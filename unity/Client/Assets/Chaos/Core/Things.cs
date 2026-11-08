@@ -35,6 +35,7 @@ namespace Chaos.Core
         public bool HookSouth, HookEast, Rotateable, DontHide, Translucent, Lying, AnimateAlways, FullGround;
         public bool IgnoreLook, Usable, TopEffect, NoMoveAnimation;
         public int MarketCategory = -1;
+        public string MarketName = "";
         public int GroundSpeed, LightLevel, LightColor, DisplacementX, DisplacementY, Elevation, MinimapColor;
         public FrameGroup[] Groups;
 
@@ -173,7 +174,7 @@ namespace Chaos.Core
                     case 32: t.IgnoreLook = true; break;
                     case 33: r.U16(); break;                      // cloth slot
                     case 34:                                      // market
-                        t.MarketCategory = r.U16(); r.U16(); r.U16(); r.Str(); r.U16(); r.U16();
+                        t.MarketCategory = r.U16(); r.U16(); r.U16(); t.MarketName = r.Str(); r.U16(); r.U16();
                         break;
                     case 35: r.U16(); break;                      // default action
                     case 36: case 37: break;                      // wrappable, unwrappable

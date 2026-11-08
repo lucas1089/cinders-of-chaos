@@ -43,13 +43,15 @@ namespace Chaos.Core
                 E("Charms", "win:CharmsWindow"),
                 E("Spell Supports", "win:SpellSupportsWindow"), E("Chaos Pact", "win:PactWindow"), E("Loadouts", "win:LoadoutsWindow"),
                 E("Town Portal", "win:TownPortalWindow"), E("Hideout", "win:HideoutWindow"),
+                E("Referral", "win:ReferralWindow"), E("Customise Character", "win:OutfitExtrasWindow"),
             } },
             new MenuCategory { Id = "hunt", Text = Lk.N("Hunt"), Entries = new[]
             {
-                E("Battle List", "win:BattleListWindow"), E("Party Frames", "win:PartyFramesWindow"), E("Hunt Tracker", "win:HuntWindow"),
+                E("Battle List", "win:BattleListWindow"), E("Party Frames", "win:PartyFramesWindow"), E("Hunt Tracker", "win:HuntWindow"), E("DPS Meter", "win:DpsMeterWindow"),
                 E("Minimap", "win:MinimapWindow"), E("Fight", "win:FightWindow"),
                 E("Bestiary", "win:BestiaryWindow"),
                 E("Map Overlay", "win:MapOverlayWindow"), E("Map Markers", "win:MapMarkersWindow"), E("Auto Loot", "win:AutoLootWindow"),
+                E("Nemesis", "win:NemesisWindow"), E("Boss Spawns", "win:BossSpawnsWindow"),
             } },
             new MenuCategory { Id = "adventure", Text = Lk.N("Adventure"), Entries = new[]
             {
@@ -62,23 +64,27 @@ namespace Chaos.Core
                 E("Scorched Marches", "win:PvpZoneWindow"), E("Battleground", "win:BattlegroundWindow"), E("Invasions", "win:InvasionWindow"),
                 E("Daily Reward", "win:DailyWindow"), E("Season", "win:SeasonWindow"), E("Season Pass", "win:PassWindow"), E("Weekly Chest", "win:WeeklyChestWindow"),
                 E("Ember Cache", "win:EmberCacheWindow"),
+                E("Community", "win:CommunityGoalWindow"), E("Chronicle", "win:ChronicleWindow"),
             } },
             new MenuCategory { Id = "economy", Text = Lk.N("Economy"), Entries = new[]
             {
                 E("House", "info:house"), E("Ancestral Store", "info:ancestral"),
                 E("Market", "win:MarketWindow"),
                 E("Crafting Bench", "win:CraftingWindow"), E("Professions", "win:ProfessionsWindow"), E("Crafting Tables", "win:CraftTableWindow"),
-                E("Item Finder", "win:ItemFinderWindow"), E("Orb Exchange", "win:OrbExchangeWindow"), E("Candlemarks", "win:CandlemarksWindow"), E("Auto Seller", "win:AutoSellerWindow"),
+                E("Codex", "win:CodexWindow"), E("Item Finder", "win:ItemFinderWindow"), E("Orb Exchange", "win:OrbExchangeWindow"), E("Candlemarks", "win:CandlemarksWindow"), E("Auto Seller", "win:AutoSellerWindow"),
             } },
             new MenuCategory { Id = "social", Text = Lk.N("Social"), Entries = new[]
             {
                 E("Channels", "win:ChannelsWindow"),
                 E("Guild", "win:GuildWindow"), E("Guild Wars", "win:GuildWarWindow"), E("Party Finder", "win:PartyFinderWindow"),
                 E("Leaderboards", "win:LeaderboardWindow"), E("Inspect Player", "win:InspectWindow"),
+                E("Mentors", "win:MentorWindow"), E("Patch Notes", "win:PatchNotesWindow"),
             } },
             new MenuCategory { Id = "system", Text = Lk.N("System"), Entries = new[]
             {
-                E("Hotkeys", "win:HotkeyBarWindow"), E("Server Info", "info:server"),
+                E("Hotkeys", "win:HotkeyBarWindow"), E("Help Search", "win:HelpSearchWindow"), E("Server Info", "info:server"),
+                E("Drop Feed", "win:DropFeedWindow"), E("Credits", "win:CreditsWindow"), E("Streamer and cinema mode", "win:StreamerWindow"),
+                E("Performance", "win:PerfWindow"), E("Screenshots", "win:ShotsWindow"),
             } },
         };
 

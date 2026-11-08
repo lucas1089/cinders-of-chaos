@@ -55,6 +55,9 @@ namespace Chaos.Client
         void Awake()
         {
             Application.targetFrameRate = 60;
+            // keep running when the window loses focus: the session must keep reading, walking and answering pings while the player is in another
+            // window (the project has no ProjectSettings, so the player default is to pause). The demo tour's resize also drops the focus under xvfb.
+            Application.runInBackground = true;
             Loc.Set(Loc.Choose(PlayerPrefs.GetString("chaos.lang", ""), Application.systemLanguage.ToString()));
             pairDir = PlayerPrefs.GetString("chaos.pair", DefaultPairDir());
             host = PlayerPrefs.GetString("chaos.host", host);
@@ -84,7 +87,7 @@ namespace Chaos.Client
         // The server sends the 15 x 11 view plus one tile left and top and two right and bottom (World.Range*). A wider
         // view showed unknown tiles at the sides, black, and they flashed while walking. The map keeps the 15 x 11 shape
         // and is centred; the rest of the screen is the backdrop.
-        public const float ViewTilesW = 15f, ViewTilesH = 11f;
+        public static float ViewTilesW = 15f, ViewTilesH = 11f;   // 15 x 11 unless the map zoom (Core/Layout.cs ViewZoom) shows fewer rows
         public static float UiScale(float screenW, float screenH, float dpi)
         {
             float byHeight = Mathf.Min(screenH / 720f, screenW / 960f);
@@ -207,10 +210,12 @@ namespace Chaos.Client
                 Build = ClientBuild(),
                 RsaModulus = RsaModulus(),
                 Identity = IdentityChoice(),
+                Streamer = streamer,
             });
             session.Log += line => { lock (log) { log.Add(line); if (log.Count > 8) log.RemoveAt(0); } };
             ChatEntered();
             SocialEntered();   // ChaosApp.Social.cs
+            CommunityEntered();   // ChaosApp.Community.cs
             session.Start();
             var go = new GameObject("Map");
             go.transform.SetParent(transform);
@@ -273,6 +278,7 @@ namespace Chaos.Client
 
         void Update()
         {
+            VisualUpdate();   // ChaosApp.Visual.cs: options, sounds, music, zoom, layout
             if (Input.GetKeyDown(KeyCode.F11) && !chatFocused) ToggleFrontArt();
             if (screen != Screen.Game || session == null) return;
             session.Poll();
@@ -319,6 +325,8 @@ namespace Chaos.Client
                 foreach (var win in windows)
                     if (win.Hotkey != KeyCode.None && Input.GetKeyDown(win.Hotkey) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
                         win.Open = !win.Open;
+            PlayUpdate();   // ChaosApp.Play.cs: look, use with, trade target, item menu on the map
+            CommunityUpdate();   // ChaosApp.Community.cs
             CombatUpdate();
             HandleWalk();
         }
@@ -416,7 +424,7 @@ namespace Chaos.Client
             else if (down) d = Dir.South;
             else if (left) d = Dir.West;
             else if (right) d = Dir.East;
-            if (d == null && Input.GetMouseButton(0) && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition))
+            if (d == null && Input.GetMouseButton(0) && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition) && !PlayBlocksWalk)
             {
                 // touch / click: walk towards the pointer from the screen centre
                 Vector2 v = (Vector2)Input.mousePosition - new Vector2(UnityEngine.Screen.width, UnityEngine.Screen.height) / 2;
@@ -496,8 +504,9 @@ namespace Chaos.Client
         void GameGui(float w, float h, float scale)
         {
             uiRects.Clear();
+            HudLayoutUpdate(w, h);   // ChaosApp.Visual.cs
             // the windows, in UI units: names under them are not drawn
-            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w), ToolbarRect(w) };
+            var covers = new List<Rect> { StatusRect(), ChatRect(w, h), LogoutRect(w), HudPlace("toolbar", ToolbarRect(w)) };
             foreach (var win in windows) if (win.Open) covers.Add(win.Area);
             if (view != null)
             {
@@ -513,8 +522,10 @@ namespace Chaos.Client
                     // above the creature's tile, left-shifted by its outfit's displacement
                     float x = sp.x / scale, y = (UnityEngine.Screen.height - sp.y) / scale;
                     if (x < map.x || x > map.xMax || y < map.y || y > map.yMax + tile * 0.5f) continue;
+                    if (CommunityHidesName(c)) continue;   // streamer / cinema mode (ChaosApp.Community.cs)
                     x -= map.x;
                     y -= map.y;
+                    y -= InfoLift.Scaled(c, tile);   // names over tall looks (Core/InfoLift.cs)
                     var col = c.Type == 1 ? new Color(1f, 0.6f, 0.6f) : c.Type == 2 ? new Color(0.6f, 0.9f, 1f) : new Color(0.6f, 1f, 0.6f);
                     var hp = c.HealthPercent > 50 ? new Color(0.2f, 0.85f, 0.2f) : c.HealthPercent > 20 ? new Color(0.95f, 0.8f, 0.1f) : new Color(0.9f, 0.15f, 0.1f);
                     Rect nr = new Rect(x - 100, y - barH - 22, 200, 18);
@@ -525,6 +536,7 @@ namespace Chaos.Client
                     DrawNameplate(c, x, nr);   // ChaosApp.World.cs: frame, guild and title of a player
                     nameStyle.normal.textColor = Color.black;
                     GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
+                    col = VisualNameColor(c, col);   // the own name shader
                     nameStyle.normal.textColor = col;
                     GUI.Label(nr, c.Name, nameStyle);
                     DrawBubbles(c, x, nr.y);
@@ -534,9 +546,11 @@ namespace Chaos.Client
                 }
                 DrawGroundLabels(map, scale);
                 DrawWorldOverlays(map, scale);   // ChaosApp.World.cs: tile overlays, NPC marks, map overlay, weather
+                DrawVisualOverlays(map, scale);  // ChaosApp.Visual.cs: ground rings, decals, auras, beams, flashes, wings
                 DrawAttackFrame(map, scale);
                 GUI.EndGroup();
             }
+            if (streamer.Cinema) return;   // cinema mode: the map alone (ChaosApp.Community.cs)
             StatusPanel(scale);
             ChatWindow(w, h, scale);
             DrawWindows(w, h, scale);
@@ -554,16 +568,19 @@ namespace Chaos.Client
             if (GUI.Button(outR, "Log out")) { session?.Logout(); Leave("Logged out."); }
             HudGui(w, h, scale);     // toasts, buffs, monster and cast bars, anti-bot (ChaosApp.Hud.cs)
             PartyGui(w, h, scale);   // the right-click menu and the party invitation, over the windows
+            PlayGui(w, h, scale);    // the use with / trade crosshair hint (ChaosApp.Play.cs)
             ItemsGui(w, h, scale);   // the item tooltip, the modal window and the text window (ChaosApp.Items.cs)
+            HudEditGui(w, h, scale); // ChaosApp.Visual.cs: the HUD piece frames of the edit mode
             WorldGui(w, h, scale);   // the Candlemarks counter, the Hideout placing bar and the small tooltip (ChaosApp.World.cs)
         }
 
         public static void Fill(Rect r, Color c) => GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, false, 0, c, 0, 0);
         static Rect Scaled(Rect r, float s) => new Rect(r.x * s, r.y * s, r.width * s, r.height * s);
 
-        static Rect StatusRect() => new Rect(8, 8, 248, 92);
-        static Rect LogoutRect(float w) => new Rect(w - 96, 8, 88, 30);
-        Rect ChatRect(float w, float h)
+        static Rect StatusRect() => HudPlace("status", new Rect(8, 8, 248, 92));
+        static Rect LogoutRect(float w) => HudPlace("logout", new Rect(w - 96, 8, 88, 30));
+        Rect ChatRect(float w, float h) => HudPlace("chat", ChatDefault(w, h));
+        Rect ChatDefault(float w, float h)
         {
             if (!chatOpen) return new Rect(8, h - 38, 90, 30);
             float ch = Mathf.Min(240f, h * 0.36f);

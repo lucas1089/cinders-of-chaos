@@ -104,7 +104,7 @@ namespace Chaos.Client
         // camera
         Vector3 camTarget, camVel;
         bool camSnap = true;
-        float fitDist = 18f, fitAspect = -1f;
+        float fitDist = 18f, fitAspect = -1f, fitRows = -1f;
 
         // ---- setup ----
 
@@ -595,9 +595,9 @@ namespace Chaos.Client
         float FitDistance()
         {
             float aspect = Cam.aspect;
-            if (Mathf.Abs(aspect - fitAspect) > 0.001f)
+            if (Mathf.Abs(aspect - fitAspect) > 0.001f || fitRows != ChaosApp.ViewTilesH)   // the map zoom changes the rows
             {
-                fitAspect = aspect;
+                fitAspect = aspect; fitRows = ChaosApp.ViewTilesH;
                 fitDist = Hd2dCamera.ForTile(0f, 0f, new Pos(0, 0, 0), aspect, FrontArtCamera.Pitch, FrontArtCamera.Fov, ChaosApp.ViewTilesW, ChaosApp.ViewTilesH).Distance;
             }
             return fitDist;

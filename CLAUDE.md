@@ -98,6 +98,8 @@ python3 -I unity/tools/hd2d_preview_test.py   # HD-2D offline preview (O432): cl
 python3 -I unity/tools/fetch_3d_assets_test.py   # Unity 3D characters (KayKit packs, CC0, pinned commits, per-file sha256, not committed): the fetch script's pure parts on a fake archive; run python3 -I unity/tools/fetch_3d_assets.py (--check) to get the files; the class and monster mapping is in the Core.Tests run (unity/README.md "3D characters")
 python3 -I unity/tools/gen_front_art_emission.py --check   # Unity front-art scene: emission masks <dir>_e.png of the test sprites (staff flame, eyes) from the glow rule (CI uses the fx venv)
 python3 -I unity/tools/front_art_packs_test.py   # front-art pack monsters: canvas, mirror, normal map, glow modes, tar filter, seal / open (the art itself: unity/art/front_art_packs.enc, secret CHAOS_ART_KEY; CI uses the fx venv)
+python3 -I tools/ci/check_unity_opcodes.py && python3 -I tools/ci/check_unity_opcodes_test.py   # every client-facing extended opcode (server chaos_constants.lua, main client modules) is handled in Unity or on tools/ci/unity_opcodes_allowlist.txt with a reason; the list can only shrink (O433 phase 5)
+python3 -I unity/tools/gen_unity_credits.py --check && python3 -I unity/tools/gen_unity_credits_test.py   # docs/CREDITS.md -> unity Core/CreditsData.cs, the Unity Credits window (run gen_unity_credits.py without --check to write)
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
 python3 -I website/tools/gen_promo_video_test.py   # promo videos (gen_promo_video.py, docs/PROMO.md section 1): timeline, captions, pan, tempo, scene choice on synthetic data
 python3 -I website/tools/gen_site_media.py --check   # trailer, shorts and screenshots of the front page (O425): files, size budgets (total 25 MB) and sha256 against media/manifest.json; --build SRC_DIR re-encodes from the recordings (ffmpeg; not in git); chaos_media_page_test.php covers the page
@@ -118,6 +120,7 @@ cd server && luajit tools/gen_guide_data.lua                  # -> client game_h
 cd server && lua5.3 tools/gen_guide_data.lua --check
 python3 -I server/tools/weapon_sim.py --power --check             # -> data/scripts/chaos/weapon_power_config.lua (--power --write)
 luajit unity/tools/gen_tree_data.lua                          # -> unity/Client/Assets/Chaos/Resources/PassiveTree.json (Unity passive tree layout from client treedata; --check in CI)
+luajit unity/tools/gen_info_data.lua                          # -> unity/Client/Assets/Chaos/Resources/Codex.json, HowItWorks.json, HelpSearch.json and Core/InfoLiftData.cs (Unity info windows from the client data files; --check in CI, also lua5.3)
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
 python3 -I website/tools/gen_streamer_kit.py                  # -> website plugins/chaos/assets/streamer: OBS overlays, Twitch panels, banners, Discord icon (--check in CI with the fx venv; O320)
 python3 -I website/tools/gen_promo_kit.py                     # -> website plugins/chaos/assets/promo: beta and launch posts, story, class cards, forum banners (texts and dates: website/tools/promo_source.json; --check in CI with the fx venv)
@@ -174,7 +177,7 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
 ## Rules
 
 - No names of other servers, games or clients in the repo. `check_names.py` enforces it.
-  - Art pack names may appear only in `docs/CREDITS.md` and the two files generated from it.
+  - Art pack names may appear only in `docs/CREDITS.md` and the files generated from it.
 - Every third-party asset, font, library or tool that ships goes into `docs/CREDITS.md`. Then run `gen_credits.py`.
 - No real account data or player logs in the repo.
 - When telling the owner to run a VPS step, say first if the admin app (`android/`) can do it, and where (tab > card > button).

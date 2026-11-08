@@ -89,8 +89,10 @@ namespace Chaos.Core
             if (kind < 23 || kind > 29)
             {
                 Talks.Clock = Clock;
+                text = ShortNumbers.InMessage(kind, text);   // client_chaos_numbers: 15300 is 15.3k in status and look texts
                 Talks.OnText(kind, channel, text);
-                Text(text); Chat("", text, 0);
+                if (LootScreen.OnScreen(kind)) Text(text);   // game_lootscreen: the loot line stays off the screen, the chat tabs still get it
+                Chat("", text, 0);
             }
             else if (W.Fx.Enabled)   // damage, heal and experience numbers
                 W.Fx.Push(typed ? FxEvent.TypedNumber(kind, at, v1, c1, v2, c2, text, percent, impact, owner) : FxEvent.Number(kind, at, v1, c1, v2, c2, text));

@@ -61,6 +61,8 @@ namespace Chaos.Client
                 yield return body.Current;
             }
             if (rt != null) rt.Release();
+            // -chaosDemoTour DIR next to this flag: the app runs on in this process and records the demo tour (ChaosApp.Tour.cs)
+            if (code == 0 && ChaosApp.DemoTourRequested(out string tourDir)) { ChaosApp.HandOverToDemoTour(tourDir, gameObject); yield break; }
             Application.Quit(code);
         }
 

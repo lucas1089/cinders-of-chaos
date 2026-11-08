@@ -58,7 +58,7 @@ namespace Chaos.Client
                     var pic = new Rect(row.x + 8, row.y + 6, 46, 46);
                     Fill(pic, new Color(0f, 0f, 0f, 0.5f));
                     DrawOutfit(pic, c.Outfit);
-                    GUI.Label(new Rect(row.x + 62, row.y + 4, row.width - 70, 22), c.Name, titleStyle);
+                    GUI.Label(new Rect(row.x + 62, row.y + 4, row.width - 70, 22), streamer.ListName(c.Name, sel), titleStyle);
                     var cs = new GUIStyle(small) { fontSize = 12 };
                     cs.normal.textColor = ColorUtility.TryParseHtmlString(c.Class.Color, out var cc) ? cc : Color.white;
                     string line = c.Level > 0 ? Loc.T("Level {0}", c.Level) + "  " : "";

@@ -234,8 +234,9 @@ namespace Chaos.Client
             if (g.PatternX >= 8) dir = (int)c.Direction;   // a look with eight facings (src-patch 0077)
             int phase;
             if (walking && g.Phases > 1) phase = 1 + (int)(progress * (g.Phases - 1)) % (g.Phases - 1);
-            else phase = g.Phases > 1 && !walking && t.Groups.Length > 1 ? Phase(g, c.Id) : 0;
-            float ox = x - (elevation + t.DisplacementX) / 32f, oy = y + (elevation + t.DisplacementY) / 32f;
+            else phase = g.Phases > 1 && !walking && (t.Groups.Length > 1 || BossAnimate.Animates(o.LookType)) ? Phase(g, c.Id) : 0;   // game_bossanimate: a look with walk frames only still beats its wings
+            BossAnimate.Shift(o.LookType, out int bsx, out int bsy);   // and a boss whose art sits off its tile is moved down and right
+            float ox = x - (elevation + t.DisplacementX + bsx) / 32f, oy = y + (elevation + t.DisplacementY + bsy) / 32f;
             for (int addon = 0; addon < g.PatternY; addon++)
             {
                 if (addon > 0 && (o.Addons & (1 << (addon - 1))) == 0) continue;

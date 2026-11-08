@@ -508,6 +508,30 @@ Not run in a Unity editor or player in the session that wrote it: it compiles in
 - Options window (Ctrl+L): language (PlayerPrefs `chaos.lang`, hello on 157), keep attacking while moving (186), right-click equips (188), buff bar, the display scale the server reports (157). The two options and the language go out once after the login (`HudState.Hello`).
 - Not done: icon art for buffs and toasts, frame art for the monster bar, the Town Portal bar, in-world tier labels, monster scaling by tier, catacomb Start protection zone check.
 
+## Demo tour video
+
+The owner's video of the client running the game, not a test scene. `ChaosUnity -chaosDemoTour OUT_DIR` starts a fake game server in the
+player's own process (`Core/DemoTour.cs`, `FakeGameServer`), logs in to it through the normal `ChaosApp` flow (login port, character list,
+game port with the guard challenge: the key, the RSA modulus and the Extended wire reach the app through the same environment variables it
+always reads), switches on the F8 front-art live view and plays about 23 seconds. No real server data and no accounts: the art is the
+real pair's outdoor ids when found (`-chaosPair`, `CHAOS_PAIR_DIR`, `things/`), else its temple floors, else the synthetic art.
+The fake server has a login port and a game port of its own, so a slow login (software GL) is never taken for a game client.
+The player keeps running without focus (`Application.runInBackground`, set in `ChaosApp.Awake`): the tour's resize drops the focus under
+xvfb, and a player in another window must keep its session (reads, pings) alive.
+- Server timeline (`FakeGameServer`, times in `TourPlan`): a skeleton and a ghoul walk in, an archer shoots, the hero fights (0x83 effects,
+  0x85 missiles, 0xB4 numbers, 0x8C and 0xA0 health), casts a fire spell and a heal (0xAA spell words, 0xA4 and 0xA5 cooldowns), loot lines,
+  an NPC greets and opens its shop (0x7A, 0x7B), toasts (79: journey, achievement, party invite, season pass), a buff added (234), a party
+  forms (235). The map is a function of the tile (`TourMap`), so the strips of the hero's walk match the first view.
+- Player side (`Unity/ChaosApp.Tour.cs`, `TourDirector`): walks five steps, attacks, casts, talks to the NPC and trades, then opens and closes
+  the spellbook, party frames, passive tree and skills windows in turn and two top-menu drop-downs, with the HUD on.
+- Deterministic: `Time.captureFramerate = 60`, the game clock (`GameSession.TestClock`) is the frame count and the script runs on that clock,
+  never the wall clock. One PNG per frame, `OUT_DIR/demo_tour_0000.png ...`, 1280x720, 1381 frames. Exit code 0 when all were written.
+- With `-chaosHd2dShot` too, the screenshots run first and `Hd2dShot` hands the process over to the tour. Log lines: `chaos demo tour:`.
+- CI (`unity-prototype.yml`, Linux target): one player run with both flags under xvfb, a second run with the tour alone if no frames came,
+  then `ffmpeg -framerate 60 -i demo_tour_%04d.png -vf scale=1280:720,format=yuv420p -c:v libx264 -crf 20` writes `demo_tour.mp4` into the
+  `hd2d-shots` artifact. The PNG frames are deleted after encoding; `demo_tour_still_1..4.png` stay.
+- Test: `Core.Tests/TourTests.cs` (the server against a real `GameSession`, no Unity).
+
 ## Tests
 
 ```
@@ -529,6 +553,7 @@ The checks cover:
 - the front-art creatures (`FrontLooksTests.cs`): the name rules over every monster name of the server, the 21 classes, the outfit composer, the label, the state machine (steps, facing, swings, flinch);
 - NPC talk and trade (`NpcTests.cs`): byte-level 0x7A, 0x7B, 0x7C in and the buy, sell, look, close and NPC speech packets out, lists, search, quantity bounds (money, capacity, stock, 100), totals, currency (opcode 113), {keywords}, the talk log and its channel rule, NPC speech in the parser;
 - the front-art live effects (`FrontFxTests.cs`): byte-level packets of 0x83, 0x84, 0x85, 0x86 and 0xB4, every effect and missile id of the server's Lua files has an element, palettes and missile arts, number text, the melee rule, timing and the director's rules;
+- the demo tour server (`TourTests.cs`): a real session logs in through the login and the game port and plays the whole script on a simulated 60 fps clock (steps, fights, spells, shop, party, toasts, buffs);
 - the 3D character mapping (`CharsTests.cs`): the 21 classes against the vocation files, the monster rules over every monster name of the server
   (it prints the share per model), size, hand bones, idle clips, the label font and the line-up. The fetch script: `python3 -I unity/tools/fetch_3d_assets_test.py`.
 
@@ -723,8 +748,8 @@ fog, ambient light and shadow quality. `Hd2dPost.SpriteMaterial(atlas)` is the l
 - Auto setup: `HelperRotation.Select` picks the class preset for the level, replaces spells the character cannot cast, tops up to 5, puts area spells first and the class ultimate
   (level 1200) in front. `Core/HelperRotationData.cs` is generated from `client/overlay/modules/game_helperrotation/autorotation_data.lua` by
   `luajit unity/tools/gen_helper_rotation_data.lua` (`--check` in the `core` job).
-- Not ported: runes, party and friend heals, Follow, Auto sell, food, exercise, Everfull "follow the carried flask", the potion gate for closed backpacks, shooter profiles, the line-of-sight
-  check (every monster in the 7 x 5 window counts), the Auto Target engine and guard (summons are skipped by creature type), the helper HUD, helper timers window, support spells tab.
+- Not ported (phase 5 track Q added runes, ally heals, food, Everfull held, presets, the Support tab and the HUD: see "Helper extras" below): Follow, Auto sell, exercise, the potion gate for closed backpacks,
+  the line-of-sight check (every monster in the 7 x 5 window counts), the Auto Target engine and guard (summons are skipped by creature type).
 - Typed damage numbers: with the Chaos identity the login now sends capability bit 7 (`0xC0` with wide spell ids). `GameParser.TextMessage` reads u16 percent, u8 type, u32 creature after
   the value pairs when feature 155 is on, and `FxEvent.TypedNumber` carries them. In the live view (`FrontFxDirector`, `FrontLiveFx`) a critical hit is bigger and slower, a condition tick smaller,
   mana drain and mana gain are water coloured, an energy shield hit is energy coloured, every number is scattered by `DamageScatter` (the main client's rolls: shift, speed, drift, the texts of one hit
@@ -823,3 +848,111 @@ windows: `Unity/Windows/WorldWindows.cs` and `ItemWindows.cs`. No window has a h
   Nothing here was run against a live server.
 - Tests: `Core.Tests/WorldTests.cs` drives every model with the messages of the server scripts and reads back what it sends (about 400 checks): the placement check of the hideout, field timers on a
   synthetic world, rain fades, plate batches and retries, order forms, crate cells, part joining, and that every text has a pt-BR entry.
+
+## Base gameplay actions (O433 phase 5, track P)
+
+What a player does with items and players. Pure models in `Core/Play.cs`, `PlayLists.cs`, `PlayGuards.cs`, `PlayLook.cs`, wired by `Core/GamePlay.cs`; the app side is `Unity/ChaosApp.Play.cs` and `Unity/Windows/PlayWindows.cs`.
+Wire layouts are TFS 1.4.2 `protocolgame.cpp` for 10.98 (the base tree is not in this repo, so check them on a live run).
+- Look: Shift + left click on the map (0x8C with the tile, the stack position and the item id; a creature goes as 0x8D) or on a slot of the equipment or a bag. While the chat line is being written Shift + click on a slot still links the item.
+  The answer is the text message the chat shows. Picking: `TilePick` (`LookIndex`, `UseIndex`, `TopCreature`) follows the base `getTopLookThing` and `getTopUseThing`.
+- Use: a right click uses a map item or a slot item (Classic Controls). A multi-use item (rope, shovel, runes) starts the crosshair "Use with ..." unless the server listed it as equipment and "Right-click equips items" is on
+  (opcode 188, `HudOptions.MultiUseIds`). The next left click is the target: a map item or a slot (0x83), a creature (0x84). A right click or Esc ends it. Rotate is 0x85.
+- Item menu: Ctrl + right click on a slot or a map item. Open or Use, Use with ..., Rotate, Look, Trade with ... (own items, another player in view), then the hooks of the Chaos modules: Where to find (`ItemFinderState`),
+  Add to / Remove from Loot List (`AutoLootState`), Pouch settings (`PouchesState.IsLootPouch`), Transmog (worn head, armor, hands, legs, feet), Lock item / Unlock item (`CraftingLockMenu`, `CraftingState.LockAt`, the server's lockAt).
+- Trade: "Trade with ..." in the menu, then a click on a player sends 0x7D. `TradeWindow` opens on the server's 0x7D and 0x7E, a click on an item looks at it (0x7E), Accept is 0x7F, Reject or the x is 0x80.
+  A changed counter offer clears your accept (TFS sends no accepted message).
+- VIP list (`VipWindow`): 0xD2 entries, 0xD3 status, 0xD4 for an old logout. Add by name (0xDC), edit description, icon and notify (0xDE), remove (0xDD), double click opens a private tab. Quest log (`QuestLogWindow`): 0xF0 list, a pick asks 0xF1.
+  Neither window has a hotkey (Ctrl keys are taken); the Windows menu lists them.
+- Badge slot: `Parser.Inventory` has 14 slots, the equipment window draws slot 13 where ammo was (the server gives slot 10 nothing since src-patch 0058).
+- Guards: `DeadGuard` (a monster at 0 percent for 3 s leaves the map), `TargetGuard` and `TargetLock` (the helper's locked target is dropped after 3 refused re-sends in 3 s), `AutoTargetCore` (goblins, bosses, special tiers first; `HelperEngine.RankOf` is set by the helper window from the name and the monster bar),
+  `LootScreen` (the loot line stays off the screen), `LookPreview` + `LookPreviewWindow` (`ChaosApp.ShowLookPreview(option)`).
+- Not done: map picking in the HD-2D scene (creatures only there), the reach rule of Auto Target (no pathfinder or line of sight in the Unity world) and its two options, the mount, wings, aura and shader drawn on the look preview and the effect stage, a call of `ShowLookPreview` from the Outfit, Cosmetics and Store windows,
+  split stack dialog on drag, the equip hotkey (0x77), "Browse field", the rules of the quest log tracker, a Rift Key name check for the lock entry (the client has no item names). Nothing here was run against a live server.
+- Tests: `Core.Tests/PlayTests.cs` (byte-level packets out and in, tile picking, menu entries, crosshair, trade, VIP, quest log, guards, Auto Target order and the engine with it, badge slot, look preview, texts).
+## Visuals, audio and layout (O433 phase 5, track R)
+
+Eighteen more modules of the main client. The rules are the Lua logic files without engine calls: `Core/Audio.cs` (sound mixer, region music, the overlay file finder), `Core/Visual.cs` (opacity, error colour, wings, loot beams,
+decals, auras, cosmetic prints, ground ids, boss looks, hit flash, shake, name shaders), `Core/Layout.cs` (map zoom, movable HUD, screen fit, window fade, saved layout). `Core/GameVisual.cs` (`GameSession.Visual`)
+connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds, decals and flashes see every damage number and magic effect whether or not the live view runs.
+- Files: the sounds and the music are the main client's own ogg files (`client/overlay/modules/game_chaossound/sounds`, `game_chaosmusic/music`, built by `client/tools/gen_music.py`), and the aura, decal and print
+  pictures are its png files. Nothing is copied into the Unity project. The player looks in `CHAOS_OVERLAY_DIR`, `StreamingAssets/overlay/modules`, `overlay/modules` beside the executable, then the repository's
+  `client/overlay/modules` (`OverlayFiles`). A build that ships the game folder copies the module folders `game_chaossound`, `game_chaosmusic`, `game_chestaura`, `game_combatdecals` and `game_cosmeticfx` to
+  `StreamingAssets/overlay/modules`; the CI build does this (its ogg and png files only, `unity-prototype.yml`). Without the files the game is silent and has no pictures for auras, decals and prints (drawn stand-ins for the rest); Options > Sound says so.
+- Drawing: `Unity/ChaosApp.Visual.cs` draws in the map group through `TileScreenPx`, so the classic view and the front-art live view (F8) share it: ground rings (the 223 ground effect ids), decals, footprints, chest and
+  Templar auras (the range frame as a nine-slice), cosmetic glows, loot beams, hit flashes and level-up wings. The HD-2D scene draws none of it. `Unity/ChaosApp.Audio.cs` plays the cues (8 voices) and cross-fades two
+  music sources. The own name wears the picked name shader (`NameShadersWindow`, opcode 96).
+- Layout: the map zoom (7 to 11 rows, Ctrl and the wheel, `ChaosApp.ViewTilesW/H` are no longer constants), the camera shake, the movable HUD pieces (plate, log out, chat, top menu; edit mode and reset in Options > Layout,
+  saved per character in `chaos.hudpos.<name>`), windows taller than the screen (wheel scroll), the window fade, and the saved window places (`chaos.layout.<name>`, plus the open state of the minimap, battle list, equipment and containers).
+- Options: the existing options window got four pages (General, Sound, Visuals, Layout), `Unity/Windows/VisualWindows.cs`; every option is in PlayerPrefs (`VisualPrefs`: `chaos.sound`, `chaos.music`, `chaos.lootbeams`,
+  `chaos.visualfx`, `chaos.effectopacity` and flags). Texts: `Core/LocVisual.cs` (pt-BR).
+- Not done: a larger map area than 11 rows (needs the aware range change, opcodes 0x33 and 0x42 of other sizes); effects drawn under creatures (they are over them, IMGUI); the pack effect strips of the loot beams and wings
+  (drawn in code instead); the outline shader of cosmetics; the grade, bloom, spell light, liquid shimmer, target and hover outlines and cooldown pulse of game_visualfx; the shift of Gravewarden Ulthar in the live view;
+  the container, panel and size parts of game_chaoslayout; name shaders of other players. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
+- Tests: `Core.Tests/VisualTests.cs` (about 190 checks): the mixer rules and files against `soundlogic.lua` and the module folder, the music rules and hysteresis with the files, the cursed and foot aura messages and
+  the strip sizes, decal colours, beams, prints, ground ids against `groundfx_data.lua`, the layout rules, and a session fed with the combat events (cue, flash, stain, shake, ring, wings, kill, chest, footprint).
+## Helper extras and the info windows (O433 phase 5, track Q)
+
+Helper extras (all in the helper window, Ctrl+R; tabs Healing, Shooter, Target, Runes, Allies, Support, More). Rules: `Core/HelperExtras.cs` and `Core/HelperSupport.cs`, loop parts:
+`Core/HelperEngineExtras.cs`, settings: `Core/HelperConfig.cs` (new fields are read with defaults, an older saved text still loads). Same pacing as the main client: the new parts run every 250 ms
+(allies, attack runes, Support) or 1000 ms (food); a rune waits one second per kind (`HelperTimers` channels healRune, attackRune, food); an ally heal has a gap per target (1.2 s) and a budget of
+8 in 10 s; nothing runs in a protection zone and every cast goes through `HelperCasts`.
+- Runes: 2 healing rows on yourself (percent) and 3 attack rows per preset (monsters to hit, health range of the monsters, priority). An attack rune goes on the target while the spell rotation is on,
+  when the monsters in its area reach the count. The rune must be in the equipment or an open bag (the main client's gate for closed backpacks is not ported).
+- Allies: party members below a percent and a list of 5 friends below another; a single-target spell by name (the name is cleaned and quoted), a group spell by count, a healing rune. Your own healing
+  comes first. Players come from the map (`IHelperHostExt.Players`, party shield from the creature).
+- Food: eats a carried food every two minutes. The 10.98 state word has no hungry bit, so only the gap rules.
+- Everfull held (`EverfullHeld`, opcode 116 `held`, `sync` sent when the helper starts): a Health or Mana Potion row follows the carried flask of its slot.
+- Shooter presets: up to 20 named presets of the five slots, the attack rune rows and the Auto Target mode (`HelperConfig.AddProfile`, `SelectProfile`, `RenameProfile`, `DeleteProfile`); the live
+  `Shooter`, `RuneAttack` and `AutoTargetMode` are the selected preset's. Buttons < and > cycle them. The main client's hotkey that cycles presets is not ported.
+- Support: up to 8 support spells (shields, summons, fight buffs, vigils) cast by priority when off cooldown and while the effect is not on. A port of `supportspells.lua`. Unity has no buff bar, so the rule
+  the main client uses when the bar cannot tell applies to every spell: the spell's own duration since our last cast, else at least a minute (or its cooldown). A vigil (a switch) is never cast blind, so
+  it stays unused. A capped summon is cast only below the summon cap, counted from your summons on the map. "Fill from my class" is Auto setup's plan; the Auto setup button of the Shooter tab also fills an
+  empty section. No timer section (the main client's Support absorbed it).
+- Bot HUD (`HelperHudWindow`, no menu entry): a movable window with the rows of the ticked sections (combat, healing, support, player), on while "Show Bot HUD" is ticked in the More tab.
+- helper timers (`game_helpertimers`) is the pure `HelperTimers` class that was already there: no window in the main client either.
+- Not ported: Follow, Auto sell (needs the pouches window of the main client), exercise weapons, the potion gate for closed backpacks, the line-of-sight check, the preset hotkey.
+
+Info windows (none has a hotkey; the top menu opens them: Hunt > DPS Meter, Economy > Codex, System > Help Search; `Unity/Windows/InfoDataWindows.cs`, `Unity/ChaosApp.Info.cs`):
+- DPS meter (`DpsMeterWindow`, `Core/DpsMeter.cs`, opcode 204): bars per skill with total, per second and share; tabs Damage / Healing / Taken / Received; the current fight, the session or one of the last
+  10 fights (< >); party mode; the Combat log switch shows the detail table (hits, crits, average, max, overhealing, element split); Copy puts the summary on the clipboard, To chat writes one line into the chat
+  input; Reset asks twice. The server starts pushing on `open` and stops on `close`, so the window only asks while it is open. Settings per character in PlayerPrefs `chaos.dpsmeter.<name>`.
+- Short numbers (`Core/InfoNumbers.cs`, `ShortNumbers`): `Short`, `Exact` and `In` (the conservative text rule of `client_chaos_numbers`: ids, coordinates, years and times stay as they are). Server text of the
+  kinds 17, 18, 19, 21 and 22 (status, event advance, look) is shortened in `GameParser.TextMessage`; `ShortNumbers.Enabled` turns it off.
+- Names over tall looks (`Core/InfoLift.cs`, table `Core/InfoLiftData.cs`): the name and health bar of a player or an NPC wearing a tall look go up by the lift of its look type, in the classic view.
+  Monsters keep the classic place, as in the main client. The 3D live view places its labels from the figure and is not changed.
+- Data (`unity/tools/gen_info_data.lua`, `--check` in CI, run with luajit or lua5.3): `Resources/Codex.json` (from `codex_data.lua`), `HowItWorks.json`, `HelpSearch.json` and `Core/InfoLiftData.cs`.
+  Rerun it after `server/tools/gen_codex_data.lua`, `gen_howitworks_data.lua`, `gen_guide_data.lua` or a new pair's `gen_info_lift.py`.
+- Codex (`CodexWindow`, `Core/Codex.cs`): 11 tabs, filters (a click on a filter goes to the next option, right-click back), search (every word starts a word of the name or the page), the list and the page
+  (tables with the tier rows that roll at the chosen item level marked, shared sections, links with Back, "Where to find" opens the item finder). The texts are English: the main client translates them
+  through its own key table (`CodexText`), which Unity does not have. The crafting bench's right-click on a modifier calls `ChaosApp.OpenCodex(id)` (`CodexView.IdForMod`).
+- How it works (`HowItWorksWindow`, `Core/HowItWorks.cs`): the card of a feature in en or pt-BR. A `?` button in the title bar of every feature window that has a card (`GameWindow.HowKey`, the table
+  `HowItWorks.UnityWindows`); the first time a character opens such a window the card opens by itself (PlayerPrefs `chaos.howitworks.seen.<name>`, off with the box below the card `chaos.howitworks.auto`).
+- Help search (`HelpSearchWindow`, `Core/HelpSearch.cs`): offline ranking over the cards, the unlock entries and the Codex, the first steps before the player types, snippets in the language chosen. A click
+  opens a card or a Codex entry.
+- Weapon list (`ProficiencyWindow`, `Core/ProficiencyCatalog.cs`): every dat item with a weapon market category and a name, by category with a search. The dat has no weapon type (the main client uses it for
+  items without market data), the perk trees and weapon experience are not in Unity. No menu entry (the main client has none either); it is in the Windows list.
+- Texts: `Core/LocInfo.cs` (pt-BR, merged in `LocStrings`).
+- Tests: `Core.Tests/InfoTests.cs` mirrors the Lua tests of the helper extras, `dpsmath_test.lua`, `numbers_test.lua`, `infolift_core_test.lua`, `howcore_test.lua`, `helpcore_test.lua`, `codexview_test.lua` and
+  `catalogcore_test.lua`, reads the real JSON files, and drives the engine with a fake game (about 300 checks).
+- Not done: the Codex pt-BR texts, the DPS meter's icons, drag and resize of the panel (the window frame moves; size and position are not kept), the 3D label lift, Follow and Auto sell, the buff bar the
+  Support section would read. Nothing here ran against a live server.
+## Community, credits and tools (O433 phase 5, track S)
+
+Sixteen more modules of the main client and a check that no opcode is forgotten. Models in `Core/Community.cs` (admin panel 120, boss spawns 217, survey 122, nemesis 163, referral 220),
+`Core/CommunityGoal.cs` (community goal and Brazier 203, chronicle and Memorial 171, mentors 194, patch notes 244) and `Core/CommunityExtras.cs` (card borders 172, drop feed 229, credits,
+streamer and cinema mode, performance record, automatic screenshots, Customise Character extras); the session part is `Core/GameCommunity.cs` (`GameSession.Community`), the windows
+`Unity/Windows/CommunityWindows.cs` (all on the list-window framework: `SocialPanel` rows), the app glue `Unity/ChaosApp.Community.cs`. No window has a hotkey: the top menu opens them
+(`Core/TopMenu.cs`) or the server does (survey at level 20 and 50, the Brazier, the pocket boss NPC, the mentor offer, the patch notes at the login). Texts: `Core/LocCommunity.cs`.
+- Opcode coverage: `python3 -I tools/ci/check_unity_opcodes.py` (CI job `core`). Every `ChaosOpcodes` number of the server and every opcode a main client module registers must be handled in Unity or
+  be in `tools/ci/unity_opcodes_allowlist.txt` with a reason ("not ported yet" is open work). The list can only shrink; `--list` prints the table. The test builds a made-up tree.
+- Admin Panel: the same gate as the main client. The client asks for the catalog 600 ms after the login; only staff accounts get an answer, and the window is in the menu only then. The server re-checks every action.
+- Credits: `python3 -I unity/tools/gen_unity_credits.py` writes `Core/CreditsData.cs` from docs/CREDITS.md with the parser of `client/tools/gen_credits.py` (`--check` in CI).
+- Streamer mode (Ctrl+Shift+S): `ChatModel.Streamer` hides private message text (and the sender, with the sub-option) before a line is stored and masks IP addresses in server texts; the character list masks the
+  other characters; the own name is not drawn. Cinema mode (Ctrl+Shift+H) draws the map alone. Options in PlayerPrefs (`chaos.streamerMode` ...).
+- Screenshots: `ScreenCapture` into `screenshots/` of `Application.persistentDataPath`, 300 ms after the event (level up, valuable loot, achievement, new record line). Performance: `PerfCore` is perf_core.lua
+  ported (stats, record, verdict, CSV, report); Record 60 s writes `chaos-perf-<time>.csv` and `.txt` next to the screenshots folder.
+- Tests: `Core.Tests/CommunityTests.cs` drives every model with the server's messages and reads back what it sends (about 270 checks): the admin gate and confirm press, boss countdowns and pocket buttons,
+  survey answers, nemesis times, referral rows, goal stages and Brazier limits, chronicle languages and memset, mentor pages and offer, patch notes in parts and the login wait for the Daily Reward window,
+  the changelog, card borders, drop feed, credits, streamer masks through the chat model, the performance record (60 samples, CSV, report), screenshot rules, the extras plan, and that every text has a pt-BR entry.
+- Not done: Boss Defeated screenshots, the window title and login fields of streamer mode, the Customise Character look preview and colour palette, boss pictures and stage icons, a Nemesis tab in the Bestiary window.
+  `game_event` is N/A (no server system behind it). Not run against a live server (as the other tracks).

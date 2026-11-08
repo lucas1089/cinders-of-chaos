@@ -2,7 +2,7 @@
 """Fail if text files mention other servers or clients by name (project rule: no such references).
 base-patches/ and mapeditor/patches/ are skipped: their context lines are copied from the client and map editor
 trees and cannot be edited.
-Art pack names (ART_PACKS) are allowed only in the credits (docs/CREDITS.md and the two files gen_credits.py makes
+Art pack names (ART_PACKS) are allowed only in the credits (docs/CREDITS.md, unity/tools/gen_unity_credits.py's file and the two files gen_credits.py makes
 from it): the owner shows the packs' credits in the game and on the website (2026-10-15).
 
 Names added from 2026-10-16 on are kept only as hashes (DENY_HASHES), so they are not written in the repo either:
@@ -35,7 +35,7 @@ DENY_HASHES = {
 ART_PACKS = re.compile(r'\bwst(_|\b)|raven ?fantasy|pixel ?spellcraft|anime ?ki ?auras|mutter ?pixel|pocket ?cozy|bloom ?pixle|'
                        r'pixel ?(status ?effects|projectiles|fireworks|blood ?vfx)|animated ?vfx', re.I)
 CREDITS_FILES = ('docs/CREDITS.md', 'client/overlay/modules/client_chaos_credits/credits_data.lua',
-                 'website/overlay/plugins/chaos/credits/credits_data.json')
+                 'website/overlay/plugins/chaos/credits/credits_data.json', 'unity/Client/Assets/Chaos/Core/CreditsData.cs')
 SKIP = ('client/base-patches/', 'mapeditor/patches/', 'tools/ci/check_names.py')
 WORD = re.compile(r'[A-Z]+(?![a-z])|[A-Z]?[a-z]+')
 

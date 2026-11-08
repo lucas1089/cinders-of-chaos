@@ -142,11 +142,12 @@ namespace Chaos.Client
         {
             if (windows.Count == 0) MakeWindows();
             int count = TopMenu.Categories.Length + 1;
-            float x0 = w - 104 - TopButtonW * count;
+            var tbShift = HudShift("toolbar", ToolbarRect(w));   // the movable top menu (ChaosApp.Visual.cs)
+            float x0 = w - 104 - TopButtonW * count + tbShift.x, y0 = 8 + tbShift.y;
             var e = Event.current;
             for (int i = 0; i < count; i++)
             {
-                var b = new Rect(x0 + TopButtonW * i, 8, TopButtonW - 4, 30);
+                var b = new Rect(x0 + TopButtonW * i, y0, TopButtonW - 4, 30);
                 uiRects.Add(Scaled(b, scale));
                 bool on = topMenuOpen == i;
                 if (GUI.Toggle(b, on, CategoryText(i), GUI.skin.button) != on)

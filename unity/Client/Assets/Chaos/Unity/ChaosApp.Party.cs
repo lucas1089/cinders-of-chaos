@@ -82,7 +82,7 @@ namespace Chaos.Client
         // ------------------------------------------------------------------------------------ party actions
         int MyShield => world?.Player != null ? world.Player.Shield : 0;
 
-        Vector2 MouseUi()
+        public Vector2 MouseUi()
         {
             float scale = UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi);
             return new Vector2(Input.mousePosition.x / scale, (UnityEngine.Screen.height - Input.mousePosition.y) / scale);
@@ -91,7 +91,7 @@ namespace Chaos.Client
         /// <summary>Right-click on a creature of the map. A monster or npc is attacked as before; a player gets the menu.</summary>
         void OnCreatureRightClick(Creature c)
         {
-            if (c == null || session == null) return;
+            if (c == null || session == null || PlayUsedClick) return;
             if (c.Type != 0) { session.Attack(c.Id); return; }
             var items = new List<KeyValuePair<string, Action>>();
             uint id = c.Id;
