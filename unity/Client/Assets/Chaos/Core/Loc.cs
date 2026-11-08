@@ -53,6 +53,9 @@ namespace Chaos.Core
     /// <summary>pt-BR texts of the Unity windows: English key -> Brazilian Portuguese.</summary>
     public static class LocStrings
     {
+        // the items and economy windows keep their texts in LocItems.cs (merged below, so a key two files share is not an error)
+        static LocStrings() { foreach (var kv in LocItems.PtBr) PtBr[kv.Key] = kv.Value; }
+
         public static readonly Dictionary<string, string> PtBr = new Dictionary<string, string>
         {
             // SpellbookWindow
