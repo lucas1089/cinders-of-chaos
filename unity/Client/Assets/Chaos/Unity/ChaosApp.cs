@@ -434,12 +434,12 @@ namespace Chaos.Client
         readonly WalkInputState walkKeys = new WalkInputState();
         Dir? pointerDir;
 
-        void HandleWalk()
+        /// <summary>Set by the walking video: the keys it holds this frame (WalkInput mask) instead of the keyboard's.</summary>
+        internal Func<int> WalkMaskSource;
+
+        /// <summary>The held walk keys as one mask: WASD, the arrows, the numpad.</summary>
+        static int HeldWalkMask()
         {
-            if (chatFocused || TextEditing) return;   // typing: the letters go to the chat line
-            if (OverlayKeys.Pans(Utils != null && Utils.Overlay.Shown, Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift), false)
-                && (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))) return;   // Shift + arrows pan the map overlay
-            // held keys to one mask: two keys make a diagonal, the numpad 7 9 1 3 are diagonals (Core/SmoothWalk.cs)
             int mask = 0;
             if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W)) mask |= WalkInput.Up;
             if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S)) mask |= WalkInput.Down;
@@ -448,6 +448,17 @@ namespace Chaos.Client
             KeyCode[] pad = { KeyCode.Keypad1, KeyCode.Keypad2, KeyCode.Keypad3, KeyCode.Keypad4, KeyCode.Keypad6, KeyCode.Keypad7, KeyCode.Keypad8, KeyCode.Keypad9 };
             int[] padDigit = { 1, 2, 3, 4, 6, 7, 8, 9 };
             for (int i = 0; i < pad.Length; i++) if (Input.GetKey(pad[i])) mask |= WalkInput.NumpadMask(padDigit[i]);
+            return mask;
+        }
+
+        void HandleWalk()
+        {
+            if (chatFocused || TextEditing) return;   // typing: the letters go to the chat line
+            if (OverlayKeys.Pans(Utils != null && Utils.Overlay.Shown, Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift), false)
+                && (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))) return;   // Shift + arrows pan the map overlay
+            // held keys to one mask: two keys make a diagonal, the numpad 7 9 1 3 are diagonals (Core/SmoothWalk.cs). The walking video (ChaosApp.WalkTour.cs) gives
+            // the mask of its keys here, so its steps take the same road as a player's: the mask, WalkInputState, GameSession.Walk
+            int mask = WalkMaskSource != null ? WalkMaskSource() : HeldWalkMask();
             Dir? d = walkKeys.Update(session.Now, mask);
             if (mask == 0 && Input.GetMouseButton(0) && ClickHeldLong && GUIUtility.hotControl == 0 && !OverUi(Input.mousePosition) && !PlayBlocksWalk)
             {

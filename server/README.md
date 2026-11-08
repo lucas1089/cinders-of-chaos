@@ -29109,3 +29109,60 @@ The server only needs the items to exist so the map editor can place them. No sp
 * **Pair 60** is built and on windows-assets 7a5c19e (client/MANIFEST.md "Pair 60"). **Not done:** any look in a client.
 * **Tests.** `tools/install_temple_art_test.py` (39 rows, ids, kinds, flags, names, manifest equal to the generator's, otb and items.xml
   rules on synthetic files, the guard end to end), `tools/client_pair_test.py`, `client/tools/sprites/gen_temple_art_test.py`.
+
+## Loot bag instead of corpses
+
+Owner 2026-11-08 (pt-BR): "remover os corpos de criaturas mortos do jogo e deixar so aquela bagzinha, sabe? A que ja tem em alguns dos
+monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O435.
+
+* **What the bag is.** Item 6068, the import fallback corpse (`tools/fix_monster_xml.py` `FALLBACK_CORPSE`, `adapt_monsters.py`): 191 of our
+  monster files already use it. In the stock items it is the first stage of a demon corpse (6068 -> 5527 -> 5528): a container with
+  `corpseType`, 24 slots, flags container / forceuse / notmoveable in the dat, drawn as a small dark sack with sparkles. It has no
+  corpse or lying-corpse flag in the dat, which matters for the client (below). Seen in the stock things pair (read only).
+* **The rule, one place.** `data/scripts/chaos/corpse_config.lua`: `enabled` (the switch), `bagId`, `name`, `slots`, `seconds`,
+  `keepIds`. Pure logic `corpse_core.lua` (`ChaosCorpse`), engine glue `corpse_bag.lua`.
+* **Why the engine.** Every monster of the game, the 1487 base ones, ours and the Lua ones, would otherwise need a rewrite (thousands of
+  base files, a new import re-adding the old corpse). The corpse is chosen in one place: `Creature::getCorpse` reads
+  `getLookCorpse()` at death. Engine src-patch `0089-monster-loot-bag.patch` overrides `Monster::getLookCorpse` (monster.h) with
+  `ChaosLootBag::corpseOf(table, own corpse)` (new header `chaoslootbag.h`) and adds `Game.setMonsterLootBag(bagId, keepIds)`.
+  The bag is made where the body was made, so the corpse owner, decay, loot, `onDeath` / `onDropLoot` and every script see an
+  ordinary corpse container. Rules: corpse 0 stays nothing (22 Chaos monsters, summons, pets, Necromancer minions); a monster whose own
+  corpse id is in `keepIds` keeps it; bag id 0 is the old behaviour. `corpse_bag.lua` calls the function at every load, so
+  `enabled = false` and a `/reload` give the bodies back. An engine without the patch logs one line and nothing changes.
+* **Players.** Not touched: `Player::getLookCorpse` is not in the patch, the table is read only from `Monster::getLookCorpse`.
+  Tested three ways: `ChaosCorpse.corpseFor(cfg, "player", id)` returns the id for any id (`tests/corpse_bag_test.lua`), the patch guard
+  fails when the patch touches player.* / creature.* or calls the table anywhere but monster.h (`tools/patch_monster_corpses_test.py`),
+  and the C++ header test has no player path.
+* **items.xml.** Install step `lootbag` (`tools/patch_monster_corpses.py`, idempotent, after `corpses`): item 6068 gets the name
+  "sack of loot", the config's slots (the biggest stock corpse holds 60, bonus loot and orbs come on top), `decayTo 0` and
+  `duration` 180 s. No remains stage: the stock chain left a pile (5527, 5528) after the loot. `corpseType` stays, so
+  `ItemType:isCorpse()` is true. 180 s is the loot stage the 5 minute decay scaling (`patch_corpse_decay.py`) left before.
+* **Consumers checked.** Loot goes into the bag: the stock loot, the Chaos loot layer and rarity rolls (`loot.lua`), Echoing Spoils, the
+  Loot Bag and the other pouches (`pouches.lua`), base auto loot, Rarity Autoloot, the Auto Seller "from a corpse" (`autosell.lua`),
+  paragon gold, globes: all `onDropLoot` callbacks on the corpse container. Corpse ownership and party loot rights: the engine sets the
+  owner in `Monster::getCorpse` on the bag. Quick loot and click-to-loot of the loot feed: the same container. Ground labels, "Corpse:
+  N items" and the decay timer (`groundloot.lua`, `groundloot_core.lua`: a container with a corpse type or an owner; the timer sums the
+  container stages, now one). Loot filter peek (`lootfilter.lua`: `getCorpseOwner() ~= 0 or isCorpse()`), loot beams (they read the
+  ground label rows). Necromancer Raise Dead and Corpse Explosion (`necro_lib.lua` `corpsesAround`: `ItemType:isCorpse()`, no loot
+  inside, owner; the player body ids 3058 and 3065 are refused as before). Flaying (`professions.lua`: tagged by a custom attribute on
+  the corpse object, not by id). Pocket boss loot cleanup (`pocketboss.lua`: the corpse id read at the kill). Hunt and achievements
+  readers, `botreview.lua`, `antibot.lua` (`isCorpse()` or owner). Rift, tower and guardian monsters, event monsters, wolves and
+  minions: ordinary monsters with their own corpse attribute, or 0. No Lua of ours compares a corpse's id with a number (scanned in the
+  test). Unity ground labels already treat a container that is not pickupable as a corpse.
+* **Client.** The main client's ground labels took a container as a corpse only with the dat flags corpse / lying corpse, and 6068 has
+  neither, so the labels and loot beams skipped the 191 import monsters already. `GroundLabelsLogic.CORPSE_BAG_ID` (6068, compared with the
+  config by the test) makes the bag a corpse. The container window title is the item name.
+* **Kept by id, on purpose (`keepIds`).** The four Elemental Overlord corpses (8934, 8967, 8968, 8969: `movements/.../summonOverlord.lua`
+  summons the boss when the body is moved onto the altar) and the two Father's Burden bodies (12545, 12546). Add ids to
+  `keepIds` to bring a body back.
+* **Stock skinning off** (owner 2026-11-08: "o esfolar nem é usado. pode remover"). The stock skinning script (the one `actions.xml` names
+  for the obsidian knife 5908; an obsidian knife on dead minotaurs, dragons, ...) works by corpse id. Step `lootbag` puts one marked
+  `do return false end` at the top of its onUse, after the professions hook when there is one, so the Professions' Flaying (obsidian knife
+  on a beast or reptile corpse, tag based) still runs and the stock code never does. Everything else in the script (its other items in
+  `actions.xml`, if any) is off with it.
+* **Not changed.** Player deaths (corpse, `death_keep.lua`, `deathrecap.lua`). The store Loot Bag item is another thing. Spawns, loot
+  tables and XML files stay as they are; `fix_monster_xml.py` keeps giving imports 6068.
+* **Apply.** `patch -p1 < 0089-monster-loot-bag.patch` in the server source after 0001-0088, rebuild, then `install_all.py` (step
+  `lootbag`) and a restart. Tests: `tests/corpse_bag_test.lua`, `tools/patch_monster_corpses_test.py`, `tools/chaoslootbag_test.cpp`
+  (CI builds the header cut out of the patch). The patch applies on top of 0079-0087 of an already patched tree (luascript.cpp with
+  fuzz 2). **Not tested:** a full build with the patch, a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.

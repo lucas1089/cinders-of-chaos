@@ -171,6 +171,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
   debuffs      tools/patch_debuff_durations.py   monster debuffs (slow, outfit, drunk, strength) last at most 10 s
   corpses      tools/patch_corpse_decay.py       every corpse (all its decay stages) stays at most 5 min (items.xml durations)
+  lootbag      tools/patch_monster_corpses.py    item 6068 becomes the loot bag every monster leaves instead of its body: name, slots,
+               lasts seconds then nothing (items.xml; the rule is engine src-patch 0089 and scripts/chaos/corpse_bag.lua, the
+               numbers scripts/chaos/corpse_config.lua; README "Loot bag instead of corpses"; after corpses); also turns the stock
+               skinning script (obsidian knife) off, the professions' Flaying hook in it still runs
   spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
                tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
@@ -1075,6 +1079,13 @@ def step_corpses(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'corpses')  # late: after every step that adds corpse items to items.xml
+
+
+def step_lootbag(server, data, ctx):
+    return tool_result(run_tool([tool('patch_monster_corpses.py'), data], 'patch_monster_corpses.py'))
+
+
+STEPS.insert(STEPS.index('corpses') + 1, 'lootbag')  # after corpses: the bag's own decay wins over the 5 minute scaling
 
 
 def step_spawns(server, data, ctx):

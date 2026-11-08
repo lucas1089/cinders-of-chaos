@@ -43,6 +43,16 @@ namespace Chaos.Core
             return Math.Max(step, Math.Min(5000, ms));
         }
 
+        /// <summary>The server's step duration (src-patch 0018) from a creature's speed and the ground speed of the tile it steps onto. One place for the
+        /// client (GameSession.StepMs) and the walking video's fake server (Core/DemoTour.cs), so both agree to the millisecond.</summary>
+        public static double StepMs(int speed, int groundSpeed, bool diagonal, bool player)
+        {
+            double calc = Math.Floor(857.36 * Math.Log(Math.Max(0, speed) + 261.29) - 4795.01 + 0.5);
+            calc = Math.Max(1, calc);
+            long ms = (long)(1000 * Math.Max(1, groundSpeed) / calc);
+            return Scale(ms, diagonal, player);
+        }
+
         public static double Lead(double stepMs) { return Math.Min(PreWalkLeadMs, stepMs * PreWalkMaxShare); }
 
         /// <summary>True when the next step may go: nothing is predicted past `endMs` minus the lead, and fewer than MaxPending are out.</summary>
