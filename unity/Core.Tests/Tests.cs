@@ -89,6 +89,10 @@ namespace Chaos.Core.Tests
             Phase9DTests.Run,
             Phase10FTests.Run,
             FakeModulesTests.Run,
+            Phase12HTests.Run,
+            FakeModulesP13Tests.Run,
+            Phase14HTests.Run,
+            FakeModulesP14Tests.Run,
         };
 
         static void CryptoChecks()

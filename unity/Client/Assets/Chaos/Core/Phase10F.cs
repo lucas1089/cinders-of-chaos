@@ -94,6 +94,13 @@ namespace Chaos.Core
 
         public static bool Zero(float w, float h) => float.IsNaN(w) || float.IsNaN(h) || w < MinSide || h < MinSide;
 
+        /// <summary>Phase 12, track H: a side larger than the screen (after the window's first frames). Such a window cannot show its frame whole, however it is moved.</summary>
+        public static bool Oversize(float w, float h, float screenW, float screenH)
+        {
+            if (float.IsNaN(w) || float.IsNaN(h)) return false;
+            return w > screenW + Slack || h > screenH + Slack;
+        }
+
         /// <summary>True when any edge is outside the screen by more than the slack, or the rect has NaN in it.</summary>
         public static bool OffScreen(float x, float y, float w, float h, float screenW, float screenH)
         {
@@ -173,6 +180,12 @@ namespace Chaos.Core
         public string Name = "", Kind = "";
         public int Frames;
         public bool OffScreen, ZeroSize, HasRect, OpenAtEnd = true;
+        /// <summary>Phase 12, track H: a side larger than the screen; a body too thin for a line (Thin); a body with no ink under the title bar (EmptyBody; Ink is the share measured, -1 when not measured).</summary>
+        public bool Oversize, Thin, EmptyBody;
+        public float Ink = -1f;
+        /// <summary>Phase 13, track G: other open windows drawn after this one hide at least SmokeCover.Limit of its rect (CoverShare is the part hidden, -1 when not measured). A report only: it is not a Problem.</summary>
+        public bool Covered;
+        public float CoverShare = -1f;
         public SmokeBox Rect;
         /// <summary>Phase 11, track G: why a context HUD could not be shown (no server push drives it). Not an error: the step is classified "context".</summary>
         public string Context = "";
@@ -180,7 +193,7 @@ namespace Chaos.Core
 
         public int Count(SmokeIssueKind k) { int n = 0; foreach (var i in Issues) if (i.Kind == k) n += i.Count; return n; }
         /// <summary>Any exception, layout error, logged error, zero size or off-screen rect.</summary>
-        public bool Problem => Issues.Count > 0 || OffScreen || ZeroSize;
+        public bool Problem => Issues.Count > 0 || OffScreen || ZeroSize || Oversize || Thin || EmptyBody;
     }
 
     /// <summary>The run's record: one SmokeRecord per step in order, log lines go to the open step (or the background record between steps).</summary>
@@ -223,13 +236,18 @@ namespace Chaos.Core
         /// <summary>Steps classified "context" (a HUD that no server push opens), not counted as problems.</summary>
         public int ContextCount { get { int n = 0; foreach (var r in records) if (r.Context.Length > 0) n++; return n; } }
         public int OffScreenCount { get { int n = 0; foreach (var r in records) if (r.OffScreen || r.ZeroSize) n++; return n; } }
+        public int OversizeCount { get { int n = 0; foreach (var r in records) if (r.Oversize) n++; return n; } }
+        /// <summary>Windows whose body is too thin or has no ink.</summary>
+        public int EmptyCount { get { int n = 0; foreach (var r in records) if (r.Thin || r.EmptyBody) n++; return n; } }
+        /// <summary>Phase 13, track G: windows mostly hidden by a window drawn after them (reported, not counted as problems).</summary>
+        public int CoveredCount { get { int n = 0; foreach (var r in records) if (r.Covered) n++; return n; } }
 
         /// <summary>The line the CI step greps for.</summary>
         public string SummaryLine() => "chaos window smoke: " + records.Count + " windows, " + WithProblems + " with errors";
 
         /// <summary>The detail line under it.</summary>
         public string DetailLine() => "chaos window smoke: " + Total(SmokeIssueKind.Exception) + " exceptions, " + Total(SmokeIssueKind.Layout) + " layout errors, "
-            + Total(SmokeIssueKind.Error) + " logged errors, " + OffScreenCount + " off screen or empty, " + background.Issues.Count + " in the background, " + ContextCount + " context only";
+            + Total(SmokeIssueKind.Error) + " logged errors, " + OffScreenCount + " off screen or empty, " + background.Issues.Count + " in the background, " + ContextCount + " context only, " + OversizeCount + " oversize, " + EmptyCount + " thin or empty body";
 
         // ------------------------------------------------------------------------------------ json
         static string Q(string s)
@@ -278,13 +296,17 @@ namespace Chaos.Core
              .Append(",\"exceptions\":").Append(Total(SmokeIssueKind.Exception))
              .Append(",\"layoutErrors\":").Append(Total(SmokeIssueKind.Layout))
              .Append(",\"loggedErrors\":").Append(Total(SmokeIssueKind.Error))
-             .Append(",\"offScreen\":").Append(OffScreenCount).Append(",\"context\":").Append(ContextCount).Append("},\n \"windows\":[");
+             .Append(",\"offScreen\":").Append(OffScreenCount).Append(",\"oversize\":").Append(OversizeCount).Append(",\"emptyBody\":").Append(EmptyCount)
+             .Append(",\"context\":").Append(ContextCount).Append(",\"covered\":").Append(CoveredCount).Append("},\n \"windows\":[");
             for (int i = 0; i < records.Count; i++)
             {
                 var r = records[i];
                 b.Append(i == 0 ? "" : ",").Append("\n  {\"name\":").Append(Q(r.Name)).Append(",\"kind\":").Append(Q(r.Kind)).Append(",\"frames\":").Append(r.Frames)
                  .Append(",\"offScreen\":").Append(r.OffScreen ? "true" : "false").Append(",\"zeroSize\":").Append(r.ZeroSize ? "true" : "false")
-                 .Append(",\"openAtEnd\":").Append(r.OpenAtEnd ? "true" : "false");
+                 .Append(",\"openAtEnd\":").Append(r.OpenAtEnd ? "true" : "false")
+                 .Append(",\"oversize\":").Append(r.Oversize ? "true" : "false").Append(",\"thin\":").Append(r.Thin ? "true" : "false").Append(",\"emptyBody\":").Append(r.EmptyBody ? "true" : "false").Append(",\"covered\":").Append(r.Covered ? "true" : "false");
+                if (r.CoverShare >= 0f) b.Append(",\"coverShare\":").Append(Math.Round(r.CoverShare, 2).ToString("0.##", CultureInfo.InvariantCulture));
+                if (r.Ink >= 0f) b.Append(",\"ink\":").Append(Math.Round(r.Ink, 3).ToString("0.###", CultureInfo.InvariantCulture));
                 if (r.Context.Length > 0) b.Append(",\"context\":").Append(Q(r.Context));
                 if (r.HasRect) b.Append(",\"rect\":[").Append(N(r.Rect.X)).Append(',').Append(N(r.Rect.Y)).Append(',').Append(N(r.Rect.W)).Append(',').Append(N(r.Rect.H)).Append(']');
                 b.Append(",\"exceptions\":");

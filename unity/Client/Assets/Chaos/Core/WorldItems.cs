@@ -166,7 +166,7 @@ namespace Chaos.Core
 
         public void Normalize(object s, double now)
         {
-            Unlocked = Json.Bool(s, "unlocked"); Paused = Json.Bool(s, "paused"); Open = Json.Bool(s, "open");
+            Unlocked = Json.Truthy(s, "unlocked"); Paused = Json.Truthy(s, "paused"); Open = Json.Truthy(s, "open");
             NeedsText = Json.Text(s, "needs", Needs); Notice = Json.Text(s, "notice");
             Interval = Math.Max(0, IntervalOf(Json.Get(s, "interval") as double?));
             Slots = Math.Max(0, Json.Get(s, "slots") is double sl ? (int)sl : 40);
@@ -175,7 +175,7 @@ namespace Chaos.Core
             foreach (object m in Json.List(s, "intervals")) { int v = IntervalOf(m as double?); if (v > 0) IntervalChoices.Add(v); }
             if (IntervalChoices.Count == 0) IntervalChoices = new List<int>(Intervals);
             var on = new Dictionary<string, bool>();
-            foreach (object t in Json.List(s, "tiers")) if (t is Dictionary<string, object>) on[Json.Text(t, "key")] = Json.Bool(t, "on");
+            foreach (object t in Json.List(s, "tiers")) if (t is Dictionary<string, object>) on[Json.Text(t, "key")] = Json.Truthy(t, "on");
             Tiers.Clear();
             for (int i = 0; i < TierKeys.Length; i++)
             {
@@ -241,7 +241,7 @@ namespace Chaos.Core
         public static PouchRules Normalize(object r)
         {
             var o = new PouchRules();
-            bool F(string k, bool dflt) => Json.Get(r, k) == null ? dflt : Json.Bool(r, k);
+            bool F(string k, bool dflt) => Json.Get(r, k) == null ? dflt : Json.Truthy(r, k);
             o.List = F("list", false); o.Gold = F("gold", false); o.Uniques = F("uniques", false); o.Gear = F("gear", false);
             o.Supplies = F("supplies", false); o.Gems = F("gems", false); o.Other = F("other", false); o.Overflow = F("overflow", true);
             o.MinRarity = CanonRarity(Json.Get(r, "minRarity") is double d ? d : 5);
@@ -323,8 +323,8 @@ namespace Chaos.Core
             var rar = Json.Get(d, "rarities");
             if (rar is List<object> rl) { Rarities.Clear(); foreach (object o in rl) Rarities.Add(o as string ?? ""); }
             var own = Json.Get(d, "owned");
-            if (own is Dictionary<string, object> om) { Owned.Clear(); foreach (var kv in om) if (kv.Value is bool b) Owned[kv.Key] = b; }
-            if (Json.Bool(d, "open")) Visible = true;
+            if (own is Dictionary<string, object> om) { Owned.Clear(); foreach (var kv in om) if (kv.Value != null) Owned[kv.Key] = Json.Truthy(kv.Value); }
+            if (Json.Truthy(d, "open")) Visible = true;
             Changed();
         }
 
@@ -660,9 +660,9 @@ namespace Chaos.Core
 
         public double Left(double elapsedSec) => Math.Max(0, Json.Number(State, "left") - Math.Max(0, elapsedSec));
         public string RefreshText(double elapsedSec) => State == null ? "" : Loc.T("New crates at {0} ({1}), in {2}", Json.Text(State, "at", "?"), Json.Text(State, "tz", Loc.T("server time")), Countdown(Left(elapsedSec)));
-        public bool Near => Json.Bool(State, "near");
+        public bool Near => Json.Truthy(State, "near");
 
-        public bool CanBuy(object it) => State != null && Near && !Json.Bool(it, "sold") && Json.Number(State, "money") >= Json.Number(it, "p");
+        public bool CanBuy(object it) => State != null && Near && !Json.Truthy(it, "sold") && Json.Number(State, "money") >= Json.Number(it, "p");
 
         public List<GambleCell> Cells()
         {
@@ -671,7 +671,7 @@ namespace Chaos.Core
             foreach (object raw in Json.List(State, "items"))
             {
                 object it = raw is Dictionary<string, object> ? raw : new Dictionary<string, object> { { "sold", true } };
-                bool sold = Json.Bool(it, "sold");
+                bool sold = Json.Truthy(it, "sold");
                 double p = Json.Number(it, "p");
                 bool afford = Json.Number(State, "money") >= p;
                 string npc = Json.Text(State, "npc", Loc.T("the Gambler"));
@@ -690,7 +690,7 @@ namespace Chaos.Core
             return o;
         }
 
-        public int SoldCount() { int n = 0; foreach (object it in Json.List(State, "items")) if (it is Dictionary<string, object> && Json.Bool(it, "sold")) n++; return n; }
+        public int SoldCount() { int n = 0; foreach (object it in Json.List(State, "items")) if (it is Dictionary<string, object> && Json.Truthy(it, "sold")) n++; return n; }
 
         public string Header() => State == null ? "" : Loc.T("Sealed crates for level {0} (item level up to {1}): {2} of {3} sold. Your gold: {4}", Json.Int(State, "level"), Json.Int(State, "gate"), SoldCount(), Json.List(State, "items").Count, WorldText.Thousands(Json.Number(State, "money")));
 
@@ -773,7 +773,7 @@ namespace Chaos.Core
                 case "state": State = data; ReceivedAt = Clock(); Buying = false; Status = ""; Changed(); break;
                 case "result":
                     Buying = false;
-                    Status = Json.Text(data, "text"); StatusColor = Json.Bool(data, "ok") ? "#8fd16a" : "#e07060";
+                    Status = Json.Text(data, "text"); StatusColor = Json.Truthy(data, "ok") ? "#8fd16a" : "#e07060";
                     if (Json.Get(data, "reveal") is Dictionary<string, object> rv) { Reveal = rv; RevealText(rv, out string c); StatusColor = c; }
                     Changed();
                     break;
@@ -915,7 +915,7 @@ namespace Chaos.Core
             if (action == "offer") { Quote = data; QuoteVisible = true; Changed(); return; }
             if (action != "state") return;
             State = data;
-            if (Json.Bool(data, "open")) Visible = true;
+            if (Json.Truthy(data, "open") || Json.Number(data, "open") == 1) Visible = true;   // the server sends open = 1 (embercache.lua send), a number: phase 13 track G
             Changed();
         }
 

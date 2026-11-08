@@ -370,7 +370,7 @@ namespace Chaos.Core
             return new FxSpec
             {
                 Id = id, Dx = Json.Int(o, "dx"), Dy = Json.Int(o, "dy"), Ms = Json.Int(o, "ms"),
-                Missile = (m is bool b && b) || (m is double d && d != 0), Name = Json.Text(o, "n"),
+                Missile = Json.Truthy(m), Name = Json.Text(o, "n"),
             };
         }
 

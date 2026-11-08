@@ -255,6 +255,7 @@ namespace Chaos.Client
                             if (ctx != null && !ctx.Drivable) { rec.Context = ctx.Reason; win.Open = true; break; }   // classified "context": no push opens it
                             if (ctx != null && server != null && !server.Push(ctx.Pushes)) rec.Context = "the fake server had nobody to push to";
                             win.Open = true;   // a window with a module asks its server module in its own Tick; the answer arrives while the step stays open
+                            SetupWindow(win, s.Id);
                             break;
                         }
                     case WindowSmokePlan.Info:
@@ -264,6 +265,45 @@ namespace Chaos.Client
                         app.FindWindow<OptionsWindow>().ShowPage(s.Index);
                         break;
                 }
+            }
+
+            /// <summary>Phase 13, track G: what a window needs that no module request can give (the fake server answers the rest): the How it works window needs a card, the Inspect window a
+            /// name to ask for (the answer is the sample of Core/FakeModulesP13.cs), the trade window a trade partner (base protocol packets 0x7D and 0x7E from the fake server). Real behaviour
+            /// is not changed: these are the calls a player's click makes.</summary>
+            void SetupWindow(GameWindow win, string id)
+            {
+                switch (id)
+                {
+                    case "HowItWorksWindow":
+                        if (win is HowItWorksWindow how && InfoStore.How != null)
+                            foreach (var c in InfoStore.How.Cards) { if (how.Show(c.Key)) break; }
+                        break;
+                    case "InspectWindow":
+                        app.Session?.Social?.Inspect?.InspectName(FakeModules.InspectName);
+                        break;
+                    case "DropFeedWindow":   // phase 14, track H: the line the server posts for a rare drop (no module message exists for it)
+                        if (server != null && !server.PushText(FakeModules.DropFeedTextType, FakeModules.DropFeedLine())) rec.Context = "the fake server had nobody to push the drop line to";
+                        break;
+                    case "TradeWindow":
+                        if (server != null && !server.PushTrade(FakeModules.TradePartner)) rec.Context = "the fake server had nobody to push the trade to";
+                        break;
+                }
+            }
+
+            /// <summary>Phase 13, track G: the share of the step's window that open windows drawn after it hide (a later place in the window list is drawn above). A report: json "covered".</summary>
+            void MeasureCover(SmokeStep s, bool open)
+            {
+                int index = -1;
+                for (int i = 0; i < app.windows.Count; i++) if (app.windows[i].GetType().Name == s.Id) { index = i; break; }
+                if (index < 0 || app.windows[index].RaiseWhenShown) return;   // it comes to the front each time it is shown, whatever its place in the list
+                var above = new List<SmokeBox>();
+                for (int j = index + 1; j < app.windows.Count; j++)
+                {
+                    var o = app.windows[j];
+                    if (o.Open) above.Add(new SmokeBox(o.Area.x, o.Area.y, o.Area.width, o.Area.height));
+                }
+                rec.CoverShare = SmokeCover.Share(rec.Rect, above);
+                rec.Covered = open && SmokeCover.Covered(rec.CoverShare);
             }
 
             /// <summary>The rect of what the step opened, in UI units; false for steps that are the whole screen or a drop-down.</summary>
@@ -299,6 +339,9 @@ namespace Chaos.Client
                     rec.Rect = new SmokeBox(r.x, r.y, r.width, r.height);
                     rec.ZeroSize = SmokeRect.Zero(r.width, r.height);
                     rec.OffScreen = SmokeRect.OffScreen(r.x, r.y, r.width, r.height, uw, uh);
+                    rec.Oversize = SmokeRect.Oversize(r.width, r.height, uw, uh);   // phase 12, track H
+                    if (s.Kind != WindowSmokePlan.Login) rec.Thin = open && SmokeBody.Thin(r.height);
+                    if (s.Kind == WindowSmokePlan.Window) MeasureCover(s, open);   // phase 13, track G
                     crop = SmokeSheet.Crop(r.x * scale, r.y * scale, r.width * scale, r.height * scale, 8f, UnityEngine.Screen.width, UnityEngine.Screen.height);
                 }
                 if (ctx != null && ctx.Drivable && rec.Context.Length == 0 && !open) rec.Context = "the push did not open it: " + ctx.Source;
@@ -309,6 +352,7 @@ namespace Chaos.Client
                 {
                     try { tile.Tex = MakeTile(shot, crop); }
                     catch (Exception e) { SmokeReport.AddIssue(rec, SmokeIssueKind.Exception, "tile: " + e.GetType().Name + ": " + e.Message, e.StackTrace); }
+                    if (hasRect && open && s.Kind != WindowSmokePlan.Login) MeasureBody(shot, rec, scale);
                     Destroy(shot);
                 }
                 tiles.Add(tile);
@@ -318,8 +362,26 @@ namespace Chaos.Client
                 tile.Flags = Flags(rec);
                 if (rec.Problem) Debug.Log("chaos window smoke: problem in " + s.Name + ": " + tile.Flags);
                 if (rec.Context.Length > 0) Debug.Log("chaos window smoke: context only: " + s.Name + ": " + rec.Context);
+                if (rec.Covered) Debug.Log("chaos window smoke: covered: " + s.Name + ": " + Mathf.RoundToInt(rec.CoverShare * 100) + "% hidden by windows drawn after it");
                 EndContext();
                 current = null; rec = null;
+            }
+
+            /// <summary>Phase 12, track H: the ink share of the window's body in the screenshot (pixels unlike the body's main colour). A window with none drew no text, icon or bar.</summary>
+            void MeasureBody(Texture2D shot, SmokeRecord r, float scale)
+            {
+                try
+                {
+                    var f = shot.format;
+                    if (f != TextureFormat.RGBA32 && f != TextureFormat.ARGB32 && f != TextureFormat.BGRA32) return;
+                    var box = SmokeBody.Inner(r.Rect, scale, shot.width, shot.height);
+                    byte[] px = shot.GetRawTextureData();
+                    float ink = SmokeBody.Ink(px, shot.width, shot.height, box, true, out int samples);
+                    if (samples < SmokeBody.MinSamples) return;
+                    r.Ink = ink;
+                    r.EmptyBody = SmokeBody.Empty(ink, samples);
+                }
+                catch (Exception e) { Debug.LogWarning("chaos window smoke: body check: " + e.Message); }
             }
 
             /// <summary>The step has drawn its frames and the server's answers are in. A context HUD also waits for its window to open (the push arrives some frames after the request).</summary>
@@ -332,6 +394,7 @@ namespace Chaos.Client
                     var w = app.WindowNamed(current.Id);
                     if (w == null || !w.Open) return false;
                 }
+                if (current.Kind == WindowSmokePlan.Window && current.Id == "TradeWindow" && rec.Context.Length == 0 && app.Session != null && !app.Session.PlayerTrade.Open) return false;   // the trade packets are not extended messages: wait for them
                 return quiet >= QuietFrames;
             }
 
@@ -343,7 +406,7 @@ namespace Chaos.Client
                 {
                     if (server != null && ctx.Close.Count > 0) server.Push(ctx.Close);
                     var s = app.session;
-                    if (s != null) { s.Endgame?.Clear(); s.Progress?.Rift?.Hide(); }
+                    if (s != null) { s.Endgame?.Clear(); s.Progress?.Rift?.Hide(); s.Utils?.Waystone?.Clear(); }
                 }
                 catch (Exception e) { Debug.LogWarning("chaos window smoke: ending the context of " + current.Name + ": " + e.Message); }
                 ctx = null;
@@ -358,6 +421,10 @@ namespace Chaos.Client
                 if (g > 0) f += "ERR" + g + " ";
                 if (r.ZeroSize) f += "ZERO ";
                 if (r.OffScreen) f += "OFF ";
+                if (r.Oversize) f += "OVER ";
+                if (r.Thin) f += "THIN ";
+                if (r.EmptyBody) f += "EMPTY ";
+                if (r.Covered) f += "COVER ";   // phase 13, track G: reported, not a problem
                 if (!r.OpenAtEnd && r.Context.Length == 0) f += "SHUT ";
                 if (r.Context.Length > 0) f += "CTX ";
                 return f.TrimEnd();

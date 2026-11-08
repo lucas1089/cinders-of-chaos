@@ -85,7 +85,7 @@ namespace Chaos.Core
             foreach (object b in list)
             {
                 if (used.Contains(b)) continue;
-                bool imp = Json.Bool(b, "imp");
+                bool imp = Json.Truthy(b, "imp");
                 string k = Json.Text(b, "k");
                 bool signed = imp || !Unsigned.Contains(k);
                 string label = Json.Text(b, "l");
@@ -154,7 +154,7 @@ namespace Chaos.Core
                     groups.Add(group);
                 }
                 string g = Json.Text(m, "g");
-                string color = sd == "i" ? TipLines.Corrupted : Json.Bool(m, "pw") ? TipLines.Power : g == "chaos" ? TipLines.Chaos : g == "element" ? TipLines.Element : TipLines.Mod;
+                string color = sd == "i" ? TipLines.Corrupted : Json.Truthy(m, "pw") ? TipLines.Power : g == "chaos" ? TipLines.Chaos : g == "element" ? TipLines.Element : TipLines.Mod;
                 var row = new TipRow { IsMod = true, Text = Json.Text(m, "t"), Color = color, Range = RangeText(m) };
                 if (Json.Get(m, "tr") != null)
                 {
@@ -163,7 +163,7 @@ namespace Chaos.Core
                     row.TagColor = TipLines.TierColor(tr);
                     row.Top = Json.Get(tip, "maxTier") != null && tr == (int)Json.Number(tip, "maxTier");
                 }
-                if (Json.Bool(m, "bd")) row.Parts = new[] { row.Text, color, " " + Loc.T("[bound]"), TipLines.Bound };
+                if (Json.Truthy(m, "bd")) row.Parts = new[] { row.Text, color, " " + Loc.T("[bound]"), TipLines.Bound };
                 group.Rows.Add(row);
             }
             object veil = Json.Get(tip, "veil");
@@ -250,7 +250,7 @@ namespace Chaos.Core
                 add(g);
             }
             var misc = new TipGroup();
-            if (Json.Bool(tip, "locked")) misc.Rows.Add(new TipRow { Text = Loc.T("Locked"), Color = TipLines.Gold });
+            if (Json.Truthy(tip, "locked")) misc.Rows.Add(new TipRow { Text = Loc.T("Locked"), Color = TipLines.Gold });
             object look = Json.Get(tip, "look");
             if (look is Dictionary<string, object> && Json.Text(look, "name").Length > 0) misc.Rows.Add(new TipRow { Text = Loc.T("Appearance: {0}", Json.Text(look, "name")), Color = TipLines.Mod });
             if (Json.Text(tip, "store").Length > 0) misc.Rows.Add(new TipRow { Text = Json.Text(tip, "store"), Color = TipLines.Gold });
@@ -332,8 +332,8 @@ namespace Chaos.Core
             object quality = Json.Get(tip, "quality");
             if (quality is Dictionary<string, object> && Json.Number(quality, "q") > 0)
                 c.Flags.Add(new TipLine { Text = Loc.T("Quality +{0}%  (up to {1}%)", (int)Json.Number(quality, "q"), (int)Json.Number(quality, "cap", 20)), Color = TipLines.Quality });
-            if (Json.Bool(tip, "ruined")) c.Flags.Add(new TipLine { Text = Loc.T("Ruined: no orb can change this item"), Color = TipLines.Red });
-            if (Json.Bool(tip, "corrupted")) c.Flags.Add(new TipLine { Text = Loc.T("Corrupted: no orb can change this item"), Color = TipLines.Corrupted });
+            if (Json.Truthy(tip, "ruined")) c.Flags.Add(new TipLine { Text = Loc.T("Ruined: no orb can change this item"), Color = TipLines.Red });
+            if (Json.Truthy(tip, "corrupted")) c.Flags.Add(new TipLine { Text = Loc.T("Corrupted: no orb can change this item"), Color = TipLines.Corrupted });
             var rest = new List<KeyValuePair<string, string>>();
             StatTiles(Json.Get(tip, "base"), c.Tiles, rest);
             c.ExtraLines.AddRange(ExtraLines2(rest));

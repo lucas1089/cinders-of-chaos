@@ -154,21 +154,21 @@ namespace Chaos.Core
         public static CreateState From(object account)
         {
             if (!(account is Dictionary<string, object>)) return null;
-            var s = new CreateState { Terms = Json.Get(account, "terms") as bool? ?? true, TermsUrl = Json.Text(account, "termsUrl") };
+            var s = new CreateState { Terms = Json.Truthy(account, "terms", true), TermsUrl = Json.Text(account, "termsUrl") };
             object rules = Json.Get(account, "rules");
             if (rules != null) { s.MinL = Json.Int(rules, "minL", 3); s.MaxL = Json.Int(rules, "maxL", 20); s.MaxW = Json.Int(rules, "maxW", 3); }
             foreach (object c in Json.List(account, "classes"))
                 s.Classes.Add(new CreateClass
                 {
                     Id = Json.Int(c, "id"), Name = Json.Text(c, "name"), Plays = Json.Text(c, "plays"), Icon = Json.Text(c, "icon"),
-                    Locked = Json.Bool(c, "locked"), Male = Json.Int(c, "male"), Female = Json.Int(c, "female"),
+                    Locked = Json.Truthy(c, "locked"), Male = Json.Int(c, "male"), Female = Json.Int(c, "female"),
                 });
             object season = Json.Get(account, "season");
             if (season is Dictionary<string, object> && Json.Get(season, "id") is double sid)
             {
                 s.SeasonId = (int)sid; s.SeasonName = Json.Text(season, "name"); s.SeasonTag = Json.Text(season, "tag");
                 foreach (object m in Json.List(season, "modes"))
-                    s.Modes.Add(new CreateMode { Key = Json.Text(m, "key"), Name = Json.Text(m, "name"), Warning = Json.Text(m, "warning"), Hardcore = Json.Bool(m, "hc") });
+                    s.Modes.Add(new CreateMode { Key = Json.Text(m, "key"), Name = Json.Text(m, "name"), Warning = Json.Text(m, "warning"), Hardcore = Json.Truthy(m, "hc") });
             }
             return s;
         }
@@ -277,7 +277,7 @@ namespace Chaos.Core
             var a = new CreateAnswer();
             object root = Json.TryParse(body);
             if (!(root is Dictionary<string, object>)) { a.Error = "noanswer"; return a; }
-            a.Ok = Json.Bool(root, "ok");
+            a.Ok = Json.Truthy(root, "ok");
             a.Name = Json.Text(root, "name");
             a.Url = Json.Text(root, "url");
             if (a.Ok) { a.Message = Json.Text(root, "message"); return a; }

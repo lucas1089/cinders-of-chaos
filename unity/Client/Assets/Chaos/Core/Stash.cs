@@ -166,16 +166,16 @@ namespace Chaos.Core
                 case "addItems": AddItems(d); break;
                 case "tabs": ApplyTabs(d); break;
                 case "access":
-                    if (Json.Get(d, "canWithdraw") is bool w) { CanWithdraw = w; WithdrawWhy = ""; }
-                    if (Json.Get(d, "canDeposit") is bool dep) { CanDeposit = dep; DepositWhy = ""; RemoteKind = ""; }
+                    if (Json.Get(d, "canWithdraw") != null) { CanWithdraw = Json.Truthy(d, "canWithdraw"); WithdrawWhy = ""; }
+                    if (Json.Get(d, "canDeposit") != null) { CanDeposit = Json.Truthy(d, "canDeposit"); DepositWhy = ""; RemoteKind = ""; }
                     break;
                 case "Toggle":
                     // the stash keeper NPC or a depot locker asks for the window (open): shown when not already
                     if (!Visible) Show();
-                    else if (!Json.Bool(d, "open")) Hide();
+                    else if (!Json.Truthy(d, "open")) Hide();
                     break;
                 case "StowReport": StowReport = ReportText(d); break;
-                case "StashAll": Stowing = Json.Bool(d, "status"); break;
+                case "StashAll": Stowing = Json.Truthy(d, "status"); break;
                 case "found": Finder.OnFound(d); break;
                 case "forceBlockList":
                     Blocks.Clear();
@@ -186,7 +186,7 @@ namespace Chaos.Core
                     object item = Json.Get(d, "itemData");
                     int id = Json.Int(item, "id");
                     Blocks.RemoveAll(b => b.Id == id);
-                    if (Json.Bool(d, "status")) Blocks.Add(BlockOf(item));
+                    if (Json.Truthy(d, "status")) Blocks.Add(BlockOf(item));
                     break;
                 }
             }
@@ -195,7 +195,7 @@ namespace Chaos.Core
 
         void AddItems(object d)
         {
-            if (Json.Bool(d, "isFirst")) building = new List<StashItem>();
+            if (Json.Truthy(d, "isFirst")) building = new List<StashItem>();
             foreach (object e in Json.List(d, "items"))
             {
                 building.Add(new StashItem
@@ -205,7 +205,7 @@ namespace Chaos.Core
                     Row = Json.Get(e, "row") is double row ? (int)row : -1, Rarity = Json.Int(e, "rarity"),
                 });
             }
-            if (!Json.Bool(d, "isLast")) return;
+            if (!Json.Truthy(d, "isLast")) return;
             Items.Clear();
             Items.AddRange(building);
             ItemsLoaded = true;
@@ -219,11 +219,11 @@ namespace Chaos.Core
                 Tabs.Add(new StashTab
                 {
                     Id = Json.Int(e, "id"), Name = Json.Text(e, "name"), Used = Json.Int(e, "used"), Size = Json.Int(e, "size"),
-                    Locked = Json.Bool(e, "locked"), Affinity = Json.Bool(e, "affinity"), Old = Json.Bool(e, "old"), Icon = Json.Int(e, "icon"),
+                    Locked = Json.Truthy(e, "locked"), Affinity = Json.Truthy(e, "affinity"), Old = Json.Truthy(e, "old"), Icon = Json.Int(e, "icon"),
                 });
             HasTabs = true;
-            CanWithdraw = Json.Bool(d, "canWithdraw");
-            CanDeposit = Json.Bool(d, "canDeposit");
+            CanWithdraw = Json.Truthy(d, "canWithdraw");
+            CanDeposit = Json.Truthy(d, "canDeposit");
             WithdrawWhy = Json.Text(d, "withdrawWhy");
             DepositWhy = Json.Text(d, "depositWhy");
             RemoteKind = Json.Text(d, "remote");

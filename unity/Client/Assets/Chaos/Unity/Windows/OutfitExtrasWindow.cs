@@ -14,6 +14,7 @@ namespace Chaos.Client
         public override string Title => Loc.T("Customise Character");
         protected override SocialPanel Panel(GameSession s) => s?.Community?.OutfitExtras;
         protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 330), 50, Mathf.Min(660, w - 16), Mathf.Min(560, h - 60));
+        public override bool RaiseWhenShown => true;   // outfitextras.lua: window:show() then window:raise(), over the Outfit window
 
         string category = "outfit", search = "", colorTab = "head";
         int facing = LookPreview.South;

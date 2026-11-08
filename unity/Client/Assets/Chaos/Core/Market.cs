@@ -141,7 +141,7 @@ namespace Chaos.Core
         {
             var p = new List<string>();
             int rarity = Json.Int(row, "rarity");
-            if (Json.Bool(row, "unique")) p.Add(Loc.T("Unique"));
+            if (Json.Truthy(row, "unique")) p.Add(Loc.T("Unique"));
             else if (rarity > 0) p.Add(RarityName(rarity) ?? Loc.T("Rarity {0}", rarity));
             if (Json.Int(row, "ilvl") > 0) p.Add(Loc.T("iLvl {0}", Json.Int(row, "ilvl")));
             string veil = Json.Text(row, "veil");
@@ -180,7 +180,7 @@ namespace Chaos.Core
         public static string OrderSubLine(object row, Func<string, string> modName = null)
         {
             var p = new List<string> { Loc.T("{0}/{1} bought", SFmt.Money(Json.Number(row, "filled")), SFmt.Money(Json.Number(row, "qty"))) };
-            if (Json.Text(row, "buyer").Length > 0 && !Json.Bool(row, "mine")) p.Add(Loc.T("by {0}", Json.Text(row, "buyer")));
+            if (Json.Text(row, "buyer").Length > 0 && !Json.Truthy(row, "mine")) p.Add(Loc.T("by {0}", Json.Text(row, "buyer")));
             string state = Json.Text(row, "state");
             p.Add(state == "active" ? Loc.T("{0} left", TimeLeft(Json.Number(row, "left"))) : Loc.T(state));
             object f = Json.Get(row, "filter");
@@ -442,12 +442,12 @@ namespace Chaos.Core
         {
             if (Meta == null) return "";
             string realm = Json.Text(Meta, "realmName", Loc.T("Standard"));
-            if (SFmt.Has(Meta, "coinsOk") && !Json.Bool(Meta, "coinsOk", true))
+            if (SFmt.Has(Meta, "coinsOk") && !Json.Truthy(Meta, "coinsOk", true))
                 return Loc.T("{0} market   Bank: {1} gold", realm, SFmt.Money(Json.Number(Meta, "gold")));
             return Loc.T("{0} market  Bank: {1} gold  Chaos Coins: {2}", realm, SFmt.Money(Json.Number(Meta, "gold")), SFmt.Money(Json.Number(Meta, "coins")));
         }
 
-        bool CoinsOk => Meta == null || !SFmt.Has(Meta, "coinsOk") || Json.Bool(Meta, "coinsOk", true);
+        bool CoinsOk => Meta == null || !SFmt.Has(Meta, "coinsOk") || Json.Truthy(Meta, "coinsOk", true);
 
         // ------------------------------------------------------------------------------------ requests
         public override void SelectTab(string key) { Tab = key; EnterTab(key); Changed(); }
@@ -582,7 +582,7 @@ namespace Chaos.Core
             suggest = 0;
             if (Selected == null || SellPriceData == null || SellPriceFor != Selected) return "";
             object g = Json.Get(SellPriceData, "gold");
-            long count = Json.Bool(Selected, "stack") ? Math.Max(1, SFmt.ParseAmount(Text("count"))) : 1;
+            long count = Json.Truthy(Selected, "stack") ? Math.Max(1, SFmt.ParseAmount(Text("count"))) : 1;
             string key = MarketPrices.KeyText(Json.Int(SellPriceData, "rarity"), Json.Text(SellPriceData, "bandText"));
             string text = (key.Length > 0 ? key + ": " : "") + MarketPrices.Typical(g, "gold").Text;
             double typical = Json.Number(g, "typical");
@@ -596,7 +596,7 @@ namespace Chaos.Core
         {
             var o = new List<PriceLine>();
             if (Selected == null || SellPriceData == null || SellPriceFor != Selected) return o;
-            long count = Json.Bool(Selected, "stack") ? Math.Max(1, SFmt.ParseAmount(Text("count"))) : 1;
+            long count = Json.Truthy(Selected, "stack") ? Math.Max(1, SFmt.ParseAmount(Text("count"))) : 1;
             var warn = Json.Get(SellPriceData, "warn");
             double low = warn != null && Json.Get(warn, "low") is double l ? l : 0.5, high = warn != null && Json.Get(warn, "high") is double h ? h : 2.0;
             foreach (string cur in new[] { "gold", "coins" })
@@ -618,7 +618,7 @@ namespace Chaos.Core
         public bool ListItem()
         {
             if (Selected == null) return false;
-            bool stack = Json.Bool(Selected, "stack");
+            bool stack = Json.Truthy(Selected, "stack");
             long have = Json.Int(Selected, "count", 1), count = stack ? SFmt.ParseAmount(Text("count")) : 1;
             if (!MarketMath.CheckSell(Meta, Text("gold"), Text("coins"), count, have, DaysOption(), out long gold, out long coins, out string why)) { Say(why, false); return false; }
             var req = new Dictionary<string, object>();
@@ -686,9 +686,9 @@ namespace Chaos.Core
         SocialRow OfferRow(RowList l, object offer, string mode)
         {
             int rarity = Json.Int(offer, "rarity");
-            bool unique = Json.Bool(offer, "unique");
+            bool unique = Json.Truthy(offer, "unique");
             string name = (Json.Int(offer, "count", 1) > 1 ? Json.Int(offer, "count", 1) + "x " : "") + Json.Text(offer, "name", "?");
-            string sub = mode == "browse" ? MarketMath.SubLine(offer) : mode == "history" ? MarketMath.HistoryLine(offer) + (Json.Bool(offer, "order") ? Loc.T(" (buy order)") : "") : MarketMath.StateLine(offer);
+            string sub = mode == "browse" ? MarketMath.SubLine(offer) : mode == "history" ? MarketMath.HistoryLine(offer) + (Json.Truthy(offer, "order") ? Loc.T(" (buy order)") : "") : MarketMath.StateLine(offer);
             if (mode == "browse")
             {
                 var mark = MarketPrices.RowMark(offer);
@@ -717,7 +717,7 @@ namespace Chaos.Core
                 }
                 r.Hover = () => AskTip(Json.Get(o, "id"));
                 r.Btn(Loc.T("Prices"), true, () => ShowPrices(o), MarketPrices.RowTypical(o) ?? "");
-                if (!Json.Bool(offer, "mine")) r.Btn(Loc.T("Buy"), true, () => { ConfirmBuyOffer = o; Changed(); });
+                if (!Json.Truthy(offer, "mine")) r.Btn(Loc.T("Buy"), true, () => { ConfirmBuyOffer = o; Changed(); });
                 else r.Btn(Loc.T("Cancel"), true, () => { ConfirmCancelOffer = o; Changed(); });
             }
             else if (mode == "mine")
@@ -837,7 +837,7 @@ namespace Chaos.Core
         {
             l.Section(Loc.T("Price history") + ": " + Json.Text(PriceOffer, "name", "?"));
             if (PriceData == null) { l.Text(Loc.T("Loading..."), "dim"); l.Row("").Btn(Loc.T("Close"), true, ClosePrices); return; }
-            if (Json.Bool(PriceData, "gone")) { l.Text(Loc.T("That offer is gone."), "dim"); l.Row("").Btn(Loc.T("Close"), true, ClosePrices); return; }
+            if (Json.Truthy(PriceData, "gone")) { l.Text(Loc.T("That offer is gone."), "dim"); l.Row("").Btn(Loc.T("Close"), true, ClosePrices); return; }
             string key = MarketPrices.KeyText(Json.Int(PriceData, "rarity"), Json.Text(PriceData, "bandText"));
             l.Text((key.Length > 0 ? key + "; " : "") + Loc.T("sales on your market only"), "dim");
             var s = Json.Get(PriceData, PriceCur);
@@ -862,7 +862,7 @@ namespace Chaos.Core
                 if (rarity > 0) sub.Add(MarketMath.RarityName(rarity));
                 if (Json.Int(Selected, "ilvl") > 0) sub.Add("iLvl " + Json.Int(Selected, "ilvl"));
                 sel.Sub = string.Join(" - ", sub);
-                if (Json.Bool(Selected, "stack")) l.Input(Loc.T("Count"), "count", Loc.T("of {0}", Json.Int(Selected, "count", 1)));
+                if (Json.Truthy(Selected, "stack")) l.Input(Loc.T("Count"), "count", Loc.T("of {0}", Json.Int(Selected, "count", 1)));
                 l.Input(Loc.T("Gold price"), "gold", "5k, 2.5m");
                 if (CoinsOk) l.Input(Loc.T("Chaos Coins price"), "coins");
                 l.Combo(Loc.T("Duration"), "days", DaysOptions());
@@ -922,7 +922,7 @@ namespace Chaos.Core
             var order = o;
             if (Json.Text(o, "state") == "active")
             {
-                if (mine || Json.Bool(o, "mine")) r.Btn(Loc.T("Cancel"), true, () => { ConfirmOrderCancel = order; Changed(); });
+                if (mine || Json.Truthy(o, "mine")) r.Btn(Loc.T("Cancel"), true, () => { ConfirmOrderCancel = order; Changed(); });
                 else r.Btn(Loc.T("Sell"), true, () => StartFill(order));
             }
             return r;

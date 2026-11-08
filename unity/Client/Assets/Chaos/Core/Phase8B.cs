@@ -141,7 +141,7 @@ namespace Chaos.Core
             foreach (var step in play)
             {
                 var b = Json.Get(step, "b");
-                if (!(b is Dictionary<string, object>) || Json.Bool(b, "m")) continue;
+                if (!(b is Dictionary<string, object>) || Json.Truthy(b, "m")) continue;
                 if (best == null || Json.Number(b, "ms") > Json.Number(best, "ms")) best = b;
             }
             if (best != null) return best;

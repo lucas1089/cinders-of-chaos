@@ -26,7 +26,7 @@ namespace Chaos.Core
         static bool Flag(object o, string key)
         {
             var v = Json.Get(o, key);
-            return v is bool b ? b : v is double d && d == 1 || v is string s && s == "1";
+            return Json.Truthy(v);
         }
 
         public static LootInfo From(object row)
@@ -118,9 +118,9 @@ namespace Chaos.Core
             o.LootMin = Json.Get(s, "lootMin") is double lm ? Canon(Math.Max(0, lm)) : o.LootMin;
             o.LootFrom = Json.Get(s, "lootFrom") is double lf ? Canon(Math.Max(0, lf)) : o.LootFrom;
             var show = Json.Get(s, "show");
-            foreach (var c in Categories) o.Show[c] = !(Json.Get(show, c) is bool b && !b);
-            o.Icons = !(Json.Get(s, "icons") is bool i && !i);
-            o.Notify = !(Json.Get(s, "notify") is bool n && !n);
+            foreach (var c in Categories) o.Show[c] = Json.Truthy(show, c, true);
+            o.Icons = Json.Truthy(s, "icons", true);
+            o.Notify = Json.Truthy(s, "notify", true);
             o.Tier = Json.Get(s, "tier") is double t && !double.IsNaN(t) ? Math.Max(0, Math.Min(MaxTier, (int)Math.Floor(t))) : o.Tier;
             return o;
         }
@@ -306,8 +306,8 @@ namespace Chaos.Core
         {
             var o = new LootSoundSettings();
             if (!(t is Dictionary<string, object>)) return o;
-            o.Mute = Json.Bool(t, "mute");
-            o.Hunt = !(Json.Get(t, "hunt") is bool h && !h);
+            o.Mute = Json.Truthy(t, "mute");
+            o.Hunt = Json.Truthy(t, "hunt", true);
             var rules = Json.Get(t, "rules");
             foreach (var r in LootRules.All)
             {
@@ -463,14 +463,14 @@ namespace Chaos.Core
                 case "settings":
                 {
                     Settings = LootFilterRules.Normalize(Json.Get(d, "s"));
-                    Unlocked = Json.Bool(d, "unlocked");
+                    Unlocked = Json.Truthy(d, "unlocked");
                     Presets.Clear();
                     foreach (object p in Json.List(d, "presets")) Presets.Add(new KeyValuePair<string, string>(Json.Text(p, "key"), Json.Text(p, "name")));
                     if (Json.Get(d, "snd") is Dictionary<string, object>) Sound = LootSoundSettings.Normalize(Json.Get(d, "snd"));
                     ReadCounts(Json.Get(d, "counts"));
                     Loaded = true;
                     Changed();
-                    if (Json.Bool(d, "open")) ShowRequested();
+                    if (Json.Truthy(d, "open")) ShowRequested();
                     return;
                 }
                 case "kill":
@@ -520,7 +520,7 @@ namespace Chaos.Core
                 {
                     int cid = Json.Int(d, "cid", -1);
                     if (cid < 0) return;
-                    var set = new PeekSet { Corpse = Json.Bool(d, "corpse") };
+                    var set = new PeekSet { Corpse = Json.Truthy(d, "corpse") };
                     foreach (object row in Json.List(d, "items"))
                     {
                         int idx = Json.Int(row, "i", -1);

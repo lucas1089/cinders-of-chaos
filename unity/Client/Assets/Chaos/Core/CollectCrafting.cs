@@ -58,7 +58,7 @@ namespace Chaos.Core
                 case "info": Info = data; break;
                 case "gemguide": GemGuide = data; break;
                 case "state": OnState(data); break;
-                case "result": ResultText = CF.T(data, "text"); ResultOk = !(CF.G(data, "ok") is bool b) || b; break;
+                case "result": ResultText = CF.T(data, "text"); ResultOk = Json.Truthy(data, "ok", true); break;
             }
         }
 
@@ -330,7 +330,7 @@ namespace Chaos.Core
             return count > 1 ? Loc.T("Salvage {0} items", count) : count == 1 ? Loc.T("Salvage 1 item") : Loc.T("Salvage all");
         }
 
-        public bool Installed => CF.G(Salvage, "installed") as bool? != false;
+        public bool Installed => Json.Truthy(Salvage, "installed", true);
 
         // recipes (recipeview.lua)
         public static bool IsShardRecipe(object r) => CF.N(r, "input") > 0;
@@ -351,7 +351,7 @@ namespace Chaos.Core
         {
             bool enough = Have(r, sv) >= CF.N(r, "cost");
             if (IsShardRecipe(r)) return enough;
-            return CF.G(sv, "installed") as bool? != false && (enough || (RecycleBack(r) > 0 && CF.N(r, "count") > 0));
+            return Json.Truthy(sv, "installed", true) && (enough || (RecycleBack(r) > 0 && CF.N(r, "count") > 0));
         }
 
         public static string RecipeTip(object r, object sv)

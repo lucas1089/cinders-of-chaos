@@ -256,14 +256,20 @@ jobs:
           import json, sys
           d = json.load(open(sys.argv[1]))
           s = d["summary"]
-          print("window smoke: %d windows, %d with problems (%d exceptions, %d layout errors, %d logged errors, %d off screen or empty)"
-                % (s["windows"], s["withErrors"], s["exceptions"], s["layoutErrors"], s["loggedErrors"], s["offScreen"]))
+          print("window smoke: %d windows, %d with problems (%d exceptions, %d layout errors, %d logged errors, %d off screen or empty, %d oversize, %d thin or empty body)"
+                % (s["windows"], s["withErrors"], s["exceptions"], s["layoutErrors"], s["loggedErrors"], s["offScreen"], s.get("oversize", 0), s.get("emptyBody", 0)))
           for w in d["windows"]:
               flags = []
               if w["offScreen"]:
                   flags.append("off screen")
               if w["zeroSize"]:
                   flags.append("empty rect")
+              if w.get("oversize"):
+                  flags.append("larger than the screen")
+              if w.get("thin"):
+                  flags.append("body too thin")
+              if w.get("emptyBody"):
+                  flags.append("empty body (ink %s)" % w.get("ink"))
               if not w["exceptions"] and not flags:
                   continue
               print("  %s (%d frames)%s" % (w["name"], w["frames"], ": " + ", ".join(flags) if flags else ""))

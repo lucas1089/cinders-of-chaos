@@ -73,6 +73,8 @@ namespace Chaos.Client
     {
         bool wasWanted, dismissed, lastOpen;
         public override bool InMenu => false;
+        /// <summary>A HUD or pop-up is never larger than the screen (phase 12, track H).</summary>
+        public override bool ClampToScreen => true;
         /// <summary>True while the activity wants its HUD.</summary>
         protected abstract bool Wanted(ChaosApp app);
         public override void Reset() { wasWanted = false; dismissed = false; lastOpen = false; Open = false; }

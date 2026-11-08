@@ -289,7 +289,7 @@ namespace Chaos.Core
                     Styles.Add(new PortalStyle
                     {
                         Id = Json.Text(o, "id", Json.Int(o, "id").ToString(CultureInfo.InvariantCulture)), Name = Json.Text(o, "name", "?"), Desc = Json.Text(o, "desc"),
-                        Route = Json.Text(o, "route"), How = Json.Text(o, "how"), Owned = Json.Bool(o, "owned"), Selected = Json.Bool(o, "selected"),
+                        Route = Json.Text(o, "route"), How = Json.Text(o, "how"), Owned = Json.Truthy(o, "owned"), Selected = Json.Truthy(o, "selected"),
                         ClientItem = Json.Int(o, "clientItem"), Price = Json.Int(o, "price"),
                     });
                 }
@@ -297,7 +297,7 @@ namespace Chaos.Core
                 string sel = Json.Get(data, "selected") == null ? "" : Json.Text(data, "selected", Json.Int(data, "selected").ToString(CultureInfo.InvariantCulture));
                 if (StyleOf(SelectedId) == null) SelectedId = sel;
                 Loaded = true;
-                if (Json.Bool(data, "open")) { Visible = true; tickAt = -1; }
+                if (Json.Truthy(data, "open")) { Visible = true; tickAt = -1; }
                 Changed();
             }
             else if (action == "cast") CastStarted(Loc.T("Town Portal"), Json.Number(data, "ms", 3000));
@@ -608,7 +608,7 @@ namespace Chaos.Core
                 l.Add(new HideoutVisit
                 {
                     Guid = (long)Json.Number(v, "guid"), Name = Json.Text(v, "name"), Theme = Json.Text(v, "theme"), Why = Json.Text(v, "why"), At = Json.Text(v, "at"),
-                    Likes = Json.Get(v, "likes") == null ? -1 : Json.Int(v, "likes"), Visits = Json.Get(v, "visits") == null ? -1 : Json.Int(v, "visits"), Online = Json.Bool(v, "online"),
+                    Likes = Json.Get(v, "likes") == null ? -1 : Json.Int(v, "likes"), Visits = Json.Get(v, "visits") == null ? -1 : Json.Int(v, "visits"), Online = Json.Truthy(v, "online"),
                 });
             }
             return l;
@@ -625,7 +625,7 @@ namespace Chaos.Core
                 ShowLikes = ParseVisits(Json.Get(sc, "likes")); ShowVisits = ParseVisits(Json.Get(sc, "visits"));
                 Changed();
             }
-            else if (action == "result") { ResultText = Json.Text(data, "text"); ResultOk = Json.Bool(data, "ok"); Changed(); }
+            else if (action == "result") { ResultText = Json.Text(data, "text"); ResultOk = Json.Truthy(data, "ok"); Changed(); }
         }
 
         void ApplyState(object d)
@@ -638,7 +638,7 @@ namespace Chaos.Core
             if (HasInside)
             {
                 var org = Json.Get(ins, "origin");
-                Inside = new HideoutInside { IsOwner = Json.Bool(ins, "isOwner"), OwnerName = Json.Text(ins, "ownerName"), Owner = (long)Json.Number(ins, "owner"), OriginX = Json.Int(org, "x"), OriginY = Json.Int(org, "y"), OriginZ = Json.Int(org, "z") };
+                Inside = new HideoutInside { IsOwner = Json.Truthy(ins, "isOwner"), OwnerName = Json.Text(ins, "ownerName"), Owner = (long)Json.Number(ins, "owner"), OriginX = Json.Int(org, "x"), OriginY = Json.Int(org, "y"), OriginZ = Json.Int(org, "z") };
             }
             var lay = Json.Get(d, "layout");
             Layout = new HideoutLayout { W = Json.Int(lay, "w"), H = Json.Int(lay, "h") };
@@ -651,7 +651,7 @@ namespace Chaos.Core
                 var r = new HideoutRow
                 {
                     Key = Json.Text(o, "key"), Name = Json.Text(o, "name"), Cat = Json.Text(o, "cat"), Source = Json.Text(o, "source"), How = Json.Text(o, "how"),
-                    Layer = Json.Text(o, "layer", "object"), Item = Json.Int(o, "item"), Placed = Json.Int(o, "placed"), Max = Json.Int(o, "max"), Owned = Json.Bool(o, "owned"), Block = Json.Bool(o, "block"),
+                    Layer = Json.Text(o, "layer", "object"), Item = Json.Int(o, "item"), Placed = Json.Int(o, "placed"), Max = Json.Int(o, "max"), Owned = Json.Truthy(o, "owned"), Block = Json.Truthy(o, "block"),
                 };
                 foreach (object rot in Json.List(o, "rots")) r.Rots.Add(ParseParts(rot));
                 if (Json.Get(o, "wallW") != null) r.WallW = ParseParts(Json.Get(o, "wallW"));
@@ -662,13 +662,13 @@ namespace Chaos.Core
                 Placed.Add(new HideoutPlaced { Id = Json.Int(o, "id"), Key = Json.Text(o, "key"), X = Json.Int(o, "x"), Y = Json.Int(o, "y"), R = Math.Max(1, Json.Int(o, "r", 1)) });
             Themes.Clear();
             foreach (object o in Json.List(d, "themes"))
-                Themes.Add(new HideoutTheme { Key = Json.Text(o, "key"), Name = Json.Text(o, "name"), Desc = Json.Text(o, "desc"), How = Json.Text(o, "how"), Owned = Json.Bool(o, "owned"), Selected = Json.Bool(o, "selected"), MaxDecor = Json.Int(o, "maxDecor"), Item = Json.Int(o, "item") });
+                Themes.Add(new HideoutTheme { Key = Json.Text(o, "key"), Name = Json.Text(o, "name"), Desc = Json.Text(o, "desc"), How = Json.Text(o, "how"), Owned = Json.Truthy(o, "owned"), Selected = Json.Truthy(o, "selected"), MaxDecor = Json.Int(o, "maxDecor"), Item = Json.Int(o, "item") });
             Permissions.Clear();
             foreach (object o in Json.List(d, "permissions")) Permissions.Add(new HideoutPerm { Id = Json.Int(o, "id"), Name = Json.Text(o, "name"), Desc = Json.Text(o, "desc") });
             Categories.Clear();
             foreach (object o in Json.List(d, "categories")) if (o is string s) Categories.Add(s); else if (o is Dictionary<string, object>) Categories.Add(Json.Text(o, "key"));
             Loaded = true;
-            if (Json.Bool(d, "open")) Visible = true;
+            if (Json.Truthy(d, "open")) Visible = true;
             Changed();
         }
 

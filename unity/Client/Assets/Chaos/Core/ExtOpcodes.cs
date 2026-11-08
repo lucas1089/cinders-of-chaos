@@ -278,17 +278,31 @@ namespace Chaos.Core
 
         public static string Text(object o, string key, string fallback = "")
         {
-            return Get(o, key) is string s ? s : fallback;
+            var v = Get(o, key);
+            return v is string s ? s : v is double d && !double.IsNaN(d) && !double.IsInfinity(d) ? NumberText(d) : fallback;
+        }
+
+        /// <summary>A number as text the way Lua's tostring writes a whole number (12, not 12.0).</summary>
+        public static string NumberText(double d) => d == Math.Floor(d) && Math.Abs(d) < 1e15 ? ((long)d).ToString(CultureInfo.InvariantCulture) : d.ToString("R", CultureInfo.InvariantCulture);
+
+        /// <summary>A number as the server may send it: a JSON number, or a numeric string ("12", "1.5": storage values and
+        /// tostring() results reach the wire as text). Null when it is neither.</summary>
+        public static double? AsNumber(object v)
+        {
+            if (v is double d) return d;
+            if (v is string s && s.Length > 0 && s.Length < 40 && double.TryParse(s.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var x) && !double.IsNaN(x) && !double.IsInfinity(x)) return x;
+            return null;
         }
 
         public static double Number(object o, string key, double fallback = 0)
         {
-            return Get(o, key) is double d ? d : fallback;
+            return AsNumber(Get(o, key)) ?? fallback;
         }
 
         public static int Int(object o, string key, int fallback = 0)
         {
-            return Get(o, key) is double d && !double.IsNaN(d) ? (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, d)) : fallback;
+            var n = AsNumber(Get(o, key));
+            return n is double d && !double.IsNaN(d) ? (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, d)) : fallback;
         }
 
         public static bool Bool(object o, string key, bool fallback = false)
@@ -296,9 +310,44 @@ namespace Chaos.Core
             return Get(o, key) is bool b ? b : fallback;
         }
 
+        /// <summary>A flag as the server may send it: the Lua JSON encoder writes true/false for booleans, but many payloads carry
+        /// 1/0 (done = 1, open = 1, pw = 1), and a few strings ("1", "true"). True for true, a nonzero number, "1" or "true" (any case);
+        /// false for false, 0, NaN and any other string; null, lists and objects give the fallback. Json.Bool is strict (only a JSON
+        /// boolean) and is for reading what this client wrote itself.</summary>
+        public static bool Truthy(object v, bool fallback = false)
+        {
+            switch (v)
+            {
+                case bool b: return b;
+                case double d: return !double.IsNaN(d) && d != 0;
+                case string s:
+                    s = s.Trim();
+                    return s == "1" || s.Equals("true", StringComparison.OrdinalIgnoreCase);
+                default: return fallback;
+            }
+        }
+
+        public static bool Truthy(object o, string key, bool fallback = false) => Truthy(Get(o, key), fallback);
+
         public static List<object> List(object o, string key)
         {
-            return Get(o, key) as List<object> ?? new List<object>();
+            var v = Get(o, key);
+            if (v is List<object> l) return l;
+            // an array the encoder wrote as an object because its keys are the strings "1", "2", ...: its values in key order
+            if (v is Dictionary<string, object> m && m.Count > 0)
+            {
+                var keys = new List<KeyValuePair<int, object>>();
+                foreach (var kv in m)
+                {
+                    if (!int.TryParse(kv.Key, NumberStyles.None, CultureInfo.InvariantCulture, out int i)) return new List<object>();
+                    keys.Add(new KeyValuePair<int, object>(i, kv.Value));
+                }
+                keys.Sort((a, b) => a.Key.CompareTo(b.Key));
+                var o2 = new List<object>(keys.Count);
+                foreach (var kv in keys) o2.Add(kv.Value);
+                return o2;
+            }
+            return new List<object>();
         }
     }
 

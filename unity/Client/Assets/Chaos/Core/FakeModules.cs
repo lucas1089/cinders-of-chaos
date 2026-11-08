@@ -38,7 +38,7 @@ namespace Chaos.Core
         public bool Drivable => Reason.Length == 0;
     }
 
-    public static class FakeModules
+    public static partial class FakeModules
     {
         /// <summary>Single quotes stand for double quotes in the samples below (no apostrophes in the texts).</summary>
         static object J(string text) => Json.Parse(text.Replace('\'', '"'));
@@ -56,7 +56,7 @@ namespace Chaos.Core
         const string Sc = "server/data/scripts/chaos/";
 
         // ------------------------------------------------------------------------------------ what is covered
-        public static readonly IList<FakeModule> Catalog = new List<FakeModule>
+        static readonly IList<FakeModule> BaseModules = new List<FakeModule>
         {
             Mod("achievements", AchievementsState.OpcodeId, "achievements.lua", "AchievementsWindow", "open", "get"),
             Mod("bestiary", BestiaryState.OpcodeId, "bestiary.lua", "BestiaryWindow", "open", "list", "summary", "entry", "board", "query"),
@@ -79,6 +79,18 @@ namespace Chaos.Core
             Mod("groupqueue", GroupQueuePanel.Opcode, "groupqueue.lua", "GroupQueueWindow", "open", "query"),
             Mod("tower", TowerState.Opcode, "infinitytower.lua", "TowerWindow", "request", "state"),
         };
+
+        /// <summary>The covered modules: the phase 11 list and the phase 12 track H one (Core/FakeModulesP12.cs).</summary>
+        public static readonly IList<FakeModule> Catalog = BuildCatalog();
+
+        static IList<FakeModule> BuildCatalog()
+        {
+            var all = new List<FakeModule>(BaseModules);
+            all.AddRange(Phase12Modules());
+            all.AddRange(Phase13Modules());
+            all.AddRange(Phase14Modules());
+            return all;
+        }
 
         static FakeModule Mod(string name, byte op, string file, string window, params string[] requests) =>
             new FakeModule { Name = name, Op = op, Source = file.StartsWith("tests/", StringComparison.Ordinal) ? "server/" + file : Sc + file, Windows = new[] { window }, Requests = requests };
@@ -149,6 +161,9 @@ namespace Chaos.Core
                 if (action == "request") o.Add(TowerOpen());
                 if (action == "state") o.Add(Flat(TowerState.Opcode, "{'action':'state','inRun':false,'canSkip':false,'floor':0,'nextBoss':false}", Sc + "infinitytower_run.lua (sendState)"));
             }
+            if (o.Count == 0) o.AddRange(Answer12(op, action, data));   // phase 12, track H: Core/FakeModulesP12.cs
+            if (o.Count == 0) o.AddRange(Answer13(op, action, data));   // phase 13, track G: Core/FakeModulesP13.cs
+            if (o.Count == 0) o.AddRange(Answer14(op, action, data));   // phase 14, track H: Core/FakeModulesP14.cs
             return o;
         }
 
@@ -387,11 +402,6 @@ namespace Chaos.Core
                 M(BattlegroundState.Opcode, "hud",
                     "{'phase':'fight','left':600,'score':[120,95],'win':300,'braziers':[{'name':'North Well','owner':1,'progress':100,'contested':false},{'name':'South Well','owner':0,'progress':40,'contested':true}]," +
                     "'team':1,'teams':['Ash','Frost'],'colors':['#c0501a','#3a6fc0'],'players':[8,8]}", Sc + "battleground.lua (hudOf)"));
-            Ctx(d, "BattlegroundBoardWindow", Sc + "battleground.lua",
-                M(BattlegroundState.Opcode, "hud", "{'phase':'fight','left':600,'score':[120,95],'win':300,'braziers':[],'team':1,'teams':['Ash','Frost'],'colors':['#c0501a','#3a6fc0'],'players':[8,8]}", Sc + "battleground.lua (hudOf)"),
-                M(BattlegroundState.Opcode, "end",
-                    "{'result':'win','reason':'score','rated':true,'team':1,'teams':['Ash','Frost'],'score':[300,210],'winner':1,'honor':40,'firstWin':true,'items':'','duration':900," +
-                    "'rows':[{'name':'Ember','team':1,'role':'dps','level':300,'kills':12,'assists':4,'downs':2,'captures':3,'damage':250000,'healing':1000,'honor':40,'voc':'Juggernaut'},{'name':'Vex','team':2,'role':'tank','level':310,'kills':8,'assists':2,'downs':5,'captures':1,'damage':180000,'healing':0,'honor':10,'voc':'Warden'}]}", Sc + "battleground.lua (end and scoreboardOf)"));
             Ctx(d, "PvpZoneConfirmWindow", Sc + "pvpzone.lua",
                 M(PvpZoneState.Opcode, "state",
                     "{'confirm':true,'name':'Scorched Marches','minLevel':200,'level':310,'inside':false,'carried':350,'carryMax':1000,'banked':1200,'rules':['Anyone can attack you here.','A defeat drops your embers.']," +
@@ -409,6 +419,8 @@ namespace Chaos.Core
             Ctx(d, "TaskTrackerWindow", Sc + "bestiary.lua", BestTracker(true));
             d["TaskTrackerWindow"].Close.Add(BestTracker(false));
             // no server push opens it: the Bot HUD follows the helper's own client setting (HelperConfig Hud.Enabled), saved in the player
+            AddContexts12(d);
+            AddContexts14(d);   // phase 14, track H: the survey push and the Battleground match (Core/FakeModulesP14.cs)
             d["HelperHudWindow"] = new FakeContext { Window = "HelperHudWindow", Source = "client setting", Reason = "the Bot HUD opens from the helper's own setting (Hud.Enabled), no server message drives it" };
             return d;
         }

@@ -53,7 +53,7 @@ namespace Chaos.Client
                 if (drag != null && drag.Kind == "placed" && drag.Id == CF.I(p, "id")) continue;
                 var rr = CharmsState.Rect(CF.I(p, "x"), CF.I(p, "y"), CF.I(p, "w"), CF.I(p, "h"));
                 var r = new Rect(gridRect.x + rr[0], gridRect.y + rr[1], rr[2], rr[3]);
-                Tile(app, r, p, true, CF.G(p, "active") is bool act && !act ? 0.4f : 1f, CF.I(p, "w"), CF.I(p, "h"));
+                Tile(app, r, p, true, CF.G(p, "active") != null && !CF.B(p, "active") ? 0.4f : 1f, CF.I(p, "w"), CF.I(p, "h"));
                 if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(mouse) && drag == null) { drag = CharmsState.DragOf(p, "placed"); dragCharm = p; e.Use(); }
             }
 

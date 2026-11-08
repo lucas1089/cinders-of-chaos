@@ -51,6 +51,8 @@ namespace Chaos.Core.Tests
                     { "crafting", CraftingState.OpcodeId }, { "hunt", HuntTracker.Opcode }, { "guild", GuildPanel.Opcode }, { "infinitytower", TowerState.Opcode },
                     { "dungeons", DungeonsState.Opcode }, { "invasion", InvasionState.Opcode }, { "siege", SiegeState.Opcode }, { "arena", ArenaState.Opcode },
                     { "rift", RiftHud.Opcode }, { "groupQueue", GroupQueuePanel.Opcode }, { "partyFinder", PartyFinderPanel.Opcode },
+                    { "bank", BankState.Opcode }, { "stash", StashState.Opcode }, { "shop", StoreState.Opcode }, { "market", MarketPanel.Opcode }, { "bounty", BountyState.Opcode },
+                    { "leaderboard", LeaderboardPanel.Opcode }, { "raid", RaidState.Opcode },
                 };
                 foreach (var kv in pairs)
                 {
@@ -67,7 +69,7 @@ namespace Chaos.Core.Tests
             foreach (var mod in FakeModules.Catalog)
                 foreach (string action in mod.Requests)
                 {
-                    var answers = FakeModules.Answer(mod.Op, Request(action, action == "entry" ? "{'id':1}" : action == "tiers" ? "{'season':3}" : action == "looks" ? "{'kind':'helmet'}" : action == "fetch" ? "{'category':'mining','page':1}" : null));
+                    var answers = FakeModules.Answer(mod.Op, Request(action, FakeModules.SampleData(mod.Op, action)));
                     check(answers.Count > 0, "fake modules: " + mod.Name + " answers '" + action + "'");
                     foreach (var m in answers)
                     {
@@ -98,6 +100,26 @@ namespace Chaos.Core.Tests
             check(s.Social.PartyFinder.Init != null && s.Social.PartyFinder.Data != null, "fake modules: party finder init and list");
             check(s.Social.GroupQueue.State != null, "fake modules: group queue state");
             check(s.Endgame.Tower.HasData && s.Endgame.Tower.Milestones.Count == 2 && s.Endgame.Tower.Rankings.Count == 2, "fake modules: tower window data");
+            Phase12Checks(check, s);
+        }
+
+        // phase 12, track H: the answers of Core/FakeModulesP12.cs leave the state the windows draw
+        static void Phase12Checks(Action<bool, string> check, GameSession s)
+        {
+            check(s.Bank.HasState && s.Bank.GoldCarried == 350000 && s.Bank.GoldBank == 1200000, "fake modules: bank gold carried and banked");
+            check(s.Stash.HasTabs && s.Stash.Tabs.Count == 2 && s.Stash.ItemsLoaded && s.Stash.Items.Count == 3 && s.Stash.CanWithdraw && s.Stash.Blocks.Count == 0, "fake modules: stash tabs and items");
+            check(s.Store.Loaded && s.Store.Categories.Count == 3 && s.Store.Tree.Count == 2 && s.Store.Coins == 250, "fake modules: store tree and coins");
+            check(s.Social.Market.Meta != null && s.Social.Market.PageData != null && s.Social.Market.Total == 3 && s.Social.Market.SellData != null && s.Social.Market.MineData != null
+                && s.Social.Market.HistoryData != null && s.Social.Market.OrdersData != null, "fake modules: market meta and every tab's data");
+            check(s.Endgame.Dungeons.Rows.Count == 2 && s.Endgame.Dungeons.Details.Count == 2 && s.Endgame.Dungeons.Selected != null && s.Endgame.Dungeons.Selected.Solo.Count == 1, "fake modules: dungeons list, details and the solo board");
+            check(s.Endgame.Raid.Info != null && s.Endgame.Raid.JournalBosses.Count == 1 && RaidView.VendorStock(s.Endgame.Raid.Info).Count == 2 && RaidView.SavedRow(Json.List(s.Endgame.Raid.Info, "saved")[0]).Id == 7,
+                "fake modules: raid info, the vendor stock and the journal");
+            check(s.Endgame.Bounty.HasBoard && s.Endgame.Bounty.Bands.Count == 2 && s.Endgame.Bounty.Current != null && s.Endgame.Bounty.Current.Contracts.Count == 3, "fake modules: bounty bands and contracts");
+            check(s.Utils.AutoLoot.Rows.Count == 3 && s.Utils.AutoLoot.MaxSlot == 40, "fake modules: auto loot list");
+            check(s.Utils.Pouches.Owned.Count == 3 && s.Utils.Pouches.Rules.Gold && s.Utils.Pouches.SellerKnown && s.Utils.Pouches.Seller.Unlocked && s.Utils.Pouches.Seller.List.Count == 1, "fake modules: pouch rules and the auto seller");
+            check(s.Utils.Portal.Loaded && s.Utils.Portal.Styles.Count == 2 && s.Utils.Portal.SelectedId == "ember", "fake modules: town portal styles");
+            check(s.Endgame.PvpZone.State != null && Json.List(s.Endgame.PvpZone.State, "factions").Count == 2 && Json.List(s.Endgame.PvpZone.State, "vendor").Count == 2 && s.Endgame.PvpZone.Visible && !s.Endgame.PvpZone.ConfirmAsked, "fake modules: Marches window state, no confirm");
+            check(s.Social.Leaderboard.Meta != null && s.Social.Leaderboard.Current != null && SFmt.Rows(s.Social.Leaderboard.Current, "rows").Count == 3, "fake modules: leaderboard meta and the board");
         }
 
         static void ContextChecks(Action<bool, string> check)
@@ -106,7 +128,7 @@ namespace Chaos.Core.Tests
             {
                 "TowerPanelWindow", "DungeonCounterWindow", "RaidHudWindow", "RaidCalloutWindow", "DescentHudWindow", "DescentOfferWindow", "DescentShopWindow", "InvasionHudWindow",
                 "SiegeHudWindow", "ArenaHudWindow", "BattlegroundHudWindow", "BattlegroundBoardWindow", "PvpZoneConfirmWindow", "PvpZoneHudWindow", "RiftWindow", "ReadyCheckWindow",
-                "TaskTrackerWindow", "HelperHudWindow",
+                "TaskTrackerWindow", "HelperHudWindow", "WaystoneWindow", "SurveyWindow",
             };
             check(expected.All(w => FakeModules.Context(w) != null) && FakeModules.ContextWindows.Count() == expected.Length, "fake contexts: the " + expected.Length + " context HUDs");
             check(FakeModules.Context("HelperHudWindow") != null && !FakeModules.Context("HelperHudWindow").Drivable && FakeModules.Context("HelperHudWindow").Reason.Length > 10, "fake contexts: the Bot HUD says why no push opens it");
@@ -127,12 +149,14 @@ namespace Chaos.Core.Tests
                 { "SiegeHudWindow", () => s.Endgame.Siege.Hud != null },
                 { "ArenaHudWindow", () => s.Endgame.Arena.HudShown(now) && s.Endgame.Arena.Side(true).Count == 2 },
                 { "BattlegroundHudWindow", () => s.Endgame.Battleground.Hud != null },
-                { "BattlegroundBoardWindow", () => s.Endgame.Battleground.BoardVisible && s.Endgame.Battleground.BoardData != null },
+                { "BattlegroundBoardWindow", () => s.Endgame.Battleground.InMatch && s.Endgame.Battleground.BoardData != null },   // phase 14: the live board of a running match
                 { "PvpZoneConfirmWindow", () => s.Endgame.PvpZone.ConfirmAsked },
                 { "PvpZoneHudWindow", () => s.Endgame.PvpZone.Inside },
                 { "RiftWindow", () => s.Progress.Rift.Active },
                 { "ReadyCheckWindow", () => s.Social.GroupQueue.CheckOpen },
                 { "TaskTrackerWindow", () => TaskTrackerState.Rows(s.Bestiary.TrackerRows).Count == 2 },
+                { "SurveyWindow", () => s.Community.Survey.Visible && s.Community.Survey.Stage == SurveyPanel.SourceStage },
+                { "WaystoneWindow", () => s.Utils.Waystone.Visible && s.Utils.Waystone.Rows.Count >= 6 && s.Utils.Waystone.Rows[0].Count == 5 },
             };
             foreach (var kv in wanted)
             {
@@ -141,7 +165,7 @@ namespace Chaos.Core.Tests
                 foreach (var m in ctx.Pushes) Feed(s, m);
                 check(kv.Value(), "fake contexts: " + kv.Key + " is wanted after its push");
                 foreach (var m in ctx.Close) Feed(s, m);
-                s.Endgame.Clear(); s.Progress.Rift.Hide();
+                s.Endgame.Clear(); s.Progress.Rift.Hide(); s.Utils.Waystone.Clear();
                 check(!kv.Value(), "fake contexts: " + kv.Key + " is gone after the end messages and the clear");
             }
         }
@@ -155,7 +179,7 @@ namespace Chaos.Core.Tests
         }
 
         // keys under these are dynamic names (player names, counts per orb, tier numbers), not field names of the server
-        static readonly HashSet<string> Dynamic = new HashSet<string> { "names", "counts", "reasons", "orbs", "pick", "tiers", "skipped", "cooldowns" };
+        static readonly HashSet<string> Dynamic = new HashSet<string> { "names", "counts", "reasons", "orbs", "pick", "tiers", "skipped", "cooldowns", "bosses", "shards", "relics", "have", "words" };
 
         static void Keys(object o, string parent, HashSet<string> into)
         {
@@ -199,7 +223,7 @@ namespace Chaos.Core.Tests
             var s = NewSession();
             foreach (var mod in FakeModules.Catalog)
                 foreach (string action in mod.Requests)
-                    msgs.AddRange(FakeModules.Answer(mod.Op, Request(action, action == "entry" ? "{'id':1}" : action == "tiers" ? "{'season':3}" : action == "looks" ? "{'kind':'helmet'}" : action == "fetch" ? "{'category':'mining','page':1}" : null)));
+                    msgs.AddRange(FakeModules.Answer(mod.Op, Request(action, FakeModules.SampleData(mod.Op, action))));
             foreach (var w in FakeModules.ContextWindows) { var c = FakeModules.Context(w); msgs.AddRange(c.Pushes); msgs.AddRange(c.Close); }
             var missing = new List<string>();
             var textCache = new Dictionary<string, string>();

@@ -333,7 +333,7 @@ namespace Chaos.Core
                     break;
                 case "sendNodes": ApplyNodes(data); return;
                 case "planResult":
-                    PlanOk = Json.Bool(data, "ok");
+                    PlanOk = Json.Truthy(data, "ok");
                     PlanMessage = Json.Text(data, "message", PlanOk ? Loc.T("Applied.") : Loc.T("The plan was not applied."));
                     if (PlanOk) ResetPlan();
                     else Say(Loc.T("Passive tree"), PlanMessage);
@@ -354,7 +354,7 @@ namespace Chaos.Core
                 case "buildCode":
                     BuildCodeText = Json.Text(data, "code");
                     BuildError = false;
-                    if (Json.Bool(data, "full")) BuildCodeText = FullCode(BuildCodeText, data);
+                    if (Json.Truthy(data, "full")) BuildCodeText = FullCode(BuildCodeText, data);
                     BuildMessage = Loc.T("Your build code ({0} nodes) is ready. Copy it and share it.", Json.List(data, "nodes").Count);
                     break;
                 case "buildPreview":
@@ -362,7 +362,7 @@ namespace Chaos.Core
                     foreach (object o in Json.List(data, "nodes")) if (o is double n) PreviewNodes.Add((int)n);
                     PreviewCode = Json.Text(data, "code");
                     PreviewCost = (long)Json.Number(data, "cost");
-                    PreviewSummary = Json.Text(data, "summary") + (Json.Get(data, "change") is bool ch && ch
+                    PreviewSummary = Json.Text(data, "summary") + (Json.Truthy(data, "change")
                         ? "\n" + Loc.T("The tree shows the build now. Apply Build to take it, Cancel Preview to go back.") : "");
                     BuildError = false;
                     BuildMessage = Loc.T("Points: the build needs {0}, you own {1}.", Json.Int(data, "wanted"), Json.Int(data, "points"));

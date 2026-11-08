@@ -428,7 +428,7 @@ namespace Chaos.Core
                     if (!(recap is Dictionary<string, object>)) return;
                     Current = recap;
                     Selected = Json.Int(d, "id");
-                    if (Json.Bool(d, "auto")) AutoOpen();
+                    if (Json.Truthy(d, "auto")) AutoOpen();
                     Changed();
                     return;
                 }

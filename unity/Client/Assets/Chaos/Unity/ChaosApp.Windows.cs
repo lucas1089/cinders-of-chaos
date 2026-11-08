@@ -20,6 +20,16 @@ namespace Chaos.Client
         public virtual string TravelKey => null;
         /// <summary>False for a window that sets its own size every frame or has its own grip (phase 9, track E: the grip in the corner and the saved size, game_chaoslayout).</summary>
         public virtual bool Resizable => true;
+        /// <summary>Phase 12, track H: true for a window that must never be larger than the screen (a HUD, a pop-up): its rect is cut to the screen by Chaos.Core.WindowFit when it is placed
+        /// and again whenever it grows. A window that sizes itself every frame (Resizable false) gets the same. The other windows keep the screen fit of client_chaos_screenfit (the wheel moves
+        /// a window taller than the screen).</summary>
+        public virtual bool ClampToScreen => false;
+        /// <summary>Set to draw this window above the others on its next frame (the main client's raise(), for a confirmation that opens over its own window).</summary>
+        public bool RaiseNext;
+        /// <summary>True for a confirmation that opens over its own window (pvpzone.lua confirm:raise()): it comes to the front for a few frames each time it is shown,
+        /// however it was opened (a server push, the window smoke run, a click).</summary>
+        public virtual bool RaiseWhenShown => false;
+        int lastDrawFrame = -10, raiseFrames;
         /// <summary>True once the player set the size with the grip (or the saved layout did): only then the size is saved.</summary>
         public bool UserSized;
         /// <summary>The size the program gave the window when it was placed (a double click on the grip goes back to it).</summary>
@@ -87,21 +97,38 @@ namespace Chaos.Client
             }
         }
 
+        /// <summary>The one shared clamp of a window rect to a w x h UI screen (Chaos.Core.WindowFit.Fit): no side larger than the screen less the margins, no edge outside.</summary>
+        public static Rect FitToScreen(Rect r, float w, float h)
+        {
+            var f = Chaos.Core.WindowFit.Fit(new Chaos.Core.SmokeBox(r.x, r.y, r.width, r.height), w, h);
+            return new Rect(f.X, f.Y, f.W, f.H);
+        }
+
         internal void Draw(ChaosApp app, int id, float w, float h)
         {
             if (!placed)
             {
                 Area = Place(w, h); placed = true;
+                if (ClampToScreen || !Resizable) Area = FitToScreen(Area, w, h);
                 DefaultSize = Area.size;
                 Placed?.Invoke(this);
                 Area.x = Chaos.Core.ScreenFit.OpenStart(Area.x, Area.width, 0, w); Area.y = Chaos.Core.ScreenFit.OpenStart(Area.y, Area.height, 0, h);
             }
+            if ((ClampToScreen || !Resizable) && Chaos.Core.WindowFit.Exceeds(Area.width, Area.height, w, h)) Area = FitToScreen(Area, w, h);   // it grew past the screen
             // keep the title bar on screen; a window taller or wider than the screen moves only so far that it still covers it (client_chaos_screenfit)
             bool tall = Chaos.Core.ScreenFit.Overflows(Area.height, h), wide = Chaos.Core.ScreenFit.Overflows(Area.width, w);
             var ev = Event.current;
             if (tall && ev.type == EventType.ScrollWheel && Area.Contains(ev.mousePosition)) { Area.y = Chaos.Core.ScreenFit.Wheel(Area.y, Area.height, 0, h, ev.delta.y < 0); ev.Use(); }
             Area.x = wide ? Chaos.Core.ScreenFit.Clamp(Area.x, Area.width, 0, w) : Mathf.Clamp(Area.x, 0, Mathf.Max(0, w - Area.width));
             Area.y = tall ? Chaos.Core.ScreenFit.Clamp(Area.y, Area.height, 0, h) : Mathf.Clamp(Area.y, 0, Mathf.Max(0, h - 24));
+            int frame = Time.frameCount;
+            if (RaiseWhenShown && frame - lastDrawFrame > 1) raiseFrames = 3;   // shown again after a frame or more hidden: the window may not exist yet on its first frame, so raise on three
+            lastDrawFrame = frame;
+            if (RaiseNext || raiseFrames > 0)
+            {
+                GUI.BringWindowToFront(id); GUI.FocusWindow(id); RaiseNext = false;
+                if (raiseFrames > 0 && ev.type == EventType.Repaint) raiseFrames--;
+            }
             var oldColor = GUI.color;
             if (Alpha < 0.999f) GUI.color = new Color(1f, 1f, 1f, Alpha);
             Area = GUI.Window(id, Area, _ =>

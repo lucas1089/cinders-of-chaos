@@ -68,7 +68,7 @@ namespace Chaos.Core
 
         static CodexSection Section(object o)
         {
-            var s = new CodexSection { Ref = Json.Text(o, "ref"), H = Json.Text(o, "h"), Tiers = Json.Bool(o, "tiers") };
+            var s = new CodexSection { Ref = Json.Text(o, "ref"), H = Json.Text(o, "h"), Tiers = Json.Truthy(o, "tiers") };
             s.Paragraphs = Strings(o, "p");
             s.Cols = Strings(o, "cols");
             foreach (object w in Json.List(o, "w")) if (w is double d) s.W.Add(d);

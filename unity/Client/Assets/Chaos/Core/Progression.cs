@@ -394,7 +394,7 @@ namespace Chaos.Core
             foreach (object r in Json.List(data, "x"))
                 if (r is List<object> a && a.Count >= 3)
                     Drops.Add(new HuntItem { Id = Int(a, 0), Count = Int(a, 1), Name = a[2] as string ?? "?", Rarity = a.Count > 3 ? Int(a, 3) : 0, Unique = a.Count > 4 && Int(a, 4) == 1, Orb = a.Count > 5 && Int(a, 5) == 1 });
-            if (Json.Bool(data, "open")) OpenRequested = true;
+            if (Json.Truthy(data, "open") || Json.Number(data, "open") == 1) OpenRequested = true;   // hunt.lua sends open = 1, a number (phase 13 track G)
             Changed();
         }
 
@@ -509,7 +509,7 @@ namespace Chaos.Core
                 Swift = Json.Number(d, "swift");
                 Mods.Clear();
                 foreach (object m in Json.List(d, "mods"))
-                    Mods.Add(new RiftMod { Name = Json.Text(m, "name"), Text = Json.Text(m, "text"), Side = Json.Text(m, "side"), Tier = Json.Int(m, "tier"), Boon = Json.Bool(m, "boon") });
+                    Mods.Add(new RiftMod { Name = Json.Text(m, "name"), Text = Json.Text(m, "text"), Side = Json.Text(m, "side"), Tier = Json.Int(m, "tier"), Boon = Json.Truthy(m, "boon") });
                 Notes.Clear();
                 foreach (object n in Json.List(d, "notes")) if (n is string s) Notes.Add(s);
                 object b = Json.Get(d, "bonus");
@@ -785,7 +785,7 @@ namespace Chaos.Core
             if (v is double d) return d > 0 || d == -1;
             if (v is string s) return s.Length > 0;
             if (v is List<object> l) return l.Count > 0;
-            return v is bool b && b;
+            return Json.Truthy(v);
         }
 
         /// <summary>The choice list "warrior|juggernaut" -> {"Warrior", "Juggernaut"} as (text, value).</summary>
@@ -847,8 +847,8 @@ namespace Chaos.Core
             };
             string fs = Json.Text(s, "freeSwitch");
             lines.Add(fs.Length > 0 ? Loc.T("Free switch: available (to {0})", fs) : Loc.T("Free switch: none"));
-            lines.Add(Json.Bool(s, "familiarReady") ? Loc.T("Familiar: available") : Loc.T("Familiar: from level {0}", Json.Int(s, "familiarLevel", 200)));
-            if (Json.Bool(s, "inTutorial")) lines.Add(Loc.T("Tutorial: you are on the tutorial island"));
+            lines.Add(Json.Truthy(s, "familiarReady") ? Loc.T("Familiar: available") : Loc.T("Familiar: from level {0}", Json.Int(s, "familiarLevel", 200)));
+            if (Json.Truthy(s, "inTutorial")) lines.Add(Loc.T("Tutorial: you are on the tutorial island"));
             if (Json.Get(s, "webshopOrders") is double w && w >= 0) lines.Add(Loc.T("Web shop items to claim: {0}", (int)w));
             var frames = FrameOptions();
             if (frames.Count > 0) lines.Add(Loc.T("Your frames: {0}", string.Join(", ", frames.ConvertAll(f => f.Key))));

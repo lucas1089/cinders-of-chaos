@@ -117,9 +117,9 @@ namespace Chaos.Core
                     return look > 0 ? PreviewOption.Of(k, look) : null;
                 case "shader":
                     return Json.Text(l, "shader").Length > 0 ? new PreviewOption { Kind = "shader", Shader = Json.Text(l, "shader") } : null;
-                case "outline": { var a = Name(Json.Text(l, "art")); return a != null ? new PreviewOption { Kind = "outline", Art = a, Pulse = Json.Bool(l, "pulse") } : null; }
+                case "outline": { var a = Name(Json.Text(l, "art")); return a != null ? new PreviewOption { Kind = "outline", Art = a, Pulse = Json.Truthy(l, "pulse") } : null; }
                 case "footprint": { var a = Name(Json.Text(l, "art")); return a != null ? new PreviewOption { Kind = "footprint", Art = a } : null; }
-                case "effects": { var pl = Json.List(l, "play"); return pl != null && pl.Count > 0 ? new PreviewOption { Kind = "effects", Play = pl, KillFx = Json.Bool(l, "killfx") } : null; }
+                case "effects": { var pl = Json.List(l, "play"); return pl != null && pl.Count > 0 ? new PreviewOption { Kind = "effects", Play = pl, KillFx = Json.Truthy(l, "killfx") } : null; }
                 case "nameplate": { var f = Name(Json.Text(l, "frame")); return f != null ? new PreviewOption { Kind = "nameplate", Frame = f } : null; }
                 case "bundle":
                 {

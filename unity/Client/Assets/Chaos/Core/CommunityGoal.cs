@@ -36,7 +36,7 @@ namespace Chaos.Core
             switch (action)
             {
                 case "state": Data = data; Arrived = NowMs; break;
-                case "msg": Status = Json.Text(data, "text"); StatusTone = Json.Bool(data, "ok") ? "good" : "bad"; msgAt = NowMs; break;
+                case "msg": Status = Json.Text(data, "text"); StatusTone = Json.Truthy(data, "ok") ? "good" : "bad"; msgAt = NowMs; break;
                 case "brazier": Tab = "brazier"; if (!Visible) Show(); else Send("open"); break;
             }
         }
@@ -59,7 +59,7 @@ namespace Chaos.Core
         public static string StageState(object s, double elapsed)
         {
             if (s != null && Json.Get(s, "left") != null && Left(Json.Number(s, "left"), elapsed) > 0) return "open";
-            return Json.Bool(s, "done") ? "done" : "todo";
+            return Json.Truthy(s, "done") ? "done" : "todo";
         }
 
         public static string StageLine(object s, double elapsed, out string tone)
@@ -103,7 +103,7 @@ namespace Chaos.Core
         {
             var w = Json.Get(data, "week");
             if (Json.List(w, "mods").Count == 0) return Loc.T("No world modifier this week.");
-            return Loc.T("This week ({0} left){1}", Cm.CountdownMin(Left(Json.Number(w, "left"), elapsed)), Json.Bool(w, "staff") ? Loc.T(", set by the staff") : "");
+            return Loc.T("This week ({0} left){1}", Cm.CountdownMin(Left(Json.Number(w, "left"), elapsed)), Json.Truthy(w, "staff") ? Loc.T(", set by the staff") : "");
         }
 
         public static string GoalTimeText(object data, double elapsed) => Loc.T("Ends in {0}", Cm.CountdownMin(Left(Json.Number(Json.Get(data, "goal"), "left"), elapsed)));
@@ -146,7 +146,7 @@ namespace Chaos.Core
         {
             var b = Json.Get(data, "brazier");
             ok = false; tone = "bad";
-            if (!Json.Bool(b, "near")) return Loc.T("Stand next to the Great Brazier in the temple.");
+            if (!Json.Truthy(b, "near")) return Loc.T("Stand next to the Great Brazier in the temple.");
             string why = Donation(data, ParseGold(text), out long take, out long pts);
             if (why != null) return why;
             ok = true; tone = "good";
@@ -268,7 +268,7 @@ namespace Chaos.Core
                 State = data;
                 if (SelectedChapter <= 0 || SelectedChapter > Chapters(State).Count) SelectedChapter = DefaultChapter(State);
             }
-            else if (action == "mem") { Mem = data; if (!Form.ContainsKey("m_records")) { Form["m_records"] = Json.Bool(data, "records") ? "1" : "0"; Form["m_fallen"] = Json.Bool(data, "fallen") ? "1" : "0"; } }
+            else if (action == "mem") { Mem = data; if (!Form.ContainsKey("m_records")) { Form["m_records"] = Json.Truthy(data, "records") ? "1" : "0"; Form["m_fallen"] = Json.Truthy(data, "fallen") ? "1" : "0"; } }
         }
 
         public static string Lang() => Loc.Language == Loc.Portuguese ? "pt" : "en";
@@ -431,7 +431,7 @@ namespace Chaos.Core
                 string key = sec[0];
                 r.Btn(Loc.T(sec[1]), MemSection != key, () => { MemSection = key; Changed(); });
             }
-            Header2 = Json.Bool(Mem, "ask") ? Loc.T("Your fall waits for an answer") : Loc.T("Show me on the Memorial");
+            Header2 = Json.Truthy(Mem, "ask") ? Loc.T("Your fall waits for an answer") : Loc.T("Show me on the Memorial");
             if (MemSection == "choice")
             {
                 l.Text(Loc.T("The Capital Memorial remembers the realm's firsts, its records and the heroes who fell in Hardcore. Choose what it may say about you."), "text");
@@ -483,7 +483,7 @@ namespace Chaos.Core
                 {
                     bool first = StatusData == null;
                     StatusData = d;
-                    if (Json.Bool(d, "open"))
+                    if (Json.Truthy(d, "open"))
                     {
                         if (first || !Visible || !tabChosen) Tab = FirstTab(d);
                         tabChosen = true;
@@ -494,7 +494,7 @@ namespace Chaos.Core
                     break;
                 }
                 case "mentors": MentorRows = new List<object>(SFmt.Rows(d, "rows")); break;
-                case "message": Status = Json.Text(d, "text"); StatusTone = Json.Bool(d, "error") ? "bad" : "good"; break;
+                case "message": Status = Json.Text(d, "text"); StatusTone = Json.Truthy(d, "error") ? "bad" : "good"; break;
                 case "offer": Offer = d; Visible = true; break;
             }
         }
@@ -520,10 +520,10 @@ namespace Chaos.Core
         public static string PickText(object s)
         {
             if (s == null) return Loc.T("Loading...");
-            if (!Json.Bool(s, "enabled")) return Loc.T("The mentor system is off.");
+            if (!Json.Truthy(s, "enabled")) return Loc.T("The mentor system is off.");
             var r = Json.Get(s, "rules");
             if (Json.Get(s, "apprentice") != null) return Loc.T("You have a mentor: see My mentor.");
-            if (!Json.Bool(s, "canPick")) return Json.Text(s, "pickNote");
+            if (!Json.Truthy(s, "canPick")) return Json.Text(s, "pickNote");
             return Loc.T("New characters (up to level {0}, account up to {1} days old) can pick a mentor. Hunting together in a party gives you +{2}% experience and {3}% less damage from monsters while your mentor is not far above the monsters. You graduate at level {4}.",
                 Json.Int(r, "maxLevel"), Json.Int(r, "accountDays"), Json.Int(r, "exp"), Json.Int(r, "dmg"), Json.Int(r, "gradLevel"));
         }
@@ -570,7 +570,7 @@ namespace Chaos.Core
         public static bool CanChoose(object r, object s)
         {
             int places = Math.Max(0, Json.Int(r, "max") - Json.Int(r, "active"));
-            return (s == null || (Json.Bool(s, "canPick") && Json.Get(s, "apprentice") == null)) && places > 0;
+            return (s == null || (Json.Truthy(s, "canPick") && Json.Get(s, "apprentice") == null)) && places > 0;
         }
 
         public sealed class InviteRow { public double Guid; public string Kind = "", Text = ""; }
@@ -580,7 +580,7 @@ namespace Chaos.Core
             var o = new List<InviteRow>();
             if (s == null) return o;
             var rf = Json.Get(s, "referrer");
-            if (Cm.IsMap(rf) && Json.Bool(s, "canPick")) o.Add(new InviteRow { Guid = Json.Number(rf, "guid"), Kind = "referrer", Text = Loc.T("Your referrer mentors as {0}.", Json.Text(rf, "name", "?")) });
+            if (Cm.IsMap(rf) && Json.Truthy(s, "canPick")) o.Add(new InviteRow { Guid = Json.Number(rf, "guid"), Kind = "referrer", Text = Loc.T("Your referrer mentors as {0}.", Json.Text(rf, "name", "?")) });
             foreach (var i in SFmt.Rows(s, "invites"))
                 o.Add(new InviteRow { Guid = Json.Number(i, "guid"), Kind = "invite", Text = Loc.T("{0} (Lv {1} {2}) invites you - {3}", Json.Text(i, "name", "?"), Json.Int(i, "level"), Json.Text(i, "voc"), LeftText(Json.Number(i, "left"))) });
             return o;
@@ -602,11 +602,11 @@ namespace Chaos.Core
             var a = Json.Get(s, "apprentice");
             if (!Cm.IsMap(a))
             {
-                if (Json.Bool(s, "graduated")) { sub = Loc.T("Thank your mentor: you can become one yourself one day."); return Loc.T("You graduated."); }
+                if (Json.Truthy(s, "graduated")) { sub = Loc.T("Thank your mentor: you can become one yourself one day."); return Loc.T("You graduated."); }
                 sub = Loc.T("Pick one in Find a mentor, or accept an invitation.");
                 return Loc.T("You have no mentor.");
             }
-            string title = Json.Text(a, "name", "?") + "  -  Lv " + Json.Int(a, "level") + " " + Json.Text(a, "voc") + "  (" + (Json.Bool(a, "online") ? Loc.T("online") : Loc.T("offline")) + ")";
+            string title = Json.Text(a, "name", "?") + "  -  Lv " + Json.Int(a, "level") + " " + Json.Text(a, "voc") + "  (" + (Json.Truthy(a, "online") ? Loc.T("online") : Loc.T("offline")) + ")";
             string how = Json.Text(a, "source");
             switch (how) { case "list": how = Loc.T("chosen from the list"); break; case "invite": how = Loc.T("by invitation"); break; case "referral": how = Loc.T("your referrer"); break; }
             sub = Loc.T("Mentor since {0} ({1}). Hunted together: {2}.", Cm.IsoDate(Json.Number(a, "linkedAt")), how, MinutesText(Json.Number(a, "shared")));
@@ -620,7 +620,7 @@ namespace Chaos.Core
             string basic = Loc.T("Mentors: an account with a level {0} character, {1} hours of play and {2} days of age. Up to {3} apprentices. You earn Mentor Marks from their milestones (after {4} minutes hunting together) and 1 mark per {5} minutes of hunting together ({6} a day, {7} a month in all). Marks buy titles, cosmetics and supplies, never power.",
                 Json.Int(r, "mentorLevel"), Json.Int(r, "mentorHours"), Json.Int(r, "mentorDays"), Json.Int(r, "maxApprentices"), Json.Int(r, "minShared"), Json.Int(r, "huntMinutes"), Json.Int(r, "dailyHuntMarks"), Json.Int(r, "monthlyCap"));
             if (Json.Get(s, "mentor") != null) return basic;
-            if (Json.Bool(s, "canMentor")) return Loc.T("{0} You can register this character.", basic);
+            if (Json.Truthy(s, "canMentor")) return Loc.T("{0} You can register this character.", basic);
             return basic + " " + Json.Text(s, "mentorNote");
         }
 
@@ -648,7 +648,7 @@ namespace Chaos.Core
                 bool buyable = true;
                 bool weekly = Json.Get(it, "weeklyLeft") != null;
                 if (!isMentor) { buyable = false; button = Loc.T("Mentors only"); }
-                else if (Json.Bool(it, "owned")) { buyable = false; button = Loc.T("Owned"); }
+                else if (Json.Truthy(it, "owned")) { buyable = false; button = Loc.T("Owned"); }
                 else if (weekly && Json.Number(it, "weeklyLeft") <= 0) { buyable = false; button = Loc.T("Next week"); }
                 else if (marks < Json.Number(it, "cost")) buyable = false;
                 string desc = Json.Text(it, "desc");
@@ -715,7 +715,7 @@ namespace Chaos.Core
         {
             l.Text(PickText(s), "text");
             l.Combo(Loc.T("Looking for a mentor"), "seek", new[] { Loc.T("No"), Loc.T("Yes") });
-            if (!Form.ContainsKey("seek")) Form["seek"] = Json.Bool(s, "seeking") ? "1" : "0";
+            if (!Form.ContainsKey("seek")) Form["seek"] = Json.Truthy(s, "seeking") ? "1" : "0";
             foreach (var inv in InviteRows(s))
             {
                 double guid = inv.Guid;
@@ -737,7 +737,7 @@ namespace Chaos.Core
                 foreach (var r0 in MentorRows)
                 {
                     double guid = Json.Number(r0, "guid");
-                    bool on = Json.Bool(r0, "online");
+                    bool on = Json.Truthy(r0, "online");
                     var row = l.Row(MentorTitle(r0), on ? Loc.T("online") : Loc.T("offline"), on ? "good" : "dim");
                     row.Sub = MentorSub(r0);
                     row.Tip = Json.Text(r0, "note");
@@ -760,7 +760,7 @@ namespace Chaos.Core
             if (Cm.IsMap(a))
             {
                 string bonus = Json.Text(a, "bonusText");
-                if (bonus.Length > 0) l.Text(bonus, Json.Bool(a, "bonus") ? "good" : "warn");
+                if (bonus.Length > 0) l.Text(bonus, Json.Truthy(a, "bonus") ? "good" : "warn");
                 l.Row(Loc.T("Dismiss your mentor")).Btn(Loc.T("Dismiss"), true, () => Send("dismiss"));
                 l.Section(Loc.T("Milestones (your mentor earns Mentor Marks)"));
                 foreach (var m in SFmt.Rows(a, "milestones"))
@@ -790,20 +790,20 @@ namespace Chaos.Core
                     double guid = Json.Number(a, "guid");
                     var steps = new List<string>();
                     foreach (var ms in SFmt.Rows(a, "milestones")) steps.Add(ShortMilestone(Json.Text(ms, "key")) + " " + StateText(Json.Text(ms, "state")));
-                    var row = l.Row(Json.Text(a, "name", "?") + "  -  Lv " + Json.Int(a, "level") + " " + Json.Text(a, "voc") + (Json.Bool(a, "online") ? "  (" + Loc.T("online") + ")" : ""),
+                    var row = l.Row(Json.Text(a, "name", "?") + "  -  Lv " + Json.Int(a, "level") + " " + Json.Text(a, "voc") + (Json.Truthy(a, "online") ? "  (" + Loc.T("online") + ")" : ""),
                         Loc.T("Since {0}, together {1}", Cm.IsoDate(Json.Number(a, "linkedAt")), MinutesText(Json.Number(a, "shared"))));
                     row.Sub = string.Join("   ", steps);
                     row.Btn(Loc.T("Release"), true, () => Send("release", SFmt.Map("guid", guid)));
                 }
                 l.Input(Loc.T("Invite a character"), "inv", Loc.T("character name")).Btn(Loc.T("Invite"), true, Invite);
             }
-            if (isMentor || Json.Bool(s, "canMentor"))
+            if (isMentor || Json.Truthy(s, "canMentor"))
             {
                 l.Section(Loc.T("Your card"));
                 if (isMentor && !Form.ContainsKey("c_lang"))
                 {
                     Form["c_lang"] = Json.Text(m, "lang"); Form["c_hours"] = Json.Text(m, "hours"); Form["c_note"] = Json.Text(m, "note");
-                    Form["c_accepting"] = Json.Bool(m, "accepting") ? "1" : "0"; Form["c_public"] = Json.Bool(m, "public") ? "1" : "0";
+                    Form["c_accepting"] = Json.Truthy(m, "accepting") ? "1" : "0"; Form["c_public"] = Json.Truthy(m, "public") ? "1" : "0";
                 }
                 l.Input(Loc.T("Language"), "c_lang", Loc.T("e.g. English, Portuguese"));
                 l.Input(Loc.T("Hours"), "c_hours", Loc.T("e.g. evenings"));
@@ -926,20 +926,20 @@ namespace Chaos.Core
         {
             Weeks.Clear();
             foreach (var w in SFmt.Rows(d, "weeks")) if (Json.Text(w, "id").Length > 0) Weeks.Add(w);
-            AutoEnabled = Json.Get(d, "autoEnabled") as bool? != false;
+            AutoEnabled = Json.Truthy(d, "autoEnabled", true);
             string id = Json.Text(d, "selected");
             if (id.Length == 0 || FindWeek(id) == null) id = Weeks.Count > 0 ? Json.Text(Weeks[0], "id") : "";
             SelectedId = id;
-            if (Json.Bool(d, "open"))
+            if (Json.Truthy(d, "open"))
             {
                 Pending = null;
                 Visible = true;
                 AskChangelog(false);
                 MarkSeen();
             }
-            else if (Json.Bool(d, "auto") && !Visible)
+            else if (Json.Truthy(d, "auto") && !Visible)
             {
-                Pending = new Auto { DailyFirst = Json.Bool(d, "dailyFirst"), Since = NowMs / 1000 };
+                Pending = new Auto { DailyFirst = Json.Truthy(d, "dailyFirst"), Since = NowMs / 1000 };
             }
         }
 
@@ -978,7 +978,7 @@ namespace Chaos.Core
                 foreach (var sec in SFmt.Rows(p, "sections"))
                 {
                     var last = sections.Count > 0 ? sections[sections.Count - 1] as Dictionary<string, object> : null;
-                    if (Json.Bool(sec, "cont") && last != null && Json.Text(last, "name") == Json.Text(sec, "name"))
+                    if (Json.Truthy(sec, "cont") && last != null && Json.Text(last, "name") == Json.Text(sec, "name"))
                         ((List<object>)last["items"]).AddRange(Json.List(sec, "items"));
                     else
                         sections.Add(new Dictionary<string, object> { { "name", Json.Get(sec, "name") }, { "kind", Json.Get(sec, "kind") }, { "items", new List<object>(Json.List(sec, "items")) } });
@@ -1092,7 +1092,7 @@ namespace Chaos.Core
             if (tag == "client")
             {
                 int n = Json.Int(e, "client");
-                if (Json.Bool(e, "pending") || n == 0) return Loc.T("Client: next update");
+                if (Json.Truthy(e, "pending") || n == 0) return Loc.T("Client: next update");
                 return Loc.T("Client {0}", n);
             }
             return TagLabel(tag);
@@ -1135,7 +1135,7 @@ namespace Chaos.Core
                 string id = Json.Text(Weeks[i], "id");
                 if (id == SelectedId) sel = i;
                 string date = FormatDate(Json.Text(Weeks[i], "date"), true);
-                names.Add((date.Length > 0 ? date : id) + "  " + Json.Text(Weeks[i], "title") + (Json.Bool(Weeks[i], "new") ? "  " + Loc.T("NEW") : ""));
+                names.Add((date.Length > 0 ? date : id) + "  " + Json.Text(Weeks[i], "title") + (Json.Truthy(Weeks[i], "new") ? "  " + Loc.T("NEW") : ""));
             }
             if (Form.ContainsKey("week") && Index("week") != sel)
             {
@@ -1172,7 +1172,7 @@ namespace Chaos.Core
         List<SocialRow> ChangelogTab(RowList l)
         {
             if (Changelog == null) { l.Text(Loc.T("Loading..."), "dim"); return l.Rows; }
-            if (!Json.Bool(Changelog, "available", true)) { l.Text(Loc.T("The changelog is not available on this server."), "dim"); return l.Rows; }
+            if (!Json.Truthy(Changelog, "available", true)) { l.Text(Loc.T("The changelog is not available on this server."), "dim"); return l.Rows; }
             string date = Json.Text(Json.Get(Changelog, "server"), "date");
             Header2 = (date.Length > 0 ? Loc.T("Server updated: {0}", FormatDate(date)) : Loc.T("Server updated: unknown")) + "     " + Loc.T("Client: Unity prototype");
             var names = new List<string>();

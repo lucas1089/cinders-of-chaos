@@ -76,7 +76,7 @@ namespace Chaos.Core
         public static bool CanApply(object row, List<object> my, int level, out string why)
         {
             why = "";
-            if (Json.Bool(row, "mine")) { why = Loc.T("Your group"); return false; }
+            if (Json.Truthy(row, "mine")) { why = Loc.T("Your group"); return false; }
             if (Json.Get(row, "ap") is string) { why = Loc.T("Applied"); return false; }
             if (!LevelFits(row, level)) { why = BandText(row); return false; }
             if (ApplyRoles(row, my).Count == 0) { why = Loc.T("No open role for you"); return false; }
@@ -92,7 +92,7 @@ namespace Chaos.Core
             if (mt.Length > 0) p.Add(mt);
             if (Json.Int(row, "ml") > 1 || Json.Int(row, "xl") > 0) p.Add(BandShort(row));
             p.Add(Loc.T("{0} left", TimeLeft(Json.Number(row, "left") - elapsed)));
-            if (Json.Bool(row, "season")) p.Add(Loc.T("Season"));
+            if (Json.Truthy(row, "season")) p.Add(Loc.T("Season"));
             return string.Join("  -  ", p);
         }
 
@@ -126,7 +126,7 @@ namespace Chaos.Core
             if (!SFmt.IsMap(act)) return "none";
             if (SFmt.Has(act, "range")) return "range";
             if (Json.List(act, "targets").Count > 0) return "targets";
-            if (Json.Bool(act, "title") || Json.Get(act, "title") is bool b && b) return "title";
+            if (Json.Truthy(act, "title")) return "title";
             return "none";
         }
 
@@ -262,7 +262,7 @@ namespace Chaos.Core
             Form["note"] = Json.Text(input, "note"); Form["nk"] = Json.Int(input, "nk").ToString(CultureInfo.InvariantCulture);
             var exps = Json.List(Init, "exp");
             for (int i = 0; i < exps.Count; i++) if (exps[i] is double v && v == Json.Number(input, "exp")) Form["exp"] = i.ToString(CultureInfo.InvariantCulture);
-            Form["auto"] = Json.Bool(input, "auto") ? "1" : "0";
+            Form["auto"] = Json.Truthy(input, "auto") ? "1" : "0";
         }
 
         public override void OnForm(string key)
@@ -333,14 +333,14 @@ namespace Chaos.Core
             foreach (var row in SFmt.Rows(Data, "rows"))
             {
                 bool keep = true;
-                if (!Json.Bool(row, "mine"))
+                if (!Json.Truthy(row, "mine"))
                 {
                     if (actKey.Length > 0 && Json.Text(row, "a") != actKey) keep = false;
                     if (keep && role.Length > 0 && PartyFinderMath.OpenOf(row, role) <= 0 && Json.Text(row, "ap") != role) keep = false;
                     if (keep && fits && !PartyFinderMath.LevelFits(row, Level)) keep = false;
                 }
                 if (!keep) continue;
-                if (Json.Bool(row, "mine")) mine.Add(row); else if (Json.Get(row, "ap") is string) applied.Add(row); else rest.Add(row);
+                if (Json.Truthy(row, "mine")) mine.Add(row); else if (Json.Get(row, "ap") is string) applied.Add(row); else rest.Add(row);
             }
             mine.AddRange(applied); mine.AddRange(rest);
             return mine;
@@ -370,13 +370,13 @@ namespace Chaos.Core
             foreach (var row in rows)
             {
                 var r = row;
-                var line = l.Row(Json.Text(row, "an", "?"), PartyFinderMath.OpenText(row, Init), Json.Bool(row, "mine") ? "gold" : "text");
+                var line = l.Row(Json.Text(row, "an", "?"), PartyFinderMath.OpenText(row, Init), Json.Truthy(row, "mine") ? "gold" : "text");
                 line.Tip = PartyFinderMath.SubLine(row, el);
                 string note = PartyFinderMath.NoteText(row, notes);
                 if (note.Length > 0) l.Text(note, "dim");
                 l.Text(PartyFinderMath.SubLine(row, el), "dim");
                 l.Text(PartyFinderMath.CompText(row, Init), "text");
-                if (Json.Bool(row, "mine")) line.Btn(Loc.T("Manage"), true, () => SelectTab("my"));
+                if (Json.Truthy(row, "mine")) line.Btn(Loc.T("Manage"), true, () => SelectTab("my"));
                 else if (Json.Get(row, "ap") is string ap) { line.Right = Loc.T("Applied as {0}", PartyFinderMath.RoleName(ap, Init)); line.Btn(Loc.T("Withdraw"), true, () => Withdraw(r)); }
                 else
                 {
@@ -444,7 +444,7 @@ namespace Chaos.Core
             foreach (var a in apps)
             {
                 var app = a;
-                l.Row(PartyFinderMath.ApplicantLine(a), PartyFinderMath.RoleName(Json.Text(a, "r"), Init) + "  " + (Json.Bool(a, "q") ? Loc.T("quick join, ") : "") + PartyFinderMath.Ago(Json.Number(a, "ago") + Elapsed))
+                l.Row(PartyFinderMath.ApplicantLine(a), PartyFinderMath.RoleName(Json.Text(a, "r"), Init) + "  " + (Json.Truthy(a, "q") ? Loc.T("quick join, ") : "") + PartyFinderMath.Ago(Json.Number(a, "ago") + Elapsed))
                     .Btn(Loc.T("Accept"), true, () => Accept(mine, app)).Btn(Loc.T("Decline"), true, () => Decline(mine, app));
             }
         }
@@ -457,7 +457,7 @@ namespace Chaos.Core
 
         public static int ArenaSize(string mode) => mode == "1v1" ? 1 : mode == "2v2" ? 2 : mode == "3v3" ? 3 : 0;
         public static bool InGroup(object state) => SFmt.IsMap(Json.Get(state, "group"));
-        public static bool CanEdit(object state) => SFmt.IsMap(state) && !(SFmt.Has(state, "enabled") && !Json.Bool(state, "enabled", true)) && Json.Bool(state, "leader") && !InGroup(state);
+        public static bool CanEdit(object state) => SFmt.IsMap(state) && !(SFmt.Has(state, "enabled") && !Json.Truthy(state, "enabled", true)) && Json.Truthy(state, "leader") && !InGroup(state);
 
         public static List<int> Difficulties(object dungeon)
         {
@@ -482,9 +482,9 @@ namespace Chaos.Core
         {
             why = "";
             if (!SFmt.IsMap(state)) { why = Loc.T("Waiting for the server."); return false; }
-            if (SFmt.Has(state, "enabled") && !Json.Bool(state, "enabled", true)) { why = Loc.T("The Group Queue is closed."); return false; }
+            if (SFmt.Has(state, "enabled") && !Json.Truthy(state, "enabled", true)) { why = Loc.T("The Group Queue is closed."); return false; }
             if (InGroup(state)) return false;
-            if (!Json.Bool(state, "leader")) { why = Loc.T("Only the party leader can queue the party."); return false; }
+            if (!Json.Truthy(state, "leader")) { why = Loc.T("Only the party leader can queue the party."); return false; }
             if (!payload.ContainsKey("arena") && !payload.ContainsKey("bg") && !payload.ContainsKey("dungeon")) { why = Loc.T("Pick at least one queue."); return false; }
             int size = SFmt.Has(state, "size") ? Json.Int(state, "size") : 1;
             if (payload.TryGetValue("arena", out object am) && ArenaSize(am as string) != size) { why = Loc.T("Arena: 1v1 is played alone, 2v2 as a party of two, 3v3 as a party of three."); return false; }
@@ -501,7 +501,7 @@ namespace Chaos.Core
             if (!SFmt.IsMap(g))
             {
                 o.Add(new KeyValuePair<string, string>(Loc.T("Not queued."), "dim"));
-                if (Json.Bool(state, "inParty") && !Json.Bool(state, "leader")) o.Add(new KeyValuePair<string, string>(Loc.T("Your party leader picks the queues."), "dim"));
+                if (Json.Truthy(state, "inParty") && !Json.Truthy(state, "leader")) o.Add(new KeyValuePair<string, string>(Loc.T("Your party leader picks the queues."), "dim"));
                 return o;
             }
             var names = new List<string>();
@@ -510,7 +510,7 @@ namespace Chaos.Core
             o.Add(new KeyValuePair<string, string>(Loc.T("Waiting {0}", SFmt.Clock(Json.Number(g, "waited") + elapsed)), "text"));
             object chk = Json.Get(g, "check");
             if (SFmt.IsMap(chk)) o.Add(new KeyValuePair<string, string>(Loc.T("Ready check: {0}, {1} of {2} ready", Json.Text(chk, "label", Json.Text(chk, "key")), Json.Int(chk, "accepted"), Json.Int(chk, "total")), "warn"));
-            else if (Json.Bool(g, "ready")) o.Add(new KeyValuePair<string, string>(Loc.T("Everyone is ready: the match starts as soon as it can."), "good"));
+            else if (Json.Truthy(g, "ready")) o.Add(new KeyValuePair<string, string>(Loc.T("Everyone is ready: the match starts as soon as it can."), "good"));
             o.Add(new KeyValuePair<string, string>(Loc.T("When a queue finds a match, you leave the others. A party gets a ready check first."), "dim"));
             return o;
         }
@@ -527,7 +527,7 @@ namespace Chaos.Core
             {
                 Title = Loc.T("{0} is ready to start", Json.Text(c, "label", Json.Text(c, "key", "?"))),
                 Sub = Loc.T("{0} of {1} party members ready", Json.Int(c, "accepted"), Math.Max(1, SFmt.Has(c, "total") ? Json.Int(c, "total") : 1)),
-                Percent = (int)Math.Floor(Math.Min(100, 100 * left / total) + 0.5), Left = left, Timer = SFmt.Clock(left), Answered = Json.Bool(c, "mine"),
+                Percent = (int)Math.Floor(Math.Min(100, 100 * left / total) + 0.5), Left = left, Timer = SFmt.Clock(left), Answered = Json.Truthy(c, "mine"),
             };
         }
     }
@@ -565,7 +565,7 @@ namespace Chaos.Core
             {
                 case "state":
                     State = d; stateAt = Clock();
-                    if (Json.Bool(d, "open")) { Visible = true; Status = ""; }
+                    if (Json.Truthy(d, "open")) { Visible = true; Status = ""; }
                     int size = SFmt.Has(d, "size") ? Json.Int(d, "size") : 1;
                     if (Arena.Length > 0 && GroupQueueMath.ArenaSize(Arena) != size) Arena = "";
                     break;
@@ -633,7 +633,7 @@ namespace Chaos.Core
                 l.Row("", why, "dim").Btn(Loc.T("Join Queues"), ok, JoinOrLeave, why.Length > 0 ? why : Loc.T("Queue in a protection zone, out of combat."));
             }
             var row = l.Row("");
-            if (Json.Bool(State, "raid")) row.Btn(Loc.T("Raid check"), Json.Bool(State, "inParty") && Json.Bool(State, "leader") && !GroupQueueMath.InGroup(State), RaidCheck);
+            if (Json.Truthy(State, "raid")) row.Btn(Loc.T("Raid check"), Json.Truthy(State, "inParty") && Json.Truthy(State, "leader") && !GroupQueueMath.InGroup(State), RaidCheck);
             row.Btn(Loc.T("Find a group"), true, () => FindGroup());
             return l.Rows;
         }

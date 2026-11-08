@@ -39,7 +39,7 @@ namespace Chaos.Core
                 Id = Json.Int(o, "id"), Level = Json.Int(o, "level"), MagicLevel = Json.Int(o, "maglevel", Json.Int(o, "mlevel")),
                 Mana = Json.Int(o, "mana"), ManaPercent = Json.Int(o, "manaPercent"), Soul = Json.Int(o, "soul"),
                 Cooldown = Json.Int(o, "cooldown"), GroupCooldown = Json.Int(o, "groupCooldown"), Range = Json.Int(o, "range"),
-                Quest = Json.Int(o, "quest"), NeedLearn = Json.Bool(o, "needLearn"), Premium = Json.Bool(o, "premium"),
+                Quest = Json.Int(o, "quest"), NeedLearn = Json.Truthy(o, "needLearn"), Premium = Json.Truthy(o, "premium"),
                 Rune = Json.Get(o, "rune") is double r ? (int)r : 0, RuneClientId = Json.Int(o, "runeClientId"),
             };
             object g = Json.Get(o, "group");
@@ -153,7 +153,7 @@ namespace Chaos.Core
                         VocationNames.Clear();
                         foreach (object v in names) VocationNames[Json.Int(v, "id")] = Json.Text(v, "name");
                     }
-                    if (Json.Bool(m.Data, "unchanged") && Spells.Count > 0)
+                    if (Json.Truthy(m.Data, "unchanged") && Spells.Count > 0)
                     {
                         pending = null;
                         string sig = Json.Text(m.Data, "sig", null);

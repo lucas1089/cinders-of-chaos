@@ -165,7 +165,7 @@ namespace Chaos.Core
                         Add("BATTLE_PASS", Loc.T("Mission Complete: {0} and received {1} battle pass exp", Json.Text(d, "missionName"), Json.Int(d, "expPoints")), (int)Json.Number(d, "monsterLookType"));
                     break;
                 case "danger":
-                    ShowDanger(message, Json.Bool(d, "caution"), Clock());
+                    ShowDanger(message, Json.Truthy(d, "caution"), Clock());
                     break;
                 case "partyInvite":
                     if (Json.Get(d, "inviterName") != null)
@@ -1028,13 +1028,13 @@ namespace Chaos.Core
                 }
                 case "checkResult":
                     if (Check == null) return;
-                    if (Json.Bool(d, "retry"))
+                    if (Json.Truthy(d, "retry"))
                     {
                         Status = Json.Text(d, "text", Loc.T("Try again."));
                         StatusGood = StatusBad = false;
                         return;   // the next picture follows
                     }
-                    bool ok = Json.Bool(d, "ok");
+                    bool ok = Json.Truthy(d, "ok");
                     Status = Json.Text(d, "text");
                     StatusGood = ok;
                     StatusBad = !ok;
@@ -1051,7 +1051,7 @@ namespace Chaos.Core
                     break;
                 case "reportResult":
                     ReportStatus = Json.Text(d, "text");
-                    ReportStatusGood = Json.Bool(d, "ok");
+                    ReportStatusGood = Json.Truthy(d, "ok");
                     ReportSent = ReportStatusGood;
                     if (ReportStatusGood) ReportCloseAt = now + 2500;
                     break;
