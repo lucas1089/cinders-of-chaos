@@ -8,7 +8,7 @@
 //                u16 channel id for 6, 7, 8, 14; nothing for private 4, 15, broadcast 13; then string text.
 //   0x96 say:    u8 type, then receiver (string) for 5 and 16, channel id (u16) for 7, 8, 14; then string text.
 //   0xA0 fight:  u8 fight mode (1 offensive, 2 balanced, 3 defensive), u8 chase (0 stand, 1 chase),
-//                u8 secure (0 on, 1 off), u8 pvp mode (0).
+//                u8 secure (1 on, 0 off: the server keeps it as Player::secureMode, found live in phase 22), u8 pvp mode (0).
 using System;
 using System.Collections.Generic;
 using System.Text;

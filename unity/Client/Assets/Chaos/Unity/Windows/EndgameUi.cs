@@ -101,41 +101,25 @@ namespace Chaos.Client
     static class EndgameBridge
     {
         static Chaos.Core.Endgame wired;
-        static bool? secureBefore;
+        static ChaosApp guardApp;
+        /// <summary>The secure mode held off for a match (Core/SecureGuard.cs); the Fight window reads it to save the player's own choice.</summary>
+        public static readonly SecureGuard Guard = new SecureGuard(
+            () => guardApp?.Session?.Modes,
+            m => guardApp?.Session?.SetFightModes(m));
 
         public static void Wire(ChaosApp app)
         {
             var e = app.Session?.Endgame;
             if (e == null || e == wired) return;
             wired = e;
-            secureBefore = null;
-            System.Action off = () => SecureOff(app), on = () => SecureOn(app);
+            guardApp = app;
+            Guard.Reset();
+            System.Action off = Guard.Off, on = Guard.On;
             e.Arena.Started = off; e.Arena.Ended = () => { app.Session?.CancelAttack(); on(); };
             e.Battleground.Started = off; e.Battleground.Ended = () => { app.Session?.CancelAttack(); on(); };
             e.PvpZone.Started = off; e.PvpZone.Ended = on;
             System.Action<string> line = t => app.PostLine(t);
             e.Raid.Notice = line; e.Descent.Notice = line; e.Battleground.Notice = line; e.Battleground.Alert = line; e.PvpZone.Notice = line;
-        }
-
-        static void SecureOff(ChaosApp app)
-        {
-            var s = app.Session;
-            if (s == null) return;
-            if (secureBefore == null) secureBefore = s.Modes.Secure;
-            if (s.Modes.Secure)
-            {
-                var m = new FightModes { Fight = s.Modes.Fight, Chase = s.Modes.Chase, Secure = false };
-                s.SetFightModes(m);
-            }
-        }
-
-        static void SecureOn(ChaosApp app)
-        {
-            var s = app.Session;
-            if (s == null) return;
-            if (secureBefore == true && !s.Modes.Secure)
-                s.SetFightModes(new FightModes { Fight = s.Modes.Fight, Chase = s.Modes.Chase, Secure = true });
-            secureBefore = null;
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Chaos.Core.LiveCheck
         public byte[] GuardKey = ClientGuard.DevKey;
         public string Rsa = Protocol.OpenRsaModulus;
         // ---- play scenarios (LiveScenarios.cs), phase 21
-        /// <summary>The scenarios to run: tooltip, stairs, floorchange, npc, sell, market, party, sharedkill, rift, death, pvpdeath (empty: none).</summary>
+        /// <summary>The scenarios to run: tooltip, stairs, floorchange, npc, sell, market, modal, party, sharedkill, rift, riftboss, death, pvpdeath (empty: none).</summary>
         public readonly List<string> Scenarios = new List<string>();
         /// <summary>The second account of the party and death scenarios (environment CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, CHAOS_LIVE_CHARACTER2).</summary>
         public string Account2, Password2, Character2;
@@ -33,6 +33,17 @@ namespace Chaos.Core.LiveCheck
         public string Weak = "Rat";
         /// <summary>Server item id of the Rift Key (rift_config.lua key.itemId) the rift scenario asks the staff command for.</summary>
         public int RiftKeyServerId = 10155;
+        // ---- phase 23
+        /// <summary>The NPC that sends a modal window (0xFA) for the modal scenario, the word that makes it send one, and where to walk to find it. The default is the Chaos
+        /// Archivist Maelis, who answers "tales" with the list of tales (modal id 7170, tales.lua).</summary>
+        public string ModalNpc = "Archivist Maelis", ModalWord = "tales";
+        public Pos? ModalAt;
+        /// <summary>The staff chat commands the riftboss scenario uses: one that kills every monster round the staff character (it hits the rift's packs, then the guardian), and one
+        /// that moves the character next to the strongest monster in range (the guardian's arena is far from the entrance). The server has neither: a local-only revscript
+        /// for the run (unity/README.md "Rift boss and modal windows (phase 23)"); without them the scenario is a skip.</summary>
+        public string RiftKill = "/rkill", RiftNear = "/rnear";
+        /// <summary>Server item ids of the rift reward chest (rift_config.lua chest.itemId and chest.fallbackId), whose client ids the scenario looks for on the map.</summary>
+        public int RiftChestServerId = 32311, RiftChestFallbackServerId = 21584;
         /// <summary>The aware range asked for after the login (Chaos identity only), 0 asks for nothing.</summary>
         public int AwareWidth, AwareHeight;
         /// <summary>Time limit of one scenario in ms (the death and rift ones take their own, longer, limits from it).</summary>

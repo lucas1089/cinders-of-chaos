@@ -25,7 +25,7 @@ namespace Chaos.Core.LiveCheck
 
     public sealed partial class LiveRun
     {
-        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "party", "sharedkill", "rift", "death", "pvpdeath" };
+        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "party", "sharedkill", "rift", "riftboss", "death", "pvpdeath" };
 
         readonly List<ScenarioResult> scenarios = new List<ScenarioResult>();
         Dictionary<int, string> floorChanges;
@@ -57,6 +57,8 @@ namespace Chaos.Core.LiveCheck
                         case "pvpdeath": ScPvpDeath(r); break;
                         case "party": ScParty(r); break;
                         case "rift": ScRift(r); break;
+                        case "modal": ScModal(r); break;
+                        case "riftboss": ScRiftBoss(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }
@@ -579,17 +581,20 @@ namespace Chaos.Core.LiveCheck
         }
 
         // ------------------------------------------------------------------------------------ rift
-        void ScRift(ScenarioResult r)
+        /// <summary>Asks the staff command for a Rift Key, takes it out of the backpack and uses it (the first half of the rift and riftboss scenarios). True when the rift
+        /// opened and the HUD message came; else the scenario is set to skip and false comes back. `before` is where the character stood, `rift0` the opcode 228 count before.</summary>
+        bool OpenRift(ScenarioResult r, out Pos before, out int rift0)
         {
-            if (serverToClient == null || !serverToClient.TryGetValue(o.RiftKeyServerId, out int keyClient)) { r.Skip("no items.otb node for the Rift Key (server id " + o.RiftKeyServerId + ")"); return; }
+            before = me.Pos;
+            rift0 = ops[228].Replies;
+            if (serverToClient == null || !serverToClient.TryGetValue(o.RiftKeyServerId, out int keyClient)) { r.Skip("no items.otb node for the Rift Key (server id " + o.RiftKeyServerId + ")"); return false; }
             var p = s.Parser;
-            var mark = Mark.Of(me);
             int say0 = me.Said.Count;
             // a key from the staff command; only an administrator gets one
             s.Say("/rift key 1");
             Pump(1500, () => false);
             ushort bagId = p.Inventory.Length > 3 && p.Inventory[3] != null ? (ushort)p.Inventory[3].Id : (ushort)0;
-            if (bagId == 0) { r.Skip("no backpack on the character to hold a key"); return; }
+            if (bagId == 0) { r.Skip("no backpack on the character to hold a key"); return false; }
             foreach (var cid in p.Containers.Keys.ToList()) s.CloseContainer(cid);
             Pump(400, () => false);
             s.UseItem(GameSession.InventoryPos(3), bagId, 0);
@@ -605,21 +610,29 @@ namespace Chaos.Core.LiveCheck
             {
                 var texts = me.ServerTexts(say0).Take(3).ToList();
                 r.Skip("the staff command gave no Rift Key (the character needs the administrator rights: group and account type God on the local server)" + (texts.Count > 0 ? "; server said: " + string.Join(" | ", texts) : ""));
-                return;
+                return false;
             }
             r.Note("a Rift Key (client id " + keyClient + ") is in the backpack");
-            var before = me.Pos;
-            int rift0 = ops[228].Replies;
+            before = me.Pos;
+            int seen228 = ops[228].Replies;
+            rift0 = seen228;
             int say1 = me.Said.Count;
             s.UseItem(GameSession.ContainerPos(contId, slot), (ushort)keyClient, (byte)slot);
-            bool entered = WaitFor(Math.Max(30000, o.ScenarioMs), () => s.Progress.Rift.Active || ops[228].Replies > rift0 || s.Closed != null);
+            bool entered = WaitFor(Math.Max(30000, o.ScenarioMs), () => s.Progress.Rift.Active || ops[228].Replies > seen228 || s.Closed != null);
             if (!entered)
             {
                 var texts = me.ServerTexts(say1).Take(3).ToList();
                 r.Skip("the rift did not open within the time limit" + (texts.Count > 0 ? "; server said: " + string.Join(" | ", texts) : " (no slot ready on this server, or the key was refused)"));
-                return;
+                return false;
             }
             Pump(2500, () => false);
+            return true;
+        }
+
+        void ScRift(ScenarioResult r)
+        {
+            var mark = Mark.Of(me);
+            if (!OpenRift(r, out Pos before, out int rift0)) return;
             var st = ops[228];
             r.Note("rift opened: 228 messages " + (st.Replies - rift0) + " [" + string.Join(",", st.Actions) + "], HUD active " + s.Progress.Rift.Active + ", tier " + s.Progress.Rift.Tier + ", total " + s.Progress.Rift.Total +
                    ", position " + P(before) + " to " + P(me.Pos));

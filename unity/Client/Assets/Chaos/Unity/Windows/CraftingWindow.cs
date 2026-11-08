@@ -76,7 +76,6 @@ namespace Chaos.Client
             var mods = item != null ? c.Mods : new List<Dictionary<string, object>>();
             var lines = new List<System.Func<Rect, float>>();
             var mv = new Rect(r.x + 4, r.y + 88, r.width - 8, r.height * 0.42f);
-            float y = 0, total = 0;
             var entries = new List<KeyValuePair<string, Dictionary<string, object>>>();
             string side = null;
             foreach (var m in mods)
