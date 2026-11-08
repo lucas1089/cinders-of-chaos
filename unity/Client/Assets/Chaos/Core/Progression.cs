@@ -116,6 +116,15 @@ namespace Chaos.Core
         // ---- the simple skill list: Melee (best of sword, club, axe), Ranged, Magic / Wand, Shielding, Fist for the Monk line
         public const int Fist = 0, Club = 1, Sword = 2, Axe = 3, Distance = 4, Shielding = 5, Fishing = 6;
 
+        /// <summary>The bar tooltip of a skill row ("Melee: 42" and the percent to the next level).</summary>
+        public static string BarTip(string name, int level, int percent) => name + ": " + level + "\n" + Loc.T("{0}% to the next level", percent);
+
+        /// <summary>The row tooltip of the Melee row: the three weapon skills are one.</summary>
+        public static string MeleeTip() => Loc.T("Swords, axes and clubs share one skill: the best of the three.");
+
+        /// <summary>A boosted skill (level above base) shows green, as in the main client.</summary>
+        public static bool Boosted(SkillValue k) => k.Level > k.Base;
+
         public static bool ShowFist(int vocation) => vocation == 17 || vocation == 18 || vocation == 19;
 
         /// <summary>The best of sword, club and axe (a tie by the higher percent, then in the order sword, club, axe).</summary>

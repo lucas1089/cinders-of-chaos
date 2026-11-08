@@ -20,8 +20,12 @@ namespace Chaos.Client
         Vector2 catScroll, offerScroll;
         int seenMessages;
         string messageTitle = "", messageText = "";
+        StoreOffer giftOffer;        // the offer whose Gift button asked for a name
+        string giftName = "";
+        string triedKey = "";        // category:page:row of the offer on trial and when it ends (ms of the session clock)
+        double triedUntil;
 
-        public override void Reset() { lastVisible = false; search = searchSent = ""; Open = false; seenMessages = 0; messageText = ""; }
+        public override void Reset() { giftOffer = null; giftName = ""; triedKey = ""; lastVisible = false; search = searchSent = ""; Open = false; seenMessages = 0; messageText = ""; }
 
         public override void Tick(ChaosApp app)
         {
@@ -45,7 +49,7 @@ namespace Chaos.Client
             var st = s?.Store;
             if (st == null) return;
             var e = Event.current;
-            bool modal = st.ConfirmOffer != null || messageText.Length > 0;
+            bool modal = st.ConfirmOffer != null || messageText.Length > 0 || giftOffer != null;
 
             // header: search, history, coins
             var sr = new Rect(inner.x + 2, inner.y + 2, 250, 24);
@@ -73,8 +77,10 @@ namespace Chaos.Client
                 var r = new Rect(row.Depth * 14f, i * 28f, SideW - 18 - row.Depth * 14f, 26);
                 bool on = !row.Node.Group && row.Node.Category.Index == st.Selected && !st.BrowsingHistory && st.Searching.Length == 0;
                 ChaosApp.Fill(r, on ? new Color(0.6f, 0.45f, 0.12f, 0.4f) : new Color(1f, 1f, 1f, 0.05f));
-                string label = (row.Node.Group ? (row.Expanded ? "- " : "+ ") : "") + StoreTree.Label(row.Node.Name, row.Node.Size);
                 var cat = row.Node.Category;
+                string label = (row.Node.Group ? (row.Expanded ? "- " : "+ ") : "") + StoreTree.Label(row.Node.Name, row.Node.Size);
+                // the weekly rotation counts down to the Monday change
+                if (!row.Node.Group && cat != null && cat.EndsAt >= 0) label = StoreRotation.Label(StoreTree.Label(row.Node.Name, row.Node.Size), cat.EndsAt, s.Now / 1000.0);
                 if (cat != null && cat.Type == "item" && cat.Item != 0) { app.DrawItem(new Rect(r.x + 1, r.y + 1, 24, 24), (ushort)cat.Item, 1); }
                 else if (cat != null && cat.Type == "outfit") app.DrawOutfit(new Rect(r.x + 1, r.y + 1, 24, 24), cat.Outfit);
                 GUI.Label(new Rect(r.x + 28, r.y + 3, r.width - 28, 22), label, app.SmallStyle);
@@ -111,7 +117,8 @@ namespace Chaos.Client
                 GUI.Label(new Rect(main.x + 84, main.yMax - 22, main.width - 168, 22), Loc.T("Page {0} of {1}", st.Page, st.TotalPages), new GUIStyle(app.SmallStyle) { alignment = TextAnchor.MiddleCenter });
             }
 
-            if (st.ConfirmOffer != null) ConfirmBox(app, st, inner);
+            if (giftOffer != null) GiftBox(app, st, inner);
+            else if (st.ConfirmOffer != null) ConfirmBox(app, st, inner);
             else if (messageText.Length > 0) MessageBox(app, inner);
         }
 
@@ -130,7 +137,12 @@ namespace Chaos.Client
             if (o.Type == "item" && o.Item != 0) app.DrawItem(new Rect(pic.x + 4, pic.y + 4, 48, 48), (ushort)o.Item, o.Count);
             else if (o.Type == "outfit" && o.Outfit != null) app.DrawOutfit(new Rect(pic.x + 4, pic.y + 4, 48, 48), o.Outfit);
             var ts = new GUIStyle(app.SmallStyle) { fontStyle = FontStyle.Bold };
-            GUI.Label(new Rect(r.x + 66, r.y + 2, r.width - 66 - 96, 20), Loc.T("{0} ({1} coins)", o.Title, Short(o.Cost)), ts);
+            // a chat colour tints the title (the offer's preview.color), a loot label accent sits behind it (preview.accent)
+            string titleText = Loc.T("{0} ({1} coins)", o.Title, Short(o.Cost));
+            if (o.PreviewColor.Length > 0 && ColorUtility.TryParseHtmlString(o.PreviewColor, out var tint)) ts.normal.textColor = tint;
+            if (o.PreviewAccent.Length > 0 && ColorUtility.TryParseHtmlString(o.PreviewAccent, out var accent))
+                ChaosApp.Fill(new Rect(r.x + 64, r.y + 3, Mathf.Min(r.width - 66 - 96, ts.CalcSize(new GUIContent(titleText)).x + 4), 18), accent);
+            GUI.Label(new Rect(r.x + 66, r.y + 2, r.width - 66 - 96, 20), titleText, ts);
             var ds = new GUIStyle(app.SmallStyle) { fontSize = 11, wordWrap = true };
             string desc = o.Description;
             if (o.Tags.Count > 0) desc = string.Join("  ", o.Tags) + "  " + desc;
@@ -140,6 +152,23 @@ namespace Chaos.Client
             {
                 GUI.enabled = !modal && !o.Owned;
                 if (GUI.Button(new Rect(r.xMax - 90, r.y + 24, 84, 28), o.Owned ? Loc.T("Owned") : Loc.T("Buy"))) st.AskBuy(o);
+                // Gift: buy it for another character. Try on: the server plays the effect round you for ten seconds
+                bool second = o.Gift;
+                if (o.Gift)
+                {
+                    GUI.enabled = !modal;
+                    if (GUI.Button(new Rect(r.xMax - 90, r.y + 52, 40, 14), Loc.T("Gift"))) { giftOffer = o; giftName = ""; }
+                }
+                if (o.PreviewEffect)
+                {
+                    string key = o.Category + ":" + o.Page + ":" + o.Row;
+                    int left = triedKey == key ? StoreTryOn.SecondsLeft(triedUntil, app.Session.Now) : 0;
+                    GUI.enabled = !modal && left == 0;
+                    if (GUI.Button(new Rect(r.xMax - (second ? 48 : 90), r.y + 52, second ? 44 : 84, 14), StoreTryOn.Countdown(left) ?? Loc.T("TRY ON")))
+                    {
+                        if (st.TryOn(o)) { triedKey = key; triedUntil = app.Session.Now + StoreTryOn.Ms; }
+                    }
+                }
                 GUI.enabled = true;
             }
         }
@@ -151,9 +180,29 @@ namespace Chaos.Client
             ChaosApp.Fill(new Rect(box.x - 2, box.y - 2, box.width + 4, box.height + 4), new Color(0.5f, 0.4f, 0.2f, 1f));
             ChaosApp.Fill(box, new Color(0.06f, 0.05f, 0.07f, 1f));
             var ms = new GUIStyle(app.SmallStyle) { wordWrap = true };
-            GUI.Label(new Rect(box.x + 8, box.y + 8, box.width - 16, 60), Loc.T("Do you want to buy {0} for {1} Chaos Coins?", o.Title, ((long)o.Cost).ToString("N0", CultureInfo.InvariantCulture)), ms);
+            string coinsText = ((long)o.Cost).ToString("N0", CultureInfo.InvariantCulture);
+            GUI.Label(new Rect(box.x + 8, box.y + 8, box.width - 16, 60), st.GiftTo.Length > 0 ? Loc.T("Give {0} to {1} for {2} Chaos Coins?", o.Title, st.GiftTo, coinsText) : Loc.T("Do you want to buy {0} for {1} Chaos Coins?", o.Title, coinsText), ms);
             if (GUI.Button(new Rect(box.x + 8, box.yMax - 38, 150, 28), Loc.T("Yes"))) st.ConfirmBuy();
             if (GUI.Button(new Rect(box.xMax - 158, box.yMax - 38, 150, 28), Loc.T("No"))) st.CancelBuy();
+        }
+
+        // Gift: a name, then the confirmation box (it says who gets it); the server checks the character and the price again
+        void GiftBox(ChaosApp app, StoreState st, Rect inner)
+        {
+            var o = giftOffer;
+            var box = new Rect(inner.x + inner.width / 2 - 180, inner.y + 140, 360, 150);
+            ChaosApp.Fill(new Rect(box.x - 2, box.y - 2, box.width + 4, box.height + 4), new Color(0.5f, 0.4f, 0.2f, 1f));
+            ChaosApp.Fill(box, new Color(0.06f, 0.05f, 0.07f, 1f));
+            var ms = new GUIStyle(app.SmallStyle) { wordWrap = true };
+            GUI.Label(new Rect(box.x + 8, box.y + 6, box.width - 16, 50),
+                Loc.T("Buy {0} ({1} Chaos Coins) for another character. It gets it at once, or at its next login.", o.Title, ((long)o.Cost).ToString("N0", CultureInfo.InvariantCulture)), ms);
+            GUI.SetNextControlName("storeGift");
+            giftName = GUI.TextField(new Rect(box.x + 8, box.y + 62, box.width - 16, 24), giftName, 30);
+            if (GUI.GetNameOfFocusedControl() == "storeGift") app.MarkTextEditing();
+            GUI.enabled = giftName.Trim().Length > 0;
+            if (GUI.Button(new Rect(box.x + 8, box.yMax - 38, 150, 28), Loc.T("Gift"))) { if (st.AskGift(o, giftName)) giftOffer = null; }
+            GUI.enabled = true;
+            if (GUI.Button(new Rect(box.xMax - 158, box.yMax - 38, 150, 28), Loc.T("Cancel"))) giftOffer = null;
         }
 
         void MessageBox(ChaosApp app, Rect inner)

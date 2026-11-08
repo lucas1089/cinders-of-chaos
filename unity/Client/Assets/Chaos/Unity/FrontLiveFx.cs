@@ -226,6 +226,7 @@ namespace Chaos.Client
                 world.Fx.Enabled = true;
                 director.Clear();
             }
+            director.Scatter.Settings = ScatterPrefs.Current;
             director.Update(Time.unscaledTime);
             FxEvent e;
             while (world.Fx.TryDequeue(out e)) director.Feed(world, e);

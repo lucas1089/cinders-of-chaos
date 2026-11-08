@@ -6,8 +6,9 @@
 //   server -> client  settings {s, unlocked, presets = [{key, name, desc}], open, snd, counts}
 //                     kill {k, m (monster), items = [{n, id, c, r, u, o, g, x, nm, left}], hits, counts}   update {k, left = [..]}
 //                     decay {k}   msg {text}   counts {session, total}   peek {cid, items}   beam {..}
-// The loot channel is the list of kills with their items; a click on an item takes it (Shift: one). Not ported: peek (rarity frames of the
-// open bags), beams, rule sounds (the sound settings are kept and sent back untouched).
+// The loot channel is the list of kills with their items; a click on an item takes it (Shift: one). Peek (client -> server {cid}) gives the
+// rarity rows of an open bag: LootPeek, drawn as glow, frame and dim on the container slots. Not ported: beams, rule sounds (the sound
+// settings are kept and sent back untouched).
 // Tests: Core.Tests/HelperTests.cs (mirrors lootfilter_test.lua).
 using System;
 using System.Collections.Generic;
@@ -208,6 +209,158 @@ namespace Chaos.Core
         }
     }
 
+    /// <summary>The rows peek gave for one open container: index (the server's slot index) to row.</summary>
+    public sealed class PeekSet
+    {
+        public bool Corpse;
+        public readonly Dictionary<int, LootInfo> Items = new Dictionary<int, LootInfo>();
+    }
+
+    /// <summary>How a container slot is decorated by the loot filter (lootfilter.lua decorate).</summary>
+    public struct PeekDecor
+    {
+        /// <summary>"highlight", "normal" or "dim".</summary>
+        public string State;
+        /// <summary>The rarity colour, null when the row has none.</summary>
+        public string Color;
+        public bool Glow, Soft, Dim;
+    }
+
+    public static class LootPeek
+    {
+        public const double DelaySeconds = 0.06;
+
+        /// <summary>A row belongs to the item in the slot: the same client id and, with item attributes, the same rarity and unique flag.</summary>
+        public static bool RowFits(LootInfo row, Item item, bool hasRow, bool attrsOn)
+        {
+            if (!hasRow || item == null || row.Id != item.Id) return false;
+            if (!attrsOn) return true;
+            if (LootFilterRules.Canon(row.R) != ItemRarity.Of(item)) return false;
+            return row.U == ItemRarity.IsUnique(item);
+        }
+
+        /// <summary>An orb glows as a thin ring only, no frame on top.</summary>
+        public static bool IsSoft(LootInfo info) => info.O && !info.U && LootFilterRules.Color(info) == LootFilterRules.OrbColor;
+
+        public static PeekDecor Decorate(LootInfo row, bool corpse, LootFilterSettings s)
+        {
+            string state = LootFilterRules.Classify(row, s);
+            string color = LootFilterRules.Color(row);
+            bool lit = color != null && state == "highlight";
+            bool soft = IsSoft(row);
+            return new PeekDecor { State = state, Color = color, Glow = lit && !soft, Soft = lit && soft, Dim = corpse && state == "dim" };
+        }
+
+        /// <summary>The signature of a container's contents; peek is asked again when it changes.</summary>
+        public static string Signature(Container c)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append(c.Id).Append(':').Append(c.ItemId).Append(':').Append(c.FirstIndex).Append(':').Append(c.Items.Count);
+            foreach (var it in c.Items) sb.Append(',').Append(it != null ? it.Id : 0).Append('x').Append(it != null ? it.Count : 0);
+            return sb.ToString();
+        }
+    }
+
+    /// <summary>The rules the server counts (lootfilter_core.lua F.RULES) and the sounds it can pick (F.SOUNDS).</summary>
+    public static class LootRules
+    {
+        public struct Rule { public string Key, Name, Color; }
+        public static readonly Rule[] All =
+        {
+            new Rule { Key = "unique", Name = "Uniques", Color = "#e07b24" },
+            new Rule { Key = "power", Name = "Legendary powers", Color = "#ffd040" },
+            new Rule { Key = "rarity", Name = "Rarity glow", Color = "#a35cf0" },
+            new Rule { Key = "tier", Name = "Modifier tier", Color = "#4a90ff" },
+            new Rule { Key = "orb", Name = "Orbs", Color = "#4fd8d0" },
+        };
+        public static readonly string[] Sounds = { "Chime", "Bell", "Ping", "Drum", "Fanfare" };
+
+        public static string SoundName(int id) => id >= 1 && id <= Sounds.Length ? Loc.T(Sounds[id - 1]) : Loc.T("No sound");
+
+        /// <summary>1234567 to "1,234,567".</summary>
+        public static string Number(long n) => n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+
+        public static Dictionary<string, int> Counts(object c)
+        {
+            var o = new Dictionary<string, int>();
+            foreach (var r in All) { double v = Json.Number(c, r.Key); o[r.Key] = v > 0 ? (int)Math.Floor(v) : 0; }
+            return o;
+        }
+    }
+
+    /// <summary>The sound settings the server keeps per character (snd): a sound id per rule, volume, mute, show in the hunt tracker.</summary>
+    public sealed class LootSoundSettings
+    {
+        public readonly Dictionary<string, int> Rules = new Dictionary<string, int> { { "unique", 5 }, { "power", 1 }, { "rarity", 0 }, { "tier", 0 }, { "orb", 0 } };
+        public int Volume = 70;
+        public bool Mute, Hunt = true;
+
+        public LootSoundSettings Copy()
+        {
+            var c = new LootSoundSettings { Volume = Volume, Mute = Mute, Hunt = Hunt };
+            foreach (var r in LootRules.All) c.Rules[r.Key] = Rules[r.Key];
+            return c;
+        }
+
+        public static LootSoundSettings Normalize(object t)
+        {
+            var o = new LootSoundSettings();
+            if (!(t is Dictionary<string, object>)) return o;
+            o.Mute = Json.Bool(t, "mute");
+            o.Hunt = !(Json.Get(t, "hunt") is bool h && !h);
+            var rules = Json.Get(t, "rules");
+            foreach (var r in LootRules.All)
+            {
+                if (!(Json.Get(rules, r.Key) is double v) || double.IsNaN(v)) continue;
+                int id = (int)Math.Floor(v);
+                o.Rules[r.Key] = id >= 0 && id <= LootRules.Sounds.Length ? id : 0;
+            }
+            if (Json.Get(t, "vol") is double vol && !double.IsNaN(vol)) o.Volume = Math.Max(0, Math.Min(100, (int)Math.Floor(vol)));
+            return o;
+        }
+
+        public Dictionary<string, object> ToDict()
+        {
+            var rules = new Dictionary<string, object>();
+            foreach (var r in LootRules.All) rules[r.Key] = Rules[r.Key];
+            return new Dictionary<string, object> { { "rules", rules }, { "vol", Volume }, { "mute", Mute }, { "hunt", Hunt } };
+        }
+
+        public bool Same(LootSoundSettings b)
+        {
+            if (Volume != b.Volume || Mute != b.Mute || Hunt != b.Hunt) return false;
+            foreach (var r in LootRules.All) if (Rules[r.Key] != b.Rules[r.Key]) return false;
+            return true;
+        }
+    }
+
+    /// <summary>The preview rows of the Filter tab: sample items and what the settings do to them.</summary>
+    public static class LootPreview
+    {
+        public struct Entry { public string Text, State, Color; }
+
+        public static List<Entry> Build(LootFilterSettings s)
+        {
+            var rows = new List<LootInfo>();
+            rows.Add(new LootInfo { G = "equipment", Nm = Loc.T("Gear without rarity") });
+            foreach (int id in LootFilterRules.RarityIds) rows.Add(new LootInfo { G = "equipment", R = id, Nm = Loc.T("{0} gear", LootFilterRules.RarityName(id)) });
+            if (s.Tier > 0) rows.Add(new LootInfo { G = "equipment", R = 1, T = s.Tier, Nm = Loc.T("Common gear with a T{0} modifier", s.Tier) });
+            rows.Add(new LootInfo { G = "equipment", U = true, Nm = Loc.T("A unique") });
+            rows.Add(new LootInfo { G = "currency", O = true, Nm = Loc.T("An orb") });
+            rows.Add(new LootInfo { G = "currency", Nm = Loc.T("Coins") });
+            rows.Add(new LootInfo { G = "supplies", Nm = Loc.T("A potion") });
+            rows.Add(new LootInfo { G = "other", Nm = Loc.T("Other loot") });
+            var o = new List<Entry>();
+            foreach (var r in rows)
+            {
+                string st = LootFilterRules.Classify(r, s);
+                string word = st == "highlight" ? Loc.T("glows") : st == "dim" ? Loc.T("dimmed") : Loc.T("shown");
+                o.Add(new Entry { Text = r.Nm + ": " + word, State = st, Color = LootFilterRules.Color(r) });
+            }
+            return o;
+        }
+    }
+
     public sealed class LootKill
     {
         public int K;
@@ -233,6 +386,30 @@ namespace Chaos.Core
         public string Message = "";
         public double MessageAt = -1e9;
         public event Action Changed = delegate { };
+        /// <summary>The server's rule counters (counts {session, total}) and the sound settings (snd).</summary>
+        public Dictionary<string, int> CountSession = LootRules.Counts(null), CountTotal = LootRules.Counts(null);
+        public LootSoundSettings Sound = new LootSoundSettings();
+        /// <summary>Kills since the login that matched a rule: the last kill's hits, for a sound when one plays.</summary>
+        public Dictionary<string, int> LastHits = new Dictionary<string, int>();
+        public void SetSound(LootSoundSettings s) { Sound = s.Copy(); ext.Send(Opcode, "sound", new Dictionary<string, object> { { "s", s.ToDict() } }); Changed(); }
+        /// <summary>Reset the counters: scope session, total or all (one rule).</summary>
+        public void ResetCounts(string scope, string rule = null)
+        {
+            var d = new Dictionary<string, object> { { "scope", scope } };
+            if (rule != null) d["rule"] = rule;
+            ext.Send(Opcode, "reset", d);
+        }
+        void ReadCounts(object c)
+        {
+            if (!(c is Dictionary<string, object>)) return;
+            CountSession = LootRules.Counts(Json.Get(c, "session")); CountTotal = LootRules.Counts(Json.Get(c, "total"));
+        }
+        /// <summary>The peek rows of the open containers, by container id.</summary>
+        public readonly Dictionary<int, PeekSet> Peeks = new Dictionary<int, PeekSet>();
+        /// <summary>Asks for the rarity rows of an open container.</summary>
+        public void RequestPeek(int cid) { ext.Send(Opcode, "peek", new Dictionary<string, object> { { "cid", cid } }); }
+        public void ForgetPeek(int cid) { Peeks.Remove(cid); }
+        public PeekSet PeekOf(int cid) { PeekSet p; return Peeks.TryGetValue(cid, out p) ? p : null; }
         /// <summary>The server answered "open": show the settings.</summary>
         public event Action ShowRequested = delegate { };
 
@@ -266,6 +443,8 @@ namespace Chaos.Core
                     Unlocked = Json.Bool(d, "unlocked");
                     Presets.Clear();
                     foreach (object p in Json.List(d, "presets")) Presets.Add(new KeyValuePair<string, string>(Json.Text(p, "key"), Json.Text(p, "name")));
+                    if (Json.Get(d, "snd") is Dictionary<string, object>) Sound = LootSoundSettings.Normalize(Json.Get(d, "snd"));
+                    ReadCounts(Json.Get(d, "counts"));
                     Loaded = true;
                     Changed();
                     if (Json.Bool(d, "open")) ShowRequested();
@@ -282,6 +461,8 @@ namespace Chaos.Core
                         if (info.N == 0) info.N = kill.Items.Count + 1;
                         kill.Items.Add(info);
                     }
+                    ReadCounts(Json.Get(d, "counts"));
+                    LastHits = Json.Get(d, "hits") is Dictionary<string, object> ? LootRules.Counts(Json.Get(d, "hits")) : new Dictionary<string, int>();
                     Kills.Insert(0, kill);
                     while (Kills.Count > MaxKills) Kills.RemoveAt(Kills.Count - 1);
                     Changed();
@@ -307,6 +488,21 @@ namespace Chaos.Core
                     if (kill != null) { kill.Decayed = true; Changed(); }
                     return;
                 }
+                case "counts": ReadCounts(d); Changed(); return;
+                case "peek":
+                {
+                    int cid = Json.Int(d, "cid", -1);
+                    if (cid < 0) return;
+                    var set = new PeekSet { Corpse = Json.Bool(d, "corpse") };
+                    foreach (object row in Json.List(d, "items"))
+                    {
+                        int idx = Json.Int(row, "i", -1);
+                        if (idx >= 0) set.Items[idx] = LootInfo.From(row);
+                    }
+                    Peeks[cid] = set;
+                    Changed();
+                    return;
+                }
                 case "msg":
                     Message = Json.Text(d, "text", ""); MessageAt = Clock();
                     Changed();
@@ -314,6 +510,6 @@ namespace Chaos.Core
             }
         }
 
-        public void Reset() { Kills.Clear(); Loaded = false; Message = ""; Presets.Clear(); Settings = new LootFilterSettings(); }
+        public void Reset() { Peeks.Clear(); CountSession = LootRules.Counts(null); CountTotal = LootRules.Counts(null); Sound = new LootSoundSettings(); LastHits.Clear(); Kills.Clear(); Loaded = false; Message = ""; Presets.Clear(); Settings = new LootFilterSettings(); }
     }
 }

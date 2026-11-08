@@ -10,7 +10,7 @@
 //                     Toggle {remote, open} | access {canWithdraw | canDeposit} | StowReport {stowed, kept, reasons} | StashAll {status}
 //                     addCategorys {list = [{name, value}]} | forceBlockList | addBlockItem | found
 // Withdrawing works only in a protection zone or a hideout, depositing in town or with the remote unlock; the server checks both again.
-// Not in Unity yet: the "never stash" block list and Find my item.
+// The never-stash list and Find my item are in Core/StashFind.cs (Blocks, Finder).
 using System;
 using System.Collections.Generic;
 
@@ -49,12 +49,33 @@ namespace Chaos.Core
         public string StowReport = "";
         public bool Stowing;
         public Action Changed = delegate { };
+        /// <summary>The never-stash list (item types the Stow Everything and deposits keep out), from forceBlockList and addBlockItem.</summary>
+        public readonly List<StashBlock> Blocks = new List<StashBlock>();
+        /// <summary>Find my item: one search over equipment, bags, purse, inbox and stash.</summary>
+        public readonly StashFinder Finder;
 
         public StashState(ExtOpcodes e)
         {
             ext = e;
+            Finder = new StashFinder(SendMake);
+            Finder.Changed = () => Changed();
             ext.On(Opcode, OnMessage);
         }
+
+        /// <summary>Puts the type of the item at a position on the never-stash list, or takes it off when it is on (the server toggles).</summary>
+        public void ToggleBlock(Pos pos, int stackPos)
+        {
+            var p = new Dictionary<string, object> { { "x", pos.X }, { "y", pos.Y }, { "z", pos.Z }, { "stackpos", stackPos } };
+            SendMake("ChangeStash", new Dictionary<string, object> { { "Pos", p } });
+        }
+
+        /// <summary>Takes an item type off the never-stash list.</summary>
+        public void Unblock(int itemId)
+        {
+            SendMake("ChangeStash", new Dictionary<string, object> { { "RemoveUI", true }, { "itemId", itemId } });
+        }
+
+        static StashBlock BlockOf(object e) => new StashBlock { Sprite = Json.Int(e, "sprite"), Name = Json.Text(e, "name"), Id = Json.Int(e, "id") };
 
         void SendMake(string make, Dictionary<string, object> extra = null)
         {
@@ -155,6 +176,19 @@ namespace Chaos.Core
                     break;
                 case "StowReport": StowReport = ReportText(d); break;
                 case "StashAll": Stowing = Json.Bool(d, "status"); break;
+                case "found": Finder.OnFound(d); break;
+                case "forceBlockList":
+                    Blocks.Clear();
+                    foreach (object e in Json.List(d, "items")) Blocks.Add(BlockOf(e));
+                    break;
+                case "addBlockItem":
+                {
+                    object item = Json.Get(d, "itemData");
+                    int id = Json.Int(item, "id");
+                    Blocks.RemoveAll(b => b.Id == id);
+                    if (Json.Bool(d, "status")) Blocks.Add(BlockOf(item));
+                    break;
+                }
             }
             Changed();
         }
@@ -230,6 +264,7 @@ namespace Chaos.Core
             HasTabs = ItemsLoaded = Visible = Opening = false;
             CanWithdraw = CanDeposit = false;
             SelectedTab = 0; StowReport = ""; Stowing = false;
+            Blocks.Clear();
         }
     }
 }

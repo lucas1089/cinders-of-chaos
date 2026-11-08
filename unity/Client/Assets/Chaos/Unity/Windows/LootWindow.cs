@@ -41,6 +41,9 @@ namespace Chaos.Client
                 modelsFor = s;
                 filter = new LootFilterModel(s.Ext) { Clock = () => s.Now / 1000.0 };
                 ground = new GroundLabelsModel(s.Ext) { Clock = () => s.Now / 1000.0 };
+                ground.MoveToBackpack = (from, id, stack, count) => s.MoveItem(from, id, stack, GameSession.InventoryPos(GroundPick.BackpackSlot), count);
+                ground.Notice = text => s.Talks.AddLocal(text);
+                ground.HasBackpack = () => s.Parser.Inventory.Length > GroundPick.BackpackSlot && s.Parser.Inventory[GroundPick.BackpackSlot] != null;
                 filter.ShowRequested += () => { Open = true; if (tab == 0) tab = 1; };
                 synced = false; loadedFor = null;
             }
@@ -93,13 +96,60 @@ namespace Chaos.Client
             if (filter == null) return;
             Styles(app);
             float x = inner.x + 4, w = inner.width - 8, y = inner.y + 2;
-            int t = GUI.Toolbar(new Rect(x, y, w, 24), tab, new[] { Loc.T("Loot"), Loc.T("Filter"), Loc.T("Labels") });
+            int t = GUI.Toolbar(new Rect(x, y, w, 24), tab, new[] { Loc.T("Loot"), Loc.T("Filter"), Loc.T("Labels"), Loc.T("Rules") });
             if (t != tab) { tab = t; scroll = Vector2.zero; if (t != 0) filter.Open(); }
             y += 30;
             var area = new Rect(x, y, w, inner.yMax - y);
             if (tab == 0) DrawLoot(app, area);
-            else if (tab == 1) DrawFilter(area);
-            else DrawLabels(area);
+            else if (tab == 2) DrawLabels(area);
+            else
+            {
+                // the Filter and Rules tabs are longer than the window: one scroll view
+                scroll = GUI.BeginScrollView(area, scroll, new Rect(0, 0, area.width - 18, tab == 1 ? 760 : 560));
+                var inside = new Rect(0, 0, area.width - 18, 760);
+                if (tab == 1) DrawFilter(inside); else DrawRules(inside);
+                GUI.EndScrollView();
+            }
+        }
+
+        // ---- rule counters and sounds ----
+        void DrawRules(Rect r)
+        {
+            if (!filter.Loaded) { GUI.Label(r, Loc.T("Loading..."), hint); return; }
+            var snd = filter.Sound.Copy();
+            float x = r.x, w = r.width, y = r.y;
+            GUI.Label(new Rect(x, y, w, 30), Loc.T("What your kills dropped, by filter rule, and the sound each plays."), hint);
+            y += 34;
+            foreach (var rule in LootRules.All)
+            {
+                var col = Hex(rule.Color);
+                var tint = GUI.contentColor;
+                GUI.contentColor = col;
+                GUI.Label(new Rect(x, y, w, 18), Loc.T(rule.Name), small);
+                GUI.contentColor = tint;
+                y += 18;
+                GUI.Label(new Rect(x + 8, y, w - 70, 18), Loc.T("Session {0}   Total {1}", LootRules.Number(filter.CountSession[rule.Key]), LootRules.Number(filter.CountTotal[rule.Key])), hint);
+                if (GUI.Button(new Rect(x + w - 60, y - 2, 60, 20), Loc.T("Reset"))) filter.ResetCounts("all", rule.Key);
+                y += 20;
+                int id = snd.Rules[rule.Key];
+                if (GUI.Button(new Rect(x + 8, y, 24, 20), "-")) id = id <= 0 ? LootRules.Sounds.Length : id - 1;
+                GUI.Label(new Rect(x + 34, y + 1, w - 80, 18), LootRules.SoundName(id), new GUIStyle(small) { alignment = TextAnchor.UpperCenter });
+                if (GUI.Button(new Rect(x + w - 60, y, 24, 20), "+")) id = id >= LootRules.Sounds.Length ? 0 : id + 1;
+                snd.Rules[rule.Key] = id;
+                y += 26;
+            }
+            GUI.Label(new Rect(x, y + 2, 70, 20), Loc.T("Volume"), small);
+            if (GUI.Button(new Rect(x + 74, y, 24, 20), "-")) snd.Volume = Mathf.Max(0, snd.Volume - 10);
+            GUI.Label(new Rect(x + 100, y + 1, 50, 18), snd.Volume + "%", new GUIStyle(small) { alignment = TextAnchor.UpperCenter });
+            if (GUI.Button(new Rect(x + 152, y, 24, 20), "+")) snd.Volume = Mathf.Min(100, snd.Volume + 10);
+            y += 26;
+            snd.Mute = GUI.Toggle(new Rect(x, y, w, 22), snd.Mute, Loc.T("Mute loot sounds")); y += 24;
+            snd.Hunt = GUI.Toggle(new Rect(x, y, w, 22), snd.Hunt, Loc.T("Show the counters in the Hunt Tracker")); y += 28;
+            if (GUI.Button(new Rect(x, y, w / 2 - 2, 22), Loc.T("Reset session"))) filter.ResetCounts("session");
+            if (GUI.Button(new Rect(x + w / 2 + 2, y, w / 2 - 2, 22), Loc.T("Reset totals"))) filter.ResetCounts("total");
+            y += 28;
+            GUI.Label(new Rect(x, y, w, 30), Loc.T("Sounds play in the main client; this client keeps your choice."), hint);
+            if (!snd.Same(filter.Sound)) filter.SetSound(snd);
         }
 
         // ---- the loot channel ----
@@ -189,7 +239,28 @@ namespace Chaos.Client
             }
             GUI.Label(new Rect(x, y, w, 30), Loc.T("Unchecked categories are dimmed (still lootable). Uniques and orbs always glow."), hint);
             y += 34;
-            s.Notify = GUI.Toggle(new Rect(x, y, w, 22), s.Notify, Loc.T("Rare-drop message"));
+            s.Notify = GUI.Toggle(new Rect(x, y, w, 22), s.Notify, Loc.T("Rare-drop message")); y += 24;
+            s.Icons = GUI.Toggle(new Rect(x, y, w, 22), s.Icons, Loc.T("Loot icons in the chat")); y += 28;
+            // Rarity Autoloot (a store unlock): gear below the first stays in the corpse, gear from the second on is always taken
+            GUI.Label(new Rect(x, y, w, 18), Loc.T("Rarity Autoloot (store unlock)"), small); y += 20;
+            bool open = filter.Unlocked;
+            GUI.enabled = open;
+            GUI.Label(new Rect(x, y + 2, w - 130, 20), Loc.T("Leave gear below"), small);
+            s.LootMin = RarityStepper(new Rect(x + w - 126, y, 126, 22), s.LootMin); y += 26;
+            GUI.Label(new Rect(x, y + 2, w - 130, 20), Loc.T("Always take gear from"), small);
+            s.LootFrom = RarityStepper(new Rect(x + w - 126, y, 126, 22), s.LootFrom); y += 26;
+            GUI.enabled = true;
+            GUI.Label(new Rect(x, y, w, 32), open ? Loc.T("Unlocked. Uniques and orbs are never held back.") : Loc.T("Locked: buy \"Rarity Autoloot\" in the Store (Convenience)."), hint);
+            y += 36;
+            GUI.Label(new Rect(x, y, w, 18), Loc.T("Preview"), small); y += 20;
+            foreach (var pe in LootPreview.Build(s))
+            {
+                var tint = GUI.contentColor;
+                GUI.contentColor = pe.Color != null ? Hex(pe.Color) : new Color(0.85f, 0.81f, 0.75f);
+                GUI.Label(new Rect(x + 6, y, w - 6, 18), pe.Text, small);
+                GUI.contentColor = tint;
+                y += 18;
+            }
             if (!SameSettings(s, filter.Settings)) filter.Set(s);
         }
 

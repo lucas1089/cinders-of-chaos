@@ -23,7 +23,49 @@ namespace Chaos.Core
         public int Index;   // 1-based, as the server's pages
         public string Name = "", Type = "", Parent = "";
         public int Item, Count, Pages = 1, Size = -1, EndsIn = -1;
+        /// <summary>When a rotating category ends (the store clock's seconds), -1 for one that does not rotate.</summary>
+        public double EndsAt = -1;
         public Outfit Outfit;
+    }
+
+    /// <summary>The weekly rotation's countdown on its category ("This week (3d 04h)"), a port of game_shop/rotation.lua.</summary>
+    public static class StoreRotation
+    {
+        /// <summary>Seconds to "3d 04h", "5h 07m", "12m" (never negative).</summary>
+        public static string Left(double seconds)
+        {
+            long s = (long)Math.Max(0, Math.Floor(seconds));
+            long d = s / 86400, h = s % 86400 / 3600, m = s % 3600 / 60;
+            if (d > 0) return d + "d " + h.ToString("00") + "h";
+            if (h > 0) return h + "h " + m.ToString("00") + "m";
+            return Math.Max(m, s > 0 ? 1 : 0) + "m";
+        }
+
+        public static string Label(string name, double endsAt, double now) => endsAt < 0 ? name : name + " (" + Left(endsAt - now) + ")";
+    }
+
+    /// <summary>The TRY ON button of an offer (game_shop/tryon.lua): the server plays a cosmetic's effect round the character for this player only.</summary>
+    public static class StoreTryOn
+    {
+        public const double Ms = 10000;
+
+        /// <summary>Seconds left (rounded up) of a try that ends at untilMs; 0 when over.</summary>
+        public static int SecondsLeft(double untilMs, double now)
+        {
+            double left = untilMs - now;
+            return left <= 0 ? 0 : (int)Math.Ceiling(left / 1000);
+        }
+
+        public static string Countdown(int left) => left > 0 ? left + "s" : null;
+
+        /// <summary>A chat colour or a loot label accent in the offer's preview: "#rrggbb" or "#rrggbbaa", else "".</summary>
+        public static string HexOrEmpty(string v, bool allowAlpha)
+        {
+            if (v == null || v.Length == 0 || v[0] != '#') return "";
+            if (v.Length != 7 && !(allowAlpha && v.Length == 9)) return "";
+            for (int i = 1; i < v.Length; i++) if (!Uri.IsHexDigit(v[i])) return "";
+            return v;
+        }
     }
 
     public sealed class StoreOffer
@@ -33,6 +75,9 @@ namespace Chaos.Core
         public Outfit Outfit;
         public double Cost, OldCost;
         public bool Gift, Owned;
+        /// <summary>preview.effect: the server can play the cosmetic round the character (the TRY ON button); Color tints the title, Accent sits behind it.</summary>
+        public bool PreviewEffect;
+        public string PreviewColor = "", PreviewAccent = "";
         public readonly List<string> Tags = new List<string>(), Path = new List<string>();
         public bool Buyable => Category > 0 && Page > 0 && Row > 0;
 
@@ -53,6 +98,13 @@ namespace Chaos.Core
                 Cost = Json.Number(e, "cost"), OldCost = Json.Number(e, "oldCost"), Gift = Json.Bool(e, "gift"), Owned = Json.Bool(e, "owned"),
                 Category = category, Page = page, Row = row,
             };
+            object pv = Json.Get(e, "preview");
+            if (pv is Dictionary<string, object>)
+            {
+                o.PreviewEffect = Json.Bool(pv, "effect");
+                o.PreviewColor = StoreTryOn.HexOrEmpty(Json.Text(pv, "color"), false);
+                o.PreviewAccent = StoreTryOn.HexOrEmpty(Json.Text(pv, "accent"), true);
+            }
             foreach (object t in Json.List(e, "tags")) if (t is string s) o.Tags.Add(s);
             foreach (object p in Json.List(e, "path")) if (p is string s) o.Path.Add(s);
             return o;
@@ -193,6 +245,10 @@ namespace Chaos.Core
         public string MessageTitle = "", MessageText = "";
         public bool Visible, Loaded;
         public StoreOffer ConfirmOffer;
+        /// <summary>The character a confirmed purchase is a gift for ("" for a purchase for oneself).</summary>
+        public string GiftTo = "";
+        /// <summary>The store clock in seconds (the rotation countdown counts from the time the list came).</summary>
+        public Func<double> Clock = () => 0;
         public Action Changed = delegate { };
         public int Messages;
         string pendingCategory = "";
@@ -279,7 +335,23 @@ namespace Chaos.Core
             return true;
         }
 
-        public void CancelBuy() { ConfirmOffer = null; }
+        public void CancelBuy() { ConfirmOffer = null; GiftTo = ""; }
+
+        /// <summary>The Gift click after the name: asks for the confirmation of a purchase for another character.</summary>
+        public bool AskGift(StoreOffer o, string name)
+        {
+            name = (name ?? "").Trim();
+            if (o == null || !o.Buyable || !o.Gift || name.Length == 0) return false;
+            ConfirmOffer = o; GiftTo = name;
+            return true;
+        }
+
+        /// <summary>The TRY ON click: the server plays the cosmetic round the character for this player only; nothing is bought.</summary>
+        public bool TryOn(StoreOffer o)
+        {
+            if (o == null || !o.Buyable || !o.PreviewEffect) return false;
+            return ext.Send(Opcode, "preview", new Dictionary<string, object> { { "category", o.Category }, { "page", o.Page }, { "offer", o.Row } });
+        }
 
         public static Dictionary<string, object> BuyData(StoreOffer o, string giftTo)
         {
@@ -293,7 +365,8 @@ namespace Chaos.Core
         public bool ConfirmBuy(string giftTo = null)
         {
             var o = ConfirmOffer;
-            ConfirmOffer = null;
+            if (string.IsNullOrEmpty(giftTo) && GiftTo.Length > 0) giftTo = GiftTo;
+            ConfirmOffer = null; GiftTo = "";
             if (o == null || !o.Buyable) return false;
             return ext.Send(Opcode, "buy", BuyData(o, giftTo));
         }
@@ -340,7 +413,7 @@ namespace Chaos.Core
                 {
                     Index = i, Name = Json.Text(e, "name"), Type = Json.Text(e, "type"), Parent = Json.Text(e, "parent"), Item = Json.Int(e, "item"),
                     Count = Json.Int(e, "count", 1), Pages = Math.Max(1, Json.Int(e, "pages", 1)), Size = Json.Get(e, "size") is double sz ? (int)sz : -1,
-                    EndsIn = Json.Get(e, "endsIn") is double en ? (int)en : -1, Outfit = StoreOffer.ReadOutfit(Json.Get(e, "outfit")),
+                    EndsIn = Json.Get(e, "endsIn") is double en ? (int)en : -1, EndsAt = Json.Get(e, "endsIn") is double en2 ? Clock() + en2 : -1, Outfit = StoreOffer.ReadOutfit(Json.Get(e, "outfit")),
                 };
                 Categories.Add(c);
             }
@@ -392,7 +465,7 @@ namespace Chaos.Core
         public void Clear()
         {
             Categories.Clear(); GroupSizes.Clear(); Tree = new List<StoreNode>(); Offers.Clear(); History.Clear();
-            Selected = 0; Page = 1; Expanded = ""; Searching = ""; BrowsingHistory = false; Coins = -1; Visible = Loaded = false; ConfirmOffer = null;
+            Selected = 0; Page = 1; Expanded = ""; Searching = ""; BrowsingHistory = false; Coins = -1; Visible = Loaded = false; ConfirmOffer = null; GiftTo = "";
             MessageTitle = MessageText = ""; pendingCategory = "";
         }
     }

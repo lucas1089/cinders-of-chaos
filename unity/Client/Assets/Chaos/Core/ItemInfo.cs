@@ -391,9 +391,72 @@ namespace Chaos.Core
                 foreach (string line in WrapText(Json.Text(tip, "collects"), Wrap)) o.Add(line, Dim);
             string charges = ChargesText(Json.Get(tip, "charges"));
             if (charges != null) o.Add(charges, Text, true);
+            // where it comes from (server itemfinder.lua F.brief): the first sources, the expected effort, a token price
+            var src = SourceLines(Json.Get(tip, "src"));
+            for (int i = 0; i < src.Count; i++) o.Add(src[i].Text, src[i].Color, i == 0);
             if (Has(tip, "weight"))
-                o.Add(Loc.T("Weight {0} oz", Trim(Num(tip, "weight"))), Dim, charges == null && !locked && Json.Text(tip, "store").Length == 0);
+                o.Add(Loc.T("Weight {0} oz", Trim(Num(tip, "weight"))), Dim, src.Count == 0 && !locked && Json.Text(tip, "store").Length == 0);
             return o.Lines;
+        }
+
+        /// <summary>1 / p as a player reads it (1-20 exact, then 5s, 10s, 50s, 100s); 0 when p is not a chance (goals_core.lua K.oneIn).</summary>
+        public static int OneIn(double p)
+        {
+            if (!(p > 0)) return 0;
+            double n = 1 / p;
+            if (n < 1.5) return 1;
+            double step = n < 20 ? 1 : n < 200 ? 5 : n < 1000 ? 10 : n < 10000 ? 50 : 100;
+            return (int)Math.Max(1, Math.Floor(n / step + 0.5) * step);
+        }
+
+        /// <summary>The sources block of a tooltip: src = {s = [{k, n, v}], e = {p, w, m}, t = token price, u = {n = [names], m = more}} (tooltiplogic.lua sourceLines).</summary>
+        public static List<TipLine> SourceLines(object src)
+        {
+            var rows = new List<TipLine>();
+            if (!(src is Dictionary<string, object>)) return rows;
+            var parts = new List<string>();
+            var seen = new HashSet<string>();
+            var list = Json.List(src, "s");
+            foreach (object s in list)
+            {
+                string n = Json.Text(s, "n");
+                if (n.Length == 0 || !seen.Add(n)) continue;
+                string v = Json.Get(s, "v") is double dv ? Trim(dv) : Json.Text(s, "v");
+                parts.Add(v.Length > 0 ? n + " (" + v + ")" : n);
+            }
+            if (parts.Count > 0)
+            {
+                string k = Json.Text(list[0], "k");
+                bool drop = k == "monster" || k == "drop";
+                string text = drop ? Loc.T("Drops from: {0}", string.Join(", ", parts)) : Loc.T("Sources: {0}", string.Join(", ", parts));
+                foreach (string line in WrapText(text, Wrap)) rows.Add(new TipLine { Text = line, Color = Dim });
+            }
+            string effort = null;
+            object e = Json.Get(src, "e");
+            int one = e is Dictionary<string, object> ? OneIn(Json.Number(e, "p")) : 0;
+            if (one > 0)
+            {
+                string count = Int(one), w = Json.Text(e, "w"), m = Json.Text(e, "m");
+                if (w == "legendary") effort = Loc.T("~1 in {0} legendary kills", count);
+                else if (w == "boss") effort = Loc.T("~1 in {0} boss kills", count);
+                else if (m.Length > 0) effort = Loc.T("~1 in {0} kills of {1}", count, m);
+                else effort = Loc.T("~1 in {0} kills", count);
+            }
+            double price = Json.Number(src, "t");
+            if (effort != null && price > 0) effort += Loc.T(", or {0} Conquest Tokens", Int(price));
+            else if (price > 0) effort = Loc.T("Conquest vendor: {0} tokens", Int(price));
+            if (effort != null) foreach (string line in WrapText(effort, Wrap)) rows.Add(new TipLine { Text = line, Color = Gold });
+            object u = Json.Get(src, "u");
+            var names = new List<string>();
+            foreach (object n in Json.List(u, "n")) if (n is string ns && ns.Length > 0) names.Add(ns);
+            if (names.Count > 0)
+            {
+                string joined = string.Join(", ", names);
+                int more = (int)Math.Floor(Json.Number(u, "m"));
+                if (more > 0) joined = Loc.T("{0} +{1} more", joined, more);
+                foreach (string line in WrapText(Loc.T("Used in: {0}", joined), Wrap)) rows.Add(new TipLine { Text = line, Color = Dim });
+            }
+            return rows;
         }
     }
 
@@ -462,6 +525,24 @@ namespace Chaos.Core
             if (hoverKey != d.Key) { hoverKey = d.Key; hoverSince = now; }
             if (now - hoverSince < AskDelayMs) return null;
             pending.TryGetValue(d.PosKey, out var p);
+            if (p != null && p.Key == d.Key && now - p.At <= PendingTimeoutMs) return null;
+            Ask(d, now, p != null && p.Key == d.Key ? p.Tries : 0);
+            return null;
+        }
+
+        /// <summary>The cached tooltip of another item (a worn one for the Ctrl compare): asked at once, without the hover delay and without
+        /// touching the hovered key. waiting is true while an answer is on its way.</summary>
+        public object Quick(TipIdent d, double now, out bool waiting)
+        {
+            waiting = false;
+            if (d == null || !Askable(new Pos(d.X, d.Y, d.Z))) return null;
+            if (cache.TryGetValue(d.Key, out var e))
+            {
+                if (e.Expires > 0 && now > e.Expires) Drop(d.Key);
+                else return e.Tip;
+            }
+            pending.TryGetValue(d.PosKey, out var p);
+            waiting = true;
             if (p != null && p.Key == d.Key && now - p.At <= PendingTimeoutMs) return null;
             Ask(d, now, p != null && p.Key == d.Key ? p.Tries : 0);
             return null;
