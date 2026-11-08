@@ -259,9 +259,9 @@ namespace Chaos.Core.Tests
         static void Fight(Action<bool, string> check)
         {
             var m = new FightModes();
-            check(m.Packet().SequenceEqual(new byte[] { 0xA0, 2, 0, 0, 0 }), "fight: balanced, stand, secure on");
+            check(m.Packet().SequenceEqual(new byte[] { 0xA0, 2, 0, 1, 0 }), "fight: balanced, stand, secure on (the secure byte is 1 when on: Player::secureMode, found live in phase 22)");
             m = new FightModes { Fight = FightModes.Offensive, Chase = true, Secure = false };
-            check(m.Packet().SequenceEqual(new byte[] { 0xA0, 1, 1, 1, 0 }), "fight: offensive, chase, secure off");
+            check(m.Packet().SequenceEqual(new byte[] { 0xA0, 1, 1, 0, 0 }), "fight: offensive, chase, secure off (byte 0)");
             check(new FightModes { Fight = FightModes.Defensive }.Packet()[1] == 3, "fight: defensive is 3");
             check(m.Encode() == "1,1,0", "fight: saved form");
             var d = FightModes.Decode("3,1,0");
