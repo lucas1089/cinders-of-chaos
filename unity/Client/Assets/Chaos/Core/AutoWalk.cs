@@ -48,11 +48,11 @@ namespace Chaos.Core
         public static readonly Dir[] All = { Dir.North, Dir.East, Dir.South, Dir.West, Dir.NorthEast, Dir.SouthEast, Dir.SouthWest, Dir.NorthWest };
     }
 
-    /// <summary>A* on one floor over the tiles the client knows. A diagonal step takes three times as long on the server, so it costs 30 against 10: the path
-    /// goes straight where it can and cuts a corner only when it must.</summary>
+    /// <summary>A* on one floor over the tiles the client knows. A diagonal step takes WalkTiming.DiagonalNum / DiagonalDen of a straight one (about 1.4), so it costs 14 against 10: the path
+    /// cuts a corner where that is shorter and goes straight otherwise.</summary>
     public static class PathFinder
     {
-        public const int Straight = 10, Diagonal = 30;
+        public const int Straight = 10, Diagonal = (int)(Straight * WalkTiming.DiagonalNum / WalkTiming.DiagonalDen);
         public const int MaxNodes = 6000, MaxRadius = 40;
 
         sealed class Node { public Pos P; public int G, F; public Node From; public Dir Via; public bool Closed; }

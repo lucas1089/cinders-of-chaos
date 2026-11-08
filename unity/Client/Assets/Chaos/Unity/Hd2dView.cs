@@ -160,13 +160,7 @@ namespace Chaos.Client
 
         float[] Drawn(Creature c, out float progress)
         {
-            progress = 1;
-            float x = c.Position.X, y = c.Position.Y;
-            if (c.WalkStart >= 0 && c.WalkMs > 0)
-            {
-                progress = (float)Math.Min(1.0, (Now - c.WalkStart) / c.WalkMs);
-                if (progress < 1) { x = Mathf.Lerp(c.WalkFrom.X, x, progress); y = Mathf.Lerp(c.WalkFrom.Y, y, progress); }
-            }
+            WalkMath.Drawn(c, Now, out float x, out float y, out progress);   // Core/SmoothWalk.cs
             return new[] { x, y };
         }
 

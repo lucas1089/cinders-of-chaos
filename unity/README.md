@@ -1244,6 +1244,24 @@ Outfit and look UI: the rows `game_outfitextras`, `game_lookpreview`, `client_ch
 - Window sizes: `GameWindow.ResizeGrip` (a grip in the bottom right corner, a double click goes back), `WindowSize` (minimum 160 x 100, at most the screen), `WindowLayout.NoteSize` (two more numbers in a window's entry, only for a window the player resized). Windows that size themselves have `Resizable => false`.
 - Not run in a Unity editor or against a live server: the drawing code is only compiled (`Client.Check`). Approximations: a creature's box on the stage is the stock look's; no Walk switch.
 
+## Smooth 8-direction walking (phase 18, track M1)
+
+Walking glides at a constant speed in all four views (classic, HD-2D, live front-art, 3D) and takes 8 directions. The server stays tile based and authoritative. Pure logic: `Core/SmoothWalk.cs`, tests: `Core.Tests/SmoothWalkTests.cs`.
+
+What made it hitch: a step was sent only when the server had answered the last one and the glide was over, and a glide began when its answer arrived. Each tile cost one round trip of standing still. The camera follows the player's drawn position, so it stopped as well.
+
+What it does now:
+- Pre-walk. The next step goes out `WalkTiming.PreWalkLeadMs` (90 ms, at most 60% of a step) before the current glide ends, up to `MaxPending` (2) steps in flight. The server queues the next step of a walking player.
+- Prediction. `StepPredictor` keeps the steps sent and not confirmed (`Creature.Pred`). `WalkMath` draws them at once, one after the other, so the player and the camera glide without waiting. A step onto a tile the client thinks blocked is sent but not drawn (`GameSession.Walkable`).
+- Reconcile. The answer (0x6D) keeps the predicted start, so nothing moves. A move that was not predicted, a cancel (0xB5), a teleport (0x64), a floor change or no answer in 1.5 s clears the prediction and the player is where the server says.
+- Other creatures and auto-walk. `WalkChain` starts a confirmed move when the last glide ends (early), or up to 25% of a step (60 ms at most) in the past when it is a little late. A creature whose moves come on time never stops. A move later than that stands for the delay (no render buffer).
+- Camera and views read `WalkMath.Drawn` / `Between`; the live front-art picture follows the same function through the game clock.
+- 8 directions. Held keys (WASD, arrows, numpad 8 4 6 2) fold into one mask, two keys make a diagonal, opposite keys cancel, numpad 7 9 1 3 are diagonals. The first key of a pair waits 45 ms for the second (`WalkInputState`) so W then D does not send a step north first. A held mouse button walks towards the pointer in 8 sectors of 45 degrees with 6 degrees of hysteresis (`WalkInput.Sector`).
+- Diagonal step time is one constant, `WalkTiming.DiagonalNum / DiagonalDen` = 141 / 100 (about sqrt 2), for the player and the others. The server side is `PLAYER_DIAGONAL_STEP_NUM / _DEN` of `server/src-patches/0018-movement-speed.patch` (7 / 5 today); track M2 moves it to the same value in a later numbered patch. Until then the two differ by 0.7%, the glide ends a few ms early and the next step waits for the server. The path finder costs a diagonal with the same constant (14 against 10).
+- No "Smooth walking" option: it is always on.
+
+Not tested: on a live server (round trip, the server's queue of steps), with a real gamepad or touch, in the Unity player.
+
 ## Window smoke run
 
 Phase 10, track F. Almost every window of phases 1-9 only compiled until now. `ChaosUnity -chaosWindowSmoke OUT_DIR` runs the app in the CI player, logs in to the demo tour's fake server and opens every window once. A report, not a gate.

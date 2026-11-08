@@ -39,7 +39,7 @@ namespace Chaos.Core.Tests
             var straight = PathFinder.Find(from, new Pos(4, 1, 7), Open());
             check(straight != null && straight.Count == 3 && straight.All(d => d == Dir.East), "path: a straight line goes east three times");
             var diag = PathFinder.Find(from, new Pos(3, 3, 7), Open());
-            check(diag != null && diag.Count == 4 && diag.All(d => !WalkDirs.Diagonal(d)), "path: straight steps are preferred to diagonals (a diagonal costs three)");
+            check(diag != null && diag.Count == 2 && diag.All(d => WalkDirs.Diagonal(d)), "path: a diagonal costs 1.4 straight steps, so two diagonals beat four straight ones");
             // a wall with a gap: the path goes round and ends on the goal
             var walls = new List<string>();
             for (int y = 0; y < 11; y++) walls.Add("3," + y);   // x = 3 is blocked except y = 11

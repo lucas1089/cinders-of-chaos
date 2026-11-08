@@ -45,6 +45,8 @@ namespace Chaos.Core
         public float FaceX, FaceZ;
         public FcClip Clip;
         public bool Walking;
+        /// <summary>The two tiles of the step going on (equal when standing); only with a game clock.</summary>
+        public Pos SegFrom, SegTo;
         /// <summary>0..1 through the step while walking; 0..1 through the swing while attacking.</summary>
         public float WalkU, SwingU;
         /// <summary>Seconds the going step takes.</summary>
@@ -89,8 +91,10 @@ namespace Chaos.Core
         }
 
         /// <summary>Moves the machine to time `t` (seconds, its own clock) with what the creature is now. `foe` is the creature it fights,
-        /// or null: the nearest one of the other side standing next to it, or the target the player picked.</summary>
-        public void Update(double t, Creature c, Creature foe)
+        /// or null: the nearest one of the other side standing next to it, or the target the player picked. `gameNow` (ms, the session clock) makes the
+        /// step follow Core/SmoothWalk.cs, as the classic and HD-2D views do (a step glides from when the server's clock says, a predicted step of the player included);
+        /// NaN keeps this machine's own step clock (the tests).</summary>
+        public void Update(double t, Creature c, Creature foe, double gameNow = double.NaN)
         {
             if (!started)
             {
@@ -100,39 +104,52 @@ namespace Chaos.Core
                 nextSwing = t + Hash01(c.Id) * AttackEvery;
             }
             // ---- movement
-            if (c.Position != lastPos)
+            if (!double.IsNaN(gameNow))
             {
-                bool step = c.WalkStart >= 0 && c.WalkStart != lastWalkStart && c.WalkMs > 0 && c.WalkFrom.Z == c.Position.Z
-                            && Math.Max(Math.Abs(c.WalkFrom.X - c.Position.X), Math.Abs(c.WalkFrom.Y - c.Position.Y)) <= 1;
-                if (step)
+                WalkMath.Between(c, gameNow, out SegFrom, out SegTo, out float su);
+                stepActive = SegFrom != SegTo && su < 1f;
+                X = SegFrom.X + (SegTo.X - SegFrom.X) * su; Y = SegFrom.Y + (SegTo.Y - SegFrom.Y) * su;
+                if (SegFrom == SegTo) { X = c.Position.X; Y = c.Position.Y; }
+                WalkU = stepActive ? su : 1f;
+                lastPos = c.Position; lastWalkStart = c.WalkStart;
+                stepDur = Math.Max(StepMinMs, c.WalkMs) / 1000.0;
+            }
+            else
+            {
+                if (c.Position != lastPos)
                 {
-                    // start from where the picture is, unless that is far from where the server says the step began
-                    float sx = c.WalkFrom.X, sy = c.WalkFrom.Y;
+                    bool step = c.WalkStart >= 0 && c.WalkStart != lastWalkStart && c.WalkMs > 0 && c.WalkFrom.Z == c.Position.Z
+                                && Math.Max(Math.Abs(c.WalkFrom.X - c.Position.X), Math.Abs(c.WalkFrom.Y - c.Position.Y)) <= 1;
+                    if (step)
                     {
-                        float dx = X - sx, dy = Y - sy;
-                        if (dx * dx + dy * dy > SnapTiles * SnapTiles) { X = sx; Y = sy; }
+                        // start from where the picture is, unless that is far from where the server says the step began
+                        float sx = c.WalkFrom.X, sy = c.WalkFrom.Y;
+                        {
+                            float dx = X - sx, dy = Y - sy;
+                            if (dx * dx + dy * dy > SnapTiles * SnapTiles) { X = sx; Y = sy; }
+                        }
+                        fromX = X; fromY = Y;
+                        stepStart = t;
+                        stepDur = Math.Max(StepMinMs, c.WalkMs) / 1000.0;
+                        stepActive = true;
                     }
-                    fromX = X; fromY = Y;
-                    stepStart = t;
-                    stepDur = Math.Max(StepMinMs, c.WalkMs) / 1000.0;
-                    stepActive = true;
+                    else { stepActive = false; X = c.Position.X; Y = c.Position.Y; }
+                    lastPos = c.Position;
                 }
-                else { stepActive = false; X = c.Position.X; Y = c.Position.Y; }
-                lastPos = c.Position;
-            }
-            lastWalkStart = c.WalkStart;
-            if (stepActive)
-            {
-                double u = (t - stepStart) / stepDur;
-                if (u >= 1.0) { stepActive = false; X = c.Position.X; Y = c.Position.Y; WalkU = 1f; }
-                else
+                lastWalkStart = c.WalkStart;
+                if (stepActive)
                 {
-                    WalkU = (float)u;
-                    X = fromX + (c.Position.X - fromX) * WalkU;
-                    Y = fromY + (c.Position.Y - fromY) * WalkU;
+                    double u = (t - stepStart) / stepDur;
+                    if (u >= 1.0) { stepActive = false; X = c.Position.X; Y = c.Position.Y; WalkU = 1f; }
+                    else
+                    {
+                        WalkU = (float)u;
+                        X = fromX + (c.Position.X - fromX) * WalkU;
+                        Y = fromY + (c.Position.Y - fromY) * WalkU;
+                    }
                 }
+                else { X = c.Position.X; Y = c.Position.Y; }
             }
-            else { X = c.Position.X; Y = c.Position.Y; }
             Walking = stepActive;
             StepSeconds = (float)stepDur;
             if (!Walking) WalkU = 0f;
