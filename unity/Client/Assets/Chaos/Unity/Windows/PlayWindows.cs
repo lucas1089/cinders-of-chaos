@@ -248,16 +248,19 @@ namespace Chaos.Client
         protected override Rect Place(float w, float h) => new Rect(w - 360, 330, 220, 330);
 
         public PreviewOption Option;
+        /// <summary>Session ms at which a store try-on ends (0: none): the panel then goes back to the character as worn and closes (game_shop TRY ON, phase 8 track A).</summary>
+        public double TryUntil;
         public bool Simple, AutoTurn;
         int facing = LookPreview.South;
         double lastTurn;
 
-        public override void Reset() { Option = null; Simple = false; AutoTurn = false; facing = LookPreview.South; Open = false; }
+        public override void Reset() { Option = null; TryUntil = 0; Simple = false; AutoTurn = false; facing = LookPreview.South; Open = false; }
 
         protected override void Body(ChaosApp app, Rect inner)
         {
             var me = app.World?.Player;
             if (me == null) return;
+            if (TryUntil > 0 && app.Session != null && StoreTryPanel.Over(TryUntil, app.Session.Now)) { TryUntil = 0; Option = null; Open = false; return; }
             if (AutoTurn && Time.realtimeSinceStartupAsDouble * 1000 - lastTurn > LookPreview.AutoTurnMs) { facing = LookPreview.Turn(facing, 1); lastTurn = Time.realtimeSinceStartupAsDouble * 1000; }
             var o = LookPreview.Compose(Simple, me.Outfit, Option, null, out string note);
             var stage = new Rect(inner.x + 20, inner.y + 4, inner.width - 40, inner.width - 40);

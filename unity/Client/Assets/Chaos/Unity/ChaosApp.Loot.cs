@@ -1,4 +1,4 @@
-// Loot labels over the ground items, drawn in the map group of GameGui (classic view and the live front-art view; the HD-2D scene draws none yet).
+// Loot labels over the ground items, drawn in the map group of GameGui (classic view, the live front-art view and, since phase 8 track A, the HD-2D scene).
 // The rules, the scan and the server questions are Core/GroundLabels.cs; LootWindow scans once per frame. One block of labels per tile, laid out
 // so that none overlaps another (GroundLabelRules.Layout); the rarity colour, the loot filter and the settings decide what gets a label.
 using System.Collections.Generic;
@@ -23,6 +23,13 @@ namespace Chaos.Client
             {
                 px = cam.WorldToScreenPoint(frontLive.TileToWorld(p.X, p.Y, p.Z));
                 return true;
+            }
+            if (hd2d && hd2dView != null && cam != null)
+            {
+                // the HD-2D scene (phase 8 track A): the middle of the tile on the ground plane, through the tilted camera
+                var o = world.Center;
+                px = cam.WorldToScreenPoint(new Vector3(Hd2d.WorldX(o, p.X) + 0.5f, 0.05f, Hd2d.WorldZ(o, p.Y) - 0.5f));
+                return px.z > 0f;
             }
             if (hd2d || view == null) return false;
             Vector2 c = view.CamTiles;

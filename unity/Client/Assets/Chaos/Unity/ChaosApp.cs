@@ -564,6 +564,7 @@ namespace Chaos.Client
                     Fill(new Rect(bar.x, bar.y, bar.width * c.HealthPercent / 100f, bar.height), hp);
                 }
                 NpcBubbleGui(map, scale);   // ChaosApp.Phase6V.cs: the speech bubble over the NPC we talk to
+                DrawItemRings(map, scale);   // ChaosApp.Phase8A.cs: rarity rings under items in the live and HD-2D views
                 DrawGroundLabels(map, scale);
                 DrawWorldOverlays(map, scale);   // ChaosApp.World.cs: tile overlays, NPC marks, map overlay, weather
                 DrawVisualOverlays(map, scale);  // ChaosApp.Visual.cs: ground rings, decals, auras, beams, flashes, wings

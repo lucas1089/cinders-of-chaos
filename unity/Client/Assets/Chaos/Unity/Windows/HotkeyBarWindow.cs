@@ -182,6 +182,7 @@ namespace Chaos.Client
             {
                 case HotOutcome.NotCarried: app.PostLine(Loc.T("That item is not in your equipment or an open bag.")); break;
                 case HotOutcome.NoTarget: app.PostLine(Loc.T("Attack a monster first.")); break;
+                case HotOutcome.AlreadyWorn: app.PostLine(Loc.T("That item is already worn.")); break;
             }
         }
 
@@ -242,9 +243,13 @@ namespace Chaos.Client
         {
             bool side = i >= HotbarModel.Count;
             var s = bar[i];
+            // the main client's ornate slot frame (hotbar_slot, hotbar_slot_ready, hotbar_socket) under the slot; the plain fill stays when the pictures are missing
+            int cdNow = 0;
+            { var sp0 = s.Kind == HotKind.Text ? app.Session?.Spells.ByWords(s.Text) : null; if (sp0 != null) cdNow = app.Session.Spells.CooldownSeconds(sp0); }
+            bool framed = e.type == EventType.Repaint && app.DrawHotbarSlotFrame(r, side, HotbarFrame.Ready(s, cdNow, side));
             Color fill = i == editing ? new Color(0.45f, 0.3f, 0.12f, 0.95f) : (dragFrom >= 0 && dragMoved && r.Contains(e.mousePosition) ? new Color(0.6f, 0.45f, 0.15f, 0.7f) : new Color(1f, 1f, 1f, 0.08f));
-            ChaosApp.Fill(r, fill);
-            if (side)   // the round sockets of the main client: a gold ring
+            if (!framed || i == editing || (dragFrom >= 0 && dragMoved && r.Contains(e.mousePosition))) ChaosApp.Fill(r, framed ? new Color(fill.r, fill.g, fill.b, fill.a * 0.6f) : fill);
+            if (side && !framed)   // the round sockets of the main client: a gold ring
             {
                 var ring = new Color(0.85f, 0.65f, 0.25f, 0.55f);
                 ChaosApp.Fill(new Rect(r.x, r.y, r.width, 1), ring); ChaosApp.Fill(new Rect(r.x, r.yMax - 1, r.width, 1), ring);
@@ -259,7 +264,10 @@ namespace Chaos.Client
                 bool drawn = spell != null && app.DrawSpellIcon(new Rect(r.x + 1, r.yMax - icon - 1f, icon, icon), spell.Words, spell.Id);
                 if (!drawn) GUI.Label(new Rect(r.x + 2, r.y + 14, r.width - 2, r.height - 14), s.Text, textStyle);
             }
-            GUI.Label(new Rect(r.x + 2, r.y, r.width - 2, 14), HotbarLayout.KeyLabel(i), keyStyle);
+            string keyText = HotbarLayout.KeyLabel(i);
+            if (e.type == EventType.Repaint) app.DrawHotbarKeyBox(r, keyText);
+            var kl = HotbarFrame.KeyLabel(r.x, r.y, r.width, keyStyle.fontSize);   // as tall as the font needs, never the old 14 pixels
+            GUI.Label(new Rect((float)kl.X, (float)kl.Y, (float)kl.W, (float)kl.H), keyText, keyStyle);
             // game_spellsupports: a small pip per socketed rune, and the supports in the tooltip
             if (spell != null)
             {
@@ -341,7 +349,8 @@ namespace Chaos.Client
             if (sizedKey == null || sizedKey != SizeKey()) return;   // Tick resizes first
             if (keyStyle == null)
             {
-                keyStyle = new GUIStyle(app.SmallStyle) { fontSize = 10, alignment = TextAnchor.UpperLeft };
+                // no padding and no clipping: the skin of the windows pads labels, which cut the bottom of the Q and E (they read as O and F)
+                keyStyle = new GUIStyle(app.SmallStyle) { fontSize = HotbarFrame.KeyFont, alignment = TextAnchor.UpperLeft, padding = new RectOffset(1, 0, 0, 0), clipping = TextClipping.Overflow, wordWrap = false };
                 keyStyle.normal.textColor = new Color(1f, 0.85f, 0.4f);
                 textStyle = new GUIStyle(app.SmallStyle) { fontSize = 11, alignment = TextAnchor.LowerLeft, clipping = TextClipping.Clip };
                 cooldownStyle = new GUIStyle(app.SmallStyle) { fontSize = 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
@@ -357,6 +366,12 @@ namespace Chaos.Client
             if (dragFrom >= 0 && e.type == EventType.MouseDrag && (e.mousePosition - dragStart).sqrMagnitude > 36f) dragMoved = true;
             if (dragFrom >= 0 && e.type == EventType.Repaint && !Input.GetMouseButton(0)) { dragFrom = -1; dragMoved = false; }
 
+            if (e.type == EventType.Repaint)
+            {
+                var body = HotbarFrame.BodyOf(inner.x, inner.y, m.Width, m.SlotH, 5);
+                app.DrawHotbarBody(body);
+                app.DrawHotbarGem(body, m.Scale);
+            }
             foreach (int i in HotbarLayout.Shown(m.Count))
                 DrawSlot(app, new Rect(inner.x + (float)HotbarLayout.SlotX(m, i), inner.y, m.SlotW, m.SlotH), i, e);
             DrawSlot(app, new Rect(inner.x + (float)HotbarLayout.SlotX(m, HotbarModel.SideQ), inner.y, m.SideW, m.SlotH), HotbarModel.SideQ, e);

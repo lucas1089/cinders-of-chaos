@@ -47,6 +47,8 @@ namespace Chaos.Client
         {
             int cell = SpellIcons.Cell(words, spellId);
             if (cell == 0) return false;
+            var painted = PaintedSpellTexture(cell);   // phase 8 track A: the "Painted icons" option
+            if (painted != null) { GUI.DrawTexture(r, painted, ScaleMode.StretchToFill, true); return true; }
             var tex = ArtTexture(SpellIcons.Path(SpellIcons.Sheet32));
             if (tex == null || !SpellIcons.CellUv(cell, 32, 32, tex.width, tex.height, out float u, out float v, out float w, out float h)) return false;
             GUI.DrawTextureWithTexCoords(r, tex, new Rect(u, v, w, h));
@@ -71,7 +73,12 @@ namespace Chaos.Client
             return true;
         }
 
-        public Texture2D BuffTexture(BuffEntry b) => b == null ? null : ArtTexture(BuffIcons.Path(BuffIcons.OwnName(b.Icon, b.Key)));
+        public Texture2D BuffTexture(BuffEntry b)
+        {
+            if (b == null) return null;
+            string name = BuffIcons.OwnName(b.Icon, b.Key);
+            return PaintedBuffTexture(name) ?? ArtTexture(BuffIcons.Path(name));
+        }
 
         /// <summary>The icon of a toast type, 48 px, into r; false when its file is missing.</summary>
         public bool DrawToastIcon(Rect r, string type)

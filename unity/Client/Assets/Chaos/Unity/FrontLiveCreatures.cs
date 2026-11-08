@@ -23,6 +23,8 @@ namespace Chaos.Client
         /// <summary>The 32 x 32 RGBA of a sprite id (SpriteAtlas.Raw), for the outfit art. Found by reflection on the view's "Atlas" when unset.</summary>
         public Func<uint, byte[]> SpriteSource;
         public bool ShowLabels = true;
+        /// <summary>The draw size of a monster (MonsterWorld.DrawScale, phase 8 track A): bosses and omen guardians bigger, a body too big for its tile smaller. Null: 1.</summary>
+        public Func<Creature, float> CreatureScale;
         /// <summary>The shadow of a figure and the blob; off on phones.</summary>
         public bool Silhouettes = true;
 
@@ -350,6 +352,8 @@ namespace Chaos.Client
             }
             float breath = st.Walking ? 1f : 1f + 0.012f * Mathf.Sin(clock * 2.1f + (c.Id & 15) * 1.7f);
             scale.y *= breath;
+            float monsterScale = SceneScale.For(c, CreatureScale);
+            if (monsterScale != 1f) { scale.x *= monsterScale; scale.y *= monsterScale; }
             float lift = hop ? Hop * Mathf.Abs(Mathf.Sin(clock * Mathf.PI * 4f)) : 0f;
             var feet = new Vector3(px, gy + 0.01f, pz);
             var pos = feet + Vector3.up * lift;
@@ -366,7 +370,7 @@ namespace Chaos.Client
                 bool flame = NearestFlame(feet, out var fp, out float fr);
                 FrontArtSprites.ApplyCast(s.Cast, s.CastMat, feet, s.Units, flame, fp, fr, sun);
                 s.Blob.gameObject.SetActive(true);
-                float k = s.Units / FrontArtScene.SpriteUnits;
+                float k = s.Units * monsterScale / FrontArtScene.SpriteUnits;
                 s.Blob.position = new Vector3(px, gy + FrontArtSprites.CastLift, pz);
                 s.Blob.localScale = new Vector3(1.24f * k, 1f, 0.72f * k);
             }

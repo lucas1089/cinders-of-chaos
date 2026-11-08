@@ -29,6 +29,10 @@ namespace Chaos.Client
         public Func<Hd2dPiece, bool> Skip;
         /// <summary>Creatures this returns true for are not drawn as sprites (a 3D character takes their place: Hd2dChars3d). Their name label stays.</summary>
         public Func<Creature, bool> SkipCreature;
+        /// <summary>The draw size of a monster (phase 8 track A, game_monsterbar): its quads are scaled about its feet. Null: 1.</summary>
+        public Func<Creature, float> CreatureScale;
+        float curScale = 1f;
+        Vector3 curPivot;
         public static bool LowQuality => Application.isMobilePlatform || PlayerPrefs.GetInt("chaos.hd2d.low", 0) == 1;
         public int MaxLights => LowQuality ? 4 : 8;
         public int MaxShadowLights => LowQuality ? 0 : 2;
@@ -276,6 +280,20 @@ namespace Chaos.Client
         void AddCreature(Hd2dPiece piece)
         {
             var c = piece.Creature;
+            curScale = SceneScale.For(c, CreatureScale);
+            curPivot = new Vector3(piece.Right - 0.5f, piece.Y, piece.Z);
+            try { AddCreatureScaled(piece, c); } finally { curScale = 1f; }
+        }
+
+        Vector3 Scaled(Vector3 v)
+        {
+            if (curScale == 1f) return v;
+            SceneScale.About(ref v.x, ref v.y, ref v.z, curPivot.x, curPivot.y, curPivot.z, curScale);
+            return v;
+        }
+
+        void AddCreatureScaled(Hd2dPiece piece, Creature c)
+        {
             var o = c.Outfit;
             if (o.LookType == 0)
             {
@@ -330,9 +348,9 @@ namespace Chaos.Client
             Labels.Add(new Label
             {
                 C = piece.Creature,
-                Head = new Vector3(tr.X - piece.Width / 2f, tr.Y + 0.1f, tr.Z),
-                BottomLeft = new Vector3(bl.X, bl.Y, bl.Z),
-                TopRight = new Vector3(tr.X, tr.Y, tr.Z),
+                Head = Scaled(new Vector3(tr.X - piece.Width / 2f, tr.Y + 0.1f, tr.Z)),
+                BottomLeft = Scaled(new Vector3(bl.X, bl.Y, bl.Z)),
+                TopRight = Scaled(new Vector3(tr.X, tr.Y, tr.Z)),
             });
         }
 
@@ -351,7 +369,7 @@ namespace Chaos.Client
                 var c = n == 1 ? piece.Cell(ww, hh) : piece.Strip(ww, hh, k, n);
                 float v0 = r.yMin + (r.yMax - r.yMin) * k / n, v1 = r.yMin + (r.yMax - r.yMin) * (k + 1) / n;
                 int i = b.V.Count;
-                for (int q = 0; q < 4; q++) { b.V.Add(new Vector3(c[q].X, c[q].Y, c[q].Z) + bias); b.N.Add(normal); }
+                for (int q = 0; q < 4; q++) { b.V.Add(Scaled(new Vector3(c[q].X, c[q].Y, c[q].Z)) + bias); b.N.Add(normal); }
                 b.UV.Add(new Vector2(r.xMin, v0));
                 b.UV.Add(new Vector2(r.xMax, v0));
                 b.UV.Add(new Vector2(r.xMax, v1));

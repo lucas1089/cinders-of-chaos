@@ -275,6 +275,7 @@ namespace Chaos.Client
                 var hs = new GUIStyle(small) { fontSize = 12, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
                 hs.normal.textColor = Color.white;
                 GUI.Label(new Rect(box.x, box.y, box.width, 20), tc.DangerCaution ? Loc.T("CAUTION") : Loc.T("DANGER"), hs);
+                if (GUI.Button(new Rect(box.xMax - 22, box.y + 1, 20, 18), "x")) tc.DangerUntil = -1;   // the close button of the main client's danger window
                 var ds = new GUIStyle(toastText) { alignment = TextAnchor.MiddleCenter };
                 ds.normal.textColor = new Color(0.56f, 0.1f, 0.1f);
                 GUI.Label(new Rect(box.x + 8, box.y + 22, box.width - 16, 36), tc.DangerText, ds);
@@ -297,6 +298,10 @@ namespace Chaos.Client
                 ts.normal.textColor = HexColor(t.Style.TitleColor, Color.white);
                 GUI.Label(new Rect(box.x + 8, box.y + 3, box.width - 40, 20), Loc.T(t.Style.Title), ts);
                 if (GUI.Button(new Rect(box.xMax - 24, box.y + 3, 20, 18), "x")) close = t;
+                // a press on a toast pauses its timer until the release or until the pointer leaves it (the main client's onMousePress / onHoverChange)
+                var pe = Event.current;
+                if (pe.type == EventType.MouseDown && pe.button == 0 && box.Contains(pe.mousePosition)) ToastPause.Press(t, now);
+                else if (t.PausedAt >= 0 && ((pe.type == EventType.MouseUp && pe.button == 0) || !box.Contains(pe.mousePosition) || !Input.GetMouseButton(0))) ToastPause.Resume(t, now);
                 bool buttons = t.HasButtons;
                 float textBottom = buttons ? ToastKinds.ButtonTextBottom : ToastKinds.TextBottom;
                 // the toast type's own 48 px icon at the left (game_chaosnotify); the text moves right of it when the picture is there
@@ -317,9 +322,9 @@ namespace Chaos.Client
                 // timer bar and the seconds left
                 var bar = new Rect(box.x + 8, box.yMax - 16, box.width - 44, 8);
                 Fill(bar, new Color(0f, 0f, 0f, 0.8f));
-                Fill(new Rect(bar.x, bar.y, bar.width * (float)t.Fraction(now), bar.height), HexColor(t.Style.TitleColor, Color.white));
+                Fill(new Rect(bar.x, bar.y, bar.width * (float)ToastPause.Fraction(t, now), bar.height), HexColor(t.Style.TitleColor, Color.white));
                 var cs = new GUIStyle(hudTiny) { alignment = TextAnchor.MiddleRight };
-                GUI.Label(new Rect(box.xMax - 34, box.yMax - 20, 28, 16), Mathf.CeilToInt((float)t.Left(now) / 1000f).ToString(), cs);
+                GUI.Label(new Rect(box.xMax - 34, box.yMax - 20, 28, 16), Mathf.CeilToInt((float)ToastPause.Left(t, now) / 1000f).ToString(), cs);
             }
             if (accept != null) tc.Accept(accept);
             else if (decline != null) tc.Decline(decline);

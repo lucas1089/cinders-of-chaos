@@ -217,7 +217,7 @@ namespace Chaos.Core.Tests
             check(bar[2].IsEmpty && bar.Saved(2) == "", "hotbar: remove clears a slot");
             for (int i = 0; i < HotbarModel.Count; i++) bar.SetItem(i, 100 + i, false);
             check(bar.FirstEmpty() == -1, "hotbar: a full bar has no empty slot");
-            check(HotbarModel.Modes.Length == 4 && HotbarModel.ModeLabel(ItemMode.OnSelf) == "Use on yourself" && HotbarModel.ModeLabel(ItemMode.WithCrosshair) == "Use with ..." && HotbarModel.ModeMark(ItemMode.Use) == "" && HotbarModel.ModeMark(ItemMode.OnTarget) == "T",
+            check(HotbarModel.Modes.Length == 5 && HotbarModel.ModeLabel(ItemMode.OnSelf) == "Use on yourself" && HotbarModel.ModeLabel(ItemMode.WithCrosshair) == "Use with ..." && HotbarModel.ModeMark(ItemMode.Use) == "" && HotbarModel.ModeMark(ItemMode.OnTarget) == "T",
                 "hotbar: mode labels and marks");
             // the saved text of every slot parses back to the same slot
             var again = new HotbarModel();

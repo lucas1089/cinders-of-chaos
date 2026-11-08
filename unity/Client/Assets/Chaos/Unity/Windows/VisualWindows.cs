@@ -167,6 +167,7 @@ namespace Chaos.Client
             }
             VisualPrefs.ChestAuras = Check(ref y, inner, VisualPrefs.ChestAuras, Loc.T("Chest and Templar auras"), app);
             VisualPrefs.ItemOutlines = Check(ref y, inner, VisualPrefs.ItemOutlines, Loc.T("Rarity outline on items on the map"), app);
+            VisualPrefs.Painted = Check(ref y, inner, VisualPrefs.Painted, Loc.T("Painted icons (bar, spellbook, passive tree)"), app);
             VisualPrefs.WingsOwn = Check(ref y, inner, VisualPrefs.WingsOwn, Loc.T("Level-up wings on my character"), app);
             VisualPrefs.WingsOthers = Check(ref y, inner, VisualPrefs.WingsOthers, Loc.T("Level-up wings on other characters"), app);
             VisualPrefs.PrintsOthers = Check(ref y, inner, VisualPrefs.PrintsOthers, Loc.T("Footprints of other characters"), app);

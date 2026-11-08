@@ -13,7 +13,7 @@ namespace Chaos.Core
     public enum HotKind { Empty, Text, Item }
 
     /// <summary>What a press of an item slot does.</summary>
-    public enum ItemMode { Use, OnSelf, OnTarget, WithCrosshair }
+    public enum ItemMode { Use, OnSelf, OnTarget, WithCrosshair, Equip }
 
     public struct HotSlot
     {
@@ -24,7 +24,7 @@ namespace Chaos.Core
         public bool IsEmpty => Kind == HotKind.Empty;
     }
 
-    public enum HotOutcome { None, Said, Used, UsedOnSelf, UsedOnTarget, Crosshair, NotCarried, NoTarget }
+    public enum HotOutcome { None, Said, Used, UsedOnSelf, UsedOnTarget, Crosshair, NotCarried, NoTarget, AlreadyWorn }
 
     /// <summary>What the hotbar needs from the game: the carried items, the target, the actions.</summary>
     public interface IHotbarHost
@@ -37,6 +37,9 @@ namespace Chaos.Core
         uint SelfId { get; }
         void Say(string text);
     }
+
+    /// <summary>A host that can say what is worn (phase 8 track A, the Equip mode: a worn item is not used again).</summary>
+    public interface IHotbarEquipHost : IHotbarHost { bool IsWorn(int clientId); }
 
     public sealed class HotbarModel
     {
@@ -59,7 +62,7 @@ namespace Chaos.Core
                 if (p.Length >= 1 && int.TryParse(p[0], NumberStyles.None, CultureInfo.InvariantCulture, out int id) && id > 0 && id <= 65535)
                 {
                     var mode = ItemMode.Use;
-                    if (p.Length >= 2 && int.TryParse(p[1], NumberStyles.None, CultureInfo.InvariantCulture, out int m) && m >= 0 && m <= (int)ItemMode.WithCrosshair) mode = (ItemMode)m;
+                    if (p.Length >= 2 && int.TryParse(p[1], NumberStyles.None, CultureInfo.InvariantCulture, out int m) && m >= 0 && m <= (int)ItemMode.Equip) mode = (ItemMode)m;
                     return new HotSlot { Kind = HotKind.Item, ItemId = id, Mode = mode, Text = "" };
                 }
             }
@@ -129,7 +132,7 @@ namespace Chaos.Core
         /// <summary>A rune, a potion or any multi-use item starts a "use with" by default; other items are used.</summary>
         public static ItemMode DefaultMode(bool multiUse) => multiUse ? ItemMode.WithCrosshair : ItemMode.Use;
 
-        public static readonly ItemMode[] Modes = { ItemMode.Use, ItemMode.OnSelf, ItemMode.OnTarget, ItemMode.WithCrosshair };
+        public static readonly ItemMode[] Modes = { ItemMode.Use, ItemMode.OnSelf, ItemMode.OnTarget, ItemMode.WithCrosshair, ItemMode.Equip };
 
         /// <summary>The menu text of a mode (English keys; the window runs them through Loc.T).</summary>
         public static string ModeLabel(ItemMode m)
@@ -139,6 +142,7 @@ namespace Chaos.Core
                 case ItemMode.OnSelf: return "Use on yourself";
                 case ItemMode.OnTarget: return "Use on target";
                 case ItemMode.WithCrosshair: return "Use with ...";
+                case ItemMode.Equip: return "Equip";
                 default: return "Use";
             }
         }
@@ -151,6 +155,7 @@ namespace Chaos.Core
                 case ItemMode.OnSelf: return "S";
                 case ItemMode.OnTarget: return "T";
                 case ItemMode.WithCrosshair: return "+";
+                case ItemMode.Equip: return "=";
                 default: return "";
             }
         }
@@ -176,6 +181,10 @@ namespace Chaos.Core
                     return host.UseOnCreature(s.ItemId, host.AttackTarget) ? HotOutcome.UsedOnTarget : HotOutcome.NotCarried;
                 case ItemMode.WithCrosshair:
                     return host.StartCrosshair(s.ItemId) ? HotOutcome.Crosshair : HotOutcome.NotCarried;
+                case ItemMode.Equip:
+                    // the server equips what is used from a bag; an item already worn is left alone (the main client's "Equip" mode swaps, it never takes off)
+                    if (host is IHotbarEquipHost eh && eh.IsWorn(s.ItemId)) return HotOutcome.AlreadyWorn;
+                    return host.UseItem(s.ItemId) ? HotOutcome.Used : HotOutcome.NotCarried;
                 default:
                     return host.UseItem(s.ItemId) ? HotOutcome.Used : HotOutcome.NotCarried;
             }
@@ -209,7 +218,7 @@ namespace Chaos.Core
     }
 
     /// <summary>IHotbarHost over a GameSession; the crosshair belongs to the window layer, which hands in how to start it.</summary>
-    public sealed class SessionHotbarHost : IHotbarHost
+    public sealed class SessionHotbarHost : IHotbarEquipHost
     {
         readonly GameSession s;
         readonly Action<ItemRef> crosshair;
@@ -217,6 +226,11 @@ namespace Chaos.Core
         public SessionHotbarHost(GameSession session, Action<ItemRef> startCrosshair) { s = session; crosshair = startCrosshair; }
 
         public int CountItem(int clientId) => s.CountItem(clientId);
+        public bool IsWorn(int clientId)
+        {
+            for (int slot = 1; slot < s.Parser.Inventory.Length; slot++) { var it = s.Parser.Inventory[slot]; if (it != null && it.Id == clientId) return true; }
+            return false;
+        }
         public bool UseItem(int clientId) => s.UseCarriedItem(clientId);
         public bool UseOnCreature(int clientId, uint creature) => s.UseItemOnCreature(clientId, creature);
         public uint AttackTarget => s.AttackTarget;

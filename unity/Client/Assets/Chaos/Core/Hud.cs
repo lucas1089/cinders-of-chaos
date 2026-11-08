@@ -44,6 +44,8 @@ namespace Chaos.Core
         public string Type = "", Message = "";
         public ToastStyle Style;
         public double StartAt = -1;
+        /// <summary>Session ms a press on the toast paused its timer at (phase 8 track A, ToastPause); -1 when running.</summary>
+        public double PausedAt = -1;
         public int MonsterLook;
         /// <summary>Party invitation: the inviter. Catacomb free: element and level.</summary>
         public string Inviter = "", Element = "";
@@ -129,6 +131,8 @@ namespace Chaos.Core
         public bool DangerCaution;
         public double DangerUntil = -1;
         public Func<double> Clock = () => 0;
+        /// <summary>On a phone only the toasts that wait for an answer are shown (set by the app).</summary>
+        public static bool Phone;
         readonly ExtOpcodes ext;
 
         public ToastCenter(ExtOpcodes e)
@@ -191,6 +195,7 @@ namespace Chaos.Core
         public Toast Add(string type, string message, int monsterLook = 0)
         {
             if (!ToastKinds.Styles.TryGetValue(type, out var style)) return null;
+            if (!ToastPause.Shown(type, Phone)) return null;   // a phone shows only the invitations (game_chaosnotify O401)
             var t = new Toast { Type = type, Style = style, Message = message, MonsterLook = monsterLook };
             Enqueue(Queue, t, ToastKinds.QueueMax);
             Tick(Clock());
@@ -219,7 +224,7 @@ namespace Chaos.Core
         /// <summary>Drops toasts whose time ran out and takes waiting ones into the free places.</summary>
         public void Tick(double now)
         {
-            Active.RemoveAll(t => now >= t.EndAt);
+            Active.RemoveAll(t => t.PausedAt < 0 && now >= t.EndAt);
             while (Active.Count < ToastKinds.MaxActive && Queue.Count > 0)
             {
                 var t = Queue[0];

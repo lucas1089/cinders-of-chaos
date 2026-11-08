@@ -4,7 +4,10 @@
 -- stat lines of passivetree.lua getCustomStatString, run here with an English tr().
 -- Run from the repo root:  luajit unity/tools/gen_tree_data.lua [--check]   (also lua5.3). --check exits 1 when stale.
 --
--- Format (compact JSON, sorted keys): {"version":1,"nodes":[node...]}; node:
+-- Phase 8 track A adds the icon key (k, and ik: the class variants' own icon keys), the group (g) and orbit (b) of a node for its curved links, the group
+-- centres ("groups": {id: [x, y]}), and a second file PassiveTreeIcons.json with the clip of every icon key the nodes use and the painted option's cells.
+--
+-- Format (compact JSON, sorted keys): {"version":1,"nodes":[node...],"groups":{...}}; node:
 --   i id, x y position (the client's own: group centre + orbit), t type (s start, c common, u uncommon, r rare, v very rare,
 --   m mythic, d divine / keystone, M mastery), n name, s stat lines [text], d description paragraph, l class line (only that
 --   line sees it), c classes that may take it, h 1 hidden, o linked ids (undirected), a mastery effects [{n, s}],
@@ -12,6 +15,7 @@
 local root = arg and arg[0] and arg[0]:match("^(.*)/unity/tools/") or "."
 local mod = root .. "/client/overlay/modules/game_passivetree/"
 local out = root .. "/unity/Client/Assets/Chaos/Resources/PassiveTree.json"
+local outIcons = root .. "/unity/Client/Assets/Chaos/Resources/PassiveTreeIcons.json"
 
 local function load(file, env)
   local f = assert(loadfile(mod .. file))
@@ -85,6 +89,7 @@ local round = function(v) return math.floor(v * 10 + 0.5) / 10 end
 local orbitDist = {[0] = 0, 60, 80, 120, 191, 250, 290}
 
 local list = {}
+local usedIcons = {}
 local ids = {}
 for id in pairs(nodes) do ids[#ids + 1] = id end
 table.sort(ids)
@@ -114,6 +119,21 @@ for _, id in ipairs(ids) do
   if node.line then entry.l = node.line end
   if node.classes then entry.c = node.classes end
   if node.hidden then entry.h = 1 end
+  if node.group then entry.g = node.group end
+  if node.orbit and node.orbit > 0 then entry.b = node.orbit end
+  if node.icon then entry.k = node.icon; usedIcons[node.icon] = true end
+  do
+    local ik
+    for key in pairs(keys) do
+      local vn = node[key]
+      if type(vn) == "table" and vn.icon and vn.icon ~= node.icon and data.icons[vn.icon] then
+        ik = ik or {}
+        ik[key] = vn.icon
+        usedIcons[vn.icon] = true
+      end
+    end
+    if ik then entry.ik = ik end
+  end
   if node.isMastery then
     entry.a = {}
     for i, effect in ipairs(node.masteries or {}) do
@@ -171,8 +191,24 @@ end
 
 local lines = {'{"version":1,"nodes":['}
 for i, e in ipairs(list) do lines[#lines + 1] = enc(e) .. (i < #list and "," or "") end
-lines[#lines + 1] = "]}"
+local groupList = {}
+for gid, g in pairs(groups) do groupList[tostring(gid)] = {round(g.x), round(g.y)} end
+lines[#lines + 1] = '],"groups":' .. enc(groupList) .. '}'
 local text = table.concat(lines, "\n") .. "\n"
+
+-- the icon clips: key -> {f file (nil: skills), x, y, w, h}; painted: key -> {x, y} of the 64 px cell in painted_nodes.png (only the keys nodes use)
+local iconTable, paintedTable = {}, {}
+for key in pairs(usedIcons) do
+  local ic = data.icons[key]
+  if ic then
+    local rec = {x = ic.x or 0, y = ic.y or 0, w = ic.w or 0, h = ic.h or 0}
+    if ic.file then rec.f = (ic.file:gsub("^/images/passivetree/", "")) end
+    iconTable[key] = rec
+  end
+  local pt = data.painted and data.painted[key]
+  if pt then paintedTable[key] = {pt.x, pt.y} end
+end
+local iconText = '{"version":1,"icons":' .. enc(iconTable) .. ',"painted":' .. enc(paintedTable) .. '}\n'
 
 local check = false
 for _, a in ipairs(arg or {}) do if a == "--check" then check = true end end
@@ -184,10 +220,20 @@ if check then
     io.stderr:write("PassiveTree.json is stale: run luajit unity/tools/gen_tree_data.lua\n")
     os.exit(1)
   end
+  local fi = io.open(outIcons, "rb")
+  local haveIcons = fi and fi:read("*a")
+  if fi then fi:close() end
+  if haveIcons ~= iconText then
+    io.stderr:write("PassiveTreeIcons.json is stale: run luajit unity/tools/gen_tree_data.lua\n")
+    os.exit(1)
+  end
   print("PassiveTree.json: ok (" .. #list .. " nodes)")
 else
   local f = assert(io.open(out, "wb"))
   f:write(text)
   f:close()
+  local fi = assert(io.open(outIcons, "wb"))
+  fi:write(iconText)
+  fi:close()
   print("wrote " .. out .. " (" .. #list .. " nodes, " .. #text .. " bytes)")
 end
