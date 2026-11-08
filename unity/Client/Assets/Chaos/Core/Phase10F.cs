@@ -183,6 +183,9 @@ namespace Chaos.Core
         /// <summary>Phase 12, track H: a side larger than the screen; a body too thin for a line (Thin); a body with no ink under the title bar (EmptyBody; Ink is the share measured, -1 when not measured).</summary>
         public bool Oversize, Thin, EmptyBody;
         public float Ink = -1f;
+        /// <summary>Phase 13, track G: other open windows drawn after this one hide at least SmokeCover.Limit of its rect (CoverShare is the part hidden, -1 when not measured). A report only: it is not a Problem.</summary>
+        public bool Covered;
+        public float CoverShare = -1f;
         public SmokeBox Rect;
         /// <summary>Phase 11, track G: why a context HUD could not be shown (no server push drives it). Not an error: the step is classified "context".</summary>
         public string Context = "";
@@ -236,6 +239,8 @@ namespace Chaos.Core
         public int OversizeCount { get { int n = 0; foreach (var r in records) if (r.Oversize) n++; return n; } }
         /// <summary>Windows whose body is too thin or has no ink.</summary>
         public int EmptyCount { get { int n = 0; foreach (var r in records) if (r.Thin || r.EmptyBody) n++; return n; } }
+        /// <summary>Phase 13, track G: windows mostly hidden by a window drawn after them (reported, not counted as problems).</summary>
+        public int CoveredCount { get { int n = 0; foreach (var r in records) if (r.Covered) n++; return n; } }
 
         /// <summary>The line the CI step greps for.</summary>
         public string SummaryLine() => "chaos window smoke: " + records.Count + " windows, " + WithProblems + " with errors";
@@ -292,14 +297,15 @@ namespace Chaos.Core
              .Append(",\"layoutErrors\":").Append(Total(SmokeIssueKind.Layout))
              .Append(",\"loggedErrors\":").Append(Total(SmokeIssueKind.Error))
              .Append(",\"offScreen\":").Append(OffScreenCount).Append(",\"oversize\":").Append(OversizeCount).Append(",\"emptyBody\":").Append(EmptyCount)
-             .Append(",\"context\":").Append(ContextCount).Append("},\n \"windows\":[");
+             .Append(",\"context\":").Append(ContextCount).Append(",\"covered\":").Append(CoveredCount).Append("},\n \"windows\":[");
             for (int i = 0; i < records.Count; i++)
             {
                 var r = records[i];
                 b.Append(i == 0 ? "" : ",").Append("\n  {\"name\":").Append(Q(r.Name)).Append(",\"kind\":").Append(Q(r.Kind)).Append(",\"frames\":").Append(r.Frames)
                  .Append(",\"offScreen\":").Append(r.OffScreen ? "true" : "false").Append(",\"zeroSize\":").Append(r.ZeroSize ? "true" : "false")
                  .Append(",\"openAtEnd\":").Append(r.OpenAtEnd ? "true" : "false")
-                 .Append(",\"oversize\":").Append(r.Oversize ? "true" : "false").Append(",\"thin\":").Append(r.Thin ? "true" : "false").Append(",\"emptyBody\":").Append(r.EmptyBody ? "true" : "false");
+                 .Append(",\"oversize\":").Append(r.Oversize ? "true" : "false").Append(",\"thin\":").Append(r.Thin ? "true" : "false").Append(",\"emptyBody\":").Append(r.EmptyBody ? "true" : "false").Append(",\"covered\":").Append(r.Covered ? "true" : "false");
+                if (r.CoverShare >= 0f) b.Append(",\"coverShare\":").Append(Math.Round(r.CoverShare, 2).ToString("0.##", CultureInfo.InvariantCulture));
                 if (r.Ink >= 0f) b.Append(",\"ink\":").Append(Math.Round(r.Ink, 3).ToString("0.###", CultureInfo.InvariantCulture));
                 if (r.Context.Length > 0) b.Append(",\"context\":").Append(Q(r.Context));
                 if (r.HasRect) b.Append(",\"rect\":[").Append(N(r.Rect.X)).Append(',').Append(N(r.Rect.Y)).Append(',').Append(N(r.Rect.W)).Append(',').Append(N(r.Rect.H)).Append(']');

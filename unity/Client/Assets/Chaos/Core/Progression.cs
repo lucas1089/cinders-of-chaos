@@ -394,7 +394,7 @@ namespace Chaos.Core
             foreach (object r in Json.List(data, "x"))
                 if (r is List<object> a && a.Count >= 3)
                     Drops.Add(new HuntItem { Id = Int(a, 0), Count = Int(a, 1), Name = a[2] as string ?? "?", Rarity = a.Count > 3 ? Int(a, 3) : 0, Unique = a.Count > 4 && Int(a, 4) == 1, Orb = a.Count > 5 && Int(a, 5) == 1 });
-            if (Json.Bool(data, "open")) OpenRequested = true;
+            if (Json.Bool(data, "open") || Json.Number(data, "open") == 1) OpenRequested = true;   // hunt.lua sends open = 1, a number (phase 13 track G)
             Changed();
         }
 
