@@ -207,6 +207,8 @@ pub struct UnityRelease {
     pub version: u64,
     pub package: u64,
     pub files: Vec<(String, Vec<u8>)>,
+    /// The manifest's `native.dev` (O433 phase 17): None leaves it out (a manifest of before), Some says it.
+    pub dev: Option<bool>,
 }
 
 impl UnityRelease {
@@ -216,11 +218,15 @@ impl UnityRelease {
             .iter()
             .map(|(n, d)| serde_json::json!({"path": n, "sha256": sha256_hex(d), "size": d.len()}))
             .collect();
+        let mut native = serde_json::json!({
+            "package": self.package, "game": "ChaosUnity.exe", "layout": "tree", "files_url": "native/", "files": files
+        });
+        if let Some(d) = self.dev {
+            native["dev"] = serde_json::json!(d);
+        }
         serde_json::json!({
             "format": 1, "product": "cinders-of-chaos", "channel": "unity", "version": self.version,
-            "min_package": 0, "files": [],
-            "native": {"package": self.package, "game": "ChaosUnity.exe", "layout": "tree", "files_url": "native/",
-                       "files": files}
+            "min_package": 0, "files": [], "native": native
         })
         .to_string()
     }

@@ -116,20 +116,33 @@ namespace Chaos.Client
             if (dat != null) return true;
             try
             {
-                string d = Path.Combine(pairDir, "Tibia.dat"), s = Path.Combine(pairDir, "Tibia.spr");
-                if (!File.Exists(d) || !File.Exists(s))
+                // the order and the rules are Core/ThingsPair.cs (unity/README.md "Sprite pair"): -chaosThings DIR, loose files in pairDir
+                // (things/ beside the player by default), the encrypted blobs of the install, the main client's chaos.pack next to it
+                byte[] key = GuardKey();
+                var res = PairLocator.Find(new PairRequest
                 {
-                    status = "No Tibia.dat / Tibia.spr in " + pairDir;
+                    FlagDir = TourArg("-chaosThings"),
+                    PackFile = TourArg("-chaosPack"),
+                    LooseDir = pairDir,
+                    InstallDir = Path.GetDirectoryName(Application.dataPath) ?? ".",
+                    Key = key,
+                    KeyIsDev = ReferenceEquals(key, ClientGuard.DevKey),
+                }, new DiskPairFiles());
+                if (!res.Ok)
+                {
+                    status = Loc.T("No sprite pair found: {0}", res.Error);
+                    Debug.Log("chaos pair: " + res.Error);   // never holds the key (Core.Tests check the messages)
                     return false;
                 }
-                dat = DatFile.Load(d);
-                spr = SprFile.Open(s);
+                dat = res.Dat;
+                spr = res.Spr;
                 atlas = new SpriteAtlas(spr);
+                Debug.Log("chaos pair: " + res.Origin + " " + res.Where);
                 return true;
             }
             catch (Exception e)
             {
-                status = "Could not read the pair: " + e.Message;
+                status = Loc.T("Could not read the sprite pair: {0}", e.Message);
                 dat = null;
                 return false;
             }

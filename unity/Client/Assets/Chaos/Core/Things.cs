@@ -215,6 +215,19 @@ namespace Chaos.Core
         }
 
         readonly int headerSize;
+        readonly SprShardSet shards;
+
+        /// <summary>A sprite file kept as shards (Core/SprShards.cs): the ids are looked up in the shard that holds them.</summary>
+        public SprFile(SprShardSet shards)
+        {
+            this.shards = shards;
+            transparency = true;
+            Signature = shards.Index.Signature;
+            Count = shards.Index.Total;
+        }
+
+        /// <summary>Why the last shard that did not open failed, or null (sharded files only).</summary>
+        public string ShardError => shards?.LastError;
 
         public static SprFile Open(string path) => new SprFile(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.RandomAccess));
 
@@ -234,6 +247,7 @@ namespace Chaos.Core
         public byte[] Rgba(uint id)
         {
             if (id == 0 || id > Count) return null;
+            if (shards != null) return shards.Rgba(id);
             lock (gate)
             {
                 var off = new byte[4];
@@ -272,6 +286,6 @@ namespace Chaos.Core
             return px;
         }
 
-        public void Dispose() { s.Dispose(); }
+        public void Dispose() { if (shards != null) shards.Dispose(); else s.Dispose(); }
     }
 }

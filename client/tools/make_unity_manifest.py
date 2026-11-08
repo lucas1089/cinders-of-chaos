@@ -19,6 +19,15 @@ channel lists relative paths with sub-folders ("layout": "tree"), the main clien
   verify   PUBLISH_DIR --public HEX
            Signature, payload rules and the size and SHA-256 of every blob.
 
+The sprite pair (ROADMAP O433 phase 17, unity/README.md "Sprite pair"): a Unity build that carries the client guard key
+(pack --embed-client-key, the workflow input embed_client_key) can open the main client's encrypted update blobs, so build
+--pair-from LIVE_DIR (the main client's published updates/live folder) adds the sprite pair to the channel as those same
+blobs: data/things/<n>/Tibia.dat, Tibia.sprshards and the Tibia.NNN.spr shards, copied byte for byte (same encryption, same key,
+nothing is decrypted or re-encrypted) to things_enc/<name>.chub. The live manifest's signature is checked first, then each blob's
+size, SHA-256 and CHUB header (a development-key blob is refused); with CHAOS_CLIENT_KEY in the environment each blob is also
+decrypted and compared with the signed plain hash and the shard index. A package built without the key is a DEV package: it is
+published with "dev": true in its manifest (the launcher does not offer it to players) and gets no pair, since it could not open it.
+
 Rules (the launcher refuses the same, launcher/src/manifest.rs `check_tree_path`): at most TREE_MAX_FILES files and
 TREE_MAX_DEPTH folders deep; each name 1 to 96 characters of letters, digits and . _ - and space, starting with a
 letter or digit, not ending in a dot or space, no Windows device name; no two paths that differ only in case; no path that
@@ -44,6 +53,10 @@ SEGMENT = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._ -]{0,95}$')
 LEFT_OUT_DIR = re.compile(r'(_BurstDebugInformation_DoNotShip|_BackUpThisFolder_ButDontShipItWithYourGame)$')
 LEFT_OUT_EXT = {'pdb'}
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
+PAIR_DIR = 'things_enc'       # Core/ThingsPair.cs PairLocator.BlobDir
+PAIR_EXT = '.chub'            # Core/ThingsPair.cs PairLocator.BlobExt
+PAIR_FILE = re.compile(r'^data/things/(\d+)/(Tibia\.(?:dat|sprshards|\d{3}\.spr))$')
+CHUB_MAGIC, CHUB_VERSION, CHUB_HEADER = b'CHUB', 1, 28
 
 
 def check_tree_path(path):
@@ -78,6 +91,8 @@ def check_tree_native(n):
         return 'native: layout is not tree'
     if 'launcher' in n:
         return 'native: the unity channel has no launcher entry'
+    if 'dev' in n and not isinstance(n['dev'], bool):
+        return 'native: dev is not a boolean'
     files = n.get('files')
     if not isinstance(files, list) or not files or len(files) > TREE_MAX_FILES:
         return 'native: bad file list'
@@ -123,9 +138,14 @@ def check_payload(m):
     return check_tree_native(m.get('native'))
 
 
-def make_native(entries, package, game):
-    return {'package': package, 'game': game, 'files_url': mum.NATIVE_DIR + '/', 'layout': LAYOUT,
-            'files': [{'path': p, 'sha256': h, 'size': s} for p, h, s in entries]}
+def make_native(entries, package, game, dev=None):
+    """dev None leaves the flag out (the file list of unity_build.json); a published manifest says True or False: a DEV package
+    (built without the client key) is not offered to players by the launcher."""
+    n = {'package': package, 'game': game, 'files_url': mum.NATIVE_DIR + '/', 'layout': LAYOUT,
+         'files': [{'path': p, 'sha256': h, 'size': s} for p, h, s in entries]}
+    if dev is not None:
+        n['dev'] = bool(dev)
+    return n
 
 
 def collect_tree(root, skip=()):
@@ -190,7 +210,9 @@ def pack(args):
     err = check_tree_native(native)
     if err:
         sys.exit('refused: ' + err)
-    info = {'format': 1, 'kind': 'cinders-unity-build', 'created': now(), 'native': native}
+    # a boolean only, never the key: whether the build carries CHAOS_CLIENT_KEY (the workflow input embed_client_key)
+    info = {'format': 1, 'kind': 'cinders-unity-build', 'created': now(), 'embed_client_key': bool(args.embed_client_key),
+            'native': native}
     out = os.path.abspath(args.out)
     os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
     tmp = out + '.tmp'
@@ -200,7 +222,9 @@ def pack(args):
             z.write(os.path.join(root, *p.split('/')), p)
     os.replace(tmp, out)
     total = sum(s for _, _, s in entries)
-    print(f'packed {len(entries)} files ({total} bytes) as {out}; package {args.package}, game {args.game}')
+    print(f'packed {len(entries)} files ({total} bytes) as {out}; package {args.package}, game {args.game}; '
+          + ('KEYED: the client key is inside this build (embed_client_key), it can open the sprite pair blobs' if args.embed_client_key
+             else 'DEV package: no client key inside, the launcher will not offer it to players'))
     return 0
 
 
@@ -214,6 +238,8 @@ def read_build_info(root):
     err = check_tree_native(info.get('native'))
     if err:
         sys.exit(f'{BUILD_FILE}: {err}')
+    if 'embed_client_key' in info and not isinstance(info['embed_client_key'], bool):
+        sys.exit(f'{BUILD_FILE}: embed_client_key is not a boolean')
     return info
 
 
@@ -223,6 +249,99 @@ def previous_version(out):
         return json.loads(env['payload'])['version']
     except (OSError, ValueError, KeyError, TypeError):
         return 0
+
+
+def read_live_pair(live_dir, public):
+    """The sprite pair of the main client's published update (LIVE_DIR = updates/live) as Unity channel entries:
+    ([(things_enc/<name>.chub, blob sha256, blob size)], {blob sha256: abspath of the blob}, text for the log).
+    Exits with the reason when the live manifest is not signed by `public`, has no complete pair, or a blob is wrong. The blobs are
+    NOT decrypted here unless CHAOS_CLIENT_KEY is set; then each one is checked against the signed plain hash and the shard index."""
+    live = os.path.abspath(live_dir)
+    try:
+        env = json.load(open(os.path.join(live, 'manifest.json'), encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        sys.exit(f'--pair-from {live}: manifest.json: {e}')
+    if env.get('format') != mum.FORMAT or not isinstance(env.get('payload'), str):
+        sys.exit(f'--pair-from {live}: not a Cinders of Chaos update envelope')
+    if not re.fullmatch(r'[0-9a-f]{128}', str(env.get('signature'))) or \
+            not mum.verify_sig(public, env['payload'].encode('utf-8'), bytes.fromhex(env['signature'])):
+        sys.exit(f'--pair-from {live}: the live manifest is not signed by this update key')
+    m = json.loads(env['payload'])
+    err = mum.check_payload(m)
+    if err:
+        sys.exit(f'--pair-from {live}: refused: {err}')
+    by_dir = {}
+    for f in m['files']:
+        hit = PAIR_FILE.match(f['path'])
+        if hit:
+            by_dir.setdefault(int(hit.group(1)), {})[hit.group(2)] = f
+    complete = sorted(v for v, fs in by_dir.items() if 'Tibia.dat' in fs and 'Tibia.sprshards' in fs)
+    if not complete:
+        sys.exit(f'--pair-from {live}: the live manifest holds no data/things/<n>/Tibia.dat with Tibia.sprshards '
+                 '(publish the main client first; the Unity pair is the main client\'s shard set)')
+    ver = complete[-1]
+    fs = by_dir[ver]
+    shards = sorted(n for n in fs if re.fullmatch(r'Tibia\.\d{3}\.spr', n))
+    if not shards or shards != ['Tibia.%03d.spr' % i for i in range(len(shards))]:
+        sys.exit(f'--pair-from {live}: the shards of data/things/{ver}/ are missing or have a gap: {shards[:3]}...')
+    names = ['Tibia.dat', 'Tibia.sprshards'] + shards
+    entries, src = [], {}
+    for n in names:
+        f = fs[n]
+        blob = os.path.join(live, 'files', f['blob'][:2], f['blob'])
+        if not os.path.isfile(blob) or os.path.getsize(blob) != f['blob_size'] or mum.sha256_file(blob) != f['blob']:
+            sys.exit(f'--pair-from {live}: the blob of {n} is missing or changed')
+        with open(blob, 'rb') as bf:
+            head = bf.read(CHUB_HEADER)
+        if len(head) < CHUB_HEADER or head[:4] != CHUB_MAGIC or head[4] != CHUB_VERSION:
+            sys.exit(f'--pair-from {live}: the blob of {n} is not an encrypted update blob')
+        if head[5] & 1:
+            sys.exit(f'--pair-from {live}: the blob of {n} is encrypted with the DEVELOPMENT key (a test publish); '
+                     'a keyed Unity build cannot open it')
+        entries.append((f'{PAIR_DIR}/{n}{PAIR_EXT}', f['blob'], f['blob_size']))
+        src[f['blob']] = blob
+    checked = check_pair_content(live, fs, names)
+    return entries, src, (f'sprite pair: data/things/{ver}/ ({len(names)} blobs, {sum(e[2] for e in entries)} bytes, copied as they are; '
+                          + ('decrypted and checked against the signed hashes and the shard index' if checked
+                             else 'ciphertext checked only: no CHAOS_CLIENT_KEY here') + ')')
+
+
+def check_pair_content(live, fs, names):
+    """With CHAOS_CLIENT_KEY: every pair blob decrypts to the signed plain hash, and the shard index lists exactly the shards,
+    with their sizes and hashes. Returns False when there is no key (nothing checked), exits on a mismatch."""
+    if not os.environ.get(mum.KEY_ENV, '').strip():
+        return False
+    uc = mum.crypt()
+    keys = [k for _, k in mum.client_keys(False)]
+    plain = {}
+    index_text = None
+    for n in names:
+        f = fs[n]
+        blob = os.path.join(live, 'files', f['blob'][:2], f['blob'])
+        got = None
+        for k in keys:
+            try:
+                if n == 'Tibia.sprshards':
+                    with open(blob, 'rb') as bf:
+                        index_text = uc.decrypt(bf.read(), k).decode('utf-8')
+                got = uc.decrypt_file(blob, k)[1]
+                break
+            except uc.BlobError:
+                continue
+        if got is None:
+            sys.exit(f'--pair-from {live}: no key of {mum.KEY_ENV} opens the blob of {n} (another build key, or a damaged file)')
+        if got != f['sha256']:
+            sys.exit(f'--pair-from {live}: the blob of {n} does not decrypt to the signed content')
+        plain[n] = (got, f['size'])
+    listed = {}
+    for line in (index_text or '').splitlines():
+        w = line.split()
+        if w and w[0] == 'shard' and len(w) >= 6:
+            listed[w[3]] = (int(w[4]), w[5])
+    want = {n: (plain[n][1], plain[n][0]) for n in names if n.endswith('.spr')}
+    if listed != want:
+        sys.exit(f'--pair-from {live}: Tibia.sprshards does not describe the shard blobs (names, sizes, SHA-256)')
+    return True
 
 
 def build(args):
@@ -250,7 +369,26 @@ def build(args):
         sys.exit('--version must be 1 or more')
     if version <= prev:
         sys.exit(f'version {version} is not newer than the published {prev}; the launcher refuses older manifests')
-    native = make_native(entries, info['native']['package'], info['native']['game'])
+    keyed = info.get('embed_client_key') is True
+    src_all = dict(src)
+    all_entries = list(entries)
+    if args.pair_from:
+        if keyed:
+            pair, psrc, note = read_live_pair(args.pair_from, public)
+            have = {p.lower() for p, _, _ in entries}
+            clash = [p for p, _, _ in pair if p.lower() in have]
+            if clash:
+                sys.exit(f'the player folder already has {clash[0]}: the sprite pair needs the {PAIR_DIR}/ folder')
+            all_entries += pair
+            src_all.update(psrc)
+            print(note)
+        else:
+            print('DEV package (unity_build.json: embed_client_key is not true): no sprite pair is added, a build without the '
+                  'client key could not open it; its manifest says "dev": true and the launcher does not offer it to players')
+    elif not keyed:
+        print('DEV package (unity_build.json: embed_client_key is not true): its manifest says "dev": true and the launcher does not '
+              'offer it to players')
+    native = make_native(all_entries, info['native']['package'], info['native']['game'], dev=not keyed)
     payload = json.dumps({'format': 1, 'product': mum.PRODUCT, 'channel': CHANNEL, 'version': version,
                           'created': now(), 'min_package': 0, 'files': [], 'native': native},
                          sort_keys=True, separators=(',', ':'), ensure_ascii=True)
@@ -258,7 +396,7 @@ def build(args):
     if err:
         sys.exit('internal: ' + err)
     os.makedirs(out, exist_ok=True)
-    mum.publish_native(out, entries, src)  # blobs first, the manifest last
+    mum.publish_native(out, all_entries, src_all)  # blobs first, the manifest last
     signature = mum.sign(seed, payload.encode('ascii'))
     if not mum.verify_sig(public, payload.encode('ascii'), signature):
         sys.exit('internal: the new signature does not verify')
@@ -267,10 +405,11 @@ def build(args):
         f.write(mum.make_envelope(payload, public.hex(), signature.hex()))
     os.chmod(tmp, 0o644)
     os.replace(tmp, os.path.join(out, 'manifest.json'))
-    removed = mum.prune_blobs(os.path.join(out, mum.NATIVE_DIR), {h for _, h, _ in entries})
-    total = sum(s for _, _, s in entries)
-    print(f'published unity version {version} (was {prev}): {len(entries)} files, {total} bytes, package '
-          f'{native["package"]}, game {native["game"]}; {removed} old file(s) removed; public key {public.hex()}')
+    removed = mum.prune_blobs(os.path.join(out, mum.NATIVE_DIR), {h for _, h, _ in all_entries})
+    total = sum(s for _, _, s in all_entries)
+    print(f'published unity version {version} (was {prev}): {len(all_entries)} files ({len(all_entries) - len(entries)} of the sprite pair), '
+          f'{total} bytes, package {native["package"]}, game {native["game"]}, {"KEYED" if keyed else "DEV (not offered to players)"}; '
+          f'{removed} old file(s) removed; public key {public.hex()}')
     return 0
 
 
@@ -301,8 +440,9 @@ def verify(args):
     if bad:
         sys.exit(f'{bad} blob(s) missing or changed')
     n = m['native']
-    print(f'ok: unity version {m["version"]}, {len(n["files"])} files (package {n["package"]}, game {n["game"]}), '
-          'signature good, every blob checked')
+    pair = sum(1 for f in n['files'] if f['path'].startswith(PAIR_DIR + '/'))
+    print(f'ok: unity version {m["version"]}, {len(n["files"])} files (package {n["package"]}, game {n["game"]}, '
+          f'{"DEV" if n.get("dev") else "keyed"}, {pair} sprite pair blobs), signature good, every blob checked')
     return 0
 
 
@@ -314,11 +454,15 @@ def main(argv=None):
     p.add_argument('--out', required=True)
     p.add_argument('--package', type=int, required=True, help='the client build the player was built for')
     p.add_argument('--game', default=DEFAULT_GAME)
+    p.add_argument('--embed-client-key', action='store_true',
+                   help='the build carries the client guard key (workflow input embed_client_key); only a boolean is written')
     b = sub.add_parser('build')
     b.add_argument('dir')
     b.add_argument('--out', required=True)
     b.add_argument('--key')
     b.add_argument('--version', type=int)
+    b.add_argument('--pair-from', metavar='LIVE_DIR', help='the main client\'s published updates/live folder: its sprite pair '
+                   'is added as encrypted blobs (keyed builds only)')
     v = sub.add_parser('verify')
     v.add_argument('publish_dir')
     v.add_argument('--public', required=True)

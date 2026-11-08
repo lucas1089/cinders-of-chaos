@@ -22230,14 +22230,22 @@ script re-runs itself with `sudo -n`, which drops the environment.
   folder replaced by `unity`). The script extracts the zip with the same safe extract, finds `unity_build.json`, and
   `client/tools/make_unity_manifest.py build` hashes the files again (they must match it), copies them as plain blobs to
   `updates/unity/native/<sha[:2]>/<sha>` and writes `updates/unity/manifest.json` signed with the same key, last; `verify` runs
-  after it and a web check asks the manifest and a Range request on the biggest blob. It needs no `CHAOS_CLIENT_KEY` (a public
-  build, plain blobs) and never touches `updates/live`. Its version counts on its own (the tag number, else the published one plus 1, and it
+  after it and a web check asks the manifest and a Range request on the biggest blob. It needs no `CHAOS_CLIENT_KEY` and never changes
+  `updates/live`. **Sprite pair (O433 phase 17):** for a package built with the client key (`unity_build.json` `"embed_client_key": true`, the workflow
+  input `embed_client_key`) it also reads the main client's published `updates/live` (`CHAOS_UPDATE_UNITY_PAIR_FROM` names another folder; the live
+  manifest must be signed by the same update key) and copies the pair blobs `data/things/<n>/Tibia.dat`, `Tibia.sprshards` and the `Tibia.NNN.spr` shards
+  byte for byte as native files `things_enc/<name>.chub` (the same encrypted update blobs, same key, nothing decrypted or re-encrypted; size, SHA-256 and
+  the `CHUB` header are checked, a development-key blob is refused). When `CHAOS_CLIENT_KEY` is at hand (the environment, or the line of `CHAOS_ENV`; never
+  printed, not required) each blob is also decrypted and compared with the signed hash and with the shard index. `--no-pair` leaves it out; with no
+  published main client there is a warning and no pair. A package built without the key is a dev package: `"dev": true` in its signed manifest, no pair,
+  and the launcher refuses to install it (`--allow-dev-unity` for testers). Publish the main client first; after a main release that changes the
+  pair, publish the Unity package again with `--version N+1`. Its version counts on its own (the tag number, else the published one plus 1, and it
   must go up). It does not go with `--apk`, `--no-apk`, `--min-package`, `--key-index` or `--check-only`. Admin app (Android and
   desktop): Comandos > "Site e update do client" > "Release do client Unity (beta)" > "Publicar client Unity". The launcher then
-  offers "Unity client (beta)" (launcher/README.md "Client choice"; unity/README.md "Shipping the Unity client", with the open
-  guard key and sprite pair questions). nginx already covers `/updates/unity/` (the `location ^~ /updates/` block). Tests: `publish_client_update_test.py` (tag and
+  offers "Unity client (beta)" (launcher/README.md "Client choice"; unity/README.md "Shipping the Unity client" and "Sprite pair"). nginx already covers `/updates/unity/` (the `location ^~ /updates/` block). Tests: `publish_client_update_test.py` (tag and
   local zip, no client key, own manifest, main manifest untouched, web check, refusals: same version, main client zip, changed file, extra
-  script, main client options, small download), `chaos_ctl_test.py` (refusals and the arguments reaching a stub),
+  script, main client options, small download; the sprite pair: keyed package with the live blobs copied byte for byte, decrypted checks with the key and
+  ciphertext checks without, `--no-pair`, dev package, no main client, wrong key, live manifest of another update key), `chaos_ctl_test.py` (refusals and the arguments reaching a stub),
   `client/tools/make_unity_manifest_test.py`.
   Tests: `chaos_ctl_test.py` (refusals, the arguments and settings reaching a stub) and `publish_client_update_test.py`
   (the real script on synthetic loose and packed packages with throwaway keys: the manifest verifies, every blob is

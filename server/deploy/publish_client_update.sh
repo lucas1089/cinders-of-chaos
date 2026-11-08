@@ -5,7 +5,7 @@
 # usage: publish_client_update.sh [options] TAG|ZIP          (as root: the private key is readable by root only)
 #        publish_client_update.sh --apk APKTAG|APKFILE [--apk-info JSON] [--apk-min-version-code N]   (app update only)
 #        publish_client_update.sh --no-apk | --apk-min-version-code N                                  (app update only)
-#        publish_client_update.sh --unity [--version N] TAG|ZIP                                        (Unity client channel only)
+#        publish_client_update.sh --unity [--version N] [--no-pair] TAG|ZIP                            (Unity client channel only)
 #
 #   TAG   a release of the repository (winpkg-46): downloads its CindersOfChaos-Client-Windows.zip
 #   ZIP   a local client zip instead (not offered by chaos-ctl.sh, which publishes release tags only)
@@ -43,11 +43,21 @@
 #   --unity           the Unity client channel (O433 phase 16, unity/README.md "Shipping the Unity client"): TAG|ZIP is the
 #                     Unity Windows player zip of the workflow unity-prototype.yml (CindersOfChaos-Unity-Windows.zip: the player
 #                     folder and unity_build.json). Nothing of the main client changes: its own manifest, signed with the same
-#                     key, goes to $CHAOS_SITE_DIR/updates/unity (plain blobs under native/, the Unity build holds no secret) and
+#                     key, goes to $CHAOS_SITE_DIR/updates/unity (blobs under native/: the player files plain, the sprite pair encrypted, below) and
 #                     the launcher installs it in a folder of its own when the player picks "Unity client (beta)". The files are
 #                     hashed again and must match unity_build.json. --version N: the manifest version, default the number at the
 #                     end of the tag (unity-3 -> 3), else the published unity version + 1; it must be above the published one.
-#                     Needs no CHAOS_CLIENT_KEY. Not with the options of the main client or the app update.
+#                     Not with the options of the main client or the app update.
+#                     The sprite pair (O433 phase 17, unity/README.md "Sprite pair"): a package built with the client key inside
+#                     (unity_build.json "embed_client_key": true) gets the main client's sprite pair added as the very same
+#                     encrypted update blobs, copied byte for byte from $CHAOS_SITE_DIR/updates/live (or CHAOS_UPDATE_UNITY_PAIR_FROM):
+#                     things_enc/Tibia.dat.chub, Tibia.sprshards.chub and the Tibia.NNN.spr.chub shards, so a Unity-only install
+#                     draws. The live manifest's signature and every blob's size and SHA-256 are checked first; with CHAOS_CLIENT_KEY
+#                     (from CHAOS_ENV when it is there, never printed, not required) each blob is decrypted and compared too. A package
+#                     built without the key is a DEV package: "dev": true in its manifest, no pair, and the launcher does not offer it
+#                     to players. Publish the main client first; to refresh the pair after a new main release publish the unity
+#                     package again with --version N+1.
+#   --no-pair         with --unity: leave the sprite pair out (the player then finds the main client's chaos.pack or loose files)
 #   --check-only     no publish: only the web server check of the published manifest (below)
 #   --no-check        skip the web server check
 #   --keep            keep the work folder (the download and the extracted client) for a look afterwards
@@ -80,6 +90,7 @@
 #   CHAOS_UPDATE_ASSET    CindersOfChaos-Client-Windows.zip
 #   CHAOS_UPDATE_UNITY_ASSET     CindersOfChaos-Unity-Windows.zip   the Unity player asset of a release (--unity TAG)
 #   CHAOS_UPDATE_UNITY_MIN_MB    20                a smaller Unity download is refused
+#   CHAOS_UPDATE_UNITY_PAIR_FROM (updates/live)    the main client's published folder the Unity sprite pair is taken from
 #   CHAOS_UPDATE_UNITY_URL       (empty)           the public URL of updates/unity/manifest.json for the check (default: CHAOS_UPDATE_URL
 #                                                  with its updates/<channel>/ folder replaced by updates/unity/)
 #   CHAOS_UPDATE_APK_ASSET       CindersOfChaos-Android.apk    the APK asset of an Android client release (--apk TAG)
@@ -113,6 +124,7 @@ APK_MIN_MB=${CHAOS_UPDATE_APK_MIN_MB:-1}
 UNITY_ASSET=${CHAOS_UPDATE_UNITY_ASSET:-CindersOfChaos-Unity-Windows.zip}
 UNITY_MIN_MB=${CHAOS_UPDATE_UNITY_MIN_MB:-20}
 UNITY_URL=${CHAOS_UPDATE_UNITY_URL:-}
+UNITY_PAIR_FROM=${CHAOS_UPDATE_UNITY_PAIR_FROM:-}
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'publish: %s\n' "$*" >&2; exit 1; }
@@ -122,7 +134,7 @@ isnum() { [[ ${1:-} =~ ^[0-9]{1,9}$ ]]; }
 ENVFILE=${CHAOS_ENV:-/etc/chaos/chaos.env}
 ENCRYPTED_MIN_PACKAGE=13
 
-VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC="" KEYIDX="" APK="" APKINFO="" APKMIN="" NOAPK=0 UNITY=0
+VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC="" KEYIDX="" APK="" APKINFO="" APKMIN="" NOAPK=0 UNITY=0 NOPAIR=0
 while [ $# -gt 0 ]; do
   case $1 in
     --version) isnum "${2:-}" || die "--version N"; VERSION=$((10#$2)); shift 2 ;;
@@ -133,6 +145,7 @@ while [ $# -gt 0 ]; do
     --apk-min-version-code) isnum "${2:-}" || die "--apk-min-version-code N"; APKMIN=$((10#$2)); shift 2 ;;
     --no-apk) NOAPK=1; shift ;;
     --unity) UNITY=1; shift ;;
+    --no-pair) NOPAIR=1; shift ;;
     --check-only) PUBLISH=0; shift ;;
     --no-check) CHECK=0; shift ;;
     --keep) KEEP=1; shift ;;
@@ -148,6 +161,8 @@ if [ "$UNITY" = 1 ]; then
   { [ -z "$APK" ] && [ -z "$APKINFO" ] && [ -z "$APKMIN" ] && [ "$NOAPK" = 0 ] && [ -z "$MINPKG" ] && [ -z "$KEYIDX" ]; } \
     || die "--unity does not go with --apk, --no-apk, --apk-min-version-code, --min-package or --key-index (they are the main client's)"
   [ "$PUBLISH" = 1 ] || die "--unity does not go with --check-only"
+elif [ "$NOPAIR" = 1 ]; then
+  die "--no-pair goes with --unity"
 fi
 LIVE="$SITE/updates/live"
 UNITYDIR="$SITE/updates/unity"
@@ -312,14 +327,18 @@ if [ -z "$SRC" ]; then
 fi
 
 # the blob key: the client guard secret of the game server (never printed, only passed on in the environment).
-# The Unity channel has plain blobs (no secret in a public build) and needs none.
-if [ "$UNITY" = 0 ] && [ -z "${CHAOS_CLIENT_KEY:-}" ] && [ -r "$ENVFILE" ]; then
+# The Unity channel copies the main client's blobs as they are and needs no key; with one it also decrypts them to check them.
+if [ -z "${CHAOS_CLIENT_KEY:-}" ] && [ -r "$ENVFILE" ]; then
   CHAOS_CLIENT_KEY=$(sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}CHAOS_CLIENT_KEY=//p' "$ENVFILE" | tail -n 1 \
     | tr -d " \"'\r")
 fi
 if [ "$UNITY" = 0 ]; then
   [ -n "${CHAOS_CLIENT_KEY:-}" ] || die "no CHAOS_CLIENT_KEY (the environment, or a CHAOS_CLIENT_KEY= line in $ENVFILE): the update blobs are encrypted with it and are never published plain"
   export CHAOS_CLIENT_KEY
+elif [ -n "${CHAOS_CLIENT_KEY:-}" ]; then
+  export CHAOS_CLIENT_KEY
+else
+  unset CHAOS_CLIENT_KEY
 fi
 
 TAG="" ZIP="" NATIVE=""
@@ -412,7 +431,17 @@ if [ "$UNITY" = 1 ]; then
   PUBLIC=$DERIVED
   uargs=(build "$UBUILD" --out "$UNITYDIR" --key "$KEY")
   [ -n "$VERSION" ] && uargs+=(--version "$VERSION")
-  say "build: unity channel, plain blobs -> $UNITYDIR"
+  # the sprite pair: the main client's published encrypted blobs, for a package that carries the client key
+  PAIRFROM=${UNITY_PAIR_FROM:-$LIVE}
+  if [ "$NOPAIR" = 1 ]; then
+    say "sprite pair: left out (--no-pair)"
+  elif [ -f "$PAIRFROM/manifest.json" ]; then
+    uargs+=(--pair-from "$PAIRFROM")
+    say "sprite pair: from $PAIRFROM (a keyed package only; a DEV package gets none)"
+  else
+    say "WARN: no published main client at $PAIRFROM: the Unity channel gets no sprite pair (publish the main client first, then the Unity package again with --version N+1)"
+  fi
+  say "build: unity channel -> $UNITYDIR"
   python3 -I "$UNITYTOOL" "${uargs[@]}" || die "make_unity_manifest.py build failed; nothing new was published"
   python3 -I "$UNITYTOOL" verify "$UNITYDIR" --public "$PUBLIC" || die "verify failed: check $UNITYDIR/manifest.json before players fetch it"
   chk="skipped"

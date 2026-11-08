@@ -621,8 +621,8 @@ Pure code in `Core/Phase7Y.cs` and `Core/Phase7YTree.cs`, tests in `Core.Tests/P
 ## Running it
 
 1. Open `unity/Client` in Unity 2022.3 LTS and press Play.
-2. Put `Tibia.dat` and `Tibia.spr` of the current pair in a folder. The login screen asks for that folder.
-   It defaults to `things/` beside the executable.
+2. The sprite pair (`Tibia.dat` and the sprites) is found in this order (section "Sprite pair"): the flag `-chaosThings DIR`, loose files in the folder the login
+   screen names (default `things/` beside the executable: development), the encrypted blobs `things_enc/` of the install, the main client's `chaos.pack` next to it.
 3. Server keys at run time:
    - `CHAOS_RSA_PUBLIC` is the server's RSA modulus in decimal. Without it the build uses the one baked in, or the open key.
    - `CHAOS_CLIENT_KEY` is the guard key.
@@ -641,8 +641,9 @@ Keys: arrows, WASD, numpad. A held mouse button or finger walks towards the poin
     - Windows: `C:\ProgramData\Unity\Unity_lic.ulf`.
   - `CHAOS_RSA_PUBLIC` (secret) is baked in. It is public data. Without it the build can not log in to the live server.
   - The guard key is **not** baked in by default. This repository is public.
-    - The input `embed_client_key` puts `CHAOS_CLIENT_KEY` into the build. Use it only for a build you keep to yourself.
-    - Otherwise set `CHAOS_CLIENT_KEY` on the PC that runs it, or test against a server with the guard in mode "log".
+    - The input `embed_client_key` puts `CHAOS_CLIENT_KEY` into the build, exactly as the main client's `Chaos.exe` carries it. It is the way to a player build
+      (owner decision 2026-11-08, "Shipping the Unity client"); the key is in the build and never in the repository.
+    - Otherwise the build is a **DEV package**: set `CHAOS_CLIENT_KEY` on the PC that runs it, or test against a server with the guard in mode "log".
 
 The artifact `chaos-unity-<target>` is kept 7 days.
 
@@ -658,7 +659,7 @@ Route, step by step:
    Linux and Android builds are unchanged and are not packed.
 2. The zip holds the player folder at its root (`ChaosUnity.exe`, `UnityPlayer.dll`, `ChaosUnity_Data/...`, `MonoBleedingEdge/...`) and `unity_build.json`:
    every file with path, size and SHA-256, in the shape of the `native` section the launcher already reads, plus the package number (the `client_build` input).
-   `client/tools/make_unity_manifest.py pack` writes it. Not signed: the update key never leaves the VPS. Left out: `*_BurstDebugInformation_DoNotShip`,
+   `client/tools/make_unity_manifest.py pack` writes it, and the boolean `embed_client_key` (the workflow input; never the key): keyed or dev, see below. Not signed: the update key never leaves the VPS. Left out: `*_BurstDebugInformation_DoNotShip`,
    `*_BackUpThisFolder_ButDontShipItWithYourGame`, `.pdb`. Refused: links, scripts (`.bat`, `.cmd`, `.ps1`, shortcuts), odd names, `.exe` outside the root,
    more than 4096 files or 12 folders deep. The launcher applies the same rules.
 3. No release is made by the workflow. To publish, the owner downloads the zip and attaches it to a GitHub release by hand, tag `unity-N`
@@ -667,9 +668,11 @@ Route, step by step:
    Shell fallback: `chaos-ctl.sh publish-unity unity-N [--version N]`, which runs `publish_client_update.sh --unity unity-N`.
    It downloads the zip, extracts it safely, hashes the files again (they must match `unity_build.json`), copies them as plain blobs to
    `updates/unity/native/<sha[:2]>/<sha>` and writes `updates/unity/manifest.json` signed with the same Ed25519 key, last.
-   The main client's `updates/live` is not touched, and no `CHAOS_CLIENT_KEY` is needed (the Unity build is public client code, no secret in the blobs).
+   The main client's `updates/live` is not touched (it is only read, for the sprite pair of a keyed package). The player files are plain blobs (public client code);
+   the sprite pair blobs are the main client's own encrypted blobs, copied as they are (section "Sprite pair"). No `CHAOS_CLIENT_KEY` is needed to publish;
+   with one at hand the publisher also decrypts the pair blobs to check them.
    The manifest version counts on its own: the tag number, else the published one plus 1, and it must go up.
-5. Players: the launcher shows "Client: Main client | Unity client (beta)". Unity is installed in `unity/` inside the game folder with its own
+5. Players: the launcher shows "Client: Main client | Unity client (beta)". A DEV package (`"dev": true` in its manifest) is refused with a message; testers pass `--allow-dev-unity`. Unity is installed in `unity/` inside the game folder with its own
    `.cinders_launcher` state, through the same update code (resume, hash check, journaled swap with rollback). The choice is saved in
    `.cinders_launcher/settings.json`. `Jogar` starts `unity/ChaosUnity.exe`. Details: `launcher/README.md` "Client choice".
 
@@ -677,17 +680,60 @@ Files: `client/tools/make_unity_manifest.py` (pack, build, verify; tests `make_u
 (tests `publish_client_update_test.py`), `server/deploy/chaos-ctl.sh publish-unity` (tests `chaos_ctl_test.py`), `launcher/src/choice.rs`, `manifest.rs`
 (layout `Tree`), `config.rs`, `launcher/tests/unity_update.rs`, `launcher/tests/vector.rs` (a manifest signed by Python), the website downloads page.
 
-Open before players use it (owner decisions, nothing here decides them):
-- **The guard key.** A default build answers the guard with the development key, so a live server in mode enforce refuses the login. The only way to a build
-  that logs in is the input `embed_client_key`, which puts `CHAOS_CLIENT_KEY` into a file every player downloads. This repository and the update folder are public,
-  so the key can be read out of the build. Choose between that (the guard is then only a hurdle) and the server guard in mode "log" for Unity.
-  The workflow prints a warning when the key is in the package.
-- **The sprite pair.** Unity reads `Tibia.dat` and `Tibia.spr` from `things/` beside the exe, so from `unity/things/`. The update channel does not carry
-  them: the pair holds art whose licence allows it inside a built game but not as plain files (docs/CREDITS.md), and the main client keeps it inside the
-  encrypted `chaos.pack`. Until the owner decides how to deliver it (for example an encrypted blob opened by the build), a tester puts the pair there by hand.
-  The launcher never touches files the manifest does not name.
+Decided by the owner (2026-11-08, pt-BR): "Embutir como no principal". The guard key and the sprite pair: see "Sprite pair" below.
+
+Open before players use it:
 - **Not run on Windows or against a live server.** The window smoke run (CI) and the fake server are the only runs. The swap of a loaded player on Windows is untested, as for the main client.
 - **Code signing.** Same as the launcher: unsigned programs get antivirus and SmartScreen warnings.
+
+## Sprite pair
+
+Owner 2026-11-08 (pt-BR): "Embutir como no principal". The Unity player build for players carries the client guard key exactly like the main client's `Chaos.exe`
+does, and the sprite pair reaches the player the way the main client's does, so nobody copies files by hand. O433 phase 17. Written and tested here (C#, Python, Rust);
+not run in a Unity player, on Windows or against the real VPS.
+
+The key. The workflow input `embed_client_key` (and the secret `CHAOS_CLIENT_KEY` being set) puts the key into the build as the Resource `chaos_client_key`;
+`ChaosApp.GuardKey()` reads it for the guard answer and, now, for the pair. It is never in the repository, a log, a test or a committed file: the Core tests use a key made up
+from a sentence. The key can be read out of a build, as out of the main client's exe (the main client's pack only deters copying, base patch 0102). What the flag decides:
+- `embed_client_key = true`: a **keyed** package. The job log says so (a warning), `unity_build.json` holds `"embed_client_key": true` (a boolean, never the key),
+  the signed manifest says `"dev": false`, the publisher adds the sprite pair.
+- `embed_client_key = false`: a **dev** package. The job log says so, `unity_build.json` holds `false`, the manifest says `"dev": true`, the publisher adds no pair (the build could
+  not open it) and the launcher refuses to install it: the message "development build ... not offered to players". Testers run `cinders-launcher --allow-dev-unity`
+  (or `CINDERS_ALLOW_DEV_UNITY=1`). A zip made before phase 17 has no field and is published as dev.
+
+Where the pair is found (`Core/ThingsPair.cs`, `PairLocator.Find`; glue `ChaosApp.LoadPair`):
+1. `-chaosThings DIR`: loose `Tibia.dat` with `Tibia.spr` or `Tibia.sprshards` (an explicit choice: when wrong the login screen says so, no fall back).
+2. Loose files in the folder of the login screen (`things/` beside the player by default; the `unity/things/` of a tester). Shards are read like the engine does:
+   a broken shard set falls back to a single `Tibia.spr`.
+3. The encrypted blobs of the install: `things_enc/Tibia.dat.chub`, `Tibia.sprshards.chub` and one `Tibia.NNN.spr.chub` per shard, installed by the launcher from the unity channel.
+   Shards are decrypted one at a time when a sprite needs them (`SprShardSet`, 6 kept in memory, about 30 MB each); the dat and the index at the start.
+4. The main client's pack: `-chaosPack FILE`, else `chaos.pack` in the folder above the player (the launcher installs the main client in `<install>/` and Unity in `<install>/unity/`),
+   else beside the player. Only the pair entries `data/things/<n>/Tibia.*` are kept out of the pack; the rest of it is read and thrown away. The pair then lives in memory (about a gigabyte
+   with the real pair; the main client holds the whole pack in memory the same way) and the open takes seconds.
+A wrong key (a dev package against real blobs, a pack of another build) fails with "wrong key or changed file" (and a hint for a dev build), never with the key or any content.
+A shard that does not fit the index or does not decrypt draws nothing and is reported once (`SprFile.ShardError`), as the engine does.
+
+The container, ported from the engine and not guessed (`Core/PackCipher.cs`, `PackReader.cs`, `SprShards.cs`):
+- `chaos.pack` (base patch 0102, `src/framework/util/chaospack.h`; writer `client/tools/pack_client.py`): 28-byte header `CHPK`, version 2, flags (bit 0 dev key), 2 reserved, 12-byte nonce,
+  u64 LE length of the uncompressed ZIP; then AES-256-GCM of a zlib stream of a store-only ZIP (additional data = the header), then the 16-byte tag.
+- Update blob (base patch 0103, `chaosblob.h`; writer `client/tools/update_crypt.py`): the same header with `CHUB`, version 1 and the file's length; AES-256-GCM of the file; tag.
+- Keys: HKDF-SHA256 of the 32-byte client key with salt `CindersOfChaos/pack/v1` and info `chaos-pack-aes-256-gcm`, or `CindersOfChaos/update/v1` and `chaos-update-blob-aes-256-gcm`.
+  (A rotation `old,new` of the server key: the build uses the last one, as the guard does.)
+- AES-GCM is written in the Core (AES in ECB mode makes the counter stream, GHASH is managed) because `AesGcm` is not in Unity's Mono. The tag is checked at the end and nothing is returned before
+  it verified. Like the engine, inflate runs on bytes the tag has not yet authenticated, into a size fixed by the header. Unlike the engine, bytes after the zlib stream and the Adler-32 trailer
+  are not checked (the tag covers them). Shards: `chaos-spr-shards 1` index, each shard a `.spr` of one id range, id in the shard = id - first + 1 (base patch 0048).
+- Tests (`Core.Tests/Phase17Tests.cs`): the NIST GCM vector, RFC 5869, a pack and a blob made by the real Python tools with a made-up key, C# writers that mirror them
+  (a pack over one 4 MB chunk, tampered tag, body, header and length, version 1, a member that is not stored, unsafe names), the shard index, the shard set against a single file,
+  and `PairLocator` over a fake install folder for every order and every failure.
+
+The channel (`client/tools/make_unity_manifest.py build --pair-from LIVE_DIR`, called by `publish_client_update.sh --unity`): for a keyed package the publisher reads the main client's
+published `updates/live` (the live manifest must be signed by the same update key), takes `data/things/<n>/Tibia.dat`, `Tibia.sprshards` and the shards, checks each blob (size, SHA-256, `CHUB` header,
+not the development key; with `CHAOS_CLIENT_KEY` also the decrypted hash and the shard index), and copies them byte for byte as native files `things_enc/<name>.chub`. Same encryption, same key,
+the same signature of the manifest; nothing is decrypted or re-encrypted. `--no-pair` leaves it out. Publish the main client first; after a main release that changes the pair, publish the Unity
+package again with `--version N+1` (the manifest version must go up). The Unity update then downloads only the changed shard blobs.
+
+Not done: shard decryption on a background thread (the first sprite of each shard waits for about 30 MB of AES-GCM on the main thread); the time of GCM in Mono is not measured;
+the launcher shows no dedicated screen for a dev package (it is the error text); the admin app has no button for `--no-pair`.
 
 ## Protocol notes
 
@@ -714,7 +760,7 @@ Players can use the main client (`client/`) or Unity on the same server. What th
 | game login | marker `"OTCv8"` + version after the random byte | `sendFeatures` (0x43), wings / aura / shader in outfits, floors as 0x4B |
 | game login (0003) | then `"OTCv8TierByte"` and `"A"` | chaosClient: feature 126, item attributes after every item, packet compression when `packetCompression` is on (0069, 0073) |
 | game login (0051, 0079) | then u32, `"C"` and a capability byte | bit 7 typed impact numbers (155), bit 6 16-bit spell ids (152, needs `chaosWideSpellIds`) |
-| guard (0021) | challenge 189, hello 190 | `ClientGuard.cs`, unchanged. The real key comes from `CHAOS_CLIENT_KEY` at build time, never embedded by default. |
+| guard (0021) | challenge 189, hello 190 | `ClientGuard.cs`, unchanged. The real key comes from `CHAOS_CLIENT_KEY` at build time; embedded only with the workflow input `embed_client_key` (owner 2026-11-08: a player build carries it like the main client), never in the repository. |
 | extended opcodes (0075) | string over 16384 bytes | dropped on the server |
 | Lua | `Player:sendExtendedOpcode` and the opcode dispatch | no check of the OS beyond the engine's, so Unity gets every module's messages |
 

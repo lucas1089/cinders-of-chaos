@@ -11,6 +11,9 @@
 #   CindersOfChaos-Unity-Windows.zip (the player folder plus unity_build.json: every file with size and SHA-256) in the artifact
 #   chaos-unity-windows-package. The workflow publishes no release and holds no signing key: the VPS signs it
 #   (publish_client_update.sh --unity, admin app: Comandos > Site e update do client > Publicar client Unity).
+#   embed_client_key decides what the package is (owner decision 2026-11-08, "Embutir como no principal"): true = a KEYED package that
+#   carries the client key like the main client's Chaos.exe and so opens the sprite pair blobs; false = a DEV package. The job log says
+#   which, and unity_build.json holds the boolean "embed_client_key" (never the key).
 name: Unity prototype
 
 on:
@@ -317,12 +320,22 @@ jobs:
           CLIENT_BUILD: ${{ inputs.client_build }}
           EMBED: ${{ inputs.embed_client_key }}
         run: |
-          if [ "$EMBED" = "true" ]; then echo "::warning::The client guard key is inside this package: whoever gets the zip can read it. Publish it only after the owner decided that (unity/README.md 'Shipping the Unity client')."; fi
+          # embed_client_key (the bake step above refused a missing secret): the package is KEYED, else it is a DEV package.
+          # unity_build.json gets the boolean "embed_client_key" (never the key); the publisher turns it into "dev": true in the
+          # signed manifest of a dev package and the launcher does not offer such a package to players (unity/README.md "Sprite pair").
+          keyed_flag=""
+          if [ "$EMBED" = "true" ]; then
+            keyed_flag="--embed-client-key"
+            echo "::warning::KEYED package: the client guard key is inside this build, so it opens the sprite pair blobs and logs in to a live server. Whoever gets the zip can read the key out of it (the same as the main client's exe). Publish it only as the owner decided (unity/README.md 'Sprite pair')."
+          else
+            echo "::notice::DEV package: no client key inside (embed_client_key is false). It answers the guard with the public development key, cannot open the encrypted sprite pair, and the launcher will not offer it to players."
+          fi
           exe=$(find build/StandaloneWindows64 -maxdepth 3 -name ChaosUnity.exe -type f | head -n 1)
           if [ -z "$exe" ]; then echo "::error::no ChaosUnity.exe under build/StandaloneWindows64"; ls -R build | head -30; exit 1; fi
           sudo chmod -R a+rX build
           mkdir -p unity-package
-          python3 -I client/tools/make_unity_manifest.py pack "$(dirname "$exe")" --out unity-package/CindersOfChaos-Unity-Windows.zip --package "$CLIENT_BUILD"
+          python3 -I client/tools/make_unity_manifest.py pack "$(dirname "$exe")" --out unity-package/CindersOfChaos-Unity-Windows.zip --package "$CLIENT_BUILD" $keyed_flag
+          unzip -p unity-package/CindersOfChaos-Unity-Windows.zip unity_build.json | python3 -I -c 'import json,sys; print("unity_build.json: embed_client_key =", json.load(sys.stdin)["embed_client_key"])'
           (cd unity-package && sha256sum CindersOfChaos-Unity-Windows.zip | tee CindersOfChaos-Unity-Windows.zip.sha256)
           ls -l unity-package
       - uses: actions/upload-artifact@v4

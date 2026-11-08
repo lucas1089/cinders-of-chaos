@@ -16,6 +16,10 @@ pack of another key and a min_package below 13 are refused; the old plain blobs 
 Unity channel (O433 phase 16): --unity publishes the player zip of the workflow (a tag or a local zip) as updates/unity with
 plain blobs and no client key, leaves the main manifest alone, refuses a changed file, a main client zip, a lower version
 and the main client's options.
+Unity sprite pair (O433 phase 17): a package built with the client key (unity_build.json embed_client_key) gets the main
+client's encrypted pair blobs copied byte for byte as things_enc/*.chub (decrypted and checked when the key is at hand, ciphertext
+only otherwise); a dev package says "dev": true and gets none; --no-pair, no published main client, a key that does not open the
+blobs and a live manifest of another update key.
 Sprite shards (pair 37): a single Tibia.spr in a package is published as its shard set (split and verified), a pack
 that holds the shards publishes them as they are, one with both leaves the single file out, a broken spr is refused.
 
@@ -656,6 +660,75 @@ exec %s "$@"
         check(r.returncode != 0, 'unity: a zip with an extra file refused')
         check(open(os.path.join(unity_live, 'manifest.json')).read() == ubefore and os.listdir(work) == [],
               'unity: refused runs change nothing')
+        # ---- the sprite pair (O433 phase 17): a package that carries the client key gets the main client's encrypted blobs
+        ukeyed = os.path.join(zips, 'unity_keyed.zip')
+        with open(os.devnull, 'w') as sink:
+            real, sys.stdout = sys.stdout, sink
+            try:
+                mun.main(['pack', player, '--out', ukeyed, '--package', '31', '--embed-client-key'])
+            finally:
+                sys.stdout = real
+        live_files = {f['path']: f for f in payload()['files']}
+        live_pair = {p: f for p, f in live_files.items() if p.startswith('data/things/1098/Tibia.')}
+        check('data/things/1098/Tibia.dat' in live_pair and 'data/things/1098/Tibia.sprshards' in live_pair,
+              'unity pair: the published main client holds a pair to copy: ' + ' '.join(sorted(live_pair)))
+        main_before = open(os.path.join(live, 'manifest.json')).read()
+        r = run('--unity', '--version', '10', ukeyed, extra=env_u)
+        check(r.returncode == 0 and 'sprite pair: from ' in r.stdout and 'KEYED' in r.stdout,
+              'unity pair: a keyed package publishes with the pair: ' + r.stdout + r.stderr)
+        check('decrypted and checked against the signed hashes and the shard index' in r.stdout,
+              'unity pair: with the key at hand the blobs are decrypted and checked')
+        um = upayload() if r.returncode == 0 else {'native': {'files': []}}
+        got = {f['path']: f for f in um['native']['files'] if f['path'].startswith('things_enc/')}
+        want = {'things_enc/' + p.rsplit('/', 1)[1] + '.chub': f for p, f in live_pair.items()}
+        check(set(got) == set(want) and len(got) >= 3, 'unity pair: the pair files of the main client, as things_enc/*.chub')
+        same = all(got[n]['sha256'] == want[n]['blob'] and got[n]['size'] == want[n]['blob_size'] and
+                   open(os.path.join(unity_live, 'native', got[n]['sha256'][:2], got[n]['sha256']), 'rb').read() ==
+                   open(os.path.join(live, 'files', want[n]['blob'][:2], want[n]['blob']), 'rb').read() for n in got)
+        check(same and um['native'].get('dev') is False and uverify(),
+              'unity pair: the same bytes as the live blobs, not a dev package, it verifies')
+        blob_path = os.path.join(unity_live, 'native', got['things_enc/Tibia.dat.chub']['sha256'][:2],
+                                 got['things_enc/Tibia.dat.chub']['sha256']) if got else ''
+        check(got and update_crypt.decrypt_file(blob_path, bytes.fromhex(CLIENT_KEY))[1] == live_pair['data/things/1098/Tibia.dat']['sha256'],
+              'unity pair: the published Tibia.dat blob opens with the client key')
+        check(open(os.path.join(live, 'manifest.json')).read() == main_before, 'unity pair: the main client is not touched')
+        # no key at hand: ciphertext checks only
+        r = run('--unity', '--version', '11', ukeyed, extra=env_u, drop=('CHAOS_CLIENT_KEY',))
+        check(r.returncode == 0 and 'ciphertext checked only' in r.stdout, 'unity pair: without the key only the ciphertext is checked: ' + r.stdout + r.stderr)
+        # --no-pair, and --no-pair without --unity
+        r = run('--unity', '--version', '12', '--no-pair', ukeyed, extra=env_u)
+        um = upayload() if r.returncode == 0 else {'native': {'files': []}}
+        check(r.returncode == 0 and 'left out (--no-pair)' in r.stdout and um['native'].get('dev') is False
+              and not any(f['path'].startswith('things_enc/') for f in um['native']['files']),
+              'unity pair: --no-pair leaves it out: ' + r.stdout + r.stderr)
+        r = run('--no-pair', uzip)
+        check(r.returncode != 0 and '--no-pair goes with --unity' in r.stderr, '--no-pair without --unity refused')
+        # a DEV package (no key inside): marked dev, no pair
+        r = run('--unity', '--version', '13', uzip, extra=env_u)
+        um = upayload() if r.returncode == 0 else {'native': {'files': []}}
+        check(r.returncode == 0 and um['native'].get('dev') is True
+              and not any(f['path'].startswith('things_enc/') for f in um['native']['files']) and 'no sprite pair is added' in r.stdout,
+              'unity pair: a dev package says dev and gets no pair: ' + r.stdout + r.stderr)
+        # no published main client: a warning, no pair
+        r = run('--unity', '--version', '14', ukeyed, extra=dict(env_u, CHAOS_UPDATE_UNITY_PAIR_FROM=os.path.join(tmp, 'nowhere')))
+        um = upayload() if r.returncode == 0 else {'native': {'files': []}}
+        check(r.returncode == 0 and 'WARN: no published main client' in r.stdout
+              and not any(f['path'].startswith('things_enc/') for f in um['native']['files']),
+              'unity pair: no main client published: a warning and no pair: ' + r.stdout + r.stderr)
+        # a main client published with another key than the one at hand: refused, nothing published
+        ubefore = open(os.path.join(unity_live, 'manifest.json')).read()
+        r = run('--unity', '--version', '15', ukeyed, extra=dict(env_u, CHAOS_CLIENT_KEY=OLD_KEY))
+        check(r.returncode != 0 and 'no key of CHAOS_CLIENT_KEY opens' in r.stderr and
+              open(os.path.join(unity_live, 'manifest.json')).read() == ubefore, 'unity pair: a key that does not open the live blobs refused: ' + r.stderr)
+        # a live manifest of another update key is refused
+        other = os.path.join(tmp, 'keys3')
+        os.makedirs(other)
+        key3 = os.path.join(other, 'update-key.hex')
+        subprocess.run([sys.executable, '-I', TOOL, 'keygen', '--private', key3], capture_output=True, text=True)
+        r = run('--unity', '--version', '16', ukeyed, extra=dict(env_u, CHAOS_UPDATE_KEY=key3))
+        check(r.returncode != 0 and 'not signed by this update key' in r.stderr and
+              open(os.path.join(unity_live, 'manifest.json')).read() == ubefore, 'unity pair: a live manifest of another key refused: ' + r.stderr)
+        check(os.listdir(work) == [], 'unity pair: the work folder is removed')
         usrv.shutdown()
         plain.shutdown()
 

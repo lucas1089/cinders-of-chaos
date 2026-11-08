@@ -53,12 +53,17 @@ update runs is not possible; changing it starts the update of the other client a
 - **The launcher still updates itself.** The Unity manifest has no launcher entry. After the Unity update the launcher reads the main manifest in `launcher_only` mode
   (best effort, silent): only `CindersLauncher.exe` is looked at, nothing else is hashed, downloaded or installed, no state is saved. A player who only uses
   Unity still gets a new launcher; a dead main manifest never stops the Unity update.
-- **What Unity needs on the player's side.** `unity/things/Tibia.dat` and `Tibia.spr` (not shipped, unity/README.md "Shipping the Unity client"). The window shows a
+- **What Unity needs on the player's side.** Nothing by hand (O433 phase 17, unity/README.md "Sprite pair"): the unity channel carries the sprite pair as the main
+  client's encrypted blobs (`things_enc/*.chub`, installed like any file), and the player also finds the main client's `chaos.pack` one folder up. The window shows a
   note under the choice.
+- **Dev packages.** A Unity package built without the client key says `"dev": true` in its `native` section (`Native::dev`, absent means false). The launcher installs
+  nothing of it and shows "The published Unity client is a development build ... not offered to players" (`Error::DevPackage`); testers run `--allow-dev-unity`
+  (or `CINDERS_ALLOW_DEV_UNITY=1`). Only the Unity layout is checked; the main client's manifest never carries the flag.
 - Tests: `src/manifest.rs`, `src/config.rs`, `src/i18n.rs` (unit), `tests/unity_update.rs` (12 cases against the local HTTP server: nested first install and no-op,
   change and removal with the player's files kept, a hand-changed file, rollback at every step, bad hash and signature, paths out of the folder, the wrong
   client's manifest, own version counter, the choice, the launcher's self-update from a Unity run, no address, the saved choice) and `tests/vector.rs`
-  (a Unity manifest signed by `make_unity_manifest_test.py`).
+  (a Unity manifest signed by `make_unity_manifest_test.py`). Phase 17 added the dev flag: `manifest.rs` (boolean, default false), `unity_update.rs` (a dev package refused with
+  nothing installed and no state saved, allowed with `allow_dev`, a keyed one with `dev` false or absent).
 
 ## Look (O339)
 
@@ -97,7 +102,7 @@ them out.
 - `src/`: `manifest.rs` (envelope, signature, `native` rules), `install.rs` (diff, download, swap, rollback, recovery),
   `selfupdate.rs`, `net.rs` (the system `curl`, built into Windows 10 and 11), `config.rs` (also the client choice), `choice.rs` (update the chosen client),
   `feed.rs` (News and Changelog), `i18n.rs`, `launch.rs`,
-  `main.rs` (egui window, or `--cli [--no-start] [--dir DIR] [--lang pt|en] [--client main|unity]` for tests and scripts).
+  `main.rs` (egui window, or `--cli [--no-start] [--dir DIR] [--lang pt|en] [--client main|unity] [--allow-dev-unity]` for tests and scripts).
 - `theme.rs` (window look), `assets/` (embedded art), `tools/gen_launcher_art.py` (makes the art).
 - `../crates/selfupdate/`: SHA-256, version compare and the staged rename, shared with `desktop/`.
 
