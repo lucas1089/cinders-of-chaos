@@ -566,7 +566,9 @@ namespace Chaos.Core
         /// <summary>The HUD models (toasts, buff bar, cast bar, shield, chi, monster bar, anti-bot, options): Core/Hud.cs.</summary>
         public readonly HudState Hud;
         int hudAskedLevel;
-        bool featuresLogged, spellsAsked, partyOpened;
+        bool featuresLogged, spellsAsked, partyOpened, progressStarted;
+        /// <summary>The progression windows' state: passive tree, skill stats, goals, hunt tracker, rift HUD, info pages, menu unlocks.</summary>
+        public readonly Progression Progress;
         double enteredAt = -1;
 
         public GameSession(World w, Options o)
@@ -579,6 +581,7 @@ namespace Chaos.Core
             Spells = new SpellBook(Ext) { Clock = () => Now, Say = Say, LevelNow = () => parser.Level, MagicLevelNow = () => parser.MagicLevel };
             Party = new PartyFrames(Ext) { Clock = () => Now, Packet = payload => conn?.Send(payload) };
             Hud = new HudState(Ext, () => Now, () => world.PlayerVocation);
+            Progress = new Progression(Ext, () => Now);
             parser.SpellCooldown = (id, ms) => Spells.OnSpellCooldown(id, ms);
             parser.GroupCooldown = (g, ms) => Spells.OnGroupCooldown(g, ms);
             parser.ExtendedOpcode = OnExtended;
@@ -683,6 +686,8 @@ namespace Chaos.Core
             if (enteredAt >= 0 && Now - enteredAt > 800) Hud.Hello(Loc.Language);
             if (Hud.Options.LevelChanged(parser.Level) && parser.Level != hudAskedLevel) { hudAskedLevel = parser.Level; Hud.Options.SendHello(Loc.Language); }
             Hud.Tick(Now);
+            // the progression requests (menu unlocks hello, combat stats, rift query, goal tracker): the main client waits 1.8 s
+            if (!progressStarted && enteredAt >= 0 && Now - enteredAt > 1800) { progressStarted = true; Progress.Start(); }
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";
             if (stepSent >= 0 && Now - stepSent > 1500) stepSent = -1;   // no answer to a step: let the next one go
         }
