@@ -5,7 +5,7 @@ This file lists every module of the main client (`client/overlay/modules/`, 169 
 It also lists the base protocol opcodes the Unity parser lacks and a plan in three phases.
 Edit the module rows by hand when a status changes. A module row changes in the same commit as its Unity window.
 
-Counts: 19 done, 28 partial, 107 missing, 15 not applicable.
+Counts: 27 done, 30 partial, 97 missing, 15 not applicable.
 By priority: 13 P0 core loop, 30 P1 needed to play, 83 P2 systems, 28 P3 polish, 15 N/A.
 
 ## Who Unity is on the server
@@ -29,7 +29,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 | Walk by keys and by click | done | No auto-walk to a clicked tile (0x64 from the client), no stop. |
 | Attack, follow, cancel, battle list | done | `BattleListWindow`. Fight modes and secure mode (0xA0) are sent at the login and on change (`FightWindow`, saved in PlayerPrefs). |
 | Spells, hotbar, cooldowns | partial | This track: spellbook, 12 hotbar slots with cooldown numbers. No item or rune slots, no icons. |
-| Chat | done | Tabs (Default, Server Log, channels, private), channel list, `*name* text`, `#y` and `#w`, unread counts, floating speech. No item links, no channel creation or invites. |
+| Chat | done | Tabs (Default, Server Log, channels, private), channel list, `*name* text`, `#y` and `#w`, unread counts, floating speech. Item links through game_chatlinks (Shift+click, coloured names, hover tooltip). No channel creation or invites. |
 | Containers, equipment, use, move | partial | Open, close, up, use, drag. No split stack dialog, no use-with, no look. |
 | NPC trade, NPC talk | done | `NpcTalkWindow`, `NpcTradeWindow`, `Core/NpcTrade.cs`. 0x7A, 0x7B, 0x7C in, 0x79, 0x7A, 0x7B, 0x7C out, NPC speech, currency (opcode 113). Not tried on the live server. No buy-in-backpacks fee, no modal windows. |
 | Death | done | 0x28 shows a death window with the penalty; OK goes to the character list. The recap window (opcode 154) opens at the next login. |
@@ -113,9 +113,9 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_chaosview` | none | Map zoom and the largest map area. Unity shows 15 x 11 tiles. | missing | P2 | S |
 | `game_chaosweather` | 114 | Rain and ambient particles. | missing | P2 | M |
 | `game_charms` | 198 | Charms grid. | missing | P2 | M |
-| `game_chatlinks` | 249 | Item links in chat. | missing | P2 | M |
+| `game_chatlinks` | 249 | Item links in chat: Shift+click on an item of the equipment or a bag asks the server for a link (register), the name goes into the chat line as a chip and is written out as [Name]{<r><id>} when the line is sent (up to 3, 250 characters, no links to NPCs, the Help channel needs the tutor right); a line with links shows the names in the rarity colour and the tooltip of the link under the pointer (get, 10 minute snapshots, expired answers). Core/ChatLinks.cs, ChaosApp.Social.cs. No Ctrl compare. | done | P2 | M |
 | `game_codex` | none | Codex encyclopedia, static data from the server tools. | missing | P2 | L |
-| `game_conquest` | 167 | Conquest vendor window. | missing | P2 | M |
+| `game_conquest` | 167 | Conquest vendor (opcode 167): Uniques, Set Pieces, Raid and Ascended, Cinderheart (Omen Keys, attune, Ascended Shards, conversions), Refine and Progress pages, one purchase at a time, opened by the NPC. ConquestWindow, Core/Factions.cs. | done | P2 | M |
 | `game_cosmetics` | 225 | Cosmetics window. | missing | P2 | L |
 | `game_crafting` | 232 | Crafting bench. | missing | P2 | M |
 | `game_craftingtable` | 91 | Base crafting tables. | missing | P2 | M |
@@ -126,12 +126,12 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_dpsmeter` | 204 | DPS meter and combat log. | missing | P2 | M |
 | `game_dungeons` | 109 | Dungeon finder. | missing | P2 | M |
 | `game_embercache` | 174 | Ember Cache and day book. | missing | P2 | M |
-| `game_factions` | 215 | Factions window. | missing | P2 | M |
+| `game_factions` | 215 | Factions (opcode 215): faction tabs with rank bars, lore, rival, week cap, tokens with Turn in, Go to NPC (opcode 121), contracts with Deliver, quartermaster offers (Buy, Craft), opened by the faction NPCs. FactionsWindow, Core/Factions.cs. No emblem art. | done | P2 | M |
 | `game_gamble` | 199 | The Gambler window. | missing | P2 | M |
 | `game_groundfx` | none | Spell effects under creatures. | missing | P2 | M |
-| `game_groupqueue` | 160 | Group queue and ready check. | missing | P2 | M |
-| `game_guild` | 252 | Guild window. | missing | P2 | L |
-| `game_guildwar` | 197 | Guild wars and guild boss. | missing | P2 | L |
+| `game_groupqueue` | 160 | Group queue (opcode 160): arena by party size, battleground, dungeon with difficulty, join and leave, raid check, Find a group, and the ready check box with its countdown (Accept, Decline). GroupQueueWindow, ReadyCheckWindow, Core/PartyFinder.cs. | done | P2 | M |
+| `game_guild` | 252 | Guild window (opcode 252): overview with the XP bar, perks, bank deposit and withdraw, scroll and log; members; guild hall (buy, rent, upgrades, hub); guild stash (take); top guilds. GuildWindow, Core/Guild.cs. The hall bench module is not opened (a line says so). | done | P2 | L |
+| `game_guildwar` | 197 | Guild wars (opcode 197): offers (accept, decline, take back), running wars (surrender with a second click, kill log), declare form, war board, weekly guild boss (fuel bar, summon, gold and material feeding, banner, spoils, board). GuildWarWindow, Core/Guild.cs. | done | P2 | L |
 | `game_helperhud` | none | Helper HUD on the map. | missing | P2 | S |
 | `game_helpersupport` | none | Helper support spell tab. | missing | P2 | M |
 | `game_helpertimers` | none | Helper cooldown channels. | missing | P2 | M |
@@ -142,22 +142,22 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_infinitytower` | 214 | Infinity Tower window. | missing | P2 | M |
 | `game_invasion` | 251 | Invasion HUD and event list. | missing | P2 | M |
 | `game_itemfinder` | 155 | Item finder. | missing | P2 | M |
-| `game_leaderboard` | 229 | Leaderboards. | missing | P2 | M |
+| `game_leaderboard` | 229 | Leaderboards (opcode 229): weekly boards pick list sorted by name (kept per character), class tab, season toggle and modes, champions, own rank, reset timer; the Records view (categories, boards, period, variant, size, class, Realm Firsts, My Records). LeaderboardWindow, Core/Leaderboard.cs. Exact numbers instead of short ones. | done | P2 | M |
 | `game_loadouts` | 206 | Loadouts (Armory). | missing | P2 | M |
 | `game_lookpreview` | none | Look preview panel. | missing | P2 | M |
 | `game_lootscreen` | none | Hides the loot line on the game screen. | missing | P2 | S |
 | `game_mapmarkers` | 153 | Party and point markers on the minimap, NPC quest marks. | missing | P2 | M |
 | `game_mapoverlay` | 245 | Explored map overlay on the game view. | missing | P2 | M |
-| `game_market` | 221 | Player market. | missing | P2 | L |
+| `game_market` | 221 | Player market (opcode 221): Browse (search, category, rarity, currency, sort, level and price range, pages, hover tooltip, Buy with a confirmation per currency), Sell (backpack list, prices, duration, fee text), My Offers (cancel), History, Buy Orders (browse, own, post with item search, fill, cancel). MarketWindow, Core/Market.cs. Not ported: the Modifiers filter of Browse and of an order, the price history chart, drag an item onto the Sell slot. | partial | P2 | L |
 | `game_minimapsync` | none | Minimap after death or teleport. Unity has a minimap window; no marker sync. | partial | P2 | S |
 | `game_nameplate` | 248 | Name plates with titles and frames. | missing | P2 | S |
 | `game_npctravel` | 121 | Go to NPC button. | missing | P2 | S |
 | `game_orbexchange` | 209 | Orb Exchange. | missing | P2 | M |
 | `game_outfitextras` | none | Customise Character window. | missing | P2 | L |
 | `game_pact` | 222 | Chaos Pact window. | missing | P2 | M |
-| `game_partyfinder` | 208 | Party finder. | missing | P2 | M |
+| `game_partyfinder` | 208 | Party finder (opcode 208): browse with the activity, role and level filters, Apply by role, Withdraw, quick join queue, My Group form (activity, range or target or title, wanted counts, level band, notes, duration, auto accept), applications (Accept, Decline), notices and nudges as chat lines. PartyFinderWindow, Core/PartyFinder.cs. No badge on the menu button, no slot boxes (text composition). | done | P2 | M |
 | `game_pets` | 254 | Pets window. | missing | P2 | M |
-| `game_playerinspect` | 240 | Inspect player. | missing | P2 | M |
+| `game_playerinspect` | 240 | Inspect player (opcode 240): by typed name or the right-click Inspect on a player; header with the outfit, equipment rows with item tooltips (transmog looks), profile, combat sheet, records, the privacy setting, denials. InspectWindow, Core/Inspect.cs. The passive tree is a summary line, not the read-only tree view. | partial | P2 | M |
 | `game_pouches` | 226 | Loot bag rules and auto seller. | missing | P2 | M |
 | `game_professions` | 195 | Professions. | missing | P2 | M |
 | `game_proficiencycatalog` | none | Weapon list of the proficiency window, built on the client. | missing | P2 | S |

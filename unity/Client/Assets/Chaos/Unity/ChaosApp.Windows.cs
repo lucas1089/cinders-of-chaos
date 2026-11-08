@@ -56,6 +56,7 @@ namespace Chaos.Client
         /// <summary>Every game window, in toolbar order. Add a new window here (one line).</summary>
         void MakeWindows()
         {
+            AddSocialWindows();   // ChaosApp.Social.cs
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());
             windows.Add(new SkillsWindow());

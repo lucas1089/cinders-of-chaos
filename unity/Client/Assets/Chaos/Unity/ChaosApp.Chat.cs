@@ -65,7 +65,7 @@ namespace Chaos.Client
             else if (e.type == EventType.KeyDown && chatFocused && ctrl && e.keyCode == KeyCode.E) { session.CloseTab(m.Active); e.Use(); }
             else if (enter && chatFocused)
             {
-                session.Talk(chatInput);
+                session.Talk(ChatSendText(chatInput));
                 chatInput = "";
                 GUI.FocusControl(null);
                 e.Use();
@@ -100,7 +100,7 @@ namespace Chaos.Client
             float lineW = list.width - 20, total = 0;
             var lines = cur.Lines;
             var heights = new float[lines.Count];
-            for (int i = 0; i < lines.Count; i++) { heights[i] = chatStyle.CalcHeight(new GUIContent(lines[i].Stamp + " " + lines[i].Display), lineW); total += heights[i]; }
+            for (int i = 0; i < lines.Count; i++) { heights[i] = chatStyle.CalcHeight(new GUIContent(lines[i].Stamp + " " + ChatLinksMath.Plain(lines[i].Display)), lineW); total += heights[i]; }
             var last = lines.Count > 0 ? lines[lines.Count - 1] : null;
             if ((last != chatLastLine || cur != chatLastTab) && e.type == EventType.Repaint)
             {
@@ -112,7 +112,7 @@ namespace Chaos.Client
             for (int i = 0; i < lines.Count; i++)
             {
                 chatStyle.normal.textColor = Rgb(lines[i].Color);
-                GUI.Label(new Rect(0, y, lineW, heights[i]), lines[i].Stamp + " " + lines[i].Display, chatStyle);
+                DrawChatLine(new Rect(0, y, lineW, heights[i]), lines[i]);   // item links in colour (ChaosApp.Social.cs)
                 y += heights[i];
             }
             GUI.EndScrollView();

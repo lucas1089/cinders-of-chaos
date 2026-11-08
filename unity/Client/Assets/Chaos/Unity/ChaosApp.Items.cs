@@ -43,6 +43,7 @@ namespace Chaos.Client
             var e = Event.current;
             if (e.type != EventType.Repaint) return;
             var tips = session.Tips;
+            if (hoverTipFrame == Time.frameCount) { tips.HoverEnded(); DrawTipBox(hoverTip, hoverExtra, hoverNote, w, h); return; }   // a social window's tooltip (ShowTip)
             if (ItemSlots.HoverFrame != Time.frameCount || ItemSlots.HoverItem == null) { tips.HoverEnded(); return; }
             var it = ItemSlots.HoverItem;
             var pos = ItemSlots.HoverPos;
@@ -51,17 +52,35 @@ namespace Chaos.Client
                 pos = new Pos(pos.X, pos.Y, pos.Z - cont.FirstIndex);
             var tip = tips.Lookup(ItemTips.Describe(it, pos), session.Now);
             if (tip == null) return;
+            DrawTipBox(tip, null, null, w, h);
+        }
+
+        // a window (market row, inspect slot, chat link) asks for a tooltip for this frame: a tip table with extra lines under it, or just a note
+        object hoverTip;
+        List<TipLine> hoverExtra;
+        string hoverNote;
+        int hoverTipFrame = -1;
+
+        public void ShowTip(object tip, List<TipLine> extra = null, string note = null)
+        {
+            hoverTip = tip; hoverExtra = extra; hoverNote = note; hoverTipFrame = Time.frameCount;
+        }
+
+        void DrawTipBox(object tip, List<TipLine> extra, string note, float w, float h)
+        {
             if (tipStyle == null)
             {
                 tipStyle = new GUIStyle(small) { fontSize = 12, richText = true, wordWrap = false, clipping = TextClipping.Clip };
                 tipTitleStyle = new GUIStyle(small) { fontSize = 15, fontStyle = FontStyle.Bold, richText = true, wordWrap = false };
             }
-            var lines = TipLines.Lines(tip, session.Parser.Level);
-            string name = TipLines.Title(Json.Text(tip, "name"));
-            int count = Json.Int(tip, "count", 1);
+            var lines = tip != null ? TipLines.Lines(tip, session.Parser.Level) : new List<TipLine>();
+            if (note != null) lines.Add(new TipLine { Text = note, Color = TipLines.Text });
+            if (extra != null) lines.AddRange(extra);
+            string name = tip != null ? TipLines.Title(Json.Text(tip, "name")) : "";
+            int count = tip != null ? Json.Int(tip, "count", 1) : 1;
             if (count > 1) name += " x" + count;
             const float Width = 300f, Pad = 8f, Line = 16f;
-            float height = Pad * 2 + 22;
+            float height = Pad * 2 + (tip != null ? 22 : 0);
             foreach (var l in lines) height += Line + (l.Sep ? 6 : 0);
             Vector2 m = MouseUi();
             var r = new Rect(m.x + 16, m.y + 16, Width, height);
@@ -70,8 +89,11 @@ namespace Chaos.Client
             Fill(new Rect(r.x - 1, r.y - 1, r.width + 2, r.height + 2), new Color(0.5f, 0.4f, 0.2f, 0.9f));
             Fill(r, new Color(0.05f, 0.04f, 0.06f, 0.97f));
             float y = r.y + Pad;
-            GUI.Label(new Rect(r.x + Pad, y, Width - 2 * Pad, 22), "<color=" + Hex(TipLines.TitleColor(tip)) + ">" + RichSafe(name) + "</color>", tipTitleStyle);
-            y += 22;
+            if (tip != null)
+            {
+                GUI.Label(new Rect(r.x + Pad, y, Width - 2 * Pad, 22), "<color=" + Hex(TipLines.TitleColor(tip)) + ">" + RichSafe(name) + "</color>", tipTitleStyle);
+                y += 22;
+            }
             foreach (var l in lines)
             {
                 if (l.Sep) { Fill(new Rect(r.x + Pad, y + 2, Width - 2 * Pad, 1), new Color(1f, 1f, 1f, 0.12f)); y += 6; }
