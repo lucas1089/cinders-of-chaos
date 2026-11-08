@@ -964,7 +964,7 @@ connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds,
   `chaos.visualfx`, `chaos.effectopacity` and flags). Texts: `Core/LocVisual.cs` (pt-BR).
 - Not done: drawing a larger map area than 15 x 11 tiles (the wire is ready, see "Wire audit"); effects drawn under creatures (they are over them, IMGUI); the pack effect strips of the loot beams and wings
   (drawn in code instead); the outline shader of cosmetics; the grade, bloom, spell light, liquid shimmer, target and hover outlines and cooldown pulse of game_visualfx; the shift of Gravewarden Ulthar in the live view;
-  the container, panel and size parts of game_chaoslayout; name shaders of other players. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
+  the container, panel and size parts of game_chaoslayout. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
 - Tests: `Core.Tests/VisualTests.cs` (about 190 checks): the mixer rules and files against `soundlogic.lua` and the module folder, the music rules and hysteresis with the files, the cursed and foot aura messages and
   the strip sizes, decal colours, beams, prints, ground ids against `groundfx_data.lua`, the layout rules, and a session fed with the combat events (cue, flash, stain, shake, ring, wings, kill, chest, footprint).
 ## Helper extras and the info windows (O433 phase 5, track Q)
@@ -1151,7 +1151,8 @@ The GLSL of `client/overlay/data/shaders` is ported to built-in pipeline shaders
 - Fallbacks: every shader is looked up by `FxShaders` (Resources, then `Shader.Find`; `CHAOS_NO_FX_SHADERS=1` turns them off). When one is null the view draws as before:
   the plain sprite, the soft disc for a hit, the glow picture for an outline, no grade.
 - The shaders are compiled only by the CI Unity build. `Client.Check` and `Core.Tests` do not see them; `Phase8CTests` checks their text (braces, includes, no GLSL left, names, defines).
-- Left (see the rows): the other players' name shaders (the wire is not in this repo), the spell light and glowing spell effects (the classic view draws no spell effects from the dat),
+- Name shaders of other players: nothing to port. The server has no opcode 96 handler and no base patch puts a shader in a creature packet, so the main client draws only its own (evidence in the `game_nameshaders` row of `docs/UNITY_PARITY.md`). The row is done.
+- Left (see the rows): the spell light and glowing spell effects (the classic view draws no spell effects from the dat),
   the hover outline, outlines and the flash shader in the live view.
 ## Phase 8, track B
 
