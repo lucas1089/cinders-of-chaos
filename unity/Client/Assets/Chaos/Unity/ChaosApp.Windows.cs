@@ -77,6 +77,7 @@ namespace Chaos.Client
             AddSocialWindows();   // ChaosApp.Social.cs
             AddPlayWindows();     // ChaosApp.Play.cs: trade, VIP list, quest log, look preview
             AddInfoWindows();   // ChaosApp.Info.cs
+            AddCommunityWindows();   // ChaosApp.Community.cs
             windows.Add(new EquipmentWindow());
             windows.Add(new ContainersWindow());
             windows.Add(new SkillsWindow());

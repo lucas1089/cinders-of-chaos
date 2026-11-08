@@ -12,9 +12,9 @@ name: Unity prototype
 on:
   push:
     branches: [main]
-    paths: ["unity/**", ".github/workflows/unity-prototype.yml"]
+    paths: ["unity/**", ".github/workflows/unity-prototype.yml", "tools/ci/check_unity_opcodes*.py", "tools/ci/unity_opcodes_allowlist.txt", "server/data/scripts/chaos/chaos_constants.lua", "docs/CREDITS.md", "client/overlay/modules/**/*.lua"]
   pull_request:
-    paths: ["unity/**", ".github/workflows/unity-prototype.yml"]
+    paths: ["unity/**", ".github/workflows/unity-prototype.yml", "tools/ci/check_unity_opcodes*.py", "tools/ci/unity_opcodes_allowlist.txt", "server/data/scripts/chaos/chaos_constants.lua", "docs/CREDITS.md", "client/overlay/modules/**/*.lua"]
   workflow_dispatch:
     inputs:
       target:
@@ -53,6 +53,10 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq luajit && luajit unity/tools/gen_helper_rotation_data.lua --check
       - name: Info data is current (Codex, How it works, Help search JSON and the info lift table from the main client's data files)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq luajit lua5.3 && luajit unity/tools/gen_info_data.lua --check && lua5.3 unity/tools/gen_info_data.lua --check
+      - name: Every client-facing extended opcode is handled in Unity or on the allowlist with a reason (the list can only shrink)
+        run: python3 -I tools/ci/check_unity_opcodes.py && python3 -I tools/ci/check_unity_opcodes_test.py
+      - name: Credits data is current (docs/CREDITS.md to the Unity Credits window)
+        run: python3 -I unity/tools/gen_unity_credits.py --check && python3 -I unity/tools/gen_unity_credits_test.py
       - name: Core tests
         working-directory: unity/Core.Tests
         run: dotnet run -c Release

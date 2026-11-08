@@ -546,6 +546,8 @@ namespace Chaos.Core
             /// <summary>Extended (default): OS 21, markers u16 0, plain 10.98 wire, extended opcodes on. Chaos: the markers of the
             /// main client too (feature list, wings / aura / shader, 0x4B floors, item attributes). See ClientIdentity.</summary>
             public ClientIdentity Identity = ClientIdentity.Extended;
+            /// <summary>Streamer mode shared with the app (character list names); a session makes its own when null.</summary>
+            public StreamerState Streamer;
         }
 
         readonly World world;
@@ -602,6 +604,7 @@ namespace Chaos.Core
             InitWorldUtils();
             InitPlay();   // Core/GamePlay.cs
             InitVisual();   // Core/GameVisual.cs
+            InitCommunity();   // Core/GameCommunity.cs
             parser.WalkCancelled = _ => stepSent = -1;
             parser.PlayerMoved = _ => stepSent = -1;
         }
@@ -695,6 +698,7 @@ namespace Chaos.Core
             CollectPoll();
             WorldUtilsPoll();
             VisualPoll();
+            CommunityPoll();
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
             if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
             // the party frames: watch a moment after the login (the main client waits 400 ms)
