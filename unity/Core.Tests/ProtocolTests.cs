@@ -341,7 +341,7 @@ namespace Chaos.Core.Tests
                             {
                                 var ask = new ByteReader(x);
                                 ask.U8(); ask.U8();
-                                asked = ExtOpcodes.FromWire(ask.Str());
+                                asked = ExtOpcodes.FromWire(ask.StrRaw());
                                 askSeen = true;
                             }
                         }

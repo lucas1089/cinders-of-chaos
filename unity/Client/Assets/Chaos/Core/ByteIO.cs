@@ -80,7 +80,33 @@ namespace Chaos.Core
             return v / Math.Pow(10, precision);
         }
 
+        static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
+
+        /// <summary>A string of the server as the main client shows it (base patch 0028, InputMessage::getString): text that is valid UTF-8
+        /// with a non-ASCII character is UTF-8 (a script saved as UTF-8 sends "ç" as C3 A7), anything else is Latin-1. A byte order mark is dropped.</summary>
+        public static string Utf8OrLatin1(byte[] b, int offset, int count)
+        {
+            bool ascii = true;
+            for (int i = offset; i < offset + count; i++) if (b[i] >= 0x80) { ascii = false; break; }
+            if (!ascii)
+            {
+                try { return StrictUtf8.GetString(b, offset, count).Replace(((char)0xFEFF).ToString(), ""); }
+                catch (ArgumentException) { }   // not UTF-8 (DecoderFallbackException): Latin-1
+            }
+            return Latin1.GetString(b, offset, count);
+        }
+
         public string Str()
+        {
+            int n = U16();
+            Need(n);
+            string s = Utf8OrLatin1(buf, Pos, n);
+            Pos += n;
+            return s;
+        }
+
+        /// <summary>The string as one char per byte (Latin-1 whatever the bytes are): extended opcode payloads, which decode their own UTF-8 (ExtOpcodes.FromWire).</summary>
+        public string StrRaw()
         {
             int n = U16();
             Need(n);

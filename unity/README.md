@@ -617,7 +617,7 @@ The artifact `chaos-unity-<target>` is kept 7 days.
 
 - The game login says who we are in two places (full audit in "Both clients"): the OS word and the marker bytes after the random byte.
   Identity Extended (default): OS 21 and `u16 0`. The server sends no feature list, plain outfits (no wings, aura or shader), one 0x64 map, no item attributes, never compresses.
-  An adler32 of 0, which would mean a compressed packet, is refused.
+  A zero where the adler32 goes means a deflated packet: `Core/Inflate.cs` inflates it (the server only deflates for Identity Chaos, config `packetCompression`).
   Identity Chaos: OS 21 and the markers of the main client (`ClientIdentity.WriteMarkers`). The server then sends 0x43 (feature list), outfits with
   `u16 wings, u16 aura, string shader`, the floors of a change of level as 0x4B messages before 0xBE and 0xBF, item attributes (feature 126),
   16-bit spell ids in 0xA4 (feature 152). `GameParser` reads all of that when `Identity.Markers` is set. Item attributes follow the feature, not the identity.
@@ -651,7 +651,7 @@ Chaos is parsed and tested on a fake server only. Before it becomes the default:
 1. log in with `CHAOS_UNITY_IDENTITY=chaos` and read the log line `Server features: ...`. The full list is in the base engine, not in this repo.
    A feature that changes a wire width the parser does not know (an effect id of 16 bits, for example) must be handled by the effect parser of track B through `GameParser.Features`.
 2. walk through a staircase and a hole (0x4B floors), open a bag with a rarity item, see a creature with wings or a shader.
-3. keep `packetCompression` off until Unity has an inflater (it throws on a compressed packet).
+3. `packetCompression` may be on: Unity inflates (`Core/Inflate.cs`, wire audit below). Not yet seen on a live server.
 4. leave capability bit 7 off until the 0xB4 parser reads the three extra fields (percent, type, creature id). `ClientIdentity.Capabilities` holds the bits.
 
 UI text: the English text is the key, `Loc.T("text", args)` looks it up in `LocStrings.PtBr` (`Core/Loc.cs`). Arguments are `{0}`. The language is `chaos.lang` or the system language.
@@ -659,6 +659,50 @@ A test fails when a `Loc.T` key in `Unity/` has no pt-BR entry. Server texts com
 Window titles of the older windows are not translated yet.
 
 Parity: `docs/UNITY_PARITY.md` has the module table (169 rows), the missing base opcodes and the migration plan.
+
+## Wire audit
+
+Phase 6, track T. The parser was checked against the patches, not against itself: `Core.Tests/WireAuditTests.cs` holds byte vectors written by hand from
+what the patches write (about 100 checks), plus `server/tools/cast_relay.py`, which parses the same server stream and has its own tests.
+The base server and the base client are not in this repo, so a layout only they define is marked "base" and stays on the live-run list.
+
+Verified, by patch:
+- Login markers (src 0003, 0051, 0079): `u16 5 "OTCv8"`, `u16` version, `"OTCv8TierByte"`, `"A"`, `u32`, `"C"`, capability byte 0xC0 (bit 7 typed numbers, bit 6 16-bit spell ids). The test
+  also reads the bytes the way `onRecvFirstMessage` does. Extended is `u16 0`.
+- 0x43 feature list (src 0003): `u16` count, `u8` feature and `u8` enabled. 126, 152 and 155 are the Chaos features.
+- Items (src 0003, 0050, 0081): id, mark, count byte for stackable, fluid, splash and quivers, phase byte for more than one phase, then `u16` count and `u16` key + `u64` value, in the inventory (0x78),
+  containers (0x6E, 0x70, 0x71, 0x72 with and without the sliding item), tiles (0x6A) and the browse field's bag (count 0). A 500 slot bag is a page of 250 (capacity byte 250, size 500, first index 250). Key 3 carries 1 or 2.
+- Creatures (src 0077, 0083): 0x61, 0x62, 0x63, the facing bytes 4 to 7 (north-east, south-east, south-west, north-west), the refresh by id (`0x6B 0xFFFF id` and the full form with remove = own id),
+  outfits with mount, wings, aura and shader (also 0x8E and the item look), the square 0x93 (id, 1, colour).
+- Text and numbers (src 0037, 0051, 0052; base 0100): 0xB4 modes 23 to 29 with and without feature 155, 0xA4 with a byte or a `u16` id (0079, ids above 255), 0xA5 group id stays a byte,
+  0xA0 and 0xA1 (display scaled `u32` health and mana, the seven crafting skills of base 0012, the 24 byte tail).
+- Basic data 0x9F (base 0016, `ascension.lua`): the class byte (1 to 29) becomes the vocation id with the table of that patch and is read again after an ascension.
+- UTF-8 text (base 0028): a string that is valid UTF-8 with a non-ASCII character is read as UTF-8, anything else as Latin-1, a byte order mark is dropped (`ByteReader.Str`). Extended opcode payloads keep their bytes (`StrRaw`) and decode their own UTF-8.
+- Map (src 0072, aware range): 0x64, 0x65 to 0x68, 0x4B, 0xBE and 0xBF with the skip chain across floors, at 17 x 13 and at 29 x 21.
+- Compression (src 0069, 0073; base 0131, 0135), below.
+- Verified from `cast_relay.py` only, not in a patch: the 0x17 login tail, 0xA0 field order, the tile and creature layout of the base (mark, speech bubble, helpers, unpassable), the step time.
+
+Mismatches found and fixed (patch, what the main client does, what Unity did):
+1. src 0069 / 0073, base 0131: the server deflates packets of an Identity Chaos connection when `packetCompression` is on. Unity threw on the zero checksum word. Now `RawInflater` (below).
+2. Aware range, src 0003 `GameChangeMapAwareRange`, `game_chaosview`: 0x42 other than 17 x 13 made Unity throw, and the map messages used the constants 8, 9, 6, 7 and 18 x 14. Now `World.Range` (`AwareRange`) drives every map read.
+3. Base 0016 (`GameChaosVocationIds`, always on in the 1098 profile) and `ascension.lua`: the class byte of 0x9F was dropped, so an ascension left the vocation of the character list. Now it sets `World.PlayerVocation`.
+4. Base 0028: server texts in UTF-8 ("ação" as `C3 A7 C3 A3`) showed as "Ã§Ã£" in chat and windows. Now `ByteReader.Str` applies the main client's rule.
+5. Src 0037 with 0085: health and mana come as `u32` clamped by the display scale; `(int)` turned a value above 2^31 negative. Now `FitInt` keeps the bar in range.
+6. The creature square 0x93 was skipped (the parser read a 0x86 that 10.98 does not send). Now it queues a Square event (nothing draws it yet).
+
+Compression: `Core/Inflate.cs` is a small inflate (stored, fixed and dynamic blocks, the decoder of zlib's `puff`). The server's stream is one raw deflate stream per connection with a sync flush after every packet,
+so each packet ends on an empty stored block and the only state between packets is the 32 KB history. Not `DeflateStream`: it cannot be fed one packet at a time. Packet layout: `u16` length, `u32` 0, XTEA of
+(`u16` length of the deflated bytes, the bytes, padding); bodies under 128 bytes stay plain with a real adler32 and do not touch the stream. At most 65536 bytes per packet (base 0131); a final block, a bad block or
+a stream that ends inside a block is a `CompressionException`, and `GameSession` closes the connection (the stream is out of step for good; the main client does the same). Tests: four packets of one stream made by zlib
+(level 3, window 2^14, memLevel 7, as the server's Deflater), sixty packets of a `DeflateStream` over 70 KB (history past 32 KB), the cap, error cases, and `Protocol.Decrypt` with plain packets between deflated ones.
+
+Aware range: the server tells it with 0x42 (`u8` width, `u8` height; 17 x 13 by default) to a client that sent the markers, and the client asks with 0x33 (`u8` width, `u8` height, at most 29 x 21, what `game_chaosview` sends at
+the game start). `AwareRange`: left = width / 2, right = 1 + width / 2, top and bottom the same for the height, a full map is (width + 1) x (height + 1) tiles from (x - left, y - top); only odd sizes make a window, so an even size
+is refused. `GameSession.RequestAwareRange(w, h)` sends 0x33 (Identity Chaos only), `CHAOS_UNITY_AWARE=29x21` asks after the login. The views still draw 15 x 11 tiles: `World.RangeLeft` and the other constants stay the drawn window,
+`World.Range` is what is read and kept (`ForgetOutside` follows it). The server's own answer to 0x33 (whether it resends the map) is in the base fork, so a live run should check that.
+
+Not verified, live run needed: the 0xC8 outfit window lists after the current look (wings and auras with `u16` ids, shaders with a byte id, the other width is tried when names do not read, tested both ways), the 0xD3 set packet tail,
+and everything marked "base" above.
 
 ## HD-2D post-processing (O432)
 
@@ -885,7 +929,7 @@ connects them to the combat feed and the world. `FxFeed` got a `Tap`, so sounds,
   saved per character in `chaos.hudpos.<name>`), windows taller than the screen (wheel scroll), the window fade, and the saved window places (`chaos.layout.<name>`, plus the open state of the minimap, battle list, equipment and containers).
 - Options: the existing options window got four pages (General, Sound, Visuals, Layout), `Unity/Windows/VisualWindows.cs`; every option is in PlayerPrefs (`VisualPrefs`: `chaos.sound`, `chaos.music`, `chaos.lootbeams`,
   `chaos.visualfx`, `chaos.effectopacity` and flags). Texts: `Core/LocVisual.cs` (pt-BR).
-- Not done: a larger map area than 11 rows (needs the aware range change, opcodes 0x33 and 0x42 of other sizes); effects drawn under creatures (they are over them, IMGUI); the pack effect strips of the loot beams and wings
+- Not done: drawing a larger map area than 15 x 11 tiles (the wire is ready, see "Wire audit"); effects drawn under creatures (they are over them, IMGUI); the pack effect strips of the loot beams and wings
   (drawn in code instead); the outline shader of cosmetics; the grade, bloom, spell light, liquid shimmer, target and hover outlines and cooldown pulse of game_visualfx; the shift of Gravewarden Ulthar in the live view;
   the container, panel and size parts of game_chaoslayout; name shaders of other players. The audio and picture loading and the drawing compile (`unity/Client.Check`) but were not run in a Unity player or against a live server.
 - Tests: `Core.Tests/VisualTests.cs` (about 190 checks): the mixer rules and files against `soundlogic.lua` and the module folder, the music rules and hysteresis with the files, the cursed and foot aura messages and

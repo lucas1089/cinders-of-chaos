@@ -44,18 +44,22 @@ namespace Chaos.Core
             return Frame(inner);
         }
 
-        /// <summary>The payload of a packet body (the bytes after the u16 size): checksum checked, XTEA decrypted.</summary>
-        public static byte[] Decrypt(byte[] body, uint[] key)
+        /// <summary>The payload of a packet body (the bytes after the u16 size): checksum checked, XTEA decrypted. A zero where the adler32
+        /// goes marks a deflated payload (src-patch 0069, Core/Inflate.cs): it is inflated with the connection's stream, `inflater`.
+        /// Without one (the login port never compresses) such a packet is refused.</summary>
+        public static byte[] Decrypt(byte[] body, uint[] key, RawInflater inflater = null)
         {
             if (body.Length < 12 || (body.Length - 4) % 8 != 0) throw new ProtocolException("bad encrypted packet size " + body.Length);
             uint sum = (uint)(body[0] | body[1] << 8 | body[2] << 16 | body[3] << 24);
-            if (sum == 0) throw new ProtocolException("a compressed packet (the prototype never asks for compression)");
-            if (sum != Adler32.Of(body, 4, body.Length - 4)) throw new ProtocolException("packet checksum mismatch");
+            bool deflated = sum == 0;
+            if (deflated && inflater == null) throw new ProtocolException("a compressed packet on a connection with no inflater");
+            if (!deflated && sum != Adler32.Of(body, 4, body.Length - 4)) throw new ProtocolException("packet checksum mismatch");
             var inner = new byte[body.Length - 4];
             Array.Copy(body, 4, inner, 0, inner.Length);
             Xtea.Decrypt(inner, 0, inner.Length, key);
             int n = inner[0] | inner[1] << 8;
             if (n + 2 > inner.Length) throw new ProtocolException("inner length " + n + " beyond the packet");
+            if (deflated) return inflater.Inflate(inner, 2, n);
             var payload = new byte[n];
             Array.Copy(inner, 2, payload, 0, n);
             return payload;
@@ -111,7 +115,8 @@ namespace Chaos.Core
 
         /// <summary>The first packet on the game port, answering the challenge. The identity decides the OS word and the
         /// markers: Extended (the default) sends u16 0 (plain 10.98 wire: one 0x64 map, no feature list, outfits without
-        /// wings / aura / shader, no item attributes, no compression), Chaos sends the OTCv8 markers of the main client.</summary>
+        /// wings / aura / shader, no item attributes, no compression, a fixed 18 x 14 view), Chaos sends the OTCv8 markers of the main client
+        /// (the server may then deflate its packets, src-patch 0069, and change the aware range, 0x33 and 0x42).</summary>
         public static byte[] GameLoginPacket(Rsa rsa, uint[] xtea, string sessionKey, string character, uint clientId,
                                              uint timestamp, byte random, ClientIdentity identity = null)
         {

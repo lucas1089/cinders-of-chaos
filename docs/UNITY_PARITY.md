@@ -17,6 +17,8 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 - Markers `u16 0` (identity Extended, the default): plain 10.98 wire. No feature list, plain outfits, one 0x64 map, no item attributes, no compression.
 - Markers of the main client (identity Chaos, `CHAOS_UNITY_IDENTITY=chaos`): feature list 0x43, outfits with wings, aura and shader, 0x4B floors, item attributes (feature 126), 16-bit spell ids (feature 152).
   Parsed and tested on a fake server. Not yet run against a live server.
+  The server may deflate packets for this identity (config `packetCompression`, src-patch 0069): `Core/Inflate.cs` inflates them, with the size cap of base patch 0131.
+  The aware range of 0x42 (default 17 x 13, up to 29 x 21) is read by every map message. Wire audit: `unity/README.md` "Wire audit".
 - Client version word `0x4343 << 16 | build`, the guard handshake on 189 and the hello on 190 are done. The real guard key is never embedded by default.
 
 ## Core loop (base protocol features)
@@ -25,7 +27,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 |---|---|---|
 | Account login, character list | done | `LoginClient`. No character creation form. |
 | Game login, guard handshake, pings | done | `GameSession`. |
-| Map, floors, 8 directions, light | done | 18 x 14 tiles read, 15 x 11 shown. Another aware range is refused. |
+| Map, floors, 8 directions, light | done | Read with the aware range the server tells (0x42: default 17 x 13 = 18 x 14 tiles, any odd size such as 29 x 21 is read by 0x64, 0x65 to 0x68, 0x4B, 0xBE, 0xBF); 15 x 11 shown. A larger range is asked with `GameSession.RequestAwareRange` (0x33) or `CHAOS_UNITY_AWARE=29x21`, Identity Chaos only. |
 | Walk by keys and by click | done | No auto-walk to a clicked tile (0x64 from the client), no stop. |
 | Attack, follow, cancel, battle list | done | `BattleListWindow`. Fight modes and secure mode (0xA0) are sent at the login and on change (`FightWindow`, saved in PlayerPrefs). |
 | Spells, hotbar, cooldowns | partial | This track: spellbook, 12 hotbar slots with cooldown numbers. No item or rune slots, no icons. |
@@ -110,7 +112,7 @@ Status: done, partial, missing, or N/A (platform code of the main client that Un
 | `game_chaosshaders` | none | Outfit shaders. The shader name is parsed in Chaos identity, nothing draws it. | partial | P2 | L |
 | `game_chaossound` | none | Combat, spell, level, loot, goal and window sounds with the gap, burst, cap and distance rules of the main client, volume and group options. Reads the module ogg files from the overlay folder (`CHAOS_OVERLAY_DIR`). `Core/Audio.cs`, `Unity/ChaosApp.Audio.cs`. | done | P2 | M |
 | `game_chaosuiscale` | none | Interface scale. Unity scales with the window height. | partial | P2 | S |
-| `game_chaosview` | none | Map zoom by whole rows, 7 to 11, by Ctrl and the wheel or the Layout page of Options; both views follow it. A larger area than 11 rows needs the aware range change (0x33 and 0x42 other sizes), not sent yet. `ViewZoom`. | partial | P2 | S |
+| `game_chaosview` | none | Map zoom by whole rows, 7 to 11, by Ctrl and the wheel or the Layout page of Options; both views follow it. The wire half is done: 0x42 is read and 0x33 can be sent (`RequestAwareRange`, `CHAOS_UNITY_AWARE`, `World.Range`, tested at 17 x 13 and 29 x 21). Not done: the views still draw 15 x 11 tiles at most and nothing asks for a larger range by itself, so the zoom stays 7 to 11 rows; no per character saved zoom as the main client keeps it. `ViewZoom`. | partial | P2 | S |
 | `game_chaosweather` | 114 | Rain (3 layers, levels 1 to 3, fade, faster fade under a roof), ambient specks (embers, motes, dust) and the area colour mood over the game view, drawn in code (`WeatherState`, `ChaosApp.World.cs`), not the art strips. No option to switch it off yet, none in HD-2D. | partial | P2 | M |
 | `game_charms` | 198 | `CharmsWindow` (top menu Character, opcode 198, `Core/CollectCharms.cs`): the cell grid, drag a charm of the list onto a cell (preview green or red), move a placed charm, drop it on the list to take it out, salvage, reforge, totals and unlock groups. Not here: dropping a charm item from a backpack onto the grid (the `place` with a map position), the per-shape slot art. | partial | P2 | M |
 | `game_chatlinks` | 249 | Item links in chat: Shift+click on an item of the equipment or a bag asks the server for a link (register), the name goes into the chat line as a chip and is written out as [Name]{<r><id>} when the line is sent (up to 3, 250 characters, no links to NPCs, the Help channel needs the tutor right); a line with links shows the names in the rarity colour and the tooltip of the link under the pointer (get, 10 minute snapshots, expired answers). Core/ChatLinks.cs, ChaosApp.Social.cs. No Ctrl compare. | done | P2 | M |
@@ -230,7 +232,6 @@ Server to client, not read by `GameParser`:
 | Opcode | Meaning | Needed for | Prio |
 |---|---|---|---|
 | 0x0B | GM actions | none | P3 |
-| 0x33, 0x42 other sizes | change of the aware range | a larger view than 18 x 14 (map zoom, game_chaosview) | P2 |
 | 0xA8, 0xA9 | creature square and cancel variants | none known | P3 |
 | 0xAE | rule violation channel | none (Chaos has its own reports) | P3 |
 | 0xB6 | walk wait | smoother walking on slow ground | P2 |
@@ -238,7 +239,7 @@ Server to client, not read by `GameParser`:
 | 0xF6 to 0xF9 | base market | none (Chaos market uses opcode 221) | P3 |
 | 0xDF, 0xEE | coin and resource balance | base store, resources | P2 |
 
-Inside packets Unity reads, it skips or ignores: 0x9F spell list body, 0xDD map flags (read, not shown), 0x8D to 0x95 creature fields beyond the ones in `Creature`.
+Inside packets Unity reads, it skips or ignores: 0x9F spell list body (the class byte is read, base patch 0016), 0xDD map flags (read, not shown), 0x8D to 0x95 creature fields beyond the ones in `Creature`.
 
 Client to server packets Unity sends: walk and turn, say, use, move, close, up, attack, follow, party (0xA3 invite, 0xA4 join, 0xA5 revoke, 0xA6 pass leadership, 0xA7 leave, 0xA8 shared experience), pong, logout, extended opcodes, NPC shop (0x79 to 0x7C), words to an NPC (0x96 type 12).
 Sent by the chat track: talk with type, channel or receiver (0x96), channels (0x97 to 0x9A), NPC channel close (0x9E), fight modes (0xA0). Read by it: 0xAA all 10.98 talk types (position for 1, 2, 3, 9, 10, 36, 37; channel id for 6, 7, 8, 14; none for 4, 13, 15), 0xAB to 0xB3, 0xB4 console kinds by tab, 0x28 with death type and penalty (the main client enables both features). 0xA7 is not a fight mode echo in 10.98 (it stays read and ignored). The NPC channel tab is a chat tab named NPCs; trade is the NPC track's.
@@ -282,7 +283,7 @@ Goal: every module of the table is done or N/A.
 1. P2 windows by group: economy (shop, market, orb exchange, stash, bank, crafting), social (guild, party finder, mentor), progression (passive tree, atlas, season, achievements, goals), PvP (arena, battleground, zones).
    Most are JSON windows on one opcode. Build a small widget kit first (tabs, grids, lists, tooltips) so each window is a few hundred lines.
 2. P3 polish: music, sound, weather, decals, shaders on outfits and names, streamer mode, credits.
-3. Chunked payloads through `ExtOpcodes` need no change. Add an inflater for packet compression before the owner turns `packetCompression` on for Unity players.
+3. Chunked payloads through `ExtOpcodes` need no change. Packet compression: the inflater is in (`Core/Inflate.cs`, wire audit, phase 6), so `packetCompression` may be on for Unity players with identity Chaos.
 4. Keep the table current: a module row changes status in the same commit as its window.
 
 ### Phase 3: the switch

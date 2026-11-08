@@ -1,5 +1,6 @@
 // The client's picture of the world: tiles with their stacks, the creatures, the player's position.
 // Filled by GameSession from the server's packets; drawn by the Unity side.
+using System;
 using System.Collections.Generic;
 
 namespace Chaos.Core
@@ -64,11 +65,62 @@ namespace Chaos.Core
         public Tile(Pos p) { Pos = p; }
     }
 
+    /// <summary>The aware range as the server's 0x42 gives it (width and height, 17 x 13 by default) and the tile counts the map messages use
+    /// (the engine's AwareRange of protocolgame.h, as server/tools/cast_relay.py reads it): a full map is Horizontal x Vertical tiles from
+    /// (x - Left, y - Top); a step reads a row or column at Bottom or Right. Only odd sizes make a consistent window (left + right + 1 =
+    /// horizontal); the main client asks for 29 x 21 (game_chaosview).</summary>
+    public struct AwareRange
+    {
+        public readonly int Width, Height;
+        public AwareRange(int width, int height) { Width = width; Height = height; }
+
+        public static readonly AwareRange Default = new AwareRange(17, 13);
+        /// <summary>The server's limits (Map::maxClientViewportX * 2 + 1, Y: game_chaosview AWARE_WIDTH and AWARE_HEIGHT).</summary>
+        public const int MaxWidth = 29, MaxHeight = 21;
+
+        public int Left => Width / 2;
+        public int Right => 1 + Width / 2;
+        public int Top => Height / 2;
+        public int Bottom => 1 + Height / 2;
+        public int Horizontal => Width + 1;
+        public int Vertical => Height + 1;
+
+        /// <summary>True for sizes the map messages can be read with: odd and at least 1.</summary>
+        public static bool Valid(int width, int height) => width >= 1 && height >= 1 && width % 2 == 1 && height % 2 == 1;
+
+        /// <summary>A request the server accepts: odd, 3 up to the limits.</summary>
+        public static AwareRange Clamp(int width, int height)
+        {
+            width = Math.Max(3, Math.Min(MaxWidth, width));
+            height = Math.Max(3, Math.Min(MaxHeight, height));
+            if (width % 2 == 0) width--;
+            if (height % 2 == 0) height--;
+            return new AwareRange(width, height);
+        }
+
+        /// <summary>"29x21" (or "29 x 21") to a request; false for anything else. Used for the setting that asks the server for a larger area.</summary>
+        public static bool TryParse(string text, out AwareRange range)
+        {
+            range = Default;
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            var parts = text.ToLowerInvariant().Replace(" ", "").Split('x');
+            if (parts.Length != 2 || !int.TryParse(parts[0], out int w) || !int.TryParse(parts[1], out int h) || w < 1 || h < 1) return false;
+            range = Clamp(w, h);
+            return true;
+        }
+
+        public override string ToString() => Width + "x" + Height;
+    }
+
     public sealed class World
     {
-        // the 10.98 view: 18 x 14 tiles around the player (8 left, 9 right, 6 up, 7 down)
+        // the 10.98 view: 18 x 14 tiles around the player (8 left, 9 right, 6 up, 7 down). These are the DEFAULT range and the area the views draw
+        // (15 x 11 of it); what the parser reads is `Range`, which the server's 0x42 changes (AwareRange).
         public const int RangeLeft = 8, RangeRight = 9, RangeTop = 6, RangeBottom = 7;
         public const int ViewW = RangeLeft + RangeRight + 1, ViewH = RangeTop + RangeBottom + 1;
+
+        /// <summary>The area of tiles the server describes round the player: the default 17 x 13 (18 x 14 tiles), or what the last 0x42 said.</summary>
+        public AwareRange Range = AwareRange.Default;
 
         public readonly DatFile Dat;
         public readonly Dictionary<Pos, Tile> Tiles = new Dictionary<Pos, Tile>();
@@ -165,7 +217,7 @@ namespace Chaos.Core
             {
                 int off = center.Z - p.Z;
                 int dx = p.X - off - center.X, dy = p.Y - off - center.Y;
-                if (dx < -RangeLeft - 1 || dx > RangeRight + 1 || dy < -RangeTop - 1 || dy > RangeBottom + 1) gone.Add(p);
+                if (dx < -Range.Left - 1 || dx > Range.Right + 1 || dy < -Range.Top - 1 || dy > Range.Bottom + 1) gone.Add(p);
             }
             foreach (var p in gone) Tiles.Remove(p);
         }
