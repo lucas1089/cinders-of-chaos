@@ -48,6 +48,11 @@ namespace Chaos.Core
             new MenuCategory { Id = "adventure", Text = Lk.N("Adventure"), Entries = new[]
             {
                 E("Next Goals", "win:GoalsWindow"), E("Goal Tracker", "win:GoalTrackerWindow"), E("Rifts", "info:rift"), E("Events", "info:events"),
+                // endgame activities (track L); the menu texts are the keys of the server's level unlocks (unlocks_config.lua)
+                E("Dungeons", "win:DungeonsWindow"), E("Infinity Tower", "win:TowerWindow"), E("Bounty Board", "win:BountyWindow"),
+                E("Arena", "win:ArenaWindow"), E("Guild Siege", "win:SiegeWindow"), E("Ember Descent", "win:DescentWindow"),
+                E("Rift Atlas", "win:RiftAtlasWindow"), E("Waystone Atlas", "win:WaystoneAtlasWindow"), E("Raid: Ashen Sepulchre", "win:RaidWindow"),
+                E("Scorched Marches", "win:PvpZoneWindow"), E("Battleground", "win:BattlegroundWindow"), E("Invasions", "win:InvasionWindow"),
             } },
             new MenuCategory { Id = "economy", Text = Lk.N("Economy"), Entries = new[]
             {
