@@ -166,30 +166,49 @@ namespace Chaos.Client
                 b.Intensity = LootBeams.IntensityOrder[Mathf.Max(0, it)];
             }
             VisualPrefs.ChestAuras = Check(ref y, inner, VisualPrefs.ChestAuras, Loc.T("Chest and Templar auras"), app);
+            VisualPrefs.ItemOutlines = Check(ref y, inner, VisualPrefs.ItemOutlines, Loc.T("Rarity outline on items on the map"), app);
             VisualPrefs.WingsOwn = Check(ref y, inner, VisualPrefs.WingsOwn, Loc.T("Level-up wings on my character"), app);
             VisualPrefs.WingsOthers = Check(ref y, inner, VisualPrefs.WingsOthers, Loc.T("Level-up wings on other characters"), app);
             VisualPrefs.PrintsOthers = Check(ref y, inner, VisualPrefs.PrintsOthers, Loc.T("Footprints of other characters"), app);
             VisualPrefs.GlowsOthers = Check(ref y, inner, VisualPrefs.GlowsOthers, Loc.T("Glows of other characters"), app);
             VisualPrefs.ErrorColorOn = Check(ref y, inner, VisualPrefs.ErrorColorOn, Loc.T("Error messages in their own colour"), app);
             VisualPrefs.UiFadeOn = Check(ref y, inner, VisualPrefs.UiFadeOn, Loc.T("Fade windows in and out"), app);
+            bool weatherOld = Phase7Prefs.WeatherOn;
+            Phase7Prefs.WeatherOn = Check(ref y, inner, Phase7Prefs.WeatherOn, Loc.T("Rain, embers and area colours"), app);
+            if (weatherOld != Phase7Prefs.WeatherOn) Phase7Prefs.Save();
             if (GUI.Button(new Rect(inner.x + 2, y + 4, inner.width - 4, 24), Loc.T("Name shaders..."))) { var w = app.FindWindow<NameShadersWindow>(); if (w != null) w.Open = true; }
         }
 
         static void LayoutPage(ChaosApp app, Rect inner, ref float y)
         {
             GUI.Label(new Rect(inner.x + 2, y, 130, 22), Loc.T("Map zoom"), app.SmallStyle);
-            if (GUI.Button(new Rect(inner.x + 120, y, 30, 22), "-")) VisualPrefs.ViewRows = ViewZoom.Step(VisualPrefs.ViewRows, -1);
-            GUI.Label(new Rect(inner.x + 156, y, 150, 22), Loc.T("{0} rows", VisualPrefs.ViewRows), app.SmallStyle);
-            if (GUI.Button(new Rect(inner.x + 280, y, 30, 22), "+")) VisualPrefs.ViewRows = ViewZoom.Step(VisualPrefs.ViewRows, 1);
+            if (GUI.Button(new Rect(inner.x + 120, y, 30, 22), "-")) { VisualPrefs.ViewRows = ViewZoom.Step(ViewZoom.Clamp(VisualPrefs.ViewRows, app.ViewMaxRows), -1, app.ViewMaxRows); }
+            GUI.Label(new Rect(inner.x + 156, y, 150, 22), Loc.T("{0} rows", ViewZoom.Clamp(VisualPrefs.ViewRows, app.ViewMaxRows)), app.SmallStyle);
+            if (GUI.Button(new Rect(inner.x + 280, y, 30, 22), "+")) { VisualPrefs.ViewRows = ViewZoom.Step(ViewZoom.Clamp(VisualPrefs.ViewRows, app.ViewMaxRows), 1, app.ViewMaxRows); }
             y += 28;
             var st = new GUIStyle(app.SmallStyle) { wordWrap = true };
-            GUI.Label(new Rect(inner.x + 2, y, inner.width - 4, 40), Loc.T("Ctrl and the mouse wheel over the map zoom too. A larger area than 11 rows needs the server's view range, not sent yet."), st);
+            GUI.Label(new Rect(inner.x + 2, y, inner.width - 4, 40), Loc.T("Ctrl and the mouse wheel over the map zoom too. Wide view asks the server for the largest area, so up to 19 rows show in the classic view (11 in HD-2D and the live view)."), st);
             y += 46;
+            VisualPrefs.WideView = Check(ref y, inner, VisualPrefs.WideView, Loc.T("Wide view (ask the server for 29 x 21 tiles)"), app);
             bool edit = Check(ref y, inner, HudLayout.Editing, Loc.T("Move the HUD pieces"), app);
             if (edit != HudLayout.Editing) { HudLayout.Editing = edit; if (!edit) app.SaveHud(); }
             if (GUI.Button(new Rect(inner.x + 2, y, inner.width - 4, 24), Loc.T("Put the HUD pieces back"))) app.ResetHud();
             y += 32;
             VisualPrefs.LayoutOn = Check(ref y, inner, VisualPrefs.LayoutOn, Loc.T("Remember window places per character"), app);
+            // phase 7, track Q: the interface scale, the window frames and their skins
+            y += 4;
+            GUI.Label(new Rect(inner.x + 2, y, 130, 22), Loc.T("Interface scale"), app.SmallStyle);
+            int oldScale = Phase7Prefs.UiScaleIndex;
+            if (GUI.Button(new Rect(inner.x + 120, y, 30, 22), "-")) Phase7Prefs.UiScaleIndex = UiScaleOption.ClampIndex(Phase7Prefs.UiScaleIndex - 1);
+            GUI.Label(new Rect(inner.x + 156, y, 110, 22), UiScaleOption.Percent(Phase7Prefs.UiScaleIndex) + "%", app.SmallStyle);
+            if (GUI.Button(new Rect(inner.x + 280, y, 30, 22), "+")) Phase7Prefs.UiScaleIndex = UiScaleOption.ClampIndex(Phase7Prefs.UiScaleIndex + 1);
+            y += 28;
+            bool themeOld = Phase7Prefs.ThemeOn;
+            Phase7Prefs.ThemeOn = Check(ref y, inner, Phase7Prefs.ThemeOn, Loc.T("Dark fantasy window frames"), app);
+            string skinOld = Phase7Prefs.Skin;
+            if (GUI.Button(new Rect(inner.x + 2, y, inner.width - 4, 24), Loc.T("Window skin: {0}", Loc.T(UiTheme.SkinNames[Phase7Prefs.Skin])))) Phase7Prefs.Skin = UiTheme.Next(Phase7Prefs.Skin);
+            y += 30;
+            if (oldScale != Phase7Prefs.UiScaleIndex || themeOld != Phase7Prefs.ThemeOn || skinOld != Phase7Prefs.Skin) Phase7Prefs.Save();
         }
     }
 }

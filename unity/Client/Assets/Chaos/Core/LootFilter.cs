@@ -391,6 +391,8 @@ namespace Chaos.Core
         public LootSoundSettings Sound = new LootSoundSettings();
         /// <summary>Kills since the login that matched a rule: the last kill's hits, for a sound when one plays.</summary>
         public Dictionary<string, int> LastHits = new Dictionary<string, int>();
+        /// <summary>The rule sound of the last kill (phase 7 track Y): the file under the modules folder and the gain; SoundPending until the app played it. AlertedKill: the kill whose rule sound was chosen, so its rare-drop line stays silent.</summary>
+        public string SoundFile = ""; public float SoundGain; public bool SoundPending; public int AlertedKill = int.MinValue;
         public void SetSound(LootSoundSettings s) { Sound = s.Copy(); ext.Send(Opcode, "sound", new Dictionary<string, object> { { "s", s.ToDict() } }); Changed(); }
         /// <summary>Reset the counters: scope session, total or all (one rule).</summary>
         public void ResetCounts(string scope, string rule = null)
@@ -463,6 +465,8 @@ namespace Chaos.Core
                     }
                     ReadCounts(Json.Get(d, "counts"));
                     LastHits = Json.Get(d, "hits") is Dictionary<string, object> ? LootRules.Counts(Json.Get(d, "hits")) : new Dictionary<string, int>();
+                    string soundFile, soundRule; float soundGain;
+                    if (LootRuleSounds.Pick(LastHits, Sound, out soundFile, out soundGain, out soundRule)) { SoundFile = soundFile; SoundGain = soundGain; SoundPending = true; AlertedKill = k; }
                     Kills.Insert(0, kill);
                     while (Kills.Count > MaxKills) Kills.RemoveAt(Kills.Count - 1);
                     Changed();

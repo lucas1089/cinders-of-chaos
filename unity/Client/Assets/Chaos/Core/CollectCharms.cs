@@ -4,6 +4,7 @@
 //                     bag [{ref, sid, iid, w, h, name, rarity, ilvl, icon, item, mods, salvage, reforge}], totals [{t, v, cap}], groups [{open, text, cells}]}
 //                     result {ok, text}
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -166,6 +167,21 @@ namespace Chaos.Core
                 return new CharmAction { Action = "move", Data = D("id", (double)drag.Id, "x", (double)p.X, "y", (double)p.Y) };
             }
             return new CharmAction { Action = "place", Data = D("ref", drag.Ref, "sid", drag.Sid, "iid", drag.Iid, "x", (double)p.X, "y", (double)p.Y) };
+        }
+
+        /// <summary>An item dragged in from a bag or a container onto the grid (charms.lua onDropItem): its size is known from the list of charms you carry (same per-item id),
+        /// else 1 x 1; the server gets the item's map position and per-item id and the anchor cell. Null with a message when it does not fit.</summary>
+        public CharmAction ItemDropAction(Pos pos, ulong iid, float px, float py, out string why)
+        {
+            why = null;
+            int w = 1, h = 1;
+            if (iid > 0)
+                foreach (var b in Bag)
+                    if (CF.Str(CF.G(b, "iid")) == iid.ToString(CultureInfo.InvariantCulture)) { w = Math.Max(1, CF.I(b, "w")); h = Math.Max(1, CF.I(b, "h")); }
+            if (!Anchor(px, py, w, h, out int x, out int y)) { why = Loc.T("Drop it on the grid."); return null; }
+            if (!Check(w, h, x, y, 0, out string bad)) { why = bad; return null; }
+            var p = new Dictionary<string, object> { { "x", (double)pos.X }, { "y", (double)pos.Y }, { "z", (double)pos.Z } };
+            return new CharmAction { Action = "place", Data = D("pos", p, "iid", iid.ToString(CultureInfo.InvariantCulture), "x", (double)x, "y", (double)y) };
         }
 
         public static CharmDrag DragOf(Dictionary<string, object> c, string kind) => new CharmDrag

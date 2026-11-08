@@ -35,6 +35,7 @@ namespace Chaos.Client
         public override void Reset()
         {
             engine = null; engineFor = null; loadedFor = null; lastHealth = -1; pick = Pick.None; message = ""; dirty = false;
+            noticeShown = null; followEdit = null;
         }
 
         // ------------------------------------------------------------------------------------ the loop, once per frame
@@ -50,10 +51,13 @@ namespace Chaos.Client
                 engine = new HelperEngine(s.Spells, host);
                 engineFor = s; loadedFor = name;
                 engine.Config = HelperConfig.FromJson(PlayerPrefs.GetString(HelperConfig.PrefsKey("-", name), ""));
+                engine.Reach = s.AutoTargetReach;   // game_autotarget "Only reachable" (Core/Phase7Z.cs)
                 engine.RankOf = s.AutoTargetRank;   // game_autotarget: goblins, bosses and special monsters first (Core/PlayGuards.cs)
                 engine.Held = new EverfullHeld(s.Ext);
                 engine.Held.Ask();
                 var e = engine;
+                var prevText = s.Parser.Talks.ServerText;   // the potion gate reads the server's "Using ..." and "Sorry, not possible." (Phase7XHelper.cs)
+                s.Parser.Talks.ServerText = t => { prevText(t); e.OnServerText(t); };
                 // the server's answers to a cast confirm it (0xA4 / 0xA5); the session's own handlers keep working
                 var spellCd = s.Parser.SpellCooldown; var groupCd = s.Parser.GroupCooldown;
                 s.Parser.SpellCooldown = (id, ms) => { spellCd(id, ms); e.OnSpellCooldown(id); };
@@ -66,6 +70,9 @@ namespace Chaos.Client
             if (lastHealth >= 0 && hp < lastHealth) engine.OnHealthChanged(lastHealth, hp);
             lastHealth = hp;
             engine.Tick();
+            // a level-up with new spells opens the window on the Shooter tab, where Add and Ignore are (the main client asks in a box)
+            if (engine.LevelNotice != null && engine.LevelNotice != noticeShown) { noticeShown = engine.LevelNotice; Open = true; tab = 1; pick = Pick.None; extraPick = ExtraPick.None; }
+            if (engine.LevelMessage.Length > 0) { message = engine.LevelMessage; engine.LevelMessage = ""; dirty = true; app.PostLine(message); }
             if (dirty) { dirty = false; PlayerPrefs.SetString(HelperConfig.PrefsKey("-", loadedFor), engine.Config.ToJson()); PlayerPrefs.Save(); }
         }
 
@@ -130,7 +137,7 @@ namespace Chaos.Client
 
             if (extraPick != ExtraPick.None) { DrawExtraPicker(x, y, w, inner.yMax - y); return; }
 
-            int t = GUI.SelectionGrid(new Rect(x, y, w, 52), tab, new[] { Loc.T("Healing"), Loc.T("Shooter"), Loc.T("Target"), Loc.T("Runes"), Loc.T("Allies"), Loc.T("Support"), Loc.T("More") }, 4);
+            int t = GUI.SelectionGrid(new Rect(x, y, w, 52), tab, new[] { Loc.T("Healing"), Loc.T("Shooter"), Loc.T("Target"), Loc.T("Runes"), Loc.T("Allies"), Loc.T("Support"), Loc.T("More"), Loc.T("Follow and sell") }, 4);
             if (t != tab) { tab = t; message = ""; }
             y += 58;
             if (tab == 0) DrawHealing(x, y, w);
@@ -221,6 +228,7 @@ namespace Chaos.Client
                 dirty = true; message = "";
             }
             y += 34;
+            y += DrawLevelUp(x, y, w);
             if (message.Length > 0) GUI.Label(new Rect(x, y, w, 60), message, hint);
         }
 
@@ -243,6 +251,12 @@ namespace Chaos.Client
             y += 30;
             GUI.Label(new Rect(x, y, w, 34), Loc.T("Attacks a monster within 7 x 5 tiles by the rule below and keeps it until it is gone."), hint);
             y += 40;
+            bool pr = GUI.Toggle(new Rect(x, y, w, 24), cfg.AutoTargetPriority, new GUIContent(Loc.T("Priority targets"), Loc.T("Loot goblins, bosses and special monsters first.")));
+            if (pr != cfg.AutoTargetPriority) { cfg.AutoTargetPriority = pr; dirty = true; }
+            y += 26;
+            bool rc = GUI.Toggle(new Rect(x, y, w, 24), cfg.AutoTargetReachable, new GUIContent(Loc.T("Only reachable"), Loc.T("Never a monster the character cannot get to or shoot.")));
+            if (rc != cfg.AutoTargetReachable) { cfg.AutoTargetReachable = rc; dirty = true; }
+            y += 30;
             for (int i = 0; i < ModeText.Length; i++, y += 28)
             {
                 bool sel = cfg.AutoTargetMode == i + 1;

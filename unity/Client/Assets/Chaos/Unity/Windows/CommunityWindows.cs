@@ -19,6 +19,7 @@ namespace Chaos.Client
     public sealed class BossSpawnsWindow : SocialWindow
     {
         public override string Title => Loc.T("Boss Spawns");
+        public override string TravelKey => "pocketboss";
         protected override SocialPanel Panel(GameSession s) => s?.Community?.BossSpawns;
         protected override Rect Place(float w, float h) => new Rect(Mathf.Max(8, w / 2 - 320), 50, Mathf.Min(640, w - 16), Mathf.Min(600, h - 60));
     }

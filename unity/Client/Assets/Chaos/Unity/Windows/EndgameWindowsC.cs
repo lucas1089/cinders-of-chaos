@@ -726,14 +726,17 @@ namespace Chaos.Client
                 var c = cur.Contracts[i];
                 var r = new Rect(0, i * rowH, view.width - 20, rowH - 4);
                 Eu.Panel(r, 0.06f);
-                Eu.Label(app, new Rect(r.x + 6, r.y + 3, 50, 14), BountyView.KindText(c.Type), BountyView.KindColor(c.Type), 10, true);
+                // the creature of the contract (game_bounty row.creature): its outfit with the colours the server sent
+                var look = OutfitJson.Read(c.Outfit, c.Look);
+                if (look != null) app.DrawOutfit(new Rect(r.x + 4, r.y + 8, 56, 56), look);
+                Eu.Label(app, new Rect(r.x + 62, r.y + 3, 50, 14), BountyView.KindText(c.Type), BountyView.KindColor(c.Type), 10, true);
                 string tc = BountyView.TierColor(c.Tier);
-                Eu.Label(app, new Rect(r.x + 58, r.y + 2, r.width - 220, 18), c.Name + (c.Level > 0 ? "  (" + c.Level + ")" : ""), c.Type == "elite" && tc != null ? tc : Eu.Text, 14, true);
-                Eu.Label(app, new Rect(r.x + 6, r.y + 22, r.width - 190, 16), BountyView.TaskText(c), Eu.Text, 12);
+                Eu.Label(app, new Rect(r.x + 114, r.y + 2, r.width - 276, 18), c.Name + (c.Level > 0 ? "  (" + c.Level + ")" : ""), c.Type == "elite" && tc != null ? tc : Eu.Text, 14, true);
+                Eu.Label(app, new Rect(r.x + 62, r.y + 22, r.width - 246, 16), BountyView.TaskText(c), Eu.Text, 12);
                 string reward = BountyView.RewardText(c.Reward, out _);
-                Eu.Label(app, new Rect(r.x + 6, r.y + 40, r.width - 190, 16), Loc.T("Reward:") + " " + reward, Eu.Bright, 11);
+                Eu.Label(app, new Rect(r.x + 62, r.y + 40, r.width - 246, 16), Loc.T("Reward:") + " " + reward, Eu.Bright, 11);
                 if (c.State != "open")
-                    Eu.Bar(app, new Rect(r.x + 6, r.y + 57, r.width - 190, 12), Mathf.Floor(c.Progress * 100f / Mathf.Max(1, c.Count)), c.State == "done" ? "#2f7a2a" : "#8a1010", Fmt.Short(c.Progress) + " / " + Fmt.Short(c.Count), 10);
+                    Eu.Bar(app, new Rect(r.x + 62, r.y + 57, r.width - 246, 12), Mathf.Floor(c.Progress * 100f / Mathf.Max(1, c.Count)), c.State == "done" ? "#2f7a2a" : "#8a1010", Fmt.Short(c.Progress) + " / " + Fmt.Short(c.Count), 10);
                 var ab = new Rect(r.xMax - 170, r.y + 8, 160, 26);
                 if (c.State == "open") { if (Eu.Button(ab, Loc.T("Accept"), !b.Full)) b.Accept(c.Key); }
                 else if (c.State == "active")

@@ -22,10 +22,14 @@ namespace Chaos.Client
         public static int EffectPercent = EffectOpacity.Default;
         public static bool Decals = true, ChestAuras = true, ErrorColorOn = true, UiFadeOn = true, LayoutOn = true;
         public static bool WingsOwn = true, WingsOthers = true, PrintsOthers = true, GlowsOthers = true;
+        /// <summary>The rarity outline of items on the map (phase 7 track Y, MapItemOutline).</summary>
+        public static bool ItemOutlines = true;
         /// <summary>The health and mana globes beside the hotkey bar (track U; drawn only when the orb pictures are found).</summary>
-        public static bool Globes = true;
+        public static bool Globes = true, WideView = true;
         public const string GlobesPref = "chaos.globes";
         public static int ViewRows = ViewZoom.DefaultRows;
+        /// <summary>The character in the game now (set by ChaosApp), whose zoom is kept.</summary>
+        public static string CurrentCharacter;
         static bool loaded;
 
         static bool Flag(string key, bool def) => PlayerPrefs.GetInt(key, def ? 1 : 0) == 1;
@@ -44,8 +48,10 @@ namespace Chaos.Client
             ErrorColorOn = Flag(ErrorColor.Pref, true); UiFadeOn = Flag(UiFade.Pref, true); LayoutOn = Flag(WindowLayout.Pref + "on", true);
             WingsOwn = Flag(LevelWingsState.OwnPref, true); WingsOthers = Flag(LevelWingsState.OthersPref, true);
             PrintsOthers = Flag(CosmeticFxState.OthersPrintsPref, true); GlowsOthers = Flag(CosmeticFxState.OthersGlowPref, true);
-            ViewRows = ViewZoom.Clamp(PlayerPrefs.GetInt(ViewZoom.Pref, ViewZoom.DefaultRows));
+            ViewRows = ViewZoom.Clamp(PlayerPrefs.GetInt(ViewZoom.Pref, ViewZoom.DefaultRows), ViewZoom.HardMaxRows);
+            WideView = Flag(ViewZoom.WidePref, true);
             Globes = Flag(GlobesPref, true);
+            ItemOutlines = Flag(MapItemOutline.PrefKey, true);
             ErrorColor.Enabled = ErrorColorOn;
         }
 
@@ -61,7 +67,10 @@ namespace Chaos.Client
             SetFlag(LevelWingsState.OwnPref, WingsOwn); SetFlag(LevelWingsState.OthersPref, WingsOthers);
             SetFlag(CosmeticFxState.OthersPrintsPref, PrintsOthers); SetFlag(CosmeticFxState.OthersGlowPref, GlowsOthers);
             PlayerPrefs.SetInt(ViewZoom.Pref, ViewRows);
+            SetFlag(ViewZoom.WidePref, WideView);
+            if (ViewZoom.CharKey(CurrentCharacter) is string ck) PlayerPrefs.SetInt(ck, ViewRows);
             SetFlag(GlobesPref, Globes);
+            SetFlag(MapItemOutline.PrefKey, ItemOutlines);
             ErrorColor.Enabled = ErrorColorOn;
             PlayerPrefs.Save();
         }
@@ -173,7 +182,34 @@ namespace Chaos.Client
                     if (voice == null) continue;
                     voice.clip = clip; voice.volume = Mathf.Clamp01(pick.Gain); voice.Play();
                 }
+            RuleSoundUpdate();
             MusicUpdate(v);
+        }
+
+        /// <summary>Plays the loot filter's rule sound of a kill (phase 7 track Y; the file is the main client's own game_lootfilter/sounds/*.ogg).</summary>
+        void RuleSoundUpdate()
+        {
+            var f = FindWindow<LootWindow>()?.Filter;
+            if (f == null || !f.SoundPending) return;
+            f.SoundPending = false;
+            PlayRuleFile(f.SoundFile, f.SoundGain);
+        }
+
+        void PlayRuleFile(string rel, float gain)
+        {
+            if (string.IsNullOrEmpty(rel)) return;
+            LoadClip(rel, clip =>
+            {
+                var voice = FreeVoice();
+                if (clip == null || voice == null) return;
+                voice.clip = clip; voice.volume = Mathf.Clamp01(gain); voice.Play();
+            });
+        }
+
+        /// <summary>The play button of the Rules tab: a sound id (1 .. 5) at the volume (0 .. 100).</summary>
+        public void PlayRuleSound(int id, int volume)
+        {
+            PlayRuleFile(LootRuleSounds.File(id), Mathf.Clamp01(volume / 100f));
         }
 
         AudioSource FreeVoice()

@@ -10,9 +10,43 @@ namespace Chaos.Client
         public override string Title => Loc.T("Daily Reward");
         protected override Rect Place(float w, float h) => new Rect(w / 2 - 300, 70, 600, 360);
 
-        protected override bool ModelVisible(ChaosApp app) => app.Session.Daily.Visible;
-        protected override void ModelShow(ChaosApp app) => app.Session.Daily.Show();
-        protected override void ModelHide(ChaosApp app) => app.Session.Daily.Hide();
+        readonly DailyAnchor anchor = new DailyAnchor();
+        Pos lastPos;
+        bool hadPos;
+
+        // a login window waits for a modal dialog and the patch notes (DailyGate), so it never opens on top of them
+        protected override bool ModelVisible(ChaosApp app)
+        {
+            var d = app.Session.Daily;
+            if (!d.Visible) return false;
+            if (d.LoginOpen && !Open)
+            {
+                bool notes = app.FindWindow<PatchNotesWindow>()?.Open == true;
+                if (DailyGate.ShouldWait(1, app.Session.Modals.Current != null, notes)) return false;
+            }
+            return true;
+        }
+        protected override void ModelShow(ChaosApp app) { app.Session.Daily.Show(); AnchorHere(app); }
+        protected override void ModelHide(ChaosApp app) { app.Session.Daily.Hide(); anchor.Clear(); }
+
+        void AnchorHere(ChaosApp app)
+        {
+            var me = app.World?.Player;
+            if (me != null) { anchor.Set(me.Position); lastPos = me.Position; hadPos = true; }
+        }
+
+        // walking more than 3 tiles away closes the window and tells the server (daily.lua onPlayerPositionChange)
+        protected override void ModelTick(ChaosApp app)
+        {
+            var me = app.World?.Player;
+            if (me == null) { hadPos = false; return; }
+            if (Open && !anchor.Has) AnchorHere(app);
+            if (hadPos && me.Position != lastPos)
+            {
+                if (anchor.Moved(lastPos, me.Position, Open)) { Open = false; app.Session.Daily.Hide(); }
+            }
+            lastPos = me.Position; hadPos = true;
+        }
 
         protected override void Body(ChaosApp app, Rect inner)
         {

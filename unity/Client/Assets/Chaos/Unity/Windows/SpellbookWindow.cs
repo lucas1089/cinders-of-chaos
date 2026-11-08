@@ -13,6 +13,7 @@ namespace Chaos.Client
         static readonly string[] FilterKeys = { SpellBook.FilterLearned, SpellBook.FilterSoon, SpellBook.FilterVocation, SpellBook.FilterAll, SpellBook.FilterRunes };
         static readonly string[] KindKeys = { "all", "attack", "support" };
         const float Row = 34f;
+        const float DetailH = 272f;   // header, the area preview with the rows beside it, the F1 to F12 row
 
         SpellBook hooked;
         bool wasOpen;
@@ -31,7 +32,7 @@ namespace Chaos.Client
         public override string Title => Loc.T("Spells");
         public override KeyCode Hotkey => KeyCode.P;
 
-        protected override Rect Place(float w, float h) => new Rect(12f, 48f, 340f, 440f);
+        protected override Rect Place(float w, float h) => new Rect(12f, 48f, 340f, Mathf.Min(660f, Mathf.Max(440f, h - 60f)));
 
         public override void Reset()
         {
@@ -146,7 +147,7 @@ namespace Chaos.Client
                 if (selected != null && !visible.Contains(selected)) selected = null;
             }
 
-            float detailH = selected != null ? 112f : 36f;
+            float detailH = selected != null ? DetailH : 36f;
             var listRect = new Rect(x, y, w, inner.yMax - y - detailH - 4);
             if (!book.Loaded)
             {
@@ -206,6 +207,66 @@ namespace Chaos.Client
             }
         }
 
+        string tipText = "";
+        Vector2 tipAt;
+
+        static Color RoleColor(AreaRole role, Color hit)
+        {
+            switch (role)
+            {
+                case AreaRole.Hit: return hit;
+                case AreaRole.Caster: return new Color(0.965f, 0.81f, 0.45f);
+                case AreaRole.TargetHit: return hit;
+                default: return new Color(0.10f, 0.08f, 0.09f);
+            }
+        }
+
+        /// <summary>The area grid of the main client's details: your square, the tiles hit, the target (white frame), then the legend and the note.</summary>
+        void DrawArea(ChaosApp app, Spell sp, Rect box)
+        {
+            ChaosApp.Fill(box, new Color(0.05f, 0.04f, 0.055f, 0.55f));
+            var roles = SpellArea.Roles(sp);
+            int cell = SpellArea.CellSize(roles, box.width, box.height - 30f);
+            var hit = ElementColor(sp.Element);
+            float gw = cell * SpellArea.Columns(roles);
+            float gx = box.x + (box.width - gw) / 2f, gy = box.y + 4f;
+            for (int r = 0; r < roles.Length; r++)
+                for (int c = 0; c < roles[r].Length; c++)
+                {
+                    var role = roles[r][c];
+                    var rc = new Rect(gx + c * cell, gy + r * cell, cell - 1, cell - 1);
+                    ChaosApp.Fill(new Rect(rc.x - 1, rc.y - 1, rc.width + 2, rc.height + 2), new Color(0.16f, 0.13f, 0.15f));
+                    ChaosApp.Fill(rc, RoleColor(role, hit));
+                    if (role == AreaRole.Target || role == AreaRole.TargetHit)
+                    {
+                        float b = cell >= 9 ? 2f : 1f;
+                        ChaosApp.Fill(new Rect(rc.x, rc.y, rc.width, b), Color.white);
+                        ChaosApp.Fill(new Rect(rc.x, rc.yMax - b, rc.width, b), Color.white);
+                        ChaosApp.Fill(new Rect(rc.x, rc.y, b, rc.height), Color.white);
+                        ChaosApp.Fill(new Rect(rc.xMax - b, rc.y, b, rc.height), Color.white);
+                    }
+                }
+            // legend: hit, you, target
+            float ly = box.yMax - 28f, lx = box.x + 6f;
+            ChaosApp.Fill(new Rect(lx, ly + 2, 9, 9), hit);
+            GUI.Label(new Rect(lx + 12, ly - 2, 34, 16), Loc.T("Hit"), wordsStyle);
+            ChaosApp.Fill(new Rect(lx + 46, ly + 2, 9, 9), new Color(0.965f, 0.81f, 0.45f));
+            GUI.Label(new Rect(lx + 58, ly - 2, 34, 16), Loc.T("You"), wordsStyle);
+            var tcol = SpellArea.HasTargetHit(roles) ? hit : new Color(0.10f, 0.08f, 0.09f);
+            ChaosApp.Fill(new Rect(lx + 92, ly + 1, 11, 11), Color.white);
+            ChaosApp.Fill(new Rect(lx + 94, ly + 3, 7, 7), tcol);
+            GUI.Label(new Rect(lx + 106, ly - 2, 48, 16), Loc.T("Target"), wordsStyle);
+            string note = SpellArea.Note(sp, out int arg);
+            GUI.Label(new Rect(box.x + 4, box.yMax - 14, box.width - 8, 14), arg > 0 ? Loc.T(note, arg) : Loc.T(note), new GUIStyle(wordsStyle) { alignment = TextAnchor.UpperCenter });
+        }
+
+        void DrawStat(string key, string value, Rect row, string tip)
+        {
+            GUI.Label(new Rect(row.x, row.y, 62, row.height), key, wordsStyle);
+            GUI.Label(new Rect(row.x + 62, row.y, row.width - 62, row.height), value, nameStyle);
+            if (tip != null && Event.current.type == EventType.Repaint && row.Contains(Event.current.mousePosition)) { tipText = tip; tipAt = Event.current.mousePosition; }
+        }
+
         void DrawDetails(ChaosApp app, SpellBook book, Rect r)
         {
             if (selected == null)
@@ -215,13 +276,36 @@ namespace Chaos.Client
                 return;
             }
             var sp = selected;
+            tipText = "";
             ChaosApp.Fill(r, new Color(0f, 0f, 0f, 0.35f));
             bool bigIcon = app.DrawSpellEntryIcon(new Rect(r.xMax - 38, r.y + 4, 32, 32), sp);
             GUI.Label(new Rect(r.x + 6, r.y + 2, r.width - (bigIcon ? 46 : 12), 18), sp.Name + "  (" + Loc.T("Words: {0}", sp.Words) + ")", app.SmallStyle);
             var line = Loc.T("Level {0}", sp.Level) + "   " + Loc.T("Magic level {0}", sp.MagicLevel) + "   " + Loc.T("Mana {0}", sp.Mana) + "   " + Loc.T("Cooldown {0}s", (sp.Cooldown / 1000f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture));
             GUI.Label(new Rect(r.x + 6, r.y + 20, r.width - (bigIcon ? 46 : 12), 16), line, wordsStyle);
             string status = StatusText(book.Status(sp));
-            GUI.Label(new Rect(r.x + 6, r.y + 36, r.width - 12, 36), status.Length > 0 ? status : sp.Description, hintStyle);
+            GUI.Label(new Rect(r.x + 6, r.y + 36, r.width - 12, 24), status.Length > 0 ? status : sp.Description, hintStyle);
+            // game_spellsupports: the runes socketed in this spell (BookLine), with the effects in the tooltip
+            string supTip = "";
+            var supports = app.Session?.Utils?.Supports;
+            string supLine = supports != null ? supports.BookLine(sp.Words, out supTip) : null;
+            if (supLine != null)
+            {
+                var sr = new Rect(r.x + 6, r.y + 60, r.width - 12, 16);
+                GUI.Label(sr, supLine, wordsStyle);
+                if (supTip.Length > 0 && sr.Contains(Event.current.mousePosition)) app.SetTip(supTip);
+            }
+            // the area preview on the left, the rows of the main client on the right
+            float top = r.y + 76f, boxH = r.yMax - 50f - top;
+            DrawArea(app, sp, new Rect(r.x + 6, top, 160f, boxH));
+            float ry = top;
+            foreach (var st in SpellDetails.Rows(sp, book.VocationNames))
+            {
+                string val = st.Translate ? Loc.T(st.Value) : st.Value;
+                if (!st.Translate && st.Key == "Vocations" && st.Value.EndsWith(" classes", System.StringComparison.Ordinal))
+                    val = Loc.T("{0} classes", st.Value.Substring(0, st.Value.IndexOf(' ')));
+                DrawStat(Loc.T(st.Key), val, new Rect(r.x + 172, ry, r.width - 178, 15), st.Tip);
+                ry += 15f;
+            }
             // F1 to F12: a right-click selected the spell; these put it on a hotkey slot
             float bw = (r.width - 12) / 12f;
             for (int i = 0; i < 12; i++)
@@ -230,6 +314,12 @@ namespace Chaos.Client
                 if (GUI.Button(b, "F" + (i + 1))) app.FindWindow<HotkeyBarWindow>()?.Assign(i, sp.Words);
             }
             GUI.Label(new Rect(r.x + 6, r.yMax - 46, r.width - 12, 16), Loc.T("Put on a hotkey:"), wordsStyle);
+            if (tipText.Length > 0)
+            {
+                var tr2 = new Rect(Mathf.Min(tipAt.x + 10, r.xMax - 190), tipAt.y + 14, 186, 34);
+                ChaosApp.Fill(tr2, new Color(0.04f, 0.03f, 0.04f, 0.95f));
+                GUI.Label(new Rect(tr2.x + 3, tr2.y + 1, tr2.width - 6, tr2.height - 2), tipText, hintStyle);
+            }
         }
     }
 }

@@ -48,6 +48,21 @@ namespace Chaos.Core
             return Valid(k) ? k : "";
         }
 
+        /// <summary>Who fronts a service panel (the goNpcButton tooltips of the main client's panels): key to the NPC as the tooltip names it.</summary>
+        public static readonly Dictionary<string, string> PanelNpc = new Dictionary<string, string>
+        {
+            { "stash", "Tavish Coldhand, the stash keeper" }, { "pocketboss", "Vessa Hollowmark, the pocket boss NPC" }, { "candlemarks", "Osric the Chandler" },
+            { "gambler", "Mordecai Ashwager, the Gambler" }, { "materials", "the Material Broker" },
+        };
+
+        /// <summary>The tooltip of the Go to NPC button of a panel: where it takes you and its rules. Plain English, translated by the caller's Loc table.</summary>
+        public static string PanelTip(string key)
+        {
+            string npc;
+            if (!PanelNpc.TryGetValue(key ?? "", out npc)) return Loc.T("Takes you in front of the NPC. Not in combat; a short wait between two trips.");
+            return Loc.T("Takes you in front of {0}, in the market of the teleport room. Not in combat; a short wait between two trips.", npc);
+        }
+
         public static bool TooSoon(double nowSec, double lastSec) => lastSec >= 0 && nowSec >= lastSec && nowSec - lastSec < GapSeconds;
 
         public static Dictionary<string, object> Message(string key) => Valid(key) ? new Dictionary<string, object> { { "k", key } } : null;

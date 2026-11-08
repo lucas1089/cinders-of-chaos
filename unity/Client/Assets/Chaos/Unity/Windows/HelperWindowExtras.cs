@@ -74,6 +74,7 @@ namespace Chaos.Client
             if (tab == 3) DrawRunes(x, y, w);
             else if (tab == 4) DrawAllies(x, y, w);
             else if (tab == 5) DrawSupport(x, y, w, h);
+            else if (tab == 7) DrawFollowSell(x, y, w);   // phase 7 track X: HelperWindowP7.cs
             else DrawMore(x, y, w);
         }
 

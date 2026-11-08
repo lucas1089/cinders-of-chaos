@@ -91,7 +91,9 @@ namespace Chaos.Client
         public static float UiScale(float screenW, float screenH, float dpi)
         {
             float byHeight = Mathf.Min(screenH / 720f, screenW / 960f);
-            return Mathf.Max(1f, Mathf.Max(byHeight, dpi / 160f));
+            float auto = Mathf.Max(1f, Mathf.Max(byHeight, dpi / 160f));
+            Phase7Prefs.Load();
+            return UiScaleOption.Factor(Phase7Prefs.UiScaleIndex, screenW, screenH, auto);   // the option Interface scale (Core/Phase7Q.cs)
         }
 
         public static Rect MapRect(float screenW, float screenH)
@@ -248,6 +250,7 @@ namespace Chaos.Client
 
         void Leave(string why)
         {
+            Phase7QLeave(why);   // ChaosApp.Phase7Q.cs: the explored map is saved, a death notes the open windows
             session?.Dispose();
             session = null;
             if (view != null) Destroy(view.gameObject);
@@ -464,6 +467,7 @@ namespace Chaos.Client
                 GUI.skin.textField.fontSize = 14;
                 GUI.skin.label.fontSize = 14;
             }
+            ApplyControlSkin();   // ChaosApp.Phase7Q.cs: buttons and text fields in the skin's pictures
             // the UI is laid out for 720 px of height and grows with the window (and with dense phone screens)
             float scale = UiScale(UnityEngine.Screen.width, UnityEngine.Screen.height, UnityEngine.Screen.dpi);
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1));
@@ -474,6 +478,7 @@ namespace Chaos.Client
                 case Screen.Characters: CharactersGui(w, h); break;
                 case Screen.Game: GameGui(w, h, scale); break;
             }
+            StreamerBadgeGui(w, h);   // ChaosApp.Phase7Q.cs: the STREAMER badge while streamer mode is on
         }
 
         Texture2D logo;
@@ -495,11 +500,12 @@ namespace Chaos.Client
             GUILayout.Label("Cinders of Chaos - Unity prototype");
             GUILayout.Label("Server");
             GUILayout.BeginHorizontal();
-            host = GUILayout.TextField(host, GUILayout.Width(240));
+            // streamer mode hides the text of the server address and the account (client_chaos_streamer)
+            host = streamer.Streamer ? GUILayout.PasswordField(host, '*', GUILayout.Width(240)) : GUILayout.TextField(host, GUILayout.Width(240));
             port = GUILayout.TextField(port);
             GUILayout.EndHorizontal();
             GUILayout.Label("Account");
-            account = GUILayout.TextField(account);
+            account = streamer.Streamer ? GUILayout.PasswordField(account, '*') : GUILayout.TextField(account);
             GUILayout.Label("Password");
             password = GUILayout.PasswordField(password, '*');
             GUILayout.Label("Folder with Tibia.dat and Tibia.spr");
@@ -548,8 +554,10 @@ namespace Chaos.Client
                     nameStyle.normal.textColor = Color.black;
                     GUI.Label(new Rect(nr.x + 1, nr.y + 1, nr.width, nr.height), c.Name, nameStyle);
                     col = VisualNameColor(c, col);   // the own name shader
+                    col = MonsterNameColor(c, col);   // ChaosApp.Phase7Y.cs: a tiered monster's name in its tier colour
                     nameStyle.normal.textColor = col;
                     GUI.Label(nr, c.Name, nameStyle);
+                    DrawMonsterMods(c, x, nr);   // the tier word and the modifier lines over the name
                     DrawBubbles(c, x, nr.y);
                     Rect bar = new Rect(x - barW / 2, y - barH - 3, barW, barH);
                     Fill(new Rect(bar.x - 1, bar.y - 1, bar.width + 2, bar.height + 2), new Color(0f, 0f, 0f, 0.85f));

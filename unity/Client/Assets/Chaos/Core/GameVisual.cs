@@ -43,6 +43,8 @@ namespace Chaos.Core
 
         // set by the app: the loot kills (for rare loot sounds), an activity HUD ("arena" or "dungeon"), the rumble clock
         public Func<IList<LootKill>> LootKills = () => null;
+        /// <summary>True for a kill whose loot filter rule sound was chosen (the rare-drop cue then stays silent, as the main client's tellGameSound).</summary>
+        public Func<int, bool> LootAlerted = k => false;
         public Func<string> Activity = () => null;
         public Func<double> Random = () => 0.5;
 
@@ -169,7 +171,7 @@ namespace Chaos.Core
             if (kills != null && kills.Count > 0)
             {
                 int k = kills[0].K;
-                if (lastKillK != int.MinValue && k != lastKillK) Cue(SoundLogic.LootEvent(kills[0].Items, false) ?? "", 0);
+                if (lastKillK != int.MinValue && k != lastKillK) Cue(SoundLogic.LootEvent(kills[0].Items, LootAlerted(k)) ?? "", 0);
                 lastKillK = k;
             }
             ScanCreatures(w, me, now);

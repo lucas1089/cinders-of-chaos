@@ -52,6 +52,7 @@ namespace Chaos.Client
                 loadedFor = name;
                 ground.Settings = GroundLabelSettings.From(Json.TryParse(PlayerPrefs.GetString("chaos.groundlabels." + name.ToLowerInvariant(), "")));
             }
+            ground.Accent = CosmeticsLogic.ValidColor(s.Cosmetics?.Accent) ? s.Cosmetics.Accent : null;   // the loot label accent cosmetic (phase 7 track Y)
             if (Time.frameCount == lastFrame) return;   // OnGUI runs several times a frame
             lastFrame = Time.frameCount;
             if (!synced && s.Now > 1000) { synced = true; filter.Sync(); }
@@ -107,13 +108,13 @@ namespace Chaos.Client
                 // the Filter and Rules tabs are longer than the window: one scroll view
                 scroll = GUI.BeginScrollView(area, scroll, new Rect(0, 0, area.width - 18, tab == 1 ? 760 : 560));
                 var inside = new Rect(0, 0, area.width - 18, 760);
-                if (tab == 1) DrawFilter(inside); else DrawRules(inside);
+                if (tab == 1) DrawFilter(inside); else DrawRules(app, inside);
                 GUI.EndScrollView();
             }
         }
 
         // ---- rule counters and sounds ----
-        void DrawRules(Rect r)
+        void DrawRules(ChaosApp app, Rect r)
         {
             if (!filter.Loaded) { GUI.Label(r, Loc.T("Loading..."), hint); return; }
             var snd = filter.Sound.Copy();
@@ -135,6 +136,9 @@ namespace Chaos.Client
                 if (GUI.Button(new Rect(x + 8, y, 24, 20), "-")) id = id <= 0 ? LootRules.Sounds.Length : id - 1;
                 GUI.Label(new Rect(x + 34, y + 1, w - 80, 18), LootRules.SoundName(id), new GUIStyle(small) { alignment = TextAnchor.UpperCenter });
                 if (GUI.Button(new Rect(x + w - 60, y, 24, 20), "+")) id = id >= LootRules.Sounds.Length ? 0 : id + 1;
+                GUI.enabled = id > 0 && !snd.Mute && snd.Volume > 0;
+                if (GUI.Button(new Rect(x + w - 32, y, 28, 20), ">")) app.PlayRuleSound(id, snd.Volume);
+                GUI.enabled = true;
                 snd.Rules[rule.Key] = id;
                 y += 26;
             }
@@ -148,7 +152,6 @@ namespace Chaos.Client
             if (GUI.Button(new Rect(x, y, w / 2 - 2, 22), Loc.T("Reset session"))) filter.ResetCounts("session");
             if (GUI.Button(new Rect(x + w / 2 + 2, y, w / 2 - 2, 22), Loc.T("Reset totals"))) filter.ResetCounts("total");
             y += 28;
-            GUI.Label(new Rect(x, y, w, 30), Loc.T("Sounds play in the main client; this client keeps your choice."), hint);
             if (!snd.Same(filter.Sound)) filter.SetSound(snd);
         }
 

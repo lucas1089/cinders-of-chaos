@@ -9,6 +9,7 @@ namespace Chaos.Client
     public sealed class ProfessionsWindow : ModelWindow
     {
         public override string Title => Loc.T("Professions");
+        public override string TravelKey => "materials";
         protected override Rect Place(float w, float h) => new Rect(w / 2 - 370, 40, 740, 600);
 
         Vector2 areaScroll, boardScroll;

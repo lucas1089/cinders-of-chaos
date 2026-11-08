@@ -96,7 +96,11 @@ namespace Chaos.Client
                     string key = CF.T(m, "key");
                     bool on = key.Length > 0 && key == c.SelectedMod;
                     ChaosApp.Fill(rr, on ? new Color(0.96f, 0.81f, 0.45f, 0.21f) : new Color(1f, 1f, 1f, 0.03f));
-                    GUI.Label(new Rect(rr.x + 4, rr.y, rr.width - 50, 20), new GUIContent(CraftingState.ModText(m), CF.B(m, "power") ? CF.T(m, "text") + "\n" + Loc.T("Legendary power: it changes what your character does.") : CF.B(m, "bound") ? Loc.T("Bound: the orbs that change modifiers leave it alone. Only an Orb of Erasure frees it.") : ""), ColoredSmall(app, CraftingState.ModColor(m)));
+                    string codexId = CodexView.IdForMod(key, CF.T(m, "group"), InfoStore.Codex);
+                    string codexTip = codexId != null ? Loc.T("Right-click: its page in the Codex.") : null;
+                    string baseTip = CF.B(m, "power") ? CF.T(m, "text") + "\n" + Loc.T("Legendary power: it changes what your character does.") : CF.B(m, "bound") ? Loc.T("Bound: the orbs that change modifiers leave it alone. Only an Orb of Erasure frees it.") : "";
+                    GUI.Label(new Rect(rr.x + 4, rr.y, rr.width - 50, 20), new GUIContent(CraftingState.ModText(m), baseTip.Length > 0 ? (codexTip != null ? baseTip + "\n" + codexTip : baseTip) : (codexTip ?? "")), ColoredSmall(app, CraftingState.ModColor(m)));
+                    if (codexId != null && Event.current.type == EventType.MouseDown && Event.current.button == 1 && rr.Contains(Event.current.mousePosition)) { app.OpenCodex(codexId); Event.current.Use(); }
                     if (CF.B(m, "bound")) GUI.Label(new Rect(rr.xMax - 46, rr.y, 44, 20), Loc.T("bound"), app.SmallStyle);
                     if (key.Length > 0 && Event.current.type == EventType.MouseDown && Event.current.button == 0 && rr.Contains(Event.current.mousePosition)) { c.SelectMod(key); Event.current.Use(); }
                     return;
@@ -240,7 +244,7 @@ namespace Chaos.Client
         // ---------------------------------------------------------------------------------------------- guide
         void Guide(ChaosApp app, CraftingState c, Rect body)
         {
-            guidePage = CU.Tabs(new Rect(body.x + 4, body.y, 400, 24), new[] { Loc.T("Orbs"), Loc.T("Basics"), Loc.T("Plan") }, guidePage);
+            guidePage = CU.Tabs(new Rect(body.x + 4, body.y, 400, 24), new[] { Loc.T("Orbs"), Loc.T("Basics"), Loc.T("Plan"), Loc.T("Gems") }, guidePage);
             var view = new Rect(body.x + 4, body.y + 30, body.width - 8, body.height - 34);
             var lines = new List<KeyValuePair<string, string>>();
             if (guidePage == 0)
@@ -254,8 +258,21 @@ namespace Chaos.Client
                 }
             else if (guidePage == 1)
                 foreach (var b in CraftGuide.Basics) { lines.Add(new KeyValuePair<string, string>(Loc.T(b[0]), "#e8b84a")); lines.Add(new KeyValuePair<string, string>("   " + Loc.T(b[1]), null)); }
-            else
+            else if (guidePage == 2)
                 foreach (var p in CraftGuide.Plan) lines.Add(new KeyValuePair<string, string>(Loc.T(p), null));
+            else
+            {
+                // the gem table (the server's gemguide message): how gems work, then every gem with its bonus per slot group
+                foreach (var b in GemGuide.Basics(c.GemGuide)) { lines.Add(new KeyValuePair<string, string>(b.Key, "#e8b84a")); lines.Add(new KeyValuePair<string, string>("   " + b.Value, null)); }
+                lines.Add(new KeyValuePair<string, string>(Loc.T("Every gem, from the worst quality to the best"), "#e8b84a"));
+                var gem = GemGuide.Rows(c.GemGuide);
+                if (gem.Count == 0) lines.Add(new KeyValuePair<string, string>(Loc.T("Open the crafting bench once to load the gem table."), null));
+                foreach (var row in gem)
+                {
+                    lines.Add(new KeyValuePair<string, string>(row.Name, row.Color));
+                    foreach (var g in row.Groups) lines.Add(new KeyValuePair<string, string>("   " + GemGuide.GroupLine(g), null));
+                }
+            }
             var st = CU.Wrap(app);
             float total = 0;
             var hs = lines.Select(l => st.CalcHeight(new GUIContent(l.Key), view.width - 24) + 2).ToList();

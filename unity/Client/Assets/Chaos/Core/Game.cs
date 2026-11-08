@@ -43,6 +43,8 @@ namespace Chaos.Core
         public Action<int, uint> GroupCooldown = delegate { };
         /// <summary>The creature we attack (0 none). Set by GameSession.Attack, cleared by the server's 0xA3.</summary>
         public uint AttackTarget;
+        /// <summary>The creature we follow (0 none): set by GameSession.Follow, cleared by an attack, a cancel and the server's 0xA3 (phase 7 track X: the helper's Follow).</summary>
+        public uint FollowTarget;
         public int Health, MaxHealth, Mana, MaxMana, Level;
         /// <summary>0xA2: the status icon bits (1 poison, 2 burning, 4 energy, 8 drunk, 16 mana shield, 32 paralyzed, 64 haste, 16384 protection zone ...). The helper reads haste and the zone.</summary>
         public int PlayerStates;
@@ -254,7 +256,7 @@ namespace Chaos.Core
                     r.Skip(6 * 4);   // the special skills
                     break;
                 case 0xA2: PlayerStates = r.U16(); break;
-                case 0xA3: r.U32(); AttackTarget = 0; break;   // cancel target
+                case 0xA3: r.U32(); AttackTarget = 0; FollowTarget = 0; break;   // cancel target
                 case 0xA4: { int id = Features.Has(ClientFeatures.ExtendedSpellIds) ? r.U16() : r.U8(); SpellCooldown(id, r.U32()); break; }
                 case 0xA5: { int g = r.U8(); GroupCooldown(g, r.U32()); break; }
                 case 0xA7: r.U8(); r.U8(); r.U8(); r.U8(); break;
@@ -858,6 +860,7 @@ namespace Chaos.Core
         {
             if (id == 0) { CancelAttack(); return; }
             parser.AttackTarget = id;
+            parser.FollowTarget = 0;
             conn?.Send(Protocol.AttackPacket(0xA1, id, ++attackSeq));
         }
 
@@ -866,6 +869,7 @@ namespace Chaos.Core
         {
             if (id == 0) { CancelAttack(); return; }
             parser.AttackTarget = 0;
+            parser.FollowTarget = id;
             conn?.Send(Protocol.AttackPacket(0xA2, id, ++attackSeq));
         }
 
@@ -873,6 +877,7 @@ namespace Chaos.Core
         public void CancelAttack()
         {
             parser.AttackTarget = 0;
+            parser.FollowTarget = 0;
             conn?.Send(Protocol.AttackPacket(0xA1, 0, ++attackSeq));
         }
 

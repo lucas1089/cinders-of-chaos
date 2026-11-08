@@ -134,8 +134,16 @@ namespace Chaos.Client
             ChaosApp.Fill(r, new Color(1f, 1f, 1f, 0.06f));
             var pic = new Rect(r.x + 4, r.y + 4, 56, 56);
             ChaosApp.Fill(pic, new Color(0.11f, 0.09f, 0.12f, 1f));
-            if (o.Type == "item" && o.Item != 0) app.DrawItem(new Rect(pic.x + 4, pic.y + 4, 48, 48), (ushort)o.Item, o.Count);
+            if (o.LookIcon.Mode != StoreLookIcon.Native && app.DrawStoreLook(pic, o.LookIcon)) { }   // a footprint's print, a plate frame, a colour sample (shopicon.lua)
+            else if (o.Type == "item" && o.Item != 0) app.DrawItem(new Rect(pic.x + 4, pic.y + 4, 48, 48), (ushort)o.Item, o.Count);
             else if (o.Type == "outfit" && o.Outfit != null) app.DrawOutfit(new Rect(pic.x + 4, pic.y + 4, 48, 48), o.Outfit);
+            if (o.Look != null && !modal)
+            {
+                // a look offer: the picture opens the shared look preview on your character (game_shop lookOption)
+                var tag = new GUIStyle(app.SmallStyle) { fontSize = 10, alignment = TextAnchor.LowerCenter };
+                GUI.Label(new Rect(pic.x, pic.yMax - 14, pic.width, 14), Loc.T("Look"), tag);
+                if (GUI.Button(pic, GUIContent.none, GUIStyle.none)) app.ShowLookPreview(o.Look);
+            }
             var ts = new GUIStyle(app.SmallStyle) { fontStyle = FontStyle.Bold };
             // a chat colour tints the title (the offer's preview.color), a loot label accent sits behind it (preview.accent)
             string titleText = Loc.T("{0} ({1} coins)", o.Title, Short(o.Cost));
@@ -167,6 +175,18 @@ namespace Chaos.Client
                     if (GUI.Button(new Rect(r.xMax - (second ? 48 : 90), r.y + 52, second ? 44 : 84, 14), StoreTryOn.Countdown(left) ?? Loc.T("TRY ON")))
                     {
                         if (st.TryOn(o)) { triedKey = key; triedUntil = app.Session.Now + StoreTryOn.Ms; }
+                    }
+                }
+                string plate = o.PreviewEffect ? null : PlateTry.Frame(o.Look);
+                if (plate != null)
+                {
+                    // a name plate: the frame shows on your own plate for ten seconds, on this client only (game_nameplate beginTry)
+                    string key = o.Category + ":" + o.Page + ":" + o.Row;
+                    int left = triedKey == key ? StoreTryOn.SecondsLeft(triedUntil, app.Session.Now) : 0;
+                    GUI.enabled = !modal && left == 0;
+                    if (GUI.Button(new Rect(r.xMax - (o.Gift ? 48 : 90), r.y + 52, o.Gift ? 44 : 84, 14), StoreTryOn.Countdown(left) ?? Loc.T("TRY ON")))
+                    {
+                        if (app.TryPlateFrame(plate)) { triedKey = key; triedUntil = app.Session.Now + StoreTryOn.Ms; }
                     }
                 }
                 GUI.enabled = true;

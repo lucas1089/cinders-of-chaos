@@ -51,7 +51,6 @@ namespace Chaos.Core
             { "Show the counters in the Hunt Tracker", "Mostrar os contadores no Hunt Tracker" },
             { "Reset session", "Zerar sessão" },
             { "Reset totals", "Zerar totais" },
-            { "Sounds play in the main client; this client keeps your choice.", "Os sons tocam no cliente principal; este cliente guarda sua escolha." },
             { "Loot icons in the chat", "Ícones de loot no chat" },
             { "Rarity Autoloot (store unlock)", "Rarity Autoloot (desbloqueio da loja)" },
             { "Leave gear below", "Deixar equipamento abaixo de" },

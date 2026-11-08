@@ -22,6 +22,8 @@ namespace Chaos.Core
         public bool Enabled;
         public bool MagicShooter, AutoTarget, AutoTurn = true;
         public int AutoTargetMode = HelperLogic.ModeDefault;
+        /// <summary>game_autotarget options (both on by default): loot goblins, bosses and special monsters first; never a monster that cannot be reached or shot.</summary>
+        public bool AutoTargetPriority = true, AutoTargetReachable = true;
         public readonly List<HelperHealRow> Heals = new List<HelperHealRow>();
         public readonly List<HelperPotionRow> Potions = new List<HelperPotionRow>();
         public HelperTrainRow Training = new HelperTrainRow();
@@ -39,6 +41,12 @@ namespace Chaos.Core
         public HelperHudSettings Hud = new HelperHudSettings();
         public readonly Dictionary<string, HelperProfile> Profiles = new Dictionary<string, HelperProfile>();
         public string SelectedProfile = "Default";
+        // phase 7 track X (Phase7XHelper.cs): Follow, Auto sell, the exercise weapon, and the level-up notice's switch and ignored spells
+        public HelperFollowCfg Follow = new HelperFollowCfg();
+        public HelperSellCfg Sell = new HelperSellCfg();
+        public HelperExerciseCfg Exercise = new HelperExerciseCfg();
+        public bool AutoUpdateSpells;
+        public readonly HashSet<int> IgnoredSpells = new HashSet<int>();
 
         public HelperConfig()
         {
@@ -154,7 +162,7 @@ namespace Chaos.Core
             var root = new Dictionary<string, object>
             {
                 { "version", Version }, { "enabled", Enabled }, { "magicShooter", MagicShooter }, { "autoTarget", AutoTarget }, { "autoTurn", AutoTurn },
-                { "autoTargetMode", AutoTargetMode }, { "heals", heals }, { "potions", potions }, { "slots", slots },
+                { "autoTargetMode", AutoTargetMode }, { "autoTargetPriority", AutoTargetPriority }, { "autoTargetReachable", AutoTargetReachable }, { "heals", heals }, { "potions", potions }, { "slots", slots },
                 { "training", new Dictionary<string, object> { { "id", Training.Id }, { "percent", Training.Percent }, { "enabled", Training.Enabled } } },
                 { "haste", new Dictionary<string, object> { { "id", Haste.Id }, { "enabled", Haste.Enabled }, { "safecast", Haste.SafeCast } } },
                 { "autoMarker", new List<int>(AutoMarker) },
@@ -162,8 +170,21 @@ namespace Chaos.Core
                 { "hud", new Dictionary<string, object> { { "enabled", Hud.Enabled }, { "size", Hud.Size }, { "showTargeting", Hud.ShowTargeting }, { "showHaste", Hud.ShowHaste },
                     { "showPlayer", Hud.ShowPlayer }, { "showHealing", Hud.ShowHealing } } },
                 { "profile", SelectedProfile }, { "profiles", ProfilesJson() },
+                { "follow", new Dictionary<string, object> { { "enabled", Follow.Enabled }, { "mode", Follow.Mode }, { "name", Follow.Name }, { "distance", Follow.Distance } } },
+                { "autoSell", new Dictionary<string, object> { { "enabled", Sell.Enabled }, { "minutes", Sell.Interval }, { "belowCap", Sell.BelowCap }, { "capacity", Sell.Capacity } } },
+                { "exercise", new Dictionary<string, object> { { "enabled", Exercise.Enabled }, { "id", Exercise.Id } } },
+                { "autoUpdateSpells", AutoUpdateSpells }, { "ignoredSpells", IgnoredJson() },
             };
             return Json.Serialize(root);
+        }
+
+        List<object> IgnoredJson()
+        {
+            var ids = new List<int>(IgnoredSpells);
+            ids.Sort();
+            var o = new List<object>();
+            foreach (int id in ids) o.Add(id);
+            return o;
         }
 
         List<object> RuneHealJson()
@@ -231,6 +252,8 @@ namespace Chaos.Core
             c.AutoTarget = Bool(root, "autoTarget", false);
             c.AutoTurn = Bool(root, "autoTurn", true);
             c.AutoTargetMode = Int(root, "autoTargetMode", 1, HelperLogic.ModeMax, HelperLogic.ModeDefault);
+            c.AutoTargetPriority = Bool(root, "autoTargetPriority", true);
+            c.AutoTargetReachable = Bool(root, "autoTargetReachable", true);
             var heals = Json.List(root, "heals");
             for (int i = 0; i < HealRows && i < heals.Count; i++)
             {
@@ -283,6 +306,27 @@ namespace Chaos.Core
         void ReadExtras(object root)
         {
             AutoEat = Bool(root, "autoEat", false);
+            var fo = Json.Get(root, "follow");
+            if (fo is Dictionary<string, object>)
+            {
+                Follow.Enabled = Bool(fo, "enabled", false);
+                Follow.Mode = Json.Text(fo, "mode") == "leader" ? "leader" : "name";
+                Follow.Name = HelperAlly.CleanName(Json.Text(fo, "name")) ?? "";
+                Follow.Distance = Int(fo, "distance", 1, HelperFollowCfg.DistanceMax, 1);
+            }
+            var se = Json.Get(root, "autoSell");
+            if (se is Dictionary<string, object>)
+            {
+                Sell.Enabled = Bool(se, "enabled", false);
+                int m = Json.Get(se, "minutes") is double md ? HelperSellCfg.MinutesOf(md) : -1;
+                Sell.Interval = m > 0 ? m : 30;
+                Sell.BelowCap = Bool(se, "belowCap", false);
+                Sell.Capacity = Int(se, "capacity", 0, HelperSellCfg.CapacityMax, 100);
+            }
+            var ex = Json.Get(root, "exercise");
+            if (ex is Dictionary<string, object>) { Exercise.Enabled = Bool(ex, "enabled", false); Exercise.Id = Int(ex, "id", 0, IdMax, 0); }
+            AutoUpdateSpells = Bool(root, "autoUpdateSpells", false);
+            foreach (object o in Json.List(root, "ignoredSpells")) if (o is double d && IgnoredSpells.Count < 500) IgnoredSpells.Add(Clamp(d, 0, IdMax, 0));
             var rh = Json.List(root, "runeHeal");
             int[] healDefaults = { 60, 40 };
             for (int i = 0; i < RuneHealRows && i < rh.Count; i++)

@@ -7,7 +7,8 @@
 // most every 600 ms) and HelperCasts (a cast waits for the server's cooldown packet, a refused one backs off). One shooter cast per tick.
 // A hit taken heals at once (OnHealthChanged), at most every 100 ms. When the server sent nothing for 2.5 s nothing is sent until it is back.
 // Track Q added runes, party and friend heals, food, the Everfull held flask, the Support section and shooter profiles (HelperEngineExtras.cs).
-// Not ported (see unity/README.md "Combat helper"): Follow, Auto sell, exercise, the potion gate for closed backpacks, the line-of-sight check.
+// Phase 7 track X added Follow, Auto sell, the exercise weapon, the potion gate for closed backpacks, the line-of-sight check of the area counts, ally heals
+// and attack runes, and the level-up notice (Phase7XHelper.cs).
 using System;
 using System.Collections.Generic;
 
@@ -117,14 +118,23 @@ namespace Chaos.Core
         {
             if (!HelperPotions.CanDrink(id, Host.Level)) return false;
             if (!Timers.UseReady(HelperTimers.Potion, Host.Now)) return false;
-            return Host.ItemCount(id) > 0;
+            return Probeable(id, Host.ItemCount(id));   // a potion in a closed backpack is probed by id (the potion gate)
         }
 
         bool UsePotion(int id)
         {
             double t = Host.Now;
-            if (!Timers.UseReady(HelperTimers.Potion, t) || Host.ItemCount(id) <= 0) return false;
-            Host.UseOnSelf(id);
+            int have = Host.ItemCount(id);
+            if (!Timers.UseReady(HelperTimers.Potion, t) || !Probeable(id, have)) return false;
+            if (have > 0) Host.UseOnSelf(id);
+            else
+            {
+                var p7 = HostP7;
+                if (p7 == null || !p7.UseByIdOnCreature(id, 0)) return false;
+                Gate.Used(id, t, have);
+                GateProbes++;
+            }
+            if (have > 0) Gate.Used(id, t, have);
             Timers.Used(HelperTimers.Potion, t);
             Potions++;
             return true;
@@ -163,22 +173,37 @@ namespace Chaos.Core
             return false;
         }
 
-        /// <summary>Auto Target: keeps the locked creature while it lives and is in reach, else picks by the mode (A..H) and attacks.</summary>
+        /// <summary>game_autotarget reach rule: the path and sight hooks of the host (Phase7Z.cs ReachCache). Null: no reach rule.</summary>
+        public ReachCache Reach;
+
+        /// <summary>Auto Target: keeps the locked creature while it lives and is in reach, else picks by the mode (A..H) and attacks. Options: "Priority targets" (RankOf)
+        /// and "Only reachable" (Reach), both on by default.</summary>
         void TargetTick()
         {
             if (!Config.AutoTarget) return;
             var pos = Host.Position;
             var list = Gather(pos);
+            bool prio = RankOf != null && Config.AutoTargetPriority;
+            bool reach = Reach != null && Config.AutoTargetReachable;
+            if (reach) Reach.NewTick(Host.Now);
+            bool ranged = reach && AutoTargetCore.IsRanged(HostExt != null ? HostExt.Vocation : 0);
+            Func<AutoCand, bool?> rf = reach ? (Func<AutoCand, bool?>)(c => c.Reachable) : null;
             HelperCreature locked;
             if (LockedTarget != 0 && InList(list, LockedTarget, out locked))
             {
                 var act = LockGuard.Action(LockedTarget, Host.AttackTarget, Host.Now);
                 if (act == LockAction.Attack) Host.Attack(LockedTarget);
                 bool dropLock = act == LockAction.Drop;
-                if (!dropLock && RankOf != null && !AutoTargetCore.KeepLock(Cand(locked, pos), Cands(list, pos), null, true)) dropLock = true;   // a better class came into reach
+                if (!dropLock && (prio || reach) && !AutoTargetCore.KeepLock(Cand(locked, pos, reach, ranged), Cands(list, pos, reach, ranged), rf, prio)) dropLock = true;   // out of reach, or a better class came into reach
                 if (!dropLock) return;
             }
             LockedTarget = 0;
+            if (reach)
+            {
+                var keep = new List<HelperCreature>();
+                foreach (var c in list) if (Cand(c, pos, true, ranged).Reachable == true) keep.Add(c);
+                list = keep;
+            }
             var cands = new List<HelperCreature>();
             foreach (var c in list)
             {
@@ -189,21 +214,33 @@ namespace Chaos.Core
             }
             HelperCreature pick;
             if (!HelperLogic.PickByMode(cands, pos, Config.AutoTargetMode, out pick)) return;
-            if (RankOf != null)
+            if (prio)
             {
-                var first = AutoTargetCore.PickPriority(Cands(list, pos), null);   // a goblin, boss or special monster in reach comes first
+                var first = AutoTargetCore.PickPriority(Cands(list, pos, reach, ranged), rf);   // a goblin, boss or special monster in reach comes first
                 if (first != null && InList(list, first.Id, out var better)) pick = better;
             }
             if (Host.AttackTarget != pick.Id) Host.Attack(pick.Id);
             LockedTarget = pick.Id;
         }
 
-        AutoCand Cand(HelperCreature c, Pos from) => new AutoCand { Id = c.Id, Dist = HelperLogic.Distance(from, c.Position), Health = c.Health, Rank = RankOf != null ? RankOf(c.Id) : AutoTargetCore.RankNormal };
+        AutoCand Cand(HelperCreature c, Pos from, bool reach = false, bool ranged = false)
+        {
+            var a = new AutoCand { Id = c.Id, Dist = HelperLogic.Distance(from, c.Position), Health = c.Health, Rank = RankOf != null && Config.AutoTargetPriority ? RankOf(c.Id) : AutoTargetCore.RankNormal };
+            if (reach && Reach != null)
+            {
+                a.Reachable = Reach.Query(c.Id, from, c.Position, ranged, Host.Now, out double d);
+                if (a.Reachable == true) a.Dist = d;
+            }
+            return a;
+        }
 
-        List<AutoCand> Cands(IList<HelperCreature> list, Pos from)
+        List<AutoCand> Cands(IList<HelperCreature> list, Pos from, bool reach = false, bool ranged = false)
         {
             var o = new List<AutoCand>();
-            foreach (var c in list) o.Add(Cand(c, from));
+            // the nearest first, so a spent path budget leaves out the far ones
+            var order = new List<HelperCreature>(list);
+            order.Sort((a, b) => { double da = HelperLogic.Distance(from, a.Position), db = HelperLogic.Distance(from, b.Position); return da != db ? da.CompareTo(db) : a.Id.CompareTo(b.Id); });
+            foreach (var c in order) o.Add(Cand(c, from, reach, ranged));
             return o;
         }
 
@@ -230,10 +267,10 @@ namespace Chaos.Core
                 if (slot.ForceCast && hasTarget && HelperLogic.FacingToward(pos, targetPos, out d))
                 {
                     hasDir = true; dir = d;
-                    return HelperLogic.CountHits(pos, d, area, list);
+                    return HelperLogic.CountHits(pos, d, area, list, false, Sight);
                 }
                 int n;
-                var best = HelperLogic.BestDirection(pos, area, list, out n);
+                var best = HelperLogic.BestDirection(pos, area, list, out n, Sight);
                 if (n > 0) { hasDir = true; dir = best; }
                 return n;
             }
@@ -284,6 +321,9 @@ namespace Chaos.Core
             double t = Host.Now;
             if (lastTick >= 0 && t - lastTick < TickMs) return;
             lastTick = t;
+            int vocationNow = HostExt != null ? HostExt.Vocation : 0;
+            LevelWatch(vocationNow);      // phase 7 track X: a level-up asks about new spells (Phase7XHelper.cs)
+            VocationWatch(vocationNow);   // and a class change takes the old class's spells out
             // the server sent nothing for a while (a save): do not pile packets up for when it is back
             if (Host.MsSinceLastRead > FreezeMs) frozenUntil = t + FreezeResumeMs;
             if (t < frozenUntil) { Why = "freeze"; return; }
@@ -291,6 +331,7 @@ namespace Chaos.Core
             Why = !Config.Enabled ? "helperoff" : pz ? "pz" : Host.Following ? "follow" : null;
             if (pz && !pzWas) { LockedTarget = 0; if (Host.AttackTarget != 0) Host.CancelAttack(); }   // entering a protection zone drops the attack, not the settings
             pzWas = pz;
+            P7Tick(pz);   // Follow, Auto sell and the exercise weapon (Phase7XHelper.cs)
             if (Why == "helperoff") { LockedTarget = 0; return; }
             if (Host.MaxHealth <= 0) return;
             if (Due("heal", EveryHeal)) HealTick();
@@ -359,6 +400,7 @@ namespace Chaos.Core
             lastTick = -1; frozenUntil = 0; pzWas = false;
             lastRun.Clear();
             ResetExtras();
+            ResetP7();
         }
     }
 

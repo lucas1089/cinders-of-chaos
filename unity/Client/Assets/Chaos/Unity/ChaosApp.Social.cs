@@ -81,6 +81,18 @@ namespace Chaos.Client
         void DrawChatLine(Rect r, ChatLine line)
         {
             string display = line.Display;
+            if (session != null && line.Speaker.Length > 0 && (display.IndexOf('{') < 0 || ChatLinksMath.Parse(display).Count == 0))
+            {
+                // the chat colour cosmetic: the speaker's name in the colour the server sent (ChatTint, game_cosmetics)
+                string tinted = ChatTint.Rich(line.Stamp, display, line.Speaker, session.Cosmetics?.NameColors, "#" + ColorUtility.ToHtmlStringRGB(Rgb(line.Color)));
+                if (tinted != null)
+                {
+                    if (chatRichStyle == null) { chatRichStyle = new GUIStyle(chatStyle) { richText = true }; chatPlainStyle = new GUIStyle(chatStyle) { richText = false }; }
+                    chatRichStyle.fontSize = chatStyle.fontSize;
+                    GUI.Label(r, tinted, chatRichStyle);
+                    return;
+                }
+            }
             if (session == null || display.IndexOf('{') < 0 || ChatLinksMath.Parse(display).Count == 0) { GUI.Label(r, line.Stamp + " " + display, chatStyle); return; }
             if (chatRichStyle == null) { chatRichStyle = new GUIStyle(chatStyle) { richText = true }; chatPlainStyle = new GUIStyle(chatStyle) { richText = false }; }
             chatRichStyle.fontSize = chatStyle.fontSize; chatPlainStyle.fontSize = chatStyle.fontSize;

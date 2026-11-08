@@ -14,7 +14,7 @@ namespace Chaos.Client
 
         public override string Title => Loc.T("Options");
         public override KeyCode Hotkey => KeyCode.L;
-        protected override Rect Place(float w, float h) => new Rect(w / 2 - 170, Mathf.Max(8f, h / 2 - 250), 340, 500);
+        protected override Rect Place(float w, float h) => new Rect(w / 2 - 170, Mathf.Max(8f, h / 2 - 280), 340, 560);
         public override void Reset() { loaded = false; }
 
         public override void Tick(ChaosApp app)

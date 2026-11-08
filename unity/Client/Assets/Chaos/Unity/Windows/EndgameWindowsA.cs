@@ -173,8 +173,12 @@ namespace Chaos.Client
                 bool sel = row.Id == d.SelectedId;
                 Eu.Panel(r, sel ? 0.16f : 0.05f);
                 if (GUI.Button(r, GUIContent.none, GUIStyle.none) && !sel) d.Select(row.Id);
-                Eu.Label(app, new Rect(r.x + 6, r.y + 3, r.width - 8, 18), row.Title, sel ? Eu.Bright : Eu.Text, 13, true);
-                Eu.Label(app, new Rect(r.x + 6, r.y + 22, 90, 16), Loc.T("{0}+ Level", Fmt.Short(row.Level)), Eu.Dim, 11);
+                // the boss of the dungeon (game_dungeons boss outfit)
+                var boss = OutfitJson.Read(row.Boss);
+                if (boss != null) app.DrawOutfit(new Rect(r.x + 2, r.y + 2, 40, 40), boss);
+                float bx = boss != null ? 44 : 6;
+                Eu.Label(app, new Rect(r.x + bx, r.y + 3, r.width - bx - 2, 18), row.Title, sel ? Eu.Bright : Eu.Text, 13, true);
+                Eu.Label(app, new Rect(r.x + bx, r.y + 22, 70, 16), Loc.T("{0}+ Level", Fmt.Short(row.Level)), Eu.Dim, 11);
                 var det = d.Details.TryGetValue(row.Id, out var dd) ? dd : null;
                 int q = det != null ? det.QueuePlayers : row.Queue;
                 Eu.Label(app, new Rect(r.x + 96, r.y + 22, r.width - 100, 16), DungeonsView.QueueText(q), Eg.QueueColor(q), 11, false, TextAnchor.UpperRight);
