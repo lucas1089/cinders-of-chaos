@@ -67,6 +67,14 @@ impl Default for Poller {
 }
 
 impl Poller {
+    /// A poller with its own interval (the engine build card asks every 20 s).
+    pub fn every(secs: u64) -> Poller {
+        Poller {
+            interval_secs: secs,
+            ..Poller::default()
+        }
+    }
+
     /// True when a refresh should start now: not paused, none running (a slow ssh never piles up calls), and the
     /// interval is over since the last start.
     pub fn due(&self, now_ms: u64) -> bool {

@@ -6,6 +6,7 @@ use cinders_admin::cards::{self, Count, Metrics, Player, State, Status};
 use cinders_admin::catalog::{self, PanelAction};
 use cinders_admin::commands::{self, Action, Kind, Live, Section, ACTIONS};
 use cinders_admin::config::{self, Config};
+use cinders_admin::engine::{self, EngineInfo};
 use cinders_admin::health::{self, Health};
 use cinders_admin::infos::{self, Report, UpdateInfo};
 use cinders_admin::live::{self, Level, Poller};
@@ -36,6 +37,10 @@ enum Answer {
     Update,
     /// `feedback`: one card per report.
     Feedback,
+    /// `engine-build status`: the card Recompilar engine (read even when the exit code says GitHub failed).
+    Engine,
+    /// `engine-build start`: on success the window follows the build.
+    EngineStart,
 }
 
 enum Msg {
@@ -61,6 +66,8 @@ enum Msg {
     /// O397: parsed `game-health --kv`, or why it failed.
     CardHealth(Result<Health, String>),
     Live(Result<LiveData, String>),
+    /// The window's own `engine-build status` while a build runs: the text, no output pane entry.
+    EnginePoll(String),
     /// Names printed by `reload-files`.
     ReloadList(Result<Vec<String>, String>),
 }
@@ -90,6 +97,11 @@ struct App {
     out_window: bool,
     /// Last good `update-check`, drawn in the group "Atualizar servidor".
     update_info: Option<UpdateInfo>,
+    /// Last `engine-build status`, drawn in the group "Recompilar engine".
+    engine_info: Option<EngineInfo>,
+    /// A build runs (or just started): `engine-build status` is asked every `engine::POLL_SECS` seconds.
+    engine_watch: bool,
+    engine_poller: Poller,
     /// Last good `feedback`, drawn in the group "Bugs e sugestões".
     reports: Option<Vec<Report>>,
     busy: usize,
@@ -142,6 +154,9 @@ impl App {
             out: output::Log::default(),
             out_window: false,
             update_info: None,
+            engine_info: None,
+            engine_watch: false,
+            engine_poller: Poller::every(engine::POLL_SECS),
             reports: None,
             busy: 0,
             tx,
@@ -678,6 +693,8 @@ impl App {
                     panel_answer: false,
                     answer: match a.template.split(' ').next() {
                         Some("update-check") => Answer::Update,
+                        Some("engine-build") if a.template == "engine-build status" => Answer::Engine,
+                        Some("engine-build") if a.template == "engine-build start" => Answer::EngineStart,
                         Some("feedback") => Answer::Feedback,
                         _ => Answer::Plain,
                     },
@@ -785,6 +802,7 @@ impl App {
             self.group_rows(ui, ctx, indices);
             match group {
                 "Atualizar servidor" => self.update_card_ui(ui),
+                "Recompilar engine" => self.engine_card_ui(ui),
                 "Bugs e sugestões" => self.reports_ui(ui),
                 "Saúde do jogo" => self.health_ui(ui, ctx),
                 _ => {}
@@ -1118,6 +1136,77 @@ impl App {
                 self.out_window = false;
             }
         });
+    }
+
+    /// Keeps the answer of `engine-build status`; the window follows the build while it is queued or in progress.
+    fn set_engine(&mut self, text: &str) {
+        let e = EngineInfo::parse(text);
+        if !e.valid() {
+            // a refusal (no token, ssh trouble): shown in the status line, the follow-up goes on if it was on
+            let why = engine::refusal(text);
+            self.status = format!(
+                "Recompilar engine: {}",
+                if why.is_empty() {
+                    text.lines().next().unwrap_or("sem resposta")
+                } else {
+                    why
+                }
+            );
+            return;
+        }
+        self.engine_watch = e.running();
+        self.engine_info = Some(e);
+    }
+
+    /// While a build runs: asks `engine-build status` every 20 s in the background (the output pane stays quiet).
+    fn poll_engine(&mut self, ctx: &egui::Context) {
+        if !self.engine_watch || !self.cfg.configured() {
+            return;
+        }
+        let now = self.started.elapsed().as_millis() as u64;
+        if self.engine_poller.due(now) {
+            self.engine_poller.started(now);
+            let (cfg, tx, c) = (self.cfg.clone(), self.tx.clone(), ctx.clone());
+            std::thread::spawn(move || {
+                let o = ssh::exec(&cfg, &ssh::ctl_line(&cfg, "engine-build status"), 90, None);
+                let _ = tx.send(Msg::EnginePoll(o.text));
+                c.request_repaint();
+            });
+        } else if let Some(ms) = self.engine_poller.wait_ms(now) {
+            ctx.request_repaint_after(std::time::Duration::from_millis(ms.clamp(500, 5000)));
+        }
+    }
+
+    /// The answer of "Atualizar estado" as a card: headline, lines, and a pointer to Atualizar servidor when it is done.
+    fn engine_card_ui(&mut self, ui: &mut egui::Ui) {
+        let Some(e) = &self.engine_info else { return };
+        ui.add_space(8.0);
+        theme::well().show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            let colour = match e.state() {
+                "success" if e.newer() => theme::OK,
+                "failure" | "unknown" => theme::ERROR,
+                "queued" | "in_progress" => theme::WARN,
+                _ => theme::TEXT,
+            };
+            ui.horizontal(|ui| {
+                ui.colored_label(colour, e.headline());
+                if e.running() {
+                    ui.add(egui::Spinner::new().color(theme::MUTED));
+                }
+            });
+            for line in e.lines() {
+                let colour = if line.starts_with("Sem token") || line.starts_with("Parou em") {
+                    theme::WARN
+                } else if line.starts_with("Próximo passo") {
+                    theme::OK
+                } else {
+                    theme::TEXT
+                };
+                ui.label(egui::RichText::new(line).color(colour));
+            }
+        });
+        ui.add_space(8.0);
     }
 
     /// The answer of "Verificar" as a card: headline, summary lines and the last run.
@@ -1722,6 +1811,12 @@ impl eframe::App for App {
                             self.update_info = u.valid().then_some(u);
                         }
                         Answer::Feedback if ok => self.reports = Some(infos::parse_reports(&text)),
+                        // status exits 1 when GitHub could not be read, but still prints state=unknown and why
+                        Answer::Engine => self.set_engine(&text),
+                        Answer::EngineStart if ok => {
+                            self.engine_watch = true;
+                            self.engine_poller.refresh_now();
+                        }
                         _ => {}
                     }
                     self.out.finish(id, text.trim_end(), ok);
@@ -1777,6 +1872,10 @@ impl eframe::App for App {
                         Err(e) => self.live_note = format!("Sem resposta: {e}"),
                     }
                 }
+                Msg::EnginePoll(text) => {
+                    self.engine_poller.finished();
+                    self.set_engine(&text);
+                }
                 Msg::ReloadList(r) => match r {
                     Ok(v) => {
                         self.reload_note = format!("{} arquivos de configuração.", v.len());
@@ -1817,6 +1916,7 @@ impl eframe::App for App {
         if self.section == Section::LiveView && self.search.trim().is_empty() {
             self.poll_live(ctx);
         }
+        self.poll_engine(ctx);
 
         egui::TopBottomPanel::top("top")
             .frame(egui::Frame::none().fill(theme::BG))
