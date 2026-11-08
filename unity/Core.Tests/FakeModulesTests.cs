@@ -178,7 +178,7 @@ namespace Chaos.Core.Tests
         }
 
         // keys under these are dynamic names (player names, counts per orb, tier numbers), not field names of the server
-        static readonly HashSet<string> Dynamic = new HashSet<string> { "names", "counts", "reasons", "orbs", "pick", "tiers", "skipped", "cooldowns" };
+        static readonly HashSet<string> Dynamic = new HashSet<string> { "names", "counts", "reasons", "orbs", "pick", "tiers", "skipped", "cooldowns", "bosses", "shards", "relics", "have", "words" };
 
         static void Keys(object o, string parent, HashSet<string> into)
         {

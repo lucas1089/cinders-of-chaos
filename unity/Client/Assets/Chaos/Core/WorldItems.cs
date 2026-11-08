@@ -915,7 +915,7 @@ namespace Chaos.Core
             if (action == "offer") { Quote = data; QuoteVisible = true; Changed(); return; }
             if (action != "state") return;
             State = data;
-            if (Json.Bool(data, "open")) Visible = true;
+            if (Json.Bool(data, "open") || Json.Number(data, "open") == 1) Visible = true;   // the server sends open = 1 (embercache.lua send), a number: phase 13 track G
             Changed();
         }
 

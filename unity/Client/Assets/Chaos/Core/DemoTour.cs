@@ -423,6 +423,28 @@ namespace Chaos.Core
             }
         }
 
+        /// <summary>Phase 13, track G (the smoke run): a player trade with a partner, as the server opens one: 0x7D your offer, 0x7E theirs (FakeModules.TradePacket). The items are ids the client knows
+        /// (the tour's ground and tree ids), since the wire form of an item depends on the client's dat. Thread safe; false when nobody is in the game.</summary>
+        public bool PushTrade(string partner)
+        {
+            lock (gate)
+            {
+                if (cur == null || !cur.Entered) return false;
+                var ids = new List<int>();
+                foreach (int id in new[] { art.Grass, art.Path, art.Tree, art.Rock, art.Wall, art.Torch }) if (id > 0 && !ids.Contains(id)) ids.Add(id);
+                if (ids.Count == 0) return false;
+                int At(int i) => ids[i % ids.Count];
+                var own = new[] { new[] { At(0), 1 }, new[] { At(1), 3 } };
+                var theirs = new[] { new[] { At(2), 1 } };
+                Func<int, bool> counted = id => art.Counted.Contains(id), phased = id => art.Phased.Contains(id);
+                var w = new ByteWriter();
+                foreach (byte b in FakeModules.TradePacket(0x7D, partner, own, counted, phased)) w.U8(b);
+                foreach (byte b in FakeModules.TradePacket(0x7E, partner, theirs, counted, phased)) w.U8(b);
+                cur.Send(w.ToArray());
+                return true;
+            }
+        }
+
         // ------------------------------------------------------------------------------------ the map on the wire
         /// <summary>The server's floor encoding (protocolgame.cpp GetFloorDescription): skip counters across floors; only floor 7 has tiles.</summary>
         void Floors(ByteWriter w, int x, int y, int z, int width, int height)

@@ -87,6 +87,7 @@ namespace Chaos.Core
         {
             var all = new List<FakeModule>(BaseModules);
             all.AddRange(Phase12Modules());
+            all.AddRange(Phase13Modules());
             return all;
         }
 
@@ -160,6 +161,7 @@ namespace Chaos.Core
                 if (action == "state") o.Add(Flat(TowerState.Opcode, "{'action':'state','inRun':false,'canSkip':false,'floor':0,'nextBoss':false}", Sc + "infinitytower_run.lua (sendState)"));
             }
             if (o.Count == 0) o.AddRange(Answer12(op, action, data));   // phase 12, track H: Core/FakeModulesP12.cs
+            if (o.Count == 0) o.AddRange(Answer13(op, action, data));   // phase 13, track G: Core/FakeModulesP13.cs
             return o;
         }
 
