@@ -529,7 +529,9 @@ namespace Chaos.Client
             WorldStyles();
             if (u.Candles.Hud != null)
             {
-                var r = new Rect(w - 104 - 76 * 7 - 216, 12, 210, 24);
+                // beside the menu row as last drawn (its buttons are as wide as their labels), never on it
+                TopbarLayout.SideSlot(topBarRect.xMin, topBarRect.xMax, topBarRect.yMax, StatusRect().xMax + 8f, 210f, 6f, w - 104 - 76 * 7 - 216, out float cx, out float cy);
+                var r = new Rect(cx, cy, 210, 24);
                 uiRects.Add(Scaled(r, scale));
                 Fill(r, new Color(0.04f, 0.03f, 0.05f, 0.8f));
                 GUI.Label(new Rect(r.x + 4, r.y + 2, r.width - 8, 20), u.Candles.CounterText(), worldTiny);
