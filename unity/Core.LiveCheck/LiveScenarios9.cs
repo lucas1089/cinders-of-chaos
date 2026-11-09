@@ -14,8 +14,10 @@ namespace Chaos.Core.LiveCheck
 {
     public sealed partial class LiveRun
     {
-        /// <summary>Scenarios that run by name only (not in `all`).</summary>
-        public static readonly string[] OptInScenarios = { "firstfightsmoke", "purse" };
+        /// <summary>Scenarios that run by name only (not in `all`). A run follows this order, not the order of --scenario:
+        /// the two party scenarios stay last, since they log the partner in and its connection stays up, and the
+        /// multi-client rule of the server refuses a trial or dungeon entry while a second character of the same address is online.</summary>
+        public static readonly string[] OptInScenarios = { "firstfightsmoke", "purse", "testsummons", "testpets", "testrift", "testwaystone", "testloot", "testchests", "testspellquest", "testunique", "testdual", "testauto", "testparty", "testpartyxp" };
 
         /// <summary>The time the scenario waits for the state machine: its own limit plus the loot grace and a margin.</summary>
         const int FirstFightSmokeLimitMs = (int)(LiveFirstFightStep.LimitMs + LiveFirstFightStep.LootGraceMs) + 15000;
@@ -128,6 +130,7 @@ namespace Chaos.Core.LiveCheck
                 ExpTexts = p.ExpGainTexts,
                 Experience = (long)p.Experience,
                 ContainerOpens = Seen(0x6E),
+                ContainerCloses = Seen(0x6F),
                 ContainersWindowOpen = p.Containers.Count > 0,
             };
             uint self = world.PlayerId;

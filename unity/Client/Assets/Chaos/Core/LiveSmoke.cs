@@ -499,8 +499,8 @@ namespace Chaos.Core
         public int Health, MaxHealth;
         /// <summary>The player's own moves the server confirmed (Parser.PlayerMoves) and the steps the server refused (0xB5), both counted since the session began.</summary>
         public int Moves, Refused;
-        /// <summary>The experience text lines seen ("You gained N experience points.", Parser.ExpGainTexts), and how many container windows the server opened (0x6E).</summary>
-        public int ExpTexts, ContainerOpens;
+        /// <summary>The experience text lines seen ("You gained N experience points.", Parser.ExpGainTexts), how many container windows the server opened (0x6E) and closed (0x6F).</summary>
+        public int ExpTexts, ContainerOpens, ContainerCloses;
         /// <summary>The experience of the last 0xA0.</summary>
         public long Experience;
         /// <summary>The client's own walkability check (WalkMap.Walkable): the route is planned on what it calls free.</summary>
@@ -523,6 +523,8 @@ namespace Chaos.Core
         public int AutoSetupSlots, Hops, Replans, WalkPlanned, WalkSent, WalkConfirmed, WalkRefused, Kills, ExpTexts, LootItems;
         public long ExpBefore, ExpAfter;
         public string SkipReason = "", Error = "", AutoSetupMessage = "", Monster = "", LootName = "", Screenshot = "";
+        /// <summary>Why a body did not open, in one line (the uses sent, the 0x6E and 0x6F counts before and after, the open containers); empty when it opened. CI run 42670112065, Chaos: the body never opened with no word why.</summary>
+        public string LootDiag = "";
         public double Ms;
         /// <summary>Where the character stood at the end (for the log: "32390,32227,8").</summary>
         public Pos End;
@@ -553,7 +555,7 @@ namespace Chaos.Core
             if (!Ran) return w;
             if (Skipped) w.Add("firstfight: skipped: " + SkipReason);
             if (WalkRefused > 0) w.Add("firstfight walk: " + WalkRefused + " steps refused on tiles the client thought walkable");
-            if (!Skipped && Kills > 0 && !LootOpened) w.Add("firstfight: the body did not open in the container window" + (LootTried ? "" : " (no container on the kill's tile)"));
+            if (!Skipped && Kills > 0 && !LootOpened) w.Add("firstfight: the body did not open in the container window" + (LootTried ? "" : " (no container on the kill's tile)") + (LootDiag.Length > 0 ? " [" + LootDiag + "]" : ""));
             if (LootOpened && !LootWindowOpen) w.Add("firstfight: the Containers window was not open with the body");
             return w;
         }
@@ -574,7 +576,7 @@ namespace Chaos.Core
              .Append(",\"confirmed\":").Append(WalkConfirmed.ToString(inv)).Append(",\"refused\":").Append(WalkRefused.ToString(inv)).Append(",\"reachedCave\":").Append(B(ReachedCave)).Append('}');
             b.Append(",\"monster\":").Append(LiveSmokeReport.Quote(Monster, secrets)).Append(",\"ratInReach\":").Append(B(RatInReach)).Append(",\"kills\":").Append(Kills.ToString(inv)).Append(",\"died\":").Append(B(Died));
             b.Append(",\"experience\":{\"before\":").Append(ExpBefore.ToString(inv)).Append(",\"after\":").Append(ExpAfter.ToString(inv)).Append(",\"texts\":").Append(ExpTexts.ToString(inv)).Append('}');
-            b.Append(",\"loot\":{\"opened\":").Append(B(LootOpened)).Append(",\"name\":").Append(LiveSmokeReport.Quote(LootName, secrets)).Append(",\"items\":").Append(LootItems.ToString(inv)).Append(",\"windowOpen\":").Append(B(LootWindowOpen)).Append('}');
+            b.Append(",\"loot\":{\"opened\":").Append(B(LootOpened)).Append(",\"name\":").Append(LiveSmokeReport.Quote(LootName, secrets)).Append(",\"items\":").Append(LootItems.ToString(inv)).Append(",\"windowOpen\":").Append(B(LootWindowOpen)).Append(",\"diag\":").Append(LiveSmokeReport.Quote(LootDiag, secrets)).Append('}');
             b.Append(",\"screenshot\":").Append(LiveSmokeReport.Quote(Screenshot, secrets)).Append(",\"ms\":").Append(Math.Round(Ms).ToString("0", inv));
             b.Append(",\"end\":").Append(LiveSmokeReport.Quote(End.ToString(), secrets)).Append(",\"hopLog\":[");
             for (int i = 0; i < HopLog.Count; i++) b.Append(i == 0 ? "" : ",").Append(LiveSmokeReport.Quote(HopLog[i], secrets));
@@ -622,7 +624,8 @@ namespace Chaos.Core
         Hop hop;
         Purpose purpose = Purpose.Route;
         LootState lootState = LootState.Find;
-        int attempts, moves0, refused0, groundIndex, texts0 = -1, opens0, lootTries, hopRefused, hopReplans;
+        int attempts, moves0, refused0, groundIndex, texts0 = -1, opens0, closes0, lootTries, hopRefused, hopReplans;
+        string snap0 = "";
         double hopStart;
         bool hopAsked, hopRunning, setupAsked, helperAsked, planned, chased, windowAsked, stepAsked;
         double stepAt;
@@ -1029,6 +1032,22 @@ namespace Chaos.Core
         }
 
         // ------------------------------------------------------------------------------------ the body
+        /// <summary>The open container that is the body (its item id), null when none.</summary>
+        LiveFightContainer BodyOpen(LiveFightView v)
+        {
+            if (Loot == null) return null;
+            foreach (var x in v.Containers) if (x.ItemId == Loot.ItemId) return x;
+            return null;
+        }
+
+        /// <summary>The open containers as "id:item" pairs: a change says a window opened, was replaced or closed.</summary>
+        static string Snap(LiveFightView v)
+        {
+            var sb = new StringBuilder();
+            foreach (var x in v.Containers) { if (sb.Length > 0) sb.Append(' '); sb.Append(x.Id).Append(':').Append(x.ItemId); }
+            return sb.ToString();
+        }
+
         LiveFightAction LootStep(LiveFightView v, double now)
         {
             var r = Result;
@@ -1060,14 +1079,25 @@ namespace Chaos.Core
                         if (l != null) Loot = l;
                         if (Loot == null) { Go(Phase.Shoot, now); return LiveFightAction.None; }
                         r.LootTried = true;
+                        // a body that is open already (the server opened it, or an earlier use did and the count was missed): a use now would close it again
+                        var already = BodyOpen(v);
+                        if (already != null)
+                        {
+                            r.LootOpened = true; r.LootName = already.Name; r.LootItems = already.Items;
+                            lootState = LootState.Window; lootAt = now;
+                            return LootStep(v, now);
+                        }
                         lootTries++;
                         opens0 = v.ContainerOpens;
+                        closes0 = v.ContainerCloses;
+                        snap0 = Snap(v);
                         lootAt = now;
                         lootState = LootState.Wait;
                         return LiveFightAction.UseLoot;
                     }
                 case LootState.Wait:
-                    if (v.ContainerOpens > opens0)
+                    // the count of 0x6E, or the open containers changed to hold the body (the server answers an open of a body with the id of the open backpack again)
+                    if (v.ContainerOpens > opens0 || (Snap(v) != snap0 && BodyOpen(v) != null))
                     {
                         LiveFightContainer c = null;
                         foreach (var x in v.Containers) if (x.ItemId == Loot.ItemId) c = x;
@@ -1081,6 +1111,7 @@ namespace Chaos.Core
                     }
                     if (now - lootAt >= LootWaitMs)
                     {
+                        r.LootDiag = "use " + lootTries + " of " + LootTries + ": 0x6E " + opens0 + " to " + v.ContainerOpens + ", 0x6F " + closes0 + " to " + v.ContainerCloses + ", open [" + Snap(v) + "], body item " + (Loot != null ? Loot.ItemId : 0);
                         if (lootTries < LootTries) lootState = LootState.Find;   // the body moved or a creature stood on it: look again
                         else Go(Phase.Shoot, now);
                         lootAt = now;

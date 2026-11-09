@@ -466,7 +466,7 @@ namespace Chaos.Core.Tests
         sealed class FightSim
         {
             public Pos Player = new Pos(32369, 32241, 7);
-            public bool SpellsLoaded = true, Dead, BlockRoute, StairWorks = true, RatsInCave = true, NeverDies, GivesExperience = true, OpensBody = true, BodyHasItems = true, WindowOpensByItself = true, StaysAtTemple = true;
+            public bool SpellsLoaded = true, Dead, BlockRoute, StairWorks = true, RatsInCave = true, NeverDies, GivesExperience = true, OpensBody = true, BodyAlreadyOpen, OpenUncounted, BodyHasItems = true, WindowOpensByItself = true, StaysAtTemple = true;
             public int Slots = 5, InjectRefusals;
             public double KillAfterMs = 3000, SpawnAtMs, StepMs = 250;
             public long Experience = 4200;
@@ -522,6 +522,12 @@ namespace Chaos.Core.Tests
                         ExpTexts++;
                         if (GivesExperience) Experience += 390;
                         bodies[rat.Pos] = 5964;
+                        if (BodyAlreadyOpen)   // something else opened the body at the kill: a use now would close it
+                        {
+                            ContainerOpens++;
+                            containers.Add(new LiveFightContainer { Id = 0, ItemId = 5964, Name = "dead rat", Items = BodyHasItems ? 2 : 0 });
+                            ContainersWindow = true;
+                        }
                     }
                     target = 0;
                 }
@@ -581,7 +587,7 @@ namespace Chaos.Core.Tests
                         UseCalls++;
                         if (OpensBody && PathFinder.Cheb(Player, st.Loot.Tile) <= 1)   // the server refuses a use from afar
                         {
-                            ContainerOpens++;
+                            if (!OpenUncounted) ContainerOpens++;   // OpenUncounted: the open shows in the container list only
                             containers.Clear();
                             containers.Add(new LiveFightContainer { Id = 0, ItemId = st.Loot.ItemId, Name = "dead rat", Items = BodyHasItems ? 2 : 0 });
                             if (WindowOpensByItself) ContainersWindow = true;
@@ -763,6 +769,21 @@ namespace Chaos.Core.Tests
             end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
             check(sim.ShowBodies == 0, "first fight: no open body, the Helper window stays for the picture");
             check(end > 0 && res.Kills == 1 && res.LootTried && !res.LootOpened && res.Pass && res.Warnings().Any(x => x.Contains("body did not open")) && sim.UseCalls == LiveFirstFightStep.LootTries, "first fight: a body that never opens is a warning after " + LiveFirstFightStep.LootTries + " tries: " + string.Join("|", res.Warnings()));
+
+            // ---- the body was open before the smoke's use (a use would close it again), and a body whose open the 0x6E count missed
+            sim = new FightSim { BodyAlreadyOpen = true };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(end > 0 && res.Kills == 1 && res.LootTried && res.LootOpened && res.LootItems == 2 && sim.UseCalls == 0 && res.Pass && res.Warnings().Count == 0 && res.LootDiag.Length == 0, "first fight: a body that is open already is taken as opened and no use closes it again (uses " + sim.UseCalls + ")");
+            sim = new FightSim { OpenUncounted = true };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(end > 0 && res.LootOpened && res.LootItems == 2 && sim.UseCalls == 1 && res.Pass && res.Warnings().Count == 0, "first fight: a body that shows in the container list with no new 0x6E counted is opened (uses " + sim.UseCalls + ")");
+            sim = new FightSim { OpensBody = false };
+            res = new LiveFirstFightResult();
+            RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(res.LootDiag.Contains("use " + LiveFirstFightStep.LootTries + " of " + LiveFirstFightStep.LootTries) && res.LootDiag.Contains("0x6E") && res.LootDiag.Contains("0x6F") && res.LootDiag.Contains("body item 5964") && res.Warnings().Any(x => x.Contains("[use ")) && res.ToJson(null).Contains("\"diag\":\"use "),
+                "first fight: a body that never opens says why in the warning and the json: " + res.LootDiag);
 
             // ---- a walk to the body that never ends: the part's time limit ends it, a warning
             sim = new FightSim();

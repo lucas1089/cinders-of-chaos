@@ -147,7 +147,11 @@ namespace Chaos.Client
             {
                 var t = app.world.Get(loot.Tile);
                 if (t == null || loot.Stack < 0 || loot.Stack >= t.Things.Count || t.Things[loot.Stack].IsCreature) return;
-                app.RightClickItem(new ItemRef(loot.Tile, (byte)loot.Stack, t.Things[loot.Stack].Item));
+                var item = t.Things[loot.Stack].Item;
+                // a body is opened with a plain use, which is what the right click of a container does. The right click of an item the dat flags as multi-use starts a "Use with" crosshair
+                // instead and sends nothing (RightClickItem): for a body that is the menu's "Open" entry, so the smoke sends the use itself (CI run 42670112065: the Chaos body never opened)
+                if (item != null && item.Type != null && item.Type.Container) app.session.UseItem(loot.Tile, (ushort)item.Id, (byte)loot.Stack, ItemSlots.FreeContainerId(app));
+                else app.RightClickItem(new ItemRef(loot.Tile, (byte)loot.Stack, item));
             }
 
             LiveFightView BuildFightView()
@@ -168,6 +172,7 @@ namespace Chaos.Client
                     ExpTexts = p.ExpGainTexts,
                     Experience = (long)p.Experience,
                     ContainerOpens = p.Seen.TryGetValue(0x6E, out int opened) ? opened : 0,
+                    ContainerCloses = p.Seen.TryGetValue(0x6F, out int closed) ? closed : 0,
                 };
                 uint self = w.PlayerId;
                 v.Walkable = pos => WalkMap.Walkable(w, pos, self);

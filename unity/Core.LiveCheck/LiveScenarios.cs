@@ -85,6 +85,18 @@ namespace Chaos.Core.LiveCheck
                         case "firstunlock": ScFirstUnlock(r); break;
                         case "firstfightsmoke": ScFirstFightSmoke(r); break;
                         case "purse": ScPurse(r); break;
+                        case "testsummons": ScTSummons(r); break;
+                        case "testpets": ScTPets(r); break;
+                        case "testparty": ScTParty(r); break;
+                        case "testpartyxp": ScTPartyXp(r); break;
+                        case "testrift": ScTRift(r); break;
+                        case "testwaystone": ScTWaystone(r); break;
+                        case "testloot": ScTLoot(r); break;
+                        case "testchests": ScTChests(r); break;
+                        case "testspellquest": ScTSpellQuest(r); break;
+                        case "testunique": ScTUnique(r); break;
+                        case "testdual": ScTDual(r); break;
+                        case "testauto": ScTAuto(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }

@@ -16,7 +16,7 @@
 #   UL_ENGINE_REPO  repository of the releases (default GITHUB_REPOSITORY, else the origin of this checkout)
 #   UL_LOGIN_PORT, UL_GAME_PORT, UL_DB_PORT   default 17171, 17172, 13306
 #   UL_IDENTITIES   default extended,chaos
-#   UL_GROUPS       default newplayer,temple,shop,shared,death,market (the rift groups run last: its slots build a minute after the start)
+#   UL_GROUPS       default newplayer,temple,shop,shared,death,market,tester (the rift groups run last: its slots build a minute after the start)
 #   UL_RESUME=1     keep the finished stages of an earlier run in UL_WORK (local work on this script)
 #
 # Modes (O433, the player on the same server: .github/workflows/unity-prototype.yml, unity/README.md "Player on a live server (CI)"):
@@ -35,6 +35,10 @@
 # The newplayer group needs no staff at all: a level 1 character that never logged in, the scenarios newplayer, questlog, firstunlock and firstkill (phases 27 and 28).
 # firstunlock hunts the Rats to level 9, where every class opens Ghost Rope (about 35 s on fresh spawns, at most 170 s, a skip when the level is not reached). firstquest
 # (25 rats, the teleport room, three scroll uses) and riftkilled (the local helper /rgive) are not run here.
+# The tester group (phase 30) runs the tester bot checks of server/tools/tester_checks.py through the Unity core: the TEST ONLY helper of the tester bots
+# (server/tools/tester_helper.lua, `!tester ...`) is copied into data/scripts of this run's server (install_tester_helper, before tfs starts) and acts for characters named
+# "Tester Xxx" with the storage 7102900 = 1 only; the two characters of the run (a Beastmaster for Extended, a Necromancer for Chaos, and a Warrior partner) are made here with
+# that name and storage, level 1500, the hunt spot in the rat cave. The helper is not part of the install and goes down with the work folder.
 # Staff commands: the death, sharedkill and rift scenarios use stock staff commands (/goto, /m, /rift, /i) of staff accounts
 # made in the database of this run. The riftboss scenario is not run: its /rkill and /rnear exist only as a local-only
 # revscript (unity/README.md phase 23) and are not server data.
@@ -92,7 +96,7 @@ LOGIN_PORT=${UL_LOGIN_PORT:-17171}
 GAME_PORT=${UL_GAME_PORT:-17172}
 DB_PORT=${UL_DB_PORT:-13306}
 IDENTITIES=${UL_IDENTITIES:-extended,chaos}
-GROUPS_TO_RUN=${UL_GROUPS:-newplayer,temple,shop,shared,death,market}
+GROUPS_TO_RUN=${UL_GROUPS:-newplayer,temple,shop,shared,death,market,tester}
 SERVER="$WORK/server"
 RUN="$WORK/run"
 SOCK="$RUN/mariadb.sock"
@@ -228,6 +232,16 @@ install_chaos() {
   echo "   chaos tables: $(dbq chaos -N -e "SHOW TABLES LIKE 'chaos_%'" | wc -l)"
 }
 
+# install_tester_helper: the TEST ONLY helper of the tester bots into data/scripts, as chaos-ctl.sh testers start does, only when the group `tester` runs. It acts for a character
+# named "Tester Xxx" with the storage 7102900 = 1 and for no other (tester_helper_core.lua H.eligible), and it is never part of install_all.py.
+install_tester_helper() {
+  case ",$GROUPS_TO_RUN," in *,tester,*) ;; *) return 0 ;; esac
+  [ -f "$REPO/server/tools/tester_helper.lua" ] && [ -f "$REPO/server/tools/tester_helper_core.lua" ] || die "server/tools/tester_helper.lua is missing"
+  cp "$REPO/server/tools/tester_helper.lua" "$SERVER/data/scripts/zz_tester_helper.lua"
+  cp "$REPO/server/tools/tester_helper_core.lua" "$SERVER/data/scripts/zz_tester_helper_core.lua"
+  echo "   tester helper installed (TEST ONLY: data/scripts/zz_tester_helper*.lua)"
+}
+
 # ---------------------------------------------------------------------------------------------------- 4. engine
 ENGINE_FROM=""
 fetch_engine() {
@@ -340,6 +354,41 @@ INSERT INTO players (name, group_id, account_id, vocation, level, experience, he
 SQL
 }
 
+# new_testers IDENTITY: the tester characters of the group `tester` (phase 30): a primary and a partner, each named "Tester Xxx" (the helper's name rule: Tester, a space, a capital and
+# two lower case letters) with the storage 7102900 = 1 (the helper's marker; +2, +3, +4 are the hunt spot, the rat cave under Cinderhold, a safe place for level 1500), level 1500,
+# 12000 health, 10500 mana, plain players (no staff right). The primary is a Beastmaster (Extended) or a Necromancer (Chaos), the two classes with summons; the partner a Warrior.
+# Sets PA PN PP QA QN QP like new_chars.
+TESTER_P=(Aka Bel Cor Dun Eld Fan Gor Hal Ivo Jun Kel Lor)
+TESTER_Q=(Mar Nor Ola Per Qui Rur Sab Tam Ulr Ves Wyn Yar)
+new_testers() {
+  local id=$1 voc=15
+  [ "$id" = chaos ] && voc=20
+  RUN_NO=$((RUN_NO + 1))
+  local k=$((RUN_NO - 1))
+  PA="lct$RUN_NO$(rand_hex 3)"; QA="lcu$RUN_NO$(rand_hex 3)"
+  PN="Tester ${TESTER_P[$((k % 12))]}"; QN="Tester ${TESTER_Q[$((k % 12))]}"
+  PP=$(rand_hex 12); QP=$(rand_hex 12)
+  ALL_SECRETS+=("$PP" "$QP")
+  local px py pz
+  IFS=, read -r px py pz <<< "$TEMPLE_AT"
+  local exp
+  exp=$(python3 -I -c 'L = 1500; print(50 * (L ** 3 - 6 * L ** 2 + 17 * L - 12) // 3)')
+  dbq chaos <<SQL
+INSERT INTO accounts (name, password, type, creation) VALUES ('$PA', SHA1('$PP'), 1, UNIX_TIMESTAMP()), ('$QA', SHA1('$QP'), 1, UNIX_TIMESTAMP());
+INSERT INTO players (name, group_id, account_id, vocation, level, experience, health, healthmax, mana, manamax, maglevel, skill_fist, skill_club, skill_sword, skill_axe, skill_dist, skill_shielding,
+                     cap, soul, sex, looktype, lookhead, lookbody, looklegs, lookfeet, lookaddons, town_id, posx, posy, posz, lastlogin)
+  SELECT '$PN', 1, id, $voc, 1500, $exp, 12000, 12000, 10500, 10500, 60, 130, 130, 130, 130, 130, 130, 40000, 100, 1, 128, 78, 68, 58, 76, 3, 2, $px, $py, $pz, 0 FROM accounts WHERE name = '$PA';
+INSERT INTO players (name, group_id, account_id, vocation, level, experience, health, healthmax, mana, manamax, maglevel, skill_fist, skill_club, skill_sword, skill_axe, skill_dist, skill_shielding,
+                     cap, soul, sex, looktype, lookhead, lookbody, looklegs, lookfeet, lookaddons, town_id, posx, posy, posz, lastlogin)
+  SELECT '$QN', 1, id, 4, 1500, $exp, 12000, 12000, 10500, 10500, 60, 130, 130, 130, 130, 130, 130, 40000, 100, 1, 128, 78, 68, 58, 76, 3, 2, $px, $py, $pz, 0 FROM accounts WHERE name = '$QA';
+INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7100252, 101 FROM players WHERE name IN ('$PN', '$QN');
+INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7102900, 1 FROM players WHERE name IN ('$PN', '$QN');
+INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7102902, 32369 FROM players WHERE name IN ('$PN', '$QN');
+INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7102903, 32214 FROM players WHERE name IN ('$PN', '$QN');
+INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7102904, 8 FROM players WHERE name IN ('$PN', '$QN');
+SQL
+}
+
 # staff: primary, partner, both or none: the group's set-up. Level 1200 (experience of level 1200) so that every hunt, rift and
 # shared experience rule applies; vocation 4 (Warrior); first login (lastlogin 0): the starter kit with gold, the tutorial skipped.
 new_chars() {
@@ -398,6 +447,11 @@ run_group_once() {
                 # The stairs and the cave are the base map of windows-assets.
       new_newbie "$id"
       live_run "$label" "$id" newplayer,questlog,purse,firstunlock,firstkill ;;
+    tester)  # the tester bot checks of tools/tester_checks.py through the Unity core (phase 30): the TEST ONLY helper (install_tester_helper) answers for the two "Tester Xxx" characters.
+             # The scenarios that need the second connection (the party ones) run last: its connection stays up and the multi-client rule would block the trial and dungeon legs before them.
+             # The run order is the order of LiveRun.OptInScenarios, not of this list (Core.Tests checks that the party ones end it).
+      new_testers "$id"
+      live_run "$label" "$id" testsummons,testpets,testrift,testwaystone,testloot,testchests,testspellquest,testunique,testdual,testauto,testparty,testpartyxp --no-ext ;;
     shop)    # selling to an NPC that buys (the post office NPC does not)
       new_chars 0 0 "$SELL_AT" "$(beside "$SELL_AT")"
       live_run "$label" "$id" sell --npc "$SELL_NPC" --npc-at "$SELL_AT" ;;
@@ -418,7 +472,9 @@ run_groups() {
   local g id
   # a resumed work folder keeps the rows of an earlier run
   dbq chaos -e "DELETE FROM player_storage WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Live %');
-                DELETE FROM players WHERE name LIKE 'Live %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%' OR name LIKE 'lcn%';"
+                DELETE FROM players WHERE name LIKE 'Live %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%' OR name LIKE 'lcn%';
+                DELETE FROM player_storage WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Tester %');
+                DELETE FROM players WHERE name LIKE 'Tester %'; DELETE FROM accounts WHERE name LIKE 'lct%' OR name LIKE 'lcu%';"
   for g in ${GROUPS_TO_RUN//,/ }; do
     for id in ${IDENTITIES//,/ }; do
       t0=$SECONDS
@@ -562,6 +618,7 @@ if [ "$MODE" != serve ]; then
   mark "dotnet build"
 fi
 
+install_tester_helper
 start_tfs; mark "tfs start"
 
 if [ "$MODE" = serve ]; then
