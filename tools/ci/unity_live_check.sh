@@ -193,7 +193,7 @@ load_base_schema() {
 
 # ---------------------------------------------------------------------------------------------------- 3. config, install
 write_config() {
-  log "config.lua (ports $LOGIN_PORT/$GAME_PORT, database, client guard in enforce mode)"
+  log "config.lua (ports $LOGIN_PORT/$GAME_PORT, database, client guard in enforce mode, no shutdown at the daily save)"
   python3 -I - "$SERVER/config.lua" "$LOGIN_PORT" "$GAME_PORT" "$DB_PORT" "$DBPASS" <<'PY'
 import re, sys
 path, login, game, dbport, dbpass = sys.argv[1:6]
@@ -206,7 +206,10 @@ for key, value in want.items():
     if n != 1:
         sys.exit('config.lua: no %s line' % key)
 # the guard: key from the environment of tfs (CHAOS_CLIENT_KEY), none in this file
-for key, value in (('clientGuardMode', '"enforce"'), ('clientGuardKey', '""'), ('clientGuardAllowDevKey', 'false')):
+# the daily server save (globalevents "Server Save", 08:00 server time) shuts the server down by default: a run that crosses it lost
+# the server mid-scenario (PR 325, 2026-11-09: every run after 08:05 UTC could not log in). Save, but stay up and open.
+for key, value in (('clientGuardMode', '"enforce"'), ('clientGuardKey', '""'), ('clientGuardAllowDevKey', 'false'),
+                   ('serverSaveShutdown', 'false'), ('serverSaveClose', 'false')):
     text, n = re.subn(r'^(%s\s*=\s*)[^\r\n]*' % key, lambda m: m.group(1) + value, text, count=1, flags=re.M)
     if n == 0:
         text = text.rstrip('\n') + '\n%s = %s\n' % (key, value)

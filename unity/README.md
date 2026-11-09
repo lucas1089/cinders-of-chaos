@@ -802,6 +802,8 @@ Local run 2026-11-08 (base server of `windows-assets`, no map master, engine of 
 
 Open: the AppArmor profile of the apt MariaDB on `ubuntu-latest` is removed in the workflow (`apparmor_parser -R`) so that the private data folder works; not yet run on a runner. The first workflow run decides the real time (the install step is CPU bound).
 
+Daily save (2026-11-09): the base server saves at 08:00 server time and, by default, shuts down 5 minutes later; the PR 325 run crossed it and every run after 08:05 UTC could not log in (the client saw "The server closed the connection", the server log ends with "Shutting down... done!"). The script now sets `serverSaveShutdown = false` and `serverSaveClose = false` in the work copy of config.lua: the save still runs, the server stays up and open.
+
 ### Player on a live server (CI) (2026-11-09)
 
 Core.LiveCheck proves the Core. This proves the built player: the Linux player of `unity-prototype.yml` (build job, manual, target StandaloneLinux64) plays on the same kind of real server. The demo tour, the window smoke run and the walking video still use the fake server inside the player; the new flag `-chaosLiveSmoke OUT_DIR` (`Unity/ChaosApp.LiveSmoke.cs`, pure parts in `Core/LiveSmoke.cs`, tests in `Core.Tests/LiveSmokeTests.cs`) uses a real one.
