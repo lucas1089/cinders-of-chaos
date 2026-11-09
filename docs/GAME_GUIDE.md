@@ -281,7 +281,7 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
 - **Veiled modifiers:** rare and better drops from the high content (rifts, the raid, the Ascended bosses) can carry a
   hidden modifier slot. The **Orb of Unveiling** shows you three modifiers from a veiled pool of twenty; you keep the
   one you choose, for good.
-- **183 uniques** with fixed, build-defining stats and a socket of their own. Some only drop from bosses, some only
+- **196 uniques** with fixed, build-defining stats and a socket of their own. Some only drop from bosses, some only
   for season characters while the season runs. The raid, the Ember Descent and the Ascended bosses add their own.
 - **Rich item tooltips:** hover an item to see its rarity, item level, its prefixes and suffixes, every modifier with
   its tier ("T5") and the value range of that tier, quality, bound modifiers, sockets and gems, unique set and
