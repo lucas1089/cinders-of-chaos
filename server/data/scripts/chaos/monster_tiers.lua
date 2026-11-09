@@ -134,7 +134,14 @@ ChaosMods = {
 				if ChaosCombatFx then
 					ChaosCombatFx.reflect(m) -- shield flash on the reflecting monster (combat_fx.lua, throttled)
 				end
-				doTargetCombatHealth(m, attacker, COMBAT_PHYSICALDAMAGE, -math.floor(dmg * 0.15), -math.floor(dmg * 0.15), CONST_ME_NONE)
+				-- 15% of the damage that lands (overkill is not reflected, as the rift's Reflection), dealt back as it was dealt: with
+				-- no attacker, so the monster's own damage multipliers (tier, rift, party, guardian curve) do not scale it a second
+				-- time (O433 phase 25: a 30k hit on a Reflective legendary guardian came back as 16.9k, 56% of the hit, and killed a
+				-- 10k player)
+				local back = math.floor(math.min(dmg, math.max(0, m:getHealth())) * 0.15)
+				if back > 0 then
+					doTargetCombatHealth(0, attacker, COMBAT_PHYSICALDAMAGE, -back, -back, CONST_ME_NONE)
+				end
 			end
 		end},
 	regenerating = {name = "Regenerating", shader = 2, power = 1, effect = CONST_ME_MAGIC_GREEN,

@@ -40,6 +40,8 @@ namespace Chaos.Core.Tests
             EndgameScenarioList(check);
             OmenAndFailedRiftHud(check);
             ExtErrorCount(check);
+            Phase25ScenarioList(check);
+            LastLifeAndTwinHud(check);
             Failures(check);
             Otb(check);
             Plan(check);
@@ -615,6 +617,56 @@ namespace Chaos.Core.Tests
             check(c.ExtErrors == 2, "ext errors: invalid JSON and a handler that threw are counted (" + c.ExtErrors + ")");
             s.Ext.Receive(228, ExtOpcodes.ToWire("{\"action\":\"start\"}"));
             check(c.ExtErrors == 2, "ext errors: the next good message goes through");
+        }
+
+        // ------------------------------------------------------------------------------------------------ phase 25
+        // The five scenarios of phase 25 run after coffer and before the two death scenarios; the options and the scrub know the third account.
+        static void Phase25ScenarioList(Action<bool, string> check)
+        {
+            var all = LiveRun.AllScenarios.ToList();
+            string[] names = { "guardians", "partnerdeath", "lastlife", "party3", "trialwindows" };
+            bool order = true;
+            int last = all.IndexOf("coffer");
+            foreach (string n in names) { int i = all.IndexOf(n); order &= i > last; last = i; }
+            check(order && last < all.IndexOf("death"), "phase 25: guardians, partnerdeath, lastlife, party3 and trialwindows follow coffer in that order and run before the death scenarios");
+            check(all.Count == all.Distinct().Count() && all[all.Count - 1] == "pvpdeath" && all[all.Count - 2] == "death", "phase 25: no name twice, the two death scenarios still last");
+            var o = new LiveOptions();
+            check(o.GuardianTier == 5 && o.TwinMods == "twin:70" && o.WrathMods == "wrath:20" && o.HitSize == 0 && o.ReflectProbe == "tier", "phase 25: the guardian, hit size and reflect probe defaults (Twin Guardians need tier 3, the Wrathful Guardian tier 4)");
+            check(o.ArchivistNpc == "Archivist Odrenna" && !o.ArchivistAt.HasValue && o.Account3 == null && o.Password3 == null && o.Character3 == null, "phase 25: the Archivist default and no third account until the environment gives one");
+            // the third account's names never reach a report
+            string line = LiveRun.Scrub("Tester Xyzq joined the party of Tester Abcd (third-acct-77)", new[] { "Tester Xyzq", "Tester Abcd", "third-acct-77" });
+            check(line == "<name> joined the party of <name> (<name>)", "phase 25: account and character names of all three connections are scrubbed (" + line + ")");
+        }
+
+        // The HUD of the two guardians (rift.lua hudData: the note 'Guardians left: N.' while a Twin Guardian lives) and of the last life: a member who falls with lives left gets
+        // {result = "left"}; the next login starts the HUD again; the death that takes the last life ends the run for all with {result = "failed"} and 0 lives.
+        static void LastLifeAndTwinHud(Action<bool, string> check)
+        {
+            var ext = new ExtOpcodes();
+            double now = 9000;
+            var h = new RiftHud(ext) { Clock = () => now };
+            Action<string> msg = json => ext.Receive(228, ExtOpcodes.ToWire(json));
+            msg("{\"action\":\"update\",\"data\":{\"tier\":5,\"boss\":\"alive\",\"state\":\"running\",\"total\":300,\"killed\":240,\"bossAt\":230,\"bossName\":\"Crypt Dreadknight\",\"notes\":[\"Guardians left: 2.\"],\"lives\":4,\"livesMax\":4}}");
+            check(h.Active && h.Notes.Count == 1 && h.Notes[0] == "Guardians left: 2." && h.Boss == "alive", "twin HUD: the note names two guardians left and the guardian stays alive");
+            msg("{\"action\":\"update\",\"data\":{\"tier\":5,\"boss\":\"alive\",\"state\":\"running\",\"total\":300,\"killed\":240,\"bossAt\":230,\"bossName\":\"Crypt Dreadknight\",\"notes\":[\"Guardians left: 1.\"],\"lives\":4,\"livesMax\":4}}");
+            check(h.Notes.Count == 1 && h.Notes[0] == "Guardians left: 1." && h.State == "running" && h.Result.Length == 0, "twin HUD: one twin down, the run goes on (no result, one note)");
+            // the first death with lives left: the fallen member gets 'left', the survivors' update has one life less and the 'may still return' note
+            msg("{\"action\":\"update\",\"data\":{\"tier\":1,\"boss\":\"waiting\",\"state\":\"running\",\"total\":264,\"killed\":0,\"bossAt\":198,\"notes\":[\"1 fallen player may still return.\"],\"lives\":1,\"livesMax\":4}}");
+            check(h.Lives == 1 && h.LivesMax == 4 && h.LivesLine() == "Lives: 1 / 4" && h.Notes.Count == 1 && h.Notes[0].StartsWith("1 fallen player"), "last life HUD: one life left, 1 of 4, the note about the fallen player");
+            msg("{\"action\":\"end\",\"data\":{\"result\":\"left\",\"text\":\"You fell: 1 life left. You return at the rift's entrance when you log in again.\"}}");
+            check(h.State == "left" && h.Result == "left" && h.ResultText.IndexOf("1 life left", StringComparison.Ordinal) >= 0 && h.HideAt == now + 8000, "last life HUD: the fallen member's 'left' end text names the life left, hides after 8 s");
+            // the login after the death: the server sends 'start' again, the old result goes
+            msg("{\"action\":\"start\",\"data\":{\"tier\":1,\"boss\":\"waiting\",\"state\":\"running\",\"total\":264,\"killed\":3,\"bossAt\":198,\"lives\":1,\"livesMax\":4}}");
+            check(h.Active && h.Result.Length == 0 && h.ResultText.Length == 0 && h.HideAt < 0 && h.State == "running" && h.Lives == 1, "last life HUD: the returning member's start clears the 'left' result");
+            // the last life: the survivors' update with 0 lives, then the end message of the collapse
+            msg("{\"action\":\"update\",\"data\":{\"tier\":1,\"boss\":\"waiting\",\"state\":\"failed\",\"total\":264,\"killed\":3,\"bossAt\":198,\"lives\":0,\"livesMax\":4}}");
+            check(h.Lives == 0 && h.State == "failed" && h.LivesLine() == "Lives: 0 / 4", "last life HUD: 0 lives (not 'unknown') and the failed state in the update before the end");
+            msg("{\"action\":\"end\",\"data\":{\"result\":\"failed\",\"text\":\"No lives are left! The rift collapses and the key is lost.\"}}");
+            check(h.Result == "failed" && h.State == "failed" && h.Boss == "waiting" && h.ExitIn == 0 && h.HideAt == now + 8000 && h.ResultText.StartsWith("No lives are left!"), "last life HUD: the collapse ends the run as failed, no exit time, the boss never dead");
+            // a member who was removed (dead) and never had a HUD: the end message alone shows the result
+            var fresh = new RiftHud(ext) { Clock = () => now };
+            fresh.Handle("end", Json.TryParse("{\"result\":\"failed\",\"text\":\"No lives are left! The rift collapses and the key is lost.\"}"));
+            check(fresh.Active && fresh.State == "failed" && fresh.Result == "failed", "last life HUD: an end message without a start still shows the result");
         }
 
         static void WholeRun(Action<bool, string> check)

@@ -170,7 +170,7 @@ namespace Chaos.Core.LiveCheck
 
         /// <summary>The rift to its guardian, the guardian killed, the reward chest opened (phase 23); phase 24 asks for a tier above 1 with fixed modifiers (rifttier) or an Omen
         /// arena (omen: no packs, the guardian comes a few seconds after the arrival).</summary>
-        void RiftBossRun(ScenarioResult r, int tier, string mods, bool omen)
+        void RiftBossRun(ScenarioResult r, int tier, string mods, bool omen, string flavour = null)
         {
             var p = s.Parser;
             var mark = Mark.Of(me);
@@ -241,6 +241,7 @@ namespace Chaos.Core.LiveCheck
                        (boss == null ? "no" : "yes, " + PathFinder.Cheb(boss.Position, me.Pos) + " tiles away, health " + boss.HealthPercent + "%") + "; monsters in view " + world.Creatures.Values.Count(c => c.Type == 1));
                 if (moved && boss == null) problems.Append("the guardian '" + rift.BossName + "' is not among the creatures in view after the move; ");
                 snap();
+                if (flavour != null) GuardianFlavour(r, flavour, rift, problems, texts0);
                 // 3. the guardian dies
                 var beforeKill = new Dictionary<byte, int>(p.Seen);
                 int kills = 0;

@@ -25,12 +25,12 @@ namespace Chaos.Core.LiveCheck
 
     public sealed partial class LiveRun
     {
-        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "death", "pvpdeath" };
+        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "guardians", "partnerdeath", "lastlife", "party3", "trialwindows", "death", "pvpdeath" };
 
         readonly List<ScenarioResult> scenarios = new List<ScenarioResult>();
         Dictionary<int, string> floorChanges;
         Dictionary<int, int> serverToClient;
-        bool ScenariosFailed => partnerBad || scenarios.Any(x => x.Status == "fail");
+        bool ScenariosFailed => partnerBad || thirdBad || scenarios.Any(x => x.Status == "fail");
         static long Tick => Environment.TickCount64;
 
         void RunScenarios()
@@ -65,6 +65,11 @@ namespace Chaos.Core.LiveCheck
                         case "riftfail": ScRiftFail(r); break;
                         case "omen": ScOmen(r); break;
                         case "coffer": ScCoffer(r); break;
+                        case "guardians": ScGuardians(r); break;
+                        case "partnerdeath": ScPartnerDeath(r); break;
+                        case "lastlife": ScLastLife(r); break;
+                        case "party3": ScParty3(r); break;
+                        case "trialwindows": ScTrialWindows(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }
@@ -631,8 +636,9 @@ namespace Chaos.Core.LiveCheck
             rift0 = seen228;
             int say1 = me.Said.Count;
             s.Progress.Rift.Hide();   // the HUD of an earlier rift of this run stays "active" with its end message until the window hides it
+            s.Progress.Rift.State = "";   // and so does its state: only the new run's start (state running) counts as the rift being open (phase 25: a late end message of the old rift opened the wait)
             s.UseItem(GameSession.ContainerPos(contId, slot), (ushort)keyClient, (byte)slot);
-            bool entered = WaitFor(Math.Max(30000, o.ScenarioMs), () => s.Progress.Rift.Active || ops[228].Replies > seen228 || s.Closed != null);
+            bool entered = WaitFor(Math.Max(30000, o.ScenarioMs), () => (s.Progress.Rift.Active && s.Progress.Rift.State == "running") || s.Closed != null);
             if (!entered)
             {
                 var texts = me.ServerTexts(say1).Take(3).ToList();
@@ -793,7 +799,7 @@ namespace Chaos.Core.LiveCheck
             return text;
         }
 
-        IEnumerable<string> SecretNames() => new[] { o.Account, o.Account2, o.Character, o.Character2, me?.Character, partner?.Character }.Where(x => !string.IsNullOrEmpty(x));
+        IEnumerable<string> SecretNames() => new[] { o.Account, o.Account2, o.Account3, o.Character, o.Character2, o.Character3, me?.Character, partner?.Character, third?.Character }.Where(x => !string.IsNullOrEmpty(x));
 
         public List<object> ScenarioRows() =>
             scenarios.Select(x => (object)new Dictionary<string, object>
@@ -811,9 +817,10 @@ namespace Chaos.Core.LiveCheck
                 foreach (var n in x.Notes) sb.AppendLine("      " + Scrub(n, SecretNames()));
             }
             if (partnerStats != null) sb.AppendLine("partner connection: " + partnerStats);
+            if (thirdStats != null) sb.AppendLine("third connection: " + thirdStats);
         }
 
-        string partnerStats;
-        bool partnerBad;
+        string partnerStats, thirdStats;
+        bool partnerBad, thirdBad;
     }
 }
