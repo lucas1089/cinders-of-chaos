@@ -18061,6 +18061,10 @@ startup if missing; also `sql/chaos_patchnotes.sql`). The notes live on the serv
   history (the beta note says so). A server that installs the folder before 31 October shows the beta note at once;
   where that is not wanted, delete `data/patchnotes/2026-10-31.md` after every `install_all.py` run (it copies the file
   again). docs/BETA.md lists the notes still to write for the beta and for launch.
+  `2026-11-07.md` (beta weekend 2) and `2026-11-11.md` (Wednesday) follow, each with its pt-BR twin. The window and the
+  login opening do not look at the date: a file in the folder shows at once, so the 11 November note shows as soon as
+  the folder is installed. Only the Discord post waits for the day. The launch note is a draft in
+  `docs/drafts/patchnotes-2026-11-20.md` (and `.pt-br.md`) so it stays out of the folder until launch.
 - **Window.** Weeks on the left (date, title, NEW for unseen ones), the selected week on the right: title, date, intro,
   section headings in colour (New green, Changes gold, Fixes blue, Balance violet), bullets with a dot in the section
   colour, sub-bullets, bold leads. A long note is sent in parts of about 4 KB of text (`PN.parts`; one 9 KB message never

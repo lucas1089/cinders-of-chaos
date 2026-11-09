@@ -21,17 +21,19 @@ Patch notes toda quarta. Weekend Ritual toda sexta 18:00 até domingo 23:59, bos
 
 ## Só eu posso fazer
 
-### Antes do beta (31/10)
+### Antes do beta (31/10, os dois fins de semana já passaram)
+O que o repositório não prova (estado do VPS, chaves) fica aberto até você confirmar.
 - [ ] Servidor do beta com o código do título "Beta Tester" desde o primeiro fim de semana.
 - [ ] Fuso do VPS em São Paulo: `sudo timedatectl set-timezone America/Sao_Paulo` (o app admin ainda não tem botão).
-- [ ] Mandar a posição (x, y, z) ou a área das escadas sem descida.
+- [x] Mandar a posição (x, y, z) ou a área das escadas sem descida. Feito: a captura de 26/10 virou o O264 (445 destinos sem chão achados por ferramenta e corrigidos, posição exata da captura sem confirmar; ROADMAP).
 
 ### Antes do lançamento (20/11)
+- [ ] Decisões em aberto antes do lançamento (maxPlayers, parte dos criadores, wipe depois do lançamento, Founder Pack): lista em [docs/OWNER_TODO.md](docs/OWNER_TODO.md), seção "Open owner decisions before launch".
 - [ ] Testar ao vivo o que entrou em 29/10: Loot Bag com mais de 250 itens (páginas), janela de cosméticos, TRY ON da loja, `/weekend status|off|on`, stash sem piscar, salvage de um clique.
 - [ ] Certificado de assinatura de código (SSL.com IV ou OV com eSigner). Credenciais só como secrets do GitHub.
 - [ ] Testar o launcher no Windows. Instalar fora de `C:\Program Files`.
 - [ ] Testar "Publicar update" no app admin com um update que troca o `chaos.pack` (timeout de 30 s).
-- [ ] Baixar e testar o app de gestão: GitHub > Releases > `admin-desktop-v0.1.0` > `cinders-admin.exe`.
+- [ ] Baixar e testar o app de gestão: GitHub > Releases > a `admin-desktop-v*` mais nova (hoje `admin-desktop-v0.4.1`, de 08/11) > `cinders-admin.exe`.
 - [ ] Advogado: Termos de Doação seção 7 (15% dos criadores na janela de lançamento) e as outras cláusulas de [docs/OWNER_TODO.md](docs/OWNER_TODO.md).
 - [ ] Discord: criar o servidor, ativar Comunidade, colocar o ícone e o banner (`website/art/`), webhooks do jogo, link em `CHAOS_DISCORD_URL`.
 - [ ] Domínio, hospedagem com proteção DDoS, SMTP, reCAPTCHA, Mercado Pago e PayPal ao vivo, chaves do updater e do client. Lista completa em [docs/OWNER_TODO.md](docs/OWNER_TODO.md).

@@ -526,6 +526,11 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
   `chaos_beta_grants`) are wiped with the beta (docs/BETA.md section 9; only the beta coins: the snippet in docs/BETA.md
   section 4).
 
+**Two beta switches, not one.** `beta_config.lua` `enabled` is the beta starter coins (5,000 free coins per account) and the
+Beta Tester record: no admin app button, `true` today, must be `false` at launch. `beta_mode_config.lua` `enabled` is beta
+test mode, which lifts weekly and daily gameplay limits: admin app tab Comandos > Ações rápidas > card Modo beta (testes) >
+Desligar (or Desligar e reiniciar), must be `false` at launch too. Turning one off does not turn off the other.
+
 ## 12. Open loose ends that matter for launch (ROADMAP.md)
 
 Still open:
@@ -872,7 +877,8 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
   unspent (`removeCoinsOnReversal` in `shop_coins_config.lua`) and staff see it in the admin panel (Store > Donations:
   refunds and chargebacks). Chargeback fraud: the account is locked until the dispute is settled, fraud again is a
   permanent ban by an administrator (docs/GM_HANDBOOK.md section 4, Rules 7.9, Donation Terms section 6).
-- Set the real prices (`usdCents` of each pack) before launch: the ones in the repository are placeholders.
+- The prices are decided: docs/PRICES.md (owner delegated, 2026-10-14). `cd server && luajit tools/store_model.lua --check`
+  holds the packs and the store. Change `usdCents` of a pack only with the owner's word.
 
 **From the admin app (the way to do it, O413).** Step by step in Portuguese: [docs/PAYMENTS.md](PAYMENTS.md). Tab
 Comandos > Ações rápidas > card Pagamentos (doações): one field per setting with Salvar (the value goes on stdin over SSH

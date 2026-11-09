@@ -1,4 +1,4 @@
-# Open beta plan (draft for the owner)
+# Open beta plan (partly decided)
 
 Status: **partly decided.** On 2026-10-29 the owner confirmed: launch on Fri 20 Nov 2026 at 15:00; Season 1 and PvP
 Season 1 start with the launch; one full wipe between the beta and the launch (section 3); a "Beta Tester" title for

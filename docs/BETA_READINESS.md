@@ -5,9 +5,14 @@ open beta weekends Sat 31 Oct and Sat 7 Nov 2026, launch Fri 20 Nov 2026 15:00 (
 The full beta plan is docs/BETA.md. The install steps are docs/LAUNCH.md. This file only says what must be true, who
 does it and how to check it.
 
-**State today.** A live integrated test passed on 2026-10-14 on a local test server with the Linux client. Its fixes
-are committed (`0ff264b2`, `6f4c0435`). Nothing has run on a production host yet. No public host, domain, payment
-account, Discord server or signing key exists yet.
+**State today.** Written 2026-10-14. Updated 2026-11-09: both beta weekends (31 Oct, 7 Nov) are over, and the rows
+below keep their original wording. A live integrated test passed on 2026-10-14 on a local test server with the Linux
+client. Its fixes are committed (`0ff264b2`, `6f4c0435`). What the repository shows now: a beta VPS runs the Linux kit
+(docs/LAUNCH.md "Updating the kit server"); the domain cindersofchaos.com is the updater URL of docs/LAUNCH.md "Client updates"
+and the download host of the `winpkg-N` release notes (DNS and HTTPS are not checked here); the updater key was made on
+2026-10-20 (docs/LAUNCH.md); the release client is built with the official key (`winpkg-110` notes, client build 30).
+What the repository cannot show: payment accounts, the Discord server, a code-signing certificate, mail and captcha, the
+VPS timezone, which keys the VPS holds. Those rows stay open until the owner confirms them.
 
 ## How to read it
 
@@ -29,7 +34,7 @@ closed staff-only weekend.
 |---|---|---|---|
 | B1 | **Beta host.** Game server with a fast core (3 GHz+), 16 GB RAM, MariaDB on local NVMe. Choice in docs/HOSTING.md. | Owner | `fio` fsync test of LAUNCH.md section 2 prints a few ms or less. |
 | B2 | **Domain and HTTPS.** Site address `https://...` and a DNS name for the game. | Owner | `curl -I https://<site>` gives 200 with a valid certificate. The play host resolves. |
-| B3 | **Beta dates and owner decisions in docs/BETA.md.** Open or closed, the wipe scope, test coins, Blood Moon on or off. It is still "draft, nothing decided". | Owner | BETA.md status line no longer says draft. |
+| B3 | **Beta dates and owner decisions in docs/BETA.md.** Open or closed, the wipe scope, test coins, Blood Moon on or off. Partly decided: the owner confirmed the launch date and the wipe on 2026-10-29 (BETA.md status line). Other choices are still marked "Owner decides". | Owner | BETA.md has no "Owner decides" left. |
 | B4 | **Season 1 start.** Done 2026-10-29: `season_config.lua` starts Season 1 with the launch, 20 Nov 2026 15:00, to 19 Feb 2027; the PvP epoch is the launch too. | Dev (done) | `/season status` on the beta server: not started. `season_test.lua` passes. |
 | B5 | **Pace rebalance committed or switched off.** `pace.lua`, `pace_core.lua`, `pace_config.lua` and `tests/pace_test.lua` are untracked work in progress. `enabled = true`. ROADMAP #151 says LIVECHECK. `chaos_update.sh` refuses a dirty checkout. | Dev | `git status --short` clean on the beta tag. CI green. One live hunt with pace on. |
 | B6 | **Load test with packs.** Done for 300 (`01330d01`, server/README.md "Load test with area classes"). Full map, pace on, 73% area classes, on a 4 vCPU 2.1 GHz box that also ran the bots. 300 bots pass: lag about 60 ms, p95 about 105 ms, no 500 ms stall after the loot filter fix. 400 bots fail on that box: lag about 70 ms, p95 about 165 ms, 2-5 stalls. The beta stays at `maxPlayers` 300. The launch cap is L5. | Dev | Done for 300. Repeat on the beta host: `loadtest.py setup --spread`, `run --hunt --classes` at 300 bots, then `loadtest.py cleanup`. Fallback for load is a lower `maxPlayers`, not `pace_config.lua` `enabled = false` (pace off is heavier). |
