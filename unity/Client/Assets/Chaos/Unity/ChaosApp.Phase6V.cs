@@ -229,6 +229,7 @@ namespace Chaos.Client
 
         void Phase6VUpdate()
         {
+            using var _slow = SlowCalls.Scope("Phase6VUpdate", "Update");
             if (session == null || world?.Player == null) return;
             double now = session.Now;
             Pos me = world.Player.Position;
@@ -331,6 +332,7 @@ namespace Chaos.Client
         /// <summary>The bubble over the NPC we talk to: its name, its latest reply (wrapped, at most 8 lines), keyword chips and an end button. Drawn inside the map group (`map`: its rect in UI units).</summary>
         void NpcBubbleGui(Rect map, float scale)
         {
+            using var _slow = SlowCalls.Scope("NpcBubbleGui", "OnGUI");
             var talk = session?.Parser.NpcTalk;
             if (talk == null || world?.Player == null || view == null && !HdLabelsOn) return;
             double now = session.Now;
@@ -455,6 +457,7 @@ namespace Chaos.Client
         /// <summary>Called at the end of GameGui for the pieces of this track.</summary>
         void Phase6VGui(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("Phase6VGui", "OnGUI");
             SplitGui(w, h, scale);
         }
     }

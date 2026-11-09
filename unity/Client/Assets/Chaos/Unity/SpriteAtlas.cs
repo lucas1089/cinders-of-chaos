@@ -36,7 +36,8 @@ namespace Chaos.Client
             if (id == 0) return 0;
             ulong key = id;
             if (slots.TryGetValue(key, out int s)) return s;
-            byte[] rgba = spr.Rgba(id);
+            byte[] rgba;
+            using (SlowCalls.Scope("SpriteAtlas.Sprite (spr read and decode)", "load")) rgba = spr.Rgba(id);   // the first sprite of a shard opens the shard (Core/SprShards.cs; a blob shard is decrypted whole, about 30 MB)
             s = rgba == null ? 0 : Put(rgba);
             slots[key] = s;
             return s;
@@ -81,6 +82,7 @@ namespace Chaos.Client
         public void Upload()
         {
             if (!dirty) return;
+            using var _slow = SlowCalls.Scope("SpriteAtlas.Upload (Apply of the 4096 x 4096 texture)", "upload");
             Texture.Apply(false);
             dirty = false;
         }

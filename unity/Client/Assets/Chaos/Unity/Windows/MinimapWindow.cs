@@ -46,6 +46,7 @@ namespace Chaos.Client
 
         void Build(MinimapMemory mem, Pos p)
         {
+            using var _slow = SlowCalls.Scope("MinimapWindow.Build", "OnGUI");
             if (tex == null)
             {
                 tex = new Texture2D(Size, Size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };

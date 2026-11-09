@@ -31,6 +31,7 @@ namespace Chaos.Client
         /// <summary>Called from VisualUpdate: hands the views their effect callbacks and keeps the grade post on the right camera.</summary>
         void Phase8CUpdate()
         {
+            using var _slow = SlowCalls.Scope("Phase8CUpdate", "Update");
             Phase8CPrefs.Load();
             if (screen != Screen.Game || session == null) { if (gradePost != null) gradePost.enabled = false; return; }
             if (view != null) { view.CreatureFx = c => Phase8CLook(c, true, true); view.LiquidFx = Phase8CPrefs.Liquid; }

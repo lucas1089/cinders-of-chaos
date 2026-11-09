@@ -24,6 +24,7 @@ namespace Chaos.Client
         /// <summary>Draws every HUD element. Call after the windows, before the context menu.</summary>
         void HudGui(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("HudGui", "OnGUI");
             var hud = session?.Hud;
             if (hud == null) return;
             if (toastText == null)

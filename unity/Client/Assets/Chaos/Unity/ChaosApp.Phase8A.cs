@@ -16,6 +16,7 @@ namespace Chaos.Client
         /// <summary>Every frame (called from Phase7YUpdate): the scene views' monster draw size, the phone flag of the toasts, the auto build's clock.</summary>
         void Phase8AUpdate()
         {
+            using var _slow = SlowCalls.Scope("Phase8AUpdate", "Update");
             ToastCenter.Phone = Application.isMobilePlatform;
             if (hd2dView != null) hd2dView.CreatureScale = MonsterScaleFor;
             var flc = frontLive != null ? frontLive.GetComponent<FrontLiveCreatures>() : null;
@@ -228,6 +229,7 @@ namespace Chaos.Client
 
         Texture2D RingTexture()
         {
+            using var _slow = SlowCalls.Scope("RingTexture", "load");
             if (ringTex != null) return ringTex;
             const int W = 64, H = 32;
             ringTex = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, name = "chaos-rarity-ring" };
@@ -249,6 +251,7 @@ namespace Chaos.Client
         /// <summary>The rarity ring under items lying near the player, in the live and HD-2D views (the classic view outlines the sprite itself).</summary>
         void DrawItemRings(Rect map, float scale)
         {
+            using var _slow = SlowCalls.Scope("DrawItemRings", "OnGUI");
             if (!(LiveOn || (hd2d && hd2dView != null)) || !VisualPrefs.ItemOutlines || world?.Player == null || Event.current.type != EventType.Repaint) return;
             if (ItemGlowRealOn) return;   // phase 9 track D: the sprite shader draws the real outline; the ring is the fallback
             float tile = map.height / ViewTilesH;

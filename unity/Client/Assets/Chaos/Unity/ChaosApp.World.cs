@@ -61,6 +61,7 @@ namespace Chaos.Client
         /// <summary>Called inside the map group (map is its rect in UI units) after the ground labels.</summary>
         void DrawWorldOverlays(Rect map, float scale)
         {
+            using var _slow = SlowCalls.Scope("DrawWorldOverlays", "OnGUI");
             var u = Utils;
             if (u == null || world?.Player == null) return;
             WorldStyles();
@@ -524,6 +525,7 @@ namespace Chaos.Client
         /// <summary>The Candlemarks counter, the Hideout placing bar and the tooltip (over the windows, like the HUD).</summary>
         void WorldGui(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("WorldGui", "OnGUI");
             var u = Utils;
             if (u == null) { worldTip = ""; return; }
             WorldStyles();

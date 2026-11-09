@@ -42,6 +42,7 @@ namespace Chaos.Client
         /// <summary>Draws the labels inside the map group (map is its rect in UI units). A click on a corpse label opens the corpse.</summary>
         void DrawGroundLabels(Rect map, float scale)
         {
+            using var _slow = SlowCalls.Scope("DrawGroundLabels", "OnGUI");
             var loot = FindWindow<LootWindow>();
             if (loot == null || loot.Ground == null || loot.Filter == null || session == null || world?.Player == null) return;
             var settings = loot.Ground.Settings;

@@ -20,6 +20,7 @@ namespace Chaos.Client
             string key = (smooth ? "s|" : "p|") + rel;
             if (artTex.TryGetValue(key, out var t)) return t;
             t = null;
+            using var _slow = SlowCalls.Scope(SlowCalls.Log.On ? "ArtTexture " + rel : null, "load");   // the first read of a picture of the overlay folders (Core/SlowCalls.cs)
             string path = OverlayPath(rel);
             if (path != null)
             {

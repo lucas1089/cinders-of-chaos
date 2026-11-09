@@ -136,6 +136,7 @@ namespace Chaos.Client
         /// drawn here too (the options page and the credits).</summary>
         void LoginBarGui(float w, float h)
         {
+            using var _slow = SlowCalls.Scope("LoginBarGui", "OnGUI");
             var b = new Rect(10, 8, 100, 30);
             bool on = loginMenuOpen == 0;
             if (GUI.Toggle(b, on, Loc.T("System"), GUI.skin.button) != on) loginMenuOpen = on ? -1 : 0;

@@ -86,6 +86,7 @@ namespace Chaos.Client
         /// <summary>Called every frame before the combat clicks.</summary>
         void PlayUpdate()
         {
+            using var _slow = SlowCalls.Scope("PlayUpdate", "Update");
             if (session == null || world?.Player == null || chatFocused || TextEditing) return;
             if (Crosshair.Active && Input.GetKeyDown(KeyCode.Escape)) Crosshair.Cancel();
             if (!PointerOnMap) return;
@@ -205,6 +206,7 @@ namespace Chaos.Client
         // ------------------------------------------------------------------------------------ the crosshair hint
         void PlayGui(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("PlayGui", "OnGUI");
             if (!Crosshair.Active || Event.current.type != EventType.Repaint) return;
             if (crossStyle == null) crossStyle = new GUIStyle(small) { fontSize = 12, wordWrap = false };
             string text = Crosshair.Mode == CrosshairState.Kind.Trade ? Loc.T("Trade with ...: click a player. Right click or Esc cancels.") : Loc.T("Use with ...: click a target. Right click or Esc cancels.");

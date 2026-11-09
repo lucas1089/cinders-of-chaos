@@ -60,6 +60,7 @@ namespace Chaos.Client
         {
             if (repeatTex.TryGetValue(rel, out var t)) return t;
             t = null;
+            using var _slow = SlowCalls.Scope(SlowCalls.Log.On ? "ArtRepeat " + rel : null, "load");
             string path = OverlayPath(rel);
             if (path != null)
             {
@@ -134,6 +135,7 @@ namespace Chaos.Client
         /// False when the theme is off or the pictures are not there; the window then draws its flat style.</summary>
         public bool DrawWindowChrome(float w, float h)
         {
+            using var _slow = SlowCalls.Scope("DrawWindowChrome", "OnGUI");
             Phase7Prefs.Load();
             if (!Phase7Prefs.ThemeOn) return false;
             string skin = Phase7Prefs.Skin;
@@ -191,6 +193,7 @@ namespace Chaos.Client
         /// <summary>Gives the IMGUI buttons and text fields the pictures of the chosen skin (and puts the stock look back when the theme is off). Runs every OnGUI, acts on a change.</summary>
         void ApplyControlSkin()
         {
+            using var _slow = SlowCalls.Scope("ApplyControlSkin", "OnGUI");
             Phase7Prefs.Load();
             string want = Phase7Prefs.ThemeOn ? Phase7Prefs.Skin : "";
             if (want == controlSkin) return;
@@ -307,6 +310,7 @@ namespace Chaos.Client
         /// <summary>The small STREAMER badge (client_chaos_topbar setBadge 'streamer'): beside the top menu in the game, in the top right corner elsewhere. Gone in cinema mode.</summary>
         void StreamerBadgeGui(float w, float h)
         {
+            using var _slow = SlowCalls.Scope("StreamerBadgeGui", "OnGUI");
             if (!streamer.Streamer || streamer.Cinema) return;
             string text = Loc.T("STREAMER");
             var st = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter, fontSize = 11, fontStyle = FontStyle.Bold };
@@ -361,6 +365,7 @@ namespace Chaos.Client
         /// <summary>Every frame in the game: loads the character's explored map once, saves it every minute, reopens the overlay and the minimap window after a death.</summary>
         void Phase7QUpdate()
         {
+            using var _slow = SlowCalls.Scope("Phase7QUpdate", "Update");
             if (screen != Screen.Game || session == null || world?.Player == null || minimapWorld != world) return;
             string name = world.Player.Name;
             if (string.IsNullOrEmpty(name)) return;

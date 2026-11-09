@@ -19,6 +19,7 @@ namespace Chaos.Client
         {
             if (iconCache == null)
             {
+                using var _slow = SlowCalls.Scope("PassiveTreeIcons data", "load");
                 var asset = Resources.Load<TextAsset>("PassiveTreeIcons");
                 if (asset != null) { try { iconCache = TreeIcons.Parse(asset.text); } catch (System.Exception) { iconCache = null; } }
             }

@@ -92,10 +92,71 @@ namespace Chaos.Client
             void Start()
             {
                 startedAt = NowMs;
+                SlowCalls.Log.On = true;   // the slow call record (Core/SlowCalls.cs): on for the whole run, nothing of it in normal play
+                SlowCalls.Log.SetOrigin("login");
+                StartWatch();
+                Camera.onPreCull += PreCull; Camera.onPreRender += PreRender; Camera.onPostRender += PostRender;   // where the main thread is while it renders (a freeze in the GL driver writes no scope)
                 StartCoroutine(Capture());
             }
 
-            void OnDestroy() { Unhook(); }
+            void OnDestroy() { Unhook(); StopWatch(); Camera.onPreCull -= PreCull; Camera.onPreRender -= PreRender; Camera.onPostRender -= PostRender; }
+            static void PreCull(Camera c) { SlowCalls.Log.Note("render: camera culling"); }
+            static void PreRender(Camera c) { SlowCalls.Log.Note("render: a camera starts to draw"); }
+            static void PostRender(Camera c) { SlowCalls.Log.Note("render: a camera has drawn"); }
+
+            // ------------------------------------------------------------------------------------ the slow calls and the watchdog
+            // A frame that hangs writes no scope until it ends, so a thread looks at the main thread's open scopes while it hangs (SlowCallLog.Sample) and logs the place at once:
+            // the run's log then names the call even when the job is cut off in the middle of the freeze.
+            System.Threading.Thread watchThread;
+            volatile bool watchStop;
+            int slowLogged, stallLogged;
+
+            void StartWatch()
+            {
+                if (watchThread != null) return;
+                watchStop = false;
+                watchThread = new System.Threading.Thread(() =>
+                {
+                    while (!watchStop)
+                    {
+                        System.Threading.Thread.Sleep(250);
+                        string line = SlowCalls.Log.Sample();
+                        if (line != null) Debug.Log("chaos live smoke: " + line);   // Debug.Log is allowed off the main thread
+                    }
+                }) { IsBackground = true, Name = "chaos stall watch" };
+                watchThread.Start();
+            }
+
+            void StopWatch()
+            {
+                watchStop = true;
+                watchThread = null;
+            }
+
+            /// <summary>Once per frame: the beat of the frame gap record and the lines of the calls and gaps that ended since the last frame.</summary>
+            void SlowFrame()
+            {
+                var log = SlowCalls.Log;
+                log.Beat();
+                log.Note("LiveSmoke.Update");
+                var calls = log.Calls();
+                for (; slowLogged < calls.Count; slowLogged++) Debug.Log("chaos live smoke: " + SlowCallLog.Line(calls[slowLogged]));
+                int closed = log.ClosedStalls;
+                if (stallLogged < closed)
+                {
+                    var stalls = log.Stalls();
+                    for (; stallLogged < closed && stallLogged < stalls.Count; stallLogged++) Debug.Log("chaos live smoke: " + SlowCallLog.Line(stalls[stallLogged]));
+                }
+            }
+
+            /// <summary>The record of the run into the report (live_smoke.json "slowCalls" and "stalls").</summary>
+            void SyncSlow()
+            {
+                rep.Slow.Clear(); rep.Slow.AddRange(SlowCalls.Log.Calls());
+                rep.Stalls.Clear(); rep.Stalls.AddRange(SlowCalls.Log.Stalls());
+            }
+
+            void LateUpdate() { SlowCalls.Log.Note("LiveSmoke.LateUpdate"); }
 
             void Hook() { if (!logHooked) { Application.logMessageReceived += OnLog; logHooked = true; } }
             void Unhook() { if (logHooked) { Application.logMessageReceived -= OnLog; logHooked = false; } }
@@ -110,6 +171,7 @@ namespace Chaos.Client
             void WriteJson()
             {
                 if (dir == null) return;
+                SyncSlow();
                 try { File.WriteAllText(Path.Combine(dir, "live_smoke.json"), rep.ToJson(cfg != null ? cfg.Secrets() : null)); }
                 catch (Exception e) { Debug.LogWarning("chaos live smoke: could not write live_smoke.json: " + e.Message); }
             }
@@ -125,6 +187,7 @@ namespace Chaos.Client
                 Debug.Log("chaos live smoke: failed: " + (cfg != null ? Scrub(why) : why));
                 WriteJson();
                 Unhook();
+                StopWatch();
                 SetPhase(Phase.Done);
                 Application.Quit(1);
             }
@@ -138,6 +201,7 @@ namespace Chaos.Client
             void Update()
             {
                 if (phase == Phase.Done) return;
+                SlowFrame();
                 try { Step(); }
                 catch (Exception e)
                 {
@@ -264,6 +328,7 @@ namespace Chaos.Client
                     if (nbRun)
                     {
                         rep.NewPlayer.EnterOk = true;
+                        SlowCalls.Log.SetOrigin("new");   // slow calls count from the fresh character's entry, as LongestFrameAtMs does
                         Debug.Log("chaos live smoke: new player: in the world, " + app.world.Tiles.Count + " tiles");
                         app.hd2d = false; app.live = false; app.world3d = false;
                         app.ApplyHd2d();
@@ -274,6 +339,7 @@ namespace Chaos.Client
                         return;
                     }
                     rep.EnterOk = true;
+                    SlowCalls.Log.SetOrigin("main");
                     rep.EnterMs = NowMs - phaseAt;
                     Debug.Log("chaos live smoke: in the world, " + app.world.Tiles.Count + " tiles in " + Math.Round(rep.EnterMs) + " ms");
                     app.hd2d = false; app.live = false; app.world3d = false;   // the classic view, whatever the saved settings say
@@ -585,6 +651,7 @@ namespace Chaos.Client
             void BeginSheets()
             {
                 rep.Sheets = SmokeSheet.SheetCount(tiles.Count);
+                SyncSlow();
                 Debug.Log(rep.SummaryLine());
                 foreach (var w in rep.Warnings()) Debug.Log("chaos live smoke: warning: " + w);
                 foreach (var n in rep.Notes()) Debug.Log("chaos live smoke: note: " + n);
@@ -600,6 +667,7 @@ namespace Chaos.Client
                 rep.Finished = true;
                 WriteJson();
                 Unhook();
+                StopWatch();
                 SetPhase(Phase.Done);
                 Debug.Log("chaos live smoke: wrote live_smoke.json, " + rep.Screenshots + " screenshots and " + rep.Sheets + " sheets to " + dir + ", " + (rep.Pass ? "pass" : "FAIL"));
                 Application.Quit(rep.Pass ? 0 : 1);
@@ -649,6 +717,7 @@ namespace Chaos.Client
             /// <summary>The contact sheet, drawn over the whole screen in front of the app (GUI depth) so the capture of the frame is the sheet.</summary>
             void OnGUI()
             {
+                SlowCalls.Log.Note("LiveSmoke.OnGUI");
                 if (phase != Phase.Sheets) return;
                 GUI.depth = -1000;
                 GUI.matrix = Matrix4x4.identity;

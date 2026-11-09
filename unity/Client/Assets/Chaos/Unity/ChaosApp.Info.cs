@@ -15,18 +15,20 @@ namespace Chaos.Client
 
         static string Read(string name)
         {
+            using var _slow = SlowCalls.Scope("InfoStore.Read " + name, "load");
             var asset = Resources.Load<TextAsset>(name);
             return asset != null ? asset.text : "";
         }
 
-        public static CodexData Codex => codex ?? (codex = CodexData.Load(Read("Codex")));
-        public static HowItWorks How => how ?? (how = HowItWorks.Load(Read("HowItWorks")));
+        // the three loads are timed whole: the parse of the 670 KB Codex is the part of them that is not Resources.Load
+        public static CodexData Codex { get { if (codex == null) { using (SlowCalls.Scope("InfoStore.Codex (read and parse)", "load")) codex = CodexData.Load(Read("Codex")); } return codex; } }
+        public static HowItWorks How { get { if (how == null) { using (SlowCalls.Scope("InfoStore.How (read and parse)", "load")) how = HowItWorks.Load(Read("HowItWorks")); } return how; } }
 
         public static HelpIndex Help
         {
             get
             {
-                if (help == null) help = HelpSearch.Build(How, Json.TryParse(Read("HelpSearch")), Codex);
+                if (help == null) { using (SlowCalls.Scope("InfoStore.Help (build the index)", "load")) help = HelpSearch.Build(How, Json.TryParse(Read("HelpSearch")), Codex); }
                 return help;
             }
         }

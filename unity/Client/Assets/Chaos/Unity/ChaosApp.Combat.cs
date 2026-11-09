@@ -22,6 +22,7 @@ namespace Chaos.Client
 
         void CombatUpdate()
         {
+            using var _slow = SlowCalls.Scope("CombatUpdate", "Update");
             // a new world (another character): forget the old minimap
             if (minimapWorld != world) { minimapWorld = world; Minimap.Clear(); minimapNext = 0f; }
             if (world != null && Time.unscaledTime >= minimapNext)
@@ -73,6 +74,7 @@ namespace Chaos.Client
         /// <summary>A red square frame round the attacked creature. Called inside the map group (map is its rect, in UI units).</summary>
         void DrawAttackFrame(Rect map, float scale)
         {
+            using var _slow = SlowCalls.Scope("DrawAttackFrame", "OnGUI");
             uint target = session?.AttackTarget ?? 0;
             if (target == 0 || view == null) return;
             if (HdLabelsOn)

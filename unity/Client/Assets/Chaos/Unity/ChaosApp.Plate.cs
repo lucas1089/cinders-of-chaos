@@ -15,6 +15,7 @@ namespace Chaos.Client
 
         void PlatePanel(float scale)
         {
+            using var _slow = SlowCalls.Scope("PlatePanel", "OnGUI");
             var p = session?.Parser;
             var me = world?.Player;
             if (p == null) return;

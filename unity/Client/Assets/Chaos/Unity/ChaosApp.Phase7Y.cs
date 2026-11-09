@@ -22,6 +22,7 @@ namespace Chaos.Client
             BitmapFont f;
             if (cache.TryGetValue(name, out f)) return f;
             f = null;
+            using var _slow = SlowCalls.Scope("Phase7YFonts.Get " + name, "load");
             try
             {
                 string def = Path(ScatterFonts.DefPath(name)), sheet = Path(ScatterFonts.SheetPath(name));
@@ -63,6 +64,7 @@ namespace Chaos.Client
         /// <summary>Every frame: the hooks of this track into the map view and the fonts.</summary>
         void Phase7YUpdate()
         {
+            using var _slow = SlowCalls.Scope("Phase7YUpdate", "Update");
             Phase7YFonts.Path = OverlayPath;
             Phase8AUpdate();   // ChaosApp.Phase8A.cs
             var inspect = session?.Social?.Inspect;

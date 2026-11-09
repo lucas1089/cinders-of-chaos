@@ -66,6 +66,7 @@ namespace Chaos.Client
         /// <summary>Builds the mesh for the current world now (LateUpdate, or the screenshot mode without a frame).</summary>
         public void Refresh()
         {
+            using var _slow = SlowCalls.Scope("MapView.Refresh", "LateUpdate");
             if (World == null || Atlas == null) return;
             int gen = Atlas.Generation;
             Build();
