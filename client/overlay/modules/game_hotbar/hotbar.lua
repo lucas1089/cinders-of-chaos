@@ -235,12 +235,14 @@ local function layoutFrame()
   line:setMarginBottom(2)
   local chat = frame:getChildById('chatButton')
   local gear = frame:getChildById('gearButton')
+  local cb = L.cornerButtons(m)
   for i, b in ipairs({ chat, gear }) do
     b:breakAnchors()
     b:addAnchor(AnchorRight, 'parent', AnchorRight)
     b:addAnchor(AnchorTop, 'parent', AnchorTop)
-    b:setMarginRight(m.capW + m.pad + (i == 1 and 26 or 0))
-    b:setMarginTop(m.bodyTop - 8)
+    b:setSize({ width = cb.size, height = cb.size })
+    b:setMarginRight(i == 1 and cb.chatRight or cb.gearRight)
+    b:setMarginTop(cb.top)
     b:raise()
   end
   local dot = frame:getChildById('chatDot')
@@ -298,6 +300,14 @@ local function collapseBottom()
   end
 end
 
+-- the round buttons, the unread dot and the drag handle are drawn last (a later child is drawn over an earlier one)
+local function raiseControls()
+  for _, id in ipairs({ 'chatButton', 'gearButton', 'chatDot', 'handle' }) do
+    local w = alive(frame) and frame:getChildById(id) or nil
+    if w then w:raise() end
+  end
+end
+
 -- (re)build everything for the current settings and window
 function M.relayout()
   if not active or not alive(frame) or not bar then return end
@@ -307,6 +317,7 @@ function M.relayout()
   frame:setSize({ width = m.width, height = m.height })
   layoutFrame()
   buildParts()
+  raiseControls() -- the slot frames buildParts made are the newest children: the buttons go back over them
   placeFrame()
   applyOrbs()
   for _, c in ipairs(cells) do c.readyShown, c.keyText, c.cdText = nil, nil, nil end

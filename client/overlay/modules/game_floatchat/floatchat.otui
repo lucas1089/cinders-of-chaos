@@ -16,40 +16,47 @@ ChaosFloatBadge < Label
   phantom: true
   visible: false
 
+// A header menu button: icon, label, unread badge (only when there is news) and caret in one row. The row is a box
+// layout that fits its children, so the button is as wide as what it holds and nothing can sit over the label (the old
+// button drew its text itself and anchored the icon, badge and caret over it, which covered the label in a client,
+// owner screenshot 2026-11-09). Children are phantom: a click anywhere is the button's.
+ChaosFloatTabLabel < Label
+  height: 20
+  font: verdana-11px-rounded
+  color: #e8c89a
+  text-align: left
+  text-auto-resize: true
+  phantom: true
+
 ChaosFloatTab < UIButton
   height: 20
   focusable: false
-  color: #e8c89a
-  font: verdana-11px-rounded
-  text-align: left
-  padding-left: 18
-  padding-right: 32
-  text-auto-resize: true
   background-color: #00000000
+  padding: 0 3 0 3
+  layout:
+    type: horizontalBox
+    spacing: 3
+    fit-children: true
   $hover:
     background-color: #5a3a2960
-    color: #ffe0b0
   $pressed:
     background-color: #c8782e80
 
   ChaosFloatIcon
     id: icon
-    anchors.left: parent.left
-    anchors.verticalCenter: parent.verticalCenter
-    margin-left: 2
+    margin-top: 3
 
-  ChaosFloatIcon
-    id: caret
-    anchors.right: parent.right
-    anchors.verticalCenter: parent.verticalCenter
-    margin-right: -2
-    image-source: /modules/game_floatchat/images/chat_caret
+  ChaosFloatTabLabel
+    id: label
 
   ChaosFloatBadge
     id: badge
-    anchors.right: parent.right
-    anchors.verticalCenter: parent.verticalCenter
-    margin-right: 15
+    margin-top: 3
+
+  ChaosFloatIcon
+    id: caret
+    margin-top: 3
+    image-source: /modules/game_floatchat/images/chat_caret
 
 ChaosFloatChat < UIWidget
   id: chaosFloatChat
@@ -73,7 +80,6 @@ ChaosFloatChat < UIWidget
       id: channels
       anchors.left: parent.left
       anchors.verticalCenter: parent.verticalCenter
-      !text: tr('Channels')
       !tooltip: tr('Open channels')
 
     ChaosFloatTab
@@ -81,7 +87,6 @@ ChaosFloatChat < UIWidget
       anchors.left: channels.right
       anchors.verticalCenter: parent.verticalCenter
       margin-left: 6
-      !text: tr('Private')
       !tooltip: tr('Private chats')
 
     UIButton

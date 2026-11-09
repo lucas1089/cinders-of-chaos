@@ -973,9 +973,9 @@ Stash.FindGo = function(r)
 		local panel = inv and inv.getInventoryPanel and inv.getInventoryPanel()
 		flashWidget(panel and panel:getChildById('slot' .. (tonumber(r.slot) or 0)))
 	elseif a == 'purse' then
-		local inv = modules.game_inventory
-		flashWidget(inv and inv.purseButton)
-		failure(tr('It is in your purse: the purse button under your equipment opens it.'))
+		local bag = modules.game_bagpanel
+		flashWidget(bag and bag.getPurseButton and bag.getPurseButton())
+		failure(tr('It is in your purse: the Purse button of the inventory panel opens it.'))
 	elseif a == 'inbox' then
 		showStash(function()
 			if Stash.UI and Stash.UI.InboxButton then flashWidget(Stash.UI.InboxButton) end
