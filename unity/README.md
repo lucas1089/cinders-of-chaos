@@ -17,7 +17,7 @@ A Personal license keeps the engine's "Made with" line under our logo; the setti
 Windows so far (files in `Assets/Chaos/Unity/Windows/`):
 - Battle (Ctrl+B): creatures on your floor in view, nearest first. Left-click attacks (again stops), right-click follows. The target has a red row and a red frame on the map.
 - Minimap (Ctrl+M): the remembered minimap round you (2 px per tile), floor up/down and zoom buttons. `MinimapMemory` (`Core/Minimap.cs`) keeps explored ground per floor.
-- Hotkeys: 12 slots, F1 to F12, open at the bottom. Click a slot to type what it says; Enter or ok saves, per character in PlayerPrefs. The keys work while the bar is open and the chat line is not focused.
+- Hotkeys: 12 slots, keys 1 to 8 for the first eight and F9 to F12 for the rest (F1 to F8 still work), Q and E for the two side slots, open at the bottom. Click a slot to type what it says; Enter or ok saves, per character in PlayerPrefs. The keys work while the bar is open and neither the chat line nor another text field has the keyboard (digits, Q and E also need a filled slot and no Shift).
   Right-click a slot to pick a spell for it in the spellbook. A slot that holds the words of a spell counts its cooldown down.
 - Spells (Ctrl+P): the server's spell list (opcode 219) with the filters of the main client (learned, available soon, my vocation, all, runes; all, attack, support; search).
   Left-click casts (says the words), right-click selects and shows F1 to F12 buttons that put the spell on a hotkey slot. Cooldowns come from 0xA4 and 0xA5.

@@ -197,11 +197,12 @@ namespace Chaos.Client
             var e = Event.current;
             // not while the chat line or a slot has the keyboard
             if (e.type != EventType.KeyDown || editing >= 0 || app.ChatFocused || e.control || e.alt) return;
-            int slot = HotbarLayout.SlotOfKey(e.keyCode.ToString());
+            string keyName = e.keyCode.ToString();
+            int slot = HotbarLayout.SlotOfKey(keyName);
             if (slot < 0) return;
-            // the bare Q and E belong to the side slots only when they hold something
+            // the keys that type text (the digits 1 to 8, Q, E) belong to a slot only when it holds something, without Shift,
             // and never while any text field (search, NPC line, create window) has the keyboard
-            if (slot >= HotbarModel.Count && (bar[slot].IsEmpty || e.shift || GUIUtility.keyboardControl != 0)) return;
+            if (HotbarLayout.IsTextKey(keyName) && (bar[slot].IsEmpty || e.shift || GUIUtility.keyboardControl != 0)) return;
             if (!bar[slot].IsEmpty) Press(app, slot);
             e.Use();
         }
