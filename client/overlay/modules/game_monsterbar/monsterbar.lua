@@ -84,15 +84,9 @@ local function paintInfo(info)
   local plate = window:getChildById('namePlate')
   plate:setImageSource(img.plaque)
   fitPlate(plate, name, 120, NAME_MAX)
-  local levelText = S.levelText(info.level)
-  local levelPlate, level = window:getChildById('levelPlate'), window:getChildById('level')
-  levelPlate:setVisible(levelText ~= nil)
-  level:setVisible(levelText ~= nil)
-  if levelText then
-    level:setText(levelText)
-    levelPlate:setImageSource(img.plaque)
-    fitPlate(levelPlate, level, 44, 80)
-  end
+  -- no level plate left of the name: the name already ends in the level ("Rat [2]"), the plate showed it twice
+  window:getChildById('levelPlate'):setVisible(false)
+  window:getChildById('level'):setVisible(false)
   setMods(info.mods)
 end
 

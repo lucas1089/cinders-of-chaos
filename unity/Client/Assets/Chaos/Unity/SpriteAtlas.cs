@@ -36,7 +36,8 @@ namespace Chaos.Client
             if (id == 0) return 0;
             ulong key = id;
             if (slots.TryGetValue(key, out int s)) return s;
-            byte[] rgba = spr.Rgba(id);
+            byte[] rgba;
+            using (SlowCalls.Scope("SpriteAtlas.Sprite (spr read and decode)", "load")) rgba = spr.Rgba(id);   // the first sprite of a shard opens the shard (Core/SprShards.cs; a blob shard is decrypted whole, about 30 MB)
             s = rgba == null ? 0 : Put(rgba);
             slots[key] = s;
             return s;
@@ -78,12 +79,23 @@ namespace Chaos.Client
             return s;
         }
 
+        /// <summary>Sends the texture to the GPU at most once a frame. Apply always sends the whole 64 MB; the effect, outfit and preview painters call this per new cell inside
+        /// their loops, so a fresh character's first effects (kit, level up, gift, fireworks) sent it dozens of times in one frame: a 17 to 23 s frame under the CI player's
+        /// software GL (PR 329 slow call log). A cell put after this frame's upload shows from the next frame.</summary>
         public void Upload()
         {
             if (!dirty) return;
+            int frame = Time.frameCount;
+            if (frame == appliedFrame) return;
+            using var _slow = SlowCalls.Scope("SpriteAtlas.Upload (Apply of the 4096 x 4096 texture)", "upload");
             Texture.Apply(false);
             dirty = false;
+            appliedFrame = frame;
+            Uploads++;
         }
+
+        int appliedFrame = -1;
+        public int Uploads;   // how many times the texture went to the GPU (the live smoke reads it)
 
         public Rect Uv(int slot)
         {

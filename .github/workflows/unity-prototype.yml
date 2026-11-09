@@ -451,6 +451,14 @@ jobs:
                   if n.get("longestFrameMs", 0) >= 3000:
                       notes.append("- %s: new player first minute: the longest frame took %.1f s, %.1f s after entering (the Helper took the request at %.1f s, seen open at %.1f s)" % (
                           ident, n["longestFrameMs"] / 1000.0, n.get("longestFrameAtMs", 0) / 1000.0, n.get("helperTakenMs", -1000) / 1000.0, n.get("helperMs", 0) / 1000.0))
+              # the slow call record of the player (Core/SlowCalls.cs): the three calls with the most own time, then the longest frame gap with the places the watchdog saw (O433, first frame stall)
+              sl = sorted(d.get("slowCalls") or [], key=lambda c: -c.get("selfMs", 0))[:3]
+              if sl:
+                  notes.append("- %s: slowest calls by own time (top %d of %d): %s" % (ident, len(sl), len(d["slowCalls"]), "; ".join(
+                      "%s (%s) %.1f s at %.1f s %s" % (c.get("name"), c.get("phase"), c.get("selfMs", 0) / 1000.0, c.get("at", 0) / 1000.0, c.get("who", "")) for c in sl)))
+              for gap in sorted(d.get("stalls") or [], key=lambda g: -g.get("ms", 0))[:1]:
+                  notes.append("- %s: longest frame gap %.1f s at %.1f s (%s); the main thread was seen in: %s; the last call that ended before it: %s" % (
+                      ident, gap.get("ms", 0) / 1000.0, gap.get("at", 0) / 1000.0, gap.get("who", ""), " | ".join(gap.get("seen") or []) or "not seen", gap.get("lastEnded") or "none"))
               ff = d.get("firstfight") or {}
               if ff.get("ran"):
                   fw, fx, fl = ff.get("walk") or {}, ff.get("experience") or {}, ff.get("loot") or {}

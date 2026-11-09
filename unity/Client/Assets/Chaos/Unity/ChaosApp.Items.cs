@@ -19,6 +19,7 @@ namespace Chaos.Client
         /// <summary>The tooltip, the modal window and the text window. Call last in the game GUI, over the windows.</summary>
         void ItemsGui(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("ItemsGui", "OnGUI");
             if (session == null) return;
             ItemTipGui(w, h);
             ModalGui(w, h, scale);

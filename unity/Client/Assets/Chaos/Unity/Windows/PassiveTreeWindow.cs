@@ -71,6 +71,7 @@ namespace Chaos.Client
         {
             if (cache == null)
             {
+                using var _slow = SlowCalls.Scope("PassiveTree data (read and parse)", "load");
                 var asset = Resources.Load<TextAsset>("PassiveTree");
                 if (asset != null) { try { cache = TreeData.Parse(asset.text); } catch (Exception) { cache = null; } }
             }
@@ -82,6 +83,7 @@ namespace Chaos.Client
             if (tree.Ready) return;
             if (cache == null)
             {
+                using var _slow = SlowCalls.Scope("PassiveTree data (read and parse)", "load");
                 var asset = Resources.Load<TextAsset>("PassiveTree");
                 if (asset != null) { try { cache = TreeData.Parse(asset.text); } catch (Exception) { cache = null; } }
             }

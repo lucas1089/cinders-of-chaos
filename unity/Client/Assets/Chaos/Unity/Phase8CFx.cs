@@ -18,6 +18,7 @@ namespace Chaos.Client
         static Shader Load(string asset, string name)
         {
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CHAOS_NO_FX_SHADERS"))) return null;
+            using var _slow = SlowCalls.Scope("FxShaders.Load " + asset, "load");
             Shader s = null;
             try { s = Resources.Load<Shader>("Shaders/" + asset); } catch (Exception) { s = null; }
             if (s == null) s = Shader.Find(name);
@@ -87,6 +88,7 @@ namespace Chaos.Client
 
         void OnRenderImage(RenderTexture src, RenderTexture dst)
         {
+            using var _slow = SlowCalls.Scope("MapGradePost.OnRenderImage", "render");   // the first draw with the grade shader compiles it
             float strength = MapGradeFx.Bloom(Bloom);
             if (mat == null || (!Grade && strength <= 0f)) { Graphics.Blit(src, dst); return; }
             var m = MapGradeFx.Clamp(new[] { (double)Mood[0], Mood[1], Mood[2], Mood[3], Mood[4] });

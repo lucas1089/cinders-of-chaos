@@ -90,6 +90,7 @@ namespace Chaos.Client
         /// <summary>Per frame in the game: the hotkeys of streamer and cinema mode and the performance sample.</summary>
         void CommunityUpdate()
         {
+            using var _slow = SlowCalls.Scope("CommunityUpdate", "Update");
             if (session == null) return;
             bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);

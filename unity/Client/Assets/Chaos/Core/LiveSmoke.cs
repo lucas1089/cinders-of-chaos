@@ -1122,6 +1122,9 @@ namespace Chaos.Core
         /// <summary>The fresh character's first fight after the Helper shot (Auto setup, Helper on, the walk to the cave, one Rat killed, its body opened); not run without the fresh character.</summary>
         public readonly LiveFirstFightResult FirstFight = new LiveFirstFightResult();
         public int Sheets, Screenshots;
+        /// <summary>Calls of the player that took 500 ms or more and frame gaps of 500 ms or more (Core/SlowCalls.cs), the run's own record; empty when nothing was slow.</summary>
+        public readonly List<SlowCall> Slow = new List<SlowCall>();
+        public readonly List<StallRecord> Stalls = new List<StallRecord>();
 
         /// <summary>The walk counts when the legs had a free tile to walk, the server confirmed at least MinSteps (or all there were) and at least half of the planned steps. The legs
         /// only cover tiles the client calls walkable, so a refusal is a finding, but one creature in the way does not fail the run.</summary>
@@ -1205,6 +1208,7 @@ namespace Chaos.Core
             var n = new List<string>();
             foreach (var x in Windows) if (StatusOf(x) == LiveWindowStatus.NeedsCondition) n.Add(x.Class + ": needs condition: " + Conditions[x.Class]);
             if (NewPlayer.Ran && NewPlayer.EnterOk && !NewPlayer.LoggedOut && FirstFight.RatInReach) n.Add("newplayer: the fresh character fought, the server refuses a logout in the minute after a fight, so the app closed the connection");
+            if (Slow.Count > 0) n.Add("slow calls (own time): " + SlowCallLog.Summary(Slow, 3));
             if (StepsCancelled > 0) n.Add("known issue: a held key keeps up to " + WalkTiming.MaxPending + " steps out and a refusal (0xB5) drops every predicted step (Core/SmoothWalk.cs, Core/Game.cs); the legs here stop at the planned steps, so a refusal on a checked tile is the server's or a creature's");
             return n;
         }
@@ -1272,6 +1276,32 @@ namespace Chaos.Core
             return b.Append(']').ToString();
         }
 
+        string SlowCallsJson(IList<string> secrets)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            var b = new StringBuilder("[");
+            for (int i = 0; i < Slow.Count; i++)
+            {
+                var c = Slow[i];
+                b.Append(i == 0 ? "" : ",").Append("{\"name\":").Append(Q(c.Name, secrets)).Append(",\"phase\":").Append(Q(c.Phase, secrets)).Append(",\"ms\":").Append(Math.Round(c.Ms).ToString("0", inv))
+                 .Append(",\"selfMs\":").Append(Math.Round(c.SelfMs).ToString("0", inv)).Append(",\"at\":").Append(Math.Round(c.AtMs).ToString("0", inv)).Append(",\"who\":").Append(Q(c.Who, secrets)).Append('}');
+            }
+            return b.Append(']').ToString();
+        }
+
+        string StallsJson(IList<string> secrets)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            var b = new StringBuilder("[");
+            for (int i = 0; i < Stalls.Count; i++)
+            {
+                var s = Stalls[i];
+                b.Append(i == 0 ? "" : ",").Append("{\"ms\":").Append(Math.Round(s.Ms).ToString("0", inv)).Append(",\"at\":").Append(Math.Round(s.AtMs).ToString("0", inv)).Append(",\"who\":").Append(Q(s.Who, secrets))
+                 .Append(",\"lastEnded\":").Append(Q(s.LastEnded, secrets)).Append(",\"seen\":").Append(Strs(s.Seen, secrets)).Append('}');
+            }
+            return b.Append(']').ToString();
+        }
+
         /// <summary>live_smoke.json: ASCII only, stable order. Every text goes through the secret cut (the password, the account name, the character name).</summary>
         public string ToJson(IList<string> secrets)
         {
@@ -1281,6 +1311,7 @@ namespace Chaos.Core
              .Append(",\n \"warnings\":").Append(Strs(Warnings(), secrets)).Append(",\n \"notes\":").Append(Strs(Notes(), secrets));
             b.Append(",\n \"newplayer\":").Append(NewPlayer.ToJson(secrets));
             b.Append(",\n \"firstfight\":").Append(FirstFight.ToJson(secrets));
+            b.Append(",\n \"slowCalls\":").Append(SlowCallsJson(secrets)).Append(",\n \"stalls\":").Append(StallsJson(secrets));
             b.Append(",\n \"login\":{\"ok\":").Append(Bool(LoginOk)).Append(",\"error\":").Append(Q(LoginError, secrets)).Append('}');
             b.Append(",\n \"enter\":{\"ok\":").Append(Bool(EnterOk)).Append(",\"error\":").Append(Q(EnterError, secrets)).Append(",\"ms\":").Append(Math.Round(EnterMs).ToString("0", inv)).Append('}');
             b.Append(",\n \"map\":{\"tilesInModel\":").Append(TilesInModel.ToString(inv)).Append(",\"tilesDrawn\":").Append(TilesDrawn.ToString(inv))

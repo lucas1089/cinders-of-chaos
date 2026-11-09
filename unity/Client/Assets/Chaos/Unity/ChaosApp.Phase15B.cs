@@ -19,6 +19,7 @@ namespace Chaos.Client
             {
                 if (addMatDone) return addMat;
                 addMatDone = true;
+                using var _slow = SlowCalls.Scope("AddMat (Chaos/Add shader load)", "load");
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CHAOS_NO_FX_SHADERS"))) return null;
                 Shader s = null;
                 try { s = Resources.Load<Shader>("Shaders/ChaosAdd"); } catch (Exception) { s = null; }
@@ -34,6 +35,7 @@ namespace Chaos.Client
         /// <summary>One textured quad added onto the picture, cut to the clip rect (the map). uv: the part of the texture, v up like GUI.DrawTextureWithTexCoords.</summary>
         void AddQuad(Rect dst, Texture tex, Rect uv, Color col, Rect clip)
         {
+            using var _slow = SlowCalls.Scope("AddQuad", "OnGUI");
             if (tex == null || !AddOn) return;
             if (!AddFx.Clip(dst.x, dst.y, dst.width, dst.height, uv.x, uv.y, uv.width, uv.height, clip.x, clip.y, clip.width, clip.height,
                     out float x, out float y, out float w, out float h, out float u, out float v, out float uw, out float vh)) return;
@@ -44,6 +46,7 @@ namespace Chaos.Client
         /// available (the caller lays the faint tint).</summary>
         bool DrawSpellLightAdd(VisualEffects v, Rect map, float scale, double now)
         {
+            using var _slow = SlowCalls.Scope("DrawSpellLightAdd", "OnGUI");
             if (!AddOn || texSoft == null) return false;
             int floor = world.Center.Z;
             foreach (var kv in v.SpellLights.Now(now))

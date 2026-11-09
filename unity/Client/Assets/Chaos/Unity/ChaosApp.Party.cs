@@ -34,6 +34,7 @@ namespace Chaos.Client
         /// <summary>The menu window and the invitation box. Call last in the game GUI, so they sit over the other windows.</summary>
         void PartyGui(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("PartyGui", "OnGUI");
             if (session == null) return;
             double now = session.Now;
             var party = session.Party;

@@ -36,6 +36,7 @@ namespace Chaos.Client
 
         void ChatPanel(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("ChatPanel", "OnGUI");
             Rect box = ChatRect(w, h);
             if (!chatOpen)
             {
@@ -156,6 +157,7 @@ namespace Chaos.Client
         /// <summary>The death window: a modal box over the game. OK (or Enter) leaves for the character list, like the main client.</summary>
         void DeathWindow(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("DeathWindow", "OnGUI");
             var p = session?.Parser;
             if (p == null || !p.Dead) return;
             uiRects.Add(new Rect(0, 0, UnityEngine.Screen.width, UnityEngine.Screen.height));

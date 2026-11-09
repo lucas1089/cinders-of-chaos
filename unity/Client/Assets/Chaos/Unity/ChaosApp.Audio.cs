@@ -152,7 +152,8 @@ namespace Chaos.Client
             {
                 yield return req.SendWebRequest();
                 AudioClip clip = null;
-                if (req.result == UnityWebRequest.Result.Success) { clip = DownloadHandlerAudioClip.GetContent(req); if (clip != null) clip.name = rel; }
+                using (SlowCalls.Scope(SlowCalls.Log.On ? "Audio GetContent " + rel : null, "Update"))   // the decode of an ogg on the main thread
+                    if (req.result == UnityWebRequest.Result.Success) { clip = DownloadHandlerAudioClip.GetContent(req); if (clip != null) clip.name = rel; }
                 clipsLoading.Remove(rel);
                 if (clip != null) clips[rel] = clip; else clipsMissing.Add(rel);
                 done?.Invoke(clip);
@@ -174,6 +175,7 @@ namespace Chaos.Client
         /// <summary>Plays the cues the session queued and runs the music. Called every frame from VisualUpdate.</summary>
         void AudioUpdate(VisualEffects v)
         {
+            using var _slow = SlowCalls.Scope("AudioUpdate", "Update");
             AudioSetup();
             if (!audioPreloaded) { audioPreloaded = true; StartCoroutine(PreloadSounds()); }
             float master = AudioListener.volume;
@@ -237,6 +239,7 @@ namespace Chaos.Client
 
         void MusicUpdate(VisualEffects v)
         {
+            using var _slow = SlowCalls.Scope("MusicUpdate", "Update");
             var st = VisualPrefs.Music;
             string region = screen == Screen.Game && v != null ? v.Region : "login";
             string rel = MusicLogic.File(region);

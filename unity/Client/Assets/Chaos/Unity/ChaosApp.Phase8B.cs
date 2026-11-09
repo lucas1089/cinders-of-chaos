@@ -17,6 +17,7 @@ namespace Chaos.Client
         /// <summary>Called every frame from VisualUpdate.</summary>
         void Phase8BUpdate()
         {
+            using var _slow = SlowCalls.Scope("Phase8BUpdate", "Update");
             OverlayKeysUpdate();
             ContainerMemoryUpdate();
             var market = session?.Social?.Market;

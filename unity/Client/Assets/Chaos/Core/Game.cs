@@ -83,7 +83,7 @@ namespace Chaos.Core
                 byte op = r.U8();
                 Seen.TryGetValue(op, out int n);
                 Seen[op] = n + 1;
-                try { Message(op, r); }
+                try { using (SlowCalls.Scope(SlowCalls.Log.On ? SlowCalls.MessageName(op) : null, "Poll")) Message(op, r); }
                 catch (Exception e) { NoteFailure(op, at, r.Pos, e); throw; }
             }
         }
@@ -133,7 +133,7 @@ namespace Chaos.Core
                 case 0x1E: break;
                 case 0x1F: r.U32(); r.U8(); break;
                 case 0x28: Death(r); break;
-                case 0x32: ExtendedOpcode(r.U8(), r.StrRaw()); break;   // bytes as they are: ExtOpcodes decodes the UTF-8 itself
+                case 0x32: { byte eo = r.U8(); string ed = r.StrRaw(); using (SlowCalls.Scope(SlowCalls.Log.On ? SlowCalls.ExtendedName(eo) : null, "Poll")) ExtendedOpcode(eo, ed); break; }   // bytes as they are: ExtOpcodes decodes the UTF-8 itself
                 case 0x42:
                 {
                     int aw = r.U8(), ah = r.U8();
@@ -799,23 +799,23 @@ namespace Chaos.Core
             }
             if (parser.LoggedIn && enteredAt < 0) enteredAt = Now;
             if (!awareAsked && parser.LoggedIn && opt.AwareWidth > 0) { awareAsked = true; RequestAwareRange(opt.AwareWidth, opt.AwareHeight); }
-            ChatPoll();
-            ItemsPoll();
-            EndgamePoll();
-            CollectPoll();
-            WorldUtilsPoll();
-            VisualPoll();
-            CommunityPoll();
+            using (SlowCalls.Scope("ChatPoll", "Poll")) ChatPoll();
+            using (SlowCalls.Scope("ItemsPoll", "Poll")) ItemsPoll();
+            using (SlowCalls.Scope("EndgamePoll", "Poll")) EndgamePoll();
+            using (SlowCalls.Scope("CollectPoll", "Poll")) CollectPoll();
+            using (SlowCalls.Scope("WorldUtilsPoll", "Poll")) WorldUtilsPoll();
+            using (SlowCalls.Scope("VisualPoll", "Poll")) VisualPoll();
+            using (SlowCalls.Scope("CommunityPoll", "Poll")) CommunityPoll();
             // the spell list is fetched a few seconds after the login (the main client's prefetch), so the first window is instant
-            if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; Spells.Open(true); }
+            if (!spellsAsked && enteredAt >= 0 && Now - enteredAt > 3000) { spellsAsked = true; using (SlowCalls.Scope("Spells.Open", "Poll")) Spells.Open(true); }
             // the party frames: watch a moment after the login (the main client waits 400 ms)
-            if (!partyOpened && enteredAt >= 0 && Now - enteredAt > 600) { partyOpened = true; Party.Open(); }
+            if (!partyOpened && enteredAt >= 0 && Now - enteredAt > 600) { partyOpened = true; using (SlowCalls.Scope("Party.Open", "Poll")) Party.Open(); }
             // the HUD: the options and the language go out a moment after the login; the timers run every frame
             if (enteredAt >= 0 && Now - enteredAt > 800) Hud.Hello(Loc.Language);
             if (Hud.Options.LevelChanged(parser.Level) && parser.Level != hudAskedLevel) { hudAskedLevel = parser.Level; Hud.Options.SendHello(Loc.Language); }
-            Hud.Tick(Now);
+            using (SlowCalls.Scope("Hud.Tick", "Poll")) Hud.Tick(Now);
             // the progression requests (menu unlocks hello, combat stats, rift query, goal tracker): the main client waits 1.8 s
-            if (!progressStarted && enteredAt >= 0 && Now - enteredAt > 1800) { progressStarted = true; Progress.Start(); }
+            if (!progressStarted && enteredAt >= 0 && Now - enteredAt > 1800) { progressStarted = true; using (SlowCalls.Scope("Progress.Start", "Poll")) Progress.Start(); }
             PlayPoll();   // Core/GamePlay.cs: the dead guard
             if (conn.Closed && Closed == null) Closed = conn.Error ?? "The server closed the connection.";
             parser.Steps.Expire(world.Player, Now);   // no answer to a step: let the next one go

@@ -239,14 +239,18 @@ namespace Chaos.Client
 
         void DrawWindows(float w, float h, float scale)
         {
-            if (windows.Count == 0) MakeWindows();
-            foreach (var win in windows) win.Tick(this);
-            TopbarGui(w, h, scale);   // ChaosApp.Progression.cs: category buttons, drop-downs, new unlocks
+            SlowCalls.Log.FrameStarted(Time.unscaledDeltaTime * 1000.0);   // a frame of 500 ms or more turns the slow call record on (Core/SlowCalls.cs)
+            bool timed = SlowCalls.Log.On;
+            string evt = timed ? "OnGUI " + (Event.current != null ? Event.current.type.ToString() : "?") : null;
+            if (windows.Count == 0) { using (SlowCalls.Scope("MakeWindows", "OnGUI")) MakeWindows(); }
+            foreach (var win in windows)
+                using (SlowCalls.Scope(timed ? win.GetType().Name : null, "Tick")) win.Tick(this);   // a window's per-frame code, open or not
+            using (SlowCalls.Scope("TopbarGui", evt)) TopbarGui(w, h, scale);   // ChaosApp.Progression.cs: category buttons, drop-downs, new unlocks
             for (int i = 0; i < windows.Count; i++)
             {
                 var win = windows[i];
                 if (!WindowShown(win)) continue;   // ChaosApp.Visual.cs: fade in and out
-                win.Draw(this, 1000 + i, w, h);
+                using (SlowCalls.Scope(timed ? win.GetType().Name : null, evt)) win.Draw(this, 1000 + i, w, h);
                 if (win.Open) uiRects.Add(Scaled(win.Area, scale));
             }
         }

@@ -47,6 +47,7 @@ namespace Chaos.Client
         /// <summary>Called first in Update on every screen: the options, the sounds and the music, the zoom, the layout.</summary>
         void VisualUpdate()
         {
+            using var _slow = SlowCalls.Scope("VisualUpdate", "Update");
             VisualPrefs.Load();
             BossAnimate.Clock = () => session != null ? session.Now : Time.timeAsDouble * 1000.0;
             VisualRuntime.EffectAlpha = EffectOpacity.Alpha(VisualPrefs.EffectPercent);
@@ -110,6 +111,7 @@ namespace Chaos.Client
         /// <summary>Per character zoom (game_chaosview): when the character is known its saved rows are loaded, a new one starts at about 72 px a tile.</summary>
         void ViewCharacterUpdate()
         {
+            using var _slow = SlowCalls.Scope("ViewCharacterUpdate", "Update");
             string name = screen == Screen.Game ? world?.Player?.Name : null;
             if (string.IsNullOrEmpty(name)) { viewFor = null; VisualPrefs.CurrentCharacter = null; return; }
             if (viewFor == name) return;
@@ -124,6 +126,7 @@ namespace Chaos.Client
         /// CHAOS_UNITY_AWARE keeps its own say; a connection without the Chaos markers cannot ask and stays at the default.</summary>
         void AwareUpdate()
         {
+            using var _slow = SlowCalls.Scope("AwareUpdate", "Update");
             if (screen != Screen.Game || session == null || world?.Player == null || !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("CHAOS_UNITY_AWARE"))) { if (screen != Screen.Game) awareSent = false; return; }
             var want = ViewZoom.Wanted(VisualPrefs.WideView);
             if (awareSent && want.Width == awareAskedFor.Width && want.Height == awareAskedFor.Height) return;
@@ -134,6 +137,7 @@ namespace Chaos.Client
         /// <summary>Ctrl + wheel over the map zooms the classic view by whole rows (7 to 11). The live view has its own wheel zoom.</summary>
         void ViewWheelZoom()
         {
+            using var _slow = SlowCalls.Scope("ViewWheelZoom", "Update");
             if (LiveOn || hd2d || chatFocused) return;
             bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             float wheel = Input.mouseScrollDelta.y;
@@ -171,6 +175,7 @@ namespace Chaos.Client
         {
             if (visualTex.TryGetValue(rel, out var t)) return t;
             t = null;
+            using var _slow = SlowCalls.Scope(SlowCalls.Log.On ? "OverlayTex " + rel : null, "load");
             string path = OverlayPath(rel);
             if (path != null)
             {
@@ -199,6 +204,7 @@ namespace Chaos.Client
 
         void VisualTextures()
         {
+            using var _slow = SlowCalls.Scope("VisualTextures", "load");
             if (texSoft != null) return;
             texSoft = MakeTex(64, 64, (u, v) => { float d = Mathf.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f)) * 2f; return 1f - d * d; });
             texRing = MakeTex(64, 64, (u, v) => { float d = Mathf.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f)) * 2f; return Mathf.Max(0f, 1f - Mathf.Abs(d - 0.85f) / 0.12f); });
@@ -269,6 +275,7 @@ namespace Chaos.Client
         /// <summary>Called inside the map group (map is its rect in UI units), after the world overlays.</summary>
         void DrawVisualOverlays(Rect map, float scale)
         {
+            using var _slow = SlowCalls.Scope("DrawVisualOverlays", "OnGUI");
             var v = Vis;
             if (v == null || world?.Player == null || Event.current.type != EventType.Repaint || (hd2d && !LiveOn)) return;
             VisualTextures();
@@ -292,6 +299,7 @@ namespace Chaos.Client
         /// VisualRuntime.Grounds, in HD-2D there are none yet.</summary>
         void GroundFlatsUpdate(VisualEffects v)
         {
+            using var _slow = SlowCalls.Scope("GroundFlatsUpdate", "Update");
             VisualRuntime.Grounds = v != null ? v.Grounds : null;
             VisualRuntime.GroundNow = () => session != null ? session.Now : 0.0;
             if (view == null) return;
@@ -518,6 +526,7 @@ namespace Chaos.Client
 
         void HudLayoutUpdate(float w, float h)
         {
+            using var _slow = SlowCalls.Scope("HudLayoutUpdate", "OnGUI");
             hudW = w; hudH = h;
             string name = world?.Player?.Name;
             if (name == null || hudFor == name) return;
@@ -528,6 +537,7 @@ namespace Chaos.Client
         /// <summary>The edit mode: each piece gets a frame you drag; double click puts it back. Called at the end of GameGui.</summary>
         void HudEditGui(float w, float h, float scale)
         {
+            using var _slow = SlowCalls.Scope("HudEditGui", "OnGUI");
             hudW = w; hudH = h;
             if (!HudLayout.Editing) { hudDrag = null; return; }
             var e = Event.current;
@@ -587,6 +597,7 @@ namespace Chaos.Client
         // ------------------------------------------------------------------------------------------------ saved window layout and fade
         void VisualLayoutUpdate()
         {
+            using var _slow = SlowCalls.Scope("VisualLayoutUpdate", "Update");
             string name = world?.Player?.Name;
             if (name == null) return;
             if (layoutFor != name)

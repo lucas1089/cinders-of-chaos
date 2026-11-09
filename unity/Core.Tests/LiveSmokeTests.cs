@@ -17,6 +17,7 @@ namespace Chaos.Core.Tests
             ReportChecks(check);
             NewPlayerChecks(check);
             FirstFightChecks(check);
+            SlowCallChecks(check);
         }
 
         static Func<string, string> Env(params string[] kv)
@@ -953,6 +954,130 @@ namespace Chaos.Core.Tests
             string line = Good().SummaryLine();
             check(line.StartsWith("chaos live smoke: identity chaos, login ok, entered ok, walk 8 of 9 steps confirmed, 160 tiles drawn, 2 windows (1 answered, 0 prefetched at login, 1 local-only, 0 need a condition, 0 without an answer), 0 exceptions, 0 layout errors, pass", StringComparison.Ordinal), "live report: the summary line: " + line);
             check(LiveSmokeReport.SheetName(0) == "live_smoke_sheet_1.png" && LiveSmokeReport.SheetName(11) == "live_smoke_sheet_12.png", "live report: sheet file names");
+        }
+
+        // ------------------------------------------------------------------------------------ the slow call record (Core/SlowCalls.cs)
+        static void SlowCallChecks(Action<bool, string> check)
+        {
+            double t = 0;
+            SlowCallLog Make(bool on) => new SlowCallLog { Clock = () => t, On = on };
+
+            // off: nothing is read, nothing is written
+            t = 0;
+            var log = Make(false);
+            using (log.Begin("x", "OnGUI")) t += 5000;
+            check(log.Calls().Count == 0 && log.Where().StartsWith("outside", StringComparison.Ordinal), "slow calls: with the log off a scope records nothing and costs a default struct");
+
+            // on: 600 ms is written down, 100 ms is not
+            log = Make(true); t = 1000; log.SetOrigin("new");
+            t = 3000;
+            using (log.Begin("HelperWindow", "OnGUI Repaint")) t += 600;
+            using (log.Begin("Quick", "Tick")) t += 100;
+            var calls = log.Calls();
+            check(calls.Count == 1 && calls[0].Name == "HelperWindow" && calls[0].Phase == "OnGUI Repaint" && Math.Abs(calls[0].Ms - 600) < 0.01 && Math.Abs(calls[0].AtMs - 2000) < 0.01 && calls[0].Who == "new", "slow calls: a call of 500 ms or more is kept with name, phase, ms and when it began after the origin, a quick one is not");
+            check(log.LastEnded == "Tick Quick", "slow calls: the last call that ended is known: " + log.LastEnded);
+
+            // nested: the outer call's own time leaves the inner out; the top list ranks by own time
+            t = 0; log = Make(true);
+            using (log.Begin("Window", "OnGUI"))
+            {
+                t += 500;
+                using (log.Begin("ArtTexture a.png", "load")) t += 1500;
+                t += 100;
+            }
+            calls = log.Calls();
+            check(calls.Count == 2 && calls[0].Name == "ArtTexture a.png" && Math.Abs(calls[1].Ms - 2100) < 0.01 && Math.Abs(calls[1].SelfMs - 600) < 0.01, "slow calls: the outer call keeps the inner time out of its own time (2100 total, 600 own)");
+            var top = SlowCallLog.Top(calls, 1);
+            check(top.Count == 1 && top[0].Name == "ArtTexture a.png", "slow calls: the top list is by own time, the inner call that did the work comes first");
+            check(SlowCallLog.Summary(calls, 3).StartsWith("ArtTexture a.png (load) 1.5 s at 0.5 s", StringComparison.Ordinal) && SlowCallLog.Summary(calls, 3).Contains("Window (OnGUI) 0.6 s of 2.1 s at 0.0 s"), "slow calls: the summary names the top calls: " + SlowCallLog.Summary(calls, 3));
+
+            // where the main thread is: the open scopes from the outside in, else the last note
+            log = Make(true); t = 0;
+            log.Note("Update");
+            check(log.Where() == "outside any timed call, after Update", "slow calls: no open scope, the last note: " + log.Where());
+            var outer = log.Begin("HelperWindow", "OnGUI");
+            var inner = log.Begin("ArtTexture b.png", "load");
+            check(log.Where() == "OnGUI HelperWindow > load ArtTexture b.png", "slow calls: the open scopes, outside in: " + log.Where());
+            inner.Dispose(); outer.Dispose();
+            check(log.Where().StartsWith("outside", StringComparison.Ordinal), "slow calls: closed scopes leave the stack empty");
+
+            // a thrown exception still ends the scope
+            log = Make(true); t = 0;
+            try { using (log.Begin("Boom", "Update")) { t += 800; throw new InvalidOperationException("x"); } } catch (InvalidOperationException) { }
+            check(log.Calls().Count == 1 && log.Where().StartsWith("outside", StringComparison.Ordinal), "slow calls: a scope that ends by an exception is recorded and popped");
+
+            // the record is bounded
+            log = Make(true); t = 0;
+            for (int i = 0; i < SlowCallLog.MaxCalls + 20; i++) using (log.Begin("c" + i, "Tick")) t += 600;
+            check(log.Calls().Count == SlowCallLog.MaxCalls && log.DroppedCalls == 20, "slow calls: at most " + SlowCallLog.MaxCalls + " calls are kept, the rest are counted");
+
+            // a frame of 500 ms or more turns a log that is off on
+            log = Make(false);
+            log.FrameStarted(16); bool a = log.On;
+            log.FrameStarted(499); bool b = log.On;
+            log.FrameStarted(520);
+            check(!a && !b && log.On, "slow calls: the log turns itself on after a frame of 500 ms, not before");
+
+            // the frame gap record and the watchdog: the main thread is in a call for 20 s, the watchdog samples it, the next beat closes the gap
+            log = Make(true); t = 100000; log.SetOrigin("new");
+            t = 101800; log.Beat();                                    // a frame at 1.8 s
+            using (log.Begin("ControlSkin", "OnGUI")) { }
+            var scope = log.Begin("SomeWindow", "OnGUI Layout");       // the call that hangs
+            t = 102300;
+            check(log.Sample() == null, "stall watch: 500 ms without a beat is too early to look");
+            t = 103000;
+            string line = log.Sample();
+            check(line != null && line.Contains("1.2 s without a frame") && line.Contains("OnGUI Layout SomeWindow"), "stall watch: after 1 s the watchdog says where the main thread is: " + line);
+            t = 103200;
+            check(log.Sample() == null, "stall watch: the watchdog does not write twice in 400 ms");
+            var deeper = log.Begin("ArtTexture c.png", "load");
+            t = 110000;
+            line = log.Sample();
+            check(line != null && line.Contains("load ArtTexture c.png") && line.Contains("8.2 s"), "stall watch: a new place is a new line: " + line);
+            t = 111000;
+            check(log.Sample() == null, "stall watch: the same place again is not logged again");
+            deeper.Dispose(); scope.Dispose();
+            t = 122000; log.Beat();
+            var stalls = log.Stalls();
+            check(stalls.Count == 1 && log.ClosedStalls == 1 && Math.Abs(stalls[0].Ms - 20200) < 0.01 && Math.Abs(stalls[0].AtMs - 1800) < 0.01 && stalls[0].Who == "new", "stall watch: the beat after the freeze closes it: 20.2 s that began 1.8 s after the origin");
+            check(stalls[0].Seen.Count == 2 && stalls[0].Seen[0].Contains("SomeWindow") && stalls[0].Seen[1].Contains("ArtTexture c.png") && stalls[0].LastEnded.Contains("ControlSkin"), "stall watch: the record holds both places the watchdog saw and the call that ended before the hang");
+            check(SlowCallLog.Line(stalls[0]).StartsWith("frame gap: 20.2 s at 1.8 s (new)", StringComparison.Ordinal), "stall watch: the log line: " + SlowCallLog.Line(stalls[0]));
+            t = 122400; log.Beat();
+            check(log.Stalls().Count == 1, "stall watch: a gap under 500 ms is not a stall");
+            t = 123200; log.Beat();
+            stalls = log.Stalls();
+            check(stalls.Count == 2 && Math.Abs(stalls[1].Ms - 800) < 0.01 && stalls[1].Seen.Count == 0, "stall watch: a gap of 500 ms to 1 s is recorded without a place (the watchdog starts at 1 s)");
+            // a freeze still going on is listed (the job is cut off in the middle of it)
+            t = 130000; log.Sample();
+            check(log.Stalls().Count == 3 && log.ClosedStalls == 2 && log.Stalls()[2].Ms > 6000, "stall watch: a freeze that has not ended yet is listed last");
+
+            // the report: json, notes and the secret cut
+            var rep = Good();
+            rep.Slow.Add(new SlowCall { Name = "ArtTexture hunter2hunter2.png", Phase = "load", Ms = 21000, SelfMs = 20500, AtMs = 2400, Who = "new" });
+            rep.Slow.Add(new SlowCall { Name = "Window", Phase = "OnGUI Repaint", Ms = 700, SelfMs = 700, AtMs = 25000, Who = "new" });
+            rep.Stalls.Add(new StallRecord { AtMs = 1800, Ms = 19000, Who = "new", LastEnded = "OnGUI ControlSkin" });
+            rep.Stalls[0].Seen.Add("OnGUI SomeWindow > load ArtTexture c.png");
+            var j = Json.TryParse(rep.ToJson(new List<string> { "hunter2hunter2" }));
+            var sc = Json.List(j, "slowCalls"); var st = Json.List(j, "stalls");
+            check(sc.Count == 2 && Json.Text(sc[0], "name") == "ArtTexture <removed>.png" && Json.Text(sc[0], "phase") == "load" && Json.Int(sc[0], "ms") == 21000 && Json.Int(sc[0], "selfMs") == 20500 && Json.Int(sc[0], "at") == 2400 && Json.Text(sc[0], "who") == "new", "slow call json: name (secrets cut), phase, ms, own ms, at and who");
+            check(st.Count == 1 && Json.Int(st[0], "ms") == 19000 && Json.Int(st[0], "at") == 1800 && Json.Text(st[0], "lastEnded") == "OnGUI ControlSkin" && Json.List(st[0], "seen").Count == 1, "slow call json: the stall with its places and the last call that ended");
+            check(rep.Notes().Any(x => x.StartsWith("slow calls (own time): ArtTexture hunter2hunter2.png (load) 20.5 s of 21.0 s at 2.4 s new", StringComparison.Ordinal)) && rep.Pass, "slow call report: a note with the top calls, never a failure");
+            var empty = Json.TryParse(Good().ToJson(null));
+            check(Json.List(empty, "slowCalls").Count == 0 && Json.List(empty, "stalls").Count == 0 && !Good().Notes().Any(x => x.StartsWith("slow calls", StringComparison.Ordinal)), "slow call report: nothing slow, empty arrays and no note");
+
+            // the watchdog thread and the main thread together (real clock): no exception, the record stays consistent
+            var real = new SlowCallLog { On = true, WatchMs = 5, SampleMs = 1, ThresholdMs = 1 };
+            bool stop = false; Exception bad = null;
+            var th = new System.Threading.Thread(() => { try { while (!stop) { real.Sample(); System.Threading.Thread.Sleep(1); } } catch (Exception e) { bad = e; } });
+            th.Start();
+            real.Beat();
+            for (int i = 0; i < 300; i++)
+            {
+                using (real.Begin("a", "OnGUI")) using (real.Begin("b", "load")) System.Threading.Thread.Sleep(0);
+                if (i % 100 == 0) { System.Threading.Thread.Sleep(15); real.Beat(); }
+            }
+            stop = true; th.Join();
+            check(bad == null && real.Where().StartsWith("outside", StringComparison.Ordinal) && real.Stalls().Count >= 1, "stall watch: a watchdog thread beside a main thread that opens and closes scopes breaks nothing");
         }
     }
 }
