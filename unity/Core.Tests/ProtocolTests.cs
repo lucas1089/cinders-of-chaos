@@ -169,6 +169,13 @@ namespace Chaos.Core.Tests
             check(rat.WalkMs % 50 == 0 && rat.WalkMs > 0, "creature: step time rounded to 50 ms: " + rat.WalkMs);
             parser.Parse(new ByteWriter().U8(0x6C).U16(0xFFFF).U32(Rat).ToArray());
             check(world.Get(Start.Offset(3, 1)).Things.Count == 1, "creature: removed from its tile");
+            check(rat.Position.X == 0 && world.Creatures.ContainsKey(Rat), "creature: a removed creature is off the map (no ghost at its last tile for the renderers and the battle list), the table keeps it for the known-creature ids (O433 phase 26)");
+            {
+                var dead = new Creature { Id = 0x40000777, Type = 1, Name = "Dead Rat", HealthPercent = 0 };
+                world.Creatures[dead.Id] = dead; world.AddThing(Start.Offset(3, 1), new Thing { Creature = dead });
+                parser.Parse(new ByteWriter().U8(0x6C).U16(0xFFFF).U32(dead.Id).ToArray());
+                check(!world.Creatures.ContainsKey(dead.Id), "creature: a dead monster removed from the map leaves the creature table too (the dead guard skips creatures off the map, so a kill was never seen as gone; O433 phase 26 CI)");
+            }
 
             // items, pings, extended opcodes, texts, unknown opcodes
             bool pinged = false;

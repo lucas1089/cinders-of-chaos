@@ -25,7 +25,7 @@ namespace Chaos.Core.LiveCheck
 
     public sealed partial class LiveRun
     {
-        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "guardians", "partnerdeath", "lastlife", "party3", "trialwindows", "death", "pvpdeath" };
+        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "guardians", "partnerdeath", "lastlife", "party3", "trialwindows", "riftsolodeath", "omenparty", "wrathnova", "death", "pvpdeath" };
 
         readonly List<ScenarioResult> scenarios = new List<ScenarioResult>();
         Dictionary<int, string> floorChanges;
@@ -70,6 +70,9 @@ namespace Chaos.Core.LiveCheck
                         case "lastlife": ScLastLife(r); break;
                         case "party3": ScParty3(r); break;
                         case "trialwindows": ScTrialWindows(r); break;
+                        case "riftsolodeath": ScRiftSoloDeath(r); break;
+                        case "omenparty": ScOmenParty(r); break;
+                        case "wrathnova": ScWrathNova(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }
@@ -522,7 +525,7 @@ namespace Chaos.Core.LiveCheck
 
         Creature Seeing(LiveClient who, string name)
         {
-            foreach (var c in who.World.Creatures.Values) if (c.Type == 0 && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)) return c;
+            foreach (var c in who.World.Creatures.Values) if (c.Type == 0 && c.Position.X > 0 && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)) return c;
             return null;
         }
 

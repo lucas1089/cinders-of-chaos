@@ -17,7 +17,7 @@ namespace Chaos.Core.LiveCheck
             if (why != null) Console.Error.WriteLine(why);
             Console.Error.WriteLine("usage: Core.LiveCheck HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE] [--identity extended|chaos]");
             Console.Error.WriteLine("                      [--otb items.otb | --pair DIR] [--no-ext]   (password: environment variable CHAOS_LIVE_PASSWORD)");
-            Console.Error.WriteLine("                      [--scenario tooltip,stairs,floorchange,npc,sell,market,modal,moremodals,party,sharedkill,rift,riftboss,partyrift,rifttier,riftfail,omen,coffer,guardians,partnerdeath,lastlife,party3,trialwindows,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
+            Console.Error.WriteLine("                      [--scenario tooltip,stairs,floorchange,npc,sell,market,modal,moremodals,party,sharedkill,rift,riftboss,partyrift,rifttier,riftfail,omen,coffer,guardians,partnerdeath,lastlife,party3,trialwindows,riftsolodeath,omenparty,wrathnova,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
             Console.Error.WriteLine("                      [--rift-tier N] [--rift-mods name:value,...] [--keeper-at X,Y,Z]");
             Console.Error.WriteLine("                      [--guardian-tier N] [--twin-mods name:value,...] [--wrath-mods name:value,...] [--guardian-parts twin,wrath] [--hit-size N] [--reflect-probe tier|rift] [--archivist-at X,Y,Z]   (third account: CHAOS_LIVE_ACCOUNT3, CHAOS_LIVE_PASSWORD3, CHAOS_LIVE_CHARACTER3)");
             Console.Error.WriteLine("                      [--modal-npc NAME] [--modal-word WORD] [--modal-at X,Y,Z] [--rift-kill /CMD] [--rift-near /CMD]");

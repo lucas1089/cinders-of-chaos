@@ -191,7 +191,12 @@ namespace Chaos.Core
                 case 0x6C:
                 {
                     var (p, sp, cr) = Mapped(r);
-                    if (cr != null) W.RemoveCreature(cr);
+                    if (cr != null)
+                    {
+                        W.RemoveCreature(cr);
+                        if (cr.Id != W.PlayerId && cr.Type != 0 && cr.HealthPercent <= 0) W.Creatures.Remove(cr.Id);   // a dead monster or summon that leaves the map is gone for good (its id is never sent again), as the dead guard used to sweep it
+                        else if (cr.Id != W.PlayerId) cr.Position = default;   // off the map: the creature table keeps it for the server's known-creature ids, but nothing draws or lists a creature with no tile
+                    }
                     else if (sp >= 0) W.RemoveAt(p, sp);
                     break;
                 }

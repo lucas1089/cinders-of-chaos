@@ -224,7 +224,12 @@ namespace Chaos.Core
                 int dx = p.X - off - center.X, dy = p.Y - off - center.Y;
                 if (dx < -Range.Left - 1 || dx > Range.Right + 1 || dy < -Range.Top - 1 || dy > Range.Bottom + 1) gone.Add(p);
             }
-            foreach (var p in gone) Tiles.Remove(p);
+            foreach (var p in gone)
+            {
+                var tile = Tiles[p];
+                foreach (var th in tile.Things) if (th.IsCreature && th.Creature.Id != PlayerId) th.Creature.Position = default;   // a creature left behind is off the map, not a ghost at its last tile
+                Tiles.Remove(p);
+            }
         }
     }
 }
