@@ -265,6 +265,7 @@ namespace Chaos.Core.LiveCheck
             {
                 var st = Stat(op);
                 st.RawReplies++;
+                TimelineExt(op, data);
                 if (debug && !ops.ContainsKey(op)) Console.Error.WriteLine("raw " + op + ": " + (data.Length > 160 ? data.Substring(0, 160) : data).Replace("\n", " "));
                 if (data.Length > 0 && (data[0] == 'S' || data[0] == 'P' || data[0] == 'E') && data.Length < 8200) chunkedReplies++;
                 prevExt(op, data);
@@ -307,6 +308,7 @@ namespace Chaos.Core.LiveCheck
                 }
                 partner?.Poll();
                 third?.Poll();
+                TimelineTick();
                 tilesMax = Math.Max(tilesMax, world.Tiles.Count);
                 creaturesMax = Math.Max(creaturesMax, world.Creatures.Count);
                 if (until()) return;

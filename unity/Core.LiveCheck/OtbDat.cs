@@ -109,6 +109,37 @@ namespace Chaos.Core.LiveCheck
             return result;
         }
 
+        /// <summary>The client ids of the teleport items of items.xml (attribute type = teleport, as TFS reads the type of an item): the great purple teleport of the temple (28013 to 28017) and
+        /// the magic forcefield are such items. The otb group of these nodes is 0 on this server, so the group alone does not find them.</summary>
+        public static HashSet<int> TeleportItems(string itemsXml, byte[] otb)
+        {
+            var byServer = new Dictionary<int, int>();
+            foreach (var n in ReadNodes(otb)) byServer[n.Server] = n.Client;
+            var result = new HashSet<int>();
+            foreach (Match m in Regex.Matches(itemsXml, @"<item\b([^>]*?)(/?)>"))
+            {
+                if (m.Groups[2].Value.Length > 0) continue;
+                int bodyStart = m.Index + m.Length;
+                int end = itemsXml.IndexOf("</item>", bodyStart, StringComparison.Ordinal);
+                string body = itemsXml.Substring(bodyStart, (end >= 0 ? end : bodyStart) - bodyStart);
+                if (!Regex.IsMatch(body, "key=\"type\"\\s+value=\"teleport\"")) continue;
+                int from = -1, to = -1;
+                foreach (Match a in Regex.Matches(m.Groups[1].Value, "(\\w+)=\"([^\"]*)\""))
+                {
+                    int.TryParse(a.Groups[2].Value, out int v);
+                    switch (a.Groups[1].Value)
+                    {
+                        case "id": from = to = v; break;
+                        case "fromid": from = v; break;
+                        case "toid": to = v; break;
+                    }
+                }
+                if (from < 0 || to < from || to - from > 5000) continue;
+                for (int id = from; id <= to; id++) if (byServer.TryGetValue(id, out int cid)) result.Add(cid);
+            }
+            return result;
+        }
+
         public static DatFile Build(byte[] otb)
         {
             var nodes = ReadNodes(otb);

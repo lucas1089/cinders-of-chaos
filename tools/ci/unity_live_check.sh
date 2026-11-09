@@ -16,7 +16,7 @@
 #   UL_ENGINE_REPO  repository of the releases (default GITHUB_REPOSITORY, else the origin of this checkout)
 #   UL_LOGIN_PORT, UL_GAME_PORT, UL_DB_PORT   default 17171, 17172, 13306
 #   UL_IDENTITIES   default extended,chaos
-#   UL_GROUPS       default temple,shop,shared,death,market (the rift groups run last: its slots build a minute after the start)
+#   UL_GROUPS       default newplayer,temple,shop,shared,death,market (the rift groups run last: its slots build a minute after the start)
 #   UL_RESUME=1     keep the finished stages of an earlier run in UL_WORK (local work on this script)
 #
 # Modes (O433, the player on the same server: .github/workflows/unity-prototype.yml, unity/README.md "Player on a live server (CI)"):
@@ -31,6 +31,8 @@
 # Secrets: none. The guard key of the Chaos identity is made here (openssl rand), given to tfs and Core.LiveCheck through
 # the environment and thrown away with the work folder; a repository secret is not used (the server and the client are both
 # ours, so the guard is checked in enforce mode with a key nobody else has). The RSA modulus comes from the base key.pem.
+# The newplayer group needs no staff at all: a level 1 character that never logged in, the scenarios newplayer and firstkill (phase 27). firstquest (25 rats,
+# the teleport room, three scroll uses) and riftkilled (the local helper /rgive) are not run here.
 # Staff commands: the death, sharedkill and rift scenarios use stock staff commands (/goto, /m, /rift, /i) of staff accounts
 # made in the database of this run. The riftboss scenario is not run: its /rkill and /rnear exist only as a local-only
 # revscript (unity/README.md phase 23) and are not server data.
@@ -88,7 +90,7 @@ LOGIN_PORT=${UL_LOGIN_PORT:-17171}
 GAME_PORT=${UL_GAME_PORT:-17172}
 DB_PORT=${UL_DB_PORT:-13306}
 IDENTITIES=${UL_IDENTITIES:-extended,chaos}
-GROUPS_TO_RUN=${UL_GROUPS:-temple,shop,shared,death,market}
+GROUPS_TO_RUN=${UL_GROUPS:-newplayer,temple,shop,shared,death,market}
 SERVER="$WORK/server"
 RUN="$WORK/run"
 SOCK="$RUN/mariadb.sock"
@@ -191,7 +193,7 @@ load_base_schema() {
 
 # ---------------------------------------------------------------------------------------------------- 3. config, install
 write_config() {
-  log "config.lua (ports $LOGIN_PORT/$GAME_PORT, database, client guard in enforce mode)"
+  log "config.lua (ports $LOGIN_PORT/$GAME_PORT, database, client guard in enforce mode, no shutdown at the daily save)"
   python3 -I - "$SERVER/config.lua" "$LOGIN_PORT" "$GAME_PORT" "$DB_PORT" "$DBPASS" <<'PY'
 import re, sys
 path, login, game, dbport, dbpass = sys.argv[1:6]
@@ -204,7 +206,10 @@ for key, value in want.items():
     if n != 1:
         sys.exit('config.lua: no %s line' % key)
 # the guard: key from the environment of tfs (CHAOS_CLIENT_KEY), none in this file
-for key, value in (('clientGuardMode', '"enforce"'), ('clientGuardKey', '""'), ('clientGuardAllowDevKey', 'false')):
+# the daily server save (globalevents "Server Save", 08:00 server time) shuts the server down by default: a run that crosses it lost
+# the server mid-scenario (PR 325, 2026-11-09: every run after 08:05 UTC could not log in). Save, but stay up and open.
+for key, value in (('clientGuardMode', '"enforce"'), ('clientGuardKey', '""'), ('clientGuardAllowDevKey', 'false'),
+                   ('serverSaveShutdown', 'false'), ('serverSaveClose', 'false')):
     text, n = re.subn(r'^(%s\s*=\s*)[^\r\n]*' % key, lambda m: m.group(1) + value, text, count=1, flags=re.M)
     if n == 0:
         text = text.rstrip('\n') + '\n%s = %s\n' % (key, value)
@@ -313,6 +318,26 @@ PY
 beside() { local x y z; IFS=, read -r x y z <<< "$1"; echo "$((x + 1)),$y,$z"; }
 
 # new_chars GROUP: two fresh accounts and characters; sets PA PN PP (primary account, character, password) and QA QN QP (partner)
+# new_newbie IDENTITY: one fresh account and character made the way the website makes one (level 1, 150 health, 0 mana, 400 capacity, position 0,0,0,
+# lastlogin 0, no staff right, no tester row): the first login gives the start level, the kit, the welcome and the temple of Cinderhold. Sets PA PN PP; the
+# partner of live_run is not used. The Extended identity gets a Warrior (vocation 4), the Chaos one a Mystic (vocation 1): a melee and a caster first spell.
+new_newbie() {
+  local id=$1 voc=4 look=128
+  [ "$id" = chaos ] && voc=1
+  RUN_NO=$((RUN_NO + 1))
+  PA="lcn$RUN_NO$(rand_hex 3)"; QA=""; QN=""; QP=""
+  local k=$((RUN_NO - 1)) tail_letter=(A B C D E F G H I J K L)
+  PN="Live ${PRIM_NAMES[$((k % 12))]} ${tail_letter[$((k / 12))]}"
+  PP=$(rand_hex 12)
+  ALL_SECRETS+=("$PP")
+  dbq chaos <<SQL
+INSERT INTO accounts (name, password, type, creation) VALUES ('$PA', SHA1('$PP'), 1, UNIX_TIMESTAMP());
+INSERT INTO players (name, group_id, account_id, vocation, level, experience, health, healthmax, mana, manamax, cap, soul,
+                     sex, looktype, lookhead, lookbody, looklegs, lookfeet, lookaddons, town_id, posx, posy, posz, lastlogin)
+  SELECT '$PN', 1, id, $voc, 1, 0, 150, 150, 0, 0, 400, 100, 1, $look, 78, 68, 58, 76, 3, 2, 0, 0, 0, 0 FROM accounts WHERE name = '$PA';
+SQL
+}
+
 # staff: primary, partner, both or none: the group's set-up. Level 1200 (experience of level 1200) so that every hunt, rift and
 # shared experience rule applies; vocation 4 (Warrior); first login (lastlogin 0): the starter kit with gold, the tutorial skipped.
 new_chars() {
@@ -366,6 +391,10 @@ run_group_once() {
     temple)  # stock item tooltip, a stair and the floor change, NPC trade, a party of two (both plain players)
       new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"
       live_run "$label" "$id" tooltip,stairs,floorchange,npc,party --npc "$NPC_NAME" --npc-at "$NPC_AT" --stairs-at "$STAIRS_AT" ;;
+    newplayer)  # a fresh character's first login (every packet and opcode of its first 45 s, the kit, the welcome, the outfit window) and its first kill with the
+                # first attack spell, the loot bag read and taken: no staff right, no local script. The stairs and the cave are the base map of windows-assets.
+      new_newbie "$id"
+      live_run "$label" "$id" newplayer,firstkill ;;
     shop)    # selling to an NPC that buys (the post office NPC does not)
       new_chars 0 0 "$SELL_AT" "$(beside "$SELL_AT")"
       live_run "$label" "$id" sell --npc "$SELL_NPC" --npc-at "$SELL_AT" ;;
