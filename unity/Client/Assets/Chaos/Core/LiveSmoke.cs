@@ -62,6 +62,9 @@ namespace Chaos.Core
     {
         public string Name = "";
         public int Mask, Steps;
+        /// <summary>A way back: its steps are what the leg before it really confirmed (a held key overshoots by the steps in flight), so the hero ends where it began;
+        /// nothing confirmed before it, nothing to walk back.</summary>
+        public bool Mirror;
     }
 
     /// <summary>What a leg did.</summary>
@@ -92,17 +95,37 @@ namespace Chaos.Core
         public bool Done { get; private set; }
         public int LegIndex => leg;
 
-        /// <summary>North, south, east, west, then north and south again: two steps each, so the hero ends where it began. A start place with a wall on one side (the temple
-        /// stair of the CI server refuses east and west, 2026-11-09) still gets the steps from the legs that are free: a refused leg ends after two refusals.</summary>
-        public static List<LiveWalkLeg> DefaultLegs() => new List<LiveWalkLeg>
+        static readonly Dir[] Four = { Dir.North, Dir.South, Dir.East, Dir.West };
+
+        static int MaskOf(Dir d) => d == Dir.North ? WalkInput.Up : d == Dir.South ? WalkInput.Down : d == Dir.East ? WalkInput.Right : WalkInput.Left;
+
+        static Dir Opposite(Dir d) => d == Dir.North ? Dir.South : d == Dir.South ? Dir.North : d == Dir.East ? Dir.West : Dir.East;
+
+        static string NameOf(Dir d) => d == Dir.North ? "north" : d == Dir.South ? "south" : d == Dir.East ? "east" : "west";
+
+        /// <summary>The legs for a start tile: for north, south, east and west in this order, the tiles the client itself calls walkable (the check of the prediction, WalkMap.Walkable)
+        /// up to `steps` of them, as one leg out and one leg back. A direction with no walkable tile has no leg, so a step the server refuses later is a real finding (the client
+        /// thought the tile free), not a wall of the start place: the first run on a server (2026-11-09) walked blind and lost the north leg of Extended and the east and the second
+        /// north leg of Chaos to walls round the temple stair. The legs come in pairs, so the hero ends where it began. None free: no leg.</summary>
+        public static List<LiveWalkLeg> LegsAround(Pos start, Func<Pos, bool> walkable, int steps = 2)
         {
-            new LiveWalkLeg { Name = "north", Mask = WalkInput.Up, Steps = 2 },
-            new LiveWalkLeg { Name = "south", Mask = WalkInput.Down, Steps = 2 },
-            new LiveWalkLeg { Name = "east", Mask = WalkInput.Right, Steps = 2 },
-            new LiveWalkLeg { Name = "west", Mask = WalkInput.Left, Steps = 2 },
-            new LiveWalkLeg { Name = "north again", Mask = WalkInput.Up, Steps = 2 },
-            new LiveWalkLeg { Name = "south again", Mask = WalkInput.Down, Steps = 2 },
-        };
+            var legs = new List<LiveWalkLeg>();
+            foreach (var d in Four)
+            {
+                var p = start;
+                int k = 0;
+                while (k < steps)
+                {
+                    var q = WalkDirs.Step(p, d);
+                    if (!walkable(q)) break;
+                    p = q; k++;
+                }
+                if (k == 0) continue;
+                legs.Add(new LiveWalkLeg { Name = NameOf(d), Mask = MaskOf(d), Steps = k });
+                legs.Add(new LiveWalkLeg { Name = "back " + NameOf(Opposite(d)), Mask = MaskOf(Opposite(d)), Steps = k, Mirror = true });
+            }
+            return legs;
+        }
 
         public int Mask(double nowMs, int moves, int cancels)
         {
@@ -121,6 +144,14 @@ namespace Chaos.Core
                 StartLeg(leg + 1, nowMs, moves, cancels);
             }
             var l = legs[leg];
+            if (l.Steps <= 0)
+            {
+                // a way back after a leg that went nowhere: nothing to walk
+                results.Add(new LiveWalkResult { Name = l.Name, Wanted = 0 });
+                inGap = true;
+                gapUntil = nowMs;
+                return 0;
+            }
             int got = moves - moves0, refused = cancels - cancels0;
             bool timedOut = nowMs - legStart >= LegTimeoutMs;
             if (got >= l.Steps || refused >= MaxCancels || timedOut)
@@ -136,8 +167,25 @@ namespace Chaos.Core
         void StartLeg(int index, double nowMs, int moves, int cancels)
         {
             leg = index; legStart = nowMs; moves0 = moves; cancels0 = cancels; inGap = false;
+            if (legs[index].Mirror && results.Count > 0) legs[index].Steps = results[results.Count - 1].Confirmed;
         }
     }
+
+    /// <summary>What a window is expected to do when it opens on a live server. Asks: it sends its request on open (or its model does), the server answers on an extended opcode.
+    /// Native: the data comes from the base protocol or the client alone. Local: nothing is sent on open (the player's own settings, or a request that waits for typed input).
+    /// Prefetch: the module is asked once at login (Opcode), opening the window sends nothing, the data is there already.</summary>
+    public enum LiveWindowMode { Asks, Native, Local, Prefetch }
+
+    /// <summary>The rule of one window class (LiveSmokePlan.RuleOf).</summary>
+    public sealed class LiveWindowRule
+    {
+        public LiveWindowMode Mode = LiveWindowMode.Asks;
+        public int Opcode;
+        public string Why = "";
+    }
+
+    /// <summary>Where a window ends in the report: every window is exactly one of these.</summary>
+    public enum LiveWindowStatus { Answered, Prefetched, Local, NeedsCondition, NoAnswer }
 
     /// <summary>The window steps of the live run and when a step is done.</summary>
     public static class LiveSmokePlan
@@ -159,6 +207,23 @@ namespace Chaos.Core
         };
 
         public static bool IsNative(string windowClass) => Array.IndexOf(Native, windowClass) >= 0;
+
+        /// <summary>The first live run (2026-11-09, both identities) found four windows without an answer, and the code says none of them should get one on open:
+        /// Skills (the main client's game_skillstats asks `get` on opcode 119 at the game start, the server pushes the numbers on every change; the Unity Progress.Start does the same
+        /// 1.8 s after entering), Dungeons (game_dungeons asks `fetch` on opcode 109 at the game start only, Endgame.Start 2.2 s after entering; opening it sends nothing), Helper (its
+        /// settings are the character's own, saved in the player's prefs; the loop runs whether the window is open or not) and the Item Finder (it asks only once two letters are typed).</summary>
+        public static LiveWindowRule RuleOf(string windowClass)
+        {
+            if (IsNative(windowClass)) return new LiveWindowRule { Mode = LiveWindowMode.Native, Why = "base protocol or client only" };
+            switch (windowClass)
+            {
+                case "SkillsWindow": return new LiveWindowRule { Mode = LiveWindowMode.Prefetch, Opcode = SkillStats.Opcode, Why = "stat rows asked at the game start, pushed on every change" };
+                case "DungeonsWindow": return new LiveWindowRule { Mode = LiveWindowMode.Prefetch, Opcode = DungeonsState.Opcode, Why = "list fetched once at the game start" };
+                case "HelperWindow": return new LiveWindowRule { Mode = LiveWindowMode.Local, Why = "the character's own settings, nothing to ask" };
+                case "ItemFinderWindow": return new LiveWindowRule { Mode = LiveWindowMode.Local, Why = "asks only after two typed letters" };
+                default: return new LiveWindowRule();
+            }
+        }
 
         /// <summary>The steps (Core/Phase10F.cs WindowSmokePlan.GameSteps, windows only) for the main windows that exist in `available` (the class names of the app's window list);
         /// the ones that do not exist are listed in `missing`.</summary>
@@ -203,7 +268,8 @@ namespace Chaos.Core
     public sealed class LiveSmokeWindow
     {
         public string Name = "", Class = "";
-        public bool Native;
+        public bool Native => LiveSmokePlan.IsNative(Class);
+        public LiveWindowRule Rule => LiveSmokePlan.RuleOf(Class);
         public readonly SortedSet<int> Opcodes = new SortedSet<int>();
         public int Answers;
         public double Ms;
@@ -222,19 +288,49 @@ namespace Chaos.Core
         public double EnterMs = -1;
         public int TilesInModel, TilesDrawn, TilesDrawnAfterWalk;
         public int StepsSent, StepsConfirmed, StepsCancelled, NetDx, NetDy;
+        /// <summary>Steps the legs asked for (the tiles round the start that the client calls walkable, out and back).</summary>
+        public int StepsPlanned;
         public IList<LiveWalkResult> Legs = new List<LiveWalkResult>();
         public readonly List<LiveSmokeWindow> Windows = new List<LiveSmokeWindow>();
         public readonly List<string> MissingWindows = new List<string>();
         public readonly SortedSet<int> OpcodesSeen = new SortedSet<int>();
+        /// <summary>The extended opcodes that came before the first window step (the login requests): what a Prefetch window needs.</summary>
+        public readonly SortedSet<int> Prefetched = new SortedSet<int>();
+        /// <summary>Windows whose server answer needs something the fresh test character lacks, with what (class name to a short reason). Empty: the first run found none.</summary>
+        public readonly Dictionary<string, string> Conditions = new Dictionary<string, string>();
         public readonly SmokeReport Smoke = new SmokeReport();
         public int Sheets, Screenshots;
 
-        public bool WalkOk => StepsConfirmed >= MinSteps;
+        /// <summary>The walk counts when the legs had a free tile to walk, the server confirmed at least MinSteps (or all there were) and at least half of the planned steps. The legs
+        /// only cover tiles the client calls walkable, so a refusal is a finding, but one creature in the way does not fail the run.</summary>
+        public bool WalkOk => StepsPlanned > 0 && StepsConfirmed >= Math.Min(MinSteps, StepsPlanned) && StepsConfirmed * 2 >= StepsPlanned;
         public int Exceptions => Smoke.Total(SmokeIssueKind.Exception) + Smoke.BackgroundRecord.Count(SmokeIssueKind.Exception);
         public int LayoutErrors => Smoke.Total(SmokeIssueKind.Layout) + Smoke.BackgroundRecord.Count(SmokeIssueKind.Layout);
         public int LoggedErrors => Smoke.Total(SmokeIssueKind.Error) + Smoke.BackgroundRecord.Count(SmokeIssueKind.Error);
-        public int NoAnswerCount { get { int n = 0; foreach (var w in Windows) if (w.NoAnswer && !w.Native) n++; return n; } }
-        public int AnsweredCount { get { int n = 0; foreach (var w in Windows) if (!w.NoAnswer) n++; return n; } }
+
+        /// <summary>The one place a window ends. Prefetch windows first (the login request was answered), then an answer while the window was open, then a known condition, then
+        /// the windows that need no answer, and what is left has no answer.</summary>
+        public LiveWindowStatus StatusOf(LiveSmokeWindow w)
+        {
+            var rule = w.Rule;
+            if (rule.Mode == LiveWindowMode.Prefetch && Prefetched.Contains(rule.Opcode)) return LiveWindowStatus.Prefetched;
+            if (w.Answers > 0) return LiveWindowStatus.Answered;
+            if (Conditions.ContainsKey(w.Class)) return LiveWindowStatus.NeedsCondition;
+            if (rule.Mode == LiveWindowMode.Native || rule.Mode == LiveWindowMode.Local) return LiveWindowStatus.Local;
+            return LiveWindowStatus.NoAnswer;
+        }
+
+        public static string StatusName(LiveWindowStatus s) =>
+            s == LiveWindowStatus.Answered ? "answered" : s == LiveWindowStatus.Prefetched ? "prefetched" : s == LiveWindowStatus.Local ? "local" : s == LiveWindowStatus.NeedsCondition ? "needsCondition" : "noAnswer";
+
+        int Count(LiveWindowStatus status) { int n = 0; foreach (var w in Windows) if (StatusOf(w) == status) n++; return n; }
+        public int AnsweredCount => Count(LiveWindowStatus.Answered);
+        public int PrefetchedCount => Count(LiveWindowStatus.Prefetched);
+        public int LocalCount => Count(LiveWindowStatus.Local);
+        public int NeedsConditionCount => Count(LiveWindowStatus.NeedsCondition);
+        public int NoAnswerCount => Count(LiveWindowStatus.NoAnswer);
+        /// <summary>Every window is in exactly one of the five counts: this is always Windows.Count.</summary>
+        public int AccountedCount => AnsweredCount + PrefetchedCount + LocalCount + NeedsConditionCount + NoAnswerCount;
 
         /// <summary>What fails the run: login, entering, the walk, a closed session, an exception, an abort. A window without an answer is a warning, never a failure.</summary>
         public List<string> Failures()
@@ -243,7 +339,11 @@ namespace Chaos.Core
             if (Aborted.Length > 0) f.Add("aborted: " + Aborted);
             if (!LoginOk) f.Add("login failed" + (LoginError.Length > 0 ? ": " + LoginError : ""));
             if (!EnterOk) f.Add("did not enter the game" + (EnterError.Length > 0 ? ": " + EnterError : ""));
-            if (LoginOk && EnterOk && !WalkOk) f.Add("walk failed: " + StepsConfirmed + " steps confirmed, at least " + MinSteps + " needed");
+            if (LoginOk && EnterOk && !WalkOk)
+            {
+                if (StepsPlanned == 0) f.Add("walk not tried: no tile round the start is walkable for the client");
+                else f.Add("walk failed: " + StepsConfirmed + " of " + StepsPlanned + " planned steps confirmed, at least " + Math.Min(MinSteps, StepsPlanned) + " and half needed");
+            }
             if (Closed.Length > 0) f.Add("the session closed: " + Closed);
             if (Exceptions > 0) f.Add(Exceptions + " exceptions logged");
             return f;
@@ -252,7 +352,14 @@ namespace Chaos.Core
         public List<string> Warnings()
         {
             var w = new List<string>();
-            foreach (var x in Windows) if (x.NoAnswer && !x.Native) w.Add(x.Class + ": no extended answer from the server");
+            foreach (var x in Windows)
+            {
+                if (StatusOf(x) != LiveWindowStatus.NoAnswer) continue;
+                var rule = x.Rule;
+                if (rule.Mode == LiveWindowMode.Prefetch) w.Add(x.Class + ": opcode " + rule.Opcode + " never came after the login request");
+                else w.Add(x.Class + ": no extended answer from the server");
+            }
+            foreach (var l in Legs) if (l.Cancelled > 0) w.Add("leg " + l.Name + ": " + l.Cancelled + " refused on tiles the client thought walkable");
             foreach (var m in MissingWindows) w.Add(m + ": not a window of this build");
             if (LayoutErrors > 0) w.Add(LayoutErrors + " IMGUI layout errors");
             if (LoggedErrors > 0) w.Add(LoggedErrors + " logged errors");
@@ -261,11 +368,19 @@ namespace Chaos.Core
             return w;
         }
 
+        /// <summary>What is not a warning and not a failure but worth a line: a window that needs a condition the test character lacks.</summary>
+        public List<string> Notes()
+        {
+            var n = new List<string>();
+            foreach (var x in Windows) if (StatusOf(x) == LiveWindowStatus.NeedsCondition) n.Add(x.Class + ": needs condition: " + Conditions[x.Class]);
+            return n;
+        }
+
         public bool Pass => Failures().Count == 0;
 
         public string SummaryLine() =>
             "chaos live smoke: identity " + Identity + ", login " + (LoginOk ? "ok" : "FAILED") + ", entered " + (EnterOk ? "ok" : "FAILED") + ", walk " + StepsConfirmed + " of " + StepsSent
-            + " steps confirmed, " + TilesDrawn + " tiles drawn, " + Windows.Count + " windows (" + AnsweredCount + " with an answer, " + NoAnswerCount + " without), "
+            + " steps confirmed, " + TilesDrawn + " tiles drawn, " + Windows.Count + " windows (" + AnsweredCount + " answered, " + PrefetchedCount + " prefetched at login, " + LocalCount + " local-only, " + NeedsConditionCount + " need a condition, " + NoAnswerCount + " without an answer), "
             + Exceptions + " exceptions, " + LayoutErrors + " layout errors, " + (Pass ? "pass" : "FAIL");
 
         /// <summary>The name of sheet N (0 based) of the contact sheets.</summary>
@@ -319,12 +434,12 @@ namespace Chaos.Core
             var inv = CultureInfo.InvariantCulture;
             var b = new StringBuilder();
             b.Append("{\n \"identity\":").Append(Q(Identity, null)).Append(",\n \"pass\":").Append(Bool(Pass)).Append(",\n \"failures\":").Append(Strs(Failures(), secrets))
-             .Append(",\n \"warnings\":").Append(Strs(Warnings(), secrets));
+             .Append(",\n \"warnings\":").Append(Strs(Warnings(), secrets)).Append(",\n \"notes\":").Append(Strs(Notes(), secrets));
             b.Append(",\n \"login\":{\"ok\":").Append(Bool(LoginOk)).Append(",\"error\":").Append(Q(LoginError, secrets)).Append('}');
             b.Append(",\n \"enter\":{\"ok\":").Append(Bool(EnterOk)).Append(",\"error\":").Append(Q(EnterError, secrets)).Append(",\"ms\":").Append(Math.Round(EnterMs).ToString("0", inv)).Append('}');
             b.Append(",\n \"map\":{\"tilesInModel\":").Append(TilesInModel.ToString(inv)).Append(",\"tilesDrawn\":").Append(TilesDrawn.ToString(inv))
              .Append(",\"tilesDrawnAfterWalk\":").Append(TilesDrawnAfterWalk.ToString(inv)).Append('}');
-            b.Append(",\n \"walk\":{\"ok\":").Append(Bool(WalkOk)).Append(",\"sent\":").Append(StepsSent.ToString(inv)).Append(",\"confirmed\":").Append(StepsConfirmed.ToString(inv))
+            b.Append(",\n \"walk\":{\"ok\":").Append(Bool(WalkOk)).Append(",\"planned\":").Append(StepsPlanned.ToString(inv)).Append(",\"sent\":").Append(StepsSent.ToString(inv)).Append(",\"confirmed\":").Append(StepsConfirmed.ToString(inv))
              .Append(",\"cancelled\":").Append(StepsCancelled.ToString(inv)).Append(",\"dx\":").Append(NetDx.ToString(inv)).Append(",\"dy\":").Append(NetDy.ToString(inv)).Append(",\"legs\":[");
             for (int i = 0; i < Legs.Count; i++)
             {
@@ -333,15 +448,16 @@ namespace Chaos.Core
                  .Append(",\"cancelled\":").Append(l.Cancelled.ToString(inv)).Append(",\"timedOut\":").Append(Bool(l.TimedOut)).Append('}');
             }
             b.Append("]}");
-            b.Append(",\n \"summary\":{\"windows\":").Append(Windows.Count.ToString(inv)).Append(",\"answered\":").Append(AnsweredCount.ToString(inv)).Append(",\"noAnswer\":").Append(NoAnswerCount.ToString(inv))
+            b.Append(",\n \"summary\":{\"windows\":").Append(Windows.Count.ToString(inv)).Append(",\"answered\":").Append(AnsweredCount.ToString(inv)).Append(",\"prefetched\":").Append(PrefetchedCount.ToString(inv)).Append(",\"local\":").Append(LocalCount.ToString(inv))
+             .Append(",\"needsCondition\":").Append(NeedsConditionCount.ToString(inv)).Append(",\"noAnswer\":").Append(NoAnswerCount.ToString(inv))
              .Append(",\"exceptions\":").Append(Exceptions.ToString(inv)).Append(",\"layoutErrors\":").Append(LayoutErrors.ToString(inv)).Append(",\"loggedErrors\":").Append(LoggedErrors.ToString(inv))
              .Append(",\"screenshots\":").Append(Screenshots.ToString(inv)).Append(",\"sheets\":").Append(Sheets.ToString(inv)).Append(",\"loggedOut\":").Append(Bool(LoggedOut))
              .Append(",\"finished\":").Append(Bool(Finished)).Append('}');
-            b.Append(",\n \"opcodesSeen\":").Append(Ints(OpcodesSeen)).Append(",\n \"missingWindows\":").Append(Strs(MissingWindows, null)).Append(",\n \"windows\":[");
+            b.Append(",\n \"opcodesSeen\":").Append(Ints(OpcodesSeen)).Append(",\n \"opcodesAtLogin\":").Append(Ints(Prefetched)).Append(",\n \"missingWindows\":").Append(Strs(MissingWindows, null)).Append(",\n \"windows\":[");
             for (int i = 0; i < Windows.Count; i++)
             {
                 var w = Windows[i];
-                b.Append(i == 0 ? "" : ",").Append("\n  {\"name\":").Append(Q(w.Name, null)).Append(",\"native\":").Append(Bool(w.Native)).Append(",\"answers\":").Append(w.Answers.ToString(inv))
+                b.Append(i == 0 ? "" : ",").Append("\n  {\"name\":").Append(Q(w.Name, null)).Append(",\"status\":").Append(Q(StatusName(StatusOf(w)), null)).Append(",\"native\":").Append(Bool(w.Native)).Append(",\"answers\":").Append(w.Answers.ToString(inv))
                  .Append(",\"opcodes\":").Append(Ints(w.Opcodes)).Append(",\"ms\":").Append(Math.Round(w.Ms).ToString("0", inv));
                 if (w.Record != null)
                 {

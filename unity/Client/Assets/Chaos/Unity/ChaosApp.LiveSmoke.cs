@@ -1,13 +1,13 @@
 // The player on a live server (unity/README.md "Player on a live server (CI)"): `ChaosUnity -chaosLiveSmoke OUT_DIR` plays on a REAL game server, not the fake one of the demo tour.
 // It logs in through the app's own login path (ChaosApp.DoLogin, the character list, ChaosApp.Enter: no side channel), waits for the map, walks east, west, north and south with held
-// keys through the player's key path (ChaosApp.WalkMaskSource, WalkInputState, GameSession.Walk: the same road as the walking video), opens the main game windows one at a time
+// keys through the player's key path (ChaosApp.WalkMaskSource, WalkInputState, GameSession.Walk: the same road as the walking video), on the tiles round the start that the client calls walkable, opens the main game windows one at a time
 // (the step list of the window smoke run, Core/Phase10F.cs, here with the real server's answers instead of the fake ones), takes screenshots and a contact sheet, logs out and writes
 // OUT_DIR/live_smoke.json: steps, exceptions, IMGUI errors, which extended opcodes answered per window, map tiles drawn, steps confirmed. The pure parts (environment, window list, walk
 // legs, report, pass rule) are Core/LiveSmoke.cs.
 // Where it connects comes from the environment, never from the command line: CHAOS_LIVE_HOST, CHAOS_LIVE_PORT (login port), CHAOS_LIVE_ACCOUNT, CHAOS_LIVE_PASSWORD, CHAOS_LIVE_CHARACTER
 // (optional), CHAOS_LIVE_IDENTITY (extended or chaos), and the variables every login reads: CHAOS_CLIENT_KEY (guard key), CHAOS_RSA_PUBLIC (modulus). The sprite pair: -chaosThings DIR or
 // CHAOS_PAIR_DIR. Nothing of that is logged: the log line holds host, port and identity, and the json has every secret cut out.
-// A window that gets no extended answer is a listed warning. The exit code is 1 when the login, entering the game or the walk fails, the session closes or an exception is logged.
+// Every window ends as answered, prefetched at login (Skills, Dungeons), local-only (native windows, Helper, Item Finder), needs a condition or no answer; only the last is a listed warning. The exit code is 1 when the login, entering the game or the walk fails, the session closes or an exception is logged.
 // Own process: next to -chaosHd2dShot, -chaosDemoTour, -chaosWindowSmoke or -chaosWalkTour those run instead. Log lines start with "chaos live smoke:".
 using System;
 using System.Collections;
@@ -255,12 +255,17 @@ namespace Chaos.Client
             void BeginWalk()
             {
                 var s = app.session;
-                walker = new LiveWalker(LiveWalker.DefaultLegs());
-                moves0 = s.Parser.PlayerMoves; sent0 = s.WalksSent; cancels0 = cancels;
                 walkFrom = app.world.Player.Position;
+                // the legs go where the client itself says the tile is walkable (the check of the walk prediction), out and back: a refused step is then a finding, not the start place's wall
+                var world = app.world;
+                var legs = LiveWalker.LegsAround(walkFrom, p => WalkMap.Walkable(world, p, world.PlayerId));
+                walker = new LiveWalker(legs);
+                rep.StepsPlanned = 0;
+                foreach (var l in legs) rep.StepsPlanned += l.Steps;
+                moves0 = s.Parser.PlayerMoves; sent0 = s.WalksSent; cancels0 = cancels;
                 walkMask = 0;
                 app.WalkMaskSource = () => walkMask;   // the player's key path takes the mask of this frame
-                Debug.Log("chaos live smoke: walking, " + LiveWalker.DefaultLegs().Count + " legs of held keys");
+                Debug.Log("chaos live smoke: walking, " + legs.Count + " legs of held keys, " + rep.StepsPlanned + " steps planned on tiles the client calls walkable");
                 SetPhase(Phase.Walk);
             }
 
@@ -300,6 +305,7 @@ namespace Chaos.Client
                 var steps = LiveSmokePlan.Windows(classes, out var missing);
                 rep.MissingWindows.AddRange(missing);
                 foreach (var st in steps) pending.Enqueue(st);
+                foreach (int op in rep.OpcodesSeen) rep.Prefetched.Add(op);   // what the login asked for (a Prefetch window's data) is there before the first step
                 Debug.Log("chaos live smoke: " + steps.Count + " windows to open, " + missing.Count + " not in this build");
                 SetPhase(Phase.Steps);
             }
@@ -318,7 +324,7 @@ namespace Chaos.Client
                 current = pending.Dequeue();
                 CloseAll();
                 rec = rep.Smoke.Begin(current.Name, current.Kind);
-                curWin = new LiveSmokeWindow { Name = current.Name, Class = current.Id, Native = LiveSmokePlan.IsNative(current.Id), Record = rec };
+                curWin = new LiveSmokeWindow { Name = current.Name, Class = current.Id, Record = rec };
                 Array.Copy(extCount, stepBase, extCount.Length);
                 stepStart = NowMs;
                 lastExtMs = stepStart;
@@ -380,14 +386,15 @@ namespace Chaos.Client
                 curWin.Ms = NowMs - stepStart;
                 rep.Windows.Add(curWin);
                 rep.Smoke.End();
-                tile.Problem = rec.Problem || (curWin.NoAnswer && !curWin.Native);
-                tile.Flags = Flags(rec, curWin);
+                var status = rep.StatusOf(curWin);
+                tile.Problem = rec.Problem || status == LiveWindowStatus.NoAnswer;
+                tile.Flags = Flags(rec, status);
                 tiles.Add(tile);
                 if (tile.Problem) Debug.Log("chaos live smoke: " + s.Name + ": " + (tile.Flags.Length > 0 ? tile.Flags : "problem"));
                 current = null; rec = null; curWin = null;
             }
 
-            static string Flags(SmokeRecord r, LiveSmokeWindow w)
+            static string Flags(SmokeRecord r, LiveWindowStatus status)
             {
                 string f = "";
                 int e = r.Count(SmokeIssueKind.Exception), l = r.Count(SmokeIssueKind.Layout), g = r.Count(SmokeIssueKind.Error);
@@ -398,7 +405,8 @@ namespace Chaos.Client
                 if (r.OffScreen) f += "OFF ";
                 if (r.Oversize) f += "OVER ";
                 if (!r.OpenAtEnd) f += "SHUT ";
-                if (w.NoAnswer && !w.Native) f += "NOANS ";
+                if (status == LiveWindowStatus.NoAnswer) f += "NOANS ";
+                else if (status == LiveWindowStatus.NeedsCondition) f += "COND ";
                 return f.TrimEnd();
             }
 
@@ -447,6 +455,7 @@ namespace Chaos.Client
                 rep.Sheets = SmokeSheet.SheetCount(tiles.Count);
                 Debug.Log(rep.SummaryLine());
                 foreach (var w in rep.Warnings()) Debug.Log("chaos live smoke: warning: " + w);
+                foreach (var n in rep.Notes()) Debug.Log("chaos live smoke: note: " + n);
                 foreach (var f in rep.Failures()) Debug.Log("chaos live smoke: failure: " + f);
                 WriteJson();
                 if (tiles.Count == 0) { Finish(); return; }

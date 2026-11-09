@@ -420,27 +420,29 @@ jobs:
           python3 -I - "$out" "$out/live_smoke_summary.md" <<'PY' || fails=$((fails + 1))
           import json, os, sys
           out, md = sys.argv[1], sys.argv[2]
-          lines = ["## Player on a live server (O433)", "", "| identity | login | entry | walk (confirmed of sent) | tiles drawn | windows | with answer | no answer | exceptions | layout errors | result |", "|---|---|---|---|---|---|---|---|---|---|---|"]
+          lines = ["## Player on a live server (O433)", "", "| identity | login | entry | walk (confirmed of planned) | tiles drawn | windows | answered | prefetched | local-only | needs condition | no answer | exceptions | layout errors | result |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
           notes, bad = [], False
           for ident in ("extended", "chaos"):
               path = os.path.join(out, "live-%s" % ident, "live_smoke.json")
               if not os.path.isfile(path):
-                  lines.append("| %s | no report | | | | | | | | | FAIL |" % ident)
+                  lines.append("| %s | no report | | | | | | | | | | | | FAIL |" % ident)
                   bad = True
                   continue
               d = json.load(open(path))
               s = d["summary"]
               ok = d.get("pass", False)
               bad = bad or not ok
-              lines.append("| %s | %s | %s | %d of %d | %d | %d | %d | %d | %d | %d | %s |" % (
-                  ident, "ok" if d["login"]["ok"] else "FAIL", "ok" if d["enter"]["ok"] else "FAIL", d["walk"]["confirmed"], d["walk"]["sent"],
-                  d["map"]["tilesDrawn"], s["windows"], s["answered"], s["noAnswer"], s["exceptions"], s["layoutErrors"], "pass" if ok else "FAIL"))
+              lines.append("| %s | %s | %s | %d of %d | %d | %d | %d | %d | %d | %d | %d | %d | %d | %s |" % (
+                  ident, "ok" if d["login"]["ok"] else "FAIL", "ok" if d["enter"]["ok"] else "FAIL", d["walk"]["confirmed"], d["walk"]["planned"],
+                  d["map"]["tilesDrawn"], s["windows"], s["answered"], s["prefetched"], s["local"], s["needsCondition"], s["noAnswer"], s["exceptions"], s["layoutErrors"], "pass" if ok else "FAIL"))
               for f in d.get("failures", []):
                   notes.append("- **%s** failed: %s" % (ident, f))
               for w in d.get("warnings", []):
                   notes.append("- %s: %s" % (ident, w))
+              for w in d.get("notes", []):
+                  notes.append("- %s: %s" % (ident, w))
           lines += [""] + (notes if notes else ["No failure and no warning."])
-          lines += ["", "A window without an extended answer is a warning, not a failure. Native windows (equipment, containers, battle list, minimap ...) are not expected to get one. The json and the sheets are in the hd2d-shots artifact (live-extended, live-chaos)."]
+          lines += ["", "Every window is answered, prefetched at login (Skills, Dungeons), local-only (native windows, Helper, Item Finder), needs a condition or has no answer; only no answer is a warning, never a failure. The json and the sheets are in the hd2d-shots artifact (live-extended, live-chaos)."]
           text = "\n".join(lines) + "\n"
           open(md, "w").write(text)
           print(text)
