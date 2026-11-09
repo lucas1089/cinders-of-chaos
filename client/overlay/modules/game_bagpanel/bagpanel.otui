@@ -10,10 +10,12 @@ BagPanelTab < ChaosTabButton
 
 // an equipment slot or an item cell: a UIItem, so the base drag and drop (g_game.move to its position) and the
 // right-click menu and the rich tooltip work as in the classic windows
+// the stack count is drawn in the widget's font and colour (UIItem::drawSelf): bright and the theme's 11 px,
+// the dim #6b6258 9 px made counts unreadable (owner 2026-11-09)
 BagPanelCell < ChaosItemSlot
   size: 34 34
-  font: Verdana-9px-antialiased
-  color: #6b6258
+  font: verdana-11px-rounded
+  color: #f2e8d5
   text-align: center
   text-wrap: true
 
