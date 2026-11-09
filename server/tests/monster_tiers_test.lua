@@ -514,6 +514,47 @@ eq(ChaosTierOf(magic), "magic", "a roll at 600 x 3 is magic")
 math.random = realRandom
 ChaosEvents, ChaosWorldEvents = nil, nil
 
+-- ---------------------------------------------------------------- Reflective (O433 phase 25)
+-- 15% of the damage that lands comes back onto the player who hit, as it was dealt: no attacker (the monster's tier, rift,
+-- party and guardian multipliers scale the hits of a monster attacker, and a legendary guardian sent a 30k hit back as 16.9k
+-- onto a 10k player), and the overkill of a hit is not reflected
+do
+	local sent = {}
+	local realDo = doTargetCombatHealth
+	doTargetCombatHealth = function(attacker, target, ctype, min, max, effect)
+		sent[#sent + 1] = {attacker = attacker, target = target, ctype = ctype, min = min, max = max}
+	end
+	local refl = Game.createMonster("Dragon", position(120, 100, 7), true, false)
+	state[refl:getId()] = {tier = "legendary", depth = 0, mods = {"reflective"}, step = 0}
+	local hitter = {isPlayer = function() return true end, isMonster = function() return false end, getId = function() return 9 end}
+	local taken = creatureEvents.ChaosModTaken
+	check(taken ~= nil, "reflective: the modifier event exists")
+	-- a hit the monster survives: 15% of all of it
+	local p1, t1, s1, st1 = taken.onHealthChange(refl, hitter, -400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(#sent, 1, "reflective: one reflected hit")
+	eq(sent[1] and sent[1].attacker, 0, "reflective: no attacker, so no monster multiplier applies")
+	eq(sent[1] and sent[1].target, hitter, "reflective: the hitter takes it")
+	eq(sent[1] and sent[1].min, -60, "reflective: 15% of a 400 hit")
+	eq(sent[1] and sent[1].max, -60, "reflective: the same maximum")
+	eq(p1, -400, "reflective: the hit itself is not changed")
+	-- overkill: a 30000 hit on a monster with 1000 health sends back 15% of the 1000 that landed
+	sent = {}
+	taken.onHealthChange(refl, hitter, -30000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(sent[1] and sent[1].min, -150, "reflective: overkill is not reflected (30000 on 1000 health sends back 150)")
+	-- a split hit (physical and elemental) counts both parts, capped by the health left
+	sent = {}
+	refl:setHealth(100)
+	taken.onHealthChange(refl, hitter, -300, COMBAT_PHYSICALDAMAGE, -700, COMBAT_FIREDAMAGE, 0)
+	eq(sent[1] and sent[1].min, -15, "reflective: capped by the health that was left (100 health, 15 back)")
+	-- nothing from a monster hit, a heal or a hit that rounds to nothing
+	sent = {}
+	taken.onHealthChange(refl, {isPlayer = function() return false end, isMonster = function() return true end}, -400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	refl:setHealth(1000)
+	taken.onHealthChange(refl, hitter, -6, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(#sent, 0, "reflective: a monster's hit and a 6 point hit reflect nothing")
+	doTargetCombatHealth = realDo
+end
+
 print(string.format("monster tiers tests: %d checks, %d failed", count, failures))
 if failures > 0 then
 	os.exit(1)

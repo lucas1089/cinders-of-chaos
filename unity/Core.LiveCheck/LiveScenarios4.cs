@@ -31,9 +31,10 @@ namespace Chaos.Core.LiveCheck
 
         void LeavePartyBoth()
         {
-            if (partner != null && partner.S.Closed == null && partner.S.Party.InParty) partner.S.Party.Do(PartyAction.Leave, 0);
+            // the engine refuses a leave while the character is in a fight (Game::playerLeaveParty, CONDITION_INFIGHT, up to 60 s after the last hit): retry
+            if (partner != null && partner.S.Closed == null && partner.S.Party.InParty) LeaveWithRetry(partner, new[] { me }, 75000, out _);
             Pump(800, () => false);
-            if (me.S.Closed == null && me.S.Party.InParty) me.S.Party.Do(PartyAction.Leave, 0);
+            if (me.S.Closed == null && me.S.Party.InParty) LeaveWithRetry(me, new LiveClient[] { partner }, 75000, out _);
             Pump(600, () => false);
         }
 

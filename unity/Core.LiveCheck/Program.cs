@@ -17,8 +17,9 @@ namespace Chaos.Core.LiveCheck
             if (why != null) Console.Error.WriteLine(why);
             Console.Error.WriteLine("usage: Core.LiveCheck HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE] [--identity extended|chaos]");
             Console.Error.WriteLine("                      [--otb items.otb | --pair DIR] [--no-ext]   (password: environment variable CHAOS_LIVE_PASSWORD)");
-            Console.Error.WriteLine("                      [--scenario tooltip,stairs,floorchange,npc,sell,market,modal,moremodals,party,sharedkill,rift,riftboss,partyrift,rifttier,riftfail,omen,coffer,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
+            Console.Error.WriteLine("                      [--scenario tooltip,stairs,floorchange,npc,sell,market,modal,moremodals,party,sharedkill,rift,riftboss,partyrift,rifttier,riftfail,omen,coffer,guardians,partnerdeath,lastlife,party3,trialwindows,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
             Console.Error.WriteLine("                      [--rift-tier N] [--rift-mods name:value,...] [--keeper-at X,Y,Z]");
+            Console.Error.WriteLine("                      [--guardian-tier N] [--twin-mods name:value,...] [--wrath-mods name:value,...] [--guardian-parts twin,wrath] [--hit-size N] [--reflect-probe tier|rift] [--archivist-at X,Y,Z]   (third account: CHAOS_LIVE_ACCOUNT3, CHAOS_LIVE_PASSWORD3, CHAOS_LIVE_CHARACTER3)");
             Console.Error.WriteLine("                      [--modal-npc NAME] [--modal-word WORD] [--modal-at X,Y,Z] [--rift-kill /CMD] [--rift-near /CMD]");
             Console.Error.WriteLine("                      [--killer MONSTER] [--weak MONSTER] [--rift-key-id N] [--scenario-seconds N] [--aware WxH]   (second account: CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, CHAOS_LIVE_CHARACTER2)");
             return 2;
@@ -71,6 +72,13 @@ namespace Chaos.Core.LiveCheck
                         case "--rift-tier": o.RiftTier = Math.Max(1, int.Parse(Next())); break;
                         case "--rift-mods": o.RiftMods = Next(); break;
                         case "--keeper-at": o.KeeperAt = ParsePos(Next()); break;
+                        case "--archivist-at": o.ArchivistAt = ParsePos(Next()); break;
+                        case "--guardian-tier": o.GuardianTier = Math.Max(1, int.Parse(Next())); break;
+                        case "--twin-mods": o.TwinMods = Next(); break;
+                        case "--wrath-mods": o.WrathMods = Next(); break;
+                        case "--guardian-parts": o.GuardianParts = Next().ToLowerInvariant(); break;
+                        case "--reflect-probe": o.ReflectProbe = Next().ToLowerInvariant() == "rift" ? "rift" : "tier"; break;
+                        case "--hit-size": o.HitSize = Math.Max(0, int.Parse(Next())); break;
                         case "--rift-key-id": o.RiftKeyServerId = int.Parse(Next()); break;
                         case "--scenario-seconds": o.ScenarioMs = Math.Max(5, int.Parse(Next())) * 1000; break;
                         case "--aware":
@@ -100,6 +108,10 @@ namespace Chaos.Core.LiveCheck
             o.Password2 = Environment.GetEnvironmentVariable("CHAOS_LIVE_PASSWORD2");
             o.Character2 = Environment.GetEnvironmentVariable("CHAOS_LIVE_CHARACTER2");
             if (string.IsNullOrEmpty(o.Character2)) o.Character2 = null;
+            o.Account3 = Environment.GetEnvironmentVariable("CHAOS_LIVE_ACCOUNT3");
+            o.Password3 = Environment.GetEnvironmentVariable("CHAOS_LIVE_PASSWORD3");
+            o.Character3 = Environment.GetEnvironmentVariable("CHAOS_LIVE_CHARACTER3");
+            if (string.IsNullOrEmpty(o.Character3)) o.Character3 = null;
             o.Password = Environment.GetEnvironmentVariable("CHAOS_LIVE_PASSWORD");
             if (string.IsNullOrEmpty(o.Password)) return Usage("set CHAOS_LIVE_PASSWORD");
             string keyText = Environment.GetEnvironmentVariable("CHAOS_CLIENT_KEY");

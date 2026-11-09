@@ -58,6 +58,21 @@ namespace Chaos.Core.LiveCheck
         /// <summary>The Keeper of Trials (the trial window) and the NPC beside him (the Ascendant Oracle's choice) for moremodals, and where to look for them.</summary>
         public string KeeperNpc = "Keeper of Trials", OracleNpc = "Ascendant Oracle";
         public Pos? KeeperAt;
+        // ---- phase 25
+        /// <summary>The third account of the party3 and trialwindows scenarios (environment CHAOS_LIVE_ACCOUNT3, CHAOS_LIVE_PASSWORD3, CHAOS_LIVE_CHARACTER3).</summary>
+        public string Account3, Password3, Character3;
+        /// <summary>The tier and the fixed modifiers of the guardians scenario (Twin Guardians need tier 3, the Wrathful Guardian tier 4 or more: rift_config.lua minTier).</summary>
+        public int GuardianTier = 5;
+        public string TwinMods = "twin:70", WrathMods = "wrath:20";
+        /// <summary>Which runs the guardians scenario makes: "twin,wrath" (both), or one of them.</summary>
+        public string GuardianParts = "twin,wrath";
+        /// <summary>The size of one hit of the partnerdeath scenario ('/rkill p N'); 0 hits for the monster's own health, as the earlier rift scenarios do.</summary>
+        public int HitSize;
+        /// <summary>What the partnerdeath probe makes the guardian reflect: "tier" (the Reflective tier modifier alone) or "rift" (the rift's own Reflection modifier, 22%, set live).</summary>
+        public string ReflectProbe = "tier";
+        /// <summary>The Archivist who sends the spell quest trial window (spellquest_config.lua npc.name) and where to look for her in the market stalls.</summary>
+        public string ArchivistNpc = "Archivist Odrenna";
+        public Pos? ArchivistAt;
         /// <summary>The aware range asked for after the login (Chaos identity only), 0 asks for nothing.</summary>
         public int AwareWidth, AwareHeight;
         /// <summary>Time limit of one scenario in ms (the death and rift ones take their own, longer, limits from it).</summary>
@@ -111,7 +126,7 @@ namespace Chaos.Core.LiveCheck
         readonly string datSource;
         World world;
         GameSession s;
-        LiveClient me, partner;
+        LiveClient me, partner, third;
         readonly Dictionary<byte, OpStat> ops = new Dictionary<byte, OpStat>();
         readonly SortedDictionary<byte, OpStat> other = new SortedDictionary<byte, OpStat>();
         readonly List<OpPlan> plan = LiveOps.Plan();
@@ -190,6 +205,14 @@ namespace Chaos.Core.LiveCheck
                 foreach (var f in partner.S.Parser.Failures.Take(5)) partnerStats += " [" + f + "]";
                 partner.Close();
                 partner = null;
+            }
+            if (third != null)
+            {
+                thirdStats = "parse failures " + third.S.Parser.FailureCount + ", exceptions " + third.Thrown.Count + ", packets " + third.S.Packets;
+                thirdBad = third.S.Parser.FailureCount > 0 || third.Thrown.Count > 0;
+                foreach (var f in third.S.Parser.Failures.Take(5)) thirdStats += " [" + f + "]";
+                third.Close();
+                third = null;
             }
             features = s.Parser.Features.All.OrderBy(f => f).Select(f => f.ToString(CultureInfo.InvariantCulture)).ToArray();
             s.Logout();
@@ -283,6 +306,7 @@ namespace Chaos.Core.LiveCheck
                     if (thrown.Count < 50) thrown.Add(e.GetType().Name + ": " + e.Message);
                 }
                 partner?.Poll();
+                third?.Poll();
                 tilesMax = Math.Max(tilesMax, world.Tiles.Count);
                 creaturesMax = Math.Max(creaturesMax, world.Creatures.Count);
                 if (until()) return;
@@ -407,6 +431,7 @@ namespace Chaos.Core.LiveCheck
                 { "packetTypes", seen },
                 { "scenarios", ScenarioRows() },
                 { "partner", partnerStats ?? "" },
+                { "third", thirdStats ?? "" },
                 { "parse", new Dictionary<string, object>
                     { { "errors", s?.Parser.FailureCount ?? 0 }, { "unknownPacketTypes", unknown }, { "thrown", thrown }, { "items", errs }, { "logged", logged } } },
                 { "walk", new Dictionary<string, object>

@@ -2820,8 +2820,10 @@ function monsterHealth.onHealthChange(creature, attacker, primaryDamage, primary
 		local landed = math.min(math.abs(primaryDamage) + math.abs(secondaryDamage), health)
 		local amount = math.floor(landed * (fx.reflect or 0) + math.min(elemental, health) * (fx.spite or 0))
 		if amount > 0 then
+			-- dealt back as it was dealt: no attacker, so the monster's own damage multipliers (its tier, the run's, the guardian
+			-- curve) do not scale it a second time (O433 phase 25: measured, the same 30k hits cost 5323 and 2494 before and 2241 and 1667 after)
 			reflecting = true
-			doTargetCombatHealth(creature:getId(), p, (fx.spite or 0) > 0 and COMBAT_ENERGYDAMAGE or COMBAT_PHYSICALDAMAGE,
+			doTargetCombatHealth(0, p, (fx.spite or 0) > 0 and COMBAT_ENERGYDAMAGE or COMBAT_PHYSICALDAMAGE,
 				-amount, -amount, CONST_ME_NONE)
 			reflecting = false
 		end
