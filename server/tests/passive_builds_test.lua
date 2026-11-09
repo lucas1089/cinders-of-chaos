@@ -178,6 +178,95 @@ end
 -- a theme only some classes have
 check(Core.find(data, "necromancer", "focus_summons") and not Core.find(data, "warrior", "focus_summons"), "the summons theme is for the summoners")
 
+-- ------------------------------------------------------------------------------------------------ build variety (O442)
+-- The Recommended builds are three different ways to play, not three stat fills, and the Auto build list reaches every
+-- keystone a class may hold. A keystone is a node whose stats for the class (its variant on 621 / 624, else its own)
+-- carry an ar* or ks* flag: the 38 keystones of the tree. The class notables (ct*) are not keystones.
+local function keystoneFlag(node, classKey)
+	local stats = (node.v and node.v[ChaosClasses.keystoneKey(Chaos.classes.ids[classKey])]) or node.s or {}
+	for stat in pairs(stats) do
+		if stat:match("^ar%u") or stat:match("^ks%u") then return stat end
+	end
+	return nil
+end
+local function keystonesOf(build, classKey)
+	local list, set = {}, {}
+	for _, id in ipairs(build.order) do
+		local flag = keystoneFlag(tree.nodes[id], classKey)
+		if flag then
+			list[#list + 1] = id
+			set[id] = flag
+		end
+	end
+	table.sort(list)
+	return list, set
+end
+-- Keystones left out of the Auto build list on purpose, with the reason (docs/BUILDS.md, the audit of 2026-11-09). Hollow Palm
+-- (Hollow Vessel with Aether Edge) is not recommended by default: strong, owner 2026-11-09 keeps it as it is. They are
+-- in no Recommended build and in no theme (keystoneThemes has no tag for them).
+local deny = {
+	arOpenHand = "fists for the loss of the weapon: -4% to +4% in the computed rows, a price for no gain",
+	arAetherEdge = "6% of the shield as energy damage for 20% less health: +2% on one and five targets without Hollow Vessel",
+	arHollowVessel = "health 100: against two monsters the shield never recharges, the pool is 51-56% smaller at level 1000 (measured)"
+}
+-- Keystones no Recommended build of the class holds, although a Focus build may: [class .. ":" .. flag] or [flag] for every
+-- class that may hold it.
+local roleAvoid = {
+	arOpenHand = deny.arOpenHand, arAetherEdge = deny.arAetherEdge, arHollowVessel = deny.arHollowVessel,
+	["elementalist:arCinderSigil"] = "Sigil of Cinders on an Elementalist: -2% on one and five targets for -20% of the other damage",
+	["ranger:arSnarewright"] = "Seeker Mine and Detonate Mines are not on the Ranger line spell list on this base (O455 gives them back): no mine role yet",
+	["deadeye:arSnarewright"] = "Seeker Mine and Detonate Mines are not on the Ranger line spell list on this base (O455 gives them back): no mine role yet",
+	["beastmaster:arSnarewright"] = "Seeker Mine and Detonate Mines are not on the Ranger line spell list on this base (O455 gives them back): no mine role yet",
+	["samurai:arContagion"] = "poison is a loss for the Samurai: measured 654 / 2218, flagged in docs/CLASSES.md",
+	["samurai:ksBlackbloodCreed"] = "poison is a loss for the Samurai: measured 654 / 2218, flagged in docs/CLASSES.md",
+	["samurai:ksViperVerdict"] = "poison is a loss for the Samurai: measured 654 / 2218, flagged in docs/CLASSES.md"
+}
+-- a kept anchor (the tank role of the survival model) may hold no keystone; every other role holds 1 to 3
+local noKeystone = {templar_shield_wall = "the Templar's tank role stays as it was: the survival model takes the median of the role builds"}
+local denyUsed, avoidChecks, coverageChecks, distinctChecks = {}, 0, 0, 0
+for classKey in pairs(Chaos.classes.ids) do
+	local inSomeBuild = {}
+	local sets = {}
+	for _, b in ipairs(data.classes[classKey]) do
+		local list, set = keystonesOf(b, classKey)
+		for id in pairs(set) do inSomeBuild[id] = true end
+		if b.kind == "role" then
+			sets[#sets + 1] = {id = b.id, key = table.concat(list, ","), count = #list}
+			check(#list <= 3, b.id .. " holds " .. #list .. " keystones: a role names 1 to 3 (" .. table.concat(list, ",") .. ")")
+			check(#list >= 1 or noKeystone[b.id] ~= nil, b.id .. " holds no keystone")
+			for id, flag in pairs(set) do
+				avoidChecks = avoidChecks + 1
+				check(not roleAvoid[flag] and not roleAvoid[classKey .. ":" .. flag], b.id .. " holds " .. flag .. ", which is left out of the Recommended builds")
+			end
+		end
+	end
+	-- C1: no two of the three roles hold the same set of keystones at the full budget
+	check(#sets == 3, classKey .. ": three roles")
+	for i = 1, #sets do
+		for j = i + 1, #sets do
+			distinctChecks = distinctChecks + 1
+			check(sets[i].key ~= sets[j].key, classKey .. ": " .. sets[i].id .. " and " .. sets[j].id .. " hold the same keystones {" .. sets[i].key .. "}")
+		end
+	end
+	-- C2: every keystone the class may hold is in a Recommended or Focus build, unless denied
+	for id, node in pairs(tree.nodes) do
+		if not node.c or node.c[classKey] then
+			local flag = keystoneFlag(node, classKey)
+			if flag then
+				if deny[flag] then
+					denyUsed[flag] = true
+					check(not inSomeBuild[id], classKey .. ": the denied keystone " .. flag .. " is in a build")
+				else
+					coverageChecks = coverageChecks + 1
+					check(inSomeBuild[id], classKey .. ": the keystone " .. flag .. " (node " .. id .. ") is in no Recommended or Focus build")
+				end
+			end
+		end
+	end
+end
+for flag in pairs(deny) do check(denyUsed[flag], "the deny table names a keystone the tree has: " .. flag) end
+check(coverageChecks >= 200 and distinctChecks == 63 and avoidChecks >= 90, "the variety guards ran: " .. coverageChecks .. " keystones, " .. distinctChecks .. " role pairs, " .. avoidChecks .. " role keystones")
+
 -- ------------------------------------------------------------------------------------------------ the texts
 local function hasPt(text, what)
 	check(type(text) == "string" and pt[text] ~= nil and pt[text] ~= "", what .. " has a pt-BR: " .. tostring(text))
@@ -189,11 +278,17 @@ end
 for kind, text in pairs(cfg.kinds) do
 	hasPt(text, "kind " .. kind)
 end
+local longestRoleText = 0
 for classKey, roles in pairs(cfg.roles) do
 	for _, role in ipairs(roles) do
 		hasPt(role.name, "role " .. classKey .. "/" .. role.id)
+		-- O442: the list shows the role's own line under its name (what it does and its price)
+		check(type(role.text) == "string" and role.text:find("Price:", 1, true), "role " .. classKey .. "/" .. role.id .. " has a text that names its price")
+		hasPt(role.text, "role text " .. classKey .. "/" .. role.id)
+		longestRoleText = math.max(longestRoleText, #tostring(role.text))
 	end
 end
+check(longestRoleText <= 170, "a role text is one line: the longest has " .. longestRoleText .. " characters")
 for stat, label in pairs(cfg.statLabels) do
 	hasPt(label[1], "label of " .. stat)
 end

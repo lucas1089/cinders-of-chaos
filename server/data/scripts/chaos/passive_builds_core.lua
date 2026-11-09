@@ -30,7 +30,8 @@ function M.list(data, cfg, statsCfg, classKey)
 		local role, theme = roles[b.id], themes[b.id]
 		local entry = {id = b.id, kind = b.kind, points = #b.order, top = b.top, index = i}
 		if b.kind == "role" and role then
-			entry.name, entry.text = role.name, cfg.kinds[role.kind]
+			-- O442: a role's own line (what it does and its price); the text of its kind when it has none
+			entry.name, entry.text = role.name, role.text or cfg.kinds[role.kind]
 		elseif theme then
 			entry.name, entry.text = theme.name, theme.text
 		end

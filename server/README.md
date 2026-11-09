@@ -3956,7 +3956,7 @@ Files: `passive_builds.lua` (engine), `passive_builds_core.lua` (pure), `passive
 generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, client `treedata/classlanes.lua`). Client: `autobuild.lua`
 / `.otui` (+ `autobuildview.lua`), `statinfo.lua` / `.otui` (+ `statinfoview.lua`) in `game_passivetree`.
 
-- **Auto build** button (tree window): a dropdown with Recommended (2 to 4 builds per class, 3 roles, 21 classes) and Focus
+- **Auto build** button (tree window): a dropdown with Recommended (3 roles per class, 21 classes; three ways to play since O442) and Focus
   themes (leech, mana, damage, ...), each with its points and a one-line summary. Opcode 65 actions `autobuildList` /
   `autobuildPreview` / `autobuildApply {build, mode = "add" | "reset", cost}`. Apply only adds the nodes you can pay and takes
   nothing back. Reset and apply takes the tree back at the normal respec price (a free reset is used first) and builds the
@@ -4017,6 +4017,20 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   (`Gen.themeNodeScores`; the variants of 621 / 624 by the class's variant key). Plaguebearer (Ninja) walks to 383, 107, 624
   and fills with Earth. `passive_builds_test` fails when a build skips a keystone tagged for its theme that the class may hold.
   A new damage keystone needs a tag. Data regenerated; needs a server reload, no client change.
+- **Auto build variety (O442, 2026-11-09):** the three Recommended roles of a class are three ways to play, each with its own
+  1 to 3 keystones (`targets`, plus the keystones tagged for its `fill` theme) and a one-line `text` with its price (the list
+  sends `text` already; `PassiveBuildsCore.list` takes the role's line before the kind's). The tank role (fill defense) of a class
+  is the anchor of `survival_model.py` and stays as it was; its theme has no keystone tag. Five new Focus themes (`snares`,
+  `party`, `retaliation`, `pack`, `single`) and more tags in `keystoneThemes` reach every keystone a class may hold. Left out of
+  every Recommended build: Open Hand Creed, Aether Edge, Hollow Vessel, Sigil of Cinders for the Elementalist, mine roles for the
+  Ranger line, poison for the Samurai (`roleAvoid` in the test, with the reasons). Class section keystones are reached by the
+  Recommended builds only: a Focus build never walks through the flagged class notables in front of them. The summons theme
+  named node 624, which every class may hold, and gave the Necromancer line Reaper's Toll: it uses the Pack Alpha tag now.
+  Tests: `passive_builds_test` (no two roles of a class hold the same keystones, every keystone is in a Recommended or Focus
+  build except the deny table, the roles avoid the left-out ones, every role text has a pt-BR). Several Ranger, Deadeye,
+  Inquisitor, Monk, Samurai, Ninja, Necromancer and Elementalist roles use the Hybrid fill on purpose: the survival model takes the median role, and a
+  damage fill would have cut the seconds to die. No model measures the damage of a keystone choice. Data regenerated; needs a
+  server reload, no client change.
 - Regenerate in this order after a tree or config change: `gen_class_lanes.lua`, `gen_passivetree_data.lua` (from the client
   treedata folder), `gen_passive_builds.lua`, `gen_wiki_data.lua`, `gen_codex_data.lua`.
 - Tests: `passive_builds_test`, `passivetree_stats_test`, `passivetree_paths_test`, `passivetree_plan_test`; client

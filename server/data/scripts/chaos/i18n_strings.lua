@@ -3247,6 +3247,176 @@ return {
 			"Farol",
 		["Retributor"] =
 			"Retribuidor",
+		["Traps and mines"] =
+			"Armadilhas e minas",
+		["Snare damage follows your weapon skill and damage nodes, with the keystone that arms more traps and mines."] =
+			"O dano das armadilhas segue seu skill de arma e os nós de dano, com o keystone que arma mais armadilhas e minas.",
+		["Party support"] =
+			"Suporte ao grupo",
+		["Mana, healing spells and magic level, with the keystones that buff and heal your party."] =
+			"Mana, magias de cura e magic level, com os keystones que fortalecem e curam o seu grupo.",
+		["Retaliation"] =
+			"Retaliação",
+		["Hold the line and hit back: health and resistances, with the keystones that reflect, counter and survive."] =
+			"Segure a linha e revide: vida e resistências, com os keystones que refletem, contra-atacam e sobrevivem.",
+		["Area clearing"] =
+			"Limpeza de área",
+		["Damage and attack speed, with the keystones that hit more than one enemy."] =
+			"Dano e velocidade de ataque, com os keystones que atingem mais de um inimigo.",
+		["Single target"] =
+			"Alvo único",
+		["Critical hits and damage multipliers, with the keystones that make one target die faster."] =
+			"Críticos e multiplicadores de dano, com os keystones que fazem um alvo morrer mais rápido.",
+		["Area: keystones that hit the whole pack, with the damage nodes of your class."] =
+			"Área: keystones que atingem o bando todo, com os nós de dano da sua classe.",
+		["Damage over time: poison, bleed and curses that keep working."] =
+			"Dano ao longo do tempo: veneno, sangramento e maldições que continuam agindo.",
+		["Retaliation: attackers pay for every hit."] =
+			"Retaliação: quem ataca paga por cada golpe.",
+		["Single target: keystones that kill one enemy fast, with crit and skill."] =
+			"Alvo único: keystones que matam um inimigo rápido, com crítico e skill.",
+		["Traps and mines: set them, then set them off."] =
+			"Armadilhas e minas: arme e depois detone.",
+		["Pack Alpha wolves and Stormstring arcs. Price: the main bow hit is 10% weaker."] =
+			"Os lobos do Pack Alpha e os arcos do Stormstring. Preço: o golpe principal do arco é 10% mais fraco.",
+		["Ricochet and Longshot: the bow bounces through a pack. Price: the wolves are filler, close hits are 15% weaker."] =
+			"Ricochet e Longshot: o arco ricocheteia pelo bando. Preço: os lobos viram reforço, golpes de perto são 15% mais fracos.",
+		["Pack Alpha with health and resistances for safe solo hunts. Price: low damage."] =
+			"Pack Alpha com vida e resistências para caçadas solo seguras. Preço: pouco dano.",
+		["Cleaving Arc hits the pack, Undying Rage heals on every blow. Price: Cleaving Arc needs a two-hander."] =
+			"O Cleaving Arc atinge o bando, o Undying Rage cura a cada golpe. Preço: o Cleaving Arc exige uma arma de duas mãos.",
+		["Sanguine and Undying Rage: leech and heal on every hit. Price: healing from others is 30% lower."] =
+			"Sanguine e Undying Rage: roubo de vida e cura a cada golpe. Preço: a cura vinda de outros é 30% menor.",
+		["Earthbreaker slams and Cascade Edge bursts on crits. Price: other hits 10% weaker, non-crits 5% weaker."] =
+			"O Earthbreaker esmaga o chão e o Cascade Edge explode nos críticos. Preço: outros golpes 10% mais fracos, não críticos 5% mais fracos.",
+		["Bone Colossus and Covenant of the Grave: a big army. Price: your own spells are 25% weaker."] =
+			"Bone Colossus e Covenant of the Grave: um grande exército. Preço: suas próprias magias são 25% mais fracas.",
+		["Bone Colossus with health and resistances. Price: low damage."] =
+			"Bone Colossus com vida e resistências. Preço: pouco dano.",
+		["Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill of your minions. Price: your hits are weaker on healthy monsters."] =
+			"O Reaper's Toll dobra os golpes em monstros fracos, a Corpse Detonation explode cada morte dos seus lacaios. Preço: seus golpes são mais fracos em monstros saudáveis.",
+		["Deadeye shots, Hunter's Focus stacks and Longshot: one target dies fast. Price: slow on packs."] =
+			"Tiros de Deadeye, acúmulos do Hunter's Focus e Longshot: um alvo morre rápido. Preço: lento contra bandos.",
+		["Stormquiver"] =
+			"Stormquiver",
+		["Stormstring arcs lightning through the pack. Price: the main bow hit is 10% weaker."] =
+			"O Stormstring faz arcos de raio pelo bando. Preço: o golpe principal do arco é 10% mais fraco.",
+		["Cascade Hunter"] =
+			"Caçador de Cascata",
+		["Cascade Edge bursts on the neighbours of every crit. Price: non-critical hits are 5% weaker."] =
+			"O Cascade Edge explode nos vizinhos de cada crítico. Preço: golpes não críticos são 5% mais fracos.",
+		["Arcane Echo repeats area spells, Elemental Overload primes the next element. Price: Overload pays only if you change element."] =
+			"O Arcane Echo repete magias de área, o Elemental Overload prepara o próximo elemento. Preço: o Overload só compensa se você trocar de elemento.",
+		["Effigy Caller"] =
+			"Invocador de Efígies",
+		["Cinder Effigies repeat your area spell every 2 seconds. Price: your spells are 25% weaker, one target gains nothing."] =
+			"Efígies de Cinzas repetem sua magia de área a cada 2 segundos. Preço: suas magias são 25% mais fracas, um alvo só não ganha nada.",
+		["Vigil Keeper"] =
+			"Guardião das Vigílias",
+		["Covenant of Vigils: vigils for the party on a deep mana pool. Price: your own damage is 10% weaker."] =
+			"Covenant of Vigils: vigílias para o grupo sobre uma mana profunda. Preço: seu próprio dano é 10% menor.",
+		["Shared Phantasm and Inspiring Illusion: your party hits harder and heals. Price: needs a party, little own damage."] =
+			"Shared Phantasm e Inspiring Illusion: seu grupo bate mais forte e se cura. Preço: exige um grupo, pouco dano próprio.",
+		["An area caster: Cinder Effigies repeat each cast. Price: your spells are 25% weaker, one target gains nothing."] =
+			"Um mago de área: Efígies de Cinzas repetem cada conjuração. Preço: suas magias são 25% mais fracas, um alvo só não ganha nada.",
+		["Divine Verdict lets Radiant Strikes judge, Dawnchain chains holy light. Price: your spells are 10% weaker."] =
+			"O Divine Verdict faz os Radiant Strikes julgarem, a Dawnchain encadeia luz sagrada. Preço: suas magias são 10% mais fracas.",
+		["Ember Brand"] =
+			"Marca de Brasa",
+		["Sigil of Cinders brands one target and burns its neighbours. Price: damage that is not fire or holy is 20% weaker."] =
+			"O Sigil of Cinders marca um alvo e queima os vizinhos. Preço: dano que não é de fogo nem sagrado é 20% mais fraco.",
+		["Rebuker"] =
+			"Repreensor",
+		["Radiant Rebuke: a shield blocks one hit in five and answers with a holy nova. Price: weapon hits are 10% weaker."] =
+			"Radiant Rebuke: um escudo bloqueia um golpe em cada cinco e responde com uma holy nova. Preço: golpes de arma são 10% mais fracos.",
+		["Flowing Mercy and Overgrowth: your heals reach a second ally and keep healing. Price: little damage."] =
+			"Flowing Mercy e Overgrowth: suas curas alcançam um segundo aliado e continuam curando. Preço: pouco dano.",
+		["Scarred Discipline: every hit you take builds chi and cuts damage. Price: no evasion."] =
+			"Scarred Discipline: cada golpe que você leva gera chi e reduz o dano. Preço: sem esquiva.",
+		["Flowing Mercy with Sanguine leech: a healer that fights. Price: healing you receive is 30% lower."] =
+			"Flowing Mercy com roubo de vida do Sanguine: um curandeiro que luta. Preço: a cura que você recebe é 30% menor.",
+		["Immovable and Bulwark: the toughest way to stand. Price: kills come slowly."] =
+			"Immovable e Bulwark: o jeito mais firme de resistir. Preço: as mortes demoram.",
+		["Elemental Overload: a spell of a new element hits harder. Price: it pays only if you change element every cast."] =
+			"Elemental Overload: uma magia de um elemento novo bate mais forte. Preço: só compensa se você trocar de elemento a cada conjuração.",
+		["Pyre Walker"] =
+			"Caminhante da Pira",
+		["Pyre Oath burns the pack around you while you stand tough. Price: your other damage is 25% weaker and you burn too."] =
+			"O Pyre Oath queima o bando ao seu redor enquanto você resiste firme. Preço: seu outro dano é 25% mais fraco e você também queima.",
+		["Earthbreaker slams and Executioner finishes. Price: most hits are 10% weaker and no tank keystone."] =
+			"O Earthbreaker esmaga o chão e o Executioner dá o golpe final. Preço: a maioria dos golpes é 10% mais fraca e nenhum keystone de tanque.",
+		["Hoarded Souls with the rot and curse nodes: damage over time. Price: a slow start."] =
+			"Hoarded Souls com os nós de podridão e maldição: dano ao longo do tempo. Preço: um começo lento.",
+		["Soul Reaper"] =
+			"Ceifador de Almas",
+		["Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill. Price: your hits are weaker on healthy monsters."] =
+			"O Reaper's Toll dobra os golpes em monstros fracos, a Corpse Detonation explode cada morte. Preço: seus golpes são mais fracos em monstros saudáveis.",
+		["Sanguine leech with Life Siphon. Price: healing from others is 30% lower."] =
+			"Roubo de vida do Sanguine com o Life Siphon. Preço: a cura vinda de outros é 30% menor.",
+		["Seventh Palm: every 5th hit lands double and shocks its neighbours. Price: the other hits are 10% weaker."] =
+			"Seventh Palm: todo 5º golpe cai em dobro e abala os vizinhos. Preço: os outros golpes são 10% mais fracos.",
+		["Palm Piercer"] =
+			"Perfurador de Palma",
+		["Piercing Palm hits pass through to the next two enemies, Scarred Discipline cuts damage taken. Price: no evasion, each hit is 5% weaker."] =
+			"Os golpes do Piercing Palm atravessam até os dois próximos inimigos, o Scarred Discipline reduz o dano recebido. Preço: sem esquiva, cada golpe é 5% mais fraco.",
+		["Elemental Overload with health and resistances. Price: low damage."] =
+			"Elemental Overload com vida e resistências. Preço: pouco dano.",
+		["Covenant of the Grave: minions hit harder and last longer. Price: your own spells are 25% weaker."] =
+			"Covenant of the Grave: lacaios batem mais forte e duram mais. Preço: suas próprias magias são 25% mais fracas.",
+		["Grave Effigies"] =
+			"Efígies da Tumba",
+		["Living Shadow opens a damage window after a dodge, Cascade Edge bursts on crits. Price: non-crits are 5% weaker."] =
+			"Living Shadow abre uma janela de dano depois de uma esquiva, o Cascade Edge explode nos críticos. Preço: golpes não críticos são 5% mais fracos.",
+		["Shadow Twin sometimes strikes twice, Fleet Shadow adds dodge. Price: you take 6% more damage."] =
+			"A Shadow Twin às vezes golpeia duas vezes, a Fleet Shadow soma esquiva. Preço: você leva 6% mais dano.",
+		["Poison on every attack that spreads when the pack dies. Price: evasion halved, weapon hits weaker."] =
+			"Veneno em todo ataque que se espalha quando o bando morre. Preço: esquiva pela metade, golpes de arma mais fracos.",
+		["Deadeye crossbow shots and the Longshot range bonus for one target. Price: hits within 2 sqm are 15% weaker."] =
+			"Tiros de besta do Deadeye e o bônus de alcance do Longshot para um alvo. Preço: golpes a até 2 sqm são 15% mais fracos.",
+		["Stormstring arcs and Ricochet bounces clear packs from range. Price: the main bow hit is 10% weaker."] =
+			"Stormstring e Ricochet limpam bandos à distância. Preço: o golpe principal do arco é 10% mais fraco.",
+		["Barbed Hunter"] =
+			"Caçador Farpado",
+		["Barbed Quiver makes every shot bleed: strong in long fights. Price: the hit itself is 10% weaker."] =
+			"O Barbed Quiver faz cada tiro sangrar: forte em lutas longas. Preço: o golpe em si é 10% mais fraco.",
+		["Way of the Blade: Counter Stance parries every melee hit. Price: low damage."] =
+			"Way of the Blade: o Counter Stance apara todo golpe corpo a corpo. Preço: pouco dano.",
+		["Shadow Twin and Cascade Edge for crit duels. Price: you take 6% more damage, non-crits 5% weaker."] =
+			"Shadow Twin e Cascade Edge para duelos de crítico. Preço: você leva 6% mais dano, não críticos 5% mais fracos.",
+		["Way of the Blade parries, Sanguine leeches on every hit. Price: healing from others is 30% lower."] =
+			"O Way of the Blade apara, o Sanguine rouba vida a cada golpe. Preço: a cura vinda de outros é 30% menor.",
+		["Bastion widens your aura and covers the party. Price: little damage."] =
+			"O Bastion alarga a sua aura e cobre o grupo. Preço: pouco dano.",
+		["Reliquary Keeper"] =
+			"Guardião do Relicário",
+		["A Reliquary Warden follows you: it heals and buffs the party and burns enemies. Price: your own damage is 10% weaker."] =
+			"Um Reliquary Warden segue você: cura e fortalece o grupo e queima inimigos. Preço: seu próprio dano é 10% menor.",
+		["Thorns, Thornbound Oath and Penitent's Wrath: attackers pay for every hit. Price: your damage is 10% weaker, your aura is halved."] =
+			"Thorns, Thornbound Oath e Penitent's Wrath: quem ataca paga por cada golpe. Preço: seu dano é 10% menor, sua aura é pela metade.",
+		["Hundred Hands feeds chi from crits, Cascade Edge bursts on them. Price: non-crits are 5% weaker."] =
+			"O Hundred Hands gera chi nos críticos, o Cascade Edge explode neles. Preço: golpes não críticos são 5% mais fracos.",
+		["Seventh Palm: every 5th hit lands double. Price: the other hits are 10% weaker."] =
+			"Seventh Palm: todo 5º golpe cai em dobro. Preço: os outros golpes são 10% mais fracos.",
+		["Hundred Hands and Iron Tithe: vigils paid in health give speed. Price: part of your health is reserved."] =
+			"Hundred Hands e Iron Tithe: vigílias pagas com vida dão velocidade. Preço: parte da sua vida fica reservada.",
+		["Dawnchain chains holy light, Penitent's Wrath answers every hit. Price: your spells are 10% weaker, your aura is halved."] =
+			"A Dawnchain encadeia luz sagrada, o Penitent's Wrath responde a cada golpe. Preço: suas magias são 10% mais fracas, sua aura é pela metade.",
+		["Shield, resistances and the Templar aura. Price: little damage."] =
+			"Escudo, resistências e a aura do Templar. Preço: pouco dano.",
+		["Pyre Oath burns the pack around you. Price: your other damage is 25% weaker and you burn too."] =
+			"O Pyre Oath queima o bando ao seu redor. Preço: seu outro dano é 25% mais fraco e você também queima.",
+		["Shadow Twin sometimes strikes twice, Cascade Edge bursts on crits. Price: you take 6% more damage, non-crits 5% weaker."] =
+			"A Shadow Twin às vezes golpeia duas vezes, o Cascade Edge explode nos críticos. Preço: você leva 6% mais dano, não críticos 5% mais fracos.",
+		["Mine-layer"] =
+			"Minador",
+		["Traps and mines for the pack, set off by hand. Price: your other hits are 15% weaker and it needs set-up."] =
+			"Armadilhas e minas para o bando, detonadas à mão. Preço: seus outros golpes são 15% mais fracos e exige preparo.",
+		["Two-hander cleaves and Earthbreaker slams for packs. Price: other melee hits are 10% weaker."] =
+			"A arma de duas mãos corta em arco e o Earthbreaker esmaga bandos. Preço: os outros golpes corpo a corpo são 10% mais fracos.",
+		["Shield, health and resistances: Bulwark blocks and reflects. Price: needs a shield, kills come slowly."] =
+			"Escudo, vida e resistências: o Bulwark bloqueia e reflete. Preço: exige um escudo, as mortes demoram.",
+		["Sanguine leech and Rampage kill stacks. Price: you receive 30% less healing and take more damage per stack."] =
+			"Roubo de vida do Sanguine e acúmulos do Rampage a cada morte. Preço: você recebe 30% menos cura e leva mais dano a cada acúmulo.",
 		-- Auto build messages (passive_builds.lua)
 		["Unknown build."] =
 			"Build desconhecida.",

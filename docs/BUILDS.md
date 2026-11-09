@@ -125,7 +125,7 @@ regeneration, heals, potions and leech fill only those 100 points. Poison and li
   than the 20-40% above (flag, not applied). The base items' equip rules kept the Robe at level 400 and the Diadem off
   the Elementalist; fixed 2026-10-13 (applied, the uniques' own equip rules): measured again, an Elementalist at level
   300 wears both, shield 2,343, recharge 45%. The Hollow Palm with the Plate passes the Deadeye at level 1000 (5,342
-  against 4,670-4,685; flag, not applied). `server/data/spells/README.md` "Snares, vigils and Hollow Vessel measured
+  against 4,670-4,685; strong, kept as it is by the owner on 2026-11-09, not recommended by default). `server/data/spells/README.md` "Snares, vigils and Hollow Vessel measured
   in game".
 
 ## The archetypes per class line
@@ -166,7 +166,7 @@ level 25), 816 per 2000 hit at level 1000 (magic level 40), still far below the 
 | **Iron Pilgrim** (new) | Templar, or any but Monk | Templar or Sentinel | Open Hand Creed; Knuckles of the Unbound; a shield; Radiant Smite, Consecration | bare fists and a shield; Radiant Strikes ride on every punch | no weapon to chase; strong shield play | the Warrior's skill spells see no weapon | 300: fist skill trains with use. 1000: the Knuckles |
 | Holy area | Templar | Inquisitor | Divine Verdict, Burning Zeal; Judgement, Purging Nova, Zealotry | the existing holy area | area with self heals | needs a group to shine | holy nodes |
 | **Trapper** (new, round 2) | Ranger | Deadeye; Ranger works | Snarewright's Creed, Hunter's Focus; Snarewalker Greaves; Snare Trap with fire or ice, Skewering Line | throw traps into the pack's path and keep shooting | strong pack clear from range; ice traps slow the pack | single target 40-50% below the line's own (computed) | 300: bow power, the Greaves. 1000: distance skill, fire nodes |
-| **Mine-layer** (new, round 2) | Ranger or Thief | Deadeye or Ninja | Snarewright's Creed; Fusewright's Charm; Seeker Mine, Detonate Mines | lay five to ten mines, set them all off at once | the best burst of the snares; the Ninja gets an area tool | needs set-up; mines waste when the pack moves | 300: the Charm, earth for poison. 1000: crit and blade power |
+| **Mine-layer** (new, round 2) | Ranger or Thief | Deadeye or Ninja | Snarewright's Creed; Fusewright's Charm; Seeker Mine, Detonate Mines | lay five to ten mines, set them all off at once | the best burst of the snares; the Ninja gets an area tool | needs set-up; mines waste when the pack moves | 300: the Charm, earth for poison. 1000: crit and blade power. Measured before the spell cap; the Ranger line gets the mines back in O455 |
 | **Choir Herald** (new, round 2) | Templar, Mystic or Necromancer | Sentinel, Illusionist or Bone Lord | Covenant of Vigils; Choirmaster's Circlet, Oathkeeper's Standard; Vigil of Wrath, Haste, Clarity | run three vigils for the party | +6% damage, +18% speed and mana for the whole party | own damage 10% lower; about half the mana is reserved | 300: maximum mana, the Circlet. 1000: the Standard |
 | **Tithebound** (new, round 2) | Warrior, Monk or Templar | Berserker, Shadowfist or Inquisitor | Iron Tithe; Vigil of Wrath and Haste on health | a fighter that pays its auras in blood | +7.5% damage and +22% speed for itself, the mana stays free | a third of the health reserved; no party buff | 300: health nodes. 1000: the uniques |
 | **Hollow Caster** (new, round 2) | Mystic or Necromancer | Elementalist or Lich | Hollow Vessel; Stillheart Robe, Hollowglass Diadem; four Maximum Energy Shield mods | cast from behind a shield that comes back in three seconds | immune to poison and life drain; heals not needed | a burst through the shield kills | 300: four T5 shield mods. 1000: the Robe, recharge mods |
@@ -179,6 +179,90 @@ Warrior or a Ranger can run Vigil of Wrath on mana alone. Hollow Vessel also sui
 New options per line in round 2: Warrior Tithebound; Ranger Trapper and Mine-layer; Mystic Choir Herald and Hollow
 Caster; Thief Mine-layer and Trapper; Necromancer Choir Herald (Bone Lord) and Hollow Caster (Lich); Monk Tithebound
 and Hollow Palm; Templar Choir Herald, Tithebound and Hollow Vessel.
+
+## Recommended builds (O442)
+
+The Auto build button of the passive tree offers three Recommended builds per class (`passive_builds_config.lua` `roles`).
+Since O442 they are three different ways to play, not three stat fills: each walks to its own one to three keystones,
+and no two builds of a class hold the same set (`tests/passive_builds_test.lua`). The Focus list reaches every other
+keystone a class may hold (five new themes: Traps and mines, Party support, Retaliation, Area clearing, Single target). The
+list shows the build's line under its name: what it does and what it costs. The tank build of a class, where it had one,
+is as it was: the survival model takes the median of the role builds. Several other builds use the Hybrid fill (health and
+resistances with the damage nodes) for the same reason; the Ranger, Deadeye and Inquisitor live longer than before, and
+no class lives shorter.
+
+These builds are legal, different from each other and free of the known traps. No model measures the damage of a keystone
+choice, so none of them is proven strong. Left out of every Recommended build: Open Hand Creed, Aether Edge and Hollow
+Vessel (a price for no gain, or a pool that does not hold; the Hollow Palm that combines the last two stays as it is,
+strong and not recommended by default), Sigil of Cinders for the Elementalist, poison for the Samurai, and mine builds for
+the Ranger line (the spells come back in O455). The first keystone of a build arrives within 23 points for 47 of the 63 builds and by 30 points for
+all 62 that hold one; the last keystone of any build arrives by 73 points.
+
+| Class | Build | Keystones | What it is for | Price |
+|---|---|---|---|---|
+| Mystic | **Arcanist** (area) | Arcane Echo, Elemental Overload | Arcane Echo repeats area spells, Elemental Overload primes the next element. | Overload pays only if you change element. |
+|  | **Mana Weaver** (support) | Covenant of Vigils | Covenant of Vigils: vigils for the party on a deep mana pool. | your own damage is 10% weaker. |
+|  | **Warded Mage** (tank) | Elemental Overload | Elemental Overload with health and resistances. | low damage. |
+| Ranger | **Sharpshooter** (single) | Deadeye, Longshot | Deadeye crossbow shots and the Longshot range bonus for one target. | hits within 2 sqm are 15% weaker. |
+|  | **Stormquiver** (area) | Stormstring, Ricochet | Stormstring arcs and Ricochet bounces clear packs from range. | the main bow hit is 10% weaker. |
+|  | **Barbed Hunter** (dot) | Barbed Quiver | Barbed Quiver makes every shot bleed: strong in long fights. | the hit itself is 10% weaker. |
+| Warrior | **Slayer** (area) | Cleaving Arc, Earthbreaker | Two-hander cleaves and Earthbreaker slams for packs. | other melee hits are 10% weaker. |
+|  | **Bulwark** (tank) | Bulwark | Shield, health and resistances: Bulwark blocks and reflects. | needs a shield, kills come slowly. |
+|  | **Bloodied** (sustain) | Sanguine Covenant, Rampage | Sanguine leech and Rampage kill stacks. | you receive 30% less healing and take more damage per stack. |
+| Elementalist | **Overloaded** (single) | Elemental Overload | Elemental Overload: a spell of a new element hits harder. | it pays only if you change element every cast. |
+|  | **Effigy Caller** (area) | Effigy Covenant | Cinder Effigies repeat your area spell every 2 seconds. | your spells are 25% weaker, one target gains nothing. |
+|  | **Vigil Keeper** (support) | Covenant of Vigils | Covenant of Vigils: vigils for the party on a deep mana pool. | your own damage is 10% weaker. |
+| Deadeye | **Marked Target** (single) | Deadeye, Hunter's Focus, Longshot | Deadeye shots, Hunter's Focus stacks and Longshot: one target dies fast. | slow on packs. |
+|  | **Stormquiver** (area) | Stormstring | Stormstring arcs lightning through the pack. | the main bow hit is 10% weaker. |
+|  | **Cascade Hunter** (crit) | Cascade Edge | Cascade Edge bursts on the neighbours of every crit. | non-critical hits are 5% weaker. |
+| Juggernaut | **Unbreakable** (tank) | Immovable, Bulwark | Immovable and Bulwark: the toughest way to stand. | kills come slowly. |
+|  | **Pyre Walker** (area) | Pyre Oath, Bulwark | Pyre Oath burns the pack around you while you stand tough. | your other damage is 25% weaker and you burn too. |
+|  | **Heavy Hitter** (single) | Earthbreaker, Executioner's Verdict | Earthbreaker slams and Executioner finishes. | most hits are 10% weaker and no tank keystone. |
+| Illusionist | **Support Weaver** (support) | Shared Phantasm, Inspiring Illusion | Shared Phantasm and Inspiring Illusion: your party hits harder and heals. | needs a party, little own damage. |
+|  | **Vigil Keeper** (support) | Covenant of Vigils | Covenant of Vigils: vigils for the party on a deep mana pool. | your own damage is 10% weaker. |
+|  | **Illusory Striker** (area) | Effigy Covenant | An area caster: Cinder Effigies repeat each cast. | your spells are 25% weaker, one target gains nothing. |
+| Thief | **Venomblade** (dot) | Blackblood Creed, Contagion Rite, Viper's Verdict | Poison on every attack that spreads when the pack dies. | evasion halved, weapon hits weaker. |
+|  | **Cutthroat** (crit) | Shadow Twin, Cascade Edge | Shadow Twin sometimes strikes twice, Cascade Edge bursts on crits. | you take 6% more damage, non-crits 5% weaker. |
+|  | **Mine-layer** (snares) | Snarewright's Creed | Traps and mines for the pack, set off by hand. | your other hits are 15% weaker and it needs set-up. |
+| Ninja | **Twin Fangs** (crit) | Living Shadow, Cascade Edge | Living Shadow opens a damage window after a dodge, Cascade Edge bursts on crits. | non-crits are 5% weaker. |
+|  | **Phantom** (single) | Shadow Twin | Shadow Twin sometimes strikes twice, Fleet Shadow adds dodge. | you take 6% more damage. |
+|  | **Plaguebearer** (dot) | Blackblood Creed, Contagion Rite, Viper's Verdict | Poison on every attack that spreads when the pack dies. | evasion halved, weapon hits weaker. |
+| Samurai | **Duelist** (tank) | Way of the Blade | Way of the Blade: Counter Stance parries every melee hit. | low damage. |
+|  | **Iaido Striker** (crit) | Shadow Twin, Cascade Edge | Shadow Twin and Cascade Edge for crit duels. | you take 6% more damage, non-crits 5% weaker. |
+|  | **Bloodblade** (sustain) | Way of the Blade, Sanguine Covenant | Way of the Blade parries, Sanguine leeches on every hit. | healing from others is 30% lower. |
+| Berserker | **Rage Engine** (area) | Undying Rage, Cleaving Arc | Cleaving Arc hits the pack, Undying Rage heals on every blow. | Cleaving Arc needs a two-hander. |
+|  | **Bloodrunner** (sustain) | Sanguine Covenant, Undying Rage | Sanguine and Undying Rage: leech and heal on every hit. | healing from others is 30% lower. |
+|  | **Crusher** (crit) | Earthbreaker, Cascade Edge | Earthbreaker slams and Cascade Edge bursts on crits. | other hits 10% weaker, non-crits 5% weaker. |
+| Beastmaster | **Pack Leader** (summons) | Pack Alpha, Stormstring | Pack Alpha wolves and Stormstring arcs. | the main bow hit is 10% weaker. |
+|  | **Wild Volley** (area) | Ricochet, Longshot | Ricochet and Longshot: the bow bounces through a pack. | the wolves are filler, close hits are 15% weaker. |
+|  | **Hardy Warden** (tank) | Pack Alpha | Pack Alpha with health and resistances for safe solo hunts. | low damage. |
+| Monk | **Iron Body** (tank) | Scarred Discipline | Scarred Discipline: every hit you take builds chi and cuts damage. | no evasion. |
+|  | **Fist Flurry** (single) | Seventh Palm | Seventh Palm: every 5th hit lands double and shocks its neighbours. | the other hits are 10% weaker. |
+|  | **Palm Piercer** (area) | Piercing Palm, Scarred Discipline | Piercing Palm hits pass through to the next two enemies, Scarred Discipline cuts damage taken. | no evasion, each hit is 5% weaker. |
+| Shadowfist | **Hundred Fists** (crit) | Hundred Hands, Cascade Edge | Hundred Hands feeds chi from crits, Cascade Edge bursts on them. | non-crits are 5% weaker. |
+|  | **Pressure Points** (single) | Seventh Palm | Seventh Palm: every 5th hit lands double. | the other hits are 10% weaker. |
+|  | **Shadow Step** (mobility) | Hundred Hands, Iron Tithe | Hundred Hands and Iron Tithe: vigils paid in health give speed. | part of your health is reserved. |
+| Iron Sage | **Chi Healer** (support) | Flowing Mercy, Overgrowth | Flowing Mercy and Overgrowth: your heals reach a second ally and keep healing. | little damage. |
+|  | **Stone Sage** (tank) | Scarred Discipline | Scarred Discipline: every hit you take builds chi and cuts damage. | no evasion. |
+|  | **Healing Fist** (sustain) | Flowing Mercy, Sanguine Covenant | Flowing Mercy with Sanguine leech: a healer that fights. | healing you receive is 30% lower. |
+| Necromancer | **Grave Caller** (summons) | Covenant of the Grave | Covenant of the Grave: minions hit harder and last longer. | your own spells are 25% weaker. |
+|  | **Death Mage** (single) | Reaper's Toll, Corpse Detonation | Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill. | your hits are weaker on healthy monsters. |
+|  | **Grave Effigies** (area) | Effigy Covenant | Cinder Effigies repeat your area spell every 2 seconds. | your spells are 25% weaker, one target gains nothing. |
+| Lich | **Rot Curser** (dot) | Hoarded Souls | Hoarded Souls with the rot and curse nodes: damage over time. | a slow start. |
+|  | **Soul Reaper** (single) | Reaper's Toll, Corpse Detonation | Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill. | your hits are weaker on healthy monsters. |
+|  | **Lifedrinker** (sustain) | Sanguine Covenant | Sanguine leech with Life Siphon. | healing from others is 30% lower. |
+| Bone Lord | **Bone Army** (summons) | Bone Colossus, Covenant of the Grave | Bone Colossus and Covenant of the Grave: a big army. | your own spells are 25% weaker. |
+|  | **Bone Warden** (tank) | Bone Colossus | Bone Colossus with health and resistances. | low damage. |
+|  | **Ossuary Fury** (area) | Reaper's Toll, Corpse Detonation | Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill of your minions. | your hits are weaker on healthy monsters. |
+| Templar | **Zealot** (damage) | Dawnchain, Penitent's Wrath | Dawnchain chains holy light, Penitent's Wrath answers every hit. | your spells are 10% weaker, your aura is halved. |
+|  | **Shield Wall** (tank) | none (kept tank role) | Shield, resistances and the Templar aura. | little damage. |
+|  | **Pyre Walker** (area) | Pyre Oath | Pyre Oath burns the pack around you. | your other damage is 25% weaker and you burn too. |
+| Inquisitor | **Judge** (area) | Divine Verdict, Dawnchain | Divine Verdict lets Radiant Strikes judge, Dawnchain chains holy light. | your spells are 10% weaker. |
+|  | **Ember Brand** (single) | Sigil of Cinders | Sigil of Cinders brands one target and burns its neighbours. | damage that is not fire or holy is 20% weaker. |
+|  | **Rebuker** (tank) | Radiant Rebuke | Radiant Rebuke: a shield blocks one hit in five and answers with a holy nova. | weapon hits are 10% weaker. |
+| Sentinel | **Bastion** (tank) | Bastion | Bastion widens your aura and covers the party. | little damage. |
+|  | **Reliquary Keeper** (support) | Reliquary Vow | A Reliquary Warden follows you: it heals and buffs the party and burns enemies. | your own damage is 10% weaker. |
+|  | **Retributor** (retaliation) | Thorns, Thornbound Oath, Penitent's Wrath | Thorns, Thornbound Oath and Penitent's Wrath: attackers pay for every hit. | your damage is 10% weaker, your aura is halved. |
 
 ## Leveling notes
 
