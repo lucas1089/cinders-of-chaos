@@ -79,13 +79,23 @@ namespace Chaos.Client
             return s;
         }
 
+        /// <summary>Sends the texture to the GPU at most once a frame. Apply always sends the whole 64 MB; the effect, outfit and preview painters call this per new cell inside
+        /// their loops, so a fresh character's first effects (kit, level up, gift, fireworks) sent it dozens of times in one frame: a 17 to 23 s frame under the CI player's
+        /// software GL (PR 329 slow call log). A cell put after this frame's upload shows from the next frame.</summary>
         public void Upload()
         {
             if (!dirty) return;
+            int frame = Time.frameCount;
+            if (frame == appliedFrame) return;
             using var _slow = SlowCalls.Scope("SpriteAtlas.Upload (Apply of the 4096 x 4096 texture)", "upload");
             Texture.Apply(false);
             dirty = false;
+            appliedFrame = frame;
+            Uploads++;
         }
+
+        int appliedFrame = -1;
+        public int Uploads;   // how many times the texture went to the GPU (the live smoke reads it)
 
         public Rect Uv(int slot)
         {
