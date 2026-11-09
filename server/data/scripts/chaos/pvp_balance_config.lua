@@ -50,14 +50,18 @@ return {
 		-- per second): it deals 0.93 of the median class's pool at 500 and 1.00 at 1000, a one shot in the opening window
 		["Deadeye@500"] = {burst = 0.93},
 		["Deadeye@1000"] = {burst = 1.01},
-		-- O444: burst at level 100, the sets have 4 or 5 spells and the pools are small: 0.98 and 0.96
-		["Illusionist@100"] = {burst = 0.98},
+		-- O444: burst at level 100, the sets have 4 or 5 spells and the pools are small: 0.98 and 0.96.
+		-- O442: the Recommended builds reach a keystone in their first 23 to 30 points and hold fewer health nodes there, so the
+		-- median pool at level 100 fell from 1924 to 1842 (-4%; levels 500 and 1000 moved under 2%). The same bursts read 1.011
+		-- (Illusionist), 0.994 (Necromancer) and 0.924 (Beastmaster, was 0.89) against the smaller pool; the pins round up
+		["Illusionist@100"] = {burst = 1.02},
+		["Beastmaster@100"] = {burst = 0.93},
 
 		-- O444: duels, damage race. Wins: the Necromancer line is the highest damage class of its level with a mana shield pool two
 		-- to four times the others' (Ward of the Mind: health plus mana, survival_model.py; the model does not spend that mana on
 		-- spells). The Bone Lord wins all 20 at 500 and 1000, the Necromancer 20 and 19 at 100 and 500. The Necromancer at 100 also
 		-- has the burst of 0.96 named above
-		["Necromancer@100"] = {burst = 0.97, wins = 20},
+		["Necromancer@100"] = {burst = 1.00, wins = 20},
 		["Necromancer@500"] = {wins = 19},
 		["Bone Lord@500"] = {wins = 20},
 		["Bone Lord@1000"] = {wins = 20},

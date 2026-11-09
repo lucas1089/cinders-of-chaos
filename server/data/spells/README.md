@@ -4243,6 +4243,7 @@ healing (with healing nearly every duel is a draw). Duels decided of 210 pairs: 
 | Sentinel | 0.65 / 0.52 / 0.50 | 8.2 / 10.0 / 10.7 | 8.6 / 11.1 / 13.2 | 4.48 / 1.79 / 1.70 | 6/10/4 | 6/12/2 | 3/13/4 |
 
 Medians: pool 1924 at 100, 10974 at 500, 21812 at 1000; damage per second 607, 3084, 6017; healing in PvP 1360, 1967, 3019 a second.
+With the Recommended builds of O442 the median pool is 1842 at 100, 10968 at 500 and 22099 at 1000. The table above was made before them. Three level 100 bursts read higher against the smaller pool: Illusionist 1.01, Necromancer 0.99, Beastmaster 0.92. `pvp_balance_config.lua` pins them.
 
 ## Honest notes / limitations
 

@@ -29236,7 +29236,8 @@ more than 18 of its 20 duels, `sustainMax` (below). Today's findings, each a nam
   class deals to every class at every level (sustain 1.07 to 7.80), so with healing every duel is a draw at 100 and 500 and 392 of 420 at 1000.
   `sustainMax` 8.5 is a temporary ceiling at today's worst (Iron Sage at 100); 1.0 would be the sane one. Owner decision.
 - **One shots in the opening window**: the Deadeye (burst 0.93 at 500, 1.00 at 1000, its long cooldowns land inside 3 s: 2.36 and 2.55 x its average),
-  the Illusionist 0.98 and the Necromancer 0.96 at 100.
+  the Illusionist 0.98 and the Necromancer 0.96 at 100. With the Recommended builds of O442 the median pool at 100 is 4% smaller, so these read 1.01 and 0.99 and the
+  Beastmaster 0.92.
 - **Lopsided duels (damage race)**: the Bone Lord wins 20 of 20 at 500 and 1000, the Necromancer 20 and 19 at 100 and 500 (a mana shield pool two to four times
   the others', not spent on spells in the model); the Inquisitor loses 20 of 20 at 1000 and 19 at 500, the Iron Sage 19 at 500 and 1000.
 Classes within 10% of a limit and the full table: `--check` prints them, `data/spells/README.md` "PvP model (O444)" has today's table.
