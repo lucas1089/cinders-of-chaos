@@ -27,6 +27,7 @@ namespace Chaos.Client
         // the welcome toast's openHelper (Core HelperOnboarding): the window opens on the Shooter tab, the Auto setup button blinks gold with the hint above it until it is clicked or the time is up
         string onboardHint = "";
         double onboardAt = -1;
+        double onboardSeenAt = -1;   // the session time of the last frame that drew the onboarding row
         bool onboardPending;   // asked, not drawn yet: the hint and blink time start at the first frame the Auto setup row is drawn (CI PR 327: the request came 22 s before the window showed, the 12 s were gone)
         int onboardDrawnFrame = -100;   // the frame the gold hint was last drawn (the live smoke reads it)
         double onboardTakenMs = -1;     // Time.realtimeSinceStartup in ms when Tick took the request and opened the window (the live smoke reads it: a gap to the frame that saw it is a stall of the main thread)
@@ -286,7 +287,14 @@ namespace Chaos.Client
             }
             GUI.Label(new Rect(x, y, w, 18), Loc.T("Mana percent and the number of monsters to cast on."), hint);
             y += 24;
-            if (onboardPending && ui?.Session != null) { onboardPending = false; onboardAt = ui.Session.Now; RaiseNext = true; }
+            if (onboardPending && ui?.Session != null) { onboardPending = false; onboardAt = ui.Session.Now; onboardSeenAt = onboardAt; RaiseNext = true; }
+            // a frame that stalls (the first draw of a fresh login took 22 to 23 s under the CI player, PR 328) does not eat the hint and blink time: the clock stops over a gap of a second or more
+            if (onboardAt >= 0 && ui?.Session != null)
+            {
+                double gap = ui.Session.Now - onboardSeenAt;
+                if (gap >= 1000) onboardAt += gap;
+                onboardSeenAt = ui.Session.Now;
+            }
             double onboardAge = onboardAt >= 0 && ui?.Session != null ? ui.Session.Now - onboardAt : -1;
             bool onboarding = HelperOnboarding.Active(onboardAge);
             if (onboarding)
