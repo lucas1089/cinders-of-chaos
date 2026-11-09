@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Live check of the engine-free core of the Unity prototype against a real server (O433, unity/README.md "Live check (O433)").
-       Compiles the Core sources by link, like Core.Tests. Not run in CI (CI only builds it): it needs an installed server. -->
+       Compiles the Core sources by link, like Core.Tests. ci.yml only builds it; the workflow unity-live-check.yml runs it against a server it builds (tools/ci/unity_live_check.sh). -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
