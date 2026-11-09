@@ -1236,6 +1236,10 @@ METRICS_ROWS = [
     ('death_monster', 'Dragon', '11-15', 9), ('death_monster', 'Rat', '1-5', 40),
     ('session1', '5', '', 6), ('session1', '10', '', 2), ('session1', '30', '', 2), ('session1', 'inf', '', 1),
     ('ttl', '10', '10', 10), ('ttl', '10', '20', 10), ('ttl', '25', '60', 4),
+    # O437 retention: one old cohort day (20089 = 2025-01-01, the day the counters began) so every window is over
+    ('meta', 'retain_since', '', 20089), ('cohort', '20250101', '', 20), ('retain', 'd1', '20250101', 8),
+    ('retain', 'd2_7', '20250101', 5), ('retain', 'd8_30', '20250101', 6), ('retain', 'in7', '20250101', 10),
+    ('retain', 'in30', '20250101', 12),
 ]
 
 
@@ -1686,9 +1690,18 @@ def test_metrics():
         check(d.get('milestones', [{}])[0].get('medianMinutes') == 10.0 and d['milestones'][0]['characters'] == 20,
               'metrics: median time to level 10: ' + str(d.get('milestones')))
         check(d.get('firstSessionCharacters') == 11, 'metrics: first sessions')
+        rt = d.get('retention', [{}])
+        check(len(rt) == 1 and rt[0].get('day') == '2025-01-01' and rt[0].get('cohort') == 20 and rt[0].get('d1Pct') == 40.0
+              and rt[0].get('in7Pct') == 50.0 and rt[0].get('in30Pct') == 60.0 and rt[0].get('d8_30Pct') == 30.0,
+              'metrics: retention by creation day: ' + str(rt))
+        check(d.get('retentionSince') == '2025-01-01' and [e['window'] for e in d.get('retentionAll', [])]
+              == ['d1', 'd2_7', 'd8_30', 'in7', 'in30'] and d['retentionAll'][0]['pct'] == 40.0,
+              'metrics: retention totals: ' + str(d.get('retentionAll')))
         r = run('metrics')
         check(r.returncode == 0 and 'Churn (gone = no login for 14 days; 36 gone, 28 active)' in r.stdout
               and 'Ember Caves' in r.stdout and 'level 10: 10 min' in r.stdout, 'metrics: text: ' + r.stdout + r.stderr)
+        check('Retention by creation day' in r.stdout and '2025-01-01: 20 new, day 1 8 (40.0%)' in r.stdout,
+              'metrics: text has the retention section: ' + r.stdout)
         r = run('metrics', '--json', extra={'STUB_METRICS_FAIL': 'table'})
         check(r.returncode == 1 and json.loads(r.stdout) == {'ok': False, 'error': 'no-table'},
               'metrics: no table: ' + r.stdout + r.stderr)

@@ -301,6 +301,36 @@ pub struct Week {
     pub pct: [Option<f64>; 3],
 }
 
+/// O437: the retention windows in the order of the report: day 1, days 2-7, days 8-30, any of 1-7, any of 1-30.
+pub const RETAIN_KEYS: [&str; 5] = ["d1", "d2_7", "d8_30", "in7", "in30"];
+pub const RETAIN_LABELS: [&str; 5] = [
+    "Dia 1",
+    "Dias 2-7",
+    "Dias 8-30",
+    "Algum dia de 1-7",
+    "Algum dia de 1-30",
+];
+
+/// O437: a cohort day (first-login day): new characters, how many came back per window, the percent of each (None:
+/// hidden, window not over, or the day is before the counters began).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CohortDay {
+    pub day: String,
+    pub cohort: Count,
+    pub covered: bool,
+    pub back: [Count; 5],
+    pub pct: [Option<f64>; 5],
+}
+
+/// O437: the total of one window over every cohort day that qualifies.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RetainTotal {
+    pub window: String,
+    pub cohort: Count,
+    pub back: Count,
+    pub pct: Option<f64>,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct FirstUse {
     pub system: String,
@@ -327,6 +357,9 @@ pub struct Metrics {
     pub sessions: Vec<Bucket>,
     pub milestones: Vec<Milestone>,
     pub weeks: Vec<Week>,
+    pub cohort_days: Vec<CohortDay>,
+    pub retain_totals: Vec<RetainTotal>,
+    pub retain_since: String,
     pub first_uses: Vec<FirstUse>,
 }
 
@@ -390,6 +423,24 @@ impl Metrics {
                 week: s(b, "week"),
                 cohort: Count::of(b, "cohort"),
                 pct: [f(b, "d1Pct"), f(b, "d3Pct"), f(b, "d7Pct")],
+            })
+            .collect();
+        m.retain_since = s(o, "retentionSince");
+        m.cohort_days = arr(o, "retention")
+            .map(|b| CohortDay {
+                day: s(b, "day"),
+                cohort: Count::of(b, "cohort"),
+                covered: b.get("covered").and_then(Value::as_bool).unwrap_or(true),
+                back: RETAIN_KEYS.map(|k| Count::of(b, k)),
+                pct: RETAIN_KEYS.map(|k| f(b, &format!("{k}Pct"))),
+            })
+            .collect();
+        m.retain_totals = arr(o, "retentionAll")
+            .map(|b| RetainTotal {
+                window: s(b, "window"),
+                cohort: Count::of(b, "cohort"),
+                back: Count::of(b, "back"),
+                pct: f(b, "pct"),
             })
             .collect();
         m.first_uses = arr(o, "firstUse")
@@ -456,6 +507,14 @@ pub fn pct(v: Option<f64>) -> String {
     match v {
         Some(v) if v >= 0.0 => format!("{v:.1}%").replace('.', ","),
         _ => "<5".into(),
+    }
+}
+
+/// O437: "8 (40,0%)"; the percent is "—" when it is hidden, the window is not over or the day was not covered.
+pub fn back_text(back: Count, pct: Option<f64>) -> String {
+    match pct {
+        Some(v) if v >= 0.0 => format!("{} ({})", back.text(), format!("{v:.1}%").replace('.', ",")),
+        _ => format!("{} (—)", back.text()),
     }
 }
 
@@ -572,6 +631,8 @@ mod tests {
 "deathAreas":[{"name":"Test Cave","deaths":30,"topBand":"1-50"}],"deathMonsters":[{"name":"Test Rat","deaths":"<5","topBand":"1-50"}],
 "stops":[{"name":"Test Hall","gone":6,"topBand":"51-100"}],
 "returns":[{"week":"2026-W42","cohort":25,"d1":10,"d1Pct":40.0,"d3":"<5","d3Pct":null,"d7":5,"d7Pct":20.0}],
+"retention":[{"day":"2026-10-20","cohort":20,"covered":true,"d1":8,"d1Pct":40.0,"d2_7":5,"d2_7Pct":25.0,"d8_30":"<5","d8_30Pct":null,"in7":10,"in7Pct":50.0,"in30":12,"in30Pct":null},{"day":"2026-10-19","cohort":9,"covered":false,"d1":3,"d1Pct":null,"d2_7":0,"d2_7Pct":null,"d8_30":0,"d8_30Pct":null,"in7":0,"in7Pct":null,"in30":0,"in30Pct":null}],
+"retentionAll":[{"window":"d1","from":1,"to":1,"cohort":20,"back":8,"pct":40.0},{"window":"in30","from":1,"to":30,"cohort":"<5","back":"<5","pct":null}],"retentionSince":"2026-10-20",
 "firstUse":[{"system":"rift","characters":9,"pct":22.5,"medianMinutes":300.0,"topBand":"1-50"},{"system":"other","characters":"<5","pct":null,"medianMinutes":null,"topBand":""}],
 "firstSessionCharacters":50,"firstSession":[{"bucket":"30","characters":20,"pct":40.0},{"bucket":"inf","characters":"<5","pct":null}],
 "milestones":[{"level":50,"medianMinutes":125.0,"characters":18},{"level":100,"medianMinutes":null,"characters":"<5"}]}"#;
@@ -592,6 +653,30 @@ mod tests {
         assert_eq!(m.monsters[0].count.text(), "<5");
         assert_eq!(m.stops[0].count, Count::N(6));
         assert_eq!(m.weeks[0].pct, [Some(40.0), None, Some(20.0)]);
+        assert_eq!(m.retain_since, "2026-10-20");
+        assert_eq!(m.cohort_days.len(), 2);
+        let c = &m.cohort_days[0];
+        assert_eq!(
+            (c.day.as_str(), c.cohort, c.covered),
+            ("2026-10-20", Count::N(20), true)
+        );
+        assert_eq!(
+            c.back,
+            [Count::N(8), Count::N(5), Count::Small, Count::N(10), Count::N(12)]
+        );
+        assert_eq!(c.pct, [Some(40.0), Some(25.0), None, Some(50.0), None]);
+        assert!(!m.cohort_days[1].covered && m.cohort_days[1].cohort == Count::N(9));
+        assert_eq!(m.retain_totals.len(), 2);
+        assert_eq!(m.retain_totals[0].window, "d1");
+        assert_eq!(m.retain_totals[0].pct, Some(40.0));
+        assert_eq!(
+            (
+                m.retain_totals[1].cohort,
+                m.retain_totals[1].back,
+                m.retain_totals[1].pct
+            ),
+            (Count::Small, Count::Small, None)
+        );
         assert_eq!(m.first_uses[0].median_minutes, Some(300.0));
         assert_eq!(m.first_uses[1].characters, Count::Small);
         assert_eq!(m.session_characters, Some(Count::N(50)));
@@ -619,6 +704,10 @@ mod tests {
     fn text_helpers() {
         assert_eq!(pct(Some(12.5)), "12,5%");
         assert_eq!(pct(None), "<5");
+        assert_eq!(back_text(Count::N(8), Some(40.0)), "8 (40,0%)");
+        assert_eq!(back_text(Count::Small, None), "<5 (—)");
+        assert_eq!(back_text(Count::N(0), None), "0 (—)");
+        assert_eq!(RETAIN_KEYS.len(), RETAIN_LABELS.len());
         assert_eq!(minutes(Some(45.4)), "45 min");
         assert_eq!(minutes(Some(210.0)), "3,5 h");
         assert_eq!(minutes(Some(4320.0)), "3,0 dias");

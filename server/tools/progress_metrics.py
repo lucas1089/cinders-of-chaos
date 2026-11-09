@@ -13,6 +13,12 @@ text summary. The rows are aggregate counters; no name, account or IP is in them
                  (10, 25, 50, 100, 200, 500, 1000, 1500, 2000)
   returns        (O258) per cohort week (Monday of the first-login day): new characters and how many logged in again on
                  day 1, 3 and 7 or later; a share is shown only when the whole week is old enough for that day
+  retention      (O437) per cohort day (first-login day, server time; the latest 60): new characters and how many logged
+                 in again on day 1, on days 2-7, on days 8-30, and at least once on days 1-7 / 1-30. One count per
+                 character and window, so day 1 + days 2-7 is not "within 7 days" (a character can be in both); the
+                 two "any" windows are counted on their own. A percent is shown only when the window is over (cohort
+                 day + last day < today) and the cohort day is not before the day the counters began (retentionSince).
+  retentionAll   (O437) the same over every cohort day that qualifies: characters, came back, percent per window
   firstUse       (O258) per system (dungeon, rift, waystone, tower, ...): characters that used it, their share of all
                  characters (churn totals), the median played minutes at the first use and the most common level band
   stops          (O258) the 10 areas where the most gone characters were last seen (top level band of each)
@@ -160,6 +166,58 @@ def returns(rows, today):
     return out
 
 
+# O437 retention windows: (key, first day, last day) after the first-login day. d1 is exactly the next calendar day. Keep in
+# step with metrics_config.lua retainWindows.
+RETAIN_WINDOWS = (('d1', 1, 1), ('d2_7', 2, 7), ('d8_30', 8, 30), ('in7', 1, 7), ('in30', 1, 30))
+RETAIN_DAYS = 60  # cohort days in the table (the latest)
+RETAIN_SINCE = 'retain_since'  # meta row: day number (days since the epoch) the counters began
+EPOCH = datetime.date(1970, 1, 1)
+
+
+def retention(rows, today, since_day):
+    """Per cohort day: new characters and the returns per window (RETAIN_WINDOWS), plus the total over all qualifying days.
+
+    A cohort day qualifies for the percent of a window when the window is over (day + last day < today) and the day is
+    not before the day the counters began (a cohort day before it lost the returns that came before the install; its
+    counts are shown, its percent is not). A hidden count (1 to 4), or a cohort of fewer than 5, leaves a percent out."""
+    since = EPOCH + datetime.timedelta(days=since_day) if since_day else None
+    keys = {w[0] for w in RETAIN_WINDOWS}
+    days = {}
+    for k, k1, k2, n in rows:
+        if n <= 0:
+            continue
+        if k == 'cohort':
+            day, field = parse_day(k1), 'cohort'
+        elif k == 'retain' and k1 in keys:
+            day, field = parse_day(k2), k1
+        else:
+            continue
+        if day is not None:
+            days.setdefault(day, dict.fromkeys(['cohort'] + sorted(keys), 0))[field] += n
+    tot = {w[0]: {'cohort': 0, 'back': 0} for w in RETAIN_WINDOWS}
+    table = []
+    for day in sorted(days):
+        d = days[day]
+        e = {'day': day.isoformat(), 'cohort': hide(d['cohort']), 'covered': since is not None and day >= since}
+        for key, _, last in RETAIN_WINDOWS:
+            mature = today is not None and day + datetime.timedelta(days=last) < today
+            e[key] = hide(d[key])
+            e[key + 'Pct'] = None
+            if e['covered'] and mature:
+                tot[key]['cohort'] += d['cohort']
+                tot[key]['back'] += d[key]
+                if d['cohort'] >= MIN_SHOWN and hide(d[key]) != SMALL:
+                    e[key + 'Pct'] = round(100.0 * d[key] / d['cohort'], 1)
+        table.append(e)
+    allrows = []
+    for key, first, last in RETAIN_WINDOWS:
+        t = tot[key]
+        ok = t['cohort'] >= MIN_SHOWN and hide(t['back']) != SMALL
+        allrows.append({'window': key, 'from': first, 'to': last, 'cohort': hide(t['cohort']), 'back': hide(t['back']),
+                        'pct': round(100.0 * t['back'] / t['cohort'], 1) if ok else None})
+    return table[-RETAIN_DAYS:], allrows
+
+
 def first_use(rows, population):
     """Per system: characters, share of the population, median played minutes, most common level band.
     k2 of a row is 'band|played-minutes bucket'."""
@@ -230,6 +288,8 @@ def report(rows, limit=TOP, today=None):
 
     if today is None:
         today = datetime.date.today()
+    since_day = meta.get(RETAIN_SINCE, 0)
+    retain_table, retain_all = retention(rows, today, since_day)
     return {
         'ok': True,
         'churn': {'days': meta.get('churn_days', 0), 'at': meta.get('churn_at', 0), 'gone': gone, 'active': active,
@@ -240,10 +300,17 @@ def report(rows, limit=TOP, today=None):
         'firstSessionCharacters': hide(sess_total),
         'milestones': milestones,
         'returns': returns(rows, today),
+        'retention': retain_table,
+        'retentionAll': retain_all,
+        'retentionSince': (EPOCH + datetime.timedelta(days=since_day)).isoformat() if since_day else None,
         'firstUse': first_use(rows, gone_raw + active_raw),
         'stops': top(rows, 'stop', limit, 'gone'),
         'empty': not rows,
     }
+
+
+RETAIN_LABELS = (('d1', 'day 1'), ('d2_7', 'days 2-7'), ('d8_30', 'days 8-30'), ('in7', 'any of 1-7'),
+                 ('in30', 'any of 1-30'))
 
 
 def minutes_text(m):
@@ -286,6 +353,22 @@ def text(rep):
             pct = w['d%dPct' % d]
             parts.append('d%d %s (%s)' % (d, w['d%d' % d], '%.1f%%' % pct if pct is not None else 'n/a'))
         out.append('  week of %s: %s new, %s' % (w['week'], w['cohort'], ', '.join(parts)))
+    out.append('Retention by creation day (server day; one count per character and window; a percent only for a finished '
+               'window, on a day the counters covered)')
+    out.append('  since %s; windows: day 1 = the next calendar day, days 2-7, days 8-30, any of days 1-7, any of days 1-30'
+               % (rep['retentionSince'] or 'unknown'))
+    for e in rep['retention']:
+        parts = []
+        for key, label in RETAIN_LABELS:
+            pct = e[key + 'Pct']
+            parts.append('%s %s (%s)' % (label, e[key], '%.1f%%' % pct if pct is not None else 'n/a'))
+        out.append('  %s: %s new, %s%s' % (e['day'], e['cohort'], ', '.join(parts),
+                                          '' if e['covered'] else ' [partial: before the counters began]'))
+    out.append('  All qualifying days:')
+    for e in rep['retentionAll']:
+        label = dict(RETAIN_LABELS)[e['window']]
+        out.append('    %s: %s of %s (%s)' % (label, e['back'], e['cohort'],
+                                              '%.1f%%' % e['pct'] if e['pct'] is not None else 'n/a'))
     out.append('First use of a system (share of all characters, median played time at the first use)')
     for e in rep['firstUse']:
         pct = '%.1f%%' % e['pct'] if e['pct'] is not None else 'n/a'

@@ -18,6 +18,9 @@
 --   M.dayNumber(t, offset) / M.dayString(day)  whole days since the epoch in server time / "YYYYMMDD"
 --   M.returnCheck(stored, today, cfg)          -> list of "d1" / "d3" / "d7" newly due, new stored value, cohort day
 --   M.returnStart(today)                       the stored value of a first login
+-- O437 retention (server/README.md "Retention by creation day (O437)"):
+--   M.retainCheck(cohort, flags, today, cfg)   -> keys of the windows (d1, d2_7, d8_30, in7, in30) newly due, new flags
+--   M.retainSinceSql(t, today, key)            INSERT IGNORE of the meta row with the day the counters began, or nil
 --   M.firstUseMark(mask, key, cfg)             -> true and the new mask when the system's bit was not set; false, mask
 --   M.systemIndex(key, cfg)                    1-based index of a system in cfg.systems, or nil (O374 last system)
 --   M.playedBucket(minutes, cfg)               the played-minutes bucket label of a first use
@@ -29,7 +32,8 @@
 -- Table: kind, k1, k2, n. Kinds: death_area (k1 area, k2 band), death_monster (k1 monster, k2 band),
 -- session1 (k1 minute bucket), ttl (k1 milestone level, k2 minute bucket), churn (k1 band, k2 gone | active),
 -- meta (k1 name, n value: churn_at, churn_days), cohort (k1 YYYYMMDD of a first login), return (k1 d1 | d3 | d7,
--- k2 YYYYMMDD of the cohort day), first (k1 system, k2 "band|played-minutes bucket"), stop (k1 area, k2 band: gone
+-- k2 YYYYMMDD of the cohort day), retain (O437: k1 d1 | d2_7 | d8_30 | in7 | in30, k2 YYYYMMDD of the cohort day),
+-- first (k1 system, k2 "band|played-minutes bucket"), stop (k1 area, k2 band: gone
 -- characters, a snapshot).
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
 
@@ -37,7 +41,7 @@ ChaosMetrics = ChaosMetrics or {}
 local M = ChaosMetrics
 local floor = math.floor
 
-M.KINDS = {"death_area", "death_monster", "session1", "ttl", "churn", "meta", "cohort", "return", "first", "stop"}
+M.KINDS = {"death_area", "death_monster", "session1", "ttl", "churn", "meta", "cohort", "return", "retain", "first", "stop"}
 
 function M.createSql(t)
 	return "CREATE TABLE IF NOT EXISTS `" .. t .. "` (" ..
@@ -385,6 +389,44 @@ function M.returnCheck(stored, today, cfg)
 		end
 	end
 	return due, cohort * 8 + flags, cohort
+end
+
+-- ---------------------------------------------------------------- O437: retention windows
+-- cohort = the character's first-login day (from the returnStorage value), flags = the windows already counted (one bit
+-- per cfg.retainWindows entry), today = the day number of this login. A login k = today - cohort days after the first
+-- one counts every window with from <= k <= to whose bit is clear. Cohort <= 0 (nothing stored: a character from before
+-- the install): nothing. Returns the keys newly due and the new flags (always whole numbers).
+function M.retainCheck(cohort, flags, today, cfg)
+	cohort = floor(tonumber(cohort) or 0)
+	flags = floor(tonumber(flags) or 0)
+	today = floor(tonumber(today) or 0)
+	if flags < 0 then
+		flags = 0
+	end
+	local due = {}
+	if cohort <= 0 then
+		return due, flags
+	end
+	local k = today - cohort
+	for i, w in ipairs(cfg.retainWindows or {}) do
+		local bit = floor(2 ^ (i - 1))
+		if floor(flags / bit) % 2 == 0 and k >= floor(w.from) and k <= floor(w.to) then
+			due[#due + 1] = w.key
+			flags = flags + bit
+		end
+	end
+	return due, flags
+end
+
+-- the statement that keeps the first server day the retention counters began (a meta row; IGNORE keeps the oldest).
+-- The day goes into the text as a whole number only; anything else gives nil (no statement).
+function M.retainSinceSql(t, today, key)
+	today = tonumber(today)
+	if not today or today ~= today or today < 1 or today > 10000000 or type(key) ~= "string" or key == "" then
+		return nil
+	end
+	return string.format("INSERT IGNORE INTO `%s` (`kind`, `k1`, `k2`, `n`) VALUES ('meta', '%s', '', %d)",
+		t, (key:gsub("[^%w_]", "")), floor(today))
 end
 
 -- ---------------------------------------------------------------- O258: first use of a system

@@ -21,7 +21,8 @@
 #   vocations                   id=class name, one per line
 #   metrics [--json]            anonymous progress counters (server/README.md "Progress metrics (O253)"), read-only: churn by level
 #                               band, the 10 areas and monsters with the most deaths, first session length, median time to
-#                               level 10 / 25 / 50 / 100 / 200. Reads the aggregate table chaos_progress_metrics (no names,
+#                               level 10 / 25 / 50 / 100 / 200, and (O437) the return rates per creation day: back on day 1,
+#                               days 2-7, days 8-30, any of 1-7 / 1-30. Reads the aggregate table chaos_progress_metrics (no names,
 #                               accounts or IPs) through server/tools/progress_metrics.py; text, or one JSON line with --json
 #                               ({"ok": false, "error": "no-table" | "database"} and exit 1 when it cannot be read)
 #   newplayer-funnel [--days N] [--json] [--pt]

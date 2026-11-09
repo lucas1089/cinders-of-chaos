@@ -61,6 +61,27 @@ final class MetricsInfo {
         final double[] pct = {-1, -1, -1};
     }
 
+    /** O437: the retention windows in the order of the report: day 1, days 2-7, days 8-30, any of 1-7, any of 1-30. */
+    static final String[] RETAIN_KEYS = {"d1", "d2_7", "d8_30", "in7", "in30"};
+    static final String[] RETAIN_LABELS = {"dia 1", "dias 2-7", "dias 8-30", "algum dia de 1-7", "algum dia de 1-30"};
+
+    /** O437: a cohort day (first-login day) and how many came back per window (pct -1: hidden, unfinished or partial). */
+    static final class CohortDay {
+        String day = "";
+        long cohort;
+        boolean covered = true;
+        final long[] back = new long[5];
+        final double[] pct = {-1, -1, -1, -1, -1};
+    }
+
+    /** O437: the total of one window over every cohort day that qualifies. */
+    static final class RetainTotal {
+        String window = "";
+        long cohort;
+        long back;
+        double pct = -1;
+    }
+
     /** O258: the first use of one system (characters, share of all characters, median played minutes, top band). */
     static final class FirstUse {
         String system = "";
@@ -84,6 +105,9 @@ final class MetricsInfo {
     long sessionCharacters;
     final List<Milestone> milestones = new ArrayList<>();
     final List<Week> weeks = new ArrayList<>();
+    final List<CohortDay> cohortDays = new ArrayList<>();
+    final List<RetainTotal> retainTotals = new ArrayList<>();
+    String retainSince = "";
     final List<FirstUse> firstUses = new ArrayList<>();
     final List<Killer> stops = new ArrayList<>();
 
@@ -152,6 +176,36 @@ final class MetricsInfo {
                 x.pct[k] = b.isNull(keys[k] + "Pct") ? -1 : b.optDouble(keys[k] + "Pct", -1);
             }
             m.weeks.add(x);
+        }
+        m.retainSince = o.isNull("retentionSince") ? "" : o.optString("retentionSince", "");
+        JSONArray rt = o.optJSONArray("retention");
+        for (int i = 0; rt != null && i < rt.length(); i++) {
+            JSONObject b = rt.optJSONObject(i);
+            if (b == null) {
+                continue;
+            }
+            CohortDay x = new CohortDay();
+            x.day = b.optString("day", "");
+            x.cohort = count(b, "cohort");
+            x.covered = b.optBoolean("covered", true);
+            for (int k = 0; k < RETAIN_KEYS.length; k++) {
+                x.back[k] = count(b, RETAIN_KEYS[k]);
+                x.pct[k] = b.isNull(RETAIN_KEYS[k] + "Pct") ? -1 : b.optDouble(RETAIN_KEYS[k] + "Pct", -1);
+            }
+            m.cohortDays.add(x);
+        }
+        JSONArray ra = o.optJSONArray("retentionAll");
+        for (int i = 0; ra != null && i < ra.length(); i++) {
+            JSONObject b = ra.optJSONObject(i);
+            if (b == null) {
+                continue;
+            }
+            RetainTotal x = new RetainTotal();
+            x.window = b.optString("window", "");
+            x.cohort = count(b, "cohort");
+            x.back = count(b, "back");
+            x.pct = b.isNull("pct") ? -1 : b.optDouble("pct", -1);
+            m.retainTotals.add(x);
         }
         JSONArray fu = o.optJSONArray("firstUse");
         for (int i = 0; fu != null && i < fu.length(); i++) {
@@ -276,6 +330,24 @@ final class MetricsInfo {
             return previous.isEmpty() ? "mais longa" : "mais de " + previous + " min";
         }
         return "até " + bucket + " min";
+    }
+
+    /** The label of a retention window key in Portuguese; an unknown key is shown as it is. */
+    static String retainLabel(String key) {
+        for (int i = 0; i < RETAIN_KEYS.length; i++) {
+            if (RETAIN_KEYS[i].equals(key)) {
+                return RETAIN_LABELS[i];
+            }
+        }
+        return key;
+    }
+
+    /** "2026-11-10" as "10/11/2026"; anything else as it is. */
+    static String dayText(String iso) {
+        if (iso.length() == 10 && iso.charAt(4) == '-' && iso.charAt(7) == '-') {
+            return iso.substring(8) + "/" + iso.substring(5, 7) + "/" + iso.substring(0, 4);
+        }
+        return iso;
     }
 
     static String when(long unix) {
