@@ -948,7 +948,9 @@ local function chestItemOf(ch)
 end
 
 -- !tester chest [spawn | use | state | abort]: a cursed chest next to the tester; use opens it (the horde starts), abort
--- ends the event and removes the chest. Answers {state, left (chests of the tester still known), monsters}
+-- ends the event and removes the chest. Answers {state, left (chests of the tester still known), monsters, horde, made}
+-- and, while the chest stands, its tile {cx, cy, cz}: a client check then looks at that tile only, not at every
+-- item that showed up near the tester (a corpse of the hunt spot is no chest).
 function commands.chest(player, arg)
 	local CC = ChaosCursedChest
 	if not CC or not CC.spawnChest then
@@ -1008,7 +1010,8 @@ function commands.chest(player, arg)
 		monsters = monsters + 1
 	end
 	tell(player, "chest", {state = ch and ch.state or "none", left = #mine, monsters = monsters,
-		horde = ch and ch.ev and ch.ev.horde or 0, made = ch and ch.ev and ch.ev.made or 0})
+		horde = ch and ch.ev and ch.ev.horde or 0, made = ch and ch.ev and ch.ev.made or 0,
+		cx = ch and ch.pos.x or nil, cy = ch and ch.pos.y or nil, cz = ch and ch.pos.z or nil})
 end
 
 -- ---------------------------------------------------------------- O110: waystone runs, rift layouts, content rewards

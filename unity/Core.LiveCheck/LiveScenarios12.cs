@@ -186,6 +186,15 @@ namespace Chaos.Core.LiveCheck
             return o;
         }
 
+        /// <summary>How many items of each id lie on one tile, as the Unity world shows them.</summary>
+        Dictionary<int, int> TileItems(Pos at)
+        {
+            var o = new Dictionary<int, int>();
+            var t = world.Get(at);
+            if (t != null) foreach (var th in t.Things) if (!th.IsCreature && th.Item != null) { o.TryGetValue(th.Item.Id, out int n); o[th.Item.Id] = n + 1; }
+            return o;
+        }
+
         void ScTChests(ScenarioResult r)
         {
             if (!TesterReady(r)) return;
@@ -213,12 +222,16 @@ namespace Chaos.Core.LiveCheck
             var spawn = TSay(me, "chest spawn", "chest", 6000);
             string chestPart;
             var chestIds = new List<int>();
+            Pos? chestAt = null;   // the chest's tile, when the helper names it
             if (spawn == null) chestPart = "skip: no answer to !tester chest";
             else if (TesterChecks.Err(spawn).Length > 0) chestPart = "skip: " + Cut80(TesterChecks.Err(spawn));
             else
             {
                 Pump(1200, () => false);
                 var appeared = NearItems(2).Where(kv => !before.TryGetValue(kv.Key, out int n0) || kv.Value > n0).Select(kv => kv.Key).ToList();   // the hunt spot is a rat cave: corpses of the bot's own kills come and go, only the ids that appeared with the spawn count
+                // The hunt spot is live: a corpse or a pool can show up near the bot in the same moment and stay. Only what appeared on the chest's own tile is the chest.
+                if (TesterChecks.Int(spawn, "cx") > 0) chestAt = new Pos((int)TesterChecks.Int(spawn, "cx"), (int)TesterChecks.Int(spawn, "cy"), (int)TesterChecks.Int(spawn, "cz"));
+                var onChestTile = chestAt.HasValue ? TileItems(chestAt.Value) : null;
                 bool idle = TesterChecks.Str(spawn, "state") == "idle";
                 var use = idle ? TSay(me, "chest use", "chest", 6000) : null;
                 Pump(3000, () => false);
@@ -228,7 +241,8 @@ namespace Chaos.Core.LiveCheck
                 Pump(1000, () => false);
                 var z = TSay(me, "chest state", "chest", 6000) ?? abort;
                 var bad = TesterChecks.ChestProblems(spawn, use, state, z);
-                chestIds.AddRange(appeared);
+                chestIds.AddRange(onChestTile == null ? appeared : appeared.Where(onChestTile.ContainsKey));
+                if (onChestTile != null && appeared.Count > 0 && chestIds.Count == 0) bad.Add("the Unity world shows no new item on the chest's tile after the chest spawned (new ids near the bot: " + string.Join(",", appeared.Take(4)) + ")");
                 if (!idle) { TSay(me, "chest abort", "chest", 6000); }
                 if (appeared.Count == 0) bad.Add("the Unity world shows no new item next to the character after the chest spawned");
                 r.Note("cursed_chest: spawned (" + TesterChecks.Str(spawn, "state") + "), Unity saw " + appeared.Count + " new item(s) near the bot (ids " + string.Join(",", appeared.Take(4)) + "), after use '" + TesterChecks.Str(use, "state") + "' with horde " + TesterChecks.Int(state, "horde") + " made " + TesterChecks.Int(state, "made") + ", Unity saw " + horde + " new monster(s), after abort '" + TesterChecks.Str(z, "state") + "'");
@@ -237,7 +251,9 @@ namespace Chaos.Core.LiveCheck
             }
             Pump(800, () => false);
             var now = NearItems(2);
-            var leftOver = chestIds.Where(id => now.TryGetValue(id, out int n1) && n1 > (before.TryGetValue(id, out int n0) ? n0 : 0)).ToList();
+            var leftOver = chestAt.HasValue
+                ? chestIds.Where(TileItems(chestAt.Value).ContainsKey).ToList()
+                : chestIds.Where(id => now.TryGetValue(id, out int n1) && n1 > (before.TryGetValue(id, out int n0) ? n0 : 0)).ToList();
             if (chestPart.StartsWith("pass", StringComparison.Ordinal) && leftOver.Count > 0) problems.Append("the Unity world still shows the chest item(s) " + string.Join(",", leftOver) + " next to the character after the chest was aborted; ");
             problems.Append(mark.Diff(me, "primary"));
             if (problems.Length > 0) { r.Fail(problems.ToString().Trim()); return; }

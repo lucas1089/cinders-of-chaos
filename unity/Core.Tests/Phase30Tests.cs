@@ -189,6 +189,23 @@ namespace Chaos.Core.Tests
             check(scenarios.All(s => Core.LiveCheck.LiveRun.OptInScenarios.Contains(s) && !Core.LiveCheck.LiveRun.AllScenarios.Contains(s)), "coverage: every tester scenario is opt-in by name, none in `all` (the helper is TEST ONLY)");
             check(Core.LiveCheck.LiveRun.TesterScenarios.OrderBy(x => x).SequenceEqual(scenarios.OrderBy(x => x)), "coverage: the scenario list of LiveRun.TesterScenarios is the one of the table");
             check(Core.LiveCheck.LiveRun.OptInScenarios.Distinct().Count() == Core.LiveCheck.LiveRun.OptInScenarios.Length, "coverage: no scenario name twice");
+            {
+                // The run order is the list order. A partner scenario logs the second character in and leaves it online,
+                // and the server refuses a trial or dungeon entry while a second character of the same address is online.
+                var partner = Core.LiveCheck.LiveRun.TesterPartnerScenarios;
+                var tester = Core.LiveCheck.LiveRun.TesterScenarios;
+                var optIn = Core.LiveCheck.LiveRun.OptInScenarios.ToList();
+                string src = Repo("unity/Core.LiveCheck/LiveScenarios11.cs");
+                var uses = new List<string>();
+                if (src != null)
+                    foreach (Match m in Regex.Matches(src, @"void (ScT\w+)\(ScenarioResult r\)\s*\{(.*?)\n        \}", RegexOptions.Singleline))
+                        if (m.Groups[2].Value.Contains("PartnerTester(")) uses.Add(m.Groups[1].Value);
+                check(partner.Length == 2 && uses.Count == partner.Length, "order: the partner scenario list names every scenario that calls PartnerTester (" + uses.Count + " in the source)");
+                check(tester.Skip(tester.Length - partner.Length).SequenceEqual(partner), "order: the partner scenarios end LiveRun.TesterScenarios");
+                check(optIn.Skip(optIn.Count - partner.Length).SequenceEqual(partner), "order: the partner scenarios end LiveRun.OptInScenarios, the order a run follows");
+                int firstPartner = partner.Min(x => optIn.IndexOf(x));
+                check(tester.Where(x => !partner.Contains(x)).All(x => optIn.IndexOf(x) >= 0 && optIn.IndexOf(x) < firstPartner), "order: every other tester scenario runs before the partner logs in");
+            }
             string run = Repo("unity/Core.LiveCheck/LiveScenarios.cs");
             check(run != null && scenarios.All(s => run.Contains("case \"" + s + "\":")), "coverage: every tester scenario has its case in the dispatcher");
         }

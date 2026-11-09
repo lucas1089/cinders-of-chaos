@@ -16,7 +16,11 @@ namespace Chaos.Core.LiveCheck
 {
     public sealed partial class LiveRun
     {
-        public static readonly string[] TesterScenarios = { "testsummons", "testpets", "testparty", "testpartyxp", "testrift", "testwaystone", "testloot", "testchests", "testspellquest", "testunique", "testdual", "testauto" };
+        /// <summary>The tester scenarios in run order. The ones that need the partner come last (see OptInScenarios).</summary>
+        public static readonly string[] TesterScenarios = { "testsummons", "testpets", "testrift", "testwaystone", "testloot", "testchests", "testspellquest", "testunique", "testdual", "testauto", "testparty", "testpartyxp" };
+
+        /// <summary>The tester scenarios that log the partner in (PartnerTester). They must end the run.</summary>
+        public static readonly string[] TesterPartnerScenarios = { "testparty", "testpartyxp" };
 
         const string NoHelper = "the tester helper did not answer: the character must be named 'Tester Xxx' with the storage 7102900 = 1 and data/scripts/zz_tester_helper.lua (TEST ONLY, server/tools/tester_helper.lua) must be installed";
 

@@ -448,7 +448,8 @@ run_group_once() {
       new_newbie "$id"
       live_run "$label" "$id" newplayer,questlog,purse,firstunlock,firstkill ;;
     tester)  # the tester bot checks of tools/tester_checks.py through the Unity core (phase 30): the TEST ONLY helper (install_tester_helper) answers for the two "Tester Xxx" characters.
-             # The scenarios that need the second connection (the party ones) run last: its connection stays up and the multi-client rule would block the dungeon legs before them.
+             # The scenarios that need the second connection (the party ones) run last: its connection stays up and the multi-client rule would block the trial and dungeon legs before them.
+             # The run order is the order of LiveRun.OptInScenarios, not of this list (Core.Tests checks that the party ones end it).
       new_testers "$id"
       live_run "$label" "$id" testsummons,testpets,testrift,testwaystone,testloot,testchests,testspellquest,testunique,testdual,testauto,testparty,testpartyxp --no-ext ;;
     shop)    # selling to an NPC that buys (the post office NPC does not)

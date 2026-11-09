@@ -8717,7 +8717,7 @@ the rules of `ChaosPartyXpCore.diagnose` (who fails level, range or fight), the 
 `Party:onShareExperience` pays for 1000 experience; `!tester waystone <1-15> [loot]` and `!tester riftrun [layout | loot]`
 the runs of `waystone_run`, `rift_layout` and `content_rewards` above (each is one atomic command that cleans up in all
 cases: the waystone map is put back, the rift run is closed; a rift needs level 100); `!tester chest [spawn | use | state | abort]` a cursed chest of the bot (`ChaosCursedChest.spawnChest`,
-`use`, `failEvent`); `!tester spellquest [state | reset | set Q STEP [KILLS [FRAGMENTS]] | kill [N] [boss] | trial | leave |
+`use`, `failEvent`; while the chest stands the answer names its tile `cx`, `cy`, `cz`, so a client check looks at that tile only); `!tester spellquest [state | reset | set Q STEP [KILLS [FRAGMENTS]] | kill [N] [boss] | trial | leave |
 complete]` the line spell quests of the bot (`ChaosSpellQuest`; the staff command `/spellquest` is not open to a tester, so
 the helper writes the same storages with `ChaosSpellQuestCore.applySet`). `kill` credits N hunt kills of the bot's own level
 through `ChaosSpellQuest.credit` (the real counting, the fragment roll and the pity), at most 60 a call; `trial` is

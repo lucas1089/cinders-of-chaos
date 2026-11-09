@@ -640,6 +640,20 @@ do
 	eq(#ana.log.msgs, 0, "a real player's summons are not probed")
 	talks["!tester"].onSay(t2, "!tester", "chest")
 	check(t2.log.msgs[#t2.log.msgs]:find('chest {"err":"no cursed chest system"}', 1, true) ~= nil, "chest: no system, an error answer")
+	-- a standing chest names its tile: the client check looks at that tile only
+	local realGuid = t2.getGuid
+	t2.getGuid = function() return 78 end
+	ChaosCursedChest = {spawnChest = function() end, tagged = {},
+		chests = {k = {key = "k", ownerId = 78, state = "idle", itemId = 1, pos = {x = 101, y = 202, z = 7}}}}
+	talks["!tester"].onSay(t2, "!tester", "chest state")
+	local line = t2.log.msgs[#t2.log.msgs]
+	check(line:find('"state":"idle"', 1, true) and line:find('"cx":101', 1, true) and line:find('"cy":202', 1, true) and line:find('"cz":7', 1, true),
+		"chest: a standing chest answers its tile")
+	ChaosCursedChest.chests = {}
+	talks["!tester"].onSay(t2, "!tester", "chest state")
+	line = t2.log.msgs[#t2.log.msgs]
+	check(line:find('"state":"none"', 1, true) and not line:find('"cx"', 1, true), "chest: no chest, no tile")
+	ChaosCursedChest, t2.getGuid = nil, realGuid
 end
 
 -- ------------------------------------------------------------------ the line spell quests (!tester spellquest)
