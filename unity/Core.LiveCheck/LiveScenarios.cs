@@ -25,11 +25,15 @@ namespace Chaos.Core.LiveCheck
 
     public sealed partial class LiveRun
     {
-        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "guardians", "partnerdeath", "lastlife", "party3", "trialwindows", "riftsolodeath", "omenparty", "wrathnova", "death", "pvpdeath" };
+        public static readonly string[] AllScenarios = { "newplayer", "firstkill", "firstquest", "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "guardians", "partnerdeath", "lastlife", "party3", "trialwindows", "riftsolodeath", "riftkilled", "omenparty", "wrathnova", "death", "pvpdeath" };
 
         readonly List<ScenarioResult> scenarios = new List<ScenarioResult>();
         Dictionary<int, string> floorChanges;
+        /// <summary>While set, Passable refuses a stair, ramp or hole tile: a walk to a place on the same floor must not change the floor on the way (phase 27).</summary>
+        bool avoidStairs;
         Dictionary<int, int> serverToClient;
+        /// <summary>Client ids of the teleport items (otb group 7): the great purple teleport of the temple is one (phase 27).</summary>
+        HashSet<int> teleportClient = new HashSet<int>();
         bool ScenariosFailed => partnerBad || thirdBad || scenarios.Any(x => x.Status == "fail");
         static long Tick => Environment.TickCount64;
 
@@ -73,6 +77,10 @@ namespace Chaos.Core.LiveCheck
                         case "riftsolodeath": ScRiftSoloDeath(r); break;
                         case "omenparty": ScOmenParty(r); break;
                         case "wrathnova": ScWrathNova(r); break;
+                        case "riftkilled": ScRiftKilled(r); break;
+                        case "newplayer": ScNewPlayer(r); break;
+                        case "firstkill": ScFirstKill(r); break;
+                        case "firstquest": ScFirstQuest(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }
@@ -94,8 +102,14 @@ namespace Chaos.Core.LiveCheck
             {
                 byte[] otb = System.IO.File.ReadAllBytes(o.OtbFile);
                 serverToClient = new Dictionary<int, int>();
-                foreach (var n in OtbDat.ReadNodes(otb)) serverToClient[n.Server] = n.Client;
-                if (xml != null) floorChanges = OtbDat.FloorChanges(System.IO.File.ReadAllText(xml, Encoding.GetEncoding("ISO-8859-1")), otb);
+                teleportClient = new HashSet<int>();
+                foreach (var n in OtbDat.ReadNodes(otb)) { serverToClient[n.Server] = n.Client; if (n.Group == 7) teleportClient.Add(n.Client); }
+                if (xml != null)
+                {
+                    string xmlText = System.IO.File.ReadAllText(xml, Encoding.GetEncoding("ISO-8859-1"));
+                    floorChanges = OtbDat.FloorChanges(xmlText, otb);
+                    foreach (int tid in OtbDat.TeleportItems(xmlText, otb)) teleportClient.Add(tid);
+                }
             }
         }
 
@@ -203,6 +217,7 @@ namespace Chaos.Core.LiveCheck
         /// <summary>WalkMap.Walkable, and a stair, ramp or hole tile whose floor change item is not the ground in the item types built from items.otb.</summary>
         bool Passable(World w, Pos p, uint selfId)
         {
+            if (avoidStairs) { var st = w.Get(p); if (st != null && FloorChangeOf(st) != null) return false; }
             if (WalkMap.Walkable(w, p, selfId)) return true;
             var t = w.Get(p);
             if (t == null || FloorChangeOf(t) == null) return false;
