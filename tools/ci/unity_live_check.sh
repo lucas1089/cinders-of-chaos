@@ -19,6 +19,15 @@
 #   UL_GROUPS       default temple,shop,shared,death,market (the rift groups run last: its slots build a minute after the start)
 #   UL_RESUME=1     keep the finished stages of an earlier run in UL_WORK (local work on this script)
 #
+# Modes (O433, the player on the same server: .github/workflows/unity-prototype.yml, unity/README.md "Player on a live server (CI)"):
+#   (none)          the run above: Core.LiveCheck plays, reports, summary, the server goes down at the end
+#   --serve-only    brings the server up (steps 1-3 and 5, no Core.LiveCheck), makes one fresh account and character per identity of
+#                   UL_IDENTITIES, writes WORK/client-IDENTITY.env (mode 600, `export NAME=value` lines: CHAOS_LIVE_HOST, _PORT,
+#                   _ACCOUNT, _PASSWORD, _CHARACTER, _IDENTITY, CHAOS_CLIENT_KEY, CHAOS_RSA_PUBLIC; the player and Core.LiveCheck read
+#                   those) and leaves tfs and MariaDB running detached (pid files in WORK/run). No secret is printed: only the paths of
+#                   the files. UL_OUT is not needed. A second call on the same UL_WORK is not supported (use a new folder).
+#   --stop          stops what --serve-only started (tfs, then MariaDB) and deletes the env files and the database password. Needs UL_WORK only.
+#
 # Secrets: none. The guard key of the Chaos identity is made here (openssl rand), given to tfs and Core.LiveCheck through
 # the environment and thrown away with the work folder; a repository secret is not used (the server and the client are both
 # ours, so the guard is checked in enforce mode with a key nobody else has). The RSA modulus comes from the base key.pem.
@@ -28,7 +37,49 @@
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
-: "${UL_ASSETS:?UL_ASSETS: checkout of windows-assets}" "${UL_WORK:?UL_WORK: work folder}" "${UL_OUT:?UL_OUT: output folder}"
+MODE=run
+case "${1:-}" in
+  "") ;;
+  --serve-only) MODE=serve ;;
+  --stop) MODE=stop ;;
+  *) echo "usage: [UL_* variables] $0 [--serve-only | --stop]" >&2; exit 2 ;;
+esac
+
+# --stop: what --serve-only left running goes down, the env files and the database password go. Nothing else is read.
+if [ "$MODE" = stop ]; then
+  : "${UL_WORK:?UL_WORK: the work folder of --serve-only}"
+  [ -d "$UL_WORK/run" ] || { echo "no $UL_WORK/run: nothing to stop"; exit 0; }
+  W=$(cd "$UL_WORK" && pwd)
+  if [ -s "$W/run/tfs.pid" ]; then
+    p=$(cat "$W/run/tfs.pid")
+    if kill -0 "$p" 2>/dev/null; then
+      kill -TERM "$p" 2>/dev/null || true
+      for _ in $(seq 1 20); do kill -0 "$p" 2>/dev/null || break; sleep 1; done
+      kill -KILL "$p" 2>/dev/null || true
+    fi
+    echo "tfs stopped"
+  fi
+  if [ -s "$W/run/mariadb.pid" ]; then
+    p=$(cat "$W/run/mariadb.pid")
+    sock=$(cat "$W/run/mariadb.sockpath" 2>/dev/null || echo "$W/run/mariadb.sock")
+    if kill -0 "$p" 2>/dev/null; then
+      mariadb-admin --no-defaults --socket="$sock" -uroot shutdown 2>/dev/null || true
+      for _ in $(seq 1 20); do kill -0 "$p" 2>/dev/null || break; sleep 1; done
+      kill -KILL "$p" 2>/dev/null || true
+    fi
+    echo "database stopped"
+  fi
+  rm -f "$W"/client-*.env "$W/.db-user"
+  echo "env files and database password removed"
+  exit 0
+fi
+
+if [ "$MODE" = serve ]; then
+  : "${UL_ASSETS:?UL_ASSETS: checkout of windows-assets}" "${UL_WORK:?UL_WORK: work folder}"
+  UL_OUT=${UL_OUT:-$UL_WORK/out}
+else
+  : "${UL_ASSETS:?UL_ASSETS: checkout of windows-assets}" "${UL_WORK:?UL_WORK: work folder}" "${UL_OUT:?UL_OUT: output folder}"
+fi
 ASSETS=$(cd "$UL_ASSETS" && pwd)
 mkdir -p "$UL_WORK" "$UL_OUT"
 WORK=$(cd "$UL_WORK" && pwd)
@@ -65,8 +116,12 @@ stage_mark() { : > "$WORK/.done-$1"; }
 
 TFS_PID=""
 DB_PID=""
+KEEP=0       # --serve-only, once the server is up: the processes stay, --stop ends them
+DETACH=()    # --serve-only: tfs and MariaDB in their own session, so the end of this script and of the workflow step does not take them down
+[ "$MODE" = serve ] && DETACH=(setsid)
 cleanup() {
   set +e
+  [ "$KEEP" = 1 ] && return
   if [ -n "$TFS_PID" ] && kill -0 "$TFS_PID" 2>/dev/null; then kill -TERM "$TFS_PID" 2>/dev/null; for _ in $(seq 1 20); do kill -0 "$TFS_PID" 2>/dev/null || break; sleep 1; done; kill -KILL "$TFS_PID" 2>/dev/null; fi
   if [ -n "$DB_PID" ] && kill -0 "$DB_PID" 2>/dev/null; then mariadb-admin --no-defaults --socket="$SOCK" -uroot shutdown 2>/dev/null; for _ in $(seq 1 20); do kill -0 "$DB_PID" 2>/dev/null || break; sleep 1; done; kill -KILL "$DB_PID" 2>/dev/null; fi
 }
@@ -103,10 +158,11 @@ start_db() {
     mariadb-install-db --no-defaults "${as_root[@]}" --datadir="$WORK/db" --auth-root-authentication-method=normal --skip-test-db \
       > "$WORK/db-install.log" 2>&1 || { tail -n 20 "$WORK/db-install.log"; die "mariadb-install-db failed"; }
   fi
-  mariadbd --no-defaults "${as_root[@]}" --datadir="$WORK/db" --socket="$SOCK" --pid-file="$RUN/mariadb.pid" \
+  ${DETACH[@]+"${DETACH[@]}"} mariadbd --no-defaults "${as_root[@]}" --datadir="$WORK/db" --socket="$SOCK" --pid-file="$RUN/mariadb.pid" \
     --port="$DB_PORT" --bind-address=127.0.0.1 --skip-name-resolve --log-error="$WORK/mariadb.err" \
     --innodb-buffer-pool-size=256M --max-allowed-packet=64M > /dev/null 2>&1 &
   DB_PID=$!
+  printf '%s\n' "$SOCK" > "$RUN/mariadb.sockpath"   # --stop needs the socket (a deep UL_WORK moves it to a temporary folder)
   for _ in $(seq 1 60); do
     mariadb-admin --no-defaults --socket="$SOCK" -uroot ping > /dev/null 2>&1 && break
     kill -0 "$DB_PID" 2>/dev/null || { tail -n 20 "$WORK/mariadb.err"; die "mariadbd stopped"; }
@@ -204,8 +260,13 @@ GUARD_KEY=""
 start_tfs() {
   log "tfs"
   GUARD_KEY=$(rand_hex 32)
-  ( cd "$SERVER" && CHAOS_CLIENT_KEY="$GUARD_KEY" exec ./tfs ) > "$WORK/tfs.log" 2>&1 &
+  if [ "$MODE" = serve ]; then
+    CHAOS_CLIENT_KEY="$GUARD_KEY" setsid bash -c 'cd "$1" && exec ./tfs' _ "$SERVER" > "$WORK/tfs.log" 2>&1 < /dev/null &
+  else
+    ( cd "$SERVER" && CHAOS_CLIENT_KEY="$GUARD_KEY" exec ./tfs ) > "$WORK/tfs.log" 2>&1 &
+  fi
   TFS_PID=$!
+  printf '%s\n' "$TFS_PID" > "$RUN/tfs.pid"
   local up=0
   for _ in $(seq 1 360); do
     if ! kill -0 "$TFS_PID" 2>/dev/null; then tail -n 40 "$WORK/tfs.log"; die "tfs stopped while starting"; fi
@@ -343,6 +404,36 @@ run_groups() {
   done
 }
 
+# ---------------------------------------------------------------------------------------------------- 6b. --serve-only: accounts and env files
+# serve_clients: one fresh account and character per identity (the first of each pair new_chars makes; the partner is not used), each in a
+# client-IDENTITY.env of mode 600 that a client sources (set -a). Values are written with printf %q; nothing goes to the terminal but the paths.
+serve_clients() {
+  log "accounts and env files (one per identity: $IDENTITIES)"
+  dbq chaos -e "DELETE FROM player_storage WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Live %');
+                DELETE FROM players WHERE name LIKE 'Live %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%';"
+  local id file
+  for id in ${IDENTITIES//,/ }; do
+    case "$id" in extended|chaos) ;; *) die "unknown identity $id" ;; esac
+    new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"
+    file="$WORK/client-$id.env"
+    (
+      umask 077
+      {
+        printf 'export CHAOS_LIVE_HOST=%q\n' 127.0.0.1
+        printf 'export CHAOS_LIVE_PORT=%q\n' "$LOGIN_PORT"
+        printf 'export CHAOS_LIVE_ACCOUNT=%q\n' "$PA"
+        printf 'export CHAOS_LIVE_PASSWORD=%q\n' "$PP"
+        printf 'export CHAOS_LIVE_CHARACTER=%q\n' "$PN"
+        printf 'export CHAOS_LIVE_IDENTITY=%q\n' "$id"
+        printf 'export CHAOS_CLIENT_KEY=%q\n' "$GUARD_KEY"
+        printf 'export CHAOS_RSA_PUBLIC=%q\n' "$RSA_PUBLIC"
+      } > "$file"
+    )
+    chmod 600 "$file"
+    echo "   $id: $file"
+  done
+}
+
 # ---------------------------------------------------------------------------------------------------- 7. summary
 write_summary() {
   python3 -I - "$RESULTS" "$OUT" "$TIMES" "$SUMMARY_MD" "$(cat "$WORK/engine.txt" 2>/dev/null || echo '?')" "${GITHUB_SHA:-$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo ?)}" <<'PY'
@@ -411,7 +502,7 @@ PY
 
 # ---------------------------------------------------------------------------------------------------- main
 command -v mariadbd > /dev/null || die "mariadbd not found (apt-get install mariadb-server)"
-command -v dotnet > /dev/null || die "dotnet not found"
+[ "$MODE" = serve ] || command -v dotnet > /dev/null || die "dotnet not found"   # --serve-only builds no client
 
 fresh=1
 if stage_done install && [ -x "$SERVER/tfs" ]; then fresh=0; log "server folder and schema kept from an earlier run (UL_RESUME)"; fi
@@ -427,11 +518,20 @@ write_config > /dev/null   # idempotent
 RSA_PUBLIC=$(python3 -I "$REPO/server/tools/rsa_key.py" public --key "$SERVER/key.pem" 2>/dev/null | grep -E '^[0-9]+$' | tail -n 1 || true)
 [ -n "$RSA_PUBLIC" ] || die "no RSA modulus from $SERVER/key.pem"
 
-log "Core.LiveCheck build"
-dotnet build -c Release -o "$WORK/livecheck" "$REPO/unity/Core.LiveCheck" > "$WORK/dotnet-build.log" 2>&1 || { tail -n 30 "$WORK/dotnet-build.log"; die "Core.LiveCheck does not build"; }
-mark "dotnet build"
+if [ "$MODE" != serve ]; then
+  log "Core.LiveCheck build"
+  dotnet build -c Release -o "$WORK/livecheck" "$REPO/unity/Core.LiveCheck" > "$WORK/dotnet-build.log" 2>&1 || { tail -n 30 "$WORK/dotnet-build.log"; die "Core.LiveCheck does not build"; }
+  mark "dotnet build"
+fi
 
 start_tfs; mark "tfs start"
+
+if [ "$MODE" = serve ]; then
+  serve_clients
+  KEEP=1
+  log "serving: tfs pid $(cat "$RUN/tfs.pid"), login $LOGIN_PORT, game $GAME_PORT; stop it with: UL_WORK=$WORK bash tools/ci/unity_live_check.sh --stop"
+  exit 0
+fi
 
 if [ -z "$SELL_AT" ]; then
   SELL_AT=$(find_npc "$SELL_NPC")
