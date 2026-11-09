@@ -24,6 +24,9 @@ namespace Chaos.Client
         Vector2 scroll;
         string message = "";
         GUIStyle hint, rowName;
+        // the welcome toast's openHelper (Core HelperOnboarding): the window opens on the Shooter tab, the Auto setup button blinks gold with the hint above it until it is clicked or the time is up
+        string onboardHint = "";
+        double onboardAt = -1;
 
         public override string Title => Loc.T("Helper");
         public override KeyCode Hotkey => KeyCode.R;
@@ -35,7 +38,7 @@ namespace Chaos.Client
         public override void Reset()
         {
             engine = null; engineFor = null; loadedFor = null; lastHealth = -1; pick = Pick.None; message = ""; dirty = false;
-            noticeShown = null; followEdit = null;
+            noticeShown = null; followEdit = null; onboardAt = -1; onboardHint = "";
         }
 
         // ------------------------------------------------------------------------------------ the loop, once per frame
@@ -76,7 +79,18 @@ namespace Chaos.Client
             if (engine.ConfigDirty) { engine.ConfigDirty = false; dirty = true; }   // a vigil the player switched off by hand was unticked
             PresetKeyTick(app);
             // a level-up with new spells opens the window on the Shooter tab, where Add and Ignore are (the main client asks in a box)
-            if (engine.LevelNotice != null && engine.LevelNotice != noticeShown) { noticeShown = engine.LevelNotice; Open = true; tab = 1; pick = Pick.None; extraPick = ExtraPick.None; }
+            if (engine.LevelNotice != null && engine.LevelNotice != noticeShown)
+            {
+                noticeShown = engine.LevelNotice; Open = true; tab = 1; pick = Pick.None; extraPick = ExtraPick.None;
+                s.Hud?.Toasts.Add("MILESTONE", engine.LevelNotice.Line);   // the new spell by name, also as a toast (the main client asks in a box)
+            }
+            string wantHint;
+            if (s.Hud != null && s.Hud.Toasts.TakeHelperRequest(out wantHint))   // a new character's welcome toast: the Helper opens on Auto setup
+            {
+                if (HelperOnboarding.NeedsToggle(Open)) Open = true;
+                tab = 1; pick = Pick.None; extraPick = ExtraPick.None; RaiseNext = true;
+                onboardHint = wantHint; onboardAt = s.Now;
+            }
             if (engine.LevelMessage.Length > 0) { message = engine.LevelMessage; engine.LevelMessage = ""; dirty = true; app.PostLine(message); }
             if (dirty) { dirty = false; PlayerPrefs.SetString(HelperConfig.PrefsKey("-", loadedFor), engine.Config.ToJson()); PlayerPrefs.Save(); }
         }
@@ -221,8 +235,22 @@ namespace Chaos.Client
             }
             GUI.Label(new Rect(x, y, w, 18), Loc.T("Mana percent and the number of monsters to cast on."), hint);
             y += 24;
-            if (GUI.Button(new Rect(x, y, 150, 28), Loc.T("Auto setup")))
+            double onboardAge = onboardAt >= 0 && ui?.Session != null ? ui.Session.Now - onboardAt : -1;
+            bool onboarding = HelperOnboarding.Active(onboardAge);
+            if (onboarding)
             {
+                var gold = new GUIStyle(hint) { fontSize = 12 };
+                gold.normal.textColor = new Color(1f, 0.82f, 0.25f);
+                GUI.Label(new Rect(x, y, w, 18), onboardHint, gold);
+                y += 20;
+            }
+            var wasColor = GUI.color;
+            if (onboarding && HelperOnboarding.Gold(onboardAge)) GUI.color = new Color(1f, 0.82f, 0.25f);
+            bool autoSetup = GUI.Button(new Rect(x, y, 150, 28), Loc.T("Auto setup"));
+            GUI.color = wasColor;
+            if (autoSetup)
+            {
+                onboardAt = -1;
                 string m = engine.AutoSetup(Vocation());
                 message = m ?? Loc.T("No rotation for this class and level yet (is the spell list loaded?).");
                 if (m != null) { engine.AutoSupport(); dirty = true; }

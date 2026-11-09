@@ -25,7 +25,7 @@ namespace Chaos.Core.LiveCheck
 
     public sealed partial class LiveRun
     {
-        public static readonly string[] AllScenarios = { "newplayer", "firstkill", "firstquest", "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "guardians", "partnerdeath", "lastlife", "party3", "trialwindows", "riftsolodeath", "riftkilled", "omenparty", "wrathnova", "death", "pvpdeath" };
+        public static readonly string[] AllScenarios = { "newplayer", "questlog", "firstunlock", "firstkill", "firstquest", "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "guardians", "partnerdeath", "lastlife", "party3", "trialwindows", "riftsolodeath", "riftkilled", "omenparty", "wrathnova", "death", "pvpdeath" };
 
         readonly List<ScenarioResult> scenarios = new List<ScenarioResult>();
         Dictionary<int, string> floorChanges;
@@ -81,6 +81,8 @@ namespace Chaos.Core.LiveCheck
                         case "newplayer": ScNewPlayer(r); break;
                         case "firstkill": ScFirstKill(r); break;
                         case "firstquest": ScFirstQuest(r); break;
+                        case "questlog": ScQuestLog(r); break;
+                        case "firstunlock": ScFirstUnlock(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }

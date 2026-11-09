@@ -408,6 +408,8 @@ namespace Chaos.Core
         public readonly List<string> Names = new List<string>();
         public RotSelection Selection;
         public string List => string.Join(", ", Names);
+        /// <summary>"New spell available: A, B." (the box of autorotation_ui.lua onLevelUp; Unity shows it in the Helper window and as a toast).</summary>
+        public string Line => Loc.T("New spell available: {0}.", List);
     }
 
     // ============================================================================================================ the host and the engine glue

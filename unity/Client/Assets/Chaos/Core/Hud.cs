@@ -122,6 +122,41 @@ namespace Chaos.Core
         }
     }
 
+    /// <summary>The rules of the Helper onboarding (game_helperrotation onboarding.lua): what a toast with openHelper asks for, and the blink of the Auto setup button.</summary>
+    public static class HelperOnboarding
+    {
+        public const string FallbackHint = "Set up your helper in one click";
+        public const double BlinkMs = 12000, StepMs = 400;
+
+        /// <summary>The hint of the toast, or the fallback text when it has none (an empty hint is none).</summary>
+        public static string HintOf(string hint, string fallback) => string.IsNullOrEmpty(hint) ? fallback : hint;
+
+        /// <summary>The window is opened when it is hidden (O.plan: toggle = not windowVisible).</summary>
+        public static bool NeedsToggle(bool windowVisible) => !windowVisible;
+
+        /// <summary>The blink: one frame per step over the time, true = gold, alternating, an even number of frames so it ends on the button's own colour (O.blinkFrames).</summary>
+        public static bool[] Frames(double blinkMs = BlinkMs, double stepMs = StepMs)
+        {
+            int n = Math.Max(0, (int)Math.Floor(blinkMs / Math.Max(1, stepMs)));
+            if (n % 2 == 1) n++;
+            var f = new bool[n];
+            for (int i = 0; i < n; i++) f[i] = i % 2 == 0;
+            return f;
+        }
+
+        /// <summary>True while the blink is on gold at this moment (ms since it began); false after the last frame.</summary>
+        public static bool Gold(double elapsedMs, double blinkMs = BlinkMs, double stepMs = StepMs)
+        {
+            if (elapsedMs < 0) return false;
+            var f = Frames(blinkMs, stepMs);
+            int i = (int)(elapsedMs / Math.Max(1, stepMs));
+            return i < f.Length && f[i];
+        }
+
+        /// <summary>True while the hint and the blink are shown (they end on their own after the blink time).</summary>
+        public static bool Active(double elapsedMs, double blinkMs = BlinkMs) => elapsedMs >= 0 && elapsedMs < blinkMs;
+    }
+
     /// <summary>The toasts of opcode 79: three shown at once, the rest in a queue of twelve, a danger line for hunt warnings.</summary>
     public sealed class ToastCenter
     {
@@ -152,6 +187,8 @@ namespace Chaos.Core
             if (type != null)
             {
                 if (message.Length > 0) Add(type, message, (int)Json.Number(d, "monsterLookType"));
+                // a new character's first login: the welcome toast also asks for the Helper (notifications.lua newplayer: data.openHelper, game_helperrotation onboarding.lua)
+                if (action == "newplayer" && Json.Truthy(d, "openHelper")) RequestHelper(Json.Text(d, "hint"));
                 return;
             }
             switch (action)
@@ -188,6 +225,28 @@ namespace Chaos.Core
                     }
                     break;
             }
+        }
+
+        /// <summary>The welcome toast's openHelper: the Helper opens on its Auto setup button with a hint under it (HelperOnboarding). The window takes the request with TakeHelperRequest.</summary>
+        public bool HelperRequested;
+        public string HelperHint = "";
+        /// <summary>How many openHelper toasts came this session.</summary>
+        public int HelperRequests;
+
+        void RequestHelper(string hint)
+        {
+            HelperRequested = true;
+            HelperHint = HelperOnboarding.HintOf(hint, Loc.T(HelperOnboarding.FallbackHint));
+            HelperRequests++;
+        }
+
+        /// <summary>The window asks once per frame: true (and the hint to show) when a welcome toast asked for the Helper and nobody opened it yet.</summary>
+        public bool TakeHelperRequest(out string hint)
+        {
+            hint = HelperHint;
+            if (!HelperRequested) return false;
+            HelperRequested = false;
+            return true;
         }
 
         static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
@@ -251,7 +310,7 @@ namespace Chaos.Core
             Close(t);
         }
 
-        public void Clear() { Queue.Clear(); Active.Clear(); DangerText = ""; DangerUntil = -1; }
+        public void Clear() { Queue.Clear(); Active.Clear(); DangerText = ""; DangerUntil = -1; HelperRequested = false; HelperHint = ""; }
     }
 
     // ============================================================================================================== buff bar

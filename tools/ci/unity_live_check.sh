@@ -31,8 +31,9 @@
 # Secrets: none. The guard key of the Chaos identity is made here (openssl rand), given to tfs and Core.LiveCheck through
 # the environment and thrown away with the work folder; a repository secret is not used (the server and the client are both
 # ours, so the guard is checked in enforce mode with a key nobody else has). The RSA modulus comes from the base key.pem.
-# The newplayer group needs no staff at all: a level 1 character that never logged in, the scenarios newplayer and firstkill (phase 27). firstquest (25 rats,
-# the teleport room, three scroll uses) and riftkilled (the local helper /rgive) are not run here.
+# The newplayer group needs no staff at all: a level 1 character that never logged in, the scenarios newplayer, questlog, firstunlock and firstkill (phases 27 and 28).
+# firstunlock hunts the Rats to level 9, where every class opens Ghost Rope (about 35 s on fresh spawns, at most 170 s, a skip when the level is not reached). firstquest
+# (25 rats, the teleport room, three scroll uses) and riftkilled (the local helper /rgive) are not run here.
 # Staff commands: the death, sharedkill and rift scenarios use stock staff commands (/goto, /m, /rift, /i) of staff accounts
 # made in the database of this run. The riftboss scenario is not run: its /rkill and /rnear exist only as a local-only
 # revscript (unity/README.md phase 23) and are not server data.
@@ -391,10 +392,11 @@ run_group_once() {
     temple)  # stock item tooltip, a stair and the floor change, NPC trade, a party of two (both plain players)
       new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"
       live_run "$label" "$id" tooltip,stairs,floorchange,npc,party --npc "$NPC_NAME" --npc-at "$NPC_AT" --stairs-at "$STAIRS_AT" ;;
-    newplayer)  # a fresh character's first login (every packet and opcode of its first 45 s, the kit, the welcome, the outfit window) and its first kill with the
-                # first attack spell, the loot bag read and taken: no staff right, no local script. The stairs and the cave are the base map of windows-assets.
+    newplayer)  # a fresh character's first login (every packet and opcode of its first 45 s, the kit, the welcome, the outfit window), the base quest log (0xF0, 0xF1),
+                # the first spell unlock by name (level 9) and its first kill with the first attack spell, the loot bag read and taken: no staff right, no local script.
+                # The stairs and the cave are the base map of windows-assets.
       new_newbie "$id"
-      live_run "$label" "$id" newplayer,firstkill ;;
+      live_run "$label" "$id" newplayer,questlog,firstunlock,firstkill ;;
     shop)    # selling to an NPC that buys (the post office NPC does not)
       new_chars 0 0 "$SELL_AT" "$(beside "$SELL_AT")"
       live_run "$label" "$id" sell --npc "$SELL_NPC" --npc-at "$SELL_AT" ;;
