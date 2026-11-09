@@ -7,6 +7,7 @@ BagPanelCore = {}
 local C = BagPanelCore
 
 C.BACK_SLOT = 3
+C.PURSE_SLOT = 11          -- the purse: the engine's store inbox, where store purchases are delivered (server/README.md "Store")
 C.CELL = 34
 C.SPACING = 2
 C.MAX_STEPS_PER_ITEM = 2   -- the sort stops after this many moves per item (a safety net, a sort needs at most one)

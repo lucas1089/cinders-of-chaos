@@ -191,5 +191,110 @@ do
 end
 eq(L.overlap(nil, { x = 0, y = 0, width = 1, height = 1 }), false, 'overlap with nothing')
 
+-- the round chat and gear buttons stay clear above the slot frames at every scale, with and without globes, and the
+-- two buttons do not touch each other
+for _, globes in ipairs({ true, false }) do
+  for scale = L.SCALE_MIN, L.SCALE_MAX, L.SCALE_STEP do
+    for _, count in ipairs(L.COUNTS) do
+      local mm = L.metrics({ count = count, scale = scale, globes = globes })
+      local cb = L.cornerButtons(mm)
+      local tag = string.format('%d%% %s', scale, globes and 'globes' or 'no globes')
+      eq(cb.top + cb.size <= mm.slotY - L.CORNER_GAP, true, 'buttons end above the slot frames at ' .. tag)
+      eq(cb.top >= 0, true, 'buttons inside the bar at ' .. tag)
+      eq(cb.size >= 12 and cb.size <= L.CORNER_BUTTON, true, 'button size at ' .. tag)
+      eq(cb.chatRight - cb.gearRight >= cb.size + 1, true, 'chat and gear apart at ' .. tag)
+      eq(cb.chatRight + cb.size <= mm.width, true, 'chat button inside the bar at ' .. tag)
+    end
+  end
+end
+
+-- default keys: 1..8 on slots 1..8, Q and E on the sockets, Chat Off only, a player's own key stays
+do
+  local function act(slot, bar) return 'TriggerActionButton_' .. (bar or 1) .. '.' .. slot end
+  local function find(list, action, secondary)
+    for _, e in ipairs(list) do
+      if e.actionsetting and e.actionsetting.action == action and (e.secondary and true or false) == (secondary and true or false) then return e end
+    end
+  end
+  local function stock()
+    local l = {}
+    for i = 1, 12 do l[#l + 1] = { actionsetting = { action = act(i) }, keysequence = 'F' .. i } end
+    l[#l + 1] = { actionsetting = { action = act(1, 2) }, keysequence = 'F1' } -- bar 2 is not ours
+    l[#l + 1] = { actionsetting = { action = 'GoNorthWest' }, keysequence = 'Q' }
+    l[#l + 1] = { actionsetting = { action = 'GoNorthEast' }, keysequence = 'E' }
+    l[#l + 1] = { actionsetting = { action = 'GoNorth' }, keysequence = 'W' }
+    return l
+  end
+  local list = stock()
+  local changed, skipped = L.applyDefaultKeys(list, 1)
+  eq(changed, true, 'stock list changes'); eq(#skipped, 0, 'nothing skipped')
+  for i = 1, 8 do eq(find(list, act(i)).keysequence, tostring(i), 'slot ' .. i .. ' gets ' .. i) end
+  for i = 9, 12 do eq(find(list, act(i)).keysequence, 'F' .. i, 'slot ' .. i .. ' keeps F' .. i) end
+  eq(find(list, act(1, 2)).keysequence, 'F1', 'another bar untouched')
+  eq(find(list, act(13)).keysequence, 'Q', 'socket 13 gets Q'); eq(find(list, act(14)).keysequence, 'E', 'socket 14 gets E')
+  eq(find(list, 'GoNorthWest'), nil, 'Q taken from Go North-West'); eq(find(list, 'GoNorthEast'), nil, 'E taken from Go North-East')
+  eq(find(list, 'GoNorth').keysequence, 'W', 'W stays')
+  eq(L.applyDefaultKeys(list, 1), false, 'second run changes nothing')
+
+  -- the player's own keys stay (a letter, a modifier combo, a digit on another slot), also when he cleared one slot's stock key
+  local own = stock()
+  find(own, act(1)).keysequence = 'Ctrl+1'
+  find(own, act(2)).keysequence = 'x'
+  find(own, act(3)).keysequence = '3'
+  table.remove(own, 5) -- slot 5 had its entry removed
+  L.applyDefaultKeys(own, 1)
+  eq(find(own, act(1)).keysequence, 'Ctrl+1', 'own combo kept'); eq(find(own, act(2)).keysequence, 'x', 'own letter kept')
+  eq(find(own, act(3)).keysequence, '3', 'already a digit'); eq(find(own, act(4)).keysequence, '4', 'stock replaced')
+  eq(find(own, act(5)) and find(own, act(5)).keysequence, '5', 'no entry (fresh) gets the default')
+
+  -- a key held by anything else is not taken: slot stays on F, reported
+  local held = stock()
+  held[#held + 1] = { actionsetting = { action = 'Screenshot' }, keysequence = '2' }
+  held[#held + 1] = { actionsetting = { action = 'Custom' }, keysequence = 'q' }
+  local ch, sk = L.applyDefaultKeys(held, 1)
+  eq(ch, true, 'the rest still changes'); eq(find(held, act(2)).keysequence, 'F2', 'slot 2 keeps F2')
+  eq(find(held, act(13)), nil, 'no entry for Q when another action holds q')
+  eq(sk[1], 2, 'slot 2 reported'); eq(sk[2], 13, 'slot 13 reported')
+  eq(find(held, 'GoNorthWest').keysequence, 'Q', 'Go North-West stays when Q is not given away')
+
+  -- a blank key row counts as unset; a secondary row never counts as the slot's key
+  local blank = { { actionsetting = { action = act(1) }, keysequence = '' },
+                  { actionsetting = { action = act(1) }, keysequence = 'F1', secondary = true } }
+  L.applyDefaultKeys(blank, 1)
+  eq(find(blank, act(1)).keysequence, '1', 'blank row gets 1'); eq(find(blank, act(1), true).keysequence, 'F1', 'secondary row stays')
+  eq(L.applyDefaultKeys(nil, 1), false, 'no list')
+  eq(L.keyLabel('1'), '1', 'label of a digit')
+
+  -- over all sets, one time: Chat On is never touched
+  local sets = { Knight = { chatOn = stock(), chatOff = stock() }, Mage = { chatOn = {}, chatOff = {} }, Broken = 5 }
+  local cur, any, done = L.applyToSets(sets, nil, 'Knight', 1)
+  eq(cur, true, 'current set changed'); eq(any, true, 'a set changed')
+  eq(done.Knight, true, 'done flag'); eq(done.Mage, true, 'empty set done too'); eq(done.Broken, nil, 'a non-table set is skipped')
+  eq(find(sets.Knight.chatOn, act(1)).keysequence, 'F1', 'Chat On keeps F1')
+  eq(find(sets.Knight.chatOff, act(1)).keysequence, '1', 'Chat Off has 1')
+  eq(find(sets.Mage.chatOff, act(8)).keysequence, '8', 'a fresh set gets 8')
+  find(sets.Knight.chatOff, act(1)).keysequence = 'F1' -- the player goes back to F1 later
+  cur, any = L.applyToSets(sets, done, 'Knight', 1)
+  eq(cur or any, false, 'done sets are not run again: his F1 stays')
+  eq(find(sets.Knight.chatOff, act(1)).keysequence, 'F1', 'F1 still F1')
+end
+
+-- finding the base bar after a death or any relog (Death and re-login, 2026-11-09): the bar's own visible flag counts
+do
+  local function c(id, slots, shown) return { id = id, slots = slots, shown = shown } end
+  eq(L.pickBar({ c('actionbar.1', 50, true), c('actionbar.2', 50, true) }), 1, 'the base id wins')
+  eq(L.pickBar({ c('actionbar.2', 50, true), c('actionbar.3', 50, true), c('actionbar.1', 50, true) }), 3, 'the base id wins, whatever its place')
+  eq(L.pickBar({ c('actionbar.1', 50, false), c('actionbar.2', 50, true) }), 2, 'a bar the player hid is not taken')
+  eq(L.pickBar({ c('actionbar.1', 4, true), c('actionbar.2', 50, true) }), 2, 'too few slots')
+  eq(L.pickBar({ c('actionbar.1', 50, false) }), nil, 'nothing shown: none')
+  eq(L.pickBar({ c('other', 50, true), c('x', 50, true) }), 1, 'no base id: the first shown')
+  eq(L.pickBar({}), nil, 'no children'); eq(L.pickBar(nil), nil, 'no list')
+  eq(L.adoptDelay(0), 300, 'fast first'); eq(L.adoptDelay(69), 300, 'fast until the 70th')
+  eq(L.adoptDelay(70), 2000, 'then slow'); eq(L.adoptDelay(5000), 2000, 'slow for ever')
+  local f = {}
+  eq(L.barLost(true, f, f), false, 'bar in the frame'); eq(L.barLost(false, nil, f), true, 'bar destroyed')
+  eq(L.barLost(true, {}, f), true, 'bar taken back by the base'); eq(L.barLost(false, f, f), true, 'dead bar')
+end
+
 if fails == 0 then print('hotbar_test: ok') end
 os.exit(fails == 0 and 0 or 1)

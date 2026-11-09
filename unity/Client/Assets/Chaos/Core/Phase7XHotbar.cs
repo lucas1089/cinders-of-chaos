@@ -101,17 +101,32 @@ namespace Chaos.Core
             return list;
         }
 
-        /// <summary>The key label of a slot: F1 to F12 for the row, Q and E for the sockets.</summary>
-        public static string KeyLabel(int slot) => slot == HotbarModel.SideQ ? "Q" : slot == HotbarModel.SideE ? "E" : slot >= 0 && slot < HotbarModel.Count ? "F" + (slot + 1).ToString(CultureInfo.InvariantCulture) : "";
+        /// <summary>How many slots of the row the number keys press by default (keys 1 to 8; the rest keep F9 to F12).</summary>
+        public const int DigitSlots = 8;
 
-        /// <summary>The slot a bare key presses: F1 to F12 (names "F1".."F12"), Q and E for the sockets; -1 for any other key name.</summary>
+        /// <summary>The key label of a slot: 1 to 8 for the first eight slots, F9 to F12 for the rest of the row, Q and E for the sockets.</summary>
+        public static string KeyLabel(int slot)
+        {
+            if (slot == HotbarModel.SideQ) return "Q";
+            if (slot == HotbarModel.SideE) return "E";
+            if (slot < 0 || slot >= HotbarModel.Count) return "";
+            return slot < DigitSlots ? (slot + 1).ToString(CultureInfo.InvariantCulture) : "F" + (slot + 1).ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The slot a bare key presses: the number keys (names "Alpha1".."Alpha8", or "1".."8") for slots 0 to 7, F1 to F12 (names "F1".."F12", the older keys, still working), Q and E for the sockets; -1 for any other key name.</summary>
         public static int SlotOfKey(string keyName)
         {
             if (keyName == "Q") return HotbarModel.SideQ;
             if (keyName == "E") return HotbarModel.SideE;
-            if (keyName != null && keyName.Length >= 2 && keyName[0] == 'F' && int.TryParse(keyName.Substring(1), NumberStyles.None, CultureInfo.InvariantCulture, out int n) && n >= 1 && n <= HotbarModel.Count) return n - 1;
+            if (keyName == null) return -1;
+            string digits = keyName.StartsWith("Alpha", StringComparison.Ordinal) ? keyName.Substring(5) : keyName;
+            if (digits.Length == 1 && digits[0] >= '1' && digits[0] <= '8') return digits[0] - '1';
+            if (keyName.Length >= 2 && keyName[0] == 'F' && int.TryParse(keyName.Substring(1), NumberStyles.None, CultureInfo.InvariantCulture, out int n) && n >= 1 && n <= HotbarModel.Count) return n - 1;
             return -1;
         }
+
+        /// <summary>A key that types text (a digit, Q, E): it must not fire while a text field has the keyboard, and an empty slot lets it through.</summary>
+        public static bool IsTextKey(string keyName) => keyName == "Q" || keyName == "E" || (keyName != null && keyName.Length > 0 && SlotOfKey(keyName) >= 0 && keyName[0] != 'F');
 
         /// <summary>The slot of a point in the bar, -1 outside every slot. The row's slots are `count` cells from `rowX`; the sockets stand left and right of it.</summary>
         public static int SlotAt(HotbarMetrics m, double x, double y, double barTop)

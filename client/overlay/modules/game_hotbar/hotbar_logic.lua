@@ -25,6 +25,9 @@ L.LINE_H = 14          -- the event line above the body
 L.ORB_BASE = 110       -- diameter of a globe at 100%
 L.ORB_PAD = 6          -- globe <-> bar
 L.BOTTOM_GAP = 4       -- bar <-> window's bottom edge
+L.CORNER_BUTTON = 22   -- the round chat and gear buttons over the bar's right end (art size)
+L.CORNER_GAP = 2       -- their bottom edge <-> the slot frames' top edge
+L.CORNER_SPACING = 4   -- chat button <-> gear button
 
 -- ------------------------------------------------------------------ options
 L.COUNTS = { 6, 8, 10, 12 }
@@ -99,6 +102,18 @@ function L.metrics(opts)
   m.keyY = m.slotY + m.slot - round(4 * s)
   m.lineY = m.bodyTop - m.lineH
   return m
+end
+
+-- The round chat and gear buttons over the right end of the bar: size, top (from the bar's top edge) and the right
+-- margins (from the bar's right edge) of the gear and the chat button. They end CORNER_GAP above the top of the slot
+-- frames, so a square frame never covers a round button (they used to end exactly on the frames' top at 100% and ran
+-- into them below that: the frames start 14 px under the body's top at 100% but 11 px at 75%, the buttons stayed 22 px).
+-- A bar with little room above its slots draws them smaller (no less than 12 px).
+function L.cornerButtons(m)
+  local size = math.max(12, math.min(L.CORNER_BUTTON, m.slotY - L.CORNER_GAP))
+  local right = m.capW + m.pad -- the right end of the right socket
+  return { size = size, top = math.max(0, m.slotY - L.CORNER_GAP - size), gearRight = right,
+           chatRight = right + size + L.CORNER_SPACING }
 end
 
 -- The options that fit `available` pixels of width: the scale goes down in steps to FIT_MIN_SCALE first, then
@@ -199,6 +214,84 @@ function L.keyLabel(hotkey, socketKind)
   return socketKind and L.SOCKET_KEYS[socketKind] or ''
 end
 
+-- ------------------------------------------------------------------ default keys (owner: hotkeys 1-8 by default)
+-- The base hotkey sets (Options.array.hotkeyOptions.hotkeySets[name].chatOn / .chatOff, lists of
+-- { actionsetting = { action = 'TriggerActionButton_<bar>.<slot>' }, keysequence = 'F1' }) give the slots of the first
+-- bar the stock keys F1..F12. Slots 1..8 get the number keys, slots 13 and 14 (the sockets) get Q and E. Only the
+-- "Chat Off" list is touched: that is the mode where the movement keys work. In "Chat On" the keys go to the chat line,
+-- so the digits and letters must stay free there; its F keys stay (the F keys work in both modes).
+-- Rule per default, in one set, one time (the caller keeps the done flag per set):
+--   a slot with the stock key (or a blank one) gets the new key; a slot with no entry gets it (fresh set);
+--   a slot with any other key keeps it (the player's own choice, never replaced);
+--   a key held by another entry is not taken, except Go North-West / Go North-East (Q and E of the stock walking
+--   set): their entries are dropped, the numpad keys still walk the diagonals.
+L.DEFAULT_KEY_SLOTS = {
+  { slot = 1, key = '1', stock = 'F1' }, { slot = 2, key = '2', stock = 'F2' }, { slot = 3, key = '3', stock = 'F3' },
+  { slot = 4, key = '4', stock = 'F4' }, { slot = 5, key = '5', stock = 'F5' }, { slot = 6, key = '6', stock = 'F6' },
+  { slot = 7, key = '7', stock = 'F7' }, { slot = 8, key = '8', stock = 'F8' },
+  { slot = L.SOCKET_SLOTS.potion, key = L.SOCKET_KEYS.potion }, { slot = L.SOCKET_SLOTS.utility, key = L.SOCKET_KEYS.utility },
+}
+L.KEY_STEAL_ACTIONS = { GoNorthWest = true, GoNorthEast = true }
+L.KEYS_NODE = 'chaos_hotbar_keys'
+
+local function lower(v) return type(v) == 'string' and v:lower() or nil end
+
+-- Applies the default keys to one chatOff list of a bar (barNumber 1 = the first bottom bar). Returns true when the
+-- list changed, then the slots left alone because another entry holds their key.
+function L.applyDefaultKeys(list, barNumber)
+  if type(list) ~= 'table' then return false, {} end
+  barNumber = math.floor(num(barNumber) or 1)
+  local changed, skipped = false, {}
+  for _, d in ipairs(L.DEFAULT_KEY_SLOTS) do
+    local action = 'TriggerActionButton_' .. barNumber .. '.' .. d.slot
+    local entry
+    for _, e in ipairs(list) do
+      local a = type(e) == 'table' and type(e.actionsetting) == 'table' and e.actionsetting.action
+      if a == action and not e.secondary then entry = e break end
+    end
+    local want = lower(d.key)
+    local current = entry and lower(entry.keysequence) or ''
+    local replace = entry == nil or current == '' or (d.stock ~= nil and current == lower(d.stock))
+    if replace and current ~= want then
+      local holders, blocked = {}, false
+      for i, e in ipairs(list) do
+        if e ~= entry and type(e) == 'table' and lower(e.keysequence) == want then
+          local a = type(e.actionsetting) == 'table' and e.actionsetting.action
+          if a and L.KEY_STEAL_ACTIONS[a] and not e.secondary then holders[#holders + 1] = i else blocked = true end
+        end
+      end
+      if blocked then
+        skipped[#skipped + 1] = d.slot
+      else
+        for k = #holders, 1, -1 do table.remove(list, holders[k]) end
+        if entry then entry.keysequence = d.key
+        else list[#list + 1] = { actionsetting = { action = action }, keysequence = d.key } end
+        changed = true
+      end
+    end
+  end
+  return changed, skipped
+end
+
+-- applyDefaultKeys over the chatOff list of every hotkey set not yet in `done` ({ [setName] = true }, kept by the caller
+-- in g_settings node L.KEYS_NODE; a key the player clears later stays cleared). Returns: the set named `current` changed,
+-- any set changed, the updated done table.
+function L.applyToSets(sets, done, current, barNumber)
+  done = type(done) == 'table' and done or {}
+  local anyChanged, currentChanged = false, false
+  if type(sets) ~= 'table' then return false, false, done end
+  for name, set in pairs(sets) do
+    if type(set) == 'table' and type(set.chatOff) == 'table' and not done[name] then
+      if L.applyDefaultKeys(set.chatOff, barNumber) then
+        anyChanged = true
+        if name == current then currentChanged = true end
+      end
+      done[name] = true
+    end
+  end
+  return currentChanged, anyChanged, done
+end
+
 -- ------------------------------------------------------------------ cooldown number
 -- The big number on a slot: whole seconds left rounded up, one decimal under 2 s, "1m" from 60 s, nothing without a
 -- cooldown. Also the dark fill's share (0..1, the part still to wait).
@@ -270,6 +363,40 @@ end
 -- the diameter of the globes for the docked bar (game_shaderfx scales its art to it)
 function L.orbDiameter(scale)
   return round(L.ORB_BASE * (L.clampScale(scale) / 100))
+end
+
+-- ------------------------------------------------------------------ finding the base bar (Death and re-login, 2026-11-09)
+L.BAR_ID = 'actionbar.1'   -- the id game_actionbar gives its first bottom bar (createActionBars)
+L.MIN_BAR_SLOTS = 6
+L.ADOPT_FAST_TRIES = 70    -- 300 ms apart (21 s), then every ADOPT_SLOW_MS for as long as the layout is on
+L.ADOPT_FAST_MS = 300
+L.ADOPT_SLOW_MS = 2000
+
+-- candidates: the children of gameBottomActionPanel as { id, slots, shown } where `shown` is the bar's OWN visible flag
+-- (isExplicitlyVisible), never the effective one: the panel is hidden while the hotbar runs and a bar given back to it
+-- reads invisible, so the second login of a client never found its bar. Returns the index to adopt: the bar with the
+-- base id when it is shown and has slots, else the first shown bar with enough slots, else nil.
+function L.pickBar(candidates)
+  local first
+  for i, e in ipairs(candidates or {}) do
+    if e.shown and (tonumber(e.slots) or 0) >= L.MIN_BAR_SLOTS then
+      if e.id == L.BAR_ID then return i end
+      first = first or i
+    end
+  end
+  return first
+end
+
+-- ms before adopt try number `tries` (0 is the first): quick at first, slow forever after (the bars of a login that
+-- is slow to build must still be found; the old rule gave up after 21 s and left the frame half built)
+function L.adoptDelay(tries)
+  if (tonumber(tries) or 0) < L.ADOPT_FAST_TRIES then return L.ADOPT_FAST_MS end
+  return L.ADOPT_SLOW_MS
+end
+
+-- whether the adopted bar was lost: destroyed, or no longer inside the hotbar's frame (the base took it back)
+function L.barLost(barAlive, barParent, frame)
+  return not barAlive or barParent ~= frame
 end
 
 return HotbarLogic

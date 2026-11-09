@@ -20,6 +20,7 @@ local POLL_MS, FADE_MS = 100, 100
 local win, content, header
 local consolePanel, origParent
 local tabBarHeight = 0
+local TAB_ROW_MIN = 24       -- the least the tab row is pushed up by, when it cannot be measured (yet)
 local settings = L.settingsFor(nil, nil)
 local state = L.new(false, 0)
 local character
@@ -39,14 +40,17 @@ local function root()
   return gi and gi.getRootPanel and gi.getRootPanel() or nil
 end
 
--- the game area the window may use, as a rect in screen pixels: the root panel without the side panels and the top menu
-local function area()
+-- the game area the window may use, as a rect in screen pixels: the root panel without the side panels and the top menu.
+-- `wide`: the area a placed or dragged window may use, which reaches the screen's left edge (x = 0) over the left side
+-- panel column: the chat floats over the map, and the old limit (the left panels' right edge) kept it from going all
+-- the way left (owner 2026-11-09). The default place (nothing saved) keeps to the map's own area.
+local function area(wide)
   local r = root()
   if not r then return { x = 0, y = 0, width = 1024, height = 600 } end
   local rect = r:getRect()
   local left, right, top = rect.x, rect.x + rect.width, rect.y
   local lp, rp = r:getChildById('gameLeftPanels'), r:getChildById('gameRightPanels')
-  if lp and lp:isVisible() and lp:getWidth() > 0 then left = math.max(left, lp:getX() + lp:getWidth()) end
+  if not wide and lp and lp:isVisible() and lp:getWidth() > 0 then left = math.max(left, lp:getX() + lp:getWidth()) end
   if rp and rp:isVisible() and rp:getWidth() > 0 then right = math.min(right, rp:getX()) end
   local bar = r:getChildById('chaosMenuBar')
   if bar and bar:isVisible() and bar:getY() < rect.y + 60 then top = math.max(top, bar:getY() + bar:getHeight()) end
@@ -132,7 +136,7 @@ local function place()
   local r = root()
   if not r then return end
   local rect = r:getRect()
-  local a = area()
+  local a = area(settings.x ~= nil)
   if state.hidden then
     win:setMarginLeft(PARK)
     return
@@ -243,7 +247,7 @@ end
 local function onDragMove(pos)
   if not drag or state.hidden then return false end
   local rect = root():getRect()
-  local a = area()
+  local a = area(true)
   local mx, my = mouse(pos)
   local r
   if drag.kind == 'move' then r = L.moveBy(drag.start, mx, my, a) else r = L.resizeBy(drag.start, mx, my, a) end
@@ -291,16 +295,40 @@ local function wireWindow()
     tab.onClick = function(self) showMenu(id, self) end
     local icon = tab:getChildById('icon')
     if icon then icon:setImageSource('/modules/game_floatchat/images/chat_' .. id) end
+    local label = tab:getChildById('label')
+    if label then label:setText(id == 'private' and tr('Private') or tr('Channels')) end
   end
 end
 
 -- ---------------------------------------------------------------- reparenting the console
+-- How far the console's tab row reaches down from the console panel's top: where its content panel starts (the content
+-- panel hangs under the tab row). Measured after a layout, so it is the row's real footprint, margins included. The
+-- bar's own height alone was too little (0 before the first layout of the hidden base panel), and the row then stayed
+-- in the content area under the header (owner screenshot 2026-11-09: the tabs over "Channels" and "Private").
+local function tabRowFootprint()
+  if not alive(consolePanel) then return nil end
+  local cp = consolePanel:recursiveGetChildById('consoleContentPanel')
+  if not cp then return nil end
+  local d = cp:getY() - consolePanel:getY()
+  if d >= 8 and d <= 120 then return d end
+  return nil
+end
+
+-- push the tab row up out of the clipped content area (again whenever the measure changes)
+local function fitTabRow()
+  if not (alive(consolePanel) and alive(content)) then return end
+  local bar = tabBar()
+  local want = tabRowFootprint() or math.max(bar and bar:getHeight() or 0, TAB_ROW_MIN)
+  if want ~= tabBarHeight or consolePanel:getMarginTop() ~= -want then
+    tabBarHeight = want
+    consolePanel:setMarginTop(-want)
+  end
+end
+
 local function takeConsole()
   consolePanel = findConsolePanel()
   if not alive(consolePanel) or not alive(content) then return false end
   origParent = consolePanel:getParent()
-  local bar = tabBar()
-  tabBarHeight = bar and bar:getHeight() or 0
   consolePanel:setParent(content)
   consolePanel:breakAnchors()
   consolePanel:addAnchor(AnchorTop, 'parent', AnchorTop)
@@ -308,7 +336,8 @@ local function takeConsole()
   consolePanel:addAnchor(AnchorRight, 'parent', AnchorRight)
   consolePanel:addAnchor(AnchorBottom, 'parent', AnchorBottom)
   -- the base tab row is pushed above the content area (which clips it): our header menus take its place
-  consolePanel:setMarginTop(-tabBarHeight)
+  tabBarHeight = 0
+  fitTabRow()
   pcall(content.setClipping, content, true)
   -- the base console draws its own dark background: the window's own see-through body shows instead
   pcall(consolePanel.setBackgroundColor, consolePanel, '#00000000')
@@ -340,6 +369,9 @@ local function poll()
     dispatch(typing and 'typing_on' or 'typing_off')
   end
   updateBadges()
+  -- the base console panel was destroyed and rebuilt, or taken back into its own panel: take it again
+  if alive(content) and (not alive(consolePanel) or consolePanel:getParent() ~= content) then pcall(takeConsole) end
+  fitTabRow()
   pollEvent = scheduleEvent(poll, POLL_MS)
 end
 
@@ -421,14 +453,41 @@ local function onGeometry()
   if active and not drag then place() end
 end
 
+-- Direct game hooks, besides the layout mode's notice (see game_hotbar): a game end always ends the window, and a few
+-- moments after a start it is switched on if the layout mode says action and nothing did.
+local ensureEvents = {}
+local function cancelEnsure()
+  for _, e in ipairs(ensureEvents) do removeEvent(e) end
+  ensureEvents = {}
+end
+
+local function onGameEnd()
+  cancelEnsure()
+  disable()
+end
+
+local function onGameStart()
+  cancelEnsure()
+  for _, ms in ipairs({ 700, 2000, 5000 }) do
+    ensureEvents[#ensureEvents + 1] = scheduleEvent(function()
+      if not active and g_game.isOnline() and ChaosLayoutMode and ChaosLayoutMode.isAction and ChaosLayoutMode.isAction() then
+        enable()
+      end
+    end, ms)
+  end
+end
+
 function M.init()
   if g_app.isMobile() then return end
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   if ChaosLayoutMode and ChaosLayoutMode.subscribe then ChaosLayoutMode.subscribe(onMode) end
   local r = root()
   if r then connect(r, { onGeometryChange = onGeometry }) end
 end
 
 function M.terminate()
+  pcall(disconnect, g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  cancelEnsure()
   if ChaosLayoutMode and ChaosLayoutMode.unsubscribe then ChaosLayoutMode.unsubscribe(onMode) end
   local r = root()
   if r then pcall(disconnect, r, { onGeometryChange = onGeometry }) end

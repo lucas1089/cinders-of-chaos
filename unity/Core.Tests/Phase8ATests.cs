@@ -74,7 +74,7 @@ namespace Chaos.Core.Tests
             check(k.H >= 16 && k.X == 102 && k.Y == 20 && k.W == 32, "hotbar: the key label is 16 high for a 10 px font, never the old 14: " + k.H);
             check(HotbarFrame.KeyLabel(0, 0, 34, 14).H >= 22, "hotbar: a bigger font gets a taller label");
             check(HotbarFrame.KeyLabel(0, 0, 4, 10).W >= 10, "hotbar: a tiny slot keeps a usable label width");
-            check(HotbarLayout.KeyLabel(HotbarModel.SideQ) == "Q" && HotbarLayout.KeyLabel(HotbarModel.SideE) == "E" && HotbarLayout.KeyLabel(0) == "F1", "hotbar: the key labels of the sockets and the row");
+            check(HotbarLayout.KeyLabel(HotbarModel.SideQ) == "Q" && HotbarLayout.KeyLabel(HotbarModel.SideE) == "E" && HotbarLayout.KeyLabel(0) == "1", "hotbar: the key labels of the sockets and the row");
             // the frame geometry of hotbar_logic.lua: the base button is 36 of the 44 pixel frame
             var f = HotbarFrame.SlotFrameOf(10, 10, 36, 36);
             check(f.X == 6 && f.Y == 6 && f.W == 44 && f.H == 44, "hotbar: the slot frame is the 36 px slot grown to 44");

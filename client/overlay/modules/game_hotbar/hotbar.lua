@@ -15,7 +15,7 @@ local M = ChaosHotbar
 local L = HotbarLogic
 
 local TICK_MS = 100
-local ADOPT_RETRY_MS, ADOPT_TRIES = 300, 70
+local ENSURE_MS = { 700, 2000, 5000 } -- after a game start: is the hotbar on when the layout mode says action
 
 local frame
 local active = false
@@ -30,9 +30,19 @@ local eventLine = {}
 local drag
 local lastRoot = nil
 local chatListener
+local barIndex            -- where the base bar sat in gameBottomActionPanel (put back there)
+local hiddenKids = {}     -- children of the base bar made invisible (the lock column, tabs, arrows)
+local savedBottom         -- what collapseBottom changed in the classic bottom area (restoreBottom puts it back)
+local ensureEvents = {}
 
 local function now() return g_clock.millis() end
 local function alive(w) return w ~= nil and not w:isDestroyed() end
+-- the widget's OWN visible flag: isVisible() is false under a hidden ancestor, and the bottom action panel is hidden
+-- while the hotbar runs (collapseBottom)
+local function shown(w)
+  if w.isExplicitlyVisible then return w:isExplicitlyVisible() end
+  return w:isVisible()
+end
 
 local function root()
   local gi = modules.game_interface
@@ -59,17 +69,22 @@ local function slotsOf(w, out)
   return out
 end
 
--- the first bottom action bar: the child of gameBottomActionPanel that holds at least 6 slot buttons
+-- the first bottom action bar: the child of gameBottomActionPanel that holds at least 6 slot buttons, the bar with the base
+-- id first (HotbarLogic.pickBar). Its own visible flag counts, not the effective one: the panel is hidden while the hotbar
+-- runs, and a bar given back to it read invisible, so after a death (a fast relog) or any logout the bar was never found
+-- again, the frame stayed an empty 200 x 100 box and the globes stayed undocked.
 local function findBar()
   local r = root()
   local panel = r and r:getChildById('gameBottomActionPanel')
   if not panel then return nil end
-  for _, child in ipairs(panel:getChildren()) do
-    if child:isVisible() then
-      local list = slotsOf(child, {})
-      if #list >= 6 then return child, list end
-    end
+  local kids, candidates, lists = panel:getChildren(), {}, {}
+  for i, child in ipairs(kids) do
+    local list = slotsOf(child, {})
+    lists[i] = list
+    candidates[i] = { id = child:getId(), slots = #list, shown = shown(child) }
   end
+  local pick = L.pickBar(candidates)
+  if pick then return kids[pick], lists[pick], pick end
 end
 
 local function hotkeyOf(b)
@@ -146,9 +161,9 @@ local function styleRow()
 end
 
 local function adopt()
-  local found, list = findBar()
+  local found, list, index = findBar()
   if not found then return false end
-  bar, buttons = found, list
+  bar, buttons, barIndex = found, list, index
   slotParent = buttons[1]:getParent()
   return true
 end
@@ -191,8 +206,14 @@ local function buildParts()
     slotParent:setMarginLeft(0)
     slotParent:setMarginTop(0)
     slotParent:setHeight(m.button)
+    -- as wide as the row: its anchors are broken, so it kept the base width and clipped the E socket at the row's end
+    -- (owner 2026-11-09: nothing could be dropped on E)
+    slotParent:setWidth(rowRight - rowLeft)
     for _, child in ipairs(bar:getChildren()) do -- the lock column, tabs and arrows of the base bar are not part of the look
-      if child ~= slotParent then child:setVisible(false) end
+      if child ~= slotParent then
+        if shown(child) then hiddenKids[#hiddenKids + 1] = child end
+        child:setVisible(false)
+      end
     end
   end
   for _, c in ipairs(layout) do
@@ -235,12 +256,14 @@ local function layoutFrame()
   line:setMarginBottom(2)
   local chat = frame:getChildById('chatButton')
   local gear = frame:getChildById('gearButton')
+  local cb = L.cornerButtons(m)
   for i, b in ipairs({ chat, gear }) do
     b:breakAnchors()
     b:addAnchor(AnchorRight, 'parent', AnchorRight)
     b:addAnchor(AnchorTop, 'parent', AnchorTop)
-    b:setMarginRight(m.capW + m.pad + (i == 1 and 26 or 0))
-    b:setMarginTop(m.bodyTop - 8)
+    b:setSize({ width = cb.size, height = cb.size })
+    b:setMarginRight(i == 1 and cb.chatRight or cb.gearRight)
+    b:setMarginTop(cb.top)
     b:raise()
   end
   local dot = frame:getChildById('chatDot')
@@ -269,25 +292,36 @@ local function placeFrame()
   frame:setMarginBottom(placed.bottom)
 end
 
--- the bottom area of the classic layout makes way: the map takes the height
+-- the bottom area of the classic layout makes way: the map takes the height. What it changes is kept (savedBottom) and
+-- put back when the hotbar stops (restoreBottom), so the next login, in either layout, finds the panels as the base made them.
 local function collapseBottom()
   local r = root()
   if not r then return end
+  savedBottom = savedBottom or {}
   local s = r:getChildById('bottomSplitter')
   if s then
+    if savedBottom.splitter == nil then
+      local ok, margin, height, phantom = pcall(function() return s:getMarginBottom(), s:getHeight(), s.isPhantom and s:isPhantom() or false end)
+      if ok then savedBottom.splitter = { margin = margin, height = height, phantom = phantom } end
+    end
     s:setMarginBottom(0)
     pcall(s.setHeight, s, 1)
     pcall(s.setPhantom, s, true)
   end
   local bottom = r:getChildById('gameBottomPanel')
-  if bottom then bottom:setVisible(false) end -- the console moved into game_floatchat
+  if bottom then
+    if savedBottom.bottomShown == nil then savedBottom.bottomShown = shown(bottom) end
+    bottom:setVisible(false) -- the console moved into game_floatchat
+  end
   local ab = r:getChildById('gameBottomActionPanel')
   if ab then
+    if savedBottom.panelShown == nil then savedBottom.panelShown = shown(ab) end
     local others = false
     for _, child in ipairs(ab:getChildren()) do
-      if child ~= bar and child:isVisible() and #slotsOf(child, {}) >= 1 then others = true end
+      if child ~= bar and shown(child) and #slotsOf(child, {}) >= 1 then others = true end
     end
     if others then -- more bottom bars are on: they sit just above the hotbar
+      savedBottom.panelMoved = true
       ab:breakAnchors()
       ab:addAnchor(AnchorBottom, 'chaosHotbar', AnchorTop)
       ab:addAnchor(AnchorHorizontalCenter, 'chaosHotbar', AnchorHorizontalCenter)
@@ -295,6 +329,41 @@ local function collapseBottom()
     else
       ab:setVisible(false)
     end
+  end
+end
+
+local function restoreBottom()
+  local r = root()
+  local saved = savedBottom
+  savedBottom = nil
+  if not r or not saved then return end
+  local s = r:getChildById('bottomSplitter')
+  if s and saved.splitter then
+    s:setMarginBottom(saved.splitter.margin)
+    pcall(s.setHeight, s, saved.splitter.height)
+    pcall(s.setPhantom, s, saved.splitter.phantom == true)
+  end
+  local bottom = r:getChildById('gameBottomPanel')
+  if bottom and saved.bottomShown ~= nil then bottom:setVisible(saved.bottomShown) end
+  local ab = r:getChildById('gameBottomActionPanel')
+  if ab then
+    if saved.panelMoved then -- the anchors of the base style (gameinterface.otui, not mobile)
+      ab:breakAnchors()
+      ab:addAnchor(AnchorLeft, 'bottomSplitter', AnchorLeft)
+      ab:addAnchor(AnchorRight, 'bottomSplitter', AnchorRight)
+      ab:addAnchor(AnchorTop, 'bottomSplitter', AnchorTop)
+      ab:setMarginTop(6)
+      ab:setMarginBottom(0)
+    end
+    if saved.panelShown ~= nil then ab:setVisible(saved.panelShown) end
+  end
+end
+
+-- the round buttons, the unread dot and the drag handle are drawn last (a later child is drawn over an earlier one)
+local function raiseControls()
+  for _, id in ipairs({ 'chatButton', 'gearButton', 'chatDot', 'handle' }) do
+    local w = alive(frame) and frame:getChildById(id) or nil
+    if w then w:raise() end
   end
 end
 
@@ -307,15 +376,34 @@ function M.relayout()
   frame:setSize({ width = m.width, height = m.height })
   layoutFrame()
   buildParts()
+  raiseControls() -- the slot frames buildParts made are the newest children: the buttons go back over them
   placeFrame()
   applyOrbs()
   for _, c in ipairs(cells) do c.readyShown, c.keyText, c.cdText = nil, nil, nil end
 end
 
 -- ---------------------------------------------------------------- the tick
+local tryAdopt
+
+-- the base bar is gone from the frame (destroyed and rebuilt, or taken back by the base): drop the half-built row, hide the
+-- frame and adopt again (the tick chain ends here; a successful adopt starts the next one)
+local function lostBar()
+  clearParts()
+  bar, slotParent, buttons, plan = nil, nil, nil, nil
+  if alive(frame) then frame:setVisible(false) end
+  local fx = modules.game_shaderfx
+  if fx and type(fx.setOrbDock) == 'function' then pcall(fx.setOrbDock, nil, false) end
+  if adoptEvent then removeEvent(adoptEvent) adoptEvent = nil end
+  tryAdopt(0)
+end
+
 local function tick()
   tickEvent = nil
   if not active or not alive(frame) then return end
+  if L.barLost(bar ~= nil and alive(bar), bar ~= nil and alive(bar) and bar:getParent() or nil, frame) then
+    lostBar()
+    return
+  end
   for _, c in ipairs(cells) do
     if alive(c.button) then
       local d, e = cooldownOf(c.button)
@@ -454,21 +542,44 @@ local function wireFrame()
 end
 
 -- ---------------------------------------------------------------- start and stop
-local function tryAdopt(tries)
+function tryAdopt(tries)
   adoptEvent = nil
-  if not active then return end
+  if not active or not alive(frame) then return end
   if adopt() then
     collapseBottom()
     M.relayout()
     collapseBottom()
+    frame:setVisible(true) -- hidden until the bar is in it: a frame without its bar is an empty box
+    if tickEvent then removeEvent(tickEvent) tickEvent = nil end
     tick()
     return
   end
-  if tries < ADOPT_TRIES then
-    adoptEvent = scheduleEvent(function() tryAdopt(tries + 1) end, ADOPT_RETRY_MS)
-  else
-    g_logger.warning('[hotbar] no action bar found: the central hotbar stays off')
+  if tries == L.ADOPT_FAST_TRIES then
+    g_logger.warning('[hotbar] no action bar found yet: the central hotbar waits for it')
   end
+  if g_game.isOnline() then adoptEvent = scheduleEvent(function() tryAdopt(tries + 1) end, L.adoptDelay(tries)) end
+end
+
+-- Default keys 1-8 (slots 1..8) and Q / E (the sockets) in the Chat Off hotkey sets, once per set (HotbarLogic.applyToSets:
+-- a key the player set stays, a stock F key is replaced). The base bar bound its slots at the game start, so a change to the
+-- set in use is applied by the bar's own switchChatMode (re-reads the set, rebinds, relabels); the walking mode is kept as it was.
+local function applyDefaultKeys()
+  if not (Options and Options.array and Options.array.hotkeyOptions) then return end
+  local sets = Options.array.hotkeyOptions.hotkeySets
+  if type(sets) ~= 'table' then return end
+  local node = g_settings.getNode(L.KEYS_NODE)
+  local done = type(node) == 'table' and node.sets or nil
+  local currentChanged, anyChanged
+  currentChanged, anyChanged, done = L.applyToSets(sets, done, Options.currentHotkeySetName, 1)
+  g_settings.setNode(L.KEYS_NODE, { sets = done })
+  if not anyChanged then return end
+  if Options.saveData then pcall(Options.saveData) end
+  if not currentChanged then return end
+  local ab, walking = modules.game_actionbar, modules.game_walking
+  if not (ab and ab.switchChatMode) then return end
+  local wasWsad = walking and walking.isEnableWSAD and walking.isEnableWSAD()
+  pcall(ab.switchChatMode, Options.isChatOnEnabled == true)
+  if walking and wasWsad == false and walking.disableWSAD then pcall(walking.disableWSAD) end
 end
 
 local function enable()
@@ -483,11 +594,35 @@ local function enable()
   frame:addAnchor(AnchorLeft, 'parent', AnchorLeft)
   frame:addAnchor(AnchorBottom, 'parent', AnchorBottom)
   frame:setSize({ width = 200, height = 100 })
+  frame:setVisible(false) -- shown by tryAdopt once the bar is in it
   wireFrame()
   active = true
   eventLine = {}
   connect(g_game, { onTextMessage = onTextMessage })
+  pcall(applyDefaultKeys)
   tryAdopt(0)
+end
+
+local function cancelEnsure()
+  for _, e in ipairs(ensureEvents) do removeEvent(e) end
+  ensureEvents = {}
+end
+
+-- the base bar goes back to its panel, at the place it had, visible as it was, with the pieces of it made invisible shown
+-- again, and the bottom area as the base left it (the next login lays it out again, in either layout)
+local function releaseBar()
+  restoreBottom()
+  local panel = root() and root():getChildById('gameBottomActionPanel') or nil
+  if bar and alive(bar) and panel then
+    pcall(bar.setParent, bar, panel)
+    pcall(panel.moveChildToIndex, panel, bar, barIndex or 1)
+    pcall(bar.fill, bar, 'parent')
+    pcall(bar.setClipping, bar, false)
+  end
+  for _, w in ipairs(hiddenKids) do
+    if alive(w) then w:setVisible(true) end
+  end
+  hiddenKids, barIndex = {}, nil
 end
 
 local function disable()
@@ -499,16 +634,7 @@ local function disable()
   pcall(disconnect, g_game, { onTextMessage = onTextMessage })
   local fx = modules.game_shaderfx
   if fx and type(fx.setOrbDock) == 'function' then pcall(fx.setOrbDock, nil, false) end
-  -- the base bar goes back to its panel (the next login lays it out again)
-  if bar and alive(bar) and alive(frame) then
-    local r = root()
-    local panel = r and r:getChildById('gameBottomActionPanel')
-    if panel then
-      pcall(bar.setParent, bar, panel)
-      pcall(bar.fill, bar, 'parent')
-      pcall(bar.setClipping, bar, false)
-    end
-  end
+  releaseBar()
   clearParts()
   if alive(frame) then frame:destroy() end
   frame, bar, slotParent, buttons, plan, drag = nil, nil, nil, nil, nil, nil
@@ -529,8 +655,28 @@ local function onGeometry()
   if active and not drag and alive(frame) then M.relayout() end
 end
 
+-- Direct game hooks, besides the layout mode's notice: the end of a game always ends the hotbar (a death is a fast relog:
+-- end and start in the same second), and a few moments after a start the hotbar is switched on if the layout mode says
+-- action and nothing did (a notice lost to a handler chain that stopped, a start that came before the character was known).
+local function onGameEnd()
+  cancelEnsure()
+  disable()
+end
+
+local function onGameStart()
+  cancelEnsure()
+  for _, ms in ipairs(ENSURE_MS) do
+    ensureEvents[#ensureEvents + 1] = scheduleEvent(function()
+      if not active and g_game.isOnline() and ChaosLayoutMode and ChaosLayoutMode.isAction and ChaosLayoutMode.isAction() then
+        enable()
+      end
+    end, ms)
+  end
+end
+
 function M.init()
   if g_app.isMobile() then return end
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   if ChaosLayoutOptions and ChaosLayoutOptions.init then ChaosLayoutOptions.init() end -- hotbar_options.lua
   if ChaosLayoutMode and ChaosLayoutMode.subscribe then ChaosLayoutMode.subscribe(onMode) end
   local r = root()
@@ -544,6 +690,8 @@ function M.init()
 end
 
 function M.terminate()
+  pcall(disconnect, g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  cancelEnsure()
   if ChaosLayoutOptions and ChaosLayoutOptions.terminate then ChaosLayoutOptions.terminate() end
   if ChaosLayoutMode and ChaosLayoutMode.unsubscribe then ChaosLayoutMode.unsubscribe(onMode) end
   local r = lastRoot

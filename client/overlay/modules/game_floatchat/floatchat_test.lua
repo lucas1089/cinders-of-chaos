@@ -46,6 +46,12 @@ eq(L.place(L.settingsFor(nil, 'A'), area, bar).y + 150 + 6, 480, 'no saved place
 local start = { x = 100, y = 300, width = 380, height = 150, mouseX = 120, mouseY = 310 }
 r = L.moveBy(start, 220, 260, area)
 eq(r.x, 200, 'move x'); eq(r.y, 250, 'move y')
+-- all the way left: the wide area starts at the screen edge (x = 0), the map's area at the left panels' edge (180)
+r = L.moveBy(start, -900, 310, area)
+eq(r.x, 0, 'dragged far left: the screen edge')
+r = L.moveBy(start, -900, 310, { x = 180, y = 0, width = 820, height = 600 })
+eq(r.x, 180, 'a narrower area keeps the chat right of it')
+eq(L.place(L.settingsFor({ A = { x = 0, y = 300, width = 380, height = 150 } }, 'A'), area, nil).x, 0, 'a saved x of 0 stays 0')
 r = L.resizeBy(start, 220, 410, area)
 eq(r.width, 480, 'resize width'); eq(r.height, 250, 'resize height')
 r = L.resizeBy(start, -400, -400, area)

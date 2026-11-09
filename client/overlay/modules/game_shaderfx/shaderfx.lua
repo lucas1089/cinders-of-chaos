@@ -116,7 +116,7 @@ local function paintOrb(kind)
     local _, liquidSize = L.orbSize(options.orbSize)
     local texels = liquidSize * 2 -- the mask art is drawn at twice its size (L.orbArt)
     if dock then
-      local _, docked, _, _, _, maskTexels = L.dockedSize(dock.diameter)
+      local _, docked, _, _, _, maskTexels = L.dockedSize((L.dockedDiameter(dock.diameter, options.orbSize)))
       liquidSize, texels = docked, maskTexels
     end
     local clip, height = L.plainClip(st.fill, texels, liquidSize)
@@ -173,7 +173,7 @@ end
 local function applyOrbSize()
   local size, liquidSize, font = L.orbSize(options.orbSize)
   local ringImage, maskImage = L.orbArt(options.orbSize)
-  if dock then size, liquidSize, font, ringImage, maskImage = L.dockedSize(dock.diameter) end
+  if dock then size, liquidSize, font, ringImage, maskImage = L.dockedSize((L.dockedDiameter(dock.diameter, options.orbSize))) end
   for _, kind in ipairs({ 'health', 'mana' }) do
     local w = orbWidget(kind)
     if w then
@@ -207,6 +207,7 @@ local function placeOrbs()
   if not orbs then return end
   if dock then
     -- docked in the hotbar's end caps: left and right of its frame (the frame is a sibling in the root panel)
+    local _, grow = L.dockedDiameter(dock.diameter, options.orbSize) -- a large globe grows outward
     for _, kind in ipairs({ 'health', 'mana' }) do
       local w = orbWidget(kind)
       if w then
@@ -215,10 +216,10 @@ local function placeOrbs()
         w:setMarginBottom(0)
         if kind == 'health' then
           w:addAnchor(AnchorLeft, 'chaosHotbar', AnchorLeft)
-          w:setMarginLeft(3)
+          w:setMarginLeft(3 - grow)
         else
           w:addAnchor(AnchorRight, 'chaosHotbar', AnchorRight)
-          w:setMarginRight(3)
+          w:setMarginRight(3 - grow)
         end
         w:raise()
       end
@@ -349,6 +350,7 @@ function onOption(which, value)
   elseif which == 'orbSize' then
     options.orbSize = tonumber(value) or L.ORB_DEFAULT_SIZE
     applyOrbSize()
+    placeOrbs() -- docked globes: the margins follow the size
     relayoutChat()
   end
 end

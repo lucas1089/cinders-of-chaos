@@ -166,6 +166,14 @@ do
   eq(clip.height, 100, 'plain fill capped at 1')
 end
 
+-- Orb size on docked globes: small / medium / large scale the hotbar diameter; a large one grows outward
+do
+  eq((L.dockedDiameter(110, 2)), 110, 'docked medium keeps the hotbar diameter')
+  eq((L.dockedDiameter(110, 1)), 83, 'docked small'); eq((select(2, L.dockedDiameter(110, 1))), 0, 'small does not grow')
+  eq((L.dockedDiameter(110, 3)), 126, 'docked large'); eq((select(2, L.dockedDiameter(110, 3))), 16, 'large grows 16 px')
+  eq((L.dockedDiameter(110, nil)), 110, 'no option is medium'); eq((L.dockedDiameter(40, 1)), 40, 'never below 40')
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)
