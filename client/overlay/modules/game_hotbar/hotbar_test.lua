@@ -191,5 +191,76 @@ do
 end
 eq(L.overlap(nil, { x = 0, y = 0, width = 1, height = 1 }), false, 'overlap with nothing')
 
+-- default keys: 1..8 on slots 1..8, Q and E on the sockets, Chat Off only, a player's own key stays
+do
+  local function act(slot, bar) return 'TriggerActionButton_' .. (bar or 1) .. '.' .. slot end
+  local function find(list, action, secondary)
+    for _, e in ipairs(list) do
+      if e.actionsetting and e.actionsetting.action == action and (e.secondary and true or false) == (secondary and true or false) then return e end
+    end
+  end
+  local function stock()
+    local l = {}
+    for i = 1, 12 do l[#l + 1] = { actionsetting = { action = act(i) }, keysequence = 'F' .. i } end
+    l[#l + 1] = { actionsetting = { action = act(1, 2) }, keysequence = 'F1' } -- bar 2 is not ours
+    l[#l + 1] = { actionsetting = { action = 'GoNorthWest' }, keysequence = 'Q' }
+    l[#l + 1] = { actionsetting = { action = 'GoNorthEast' }, keysequence = 'E' }
+    l[#l + 1] = { actionsetting = { action = 'GoNorth' }, keysequence = 'W' }
+    return l
+  end
+  local list = stock()
+  local changed, skipped = L.applyDefaultKeys(list, 1)
+  eq(changed, true, 'stock list changes'); eq(#skipped, 0, 'nothing skipped')
+  for i = 1, 8 do eq(find(list, act(i)).keysequence, tostring(i), 'slot ' .. i .. ' gets ' .. i) end
+  for i = 9, 12 do eq(find(list, act(i)).keysequence, 'F' .. i, 'slot ' .. i .. ' keeps F' .. i) end
+  eq(find(list, act(1, 2)).keysequence, 'F1', 'another bar untouched')
+  eq(find(list, act(13)).keysequence, 'Q', 'socket 13 gets Q'); eq(find(list, act(14)).keysequence, 'E', 'socket 14 gets E')
+  eq(find(list, 'GoNorthWest'), nil, 'Q taken from Go North-West'); eq(find(list, 'GoNorthEast'), nil, 'E taken from Go North-East')
+  eq(find(list, 'GoNorth').keysequence, 'W', 'W stays')
+  eq(L.applyDefaultKeys(list, 1), false, 'second run changes nothing')
+
+  -- the player's own keys stay (a letter, a modifier combo, a digit on another slot), also when he cleared one slot's stock key
+  local own = stock()
+  find(own, act(1)).keysequence = 'Ctrl+1'
+  find(own, act(2)).keysequence = 'x'
+  find(own, act(3)).keysequence = '3'
+  table.remove(own, 5) -- slot 5 had its entry removed
+  L.applyDefaultKeys(own, 1)
+  eq(find(own, act(1)).keysequence, 'Ctrl+1', 'own combo kept'); eq(find(own, act(2)).keysequence, 'x', 'own letter kept')
+  eq(find(own, act(3)).keysequence, '3', 'already a digit'); eq(find(own, act(4)).keysequence, '4', 'stock replaced')
+  eq(find(own, act(5)) and find(own, act(5)).keysequence, '5', 'no entry (fresh) gets the default')
+
+  -- a key held by anything else is not taken: slot stays on F, reported
+  local held = stock()
+  held[#held + 1] = { actionsetting = { action = 'Screenshot' }, keysequence = '2' }
+  held[#held + 1] = { actionsetting = { action = 'Custom' }, keysequence = 'q' }
+  local ch, sk = L.applyDefaultKeys(held, 1)
+  eq(ch, true, 'the rest still changes'); eq(find(held, act(2)).keysequence, 'F2', 'slot 2 keeps F2')
+  eq(find(held, act(13)), nil, 'no entry for Q when another action holds q')
+  eq(sk[1], 2, 'slot 2 reported'); eq(sk[2], 13, 'slot 13 reported')
+  eq(find(held, 'GoNorthWest').keysequence, 'Q', 'Go North-West stays when Q is not given away')
+
+  -- a blank key row counts as unset; a secondary row never counts as the slot's key
+  local blank = { { actionsetting = { action = act(1) }, keysequence = '' },
+                  { actionsetting = { action = act(1) }, keysequence = 'F1', secondary = true } }
+  L.applyDefaultKeys(blank, 1)
+  eq(find(blank, act(1)).keysequence, '1', 'blank row gets 1'); eq(find(blank, act(1), true).keysequence, 'F1', 'secondary row stays')
+  eq(L.applyDefaultKeys(nil, 1), false, 'no list')
+  eq(L.keyLabel('1'), '1', 'label of a digit')
+
+  -- over all sets, one time: Chat On is never touched
+  local sets = { Knight = { chatOn = stock(), chatOff = stock() }, Mage = { chatOn = {}, chatOff = {} }, Broken = 5 }
+  local cur, any, done = L.applyToSets(sets, nil, 'Knight', 1)
+  eq(cur, true, 'current set changed'); eq(any, true, 'a set changed')
+  eq(done.Knight, true, 'done flag'); eq(done.Mage, true, 'empty set done too'); eq(done.Broken, nil, 'a non-table set is skipped')
+  eq(find(sets.Knight.chatOn, act(1)).keysequence, 'F1', 'Chat On keeps F1')
+  eq(find(sets.Knight.chatOff, act(1)).keysequence, '1', 'Chat Off has 1')
+  eq(find(sets.Mage.chatOff, act(8)).keysequence, '8', 'a fresh set gets 8')
+  find(sets.Knight.chatOff, act(1)).keysequence = 'F1' -- the player goes back to F1 later
+  cur, any = L.applyToSets(sets, done, 'Knight', 1)
+  eq(cur or any, false, 'done sets are not run again: his F1 stays')
+  eq(find(sets.Knight.chatOff, act(1)).keysequence, 'F1', 'F1 still F1')
+end
+
 if fails == 0 then print('hotbar_test: ok') end
 os.exit(fails == 0 and 0 or 1)

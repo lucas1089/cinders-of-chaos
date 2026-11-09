@@ -471,6 +471,28 @@ local function tryAdopt(tries)
   end
 end
 
+-- Default keys 1-8 (slots 1..8) and Q / E (the sockets) in the Chat Off hotkey sets, once per set (HotbarLogic.applyToSets:
+-- a key the player set stays, a stock F key is replaced). The base bar bound its slots at the game start, so a change to the
+-- set in use is applied by the bar's own switchChatMode (re-reads the set, rebinds, relabels); the walking mode is kept as it was.
+local function applyDefaultKeys()
+  if not (Options and Options.array and Options.array.hotkeyOptions) then return end
+  local sets = Options.array.hotkeyOptions.hotkeySets
+  if type(sets) ~= 'table' then return end
+  local node = g_settings.getNode(L.KEYS_NODE)
+  local done = type(node) == 'table' and node.sets or nil
+  local currentChanged, anyChanged
+  currentChanged, anyChanged, done = L.applyToSets(sets, done, Options.currentHotkeySetName, 1)
+  g_settings.setNode(L.KEYS_NODE, { sets = done })
+  if not anyChanged then return end
+  if Options.saveData then pcall(Options.saveData) end
+  if not currentChanged then return end
+  local ab, walking = modules.game_actionbar, modules.game_walking
+  if not (ab and ab.switchChatMode) then return end
+  local wasWsad = walking and walking.isEnableWSAD and walking.isEnableWSAD()
+  pcall(ab.switchChatMode, Options.isChatOnEnabled == true)
+  if walking and wasWsad == false and walking.disableWSAD then pcall(walking.disableWSAD) end
+end
+
 local function enable()
   if active then return end
   local r = root()
@@ -487,6 +509,7 @@ local function enable()
   active = true
   eventLine = {}
   connect(g_game, { onTextMessage = onTextMessage })
+  pcall(applyDefaultKeys)
   tryAdopt(0)
 end
 
