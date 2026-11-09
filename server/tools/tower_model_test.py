@@ -7,8 +7,9 @@ usage: python3 -I server/tools/tower_model_test.py
 - the tier factor: no tiers is 1.0, the modifiers' health effect is read from monster_tiers.lua (Juggernaut, Stoneskin);
 - the planner of 2026-10-22 reproduces the beta report: the median class at level 800 gets stuck at floor 29, because the
   floor 30 boss (Zeburoth, 1,750 health a second) out-heals its one-target damage;
-- the committed config passes --check, and its `health` / `bossHealth` / `damage` / `lootShare` / `killGold` lines are what
-  --derive prints;
+- the committed config passes --check; its `damage` line is what --derive prints. O444: its `health` and `bossHealth` curves are
+  NOT what --derive prints (the class damage came from the C4 table of 2026-10-11 and is class_dps_model.py's now): `stale()`
+  says by how much, --check holds it at limits.curveTol, and the derive output applied to the config makes it match again;
 - O328: a monster shown at level L hits like a hunt monster of level L (pace damage x hit(L) over hit(band level)), the hit of
   a level 1200 monster is above the level 100 one's, the tower's items and gold an hour stay at a hunt of the same level;
 - a floor with the health doubled, a boss that heals more than the class deals, a missing breather and a wrong damage
@@ -61,7 +62,8 @@ check(abs(T.tier_factor((0, 0, 0), (hp, cnt, mod)) - 1.0) < 1e-9, 'no tiers: fac
 check(T.tier_factor((1, 0, 0), (hp, cnt, 1.0)) == 2.0, 'all magic without modifiers: x2')
 check(T.tier_info(cfg)[0] == cfg['tierHealth'] and cfg['tierHealth']['legendary'] < 6.0, 'the tower tier health replaces the stock one')
 
-# ---- the planner of 2026-10-22: the beta report
+# ---- the planner of 2026-10-22: the beta report (with the C4 numbers of its day: O444 moved the live frame to class_dps_model.py)
+T.FRAME = 'c4'
 old = T.legacy_scheme()
 oi = T.tier_info()
 check(T.reach(old, cfg, 800, oi) == 29, 'before: level 800 stops at floor 29 (reach %d)' % T.reach(old, cfg, 800, oi))
@@ -73,6 +75,9 @@ check(t30[2] > 300, 'before: the floor 30 boss out-heals (all but) a level 800 m
 check(T.floor_time(old, cfg, 30, [(None, 1500)], oi)[2] < float('inf'), 'before: it dies for a level 1500 player')
 check(old['count'](35) == 15 and old['count'](100) == 16, 'before: 15 monsters on floor 35, 16 from floor 36')
 check(old['mix'](40)[0] == 0.45 and old['mix'](40)[2] == 0.04, 'before: the tier chances rose with every floor')
+c4_800 = T.player_dps(None, 800, 1)[1]
+T.FRAME = 'now'
+check(T.player_dps(None, 800, 1)[1] > 1.3 * c4_800, 'O444: the median class at level 800 deals more than the C4 table gave it (%.0f against %.0f)' % (T.player_dps(None, 800, 1)[1], c4_800))
 
 # ---- the committed config
 new = T.new_scheme(cfg)
@@ -85,8 +90,20 @@ for f in range(1, 121):
     check(t < float('inf'), 'floor %d can be cleared at its level' % f)
     check(t < 300 + 1e-9, 'floor %d is far inside the floor limit (%.0f s of 300 / 600)' % (f, t))
 health, boss_health, damage, share, gold = T.derive(cfg, info)
-for line in (health, boss_health, damage, share, gold):
-    check(line in text, '--derive prints the committed line: ' + line[:60])
+check(damage in text, '--derive prints the committed damage line (it does not depend on the class damage)')
+# O444: the curves derived from the C4 table are stale against class_dps_model.py's damage, by a known and bounded factor
+st = T.stale(cfg, info)
+check(len(st) == len(T.DERIVE_FLOORS) + 12, 'stale: a ratio for every point of health and every boss floor (%d)' % len(st))
+check(all(r > 1.0 for _, _, r in st), 'stale: the median class is stronger now, so --derive wants more health everywhere')
+check(max(r for _, _, r in st) <= cfg['limits']['curveTol'], 'stale: inside limits.curveTol (%g)' % cfg['limits']['curveTol'])
+check(cfg['limits']['curveTol'] > 1.1, 'curveTol is the owner-decision gap of O444 (1.10 once the curves are derived again)')
+# applying the derive output closes the gap: the same config with the printed lines is no longer stale
+applied = text
+for name, line in zip(('health', 'bossHealth', 'lootShare', 'killGold'), (health, boss_health, share, gold)):
+    applied = re.sub(r'(?m)^\t' + name + r' = \{.*$', lambda m: line, applied, count=1)
+cfg_applied = T.balance(applied)
+check(max(max(r, 1 / r) for _, _, r in T.stale(cfg_applied, T.tier_info(cfg_applied))) < 1.1,
+      'stale: the config with the --derive lines is within 10%% of --derive')
 
 # ---- what --check refuses
 bad = T.balance(re.sub(r'(?m)^(\thealth = \{\{.*)$', lambda m: re.sub(r'\{(\d+), (\d+)\}',

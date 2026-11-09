@@ -22,8 +22,17 @@ No other changes are modelled (a retuned gear set, a tree change); the weights a
 was +-5% to +-15%, so the check keeps a class inside the band, not on a number.
 --check   exit 1 when a class is outside its band at one of the levels or the table has a hole
 --before  print the measured table before the change (helper mode, the state the owner saw)
+
+O444 (2026-11-09): this file is the ONE source of class damage for the balance models. boss_model.py, pack_model.py and
+tower_model.py read `dps(class, level)` and `median_dps(level)` below, not a table of their own (they carried the C4
+measurement of 2026-10-11, which is older than O430 and put the Sentinel at 1.80 of the Deadeye on a boss while this model
+has it at -14% of the median on 1 target). `dps` is the model at the three measured levels and, between and outside them,
+a straight line in the logarithm of level and damage (below 100 and between the anchors), then 0.093% a level above 1000
+(the old rule: 2.41 a level over the C4 median 2598 at level 1000; the 500 to 1000 slope of this table is 0.096%). Computed,
+not measured, as everything here.
 """
 import csv
+import math
 import os
 import re
 import statistics
@@ -111,6 +120,45 @@ def problems(out=None, med=None):
                 if abs(d) > BAND[lv]:
                     bad.append('%s level %d, %s: %+.0f%% of the median (band +-%.0f%%)' % (cls, lv, name, d * 100, BAND[lv] * 100))
     return bad
+
+
+# ---- O444: the class damage every balance model reads --------------------------------------------------------------------
+GROWTH_ABOVE_1000 = 0.00093   # damage growth per level above 1000, a share of the level 1000 damage (all classes the same)
+_CACHE = {}
+
+
+def shipped():
+    """(model, medians) of the committed state, computed once"""
+    if 'model' not in _CACHE:
+        _CACHE['model'] = model()
+    return _CACHE['model']
+
+
+def _anchor_value(points, level):
+    """points = [(anchor level, damage), ...] ascending: a straight line in log(level), log(damage) between two anchors, the
+    slope of the first two below the first anchor, the growth above 1000 a straight line (GROWTH_ABOVE_1000 a level)"""
+    if level <= 0:
+        return 0.0
+    if level >= points[-1][0]:
+        return points[-1][1] * (1 + GROWTH_ABOVE_1000 * (level - points[-1][0]))
+    for (x0, y0), (x1, y1) in zip(points, points[1:]):
+        if level <= x1:
+            e = (math.log(y1) - math.log(y0)) / (math.log(x1) - math.log(x0))
+            return y0 * (level / float(x0)) ** e
+    raise AssertionError('level above the last anchor is handled first')
+
+
+def dps(cls, level, out=None):
+    """(1 target, 5 targets) damage per second of a class at any level: the model's numbers at 100, 500 and 1000, in between
+    and outside as described in the header. No pack cleave and no boss uptime: those are the models' own"""
+    out = out or shipped()[0]
+    return tuple(_anchor_value([(lv, out[(cls, lv)][k]) for lv in LEVELS], level) for k in ('1t', '5t'))
+
+
+def median_dps(level, out=None):
+    """(median 1 target, median 5 targets) of the 21 classes at any level (the median of dps(), so the same line the
+    classes follow; at 100, 500 and 1000 it is the table's median)"""
+    return tuple(statistics.median(dps(c, level, out)[i] for c in KEY) for i in (0, 1))
 
 
 def table(out, med):

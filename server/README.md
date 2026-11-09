@@ -4224,6 +4224,8 @@ Now (`infinitytower_run.lua`, rule in `infinitytower_core.lua`):
 
 ## Infinity Tower balance and floor rewards (O144: `infinitytower_balance_config.lua`, `infinitytower_balance_core.lua`, `tools/tower_model.py`)
 
+O444 (2026-11-09): `tower_model.py` reads class damage from `class_dps_model.py`; `health` and `bossHealth` below are stale against it (x1.5 to x2.3) and `limits.curveTol` holds the gap, five limits carry `-- O444:` notes: "One truth for the balance models (O444)".
+
 Beta feedback of 2026-10-22: tower monsters were much stronger than outside ones, a level 800 player was always stuck
 between floors 20 and 29, a level 500 friend needed a minute for one level-100 monster, the drops looked like outside
 and there was no reward per floor.
@@ -7242,6 +7244,38 @@ the changes and the before / after tables are in `server/data/spells/README.md` 
   test; every class within +-25% of the level median on 1 and 5 targets (+-30% at level 100). It is a model: re-measure with the same
   test after the next install. The identity bands of `boss_balance_config.lua` and the limits of the minion, companion and tower models
   were re-anchored to the new state (reasons in each config).
+
+## One truth for the balance models (O444, 2026-11-09: `tools/class_dps_model.py`, `boss_model.py`, `pack_model.py`, `tower_model.py`)
+
+Problem (audit of 2026-11-09, checked): `boss_model.py`, `pack_model.py` and `tower_model.py` carried their own class damage, the C4
+measurement of 2026-10-11 times the class identity pass of 2026-10-28, older than O430. They disagreed with `class_dps_model.py`: at level 1000
+the Sentinel was 1.80 of the Deadeye on a boss (1.29 on packs) while `class_dps_model.py` has it at -14% of the median on 1 target, and the
+Deadeye +7% where it has +21%. The table is `python3 -I server/tools/pack_model.py --frames`; `data/spells/README.md` "Class DPS balance
+(O430)" has it in short.
+
+What each model reads now: `class_dps_model.dps(class, level)` for 1 and 5 targets, the measured table of 2026-11-06 moved by `classDamage`,
+the extra target factor and O429. It is the model at 100, 500 and 1000 and a straight line in the logarithm of level and damage between them
+and below 100, then +0.093% a level above 1000 (the old rule, the same share for every class). What each model adds is unchanged: the pack
+cleave of `pace_config.lua` (a pace layer, not in a dummy test), the boss windows and uptime, pack kill time, the tower floor curves and healing.
+`pack_model.damage(cls, level)` is the one door (`frame='c4'` keeps the old numbers for `minion_model.py` and `companion_model.py`, which rebuild
+one class in that frame and compare it with the others; they are not on the new source yet). Retired: the leader rules (the Deadeye 8% ahead on a
+boss, the Elementalist 8% ahead on a pack; O430 had set `lead` to -1), the reference median "of before the identity pass" for the pack bands,
+`companion_model.apply` in the live frame (the measured Beastmaster number holds the wolves).
+
+Limits: `boss_balance_config.lua` is a band of the level median now (`bossBand`, `packBand` 0.75 to 1.25, rows of their own empty; every class is inside:
+boss 0.81 to 1.21, packs 0.82 to 1.13, at levels 300 to 1200). `tower_model.py` limits restated with `-- O444:` notes (see below).
+
+**Owner decision, first: the stronger median class.** The absolute damage of the median class is above what the C4 table gave it (1 target at
+100 / 500 / 1000: x1.91 / x1.71 / x1.75, 6,017 against 3,431 at 1000; 5 targets x1.33 / x2.11 / x1.96). The hunts and the tower were calibrated at the
+old number (`pace_config.lua` health, `infinitytower_balance_config.lua` `health` / `bossHealth`). Under the measured damage the median class
+clears a base pack in 2.2 s at level 100 (was 2.9), 2.6 s at 640 (4.9) and 5.8 s at 1000 (9.5), and its kills an hour fall 3% at 100 and rise 12% to 27% from 300 to 1000
+(walking time does not shrink), so experience an hour is that much above the leveling model too (`progression_model.lua` is not changed).
+The tower's `health` curve is stale by x1.47 to x2.23 and `bossHealth` by x1.67 to x2.27 (`tower_model.py --derive` prints the values; the check
+prints how stale: `limits.curveTol`, 2.4 for now). Applying `--derive` alone is not enough: the floors would take 1.7 to 2.3 x the hunt pack of
+their level, because the hunts stay at the old pace (up to 2.3 x). Every number was left as it is, and five tower limits were widened (`clearMin` 1.5 to 1.3,
+`huntMin` 0.58 to 0.50, `bossMin` 30 to 24, `lootRatio` 1.05 to 1.20, `goldRatio` 1.05 to 1.45; each has a note with today's worst floor).
+It is a model of dummy damage: the dummies have no resistances and the stat window and tree are optimistic (README "Class DPS balance (O430)"
+limits), the C4 run had the same flaws. A live DPS run on a hunt decides how much of the x1.7 to x2 is real.
 
 ## Auto attack power (`weapon_power_core.lua`, `weapon_power_config.lua`, `weapon_styles.lua`)
 
@@ -19719,6 +19753,7 @@ Knives (`_packtools.lua` `fan.pack` 0.5) and Iaido Sweep (`_blades.lua` `sweep.p
 `rotation_model.csv` follows (t5 = 1 + 4 x pack): run `python3 -I server/tools/rotation_sim.py --write` after changing a pack tool, it
 rewrites the helper's Auto rotation data. The class damage factors that came with the pass are in `class_tree.lua` `classDamage`; the
 Infinity Tower health lines were re-derived (`tools/tower_model.py --derive`).
+O444: the pack bands are against the level median and the class damage is `class_dps_model.py`'s ("One truth for the balance models (O444)").
 
 **Rebalance 2026-10-20 (beta feedback).** (1) `scaled` curves: a level-scaled monster gave 1/15 of the experience and had
   1/4.6 of the health of a base monster of the same hunting level, so lvl 500 spiders (base) paid more than lvl 800
@@ -29179,6 +29214,33 @@ Keeper 700), it takes too much damage; is the Thief line's defence normal? Compu
   `tools/survival_model_test.py` (formulas, parsers, both interpreters, the guard read from `classes.lua`, the state before
   fails on the Ninja only), `tests/ninja_guard_test.lua` (the reduction by level, the hook on a mock engine).
 - **Install:** reload scripts (or restart). No engine, client, database or map change.
+
+## PvP model (O444) (`tools/pvp_model.py`, `chaos/pvp_balance_config.lua`)
+
+Computed, not measured: no PvP DPS test was ever run. `python3 -I server/tools/pvp_model.py [--detail] [--matrix LEVEL [--heal]] [--check]`
+(CI, with `pvp_model_test.py`). Per class at levels 100, 500, 1000: the damage dealt in the first 3 s as a share of the median class's pool
+(`burst`; 1.0 is a one shot), seconds to kill the median class with and without its healing, seconds to die to it, healing over the damage it
+deals (`sustain`), and wins / losses / draws of the 20 duels (one per pair, same level).
+
+Inputs, read from the repo: class damage `class_dps_model.dps` (1 target, no pack cleave: `pace_config.lua` never touches PvP); the opening
+burst `rotation_sim.py` (the class's best set from a cold start, first 3 s over 120 s); toughness `survival_model.survive` (health pool, a mana
+shield line adds its mana, armour, absorbs, dodge, class toughness, Ninja guard, potions and self heal; a 50 / 50 physical and elemental attack);
+the engine halves damage between players (`ENGINE_PVP_DAMAGE`, README "PvP (tested with two characters on the test server)", no config);
+`healing_rules_core.lua` `pvp.healingTaken` 0.70; `arena_config.lua` `fightSeconds` 300 (a fight nobody wins goes to the higher health share);
+`battleground_config.lua` `normalise`, which is x1 between two players of one level (within 4% at a bracket edge). Not in it: movement, line of
+sight, stun, snare, crowd control, mana spent on spells, potion limits, gear and build choices, parties, level differences.
+
+Limits (`pvp_balance_config.lua`): burst at most 0.90, kill the median class in 4 to 15 s (no healing), die in at least 4 s, no class wins or loses
+more than 18 of its 20 duels, `sustainMax` (below). Today's findings, each a named exception with a `-- O444:` note in the config:
+- **No class can be killed by damage alone.** Healing (one Everfull potion a second and the self heal, x0.70 in PvP combat) is above what the median
+  class deals to every class at every level (sustain 1.07 to 7.80), so with healing every duel is a draw at 100 and 500 and 392 of 420 at 1000.
+  `sustainMax` 8.5 is a temporary ceiling at today's worst (Iron Sage at 100); 1.0 would be the sane one. Owner decision.
+- **One shots in the opening window**: the Deadeye (burst 0.93 at 500, 1.00 at 1000, its long cooldowns land inside 3 s: 2.36 and 2.55 x its average),
+  the Illusionist 0.98 and the Necromancer 0.96 at 100.
+- **Lopsided duels (damage race)**: the Bone Lord wins 20 of 20 at 500 and 1000, the Necromancer 20 and 19 at 100 and 500 (a mana shield pool two to four times
+  the others', not spent on spells in the model); the Inquisitor loses 20 of 20 at 1000 and 19 at 500, the Iron Sage 19 at 500 and 1000.
+Classes within 10% of a limit and the full table: `--check` prints them, `data/spells/README.md` "PvP model (O444)" has today's table.
+The model screens for a one shot, an unkillable class and a class that wins nearly every duel; it does not forecast a ladder.
 
 ## Temple tileset (pair 60) (`install_temple_art.py`, step `templeart`, O431)
 

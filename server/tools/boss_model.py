@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
-"""The boss model: damage per second of every class on one boss, against the Deadeye's (computed, not measured;
+"""The boss model: damage per second of every class on one boss, against the median class of the level (computed, not measured;
 server/data/spells/README.md "Boss damage per class"). The mirror of pack_model.py.
 
 usage: python3 -I server/tools/boss_model.py [--levels 300,800,1000,1200] [--check]
 
-Inputs: pack_model.py's own (nothing new). Its `damage()` gives a class's 1-target damage per second at a level: the C4
-measurement (level 300 and 1000, linear in between and below, +2.41 per level above 1000) plus the kit change since
-(KIT, rotation_sim.py based) times the class identity pass (the class damage factor of class_tree.lua classDamage now over
-then, pack_model.tuning). That number is the class on one target with its tree, gear, spell factor and, for the Necromancer
-line, its minions. A boss takes only it: the pack cleave never hits a boss (it needs 2 or more targets), and the pack tools hit
-a lone target like the filler spell, which the 1-target number already holds. Boss uptime (downtime, phases, mechanics) is in
-no existing model, so every class gets full uptime; the ratio is damage while attacking.
+O444 (2026-11-09): one truth. A class's damage is class_dps_model.py's, through pack_model.damage(): the measured table of
+2026-11-06 (every class at levels 100, 500 and 1000, Auto setup rotation on dummies) moved by the class factors, the extra target
+factor and O429, a line in the logarithm between the measured levels. Until O444 this model had its own table (the C4 measurement of
+2026-10-11) and the ratios were to the Deadeye, which that table had on top: it put the Sentinel at 1.80 of the Deadeye while
+class_dps_model.py has it at -14% of the median on 1 target, and the Deadeye at +7% where class_dps_model.py has +21%. The rule "the
+Deadeye leads by 8%" is gone (O430 retired it) and so is the Deadeye as the yardstick: the ratio is to the median class.
 
-Output: damage per second and the ratio to the Deadeye per level, next to each class's pack ratio (against the reference,
-pack_model.py) so the trade between packs and bosses shows per class.
+Boss damage is the class's 1-target number: the pack cleave never hits a boss (it needs 2 or more targets), and the pack tools hit
+a lone target like the filler spell, which the 1-target number already holds. The Necromancer line's minions and the Beastmaster's
+wolves are in the measured number. Boss uptime (downtime, phases, mechanics) is in no model, so every class gets full uptime; the
+ratio is damage while attacking.
+
+Output: damage per second and the ratio to the level median per level, next to each class's pack ratio (kills per hour against the
+median class, pack_model.py) so the trade between packs and bosses shows per class.
 
 --check (CI): each class's boss ratio at every level of boss_balance_config.lua `levels` stays inside its `limits` row (widened
-by `bossWindows` at the levels that are not measured), and the Deadeye is at least `lead` ahead of every other class (the pack
-bands and the Elementalist's area lead are pack_model.py --check).
+by `bossWindows` at the levels that are not measured). The pack bands are pack_model.py --check; the 1 and 5 target band at the
+measured levels is class_dps_model.py --check.
 """
 import os
 import re
+import statistics
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -28,8 +33,7 @@ sys.path.insert(0, HERE)
 import pack_model as PM  # noqa: E402
 
 CONFIG = PM.BALANCE
-REF = 'Deadeye'
-DEFAULT_LEVELS = (300, 800, 1000, 1200)
+DEFAULT_LEVELS = (300, 500, 800, 1000, 1200)
 
 
 def config(text=None):
@@ -38,15 +42,16 @@ def config(text=None):
 
 
 def boss_dps(cls, L):
-    """damage per second on one boss at level L: the 1-target number of pack_model, no cleave, full uptime"""
+    """damage per second on one boss at level L: the 1-target number of class_dps_model (through pack_model), no cleave, full
+    uptime"""
     return PM.damage(cls, L)[0]
 
 
 def table(levels):
-    """{class: [(dps, ratio to the Deadeye) per level]}"""
+    """{class: [(dps, ratio to the median class of the level) per level]}"""
     out = {c: [] for c in PM.C4}
     for L in levels:
-        ref = boss_dps(REF, L)
+        ref = statistics.median(boss_dps(c, L) for c in PM.C4)
         for c in PM.C4:
             d = boss_dps(c, L)
             out[c].append((d, d / ref))
@@ -54,9 +59,9 @@ def table(levels):
 
 
 def pack_ratios(levels, cfg=None, mons=None):
-    """{class: [pack ratio against the reference per level]} from pack_model.spread (levels from 1000 on: late set)"""
+    """{class: [pack ratio against the median class per level]} from pack_model.spread (levels from 1000 on: late set)"""
     spec = tuple((L, L >= 1000) for L in levels)
-    t = PM.spread(spec, cfg=cfg, mons=mons, against='reference')
+    t = PM.spread(spec, cfg=cfg, mons=mons, against='median')
     return {c: [r for r, _, _ in v] for c, v in t.items()}
 
 
@@ -84,16 +89,9 @@ def check(cfg_text=None):
         print('FAIL %s at %d: boss ratio %.2f outside %.2f-%.2f' % (c, cfg['levels'][i], r, lo, hi))
     for c in missing:
         print('FAIL %s has no limits row' % c)
-    lead = 0
-    for i, L in enumerate(cfg['levels']):
-        for c in PM.C4:
-            if cfg['lead'] >= 0 and c != REF and t[c][i][1] * (1 + cfg['lead']) > 1 + 1e-9:  # a negative lead: no leader rule (O430)
-                print('FAIL %s at %d: boss ratio %.2f is within %d%% of the %s' % (c, L, t[c][i][1], round(100 * cfg['lead']), REF))
-                lead += 1
-    print('boss check: %s (%d classes, levels %s, %s)' % (
-        'FAIL' if bad or missing or lead else 'ok', len(PM.C4), ','.join(str(L) for L in cfg['levels']),
-        '%s %d%% ahead' % (REF, round(100 * cfg['lead'])) if cfg['lead'] >= 0 else 'no single target leader rule'))
-    return 1 if bad or missing or lead else 0
+    print('boss check: %s (%d classes, levels %s, damage on one boss against the level median)' % (
+        'FAIL' if bad or missing else 'ok', len(PM.C4), ','.join(str(L) for L in cfg['levels'])))
+    return 1 if bad or missing else 0
 
 
 def report(levels):

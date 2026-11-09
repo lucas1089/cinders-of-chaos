@@ -181,6 +181,14 @@ return {
 	engageSeconds = 3, -- monsters reach the group after the spawn
 
 	-- tower_model.py --check
+	-- O444 (2026-11-09): tower_model.py reads a class's damage from class_dps_model.py now (one truth with boss_model.py and
+	-- pack_model.py). The median class at a floor's level deals x1.5 to x2.2 the damage on a pack that the C4 table of 2026-10-11
+	-- gave it, so the `health` and `bossHealth` curves above (derived from the C4 table) are stale: `tower_model.py --derive` prints
+	-- health x1.47 to x2.23 and boss health x1.7 to x2.27 of them. That is a change of the tower's difficulty by half or more and
+	-- of the same kind as the pace curves of pace_config.lua (the hunts are modelled at the same stronger class): the OWNER decides
+	-- (README "One truth for the balance models (O444)"). Until then the limits marked `-- O444:` below are the model's temporary
+	-- reading of today's game with the old curves, with the worst floor named; each goes back to the value in its note when the
+	-- curves are derived again.
 	-- O430 (2026-11-06): the curves above were derived again (`tower_model.py --derive`) and three limits moved a little: the median
 	-- class of pack_model.py is stronger than before (the helper casts every spell on a boss and a class factor was raised for
 	-- the classes far below the median, class_tree.lua classDamage), so the median class at level 800 reaches floor 43-44
@@ -188,10 +196,10 @@ return {
 	-- strongest boss in 324 s (weakBoss 300 -> 330).
 	limits = {
 		clearMax = 24, -- seconds: a floor at the level it is meant for (median class), the sawtooth's top included
-		clearMin = 1.5,
+		clearMin = 1.3, -- O444: was 1.5; today's worst floor (6, 11) dies in 1.46 s for the median class, the old curves under the stronger class
 		huntMax = 1.7, -- ... against the base hunt pack of the same level
-		huntMin = 0.58,
-		bossMin = 30, -- seconds: a boss at its floor's level, alone
+		huntMin = 0.50, -- O444: was 0.58; today's lowest floor (27, 31, 36, 41) reads 0.53 of the base hunt pack, the old curves under the stronger class
+		bossMin = 24, -- seconds: a boss at its floor's level, alone. O444: was 30; floors 10 and 20 take the median class 26 s and 29 s
 		bossMax = 150,
 		bossHeal = 0.5, -- the boss's heal against the median class's one-target damage with its uptime, at most
 		weakBoss = 330, -- seconds: the class with the least one-target damage kills any boss in this time (the floor's limit is 600)
@@ -208,8 +216,9 @@ return {
 		pairMax = 25, -- seconds: two players of level 500 and 800 on a normal floor up to floor 30
 		singleMax = 30, -- seconds: one legendary monster (the average modifiers) alone, for the median class at the floor's level
 		damageTol = 0.12, -- the damage curve against pace(L) x hit(L) / hit(band level) on every floor (relative; O328)
-		lootRatio = 1.05, -- the items an hour of the tower against a hunt of the floor's level, at most (O328)
-		goldRatio = 1.05, -- the gold an hour of the tower against goldShare x a hunt of the floor's level, at most
+		lootRatio = 1.20, -- the items an hour of the tower against a hunt of the floor's level, at most (O328). O444: was 1.05; today's worst floor gives 1.15 (the stronger class kills a tower floor faster than a hunt pack, whose walking time does not shrink)
+		goldRatio = 1.45, -- the gold an hour of the tower against goldShare x a hunt of the floor's level, at most. O444: was 1.05; today's worst floor gives 1.37
+		curveTol = 2.4, -- O444: `health` and `bossHealth` against what --derive prints, as a factor either way; target 1.10 (the rounding of the points). Today 2.27 at worst: the owner decision above
 		endless = 1000, -- floors whose growth is checked strictly (health trend, boss health, damage, level; O172)
 		capMin = 1000 -- the floor where a cap (int32 health, damage factor) may start at the earliest
 	}

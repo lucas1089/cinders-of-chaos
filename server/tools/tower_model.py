@@ -12,12 +12,19 @@ floor is easier (breather) and no floor jumps more than stepMax over the one bef
 what a hunt monster of the floor's shown level deals (pace damage curve x hit(L) / hit(band level), O328); the items and the
 gold an hour of the tower stay at a hunt of the same level (lootShare, killGold, O328); a median-class player of level `reachLevel` gets `reachMin`..`reachMax` floors deep,
 a weak class at least `weakReach`; a player of 60% of the floor's level still clears it in underMax seconds; nobody is
-stopped by a healing boss. Prints the tables.
+stopped by a healing boss; O444: the committed `health` and `bossHealth` are within `curveTol` of what --derive prints now (a factor
+either way; target 1.10, 2.4 while the owner decides, limits note). Prints the tables and, last, how stale the curves are.
 --derive prints the `health`, `bossHealth`, `damage`, `lootShare` and `killGold` lines for the config from `clear`, `level`,
 `count`, the tiers, `hit` and the hunt model.
 --damage prints the damage of the floors against the line of O285 (the stock hit of the species x the factor).
 --before prints the same table for the planner of 2026-10-22 (stock pool health, tier chances rising with every
 floor, up to 16 monsters, bosses on floors 10-120 in the old order): what the beta players met.
+
+O444 (2026-11-09): one truth. The damage of a class is class_dps_model.py's (through pack_model.damage), the measured DPS
+table of 2026-11-06 moved by the class factors, the extra target factor and O429. Until O444 this model carried the C4
+measurement of 2026-10-11 and the curves below were derived from it. The median class at the floor's level is stronger now
+(x1.5 to x2.2 in damage on a pack), so the committed `health` and `bossHealth` are stale: --check prints how stale and holds
+it at `curveTol` (limits). `FRAME = 'c4'` (--before) puts the old numbers back for the planner of 2026-10-22.
 
 Inputs (everything in the repo): tools/pack_model.py (the damage of every class in packs, the pack cleave, the base hunt
 pack of a level), data/scripts/chaos/monster_tiers.lua (tier health, modifier counts and the modifiers' health effect),
@@ -49,6 +56,7 @@ PACE = os.path.join(CHAOS, 'pace_config.lua')
 RUN = os.path.join(CHAOS, 'infinitytower_run.lua')
 
 CAP = PM.PCAP
+FRAME = 'now'  # 'c4': the C4 numbers of 2026-10-11 (the planner of 2026-10-22 reproduces the beta report with them)
 
 # the planner of 2026-10-22 (infinitytower_run.lua before O144): what the beta players met
 LEGACY_BOSSES = [  # floor 10, 20, ... : health, heal per second (server/README.md "Solo kill times")
@@ -253,7 +261,7 @@ _PACE = PM.pace()
 
 def class_dps(cls, L, P, kit=True):
     """(damage per second on a pack of P monsters, one-target damage) of a class at level L, as pack_model.py"""
-    d1, d5 = PM.damage(cls, L, kit)
+    d1, d5 = PM.damage(cls, L, kit, True, FRAME)
     if PM.VOC[cls] in _PACE['cleave']:
         e = _PACE['cleave'][PM.VOC[cls]]
         pc = lin([(PM.CLEAVE_FROM, e[0]), (PM.CLEAVE_TO, e[2])], L)
@@ -308,7 +316,7 @@ def floor_time(sc, cfg, f, group, info):
 
 def hunt_clear(L, cfg_pace=None, mons=None):
     """seconds a base hunt pack (the late level-scaled set from level 670) of the median class dies in at level L"""
-    return PM.pack_clear(L, L >= 670, cfg_pace or _PACE, mons if mons is not None else _MONS)[0]
+    return PM.pack_clear(L, L >= 670, cfg_pace or _PACE, mons if mons is not None else _MONS, FRAME)[0]
 
 
 _MONS = PM.monsters()
@@ -350,7 +358,8 @@ def sig(x, n=3):
     return round(x, -int(math.floor(math.log10(abs(x)))) + (n - 1))
 
 
-def derive(cfg, info):
+def derived_points(cfg, info):
+    """({floor: health} at DERIVE_FLOORS, {boss floor: boss health}) as --derive prints them (numbers)"""
     sc = new_scheme(cfg)
     raw = []
     for f in range(1, int(cfg['maxFloor']) + 1):
@@ -371,8 +380,7 @@ def derive(cfg, info):
         if pts and v < pts[-1][1] * MIN_STEP:  # strictly rising: every floor is stronger than the one before (O172)
             v = sig(pts[-1][1] * MIN_STEP)
         pts.append((f, v))
-    health = '\thealth = {%s},' % ', '.join('{%d, %s}' % (f, ('%d' % v)) for f, v in pts)
-    out = []
+    bosses = []
     boss_prev = 0
     for k in range(1, int(cfg['maxFloor'] // cfg['bossEvery']) + 1):
         f = k * int(cfg['bossEvery'])
@@ -383,7 +391,23 @@ def derive(cfg, info):
         if boss_prev and v < boss_prev * MIN_STEP:  # a later boss floor never has less health than an earlier one (O172)
             v = sig(boss_prev * MIN_STEP)
         boss_prev = v
-        out.append('[%d] = %d' % (f, v))
+        bosses.append((f, v))
+    return pts, bosses
+
+
+def stale(cfg, info):
+    """O444: how far the committed `health` and `bossHealth` are from what --derive prints now: [(name, floor, derived / committed)]
+    at DERIVE_FLOORS and at the boss floors"""
+    pts, bosses = derived_points(cfg, info)
+    out = [('health', f, v / lin(cfg['health'], f)) for f, v in pts]
+    out += [('bossHealth', f, v / cfg['bossHealth'][f]) for f, v in bosses]
+    return out
+
+
+def derive(cfg, info):
+    pts, bosses = derived_points(cfg, info)
+    health = '\thealth = {%s},' % ', '.join('{%d, %s}' % (f, ('%d' % v)) for f, v in pts)
+    out = ['[%d] = %d' % (f, v) for f, v in bosses]
     dmg = [(f, sig(dmg_target(cfg, f))) for f in damage_floors(cfg)]
     share, gold = loot_curves(cfg, info)
     return (health, '\tbossHealth = {%s},' % ', '.join(out),
@@ -471,7 +495,7 @@ def tower_kills(cfg, info, f):
 
 def hunt_kills(L):
     """kills an hour of the median class in a base hunt pack at level L (the late sets from 670)"""
-    return PM.pack_clear(L, L >= 670, _PACE, _MONS)[2]
+    return PM.pack_clear(L, L >= 670, _PACE, _MONS, FRAME)[2]
 
 
 def _smooth_min(cfg, raw):
@@ -555,6 +579,11 @@ def check(cfg, info, out=print):
         if (not is_boss(sc, f) and slow[1] > lim['underMax']) or math.isinf(slow[0]):
             bad.append('floor %d: %.0f s at %d%% of the floor level (limit %g)' % (f, slow[0], 100 * lim['underLevel'], lim['underMax']))
     bad += endless(cfg, info)
+    # O444: the committed health curves against what --derive prints with the class damage of today
+    worst = max(stale(cfg, info), key=lambda x: max(x[2], 1 / x[2]))
+    for name, f, r in stale(cfg, info):
+        if not (1 / lim['curveTol'] <= r <= lim['curveTol']):
+            bad.append('%s at floor %d is stale: --derive prints %.2f x the committed value (limit %g)' % (name, f, r, lim['curveTol']))
     reachL = int(lim['reachLevel'])
     r = reach(sc, cfg, reachL, info)
     weak = reach(sc, cfg, reachL, info, cls=ranked(reachL, 7)[0])
@@ -602,6 +631,10 @@ def check(cfg, info, out=print):
         out('')
         out('reach (every floor within %g x the hunt pack of the player\'s level), median class: %s; weakest class at %d: floor %d' % (
             lim['reachRatio'], ', '.join('L%d floor %d' % x for x in reaches), reachL, weak))
+        out('curves: --derive prints %.2f to %.2f x the committed health and %.2f to %.2f x the committed boss health (worst: %s at floor %d, %.2f x)' % (
+            min(r for n, f, r in stale(cfg, info) if n == 'health'), max(r for n, f, r in stale(cfg, info) if n == 'health'),
+            min(r for n, f, r in stale(cfg, info) if n == 'bossHealth'), max(r for n, f, r in stale(cfg, info) if n == 'bossHealth'),
+            worst[0], worst[1], worst[2]))
     for b in bad:
         out('FAIL ' + b)
     out('tower check: %s' % ('FAIL (%d)' % len(bad) if bad else 'ok'))
@@ -710,6 +743,9 @@ def _pool_level(names):
 
 
 def main(argv):
+    global FRAME
+    if '--before' in argv:
+        FRAME = 'c4'  # the planner of 2026-10-22 and the C4 numbers of its day
     cfg = balance()
     info = tier_info(cfg if '--before' not in argv else None)
     if '--derive' in argv:

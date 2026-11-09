@@ -825,6 +825,8 @@ in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level 
 
 ### Boss damage per class (2026-10-28; computed, not measured in game)
 
+O444 (2026-11-09): the method below is the C4 frame of 2026-10-28. `boss_model.py` reads `class_dps_model.py` now and the ratio is to the level median, not the Deadeye ("One truth for the balance models (O444)" below).
+
 `server/tools/boss_model.py` (the mirror of `pack_model.py`; limits in `data/scripts/chaos/boss_balance_config.lua`).
 Boss damage per second is the class's 1-target number of `pack_model.py` (C4 measurement plus the kit change, linear
 between 300 and 1000, plus 2.41 a level above 1000, times the class identity pass: `class_tree.lua` `classDamage` now over then,
@@ -4173,7 +4175,74 @@ measured ones (the factors are interpolated between 100, 500 and 1000) and level
 nearer each other there) were not re-measured: a re-run of the same test after the next server install is the proof. The dummies
 have no resistances or monster levels, the stat window and the tree are optimistic (20 in every stat, all points in one damage
 build), no gems, runes, orbs or uniques. The extra target factor reaches the real hunt: a pack of monsters is the 5 target case.
-The best sets, pack, boss and quest numbers of `rotation_sim.py`, `pack_model.py`, `boss_model.py` do not include it.
+The best sets and quest numbers of `rotation_sim.py` do not include it; since O444 `pack_model.py`, `boss_model.py` and `tower_model.py` read `class_dps_model.py`, which does.
+
+### One truth for the balance models (O444, 2026-11-09; computed, not measured)
+
+`boss_model.py`, `pack_model.py` and `tower_model.py` carried their own class damage, the C4 measurement (2026-10-11) times the class identity
+pass, older than O430; they put the Sentinel at 1.80 of the Deadeye on a boss and 1.29 on packs at level 1000 while `class_dps_model.py` has it at
+-14% of the median on 1 target. They read `class_dps_model.dps()` now (README of the server: "One truth for the balance models (O444)"). The
+two frames at level 1000, damage per second and the distance from the median of each frame; `python3 -I server/tools/pack_model.py --frames`
+prints levels 100, 500 and 1000 (the medians: level 100: 1 target 318 against 607 (x1.91), 5 targets 761 against 1008 (x1.32); level 500: 1 target 1807 against 3084 (x1.71), 5 targets 3682 against 7761 (x2.11)).
+
+| Class (level 1000) | 1 target: C4 frame | class_dps | vs median, C4 / class_dps | 5 targets: C4 frame | class_dps | vs median, C4 / class_dps |
+|---|---:|---:|---|---:|---:|---|
+| Warrior | 1923 | 6868 | -44% / +14% | 5137 | 13259 | -26% / -3% |
+| Juggernaut | 2209 | 6837 | -36% / +14% | 3805 | 13088 | -46% / -5% |
+| Berserker | 1401 | 5590 | -59% / -7% | 4372 | 15565 | -37% / +13% |
+| Ranger | 2424 | 6853 | -29% / +14% | 3501 | 11704 | -50% / -15% |
+| Deadeye | 3657 | 7252 | +7% / +21% | 4308 | 10628 | -38% / -23% |
+| Beastmaster | 1766 | 5292 | -49% / -12% | 5028 | 15396 | -28% / +12% |
+| Mystic | 3502 | 5123 | +2% / -15% | 11996 | 15091 | +72% / +10% |
+| Elementalist | 3604 | 5179 | +5% / -14% | 13425 | 15330 | +92% / +12% |
+| Illusionist | 2848 | 5189 | -17% / -14% | 7408 | 14706 | +6% / +7% |
+| Thief | 2743 | 6771 | -20% / +13% | 5601 | 11888 | -20% / -13% |
+| Ninja | 4029 | 6779 | +17% / +13% | 8530 | 11819 | +22% / -14% |
+| Samurai | 4026 | 6552 | +17% / +9% | 8304 | 11784 | +19% / -14% |
+| Necromancer | 2858 | 6800 | -17% / +13% | 6306 | 14178 | -10% / +3% |
+| Lich | 3825 | 6017 | +11% / +0% | 7291 | 14110 | +4% / +3% |
+| Bone Lord | 3431 | 6012 | +0% / -0% | 6591 | 12476 | -6% / -9% |
+| Monk | 2720 | 6901 | -21% / +15% | 6989 | 13731 | +0% / +0% |
+| Shadowfist | 3758 | 6574 | +10% / +9% | 5899 | 11784 | -16% / -14% |
+| Iron Sage | 2890 | 5557 | -16% / -8% | 7784 | 15061 | +11% / +10% |
+| Templar | 3498 | 5159 | +2% / -14% | 9057 | 14948 | +30% / +9% |
+| Inquisitor | 5193 | 5146 | +51% / -14% | 9042 | 14382 | +29% / +5% |
+| Sentinel | 6600 | 5156 | +92% / -14% | 18155 | 13429 | +160% / -2% |
+| median | 3431 | 6017 | | 6989 | 13731 | |
+
+### PvP model (O444, 2026-11-09; COMPUTED, not measured)
+
+`server/tools/pvp_model.py --check` (limits and named exceptions: `data/scripts/chaos/pvp_balance_config.lua`; method and inputs: README of the
+server "PvP model (O444)"). One duel per pair of classes at one level, class damage from `class_dps_model.py`, toughness from `survival_model.py`,
+the engine's half damage between players, healing x0.70 in PvP combat. Burst is the share of the median class's pool dealt in the first 3 s; sustain
+is the class's healing over what the median class deals to it (above 1.0 it cannot be killed by it); the duel columns are the damage race with no
+healing (with healing nearly every duel is a draw). Duels decided of 210 pairs: 179 at level 100, 178 at level 500, 183 at level 1000.
+
+| Class | burst 100 / 500 / 1000 | seconds to kill the median class (no healing) | seconds to die to it (no healing) | sustain | duels W/L/D at 100 | at 500 | at 1000 |
+|---|---|---|---|---|---|---|---|
+| Warrior | 0.72 / 0.70 / 0.64 | 7.0 / 7.5 / 8.0 | 7.6 / 13.3 / 20.3 | 4.37 / 2.55 / 2.86 | 6/10/4 | 13/2/5 | 18/1/1 |
+| Juggernaut | 0.62 / 0.72 / 0.57 | 8.3 / 8.1 / 8.1 | 9.4 / 11.2 / 13.1 | 5.43 / 1.96 / 1.80 | 8/10/2 | 9/8/3 | 9/8/3 |
+| Berserker | 0.81 / 0.56 / 0.52 | 6.3 / 9.6 / 9.9 | 6.1 / 8.7 / 11.5 | 4.13 / 1.61 / 1.62 | 6/11/3 | 2/15/3 | 3/13/4 |
+| Ranger | 0.81 / 0.21 / 0.16 | 6.0 / 7.5 / 8.1 | 10.0 / 11.1 / 12.5 | 4.96 / 1.44 / 1.14 | 12/5/3 | 10/8/2 | 8/8/4 |
+| Deadeye | 0.80 / 0.93 / 1.00 | 6.0 / 7.6 / 7.6 | 10.5 / 11.3 / 12.9 | 4.99 / 1.47 / 1.14 | 12/5/3 | 10/8/2 | 9/7/4 |
+| Beastmaster | 0.89 / 0.40 / 0.41 | 6.3 / 10.0 / 10.4 | 12.2 / 17.6 / 22.1 | 5.39 / 1.88 / 1.78 | 14/1/5 | 13/2/5 | 14/3/3 |
+| Mystic | 0.28 / 0.39 / 0.37 | 8.4 / 10.5 / 10.8 | 14.8 / 19.2 / 21.5 | 6.47 / 2.58 / 2.31 | 12/4/4 | 13/2/5 | 13/3/4 |
+| Elementalist | 0.57 / 0.47 / 0.43 | 8.3 / 9.9 / 10.7 | 14.8 / 18.0 / 21.7 | 6.47 / 2.45 / 2.34 | 12/3/5 | 13/2/5 | 14/3/3 |
+| Illusionist | 0.98 / 0.40 / 0.38 | 6.5 / 9.9 / 10.7 | 13.5 / 17.5 / 19.4 | 6.76 / 2.46 / 2.15 | 16/1/3 | 13/2/5 | 12/6/2 |
+| Thief | 0.60 / 0.49 / 0.44 | 6.7 / 7.4 / 8.2 | 5.3 / 6.8 / 8.3 | 5.13 / 2.01 / 1.82 | 1/15/4 | 2/15/3 | 2/18/0 |
+| Ninja | 0.77 / 0.66 / 0.54 | 5.9 / 7.5 / 8.2 | 6.0 / 7.9 / 9.9 | 5.85 / 2.39 / 2.12 | 6/11/3 | 4/12/4 | 3/13/4 |
+| Samurai | 0.67 / 0.46 / 0.52 | 5.9 / 7.9 / 8.4 | 7.8 / 10.3 / 13.8 | 6.34 / 2.31 / 2.39 | 11/9/0 | 9/10/1 | 9/8/3 |
+| Necromancer | 0.96 / 0.72 / 0.67 | 6.1 / 7.5 / 8.1 | 14.2 / 17.5 / 19.4 | 6.78 / 2.35 / 2.03 | 20/0/0 | 19/1/0 | 17/1/2 |
+| Lich | 0.63 / 0.56 / 0.62 | 7.0 / 10.0 / 9.2 | 14.8 / 17.6 / 19.8 | 6.74 / 2.49 / 2.22 | 16/1/3 | 13/2/5 | 14/2/4 |
+| Bone Lord | 0.66 / 0.62 / 0.49 | 7.2 / 8.0 / 9.2 | 14.2 / 22.1 / 27.5 | 7.05 / 2.82 / 2.82 | 15/1/4 | 20/0/0 | 20/0/0 |
+| Monk | 0.31 / 0.26 / 0.29 | 8.3 / 8.5 / 8.0 | 5.8 / 8.2 / 11.6 | 4.47 / 1.81 / 1.79 | 0/17/3 | 2/14/4 | 8/11/1 |
+| Shadowfist | 0.33 / 0.28 / 0.26 | 8.7 / 7.6 / 8.4 | 5.6 / 7.6 / 10.8 | 4.16 / 1.50 / 1.61 | 0/18/2 | 2/13/5 | 3/13/4 |
+| Iron Sage | 0.30 / 0.21 / 0.22 | 8.7 / 9.9 / 9.9 | 6.2 / 7.6 / 8.6 | 7.80 / 2.27 / 1.75 | 0/17/3 | 0/19/1 | 1/19/0 |
+| Templar | 0.62 / 0.52 / 0.49 | 8.7 / 9.9 / 10.7 | 6.9 / 10.8 / 12.5 | 3.82 / 1.91 / 1.65 | 3/15/2 | 5/12/3 | 3/13/4 |
+| Inquisitor | 0.63 / 0.46 / 0.45 | 7.0 / 9.9 / 10.7 | 5.8 / 7.3 / 8.0 | 3.55 / 1.28 / 1.07 | 3/15/2 | 0/19/1 | 0/20/0 |
+| Sentinel | 0.65 / 0.52 / 0.50 | 8.2 / 10.0 / 10.7 | 8.6 / 11.1 / 13.2 | 4.48 / 1.79 / 1.70 | 6/10/4 | 6/12/2 | 3/13/4 |
+
+Medians: pool 1924 at 100, 10974 at 500, 21812 at 1000; damage per second 607, 3084, 6017; healing in PvP 1360, 1967, 3019 a second.
 
 ## Honest notes / limitations
 
