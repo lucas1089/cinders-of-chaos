@@ -84,6 +84,7 @@ namespace Chaos.Core.LiveCheck
                         case "questlog": ScQuestLog(r); break;
                         case "firstunlock": ScFirstUnlock(r); break;
                         case "firstfightsmoke": ScFirstFightSmoke(r); break;
+                        case "purse": ScPurse(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }

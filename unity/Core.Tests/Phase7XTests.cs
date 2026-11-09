@@ -576,13 +576,27 @@ namespace Chaos.Core.Tests
         // client: autorotation_ui.lua onLevelUp, game_spellbook). There is no server push of spell names: the client knows the list and the level (phase 28).
         static void SpellUnlockNames(Action<bool, string> check)
         {
+            // every class of the rotation data (phase 29: an attack spell unlock is told by name for all of them, not only the Warrior)
+            int classes = 0;
+            for (int voc = 1; voc <= 60; voc++)
+            {
+                var c = HelperRotation.ClassOf(voc);
+                if (c == null || c.Presets.Count < 2) continue;
+                classes++;
+                SpellUnlockNames(check, voc);
+            }
+            check(classes >= 15, "spell unlock: the notice is checked for every class of the rotation data (" + classes + " classes)");
+        }
+
+        static void SpellUnlockNames(Action<bool, string> check, int voc)
+        {
             Loc.Set("en");
-            var cls = HelperRotation.ClassOf(4);
+            var cls = HelperRotation.ClassOf(voc);
             int lvA = 0, lvB = 0, newId = 0;
             for (int i = 0; i + 1 < cls.Presets.Count && lvB == 0; i++)
                 foreach (int id in cls.Presets[i + 1].Spells)
                     if (Array.IndexOf(cls.Presets[i].Spells, id) < 0) { lvA = cls.Presets[i].Level; lvB = cls.Presets[i + 1].Level; newId = id; break; }
-            var host = new Host { Level = lvA, Vocation = 4 };
+            var host = new Host { Level = lvA, Vocation = voc };
             var ex = new ExtOpcodes();
             var book = new SpellBook(ex) { Clock = () => host.Now, LevelNow = () => host.Level, MagicLevelNow = () => 9999 };
             ex.Receive(219, "{\"action\":\"done\",\"data\":{\"sig\":\"x\"}}");
@@ -593,21 +607,21 @@ namespace Chaos.Core.Tests
             var eng = new HelperEngine(book, host);
             eng.Config.Enabled = true;
             var spell = book.ById(newId);
-            check(spell != null && spell.Name.Length > 0 && spell.Level == lvB, "spell unlock: the new spell is in the list with its name and level");
+            check(spell != null && spell.Name.Length > 0 && spell.Level == lvB, "spell unlock (class " + voc + "): the new spell is in the list with its name and level");
             eng.Tick();
-            check(book.Status(spell) == SpellStatus.Level, "spell unlock: before the level the list shows the spell as waiting for its level");
-            eng.AutoSetup(4);
+            check(book.Status(spell) == SpellStatus.Level, "spell unlock (class " + voc + "): before the level the list shows the spell as waiting for its level");
+            eng.AutoSetup(voc);
             host.Level = lvB; host.Now = 1000;
             eng.Tick();
-            check(book.Status(spell) == SpellStatus.Ready, "spell unlock: at its level the spell list shows it as ready");
+            check(book.Status(spell) == SpellStatus.Ready, "spell unlock (class " + voc + "): at its level the spell list shows it as ready");
             var n = eng.LevelNotice;
-            check(n != null && n.NewIds.Contains(newId) && n.Names.Contains(spell.Name) && n.List.Contains(spell.Name), "spell unlock: the notice names the new spell");
-            check(n != null && n.Line == "New spell available: " + n.List + ".", "spell unlock: the notice line is 'New spell available: NAME.'");
+            check(n != null && n.NewIds.Contains(newId) && n.Names.Contains(spell.Name) && n.List.Contains(spell.Name), "spell unlock (class " + voc + "): the notice names the new spell");
+            check(n != null && n.Line == "New spell available: " + n.List + ".", "spell unlock (class " + voc + "): the notice line is 'New spell available: NAME.'");
             var tc = new ToastCenter(new ExtOpcodes()) { Clock = () => 0 };
             var t = n == null ? null : tc.Add("MILESTONE", n.Line);
-            check(t != null && t.Message.Contains(spell.Name) && tc.Active.Count + tc.Queue.Count == 1, "spell unlock: the toast carries the spell's name");
+            check(t != null && t.Message.Contains(spell.Name) && tc.Active.Count + tc.Queue.Count == 1, "spell unlock (class " + voc + "): the toast carries the spell's name");
             Loc.Set("pt-BR");
-            check(n != null && n.Line == "Nova magia disponível: " + n.List + ".", "spell unlock: the notice line in pt-BR");
+            check(n != null && n.Line == "Nova magia disponível: " + n.List + ".", "spell unlock (class " + voc + "): the notice line in pt-BR");
             Loc.Set("en");
         }
 
