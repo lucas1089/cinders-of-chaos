@@ -324,6 +324,20 @@ function M.draw()
   end))
 end
 
+-- the Purse button (O420 follow-up, 2026-11-09): the stock window's purse button went with the stock window and the
+-- store's purchases are delivered to the purse, so the panel has its own. Same call as the stock button: use the item
+-- of the purse slot (a container, its window opens like any other).
+function M.openPurse()
+  local player = g_game.isOnline() and g_game.getLocalPlayer() or nil
+  local purse = player and player:getInventoryItem(C.PURSE_SLOT) or nil
+  if not purse then return message(tr('You have no purse.')) end
+  g_game.use(purse)
+end
+
+function M.purseButton()
+  return child('purseButton')
+end
+
 function M.refresh()
   if queued then return end
   queued = true
@@ -702,4 +716,6 @@ end
 function init() M.init() end
 function terminate() M.terminate() end
 function sort() M.sort() end
+function openPurse() M.openPurse() end
+function getPurseButton() return M.purseButton() end
 function selectPage(key) M.selectPage(key) end

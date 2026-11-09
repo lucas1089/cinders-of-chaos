@@ -132,22 +132,24 @@ function M.destroy()
   window = nil
 end
 
--- A button in Options > Interface (the Options window is the base client's: its panel ids are not ours, so this looks for
--- the interface panel by a few names and does nothing when there is none)
+-- A "Layout options" entry at the end of the Options window's left menu (Controls, Interface, Graphics, Misc.), under the
+-- last entry. The menu (optionsWindow.options) is a vertical box that stacks its entries, so the button takes its own
+-- row and never covers another one. Before (owner screenshot 2026-11-09) the button was made inside a panel found by
+-- a guessed id with no anchors, which put it at that panel's top left, over the Controls and Graphics entries. The
+-- label is the short one, 85 px in pt-BR at most (client/tools/check_text_fit.py checks it against the 115 px entry).
 function M.addOptionsButton()
   local cs = modules.client_settings
   local w = cs and cs.optionsWindow
   if not alive(w) or w.chaosLayoutButton then return end
-  local panel
-  for _, id in ipairs({ 'interfacePanel', 'interface', 'interfaceTab', 'optionsTabContent' }) do
-    local ok, found = pcall(function() return w:recursiveGetChildById(id) end)
-    if ok and found then panel = found break end
-  end
-  if not panel then return end
-  local ok, b = pcall(g_ui.createWidget, 'ChaosButton', panel)
+  local menu = w.options
+  if not alive(menu) then return end
+  local ok, b = pcall(g_ui.createWidget, 'ChaosButton', menu)
   if not ok or not b then return end
-  b:setText(tr('Layout options...'))
-  b:setWidth(180)
+  b:setId('chaosLayoutButton')
+  b:setText(tr('Layout options'))
+  pcall(b.setFont, b, 'verdana-9px-bold')
+  b:setHeight(22)
+  b:setMarginTop(6)
   b.onClick = function() M.open() end
   w.chaosLayoutButton = b
 end

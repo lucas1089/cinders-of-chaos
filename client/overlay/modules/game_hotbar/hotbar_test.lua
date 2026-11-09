@@ -191,5 +191,22 @@ do
 end
 eq(L.overlap(nil, { x = 0, y = 0, width = 1, height = 1 }), false, 'overlap with nothing')
 
+-- the round chat and gear buttons stay clear above the slot frames at every scale, with and without globes, and the
+-- two buttons do not touch each other
+for _, globes in ipairs({ true, false }) do
+  for scale = L.SCALE_MIN, L.SCALE_MAX, L.SCALE_STEP do
+    for _, count in ipairs(L.COUNTS) do
+      local mm = L.metrics({ count = count, scale = scale, globes = globes })
+      local cb = L.cornerButtons(mm)
+      local tag = string.format('%d%% %s', scale, globes and 'globes' or 'no globes')
+      eq(cb.top + cb.size <= mm.slotY - L.CORNER_GAP, true, 'buttons end above the slot frames at ' .. tag)
+      eq(cb.top >= 0, true, 'buttons inside the bar at ' .. tag)
+      eq(cb.size >= 12 and cb.size <= L.CORNER_BUTTON, true, 'button size at ' .. tag)
+      eq(cb.chatRight - cb.gearRight >= cb.size + 1, true, 'chat and gear apart at ' .. tag)
+      eq(cb.chatRight + cb.size <= mm.width, true, 'chat button inside the bar at ' .. tag)
+    end
+  end
+end
+
 if fails == 0 then print('hotbar_test: ok') end
 os.exit(fails == 0 and 0 or 1)

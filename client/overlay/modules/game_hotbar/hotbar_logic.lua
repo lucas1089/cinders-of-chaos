@@ -25,6 +25,9 @@ L.LINE_H = 14          -- the event line above the body
 L.ORB_BASE = 110       -- diameter of a globe at 100%
 L.ORB_PAD = 6          -- globe <-> bar
 L.BOTTOM_GAP = 4       -- bar <-> window's bottom edge
+L.CORNER_BUTTON = 22   -- the round chat and gear buttons over the bar's right end (art size)
+L.CORNER_GAP = 2       -- their bottom edge <-> the slot frames' top edge
+L.CORNER_SPACING = 4   -- chat button <-> gear button
 
 -- ------------------------------------------------------------------ options
 L.COUNTS = { 6, 8, 10, 12 }
@@ -99,6 +102,18 @@ function L.metrics(opts)
   m.keyY = m.slotY + m.slot - round(4 * s)
   m.lineY = m.bodyTop - m.lineH
   return m
+end
+
+-- The round chat and gear buttons over the right end of the bar: size, top (from the bar's top edge) and the right
+-- margins (from the bar's right edge) of the gear and the chat button. They end CORNER_GAP above the top of the slot
+-- frames, so a square frame never covers a round button (they used to end exactly on the frames' top at 100% and ran
+-- into them below that: the frames start 14 px under the body's top at 100% but 11 px at 75%, the buttons stayed 22 px).
+-- A bar with little room above its slots draws them smaller (no less than 12 px).
+function L.cornerButtons(m)
+  local size = math.max(12, math.min(L.CORNER_BUTTON, m.slotY - L.CORNER_GAP))
+  local right = m.capW + m.pad -- the right end of the right socket
+  return { size = size, top = math.max(0, m.slotY - L.CORNER_GAP - size), gearRight = right,
+           chatRight = right + size + L.CORNER_SPACING }
 end
 
 -- The options that fit `available` pixels of width: the scale goes down in steps to FIT_MIN_SCALE first, then

@@ -8,6 +8,7 @@ Only fonts whose sheet is in the overlay can be measured here (data/fonts/*.otfo
 Checked now:
   Options menu sub-entries (base patch 0104, NOptionButton: 115 px, no icon, verdana-9px-bold): every name of the
   OPTION_LABELS table of base patch 0056 but the four top entries, and its pt-BR text (client_chaos_locale/pt_br.lua).
+  The "Layout options" entry game_hotbar adds under the last menu entry (hotbar_options.lua): same font and width.
   The four top entries (Controls, Interface, Graphics, Misc.) keep $var-cip-font, a stock sheet not in the repo.
 
 Usage: python3 client/tools/check_text_fit.py   (Pillow; exit 1 when a text does not fit)
@@ -28,6 +29,7 @@ MENU_TOP = {'controls', 'interface', 'graphics', 'misc'}
 SUBENTRY_FONT = 'verdana-9px-bold'
 SUBENTRY_WIDTH = 115
 SUBENTRY_PAD = 4  # each side: the button's bevel
+LAYOUT_ENTRY = 'Layout options'  # game_hotbar's entry under the last menu entry
 
 
 def otfont(path):
@@ -136,6 +138,21 @@ def check():
             widest = max(widest, (w, text))
             if w > room:
                 problems.append('options menu sub-entry "%s" is %d px in %s, the button has %d' % (text, w, SUBENTRY_FONT, room))
+    # the "Layout options" entry game_hotbar adds under the last menu entry (hotbar_options.lua), same font and button
+    hb = open(os.path.join(CLIENT, 'overlay', 'modules', 'game_hotbar', 'hotbar_options.lua'), encoding='utf-8').read()
+    if "setFont, b, '%s'" % SUBENTRY_FONT not in hb:
+        problems.append('hotbar_options.lua: the Layout options entry is not drawn in %s' % SUBENTRY_FONT)
+    if "b:setText(tr('%s'))" % LAYOUT_ENTRY not in hb:
+        problems.append('hotbar_options.lua: the Layout options entry text is not tr(\'%s\')' % LAYOUT_ENTRY)
+    if LAYOUT_ENTRY not in tr:
+        problems.append('no pt-BR text for the options menu entry "%s"' % LAYOUT_ENTRY)
+    for text in (LAYOUT_ENTRY, tr.get(LAYOUT_ENTRY)):
+        if text is None:
+            continue
+        w = measure(text)
+        widest = max(widest, (w, text))
+        if w > room:
+            problems.append('options menu entry "%s" is %d px in %s, the button has %d' % (text, w, SUBENTRY_FONT, room))
     return problems, widest, room
 
 

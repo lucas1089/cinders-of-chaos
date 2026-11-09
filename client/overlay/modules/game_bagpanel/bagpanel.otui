@@ -161,3 +161,13 @@ MiniWindow
         !text: tr('Sort')
         !tooltip: tr('Puts the items of this page in order: by item, then the bigger stack first.')
         @onClick: modules.game_bagpanel.sort()
+
+      BagPanelButton
+        id: purseButton
+        anchors.top: parent.top
+        anchors.left: sortButton.right
+        margin-left: 6
+        width: 72
+        !text: tr('Purse')
+        !tooltip: tr('Opens your purse. What you buy in the store is delivered there.')
+        @onClick: modules.game_bagpanel.openPurse()

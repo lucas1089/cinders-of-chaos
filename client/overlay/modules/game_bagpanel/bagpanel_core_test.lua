@@ -7,6 +7,9 @@ local function eq(a, b, what)
   if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
 end
 
+eq(C.PURSE_SLOT, 11, 'the purse is inventory slot 11 (store delivery)')
+eq(C.slotPos(C.PURSE_SLOT).y, 11, 'purse position')
+
 -- equipment grid: the nine worn slots and the badge, once each
 local seen, count = {}, 0
 for _, row in ipairs(C.EQUIP_ROWS) do
