@@ -1384,6 +1384,9 @@ jobs:
           shellcheck server/deploy/chaos-ctl.sh
           python3 -I server/deploy/chaos_ctl_test.py
 
+      - name: Launch wipe tool (O438; table policy covers every CREATE TABLE, refusals, one transaction, checks; fake runner, no database)
+        run: python3 -I server/deploy/launch_wipe_test.py
+
       - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; Saúde do jogo parsing; Pagamentos card checks and status text; plain JVM)
         run: |
           mkdir -p /tmp/appjava

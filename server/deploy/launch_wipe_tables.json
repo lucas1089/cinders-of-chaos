@@ -1,0 +1,995 @@
+{
+ "version": 1,
+ "about": "Launch wipe policy (docs/BETA.md section 9, server/README.md Launch wipe O438). Every table gets one action: wipe (DELETE all rows), keep (never touched) or partial (named rule). owner_decision true: the owner's call, the safer action is set.",
+ "tables": {
+  "account_ban_history": {
+   "action": "keep",
+   "reason": "ban records stay (BETA.md section 3, owner decides, recommended keep)",
+   "owner_decision": true,
+   "owner_note": "the banned_by column points at deleted staff characters; the rows stay"
+  },
+  "account_bans": {
+   "action": "keep",
+   "reason": "ban records stay (BETA.md section 3, owner decides, recommended keep)",
+   "owner_decision": true,
+   "owner_note": "the banned_by column points at deleted staff characters; the rows stay"
+  },
+  "account_storage": {
+   "action": "keep",
+   "reason": "account-wide storage values; no Chaos script writes it",
+   "owner_decision": true,
+   "owner_note": "the base scripts may keep account-wide flags here; read the row count and wipe by hand if it is beta progress"
+  },
+  "account_viplist": {
+   "action": "wipe",
+   "reason": "VIP lists point at beta characters (section 9 step 5)"
+  },
+  "accounts": {
+   "action": "partial",
+   "reason": "accounts stay; premium time and coins go to 0 (section 9 step 5)",
+   "set": {
+    "premium_ends_at": 0,
+    "premdays": 0,
+    "lastday": 0,
+    "coins": 0,
+    "coins_transferable": 0,
+    "tournament_coins": 0
+   }
+  },
+  "boosted_boss": {
+   "action": "keep",
+   "reason": "the daily boosted pick, rewritten by the engine"
+  },
+  "boosted_creature": {
+   "action": "keep",
+   "reason": "the daily boosted pick, rewritten by the engine"
+  },
+  "chaos_account_extras": {
+   "action": "wipe",
+   "reason": "account-wide extras bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_achievement_stats": {
+   "action": "wipe",
+   "reason": "achievements and counters of beta characters"
+  },
+  "chaos_achievements": {
+   "action": "wipe",
+   "reason": "achievements and counters of beta characters"
+  },
+  "chaos_admin_log": {
+   "action": "keep",
+   "reason": "staff audit record"
+  },
+  "chaos_antibot_holds": {
+   "action": "keep",
+   "reason": "moderation hold on an account, not progress; staff clear it",
+   "owner_decision": true,
+   "owner_note": "kept so a held account stays held; clear it by hand if the beta flag was wrong"
+  },
+  "chaos_antibot_log": {
+   "action": "wipe",
+   "reason": "anti-bot scores of beta characters"
+  },
+  "chaos_arena_match_players": {
+   "action": "wipe",
+   "reason": "arena matches and ratings of beta characters"
+  },
+  "chaos_arena_matches": {
+   "action": "wipe",
+   "reason": "arena matches and ratings of beta characters"
+  },
+  "chaos_arena_ratings": {
+   "action": "wipe",
+   "reason": "arena matches and ratings of beta characters"
+  },
+  "chaos_bank": {
+   "action": "wipe",
+   "reason": "bank stars of beta characters"
+  },
+  "chaos_bazaar_bids": {
+   "action": "wipe",
+   "reason": "Character Bazaar auctions of beta characters, paid in beta coins"
+  },
+  "chaos_bazaar_listings": {
+   "action": "wipe",
+   "reason": "Character Bazaar auctions of beta characters, paid in beta coins"
+  },
+  "chaos_bazaar_log": {
+   "action": "wipe",
+   "reason": "bazaar log of the beta; ids kept because chaos_discord_state holds a cursor into it",
+   "keep_ids": true
+  },
+  "chaos_bestiary": {
+   "action": "wipe",
+   "reason": "bestiary kills and tasks of beta characters"
+  },
+  "chaos_bestiary_tasks": {
+   "action": "wipe",
+   "reason": "bestiary kills and tasks of beta characters"
+  },
+  "chaos_beta_grants": {
+   "action": "wipe",
+   "reason": "beta starter coin grants, part of the beta economy (section 9 step 6 expects 0)"
+  },
+  "chaos_beta_testers": {
+   "action": "keep",
+   "reason": "accounts that get the Beta Tester title at launch"
+  },
+  "chaos_bg_matches": {
+   "action": "wipe",
+   "reason": "battleground matches of the beta"
+  },
+  "chaos_boss_spawns": {
+   "action": "wipe",
+   "reason": "boss kill timers of the beta world"
+  },
+  "chaos_bot_actions": {
+   "action": "wipe",
+   "reason": "bot review rows of beta characters"
+  },
+  "chaos_bot_daily": {
+   "action": "wipe",
+   "reason": "bot review rows of beta characters"
+  },
+  "chaos_bounty": {
+   "action": "wipe",
+   "reason": "bounty contracts of beta characters"
+  },
+  "chaos_build_slots": {
+   "action": "keep",
+   "reason": "saved passive tree build codes of the account, templates without progress",
+   "owner_decision": true,
+   "owner_note": "wipe them if the owner wants a clean slate; they give no advantage"
+  },
+  "chaos_build_trends": {
+   "action": "wipe",
+   "reason": "daily build snapshots of beta characters; launch trends start clean"
+  },
+  "chaos_candlemark_progress": {
+   "action": "wipe",
+   "reason": "Candlemarks balance, progress and purchases of the beta"
+  },
+  "chaos_candlemark_purchases": {
+   "action": "wipe",
+   "reason": "Candlemarks balance, progress and purchases of the beta"
+  },
+  "chaos_candlemarks": {
+   "action": "wipe",
+   "reason": "Candlemarks balance, progress and purchases of the beta"
+  },
+  "chaos_catchup": {
+   "action": "wipe",
+   "reason": "returning player state of beta accounts"
+  },
+  "chaos_charms": {
+   "action": "wipe",
+   "reason": "charms placed by beta characters"
+  },
+  "chaos_chronicle_chapters": {
+   "action": "wipe",
+   "reason": "Ashen Chronicle progress of the beta; Season 1 starts clean"
+  },
+  "chaos_chronicle_contrib": {
+   "action": "wipe",
+   "reason": "Ashen Chronicle progress of the beta; Season 1 starts clean"
+  },
+  "chaos_chronicle_levels": {
+   "action": "wipe",
+   "reason": "Ashen Chronicle progress of the beta; Season 1 starts clean"
+  },
+  "chaos_chronicle_progress": {
+   "action": "wipe",
+   "reason": "Ashen Chronicle progress of the beta; Season 1 starts clean"
+  },
+  "chaos_chronicle_record": {
+   "action": "wipe",
+   "reason": "Ashen Chronicle progress of the beta; Season 1 starts clean"
+  },
+  "chaos_chronicle_state": {
+   "action": "wipe",
+   "reason": "Ashen Chronicle progress of the beta; Season 1 starts clean"
+  },
+  "chaos_class_unlocks": {
+   "action": "wipe",
+   "reason": "account-wide class unlocks bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_client_api_log": {
+   "action": "keep",
+   "reason": "website client API tokens and replay guard, account level and short lived"
+  },
+  "chaos_client_nonces": {
+   "action": "keep",
+   "reason": "website client API tokens and replay guard, account level and short lived"
+  },
+  "chaos_client_tokens": {
+   "action": "keep",
+   "reason": "website client API tokens and replay guard, account level and short lived"
+  },
+  "chaos_coin_gifts": {
+   "action": "keep",
+   "reason": "coin gift ledger; links gifts to paid orders for a refund clawback",
+   "owner_decision": true,
+   "owner_note": "kept as part of the payment record; coins themselves still go to 0"
+  },
+  "chaos_coin_orders": {
+   "action": "keep",
+   "reason": "payment ledger of money already paid"
+  },
+  "chaos_coin_payments": {
+   "action": "keep",
+   "reason": "payment ledger of money already paid"
+  },
+  "chaos_collection": {
+   "action": "wipe",
+   "reason": "account collection entries of the beta (account-wide unlocks)"
+  },
+  "chaos_community_buffs": {
+   "action": "wipe",
+   "reason": "community goal and world buff state of the beta world"
+  },
+  "chaos_community_contrib": {
+   "action": "wipe",
+   "reason": "community goal and world buff state of the beta world"
+  },
+  "chaos_community_goal": {
+   "action": "wipe",
+   "reason": "community goal and world buff state of the beta world"
+  },
+  "chaos_community_history": {
+   "action": "wipe",
+   "reason": "community goal and world buff state of the beta world"
+  },
+  "chaos_community_week": {
+   "action": "wipe",
+   "reason": "community goal and world buff state of the beta world"
+  },
+  "chaos_conquest": {
+   "action": "wipe",
+   "reason": "Conquest tokens and log of beta characters"
+  },
+  "chaos_conquest_log": {
+   "action": "wipe",
+   "reason": "Conquest tokens and log of beta characters"
+  },
+  "chaos_conquest_seen": {
+   "action": "wipe",
+   "reason": "Conquest tokens and log of beta characters"
+  },
+  "chaos_cosmetics": {
+   "action": "wipe",
+   "reason": "cosmetics, exclusives and transmog bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_crafting_log": {
+   "action": "wipe",
+   "reason": "crafting log of beta characters"
+  },
+  "chaos_creator_applications": {
+   "action": "keep",
+   "reason": "creator program: codes, applications, supporters and the share owed on paid orders"
+  },
+  "chaos_creator_codes": {
+   "action": "keep",
+   "reason": "creator program: codes, applications, supporters and the share owed on paid orders"
+  },
+  "chaos_creator_log": {
+   "action": "keep",
+   "reason": "creator program: codes, applications, supporters and the share owed on paid orders"
+  },
+  "chaos_creator_support": {
+   "action": "keep",
+   "reason": "creator program: codes, applications, supporters and the share owed on paid orders"
+  },
+  "chaos_creator_uses": {
+   "action": "keep",
+   "reason": "creator program: codes, applications, supporters and the share owed on paid orders"
+  },
+  "chaos_daily_account": {
+   "action": "wipe",
+   "reason": "login streaks of the beta"
+  },
+  "chaos_death_recaps": {
+   "action": "wipe",
+   "reason": "death recaps of beta characters"
+  },
+  "chaos_depot_tabs": {
+   "action": "wipe",
+   "reason": "depot tabs bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_descent_players": {
+   "action": "wipe",
+   "reason": "Ember Descent runs and best depths of beta characters"
+  },
+  "chaos_descent_runs": {
+   "action": "wipe",
+   "reason": "Ember Descent runs and best depths of beta characters"
+  },
+  "chaos_discord_queue": {
+   "action": "wipe",
+   "reason": "queued Discord messages of beta events; they must not post at launch"
+  },
+  "chaos_discord_state": {
+   "action": "keep",
+   "reason": "Discord worker cursors; the cursor into chaos_bazaar_log stays valid because its ids are kept"
+  },
+  "chaos_dungeon_progress": {
+   "action": "wipe",
+   "reason": "dungeon progress and runs of beta characters"
+  },
+  "chaos_dungeon_run_players": {
+   "action": "wipe",
+   "reason": "dungeon progress and runs of beta characters"
+  },
+  "chaos_dungeon_runs": {
+   "action": "wipe",
+   "reason": "dungeon progress and runs of beta characters"
+  },
+  "chaos_exclusives": {
+   "action": "wipe",
+   "reason": "cosmetics, exclusives and transmog bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_faction_contracts": {
+   "action": "wipe",
+   "reason": "faction reputation, contracts and purchases of beta characters"
+  },
+  "chaos_faction_purchases": {
+   "action": "wipe",
+   "reason": "faction reputation, contracts and purchases of beta characters"
+  },
+  "chaos_factions": {
+   "action": "wipe",
+   "reason": "faction reputation, contracts and purchases of beta characters"
+  },
+  "chaos_founder_revokes": {
+   "action": "keep",
+   "reason": "record of Founder Pack reversals after refunds or chargebacks"
+  },
+  "chaos_goals": {
+   "action": "wipe",
+   "reason": "goal progress of beta characters"
+  },
+  "chaos_guild": {
+   "action": "wipe",
+   "reason": "guild levels, banks, halls and depots (guilds are wiped, BETA.md section 3)"
+  },
+  "chaos_guild_contrib": {
+   "action": "wipe",
+   "reason": "guild levels, banks, halls and depots (guilds are wiped, BETA.md section 3)"
+  },
+  "chaos_guild_depot": {
+   "action": "wipe",
+   "reason": "guild levels, banks, halls and depots (guilds are wiped, BETA.md section 3)"
+  },
+  "chaos_guild_hall": {
+   "action": "wipe",
+   "reason": "guild levels, banks, halls and depots (guilds are wiped, BETA.md section 3)"
+  },
+  "chaos_guild_log": {
+   "action": "wipe",
+   "reason": "guild levels, banks, halls and depots (guilds are wiped, BETA.md section 3)"
+  },
+  "chaos_guild_stats": {
+   "action": "wipe",
+   "reason": "guild levels, banks, halls and depots (guilds are wiped, BETA.md section 3)"
+  },
+  "chaos_guild_upgrades": {
+   "action": "wipe",
+   "reason": "guild levels, banks, halls and depots (guilds are wiped, BETA.md section 3)"
+  },
+  "chaos_guildboss_contrib": {
+   "action": "wipe",
+   "reason": "guild boss runs of the beta"
+  },
+  "chaos_guildboss_runs": {
+   "action": "wipe",
+   "reason": "guild boss runs of the beta"
+  },
+  "chaos_guildboss_week": {
+   "action": "wipe",
+   "reason": "guild boss runs of the beta"
+  },
+  "chaos_guildwar": {
+   "action": "wipe",
+   "reason": "guild wars of the beta"
+  },
+  "chaos_guildwar_kills": {
+   "action": "wipe",
+   "reason": "guild wars of the beta"
+  },
+  "chaos_hideout_decor": {
+   "action": "wipe",
+   "reason": "hideouts, decor and unlocks of beta characters"
+  },
+  "chaos_hideout_likes": {
+   "action": "wipe",
+   "reason": "hideouts, decor and unlocks of beta characters"
+  },
+  "chaos_hideout_unlocks": {
+   "action": "wipe",
+   "reason": "hideouts, decor and unlocks of beta characters"
+  },
+  "chaos_hideout_visits": {
+   "action": "wipe",
+   "reason": "hideouts, decor and unlocks of beta characters"
+  },
+  "chaos_hideouts": {
+   "action": "wipe",
+   "reason": "hideouts, decor and unlocks of beta characters"
+  },
+  "chaos_leaderboard": {
+   "action": "wipe",
+   "reason": "leaderboards and their titles (BETA.md section 3)"
+  },
+  "chaos_leaderboard_titles": {
+   "action": "wipe",
+   "reason": "leaderboards and their titles (BETA.md section 3)"
+  },
+  "chaos_legal_acceptance": {
+   "action": "keep",
+   "reason": "acceptance of the legal texts by the account; wiping it asks everyone again"
+  },
+  "chaos_loadouts": {
+   "action": "wipe",
+   "reason": "loadouts of beta characters"
+  },
+  "chaos_market_deliveries": {
+   "action": "wipe",
+   "reason": "market offers, orders, prices and history of the beta economy"
+  },
+  "chaos_market_history": {
+   "action": "wipe",
+   "reason": "market offers, orders, prices and history of the beta economy"
+  },
+  "chaos_market_history_daily": {
+   "action": "wipe",
+   "reason": "market offers, orders, prices and history of the beta economy"
+  },
+  "chaos_market_log": {
+   "action": "wipe",
+   "reason": "market offers, orders, prices and history of the beta economy"
+  },
+  "chaos_market_offer_mods": {
+   "action": "wipe",
+   "reason": "market offers, orders, prices and history of the beta economy"
+  },
+  "chaos_market_offers": {
+   "action": "wipe",
+   "reason": "market offers, orders, prices and history of the beta economy"
+  },
+  "chaos_market_orders": {
+   "action": "wipe",
+   "reason": "market offers, orders, prices and history of the beta economy"
+  },
+  "chaos_memorial_entries": {
+   "action": "wipe",
+   "reason": "memorial entries of beta characters"
+  },
+  "chaos_memorial_optin": {
+   "action": "wipe",
+   "reason": "memorial entries of beta characters"
+  },
+  "chaos_mentor_links": {
+   "action": "wipe",
+   "reason": "mentor links, marks and purchases of beta characters"
+  },
+  "chaos_mentor_log": {
+   "action": "wipe",
+   "reason": "mentor links, marks and purchases of beta characters"
+  },
+  "chaos_mentor_milestones": {
+   "action": "wipe",
+   "reason": "mentor links, marks and purchases of beta characters"
+  },
+  "chaos_mentor_purchases": {
+   "action": "wipe",
+   "reason": "mentor links, marks and purchases of beta characters"
+  },
+  "chaos_mentors": {
+   "action": "wipe",
+   "reason": "mentor links, marks and purchases of beta characters"
+  },
+  "chaos_nemesis": {
+   "action": "wipe",
+   "reason": "nemeses of beta characters"
+  },
+  "chaos_orbx_deliveries": {
+   "action": "wipe",
+   "reason": "Orb Exchange orders and trades of the beta economy"
+  },
+  "chaos_orbx_log": {
+   "action": "wipe",
+   "reason": "Orb Exchange orders and trades of the beta economy"
+  },
+  "chaos_orbx_orders": {
+   "action": "wipe",
+   "reason": "Orb Exchange orders and trades of the beta economy"
+  },
+  "chaos_orbx_trades": {
+   "action": "wipe",
+   "reason": "Orb Exchange orders and trades of the beta economy"
+  },
+  "chaos_pact": {
+   "action": "wipe",
+   "reason": "Chaos Pact bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_pact_log": {
+   "action": "wipe",
+   "reason": "Chaos Pact bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_pact_marks": {
+   "action": "wipe",
+   "reason": "Chaos Pact bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_pact_xp": {
+   "action": "wipe",
+   "reason": "Chaos Pact bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_paragon": {
+   "action": "wipe",
+   "reason": "paragon points and passive trees of beta characters"
+  },
+  "chaos_passive_tree": {
+   "action": "wipe",
+   "reason": "paragon points and passive trees of beta characters"
+  },
+  "chaos_password_resets": {
+   "action": "keep",
+   "reason": "website account recovery records"
+  },
+  "chaos_patchnotes": {
+   "action": "keep",
+   "reason": "patch notes seen state and auto-open setting of the account"
+  },
+  "chaos_pay_payers": {
+   "action": "keep",
+   "reason": "payment ledger of money already paid"
+  },
+  "chaos_pets": {
+   "action": "wipe",
+   "reason": "pets of beta characters"
+  },
+  "chaos_player_titles": {
+   "action": "wipe",
+   "reason": "titles earned by beta characters"
+  },
+  "chaos_pocketboss": {
+   "action": "wipe",
+   "reason": "pocket boss use of beta characters"
+  },
+  "chaos_poi_seen": {
+   "action": "wipe",
+   "reason": "map discovery of beta characters"
+  },
+  "chaos_professions": {
+   "action": "wipe",
+   "reason": "profession levels and sales of beta characters"
+  },
+  "chaos_professions_sales": {
+   "action": "wipe",
+   "reason": "profession levels and sales of beta characters"
+  },
+  "chaos_progress_metrics": {
+   "action": "wipe",
+   "reason": "progress counters of the beta; the launch report starts clean (the backup keeps them)"
+  },
+  "chaos_pvp_players": {
+   "action": "wipe",
+   "reason": "PvP honor, ratings and rewards of the beta"
+  },
+  "chaos_pvp_purchases": {
+   "action": "wipe",
+   "reason": "PvP honor, ratings and rewards of the beta"
+  },
+  "chaos_pvp_ratings": {
+   "action": "wipe",
+   "reason": "PvP honor, ratings and rewards of the beta"
+  },
+  "chaos_pvp_season_rewards": {
+   "action": "wipe",
+   "reason": "PvP honor, ratings and rewards of the beta"
+  },
+  "chaos_pvpzone_control": {
+   "action": "wipe",
+   "reason": "Scorched Marches state of the beta"
+  },
+  "chaos_pvpzone_players": {
+   "action": "wipe",
+   "reason": "Scorched Marches state of the beta"
+  },
+  "chaos_pvpzone_purchases": {
+   "action": "wipe",
+   "reason": "Scorched Marches state of the beta"
+  },
+  "chaos_raid_instances": {
+   "action": "wipe",
+   "reason": "raid instances, lockouts and marks of beta characters"
+  },
+  "chaos_raid_lockouts": {
+   "action": "wipe",
+   "reason": "raid instances, lockouts and marks of beta characters"
+  },
+  "chaos_raid_members": {
+   "action": "wipe",
+   "reason": "raid instances, lockouts and marks of beta characters"
+  },
+  "chaos_raid_players": {
+   "action": "wipe",
+   "reason": "raid instances, lockouts and marks of beta characters"
+  },
+  "chaos_raid_purchases": {
+   "action": "wipe",
+   "reason": "raid instances, lockouts and marks of beta characters"
+  },
+  "chaos_records": {
+   "action": "wipe",
+   "reason": "records, awards and realm firsts of the beta"
+  },
+  "chaos_records_awards": {
+   "action": "wipe",
+   "reason": "records, awards and realm firsts of the beta"
+  },
+  "chaos_records_boards": {
+   "action": "keep",
+   "reason": "board catalogue, rewritten by the server at startup"
+  },
+  "chaos_records_firsts": {
+   "action": "wipe",
+   "reason": "records, awards and realm firsts of the beta"
+  },
+  "chaos_recovery_requests": {
+   "action": "keep",
+   "reason": "website account recovery records"
+  },
+  "chaos_referral_codes": {
+   "action": "keep",
+   "reason": "referral codes shared in the beta keep working (BETA.md section 3)"
+  },
+  "chaos_referral_log": {
+   "action": "keep",
+   "reason": "referral links, paid rewards, tier titles and log; kept so no reward pays twice",
+   "owner_decision": true,
+   "owner_note": "wipe them only if the owner wants beta referrals to pay again for launch characters"
+  },
+  "chaos_referral_rewards": {
+   "action": "keep",
+   "reason": "referral links, paid rewards, tier titles and log; kept so no reward pays twice",
+   "owner_decision": true,
+   "owner_note": "wipe them only if the owner wants beta referrals to pay again for launch characters"
+  },
+  "chaos_referral_tiers": {
+   "action": "keep",
+   "reason": "referral links, paid rewards, tier titles and log; kept so no reward pays twice",
+   "owner_decision": true,
+   "owner_note": "wipe them only if the owner wants beta referrals to pay again for launch characters"
+  },
+  "chaos_referrals": {
+   "action": "keep",
+   "reason": "referral links, paid rewards, tier titles and log; kept so no reward pays twice",
+   "owner_decision": true,
+   "owner_note": "wipe them only if the owner wants beta referrals to pay again for launch characters"
+  },
+  "chaos_reports": {
+   "action": "wipe",
+   "reason": "player and bug reports about beta characters (BETA.md section 3; the backup keeps them)"
+  },
+  "chaos_rift_atlas": {
+   "action": "wipe",
+   "reason": "map discovery of beta characters"
+  },
+  "chaos_season_journey": {
+   "action": "wipe",
+   "reason": "season characters, progress and rewards of the beta (BETA.md section 3)"
+  },
+  "chaos_season_journey_stats": {
+   "action": "wipe",
+   "reason": "season characters, progress and rewards of the beta (BETA.md section 3)"
+  },
+  "chaos_season_log": {
+   "action": "wipe",
+   "reason": "season characters, progress and rewards of the beta (BETA.md section 3)"
+  },
+  "chaos_season_modes": {
+   "action": "wipe",
+   "reason": "season characters, progress and rewards of the beta (BETA.md section 3)"
+  },
+  "chaos_season_players": {
+   "action": "wipe",
+   "reason": "season characters, progress and rewards of the beta (BETA.md section 3)"
+  },
+  "chaos_season_progress": {
+   "action": "wipe",
+   "reason": "season characters, progress and rewards of the beta (BETA.md section 3)"
+  },
+  "chaos_season_requests": {
+   "action": "wipe",
+   "reason": "season characters, progress and rewards of the beta (BETA.md section 3)"
+  },
+  "chaos_season_rewards": {
+   "action": "wipe",
+   "reason": "season characters, progress and rewards of the beta (BETA.md section 3)"
+  },
+  "chaos_seasonpass": {
+   "action": "wipe",
+   "reason": "season pass bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_seasonpass_claims": {
+   "action": "wipe",
+   "reason": "season pass bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_seasonpass_log": {
+   "action": "wipe",
+   "reason": "season pass bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_seasonpass_packs": {
+   "action": "wipe",
+   "reason": "season pass bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_seasonpass_periods": {
+   "action": "wipe",
+   "reason": "season pass bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_shop_coins": {
+   "action": "wipe",
+   "reason": "Chaos Coin balances go to 0 (BETA.md section 9); the paid ledger tables stay"
+  },
+  "chaos_shop_gifts": {
+   "action": "wipe",
+   "reason": "store gifts and history paid with beta coins"
+  },
+  "chaos_shop_history": {
+   "action": "wipe",
+   "reason": "store gifts and history paid with beta coins"
+  },
+  "chaos_shop_purchases": {
+   "action": "wipe",
+   "reason": "store purchases paid with beta coins; ids kept because chaos_founder_revokes holds purchase ids",
+   "keep_ids": true
+  },
+  "chaos_siege_results": {
+   "action": "wipe",
+   "reason": "guild siege results and sign-ups of the beta"
+  },
+  "chaos_siege_signups": {
+   "action": "wipe",
+   "reason": "guild siege results and sign-ups of the beta"
+  },
+  "chaos_stash": {
+   "action": "wipe",
+   "reason": "stash items of beta characters"
+  },
+  "chaos_stash_block": {
+   "action": "wipe",
+   "reason": "stash items of beta characters"
+  },
+  "chaos_stash_items": {
+   "action": "wipe",
+   "reason": "stash items of beta characters"
+  },
+  "chaos_stash_log": {
+   "action": "wipe",
+   "reason": "stash items of beta characters"
+  },
+  "chaos_survey": {
+   "action": "wipe",
+   "reason": "new player survey answers of the beta (the backup keeps them); launch players are asked again"
+  },
+  "chaos_telemetry_area": {
+   "action": "wipe",
+   "reason": "balance telemetry of the beta; launch numbers start clean (the backup keeps them)"
+  },
+  "chaos_telemetry_boss": {
+   "action": "wipe",
+   "reason": "balance telemetry of the beta; launch numbers start clean (the backup keeps them)"
+  },
+  "chaos_telemetry_casts": {
+   "action": "wipe",
+   "reason": "balance telemetry of the beta; launch numbers start clean (the backup keeps them)"
+  },
+  "chaos_telemetry_class": {
+   "action": "wipe",
+   "reason": "balance telemetry of the beta; launch numbers start clean (the backup keeps them)"
+  },
+  "chaos_telemetry_deaths": {
+   "action": "wipe",
+   "reason": "balance telemetry of the beta; launch numbers start clean (the backup keeps them)"
+  },
+  "chaos_telemetry_economy": {
+   "action": "wipe",
+   "reason": "balance telemetry of the beta; launch numbers start clean (the backup keeps them)"
+  },
+  "chaos_telemetry_hunt": {
+   "action": "wipe",
+   "reason": "balance telemetry of the beta; launch numbers start clean (the backup keeps them)"
+  },
+  "chaos_telemetry_online": {
+   "action": "wipe",
+   "reason": "balance telemetry of the beta; launch numbers start clean (the backup keeps them)"
+  },
+  "chaos_tower_players": {
+   "action": "wipe",
+   "reason": "Infinity Tower points and rewards of beta characters"
+  },
+  "chaos_tower_season_rewards": {
+   "action": "wipe",
+   "reason": "Infinity Tower points and rewards of beta characters"
+  },
+  "chaos_transmog": {
+   "action": "wipe",
+   "reason": "cosmetics, exclusives and transmog bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_transmog_sets": {
+   "action": "wipe",
+   "reason": "cosmetics, exclusives and transmog bought with beta coins (BETA.md section 3)"
+  },
+  "chaos_waystone_atlas": {
+   "action": "wipe",
+   "reason": "map discovery of beta characters"
+  },
+  "chaos_web_registrations": {
+   "action": "keep",
+   "reason": "website registration log of the accounts that stay"
+  },
+  "chaos_weekly_class_podium": {
+   "action": "wipe",
+   "reason": "weekly class podium of the beta"
+  },
+  "guild_invites": {
+   "action": "wipe",
+   "reason": "guilds and wars are wiped (section 9 step 5)"
+  },
+  "guild_membership": {
+   "action": "wipe",
+   "reason": "guilds and wars are wiped (section 9 step 5)"
+  },
+  "guild_ranks": {
+   "action": "wipe",
+   "reason": "guilds and wars are wiped (section 9 step 5)"
+  },
+  "guild_wars": {
+   "action": "wipe",
+   "reason": "guilds and wars are wiped (section 9 step 5)"
+  },
+  "guilds": {
+   "action": "wipe",
+   "reason": "guilds and wars are wiped (section 9 step 5)"
+  },
+  "guildwar_kills": {
+   "action": "wipe",
+   "reason": "guilds and wars are wiped (section 9 step 5)"
+  },
+  "house_lists": {
+   "action": "wipe",
+   "reason": "house access lists and house items (section 9 step 5)"
+  },
+  "houses": {
+   "action": "partial",
+   "reason": "houses stay; owner, rent paid and bids cleared (section 9 step 5)",
+   "set": {
+    "owner": 0,
+    "paid": 0,
+    "warnings": 0,
+    "bid": 0,
+    "bid_end": 0,
+    "last_bid": 0,
+    "highest_bidder": 0
+   }
+  },
+  "ip_bans": {
+   "action": "keep",
+   "reason": "ban records stay (BETA.md section 3, owner decides, recommended keep)",
+   "owner_decision": true,
+   "owner_note": "the banned_by column points at deleted staff characters; the rows stay"
+  },
+  "market_history": {
+   "action": "wipe",
+   "reason": "base market offers and history (section 9 step 5)"
+  },
+  "market_offers": {
+   "action": "wipe",
+   "reason": "base market offers and history (section 9 step 5)"
+  },
+  "player_deaths": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "player_depotitems": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "player_history_skill": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "player_inboxitems": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "player_items": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "player_namelocks": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "player_spells": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "player_storage": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "player_storeinboxitems": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "players": {
+   "action": "wipe",
+   "reason": "every beta character (section 9 step 5); ids kept so kept tables never point at a new character",
+   "keep_ids": true
+  },
+  "players_online": {
+   "action": "wipe",
+   "reason": "rows of beta characters (section 9 step 5)"
+  },
+  "server_config": {
+   "action": "partial",
+   "reason": "state rows of the beta world go (section 9 step 5) and cursors into wiped tables; migration and index rows stay",
+   "delete_like": [
+    "chaos_season_%",
+    "chaos_worldbuff_%"
+   ],
+   "delete_in": [
+    "chaos_community_override",
+    "chaos_leaderboard_reset",
+    "chaos_pvp_season_done",
+    "chaos_tower_season_done",
+    "chaos_guild_siege_seen"
+   ],
+   "set_rows": {
+    "chaos_discord_season": "0"
+   },
+   "owner_decision": true,
+   "owner_note": "players_record (the peak online number of the beta) stays; delete that row by hand if the launch should start at 0"
+  },
+  "shop_history": {
+   "action": "wipe",
+   "reason": "base store history paid with beta coins"
+  },
+  "tile_store": {
+   "action": "wipe",
+   "reason": "house access lists and house items (section 9 step 5)"
+  },
+  "towns": {
+   "action": "keep",
+   "reason": "map towns, not game progress"
+  },
+  "znote_accounts": {
+   "action": "partial",
+   "reason": "website account rows stay; the base store points go to 0",
+   "set": {
+    "points": 0
+   }
+  },
+  "znote_global_storage": {
+   "action": "keep",
+   "reason": "website key value settings, no game progress"
+  },
+  "znote_guild_wars": {
+   "action": "wipe",
+   "reason": "website guild war rows of the wiped guilds"
+  },
+  "znote_player_reports": {
+   "action": "wipe",
+   "reason": "website rows of beta characters and orders (section 9 step 5)"
+  },
+  "znote_players": {
+   "action": "wipe",
+   "reason": "website rows of beta characters and orders (section 9 step 5)"
+  },
+  "znote_shop_orders": {
+   "action": "wipe",
+   "reason": "website rows of beta characters and orders (section 9 step 5)"
+  }
+ }
+}

@@ -286,7 +286,8 @@ Behind gateways (section "Gateways and DDoS") 7171, 7172 and 8090 are open to th
   `/goblin`, `/blessing`, `/season start|end`, `/seasonpass` and `/journey` need a god account (type 5). Every staff
   use of a guarded command goes to the admin audit log. Who may do what, and the rules for staff:
   [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12).
-- Start from a **fresh database**, or from the beta database after its wipe (docs/BETA.md "Wipe procedure"); never from
+- Start from a **fresh database**, or from the beta database after its wipe (docs/BETA.md "Wipe procedure",
+  `server/deploy/launch_wipe.py`, rehearsal in section 7); never from
   a test database: those have accounts with known passwords (`test`, `test2`, ...).
 
 ## 7. Backups
@@ -370,6 +371,24 @@ sudo mysql -e "SELECT COUNT(*) FROM chaos_drill.accounts; SELECT COUNT(*) FROM c
 sudo mysql -e "DROP DATABASE chaos_drill"
 ```
 Write down the date and how long it took; that time is the rollback time.
+
+### Wipe rehearsal (O438)
+
+The beta wipe (docs/BETA.md section 9, `server/deploy/launch_wipe.py`) runs once on a restored copy first, with the game
+running if need be: the tool skips the server check for a database other than `CHAOS_DB_NAME`. The dump has triggers
+whose definer is the database user of `chaos.env`, so that user needs the copy:
+```
+sudo mysql -e "GRANT ALL ON chaos_drill.* TO 'chaos'@'localhost'"        # after the restore drill's CREATE and zcat steps
+sudo mysql chaos_drill -e "DELETE FROM players_online"                   # the dump holds the rows of the moment it was made
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py --db chaos_drill                       # dry run
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py --db chaos_drill --execute \
+  --confirm "WIPE chaos_drill" --backup chaos-db.sql.gz --backup-max-age-minutes 100000
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py --db chaos_drill --verify
+sudo mysql -e "REVOKE ALL ON chaos_drill.* FROM 'chaos'@'localhost'; DROP DATABASE chaos_drill"
+```
+Read the dry run, the owner decisions it lists and the checks at the end of `--execute`. The admin app has no button for
+the wipe (by design: a root shell step on the VPS); stopping and updating the server around it are Painel > Servidor and
+Painel > Atualizar servidor.
 
 ## 8. Client
 
@@ -523,8 +542,8 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
   Chaos Coins at its first new character (server/README.md "Beta starter coins"). Set `enabled = false` on the launch
   server before the first start; check with `grep -n "enabled" data/scripts/chaos/beta_config.lua`. The beta coins, the
   purchases made with them and the grant rows (`chaos_shop_coins`, `chaos_shop_purchases`, `chaos_shop_history`,
-  `chaos_beta_grants`) are wiped with the beta (docs/BETA.md section 9; only the beta coins: the snippet in docs/BETA.md
-  section 4).
+  `chaos_beta_grants`) are wiped with the beta by `server/deploy/launch_wipe.py` (docs/BETA.md section 9; only the beta
+  coins: the snippet in docs/BETA.md section 4).
 
 **Two beta switches, not one.** `beta_config.lua` `enabled` is the beta starter coins (5,000 free coins per account) and the
 Beta Tester record: no admin app button, `true` today, must be `false` at launch. `beta_mode_config.lua` `enabled` is beta

@@ -24022,8 +24022,9 @@ else (no coins, no items).
 - **Recording.** `beta_tester.lua` logs every login. When the time is inside one of `tester.windows` (31 Oct 15:00 to
   1 Nov 23:00 and 7 Nov 15:00 to 8 Nov 23:00, server time) it writes the account into `chaos_beta_testers` with
   `INSERT IGNORE`. The Friday staff smoke test (30 Oct) and the days between the weekends are outside the windows.
-- **Surviving the wipe.** docs/BETA.md section 9 truncates every `chaos_*` table except a short list; `chaos_beta_testers`
-  is on that list (and so are `chaos_admin_log`, `chaos_patchnotes`, `chaos_referral_codes`). The file must be installed
+- **Surviving the wipe.** `server/deploy/launch_wipe.py` (docs/BETA.md section 9, "Launch wipe (O438)") keeps the tables its
+  policy marks `keep`; `chaos_beta_testers` is one of them (and so are `chaos_admin_log`, `chaos_patchnotes`,
+  `chaos_referral_codes`, the creator program, the legal acceptance and the payment ledger). The file must be installed
   on the beta server from the first weekend: only logins inside a window are recorded. If it was not, the final beta backup
   rebuilds the list from `players.lastlogin` inside the windows.
 - **The title.** `ChaosTitles.register("betatester", ...)` (the Founder Pack's way): the title shows only when the beta
@@ -29218,3 +29219,43 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   `lootbag`) and a restart. Tests: `tests/corpse_bag_test.lua`, `tools/patch_monster_corpses_test.py`, `tools/chaoslootbag_test.cpp`
   (CI builds the header cut out of the patch). The patch applies on top of 0079-0087 of an already patched tree (luascript.cpp with
   fuzz 2). **Not tested:** a full build with the patch, a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.
+
+## Launch wipe (O438) (`deploy/launch_wipe.py`, `deploy/launch_wipe_tables.json`)
+
+The beta wipe of docs/BETA.md section 9 as a tool, run as root on the game server with the game stopped. Python 3
+standard library and the mysql client; it reaches the database like `chaos-ctl.sh` and `backup.sh` (`/etc/chaos/chaos.env`,
+the password only in a temporary 0600 option file). Run it with `python3 -I`.
+- **Policy.** `launch_wipe_tables.json` names every table once: `wipe` (DELETE all rows), `keep` (never touched) or
+  `partial` (accounts: premium and coin columns to 0; houses: owner, rent paid and bids cleared; `znote_accounts.points` to
+  0; `server_config`: the beta state rows deleted, `chaos_discord_season` set to 0), each with a one-line reason.
+  `owner_decision: true` marks a table that is the owner's call: the safer action (keep) is set and the dry run lists it.
+  Rule of thumb: wipe what belongs to a character, to game progress or to the beta economy; keep the account identity,
+  money already paid (`chaos_coin_orders`, `chaos_coin_payments`, `chaos_pay_payers`), the law (`chaos_legal_acceptance`),
+  the creator program and the staff record. `keep_ids` on a wipe table: its AUTO_INCREMENT is not reset, because a kept
+  table holds ids of it (`chaos_bazaar_log`: the cursor in `chaos_discord_state`; `chaos_shop_purchases`:
+  `chaos_founder_revokes`; `players`: the kept ban and log rows).
+- **Fail closed.** A table in the database that the policy does not name stops every mode with exit code 2 and the list.
+  `launch_wipe_test.py` fails when a table that `server/sql/*.sql`, the revscripts or the website installer create is not
+  in the policy, so a new table forces a decision.
+- **Dry run** (default): per table the action, rows now, rows that would go, owner decisions, and whether `--execute`
+  would pass (server stopped, `players_online` empty). Nothing is written.
+- **`--execute --confirm "WIPE <database>" --backup DUMP`**: refuses (one line, exit 1, nothing changed) unless the
+  confirm text names the real database, DUMP is a non-empty file modified within `--backup-max-age-minutes` (120), the
+  server is not running (the unit like `chaos-ctl.sh status`, the pid file, any `tfs` process; skipped for `--db` other
+  than the game's `CHAOS_DB_NAME`, for a rehearsal on a copy) and `players_online` is empty. The wipe is one
+  transaction (`DELETE` and `UPDATE`, never `TRUNCATE`, foreign key checks off): a failure rolls back (exit 3). Then
+  `AUTO_INCREMENT` is reset (a failure is a warning) and the checks run.
+- **Checks** (`--verify` runs only these): 0 players, `players_online` empty, accounts and `chaos_beta_testers` counts
+  unchanged, every keep and partial table at its count from before (the baseline file `/var/lib/chaos/launch-wipe-<db>.json`,
+  written by `--execute`, `--baseline FILE`), every wipe table at 0, 0 coins, 0 owned houses, the `server_config` rows.
+  Exit 1 names any mismatch.
+- **Rehearsal** on a restored copy: docs/LAUNCH.md section 7 "Wipe rehearsal". The admin app has no button for the wipe, by
+  design (a root shell step on the VPS); the stop and the update around it are Painel > Servidor and Painel > Atualizar
+  servidor.
+- **Assumptions.** The tables the policy names that a given database lacks are skipped. Columns of `accounts` that the
+  schema lacks (`premdays`, `coins`, ...) are skipped. A wipe table that is not InnoDB gets a dry-run warning (a rollback
+  would not undo it). Row counts are `COUNT(*)`. Bans keep a `banned_by` that points at a deleted staff character.
+  The `ondelete_players` trigger of the base schema runs per deleted player (it clears house owners).
+- **Tests:** `deploy/launch_wipe_test.py` (policy coverage, validator, SQL text, every refusal, server detection, the mysql
+  call, dry run, execute, idempotence, rollback, verify; a fake runner, no database). Rehearsed once on a real MariaDB
+  with a dump of a small installed server (counts in ROADMAP O438).

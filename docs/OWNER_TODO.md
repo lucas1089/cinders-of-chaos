@@ -16,7 +16,11 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
     The Chronicle's goal sizes assume the launch start (server/README.md "The Ashen Chronicle", "Goal sizes").
   - Patch notes come out every Wednesday.
   - Wipe: one full wipe between the beta and the launch (all beta characters and items). After the launch, permanent
-    characters are never wiped; seasons are optional separate characters.
+    characters are never wiped; seasons are optional separate characters. The wipe is a tool now
+    (`server/deploy/launch_wipe.py`, docs/BETA.md section 9): a root shell step on the VPS, no button in the admin app
+    by design (stop and update around it: Painel > Servidor, Painel > Atualizar servidor). Its dry run lists the owner
+    decisions (bans, referral links, coin gifts, build slots, bot holds, account storage, the peak online number):
+    each is kept until you say otherwise.
 - [ ] **The beta plan.** Who joins, the wipe before launch, coins and donations in the beta, the Season 1 start and
   the staff schedule: every decision is in [docs/BETA.md](BETA.md) (draft), each marked "Owner decides" with a
   recommendation. The go / no-go list for the beta, with owner and dev items: [docs/BETA_READINESS.md](BETA_READINESS.md).
@@ -26,7 +30,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   must be reviewed before the Bazaar and creator codes are switched on for players. The Terms' new helper sentence
   (section 6) and the pack prices go to the same review.
 - [ ] **Beta Tester title (built 2026-10-29, a check).** `beta_tester.lua` records the accounts that log in during the
-  two beta weekends and keeps them through the wipe (`chaos_beta_testers`, kept by the wipe list of docs/BETA.md section
+  two beta weekends and keeps them through the wipe (`chaos_beta_testers`, kept by the wipe policy of docs/BETA.md section
   9). At launch the accounts get the cosmetic title "Beta Tester" when the beta switch is off. Make sure the beta server
   has the commit from the first weekend (admin app: Painel > Atualizar servidor > Aplicar e reiniciar; shell fallback:
   `chaos_update.sh`). At launch set `beta_config.lua` `enabled = false` (docs/LAUNCH.md section 11; the admin app has no button for
