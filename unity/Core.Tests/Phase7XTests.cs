@@ -569,6 +569,46 @@ namespace Chaos.Core.Tests
             check(!hn.Log.Any(l => l.StartsWith("byid")) && (hn.Log.Count == 0 || hn.Log[0] == "self 266"), "engine gate: a counted potion is used the old way");
 
             LevelUpChecks(check);
+            SpellUnlockNames(check);
+        }
+
+        // A level up that opens a class spell is told by the spell's name: the Helper's notice and a toast carry it, and the spell list shows the spell as ready at that level (main
+        // client: autorotation_ui.lua onLevelUp, game_spellbook). There is no server push of spell names: the client knows the list and the level (phase 28).
+        static void SpellUnlockNames(Action<bool, string> check)
+        {
+            Loc.Set("en");
+            var cls = HelperRotation.ClassOf(4);
+            int lvA = 0, lvB = 0, newId = 0;
+            for (int i = 0; i + 1 < cls.Presets.Count && lvB == 0; i++)
+                foreach (int id in cls.Presets[i + 1].Spells)
+                    if (Array.IndexOf(cls.Presets[i].Spells, id) < 0) { lvA = cls.Presets[i].Level; lvB = cls.Presets[i + 1].Level; newId = id; break; }
+            var host = new Host { Level = lvA, Vocation = 4 };
+            var ex = new ExtOpcodes();
+            var book = new SpellBook(ex) { Clock = () => host.Now, LevelNow = () => host.Level, MagicLevelNow = () => 9999 };
+            ex.Receive(219, "{\"action\":\"done\",\"data\":{\"sig\":\"x\"}}");
+            var firstLevel = new Dictionary<int, int>();
+            foreach (var pr in cls.Presets) foreach (int sid in pr.Spells) if (!firstLevel.ContainsKey(sid)) firstLevel[sid] = pr.Level;
+            foreach (var kv in HelperRotation.SpellData) book.Spells.Add(new Spell { Id = kv.Key, Name = kv.Value.Name, Words = kv.Value.Words, Group = 1, Level = firstLevel.TryGetValue(kv.Key, out int fl) ? fl : 1 });
+            foreach (var hh in cls.Heals) book.Spells.Add(new Spell { Id = hh.Id, Name = "Heal " + hh.Id, Words = "heal " + hh.Id, Group = 2, Level = 1 });
+            var eng = new HelperEngine(book, host);
+            eng.Config.Enabled = true;
+            var spell = book.ById(newId);
+            check(spell != null && spell.Name.Length > 0 && spell.Level == lvB, "spell unlock: the new spell is in the list with its name and level");
+            eng.Tick();
+            check(book.Status(spell) == SpellStatus.Level, "spell unlock: before the level the list shows the spell as waiting for its level");
+            eng.AutoSetup(4);
+            host.Level = lvB; host.Now = 1000;
+            eng.Tick();
+            check(book.Status(spell) == SpellStatus.Ready, "spell unlock: at its level the spell list shows it as ready");
+            var n = eng.LevelNotice;
+            check(n != null && n.NewIds.Contains(newId) && n.Names.Contains(spell.Name) && n.List.Contains(spell.Name), "spell unlock: the notice names the new spell");
+            check(n != null && n.Line == "New spell available: " + n.List + ".", "spell unlock: the notice line is 'New spell available: NAME.'");
+            var tc = new ToastCenter(new ExtOpcodes()) { Clock = () => 0 };
+            var t = n == null ? null : tc.Add("MILESTONE", n.Line);
+            check(t != null && t.Message.Contains(spell.Name) && tc.Active.Count + tc.Queue.Count == 1, "spell unlock: the toast carries the spell's name");
+            Loc.Set("pt-BR");
+            check(n != null && n.Line == "Nova magia disponível: " + n.List + ".", "spell unlock: the notice line in pt-BR");
+            Loc.Set("en");
         }
 
         static void LevelUpChecks(Action<bool, string> check)

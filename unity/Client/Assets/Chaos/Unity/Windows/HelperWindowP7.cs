@@ -23,7 +23,7 @@ namespace Chaos.Client
             {
                 var box = new Rect(x, y + used, w, 74);
                 ChaosApp.Fill(box, new Color(0.45f, 0.3f, 0.12f, 0.35f));
-                GUI.Label(new Rect(box.x + 6, box.y + 2, box.width - 12, 36), Loc.T("New spell available: {0}.", n.List) + "\n" + Loc.T("Add to rotation?"), hint);
+                GUI.Label(new Rect(box.x + 6, box.y + 2, box.width - 12, 36), n.Line + "\n" + Loc.T("Add to rotation?"), hint);
                 if (GUI.Button(new Rect(box.x + 6, box.y + 42, 90, 26), Loc.T("Add")))
                 {
                     int added = engine.AcceptLevelNotice();
