@@ -16,6 +16,9 @@ namespace Chaos.Core
     public sealed class LiveSmokeEnv
     {
         public string Host = "127.0.0.1", Account = "", Password = "", Character, Identity = "extended";
+        /// <summary>The fresh, never-logged-in character of the new player first minute (CHAOS_LIVE_NEW_ACCOUNT, _PASSWORD, _CHARACTER: all three or none). Empty: the step is skipped.</summary>
+        public string NewAccount = "", NewPassword = "", NewCharacter = "";
+        public bool HasNewPlayer => NewAccount.Length > 0 && NewPassword.Length > 0 && NewCharacter.Length > 0;
         public int Port = 7171;
         public readonly List<string> Errors = new List<string>();
         public bool Ok => Errors.Count == 0;
@@ -42,6 +45,11 @@ namespace Chaos.Core
                 if (id != "extended" && id != "chaos") e.Errors.Add("CHAOS_LIVE_IDENTITY must be extended or chaos");
                 else e.Identity = id;
             }
+            e.NewAccount = V("CHAOS_LIVE_NEW_ACCOUNT");
+            e.NewPassword = get("CHAOS_LIVE_NEW_PASSWORD") ?? "";
+            e.NewCharacter = V("CHAOS_LIVE_NEW_CHARACTER");
+            int given = (e.NewAccount.Length > 0 ? 1 : 0) + (e.NewPassword.Length > 0 ? 1 : 0) + (e.NewCharacter.Length > 0 ? 1 : 0);
+            if (given != 0 && given != 3) e.Errors.Add("set all of CHAOS_LIVE_NEW_ACCOUNT, CHAOS_LIVE_NEW_PASSWORD and CHAOS_LIVE_NEW_CHARACTER, or none");
             return e;
         }
 
@@ -52,7 +60,7 @@ namespace Chaos.Core
         public List<string> Secrets()
         {
             var s = new List<string>();
-            foreach (var t in new[] { Password, Account, Character }) if (!string.IsNullOrEmpty(t)) s.Add(t);
+            foreach (var t in new[] { Password, Account, Character, NewPassword, NewAccount, NewCharacter }) if (!string.IsNullOrEmpty(t)) s.Add(t);
             return s;
         }
     }
@@ -303,6 +311,133 @@ namespace Chaos.Core
         public bool NoAnswer => Answers == 0;
     }
 
+    /// <summary>What the Helper window shows right now, read by the player each frame (Unity/Windows/HelperWindow.cs OnboardingView): open, the tab, whether the gold hint was drawn this
+    /// frame, the hint text, whether the blink time is still running.</summary>
+    public sealed class LiveHelperView
+    {
+        public bool Open, HintDrawn, BlinkActive;
+        public int Tab = -1;
+        public string Hint = "";
+    }
+
+    public enum LiveNewPlayerAction { Wait, Screenshot, Done }
+
+    /// <summary>The first minute of a new player in the live run (O433): the "newplayer" block of live_smoke.json and its failure lines. `Ran` is false when the run had no fresh
+    /// character (the variables CHAOS_LIVE_NEW_* unset): no failure.</summary>
+    public sealed class LiveNewPlayerResult
+    {
+        /// <summary>The Helper's Shooter tab, where Auto setup is (HelperWindow tab 1).</summary>
+        public const int ShooterTab = 1;
+
+        public bool Ran, LoginOk, EnterOk, ToastSeen, HelperAsked, HelperOpened, HintShown, BlinkActive, LoggedOut;
+        public int Tab = -1;
+        public string Hint = "", Error = "", Screenshot = "";
+        public double ToastMs = -1, HelperMs = -1;
+
+        public List<string> Failures()
+        {
+            var f = new List<string>();
+            if (!Ran) return f;
+            if (Error.Length > 0) f.Add("newplayer: " + Error);
+            if (!(LoginOk && EnterOk)) { if (Error.Length == 0) f.Add("newplayer: the fresh character did not get into the game"); return f; }
+            if (!ToastSeen) { f.Add("newplayer: no welcome toast after " + (int)(LiveNewPlayerStep.ToastLimitMs / 1000) + " s in the game"); return f; }
+            if (!HelperAsked) f.Add("newplayer: the welcome toast came without openHelper");
+            if (!HelperOpened) f.Add("newplayer: the Helper did not open by itself on the welcome toast");
+            else
+            {
+                if (Tab != ShooterTab) f.Add("newplayer: the Helper opened on tab " + Tab + ", not on Auto setup (tab " + ShooterTab + ")");
+                if (!HintShown) f.Add("newplayer: the Helper shows no hint above Auto setup");
+                if (!BlinkActive) f.Add("newplayer: the Auto setup button does not blink");
+            }
+            return f;
+        }
+
+        public bool Pass => Failures().Count == 0;
+
+        static string B(bool v) => v ? "true" : "false";
+
+        public string ToJson(IList<string> secrets)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            if (!Ran) return "{\"ran\":false}";
+            var b = new StringBuilder("{\"ran\":true,\"pass\":").Append(B(Pass));
+            b.Append(",\"loginOk\":").Append(B(LoginOk)).Append(",\"enterOk\":").Append(B(EnterOk)).Append(",\"error\":").Append(LiveSmokeReport.Quote(Error, secrets));
+            b.Append(",\"toastSeen\":").Append(B(ToastSeen)).Append(",\"toastMs\":").Append(Math.Round(ToastMs).ToString("0", inv));
+            b.Append(",\"openHelper\":").Append(B(HelperAsked));
+            b.Append(",\"helperOpened\":").Append(B(HelperOpened)).Append(",\"helperMs\":").Append(Math.Round(HelperMs).ToString("0", inv));
+            b.Append(",\"tab\":").Append(Tab.ToString(inv)).Append(",\"autoSetupTab\":").Append(B(Tab == ShooterTab));
+            b.Append(",\"hintShown\":").Append(B(HintShown)).Append(",\"hint\":").Append(LiveSmokeReport.Quote(Hint, secrets));
+            b.Append(",\"blinkActive\":").Append(B(BlinkActive)).Append(",\"screenshot\":").Append(LiveSmokeReport.Quote(Screenshot, secrets));
+            b.Append(",\"loggedOut\":").Append(B(LoggedOut)).Append('}');
+            return b.ToString();
+        }
+    }
+
+    /// <summary>The state machine of the new player step, after the fresh character is in the game: wait for the welcome toast (the server sends it 2.5 s after the first login),
+    /// wait for the Helper to open on its own, let it draw a moment, take the screenshot, done. A timeout does not stop the step: the flags stay false and the screenshot is still
+    /// taken, so a failed run shows what the screen had. Time is in ms on the caller's clock; nothing here reads a clock.</summary>
+    public sealed class LiveNewPlayerStep
+    {
+        public const double ToastLimitMs = 30000, HelperLimitMs = 4000, SettleMs = 700;
+        public enum Phase { WaitToast, WaitHelper, Settle, Shoot, Done }
+
+        public Phase State { get; private set; } = Phase.WaitToast;
+        public readonly LiveNewPlayerResult Result;
+        readonly double start;
+        double phaseAt;
+
+        public LiveNewPlayerStep(LiveNewPlayerResult result, double nowMs)
+        {
+            Result = result;
+            start = phaseAt = nowMs;
+        }
+
+        void Go(Phase p, double now) { State = p; phaseAt = now; }
+
+        /// <summary>One call per frame. `toastNow`: a welcome toast (NEW_PLAYER) is on screen or in the queue this frame; `helperRequests`: ToastCenter.HelperRequests (how many openHelper toasts
+        /// came); `view`: the Helper window as it is. Returns Screenshot (the caller takes it and calls ShotTaken) and, at the end, Done.</summary>
+        public LiveNewPlayerAction Update(double now, bool toastNow, int helperRequests, LiveHelperView view)
+        {
+            var r = Result;
+            if (State == Phase.Done) return LiveNewPlayerAction.Done;
+            if (State != Phase.Shoot)
+            {
+                if (toastNow && !r.ToastSeen) { r.ToastSeen = true; r.ToastMs = now - start; }
+                if (helperRequests > 0) r.HelperAsked = true;
+                if (view.Open && !r.HelperOpened) { r.HelperOpened = true; r.HelperMs = now - start; }
+            }
+            switch (State)
+            {
+                case Phase.WaitToast:
+                    if (r.ToastSeen) Go(Phase.WaitHelper, now);
+                    else if (now - start >= ToastLimitMs) Go(Phase.Shoot, now);   // no toast: no Helper to wait for either, the screenshot shows what there is
+                    break;
+                case Phase.WaitHelper:
+                    if (r.HelperOpened) Go(Phase.Settle, now);
+                    else if (now - phaseAt >= HelperLimitMs) Go(Phase.Shoot, now);
+                    break;
+                case Phase.Settle:
+                    if (now - phaseAt >= SettleMs) Go(Phase.Shoot, now);
+                    break;
+            }
+            if (State == Phase.Shoot)
+            {
+                // what the screen shows at the moment of the shot
+                r.HelperOpened = r.HelperOpened && view.Open;
+                if (r.HelperOpened) { r.Tab = view.Tab; r.HintShown = view.HintDrawn && !string.IsNullOrEmpty(view.Hint); r.Hint = view.Hint ?? ""; r.BlinkActive = view.BlinkActive; }
+                return LiveNewPlayerAction.Screenshot;
+            }
+            return LiveNewPlayerAction.Wait;
+        }
+
+        /// <summary>The caller took the screenshot (or tried): the step ends.</summary>
+        public void ShotTaken(string name)
+        {
+            Result.Screenshot = name ?? "";
+            State = Phase.Done;
+        }
+    }
+
     /// <summary>The run's report (live_smoke.json), the pass rule and the log lines.</summary>
     public sealed class LiveSmokeReport
     {
@@ -325,6 +460,8 @@ namespace Chaos.Core
         /// <summary>Windows whose server answer needs something the fresh test character lacks, with what (class name to a short reason). Empty: the first run found none.</summary>
         public readonly Dictionary<string, string> Conditions = new Dictionary<string, string>();
         public readonly SmokeReport Smoke = new SmokeReport();
+        /// <summary>The new player first minute (a fresh character logged in before the normal run); not run when the environment has no fresh character.</summary>
+        public readonly LiveNewPlayerResult NewPlayer = new LiveNewPlayerResult();
         public int Sheets, Screenshots;
 
         /// <summary>The walk counts when the legs had a free tile to walk, the server confirmed at least MinSteps (or all there were) and at least half of the planned steps. The legs
@@ -375,6 +512,7 @@ namespace Chaos.Core
             foreach (var l in Legs) if (l.Sent > l.Wanted) f.Add("walk plan bug: leg " + l.Name + " sent " + l.Sent + " steps for " + l.Wanted + " planned, the extra tile was never checked");
             if (Closed.Length > 0) f.Add("the session closed: " + Closed);
             if (Exceptions > 0) f.Add(Exceptions + " exceptions logged");
+            f.AddRange(NewPlayer.Failures());
             return f;
         }
 
@@ -393,6 +531,7 @@ namespace Chaos.Core
             if (LayoutErrors > 0) w.Add(LayoutErrors + " IMGUI layout errors");
             if (LoggedErrors > 0) w.Add(LoggedErrors + " logged errors");
             if (EnterOk && LoginOk && !LoggedOut) w.Add("no clean logout (the server did not close the connection)");
+            if (NewPlayer.Ran && NewPlayer.EnterOk && !NewPlayer.LoggedOut) w.Add("newplayer: no clean logout of the fresh character");
             if (EnterOk && TilesDrawn == 0) w.Add("no tile in the drawn view");
             return w;
         }
@@ -418,12 +557,15 @@ namespace Chaos.Core
         public string SummaryLine() =>
             "chaos live smoke: identity " + Identity + ", login " + (LoginOk ? "ok" : "FAILED") + ", entered " + (EnterOk ? "ok" : "FAILED") + ", walk " + StepsConfirmed + " of " + StepsSent
             + " steps confirmed, " + TilesDrawn + " tiles drawn, " + Windows.Count + " windows (" + AnsweredCount + " answered, " + PrefetchedCount + " prefetched at login, " + LocalCount + " local-only, " + NeedsConditionCount + " need a condition, " + NoAnswerCount + " without an answer), "
-            + Exceptions + " exceptions, " + LayoutErrors + " layout errors, " + (Pass ? "pass" : "FAIL");
+            + Exceptions + " exceptions, " + LayoutErrors + " layout errors, " + (NewPlayer.Ran ? "newplayer " + (NewPlayer.Pass ? "ok" : "FAIL") + ", " : "") + (Pass ? "pass" : "FAIL");
 
         /// <summary>The name of sheet N (0 based) of the contact sheets.</summary>
         public static string SheetName(int sheet) => "live_smoke_sheet_" + (sheet + 1).ToString(CultureInfo.InvariantCulture) + ".png";
 
         // ------------------------------------------------------------------------------------ json
+        /// <summary>A json string with every secret cut out.</summary>
+        public static string Quote(string s, IList<string> secrets) => Q(s, secrets);
+
         static string Q(string s, IList<string> secrets)
         {
             s = s ?? "";
@@ -472,6 +614,7 @@ namespace Chaos.Core
             var b = new StringBuilder();
             b.Append("{\n \"identity\":").Append(Q(Identity, null)).Append(",\n \"pass\":").Append(Bool(Pass)).Append(",\n \"failures\":").Append(Strs(Failures(), secrets))
              .Append(",\n \"warnings\":").Append(Strs(Warnings(), secrets)).Append(",\n \"notes\":").Append(Strs(Notes(), secrets));
+            b.Append(",\n \"newplayer\":").Append(NewPlayer.ToJson(secrets));
             b.Append(",\n \"login\":{\"ok\":").Append(Bool(LoginOk)).Append(",\"error\":").Append(Q(LoginError, secrets)).Append('}');
             b.Append(",\n \"enter\":{\"ok\":").Append(Bool(EnterOk)).Append(",\"error\":").Append(Q(EnterError, secrets)).Append(",\"ms\":").Append(Math.Round(EnterMs).ToString("0", inv)).Append('}');
             b.Append(",\n \"map\":{\"tilesInModel\":").Append(TilesInModel.ToString(inv)).Append(",\"tilesDrawn\":").Append(TilesDrawn.ToString(inv))

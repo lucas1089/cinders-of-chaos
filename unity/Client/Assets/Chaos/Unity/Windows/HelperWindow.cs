@@ -27,6 +27,15 @@ namespace Chaos.Client
         // the welcome toast's openHelper (Core HelperOnboarding): the window opens on the Shooter tab, the Auto setup button blinks gold with the hint above it until it is clicked or the time is up
         string onboardHint = "";
         double onboardAt = -1;
+        bool onboardPending;   // asked, not drawn yet: the hint and blink time start at the first frame the Auto setup row is drawn (CI PR 327: the request came 22 s before the window showed, the 12 s were gone)
+        int onboardDrawnFrame = -100;   // the frame the gold hint was last drawn (the live smoke reads it)
+
+        /// <summary>The window as the live smoke run sees it (Core/LiveSmoke.cs LiveHelperView): open, the tab, the hint drawn within the last two frames, the blink time still running.</summary>
+        public LiveHelperView OnboardingView(double sessionNow)
+        {
+            double age = onboardAt >= 0 ? sessionNow - onboardAt : -1;
+            return new LiveHelperView { Open = Open, Tab = tab, Hint = onboardHint, HintDrawn = Time.frameCount - onboardDrawnFrame <= 2, BlinkActive = HelperOnboarding.Active(age) };
+        }
 
         public override string Title => Loc.T("Helper");
         public override KeyCode Hotkey => KeyCode.R;
@@ -38,7 +47,7 @@ namespace Chaos.Client
         public override void Reset()
         {
             engine = null; engineFor = null; loadedFor = null; lastHealth = -1; pick = Pick.None; message = ""; dirty = false;
-            noticeShown = null; followEdit = null; onboardAt = -1; onboardHint = "";
+            noticeShown = null; followEdit = null; onboardAt = -1; onboardPending = false; onboardHint = ""; onboardDrawnFrame = -100;
         }
 
         // ------------------------------------------------------------------------------------ the loop, once per frame
@@ -89,7 +98,7 @@ namespace Chaos.Client
             {
                 if (HelperOnboarding.NeedsToggle(Open)) Open = true;
                 tab = 1; pick = Pick.None; extraPick = ExtraPick.None; RaiseNext = true;
-                onboardHint = wantHint; onboardAt = s.Now;
+                onboardHint = wantHint; onboardAt = -1; onboardPending = true;
             }
             if (engine.LevelMessage.Length > 0) { message = engine.LevelMessage; engine.LevelMessage = ""; dirty = true; app.PostLine(message); }
             if (dirty) { dirty = false; PlayerPrefs.SetString(HelperConfig.PrefsKey("-", loadedFor), engine.Config.ToJson()); PlayerPrefs.Save(); }
@@ -235,6 +244,7 @@ namespace Chaos.Client
             }
             GUI.Label(new Rect(x, y, w, 18), Loc.T("Mana percent and the number of monsters to cast on."), hint);
             y += 24;
+            if (onboardPending && ui?.Session != null) { onboardPending = false; onboardAt = ui.Session.Now; RaiseNext = true; }
             double onboardAge = onboardAt >= 0 && ui?.Session != null ? ui.Session.Now - onboardAt : -1;
             bool onboarding = HelperOnboarding.Active(onboardAge);
             if (onboarding)
@@ -242,6 +252,7 @@ namespace Chaos.Client
                 var gold = new GUIStyle(hint) { fontSize = 12 };
                 gold.normal.textColor = new Color(1f, 0.82f, 0.25f);
                 GUI.Label(new Rect(x, y, w, 18), onboardHint, gold);
+                onboardDrawnFrame = Time.frameCount;
                 y += 20;
             }
             var wasColor = GUI.color;
@@ -250,7 +261,7 @@ namespace Chaos.Client
             GUI.color = wasColor;
             if (autoSetup)
             {
-                onboardAt = -1;
+                onboardAt = -1; onboardPending = false;
                 string m = engine.AutoSetup(Vocation());
                 message = m ?? Loc.T("No rotation for this class and level yet (is the spell list loaded?).");
                 if (m != null) { engine.AutoSupport(); dirty = true; }
