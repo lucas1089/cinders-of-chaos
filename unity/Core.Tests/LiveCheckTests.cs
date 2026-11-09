@@ -44,6 +44,8 @@ namespace Chaos.Core.Tests
             LastLifeAndTwinHud(check);
             Phase26ScenarioList(check);
             SoloDeathHudAndNova(check);
+            Phase27ScenarioList(check);
+            FirstHourHelpers(check);
             Failures(check);
             Otb(check);
             Plan(check);
@@ -682,6 +684,36 @@ namespace Chaos.Core.Tests
             foreach (string n in names) { int i = all.IndexOf(n); order &= i > last; last = i; }
             check(order && last < all.IndexOf("death"), "phase 26: riftsolodeath, omenparty and wrathnova follow trialwindows in that order and run before the death scenarios");
             check(all.Count == all.Distinct().Count() && all[all.Count - 1] == "pvpdeath", "phase 26: no name twice, pvpdeath still last");
+        }
+
+        // ------------------------------------------------------------------------------------------------ phase 27
+        // newplayer, firstkill and firstquest open the list (a new character's first hour, in the order a player lives it), riftkilled follows riftsolodeath.
+        static void Phase27ScenarioList(Action<bool, string> check)
+        {
+            var all = LiveRun.AllScenarios.ToList();
+            check(all[0] == "newplayer" && all[1] == "firstkill" && all[2] == "firstquest", "phase 27: newplayer, firstkill and firstquest come first, in the order of a first hour");
+            check(all.IndexOf("riftkilled") == all.IndexOf("riftsolodeath") + 1, "phase 27: riftkilled follows riftsolodeath");
+            check(all.Count == all.Distinct().Count() && all[all.Count - 1] == "pvpdeath", "phase 27: no name twice, pvpdeath still last");
+            check(LiveRun.FirstLoginWindowMs >= 40000, "phase 27: the first login window covers the Tale of Cinderhold introduction (30 s after the welcome)");
+        }
+
+        // The helpers of the first hour scenarios: a monster's name carries the level tag the server appends ("Rat [4]"), a wanted Rat takes a Cave Rat too (the first hunt and the tale
+        // of the cellars count both), and the teleport items of items.xml (type = teleport, an id range too) are found through the otb ids.
+        static void FirstHourHelpers(Action<bool, string> check)
+        {
+            check(LiveRun.BaseName("Rat [4]") == "Rat" && LiveRun.BaseName("Cave Rat [5]") == "Cave Rat" && LiveRun.BaseName("Dragon") == "Dragon" && LiveRun.BaseName("Name ]") == "Name ]", "monster names: the level tag is cut off, a name without one stays");
+            check(LiveRun.NameIs("Rat [4]", "Rat") && LiveRun.NameIs("Cave Rat [5]", "Rat") && LiveRun.NameIs("Cave Rat", "cave rat") && !LiveRun.NameIs("Cave Rat [5]", "Spider") && !LiveRun.NameIs("Rat [4]", "Cave Rat"), "monster names: a wanted Rat takes a Cave Rat, nothing else");
+            var o = new List<byte> { 0, 0, 0, 0 };
+            o.Add(0xFE); o.Add(0);
+            o.AddRange(new byte[] { 0, 0, 0, 0, 1, 4, 0, 1, 0, 0, 0 });
+            Node(o, 0, 0, 28013, 25358); Node(o, 0, 0, 28014, 25359); Node(o, 0, 0, 28015, 25360);   // a range of Mystic Teleport pieces
+            Node(o, 0, 0, 1387, 1949);                                                                  // a single teleport item
+            Node(o, 0, 0, 2120, 3003);                                                                  // a rope
+            o.Add(0xFF);
+            string xml = "<items>\n<item fromid=\"28013\" toid=\"28015\" name=\"Mystic Teleport\">\n<attribute key=\"type\" value=\"teleport\" />\n</item>\n" +
+                         "<item id=\"1387\" name=\"magic forcefield\">\n<attribute key=\"type\" value=\"teleport\" />\n</item>\n<item id=\"2120\" name=\"rope\">\n<attribute key=\"weight\" value=\"1800\" />\n</item>\n<item id=\"2121\" name=\"x\" />\n</items>";
+            var tele = OtbDat.TeleportItems(xml, o.ToArray());
+            check(tele.SetEquals(new[] { 25358, 25359, 25360, 1949 }), "teleport items: the id range and the single item of items.xml map to their client ids, the rope is not one (" + string.Join(",", tele.OrderBy(x => x)) + ")");
         }
 
         // A mortal who dies alone in a rift: the end message 'left' with the lives, the next login's start clears it, the last life ends it as failed; a fresh HUD (a new
