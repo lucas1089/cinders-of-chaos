@@ -1,0 +1,80 @@
+name: Launch rehearsal
+
+# tools/ci/launch_rehearsal.sh (O441): the real server of windows-assets with the committed configs of this commit runs under a
+# shifted clock (libfaketime, TZ America/Sao_Paulo) across each launch boundary: the Founder Pack window, the Season 1 start (once,
+# also after a restart), PvP Season 1, the creator launch bonus window, the Weekend Ritual, the 06:00 server save, the O439 start
+# line and launch_check.py. A headless client reads what a player gets. The base server comes from tools/ci/unity_live_check.sh
+# --serve-only (the same inputs as unity-live-check.yml); the run itself needs about 30 minutes of waiting on top of the install.
+# No secret is used: accounts and the guard key are made in the run. Only the report is uploaded: check names, dates, counts.
+# Manual only. It publishes nothing and releases nothing.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: launch-rehearsal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rehearsal:
+    name: Launch boundaries on a shifted clock
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the assets
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets
+          sparse-checkout: |
+            server
+            world
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Install the tools
+        run: |
+          # faketime: libfaketime, the shifted clock of tfs; mariadb-server: the private database of the run;
+          # numpy and luajit: install steps contentareas
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq faketime mariadb-server mariadb-client python3-numpy luajit
+          # the system service is not used; a profile for /usr/sbin/mariadbd would keep the private data folder out
+          sudo systemctl stop mariadb || true
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd 2>/dev/null || true
+
+      - name: Unit test of the rehearsal
+        run: python3 -I chaos/tools/ci/launch_rehearsal_test.py
+
+      - name: Rehearse the launch
+        env:
+          UL_ASSETS: ${{ github.workspace }}/assets
+          LR_WORK: ${{ runner.temp }}/lr
+          LR_OUT: ${{ runner.temp }}/lr-out
+        run: |
+          mkdir -p "$LR_WORK" "$LR_OUT"
+          rc=0
+          bash chaos/tools/ci/launch_rehearsal.sh || rc=$?
+          if [ -f "$LR_OUT/launch-rehearsal-report.txt" ]; then
+            { echo '### Launch rehearsal'; echo '```'; cat "$LR_OUT/launch-rehearsal-report.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$rc"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-rehearsal-report
+          # the report only: check names, dates, booleans and counts; never the work folder, a log, key.pem or config.lua
+          path: ${{ runner.temp }}/lr-out/launch-rehearsal-report.txt
+          if-no-files-found: warn
+          retention-days: 14

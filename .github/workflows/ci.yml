@@ -1382,6 +1382,12 @@ jobs:
       - name: Launch check (launch_check.py on a temporary server folder with fakes; every check's OK / WARN / FAIL rule, the Lua reader, report, JSON, exit code, no key printed; O440)
         run: python3 -I server/deploy/launch_check_test.py
 
+      - name: Launch rehearsal (O441; boundary table from the real configs, the decision of each check, report, probe parsing, script rules; no server, no faketime)
+        run: |
+          bash -n tools/ci/launch_rehearsal.sh
+          shellcheck tools/ci/launch_rehearsal.sh
+          python3 -I tools/ci/launch_rehearsal_test.py
+
       - name: Admin app server side (chaos-ctl.sh with stubs; remote.cmd commands)
         run: |
           shellcheck server/deploy/chaos-ctl.sh

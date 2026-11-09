@@ -390,6 +390,33 @@ Read the dry run, the owner decisions it lists and the checks at the end of `--e
 the wipe (by design: a root shell step on the VPS); stopping and updating the server around it are Painel > Servidor and
 Painel > Atualizar servidor.
 
+### Clock rehearsal (O441)
+
+`tools/ci/launch_rehearsal.sh` runs the real server with the committed configs under a shifted clock (libfaketime, `TZ=America/Sao_Paulo`)
+and crosses each launch boundary by waiting for it. A headless client reads what a player gets. Manual workflow: Actions > Launch
+rehearsal. About 30 minutes of waiting on top of the server install. Report: one line per check, dates and counts only.
+
+What it proves, on the real server:
+- The O439 start line shows the shifted local time and offset -180, no warning.
+- The Founder Pack is not in the store at 2026-11-20 14:58, is there at 15:01, and is gone at 2026-12-18 15:01.
+- Season 1 is upcoming before 15:00, active after, starts once (log line, broadcast, database row), and a restart after the start
+  starts nothing again and leaves the season characters and their progress alone.
+- PvP Season 1 is not started before the epoch, runs after it, and ends after the configured weeks.
+- The creator launch bonus: a donation credited one second before the window earns the base share, the first and the last second of
+  the window earn 15%, the first second after it the base share again. The share depends on the instant the donation was credited,
+  not on the clock of the server, so this proves the zone and the window edges.
+- The Weekend Ritual is off before Fri 18:00, on after (announced once), on before Sun 23:59, off after.
+- The server save notice fires once at 06:00, and the engine stops once, five minutes later.
+- `launch_check.py` reads the four dates as OK under the same clock.
+
+What it does not prove: the VPS itself (its real zone, `timedatectl`, the service manager, the real database clock), payments (no
+provider is called, no coins are bought), the real client (the probe is a headless protocol client, it sees no window), the
+live player load, and the 300 or 400 player cap. The clock runs at real speed, so a boundary costs real minutes. MariaDB stays on
+the real clock, and no rehearsed system compares a database `NOW()` with `os.time()`.
+
+Before launch, on the VPS: `timedatectl` says `America/Sao_Paulo`, then `chaos-ctl.sh launch-check`. Admin app: Saude e espaco >
+Ver fuso horario, and Comandos > Acoes rapidas > Conferir lancamento.
+
 ## 8. Client
 
 - Linux: `client/LINUX.md`. Windows: the manual workflow **Windows client** (`.github/workflows/windows-client.yml`,

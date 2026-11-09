@@ -29366,3 +29366,48 @@ key is only tested for presence: it is never printed, logged or hashed. No names
   output), Android `LaunchCheckInfoTest`.
 * **Not verified:** a run on the real VPS (the database counts, `pay-status` as root, the checkout), the Android card build (no SDK
   here).
+
+## Launch rehearsal (O441) (`tools/ci/launch_rehearsal.sh`, `launch_rehearsal_core.py`, `launch_rehearsal_probe.py`, workflow `launch-rehearsal.yml`)
+
+The unit tests of the launch systems pin the clock on a mocked engine. This runs the real `tfs` with the committed configs under a
+shifted clock and crosses each launch boundary by waiting for it. Nothing in `server/` or a config is changed.
+
+**Clock.** libfaketime, `apt-get install -y faketime`. `tfs` starts with `LD_PRELOAD=libfaketime.so.1`, `FAKETIME="@2026-11-20 14:58:00"`
+and `TZ=America/Sao_Paulo`, two minutes before the boundary. The rate is 1: the clock ticks at real speed from the fake start, so every
+engine timer keeps its meaning, and the runs wait about two real minutes per boundary. `FAKETIME_DONT_FAKE_MONOTONIC=1` keeps the
+monotonic clock real. The binary needs no change: it is dynamic, and `os.time`, the scheduler and the `time` globalevent all follow
+the preload. MariaDB stays on the real clock. The rehearsed systems store `os.time()` values and compare nothing with a database
+`NOW()`; the one thing to know is that the database keeps the last logout of the probe character, so the runs go in time order and
+the character is reset before each one.
+
+**Runs, from the configs** (`launch_rehearsal_core.py plan`, dates read with the readers of `deploy/launch_check.py`): the launch
+minute, a restart four minutes later, Fri 18:00 (weekend on), Sun 23:59 (weekend off), the 06:00 save of the next day (the save time
+is set the way the VPS setup does it, `prod_config.py --save-time`), and Fri 2026-12-18 15:00 (Founder closes).
+
+| Check | Observed through | Rule |
+|---|---|---|
+| `start_line` | the `>> Timezone:` line, parsed to a time and an offset | the shifted local time, offset -180, no warning line |
+| `founder` | store opcode 218, the category list | no Founder category before 2026-11-20 15:00, one after, none after 2026-12-18 15:00 |
+| `season` | season opcode 246 `state`, the broadcast, the log, the database | `upcoming` then `active`, countdowns within 90 s of the fake clock, one start line, one broadcast |
+| `season_once` | a restart after the start, a sentinel season character with progress in the database | no second start, no end or migrate row, sentinel and progress unchanged, member count matches |
+| `pvp` | battleground opcode 200 `state`, `season.endsIn` | more than the 8 weeks before the epoch, less after, season 1, countdown within 90 s |
+| `creator` | four credited donations of 1000 coins seeded at the edges of the window, read after the start round | 100, 150, 150, 100 coins: base, launch pct, launch pct, base |
+| `weekend` | `/weekend status` of a staff probe character, the broadcast, the server log, the login line | off, on and announced once by the server, on, off |
+| `save` | the broadcasts, the process | the first notice once at 06:00, five notices in all, the process ends about 300 s later |
+| `launch_check` | `deploy/launch_check.py --json` under the same clock | the four date checks and `timezone` are OK |
+
+The probe is `launch_rehearsal_probe.py`, the bot client of `tools/loadtest.py`: it logs in once per run, stays in the game across
+the boundary and asks at two moments. It writes booleans, counts and state words only. A staff group (4) is set on the probe
+character in the rehearsal database for `/weekend status`, and put back. The creator seeds and the sentinel rows are deleted again.
+
+**The share of a creator is decided by the instant the donation was credited**, not by the clock of the server: the check proves the
+zone and the window edges, not a live crossing. The client sees the weekend announcement twice, the broadcast and the toast.
+
+**Where the server comes from.** CI: `UL_ASSETS` and `LR_WORK`, the base server of `tools/ci/unity_live_check.sh --serve-only` and its
+`--stop` at the end; the workflow is manual. Local: `LR_SERVER` (an installed folder), `LR_DB_SOCK`, `LR_CRED_FILE` (an env file with the
+probe account, local test data), and `LR_DB_DUMP` to dump the database before and restore it after. `LR_ONLY=launch,again` runs a subset.
+`zz_*` test files of the server folder and the `Server Save` time are moved aside and put back. Exit 1 on any FAIL.
+
+* **Tests:** `tools/ci/launch_rehearsal_test.py`, in `ci.yml` next to the launch check: the boundary table, every decision with passing
+  and failing inputs, the report, the probe parsing, and rules of the script (strict mode, guarded `rm`, no log lines).
+* **Not verified:** the VPS (its zone and its service manager), payments, the real client, a rate above 1.
