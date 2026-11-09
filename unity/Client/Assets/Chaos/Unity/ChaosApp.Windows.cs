@@ -255,7 +255,7 @@ namespace Chaos.Client
             }
         }
 
-        void ResetWindows() { foreach (var win in windows) win.Reset(); }
+        void ResetWindows() { foreach (var win in windows) win.Reset(); ResetSessionState(); }   // ChaosApp.Phase29.cs
 
         /// <summary>Draws an item sprite (first frame, first pattern) into r, with its count when above 1.</summary>
         public void DrawItem(Rect r, ushort id, int count)
@@ -279,14 +279,22 @@ namespace Chaos.Client
                         // the atlas UVs are bottom-up like the map mesh: DrawTextureWithTexCoords takes them as they are
                         GUI.DrawTextureWithTexCoords(cr, atlas.Texture, uv);
                     }
-            if (count > 1)
-            {
-                var st = new GUIStyle(small) { alignment = TextAnchor.LowerRight, fontSize = 12, fontStyle = FontStyle.Bold };
-                st.normal.textColor = Color.black;
-                GUI.Label(new Rect(r.x + 1, r.y + 1, r.width, r.height), count.ToString(), st);
-                st.normal.textColor = Color.white;
-                GUI.Label(r, count.ToString(), st);
-            }
+            if (count > 1) DrawStackCount(r, StackCountLook.Text(count), StackCountLook.Rgb);
+        }
+
+        GUIStyle stackCountStyle;
+
+        /// <summary>A stack count over a slot: the main client's cream (#f2e8d5), 12 px bold (the slot's other text is 11), a dark outline on four sides and a shadow
+        /// (Core/Phase29.cs StackCountLook). Used by the inventory, the containers, the trade lists and the hotbar.</summary>
+        public void DrawStackCount(Rect r, string text, uint rgb)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            if (stackCountStyle == null) stackCountStyle = new GUIStyle(small) { alignment = TextAnchor.LowerRight, fontSize = StackCountLook.FontSize, fontStyle = FontStyle.Bold, clipping = TextClipping.Overflow };
+            var dark = new Color(0f, 0f, 0f, StackCountLook.OutlineAlpha);
+            stackCountStyle.normal.textColor = dark;
+            foreach (var o in StackCountLook.Outline) GUI.Label(new Rect(r.x + o[0], r.y + o[1], r.width, r.height), text, stackCountStyle);
+            stackCountStyle.normal.textColor = new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1f);
+            GUI.Label(r, text, stackCountStyle);
         }
     }
 }

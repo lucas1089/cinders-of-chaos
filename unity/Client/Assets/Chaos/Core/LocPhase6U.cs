@@ -13,7 +13,7 @@ namespace Chaos.Core
             { "Use on target", "Usar no alvo" },
             { "That item is not in your equipment or an open bag.", "Esse item não está no equipamento nem em uma bolsa aberta." },
             { "Attack a monster first.", "Ataque um monstro primeiro." },
-            { "Added to hotbar slot F{0}.", "Adicionado ao espaço F{0} da barra." },
+            { "Added to hotbar slot {0}.", "Adicionado ao espaço {0} da barra." },
             { "The hotbar is full.", "A barra está cheia." },
             { "Drop an item on a slot to keep it there.", "Solte um item em um espaço para guardá-lo ali." },
             { "Health and mana globes", "Globos de vida e mana" },

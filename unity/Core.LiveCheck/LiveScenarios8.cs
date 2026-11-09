@@ -49,6 +49,30 @@ namespace Chaos.Core.LiveCheck
                 r.Note("0xF1 answered for quest " + id + (log.Count > 0 ? " '" + log.First(q => q.Id == id).Name + "'" : " (the first quest of the base server; the log was empty)") + ": " + lines.Count + " mission line(s)" + (lines.Count > 0 ? " [" + string.Join(" | ", lines.Take(3).Select(m => m.Name + ": " + (m.Description.Length > 60 ? m.Description.Substring(0, 60) + "..." : m.Description))) + "]" : ""));
                 foreach (var m in lines) if (m.Name.Length == 0) problems.Append("a mission line of quest " + id + " has no name; ");
             }
+            // a completed quest (phase 29): the log's flag is read, and the line of it names its done missions "... (completed)" (base Mission::getName). A new character has none: its
+            // quests need NPC chains far from the temple, so a completed one is seen only on a character whose storage rows were set in the local db (not play), and only noted here
+            var done = log.Where(q => q.Completed).ToList();
+            if (done.Count > 0)
+            {
+                ushort did = done[0].Id;
+                int l1 = Seen(0xF1);
+                p.Quests.Select(did);
+                bool gotDone = WaitFor(4000, () => Seen(0xF1) > l1);
+                Pump(300, () => false);
+                var dl = p.Quests.Missions(did);
+                if (!gotDone || dl == null) problems.Append("no line for the completed quest " + did + "; ");
+                else
+                {
+                    int marked = dl.Count(m => m.Name.EndsWith("(completed)", StringComparison.Ordinal));
+                    r.Note("completed quest " + did + " '" + done[0].Name + "': " + dl.Count + " mission line(s), " + marked + " marked (completed) [" + string.Join(" | ", dl.Take(3).Select(m => m.Name)) + "], hide completed leaves " + (p.Quests.Quests.Count - done.Count) + " of " + p.Quests.Quests.Count + ", summary '" + p.Quests.Summary() + "'");
+                    if (dl.Count == 0) problems.Append("the completed quest " + did + " lists no mission; ");
+                    else if (marked == 0) problems.Append("the completed quest " + did + " has no mission marked (completed); ");
+                    p.Quests.HideCompleted = true;
+                    if (p.Quests.Visible().Count != p.Quests.Quests.Count - done.Count) problems.Append("hide completed leaves " + p.Quests.Visible().Count + " rows; ");
+                    p.Quests.HideCompleted = false;
+                }
+            }
+            else r.Note("no completed quest in the log: a new character has none (the base quests need NPC chains far from the temple; a completed one is checked on a character with its storage rows set in the local db)");
             // the same request again: the same log (the server's state did not change)
             int n1 = Seen(0xF0);
             p.Quests.Request();

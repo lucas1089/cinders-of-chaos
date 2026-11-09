@@ -23,7 +23,7 @@ namespace Chaos.Client
         static readonly string[] Names = { "", "Head", "Neck", "Bag", "Armor", "Right", "Left", "Legs", "Feet", "Ring", "", "", "", "Badge" };
         const float SlotSize = 38, Gap = 6, TabH = 22;
         /// <summary>The height of the window: containers are placed under it (ContainersWindow).</summary>
-        public const float Height = 348;
+        public const float Height = 376;
 
         GUIStyle tabStyle, tinyStyle;
 
@@ -67,7 +67,30 @@ namespace Chaos.Client
             GUI.Label(new Rect(inner.x + 6, y + 48, inner.width - 12, 18), Loc.T("{0} gold, {1} platinum, {2} crystal", counts[0], counts[1], counts[2]), tinyStyle);
             double coins = s.Store != null ? s.Store.Coins : -1;
             if (coins >= 0) GUI.Label(new Rect(inner.x + 6, y + 64, inner.width - 12, 18), Loc.T("Chaos Coins: {0}", Plate.Short(coins)), tinyStyle);
+            PurseRow(app, new Rect(inner.x + 6, y + 86, inner.width - 12, 22));
             ItemSlots.Ghost(app, new Rect(0, 0, Area.width, Area.height));
+        }
+
+        /// <summary>The Purse button under the equipment (game_bagpanel, 2026-11-09): what is bought in the store is delivered to the purse (inventory slot 11), so the player
+        /// needs a way to open it. The request is the main client's: use the item of that slot (Core/Phase29.cs PurseButton, GameSession.UsePurse). With no purse the chat says so.</summary>
+        void PurseRow(ChaosApp app, Rect r)
+        {
+            var s = app.Session;
+            bool has = PurseButton.Has(s.Parser.Inventory);
+            var old = GUI.color;
+            if (!has) GUI.color = new Color(1f, 1f, 1f, 0.6f);
+            if (GUI.Button(r, new GUIContent(Loc.T("Purse"), PurseButton.Tooltip), tabStyle))
+            {
+                if (!s.UsePurse(ItemSlots.FreeContainerId(app))) app.PostLine(PurseButton.NoPurse);
+            }
+            GUI.color = old;
+            if (r.Contains(Event.current.mousePosition) && Event.current.type == EventType.Repaint)
+            {
+                var tip = new GUIStyle(app.SmallStyle) { fontSize = 11, wordWrap = true };
+                var tr = new Rect(r.x - 6, r.y - 44, r.width + 12, 40);
+                ChaosApp.Fill(tr, new Color(0.03f, 0.02f, 0.04f, 0.95f));
+                GUI.Label(new Rect(tr.x + 4, tr.y + 2, tr.width - 8, tr.height - 4), PurseButton.Tooltip, tip);
+            }
         }
 
         /// <summary>Gold, platinum and crystal coins in the open containers, as (client id, count) pairs.</summary>

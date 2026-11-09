@@ -397,7 +397,7 @@ run_group_once() {
                 # the first spell unlock by name (level 9) and its first kill with the first attack spell, the loot bag read and taken: no staff right, no local script.
                 # The stairs and the cave are the base map of windows-assets.
       new_newbie "$id"
-      live_run "$label" "$id" newplayer,questlog,firstunlock,firstkill ;;
+      live_run "$label" "$id" newplayer,questlog,purse,firstunlock,firstkill ;;
     shop)    # selling to an NPC that buys (the post office NPC does not)
       new_chars 0 0 "$SELL_AT" "$(beside "$SELL_AT")"
       live_run "$label" "$id" sell --npc "$SELL_NPC" --npc-at "$SELL_AT" ;;

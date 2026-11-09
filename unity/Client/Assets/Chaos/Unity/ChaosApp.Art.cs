@@ -119,7 +119,7 @@ namespace Chaos.Client
             if (r.Item == null) return;
             var bar = FindWindow<HotkeyBarWindow>();
             int slot = bar != null ? bar.AddItem(r.Id, ItemIsMultiUse(r.Id)) : -1;
-            PostLine(slot >= 0 ? Loc.T("Added to hotbar slot F{0}.", slot + 1) : Loc.T("The hotbar is full."));
+            PostLine(slot >= 0 ? Loc.T("Added to hotbar slot {0}.", HotbarLayout.KeyLabel(slot)) : Loc.T("The hotbar is full."));
         }
 
 

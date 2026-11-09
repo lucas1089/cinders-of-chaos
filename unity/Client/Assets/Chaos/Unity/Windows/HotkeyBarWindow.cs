@@ -21,7 +21,7 @@ namespace Chaos.Client
         int editing = -1;
         string editText = "";
         bool focusEdit;
-        GUIStyle keyStyle, textStyle, hintStyle, cooldownStyle, countStyle, markStyle;
+        GUIStyle keyStyle, textStyle, hintStyle, cooldownStyle, markStyle;
         SessionHotbarHost host;
         GameSession hostFor;
 
@@ -229,13 +229,8 @@ namespace Chaos.Client
             float icon = Mathf.Min(32f * m.Scale / 100f, r.width - 2f);
             app.DrawItem(new Rect(r.x + 1, r.y + r.height - icon - 1f, icon, icon), (ushort)s.ItemId, 0);
             GUI.color = old;
-            if (have != 1)
-            {
-                countStyle.normal.textColor = Color.black;
-                GUI.Label(new Rect(r.x + 1, r.y + 1, r.width - 1, r.height - 1), have.ToString(), countStyle);
-                countStyle.normal.textColor = have <= 0 ? new Color(1f, 0.45f, 0.4f) : Color.white;
-                GUI.Label(new Rect(r.x, r.y, r.width - 1, r.height - 1), have.ToString(), countStyle);
-            }
+            // the same readable count as the inventory (Core/Phase29.cs StackCountLook): cream, outlined; red when none is carried
+            if (StackCountLook.HotbarShows(have)) app.DrawStackCount(new Rect(r.x, r.y, r.width - 1, r.height - 1), have.ToString(), StackCountLook.HotbarRgb(have));
             string mark = HotbarModel.ModeMark(s.Mode);
             if (mark.Length > 0) GUI.Label(new Rect(r.xMax - 12, r.y, 12, 14), mark, markStyle);
         }
@@ -357,7 +352,6 @@ namespace Chaos.Client
                 keyStyle.normal.textColor = new Color(1f, 0.85f, 0.4f);
                 textStyle = new GUIStyle(app.SmallStyle) { fontSize = 11, alignment = TextAnchor.LowerLeft, clipping = TextClipping.Clip };
                 cooldownStyle = new GUIStyle(app.SmallStyle) { fontSize = 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-                countStyle = new GUIStyle(app.SmallStyle) { fontSize = 12, fontStyle = FontStyle.Bold, alignment = TextAnchor.LowerRight };
                 markStyle = new GUIStyle(app.SmallStyle) { fontSize = 11, fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperRight };
                 markStyle.normal.textColor = new Color(0.55f, 0.9f, 1f);
                 hintStyle = new GUIStyle(app.SmallStyle) { fontSize = 12 };
