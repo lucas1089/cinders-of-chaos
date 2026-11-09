@@ -296,13 +296,13 @@ namespace Chaos.Core.Tests
             Loc.Set("pt-BR");
             var texts = new List<string>
             {
-                "Add to hotbar", "Remove from hotbar", "That item is not in your equipment or an open bag.", "Attack a monster first.", "Added to hotbar slot F{0}.",
+                "Add to hotbar", "Remove from hotbar", "That item is not in your equipment or an open bag.", "Attack a monster first.", "Added to hotbar slot {0}.",
                 "The hotbar is full.", "Drop an item on a slot to keep it there.", "Health and mana globes",
             };
             texts.AddRange(HotbarModel.Modes.Select(HotbarModel.ModeLabel));
             var missing = texts.Where(t => Loc.T(t) == t).ToList();
             check(missing.Count == 0, "texts: every hotbar text has pt-BR (" + string.Join(" | ", missing) + ")");
-            check(Loc.T("Added to hotbar slot F{0}.", 3) == "Adicionado ao espaço F3 da barra.", "texts: placeholders keep their index");
+            check(Loc.T("Added to hotbar slot {0}.", 3) == "Adicionado ao espaço 3 da barra.", "texts: placeholders keep their index");
             check(LocPhase6U.PtBr.All(kv => Regex.Matches(kv.Key, "\\{\\d+\\}").Count == Regex.Matches(kv.Value, "\\{\\d+\\}").Count), "texts: pt-BR keeps the placeholders of the English text");
             Loc.Set("en");
         }
