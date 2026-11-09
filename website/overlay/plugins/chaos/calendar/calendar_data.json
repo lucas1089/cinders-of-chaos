@@ -44,7 +44,7 @@
    "start": "2026-11-07T15:00:00-03:00",
    "hasTime": true,
    "end": "2026-11-08T23:00:00-03:00",
-   "patchnoteReady": false
+   "patchnoteReady": true
   },
   {
    "id": "wipe",
@@ -210,8 +210,8 @@
    "en": "Wednesday"
   },
   "firstRegular": "2026-11-25",
-  "count": 6,
-  "latest": "2026-10-31",
+  "count": 8,
+  "latest": "2026-11-11",
   "title": {
    "pt-BR": "Notas de patch",
    "en": "Patch notes"
