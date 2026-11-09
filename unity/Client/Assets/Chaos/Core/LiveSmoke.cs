@@ -57,39 +57,50 @@ namespace Chaos.Core
         }
     }
 
-    /// <summary>One leg of the walk: keys held (WalkInput mask) until some steps were confirmed.</summary>
+    /// <summary>One leg of the walk: keys held (WalkInput mask) until `Steps` steps were sent (not confirmed: see LiveWalker).</summary>
     public sealed class LiveWalkLeg
     {
         public string Name = "";
         public int Mask, Steps;
-        /// <summary>A way back: its steps are what the leg before it really confirmed (a held key overshoots by the steps in flight), so the hero ends where it began;
-        /// nothing confirmed before it, nothing to walk back.</summary>
+        /// <summary>A way back: its steps are where the hero stands after the leg before it (by position when the walker has one, else the steps that leg confirmed), so the
+        /// hero ends where it began; nothing to undo, nothing to walk back.</summary>
         public bool Mirror;
     }
 
-    /// <summary>What a leg did.</summary>
+    /// <summary>What a leg did. Sent = steps the client sent in the leg, Confirmed = moves of the player the server sent, Cancelled = steps the server refused.</summary>
     public sealed class LiveWalkResult
     {
         public string Name = "";
-        public int Wanted, Confirmed, Cancelled;
+        public int Wanted, Sent, Confirmed, Cancelled;
         public bool TimedOut;
+        /// <summary>Steps sent but neither confirmed nor refused when the leg was closed (a time out).</summary>
+        public int Lost => Math.Max(0, Sent - Confirmed - Cancelled);
     }
 
-    /// <summary>The walk of the live run: the keys of a leg are held until the leg's steps are confirmed by the server (the player's moves counter), two steps are refused
-    /// (a wall) or the time is up; then a short pause, then the next leg. Mask() is asked every frame with the clock and the two counters of the session and gives the key mask for
-    /// that frame (the player's own path: ChaosApp.WalkMaskSource, WalkInputState, GameSession.Walk). No Unity, no session: the counters come in as numbers.</summary>
+    /// <summary>The walk of the live run. The key of a leg is held until the leg's steps are SENT (the session's WalksSent counter), then let go, then the leg waits until every
+    /// step it sent is answered (confirmed by the player's moves counter or refused by a cancel), or the time is up; then a short pause, then the next leg. Releasing by the
+    /// confirmed count was the bug of run 2 (2026-11-09): the client sends the next step up to WalkTiming.PreWalkLeadMs before the glide of the last ends and keeps up to
+    /// WalkTiming.MaxPending steps out, so with a key held until the server confirmed N steps, N+1 or N+2 were already sent, the extra tile was never checked and the way back
+    /// had more to undo. A held key sends one step per frame at most and Mask() is asked every frame before the key path, so the count of sent steps is exact: the hero
+    /// never goes past the planned tile. A refused step ends the hold at once (a wall or a creature). Mask() is asked every frame with the clock and the counters of the session
+    /// and gives the key mask for that frame (the player's own path: ChaosApp.WalkMaskSource, WalkInputState, GameSession.Walk). No Unity, no session: the counters come in as numbers.</summary>
     public sealed class LiveWalker
     {
         public const double LegTimeoutMs = 3500, GapMs = 450;
         public const int MaxCancels = 2;
+        /// <summary>Tiles past a leg's planned end that LegsAround wants walkable too.</summary>
+        public const int PlanMargin = 1;
 
         readonly IList<LiveWalkLeg> legs;
+        readonly Func<Pos> where;
         readonly List<LiveWalkResult> results = new List<LiveWalkResult>();
-        int leg = -1, moves0, cancels0;
+        int leg = -1, moves0, cancels0, sent0;
+        Pos legFrom;
         double legStart, gapUntil = -1;
-        bool inGap;
+        bool inGap, released;
 
-        public LiveWalker(IList<LiveWalkLeg> legs) { this.legs = legs; }
+        /// <summary>`where` gives the player's position (for the way back by position); null: the way back is what the leg before confirmed.</summary>
+        public LiveWalker(IList<LiveWalkLeg> legs, Func<Pos> where = null) { this.legs = legs; this.where = where; }
 
         public IList<LiveWalkResult> Results => results;
         public bool Done { get; private set; }
@@ -104,44 +115,48 @@ namespace Chaos.Core
         static string NameOf(Dir d) => d == Dir.North ? "north" : d == Dir.South ? "south" : d == Dir.East ? "east" : "west";
 
         /// <summary>The legs for a start tile: for north, south, east and west in this order, the tiles the client itself calls walkable (the check of the prediction, WalkMap.Walkable)
-        /// up to `steps` of them, as one leg out and one leg back. A direction with no walkable tile has no leg, so a step the server refuses later is a real finding (the client
-        /// thought the tile free), not a wall of the start place: the first run on a server (2026-11-09) walked blind and lost the north leg of Extended and the east and the second
-        /// north leg of Chaos to walls round the temple stair. The legs come in pairs, so the hero ends where it began. None free: no leg.</summary>
-        public static List<LiveWalkLeg> LegsAround(Pos start, Func<Pos, bool> walkable, int steps = 2)
+        /// up to `steps` of them, as one leg out and one leg back. Every tile a leg can reach is checked: the planned ones and `margin` more past the end (a step sent too many still
+        /// lands on a checked tile). The way back needs none: its steps are the distance to the start, it stops there. A leg is cut so that its planned length plus the margin is walkable (a corridor of two free tiles
+        /// gives a leg of one step); a direction with no such run has no leg, so a step the server refuses later is a real finding (the client thought the tile free), not a wall of
+        /// the start place. The legs come in pairs, so the hero ends where it began. None free: no leg.</summary>
+        public static List<LiveWalkLeg> LegsAround(Pos start, Func<Pos, bool> walkable, int steps = 2, int margin = PlanMargin)
         {
             var legs = new List<LiveWalkLeg>();
             foreach (var d in Four)
             {
                 var p = start;
-                int k = 0;
-                while (k < steps)
+                int run = 0;
+                while (run < steps + margin)
                 {
                     var q = WalkDirs.Step(p, d);
                     if (!walkable(q)) break;
-                    p = q; k++;
+                    p = q; run++;
                 }
-                if (k == 0) continue;
+                int k = Math.Min(steps, run - margin);
+                if (k <= 0) continue;
                 legs.Add(new LiveWalkLeg { Name = NameOf(d), Mask = MaskOf(d), Steps = k });
                 legs.Add(new LiveWalkLeg { Name = "back " + NameOf(Opposite(d)), Mask = MaskOf(Opposite(d)), Steps = k, Mirror = true });
             }
             return legs;
         }
 
-        public int Mask(double nowMs, int moves, int cancels)
+        /// <summary>`sent` is the session's WalksSent counter; `moves` the player's moves the server confirmed; `cancels` the refused steps.</summary>
+        public int Mask(double nowMs, int moves, int cancels, int sent)
         {
             if (Done) return 0;
             if (legs.Count == 0) { Done = true; return 0; }
-            if (leg < 0) { StartLeg(0, nowMs, moves, cancels); }
+            if (leg < 0) { StartLeg(0, nowMs, moves, cancels, sent); }
             if (inGap)
             {
                 if (nowMs < gapUntil) return 0;
-                // late confirmations of the leg that just ended count for it
+                // late answers of the leg that just ended count for it
                 var last = results[results.Count - 1];
                 last.Confirmed = Math.Max(last.Confirmed, moves - moves0);
                 last.Cancelled = Math.Max(last.Cancelled, cancels - cancels0);
+                last.Sent = Math.Max(last.Sent, sent - sent0);
                 inGap = false;
                 if (leg + 1 >= legs.Count) { Done = true; return 0; }
-                StartLeg(leg + 1, nowMs, moves, cancels);
+                StartLeg(leg + 1, nowMs, moves, cancels, sent);
             }
             var l = legs[leg];
             if (l.Steps <= 0)
@@ -152,22 +167,33 @@ namespace Chaos.Core
                 gapUntil = nowMs;
                 return 0;
             }
-            int got = moves - moves0, refused = cancels - cancels0;
+            int got = moves - moves0, refused = cancels - cancels0, out_ = sent - sent0;
             bool timedOut = nowMs - legStart >= LegTimeoutMs;
-            if (got >= l.Steps || refused >= MaxCancels || timedOut)
+            // the key goes up when the planned steps are out, or one is refused, or the time is up
+            if (!released && (out_ >= l.Steps || refused > 0 || timedOut)) released = true;
+            bool answered = (out_ >= l.Steps || refused > 0) && got + refused >= out_;
+            if (released && (answered || refused >= MaxCancels || timedOut))
             {
-                results.Add(new LiveWalkResult { Name = l.Name, Wanted = l.Steps, Confirmed = got, Cancelled = refused, TimedOut = timedOut && got < l.Steps && refused < MaxCancels });
+                results.Add(new LiveWalkResult { Name = l.Name, Wanted = l.Steps, Sent = out_, Confirmed = got, Cancelled = refused, TimedOut = timedOut && !answered });
                 inGap = true;
                 gapUntil = nowMs + GapMs;
                 return 0;
             }
-            return l.Mask;
+            return released ? 0 : l.Mask;
         }
 
-        void StartLeg(int index, double nowMs, int moves, int cancels)
+        void StartLeg(int index, double nowMs, int moves, int cancels, int sent)
         {
-            leg = index; legStart = nowMs; moves0 = moves; cancels0 = cancels; inGap = false;
-            if (legs[index].Mirror && results.Count > 0) legs[index].Steps = results[results.Count - 1].Confirmed;
+            leg = index; legStart = nowMs; moves0 = moves; cancels0 = cancels; sent0 = sent; inGap = false; released = false;
+            var l = legs[index];
+            if (l.Mirror && results.Count > 0)
+            {
+                var prev = results[results.Count - 1];
+                // back by position: the steps from where the hero stands to where the leg before it began
+                if (where != null) l.Steps = Math.Max(Math.Abs(where().X - legFrom.X), Math.Abs(where().Y - legFrom.Y));
+                else l.Steps = prev.Confirmed;
+            }
+            if (where != null) legFrom = where();
         }
     }
 
@@ -344,6 +370,7 @@ namespace Chaos.Core
                 if (StepsPlanned == 0) f.Add("walk not tried: no tile round the start is walkable for the client");
                 else f.Add("walk failed: " + StepsConfirmed + " of " + StepsPlanned + " planned steps confirmed, at least " + Math.Min(MinSteps, StepsPlanned) + " and half needed");
             }
+            foreach (var l in Legs) if (l.Sent > l.Wanted) f.Add("walk plan bug: leg " + l.Name + " sent " + l.Sent + " steps for " + l.Wanted + " planned, the extra tile was never checked");
             if (Closed.Length > 0) f.Add("the session closed: " + Closed);
             if (Exceptions > 0) f.Add(Exceptions + " exceptions logged");
             return f;
@@ -373,10 +400,18 @@ namespace Chaos.Core
         {
             var n = new List<string>();
             foreach (var x in Windows) if (StatusOf(x) == LiveWindowStatus.NeedsCondition) n.Add(x.Class + ": needs condition: " + Conditions[x.Class]);
+            if (StepsCancelled > 0) n.Add("known issue: a held key keeps up to " + WalkTiming.MaxPending + " steps out and a refusal (0xB5) drops every predicted step (Core/SmoothWalk.cs, Core/Game.cs); the legs here stop at the planned steps, so a refusal on a checked tile is the server's or a creature's");
             return n;
         }
 
         public bool Pass => Failures().Count == 0;
+
+        /// <summary>Planned, sent, confirmed and refused of the walk on one line; sent = confirmed + refused + unanswered, planned >= sent when the plan holds.</summary>
+        public string WalkAccounts()
+        {
+            int unanswered = Math.Max(0, StepsSent - StepsConfirmed - StepsCancelled);
+            return "walk: " + StepsPlanned + " planned, " + StepsSent + " sent, " + StepsConfirmed + " confirmed, " + StepsCancelled + " refused, " + unanswered + " unanswered";
+        }
 
         public string SummaryLine() =>
             "chaos live smoke: identity " + Identity + ", login " + (LoginOk ? "ok" : "FAILED") + ", entered " + (EnterOk ? "ok" : "FAILED") + ", walk " + StepsConfirmed + " of " + StepsSent
@@ -444,7 +479,7 @@ namespace Chaos.Core
             for (int i = 0; i < Legs.Count; i++)
             {
                 var l = Legs[i];
-                b.Append(i == 0 ? "" : ",").Append("{\"name\":").Append(Q(l.Name, null)).Append(",\"wanted\":").Append(l.Wanted.ToString(inv)).Append(",\"confirmed\":").Append(l.Confirmed.ToString(inv))
+                b.Append(i == 0 ? "" : ",").Append("{\"name\":").Append(Q(l.Name, null)).Append(",\"wanted\":").Append(l.Wanted.ToString(inv)).Append(",\"sent\":").Append(l.Sent.ToString(inv)).Append(",\"confirmed\":").Append(l.Confirmed.ToString(inv))
                  .Append(",\"cancelled\":").Append(l.Cancelled.ToString(inv)).Append(",\"timedOut\":").Append(Bool(l.TimedOut)).Append('}');
             }
             b.Append("]}");

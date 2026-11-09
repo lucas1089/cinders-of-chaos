@@ -258,8 +258,11 @@ namespace Chaos.Client
                 walkFrom = app.world.Player.Position;
                 // the legs go where the client itself says the tile is walkable (the check of the walk prediction), out and back: a refused step is then a finding, not the start place's wall
                 var world = app.world;
-                var legs = LiveWalker.LegsAround(walkFrom, p => WalkMap.Walkable(world, p, world.PlayerId));
-                walker = new LiveWalker(legs);
+                Func<Pos, bool> free = p => WalkMap.Walkable(world, p, world.PlayerId);
+                // every tile a leg can reach, the margin tile past its end included, is one the client calls walkable
+                var legs = LiveWalker.LegsAround(walkFrom, free);
+                if (legs.Count == 0) { legs = LiveWalker.LegsAround(walkFrom, free, 2, 0); Debug.Log("chaos live smoke: no leg has a free margin tile, planned without it"); }
+                walker = new LiveWalker(legs, () => app.world.Player.Position);
                 rep.StepsPlanned = 0;
                 foreach (var l in legs) rep.StepsPlanned += l.Steps;
                 moves0 = s.Parser.PlayerMoves; sent0 = s.WalksSent; cancels0 = cancels;
@@ -272,7 +275,7 @@ namespace Chaos.Client
             void StepWalk()
             {
                 var s = app.session;
-                walkMask = walker.Mask(NowMs, s.Parser.PlayerMoves, cancels);
+                walkMask = walker.Mask(NowMs, s.Parser.PlayerMoves, cancels, s.WalksSent);
                 if (!walker.Done) return;
                 walkMask = 0;
                 SetPhase(Phase.WalkEnd);
@@ -290,8 +293,8 @@ namespace Chaos.Client
                 var now = app.world.Player.Position;
                 rep.NetDx = now.X - walkFrom.X; rep.NetDy = now.Y - walkFrom.Y;
                 rep.TilesDrawnAfterWalk = LiveSmokePlan.TilesDrawn(app.world, (int)ViewTilesW, (int)ViewTilesH);
-                foreach (var l in walker.Results) Debug.Log("chaos live smoke: leg " + l.Name + ": " + l.Confirmed + " of " + l.Wanted + " steps confirmed, " + l.Cancelled + " refused" + (l.TimedOut ? ", timed out" : ""));
-                Debug.Log("chaos live smoke: walk: " + rep.StepsSent + " steps sent, " + rep.StepsConfirmed + " confirmed, " + rep.StepsCancelled + " refused, net " + rep.NetDx + "," + rep.NetDy);
+                foreach (var l in walker.Results) Debug.Log("chaos live smoke: leg " + l.Name + ": " + l.Sent + " sent of " + l.Wanted + " planned, " + l.Confirmed + " confirmed, " + l.Cancelled + " refused" + (l.TimedOut ? ", timed out" : ""));
+                Debug.Log("chaos live smoke: " + rep.WalkAccounts() + ", net " + rep.NetDx + "," + rep.NetDy);
                 RequestShot("live_smoke_walked.png", BeginWindows);
             }
 

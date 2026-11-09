@@ -71,29 +71,56 @@ namespace Chaos.Core.Tests
             check(LiveSmokePlan.StepReady(3000, 0, false) && LiveSmokePlan.StepReady(3200, 10, true), "live smoke plan: the maximum ends any step");
         }
 
-        /// <summary>A simulated server: a key held confirms a step every 160 ms (not faster than one in flight); the walls refuse.</summary>
-        static void Simulate(LiveWalker w, Func<int, bool> blocked, bool silent, out int moves, out int cancels, out List<int> masks, out double ms)
+        /// <summary>A simulated client and server: a held key sends a step as soon as fewer than two are out and the last glide is about to end (the client's pipelining, WalkTiming
+        /// MaxPending and PreWalkLeadMs); the server answers each 160 ms after the one before; a step onto a blocked tile is refused and drops every step still out. Mask() is asked
+        /// before the key path of every frame, as ChaosApp.LiveSmoke does. `Touched` is every tile a step was sent to.</summary>
+        sealed class Sim
         {
-            moves = 0; cancels = 0; masks = new List<int>();
-            double now = 1000, nextStep = 0;
-            int guard = 0;
-            while (!w.Done && guard++ < 100000)
+            public Pos Pos = Start;
+            public int Sent, Moves, Cancels;
+            public readonly List<Pos> Touched = new List<Pos>();
+            public readonly List<int> Masks = new List<int>();
+            public double Ms;
+            readonly List<(Pos to, double at)> pending = new List<(Pos, double)>();
+
+            public void Run(LiveWalker w, Func<Pos, bool> blocked, bool silent)
             {
-                int m = w.Mask(now, moves, cancels);
-                if (masks.Count == 0 || masks[masks.Count - 1] != m) masks.Add(m);
-                if (m != 0 && !silent && now >= nextStep)
+                double now = 1000, lastEnd = 0;
+                int guard = 0;
+                while (!w.Done && guard++ < 100000)
                 {
-                    if (blocked(m)) cancels++; else moves++;
-                    nextStep = now + 160;
+                    int m = w.Mask(now, Moves, Cancels, Sent);
+                    if (Masks.Count == 0 || Masks[Masks.Count - 1] != m) Masks.Add(m);
+                    // the server answers
+                    while (!silent && pending.Count > 0 && now >= pending[0].at)
+                    {
+                        var st = pending[0]; pending.RemoveAt(0);
+                        if (blocked(st.to)) { Cancels++; pending.Clear(); lastEnd = now; }
+                        else { Moves++; Pos = st.to; }
+                    }
+                    // the key path: one step per frame at most
+                    if (m != 0 && pending.Count < 2 && now >= lastEnd - 90)
+                    {
+                        var d = WalkInput.FromMask(m).Value;
+                        var tip = pending.Count > 0 ? pending[pending.Count - 1].to : Pos;
+                        var to = WalkDirs.Step(tip, d);
+                        double conf = Math.Max(now + 40, pending.Count > 0 ? pending[pending.Count - 1].at + 160 : now + 40);
+                        pending.Add((to, conf));
+                        Touched.Add(to);
+                        Sent++;
+                        lastEnd = conf + 120;
+                    }
+                    now += 16;
                 }
-                now += 16;
+                Ms = now - 1000;
             }
-            ms = now - 1000;
         }
 
         static readonly Pos Start = new Pos(1000, 1000, 7);
 
         static List<LiveWalkLeg> OpenLegs() => LiveWalker.LegsAround(Start, p => true);
+
+        static Pos At(int dx, int dy) => new Pos(Start.X + dx, Start.Y + dy, 7);
 
         static void WalkChecks(Action<bool, string> check)
         {
@@ -104,69 +131,105 @@ namespace Chaos.Core.Tests
             for (int i = 0; i < legs.Count; i += 2)
                 check(legs[i + 1].Mirror && (legs[i].Mask ^ legs[i + 1].Mask) is int x && (x == (WalkInput.Up | WalkInput.Down) || x == (WalkInput.Left | WalkInput.Right)), "live walk: leg " + legs[i].Name + " is followed by its way back");
 
-            // a wall north and a one-tile gap east: no north leg, east one step; the asked tiles are the ones beyond the start
+            // the margin: every tile a leg can reach is asked, the planned ones, and one past the end (the way back goes by position and stops at the start, so it needs no margin)
             var asked = new List<Pos>();
-            var walls = LiveWalker.LegsAround(Start, p => { asked.Add(p); return !(p.X == Start.X && p.Y < Start.Y) && !(p.X > Start.X + 1); });
-            check(walls.Select(l => l.Name).SequenceEqual(new[] { "south", "back north", "east", "back west", "west", "back east" }) && walls.First(l => l.Name == "east").Steps == 1 && walls.First(l => l.Name == "south").Steps == 2, "live walk: a wall has no leg, a gap of one tile gives one step: " + string.Join(",", walls.Select(l => l.Name + l.Steps)));
-            check(asked.Contains(new Pos(Start.X, Start.Y - 1, 7)) && asked.Contains(new Pos(Start.X + 2, Start.Y, 7)) && asked.All(q => q.Z == 7), "live walk: the check is asked for the tiles next to the start on its floor");
+            LiveWalker.LegsAround(Start, p => { asked.Add(p); return true; });
+            check(asked.Contains(At(0, -3)) && asked.Contains(At(0, 3)) && asked.Contains(At(3, 0)) && asked.Contains(At(-3, 0)) && !asked.Contains(At(0, 0)) && asked.All(q => q.Z == 7), "live walk: the check is asked for the tile past the planned end of every leg, on the start's floor");
+            // a wall at three tiles north: the leg is one step (two free tiles, one is the margin); a wall at two tiles: no north leg
+            var cut = LiveWalker.LegsAround(Start, p => !(p.X == Start.X && p.Y <= Start.Y - 3));
+            check(cut.First(l => l.Name == "north").Steps == 1 && cut.First(l => l.Name == "back south").Steps == 1 && cut.First(l => l.Name == "south").Steps == 2, "live walk: a wall at three tiles north cuts the north leg to one step, the margin tile stays free");
+            var cut2 = LiveWalker.LegsAround(Start, p => !(p.X == Start.X && p.Y <= Start.Y - 2));
+            check(cut2.All(l => l.Name != "north" && l.Name != "back south") && cut2.Any(l => l.Name == "south"), "live walk: a wall at two tiles north leaves no room for a margin, no north leg");
+            check(LiveWalker.LegsAround(Start, p => p.X == Start.X && (p.Y == Start.Y - 1 || p.Y == Start.Y - 2), 2, 0).Any(l => l.Name == "north" && l.Steps == 2), "live walk: margin 0 plans the old way");
             check(LiveWalker.LegsAround(Start, p => false).Count == 0, "live walk: nothing walkable, no leg");
-            check(new LiveWalker(LiveWalker.LegsAround(Start, p => false)).Mask(0, 0, 0) == 0, "live walk: and the walker ends at once");
+            check(new LiveWalker(LiveWalker.LegsAround(Start, p => false)).Mask(0, 0, 0, 0) == 0, "live walk: and the walker ends at once");
 
             // the real start tile of the first run: the north tile was a wall and the east and west ones were not the same on both characters; legs from that map never touch a wall
             var map = new HashSet<Pos>();
-            for (int dx = -3; dx <= 3; dx++) for (int dy = -3; dy <= 3; dy++) map.Add(new Pos(Start.X + dx, Start.Y + dy, 7));
-            map.Remove(new Pos(Start.X, Start.Y - 1, 7));           // the wall north of the start
-            map.Remove(new Pos(Start.X + 1, Start.Y, 7));           // a pillar east
+            for (int dx = -4; dx <= 4; dx++) for (int dy = -4; dy <= 4; dy++) map.Add(At(dx, dy));
+            map.Remove(At(0, -1));           // the wall north of the start
+            map.Remove(At(1, 0));            // a pillar east
             var around = LiveWalker.LegsAround(Start, map.Contains);
-            check(around.All(l => l.Name != "north" && l.Name != "east") && around.Any(l => l.Name == "south") && around.Any(l => l.Name == "west"), "live walk: a start with walls north and east walks south and west only");
+            check(around.All(l => l.Name != "north" && l.Name != "east" && l.Name != "back south" && l.Name != "back west") && around.Any(l => l.Name == "south") && around.Any(l => l.Name == "west") && around.Count == 4, "live walk: a start with walls north and east walks south and west only");
 
-            var w = new LiveWalker(OpenLegs());
-            Simulate(w, m => false, false, out int moves, out int cancels, out var masks, out double ms);
-            check(w.Done && w.Results.Count == 8 && w.Results.All(r => r.Confirmed >= 2 && !r.TimedOut && r.Cancelled == 0), "live walk: every leg confirmed on an open road: " + string.Join(",", w.Results.Select(r => r.Name + r.Confirmed)));
-            check(masks.Where(m => m != 0).SequenceEqual(new[] { WalkInput.Up, WalkInput.Down, WalkInput.Down, WalkInput.Up, WalkInput.Right, WalkInput.Left, WalkInput.Left, WalkInput.Right }), "live walk: north and back, south and back, east and back, west and back with the keys let go between");
-            check(moves >= 16 && moves <= 24 && ms < 30000, "live walk: " + moves + " steps in " + (ms / 1000).ToString("0.0") + " s");
-            check(w.Mask(99999, moves, cancels) == 0 && w.Done, "live walk: done stays done and holds no key");
+            // an open road with a client that keeps two steps out: no step goes past the plan, sent = confirmed + refused, the hero ends where it began
+            var sim = new Sim();
+            var w = new LiveWalker(OpenLegs(), () => sim.Pos);
+            sim.Run(w, p => false, false);
+            int planned = OpenLegs().Sum(l => l.Steps);
+            check(w.Done && w.Results.Count == 8 && w.Results.All(r => r.Sent == r.Wanted && r.Confirmed == r.Wanted && r.Cancelled == 0 && !r.TimedOut), "live walk: every leg sent, and had confirmed, exactly its steps: " + string.Join(",", w.Results.Select(r => r.Name + " " + r.Sent + "/" + r.Confirmed + "/" + r.Wanted)));
+            check(sim.Sent == planned && sim.Moves == planned && sim.Cancels == 0 && sim.Pos.Equals(Start), "live walk: " + planned + " steps planned, sent, confirmed, none refused, net zero (" + sim.Sent + "," + sim.Moves + "," + sim.Cancels + ")");
+            var okTiles = new HashSet<Pos>(new[] { At(0, -1), At(0, -2), At(0, 1), At(0, 2), At(1, 0), At(2, 0), At(-1, 0), At(-2, 0), Start });
+            check(sim.Touched.All(okTiles.Contains), "live walk: every step went to a tile of the plan");
+            check(sim.Masks.Where(m => m != 0).SequenceEqual(new[] { WalkInput.Up, WalkInput.Down, WalkInput.Down, WalkInput.Up, WalkInput.Right, WalkInput.Left, WalkInput.Left, WalkInput.Right }), "live walk: north and back, south and back, east and back, west and back with the keys let go between");
+            check(sim.Ms < 30000, "live walk: " + (sim.Ms / 1000).ToString("0.0") + " s");
+            check(w.Mask(99999, sim.Moves, sim.Cancels, sim.Sent) == 0 && w.Done, "live walk: done stays done and holds no key");
 
-            // a wall the client did not know of (a prediction finding): two refusals end the north leg, its way back has nothing to walk, the rest walks
-            w = new LiveWalker(OpenLegs());
-            Simulate(w, m => m == WalkInput.Up, false, out moves, out cancels, out masks, out ms);
+            // a margin tile the server refuses (the client thought it free) is never walked: the legs stop at their planned steps
+            sim = new Sim();
+            w = new LiveWalker(OpenLegs(), () => sim.Pos);
+            sim.Run(w, p => p.Equals(At(0, -3)) || p.Equals(At(0, 3)) || p.Equals(At(3, 0)) || p.Equals(At(-3, 0)), false);
+            check(sim.Cancels == 0 && sim.Moves == planned && sim.Pos.Equals(Start), "live walk: a wall on the margin tile is never touched by a leg of two steps");
+
+            // a wall the client did not know of (a prediction finding) two tiles north: one step is confirmed, one refused, the way back is the one step walked
+            sim = new Sim();
+            w = new LiveWalker(OpenLegs(), () => sim.Pos);
+            sim.Run(w, p => p.Equals(At(0, -2)), false);
             var north = w.Results.First(r => r.Name == "north");
             var backSouth = w.Results.First(r => r.Name == "back south");
-            check(w.Done && north.Cancelled >= 2 && north.Confirmed == 0 && !north.TimedOut && backSouth.Wanted == 0 && backSouth.Confirmed == 0, "live walk: a refused leg ends after two refusals and its way back is skipped");
-            check(w.Results.Count(r => r.Confirmed >= 2) >= 5 && moves >= LiveSmokeReport.MinSteps, "live walk: the other legs still walk");
-            // the way back is a short skip, not a pause of a leg's length
-            check(ms < 4 * (LiveWalker.LegTimeoutMs + LiveWalker.GapMs), "live walk: " + (ms / 1000).ToString("0.0") + " s with a refused leg");
+            check(w.Done && north.Wanted == 2 && north.Sent == 2 && north.Confirmed == 1 && north.Cancelled == 1 && !north.TimedOut, "live walk: a refused step ends the north leg: sent " + north.Sent + " confirmed " + north.Confirmed + " refused " + north.Cancelled);
+            check(backSouth.Wanted == 1 && backSouth.Sent == 1 && backSouth.Confirmed == 1 && backSouth.Cancelled == 0, "live walk: the way back is by position, one step");
+            check(sim.Pos.Equals(Start) && sim.Sent == sim.Moves + sim.Cancels && sim.Cancels == 1, "live walk: the hero is home and sent = confirmed + refused (" + sim.Sent + "," + sim.Moves + "," + sim.Cancels + ")");
 
-            // a silent server: every out leg times out, the ways back are skipped, the walker still ends
-            w = new LiveWalker(OpenLegs());
-            Simulate(w, m => false, true, out moves, out cancels, out masks, out ms);
-            check(w.Done && moves == 0 && w.Results.Count == 8 && w.Results.Where(r => r.Wanted > 0).All(r => r.TimedOut && r.Confirmed == 0) && w.Results.Count(r => r.Wanted == 0) == 4, "live walk: a server that answers nothing times the out legs out and skips the ways back");
-            check(ms >= 4 * LiveWalker.LegTimeoutMs && ms < 4 * (LiveWalker.LegTimeoutMs + LiveWalker.GapMs) + 1500, "live walk: and it takes about " + (4 * (LiveWalker.LegTimeoutMs + LiveWalker.GapMs) / 1000).ToString("0") + " s (" + (ms / 1000).ToString("0.0") + ")");
+            // a wall at the first tile (a real prediction miss): the leg ends after the refusal, the way back is skipped, the others walk
+            sim = new Sim();
+            w = new LiveWalker(OpenLegs(), () => sim.Pos);
+            sim.Run(w, p => p.Equals(At(0, -1)), false);
+            north = w.Results.First(r => r.Name == "north");
+            backSouth = w.Results.First(r => r.Name == "back south");
+            check(w.Done && north.Confirmed == 0 && north.Cancelled >= 1 && backSouth.Wanted == 0 && backSouth.Sent == 0, "live walk: a leg refused at its first step has no way back");
+            check(w.Results.Count(r => r.Confirmed >= 2) >= 5 && sim.Moves >= LiveSmokeReport.MinSteps && sim.Pos.Equals(Start), "live walk: the other legs still walk and the hero is home");
+            check(sim.Ms < 4 * (LiveWalker.LegTimeoutMs + LiveWalker.GapMs), "live walk: " + (sim.Ms / 1000).ToString("0.0") + " s with a refused leg");
 
-            // a held key overshoots by the steps in flight: the way back is as long as what the leg really confirmed, so the hero is back where it began
+            // a silent server: every out leg times out, the ways back are skipped (the hero did not move), the walker still ends
+            sim = new Sim();
+            w = new LiveWalker(OpenLegs(), () => sim.Pos);
+            sim.Run(w, p => false, true);
+            check(w.Done && sim.Moves == 0 && w.Results.Count == 8 && w.Results.Where(r => r.Wanted > 0).All(r => r.TimedOut && r.Confirmed == 0 && r.Sent <= r.Wanted && r.Lost == r.Sent) && w.Results.Count(r => r.Wanted == 0) == 4, "live walk: a server that answers nothing times the out legs out and skips the ways back");
+            check(sim.Ms >= 4 * LiveWalker.LegTimeoutMs && sim.Ms < 4 * (LiveWalker.LegTimeoutMs + LiveWalker.GapMs) + 1500, "live walk: and it takes about " + (4 * (LiveWalker.LegTimeoutMs + LiveWalker.GapMs) / 1000).ToString("0") + " s (" + (sim.Ms / 1000).ToString("0.0") + ")");
+
+            // the key goes up when the planned steps are SENT, not when they are confirmed: with two out the third is never sent
             var pair = new List<LiveWalkLeg> { new LiveWalkLeg { Name = "south", Mask = WalkInput.Down, Steps = 2 }, new LiveWalkLeg { Name = "back north", Mask = WalkInput.Up, Steps = 2, Mirror = true } };
             w = new LiveWalker(pair);
-            int mv = 0;
+            int mv = 0, sent = 0;
             double t = 0;
-            w.Mask(t, mv, 0);
-            mv = 3; t += 20;                                   // the third step was in flight when the second was confirmed
-            check(w.Mask(t, mv, 0) == 0, "live walk: the out leg ends at its steps");
+            check(w.Mask(t, mv, 0, sent) == WalkInput.Down, "live walk: the key is held at the start");
+            sent = 1; t += 20;
+            check(w.Mask(t, mv, 0, sent) == WalkInput.Down, "live walk: one of two steps sent, still held");
+            sent = 2; t += 20;
+            check(w.Mask(t, mv, 0, sent) == 0, "live walk: two of two sent, the key is up before any is confirmed");
+            mv = 1; t += 100;
+            check(w.Mask(t, mv, 0, sent) == 0 && w.Results.Count == 0, "live walk: the leg waits for the answers of its steps");
+            mv = 2; t += 100;
+            w.Mask(t, mv, 0, sent);
+            check(w.Results.Count == 1 && w.Results[0].Sent == 2 && w.Results[0].Confirmed == 2, "live walk: and ends when both are answered");
             t += LiveWalker.GapMs + 10;
-            check(w.Mask(t, mv, 0) == WalkInput.Up && pair[1].Steps == 3, "live walk: the way back asks for the three steps that were walked");
-            mv = 6; t += 20;
-            check(w.Mask(t, mv, 0) == 0 && w.Results.Count == 2 && w.Results[1].Wanted == 3 && w.Results[1].Confirmed == 3, "live walk: the way back ends at the same three steps");
+            check(w.Mask(t, mv, 0, sent) == WalkInput.Up && pair[1].Steps == 2, "live walk: without a position the way back is what the leg confirmed");
+            sent = 4; mv = 4; t += 20;
+            w.Mask(t, mv, 0, sent);
+            check(w.Results.Count == 2 && w.Results[1].Wanted == 2 && w.Results[1].Confirmed == 2, "live walk: the way back ends at the same steps");
 
-            // late confirmations during the pause count for the leg that ended
+            // late answers during the pause count for the leg that ended
             w = new LiveWalker(new List<LiveWalkLeg> { new LiveWalkLeg { Name = "a", Mask = WalkInput.Up, Steps = 1 } });
-            mv = 0; t = 0;
-            w.Mask(t, mv, 0);
-            mv = 1; t += 20;
-            check(w.Mask(t, mv, 0) == 0, "live walk: the leg ends at its steps");
-            mv = 2; t += 100;   // a second step was already in flight
-            w.Mask(t, mv, 0); t += LiveWalker.GapMs + 10;
-            w.Mask(t, mv, 0);
-            check(w.Done && w.Results[0].Confirmed == 2, "live walk: a step confirmed during the pause counts for its leg");
-            check(new LiveWalker(new List<LiveWalkLeg>()).Mask(0, 0, 0) == 0, "live walk: no legs, nothing to do");
+            mv = 0; sent = 0; t = 0;
+            w.Mask(t, mv, 0, sent);
+            sent = 1; mv = 1; t += 20;
+            check(w.Mask(t, mv, 0, sent) == 0 && w.Results.Count == 1, "live walk: the leg ends at its steps");
+            mv = 2; sent = 2; t += 100;   // a step of the key path that was already out
+            w.Mask(t, mv, 0, sent); t += LiveWalker.GapMs + 10;
+            w.Mask(t, mv, 0, sent);
+            check(w.Done && w.Results[0].Confirmed == 2 && w.Results[0].Sent == 2, "live walk: a step answered during the pause counts for its leg");
+            check(new LiveWalker(new List<LiveWalkLeg>()).Mask(0, 0, 0, 0) == 0, "live walk: no legs, nothing to do");
         }
 
         static void TileChecks(Action<bool, string> check)
@@ -279,6 +342,14 @@ namespace Chaos.Core.Tests
             f = Good();
             f.Legs = new List<LiveWalkResult> { new LiveWalkResult { Name = "north", Wanted = 2, Confirmed = 0, Cancelled = 3 } };
             check(f.Pass && f.Warnings().Any(x => x.StartsWith("leg north: 3 refused", StringComparison.Ordinal)), "live report: a refused leg on a tile the client thought free is a warning, with the count");
+            f = Good(); f.StepsPlanned = 12; f.StepsSent = 11; f.StepsConfirmed = 10; f.StepsCancelled = 1;
+            f.Legs = new List<LiveWalkResult> { new LiveWalkResult { Name = "north", Wanted = 2, Sent = 2, Confirmed = 1, Cancelled = 1 } };
+            check(f.Pass && f.WalkAccounts() == "walk: 12 planned, 11 sent, 10 confirmed, 1 refused, 0 unanswered" && f.Notes().Any(x => x.StartsWith("known issue:", StringComparison.Ordinal)), "live report: planned, sent, confirmed, refused and unanswered on one line, a refusal names the known pipelining issue");
+            f = Good(); f.StepsCancelled = 0;
+            check(!f.Notes().Any(x => x.StartsWith("known issue:", StringComparison.Ordinal)), "live report: no refusal, no known issue note");
+            f = Good();
+            f.Legs = new List<LiveWalkResult> { new LiveWalkResult { Name = "south", Wanted = 2, Sent = 3, Confirmed = 3 } };
+            check(!f.Pass && f.Failures().Any(x => x.StartsWith("walk plan bug: leg south sent 3 steps for 2", StringComparison.Ordinal)), "live report: a leg that sent more steps than planned is a plan bug and fails");
             f = Good(); f.Closed = "Connection lost";
             check(!f.Pass, "live report: a closed session fails");
             f = Good(); f.Aborted = "over time";
@@ -318,7 +389,7 @@ namespace Chaos.Core.Tests
             check(wins.Count == 2 && Json.Int(wins[0], "answers") == 2 && Json.List(wins[0], "opcodes").Count == 2 && Json.Bool(wins[1], "native") && Json.Text(wins[0], "status") == "answered" && Json.Text(wins[1], "status") == "local", "live report json: windows with answers, opcodes and status");
             check(Json.List(parsed, "opcodesSeen").Count == 2 && Json.Int(Json.Get(parsed, "summary"), "windows") == 2 && Json.Int(Json.Get(parsed, "summary"), "loggedErrors") == 1, "live report json: opcodes seen and the summary");
             var sum = Json.Get(parsed, "summary");
-            check(Json.Int(sum, "answered") == 1 && Json.Int(sum, "local") == 1 && Json.Int(sum, "prefetched") == 0 && Json.Int(sum, "needsCondition") == 0 && Json.Int(sum, "noAnswer") == 0 && Json.List(parsed, "notes").Count == 0 && Json.List(parsed, "opcodesAtLogin").Count == 0, "live report json: the five window counts, the notes and the opcodes at login");
+            check(Json.Int(sum, "answered") == 1 && Json.Int(sum, "local") == 1 && Json.Int(sum, "prefetched") == 0 && Json.Int(sum, "needsCondition") == 0 && Json.Int(sum, "noAnswer") == 0 && Json.List(parsed, "notes").Count == 1 && Json.List(parsed, "opcodesAtLogin").Count == 0, "live report json: the five window counts, the notes and the opcodes at login");
             check(!json.Any(c => c > 0x7e), "live report json: ASCII only");
             var failing = Good(); failing.LoginOk = false;
             var fp = Json.TryParse(failing.ToJson(null));
