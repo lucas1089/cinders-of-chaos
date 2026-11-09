@@ -25,7 +25,7 @@ namespace Chaos.Core.LiveCheck
 
     public sealed partial class LiveRun
     {
-        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "party", "sharedkill", "rift", "riftboss", "death", "pvpdeath" };
+        public static readonly string[] AllScenarios = { "tooltip", "stairs", "floorchange", "npc", "sell", "market", "modal", "moremodals", "party", "sharedkill", "rift", "riftboss", "partyrift", "rifttier", "riftfail", "omen", "coffer", "death", "pvpdeath" };
 
         readonly List<ScenarioResult> scenarios = new List<ScenarioResult>();
         Dictionary<int, string> floorChanges;
@@ -59,6 +59,12 @@ namespace Chaos.Core.LiveCheck
                         case "rift": ScRift(r); break;
                         case "modal": ScModal(r); break;
                         case "riftboss": ScRiftBoss(r); break;
+                        case "moremodals": ScMoreModals(r); break;
+                        case "partyrift": ScPartyRift(r); break;
+                        case "rifttier": ScRiftTier(r); break;
+                        case "riftfail": ScRiftFail(r); break;
+                        case "omen": ScOmen(r); break;
+                        case "coffer": ScCoffer(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }
@@ -214,14 +220,15 @@ namespace Chaos.Core.LiveCheck
         /// <summary>The parser failures and the unmatched moves, to see whether a scenario step added any.</summary>
         sealed class Mark
         {
-            public int Failures, Unmatched, Thrown;
-            public static Mark Of(LiveClient c) => new Mark { Failures = c.S.Parser.FailureCount, Unmatched = c.S.Parser.MoveUnmatched, Thrown = c.Thrown.Count };
+            public int Failures, Unmatched, Thrown, ExtErrors;
+            public static Mark Of(LiveClient c) => new Mark { Failures = c.S.Parser.FailureCount, Unmatched = c.S.Parser.MoveUnmatched, Thrown = c.Thrown.Count, ExtErrors = c.ExtErrors };
             public string Diff(LiveClient c, string who)
             {
                 var sb = new StringBuilder();
                 if (c.S.Parser.FailureCount > Failures) sb.Append(who + ": " + (c.S.Parser.FailureCount - Failures) + " parse failure(s) (" + string.Join("; ", c.S.Parser.Failures.Skip(Failures).Take(3).Select(f => f.ToString())) + "); ");
                 if (c.S.Parser.MoveUnmatched > Unmatched) sb.Append(who + ": " + (c.S.Parser.MoveUnmatched - Unmatched) + " move(s) of a creature not where the message said; ");
                 if (c.Thrown.Count > Thrown) sb.Append(who + ": exception " + c.Thrown[Thrown] + "; ");
+                if (c.ExtErrors > ExtErrors) sb.Append(who + ": " + (c.ExtErrors - ExtErrors) + " extended opcode message(s) were invalid JSON or threw in a handler; ");
                 return sb.ToString();
             }
         }
@@ -583,15 +590,21 @@ namespace Chaos.Core.LiveCheck
         // ------------------------------------------------------------------------------------ rift
         /// <summary>Asks the staff command for a Rift Key, takes it out of the backpack and uses it (the first half of the rift and riftboss scenarios). True when the rift
         /// opened and the HUD message came; else the scenario is set to skip and false comes back. `before` is where the character stood, `rift0` the opcode 228 count before.</summary>
-        bool OpenRift(ScenarioResult r, out Pos before, out int rift0)
+        bool OpenRift(ScenarioResult r, out Pos before, out int rift0, int tier = 1, string mods = null, bool omen = false)
         {
             before = me.Pos;
             rift0 = ops[228].Replies;
-            if (serverToClient == null || !serverToClient.TryGetValue(o.RiftKeyServerId, out int keyClient)) { r.Skip("no items.otb node for the Rift Key (server id " + o.RiftKeyServerId + ")"); return false; }
+            int keyServer = omen ? o.OmenKeyServerId : o.RiftKeyServerId;
+            string keyName = omen ? "Omen Key" : "Rift Key";
+            if (serverToClient == null || !serverToClient.TryGetValue(keyServer, out int keyClient)) { r.Skip("no items.otb node for the " + keyName + " (server id " + keyServer + ")"); return false; }
             var p = s.Parser;
+            // keys left in the backpack by an earlier rift (the chest leaves one behind) are cleared first, so the key found below is the one asked for (a local-only staff
+            // command, like /rkill; without it the first key in the bag is used, whatever its tier)
+            s.Say(o.RiftKeys);
+            Pump(700, () => false);
             int say0 = me.Said.Count;
-            // a key from the staff command; only an administrator gets one
-            s.Say("/rift key 1");
+            // a key from the staff command (phase 24: a tier above 1, fixed modifiers "name:value,...", an Omen Key); only an administrator gets one
+            s.Say(omen ? "/rift omen" : "/rift key " + tier.ToString(CultureInfo.InvariantCulture) + (string.IsNullOrEmpty(mods) ? "" : " " + mods));
             Pump(1500, () => false);
             ushort bagId = p.Inventory.Length > 3 && p.Inventory[3] != null ? (ushort)p.Inventory[3].Id : (ushort)0;
             if (bagId == 0) { r.Skip("no backpack on the character to hold a key"); return false; }
@@ -609,14 +622,15 @@ namespace Chaos.Core.LiveCheck
             if (slot < 0)
             {
                 var texts = me.ServerTexts(say0).Take(3).ToList();
-                r.Skip("the staff command gave no Rift Key (the character needs the administrator rights: group and account type God on the local server)" + (texts.Count > 0 ? "; server said: " + string.Join(" | ", texts) : ""));
+                r.Skip("the staff command gave no " + keyName + " (the character needs the administrator rights: group and account type God on the local server)" + (texts.Count > 0 ? "; server said: " + string.Join(" | ", texts) : ""));
                 return false;
             }
-            r.Note("a Rift Key (client id " + keyClient + ") is in the backpack");
+            r.Note((omen ? "an Omen" : "a Rift") + " Key (client id " + keyClient + ") is in the backpack");
             before = me.Pos;
             int seen228 = ops[228].Replies;
             rift0 = seen228;
             int say1 = me.Said.Count;
+            s.Progress.Rift.Hide();   // the HUD of an earlier rift of this run stays "active" with its end message until the window hides it
             s.UseItem(GameSession.ContainerPos(contId, slot), (ushort)keyClient, (byte)slot);
             bool entered = WaitFor(Math.Max(30000, o.ScenarioMs), () => s.Progress.Rift.Active || ops[228].Replies > seen228 || s.Closed != null);
             if (!entered)
@@ -793,7 +807,7 @@ namespace Chaos.Core.LiveCheck
             sb.AppendLine("scenarios: " + scenarios.Count(x => x.Status == "pass") + " pass, " + scenarios.Count(x => x.Status == "fail") + " fail, " + scenarios.Count(x => x.Status == "skip") + " skip");
             foreach (var x in scenarios)
             {
-                sb.AppendLine("  " + x.Name.PadRight(8) + x.Status.ToUpperInvariant().PadRight(6) + Math.Round(x.Ms / 1000, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s  " + Scrub(x.Reason, SecretNames()));
+                sb.AppendLine("  " + x.Name.PadRight(11) + x.Status.ToUpperInvariant().PadRight(6) + Math.Round(x.Ms / 1000, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s  " + Scrub(x.Reason, SecretNames()));
                 foreach (var n in x.Notes) sb.AppendLine("      " + Scrub(n, SecretNames()));
             }
             if (partnerStats != null) sb.AppendLine("partner connection: " + partnerStats);

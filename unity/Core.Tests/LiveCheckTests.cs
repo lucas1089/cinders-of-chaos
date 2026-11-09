@@ -37,6 +37,9 @@ namespace Chaos.Core.Tests
             BagCount(check);
             RiftBossHud(check);
             ScenarioList(check);
+            EndgameScenarioList(check);
+            OmenAndFailedRiftHud(check);
+            ExtErrorCount(check);
             Failures(check);
             Otb(check);
             Plan(check);
@@ -553,6 +556,65 @@ namespace Chaos.Core.Tests
             check(all.Contains("modal") && all.Contains("riftboss") && all.IndexOf("riftboss") > all.IndexOf("rift") && all.IndexOf("modal") < all.IndexOf("party"), "scenarios: modal and riftboss are in the list, riftboss after rift");
             var o = new LiveOptions();
             check(o.ModalNpc == "Archivist Maelis" && o.ModalWord == "tales" && o.RiftKill == "/rkill" && o.RiftNear == "/rnear" && o.RiftChestServerId == 32311 && o.RiftChestFallbackServerId == 21584, "scenarios: the defaults of the phase 23 options");
+        }
+
+
+        // ------------------------------------------------------------------------------------------------ endgame scenarios (phase 24)
+        static void EndgameScenarioList(Action<bool, string> check)
+        {
+            var all = LiveRun.AllScenarios.ToList();
+            check(all.Contains("moremodals") && all.IndexOf("moremodals") > all.IndexOf("modal") && all.IndexOf("moremodals") < all.IndexOf("party"), "endgame scenarios: moremodals follows modal");
+            bool order = true;
+            foreach (string n in new[] { "partyrift", "rifttier", "riftfail", "omen", "coffer" })
+                order &= all.Contains(n) && all.IndexOf(n) > all.IndexOf("riftboss") && all.IndexOf(n) < all.IndexOf("death");
+            check(order, "endgame scenarios: partyrift, rifttier, riftfail, omen and coffer run after riftboss and before the death scenarios");
+            check(all.Count == all.Distinct().Count() && all[all.Count - 1] == "pvpdeath" && all[all.Count - 2] == "death", "endgame scenarios: no name twice, the two death scenarios last");
+            var o = new LiveOptions();
+            check(o.RiftTier == 2 && o.RiftMods == null && o.RiftFailSeconds == 12 && o.RiftTime == "/rtime" && o.RiftGo == "/rgo" && o.RiftKeys == "/rkeys", "endgame scenarios: the defaults of the rift options");
+            check(o.OmenKeyServerId == 32072 && o.CofferServerId == 32312 && o.CofferFallbackServerId == 12664 && o.KeeperNpc == "Keeper of Trials" && !o.KeeperAt.HasValue, "endgame scenarios: the item ids and the Keeper default");
+        }
+
+        // The HUD of an Omen arena and of a rift that ran out of time, as rift.lua sends them (hudData: omen, title, total 0, bossAt 0; fail: an end message without exitIn).
+        static void OmenAndFailedRiftHud(Action<bool, string> check)
+        {
+            var ext = new ExtOpcodes();
+            double now = 5000;
+            var r = new RiftHud(ext) { Clock = () => now };
+            Action<string> msg = json => ext.Receive(228, ExtOpcodes.ToWire(json));
+            msg("{\"action\":\"start\",\"data\":{\"tier\":15,\"theme\":\"Ashen Crypt\",\"left\":720,\"limit\":720,\"total\":0,\"killed\":0,\"bossAt\":0,\"boss\":\"waiting\",\"state\":\"running\",\"bossName\":\"Sangrith the Bloodmoon Herald\",\"mods\":[],\"notes\":[],\"lives\":3,\"livesMax\":3,\"omen\":\"Bloodmoon\",\"title\":\"Omen - Bloodmoon\"}}");
+            check(r.Active && r.Omen == "Bloodmoon" && r.Title == "Omen - Bloodmoon" && r.Total == 0 && r.BossAt == 0 && r.Lives == 3 && r.LivesMax == 3, "omen HUD: the start message names the omen, the title and the shared lives");
+            check(r.BossLine() == "The guardian Sangrith the Bloodmoon Herald is coming..." && r.BossPercent() == 100, "omen HUD: the waiting guardian line is 'coming', not a kill count (bossAt 0)");
+            msg("{\"action\":\"update\",\"data\":{\"tier\":15,\"left\":715,\"limit\":720,\"total\":0,\"killed\":0,\"bossAt\":0,\"boss\":\"alive\",\"state\":\"running\",\"bossName\":\"Sangrith the Bloodmoon Herald\",\"omen\":\"Bloodmoon\",\"title\":\"Omen - Bloodmoon\"}}");
+            check(r.Boss == "alive" && r.BossLine() == "The guardian Sangrith the Bloodmoon Herald is here!", "omen HUD: the guardian comes after the start delay");
+            msg("{\"action\":\"end\",\"data\":{\"result\":\"success\",\"text\":\"The guardian falls! Open its chest within 60 seconds.\",\"exitIn\":60}}");
+            check(r.State == "success" && r.Boss == "dead" && r.Omen == "Bloodmoon" && r.HideAt == now + 62000, "omen HUD: the end message keeps the omen and the exit time");
+            // a rift that ran out of time: removePlayer sends {result = "failed", text} with no exitIn; the players leave at once
+            var f = new RiftHud(ext) { Clock = () => now };
+            f.Handle("start", Json.TryParse("{\"tier\":2,\"boss\":\"waiting\",\"state\":\"running\",\"total\":205,\"killed\":139,\"bossAt\":154,\"lives\":3,\"livesMax\":3}"));
+            f.Handle("end", Json.TryParse("{\"result\":\"failed\",\"text\":\"Time is up! The rift collapses and the key is lost.\"}"));
+            check(f.Result == "failed" && f.State == "failed" && f.Boss == "waiting" && f.ExitIn == 0 && f.HideAt == now + 8000 && f.ResultText.StartsWith("Time is up!"), "failed rift HUD: result failed, the boss state kept, hides after 8 s without an exit time");
+            check(f.LivesLine() == "Lives: 3 / 3" && f.Killed == 139, "failed rift HUD: the lives and the kills of the last update stay");
+            // a member who fell with lives left gets {result = "left"} while the run goes on for the others
+            var l = new RiftHud(ext) { Clock = () => now };
+            l.Handle("start", Json.TryParse("{\"tier\":1,\"boss\":\"alive\",\"state\":\"running\",\"total\":10,\"killed\":10,\"bossAt\":8,\"lives\":3,\"livesMax\":4}"));
+            l.Handle("end", Json.TryParse("{\"result\":\"left\",\"text\":\"You fell: 3 lives left. You return at the rift's entrance when you log in again.\"}"));
+            check(l.State == "left" && l.Boss == "alive" && l.Result == "left" && l.Lives == 3, "party rift HUD: a fallen member's 'left' end message keeps the guardian alive and the shared lives");
+        }
+
+        // LiveClient counts the extended opcode errors of its own connection (phase 24: the partner of the party rift has no per-opcode table).
+        static void ExtErrorCount(Action<bool, string> check)
+        {
+            var world = new World(DatFile.Parse(Program.SyntheticDat()));
+            var s = new GameSession(world, new GameSession.Options { Host = "127.0.0.1", Port = 1, Account = "a", Password = "b", Character = "c" });
+            var c = new LiveClient(world, s, "hero");
+            s.Ext.On(228, m => { if (m.Action == "boom") throw new InvalidOperationException("boom"); });
+            s.Ext.Receive(228, ExtOpcodes.ToWire("{\"action\":\"start\",\"data\":{}}"));
+            check(c.ExtErrors == 0, "ext errors: a good message counts nothing");
+            s.Ext.Receive(228, ExtOpcodes.ToWire("not json"));
+            s.Ext.Receive(228, ExtOpcodes.ToWire("{\"action\":\"boom\"}"));
+            check(c.ExtErrors == 2, "ext errors: invalid JSON and a handler that threw are counted (" + c.ExtErrors + ")");
+            s.Ext.Receive(228, ExtOpcodes.ToWire("{\"action\":\"start\"}"));
+            check(c.ExtErrors == 2, "ext errors: the next good message goes through");
         }
 
         static void WholeRun(Action<bool, string> check)

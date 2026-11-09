@@ -166,7 +166,11 @@ namespace Chaos.Core.LiveCheck
             return best;
         }
 
-        void ScRiftBoss(ScenarioResult r)
+        void ScRiftBoss(ScenarioResult r) => RiftBossRun(r, 1, null, false);
+
+        /// <summary>The rift to its guardian, the guardian killed, the reward chest opened (phase 23); phase 24 asks for a tier above 1 with fixed modifiers (rifttier) or an Omen
+        /// arena (omen: no packs, the guardian comes a few seconds after the arrival).</summary>
+        void RiftBossRun(ScenarioResult r, int tier, string mods, bool omen)
         {
             var p = s.Parser;
             var mark = Mark.Of(me);
@@ -180,7 +184,7 @@ namespace Chaos.Core.LiveCheck
             var actions = new List<string>();
             bool recording = true;
             s.Ext.On(228, m => { if (recording && actions.Count < 400) actions.Add(m.Action); });
-            if (!OpenRift(r, out Pos before, out int rift0)) { recording = false; return; }
+            if (!OpenRift(r, out Pos before, out int rift0, tier, mods, omen)) { recording = false; return; }
             var states = new List<string>();
             Action snap = () =>
             {
@@ -188,14 +192,26 @@ namespace Chaos.Core.LiveCheck
                 if (states.Count == 0 || !states[states.Count - 1].StartsWith((rift.Boss.Length > 0 ? rift.Boss : "-") + "/" + (rift.State.Length > 0 ? rift.State : "-"), StringComparison.Ordinal)) states.Add(st);
             };
             snap();
-            r.Note("rift opened: tier " + rift.Tier + ", " + rift.Total + " monsters, the guardian after " + rift.BossAt + " kills, theme '" + rift.Theme + "', " + rift.Mods.Count + " modifier(s), position " + P(before) + " to " + P(me.Pos));
+            r.Note((omen ? "omen arena" : "rift") + " opened: tier " + rift.Tier + ", " + rift.Total + " monsters, the guardian after " + rift.BossAt + " kills, theme '" + rift.Theme + "', " + rift.Mods.Count + " modifier(s)" +
+                   (rift.Mods.Count > 0 ? " [" + string.Join("; ", rift.Mods.Select(RiftHud.ModLine)) + "]" : "") + ", lives " + rift.Lives + "/" + rift.LivesMax + ", omen '" + rift.Omen + "', title '" + rift.Title + "', position " + P(before) + " to " + P(me.Pos));
+            var problems0 = new StringBuilder();
+            if (!omen && tier > 1 && rift.Tier != tier) problems0.Append("the HUD says tier " + rift.Tier + ", the key was tier " + tier + "; ");
+            if (omen && rift.Omen.Length == 0) problems0.Append("the HUD of an Omen arena names no omen; ");
+            if (omen && rift.Title.Length == 0) problems0.Append("the HUD of an Omen arena has no title; ");
+            problems.Append(problems0);
             bool done = false;
             try
             {
                 int packs0 = rift.Killed, waves = 0;
                 long limit = Tick + Math.Max(150000, o.ScenarioMs * 3);
+                if (omen)
+                {
+                    // an Omen arena has no packs: the guardian comes startDelay seconds after the arrival
+                    WaitFor(30000, () => rift.Boss == "alive" || rift.Boss == "dead" || rift.Result.Length > 0 || s.Closed != null);
+                    snap();
+                }
                 // 1. the packs: the staff command kills every monster round the character until the guardian comes
-                while (Tick < limit && s.Closed == null && rift.Boss != "alive" && rift.Boss != "dead" && rift.Result.Length == 0)
+                while (!omen && Tick < limit && s.Closed == null && rift.Boss != "alive" && rift.Boss != "dead" && rift.Result.Length == 0)
                 {
                     s.Say(o.RiftKill);
                     waves++;
@@ -212,7 +228,7 @@ namespace Chaos.Core.LiveCheck
                 r.Note("packs: " + waves + " wave(s) of '" + o.RiftKill + "', kills " + packs0 + " to " + rift.Killed + " of " + rift.BossAt + " (total " + rift.Total + "), HUD boss '" + rift.Boss + "', state '" + rift.State + "'");
                 r.Note("monsters hit per wave (the command's own reply): " + string.Join(",", me.ServerTexts(texts0).Where(x => x.StartsWith("rkill ", StringComparison.Ordinal)).Select(x => x.Substring(6)).Take(60)));
                 if (rift.Boss != "alive") { problems.Append("the guardian did not come within the time limit (kills " + rift.Killed + " of " + rift.BossAt + ", boss '" + rift.Boss + "', state '" + rift.State + "'); "); goto finish; }
-                if (rift.Killed < rift.BossAt) problems.Append("the guardian came after " + rift.Killed + " kills, the HUD says " + rift.BossAt + "; ");
+                if (!omen && rift.Killed < rift.BossAt) problems.Append("the guardian came after " + rift.Killed + " kills, the HUD says " + rift.BossAt + "; ");
                 if (rift.BossName.Length == 0) problems.Append("the HUD names no guardian; ");
                 r.Note("guardian: '" + rift.BossName + "', HUD line '" + rift.BossLine() + "', percent " + rift.BossPercent());
                 // 2. to the guardian: its arena is far from the entrance
@@ -239,6 +255,12 @@ namespace Chaos.Core.LiveCheck
                 snap();
                 r.Note("guardian: " + kills + " kill command(s); end message '" + rift.Result + "', HUD state '" + rift.State + "', boss '" + rift.Boss + "', exit in " + rift.ExitIn + " s, text '" + rift.ResultText + "'");
                 r.Note("packets since the guardian was in view: [" + PacketDiff(p, beforeKill) + "]");
+                if (rift.Result != "success")
+                {
+                    var alive = world.Creatures.Values.Where(c => c.Type == 1 && rift.BossName.Length > 0 && c.Name.IndexOf(rift.BossName, StringComparison.OrdinalIgnoreCase) >= 0).Select(c => c.HealthPercent + "%").ToList();
+                    r.Note("the guardian's health in view after the kill commands: " + (alive.Count == 0 ? "not in view" : string.Join(",", alive)) + "; the command's replies: " +
+                           string.Join(",", me.ServerTexts(texts0).Where(x => x.StartsWith("rkill ", StringComparison.Ordinal)).Select(x => x.Substring(6)).TakeLast(8)));
+                }
                 if (rift.Result != "success") { problems.Append("the rift did not end in success (result '" + rift.Result + "', state '" + rift.State + "'); "); goto finish; }
                 if (rift.Boss != "dead") problems.Append("the HUD boss state is '" + rift.Boss + "' after the success; ");
                 if (rift.State != "success") problems.Append("the HUD state is '" + rift.State + "' after the success; ");
@@ -300,7 +322,7 @@ namespace Chaos.Core.LiveCheck
             if (ExtBad() > bad0) problems.Append((ExtBad() - bad0) + " extended opcode message(s) were invalid JSON or threw in a handler; ");
             problems.Append(mark.Diff(me, "primary"));
             if (problems.Length > 0) r.Fail(problems.ToString().Trim());
-            else r.Pass("a rift cleared to its guardian (" + rift.Killed + " kills, HUD waiting > alive > dead), the guardian killed, the reward chest opened and paid, every rift opcode and container packet parsed, no failure");
+            else r.Pass((omen ? "an Omen arena" : "a tier " + rift.Tier + " rift cleared") + " to its guardian (" + rift.Killed + " kills, HUD waiting > alive > dead), the guardian killed, the reward chest opened and paid, every rift opcode and container packet parsed, no failure");
         }
     }
 }

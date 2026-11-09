@@ -17,7 +17,8 @@ namespace Chaos.Core.LiveCheck
             if (why != null) Console.Error.WriteLine(why);
             Console.Error.WriteLine("usage: Core.LiveCheck HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE] [--identity extended|chaos]");
             Console.Error.WriteLine("                      [--otb items.otb | --pair DIR] [--no-ext]   (password: environment variable CHAOS_LIVE_PASSWORD)");
-            Console.Error.WriteLine("                      [--scenario tooltip,stairs,floorchange,npc,sell,market,modal,party,sharedkill,rift,riftboss,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
+            Console.Error.WriteLine("                      [--scenario tooltip,stairs,floorchange,npc,sell,market,modal,moremodals,party,sharedkill,rift,riftboss,partyrift,rifttier,riftfail,omen,coffer,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
+            Console.Error.WriteLine("                      [--rift-tier N] [--rift-mods name:value,...] [--keeper-at X,Y,Z]");
             Console.Error.WriteLine("                      [--modal-npc NAME] [--modal-word WORD] [--modal-at X,Y,Z] [--rift-kill /CMD] [--rift-near /CMD]");
             Console.Error.WriteLine("                      [--killer MONSTER] [--weak MONSTER] [--rift-key-id N] [--scenario-seconds N] [--aware WxH]   (second account: CHAOS_LIVE_ACCOUNT2, CHAOS_LIVE_PASSWORD2, CHAOS_LIVE_CHARACTER2)");
             return 2;
@@ -67,6 +68,9 @@ namespace Chaos.Core.LiveCheck
                         case "--modal-at": o.ModalAt = ParsePos(Next()); break;
                         case "--rift-kill": o.RiftKill = Next(); break;
                         case "--rift-near": o.RiftNear = Next(); break;
+                        case "--rift-tier": o.RiftTier = Math.Max(1, int.Parse(Next())); break;
+                        case "--rift-mods": o.RiftMods = Next(); break;
+                        case "--keeper-at": o.KeeperAt = ParsePos(Next()); break;
                         case "--rift-key-id": o.RiftKeyServerId = int.Parse(Next()); break;
                         case "--scenario-seconds": o.ScenarioMs = Math.Max(5, int.Parse(Next())) * 1000; break;
                         case "--aware":

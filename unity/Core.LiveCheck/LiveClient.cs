@@ -19,15 +19,19 @@ namespace Chaos.Core.LiveCheck
         public readonly string Character;
         public int Cancels;
         public readonly List<string> Thrown = new List<string>();
-        /// <summary>Every chat line and server message, in order (capped).</summary>
+        /// <summary>Extended opcode messages that were invalid JSON or threw in a Core handler on this connection (phase 24; the primary's are also counted per opcode).</summary>
+        public int ExtErrors;
+        /// <summary>Every chat line and server message, in order (capped at 20000).</summary>
         public readonly List<SaidLine> Said = new List<SaidLine>();
 
         public LiveClient(World w, GameSession s, string character)
         {
             World = w; S = s; Character = character;
-            s.Chat += (who, text, type) => { if (Said.Count < 600) Said.Add(new SaidLine { Who = who, Text = text, Type = type }); };
+            s.Chat += (who, text, type) => { if (Said.Count < 20000) Said.Add(new SaidLine { Who = who, Text = text, Type = type }); };
             var prev = s.Parser.WalkCancelled;
             s.Parser.WalkCancelled = d => { Cancels++; prev(d); };
+            var prevLog = s.Ext.Log;
+            s.Ext.Log = m => { if (m.StartsWith("extended opcode ", StringComparison.Ordinal)) ExtErrors++; prevLog(m); };
         }
 
         public Pos Pos { get { var p = World.Player; return p == null ? default : p.Position; } }
