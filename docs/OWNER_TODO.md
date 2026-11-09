@@ -154,7 +154,8 @@ Claude does not change these. Each names the two places that disagree.
 
 ## On the live server
 
-- [ ] Machine timezone `America/Sao_Paulo` (`timedatectl set-timezone America/Sao_Paulo`). Weekly resets, events and the Gambler's 4-hour refresh use server time.
+- [ ] Machine timezone `America/Sao_Paulo`. Admin app: Comandos > Ações rápidas > Saúde e espaço > Ver fuso horário, then Ajustar para São Paulo, then restart the game (Painel > Servidor): a running process keeps the old zone. Shell fallback: `chaos-ctl.sh timezone`, `chaos-ctl.sh timezone set` (O439). Weekly resets, events, Season 1, the Founder Pack, the creator launch bonus and the 06:00 save use server time.
+- [ ] Before the first start of the launch server: admin app Comandos > Ações rápidas > Conferir lançamento > Conferir (shell fallback: `chaos-ctl.sh launch-check`). No `FAIL` line (O440).
 - [ ] Bugs and suggestions from players: update the VPS repository (admin app: Painel > Atualizar servidor), recompile the app once, then read them in Painel > Bugs e sugestões > Atualizar > Copiar tudo and paste the list to Claude (docs/ADMIN_APP.md; shell fallback: `chaos-ctl.sh feedback`).
 - [ ] `expose_php = Off` in php.ini.
 - [ ] The nginx server block, the `limit_req_zone` lines and `fastcgi_param HTTPS on` from website/README.md "Web server".

@@ -24,7 +24,8 @@ Patch notes toda quarta. Weekend Ritual toda sexta 18:00 até domingo 23:59, bos
 ### Antes do beta (31/10, os dois fins de semana já passaram)
 O que o repositório não prova (estado do VPS, chaves) fica aberto até você confirmar.
 - [ ] Servidor do beta com o código do título "Beta Tester" desde o primeiro fim de semana.
-- [ ] Fuso do VPS em São Paulo: `sudo timedatectl set-timezone America/Sao_Paulo` (o app admin ainda não tem botão).
+- [ ] Fuso do VPS em São Paulo: app admin, aba Comandos > Ações rápidas > Saúde e espaço > Ver fuso horário, depois Ajustar para São Paulo, depois reiniciar o jogo (Painel > Servidor). No shell: `chaos-ctl.sh timezone` e `chaos-ctl.sh timezone set` (ou `sudo timedatectl set-timezone America/Sao_Paulo`).
+- [ ] Antes de ligar o servidor do lançamento: app admin, aba Comandos > Ações rápidas > Conferir lançamento > Conferir (shell: `chaos-ctl.sh launch-check`). Nenhuma linha FAIL.
 - [x] Mandar a posição (x, y, z) ou a área das escadas sem descida. Feito: a captura de 26/10 virou o O264 (445 destinos sem chão achados por ferramenta e corrigidos, posição exata da captura sem confirmar; ROADMAP).
 
 ### Antes do lançamento (20/11)

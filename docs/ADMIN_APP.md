@@ -10,7 +10,7 @@ Visual escuro e quente, a mesma rampa de cinzas do app do PC (`desktop/src/theme
 | Aba | Para quê |
 |---|---|
 | Painel | Estado do servidor em texto colorido (no ar, parado, falhou, ligando, sem serviço; no ar leva o ponto brasa), há quanto tempo está no ar, jogadores (toque: quem está online, com a classe), erros desde o último início (toque: abre os erros), memória e disco com barra, carga, último backup. Puxe para baixo para atualizar; atualiza sozinho a cada 30 s (muda em Config). Botões grandes: Ligar, Desligar, Salvar, Reiniciar, Reiniciar em… (1 a 15 min, com aviso aos jogadores), Backup. Os perigosos pedem confirmação; a resposta aparece num cartão, em português, com os detalhes escondidos e os botões **Copiar** e **Compartilhar** (uma resposta grande, como o log dos testers, vai como arquivo .txt para salvar ou anexar). Cartões **Atualizar servidor** e **Recompilar engine** (abaixo) |
-| Comandos | Ações rápidas: aviso para todos, expulsar, abrir e fechar o login, versão por tag (layout padrão), **Taxa de XP**, **Par do cliente**, **Contas** (criar, trocar senha), **Saúde e espaço** (verificar, limpar sobras, ver backups), **Servidor como usuário chaos** (Ver, Corrigir, Corrigir e reiniciar, Log do reinício), **Testers** (iniciar, parar, status, relatório, log das ações, apagar), **Site e update do client** (reinstalar o site, publicar o update de uma release). Painel do jogo: todos os comandos do painel de admin, por categoria, com busca e formulário (Chaos Coins: Store > Give Chaos Coins; grupo/GM: Players > Set group) |
+| Comandos | Ações rápidas: aviso para todos, expulsar, abrir e fechar o login, versão por tag (layout padrão), **Taxa de XP**, **Par do cliente**, **Contas** (criar, trocar senha), **Saúde e espaço** (verificar, limpar sobras, ver backups, ver e ajustar o fuso horário), **Conferir lançamento** (a lista do lançamento contra o servidor instalado), **Servidor como usuário chaos** (Ver, Corrigir, Corrigir e reiniciar, Log do reinício), **Testers** (iniciar, parar, status, relatório, log das ações, apagar), **Site e update do client** (reinstalar o site, publicar o update de uma release). Painel do jogo: todos os comandos do painel de admin, por categoria, com busca e formulário (Chaos Coins: Store > Give Chaos Coins; grupo/GM: Players > Set group) |
 | Logs | Console, Erros, Updates (servidor, publicação do client, instalação do site), GM e Terminal. GM: os logs de comando do staff (`data/logs/<nome> commands.log`, mais novo primeiro) e o registro do painel de admin (tabela `chaos_admin_log`), de todos ou de um membro do staff. Fonte monoespaçada, 50 a 500 linhas, Acompanhar (recarrega a cada 5 s), copiar. Erros: só desde o último início do servidor, linhas iguais juntas com a contagem (×56); "Incluir inícios anteriores" mostra os antigos, cada um com a data do início. "Limpar lista" (`errors clear`) zera a lista e o contador do Painel: só contam os erros novos; o log do servidor não é apagado. Terminal: qualquer comando na VPS, a pasta é guardada, botão `sudo -n` |
 | Config | Endereço, porta, usuário, caminho do chaos-ctl.sh, personagem admin, intervalo do painel. Chave: gerar, mostrar, copiar, compartilhar, copiar o comando de instalação. Impressão digital da VPS com o botão Esquecer. Testar conexão |
 
@@ -218,6 +218,19 @@ Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]
   disco e memória. Limpar mostra a lista e pede confirmação antes de apagar: pastas de trabalho de atualizações e
   publicações em `/var/tmp` com mais de um dia, pastas `srvNN` lá, `tfs.antes-*` além dos 2 mais novos,
   `config.lua.before-*` além dos 5 mais novos. Backups: lista os dumps e arquivos; restaurar continua sendo pela VPS.
+  Fuso horário (O439; `timezone`, `timezone set`): **Ver fuso horário** mostra o fuso da VPS, a hora de lá, o desvio de UTC e o
+  fuso esperado (America/Sao_Paulo, UTC-3), certo ou ERRADO. O jogo usa a hora da VPS (Season 1, Founder Pack, bônus de
+  lançamento dos criadores, salvamento das 06:00). **Ajustar para São Paulo** pede confirmação, ajusta com `timedatectl` e diz
+  no resultado para reiniciar o jogo em Painel > Servidor: um processo que já roda guarda o fuso antigo. O botão não reinicia
+  nada. O app precisa ser recompilado para ter os dois botões. No desktop: VPS e manutenção > Saúde e espaço, os mesmos dois.
+- **Conferir lançamento** (`launch-check`; Comandos > Ações rápidas > cartão Conferir lançamento > Conferir; O440): lê o servidor
+  instalado e não muda nada. Mostra uma linha de resumo ("3 falhas, 2 avisos" ou "Tudo certo para o lançamento") e as linhas
+  com as falhas primeiro: beta e modo beta desligados, cron das moedas de teste ausente, pagamentos sem mock, arquivos de
+  teste, fuso horário, `maxPlayers`, datas da Season 1, da temporada PvP, do Founder Pack e do bônus dos criadores contra
+  sex 20/11/2026 15:00, chave e modo do guarda do client (só presença: a chave nunca aparece), patch notes do lançamento,
+  contagens do banco (sem nomes), backup de menos de 24 horas e a versão instalada. Copiar leva o resultado para o
+  clipboard. O app precisa ser recompilado para ter o cartão. No desktop: VPS e manutenção > Conferir lançamento > Conferir
+  (as linhas do próprio comando). Detalhes das regras: server/README.md "Launch check (O440)".
 - **Servidor como usuário chaos** (`server-user status | fix [--restart 300] | rollback | log`; Comandos > Ações rápidas > cartão
   Servidor como usuário chaos > Ver / Corrigir / Corrigir e reiniciar (5 min) / Log do reinício): o motor avisa "executed
   as root user" quando a unidade do systemd roda o jogo como root. **Ver** mostra com que usuário o motor roda, o `User=` da

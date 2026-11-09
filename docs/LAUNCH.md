@@ -550,6 +550,23 @@ Beta Tester record: no admin app button, `true` today, must be `false` at launch
 test mode, which lifts weekly and daily gameplay limits: admin app tab Comandos > Ações rápidas > card Modo beta (testes) >
 Desligar (or Desligar e reiniciar), must be `false` at launch too. Turning one off does not turn off the other.
 
+**Check it in one go, before the first start of the launch server (O440):** `chaos-ctl.sh launch-check` (admin app: Comandos >
+Ações rápidas > Conferir lançamento > Conferir). It reads the installed server and changes nothing. It checks the two beta
+switches, the beta coins cron, the payment providers (no mock), test files, the clock zone, `maxPlayers`, the dates of Season 1,
+the PvP season, the Founder Pack and the creator bonus against Fri 2026-11-20 15:00, the client guard key and mode (presence
+only), the launch patch notes, counts in the database, the newest backup and the checkout. Exit 1 when any line is `FAIL`;
+`WARN` lines are decisions or expected counts (players and coins are expected before the wipe, not after it). Pass
+`--max-players 400` (or 300) once the owner decides, so a different value fails. The wipe of the beta data is a separate tool.
+
+**The clock zone (O439).** The game reads the machine's local time: Season 1, the Founder Pack, the creator launch bonus, the
+weekend ritual and the 06:00 save. The VPS must be on `America/Sao_Paulo` (UTC-3) before 15:00 on launch day, or everything
+starts 3 hours off. Check: admin app Comandos > Ações rápidas > Saúde e espaço > Ver fuso horário (shell: `chaos-ctl.sh
+timezone`). Fix: Ajustar para São Paulo (shell: `chaos-ctl.sh timezone set`). **Then restart the game server** (Painel >
+Servidor): a running process keeps the old zone. The command never restarts by itself. The server prints its zone at every
+start (`>> Timezone: ...`, and a `>> TIMEZONE WARNING` line when it is wrong), and `chaos_health.py` alerts on the check
+`timezone`. `CHAOS_TIMEZONE` in `/etc/chaos/chaos.env` changes the expected zone for the shell tool and the health check; the Lua
+side (`timezone_config.lua`) must be changed to match (server/README.md "Timezone guard (O439)").
+
 ## 12. Open loose ends that matter for launch (ROADMAP.md)
 
 Still open:
@@ -589,7 +606,8 @@ Done or decided since the first version of this list (ROADMAP "Open decisions an
 5. Remove every test-only file and turn the beta switch off (`beta_config.lua` `enabled = false`; section 11). Turn beta test mode off too (`chaos-ctl.sh beta-mode off`, Comandos > Modo beta; `beta_mode_config.lua` `enabled = false`, `storeOfferKeys` empty): it lifts the weekly and daily gameplay limits. Also
    remove the beta coin top-up cron, if the beta used one (`rm /etc/cron.d/chaos-beta-coins`; docs/BETA.md section 4):
    left in place it refills every account's coins every minute after the wipe.
-6. systemd units, logrotate, firewall (section 5); start; read the log: no `Lua Script Error`.
+   Then `chaos-ctl.sh launch-check` (section 11): no `FAIL` line, and the clock zone is `America/Sao_Paulo` (O439).
+6. systemd units, logrotate, firewall (section 5); start; read the log: no `Lua Script Error`, and a `>> Timezone:` line with `UTC-03:00`.
 7. Create the staff account and characters; log in with the release client; check the login screen (boosted creature,
    events, players online), a store purchase, a crafting orb, the bank, the stash.
 8. Website: character creation with the class lock (section 6). Donations: the sandbox test of "Donations" below, then

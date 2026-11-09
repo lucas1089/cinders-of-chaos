@@ -5,6 +5,7 @@ backup files. Run: python3 -I server/tools/chaos_health_test.py"""
 import contextlib
 import io
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -12,6 +13,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import chaos_health as H  # noqa: E402
+import chaos_timezone as TZ  # noqa: E402
 
 checks = 0
 
@@ -37,6 +39,8 @@ class FakeSystem:
         self.ports = {7171: True, 7172: True}
         self.reply = REPLY
         self.db = (True, 'answers')
+        self.tz = {'names': [('timedatectl', 'America/Sao_Paulo'), ('/etc/timezone', 'America/Sao_Paulo')],
+                   'offset': -180}
         self.free = {}           # path -> free bytes (default 100 GB)
         self.posts = []
         self.post_ok = True
@@ -60,6 +64,9 @@ class FakeSystem:
 
     def db_ping(self):
         return self.db
+
+    def timezone_info(self, now):
+        return self.tz
 
     def disk(self, path):
         return self.free.get(path, 100 * GB), 200 * GB, hash(path)
@@ -144,14 +151,82 @@ try:
     e, m = H.errors_step(e, 0, [], 2800, 1800)
     ok(m and m.startswith('2 error line(s)') and 'd\ne' in m, 'the waiting errors post when the window ends')
 
+    # --- pure: the clock zone check (O439, chaos_timezone.py)
+    SP = [('timedatectl', 'America/Sao_Paulo'), ('/etc/timezone', 'America/Sao_Paulo'),
+          ('/etc/localtime', 'America/Sao_Paulo')]
+    ok(TZ.health_result({'names': SP, 'offset': -180}, TZ.DEFAULT_ZONE, TZ.DEFAULT_OFFSET_MIN)[0] == 'ok',
+       'the expected zone and offset pass')
+    st_, detail = TZ.health_result({'names': [('timedatectl', 'Etc/UTC')], 'offset': 0}, TZ.DEFAULT_ZONE, -180)
+    ok(st_ == 'fail' and 'Etc/UTC' in detail and 'UTC+00:00' in detail and 'UTC-03:00' in detail
+       and 'chaos-ctl.sh timezone set' in detail and 'restart' in detail, 'UTC fails and names zone, offset and fix: ' + detail)
+    ok(TZ.health_result({'names': [('/etc/timezone', 'Etc/UTC'), ('timedatectl', 'America/Sao_Paulo')], 'offset': -180},
+                        TZ.DEFAULT_ZONE, -180)[0] == 'ok', 'one source naming the expected zone with the right offset is enough')
+    ok(TZ.health_result({'names': [('timedatectl', 'America/Sao_Paulo')], 'offset': 0}, TZ.DEFAULT_ZONE, -180)[0] == 'fail',
+       'the right name with the wrong offset now fails (a stale name)')
+    ok(TZ.health_result({'names': [('timedatectl', 'Etc/GMT+3')], 'offset': -180}, TZ.DEFAULT_ZONE, -180)[0] == 'fail',
+       'the right offset under another name fails')
+    st_, detail = TZ.health_result({'names': [], 'offset': -180}, TZ.DEFAULT_ZONE, -180)
+    ok(st_ == 'ok' and 'cannot be read' in detail, 'no readable name: the offset decides')
+    ok(TZ.health_result({'names': [], 'offset': 0}, TZ.DEFAULT_ZONE, -180)[0] == 'fail', 'no name and a wrong offset fails')
+    ok(TZ.health_result({'names': [('timedatectl', 'Europe/Lisbon')], 'offset': 60}, 'Europe/Lisbon', None)[0] == 'ok',
+       'a zone with no known offset is compared by name')
+    ok(TZ.expected_zone({}) == 'America/Sao_Paulo' and TZ.expected_zone({'CHAOS_TIMEZONE': 'Europe/Lisbon'}) == 'Europe/Lisbon',
+       'CHAOS_TIMEZONE of the environment')
+    ok(TZ.expected_zone({}, env_text='A=1\nCHAOS_TIMEZONE="Europe/Paris"  # x\n') == 'Europe/Paris', 'CHAOS_TIMEZONE of the env file')
+    ok(TZ.expected_zone({'CHAOS_TIMEZONE': 'a b; rm'}) == 'America/Sao_Paulo', 'a bad zone name is ignored')
+    ok(TZ.expected_offset('America/Sao_Paulo') == -180, 'the default zone has its constant offset')
+    ok(TZ.format_offset(-180) == '-03:00' and TZ.format_offset(0) == '+00:00' and TZ.format_offset(330) == '+05:30',
+       'offset text')
+    ok(TZ.zone_from_link('../usr/share/zoneinfo/America/Sao_Paulo') == 'America/Sao_Paulo'
+       and TZ.zone_from_link('/usr/share/zoneinfo/posix/Etc/UTC') == 'Etc/UTC' and TZ.zone_from_link('/tmp/x') == '',
+       'zone name from the /etc/localtime link')
+    # the readers, on temp files and a fake timedatectl
+    zdir = tempfile.mkdtemp(prefix='chaos-tz-test-')
+    try:
+        etc = os.path.join(zdir, 'timezone')
+        link = os.path.join(zdir, 'localtime')
+        with open(etc, 'w') as f:
+            f.write('Etc/UTC\n')
+        os.symlink('../usr/share/zoneinfo/America/Sao_Paulo', link)
+        names = TZ.read_zone_names(run=lambda c: 'America/Sao_Paulo\n', etc_timezone=etc, localtime=link)
+        ok(names == [('timedatectl', 'America/Sao_Paulo'), ('/etc/timezone', 'Etc/UTC'),
+                     ('/etc/localtime', 'America/Sao_Paulo')], 'the three readers: %r' % (names,))
+        names = TZ.read_zone_names(run=lambda c: '', etc_timezone=os.path.join(zdir, 'none'),
+                                   localtime=os.path.join(zdir, 'none2'))
+        ok(names == [], 'no source readable: no names, no crash')
+        old = lambda c: 'Time zone: America/Sao_Paulo (-03, -0300)\n' if c[1] == 'status' else ''  # noqa: E731
+        ok(TZ.read_zone_names(run=old, etc_timezone=os.path.join(zdir, 'none'), localtime=os.path.join(zdir, 'none2'))
+           == [('timedatectl', 'America/Sao_Paulo')], 'older timedatectl status text')
+        # the command line, with the hooks: UTC fails with exit 1, then the expected zone passes
+        os.environ['CHAOS_TZ_ETC_TIMEZONE'] = etc
+        os.environ['CHAOS_TZ_LOCALTIME'] = os.path.join(zdir, 'none')
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = TZ.main(['status'], now=T0, run=lambda c: '')
+        lines = dict(l.split('=', 1) for l in buf.getvalue().splitlines())
+        ok(rc == 1, 'status exits 1 when the zone is wrong')
+        ok(lines['zone'] == 'Etc/UTC' and lines['result'] == 'WRONG' and lines['expected_zone'] == 'America/Sao_Paulo'
+           and lines['expected_offset'] == '-03:00' and 'local_time' in lines, 'status lines: %r' % (lines,))
+    finally:
+        os.environ.pop('CHAOS_TZ_ETC_TIMEZONE', None)
+        os.environ.pop('CHAOS_TZ_LOCALTIME', None)
+        shutil.rmtree(zdir)
+    # the Lua side keeps its own copy of the expected zone: the two must agree
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, '..', 'data', 'scripts', 'chaos', 'timezone_config.lua')) as f:
+        lua_cfg = f.read()
+    ok(re.search(r'zone\s*=\s*"%s"' % re.escape(TZ.DEFAULT_ZONE), lua_cfg) is not None
+       and re.search(r'offsetMinutes\s*=\s*%d\b' % TZ.DEFAULT_OFFSET_MIN, lua_cfg) is not None,
+       'timezone_config.lua and chaos_timezone.py name the same zone and offset')
+
     # --- run 1: all up, first run: nothing is posted
     out = go(T0)
     ok(out == [], 'all up on the first run: no post')
     st = state()
     ok(all(c['ok'] for c in st['checks'].values()), 'every check passes')
     for name in ('unit:chaos-server', 'unit:mariadb', 'unit:chaos-clientservices', 'unit:chaos-payworker', 'unit:nginx',
-                 'unit:php8.3-fpm', 'port:login', 'port:game', 'status', 'database', 'disk:/', 'disk:' + backup,
-                 'backup'):
+                 'unit:php8.3-fpm', 'port:login', 'port:game', 'status', 'database', 'timezone', 'disk:/',
+                 'disk:' + backup, 'backup'):
         ok(name in st['checks'], 'checked: ' + name)
     ok('offsite' not in st['checks'], 'no off-site check without a remote')
     ok(st['online'][-1][1] == 17, 'the player count is sampled')
@@ -165,6 +240,17 @@ try:
     out = go(T0 + 900)
     ok(len(out) == 1 and 'OK database' in out[0], 'the recovery alerts once')
     ok(go(T0 + 1200) == [], 'quiet again')
+
+    # --- the clock zone (O439): a machine left in UTC alerts once with the zone, the offset and the fix, then recovers
+    fake.tz = {'names': [('timedatectl', 'Etc/UTC'), ('/etc/timezone', 'Etc/UTC')], 'offset': 0}
+    out = go(T0 + 1350)
+    ok(len(out) == 1 and 'FAIL timezone' in out[0] and 'Etc/UTC' in out[0] and 'UTC+00:00' in out[0]
+       and 'America/Sao_Paulo' in out[0] and 'chaos-ctl.sh timezone set' in out[0],
+       'a UTC machine alerts with the zone found, the offset and the fix: ' + str(out))
+    ok(go(T0 + 1360) == [], 'no repeat while the zone stays wrong')
+    fake.tz = {'names': [('timedatectl', 'America/Sao_Paulo')], 'offset': -180}
+    out = go(T0 + 1370)
+    ok(len(out) == 1 and 'OK timezone' in out[0], 'the zone recovers')
 
     # --- the game port: confirm 2 (one miss is not an alert)
     fake.ports[7172] = False

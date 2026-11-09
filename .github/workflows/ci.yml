@@ -1379,6 +1379,9 @@ jobs:
           bash -n server/deploy/chaos_update.sh
           python3 -I server/deploy/chaos_update_test.py
 
+      - name: Launch check (launch_check.py on a temporary server folder with fakes; every check's OK / WARN / FAIL rule, the Lua reader, report, JSON, exit code, no key printed; O440)
+        run: python3 -I server/deploy/launch_check_test.py
+
       - name: Admin app server side (chaos-ctl.sh with stubs; remote.cmd commands)
         run: |
           shellcheck server/deploy/chaos-ctl.sh
@@ -1387,7 +1390,7 @@ jobs:
       - name: Launch wipe tool (O438; table policy covers every CREATE TABLE, refusals, one transaction, checks; fake runner, no database)
         run: python3 -I server/deploy/launch_wipe_test.py
 
-      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; Saúde do jogo parsing; Pagamentos card checks and status text; plain JVM)
+      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; Saúde do jogo parsing; Pagamentos card checks and status text; fuso horário text (O439); Conferir lançamento summary and order (O440); plain JVM)
         run: |
           mkdir -p /tmp/appjava
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/DiscordInfo.java android/app/src/test/java/com/cindersofchaos/admin/DiscordInfoTest.java
@@ -1404,6 +1407,10 @@ jobs:
           java -cp /tmp/appjava com.cindersofchaos.admin.PayInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/EngineBuildInfo.java android/app/src/test/java/com/cindersofchaos/admin/EngineBuildInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.EngineBuildInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/TimezoneInfo.java android/app/src/test/java/com/cindersofchaos/admin/TimezoneInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.TimezoneInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/LaunchCheckInfo.java android/app/src/test/java/com/cindersofchaos/admin/LaunchCheckInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.LaunchCheckInfoTest
 
       - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
         run: |

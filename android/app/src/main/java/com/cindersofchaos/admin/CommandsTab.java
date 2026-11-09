@@ -227,6 +227,7 @@ final class CommandsTab {
         buildDiscordBot();
         buildPayments();
         buildHealth();
+        buildLaunchCheck();
         buildServerUser();
         buildVps();
         buildServices();
@@ -1196,7 +1197,43 @@ final class CommandsTab {
                     + "\n\nRestaurar é pela VPS (docs/LAUNCH.md, Incident runbook): o app não restaura banco.", f.raw));
         }));
         b.addView(backups, ui.gap(4));
+        // the clock zone (chaos-ctl.sh timezone [set], O439): the game reads the VPS's local time
+        b.addView(ui.hint("Fuso horário: o Founder Pack, a Season 1, o bônus de lançamento dos criadores e o salvamento "
+                + "das 06:00 usam a hora da VPS, que precisa ser a de São Paulo (UTC-3). Ajustar não reinicia o jogo."),
+                ui.gap(12));
+        MaterialButton tz = ui.secondary("Ver fuso horário", R.drawable.ic_refresh);
+        tz.setOnClickListener(v -> timezone("Fuso horário", "timezone", false));
+        MaterialButton tzSet = ui.danger("Ajustar para São Paulo", 0);
+        tzSet.setOnClickListener(v -> a.confirm("Ajustar o fuso da VPS para São Paulo?", "A VPS passa a usar America/Sao_Paulo "
+                + "(UTC-3). O jogo que já está rodando só pega o fuso novo quando reiniciar (Painel > Servidor): o app não "
+                + "reinicia nada sozinho.", "Ajustar", true, () -> timezone("Ajustar fuso", "timezone set", true)));
+        b.addView(ui.evenRow(tz, tzSet), ui.gap(4));
         quick.addView(c, ui.gap(12));
+    }
+
+    // the clock zone of the VPS: the command exits 1 when the zone is wrong, so its lines are read whatever the exit code
+    private void timezone(String what, String args, boolean set) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running(what);
+        a.ctlAction(args, 60, f -> {
+            TimezoneInfo t = TimezoneInfo.parse(f.raw);
+            Friendly shown = f;
+            if (t != null) {
+                String text = set ? t.afterSet() : t.summary();
+                shown = t.ok ? Friendly.ok(set ? "Fuso ajustado" : "Fuso certo", text, f.raw)
+                        : Friendly.fail(set ? "Fuso ainda errado" : "Fuso errado", text, f.raw);
+            }
+            result.show(what, shown);
+            a.snack(what + ": " + (shown.ok ? "feito" : shown.title), shown.ok);
+        });
+    }
+
+    // the launch list against the installed server (chaos-ctl.sh launch-check, O440; read only)
+    private void buildLaunchCheck() {
+        quick.addView(new LaunchCheckCard(a).card, ui.gap(12));
     }
 
     // the game server as the system user chaos instead of root (chaos-ctl.sh server-user status | fix; server/README.md

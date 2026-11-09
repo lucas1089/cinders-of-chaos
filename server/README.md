@@ -29259,3 +29259,82 @@ the password only in a temporary 0600 option file). Run it with `python3 -I`.
 - **Tests:** `deploy/launch_wipe_test.py` (policy coverage, validator, SQL text, every refusal, server detection, the mysql
   call, dry run, execute, idempotence, rollback, verify; a fake runner, no database). Rehearsed once on a real MariaDB
   with a dump of a small installed server (counts in ROADMAP O438).
+
+## Timezone guard (O439) (`tools/chaos_timezone.py`, `chaos/timezone.lua`, `timezone_core.lua`, `timezone_config.lua`, `chaos-ctl.sh timezone`)
+
+The game reads the machine's **local** time: `weekend_config.lua`, `founder_config.lua`, `season_config.lua`, the creator launch
+bonus and the 06:00 save. The launch is Fri 2026-11-20 15:00 Brasilia time (UTC-3). A VPS left in UTC starts all of it 3 hours
+late, silently. Three guards, one expected zone: `America/Sao_Paulo`, UTC offset -180 minutes.
+
+* **One place.** Deploy side: `server/tools/chaos_timezone.py` (`DEFAULT_ZONE`, `DEFAULT_OFFSET_MIN`, and an optional
+  `CHAOS_TIMEZONE=` in `/etc/chaos/chaos.env`). Lua side: `data/scripts/chaos/timezone_config.lua`. **The two must agree.**
+  `tools/chaos_health_test.py` compares them. A `CHAOS_TIMEZONE` other than the default needs the same change in the Lua file.
+* **How the zone is read.** Three ways, because a zone name can be read in more than one way: `timedatectl show`, `/etc/timezone`
+  and the `/etc/localtime` link. The UTC offset now comes from the C library, so it is the offset the game process gets. Right
+  means: the offset is the expected one AND, when any name can be read, the expected name is one of them. A stale name with
+  the wrong offset fails. The right offset under another name (for example `Etc/GMT+3`) fails too. When no name can be read,
+  the offset decides.
+* **Health check `timezone`** (`chaos_health.py`, every 5 minutes): FAIL names the zone found, the offset found, the expected
+  zone and the fix. It alerts once on the change, like the other checks.
+* **Start line** (`timezone.lua`, pure logic in `timezone_core.lua`, test `tests/timezone_test.lua`): at every start the console
+  shows `>> Timezone: local time ..., UTC-03:00 (expected America/Sao_Paulo, UTC-03:00)`. When the offset is not the expected
+  one, a second line `>> TIMEZONE WARNING: ...` names both offsets and the fix. The offset comes from `os.time` and
+  `os.date("!*t")` (the daylight saving flag of the local read is used for both reads). It never stops the server and never
+  changes anything; a failing check is caught and printed.
+* **`chaos-ctl.sh timezone`**: key=value lines `zone`, `local_time`, `utc_offset`, `expected_zone`, `expected_offset`,
+  `result=OK|WRONG`, `detail`. Exit 1 when WRONG.
+* **`chaos-ctl.sh timezone set`**: `timedatectl set-timezone` to the expected zone (root), then the same lines, `restart_needed=yes`
+  and a note. **A running process keeps the old zone**: restart the game server for it to take effect. The command never restarts
+  by itself.
+* **Admin app:** Android Comandos > Ações rápidas > Saúde e espaço > "Ver fuso horário" and "Ajustar para São Paulo" (asks first);
+  desktop VPS e manutenção > Saúde e espaço, same two buttons. The result after the set says to restart in Painel > Servidor.
+* **Tests:** `tools/chaos_health_test.py` (pure decision, the three readers, the alert), `deploy/chaos_ctl_test.py`
+  (`test_timezone`, with a fake `timedatectl`), `tests/timezone_test.lua` (LuaJIT and Lua 5.3, injected clocks), Android
+  `TimezoneInfoTest`.
+* **Not verified:** a real `timedatectl set-timezone` on the VPS, and a real start of the engine with `timezone.lua` (the engine
+  API used is `GlobalEvent` `onStartup`, as in the other startup scripts).
+
+## Launch check (O440) (`deploy/launch_check.py`, `chaos-ctl.sh launch-check`)
+
+`chaos-ctl.sh launch-check [--json] [--max-players N] [--launch "YYYY-MM-DD HH:MM"]` checks the **installed** server against the
+launch list and **changes nothing**. One line per check, `OK`, `WARN` or `FAIL`, a short name and one sentence, then
+`launch check: N FAIL, N WARN, N OK`. **Exit 1 when any check is FAIL**, else 0. `--json` prints one JSON line. A check that cannot
+run (a file is missing, the database is down, a Lua config does not read) is a FAIL that says why, never a crash and never a
+silent OK. The wipe of the beta data is a separate tool; this one only reports counts.
+
+The shell tool gets the facts that need root (the five database counts, one query each, and the `pay-status` lines) and feeds them
+to `launch_check.py` on stdin. Everything else the script reads itself: the server folder, the env file, the backup folder, the
+checkout. The Lua configs are read with a small tolerant reader (a regex on the known keys); what it cannot read is "cannot read",
+never a guess.
+
+| Name | Reads | FAIL | WARN |
+|---|---|---|---|
+| `beta_config` | `beta_config.lua` `enabled` | true, or unreadable | |
+| `beta_mode` | `beta_mode_config.lua` `enabled` (file only: beta mode is read at the start of the scripts) | true, or unreadable | |
+| `beta_cron` | `/etc/cron.d/chaos-beta-coins` (`CHAOS_BETA_CRON` for tests) | the file exists | |
+| `payments` | `pay-status`: providers, mock flag, Mercado Pago token kind | a mock provider; no payments status | no live provider; a Mercado Pago TEST token |
+| `test_files` | `zz_*` and `ztest*` under `data/scripts`, `ztest*` in the server folder | any (5 listed) | |
+| `timezone` | `chaos_timezone.py` (see Timezone guard) | not on the expected zone and offset | |
+| `max_players` | `config.lua` `maxPlayers` | with `--max-players N`: a different value | without the flag, always: "owner decision: 300 or 400" |
+| `dates_season` | `season_config.lua` Season 1 start and end | the start is not the launch | |
+| `dates_pvp` | `battleground_config.lua` `season.epoch`, `weeks` | cannot read | the epoch is not the launch |
+| `dates_founder` | `founder_config.lua` start and end | the start is not the launch | |
+| `dates_creator` | `creator_codes_config.lua` `launchBonusStart`, `launchBonusDays` | cannot read | the start is not the launch |
+| `client_guard` | `config.lua` `clientGuardMode`, `clientGuardAllowDevKey`; the key: `CHAOS_CLIENT_KEY` of the env file, `clientGuardKey`, `clientGuardKeyFile` | mode off or not set; a dev key allowed; no key | mode `log` |
+| `patch_notes` | `data/patchnotes/LAUNCHDATE.md` and `.pt-br.md` | | either missing |
+| `database` | counts only: players, accounts, accounts with coins, `players_online`, `chaos_beta_testers` | a count cannot be read | players or coins above 0 (expected before the wipe, not after it) |
+| `backup` | the newest file of the backup folder (`CHAOS_BACKUP_DIR`, `backup.sh`) | none | 24 hours old or more |
+| `checkout` | the checkout of `CHAOS_REPO`: branch, short commit, clean or dirty | not a checkout | dirty, or not on `main` (a detached head at the commit `main` points to counts as main) |
+
+The launch time is a constant at the top of the tool (`LAUNCH`, 2026-11-20 15:00, server local time); `--launch` moves it. The
+dates are printed as the configs say them, in server local time, so a wrong machine zone is the `timezone` line's job. The client
+key is only tested for presence: it is never printed, logged or hashed. No names, ids or rows reach the output, only counts.
+
+* **Admin app:** Android Comandos > Ações rápidas > "Conferir lançamento" > Conferir (one summary line, "3 falhas, 2 avisos" or
+  "Tudo certo para o lançamento", then the lines with FAIL first); desktop VPS e manutenção > "Conferir lançamento" > Conferir
+  (the command's own lines).
+* **Tests:** `deploy/launch_check_test.py` (every rule, the reader, report, JSON, exit code, a whole run on a temp folder),
+  `deploy/chaos_ctl_test.py` (`test_launch_check`: stub database and checkout, flags, refusals, nothing written, no key in any
+  output), Android `LaunchCheckInfoTest`.
+* **Not verified:** a run on the real VPS (the database counts, `pay-status` as root, the checkout), the Android card build (no SDK
+  here).
