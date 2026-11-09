@@ -279,14 +279,20 @@ namespace Chaos.Core.Tests
                 if (silentNative.Contains(cls) || four.Contains(cls)) r.Windows.Add(Win(cls));
                 else r.Windows.Add(Win(cls, 100));
             }
-            check(r.Windows.Count == 43 && r.AnsweredCount == 33 && silentNative.Concat(answeredNative).All(LiveSmokePlan.IsNative), "live account: the first run: 43 windows, 33 answered (" + r.AnsweredCount + ")");
-            check(r.LocalCount == 8 && r.NoAnswerCount == 2 && r.AccountedCount == 43, "live account: before Skills and Dungeons are known as login requests: 8 local-only, 2 without an answer, all 43 accounted for (" + r.SummaryLine() + ")");
+            check(r.Windows.Count == 43 && r.AnsweredCount == 30 && silentNative.Concat(answeredNative).All(LiveSmokePlan.IsNative), "live account: the first run: 43 windows, 33 with an opcode while open, 30 of them asking windows; a native window with a background push is local (" + r.AnsweredCount + ")");
+            check(r.LocalCount == 11 && r.NoAnswerCount == 2 && r.AccountedCount == 43, "live account: before Skills and Dungeons are known as login requests: 11 local-only, 2 without an answer, all 43 accounted for (" + r.SummaryLine() + ")");
 
             // the same run with the rules: Skills and Dungeons were asked at login (119 and 109 seen before the steps), Helper and Item Finder send nothing
             r.Prefetched.Add(119); r.Prefetched.Add(109); r.Prefetched.Add(200);
-            check(r.NoAnswerCount == 0 && r.PrefetchedCount == 2 && r.LocalCount == 8 && r.AnsweredCount == 33 && r.NeedsConditionCount == 0 && r.AccountedCount == 43, "live account: 33 answered, 2 prefetched, 8 local-only, none without an answer: " + r.SummaryLine());
+            check(r.NoAnswerCount == 0 && r.PrefetchedCount == 2 && r.LocalCount == 11 && r.AnsweredCount == 30 && r.NeedsConditionCount == 0 && r.AccountedCount == 43, "live account: 30 answered, 2 prefetched, 11 local-only, none without an answer: " + r.SummaryLine());
             check(r.Warnings().Count == 0 && r.Notes().Count == 0 && r.Windows.All(w => r.StatusOf(w) != LiveWindowStatus.NoAnswer), "live account: and no warning is left");
             check(LiveSmokeReport.StatusName(r.StatusOf(r.Windows.First(w => w.Class == "DungeonsWindow"))) == "prefetched" && LiveSmokeReport.StatusName(r.StatusOf(r.Windows.First(w => w.Class == "ItemFinderWindow"))) == "local" && LiveSmokeReport.StatusName(r.StatusOf(r.Windows.First(w => w.Class == "BankWindow"))) == "answered", "live account: status names of a prefetched, a local-only and an answered window");
+
+            // runs 3 and 4: the same native window got a background push in one run and none in the other; both must read local
+            {
+                var a = new LiveSmokeReport { LoginOk = true, EnterOk = true }; a.Windows.Add(Win("BattleListWindow", 100)); a.Windows.Add(Win("MinimapWindow"));
+                check(a.StatusOf(a.Windows[0]) == LiveWindowStatus.Local && a.StatusOf(a.Windows[1]) == LiveWindowStatus.Local, "live account: a native window is local with or without a background push while open (counts stable between runs)");
+            }
 
             // Skills asked at login but the answer never came: a warning that names the opcode, not a silent pass
             var late = new LiveSmokeReport { LoginOk = true, EnterOk = true };
