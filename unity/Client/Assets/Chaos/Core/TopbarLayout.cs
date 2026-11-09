@@ -52,6 +52,18 @@ namespace Chaos.Core
             return r;
         }
 
+        /// <summary>Where a box of `width` next to the menu row goes (the Candlemarks counter): left of the row's first button, `gap` apart, when that stays
+        /// right of `leftLimit`; else under the row, right-aligned with it. barXMax 0 or less: the row is not drawn yet, `fallbackX` is used.</summary>
+        public static void SideSlot(float barXMin, float barXMax, float barYMax, float leftLimit, float width, float gap, float fallbackX, out float x, out float y)
+        {
+            if (barXMax <= 0) { x = fallbackX; y = 12; return; }
+            x = barXMin - gap - width;
+            y = 12;
+            if (x >= leftLimit) return;
+            x = barXMax - width;
+            y = barYMax + gap;
+        }
+
         /// <summary>Cell width for a buff icon: wide enough for the short name and the timer, never below the base size.</summary>
         public static float CellWidth(float labelWidth, float timerWidth, float baseSize, float padding = 4f) =>
             Math.Max(baseSize, Math.Max(labelWidth, timerWidth) + padding);

@@ -42,6 +42,16 @@ namespace Chaos.Core.Tests
             check(wide[0].Row == 0 && wide[1].Row == 1, "topbar: an over-wide label sits alone on its row");
             check(TopbarLayout.Fit(new float[0], 10f, 56f, 4f, 0f, 500f).Length == 0, "topbar: no buttons, no cells");
 
+            // the Candlemarks counter beside the row: the old fixed spot (7 buttons of 76 px) ran into "Character" on 1280 px (live server, 2026-11-09)
+            var en = TopbarLayout.Fit(Widths(En), 10f, 56f, 4f, 264f, 1176f);
+            float rowMin = en[0].X, rowMax = en[en.Length - 1].X + en[en.Length - 1].W;
+            TopbarLayout.SideSlot(rowMin, rowMax, 38f, 264f, 210f, 6f, 0f, out float sx, out float sy);
+            check(sy == 12f && sx + 210f + 6f <= rowMin + 0.01f && sx >= 264f, "candle counter: left of the first menu button on 1280 px (" + sx + ".." + (sx + 210f) + ", row from " + rowMin + ")");
+            TopbarLayout.SideSlot(narrow.Min(c => c.X), 800f, 70f, 264f, 210f, 6f, 0f, out sx, out sy);
+            check(sy == 76f && Math.Abs(sx + 210f - 800f) < 0.01f, "candle counter: under a wrapped row, right-aligned, when no room is left of it");
+            TopbarLayout.SideSlot(0f, 0f, 0f, 264f, 210f, 6f, 123f, out sx, out sy);
+            check(sx == 123f && sy == 12f, "candle counter: the fallback spot before the row was drawn");
+
             // minimum width for short labels
             check(TopbarLayout.Fit(new[] { 8f }, 10f, 56f, 4f, 0f, 500f)[0].W == 56f, "topbar: minimum button width");
 
