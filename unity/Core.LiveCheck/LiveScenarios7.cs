@@ -496,7 +496,8 @@ namespace Chaos.Core.LiveCheck
             if (!opened)
                 return "using the loot container (client id " + cid + ", server id " + sid + ", stack position " + stack + " of tile " + P(tile) + ", the character at " + P(me.Pos) + ", things on the tile [" + string.Join(" ", (world.Get(tile)?.Things ?? new List<Thing>()).Select(th => th.IsCreature ? "c" + th.Creature.Id : th.Item.Id.ToString(CultureInfo.InvariantCulture))) + "]) opened nothing (no 0x6E); server said [" + string.Join(" | ", me.ServerTexts(say0).Take(2)) + "]";
             Pump(400, () => false);
-            var ct = p.Containers.Values.FirstOrDefault(c => c.ItemId == cid) ?? p.Containers.Values.Last();
+            var ct = p.Containers.Values.FirstOrDefault(c => c.ItemId == cid) ?? p.Containers.Values.LastOrDefault();
+            if (ct == null) return "the loot container (client id " + cid + ") opened (0x6E) and no container is open a moment later (closed again by the server, 0x6F)";
             var items = ct.Items.Where(i => i != null).ToList();
             r.Note("loot container: client id " + cid + " (server id " + sid + (wasBag ? ", the loot bag of O435" : ", the monster's own body: this engine has no loot bag patch") + "), name '" + ct.Name + "', capacity " + ct.Capacity + ", " + items.Count + " item(s) [" + string.Join(", ", items.Select(i => i.Id + "x" + Math.Max(1, i.Count))) + "], packets +" + PacketDiff(p, packets0) + "; open containers now [" + string.Join(" ", p.Containers.Values.Select(c => c.Id + ":" + c.ItemId)) + "]");
             if (items.Count == 0) { s.CloseContainer(ct.Id); return ""; }
@@ -567,7 +568,7 @@ namespace Chaos.Core.LiveCheck
             }
             int maxKills = 24;
             bool looted = false, anyKill = false, everBag = false;
-            int kills = 0, deaths = 0;
+            int kills = 0, deaths = 0, emptyReads = 0;
             var lootFails = new List<string>();
             long expStart = (long)p.Experience;
             int levelStart = p.Level;
@@ -592,7 +593,7 @@ namespace Chaos.Core.LiveCheck
                 everBag |= wasBag;
                 if (lootProblem.Length > 0) { lootFails.Add(lootProblem); r.Note("loot attempt failed: " + lootProblem); continue; }
                 looted = moved > 0;
-                if (!looted) r.Note("the loot container was empty; killing another");
+                if (!looted) { emptyReads++; r.Note("the loot container was empty; killing another"); }
             }
             long expEnd = (long)p.Experience;
             r.Note("after " + kills + " kill(s): experience " + expStart + " to " + expEnd + ", level " + levelStart + " to " + p.Level + ", health " + p.Health + "/" + p.MaxHealth + ", looted " + looted);
@@ -601,11 +602,14 @@ namespace Chaos.Core.LiveCheck
                 r.Note("level up " + levelStart + " to " + p.Level + ": server lines [" + string.Join(" | ", me.ServerTexts(0).Where(x => x.IndexOf("advanced", StringComparison.OrdinalIgnoreCase) >= 0).TakeLast(2)) + "]; 0xA0 and spell pushes read, spells ready " + (s.Spells.Loaded ? s.Spells.Visible(SpellBook.FilterLearned, "all", "").Count : 0));
             }
             else r.Note("no level up: " + (expEnd - expStart) + " experience gained in " + kills + " kill(s) (the next level needs more)");
-            if (!looted && anyKill) problems.Append("no loot was taken in " + kills + " kill(s)" + (lootFails.Count > 0 ? ": " + string.Join(" | ", lootFails.Take(2)) : " (every loot container was empty)") + "; ");
+            // an empty body is the server's rule, not a client fault: every coin of a kill goes to the bank (autoloot.lua ChaosAutolootGold.wanted, owner 2026-10-21) and a
+            // Cave Rat's other drops are rare, so CI saw 2 to 7 empty bodies in a row (PR 325). Reading an empty container is enough; taking items is checked when there are any.
+            if (!looted && anyKill && emptyReads > 0) r.Note("no item to take in " + emptyReads + " loot container(s) read: the coins go to the bank and the other drops are rare; the open and read path passed");
+            else if (!looted && anyKill) problems.Append("no loot was taken in " + kills + " kill(s)" + (lootFails.Count > 0 ? ": " + string.Join(" | ", lootFails.Take(2)) : " (every loot container was empty)") + "; ");
             problems.Append(mark.Diff(me, "primary"));
             if (!anyKill && problems.Length == 0) problems.Append("no " + weak + " was killed; ");
             if (problems.Length > 0) r.Fail(problems.ToString().Trim());
-            else r.Pass(kills + " " + weak + " killed with " + (spell == null ? "melee" : spell.Name + " and melee") + ", " + (expEnd - expStart) + " experience, loot " + (everBag ? "bag" : "container") + " opened, read and taken into the backpack, no parse failure");
+            else r.Pass(kills + " " + weak + " killed with " + (spell == null ? "melee" : spell.Name + " and melee") + ", " + (expEnd - expStart) + " experience, loot " + (everBag ? "bag" : "container") + " opened and read" + (looted ? ", items taken into the backpack" : " (" + emptyReads + " empty: coins go to the bank)") + ", no parse failure");
         }
         // ------------------------------------------------------------------------------------ firstquest
         /// <summary>Cinderhold's temple spot, the great purple teleport north-west of it (its tiles lead to the teleport room, x 32364-32366, y 32235-32236) and the cellar the first tale
