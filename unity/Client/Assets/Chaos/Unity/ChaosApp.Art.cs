@@ -160,15 +160,7 @@ namespace Chaos.Client
             var plate = new Rect(px + Mathf.Floor((MonsterBarArt.PanelW - nameW) / 2f), py + MonsterBarArt.PlateTop, nameW, MonsterBarArt.PlateH);
             DrawNineSlice(plate, plaque, MonsterBarArt.PlateBorderX, MonsterBarArt.PlateBorderY);
             GUI.Label(plate, title, ns);
-            string lv = MonsterBar.LevelText(info?.Level ?? 0);
-            if (lv != null)
-            {
-                var ls = new GUIStyle(ns);
-                int lvW = MonsterBarArt.PlateWidth(ls.CalcSize(new GUIContent(lv)).x, MonsterBarArt.LevelMin, MonsterBarArt.LevelMax);
-                var lr = new Rect(plate.x - MonsterBarArt.LevelGap - lvW, plate.y, lvW, MonsterBarArt.PlateH);
-                DrawNineSlice(lr, plaque, MonsterBarArt.PlateBorderX, MonsterBarArt.PlateBorderY);
-                GUI.Label(lr, lv, ls);
-            }
+            // no level plate left of the name: the name already ends in the level ("Rat [2]"), as in the main client
 
             // modifier chips under the frame, centred, with their tooltips
             if (info != null && info.Mods.Count > 0)

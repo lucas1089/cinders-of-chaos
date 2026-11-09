@@ -167,10 +167,7 @@ namespace Chaos.Client
                     var ns = new GUIStyle(small) { fontSize = 13, fontStyle = FontStyle.Bold };
                     ns.normal.textColor = nameCol;
                     GUI.Label(new Rect(box.x + 6, box.y + 1, box.width - 70, 20), title, ns);
-                    string lv = MonsterBar.LevelText(info?.Level ?? 0);
-                    var rs = new GUIStyle(hudTiny) { alignment = TextAnchor.MiddleRight };
-                    rs.normal.textColor = new Color(0.85f, 0.8f, 0.7f);
-                    if (lv != null) GUI.Label(new Rect(box.xMax - 64, box.y + 1, 58, 20), lv, rs);
+                    // no level label: the name already ends in the level ("Rat [2]"), as in the main client
                     var bar = new Rect(box.x + 6, box.y + 22, box.width - 12, 12);
                     Fill(bar, new Color(0f, 0f, 0f, 0.9f));
                     int tw = MonsterBar.FillWidth(hud.Monster.TrailValue, (int)bar.width);
