@@ -16,6 +16,7 @@ namespace Chaos.Core.Tests
             TileChecks(check);
             ReportChecks(check);
             NewPlayerChecks(check);
+            FirstFightChecks(check);
         }
 
         static Func<string, string> Env(params string[] kv)
@@ -344,7 +345,7 @@ namespace Chaos.Core.Tests
             var to = r.NewPlayer;
             to.Ran = n.Ran; to.LoginOk = n.LoginOk; to.EnterOk = n.EnterOk; to.LoggedOut = n.LoggedOut; to.ToastSeen = n.ToastSeen; to.HelperAsked = n.HelperAsked;
             to.HelperOpened = n.HelperOpened; to.HintShown = n.HintShown; to.BlinkActive = n.BlinkActive; to.Tab = n.Tab; to.Hint = n.Hint; to.Error = n.Error;
-            to.Screenshot = n.Screenshot; to.ToastMs = n.ToastMs; to.HelperMs = n.HelperMs;
+            to.Screenshot = n.Screenshot; to.ToastMs = n.ToastMs; to.HelperMs = n.HelperMs; to.HelperTakenMs = n.HelperTakenMs; to.LongestFrameMs = n.LongestFrameMs; to.LongestFrameAtMs = n.LongestFrameAtMs;
             return r;
         }
 
@@ -455,6 +456,415 @@ namespace Chaos.Core.Tests
             pj = Json.TryParse(text);
             check(pj != null && !text.Contains("np-secret") && !text.Contains("Live Fresh A") && text.Contains("<removed>") && !Json.Bool(pj, "pass") && !Json.Bool(Json.Get(pj, "newplayer"), "pass"), "newplayer json: a failing block says why and holds no secret");
             check(!text.Any(c => c > 0x7e), "newplayer json: ASCII only");
+        }
+
+
+        // ============================================================================================================================ the first fight (O433, "New player first fight")
+        // A simulated game: the temple floor with the stair the client calls not walkable, the cave below with Rats, steps one tile each 250 ms, a kill after some seconds of attack, a body, a container
+        // that opens. The step runs against it the way the player and the live check run it, so the route, the stair step, the fight, the loot and every end state are checked without a screen or a server.
+        sealed class FightSim
+        {
+            public Pos Player = new Pos(32369, 32241, 7);
+            public bool SpellsLoaded = true, Dead, BlockRoute, StairWorks = true, RatsInCave = true, NeverDies, GivesExperience = true, OpensBody = true, BodyHasItems = true, WindowOpensByItself = true, StaysAtTemple = true;
+            public int Slots = 5, InjectRefusals;
+            public double KillAfterMs = 3000, SpawnAtMs, StepMs = 250;
+            public long Experience = 4200;
+            public int ExpTexts, ContainerOpens, Moves, Refused, Attacks, Chases, UseCalls, Walks, Steps, ShowBodies;
+            public bool HelperOn, Rotation, ContainersWindow, AutoWalk, StuckWalk;
+            public double Now;
+            public readonly List<LiveFightMonster> Rats = new List<LiveFightMonster>();
+            readonly Dictionary<Pos, int> bodies = new Dictionary<Pos, int>();
+            readonly List<LiveFightContainer> containers = new List<LiveFightContainer>();
+            List<Pos> walk = new List<Pos>();
+            int walkAt;
+            double nextStep = -1, stairAt = -1, attackStart = -1;
+            uint target;
+            bool arrived;
+            public static readonly Pos Landing = new Pos(32390, 32225, 8);
+
+            public bool Walkable(Pos p)
+            {
+                if (p.Z == 7) return p.X >= 32355 && p.X <= 32400 && p.Y >= 32205 && p.Y <= 32250 && !p.Equals(LiveFirstFightStep.Stair) && !(BlockRoute && p.Y == 32230);
+                if (p.Z == 8) return p.X >= 32340 && p.X <= 32410 && p.Y >= 32195 && p.Y <= 32240;
+                return false;
+            }
+
+            public void Advance(double now)
+            {
+                Now = now;
+                if (stairAt >= 0 && now >= stairAt) { stairAt = -1; Player = Landing; Moves++; }
+                if (AutoWalk && !StuckWalk && nextStep >= 0 && now >= nextStep)
+                {
+                    if (InjectRefusals > 0 && walkAt == 2) { InjectRefusals--; Refused++; AutoWalk = false; nextStep = -1; }
+                    else
+                    {
+                        Player = walk[++walkAt]; Moves++;
+                        if (walkAt >= walk.Count - 1) { AutoWalk = false; nextStep = -1; }
+                        else nextStep = now + StepMs;
+                    }
+                }
+                if (Player.Z == 8 && !arrived)
+                {
+                    arrived = true; SpawnAtMs = now;
+                    if (RatsInCave)
+                    {
+                        Rats.Add(new LiveFightMonster { Id = 101, Name = "Cave Rat [5]", Pos = new Pos(32392, 32228, 8) });
+                        Rats.Add(new LiveFightMonster { Id = 102, Name = "Rat [2]", Pos = new Pos(32387, 32230, 8) });
+                    }
+                }
+                if (target != 0 && attackStart >= 0 && !NeverDies && now - attackStart >= KillAfterMs)
+                {
+                    var rat = Rats.Find(m => m.Id == target);
+                    if (rat != null)
+                    {
+                        Rats.Remove(rat);
+                        ExpTexts++;
+                        if (GivesExperience) Experience += 390;
+                        bodies[rat.Pos] = 5964;
+                    }
+                    target = 0;
+                }
+            }
+
+            public LiveFightView View()
+            {
+                var v = new LiveFightView
+                {
+                    Player = Player, Dead = Dead, Health = 150, MaxHealth = 185, SpellsLoaded = SpellsLoaded, AutoWalkActive = AutoWalk, Moves = Moves, Refused = Refused, ExpTexts = ExpTexts, Experience = Experience,
+                    ContainerOpens = ContainerOpens, ContainersWindowOpen = ContainersWindow, Walkable = Walkable,
+                };
+                foreach (var m in Rats) if (m.Pos.Z == Player.Z) v.Monsters.Add(m);
+                v.LootNear = at =>
+                {
+                    for (int ring = 0; ring <= 1; ring++)
+                        foreach (var kv in bodies)
+                            if (PathFinder.Cheb(kv.Key, at) == ring) return new LiveFightLoot { Tile = kv.Key, Stack = 1, ItemId = kv.Value };
+                    return null;
+                };
+                foreach (var c in containers) v.Containers.Add(c);
+                return v;
+            }
+
+            public void Do(LiveFightAction act, LiveFirstFightStep st)
+            {
+                switch (act)
+                {
+                    case LiveFightAction.PressAutoSetup: st.AutoSetupDone(Slots, Slots > 0 ? "Rotation set: Kindling Spark" : ""); break;
+                    case LiveFightAction.HelperOn: HelperOn = true; Rotation = true; st.HelperSet(true, true); break;
+                    case LiveFightAction.Walk:
+                        {
+                            Walks++;
+                            var path = PathFinder.Find(Player, st.WalkGoal, Walkable, st.WalkRange);
+                            if (path == null) { st.WalkStarted(-1); break; }
+                            if (path.Count == 0) { st.WalkStarted(0); break; }
+                            walk = PathFinder.Tiles(Player, path); walkAt = 0; AutoWalk = true; nextStep = Now + StepMs;
+                            if (StuckWalk) nextStep = -1;
+                            st.WalkStarted(path.Count);
+                            break;
+                        }
+                    case LiveFightAction.Step:
+                        {
+                            Steps++;
+                            var to = WalkDirs.Step(Player, st.StepDir);
+                            if (to.Equals(LiveFirstFightStep.Stair) && StairWorks) stairAt = Now + 300;
+                            else if (Walkable(to)) { Player = to; Moves++; }
+                            else Refused++;
+                            break;
+                        }
+                    case LiveFightAction.ChaseOn: Chases++; break;
+                    case LiveFightAction.Attack:
+                        Attacks++;
+                        if (target != st.AttackId) { target = st.AttackId; attackStart = Now; }
+                        break;
+                    case LiveFightAction.UseLoot:
+                        UseCalls++;
+                        if (OpensBody && PathFinder.Cheb(Player, st.Loot.Tile) <= 1)   // the server refuses a use from afar
+                        {
+                            ContainerOpens++;
+                            containers.Clear();
+                            containers.Add(new LiveFightContainer { Id = 0, ItemId = st.Loot.ItemId, Name = "dead rat", Items = BodyHasItems ? 2 : 0 });
+                            if (WindowOpensByItself) ContainersWindow = true;
+                        }
+                        break;
+                    case LiveFightAction.OpenContainers: ContainersWindow = true; break;
+                    case LiveFightAction.ShowBody: ShowBodies++; break;
+                    case LiveFightAction.Screenshot: st.ShotTaken("first_fight_extended.png"); break;
+                }
+            }
+        }
+
+        /// <summary>Runs the step against the sim from `from` ms until the picture is taken or `limit` ms went by; returns the clock at the end, -1 when it never finished.</summary>
+        static double RunFight(LiveFirstFightStep st, FightSim sim, double from = 10000, double limit = 240000)
+        {
+            for (double t = from; t < from + limit; t += 50)
+            {
+                sim.Advance(t);
+                var act = st.Update(t, sim.View());
+                sim.Do(act, st);
+                if (st.State == LiveFirstFightStep.Phase.Done) return t;
+            }
+            return -1;
+        }
+
+        static void FirstFightChecks(Action<bool, string> check)
+        {
+            // the route data: the temple spot, the stair, the way and the grounds as the live check walks them
+            check(LiveFirstFightStep.Route.Length == 7 && LiveFirstFightStep.Route.All(p => p.Z == 7) && LiveFirstFightStep.Grounds.All(p => p.Z == 8) && LiveFirstFightStep.Stair.Equals(new Pos(32390, 32225, 7)) && LiveFirstFightStep.TempleSpot.Z == 7, "first fight: the route, the stair and the grounds are floor 7 and floor 8 of the live check's data");
+            check(LiveFirstFightStep.IsRat("Rat [4]") && LiveFirstFightStep.IsRat("Cave Rat") && LiveFirstFightStep.IsRat("rat") && !LiveFirstFightStep.IsRat("Pig [2]") && !LiveFirstFightStep.IsRat("Rat King"), "first fight: a Rat or a Cave Rat by name, with or without the level tag");
+            check(LiveFirstFightStep.BaseName("Cave Rat [5]") == "Cave Rat" && LiveFirstFightStep.BaseName("Cave Rat") == "Cave Rat" && LiveFirstFightStep.BaseName(null) == "", "first fight: the level tag is cut from a name");
+
+            // ---- the good run
+            var sim = new FightSim();
+            var res = new LiveFirstFightResult();
+            var st = new LiveFirstFightStep(res, 10000);
+            double end = RunFight(st, sim);
+            check(end > 0 && st.State == LiveFirstFightStep.Phase.Done && res.Ran && !res.Skipped, "first fight: the good run ends with the picture taken (" + end + ")");
+            check(res.AutoSetupPressed && res.AutoSetupSlots == 5 && res.HelperOn && res.RotationOn && sim.HelperOn && sim.Rotation, "first fight: Auto setup pressed with 5 slots, the Helper and the rotation on");
+            check(res.ReachedCave && res.Hops >= 2 && res.Hops <= 8 && sim.Player.Z == 8 && sim.Steps >= 1 && sim.Steps <= 3, "first fight: the walk reached the cave on floor 8 by the stair step (" + res.Hops + " hops, " + sim.Steps + " step(s))");
+            check(res.WalkPlanned > 20 && res.WalkSent >= res.WalkPlanned && res.WalkConfirmed >= res.WalkPlanned - 3 && res.WalkRefused == 0, "first fight: the walk counts: planned " + res.WalkPlanned + ", sent " + res.WalkSent + ", confirmed " + res.WalkConfirmed + ", refused " + res.WalkRefused);
+            check(res.HopLog.Count == res.Hops && res.HopLog.All(h => h.Contains("arrived")) && res.HopLog[0].StartsWith("route 1 to 32366,32235,7", StringComparison.Ordinal), "first fight: one log line per hop, each arrived: " + string.Join(" | ", res.HopLog.Take(2)));
+            check(res.RatInReach && res.Kills == 1 && res.Monster.Length > 0 && sim.Chases == 1 && sim.Attacks >= 1, "first fight: chase on once, a Rat attacked and killed (" + res.Monster + ", " + sim.Attacks + " attack order(s))");
+            check(res.ExpBefore == 4200 && res.ExpAfter == 4590 && res.ExpTexts == 1, "first fight: the experience before and after, one text (" + res.ExpBefore + " to " + res.ExpAfter + ")");
+            check(res.LootTried && res.LootOpened && res.LootItems == 2 && res.LootName == "dead rat" && res.LootWindowOpen && sim.UseCalls == 1, "first fight: the body opened in the container window with its 2 items");
+            check(sim.ShowBodies == 1, "first fight: with the body open the picture is prepared once (the Helper window put away, the container window in front)");
+            check(res.Screenshot == "first_fight_extended.png" && res.Ms > 10000 && res.Ms < LiveFirstFightStep.LimitMs, "first fight: the picture is named and the part took " + (int)res.Ms + " ms");
+            check(res.Pass && res.Failures().Count == 0 && res.Warnings().Count == 0, "first fight: a good run passes with no failure and no warning: " + string.Join("|", res.Failures().Concat(res.Warnings())));
+            check(st.Update(end + 1000, sim.View()) == LiveFightAction.Done, "first fight: done stays done");
+
+            // ---- the action order: Auto setup first, then the Helper, then the walk (no step before the Helper is on)
+            sim = new FightSim();
+            res = new LiveFirstFightResult();
+            st = new LiveFirstFightStep(res, 0);
+            var order = new List<LiveFightAction>();
+            for (double t = 0; t < 30000 && order.Count < 6; t += 50)
+            {
+                sim.Advance(t);
+                var act = st.Update(t, sim.View());
+                if (act != LiveFightAction.None) order.Add(act);
+                sim.Do(act, st);
+            }
+            check(order.Count >= 3 && order[0] == LiveFightAction.PressAutoSetup && order[1] == LiveFightAction.HelperOn && order[2] == LiveFightAction.Walk, "first fight: the order is Auto setup, Helper on, walk: " + string.Join(",", order));
+
+            // ---- a spell list that is late: the step waits for it, then goes on
+            sim = new FightSim { SpellsLoaded = false };
+            res = new LiveFirstFightResult();
+            st = new LiveFirstFightStep(res, 0);
+            for (double t = 0; t < 4000; t += 50) { sim.Advance(t); sim.Do(st.Update(t, sim.View()), st); }
+            check(!res.AutoSetupPressed && res.Error.Length == 0 && st.State == LiveFirstFightStep.Phase.Spells, "first fight: no Auto setup before the spell list is there");
+            sim.SpellsLoaded = true;
+            end = RunFight(st, sim, 4000);
+            check(end > 0 && res.Pass && res.Kills == 1, "first fight: the spell list arrives late, the run goes on and passes");
+
+            // ---- the spell list never comes: an error line, a picture, no walk
+            sim = new FightSim { SpellsLoaded = false };
+            res = new LiveFirstFightResult();
+            st = new LiveFirstFightStep(res, 0);
+            end = RunFight(st, sim, 0);
+            check(end >= LiveFirstFightStep.SpellsWaitMs && end < LiveFirstFightStep.SpellsWaitMs + 2000 && res.Error.Contains("spell list never arrived") && sim.Walks == 0 && !res.Pass && res.Failures().Any(x => x.StartsWith("firstfight: the spell list", StringComparison.Ordinal)), "first fight: no spell list in 10 s is a failure, nothing is walked");
+
+            // ---- Auto setup that fills nothing, a Helper that stays off
+            sim = new FightSim { Slots = 0 };
+            res = new LiveFirstFightResult();
+            RunFight(new LiveFirstFightStep(res, 10000), sim);
+            check(!res.Pass && res.Failures().Any(x => x.StartsWith("firstfight: Auto setup filled no spell slot", StringComparison.Ordinal)), "first fight: an Auto setup with no slot is a failure");
+            res = new LiveFirstFightResult { Ran = true, AutoSetupPressed = true, AutoSetupSlots = 3, HelperOn = false };
+            check(res.Failures().Any(x => x.Contains("Helper did not turn on")), "first fight: a Helper that did not turn on is a failure");
+
+            // ---- not at the temple: nothing to walk, a skip with the place
+            sim = new FightSim { Player = new Pos(32500, 32100, 7) };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(end > 0 && res.Skipped && res.SkipReason.Contains("not at the temple") && res.Pass && res.Warnings().Any(x => x.StartsWith("firstfight: skipped:", StringComparison.Ordinal)) && res.AutoSetupPressed, "first fight: away from the temple the run skips with the place (Auto setup was still pressed)");
+
+            // ---- a wall across the way: the walk fails, the part skips with the reason, no failure
+            sim = new FightSim { BlockRoute = true };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(end > 0 && res.Skipped && res.SkipReason.StartsWith("the way to the cave failed", StringComparison.Ordinal) && !res.ReachedCave && res.Pass && res.HopLog.Any(h => h.Contains("failed")), "first fight: a blocked way skips with the hop that failed: " + res.SkipReason);
+            check(res.Kills == 0 && !res.RatInReach && sim.Attacks == 0, "first fight: a skipped run attacks nothing");
+
+            // ---- the stair that does not take the character down: three steps, then a skip
+            sim = new FightSim { StairWorks = false };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(end > 0 && res.Skipped && res.SkipReason.Contains("did not change the floor") && sim.Steps == LiveFirstFightStep.StepAttempts && res.Pass, "first fight: a stair step that does not change the floor is tried " + LiveFirstFightStep.StepAttempts + " times, then a skip: " + res.SkipReason);
+
+            // ---- no Rat in the cave: the landing waits, the grounds are visited, then a skip
+            sim = new FightSim { RatsInCave = false };
+            res = new LiveFirstFightResult();
+            st = new LiveFirstFightStep(res, 0);
+            end = RunFight(st, sim, 0);
+            check(end > 0 && res.Skipped && res.ReachedCave && res.SkipReason.StartsWith("no Rat in view", StringComparison.Ordinal) && res.Pass && !res.RatInReach && res.Kills == 0, "first fight: no Rat in view skips with the reason, no failure: " + res.SkipReason);
+            check(res.Hops >= 7 && sim.Walks >= 8, "first fight: the known grounds were visited before the skip (" + res.Hops + " hops)");
+
+            // ---- a Rat that comes late (while the character waits at the landing): it is fought
+            sim = new FightSim { RatsInCave = false };
+            res = new LiveFirstFightResult();
+            st = new LiveFirstFightStep(res, 0);
+            bool added = false;
+            for (double t = 0; t < 200000 && st.State != LiveFirstFightStep.Phase.Done; t += 50)
+            {
+                sim.Advance(t);
+                if (!added && sim.Player.Z == 8 && sim.Now - sim.SpawnAtMs > 3000) { added = true; sim.Rats.Add(new LiveFightMonster { Id = 201, Name = "Cave Rat [5]", Pos = new Pos(32392, 32222, 8) }); }
+                sim.Do(st.Update(t, sim.View()), st);
+            }
+            check(added && res.Kills == 1 && res.Pass && res.Hops <= 8, "first fight: a Rat that wanders in during the landing wait is fought and killed without a walk to the grounds");
+
+            // ---- a Rat in reach that never dies: the limit, a failure
+            sim = new FightSim { NeverDies = true };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(end >= LiveFirstFightStep.LimitMs && end < LiveFirstFightStep.LimitMs + 2000 && res.RatInReach && res.Kills == 0 && !res.Skipped, "first fight: the time limit ends a fight that never ends (" + end + ")");
+            check(!res.Pass && res.Failures().Count == 1 && res.Failures()[0].StartsWith("firstfight: no kill in 120 s with a ", StringComparison.Ordinal) && sim.Attacks >= 40, "first fight: no kill with a Rat in reach is a failure (the attack order repeated " + sim.Attacks + " times): " + string.Join("|", res.Failures()));
+
+            // ---- the time limit while still walking (a slow walk): a skip, not a failure
+            sim = new FightSim { StepMs = 3000 };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(end > 0 && res.Skipped && res.SkipReason.StartsWith("the cave was not reached in 120 s", StringComparison.Ordinal) && !res.ReachedCave && res.Pass, "first fight: a walk too slow for the time limit skips at the limit: " + res.SkipReason);
+
+            // ---- a walk that never moves: every hop gives up after its tries, a skip with the hop
+            sim = new FightSim();
+            res = new LiveFirstFightResult();
+            st = new LiveFirstFightStep(res, 0);
+            for (double t = 0; t < 200000 && st.State != LiveFirstFightStep.Phase.Done; t += 50)
+            {
+                sim.Advance(t);
+                var act = st.Update(t, sim.View());
+                if (act == LiveFightAction.Walk) st.WalkStarted(5);   // a walk that never moves the character
+                else sim.Do(act, st);
+            }
+            check(res.Skipped && res.SkipReason.StartsWith("the way to the cave failed: no way to 32366,32235,7", StringComparison.Ordinal) && res.Pass, "first fight: a walk that never moves gives up after " + LiveFirstFightStep.HopAttempts + " tries: " + res.SkipReason);
+
+            // ---- the character dies
+            sim = new FightSim { KillAfterMs = 30000 };
+            res = new LiveFirstFightResult();
+            st = new LiveFirstFightStep(res, 0);
+            for (double t = 0; t < 120000 && st.State != LiveFirstFightStep.Phase.Done; t += 50)
+            {
+                sim.Advance(t);
+                if (sim.Player.Z == 8 && t > 25000) sim.Dead = true;
+                sim.Do(st.Update(t, sim.View()), st);
+            }
+            check(res.Died && !res.Pass && res.Failures().Any(x => x.Contains("died")) && st.State == LiveFirstFightStep.Phase.Done && res.Screenshot.Length > 0, "first fight: a death is a failure line, the picture is still taken");
+
+            // ---- a kill with no experience in 0xA0, and none in the text
+            sim = new FightSim { GivesExperience = false };
+            res = new LiveFirstFightResult();
+            RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(res.Kills == 1 && !res.Pass && res.Failures().Any(x => x.Contains("no experience in 0xA0 (4200 to 4200)")), "first fight: a kill whose experience did not go up in 0xA0 is a failure");
+            res = new LiveFirstFightResult { Ran = true, Kills = 1, ExpBefore = 10, ExpAfter = 400, ExpTexts = 0, AutoSetupPressed = true, AutoSetupSlots = 1, HelperOn = true };
+            check(res.Failures().Count == 1 && res.Failures()[0].Contains("no experience text"), "first fight: a kill with no experience text is a failure");
+
+            // ---- a body that never opens: a warning, the run still passes
+            sim = new FightSim { OpensBody = false };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(sim.ShowBodies == 0, "first fight: no open body, the Helper window stays for the picture");
+            check(end > 0 && res.Kills == 1 && res.LootTried && !res.LootOpened && res.Pass && res.Warnings().Any(x => x.Contains("body did not open")) && sim.UseCalls == LiveFirstFightStep.LootTries, "first fight: a body that never opens is a warning after " + LiveFirstFightStep.LootTries + " tries: " + string.Join("|", res.Warnings()));
+
+            // ---- a walk to the body that never ends: the part's time limit ends it, a warning
+            sim = new FightSim();
+            res = new LiveFirstFightResult();
+            st = new LiveFirstFightStep(res, 0);
+            double killedAt = -1;
+            for (double t = 0; t < 200000 && st.State != LiveFirstFightStep.Phase.Done; t += 50)
+            {
+                sim.Advance(t);
+                if (res.Kills > 0 && killedAt < 0) { killedAt = t; sim.StuckWalk = true; }
+                sim.Do(st.Update(t, sim.View()), st);
+                if (st.State == LiveFirstFightStep.Phase.Done) end = t;
+            }
+            check(killedAt > 0 && res.Kills == 1 && !res.LootOpened && res.Pass && st.State == LiveFirstFightStep.Phase.Done && end <= LiveFirstFightStep.LimitMs + 1000 && res.Warnings().Any(x => x.Contains("body did not open")), "first fight: a walk to the body that never ends is cut at the part's time limit (" + (int)end + " ms), a warning");
+
+            // ---- an empty body is fine (the coins go to the bank)
+            sim = new FightSim { BodyHasItems = false };
+            res = new LiveFirstFightResult();
+            RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(res.LootOpened && res.LootItems == 0 && res.Pass && res.Warnings().Count == 0, "first fight: an empty body that opened passes with no warning");
+
+            // ---- the Containers window that does not open by itself: the step opens it like a player
+            sim = new FightSim { WindowOpensByItself = false };
+            res = new LiveFirstFightResult();
+            RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(res.LootOpened && res.LootWindowOpen && sim.ContainersWindow && res.Pass, "first fight: a Containers window that stayed shut is opened by the step, the body shows in it");
+
+            // ---- refused steps on tiles the client thought free: a warning with the count, the walk goes on
+            sim = new FightSim { InjectRefusals = 1 };
+            res = new LiveFirstFightResult();
+            end = RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            check(end > 0 && res.Pass && res.WalkRefused == 1 && res.Replans >= 1 && res.Kills == 1 && res.Warnings().Any(x => x.StartsWith("firstfight walk: 1 steps refused", StringComparison.Ordinal)), "first fight: a refused step is a warning, the hop is planned again and the run passes: " + string.Join("|", res.Warnings()));
+            check(res.HopLog.Any(h => h.Contains("1 refused")), "first fight: the hop log says where the refusal was");
+
+            // ---- the loot rule: the kill's own tile first, the top of a stack, a body of an earlier fight beside it is not taken
+            var w = new World(null);
+            void Put(Pos p, params Thing[] things) { var tl = w.GetOrMake(p); foreach (var th in things) tl.Things.Add(th); }
+            Thing Box(int id) => new Thing { Item = new Item { Id = id, Type = new ThingType { Id = id, Container = true } } };
+            Thing Plain(int id) => new Thing { Item = new Item { Id = id, Type = new ThingType { Id = id } } };
+            var kill = new Pos(32392, 32228, 8);
+            Put(kill.Offset(-1, 0), Box(7001));
+            check(LiveFirstFightStep.LootOn(w, kill)?.ItemId == 7001 && LiveFirstFightStep.LootOn(w, kill).Tile.Equals(kill.Offset(-1, 0)), "loot rule: no body on the tile, the one beside it is taken");
+            Put(kill, Plain(100), Box(5964), Plain(101));
+            var l = LiveFirstFightStep.LootOn(w, kill);
+            check(l != null && l.ItemId == 5964 && l.Tile.Equals(kill) && l.Stack == 1, "loot rule: the kill's own tile first, the stack position of the container item");
+            Put(kill, Box(5965));
+            check(LiveFirstFightStep.LootOn(w, kill).ItemId == 5965 && LiveFirstFightStep.LootOn(w, kill).Stack == 3, "loot rule: the top of the stack first");
+            check(LiveFirstFightStep.LootOn(w, new Pos(32300, 32100, 8)) == null, "loot rule: nothing near is null");
+            var tc = w.GetOrMake(new Pos(32300, 32100, 8)); tc.Things.Add(new Thing { Creature = new Creature { Id = 5 } }); tc.Things.Add(Plain(9));
+            check(LiveFirstFightStep.LootOn(w, new Pos(32300, 32100, 8)) == null, "loot rule: a creature or a plain item is no container");
+
+            // ---- the json block
+            sim = new FightSim();
+            res = new LiveFirstFightResult();
+            RunFight(new LiveFirstFightStep(res, 0), sim, 0);
+            var json = Json.TryParse(res.ToJson(null));
+            check(json != null && Json.Bool(json, "ran") && Json.Bool(json, "pass") && !Json.Bool(json, "skipped") && Json.Text(json, "skipReason") == "" && Json.Text(json, "error") == "", "first fight json: ran, pass, not skipped");
+            var asj = Json.Get(json, "autoSetup");
+            check(Json.Bool(asj, "pressed") && Json.Int(asj, "slots") == 5 && Json.Bool(json, "helperOn") && Json.Bool(json, "rotationOn"), "first fight json: Auto setup slots, Helper on");
+            var wj = Json.Get(json, "walk");
+            check(Json.Int(wj, "hops") == res.Hops && Json.Int(wj, "planned") == res.WalkPlanned && Json.Int(wj, "sent") == res.WalkSent && Json.Int(wj, "confirmed") == res.WalkConfirmed && Json.Int(wj, "refused") == 0 && Json.Bool(wj, "reachedCave"), "first fight json: the walk counts");
+            var xj = Json.Get(json, "experience");
+            check(Json.Int(json, "kills") == 1 && Json.Text(json, "monster") == res.Monster && Json.Int(xj, "before") == 4200 && Json.Int(xj, "after") == 4590 && Json.Int(xj, "texts") == 1, "first fight json: kills, experience before and after");
+            var lj = Json.Get(json, "loot");
+            check(Json.Bool(lj, "opened") && Json.Int(lj, "items") == 2 && Json.Text(lj, "name") == "dead rat" && Json.Bool(lj, "windowOpen") && Json.Text(json, "screenshot") == "first_fight_extended.png" && Json.Int(json, "ms") > 0 && Json.List(json, "hopLog").Count == res.Hops, "first fight json: the body, the picture, the time and the hop log");
+            check(!res.ToJson(null).Any(c => c > 0x7e), "first fight json: ASCII only");
+            check(Json.TryParse(new LiveFirstFightResult().ToJson(null)) != null && !Json.Bool(Json.TryParse(new LiveFirstFightResult().ToJson(null)), "ran"), "first fight json: not run is {\"ran\":false}");
+            var sk = new LiveFirstFightResult { Ran = true, Skipped = true, SkipReason = "no Rat in view at the landing with fresh-secret" };
+            string skJson = sk.ToJson(new[] { "fresh-secret" });
+            check(Json.Bool(Json.TryParse(skJson), "skipped") && Json.Bool(Json.TryParse(skJson), "pass") && !skJson.Contains("fresh-secret") && skJson.Contains("<removed>"), "first fight json: a skip says why and passes, a secret is cut");
+
+            // ---- inside the report: failure and warning lines, the summary line, the json key, the logout note
+            var rep = Good();
+            rep.FirstFight.Ran = true; rep.FirstFight.Skipped = false; rep.FirstFight.AutoSetupPressed = true; rep.FirstFight.AutoSetupSlots = 2; rep.FirstFight.HelperOn = true; rep.FirstFight.RatInReach = true;
+            check(!rep.Pass && rep.Failures().Any(x => x.StartsWith("firstfight: no kill in 120 s", StringComparison.Ordinal)) && rep.SummaryLine().Contains("firstfight FAIL"), "first fight report: a failure line fails the run and shows in the summary line");
+            rep = Good();
+            rep.FirstFight.Ran = true; rep.FirstFight.Skipped = true; rep.FirstFight.SkipReason = "no Rat in view";
+            check(rep.Pass && rep.Warnings().Any(x => x.StartsWith("firstfight: skipped: no Rat in view", StringComparison.Ordinal)) && rep.SummaryLine().Contains("firstfight skipped"), "first fight report: a skip is a warning, the run passes");
+            rep = Good();
+            check(!rep.SummaryLine().Contains("firstfight") && rep.Warnings().Count == 0 && !Json.Bool(Json.Get(Json.TryParse(rep.ToJson(null)), "firstfight"), "ran"), "first fight report: no fresh character, nothing about the first fight and the json says ran false");
+            rep = Good();
+            rep.NewPlayer.Ran = true; rep.NewPlayer.LoginOk = true; rep.NewPlayer.EnterOk = true; rep.NewPlayer.ToastSeen = true; rep.NewPlayer.HelperAsked = true; rep.NewPlayer.HelperOpened = true; rep.NewPlayer.Tab = 1; rep.NewPlayer.HintShown = true; rep.NewPlayer.BlinkActive = true; rep.NewPlayer.LoggedOut = false;
+            check(rep.Warnings().Any(x => x.StartsWith("newplayer: no clean logout", StringComparison.Ordinal)), "first fight report: a fresh character that did not log out is a warning when it did not fight");
+            rep.FirstFight.Ran = true; rep.FirstFight.RatInReach = true; rep.FirstFight.Kills = 1; rep.FirstFight.ExpBefore = 1; rep.FirstFight.ExpAfter = 5; rep.FirstFight.ExpTexts = 1; rep.FirstFight.AutoSetupPressed = true; rep.FirstFight.AutoSetupSlots = 1; rep.FirstFight.HelperOn = true; rep.FirstFight.LootOpened = true; rep.FirstFight.LootWindowOpen = true;
+            check(!rep.Warnings().Any(x => x.StartsWith("newplayer: no clean logout", StringComparison.Ordinal)) && rep.Notes().Any(x => x.Contains("refuses a logout")) && rep.Pass, "first fight report: after a fight the dropped connection is a note, the server refuses a logout in the minute after a fight");
+            var jr = Json.TryParse(rep.ToJson(null));
+            check(Json.Bool(Json.Get(jr, "firstfight"), "ran") && Json.Int(Json.Get(jr, "firstfight"), "kills") == 1 && Json.Bool(jr, "pass"), "first fight report: the json holds the firstfight block next to the newplayer block");
+            rep.FirstFight.Error = "the session closed during the first minute";
+            check(!rep.Pass && rep.Failures().Any(x => x == "firstfight: the session closed during the first minute"), "first fight report: an error of the part is its own failure line");
+
+            // ---- the new player step records the frame gaps and when the Helper took the request (the 22 s stall of the first CI run)
+            var np = Fresh();
+            var step = new LiveNewPlayerStep(np, 1000);
+            step.Update(1000, false, 0, Shut);
+            step.Update(1100, false, 0, Shut);
+            step.Update(3400, true, 1, new LiveHelperView { TakenMs = -1 });
+            step.Update(25400, true, 1, new LiveHelperView { Open = true, Tab = 1, HintDrawn = true, Hint = "h", BlinkActive = true, TakenMs = 3450 });
+            check(Math.Abs(np.LongestFrameMs - 22000) < 1 && Math.Abs(np.LongestFrameAtMs - 2400) < 1, "new player step: the longest frame gap is 22 s and it began 2.4 s after the start (" + np.LongestFrameMs + " at " + np.LongestFrameAtMs + ")");
+            check(Math.Abs(np.HelperTakenMs - 2450) < 1 && Math.Abs(np.HelperMs - 24400) < 1 && np.ToastSeen && np.HelperOpened, "new player step: the Helper took the request at 2.4 s and was seen open at 24.4 s: a stall, not a window that stayed shut");
+            check(np.Warnings().Count == 1 && np.Warnings()[0].Contains("one frame took 22.0 s, 2.4 s after") && WithNewPlayer(np).Warnings().Any(x => x.StartsWith("newplayer: one frame took", StringComparison.Ordinal)) && !WithNewPlayer(np).Failures().Any(x => x.Contains("frame")), "new player step: a frame of seconds is a warning, never a failure");
+            check(Fresh().Warnings().Count == 0, "new player step: normal frames give no warning");
+            var npj = Json.TryParse(WithNewPlayer(np).ToJson(null));
+            check(Json.Int(Json.Get(npj, "newplayer"), "longestFrameMs") == 22000 && Json.Int(Json.Get(npj, "newplayer"), "helperTakenMs") == 2450 && Json.Int(Json.Get(npj, "newplayer"), "longestFrameAtMs") == 2400, "new player json: helperTakenMs, longestFrameMs and longestFrameAtMs");
         }
 
         static void ReportChecks(Action<bool, string> check)

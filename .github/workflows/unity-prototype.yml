@@ -448,6 +448,19 @@ jobs:
                   notes.append("- %s: new player first minute (helper_onboarding_%s.png): welcome toast %s, openHelper %s, Helper opened by itself %s on tab %s (Auto setup is tab 1), hint %s, blink %s, %s" % (
                       ident, ident, "seen" if n.get("toastSeen") else "NOT seen", "yes" if n.get("openHelper") else "NO", "yes" if n.get("helperOpened") else "NO", n.get("tab"),
                       "shown" if n.get("hintShown") else "NOT shown", "on" if n.get("blinkActive") else "off", "pass" if n.get("pass") else "FAIL"))
+                  if n.get("longestFrameMs", 0) >= 3000:
+                      notes.append("- %s: new player first minute: the longest frame took %.1f s, %.1f s after entering (the Helper took the request at %.1f s, seen open at %.1f s)" % (
+                          ident, n["longestFrameMs"] / 1000.0, n.get("longestFrameAtMs", 0) / 1000.0, n.get("helperTakenMs", -1000) / 1000.0, n.get("helperMs", 0) / 1000.0))
+              ff = d.get("firstfight") or {}
+              if ff.get("ran"):
+                  fw, fx, fl = ff.get("walk") or {}, ff.get("experience") or {}, ff.get("loot") or {}
+                  if ff.get("skipped"):
+                      notes.append("- %s: new player first fight (first_fight_%s.png): skipped, %s" % (ident, ident, ff.get("skipReason")))
+                  else:
+                      notes.append("- %s: new player first fight (first_fight_%s.png): Auto setup %s slots, Helper %s, walk %s planned %s sent %s confirmed %s refused, %s killed %s, experience %s to %s, body %s (%s items, Containers window %s), %.0f s, %s" % (
+                          ident, ident, ff.get("autoSetup", {}).get("slots"), "on" if ff.get("helperOn") else "OFF", fw.get("planned"), fw.get("sent"), fw.get("confirmed"), fw.get("refused"),
+                          ff.get("kills"), ff.get("monster") or "nothing", fx.get("before"), fx.get("after"), "opened" if fl.get("opened") else "NOT opened", fl.get("items"),
+                          "open" if fl.get("windowOpen") else "shut", ff.get("ms", 0) / 1000.0, "pass" if ff.get("pass") else "FAIL"))
           lines += [""] + (notes if notes else ["No failure and no warning."])
           lines += ["", "Every window is answered, prefetched at login (Skills, Dungeons), local-only (native windows, Helper, Item Finder), needs a condition or has no answer; only no answer is a warning, never a failure. The json and the sheets are in the hd2d-shots artifact (live-extended, live-chaos)."]
           text = "\n".join(lines) + "\n"

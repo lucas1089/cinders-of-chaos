@@ -116,7 +116,7 @@ namespace Chaos.Core
 
         static readonly Dir[] Four = { Dir.North, Dir.South, Dir.East, Dir.West };
 
-        static int MaskOf(Dir d) => d == Dir.North ? WalkInput.Up : d == Dir.South ? WalkInput.Down : d == Dir.East ? WalkInput.Right : WalkInput.Left;
+        public static int MaskOf(Dir d) => d == Dir.North ? WalkInput.Up : d == Dir.South ? WalkInput.Down : d == Dir.East ? WalkInput.Right : WalkInput.Left;
 
         static Dir Opposite(Dir d) => d == Dir.North ? Dir.South : d == Dir.South ? Dir.North : d == Dir.East ? Dir.West : Dir.East;
 
@@ -318,6 +318,10 @@ namespace Chaos.Core
         public bool Open, HintDrawn, BlinkActive;
         public int Tab = -1;
         public string Hint = "";
+        /// <summary>The caller's clock (ms) when the window took the welcome toast's request and opened itself; -1 when it has not yet. Open is read by the smoke once a frame, the window
+        /// opens in the first OnGUI pass of a frame: a long frame between the two shows as a gap between this and HelperMs (run 42602032582 of 2026-11-09: the request was taken at once
+        /// and the smoke saw the window 22 s later, because the main thread had no frame in between).</summary>
+        public double TakenMs = -1;
     }
 
     public enum LiveNewPlayerAction { Wait, Screenshot, Done }
@@ -333,6 +337,9 @@ namespace Chaos.Core
         public int Tab = -1;
         public string Hint = "", Error = "", Screenshot = "";
         public double ToastMs = -1, HelperMs = -1;
+        /// <summary>When the Helper window took the request (relative to the step start; -1: not seen), the longest gap between two frames of the step and where it began (ms after the step start). A frame gap
+        /// of seconds explains a toast or a Helper that is seen late: it is a main thread stall, not the window.</summary>
+        public double HelperTakenMs = -1, LongestFrameMs, LongestFrameAtMs;
 
         public List<string> Failures()
         {
@@ -352,6 +359,18 @@ namespace Chaos.Core
             return f;
         }
 
+        /// <summary>A frame of the step that took StallWarnMs or more: the player froze that long (software rendering on a runner, a first-use cost). Not a failure: the Helper and the toast are only seen late by that much.</summary>
+        public const double StallWarnMs = 3000;
+
+        public List<string> Warnings()
+        {
+            var w = new List<string>();
+            if (Ran && LongestFrameMs >= StallWarnMs)
+                w.Add("newplayer: one frame took " + Math.Round(LongestFrameMs / 1000.0, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s, " + Math.Round(LongestFrameAtMs / 1000.0, 1).ToString("0.0", CultureInfo.InvariantCulture)
+                    + " s after the fresh character entered (a main thread stall: the toast and the Helper window are seen that late, the Helper took its request at " + (HelperTakenMs < 0 ? "no time" : Math.Round(HelperTakenMs / 1000.0, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s") + ")");
+            return w;
+        }
+
         public bool Pass => Failures().Count == 0;
 
         static string B(bool v) => v ? "true" : "false";
@@ -365,6 +384,7 @@ namespace Chaos.Core
             b.Append(",\"toastSeen\":").Append(B(ToastSeen)).Append(",\"toastMs\":").Append(Math.Round(ToastMs).ToString("0", inv));
             b.Append(",\"openHelper\":").Append(B(HelperAsked));
             b.Append(",\"helperOpened\":").Append(B(HelperOpened)).Append(",\"helperMs\":").Append(Math.Round(HelperMs).ToString("0", inv));
+            b.Append(",\"helperTakenMs\":").Append(Math.Round(HelperTakenMs).ToString("0", inv)).Append(",\"longestFrameMs\":").Append(Math.Round(LongestFrameMs).ToString("0", inv)).Append(",\"longestFrameAtMs\":").Append(Math.Round(LongestFrameAtMs).ToString("0", inv));
             b.Append(",\"tab\":").Append(Tab.ToString(inv)).Append(",\"autoSetupTab\":").Append(B(Tab == ShooterTab));
             b.Append(",\"hintShown\":").Append(B(HintShown)).Append(",\"hint\":").Append(LiveSmokeReport.Quote(Hint, secrets));
             b.Append(",\"blinkActive\":").Append(B(BlinkActive)).Append(",\"screenshot\":").Append(LiveSmokeReport.Quote(Screenshot, secrets));
@@ -384,7 +404,7 @@ namespace Chaos.Core
         public Phase State { get; private set; } = Phase.WaitToast;
         public readonly LiveNewPlayerResult Result;
         readonly double start;
-        double phaseAt;
+        double phaseAt, lastCall = -1;
 
         public LiveNewPlayerStep(LiveNewPlayerResult result, double nowMs)
         {
@@ -400,8 +420,12 @@ namespace Chaos.Core
         {
             var r = Result;
             if (State == Phase.Done) return LiveNewPlayerAction.Done;
+            // the gap since the last call is the length of the frame in between: a stall of seconds (main thread) is written down, with where it began
+            if (lastCall >= 0 && now - lastCall > r.LongestFrameMs) { r.LongestFrameMs = now - lastCall; r.LongestFrameAtMs = lastCall - start; }
+            lastCall = now;
             if (State != Phase.Shoot)
             {
+                if (view.TakenMs >= 0 && r.HelperTakenMs < 0) r.HelperTakenMs = view.TakenMs - start;
                 if (toastNow && !r.ToastSeen) { r.ToastSeen = true; r.ToastMs = now - start; }
                 if (helperRequests > 0) r.HelperAsked = true;
                 if (view.Open && !r.HelperOpened) { r.HelperOpened = true; r.HelperMs = now - start; }
@@ -438,6 +462,639 @@ namespace Chaos.Core
         }
     }
 
+    // ============================================================================================================================ the first fight
+    // A new player's first fight in the real player (O433, unity/README.md "New player first fight"): after the Helper shot the fresh character presses Auto setup (the window's own
+    // code path), turns the Helper on, walks from the temple to the cave under Cinderhold with the client's own click-to-walk (an auto-walk path planned on the tiles the client calls
+    // walkable), lets the Helper and the player's attack kill one Rat, opens the body in the container window and takes a picture. Everything that decides is here: the route, the
+    // state machine, the pass rules and the json block. The player (Unity/ChaosApp.LiveSmoke.cs) and the live check (Core.LiveCheck, scenario firstfightsmoke) only run the actions.
+
+    /// <summary>A monster in the player's world model, on the player's floor.</summary>
+    public sealed class LiveFightMonster
+    {
+        public uint Id;
+        public string Name = "";
+        public Pos Pos;
+        public int HealthPercent = 100;
+    }
+
+    /// <summary>A container item on a map tile (a monster's body or the loot bag): where, its stack position on the tile and its client id.</summary>
+    public sealed class LiveFightLoot
+    {
+        public Pos Tile;
+        public int Stack, ItemId;
+    }
+
+    /// <summary>An open container of the session (0x6E): its client item id, its name and what it holds.</summary>
+    public sealed class LiveFightContainer
+    {
+        public int Id, ItemId, Items;
+        public string Name = "";
+    }
+
+    /// <summary>What the player's session shows this frame (built by the caller from the world model, the parser and the windows).</summary>
+    public sealed class LiveFightView
+    {
+        public Pos Player;
+        public bool Dead, SpellsLoaded, AutoWalkActive, ContainersWindowOpen;
+        public int Health, MaxHealth;
+        /// <summary>The player's own moves the server confirmed (Parser.PlayerMoves) and the steps the server refused (0xB5), both counted since the session began.</summary>
+        public int Moves, Refused;
+        /// <summary>The experience text lines seen ("You gained N experience points.", Parser.ExpGainTexts), and how many container windows the server opened (0x6E).</summary>
+        public int ExpTexts, ContainerOpens;
+        /// <summary>The experience of the last 0xA0.</summary>
+        public long Experience;
+        /// <summary>The client's own walkability check (WalkMap.Walkable): the route is planned on what it calls free.</summary>
+        public Func<Pos, bool> Walkable;
+        /// <summary>The monsters of the player's floor that have a tile in the world model.</summary>
+        public IList<LiveFightMonster> Monsters = new List<LiveFightMonster>();
+        /// <summary>The container item on a tile or beside it (the body of a kill), null when there is none.</summary>
+        public Func<Pos, LiveFightLoot> LootNear;
+        public IList<LiveFightContainer> Containers = new List<LiveFightContainer>();
+    }
+
+    /// <summary>What the step asks the caller to do. Answered at once with the matching method of LiveFirstFightStep (AutoSetupDone, HelperSet, WalkStarted, ShotTaken); the others need no answer. Step: one step
+    /// of the player's own key path in StepDir (the stair: the client calls its tile not walkable, the click path refuses it, a step onto it works).</summary>
+    public enum LiveFightAction { None, PressAutoSetup, HelperOn, Walk, Step, ChaseOn, Attack, UseLoot, OpenContainers, ShowBody, Screenshot, Done }
+
+    /// <summary>The "firstfight" block of live_smoke.json and its failure and warning lines. Ran is false when there was no fresh character (nothing to say). A skip says why and is no failure.</summary>
+    public sealed class LiveFirstFightResult
+    {
+        public bool Ran, Skipped, Died, RatInReach, ReachedCave, AutoSetupPressed, HelperOn, RotationOn, LootOpened, LootWindowOpen, LootTried;
+        public int AutoSetupSlots, Hops, Replans, WalkPlanned, WalkSent, WalkConfirmed, WalkRefused, Kills, ExpTexts, LootItems;
+        public long ExpBefore, ExpAfter;
+        public string SkipReason = "", Error = "", AutoSetupMessage = "", Monster = "", LootName = "", Screenshot = "";
+        public double Ms;
+        /// <summary>Where the character stood at the end (for the log: "32390,32227,8").</summary>
+        public Pos End;
+        /// <summary>One short line per hop of the walk (goal, how it ended, refused steps, re-plans): where a refusal happened. At most 24.</summary>
+        public readonly List<string> HopLog = new List<string>();
+
+        public List<string> Failures()
+        {
+            var f = new List<string>();
+            if (!Ran) return f;
+            if (Error.Length > 0) f.Add("firstfight: " + Error);
+            if (Skipped) return f;
+            if (Died) f.Add("firstfight: the character died in its first fight");
+            if (AutoSetupPressed && AutoSetupSlots == 0) f.Add("firstfight: Auto setup filled no spell slot" + (AutoSetupMessage.Length > 0 ? " (" + AutoSetupMessage + ")" : ""));
+            if (AutoSetupPressed && !HelperOn) f.Add("firstfight: the Helper did not turn on");
+            if (Kills == 0 && RatInReach && !Died) f.Add("firstfight: no kill in " + (int)(LiveFirstFightStep.LimitMs / 1000) + " s with a " + (Monster.Length > 0 ? Monster : "Rat") + " in reach");
+            if (Kills > 0)
+            {
+                if (ExpTexts == 0) f.Add("firstfight: the kill came with no experience text");
+                if (ExpAfter <= ExpBefore) f.Add("firstfight: the kill gave no experience in 0xA0 (" + ExpBefore + " to " + ExpAfter + ")");
+            }
+            return f;
+        }
+
+        public List<string> Warnings()
+        {
+            var w = new List<string>();
+            if (!Ran) return w;
+            if (Skipped) w.Add("firstfight: skipped: " + SkipReason);
+            if (WalkRefused > 0) w.Add("firstfight walk: " + WalkRefused + " steps refused on tiles the client thought walkable");
+            if (!Skipped && Kills > 0 && !LootOpened) w.Add("firstfight: the body did not open in the container window" + (LootTried ? "" : " (no container on the kill's tile)"));
+            if (LootOpened && !LootWindowOpen) w.Add("firstfight: the Containers window was not open with the body");
+            return w;
+        }
+
+        public bool Pass => Failures().Count == 0;
+
+        static string B(bool v) => v ? "true" : "false";
+
+        public string ToJson(IList<string> secrets)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            if (!Ran) return "{\"ran\":false}";
+            var b = new StringBuilder("{\"ran\":true,\"pass\":").Append(B(Pass)).Append(",\"skipped\":").Append(B(Skipped)).Append(",\"skipReason\":").Append(LiveSmokeReport.Quote(SkipReason, secrets));
+            b.Append(",\"error\":").Append(LiveSmokeReport.Quote(Error, secrets));
+            b.Append(",\"autoSetup\":{\"pressed\":").Append(B(AutoSetupPressed)).Append(",\"slots\":").Append(AutoSetupSlots.ToString(inv)).Append(",\"message\":").Append(LiveSmokeReport.Quote(AutoSetupMessage, secrets)).Append('}');
+            b.Append(",\"helperOn\":").Append(B(HelperOn)).Append(",\"rotationOn\":").Append(B(RotationOn));
+            b.Append(",\"walk\":{\"hops\":").Append(Hops.ToString(inv)).Append(",\"replans\":").Append(Replans.ToString(inv)).Append(",\"planned\":").Append(WalkPlanned.ToString(inv)).Append(",\"sent\":").Append(WalkSent.ToString(inv))
+             .Append(",\"confirmed\":").Append(WalkConfirmed.ToString(inv)).Append(",\"refused\":").Append(WalkRefused.ToString(inv)).Append(",\"reachedCave\":").Append(B(ReachedCave)).Append('}');
+            b.Append(",\"monster\":").Append(LiveSmokeReport.Quote(Monster, secrets)).Append(",\"ratInReach\":").Append(B(RatInReach)).Append(",\"kills\":").Append(Kills.ToString(inv)).Append(",\"died\":").Append(B(Died));
+            b.Append(",\"experience\":{\"before\":").Append(ExpBefore.ToString(inv)).Append(",\"after\":").Append(ExpAfter.ToString(inv)).Append(",\"texts\":").Append(ExpTexts.ToString(inv)).Append('}');
+            b.Append(",\"loot\":{\"opened\":").Append(B(LootOpened)).Append(",\"name\":").Append(LiveSmokeReport.Quote(LootName, secrets)).Append(",\"items\":").Append(LootItems.ToString(inv)).Append(",\"windowOpen\":").Append(B(LootWindowOpen)).Append('}');
+            b.Append(",\"screenshot\":").Append(LiveSmokeReport.Quote(Screenshot, secrets)).Append(",\"ms\":").Append(Math.Round(Ms).ToString("0", inv));
+            b.Append(",\"end\":").Append(LiveSmokeReport.Quote(End.ToString(), secrets)).Append(",\"hopLog\":[");
+            for (int i = 0; i < HopLog.Count; i++) b.Append(i == 0 ? "" : ",").Append(LiveSmokeReport.Quote(HopLog[i], secrets));
+            b.Append("]}");
+            return b.ToString();
+        }
+    }
+
+    /// <summary>The state machine of the first fight. One Update per frame with the clock (ms) and the view; it returns the action to run (None most frames). Order: wait for the spell
+    /// list, Auto setup, Helper on (and the spell rotation), the walk (hops: the waypoints of the way from the temple to the stair at 32390,32225,7, each an auto-walk planned on the
+    /// tiles the client calls walkable, re-planned when a hop ends short), the Rats of the cave (the known grounds are visited when none is in view), the fight (chase on, an attack order
+    /// repeated every 2.5 s, the Helper casting), the kill (the creature gone, the experience text, the experience of 0xA0), the body (walk beside it, use it, the container opens in the
+    /// container window), a picture. Time limit LimitMs from the start: with a Rat in reach and no kill it fails, with no Rat in view it skips with the reason.</summary>
+    public sealed class LiveFirstFightStep
+    {
+        public const double LimitMs = 120000, HopLimitMs = 25000, SpellsWaitMs = 10000, NoRatWaitMs = 8000, GroundWaitMs = 1500, AttackEveryMs = 2500, GoneWaitMs = 2500, KillSettleMs = 600,
+            CorpseWaitMs = 2500, LootWaitMs = 4000, LootGraceMs = 15000, WindowWaitMs = 600, SettleMs = 700, RetryGapMs = 300, StepWaitMs = 1500;
+        public const int HopAttempts = 4, LootTries = 2, StepAttempts = 3;
+
+        /// <summary>Cinderhold's temple spot (where a new character stands) and the stair down to the cave of the first hunt (the stairs the street passes lead to closed basements).</summary>
+        public static readonly Pos TempleSpot = new Pos(32369, 32241, 7), Stair = new Pos(32390, 32225, 7);
+        /// <summary>The way from the temple to the stair (server map, floor 7: out of the hall by the west side of the north door, round the house to its east side). Every hop is short and in view (Core.LiveCheck DescentRoute).</summary>
+        public static readonly Pos[] Route = { new Pos(32366, 32235, 7), new Pos(32366, 32229, 7), new Pos(32368, 32223, 7), new Pos(32374, 32217, 7), new Pos(32380, 32213, 7), new Pos(32384, 32219, 7), new Pos(32387, 32225, 7) };
+        /// <summary>Where the Rats of the cave live (server spawn file, floor 8): visited when none is in view at the landing.</summary>
+        public static readonly Pos[] Grounds = { new Pos(32385, 32217, 8), new Pos(32390, 32217, 8), new Pos(32394, 32217, 8), new Pos(32362, 32214, 8), new Pos(32352, 32214, 8), new Pos(32368, 32203, 8) };
+
+        public enum Phase { Spells, AutoSetup, HelperOn, Walk, Hunt, Fight, Settle, Loot, Shoot, Done }
+        enum Purpose { Route, Grounds, Body }
+        enum LootState { Find, Beside, Use, Wait, Window }
+
+        sealed class Hop { public Pos Goal; public int Range; public bool Floor, Stepping; }
+
+        public Phase State { get; private set; } = Phase.Spells;
+        public readonly LiveFirstFightResult Result;
+        /// <summary>The parameters of the action just returned.</summary>
+        public Pos WalkGoal;
+        public int WalkRange;
+        public Dir StepDir;
+        public uint AttackId;
+        public LiveFightLoot Loot;
+
+        readonly double start;
+        double phaseAt, killAt = -1, lastAttack = -1, hopAt, retryAt, shotAt = -1, goneAt = -1, lootAt, lastNow;
+        readonly Queue<Hop> hops = new Queue<Hop>();
+        Hop hop;
+        Purpose purpose = Purpose.Route;
+        LootState lootState = LootState.Find;
+        int attempts, moves0, refused0, groundIndex, texts0 = -1, opens0, lootTries, hopRefused, hopReplans;
+        double hopStart;
+        bool hopAsked, hopRunning, setupAsked, helperAsked, planned, chased, windowAsked, stepAsked;
+        double stepAt;
+        string hopNote = "";
+        uint target;
+        readonly Dictionary<uint, Pos> seen = new Dictionary<uint, Pos>();
+        Pos killPos;
+
+        public LiveFirstFightStep(LiveFirstFightResult result, double nowMs)
+        {
+            Result = result;
+            result.Ran = true;
+            start = phaseAt = nowMs;
+        }
+
+        void Go(Phase p, double now) { State = p; phaseAt = now; }
+
+        /// <summary>A Rat or a Cave Rat (the server adds a level tag: "Rat [4]").</summary>
+        public static bool IsRat(string name)
+        {
+            string b = BaseName(name);
+            return string.Equals(b, "Rat", StringComparison.OrdinalIgnoreCase) || string.Equals(b, "Cave Rat", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string BaseName(string n)
+        {
+            n = n ?? "";
+            int b = n.LastIndexOf(" [", StringComparison.Ordinal);
+            return b > 0 && n.EndsWith("]", StringComparison.Ordinal) ? n.Substring(0, b) : n;
+        }
+
+        /// <summary>The container item on the tile of a kill, else on a tile beside it (the kill's own tile first, then the ring round it; the top of a stack first): the monster's body, or the
+        /// loot bag on an engine that has it. A body of an earlier fight next to it is not taken for this one.</summary>
+        public static LiveFightLoot LootOn(World w, Pos at)
+        {
+            for (int ring = 0; ring <= 1; ring++)
+                for (int dx = -ring; dx <= ring; dx++)
+                    for (int dy = -ring; dy <= ring; dy++)
+                    {
+                        if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != ring) continue;
+                        var tp = at.Offset(dx, dy);
+                        var t = w.Get(tp);
+                        if (t == null) continue;
+                        for (int i = t.Things.Count - 1; i >= 0; i--)
+                        {
+                            var th = t.Things[i];
+                            if (th.IsCreature || th.Item == null || th.Item.Type == null || !th.Item.Type.Container) continue;
+                            return new LiveFightLoot { Tile = tp, Stack = i, ItemId = th.Item.Id };
+                        }
+                    }
+            return null;
+        }
+
+        // ------------------------------------------------------------------------------------ the caller's answers
+        public void AutoSetupDone(int slots, string message)
+        {
+            Result.AutoSetupPressed = true;
+            Result.AutoSetupSlots = slots;
+            Result.AutoSetupMessage = message ?? "";
+        }
+
+        public void HelperSet(bool on, bool rotation)
+        {
+            Result.HelperOn = on;
+            Result.RotationOn = rotation;
+        }
+
+        /// <summary>The auto-walk was planned and its packet sent: its length in steps; 0 when the character is there already; -1 when there is no way over the tiles the client knows.</summary>
+        public void WalkStarted(int steps)
+        {
+            if (steps < 0) { hopRunning = false; hopNote = "no way over the tiles in view"; return; }
+            hopRunning = steps > 0;
+            Result.WalkSent += steps;
+            if (attempts == 0) Result.WalkPlanned += steps;
+            hopAt = lastNow;
+        }
+
+        public void ShotTaken(string name)
+        {
+            Result.Screenshot = name ?? "";
+            State = Phase.Done;
+        }
+
+        // ------------------------------------------------------------------------------------ the end states
+        void Skip(string why, double now)
+        {
+            if (!Result.Skipped && Result.Kills == 0) { Result.Skipped = true; Result.SkipReason = why; }
+            Go(Phase.Shoot, now);
+        }
+
+        /// <summary>One call per frame. Returns the action to run; the parameters are WalkGoal / WalkRange, AttackId and Loot.</summary>
+        public LiveFightAction Update(double now, LiveFightView v)
+        {
+            lastNow = now;
+            var r = Result;
+            if (State == Phase.Done) return LiveFightAction.Done;
+            r.Ms = now - start;
+            r.End = v.Player;
+            // the Rats' last tiles: a kill's tile is where the Rat was seen last
+            foreach (var m in v.Monsters) if (IsRat(m.Name)) seen[m.Id] = m.Pos;
+            if (v.Dead && State != Phase.Shoot) { r.Died = true; Go(Phase.Shoot, now); }
+            if (r.Kills == 0 && State != Phase.Shoot && State != Phase.Settle && State != Phase.Loot && now - start >= LimitMs) TimeUp(v, now);
+            // a walk to the body that does not end: the body's own time is up
+            if (r.Kills > 0 && State == Phase.Walk && now > Math.Max(start + LimitMs, killAt + LootGraceMs)) Go(Phase.Shoot, now);
+            switch (State)
+            {
+                case Phase.Spells:
+                    if (!v.SpellsLoaded)
+                    {
+                        if (now - phaseAt >= SpellsWaitMs) { r.Error = "the spell list never arrived, so Auto setup had nothing to set up"; Go(Phase.Shoot, now); }
+                        return LiveFightAction.None;
+                    }
+                    if (!setupAsked) { setupAsked = true; return LiveFightAction.PressAutoSetup; }
+                    if (!helperAsked) { helperAsked = true; return LiveFightAction.HelperOn; }
+                    if (!planned) { planned = true; PlanRoute(v, now); }   // the walk starts on the next frame (or the part ends: not at the temple)
+                    return LiveFightAction.None;
+                case Phase.Walk: return Walk(v, now, Phase.Walk);
+                case Phase.Hunt: return Hunt(v, now);
+                case Phase.Fight: return Fight(v, now);
+                case Phase.Settle:
+                    if (now - killAt < KillSettleMs) return LiveFightAction.None;
+                    r.ExpAfter = v.Experience;
+                    r.ExpTexts = Math.Max(0, v.ExpTexts - Math.Max(0, texts0));
+                    r.Kills = 1;
+                    lootAt = now; lootState = LootState.Find;
+                    Go(Phase.Loot, now);
+                    return LiveFightAction.None;
+                case Phase.Loot: return LootStep(v, now);
+                case Phase.Shoot:
+                    // the picture shows the open body: the Helper window (on the same side of the screen) is put away and the container window comes to the front, once
+                    if (shotAt < 0) { shotAt = now; return r.LootOpened ? LiveFightAction.ShowBody : LiveFightAction.None; }
+                    // a moment for the frames to draw what is there (the open body, the fight), then the picture
+                    if (now - shotAt < SettleMs) return LiveFightAction.None;
+                    return LiveFightAction.Screenshot;
+            }
+            return LiveFightAction.None;
+        }
+
+        void TimeUp(LiveFightView v, double now)
+        {
+            if (!Result.ReachedCave) Skip("the cave was not reached in " + (int)(LimitMs / 1000) + " s" + (hopNote.Length > 0 ? " (" + hopNote + ")" : "") + ", the character is at " + v.Player, now);
+            else if (!Result.RatInReach) Skip("no Rat came into view in " + (int)(LimitMs / 1000) + " s, the character is at " + v.Player, now);
+            else Go(Phase.Shoot, now);   // a Rat was in reach and nothing died: Failures() says so
+        }
+
+        // ------------------------------------------------------------------------------------ the walk
+        void PlanRoute(LiveFightView v, double now)
+        {
+            if (v.Player.Z != Stair.Z || PathFinder.Cheb(v.Player, TempleSpot) > 14)
+            {
+                Skip("the character is not at the temple of Cinderhold (at " + v.Player + ")", now);
+                return;
+            }
+            purpose = Purpose.Route;
+            foreach (var w in Route) hops.Enqueue(new Hop { Goal = w, Range = 1 });
+            hops.Enqueue(new Hop { Goal = Stair, Range = 0, Floor = true });
+            Go(Phase.Walk, now);
+        }
+
+        /// <summary>The tile beside the stair the character walks to before it steps onto the stair: a walkable tile next to it in the four directions with a way from the character, the nearest.
+        /// Null when the stair is not in view (further than 7 tiles, or no such tile with a way).</summary>
+        static bool BesideStair(LiveFightView v, out Pos beside)
+        {
+            beside = default(Pos);
+            if (v.Walkable == null || v.Player.Z != Stair.Z || PathFinder.Cheb(v.Player, Stair) > 7) return false;
+            int best = int.MaxValue;
+            foreach (var d in new[] { Dir.North, Dir.South, Dir.East, Dir.West })
+            {
+                var q = WalkDirs.Step(Stair, d);
+                if (!v.Walkable(q)) continue;
+                var way = q.Equals(v.Player) ? new List<Dir>() : PathFinder.Find(v.Player, q, v.Walkable, 0);
+                if (way == null || way.Count >= best) continue;
+                best = way.Count; beside = q;
+            }
+            return best != int.MaxValue;
+        }
+
+        /// <summary>The next hop of the queue; on the route the stair itself instead as soon as it shows and a way to the tile beside it is known (the way a player takes a stair that is in view).
+        /// The stair hop walks to that tile and then steps onto the stair with the key path.</summary>
+        bool NextHop(LiveFightView v)
+        {
+            if (hops.Count == 0) return false;
+            hop = hops.Dequeue();
+            if (purpose == Purpose.Route && !hop.Floor && BesideStair(v, out Pos early))
+            {
+                hops.Clear();
+                hop = new Hop { Goal = early, Range = 0, Floor = true };
+            }
+            else if (hop.Floor)
+            {
+                if (BesideStair(v, out Pos beside)) hop.Goal = beside;
+                else { hop.Goal = Stair; hop.Range = 1; }
+            }
+            attempts = 0; hopAsked = false; hopRunning = false; hopNote = ""; stepAsked = false;
+            Result.Hops++;
+            moves0 = v.Moves; refused0 = v.Refused;
+            hopRefused = 0; hopReplans = 0; hopStart = lastNow;
+            return true;
+        }
+
+        void LogHop(LiveFightView v, string how)
+        {
+            if (hop == null || Result.HopLog.Count >= 24) return;
+            Result.HopLog.Add((purpose == Purpose.Route ? "route " : purpose == Purpose.Grounds ? "grounds " : "body ") + Result.Hops + " to " + hop.Goal + (hop.Floor ? " (stair)" : "") + ": " + how + " at " + v.Player + ", "
+                + Math.Round((lastNow - hopStart) / 1000.0, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s, " + hopRefused + " refused, " + hopReplans + " re-plan(s)");
+        }
+
+        static bool Beside(Pos p) => Math.Abs(p.X - Stair.X) + Math.Abs(p.Y - Stair.Y) == 1 && p.Z == Stair.Z;
+
+        static bool Arrived(Hop h, LiveFightView v)
+        {
+            if (h.Floor && h.Stepping) return v.Player.Z != Stair.Z;
+            if (h.Floor && h.Range == 0 && v.Player.Z != Stair.Z) return true;   // some other way down
+            if (v.Player.Z != h.Goal.Z) return false;
+            return h.Range > 0 ? PathFinder.Cheb(v.Player, h.Goal) <= h.Range : v.Player.Equals(h.Goal);
+        }
+
+        static Dir DirTo(Pos from, Pos to)
+        {
+            int dx = Math.Sign(to.X - from.X), dy = Math.Sign(to.Y - from.Y);
+            if (dx == 0) return dy < 0 ? Dir.North : Dir.South;
+            if (dy == 0) return dx > 0 ? Dir.East : Dir.West;
+            return dx > 0 ? (dy < 0 ? Dir.NorthEast : Dir.SouthEast) : (dy < 0 ? Dir.NorthWest : Dir.SouthWest);
+        }
+
+        void CountWalk(LiveFightView v)
+        {
+            Result.WalkConfirmed += v.Moves - moves0; moves0 = v.Moves;
+            int refused = v.Refused - refused0;
+            Result.WalkRefused += refused; hopRefused += refused; refused0 = v.Refused;
+        }
+
+        LiveFightAction Walk(LiveFightView v, double now, Phase self)
+        {
+            var r = Result;
+            if (State != self) Go(self, now);
+            for (; ; )
+            {
+                if (hop == null)
+                {
+                    if (!NextHop(v)) { WalkEnded(v, now, true, ""); return LiveFightAction.None; }
+                }
+                if (hop.Stepping)
+                {
+                    // the last step of the stair hop: one step of the key path onto the stair, again when the floor did not change
+                    if (v.Player.Z != Stair.Z) { CountWalk(v); LogHop(v, "arrived"); hop = null; continue; }
+                    if (!stepAsked)
+                    {
+                        if (!Beside(v.Player)) { hop.Stepping = false; hopAsked = false; hopRunning = false; continue; }   // pushed away: back to walking
+                        stepAsked = true; stepAt = now;
+                        StepDir = DirTo(v.Player, Stair);
+                        r.WalkSent++;
+                        return LiveFightAction.Step;
+                    }
+                    if (now - stepAt < StepWaitMs) return LiveFightAction.None;
+                    CountWalk(v);
+                    stepAsked = false;
+                    if (++attempts >= StepAttempts)
+                    {
+                        string why = "stepping " + StepDir + " onto the stair at " + Stair + " did not change the floor (the character at " + v.Player + ")";
+                        LogHop(v, "failed");
+                        hop = null; hops.Clear();
+                        WalkEnded(v, now, false, why);
+                        return LiveFightAction.None;
+                    }
+                    r.Replans++; hopReplans++;
+                    return LiveFightAction.None;
+                }
+                if (!hopAsked)
+                {
+                    if (now < retryAt) return LiveFightAction.None;
+                    hopAsked = true; hopRunning = false;
+                    WalkGoal = hop.Goal;
+                    WalkRange = hop.Range + Math.Max(0, attempts - 1);   // a hop that found no way relaxes its range a tile per try
+                    return LiveFightAction.Walk;
+                }
+                if (hopRunning && v.AutoWalkActive && now - hopAt < HopLimitMs) return LiveFightAction.None;
+                // the walk is over, or never began: counted, and by position did it get there?
+                CountWalk(v);
+                if (Arrived(hop, v))
+                {
+                    if (hop.Floor && v.Player.Z == Stair.Z && Beside(v.Player)) { hop.Stepping = true; attempts = 0; stepAsked = false; continue; }
+                    LogHop(v, "arrived");
+                    hop = null;
+                    continue;
+                }
+                if (hop.Floor && Beside(v.Player)) { hop.Stepping = true; attempts = 0; stepAsked = false; continue; }   // beside the stair, wherever the walk ended
+                attempts++;
+                if (attempts >= HopAttempts)
+                {
+                    string why = "no way to " + hop.Goal + " from " + v.Player + " after " + HopAttempts + " tries" + (hopNote.Length > 0 ? ": " + hopNote : "");
+                    LogHop(v, "failed");
+                    hop = null;
+                    hops.Clear();
+                    WalkEnded(v, now, false, why);
+                    return LiveFightAction.None;
+                }
+                if (hopRunning) { r.Replans++; hopReplans++; }
+                hopAsked = false; hopRunning = false;
+                retryAt = now + RetryGapMs;
+                return LiveFightAction.None;
+            }
+        }
+
+        void WalkEnded(LiveFightView v, double now, bool ok, string why)
+        {
+            if (why.Length > 0) hopNote = why;
+            switch (purpose)
+            {
+                case Purpose.Route:
+                    if (!ok) { Skip("the way to the cave failed: " + why, now); return; }
+                    Result.ReachedCave = v.Player.Z != Stair.Z;
+                    Go(Phase.Hunt, now);
+                    return;
+                case Purpose.Grounds:
+                    Go(Phase.Hunt, now);   // arrived, or this ground has no way: Hunt looks for a Rat and goes on to the next ground
+                    return;
+                default:
+                    lootState = LootState.Use;
+                    Go(Phase.Loot, now);
+                    return;
+            }
+        }
+
+        // ------------------------------------------------------------------------------------ the Rats
+        LiveFightMonster NearestRat(LiveFightView v)
+        {
+            LiveFightMonster best = null;
+            int bd = int.MaxValue;
+            foreach (var m in v.Monsters)
+            {
+                if (!IsRat(m.Name) || m.HealthPercent <= 0 || m.Pos.Z != v.Player.Z) continue;
+                int d = PathFinder.Cheb(m.Pos, v.Player);
+                if (d > 9 || d > bd || (d == bd && best != null && m.Id > best.Id)) continue;
+                if (d > 1 && (v.Walkable == null || PathFinder.Find(v.Player, m.Pos, v.Walkable, 1) == null)) continue;
+                bd = d; best = m;
+            }
+            return best;
+        }
+
+        LiveFightAction Hunt(LiveFightView v, double now)
+        {
+            var r = Result;
+            var rat = NearestRat(v);
+            if (rat != null)
+            {
+                r.RatInReach = true;
+                r.Monster = LiveFirstFightStep.BaseName(rat.Name);
+                target = rat.Id;
+                if (texts0 < 0) { texts0 = v.ExpTexts; r.ExpBefore = v.Experience; }
+                lastAttack = -1; goneAt = -1;
+                Go(Phase.Fight, now);
+                return Fight(v, now);
+            }
+            if (now - phaseAt < (groundIndex == 0 ? NoRatWaitMs : GroundWaitMs)) return LiveFightAction.None;   // the landing fills, a Rat wanders in
+            while (groundIndex < Grounds.Length)
+            {
+                var g = Grounds[groundIndex++];
+                if (g.Z != v.Player.Z) continue;
+                purpose = Purpose.Grounds;
+                hops.Enqueue(new Hop { Goal = g, Range = 3 });
+                return Walk(v, now, Phase.Walk);
+            }
+            Skip("no Rat in view at the landing or on the known grounds, the character is at " + v.Player, now);
+            return LiveFightAction.None;
+        }
+
+        LiveFightAction Fight(LiveFightView v, double now)
+        {
+            var r = Result;
+            if (!chased) { chased = true; return LiveFightAction.ChaseOn; }
+            bool there = false;
+            foreach (var m in v.Monsters) if (m.Id == target) { there = true; break; }
+            // the kill: the experience text came and a Rat left the map (the one hit, or one the Helper took)
+            uint goneId = there ? 0u : target;
+            if (there && v.ExpTexts > texts0)
+                foreach (var id in seen.Keys)
+                {
+                    bool inView = false;
+                    foreach (var m in v.Monsters) if (m.Id == id) { inView = true; break; }
+                    if (!inView) { goneId = id; break; }
+                }
+            if (v.ExpTexts > texts0 && goneId != 0)
+            {
+                killPos = seen[goneId]; killAt = now;
+                Go(Phase.Settle, now);
+                return LiveFightAction.None;
+            }
+            if (!there)
+            {
+                // gone and no experience text yet: a moment for it, then another Rat
+                if (goneAt < 0) goneAt = now;
+                else if (now - goneAt >= GoneWaitMs) { seen.Remove(target); goneAt = -1; Go(Phase.Hunt, now); }
+                return LiveFightAction.None;
+            }
+            goneAt = -1;
+            if (lastAttack < 0 || now - lastAttack >= AttackEveryMs)
+            {
+                lastAttack = now;
+                AttackId = target;
+                return LiveFightAction.Attack;
+            }
+            return LiveFightAction.None;
+        }
+
+        // ------------------------------------------------------------------------------------ the body
+        LiveFightAction LootStep(LiveFightView v, double now)
+        {
+            var r = Result;
+            if (now > Math.Max(start + LimitMs, killAt + LootGraceMs)) { Go(Phase.Shoot, now); return LiveFightAction.None; }
+            switch (lootState)
+            {
+                case LootState.Find:
+                    {
+                        var l = v.LootNear != null ? v.LootNear(killPos) : null;
+                        if (l == null)
+                        {
+                            if (now - lootAt >= CorpseWaitMs) Go(Phase.Shoot, now);   // no body on the tile: the warning says so
+                            return LiveFightAction.None;
+                        }
+                        Loot = l;
+                        if (PathFinder.Cheb(v.Player, l.Tile) > 1)
+                        {
+                            purpose = Purpose.Body;
+                            hops.Enqueue(new Hop { Goal = l.Tile, Range = 1 });
+                            lootState = LootState.Beside;
+                            return Walk(v, now, Phase.Walk);
+                        }
+                        lootState = LootState.Use;
+                        return LootStep(v, now);
+                    }
+                case LootState.Use:
+                    {
+                        var l = v.LootNear != null ? v.LootNear(killPos) : null;
+                        if (l != null) Loot = l;
+                        if (Loot == null) { Go(Phase.Shoot, now); return LiveFightAction.None; }
+                        r.LootTried = true;
+                        lootTries++;
+                        opens0 = v.ContainerOpens;
+                        lootAt = now;
+                        lootState = LootState.Wait;
+                        return LiveFightAction.UseLoot;
+                    }
+                case LootState.Wait:
+                    if (v.ContainerOpens > opens0)
+                    {
+                        LiveFightContainer c = null;
+                        foreach (var x in v.Containers) if (x.ItemId == Loot.ItemId) c = x;
+                        if (c == null && v.Containers.Count > 0) c = v.Containers[v.Containers.Count - 1];
+                        if (c != null)
+                        {
+                            r.LootOpened = true; r.LootName = c.Name; r.LootItems = c.Items;
+                            lootState = LootState.Window; lootAt = now;
+                            return LootStep(v, now);
+                        }
+                    }
+                    if (now - lootAt >= LootWaitMs)
+                    {
+                        if (lootTries < LootTries) lootState = LootState.Find;   // the body moved or a creature stood on it: look again
+                        else Go(Phase.Shoot, now);
+                        lootAt = now;
+                    }
+                    return LiveFightAction.None;
+                default:   // Window: the container window shows the open body
+                    if (!v.ContainersWindowOpen && !windowAsked) { windowAsked = true; return LiveFightAction.OpenContainers; }
+                    r.LootWindowOpen = v.ContainersWindowOpen;
+                    if (v.ContainersWindowOpen || now - lootAt >= WindowWaitMs) Go(Phase.Shoot, now);
+                    return LiveFightAction.None;
+            }
+        }
+    }
+
     /// <summary>The run's report (live_smoke.json), the pass rule and the log lines.</summary>
     public sealed class LiveSmokeReport
     {
@@ -462,6 +1119,8 @@ namespace Chaos.Core
         public readonly SmokeReport Smoke = new SmokeReport();
         /// <summary>The new player first minute (a fresh character logged in before the normal run); not run when the environment has no fresh character.</summary>
         public readonly LiveNewPlayerResult NewPlayer = new LiveNewPlayerResult();
+        /// <summary>The fresh character's first fight after the Helper shot (Auto setup, Helper on, the walk to the cave, one Rat killed, its body opened); not run without the fresh character.</summary>
+        public readonly LiveFirstFightResult FirstFight = new LiveFirstFightResult();
         public int Sheets, Screenshots;
 
         /// <summary>The walk counts when the legs had a free tile to walk, the server confirmed at least MinSteps (or all there were) and at least half of the planned steps. The legs
@@ -513,6 +1172,7 @@ namespace Chaos.Core
             if (Closed.Length > 0) f.Add("the session closed: " + Closed);
             if (Exceptions > 0) f.Add(Exceptions + " exceptions logged");
             f.AddRange(NewPlayer.Failures());
+            f.AddRange(FirstFight.Failures());
             return f;
         }
 
@@ -531,7 +1191,10 @@ namespace Chaos.Core
             if (LayoutErrors > 0) w.Add(LayoutErrors + " IMGUI layout errors");
             if (LoggedErrors > 0) w.Add(LoggedErrors + " logged errors");
             if (EnterOk && LoginOk && !LoggedOut) w.Add("no clean logout (the server did not close the connection)");
-            if (NewPlayer.Ran && NewPlayer.EnterOk && !NewPlayer.LoggedOut) w.Add("newplayer: no clean logout of the fresh character");
+            w.AddRange(NewPlayer.Warnings());
+            // after a fight the server refuses a logout for about a minute (the in-fight condition), so the app drops the connection: expected, a note
+            if (NewPlayer.Ran && NewPlayer.EnterOk && !NewPlayer.LoggedOut && !FirstFight.RatInReach) w.Add("newplayer: no clean logout of the fresh character");
+            w.AddRange(FirstFight.Warnings());
             if (EnterOk && TilesDrawn == 0) w.Add("no tile in the drawn view");
             return w;
         }
@@ -541,6 +1204,7 @@ namespace Chaos.Core
         {
             var n = new List<string>();
             foreach (var x in Windows) if (StatusOf(x) == LiveWindowStatus.NeedsCondition) n.Add(x.Class + ": needs condition: " + Conditions[x.Class]);
+            if (NewPlayer.Ran && NewPlayer.EnterOk && !NewPlayer.LoggedOut && FirstFight.RatInReach) n.Add("newplayer: the fresh character fought, the server refuses a logout in the minute after a fight, so the app closed the connection");
             if (StepsCancelled > 0) n.Add("known issue: a held key keeps up to " + WalkTiming.MaxPending + " steps out and a refusal (0xB5) drops every predicted step (Core/SmoothWalk.cs, Core/Game.cs); the legs here stop at the planned steps, so a refusal on a checked tile is the server's or a creature's");
             return n;
         }
@@ -557,7 +1221,8 @@ namespace Chaos.Core
         public string SummaryLine() =>
             "chaos live smoke: identity " + Identity + ", login " + (LoginOk ? "ok" : "FAILED") + ", entered " + (EnterOk ? "ok" : "FAILED") + ", walk " + StepsConfirmed + " of " + StepsSent
             + " steps confirmed, " + TilesDrawn + " tiles drawn, " + Windows.Count + " windows (" + AnsweredCount + " answered, " + PrefetchedCount + " prefetched at login, " + LocalCount + " local-only, " + NeedsConditionCount + " need a condition, " + NoAnswerCount + " without an answer), "
-            + Exceptions + " exceptions, " + LayoutErrors + " layout errors, " + (NewPlayer.Ran ? "newplayer " + (NewPlayer.Pass ? "ok" : "FAIL") + ", " : "") + (Pass ? "pass" : "FAIL");
+            + Exceptions + " exceptions, " + LayoutErrors + " layout errors, " + (NewPlayer.Ran ? "newplayer " + (NewPlayer.Pass ? "ok" : "FAIL") + ", " : "")
+            + (FirstFight.Ran ? "firstfight " + (FirstFight.Skipped ? "skipped" : FirstFight.Pass ? "ok" : "FAIL") + ", " : "") + (Pass ? "pass" : "FAIL");
 
         /// <summary>The name of sheet N (0 based) of the contact sheets.</summary>
         public static string SheetName(int sheet) => "live_smoke_sheet_" + (sheet + 1).ToString(CultureInfo.InvariantCulture) + ".png";
@@ -615,6 +1280,7 @@ namespace Chaos.Core
             b.Append("{\n \"identity\":").Append(Q(Identity, null)).Append(",\n \"pass\":").Append(Bool(Pass)).Append(",\n \"failures\":").Append(Strs(Failures(), secrets))
              .Append(",\n \"warnings\":").Append(Strs(Warnings(), secrets)).Append(",\n \"notes\":").Append(Strs(Notes(), secrets));
             b.Append(",\n \"newplayer\":").Append(NewPlayer.ToJson(secrets));
+            b.Append(",\n \"firstfight\":").Append(FirstFight.ToJson(secrets));
             b.Append(",\n \"login\":{\"ok\":").Append(Bool(LoginOk)).Append(",\"error\":").Append(Q(LoginError, secrets)).Append('}');
             b.Append(",\n \"enter\":{\"ok\":").Append(Bool(EnterOk)).Append(",\"error\":").Append(Q(EnterError, secrets)).Append(",\"ms\":").Append(Math.Round(EnterMs).ToString("0", inv)).Append('}');
             b.Append(",\n \"map\":{\"tilesInModel\":").Append(TilesInModel.ToString(inv)).Append(",\"tilesDrawn\":").Append(TilesDrawn.ToString(inv))
