@@ -191,6 +191,9 @@ local function buildParts()
     slotParent:setMarginLeft(0)
     slotParent:setMarginTop(0)
     slotParent:setHeight(m.button)
+    -- as wide as the row: its anchors are broken, so it kept the base width and clipped the E socket at the row's end
+    -- (owner 2026-11-09: nothing could be dropped on E)
+    slotParent:setWidth(rowRight - rowLeft)
     for _, child in ipairs(bar:getChildren()) do -- the lock column, tabs and arrows of the base bar are not part of the look
       if child ~= slotParent then child:setVisible(false) end
     end
