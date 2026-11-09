@@ -56,6 +56,18 @@ function L.dockedSize(diameter)
     artLiquid * 2
 end
 
+-- The Orb size option on docked globes: the hotbar scale sets the diameter at medium; small and large scale it, and
+-- extra (the pixels a large globe grows past its cap) tells the placement to let it grow outward, not into the bar.
+-- Without this the option did nothing while the globes sat in the hotbar (the default on PC).
+L.DOCK_SCALE = { 0.75, 1, 1.15 }
+function L.dockedDiameter(diameter, option)
+  local i = math.floor(tonumber(option) or 0)
+  local f = L.DOCK_SCALE[i] or L.DOCK_SCALE[L.ORB_DEFAULT_SIZE]
+  local base = math.floor(tonumber(diameter) or L.ORB_SIZES[1].size)
+  local d = math.max(40, math.floor(base * f + 0.5))
+  return d, math.max(0, d - base)
+end
+
 -- The plain globe (liquid orbs off, or no ui shaders): the mask drawn as far up as the fill, cut from the bottom.
 -- Returns the clip {x, y, width, height} of an image `texels` wide and the height in pixels of a liquid `liquid` high.
 function L.plainClip(fill, texels, liquid)
