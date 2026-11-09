@@ -3615,6 +3615,7 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
   `--list` prints every passive, no flag the table per class line and band, `--tune` the numbers that bring an outlier into range.
   Average gain of one passive by class line: warrior 1.12-1.20, ranger 1.14-1.30, mystic 1.14-1.25, thief 1.10-1.20, monk
   1.11-1.19, necromancer 1.13-1.24, templar 1.12-1.17. The model is an estimate, not a measurement: nothing here was run live.
+- **Build uniques for the thin bands (O443, 2026-11-09).** The Necromancer, Thief and Mystic lines had 3, 4 and 5 passives in the band 401-900 against 8 to 10 for the others. 13 uniques on free stock bases (no art, no pair change) bring them to 9, 9 and 9: Echo Hex and One Page Open (Mystic and Necromancer), Deep Well and Cup Overfull (Mystic), Ossuary Ward, Last Rites, Lid Closed and Brood Pact (Necromancer), Dust Never Settles, Dry Powder, Trail of Rot, Last Word and First Cut (Thief). Model gain 1.10 to 1.24 each, same families as before, no new code. Five of them (levels 430-540, chance 1 or 2) are leveling entries inside the open-level window, so their chances were set to keep `tools/unique_pace_model.lua --check` in 1500-2500; the eight above level 700 drop only from their listed hunt monsters (none of them is a monster of the level 1500 late sets, `tests/unique_hunt_test.lua`). Each has `equipLevel` and `equipLines`. Total: 196 unique specs in `chaos_items.xml`.
 - **Bug found and fixed on the way.** `archetypes.lua` read the worn archetype uniques only at login and on inventory moves;
   an item that left its slot another way kept its effect. The think event now checks them again.
 - Tests: `tests/unique_passives_test.lua` (every unique has a passive and its text matches the config, pt-BR numbers in the
@@ -3753,7 +3754,12 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
 | 400 | Cinderstorm Crown | Rain of Sparks | nova | Mystic, Necromancer |
 | 400 | Lichbound Mask | Eyes Go Dark | mark | Mystic, Necromancer |
 | 400 | Lichbound Kilt | Cord of Hair | minionPact | Necromancer |
+| 430 | Dustroad Treads | Dust Never Settles | statscale | Thief |
 | 450 | Pilgrim's Reliquary | Walked In Walked Out | panic | all |
+| 470 | Cowl of Hollow Echoes | Echo Hex | extra | Mystic, Necromancer |
+| 480 | Dry Powder Breeches | Dry Powder | nova | Thief |
+| 520 | Ossuary Warden's Amulet | Ossuary Ward | ward | Necromancer |
+| 540 | Plaguerunner's Cowl | Trail of Rot | spread | Thief |
 | 600 | Gravewhisper Stiletto | Quiet Work | critrule | Thief |
 | 600 | Gallows Coat | One Bolt per Pocket | extra | Ranger |
 | 600 | Gallows Arbalest | Hangman's Rope | opener | Ranger |
@@ -3761,7 +3767,11 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
 | 600 | Emberwake Locket | Small Patient Fire | mend | Mystic, Monk, Templar |
 | 600 | Gallows Hood | Face Unseen | mark | Ranger, Thief |
 | 650 | Grasp of the Pyre Saint | Saint Walked On | lowlife | Monk |
+| 720 | Lectern of the Open Page | One Page Open | focus | Mystic, Necromancer |
+| 740 | Tidewrack Mantle | Deep Well | statscale | Mystic |
 | 750 | Quiver of Shattered Skies | Shattered Volley | extra | Ranger |
+| 760 | Signet of Last Rites | Last Rites | opener | Necromancer |
+| 780 | Hem of the Last Word | Last Word | riposte | Thief |
 | 800 | Eye of the Hexmaw | Every Curse First | spread | Mystic, Necromancer |
 | 800 | Crown of the Last Sovereign | Expected Throne | hitcap | Warrior, Templar |
 | 800 | Marrowforged Greaves | Creak and Hold | hitcap | Warrior, Monk, Templar |
@@ -3771,6 +3781,10 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
 | 800 | Ashwarden Bulwark | Everything Behind Lived | ward | Warrior, Templar |
 | 800 | Ashwarden Visor | Down They Stayed | statscale | Warrior, Monk, Templar |
 | 800 | Ashwarden Cuirass | Ash in the Seams | immunity | Warrior, Ranger, Thief, Monk, Templar |
+| 820 | Cutthroat's Locket | First Cut | opener | Thief |
+| 840 | Cupbearer's Greaves | Cup Overfull | manashield | Mystic |
+| 860 | Gravemother's Shawl | Brood Pact | minionPact | Necromancer |
+| 880 | Lidbound Bulwark | Lid Closed | hitcap | Necromancer |
 | 900 | Moonlit Gallows Bow | Gallows Beam | mark | Ranger |
 | 900 | Ember-Lashed Quiver | Glow at the Knots | convert | Ranger |
 | 1000 | Cinderheart Signet | Last Coal of a Sovereign | nova | Warrior, Mystic, Templar |
@@ -14635,26 +14649,36 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 | Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Helmet | Warrior, Juggernaut, Berserker | 25/100 | 20/187 | 13/243 | 11/215 | 27/133 | 11/127 | 6/100 | 13/114 | 7/105 | 8/103 |
-| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
-| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 10/143 | 5/100 | 11/145 | 6/117 | 7/129 |
+| Helmet | Ranger, Deadeye, Beastmaster | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
+| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 11/171 | 5/100 | 11/145 | 6/117 | 7/129 |
+| Helmet | Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 12/160 | 6/100 | 13/123 | 7/119 | 8/117 |
 | Helmet | Monk, Shadowfist, Iron Sage | 25/100 | 20/207 | 13/255 | 11/250 | 28/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
 | Helmet | Templar, Inquisitor, Sentinel | 25/100 | 20/187 | 13/243 | 11/215 | 28/133 | 11/127 | 6/100 | 13/114 | 7/105 | 8/103 |
 | Armor | Warrior, Juggernaut, Berserker | 26/100 | 13/126 | 23/144 | 19/185 | 31/106 | 13/100 | 19/100 | 9/100 | 7/100 | 8/106 |
-| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 26/100 | 13/141 | 23/160 | 19/209 | 31/119 | 13/100 | 19/100 | 9/100 | 7/109 | 7/100 |
-| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 26/100 | 13/156 | 22/182 | 18/234 | 31/136 | 12/100 | 18/100 | 7/100 | 5/109 | 7/112 |
+| Armor | Ranger, Deadeye, Beastmaster | 26/100 | 13/141 | 23/160 | 19/209 | 31/119 | 13/100 | 19/100 | 9/100 | 7/109 | 7/100 |
+| Armor | Mystic, Elementalist, Illusionist | 26/100 | 13/156 | 22/182 | 18/234 | 31/136 | 12/100 | 19/114 | 7/100 | 5/109 | 7/112 |
+| Armor | Thief, Ninja, Samurai | 26/100 | 13/141 | 23/160 | 19/209 | 31/119 | 13/100 | 20/100 | 9/100 | 7/109 | 7/100 |
+| Armor | Necromancer, Lich, Bone Lord | 26/100 | 13/156 | 22/182 | 18/234 | 31/136 | 12/100 | 19/105 | 7/100 | 5/109 | 7/112 |
 | Armor | Monk, Shadowfist, Iron Sage | 26/100 | 13/141 | 23/160 | 19/209 | 32/119 | 13/100 | 19/100 | 9/100 | 7/109 | 7/100 |
 | Armor | Templar, Inquisitor, Sentinel | 26/100 | 13/126 | 23/144 | 19/185 | 32/106 | 13/100 | 19/100 | 9/100 | 7/100 | 8/106 |
 | Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 15/166 | 8/100 | 8/186 | 7/257 | 18/122 | 7/100 | 6/100 | 10/100 | 8/107 | 7/107 |
-| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 15/166 | 8/100 | 8/217 | 7/257 | 18/138 | 6/104 | 5/100 | 9/100 | 8/107 | 7/107 |
-| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 15/229 | 8/100 | 7/260 | 6/300 | 18/157 | 6/117 | 5/100 | 9/100 | 7/107 | 7/107 |
+| Legs | Ranger, Deadeye, Beastmaster, Monk, Shadowfist, Iron Sage | 15/166 | 8/100 | 8/217 | 7/257 | 18/138 | 6/104 | 5/100 | 9/100 | 8/107 | 7/107 |
+| Legs | Mystic, Elementalist, Illusionist | 15/229 | 8/100 | 7/260 | 6/300 | 18/157 | 6/117 | 6/132 | 9/100 | 7/107 | 7/107 |
+| Legs | Thief, Ninja, Samurai | 15/166 | 8/100 | 8/217 | 7/257 | 18/138 | 7/131 | 5/100 | 9/100 | 8/107 | 7/107 |
+| Legs | Necromancer, Lich, Bone Lord | 15/229 | 8/100 | 7/260 | 6/300 | 18/157 | 6/117 | 5/100 | 9/100 | 7/107 | 7/107 |
 | Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 6 | 8/150 | 8/200 | 8/200 | 14/100 | 12/100 | 7/100 | 12/120 | 7/100 | 12/100 |
-| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 6 | 8/150 | 8/200 | 9/200 | 14/100 | 12/100 | 7/100 | 12/120 | 7/100 | 12/100 |
+| Boots | Ranger, Deadeye, Beastmaster | 6 | 8/150 | 8/200 | 9/200 | 14/100 | 12/100 | 7/100 | 12/120 | 7/100 | 12/100 |
+| Boots | Thief, Ninja, Samurai | 6 | 8/150 | 8/200 | 9/200 | 14/100 | 13/133 | 7/100 | 12/120 | 7/100 | 12/100 |
 | Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 23/100 | 13/142 | 5/118 | 15/125 | 11/100 | 9/100 | 10/100 | 11/100 | 9/113 | 11/100 |
-| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 6/100 | 7/100 | 8/106 | 7/100 |
+| Spellbook | Mystic, Elementalist, Illusionist | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 7/100 | 7/100 | 8/106 | 7/100 |
+| Spellbook | Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 8/100 | 7/100 | 8/106 | 7/100 |
 | Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 | 2 |
-| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 7 | 10 | 7 | 10 |
-| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 7 | 10 | 7 | 10 |
-| Ring | all 21 | 21 | 5 | 7 | 13 | 8 | 8 | 7 | 11 | 7 | 10 |
+| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 7 | 10 | 7 | 10 |
+| Amulet | Ranger, Deadeye, Beastmaster | 16 | 8 | 15 | 15 | 10 | 7 | 7 | 10 | 7 | 10 |
+| Amulet | Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 8 | 10 | 7 | 10 |
+| Amulet | Necromancer, Lich, Bone Lord | 16 | 8 | 15 | 14 | 10 | 8 | 7 | 10 | 7 | 10 |
+| Ring | Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 21 | 5 | 7 | 13 | 8 | 8 | 7 | 11 | 7 | 10 |
+| Ring | Necromancer, Lich, Bone Lord | 21 | 5 | 7 | 13 | 8 | 8 | 8 | 11 | 7 | 10 |
 
 <!-- gear-coverage:end -->
 
@@ -24952,7 +24976,7 @@ Every number is in `loadouts_config.lua`; the rules are in `loadouts_core.lua` (
 Not part of a loadout: the Vocation Trial node picks (`trials.lua`; changing a held node costs a Trial Token and gold, which a free
 switch would dodge) and the trial nodes themselves (they are kept through every tree change anyway).
 
-**Slots.** 3 for everyone, a 4th at level 200 and a 5th at level 500 (`baseSlots`, `earned`, `maxSlots`), and one more while the
+**Slots.** 4 for everyone (O443: was 3), a 5th at level 200 and a 6th at level 500 (`baseSlots`, `earned`, `maxSlots` 7), and one more while the
 Chaos Pact (the VIP) is active (`pactSlots`, owner approval 2026-10-13; `ChaosPactPerks.loadoutBonus`; a slot over the limit
 keeps its loadout, as below). The earned slots are never sold on their own in the store. The Pact's slot is a paid slot in
 effect (a loadout slot is worth respec gold: each one keeps a tree that would otherwise cost a full reset); the owner kept it
@@ -25005,8 +25029,8 @@ At login a database one serial ahead of the storages (the save never happened) i
 (a restored backup) takes the database serial.
 
 **Storages and table.** 7100570 active slot, 7100571 switch serial, 7100572 time of the last switch (7100570 - 7100579 reserved);
-7112000 - 7127999 the runes of the inactive loadouts (8 slots of 2000, above the live sockets 7110000 - 7111999). Table
-`chaos_loadouts`: one row per character and slot (1..5), slot 0 is the character's switch record; `loadouts.lua` also creates it at
+7112000 - 7127999 the runes of the inactive loadouts (8 slots of 2000, above the live sockets 7110000 - 7111999; slot 7 uses 7124000 - 7125999, so one spare slot is left). Table
+`chaos_loadouts`: one row per character and slot (1..7), slot 0 is the character's switch record; `loadouts.lua` also creates it at
 startup.
 
 **Protocol** (JSON `{action, data}`): client `open`, `save {slot, name, icon}`, `load {slot}`, `rename {slot, name, icon}`,

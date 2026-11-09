@@ -1,4 +1,4 @@
--- Loadouts / Armory (data/scripts/chaos/loadouts.lua): one row per character and loadout slot (1..5); slot 0 is the
+-- Loadouts / Armory (data/scripts/chaos/loadouts.lua): one row per character and loadout slot (1..7); slot 0 is the
 -- character's armory state (`serial` and `undo`: the crash-safe switch record). Columns of a loadout:
 --   voc       vocation id it was saved with          tree      passive tree node ids "2,3,9"
 --   paragon   "damage=3,health=4"                    supports  "spell:rune/rune/rune;..." (a summary: the runes

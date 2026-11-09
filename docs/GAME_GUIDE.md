@@ -225,7 +225,7 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   and survive tree resets.
 - **Loadouts** (Character > Loadouts, or the Loadouts button of the passive tree): save whole builds and switch between
   them. A loadout holds the passive tree, the Paragon points, the support runes in your spells, an equipment set and
-  your action bar. Three slots, a fourth at level 200 and a fifth at level 500, earned and never sold. Switching is free,
+  your action bar. Four slots, a fifth at level 200 and a sixth at level 500, earned and never sold. The Chaos Pact adds a seventh. Switching is free,
   out of combat and outside instances, with a short channel outside protection zones. A saved tree was paid for once,
   so a switch never dodges a respec price.
 - **Paragon:** after level 1000 every level gives a Paragon point. You spend them on small, capped bonuses in four
