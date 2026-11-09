@@ -15,7 +15,7 @@ namespace Chaos.Core.LiveCheck
     public sealed partial class LiveRun
     {
         /// <summary>Scenarios that run by name only (not in `all`).</summary>
-        public static readonly string[] OptInScenarios = { "firstfightsmoke", "purse" };
+        public static readonly string[] OptInScenarios = { "firstfightsmoke", "purse", "testsummons", "testpets", "testparty", "testpartyxp", "testrift", "testwaystone", "testloot", "testchests", "testspellquest", "testunique", "testdual", "testauto" };
 
         /// <summary>The time the scenario waits for the state machine: its own limit plus the loot grace and a margin.</summary>
         const int FirstFightSmokeLimitMs = (int)(LiveFirstFightStep.LimitMs + LiveFirstFightStep.LootGraceMs) + 15000;
@@ -128,6 +128,7 @@ namespace Chaos.Core.LiveCheck
                 ExpTexts = p.ExpGainTexts,
                 Experience = (long)p.Experience,
                 ContainerOpens = Seen(0x6E),
+                ContainerCloses = Seen(0x6F),
                 ContainersWindowOpen = p.Containers.Count > 0,
             };
             uint self = world.PlayerId;

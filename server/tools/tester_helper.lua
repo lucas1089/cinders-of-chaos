@@ -50,7 +50,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 8
+HELPER_VERSION = 9
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -710,8 +710,8 @@ local function hitDown(lid, id, out)
 		if not mon or mon:getHealth() <= 0 then
 			return
 		end
-		-- the health left plus one, capped below 2^31 (max health x 10 of a level-scaled monster overflowed)
-		local hp = math.min(mon:getHealth() + 1, 2000000000)
+		-- twenty times the health left plus one, capped below 2^31 (max health x 10 of a level-scaled monster overflowed): a class that deals a fraction of a physical hit rounds a hit of 3 down to 0 and left the Demon at 2 health after the party kill (Unity live check, phase 30: Beastmaster)
+		local hp = math.min((mon:getHealth() + 1) * 20, 2000000000)
 		local okH, err = pcall(doTargetCombatHealth, lid, mon, COMBAT_PHYSICALDAMAGE, -hp, -hp, CONST_ME_NONE)
 		if not okH then
 			out.hitErr = tostring(err)
@@ -1343,8 +1343,8 @@ end
 
 -- ---------------------------------------------------------------- O278 unique passives, live
 -- "!tester unique": a real unique copy (custom attribute chaos_unique) of an item whose passive is a damage multiplier
--- with no state to build (UNIQUE_FAMILIES) and works for the tester's class line goes into an empty slot. One hit of a
--- tenth of a fresh monster's health before it is worn, one on a second fresh monster after; the multiplier the glue's
+-- with no state to build (UNIQUE_FAMILIES) and works for the tester's class line goes into an empty slot. A plain hit to settle the
+-- class's per-hit state, then one hit of a tenth of a fresh monster's health before it is worn, one on a second fresh monster after; the multiplier the glue's
 -- own ChaosUniquePassivesCore.dealt returned on the second hit is caught. Item and monsters are removed again.
 -- Answers {id, family, line, slot, active = {families}, m, crit, lostBefore, lostAfter, hit} or {err}
 local UNIQUE_FAMILIES = {critrule = true, opener = true, lowlife = true, overflow = true}
@@ -1425,7 +1425,10 @@ function commands.unique(player)
 	local out = {line = line}
 	local capWas
 	local ok, err = pcall(function()
-		out.lostBefore, out.hit = probeHit(player, spot, capture)
+		-- the first hit of a character reads other than the ones after it for classes with state per hit (Beastmaster 159 then 87, Thief 234 then 304 in the Unity live check of phase 30:
+		-- the plain hit twice, the passive explained the third exactly): the baseline is a second plain hit on a fresh monster
+		out.lostFirst, out.hit = probeHit(player, spot, capture)
+		out.lostBefore = probeHit(player, spot, capture)
 		-- the first candidate the slot takes (the engine refuses some for the class or a slot rule: live run 2026-11-01)
 		local pick, slot, refused = nil, nil, {}
 		for _, e in ipairs(cands) do
