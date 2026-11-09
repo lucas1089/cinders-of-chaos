@@ -22,9 +22,10 @@
 # Modes (O433, the player on the same server: .github/workflows/unity-prototype.yml, unity/README.md "Player on a live server (CI)"):
 #   (none)          the run above: Core.LiveCheck plays, reports, summary, the server goes down at the end
 #   --serve-only    brings the server up (steps 1-3 and 5, no Core.LiveCheck), makes one fresh account and character per identity of
-#                   UL_IDENTITIES, writes WORK/client-IDENTITY.env (mode 600, `export NAME=value` lines: CHAOS_LIVE_HOST, _PORT,
-#                   _ACCOUNT, _PASSWORD, _CHARACTER, _IDENTITY, CHAOS_CLIENT_KEY, CHAOS_RSA_PUBLIC; the player and Core.LiveCheck read
-#                   those) and leaves tfs and MariaDB running detached (pid files in WORK/run). No secret is printed: only the paths of
+#                   UL_IDENTITIES, plus one more character per identity that never logged in (new_newbie, level 1), writes
+#                   WORK/client-IDENTITY.env (mode 600, `export NAME=value` lines: CHAOS_LIVE_HOST, _PORT, _ACCOUNT, _PASSWORD,
+#                   _CHARACTER, _IDENTITY, CHAOS_LIVE_NEW_ACCOUNT, _NEW_PASSWORD, _NEW_CHARACTER (the player smoke's new player first
+#                   minute), CHAOS_CLIENT_KEY, CHAOS_RSA_PUBLIC; the player and Core.LiveCheck read those) and leaves tfs and MariaDB running detached (pid files in WORK/run). No secret is printed: only the paths of
 #                   the files. UL_OUT is not needed. A second call on the same UL_WORK is not supported (use a new folder).
 #   --stop          stops what --serve-only started (tfs, then MariaDB) and deletes the env files and the database password. Needs UL_WORK only.
 #
@@ -417,7 +418,7 @@ run_groups() {
   local g id
   # a resumed work folder keeps the rows of an earlier run
   dbq chaos -e "DELETE FROM player_storage WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Live %');
-                DELETE FROM players WHERE name LIKE 'Live %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%';"
+                DELETE FROM players WHERE name LIKE 'Live %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%' OR name LIKE 'lcn%';"
   for g in ${GROUPS_TO_RUN//,/ }; do
     for id in ${IDENTITIES//,/ }; do
       t0=$SECONDS
@@ -436,25 +437,31 @@ run_groups() {
 }
 
 # ---------------------------------------------------------------------------------------------------- 6b. --serve-only: accounts and env files
-# serve_clients: one fresh account and character per identity (the first of each pair new_chars makes; the partner is not used), each in a
+# serve_clients: one fresh account and character per identity (the first of each pair new_chars makes; the partner is not used) and one more that never logged in
+# (new_newbie, level 1: the player smoke logs it in first, CHAOS_LIVE_NEW_*), each in a
 # client-IDENTITY.env of mode 600 that a client sources (set -a). Values are written with printf %q; nothing goes to the terminal but the paths.
 serve_clients() {
   log "accounts and env files (one per identity: $IDENTITIES)"
   dbq chaos -e "DELETE FROM player_storage WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Live %');
-                DELETE FROM players WHERE name LIKE 'Live %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%';"
+                DELETE FROM players WHERE name LIKE 'Live %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%' OR name LIKE 'lcn%';"
   local id file
   for id in ${IDENTITIES//,/ }; do
     case "$id" in extended|chaos) ;; *) die "unknown identity $id" ;; esac
     new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"
+    local main_a=$PA main_n=$PN main_p=$PP
+    new_newbie "$id"   # one more, never logged in (the new player first minute of the player smoke, O433); it sets PA PN PP, the normal ones are kept above
     file="$WORK/client-$id.env"
     (
       umask 077
       {
         printf 'export CHAOS_LIVE_HOST=%q\n' 127.0.0.1
         printf 'export CHAOS_LIVE_PORT=%q\n' "$LOGIN_PORT"
-        printf 'export CHAOS_LIVE_ACCOUNT=%q\n' "$PA"
-        printf 'export CHAOS_LIVE_PASSWORD=%q\n' "$PP"
-        printf 'export CHAOS_LIVE_CHARACTER=%q\n' "$PN"
+        printf 'export CHAOS_LIVE_ACCOUNT=%q\n' "$main_a"
+        printf 'export CHAOS_LIVE_PASSWORD=%q\n' "$main_p"
+        printf 'export CHAOS_LIVE_CHARACTER=%q\n' "$main_n"
+        printf 'export CHAOS_LIVE_NEW_ACCOUNT=%q\n' "$PA"
+        printf 'export CHAOS_LIVE_NEW_PASSWORD=%q\n' "$PP"
+        printf 'export CHAOS_LIVE_NEW_CHARACTER=%q\n' "$PN"
         printf 'export CHAOS_LIVE_IDENTITY=%q\n' "$id"
         printf 'export CHAOS_CLIENT_KEY=%q\n' "$GUARD_KEY"
         printf 'export CHAOS_RSA_PUBLIC=%q\n' "$RSA_PUBLIC"

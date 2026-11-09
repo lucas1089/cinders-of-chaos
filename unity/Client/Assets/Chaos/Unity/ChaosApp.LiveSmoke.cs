@@ -8,6 +8,9 @@
 // (optional), CHAOS_LIVE_IDENTITY (extended or chaos), and the variables every login reads: CHAOS_CLIENT_KEY (guard key), CHAOS_RSA_PUBLIC (modulus). The sprite pair: -chaosThings DIR or
 // CHAOS_PAIR_DIR. Nothing of that is logged: the log line holds host, port and identity, and the json has every secret cut out.
 // Every window ends as answered, prefetched at login (Skills, Dungeons), local-only (native windows, Helper, Item Finder), needs a condition or no answer; only the last is a listed warning. The exit code is 1 when the login, entering the game or the walk fails, the session closes or an exception is logged.
+// New player first minute (O433, unity/README.md "New player first minute"): when CHAOS_LIVE_NEW_ACCOUNT, _PASSWORD and _CHARACTER are set (a fresh character that never logged in,
+// made by tools/ci/unity_live_check.sh --serve-only), the run first logs that character in, waits for the welcome toast, checks that the Helper opened by itself on Auto setup with the hint,
+// takes helper_onboarding_IDENTITY.png, writes the "newplayer" block of live_smoke.json, logs out and then goes on with the normal character. A fault there is a failure line, never a stop.
 // Own process: next to -chaosHd2dShot, -chaosDemoTour, -chaosWindowSmoke or -chaosWalkTour those run instead. Log lines start with "chaos live smoke:".
 using System;
 using System.Collections;
@@ -36,7 +39,7 @@ namespace Chaos.Client
 
         sealed class LiveSmokeDirector : MonoBehaviour
         {
-            enum Phase { Start, Login, Entering, Settle, Shot, Walk, WalkEnd, Steps, Logout, Sheets, Done }
+            enum Phase { Start, Login, Entering, NewPlayer, NewLogout, Settle, Shot, Walk, WalkEnd, Steps, Logout, Sheets, Done }
 
             sealed class Tile { public string Name; public Texture2D Tex; public bool Problem; public string Flags = ""; }
 
@@ -52,6 +55,11 @@ namespace Chaos.Client
             readonly int[] extCount = new int[256];
             double lastExtMs;
             int cancels;
+            // the new player first minute: true from the start until the fresh character is out and the normal login begins
+            bool nbRun;
+            LiveNewPlayerStep nbStep;
+            double nbLogoutAt;
+            const double NbLogoutLimitMs = 5000;
             // the walk
             LiveWalker walker;
             int walkMask, moves0, sent0, cancels0;
@@ -128,7 +136,11 @@ namespace Chaos.Client
             {
                 if (phase == Phase.Done) return;
                 try { Step(); }
-                catch (Exception e) { Fail(e.GetType().Name + ": " + e.Message); }
+                catch (Exception e)
+                {
+                    if (nbRun && phase != Phase.Start) NewAbort(e.GetType().Name + ": " + e.Message);
+                    else Fail(e.GetType().Name + ": " + e.Message);
+                }
             }
 
             void Step()
@@ -139,6 +151,12 @@ namespace Chaos.Client
                     if (app == null) return;
                 }
                 if (NowMs - startedAt > TotalLimitMs) { Fail("the live smoke run ran over " + (int)(TotalLimitMs / 1000) + " s"); return; }
+                // the fresh character's session went away on its own: its failure line, then the normal run
+                if (nbRun && (phase == Phase.NewPlayer || phase == Phase.Shot) && (app.session == null || app.screen != Screen.Game))
+                {
+                    NewAbort("the session closed during the first minute (" + (string.IsNullOrEmpty(app.status) ? "the connection ended" : app.status) + ")");
+                    return;
+                }
                 // the session went away on its own (the server closed it, a kick): not a clean end
                 if ((phase == Phase.Settle || phase == Phase.Shot || phase == Phase.Walk || phase == Phase.WalkEnd || phase == Phase.Steps) && (app.session == null || app.screen != Screen.Game))
                 {
@@ -152,6 +170,8 @@ namespace Chaos.Client
                     case Phase.Start: StartRun(); break;
                     case Phase.Login: StepLogin(); break;
                     case Phase.Entering: StepEntering(); break;
+                    case Phase.NewPlayer: StepNewPlayer(); break;
+                    case Phase.NewLogout: StepNewLogout(); break;
                     case Phase.Settle:
                         if (NowMs - phaseAt >= SettleMs)
                         {
@@ -183,9 +203,11 @@ namespace Chaos.Client
                 if (!string.IsNullOrEmpty(pair)) app.pairDir = pair;
                 app.host = cfg.Host;
                 app.port = cfg.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                app.account = cfg.Account;
-                app.password = cfg.Password;
-                Debug.Log("chaos live smoke: started, " + cfg.Describe());
+                nbRun = cfg.HasNewPlayer;
+                rep.NewPlayer.Ran = nbRun;
+                app.account = nbRun ? cfg.NewAccount : cfg.Account;
+                app.password = nbRun ? cfg.NewPassword : cfg.Password;
+                Debug.Log("chaos live smoke: started, " + cfg.Describe() + (nbRun ? ", new player first minute first" : ""));
                 app.DoLogin();   // the login screen's path: the pair, the login server, then the character list
                 SetPhase(Phase.Login);
             }
@@ -193,22 +215,23 @@ namespace Chaos.Client
             void StepLogin()
             {
                 if (app.dat == null) { Fail("no sprite pair: " + (app.status ?? "")); return; }   // DoLogin loads the pair before it connects; a miss ends it at once
-                if (app.login != null && app.login.Error != null) { Fail("login: " + app.login.Error); return; }
-                if (app.status != null && app.status.StartsWith("Login failed", StringComparison.Ordinal)) { Fail(app.status); return; }
+                if (app.login != null && app.login.Error != null) { LoginFail("login: " + app.login.Error); return; }
+                if (app.status != null && app.status.StartsWith("Login failed", StringComparison.Ordinal)) { LoginFail(app.status); return; }
                 if (app.screen == Screen.Characters && app.login != null && app.login.Characters.Count > 0)
                 {
                     CharacterEntry ch = null;
-                    foreach (var c in app.login.Characters) if (cfg.Character != null && c.Name == cfg.Character) { ch = c; break; }
-                    if (ch == null && cfg.Character == null) ch = app.login.Characters[0];
-                    if (ch == null) { Fail("login: the character is not in the list"); return; }
-                    rep.LoginOk = true;
-                    Debug.Log("chaos live smoke: logged in, " + app.login.Characters.Count + " characters in the list");
+                    string want = nbRun ? cfg.NewCharacter : cfg.Character;
+                    foreach (var c in app.login.Characters) if (want != null && c.Name == want) { ch = c; break; }
+                    if (ch == null && want == null) ch = app.login.Characters[0];
+                    if (ch == null) { LoginFail("login: the character is not in the list"); return; }
+                    if (nbRun) rep.NewPlayer.LoginOk = true; else rep.LoginOk = true;
+                    Debug.Log("chaos live smoke: " + (nbRun ? "new player: " : "") + "logged in, " + app.login.Characters.Count + " characters in the list");
                     app.Enter(ch);   // the list's own path
-                    HookSession();
+                    if (!nbRun) HookSession();   // the fresh character's session is not counted: its opcodes would hide a missing prefetch of the normal one
                     SetPhase(Phase.Entering);
                     return;
                 }
-                if (NowMs - phaseAt > LoginLimitMs) Fail("no character list after " + (int)(LoginLimitMs / 1000) + " s (status '" + (app.status ?? "") + "')");
+                if (NowMs - phaseAt > LoginLimitMs) LoginFail("no character list after " + (int)(LoginLimitMs / 1000) + " s (status '" + (app.status ?? "") + "')");
             }
 
             /// <summary>Counts every extended message the server sends (per opcode) and every refused step, without changing what the session does with them.</summary>
@@ -230,9 +253,21 @@ namespace Chaos.Client
             void StepEntering()
             {
                 var s = app.session;
-                if (s == null || s.Closed != null) { Fail("the session closed: " + (s?.Closed ?? "gone")); return; }
+                if (s == null || s.Closed != null) { EnterFail("the session closed: " + (s?.Closed ?? "gone")); return; }
                 if (s.Parser.LoggedIn && app.world != null && app.world.Player != null && app.world.Tiles.Count > 0)
                 {
+                    if (nbRun)
+                    {
+                        rep.NewPlayer.EnterOk = true;
+                        Debug.Log("chaos live smoke: new player: in the world, " + app.world.Tiles.Count + " tiles");
+                        app.hd2d = false; app.live = false; app.world3d = false;
+                        app.ApplyHd2d();
+                        if (app.windows.Count == 0) app.MakeWindows();
+                        app.FindWindow<HowItWorksWindow>()?.MarkAllSeen(app);   // a first-open card would cover the Helper in the picture
+                        nbStep = new LiveNewPlayerStep(rep.NewPlayer, NowMs);
+                        SetPhase(Phase.NewPlayer);
+                        return;
+                    }
                     rep.EnterOk = true;
                     rep.EnterMs = NowMs - phaseAt;
                     Debug.Log("chaos live smoke: in the world, " + app.world.Tiles.Count + " tiles in " + Math.Round(rep.EnterMs) + " ms");
@@ -241,7 +276,90 @@ namespace Chaos.Client
                     SetPhase(Phase.Settle);   // the session's own hellos and prefetches (spells, progression) arrive meanwhile
                     return;
                 }
-                if (NowMs - phaseAt > EnterLimitMs) Fail("no world after " + (int)(EnterLimitMs / 1000) + " s (status '" + (app.status ?? "") + "')");
+                if (NowMs - phaseAt > EnterLimitMs) EnterFail("no world after " + (int)(EnterLimitMs / 1000) + " s (status '" + (app.status ?? "") + "')");
+            }
+
+            // ------------------------------------------------------------------------------------ the new player first minute
+            /// <summary>A login problem: the fresh character's is its failure line (the run goes on), the normal character's ends the run.</summary>
+            void LoginFail(string why) { if (nbRun) NewAbort(why); else Fail(why); }
+
+            void EnterFail(string why) { if (nbRun) NewAbort(why); else Fail(why); }
+
+            /// <summary>The fresh character's step is over with a fault: the line goes in the report, the character logs out (when it is in), the normal run starts.</summary>
+            void NewAbort(string why)
+            {
+                if (!nbRun) return;
+                string text = cfg != null ? Scrub(why) : why;
+                if (rep.NewPlayer.Error.Length == 0) rep.NewPlayer.Error = text;
+                Debug.Log("chaos live smoke: new player: " + text);
+                if (app.screen == Screen.Game && app.session != null && app.session.Closed == null) BeginNewLogout();
+                else
+                {
+                    if (app.screen == Screen.Game) app.Leave("The new player step ended.");
+                    BeginMainLogin();
+                }
+            }
+
+            static bool WelcomeToastOn(ToastCenter t)
+            {
+                foreach (var x in t.Active) if (x.Type == "NEW_PLAYER") return true;
+                foreach (var x in t.Queue) if (x.Type == "NEW_PLAYER") return true;
+                return false;
+            }
+
+            void StepNewPlayer()
+            {
+                var s = app.session;
+                var win = app.FindWindow<HelperWindow>();
+                var toasts = s.Hud != null ? s.Hud.Toasts : null;
+                var view = win != null ? win.OnboardingView(s.Now) : new LiveHelperView();
+                var act = nbStep.Update(NowMs, toasts != null && WelcomeToastOn(toasts), toasts != null ? toasts.HelperRequests : 0, view);
+                if (act == LiveNewPlayerAction.Screenshot)
+                {
+                    var r = rep.NewPlayer;
+                    Debug.Log("chaos live smoke: new player: toast " + (r.ToastSeen ? "seen" : "NOT seen") + ", Helper " + (r.HelperOpened ? "open on tab " + r.Tab : "NOT open") + ", hint " + (r.HintShown ? "shown" : "NOT shown") + ", blink " + (r.BlinkActive ? "on" : "off"));
+                    RequestShot("helper_onboarding_" + cfg.Identity + ".png", NewShotDone);
+                }
+            }
+
+            void NewShotDone()
+            {
+                nbStep.ShotTaken("helper_onboarding_" + cfg.Identity + ".png");
+                BeginNewLogout();
+            }
+
+            void BeginNewLogout()
+            {
+                CloseAll();
+                app.session.Logout();
+                nbLogoutAt = NowMs;
+                SetPhase(Phase.NewLogout);
+            }
+
+            void StepNewLogout()
+            {
+                if (app.screen != Screen.Game || app.session == null) { rep.NewPlayer.LoggedOut = true; BeginMainLogin(); return; }
+                if (NowMs - nbLogoutAt > NbLogoutLimitMs)
+                {
+                    rep.NewPlayer.LoggedOut = false;
+                    app.Leave("Logged out.");
+                    BeginMainLogin();
+                }
+            }
+
+            /// <summary>The normal run starts: the same login path as before, with the normal account (the list of the fresh character is dropped so the old list is not taken for the new one).</summary>
+            void BeginMainLogin()
+            {
+                nbRun = false;
+                nbStep = null;
+                app.login = null;
+                app.screen = Screen.Login;
+                app.status = "";
+                app.account = cfg.Account;
+                app.password = cfg.Password;
+                Debug.Log("chaos live smoke: new player step over, logging in with the normal character");
+                app.DoLogin();
+                SetPhase(Phase.Login);
             }
 
             // ------------------------------------------------------------------------------------ a screenshot of the whole screen

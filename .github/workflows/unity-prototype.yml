@@ -399,6 +399,8 @@ jobs:
               set -a; . "$work/client-$id.env"; set +a
               echo "::add-mask::$CHAOS_LIVE_PASSWORD"
               echo "::add-mask::$CHAOS_CLIENT_KEY"
+              # the fresh character of the new player first minute (CHAOS_LIVE_NEW_*, same file): masked, and cut from the log lines below
+              echo "::add-mask::$CHAOS_LIVE_NEW_PASSWORD"
               export CHAOS_PAIR_DIR="$pair"
               set +e
               LIBGL_ALWAYS_SOFTWARE=1 timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" "$exe" \
@@ -408,7 +410,7 @@ jobs:
               echo "live smoke ($id) exit code: $rc"
               # the player's own lines only, with the run's secrets cut out (all random hex or letters: safe in sed)
               grep "chaos live smoke" "$work/player_live_$id.log" 2>/dev/null \
-                | sed -e "s/$CHAOS_LIVE_PASSWORD/<removed>/g" -e "s/$CHAOS_CLIENT_KEY/<removed>/g" -e "s/$CHAOS_LIVE_ACCOUNT/<removed>/g" > "$live/live_smoke.log" || true
+                | sed -e "s/$CHAOS_LIVE_PASSWORD/<removed>/g" -e "s/$CHAOS_CLIENT_KEY/<removed>/g" -e "s/$CHAOS_LIVE_ACCOUNT/<removed>/g" -e "s/$CHAOS_LIVE_NEW_PASSWORD/<removed>/g" -e "s/$CHAOS_LIVE_NEW_ACCOUNT/<removed>/g" > "$live/live_smoke.log" || true
               cat "$live/live_smoke.log"
               exit "$rc"
             ) || { echo "::warning::live smoke ($id): the player exited with a failure; live_smoke.json and the log lines say which"; fails=$((fails + 1)); }
@@ -441,6 +443,11 @@ jobs:
                   notes.append("- %s: %s" % (ident, w))
               for w in d.get("notes", []):
                   notes.append("- %s: %s" % (ident, w))
+              n = d.get("newplayer") or {}
+              if n.get("ran"):
+                  notes.append("- %s: new player first minute (helper_onboarding_%s.png): welcome toast %s, openHelper %s, Helper opened by itself %s on tab %s (Auto setup is tab 1), hint %s, blink %s, %s" % (
+                      ident, ident, "seen" if n.get("toastSeen") else "NOT seen", "yes" if n.get("openHelper") else "NO", "yes" if n.get("helperOpened") else "NO", n.get("tab"),
+                      "shown" if n.get("hintShown") else "NOT shown", "on" if n.get("blinkActive") else "off", "pass" if n.get("pass") else "FAIL"))
           lines += [""] + (notes if notes else ["No failure and no warning."])
           lines += ["", "Every window is answered, prefetched at login (Skills, Dungeons), local-only (native windows, Helper, Item Finder), needs a condition or has no answer; only no answer is a warning, never a failure. The json and the sheets are in the hd2d-shots artifact (live-extended, live-chaos)."]
           text = "\n".join(lines) + "\n"

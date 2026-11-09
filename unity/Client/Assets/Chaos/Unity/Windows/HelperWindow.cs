@@ -27,6 +27,14 @@ namespace Chaos.Client
         // the welcome toast's openHelper (Core HelperOnboarding): the window opens on the Shooter tab, the Auto setup button blinks gold with the hint above it until it is clicked or the time is up
         string onboardHint = "";
         double onboardAt = -1;
+        int onboardDrawnFrame = -100;   // the frame the gold hint was last drawn (the live smoke reads it)
+
+        /// <summary>The window as the live smoke run sees it (Core/LiveSmoke.cs LiveHelperView): open, the tab, the hint drawn within the last two frames, the blink time still running.</summary>
+        public LiveHelperView OnboardingView(double sessionNow)
+        {
+            double age = onboardAt >= 0 ? sessionNow - onboardAt : -1;
+            return new LiveHelperView { Open = Open, Tab = tab, Hint = onboardHint, HintDrawn = Time.frameCount - onboardDrawnFrame <= 2, BlinkActive = HelperOnboarding.Active(age) };
+        }
 
         public override string Title => Loc.T("Helper");
         public override KeyCode Hotkey => KeyCode.R;
@@ -38,7 +46,7 @@ namespace Chaos.Client
         public override void Reset()
         {
             engine = null; engineFor = null; loadedFor = null; lastHealth = -1; pick = Pick.None; message = ""; dirty = false;
-            noticeShown = null; followEdit = null; onboardAt = -1; onboardHint = "";
+            noticeShown = null; followEdit = null; onboardAt = -1; onboardHint = ""; onboardDrawnFrame = -100;
         }
 
         // ------------------------------------------------------------------------------------ the loop, once per frame
@@ -242,6 +250,7 @@ namespace Chaos.Client
                 var gold = new GUIStyle(hint) { fontSize = 12 };
                 gold.normal.textColor = new Color(1f, 0.82f, 0.25f);
                 GUI.Label(new Rect(x, y, w, 18), onboardHint, gold);
+                onboardDrawnFrame = Time.frameCount;
                 y += 20;
             }
             var wasColor = GUI.color;

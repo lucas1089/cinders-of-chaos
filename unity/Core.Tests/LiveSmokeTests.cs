@@ -15,6 +15,7 @@ namespace Chaos.Core.Tests
             WalkChecks(check);
             TileChecks(check);
             ReportChecks(check);
+            NewPlayerChecks(check);
         }
 
         static Func<string, string> Env(params string[] kv)
@@ -316,6 +317,144 @@ namespace Chaos.Core.Tests
             var sum = Json.Get(pj, "summary");
             check(wins.Count == 43 && Json.Int(sum, "answered") + Json.Int(sum, "prefetched") + Json.Int(sum, "local") + Json.Int(sum, "needsCondition") + Json.Int(sum, "noAnswer") == 43, "live account json: the five counts add up to the windows");
             check(wins.All(w => new[] { "answered", "prefetched", "local", "needsCondition", "noAnswer" }.Contains(Json.Text(w, "status"))) && Json.List(pj, "opcodesAtLogin").Count == 3, "live account json: every window has a status, and the opcodes at login are listed");
+        }
+
+        // ------------------------------------------------------------------------------------ the new player first minute (O433)
+        static LiveHelperView OpenView(int tab = 1, bool hint = true, bool blink = true) => new LiveHelperView { Open = true, Tab = tab, HintDrawn = hint, Hint = hint ? "Set up your helper in one click" : "", BlinkActive = blink };
+        static readonly LiveHelperView Shut = new LiveHelperView();
+
+        /// <summary>Runs the step with a script: the toast shows from toastAt, the Helper is open from helperAt (ms after the start), until the screenshot is asked. Returns that time, or -1.</summary>
+        static double Drive(LiveNewPlayerStep st, double toastAt, double helperAt, Func<LiveHelperView> shown, int asks = 1, double limit = 60000)
+        {
+            for (double t = 0; t <= limit; t += 100)
+            {
+                bool toast = toastAt >= 0 && t >= toastAt;
+                bool open = helperAt >= 0 && t >= helperAt;
+                var act = st.Update(1000 + t, toast, toast ? asks : 0, open ? shown() : Shut);
+                if (act == LiveNewPlayerAction.Screenshot) { st.ShotTaken("helper_onboarding_extended.png"); return t; }
+            }
+            return -1;
+        }
+
+        static LiveNewPlayerResult Fresh() => new LiveNewPlayerResult { Ran = true, LoginOk = true, EnterOk = true };
+
+        static LiveSmokeReport WithNewPlayer(LiveNewPlayerResult n)
+        {
+            var r = Good();
+            var to = r.NewPlayer;
+            to.Ran = n.Ran; to.LoginOk = n.LoginOk; to.EnterOk = n.EnterOk; to.LoggedOut = n.LoggedOut; to.ToastSeen = n.ToastSeen; to.HelperAsked = n.HelperAsked;
+            to.HelperOpened = n.HelperOpened; to.HintShown = n.HintShown; to.BlinkActive = n.BlinkActive; to.Tab = n.Tab; to.Hint = n.Hint; to.Error = n.Error;
+            to.Screenshot = n.Screenshot; to.ToastMs = n.ToastMs; to.HelperMs = n.HelperMs;
+            return r;
+        }
+
+        static void NewPlayerChecks(Action<bool, string> check)
+        {
+            // environment: all three or none
+            var e = LiveSmokeEnv.Read(Env("CHAOS_LIVE_ACCOUNT", "a", "CHAOS_LIVE_PASSWORD", "p"));
+            check(e.Ok && !e.HasNewPlayer, "newplayer env: none of the three variables: no fresh character, no error");
+            e = LiveSmokeEnv.Read(Env("CHAOS_LIVE_ACCOUNT", "a", "CHAOS_LIVE_PASSWORD", "p", "CHAOS_LIVE_NEW_ACCOUNT", "lcn1x", "CHAOS_LIVE_NEW_PASSWORD", "np-secret", "CHAOS_LIVE_NEW_CHARACTER", "Live Fresh A"));
+            check(e.Ok && e.HasNewPlayer && e.NewAccount == "lcn1x" && e.NewPassword == "np-secret" && e.NewCharacter == "Live Fresh A", "newplayer env: the three variables read");
+            check(e.Secrets().Contains("np-secret") && e.Secrets().Contains("lcn1x") && e.Secrets().Contains("Live Fresh A"), "newplayer env: the fresh account, password and name are secrets");
+            check(!e.Describe().Contains("np-secret") && !e.Describe().Contains("lcn1x") && !e.Describe().Contains("Fresh"), "newplayer env: the log line holds none of them");
+            e = LiveSmokeEnv.Read(Env("CHAOS_LIVE_ACCOUNT", "a", "CHAOS_LIVE_PASSWORD", "p", "CHAOS_LIVE_NEW_ACCOUNT", "lcn1x"));
+            check(!e.Ok && !e.HasNewPlayer && !string.Join(" ", e.Errors).Contains("lcn1x"), "newplayer env: one or two of the three is an error that holds no value");
+
+            // the good first minute: toast at 2.6 s, the Helper opens 100 ms later, draws, shot
+            var res = Fresh();
+            var st = new LiveNewPlayerStep(res, 1000);
+            check(st.State == LiveNewPlayerStep.Phase.WaitToast && st.Update(1000, false, 0, Shut) == LiveNewPlayerAction.Wait, "newplayer step: starts waiting for the toast");
+            double end = Drive(st, 2600, 2700, () => OpenView());
+            check(end >= 0 && st.State == LiveNewPlayerStep.Phase.Done && res.ToastSeen && res.HelperAsked && res.HelperOpened && res.Tab == 1 && res.HintShown && res.BlinkActive && res.Hint.Length > 0, "newplayer step: toast, Helper on tab 1, hint and blink recorded");
+            check(Math.Abs(res.ToastMs - 2600) < 1 && Math.Abs(res.HelperMs - 2700) < 1, "newplayer step: toast and Helper times from the start of the step");
+            check(end >= 2700 + LiveNewPlayerStep.SettleMs - 1 && end < 2700 + LiveNewPlayerStep.SettleMs + 300, "newplayer step: the shot waits for the settle time after the Helper opened (" + end + ")");
+            check(st.Update(99999, true, 1, OpenView()) == LiveNewPlayerAction.Done && res.Screenshot == "helper_onboarding_extended.png", "newplayer step: done after the screenshot, the file name kept");
+            check(res.Pass && res.Failures().Count == 0, "newplayer result: the good run passes");
+
+            // the Helper was already open when the toast came
+            res = Fresh();
+            Drive(new LiveNewPlayerStep(res, 1000), 500, 0, () => OpenView());
+            check(res.Pass && res.HelperOpened, "newplayer step: a Helper that was open before the toast still passes");
+
+            // no toast: the step waits the limit, still asks for the shot, and fails with the line
+            res = Fresh();
+            st = new LiveNewPlayerStep(res, 1000);
+            end = Drive(st, -1, -1, () => OpenView());
+            check(end >= LiveNewPlayerStep.ToastLimitMs - 1 && end < LiveNewPlayerStep.ToastLimitMs + 200 && !res.ToastSeen && st.State == LiveNewPlayerStep.Phase.Done, "newplayer step: no toast ends after the limit with a shot (" + end + ")");
+            check(!res.Pass && res.Failures().Count == 1 && res.Failures()[0].StartsWith("newplayer: no welcome toast after 30 s", StringComparison.Ordinal), "newplayer result: no toast is a failure line: " + string.Join("|", res.Failures()));
+
+            // toast but the Helper never opens
+            res = Fresh();
+            st = new LiveNewPlayerStep(res, 1000);
+            end = Drive(st, 2000, -1, () => OpenView());
+            check(end >= 2000 + LiveNewPlayerStep.HelperLimitMs - 1 && end < 2000 + LiveNewPlayerStep.HelperLimitMs + 200 && res.ToastSeen && !res.HelperOpened, "newplayer step: a Helper that stays shut ends after its limit (" + end + ")");
+            check(!res.Pass && res.Failures().Any(x => x.Contains("Helper did not open by itself")) && res.Tab == -1 && !res.HintShown, "newplayer result: a Helper that did not open is a failure line, no tab or hint recorded");
+
+            // the toast came without openHelper
+            res = Fresh();
+            Drive(new LiveNewPlayerStep(res, 1000), 1000, -1, () => OpenView(), 0);
+            check(res.ToastSeen && !res.HelperAsked && res.Failures().Any(x => x.Contains("without openHelper")), "newplayer result: a toast without openHelper is its own failure line");
+
+            // wrong tab, no hint, no blink: a separate line each
+            res = Fresh();
+            Drive(new LiveNewPlayerStep(res, 1000), 500, 600, () => OpenView(0, true, true));
+            check(res.HelperOpened && res.Tab == 0 && res.Failures().Count == 1 && res.Failures()[0].Contains("tab 0, not on Auto setup"), "newplayer result: the Healing tab is a failure line");
+            res = Fresh();
+            Drive(new LiveNewPlayerStep(res, 1000), 500, 600, () => OpenView(1, false, true));
+            check(res.Failures().Count == 1 && res.Failures()[0].Contains("no hint") && !res.HintShown, "newplayer result: no hint drawn is a failure line");
+            res = Fresh();
+            Drive(new LiveNewPlayerStep(res, 1000), 500, 600, () => OpenView(1, true, false));
+            check(res.Failures().Count == 1 && res.Failures()[0].Contains("does not blink"), "newplayer result: no blink is a failure line");
+
+            // a Helper that opened and was shut again before the shot does not count as open
+            res = Fresh();
+            st = new LiveNewPlayerStep(res, 0);
+            st.Update(0, true, 1, Shut); st.Update(100, true, 1, OpenView());
+            var act = LiveNewPlayerAction.Wait;
+            for (double t = 200; t <= 3000 && act != LiveNewPlayerAction.Screenshot; t += 100) act = st.Update(t, true, 1, Shut);
+            check(act == LiveNewPlayerAction.Screenshot && !res.HelperOpened && res.Tab == -1, "newplayer step: a Helper shut again before the shot is not open");
+
+            // the toast seen is kept when it leaves the screen
+            res = Fresh();
+            st = new LiveNewPlayerStep(res, 0);
+            st.Update(0, true, 1, Shut); st.Update(100, false, 1, OpenView());
+            check(res.ToastSeen && res.HelperAsked && res.HelperOpened && st.State == LiveNewPlayerStep.Phase.Settle, "newplayer step: the toast is latched when it leaves the screen");
+
+            // login and entry faults of the fresh character
+            res = new LiveNewPlayerResult { Ran = true, Error = "login: Account name or password is not correct." };
+            check(!res.Pass && res.Failures().Count == 1 && res.Failures()[0] == "newplayer: login: Account name or password is not correct.", "newplayer result: a login fault is one failure line: " + string.Join("|", res.Failures()));
+            res = new LiveNewPlayerResult { Ran = true, LoginOk = true };
+            check(!res.Pass && res.Failures().Any(x => x.Contains("did not get into the game")), "newplayer result: not entering the game without a message still fails");
+            res = new LiveNewPlayerResult();
+            check(res.Pass && res.Failures().Count == 0 && res.ToJson(null) == "{\"ran\":false}", "newplayer result: a run without a fresh character has no failure and an empty block");
+
+            // the report: the failure lines join the gate rule, the other checks stay as they were
+            var good = new LiveNewPlayerResult { Ran = true, LoginOk = true, EnterOk = true, LoggedOut = true, ToastSeen = true, HelperAsked = true, HelperOpened = true, Tab = 1, HintShown = true, Hint = "Set up your helper in one click", BlinkActive = true, ToastMs = 2600, HelperMs = 2700, Screenshot = "helper_onboarding_extended.png" };
+            var rep = WithNewPlayer(good);
+            check(rep.Pass && rep.Failures().Count == 0 && rep.SummaryLine().Contains("0 layout errors, newplayer ok, pass"), "newplayer report: a good first minute passes and shows on the summary line: " + rep.SummaryLine());
+            rep = WithNewPlayer(new LiveNewPlayerResult { Ran = true, LoginOk = true, EnterOk = true, LoggedOut = true, ToastSeen = false });
+            check(!rep.Pass && rep.Failures().Any(x => x.StartsWith("newplayer: no welcome toast", StringComparison.Ordinal)) && rep.SummaryLine().Contains("newplayer FAIL, FAIL"), "newplayer report: a missing toast fails the run: " + rep.SummaryLine());
+            rep = WithNewPlayer(good);
+            rep.StepsConfirmed = 0;
+            check(!rep.Pass && !rep.Failures().Any(x => x.StartsWith("newplayer", StringComparison.Ordinal)), "newplayer report: a good first minute does not hide a failed walk");
+            rep = WithNewPlayer(good); rep.NewPlayer.LoggedOut = false;
+            check(rep.Pass && rep.Warnings().Any(x => x.StartsWith("newplayer: no clean logout", StringComparison.Ordinal)), "newplayer report: no clean logout of the fresh character is a warning, not a failure");
+            check(Good().Pass && !Good().SummaryLine().Contains("newplayer") && Good().Warnings().Count == 0, "newplayer report: a run without a fresh character reads as before");
+
+            // the json block
+            rep = WithNewPlayer(good);
+            var pj = Json.TryParse(rep.ToJson(null));
+            var nb = Json.Get(pj, "newplayer");
+            check(nb != null && Json.Bool(nb, "ran") && Json.Bool(nb, "pass") && Json.Bool(nb, "toastSeen") && Json.Bool(nb, "openHelper") && Json.Bool(nb, "helperOpened") && Json.Int(nb, "tab") == 1 && Json.Bool(nb, "autoSetupTab"), "newplayer json: ran, pass, toast, openHelper, Helper opened on tab 1");
+            check(Json.Bool(nb, "hintShown") && Json.Text(nb, "hint") == "Set up your helper in one click" && Json.Bool(nb, "blinkActive") && Json.Text(nb, "screenshot") == "helper_onboarding_extended.png" && Json.Int(nb, "toastMs") == 2600 && Json.Bool(nb, "loggedOut"), "newplayer json: hint, blink, screenshot name, times");
+            check(Json.Bool(pj, "pass") && Json.Bool(Json.Get(pj, "login"), "ok"), "newplayer json: the normal login and pass stay at their places");
+            pj = Json.TryParse(Good().ToJson(null));
+            check(!Json.Bool(Json.Get(pj, "newplayer"), "ran"), "newplayer json: no fresh character gives {\"ran\":false}");
+            rep = WithNewPlayer(new LiveNewPlayerResult { Ran = true, LoginOk = true, EnterOk = true, ToastSeen = false, Error = "boom with np-secret and Live Fresh A" });
+            string text = rep.ToJson(new[] { "np-secret", "lcn1x", "Live Fresh A" });
+            pj = Json.TryParse(text);
+            check(pj != null && !text.Contains("np-secret") && !text.Contains("Live Fresh A") && text.Contains("<removed>") && !Json.Bool(pj, "pass") && !Json.Bool(Json.Get(pj, "newplayer"), "pass"), "newplayer json: a failing block says why and holds no secret");
+            check(!text.Any(c => c > 0x7e), "newplayer json: ASCII only");
         }
 
         static void ReportChecks(Action<bool, string> check)
