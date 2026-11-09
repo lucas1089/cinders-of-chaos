@@ -40,7 +40,7 @@ namespace Chaos.Core.LiveCheck
         void RunScenarios()
         {
             PrepareScenarioData();
-            var want = o.Scenarios.Contains("all") ? AllScenarios.ToList() : AllScenarios.Where(n => o.Scenarios.Contains(n)).ToList();
+            var want = o.Scenarios.Contains("all") ? AllScenarios.ToList() : AllScenarios.Concat(OptInScenarios).Where(n => o.Scenarios.Contains(n)).ToList();
             foreach (string name in want)
             {
                 var r = new ScenarioResult { Name = name };
@@ -83,6 +83,7 @@ namespace Chaos.Core.LiveCheck
                         case "firstquest": ScFirstQuest(r); break;
                         case "questlog": ScQuestLog(r); break;
                         case "firstunlock": ScFirstUnlock(r); break;
+                        case "firstfightsmoke": ScFirstFightSmoke(r); break;
                         case "death": ScDeath(r); break;
                     }
                 }

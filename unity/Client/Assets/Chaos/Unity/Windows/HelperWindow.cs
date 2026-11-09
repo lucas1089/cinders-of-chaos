@@ -27,15 +27,58 @@ namespace Chaos.Client
         // the welcome toast's openHelper (Core HelperOnboarding): the window opens on the Shooter tab, the Auto setup button blinks gold with the hint above it until it is clicked or the time is up
         string onboardHint = "";
         double onboardAt = -1;
+        double onboardSeenAt = -1;   // the session time of the last frame that drew the onboarding row
         bool onboardPending;   // asked, not drawn yet: the hint and blink time start at the first frame the Auto setup row is drawn (CI PR 327: the request came 22 s before the window showed, the 12 s were gone)
         int onboardDrawnFrame = -100;   // the frame the gold hint was last drawn (the live smoke reads it)
+        double onboardTakenMs = -1;     // Time.realtimeSinceStartup in ms when Tick took the request and opened the window (the live smoke reads it: a gap to the frame that saw it is a stall of the main thread)
 
         /// <summary>The window as the live smoke run sees it (Core/LiveSmoke.cs LiveHelperView): open, the tab, the hint drawn within the last two frames, the blink time still running.</summary>
         public LiveHelperView OnboardingView(double sessionNow)
         {
             double age = onboardAt >= 0 ? sessionNow - onboardAt : -1;
-            return new LiveHelperView { Open = Open, Tab = tab, Hint = onboardHint, HintDrawn = Time.frameCount - onboardDrawnFrame <= 2, BlinkActive = HelperOnboarding.Active(age) };
+            return new LiveHelperView { Open = Open, Tab = tab, Hint = onboardHint, HintDrawn = Time.frameCount - onboardDrawnFrame <= 2, BlinkActive = HelperOnboarding.Active(age), TakenMs = onboardTakenMs };
         }
+
+        // ------------------------------------------------------------------------------------ what a click on the window's controls runs
+        // The buttons and ticks below call these, and the live smoke's first fight (Core/LiveSmoke.cs LiveFirstFightStep) calls the same methods: no engine call a player could not make.
+
+        /// <summary>The Auto setup button: fills the five slots (and the healing rows when they are empty) from the class presets. Returns the message the window shows, null when the class has no
+        /// preset or the spell list has not arrived.</summary>
+        public string PressAutoSetup(ChaosApp app)
+        {
+            ui = app;
+            onboardAt = -1; onboardPending = false;
+            if (engine == null) return null;
+            string m = engine.AutoSetup(Vocation());
+            message = m ?? Loc.T("No rotation for this class and level yet (is the spell list loaded?).");
+            if (m != null) { engine.AutoSupport(); dirty = true; }
+            return m;
+        }
+
+        /// <summary>How many of the five spell slots hold a spell.</summary>
+        public int FilledSlots()
+        {
+            int n = 0;
+            if (engine != null) foreach (var slot in engine.Config.Shooter) if (slot.Id > 0) n++;
+            return n;
+        }
+
+        /// <summary>The "Helper on" tick.</summary>
+        public void SetHelperOn(bool on)
+        {
+            if (engine == null || engine.Config.Enabled == on) return;
+            engine.Config.Enabled = on; dirty = true;
+        }
+
+        /// <summary>The "Spell rotation" tick of the Shooter tab.</summary>
+        public void SetSpellRotation(bool on)
+        {
+            if (engine == null || engine.Config.MagicShooter == on) return;
+            engine.Config.MagicShooter = on; dirty = true;
+        }
+
+        public bool HelperOn => engine != null && engine.Config.Enabled;
+        public bool SpellRotationOn => engine != null && engine.Config.MagicShooter;
 
         public override string Title => Loc.T("Helper");
         public override KeyCode Hotkey => KeyCode.R;
@@ -47,7 +90,7 @@ namespace Chaos.Client
         public override void Reset()
         {
             engine = null; engineFor = null; loadedFor = null; lastHealth = -1; pick = Pick.None; message = ""; dirty = false;
-            noticeShown = null; followEdit = null; onboardAt = -1; onboardPending = false; onboardHint = ""; onboardDrawnFrame = -100;
+            noticeShown = null; followEdit = null; onboardAt = -1; onboardPending = false; onboardHint = ""; onboardDrawnFrame = -100; onboardTakenMs = -1;
         }
 
         // ------------------------------------------------------------------------------------ the loop, once per frame
@@ -98,7 +141,7 @@ namespace Chaos.Client
             {
                 if (HelperOnboarding.NeedsToggle(Open)) Open = true;
                 tab = 1; pick = Pick.None; extraPick = ExtraPick.None; RaiseNext = true;
-                onboardHint = wantHint; onboardAt = -1; onboardPending = true;
+                onboardHint = wantHint; onboardAt = -1; onboardPending = true; onboardTakenMs = Time.realtimeSinceStartupAsDouble * 1000.0;
             }
             if (engine.LevelMessage.Length > 0) { message = engine.LevelMessage; engine.LevelMessage = ""; dirty = true; app.PostLine(message); }
             if (dirty) { dirty = false; PlayerPrefs.SetString(HelperConfig.PrefsKey("-", loadedFor), engine.Config.ToJson()); PlayerPrefs.Save(); }
@@ -157,7 +200,7 @@ namespace Chaos.Client
             float x = inner.x + 4, w = inner.width - 8, y = inner.y + 2;
 
             bool on = GUI.Toggle(new Rect(x, y, 150, 24), cfg.Enabled, Loc.T("Helper on"));
-            if (on != cfg.Enabled) { cfg.Enabled = on; dirty = true; }
+            if (on != cfg.Enabled) SetHelperOn(on);
             GUI.Label(new Rect(x + 150, y + 2, w - 150, 20), StatusText(), new GUIStyle(hint) { alignment = TextAnchor.UpperRight });
             y += 28;
 
@@ -228,7 +271,7 @@ namespace Chaos.Client
         {
             var cfg = engine.Config;
             bool ms = GUI.Toggle(new Rect(x, y, 170, 24), cfg.MagicShooter, Loc.T("Spell rotation"));
-            if (ms != cfg.MagicShooter) { cfg.MagicShooter = ms; dirty = true; }
+            if (ms != cfg.MagicShooter) SetSpellRotation(ms);
             bool at = GUI.Toggle(new Rect(x + 175, y, w - 175, 24), cfg.AutoTurn, Loc.T("Auto turn"));
             if (at != cfg.AutoTurn) { cfg.AutoTurn = at; dirty = true; }
             y += 30;
@@ -244,7 +287,14 @@ namespace Chaos.Client
             }
             GUI.Label(new Rect(x, y, w, 18), Loc.T("Mana percent and the number of monsters to cast on."), hint);
             y += 24;
-            if (onboardPending && ui?.Session != null) { onboardPending = false; onboardAt = ui.Session.Now; RaiseNext = true; }
+            if (onboardPending && ui?.Session != null) { onboardPending = false; onboardAt = ui.Session.Now; onboardSeenAt = onboardAt; RaiseNext = true; }
+            // a frame that stalls (the first draw of a fresh login took 22 to 23 s under the CI player, PR 328) does not eat the hint and blink time: the clock stops over a gap of a second or more
+            if (onboardAt >= 0 && ui?.Session != null)
+            {
+                double gap = ui.Session.Now - onboardSeenAt;
+                if (gap >= 1000) onboardAt += gap;
+                onboardSeenAt = ui.Session.Now;
+            }
             double onboardAge = onboardAt >= 0 && ui?.Session != null ? ui.Session.Now - onboardAt : -1;
             bool onboarding = HelperOnboarding.Active(onboardAge);
             if (onboarding)
@@ -259,13 +309,7 @@ namespace Chaos.Client
             if (onboarding && HelperOnboarding.Gold(onboardAge)) GUI.color = new Color(1f, 0.82f, 0.25f);
             bool autoSetup = GUI.Button(new Rect(x, y, 150, 28), Loc.T("Auto setup"));
             GUI.color = wasColor;
-            if (autoSetup)
-            {
-                onboardAt = -1; onboardPending = false;
-                string m = engine.AutoSetup(Vocation());
-                message = m ?? Loc.T("No rotation for this class and level yet (is the spell list loaded?).");
-                if (m != null) { engine.AutoSupport(); dirty = true; }
-            }
+            if (autoSetup) PressAutoSetup(ui);
             if (GUI.Button(new Rect(x + 156, y, w - 156, 28), Loc.T("Clear slots")))
             {
                 for (int i = 0; i < cfg.Shooter.Count; i++) cfg.Shooter[i] = new HelperSlot { Priority = i + 1 };

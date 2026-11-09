@@ -13,6 +13,6 @@
   <ItemGroup>
     <Compile Include="../Client/Assets/Chaos/Core/**/*.cs" />
     <!-- the live check's own logic (Core.LiveCheck, unity/README.md "Live check (O433)"), tested here; its Program.cs is not linked -->
-    <Compile Include="../Core.LiveCheck/OtbDat.cs;../Core.LiveCheck/LiveOps.cs;../Core.LiveCheck/LiveRun.cs;../Core.LiveCheck/LiveClient.cs;../Core.LiveCheck/LiveScenarios.cs;../Core.LiveCheck/LiveScenarios2.cs;../Core.LiveCheck/LiveScenarios3.cs;../Core.LiveCheck/LiveScenarios4.cs;../Core.LiveCheck/LiveScenarios5.cs;../Core.LiveCheck/LiveScenarios6.cs;../Core.LiveCheck/LiveScenarios7.cs;../Core.LiveCheck/LiveScenarios8.cs" />
+    <Compile Include="../Core.LiveCheck/OtbDat.cs;../Core.LiveCheck/LiveOps.cs;../Core.LiveCheck/LiveRun.cs;../Core.LiveCheck/LiveClient.cs;../Core.LiveCheck/LiveScenarios.cs;../Core.LiveCheck/LiveScenarios2.cs;../Core.LiveCheck/LiveScenarios3.cs;../Core.LiveCheck/LiveScenarios4.cs;../Core.LiveCheck/LiveScenarios5.cs;../Core.LiveCheck/LiveScenarios6.cs;../Core.LiveCheck/LiveScenarios7.cs;../Core.LiveCheck/LiveScenarios8.cs;../Core.LiveCheck/LiveScenarios9.cs" />
   </ItemGroup>
 </Project>

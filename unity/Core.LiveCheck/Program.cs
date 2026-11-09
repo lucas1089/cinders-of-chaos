@@ -54,7 +54,7 @@ namespace Chaos.Core.LiveCheck
                             foreach (string n in Next().Split(',', StringSplitOptions.RemoveEmptyEntries))
                             {
                                 string name = n.Trim().ToLowerInvariant();
-                                if (name != "all" && Array.IndexOf(LiveRun.AllScenarios, name) < 0) return Usage("unknown scenario " + name + " (" + string.Join(", ", LiveRun.AllScenarios) + ", all)");
+                                if (name != "all" && Array.IndexOf(LiveRun.AllScenarios, name) < 0 && Array.IndexOf(LiveRun.OptInScenarios, name) < 0) return Usage("unknown scenario " + name + " (" + string.Join(", ", System.Linq.Enumerable.Concat(LiveRun.AllScenarios, LiveRun.OptInScenarios)) + ", all)");
                                 if (!o.Scenarios.Contains(name)) o.Scenarios.Add(name);
                             }
                             break;

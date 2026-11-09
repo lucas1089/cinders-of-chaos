@@ -11,6 +11,9 @@
 // New player first minute (O433, unity/README.md "New player first minute"): when CHAOS_LIVE_NEW_ACCOUNT, _PASSWORD and _CHARACTER are set (a fresh character that never logged in,
 // made by tools/ci/unity_live_check.sh --serve-only), the run first logs that character in, waits for the welcome toast, checks that the Helper opened by itself on Auto setup with the hint,
 // takes helper_onboarding_IDENTITY.png, writes the "newplayer" block of live_smoke.json, logs out and then goes on with the normal character. A fault there is a failure line, never a stop.
+// New player first fight (O433, unity/README.md "New player first fight"): after that shot the fresh character presses Auto setup (the window's own code path), turns the Helper on, walks from the temple to the cave under Cinderhold
+// with the client's click to walk, lets the Helper and the attack kill a Rat, opens the body in the Containers window and takes first_fight_IDENTITY.png (Unity/ChaosApp.LiveFight.cs, the state machine is Core LiveFirstFightStep),
+// writes the "firstfight" block, then logs out. The first minute also records the longest frame and when the Helper took the toast's request, so a main thread freeze shows as such.
 // Own process: next to -chaosHd2dShot, -chaosDemoTour, -chaosWindowSmoke or -chaosWalkTour those run instead. Log lines start with "chaos live smoke:".
 using System;
 using System.Collections;
@@ -37,9 +40,9 @@ namespace Chaos.Client
             new GameObject("Live smoke").AddComponent<LiveSmokeDirector>().Begin(dir);
         }
 
-        sealed class LiveSmokeDirector : MonoBehaviour
+        sealed partial class LiveSmokeDirector : MonoBehaviour
         {
-            enum Phase { Start, Login, Entering, NewPlayer, NewLogout, Settle, Shot, Walk, WalkEnd, Steps, Logout, Sheets, Done }
+            enum Phase { Start, Login, Entering, NewPlayer, FirstFight, NewLogout, Settle, Shot, Walk, WalkEnd, Steps, Logout, Sheets, Done }
 
             sealed class Tile { public string Name; public Texture2D Tex; public bool Problem; public string Flags = ""; }
 
@@ -152,7 +155,7 @@ namespace Chaos.Client
                 }
                 if (NowMs - startedAt > TotalLimitMs) { Fail("the live smoke run ran over " + (int)(TotalLimitMs / 1000) + " s"); return; }
                 // the fresh character's session went away on its own: its failure line, then the normal run
-                if (nbRun && (phase == Phase.NewPlayer || phase == Phase.Shot) && (app.session == null || app.screen != Screen.Game))
+                if (nbRun && (phase == Phase.NewPlayer || phase == Phase.FirstFight || phase == Phase.Shot) && (app.session == null || app.screen != Screen.Game))
                 {
                     NewAbort("the session closed during the first minute (" + (string.IsNullOrEmpty(app.status) ? "the connection ended" : app.status) + ")");
                     return;
@@ -171,6 +174,7 @@ namespace Chaos.Client
                     case Phase.Login: StepLogin(); break;
                     case Phase.Entering: StepEntering(); break;
                     case Phase.NewPlayer: StepNewPlayer(); break;
+                    case Phase.FirstFight: StepFirstFight(); break;
                     case Phase.NewLogout: StepNewLogout(); break;
                     case Phase.Settle:
                         if (NowMs - phaseAt >= SettleMs)
@@ -228,6 +232,7 @@ namespace Chaos.Client
                     Debug.Log("chaos live smoke: " + (nbRun ? "new player: " : "") + "logged in, " + app.login.Characters.Count + " characters in the list");
                     app.Enter(ch);   // the list's own path
                     if (!nbRun) HookSession();   // the fresh character's session is not counted: its opcodes would hide a missing prefetch of the normal one
+                    else HookFightCancels();     // but its refused steps are (the first fight's walk)
                     SetPhase(Phase.Entering);
                     return;
                 }
@@ -290,7 +295,8 @@ namespace Chaos.Client
             {
                 if (!nbRun) return;
                 string text = cfg != null ? Scrub(why) : why;
-                if (rep.NewPlayer.Error.Length == 0) rep.NewPlayer.Error = text;
+                if (ffStep != null && ffStep.State != LiveFirstFightStep.Phase.Done) { if (rep.FirstFight.Error.Length == 0) rep.FirstFight.Error = text; }   // a fault in the first fight is its own line
+                else if (rep.NewPlayer.Error.Length == 0) rep.NewPlayer.Error = text;
                 Debug.Log("chaos live smoke: new player: " + text);
                 if (app.screen == Screen.Game && app.session != null && app.session.Closed == null) BeginNewLogout();
                 else
@@ -318,6 +324,9 @@ namespace Chaos.Client
                 {
                     var r = rep.NewPlayer;
                     Debug.Log("chaos live smoke: new player: toast " + (r.ToastSeen ? "seen" : "NOT seen") + ", Helper " + (r.HelperOpened ? "open on tab " + r.Tab : "NOT open") + ", hint " + (r.HintShown ? "shown" : "NOT shown") + ", blink " + (r.BlinkActive ? "on" : "off"));
+                    var inv = System.Globalization.CultureInfo.InvariantCulture;
+                    Debug.Log("chaos live smoke: new player: times after entering: toast seen " + Math.Round(r.ToastMs / 1000.0, 1).ToString("0.0", inv) + " s, the Helper took the request " + (r.HelperTakenMs < 0 ? "never" : Math.Round(r.HelperTakenMs / 1000.0, 1).ToString("0.0", inv) + " s")
+                              + ", seen open " + Math.Round(r.HelperMs / 1000.0, 1).ToString("0.0", inv) + " s, longest frame " + Math.Round(r.LongestFrameMs).ToString("0", inv) + " ms at " + Math.Round(r.LongestFrameAtMs / 1000.0, 1).ToString("0.0", inv) + " s");
                     RequestShot("helper_onboarding_" + cfg.Identity + ".png", NewShotDone);
                 }
             }
@@ -325,11 +334,13 @@ namespace Chaos.Client
             void NewShotDone()
             {
                 nbStep.ShotTaken("helper_onboarding_" + cfg.Identity + ".png");
-                BeginNewLogout();
+                if (app.session != null && app.session.Closed == null && app.screen == Screen.Game) BeginFirstFight();   // the first fight, then the logout
+                else BeginNewLogout();
             }
 
             void BeginNewLogout()
             {
+                fightKey = 0; app.WalkMaskSource = null;   // no key of the first fight stays held
                 CloseAll();
                 app.session.Logout();
                 nbLogoutAt = NowMs;
