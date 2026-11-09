@@ -36,7 +36,7 @@ namespace Chaos.Client
         readonly Dictionary<GameWindow, UiFade> fades = new Dictionary<GameWindow, UiFade>();
         readonly Dictionary<GameWindow, bool> fadeWasOpen = new Dictionary<GameWindow, bool>();
         List<KeyValuePair<Pos, BeamLook>> beams = new List<KeyValuePair<Pos, BeamLook>>();
-        double beamsAt = -1e9;
+        readonly SessionStamp beamsStamp = new SessionStamp();   // a stamp of one session: a new login draws beams at once (Core/Phase29.cs)
         Rect shakeBase;
         bool shaken;
         static readonly string[] LayoutOpenWindows = { "MinimapWindow", "BattleListWindow", "EquipmentWindow", "ContainersWindow" };
@@ -424,9 +424,9 @@ namespace Chaos.Client
             if (!s.Enabled) return;
             var loot = FindWindow<LootWindow>();
             if (loot == null || loot.Ground == null || loot.Filter == null) return;
-            if (now - beamsAt > 250)
+            if (beamsStamp.Due(session, now, 250))
             {
-                beamsAt = now;
+                beamsStamp.Mark(session, now);
                 var all = new List<KeyValuePair<Pos, BeamLook>>();
                 var seen = new HashSet<Pos>();
                 // corpses the server named (opcode 238 "beam"): they come first, the ground labels fill in the rest

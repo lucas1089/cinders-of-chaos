@@ -15,7 +15,7 @@ namespace Chaos.Client
         GameSession modelsFor;
         string loadedFor;
         int lastFrame = -1;
-        double lastScan = -1e9;
+        readonly SessionStamp scanStamp = new SessionStamp();
         Pos lastPos;
         bool synced, wasOpen;
         int tab;
@@ -29,7 +29,7 @@ namespace Chaos.Client
         public LootFilterModel Filter => filter;
         public GroundLabelsModel Ground => ground;
 
-        public override void Reset() { filter = null; ground = null; modelsFor = null; loadedFor = null; synced = false; wasOpen = false; }
+        public override void Reset() { filter = null; ground = null; modelsFor = null; loadedFor = null; synced = false; wasOpen = false; scanStamp.Reset(); lastPos = default(Pos); lastFrame = -1; }
 
         public override void Tick(ChaosApp app)
         {
@@ -60,9 +60,9 @@ namespace Chaos.Client
             if (me == null) return;
             double now = s.Now;
             bool moved = me.Position != lastPos;
-            if (now - lastScan >= (moved ? GroundLabelRules.MoveScanMs : GroundLabelRules.ScanMs))
+            if (scanStamp.Due(s, now, moved ? GroundLabelRules.MoveScanMs : GroundLabelRules.ScanMs))
             {
-                lastScan = now;
+                scanStamp.Mark(s, now);
                 lastPos = me.Position;
                 ground.Scan(app.World, app.World.Center);
             }

@@ -59,7 +59,7 @@ namespace Chaos.Client
     public sealed partial class ChaosApp
     {
         readonly Dictionary<int, BodyBox> bodyBoxes = new Dictionary<int, BodyBox>();
-        double monsterAskAt = -1e9;
+        readonly SessionStamp monsterAskStamp = new SessionStamp();   // the session clock restarts at a login: a plain double would block the question for the old session's age
 
         /// <summary>Every frame: the hooks of this track into the map view and the fonts.</summary>
         void Phase7YUpdate()
@@ -106,9 +106,9 @@ namespace Chaos.Client
             var box = BodyBoxOf(c.Outfit.LookType);
             float s = MonsterWorld.DrawScale(box, info?.Tier, info?.Role);
             // a body too big for an ordinary monster: ask for the tier at once, so a boss is never left shrunk (one question each 250 ms, once per 30 s per creature)
-            if (info == null && s < 1f && session.Now - monsterAskAt >= 250)
+            if (info == null && s < 1f && monsterAskStamp.Due(session, session.Now, 250))
             {
-                monsterAskAt = session.Now;
+                monsterAskStamp.Mark(session, session.Now);
                 session.Hud.Monster.Query(c.Id, session.Now);
             }
             return s;
