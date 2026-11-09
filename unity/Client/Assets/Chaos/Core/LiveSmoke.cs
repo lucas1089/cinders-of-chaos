@@ -334,15 +334,17 @@ namespace Chaos.Core
         public int LayoutErrors => Smoke.Total(SmokeIssueKind.Layout) + Smoke.BackgroundRecord.Count(SmokeIssueKind.Layout);
         public int LoggedErrors => Smoke.Total(SmokeIssueKind.Error) + Smoke.BackgroundRecord.Count(SmokeIssueKind.Error);
 
-        /// <summary>The one place a window ends. Prefetch windows first (the login request was answered), then an answer while the window was open, then a known condition, then
-        /// the windows that need no answer, and what is left has no answer.</summary>
+        /// <summary>The one place a window ends. Prefetch windows first (the login request was answered), then the windows that ask nothing (local, whatever lands while they are
+        /// open), then an answer while the window was open, then a known condition, and what is left has no answer.</summary>
         public LiveWindowStatus StatusOf(LiveSmokeWindow w)
         {
             var rule = w.Rule;
             if (rule.Mode == LiveWindowMode.Prefetch && Prefetched.Contains(rule.Opcode)) return LiveWindowStatus.Prefetched;
+            // a native or local window asks nothing, so an extended opcode that lands while it is open is a background push (runs 3 and 4 of 2026-11-09: Containers, Battle
+            // List, Minimap and Fight swapped between answered and local by timing alone); its opcodes stay in the json, its status stays local
+            if (rule.Mode == LiveWindowMode.Native || rule.Mode == LiveWindowMode.Local) return LiveWindowStatus.Local;
             if (w.Answers > 0) return LiveWindowStatus.Answered;
             if (Conditions.ContainsKey(w.Class)) return LiveWindowStatus.NeedsCondition;
-            if (rule.Mode == LiveWindowMode.Native || rule.Mode == LiveWindowMode.Local) return LiveWindowStatus.Local;
             return LiveWindowStatus.NoAnswer;
         }
 

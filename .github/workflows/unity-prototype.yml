@@ -342,9 +342,9 @@ jobs:
       # The player on a REAL server (unity/README.md "Player on a live server (CI)", O433): the same Linux player, flag -chaosLiveSmoke, logs in through its own login
       # screen path to a server built in this job by tools/ci/unity_live_check.sh --serve-only (the base server and map of windows-assets, install_all.py of this
       # commit, a private MariaDB, the tfs engine of the newest winpkg release, fresh accounts with random passwords, the guard in enforce mode with a key made here),
-      # walks, opens the main windows, logs out and writes live_smoke.json and the sheets. Extended identity first, then Chaos. A REPORT, not a gate, like the window
-      # smoke run: the step is continue-on-error and shows red when a run fails (login, entering, the walk, a closed session or an exception), the job goes on. It
-      # becomes a gate (continue-on-error: false) after two green runs in a row on main. Only live_smoke.json, the png files, a scrubbed log of the player's own
+      # walks, opens the main windows, logs out and writes live_smoke.json and the sheets. Extended identity first, then Chaos. A GATE since 2026-11-09 (two clean
+      # runs in a row on main, runs 42563859766 and 42568736362): a failed run (login, entering, the walk, a closed session or an exception) fails the job; the artifact
+      # below is uploaded all the same. Only live_smoke.json, the png files, a scrubbed log of the player's own
       # "chaos live smoke" lines and a summary go into the hd2d-shots artifact: no password, no key, no server log, no player log.
       - name: Check out the assets for the live server
         if: steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
@@ -358,10 +358,10 @@ jobs:
             world
             SHA256SUMS.parts
           sparse-checkout-cone-mode: true
-      - name: "Player on a live server: Extended and Chaos identity (report)"
+      - name: "Player on a live server: Extended and Chaos identity (gate)"
         id: livesmoke
         if: steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
-        continue-on-error: true
+        continue-on-error: false
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
