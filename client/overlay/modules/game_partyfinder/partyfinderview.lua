@@ -5,10 +5,12 @@ local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) 
 PartyFinderView = {}
 local V = PartyFinderView
 
-V.ROLE_ORDER = { 'tank', 'healer', 'dps' }
-V.ROLE_LETTER = { tank = 'T', healer = 'H', dps = 'D' }
-V.ROLE_NAME = { tank = 'Tank', healer = 'Healer', dps = 'DPS' }
-V.ROLE_COLOR = { tank = '#7fb8e8', healer = '#6fd8a8', dps = '#e8846a' }
+-- O445: support is the fourth role (party buffs, auras, enemy curses). The order is replaced by the server's list
+-- (V.setRoles), so a server with three roles shows three and a server with a fifth role shows it too.
+V.ROLE_ORDER = { 'tank', 'healer', 'dps', 'support' }
+V.ROLE_LETTER = { tank = 'T', healer = 'H', dps = 'D', support = 'S' }
+V.ROLE_NAME = { tank = 'Tank', healer = 'Healer', dps = 'DPS', support = 'Support' }
+V.ROLE_COLOR = { tank = '#7fb8e8', healer = '#6fd8a8', dps = '#e8846a', support = '#c08ae8' }
 V.COLORS = {
   open = '#2a2128',
   text = '#d6c9ae',
@@ -22,13 +24,24 @@ local function num(v) return tonumber(v) or 0 end
 
 -- the role names and colours the server sent (init.roles), on top of the defaults
 function V.setRoles(roles)
+  local order, seen = {}, {}
   for _, r in ipairs(roles or {}) do
-    if type(r) == 'table' and r.k then
+    if type(r) == 'table' and type(r.k) == 'string' then
       V.ROLE_NAME[r.k] = r.n or V.ROLE_NAME[r.k] or r.k
       V.ROLE_COLOR[r.k] = r.c or V.ROLE_COLOR[r.k]
       V.ROLE_LETTER[r.k] = V.ROLE_LETTER[r.k] or tostring(r.n or r.k):sub(1, 1):upper()
+      if not seen[r.k] then seen[r.k] = true order[#order + 1] = r.k end
     end
   end
+  if #order > 0 then V.ROLE_ORDER = order end
+end
+
+-- does the server know this role? (a server older than O445 has no support: the form hides its box)
+function V.hasRole(role)
+  for _, r in ipairs(V.ROLE_ORDER) do
+    if r == role then return true end
+  end
+  return false
 end
 
 function V.roleName(role) return V.ROLE_NAME[role] or tostring(role or '?') end
@@ -228,11 +241,11 @@ local function int(v)
 end
 
 -- the post input from the form's values (texts and combo data); clamps ranges into the activity's bounds
--- f = {a, lo, hi, t, title, tank, healer, dps, minLevel, maxLevel, nk, note, exp, role, auto}
+-- f = {a, lo, hi, t, title, tank, healer, dps, support, minLevel, maxLevel, nk, note, exp, role, auto}
 function V.postInput(acts, f)
   local act = V.activityOf(acts, f.a)
   local input = { a = f.a, role = f.role, exp = int(f.exp), note = tostring(f.note or ''), auto = f.auto and true or false,
-    want = { tank = int(f.tank) or 0, healer = int(f.healer) or 0, dps = int(f.dps) or 0 },
+    want = { tank = int(f.tank) or 0, healer = int(f.healer) or 0, dps = int(f.dps) or 0, support = int(f.support) or 0 },
     minLevel = math.max(1, int(f.minLevel) or 1), nk = math.max(0, int(f.nk) or 0) }
   -- O389: the top of the level band, empty or 0 = none; never under the minimum
   local maxLevel = int(f.maxLevel) or 0
@@ -253,7 +266,7 @@ function V.postInput(acts, f)
 end
 
 -- the size and wanted caps of an activity (server K.buildActivities: max, per; a raid holds 15), with the init limits
--- (lim.party, lim.perRole) for a server that does not send them -> {max, per = {tank, healer, dps}}
+-- (lim.party, lim.perRole) for a server that does not send them -> {max, per = {tank, healer, dps, support}}
 function V.limits(act, lim)
   lim = type(lim) == 'table' and lim or {}
   local out = { max = math.floor(num(act and act.max) > 0 and num(act.max) or (num(lim.party) > 0 and num(lim.party) or 10)), per = {} }
@@ -273,7 +286,7 @@ end
 
 -- the total size of the group the form describes (leader + wanted)
 function V.formSize(f)
-  return 1 + (int(f.tank) or 0) + (int(f.healer) or 0) + (int(f.dps) or 0)
+  return 1 + (int(f.tank) or 0) + (int(f.healer) or 0) + (int(f.dps) or 0) + (int(f.support) or 0)
 end
 
 -- "Queued as DPS (any activity) - 2m" for the quick-join line

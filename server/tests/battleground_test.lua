@@ -245,6 +245,15 @@ eq(K.pickRole(pf, 5, nil), "dps", "Elementalist: dps")
 eq(K.pickRole(pf, 999, "tank"), "dps", "unknown vocation: the default role")
 eq(K.parseRole("Healer"), "healer", "parseRole")
 eq(K.parseRole("boss"), nil, "parseRole refuses")
+-- O445: support is a fourth role. Queued as support only by the classes whose kit has it, else the main role
+eq(K.parseRole("Support"), "support", "parseRole takes support")
+eq(K.pickRole(pf, 10, "support"), "support", "Illusionist may queue as support")
+eq(K.pickRole(pf, 20, "support"), "support", "Necromancer may queue as support")
+eq(K.pickRole(pf, 25, "support"), "support", "Sentinel may queue as support")
+eq(K.pickRole(pf, 7, "support"), "dps", "Deadeye cannot: its main role")
+eq(K.pickRole(pf, 13, "support"), "tank", "Samurai cannot: its main role")
+eq(K.pickRole(pf, 999, "support"), "dps", "unknown vocation: the default role")
+eq(K.pickRole(pf, 10, nil), "healer", "Illusionist still defaults to healer")
 
 -- ====================================================================== matchmaking
 local nid = 0
@@ -285,6 +294,35 @@ eq(rc2.tank, 1, "one tank each (team 2)")
 eq(rc1.healer, 1, "one healer each (team 1)")
 eq(rc2.healer, 1, "one healer each (team 2)")
 check(math.abs(a1 - a2) <= 20, "team ratings close (" .. a1 .. " / " .. a2 .. ")")
+-- O445: a support counts as a dps in the split (tanks and healers are spread; supports do not move the cost)
+do
+  local sl = {}
+  for i = 1, 20 do
+    sl[i] = solo(i <= 2 and "tank" or (i <= 4 and "healer" or (i <= 10 and "support" or "dps")), 1400 + i * 10, 100 + i)
+  end
+  local fs = K.findMatches(cfg, sl, 125)
+  eq(#fs, 1, "support: one match from 20 solos with 6 supports")
+  eq(fs[1].size, 10, "support: 10v10")
+  local r1, b1 = roles(fs[1].teams[1])
+  local r2, b2 = roles(fs[1].teams[2])
+  eq(r1.tank, 1, "support: one tank each (team 1)")
+  eq(r2.tank, 1, "support: one tank each (team 2)")
+  eq(r1.healer, 1, "support: one healer each (team 1)")
+  eq(r2.healer, 1, "support: one healer each (team 2)")
+  eq(r1.support + r2.support, 6, "support: teamStats counts the supports")
+  eq(r1.tank + r1.healer + r1.dps + r1.support, 10, "support: every player of the team has a counted role")
+  check(math.abs(b1 - b2) <= 20, "support: team ratings close (" .. b1 .. " / " .. b2 .. ")")
+  -- the cost of a split is the same with a support in the place of a dps
+  local ta = {solo("tank", 1500), solo("dps", 1500), solo("dps", 1500)}
+  local tb = {solo("healer", 1500), solo("dps", 1500), solo("dps", 1500)}
+  local tc = {solo("tank", 1500), solo("support", 1500), solo("dps", 1500)}
+  local td = {solo("healer", 1500), solo("dps", 1500), solo("support", 1500)}
+  eq(K.cost(cfg, ta, tb), K.cost(cfg, tc, td), "support: a support in the place of a dps leaves the split cost unchanged")
+  -- a whole queue of supports still forms a match (no deadlock, the pool does not shrink)
+  local all = {}
+  for i = 1, 10 do all[i] = solo("support", 1500, 0) end
+  eq(#K.findMatches(cfg, all, 9999), 1, "support: ten supports still start a 5v5")
+end
 -- 12 solos: 6v6 only after fillSeconds
 list = {}
 for i = 1, 12 do list[i] = solo("dps", 1500, 1000) end

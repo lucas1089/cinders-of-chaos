@@ -516,9 +516,25 @@ ChaosMainWindow
         color: #e8846a
         !text: tr('DPS')
 
+      ChaosComboBox
+        id: wantSupport
+        anchors.left: lDps.right
+        anchors.verticalCenter: wantDps.verticalCenter
+        margin-left: 8
+        width: 40
+
+      ChaosLabel
+        id: lSupport
+        anchors.left: wantSupport.right
+        anchors.verticalCenter: wantDps.verticalCenter
+        margin-left: 4
+        text-auto-resize: true
+        color: #c08ae8
+        !text: tr('Support')
+
       ChaosLabelDim
         id: sizeLabel
-        anchors.left: lDps.right
+        anchors.left: lSupport.right
         anchors.verticalCenter: wantDps.verticalCenter
         margin-left: 12
         text-auto-resize: true

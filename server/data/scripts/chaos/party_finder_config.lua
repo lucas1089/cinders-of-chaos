@@ -7,25 +7,32 @@ return {
 	enabled = true,
 
 	-- ------------------------------------------------------------------ roles
-	-- the three roles of a group (docs/CLASSES.md "Roles in a group"); c = the colour the client draws the role in
+	-- the four roles of a group (docs/CLASSES.md "Roles in a group"); c = the colour the client draws the role in.
+	-- Support (O445) is the party buffs, auras and enemy curses; it is never required, and where a rule counts tanks and
+	-- healers only (the battleground split, a dps slot) a support counts as a dps. The order is the order of the slot boxes.
 	roles = {
 		{key = "tank", name = "Tank", c = "#7fb8e8"},
 		{key = "healer", name = "Healer", c = "#6fd8a8"},
-		{key = "dps", name = "DPS", c = "#e8846a"}
+		{key = "dps", name = "DPS", c = "#e8846a"},
+		{key = "support", name = "Support", c = "#c08ae8"}
 	},
 	-- the roles a class may fill, by vocation id (Chaos.classes.ids); the first one is the class's main role, used for
 	-- party members who joined without a listing role. A vocation not listed fills `defaultRoles`.
 	--   Tank: Juggernaut, Sentinel, Samurai (duelist off-tank); the Warrior and Templar base classes may tank too.
 	--   Healer: Illusionist (the best healer), Iron Sage (the second healer), the Sentinel's healing aura; the Mystic base
 	--   class already has Purifying Wellspring.
+	--   Support (O445, always after the roles the class had): Illusionist (Shared Phantasm, Inspiring Illusion party attack
+	--   buffs), Iron Sage (Mantra of Stone party aura, Chi Ward on a party member), the Templar line (the party defence
+	--   aura; the Inquisitor's Judgement too), the Necromancer line (Withering Curse: the target takes more from everyone).
+	--   Banner Call and the four Vigils are not a reason: every class has them.
 	classRoles = {
 		[4] = {"tank", "dps"}, [8] = {"tank", "dps"}, [14] = {"dps"}, -- Warrior, Juggernaut, Berserker
 		[3] = {"dps"}, [7] = {"dps"}, [15] = {"dps"}, -- Ranger, Deadeye, Beastmaster
-		[1] = {"dps", "healer"}, [5] = {"dps"}, [10] = {"healer", "dps"}, -- Mystic, Elementalist, Illusionist
+		[1] = {"dps", "healer"}, [5] = {"dps"}, [10] = {"healer", "dps", "support"}, -- Mystic, Elementalist, Illusionist
 		[11] = {"dps"}, [12] = {"dps"}, [13] = {"tank", "dps"}, -- Thief, Ninja, Samurai
-		[17] = {"dps"}, [18] = {"dps"}, [19] = {"healer", "dps"}, -- Monk, Shadowfist, Iron Sage
-		[20] = {"dps"}, [21] = {"dps"}, [22] = {"dps"}, -- Necromancer, Lich, Bone Lord
-		[23] = {"tank", "dps"}, [24] = {"dps"}, [25] = {"tank", "healer"} -- Templar, Inquisitor, Sentinel
+		[17] = {"dps"}, [18] = {"dps"}, [19] = {"healer", "dps", "support"}, -- Monk, Shadowfist, Iron Sage
+		[20] = {"dps", "support"}, [21] = {"dps", "support"}, [22] = {"dps", "support"}, -- Necromancer, Lich, Bone Lord
+		[23] = {"tank", "dps", "support"}, [24] = {"dps", "support"}, [25] = {"tank", "healer", "support"} -- Templar, Inquisitor, Sentinel
 	},
 	defaultRoles = {"dps"},
 
@@ -41,8 +48,8 @@ return {
 	--   bands = "<source>": the level band {lo, hi} of each target from the engine file (hunts: the hunt teleports'
 	--           bands); the client proposes it as the listing's level band (O389)
 	--   maxParty = n: this activity's group size (leader + party + wanted), else the `maxParty` below
-	--   perRole = {tank, healer, dps}: wanted count of each role, else `maxPerRole` below
-	--   suggest = {tank, healer, dps}: what the client's form proposes when this activity is picked for a new listing
+	--   perRole = {tank, healer, dps, support}: wanted count of each role, else `maxPerRole` below
+	--   suggest = {tank, healer, dps, support}: what the client's form proposes when this activity is picked for a new listing
 	activities = {
 		-- O389: a hunt of the teleport room (hunt_teleports.lua: the placed plans and the base hunts, by level band)
 		{key = "hunt", name = "Hunt", targets = "hunts", bands = "huntBands"},
@@ -55,7 +62,7 @@ return {
 		{key = "tower", name = "Infinity Tower", range = {min = 1, max = 200, label = "Floor", short = "F"}},
 		{key = "raid", name = "Raid", targets = "raids", fallback = {"The Ashen Sepulchre"}, -- raid_config.lua name
 			-- one engine party of up to 15 (raid_config.lua maxPlayers; the raid also opens solo; TFS parties have no size cap)
-			maxParty = 15, perRole = {tank = 3, healer = 4, dps = 12}, suggest = {tank = 2, healer = 3, dps = 9}},
+			maxParty = 15, perRole = {tank = 3, healer = 4, dps = 12, support = 4}, suggest = {tank = 2, healer = 3, dps = 9}},
 		{key = "trial", name = "Trial", targets = "trials", fallback = {"Normal", "Cruel", "Merciless"}},
 		{key = "battleground", name = "Battleground", maxParty = 5}, -- Ember Wells (battleground.lua): the leader queues the party
 		{key = "other", name = "Other", title = true}

@@ -470,6 +470,9 @@ namespace Chaos.Core.Tests
             check(BgView.QueueStatus(Json.Parse("{\"bracket\":{},\"queue\":{\"waited\":30,\"players\":6,\"est\":50}}"), 10, out color) == "In the queue 0:40 (6 players waiting). Estimated: ~40s" && color == "#f6cf72", "bg: in the queue");
             var roles = BgView.RoleOptions(s.State);
             check(roles.Count == 3 && roles[2].Chosen && roles[0].Text == "Tank" && roles[1].Color == "#6fd8a8", "bg: roles");
+            var supState = Json.Parse("{\"roles\":[\"healer\",\"dps\",\"support\",\"scout\"],\"role\":\"support\"}");
+            var supRoles = BgView.RoleOptions(supState);
+            check(supRoles.Count == 4 && supRoles[2].Text == "Support" && supRoles[2].Color == "#c08ae8" && supRoles[2].Chosen && supRoles[3].Text == "scout" && supRoles[3].Color == "#d6c9ae" && BgView.RoleName("support") == "Support", "bg: support is the fourth role, an unknown key shows as its key");
             check(BgView.HonorLine(s.State) == "Honor 1,200   (this week 300 / 2,000)   Weekly first win: taken" && BgView.RecordLine(s.State) == "Battlegrounds 10   W-L-D 6-3-1   Downs dealt 40   Wells taken 12", "bg: honor and record lines");
             var sea = Json.Get(s.State, "season");
             var card = BgView.Card(Json.Get(Json.Get(sea, "brackets"), "bg"), Json.Parse("[{\"key\":\"ashen\"},{\"key\":\"ember\"}]"), 5);

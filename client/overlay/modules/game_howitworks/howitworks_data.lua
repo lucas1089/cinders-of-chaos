@@ -186,7 +186,7 @@ HowData = {
 			{id = "who", en = "Every player. Search with any word, then use the filters of the tab. Where to find opens the Item Finder.", pt = "Todo jogador. Busque com qualquer palavra e depois use os filtros da aba. Onde achar abre o Item Finder."}
 		}},
 		{key = "partyfinder", title = {en = "Party Finder", pt = "Procurar Grupo"}, window = "game_partyfinder", rows = {
-			{id = "what", en = "Find a group, or players for yours: post what you want to do and the roles you need (tank, healer, damage), or apply to a listing.", pt = "Ache um grupo, ou jogadores para o seu: anuncie o que quer fazer e as funções que precisa (tank, healer, dano), ou candidate-se a um anúncio."},
+			{id = "what", en = "Find a group, or players for yours: post what you want to do and the roles you need (tank, healer, damage, support), or apply to a listing. Support is the buffs, auras and curses of a class. No group has to ask for it.", pt = "Ache um grupo, ou jogadores para o seu: anuncie o que quer fazer e as funções que precisa (tank, healer, dano, suporte), ou candidate-se a um anúncio. Suporte são os buffs, auras e maldições de uma classe. Nenhum grupo precisa pedir um."},
 			{id = "who", en = "Every player. Activities: Hunt, Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial and Battleground, or anything else.", pt = "Todo jogador. Atividades: Hunt, Rift, Dungeon, World Boss, Omen, Infinity Tower, Raid, Trial e Battleground, ou qualquer outra coisa."},
 			{id = "often", en = "A listing closes by itself after 15 to 120 minutes, as you choose. You can have 5 applications open at once.", pt = "Um anúncio fecha sozinho após 15 a 120 minutos, como você escolher. Você pode ter 5 candidaturas abertas ao mesmo tempo."}
 		}},

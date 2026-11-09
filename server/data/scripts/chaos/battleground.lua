@@ -6,7 +6,7 @@
 --
 -- Flow
 --   the window (Adventure > Battleground): Queue (solo, or the party leader queues the party of up to 5) as a role
---   of the class (tank / healer / DPS, party_finder_config.lua classRoles); level 100+, in a protection zone, out of
+--   of the class (tank / healer / DPS / support, party_finder_config.lua classRoles); level 100+, in a protection zone, out of
 --   combat, not multi-clienting, not inside another instance or the arena (queue or match), no deserter penalty.
 --   -> every matchmakeSeconds the queue forms matches per realm (standard / the running season) and level bracket:
 --      5v5 .. 10v10, parties kept whole, tanks and healers spread, team ratings close (battleground_core.lua)

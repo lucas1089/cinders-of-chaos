@@ -47,6 +47,12 @@ eq(V.queueStatus({ minLevel = 100 }, 0), 'You need level 100 for the battlegroun
 eq(V.queueStatus({ match = { phase = 'fight' } }, 0), 'You are in a battleground match.', 'in a match')
 local roles = V.roleOptions({ roles = { 'tank', 'healer' }, role = 'healer' })
 eq(#roles, 2, 'roles'); eq(roles[2].chosen, true, 'chosen role'); eq(roles[1].text, 'Tank', 'role name')
+-- O445: support is a fourth role; an unknown key from a newer server is shown by its key, never an error
+roles = V.roleOptions({ roles = { 'healer', 'dps', 'support' }, role = 'support' })
+eq(#roles, 3, 'support: roles'); eq(roles[3].text, 'Support', 'support: name'); eq(roles[3].chosen, true, 'support: chosen')
+eq(roles[3].color ~= roles[1].color and roles[3].color ~= roles[2].color, true, 'support: own colour')
+roles = V.roleOptions({ roles = { 'dps', 'scout' }, role = 'dps' })
+eq(roles[2].text, 'scout', 'unknown role: its key'); eq(roles[2].color, '#d6c9ae', 'unknown role: default colour')
 eq(V.honorLine({ honor = 1250, weekHonor = 300, weekCap = 6000, firstWinDone = true }),
   'Honor 1,250   (this week 300 / 6,000)   Weekly first win: taken', 'honor line')
 local vr = V.vendorRow({ name = '50 great health potions', cost = 60, kind = 'item' }, 59)

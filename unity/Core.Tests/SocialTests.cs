@@ -352,6 +352,12 @@ namespace Chaos.Core.Tests
             input = PartyFinderMath.PostInput(acts, "hunt", "dps", 30, "", false, 0, 0, 3, "60", "40", 0, "", "", 2, "");
             check((int)input["t"] == 2 && (int)input["maxLevel"] == 60 && !input.ContainsKey("lo"), "party finder: a hunt target and a max level never under the minimum");
             check(PartyFinderMath.Limits(acts[0], Json.Get(init, "lim")).SequenceEqual(new[] { 5, 1, 1, 3 }) && PartyFinderMath.FormKind(acts[0]) == "range" && PartyFinderMath.FormKind(acts[1]) == "targets", "party finder: limits and form kinds");
+            // O445: support, the fourth role: named, lettered and counted in the open text; a server without it, or a key this client does not know, never errors
+            var supRow = Json.Parse("{\"open\":{\"healer\":1,\"dps\":1,\"support\":2},\"comp\":[{\"r\":\"support\",\"n\":\"Seris\",\"st\":\"leader\"},{\"r\":\"scout\",\"n\":\"Odd\"}]}");
+            check(PartyFinderMath.RoleName("support") == "Support" && PartyFinderMath.RoleLetter("support") == "S" && PartyFinderMath.RoleLetter("scout") == "?" && PartyFinderMath.RoleName("scout") == "scout", "party finder: support name and letter, an unknown key falls back");
+            check(PartyFinderMath.OpenText(supRow) == "Needs 1 Healer, 1 DPS, 2 Support" && PartyFinderMath.CompText(supRow, init) == "S Seris*   ? Odd   H -   D -   S -   S -", "party finder: open text and composition show support");
+            check(PartyFinderMath.ApplyRoles(supRow, new List<object> { "healer", "support" }).SequenceEqual(new[] { "healer", "support" }) && PartyFinderMath.OpenText(Json.Parse("{\"open\":{\"dps\":1}}")) == "Needs 1 DPS", "party finder: a class with support may apply as support, no support slot changes nothing");
+            check(PartyFinderMath.RoleName("support", Json.Parse("{\"roles\":[{\"k\":\"support\",\"n\":\"Suporte\"}]}")) == "Suporte" && PartyFinderMath.Limits(acts[0], Json.Get(init, "lim")).Length == 4, "party finder: the server's role name wins, the wanted form keeps its three boxes");
 
             var rig = new Rig();
             var p = new PartyFinderPanel(rig.Ext) { Clock = () => rig.Now };

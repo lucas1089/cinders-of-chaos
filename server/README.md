@@ -630,7 +630,7 @@ working directory, as with the rest of the base server libs).
 | game_bossspawns | `bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql` | **217**, Adventure > Boss Spawns | Every boss by category with place and respawn status, live alive state and last kills (see "Boss spawns"). Unit and mocked-engine tests; not run on a live server. |
 | game_riftatlas | `atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql` (hooks in `rift_core.lua`) | **210**, Adventure > Rift Atlas, the rift HUD | Rift Atlas: completion grid of first completions (theme x tier, flawless, swift, omens; 96 points), a map of 81 nodes in a core and four theme branches with 4 keystones, allocate / refund for gold or an orb; effects applied in `rift_core.lua` (see "Rift Atlas"). Unit and mocked-engine tests; not run on a live server. |
 | game_riftatlas (waystone mode) | `waystone_atlas.lua`, `waystone_atlas_core.lua`, `waystone_atlas_config.lua`, `sql/chaos_waystone_atlas.sql` (hooks in `waystone_mods.lua`, `waystone_tiers.lua`) | **159**, Adventure > Waystone Atlas | Waystone Atlas: map x tier cells and a Rare cell per tier (75 points) for a map of 81 nodes in a core and four branches (Low, Middle, High Maps, Cartography) with 4 keystones; the map opener's atlas shapes the run (see "Waystone Atlas"). Unit and mocked-engine tests; not run on a live server. |
-| game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
+| game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS / support slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
 | game_antibot | `antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py` | **211**, right-click a player > Report Player, System > Report a Player, `/reports` (staff) | Behaviour detection (action rhythm, instant reactions, walked loops, loot timing, nonstop play) with a decaying suspicion score, the presence check modal (four pictures, one retry, 75 s, deferred in PvP and boss fights), player reports with public chat lines and limits, the staff log and command, an admin page on the website; never bans by itself (see "Anti-bot and player reports"). Unit, synthetic-trace and mocked-engine tests; not run on a live server. |
 | game_factions | `factions.lua`, `factions_core.lua`, `factions_config.lua`, `sql/chaos_factions.sql`, `tools/install_factions.py`, `data/npc/` (four NPCs) | **215**, the faction NPCs (no top menu entry), the faction NPCs | Four factions with reputation ranks (Hostile .. Exalted): daily / weekly contracts by seed, kills of their monster families, bounties, rift seals of their theme, invasions, world bosses and faction tokens; daily diminishing returns, weekly cap, rivals; quartermasters with fixed gear, orb bundles, a recipe, the tabard aura and a mount; rank titles, Exalted achievements, a weekly Reputation board (see "Factions"). Unit and mocked-engine tests; not run on a live server. |
 | game_descent | `descent.lua`, `descent_core.lua`, `descent_config.lua`, `sql/chaos_descent.sql` (buff source in `data/lib/chaos_buffs.lua`) | **205**, Adventure > Ember Descent, the portal in the temple's gallery | The Ember Descent: a roguelike trial of 8-12 seeded rooms (combat, elite, treasure, shrine, merchant, boss) in a runtime-built hall; three boon cards after a room, curses for more rewards, run HUD with the boons and curses, merchant window, entry window with the free runs and the Ember Sigil forge; a weekly seeded run with its leaderboard (see "The Ember Descent"). Unit tests; full runs on a live test server. |
@@ -23579,7 +23579,7 @@ a role, and the leader accepts (a real party invite) or declines.
 
 **Listing.** Activity: Rift (tier range, max from `rift_config.lua` `maxTier`), Dungeon (from `Chaos.dungeons.extra`),
 World Boss (`Chaos.worldBoss.bosses`), Omen (the guardians of `rift_config.lua` `omen.kinds`), Infinity Tower (floor
-range), Raid, Trial (`trials_config.lua` tiers), Other (a free title). Wanted tank / healer / DPS counts (0-6 each, leader +
+range), Raid, Trial (`trials_config.lua` tiers), Other (a free title). Wanted tank / healer / DPS / support counts (0-6 each, leader +
 party + wanted at most 10; a raid: see below), the leader's own role, minimum level, a note (80 printable characters; bad words become
 asterisks, link-like words are cut), expiry (15 / 30 / 60 / 120 min), "auto-accept quick joins". One listing per
 character; posting again updates it (ids and applications kept; a role can not drop below the slots already taken).
@@ -23587,8 +23587,8 @@ Only a party leader (or a character without a party) can post.
 
 **Raid listings of 15.** An activity may set its own size and caps (`party_finder_config.lua` `activities`: `maxParty`,
 `perRole`, `suggest`). The Raid sets 15 (raid_config.lua `maxPlayers`; `tests/party_finder_test.lua` checks they match),
-up to 3 tanks, 4 healers and 12 DPS wanted (the leader's own role comes on top), and the form proposes 2 / 3 / 9 (15 with
-the leader). Every other activity keeps 10 and 0-6 per role. The listing stores its size (`L.max`, `K.maxOf`); post,
+up to 3 tanks, 4 healers, 12 DPS and 4 support wanted (the leader's own role comes on top), and the form proposes 2 / 3 / 9 / 0
+(15 with the leader). Every other activity keeps 10 and 0-6 per role. The listing stores its size (`L.max`, `K.maxOf`); post,
 update (a raid of 12 cannot become a rift) and accept (`partyFull`) check against it, and rows carry `max`; init `acts`
 carry `max`, `per` and `suggest`. The engine side needs nothing new: TFS 1.4.2 parties have no member cap (`Party`
 holds a plain member list; `invitePlayer` and `joinParty` never count it), and the raid uses one engine party: `raid.lua`
@@ -23599,6 +23599,34 @@ holds a plain member list; `invitePlayer` and `joinParty` never count it), and t
 Juggernaut, Sentinel and Samurai (and the Warrior and Templar base classes); healers the Illusionist, Iron Sage, Sentinel
 and the Mystic base class; everyone may play DPS except the Sentinel. The first role is the class's main role, used for
 party members who joined without a listing slot. Applications and posts are checked against the character's real class.
+
+**Support (O445).** The fourth role, `support` ("Support", pt-BR "Suporte", violet `#c08ae8`, letter S), for the classes whose
+kit buffs the party, wraps it in an aura or curses the enemy. It is the last role of each class that has it, never the
+first, and every class keeps the roles it had. Evidence from the spells and scripts: Illusionist (Shared Phantasm and
+Inspiring Illusion, `passivetree_keystones.lua`: party attack buffs and a party heal on a marked enemy); Iron Sage
+(`mantra_of_stone.lua`: party members within 6 sqm take 8% less and are healed, `chi_ward.lua`: an absorb on a party member);
+Templar, Inquisitor, Sentinel (`templar_aura_core.lua`: the party defence aura, always on; the Inquisitor's Judgement,
+`templar_combat.lua`: holy damage on the target from anyone); Necromancer, Lich, Bone Lord (`necro_config.lua` Withering
+Curse: the target takes +15% (Lich +25%) from everyone). Not support: Banner Call and the four Vigils (every class has
+them), Pressure Points (a Monk stack, helps Monks only), Banner of Bones (the Bone Lord's minions only), the self buffs of the
+line quests. A group never has to ask for support; a listing without a support count is valid, and an older client that
+sends three counts posts as before.
+
+Rules that count roles, and how a support counts: the Party Finder wants (own count, cap 0-6, a raid 4, the size rule counts
+it, `K.open` and `K.filled` are keyed by `cfg.roles`); the quick join queue and "Join as" (its own role); the group queue
+(`groupqueue_config.lua` `roles`, a battleground pick of `support` is kept and the class check stays in
+`battleground_core.lua` `pickRole`); the battleground split (`battleground_core.lua` `cost`, `roleRank`: only tanks and
+healers are spread, a support counts as DPS, so a queue of supports starts a match and the pool does not shrink); the raid
+(`raid.lua` asks for no role, a raid listing is the Party Finder's); dungeons, rifts, Guild Boss and the leaderboards ask for
+none. Rewards that depend on a role: the world boss score is damage + healing x `healWeight` + tanking x `tankWeight`
+(`worldboss.lua`, by what a player did, not by role) and the Guild Boss reward is damage share or "healed an ally"
+(`guildboss_core.lua` `rewarded`). The server does not measure buff or debuff uptime, so a support is scored on its damage
+like a DPS; no role bonus exists. Party frames draw no role today. Client: `game_partyfinder` (form box, filter, slot letter
+and colour, queue and apply lists), `game_battleground` (`bgview.lua` role names and colours); a role key a client does not
+know is shown by its name and the default colour, and `V.setRoles` takes the order from the server's list. Unity:
+`PartyFinder.cs` and `EndgamePvp.cs` name, letter and colour it and count open support slots; the Unity form still asks for
+tanks, healers and DPS only. Tests: `tests/party_finder_test.lua`, `battleground_test.lua`, `groupqueue_test.lua`, client
+`partyfinderview_test.lua`, `bgview_test.lua`, Unity `Core.Tests`.
 
 **Flow.** Apply (one role, the level, a free slot of that role; at most 5 open applications per character and 20 per
 listing; 120 s before a declined character may apply again to the same listing). The leader gets a toast, a console line

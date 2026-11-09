@@ -27,7 +27,7 @@ return {
 	arenaOrder = {"1v1", "2v2", "3v3"},
 
 	-- the battleground roles a member may ask for (battleground_core.lua parseRole); none = the class default
-	roles = {tank = true, healer = true, dps = true},
+	roles = {tank = true, healer = true, dps = true, support = true},
 
 	-- the largest party the battleground takes (battleground_config.lua partyMax is read when it is loaded)
 	bgPartyMax = 5,

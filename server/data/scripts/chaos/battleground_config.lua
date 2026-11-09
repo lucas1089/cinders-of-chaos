@@ -35,7 +35,8 @@ return {
 	-- rating window of a match: every entry within window(waited of the oldest) of the oldest entry's rating
 	window = {base = 250, step = 50, everySeconds = 15, max = 1200},
 	-- the role balance (party_finder_config.lua roles / classRoles): a player queues as one of his class's roles
-	-- (default its main role). Cost of a split = |avg rating 1 - avg rating 2| + roleWeight x role count differences;
+	-- (default its main role). Cost of a split = |avg rating 1 - avg rating 2| + roleWeight x role count differences
+	-- (tanks and healers; a support counts as a dps, O445);
 	-- tanks and healers are spread first.
 	roleWeight = 120,
 	splitStarts = 8, -- extra pseudo-random starting splits of the local search (near the exhaustive optimum, tested)

@@ -4135,7 +4135,7 @@ return {
 		["Pick one of the listed targets."] = "Escolha um dos alvos listados.",
 		["Give your group a short title."] = "Dê um título curto ao seu grupo.",
 		["Your class cannot fill that role."] = "Sua classe não pode ocupar esse papel.",
-		["Ask for at least one tank, healer or DPS."] = "Peça pelo menos um tank, healer ou DPS.",
+		["Ask for at least one tank, healer, support or DPS."] = "Peça pelo menos um tank, healer, suporte ou DPS.",
 		["Too many of one role."] = "Papéis demais do mesmo tipo.",
 		["That is more than a full party."] = "Isso é mais que um grupo cheio.",
 		["You already took more of that role."] = "Você já ocupou mais vagas desse papel.",

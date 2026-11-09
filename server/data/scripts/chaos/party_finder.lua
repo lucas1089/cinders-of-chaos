@@ -1,5 +1,5 @@
 -- Party Finder (LFG) (client game_partyfinder, extended opcode ChaosOpcodes.partyFinder = 208). Players post a listing
--- (activity, wanted tank / healer / DPS slots, minimum level, note, expiry), others browse it and apply with a role, the
+-- (activity, wanted tank / healer / DPS / support slots, minimum level, note, expiry), others browse it and apply with a role, the
 -- leader accepts (a real party invite from the engine) or declines. "Join as role" queues a character for the oldest
 -- listing with that role open. Numbers: party_finder_config.lua; pure logic: party_finder_core.lua
 -- (tests/party_finder_test.lua); overview: server/README.md "Party Finder".
@@ -14,7 +14,7 @@
 -- up (listing closes); expiry; full listings close; the quick-join queue is matched; open windows get the new list.
 --
 -- Protocol (JSON {action, data}):
---   client -> server  open | hide | refresh | post {a, lo, hi, t, title, want {tank, healer, dps}, minLevel, note, exp,
+--   client -> server  open | hide | refresh | post {a, lo, hi, t, title, want {tank, healer, dps, support}, minLevel, note, exp,
 --                     role, auto} | unlist {id?} | apply {id, role} | withdraw {id} | accept {id, g} | decline {id, g}
 --                     | queue {role, a?} | unqueue
 --   server -> client  init {acts, roles, my, lv, exp, defExp, lim, staff} | list {rows, mine, badge, applied, queue}

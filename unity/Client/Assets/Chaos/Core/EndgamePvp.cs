@@ -278,8 +278,8 @@ namespace Chaos.Core
     {
         public static readonly string[] BracketOrder = { "1v1", "2v2", "3v3", "bg" };
 
-        public static string RoleName(string r) => r == "tank" ? "Tank" : r == "healer" ? "Healer" : r == "dps" ? "DPS" : "";
-        public static string RoleColor(string r) => r == "tank" ? "#7fb8e8" : r == "healer" ? "#6fd8a8" : r == "dps" ? "#e8846a" : "#d6c9ae";
+        public static string RoleName(string r) => r == "tank" ? "Tank" : r == "healer" ? "Healer" : r == "dps" ? "DPS" : r == "support" ? "Support" : "";
+        public static string RoleColor(string r) => r == "tank" ? "#7fb8e8" : r == "healer" ? "#6fd8a8" : r == "dps" ? "#e8846a" : r == "support" ? "#c08ae8" : "#d6c9ae";
 
         public static string Result(string r, out string color)
         {
