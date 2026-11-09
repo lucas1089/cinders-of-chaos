@@ -74,7 +74,7 @@ stop_tfs() {
   TFS_PID=""
 }
 
-# shellcheck disable=SC2329 # runs through the EXIT trap
+# shellcheck disable=SC2317,SC2329 # runs through the EXIT trap (older shellcheck reports SC2317)
 cleanup() {
   local rc=$?
   trap - EXIT
@@ -90,7 +90,7 @@ cleanup() {
       dbq -e "UPDATE players SET group_id=$PROBE_GROUP WHERE name='$(sqlq "$CHAOS_LIVE_CHARACTER")'" 2>/dev/null || true
     fi
     if [ -n "$DUMP" ] && [ -s "$DUMP" ]; then
-      dbq < "$DUMP" 2>/dev/null && echo "   database restored from the dump" || echo "   database restore FAILED"
+      if dbq < "$DUMP" 2>/dev/null; then echo "   database restored from the dump"; else echo "   database restore FAILED"; fi
     fi
   fi
   if [ -d "$ASIDE" ] && [ -n "$SERVER" ]; then
@@ -149,7 +149,7 @@ else
   die "give LR_SERVER (local) or UL_ASSETS (CI), see the header of this script"
 fi
 export CHAOS_LIVE_ACCOUNT CHAOS_LIVE_PASSWORD CHAOS_LIVE_CHARACTER
-[ -n "$CHAOS_LIVE_ACCOUNT" ] && [ -n "$CHAOS_LIVE_CHARACTER" ] || die "no probe account in the env file"
+if [ -z "$CHAOS_LIVE_ACCOUNT" ] || [ -z "$CHAOS_LIVE_CHARACTER" ]; then die "no probe account in the env file"; fi
 [ -x "$SERVER/tfs" ] || die "no tfs in the server folder"
 [ -S "$SOCK" ] || die "no MariaDB socket"
 DBNAME=$(cfg_value mysqlDatabase)
@@ -191,7 +191,7 @@ dbq < "$REPO/server/sql/chaos_season.sql"
 CREATOR=$(python3 -I "$CORE" creator-instants --server "$SERVER")
 CREATOR_ACC=$(dbn "SELECT id FROM accounts WHERE id NOT IN (SELECT account_id FROM chaos_creator_support) ORDER BY id LIMIT 1")
 DONOR_ACC=$(dbn "SELECT id FROM accounts WHERE id<>$CREATOR_ACC AND id NOT IN (SELECT account_id FROM chaos_creator_support) ORDER BY id LIMIT 1")
-[ -n "$CREATOR_ACC" ] && [ -n "$DONOR_ACC" ] || die "two accounts without a creator pick are needed"
+if [ -z "$CREATOR_ACC" ] || [ -z "$DONOR_ACC" ]; then die "two accounts without a creator pick are needed"; fi
 dbq -e "INSERT INTO chaos_creator_codes (code, account_id, pct, active, created_at) VALUES ('LRTEST', $CREATOR_ACC, 0, 1, 1)"
 CODE_ID=$(dbn "SELECT id FROM chaos_creator_codes WHERE code='LRTEST'")
 dbq -e "INSERT INTO chaos_creator_support (account_id, code_id, set_at, expires_at) VALUES ($DONOR_ACC, $CODE_ID, 1, 4000000000)"
