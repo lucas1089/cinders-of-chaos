@@ -584,7 +584,7 @@ It logs in, enters, takes four steps and prints the opcodes it read. The guard k
 
 ## Live check (O433)
 
-`unity/Core.LiveCheck` runs the pure C# core against a real server. It links the Core sources like `Core.Tests`, has no UnityEngine and is only built in CI (`ci.yml`), never run there.
+`unity/Core.LiveCheck` runs the pure C# core against a real server. It links the Core sources like `Core.Tests`, has no UnityEngine. `ci.yml` only builds it; the manual workflow `unity-live-check.yml` runs it against a server it builds ("Live check in CI" below).
 
 ```
 cd unity/Core.LiveCheck && dotnet build -c Release
@@ -758,6 +758,48 @@ Local setup (not committed, local data only): the primary staff (group and accou
 Found and fixed in phase 24: no Core parser or model bug in these flows. Every packet read (0xA0 with the staff's free capacity 4294967295, 0x6E to 0x72, 0xA1, 0x8F, 0x4B, 0x64, 0x28 on the partner) and every extended opcode of the rifts, the party (235), the coffer and the Omen arenas was handled, 0 invalid JSON, 0 handler errors. The opcodes outside the table that came (0, 89, 92, 99, 106, 181, 189) are the base modules and the guard challenge, as before. What the runs fixed is the live check tool itself (the line cap of 600, the stale HUD, the key pick, above) and it gained the partner's extended opcode error count. Synthetic regressions in `Core.Tests/LiveCheckTests.cs`: `EndgameScenarioList`, `OmenAndFailedRiftHud` (the Omen HUD with `omen`, `title`, `total 0`, `bossAt 0`; the failed end message without `exitIn`; a fallen member's `left`), `ExtErrorCount`.
 
 Not covered: a death inside a rift that costs the last life (the run collapses, no chest), a rift with the Twin Guardians or the Wrathful Guardian (the staff command removes the thralls), a party of more than two, the guardian fight itself (telegraphs and enrage: the run kills it with a staff command), the Omen arena for a party, the tutorial island, the spell quest and the Oracle's Trial windows.
+
+### Live check in CI (2026-11-08)
+
+The workflow `.github/workflows/unity-live-check.yml` (manual, and on pull requests that touch `unity/Client/Assets/Chaos/Core/**`, `unity/Core.LiveCheck/**`, the script or the workflow) builds a server and lets both identities play on it, so a change to Core or to the server data that breaks one client shows up before a player does. It is a gate: a failed run or scenario fails the job, a skip does not. `tools/ci/unity_live_check.sh` does the work and runs the same way by hand:
+
+```
+UL_ASSETS=CHECKOUT_OF_windows-assets UL_WORK=EMPTY_DIR UL_OUT=REPORT_DIR bash tools/ci/unity_live_check.sh
+```
+
+Needs `mariadbd`, `dotnet`, `openssl`, `gh` (only for the engine), `python3-numpy` and `luajit` (install step `contentareas`). Ports 17171, 17172 and 13306 (`UL_LOGIN_PORT`, `UL_GAME_PORT`, `UL_DB_PORT`), so it can run beside a server on the stock ports. `UL_ENGINE_TAR` gives an archive already downloaded, `UL_IDENTITIES` and `UL_GROUPS` narrow the run, `UL_RESUME=1` keeps the installed folder of an earlier run in `UL_WORK`.
+
+Steps (seconds from the local run on 4 cores; the first is most of the time):
+1. Base server of `windows-assets` (sparse checkout `server`, `world`, `SHA256SUMS.parts`; sha256 checked), the map master when the branch has one, `install_all.py` of this commit with the real database: 874 s.
+2. A private MariaDB (own data folder, socket and port, 127.0.0.1 only), the base schema, the `chaos_*` tables (185 after the install): 3 s.
+3. Engine: the `tfs` binary and its 7 libraries from the newest `winpkg-N` release that has `CindersOfChaos-Server-Linux.tar.gz` (`gh release download`, read-only `GITHUB_TOKEN`; the REST asset download when that fails): 7 s. Chosen over building because the build needs the whole base tree, cmake, Boost, Crypto++, LuaJIT, pugixml and the 89 src-patches in order (about 20 minutes on a runner, with its own cache in `windows-package.yml`), and the release binary is the engine the live server runs. It can lag the repository: winpkg-109 (commit 424cba2) lacks src-patch 0089 (loot bags), so `corpse_bag.lua` logs that monsters keep their bodies; nothing in the scenarios depends on it. The summary and the log name the release.
+4. `config.lua`: ports, database, `clientGuardMode = "enforce"`. The guard key of the Chaos identity is `openssl rand -hex 32` made in the run, given to `tfs` and to `Core.LiveCheck` through `CHAOS_CLIENT_KEY`, never written to a file or a report. No repository secret is used, so a pull request from a fork runs the same checks (the server and the client are both ours: enforce mode is exercised with a key nobody else has). `CHAOS_RSA_PUBLIC` is the modulus of the base `key.pem` (`rsa_key.py public`), read in the runner.
+5. tfs start: 30 s. Then per group and identity (Extended, then Chaos) fresh accounts and characters made by SQL (level 1200, class 4, first login kit with 500 gold, random passwords from `openssl rand`, stock SHA-1 that the server re-hashes, given on stdin and in the environment `CHAOS_LIVE_PASSWORD`, `CHAOS_LIVE_ACCOUNT2`, `CHAOS_LIVE_PASSWORD2`, `CHAOS_LIVE_CHARACTER2`). Every run starts with login, entry, the 8 step walk, the parser and the opcode sweep, then its scenarios:
+
+| group | start | staff | scenarios |
+|---|---|---|---|
+| temple | base temple stair | none | tooltip, stairs, floorchange, npc (Tesenna), party |
+| shop | beside Solan | none | sell |
+| shared | base temple stair | partner | sharedkill |
+| death | base temple stair | partner | death |
+| market | hub market of Cinderhold | primary | modal (Archivist Maelis), rift |
+
+A group whose run fails is run once more with new characters (the server is live; a refused step after a respawn showed up once in a local run and passed on the second). Both tries are in the reports (`GROUP-try1-IDENTITY.json`) and the summary lists the first one. A real fault fails twice. The `market` group runs last: the rift slots build for a minute after the start.
+6. Output in `UL_OUT`: `GROUP-IDENTITY.json` and `.txt` per run (names are scrubbed by `Core.LiveCheck`), `summary.md` (runs, scenario table, failed, skipped with reasons, seconds per step; the workflow appends it to `$GITHUB_STEP_SUMMARY`), the tail of the server log. The workflow uploads `*.json`, `*.txt`, `*.md` of that folder as the artifact `unity-live-check-reports`. Never uploaded: `key.pem`, `config.lua`, the work folder, the database. The script also cuts the run's passwords and guard key out of every file of the output folder as a last guard.
+
+Not in the CI set: `riftboss` (its `/rkill` and `/rnear` are a local-only revscript, not server data, and stay out of the repository and the runner), `market` (a skip by design), `pvpdeath` (the Chaos multi-client rule and a local-only storage switch). Run them by hand as above.
+
+Local run 2026-11-08 (base server of `windows-assets`, no map master, engine of winpkg-109), Extended and Chaos, 0 parse failures in every run:
+
+| scenario | Extended | Chaos |
+|---|---|---|
+| tooltip, stairs, floorchange, npc, party | pass | pass |
+| sell (Solan) | pass | pass |
+| sharedkill | pass | pass |
+| death | pass (first try failed once: no step after the respawn; second try passed) | pass |
+| modal, rift | pass | pass |
+
+Open: the AppArmor profile of the apt MariaDB on `ubuntu-latest` is removed in the workflow (`apparmor_parser -R`) so that the private data folder works; not yet run on a runner. The first workflow run decides the real time (the install step is CPU bound).
 
 ## NPC talk and trade
 

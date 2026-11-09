@@ -1,0 +1,88 @@
+name: Unity live check
+
+# tools/ci/unity_live_check.sh: the Unity Core (unity/Core.LiveCheck) plays on a real server, with the Extended and the
+# Chaos identity: the base server and map of windows-assets, install_all.py of this commit, a private MariaDB, the engine
+# (tfs and its libraries) of the newest winpkg release with a Linux server, fresh accounts with random passwords made in the
+# run. Scenarios: login and walk, tooltip, stairs, floor change, NPC trade, sell, party, shared kill, death, rift, modal
+# (unity/README.md "Live check in CI"). A failed run or scenario fails the job; a skip is listed in the summary.
+# No secret is used: the guard key of the Chaos identity is made in the run (openssl rand) for tfs and the client alike.
+# About 45 minutes (the install of the content takes about 12). Manual, and on pull requests that touch what it checks.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "unity/Client/Assets/Chaos/Core/**"
+      - "unity/Core.LiveCheck/**"
+      - "tools/ci/unity_live_check.sh"
+      - ".github/workflows/unity-live-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unity-live-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live:
+    name: Core against a live server
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    steps:
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the assets
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets
+          sparse-checkout: |
+            server
+            world
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Install the tools
+        run: |
+          # mariadb-server: the private database of the run (its own data folder, socket and port); numpy and luajit:
+          # install steps contentareas (area_plan_place.py, hunt_teleports_dump.lua)
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mariadb-server mariadb-client python3-numpy luajit
+          # the system service is not used; a profile for /usr/sbin/mariadbd would keep the private data folder out
+          sudo systemctl stop mariadb || true
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd 2>/dev/null || true
+          dotnet --version
+
+      - name: Live check
+        id: live
+        env:
+          UL_ASSETS: ${{ github.workspace }}/assets
+          UL_WORK: ${{ runner.temp }}/ul
+          UL_OUT: ${{ runner.temp }}/ul-out
+        run: |
+          mkdir -p "$UL_WORK" "$UL_OUT"
+          rc=0
+          bash chaos/tools/ci/unity_live_check.sh || rc=$?
+          [ -f "$UL_OUT/summary.md" ] && cat "$UL_OUT/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-live-check-reports
+          # reports (names scrubbed by Core.LiveCheck), the summary and a log tail; never the work folder, key.pem or config.lua
+          path: |
+            ${{ runner.temp }}/ul-out/*.json
+            ${{ runner.temp }}/ul-out/*.txt
+            ${{ runner.temp }}/ul-out/*.md
+          if-no-files-found: warn
+          retention-days: 14
