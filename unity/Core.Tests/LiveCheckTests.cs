@@ -46,6 +46,10 @@ namespace Chaos.Core.Tests
             SoloDeathHudAndNova(check);
             Phase27ScenarioList(check);
             FirstHourHelpers(check);
+            Phase28ScenarioList(check);
+            WelcomeToastOpensHelper(check);
+            SystemUnlockAnnouncement(check);
+            QuestLogWire(check);
             Failures(check);
             Otb(check);
             Plan(check);
@@ -691,7 +695,7 @@ namespace Chaos.Core.Tests
         static void Phase27ScenarioList(Action<bool, string> check)
         {
             var all = LiveRun.AllScenarios.ToList();
-            check(all[0] == "newplayer" && all[1] == "firstkill" && all[2] == "firstquest", "phase 27: newplayer, firstkill and firstquest come first, in the order of a first hour");
+            check(all[0] == "newplayer" && all.IndexOf("firstkill") < all.IndexOf("firstquest") && all.IndexOf("firstquest") < all.IndexOf("tooltip"), "phase 27: newplayer opens the list, firstkill and firstquest follow in the order of a first hour, before the others");
             check(all.IndexOf("riftkilled") == all.IndexOf("riftsolodeath") + 1, "phase 27: riftkilled follows riftsolodeath");
             check(all.Count == all.Distinct().Count() && all[all.Count - 1] == "pvpdeath", "phase 27: no name twice, pvpdeath still last");
             check(LiveRun.FirstLoginWindowMs >= 40000, "phase 27: the first login window covers the Tale of Cinderhold introduction (30 s after the welcome)");
@@ -714,6 +718,94 @@ namespace Chaos.Core.Tests
                          "<item id=\"1387\" name=\"magic forcefield\">\n<attribute key=\"type\" value=\"teleport\" />\n</item>\n<item id=\"2120\" name=\"rope\">\n<attribute key=\"weight\" value=\"1800\" />\n</item>\n<item id=\"2121\" name=\"x\" />\n</items>";
             var tele = OtbDat.TeleportItems(xml, o.ToArray());
             check(tele.SetEquals(new[] { 25358, 25359, 25360, 1949 }), "teleport items: the id range and the single item of items.xml map to their client ids, the rope is not one (" + string.Join(",", tele.OrderBy(x => x)) + ")");
+        }
+
+        // ------------------------------------------------------------------------------------------------ phase 28
+        // questlog and firstunlock join the first hour: newplayer, questlog (the new character's empty log), firstunlock, firstkill, firstquest, then the others.
+        static void Phase28ScenarioList(Action<bool, string> check)
+        {
+            var all = LiveRun.AllScenarios.ToList();
+            check(all.IndexOf("newplayer") == 0 && all.IndexOf("questlog") == 1 && all.IndexOf("firstunlock") == 2 && all.IndexOf("firstkill") == 3 && all.IndexOf("firstquest") == 4, "phase 28: newplayer, questlog, firstunlock, firstkill, firstquest open the list in that order");
+            check(all.Count == all.Distinct().Count() && all[all.Count - 1] == "pvpdeath", "phase 28: no name twice, pvpdeath still last");
+            check(LiveRun.FirstUnlockLimitMs == 170000, "phase 28: a first spell unlock gets three minutes at most (170 s of hunting after the walk starts)");
+        }
+
+        // The welcome toast of a new character carries openHelper and a hint (server newplayer.lua showWelcome: {action "newplayer", message, openHelper = true, hint}); the main client
+        // opens the Helper on its Auto setup button (notifications.lua newplayer, onboarding.lua; its test: onboarding_test.lua, the same expectations here).
+        static void WelcomeToastOpensHelper(Action<bool, string> check)
+        {
+            Loc.Set("en");
+            var ext = new ExtOpcodes();
+            var tc = new ToastCenter(ext) { Clock = () => 0 };
+            Action<string> msg = json => ext.Receive(79, ExtOpcodes.ToWire(json));
+            msg("{\"action\":\"newplayer\",\"message\":\"Welcome, a new adventurer.\"}");
+            check(tc.Active.Count + tc.Queue.Count == 1 && !tc.HelperRequested && tc.HelperRequests == 0, "welcome toast: a plain newplayer toast shows and does not open the Helper");
+            msg("{\"action\":\"newplayer\",\"message\":\"Your first steps.\",\"openHelper\":true,\"hint\":\"Press Auto setup\"}");
+            check(tc.Active.Count + tc.Queue.Count == 2 && tc.HelperRequested && tc.HelperRequests == 1 && tc.HelperHint == "Press Auto setup", "welcome toast: openHelper shows the toast and asks for the Helper with the server's hint");
+            check(tc.TakeHelperRequest(out string h1) && h1 == "Press Auto setup" && !tc.HelperRequested && !tc.TakeHelperRequest(out _), "welcome toast: the window takes the request once");
+            msg("{\"action\":\"newplayer\",\"message\":\"x\",\"openHelper\":true}");
+            check(tc.TakeHelperRequest(out string h2) && h2 == "Set up your helper in one click", "welcome toast: no hint, the client's own text");
+            msg("{\"action\":\"newplayer\",\"openHelper\":true,\"hint\":\"\"}");
+            check(tc.TakeHelperRequest(out string h3) && h3 == "Set up your helper in one click", "welcome toast: an empty hint is no hint, and no message still opens the Helper");
+            msg("{\"action\":\"bounty\",\"message\":\"b\",\"openHelper\":true}");
+            check(!tc.HelperRequested, "welcome toast: only a newplayer message opens the Helper");
+            msg("{\"action\":\"newplayer\",\"message\":\"y\",\"openHelper\":false}");
+            check(!tc.HelperRequested && tc.HelperRequests == 3, "welcome toast: openHelper false does nothing");
+            Loc.Set("pt-BR");
+            msg("{\"action\":\"newplayer\",\"openHelper\":true}");
+            check(tc.TakeHelperRequest(out string hp) && hp == "Configure seu helper com um clique", "welcome toast: the fallback hint in pt-BR");
+            Loc.Set("en");
+            msg("{\"action\":\"newplayer\",\"openHelper\":true}");
+            tc.Clear();
+            check(!tc.HelperRequested, "welcome toast: a new session forgets an unanswered request");
+            // onboarding.lua: O.plan and O.blinkFrames
+            check(HelperOnboarding.NeedsToggle(false) && !HelperOnboarding.NeedsToggle(true), "helper onboarding: a hidden window is opened, an open one is not closed");
+            check(HelperOnboarding.HintOf("Set up", "fb") == "Set up" && HelperOnboarding.HintOf("", "fb") == "fb" && HelperOnboarding.HintOf(null, "fb") == "fb", "helper onboarding: the server hint, else the fallback");
+            var f = HelperOnboarding.Frames(12000, 400);
+            check(f.Length == 30 && f[0] && !f[f.Length - 1], "helper onboarding: thirty frames, gold first, ending on the button's own colour");
+            check(HelperOnboarding.Frames(1000, 400).Length % 2 == 0 && HelperOnboarding.Frames(0, 400).Length == 0, "helper onboarding: an even count, no blink for no time");
+            check(HelperOnboarding.Gold(0) && !HelperOnboarding.Gold(450) && HelperOnboarding.Gold(850) && !HelperOnboarding.Gold(11999) && !HelperOnboarding.Gold(12000) && !HelperOnboarding.Gold(-1), "helper onboarding: gold at the even steps, off after the time");
+            check(HelperOnboarding.Active(0) && HelperOnboarding.Active(11999) && !HelperOnboarding.Active(12000) && !HelperOnboarding.Active(-1), "helper onboarding: the hint and the blink end on their own");
+        }
+
+        // Opcode 115 'new' (server unlocks.lua announcement) is a system of the top menu by key, not a spell: the level up that opens one is read as an announcement with its title and its
+        // two lines. A class spell is told by name elsewhere (the Helper's level up notice: Phase7XTests SpellUnlockNames).
+        static void SystemUnlockAnnouncement(Action<bool, string> check)
+        {
+            var ux = new ExtOpcodes();
+            var mu = new MenuUnlocks(ux) { Clock = () => 0 };
+            ux.Receive(115, "{\"action\":\"new\",\"data\":{\"key\":\"passive\",\"level\":12,\"menu\":\"Passive Tree\",\"title\":\"Passive Tree\",\"why\":[\"Spend points.\",\"Open it.\"]}}");
+            check(mu.Announcement != null && mu.Announcement.Key == "passive" && mu.Announcement.Title == "Passive Tree" && mu.Announcement.Line2 == "Open it." && mu.Unlocked.Contains("passive"), "system unlock: opcode 115 'new' is read as the announcement (key, title, two lines)");
+        }
+
+        // The base quest log, on the wire of the base server (protocolgame.cpp sendQuestLog / sendQuestLine): the client's requests 0xF0 and 0xF1 (quest id), the answers 0xF0 (u16 count,
+        // per quest u16 id, string name, u8 completed) and 0xF1 (u16 quest id, u8 count, per mission string name, string description), read to the last byte.
+        static void QuestLogWire(Action<bool, string> check)
+        {
+            Loc.Set("en");
+            var p = NewParser();
+            var sent = new List<byte[]>();
+            p.Quests.Send = sent.Add;
+            p.Quests.Request();
+            p.Quests.Select(0x01A5);
+            check(sent.Count == 2 && Hex(sent[0]) == "f0" && Hex(sent[1]) == "f1a501", "quest log wire: the requests are F0 and F1 with the quest id (little endian)");
+            // 0xF0: a new character holds no started quest; a log of two with Latin-1 text; the packet followed by another one in the same message
+            p.Parse(new ByteWriter().U8(0xF0).U16(0).ToArray());
+            check(p.Quests.Loaded && p.Quests.Quests.Count == 0 && p.FailureCount == 0, "quest log wire: F0 with no quest is read");
+            var log = new ByteWriter().U8(0xF0).U16(2).U16(7).Str("Pastry Decoration").U8(0).U16(300).Str("Café Quest").U8(1);
+            p.Parse(log.ToArray());
+            check(p.Quests.Quests.Count == 2 && p.Quests.Quests[0].Id == 7 && p.Quests.Quests[1].Completed && p.Quests.Quests[1].Name == "Café Quest" && p.FailureCount == 0, "quest log wire: F0 with two quests, ids names and flags");
+            var next = new ByteWriter().U8(0xF0).U16(1).U16(9).Str("Mines").U8(0).U8(0xA2).U16(0x0105);
+            p.Parse(next.ToArray());
+            check(p.Quests.Quests.Count == 1 && p.Quests.Quests[0].Name == "Mines" && p.PlayerStates == 0x0105 && p.FailureCount == 0, "quest log wire: F0 followed by another packet reads both, the second at its right place (" + p.FailureCount + " failures)");
+            // 0xF1: a quest that is not started has no missions (the base server lists the started ones), then missions
+            p.Parse(new ByteWriter().U8(0xF1).U16(0x01A5).U8(0).ToArray());
+            var none = p.Quests.Missions(0x01A5);
+            check(none != null && none.Count == 0 && p.FailureCount == 0, "quest line wire: F1 with no mission is an empty list, not a missing one");
+            p.Parse(new ByteWriter().U8(0xF1).U16(7).U8(2).Str("Find it").Str("Look in the cave.").Str("Café").Str("Back to the town.").ToArray());
+            var ms = p.Quests.Missions(7);
+            check(ms != null && ms.Count == 2 && ms[0].Name == "Find it" && ms[0].Description == "Look in the cave." && ms[1].Name == "Café" && p.FailureCount == 0, "quest line wire: F1 with two missions, names and descriptions");
+            check(p.Quests.Summary() == "0 of 1 quests done" && p.Seen.ContainsKey(0xF0) && p.Seen.ContainsKey(0xF1), "quest log wire: the summary counts the log, both packet types were counted");
         }
 
         // A mortal who dies alone in a rift: the end message 'left' with the lives, the next login's start clears it, the last life ends it as failed; a fresh HUD (a new
