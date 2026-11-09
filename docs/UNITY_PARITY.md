@@ -17,6 +17,9 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 - Markers `u16 0` (identity Extended, the default): plain 10.98 wire. No feature list, plain outfits, one 0x64 map, no item attributes, no compression.
 - Markers of the main client (identity Chaos, `CHAOS_UNITY_IDENTITY=chaos`): feature list 0x43, outfits with wings, aura and shader, 0x4B floors, item attributes (feature 126), 16-bit spell ids (feature 152).
   Parsed and tested on a fake server. Not yet run against a live server.
+- Live server, 2026-11-09 (identity Extended, `Core.Tests` `live` command, a test account): the login, the character list and the game entry
+  pass with the server's RSA modulus; the whole entry packet reads (the engine's 0xF5 inventory id list was the one unknown opcode, now
+  skipped). The client guard then closes the game: it takes the release key only, so a play test needs a build with the embedded key.
   The server may deflate packets for this identity (config `packetCompression`, src-patch 0069): `Core/Inflate.cs` inflates them, with the size cap of base patch 0131.
   The aware range of 0x42 (default 17 x 13, up to 29 x 21) is read by every map message. Wire audit: `unity/README.md` "Wire audit".
 - Client version word `0x4343 << 16 | build`, the guard handshake on 189 and the hello on 190 are done. The real guard key is never embedded by default.

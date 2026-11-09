@@ -91,6 +91,11 @@ namespace Chaos.Core.Tests
         static void Features(Action<bool, string> check)
         {
             // sendFeatures: 0x43, u16 count, then u8 feature and u8 enabled each (feature 126 item attributes 0003, 152 wide spell ids 0079, 155 typed numbers 0051)
+            // 0xF5, the engine's sendItems at login (the live server sends it, the fake server did not): u16 count, then u16 id, u8 0, u16 1 each
+            var inv = Parser(false, out _);
+            inv.Parse(FromHex("f5" + "0200" + "010000" + "0100" + "0b0000" + "0100" + "1d"));
+            check(inv.Seen.ContainsKey(0xF5) && inv.Seen.ContainsKey(0x1D), "wire: 0xF5 inventory id list is read whole, the next message follows");
+
             var p = Parser(true, out _);
             p.Parse(FromHex("43" + "0500" + "7e01" + "9801" + "9b01" + "0600" + "6f00"));
             check(p.Features.Announced && p.Features.Has(126) && p.Features.Has(152) && p.Features.Has(155) && !p.Features.Has(6) && !p.Features.Has(111),

@@ -287,6 +287,7 @@ namespace Chaos.Core
                 case 0xDC: r.U8(); break;
                 case 0xDD: ReadPos(r); r.U8(); r.Str(); break;
                 case 0xF3: r.U16(); r.Str(); r.U8(); break;
+                case 0xF5: r.Skip(r.U16() * 5); break;   // the engine's sendItems at login: u16 count, then u16 id, u8 0, u16 1 each (the 11 slots and the inventory ids)
                 default:
                     throw new ProtocolException("unknown opcode 0x" + op.ToString("X2") + " at " + (r.Pos - 1));
             }
