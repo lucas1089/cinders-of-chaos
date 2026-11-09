@@ -42,6 +42,8 @@ namespace Chaos.Core.Tests
             ExtErrorCount(check);
             Phase25ScenarioList(check);
             LastLifeAndTwinHud(check);
+            Phase26ScenarioList(check);
+            SoloDeathHudAndNova(check);
             Failures(check);
             Otb(check);
             Plan(check);
@@ -667,6 +669,52 @@ namespace Chaos.Core.Tests
             var fresh = new RiftHud(ext) { Clock = () => now };
             fresh.Handle("end", Json.TryParse("{\"result\":\"failed\",\"text\":\"No lives are left! The rift collapses and the key is lost.\"}"));
             check(fresh.Active && fresh.State == "failed" && fresh.Result == "failed", "last life HUD: an end message without a start still shows the result");
+        }
+
+        // ------------------------------------------------------------------------------------------------ phase 26
+        // riftsolodeath, omenparty and wrathnova follow trialwindows and run before the two death scenarios.
+        static void Phase26ScenarioList(Action<bool, string> check)
+        {
+            var all = LiveRun.AllScenarios.ToList();
+            string[] names = { "riftsolodeath", "omenparty", "wrathnova" };
+            bool order = true;
+            int last = all.IndexOf("trialwindows");
+            foreach (string n in names) { int i = all.IndexOf(n); order &= i > last; last = i; }
+            check(order && last < all.IndexOf("death"), "phase 26: riftsolodeath, omenparty and wrathnova follow trialwindows in that order and run before the death scenarios");
+            check(all.Count == all.Distinct().Count() && all[all.Count - 1] == "pvpdeath", "phase 26: no name twice, pvpdeath still last");
+        }
+
+        // A mortal who dies alone in a rift: the end message 'left' with the lives, the next login's start clears it, the last life ends it as failed; a fresh HUD (a new
+        // session after the login at the temple) is not active; a damage number of message type 24 is read as typed or plain numbers by the feed.
+        static void SoloDeathHudAndNova(Action<bool, string> check)
+        {
+            var ext = new ExtOpcodes();
+            double now = 5000;
+            var h = new RiftHud(ext) { Clock = () => now };
+            Action<string> msg = json => ext.Receive(228, ExtOpcodes.ToWire(json));
+            msg("{\"action\":\"start\",\"data\":{\"tier\":1,\"boss\":\"waiting\",\"state\":\"running\",\"total\":216,\"killed\":0,\"bossAt\":162,\"lives\":3,\"livesMax\":3}}");
+            msg("{\"action\":\"end\",\"data\":{\"result\":\"left\",\"text\":\"You fell: 2 lives left. You return at the rift's entrance when you log in again.\"}}");
+            check(h.Result == "left" && h.State == "left" && h.ResultText.IndexOf("2 lives left", StringComparison.Ordinal) >= 0 && h.Lives == 3, "solo death HUD: 'left' with the lives left in the text");
+            msg("{\"action\":\"start\",\"data\":{\"tier\":1,\"boss\":\"waiting\",\"state\":\"running\",\"total\":216,\"killed\":0,\"bossAt\":162,\"lives\":2,\"livesMax\":3}}");
+            check(h.Active && h.Result.Length == 0 && h.Lives == 2 && h.LivesLine() == "Lives: 2 / 3", "solo death HUD: the login after the death starts the HUD again with 2 lives");
+            msg("{\"action\":\"update\",\"data\":{\"tier\":1,\"boss\":\"waiting\",\"state\":\"failed\",\"total\":216,\"killed\":0,\"bossAt\":162,\"lives\":0,\"livesMax\":3}}");
+            msg("{\"action\":\"end\",\"data\":{\"result\":\"failed\",\"text\":\"No lives are left! The rift collapses and the key is lost.\"}}");
+            check(h.Result == "failed" && h.Lives == 0 && h.ExitIn == 0, "solo death HUD: the last life ends the run as failed with 0 lives");
+            check(!new RiftHud(new ExtOpcodes()).Active, "solo death HUD: a new session after the last login has no rift HUD");
+            // the tiles the client forgets take their creatures off the map (a partner who stayed behind is no ghost at its last tile)
+            var w = new World(null) { PlayerId = 1 };
+            var me = new Creature { Id = 1, Name = "Me" };
+            var far = new Creature { Id = 2, Name = "Far" };
+            w.Creatures[1] = me; w.Creatures[2] = far;
+            w.Center = new Pos(1000, 1000, 7);
+            w.AddThing(new Pos(1000, 1000, 7), new Thing { Creature = me });
+            w.AddThing(new Pos(1002, 1000, 7), new Thing { Creature = far });
+            w.ForgetOutside(w.Center);
+            check(far.Position.X == 1002 && me.Position.X == 1000, "forget: creatures inside the window keep their tile");
+            w.Center = new Pos(1100, 1000, 7);
+            w.AddThing(w.Center, new Thing { Creature = me });
+            w.ForgetOutside(w.Center);
+            check(far.Position.X == 0 && w.Creatures.ContainsKey(2) && me.Position.X == 1100, "forget: a creature left behind is off the map (no ghost), still known; the player keeps its tile");
         }
 
         static void WholeRun(Action<bool, string> check)

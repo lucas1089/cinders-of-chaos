@@ -169,6 +169,7 @@ namespace Chaos.Core.Tests
             check(rat.WalkMs % 50 == 0 && rat.WalkMs > 0, "creature: step time rounded to 50 ms: " + rat.WalkMs);
             parser.Parse(new ByteWriter().U8(0x6C).U16(0xFFFF).U32(Rat).ToArray());
             check(world.Get(Start.Offset(3, 1)).Things.Count == 1, "creature: removed from its tile");
+            check(rat.Position.X == 0 && world.Creatures.ContainsKey(Rat), "creature: a removed creature is off the map (no ghost at its last tile for the renderers and the battle list), the table keeps it for the known-creature ids (O433 phase 26)");
 
             // items, pings, extended opcodes, texts, unknown opcodes
             bool pinged = false;
