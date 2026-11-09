@@ -91,6 +91,7 @@ namespace Chaos.Core.Tests
             Phase9DTests.Run,
             Phase15BTests.Run,
             Phase10FTests.Run,
+            LiveSmokeTests.Run,
             FakeModulesTests.Run,
             Phase12HTests.Run,
             FakeModulesP13Tests.Run,

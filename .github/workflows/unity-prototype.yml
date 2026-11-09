@@ -339,6 +339,116 @@ jobs:
           grep "chaos front art" "$out/player.log" || true
           # the walking video fails the step (the artifact below is uploaded all the same, with the video and the log)
           if [ "$rc_walk" -ne 0 ]; then exit 1; fi
+      # The player on a REAL server (unity/README.md "Player on a live server (CI)", O433): the same Linux player, flag -chaosLiveSmoke, logs in through its own login
+      # screen path to a server built in this job by tools/ci/unity_live_check.sh --serve-only (the base server and map of windows-assets, install_all.py of this
+      # commit, a private MariaDB, the tfs engine of the newest winpkg release, fresh accounts with random passwords, the guard in enforce mode with a key made here),
+      # walks, opens the main windows, logs out and writes live_smoke.json and the sheets. Extended identity first, then Chaos. A REPORT, not a gate, like the window
+      # smoke run: the step is continue-on-error and shows red when a run fails (login, entering, the walk, a closed session or an exception), the job goes on. It
+      # becomes a gate (continue-on-error: false) after two green runs in a row on main. Only live_smoke.json, the png files, a scrubbed log of the player's own
+      # "chaos live smoke" lines and a summary go into the hd2d-shots artifact: no password, no key, no server log, no player log.
+      - name: Check out the assets for the live server
+        if: steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets-live
+          sparse-checkout: |
+            server
+            world
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+      - name: "Player on a live server: Extended and Chaos identity (report)"
+        id: livesmoke
+        if: steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          out="$PWD/hd2d-shots"
+          work="$RUNNER_TEMP/ul-live"
+          mkdir -p "$out" "$work"
+          if [ ! -f assets-live/server/base-server.tar.xz ]; then echo "::warning::live smoke: no server/base-server.tar.xz in windows-assets (the checkout above failed or the branch has no server): skipped"; exit 1; fi
+          exe=$(find build/StandaloneLinux64 -name ChaosUnity.x86_64 -type f | head -n 1)
+          if [ -z "$exe" ] || [ ! -e "$exe" ]; then echo "::warning::live smoke: no player under build/StandaloneLinux64"; exit 1; fi
+          sudo chmod -R a+rX build
+          sudo chmod a+x "$exe"
+          # the tools of unity-live-check.yml (private MariaDB, numpy and luajit for the content install) and the player's (a virtual display, Mesa)
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mariadb-server mariadb-client python3-numpy luajit xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa
+          sudo systemctl stop mariadb || true
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd 2>/dev/null || true
+          # the sprite pair: the one the screenshots step opened, else from the assets of that step
+          pair=""
+          if [ -f pair/Tibia.dat ]; then pair="$PWD/pair"
+          elif ls assets/things/things-1098.tar.xz.part* >/dev/null 2>&1; then
+            mkdir -p pair && cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C pair && [ -f pair/Tibia.dat ] && pair="$PWD/pair"
+          fi
+          if [ -z "$pair" ]; then echo "::warning::live smoke: no sprite pair (the screenshots step has none either): the player cannot load the item and creature art"; exit 1; fi
+          # the server up, detached; it is stopped below and by the trap, whatever happens in between
+          trap 'UL_WORK="$work" bash "$GITHUB_WORKSPACE/tools/ci/unity_live_check.sh" --stop >/dev/null 2>&1 || true' EXIT
+          rc_serve=0
+          UL_ASSETS="$PWD/assets-live" UL_WORK="$work" bash tools/ci/unity_live_check.sh --serve-only || rc_serve=$?
+          if [ "$rc_serve" -ne 0 ]; then echo "::error::live smoke: the server did not come up (exit $rc_serve); the lines above say where"; exit 1; fi
+          fails=0
+          for id in extended chaos; do
+            live="$out/live-$id"
+            mkdir -p "$live"
+            (
+              # the account, the password and the keys of this run: from the env file of mode 600, never printed, masked in the log all the same
+              set -a; . "$work/client-$id.env"; set +a
+              echo "::add-mask::$CHAOS_LIVE_PASSWORD"
+              echo "::add-mask::$CHAOS_CLIENT_KEY"
+              export CHAOS_PAIR_DIR="$pair"
+              set +e
+              LIBGL_ALWAYS_SOFTWARE=1 timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" "$exe" \
+                -force-glcore -screen-width 1280 -screen-height 720 -screen-fullscreen 0 \
+                -logFile "$work/player_live_$id.log" -chaosLiveSmoke "$live"
+              rc=$?
+              echo "live smoke ($id) exit code: $rc"
+              # the player's own lines only, with the run's secrets cut out (all random hex or letters: safe in sed)
+              grep "chaos live smoke" "$work/player_live_$id.log" 2>/dev/null \
+                | sed -e "s/$CHAOS_LIVE_PASSWORD/<removed>/g" -e "s/$CHAOS_CLIENT_KEY/<removed>/g" -e "s/$CHAOS_LIVE_ACCOUNT/<removed>/g" > "$live/live_smoke.log" || true
+              cat "$live/live_smoke.log"
+              exit "$rc"
+            ) || { echo "::warning::live smoke ($id): the player exited with a failure; live_smoke.json and the log lines say which"; fails=$((fails + 1)); }
+            if [ ! -s "$live/live_smoke.json" ]; then echo "::warning::live smoke ($id): no live_smoke.json; the tail of the player log follows (secrets cut)"; tail -n 30 "$work/player_live_$id.log" 2>/dev/null | grep -v -i -E "password|account|key" || true; fi
+          done
+          UL_WORK="$work" bash tools/ci/unity_live_check.sh --stop || true
+          trap - EXIT
+          # the summary: a table per identity, then what failed and what only warned (a window without an extended answer)
+          python3 -I - "$out" "$out/live_smoke_summary.md" <<'PY' || fails=$((fails + 1))
+          import json, os, sys
+          out, md = sys.argv[1], sys.argv[2]
+          lines = ["## Player on a live server (O433)", "", "| identity | login | entry | walk (confirmed of sent) | tiles drawn | windows | with answer | no answer | exceptions | layout errors | result |", "|---|---|---|---|---|---|---|---|---|---|---|"]
+          notes, bad = [], False
+          for ident in ("extended", "chaos"):
+              path = os.path.join(out, "live-%s" % ident, "live_smoke.json")
+              if not os.path.isfile(path):
+                  lines.append("| %s | no report | | | | | | | | | FAIL |" % ident)
+                  bad = True
+                  continue
+              d = json.load(open(path))
+              s = d["summary"]
+              ok = d.get("pass", False)
+              bad = bad or not ok
+              lines.append("| %s | %s | %s | %d of %d | %d | %d | %d | %d | %d | %d | %s |" % (
+                  ident, "ok" if d["login"]["ok"] else "FAIL", "ok" if d["enter"]["ok"] else "FAIL", d["walk"]["confirmed"], d["walk"]["sent"],
+                  d["map"]["tilesDrawn"], s["windows"], s["answered"], s["noAnswer"], s["exceptions"], s["layoutErrors"], "pass" if ok else "FAIL"))
+              for f in d.get("failures", []):
+                  notes.append("- **%s** failed: %s" % (ident, f))
+              for w in d.get("warnings", []):
+                  notes.append("- %s: %s" % (ident, w))
+          lines += [""] + (notes if notes else ["No failure and no warning."])
+          lines += ["", "A window without an extended answer is a warning, not a failure. Native windows (equipment, containers, battle list, minimap ...) are not expected to get one. The json and the sheets are in the hd2d-shots artifact (live-extended, live-chaos)."]
+          text = "\n".join(lines) + "\n"
+          open(md, "w").write(text)
+          print(text)
+          if os.environ.get("GITHUB_STEP_SUMMARY"):
+              open(os.environ["GITHUB_STEP_SUMMARY"], "a").write(text)
+          sys.exit(1 if bad else 0)
+          PY
+          if [ "$fails" -ne 0 ]; then echo "::error::live smoke: $fails of the runs or checks failed (a report: the job goes on). See the table above and live-extended / live-chaos in the hd2d-shots artifact."; exit 1; fi
       - uses: actions/upload-artifact@v4
         if: always() && steps.lic.outputs.ok == '1' && inputs.target == 'StandaloneLinux64'
         with:

@@ -17,6 +17,7 @@ Full audit and the byte layout: `unity/README.md` "Both clients".
 - Markers `u16 0` (identity Extended, the default): plain 10.98 wire. No feature list, plain outfits, one 0x64 map, no item attributes, no compression.
 - Markers of the main client (identity Chaos, `CHAOS_UNITY_IDENTITY=chaos`): feature list 0x43, outfits with wings, aura and shader, 0x4B floors, item attributes (feature 126), 16-bit spell ids (feature 152).
   Parsed and tested on a fake server. Run against a live local server on 2026-11-08 (`unity/README.md` "Live check (O433)"): feature list, 0x4B floors and deflated packets read with no error.
+  The Unity player (not only Core) plays on a live server in CI since 2026-11-09: flag `-chaosLiveSmoke` in the build job of `unity-prototype.yml`, Extended then Chaos, through the app's own login path (`unity/README.md` "Player on a live server (CI)"). A report until it has run green on a runner.
   The server may deflate packets for this identity (config `packetCompression`, src-patch 0069): `Core/Inflate.cs` inflates them, with the size cap of base patch 0131.
   The aware range of 0x42 (default 17 x 13, up to 29 x 21) is read by every map message. Wire audit: `unity/README.md` "Wire audit".
 - Client version word `0x4343 << 16 | build`, the guard handshake on 189 and the hello on 190 are done. The real guard key is never embedded by default.
