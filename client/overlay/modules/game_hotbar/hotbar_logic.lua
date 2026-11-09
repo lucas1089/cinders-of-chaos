@@ -365,4 +365,38 @@ function L.orbDiameter(scale)
   return round(L.ORB_BASE * (L.clampScale(scale) / 100))
 end
 
+-- ------------------------------------------------------------------ finding the base bar (Death and re-login, 2026-11-09)
+L.BAR_ID = 'actionbar.1'   -- the id game_actionbar gives its first bottom bar (createActionBars)
+L.MIN_BAR_SLOTS = 6
+L.ADOPT_FAST_TRIES = 70    -- 300 ms apart (21 s), then every ADOPT_SLOW_MS for as long as the layout is on
+L.ADOPT_FAST_MS = 300
+L.ADOPT_SLOW_MS = 2000
+
+-- candidates: the children of gameBottomActionPanel as { id, slots, shown } where `shown` is the bar's OWN visible flag
+-- (isExplicitlyVisible), never the effective one: the panel is hidden while the hotbar runs and a bar given back to it
+-- reads invisible, so the second login of a client never found its bar. Returns the index to adopt: the bar with the
+-- base id when it is shown and has slots, else the first shown bar with enough slots, else nil.
+function L.pickBar(candidates)
+  local first
+  for i, e in ipairs(candidates or {}) do
+    if e.shown and (tonumber(e.slots) or 0) >= L.MIN_BAR_SLOTS then
+      if e.id == L.BAR_ID then return i end
+      first = first or i
+    end
+  end
+  return first
+end
+
+-- ms before adopt try number `tries` (0 is the first): quick at first, slow forever after (the bars of a login that
+-- is slow to build must still be found; the old rule gave up after 21 s and left the frame half built)
+function L.adoptDelay(tries)
+  if (tonumber(tries) or 0) < L.ADOPT_FAST_TRIES then return L.ADOPT_FAST_MS end
+  return L.ADOPT_SLOW_MS
+end
+
+-- whether the adopted bar was lost: destroyed, or no longer inside the hotbar's frame (the base took it back)
+function L.barLost(barAlive, barParent, frame)
+  return not barAlive or barParent ~= frame
+end
+
 return HotbarLogic

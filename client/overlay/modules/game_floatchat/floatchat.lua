@@ -369,6 +369,8 @@ local function poll()
     dispatch(typing and 'typing_on' or 'typing_off')
   end
   updateBadges()
+  -- the base console panel was destroyed and rebuilt, or taken back into its own panel: take it again
+  if alive(content) and (not alive(consolePanel) or consolePanel:getParent() ~= content) then pcall(takeConsole) end
   fitTabRow()
   pollEvent = scheduleEvent(poll, POLL_MS)
 end
@@ -451,14 +453,41 @@ local function onGeometry()
   if active and not drag then place() end
 end
 
+-- Direct game hooks, besides the layout mode's notice (see game_hotbar): a game end always ends the window, and a few
+-- moments after a start it is switched on if the layout mode says action and nothing did.
+local ensureEvents = {}
+local function cancelEnsure()
+  for _, e in ipairs(ensureEvents) do removeEvent(e) end
+  ensureEvents = {}
+end
+
+local function onGameEnd()
+  cancelEnsure()
+  disable()
+end
+
+local function onGameStart()
+  cancelEnsure()
+  for _, ms in ipairs({ 700, 2000, 5000 }) do
+    ensureEvents[#ensureEvents + 1] = scheduleEvent(function()
+      if not active and g_game.isOnline() and ChaosLayoutMode and ChaosLayoutMode.isAction and ChaosLayoutMode.isAction() then
+        enable()
+      end
+    end, ms)
+  end
+end
+
 function M.init()
   if g_app.isMobile() then return end
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   if ChaosLayoutMode and ChaosLayoutMode.subscribe then ChaosLayoutMode.subscribe(onMode) end
   local r = root()
   if r then connect(r, { onGeometryChange = onGeometry }) end
 end
 
 function M.terminate()
+  pcall(disconnect, g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  cancelEnsure()
   if ChaosLayoutMode and ChaosLayoutMode.unsubscribe then ChaosLayoutMode.unsubscribe(onMode) end
   local r = root()
   if r then pcall(disconnect, r, { onGeometryChange = onGeometry }) end

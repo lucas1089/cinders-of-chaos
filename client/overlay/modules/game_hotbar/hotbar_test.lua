@@ -279,5 +279,22 @@ do
   eq(find(sets.Knight.chatOff, act(1)).keysequence, 'F1', 'F1 still F1')
 end
 
+-- finding the base bar after a death or any relog (Death and re-login, 2026-11-09): the bar's own visible flag counts
+do
+  local function c(id, slots, shown) return { id = id, slots = slots, shown = shown } end
+  eq(L.pickBar({ c('actionbar.1', 50, true), c('actionbar.2', 50, true) }), 1, 'the base id wins')
+  eq(L.pickBar({ c('actionbar.2', 50, true), c('actionbar.3', 50, true), c('actionbar.1', 50, true) }), 3, 'the base id wins, whatever its place')
+  eq(L.pickBar({ c('actionbar.1', 50, false), c('actionbar.2', 50, true) }), 2, 'a bar the player hid is not taken')
+  eq(L.pickBar({ c('actionbar.1', 4, true), c('actionbar.2', 50, true) }), 2, 'too few slots')
+  eq(L.pickBar({ c('actionbar.1', 50, false) }), nil, 'nothing shown: none')
+  eq(L.pickBar({ c('other', 50, true), c('x', 50, true) }), 1, 'no base id: the first shown')
+  eq(L.pickBar({}), nil, 'no children'); eq(L.pickBar(nil), nil, 'no list')
+  eq(L.adoptDelay(0), 300, 'fast first'); eq(L.adoptDelay(69), 300, 'fast until the 70th')
+  eq(L.adoptDelay(70), 2000, 'then slow'); eq(L.adoptDelay(5000), 2000, 'slow for ever')
+  local f = {}
+  eq(L.barLost(true, f, f), false, 'bar in the frame'); eq(L.barLost(false, nil, f), true, 'bar destroyed')
+  eq(L.barLost(true, {}, f), true, 'bar taken back by the base'); eq(L.barLost(false, f, f), true, 'dead bar')
+end
+
 if fails == 0 then print('hotbar_test: ok') end
 os.exit(fails == 0 and 0 or 1)
