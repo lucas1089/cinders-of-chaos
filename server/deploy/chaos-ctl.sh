@@ -21,7 +21,8 @@
 #   vocations                   id=class name, one per line
 #   metrics [--json]            anonymous progress counters (server/README.md "Progress metrics (O253)"), read-only: churn by level
 #                               band, the 10 areas and monsters with the most deaths, first session length, median time to
-#                               level 10 / 25 / 50 / 100 / 200. Reads the aggregate table chaos_progress_metrics (no names,
+#                               level 10 / 25 / 50 / 100 / 200, and (O437) the return rates per creation day: back on day 1,
+#                               days 2-7, days 8-30, any of 1-7 / 1-30. Reads the aggregate table chaos_progress_metrics (no names,
 #                               accounts or IPs) through server/tools/progress_metrics.py; text, or one JSON line with --json
 #                               ({"ok": false, "error": "no-table" | "database"} and exit 1 when it cannot be read)
 #   newplayer-funnel [--days N] [--json] [--pt]
@@ -162,6 +163,24 @@
 #   cleanup [--yes]             lists (or with --yes removes) leftovers: old work folders of updates and publishes in
 #                               CHAOS_WORK_DIR (a day old), srvNN folders there, engine backups tfs.antes-* beyond the
 #                               newest 2, config.lua.before-* beyond the newest 5
+#   timezone                    the machine's clock zone against the one the game needs (O439, server/README.md "Timezone guard
+#                               (O439)"): key=value lines zone, local_time, utc_offset, expected_zone, expected_offset,
+#                               result=OK|WRONG and detail; exit 1 when WRONG. The game reads LOCAL time (Founder Pack, Season 1,
+#                               creator launch bonus, weekend ritual, 06:00 save): America/Sao_Paulo (UTC-3), or CHAOS_TIMEZONE of
+#                               the env file. The zone is read three ways (timedatectl, /etc/timezone, the /etc/localtime link)
+#                               and the UTC offset now must match too (server/tools/chaos_timezone.py)
+#   timezone set                timedatectl set-timezone to the expected zone (root), then the same lines, restart_needed=yes and
+#                               a note: the running game server keeps the old zone until it restarts. Never restarts by itself
+#   launch-check [--json] [--max-players N] [--launch "YYYY-MM-DD HH:MM"]
+#                               the launch list against the INSTALLED server (O440, server/README.md "Launch check (O440)"),
+#                               read-only: one line per check, OK, WARN or FAIL, a name and one sentence, then a summary line;
+#                               exit 1 when any is FAIL. beta_config and beta_mode switches off, no beta coins cron, payments
+#                               (no mock, a live provider), no zz_* / ztest* file, timezone, maxPlayers (--max-players N makes a
+#                               different value FAIL), the dates of Season 1, the PvP season, the Founder Pack and the creator
+#                               bonus against the launch (--launch moves it), client guard key and mode (presence only, the key
+#                               is never printed), the launch patch notes, counts of players / accounts / coins in the database,
+#                               the newest backup, the checkout. --json: one JSON line. Changes nothing
+#                               (server/deploy/launch_check.py)
 #   gm-logs [N] [PLAYER]        staff logs: "@staff" (names with a log), "@files" (SERVER/data/logs), "@commands PLAYER"
 #                               (the newest N lines of the base server's "<PLAYER> commands.log", newest first) and
 #                               "@panel" (the newest N rows of the admin panel's audit table chaos_admin_log, all staff
@@ -2514,6 +2533,84 @@ PY
     done
     if [ "$yes" = 1 ]; then echo "freed $((total / 1048576)) MB"
     else echo "total $((total / 1048576)) MB (cleanup --yes removes them)"; fi
+    ;;
+  timezone)
+    # O439: the machine's clock zone against the one the game needs. The decision is server/tools/chaos_timezone.py (the same
+    # as the health check "timezone" and launch-check); only `set` changes anything, and it never restarts the game.
+    tzpy="$REPO/server/tools/chaos_timezone.py"
+    [ -r "$tzpy" ] || die "no $tzpy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    case ${1:-} in
+      '')
+        [ $# -eq 0 ] || die "timezone [set]"
+        python3 -I "$tzpy" status --env-file "$ENVFILE"
+        exit $?
+        ;;
+      set)
+        [ $# -eq 1 ] || die "timezone [set]"
+        command -v timedatectl >/dev/null 2>&1 || die "timedatectl-not-found: this machine has no timedatectl (set the zone by hand: ln -sf /usr/share/zoneinfo/ZONE /etc/localtime)"
+        tzwant=$(python3 -I "$tzpy" expected --env-file "$ENVFILE") || die "cannot read the expected zone"
+        [[ $tzwant =~ ^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+){0,2}$ ]] || die "bad zone name"
+        timedatectl set-timezone "$tzwant" || die "timedatectl set-timezone $tzwant failed"
+        echo "timezone_set=$tzwant"
+        tzrc=0
+        python3 -I "$tzpy" status --env-file "$ENVFILE" || tzrc=$?
+        echo "restart_needed=yes"
+        echo "note=the running game server keeps the old zone until it restarts: restart it now (chaos-ctl.sh restart, admin app Painel > Servidor). Nothing was restarted."
+        exit "$tzrc"
+        ;;
+      *) die "timezone [set]" ;;
+    esac
+    ;;
+  launch-check)
+    # read-only (O440): launch_check.py reads the installed server, the env file, the backup folder and the checkout. The counts
+    # of the database and the payments status need root, so they come from here, on its stdin. Arguments are checked here and
+    # never reach the SQL or the shell as text.
+    lcargs=()
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --json) lcargs+=(--json) ;;
+        --max-players) shift; { num "${1:-}" && [ "${#1}" -le 5 ] && [ "$((10#$1))" -ge 1 ]; } || die "launch-check --max-players N"
+          lcargs+=(--max-players "$((10#$1))") ;;
+        --launch) shift; [[ ${1:-} =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}$ ]] || die "launch-check --launch \"YYYY-MM-DD HH:MM\""
+          lcargs+=(--launch "$1") ;;
+        *) die "launch-check [--json] [--max-players N] [--launch \"YYYY-MM-DD HH:MM\"]" ;;
+      esac
+      shift
+    done
+    lpy="$REPO/server/deploy/launch_check.py"
+    [ -r "$lpy" ] || die "no $lpy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    # shellcheck disable=SC2031 # read in this subshell on purpose (the env file's value)
+    lbdir=${BACKUPDIR:-$( . "$ENVFILE" 2>/dev/null; echo "${CHAOS_BACKUP_DIR:-/var/backups/chaos}" )}
+    launch_facts() {
+      local spec name sql v rc
+      # one query per count: a table that is missing fails only its own line
+      for spec in "players|SELECT COUNT(*) FROM players" "accounts|SELECT COUNT(*) FROM accounts" \
+        "accounts_with_coins|SELECT COUNT(*) FROM chaos_shop_coins WHERE coins > 0" \
+        "players_online|SELECT COUNT(*) FROM players_online" "beta_testers|SELECT COUNT(*) FROM chaos_beta_testers"; do
+        name=${spec%%|*}
+        sql=${spec#*|}
+        rc=0
+        v=$(mysql_q "$sql" 2>&1) || rc=$?
+        if [ "$rc" -eq 0 ] && [[ $v =~ ^[0-9]{1,12}$ ]]; then
+          printf 'db\t%s\t%s\n' "$name" "$v"
+        else
+          case $v in
+            *"doesn't exist"*) printf 'db\t%s\tERR:no-table\n' "$name" ;;
+            *) printf 'db\t%s\tERR:database\n' "$name" ;;
+          esac
+        fi
+      done
+      # the payments decision is pay-status's own: provider names, the mock flag and the kind of Mercado Pago token, never a value
+      CHAOS_CTL_NO_SUDO=1 "$SELF" pay-status 2>/dev/null | sed -n -E 's/^(pix_provider|paypal_provider|mock|mp_token)=(.*)$/pay\t\1\t\2/p'
+      return 0
+    }
+    lfacts=$(launch_facts)
+    lrc=0
+    printf '%s\n' "$lfacts" | python3 -I "$lpy" --server "$SERVER" --env-file "$ENVFILE" --backup-dir "$lbdir" --repo "$REPO" \
+      --cron-file "$(setting CHAOS_BETA_CRON /etc/cron.d/chaos-beta-coins)" ${lcargs[@]+"${lcargs[@]}"} || lrc=$?
+    exit "$lrc"
     ;;
   gm-logs)
     # staff logs: the base server's command logs (data/logs/<name> commands.log) and the admin panel's audit table

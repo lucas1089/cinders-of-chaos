@@ -7,6 +7,8 @@
 --              on `players` at startup and daily; nothing is stored per player)
 -- O258 funnel ("Funnel metrics (O258)" in server/README.md): return (d1 / d3 / d7 per first-login day), first use of a
 --   system (ChaosMetrics.firstUse, called by wrapped success paths), where the gone characters stood (area and band).
+-- O437 retention ("Retention by creation day (O437)" in server/README.md): per first-login day, the characters that logged
+--   in again on day 1, days 2 - 7, days 8 - 30 (and at least once in days 1 - 7 / 1 - 30), one count per character and window.
 -- Counters live in memory and are added to chaos_progress_metrics every flushSeconds and at shutdown. A tester bot
 -- (Chaos.isTester) and a staff character (group id above cfg.maxGroupId) are never counted. No name, account id, IP
 -- or chat is read into a counter or stored.
@@ -18,7 +20,8 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
-if not ChaosMetrics or not ChaosMetrics.areaFor or not ChaosMetrics.returnCheck or not ChaosMetrics.systemIndex then
+if not ChaosMetrics or not ChaosMetrics.areaFor or not ChaosMetrics.returnCheck or not ChaosMetrics.systemIndex
+	or not ChaosMetrics.retainCheck then
 	dofile("data/scripts/chaos/metrics_core.lua")
 end
 if not (ChaosWrapChain and ChaosWrapChain.wrap) then
@@ -161,6 +164,7 @@ function X.onLogin(player)
 	local hunt = player:getStorageValue(cfg.huntStorage)
 	X.sessions[player:getId()] = {at = os.time(), first = first, guid = player:getGuid(), hunt = hunt > 0 and hunt or nil}
 	try("return", X.countReturn, player, first)
+	try("retain", X.countRetain, player)
 	-- already in a guild at login: not a first use (a join during the session is found by memberCheck)
 	if player:getGuild() then
 		local fm = player:getStorageValue(cfg.firstStorage)
@@ -202,6 +206,27 @@ function X.countReturn(player, first)
 	player:setStorageValue(cfg.returnStorage, new)
 	for _, d in ipairs(due) do
 		X.add(X.state, "return", d, X.dayString(cohort), 1, cfg)
+	end
+end
+
+-- O437: a login k days after the first one counts each retention window that holds k and is not counted yet. The cohort
+-- day is the one of the return storage; the windows counted are the bits of cfg.retainStorage (a game flag of the
+-- character, like the other metrics storages; no row holds it).
+function X.countRetain(player)
+	local stored = player:getStorageValue(cfg.returnStorage)
+	if not stored or stored <= 0 then
+		return
+	end
+	local flags = player:getStorageValue(cfg.retainStorage)
+	flags = (flags and flags > 0) and flags or 0
+	local due, new = X.retainCheck(math.floor(stored / 8), flags, X.today(), cfg)
+	if #due == 0 then
+		return
+	end
+	player:setStorageValue(cfg.retainStorage, new)
+	local cohort = X.dayString(math.floor(stored / 8))
+	for _, key in ipairs(due) do
+		X.add(X.state, "retain", key, cohort, 1, cfg)
 	end
 end
 
@@ -468,7 +493,14 @@ logout:register()
 -- ---------------------------------------------------------------- global events
 local startup = GlobalEvent("ChaosMetricsStartup")
 function startup.onStartup()
-	ensureTable()
+	if ensureTable() then
+		-- O437: the first start with the retention counters keeps its day (INSERT IGNORE); the report gives no percent to
+		-- a cohort day before it
+		local since = X.retainSinceSql(T, X.today(), cfg.retainSinceKey)
+		if since then
+			db.asyncQuery(since)
+		end
+	end
 	try("spots", X.loadSpots)
 	try("hooks", X.installHooks)
 	X.startedAt = os.time()

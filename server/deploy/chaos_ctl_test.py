@@ -57,6 +57,16 @@ status parses state, jobs, failed step, release and newer-than-installed; the cl
 number only while the client program is unchanged since the live client's commit, a new number with a note, the pending
 number becoming the baseline once live); API errors.
 
+Timezone guard (timezone, timezone set, O439): a fake timedatectl and TZ as the process zone; UTC is WRONG with exit 1 and the
+zone, offset, expected zone and fix; the right name with the wrong offset (and the reverse) is WRONG; set calls timedatectl
+set-timezone with the expected zone (CHAOS_TIMEZONE of the env file, a bad value ignored), prints the result and the restart
+note, never restarts; refusals set nothing.
+
+Launch check (launch-check, O440): the wiring of server/deploy/launch_check.py with a stub mysql and a stub for the checkout
+tool: five count queries (only SELECT COUNT), the payments facts of pay-status, the flags --json / --max-players / --launch,
+exit 1 on a FAIL, a table or the database missing fails its own line and nothing crashes, no key, password or token in any
+output, nothing changed on disk, arguments refused before anything runs.
+
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import json
@@ -666,6 +676,8 @@ def main():
     test_pay()
     test_engine_build()
     test_server_user()
+    test_timezone()
+    test_launch_check()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
 
@@ -1236,6 +1248,10 @@ METRICS_ROWS = [
     ('death_monster', 'Dragon', '11-15', 9), ('death_monster', 'Rat', '1-5', 40),
     ('session1', '5', '', 6), ('session1', '10', '', 2), ('session1', '30', '', 2), ('session1', 'inf', '', 1),
     ('ttl', '10', '10', 10), ('ttl', '10', '20', 10), ('ttl', '25', '60', 4),
+    # O437 retention: one old cohort day (20089 = 2025-01-01, the day the counters began) so every window is over
+    ('meta', 'retain_since', '', 20089), ('cohort', '20250101', '', 20), ('retain', 'd1', '20250101', 8),
+    ('retain', 'd2_7', '20250101', 5), ('retain', 'd8_30', '20250101', 6), ('retain', 'in7', '20250101', 10),
+    ('retain', 'in30', '20250101', 12),
 ]
 
 
@@ -1686,9 +1702,18 @@ def test_metrics():
         check(d.get('milestones', [{}])[0].get('medianMinutes') == 10.0 and d['milestones'][0]['characters'] == 20,
               'metrics: median time to level 10: ' + str(d.get('milestones')))
         check(d.get('firstSessionCharacters') == 11, 'metrics: first sessions')
+        rt = d.get('retention', [{}])
+        check(len(rt) == 1 and rt[0].get('day') == '2025-01-01' and rt[0].get('cohort') == 20 and rt[0].get('d1Pct') == 40.0
+              and rt[0].get('in7Pct') == 50.0 and rt[0].get('in30Pct') == 60.0 and rt[0].get('d8_30Pct') == 30.0,
+              'metrics: retention by creation day: ' + str(rt))
+        check(d.get('retentionSince') == '2025-01-01' and [e['window'] for e in d.get('retentionAll', [])]
+              == ['d1', 'd2_7', 'd8_30', 'in7', 'in30'] and d['retentionAll'][0]['pct'] == 40.0,
+              'metrics: retention totals: ' + str(d.get('retentionAll')))
         r = run('metrics')
         check(r.returncode == 0 and 'Churn (gone = no login for 14 days; 36 gone, 28 active)' in r.stdout
               and 'Ember Caves' in r.stdout and 'level 10: 10 min' in r.stdout, 'metrics: text: ' + r.stdout + r.stderr)
+        check('Retention by creation day' in r.stdout and '2025-01-01: 20 new, day 1 8 (40.0%)' in r.stdout,
+              'metrics: text has the retention section: ' + r.stdout)
         r = run('metrics', '--json', extra={'STUB_METRICS_FAIL': 'table'})
         check(r.returncode == 1 and json.loads(r.stdout) == {'ok': False, 'error': 'no-table'},
               'metrics: no table: ' + r.stdout + r.stderr)
@@ -3102,6 +3127,333 @@ def test_server_user():
         r = run('server-user', 'fix', e=dict(renv, CHAOS_ROOT='/srv/other'))
         check(r.returncode != 0 and 'layout-unsupported' in r.stderr, 'repo layout: another root folder is refused: ' + r.stderr)
 
+
+
+TZ_TIMEDATECTL = '''#!/usr/bin/env bash
+echo "timedatectl $*" >> "$STUB/calls"
+case "$*" in
+  "show -p Timezone --value") cat "$STUB/tz" 2>/dev/null ;;
+  "set-timezone "*) printf '%s\\n' "$2" > "$STUB/tz" ;;
+  status) echo "                Time zone: $(cat "$STUB/tz" 2>/dev/null) (XXX, +0000)" ;;
+esac
+'''
+
+
+def test_timezone():
+    """chaos-ctl.sh timezone [set] (O439): the decision of server/tools/chaos_timezone.py with a fake timedatectl; TZ is
+    the process zone the offset comes from (BRT3 = UTC-3, UTC0 = UTC); nothing here touches the real zone."""
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(repo_root, 'server', 'tools', 'chaos_timezone.py'), os.path.join(repo, 'server', 'tools'))
+        for name, body in (('systemctl', SYSTEMCTL), ('timedatectl', TZ_TIMEDATECTL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\n')
+        none = os.path.join(tmp, 'none')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=env_file, CHAOS_REPO=repo,
+                   CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'),
+                   CHAOS_LOG=os.path.join(tmp, 'no.log'), CHAOS_TZ_ETC_TIMEZONE=none, CHAOS_TZ_LOCALTIME=none, TZ='UTC0')
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_TIMEZONE'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def setzone(name):
+            with open(os.path.join(stub, 'tz'), 'w') as f:
+                f.write(name + '\n')
+
+        def kv(r):
+            return dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l)
+
+        # a machine left in UTC: WRONG, exit 1, the zone, the offset, the expected zone and the fix
+        setzone('Etc/UTC')
+        r = run('timezone')
+        d = kv(r)
+        check(r.returncode == 1 and d.get('result') == 'WRONG', 'timezone: UTC is WRONG with exit 1: ' + r.stdout + r.stderr)
+        check(d.get('zone') == 'Etc/UTC' and d.get('utc_offset') == '+00:00' and d.get('expected_zone') == 'America/Sao_Paulo'
+              and d.get('expected_offset') == '-03:00', 'timezone: zone, offset and expected zone: ' + r.stdout)
+        check(re.fullmatch(r'\d{4}-\d\d-\d\d \d\d:\d\d:\d\d', d.get('local_time', '')) is not None,
+              'timezone: the local time: ' + r.stdout)
+        check('chaos-ctl.sh timezone set' in d.get('detail', '') and 'restart' in d.get('detail', ''),
+              'timezone: the detail names the fix')
+        check('set-timezone' not in calls(), 'timezone: reading never sets anything')
+        # the right zone and offset
+        setzone('America/Sao_Paulo')
+        r = run('timezone', extra={'TZ': 'BRT3'})
+        d = kv(r)
+        check(r.returncode == 0 and d.get('result') == 'OK' and d.get('utc_offset') == '-03:00'
+              and d.get('zone') == 'America/Sao_Paulo', 'timezone: Sao Paulo is OK: ' + r.stdout + r.stderr)
+        # a stale name with the wrong offset, and the right offset under another name: both WRONG
+        check(run('timezone', extra={'TZ': 'UTC0'}).returncode == 1, 'timezone: the right name with the wrong offset is WRONG')
+        setzone('Etc/UTC')
+        check(run('timezone', extra={'TZ': 'BRT3'}).returncode == 1, 'timezone: the right offset under the wrong name is WRONG')
+        # /etc/timezone and the /etc/localtime link are read too
+        with open(os.path.join(tmp, 'etc-timezone'), 'w') as f:
+            f.write('America/Sao_Paulo\n')
+        setzone('')
+        r = run('timezone', extra={'TZ': 'BRT3', 'CHAOS_TZ_ETC_TIMEZONE': os.path.join(tmp, 'etc-timezone')})
+        check(r.returncode == 0 and kv(r).get('zone') == 'America/Sao_Paulo', 'timezone: /etc/timezone is read: ' + r.stdout)
+        link = os.path.join(tmp, 'localtime')
+        os.symlink('../usr/share/zoneinfo/America/Sao_Paulo', link)
+        r = run('timezone', extra={'TZ': 'BRT3', 'CHAOS_TZ_LOCALTIME': link})
+        check(r.returncode == 0 and kv(r).get('zone') == 'America/Sao_Paulo',
+              'timezone: the /etc/localtime link is read: ' + r.stdout)
+
+        # set: timedatectl set-timezone, the result, the restart note, never a restart
+        open(os.path.join(stub, 'calls'), 'w').close()
+        setzone('Etc/UTC')
+        r = run('timezone', 'set', extra={'TZ': 'BRT3'})
+        d = kv(r)
+        check(r.returncode == 0 and 'timedatectl set-timezone America/Sao_Paulo' in calls(),
+              'timezone set: sets the expected zone: ' + r.stdout + r.stderr + calls())
+        check(d.get('timezone_set') == 'America/Sao_Paulo' and d.get('result') == 'OK' and d.get('zone') == 'America/Sao_Paulo',
+              'timezone set: prints the result: ' + r.stdout)
+        check(d.get('restart_needed') == 'yes' and 'restart' in d.get('note', '') and 'Painel > Servidor' in d.get('note', '')
+              and 'Nothing was restarted' in d.get('note', ''), 'timezone set: says the game server must be restarted: ' + r.stdout)
+        check('restart' not in calls().replace('set-timezone', '') and 'kill' not in calls(),
+              'timezone set: never restarts by itself: ' + calls())
+        # still wrong after the set (here: the process zone is UTC): exit 1, but the set was done and the note is there
+        setzone('Etc/UTC')
+        r = run('timezone', 'set', extra={'TZ': 'UTC0'})
+        check(r.returncode == 1 and kv(r).get('result') == 'WRONG' and kv(r).get('restart_needed') == 'yes',
+              'timezone set: exit 1 when the zone is still wrong: ' + r.stdout)
+        # CHAOS_TIMEZONE of the env file is the expected zone
+        with open(env_file, 'a') as f:
+            f.write('CHAOS_TIMEZONE=Europe/Lisbon\n')
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('timezone', 'set', extra={'TZ': 'UTC0'})
+        check('timedatectl set-timezone Europe/Lisbon' in calls() and kv(r).get('expected_zone') == 'Europe/Lisbon',
+              'timezone set: CHAOS_TIMEZONE of the env file: ' + r.stdout + calls())
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_TIMEZONE="a b;id"\n')
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('timezone', 'set', extra={'TZ': 'UTC0'})
+        check('timedatectl set-timezone America/Sao_Paulo' in calls(),
+              'timezone set: a bad CHAOS_TIMEZONE is ignored: ' + calls())
+        # refusals set nothing
+        open(os.path.join(stub, 'calls'), 'w').close()
+        for bad in (('timezone', 'bogus'), ('timezone', 'set', 'x'), ('timezone', 'status'), ('timezone', '$(id)')):
+            check(run(*bad).returncode != 0, 'timezone refuses %r' % (bad,))
+        check('set-timezone' not in calls(), 'timezone: a refused call sets nothing')
+        os.unlink(os.path.join(repo, 'server', 'tools', 'chaos_timezone.py'))
+        r = run('timezone')
+        check(r.returncode != 0 and 'chaos_timezone.py' in r.stderr, 'timezone: a missing tool is named: ' + r.stderr)
+        h = run('help').stdout
+        check('timezone set' in h and 'launch-check' in h, 'help lists timezone and launch-check')
+
+
+LAUNCH_MYSQL = '''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+[ -z "${STUB_DB_FAIL:-}" ] || { echo "ERROR 2002 (HY000): Can't connect to local MySQL server" >&2; exit 1; }
+case "$*" in
+  *chaos_beta_testers*)
+    [ -z "${STUB_NO_BETA_TABLE:-}" ] || { echo "ERROR 1146 (42S02): Table 'chaos.chaos_beta_testers' doesn't exist" >&2; exit 1; }
+    echo "${STUB_BETA_TESTERS:-0}" ;;
+  *chaos_shop_coins*) echo "${STUB_COINS:-0}" ;;
+  *players_online*) echo "${STUB_ONLINE:-0}" ;;
+  *"FROM accounts"*) echo "${STUB_ACCOUNTS:-0}" ;;
+  *"FROM players"*) echo "${STUB_PLAYERS:-0}" ;;
+esac
+'''
+LAUNCH_GIT = '''#!/usr/bin/env bash
+echo "git $*" >> "$STUB/calls"
+shift 4
+case "$1 $2" in
+  "rev-parse --short") echo abc1234 ;;
+  "symbolic-ref --short") echo main ;;
+  "status --porcelain") [ -z "${STUB_GIT_DIRTY:-}" ] || echo " M x.lua" ;;
+  "rev-parse HEAD") echo abc1234deadbeef ;;
+  "describe --tags") echo winpkg-50 ;;
+esac
+'''
+
+
+def test_launch_check():
+    """chaos-ctl.sh launch-check [--json] [--max-players N] [--launch ...] (O440): the wiring of launch_check.py with a stub
+    mysql and git; the decisions are launch_check_test.py's. Made-up values only."""
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    fake_key = '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        server = os.path.join(tmp, 'server')
+        cfg = os.path.join(server, 'data', 'scripts', 'chaos')
+        bdir = os.path.join(tmp, 'backups')
+        for d in (stub, os.path.join(repo, 'server', 'tools'), os.path.join(repo, 'server', 'deploy'), cfg,
+                  os.path.join(server, 'data', 'patchnotes'), os.path.join(bdir, 'db')):
+            os.makedirs(d)
+        shutil.copy(os.path.join(repo_root, 'server', 'tools', 'chaos_timezone.py'), os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(HERE, 'launch_check.py'), os.path.join(repo, 'server', 'deploy'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', LAUNCH_MYSQL), ('git', LAUNCH_GIT),
+                           ('timedatectl', TZ_TIMEDATECTL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        with open(os.path.join(stub, 'tz'), 'w') as f:
+            f.write('America/Sao_Paulo\n')
+
+        def put(path, text):
+            with open(path, 'w') as f:
+                f.write(text)
+        put(os.path.join(cfg, 'beta_config.lua'), 'return {enabled = false}\n')
+        put(os.path.join(cfg, 'beta_mode_config.lua'), 'return {enabled = false}\n')
+        put(os.path.join(cfg, 'season_config.lua'),
+            'return {seasons = {{id = 1, start = 20261120, finish = 20270219, hour = 15}}}\n')
+        put(os.path.join(cfg, 'battleground_config.lua'),
+            'return {season = {weeks = 8, epoch = {year = 2026, month = 11, day = 20, hour = 15}}}\n')
+        put(os.path.join(cfg, 'founder_config.lua'), 'local START = "2026-11-20 15:00"\nlocal END = "2026-12-18 15:00"\n')
+        put(os.path.join(cfg, 'creator_codes_config.lua'),
+            'return {launchBonusStart = "2026-11-20 15:00", launchBonusDays = 30}\n')
+        put(os.path.join(server, 'config.lua'),
+            'maxPlayers = 400\nclientGuardMode = "enforce"\nclientGuardKey = os.getenv("CHAOS_CLIENT_KEY") or ""\n'
+            'clientGuardAllowDevKey = false\n')
+        for n in ('2026-11-20.md', '2026-11-20.pt-br.md'):
+            put(os.path.join(server, 'data', 'patchnotes', n), 'x\n')
+        dump = os.path.join(bdir, 'db', 'chaos-db-x-1.sql.gz')
+        put(dump, '')
+        env_file = os.path.join(tmp, 'chaos.env')
+        put(env_file, 'CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\nCHAOS_BACKUP_DIR=%s\nCHAOS_CLIENT_KEY=%s\n' % (bdir, fake_key))
+        penv = os.path.join(tmp, 'payments.env')
+        put(penv, 'CHAOS_PAY_PIX_PROVIDER=mercadopago\nCHAOS_PAY_PAYPAL_PROVIDER=off\nCHAOS_MP_ACCESS_TOKEN=APP_USR-1234567890\n')
+        none = os.path.join(tmp, 'none')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1', CHAOS_SERVER_DIR=server,
+                   CHAOS_ENV=env_file, CHAOS_REPO=repo, CHAOS_MYSQL='mysql', CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'), CHAOS_PAY_ENV=penv,
+                   CHAOS_BETA_CRON=os.path.join(tmp, 'chaos-beta-coins'), CHAOS_TZ_ETC_TIMEZONE=none,
+                   CHAOS_TZ_LOCALTIME=none, TZ='BRT3')
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'CHAOS_BACKUP_DIR',
+                  'CHAOS_TIMEZONE', 'STUB_DB_FAIL', 'STUB_NO_BETA_TABLE', 'STUB_GIT_DIRTY'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=120)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def st(r):
+            out = {}
+            for line in r.stdout.splitlines()[:-1]:
+                p = line.split()
+                if len(p) >= 2:
+                    out[p[1]] = p[0]
+            return out
+
+        def snapshot():
+            snap = {}
+            for base in (server, bdir, repo):
+                for root, _d, files in os.walk(base):
+                    for f in files:
+                        p = os.path.join(root, f)
+                        s = os.stat(p)
+                        snap[p] = (s.st_size, s.st_mtime_ns)
+            for p in (env_file, penv):
+                s = os.stat(p)
+                snap[p] = (s.st_size, s.st_mtime_ns)
+            return snap
+
+        before = snapshot()
+        r = run('launch-check', '--max-players', '400')
+        s = st(r)
+        check(r.returncode == 0 and len(s) == 16 and set(s.values()) == {'OK'},
+              'launch-check: a good installation, 16 OK, exit 0: ' + r.stdout + r.stderr)
+        check(r.stdout.splitlines()[-1] == 'launch check: 0 FAIL, 0 WARN, 16 OK', 'launch-check: the summary line: ' + r.stdout)
+        check(snapshot() == before, 'launch-check changes nothing on disk')
+        c = calls()
+        check('SELECT COUNT(*) FROM players' in c and 'FROM chaos_shop_coins WHERE coins > 0' in c
+              and 'FROM chaos_beta_testers' in c and 'FROM players_online' in c and 'FROM accounts' in c,
+              'launch-check: the five count queries: ' + c)
+        check('UPDATE' not in c and 'DELETE' not in c and 'INSERT' not in c,
+              'launch-check: only SELECT counts reach the database')
+        check(fake_key not in r.stdout + r.stderr + c and 'secret' not in c and 'APP_USR-1234567890' not in r.stdout + r.stderr,
+              'launch-check: no client key, database password or token anywhere')
+        r = run('launch-check')
+        check(r.returncode == 0 and st(r).get('max_players') == 'WARN' and 'owner decision: 300 or 400' in r.stdout,
+              'launch-check: maxPlayers is a WARN without the flag, exit 0: ' + r.stdout)
+        r = run('launch-check', '--max-players', '300')
+        check(r.returncode == 1 and st(r).get('max_players') == 'FAIL', 'launch-check --max-players 300 against 400: FAIL')
+        r = run('launch-check', '--json', '--max-players', '400')
+        try:
+            d = json.loads(r.stdout)
+        except ValueError:
+            d = {}
+            check(False, 'launch-check --json: valid JSON: ' + r.stdout)
+        check(r.returncode == 0 and r.stdout.count('\n') == 1 and d.get('ok') is True and d.get('okCount') == 16
+              and d.get('fail') == 0, 'launch-check --json: one line: ' + r.stdout)
+        r = run('launch-check', '--max-players', '400', '--launch', '2026-12-04 15:00')
+        s = st(r)
+        check(r.returncode == 1 and s.get('dates_season') == 'FAIL' and s.get('dates_founder') == 'FAIL'
+              and s.get('patch_notes') == 'WARN', 'launch-check --launch moves the expected date: ' + r.stdout)
+
+        # one thing wrong at a time
+        put(os.path.join(cfg, 'beta_config.lua'), 'return {enabled = true}\n')
+        r = run('launch-check', '--max-players', '400')
+        check(r.returncode == 1 and st(r).get('beta_config') == 'FAIL', 'launch-check: beta_config true: FAIL, exit 1')
+        put(os.path.join(cfg, 'beta_config.lua'), 'return {enabled = false}\n')
+        put(os.path.join(tmp, 'chaos-beta-coins'), '* * * * * root true\n')
+        r = run('launch-check', '--max-players', '400')
+        check(r.returncode == 1 and st(r).get('beta_cron') == 'FAIL', 'launch-check: the beta coins cron: FAIL')
+        os.unlink(os.path.join(tmp, 'chaos-beta-coins'))
+        put(penv, 'CHAOS_PAY_PIX_PROVIDER=mock\n')
+        r = run('launch-check', '--max-players', '400')
+        check(r.returncode == 1 and st(r).get('payments') == 'FAIL', 'launch-check: a mock provider: FAIL: ' + r.stdout)
+        put(penv, 'CHAOS_PAY_PIX_PROVIDER=off\n')
+        r = run('launch-check', '--max-players', '400')
+        check(r.returncode == 0 and st(r).get('payments') == 'WARN', 'launch-check: no live provider: WARN, exit 0')
+        os.unlink(penv)
+        r = run('launch-check', '--max-players', '400')
+        check(r.returncode == 0 and st(r).get('payments') == 'WARN', 'launch-check: no payments env: WARN (providers off)')
+        put(penv, 'CHAOS_PAY_PIX_PROVIDER=mercadopago\nCHAOS_MP_ACCESS_TOKEN=APP_USR-1234567890\n')
+        r = run('launch-check', '--max-players', '400', extra={'STUB_PLAYERS': '12', 'STUB_COINS': '3', 'STUB_ACCOUNTS': '9'})
+        check(r.returncode == 0 and st(r).get('database') == 'WARN' and 'players 12' in r.stdout
+              and 'accounts with coins 3' in r.stdout, 'launch-check: players before the wipe: WARN, counts only: ' + r.stdout)
+        r = run('launch-check', '--max-players', '400', extra={'STUB_NO_BETA_TABLE': '1'})
+        check(r.returncode == 1 and st(r).get('database') == 'FAIL' and 'beta_testers (no-table)' in r.stdout,
+              'launch-check: a missing table fails only that count: ' + r.stdout)
+        r = run('launch-check', '--max-players', '400', extra={'STUB_DB_FAIL': '1'})
+        check(r.returncode == 1 and st(r).get('database') == 'FAIL' and 'players (database)' in r.stdout and len(st(r)) == 16,
+              'launch-check: the database down: FAIL, no crash, every other check ran: ' + r.stdout)
+        r = run('launch-check', '--max-players', '400', extra={'STUB_GIT_DIRTY': '1'})
+        check(r.returncode == 0 and st(r).get('checkout') == 'WARN' and 'dirty' in r.stdout,
+              'launch-check: a dirty checkout: WARN')
+        r = run('launch-check', '--max-players', '400', extra={'TZ': 'UTC0'})
+        check(r.returncode == 1 and st(r).get('timezone') == 'FAIL' and 'chaos-ctl.sh timezone set' in r.stdout,
+              'launch-check: the timezone check is the Part A one: ' + r.stdout)
+        os.unlink(dump)
+        r = run('launch-check', '--max-players', '400')
+        check(r.returncode == 1 and st(r).get('backup') == 'FAIL', 'launch-check: no backup: FAIL')
+        put(dump, '')
+
+        # refusals: nothing reaches the shell or the SQL as text
+        n = len(calls())
+        for bad in (('launch-check', 'x'), ('launch-check', '--json;id'), ('launch-check', '--max-players', 'x'),
+                    ('launch-check', '--max-players', '0'), ('launch-check', '--max-players', '1234567'),
+                    ('launch-check', '--max-players'), ('launch-check', '--launch', 'soon'),
+                    ('launch-check', '--launch', '2026-11-20'), ('launch-check', '--launch', '2026-11-20 15:00; id'),
+                    ('launch-check', '$(id)'), ('launch-check', "' OR 1=1 --")):
+            check(run(*bad).returncode != 0, 'launch-check refuses %r' % (bad,))
+        check(len(calls()) == n, 'launch-check: a refused call never reaches the database')
+        os.unlink(os.path.join(repo, 'server', 'deploy', 'launch_check.py'))
+        r = run('launch-check')
+        check(r.returncode != 0 and 'launch_check.py' in r.stderr, 'launch-check: a missing tool is named: ' + r.stderr)
 
 
 if __name__ == '__main__':

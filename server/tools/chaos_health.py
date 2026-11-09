@@ -7,6 +7,9 @@ The timer runs it every 5 minutes. Each run checks:
   - the login port (7171) and the game port (7172) accept a TCP connection;
   - the status protocol answers (chaos_watchdog.fetch_status); the player count comes from its <players online=...>;
   - MariaDB answers SELECT 1 with the CHAOS_DB_* credentials (the mysql / mariadb client, password in a 0600 file);
+  - the machine's clock zone is America/Sao_Paulo (UTC-3), or CHAOS_TIMEZONE (O439, chaos_timezone.py): the game reads
+    local time for the Founder Pack, Season 1, the creator launch bonus and the 06:00 save. The zone is read three ways
+    (timedatectl, /etc/timezone, the /etc/localtime link) and the UTC offset now must match as well;
   - free disk on / and on CHAOS_BACKUP_DIR: at least --min-free-pct (10) % and --min-free-gb (5) GB;
   - the newest dump in CHAOS_BACKUP_DIR/db is younger than --backup-max-age (26) hours;
   - the last off-site copy (server/tools/backup_offsite.sh) is younger than 26 hours, only when CHAOS_BACKUP_REMOTE or
@@ -44,6 +47,7 @@ import time
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import chaos_timezone  # noqa: E402
 import chaos_watchdog  # noqa: E402
 
 DEFAULT_UNITS = ['chaos-server', 'mariadb|mysql', 'chaos-clientservices', 'chaos-payworker']
@@ -253,6 +257,10 @@ class System:
             return True, 'answers'
         return False, (r.stderr.strip() or 'exit %d' % r.returncode)[:200]
 
+    def timezone_info(self, now):
+        """The zone names the machine gives and its UTC offset in minutes now (chaos_timezone.py)."""
+        return {'names': chaos_timezone.read_zone_names(), 'offset': chaos_timezone.local_offset(now)}
+
     def disk(self, path):
         u = shutil.disk_usage(path)
         return u.free, u.total, os.stat(path).st_dev
@@ -347,6 +355,10 @@ def run_checks(sysm, opts, env, state, now):
 
     ok, detail = sysm.db_ping()
     res['database'] = ('ok' if ok else 'fail', detail)
+
+    zone = chaos_timezone.expected_zone(env)
+    res['timezone'] = chaos_timezone.health_result(sysm.timezone_info(now), zone,
+                                                   chaos_timezone.expected_offset(zone, now))
 
     seen = {}
     for path in ['/', opts.backup_dir]:

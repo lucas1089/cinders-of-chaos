@@ -570,6 +570,43 @@ impl App {
                 .collect();
             table(ui, "m_weeks", &["Semana", "Novos", "Dia 1", "Dia 3", "Dia 7"], rows);
         });
+        sub_block(ui, "Retenção por dia de criação", |ui| {
+            // newest day first; a percent only for a finished window on a day the counters covered (server/README.md O437)
+            ui.weak(format!(
+                "Cada personagem conta uma vez por janela. Dia 1 é o dia seguinte à criação. Contagem desde {}.",
+                if m.retain_since.is_empty() {
+                    "—"
+                } else {
+                    m.retain_since.as_str()
+                }
+            ));
+            let mut head = vec!["Dia", "Novos"];
+            head.extend(cards::RETAIN_LABELS);
+            let mut rows: Vec<Vec<String>> = Vec::new();
+            if !m.retain_totals.is_empty() {
+                // the total over every qualifying day: the share of each window ("—" when hidden)
+                let mut total = vec!["Total (janelas terminadas)".to_string(), String::new()];
+                for k in cards::RETAIN_KEYS {
+                    let pct = m.retain_totals.iter().find(|t| t.window == k).and_then(|t| t.pct);
+                    total.push(match pct {
+                        Some(_) => cards::pct(pct),
+                        None => "—".into(),
+                    });
+                }
+                rows.push(total);
+            }
+            for d in m.cohort_days.iter().rev() {
+                let mut r = vec![
+                    format!("{}{}", d.day, if d.covered { "" } else { " (parcial)" }),
+                    d.cohort.text(),
+                ];
+                for k in 0..cards::RETAIN_KEYS.len() {
+                    r.push(cards::back_text(d.back[k], d.pct[k]));
+                }
+                rows.push(r);
+            }
+            table(ui, "m_retention", &head, rows);
+        });
         sub_block(ui, "Primeiro uso de cada sistema", |ui| {
             let rows = m
                 .first_uses

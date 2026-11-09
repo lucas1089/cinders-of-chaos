@@ -286,7 +286,8 @@ Behind gateways (section "Gateways and DDoS") 7171, 7172 and 8090 are open to th
   `/goblin`, `/blessing`, `/season start|end`, `/seasonpass` and `/journey` need a god account (type 5). Every staff
   use of a guarded command goes to the admin audit log. Who may do what, and the rules for staff:
   [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12).
-- Start from a **fresh database**, or from the beta database after its wipe (docs/BETA.md "Wipe procedure"); never from
+- Start from a **fresh database**, or from the beta database after its wipe (docs/BETA.md "Wipe procedure",
+  `server/deploy/launch_wipe.py`, rehearsal in section 7); never from
   a test database: those have accounts with known passwords (`test`, `test2`, ...).
 
 ## 7. Backups
@@ -370,6 +371,24 @@ sudo mysql -e "SELECT COUNT(*) FROM chaos_drill.accounts; SELECT COUNT(*) FROM c
 sudo mysql -e "DROP DATABASE chaos_drill"
 ```
 Write down the date and how long it took; that time is the rollback time.
+
+### Wipe rehearsal (O438)
+
+The beta wipe (docs/BETA.md section 9, `server/deploy/launch_wipe.py`) runs once on a restored copy first, with the game
+running if need be: the tool skips the server check for a database other than `CHAOS_DB_NAME`. The dump has triggers
+whose definer is the database user of `chaos.env`, so that user needs the copy:
+```
+sudo mysql -e "GRANT ALL ON chaos_drill.* TO 'chaos'@'localhost'"        # after the restore drill's CREATE and zcat steps
+sudo mysql chaos_drill -e "DELETE FROM players_online"                   # the dump holds the rows of the moment it was made
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py --db chaos_drill                       # dry run
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py --db chaos_drill --execute \
+  --confirm "WIPE chaos_drill" --backup chaos-db.sql.gz --backup-max-age-minutes 100000
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py --db chaos_drill --verify
+sudo mysql -e "REVOKE ALL ON chaos_drill.* FROM 'chaos'@'localhost'; DROP DATABASE chaos_drill"
+```
+Read the dry run, the owner decisions it lists and the checks at the end of `--execute`. The admin app has no button for
+the wipe (by design: a root shell step on the VPS); stopping and updating the server around it are Painel > Servidor and
+Painel > Atualizar servidor.
 
 ## 8. Client
 
@@ -523,8 +542,30 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
   Chaos Coins at its first new character (server/README.md "Beta starter coins"). Set `enabled = false` on the launch
   server before the first start; check with `grep -n "enabled" data/scripts/chaos/beta_config.lua`. The beta coins, the
   purchases made with them and the grant rows (`chaos_shop_coins`, `chaos_shop_purchases`, `chaos_shop_history`,
-  `chaos_beta_grants`) are wiped with the beta (docs/BETA.md section 9; only the beta coins: the snippet in docs/BETA.md
-  section 4).
+  `chaos_beta_grants`) are wiped with the beta by `server/deploy/launch_wipe.py` (docs/BETA.md section 9; only the beta
+  coins: the snippet in docs/BETA.md section 4).
+
+**Two beta switches, not one.** `beta_config.lua` `enabled` is the beta starter coins (5,000 free coins per account) and the
+Beta Tester record: no admin app button, `true` today, must be `false` at launch. `beta_mode_config.lua` `enabled` is beta
+test mode, which lifts weekly and daily gameplay limits: admin app tab Comandos > Ações rápidas > card Modo beta (testes) >
+Desligar (or Desligar e reiniciar), must be `false` at launch too. Turning one off does not turn off the other.
+
+**Check it in one go, before the first start of the launch server (O440):** `chaos-ctl.sh launch-check` (admin app: Comandos >
+Ações rápidas > Conferir lançamento > Conferir). It reads the installed server and changes nothing. It checks the two beta
+switches, the beta coins cron, the payment providers (no mock), test files, the clock zone, `maxPlayers`, the dates of Season 1,
+the PvP season, the Founder Pack and the creator bonus against Fri 2026-11-20 15:00, the client guard key and mode (presence
+only), the launch patch notes, counts in the database, the newest backup and the checkout. Exit 1 when any line is `FAIL`;
+`WARN` lines are decisions or expected counts (players and coins are expected before the wipe, not after it). Pass
+`--max-players 400` (or 300) once the owner decides, so a different value fails. The wipe of the beta data is a separate tool.
+
+**The clock zone (O439).** The game reads the machine's local time: Season 1, the Founder Pack, the creator launch bonus, the
+weekend ritual and the 06:00 save. The VPS must be on `America/Sao_Paulo` (UTC-3) before 15:00 on launch day, or everything
+starts 3 hours off. Check: admin app Comandos > Ações rápidas > Saúde e espaço > Ver fuso horário (shell: `chaos-ctl.sh
+timezone`). Fix: Ajustar para São Paulo (shell: `chaos-ctl.sh timezone set`). **Then restart the game server** (Painel >
+Servidor): a running process keeps the old zone. The command never restarts by itself. The server prints its zone at every
+start (`>> Timezone: ...`, and a `>> TIMEZONE WARNING` line when it is wrong), and `chaos_health.py` alerts on the check
+`timezone`. `CHAOS_TIMEZONE` in `/etc/chaos/chaos.env` changes the expected zone for the shell tool and the health check; the Lua
+side (`timezone_config.lua`) must be changed to match (server/README.md "Timezone guard (O439)").
 
 ## 12. Open loose ends that matter for launch (ROADMAP.md)
 
@@ -565,7 +606,8 @@ Done or decided since the first version of this list (ROADMAP "Open decisions an
 5. Remove every test-only file and turn the beta switch off (`beta_config.lua` `enabled = false`; section 11). Turn beta test mode off too (`chaos-ctl.sh beta-mode off`, Comandos > Modo beta; `beta_mode_config.lua` `enabled = false`, `storeOfferKeys` empty): it lifts the weekly and daily gameplay limits. Also
    remove the beta coin top-up cron, if the beta used one (`rm /etc/cron.d/chaos-beta-coins`; docs/BETA.md section 4):
    left in place it refills every account's coins every minute after the wipe.
-6. systemd units, logrotate, firewall (section 5); start; read the log: no `Lua Script Error`.
+   Then `chaos-ctl.sh launch-check` (section 11): no `FAIL` line, and the clock zone is `America/Sao_Paulo` (O439).
+6. systemd units, logrotate, firewall (section 5); start; read the log: no `Lua Script Error`, and a `>> Timezone:` line with `UTC-03:00`.
 7. Create the staff account and characters; log in with the release client; check the login screen (boosted creature,
    events, players online), a store purchase, a crafting orb, the bank, the stash.
 8. Website: character creation with the class lock (section 6). Donations: the sandbox test of "Donations" below, then
@@ -872,7 +914,8 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
   unspent (`removeCoinsOnReversal` in `shop_coins_config.lua`) and staff see it in the admin panel (Store > Donations:
   refunds and chargebacks). Chargeback fraud: the account is locked until the dispute is settled, fraud again is a
   permanent ban by an administrator (docs/GM_HANDBOOK.md section 4, Rules 7.9, Donation Terms section 6).
-- Set the real prices (`usdCents` of each pack) before launch: the ones in the repository are placeholders.
+- The prices are decided: docs/PRICES.md (owner delegated, 2026-10-14). `cd server && luajit tools/store_model.lua --check`
+  holds the packs and the store. Change `usdCents` of a pack only with the owner's word.
 
 **From the admin app (the way to do it, O413).** Step by step in Portuguese: [docs/PAYMENTS.md](PAYMENTS.md). Tab
 Comandos > Ações rápidas > card Pagamentos (doações): one field per setting with Salvar (the value goes on stdin over SSH

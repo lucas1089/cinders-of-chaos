@@ -116,6 +116,72 @@ def main():
     check(mid['d1Pct'] == 50.0 and mid['d3Pct'] is None, 'maturity per day')
     check(pm.returns([], d(2024, 10, 30)) == [], 'no cohorts')
 
+    # O437 retention by creation day: windows, maturity, the day the counters began, small numbers, totals
+    since = (d(2024, 10, 7) - d(1970, 1, 1)).days
+    rr = [('cohort', '20241006', '', 40), ('retain', 'd1', '20241006', 20), ('retain', 'in7', '20241006', 25),   # before the start day
+          ('cohort', '20241007', '', 20), ('retain', 'd1', '20241007', 8), ('retain', 'd2_7', '20241007', 5),
+          ('retain', 'd8_30', '20241007', 2), ('retain', 'in7', '20241007', 10), ('retain', 'in30', '20241007', 11),
+          ('cohort', '20241008', '', 30), ('retain', 'd1', '20241008', 15), ('retain', 'd2_7', '20241008', 6),
+          ('retain', 'in7', '20241008', 18), ('retain', 'in30', '20241008', 20),
+          ('cohort', '20241009', '', 3), ('retain', 'd1', '20241009', 1),
+          ('retain', 'd1', '20241010', 4), ('retain', 'bad', '20241010', 9), ('retain', 'd1', 'garbage', 9)]
+    tab, tot = pm.retention(rr, d(2024, 11, 20), since)
+    check([e['day'] for e in tab] == ['2024-10-06', '2024-10-07', '2024-10-08', '2024-10-09', '2024-10-10'],
+          'retention days ascending, a retain-only day listed, bad rows dropped: %r' % ([e['day'] for e in tab],))
+    t6, t7, t8, t9, t10 = tab
+    check(t6['covered'] is False and t6['d1'] == 20 and t6['d1Pct'] is None and t6['in7Pct'] is None,
+          'a day before the counters began: counts yes, percent no: %r' % (t6,))
+    check(t7['covered'] and t7['cohort'] == 20 and t7['d1Pct'] == 40.0 and t7['d2_7Pct'] == 25.0 and t7['in7Pct'] == 50.0
+          and t7['in30Pct'] == 55.0, 'day 2024-10-07 shares: %r' % (t7,))
+    check(t7['d8_30'] == '<5' and t7['d8_30Pct'] is None, 'a hidden window has no share')
+    check(t9['cohort'] == '<5' and t9['d1'] == '<5' and t9['d1Pct'] is None, 'a cohort of 3 is hidden')
+    check(t10['cohort'] == 0 and t10['d1'] == '<5' and t10['d1Pct'] is None, 'no cohort, no share')
+    by = {e['window']: e for e in tot}
+    check([e['window'] for e in tot] == ['d1', 'd2_7', 'd8_30', 'in7', 'in30'], 'totals in window order')
+    # covered and finished days: 10-07 (20 new), 10-08 (30), 10-09 (3), 10-10 (0): 53 new; d1 back 8 + 15 + 1 + 4 = 28
+    check(by['d1']['cohort'] == 53 and by['d1']['back'] == 28 and by['d1']['pct'] == 52.8, 'total d1: %r' % (by['d1'],))
+    check(by['in30']['cohort'] == 53 and by['in30']['back'] == 31 and by['in30']['pct'] == 58.5, 'total in30: %r' % (by['in30'],))
+    check(by['d1']['from'] == 1 and by['d1']['to'] == 1 and by['d8_30']['from'] == 8 and by['d8_30']['to'] == 30, 'window limits')
+    # maturity: a window is over only after its last day (day + last < today)
+    tab, tot = pm.retention(rr, d(2024, 10, 8), since)
+    check(tab[1]['d1Pct'] is None, 'day 1 of 10-07 is 10-08: not over on 10-08')
+    tab, tot = pm.retention(rr, d(2024, 10, 9), since)
+    check(tab[1]['d1Pct'] == 40.0 and tab[1]['d2_7Pct'] is None and tab[2]['d1Pct'] is None, 'over on 10-09 for 10-07 d1 only')
+    check({e['window']: e for e in tot}['d1']['cohort'] == 20, 'only finished days are in the total')
+    tab, tot = pm.retention(rr, d(2024, 10, 14), since)   # 10-07 + 7 = 10-14: days 1-7 over on 10-15
+    check(tab[1]['in7Pct'] is None and tab[1]['d2_7Pct'] is None, 'days 1-7 not over on day 7 itself')
+    tab, tot = pm.retention(rr, d(2024, 10, 15), since)
+    check(tab[1]['in7Pct'] == 50.0 and tab[1]['d2_7Pct'] == 25.0 and tab[1]['in30Pct'] is None, 'days 1-7 over on day 8, 1-30 not')
+    # the counters' start day unknown: no percent anywhere, counts still listed
+    tab, tot = pm.retention(rr, d(2024, 11, 20), 0)
+    check(all(e['covered'] is False and e['d1Pct'] is None for e in tab) and all(e['pct'] is None and e['cohort'] == 0 for e in tot),
+          'no start day: no percent, no total')
+    check(pm.retention([], d(2024, 11, 20), since)[0] == [] and pm.retention([], None, since)[1][0]['pct'] is None, 'empty, no today')
+    # the latest 60 cohort days only; the totals still cover all of them
+    many = []
+    for i in range(70):
+        day = (d(2024, 10, 7) + datetime.timedelta(days=i)).strftime('%Y%m%d')
+        many += [('cohort', day, '', 10), ('retain', 'd1', day, 5)]
+    tab, tot = pm.retention(many, d(2025, 6, 1), since)
+    check(len(tab) == 60 and tab[-1]['day'] == '2024-12-15' and tab[0]['day'] == '2024-10-17', 'the latest 60 days')
+    check({e['window']: e for e in tot}['d1']['cohort'] == 700 and {e['window']: e for e in tot}['d1']['pct'] == 50.0, 'totals over all days')
+    # a total under 5 is hidden with its percent
+    tab, tot = pm.retention([('cohort', '20241007', '', 4), ('retain', 'd1', '20241007', 2)], d(2024, 11, 1), since)
+    check(tot[0]['cohort'] == '<5' and tot[0]['back'] == '<5' and tot[0]['pct'] is None, 'a total of 4 is hidden')
+    # in the report, JSON and text
+    rep3 = pm.report(rr + [('meta', 'retain_since', '', since)], today=d(2024, 11, 20))
+    check(rep3['retentionSince'] == '2024-10-07' and len(rep3['retention']) == 5 and len(rep3['retentionAll']) == 5,
+          'report keys: %r' % (rep3['retentionSince'],))
+    check(pm.report([])['retention'] == [] and pm.report([])['retentionSince'] is None, 'empty report, retention keys')
+    json.dumps(rep3)
+    t3 = pm.text(rep3)
+    check('Retention by creation day' in t3 and '2024-10-07: 20 new, day 1 8 (40.0%)' in t3 and 'days 2-7 5 (25.0%)' in t3
+          and 'any of 1-30 11 (55.0%)' in t3 and '[partial: before the counters began]' in t3 and 'All qualifying days' in t3
+          and 'since 2024-10-07' in t3, 'text has the retention section: ' + t3)
+    check('2024-10-06: 40 new, day 1 20 (n/a)' in t3, 'a partial day shows n/a')
+    # no name, account or IP can be in the section: only counts and dates
+    check(not any(k in json.dumps(rep3['retention']) for k in ('name', 'account', 'ip')), 'retention carries counts and days only')
+
     ff = [('first', 'dungeon', '11-15|60', 30), ('first', 'dungeon', '16-20|120', 10), ('first', 'rift', '31-40|45', 4),
           ('first', 'guild', '1-5|10', 50), ('first', 'bad', 'no-pipe', 7), ('first', 'tower', '1-5|5', 0)]
     fu = pm.first_use(ff, 200)
@@ -138,7 +204,7 @@ def main():
     check(sr2['firstUse'][0]['pct'] == 10.0, 'first use share of the churn population (46 + 154 = 200)')
     t2 = pm.text(sr2)
     check('Where they stop' in t2 and 'First use of a system' in t2 and 'Return (' in t2 and 'Ember Caves' in t2, 'text has the new sections')
-    check(all(k in sr2 for k in ('returns', 'firstUse', 'stops')), 'json keys')
+    check(all(k in sr2 for k in ('returns', 'firstUse', 'stops', 'retention', 'retentionAll', 'retentionSince')), 'json keys')
     check(pm.report([])['returns'] == [] and pm.report([])['firstUse'] == [] and pm.report([])['stops'] == [], 'empty table, new sections')
 
     e = pm.report([])

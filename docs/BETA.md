@@ -1,4 +1,4 @@
-# Open beta plan (draft for the owner)
+# Open beta plan (partly decided)
 
 Status: **partly decided.** On 2026-10-29 the owner confirmed: launch on Fri 20 Nov 2026 at 15:00; Season 1 and PvP
 Season 1 start with the launch; one full wipe between the beta and the launch (section 3); a "Beta Tester" title for
@@ -55,12 +55,17 @@ separate characters; `season_config.lua`). The table below is the scope; the ban
 
 | Wiped | Kept |
 |---|---|
-| every character and everything on it: level, skills, items, depot, inbox, storages, spells, deaths | accounts (name, password, e-mail) and the website's account rows |
-| houses (owners, items, access lists) | account bans and their history (**Owner decides**; recommendation: keep them) |
+| every character and everything on it: level, skills, items, depot, inbox, storages, spells, deaths | accounts (name, password, e-mail) and the website's account rows (`znote_accounts`, store points set to 0) |
+| houses (owners, rent, bids, items, access lists) | account bans, ban history and IP bans (**Owner decides**; the tool keeps them) |
 | guilds, guild halls, guild banks, guild wars | the admin audit log (`chaos_admin_log`) |
-| every `chaos_*` table with game progress: bank stars, stash, market, Orb Exchange, store coins and purchases, the Chaos Pact, cosmetics, transmog, exclusives, class unlocks, achievements, seasons, leaderboards, ratings, reports, ... | the patch notes "seen" state and auto-open setting (`chaos_patchnotes`; the launch note is newer, so it opens anyway) and the beta testers (`chaos_beta_testers`, for the "Beta Tester" title) |
-| premium time (the Chaos Pact grants premium days, bought with beta coins) | referral codes (`chaos_referral_codes`; codes shared during the beta keep working) |
-| the season, community, world buff and leaderboard state rows of `server_config` | the other `server_config` rows (one-time migrations and index builds) |
+| every `chaos_*` table with game progress: bank stars, stash, market, Orb Exchange, store coins and purchases, the Chaos Pact, cosmetics, transmog, exclusives, class unlocks, achievements, seasons, leaderboards, ratings, reports, ... | the patch notes "seen" state (`chaos_patchnotes`) and the beta testers (`chaos_beta_testers`, for the "Beta Tester" title) |
+| premium time (the Chaos Pact grants premium days, bought with beta coins) and every coin balance | referral codes (`chaos_referral_codes`) and, **Owner decides**, the referral links, paid rewards, tier titles and log |
+| the season, community, world buff and leaderboard state rows of `server_config`, and the cursors into wiped tables | the other `server_config` rows (one-time migrations and index builds, the peak online number) |
+| queued Discord messages of beta events | the creator program (codes, applications, supporters, the share owed), the acceptance of the legal texts, the payment ledger (`chaos_coin_orders`, `chaos_coin_payments`, `chaos_pay_payers`, `chaos_coin_gifts`, `chaos_founder_revokes`), the Discord worker cursors, the website's client tokens, account recovery and registration records |
+
+The full list is `server/deploy/launch_wipe_tables.json`: every table of the database has one action (wipe, keep or a
+named partial rule) and a one-line reason, and the tool stops on a table the file does not name. Section 9 has the
+procedure. Marked **owner decision** in the file and in the dry run: the table is kept until the owner says otherwise.
 
 Why: beta coins and items were free or bought with free coins, and the beta found balance bugs; keeping them would
 put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
@@ -102,7 +107,7 @@ put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
   Single corrections: `/coins <character>, <amount>` (group 5+, written to the admin audit log) or the admin panel's
   Store > Give Chaos Coins. The amount (5,000) is **Owner decides**.
 - Say it everywhere: beta coins are not real and are wiped at launch.
-- The full wipe (section 9) removes them with every `chaos_*` table. If the owner keeps characters instead (section 3),
+- The launch wipe tool (section 9) empties them (`chaos_coin_gifts` stays, as part of the payment record). If the owner keeps characters instead (section 3),
   reset only the beta coins and their purchases, with the server stopped (items already delivered stay on the characters;
   remove those by hand or wipe):
   ```sql
@@ -115,8 +120,9 @@ put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
   DELETE FROM chaos_beta_grants;
   ```
   Keep `chaos_coin_orders` / `chaos_coin_payments` (payments are off, so they are empty; with real donations, see below).
-- Alternative: real donations in the beta. Then the coins of paid orders must survive the wipe (section 9 would keep
-  `chaos_shop_coins`, `chaos_coin_orders` and `chaos_coin_payments` for those accounts), the live payment setup must be
+- Alternative: real donations in the beta. Then the coins of paid orders must survive the wipe (the tool sets every coin
+  balance to 0 and keeps `chaos_coin_orders` and `chaos_coin_payments` as the record; keeping paid coins would need a
+  new rule, an owner decision), the live payment setup must be
   done by 31 Oct (docs/LAUNCH.md "Donations"), and the prices are still placeholders. Not recommended.
 - The sandbox run of docs/LAUNCH.md "Donations" step 6 can still be done on the beta server, with sandbox credentials,
   outside the beta hours.
@@ -256,89 +262,58 @@ Copy it off the machine too: `backup_offsite.sh` sends the newest dump and data 
 target as well). Restore it into a scratch database once to prove it (docs/LAUNCH.md section 7 "Restore drill"). It
 holds the beta's reports, anti-bot log and every character, for later questions and any tester reward.
 
-**3. Review the tables.** The base download may have tables of its own systems. List every table with a character or
-account column:
+**3. Dry run.** The tool is `server/deploy/launch_wipe.py`, policy `server/deploy/launch_wipe_tables.json`. It reads
+`/etc/chaos/chaos.env` like `chaos-ctl.sh` and `backup.sh`. The admin app has no button for it, by design: it is a root
+shell step on the VPS. The stop of step 1 and the update of step 7 are Painel > Servidor and Painel > Atualizar servidor.
 
 ```
-set -a; . /etc/chaos/chaos.env; set +a
-mysql "$CHAOS_DB_NAME" <<'SQL'
-SELECT table_name, GROUP_CONCAT(column_name) AS columns FROM information_schema.columns
-WHERE table_schema = DATABASE()
-  AND column_name IN ('player_id', 'player_guid', 'guid', 'owner', 'owner_id', 'account_id', 'accountid')
-GROUP BY table_name ORDER BY table_name;
-SHOW COLUMNS FROM accounts;
-SQL
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py
 ```
 
-Any table in that list that steps 4-6 do not cover and that holds per-character progress is wiped too (add a `DELETE`
-for it); per-account settings may stay. Note the premium column name of `accounts` for step 5.
+Nothing is written. Per table it prints the action (wipe, keep, partial), the rows now, the rows that would go and the
+reason; the last lines list the **owner decisions** and whether `--execute` would pass (server stopped, players_online
+empty). Read it. A table of the database that the policy does not name stops the tool with exit code 2 and the list: add
+the table to the JSON (wipe, keep or partial, with a reason, the test `launch_wipe_test.py` wants it too), then run again.
+Do not edit the policy to make the tool pass without reading the table.
 
-**4. Chaos tables.** Write the list, read it, then run it:
-
-```
-mysql -N "$CHAOS_DB_NAME" > /root/chaos-wipe.sql <<'SQL'
-SELECT CONCAT('TRUNCATE TABLE `', table_name, '`;') FROM information_schema.tables
-WHERE table_schema = DATABASE() AND table_name LIKE 'chaos\_%'
-  AND table_name NOT IN ('chaos_admin_log', 'chaos_patchnotes', 'chaos_referral_codes', 'chaos_beta_testers')
-ORDER BY table_name;
-SQL
-less /root/chaos-wipe.sql
-(echo 'SET FOREIGN_KEY_CHECKS = 0;'; cat /root/chaos-wipe.sql; echo 'SET FOREIGN_KEY_CHECKS = 1;') | mysql "$CHAOS_DB_NAME"
-```
-
-**5. Base tables, the website and `server_config` rows.**
+**4. The wipe.** Needs the backup of step 2 (a non-empty dump file made in the last 120 minutes: pass the path of the
+dump just written), the server stopped and `players_online` empty. Any refusal prints one line and changes nothing.
 
 ```
-mysql "$CHAOS_DB_NAME" <<'SQL'
-SET FOREIGN_KEY_CHECKS = 0;
--- characters and what hangs off them (most also go by ON DELETE CASCADE; explicit to be sure)
-DELETE FROM player_items;
-DELETE FROM player_depotitems;
-DELETE FROM player_inboxitems;
-DELETE FROM player_storage;
-DELETE FROM player_spells;
-DELETE FROM player_deaths;
-DELETE FROM player_namelocks;
-DELETE FROM account_viplist;
-DELETE FROM players_online;
-DELETE FROM guild_invites;
-DELETE FROM guild_membership;
-DELETE FROM guild_ranks;
-DELETE FROM guildwar_kills;
-DELETE FROM guild_wars;
-DELETE FROM guilds;
-DELETE FROM players;
--- houses: no owner, no bids, no items, no access lists
-UPDATE houses SET owner = 0, paid = 0, warnings = 0, bid = 0, bid_end = 0, last_bid = 0, highest_bidder = 0;
-DELETE FROM house_lists;
-DELETE FROM tile_store;
--- the stock market (off on this server; emptied anyway)
-DELETE FROM market_offers;
-DELETE FROM market_history;
--- premium time (the column of step 3; TFS 1.4: premium_ends_at; older schemas: premdays and lastday)
-UPDATE accounts SET premium_ends_at = 0;
--- the website's character rows (ZnoteX)
-DELETE FROM znote_players;
--- state rows of the beta world; the other chaos_* rows (migrations, index builds) stay
-DELETE FROM server_config
-WHERE config LIKE 'chaos\_season\_%' OR config LIKE 'chaos\_worldbuff\_%'
-   OR config IN ('chaos_community_override', 'chaos_leaderboard_reset', 'chaos_pvp_season_done',
-                 'chaos_tower_season_done');
-SET FOREIGN_KEY_CHECKS = 1;
-SQL
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py --execute \
+  --confirm "WIPE $CHAOS_DB_NAME" --backup /var/backups/chaos-beta-final/<the dump>
 ```
 
-A statement that fails because its table or column does not exist in this base schema can be skipped; check step 3's list
-for the right name. Account bans (`account_bans`, `account_ban_history`, `ip_bans`) stay unless the owner decides
-otherwise.
+`$CHAOS_DB_NAME` is the real database name (`set -a; . /etc/chaos/chaos.env; set +a` first). The wipe is one
+transaction of `DELETE` and `UPDATE` statements with foreign key checks off: a failure rolls everything back and the
+tool says so (exit 3). After the commit it resets `AUTO_INCREMENT` of the wiped tables (a failure there is a warning;
+`players`, `chaos_bazaar_log` and `chaos_shop_purchases` keep their ids on purpose, the file says why). It saves the row
+counts from before in `/var/lib/chaos/launch-wipe-<database>.json` (`--baseline FILE` for another place).
 
-**6. Check.**
+**5. What the tool does to the base tables** (the old step 5, now in the policy): characters and everything on them
+(`players`, items, depot, inbox, storage, spells, deaths, name locks, VIP lists, guilds, wars, market), `players_online`,
+the website's character rows (`znote_players`); houses stay with owner, rent paid, warnings and bids cleared and their
+access lists and items deleted; `accounts` stays with premium time and coin columns set to 0 (only the columns this
+schema has: `premium_ends_at`, `premdays`, `lastday`, `coins`, ...); `znote_accounts.points` set to 0;
+`server_config` loses `chaos_season_%`, `chaos_worldbuff_%`, `chaos_community_override`, `chaos_leaderboard_reset`,
+`chaos_pvp_season_done`, `chaos_tower_season_done` and `chaos_guild_siege_seen` (a cursor into a wiped table), and
+`chaos_discord_season` is set to 0 (so the Season 1 start posts on Discord). Bans stay.
+
+**6. Check.** The tool runs this itself at the end of `--execute` and exits 1 naming any mismatch. Run it again any time:
 
 ```
-mysql "$CHAOS_DB_NAME" -e "SELECT COUNT(*) FROM players; SELECT COUNT(*) FROM accounts; SELECT COUNT(*) FROM chaos_shop_coins; SELECT COUNT(*) FROM chaos_beta_grants; SELECT COUNT(*) FROM houses WHERE owner <> 0;"
+sudo python3 -I /opt/chaos/repo/server/deploy/launch_wipe.py --verify
 ```
 
-Expect 0, the number of accounts, 0, 0, 0. Then set `beta_config.lua` `enabled = false` (docs/LAUNCH.md section 11).
+It checks: 0 players, `players_online` empty, the accounts count and `chaos_beta_testers` count unchanged, every `keep`
+and `partial` table at its row count from before the wipe (from the baseline file), every `wipe` table at 0, 0 coins
+(`chaos_shop_coins` empty, coin columns of `accounts` and `znote_accounts.points` at 0), 0 owned houses, and the
+`server_config` rows. Without the baseline file `--verify` skips the unchanged-count checks and says so. A second
+`--execute` with a fresh backup is safe: same result. Then set `beta_config.lua` `enabled = false` (docs/LAUNCH.md
+section 11).
+
+Rehearse once on a restored copy before Wednesday: docs/LAUNCH.md section 7 "Wipe rehearsal" (the same tool with
+`--db`, the game may keep running).
 
 **7. Launch install.** Update the repository to the launch commit, set the Season 1 and PvP dates (section 5), put the
 launch note into `server/data/patchnotes/`, run `install_all.py` (docs/LAUNCH.md section 4: dry run, real run, a second

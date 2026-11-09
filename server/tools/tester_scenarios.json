@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 96,
+  "passive": 97,
   "place": 15,
   "staff": 17
  },
@@ -11419,6 +11419,15 @@
    "opcodes": [
     "tileBars"
    ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "timezone": {
+   "files": [
+    "timezone.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },

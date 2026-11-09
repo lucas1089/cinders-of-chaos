@@ -884,7 +884,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +9 the upgrade to the entry at that place among the entries with a `from` (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health, spirit tier 1, supreme mana, supreme spirit: O247) was done (1); the block is full, a new upgrade needs a new block |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
-| 7102830 - 7102834 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); +3 the last hunt (O258: the stable id of the hunt place the character last killed in); +4 = 7102834 the last system used (O374: the 1-based index in `systems`, read by the new-player funnel); 7102835 - 7102839 free |
+| 7102830 - 7102835 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); +3 the last hunt (O258: the stable id of the hunt place the character last killed in); +4 = 7102834 the last system used (O374: the 1-based index in `systems`, read by the new-player funnel); +5 = 7102835 the retention windows counted (O437: bit i = `retainWindows[i + 1]`: d1, d2_7, d8_30, in7, in30); 7102836 - 7102839 free |
 | 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of, +3 / +4 the unlocked / seen bits of entries 31-50 (O368); 7103010 and up are for O260 and O261 |
 | 7103010 - 7103011 | early spike and pity (`retention_loot_config.lua`): 7103010 the first unique (-1 / 0 unset, 1..149 kills counted, 1000000 given), 7103011 the pity counter (kills without a Rare or better drop) |
 | 7103020 - 7103029 | the Weekly Chest (`weeklychest_config.lua` `storage`, `Chaos.storage.weeklyChest`): +0 the week (YYYYMMDD of its Monday), +1 activities done (bit mask), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all; +5..9 free |
@@ -18061,6 +18061,10 @@ startup if missing; also `sql/chaos_patchnotes.sql`). The notes live on the serv
   history (the beta note says so). A server that installs the folder before 31 October shows the beta note at once;
   where that is not wanted, delete `data/patchnotes/2026-10-31.md` after every `install_all.py` run (it copies the file
   again). docs/BETA.md lists the notes still to write for the beta and for launch.
+  `2026-11-07.md` (beta weekend 2) and `2026-11-11.md` (Wednesday) follow, each with its pt-BR twin. The window and the
+  login opening do not look at the date: a file in the folder shows at once, so the 11 November note shows as soon as
+  the folder is installed. Only the Discord post waits for the day. The launch note is a draft in
+  `docs/drafts/patchnotes-2026-11-20.md` (and `.pt-br.md`) so it stays out of the folder until launch.
 - **Window.** Weeks on the left (date, title, NEW for unseen ones), the selected week on the right: title, date, intro,
   section headings in colour (New green, Changes gold, Fixes blue, Balance violet), bullets with a dot in the section
   colour, sub-bullets, bold leads. A long note is sent in parts of about 4 KB of text (`PN.parts`; one 9 KB message never
@@ -24018,8 +24022,9 @@ else (no coins, no items).
 - **Recording.** `beta_tester.lua` logs every login. When the time is inside one of `tester.windows` (31 Oct 15:00 to
   1 Nov 23:00 and 7 Nov 15:00 to 8 Nov 23:00, server time) it writes the account into `chaos_beta_testers` with
   `INSERT IGNORE`. The Friday staff smoke test (30 Oct) and the days between the weekends are outside the windows.
-- **Surviving the wipe.** docs/BETA.md section 9 truncates every `chaos_*` table except a short list; `chaos_beta_testers`
-  is on that list (and so are `chaos_admin_log`, `chaos_patchnotes`, `chaos_referral_codes`). The file must be installed
+- **Surviving the wipe.** `server/deploy/launch_wipe.py` (docs/BETA.md section 9, "Launch wipe (O438)") keeps the tables its
+  policy marks `keep`; `chaos_beta_testers` is one of them (and so are `chaos_admin_log`, `chaos_patchnotes`,
+  `chaos_referral_codes`, the creator program, the legal acceptance and the payment ledger). The file must be installed
   on the beta server from the first weekend: only logins inside a window are recorded. If it was not, the final beta backup
   rebuilds the list from `players.lastlogin` inside the windows.
 - **The title.** `ChaosTitles.register("betatester", ...)` (the Founder Pack's way): the title shows only when the beta
@@ -28015,7 +28020,7 @@ Owner request 2026-10-26: see where players stop playing and where they die, so 
 - **Cost.** Counters are plain Lua table increments (one per death, one per milestone, one per new character's logout). Every `flushSeconds` (300) and at shutdown they are added to the table with one `INSERT ... ON DUPLICATE KEY UPDATE n = n + VALUES(n)` per 200 rows (`db.asyncQuery`; `db.query` at shutdown). `maxKeys` (4000) bounds the memory between flushes; a new key beyond it is dropped. The churn query runs once a day. The one SQL read in play is `onlinetime` of one character when it reaches a milestone.
 - **Privacy.** The table `chaos_progress_metrics` (kind, k1, k2, n) holds only counters keyed by band, area, monster name, minute bucket or milestone. No character name, account id, IP or chat is read into a counter, stored, sent to the app or kept in a log; the churn query reads `level`, `lastlogin`, `group_id` and the tester storage of `players` and returns counts. The only per-character value is the milestone bit mask in the character's own storage, a game flag that no report reads. The table has no row per character, so the tester cleanup and account deletion have nothing to remove from it. Small numbers are suppressed: a count of 1 to 4 (a churn band or one side of it, an area, a monster, a first-session bucket, a milestone) is written `<5` in the text and as the string `"<5"` in the JSON, with its share and median left out (`null`) and the top band of a hidden death count empty; 0 stays 0 (`MIN_SHOWN` in `progress_metrics.py`, `minShown` in `metrics_config.lua`, `M.suppress`; the admin app shows `<5`).
 - **Install.** `install_all.py` step `sql` creates the table from `sql/chaos_progress_metrics.sql` (idempotent, every `sql/*.sql` runs); the script also creates it at startup when it is missing. The scripts reach the server through the `files` step. Restart once. The admin app needs a new build for the card; the ssh command works without it. The table is empty until players play (counters after 5 minutes, the churn snapshot a minute after the start).
-- **Report.** `chaos-ctl.sh metrics` prints text, `--json` one line (`ok`, `churn` {days, at, gone, active, bands}, `deathAreas` and `deathMonsters` (top 10: name, deaths, topBand), `firstSession`, `milestones` {level, medianMinutes, characters}); `{"ok": false, "error": "no-table" | "database"}` and exit 1 when it cannot read. The query is fixed and takes no argument.
+- **Report.** `chaos-ctl.sh metrics` prints text, `--json` one line (`ok`, `churn` {days, at, gone, active, bands}, `deathAreas` and `deathMonsters` (top 10: name, deaths, topBand), `firstSession`, `milestones` {level, medianMinutes, characters}, and since O437 `retention`, `retentionAll`, `retentionSince`); `{"ok": false, "error": "no-table" | "database"}` and exit 1 when it cannot read. The query is fixed and takes no argument.
 - **Limits and assumptions.** `players.onlinetime` is assumed to be seconds saved at logout (the mentor system reads it the same way); the engine fork is not run here. Hunt areas are named by the nearest arrival tile, not by the hunt's real boundary, so a death far inside a large hunt may fall to "Outside hunts" (raise `areaRadius`; not measured on the real map). Changing `bands` later leaves old rows under their old labels. Deaths are counted when the character has a session, so a death during the first seconds of a login is counted and a `/reload` loses the open sessions' first-session counts. Not run on a live server.
 - **Tests.** `tests/metrics_test.lua` (bands, buckets, counters and flush SQL, churn SQL and rows, areas, milestone mask, tester and staff exclusion, privacy of every statement, the engine file against a mocked engine), `tools/progress_metrics_test.py` (report, medians), `deploy/chaos_ctl_test.py` (the command, errors, refusals).
 
@@ -28083,6 +28088,28 @@ Part of the retention pass (docs/superpowers/specs/2026-10-26-retention-design.m
 - **Report.** `progress_metrics.py` gets `returns` (week, cohort, d1 / d3 / d7 and their shares), `firstUse` (system, characters, share of all characters = churn gone + active, median played minutes, most common level band) and `stops` (top 10 areas: gone, top band), in text and JSON; the milestones list is longer. Counts of 1 to 4 are `<5` (text) / `"<5"` (JSON) with their shares and medians left out; a hidden stop area also hides its band.
 - **Limits.** Characters from before the install count their first use of a system at their current level and played time, which skews the first weeks; the cohort and return figures are clean (only characters created after the install). A first use inside one 60 s window that ends before the next check (a party that forms and disbands) is missed. The "where they stop" area is the last hunt a character killed in (a kill check at most every 60 s), so a character that never hunted, or left before the install, falls back to its last saved position, which is mostly the town; the hunt is the area nearest a place's arrival tile within `areaRadius`, so a kill far inside a large hunt is not remembered. Characters that last hunted before the install have no hunt until they log in again. `waystone` counts the first waystone opened by the character, not the first map cleared. Not run on a live server.
 - **Tests.** `tests/metrics_test.lua` (day maths, return flags, first-use bits, stop rows and SQL, the wrapped hooks against fake systems, tester and staff left out), `tools/progress_metrics_test.py` (cohort weeks and maturity, first use, stops, suppression). The Android card is not built here (no SDK); CI `admin-app.yml` compiles it.
+
+## Retention by creation day (O437) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `tools/progress_metrics.py`)
+
+Owner request 2026-11-09 (pt-BR), before the 2026-11-20 launch: D1 / D7 / D30 return rates per creation day, without names, account ids, IPs or chat. It extends the progress metrics (O253) and the funnel (O258): same table, same flush, same exclusions (tester bots and staff), no opcode, no new table, no gameplay change. Admin app: Painel > card "Funil dos jogadores" (section "Retenção por dia de criação", filled by the same "Atualizar métricas" button) and desktop Jogadores > "Métricas dos jogadores" (table "Retenção por dia de criação"); `chaos-ctl.sh metrics [--json]`.
+
+- **What the data can say.** The base `players` table has `lastlogin` and `onlinetime` and no creation date, and a login history does not exist anywhere (the base keeps the last login only). So the day of each return cannot be read from SQL. The server counts it when it happens instead: the first login ever stores the cohort day (O258, storage 7102831); every later login of a counted character calls `ChaosMetrics.retainCheck(cohort, flags, today, cfg)`, which says which windows that login falls in (k = today - cohort day, server day). Windows (`retainWindows`, flags in storage 7102835, one bit each, so a character counts once per window):
+  - `d1`: logged in on day 1, the next calendar day (the real D1);
+  - `d2_7`: logged in on any of days 2 to 7; `d8_30`: any of days 8 to 30;
+  - `in7`: logged in at least once on days 1 to 7; `in30`: at least once on days 1 to 30.
+  The last two have their own bit on purpose: a character that came back on day 1 and on day 4 is in both `d1` and `d2_7`, so the first three windows cannot be added into "within 7 days". The report never calls `in7` "D7": D7 usually means exactly day 7, which this does not measure. Rows: `retain / <window> / <cohort YYYYMMDD>` (counters, `n + VALUES(n)` as the rest), the cohort size is the O258 row `cohort / <YYYYMMDD>`.
+- **What it cannot say.**
+  - Only characters created after the O258 install have a cohort day; older ones are not counted.
+  - The counters start at the O437 install. At the first start the script writes `meta / retain_since` (`INSERT IGNORE`, so the first day is kept; `M.retainSinceSql`, whole number checked). A cohort day before it lost the returns that came before the install: the report lists its counts, marks it "partial" (`covered: false`) and gives it no percent and no part in the totals.
+  - The day is the server's calendar day (the local clock of the machine, as O258 and the churn snapshot). A character online across midnight without a relog is not a new login; a relog counts. Windows count logins, not playtime: a 10 second login is a return.
+  - A percent is shown only when the window is over (cohort day + last day < today, so day 1 of today's cohort is not churn) and the cohort has at least 5 characters and the count is not 1 to 4. The percent is `back / cohort`, `cohort` being every counted character created that day, returned or not.
+  - A character that is deleted or renamed stays in its cohort counts (nothing is stored per character); a character created and used by a tester or staff is left out at the source.
+- **Privacy.** Only counters keyed by window and cohort day, the same rules as O253: no name, account id, IP or chat is read, stored or sent. The one per-character value is the 5-bit mask in the character's own storage 7102835, a game flag that no report reads (like the other metrics storages). Counts of 1 to 4 are `<5` (text) / `"<5"` (JSON), with the share left out; the total over all qualifying days is hidden the same way. As in the churn bands, a total is computed from the exact counts, so a hidden cell next to exact totals can be worked out by subtraction; the rule protects a lone number from being read, not from a determined sum of days.
+- **Report.** `progress_metrics.py` gets `retention` (the latest 60 cohort days, oldest first: `day`, `cohort`, `covered`, and per window `d1`, `d2_7`, `d8_30`, `in7`, `in30` with `<window>Pct`), `retentionAll` (per window: `from`, `to`, `cohort` and `back` summed over the qualifying days, `pct`) and `retentionSince` (ISO date or null), in text and JSON. `chaos-ctl.sh metrics` is unchanged (it already reads every row of the table); the old `returns` (O258, cohort weeks, "d1 / d3 / d7 or later" = a login on day N or later) stays as it was.
+- **Cost.** One storage read and, only when a new window is due, one storage write per login; up to 5 counter increments, then the usual 300 s flush. `maxKeys` (4000) bounds the memory; 5 windows times the cohort days of a year is far below it.
+- **Install.** Nothing to run beyond the usual update: the scripts come with the `files` step, the table exists. Restart once (the first start writes `retain_since`). The admin app needs a new build for the new section; `chaos-ctl.sh metrics` works without it.
+- **Not run live.** Done in code and tests; not run on a live server. Until the first characters pass day 1 after the install, the section lists cohort days with counts and no percent.
+- **Tests.** `tests/metrics_test.lua` (`retainCheck` for every window edge, a long absence, an unset storage, a clock that went back; `retainSinceSql` guards; the engine file: cohort day, windows once each, an older character, tester and staff left out, the start-day row, no name in a key), `tools/progress_metrics_test.py` (windows, maturity per window, the start day, small numbers, totals, the 60 day cut, text and JSON), `deploy/chaos_ctl_test.py` `test_metrics` (the command with a stub database), desktop `cards.rs` tests. The Android `MetricsInfo.java` parser compiles against stub `org.json` classes here; the app is not built (no SDK), CI `admin-app.yml` compiles it.
 
 ## New player funnel and survey (O374) (`tools/newplayer_report.py`, `survey.lua`, `survey_core.lua`, `survey_config.lua`, `sql/chaos_survey.sql`; client `game_chaossurvey`)
 
@@ -29192,3 +29219,122 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   `lootbag`) and a restart. Tests: `tests/corpse_bag_test.lua`, `tools/patch_monster_corpses_test.py`, `tools/chaoslootbag_test.cpp`
   (CI builds the header cut out of the patch). The patch applies on top of 0079-0087 of an already patched tree (luascript.cpp with
   fuzz 2). **Not tested:** a full build with the patch, a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.
+
+## Launch wipe (O438) (`deploy/launch_wipe.py`, `deploy/launch_wipe_tables.json`)
+
+The beta wipe of docs/BETA.md section 9 as a tool, run as root on the game server with the game stopped. Python 3
+standard library and the mysql client; it reaches the database like `chaos-ctl.sh` and `backup.sh` (`/etc/chaos/chaos.env`,
+the password only in a temporary 0600 option file). Run it with `python3 -I`.
+- **Policy.** `launch_wipe_tables.json` names every table once: `wipe` (DELETE all rows), `keep` (never touched) or
+  `partial` (accounts: premium and coin columns to 0; houses: owner, rent paid and bids cleared; `znote_accounts.points` to
+  0; `server_config`: the beta state rows deleted, `chaos_discord_season` set to 0), each with a one-line reason.
+  `owner_decision: true` marks a table that is the owner's call: the safer action (keep) is set and the dry run lists it.
+  Rule of thumb: wipe what belongs to a character, to game progress or to the beta economy; keep the account identity,
+  money already paid (`chaos_coin_orders`, `chaos_coin_payments`, `chaos_pay_payers`), the law (`chaos_legal_acceptance`),
+  the creator program and the staff record. `keep_ids` on a wipe table: its AUTO_INCREMENT is not reset, because a kept
+  table holds ids of it (`chaos_bazaar_log`: the cursor in `chaos_discord_state`; `chaos_shop_purchases`:
+  `chaos_founder_revokes`; `players`: the kept ban and log rows).
+- **Fail closed.** A table in the database that the policy does not name stops every mode with exit code 2 and the list.
+  `launch_wipe_test.py` fails when a table that `server/sql/*.sql`, the revscripts or the website installer create is not
+  in the policy, so a new table forces a decision.
+- **Dry run** (default): per table the action, rows now, rows that would go, owner decisions, and whether `--execute`
+  would pass (server stopped, `players_online` empty). Nothing is written.
+- **`--execute --confirm "WIPE <database>" --backup DUMP`**: refuses (one line, exit 1, nothing changed) unless the
+  confirm text names the real database, DUMP is a non-empty file modified within `--backup-max-age-minutes` (120), the
+  server is not running (the unit like `chaos-ctl.sh status`, the pid file, any `tfs` process; skipped for `--db` other
+  than the game's `CHAOS_DB_NAME`, for a rehearsal on a copy) and `players_online` is empty. The wipe is one
+  transaction (`DELETE` and `UPDATE`, never `TRUNCATE`, foreign key checks off): a failure rolls back (exit 3). Then
+  `AUTO_INCREMENT` is reset (a failure is a warning) and the checks run.
+- **Checks** (`--verify` runs only these): 0 players, `players_online` empty, accounts and `chaos_beta_testers` counts
+  unchanged, every keep and partial table at its count from before (the baseline file `/var/lib/chaos/launch-wipe-<db>.json`,
+  written by `--execute`, `--baseline FILE`), every wipe table at 0, 0 coins, 0 owned houses, the `server_config` rows.
+  Exit 1 names any mismatch.
+- **Rehearsal** on a restored copy: docs/LAUNCH.md section 7 "Wipe rehearsal". The admin app has no button for the wipe, by
+  design (a root shell step on the VPS); the stop and the update around it are Painel > Servidor and Painel > Atualizar
+  servidor.
+- **Assumptions.** The tables the policy names that a given database lacks are skipped. Columns of `accounts` that the
+  schema lacks (`premdays`, `coins`, ...) are skipped. A wipe table that is not InnoDB gets a dry-run warning (a rollback
+  would not undo it). Row counts are `COUNT(*)`. Bans keep a `banned_by` that points at a deleted staff character.
+  The `ondelete_players` trigger of the base schema runs per deleted player (it clears house owners).
+- **Tests:** `deploy/launch_wipe_test.py` (policy coverage, validator, SQL text, every refusal, server detection, the mysql
+  call, dry run, execute, idempotence, rollback, verify; a fake runner, no database). Rehearsed once on a real MariaDB
+  with a dump of a small installed server (counts in ROADMAP O438).
+
+## Timezone guard (O439) (`tools/chaos_timezone.py`, `chaos/timezone.lua`, `timezone_core.lua`, `timezone_config.lua`, `chaos-ctl.sh timezone`)
+
+The game reads the machine's **local** time: `weekend_config.lua`, `founder_config.lua`, `season_config.lua`, the creator launch
+bonus and the 06:00 save. The launch is Fri 2026-11-20 15:00 Brasilia time (UTC-3). A VPS left in UTC starts all of it 3 hours
+late, silently. Three guards, one expected zone: `America/Sao_Paulo`, UTC offset -180 minutes.
+
+* **One place.** Deploy side: `server/tools/chaos_timezone.py` (`DEFAULT_ZONE`, `DEFAULT_OFFSET_MIN`, and an optional
+  `CHAOS_TIMEZONE=` in `/etc/chaos/chaos.env`). Lua side: `data/scripts/chaos/timezone_config.lua`. **The two must agree.**
+  `tools/chaos_health_test.py` compares them. A `CHAOS_TIMEZONE` other than the default needs the same change in the Lua file.
+* **How the zone is read.** Three ways, because a zone name can be read in more than one way: `timedatectl show`, `/etc/timezone`
+  and the `/etc/localtime` link. The UTC offset now comes from the C library, so it is the offset the game process gets. Right
+  means: the offset is the expected one AND, when any name can be read, the expected name is one of them. A stale name with
+  the wrong offset fails. The right offset under another name (for example `Etc/GMT+3`) fails too. When no name can be read,
+  the offset decides.
+* **Health check `timezone`** (`chaos_health.py`, every 5 minutes): FAIL names the zone found, the offset found, the expected
+  zone and the fix. It alerts once on the change, like the other checks.
+* **Start line** (`timezone.lua`, pure logic in `timezone_core.lua`, test `tests/timezone_test.lua`): at every start the console
+  shows `>> Timezone: local time ..., UTC-03:00 (expected America/Sao_Paulo, UTC-03:00)`. When the offset is not the expected
+  one, a second line `>> TIMEZONE WARNING: ...` names both offsets and the fix. The offset comes from `os.time` and
+  `os.date("!*t")` (the daylight saving flag of the local read is used for both reads). It never stops the server and never
+  changes anything; a failing check is caught and printed.
+* **`chaos-ctl.sh timezone`**: key=value lines `zone`, `local_time`, `utc_offset`, `expected_zone`, `expected_offset`,
+  `result=OK|WRONG`, `detail`. Exit 1 when WRONG.
+* **`chaos-ctl.sh timezone set`**: `timedatectl set-timezone` to the expected zone (root), then the same lines, `restart_needed=yes`
+  and a note. **A running process keeps the old zone**: restart the game server for it to take effect. The command never restarts
+  by itself.
+* **Admin app:** Android Comandos > Ações rápidas > Saúde e espaço > "Ver fuso horário" and "Ajustar para São Paulo" (asks first);
+  desktop VPS e manutenção > Saúde e espaço, same two buttons. The result after the set says to restart in Painel > Servidor.
+* **Tests:** `tools/chaos_health_test.py` (pure decision, the three readers, the alert), `deploy/chaos_ctl_test.py`
+  (`test_timezone`, with a fake `timedatectl`), `tests/timezone_test.lua` (LuaJIT and Lua 5.3, injected clocks), Android
+  `TimezoneInfoTest`.
+* **Not verified:** a real `timedatectl set-timezone` on the VPS, and a real start of the engine with `timezone.lua` (the engine
+  API used is `GlobalEvent` `onStartup`, as in the other startup scripts).
+
+## Launch check (O440) (`deploy/launch_check.py`, `chaos-ctl.sh launch-check`)
+
+`chaos-ctl.sh launch-check [--json] [--max-players N] [--launch "YYYY-MM-DD HH:MM"]` checks the **installed** server against the
+launch list and **changes nothing**. One line per check, `OK`, `WARN` or `FAIL`, a short name and one sentence, then
+`launch check: N FAIL, N WARN, N OK`. **Exit 1 when any check is FAIL**, else 0. `--json` prints one JSON line. A check that cannot
+run (a file is missing, the database is down, a Lua config does not read) is a FAIL that says why, never a crash and never a
+silent OK. The wipe of the beta data is a separate tool; this one only reports counts.
+
+The shell tool gets the facts that need root (the five database counts, one query each, and the `pay-status` lines) and feeds them
+to `launch_check.py` on stdin. Everything else the script reads itself: the server folder, the env file, the backup folder, the
+checkout. The Lua configs are read with a small tolerant reader (a regex on the known keys); what it cannot read is "cannot read",
+never a guess.
+
+| Name | Reads | FAIL | WARN |
+|---|---|---|---|
+| `beta_config` | `beta_config.lua` `enabled` | true, or unreadable | |
+| `beta_mode` | `beta_mode_config.lua` `enabled` (file only: beta mode is read at the start of the scripts) | true, or unreadable | |
+| `beta_cron` | `/etc/cron.d/chaos-beta-coins` (`CHAOS_BETA_CRON` for tests) | the file exists | |
+| `payments` | `pay-status`: providers, mock flag, Mercado Pago token kind | a mock provider; no payments status | no live provider; a Mercado Pago TEST token |
+| `test_files` | `zz_*` and `ztest*` under `data/scripts`, `ztest*` in the server folder | any (5 listed) | |
+| `timezone` | `chaos_timezone.py` (see Timezone guard) | not on the expected zone and offset | |
+| `max_players` | `config.lua` `maxPlayers` | with `--max-players N`: a different value | without the flag, always: "owner decision: 300 or 400" |
+| `dates_season` | `season_config.lua` Season 1 start and end | the start is not the launch | |
+| `dates_pvp` | `battleground_config.lua` `season.epoch`, `weeks` | cannot read | the epoch is not the launch |
+| `dates_founder` | `founder_config.lua` start and end | the start is not the launch | |
+| `dates_creator` | `creator_codes_config.lua` `launchBonusStart`, `launchBonusDays` | cannot read | the start is not the launch |
+| `client_guard` | `config.lua` `clientGuardMode`, `clientGuardAllowDevKey`; the key: `CHAOS_CLIENT_KEY` of the env file, `clientGuardKey`, `clientGuardKeyFile` | mode off or not set; a dev key allowed; no key | mode `log` |
+| `patch_notes` | `data/patchnotes/LAUNCHDATE.md` and `.pt-br.md` | | either missing |
+| `database` | counts only: players, accounts, accounts with coins, `players_online`, `chaos_beta_testers` | a count cannot be read | players or coins above 0 (expected before the wipe, not after it) |
+| `backup` | the newest file of the backup folder (`CHAOS_BACKUP_DIR`, `backup.sh`) | none | 24 hours old or more |
+| `checkout` | the checkout of `CHAOS_REPO`: branch, short commit, clean or dirty | not a checkout | dirty, or not on `main` (a detached head at the commit `main` points to counts as main) |
+
+The launch time is a constant at the top of the tool (`LAUNCH`, 2026-11-20 15:00, server local time); `--launch` moves it. The
+dates are printed as the configs say them, in server local time, so a wrong machine zone is the `timezone` line's job. The client
+key is only tested for presence: it is never printed, logged or hashed. No names, ids or rows reach the output, only counts.
+
+* **Admin app:** Android Comandos > Ações rápidas > "Conferir lançamento" > Conferir (one summary line, "3 falhas, 2 avisos" or
+  "Tudo certo para o lançamento", then the lines with FAIL first); desktop VPS e manutenção > "Conferir lançamento" > Conferir
+  (the command's own lines).
+* **Tests:** `deploy/launch_check_test.py` (every rule, the reader, report, JSON, exit code, a whole run on a temp folder),
+  `deploy/chaos_ctl_test.py` (`test_launch_check`: stub database and checkout, flags, refusals, nothing written, no key in any
+  output), Android `LaunchCheckInfoTest`.
+* **Not verified:** a run on the real VPS (the database counts, `pay-status` as root, the checkout), the Android card build (no SDK
+  here).

@@ -8,7 +8,7 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 Item 6 of 2026-10-14 ("Decida tudo sobre o item 6"): the developers decided every pure game or design question below;
 each is under "Decided" with its reason. Left here: what needs the owner's own answer or a real-world action.
 
-- [ ] **Dates.**
+- [x] **Dates.** Confirmed 2026-10-29 (below); both beta weekends are over.
   - **Confirmed by the owner, 2026-10-29:** launch on 20 Nov 2026 at 15:00 (UTC-3).
   - Open betas on the weekends of 31 Oct and 7 Nov. The beta is open, with no keys.
   - Season 1 runs from the launch, 20 Nov 2026 15:00, to 19 Feb 2027 (13 weeks); done in `season_config.lua`. PvP
@@ -16,7 +16,11 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
     The Chronicle's goal sizes assume the launch start (server/README.md "The Ashen Chronicle", "Goal sizes").
   - Patch notes come out every Wednesday.
   - Wipe: one full wipe between the beta and the launch (all beta characters and items). After the launch, permanent
-    characters are never wiped; seasons are optional separate characters.
+    characters are never wiped; seasons are optional separate characters. The wipe is a tool now
+    (`server/deploy/launch_wipe.py`, docs/BETA.md section 9): a root shell step on the VPS, no button in the admin app
+    by design (stop and update around it: Painel > Servidor, Painel > Atualizar servidor). Its dry run lists the owner
+    decisions (bans, referral links, coin gifts, build slots, bot holds, account storage, the peak online number):
+    each is kept until you say otherwise.
 - [ ] **The beta plan.** Who joins, the wipe before launch, coins and donations in the beta, the Season 1 start and
   the staff schedule: every decision is in [docs/BETA.md](BETA.md) (draft), each marked "Owner decides" with a
   recommendation. The go / no-go list for the beta, with owner and dev items: [docs/BETA_READINESS.md](BETA_READINESS.md).
@@ -26,7 +30,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   must be reviewed before the Bazaar and creator codes are switched on for players. The Terms' new helper sentence
   (section 6) and the pack prices go to the same review.
 - [ ] **Beta Tester title (built 2026-10-29, a check).** `beta_tester.lua` records the accounts that log in during the
-  two beta weekends and keeps them through the wipe (`chaos_beta_testers`, kept by the wipe list of docs/BETA.md section
+  two beta weekends and keeps them through the wipe (`chaos_beta_testers`, kept by the wipe policy of docs/BETA.md section
   9). At launch the accounts get the cosmetic title "Beta Tester" when the beta switch is off. Make sure the beta server
   has the commit from the first weekend (admin app: Painel > Atualizar servidor > Aplicar e reiniciar; shell fallback:
   `chaos_update.sh`). At launch set `beta_config.lua` `enabled = false` (docs/LAUNCH.md section 11; the admin app has no button for
@@ -55,12 +59,12 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   island in Cinderhold. Optional for existing characters: `server/tools/migrate_home_town.py` (server/README.md "Main
   city").
 
-- [ ] **Stash prices (PLACEHOLDER).** Seven new store offers in "Storage & Slots" (`server/data/scripts/chaos/pact_config.lua`
-  `store.storage`): Weapons, Armor, Jewellery, Materials and Creature Products Stash Tab at 150 coins each, Collectibles
-  Stash Tab at 100, and Remote Stash Deposit at 400 (set in O317, was 300; deposit into the stash from anywhere; also
-  included while the Chaos Pact is active). Payments are off in the beta; set the real prices before launch. Also decide: keep selling "Extra Depot
-  Tab" / "4 Depot Tabs" (each now also counts as a general stash tab) or remove the Depot Tabs store category, and when to
-  remove the depot boxes for good (server/README.md "Stash", "Depot transition").
+- [ ] **Stash prices (review, optional).** The depot is retired (O316, 2026-10-29): the Depot Tab categories left the
+  store, and `pact_config.lua` `store.storage` marks the depot and extra stash tabs as retired. The store sells Stash
+  Slot Expansion 50 (4 for 180), ten affinity tabs (Orbs and Gems 200; Supplies, Keys, Weapons, Armor, Jewellery,
+  Materials and Creature Products 150; Collectibles 100) and Remote Stash Deposit 400. The table and reasons:
+  docs/PRICES.md "Stash room (O316)". `cd server && luajit tools/store_model.lua --check` holds them. Nothing is open
+  but the numbers, if you want other ones.
 
 - [ ] **Conquest Tokens: review the prices and the income** (`server/data/scripts/chaos/conquest_config.lua`, server/README.md
   "Conquest Tokens, the Conquest vendor and bad-luck protection"). Target: a chosen item in 1-3 weeks of dedicated play
@@ -68,6 +72,33 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   1,000 + 3 x level, set pieces 900 + 1.2 x level, raid uniques 2,400 (Crown 3,600), Ascended uniques 4,200 (Signet 5,400);
   Omen Key of a chosen kind 150, attune 40, Ascended Shard 300; refinement 60 + 60 x the new rank, up to Legendary.
   Only the numbers are left for the owner; the design questions are under "Decided".
+
+### Two beta switches (do not mix them up)
+
+- `server/data/scripts/chaos/beta_config.lua` `enabled`: the **beta starter coins** (5,000 free coins per account) and
+  the Beta Tester record. No admin app button. It is `true` today. **It must be `false` at launch**, before the first
+  start. Check: `grep -n "enabled" data/scripts/chaos/beta_config.lua`. docs/LAUNCH.md section 11.
+- `server/data/scripts/chaos/beta_mode_config.lua` `enabled`: **beta test mode**, which lifts the weekly and daily
+  gameplay limits. Admin app: tab Comandos > Ações rápidas > card Modo beta (testes) > Ver / Desligar (or Desligar e
+  reiniciar). The repo copy is `false`. **It must be `false` at launch too.** Shell fallback: `chaos-ctl.sh beta-mode off`.
+
+### Open owner decisions before launch
+
+Claude does not change these. Each names the two places that disagree.
+
+1. **maxPlayers.** 400 at launch in docs/LAUNCH.md (lines 97, 113, 575), docs/BETA.md section 2 and the "Decided" note
+   below. docs/BETA_READINESS.md B6 and L5 say 400 failed the load test with packs on a 4 vCPU 2.1 GHz box and the cap is
+   the owner's call. A run at 300 and 400 bots on the real host settles it.
+2. **Creator share.** The Donation Terms section 7 (docs/legal/donations.en.md and donations.pt-BR.md) say 10 % and name no
+   launch bonus. `creator_codes_config.lua` pays 15 % for 30 days from the launch (`launchBonusPct`). Section 8 of the same
+   terms lets offers and coin prices change, but it does not mention creator shares. So the text does not cover the
+   bonus: it is a real mismatch. Ask the lawyer to cover a temporary bonus, or set `launchBonusPct = 0`.
+3. **Wipe after launch.** Terms of Use section 7 and Donation Terms section 8 allow a later full wipe with at least
+   [PRAZO DE AVISO DE WIPE] days of notice. README.md and this file say permanent characters never wipe after the launch.
+   Pick one: drop the clause, or keep it and soften the promise.
+4. **Founder Pack.** Open in ROADMAP.md (O322) and docs/PRICES.md "Open questions for the owner": the Starter
+   coin pack (R$ 14,90, 500 coins) buys the first pack of 499; four weeks (to 18 Dec 15:00, README.md "Datas") is a
+   proposal; is half the pack price the right chargeback limit.
 
 ## Accounts and services
 
@@ -101,8 +132,8 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
 
 ## Keys
 
-- [ ] **Signed updater key ceremony.** Generate the Ed25519 key offline and keep the private key off the server. See `docs/LAUNCH.md` "Client updates".
-- [ ] **Official client key.** Set the GitHub secret `CHAOS_CLIENT_KEY` and the matching server env value. See server/README.md "Client guard".
+- [x] **Signed updater key ceremony.** Done 2026-10-20 (docs/LAUNCH.md "Client updates"). Generate the Ed25519 key offline and keep the private key off the server. See `docs/LAUNCH.md` "Client updates".
+- [ ] **Official client key.** Set the GitHub secret `CHAOS_CLIENT_KEY` and the matching server env value. See server/README.md "Client guard". The GitHub secret exists (the `winpkg-110` release notes: built with the official key); the server env value is not provable from the repo.
 
 ## Texts
 
@@ -123,7 +154,8 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
 
 ## On the live server
 
-- [ ] Machine timezone `America/Sao_Paulo` (`timedatectl set-timezone America/Sao_Paulo`). Weekly resets, events and the Gambler's 4-hour refresh use server time.
+- [ ] Machine timezone `America/Sao_Paulo`. Admin app: Comandos > Ações rápidas > Saúde e espaço > Ver fuso horário, then Ajustar para São Paulo, then restart the game (Painel > Servidor): a running process keeps the old zone. Shell fallback: `chaos-ctl.sh timezone`, `chaos-ctl.sh timezone set` (O439). Weekly resets, events, Season 1, the Founder Pack, the creator launch bonus and the 06:00 save use server time.
+- [ ] Before the first start of the launch server: admin app Comandos > Ações rápidas > Conferir lançamento > Conferir (shell fallback: `chaos-ctl.sh launch-check`). No `FAIL` line (O440).
 - [ ] Bugs and suggestions from players: update the VPS repository (admin app: Painel > Atualizar servidor), recompile the app once, then read them in Painel > Bugs e sugestões > Atualizar > Copiar tudo and paste the list to Claude (docs/ADMIN_APP.md; shell fallback: `chaos-ctl.sh feedback`).
 - [ ] `expose_php = Off` in php.ini.
 - [ ] The nginx server block, the `limit_req_zone` lines and `fastcgi_param HTTPS on` from website/README.md "Web server".
@@ -277,7 +309,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   a relog inside a dungeon.
 - Class looks pair 19 (2026-10-12): approved and pushed to `windows-assets` (b36204f2); the six new class looks go live
   with the switch in `class_looks_core.lua`.
-- maxPlayers (2026-10-12): 300 for the beta (`prod_config.py --max-players 300`), 400 at launch (the default).
+- maxPlayers (2026-10-12): 300 for the beta (`prod_config.py --max-players 300`), 400 at launch (the default). Open again: see "Open owner decisions before launch".
 - Database disk (2026-10-12): MariaDB on a local NVMe, not `innodb_flush_log_at_trx_commit = 2`. Hosting requirement
   in [LAUNCH.md](LAUNCH.md) section 2.
 - Base upgrade-slot check (2026-10-12): once a second per player in 12 groups, and at once on an equip or unequip

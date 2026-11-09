@@ -48,7 +48,7 @@ final class MetricsCard {
 
         funnelCard = ui.titledCard("Funil dos jogadores");
         LinearLayout fb = Ui.body(funnelCard);
-        fb.addView(ui.hint("Volta no dia 1, 3 e 7 por semana de entrada, quando cada sistema é usado pela primeira vez "
+        fb.addView(ui.hint("Volta no dia 1, 3 e 7 por semana de entrada, retenção por dia de criação, quando cada sistema é usado pela primeira vez "
                 + "e onde ficam os personagens que pararam. Contadores anônimos, só leitura; atualize no card de métricas."));
         funnelNote = ui.text("Toque em Atualizar métricas acima.");
         funnelNote.setPadding(0, ui.dp(8), 0, 0);
@@ -160,7 +160,7 @@ final class MetricsCard {
 
     /** O258: return per cohort week, first use of each system, and the areas where the gone characters stood last. */
     private void showFunnel(MetricsInfo m) {
-        boolean any = !m.weeks.isEmpty() || !m.firstUses.isEmpty() || !m.stops.isEmpty();
+        boolean any = !m.weeks.isEmpty() || !m.firstUses.isEmpty() || !m.stops.isEmpty() || !m.cohortDays.isEmpty();
         funnelNote.setText(any ? "Dados do servidor (grupos com menos de 5 não são mostrados)."
                 : "Ainda não há dados do funil. Eles se enchem com o jogo.");
         funnelSection("Volta por semana de entrada (dia 1 / 3 / 7 ou depois)");
@@ -184,6 +184,7 @@ final class MetricsCard {
             v.setTextSize(12);
             funnelOut.addView(v);
         }
+        showRetention(m);
         funnelSection("Primeiro uso de cada sistema");
         if (m.firstUses.isEmpty()) {
             funnelOut.addView(ui.hint("Sem dados."));
@@ -206,6 +207,55 @@ final class MetricsCard {
         for (MetricsInfo.Killer k : m.stops) {
             funnelBar(k.name, MetricsInfo.percent(k.deaths, max),
                     MetricsInfo.n(k.deaths) + " personagens" + (k.topBand.isEmpty() ? "" : "  ·  mais no nível " + k.topBand));
+        }
+    }
+
+    /**
+     * O437: return by creation day. Day 1 is the next calendar day (server time); "algum dia de 1-7 / 1-30" is at
+     * least one login in that range. A percent shows only for a finished window on a day the counters covered.
+     */
+    private void showRetention(MetricsInfo m) {
+        funnelSection("Retenção por dia de criação (dia 1, dias 2-7, dias 8-30)");
+        if (m.cohortDays.isEmpty()) {
+            funnelOut.addView(ui.hint("Sem dados."));
+            return;
+        }
+        funnelOut.addView(ui.hint("Cada personagem conta uma vez por janela. Dia 1 é o dia seguinte à criação; "
+                + "dia 1 + dias 2-7 não é igual a \"algum dia de 1-7\" (o mesmo personagem pode estar nos dois). "
+                + "Porcentagem só com a janela terminada e a partir de "
+                + (m.retainSince.isEmpty() ? "o início da contagem" : MetricsInfo.dayText(m.retainSince)) + "."));
+        if (!m.retainTotals.isEmpty()) {
+            StringBuilder sb = new StringBuilder("Total dos dias com janela terminada: ");
+            for (int i = 0; i < m.retainTotals.size(); i++) {
+                MetricsInfo.RetainTotal t = m.retainTotals.get(i);
+                if (i > 0) {
+                    sb.append("  ·  ");
+                }
+                sb.append(MetricsInfo.retainLabel(t.window)).append(" ")
+                        .append(t.pct < 0 ? "—" : MetricsInfo.pct(t.pct));
+            }
+            TextView tot = ui.text(sb.toString());
+            tot.setTextSize(13);
+            tot.setPadding(0, ui.dp(4), 0, ui.dp(4));
+            funnelOut.addView(tot);
+        }
+        for (int i = m.cohortDays.size() - 1; i >= 0; i--) {
+            MetricsInfo.CohortDay c = m.cohortDays.get(i);
+            StringBuilder sb = new StringBuilder();
+            for (int k = 0; k < MetricsInfo.RETAIN_KEYS.length; k++) {
+                if (k > 0) {
+                    sb.append("  ·  ");
+                }
+                sb.append(MetricsInfo.RETAIN_LABELS[k]).append(": ").append(MetricsInfo.n(c.back[k])).append(" (")
+                        .append(c.pct[k] < 0 ? "—" : MetricsInfo.pct(c.pct[k])).append(")");
+            }
+            TextView head = ui.text(MetricsInfo.dayText(c.day) + ":  " + MetricsInfo.n(c.cohort) + " novos"
+                    + (c.covered ? "" : "  (parcial: antes da contagem)"));
+            head.setPadding(0, ui.dp(4), 0, 0);
+            funnelOut.addView(head);
+            TextView v = ui.hint(sb.toString());
+            v.setTextSize(12);
+            funnelOut.addView(v);
         }
     }
 

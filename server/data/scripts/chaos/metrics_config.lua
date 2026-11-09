@@ -53,7 +53,7 @@ return {
 
 	-- player storage: bit mask of the milestones already recorded for the character (+0), so a level lost at a death
 	-- and gained again counts once. A game flag of the character; no metric row holds it. 7102830 - 7102839 reserved (7102833 = the last hunt,
-	-- 7102834 = the last system)
+	-- 7102834 = the last system, 7102835 = the retention windows)
 	storage = 7102830,
 
 	-- O258 return: the first login of a character stores `day * 8 + flags` in this storage (day = whole days since the
@@ -61,6 +61,24 @@ return {
 	-- return:dN once. Characters that existed before the install have no value and are not counted.
 	returnStorage = 7102831,
 	returnDays = {1, 3, 7},
+
+	-- O437 retention windows: a login on calendar day (cohort day + k), server time, with from <= k <= to counts the
+	-- window once for the character (one bit each in player storage retainStorage; the cohort day is the one in
+	-- returnStorage, so a character from before the O258 install has none and is not counted). Counted as
+	-- `retain / <key> / <cohort YYYYMMDD>`. d1 is the next calendar day; d2_7 and d8_30 are the later windows; in7 and
+	-- in30 are "came back at least once on days 1 to 7 / 1 to 30" (a character can be in several windows; adding the
+	-- first three would count it twice, so the union has its own bit). Keep the keys short (k1 is a varchar(64)).
+	retainStorage = 7102835,
+	retainWindows = {
+		{key = "d1", from = 1, to = 1},
+		{key = "d2_7", from = 2, to = 7},
+		{key = "d8_30", from = 8, to = 30},
+		{key = "in7", from = 1, to = 7},
+		{key = "in30", from = 1, to = 30}
+	},
+	-- meta row (INSERT IGNORE, the first start keeps its day): the server day the retention counters began. A cohort
+	-- day before it lost the returns that came before the install, so the report gives it no percent.
+	retainSinceKey = "retain_since",
 
 	-- O258 first use of a system: one bit per system, in this order (bit 0 = dungeon), in this storage. Each system's
 	-- success path calls ChaosMetrics.firstUse(player, key) (metrics.lua installHooks wraps the existing APIs).

@@ -309,7 +309,12 @@ for _, p in ipairs({bot, gm}) do
 end
 death(dragon, nil, nil, nil) -- a monster's death is no business of the player event
 check(next(ChaosMetrics.state.counts) ~= nil, "counters in memory")
-eq(next(tbl), nil, "nothing written before the flush")
+do
+	-- before the flush only the O437 start day (a meta row written at startup) is in the table
+	local only = next(tbl)
+	check(only == "meta|retain_since|" and next(tbl, only) == nil, "nothing written before the flush but the retention start day")
+	eq(tbl["meta|retain_since|"], ChaosMetrics.today(), "the retention start day is today (server day)")
+end
 flushAll()
 check(next(ChaosMetrics.state.counts) == nil, "memory cleared by the flush")
 eq(key("ttl", "10", "10"), 1, "newbie: level 10 after 10 minutes")
@@ -403,6 +408,51 @@ do
 	check(#due == 3 and new == 807, "a long absence: all three at once")
 	due, new = M.returnCheck(807, 200, cfg)
 	check(#due == 0 and new == 807, "all counted: nothing more")
+end
+-- O437 retention windows: pure logic
+do
+	eq(#cfg.retainWindows, 5, "five retention windows")
+	local due, new = M.retainCheck(0, 0, 105, cfg)
+	check(#due == 0 and new == 0, "no cohort day: a character from before the install")
+	due, new = M.retainCheck(-1, 0, 105, cfg)
+	check(#due == 0, "cohort -1")
+	due, new = M.retainCheck(100, 0, 100, cfg)
+	check(#due == 0 and new == 0, "same day: nothing")
+	due, new = M.retainCheck(100, 0, 101, cfg)
+	check(#due == 3 and due[1] == "d1" and due[2] == "in7" and due[3] == "in30" and new == 25, "day 1: d1 and both unions")
+	due, new = M.retainCheck(100, 25, 101, cfg)
+	check(#due == 0 and new == 25, "day 1 again: nothing twice")
+	due, new = M.retainCheck(100, 25, 102, cfg)
+	check(#due == 1 and due[1] == "d2_7" and new == 27, "day 2: only the days 2-7 window, the unions are counted")
+	due, new = M.retainCheck(100, 27, 107, cfg)
+	check(#due == 0 and new == 27, "day 7: days 2-7 already counted")
+	due, new = M.retainCheck(100, 27, 108, cfg)
+	check(#due == 1 and due[1] == "d8_30" and new == 31, "day 8: days 8-30")
+	due, new = M.retainCheck(100, 31, 131, cfg)
+	check(#due == 0 and new == 31, "day 31 is outside every window")
+	due, new = M.retainCheck(100, 0, 105, cfg)
+	check(#due == 3 and due[1] == "d2_7" and due[2] == "in7" and due[3] == "in30" and new == 26, "day 5, nothing before: no d1")
+	due, new = M.retainCheck(100, 0, 120, cfg)
+	check(#due == 2 and due[1] == "d8_30" and due[2] == "in30" and new == 20, "day 20: days 8-30 and in30, not in7")
+	due, new = M.retainCheck(100, -1, 101, cfg)
+	check(#due == 3 and new == 25, "flags -1 (unset) read as 0")
+	due, new = M.retainCheck(100, 0, 99, cfg)
+	check(#due == 0, "a clock that went back: nothing")
+	check(math.type == nil or math.type(new) == "integer", "the flags are a whole number")
+	local sql = M.retainSinceSql("chaos_progress_metrics", 20400, "retain_since")
+	eq(sql, "INSERT IGNORE INTO `chaos_progress_metrics` (`kind`, `k1`, `k2`, `n`) VALUES ('meta', 'retain_since', '', 20400)", "retain_since statement")
+	eq(M.retainSinceSql("t", 0, "retain_since"), nil, "day 0: no statement")
+	eq(M.retainSinceSql("t", "20400; DROP TABLE x", "retain_since"), nil, "text: no statement")
+	eq(M.retainSinceSql("t", 0 / 0, "retain_since"), nil, "NaN: no statement")
+	eq(M.retainSinceSql("t", 1e30, "retain_since"), nil, "huge: no statement")
+	eq(M.retainSinceSql("t", 20400.7, "retain_since"), "INSERT IGNORE INTO `t` (`kind`, `k1`, `k2`, `n`) VALUES ('meta', 'retain_since', '', 20400)", "a fraction is floored")
+	check(M.retainSinceSql("t", 20400, "a'b; --"):find("'ab'", 1, true) ~= nil, "the key keeps letters, digits and _ only")
+	local seen = {}
+	for _, k in ipairs(M.KINDS) do seen[k] = true end
+	check(seen.retain, "retain is a kind")
+	for _, w in ipairs(cfg.retainWindows) do
+		check(#w.key <= 16 and w.from >= 1 and w.to >= w.from and w.to <= 30, "window " .. w.key .. " is within days 1-30")
+	end
 end
 do
 	local b, m = M.firstUseMark(0, "dungeon", cfg)
@@ -539,6 +589,51 @@ eq(key("return", "d7", M.dayString(retDay)), nil, "not yet d7")
 relog(ret, 5)
 eq(key("return", "d7", M.dayString(retDay)), 1, "day 8: d7")
 eq(key("return", "d3", M.dayString(retDay)), 1, "d3 stays 1")
+
+-- O437 retention through the engine file: cohort day, windows once each, tester and staff left out
+do
+	local day0 = ChaosMetrics.today()
+	local d = M.dayString(day0)
+	local r = mk({id = 30, guid = 30, name = "Synthetic Rt", player = true, level = 3, group = 1, lastLogin = 0, pos = {x = 1, y = 1, z = 7}})
+	local late = mk({id = 31, guid = 31, name = "Synthetic Late", player = true, level = 3, group = 1, lastLogin = 0, pos = {x = 1, y = 1, z = 7}})
+	local old = mk({id = 32, guid = 32, name = "Synthetic Old", player = true, level = 40, group = 1, lastLogin = 99, pos = {x = 1, y = 1, z = 7}})
+	local rbot = mk({id = 33, guid = 33, name = "Tester Rt", player = true, level = 3, group = 1, lastLogin = 0, pos = {x = 1, y = 1, z = 7},
+		storage = {[Chaos.storage.tester] = 1}})
+	local rgm = mk({id = 34, guid = 34, name = "Staff Rt", player = true, level = 3, group = 3, lastLogin = 0, pos = {x = 1, y = 1, z = 7}})
+	local all5 = {r, late, old, rbot, rgm}
+	for _, p in ipairs(all5) do registry.ChaosMetricsLogin.onLogin(p) end
+	flushAll()
+	eq(key("cohort", d), 2, "cohort: the two counted new characters")
+	check(r.storage[cfg.retainStorage] == nil, "first login: no retention flag")
+	local function again(days, who)
+		clock = clock + days * 86400
+		for _, p in ipairs(who) do p.lastLogin = 1 registry.ChaosMetricsLogin.onLogin(p) end
+		flushAll()
+	end
+	local function got(k, n) return key("retain", k, d) == n end
+	again(0, {r})
+	check(key("retain", "d1", d) == nil and r.storage[cfg.retainStorage] == nil, "same day: no retention")
+	again(1, {r, old, rbot, rgm})
+	check(got("d1", 1) and got("in7", 1) and got("in30", 1) and key("retain", "d2_7", d) == nil and key("retain", "d8_30", d) == nil,
+		"day 1: d1 and the two unions")
+	eq(r.storage[cfg.retainStorage], 25, "flags d1 + in7 + in30")
+	again(0, {r})
+	check(got("d1", 1) and got("in7", 1), "a second login on day 1 counts nothing")
+	again(1, {r})
+	check(got("d1", 1) and got("d2_7", 1) and got("in7", 1) and got("in30", 1), "day 2: days 2-7, the unions stay at 1")
+	-- `late` (first login on day0) first comes back on day 9, 7 days after the last step: days 8-30 and in30 only
+	again(7, {late, r})
+	check(key("retain", "d8_30", d) == 2, "day 9: r and late both in days 8-30")
+	check(key("retain", "in30", d) == 2 and key("retain", "in7", d) == 1 and key("retain", "d1", d) == 1, "late is in30 only")
+	eq(late.storage[cfg.retainStorage], 20, "late: d8_30 + in30")
+	again(30, {r, late})
+	check(key("retain", "d8_30", d) == 2 and key("retain", "in30", d) == 2, "day 39: outside every window, nothing more")
+	check(old.storage[cfg.retainStorage] == nil and rbot.storage[cfg.retainStorage] == nil and rgm.storage[cfg.retainStorage] == nil,
+		"an older character, a tester and staff have no retention flag")
+	for k, _ in pairs(tbl) do
+		check(not (k:find("^retain|") and k:find("Synthetic", 1, true)), "no name in a retain key")
+	end
+end
 
 -- first use of a system, through the wrapped APIs and the direct call
 local f = mk({id = 21, guid = 21, name = "Synthetic Fu", player = true, level = 12, group = 1, lastLogin = 5, pos = {x = 1, y = 1, z = 7}})

@@ -61,7 +61,12 @@ ok(cfg.tester.title.color:match("^#%x%x%x%x%x%x$") ~= nil, "title color")
 local sql = readFile("sql/chaos_beta_testers.sql")
 ok(sql:find("CREATE TABLE IF NOT EXISTS `chaos_beta_testers`", 1, true) ~= nil, "sql file")
 ok(B.TESTERS_SCHEMA:find("PRIMARY KEY (`account_id`)", 1, true) ~= nil and sql:find("PRIMARY KEY (`account_id`)", 1, true) ~= nil, "one row per account")
-ok(readFile("../docs/BETA.md"):find("'chaos_beta_testers'", 1, true) ~= nil, "docs/BETA.md keeps the table at the wipe")
+-- the keep rule lives in the wipe tool's table policy (O438); docs/BETA.md says the same in words
+local policy = readFile("deploy/launch_wipe_tables.json")
+ok(policy:find('"chaos_beta_testers":%s*{%s*"action":%s*"keep"') ~= nil, "the wipe policy keeps the table")
+local betaDoc = readFile("../docs/BETA.md")
+ok(betaDoc:find("`chaos_beta_testers`. The wipe of section 9 keeps that table", 1, true) ~= nil, "docs/BETA.md keeps the table at the wipe")
+ok(betaDoc:find("`chaos_beta_testers` count unchanged", 1, true) ~= nil, "docs/BETA.md: the wipe check counts the testers")
 
 -- ====================================================================== engine
 local rows, cursor, nextId = {}, {}, 0
