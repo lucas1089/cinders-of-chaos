@@ -41,6 +41,10 @@ return {
 	undoEngineAbsorb = true,
 	-- the equipment slots the engine reads (Player::blockHit, CONST_SLOT_FIRST .. CONST_SLOT_BADGE)
 	wornSlots = {1, 2, 4, 5, 6, 7, 8, 9, 10, 13},
+	-- the passive tree and Paragon part of the four resistances (the second absorb storages 977562..) counts `share` of its
+	-- points and at most `cap` points per resistance after the share; gear, sets, gems and charms count in full. The tree's
+	-- physical reduction is not touched. share = 1 and cap = nil (or no `tree` table) give the rule before.
+	tree = {share = 0.5, cap = 30},
 	-- player storage (server/README.md "Storage keys", 7103080 - 7103089): +0 the last level the character was warned about
 	-- the penalty for (once per level)
 	storage = {lastWarned = 7103080},

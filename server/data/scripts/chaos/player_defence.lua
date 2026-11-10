@@ -135,19 +135,34 @@ local function read(player, pvp)
 	local c = cfg()
 	local sums = C.newSums(c)
 	local worn, storage = {}, {}
+	local tree = {} -- group -> the points of the passive tree and Paragon (second storages), counted below
 	for _, t in ipairs(TYPES) do
 		local ctype = K[t[1]]
 		if ctype then
-			local s = 0
+			local gear, treePts = 0, 0
 			for i = 2, 3 do
 				local v = tonumber(try(player.getStorageValue, player, t[i])) or 0
 				if v > 0 then
-					s = s + v
+					if i == 2 then
+						gear = v
+					else
+						treePts = v
+					end
 				end
 			end
-			storage[ctype] = s
-			C.addType(sums, GROUP_OF, K, ctype, s)
+			storage[ctype] = gear + treePts -- the engine's patch 0049 reads both in full
+			local g = GROUP_OF[ctype]
+			if g then
+				C.addType(sums, GROUP_OF, K, ctype, gear)
+				tree[g] = (tree[g] or 0) + treePts
+			else
+				C.addType(sums, GROUP_OF, K, ctype, gear + treePts) -- physical: the tree's reduction is in full
+			end
 		end
+	end
+	-- O464: the tree counts a share of its points, at most a cap per resistance
+	for g, pts in pairs(tree) do
+		C.addGroup(sums, g, C.treeCounted(c, pts))
 	end
 	for _, slot in ipairs(c.wornSlots) do
 		local item = try(player.getSlotItem, player, slot)

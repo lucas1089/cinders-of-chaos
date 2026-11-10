@@ -496,6 +496,10 @@ local function affixNotes(D, a, isPower)
 		notes[#notes + 1] = "A chance that a spell hit deals 50% less. All your spell suppression together counts at most 100%. It does not touch attacks, burns, poison or fields."
 	elseif a.chaosKey == "fireres" or a.chaosKey == "coldres" or a.chaosKey == "lightningres" or a.chaosKey == "chaosres" or a.chaosKey == "allres" then
 		notes[#notes + 1] = "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."
+		local PDC = D.playerDefence
+		if PDC and PDC.tree then
+			notes[#notes + 1] = string.format("The passive tree and Paragon count %s%% of their points toward a resistance, at most %s points from the tree; gear, sets, gems and charms count in full.", Gen.num((PDC.tree and PDC.tree.share or 1) * 100), Gen.num(PDC.tree and PDC.tree.cap or 0))
+		end
 		if a.chaosKey == "allres" then
 			notes[#notes + 1] = "Counts for Fire, Cold and Lightning, not for Chaos."
 		end
@@ -1804,6 +1808,7 @@ function Gen.basicsEntries(D)
 				{h = "The four resistances", p = {
 					"Fire: fire. Cold: ice, water, drowning. Lightning: energy, holy, arcane. Chaos: earth, death, life drain, mana drain. Physical is not a resistance: it has armour and the physical reduction.",
 					"Every source adds up (gear, the passive tree, Paragon, item sets, gems, charms); all elements count for Fire, Cold and Lightning, not for Chaos.",
+					PDC.tree and string.format("The passive tree and Paragon count %s%% of their points toward a resistance, at most %s points from the tree; gear, sets, gems and charms count in full.", Gen.num((PDC.tree and PDC.tree.share or 1) * 100), Gen.num(PDC.tree and PDC.tree.cap or 0)) or "The passive tree and Paragon count in full.",
 					string.format("The penalty by level (%s) comes off the sum; the result is held at %d (a rift modifier can lower that); a player attacker's penetration comes off after that, down to %d. A negative resistance raises the damage you take.",
 						table.concat(marks, ", "), DEF.resistCap, DEF.resistFloor),
 					"You are told at login and when you level up between 240 and 249 and between 490 and 499, and when you cross a mark."}},

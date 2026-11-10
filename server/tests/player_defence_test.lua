@@ -404,23 +404,23 @@ do
 	local st = PD.state(p, false)
 	-- fire: 20 + 15 storages, 12 worn, 6 mod, 10 all, 4 set = 67; cold: 10 + 5 + 7 + 10 + 2 = 34; lightning: 8 + 8 + 10 + 3 + 6 = 35;
 	-- chaos: 5 worn death + 9 = 14 (no all elements)
-	eq(st.sums.group.fire, 67, "sources of fire: storages, worn, modifier, all elements, sets")
-	eq(st.sums.group.cold, 34, "sources of cold: ice, water, charm, modifier, all elements")
+	eq(st.sums.group.fire, 59.5, "sources of fire: gear storage 20, the tree's 15 counted half (7.5), worn, modifier, all elements, sets")
+	eq(st.sums.group.cold, 31.5, "sources of cold: ice, water, charm, modifier, all elements")
 	eq(st.sums.group.lightning, 35, "sources of lightning: holy, set energy, gem arcane, modifier, all elements")
 	eq(st.sums.group.chaos, 14, "sources of chaos: a worn death, the modifier, NOT all elements")
 	eq(st.sums.phys, 40, "physical reduction: both storages")
 	eq(st.dodge, 5, "dodge from the totals"); eq(st.block, 4, "block"); eq(st.suppress, 30, "suppression")
 	eq(st.A, 50, "armour: the modifier (no armour on the pieces)")
 	local pvp = PD.state(p, true)
-	eq(pvp.sums.group.fire, 64, "item sets give their PvP share against a player (fire 1 instead of 4)")
+	eq(pvp.sums.group.fire, 56.5, "item sets give their PvP share against a player (fire 1 instead of 4)")
 	eq(pvp.sums.group.lightning, 32, "... lightning 0 instead of 3")
 	-- the resistance with the penalty
 	local r = PD.resistances(p)
-	eq(r.fire, 67, "resistances at level 100: 67, no penalty")
+	eq(r.fire, 59.5, "resistances at level 100: 59.5, no penalty")
 	p.level = 500
 	PD.invalidate(p)
 	r = PD.resistances(p)
-	eq(r.fire, 7, "at level 500: 67 - 60"); eq(r.chaos, -46, "chaos 14 - 60")
+	eq(r.fire, -0.5, "at level 500: 59.5 - 60"); eq(r.chaos, -46, "chaos 14 - 60")
 	p.level = 100
 	PD.invalidate(p)
 
@@ -428,7 +428,7 @@ do
 	math.random = function(n) return 100 end -- no dodge, no block, no suppression
 	local pd, pt, sd, st2 = ev.onHealthChange(p, foe, -880, K.fire, 0, K.none, ORIGIN_SPELL)
 	-- the engine kept 0.88 (12 absorb, storage 35 so the ceiling floor is 0.25 / 0.65 = 0.385: not reached): raw 1000; fire 67: 330
-	eq(pd, -330, "the event: raw 1000 at fire 67")
+	eq(pd, -405, "the event: raw 1000 at fire 59.5")
 	eq(pt, K.fire, "the type is kept")
 	-- the layer is off: nothing changes
 	CFG.enabled = false
@@ -454,7 +454,7 @@ do
 	-- a tick of fire: no avoidance, the resistance
 	math.random = function(n) return 1 end
 	pd = ev.onHealthChange(p, nil, -88, K.fire, 0, K.none, ORIGIN_CONDITION)
-	eq(pd, -33, "a fire tick with no attacker (the engine's item absorb comes out and the resistance goes in)")
+	eq(pd, -41, "a fire tick with no attacker (the engine's item absorb comes out and the resistance goes in)")
 
 	-- a player attacker: its penetration counts, item sets give the PvP share
 	local foePlayer = newPlayer({level = 300})
@@ -463,11 +463,11 @@ do
 	PD.invalidate(p)
 	pd = ev.onHealthChange(p, foePlayer, -880, K.fire, 0, K.none, ORIGIN_SPELL)
 	-- pvp: fire 64; minus 20 penetration = 44 -> 1000 x 0.56
-	eq(pd, -560, "PvP: sets give their PvP share, the attacker's penetration comes off")
+	eq(pd, -635, "PvP: sets give their PvP share, the attacker's penetration comes off")
 	-- a summon counts as its master
 	local summon = newMonster(foePlayer)
 	pd = ev.onHealthChange(p, summon, -880, K.fire, 0, K.none, ORIGIN_SPELL)
-	eq(pd, -560, "a player's summon counts as a player")
+	eq(pd, -635, "a player's summon counts as a player")
 	ChaosItemSets, ChaosCharms, ChaosGems = nil, nil, nil
 end
 
@@ -491,6 +491,55 @@ do
 	eq(pd, -1000, "a hit the mana shield scaled is left as it is")
 	pd = ev.onHealthChange(p, foe, -1000, K.fire, 0, K.none, ORIGIN_SPELL)
 	eq(pd, -500, "the next hit is handled again")
+end
+
+-- ---------------------------------------------------------------- the tree counts half, at most 30
+do
+	eq(CFG.tree.share, 0.5, "tree share"); eq(CFG.tree.cap, 30, "tree cap")
+	eq(C.treeCounted(CFG, 20), 10, "below the cap: half")
+	eq(C.treeCounted(CFG, 60), 30, "at the cap")
+	eq(C.treeCounted(CFG, 116), 30, "over the cap")
+	eq(C.treeCounted({tree = {share = 1}}, 116), 116, "share 1 and no cap: as before")
+	eq(C.treeCounted({}, 116), 116, "no tree table: as before")
+	-- every group, from the second storages; the physical reduction in full; gear in full; PvP the same
+	local p = newPlayer({level = 100})
+	local second = {fire = 977562, ice = 977567, energy = 977564, earth = 977565, death = 977569, physical = 977563}
+	storage[p.id .. ":" .. second.fire] = 40      -- fire group: 20
+	storage[p.id .. ":" .. second.ice] = 100      -- cold group: capped at 30
+	storage[p.id .. ":" .. second.energy] = 10    -- lightning: 5
+	storage[p.id .. ":" .. second.earth] = 30     -- chaos: 15 + 40 death / 2 = 20 -> 35 -> cap 30
+	storage[p.id .. ":" .. second.death] = 40
+	storage[p.id .. ":" .. second.physical] = 55  -- physical: in full
+	storage[p.id .. ":977544"] = 10               -- gear fire: in full
+	bonusOf[p.id] = {}
+	PD.invalidate(p)
+	for _, pvp in ipairs({false, true}) do
+		local g = PD.state(p, pvp).sums
+		eq(g.group.fire, 30, "fire: 10 gear + half of 40")
+		eq(g.group.cold, 30, "cold: half of 100 is 50, held at 30")
+		eq(g.group.lightning, 5, "lightning: half of 10")
+		eq(g.group.chaos, 30, "chaos: half of 70 is 35, held at 30")
+		eq(g.phys, 55, "the tree's physical reduction is not touched")
+	end
+	-- the engine's patch 0049 still sees the full storages
+	eq(PD.state(p, false).storage[K.fire], 50, "the engine reads both storages in full")
+	CFG.tree = nil
+	PD.invalidate(p)
+	eq(PD.state(p, false).sums.group.cold, 100, "without a tree rule the full tree counts")
+	CFG.tree = {share = 0.5, cap = 30}
+	PD.invalidate(p)
+end
+
+-- the tree's own text says it (numbers from the config), in both languages; physical resist is not touched
+do
+	dofile("data/scripts/chaos/passivetree_stats_config.lua")
+	local st = ChaosPassiveStatsConfig.stats
+	local pt = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"]
+	for _, k in ipairs({"absorbFire", "absorbIce", "absorbEarth", "absorbLife", "absorbAllElements"}) do
+		ok(st[k][2]:find("counts as half a point, and the tree gives at most 30.", 1, true), k .. " text names the tree rule")
+		ok(pt[st[k][2]] and pt[st[k][2]]:find("meio ponto", 1, true), k .. " pt-BR")
+	end
+	ok(not st.absorbPhysical[2]:find("half a point", 1, true), "physical resist text unchanged")
 end
 
 -- ---------------------------------------------------------------- class evasion is one of the dodge sources

@@ -12,7 +12,7 @@ O jeito como o seu personagem se defende mudou. Leia isto antes de caçar.
 
 **Quatro resistências.** Fire é fogo. Cold é gelo, água e afogamento. Lightning é energia, sagrado e arcano. Chaos é terra,
 morte, drenagem de vida e drenagem de mana. Tudo o que dava resistência antes continua valendo, pelo valor inteiro:
-equipamento, árvore passiva, Paragon, conjuntos, gemas e amuletos. Uma resistência para em 75. Dano físico não é uma
+equipamento, conjuntos, gemas e amuletos. A árvore passiva e o Paragon agora contam metade dos seus pontos para uma resistência, e no máximo 30 da árvore: o equipamento cobre o resto. Uma resistência para em 75. Dano físico não é uma
 resistência: ele tem armadura.
 
 **Uma penalidade por nível.** A partir do nível 250 toda resistência perde 30 pontos, a partir do nível 500 perde 60. Você é

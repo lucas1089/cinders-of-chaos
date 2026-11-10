@@ -3029,6 +3029,29 @@ return {
 			"Recebe essa porcentagem a menos de dano de mana drain, no máximo 75%.",
 		["Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each."] =
 			"Soma essa porcentagem à resistência de todos os elementos (fogo, gelo, energia, terra, morte, sagrado, água, arcano), no máximo 75 por cento cada.",
+		-- O464: the tree counts half of a resistance point, at most 30 (passivetree_stats_config.lua TREE_NOTE)
+		["Takes this percent less fire damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de fogo, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less ice damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de gelo, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less energy damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de energia, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less earth damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de terra, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less death damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de morte, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less holy damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano sagrado, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less arcane damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano arcano, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less water damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de água, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less life drain damage, at most 75%. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de life drain, no máximo 75%. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less mana drain damage, at most 75%. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de mana drain, no máximo 75%. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Soma essa porcentagem à resistência de todos os elementos (fogo, gelo, energia, terra, morte, sagrado, água, arcano), no máximo 75 por cento cada. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
 		["Raises your crafting skill; no combat effect."] =
 			"Aumenta seu skill de criação; sem efeito em combate.",
 		["Raises your armorsmith skill; no combat effect."] =

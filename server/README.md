@@ -30370,14 +30370,14 @@ pt-BR (`i18n_strings.lua`). The last level told is the player storage 7103080 (`
 points (`ChaosPlayerDefence.hooks.capDelta`); `hooks.area` is the place of a sum penalty of an area (0 now).
 
 **Every source, in ONE reader** (`ChaosPlayerDefence.state(player, pvp)`, cached 1 s, cleared when an item moves, at login and on a
-level up). Each counts at its full value toward the group of its type; an "all elements" source counts toward Fire, Cold and
+level up). Each counts at its full value (the passive tree and Paragon: half, at most 30, see their row) toward the group of its type; an "all elements" source counts toward Fire, Cold and
 Lightning, not Chaos.
 
 | Source | Where it comes from | Counts toward |
 |---|---|---|
 | Worn pieces' item absorb | the `absorbPercent` abilities of the item types (stock items, the 20 item sets of `install_gear_sets.py`, relic sets, jewellery; may be negative: a weakness) | the group of its type; physical: the physical reduction |
 | Gear rarity absorb | the two absorb storages 977544-977555 (base_rarity.lua writes the `rarity_*Absorb` attributes of every rolled item, unique and set piece; uniques and sets are not upgraded) | the same |
-| Passive tree, Paragon | the second storages 977562-977575 (`ChaosPassiveAbsorbPercent`: a type's absorb + all elements + the Paragon reduction, held at 75 per type by the tree) | the same |
+| Passive tree, Paragon | the second storages 977562-977575 (`ChaosPassiveAbsorbPercent`: a type's absorb + all elements + the Paragon reduction, held at 75 per type by the tree). **Counts `tree.share` (0.5) of its points toward a resistance, at most `tree.cap` (30) per resistance after the share** (`player_defence_config.lua` `tree`, owner 2026-11-10: "make the tree cover less, the gear has to cover the rest"); the tree's PHYSICAL reduction counts in full; the engine's patch 0049 still reads the full storage | the same |
 | Item modifiers | `fireres`, `coldres`, `lightningres`, `chaosres` (rolled, T1-T8), `allres` (Fire, Cold and Lightning), the physical absorb row | the group; all elements; physical |
 | Item sets | `ChaosItemSets.resistances` (`S.totals` res, the PvP share `resPvp` against a player or a player's summon, at most 90 each) | the group of its element |
 | Charms | `ChaosCharms.resistOf` (the `res_*` effects of placed charms) | the group of its element |
@@ -30390,9 +30390,14 @@ cards (they act on the player's damage), blessings, factions and raid (their gea
 (no per-type absorb of their own).
 
 *The totals of the 63 Recommended builds, from the tree alone, before the penalty* (`absorb` of the nodes, each type held at 75
-as the tree does, folded into the group at full value; gear and the other sources come on top): Fire mean 14.8 / max 37; Cold
-mean 33.9 / max 85; Lightning mean 35.3 / max 98; Chaos mean 51.7 / max 116; the physical reduction mean 36.8 / max 75. With
-the penalty of level 500 and no gear a mean build is at -45, -26, -25 and -8.
+as the tree does, folded into the group, then the tree rule: half, at most 30; gear and the other sources come on top).
+Without the tree rule: Fire mean 14.8 / max 37; Cold 33.9 / 85; Lightning 35.3 / 98; Chaos 51.7 / 116. With it: Fire mean 7.4 /
+max 18; Cold 16.1 / 30; Lightning 16.5 / 30; Chaos 21.5 / 30; the physical reduction mean 36.8 / max 75 (unchanged). After the
+penalty a mean build with no gear is at -22.6, -13.9, -13.5, -8.5 at level 250 and -52.6, -43.9, -43.5, -38.5 at level 500.
+To stand at 75 the gear must give, for the mean build, 98 / 89 / 89 / 84 (Fire, Cold, Lightning, Chaos) at level 250 and
+128 / 119 / 119 / 114 at level 500. In suffixes: a T6 resistance (36-41, 25-28 chaos) takes 3 / 3 / 3 / 4 suffixes at level
+250 and 4 / 4 / 4 / 5 at level 500; a T8 one (46-48, 32-35) takes 3 / 2 / 2 / 3 and 3 / 3 / 3 / 4; All Elemental Resistances
+(16 at T8, jewel, other, shield) count for Fire, Cold and Lightning at once.
 
 **Armour.** A = the armour of the worn pieces (the item's own attribute, else the type's) plus the Armour modifier. The
 vocation multiplier of the engine (0.9 to 1.15, `vocations.xml`) is not readable from Lua and is left out. The engine's armour

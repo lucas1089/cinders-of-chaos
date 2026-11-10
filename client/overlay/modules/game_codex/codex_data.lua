@@ -151,7 +151,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take.", "Counts for Fire, Cold and Lightning, not for Chaos."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take.", "The passive tree and Paragon count 50% of their points toward a resistance, at most 30 points from the tree; gear, sets, gems and charms count in full.", "Counts for Fire, Cold and Lightning, not for Chaos."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -735,7 +735,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take.", "The passive tree and Paragon count 50% of their points toward a resistance, at most 30 points from the tree; gear, sets, gems and charms count in full."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -796,7 +796,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take.", "The passive tree and Paragon count 50% of their points toward a resistance, at most 30 points from the tree; gear, sets, gems and charms count in full."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -1977,7 +1977,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take.", "The passive tree and Paragon count 50% of their points toward a resistance, at most 30 points from the tree; gear, sets, gems and charms count in full."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -2714,7 +2714,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take.", "The passive tree and Paragon count 50% of their points toward a resistance, at most 30 points from the tree; gear, sets, gems and charms count in full."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -17654,7 +17654,7 @@ CodexData = {
 						},
 						{
 							h = "The four resistances",
-							p = {"Fire: fire. Cold: ice, water, drowning. Lightning: energy, holy, arcane. Chaos: earth, death, life drain, mana drain. Physical is not a resistance: it has armour and the physical reduction.", "Every source adds up (gear, the passive tree, Paragon, item sets, gems, charms); all elements count for Fire, Cold and Lightning, not for Chaos.", "The penalty by level (level 250: -30, level 500: -60) comes off the sum; the result is held at 75 (a rift modifier can lower that); a player attacker's penetration comes off after that, down to -100. A negative resistance raises the damage you take.", "You are told at login and when you level up between 240 and 249 and between 490 and 499, and when you cross a mark."}
+							p = {"Fire: fire. Cold: ice, water, drowning. Lightning: energy, holy, arcane. Chaos: earth, death, life drain, mana drain. Physical is not a resistance: it has armour and the physical reduction.", "Every source adds up (gear, the passive tree, Paragon, item sets, gems, charms); all elements count for Fire, Cold and Lightning, not for Chaos.", "The passive tree and Paragon count 50% of their points toward a resistance, at most 30 points from the tree; gear, sets, gems and charms count in full.", "The penalty by level (level 250: -30, level 500: -60) comes off the sum; the result is held at 75 (a rift modifier can lower that); a player attacker's penetration comes off after that, down to -100. A negative resistance raises the damage you take.", "You are told at login and when you level up between 240 and 249 and between 490 and 499, and when you cross a mark."}
 						},
 						{
 							h = "Where to read it",

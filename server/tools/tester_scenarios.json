@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 67,
   "out": 38,
-  "passive": 102,
+  "passive": 103,
   "place": 15,
   "staff": 17
  },
@@ -8827,7 +8827,10 @@
    "client": [
     "game_skillstats"
    ],
-   "dataKeys": [],
+   "dataKeys": [
+    "armor",
+    "physical"
+   ],
    "files": [
     "combat_stats.lua"
    ],
@@ -12378,6 +12381,15 @@
   "pickups": {
    "files": [
     "pickups.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "player_defence": {
+   "files": [
+    "player_defence.lua"
    ],
    "kind": "passive",
    "opcodes": [],

@@ -86,6 +86,20 @@ function C.addGroup(sums, group, percent)
 	end
 end
 
+-- the points of the passive tree and Paragon that count toward one resistance: cfg.tree.share of them, at most cfg.tree.cap
+function C.treeCounted(cfg, points)
+	points = num(points)
+	local t = cfg.tree
+	if not t then
+		return points
+	end
+	local v = points * (t.share or 1)
+	if t.cap and v > t.cap then
+		v = t.cap
+	end
+	return v
+end
+
 -- ------------------------------------------------------------------------------------------------- level penalty
 -- the penalty (percent points) on all four resistances at this level
 function C.penalty(cfg, level)

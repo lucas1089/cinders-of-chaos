@@ -410,7 +410,8 @@ P.features = {
 			local P, D = C.playerDefence, C.defence
 			return {cap = D.resistCap, phys = D.physicalReductionCap, m1 = P.penalty.marks[1].level, p1 = P.penalty.marks[1].points,
 				m2 = P.penalty.marks[2].level, p2 = P.penalty.marks[2].points, w1 = P.penalty.marks[1].warnFrom,
-				w2 = P.penalty.marks[2].warnFrom, dodge = P.dodgeCap, block = D.blockCap, less = P.suppressLess}
+				w2 = P.penalty.marks[2].warnFrom, dodge = P.dodgeCap, block = D.blockCap, less = P.suppressLess,
+				share = P.tree.share * 100, tcap = P.tree.cap}
 		end,
 		what = {"A hit is worked out in this order: dodge and block can stop an attack, spell suppression takes {less}% off a spell, then armour and your physical reduction take a share off a physical hit (at most {phys}% together) and your resistance takes a share off the other kinds.",
 			"Um golpe é calculado nesta ordem: esquiva e bloqueio podem parar um ataque, a supressão de magia tira {less}% de um feitiço, depois a armadura e a sua redução física tiram uma parte de um golpe físico (no máximo {phys}% juntas) e a sua resistência tira uma parte dos outros tipos."},
@@ -418,8 +419,8 @@ P.features = {
 			"Todo personagem. Quatro resistências: Fire, Cold (gelo, água, afogamento), Lightning (energia, sagrado, arcano) e Chaos (terra, morte, drenagem de vida e de mana). O físico tem armadura no lugar."},
 		levels = {"From level {m1} every resistance loses {p1} points and from level {m2} it loses {p2}. You are told from level {w1} and from level {w2}, and when you cross the mark. A negative resistance makes you take more damage.",
 			"A partir do nível {m1} toda resistência perde {p1} pontos e a partir do nível {m2} perde {p2}. Você é avisado a partir do nível {w1} e do nível {w2}, e quando passa da marca. Uma resistência negativa faz você sofrer mais dano."},
-		drops = {"Resistances, armour, dodge, block and spell suppression come from gear, the passive tree, sets, gems and charms. A resistance counts at most {cap}%. Dodge and block count at most {dodge}% and {block}%.",
-			"Resistências, armadura, esquiva, bloqueio e supressão de magia vêm de equipamento, da árvore passiva, de conjuntos, gemas e amuletos. Uma resistência conta no máximo {cap}%. Esquiva e bloqueio contam no máximo {dodge}% e {block}%."},
+		drops = {"Resistances, armour, dodge, block and spell suppression come from gear, the passive tree, sets, gems and charms. A resistance counts at most {cap}%. The passive tree counts {share}% of its points toward a resistance, at most {tcap}. Dodge and block count at most {dodge}% and {block}%.",
+			"Resistências, armadura, esquiva, bloqueio e supressão de magia vêm de equipamento, da árvore passiva, de conjuntos, gemas e amuletos. Uma resistência conta no máximo {cap}%. A árvore passiva conta {share}% dos seus pontos para uma resistência, no máximo {tcap}. Esquiva e bloqueio contam no máximo {dodge}% e {block}%."},
 		often = {"The character sheet (Info & Services, Character Info) shows each resistance with its sources, the penalty and the result, and your armour, dodge, block and spell suppression.",
 			"A ficha do personagem (Info & Services, Character Info) mostra cada resistência com as fontes, a penalidade e o resultado, e a sua armadura, esquiva, bloqueio e supressão de magia."}},
 

@@ -11,8 +11,8 @@ Facts used: server/README.md "Player defence (O464)". Not run on a live server: 
 How your character defends has changed. Read this before you hunt.
 
 **Four resistances.** Fire is fire. Cold is ice, water and drowning. Lightning is energy, holy and arcane. Chaos is earth,
-death, life drain and mana drain. Everything that gave you a resistance before still counts, at its full value: gear, the
-passive tree, Paragon, sets, gems and charms. A resistance is held at 75. Physical damage is not a resistance: it has armour.
+death, life drain and mana drain. Everything that gave you a resistance before still counts, at its full value: gear, sets, gems and
+charms. The passive tree and Paragon now count half of their points toward a resistance, and at most 30 from the tree: the gear covers the rest. A resistance is held at 75. Physical damage is not a resistance: it has armour.
 
 **A penalty by level.** From level 250 every resistance loses 30 points, from level 500 it loses 60. You get a warning at
 login and when you level up from 240 to 249 and from 490 to 499, and a message when you pass the mark. A resistance can go
