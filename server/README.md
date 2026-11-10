@@ -4011,6 +4011,12 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   now asks whenever no preview is shown, asks again after 4 s (3 tries) and then shows an error. The skipped count of
   the plan also says "points" for the rest of a path once the points run out (it said "disconnected", which the client
   showed as nodes the class cannot hold). A preview is at most about 2.3 KB (one message, tested for every build).
+- **Starter Builds guide (O448).** `server/tools/gen_starter_builds.lua` (`--check` in CI, luajit and lua5.3) writes
+  `website/overlay/plugins/chaos/guide/starter_builds_data.json` for the website page `page?plugin=chaos&p=starterbuilds` (`starter_builds_lib.php`,
+  `pages/starterbuilds.php`). Per class its three Recommended builds in words, the keystones by name and point, the spells, what to wear, a
+  card set and four import codes (23, 73, 123, 248 points). Facts come from the build data; the words are `tools/starter_builds_config.lua`.
+  No figure: a percent sign or DPS in a text stops the generator (`tests/starter_builds_test.lua`, `website/tests/chaos_starterbuilds_page_test.php`).
+  docs/BUILDS.md "Starter builds guide and Save to a loadout slot (O448)".
 - **Drown nodes** are gone: 23 nodes hidden in `nodes.lua`, refunded once (`reworked` version 4), the tree has 640 nodes.
 - **Primary / Secondary** per class: `passivetree_stats_config.lua` `classes[...]` (the Templar line counts mana leech as
   secondary: its spells cost mana). The window shows a header, a gold (primary) or silver (secondary) border on nodes and a
@@ -25195,6 +25201,19 @@ preview at the respec prices.
   active.
 - The randomized check in `tests/loadouts_test.lua` runs thousands of save / load / delete / priced-edit steps and checks that no
   tree shape ever appears that a priced edit did not make, and that no rune is created or lost.
+
+**A recommended build into a slot (O448).** The Auto build panel of the passive tree writes a Recommended or Focus build's tree into a
+slot without changing the live tree: `ChaosLoadouts.saveBuild(player, slot, buildId, confirm)` and `slotChoices(player)`, reached
+through the passive tree's opcode 65 (`passive_builds.lua` actions `autobuildSlots` and `autobuildSaveSlot {build, slot, confirm}`;
+answers `autobuildSlots`, `autobuildSlotSaved {message, lines, slot, build}` and `autobuildError {message, slot, build, needConfirm, name}`),
+no new opcode. Rules, all pure and tested: `PassiveBuildsCore.pick` (the build of the character's class, else "unknown" or "class"),
+`PassiveBuildsCore.planSlot` (the first `points` nodes of the build, the build's masteries, refused as "class" when a node is not the
+class's or the build is not a legal path, "cap" over the keystone cap with the tree's text, "empty" without points) and
+`ChaosLoadoutsCore.planBuildSave` (a slot that does not exist or is not earned is refused, the active slot is refused, a held slot needs
+`confirm == true`). Only the `tree` column is written (name = the build's English name, `voc` = the class); `paragon`, `supports`, `gear`
+and `icon` of a held slot stay, a new slot gets them empty (an empty gear set leaves the worn items as they are on a load). A refusal
+writes nothing and changes no storage. The rate limit is `passivetree.autobuildSaveSlot` (1 s). Tests: `tests/loadouts_test.lua`,
+`tests/passive_builds_test.lua`, client `autobuild_test.lua`. docs/BUILDS.md "Starter builds guide and Save to a loadout slot (O448)".
 
 **Switching.** Out of combat (no fight condition, not PZ-locked), level 15+ (O368; was 8), not inside an instance (arena, rift, Vocation Trial,
 raid, Ember Descent, Infinity Tower, Ascended Omen, siege), `cooldownSeconds` (60) after the last switch. In a protection zone it

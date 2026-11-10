@@ -336,6 +336,37 @@ need the rarer tier 3 and 4 cards. In damage the set costs little: against the b
 the Beastmaster and Mystic lead by less than half a point. The worst case, all of a class's damage being of the set's
 element, is 6% of its damage per second. Nothing here was measured in game.
 
+## Starter builds guide and Save to a loadout slot (O448)
+
+The build audit found that the game says builds exist but not what to do with them. Two answers, both words and plain actions, no
+new numbers.
+
+- **The guide.** A website page, `page?plugin=chaos&p=starterbuilds`, English and pt-BR. Per class, its three Recommended builds:
+  name and kind, what it does (the build's own line, up to its price), how it plays (two or three short sentences), the price
+  in words, the keystones by name with the point of the build each one arrives at, the spells to lean on (from the class kit),
+  what to wear (the sword, axe or club of the Warrior, Thief and Templar lines, O454), a card set that fits when one is
+  reachable (O453) and four import codes. The data is generated: `cd server && luajit tools/gen_starter_builds.lua` writes
+  `website/overlay/plugins/chaos/guide/starter_builds_data.json` from the build data and `tools/starter_builds_config.lua`, the
+  hand-written words. `--check` is in CI. The page is `starter_builds_lib.php` and `pages/starterbuilds.php`. The wiki tree
+  guide links it, the How it works Passive Tree card and the help search name it.
+- **No figures.** The guide is qualitative: a percent sign or the letters DPS in a text stops the generator and the tests. The
+  price line of a Recommended build in the game has percent figures, so the guide writes its own price in words. A point or a
+  level is a plain fact and is allowed (a keystone arrives at point 25).
+- **The codes.** Each build is cut at 23, 73, 123 and 248 points, levels 100, 300, 500 and 1000. A code is the first N nodes of the
+  build in order, written with `ChaosBuildShare.encode` (format CB6, the Build Code window imports it). Every cut is checked
+  with the tree rules of the loadouts (`PassiveBuildsCore.planSlot`: known nodes, the class's own, each node touching the start
+  or an earlier node, at most 3 keystones) and decoded again. A cut that is not a legal tree would be dropped and listed;
+  none is dropped today: 63 builds, 252 codes. The class mark of a code is the class line (Warrior, Ranger, Mystic, Thief);
+  the Monk, Necromancer and Templar lines share mark 0, so the game accepts such a code on any of those three lines and stops
+  the nodes the class cannot hold.
+- **Save to a loadout slot.** The Auto build panel of the passive tree has a button for the picked build. The player picks a slot,
+  the build's tree cut to the character's points is written into it, named after the build. The live tree does not change, and
+  only the tree of the slot is written: its gear, runes, Paragon and icon stay as they were (the panel says so). A slot that
+  holds something is replaced only after a confirm. Refused, with nothing changed: another class's build, a build over the
+  keystone cap, a slot that does not exist or is not earned, the active slot (it holds the live build and is written over on the
+  next switch), no passive points yet, below the loadouts' level. No new opcode: the actions `autobuildSlots` and
+  `autobuildSaveSlot` of the passive tree's opcode 65, reusing the loadouts' own checks. server/README.md "Loadouts".
+
 ## Leveling notes
 
 - Keystones need their paths. The leaves at 8 or 9 points are early picks (96, 99, 102 and 105 too); 253, 262, 355 and

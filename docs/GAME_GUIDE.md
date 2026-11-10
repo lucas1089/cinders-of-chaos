@@ -234,6 +234,8 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   your action bar. Five slots, a sixth at level 200 and a seventh at level 500, earned and never sold. The Chaos Pact adds an eighth. Switching is free,
   out of combat and outside instances, with a short channel outside protection zones. A saved tree was paid for once,
   so a switch never dodges a respec price.
+  The Auto build panel of the passive tree can save a recommended build into a free slot (Save to a loadout slot): only the tree
+  of the slot is written, its gear and runes stay, and your live tree does not change. The website has a Starter Builds guide.
 - **Paragon:** after level 1000 every level gives a Paragon point. You spend them on small, capped bonuses in four
   categories (Offense, Defense, Utility and Fortune: damage, critical damage, health, damage reduction, movement speed,
   mana, gold find and item find), so there is always something to gain.

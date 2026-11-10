@@ -21,7 +21,12 @@ local function advance(ms)
 end
 function showTreeAllocation() shown = shown + 1 end
 function sendMessageBox() boxes = boxes + 1 end
-function displayGeneralBox() return {destroy = function() end} end
+local lastBox = nil
+function displayGeneralBox(title, text, buttons, ok, cancel)
+  lastBox = {title = title, text = text, buttons = buttons, destroyed = false}
+  lastBox.destroy = function(self) self.destroyed = true end
+  return lastBox
+end
 AnchorHorizontalCenter = 1
 function tr(s, ...) if select('#', ...) > 0 then return string.format(s, ...) end return s end
 
@@ -45,7 +50,15 @@ local win = widget('autoBuildWindow')
 local kids = {detailText = widget('detailText'), applyButton = widget('applyButton'), resetButton = widget('resetButton'),
   buildCombo = widget('buildCombo')}
 function win:recursiveGetChildById(id) return kids[id] end
-g_ui = {loadUI = function() return win end}
+local pickKids = {slotCombo = widget('slotCombo'), introText = widget('introText'), saveButton = widget('saveButton')}
+local pickWin = widget('autoBuildSlotWindow')
+function pickWin:recursiveGetChildById(id) return pickKids[id] end
+function pickWin:destroy() self.destroyed = true; self.visible = false end
+kids.saveSlotButton = widget('saveSlotButton')
+g_ui = {loadUI = function(name)
+  if name == 'autobuildslot' then pickWin.destroyed = false; return pickWin end
+  return win
+end}
 function getTreeWindow() return {} end
 
 dofile(dir .. 'autobuild.lua')
@@ -137,6 +150,101 @@ eq(count('autobuildPreview'), 1, 'a refused build is not asked for again by itse
 advance(AutoBuildView.PREVIEW_TIMEOUT_MS * 4)
 eq(count('autobuildPreview'), 1, 'and no timer is left')
 eq(boxes, 0, 'no message box while the window is open')
+
+-- ------------------------------------------------------------------------------------------------ save to a loadout slot (O448)
+closeAutoBuild()
+sent = {}
+openAutoBuild()
+list()
+answer('ranger_sharpshooter', 5)
+eq(kids.saveSlotButton.enabled, true, 'a build is picked: Save to a loadout slot is on')
+saveToSlotAutoBuild()
+eq(count('autobuildSlots'), 1, 'the button asks the server for the slots')
+-- the slots: slot 2 is active (holds the live build), 4 locked, 1 and 3 can be picked, 3 holds something
+local choices = {slots = {{slot = 1, empty = true}, {slot = 2, name = 'Live', active = true}, {slot = 3, name = 'Boss run'},
+  {slot = 4, empty = true, locked = true}}, limit = 3, max = 8, level = 100, minLevel = 15, nextUnlock = 200}
+H.autobuildSlots(choices)
+eq(pickWin.visible, true, 'the picker opens')
+eq(#pickKids.slotCombo.options, 2, 'the picker lists the free slots only: not the active, not the locked')
+eq(pickKids.slotCombo.options[1].text, 'Slot 1 - (empty)', 'an empty slot is named empty')
+eq(pickKids.slotCombo.options[2].text, 'Slot 3 - Boss run', 'a held slot shows what it holds')
+eq(pickKids.introText.text:find('Sharpshooter', 1, true) ~= nil, true, 'the picker names the build')
+eq(pickKids.introText.text:find('gear, runes and Paragon', 1, true) ~= nil, true, 'the picker says gear and runes stay')
+eq(pickKids.introText.text:find('live tree does not change', 1, true) ~= nil, true, 'the picker says the live tree stays')
+-- an empty slot: sent at once, without the confirm
+sent = {}
+saveSlotOk()
+eq(count('autobuildSaveSlot'), 1, 'Save sends the request')
+eq(sent[1].data.build, 'ranger_sharpshooter', 'the build'); eq(sent[1].data.slot, 1, 'the picked slot'); eq(sent[1].data.confirm, false, 'no confirm for an empty slot')
+eq(pickWin.destroyed, true, 'the picker closes')
+H.autobuildSlotSaved({message = 'Saved Sharpshooter in loadout slot 1: 32 passive nodes.', lines = {'216 more nodes of the build need more points.'}, slot = 1})
+eq(detail.text:find('Saved Sharpshooter in loadout slot 1', 1, true) ~= nil, true, 'the saved message is shown')
+eq(detail.text:find('216 more nodes', 1, true) ~= nil, true, 'and its extra line')
+eq(detail.color, AutoBuildView.GOOD, 'in green')
+-- a held slot: the player confirms, nothing is sent before
+answer('ranger_sharpshooter', 5)
+saveToSlotAutoBuild()
+H.autobuildSlots(choices)
+pickKids.slotCombo.onOptionChange(pickKids.slotCombo, 'Slot 3 - Boss run', 2)
+sent = {}
+lastBox = nil
+saveSlotOk()
+eq(count('autobuildSaveSlot'), 0, 'a held slot: nothing is sent before the answer')
+eq(lastBox ~= nil and lastBox.text:find('Slot 3 holds Boss run', 1, true) ~= nil, true, 'the question names the slot and what it holds')
+eq(lastBox.text:find('Sharpshooter', 1, true) ~= nil, true, 'and the build')
+lastBox.buttons[2].callback()
+eq(count('autobuildSaveSlot'), 0, 'Cancel sends nothing')
+saveSlotOk()
+lastBox.buttons[1].callback()
+eq(count('autobuildSaveSlot'), 1, 'Replace sends the request')
+eq(sent[1].data.slot, 3, 'the held slot'); eq(sent[1].data.confirm, true, 'with the confirm')
+eq(pickWin.destroyed, true, 'the picker closes after Replace')
+H.autobuildSlotSaved({message = 'Saved Sharpshooter in loadout slot 3: 32 passive nodes.', slot = 3})
+-- the server asks for the confirm itself (a slot filled meanwhile): the question comes, Replace sends it again with confirm
+answer('ranger_sharpshooter', 5)
+saveToSlotAutoBuild()
+H.autobuildSlots(choices)
+sent = {}
+saveSlotOk() -- slot 1, sent without the confirm
+lastBox = nil
+H.autobuildError({message = 'Slot 1 already holds Old. Confirm to replace its passive tree.', slot = 1, build = 'ranger_sharpshooter',
+  needConfirm = true, name = 'Old'})
+eq(lastBox ~= nil and lastBox.text:find('Slot 1 holds Old', 1, true) ~= nil, true, 'the server asked: the question comes')
+sent = {}
+lastBox.buttons[1].callback()
+eq(sent[1] and sent[1].data.confirm, true, 'the answer is sent with the confirm'); eq(sent[1] and sent[1].data.slot, 1, 'for the same slot')
+-- a refusal of a save: shown as the answer to the save, the preview is not touched
+H.autobuildError({message = 'That loadout is active: it holds your live build. Pick another slot.', slot = 3, build = 'ranger_sharpshooter'})
+eq(detail.text:find('live build. Pick another slot', 1, true) ~= nil, true, 'a refused save is shown')
+eq(detail.color, '#e07060', 'in red')
+eq(kids.applyButton.enabled, true, 'a refused save leaves the preview as it was')
+-- no slot to pick: a line instead of a picker
+pickWin.visible = false
+saveToSlotAutoBuild()
+H.autobuildSlots({slots = {{slot = 1, name = 'Live', active = true}, {slot = 2, empty = true, locked = true}}, limit = 1, max = 8, level = 100,
+  minLevel = 15, nextUnlock = 200})
+eq(pickWin.visible, false, 'no slot to pick: no picker')
+eq(detail.text:find('No loadout slot is free to pick', 1, true) ~= nil and detail.text:find('level 200', 1, true) ~= nil, true, 'a line says why and when')
+-- below the loadouts' level
+saveToSlotAutoBuild()
+H.autobuildSlots({slots = {}, limit = 5, max = 8, level = 10, minLevel = 15})
+eq(detail.text:find('Loadouts open at level 15', 1, true) ~= nil, true, 'below the level: the loadouts open at level 15')
+-- an answer nobody asked for opens nothing
+pickWin.visible = false
+H.autobuildSlots(choices)
+eq(pickWin.visible, false, 'a slot list nobody asked for opens nothing')
+-- closing the panel closes the picker
+saveToSlotAutoBuild()
+H.autobuildSlots(choices)
+eq(pickWin.visible, true, 'picker open again')
+closeAutoBuild()
+eq(pickWin.destroyed, true, 'closing the panel closes the picker')
+-- a save refused while the panel is closed is a message box
+sent = {}
+boxes = 0
+H.autobuildError({message = 'That slot is locked.', slot = 5})
+eq(boxes, 1, 'a slot answer with the panel closed is a message box')
+
 
 if fails > 0 then os.exit(1) end
 print('autobuild_test: ok')

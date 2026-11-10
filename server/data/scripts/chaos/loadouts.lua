@@ -29,6 +29,8 @@
 --                     cancel
 --   server -> client  state {slots = [...], limit, max, active, cooldown, castMs, inPz, level, nextUnlock, busy}
 --                     result {ok, text, lines = [...]}   cast {ms, slot}   castEnd {result}
+-- A Recommended or Focus build of the passive tree's Auto build list can be written into a slot (O448): L.saveBuild and
+-- L.slotChoices, reached through the passive tree's opcode (passive_builds.lua autobuildSlots / autobuildSaveSlot), no new opcode.
 -- Lua 5.1 / LuaJIT.
 
 if not Chaos then
@@ -48,6 +50,12 @@ if not ChaosPassiveTreeConfig then
 end
 if not ChaosPassiveTreeCore then
 	dofile("data/scripts/chaos/passivetree_core.lua")
+end
+if not ChaosPassiveBuildsConfig then
+	dofile("data/scripts/chaos/passive_builds_config.lua") -- a recommended build into a slot (O448)
+end
+if not PassiveBuildsCore then
+	dofile("data/scripts/chaos/passive_builds_core.lua")
 end
 
 ChaosLoadouts = ChaosLoadouts or {}
@@ -952,6 +960,94 @@ function L.save(player, slot, name, icon)
 	end
 	if plan.activate then
 		lines[#lines + 1] = "This loadout is now active: your current build is saved in it."
+	end
+	return true, text, lines
+end
+
+-- ------------------------------------------------------------------------------------------------ a build into a slot (O448)
+-- The slots the Auto build window offers: {slots = [{slot, name, empty, locked, active}], limit, max, level, minLevel, nextUnlock}.
+function L.slotChoices(player)
+	local rows = L.rows(player:getGuid())
+	local level = player:getLevel()
+	local limit, active = Core.slotLimit(level, nil, pactSlots(player)), activeSlot(player)
+	local slots = {}
+	for slot = 1, cfg.maxSlots do
+		local r = rows[slot]
+		slots[#slots + 1] = {slot = slot, name = r and r.name or nil, empty = r == nil, locked = slot > limit,
+			active = r ~= nil and slot == active}
+	end
+	return {slots = slots, limit = limit, max = cfg.maxSlots, level = level, minLevel = cfg.minLevel, nextUnlock = Core.nextUnlock(level)}
+end
+
+local function buildData()
+	if not ChaosPassiveBuildsData then
+		dofile("data/scripts/chaos/passive_builds_data.lua")
+	end
+	return ChaosPassiveBuildsData
+end
+
+-- Save a Recommended or Focus build of the Auto build list into loadout slot `slot`: its tree, cut to the character's passive
+-- points, named after the build. Only the tree column of the slot is written (the rules are Core.planBuildSave and
+-- PassiveBuildsCore.planSlot, tested); the live tree, the gear, the runes and the Paragon of the slot are not touched. A slot
+-- that holds something needs confirm == true. Returns true, text, lines or false, text, extra ({confirm = true, name} when the
+-- player has to confirm first). A refusal writes nothing.
+function L.saveBuild(player, slot, buildId, confirm)
+	if player:getLevel() < cfg.minLevel then
+		return false, Core.msg(nil, "lowLevel", cfg.minLevel)
+	end
+	local PB = PassiveBuildsCore
+	local data = PB and buildData()
+	local key = classKey(player)
+	if not (PB and data and key) then
+		return false, "Unknown build."
+	end
+	local build, why = PB.pick(data, key, buildId)
+	if not build then
+		return false, why == "class" and "That build is not for your class." or "Unknown build."
+	end
+	local points = totalPoints(player)
+	local sp, reason, plan = PB.planSlot(treeData(), build, {classKey = key, points = points})
+	if not sp then
+		if reason == "cap" then
+			return false, plan.capText
+		elseif reason == "empty" then
+			return false, "You have no passive points to spend yet."
+		end
+		return false, "That build is not for your class."
+	end
+	-- the checks of a load: nothing of the build may be refunded again when the slot is loaded
+	local kept, removed = Core.validateTree(treeData(), sp.ids, {classKey = key, points = points, allowed = allowedFn()})
+	if #removed > 0 or #kept ~= #sp.ids then
+		return false, "That build is not for your class."
+	end
+	local guid = player:getGuid()
+	local rows = L.rows(guid)
+	local arm = armOf(player, rows)
+	for s, slotArm in pairs(arm.slots) do
+		slotArm.name = rows[s] and rows[s].name
+	end
+	local slotPlan, slotWhy, extra = Core.planBuildSave(arm, slot, confirm == true)
+	if not slotPlan then
+		return false, slotWhy == "locked" and Core.lockedText(player:getLevel()) or slotWhy, extra
+	end
+	local name = build.id
+	for _, e in ipairs(PB.list(data, ChaosPassiveBuildsConfig, nil, key)) do
+		if e.id == build.id then
+			name = e.name
+		end
+	end
+	local old = rows[slot]
+	local row = {
+		name = Core.cleanName(name, slot), icon = Core.cleanIcon((old and old.icon) or "passivetree"), voc = vocationId(player),
+		tree = Core.formatNodes(sp.ids, sp.masteries), paragon = old and old.paragon or "", supports = old and old.supports or "",
+		gear = old and old.gear or "", serial = 0, undo = "", updated = os.time()
+	}
+	writeRow(guid, slot, row)
+	local text = ChaosI18n.msg("Saved %s in loadout slot %d: %d passive nodes. The gear, runes and Paragon of the slot stay as they were. Your live tree did not change.",
+		row.name, slot, #sp.ids)
+	local lines = {}
+	if sp.left > 0 then
+		lines[#lines + 1] = ChaosI18n.msg("%d more nodes of the build need more points.", sp.left)
 	end
 	return true, text, lines
 end

@@ -45,7 +45,7 @@ G.steps = {
 -- own text does not hold. Matched below the title and above the text (game_helpsearch/helpcore.lua).
 G.words = {
 	goals = {"level up leveling what next where to hunt", "subir de nível upar o que fazer onde caçar"},
-	passive = {"points build talents", "pontos build talentos"},
+	passive = {"points build talents starter builds recommended auto build import code", "pontos build talentos builds iniciais recomendadas auto build importar código"},
 	spellbook = {"spells attack hotkeys", "magias feitiços ataque atalhos"},
 	townportal = {"town city temple go back", "cidade templo voltar"},
 	stash = {"storage depot items", "depósito guardar itens"},

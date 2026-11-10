@@ -6,6 +6,10 @@
 -- The picked build's preview is asked for whenever none is shown (a new pick, opening the window again, after an
 -- Apply) and every request ends: an answer, or asked again on a timeout, then an error line (autobuildview.lua).
 --   autobuildApply {build, mode = "add" | "reset", cost} -> autobuildApplied {message} | autobuildError {message}
+-- Save to a loadout slot (O448): the picked build's tree goes into a loadout slot the player picks (the live tree does not
+-- change, only the tree of the slot is written; the server decides, loadouts.lua saveBuild):
+--   autobuildSlots -> autobuildSlots {slots, limit, ...}; autobuildSaveSlot {build, slot, confirm}
+--   -> autobuildSlotSaved {message, lines} | autobuildError {message, slot, needConfirm, name}
 ChaosTreeHandlers = ChaosTreeHandlers or {}
 local abWindow = nil
 local groups = {role = {}, focus = {}}
@@ -19,6 +23,11 @@ local pending = nil -- {build, tries, event}: the preview asked for and not answ
 local failed = nil -- id of the build whose preview failed (not asked again until it is picked again)
 local note = nil -- {text, color}: the server's last word (an error, the applied message), shown under the preview
 local RED = '#e07060'
+local slotWindow = nil -- the slot picker
+local slotRows = {} -- its rows: {slot, name, empty, text}
+local slotChoice = nil -- index of the picked row
+local slotBuild = nil -- {id, name}: the build being saved to a slot
+local slotBox = nil -- the question before a held slot is replaced
 
 local function alive()
   if abWindow and abWindow.isDestroyed and abWindow:isDestroyed() then
@@ -45,6 +54,10 @@ local function refresh()
     label:setColor(color)
   end
   local apply, reset = child('applyButton'), child('resetButton')
+  local save = child('saveSlotButton')
+  if save then
+    save:setEnabled(currentBuild() ~= nil)
+  end
   if apply then
     apply:setEnabled(AutoBuildView.canApply(preview))
   end
@@ -186,7 +199,19 @@ local function leavePreview()
   end
 end
 
+function closeSlotWindow()
+  if slotBox then
+    slotBox:destroy()
+    slotBox = nil
+  end
+  if slotWindow then
+    slotWindow:destroy()
+    slotWindow = nil
+  end
+end
+
 function closeAutoBuild()
+  closeSlotWindow()
   leavePreview()
   if abWindow then
     abWindow:hide()
@@ -202,6 +227,7 @@ function toggleAutoBuild()
 end
 
 function destroyAutoBuild()
+  closeSlotWindow()
   closeConfirm()
   clearPending()
   preview, failed, note = nil, nil, nil
@@ -234,6 +260,86 @@ function resetAndApplyAutoBuild()
     {text = tr('Cancel'), callback = closeConfirm},
     anchor = AnchorHorizontalCenter
   }, ok, closeConfirm)
+end
+
+-- ------------------------------------------------------------------------------------------------ save to a loadout slot (O448)
+local function sendSave(slot, confirm)
+  if slotBuild then
+    sendAction('autobuildSaveSlot', {build = slotBuild.id, slot = slot, confirm = confirm and true or false})
+  end
+end
+
+-- a held slot: the player confirms before its tree is replaced (also the answer to a save the server wants confirmed)
+local function askReplace(slot, name)
+  if not slotBuild then
+    return
+  end
+  if slotBox then
+    slotBox:destroy()
+    slotBox = nil
+  end
+  local function ok()
+    sendSave(slot, true)
+    closeSlotWindow()
+  end
+  local function cancel()
+    if slotBox then
+      slotBox:destroy()
+      slotBox = nil
+    end
+  end
+  slotBox = displayGeneralBox(tr('Save to a loadout slot'), AutoBuildView.replaceText(slot, name, slotBuild.name), {
+    {text = tr('Replace'), callback = ok},
+    {text = tr('Cancel'), callback = cancel},
+    anchor = AnchorHorizontalCenter
+  }, ok, cancel)
+end
+
+local function onSlotPick(combo, text, data)
+  slotChoice = tonumber(data)
+end
+
+local function openSlotWindow(rows_)
+  closeSlotWindow()
+  slotRows, slotChoice = rows_, 1
+  slotWindow = g_ui.loadUI('autobuildslot', getTreeWindow())
+  local combo = slotWindow:recursiveGetChildById('slotCombo')
+  combo.onOptionChange = onSlotPick
+  combo:clearOptions()
+  for i, r in ipairs(slotRows) do
+    combo:addOption(r.text, i)
+  end
+  combo:setCurrentIndex(1)
+  slotWindow:recursiveGetChildById('introText'):setText(AutoBuildView.pickText(slotBuild))
+  slotWindow:show()
+  slotWindow:raise()
+  slotWindow:focus()
+end
+
+-- the button: ask the server which slots can take a build
+function saveToSlotAutoBuild()
+  local b = currentBuild()
+  if not b then
+    return
+  end
+  slotBuild = {id = b.id, name = b.name}
+  note = nil
+  sendAction('autobuildSlots')
+end
+
+-- the picker's Save
+function saveSlotOk()
+  local r = slotRows[slotChoice or 0]
+  if not r or not slotBuild then
+    closeSlotWindow()
+    return
+  end
+  if r.empty then
+    sendSave(r.slot, false)
+    closeSlotWindow()
+  else
+    askReplace(r.slot, r.name)
+  end
 end
 
 -- ------------------------------------------------------------------------------------------------ server messages
@@ -277,8 +383,47 @@ ChaosTreeHandlers.autobuildPreview = function(data)
   refresh()
 end
 
+ChaosTreeHandlers.autobuildSlots = function(data)
+  if type(data) ~= 'table' or not slotBuild or not alive() then
+    return
+  end
+  local rows_ = AutoBuildView.slotRows(data)
+  if #rows_ == 0 then
+    slotBuild = nil
+    note = {text = AutoBuildView.noSlotText(data), color = RED}
+    refresh()
+    return
+  end
+  openSlotWindow(rows_)
+end
+
+ChaosTreeHandlers.autobuildSlotSaved = function(data)
+  closeSlotWindow()
+  slotBuild = nil
+  if alive() then
+    note = {text = AutoBuildView.savedText(data), color = AutoBuildView.GOOD}
+    refresh()
+  end
+end
+
 ChaosTreeHandlers.autobuildError = function(data)
   local text = type(data) == 'table' and data.message or tr('The build could not be applied.')
+  if AutoBuildView.isSlotAnswer(data) then
+    -- the answer to a save into a slot: never a preview's error
+    if data.needConfirm and slotBuild and data.build == slotBuild.id then
+      askReplace(data.slot, data.name)
+      return
+    end
+    closeSlotWindow()
+    slotBuild = nil
+    if alive() and abWindow:isVisible() then
+      note = {text = text, color = RED}
+      refresh()
+    else
+      sendMessageBox(tr('Auto build'), text)
+    end
+    return
+  end
   if not (alive() and abWindow:isVisible()) then
     clearPending()
     sendMessageBox(tr('Auto build'), text)

@@ -389,6 +389,8 @@ h1, h2, h3, h4 { font-family: var(--c-display); font-weight: 500; color: var(--c
 .chaos-guide-card__rows { display: grid; grid-template-columns: 112px 1fr; gap: 4px 12px; margin: 0; font-size: 14px; line-height: 1.5; }
 .chaos-guide-card__rows dt { color: var(--c-muted); font-weight: normal; }
 .chaos-guide-card__rows dd { margin: 0; }
+.chaos-sb-code { display: inline-block; max-width: 100%; word-break: break-all; font-size: 12px; user-select: all; }
+.chaos-sb-cut { color: var(--c-muted); }
 @media (max-width: 560px) {
   .chaos-guide-cards { grid-template-columns: 1fr; }
   .chaos-guide-card__rows { grid-template-columns: 1fr; gap: 0; }

@@ -1,0 +1,4735 @@
+{"_generated": "by server/tools/gen_starter_builds.lua from passive_builds_config.lua, passive_builds_data.lua and starter_builds_config.lua; do not edit, CI checks it is up to date",
+  "version": 1,
+  "format": "CB6",
+  "intro": {
+    "en": "Three builds for every class: what each one does, how it plays, what it costs, which keystones it walks to, which spells to lean on, what to wear and an import code. Words only: no damage figures. Every build is also in the game, in the Auto build list of the passive tree.",
+    "pt-BR": "Três builds para cada classe: o que cada uma faz, como se joga, quanto custa, a quais keystones ela vai, quais magias usar, o que vestir e um código de importação. Só palavras: sem números de dano. Toda build também está no jogo, na lista Auto build da árvore passiva."
+  },
+  "howTo": [
+    {
+      "en": "Pick the code of the size you need. Each code is the same build cut at a point budget: the first nodes of the build, in order, so every cut is a legal tree.",
+      "pt-BR": "Escolha o código do tamanho que você precisa. Cada código é a mesma build cortada em um orçamento de pontos: os primeiros nós da build, em ordem, então todo corte é uma árvore válida."
+    },
+    {
+      "en": "In the game open the passive tree, press Build Code, paste the code and press Import. The preview shows what changes and what it costs. Apply Build writes it. Adding nodes is free; taking nodes back costs a respec.",
+      "pt-BR": "No jogo abra a árvore passiva, clique em Build Code, cole o código e clique em Import. A prévia mostra o que muda e quanto custa. Apply Build grava. Adicionar nós é grátis; devolver nós custa um respec."
+    },
+    {
+      "en": "The same builds are in the passive tree under Auto build. There, Save to a loadout slot keeps a build in a loadout slot without touching your live tree: only the tree of the slot is written, its gear and runes stay.",
+      "pt-BR": "As mesmas builds estão na árvore passiva em Auto build. Lá, Save to a loadout slot guarda uma build em um slot de loadout sem mexer na sua árvore atual: só a árvore do slot é gravada, o equipamento e as runas ficam."
+    },
+    {
+      "en": "A code of another class is refused. Monk, Necromancer and Templar lines share one class mark in the code: the game still stops nodes your class cannot hold.",
+      "pt-BR": "O código de outra classe é recusado. As linhas Monk, Necromancer e Templar compartilham uma só marca de classe no código: o jogo ainda barra os nós que a sua classe não pode ter."
+    }
+  ],
+  "headings": {
+    "builds": {
+      "en": "Builds",
+      "pt-BR": "Builds"
+    },
+    "cardRule": {
+      "en": "A set needs three cards of one element, one for each spell line your class casts. It takes three of your five card slots and locks those lines to that element.",
+      "pt-BR": "Um conjunto pede três cartas de um elemento, uma para cada linha de magia que a sua classe lança. Ele ocupa três dos seus cinco slots de carta e prende essas linhas a esse elemento."
+    },
+    "cards": {
+      "en": "Cards",
+      "pt-BR": "Cartas"
+    },
+    "cast": {
+      "en": "Cast",
+      "pt-BR": "Lance"
+    },
+    "codes": {
+      "en": "Import codes",
+      "pt-BR": "Códigos de importação"
+    },
+    "keystoneNote": {
+      "en": "The point is the order of the build: the keystone arrives with that point.",
+      "pt-BR": "O ponto é a ordem da build: a keystone chega com esse ponto."
+    },
+    "keystones": {
+      "en": "Keystones",
+      "pt-BR": "Keystones"
+    },
+    "level": {
+      "en": "level",
+      "pt-BR": "nível"
+    },
+    "noKeystone": {
+      "en": "No keystone: the walls and the aura are the build.",
+      "pt-BR": "Sem keystone: as muralhas e a aura são a build."
+    },
+    "plays": {
+      "en": "How it plays",
+      "pt-BR": "Como se joga"
+    },
+    "point": {
+      "en": "point",
+      "pt-BR": "ponto"
+    },
+    "points": {
+      "en": "points",
+      "pt-BR": "pontos"
+    },
+    "price": {
+      "en": "Price",
+      "pt-BR": "Preço"
+    },
+    "wear": {
+      "en": "Wear",
+      "pt-BR": "Vista"
+    },
+    "what": {
+      "en": "What it does",
+      "pt-BR": "O que faz"
+    }
+  },
+  "cuts": [
+    {
+      "points": 23,
+      "level": 100
+    },
+    {
+      "points": 73,
+      "level": 300
+    },
+    {
+      "points": 123,
+      "level": 500
+    },
+    {
+      "points": 248,
+      "level": 1000
+    }
+  ],
+  "classes": [
+    {
+      "key": "warrior",
+      "name": "Warrior",
+      "line": {
+        "en": "Melee, heavy armour, the most health. Ascends to Juggernaut or Berserker.",
+        "pt-BR": "Corpo a corpo, armadura pesada, a maior vida. Ascende a Juggernaut ou Berserker."
+      },
+      "builds": [
+        {
+          "id": "warrior_slayer",
+          "name": "Slayer",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Two-hander cleaves and Earthbreaker slams for packs.",
+            "pt-BR": "A arma de duas mãos corta em arco e o Earthbreaker esmaga bandos."
+          },
+          "style": {
+            "en": "A two-hander build for packs. Every swing cleaves the monsters beside you, and every fourth hit slams the ground around the target. Walk into the pack and keep swinging.",
+            "pt-BR": "Build de duas mãos para bandos. Cada golpe atinge os monstros ao seu lado, e o quarto golpe faz o chão tremer ao redor do alvo. Entre no bando e continue batendo."
+          },
+          "price": {
+            "en": "Your ordinary melee hits are weaker.",
+            "pt-BR": "Seus golpes corpo a corpo comuns ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Cleaving Arc",
+              "point": 25
+            },
+            {
+              "name": "Earthbreaker",
+              "point": 38
+            }
+          ],
+          "spells": ["Reaping Gyre", "Colossus Fall", "Keepfall"],
+          "gear": {
+            "en": "A two-handed axe: Cleaving Arc needs a two-hander and the axe splits part of each hit among the neighbours. Heavy armour.",
+            "pt-BR": "Um machado de duas mãos: o Cleaving Arc exige arma de duas mãos e o machado divide parte de cada golpe entre os vizinhos. Armadura pesada."
+          },
+          "cards": {
+            "set": "Earth",
+            "name": {
+              "en": "Earth",
+              "pt-BR": "Terra"
+            },
+            "text": {
+              "en": "Earth hits poison the target.",
+              "pt-BR": "Os golpes de Terra envenenam o alvo."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AQBAAAAYAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAgTi8w"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AQBIEIAYAAB4BIAACAAAAQAAAAAAAAAAAAAAgAMAABbmGQAAAAAAAAAAAAAAAAAAAAAAt_4CAAAAAAAAAAAAAAAAAAAAAAAAAADg0T8fvz94mRg"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AQBIEIAYIQB5fIAUOAAAAQAAAAAAAAAAAADAgYMBAFb32QUAAAAAAAAAAAAAAAAAAAAAt_4CAAAAAAAAeK43AADc1QcAAAAAAADg0T8fvz92rKA"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AQBIEIAcIQF5fIAWOAwAAQAAEA4gkyPAIWjBgccNAFb32ScABQCeAAAAAABAIJPZAXYft_669e25ds-1e643AAD81efXjkfvAQDg0T8fvz8KK6c"
+            }
+          ]
+        },
+        {
+          "id": "warrior_bulwark",
+          "name": "Bulwark",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Shield, health and resistances: Bulwark blocks and reflects.",
+            "pt-BR": "Escudo, vida e resistências: o Bulwark bloqueia e reflete."
+          },
+          "style": {
+            "en": "The shield build. Health, resistances and the shielding skill keep you up, and Bulwark blocks some attacks outright and sends part of the melee damage back. You win slowly and you do not fall.",
+            "pt-BR": "A build do escudo. Vida, resistências e o skill de escudo mantêm você de pé, e o Bulwark bloqueia alguns ataques por completo e devolve parte do dano corpo a corpo. Você vence devagar e não cai."
+          },
+          "price": {
+            "en": "You need a shield, and kills come slowly.",
+            "pt-BR": "Você precisa de um escudo, e as mortes demoram."
+          },
+          "keystones": [
+            {
+              "name": "Bulwark",
+              "point": 19
+            }
+          ],
+          "spells": ["Ironhold", "Vigil of Iron", "Iron Bellow", "Bastion Cry"],
+          "gear": {
+            "en": "A club and a shield: Bulwark only works with a shield, and the club can daze the monster in front of you. Heavy armour.",
+            "pt-BR": "Uma clava e um escudo: o Bulwark só funciona com escudo, e a clava pode atordoar o monstro à sua frente. Armadura pesada."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AQAIEAAAAAAAcAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgDMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAAAAAAAAAAAAAAAAAAAAAAAAMABiZj5"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AQAIEAAAIAAAcAAEEAAAAQAAAAAAgCEAAEDBAYABAEABwD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI9-e_Q7AADe-gMAAAAAAAAAAAAAAMABz1EK"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AQAIEAAAICABeAAV8AAAAQAABIALwCGAIWjBAYABAEARwD8AAAAAgCrgQRYAAAAAAAQAAAAAAAAAAK9-e_U7kADf-uOuOQAAAAAAAAAAAMAB_xBc"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AQAIEAAAICEh-Qef-AwAAaAMFI47wDe8IWjpAYABAFY_3z8AAAAAgCrg0ZZAIAdYmEy3eR0BACDXYa9-e_U7kADf-vOuuf7iIQAg1xk8f8cBnnHl"
+            }
+          ]
+        },
+        {
+          "id": "warrior_bloodied",
+          "name": "Bloodied",
+          "kind": {
+            "en": "Sustain",
+            "pt-BR": "Sustento"
+          },
+          "what": {
+            "en": "Sanguine leech and Rampage kill stacks.",
+            "pt-BR": "Roubo de vida do Sanguine e acúmulos do Rampage a cada morte."
+          },
+          "style": {
+            "en": "You heal by hitting. Sanguine Covenant turns every blow into health, and Rampage grows stronger with each kill in a row, at the price of taking more damage. Keep killing to keep the stack and to stay alive.",
+            "pt-BR": "Você se cura batendo. O Sanguine Covenant transforma cada golpe em vida, e o Rampage fica mais forte a cada morte seguida, ao preço de levar mais dano. Continue matando para manter o acúmulo e continuar vivo."
+          },
+          "price": {
+            "en": "Healing from others is weaker, and every kill stack makes you take more damage.",
+            "pt-BR": "A cura vinda de outros fica mais fraca, e cada acúmulo de mortes faz você levar mais dano."
+          },
+          "keystones": [
+            {
+              "name": "Sanguine Covenant",
+              "point": 7
+            },
+            {
+              "name": "Rampage",
+              "point": 30
+            }
+          ],
+          "spells": ["Gorehook", "Red Frenzy", "Vaulting Cleave"],
+          "gear": {
+            "en": "A sword: its Tempo speeds up your swing on the same target, and every hit feeds the leech. Heavy armour, shield if you like.",
+            "pt-BR": "Uma espada: o Tempo dela acelera seu golpe no mesmo alvo, e cada golpe alimenta o roubo de vida. Armadura pesada, escudo se quiser."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AQAIEAAAAAAHKAAQAgAAASgAAAAAwCUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM8y8sM"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AQBIEIADACAHqAMR4gAAASgHxIEPwGUNAAAAAAAAAAAAAAAABQAIAABgQA4AAAAAAAAAAAAAAAAAAM91BgAAAAAAAAAAAAAAPDDk0Xs"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AQBIEIADACcHuL8f4gwAASgn1_8_wGUNMigAAAAAAAAAAAC3DQQMBABgQA5AAAAAAAAAAAAAAAAAAM91BgAAAAAAAAAAAAAAvDofBYXM"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AQD8-vf______b8f-yy2Qf6_9____3___2_DT8YAAADiEQC3DQQMBABgQA5AAEACAAAAAAAAAAAAAM91BgAAAAAAAOCvPgAAvDofAAAHABjy4P8"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "juggernaut",
+      "name": "Juggernaut",
+      "line": {
+        "en": "The Warrior who stands: the toughest class.",
+        "pt-BR": "O Warrior que aguenta: a classe mais resistente."
+      },
+      "builds": [
+        {
+          "id": "juggernaut_unbreakable",
+          "name": "Unbreakable",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Immovable and Bulwark: the toughest way to stand.",
+            "pt-BR": "Immovable e Bulwark: o jeito mais firme de resistir."
+          },
+          "style": {
+            "en": "The toughest way to stand. Immovable cuts the damage you take, more when your health is low, and Bulwark blocks and reflects. Hold the door for the party and let the monsters break against you.",
+            "pt-BR": "O jeito mais resistente de ficar de pé. O Immovable corta o dano que você leva, mais ainda com a vida baixa, e o Bulwark bloqueia e reflete. Segure a porta para o grupo e deixe os monstros se quebrarem em você."
+          },
+          "price": {
+            "en": "Kills come slowly.",
+            "pt-BR": "As mortes demoram."
+          },
+          "keystones": [
+            {
+              "name": "Immovable",
+              "point": 25
+            },
+            {
+              "name": "Bulwark",
+              "point": 44
+            }
+          ],
+          "spells": ["Ironhold", "Vigil of Iron", "Iron Bellow", "Anvil Fall"],
+          "gear": {
+            "en": "A shield and a club or a sword, in the heaviest armour you can find. Bulwark needs the shield.",
+            "pt-BR": "Um escudo e uma clava ou espada, na armadura mais pesada que você achar. O Bulwark exige o escudo."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AQBAAAAYAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAgTi8w"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AQBIEAAYAAB4bAAACAAAAQAAAAAAAAAAAADAh4MBAFbigTMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAePQ7AAAAAAAAAAAAAAAAAADXc_8ByEOn"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AQBIEAAYAAB4bAAACAAAAQAAAAAAAACAISjAh4MBAFb_2TcAAAAAAAAAAAAAAAAAAAAAd30BAAAAAAAAePQ7AABAAODWDAAAAADguV7Xc_8BCXDL"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AQBIEAAYICB5fQAd-AAAAQAABIAB-DuAYWnJh4MBAFb_3z8AAAAAAAAAAAAAIANYAEwnf3356-vVb69-e_U7AADe-vPWn-96AQDgu17_c_8BK2z1"
+            }
+          ]
+        },
+        {
+          "id": "juggernaut_pyre_walker",
+          "name": "Pyre Walker",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Pyre Oath burns the pack around you while you stand tough.",
+            "pt-BR": "O Pyre Oath queima o bando ao seu redor enquanto você resiste firme."
+          },
+          "style": {
+            "en": "Walk into the pack and stand there. Pyre Oath burns every enemy around you while you burn a little yourself, and health and resistances keep you standing. Not for a single target.",
+            "pt-BR": "Entre no bando e fique parado. O Pyre Oath queima todos os inimigos ao seu redor enquanto você queima um pouco, e vida e resistências mantêm você de pé. Não serve para um alvo só."
+          },
+          "price": {
+            "en": "Your other damage is weaker, and you burn along with the pack.",
+            "pt-BR": "Seu outro dano fica mais fraco, e você queima junto com o bando."
+          },
+          "keystones": [
+            {
+              "name": "Pyre Oath",
+              "point": 9
+            },
+            {
+              "name": "Bulwark",
+              "point": 28
+            }
+          ],
+          "spells": ["Colossus Fall", "Ironhold", "Vigil of Iron"],
+          "gear": {
+            "en": "A shield and a sword or club, with fire resistance on your armour: you burn along with the pack. Heavy armour.",
+            "pt-BR": "Um escudo e uma espada ou clava, com resistência a fogo na armadura: você queima junto com o bando. Armadura pesada."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AQAQwAEAACABSEiRIAAAEAAAAAAAAAAAAADAAYABAEAAgAFYg7Y"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AQAQwAEAACABSEiR4AMAEAAADAAAAAAAAADAB4ABAEARwD8AAAAAgCoAAAAAAAAAAAAAAAAAAAAAAAAAePU7kADdGgEAAAAAAAAAAAAAAMABGe_9"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AQAQwAEAACABSEiR4AMAEAAADIALAACAISjAB4ABAEARwD8AAAAAgCoAQAAAAAAAAEwnAAAAAAAAAAAAePU7kADf-vPWn-96AQAAAAAAAMABsBCR"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AQAQwAEAACABSGiR4AMAUAYADIBP_DuAYWnJB4ABAED_2T8AAAAAgCrgQRYAIANYAEwnd3256-vVb69-e_U7kADf-vPWn-96AQDguV78c8cB9MpX"
+            }
+          ]
+        },
+        {
+          "id": "juggernaut_heavy_hitter",
+          "name": "Heavy Hitter",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Earthbreaker slams and Executioner finishes.",
+            "pt-BR": "O Earthbreaker esmaga o chão e o Executioner dá o golpe final."
+          },
+          "style": {
+            "en": "Slow, heavy blows. Earthbreaker slams the ground every fourth hit, and Executioner's Verdict finishes monsters that are nearly dead, bosses excepted. It hits hard and gives up the tank keystones.",
+            "pt-BR": "Golpes lentos e pesados. O Earthbreaker faz o chão tremer a cada quarto golpe, e o Executioner's Verdict termina monstros quase mortos, exceto chefes. Bate forte e abre mão das keystones de tank."
+          },
+          "price": {
+            "en": "Most of your hits are weaker, and you hold no tank keystone.",
+            "pt-BR": "A maioria dos seus golpes fica mais fraca, e você não tem keystone de tank."
+          },
+          "keystones": [
+            {
+              "name": "Earthbreaker",
+              "point": 28
+            },
+            {
+              "name": "Executioner's Verdict",
+              "point": 43
+            }
+          ],
+          "spells": ["Gorehook", "Rift Cleaver", "Anvil Fall"],
+          "gear": {
+            "en": "A two-handed axe or club: the axe cleaves into the neighbours, the club can daze. Heavy armour.",
+            "pt-BR": "Um machado ou clava de duas mãos: o machado divide o golpe com os vizinhos, a clava pode atordoar. Armadura pesada."
+          },
+          "cards": {
+            "set": "Earth",
+            "name": {
+              "en": "Earth",
+              "pt-BR": "Terra"
+            },
+            "text": {
+              "en": "Earth hits poison the target.",
+              "pt-BR": "Os golpes de Terra envenenam o alvo."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AQAgAA4AAAAAAHAAAAAAQAYAAABAJAAAQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAtwbEgSE"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AQAgAA4AACAAAPgBIAAAQAYAAABAPgAAQAEAAAAAAADiAQAAAAAAAAAAAAAAAAAAAAAAt_669RcAAAAAAAAAAAAAAAAAAAAAAAAAAAAfvx-mZuc"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AQAgAA4AAGAEAPgBIAAAQC4AAABAfiQ4QEE1AAAAAADuGQAAAAAAAEAVAAAAAAAAAAAAt_669RcAAAAACAAAAAAAAAAAAAAAPBf_0T8fvx-awe4"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AQAgAA4EAGAFAPgR4AAAQD4ABIFP_yf4YWk1AAAMAED_2ScABQCeAEAVShkAIAMAmDY0t_669RcAAM-1e643AAD81efXjkf_PBf_0T8fvx-V5oI"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "berserker",
+      "name": "Berserker",
+      "line": {
+        "en": "The Warrior who hits: two-handers, rage and leech.",
+        "pt-BR": "O Warrior que bate: duas mãos, fúria e roubo de vida."
+      },
+      "builds": [
+        {
+          "id": "berserker_rage_engine",
+          "name": "Rage Engine",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Cleaving Arc hits the pack, Undying Rage heals on every blow.",
+            "pt-BR": "O Cleaving Arc atinge o bando, o Undying Rage cura a cada golpe."
+          },
+          "style": {
+            "en": "Cleave the pack and heal as you go. A two-hander hits the monsters next to you with every blow, and Undying Rage returns health from the damage you deal, more when you are low. Stay in the middle of the fight.",
+            "pt-BR": "Corte o bando e se cure pelo caminho. A arma de duas mãos atinge os monstros ao seu lado a cada golpe, e o Undying Rage devolve vida do dano que você causa, mais ainda com a vida baixa. Fique no meio da luta."
+          },
+          "price": {
+            "en": "Cleaving Arc works only with a two-handed weapon.",
+            "pt-BR": "O Cleaving Arc só funciona com arma de duas mãos."
+          },
+          "keystones": [
+            {
+              "name": "Undying Rage",
+              "point": 19
+            },
+            {
+              "name": "Cleaving Arc",
+              "point": 44
+            }
+          ],
+          "spells": ["Skyfall Cleave", "Colossus Fall", "Bloodrage"],
+          "gear": {
+            "en": "A two-handed axe: Cleaving Arc needs a two-hander and the axe's cleave adds to it. Heavy armour.",
+            "pt-BR": "Um machado de duas mãos: o Cleaving Arc exige arma de duas mãos e o corte do machado soma a ele. Armadura pesada."
+          },
+          "cards": {
+            "set": "Earth",
+            "name": {
+              "en": "Earth",
+              "pt-BR": "Terra"
+            },
+            "text": {
+              "en": "Earth hits poison the target.",
+              "pt-BR": "Os golpes de Terra envenenam o alvo."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AQBIEAAYAAAAbAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMABSv2Q"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AQBIEAAYAAB5bAAQKAAAAQAAAAAAAAAAAADAgYMBAFbigSMAAAAAAAAAAAAAAAAAAAAAtz4AAAAAAAAAeK43AAAAAAAAAAAAAAAAAAAHAPgB5jyW"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AQBIEIAYIQB5fIAUOAAAAQAAAAAAAAAAAADAgYMBAFbn2ScAAAAAAAAAAAAAAAAAAAAAt74BAAAAAAAAeK43AADcFQMAAAAAAADg0T8fv_8B1rwT"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AQBIEIAcIQF5fIAWOAwAAQAAEA4guyPAYWnBgYMNAFb32ScABQCeAAAAAABIIANYAHYft7659e25ds-1e643AAD81efXjkf_AADg0T8fv_8Bx91E"
+            }
+          ]
+        },
+        {
+          "id": "berserker_bloodrunner",
+          "name": "Bloodrunner",
+          "kind": {
+            "en": "Sustain",
+            "pt-BR": "Sustento"
+          },
+          "what": {
+            "en": "Sanguine and Undying Rage: leech and heal on every hit.",
+            "pt-BR": "Sanguine e Undying Rage: roubo de vida e cura a cada golpe."
+          },
+          "style": {
+            "en": "A double leech. Sanguine Covenant and Undying Rage both turn your hits into health, so the more you hit, the less you need a healer. Healing from others is weaker, so this build looks after itself.",
+            "pt-BR": "Roubo de vida em dobro. O Sanguine Covenant e o Undying Rage transformam seus golpes em vida, então quanto mais você bate, menos precisa de curandeiro. A cura de outros é mais fraca, então esta build se cuida sozinha."
+          },
+          "price": {
+            "en": "Healing from others is weaker.",
+            "pt-BR": "A cura vinda de outros fica mais fraca."
+          },
+          "keystones": [
+            {
+              "name": "Sanguine Covenant",
+              "point": 7
+            },
+            {
+              "name": "Undying Rage",
+              "point": 21
+            }
+          ],
+          "spells": ["Gorehook", "Red Frenzy", "Bloodrage"],
+          "gear": {
+            "en": "A two-handed sword: Tempo speeds up your swing while you stay on one target, and every hit feeds the leech.",
+            "pt-BR": "Uma espada de duas mãos: o Tempo acelera seu golpe enquanto você fica em um alvo, e cada golpe alimenta o roubo de vida."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 2,
+              "code": "CB6-AQAIEAAAAAAAaAAQAgAAAQAAAAAAAAAAAADAAYABAEAAgCMABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAB7vJD"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AQBIEIADACAB6AMR4gAAAQAHxIEPAEANAADAAYABAEAAgCMABQAIAABgQA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvDofAAAAAMABRMXY"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AQBIEIADACAH-L8f4gwAASgH1f8_AECNMyzAAYABAEABwCe3DQQMBABgQA5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMACAAAAvDofAAAAAMABt453"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AQD8-vf_______-f-z-2Qf-______1_f_2_DB4ABAEDj0Se3DQQMBABgQA5AAEACAAAAAAAAAAAAAAAAAAAAAAAAAOCvPgAAvDofAAAHANgBWNI1"
+            }
+          ]
+        },
+        {
+          "id": "berserker_crusher",
+          "name": "Crusher",
+          "kind": {
+            "en": "Critical strikes",
+            "pt-BR": "Golpes críticos"
+          },
+          "what": {
+            "en": "Earthbreaker slams and Cascade Edge bursts on crits.",
+            "pt-BR": "O Earthbreaker esmaga o chão e o Cascade Edge explode nos críticos."
+          },
+          "style": {
+            "en": "Slams and crits. Earthbreaker slams the ground every fourth hit, and when you crit, Cascade Edge bursts on the monsters around the target. Build crit chance and crit amount and let the pack pop.",
+            "pt-BR": "Pancadas e críticos. O Earthbreaker faz o chão tremer a cada quarto golpe, e quando você acerta um crítico o Cascade Edge explode nos monstros ao redor do alvo. Invista em chance e dano de crítico e veja o bando estourar."
+          },
+          "price": {
+            "en": "Your other melee hits are weaker, and so are hits that are not critical.",
+            "pt-BR": "Seus outros golpes corpo a corpo ficam mais fracos, e os que não são críticos também."
+          },
+          "keystones": [
+            {
+              "name": "Earthbreaker",
+              "point": 28
+            },
+            {
+              "name": "Cascade Edge",
+              "point": 31
+            }
+          ],
+          "spells": ["Skyfall Cleave", "Rampage Leap", "Keepfall"],
+          "gear": {
+            "en": "A two-handed club or axe with a high critical chance: the club can daze, the axe cleaves. Heavy armour.",
+            "pt-BR": "Uma clava ou machado de duas mãos com boa chance de crítico: a clava pode atordoar, o machado corta em área. Armadura pesada."
+          },
+          "cards": {
+            "set": "Earth",
+            "name": {
+              "en": "Earth",
+              "pt-BR": "Terra"
+            },
+            "text": {
+              "en": "Earth hits poison the target.",
+              "pt-BR": "Os golpes de Terra envenenam o alvo."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AQAQwAEAAAAAAGgAAAAAQAYAAABAJAAAQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAuQYUi3Q"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AQAQwAEAACABWPhVIAMAQAYAyAFAJAAAQAEAAAAAAAAKEQCjvQO-BoAKAAAAAAAAAACAuX4CXSi3"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AQAQwAEAICEBWPhXMC8AQAYA2AdPJAA4QAHoAAAAAAAOGQDjvQO-NoD6wQYAAAAAAACAuX4CAAAAAAAAAAAAAAAAAAAAAAAAPJcfAaXfMA"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AQAY0AEiOWeF2f9fOT-AQf6f-_9_LB97fwvsgcwBAFb-GQD3v9-_96r6weZAZQPYAAKAuX4CAAAAAAAAeK4zAAAAAAAAAAAAPJcfAQAHABhbX84"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ranger",
+      "name": "Ranger",
+      "line": {
+        "en": "Bows and crossbows from range. Ascends to Deadeye or Beastmaster.",
+        "pt-BR": "Arcos e bestas à distância. Ascende a Deadeye ou Beastmaster."
+      },
+      "builds": [
+        {
+          "id": "ranger_sharpshooter",
+          "name": "Sharpshooter",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Deadeye crossbow shots and the Longshot range bonus for one target.",
+            "pt-BR": "Tiros de besta do Deadeye e o bônus de alcance do Longshot para um alvo."
+          },
+          "style": {
+            "en": "A crossbow build for one big target. Deadeye gives some shots double damage and Longshot rewards distance, so stay far back and keep shooting. Health and resistances keep you alive when something reaches you.",
+            "pt-BR": "Build de besta para um alvo grande. O Deadeye dá dano dobrado a alguns tiros e o Longshot premia a distância, então fique bem longe e continue atirando. Vida e resistências mantêm você vivo quando algo chega perto."
+          },
+          "price": {
+            "en": "Hits from close range are weaker.",
+            "pt-BR": "Os golpes de perto ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Deadeye",
+              "point": 19
+            },
+            {
+              "name": "Longshot",
+              "point": 48
+            }
+          ],
+          "spells": ["Sunspear", "Hail of Dawn", "Skewering Line"],
+          "gear": {
+            "en": "A crossbow and bolts: Deadeye only works with them. Light armour with health and resistances.",
+            "pt-BR": "Uma besta e virotes: o Deadeye só funciona com eles. Armadura leve com vida e resistências."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AgAIEAAAAAAAaAAAAAAAAQAAAAAAAAAAAADAAYABAEABwCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAMABgTmz"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AgAIEAAAAAABaAAQIAAAAQAAAAAAAACAISjAAYABAEARwDcAAAAAAAAAAAAAAAAAAEwHAAAAAAAAAAAAeHQAAABAAODWnkfvAwAAAAAAAMABDKGu"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AgAIEAAAACABeAAVIAMAAQAAyAEMAACAISjAAYAJAEARwDegBQAITwDgQBYAAAAAAGwHAAAAAAAAAAAAeHQ_AADceufXnkfvAwAAAAAAAMAByTs9"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AgAYUAAgISABeAAVMAMAAaAAyAEMwCe4IWjpAYAJAEB_3zegBQCOX0D1QhYAYAAAmHwfv74BAAAAAO--e3c_AADcfufXnk_vvxf_0T89v98BgqRT"
+            }
+          ]
+        },
+        {
+          "id": "ranger_stormquiver",
+          "name": "Stormquiver",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Stormstring arcs and Ricochet bounces clear packs from range.",
+            "pt-BR": "Stormstring e Ricochet limpam bandos à distância."
+          },
+          "style": {
+            "en": "Lightning and bounces for packs. Stormstring arcs every shot into other monsters, and Ricochet bounces it again from monster to monster. Shoot from range and let the pack carry the chain.",
+            "pt-BR": "Raios e ricochetes para bandos. O Stormstring faz cada tiro saltar para outros monstros, e o Ricochet salta de novo de monstro em monstro. Atire de longe e deixe o bando carregar a corrente."
+          },
+          "price": {
+            "en": "The shot that hits your target is a little weaker.",
+            "pt-BR": "O tiro que atinge o seu alvo fica um pouco mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Stormstring",
+              "point": 7
+            },
+            {
+              "name": "Ricochet",
+              "point": 32
+            }
+          ],
+          "spells": ["Arrowstorm", "Gale Volley", "Moonshard Rain"],
+          "gear": {
+            "en": "A bow or a crossbow with energy damage: both keystones work with either. Light armour.",
+            "pt-BR": "Um arco ou uma besta com dano de energia: as duas keystones funcionam com qualquer um. Armadura leve."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AgAoEAAUAAB4NAAEBAAAAQAAAAAAAAAAAAAAgAMAABYCAVcmEQ"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AgAoEAAUAAB4P7gdBAAAAQAAAAAAOAAAwAEAgAMAABbiAwCgAAAATwAAAAAAAJDBAQAAAAAIACDXYQAAAAAAAAAAAAAAAAAAAAAAAAAHADhl_Q0"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AgAoEAAUYAR_P7gdxAAAAVBAB4ALOAAA3AEAgAMAABbqEwC3PR6PTwAAShAAAJDBAU4AAAAIACDXcQAAAAAAAAAAAAAAAAAAAAAAAAAHADhBjkc"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AgD8-vf_______uf_TM2Affe77GP_zdB3AHAgccBEx7uHwC__3_vf0A1Sh8A4JPBAU4AAAAIACDXcQAAAAAAAAAAAAAAAAAAAAAAAAAHADjNuzg"
+            }
+          ]
+        },
+        {
+          "id": "ranger_barbed_hunter",
+          "name": "Barbed Hunter",
+          "kind": {
+            "en": "Damage over time",
+            "pt-BR": "Dano ao longo do tempo"
+          },
+          "what": {
+            "en": "Barbed Quiver makes every shot bleed: strong in long fights.",
+            "pt-BR": "O Barbed Quiver faz cada tiro sangrar: forte em lutas longas."
+          },
+          "style": {
+            "en": "Every shot leaves a bleed. Barbed Quiver makes bow, crossbow and thrown weapon hits bleed, so a long fight grows deadlier the longer a monster lives. Shoot, back away and let the bleed work.",
+            "pt-BR": "Todo tiro deixa um sangramento. O Barbed Quiver faz os golpes de arco, besta e arremesso sangrarem, então uma luta longa fica mais mortal quanto mais o monstro vive. Atire, recue e deixe o sangramento trabalhar."
+          },
+          "price": {
+            "en": "The hit itself is weaker; the bleed makes up for it only in long fights.",
+            "pt-BR": "O golpe em si fica mais fraco; o sangramento compensa só nas lutas longas."
+          },
+          "keystones": [
+            {
+              "name": "Barbed Quiver",
+              "point": 29
+            }
+          ],
+          "spells": ["Skewering Line", "Gale Volley", "Seeker Mine"],
+          "gear": {
+            "en": "A bow, a crossbow or thrown weapons: all of them bleed. Light armour.",
+            "pt-BR": "Um arco, uma besta ou armas de arremesso: todos sangram. Armadura leve."
+          },
+          "cards": {
+            "set": "Earth",
+            "name": {
+              "en": "Earth",
+              "pt-BR": "Terra"
+            },
+            "text": {
+              "en": "Earth hits poison the target.",
+              "pt-BR": "Os golpes de Terra envenenam o alvo."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AgAIAAAAfQQAAAAAAAAAAABAAwAAAACAMwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAODSmX6K"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AgAIAAAAfSQBOAAVMAMAAABAywEAAACAMygAAAAAAEARwAQAAAAAgCoAAAAAAAAAAAAAAAAAAAAAAAAAeHQ_AABAAODWX6zrKA"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AgAYAAAgfSQBOACVMAMAAABAywEMgCGAM2gBAAAIAEARwASgBQCOzyrgQBYAAAAAAGwAAAAAAAAAAAMAeHQ_AADceufXX67Mdw"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AgAYQAAgfyQBOACVMAMAAKDAywEMwCe4M2gpAAAIAEB_3wWgBQCO32r1QhYAYAAAmHwft74BAAAAAM--e3Y_AADcfufX30f_vBf_0T89vx_Ydpo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "deadeye",
+      "name": "Deadeye",
+      "line": {
+        "en": "The Ranger who aims: crossbows, one target at a time.",
+        "pt-BR": "O Ranger que mira: bestas, um alvo de cada vez."
+      },
+      "builds": [
+        {
+          "id": "deadeye_marked_target",
+          "name": "Marked Target",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Deadeye shots, Hunter's Focus stacks and Longshot: one target dies fast.",
+            "pt-BR": "Tiros de Deadeye, acúmulos do Hunter's Focus e Longshot: um alvo morre rápido."
+          },
+          "style": {
+            "en": "One target, three keystones. Deadeye's double-damage shots, Hunter's Focus that grows with every hit on the same target, and Longshot's distance bonus. Pick a boss, stand far and keep shooting it.",
+            "pt-BR": "Um alvo, três keystones. Os tiros de dano dobrado do Deadeye, o Hunter's Focus que cresce a cada golpe no mesmo alvo e o bônus de distância do Longshot. Escolha um chefe, fique longe e continue atirando nele."
+          },
+          "price": {
+            "en": "Slow on packs.",
+            "pt-BR": "Lento contra bandos."
+          },
+          "keystones": [
+            {
+              "name": "Deadeye",
+              "point": 19
+            },
+            {
+              "name": "Hunter's Focus",
+              "point": 44
+            },
+            {
+              "name": "Longshot",
+              "point": 73
+            }
+          ],
+          "spells": ["Final Verdict", "Twin Verdict", "Hail of Dawn", "Sunspear"],
+          "gear": {
+            "en": "A crossbow and bolts: Deadeye needs them, and Hunter's Focus works with them too. Light armour.",
+            "pt-BR": "Uma besta e virotes: o Deadeye exige os dois, e o Hunter's Focus funciona com eles também. Armadura leve."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AgBIEAAYAAAAdAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMABPaAM"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 3,
+              "code": "CB6-AgBIEAAYAAB4dAAAAAAAAQAAAAAAAACAISjAgYMBAFbjwScAAAAAAAAAAAAAAAAAAEwHAAAAAAAAAAAAAAAAAABAAAACgEfnAwAAAAAHAPgB7Nf-"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 3,
+              "code": "CB6-AgBIEAAYICB5fAAVOAAAAQAAAAAAAACAISjAgYMJAFbzwTcAAAAAAAAAAAAAAAAAAEwHAAAAAAAAAAAAeHQ_AABAAODWnkfvAwAAAADXs_8ByAsm"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 3,
+              "code": "CB6-AgBIEIAYISB5fYAdOAMAAQAAyAEMgCGAIWjBgYMJAFb_2TejPQKOT0D1ShQAAAAAmHwft74BAAAAAI8OenY_AADcfufXnkfvvxf_0T_fs_8BbkvF"
+            }
+          ]
+        },
+        {
+          "id": "deadeye_stormquiver",
+          "name": "Stormquiver",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Stormstring arcs lightning through the pack.",
+            "pt-BR": "O Stormstring faz arcos de raio pelo bando."
+          },
+          "style": {
+            "en": "Stormstring arcs lightning from every shot into the monsters around the target. A simple pack build: aim at the middle of the pack and let the chain do the rest.",
+            "pt-BR": "O Stormstring faz cada tiro soltar raios nos monstros ao redor do alvo. Uma build de bando simples: mire no meio do bando e deixe a corrente fazer o resto."
+          },
+          "price": {
+            "en": "The shot that hits your target is a little weaker.",
+            "pt-BR": "O tiro que atinge o seu alvo fica um pouco mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Stormstring",
+              "point": 7
+            }
+          ],
+          "spells": ["Gale Volley", "Moonshard Rain", "Blessed Earth"],
+          "gear": {
+            "en": "A bow or a crossbow with energy damage. Light armour.",
+            "pt-BR": "Um arco ou uma besta com dano de energia. Armadura leve."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AgAIEAAAACABOAAVJAAAAQAAAAAAAAAAAAAAAAAAAAAAAACgBQAIT_teCA"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AgAoEAAUICBnP4AdJAAAAWgAAAAAABwAAAAAAAAAAAAAAACjPQKOTwAAAAAAYJPYAQAAAAAAACDXcYMQfA"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AgAoEAAUYCRnP4Ad5AAAAWhAB4ALOBwA3AEAAAAAAADqEwC3PR6PTwAAShAAYJPZAU4AAAAIACDXcQAAAAAAAAAAAAAAAAAAAAAAAAAHABiCmOk"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AgD8-vf_______uf_Ts2Af_e77GP_z9z3AHgAAAAAAjuHwC__X-Pf0D1Sh8A4JfZAX4AAADcACDXcQAAAAAAAAAAAAAAAAAAAAAAAAAHABg3er4"
+            }
+          ]
+        },
+        {
+          "id": "deadeye_cascade_hunter",
+          "name": "Cascade Hunter",
+          "kind": {
+            "en": "Critical strikes",
+            "pt-BR": "Golpes críticos"
+          },
+          "what": {
+            "en": "Cascade Edge bursts on the neighbours of every crit.",
+            "pt-BR": "O Cascade Edge explode nos vizinhos de cada crítico."
+          },
+          "style": {
+            "en": "A crit build. Cascade Edge makes every critical hit burst on the monsters next to the target, so build crit chance and crit amount and aim at the centre of the pack.",
+            "pt-BR": "Uma build de crítico. O Cascade Edge faz cada golpe crítico explodir nos monstros ao lado do alvo, então invista em chance e dano de crítico e mire no centro do bando."
+          },
+          "price": {
+            "en": "Hits that are not critical are weaker.",
+            "pt-BR": "Os golpes que não são críticos ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Cascade Edge",
+              "point": 8
+            }
+          ],
+          "spells": ["Final Verdict", "Twin Verdict", "Gale Volley"],
+          "gear": {
+            "en": "A crossbow or bow with a high critical chance. Light armour.",
+            "pt-BR": "Uma besta ou arco com boa chance de crítico. Armadura leve."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AgAQwAEAACABANhRIAMAAAAAyAAAAAAAAAAAAAAAAAAAAAADGCqing"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AgAQwAEAACAhOdtdKAMAAAAOyAEPAEANAAAAAAAAAAAAAICj3QC-XwDgwQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOA7v3w"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AgAQwAEAAGAlOf9fKD8AAA8O-DcPAEAvAAAoAAAAAAAMGIC_3Wy-X4D6wQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPobAVgpsA"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AgC88jN8-__3f__feT8AAf_e-7cPwH8_szzoAcQAMwjuH4C_33__f8D_wx4A4AcwmWwZAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPobAQAHABjTCKo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "beastmaster",
+      "name": "Beastmaster",
+      "line": {
+        "en": "The Ranger with wolves: a companion fights beside you.",
+        "pt-BR": "O Ranger com lobos: um companheiro luta ao seu lado."
+      },
+      "builds": [
+        {
+          "id": "beastmaster_pack_leader",
+          "name": "Pack Leader",
+          "kind": {
+            "en": "Summons",
+            "pt-BR": "Invocações"
+          },
+          "what": {
+            "en": "Pack Alpha wolves and Stormstring arcs.",
+            "pt-BR": "Os lobos do Pack Alpha e os arcos do Stormstring."
+          },
+          "style": {
+            "en": "Your companions do the biting. Pack Alpha makes your wolves and wolf spells hit harder and take less, and Stormstring arcs your shots into the pack. Keep the wolves alive and shoot beside them.",
+            "pt-BR": "Seus companheiros fazem a mordida. O Pack Alpha faz seus lobos e as magias de lobo baterem mais forte e sofrerem menos, e o Stormstring faz seus tiros saltarem no bando. Mantenha os lobos vivos e atire ao lado deles."
+          },
+          "price": {
+            "en": "The shot that hits your target is a little weaker.",
+            "pt-BR": "O tiro que atinge o seu alvo fica um pouco mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Pack Alpha",
+              "point": 19
+            },
+            {
+              "name": "Stormstring",
+              "point": 22
+            }
+          ],
+          "spells": ["Feral Command", "Pack Howl", "Pack Frenzy", "Rending Pounce"],
+          "gear": {
+            "en": "A bow with health and spirit on your armour: the wolves need you alive. Light armour.",
+            "pt-BR": "Um arco, com vida e spirit na armadura: os lobos precisam de você vivo. Armadura leve."
+          },
+          "cards": {
+            "set": "Earth",
+            "name": {
+              "en": "Earth",
+              "pt-BR": "Terra"
+            },
+            "text": {
+              "en": "Earth hits poison the target.",
+              "pt-BR": "Os golpes de Terra envenenam o alvo."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 2,
+              "code": "CB6-AgAIEAAAAAAAeAAEBAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMABaPjA"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AgAIEAAAICGJeQcf9DwAAQAANIALAAAAAADAYYABAEAQwCMUABwBgCpgQAIAAAAAAAAAAAAAAAAAAAAACAAAkAABAAAAAAAAAAAAAAAAAMAB1ER6"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AgAIOnAAr-eL-W8f_TywQQYENIALgCEAAEDBYYABAEAQwCMUABwBgCpgQAIAIAMAAAAAAAAAAAAAAAEAyC8-kAABAAAAAAAAAAAAAAAAAMAB1VpI"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AgAIOnAAr-eL-W8f_TywQfbe9_dfxH_dP3zDb8x9AEARwDsUABwBgCrgQh4A4AcAAAAAAAAAAAAAAP-_228_kAH9H-cCAAAA_P8fAAAAAMABB1Gj"
+            }
+          ]
+        },
+        {
+          "id": "beastmaster_wild_volley",
+          "name": "Wild Volley",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Ricochet and Longshot: the bow bounces through a pack.",
+            "pt-BR": "Ricochet e Longshot: o arco ricocheteia pelo bando."
+          },
+          "style": {
+            "en": "A bow build that leaves the wolves in the back. Ricochet bounces every shot through the pack, and Longshot pays for distance. Keep your range and use the wolves to hold monsters off.",
+            "pt-BR": "Uma build de arco que deixa os lobos para trás. O Ricochet faz cada tiro saltar pelo bando, e o Longshot paga pela distância. Mantenha o alcance e use os lobos para segurar os monstros."
+          },
+          "price": {
+            "en": "Close hits are weaker, and the wolves only hold monsters off.",
+            "pt-BR": "Os golpes de perto ficam mais fracos, e os lobos só seguram os monstros."
+          },
+          "keystones": [
+            {
+              "name": "Ricochet",
+              "point": 25
+            },
+            {
+              "name": "Longshot",
+              "point": 54
+            }
+          ],
+          "spells": ["Moonshard Rain", "Sunspear", "Feral Command"],
+          "gear": {
+            "en": "A bow or a crossbow: both keystones work with either. Light armour.",
+            "pt-BR": "Um arco ou uma besta: as duas keystones funcionam com qualquer um. Armadura leve."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AgAgAAAUAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAgRd5Y"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AgAgAAAUAAB4BAAACAAAAAAAAAAAAAA4AAAogAMAABbmGQAAAAAAAAAAAAAAAAAAmEw9AAAAAAAAAAAAAAAAAAAAAOCujke_IwCAAQAHADhRnQs"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AgAwQAI0ACB4BLgBKAAAAAAAAAAAAAA4AAAogAMAABbmGQAAAAAAAAAAAAAAAAAAmHw9t74BAAAAAAAAAAAAAAAAAOCvjke_IwDg0T8fvz9WtY0"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AgAwQAI8YCB5XbgdOAAAAAIAAAAAvyM4QEHpgY8NAFb32SegAAAATwAAAAAAAJDBmXw9t7659e25ds-1e643AAD81eevjke_IwDg0T8fvz8joX0"
+            }
+          ]
+        },
+        {
+          "id": "beastmaster_hardy_warden",
+          "name": "Hardy Warden",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Pack Alpha with health and resistances for safe solo hunts.",
+            "pt-BR": "Pack Alpha com vida e resistências para caçadas solo seguras."
+          },
+          "style": {
+            "en": "A safe way to hunt alone. Pack Alpha makes your wolves stronger and tougher, while the health and resistance nodes keep you alive beside them. Slow and steady, for hunts where you cannot afford to die.",
+            "pt-BR": "Um jeito seguro de caçar sozinho. O Pack Alpha deixa seus lobos mais fortes e resistentes, enquanto os nós de vida e resistência mantêm você vivo ao lado deles. Devagar e sempre, para caçadas em que você não pode morrer."
+          },
+          "price": {
+            "en": "Low damage.",
+            "pt-BR": "Pouco dano."
+          },
+          "keystones": [
+            {
+              "name": "Pack Alpha",
+              "point": 19
+            }
+          ],
+          "spells": ["Wild Bond", "Feral Command", "Pack Howl", "Soulward"],
+          "gear": {
+            "en": "A bow, and armour with health and resistances.",
+            "pt-BR": "Um arco, e armadura com vida e resistências."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AgAIEAAAAAAAaAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgDMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAAAAAAAAAAAAAAAAAAAAAAAAMAB_Mhi"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AgAIEAAAIAAAeAAEEAAAAQAAAAAAAACAISjAAYABAEABgD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAePQ7AADe-uPWHwAAAAAAAAAAAMABoKlS"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AgAIEAAAICABeAiV8AAAAQAABIALgCGAIWjBAYABAEARwD8AAAAAgCpgQBYAIAEAAAwAAAAAAAAAALkOe_U7kADf-uPeHwAAAAAAAAAAAMAB0MIA"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AgAIEAAAYCUHeC2X8DAAQZaOJvB7rGGN4WnBAYABAED_3z9gAwDwsKpqQBZAIAdYAEyHuQ4BACC_YLkOe_U7kADf-uPen1xnAAAgvxg8P8cB2MnY"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "mystic",
+      "name": "Mystic",
+      "line": {
+        "en": "Spells and mana. Ascends to Elementalist or Illusionist.",
+        "pt-BR": "Magias e mana. Ascende a Elementalist ou Illusionist."
+      },
+      "builds": [
+        {
+          "id": "mystic_arcanist",
+          "name": "Arcanist",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Arcane Echo repeats area spells, Elemental Overload primes the next element.",
+            "pt-BR": "O Arcane Echo repete magias de área, o Elemental Overload prepara o próximo elemento."
+          },
+          "style": {
+            "en": "An area caster. Arcane Echo makes spells that hit several enemies echo a moment later, and Elemental Overload makes the next spell of a new element hit harder. Cast area spells and change element on every cast.",
+            "pt-BR": "Um conjurador de área. O Arcane Echo faz as magias que atingem vários inimigos ecoarem um instante depois, e o Elemental Overload faz a próxima magia de outro elemento bater mais forte. Lance magias de área e troque de elemento a cada uma."
+          },
+          "price": {
+            "en": "It pays only if you change element on every cast.",
+            "pt-BR": "Só compensa se você trocar de elemento a cada magia."
+          },
+          "keystones": [
+            {
+              "name": "Arcane Echo",
+              "point": 25
+            },
+            {
+              "name": "Elemental Overload",
+              "point": 44
+            }
+          ],
+          "spells": ["Rime Bloom", "Falling Pyre", "Prismatic Rupture"],
+          "gear": {
+            "en": "A wand or rod with spell damage, and robes with mana and energy shield.",
+            "pt-BR": "Uma varinha ou cajado com dano de magia, e vestes com mana e escudo de energia."
+          },
+          "cards": {
+            "none": {
+              "en": "None: Elemental Overload wants a new element on every cast, and a card set locks your lines to one element.",
+              "pt-BR": "Nenhum: o Elemental Overload quer um elemento novo a cada magia, e um conjunto de cartas prende suas linhas a um só elemento."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AwAgAAAUAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAiAuzo"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AwAoEAAUAAB4bAAQAAAAAQAAAAAAAACAISjAgYMBAFbjwScAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAOCuDgAAAAAAAAAX7_gByLuJ"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AwAoEAIUAQB4bYAYCAAAAQAAAAAAAACAISjAgYMBAFbjwScAAAAAAAAAAAAAAAAAAAAAt_4AAAAAAAAAeK43AADc1eevDgAAAAAAAAAf7_8BJHxE"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AwC4UBI8IyF5fYAfOAAAAQAAAAAA_yfAYWnBgY8NgFf32ScAAwDwAAAAAAAAIANYAHaft_649W0AAN-1e643AAD81eevjlf_AADg1T8f7_8B-zoG"
+            }
+          ]
+        },
+        {
+          "id": "mystic_mana_weaver",
+          "name": "Mana Weaver",
+          "kind": {
+            "en": "Support",
+            "pt-BR": "Suporte"
+          },
+          "what": {
+            "en": "Covenant of Vigils: vigils for the party on a deep mana pool.",
+            "pt-BR": "Covenant of Vigils: vigílias para o grupo sobre uma mana profunda."
+          },
+          "style": {
+            "en": "A support caster. Covenant of Vigils makes your vigils cheaper, wider and stronger for the party, and the mana nodes give you the pool to keep them on. Turn the vigils on, stand with the group and cast between pulses.",
+            "pt-BR": "Um conjurador de suporte. O Covenant of Vigils deixa suas vigílias mais baratas, mais largas e mais fortes para o grupo, e os nós de mana dão a reserva para mantê-las. Ligue as vigílias, fique com o grupo e lance entre os pulsos."
+          },
+          "price": {
+            "en": "Your own damage is a little weaker.",
+            "pt-BR": "Seu próprio dano fica um pouco mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Covenant of Vigils",
+              "point": 6
+            }
+          ],
+          "spells": ["Vigil of Clarity", "Vigil of Iron", "Vigil of Wrath", "Purifying Wellspring"],
+          "gear": {
+            "en": "A rod with mana and spirit, and robes with mana. The vigils reserve mana, so a deep pool is the gear.",
+            "pt-BR": "Um cajado com mana e spirit, e vestes com mana. As vigílias reservam mana, então uma reserva grande é o equipamento."
+          },
+          "cards": {
+            "set": "Energy",
+            "name": {
+              "en": "Energy",
+              "pt-BR": "Energia"
+            },
+            "text": {
+              "en": "Energy hits slow the target.",
+              "pt-BR": "Os golpes de Energia atrasam o alvo."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADAAAAgAYKAAwOAAAAEAYAAAAAAAAAAAAAAAAAAAAYAOABnkD2"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADACC5gb8L4QwOAAAAFM47AAAAAAAAcAIAIAAAAIAdQOABAABgQOpxFeNB_w"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADACC5-b8f4TwOAAAHNM47AEANAADAfgLYIAAQAIB_Q-BxoCpgQOpxFQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA5NcB6UtJ"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AwBQcIA_ALm_-b-f-TwOAPoPNP4_AF_NITzA_g_cohkZQL__2-zxtirgQv5x_wMwAD4AAAAAAAAAAPuOAwAAAAAAAPD_OwAA_P8fT2G4"
+            }
+          ]
+        },
+        {
+          "id": "mystic_warded_mage",
+          "name": "Warded Mage",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Elemental Overload with health and resistances.",
+            "pt-BR": "Elemental Overload com vida e resistências."
+          },
+          "style": {
+            "en": "A careful caster. Elemental Overload still rewards a new element on every cast, while health and resistances let you survive a mistake. The damage is low, but you stay in the fight.",
+            "pt-BR": "Um conjurador cuidadoso. O Elemental Overload ainda premia um elemento novo a cada magia, enquanto vida e resistências deixam você sobreviver a um erro. O dano é baixo, mas você continua na luta."
+          },
+          "price": {
+            "en": "Low damage.",
+            "pt-BR": "Pouco dano."
+          },
+          "keystones": [
+            {
+              "name": "Elemental Overload",
+              "point": 19
+            }
+          ],
+          "spells": ["Witchfire Bolt", "Rime Bloom", "Soulward", "Ironbark Hide"],
+          "gear": {
+            "en": "A wand or rod, and robes with health, resistances and energy shield.",
+            "pt-BR": "Uma varinha ou cajado, e vestes com vida, resistências e escudo de energia."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAAAAAcAAAAAAAAQAAAAAAAAAAAADAAYABAEAQwDMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMABJ5YG"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAICABeAAVMAMAAQAAyAEMAAAAAADAAYABAEARwD8AAAAAAADgQBYAAAAAAAAAAAAAAAAAAAAAeHU-kABdGgAAAAAAAAAAAAAAAMAB-OXw"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAICABeCgVMAMAAQcAyAFMLAAAQAHAAYABAED_3z8AAAAAAADgQBYAAAAAAAAAfw0BAAAAAAAAeHU-kADfGgMAAAAAAAAAAAD8M8cBO6qc"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAICEneL0XOA8AAZeM2Q98vCGAc2nBAYABAED_3z8AAAAAAIDqQPZAKwNbAEwHfw3Na-jVYa8Oe3U-kADfGuPWmP5iAADguxj8M8cBR5RH"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "elementalist",
+      "name": "Elementalist",
+      "line": {
+        "en": "The Mystic of fire, ice and energy.",
+        "pt-BR": "O Mystic do fogo, do gelo e da energia."
+      },
+      "builds": [
+        {
+          "id": "elementalist_overloaded",
+          "name": "Overloaded",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Elemental Overload: a spell of a new element hits harder.",
+            "pt-BR": "Elemental Overload: uma magia de um elemento novo bate mais forte."
+          },
+          "style": {
+            "en": "A one-target caster who plays the elements like keys. A spell of a new element within a few seconds hits harder, so rotate fire, ice and energy and never cast the same element twice in a row.",
+            "pt-BR": "Um conjurador de alvo único que toca os elementos como teclas. Uma magia de elemento novo em poucos segundos bate mais forte, então alterne fogo, gelo e energia e nunca lance o mesmo elemento duas vezes seguidas."
+          },
+          "price": {
+            "en": "It pays only if you change element on every cast.",
+            "pt-BR": "Só compensa se você trocar de elemento a cada magia."
+          },
+          "keystones": [
+            {
+              "name": "Elemental Overload",
+              "point": 19
+            }
+          ],
+          "spells": ["Witchfire Bolt", "Forked Storm", "Rime Bloom", "Falling Pyre"],
+          "gear": {
+            "en": "A wand or rod with spell damage, and robes with mana and energy shield.",
+            "pt-BR": "Uma varinha ou cajado com dano de magia, e vestes com mana e escudo de energia."
+          },
+          "cards": {
+            "none": {
+              "en": "None: Elemental Overload wants a new element on every cast, and a card set locks your lines to one element.",
+              "pt-BR": "Nenhum: o Elemental Overload quer um elemento novo a cada magia, e um conjunto de cartas prende suas linhas a um só elemento."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAAAAAaAAQAAAAAQAAAAAAAAAAAADAAYABAEABwCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAB8UzR"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAAQAAaAAQAAAAAQAAAAAAAACAISjAAYAJAEARwCcAAAAAAAAAAAAAAAAAABYAAAAAAAAAAAAAeK43AADc1eevDgAAAAAAAAAAAMAB2VOr"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AwAY0AEgAQAAaGgRAAAAQQYAAABApCOAYWnBAYAJAEARwCcAAAAAAAAAAAAAAAAAADYAt_4AAAAAAM_1eq43AADc1eevDgAAAAAAAAAAAMABWmHu"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AwC40BMkIwEhefgfOAAAQQYAAABA_yfAYWnBAYwNAED32ScAAwDwAAAAAAAAIANYAHaft_649e25AN_1eq43AAD81eevjlf_AADg1T8fv98B2IvM"
+            }
+          ]
+        },
+        {
+          "id": "elementalist_effigy_caller",
+          "name": "Effigy Caller",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Cinder Effigies repeat your area spell every 2 seconds.",
+            "pt-BR": "Efígies de Cinzas repetem sua magia de área a cada 2 segundos."
+          },
+          "style": {
+            "en": "Leave the pack to your effigies. An area spell raises a Cinder Effigy on your tile that repeats the cast every few seconds. Cast a big area spell, step away and cast again. A single target gains nothing.",
+            "pt-BR": "Deixe o bando para as suas efígies. Uma magia de área ergue uma Cinder Effigy no seu quadrado que repete a magia a cada poucos segundos. Lance uma magia de área grande, saia de perto e lance de novo. Um alvo só não ganha nada."
+          },
+          "price": {
+            "en": "Your own spells are weaker, and a single target gains nothing.",
+            "pt-BR": "Suas próprias magias ficam mais fracas, e um alvo só não ganha nada."
+          },
+          "keystones": [
+            {
+              "name": "Effigy Covenant",
+              "point": 17
+            }
+          ],
+          "spells": ["Doomtide", "Glacial Doom", "Frozen Crypt", "Falling Pyre"],
+          "gear": {
+            "en": "A wand or rod with area damage, and robes with health and energy shield.",
+            "pt-BR": "Uma varinha ou cajado com dano de área, e vestes com vida e escudo de energia."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAAAAAcAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgHMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeASS3tY"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAICEBeAAXMAMAAQAAyAEMAACAISjAAYAJAEARwHcAAAAAAADgQBYAAAAAAAAAAAAAAAAAAAAAeD4_AABAAMAC7MFA"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAICEBeAUXMA8AAQAO2E88AACjISjAAYAJAEARwHcAAAAAAADgQvZQDwAAAAAAAAAAAAAAAAAAeD4_AADc3efuHlKrvQ"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AwAIEAAAICEBeQcfOA8AAQAO2E88gCG7IWjpAYAJAED_33egAwDwRwDgQvZQDwAAAHYH974BAAAAAI--ez4_AADc3efunuf6PBfnuT79sx86MbM"
+            }
+          ]
+        },
+        {
+          "id": "elementalist_vigil_keeper",
+          "name": "Vigil Keeper",
+          "kind": {
+            "en": "Support",
+            "pt-BR": "Suporte"
+          },
+          "what": {
+            "en": "Covenant of Vigils: vigils for the party on a deep mana pool.",
+            "pt-BR": "Covenant of Vigils: vigílias para o grupo sobre uma mana profunda."
+          },
+          "style": {
+            "en": "Vigils for the group. Covenant of Vigils makes them cheaper, wider and stronger for the party, and the mana nodes pay for them. You still hold spells of every element for when the group needs damage.",
+            "pt-BR": "Vigílias para o grupo. O Covenant of Vigils as deixa mais baratas, mais largas e mais fortes para o grupo, e os nós de mana pagam por elas. Você ainda tem magias de todos os elementos para quando o grupo precisar de dano."
+          },
+          "price": {
+            "en": "Your own damage is a little weaker.",
+            "pt-BR": "Seu próprio dano fica um pouco mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Covenant of Vigils",
+              "point": 6
+            }
+          ],
+          "spells": ["Vigil of Clarity", "Vigil of Haste", "Vigil of Wrath", "Forked Storm"],
+          "gear": {
+            "en": "A rod with mana and spirit, and robes with mana. A deep pool carries the vigils.",
+            "pt-BR": "Um cajado com mana e spirit, e vestes com mana. Uma reserva grande sustenta as vigílias."
+          },
+          "cards": {
+            "set": "Energy",
+            "name": {
+              "en": "Energy",
+              "pt-BR": "Energia"
+            },
+            "text": {
+              "en": "Energy hits slow the target.",
+              "pt-BR": "Os golpes de Energia atrasam o alvo."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADAAAAgAYKAAwOAAAAEAYAAAAAAAAAAAAAAAAAAAAYAOABnkD2"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADACC5gb8L4QwOAAAAFM47AAAAAAAAcAIAIAAAAIAdQOABAABgQOpxFeNB_w"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADACC5-b8f4TwOAAAHNM47AEANAADAfgLYIAAQAIB_Q-BxoCpgQOpxFQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA5NcB6UtJ"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AwBQcIA_ALm_-b-f-TwOAPoPNP4_AF_NITzA_g_cohkZQL__2-zxtirgQv5x_wMwAD4AAAAAAAAAAPuOAwAAAAAAAPD_OwAA_P8fT2G4"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "illusionist",
+      "name": "Illusionist",
+      "line": {
+        "en": "The Mystic of curses, illusions and the party.",
+        "pt-BR": "O Mystic das maldições, das ilusões e do grupo."
+      },
+      "builds": [
+        {
+          "id": "illusionist_support_weaver",
+          "name": "Support Weaver",
+          "kind": {
+            "en": "Support",
+            "pt-BR": "Suporte"
+          },
+          "what": {
+            "en": "Shared Phantasm and Inspiring Illusion: your party hits harder and heals.",
+            "pt-BR": "Shared Phantasm e Inspiring Illusion: seu grupo bate mais forte e se cura."
+          },
+          "style": {
+            "en": "Make the party stronger. Shared Phantasm marks the enemy so your party hits it harder and heals from it, and Inspiring Illusion adds damage to everyone near you. You need a party; alone you do little.",
+            "pt-BR": "Deixe o grupo mais forte. O Shared Phantasm marca o inimigo para o grupo bater mais forte e se curar, e o Inspiring Illusion soma dano a todos perto de você. Você precisa de um grupo; sozinho você faz pouco."
+          },
+          "price": {
+            "en": "You need a party; alone you do little.",
+            "pt-BR": "Você precisa de um grupo; sozinho você faz pouco."
+          },
+          "keystones": [
+            {
+              "name": "Shared Phantasm",
+              "point": 25
+            },
+            {
+              "name": "Inspiring Illusion",
+              "point": 44
+            }
+          ],
+          "spells": ["Hall of Mirrors", "Lucid Reverie", "Mirror Mend", "Verdant Sanctuary"],
+          "gear": {
+            "en": "A wand or rod, and robes with mana and magic level: your heals and marks are the build.",
+            "pt-BR": "Uma varinha ou cajado, e vestes com mana e magic level: suas curas e marcas são a build."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AwBAAAAYAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAjyExQ"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AwBIEAAYAAB4dZAICAAAAQAAAAAAJAAAwAHA54MBAFbywSMYAOABgCoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAEBAAAAAAAAAAAAAAAHAPgByy3i"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AwBIEAAYAAB4_dodCAMAAQQAyAHEJQA4wAHo54MBgFf22SMYAOABgCpgQAIAAEACAAAAAAAAAAAAAAAAAAAAgAEBAAAAAAAAPPcZAQAHAPgB6tPE"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AwBIOoAdBwB4_d6fyA-wQQYO3P_9LwD_xQHq54MZkFf-37u72-Dxhur-Qv7YD_AjnX4_AQDMNQAAAAAAAAAAgAEBAAAAAAAAPPcZAQAHAPgB0rMR"
+            }
+          ]
+        },
+        {
+          "id": "illusionist_vigil_keeper",
+          "name": "Vigil Keeper",
+          "kind": {
+            "en": "Support",
+            "pt-BR": "Suporte"
+          },
+          "what": {
+            "en": "Covenant of Vigils: vigils for the party on a deep mana pool.",
+            "pt-BR": "Covenant of Vigils: vigílias para o grupo sobre uma mana profunda."
+          },
+          "style": {
+            "en": "Vigils for the group. Covenant of Vigils makes them cheaper, wider and stronger for the party, and the mana nodes pay for them. Turn them on, stay close to your friends and cast between pulses.",
+            "pt-BR": "Vigílias para o grupo. O Covenant of Vigils as deixa mais baratas, mais largas e mais fortes para o grupo, e os nós de mana pagam por elas. Ligue, fique perto dos amigos e lance entre os pulsos."
+          },
+          "price": {
+            "en": "Your own damage is a little weaker.",
+            "pt-BR": "Seu próprio dano fica um pouco mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Covenant of Vigils",
+              "point": 6
+            }
+          ],
+          "spells": ["Vigil of Clarity", "Vigil of Iron", "Vigil of Wrath", "Mirror Mend"],
+          "gear": {
+            "en": "A rod with mana and spirit, and robes with mana.",
+            "pt-BR": "Um cajado com mana e spirit, e vestes com mana."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADAAAAgAYKAAwOAAAAEAYAAAAAAAAAAAAAAAAAAAAYAOABnkD2"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADAAeIgQYKAQwOAAAgM34wAACAMzgAYAAAAAAAAAAYAOABAAAAAOB4FQAAAAAAAAAAAAAAAAAAAAAAAAAAAODWPcwTtQ"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AwBAAIADAAeIgQcKAQwOAAA2M34wAECvMzgoYAAAAAAAAAAYAOABAAAAAOB4FQAAAAAAAAAAAAAAAAAAAAAAAADc9eHWPQAAfNf50U-zEiU"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AwBYQIArYa-v2Yef-Q8OAPi_P_4_AF_vszhoYAAAkAnuH4D72-DxNoD6Sv_4dwMwAAYAt34AAAAAAAAAAAAAAADc9eHWPQAAfNf50U_4z9w"
+            }
+          ]
+        },
+        {
+          "id": "illusionist_illusory_striker",
+          "name": "Illusory Striker",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "An area caster: Cinder Effigies repeat each cast.",
+            "pt-BR": "Um mago de área: Efígies de Cinzas repetem cada conjuração."
+          },
+          "style": {
+            "en": "An area caster. Cinder Effigies repeat each area spell, so cast Nightburst or Tear in the Weave in the middle of the pack, step away and cast again.",
+            "pt-BR": "Um conjurador de área. As Cinder Effigies repetem cada magia de área, então lance Nightburst ou Tear in the Weave no meio do bando, saia de perto e lance de novo."
+          },
+          "price": {
+            "en": "Your own spells are weaker, and a single target gains nothing.",
+            "pt-BR": "Suas próprias magias ficam mais fracas, e um alvo só não ganha nada."
+          },
+          "keystones": [
+            {
+              "name": "Effigy Covenant",
+              "point": 17
+            }
+          ],
+          "spells": ["Nightburst", "Tear in the Weave", "Mirror Shards", "Primordial Squall"],
+          "gear": {
+            "en": "A wand or rod with area damage, and robes with health and energy shield.",
+            "pt-BR": "Uma varinha ou cajado com dano de área, e vestes com vida e escudo de energia."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AwAYUAAgAQAAaAAQAAAAAQAAAAAAAAAAAADAAYABAEAAgGMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACJgJ0Q"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AwAYUAAgAQAAaAAQAAAAAQAAAAAAAACAIRzAAYAJAEARwGcAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeK43AADc1bevDqYQig"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AwAYUAAgIQEAeAAWEAAAAQAAAAAAgCGAIVzBAYAJAEARwGcAAwD2AAAAAAAAAAAAAHYfAAAAAAAAAM8Feq43AADc1bevjkf_6E3y"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AwA4UAIkISEh-YYfODMAAQAC6HgwgCP7IVzpAYANAED32edhwwD2eAAAAIDM7gAAmHaft74BAAAAAN-1e643AAD81bevjlf_IADg1T8fvx8lf1U"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "thief",
+      "name": "Thief",
+      "line": {
+        "en": "Fast blades, poison, traps. Ascends to Ninja or Samurai.",
+        "pt-BR": "Lâminas rápidas, veneno, armadilhas. Ascende a Ninja ou Samurai."
+      },
+      "builds": [
+        {
+          "id": "thief_venomblade",
+          "name": "Venomblade",
+          "kind": {
+            "en": "Damage over time",
+            "pt-BR": "Dano ao longo do tempo"
+          },
+          "what": {
+            "en": "Poison on every attack that spreads when the pack dies.",
+            "pt-BR": "Veneno em todo ataque que se espalha quando o bando morre."
+          },
+          "style": {
+            "en": "Poison on every strike. Blackblood Creed poisons with every attack, Contagion Rite spreads the poison to the monsters around when one dies, and Viper's Verdict strikes vitals on poisoned targets. Start a poison and let it kill the pack.",
+            "pt-BR": "Veneno em cada golpe. O Blackblood Creed envenena todo ataque, o Contagion Rite espalha o veneno aos monstros ao redor quando um morre, e o Viper's Verdict acerta pontos vitais de alvos envenenados. Comece um veneno e deixe-o matar."
+          },
+          "price": {
+            "en": "Your evasion is cut in half, and your weapon hits are weaker.",
+            "pt-BR": "Sua esquiva cai pela metade, e seus golpes de arma ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Blackblood Creed",
+              "point": 19
+            },
+            {
+              "name": "Contagion Rite",
+              "point": 24
+            },
+            {
+              "name": "Viper's Verdict",
+              "point": 37
+            }
+          ],
+          "spells": ["Poison Blades", "Venom Spiral", "Smoke Bomb", "Fan of Knives"],
+          "gear": {
+            "en": "A sword: Tempo speeds up your swing on one target, so poison goes on fast. Light armour.",
+            "pt-BR": "Uma espada: o Tempo acelera seu golpe em um alvo, então o veneno entra rápido. Armadura leve."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-BAAIAAAAfQUAAAACEQAAAABAAwAAAAAAHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPI8VAc"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 3,
+              "code": "CB6-BAAIAAAAfwUAAAAGEQAACABAAwAAgCAAPlwDAAAAAEABwDwAAAAAAAAAAAAAAAAAAPYAAAAAAAAAAAAAAAAAAADc1eGuDgAAAAAAAAAAAMAd2Wj5"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 3,
+              "code": "CB6-BACYQBAgfwUBOAUWMQAACABHAwAAwCUDPlwDAAAEAEABwD0AAAAAAAAAAAAAAAAAAPYAAAAAAAAAAN-3e64RAADc1eGvDgAAAAAAAAAAAMAdJKLK"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 3,
+              "code": "CB6-BAC8QBBkfyUhOYcf-QwACABHF4_vxSUjPlw3AABmAEAv370BBQCeAAAFQOBAK3PaAf4fFwAAACC_Rv-3e64RAADc1eGvDgYAAADggQE9P98dT_Xd"
+            }
+          ]
+        },
+        {
+          "id": "thief_cutthroat",
+          "name": "Cutthroat",
+          "kind": {
+            "en": "Critical strikes",
+            "pt-BR": "Golpes críticos"
+          },
+          "what": {
+            "en": "Shadow Twin sometimes strikes twice, Cascade Edge bursts on crits.",
+            "pt-BR": "A Shadow Twin às vezes golpeia duas vezes, o Cascade Edge explode nos críticos."
+          },
+          "style": {
+            "en": "Two blows for one. Shadow Twin sometimes sends your shadow to hit the same target again, and Cascade Edge bursts on the monsters around every critical hit. Build crit and strike fast.",
+            "pt-BR": "Dois golpes por um. O Shadow Twin às vezes manda sua sombra bater de novo no mesmo alvo, e o Cascade Edge explode nos monstros ao redor de cada crítico. Invista em crítico e golpeie rápido."
+          },
+          "price": {
+            "en": "You take more damage, and hits that are not critical are weaker.",
+            "pt-BR": "Você leva mais dano, e os golpes que não são críticos ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Shadow Twin",
+              "point": 25
+            },
+            {
+              "name": "Cascade Edge",
+              "point": 27
+            }
+          ],
+          "spells": ["Gutting Slash", "Last Breath", "Eclipse Edge"],
+          "gear": {
+            "en": "A sword with a high critical chance: Tempo speeds up the swing. Light armour.",
+            "pt-BR": "Uma espada com boa chance de crítico: o Tempo acelera o golpe. Armadura leve."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-BABAAAAYAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAhhVrs"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-BABAAAAYACB5BLhRIAMAAAAAyAEPAAAAAAAAgAMAABbqEYAD3QEOAED1wQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHADgcIstF"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-BABAAAAYICF5XbhXOA8AAAcA2AcPAAA4AAA0gAMAABbuGYDj3QG-NkD1wQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPobAAAHADgcRV8J"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-BAB4-ob_L6__fbhfOD82Af_A_7dP7B8_kAA0gAMAEx7uH4D_3-__f8D_wx4A4AewvXy9AwAAAAAAAAAAAAAAAAAAAAAAAAAAPPobAAAHADgcJaHb"
+            }
+          ]
+        },
+        {
+          "id": "thief_mine_layer",
+          "name": "Mine-layer",
+          "kind": {
+            "en": "Traps and mines",
+            "pt-BR": "Armadilhas e minas"
+          },
+          "what": {
+            "en": "Traps and mines for the pack, set off by hand.",
+            "pt-BR": "Armadilhas e minas para o bando, detonadas à mão."
+          },
+          "style": {
+            "en": "Set the field, then fire it. Snarewright's Creed lets you hold more traps and mines, armed sooner and hitting harder. Lay Snare Traps and Seeker Mines in the path of the pack and set them off with Detonate Mines.",
+            "pt-BR": "Arme o campo e depois dispare. O Snarewright's Creed deixa você ter mais armadilhas e minas, armadas mais cedo e mais fortes. Coloque Snare Traps e Seeker Mines no caminho do bando e detone com Detonate Mines."
+          },
+          "price": {
+            "en": "Your other hits are weaker, and it needs set-up.",
+            "pt-BR": "Seus outros golpes ficam mais fracos, e ela pede preparo."
+          },
+          "keystones": [
+            {
+              "name": "Snarewright's Creed",
+              "point": 4
+            }
+          ],
+          "spells": ["Snare Trap", "Seeker Mine", "Detonate Mines"],
+          "gear": {
+            "en": "A sword: the traps and mines do the work, so the weapon matters little. Light armour, so you can move and re-set.",
+            "pt-BR": "Uma espada: as armadilhas e minas fazem o trabalho, então a arma importa pouco. Armadura leve, para você se mover e rearmar."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-BAAIEAAAYAQAMAAEAACAAwBAAwAAAACAMwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAcvAeS"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-BAAYUAAgYQUBOAAWMACAAwBAAwAAAACAMygAAAAAAAAAAACgBQCeTwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADc1eOvDgAAAAAAAAAAAAAcDXM9"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-BAAYUAAgYSUBOCgXMACAAwNAAwAAgCOAM2gBAAAIAEARwCegBQCeTwAAAAAAAAAAAAAAAAAAAAAAAM-1e643AADc1eevDgAAAAAAAAAAAAAcLs53"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-BAAYUAAgYSUhObgf-ACAAwdAh4HPtyPAc2kBAAAIAED32SejvQO-XwAg2hEAAAAAAHwft765AQAAAM-1e643AAD81eevjkf_AADg0T8fvx8ceGNK"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ninja",
+      "name": "Ninja",
+      "line": {
+        "en": "The Thief of shadows and dodging.",
+        "pt-BR": "O Thief das sombras e da esquiva."
+      },
+      "builds": [
+        {
+          "id": "ninja_twin_fangs",
+          "name": "Twin Fangs",
+          "kind": {
+            "en": "Critical strikes",
+            "pt-BR": "Golpes críticos"
+          },
+          "what": {
+            "en": "Living Shadow opens a damage window after a dodge, Cascade Edge bursts on crits.",
+            "pt-BR": "Living Shadow abre uma janela de dano depois de uma esquiva, o Cascade Edge explode nos críticos."
+          },
+          "style": {
+            "en": "Dodge, then strike. Living Shadow opens a window after a dodge or after Shadow Veil in which your weapon hits deal more, and Cascade Edge bursts on every crit. Stay light, dodge and hit inside the window.",
+            "pt-BR": "Esquive e golpeie. O Living Shadow abre uma janela depois de uma esquiva ou do Shadow Veil em que seus golpes de arma causam mais dano, e o Cascade Edge explode a cada crítico. Fique leve, esquive e bata dentro da janela."
+          },
+          "price": {
+            "en": "Hits that are not critical are weaker.",
+            "pt-BR": "Os golpes que não são críticos ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Living Shadow",
+              "point": 6
+            },
+            {
+              "name": "Cascade Edge",
+              "point": 14
+            }
+          ],
+          "spells": ["Shadow Veil", "Shadow Step", "Gutting Slash", "Death Between Heartbeats"],
+          "gear": {
+            "en": "A fast sword with a high critical chance, and light armour with evasion.",
+            "pt-BR": "Uma espada rápida com boa chance de crítico, e armadura leve com esquiva."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 2,
+              "code": "CB6-BAAQwAEAAAAAANhBAAMAAAAACAAAAAAAAAAAAAAAAAAAAAADGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD8DuUf"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-BAAQwAEAICEBONxXMA8AAAAA2AcPAAAAAAAAAAAAAAAAAIDj3QG-NgDgwQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD8LjK5"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-BAAQwAEAICEBOP9fMD8AAAcO-DcPAEAvAAA0AAAAAAAMGID_3W2-NgDhwQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPobAAAAAAD8srRS"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-BAA8-gNkYf_nff9feT8wAf_e_7cPwH8_EAD0AAAAAAjsH4D_3X__f0D1wx4A4AewmXwZAAAAAAAAADkAAAAAAAAAAAAAAAAA_P8fAAC_Pxr8RXPZ"
+            }
+          ]
+        },
+        {
+          "id": "ninja_phantom",
+          "name": "Phantom",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Shadow Twin sometimes strikes twice, Fleet Shadow adds dodge.",
+            "pt-BR": "A Shadow Twin às vezes golpeia duas vezes, a Fleet Shadow soma esquiva."
+          },
+          "style": {
+            "en": "A duelist's shadow. Shadow Twin sometimes strikes the same target twice, and the Fleet Shadow notable adds dodge. Quick, single target and fragile when hit: dodge and finish.",
+            "pt-BR": "A sombra do duelista. O Shadow Twin às vezes golpeia o mesmo alvo duas vezes, e o notável Fleet Shadow soma esquiva. Rápido, alvo único e frágil quando atingido: esquive e termine."
+          },
+          "price": {
+            "en": "You take more damage.",
+            "pt-BR": "Você leva mais dano."
+          },
+          "keystones": [
+            {
+              "name": "Shadow Twin",
+              "point": 30
+            }
+          ],
+          "spells": ["Shadow Step", "Gutting Slash", "Razor Rain"],
+          "gear": {
+            "en": "A sword and light armour with evasion.",
+            "pt-BR": "Uma espada e armadura leve com esquiva."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-BABAAAAYAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABbCAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB8EhQi"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-BABAAAAYAAB4BLgBCAMAAAAAyAEMAAAAAAAAgAMAABbiAQAAAAAAAABgQAYAAAAAAAAAt74BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADXsz98LLss"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-BABAAAAYICF5XbgfOAMAAAAAyAEOAAAAAADAgYMBAFbqEQCgBQCeBgDgQBYAAAAAAAAAt74BAAAAAAAAeHQ_AAAAAAAAAAAAAAAAAADXsz98o7Ph"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-BABQQIA4YCV5XbgfOA8AACBA248_wCeAM2jBgYMJAFb-2QGj_QOeR0D1QvZAAwAAAHwAt74BAAAAAM--e3Y_AADc3uevHgAAAADg0T_fsz98vDGK"
+            }
+          ]
+        },
+        {
+          "id": "ninja_plaguebearer",
+          "name": "Plaguebearer",
+          "kind": {
+            "en": "Damage over time",
+            "pt-BR": "Dano ao longo do tempo"
+          },
+          "what": {
+            "en": "Poison on every attack that spreads when the pack dies.",
+            "pt-BR": "Veneno em todo ataque que se espalha quando o bando morre."
+          },
+          "style": {
+            "en": "Poison on every strike. Blackblood Creed poisons with every attack, Contagion Rite spreads the poison to the monsters around when one dies, and Viper's Verdict strikes vitals on poisoned targets. Start a poison and let it clear the pack.",
+            "pt-BR": "Veneno em cada golpe. O Blackblood Creed envenena todo ataque, o Contagion Rite espalha o veneno aos monstros ao redor quando um morre, e o Viper's Verdict acerta pontos vitais de alvos envenenados. Comece um veneno e deixe-o limpar."
+          },
+          "price": {
+            "en": "Your evasion is cut in half, and your weapon hits are weaker.",
+            "pt-BR": "Sua esquiva cai pela metade, e seus golpes de arma ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Blackblood Creed",
+              "point": 19
+            },
+            {
+              "name": "Contagion Rite",
+              "point": 24
+            },
+            {
+              "name": "Viper's Verdict",
+              "point": 37
+            }
+          ],
+          "spells": ["Poison Blades", "Venom Spiral", "Smoke Bomb", "Shuriken Tempest"],
+          "gear": {
+            "en": "A sword: Tempo speeds up your swing on one target, so poison goes on fast. Light armour.",
+            "pt-BR": "Uma espada: o Tempo acelera seu golpe em um alvo, então o veneno entra rápido. Armadura leve."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-BAAIAAAAfQUAAAACEQAAAABAAwAAAAAAHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPI8VAc"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 3,
+              "code": "CB6-BAAYQAAgfwUAAAAGEQAACABAAwAAgCEAPlwDAAAAAEABwDwAAAAAAAAAAAAAAAAAAPYAAAAAAAAAAM8FAgAAAAAAAOCuCAAAAAAAAAAAAMAd7xXC"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 3,
+              "code": "CB6-BAD4QJI0fwVgBYAOGQAACABAAwAAgCEAPlwDAAAEAEABwDwAAAAAAAAAAAAAAAAAAP4HAAAAAAAAAP-3iwEAAADm1eGuiOciAAAAAAAAAMAdUmzR"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 3,
+              "code": "CB6-BAD4QJI0fyVhPbMfOQ8ACAdO2w_ugSEjPlwvAIAFE0At37y59QOeTwAgQIDMKgPwAf4HAAAAAOC5QP-3ywcAAADm1eGuiOciAAAg1w8HANgd_DPA"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "samurai",
+      "name": "Samurai",
+      "line": {
+        "en": "The Thief of the duel and the parry.",
+        "pt-BR": "O Thief do duelo e da defesa."
+      },
+      "builds": [
+        {
+          "id": "samurai_duelist",
+          "name": "Duelist",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Way of the Blade: Counter Stance parries every melee hit.",
+            "pt-BR": "Way of the Blade: o Counter Stance apara todo golpe corpo a corpo."
+          },
+          "style": {
+            "en": "The patient swordsman. Counter Stance parries every melee hit while it lasts, not only the first, so stand your ground and let monsters strike at your blade. Health and resistances cover what you cannot parry.",
+            "pt-BR": "O espadachim paciente. O Counter Stance apara todo golpe corpo a corpo enquanto dura, não só o primeiro, então fique firme e deixe os monstros baterem na sua lâmina. Vida e resistências cobrem o que você não consegue aparar."
+          },
+          "price": {
+            "en": "Low damage.",
+            "pt-BR": "Pouco dano."
+          },
+          "keystones": [
+            {
+              "name": "Way of the Blade",
+              "point": 6
+            }
+          ],
+          "spells": ["Counter Stance", "Bushido Focus", "Iaijutsu", "Iaido Sweep"],
+          "gear": {
+            "en": "A sword and armour with health and resistances: the parry needs you standing in front.",
+            "pt-BR": "Uma espada e armadura com vida e resistências: a defesa pede que você fique na frente."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-BAAIEAAAAAAAcAAAAAAAAQAAAAAAAAAAAADAAYABAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAQAAAAAAAAAAAAAAAAAAAAAAAAcBzpKyw"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-BAAIEAAAIAAAcAAEEAAAAQAAAAAAwCEAAEDBAYABAEAAAAAAAAAAAAAAAAAAIANYAAAAAAAAAODRb49-e_Q7AAAAAAAAAAAAAAAAAAAAAAAcB_ylZw"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-BAAIEAAAICAhedid-AAAAQAABIEPwCEAAEDBAYABAEAQwAADOAMAgCrgQRYAIAdYAAAAAAAAAODVb69-e_U7AAAAAAAAAAAAAAAAAAAAAAAcB_OZ8w"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-BAAIEAAAYCSpedud-AMAAaCOD4EPwCUAHEDJgYMBAFb_3wRjPQOO-Crg0RYAIAdYAE6HuQ4BAODVb69-e_U7AADcGuOumFxnAAAg1xk8PwccB918Xg"
+            }
+          ]
+        },
+        {
+          "id": "samurai_iaido_striker",
+          "name": "Iaido Striker",
+          "kind": {
+            "en": "Critical strikes",
+            "pt-BR": "Golpes críticos"
+          },
+          "what": {
+            "en": "Shadow Twin and Cascade Edge for crit duels.",
+            "pt-BR": "Shadow Twin e Cascade Edge para duelos de crítico."
+          },
+          "style": {
+            "en": "Crit duels. Shadow Twin sometimes strikes twice and Cascade Edge bursts on every crit. Iaijutsu and Iaido Sweep open the fight, and a high crit chance makes every duel short.",
+            "pt-BR": "Duelos de crítico. O Shadow Twin às vezes golpeia duas vezes e o Cascade Edge explode a cada crítico. Iaijutsu e Iaido Sweep abrem a luta, e uma chance alta de crítico deixa cada duelo curto."
+          },
+          "price": {
+            "en": "You take more damage, and hits that are not critical are weaker.",
+            "pt-BR": "Você leva mais dano, e os golpes que não são críticos ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Shadow Twin",
+              "point": 25
+            },
+            {
+              "name": "Cascade Edge",
+              "point": 27
+            }
+          ],
+          "spells": ["Iaijutsu", "Iaido Sweep", "Last Breath", "Crescent Cut"],
+          "gear": {
+            "en": "A sword with a high critical chance, and light armour.",
+            "pt-BR": "Uma espada com boa chance de crítico, e armadura leve."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-BAAgAAAUAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAjv_t4"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-BAAgAAAUAAB4BLhBAAMAAAAASAAAAAA4AAA0gAMAABbuGYAD2AAAAEAVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPobAAAHADgcRQGu"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-BAAgAAAUICF5PLhXMA8AQAYA2AcPAAA4AAA0gAMAABbuGYDj3QC-fkD1wQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPobAAAHADgcLpL3"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-BAD06vf_9___f_vfOD82QP6--____1__8zw8jgMAABbuGYD_3Xy-fkD1wQoAYAPYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPobAAAHADgcx7zU"
+            }
+          ]
+        },
+        {
+          "id": "samurai_bloodblade",
+          "name": "Bloodblade",
+          "kind": {
+            "en": "Sustain",
+            "pt-BR": "Sustento"
+          },
+          "what": {
+            "en": "Way of the Blade parries, Sanguine leeches on every hit.",
+            "pt-BR": "O Way of the Blade apara, o Sanguine rouba vida a cada golpe."
+          },
+          "style": {
+            "en": "Parry and heal. Way of the Blade parries every melee hit during Counter Stance, and Sanguine Covenant returns health from the hits you land. A swordsman who looks after himself.",
+            "pt-BR": "Defenda e se cure. O Way of the Blade apara todo golpe corpo a corpo durante o Counter Stance, e o Sanguine Covenant devolve vida dos golpes que você acerta. Um espadachim que se cuida sozinho."
+          },
+          "price": {
+            "en": "Healing from others is weaker.",
+            "pt-BR": "A cura vinda de outros fica mais fraca."
+          },
+          "keystones": [
+            {
+              "name": "Way of the Blade",
+              "point": 6
+            },
+            {
+              "name": "Sanguine Covenant",
+              "point": 13
+            }
+          ],
+          "spells": ["Counter Stance", "Bushido Focus", "Gutting Slash", "Shadow Mend"],
+          "gear": {
+            "en": "A sword: Tempo speeds up the swing and every hit feeds the leech. Light or medium armour.",
+            "pt-BR": "Uma espada: o Tempo acelera o golpe e cada golpe alimenta o roubo de vida. Armadura leve ou média."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 2,
+              "code": "CB6-BAAIEAAAYAQBOAAUMgAAAQAgAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcB9wZlA"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-BAAIEAAAYAQBeAAUMgAAAQAgAwAAAACAMyjAAYABAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAePQ7AADcGuDWHwAAAAAAAAAAAAAcByJ1hA"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-BAAYEAAgYCUBeACX8gAAAQAgz4EPAACAMyjAAYAJAEAQwACgBQCeRwBgQBYAAAAAAAAAAAAAAAAAAAAAePQ_AADc-ufXHwAAAAAAAAAAAAAcBwPyIg"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-BAAYUAAgYSUBeAWX8gwAAQAu348_gCO7M2j1AYAJAEB-3wGgBQCeRwBgQpZAAAAAAEwHt74BAAAAAM--e_Y_AADc_ufXHwcAvBf_0T89vx8cB0EB2g"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "monk",
+      "name": "Monk",
+      "line": {
+        "en": "Fists and chi. Ascends to Shadowfist or Iron Sage.",
+        "pt-BR": "Punhos e chi. Ascende a Shadowfist ou Iron Sage."
+      },
+      "builds": [
+        {
+          "id": "monk_iron_body",
+          "name": "Iron Body",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Scarred Discipline: every hit you take builds chi and cuts damage.",
+            "pt-BR": "Scarred Discipline: cada golpe que você leva gera chi e reduz o dano."
+          },
+          "style": {
+            "en": "Take hits, build chi. Scarred Discipline gives you chi every time you are hit and cuts the damage you take while your chi is high. You lose your dodge, so stand firm and let health and resistances work.",
+            "pt-BR": "Leve golpes, ganhe chi. O Scarred Discipline dá chi toda vez que você é atingido e corta o dano que você leva enquanto o chi está alto. Você perde a esquiva, então fique firme e deixe vida e resistências trabalharem."
+          },
+          "price": {
+            "en": "You can no longer dodge.",
+            "pt-BR": "Você não pode mais se esquivar."
+          },
+          "keystones": [
+            {
+              "name": "Scarred Discipline",
+              "point": 20
+            }
+          ],
+          "spells": ["Lotus Stance", "Quaking Stomp", "Whirling Heel"],
+          "gear": {
+            "en": "Bare fists or fist weapons, and armour with health and resistances.",
+            "pt-BR": "Punhos limpos ou armas de punho, e armadura com vida e resistências."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AABAAIADAAAAgAMAAAAAAAAOAAAAAEABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbAB0AAAAAAAAAAAAAAAAAAAAAAAAAAdTutI"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AABAAIADAAAAgAMAAAAAAAAOAAAAAEAjAAAoAAAAAAAsHgAAAAAAAAAAAAAAAAAAbAB0AAAAAAAAAAAAAAAAAAAAAAAAgO96AQDgu1788wWWBU0"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AABQAICjAHgEgAOBwAMAAKgODIAPQGQjAEApAAAAAEA83gAAAAAAAABgQAIAAAAAbAB0AAAAAAAAAAAAyHU-AAAAAAAAgO96AQDgu1788wXggRk"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AABQAICjIP8FgAef0DMAAKiOLvA_6GUvQEEpAAAAAEA_3zx0BRyPOABgSBZAIAdYbEz9uQ4BACDXYbkOy3U-kADdGuOumO96AQDgu17888XY4PA"
+            }
+          ]
+        },
+        {
+          "id": "monk_fist_flurry",
+          "name": "Fist Flurry",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Seventh Palm: every 5th hit lands double and shocks its neighbours.",
+            "pt-BR": "Seventh Palm: todo 5º golpe cai em dobro e abala os vizinhos."
+          },
+          "style": {
+            "en": "Count your hits. Every fifth melee hit is a finisher that hits far harder and shocks the monsters next to the target. Chain fast blows and use Chi Lance and Skysplitter Fist to keep the count going.",
+            "pt-BR": "Conte seus golpes. Todo quinto golpe corpo a corpo é um finalizador que bate bem mais forte e dá choque nos monstros ao lado do alvo. Encadeie golpes rápidos e use Chi Lance e Skysplitter Fist para manter a contagem."
+          },
+          "price": {
+            "en": "Your other hits are weaker.",
+            "pt-BR": "Seus outros golpes ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Seventh Palm",
+              "point": 25
+            }
+          ],
+          "spells": ["Ashen Fist", "Chi Lance", "Skysplitter Fist"],
+          "gear": {
+            "en": "Fist weapons or bare fists with a high attack speed, and light armour.",
+            "pt-BR": "Armas de punho ou punhos limpos com boa velocidade de ataque, e armadura leve."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AAAgAAAUAACIBwAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAhjyds"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AACwQAK0fjyIBwAAKAAAAAAgAwAAAAAAEAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAt74BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfvz8AAEAq6KA"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AACwQBK0fzyIBwAAOAAAAAAgAwAAAACAMygAgAMAAFbjwQQAAAAAAAAAAAAAAAAAAAAAt74BAAAAAAAAeK4RAADc1efXDgAAAAAAAAAfvz8AAECZUZU"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AAD0QJL8fzyIBwAAOAAAAAAgAwAA_yfAc2kBgA8MAFb_2ScAAAAAAAAFAAAAIANYAHyft7659e25dt-1e643AAD81efXjlf_AADg1T8fvz8AAEAXWVE"
+            }
+          ]
+        },
+        {
+          "id": "monk_palm_piercer",
+          "name": "Palm Piercer",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Piercing Palm hits pass through to the next two enemies, Scarred Discipline cuts damage taken.",
+            "pt-BR": "Os golpes do Piercing Palm atravessam até os dois próximos inimigos, o Scarred Discipline reduz o dano recebido."
+          },
+          "style": {
+            "en": "Hit the line. Piercing Palm lets your blows pass through to the two enemies behind the target, and Scarred Discipline cuts the damage you take once you have chi. Fight in a corridor where monsters line up.",
+            "pt-BR": "Acerte a fila. O Piercing Palm faz seus golpes atravessarem até os dois inimigos atrás do alvo, e o Scarred Discipline corta o dano que você leva quando tem chi. Lute em corredores onde os monstros ficam em fila."
+          },
+          "price": {
+            "en": "You cannot dodge, and each hit is a little weaker.",
+            "pt-BR": "Você não se esquiva, e cada golpe fica um pouco mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Piercing Palm",
+              "point": 19
+            },
+            {
+              "name": "Scarred Discipline",
+              "point": 36
+            }
+          ],
+          "spells": ["Thousand-Echo Palm", "Mistborne Strike", "Chi Lance"],
+          "gear": {
+            "en": "Fist weapons or bare fists, and armour with health and resistances.",
+            "pt-BR": "Armas de punho ou punhos limpos, e armadura com vida e resistências."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAAAAAcAAAAAAAAQAAAAAAAAAAAADAAYABAEABwCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAMABWyFW"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AAAIEAAAAAAAcAAAAAAAAQAAAAAAAACAISjAAYABAEARwCcAAAAAAAAAAAAAAAAAAExHAAAAAAAAAAAAePQzAABAAODWj-c6AQAAAAAAAMABFfOo"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AAAYEAAgACABeAgR4AAAAQAABIAPAACAISjAAYAJAEARwCcABQCOAABgQBYAAAAAAGxHAAAAAAAAAAAAePQ_AADc2ufXn-f6AQAAAAAAAMABAEBuKSM"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AAAYUAAgASABeCgR4AAAAQcAzIFPviOA4WnBAYAJAED_3ycABQCOAABgQhYAAAAAmHxfv74BAAAAAO--e_c_AADc3ufXn-_-vZf_0z89v98BAMAB0UzD"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "shadowfist",
+      "name": "Shadowfist",
+      "line": {
+        "en": "The Monk of crits and speed.",
+        "pt-BR": "O Monk dos críticos e da velocidade."
+      },
+      "builds": [
+        {
+          "id": "shadowfist_hundred_fists",
+          "name": "Hundred Fists",
+          "kind": {
+            "en": "Critical strikes",
+            "pt-BR": "Golpes críticos"
+          },
+          "what": {
+            "en": "Hundred Hands feeds chi from crits, Cascade Edge bursts on them.",
+            "pt-BR": "O Hundred Hands gera chi nos críticos, o Cascade Edge explode neles."
+          },
+          "style": {
+            "en": "Crits feed your chi. Hundred Hands gives you chi from focus critical hits, and Cascade Edge bursts on every crit. Build crit chance and keep your fists moving.",
+            "pt-BR": "Os críticos alimentam seu chi. O Hundred Hands dá chi dos críticos de foco, e o Cascade Edge explode a cada crítico. Invista em chance de crítico e mantenha os punhos em movimento."
+          },
+          "price": {
+            "en": "Hits that are not critical are weaker.",
+            "pt-BR": "Os golpes que não são críticos ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Hundred Hands",
+              "point": 6
+            },
+            {
+              "name": "Cascade Edge",
+              "point": 14
+            }
+          ],
+          "spells": ["Shadowfist Flurry", "Pressure Points", "Shadow Ricochet"],
+          "gear": {
+            "en": "Fist weapons with a high critical chance, and light armour.",
+            "pt-BR": "Armas de punho com boa chance de crítico, e armadura leve."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 2,
+              "code": "CB6-AABAAAAYAABgBLBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAD2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAPoRYy"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AABAAAAYICFhXLhXMA8AQAYA2AEPAAAAAAAAAAAAAAAAAIDj3wBsNgDgwQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAPn9_c"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AABAAAAYICFhXL9fMD8AQAYO-DcPAEAjAAAoAAAAAAAMGIDz3wDuNoD6wQYAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPNcbAQAAAAAAAMAP9sEY"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AAD4wLf_b2t13L_f-T8GQP4e-L9v7F8_AADoBgAAAAjuH4D_3__vfsD_wx4A4AcA0ACAGwAAAAAAAAAAAAAAAAAAAAAAAAAA_P-_BwC_LxgAAMAPw1cw"
+            }
+          ]
+        },
+        {
+          "id": "shadowfist_pressure_points",
+          "name": "Pressure Points",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Seventh Palm: every 5th hit lands double.",
+            "pt-BR": "Seventh Palm: todo 5º golpe cai em dobro."
+          },
+          "style": {
+            "en": "One target, counted hits. Seventh Palm makes every fifth hit a finisher, and Pressure Points and Shadowfist Flurry keep the count high. Good against bosses and big monsters.",
+            "pt-BR": "Um alvo, golpes contados. O Seventh Palm faz todo quinto golpe ser um finalizador, e Pressure Points e Shadowfist Flurry mantêm a contagem alta. Bom contra chefes e monstros grandes."
+          },
+          "price": {
+            "en": "Your other hits are weaker.",
+            "pt-BR": "Seus outros golpes ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Seventh Palm",
+              "point": 30
+            }
+          ],
+          "spells": ["Pressure Points", "Shadowfist Flurry", "Skysplitter Fist"],
+          "gear": {
+            "en": "Fist weapons or bare fists with a high attack speed, and light armour.",
+            "pt-BR": "Armas de punho ou punhos limpos com boa velocidade de ataque, e armadura leve."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AABAAAAYAACIBwAAAAAAAAAAAAAAAAAAAAAAgAMAABbCAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAHyPc6"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AABYQIC4fTyIBwAAKAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAt74BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfvz8AAMAH1l_u"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AABYQIC4fzyIBwAAOAAAAAAgAwAAAACAMygAgAMAAFbjwQQAAAAAAAAAAAAAAAAAAAAAt74BAAAAAAAAeC4AAADc1efXDgAAAAAAAAAfvz8AAMAHdncv"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AAD4QJL8fzyIBwAAOAAAAAAgAwAA_yPAc2kBgA8MAFb32ScAAAAAAAAAAAAAIANYAHyft7659e25dt-1e643AAD81efXjlf_AADg1T8fvz8AAMAHFZAu"
+            }
+          ]
+        },
+        {
+          "id": "shadowfist_shadow_step",
+          "name": "Shadow Step",
+          "kind": {
+            "en": "Speed",
+            "pt-BR": "Velocidade"
+          },
+          "what": {
+            "en": "Hundred Hands and Iron Tithe: vigils paid in health give speed.",
+            "pt-BR": "Hundred Hands e Iron Tithe: vigílias pagas com vida dão velocidade."
+          },
+          "style": {
+            "en": "Fast and light. Iron Tithe lets your vigils be paid in health instead of mana and makes them stronger on you, and Hundred Hands feeds chi from crits. Vigil of Haste and the speed nodes carry you across the hunt.",
+            "pt-BR": "Rápido e leve. O Iron Tithe deixa suas vigílias serem pagas em vida em vez de mana e as torna mais fortes em você, e o Hundred Hands alimenta o chi dos críticos. Vigil of Haste e os nós de velocidade levam você pela caçada."
+          },
+          "price": {
+            "en": "Part of your health is reserved.",
+            "pt-BR": "Parte da sua vida fica reservada."
+          },
+          "keystones": [
+            {
+              "name": "Hundred Hands",
+              "point": 6
+            },
+            {
+              "name": "Iron Tithe",
+              "point": 12
+            }
+          ],
+          "spells": ["Vigil of Haste", "Vigil of Iron", "Shadow Ricochet", "Flickerdash"],
+          "gear": {
+            "en": "Fist weapons and light armour with speed. Your vigils are paid in health, so keep your health high.",
+            "pt-BR": "Armas de punho e armadura leve com velocidade. Suas vigílias são pagas em vida, então mantenha a vida alta."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 2,
+              "code": "CB6-AACsGg4AAAAAAEgBAABwAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAPffjx"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AAD8On4AAGCM8W4LCAzwQQoAEAAAAAAAIBwAbgBmAAARQAQAAAAAgCoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAPUYVH"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AAD8-v__B_jv_f-f6S_2Qf8eFAAAAAAAIBwAbgBmAAARQAQAAAAAgCoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAPBUKm"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AAD8-v__B_jv_f-f6S_2Qf8e3I_v_1__5T3Af8f_Nwj_Xz8AAAAAgOodAAAA4AcAAACAHwAAAAAAAPuPAwAAkAEBAAAAAAAA_AAAAAAsAMAAAMAPh89Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ironsage",
+      "name": "Iron Sage",
+      "line": {
+        "en": "The Monk of healing and stone.",
+        "pt-BR": "O Monk da cura e da pedra."
+      },
+      "builds": [
+        {
+          "id": "ironsage_chi_healer",
+          "name": "Chi Healer",
+          "kind": {
+            "en": "Support",
+            "pt-BR": "Suporte"
+          },
+          "what": {
+            "en": "Flowing Mercy and Overgrowth: your heals reach a second ally and keep healing.",
+            "pt-BR": "Flowing Mercy e Overgrowth: suas curas alcançam um segundo aliado e continuam curando."
+          },
+          "style": {
+            "en": "A healer with a fist. Flowing Mercy makes Kindled Breath also heal the next most hurt ally, and Overgrowth plants a regrowth on every heal you cast on others. Keep the party alive and fight when nobody needs you.",
+            "pt-BR": "Um curandeiro com punhos. O Flowing Mercy faz o Kindled Breath curar também o próximo aliado mais ferido, e o Overgrowth planta uma regeneração em cada cura nos outros. Mantenha o grupo vivo e lute quando ninguém precisar de você."
+          },
+          "price": {
+            "en": "Little damage of your own.",
+            "pt-BR": "Pouco dano próprio."
+          },
+          "keystones": [
+            {
+              "name": "Flowing Mercy",
+              "point": 6
+            },
+            {
+              "name": "Overgrowth",
+              "point": 31
+            }
+          ],
+          "spells": ["Kindled Breath", "Chi Ward", "Mantra of Stone", "Iron Chain"],
+          "gear": {
+            "en": "Bare fists or fist weapons, and armour with health, spirit and magic level for your heals.",
+            "pt-BR": "Punhos limpos ou armas de punho, e armadura com vida, spirit e magic level para as suas curas."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AABAAAAYAAB4BAAAAAAAAAAAAAAAAAAAAAAAgAMAABaCAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMBxocU8"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AABAAAAYAAB4BLgBCAMAAAAAyAEEAAA4AAAo4AMAABbmGQAAAAAAAABgQAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPDcfAQAHADgAAMBxIRGj"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AADAAAAYAgB4BLiByAMAAAAAzAEMJAA7QAEo4AMAABbmGQAAAAAAAABgQgIAAAAAmEyZeT0AAAAAAAAAAAAAAAAAAOCiAAAAPDcfAQDX4z0AAMBxUdcX"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AADMKvDdAmd8BLiDyA8AACiA3w_s5SU7XIEr4INnAFbn2TcAAAAAAABgSgLIAHDDmU69eT0AAOC5RgAAAAAAkADdFeGvjuc6PDf_uQjX430AAMBxKPy5"
+            }
+          ]
+        },
+        {
+          "id": "ironsage_stone_sage",
+          "name": "Stone Sage",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Scarred Discipline: every hit you take builds chi and cuts damage.",
+            "pt-BR": "Scarred Discipline: cada golpe que você leva gera chi e reduz o dano."
+          },
+          "style": {
+            "en": "The mountain. Scarred Discipline gives chi when you are hit and cuts the damage while your chi is high, and Mantra of Stone and Chi Ward cover the party. You cannot dodge, so you stand and take it.",
+            "pt-BR": "A montanha. O Scarred Discipline dá chi quando você é atingido e corta o dano enquanto o chi está alto, e Mantra of Stone e Chi Ward protegem o grupo. Você não se esquiva, então fica e aguenta."
+          },
+          "price": {
+            "en": "You can no longer dodge.",
+            "pt-BR": "Você não pode mais se esquivar."
+          },
+          "keystones": [
+            {
+              "name": "Scarred Discipline",
+              "point": 25
+            }
+          ],
+          "spells": ["Mantra of Stone", "Chi Ward", "Iron Palm", "Quaking Stomp"],
+          "gear": {
+            "en": "Fist weapons or bare fists, and armour with health and resistances.",
+            "pt-BR": "Armas de punho ou punhos limpos, e armadura com vida e resistências."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AABAAIADAAAAgAMAAAAAAAAOAAAAAEABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAxMx1D"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AABAAIADAAAAgAMAAAAAAAAOAAAAAEAjAAAoAAAAAAAsHgAAAAAAAAAAAAAAAAAAbAB0AAAAAAAAAAAAAAAAAAAAAAAAgOcyAADguV78cwcAAMAxgrpy"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AABAAIADAAAAgAMAAAAAAAAOAAAAAECjISgoAAAAAEA93hwAAAAAAAAAAAAAAAAAbEx9AAAAAAAAAAAAePQ7AABAAPDWn-d6AQDguV78cwcAAMAxpicN"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AABQAICjADgAgAOB4AMAAAAODIAP-HujYWkpAAAAAEB_3zwAAAAAAADgQBYAIANYfEx9f3356-vRQa9-e_U7kADf-vPWn-96AQDgu179c8cAAMAxZsbG"
+            }
+          ]
+        },
+        {
+          "id": "ironsage_healing_fist",
+          "name": "Healing Fist",
+          "kind": {
+            "en": "Sustain",
+            "pt-BR": "Sustento"
+          },
+          "what": {
+            "en": "Flowing Mercy with Sanguine leech: a healer that fights.",
+            "pt-BR": "Flowing Mercy com roubo de vida do Sanguine: um curandeiro que luta."
+          },
+          "style": {
+            "en": "A healer that fights. Sanguine Covenant turns your fist hits into health, and Flowing Mercy lets Kindled Breath reach a second ally. You heal yourself and the group while you hit.",
+            "pt-BR": "Um curandeiro que luta. O Sanguine Covenant transforma seus golpes de punho em vida, e o Flowing Mercy faz o Kindled Breath alcançar um segundo aliado. Você cura a si mesmo e o grupo enquanto bate."
+          },
+          "price": {
+            "en": "Healing from others is weaker.",
+            "pt-BR": "A cura vinda de outros fica mais fraca."
+          },
+          "keystones": [
+            {
+              "name": "Flowing Mercy",
+              "point": 6
+            },
+            {
+              "name": "Sanguine Covenant",
+              "point": 13
+            }
+          ],
+          "spells": ["Kindled Breath", "Iron Palm", "Cleaving Heel", "Tidal Palm"],
+          "gear": {
+            "en": "Fist weapons with a high attack speed: every hit feeds the leech. Armour with health.",
+            "pt-BR": "Armas de punho com boa velocidade de ataque: cada golpe alimenta o roubo de vida. Armadura com vida."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 2,
+              "code": "CB6-AAAIEAAAACABKAARIgMAAQAAyAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMBxXUig"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AABIEIADACABqAcTIg8AAQAH2E88AEANAAAAAAAAAAAAAAAAAAAAAAAAShxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA_FcfAAAAAAAAAMBxBJ8-"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AABIEIADACchuYcfKg8AAQCH2v8_AEANAAAAAAAAAAAAAID_zyxMNAAAShzvDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA_HcfAAAAAAAAAMBxiCSx"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AADMEIBLAicn-a8fKg8AAS-H2___5WWNczkADgBAAADnGYT_zyxMNAAAShzvDEACmAC0eT0AAAAAAAAAAAAAAADcFeGvvuc6_Hf_uQjX4xgAAMBx9Q7_"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "necromancer",
+      "name": "Necromancer",
+      "line": {
+        "en": "Minions, curses and corpses. Ascends to Lich or Bone Lord.",
+        "pt-BR": "Lacaios, maldições e cadáveres. Ascende a Lich ou Bone Lord."
+      },
+      "builds": [
+        {
+          "id": "necromancer_grave_caller",
+          "name": "Grave Caller",
+          "kind": {
+            "en": "Summons",
+            "pt-BR": "Invocações"
+          },
+          "what": {
+            "en": "Covenant of the Grave: minions hit harder and last longer.",
+            "pt-BR": "Covenant of the Grave: lacaios batem mais forte e duram mais."
+          },
+          "style": {
+            "en": "Let the dead fight. Covenant of the Grave makes your minions hit harder and last longer, at the cost of your own spells. Raise Bone Warrior, Bone Archer and Bone Mage, and stay behind them.",
+            "pt-BR": "Deixe os mortos lutarem. O Covenant of the Grave faz seus lacaios baterem mais forte e durarem mais, ao custo das suas próprias magias. Levante Bone Warrior, Bone Archer e Bone Mage, e fique atrás deles."
+          },
+          "price": {
+            "en": "Your own spells are weaker.",
+            "pt-BR": "Suas próprias magias ficam mais fracas."
+          },
+          "keystones": [
+            {
+              "name": "Covenant of the Grave",
+              "point": 21
+            }
+          ],
+          "spells": ["Raise Bone Warrior", "Raise Bone Archer", "Raise Bone Mage", "Raise Dead"],
+          "gear": {
+            "en": "A wand or rod, and robes with mana and spirit. You stay behind your minions.",
+            "pt-BR": "Uma varinha ou cajado, e vestes com mana e spirit. Você fica atrás dos seus lacaios."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAQwAEAAAAAAGgAAAAAQAYAAADAJQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHDCAzE0sg"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AAAQwAEAACA5Af-J6AMAQAYFDIDLJwAAAAAAcAIAAAAAAIAdABwBAABgQAYAAHDCAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcGSifQ"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AABQwIEgACA5Wf-Z6AMAQAYFDIDLJwAAAADAcc4BAEAQgKMdABwBgCpgQAYAAHDCAwAAAAAAAOC5RgAAeK43AAAAAAAAAAAAAAAAAAAAAAAAcIAkww"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AABQwIEoACE5Wf-b-AMAQAYHDIDLJ0ABQAHAcc4nAED_2acdABwBgCplQAYAIHPy22w9dw0AAOC5Rs8F-K43gAHd1eGujkc_PBQg1wkX70AAcKnT7A"
+            }
+          ]
+        },
+        {
+          "id": "necromancer_death_mage",
+          "name": "Death Mage",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill.",
+            "pt-BR": "O Reaper's Toll dobra os golpes em monstros fracos, a Corpse Detonation explode cada morte."
+          },
+          "style": {
+            "en": "Finish the weak, blow up the dead. Reaper's Toll doubles the damage of your hits on monsters that are low on health, and Corpse Detonation makes every kill explode on the monsters around it. Soften the pack, then chain the kills.",
+            "pt-BR": "Termine os fracos, exploda os mortos. O Reaper's Toll dobra o dano dos seus golpes em monstros com a vida baixa, e o Corpse Detonation faz cada morte explodir nos monstros ao redor. Enfraqueça o bando e depois encadeie as mortes."
+          },
+          "price": {
+            "en": "Your hits are weaker on healthy monsters.",
+            "pt-BR": "Seus golpes ficam mais fracos contra monstros com a vida cheia."
+          },
+          "keystones": [
+            {
+              "name": "Reaper's Toll",
+              "point": 19
+            },
+            {
+              "name": "Corpse Detonation",
+              "point": 44
+            }
+          ],
+          "spells": ["Marrow Bolt", "Wraithwind", "Gravewail", "Soulrend Beam"],
+          "gear": {
+            "en": "A wand or rod with death damage, and robes with mana and energy shield.",
+            "pt-BR": "Uma varinha ou cajado com dano de morte, e vestes com mana e escudo de energia."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAoEAAUAAAAbAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMABzuFs"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AAAoEAAUAAB5bAAQKAAAAQAAAAAAAAAAAADAgYMBAFbigSMAAAAAAAAAAAAAAAAAAAAAdwEAAAAAAAAAeK4_AAAAAAAAAAAAAAAAAAAPAPgBMJXM7Q"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AAAoEAAUAAB5bYAYKAAAAQAAAAAAAACAISjAgYMBAFbjwScAAAAAAAAAAAAAAAAAABYAdx0AAAAAAAAAeK4_AADc9eGuDwAAAAAAAAAf7_kBMNNq-w"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AAD4UJA8ISF5fYMfOAAAAQAHAAAA5CWBYWnBgcdngFfv2SejOAIARwAFAAAAIAN4mHYfdx0AAOC5Rs8F-K4_AADc9eGvj0c_PBXg0Qkf7_kBMACekA"
+            }
+          ]
+        },
+        {
+          "id": "necromancer_grave_effigies",
+          "name": "Grave Effigies",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Cinder Effigies repeat your area spell every 2 seconds.",
+            "pt-BR": "Efígies de Cinzas repetem sua magia de área a cada 2 segundos."
+          },
+          "style": {
+            "en": "Let the effigies repeat your area spell. An area spell raises a Cinder Effigy on your tile that casts it again every few seconds. Cast, step away and cast again, with minions to hold the line. A single target gains nothing.",
+            "pt-BR": "Deixe as efígies repetirem sua magia de área. Ela ergue uma Cinder Effigy no seu quadrado que a lança de novo a cada poucos segundos. Lance, saia de perto e lance outra vez. Um alvo só não ganha nada."
+          },
+          "price": {
+            "en": "Your own spells are weaker, and a single target gains nothing.",
+            "pt-BR": "Suas próprias magias ficam mais fracas, e um alvo só não ganha nada."
+          },
+          "keystones": [
+            {
+              "name": "Effigy Covenant",
+              "point": 17
+            }
+          ],
+          "spells": ["Grave Nova", "Gravewail", "Crypt Collapse", "Splinter Volley"],
+          "gear": {
+            "en": "A wand or rod with area damage, and robes with health and energy shield.",
+            "pt-BR": "Uma varinha ou cajado com dano de área, e vestes com vida e escudo de energia."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAAAABaAAQIAAAAQAAAAAAAAAAAADAAYABAEAAgGMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAMEL-vw"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAACABaAARIAMAAQAAyAEMAACAISjAAYABAEABgH8AAAAAAADgQBYAAAAAAAAAAAAAAAAAAAAAeK4_AABAAOCuCAAAAAAAAAAAAAAAMIJidg"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAICEBeAUXMAMAAQAOyAEMAACjISjoAYAJAEA1zn8AAAAAAADgQBYAAAAAAAAAAAAAAAAAAAAAeL4_AADc-vfvHwAAAAAAAQA8AAAAMIf5Cw"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAISEheYcfODMAAQAO6H08gCG7IWjpAYAJAEB_33-jPQKOR4D6QpbMDgAAADaAu74BAAAAAPkAeL4_AADc-vfvHwAAvJf_0T_98x8AMAyenQ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "lich",
+      "name": "Lich",
+      "line": {
+        "en": "The Necromancer of curses and the shade.",
+        "pt-BR": "O Necromancer das maldições e da sombra."
+      },
+      "builds": [
+        {
+          "id": "lich_rot_curser",
+          "name": "Rot Curser",
+          "kind": {
+            "en": "Damage over time",
+            "pt-BR": "Dano ao longo do tempo"
+          },
+          "what": {
+            "en": "Hoarded Souls with the rot and curse nodes: damage over time.",
+            "pt-BR": "Hoarded Souls com os nós de podridão e maldição: dano ao longo do tempo."
+          },
+          "style": {
+            "en": "Curses and slow rot. Hoarded Souls makes your spells hit harder for every empty shade slot, and the rot and curse nodes add damage over time. Start your curses early and keep them running. The first minutes are slow.",
+            "pt-BR": "Maldições e podridão lenta. O Hoarded Souls faz suas magias baterem mais forte a cada espaço de sombra vazio, e os nós de podridão e maldição somam dano ao longo do tempo. Comece as maldições cedo e mantenha-as ativas."
+          },
+          "price": {
+            "en": "A slow start.",
+            "pt-BR": "Um começo lento."
+          },
+          "keystones": [
+            {
+              "name": "Hoarded Souls",
+              "point": 6
+            }
+          ],
+          "spells": ["Withering Curse", "Soul Rot", "Blightbrand", "Wraithwind"],
+          "gear": {
+            "en": "A wand or rod, and robes with mana and spirit.",
+            "pt-BR": "Uma varinha ou cajado, e vestes com mana e spirit."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AACIEAAAAgAAaAAAAAAAAQAAAAAAAAAAAADAAYABAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAAAAAAAAAAAAAAAAAAAAAAAAAAA8ANsDd8"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AACIEAAAIiEBeCgXMAAAQQYAAADAJwAAQAHAAYABAEDCAQAAAAAAAAAAAAAAAAAAAACAuY4BAAAAAAAAeK43AAAAAAAAAAAAAAAAAAAAAAAA8AOyeU4"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AACIEAAAIiEB-C8fMAAAQQYWAADApyEBQEHBAYABAEDjwQQAAAAAAAAAAAAAAEACAACAuY4BAAAAABMAeK43AADc1QEAAAAAAAAAAAAXPx8A8AM0rN4"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AADYUIAAIiEB-L8fMAwAQQYWEE7wt2EBQEHBAYANAED32QWjOAIARwAAAIDMDvDi2QC8uY699e27cN-1-643AAD81QcAgFfnAAAg1z8XPx8A8ANQX24"
+            }
+          ]
+        },
+        {
+          "id": "lich_soul_reaper",
+          "name": "Soul Reaper",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill.",
+            "pt-BR": "O Reaper's Toll dobra os golpes em monstros fracos, a Corpse Detonation explode cada morte."
+          },
+          "style": {
+            "en": "Finish the weak, blow up the dead. Reaper's Toll doubles the damage of your hits on monsters that are low on health, and Corpse Detonation makes every kill explode on the monsters around it. Health and resistances let you stay in the pack.",
+            "pt-BR": "Termine os fracos, exploda os mortos. O Reaper's Toll dobra o dano dos seus golpes em monstros com a vida baixa, e o Corpse Detonation faz cada morte explodir nos monstros ao redor. Vida e resistências deixam você ficar no bando."
+          },
+          "price": {
+            "en": "Your hits are weaker on healthy monsters.",
+            "pt-BR": "Seus golpes ficam mais fracos contra monstros com a vida cheia."
+          },
+          "keystones": [
+            {
+              "name": "Reaper's Toll",
+              "point": 19
+            },
+            {
+              "name": "Corpse Detonation",
+              "point": 44
+            }
+          ],
+          "spells": ["Marrow Bolt", "Corpse Explosion", "Gravewail", "Soulrend Beam"],
+          "gear": {
+            "en": "A wand or rod with death damage, and robes with health, mana and energy shield.",
+            "pt-BR": "Uma varinha ou cajado com dano de morte, e vestes com vida, mana e escudo de energia."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAoEAAUAAAAbAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMABzuFs"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AAAoEAAUAAB4bAAQCAAAAQAAAAAAAAAAAADAgYMBAFbigSMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAePQ7AAAAAAAAAAAAAAAAAADXc_8BMHzOdg"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AAAoEAAUIAF5fYAeODAAAQAAIHwwAAAAAADAgYMJAFb60SMAAAAAAAAAAOBQCwAAAAAA990BAAAAAAAAePQ_AAAAAAAAAAAAAAAAAADXc_8BcM2Jtw"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AAAoEAAUICF5fYAfODMAAQAA6H08wCE4AGDpgYMNgFf_3y-3PR6PR4D6w-ZYDwAAAAAA_90BAAAAAO-1e_Y_kADd_gcAAAAAOADgu3_3c_8BcAS3Ew"
+            }
+          ]
+        },
+        {
+          "id": "lich_lifedrinker",
+          "name": "Lifedrinker",
+          "kind": {
+            "en": "Sustain",
+            "pt-BR": "Sustento"
+          },
+          "what": {
+            "en": "Sanguine leech with Life Siphon.",
+            "pt-BR": "Roubo de vida do Sanguine com o Life Siphon."
+          },
+          "style": {
+            "en": "Drink your enemies. Sanguine Covenant returns health from every hit, and Life Siphon does the same on one target. Pick a single monster, siphon it and live off the fight.",
+            "pt-BR": "Beba seus inimigos. O Sanguine Covenant devolve vida de cada golpe, e o Life Siphon faz o mesmo em um alvo. Escolha um monstro, sugue-o e viva da luta."
+          },
+          "price": {
+            "en": "Healing from others is weaker.",
+            "pt-BR": "A cura vinda de outros fica mais fraca."
+          },
+          "keystones": [
+            {
+              "name": "Sanguine Covenant",
+              "point": 12
+            }
+          ],
+          "spells": ["Life Siphon", "Soul Rot", "Marrow Bolt", "Withering Curse"],
+          "gear": {
+            "en": "A wand or rod, and robes with health and mana leech.",
+            "pt-BR": "Uma varinha ou cajado, e vestes com vida e roubo de mana."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AACIEHAAAAAAqAMQAgAAAQAHAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8AHNUsg"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AACIEHAAAAAAqAcaAjAAAQAHIH4wAEANAAAAAAAAAAAAAAAcAyRAAAAAAOBwFQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9H4fAAAAAAAA8AFIq-A"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AACYEHAgASABuAcf4jAAAQAHJP47AECNAQAAAAAAAAAAAAB8AyRAIABgQO5wFQAAmGwZAAAAAAAAAAAAAAAAAAAAAOCuPgAA9H4fAAAAAAAA8AG6DSw"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AAC4EHLgASEnuYcf-jAAASgHJP47Pl-vYTkoAAAAAADmGYB9RyRMIABgQP5wFQAAmHw9dz3MawAAAM8FAgAAAADcFeGvvuc69H7_uQg97xgA8AH1NlU"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "bonelord",
+      "name": "Bone Lord",
+      "line": {
+        "en": "The Necromancer of the great army.",
+        "pt-BR": "O Necromancer do grande exército."
+      },
+      "builds": [
+        {
+          "id": "bonelord_bone_army",
+          "name": "Bone Army",
+          "kind": {
+            "en": "Summons",
+            "pt-BR": "Invocações"
+          },
+          "what": {
+            "en": "Bone Colossus and Covenant of the Grave: a big army.",
+            "pt-BR": "Bone Colossus e Covenant of the Grave: um grande exército."
+          },
+          "style": {
+            "en": "A big army. Bone Colossus makes your Bone Golem hit harder and last longer, and Covenant of the Grave strengthens every other minion. Your own spells are weaker, so let the dead do the work.",
+            "pt-BR": "Um grande exército. O Bone Colossus faz seu Bone Golem bater mais forte e durar mais, e o Covenant of the Grave fortalece todos os outros lacaios. Suas próprias magias são mais fracas, então deixe os mortos trabalharem."
+          },
+          "price": {
+            "en": "Your own spells are weaker.",
+            "pt-BR": "Suas próprias magias ficam mais fracas."
+          },
+          "keystones": [
+            {
+              "name": "Bone Colossus",
+              "point": 6
+            },
+            {
+              "name": "Covenant of the Grave",
+              "point": 27
+            }
+          ],
+          "spells": ["Bone Golem", "Banner of Bones", "Raise Bone Warrior", "Raise Dead"],
+          "gear": {
+            "en": "A wand or rod, and robes with mana and spirit. You stay behind the army.",
+            "pt-BR": "Uma varinha ou cajado, e vestes com mana e spirit. Você fica atrás do exército."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAQwAEAAAAAAGgAAAAAQAYAAADAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcBwmHKs"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AAAQwAEAACA5afgZKAMAQAYAyAHEJQAAAADAdgAAIAAAAAAUBQCOAABgQAoAAHDCAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcBwHPuI"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AABQwAEgACA5afiZKAMAQAYAyAHEJQAAQAHAf4BBIEAAAAAUBRyPAABgQAoAAHDCAwAAdw0AAOC5RgAA-K43AAAAAAAAAAAAAAAAAAAAAAAAcBwID9U"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AABwwIEoACA5afiZKAMAQCYAyAHEJRy4YR3of8RnIEDvmSMUBRyPAABlQAoAYHPyA2wHdw0AAOC5Rs8F-K43AADc1eGujkc_PBcv1wk87wAAcByt0Xw"
+            }
+          ]
+        },
+        {
+          "id": "bonelord_bone_warden",
+          "name": "Bone Warden",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Bone Colossus with health and resistances.",
+            "pt-BR": "Bone Colossus com vida e resistências."
+          },
+          "style": {
+            "en": "A safe master of the dead. Bone Colossus makes your Bone Golem a real wall, and health and resistances keep you alive behind it. Slow, but hard to kill.",
+            "pt-BR": "Um mestre seguro dos mortos. O Bone Colossus faz do seu Bone Golem uma muralha de verdade, e vida e resistências mantêm você vivo atrás dele. Lento, mas difícil de matar."
+          },
+          "price": {
+            "en": "Low damage.",
+            "pt-BR": "Pouco dano."
+          },
+          "keystones": [
+            {
+              "name": "Bone Colossus",
+              "point": 6
+            }
+          ],
+          "spells": ["Bone Golem", "Banner of Bones", "Soulward", "Raise Bone Warrior"],
+          "gear": {
+            "en": "A wand or rod, and robes with health, resistances and spirit.",
+            "pt-BR": "Uma varinha ou cajado, e vestes com vida, resistências e spirit."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AACAAHAAAAAAgAMAAAAAAAAHAAAAAAAjAAAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAAAAAcBzEk3g"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AACAAHAAAAAAgAcCAAAAAAAHAAAAAAAjAAAoAAAAAAAuHwAAAAAAAAAAAAAAAAAAAAAAd30BAAAAAAAAAAAAAAAAAAAAAAAAAADguV79cwcAcBzh7cc"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AACAAHAAAAEAgAcCEAAAAAAHAAAAuCEjQEEpAAAAAEAuHwAAAAAAAAAAAAAAIJMxAQAAd30JAAAAAI9-e_Q7AAAAAAAAAAAAAADguV79cwcAcBxiZGQ"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AACAAHADAAEAgQcKGAwAAKCPEQ5w_HWvc10pAAAAAEB_3zwAAAAAgKoKAOBAa5fxAUwnf30JAODVea9-e_U7kADdGjPXuf7iAQDgu179c8cAcBxH_7Y"
+            }
+          ]
+        },
+        {
+          "id": "bonelord_ossuary_fury",
+          "name": "Ossuary Fury",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill of your minions.",
+            "pt-BR": "O Reaper's Toll dobra os golpes em monstros fracos, a Corpse Detonation explode cada morte dos seus lacaios."
+          },
+          "style": {
+            "en": "The dead blow up too. Reaper's Toll doubles hits on weak monsters, and Corpse Detonation makes every kill by you or your minions explode. Let the minions soften the pack and the corpses finish it.",
+            "pt-BR": "Os mortos também explodem. O Reaper's Toll dobra os golpes em monstros fracos, e o Corpse Detonation faz cada morte sua ou dos seus lacaios explodir. Deixe os lacaios enfraquecerem o bando e os cadáveres terminarem."
+          },
+          "price": {
+            "en": "Your hits are weaker on healthy monsters.",
+            "pt-BR": "Seus golpes ficam mais fracos contra monstros com a vida cheia."
+          },
+          "keystones": [
+            {
+              "name": "Reaper's Toll",
+              "point": 19
+            },
+            {
+              "name": "Corpse Detonation",
+              "point": 44
+            }
+          ],
+          "spells": ["Ossuary Surge", "Bone Offering", "Crypt Collapse", "Raise Bone Warrior"],
+          "gear": {
+            "en": "A wand or rod with death damage, and robes with mana and energy shield.",
+            "pt-BR": "Uma varinha ou cajado com dano de morte, e vestes com mana e escudo de energia."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAoEAAUAAAAbAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMABzuFs"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AAAoEAIUAQB5bIAQKAAAAQAAAAAAAAAAAADAgYMBAFbigSMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeC4AAAAAAAAAAAAAAAAAAAAfv_8BMNaeJw"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AAAoEAIUAQB5bYAYKAAAAQAAAAAAAACAIRzAgYMJAFbzwScAAAAAAAAAAAAAAAAAAAAAtwAAAAAAAAAAeK43AADc1eevDgAAAAAAAAAfv_8BMD0XYg"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AAC4UBI0IyF5fYAf-DAAAQACJIALgCP7IVzpgYMJgF7_2ScAAAAAAEA1ShkAAAAAAHYft74BAAAAAM-1e643AAD81eevjkfvPRfv0T8fv_8BMLRYCw"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "templar",
+      "name": "Templar",
+      "line": {
+        "en": "Holy melee and an aura. Ascends to Inquisitor or Sentinel.",
+        "pt-BR": "Corpo a corpo sagrado e uma aura. Ascende a Inquisitor ou Sentinel."
+      },
+      "builds": [
+        {
+          "id": "templar_zealot",
+          "name": "Zealot",
+          "kind": {
+            "en": "Damage",
+            "pt-BR": "Dano"
+          },
+          "what": {
+            "en": "Dawnchain chains holy light, Penitent's Wrath answers every hit.",
+            "pt-BR": "A Dawnchain encadeia luz sagrada, o Penitent's Wrath responde a cada golpe."
+          },
+          "style": {
+            "en": "Holy light that chains. Dawnchain sends your melee hits on to the nearest other enemies, and Penitent's Wrath answers every hit you take with a holy strike. You pay with weaker spells and a weaker aura.",
+            "pt-BR": "Luz sagrada que encadeia. O Dawnchain manda seus golpes corpo a corpo para os inimigos mais próximos, e o Penitent's Wrath responde a cada golpe que você leva com um golpe sagrado. Você paga com magias e aura mais fracas."
+          },
+          "price": {
+            "en": "Your spells are weaker, and your aura protects you less.",
+            "pt-BR": "Suas magias ficam mais fracas, e sua aura protege menos."
+          },
+          "keystones": [
+            {
+              "name": "Dawnchain",
+              "point": 19
+            },
+            {
+              "name": "Penitent's Wrath",
+              "point": 36
+            }
+          ],
+          "spells": ["Hallowed Cut", "Penitent Lash", "Crusader's Sweep"],
+          "gear": {
+            "en": "A sword and a shield: Dawnchain reads melee hits, and the sword's Tempo suits a chain on one target after another. Heavy armour.",
+            "pt-BR": "Uma espada e um escudo: o Dawnchain lê golpes corpo a corpo, e o Tempo da espada combina com uma corrente de um alvo após o outro. Armadura pesada."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AACIEHAAAAAAaAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMABKhH8"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AACIEHAAAAAB6AMQIAAAAQAWAAAAAEABAADAAYABAEAAgCMAAAAAAAAAAAAAAAAA2G0ZAAAAAAAAAAAAeK43AAAAAOCuDgAAAAAAAAAAAMABAAAAA4xmhg"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AACYUHAgAwAB6AMQIAAAAQAWAAAAAEAjAADoAYAJAEARwCcAAAAAAAAAAAAAAAAA2H09AAAAAAAAAAAAeK43AADc1eevjkf_AADggQAAAMABAAAAB_NNhg"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AACYUHAgAwEB6QcaOAAAAQAWAAAAgGMjAEDpAYANAED32ScABQCeAAAAAAAAIJN52X09t765NeC5ds-1e643AAD81eevjkf_PNfp0T8fv98BAAAAB4n0SA"
+            }
+          ]
+        },
+        {
+          "id": "templar_shield_wall",
+          "name": "Shield Wall",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Shield, resistances and the Templar aura.",
+            "pt-BR": "Escudo, resistências e a aura do Templar."
+          },
+          "style": {
+            "en": "No keystone, only walls. A shield, health, resistances and the Templar aura make a Templar who does not fall. There is little damage, so it suits a party that needs someone to stand in front.",
+            "pt-BR": "Sem keystone, só muralhas. Um escudo, vida, resistências e a aura do Templar fazem um Templar que não cai. O dano é pouco, então serve a um grupo que precisa de alguém na frente."
+          },
+          "price": {
+            "en": "Little damage of your own.",
+            "pt-BR": "Pouco dano próprio."
+          },
+          "keystones": [],
+          "spells": ["Mantle of Dawn", "Vow of Mending", "Consecration", "Sanctified Ground"],
+          "gear": {
+            "en": "A club and a shield: the club's Impact can daze the monster in front of you. The heaviest armour you can find.",
+            "pt-BR": "Uma clava e um escudo: o Impact da clava pode atordoar o monstro à sua frente. A armadura mais pesada que você achar."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AAAIEAAAAAAAaAAAAAAAAQAAAAAAAAAAAADAAYABAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeHQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB-MBAA"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 0,
+              "code": "CB6-AAAIEAAAAAAAaAAAAAAAAQAAAAAAAACAISjAAYABAEARwDwAAAAAgAgAAAAAAAAAAAAAAAAAAAAAAAAAePQ7AADe-uPWHwAAAAAAAAAAAMAAAAAAB4_7_Q"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 0,
+              "code": "CB6-AAAIEAAAICABeACV8AAAAQAABIALAACAISjAAYABAEARwDwAAAAAgCrg0RYAAAAAAEwHAAAAAAAAAAAAePU7kADf-uPWn_5iAAAAAAAAAMAAAAAABwvhqg"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 0,
+              "code": "CB6-AAAIEAAAICEhebif-DMAQQYALfB7rCGA82rJAYABAFb_3zwDOAMAgKrq0RZAIAdYAEyHeQ0BACDXYbkOe_U7kADf-uPWn_5iAAAg1xk8P8cAAAAAB2-SzA"
+            }
+          ]
+        },
+        {
+          "id": "templar_pyre_walker",
+          "name": "Pyre Walker",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Pyre Oath burns the pack around you.",
+            "pt-BR": "O Pyre Oath queima o bando ao seu redor."
+          },
+          "style": {
+            "en": "Stand in the pack and burn it. Pyre Oath burns every enemy around you while you burn a little yourself, and the defense nodes keep you alive. Poor on a single target.",
+            "pt-BR": "Fique no bando e queime-o. O Pyre Oath queima todos os inimigos ao seu redor enquanto você queima um pouco, e os nós de defesa mantêm você vivo. Fraco contra um alvo só."
+          },
+          "price": {
+            "en": "Your other damage is weaker, and you burn along with the pack.",
+            "pt-BR": "Seu outro dano fica mais fraco, e você queima junto com o bando."
+          },
+          "keystones": [
+            {
+              "name": "Pyre Oath",
+              "point": 9
+            }
+          ],
+          "spells": ["Consecration", "Censer Swing", "Sanctified Ground", "Vow of Mending"],
+          "gear": {
+            "en": "A shield and a sword or club, with fire resistance: you burn along with the pack. Heavy armour.",
+            "pt-BR": "Um escudo e uma espada ou clava, com resistência a fogo: você queima junto com o bando. Armadura pesada."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAQAACgAHgEAACB4AMAECgADAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6fZLg"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AAAQAACgAHgEAACB4AMAECgADAAAQDwAAEABAAAAAEABwAQAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAI9-e_Q7AADcmgEAAAAAAAAAAAAAAAAAAAAAA6ERyQ"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AAAQAACgAHgEAACB4AMAEKgADIALQDyAIWgBAAAAAEARwAQAAAAAAAAAAAAAYAdYAEwHAAAAACDXYa9-e_U7AADc-gMCgP5iAAAAAAAAAAAAAAAAAzSguA"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AAAQAACgAHkkgb-L-DMAEK-MLfB7bDyA82oJAAAAAFb_3ycDOAMAAIDq0RbOYAdYAEyHeQ0BACDXYa9-e_U7AADc-uPWmP5iAAAg1xk8P0cAAAAAAzMyiQ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "inquisitor",
+      "name": "Inquisitor",
+      "line": {
+        "en": "The Templar who judges and burns.",
+        "pt-BR": "O Templar que julga e queima."
+      },
+      "builds": [
+        {
+          "id": "inquisitor_judge",
+          "name": "Judge",
+          "kind": {
+            "en": "Area",
+            "pt-BR": "Área"
+          },
+          "what": {
+            "en": "Divine Verdict lets Radiant Strikes judge, Dawnchain chains holy light.",
+            "pt-BR": "O Divine Verdict faz os Radiant Strikes julgarem, a Dawnchain encadeia luz sagrada."
+          },
+          "style": {
+            "en": "Judge the pack. Divine Verdict lets your Radiant Strikes judge their target, so everyone deals more holy damage to it, and Dawnchain chains your hits through the pack. Judgement does the same by hand.",
+            "pt-BR": "Julgue o bando. O Divine Verdict faz seus Radiant Strikes julgarem o alvo, então todos causam mais dano sagrado nele, e o Dawnchain encadeia seus golpes pelo bando. O Judgement faz o mesmo à mão."
+          },
+          "price": {
+            "en": "Your spells are weaker.",
+            "pt-BR": "Suas magias ficam mais fracas."
+          },
+          "keystones": [
+            {
+              "name": "Divine Verdict",
+              "point": 6
+            },
+            {
+              "name": "Dawnchain",
+              "point": 25
+            }
+          ],
+          "spells": ["Judgement", "Purging Nova", "Penitent Lash", "Zealot's Wrath"],
+          "gear": {
+            "en": "A sword and a shield: both keystones read melee hits. Heavy armour.",
+            "pt-BR": "Uma espada e um escudo: as duas keystones leem golpes corpo a corpo. Armadura pesada."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAAAAAaAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAP8HWFw"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 2,
+              "code": "CB6-AAAIEAAAACABaAAR4AAAAQAAhIEPAAAAAADAAYAJAEAQwDMABQCeAABgQA4AAAAAAAAAAAAAAAAAAAAAeL4_AAAAAAAAAAAAAAAAAAAAAMABAAAAP0bc3A"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 2,
+              "code": "CB6-AAAIEAAAICEBeAAX8AwAAQAAlI8vAACAISjAAYAJAEARwDcABQCeAABgQp5AAAAAAAAAAAAAAAAAAAAAeL4_AADc1efuHgAAAAAAAAAAAMABAAAAP2BQJw"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 2,
+              "code": "CB6-AAAYUAAgISEBeLgX8AwAQQYAlI9_JAC44SroAYAJAED_2TdjDQCeewBgQp5AAAAAAHYH974BAAAAAAAAeL4_AADc1efvnufuvdf90Xs9v98BAAAAP04v9w"
+            }
+          ]
+        },
+        {
+          "id": "inquisitor_ember_brand",
+          "name": "Ember Brand",
+          "kind": {
+            "en": "Single target",
+            "pt-BR": "Alvo único"
+          },
+          "what": {
+            "en": "Sigil of Cinders brands one target and burns its neighbours.",
+            "pt-BR": "O Sigil of Cinders marca um alvo e queima os vizinhos."
+          },
+          "style": {
+            "en": "Brand one, burn the rest. Sigil of Cinders brands a single target; the brand burns the monsters beside it and jumps on when its bearer dies. Fire and holy spells ignite. Pick a target, brand it and cast.",
+            "pt-BR": "Marque um, queime o resto. O Sigil of Cinders marca um alvo; a marca queima os monstros ao lado dele e salta adiante quando o portador morre. Magias de fogo e sagradas incendeiam. Escolha um alvo, marque e lance."
+          },
+          "price": {
+            "en": "Damage that is not fire or holy is weaker.",
+            "pt-BR": "O dano que não é de fogo nem sagrado fica mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Sigil of Cinders",
+              "point": 9
+            }
+          ],
+          "spells": ["Heretic's Brand", "Bell of Reckoning", "Pyre of Absolution", "Zealot's Wrath"],
+          "gear": {
+            "en": "A sword or club, and gear of fire or holy damage: anything that is not fire or holy is weaker. Medium armour with health.",
+            "pt-BR": "Uma espada ou clava, e equipamento de dano de fogo ou sagrado: o que não é fogo nem sagrado fica mais fraco. Armadura média com vida."
+          },
+          "cards": {
+            "set": "Fire",
+            "name": {
+              "en": "Fire",
+              "pt-BR": "Fogo"
+            },
+            "text": {
+              "en": "Fire hits deal a little more.",
+              "pt-BR": "Os golpes de Fogo causam um pouco mais de dano."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AACQAACgjjkAAAAD0QAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwEGRg"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AACQAACgjnkFAACT8QAABCgAzIEPQCQAAEABAAAAAEAAAAAABQAIAABgQB4AAAAAAAAAAAAAAAAAAAAAeL4_AAAAAAAAAAAAAAAAAAAAAAAAAAAAD-HT5A"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AACQAACgjnkFAACT8QAABCgAzIEPwCWAIWgBAAAIAEARwAQABQCeAABgQB4AAAAAAAAAAAAAAAAAAI8CeL4_AADc1efuHwAAAAAAAAAAAAAAAAAAD_HXLA"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AACQABCgjnkFACiT8QwARC4A3I9_5Ce44WopAAAIAED_2QUABQCeAABgQp5AAAAAAHYH9-4BAAAAAI_ue74_AADc1efun-f6PNf90Xs9vx8AAAAAD1fMLQ"
+            }
+          ]
+        },
+        {
+          "id": "inquisitor_rebuker",
+          "name": "Rebuker",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Radiant Rebuke: a shield blocks one hit in five and answers with a holy nova.",
+            "pt-BR": "Radiant Rebuke: um escudo bloqueia um golpe em cada cinco e responde com uma holy nova."
+          },
+          "style": {
+            "en": "A shield that strikes back. Radiant Rebuke blocks some attacks completely, and each block sends a holy nova at the monsters around you. Stand in front, hold a shield and let them hit you.",
+            "pt-BR": "Um escudo que revida. O Radiant Rebuke bloqueia alguns ataques por completo, e cada bloqueio manda uma nova sagrada nos monstros ao seu redor. Fique na frente, segure um escudo e deixe que batam em você."
+          },
+          "price": {
+            "en": "Your weapon hits are weaker.",
+            "pt-BR": "Seus golpes de arma ficam mais fracos."
+          },
+          "keystones": [
+            {
+              "name": "Radiant Rebuke",
+              "point": 25
+            }
+          ],
+          "spells": ["Mantle of Dawn", "Vow of Mending", "Zealot's Wrath", "Purging Nova"],
+          "gear": {
+            "en": "A club and a shield: Radiant Rebuke needs the shield and the club can daze. Heavy armour with magic level.",
+            "pt-BR": "Uma clava e um escudo: o Radiant Rebuke exige o escudo e a clava pode atordoar. Armadura pesada com magic level."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 0,
+              "code": "CB6-AAAgAAAUAACIBwAAAAAAAAAAAAAAAAAAAAAAgAMAABbiAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAhjyds"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AAAgAA4UAACIB2iByAMAQAIADIAPAAAAAAAAgAMAABbqHwAAAAAAAABgSBYAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD3cz8AAAAAAUs1IA"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AAAgAA4UAAGIh2-L2AMAQAMODIAPOEABQAEAgAMAABbqHwAUABwBAADgWRcAAAAAQACAeR3NawgAAAAAAAAAAAAAAAAAAAAAAAAAAAD3cz8AAAAAAVCArQ"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AAAgAA4UAAGoh--L2DMAQKMOLPA_-GcNQEEBgAMAAFb-35wV8B8BAADqWRdAIJfx2Uy9eR3NayjXYbkOy3UYAAAAAODWmO9iAAAgvxj3cz8AAAAAARdQBQ"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sentinel",
+      "name": "Sentinel",
+      "line": {
+        "en": "The Templar who guards the party.",
+        "pt-BR": "O Templar que guarda o grupo."
+      },
+      "builds": [
+        {
+          "id": "sentinel_bastion",
+          "name": "Bastion",
+          "kind": {
+            "en": "Tank",
+            "pt-BR": "Tank"
+          },
+          "what": {
+            "en": "Bastion widens your aura and covers the party.",
+            "pt-BR": "O Bastion alarga a sua aura e cobre o grupo."
+          },
+          "style": {
+            "en": "The wall of the party. Bastion widens your aura and lets Aegis of Faith cover the party members under it. Stand between your friends and the monsters. Very little damage of your own.",
+            "pt-BR": "A muralha do grupo. O Bastion alarga sua aura e faz o Aegis of Faith cobrir os membros do grupo sob ela. Fique entre seus amigos e os monstros. Muito pouco dano próprio."
+          },
+          "price": {
+            "en": "Little damage of your own.",
+            "pt-BR": "Pouco dano próprio."
+          },
+          "keystones": [
+            {
+              "name": "Bastion",
+              "point": 6
+            }
+          ],
+          "spells": ["Aegis of Faith", "Rebuke", "Shield Wave", "Rampart Quake"],
+          "gear": {
+            "en": "A club and a shield, in the heaviest armour: the club can daze the monster in front of you.",
+            "pt-BR": "Uma clava e um escudo, na armadura mais pesada: a clava pode atordoar o monstro à sua frente."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAAAAAaAAAAAAAAQAAAAAAAAAAAADAAYABAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxwEyKzU"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAACABaAARIAMAAQAAyAEMAAAAAADAB4ABAEARwDwAAAAAgCrgQAAAAAAAAAAAAAAAAAAAAAAAePQ7kABdEAAAAAAAAAAAAAAAAMAAAAAAxwH25tA"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAACABaAARIAMAAQAAyAEMAACAISjAB4ABAEARwDwAAAAAgCrgQRYAAAAAAEwHAAAAAAAAAAAAePU7kADf-vPWn-c6AAAAAAAAAMAAAAAAxwGG4oc"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AAAIEAAAACABaAARIAMAAQAAyAEM-Du6YWnpB4ABAEB_3zwAAAAAgCrgQRYAIANYnEw3f325K-DVb69-e_U7kADf-vPWn-96IQDgu179c8cAAAAAxwGsq5A"
+            }
+          ]
+        },
+        {
+          "id": "sentinel_reliquary_keeper",
+          "name": "Reliquary Keeper",
+          "kind": {
+            "en": "Support",
+            "pt-BR": "Suporte"
+          },
+          "what": {
+            "en": "A Reliquary Warden follows you: it heals and buffs the party and burns enemies.",
+            "pt-BR": "Um Reliquary Warden segue você: cura e fortalece o grupo e queima inimigos."
+          },
+          "style": {
+            "en": "A warden for the party. Reliquary Vow sends a Reliquary Warden after you that heals and buffs the group and burns enemies. Walk with your party and let the warden work.",
+            "pt-BR": "Um guardião para o grupo. O Reliquary Vow manda um Reliquary Warden atrás de você que cura e fortalece o grupo e queima inimigos. Ande com o grupo e deixe o guardião trabalhar."
+          },
+          "price": {
+            "en": "Your own damage is a little weaker.",
+            "pt-BR": "Seu próprio dano fica um pouco mais fraco."
+          },
+          "keystones": [
+            {
+              "name": "Reliquary Vow",
+              "point": 20
+            }
+          ],
+          "spells": ["Lay on Hands", "Vow of Mending", "Aegis of Faith", "Mantle of Dawn"],
+          "gear": {
+            "en": "A sword or club and a shield, with magic level on your armour: the warden heals better for it.",
+            "pt-BR": "Uma espada ou clava e um escudo, com magic level na armadura: o guardião cura melhor assim."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AABQAAAYAACIBwAAAAAAAAAAAAAAAAAAAAAA4AMAABbiIc-U1w"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 1,
+              "code": "CB6-AABQQIA7AAeIhwUCCAwAAAAnEwAAAEABHAAA4AMAABbiIQAAAAAAAAAAAAAAAAAAwDYAAAAAAAAAAAAAAAAAAAAAAOCvDgAAPBBTzwk"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 1,
+              "code": "CB6-AABQwIE_AAeIh00LCA8AAAAn2wEEAEABHAAA4AMAABbiMQAYAOABAABgQgIAAAAAwDaAeR0AAAAAAAAAAAAAAAAAAOCvDgAAPPcZAAAHABhuf6M"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 1,
+              "code": "CB6-AAD8wpN_AyeJh20bKD8AAAcn-3EPQHwBPmgB4A_cgFf3-QcYB-BtAABgQgIAQAAAwHafeT0AAAAAAAAAeK4RAAD81eGvjuc6PPf5uQ7X4xg4eLk"
+            }
+          ]
+        },
+        {
+          "id": "sentinel_retributor",
+          "name": "Retributor",
+          "kind": {
+            "en": "Retaliation",
+            "pt-BR": "Retaliação"
+          },
+          "what": {
+            "en": "Thorns, Thornbound Oath and Penitent's Wrath: attackers pay for every hit.",
+            "pt-BR": "Thorns, Thornbound Oath e Penitent's Wrath: quem ataca paga por cada golpe."
+          },
+          "style": {
+            "en": "Make them pay. Thorns, Thornbound Oath and Penitent's Wrath send damage back at everyone who hits you, in melee or at range. Hold a shield, take the hits and let the monsters kill themselves.",
+            "pt-BR": "Faça-os pagar. O Thorns, o Thornbound Oath e o Penitent's Wrath devolvem dano a todo mundo que bate em você, de perto ou de longe. Segure um escudo, aguente os golpes e deixe os monstros se matarem."
+          },
+          "price": {
+            "en": "Your damage is weaker, and your aura protects you less.",
+            "pt-BR": "Seu dano fica mais fraco, e sua aura protege menos."
+          },
+          "keystones": [
+            {
+              "name": "Thorns",
+              "point": 19
+            },
+            {
+              "name": "Thornbound Oath",
+              "point": 27
+            },
+            {
+              "name": "Penitent's Wrath",
+              "point": 38
+            }
+          ],
+          "spells": ["Rebuke", "Aegis of Faith", "Bulwark Slam", "Rampart Quake"],
+          "gear": {
+            "en": "A club and a shield, with reflect on your gear: the club can daze. The heaviest armour you can find.",
+            "pt-BR": "Uma clava e um escudo, com reflexão no equipamento: a clava pode atordoar. A armadura mais pesada que você achar."
+          },
+          "cards": {
+            "set": "Death",
+            "name": {
+              "en": "Death",
+              "pt-BR": "Morte"
+            },
+            "text": {
+              "en": "Death hits heal you a little.",
+              "pt-BR": "Os golpes de Morte curam você um pouco."
+            }
+          },
+          "codes": [
+            {
+              "points": 23,
+              "level": 100,
+              "keystones": 1,
+              "code": "CB6-AACIEHAAAAAAaAAAAAAAAQAAAAAAAAAAAADAAYABAEAAgCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMABKhH8"
+            },
+            {
+              "points": 73,
+              "level": 300,
+              "keystones": 3,
+              "code": "CB6-AACIEHAAACAB6AM5IAAAAQAOAAAAAEABAADAB4ABAEAQwDMAAAAAgCoAAAAAAAAAbAEAAAAAAAAAAAAAePQ7kAABAAAAAAAAAAAAAAAAAMABAAAAR10gEg"
+            },
+            {
+              "points": 123,
+              "level": 500,
+              "keystones": 3,
+              "code": "CB6-AACIEHAAACAB6AM5IAMAAQAOyAEMAEAjAADoB4ABAEA83jMAAAAAgCrgQRYAAAAAbAEAAAAAAAAAAAAAePQ7kAABAAAAAAAAAADguQj8c8cBAAAARyqZ6Q"
+            },
+            {
+              "points": 248,
+              "level": 1000,
+              "keystones": 3,
+              "code": "CB6-AACIEHAAACAB6QM5KAMAAQAOyAEM-HujQEHpB4ABAEB_3z8AAAAAgCrgQRYAIAEAfE09f3356w8AAI9-e_U7kADf-vPWn-96AQDgu179c8cBAAAAR98tsQ"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

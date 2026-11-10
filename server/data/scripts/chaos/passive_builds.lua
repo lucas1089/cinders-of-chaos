@@ -302,3 +302,69 @@ ChaosPassiveTree.extraActions.autobuildApply = function(player, data)
 	end
 	return true
 end
+
+-- ------------------------------------------------------------------------------------------------ into a loadout slot (O448)
+-- "Save to a loadout slot" of the Auto build window: the tree of a Recommended or Focus build, cut to the character's points,
+-- goes into a loadout slot the player picks, named after the build. The live tree does not change, and only the tree of the
+-- slot is written (gear, runes and Paragon stay). The rules: passive_builds_core.lua pick / planSlot and loadouts_core.lua
+-- planBuildSave, the write: loadouts.lua saveBuild (it reuses the loadouts' own checks). Same opcode, two more actions:
+--   client -> server  autobuildSlots                          -> autobuildSlots {slots = [{slot, name, empty, locked, active}],
+--                                                                limit, max, level, minLevel, nextUnlock}
+--                     autobuildSaveSlot {build, slot, confirm} -> autobuildSlotSaved {message, lines, slot, build}
+--                                                                or autobuildError {message, slot, build, needConfirm, name}
+--                     (a slot that holds something is written only with confirm = true: without it the answer is
+--                      autobuildError {needConfirm = true, name = the held name} and nothing changes)
+ChaosPassiveTree.extraActions.autobuildSlots = function(player)
+	local L = ChaosLoadouts
+	if not (L and L.slotChoices) then
+		fail(player, Chaos.t(player, "Loadouts are not available right now."))
+		return true
+	end
+	Chaos.send(player, OPCODE, "autobuildSlots", L.slotChoices(player))
+	return true
+end
+
+function P.saveToSlot(player, buildId, slot, confirm)
+	local L = ChaosLoadouts
+	if not (L and L.saveBuild) then
+		return false, "Loadouts are not available right now."
+	end
+	return L.saveBuild(player, slot, buildId, confirm == true)
+end
+
+ChaosPassiveTree.extraActions.autobuildSaveSlot = function(player, data)
+	if type(data) ~= "table" then
+		fail(player, Chaos.t(player, "Malformed request."))
+		return true
+	end
+	local build = type(data.build) == "string" and #data.build <= 60 and data.build or nil
+	local slot = Chaos.toInt(data.slot, -1000000, 1000000) or 0
+	if limited(player, "passivetree.autobuildSaveSlot", cfg.rateMs or 1000) then
+		fail(player, Chaos.t(player, "Too fast: wait a moment and apply again."), {build = build, slot = slot})
+		return true
+	end
+	local ok, res, text, extra = pcall(P.saveToSlot, player, build, slot, data.confirm == true)
+	if not ok then
+		print("[Chaos] autobuildSaveSlot failed for player " .. tostring(player:getGuid()) .. ": " .. tostring(res))
+		fail(player, Chaos.t(player, "The build could not be saved. Try again later."), {build = build, slot = slot})
+		return true
+	end
+	if res then
+		local lines = {}
+		for i, line in ipairs(extra or {}) do
+			lines[i] = Chaos.tx(player, line)
+		end
+		Chaos.send(player, OPCODE, "autobuildSlotSaved", {message = Chaos.tx(player, text), lines = lines, slot = slot, build = build})
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.tx(player, text))
+		if ChaosLoadouts and ChaosLoadouts.sendState then
+			ChaosLoadouts.sendState(player) -- an open Loadouts window shows the new name
+		end
+	else
+		local out = {build = build, slot = slot}
+		if type(extra) == "table" and extra.confirm then
+			out.needConfirm, out.name = true, extra.name
+		end
+		fail(player, Chaos.tx(player, text), out)
+	end
+	return true
+end

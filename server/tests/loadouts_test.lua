@@ -234,6 +234,35 @@ plan, why = C.planSave({active = 0, limit = 3, slots = {[1] = {runes = 2}}, live
 has(why, "2 support runes of its own", "saving over a parked loadout with runes while none is active is refused")
 plan = C.planSave({active = 0, limit = 3, slots = {[1] = {runes = 2}}, live = {nodes = 1}}, 2)
 eq(plan.activate, true, "another slot is fine")
+-- a build of the Auto build list into a slot (O448): the slot rules; nothing is written by the core
+do
+	local a = {active = 2, limit = 5, slots = {[1] = {name = "Hunting", runes = 0}, [2] = {name = "Live", runes = 3}}}
+	local p, w, extra = C.planBuildSave(a, 3, nil)
+	eq(p and p.slot, 3, "build into a free slot"); eq(p and p.overwrite, false, "an empty slot is not an overwrite")
+	p, w, extra = C.planBuildSave(a, 1, nil)
+	check(p == nil and extra and extra.confirm == true and extra.name == "Hunting", "a held slot needs the confirm")
+	has(w, "Slot 1 already holds Hunting", "the confirm text names the slot and what it holds")
+	for _, no in ipairs({false, "true", 1, "yes", {}}) do
+		p, w, extra = C.planBuildSave(a, 1, no)
+		check(p == nil and extra and extra.confirm == true, "only confirm == true replaces (" .. tostring(no) .. ")")
+	end
+	p = C.planBuildSave(a, 1, true)
+	eq(p and p.overwrite, true, "confirmed: an overwrite"); eq(p and p.name, "Hunting", "the held name is reported")
+	p, w = C.planBuildSave(a, 2, true)
+	check(p == nil, "the active slot is refused even when confirmed"); has(w, "active", "active slot text")
+	p, w = C.planBuildSave(a, 6, true)
+	check(p == nil and w == "locked", "a slot the character has not earned is locked")
+	for _, bad in ipairs({0, -1, 9, 1.5, "x", 1e9}) do
+		p, w = C.planBuildSave(a, bad, true)
+		check(p == nil and w ~= "locked" and w:find("does not exist", 1, true), "slot out of range refused: " .. tostring(bad))
+	end
+	-- no active loadout: a held slot is just a slot
+	p = C.planBuildSave({active = 0, limit = 5, slots = {[1] = {name = "Old", runes = 4}}}, 1, true)
+	eq(p and p.overwrite, true, "no active loadout: a slot with runes may get a tree (its runes stay)")
+	-- an active number whose row is gone does not block the slot
+	p = C.planBuildSave({active = 2, limit = 5, slots = {}}, 2, nil)
+	eq(p and p.slot, 2, "a stale active number blocks nothing")
+end
 -- without an active loadout the live build would be lost: refused while it holds anything
 local loose = {active = 0, limit = 3, slots = {[2] = {runes = 0}}, live = {nodes = 5, paragon = 0, runes = 0}}
 plan, why = C.planLoad(loose, 2)
@@ -935,6 +964,168 @@ do
 	res = lastOf("result")
 	eq(res.ok, true, "three keystones: the load works")
 	eq(ChaosPassiveTreeCore.countKeystones(tree, presets[gid]), 3, "the live tree holds the 3")
+end
+
+-- a Recommended build into a slot (O448): LO.saveBuild, the function behind the Auto build window's "Save to a loadout slot".
+-- Only the tree column of the slot is written; the live tree, the other columns, the active slot and everything else stay.
+do
+	local gid = player:getGuid()
+	local function snapshot()
+		local rowsText = {}
+		for slot = 0, 9 do
+			local r = DB[gid] and DB[gid][slot]
+			if r then
+				rowsText[#rowsText + 1] = slot .. "|" .. tostring(r.name) .. "|" .. tostring(r.icon) .. "|" .. tostring(r.voc) .. "|" ..
+					tostring(r.tree) .. "|" .. tostring(r.paragon) .. "|" .. tostring(r.supports) .. "|" .. tostring(r.gear)
+			end
+		end
+		local keys = {}
+		for k, v in pairs(storages) do keys[#keys + 1] = k .. "=" .. tostring(v) end
+		table.sort(keys)
+		return table.concat(rowsText, "\n") .. "\n" .. table.concat(keys, ",") .. "\n" .. table.concat(presets[gid] or {}, ",") .. "\n" .. applied
+	end
+	local function en(text) return ChaosI18n.translate("en", text) end
+	local function refused(slot, buildId, confirm, part, label)
+		local before = snapshot()
+		local ok, text, extra = LO.saveBuild(player, slot, buildId, confirm)
+		text = en(text)
+		eq(ok, false, label .. ": refused")
+		has(text, part, label .. ": the text")
+		eq(snapshot(), before, label .. ": nothing changed")
+		return text, extra
+	end
+	-- a clean armory: no rows, nothing active
+	DB[gid] = {}
+	storages[7100570] = nil
+	pzFlag = true
+	player.level, player.points = 300, 60
+	local live = bfsPath(12)
+	ChaosPassiveTree.internal.savePreset(gid, 1, "Preset 1", live)
+	local slayer = dofile("data/scripts/chaos/passive_builds_data.lua").classes.warrior[1]
+	eq(slayer.id, "warrior_slayer", "the test knows the first warrior build")
+
+	-- a legal build into an empty slot: its tree cut to the points, named after the build, the rest of the row empty
+	local before = snapshot()
+	local ok, text, lines = LO.saveBuild(player, 3, "warrior_slayer")
+	eq(ok, true, "saved into an empty slot")
+	text = en(text); has(text, "Saved Slayer in loadout slot 3: 60 passive nodes", "the text names the build, the slot and the nodes")
+	has(text, "gear, runes and Paragon of the slot stay as they were", "the text says what stays")
+	has(text, "live tree did not change", "the text says the live tree is as it was")
+	has(en(lines[1]), "more nodes of the build need more points", "the nodes that wait for points are said")
+	local row = DB[gid][3]
+	local want = {}
+	for i = 1, 60 do want[i] = slayer.order[i] end
+	eq(row.tree, C.formatNodes(want), "the slot holds the first 60 nodes of the build")
+	eq(row.name, "Slayer", "named after the build")
+	eq(row.voc, 4, "saved with the class")
+	eq(row.paragon .. "|" .. row.supports .. "|" .. row.gear, "||", "an empty slot gets no gear, runes or Paragon")
+	eq(C.formatNodes(presets[gid]), C.formatNodes(live), "the live tree is as it was")
+	eq(storages[7100570], nil, "no loadout became active")
+	eq(ChaosPassiveTreeCore.countKeystones(tree, C.parseNodes(row.tree)) <= 3, true, "the slot is under the keystone cap")
+	local kept, removed = C.validateTree(tree, C.parseNodes(row.tree), {classKey = "warrior", points = 60, allowed = ChaosClassTree and ChaosClassTree.allowed})
+	eq(#removed, 0, "nothing of the slot would be refunded on a load"); eq(#kept, 60, "all 60 nodes survive the load checks")
+
+	-- a held slot: the confirm is asked first, nothing changes; confirmed, only the tree, the name and the class are replaced
+	local text2, extra = refused(3, "warrior_bulwark", nil, "Slot 3 already holds Slayer", "a held slot without the confirm")
+	check(extra and extra.confirm == true and extra.name == "Slayer", "the answer carries the confirm flag and the held name")
+	refused(3, "warrior_bulwark", false, "already holds", "confirm = false")
+	refused(3, "warrior_bulwark", "true", "already holds", "confirm = the string true")
+	DB[gid][3].paragon, DB[gid][3].supports, DB[gid][3].gear, DB[gid][3].icon = "damage=3", "10:32101/0/0", "5=empty|6=3264:1790000000001:fire sword", "pvp"
+	ok, text = LO.saveBuild(player, 3, "warrior_bulwark", true)
+	eq(ok, true, "confirmed: replaced"); has(en(text), "Saved Bulwark in loadout slot 3", "the replace text")
+	row = DB[gid][3]
+	eq(row.name, "Bulwark", "renamed after the new build")
+	check(row.tree ~= C.formatNodes(want), "the tree is the new build's")
+	eq(row.paragon .. "|" .. row.supports .. "|" .. row.gear .. "|" .. row.icon, "damage=3|10:32101/0/0|5=empty|6=3264:1790000000001:fire sword|pvp",
+		"gear, runes, Paragon and icon of the slot stay as they were")
+	eq(C.formatNodes(presets[gid]), C.formatNodes(live), "the live tree is still as it was")
+
+	-- the active slot holds the live build: refused, even confirmed
+	storages[7100570] = 3
+	refused(3, "warrior_slayer", true, "active", "the active slot")
+	storages[7100570] = nil
+
+	-- the class: another class's build, a Focus theme the class has not, an unknown id, a malformed one
+	refused(4, "ranger_stormquiver", true, "not for your class", "a build of another class")
+	refused(4, "focus_snares", true, "not for your class", "a theme the class does not have")
+	refused(4, "no_such_build", true, "Unknown build", "an unknown build")
+	refused(4, nil, true, "Unknown build", "no build")
+	refused(4, {}, true, "Unknown build", "a malformed build")
+	-- a build whose nodes are another class's (its tree does not fit a warrior)
+	local alien = {id = "warrior_alien", kind = "role", masteries = {}, top = {}, order = dofile("data/scripts/chaos/passive_builds_data.lua").classes.ranger[1].order}
+	local pbd = dofile("data/scripts/chaos/passive_builds_data.lua")
+	table.insert(pbd.classes.warrior, alien)
+	refused(4, "warrior_alien", true, "not for your class", "a build with another class's nodes under the warrior's name")
+	table.remove(pbd.classes.warrior)
+
+	-- the keystone cap: four keystones are refused whole with the tree's text, three go through
+	local function route(targets)
+		local parent, queue, head, seenIds, index = {}, {tree.root}, 1, {[tree.root] = true}, {[tree.root] = 0}
+		while head <= #queue do
+			local cur = queue[head]; head = head + 1
+			for _, nb in ipairs(tree.nodes[cur].n) do
+				if not seenIds[nb] and (not tree.nodes[nb].c or targets[nb]) then
+					seenIds[nb] = true; parent[nb] = cur; queue[#queue + 1] = nb; index[nb] = #queue
+				end
+			end
+		end
+		local set, list = {}, {}
+		for target in pairs(targets) do
+			local id = target
+			while id and id ~= tree.root do
+				if not set[id] then set[id] = true; list[#list + 1] = id end
+				id = parent[id]
+			end
+		end
+		table.sort(list, function(a, b) return index[a] < index[b] end)
+		return list
+	end
+	local fourOrder, threeOrder = route({[77] = true, [78] = true, [81] = true, [109] = true}), route({[77] = true, [78] = true, [81] = true})
+	player.points = 400
+	table.insert(pbd.classes.warrior, {id = "warrior_four", kind = "role", order = fourOrder, masteries = {}, top = {}})
+	table.insert(pbd.classes.warrior, {id = "warrior_three", kind = "role", order = threeOrder, masteries = {}, top = {}})
+	refused(4, "warrior_four", true, "You can hold at most 3 keystones. Refund one to take another.", "four keystones")
+	eq(DB[gid][4], nil, "four keystones: no row was created")
+	ok, text = LO.saveBuild(player, 4, "warrior_three")
+	eq(ok, true, "three keystones are saved")
+	eq(ChaosPassiveTreeCore.countKeystones(tree, C.parseNodes(DB[gid][4].tree)), 3, "the slot holds the three")
+	table.remove(pbd.classes.warrior); table.remove(pbd.classes.warrior)
+	DB[gid][4] = nil
+	player.points = 60
+
+	-- the slot: out of range, not earned (level 300 earns 6 slots), nothing to write
+	for _, bad in ipairs({0, -1, 9, 1.5, "x"}) do
+		refused(bad, "warrior_slayer", true, "does not exist", "slot " .. tostring(bad))
+	end
+	local lockedText = refused(7, "warrior_slayer", true, "level 500", "a slot the character has not earned")
+	eq(DB[gid][7], nil, "a locked slot got no row")
+	player.points = 0
+	refused(4, "warrior_slayer", true, "no passive points", "no passive points")
+	player.points = 60
+	player.level = 10
+	refused(4, "warrior_slayer", true, "open at level", "below the loadouts' level")
+	player.level = 300
+
+	-- the slot list the window shows
+	local choices = LO.slotChoices(player)
+	eq(choices.limit, 6, "slot choices: 6 slots at level 300"); eq(choices.max, 8, "slot choices: 8 at most")
+	eq(choices.slots[3].empty, false, "slot choices: slot 3 holds something"); eq(choices.slots[3].name, "Bulwark", "slot choices: its name")
+	eq(choices.slots[4].empty, true, "slot choices: slot 4 is empty"); eq(choices.slots[7].locked, true, "slot choices: slot 7 is locked")
+	eq(choices.slots[3].active, false, "slot choices: none active")
+	storages[7100570] = 3
+	eq(LO.slotChoices(player).slots[3].active, true, "slot choices: the active slot is marked")
+	storages[7100570] = nil
+
+	-- the saved slot loads like any other: the live tree parks, the build's tree comes in (in a protection zone, free)
+	pzFlag = true
+	storages[7100572] = os.time() - cfg.cooldownSeconds - 1
+	DB[gid][1] = {slot = 1, name = "Live", icon = "", voc = 4, tree = C.formatNodes(live), paragon = "", supports = "", gear = "", serial = 0, undo = "", updated = 0}
+	storages[7100570] = 1
+	request("load", {slot = 3})
+	res = lastOf("result")
+	eq(res and res.ok, true, "a slot written by Save to a loadout slot loads")
+	eq(#presets[gid], 60, "the live tree is the build's first 60 nodes")
+	eq(DB[gid][1].tree, C.formatNodes(live), "and the old live tree is parked in slot 1")
 end
 
 print(string.format("loadouts_test: %d checks, %d failures", count, failures))

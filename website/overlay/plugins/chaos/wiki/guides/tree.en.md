@@ -33,3 +33,4 @@ Each example works with the base class and shines with one ascension.
 - Keystones need the path to them. Plan before you spend.
 - The client's planner shows the cost in points and lets you save and share the build code.
 - Every keystone and notable is in the [tree reference](wiki:tab:tree).
+- Three builds for every class, with import codes, are in the [Starter builds](/page?plugin=chaos&p=starterbuilds&l=en) guide.

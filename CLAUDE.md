@@ -126,6 +126,8 @@ cd server && luajit tools/gen_codex_data.lua                 # -> client game_co
 cd server && lua5.3 tools/gen_codex_data.lua --check
 cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/wiki_data.json
 cd server && lua5.3 tools/gen_wiki_data.lua --check
+cd server && luajit tools/gen_starter_builds.lua                # -> website guide/starter_builds_data.json (Starter Builds guide, O448: the Recommended builds in words and import codes, no figures; words: tools/starter_builds_config.lua)
+cd server && lua5.3 tools/gen_starter_builds.lua --check
 cd server && luajit tools/gen_howitworks_data.lua             # -> client game_howitworks/howitworks_data.lua (How it works cards, O331; sentences: tools/howitworks_config.lua)
 cd server && lua5.3 tools/gen_howitworks_data.lua --check
 cd server && luajit tools/gen_guide_data.lua                  # -> client game_helpsearch/helpsearch_data.lua, website guide/guide_data.json (help search and beginner guide, O373; order and tips: tools/guide_config.lua)
