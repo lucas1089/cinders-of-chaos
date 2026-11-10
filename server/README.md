@@ -13103,7 +13103,10 @@ copy of every orb): an **item level** from its source, **how many modifiers** fr
 item level, and a **prefix / suffix** split. The engine's own rarity roll (`Item::applyRarityEffects`) is no longer used for
 new items. All numbers are in `ChaosItemMods.config`; tests: `tests/item_mods_test.lua` (catalogue, tiers, item level,
 counts, every effect against a mocked engine), `tests/crafting_test.lua` (forge, orbs, prefix / suffix rules, orbs v2 API),
-`tests/item_tooltip_test.lua`, `tests/salvage_test.lua`, `tests/lootfilter_test.lua`, `tests/supports_test.lua`.
+`tests/item_tooltip_test.lua`, `tests/salvage_test.lua`, `tests/lootfilter_test.lua`, `tests/supports_test.lua`; since O461 also
+`tests/item_mods_v2_test.lua` (roll rules, the pool of each kind, the new modifiers on a mocked character) and
+`tests/modifier_upgrade_test.lua` (the upgrade of old items). **Version 2 (O461, 2026-11-10) changed most numbers below;
+read "Equipment modifiers version 2" at the end of this section first.**
 
 **Item names** (owner 2026-10-28): a rolled item is named after its modifiers, "Vicious Longsword of Haste". Name = best
 prefix word + stock name + best suffix phrase; best = highest tier, then the larger value, then the earlier affix
@@ -13143,14 +13146,18 @@ gets `chaos_ilvl` too, so an Orb of Awakening or Gilding on it uses the level it
 level (Erasure and Fate too); an item without any level gets one from the item type's required level.
 
 **Tiers.** Eight per modifier, T1 the lowest, T8 the highest. A tier needs an item level (`tierLevels`): T1 1, T2 15, T3 30,
-T4 50, T5 70, T6 95, T7 120, T8 140. A modifier rolls among the best five tiers the item level allows
-(`tierWindow`), weighted 100, 90, 80, 65, 50, 35, 22, 12 for T1..T8 (higher tiers are rarer): at item level 150 T8 comes
-6.5%, T4 35%; at item level 40 T1 37%, T2 33%, T3 30%. The five ranges the modifiers had before (tier = ceil(rarity / 3))
-were T2-T6; since the value raise of 2026-10-18 (owner item 78) every tier is 1.5x to 3x higher (see "Value raise" below)
-and the old ranges are kept in `M.legacy` / `M.legacyEngine`. The tier is stored next to the value as `ct_<attribute key, lower case>`
-(`ct_chaos_mod_dodge`, `ct_rarity_swordskill`); an item without it (every item from before) reads its tier from the value:
-the lowest of T2-T6 whose OLD range (`M.legacy`) holds it, above T6 the top; its value is judged against the old ranges too,
-so an old item neither loses its tier nor shows a value outside its range. The pair attributes (critical, leech) store one tier for both.
+T4 50, T5 70, T6 90, T7 110, T8 130 (O461; before 1, 15, 30, 50, 70, 95, 120, 140). **Every tier the item level allows can
+roll, all with the same weight** (`tierWeights` 100 each; before only the best five tiers rolled, weighted 100 .. 12):
+at item level 150 each of T1 .. T8 comes one time in eight, at item level 40 T1, T2 and T3 one time in three. A boss of
+monster level 1000 (item level 133) rolls T8. A modifier may have a gate of its own (`def.minTier`): the weapon's Mana
+Leech does not roll below T4. Inside a modifier **the ranges never overlap and narrow toward the top** where the numbers
+allow (a tier starts above the end of the tier before); the ladders the owner gave as they are (worn Attack Speed,
+Cooldown Reduction, Experience, Critical Strike Chance) may touch. The ranges of each version are kept: version 1 (until
+O461) in `M.v1`, the ranges before the raise of 2026-10-18 in `M.legacy` / `M.legacyEngine` (they still read the tier of an
+item without a stored tier). The tier is stored next to the value as `ct_<attribute key, lower case>`
+(`ct_chaos_mod_dodge`, `ct_rarity_swordskill`); an item without it (an item from before 2026-10-18) reads its tier from the
+value: the lowest of T2-T6 whose OLD range (`M.legacy`) holds it, above T6 the top; its value is judged against the old
+ranges too, so an old item neither loses its tier nor shows a value outside its range.
 
 **How many, and the sides.** Rarity decides the count (`config.rarity`):
 
@@ -13169,59 +13176,78 @@ both sides are full. Old items keep what they have (an old item of before 2026-1
 orbs only add on a side that is open). **The Orb of Grafting** picks among the modifiers on an open side that the item does not
 have and that suit its kind, **Unmaking** removes one at random, **Upheaval / Awakening / Gilding / Fate** make a new
 copy and `forge` it (so the limits hold), **Erasure** makes a plain copy. An item's description lists them:
-"Item Level: 57. Prefixes: Sword +2 (T3); Critical Chance +1%, Critical Hit +2% (T2). Suffixes: Fire +3% (T4)".
+"Item Level: 57. Prefixes: Sword +2 (T3); Critical Strike Chance +3% (T2); Critical Strike Damage +14% (T2). Suffixes: Fire +3% (T4)".
 
-**The engine's types** (absorbs, skills, critical / leech pairs, weapon elements) have tiers too (`config.engine`), weighed
+**The engine's types** (absorbs, skills, the two critical modifiers, weapon elements) have tiers too (`config.engine`), weighed
 against the Chaos types in one list (`ChaosCrafting.affixes()`):
 
 | group | side | weight | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | absorb | suffix | 3 | 2 | 2-4 | 3-5 | 4-6 | 5-8 | 6-10 | 8-12 | 10-14 |
 | skill | prefix | 3 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 7-10 |
-| profession | suffix | 1 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 7-10 |
-| critical | prefix | 8 | 2 | 2-3 | 2-5 | 3-5 | 4-6 | 5-8 | 6-9 | 8-10 |
-| leech | suffix | 6 | 2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-7 | 6-9 | 7-10 |
+| profession (fishing, crafting) | suffix | 1 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 7-10 |
+| critchance (points) | prefix | 6 | 2 | 3 | 4 | 5 | 5-6 | 6 | 7 | 7-8 |
+| critdamage (percent) | prefix | 6 | 8-12 | 13-16 | 17-20 | 21-24 | 25-28 | 29-31 | 32-34 | 35-38 |
 | element | prefix | 2 | 2-4 | 4-9 | 7-13 | 10-18 | 15-24 | 20-30 | 26-39 | 33-52 |
 
-(skills: combat skills and magic level; profession skills are `profession`; critical is the amount, the chance part is about
-two thirds of it, `ChaosCrafting.specialChance`.)
+(skills: combat skills and magic level. The six other profession skills (woodcutting, mining, herbalist, armorsmith,
+weaponsmith, jewelsmith) and the life and mana leech PAIRS are `noRoll` since O461: the rows stay to read old items.
+Critical Strike Chance and Critical Strike Damage are two modifiers of their own that each write ONE engine attribute
+(`rarity_criticalHitChance`, `rarity_criticalHitAmount`; `customs/rarity/base_rarity.lua` makes one condition per
+attribute when the item is worn, so neither needs the other); kinds weapon, jewel, other (the badge) and quiver. The
+tree still grants the pair.)
 
 **The Chaos modifiers** (kind = which items may roll it: weapon, shield, helmet, armor, legs, boots, jewel = amulet or ring,
-other = gloves, belts and the like; cap = the most a character gets from everything equipped).
+other = the badge, quiver; cap = the most a character gets from everything equipped, "none" = the module holds no cap since
+O461; stage 2 rows (the absorbs, dodge, block, reflect, thorns, damage taken, penetration, energy shield) and the rows the
+owner left alone keep theirs). The legendary powers, the quiver modifiers (bow speed, bow critical chance, the four arrow
+elements, ...) and the energy shield have their own tables in their sections. Generated from the config on 2026-11-10.
 
 | key | text | side | kinds | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | cap |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| bossdamage | Damage to Elites and Bosses +N% | prefix | jewel, weapon | 2-5 | 4-7 | 6-10 | 9-13 | 11-16 | 14-18 | 16-20 | 18-22 | 30 |
+| bossdamage | Damage to Elites and Bosses +N% | prefix | jewel, quiver, weapon | 2-5 | 4-7 | 6-10 | 9-13 | 11-16 | 14-18 | 16-20 | 18-22 | none |
 | dodge | Dodge +N% | prefix | armor, boots, legs, other, shield | 1-2 | 2 | 2-3 | 2-4 | 3-5 | 3-5 | 4-6 | 5-7 | 10 |
 | reflect | Reflect Damage +N% | prefix | armor, shield | 2-3 | 3-4 | 4-5 | 5-6 | 6-8 | 7-9 | 8-10 | 9-11 | 15 |
 | thorns | Thorns +N | prefix | armor, legs, shield | 2-6 | 5-12 | 12-24 | 24-45 | 40-75 | 60-110 | 90-150 | 120-190 | 250 |
 | monsterreduction | Damage Taken from Monsters -N% | prefix | armor, helmet, legs, shield | 1-2 | 2 | 2-3 | 3-4 | 3-5 | 4-6 | 5-7 | 6-8 | 12 |
 | block | Block Chance +N% | prefix | shield | 2-3 | 3-5 | 4-6 | 5-8 | 7-10 | 8-11 | 9-12 | 11-14 | 15 |
-| bleedchance | Chance to Bleed +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
-| ignitechance | Chance to Ignite +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
-| poisonchance | Chance to Poison +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
-| chillchance | Chance to Chill +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
-| shockchance | Chance to Shock +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
-| physpen | Physical Penetration +N% | prefix | jewel, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
-| elepen | Elemental Penetration +N% | prefix | jewel, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
-| execute | Executes Monsters below N% Health | prefix | weapon | 1-2 | 2-3 | 3 | 3-4 | 4-5 | 5-6 | 6-7 | 7-9 | 10 |
-| dot | Damage over Time +N% | prefix | jewel, other, weapon | 4-7 | 7-11 | 10-15 | 14-20 | 18-26 | 23-32 | 29-39 | 36-48 | 60 |
-| attackspeed | Attack Speed +N% | suffix | weapon (weight 20, was 8) | 2-3 | 3-4 | 4-6 | 5-7 | 7-9 | 9-11 | 11-13 | 13-15 | 15 |
-| gearspeed | Attack Speed +N% (worn: player bonus, patch 0078) | suffix | jewel, other (weight 16) | 1 | 1-2 | 2 | 2-3 | 3-4 | 3-5 | 4-6 | 5-7 | 10 |
-| movespeed | Movement Speed +N% | suffix | boots | 2-3 | 3-4 | 4-5 | 5-7 | 6-8 | 8-10 | 9-11 | 10-12 | 12 |
-| lifeonkill | Life on Kill +N | suffix | helmet, jewel, weapon | 4-9 | 9-18 | 18-36 | 36-70 | 60-100 | 85-150 | 120-200 | 160-260 | 300 |
-| manaonkill | Mana on Kill +N | suffix | helmet, jewel, weapon | 2-5 | 5-10 | 10-20 | 20-40 | 35-65 | 50-95 | 80-130 | 110-170 | 200 |
-| lifeonhit | Health on Hit +N | suffix | jewel, other, weapon | 2-4 | 4-7 | 5-11 | 9-16 | 13-23 | 18-32 | 25-45 | 36-63 | 120 |
-| manaonhit | Mana on Hit +N | suffix | jewel, other, weapon | 2 | 2-4 | 4-7 | 5-11 | 9-14 | 13-21 | 18-29 | 25-40 | 80 |
-| regen | Health Regeneration +N per Second | suffix | armor, helmet, jewel, legs, shield | 2-4 | 4-7 | 7-12 | 11-18 | 16-26 | 23-36 | 32-48 | 44-70 | 120 |
-| experience | Experience +N% | suffix | helmet, jewel | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 8-11 | 15 |
-| goldfind | Gold Find +N% | suffix | helmet, jewel, legs, other | 2-5 | 4-7 | 5-10 | 7-14 | 11-18 | 14-23 | 19-28 | 24-34 | 40 |
-| itemfind | Item Find +N% | suffix | helmet, jewel | 2 | 2-3 | 3-5 | 4-7 | 5-10 | 7-13 | 10-16 | 13-19 | 25 |
-| rarityfind | Rarity Find +N% | suffix | helmet, jewel | 2-5 | 4-7 | 5-10 | 9-14 | 11-18 | 14-23 | 19-28 | 24-34 | 40 |
+| bleedchance | Chance to Bleed +N% | prefix | other, quiver, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
+| ignitechance | Chance to Ignite +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
+| poisonchance | Chance to Poison +N% | prefix | other, quiver, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
+| chillchance | Chance to Chill +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
+| shockchance | Chance to Shock +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
+| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
+| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
+| execute | Executes Monsters below N% Health | prefix | weapon (does not stack) | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | none |
+| dot | Damage over Time +N% | prefix | jewel, other, weapon | 7-11 | 12-13 | 14-15 | 16-17 | 18-19 | 20-21 | 22-23 | 24-26 | none |
+| attackspeed | Attack Speed +N% | suffix | weapon | 5-7 | 8-10 | 11-13 | 14-16 | 17-19 | 20-22 | 23-25 | 26-27 | none |
+| gearspeed | Attack Speed +N% | suffix | other | 5-6 | 7-8 | 9-10 | 11 | 12 | 13 | 14-15 | 15-16 | none |
+| movespeed | Movement Speed +N% | suffix | boots | 10 | 13 | 16 | 20 | 24 | 28 | 32 | 35 | none |
+| lifeonkill | Life on Kill +N | suffix | helmet, jewel, quiver, weapon | 4-9 | 12-20 | 25-40 | 50-80 | 90-140 | 150-220 | 230-320 | 330-430 | none |
+| manaonkill | Mana on Kill +N | suffix | helmet, jewel, quiver, weapon | 2-5 | 6-10 | 12-20 | 25-40 | 45-65 | 70-100 | 105-145 | 150-195 | none |
+| lifeonhit | Health on Hit +N | suffix | quiver, weapon | 2-4 | 6-10 | 12-20 | 24-36 | 40-55 | 60-78 | 82-100 | 104-119 | none |
+| manaonhit | Mana on Hit +N | suffix | quiver, weapon | 1-2 | 3-5 | 6-10 | 12-18 | 20-28 | 30-39 | 41-50 | 52-60 | none |
+| regen | Health Regeneration +N per Second | suffix | armor, legs, shield | 9-11 | 19-23 | 39-45 | 89-105 | 153-180 | 267-313 | 433-508 | 595-697 | none |
+| experience | Experience +N% | suffix | jewel | 1 | 1 | 1-2 | 1-2 | 2 | 2-3 | 2-3 | 3 | none |
+| goldfind | Gold Find +N% | suffix | helmet, jewel, legs, other (left the roll pool) | 2-5 | 4-7 | 5-10 | 7-14 | 11-18 | 14-23 | 19-28 | 24-34 | 40 |
+| itemfind | Item Find +N% | suffix | helmet, jewel (left the roll pool) | 2 | 2-3 | 3-5 | 4-7 | 5-10 | 7-13 | 10-16 | 13-19 | 25 |
+| rarityfind | Rarity Find +N% | suffix | boots, helmet, jewel | 6-10 | 11-12 | 13-14 | 15-16 | 17-18 | 19 | 20 | 21-26 | none |
 | healing | Healing Done +N% | suffix | jewel, shield, weapon | 2 | 2-3 | 3-5 | 5-8 | 7-10 | 9-13 | 11-15 | 13-18 | 20 |
 | goblinchance | Treasure Goblin Chance +N% | suffix | helmet, jewel | 9-15 | 15-23 | 21-30 | 27-41 | 33-50 | 42-60 | 53-75 | 68-90 | 100 |
-| cdr | Cooldown Reduction +N% | suffix | helmet, jewel, other | 2-3 | 3-4 | 4-6 | 6-8 | 8-10 | 9-12 | 11-14 | 13-16 | 20 |
-| manacost | Mana Cost Reduction +N% | suffix | armor, helmet, jewel | 2-3 | 3-5 | 5-7 | 7-10 | 9-12 | 11-15 | 14-18 | 17-21 | 25 |
+| cdr | Cooldown Reduction +N% | suffix | helmet, jewel, other | 6-8 | 8-10 | 10-12 | 12-14 | 14-15 | 15-16 | 16-18 | 18-20 | none |
+| manacost | Mana Cost Reduction +N% | suffix | armor, helmet, jewel (left the roll pool) | 2-3 | 3-5 | 5-7 | 7-10 | 9-12 | 11-15 | 14-18 | 17-21 | 25 |
+| lifeleech | Life Leech +N% | suffix | helmet, jewel, other | 2-4 | 5 | 6 | 7 | 8 | 8 | 9 | 10-12 | none |
+| lifeleechw | Life Leech with Weapon +N% | suffix | weapon | 20-24 | 25-26 | 27-28 | 29-30 | 31-32 | 33 | 34 | 35-45 | none |
+| manaleech | Mana Leech +N% | suffix | helmet, jewel, other | 2-4 | 5 | 5 | 5 | 6 | 6 | 6 | 6-8 | none |
+| manaleechw | Mana Leech with Weapon +N% | suffix | weapon (not below T4) | 26-32 | 26-32 | 26-32 | 26-32 | 26-32 | 26-32 | 26-32 | 26-32 | none |
+| maxlife | Maximum Life +N | prefix | armor, boots, helmet, jewel, legs, shield | 3-6 | 7-12 | 14-24 | 36-60 | 88-130 | 198-260 | 469-560 | 693-748 | none |
+| maxmana | Maximum Mana +N | prefix | armor, helmet, jewel | 6 | 18-19 | 41-43 | 97-103 | 185-197 | 301-319 | 523-555 | 704-747 | none |
+| manaregen | Mana Regeneration +N% | suffix | helmet, jewel | 10-19 | 20-26 | 27-33 | 34-40 | 41-47 | 48-53 | 54-59 | 60-69 | none |
+| strength | Strength +N | suffix | armor, boots, helmet, jewel, legs, shield | 2-4 | 5-6 | 7-8 | 9-10 | 11-12 | 13-14 | 15-16 | 17-18 | none |
+| dexterity | Dexterity +N | suffix | armor, boots, helmet, jewel, legs, shield | 2-4 | 5-6 | 7-8 | 9-10 | 11-12 | 13-14 | 15-16 | 17-18 | none |
+| intelligence | Intelligence +N | suffix | armor, boots, helmet, jewel, legs, shield | 2-4 | 5-6 | 7-8 | 9-10 | 11-12 | 13-14 | 15-16 | 17-18 | none |
+| spelldamage | Spell Damage +N% | prefix | weapon | 4-7 | 8-11 | 12-15 | 16-19 | 20-24 | 25-29 | 30-33 | 34-38 | none |
+| weapondamage | Weapon Damage +N% | prefix | weapon | 13-16 | 19-22 | 25-28 | 32-35 | 39-42 | 45-48 | 51-54 | 57-60 | none |
 
 **How the new ones work** (`item_mods.lua`; all through the same totals and caps as the others):
 - *Ailments* (bleed physical, ignite fire, poison earth): on every hit of yours on a monster the chance rolls; a hit
@@ -13252,6 +13278,63 @@ no cooldowns): Soulward 150 mana / 40000 ms bare; with a helmet of T8 Cooldown R
 (the tooltip and the Codex tier table agree) 131 mana / 36000 ms on the cooldown condition, and Banner Call 250 -> 218 mana,
 35000 -> 31500 ms, the 31500 also in the client's spell cooldown; the group cooldown stayed 2000 ms.
 
+**Equipment modifiers version 2 (O461, 2026-11-10, owner: new ladders and roll rules, as closely as the engine allows;
+"for now forget our tests and the caps we put, the DPS tests and the class objectives, I want to see how everything ends up").**
+Stage 1 changed the offence, sustain, speed and utility rows, the roll rules, quality and added modifiers; the defence rows
+and the combat order are stage 2. The balance models (class DPS, survival, boss, pack, tower, guardian, PvP, minion ...) do
+not read gear modifiers, so none of them moved and none was re-tuned; real power moved (see docs/BUILDS.md and the report
+in `docs/drafts/`). What changed:
+- *Roll rules*: every tier the item level allows rolls with equal weight (`tierWindow` is gone), `tierLevels` 1, 15, 30, 50,
+  70, 90, 110, 130, ranges never overlap and narrow upward, a modifier may have its own tier gate (`minTier`).
+- *Caps*: the module cap of every stage 1 row is gone (`cap = nil`, `M.totals` only clamps a row that has one). The caps
+  of other configs stay: `playerSpeedCap` 45, the supports cap 30 and the 1000 ms cooldown floor, `itemFindMaxPercent`
+  300, the goblin spoor cap, the absorb ceiling 75, the engine's 333 ms / 76% attack speed rules, the gems' caps.
+- *Quality* no longer multiplies a modifier. It multiplies the base bonus `ChaosCrafting.applyBaseBonus` writes (the attack,
+  defence and armour a rarity adds on top of the item type's own) by (100 + quality) / 100, rounded, never below the
+  bonus (`C.qualityBonus`); a Whetstone moves the attack, defence and armour by the change (`C.setQuality`), a Whetstone
+  refuses an item without any of the three ("needMods"). Caps 20 and 30 (Divine) stay.
+- *Rows* (ranges in the table above): attack speed 5-7 .. 26-27; worn attack speed (badge only) and bow speed 5-6 .. 15-16;
+  movement speed fixed 10 .. 35; ailment chances 18-21 .. 50-55; Execute fixed 10 at every tier and **does not stack** (the
+  highest worn value counts: `def.stack = "max"` in `M.totals`); damage over time 7-11 .. 24-26; life and mana on kill and
+  on hit follow the new ladders (health and mana on hit on weapons only); Health Regeneration (armor, legs, shield) is
+  3.5% to 4.1% of the median health of level 1000 at T8 and the same share of the median health of the level where a normal
+  drop first reaches the tier below (T1 9-11, T8 595-697 per second); Experience on jewels only, 1 .. 3; Rarity Find on
+  helmets, jewels and boots 6-10 .. 21-26; Cooldown Reduction 6-8 .. 18-20; bow critical chance 2-3 .. 8-9, the arrow
+  elements 5-10 .. 43-50. Gold Find, Item Find and Mana Cost Reduction left the roll pool (`noRoll`) and stay valid keys
+  (uniques, item sets, veiled modifiers, charms, factions, raid rewards) under their old caps.
+- *Critical Strike Chance and Critical Strike Damage* are two independent engine modifiers (above).
+- *Life and mana leech* are Lua modifiers `lifeleech`, `lifeleechw` (weapon), `manaleech`, `manaleechw` (weapon, not below
+  T4): a share of the damage a hit of yours deals, healed at once with no chance roll; the value is in tenths of a percent
+  (`4` shows as "0.4%"). The weapon's own modifier counts the hits of weapon attacks (melee, ranged, wand), the other every hit;
+  damage over time does not leech. All of them together give back at most `config.leech.maxPct` (20%) of the maximum
+  health (mana) per second per player (`M.leechLimit`, a window of `windowMs`); the part of a point a hit cannot give is
+  carried to the next hit (`M.leechGain`). The tree's leech stays the engine pair.
+- *New modifiers* (all Lua, all with a name word, a client help line, a Codex page and a pt-BR text): Maximum Life and
+  Maximum Mana (flat, one `CONDITION_ATTRIBUTES` each, sub ids 7222 / 7223, the way the tree's vitality and spirit
+  work), Mana Regeneration (percent more of the vocation's own mana regeneration, in the 3 s equipment check), Strength,
+  Dexterity and Intelligence (written to `ChaosPassiveCache[id].gearStrength ...`, which `ChaosPassivePoints` adds to the
+  tree's points in the same curves), Spell Damage (wands and rods only, `def.needs = "cast"`: added to the increment of a
+  spell or wand hit before the tree's soft cap) and Weapon Damage (weapons that hit with an attack value only,
+  `def.needs = "attack"`: the weapon's own attack attribute, `M.syncWeaponDamage`, the attack before kept in `chaos_wdbase`).
+- *Version mark and upgrade.* Every rolled item carries `chaos_modv = 2`. An item with a rarity, modifiers and no mark is
+  upgraded in place the first time it is read (`ChaosCrafting.readMods`, `ChaosItemMods.read`, so totals, tooltips,
+  orbs, the market) or moved (`item_mods.lua` onItemMoved), once (`ChaosCrafting.upgradeItem`): each modifier with a
+  stored tier keeps its tier and its place in the range (a value 40% of the way up the version 1 range is 40% of the
+  way up the new one: `C.remapValue`); the quality share is taken off (the stored `cv_` value, else the quality divided
+  out) and moves to the base bonus; a critical pair becomes the two modifiers at the pair's tier (a bound pair binds both),
+  a leech pair becomes the Lua modifier of the item's kind (the weapon's own on a weapon) at the same tier, the engine
+  attributes of the pair removed; the item may end with one modifier more than its rarity allows; rows that left the pool
+  (Gold Find, Item Find, Mana Cost Reduction, six professions) and modifiers without a stored tier (before 2026-10-18)
+  keep their numbers; the description is written again. **Never upgraded** (`C.hasFixedValues`): uniques and set pieces
+  (`chaos_unique`, `chaos_set`, a spec name), the vendor gear of the raid (`chaos_raid`) and the factions
+  (`chaos_faction`), store-bound and store items. Vendor gear made after the change is written with the middle of the
+  new range of its tier (`factions_config.lua`, `raid_config.lua`), the two helmets that had Health Regeneration (not on a
+  helmet any more) carry Maximum Life instead.
+- *Other config follow-ups*: the Void Orb's implicit pools lost Mana Cost Reduction, the crafted gear's item level maximum
+  is 89 (it must stay under the T6 gate, now 90), the charms' `gearRef` of Life and Mana on Kill follow the new T8 tops,
+  the keystone speed rule counts the boots' top 35, `tools/crit_reach.lua` models the two critical modifiers on the five
+  slots that carry them, the Codex data keeps `tierWindow` as the number of tiers (both clients read it).
+
 **Skipped on purpose**: none of the approved stats were dropped. Not done: mana-shield damage (dodge, block, reflect and the
 reduction act on health damage only), and a stat that adds the ailment chance to spells that deal no damage to the target
 (the chance needs a damaging hit).
@@ -13270,8 +13353,9 @@ Salvage yields `floor(base x (1 + 0.5 x item level / 150))` shards plus one per 
 they fit, `M.equippedItems`) are worked out again when an item is put on or taken off (EventCallback onItemMoved, after
 base_rarity), at login, on level up (speed) and by a check every 3 s (each player every 3 s; the players are checked in
 12 groups by id, one group every 250 ms, see "Game loop stalls"). They live in memory (`ChaosItemModsCache`), capped per
-modifier; nothing is written to storages. `ChaosItemMods.playerBonus(player, key)` is the API (loot.lua reads item and rarity
-find with it).
+modifier that still has a cap (O461: most rows have none); nothing is written to storages (the maximum life and mana
+conditions and the tree's gear numbers are rebuilt from the items). `ChaosItemMods.playerBonus(player, key)` is the API
+(loot.lua reads item and rarity find with it).
 
 **Drops and the engine's pass.** The engine rolls the rarity of corpse items in `Monster::dropLoot` after every Lua
 callback, only for items whose `rarity` attribute is a number. The loot layer forges the item first (step 2b) and stores
