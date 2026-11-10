@@ -40,8 +40,8 @@
 		</defense>
 	</defenses>
 	<elements>
-		<element physicalPercent="55"/>
-		<element firePercent="55"/>
+		<element physicalPercent="40"/>
+		<element firePercent="40"/>
 		<element icePercent="35"/>
 		<element earthPercent="35"/>
 		<element deathPercent="35"/>

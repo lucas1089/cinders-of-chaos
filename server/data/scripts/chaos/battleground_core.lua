@@ -29,14 +29,22 @@ function K.seasonLength(cfg)
 	return cfg.season.weeks * WEEK
 end
 
+-- the epoch (unix time) of PvP season 1, or nil while the launch date is open (O463: battleground_config.lua has no epoch)
 function K.epoch(cfg)
 	local e = cfg.season.epoch
+	if not e then
+		return nil
+	end
 	return os.time({year = e.year, month = e.month, day = e.day, hour = e.hour or 0, min = 0, sec = 0})
 end
 
--- season id (1, 2, ...) of time `now`, its start and its end. Before the epoch it is season 1 (not started yet).
+-- season id (1, 2, ...) of time `now`, its start and its end. Before the epoch it is season 1 (not started yet). With no epoch
+-- (the launch date is open) it is season 1 with no start and no end: nothing counts down.
 function K.seasonOf(cfg, now)
 	local epoch, len = K.epoch(cfg), K.seasonLength(cfg)
+	if not epoch then
+		return 1, nil, nil
+	end
 	local id = max(1, floor((now - epoch) / len) + 1)
 	local start = epoch + (id - 1) * len
 	return id, start, start + len

@@ -121,6 +121,13 @@ S.MODS = {
   swift        = 'Swift: moves faster.',
   explosive    = 'Explosive: explodes on death (5% of its health, 2 tiles).',
   juggernaut   = 'Juggernaut: 60% more health.',
+  emberforged  = 'Emberforged: adds 50% of its physical hits as fire damage.',
+  frostforged  = 'Frostforged: adds 50% of its physical hits as ice damage.',
+  stormforged  = 'Stormforged: adds 50% of its physical hits as energy damage.',
+  plated       = 'Plated: takes 50% less physical damage.',
+  resistant    = 'Resistant: resists one element by 75%.',
+  ruthless     = 'Ruthless: 20% of its hits are critical and deal 150% damage.',
+  bulwark      = 'Bulwark: 50% of weapon hits against it deal no damage.',
 }
 
 function S.mod(name)

@@ -150,6 +150,9 @@ local function lastSend(p, action)
 end
 
 -- ---------------------------------------------------------------- load
+-- the shipped launch is "open" (O463): the flow runs on an example launch; the open state of the season panel is checked below
+local LAUNCH = dofile("data/scripts/chaos/launch_core.lua")
+LAUNCH.override = {launch = "2031-03-14 18:00"}
 dofile("data/scripts/chaos/chaos_constants.lua")
 Chaos.sendChunked = function(p, op, payload) p.sends[#p.sends + 1] = payload; return true end
 local cosmetics = {}
@@ -159,6 +162,7 @@ local records = {}
 ChaosLeaderboard = {record = function(board, who, value, mode) records[#records + 1] = {board, who.name, value, mode} end}
 dofile("data/scripts/chaos/arena_season.lua")
 dofile("data/scripts/chaos/battleground.lua")
+LAUNCH.override = nil
 local B, K, cfg, PS = ChaosBattleground, ChaosBattlegroundCore, Chaos.battlegroundConfig, ChaosPvpSeason
 eq(ChaosOpcodes.battleground, 200, "opcode registered")
 local health, prepare = events.ChaosBgHealth, events.ChaosBgPrepareDeath
@@ -207,6 +211,16 @@ local st = B.stateOf(solos[3])
 check(st.queue and st.queue.players == 10 and st.queue.est >= 1, "state: queued, 10 in the group, an estimate")
 eq(st.bracket.key, "b2", "bracket b2")
 check(st.season and st.season.brackets.bg and st.season.brackets.bg.placementLeft == 5, "season view: 5 placement matches")
+check(type(st.season.endsIn) == "number", "set: the season panel counts down to the end")
+do -- the launch is open: no epoch, season 1, no end to count down to
+  local epoch = cfg.season.epoch
+  cfg.season.epoch = nil
+  local open = B.stateOf(solos[3])
+  eq(open.season.id, 1, "open: season 1")
+  eq(open.season.endsIn, nil, "open: no end, no countdown")
+  check(open.season.brackets.bg and open.season.brackets.bg.placementLeft == 5, "open: the ratings still work")
+  cfg.season.epoch = epoch
+end
 eq(#st.vendor, #cfg.vendor, "the vendor offers")
 check(B.isBusy(solos[1]), "busy for the arena")
 

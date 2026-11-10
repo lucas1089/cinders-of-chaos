@@ -273,7 +273,7 @@ local cfg = {
 			}
 		},
 		-- >>> Founder Pack (O322, owner 2026-10-29): two time-limited packs of cosmetics that never return, one per account and
-		-- tier, sold only from 2026-11-20 15:00 to 2026-12-18 15:00 (server time); offers, prices, dates and texts live in
+		-- tier, sold only from the launch to four weeks later (launch_config.lua, O463; not on sale while the launch is open, server time); offers, prices, dates and texts live in
 		-- founder_config.lua. The category is hidden outside the window (offer availableFrom / availableUntil, shop.lua).
 		-- It stays second: tools/store_model.lua reads the Starter packs as categories[1].
 		dofile("data/scripts/chaos/founder_config.lua").store.pack,

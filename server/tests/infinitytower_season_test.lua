@@ -9,7 +9,18 @@ setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
 end})
 loadstring = loadstring or load
-dofile("data/scripts/chaos/chaos_constants.lua")
+-- the shipped launch is "open" (O463): the epoch maths run on an example launch, the open state is tested in its own block
+local LAUNCH = dofile("data/scripts/chaos/launch_core.lua")
+-- chaos_constants.lua is idempotent (it returns when Chaos exists): drop Chaos to load it again under another launch value
+local function loadConstants(override)
+	LAUNCH.override = override
+	Chaos = nil
+	dofile("data/scripts/chaos/chaos_constants.lua")
+	return Chaos.tower
+end
+local cfgOpen = loadConstants({launch = "open"})
+loadConstants({launch = "2031-03-14 18:00"})
+LAUNCH.override = nil
 dofile("data/scripts/chaos/infinitytower_core.lua")
 local K = ChaosTowerCore
 local cfg = Chaos.tower
@@ -68,10 +79,24 @@ do
 	eq(finish, 1000000 + L, "and it ends 30 days after the epoch")
 	-- the configured epoch is a table in server local time
 	local e = K.epoch(cfg)
-	eq(e, os.time({year = 2026, month = 11, day = 20, hour = 15, min = 0, sec = 0}), "epoch table: the launch")
-	eq(os.date("%Y-%m-%d %H:%M", e), "2026-11-20 15:00", "launch date")
+	eq(e, os.time({year = 2031, month = 3, day = 14, hour = 18, min = 0, sec = 0}), "epoch table: the launch value")
+	eq(os.date("%Y-%m-%d %H:%M", e), "2031-03-14 18:00", "launch date (the epoch keeps the hour, not the minute)")
 	eq(K.epoch({seasonEpoch = 1735689600}), 1735689600, "a unix number still works")
 	eq((K.seasonOf(cfg, e + 45 * 86400)), 2, "45 days after the launch: season 2")
+end
+
+-- ---------------------------------------------------------------- the launch is open (O463): season 1, no end, nothing counts down
+do
+	eq(cfgOpen.seasonEpoch, nil, "open: the shipped config has no epoch")
+	eq(K.epoch(cfgOpen), nil, "open: K.epoch is nil")
+	for _, when in ipairs({0, 1000000, os.time(), 4102444800}) do
+		local s, start, finish = K.seasonOf(cfgOpen, when)
+		eq(s, 1, "open: season 1 at any time")
+		eq(start, nil, "open: no start") eq(finish, nil, "open: no end")
+	end
+	-- no ended season to pay out while it is open
+	eq(K.pendingSeasons(nil, (K.seasonOf(cfgOpen, os.time()))), nil, "open: a new server pays nothing")
+	eq(#(K.pendingSeasons(0, (K.seasonOf(cfgOpen, os.time()))) or {1}), 0, "open: season 1 is not over, nothing to pay")
 end
 
 -- ---------------------------------------------------------------- ranking and ties

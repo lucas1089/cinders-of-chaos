@@ -252,6 +252,14 @@ for f, fix in tune.fire_resist_files():
     if fix(open(f, encoding='utf-8', errors='ignore').read())[1]:
         fail(f'{f}: fire immunity; run server/tools/tune_monsters.py (a fire resistance of {tune.fire.FIRE_RESIST_PERCENT}% instead)')
 
+# resistance caps (O462, server/tools/patch_monster_resists.py): a normal monster's element percent is at most 40, a boss's 75,
+# no immunity to a damage type, the flat 30 on seven types thinned to three. tune_monsters.py applies it to these files.
+for f, _ in tune.fire_resist_files():
+    fix = tune.resists.xml if f.endswith('.xml') else tune.resists.lua
+    if fix(open(f, encoding='utf-8', errors='ignore').read())[0] != open(f, encoding='utf-8', errors='ignore').read():
+        fail(f'{f}: resistance above the cap (normal {tune.resists.CAP_NORMAL}, boss {tune.resists.CAP_BOSS}), an immunity or a flat 30 '
+             f'on seven types; run server/tools/tune_monsters.py')
+
 # experience > 0 but no loot on purpose: adds and bosses whose system pays the rewards (uber.lua, guildboss.lua,
 # raid.lua). Experience 0 (summons, pets, goblins, wardens) needs no entry. Every other monster needs a loot item.
 LOOTLESS_OK = {'bloodmoon thrall', 'cinderspawn', 'hollow wraith', 'storm shard',      # uber.lua adds

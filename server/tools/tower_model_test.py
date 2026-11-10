@@ -55,11 +55,14 @@ check(cfg['limits']['reachMin'] == 30 and cfg['limits']['reachMax'] == 46, 'a le
 
 # ---- the tiers
 hp, cnt, mod = T.tier_info()
-check(hp == {'magic': 2.0, 'rare': 3.5, 'legendary': 6.0}, 'the stock tier health is read from monster_tiers.lua: %s' % hp)
+check(hp == {'magic': 2.48, 'rare': 4.9, 'legendary': 7.98}, 'the stock tier health is read from monster_tiers.lua (O462): %s' % hp)
 check(cnt == {'magic': 1.5, 'rare': 2.5, 'legendary': 3.5}, 'modifier counts: %s' % cnt)
 check(1.0 < mod < 1.4, 'the average modifier adds health: %.3f' % mod)
 check(abs(T.tier_factor((0, 0, 0), (hp, cnt, mod)) - 1.0) < 1e-9, 'no tiers: factor 1')
-check(T.tier_factor((1, 0, 0), (hp, cnt, 1.0)) == 2.0, 'all magic without modifiers: x2')
+check(abs(T.tier_factor((1, 0, 0), (hp, cnt, 1.0)) - 2.48) < 1e-9, 'all magic without modifiers: x2.48')
+# O462: the modifiers of the defence layer have no health field; they are left out of the average, not counted as 1.0
+# (the average is that of the 13 older modifiers: Stoneskin 1 / 0.7 and Juggernaut 1.6, the rest 1.0)
+check(abs(mod - (11 + 1 / 0.7 + 1.6) / 13) < 1e-9, 'the average leaves the defence layer modifiers out: %.4f' % mod)
 check(T.tier_info(cfg)[0] == cfg['tierHealth'] and cfg['tierHealth']['legendary'] < 6.0, 'the tower tier health replaces the stock one')
 
 # ---- the planner of 2026-10-22: the beta report (with the C4 numbers of its day: O444 moved the live frame to class_dps_model.py)

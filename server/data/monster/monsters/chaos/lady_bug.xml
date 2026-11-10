@@ -27,6 +27,7 @@
 	</attacks>
 	<defenses armor="38" defense="38" />
 	<elements>
+		<element earthPercent="40"/>
 		<element physicalPercent="-15"/>
 		<element holyPercent="-15"/>
 		<element firePercent="20"/>
@@ -35,7 +36,6 @@
 		<element deathPercent="10"/>
 	</elements>
 	<immunities>
-		<immunity earth="1" />
 		<immunity invisible="1" />
 	</immunities>
 	<voices interval="5000" chance="10">

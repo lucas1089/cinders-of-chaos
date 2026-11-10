@@ -43,17 +43,36 @@ function S.toUnix(v, hour)
 	return v
 end
 
--- start, finish (unix) of a season; the overrides of /season start|end win
+-- start, finish (unix) of a season; the overrides of /season start|end win. A season with no date (season.open, the launch is
+-- open, O463) has no start until /season start gives it one; with no finish it then runs season.lengthDays days.
 function S.times(season, ov)
 	local o = ov and ov[season.id] or {}
 	local start = o.start or S.toUnix(season.start, season.hour or 0)
 	local finish = o.finish or S.toUnix(season.finish, season.hour or 0)
+	if start and not finish and tonumber(season.lengthDays) then
+		finish = start + math.floor(season.lengthDays) * 86400
+	end
 	return start, finish
 end
 
--- "upcoming" | "active" | "ended" (a season with broken dates is "ended": it never runs)
+-- the finish a season would get if it were started at `at` (unix): the overrides and the config finish win, else at + lengthDays.
+-- /season start and the admin action refuse a season that would be over at once.
+function S.finishIfStarted(season, at, ov)
+	local o = ov and ov[season.id] or {}
+	local finish = o.finish or S.toUnix(season.finish, season.hour or 0)
+	if not finish and tonumber(season.lengthDays) then
+		finish = at + math.floor(season.lengthDays) * 86400
+	end
+	return finish
+end
+
+-- "upcoming" | "active" | "ended" | "soon" (a season with broken dates is "ended": it never runs; "soon" = no date yet, the
+-- launch is open: it does not start by itself and it is not broken)
 function S.status(season, now, ov)
 	local start, finish = S.times(season, ov)
+	if season.open and not start then
+		return "soon"
+	end
 	if not start or not finish or finish <= start then
 		return "ended"
 	end
@@ -88,6 +107,16 @@ function S.upcoming(seasons, now, ov)
 		end
 	end
 	return best
+end
+
+-- the first season that has no date yet (the launch is open), or nil
+function S.soon(seasons, now, ov)
+	for _, s in ipairs(seasons or {}) do
+		if S.status(s, now, ov) == "soon" then
+			return s
+		end
+	end
+	return nil
 end
 
 function S.byId(seasons, id)
@@ -444,7 +473,7 @@ function S.uniqueAllowed(uniqueSeason, ownerRealm, now, seasons, ov)
 	if st == "ended" then
 		return true
 	end
-	if st == "upcoming" then
+	if st == "upcoming" or st == "soon" then
 		return false
 	end
 	return ownerRealm == s.id

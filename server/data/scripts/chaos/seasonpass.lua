@@ -106,6 +106,10 @@ function SP.shown()
 	if nxt and cfg.passes[nxt.id] then
 		return nxt, "upcoming"
 	end
+	local soon = ChaosSeason.soon(seasonCfg().seasons, t, ov) -- the launch is open (O463): no date yet
+	if soon and cfg.passes[soon.id] then
+		return soon, "soon"
+	end
 	return nil, nil
 end
 

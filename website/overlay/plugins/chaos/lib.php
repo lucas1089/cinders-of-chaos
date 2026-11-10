@@ -892,7 +892,11 @@ function chaos_season_time($value, int $hour): int {
 	return $v;
 }
 
-/** The seasons of season_config.lua, with the /season start|end overrides of server_config. */
+/**
+ * The seasons of season_config.lua, with the /season start|end overrides of server_config. While the launch date is open
+ * (launch_config.lua, O463) Season 1 has no start and no finish: start and finish are 0 and `soon` is true (no date to print);
+ * a /season start override then runs it `length` days (lengthDays), like season_core.lua.
+ */
 function chaos_seasons(): array {
 	$text = chaos_read_server_file('scripts/chaos/season_config.lua');
 	$seasons = array();
@@ -903,12 +907,30 @@ function chaos_seasons(): array {
 		}
 		$hour = (int)(chaos_lua_field($entry, 'hour') ?? 0);
 		$mod = chaos_lua_block($entry, 'modifier');
+		// a date that follows the one launch value (O463): `start = LC.ymd(0)`, `finish = LC.ymd(91)`, `hour = LC.hour()`: the
+		// launch day plus that many days, at the launch hour; nothing while the launch is open
+		$followStart = preg_match('/\bstart\s*=\s*\w+\.ymd\(\s*(-?\d+)\s*\)/', $entry, $fs) === 1 ? (int)$fs[1] : null;
+		$followFinish = preg_match('/\bfinish\s*=\s*\w+\.ymd\(\s*(-?\d+)\s*\)/', $entry, $ff) === 1 ? (int)$ff[1] : null;
+		$launchAt = null;
+		if ($followStart !== null || $followFinish !== null) {
+			require_once __DIR__ . '/launch_lib.php';
+			$launchAt = chaos_launch_config()['launch'];
+			$hour = $launchAt !== null ? (int)$launchAt->format('G') : $hour;
+		}
+		$at = static function (?DateTimeImmutable $launch, ?int $days) use ($hour): int {
+			if ($launch === null || $days === null) {
+				return 0;
+			}
+			return (int)$launch->modify(($days >= 0 ? '+' : '') . $days . ' days')->setTime($hour, 0)->getTimestamp();
+		};
 		$seasons[$id] = array(
 			'id'       => $id,
 			'name'     => (string)(chaos_lua_field($entry, 'name') ?? ('Season ' . $id)),
 			'tag'      => (string)(chaos_lua_field($entry, 'tag') ?? ('[S' . $id . ']')),
-			'start'    => chaos_season_time(chaos_lua_field($entry, 'start') ?? 0, $hour),
-			'finish'   => chaos_season_time(chaos_lua_field($entry, 'finish') ?? 0, $hour),
+			'start'    => $followStart !== null ? $at($launchAt, $followStart) : chaos_season_time(chaos_lua_field($entry, 'start') ?? 0, $hour),
+			'finish'   => $followFinish !== null ? $at($launchAt, $followFinish) : chaos_season_time(chaos_lua_field($entry, 'finish') ?? 0, $hour),
+			'length'   => (int)(chaos_lua_field($entry, 'lengthDays') ?? 0),
+			'soon'     => false,
 			'modifier' => $mod !== '' ? (string)(chaos_lua_field($mod, 'name') ?? '') : '',
 			'modifier_text' => $mod !== '' ? (string)(chaos_lua_field($mod, 'description') ?? '') : '',
 		);
@@ -919,6 +941,12 @@ function chaos_seasons(): array {
 				$seasons[(int)$m[1]][$m[2] === 'start' ? 'start' : 'finish'] = (int)$row['value'];
 			}
 		}
+	}
+	foreach ($seasons as $id => $s) {
+		if ($s['start'] > 0 && $s['finish'] <= 0 && $s['length'] > 0) {
+			$seasons[$id]['finish'] = $s['start'] + $s['length'] * 86400;
+		}
+		$seasons[$id]['soon'] = $seasons[$id]['start'] <= 0 && $seasons[$id]['finish'] <= 0;
 	}
 	ksort($seasons);
 	return $seasons;

@@ -679,14 +679,27 @@ Chaos.dungeons = {
 	}
 }
 
+-- the launch (launch_core.lua, O463). The server folder is the working directory; the client tests run from the
+-- repository root.
+local launchCore
+do
+	local ok, core = pcall(dofile, "data/scripts/chaos/launch_core.lua")
+	if not ok then
+		ok, core = pcall(dofile, "server/data/scripts/chaos/launch_core.lua")
+	end
+	launchCore = ok and core or dofile("data/scripts/chaos/launch_core.lua") -- fails with the real error
+end
+
 Chaos.tower = {
 	-- Season = fixed-length window counted from seasonEpoch (infinitytower_core.lua K.seasonOf): a unix time or
 	-- {year, month, day, hour} in server local time. Before the epoch it is season 1. The tower keeps its own 30-day
 	-- seasons (points, milestones and the ranking reset each one); the server Seasons (season_config.lua) are 13-week
-	-- realms with gaps that staff can start and end by hand, so they are not used here. The epoch is the launch
-	-- (docs/BETA.md: Fri 20 Nov 2026 15:00), so Tower Season 1 starts with the server (it was 2025-01-01, which made the
-	-- launch season 22). Changing it renumbers the seasons of chaos_tower_players: only on a wiped database.
-	seasonEpoch = {year = 2026, month = 11, day = 20, hour = 15},
+	-- realms with gaps that staff can start and end by hand, so they are not used here. The epoch is the launch (the one value
+	-- of launch_config.lua, O463), so Tower Season 1 starts with the server (it was 2025-01-01, which made the launch season
+	-- 22). While the launch is open there is no epoch: it is season 1 with no end (infinitytower_core.lua K.seasonOf), the
+	-- tower works as on the beta and no countdown is shown. Changing the epoch renumbers the seasons of chaos_tower_players:
+	-- only on a wiped database.
+	seasonEpoch = launchCore.parts(0),
 	seasonLengthDays = 30,
 	-- Season end (infinitytower.lua ChaosTower.checkSeasons; server/README.md "Infinity Tower season rewards"): the top
 	-- 3 of the ended season's ranking (best floor, then best time; equal floor and time share the place; staff and

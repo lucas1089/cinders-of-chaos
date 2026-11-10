@@ -47,6 +47,7 @@
 		</defense>
 	</defenses>
 	<elements>
+		<element earthPercent="75"/>
 		<element physicalPercent="25" />
 		<element firePercent="-25" />
 		<element energyPercent="20" />
@@ -55,7 +56,6 @@
 		<element deathPercent="30" />
 	</elements>
 	<immunities>
-		<immunity earth="1" />
 		<immunity paralyze="1" />
 		<immunity invisible="1" />
 		<immunity outfit="1" />

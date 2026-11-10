@@ -4,7 +4,7 @@
   "verify": [
     {
       "file": "docs/OWNER_TODO.md",
-      "has": "launch on 20 Nov 2026 at 15:00 (UTC-3)"
+      "has": "Launch date: on hold"
     },
     {
       "file": "docs/OWNER_TODO.md",
@@ -20,19 +20,19 @@
     },
     {
       "file": "docs/BETA.md",
-      "has": "Fri 20 Nov, 15:00"
+      "has": "Launch date: on hold"
     },
     {
-      "file": "docs/BETA.md",
-      "has": "Wed 18 Nov"
-    },
-    {
-      "file": "server/data/scripts/chaos/founder_config.lua",
-      "has": "local START = \"2026-11-20 15:00\""
+      "file": "server/data/scripts/chaos/launch_config.lua",
+      "has": "founderEnd = 28"
     },
     {
       "file": "server/data/scripts/chaos/founder_config.lua",
-      "has": "local END = \"2026-12-18 15:00\""
+      "has": "local START = LC.stamp(0)"
+    },
+    {
+      "file": "server/data/scripts/chaos/founder_config.lua",
+      "has": "local END = LC.stamp(LC.offset(\"founderEnd\"))"
     },
     {
       "file": "docs/OWNER_TODO.md",
@@ -44,23 +44,23 @@
     },
     {
       "file": "server/data/scripts/chaos/season_config.lua",
-      "has": "start = 20261120"
+      "has": "start = LC.ymd(0)"
     },
     {
       "file": "server/data/scripts/chaos/season_config.lua",
-      "has": "finish = 20270219"
+      "has": "finish = LC.ymd(91)"
     },
     {
       "file": "server/data/scripts/chaos/season_config.lua",
-      "has": "hour = 15"
+      "has": "lengthDays = 91"
     },
     {
       "file": "server/data/scripts/chaos/battleground_config.lua",
-      "has": "epoch = {year = 2026, month = 11, day = 20, hour = 15}"
+      "has": "epoch = dofile(\"data/scripts/chaos/launch_core.lua\").parts(0)"
     },
     {
       "file": "server/data/scripts/chaos/creator_codes_config.lua",
-      "has": "launchBonusStart = \"2026-11-20 15:00\""
+      "has": "launchBonusStart = dofile(\"data/scripts/chaos/launch_core.lua\").stamp(0)"
     }
   ],
   "events": [
@@ -104,29 +104,33 @@
       "id": "wipe",
       "kind": "wipe",
       "status": "plan",
-      "date": "2026-11-18",
+      "launchDays": -2,
       "time": "",
-      "endDate": "",
-      "endTime": "",
       "patchnote": "",
       "title": {
+        "pt-BR": "Wipe do beta e instalação de lançamento",
+        "en": "Beta wipe and launch install"
+      },
+      "titleOpen": {
         "pt-BR": "Wipe do beta e instalação de lançamento",
         "en": "Beta wipe and launch install"
       },
       "text": {
         "pt-BR": "Um único wipe completo entre o beta e o lançamento: todos os personagens e itens do beta são apagados. As regras do que fica e do que zera estão mais abaixo.",
         "en": "One full wipe between the beta and the launch: all beta characters and items are deleted. The rules for what stays and what resets are further down."
+      },
+      "textOpen": {
+        "pt-BR": "A data ainda não foi definida. Um único wipe completo entre o beta e o lançamento: todos os personagens e itens do beta são apagados, dois dias antes do lançamento. As regras do que fica e do que zera estão mais abaixo.",
+        "en": "The date is not set yet. One full wipe between the beta and the launch: all beta characters and items are deleted, two days before the launch. The rules for what stays and what resets are further down."
       }
     },
     {
       "id": "launch",
       "kind": "launch",
       "status": "confirmed",
-      "date": "2026-11-20",
-      "time": "15:00",
-      "endDate": "",
-      "endTime": "",
-      "patchnote": "2026-11-20",
+      "launchDays": 0,
+      "time": "launch",
+      "patchnote": "launch",
       "title": {
         "pt-BR": "Lançamento",
         "en": "Launch"
@@ -134,24 +138,31 @@
       "text": {
         "pt-BR": "Data confirmada pelo dono. Sai a nota de patch do lançamento e a Season 1 começa junto, no mesmo horário.",
         "en": "Date confirmed by the owner. The launch patch note goes out and Season 1 starts with it, at the same time."
+      },
+      "textOpen": {
+        "pt-BR": "A data do lançamento ainda não foi definida (decisão do dono, 10/11/2026). Quando sair, a nota de patch do lançamento e a Season 1 começam juntas, no mesmo horário.",
+        "en": "The launch date is not set yet (owner decision, 10 Nov 2026). When it is, the launch patch note goes out and Season 1 starts with it, at the same time."
       }
     },
     {
       "id": "founder",
       "kind": "sale",
       "status": "plan",
-      "date": "2026-11-20",
-      "time": "15:00",
-      "endDate": "2026-12-18",
-      "endTime": "15:00",
+      "launchDays": 0,
+      "endLaunchDays": "founderEnd",
+      "time": "launch",
       "patchnote": "",
       "title": {
         "pt-BR": "Pacote Fundador (venda limitada)",
         "en": "Founder Pack (limited sale)"
       },
       "text": {
-        "pt-BR": "Dois pacotes de cosméticos que nunca voltam, com título de Fundador, uma moldura de placa e dias de Chaos Pact. Um por conta e por pacote, só do lançamento até 18/12/2026 às 15:00. Sem poder, sem orbs de sorte, sem itens prontos.",
-        "en": "Two packs of cosmetics that never return, with a Founder title, a name plate frame and days of Chaos Pact. One per account and pack, sold only from the launch until 18 Dec 2026 at 15:00. No power, no luck orbs, no finished items."
+        "pt-BR": "Dois pacotes de cosméticos que nunca voltam, com título de Fundador, uma moldura de placa e dias de Chaos Pact. Um por conta e por pacote, só do lançamento até {founderEnd}. Sem poder, sem orbs de sorte, sem itens prontos.",
+        "en": "Two packs of cosmetics that never return, with a Founder title, a name plate frame and days of Chaos Pact. One per account and pack, sold only from the launch until {founderEnd}. No power, no luck orbs, no finished items."
+      },
+      "textOpen": {
+        "pt-BR": "Dois pacotes de cosméticos que nunca voltam, com título de Fundador, uma moldura de placa e dias de Chaos Pact. Um por conta e por pacote, em venda limitada a partir do lançamento. Ainda não está à venda: a janela sai com a data do lançamento. Sem poder, sem orbs de sorte, sem itens prontos.",
+        "en": "Two packs of cosmetics that never return, with a Founder title, a name plate frame and days of Chaos Pact. One per account and pack, in a limited sale from the launch. Not on sale yet: the window comes with the launch date. No power, no luck orbs, no finished items."
       }
     }
   ],
@@ -336,6 +347,14 @@
   },
   "open": [
     {
+      "id": "launch-date",
+      "whenOpen": true,
+      "text": {
+        "pt-BR": "Data do lançamento: a definir. O dono deixou o lançamento em aberto por enquanto (10/11/2026); o wipe do beta, o Pacote Fundador, a Season 1 e a temporada 1 de PvP seguem a data quando ela sair.",
+        "en": "Launch date: to be set. The owner left the launch open for now (10 Nov 2026); the beta wipe, the Founder Pack, Season 1 and PvP season 1 follow the date when it comes."
+      }
+    },
+    {
       "id": "season2",
       "text": {
         "pt-BR": "Nome, modificador e o que passa para a Season 2: a definir. As datas estão planejadas.",
@@ -361,6 +380,10 @@
     "text": {
       "pt-BR": "Começa no dia seguinte ao fim da Season 1. Nome, modificador e o que passa para ela ainda são a definir.",
       "en": "Starts the day after Season 1 ends. Its name, modifier and what carries into it are still to be set."
+    },
+    "textOpen": {
+      "pt-BR": "Começa no dia seguinte ao fim da Season 1, que ainda não tem data. Nome, modificador e o que passa para ela ainda são a definir.",
+      "en": "Starts the day after Season 1 ends, which has no date yet. Its name, modifier and what carries into it are still to be set."
     }
   }
 }

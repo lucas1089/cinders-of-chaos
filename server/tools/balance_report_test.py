@@ -138,6 +138,21 @@ def main():
         check([s['id'] for s in seasons] == [1, 2] and seasons[0]['name'] == 'Season of Ash', 'seasons read')
         start1 = int(time.mktime((2026, 11, 20, 15, 0, 0, 0, 0, -1)))
         check(seasons[0]['start'] == start1, 'YYYYMMDD at the hour, server local time')
+        # the launch date is open (O463): the shipped season config has no start and no finish (it reads the one launch value);
+        # the season is not a window, and a /season start override gives it lengthDays
+        ofile = os.path.join(tmp, 'season_open.lua')
+        with open(ofile, 'w') as f:
+            f.write('local LC = dofile("data/scripts/chaos/launch_core.lua")\nreturn {seasons = {{id = 1, name = "Season of Ash", tag = "[S1]",\n'
+                    '\t\topen = LC.isOpen() or nil, start = LC.ymd(0), finish = LC.ymd(91), lengthDays = 91, hour = LC.hour()}}}\n')
+        oseasons = br.read_seasons(ofile)
+        check(len(oseasons) == 1 and oseasons[0]['start'] is None and oseasons[0]['finish'] is None and oseasons[0]['length'] == 91,
+              'open: no dates, lengthDays read: ' + repr(oseasons))
+        owins = br.parse_windows(['sw\t1\t0\t0'], oseasons)
+        check(br.pick_season(owins, 'current', 4102444800) is None and br.due(owins, 4102444800, tmp, 30) == [],
+              'open: no window, nothing due')
+        owins = br.parse_windows(['sw\t1\t1800000000\t0'], oseasons)
+        check(owins[0]['finish'] == 1800000000 + 91 * 86400 and br.pick_season(owins, 'current', 1800000000 + 86400)['id'] == 1,
+              'open: a season started by hand runs lengthDays')
         wsql = br.windows_sql(seasons)
         check("`config` = 'chaos_season_1_end'" in wsql and 'UNION ALL' in wsql, 'the overrides in the windows query')
         early_end = start1 + 30 * 86400

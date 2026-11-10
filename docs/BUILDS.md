@@ -270,7 +270,7 @@ all 62 that hold one; the last keystone of any build arrives by 73 points.
 
 ## Keystone cap (O447)
 
-Owner decision of 2026-11-09: a character holds at most 3 keystones. The rule is in before the beta wipe of 2026-11-18,
+Owner decision of 2026-11-09: a character holds at most 3 keystones. The rule is in before the beta wipe (the launch date is on hold, 2026-11-10),
 so no refund event is needed beyond the login refund below. The number is `keystoneMax` in `passivetree_config.lua`.
 
 - **What counts.** Every node the tree data marks as a keystone, 38 nodes (44 since O449, 47 since O450). 24 archetype keystones (the three rounds), the

@@ -289,18 +289,18 @@ creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, 
 eq(sent and sent.data.level, nil, "monster bar: a failing level is left out")
 ChaosLoot, ChaosRift = nil, nil
 
--- the tier damages: a hit from the legendary is doubled (or more)
+-- the tier damages (O462): a hit from the legendary is x1.70 (or more: the modifiers multiply on top)
 local dmg = creatureEvents.ChaosTierHit.onHealthChange({isPlayer = function() return false end}, legend, -100, 1, 0, 1, 0)
-check(dmg <= -200, "natural roll: damage multiplier")
+check(dmg <= -170, "natural roll: damage multiplier")
 -- the mana shield part (manashield.lua): the same multiplier; the rest of a hit the mana event scaled stays as it is
 local tierShield = ChaosManaShield.providers.tiers
 local manaPart = tierShield.hit(player, legend, 100)
-check(manaPart and manaPart >= 200 and manaPart == -dmg, "mana shield part: the same multiplier")
+check(manaPart and manaPart >= 170 and manaPart == -dmg, "mana shield part: the same multiplier")
 local shieldTarget = {isPlayer = function() return false end, getId = function() return 8 end}
 ChaosManaShield.mark(8, legend:getId(), ChaosManaShield.now(), {"tiers"})
 eq(creatureEvents.ChaosTierHit.onHealthChange(shieldTarget, legend, -40, 1, 0, 1, 0), -40,
 	"the rest of a mana shield hit is not scaled again")
-check(creatureEvents.ChaosTierHit.onHealthChange(shieldTarget, legend, -40, 1, 0, 1, 0) <= -80, "the next hit is")
+check(creatureEvents.ChaosTierHit.onHealthChange(shieldTarget, legend, -40, 1, 0, 1, 0) <= -68, "the next hit is")
 
 -- ---------------------------------------------------------------- normal kills still bring ambushes after a roll
 setChance(0, 0, 0)
@@ -553,6 +553,34 @@ do
 	taken.onHealthChange(refl, hitter, -6, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
 	eq(#sent, 0, "reflective: a monster's hit and a 6 point hit reflect nothing")
 	doTargetCombatHealth = realDo
+end
+
+-- ---------------------------------------------------------------- the rank table (O462)
+-- health x2.48 / x4.90 / x7.98 (before: 2.0 / 3.5 / 6.0), damage x1.30 / x1.50 / x1.70 (before: 1.25 / 1.5 / 2.0)
+do
+	local want = {magic = {2.48, 1.30}, rare = {4.90, 1.50}, legendary = {7.98, 1.70}}
+	for tier, w in pairs(want) do
+		eq(ChaosTiers[tier].hp, w[1], "rank table: " .. tier .. " health")
+		eq(ChaosTiers[tier].damage, w[2], "rank table: " .. tier .. " damage")
+		-- a forced tier on a 1000 health monster: the health is x hp (x1.6 more with Juggernaut)
+		local m = Game.createMonster("Dragon", position(130, 100, 7), true, false)
+		check(ChaosApplyTier(m, tier), "rank table: " .. tier .. " applied")
+		local mods = state[m:getId()].mods
+		local juggernaut = false
+		for _, key in ipairs(mods) do
+			juggernaut = juggernaut or key == "juggernaut"
+		end
+		local expected = math.floor(1000 * w[1])
+		if juggernaut then
+			expected = math.floor(expected * 1.6)
+		end
+		check(math.abs(m.maxHealth - expected) <= 1, "rank table: " .. tier .. " health of a 1000 monster " .. m.maxHealth .. " ~ " .. expected)
+		-- the hit: no modifiers of its own, a 1000 hit on a creature that is no player
+		state[m:getId()].mods = {}
+		state[m:getId()]._set = nil
+		local v = creatureEvents.ChaosTierHit.onHealthChange({isPlayer = function() return false end}, m, -1000, 1, 0, 1, 0)
+		check(math.abs(v + 1000 * w[2]) <= 1, "rank table: " .. tier .. " hit " .. v .. " ~ " .. -1000 * w[2])
+	end
 end
 
 print(string.format("monster tiers tests: %d checks, %d failed", count, failures))

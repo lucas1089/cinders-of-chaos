@@ -2,7 +2,7 @@
 -- overview: server/README.md "Timezone guard (O439)".
 --
 -- The game reads the machine's LOCAL time (weekend, Founder Pack, Season 1, the creator launch bonus, the 06:00 save). The
--- launch is Fri 2026-11-20 15:00 Brasilia time (UTC-3), so a VPS left in UTC starts all of it 3 hours late. At the start the
+-- launch is at 15:00 Brasilia time (UTC-3; the date is launch_config.lua), so a VPS left in UTC starts all of it 3 hours late. At the start the
 -- server prints one line with the local time and the UTC offset, and a loud warning line when the offset is not the
 -- expected one. It never stops the server: a wrong zone is the owner's to fix (chaos-ctl.sh timezone set, then a restart).
 -- The offset comes from os.time and os.date("!*t"); a clock can be injected ({time = fn, date = fn}) so the tests need no

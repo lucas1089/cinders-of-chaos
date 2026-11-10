@@ -10,14 +10,15 @@ require_once __DIR__ . '/../i18n_lib.php';
 $GLOBALS['page_title'] = chaos_t('Calendar');
 
 $self = 'page?plugin=chaos&p=calendar';
-$data = chaos_calendar_data();
+$data = chaos_calendar_data(isset($GLOBALS['chaos_calendar_file']) ? (string)$GLOBALS['chaos_calendar_file'] : null); // the tests set the file
 $now = isset($GLOBALS['chaos_calendar_now']) ? (int)$GLOBALS['chaos_calendar_now'] : time(); // the tests set the clock
 $view = chaos_calendar_view($data, $now);
 $lang = chaos_lang();
 $tbd = chaos_t('To be set');
 $statusLabel = static function (string $status): string {
-	return $status === 'confirmed' ? chaos_t('Confirmed') : ($status === 'proposal' ? chaos_t('Proposed, to be confirmed') : chaos_t('Planned'));
+	return $status === 'confirmed' ? chaos_t('Confirmed') : ($status === 'proposal' ? chaos_t('Proposed, to be confirmed') : ($status === 'open' ? chaos_t('To be set') : chaos_t('Planned')));
 };
+$soonText = chaos_t('Coming soon');
 ?>
 <div class="chaos-page" id="chaos-calendar">
 	<div class="chaos-box">
@@ -46,7 +47,7 @@ $statusLabel = static function (string $status): string {
 			<tbody>
 			<?php foreach ($data['events'] as $e): ?>
 				<tr id="event-<?= chaos_h($e['id']) ?>">
-					<td><?= chaos_h(chaos_calendar_fmt((string)$e['start'], $lang, !empty($e['hasTime']))) ?><?php if (!empty($e['end'])): ?><br><span class="chaos-muted"><?= chaos_h(chaos_t('until %s', chaos_calendar_fmt((string)$e['end'], $lang))) ?></span><?php endif; ?></td>
+					<td><?= chaos_h(!empty($e['soon']) ? $soonText : chaos_calendar_fmt((string)$e['start'], $lang, !empty($e['hasTime']))) ?><?php if (!empty($e['end'])): ?><br><span class="chaos-muted"><?= chaos_h(chaos_t('until %s', chaos_calendar_fmt((string)$e['end'], $lang))) ?></span><?php endif; ?></td>
 					<td><strong><?= chaos_h(chaos_bi($e['title'])) ?></strong><br><span class="chaos-muted"><?= chaos_h(chaos_bi($e['text'] ?? '')) ?></span>
 						<?php if (!empty($e['patchnoteReady'])): ?><br><a href="page?plugin=chaos&amp;p=patchnotes&amp;id=<?= rawurlencode((string)$e['patchnote']) ?>"><?= chaos_h(chaos_t('Patch note')) ?></a><?php endif; ?></td>
 					<td><?= chaos_h($statusLabel((string)$e['status'])) ?></td>
@@ -62,16 +63,16 @@ $statusLabel = static function (string $status): string {
 				<dl class="chaos-facts">
 					<dt><?= chaos_h(chaos_t('Length')) ?></dt><dd><?= chaos_h(chaos_t('%d weeks (%d days)', (int)$s['lengthWeeks'], (int)$s['lengthDays'])) ?></dd>
 					<dt><?= chaos_h(chaos_t('Starts')) ?></dt>
-					<dd><?php if ($row['known']): ?><?= chaos_h(chaos_calendar_fmt((string)$s['start'], $lang)) ?><?php else: ?><span class="chaos-gold"><?= chaos_h($tbd) ?></span> <span class="chaos-muted"><?= chaos_h(chaos_t('Proposal: %s', chaos_calendar_fmt((string)$s['proposed']['start'], $lang))) ?></span><?php endif; ?></dd>
+					<dd><?php if ($row['soon']): ?><span class="chaos-gold"><?= chaos_h($soonText) ?></span><?php elseif ($row['known']): ?><?= chaos_h(chaos_calendar_fmt((string)$s['start'], $lang)) ?><?php else: ?><span class="chaos-gold"><?= chaos_h($tbd) ?></span> <span class="chaos-muted"><?= chaos_h(chaos_t('Proposal: %s', chaos_calendar_fmt((string)($s['proposed']['start'] ?? ''), $lang))) ?></span><?php endif; ?></dd>
 					<dt><?= chaos_h(chaos_t('Ends')) ?></dt>
-					<dd><?php if ($row['known']): ?><?= chaos_h(chaos_calendar_fmt((string)$s['finish'], $lang)) ?><?php else: ?><span class="chaos-gold"><?= chaos_h($tbd) ?></span> <span class="chaos-muted"><?= chaos_h(chaos_t('Proposal: %s', chaos_calendar_fmt((string)$s['proposed']['finish'], $lang))) ?></span><?php endif; ?></dd>
+					<dd><?php if ($row['soon']): ?><span class="chaos-gold"><?= chaos_h($soonText) ?></span><?php elseif ($row['known']): ?><?= chaos_h(chaos_calendar_fmt((string)$s['finish'], $lang)) ?><?php else: ?><span class="chaos-gold"><?= chaos_h($tbd) ?></span> <span class="chaos-muted"><?= chaos_h(chaos_t('Proposal: %s', chaos_calendar_fmt((string)($s['proposed']['finish'] ?? ''), $lang))) ?></span><?php endif; ?></dd>
 					<dt><?= chaos_h(chaos_t('State')) ?></dt>
-					<dd><?= chaos_h($row['state'] === 'running' ? chaos_t('Running now') : ($row['state'] === 'coming' ? chaos_t('Coming soon') : ($row['state'] === 'ended' ? chaos_t('Ended') : $tbd))) ?></dd>
+					<dd><?= chaos_h($row['state'] === 'running' ? chaos_t('Running now') : ($row['state'] === 'coming' || $row['state'] === 'soon' ? $soonText : ($row['state'] === 'ended' ? chaos_t('Ended') : $tbd))) ?></dd>
 				</dl>
 			</div>
 		<?php endforeach; ?>
 		<?php if (!empty($data['nextSeason'])): $ns = $data['nextSeason']; ?>
-			<p id="chaos-calendar-next-season"><strong><?= chaos_h(chaos_bi($ns['title'])) ?>:</strong> <?= chaos_h(chaos_t('starts %s', chaos_calendar_fmt((string)$ns['start'], $lang))) ?> (<?= chaos_h($statusLabel((string)$ns['status'])) ?>). <span class="chaos-muted"><?= chaos_h(chaos_bi($ns['text'])) ?></span></p>
+			<p id="chaos-calendar-next-season"><strong><?= chaos_h(chaos_bi($ns['title'])) ?>:</strong> <?= chaos_h(!empty($ns['soon']) ? $soonText : chaos_t('starts %s', chaos_calendar_fmt((string)$ns['start'], $lang))) ?> (<?= chaos_h($statusLabel((string)$ns['status'])) ?>). <span class="chaos-muted"><?= chaos_h(chaos_bi($ns['text'])) ?></span></p>
 		<?php else: ?>
 			<p id="chaos-calendar-next-season"><strong><?= chaos_h(chaos_t('The season after that')) ?>:</strong> <span class="chaos-gold"><?= chaos_h($tbd) ?></span> <span class="chaos-muted"><?= chaos_h(chaos_t('Dates, name and modifier are not decided.')) ?></span></p>
 		<?php endif; ?>
@@ -83,7 +84,8 @@ $statusLabel = static function (string $status): string {
 			<?php foreach ($view['cycles'] as $row): $c = $row['cycle']; ?>
 				<tr id="cycle-<?= chaos_h($c['id']) ?>">
 					<td><strong><?= chaos_h(chaos_bi($c['title'])) ?></strong><br><span class="chaos-muted"><?= chaos_h(chaos_bi($c['text'] ?? '')) ?></span></td>
-					<td><?php if ($row['show'] !== null): $w = $row['show']['window']; ?>
+					<td><?php if (!empty($row['soon'])): ?><?= chaos_h($soonText) ?>
+					<?php elseif ($row['show'] !== null): $w = $row['show']['window']; ?>
 						<?= chaos_h(chaos_t($row['show']['running'] ? 'Season %d, running: until %s' : 'Season %d, starts %s', (int)$w['n'], chaos_calendar_fmt((string)($row['show']['running'] ? $w['end'] : $w['start']), $lang))) ?>
 					<?php else: ?><span class="chaos-muted"><?= chaos_h(chaos_t('Every Monday at 06:00')) ?></span><?php endif; ?></td>
 				</tr>
@@ -93,7 +95,7 @@ $statusLabel = static function (string $status): string {
 
 		<h2 class="chaos-subheading"><?= chaos_h(chaos_bi($data['patchnotes']['title'] ?? '')) ?></h2>
 		<?php $pn = $data['patchnotes']; if (!empty($pn['weekdayName'])): ?>
-			<p id="chaos-calendar-patchday"><strong><?= chaos_h(chaos_t('Patch note day: %s', chaos_bi($pn['weekdayName']))) ?></strong><?php if (!empty($pn['firstRegular'])): ?> <span class="chaos-muted"><?= chaos_h(chaos_t('The first regular one: %s.', chaos_calendar_fmt((string)$pn['firstRegular'] . 'T00:00:00-03:00', $lang, false))) ?></span><?php endif; ?></p>
+			<p id="chaos-calendar-patchday"><strong><?= chaos_h(chaos_t('Patch note day: %s', chaos_bi($pn['weekdayName']))) ?></strong><?php if (empty($pn['firstRegular'])): ?> <span class="chaos-muted"><?= chaos_h(chaos_t('The first regular one: %s.', $soonText)) ?></span><?php else: ?> <span class="chaos-muted"><?= chaos_h(chaos_t('The first regular one: %s.', chaos_calendar_fmt((string)$pn['firstRegular'] . 'T00:00:00-03:00', $lang, false))) ?></span><?php endif; ?></p>
 		<?php endif; ?>
 		<p id="chaos-calendar-patchnotes"><?= chaos_h(chaos_bi($data['patchnotes']['text'] ?? '')) ?> <a href="page?plugin=chaos&amp;p=patchnotes"><?= chaos_h(chaos_t('Read the patch notes')) ?></a></p>
 

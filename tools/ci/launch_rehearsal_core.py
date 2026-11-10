@@ -3,8 +3,11 @@
 
 tools/ci/launch_rehearsal.sh runs the real server under a shifted clock (libfaketime, TZ America/Sao_Paulo) and this file
 holds what needs no server:
-  * the boundary table, read from the REAL committed configs with the readers of server/deploy/launch_check.py
-    (season_config.lua, founder_config.lua, battleground_config.lua, creator_codes_config.lua, weekend_config.lua)
+  * the boundary table, worked out from the one launch value (launch_config.lua, O463) and the lengths in the REAL committed
+    configs, with the readers of server/deploy/launch_check.py (season_config.lua lengthDays, founder_config.lua through the
+    founderEnd offset, battleground_config.lua weeks, creator_codes_config.lua launchBonusDays, weekend_config.lua).
+    While the launch is "open" there is no date to rehearse: every command that needs the boundaries refuses with exit 3 and
+    a clear message (set launch in launch_config.lua first: docs/LAUNCH.md "Launch date: on hold")
   * the plan: which fake start time each server run gets, and when the probe samples
   * the decision of every check from its observed inputs (booleans, counts, state words, seconds), and the report text
   * parse_start_line / parse_log: facts out of the server log, as counts and numbers only (never a log line)
@@ -13,6 +16,7 @@ Observations of one run are JSON: {"facts": {...}, "samples": [{"at": s, "fake":
 (tools/ci/launch_rehearsal_probe.py) writes the samples; the shell adds the facts. Nothing secret is ever an observation.
 
 usage (the shell tool):
+  launch_rehearsal_core.py launch --server DIR                           the launch "YYYY-MM-DD HH:MM", or exit 3 while it is open
   launch_rehearsal_core.py plan --server DIR [--save-time HH:MM]         the runs, one TSV line each
   launch_rehearsal_core.py startline LOG | logfacts LOG                  JSON facts of a server log, numbers only
   launch_rehearsal_core.py setfact FILE KEY JSON                         add a fact to an observation file
@@ -32,7 +36,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', '..', 'server', 'deploy'))
 import launch_check as LC  # noqa: E402
 
-LAUNCH = LC.LAUNCH            # '2026-11-20 15:00', Brasilia
+# the launch is NOT a constant here (O463): read_launch(server) reads launch_config.lua of the server folder
 EXPECT_OFFSET = -180          # minutes east of UTC
 LEAD = 120                    # seconds before a boundary the server is started (fake clock)
 READY = 55                    # real seconds after the start of tfs: first sample, the server is up
@@ -55,6 +59,27 @@ def _cfg_dir(server):
     return os.path.join(server, 'data', 'scripts', 'chaos')
 
 
+class LaunchOpen(ValueError):
+    """The launch date is "open": there is nothing to rehearse yet."""
+
+
+OPEN_MESSAGE = ('no launch date is set (launch = "open" in launch_config.lua): there is nothing to rehearse. Set the date first '
+                '(docs/LAUNCH.md "Launch date: on hold"), install it on the server, then run the rehearsal again.')
+
+
+def read_launch(server):
+    """The one launch value of the server folder as {'launch': datetime, 'offsets': {...}}. LaunchOpen while it is "open"."""
+    text = LC.read_text(os.path.join(_cfg_dir(server), LC.LAUNCH_FILE))
+    c = LC.read_launch_config(text)
+    if c is None or c['raw'] is None:
+        raise ValueError('cannot read launch_config.lua')
+    if c['open']:
+        raise LaunchOpen(OPEN_MESSAGE)
+    if c['launch'] is None:
+        raise ValueError('launch_config.lua: launch = "%s" is neither "open" nor a date' % c['raw'])
+    return c
+
+
 def _need(value, what):
     if value is None:
         raise ValueError('cannot read %s' % what)
@@ -62,45 +87,43 @@ def _need(value, what):
 
 
 def read_boundaries(server):
-    """Every date of the launch systems as a naive local datetime, from the configs of the server folder."""
+    """Every date of the launch systems as a naive local datetime: the launch of launch_config.lua and the lengths of the
+    configs of the server folder. Raises LaunchOpen while the launch is open."""
     d = _cfg_dir(server)
-    out = {}
-    # Season 1: the first entry of `seasons` (its id is checked)
+    lc = read_launch(server)
+    launch, offsets = lc['launch'], lc['offsets']
+    out = {'launch': launch}
+    # Season 1: starts with the launch, runs lengthDays (season_config.lua; the id is checked)
     t = _read(os.path.join(d, 'season_config.lua'))
     block = _need(LC.lua_table(t, 'seasons'), 'seasons in season_config.lua')
     if LC.lua_value(block, 'id') != 1:
         raise ValueError('the first season of season_config.lua is not id 1')
-    hour = LC.lua_value(block, 'hour')
-    hour = hour if isinstance(hour, int) and not isinstance(hour, bool) else 0
-    out['season_start'] = _need(LC.to_datetime(LC.lua_value(block, 'start'), hour), 'Season 1 start')
-    out['season_end'] = _need(LC.to_datetime(LC.lua_value(block, 'finish'), hour), 'Season 1 finish')
-    # PvP Season 1: the epoch and the weeks
+    days = LC.lua_value(block, 'lengthDays')
+    if not isinstance(days, int) or isinstance(days, bool) or days < 1:
+        raise ValueError('cannot read lengthDays of Season 1')
+    out['season_start'] = launch
+    out['season_end'] = launch + datetime.timedelta(days=days)
+    # PvP Season 1: starts with the launch, `weeks` long
     t = _read(os.path.join(d, 'battleground_config.lua'))
     season = _need(LC.lua_table(t, 'season'), 'season in battleground_config.lua')
-    epoch = _need(LC.lua_table(season, 'epoch'), 'the PvP season epoch')
-    parts = {k: LC.lua_value(epoch, k) for k in ('year', 'month', 'day', 'hour')}
     weeks = LC.lua_value(season, 'weeks')
-    if not isinstance(weeks, int) or isinstance(weeks, bool) or weeks < 1 or None in (parts['year'], parts['month'], parts['day']):
-        raise ValueError('cannot read the PvP season epoch')
-    out['pvp_start'] = datetime.datetime(parts['year'], parts['month'], parts['day'], parts['hour'] or 0, 0)
+    if not isinstance(weeks, int) or isinstance(weeks, bool) or weeks < 1:
+        raise ValueError('cannot read the PvP season weeks')
+    out['pvp_start'] = launch
     out['pvp_weeks'] = weeks
-    out['pvp_end'] = out['pvp_start'] + datetime.timedelta(weeks=weeks)
-    # Founder Pack: local START / END of founder_config.lua (the same two lines launch_check.py reads)
-    t = _read(os.path.join(d, 'founder_config.lua'))
-    ms = re.search(r'(?m)^[ \t]*local[ \t]+START[ \t]*=[ \t]*"([^"\n]*)"', t)
-    me = re.search(r'(?m)^[ \t]*local[ \t]+END[ \t]*=[ \t]*"([^"\n]*)"', t)
-    out['founder_start'] = _need(LC.to_datetime(ms.group(1) if ms else None), 'the Founder Pack start')
-    out['founder_end'] = _need(LC.to_datetime(me.group(1) if me else None), 'the Founder Pack end')
-    # creator launch bonus
+    out['pvp_end'] = launch + datetime.timedelta(weeks=weeks)
+    # Founder Pack: from the launch, to the launch plus the founderEnd offset of launch_config.lua
+    out['founder_start'] = launch
+    out['founder_end'] = launch + datetime.timedelta(days=offsets['founderEnd'])
+    # creator launch bonus: from the launch, launchBonusDays long
     t = _read(os.path.join(d, 'creator_codes_config.lua'))
-    start = _need(LC.to_datetime(LC.lua_value(t, 'launchBonusStart')), 'launchBonusStart')
     days = LC.lua_value(t, 'launchBonusDays')
     pct = LC.lua_value(t, 'launchBonusPct')
     base = LC.lua_value(t, 'sharePct')
     if any(not isinstance(v, int) or isinstance(v, bool) for v in (days, pct, base)):
         raise ValueError('cannot read the creator launch bonus')
-    out['creator_start'] = start
-    out['creator_end'] = start + datetime.timedelta(days=days)   # the last second of the window is one second before
+    out['creator_start'] = launch
+    out['creator_end'] = launch + datetime.timedelta(days=days)   # the last second of the window is one second before
     out['creator_pct'] = pct
     out['creator_base'] = base
     # weekend ritual: C.schedule {start, finish}, the theme rotation
@@ -174,7 +197,7 @@ def make_run(rid, boundary, title, after=True):
 
 def plan(b, save_time=(6, 0)):
     """The server runs, in order. Every run is a real start of tfs on a fake clock."""
-    launch = LC.parse_launch(LAUNCH)
+    launch = b['launch']
     runs = []
     r = make_run('launch', b['season_start'], 'launch minute, Season 1, Founder, PvP, creator')
     r['expect_boundaries'] = {'season': b['season_start'], 'founder': b['founder_start'], 'pvp': b['pvp_start']}
@@ -434,9 +457,9 @@ def decide_save(o):
 
 
 def decide_launch_check(facts):
-    """launch_check.py under the shifted clock: the four date checks and the timezone check are OK"""
+    """launch_check.py under the shifted clock: the launch date, the four date checks and the timezone check are OK"""
     got = facts.get('launch_check') or {}
-    names = ('dates_season', 'dates_pvp', 'dates_founder', 'dates_creator', 'timezone')
+    names = ('launch_date', 'dates_season', 'dates_pvp', 'dates_founder', 'dates_creator', 'timezone')
     good = all(got.get(n) == 'OK' for n in names)
     return res('launch_check', good, ', '.join('%s %s' % (n, got.get(n, 'missing')) for n in names))
 
@@ -459,7 +482,8 @@ def decide_all(b, runs, obs):
     return out
 
 
-def report_text(b, results, launch=LAUNCH):
+def report_text(b, results, launch=None):
+    launch = launch or LC.fmt(b['launch'])
     lines = ['Launch rehearsal (O441): the real server under a shifted clock, TZ America/Sao_Paulo',
              'launch %s, Season 1 %s to %s, Founder %s to %s, creator bonus %d%% to %s, weekend theme at launch: %s' % (
                  launch, stamp(b['season_start'])[:16], stamp(b['season_end'])[:10], stamp(b['founder_start'])[:16],
@@ -500,6 +524,17 @@ def main(argv):
     def opt(name, default=None):
         return rest[rest.index(name) + 1] if name in rest else default
 
+    try:
+        return run_command(cmd, rest, opt)
+    except LaunchOpen as e:
+        print('launch rehearsal: ' + str(e), file=sys.stderr)
+        return 3
+
+
+def run_command(cmd, rest, opt):
+    if cmd == 'launch':
+        print(LC.fmt(read_launch(opt('--server'))['launch']))
+        return 0
     if cmd == 'plan':
         b = read_boundaries(opt('--server'))
         print(plan_tsv(plan(b, parse_hhmm(opt('--save-time', '06:00')))))

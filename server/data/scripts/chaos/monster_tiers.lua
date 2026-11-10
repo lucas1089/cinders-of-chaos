@@ -27,6 +27,14 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 
+-- the rank modifiers' rules (monster_defence_core.lua): Ruthless and the extra element; numbers: monster_defence_config.lua
+ChaosMonsterDefenceConfig = ChaosMonsterDefenceConfig or dofile("data/scripts/chaos/monster_defence_config.lua")
+if not ChaosMonsterDefenceCore or not ChaosMonsterDefenceCore.attackHit then
+	dofile("data/scripts/chaos/monster_defence_core.lua")
+end
+local D = ChaosMonsterDefenceCore
+local DK = D.engineConstants()
+
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
 	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
@@ -35,9 +43,11 @@ end
 local OPCODE = ChaosOpcodes.monsterbar
 
 ChaosTiers = {
-	magic = {label = "Magic", hp = 2.0, speed = 10, damage = 1.25, xp = 2.0, effect = CONST_ME_MAGIC_BLUE},
-	rare = {label = "Rare", hp = 3.5, speed = 20, damage = 1.5, xp = 4.0, effect = CONST_ME_YELLOWENERGY or CONST_ME_MAGIC_GREEN},
-	legendary = {label = "Legendary", hp = 6.0, speed = 30, damage = 2.0, xp = 10.0, effect = CONST_ME_FIREAREA},
+	-- health and damage of the three ranks above normal (O462: health x2.48 / x4.90 / x7.98, damage x1.30 / x1.50 /
+	-- x1.70; before: x2.0 / x3.5 / x6.0 and x1.25 / x1.5 / x2.0)
+	magic = {label = "Magic", hp = 2.48, speed = 10, damage = 1.30, xp = 2.0, effect = CONST_ME_MAGIC_BLUE},
+	rare = {label = "Rare", hp = 4.90, speed = 20, damage = 1.50, xp = 4.0, effect = CONST_ME_YELLOWENERGY or CONST_ME_MAGIC_GREEN},
+	legendary = {label = "Legendary", hp = 7.98, speed = 30, damage = 1.70, xp = 10.0, effect = CONST_ME_FIREAREA},
 	-- bosses keep their own stats; the multipliers here only apply when cfg.bossScaling is on
 	boss = {label = "Boss", hp = 1.0, speed = 0, damage = 1.0, xp = 1.0, effect = CONST_ME_MORTAREA}
 }
@@ -156,7 +166,16 @@ ChaosMods = {
 				doTargetCombatHealth(m, p, COMBAT_FIREDAMAGE, -dmg, -dmg, CONST_ME_EXPLOSIONHIT)
 			end
 		end},
-	juggernaut = {name = "Juggernaut", shader = 6, power = 2, effect = CONST_ME_STUN, hp = 1.6}
+	juggernaut = {name = "Juggernaut", shader = 6, power = 2, effect = CONST_ME_STUN, hp = 1.6},
+	-- O462 (what they do: monster_defence_core.lua C.MOD, numbers: monster_defence_config.lua mods). The family "more
+	-- health" is Juggernaut (+60%). The shaders are those of the older modifiers of the same element.
+	emberforged = {name = "Emberforged", shader = 14, power = 3, effect = CONST_ME_HITBYFIRE},
+	frostforged = {name = "Frostforged", shader = 10, power = 3, effect = CONST_ME_ICEAREA},
+	stormforged = {name = "Stormforged", shader = 12, power = 3, effect = CONST_ME_ENERGYAREA},
+	plated = {name = "Plated", shader = 7, power = 2, effect = CONST_ME_STONES},
+	resistant = {name = "Resistant", shader = 13, power = 2, effect = CONST_ME_MAGIC_BLUE},
+	ruthless = {name = "Ruthless", shader = 11, power = 3, effect = CONST_ME_HITAREA},
+	bulwark = {name = "Bulwark", shader = 7, power = 2, effect = CONST_ME_BLOCKHIT or CONST_ME_STONES}
 }
 ChaosModList = {}
 for key in pairs(ChaosMods) do
@@ -384,7 +403,17 @@ local function applyTier(monster, tier, depth)
 		monster:changeSpeed(t.speed)
 	end
 	local mods = rollMods(tier)
-	state[monster:getId()] = {tier = tier, depth = depth or 0, mods = mods, step = 0}
+	-- Resistant draws its element now (monster_defence_config.lua resistElements)
+	local draw
+	for _, key in ipairs(mods) do
+		local m = D.MOD[key]
+		if m and m.resist then
+			local list = ChaosMonsterDefenceConfig.resistElements
+			draw = draw or {}
+			draw[key] = list[math.random(#list)]
+		end
+	end
+	state[monster:getId()] = {tier = tier, depth = depth or 0, mods = mods, step = 0, draw = draw}
 	monster:registerEvent("ChaosTierDeath")
 	applyMods(monster, mods)
 	monster:getPosition():sendMagicEffect(t.effect)
@@ -619,8 +648,32 @@ local function tierOnHit(s, attacker, creature, total)
 	end
 end
 
--- damage dealt TO players by a tiered monster (tier and modifier multipliers, on-hit effects). A hit a mana shield took
--- was scaled by the mana event already (manashield.lua): the rest is left as it is.
+-- the rank modifier flags of a tiered monster (D.modSet), cached on its state (monster_defence.lua reads the same field)
+local function modSetOf(s)
+	local set = s._set
+	if set == nil then
+		set = D.modSet(s.mods, s.draw) or false
+		s._set = set
+	end
+	return set or nil
+end
+
+-- Ruthless on a hit amount that the mana shield takes (no parts to split): the multiplier of a critical hit, else 1
+local function critMult(s, origin)
+	local set = modSetOf(s)
+	if set and set.crit and (origin == DK.melee or origin == DK.ranged or origin == DK.spell) then
+		local c = ChaosMonsterDefenceConfig.mods.crit
+		if math.random(100) <= c.chance then
+			return c.mult
+		end
+	end
+	return 1
+end
+
+-- damage dealt TO players by a tiered monster (tier and modifier multipliers, Ruthless, the extra element, on-hit
+-- effects). A hit a mana shield took was scaled by the mana event already (manashield.lua): the rest is left as it is.
+-- The player's login event of this one is "Chaos0TierLogin": the rank multiplier is among the first events of the player,
+-- before every reduction (O462, server/README.md "Monster defence (O462)").
 local hit = CreatureEvent("ChaosTierHit")
 function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if attacker and attacker:isMonster() then
@@ -629,6 +682,14 @@ function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, seco
 			if not (ChaosManaShield and ChaosManaShield.scaled(creature, attacker, "tiers")) then
 				primaryDamage = math.floor(primaryDamage * mult)
 				secondaryDamage = math.floor(secondaryDamage * mult)
+				local set = creature:isPlayer() and modSetOf(s)
+				if set then
+					local MDef = ChaosMonsterDefence
+					local absorbOf = MDef and MDef.playerAbsorb and function(ctype) return MDef.playerAbsorb(creature, ctype) end
+					primaryDamage, primaryType, secondaryDamage, secondaryType = D.attackHit(ChaosMonsterDefenceConfig, DK, set,
+						{primary = primaryDamage, ptype = primaryType, secondary = secondaryDamage, stype = secondaryType,
+							origin = origin}, math.random, absorbOf)
+				end
 			end
 			if creature:isPlayer() then
 				tierOnHit(s, attacker, creature, math.abs(primaryDamage) + math.abs(secondaryDamage))
@@ -644,9 +705,16 @@ if not ChaosManaShield or not ChaosManaShield.provide then
 	dofile("data/scripts/chaos/manashield_core.lua")
 end
 ChaosManaShield.provide("tiers", {
-	hit = function(player, attacker, amount)
-		local mult = attacker:isMonster() and tierHitMult(attacker)
-		return mult and math.floor(amount * mult) or nil
+	hit = function(player, attacker, amount, ctx)
+		if not attacker:isMonster() then
+			return nil
+		end
+		local mult, s = tierHitMult(attacker)
+		if not mult then
+			return nil
+		end
+		-- Ruthless counts for the mana too; the extra element of the modifiers is not added to a hit the mana shield takes
+		return math.floor(amount * mult * critMult(s, ctx and ctx.origin))
 	end,
 	absorbed = function(player, attacker, amount)
 		local _, s = tierHitMult(attacker)
@@ -656,7 +724,10 @@ ChaosManaShield.provide("tiers", {
 	end
 })
 
-local login = CreatureEvent("ChaosTierLogin")
+-- "Chaos0..." sorts before every other Chaos login event but "Chaos0MonsterDamageLogin" and "Chaos0RiftHitLogin" (the
+-- engine runs the login events in name order and a creature's events in registration order): the rank multiplier is
+-- among the first healthchange events of the player (O462; it was "ChaosTierLogin", the 28th of 33)
+local login = CreatureEvent("Chaos0TierLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosTierHit")
 	player:registerEvent("ChaosTierQuery")

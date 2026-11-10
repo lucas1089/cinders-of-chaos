@@ -4,7 +4,12 @@
 -- migration decisions and the season unique rule.
 dofile("data/scripts/chaos/season_core.lua")
 local S = ChaosSeason
+local LAUNCH = dofile("data/scripts/chaos/launch_core.lua")
+-- the shipped launch is "open" (O463): `cfg` is the shipped config; `cfgSet` the same file under an example launch
 local cfg = dofile("data/scripts/chaos/season_config.lua")
+LAUNCH.override = {launch = "2031-03-14 18:00"}
+local cfgSet = dofile("data/scripts/chaos/season_config.lua")
+LAUNCH.override = nil
 
 local function eq(a, b, m)
 	if a ~= b then
@@ -26,9 +31,41 @@ local C = {seasons = seasons, join = cfg.join, track = cfg.track}
 
 -- ---------------------------------------------------------------- shipped config sanity
 eq(type(cfg.seasons), "table", "config seasons")
-for _, s in ipairs(cfg.seasons) do
+for _, s in ipairs(cfgSet.seasons) do
 	local a, b = S.times(s)
-	eq(a ~= nil and b ~= nil and b > a, true, "shipped season " .. s.id .. " has valid dates")
+	eq(a ~= nil and b ~= nil and b > a, true, "season " .. s.id .. " has valid dates under a set launch")
+end
+-- the launch is open (O463): the shipped Season 1 has no dates, is "soon", never starts by itself and is not "ended"
+do
+	local s1 = cfg.seasons[1]
+	eq(s1.open, true, "open: the shipped Season 1 is marked open")
+	local a, b = S.times(s1)
+	eq(a, nil, "open: no start") eq(b, nil, "open: no finish")
+	local day = 86400
+	for _, when in ipairs({0, os.time(), os.time() + 400 * day, 4102444800}) do
+		eq(S.status(s1, when), "soon", "open: soon at any time")
+		eq(S.active(cfg.seasons, when), nil, "open: never active by itself")
+		eq(S.upcoming(cfg.seasons, when), nil, "open: not 'upcoming' (that one has a start)")
+		eq(S.soon(cfg.seasons, when).id, 1, "open: the soon season")
+		eq(S.migrationDue({season = 1, migrated = 0}, when, cfg.seasons), false, "open: no migration (the season is not over)")
+		eq(S.uniqueAllowed(1, 0, when, cfg.seasons), false, "open: season uniques drop for nobody")
+		eq(S.uniqueAllowed(1, 1, when, cfg.seasons), false, "open: not even for season characters")
+	end
+	-- started by hand (/season start): it runs lengthDays from the start, like a season with a finish
+	local now0 = os.time()
+	eq(S.finishIfStarted(s1, now0), now0 + 91 * day, "open: a hand start would run 91 days")
+	local ov = {[1] = {start = now0}}
+	eq(S.status(s1, now0 + day, ov), "active", "open: a hand-started season is active")
+	eq(select(2, S.times(s1, ov)), now0 + 91 * day, "open: and ends after lengthDays")
+	eq(S.status(s1, now0 + 92 * day, ov), "ended", "open: and then it ends")
+	eq(S.soon(cfg.seasons, now0 + day, ov), nil, "open: a started season is no longer soon")
+	-- a set launch: dated as before, with the finish 91 days later
+	local c1 = cfgSet.seasons[1]
+	eq(S.status(c1, os.time({year = 2031, month = 3, day = 14, hour = 17, min = 59, sec = 0})), "upcoming", "set: upcoming a minute before")
+	eq(S.status(c1, os.time({year = 2031, month = 3, day = 14, hour = 18, min = 0, sec = 0})), "active", "set: active at the launch")
+	eq(S.status(c1, os.time({year = 2031, month = 6, day = 13, hour = 18, min = 0, sec = 0})), "ended", "set: ended 91 days later")
+	eq(S.soon(cfgSet.seasons, os.time()), nil, "set: not soon")
+	eq(S.finishIfStarted(c1, os.time()), os.time({year = 2031, month = 6, day = 13, hour = 18, min = 0, sec = 0}), "set: a hand start keeps the config finish")
 end
 local keys = {}
 for _, m in ipairs(cfg.track) do

@@ -1,7 +1,8 @@
 # Open beta plan (partly decided)
 
-Status: **partly decided.** On 2026-10-29 the owner confirmed: launch on Fri 20 Nov 2026 at 15:00; Season 1 and PvP
-Season 1 start with the launch; one full wipe between the beta and the launch (section 3); a "Beta Tester" title for
+Status: **partly decided.** **Launch date: on hold (owner, 2026-11-10).** The owner left the launch open for now; the
+date, the wipe day and every date worked out from them wait (docs/LAUNCH.md "Launch date: on hold"). On 2026-10-29 the
+owner confirmed: Season 1 and PvP Season 1 start with the launch; one full wipe between the beta and the launch (section 3); a "Beta Tester" title for
 accounts that played; no beta keys (the beta stays open). The other choices are still marked **Owner decides**, with a
 recommendation. All times are UTC-3 (`America/Sao_Paulo`, the server's
 timezone; docs/OWNER_TODO.md "On the live server").
@@ -11,7 +12,8 @@ server/README.md "Patch notes" (the notes players see).
 
 ## 1. Dates and times
 
-**Decided 2026-10-29:** the launch (Fri 20 Nov, 15:00) and the open beta weekends. The rest of the schedule is the
+**Decided 2026-10-29:** the open beta weekends. The launch day was decided too, then put on hold on 2026-11-10: the rows
+below that depend on it are relative to the launch day (L), which has no date yet. The rest of the schedule is the
 recommendation:
 
 | When | What |
@@ -23,10 +25,10 @@ recommendation:
 | Mon 2 Nov to Fri 6 Nov | Fixes. A short patch note for weekend 2 (`2026-11-07.md`). Characters are kept between the weekends. |
 | **Sat 7 Nov, 15:00** | **Beta weekend 2 opens.** |
 | Sun 8 Nov, 23:00 | Weekend 2 closes. Final beta backup. |
-| Mon 9 Nov to Tue 17 Nov | Fixes, the release client package, load test on the full map. |
-| Wed 18 Nov | **Wipe** (section 9), then the launch install (docs/LAUNCH.md section 13). |
-| Thu 19 Nov | Staff dress rehearsal on the wiped database: the launch-day checks of docs/LAUNCH.md section 13. |
-| **Fri 20 Nov, 15:00** | **Launch.** Launch patch note (`2026-11-20.md`). Season 1 starts (section 5). |
+| From Mon 9 Nov until the freeze (L-5) | Fixes, the release client package, load test on the full map. |
+| L-2, a Wednesday | **Wipe** (section 9), then the launch install (docs/LAUNCH.md section 13). |
+| L-1, a Thursday | Staff dress rehearsal on the wiped database: the launch-day checks of docs/LAUNCH.md section 13. |
+| **L, a Friday, 15:00** | **Launch.** Launch patch note (`<launch date>.md`). Season 1 starts (section 5). |
 
 Notes:
 - Both beta weekends fall on Blood Moon days (Saturday and Sunday, +50% experience, `Chaos.events`). Leveling speed seen
@@ -129,28 +131,29 @@ put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
 
 ## 5. Season 1 and the PvP seasons
 
-**Decided 2026-10-29.** Season 1 (Season of Ash) starts **with the launch, Fri 20 Nov 2026 15:00**, and runs 13 weeks
-to Fri 19 Feb 2027 15:00 (the season pass is sized for 13 weeks, `seasonpass_config.lua`). Season 2 is planned for the
-day after, 20 Feb 2027 15:00. `season_config.lua` now says:
+**Decided 2026-10-29.** Season 1 (Season of Ash) starts **with the launch** and runs 13 weeks, 91 days (the season pass is
+sized for 13 weeks, `seasonpass_config.lua`). Season 2 is planned for the day after it ends. While the launch date is open
+(2026-11-10, `launch_config.lua`) Season 1 has no dates and does not start by itself. `season_config.lua` now says:
 
 ```lua
-start = 20261120,  -- was 20261101
-finish = 20270219, -- was 20270131 (13 weeks after the start)
-hour = 15,         -- was 12; server local time (UTC-3)
+start = LC.ymd(0),   -- the launch day (launch_config.lua); nil while it is open
+finish = LC.ymd(91), -- 13 weeks after the start
+lengthDays = 91,     -- what a season started by hand (/season start) runs
+hour = LC.hour(),    -- the launch hour; server local time (UTC-3)
 ```
 
 - The dates are read at startup; `/season start [id] | end | status` (god accounts) overrides them in `server_config`
   (`chaos_season_1_start` / `_end`). To test season characters in the beta, start it by hand on weekend 2
   (`/season start 1`); the wipe deletes those rows and every season table, so Season 1 starts clean at launch.
 - PvP Season 1 (arena and battleground, `battleground_config.lua` `season.epoch`) also starts **with the launch**:
-  `epoch = {year = 2026, month = 11, day = 20, hour = 15}`. Seasons are 8 weeks, so PvP Season 1 runs 20 Nov to
-  15 Jan 2027 15:00. The epoch must not lie after the launch: before it, the season counts as Season 1, not started. The wipe deletes
+  the epoch is the launch (`launch_core.lua` `parts(0)`; none while it is open, then season 1 has no end). Seasons are 8
+  weeks, so PvP Season 1 runs 8 weeks from the launch. The epoch must not lie after the launch: before it, the season counts as Season 1, not started. The wipe deletes
   `chaos_pvp_season_done`, so the new server counts from there.
 - Infinity Tower seasons (`Chaos.tower` in `chaos_constants.lua`) are their own 30-day cycle, not the realm Season:
   points, milestones and the ranking reset every 30 days and the top 3 get their chests then, while a realm Season
   lasts 13 weeks, has gaps and can be started or ended by hand. The epoch was 1 Jan 2025 (the launch would have been
-  Tower Season 22); it is now the launch, Fri 20 Nov 2026 15:00 server time, so Tower Season 1 runs 20 Nov to 20 Dec.
-  Before the epoch everything counts as Season 1 (the beta), and the wipe empties `chaos_tower_players` and deletes
+  Tower Season 22); it is now the launch (server time), so Tower Season 1 runs 30 days from the launch.
+  Before the epoch, or with no launch date, everything counts as Season 1 (the beta), and the wipe empties `chaos_tower_players` and deletes
   `chaos_tower_season_done`. **Owner decides** if the launch moves: change `seasonEpoch` with it (only on a wiped
   database). `/towerseason` shows the season, its end and the last season paid out.
 - Tests: `server/tests/season_test.lua` uses its own config, so these edits do not break it. Run it anyway.

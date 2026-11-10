@@ -882,7 +882,7 @@ end
 -- the season the window shows: the running one, else the next, else the last that ended
 local function shownSeason()
 	local t = now()
-	local s = S.active(seasons(), t, S.ov) or S.upcoming(seasons(), t, S.ov)
+	local s = S.active(seasons(), t, S.ov) or S.upcoming(seasons(), t, S.ov) or S.soon(seasons(), t, S.ov)
 	if s then
 		return s
 	end
@@ -939,6 +939,8 @@ local function infoText(player)
 		lines[#lines + 1] = Chaos.t(player, "%s %s is running: %s left.", s.name, s.tag or "", S.formatDuration(s.endsIn))
 	elseif s.status == "upcoming" then
 		lines[#lines + 1] = Chaos.t(player, "%s %s starts in %s.", s.name, s.tag or "", S.formatDuration(s.startsIn))
+	elseif s.status == "soon" then
+		lines[#lines + 1] = Chaos.t(player, "%s %s: coming soon.", s.name, s.tag or "")
 	else
 		lines[#lines + 1] = Chaos.t(player, "%s has ended.", s.name)
 	end
@@ -1330,12 +1332,12 @@ local function onAdmin(player, param)
 			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s is already running.", S.current().name))
 			return
 		end
-		local s = tonumber(arg) and S.byId(seasons(), tonumber(arg)) or S.upcoming(seasons(), t, S.ov)
+		local s = tonumber(arg) and S.byId(seasons(), tonumber(arg)) or S.upcoming(seasons(), t, S.ov) or S.soon(seasons(), t, S.ov)
 		if not s then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No upcoming season in season_config.lua (add one, or give its id)."))
 			return
 		end
-		local _, finish = S.times(s, S.ov)
+		local finish = S.finishIfStarted(s, t, S.ov)
 		if not finish or finish <= t then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s's end date has passed: change it in season_config.lua.", s.name))
 			return

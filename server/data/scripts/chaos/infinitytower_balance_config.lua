@@ -61,7 +61,8 @@ return {
 	-- monsters of a floor for one player (rounded)
 	count = {{1, 4}, {16, 6}, {32, 7}, {64, 8}, {120, 9}},
 
-	-- health of a magic / rare / legendary monster against a normal one of its floor (monster_tiers.lua has x2 / x3.5 / x6:
+	-- health of a magic / rare / legendary monster against a normal one of its floor (monster_tiers.lua has x2.48 / x4.90 /
+	-- x7.98 since O462; when this was set it had x2 / x3.5 / x6:
 	-- one legendary Lost Soul with Juggernaut and Stoneskin took a level 500 pair a minute); damage, speed and the modifiers
 	-- stay the tier's. The run sets the health to health x this (ChaosTowerBalance.preTierHealth)
 	tierHealth = {magic = 1.5, rare = 2.2, legendary = 3.5},

@@ -4,7 +4,7 @@ Your character is permanent, seasons are optional, the legacy is cosmetic. Seaso
 
 ## Seasons
 
-A season is optional: a fresh start for whoever wants one, with new characters and a ladder of their own. The first one is the **{{season.name}}**, from {{season.start}} to {{season.finish}}. Season bonus: **{{season.modifierName}}**. {{season.modifier}}
+A season is optional: a fresh start for whoever wants one, with new characters and a ladder of their own. The first one is the **{{season.name}}**, {{season.rangeEn}}. Season bonus: **{{season.modifierName}}**. {{season.modifier}}
 
 => @create | New character | Up to level {{season.joinMaxLevel}}, an empty depot, no party.
 => @season | Join | Adventure > Season, then pick a mode.

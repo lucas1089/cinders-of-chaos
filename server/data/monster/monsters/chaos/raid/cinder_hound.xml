@@ -29,7 +29,7 @@
 	<defenses armor="50" defense="50" />
 	<elements>
 		<element physicalPercent="0" />
-		<element firePercent="60" />
+		<element firePercent="40" />
 		<element energyPercent="0" />
 		<element earthPercent="10" />
 		<element icePercent="-25" />

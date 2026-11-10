@@ -120,10 +120,13 @@ def dates_text(lang):
     for e in cal["events"]:
         if e["kind"] == "wipe":
             continue
-        day = e["start"][:10].split("-")
-        when = "%s/%s/%s" % (day[2], day[1], day[0]) if lang == "pt-BR" else "%s-%s-%s" % tuple(day)
-        if e.get("hasTime"):
-            when += " " + e["start"][11:16]
+        if e.get("soon") or not e.get("start"):
+            when = "Em breve" if lang == "pt-BR" else "Coming soon"   # no date yet: the launch is open (O463)
+        else:
+            day = e["start"][:10].split("-")
+            when = "%s/%s/%s" % (day[2], day[1], day[0]) if lang == "pt-BR" else "%s-%s-%s" % tuple(day)
+            if e.get("hasTime"):
+                when += " " + e["start"][11:16]
         title = e["title"][lang]
         mark = " (%s)" % ("proposta" if lang == "pt-BR" else "proposal") if e["status"] == "proposal" else ""
         lines.append("- %s: %s%s" % (when, title, mark))

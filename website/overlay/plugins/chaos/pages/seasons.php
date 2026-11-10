@@ -12,14 +12,17 @@ $seasons = chaos_seasons();
 $now = time();
 $current = null;
 $next = null;
+$soon = null; // no date yet: the launch is open (launch_config.lua, O463)
 foreach ($seasons as $s) {
-	if ($s['start'] <= $now && $now < $s['finish']) {
+	if (!empty($s['soon'])) {
+		$soon = $soon ?? $s;
+	} elseif ($s['start'] <= $now && $now < $s['finish']) {
 		$current = $s;
 	} elseif ($s['start'] > $now && ($next === null || $s['start'] < $next['start'])) {
 		$next = $s;
 	}
 }
-$shown = $current ?? $next;
+$shown = $current ?? $next ?? $soon;
 $track = chaos_season_track();
 $hasTables = chaos_table_exists('chaos_season_players');
 $modeTabs = chaos_season_mode_tabs();
@@ -48,8 +51,8 @@ $fmt = static function (int $t): string {
 				<div class="chaos-season__state"><?= $current !== null ? 'Running now' : 'Coming soon' ?></div>
 				<h2 class="chaos-season__name"><?= chaos_h($shown['name']) ?> <span class="chaos-muted"><?= chaos_h($shown['tag']) ?></span></h2>
 				<dl class="chaos-facts">
-					<dt>Starts</dt><dd><?= chaos_h($fmt($shown['start'])) ?></dd>
-					<dt>Ends</dt><dd><?= chaos_h($fmt($shown['finish'])) ?></dd>
+					<dt>Starts</dt><dd><?= chaos_h(!empty($shown['soon']) ? 'Coming soon' : $fmt($shown['start'])) ?></dd>
+					<dt>Ends</dt><dd><?= chaos_h(!empty($shown['soon']) ? 'Coming soon' : $fmt($shown['finish'])) ?></dd>
 					<?php if ($shown['modifier'] !== ''): ?>
 						<dt>Modifier</dt><dd><span class="chaos-gold"><?= chaos_h($shown['modifier']) ?></span>: <?= chaos_h($shown['modifier_text']) ?></dd>
 					<?php endif; ?>

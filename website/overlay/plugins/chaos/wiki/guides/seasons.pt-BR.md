@@ -4,7 +4,7 @@ Seu personagem é permanente, as temporadas são opcionais, o legado é cosméti
 
 ## Temporadas
 
-Uma temporada é opcional: é um recomeço do zero para quem quiser, com personagens novos e um ranking só deles. A primeira é a **{{season.name}}**, de {{season.start}} a {{season.finish}}. Bônus da temporada: **{{season.modifierName}}**, mais experiência de monstros para os personagens da temporada.
+Uma temporada é opcional: é um recomeço do zero para quem quiser, com personagens novos e um ranking só deles. A primeira é a **{{season.name}}**, {{season.rangePt}}. Bônus da temporada: **{{season.modifierName}}**, mais experiência de monstros para os personagens da temporada.
 
 => @create | Personagem novo | Até o nível {{season.joinMaxLevel}}, depot vazio, sem grupo.
 => @season | Entre | Adventure > Season, depois escolha um modo.

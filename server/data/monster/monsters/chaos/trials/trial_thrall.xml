@@ -23,10 +23,12 @@
 		<attack name="melee" interval="2000" min="0" max="-45" />
 	</attacks>
 	<defenses armor="10" defense="10" />
+	<elements>
+		<element drownPercent="40"/>
+	</elements>
 	<immunities>
 		<immunity paralyze="1" />
 		<immunity invisible="1" />
 		<immunity outfit="1" />
-		<immunity drown="1" />
 	</immunities>
 </monster>

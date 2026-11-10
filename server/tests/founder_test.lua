@@ -13,20 +13,29 @@ local function eq(a, b, m)
 end
 
 dofile("data/scripts/chaos/chaos_constants.lua")
+local LAUNCH = dofile("data/scripts/chaos/launch_core.lua")
+-- the shipped launch is "open" (O463); the window rules are tested with an example launch, the open state at the end
+local EXAMPLE = {launch = "2031-03-14 18:00"}
+local function loadWith(override, file)
+	LAUNCH.override = override
+	local c = dofile("data/scripts/chaos/" .. file)
+	LAUNCH.override = nil
+	return c
+end
 dofile("data/scripts/chaos/shop_core.lua")
 dofile("data/scripts/chaos/nameplate_core.lua")
 dofile("data/scripts/chaos/exclusives_core.lua")
 dofile("data/scripts/chaos/founder_core.lua")
 local K, F = ChaosShopCore, ChaosFounderCore
-local cfg = dofile("data/scripts/chaos/founder_config.lua")
-local excl = dofile("data/scripts/chaos/exclusives_config.lua")
+local cfg = loadWith(EXAMPLE, "founder_config.lua")
+local excl = loadWith(EXAMPLE, "exclusives_config.lua")
 local limits = dofile("data/scripts/chaos/store_balance_config.lua").founder
 local pact = dofile("data/scripts/chaos/pact_config.lua")
 
 -- ---------------------------------------------------------------- the dates
 local T0, T1 = K.parseTime(cfg.start), K.parseTime(cfg["end"])
-eq(cfg.start, "2026-11-20 15:00", "launch: 20/11/2026 15:00 server time")
-eq(cfg["end"], "2026-12-18 15:00", "four weeks later")
+eq(cfg.start, "2031-03-14 18:00", "the sale starts with the launch value")
+eq(cfg["end"], "2031-04-11 18:00", "four weeks later")
 eq((T1 - T0) / 86400, 28, "28 days")
 eq(F.state(cfg, T0 - 1), "early", "before") eq(F.state(cfg, T0), "open", "launch") eq(F.state(cfg, T1 - 1), "open", "last second")
 eq(F.state(cfg, T1), "late", "ended") eq(F.state(cfg, T1 + 10 * 365 * 86400), "late", "never again")
@@ -222,15 +231,15 @@ end
 
 -- ---------------------------------------------------------------- rules that fail when broken
 local function broken(change)
-	local copy = dofile("data/scripts/chaos/founder_config.lua")
+	local copy = loadWith(EXAMPLE, "founder_config.lua")
 	change(copy)
 	return table.concat(F.validate(copy, {exclusives = excl, limits = limits, pactPrice = 299}), "\n")
 end
 eq(broken(function(c) c.revoke.minShortfallPct = 0 end):find("minShortfallPct", 1, true) ~= nil, true, "a revoke rule of zero")
 eq(broken(function(c) c.revoke.table = "players" end):find("chaos_*", 1, true) ~= nil, true, "a revoke table that is not ours")
 eq(broken(function(c) c["end"] = c.start end):find("ends before it starts", 1, true) ~= nil, true, "an empty window")
-eq(broken(function(c) c["end"] = "2026-11-21 15:00" end):find("days (", 1, true) ~= nil, true, "a window of one day")
-eq(broken(function(c) c["end"] = "2027-06-01 15:00" end):find("days (", 1, true) ~= nil, true, "a window of months")
+eq(broken(function(c) c["end"] = "2031-03-15 18:00" end):find("days (", 1, true) ~= nil, true, "a window of one day")
+eq(broken(function(c) c["end"] = "2032-06-01 15:00" end):find("days (", 1, true) ~= nil, true, "a window of months")
 eq(broken(function(c) c.start = "soon" end):find("YYYY-MM-DD", 1, true) ~= nil, true, "a bad date")
 eq(broken(function(c) c.tiers[1].exclusives = {"mount_tuskhide"} end):find("source founder", 1, true) ~= nil, true,
 	"an achievement exclusive in a pack")
@@ -248,6 +257,42 @@ do
 	c.exclusives[#c.exclusives + 1] = extra
 	local p = table.concat(ChaosExclusivesCore.validate(c, {founder = cfg}), "\n")
 	eq(p:find("wings_extra: needs exactly one Founder Pack tier", 1, true) ~= nil, true, "a founder exclusive nobody gives")
+end
+
+-- ---------------------------------------------------------------- the launch is open (O463): nothing is on sale, no window shows
+do
+	local open = loadWith({launch = "open"}, "founder_config.lua")
+	local exOpen = loadWith({launch = "open"}, "exclusives_config.lua")
+	eq(open.open, true, "open: marked open")
+	eq(open.start, nil, "open: no start") eq(open["end"], nil, "open: no end")
+	eq(F.state(open, 0), "early", "open: not on sale at any time") eq(F.state(open, 4102444800), "early", "open: not in the far future either")
+	eq(open.how, "Founder Pack, a limited sale, coming soon", "open: the Collection text says coming soon")
+	eq(exOpen.founderHow, open.how, "open: the exclusives use it")
+	eq(ChaosExclusivesCore.how(exOpen, byKey.wings_gold_peacock), "Founder Pack, a limited sale, coming soon", "open: how")
+	eq(#F.validate(open, {exclusives = exOpen, limits = limits, pactPrice = pact.store.pact.offers[1].cost}), 0, "open: validates")
+	for _, o in ipairs(open.store.pack.offers) do
+		eq(o.availableSoon, true, "open: " .. o.key .. " is not yet on sale")
+		eq(K.windowState(o, 0), "early", "open: the shop hides and refuses it (early)")
+		eq(K.windowState(o, 4102444800), "early", "open: still not in the far future")
+		eq(K.windowNote(o, "en"), nil, "open: no 'Available until' sentence")
+		eq(K.windowNote(o, "pt-BR"), nil, "open: no 'Disponivel ate' sentence")
+	end
+	-- a window that is left in while open fails the validation
+	local leaky = loadWith({launch = "open"}, "founder_config.lua")
+	leaky.start = "2031-03-14 18:00"
+	eq(table.concat(F.validate(leaky, {exclusives = exOpen, limits = limits, pactPrice = 299}), "\n"):find("start and end must be left out", 1, true) ~= nil,
+		true, "open: a leftover start fails")
+	local sold = loadWith({launch = "open"}, "founder_config.lua")
+	sold.store.pack.offers[1].availableSoon = nil
+	eq(table.concat(F.validate(sold, {exclusives = exOpen, limits = limits, pactPrice = 299}), "\n"):find("must be availableSoon", 1, true) ~= nil,
+		true, "open: an offer that could be sold fails")
+	-- the same sale with a launch date: from the launch to four weeks later, with the 'Available until' sentence
+	for _, o in ipairs(cfg.store.pack.offers) do
+		eq(o.availableSoon, nil, "set: not soon")
+		eq(K.windowState(o, T0 - 1), "early", "set: early") eq(K.windowState(o, T0), nil, "set: on sale") eq(K.windowState(o, T1), "late", "set: late")
+		eq(K.windowNote(o, "en"), "Available until 2031-04-11 18:00.", "set: the sentence, en")
+		eq(K.windowNote(o, "pt-BR"), "Dispon\195\173vel at\195\169 11/04/2031 18:00.", "set: the sentence, pt-BR")
+	end
 end
 
 print(string.format("founder_test: %d checks OK", checks))

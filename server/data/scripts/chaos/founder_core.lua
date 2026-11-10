@@ -23,6 +23,9 @@ F.MIN_DAYS, F.MAX_DAYS = 14, 60
 F.COSMETIC_KINDS = {wings = true, aura = true, frame = true, outfit = true, mount = true, shader = true, addons = true}
 
 function F.state(cfg, now)
+	if cfg.open then
+		return "early" -- the launch date is open (O463): no window, not on sale
+	end
 	local from, to = ChaosShopCore.parseTime(cfg.start), ChaosShopCore.parseTime(cfg["end"])
 	now = now or os.time()
 	if from and now < from then
@@ -92,7 +95,19 @@ function F.validate(cfg, opts)
 	end
 	local P = ChaosShopCore.parseTime
 	local from, to = P(cfg.start), P(cfg["end"])
-	if not from or not to then
+	if cfg.open then
+		-- the launch date is open (O463): no window at all, and every offer must say it is not on sale
+		if cfg.start ~= nil or cfg["end"] ~= nil then
+			bad("the launch is open: start and end must be left out")
+		end
+		for key, pack in pairs(cfg.store or {}) do
+			for _, o in ipairs(pack.offers or {}) do
+				if not o.availableSoon or o.availableFrom or o.availableUntil then
+					bad("the launch is open: offer %s must be availableSoon with no window", tostring(o.key or key))
+				end
+			end
+		end
+	elseif not from or not to then
 		bad("start and end must be \"YYYY-MM-DD HH:MM\"")
 	elseif to <= from then
 		bad("the sale ends before it starts")

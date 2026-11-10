@@ -107,6 +107,21 @@ img, tip = S.mod('Cursed Thing')
 eq(img, '/images/chaos/monsterbar/mods/unknown', 'unknown modifier')
 eq(tip, 'Cursed Thing', 'unknown modifier: its name')
 
+-- O462: the server's modifiers (monster_tiers.lua ChaosMods keys) all have a chip tooltip, and every tooltip has a pt-BR text
+-- (monsterbar.lua gives the tooltip to tr(): a run-time key of pt_br.lua)
+for _, key in ipairs({ 'emberforged', 'frostforged', 'stormforged', 'plated', 'resistant', 'ruthless', 'bulwark', 'juggernaut' }) do
+  eq(type(S.MODS[key]), 'string', 'chip tooltip of the modifier ' .. key)
+end
+do
+  local ok = pcall(dofile, dir .. '../client_chaos_locale/pt_br.lua')
+  local pt = ok and ChaosLocaleStrings and ChaosLocaleStrings['pt-BR']
+  if pt then
+    for key, tip in pairs(S.MODS) do
+      eq(type(pt[tip]) == 'string' and pt[tip] ~= '', true, 'pt-BR text of the chip tooltip ' .. key)
+    end
+  end
+end
+
 -- damage trail
 local t = S.trailHit(nil, 100, 100)
 eq(t.value, 100, 'trail starts at the health')

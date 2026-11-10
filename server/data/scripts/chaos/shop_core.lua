@@ -8,9 +8,10 @@
 --   C.excluded(offer, ex)                 reason text when the offer sells one of them, else nil
 --   C.outfitLooks(offer)                  the look types an outfit offer gives (male and female), each once
 --   C.parseTime(v)                        "YYYY-MM-DD HH:MM" (server time) or a number -> unix time; nil when invalid
---   C.windowState(offer, now)             nil while the offer is on sale; "early" before offer.availableFrom, "late" from
+--   C.windowState(offer, now)             nil while the offer is on sale; "early" before offer.availableFrom or while
+--                                         offer.availableSoon is set (the date is not set yet, O463), "late" from
 --                                         offer.availableUntil on ("YYYY-MM-DD HH:MM" server time; O322 Founder Pack)
---   C.windowNote(offer, lang)             "Available until 18/12/2026 15:00." (pt-BR) / "Available until 2026-12-18 15:00."
+--   C.windowNote(offer, lang)             "Available until 18/12/2026 15:00." (pt-BR) / "Available until 2026-12-18 15:00." (example date)
 --                                         for an offer with availableUntil, else nil
 --   C.weekKey(t, hour)                    week number; weeks start on Monday at `hour` (server time)
 --   C.featured(pool, week, count)         `count` keys of `pool`, a different choice every week (deterministic)
@@ -397,6 +398,9 @@ end
 -- a time-limited offer (O322 Founder Pack): offer.availableFrom / availableUntil, "YYYY-MM-DD HH:MM" server time, either
 -- may be left out. Returns nil while it is on sale, "early" before the start, "late" from the end on.
 function C.windowState(offer, now)
+	if offer.availableSoon then
+		return "early" -- the sale has no date yet (the launch is open, O463): not on sale
+	end
 	local from, to = C.parseTime(offer.availableFrom), C.parseTime(offer.availableUntil)
 	now = now or os.time()
 	if from and now < from then

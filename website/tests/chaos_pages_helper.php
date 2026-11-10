@@ -5,12 +5,13 @@
 
 define('CHAOS_TEST_REPO', realpath(__DIR__ . '/../..'));
 
-/** The HTML of pages/<page>.php for ?l=<lang>; $now sets $GLOBALS['chaos_calendar_now'] (the calendar's clock). */
-function chaos_render_page(string $page, string $lang, ?int $now = null): string {
+/** The HTML of pages/<page>.php for ?l=<lang>; $now sets $GLOBALS['chaos_calendar_now'] (the calendar's clock), $calendarFile the data file of the calendar. */
+function chaos_render_page(string $page, string $lang, ?int $now = null, ?string $calendarFile = null): string {
 	$plugin = CHAOS_TEST_REPO . '/website/overlay/plugins/chaos';
 	$code = '$config = array("chaos" => array("server_data" => ' . var_export(CHAOS_TEST_REPO . '/server/data', true) . '));'
 		. '$GLOBALS["config"] = $config; $_GET = array("plugin" => "chaos", "p" => ' . var_export($page, true) . ', "l" => ' . var_export($lang, true) . ');'
 		. ($now !== null ? '$GLOBALS["chaos_calendar_now"] = ' . (int)$now . ';' : '')
+		. ($calendarFile !== null ? '$GLOBALS["chaos_calendar_file"] = ' . var_export($calendarFile, true) . ';' : '')
 		. 'ob_start(); error_reporting(E_ALL & ~E_WARNING); require ' . var_export($plugin . '/lib.php', true) . ';'
 		. 'include ' . var_export($plugin . '/pages/' . $page . '.php', true) . '; echo ob_get_clean();';
 	$out = array();

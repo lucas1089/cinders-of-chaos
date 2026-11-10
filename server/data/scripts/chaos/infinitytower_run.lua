@@ -1012,6 +1012,12 @@ function ChaosTowerRun.levelOf(monster)
 	return info and info.level or nil
 end
 
+-- whether this is a tower boss (monster_defence.lua gives a boss its armour class; a tower monster's summon is not one)
+function ChaosTowerRun.isBoss(monster)
+	local info = monster and monster.getId and monsterInfo[monster:getId()]
+	return info ~= nil and info.boss and true or false
+end
+
 -- the monster-info of a tower monster or its summon (nil for anything else)
 local function infoOf(monster)
 	if not monster or not monster.getId then

@@ -146,7 +146,7 @@ local cfg = {
 			name = "Sepulchre", desc = "Grave-ash iron with violet rivets round your name plate."},
 		{key = "frame_infernal", kind = "frame", frame = "infernal", icon = 2353, source = "boss",
 			name = "Infernal", desc = "A frame of molten iron round your name plate."},
-		-- the Grand Founder Pack (founder_config.lua, sold 2026-11-20 to 2026-12-18 only)
+		-- the Grand Founder Pack (founder_config.lua, sold only from the launch to four weeks later; not on sale while the launch is open)
 		{key = "frame_founder", kind = "frame", frame = "founder", icon = 2160, source = "founder",
 			name = "Founder", desc = "A crowned gilded frame round your name plate. Grand Founders only, never sold again."},
 

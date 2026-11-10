@@ -39,7 +39,7 @@ N.FRAMES = {default = true, gold = true, crimson = true, violet = true, frost = 
 	cinderwrought = true, -- cinderwrought: the season pass premium track (seasonpass_config.lua), never sold
 	gallery = true, -- gallery: the collection score's Connoisseur title (collection_config.lua), never sold
 	pactbound = true, -- pactbound: worn by every character of an account with an active Chaos Pact (pact_config.lua pact.frame), never sold
-	founder = true} -- founder: the Grand Founder Pack (founder_config.lua, exclusives_config.lua frame_founder), sold 2026-11-20 to 2026-12-18 only
+	founder = true} -- founder: the Grand Founder Pack (founder_config.lua, exclusives_config.lua frame_founder), sold only from the launch to four weeks later (launch_config.lua)
 
 -- frame a title of this source brings when it is the active title
 N.SOURCE_FRAME = {staff = "gold", champion = "crimson"}

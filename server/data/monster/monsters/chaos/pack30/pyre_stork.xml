@@ -44,8 +44,8 @@
 	</defenses>
 	<elements>
 		<element physicalPercent="35"/>
-		<element firePercent="55"/>
-		<element energyPercent="55"/>
+		<element firePercent="40"/>
+		<element energyPercent="40"/>
 		<element earthPercent="35"/>
 		<element deathPercent="35"/>
 		<element holyPercent="35"/>

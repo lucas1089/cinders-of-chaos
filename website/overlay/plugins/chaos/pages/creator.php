@@ -11,6 +11,7 @@
  * Writes: POST with the page's CSRF token.
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
+require_once __DIR__ . '/../launch_lib.php';
 require_once __DIR__ . '/../creator_lib.php';
 require_once __DIR__ . '/../creators_lib.php';
 require_once __DIR__ . '/../i18n_lib.php';
@@ -59,6 +60,8 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d', $t) :
 		<p class="chaos-lead"><?= chaos_h(chaos_t('Support a streamer or content creator of Cinders of Chaos: pick their code and, for %d days, %d%% of the Chaos Coins of each of your donations goes to them in game, as a thank-you from the server. It costs you nothing: your donation and your coins stay exactly the same. Donations are always voluntary.', (int)$cfg['supportDays'], (int)$cfg['sharePct'])) ?></p>
 		<?php $bonus = chaos_creator_bonus_window($cfg); if ($bonus !== null): ?>
 			<p class="chaos-gold" id="chaos-creator-bonus"><?= chaos_h(chaos_t('Launch bonus: for donations in the first %d days after the launch (until %s, UTC-3), the creator gets %d%% of the coins instead of %d%%. It still costs you nothing.', (int)$cfg['launchBonusDays'], (new DateTimeImmutable('@' . $bonus[1]))->setTimezone(new DateTimeZone('America/Sao_Paulo'))->format('Y-m-d'), (int)$cfg['launchBonusPct'], (int)$cfg['sharePct'])) ?></p>
+		<?php elseif (chaos_launch_config()['open']): ?>
+			<p class="chaos-muted" id="chaos-creator-bonus-soon"><?= chaos_h(chaos_t('Launch bonus: coming soon (the launch date is not set yet).')) ?></p>
 		<?php endif; ?>
 		<?php if ($message !== ''): ?>
 			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-creator-message"><?= chaos_h(chaos_t($message)) ?></p>

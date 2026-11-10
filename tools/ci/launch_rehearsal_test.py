@@ -18,7 +18,28 @@ sys.path.insert(0, HERE)
 import launch_rehearsal_core as C  # noqa: E402
 import launch_rehearsal_probe as P  # noqa: E402
 
-SERVER = os.path.join(REPO, 'server')
+import shutil  # noqa: E402
+import tempfile  # noqa: E402
+
+EXAMPLE_LAUNCH = '2031-03-14 15:00'   # a Friday; the shipped launch is "open" (O463) and the owner's date is never pinned here
+CHAOS_FILES = ('season_config.lua', 'battleground_config.lua', 'founder_config.lua', 'creator_codes_config.lua',
+               'weekend_config.lua', 'launch_config.lua', 'launch_core.lua')
+
+
+def make_server(launch_value):
+    """A server folder with the REAL committed configs, and a launch_config.lua that says `launch_value`."""
+    d = tempfile.mkdtemp()
+    cfg = os.path.join(d, 'data', 'scripts', 'chaos')
+    os.makedirs(cfg)
+    for f in CHAOS_FILES:
+        shutil.copy(os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', f), cfg)
+    with open(os.path.join(cfg, 'launch_config.lua'), 'w') as fh:
+        fh.write('return {\n\tlaunch = "%s",\n\toffsets = {founderEnd = 28}\n}\n' % launch_value)
+    return d
+
+
+SERVER = make_server(EXAMPLE_LAUNCH)
+SERVER_OPEN = make_server('open')
 B = C.read_boundaries(SERVER)
 RUNS = C.plan(B)
 D = datetime.datetime
@@ -52,7 +73,7 @@ def good_obs():
                   'season_start_lines': 1, 'season_end_lines': 0, 'season_running_line': 1, 'season_members': 0,
                   'db_start_rows': 1, 'members_before': 0, 'sentinel_rows': 1, 'sentinel_value': 77, 'db_members': 1,
                   'creator_shares': {'before': 100, 'start': 150, 'last': 150, 'after': 100},
-                  'launch_check': {'dates_season': 'OK', 'dates_pvp': 'OK', 'dates_founder': 'OK', 'dates_creator': 'OK',
+                  'launch_check': {'launch_date': 'OK', 'dates_season': 'OK', 'dates_pvp': 'OK', 'dates_founder': 'OK', 'dates_creator': 'OK',
                                    'timezone': 'OK', 'beta_config': 'FAIL'}},
         'samples': [
             sample(r, at0, season={'status': 'upcoming', 'id': 1, 'startsIn': secs(B['season_start'], f0), 'endsIn': None},
@@ -91,22 +112,64 @@ def decide(obs):
 
 class Boundaries(unittest.TestCase):
     def test_dates_come_from_the_real_configs(self):
-        launch = D(2026, 11, 20, 15, 0)
-        self.assertEqual(launch, D.strptime(C.LAUNCH, '%Y-%m-%d %H:%M'))
+        launch = D(2031, 3, 14, 15, 0)
+        self.assertEqual(launch, D.strptime(EXAMPLE_LAUNCH, '%Y-%m-%d %H:%M'))
+        self.assertEqual(B['launch'], launch)
         for k in ('season_start', 'pvp_start', 'founder_start', 'creator_start'):
             self.assertEqual(B[k], launch, k)
-        self.assertEqual(B['founder_end'], D(2026, 12, 18, 15, 0))
-        self.assertEqual(B['creator_end'], D(2026, 12, 20, 15, 0))
-        self.assertEqual(B['season_end'], D(2027, 2, 19, 15, 0))
-        self.assertEqual(B['pvp_end'], D(2027, 1, 15, 15, 0))
+        self.assertEqual(B['founder_end'], D(2031, 4, 11, 15, 0))
+        self.assertEqual(B['creator_end'], D(2031, 4, 13, 15, 0))
+        self.assertEqual(B['season_end'], D(2031, 6, 13, 15, 0))
+        self.assertEqual(B['pvp_end'], D(2031, 5, 9, 15, 0))
         self.assertEqual((B['creator_pct'], B['creator_base']), (15, 10))
 
     def test_weekend(self):
         start, end = C.weekend_window(B, B['season_start'])
-        self.assertEqual(start, D(2026, 11, 20, 18, 0))   # Friday, after the launch minute
-        self.assertEqual(end, D(2026, 11, 23, 0, 0))      # the last minute is Sunday 23:59
+        self.assertEqual(start, D(2031, 3, 14, 18, 0))   # Friday, after the launch minute
+        self.assertEqual(end, D(2031, 3, 17, 0, 0))      # the last minute is Sunday 23:59
         self.assertEqual(C.lua_wday(start), 6)
-        self.assertEqual(C.weekend_theme(B, start), 'Ritual of Training')
+        self.assertEqual(C.weekend_theme(B, start), 'Ritual of Rifts')
+
+    def test_open_launch_is_refused(self):
+        """No launch date, nothing to rehearse: every command that needs the boundaries refuses with exit 3 and a clear message."""
+        with self.assertRaises(C.LaunchOpen) as cm:
+            C.read_boundaries(SERVER_OPEN)
+        self.assertIn('no launch date is set', str(cm.exception))
+        self.assertIn('nothing to rehearse', str(cm.exception))
+        self.assertTrue(issubclass(C.LaunchOpen, ValueError))
+        import contextlib
+        import io
+        for args in (['plan', '--server', SERVER_OPEN], ['launch', '--server', SERVER_OPEN],
+                     ['creator-instants', '--server', SERVER_OPEN],
+                     ['decide', '--server', SERVER_OPEN, '--obs', SERVER_OPEN]):
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+                rc = C.main(args)
+            self.assertEqual(rc, 3, args[0])
+            self.assertIn('no launch date is set', err.getvalue(), args[0])
+        # a set date: the same commands run
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(C.main(['launch', '--server', SERVER]), 0)
+        self.assertEqual(out.getvalue().strip(), EXAMPLE_LAUNCH)
+
+    def test_launch_value_is_checked(self):
+        for bad in ('soon', '2031-02-30 15:00', '2031-03-14'):
+            with self.assertRaises(ValueError) as cm:
+                C.read_boundaries(make_server(bad))
+            self.assertNotIsInstance(cm.exception, C.LaunchOpen, bad)
+
+    def test_dates_follow_the_one_value(self):
+        """Another launch value moves every boundary with it, by the documented offsets and the lengths of the configs."""
+        b = C.read_boundaries(make_server('2032-01-09 12:00'))
+        self.assertEqual(b['season_start'], D(2032, 1, 9, 12, 0))
+        self.assertEqual(b['founder_end'], D(2032, 2, 6, 12, 0))
+        self.assertEqual(b['creator_end'], D(2032, 2, 8, 12, 0))
+        self.assertEqual(b['season_end'], D(2032, 4, 9, 12, 0))
+        self.assertEqual(b['pvp_end'], D(2032, 3, 5, 12, 0))
+        runs = {r['id']: r for r in C.plan(b)}
+        self.assertEqual(runs['launch']['start'], D(2032, 1, 9, 11, 58))
+        self.assertEqual(runs['founder_end']['start'], D(2032, 2, 6, 11, 58))
 
     def test_unreadable_config_is_an_error(self):
         import tempfile
@@ -117,7 +180,7 @@ class Boundaries(unittest.TestCase):
 
     def test_creator_instants(self):
         got = dict(C.creator_instants(B))
-        self.assertEqual(got['start'], 1795197600)          # 2026-11-20 18:00:00 UTC is 15:00 in Brasilia
+        self.assertEqual(got['start'], 1931277600)          # 2031-03-14 18:00:00 UTC is 15:00 in Brasilia
         self.assertEqual(got['before'], got['start'] - 1)
         self.assertEqual(got['after'] - got['start'], 30 * 86400)
         self.assertEqual(got['last'], got['after'] - 1)
@@ -128,14 +191,14 @@ class Plan(unittest.TestCase):
         ids = [r['id'] for r in RUNS]
         self.assertEqual(ids, ['launch', 'again', 'weekend_on', 'weekend_off', 'save', 'founder_end'])
         by = {r['id']: r for r in RUNS}
-        self.assertEqual(by['launch']['start'], D(2026, 11, 20, 14, 58))
+        self.assertEqual(by['launch']['start'], D(2031, 3, 14, 14, 58))
         self.assertEqual(by['launch']['samples'], [C.READY, C.LEAD + C.SETTLE])
-        self.assertEqual(by['again']['start'], D(2026, 11, 20, 15, 2))
+        self.assertEqual(by['again']['start'], D(2031, 3, 14, 15, 2))
         self.assertIsNone(by['again']['cross'])
-        self.assertEqual(by['weekend_on']['start'], D(2026, 11, 20, 17, 58))
-        self.assertEqual(by['founder_end']['start'], D(2026, 12, 18, 14, 58))
-        self.assertEqual(by['weekend_off']['start'], D(2026, 11, 22, 23, 58))
-        self.assertEqual(by['save']['start'], D(2026, 11, 23, 5, 58))
+        self.assertEqual(by['weekend_on']['start'], D(2031, 3, 14, 17, 58))
+        self.assertEqual(by['founder_end']['start'], D(2031, 4, 11, 14, 58))
+        self.assertEqual(by['weekend_off']['start'], D(2031, 3, 16, 23, 58))
+        self.assertEqual(by['save']['start'], D(2031, 3, 17, 5, 58))
         self.assertGreater(by['save']['wait_exit'], C.NOTIFY_MINUTES * 60)
 
     def test_every_sample_is_on_the_right_side(self):
@@ -147,12 +210,12 @@ class Plan(unittest.TestCase):
 
     def test_save_time_follows_the_option(self):
         runs = C.plan(B, (7, 30))
-        self.assertEqual({r['id']: r for r in runs}['save']['boundary'], D(2026, 11, 23, 7, 30))
+        self.assertEqual({r['id']: r for r in runs}['save']['boundary'], D(2031, 3, 17, 7, 30))
 
     def test_tsv(self):
         lines = C.plan_tsv(RUNS).split('\n')
         self.assertEqual(len(lines), 6)
-        self.assertEqual(lines[0].split('\t'), ['launch', '2026-11-20 14:58:00', '55,200', '120', '0'])
+        self.assertEqual(lines[0].split('\t'), ['launch', '2031-03-14 14:58:00', '55,200', '120', '0'])
         self.assertEqual(lines[1].split('\t')[3], '-')
         starts = [ln.split('\t')[1] for ln in lines]
         self.assertEqual(starts, sorted(starts))      # chronological: the clock never goes back in one database
@@ -160,13 +223,13 @@ class Plan(unittest.TestCase):
 
 class LogFacts(unittest.TestCase):
     def test_start_line(self):
-        text = '>> Timezone: local time 2026-11-20 14:58:27, UTC-03:00 (expected America/Sao_Paulo, UTC-03:00)\n'
+        text = '>> Timezone: local time 2031-03-14 14:58:27, UTC-03:00 (expected America/Sao_Paulo, UTC-03:00)\n'
         r = C.parse_start_line(text)
-        self.assertEqual((r['time'], r['offset'], r['warnings']), ('2026-11-20 14:58:27', -180, 0))
-        w = C.parse_start_line('>> Timezone: local time 2026-11-20 17:58:27, UTC+00:00 (x)\n>> TIMEZONE WARNING: this machine\n')
+        self.assertEqual((r['time'], r['offset'], r['warnings']), ('2031-03-14 14:58:27', -180, 0))
+        w = C.parse_start_line('>> Timezone: local time 2031-03-14 17:58:27, UTC+00:00 (x)\n>> TIMEZONE WARNING: this machine\n')
         self.assertEqual((w['offset'], w['warnings']), (0, 1))
         self.assertEqual(C.parse_start_line('nothing')['time'], None)
-        self.assertEqual(C.parse_start_line('>> Timezone: local time 2026-11-20 14:58:27, UTC+05:30 (x)')['offset'], 330)
+        self.assertEqual(C.parse_start_line('>> Timezone: local time 2031-03-14 14:58:27, UTC+05:30 (x)')['offset'], 330)
 
     def test_counts_only(self):
         text = '\n'.join(['[Chaos season] Season of Ash running, 3 season character(s)',
@@ -194,7 +257,7 @@ class Decisions(unittest.TestCase):
         self.assertEqual(C.exit_code(list(res.values())), 0)
 
     def test_start_line_fails(self):
-        for bad in ({'offset': 0}, {'warnings': 1}, {'time': None}, {'time': '2026-11-20 17:58:27'}):
+        for bad in ({'offset': 0}, {'warnings': 1}, {'time': None}, {'time': '2031-03-14 17:58:27'}):
             o = good_obs()
             o['launch']['facts']['start_line'].update(bad)
             self.assertFalse(decide(o)['start_line']['ok'], bad)
@@ -210,7 +273,7 @@ class Decisions(unittest.TestCase):
         o['founder_end']['samples'][1]['founder']['listed'] = True  # never closes
         r = decide(o)['founder']
         self.assertFalse(r['ok'])
-        self.assertIn('2026-12-18 15:00', r['text'])
+        self.assertIn('2031-04-11 15:00', r['text'])
         o = good_obs()
         del o['founder_end']
         self.assertFalse(decide(o)['founder']['ok'])
@@ -305,6 +368,9 @@ class Decisions(unittest.TestCase):
         del o['launch']['facts']['launch_check']['timezone']
         self.assertFalse(decide(o)['launch_check']['ok'])
         o = good_obs()
+        o['launch']['facts']['launch_check']['launch_date'] = 'WARN'     # "no launch date is set": nothing to rehearse
+        self.assertFalse(decide(o)['launch_check']['ok'])
+        o = good_obs()
         o['launch']['facts']['launch_check']['beta_config'] = 'FAIL'    # not a date: the rehearsal does not judge it
         self.assertTrue(decide(o)['launch_check']['ok'])
 
@@ -336,7 +402,7 @@ class Report(unittest.TestCase):
         text = C.report_text(B, res)
         self.assertEqual(len([ln for ln in text.split('\n') if ln.startswith('OK  ')]), len(C.CHECKS))
         self.assertIn('launch rehearsal: 0 FAIL, %d OK' % len(C.CHECKS), text)
-        self.assertIn('Ritual of Training', text)
+        self.assertIn('Ritual of Rifts', text)
         o = good_obs()
         o['save']['facts']['exit_after'] = None
         text = C.report_text(B, C.decide_all(B, RUNS, o))
@@ -395,10 +461,10 @@ class ProbeReading(unittest.TestCase):
 
     def test_weekend_status_line(self):
         s = P.Session()
-        s.feed(b'[weekend] Running: Ritual of Training, until 2026-11-22 23:59 (2 days left).')
+        s.feed(b'[weekend] Running: Ritual of Training, until 2031-03-16 23:59 (2 days left).')
         self.assertEqual(s.weekend, 'running')
         s = P.Session()
-        s.feed(b'[weekend] Next start: 2026-11-20 18:00, Ritual of Training.')
+        s.feed(b'[weekend] Next start: 2031-03-14 18:00, Ritual of Training.')
         self.assertEqual(s.weekend, 'off')
 
     def test_broken_frames_are_ignored(self):

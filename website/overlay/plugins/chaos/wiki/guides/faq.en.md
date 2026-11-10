@@ -28,7 +28,7 @@ Up to {{multiclient.perIp}} per connection. The second one cannot attack players
 
 ## When does the season start?
 
-The {{season.name}} runs from {{season.start}} to {{season.finish}}. See [Seasons and leaderboards](wiki:guide:seasons).
+The {{season.name}} {{season.runsEn}}. See [Seasons and leaderboards](wiki:guide:seasons).
 
 ## I found a bug. What do I do?
 

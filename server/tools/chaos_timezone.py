@@ -3,7 +3,7 @@
 
 The game reads the machine's LOCAL time for the Founder Pack window, Season 1, the creator launch bonus, the weekend
 ritual and the 06:00 save (weekend_config.lua, founder_config.lua, season_config.lua, creator_codes_config.lua). The
-launch is Fri 2026-11-20 15:00 Brasilia time, UTC-3. A machine left in UTC starts all of it 3 hours off, silently.
+launch is at 15:00 Brasilia time, UTC-3 (the date is on hold, launch_config.lua). A machine left in UTC starts all of it 3 hours off, silently.
 
 Expected zone: America/Sao_Paulo, UTC offset -180 minutes, or CHAOS_TIMEZONE from the environment / the env file
 (/etc/chaos/chaos.env). The Lua side has its own copy in server/data/scripts/chaos/timezone_config.lua: the two must
