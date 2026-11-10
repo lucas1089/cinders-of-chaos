@@ -56,6 +56,8 @@ ok(cfg.sources.cardSets.cap == 4, "card sets: at most 4")
 ok(cfg.groups.extras.cap == 6 and cfg.sources.charms.group == "extras" and cfg.sources.families.group == "extras",
 	"charms and weapon families: at most 6 together")
 ok(P.softCap() == 150 and select(2, P.softCap()) == 60, "the soft cap is the tree's: 150, H 60 (unchanged)")
+ok(cfg.softCap.cap == ChaosPassiveEffectsConfig.maxDamagePercent and cfg.softCap.H == ChaosPassiveEffectsConfig.softCap.damagePercentH,
+	"the config's own copy of the soft cap (the Codex reads it) equals the tree's")
 local gcfg = dofile("data/lib/chaos_gems_config.lua")
 ok(gcfg.effects.dmg_fire.cap == cfg.sources.gems.cap and gcfg.effects.dmg_holy.cap == cfg.sources.gems.cap, "the gem effect caps are the pool's")
 ok(gcfg.effects.dmg_physical.cap == cfg.sources.gems.capPhysical, "(physical too)")

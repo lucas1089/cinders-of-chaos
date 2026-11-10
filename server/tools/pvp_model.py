@@ -89,6 +89,9 @@ def config(text=None):
     head = body[0]
     for k, v in re.findall(r'(?m)^\t(\w+) = ([-0-9.]+)', head):
         out[k] = float(v)
+    # O473: the PvP damage scale, {level, factor} rows (pvp_scale_core.lua applies it in the game, once, for every path)
+    ds = re.search(r'damageScale = \{(\{.*?\})\},?\s*\n', head)
+    out['damageScale'] = [(int(a), float(b)) for a, b in re.findall(r'\{(\d+), ([0-9.]+)\}', ds.group(1))] if ds else []
     out['exceptions'] = {}
     if len(body) > 1:
         for cls, row in re.findall(r'\["([^"]+)"\] = \{([^}]*)\}', body[1]):
@@ -298,6 +301,39 @@ def problems(res, cfg):
                 v, lim = value(t['rows'][c], m), limit(cfg, c, m, lv)
                 if not passes(m, v, lim):
                     bad.append('%s level %d, %s: %s against the limit %s' % (c, lv, m, fmt(v), fmt(lim)))
+    return bad + scale_problems(cfg)
+
+
+def damage_scale(level, cfg):
+    """the PvP damage scale of an attacker's level (pvp_scale_core.lua: geometric between two rows, flat outside). NOT applied to the
+    damage of this model: the model's class damage (class_dps_model.py) is not the typical damage after the O470 to O473 round yet,
+    so the scale would only shorten nothing and lengthen every duel. The final re-fit multiplies both (README "Increased damage pool
+    (O473)")."""
+    rows = cfg.get('damageScale') or []
+    if not rows:
+        return 1.0
+    if level <= rows[0][0]:
+        return rows[0][1]
+    if level >= rows[-1][0]:
+        return rows[-1][1]
+    for (l0, f0), (l1, f1) in zip(rows, rows[1:]):
+        if level <= l1:
+            return math.exp(math.log(f0) + (math.log(f1) - math.log(f0)) * (level - l0) / float(l1 - l0))
+    return rows[-1][1]
+
+
+def scale_problems(cfg):
+    """the shape of the scale table: ascending levels, factors in (0, 1]"""
+    rows = cfg.get('damageScale') or []
+    bad = []
+    if not rows:
+        bad.append('damageScale: no table in pvp_balance_config.lua')
+    for (l0, _), (l1, _) in zip(rows, rows[1:]):
+        if l1 <= l0:
+            bad.append('damageScale: levels do not ascend at %d' % l1)
+    for lv, f in rows:
+        if not 0 < f <= 1.0:
+            bad.append('damageScale: the factor at level %d is %s, not in (0, 1]' % (lv, f))
     return bad
 
 

@@ -28,5 +28,18 @@ lines = V.lines(data)
 eq(#lines, 7, 'attack speed line')
 eq(lines[7].text, 'Attack speed: +14% (tree 9%, gear 5%; at most 1 attack per second)', 'attack speed text')
 eq(#V.lines({crit = {chance = {total = 1}}}), 0, 'a half crit block is ignored')
+-- O473: a damage row with the pool: the pool's numbers and one line of parts
+local pooled = {damage = {{k = 'incrementFire', n = 'Fire damage', raw = 60, eff = 60, cap = 150,
+  pool = {raw = 95, eff = 95, parts = {{n = 'Passive tree and Spell Damage', raw = 60, cap = nil}, {n = 'Gems', raw = 25, cap = 25}, {n = 'Paragon', raw = 10}}}},
+  {k = 'incrementPhysical', n = 'Physical damage', raw = 300, eff = 225.2, cap = 150,
+  pool = {raw = 312, eff = 230.1, parts = {{n = 'Passive tree and Spell Damage', raw = 300}, {n = 'Gems', raw = 12}}}},
+  {k = 'incrementIce', n = 'Ice damage', raw = 20, eff = 20, cap = 150, pool = {raw = 20, eff = 20, parts = {{n = 'Passive tree and Spell Damage', raw = 20}}}}}}
+lines = V.lines(pooled)
+eq(#lines, 5, 'pool: a line and a parts line for two rows, one line for a tree-only row')
+eq(lines[1].text, 'Fire damage: +95% increased damage (full value up to +150%)', 'pool under the cap')
+eq(lines[2].text, '  Passive tree and Spell Damage +60, Gems +25, Paragon +10', 'pool parts')
+eq(lines[3].text, 'Physical damage: +312% increased damage -> +230.1% effective (full value up to +150%)', 'pool over the cap')
+eq(lines[3].color, V.OVER, 'pool over the cap is highlighted')
+eq(lines[5].text, 'Ice damage: +20% increased damage (full value up to +150%)', 'a tree-only pool has no parts line')
 if fails > 0 then os.exit(1) end
 print('totals view tests OK')

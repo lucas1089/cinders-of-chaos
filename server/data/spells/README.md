@@ -5040,6 +5040,12 @@ Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `
 - **Free effect.** The Common rune of the support, the percent field cut to 75% (rounded down): Fork 1 enemy for 26%, Breadth 26%,
   Shatter 15%, Hex 2%, Echo 11% chance for 50%, Quickening 4%, the brands 15%. No support has a price, so the effect is reduced, and
   the tooltip says so.
+- **O473 (2026-11-10): the brands are pool entries.** The four brand choices (Hallowed Ground, Storm Rupture, Grave Wail, Bell of
+  Dawn) are no free support any more: while their spell is cast they add +3 raw to the one additive damage pool
+  (`damage_pool_config.lua` `masteries`, at most 12; config `damage`). The model counts the effect as the brand did, the spell's
+  damage +3% (the pool's soft cap only lowers it), so their rows below read +3% / +3% per spell and +0.4 to +1.1% of the class damage,
+  down from +15% / +15% and +1.9 to +5.4%. `spell_mastery_model.py` CAP (15% of the class damage per choice) now counts raw pool
+  percent for these rows; nothing was re-baselined, the rows fall far under it.
 - **Spell gain** (one cast, a pack of 5 as in `rotation_model.csv`): a brand +15% on both counts, Echo +5.5%, Fork one more enemy for
   26% of the hit (a single target spell: +26% on the pack), Shatter 4 neighbours for 15% (+60% on the pack), Breadth the enemies the
   spell missed (+17% for a spell that hits 3 of 5), Hex and Quickening are not a change of one cast. Fork, Shatter and Breadth give
@@ -5060,22 +5066,22 @@ Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `
 | Echoing Slam | spell not yet cast | +1.2% / +1.8% | +1.2% / +1.8% | 6 of 6 |
 | Wide Cry | spell not yet cast | +0.0% / +3.0% | +0.0% / +2.9% | 1 of 6 |
 | Splintering Spear | spell not yet cast | +0.0% / +4.7% | +0.0% / +4.1% | 2 of 6 |
-| Hallowed Ground | +2.3% / +5.4% | +1.9% / +4.0% | +2.1% / +4.3% | 9 of 9 |
+| Hallowed Ground | +0.5% / +1.1% | +0.4% / +0.8% | +0.4% / +0.9% | 9 of 9 |
 | Hunter's Mark | +1.3% / +0.3% | +1.3% / +0.3% | +1.3% / +0.3% | 3 of 9 |
 | Crimson Fork | spell not yet cast | +0.0% / +2.2% | +0.0% / +2.4% | 2 of 6 |
-| Storm Rupture | spell not yet cast | +2.1% / +3.2% | +1.9% / +3.1% | 3 of 6 |
+| Storm Rupture | spell not yet cast | +0.4% / +0.6% | +0.4% / +0.6% | 3 of 6 |
 | Twin Toss | +0.0% / +11.2% | +0.0% / +7.2% | +0.0% / +7.0% | 9 of 9 |
 | Wide Smoke | spell not yet cast | +0.0% / +3.2% | +0.0% / +3.0% | 2 of 6 |
 | Echoing Flurry | +0.7% / +2.4% | +0.7% / +1.5% | +0.8% / +1.5% | 9 of 9 |
 | Cursed Marrow | +1.0% / +0.2% | +1.0% / +0.2% | +1.0% / +0.2% | 2 of 9 |
-| Grave Wail | spell not yet cast | +2.3% / +4.7% | +2.3% / +4.4% | 3 of 6 |
+| Grave Wail | spell not yet cast | +0.5% / +0.9% | +0.5% / +0.9% | 3 of 6 |
 | Splintered Rot | spell not yet cast | +0.0% / +5.2% | +0.0% / +5.3% | 3 of 6 |
 | Wide Mist | spell not yet cast | +0.0% / +4.1% | +0.0% / +3.9% | 6 of 6 |
 | Splitting Palm | +0.0% / +5.5% | +0.0% / +4.6% | +0.0% / +4.3% | 5 of 9 |
 | Quick Heel | +0.0% / +0.0% | +1.6% / +1.8% | +1.6% / +1.8% | 3 of 9 |
 | Echoing Ground | +1.0% / +2.9% | +1.1% / +1.9% | +1.2% / +2.0% | 9 of 9 |
 | Marked Cut | +1.0% / +0.2% | +1.0% / +0.2% | +1.0% / +0.2% | 3 of 9 |
-| Bell of Dawn | spell not yet cast | +2.4% / +3.7% | +2.3% / +3.5% | 4 of 6 |
+| Bell of Dawn | spell not yet cast | +0.5% / +0.7% | +0.5% / +0.7% | 4 of 6 |
 
 - **Reading.** The largest gain is Twin Toss on 5 targets at level 100 (+11.2%, a Thief with few spells, Shuriken Toss cast every
   2 s). From level 500 no choice is over +7.2%. Hex is about +1% on one target (4 s over a 7 to 10 s cooldown, 2%). Quickening

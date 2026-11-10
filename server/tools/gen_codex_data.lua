@@ -1170,7 +1170,21 @@ function Gen.gemEntries(D)
 			sections = {
 				{h = "Effects by tier", p = {"A gem gives one effect, chosen by the item it sits in: weapons, armour (every other gear) or jewellery (amulets and rings). Remove = gold to take it out intact (Shatter is free and destroys it)."},
 					cols = {"Tier", "Weapon", "Armour", "Jewellery", "Remove"}, w = {14, 24, 24, 24, 14}, rows = rows},
-				{h = "Caps (all gems together)", p = {capText(t.weapon) .. ".", capText(t.armour) .. ".", capText(t.jewel) .. "."}},
+				{h = "Caps (all gems together)", p = (function()
+					local lines = {capText(t.weapon) .. ".", capText(t.armour) .. ".", capText(t.jewel) .. "."}
+					local dmg
+					for _, e in ipairs({t.weapon, t.armour, t.jewel}) do
+						if e.effect:find("^dmg_") then
+							dmg = cfg.effects[e.effect]
+						end
+					end
+					if dmg then
+						-- O473: a damage gem is increased damage of the one additive pool
+						lines[#lines + 1] = string.format("A damage gem is increased damage: it adds to the one damage pool with the passive tree and the other sources, at most %d from gems of one element.",
+							dmg.cap)
+					end
+					return lines
+				end)()},
 				{h = "Combining", p = {string.format("Three gems of one type and tier make one of the next tier (%s).",
 					table.concat(cfg.tiers, " > ")),
 					"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}},
@@ -1891,6 +1905,45 @@ function Gen.basicsEntries(D)
 		{h = "Reading one", p = {
 			"Hover over a unique to read it. Hold Ctrl to compare it with the item you wear in that slot. Hold Alt to read what each line means.",
 			"Right-click a unique and choose Open in Codex to open its page here, or Where to find to see where it drops."}}})
+	-- O473: the one additive damage pool. Every number is read from the configs.
+	do
+		local pool = dofile("data/scripts/chaos/damage_pool_config.lua")
+		local pvp = dofile("data/scripts/chaos/pvp_balance_config.lua")
+		local fx = {cap = pool.softCap.cap, H = pool.softCap.H} -- the tree's soft cap (tests/damage_pool_test.lua: the same numbers)
+		local src = pool.sources
+		local function soft(raw)
+			return fx.cap + fx.H * math.log(1 + (raw - fx.cap) / fx.H)
+		end
+		local scale = {}
+		for _, row in ipairs(pvp.damageScale) do
+			scale[#scale + 1] = {Gen.num(row[1]), "x" .. string.format("%.2f", row[2])}
+		end
+		add("increaseddamage", "Increased damage", "How the damage bonuses add up: one pool, one soft cap.", {
+			{h = "In short", p = {
+				"Every bonus called increased damage adds into one pool. The pool is applied to a hit once, as 1 + the pool / 100.",
+				string.format("The pool has a soft cap: up to %s it counts in full, above it each extra point counts less (%s raw counts as %s, %s raw as %s).",
+					Gen.num(fx.cap), Gen.num(300), Gen.num(math.floor(soft(300) + 0.5)), Gen.num(500), Gen.num(math.floor(soft(500) + 0.5))),
+				"Two bonuses of 20 and 30 make 50, not 1.2 x 1.3. A character with no bonus deals exactly its base damage."}},
+			{h = "What is in the pool", cols = {"Source", "What it adds", "Most"}, w = {26, 50, 24}, rows = {
+				{"Passive tree and Spell Damage", "The increases of the hit's damage type, all elements, and the Spell Damage of a wand or rod for spells.", "soft cap"},
+				{"Unique passives", string.format("The damage bonus of a unique power while its condition holds: its own value, %s at most for one power.",
+					Gen.num(src.uniques.each)), Gen.num(src.uniques.cap)},
+				{"Gems", "The damage gem of the hit's type.", string.format("%s (physical %s)", Gen.num(src.gems.cap), Gen.num(src.gems.capPhysical))},
+				{"Spell masteries", string.format("A damage mastery of the tree adds %s while its spell is cast.", Gen.num(src.masteries.each)), Gen.num(src.masteries.cap)},
+				{"Card set", "The damage part of the card set of the hit's element.", Gen.num(src.cardSets.cap)},
+				{"Charms and weapon family", "Increased damage to a monster family (charms) and the sword's tempo edge.", Gen.num(pool.groups.extras.cap) .. " together"},
+				{"Paragon", "The Paragon damage points.", "as set"}}},
+			{h = "What a cap means", p = {
+				"A source that holds more than its most counts for nothing above it. The line of a unique power shows the value it counts.",
+				"Healing never takes the pool: it takes the tree's Healing and your intelligence."}},
+			{h = "What does not join the pool", p = {
+				"Strength, intelligence and dexterity, the weapon and its Weapon Damage, critical hits, support runes (Brand, Echo, Hex and the others), class damage, the skill and magic level terms, the monster's armour and resistances multiply the hit on their own.",
+				"The price of a unique power (the damage it takes away) also stays a multiplier of its own."}},
+			{h = "Players against players", p = {
+				"A hit that a player, or a summon or companion of a player, deals to another player is multiplied by a factor of the attacker's level, so duels stay as long as they were. Monsters and healing are never scaled.",
+				"The factor between two levels follows a straight line in between."},
+				cols = {"Attacker level", "Factor"}, w = {50, 50}, rows = scale}})
+	end
 	local rows = {}
 	for rank = 1, #C.config.rarityNames do
 		local r = ChaosRarity.idOfRank(rank)

@@ -308,13 +308,16 @@ def table():
         e = free_effect(cfg, d['supports'], c['support'])
         rune = d['supports'][c['support']]
         parts = []
-        if c['support'] in cfg['damage']:
-            parts.append('no free rune: +%d increased damage in the pool (O473)' % cfg['pool_each'])
         for f in cfg['reduce'].get(c['support'], []):
             full = rune['values'][cfg['tier'] - 1] if f == 'value' else rune['values2'][cfg['tier'] - 1]
             parts.append('%d instead of %d' % (e[f], full))
-        lines.append('| %s | %s | %s | %s | Common | none, reduced: %s | %+.0f%% / %+.0f%% | %+.1f%% / %+.1f%% |' % (
-            c['line'].capitalize(), c['name'], by_id.get(c['spell'], str(c['spell'])), c['support'].capitalize(), '; '.join(parts),
+        if c['support'] in cfg['damage']:
+            price = 'none; +%d increased damage in the pool, no free rune (O473)' % cfg['pool_each']
+        else:
+            price = 'none, reduced: ' + '; '.join(parts)
+        lines.append('| %s | %s | %s | %s | %s | %s | %+.0f%% / %+.0f%% | %+.1f%% / %+.1f%% |' % (
+            c['line'].capitalize(), c['name'], by_id.get(c['spell'], str(c['spell'])), c['support'].capitalize(),
+            'Pool' if c['support'] in cfg['damage'] else 'Common', price,
             s['spell_one'] * 100, s['spell_five'] * 100, s['class_one'] * 100, s['class_five'] * 100))
     return '\n'.join(lines)
 

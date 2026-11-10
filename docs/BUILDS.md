@@ -428,14 +428,14 @@ second element is a choice.
 
 | Set | You get | Number | Cards that carry it | Who can reach it |
 |---|---|---|---|---|
-| Fire | Fire hits deal more | +4% of the Fire part of the hit | tier 1 of 7 lines | Ranger, Mystic, Necromancer, Monk and Templar lines, Elementalist |
+| Fire | Fire hits deal increased damage | +4 raw in the damage pool (O473), for the Fire part of the hit | tier 1 of 7 lines | Ranger, Mystic, Necromancer, Monk and Templar lines, Elementalist |
 | Earth | Earth hits poison | 4% of the hit over 4 s | tier 1 to 3 | Warrior, Ranger and Templar lines |
 | Death | Death hits heal you | 1.5% of the damage, at most 1% of your health a hit | tier 3 to 4 | every class |
 | Holy | Holy hits heal you | 0.5% of your health, once every 3 s | tier 1 to 2 | Elementalist |
 | Energy | Energy hits slow the target | 15% for 1.5 s | tier 3 to 4 | Mystic, Necromancer line, Elementalist |
 
 Each number is smaller than the snare of the same element (burn 30%, poison 36% over 6 s, leech 4%, party heal 2%, ice slow
-40% for 3 s). A damage part never goes over +6% of its own element and never touches another element. Damage over time is
+40% for 3 s). A damage part never goes over +4 of its own element (6% before O473: the Fire set is a raw entry of the one damage pool, at most 4) and never touches another element. Damage over time is
 never changed. Against players the damage and poison are a third; the slow does not work on players.
 
 **Price.** A set takes 3 of your 5 slots and locks the three lines of your class to one element. Most classes have exactly
@@ -444,7 +444,7 @@ need the rarer tier 3 and 4 cards. In damage the set costs little: against the b
 `server/README.md` "Card sets (O453)") the Warrior line is 0.5 to 0.8% behind, the Templar line 1.1 to 2.0%, the Illusionist
 2.2% to 3.4%; eleven classes are level with it because their card spells are not in their rotation or the bonus is not damage;
 the Beastmaster and Mystic lead by less than half a point. The worst case, all of a class's damage being of the set's
-element, is 6% of its damage per second. Nothing here was measured in game.
+element, is 4% of its damage per second (6% before O473). Nothing here was measured in game.
 
 ## Spell modifier masteries (O451)
 
@@ -461,6 +461,9 @@ effect that gives **one named spell a free support effect**. No luck needed.
   "A reduced Fork rune, free." The count of Fork and the radius of Breadth stay.
 - It takes **no rune socket**. A real rune of the same support on that spell counts when it is stronger. The two never add.
   A brand never joins a real brand: one brand per spell, as in the window.
+- **O473 (2026-11-10): the brands are increased damage.** The four brand choices (Hallowed Ground, Storm Rupture, Grave Wail, Bell
+  of Dawn) give no free brand any more. While their spell is cast they add +3 to the one additive damage pool (at most 12 for
+  masteries). The table below says "no free rune" for them. The other 16 choices are unchanged.
 - The tree stat is `spellMod`. The tree listener writes the held choice to one storage and the spells read it where they read
   their supports. No new opcode, no engine patch, no new art. Numbers and choices: `server/data/lib/chaos_spell_masteries_config.lua`.
 - Saved trees, build codes and loadouts stay valid: the effects are appended, so an old id means the same. No version bump, no
@@ -476,22 +479,22 @@ echoes, a hit curses, a spell carries an element.
 | Warrior | Echoing Slam | Colossus Fall | Echo | Common | none, reduced: 11 instead of 15 | +5% / +5% | +1.2% / +1.8% |
 | Warrior | Wide Cry | Bastion Cry | Breadth | Common | none, reduced: 26 instead of 35 | +0% / +17% | +0.0% / +3.0% |
 | Ranger | Splintering Spear | Sunspear | Shatter | Common | none, reduced: 15 instead of 20 | +0% / +60% | +0.0% / +4.7% |
-| Ranger | Hallowed Ground | Blessed Earth | Dawnbrand | Common | none, reduced: 15 instead of 20 | +15% / +15% | +2.3% / +5.4% |
+| Ranger | Hallowed Ground | Blessed Earth | Dawnbrand | Pool | none; +3 increased damage in the pool, no free rune (O473) | +3% / +3% | +0.5% / +1.1% |
 | Ranger | Hunter's Mark | Dawnpiercer | Hex | Common | none, reduced: 2 instead of 3 | +0% / +0% | +1.3% / +0.3% |
 | Mystic | Crimson Fork | Crimson Covenant | Fork | Common | none, reduced: 26 instead of 35 | +0% / +26% | +0.0% / +2.4% |
-| Mystic | Storm Rupture | Prismatic Rupture | Stormbrand | Common | none, reduced: 15 instead of 20 | +15% / +15% | +2.1% / +3.2% |
+| Mystic | Storm Rupture | Prismatic Rupture | Stormbrand | Pool | none; +3 increased damage in the pool, no free rune (O473) | +3% / +3% | +0.4% / +0.6% |
 | Thief | Twin Toss | Shuriken Toss | Fork | Common | none, reduced: 26 instead of 35 | +0% / +26% | +0.0% / +11.2% |
 | Thief | Wide Smoke | Smoke Bomb | Breadth | Common | none, reduced: 26 instead of 35 | +0% / +17% | +0.0% / +3.2% |
 | Thief | Echoing Flurry | Blade Flurry | Echo | Common | none, reduced: 11 instead of 15 | +5% / +5% | +0.8% / +2.4% |
 | Necromancer | Cursed Marrow | Marrow Bolt | Hex | Common | none, reduced: 2 instead of 3 | +0% / +0% | +1.0% / +0.2% |
-| Necromancer | Grave Wail | Gravewail | Gravebrand | Common | none, reduced: 15 instead of 20 | +15% / +15% | +2.3% / +4.7% |
+| Necromancer | Grave Wail | Gravewail | Gravebrand | Pool | none; +3 increased damage in the pool, no free rune (O473) | +3% / +3% | +0.5% / +0.9% |
 | Necromancer | Splintered Rot | Blightbrand | Shatter | Common | none, reduced: 15 instead of 20 | +0% / +60% | +0.0% / +5.3% |
 | Monk | Wide Mist | Mistborne Strike | Breadth | Common | none, reduced: 26 instead of 35 | +0% / +17% | +0.0% / +4.1% |
 | Monk | Splitting Palm | Sundering Palm | Shatter | Common | none, reduced: 15 instead of 20 | +0% / +60% | +0.0% / +5.5% |
 | Monk | Quick Heel | Whirling Heel | Quickening | Common | none, reduced: 4 instead of 6 | +4% / +4% | +1.6% / +1.8% |
 | Templar | Echoing Ground | Consecration | Echo | Common | none, reduced: 11 instead of 15 | +5% / +5% | +1.2% / +2.9% |
 | Templar | Marked Cut | Hallowed Cut | Hex | Common | none, reduced: 2 instead of 3 | +0% / +0% | +1.0% / +0.2% |
-| Templar | Bell of Dawn | Bell of Reckoning | Dawnbrand | Common | none, reduced: 15 instead of 20 | +15% / +15% | +2.4% / +3.7% |
+| Templar | Bell of Dawn | Bell of Reckoning | Dawnbrand | Pool | none; +3 increased damage in the pool, no free rune (O473) | +3% / +3% | +0.5% / +0.7% |
 
 **Gain.** Computed, not measured. No tool measures supports, so the numbers come from the support's own numbers on the rotation
 simulator (`server/tools/spell_mastery_model.py`, `server/data/spells/README.md` "Spell modifier masteries (O451)"). Spell
@@ -586,3 +589,35 @@ Warrior, Juggernaut, Berserker: Executioner's Verdict (melee and spells finish m
 slams), Rampage (kill stacks, 5 at most), Last Stand (survive one lethal hit per 90 s). Ranger, Deadeye, Beastmaster:
 Longshot (distance bonus), Barbed Quiver (bleed), Opening Shot (first hit on a full monster), Hobbling Shot (slow). Each
 has a price on the other hits. Numbers: `server/data/spells/README.md` "Warrior and Ranger line keystones".
+
+## Increased damage (O473)
+
+All increased damage adds into one pool. Before, the sources multiplied each other: a build with a full tree, five unique
+powers, a gem, a card set, charms and Paragon had its bonuses stacked as 1.5 x 1.8 x 1.4 and so on. Now they add, the pool counts
+once, and above +150 each extra point counts less (the soft cap of the tree, unchanged).
+
+| Source | Adds | Most |
+|---|---|---|
+| Passive tree, Spell Damage of a wand or rod | the increase of the hit's type | soft cap |
+| Unique powers | the damage bonus while its condition holds | 10 each, 40 in all |
+| Gems | the damage gem of the hit's type | 25 per element, physical 12 |
+| Brand masteries | +3 while their spell is cast | 12 |
+| Card set | Fire: +4 | 4 |
+| Charms, sword tempo edge | Increased damage to a family, up to +2 | 6 together |
+| Paragon | 0.5 a point, up to 40 points | as before |
+
+Still multiplies on its own: strength and intelligence, the weapon and its Weapon Damage, critical hits, support runes, class
+damage. Healing never takes the pool.
+
+**Who loses.** The more sources a build stacked, the more it loses. Five unique powers no longer make 1.8 times the damage: the
+most they add is +40, and a power whose damage bonus was 40 to 69% adds 10. A price of a power (the damage it takes away) is the
+same as before, so a few powers are worth little now: read the line on the item. Gems of one element stop at 25, not 40. The four
+brand masteries are +3, not a free brand. Charms with Damage to a family count 6 at most together with the sword's tempo edge.
+Computed with assumed builds, not measured (server/README.md "Increased damage pool (O473)"): a build with every source stacked
+is at about a quarter to a third of its old pool factor at level 500 and above; a build with a tree and a gem loses about a
+fifth to a third; a fresh build is unchanged.
+
+**What stays.** Every item you own, with its gems and its unique power. Nothing is rerolled or deleted.
+
+**Duels.** A hit between players is scaled by the attacker's level (x1.00 at level 100, x0.79 at 500, x0.48 at 1000, x0.46 at
+2000), so duels last as long as they did. Monsters and healing are not scaled.

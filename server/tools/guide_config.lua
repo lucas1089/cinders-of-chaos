@@ -49,6 +49,8 @@ G.words = {
 	spellbook = {"spells attack hotkeys", "magias feitiços ataque atalhos"},
 	spelldamage = {"spell damage scaling magic level skill weapon attack level modifiers passive tree support runes cards charms uniques sets how strong",
 		"dano das magias escala nível mágico magic level skill arma ataque nível modificadores árvore passiva runas de suporte cartas charms únicos conjuntos quão forte"},
+	increaseddamage = {"damage increased more multiply pool soft cap sources unique gems cards charms paragon masteries stack add pvp scale duel how strong",
+		"dano aumentado mais multiplicar conjunto limite suave fontes único gemas cartas charms paragon maestrias somar pvp escala duelo quão forte"},
 	townportal = {"town city temple go back", "cidade templo voltar"},
 	stash = {"storage depot items", "depósito guardar itens"},
 	crafting = {"orbs upgrade gear modifiers gems", "orbes melhorar equipamento modificadores gemas"},

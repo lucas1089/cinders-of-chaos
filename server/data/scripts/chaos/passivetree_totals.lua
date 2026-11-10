@@ -5,6 +5,8 @@
 --   server -> client  {"action":"statTotals","data":{attributes = [{k, n, raw, eff, cap, effect}], damage = [{k, n, raw, eff, cap}],
 --                      crit = {chance = {total, tree, other}, amount = {total, tree, paragon, other}},
 --                      attackSpeed = {total, tree, gear, cap} (only with a bonus)}}
+--                     O473: a damage row also carries pool = {raw, eff, parts = [{n, raw, cap}]}, the one additive damage pool
+--                     (damage_pool_core.lua) of that type without a target: tree and Spell Damage, Paragon, gems, the card set
 --                     n = the stat name in the player's language (Chaos.t); raw = what the nodes give, eff = after the soft cap
 --                     (passivetree_effects.lua ChaosSoftCap), crit totals are the engine's own value: tree, Paragon, gear, gems,
 --                     blessings and every other source together.
@@ -62,14 +64,37 @@ local function named(player, rows)
 	return rows
 end
 
+-- O473: the one additive damage pool of a damage type for the window and the character sheet: every source that holds without a
+-- target (the tree and the worn Spell Damage, Paragon, gems, the card set of that element), the sum, the soft cap result. The unique
+-- passives, charms, the sword's edge and a mastery depend on the hit: the help line names them. {raw, eff, parts = {{n, raw, cap}}}
+function TT.pool(player, bonuses, combatType)
+	if not ChaosDamagePool then
+		return nil
+	end
+	local list, sum, eff = ChaosDamagePool.sheet(player, combatType, ChaosPassiveDamageRaw(bonuses, combatType))
+	local parts = {}
+	for _, e in ipairs(list) do
+		parts[#parts + 1] = {n = Chaos.t(player, e.label), raw = math.floor(e.raw * 10 + 0.5) / 10, cap = e.cap}
+	end
+	return {raw = math.floor(sum * 10 + 0.5) / 10, eff = math.floor(eff * 10 + 0.5) / 10, parts = parts}
+end
+
 -- the message data for a player (bonuses = the cached tree + Paragon sums, ChaosPassiveCache)
 function TT.build(player, bonuses)
 	bonuses = bonuses or ChaosPassiveCache and ChaosPassiveCache[player:getId()] or {}
 	local a = api()
 	local chance, amount = engineCrit(player)
+	local damage = named(player, PassiveTotalsCore.damage(bonuses, a))
+	local typeOf = {}
+	for _, t in ipairs(a.types) do
+		typeOf[t[1]] = t[2]
+	end
+	for _, row in ipairs(damage) do
+		row.pool = typeOf[row.k] and TT.pool(player, bonuses, typeOf[row.k]) or nil
+	end
 	return {
 		attributes = named(player, PassiveTotalsCore.attributes(bonuses, a)),
-		damage = named(player, PassiveTotalsCore.damage(bonuses, a)),
+		damage = damage,
 		crit = PassiveTotalsCore.crit(bonuses, chance, amount),
 		attackSpeed = PassiveTotalsCore.attackSpeed(bonuses, ChaosItemMods and ChaosItemMods.playerBonus and
 			ChaosItemMods.playerBonus(player, "gearspeed") or 0,

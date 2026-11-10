@@ -232,7 +232,7 @@ eq(own.manaonkill, 0, "no harvester, no mana")
 own, gear, sig = C.totals(cfg, {grand("dmg_undead", 9), grand("dmg_undead", 9), {charm = C.rollCharm(cfg, {unique = "gravewarden"})},
 	{charm = C.rollCharm(cfg, {unique = "tally"})}, {charm = C.rollCharm(cfg, {unique = "hoard"})}, grand("res_fire", 6),
 	grand("res_fire", 6)})
-eq(own.dmg_undead, 15, "family capped (9 + 9 + 6 -> 15)")
+eq(own.dmg_undead, 15, "family capped (9 + 9 + 6 -> 15; the damage pool counts 6 of it with the weapon family, O473)")
 eq(own.res_death, 4, "unique resistance")
 eq(own.res_fire, 8, "element capped")
 eq(own.lifeonkill, 12, "tally")

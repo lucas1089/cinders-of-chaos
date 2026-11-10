@@ -272,7 +272,7 @@ function F.note(family)
 	local price = shown((1 - f.single) * 100)
 	if family == "sword" then
 		local t = f.tempo
-		return string.format("Sword: tempo. Each hit on the same target speeds up your swing, up to %s%% faster, and adds up to %s%% damage. Best on one target. A new target starts over.",
+		return string.format("Sword: tempo. Each hit on the same target speeds up your swing, up to %s%% faster, and adds up to +%s%% increased damage. Best on one target. A new target starts over.",
 			shown(t.maxStacks * t.stackPct), shown(t.edge * 100))
 	elseif family == "axe" then
 		local c = f.cleave

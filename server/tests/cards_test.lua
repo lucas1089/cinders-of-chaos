@@ -1004,12 +1004,12 @@ do
 			ok(#t > 20 and not t:find("%%[sd]"), "set text " .. name .. " " .. lang .. ": " .. t)
 		end
 	end
-	eq(K.setBonusText("en", "Fire"), "Your Fire damage is 4% higher.", "Fire text")
+	eq(K.setBonusText("en", "Fire"), "Your Fire damage: +4% increased damage (a card set adds at most 4 to the one damage pool).", "Fire text")
 	eq(K.setBonusText("en", "Energy"), "Your Energy hits slow the target by 15% for 1.5 seconds.", "Energy text")
 	eq(K.setBonusText("en", "Earth"), "Your Earth hits poison the target for 4% of the hit over 4 seconds.", "Earth text")
 	eq(K.setBonusText("en", "Death"), "Your Death hits heal you for 1.5% of the damage, at most 1% of your maximum health a hit.", "Death text")
 	eq(K.setBonusText("en", "Holy"), "Your Holy hits heal you for 0.5% of your maximum health, at most once every 3 seconds.", "Holy text")
-	eq(K.setBonusText("pt-BR", "Fire"), "Seu dano de Fogo é 4% maior.", "Fire text pt-BR")
+	eq(K.setBonusText("pt-BR", "Fire"), "Seu dano de Fogo: +4% de dano aumentado (um conjunto de cartas soma no máximo 4 ao conjunto de dano).", "Fire text pt-BR")
 	eq(K.setBonusText("en", "Ice"), "", "Ice has no set text")
 	eq(K.setLine("en", st3), "Card set Death is on with 3 cards: Your Death hits heal you for 1.5% of the damage, at most 1% of your maximum health a hit.",
 		"the line of a set that is on")
@@ -1115,7 +1115,7 @@ do
 	a = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
 	eq(a, -100, "2 cards: no bonus")
 	M.use(ranger, it[3])
-	ok(lastMsg(ranger):find("Card set Fire is on with 3 cards: Your Fire damage is 4% higher.", 1, true) ~= nil, "three cards: the set is on: " .. lastMsg(ranger))
+	ok(lastMsg(ranger):find("Card set Fire is on with 3 cards: Your Fire damage: +4% increased damage", 1, true) ~= nil, "three cards: the set is on: " .. lastMsg(ranger))
 	eq(M.sets[ranger:getId()].element, "Fire", "the cache says Fire")
 	-- the hit: the primary part, the secondary part, never another element
 	a, b = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)

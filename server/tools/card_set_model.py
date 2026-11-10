@@ -23,7 +23,8 @@ The model, per class (all inputs are in the repo):
              any of its 4 elements or none. Found by search over every choice.
   set        the best 5 cards that make a set: the same search, the set's damage part added (Fire and Earth: pct x the share of the
              damage that is of the element at the end; Death, Holy and Energy give a leech, a heal and a slow: no damage, not valued).
-  worst case the cap (6%) of the class's damage per second: if ALL its damage were of the set's element.
+  worst case the cap (4% since O473, 6% before: raw percent of the one additive damage pool) of the class's damage per second: if ALL
+             its damage were of the set's element.
 --check fails when a set is better than the best mixed build of a class by AHEAD (0.5 points) or more (the owner's rule: then lower it;
 below that the lead is inside the model's own guess, and for the classes whose native element is the set's element it cannot be
 lowered away: the bonus is on damage the class deals anyway, the cards cost it nothing), when a class's

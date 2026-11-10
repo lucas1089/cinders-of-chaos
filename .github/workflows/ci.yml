@@ -1464,6 +1464,10 @@ jobs:
         run: |
           cd server && luajit tools/unique_passives_model.lua --check && lua5.3 tools/unique_passives_model.lua --check
 
+      - name: Damage pool table (O473)
+        run: |
+          cd server && luajit tools/damage_pool_table.lua --check && lua5.3 tools/damage_pool_table.lua --check
+
       - name: Codex data is up to date with the server data files
         run: |
           cd server

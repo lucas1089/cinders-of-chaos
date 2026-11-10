@@ -5493,7 +5493,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Fire Damage at most 40%.", "Max Health at most 2000.", "Fire Resistance at most 30%."}
+							p = {"Fire Damage at most 25%.", "Max Health at most 2000.", "Fire Resistance at most 30%.", "A damage gem is increased damage: it adds to the one damage pool with the passive tree and the other sources, at most 25 from gems of one element."}
 						},
 						{
 							h = "Combining",
@@ -5536,7 +5536,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Ice Damage at most 40%.", "Max Mana at most 1500.", "Ice Resistance at most 30%."}
+							p = {"Ice Damage at most 25%.", "Max Mana at most 1500.", "Ice Resistance at most 30%.", "A damage gem is increased damage: it adds to the one damage pool with the passive tree and the other sources, at most 25 from gems of one element."}
 						},
 						{
 							h = "Combining",
@@ -5579,7 +5579,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Earth Damage at most 40%.", "Movement Speed at most 12%.", "Earth Resistance at most 30%."}
+							p = {"Earth Damage at most 25%.", "Movement Speed at most 12%.", "Earth Resistance at most 30%.", "A damage gem is increased damage: it adds to the one damage pool with the passive tree and the other sources, at most 25 from gems of one element."}
 						},
 						{
 							h = "Combining",
@@ -5622,7 +5622,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Critical Chance at most 10%, Critical Hit at most 75%.", "Death Resistance at most 30%.", "Death Damage at most 40%."}
+							p = {"Critical Chance at most 10%, Critical Hit at most 75%.", "Death Resistance at most 30%.", "Death Damage at most 25%.", "A damage gem is increased damage: it adds to the one damage pool with the passive tree and the other sources, at most 25 from gems of one element."}
 						},
 						{
 							h = "Combining",
@@ -5665,7 +5665,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Attack Speed at most 30%.", "Energy Resistance at most 30%.", "Energy Damage at most 40%."}
+							p = {"Attack Speed at most 30%.", "Energy Resistance at most 30%.", "Energy Damage at most 25%.", "A damage gem is increased damage: it adds to the one damage pool with the passive tree and the other sources, at most 25 from gems of one element."}
 						},
 						{
 							h = "Combining",
@@ -5708,7 +5708,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Holy Damage at most 40%.", "Elemental Resistances: spread over each elemental resistance, under their caps.", "Holy Resistance at most 30%."}
+							p = {"Holy Damage at most 25%.", "Elemental Resistances: spread over each elemental resistance, under their caps.", "Holy Resistance at most 30%.", "A damage gem is increased damage: it adds to the one damage pool with the passive tree and the other sources, at most 25 from gems of one element."}
 						},
 						{
 							h = "Combining",
@@ -5751,7 +5751,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Life Leech Chance at most 20%, Life Leech Amount at most 15%.", "Physical Resistance at most 10%.", "Physical Damage at most 12%."}
+							p = {"Life Leech Chance at most 20%, Life Leech Amount at most 15%.", "Physical Resistance at most 10%.", "Physical Damage at most 12%.", "A damage gem is increased damage: it adds to the one damage pool with the passive tree and the other sources, at most 12 from gems of one element."}
 						},
 						{
 							h = "Combining",
@@ -5893,7 +5893,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A pilgrim carried it from the burnt chapel to the first town and never sheathed it again. Pilgrim's Resolve: Below 40% health you deal 69% more damage. For: Warrior, Templar, Monk. (Requires level 12.)"}
+							p = {"A pilgrim carried it from the burnt chapel to the first town and never sheathed it again. Pilgrim's Resolve: Below 40% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Templar, Monk. (Requires level 12.)"}
 						},
 						{
 							h = "Stats",
@@ -5945,7 +5945,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The sentence of the ash judges, passed once and never appealed. Judges of Ash: Targets at 30% health or less take 80% more damage from you. Targets at 85% or more take 18% less. For: Warrior, Thief, Monk, Templar. (Requires level 1300.)"}
+							p = {"The sentence of the ash judges, passed once and never appealed. Judges of Ash: Against targets at 30% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 85% or more take 18% less. For: Warrior, Thief, Monk, Templar. (Requires level 1300.)"}
 						},
 						{
 							h = "Stats",
@@ -6230,7 +6230,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Dyed in the blood of the road they walked. Road of Blood: Your hits deal 1% more damage per 10 speed above 200, up to 25%. For: Warrior, Thief, Ranger. (Requires level 80.) Part of the Embers of Aranoth set."}
+							p = {"Dyed in the blood of the road they walked. Road of Blood: Your hits deal 1% increased damage per 10 speed above 200, up to 25%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Thief, Ranger. (Requires level 80.) Part of the Embers of Aranoth set."}
 						},
 						{h = "Stats", p = {"Armor 4", "Fire Absorb +8%", "Magic Level +1"}},
 						{
@@ -6274,7 +6274,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Its edge was quenched in the Blood Colossus's altar and never quite dried. Altar Quench: Below 40% health you deal 98% more damage. Above 75% health you deal 15% less. For: Warrior. (Requires level 300.)"}
+							p = {"Its edge was quenched in the Blood Colossus's altar and never quite dried. Altar Quench: Below 40% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). Above 75% health you deal 15% less. For: Warrior. (Requires level 300.)"}
 						},
 						{h = "Stats", p = {"Attack 58", "Defense 30", "Melee +3"}},
 						{
@@ -6317,7 +6317,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Each ring of the mail was sworn on a separate wound. Sworn on a Wound: Each kill adds a stack for 6 s, up to 5: 7.8% more damage dealt per stack. Each stack also adds 4% damage taken. For: Warrior, Templar. (Requires level 300.)"}
+							p = {"Each ring of the mail was sworn on a separate wound. Sworn on a Wound: Each kill adds a stack for 6 s, up to 5: 7.8% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 4% damage taken. For: Warrior, Templar. (Requires level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 18", "Physical Absorb +4%"}},
 						{
@@ -6489,7 +6489,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A skull on a pole. The skull is grinning, the pole is not. Grinding Wheel: You deal 7% more damage per other monster within 3 tiles, up to 5. Alone you deal 15% less. For: Warrior, Monk. (Requires level 90.)"}
+							p = {"A skull on a pole. The skull is grinning, the pole is not. Grinding Wheel: You deal 7% increased damage per other monster within 3 tiles, up to 5, +10% increased damage (at most 10 for one unique power, 40 for all). Alone you deal 15% less. For: Warrior, Monk. (Requires level 90.)"}
 						},
 						{h = "Stats", p = {"Attack 58", "Defense 18", "Melee +5"}},
 						{
@@ -6533,7 +6533,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"It watches you from the inside of your own skull. Evil Eye: Your hits mark the target for 6 s, up to 3 at once. Marked monsters take 25% more damage from you. Others take 8% less. For: Mystic, Necromancer, Ranger. (Requires level 60.)"}
+							p = {"It watches you from the inside of your own skull. Evil Eye: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 8% less. For: Mystic, Necromancer, Ranger. (Requires level 60.)"}
 						},
 						{h = "Stats", p = {"Armor 10", "Death Absorb +6%", "Magic Level +2"}},
 						{
@@ -6857,7 +6857,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A candle wick that never burns down, bound in iron and old prayers. Wick Surplus: At 70% mana or more you deal 20% more damage. At 25% mana or less you deal 5% less. For: Mystic, Necromancer. (Requires level 10.)"}
+							p = {"A candle wick that never burns down, bound in iron and old prayers. Wick Surplus: At 70% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 25% mana or less you deal 5% less. For: Mystic, Necromancer. (Requires level 10.)"}
 						},
 						{h = "Stats", p = {"Magic Level +2", "Chance to Ignite +12%", "Mana on Kill +15"}},
 						{
@@ -7215,7 +7215,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Light enough for a court mage, warm enough for a pyre. Court Mage's Pace: Your hits deal 1% more damage per 8 magic level, up to 40%. For: Warrior, Monk, Templar. (Requires level 400.)"}
+							p = {"Light enough for a court mage, warm enough for a pyre. Court Mage's Pace: Your hits deal 1% increased damage per 8 magic level, up to 40%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Monk, Templar. (Requires level 400.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Fire Absorb +3%"}},
 						{
@@ -7344,7 +7344,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The last chapter has not been written. It is waiting for you to finish. Unwritten Chapter: At 75% mana or more you deal 55% more damage. At 40% mana or less you deal 20% less. For: Mystic, Necromancer. (Requires level 1650. Mystic and Necromancer lines.)"}
+							p = {"The last chapter has not been written. It is waiting for you to finish. Unwritten Chapter: At 75% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 40% mana or less you deal 20% less. For: Mystic, Necromancer. (Requires level 1650. Mystic and Necromancer lines.)"}
 						},
 						{h = "Stats", p = {"Defense 33", "Death Absorb +12%", "Magic Level +9"}},
 						{
@@ -7569,7 +7569,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A purse-cutter's blade, worn thin by a thousand clean strokes. Thieves swear two of them are better than one. Light Fingers: Each critical hit adds a stack for 5 s, up to 4: 7% more damage dealt per stack. For: Thief, Monk. (Requires level 10.)"}
+							p = {"A purse-cutter's blade, worn thin by a thousand clean strokes. Thieves swear two of them are better than one. Light Fingers: Each critical hit adds a stack for 5 s, up to 4: 7% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). For: Thief, Monk. (Requires level 10.)"}
 						},
 						{
 							h = "Stats",
@@ -7616,7 +7616,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"One portrait inside: whoever it is, they never saw you coming. First Cut: Targets at 90% health or more take 70% more damage from you. Targets at 25% or less take 5% less. For: Thief. (Requires level 820.)"}
+							p = {"One portrait inside: whoever it is, they never saw you coming. First Cut: Against targets at 90% health or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 25% or less take 5% less. For: Thief. (Requires level 820.)"}
 						},
 						{h = "Stats", p = {"Physical Absorb +5%", "Melee +2"}},
 						{
@@ -7753,7 +7753,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Strung with something that was once alive; it hums at the dead. Hum of the Dead: Your hits mark the target for 6 s, up to 3 at once. Marked monsters take 30% more damage from you. Others take 10% less. For: Ranger. (Requires level 110.)"}
+							p = {"Strung with something that was once alive; it hums at the dead. Hum of the Dead: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 10% less. For: Ranger. (Requires level 110.)"}
 						},
 						{h = "Stats", p = {"Attack 75", "Range 6", "Death Absorb +6%", "Ranged +6"}},
 						{
@@ -7842,7 +7842,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Wrapped tight, for running along rooftops. Rooftop Run: Your hits deal 1% more damage per 8 speed above 200, up to 30%. For: Thief, Monk, Ranger. (Requires level 300.)"}
+							p = {"Wrapped tight, for running along rooftops. Rooftop Run: Your hits deal 1% increased damage per 8 speed above 200, up to 30%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Thief, Monk, Ranger. (Requires level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 9", "Earth Absorb +4%"}},
 						{
@@ -7885,7 +7885,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A hood that swallows the light around the face. Swallowed Light: Against one target alone you deal 64% more damage. Among 3 or more monsters you deal 20% less. For: Thief, Monk. (Requires level 300.)"}
+							p = {"A hood that swallows the light around the face. Swallowed Light: Against one target alone you deal +10% increased damage (at most 10 for one unique power, 40 for all). Among 3 or more monsters you deal 20% less. For: Thief, Monk. (Requires level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 12", "Fist +2", "Melee +1"}},
 						{
@@ -7928,7 +7928,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The first of a pair. It wants the other one in your off hand. First of a Pair: Each hit in a row on one target deals 8% more, up to 6 hits. The first hit on a new target deals 12% less. For: Thief. (Requires level 300.)"}
+							p = {"The first of a pair. It wants the other one in your off hand. First of a Pair: Each hit in a row on one target adds 8% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 12% less. For: Thief. (Requires level 300.)"}
 						},
 						{h = "Stats", p = {"Attack 42", "Defense 12", "Melee +2"}},
 						{
@@ -8150,7 +8150,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The dust never settles behind them. You were never there. Dust Never Settles: Your hits deal 1% more damage per 25 speed above 700, up to 20%. For: Thief. (Requires level 430.)"}
+							p = {"The dust never settles behind them. You were never there. Dust Never Settles: Your hits deal 1% increased damage per 25 speed above 700, up to 20%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Thief. (Requires level 430.)"}
 						},
 						{h = "Stats", p = {"Armor 4", "Ice Absorb +6%"}},
 						{
@@ -8462,7 +8462,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The last thing many a condemned man heard was its song. Last Words: Targets at 30% health or less take 55% more damage from you. Targets at 80% or more take 10% less. For: Warrior, Monk. (Requires level 80.)"}
+							p = {"The last thing many a condemned man heard was its song. Last Words: Against targets at 30% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 80% or more take 10% less. For: Warrior, Monk. (Requires level 80.)"}
 						},
 						{h = "Stats", p = {"Attack 50", "Defense 18", "Melee +3"}},
 						{
@@ -8595,7 +8595,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Strung by the marsh wardens, who never let a light cross the fen unseen. Fen Warden's Mark: Your hits mark the target for 6 s, up to 2 at once. Marked monsters take 20% more damage from you. For: Ranger. (Requires level 12.)"}
+							p = {"Strung by the marsh wardens, who never let a light cross the fen unseen. Fen Warden's Mark: Your hits mark the target for 6 s, up to 2 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Ranger. (Requires level 12.)"}
 						},
 						{
 							h = "Stats",
@@ -8642,7 +8642,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Sewn the night before the first hunt. It smells of rain. First Quarry: Targets at 90% health or more take 30% more damage from you. For: Ranger. (Requires level 6. Ranger line.)"}
+							p = {"Sewn the night before the first hunt. It smells of rain. First Quarry: Against targets at 90% health or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Ranger. (Requires level 6. Ranger line.)"}
 						},
 						{h = "Stats", p = {"Defense 3", "Health on Hit +6"}},
 						{
@@ -8732,7 +8732,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Its string was a hangman's rope. It still pulls tight on its own. Hangman's Rope: Targets at 95% health or more take 90% more damage from you. Targets at 50% or less take 15% less. For: Ranger. (Requires level 600.)"}
+							p = {"Its string was a hangman's rope. It still pulls tight on its own. Hangman's Rope: Against targets at 95% health or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 50% or less take 15% less. For: Ranger. (Requires level 600.)"}
 						},
 						{h = "Stats", p = {"Attack 78", "Range 6", "Ranged +3"}},
 						{
@@ -8818,7 +8818,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The hood the hangman wore so the condemned would not see his face. Face Unseen: Your hits mark the target for 6 s, up to 4 at once. Marked monsters take 35% more damage from you. Others take 12% less. For: Ranger, Thief. (Requires level 600.)"}
+							p = {"The hood the hangman wore so the condemned would not see his face. Face Unseen: Your hits mark the target for 6 s, up to 4 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 12% less. For: Ranger, Thief. (Requires level 600.)"}
 						},
 						{h = "Stats", p = {"Armor 13", "Ranged +2"}},
 						{
@@ -8861,7 +8861,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Made for standing still a long time on a cold scaffold. Standing Still: Each hit in a row on one target deals 8% more, up to 6 hits. The first hit on a new target deals 15% less. For: Ranger, Mystic. (Requires level 600.)"}
+							p = {"Made for standing still a long time on a cold scaffold. Standing Still: Each hit in a row on one target adds 8% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 15% less. For: Ranger, Mystic. (Requires level 600.)"}
 						},
 						{h = "Stats", p = {"Armor 10"}},
 						{
@@ -8904,7 +8904,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A hangman's design: it only needs one shot. One Shot: Targets at 95% health or more take 75% more damage from you. Targets at 40% or less take 12% less. For: Ranger. (Requires level 60.)"}
+							p = {"A hangman's design: it only needs one shot. One Shot: Against targets at 95% health or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 40% or less take 12% less. For: Ranger. (Requires level 60.)"}
 						},
 						{h = "Stats", p = {"Range 5", "Ranged +3"}},
 						{
@@ -8992,7 +8992,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A two-handed argument that ends all debate. Argument Ender: Targets at 35% health or less take 60% more damage from you. Targets at 85% or more take 12% less. For: Templar, Monk. (Requires level 100.)"}
+							p = {"A two-handed argument that ends all debate. Argument Ender: Against targets at 35% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 85% or more take 12% less. For: Templar, Monk. (Requires level 100.)"}
 						},
 						{h = "Stats", p = {"Attack 66", "Defense 20"}},
 						{
@@ -9036,7 +9036,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A saint walked into the pyre and did not stop; only the hand came back out. Saint Walked On: Below 30% health you deal 98% more damage. Above 70% health you deal 15% less. For: Monk. (Requires level 650, Monks only.)"}
+							p = {"A saint walked into the pyre and did not stop; only the hand came back out. Saint Walked On: Below 30% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). Above 70% health you deal 15% less. For: Monk. (Requires level 650, Monks only.)"}
 						},
 						{h = "Stats", p = {"Attack 64", "Defense 24", "Fire Absorb +6%", "Fist +5"}},
 						{
@@ -9124,7 +9124,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Its bolts come back with the tide, and bring something with them. Tide Brings Something: Your hits mark the target for 6 s, up to 4 at once. Marked monsters take 45% more damage from you. Others take 15% less. For: Ranger. (Requires level 1800.)"}
+							p = {"Its bolts come back with the tide, and bring something with them. Tide Brings Something: Your hits mark the target for 6 s, up to 4 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 15% less. For: Ranger. (Requires level 1800.)"}
 						},
 						{
 							h = "Stats",
@@ -9219,7 +9219,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Every arrow leaves it with a sigh. Wind-Borne: Against one target alone you deal 50% more damage. Among 3 or more monsters you deal 12% less. For: Ranger. (Requires level 38. Ranger line.)"}
+							p = {"Every arrow leaves it with a sigh. Wind-Borne: Against one target alone you deal +10% increased damage (at most 10 for one unique power, 40 for all). Among 3 or more monsters you deal 12% less. For: Ranger. (Requires level 38. Ranger line.)"}
 						},
 						{h = "Stats", p = {"Defense 5", "Health on Hit +14", "Physical Penetration +4%"}},
 						{
@@ -9315,7 +9315,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Every road ends somewhere. These have not found where. Endless Road: Your hits deal 1% more damage per 6 speed above 200, up to 40%. For: Warrior, Ranger, Thief, Monk. (Requires level 1200.)"}
+							p = {"Every road ends somewhere. These have not found where. Endless Road: Your hits deal 1% increased damage per 6 speed above 200, up to 40%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Ranger, Thief, Monk. (Requires level 1200.)"}
 						},
 						{
 							h = "Stats",
@@ -9361,7 +9361,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Walk far enough and the road turns to ash behind you. Road Turns to Ash: Your melee hits deal 1% more damage per 6 speed above 200, up to 40%. For: Warrior, Thief, Monk. (Requires level 1650.)"}
+							p = {"Walk far enough and the road turns to ash behind you. Road Turns to Ash: Your melee hits deal 1% increased damage per 6 speed above 200, up to 40%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Thief, Monk. (Requires level 1650.)"}
 						},
 						{h = "Stats", p = {"Armor 16", "Earth Absorb +6%", "Ice Absorb +6%"}},
 						{
@@ -9545,7 +9545,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A coal that never cools, hung where a heart should be. Never-Cooling Coal: Your melee hits deal 2.9% more damage per 200 maximum health, up to 35%. For: Warrior, Templar, Monk. (Requires level 80.)"}
+							p = {"A coal that never cools, hung where a heart should be. Never-Cooling Coal: Your melee hits deal 2.9% increased damage per 200 maximum health, up to 35%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Templar, Monk. (Requires level 80.)"}
 						},
 						{h = "Stats", p = {"Fire Absorb +18%", "Physical Absorb +6%"}},
 						{
@@ -9818,7 +9818,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A crown with nothing inside it. Wear it and it is still empty. Nothing Inside: At 75% mana or more you deal 55% more damage. At 40% mana or less you deal 20% less. For: Mystic, Necromancer. (Requires level 1000.)"}
+							p = {"A crown with nothing inside it. Wear it and it is still empty. Nothing Inside: At 75% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 40% mana or less you deal 20% less. For: Mystic, Necromancer. (Requires level 1000.)"}
 						},
 						{
 							h = "Stats",
@@ -9910,7 +9910,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"No king sits the hollow throne. The blade keeps the seat warm. Seat Kept Warm: Below 35% health you deal 97% more damage. Above 75% health you deal 18% less. For: Warrior, Templar. (Requires level 1550.)"}
+							p = {"No king sits the hollow throne. The blade keeps the seat warm. Seat Kept Warm: Below 35% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). Above 75% health you deal 18% less. For: Warrior, Templar. (Requires level 1550.)"}
 						},
 						{
 							h = "Stats",
@@ -10138,7 +10138,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Furs of every beast that ever ran with the covenant. Covenant Furs: You deal 7% more damage per other monster within 3 tiles, up to 5. Alone you deal 12% less. For: Ranger, Warrior, Necromancer. (Requires level 250.)"}
+							p = {"Furs of every beast that ever ran with the covenant. Covenant Furs: You deal 7% increased damage per other monster within 3 tiles, up to 5, +10% increased damage (at most 10 for one unique power, 40 for all). Alone you deal 12% less. For: Ranger, Warrior, Necromancer. (Requires level 250.)"}
 						},
 						{h = "Stats", p = {"Armor 12", "Physical Absorb +3%"}},
 						{
@@ -10181,7 +10181,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A wolf's skull for a helm. The pack smells you as kin. Pack Smells Kin: Your hits mark the target for 6 s, up to 3 at once. Marked monsters take 30% more damage from you. Others take 10% less. For: Ranger, Necromancer. (Requires level 250.)"}
+							p = {"A wolf's skull for a helm. The pack smells you as kin. Pack Smells Kin: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 10% less. For: Ranger, Necromancer. (Requires level 250.)"}
 						},
 						{h = "Stats", p = {"Armor 9", "Death Absorb +3%", "Ranged +1"}},
 						{
@@ -10273,7 +10273,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A horn-ring from something that did not want to give it up. Horn-Bind: Each kill adds a stack for 6 s, up to 4: 7% more damage dealt per stack. Each stack also adds 3% damage taken. For: Warrior, Templar. (Requires level 60.)"}
+							p = {"A horn-ring from something that did not want to give it up. Horn-Bind: Each kill adds a stack for 6 s, up to 4: 7% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 3% damage taken. For: Warrior, Templar. (Requires level 60.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Melee +3"}},
 						{
@@ -10361,7 +10361,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Worn on the hand that never held a blade. Your bare fists hit as with the Open Hand Creed at 80% without the keystone; with it, 10% harder. Hand That Never Held: Each hit in a row on one target deals 8% more, up to 6 hits. The first hit on a new target deals 10% less. For: Monk, Thief, Warrior. (Requires level 400.)"}
+							p = {"Worn on the hand that never held a blade. Your bare fists hit as with the Open Hand Creed at 80% without the keystone; with it, 10% harder. Hand That Never Held: Each hit in a row on one target adds 8% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 10% less. For: Monk, Thief, Warrior. (Requires level 400.)"}
 						},
 						{h = "Stats", p = {"Fist +6"}},
 						{
@@ -10449,7 +10449,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"It stays open at one page, and that page has one name on it. One Page Open: Each hit in a row on one target deals 4% more, up to 5 hits. The first hit on a new target deals 10% less. For: Mystic, Necromancer. (Requires level 720.)"}
+							p = {"It stays open at one page, and that page has one name on it. One Page Open: Each hit in a row on one target adds 4% increased damage, up to 5 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 10% less. For: Mystic, Necromancer. (Requires level 720.)"}
 						},
 						{h = "Stats", p = {"Defense 24", "Energy Absorb +5%", "Magic Level +4"}},
 						{
@@ -10640,7 +10640,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The drowned choir still sings through it, one note per blow. One Note per Blow: You deal 9% more damage per other monster within 3 tiles, up to 6. Alone you deal 18% less. For: Warrior, Thief, Monk, Templar. (Requires level 1800.)"}
+							p = {"The drowned choir still sings through it, one note per blow. One Note per Blow: You deal 9% increased damage per other monster within 3 tiles, up to 6, +10% increased damage (at most 10 for one unique power, 40 for all). Alone you deal 18% less. For: Warrior, Thief, Monk, Templar. (Requires level 1800.)"}
 						},
 						{
 							h = "Stats",
@@ -10821,7 +10821,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Silver threads that catch light that is not there. Light That Is Not There: At 70% mana or more you deal 40% more damage. At 30% mana or less you deal 15% less. For: Mystic, Necromancer. (Requires level 300.)"}
+							p = {"Silver threads that catch light that is not there. Light That Is Not There: At 70% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 30% mana or less you deal 15% less. For: Mystic, Necromancer. (Requires level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 11", "Holy Absorb +4%"}},
 						{
@@ -10950,7 +10950,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"It moves a heartbeat before the wearer does. Heartbeat Early: Each hit in a row on one target deals 7% more, up to 6 hits. The first hit on a new target deals 12% less. For: Mystic, Ranger. (Requires level 300.)"}
+							p = {"It moves a heartbeat before the wearer does. Heartbeat Early: Each hit in a row on one target adds 7% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 12% less. For: Mystic, Ranger. (Requires level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 9", "Holy Absorb +3%"}},
 						{
@@ -11036,7 +11036,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The last mercy of a drowned order, given to anyone who can carry it. Carry two. Carry Two: Each hit in a row on one target deals 10% more, up to 6 hits. The first hit on a new target deals 15% less. For: Thief. (Requires level 1900.)"}
+							p = {"The last mercy of a drowned order, given to anyone who can carry it. Carry two. Carry Two: Each hit in a row on one target adds 10% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 15% less. For: Thief. (Requires level 1900.)"}
 						},
 						{
 							h = "Stats",
@@ -11083,7 +11083,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Cut from the gallows beam of a village the moon forgot to leave. Gallows Beam: Your hits mark the target for 6 s, up to 3 at once. Marked monsters take 40% more damage from you. Others take 12% less. For: Ranger. (Requires level 900.)"}
+							p = {"Cut from the gallows beam of a village the moon forgot to leave. Gallows Beam: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 12% less. For: Ranger. (Requires level 900.)"}
 						},
 						{
 							h = "Stats",
@@ -11130,7 +11130,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Silver that remembers the moon. It slips between ribs like a whisper. Silver Whisper: Targets at 90% health or more take 40% more damage from you. Targets at 25% or less take 5% less. For: Thief. (Requires level 28.)"}
+							p = {"Silver that remembers the moon. It slips between ribs like a whisper. Silver Whisper: Against targets at 90% health or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 25% or less take 5% less. For: Thief. (Requires level 28.)"}
 						},
 						{
 							h = "Stats",
@@ -11674,7 +11674,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"They know every short way home, and most of the long ones. Short Ways Home: Your hits deal 1.4% more damage per 10 speed above 200, up to 20%. For: Ranger, Thief, Monk. (Requires level 20.)"}
+							p = {"They know every short way home, and most of the long ones. Short Ways Home: Your hits deal 1.4% increased damage per 10 speed above 200, up to 20%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Ranger, Thief, Monk. (Requires level 20.)"}
 						},
 						{h = "Stats", p = {"Armor 3", "Movement Speed +10%", "Dodge +4%"}},
 						{
@@ -12040,7 +12040,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"There is always one more. That is the whole curse. One More: Each kill adds a stack for 7 s, up to 8: 6.7% more damage dealt per stack. Each stack also adds 3% damage taken. For: Ranger. (Requires level 1600. Ranger line.)"}
+							p = {"There is always one more. That is the whole curse. One More: Each kill adds a stack for 7 s, up to 8: 6.7% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 3% damage taken. For: Ranger. (Requires level 1600. Ranger line.)"}
 						},
 						{
 							h = "Stats",
@@ -12462,7 +12462,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"It waits for the last breath of a thing, then takes it. Last Rites: Targets at 25% health or less take 80% more damage from you. Targets at 80% or more take 10% less. For: Necromancer. (Requires level 760.)"}
+							p = {"It waits for the last breath of a thing, then takes it. Last Rites: Against targets at 25% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 80% or more take 10% less. For: Necromancer. (Requires level 760.)"}
 						},
 						{h = "Stats", p = {"Death Absorb +6%", "Magic Level +2"}},
 						{
@@ -12506,7 +12506,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Cut from a coat that outlived its owner and every wind he rode. Gale Sleeve: Each critical hit adds a stack for 5 s, up to 6: 11% more damage dealt per stack. Each stack also adds 3% damage taken. For: Ranger. (Requires level 1400. Ranger line.)"}
+							p = {"Cut from a coat that outlived its owner and every wind he rode. Gale Sleeve: Each critical hit adds a stack for 5 s, up to 6: 11% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 3% damage taken. For: Ranger. (Requires level 1400. Ranger line.)"}
 						},
 						{h = "Stats", p = {"Defense 13", "Health on Hit +42", "Physical Penetration +12%"}},
 						{
@@ -12550,7 +12550,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. Footfall Debt: Each critical hit adds a stack for 5 s, up to 5: 10% more damage dealt per stack. Each stack also adds 3% damage taken. For: Ranger, Thief. (Requires level 120. Ranger and Thief lines.)"}
+							p = {"Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. Footfall Debt: Each critical hit adds a stack for 5 s, up to 5: 10% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 3% damage taken. For: Ranger, Thief. (Requires level 120. Ranger and Thief lines.)"}
 						},
 						{h = "Stats", p = {"Armor 3", "Ranged +2", "Earth Absorb +4%"}},
 						{
@@ -12647,7 +12647,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A cage of rattling chains for what is left of a mind. Rattling Cage: Your spells deal 1.4% more damage per 150 maximum mana, up to 35%. For: Mystic, Necromancer. (Requires level 120.)"}
+							p = {"A cage of rattling chains for what is left of a mind. Rattling Cage: Your spells deal 1.4% increased damage per 150 maximum mana, up to 35%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Mystic, Necromancer. (Requires level 120.)"}
 						},
 						{
 							h = "Stats",
@@ -12923,7 +12923,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Its head was cast from a chapel bell; it still rings when it lands. Bell Toll: You deal 5% more damage per other monster within 3 tiles, up to 4. Alone you deal 8% less. For: Templar, Monk. (Requires level 15.)"}
+							p = {"Its head was cast from a chapel bell; it still rings when it lands. Bell Toll: You deal 5% increased damage per other monster within 3 tiles, up to 4, +10% increased damage (at most 10 for one unique power, 40 for all). Alone you deal 8% less. For: Templar, Monk. (Requires level 15.)"}
 						},
 						{
 							h = "Stats",
@@ -13146,7 +13146,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The undergrowth parts for them and closes behind. Parting Undergrowth: Your ranged hits deal 1% more damage per 8 speed above 200, up to 30%. For: Ranger, Thief. (Requires level 150.)"}
+							p = {"The undergrowth parts for them and closes behind. Parting Undergrowth: Your ranged hits deal 1% increased damage per 8 speed above 200, up to 30%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Ranger, Thief. (Requires level 150.)"}
 						},
 						{h = "Stats", p = {"Armor 3", "Earth Absorb +3%"}},
 						{
@@ -13190,7 +13190,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A tide of mana left it here, and the tide has not gone out. Deep Well: Your spells deal 1% more damage per 200 maximum mana above 1000, up to 24%. For: Mystic. (Requires level 740.)"}
+							p = {"A tide of mana left it here, and the tide has not gone out. Deep Well: Your spells deal 1% increased damage per 200 maximum mana above 1000, up to 24%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Mystic. (Requires level 740.)"}
 						},
 						{h = "Stats", p = {"Armor 20", "Ice Absorb +6%", "Magic Level +3"}},
 						{
@@ -13234,7 +13234,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Do not read it aloud. It will answer. Answering Voice: At 75% mana or more you deal 40% more damage. At 35% mana or less you deal 15% less. For: Mystic, Necromancer. (Requires level 100.)"}
+							p = {"Do not read it aloud. It will answer. Answering Voice: At 75% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 35% mana or less you deal 15% less. For: Mystic, Necromancer. (Requires level 100.)"}
 						},
 						{h = "Stats", p = {"Defense 14", "Death Absorb +8%", "Magic Level +4"}},
 						{
@@ -13326,7 +13326,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Put it on and the living stop being able to find you. Unfound: Below 40% health you deal 92% more damage. Above 80% health you deal 12% less. For: Thief, Mystic, Necromancer. (Requires level 120.)"}
+							p = {"Put it on and the living stop being able to find you. Unfound: Below 40% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). Above 80% health you deal 12% less. For: Thief, Mystic, Necromancer. (Requires level 120.)"}
 						},
 						{h = "Stats", p = {"Armor 4", "Magic Level +2", "Physical Absorb +5%", "Shielding +5"}},
 						{
@@ -13510,7 +13510,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A face that looks back. It has never blinked. Looks Back: Your hits mark the target for 6 s, up to 3 at once. Marked monsters take 35% more damage from you. Others take 10% less. For: Mystic, Necromancer, Thief. (Requires level 120.)"}
+							p = {"A face that looks back. It has never blinked. Looks Back: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 10% less. For: Mystic, Necromancer, Thief. (Requires level 120.)"}
 						},
 						{
 							h = "Stats",
@@ -13604,7 +13604,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"They make no sound, and neither does the one who falls behind. Soundless Step: Against one target alone you deal 63% more damage. Among 3 or more monsters you deal 20% less. For: Thief, Ranger, Monk. (Requires level 100.)"}
+							p = {"They make no sound, and neither does the one who falls behind. Soundless Step: Against one target alone you deal +10% increased damage (at most 10 for one unique power, 40 for all). Among 3 or more monsters you deal 20% less. For: Thief, Ranger, Monk. (Requires level 100.)"}
 						},
 						{h = "Stats", p = {"Armor 4", "Death Absorb +6%"}},
 						{
@@ -13648,7 +13648,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The heron stands over the dead water, and nothing it watches walks away. Nothing It Watches Walks: Targets at 95% health or more take 100% more damage from you. Targets at 50% or less take 18% less. For: Ranger. (Requires level 2100.)"}
+							p = {"The heron stands over the dead water, and nothing it watches walks away. Nothing It Watches Walks: Against targets at 95% health or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 50% or less take 18% less. For: Ranger. (Requires level 2100.)"}
 						},
 						{
 							h = "Stats",
@@ -13739,7 +13739,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A promise made to the grave, kept in blood. Grave Vow: Below 30% health you deal 98% more damage. Above 75% health you deal 15% less. For: Thief, Monk, Necromancer. (Requires level 90.)"}
+							p = {"A promise made to the grave, kept in blood. Grave Vow: Below 30% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). Above 75% health you deal 15% less. For: Thief, Monk, Necromancer. (Requires level 90.)"}
 						},
 						{
 							h = "Stats",
@@ -13792,7 +13792,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Slim, patient and well-used; its owners all died young. Widow's Patience: Each hit in a row on one target deals 6% more, up to 5 hits. The first hit on a new target deals 10% less. For: Thief, Monk, Warrior. (Requires level 40.)"}
+							p = {"Slim, patient and well-used; its owners all died young. Widow's Patience: Each hit in a row on one target adds 6% increased damage, up to 5 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 10% less. For: Thief, Monk, Warrior. (Requires level 40.)"}
 						},
 						{h = "Stats", p = {"Attack 24", "Defense 12", "Extra Defense +2"}},
 						{
@@ -16758,7 +16758,7 @@ CodexData = {
 						},
 						{
 							h = "Spell modifier masteries",
-							p = {"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra holy damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Ranger line, mastery effect Hallowed Ground: Blessed Earth.", "Templar line, mastery effect Bell of Dawn: Bell of Reckoning."}
+							p = {"A mastery effect of the passive tree adds 3 increased damage to one named spell while it is cast. It joins the one additive damage pool of the tree and gear, at most 12 from masteries, and gives no free Dawnbrand.", "Ranger line, mastery effect Hallowed Ground: Blessed Earth.", "Templar line, mastery effect Bell of Dawn: Bell of Reckoning."}
 						}
 					}
 				},
@@ -16990,7 +16990,7 @@ CodexData = {
 						},
 						{
 							h = "Spell modifier masteries",
-							p = {"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra death damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Necromancer line, mastery effect Grave Wail: Gravewail."}
+							p = {"A mastery effect of the passive tree adds 3 increased damage to one named spell while it is cast. It joins the one additive damage pool of the tree and gear, at most 12 from masteries, and gives no free Gravebrand.", "Necromancer line, mastery effect Grave Wail: Gravewail."}
 						}
 					}
 				},
@@ -17402,7 +17402,7 @@ CodexData = {
 						},
 						{
 							h = "Spell modifier masteries",
-							p = {"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra energy damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Mystic line, mastery effect Storm Rupture: Prismatic Rupture."}
+							p = {"A mastery effect of the passive tree adds 3 increased damage to one named spell while it is cast. It joins the one additive damage pool of the tree and gear, at most 12 from masteries, and gives no free Stormbrand.", "Mystic line, mastery effect Storm Rupture: Prismatic Rupture."}
 						}
 					}
 				},
@@ -18107,6 +18107,56 @@ CodexData = {
 						{
 							h = "Reading one",
 							p = {"Hover over a unique to read it. Hold Ctrl to compare it with the item you wear in that slot. Hold Alt to read what each line means.", "Right-click a unique and choose Open in Codex to open its page here, or Where to find to see where it drops."}
+						}
+					}
+				},
+				{
+					id = "basics:increaseddamage",
+					name = "Increased damage",
+					color = "#d6c9ae",
+					sub = "How the damage bonuses add up: one pool, one soft cap.",
+					sections = {
+						{
+							h = "In short",
+							p = {"Every bonus called increased damage adds into one pool. The pool is applied to a hit once, as 1 + the pool / 100.", "The pool has a soft cap: up to 150 it counts in full, above it each extra point counts less (300 raw counts as 225, 500 raw as 265).", "Two bonuses of 20 and 30 make 50, not 1.2 x 1.3. A character with no bonus deals exactly its base damage."}
+						},
+						{
+							h = "What is in the pool",
+							cols = {"Source", "What it adds", "Most"},
+							w = {26, 50, 24},
+							rows = {
+								{"Passive tree and Spell Damage", "The increases of the hit's damage type, all elements, and the Spell Damage of a wand or rod for spells.", "soft cap"},
+								{"Unique passives", "The damage bonus of a unique power while its condition holds: its own value, 10 at most for one power.", "40"},
+								{"Gems", "The damage gem of the hit's type.", "25 (physical 12)"},
+								{"Spell masteries", "A damage mastery of the tree adds 3 while its spell is cast.", "12"},
+								{"Card set", "The damage part of the card set of the hit's element.", "4"},
+								{"Charms and weapon family", "Increased damage to a monster family (charms) and the sword's tempo edge.", "6 together"},
+								{"Paragon", "The Paragon damage points.", "as set"}
+							}
+						},
+						{
+							h = "What a cap means",
+							p = {"A source that holds more than its most counts for nothing above it. The line of a unique power shows the value it counts.", "Healing never takes the pool: it takes the tree's Healing and your intelligence."}
+						},
+						{
+							h = "What does not join the pool",
+							p = {"Strength, intelligence and dexterity, the weapon and its Weapon Damage, critical hits, support runes (Brand, Echo, Hex and the others), class damage, the skill and magic level terms, the monster's armour and resistances multiply the hit on their own.", "The price of a unique power (the damage it takes away) also stays a multiplier of its own."}
+						},
+						{
+							h = "Players against players",
+							p = {"A hit that a player, or a summon or companion of a player, deals to another player is multiplied by a factor of the attacker's level, so duels stay as long as they were. Monsters and healing are never scaled.", "The factor between two levels follows a straight line in between."},
+							cols = {"Attacker level", "Factor"},
+							w = {50, 50},
+							rows = {
+								{"100", "x1.00"},
+								{"200", "x0.94"},
+								{"300", "x0.89"},
+								{"500", "x0.79"},
+								{"700", "x0.76"},
+								{"1000", "x0.48"},
+								{"1500", "x0.52"},
+								{"2000", "x0.46"}
+							}
 						}
 					}
 				},

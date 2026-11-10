@@ -2874,6 +2874,24 @@ return {
 			"Quantidade de roubo de mana",
 		["All elements"] =
 			"Todos os elementos",
+		["Passive tree and Spell Damage"] =
+			"Árvore passiva e Spell Damage",
+		["Unique passives"] =
+			"Poderes únicos",
+		["Gems"] =
+			"Gemas",
+		["Spell masteries"] =
+			"Maestrias de magia",
+		["Card set"] =
+			"Conjunto de cartas",
+		["Charms"] =
+			"Charms",
+		["Weapon family"] =
+			"Família da arma",
+		["Paragon"] =
+			"Paragon",
+		["Charms and weapon family"] =
+			"Charms e família da arma",
 		["Physical damage"] =
 			"Dano físico",
 		["Fire damage"] =
@@ -3762,8 +3780,8 @@ return {
 			"Conjunto de cartas %s desativado.",
 		["It counts for the %s card set. With %s cards of one element, one for each spell you cast, you get a bonus."] =
 			"Conta para o conjunto de cartas %s. Com %s cartas de um elemento, uma para cada magia que você lança, você ganha um bônus.",
-		["Your %s damage is %s%% higher."] =
-			"Seu dano de %s é %s%% maior.",
+		["Your %s damage: +%s%% increased damage (a card set adds at most 4 to the one damage pool)."] =
+			"Seu dano de %s: +%s%% de dano aumentado (um conjunto de cartas soma no máximo 4 ao conjunto de dano).",
 		["Your %s hits slow the target by %s%% for %s seconds."] =
 			"Seus golpes de %s reduzem a velocidade do alvo em %s%% por %s segundos.",
 		["Your %s hits poison the target for %s%% of the hit over %s seconds."] =
@@ -5701,14 +5719,14 @@ return {
 		["Reach level 600"] = "Chegue ao nível 600",
 		["Reach level 800"] = "Chegue ao nível 800",
 		["Achievement \"Edge of Ruin\" (seal a tier 10 rift)"] = "Conquista \"Edge of Ruin\" (sele um rift de tier 10)",
-		["Damage to Dragons"] = "Dano a Dragões",
-		["Damage to Demons"] = "Dano a Demônios",
-		["Damage to Undead"] = "Dano a Mortos-vivos",
-		["Damage to Humans"] = "Dano a Humanos",
-		["Damage to Humanoids"] = "Dano a Humanoides",
-		["Damage to Beasts"] = "Dano a Feras",
-		["Damage to Elementals"] = "Dano a Elementais",
-		["Damage to Insects and Arachnids"] = "Dano a Insetos e Aracnídeos",
+		["Increased damage to Dragons"] = "Dano aumentado a Dragões",
+		["Increased damage to Demons"] = "Dano aumentado a Demônios",
+		["Increased damage to Undead"] = "Dano aumentado a Mortos-vivos",
+		["Increased damage to Humans"] = "Dano aumentado a Humanos",
+		["Increased damage to Humanoids"] = "Dano aumentado a Humanoides",
+		["Increased damage to Beasts"] = "Dano aumentado a Feras",
+		["Increased damage to Elementals"] = "Dano aumentado a Elementais",
+		["Increased damage to Insects and Arachnids"] = "Dano aumentado a Insetos e Aracnídeos",
 		["Fire Resistance"] = "Resistência a fogo",
 		["Ice Resistance"] = "Resistência a gelo",
 		["Energy Resistance"] = "Resistência a energia",
@@ -8747,22 +8765,22 @@ return {
 			"Você já tem %d das peças: elas ficam fora do preço",
 		["+%d days of Chaos Pact"] =
 			"+%d dias de Chaos Pact",
-		["Damage to Dragons +%d%%"] =
-			"Dano a Dragões +%d%%",
-		["Damage to Demons +%d%%"] =
-			"Dano a Demônios +%d%%",
-		["Damage to Undead +%d%%"] =
-			"Dano a Mortos-vivos +%d%%",
-		["Damage to Humans +%d%%"] =
-			"Dano a Humanos +%d%%",
-		["Damage to Humanoids +%d%%"] =
-			"Dano a Humanoides +%d%%",
-		["Damage to Beasts +%d%%"] =
-			"Dano a Feras +%d%%",
-		["Damage to Elementals +%d%%"] =
-			"Dano a Elementais +%d%%",
-		["Damage to Insects and Arachnids +%d%%"] =
-			"Dano a Insetos e Aracnídeos +%d%%",
+		["Increased damage to Dragons +%d%%"] =
+			"Dano aumentado a Dragões +%d%%",
+		["Increased damage to Demons +%d%%"] =
+			"Dano aumentado a Demônios +%d%%",
+		["Increased damage to Undead +%d%%"] =
+			"Dano aumentado a Mortos-vivos +%d%%",
+		["Increased damage to Humans +%d%%"] =
+			"Dano aumentado a Humanos +%d%%",
+		["Increased damage to Humanoids +%d%%"] =
+			"Dano aumentado a Humanoides +%d%%",
+		["Increased damage to Beasts +%d%%"] =
+			"Dano aumentado a Feras +%d%%",
+		["Increased damage to Elementals +%d%%"] =
+			"Dano aumentado a Elementais +%d%%",
+		["Increased damage to Insects and Arachnids +%d%%"] =
+			"Dano aumentado a Insetos e Aracnídeos +%d%%",
 		["Fire Resistance +%d%%"] =
 			"Resistência a fogo +%d%%",
 		["Ice Resistance +%d%%"] =
@@ -9065,8 +9083,8 @@ return {
 		["solo"] = "sozinho",
 		["party"] = "em grupo",
 		-- Weapon families (weapon_families_core.lua F.note, the weapon tooltip line, O454); the percent signs are %% as in a fixed text
-		["Sword: tempo. Each hit on the same target speeds up your swing, up to 20%% faster, and adds up to 2%% damage. Best on one target. A new target starts over."] =
-			"Espada: tempo. Cada golpe no mesmo alvo acelera o seu ataque, até 20%% mais rápido, e soma até 2%% de dano. Melhor contra um alvo. Um novo alvo recomeça.",
+		["Sword: tempo. Each hit on the same target speeds up your swing, up to 20%% faster, and adds up to +2%% increased damage. Best on one target. A new target starts over."] =
+			"Espada: tempo. Cada golpe no mesmo alvo acelera o seu ataque, até 20%% mais rápido, e soma até +2%% de dano aumentado. Melhor contra um alvo. Um novo alvo recomeça.",
 		["Axe: cleave. 14%% of each hit is split among the monsters next to the target. Costs 2.5%% damage on one target. Best in packs."] =
 			"Machado: golpe em arco. 14%% de cada golpe se divide entre os monstros ao lado do alvo. Custa 2,5%% de dano contra um alvo. Melhor contra grupos.",
 		["Club: impact. A hit has a 25%% chance to daze a monster: it cannot attack for 0.7 s, then rests for 3 s. A boss is only slowed. Costs 2.5%% damage on one target."] =
