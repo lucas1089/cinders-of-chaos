@@ -3540,8 +3540,8 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
 - **Third round: the Warrior and Ranger lines (2026-10-20).** Beta feedback: the Warrior line had no keystone of its own
   and the Ranger line few. Eight keystones on converted leaves, flag bits 17-24 of storage 7100024 (numbers in
   `archetypes_config.lua`, rules in `archetypes_core.lua`, glue in `archetypes.lua`). Warrior, Juggernaut, Berserker:
-  Executioner's Verdict (428: a melee or spell hit that would leave a non-boss monster at 15% or less kills it; x0.60 above 15%;
-  x0.90 otherwise), Earthbreaker (409: every 4th melee hit within 3 s deals +50% and a 60% slam to up to 6 monsters
+  Executioner's Verdict (428: a melee or spell hit that would leave a non-boss monster at 15% or less kills it; hits on a target
+  above 60% health x0.90), Earthbreaker (409: every 4th melee hit within 3 s deals +50% and a 60% slam to up to 6 monsters
   within 2 sqm; the other hits x0.90), Rampage (466: a monster kill gives a stack, 5 at most, 6 s, +6% damage and +4%
   damage taken per stack), Last Stand (523: a hit that would take you under 20% health is cut to leave you there, then
   5 s of -40% damage taken, healing taken x0.80, 90 s cooldown; not against players). Ranger, Deadeye, Beastmaster:

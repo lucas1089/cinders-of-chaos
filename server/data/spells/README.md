@@ -1497,7 +1497,7 @@ sized under the signature keystones of the other lines; the sums use the rules i
 | Keystone | Class | Gain | Price | Net, computed |
 |---|---|---|---|---|
 | Unbroken Line | Juggernaut | damage taken -8% with 4 enemies next to a shield (-2% each); Immovable alone is -8% / -16% | weapon hits -5% | defensive: about 8% of the damage taken in a pack for 5% of the weapon damage |
-| Open Veins | Berserker | a bleed of 50% of the hit over 4 s, one bleed at a time | two-handed hits -8% | a hit every 2 s: +25% of a hit, -8%: about +17% on a target that lives (Barbed Quiver: +30% -10%, +20%) |
+| Open Veins | Berserker | a bleed of 50% of the hit over 4 s, one bleed at a time | two-handed hits -8% | a hit every 2 s: +25% of a hit, the hit x0.92: about +15% on a target that lives (Barbed Quiver: +30%, the hit x0.90: +17%) |
 | Lone Mark | Deadeye | +12% on a target alone (Hunter's Focus up to +20%) | -8% in a crowd | single target +12%, a pack -8%; the class order of one target is not moved by the tree |
 | Wolfbond | Beastmaster | the wolf factor x1.20, with Pack Alpha x1.62 | own bow hits -8% | with the wolves' share of the damage in `companion_model.py` (23% at 100, 53% at 1000 with the tree): -1.6% at 100, +6.8% at 1000 |
 | Convergence | Elementalist | +12% on a target with 2 or more others within 2 sqm | -7% on a lone target | a pack +12%, a lone target -7% |
@@ -4472,7 +4472,8 @@ The client side is done in `client/overlay/modules/game_chaosspells` (spell list
 
 ### Warrior and Ranger line keystones (2026-10-20, computed, not measured in game)
 
-Numbers are in `archetypes_config.lua`. Executioner's Verdict: x0.60 above 15% health, x0.90 on the rest, kill below.
+Numbers are in `archetypes_config.lua`. Executioner's Verdict: hits x0.90 while the target is above 60% health, full
+damage from 60% down, and a hit that would leave a monster at 15% or less kills it. Never on a boss.
 Earthbreaker: 3 hits x0.90 and the 4th x1.50, plus a 60% slam on up to 6 monsters, so single target 1.05 per hit.
 Rampage: 5 stacks give +30% damage and +20% damage taken. Last Stand: one lethal hit per 90 s, then 5 s of -40%.
 Longshot: +30% at 7 sqm, x0.85 at 2 sqm or less. Barbed Quiver: hit x0.90 plus 60% bleed, 1.50 of a hit over 4 s.
