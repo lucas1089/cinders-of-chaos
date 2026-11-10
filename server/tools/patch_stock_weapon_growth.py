@@ -58,7 +58,9 @@ def write_block(text, begin, lines, root):
 
 
 # ------------------------------------------------------------------------------------------------ items.xml
-ITEM_RE = re.compile(r'(<item\s+[^>]*?\bid\s*=\s*"(\d+)"[^>]*?>)(.*?)(</item>)', re.S)
+# the same shape as survey_base_weapons.py ITEM: an item with a body ends at </item>; a self-closing item (`<item id=".." name=".." />`) has none
+# and must not swallow the next item
+ITEM_RE = re.compile(r'(<item\s+([^>]*?)(/?)>)(.*?)(</item>|(?=<item\s))', re.S)
 ELEMENT_KEYS = SV.ELEMENTS
 
 
@@ -87,11 +89,14 @@ def patch_items(text, rows):
 
     def fix(m):
         nonlocal changed
-        wid = int(m.group(2))
+        idm = re.search(r'\bid\s*=\s*"(\d+)"', m.group(2))
+        if m.group(3) == '/' or not idm:
+            return m.group(0)
+        wid = int(idm.group(1))
         r = todo.get(wid)
         if not r:
             return m.group(0)
-        body = m.group(3)
+        body = m.group(4)
         # the numbers before the step: the marker's when there is one, else what the item holds now
         attack, elem = kept[wid] if wid in kept else item_before(body)
         block[wid] = (attack, elem)
@@ -104,7 +109,7 @@ def patch_items(text, rows):
                 new = set_attr(new, k, int(v * a + 0.5))
         if new != body:
             changed += 1
-        return m.group(1) + new + m.group(4)
+        return m.group(1) + new + m.group(5)
 
     out = ITEM_RE.sub(fix, text)
     lines = []

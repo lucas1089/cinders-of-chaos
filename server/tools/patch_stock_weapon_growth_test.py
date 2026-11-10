@@ -30,6 +30,7 @@ def check(cond, msg):
 
 ITEMS = '''<?xml version="1.0"?>
 <items>
+\t<item id="2399" article="a" name="a rope" />
 \t<item id="2400" name="a sword" article="a">
 \t\t<attribute key="weaponType" value="sword" />
 \t\t<attribute key="attack" value="55" />
@@ -61,6 +62,7 @@ ITEMS = '''<?xml version="1.0"?>
 \t\t<attribute key="attack" value="90" />
 \t\t<attribute key="hitChance" value="93" />
 \t</item>
+\t<item id="2407" article="a" name="a plain stick" />
 \t<item id="36700" name="a chaos blade" article="a">
 \t\t<attribute key="weaponType" value="sword" />
 \t\t<attribute key="attack" value="55" />
@@ -114,6 +116,8 @@ with tempfile.TemporaryDirectory() as td:
     check(attrs(it, 2403)['attack'] == '60', 'charges: stays')
     check(int(attrs(it, 2406)['attack']) == int(90 * a200 + 0.5) and attrs(it, 2406)['hitChance'] == '93', 'a launcher: attack only')
     check(attrs(it, 36700)['attack'] == '55', 'a weapon of the Chaos tools (id 36654 and up): stays')
+    check('<item id="2399" article="a" name="a rope" />' in it and '<item id="2407" article="a" name="a plain stick" />' in it,
+          'a self-closing item is left as it is and does not swallow the next weapon')
     check('min="%d" max="%d"' % (int(100 * WG.weapon_a(400) + 0.5), int(140 * WG.weapon_a(400) + 0.5)) in wp, 'a wand of level 400: min and max grow')
     check('min="20" max="30"' in wp, 'a rod of level 50: stays')
     check(it.count('Chaos weapon growth O472') == 1 and wp.count('Chaos weapon growth O472') == 1, 'one marker comment in each file')
