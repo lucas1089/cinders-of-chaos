@@ -102,6 +102,7 @@ python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lu
 python3 -I server/tools/patch_base_armor_percent_test.py   # engine armour off for players: config.lua armorPercentMax = 0 (O464, install_all step armourlayer)
 python3 -I server/tools/patch_base_absorb_player_test.py   # the base absorb event leaves a player to the player defence layer, run in Lua on a mock (O464, install_all step absorbplayer)
 python3 -I server/tools/patch_spell_ids_test.py      # stock spell ids below 256; a retired spell's new id is free for a Chaos spell (install_all step spells)
+python3 -I server/tools/patch_stock_spell_inputs_test.py   # Kindling Spark and Bewitching Hex read level and magic level, the old number for a typical caster at the level learned (O468; install_all step spells)
 python3 -I server/tools/monster_level_patch_test.py   # src-patch 0082: monster level = middle of the <level> range, no level skull (O326)
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
 python3 -I client/tools/rml_window_audit.py && python3 -I client/tools/rml_window_audit_test.py   # which windows the RmlUi mirror draws and which stay classic, from the .otui files (O406; --otui)
@@ -202,5 +203,6 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
   - Art pack names may appear only in `docs/CREDITS.md` and the files generated from it.
 - Every third-party asset, font, library or tool that ships goes into `docs/CREDITS.md`. Then run `gen_credits.py`.
 - No real account data or player logs in the repo.
+- A player spell that deals damage or heals reads the character level and the magic level; a spell of a weapon line also reads the weapon skill (a magic level share, `spell_scaling_config.lua`). `server/tests/spell_inputs_test.lua` casts every spell of `spells_chaos.xml` and fails when one ignores an input (O468).
 - When telling the owner to run a VPS step, say first if the admin app (`android/`) can do it, and where (tab > card > button).
   Give the shell command only as a fallback. Any `chaos-ctl.sh` command the owner runs often should get a button there.

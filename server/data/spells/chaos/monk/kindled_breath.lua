@@ -2,7 +2,7 @@
 --
 -- Finisher (needs 1 chi). Monk and Shadowfist: heal yourself for (level x 2 + fist x 6) x the finisher scale.
 -- Iron Sage (the line's healer): the most hurt party member within 5 sqm (yourself without a party, or when you are the
--- most hurt) for fist x 33 x the finisher scale, and 60% more over 6 s (CONDITION_REGENERATION, sub id
+-- most hurt) for (level x 2 + fist x 24.5) x the finisher scale, and 60% more over 6 s (CONDITION_REGENERATION, sub id
 -- ChaosMonk.ids.subId.breath). The Flowing Mercy keystone (the passive tree, class_tree.lua) also heals the next most
 -- hurt for a share of it. Numbers: ChaosMonk.cfg.breath / sageBreath.
 dofile('data/spells/scripts/chaos/_monk.lua')
@@ -55,12 +55,14 @@ function onCastSpell(creature, variant, isHotkey)
 	local M = ChaosMonk
 	local fist = player:getEffectiveSkillLevel(SKILL_FIST)
 	if not M.isIronSage(player:getVocation():getId()) then
-		local heal = M.breathHeal(player:getLevel(), fist, spent, false)
+		local heal = math.floor(M.breathHeal(player:getLevel(), fist, spent, false) * ChaosSpell.weaponShare(player)) -- O468: magic level share
 		ChaosSpell.healTarget(player, player, heal, heal, Fx("heal_sparkle", CONST_ME_MAGIC_BLUE))
 		ChaosSpell.vfx(player:getPosition(), "chi_charge")
 		return true
 	end
 	local heal, tick = M.sageBreathHeal(player:getLevel(), fist, spent)
+	local share = ChaosSpell.weaponShare(player) -- O468: the magic level share of a weapon spell, on the heal and its ticks
+	heal, tick = math.floor(heal * share), math.floor(tick * share)
 	local list = hurtList(player, M.cfg.sageBreath.range)
 	local target = list[1]
 	ChaosSpell.healTarget(player, target, heal, heal, Fx("heal_sparkle", CONST_ME_MAGIC_BLUE))

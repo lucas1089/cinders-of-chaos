@@ -5087,3 +5087,45 @@ Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `
   Cry 340, Prismatic Rupture 500.
 - **Not modelled.** Resistances (a brand's element against a monster that resists it), crits, kills (nothing here depends on one),
   the mana a faster Quickening costs, the other spells that a set leaves out.
+
+## Spell scaling (O468, owner 2026-11-10; computed, not measured)
+
+Server side: `server/README.md` "Spell scaling (O468)". What this file adds is the shape of the formulas and the note on the
+measured tables.
+
+**The formula families (what a spell reads).** Level term `level / 5` in nearly every spell (a heal uses `level x 0.16..0.3`, the
+Monk's fist attack also grows with level). Then:
+
+| Family | Reads | Magic level share (O468) |
+|---|---|---|
+| `onGetFormulaValues(player, level, magicLevel)` and `ChaosSpell.mlValues` (Mystic, Elementalist, Illusionist lines) | level, magic level | none, it is the skill |
+| `AttackKit` magic and necro schools (`ChaosNecro.values`) | level, magic level | none |
+| `AttackKit` templar school, Templar line, Ranger holy spells | level, skill x attack, magic level | none, read already (1-9% of the spell) |
+| `AttackKit` melee, distance, monk schools, the `spell` school with a weapon power | level, skill x attack | `(1 + ML / 300) / (1 + refML / 300)` |
+| `AttackKit` blade and shuriken schools, `ChaosSpell.weaponStrike` (Thief line) | level, skill x attack | same, inside `weaponStrike` |
+| SKILLVALUE callbacks (`ChaosSpell.weaponFormula`), `ChaosMonk` strikes (`MonkSpell.rawValues`) | level, skill x attack | same |
+| Wolf mauls and the companion bite (`classes.lua`), snares and mines (at placement) | level, distance or blade power, owner | same |
+| Heals: `ChaosHealing.values` and the caster heals | level, magic level | none |
+| Monk and Iron Sage heals (Kindled Breath, Mantra of Stone) | level, fist skill | same |
+
+The share is `spell_scaling_config.lua` `mlShare`: per 300, normalised by the typical weapon class magic level (`rotation_sim.py`
+ANCHORS `ml_other`: 0, 10, 25, 32, 40 at levels 1, 100, 300, 600, 1000). It multiplies the whole base damage, the level term
+included. Lay on Hands and the Iron Sage's Kindled Breath got a level term (their value at level 500 for a typical character
+is within 1%); Kindling Spark and Bewitching Hex read level and magic level through `tools/patch_stock_spell_inputs.py`.
+
+**The measured tables predate the change.** `class_dps_measured.csv`, `rotation_model.csv` and every balance model were taken
+with the typical character of the anchors. The share is normalised to that character, so the numbers stay valid by design: a
+typical character deals what it dealt before (Rift Cleaver 644 / 1286 / 1733, Sunspear 628 / 1414 / 1961, Anvil Fall 503 / 983 /
+1329, Iaijutsu 1010 / 1940 / 2565, Shuriken Toss 412 / 691 / 911, Ashen Fist 237 / 477 / 692, Feral Command 90 / 197 / 305, Snare
+Trap 299 / 650 / 944 at levels 100 / 500 / 1000, the same with the share off). A real character differs from typical by its
+own magic level: each point is about 0.33% of a weapon spell. The models do not read the real magic level of a weapon class.
+
+**Damage over time.** The four condition spells (Blightswarm, Witchfire Bolt, Falling Pyre, Shattered Psyche) tick as spell pulses
+now. Their rows of `rotation_model.csv` add the old tick sums (8, 4, 4 and 5 ticks of the condition formula); the scripts deal
+8, 4, 5 and 5, one per 2 to 3 s. The class spell factor is divided out of each tick before the event puts it back, so the rows
+still hold for a typical character without supports.
+
+**Beastmaster bites.** The bite is dealt as the owner (ORIGIN_SPELL inside the spell factor guard) and takes `classDamage` and the
+monster defence layer; `companion.autoByLevel` was re-fitted to keep the plain build's bite, and `tools/companion_model.py` multiplies
+the bite by the same event factors (`event_factor`), so its plain numbers are the old ones and its tree and full numbers include
+what the tree now gives the bite (server README "Spell scaling (O468)").

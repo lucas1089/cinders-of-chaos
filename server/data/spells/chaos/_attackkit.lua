@@ -113,7 +113,24 @@ function A.values(player, spec, chiScale)
 	return lo * k, hi * k
 end
 
+-- O468: a weapon spell of the kit also reads the magic level (ChaosSpellScaling, spell_scaling_config.lua mlShare): the schools
+-- below, and the "spell" school when its power is a weapon's. Not the blade and shuriken schools (ChaosSpell.weaponStrike does
+-- it when it deals the strike), the templar and necro schools nor the magic school: they read the magic level already.
+local WEAPON_SHARE = {melee = true, distance = true, monk = true, spell = true}
+function A.weaponShare(player, spec)
+	if WEAPON_SHARE[spec.school] and spec.power ~= "magic" then
+		return ChaosSpell.weaponShare(player)
+	end
+	return 1
+end
+
 function A.rawValues(player, spec, chiScale)
+	local lo, hi = A.baseValues(player, spec, chiScale)
+	local k = A.weaponShare(player, spec)
+	return lo * k, hi * k
+end
+
+function A.baseValues(player, spec, chiScale)
 	local scale = spec.scale or 1
 	if spec.school == "templar" then
 		local lo, hi = TemplarSpell.values(player, spec.pMin, spec.pMax, spec.mMin, spec.mMax, spec.bMin, spec.bMax)

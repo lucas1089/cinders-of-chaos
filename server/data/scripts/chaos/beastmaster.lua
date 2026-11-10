@@ -6,8 +6,9 @@
 -- follow its owner and attack the owner's target. Its health and shown level follow the owner's level (set by the
 -- spell, kept in step here: ChaosClasses.syncCompanion), and its damage too: this file deals a bite every biteMs to the
 -- owner's target when the companion stands next to it, physical damage dealt as the owner (ChaosClasses.autoBiteValues:
--- level and distance skill x the wolf factor, Pack Alpha and the Trials' minion damage; O306, O332), so it counts for the owner
--- like its own hits would (PvP rules: ChaosSpell.canAttack). The monster's own little melee attack stays.
+-- level, distance skill and magic level x the wolf factor, Pack Alpha, Wolfbond and the Trials' minion damage; O306, O332,
+-- O468), so it counts for the owner like its own hits would (PvP rules: ChaosSpell.canAttack). O468: the bite is ORIGIN_SPELL
+-- inside the class spell factor's guard, so every damage event runs on it. The monster's own little melee attack stays.
 -- At most ChaosClasses.companionCap(level) companions (1, 2 from level 400). A companion that strays farther than
 -- leashRange or onto another floor is brought back next to its owner. A character that stops being a Beastmaster
 -- loses its companions (ascension.lua calls dismissIfNotBeastmaster). The engine removes summons at logout.
@@ -91,7 +92,19 @@ local function bite(owner, companion, target)
 	if max <= 0 then
 		return
 	end
-	local ok, err = pcall(doTargetCombat, owner, target, COMBAT_PHYSICALDAMAGE, -min, -max, CONST_ME_DRAWBLOOD, ORIGIN_NONE)
+	-- O468: dealt as the owner with ORIGIN_SPELL, the way the Necromancer's minion hits are (necro_minions.lua): the engine runs no
+	-- onHealthChange event for ORIGIN_NONE (Game::combatChangeHealth), so the bite never took the passive tree, gems, charms,
+	-- item modifiers, blessings, the Trials' spell damage, keystones or the monster defence layer. Inside the class spell
+	-- factor's guard: a bite is no spell of the class's damage model (spell_factor_core.lua), the class damage factor
+	-- (class_tree.lua classDamage) and the tree's increments are the event's now
+	local SF = ChaosSpellFactor
+	if SF then
+		SF.depth = (SF.depth or 0) + 1
+	end
+	local ok, err = pcall(doTargetCombat, owner, target, COMBAT_PHYSICALDAMAGE, -min, -max, CONST_ME_DRAWBLOOD, ORIGIN_SPELL)
+	if SF then
+		SF.depth = SF.depth - 1
+	end
 	if not ok then
 		print("[ChaosBeastmaster] " .. tostring(err))
 	end

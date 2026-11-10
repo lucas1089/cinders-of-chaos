@@ -44,8 +44,11 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 	if target and target ~= creature then
+		-- O468: the curse is 5 scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.3 + 4), one
+		-- every 2 s: they take crit, supports, cards, keystones and the rest like the bolt
 		local dmg = math.max(3, math.floor(creature:getMagicLevel() * 0.3) + 4)
-		creature:addDamageCondition(target, CONDITION_CURSED, DAMAGELIST_EXPONENTIAL_DAMAGE, dmg)
+		ChaosSpell.scriptedDot(creature:getId(), target:getId(), "shatteredpsyche", COMBAT_DEATHDAMAGE, 5, 2000, dmg,
+			CONST_ME_SMALLCLOUDS)
 		ChaosSpell.slow(target, 2500, 0.3)
 	end
 	return true

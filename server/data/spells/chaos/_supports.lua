@@ -104,6 +104,16 @@ ctxAddEvent = function(callback, delay, ...)
 	end, delay, ...)
 end
 
+-- O468: the cast context of the code running now (nil outside a supported cast), and a way to run code inside one that was
+-- kept. A snare or a mine stores the context of the spell that placed it and raises it around its burst (_snares.lua), so the
+-- supports and the spell modifier masteries of that spell apply to the burst's hits
+function W.context()
+	return current
+end
+function W.run(pid, ctx, fn, ...)
+	return runWith(pid, ctx, fn, ...)
+end
+
 -- >>> Cosmetics (cosmetics.lua): the cast running now, for the spell effect skins of _common.lua
 -- player id and spell id of the supported cast whose code (or addEvent callback) runs now; nil outside a cast
 function W.cast()

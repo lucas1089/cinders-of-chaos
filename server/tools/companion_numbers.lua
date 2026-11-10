@@ -68,4 +68,5 @@ for i = 1, #arg do
 end
 
 print(json({rows = rows, config = Chaos.classes.companion, balance = balance, necro = {monsterDps = necro.monsterDps},
-	classDamage = ChaosClassTree.classDamage, packAlpha = ChaosClassTree.fx.ksPackAlpha}))
+	classDamage = ChaosClassTree.classDamage, packAlpha = ChaosClassTree.fx.ksPackAlpha,
+	defence = dofile("data/scripts/chaos/defence_config.lua"), monsterDefence = dofile("data/scripts/chaos/monster_defence_config.lua")}))

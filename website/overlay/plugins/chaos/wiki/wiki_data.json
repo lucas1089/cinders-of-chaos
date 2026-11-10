@@ -2368,7 +2368,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Breathe the chi in and heal; the heal grows with the chi spent (the Iron Sage's heal keeps healing for 6 s). Finisher (needs 1 chi). Monk and Shadowfist: heal yourself for (level x 2 + fist x 6) x the finisher scale. Iron Sage (the line's healer): the most hurt party member within 5 sqm (yourself without a party, or when you are the most hurt) for fist x 33 x the finisher scale, and 60% more over 6 s (CONDITION_REGENERATION, sub id ChaosMonk.ids.subId.breath). The Flowing Mercy keystone (the passive tree, class_tree.lua) also heals the next most hurt for a share of it. Numbers: ChaosMonk.cfg.breath / sageBreath."
+								"Breathe the chi in and heal; the heal grows with the chi spent (the Iron Sage's heal keeps healing for 6 s). Finisher (needs 1 chi). Monk and Shadowfist: heal yourself for (level x 2 + fist x 6) x the finisher scale. Iron Sage (the line's healer): the most hurt party member within 5 sqm (yourself without a party, or when you are the most hurt) for (level x 2 + fist x 24.5) x the finisher scale, and 60% more over 6 s (CONDITION_REGENERATION, sub id ChaosMonk.ids.subId.breath). The Flowing Mercy keystone (the passive tree, class_tree.lua) also heals the next most hurt for a share of it. Numbers: ChaosMonk.cfg.breath / sageBreath."
 							]
 						},
 						{
@@ -3548,7 +3548,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Call your companion (a war wolf; 2 from level 400). Companions already out are called back to your side and healed for half their health. The Beastmaster's companion: its health scales with your level, its bites with your level and distance skill, and it attacks your target (data/scripts/chaos/beastmaster.lua, numbers in Chaos.classes.companion)."
+								"Call your companion (a war wolf; 2 from level 400). Companions already out are called back to your side and healed for half their health. The Beastmaster's companion: its health scales with your level, its bites with your level, distance skill and magic level, and it attacks your target (data/scripts/chaos/beastmaster.lua, numbers in Chaos.classes.companion)."
 							]
 						},
 						{
@@ -3686,7 +3686,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Your companions leap at the target (range 7) and maul it, each for 1.5 bites at once. The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage, O332): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.feral. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
+								"Your companions leap at the target (range 7) and maul it, each for 1.5 bites at once. The Beastmaster's command. A bite is physical damage dealt as you, from your level, distance skill and magic level, times the wolf factor (Pack Alpha, the Trials' minion damage, O332): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.feral. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
 							]
 						},
 						{
@@ -4544,7 +4544,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A great heal on one party member within 5 sqm: 35% of its maximum health + magic level x 10. Say a name to choose (saen gal manh \"Name\"); without one it goes to the party member (or the Sentinel) with the lowest health share. Long cooldown. Numbers: ChaosTemplar.cfg.layOnHands."
+								"A great heal on one party member within 5 sqm: 35% of its maximum health + level x 0.3 + magic level x 5. Say a name to choose (saen gal manh \"Name\"); without one it goes to the party member (or the Sentinel) with the lowest health share. Long cooldown. Numbers: ChaosTemplar.cfg.layOnHands."
 							]
 						},
 						{
@@ -5207,7 +5207,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A howl calls the pack down on the quarry. Your companions leap at the target (range 7) and each bites every monster within 2 sqm of it, 3 bites apiece. O332: the Beastmaster's pack spell, level 220 (it took Arrowstorm's place): the wolves clear a pack, not one monster. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.howl. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
+								"A howl calls the pack down on the quarry. Your companions leap at the target (range 7) and each bites every monster within 2 sqm of it, 3 bites apiece. O332: the Beastmaster's pack spell, level 220 (it took Arrowstorm's place): the wolves clear a pack, not one monster. A bite is physical damage dealt as you, from your level, distance skill and magic level, times the wolf factor (Pack Alpha, the Trials' minion damage): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.howl. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
 							]
 						},
 						{
@@ -5347,7 +5347,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"The pack pounces. Your companions leap at the target (range 7) and each rends every monster within 1 sqm of it, 2 bites apiece. O332: the Beastmaster's cluster spell, level 240 (it took Gale Volley's place): a tight circle around the quarry, harder on the ones at its side than Pack Howl. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.pounce. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
+								"The pack pounces. Your companions leap at the target (range 7) and each rends every monster within 1 sqm of it, 2 bites apiece. O332: the Beastmaster's cluster spell, level 240 (it took Gale Volley's place): a tight circle around the quarry, harder on the ones at its side than Pack Howl. A bite is physical damage dealt as you, from your level, distance skill and magic level, times the wolf factor (Pack Alpha, the Trials' minion damage): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.pounce. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
 							]
 						},
 						{
@@ -5683,7 +5683,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 8 s cooldown. Feral Command's late sibling; the 8 s cooldown comes from the cooldown ladder. The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage, O332): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.frenzy. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
+								"Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 8 s cooldown. Feral Command's late sibling; the 8 s cooldown comes from the cooldown ladder. The Beastmaster's command. A bite is physical damage dealt as you, from your level, distance skill and magic level, times the wolf factor (Pack Alpha, the Trials' minion damage, O332): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.frenzy. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
 							]
 						},
 						{

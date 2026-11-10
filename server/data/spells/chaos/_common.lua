@@ -17,6 +17,11 @@ end
 if ChaosFxMissile then
 	ChaosFxMissile.holy_arrow = ChaosFxMissile.holy_arrow or ChaosFxMissile.holy_bolt
 end
+-- O468: the magic level share of weapon spells (data/scripts/chaos/spell_scaling_core.lua)
+if not ChaosSpellScaling then
+	pcall(dofile, 'data/scripts/chaos/spell_scaling_config.lua')
+	pcall(dofile, 'data/scripts/chaos/spell_scaling_core.lua')
+end
 if ChaosSpell then
 	return
 end
@@ -399,6 +404,22 @@ function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)
 	return (l + m * mlMin + baseMin) * scale, (l + m * mlMax + baseMax) * scale
 end
 
+-- O468: the factor on a WEAPON spell's base damage for the caster's magic level: (1 + ML / 300), divided by the same for the
+-- typical magic level at the caster's level, so a typical character deals what it dealt before (spell_scaling_config.lua
+-- mlShare). Apply it once to the hit of a spell that reads a weapon skill; never to a caster spell (its magic level is its
+-- skill), a Templar or Ranger holy spell (they read the magic level already) or an auto attack.
+function ChaosSpell.weaponShare(player)
+	local S = ChaosSpellScaling
+	return S and S.forPlayer(player) or 1
+end
+
+-- the onGetFormulaValues of a SKILLVALUE callback spell: the positive min, max of the script's formula in, the negative values
+-- the engine wants out, with the weapon share applied
+function ChaosSpell.weaponFormula(player, min, max)
+	local k = ChaosSpell.weaponShare(player)
+	return -min * k, -max * k
+end
+
 -- Damage helper for skill based spells (melee / distance).
 function ChaosSpell.skillValues(player, skillId, mult, baseMin, baseMax)
 	local s = player:getEffectiveSkillLevel(skillId)
@@ -654,6 +675,56 @@ function ChaosSpell.pulse(casterId, count, interval, fn, step)
 	end
 end
 
+-- O468 (B3): a damage over time as scripted pulses instead of an engine condition. A condition tick is dealt as ORIGIN_CONDITION,
+-- which the damage events treat apart: no critical hit, no class spell factor, no supports and spell modifier masteries, no
+-- cards, keystones or unique passives. A pulse is a spell hit of the caster, dealt inside the cast context (addEvent keeps it), so
+-- it takes everything the spell's own hit takes (the way Gorehook and Dreamrot, the kit's scripted damage over time, do).
+-- `base` is the per-tick damage the script's condition dealt (its magic level formula). The class spell factor now applies to a
+-- pulse and did not to a tick, so each tick is divided by it first (dotTick): a typical character without supports or cards deals
+-- the old tick, at every level and class (tests/spell_paths_test.lua), and the crit, supports, cards and the rest are the gain.
+-- A new pulse chain on the same target by the same caster and spell replaces the old one (a condition is refreshed).
+ChaosSpell.dots = ChaosSpell.dots or {}
+local dotTokens = 0
+
+-- the tick the class spell factor (spell_factor_config.lua, applied by the damage event to an ORIGIN_SPELL hit) turns into `base`
+function ChaosSpell.dotTick(player, base)
+	local SF = ChaosSpellFactor
+	if SF and SF.forVocation and player and player.getVocation and player.getLevel then
+		local voc = player:getVocation()
+		local f = SF.forVocation(voc and voc:getId() or 0, nil, player:getLevel())
+		if f and f > 0 then
+			return base / f
+		end
+	end
+	return base
+end
+
+-- `ticks` hits of `base` (see above) on `targetId`, the first one tickMs after the cast, every tickMs; `key` names the spell
+function ChaosSpell.scriptedDot(casterId, targetId, key, ctype, ticks, tickMs, base, effect)
+	dotTokens = dotTokens + 1
+	local token = dotTokens
+	local slot = key .. ":" .. casterId .. ":" .. targetId
+	ChaosSpell.dots[slot] = token
+	addEvent(function()
+		ChaosSpell.pulse(casterId, ticks, tickMs, function(caster, step)
+			local host = Creature(targetId)
+			if ChaosSpell.dots[slot] ~= token or not host or host:getHealth() <= 0 then
+				if ChaosSpell.dots[slot] == token then
+					ChaosSpell.dots[slot] = nil
+				end
+				return false
+			end
+			-- rounded, not cut: the tick is a few dozen, the factor the event puts back would lose up to a point of it
+			local v = math.floor(ChaosSpell.dotTick(caster, base) + 0.5)
+			ChaosSpell.damageTarget(caster, host, ctype, v, v, effect)
+			if step >= ticks then
+				ChaosSpell.dots[slot] = nil
+			end
+			return true
+		end)
+	end, tickMs)
+end
+
 -- Remove a creature later (summons / clones).
 function ChaosSpell.removeLater(creatureId)
 	local c = Creature(creatureId)
@@ -808,6 +879,9 @@ function ChaosSpell.weaponStrike(caster, target, min, max, effect, origin)
 		local voc = caster:getVocation()
 		k = k * SF.forVocation(voc and voc:getId() or 0, nil, caster:getLevel())
 	end
+	-- O468: the magic level share of a weapon spell (once, here: the blade and shuriken schools of the attack kit and the Thief
+	-- line's scripts all deal their strike through this function)
+	k = k * ChaosSpell.weaponShare(caster)
 	min, max = min * k, max * k
 	-- the strike's numbers come from ChaosSpell.meleeSkillLevel already: weapon_styles.lua must not apply the melee skill
 	-- rule (the ratio of the best skill to the weapon's own) to it a second time; it reads this storage during the call

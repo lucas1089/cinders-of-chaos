@@ -18,9 +18,12 @@ function onGetFormulaValues(player, level, magicLevel)
 	return -min, -max
 end
 
+-- O468: the poison is 8 scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.25 + 3), one
+-- every 2 s: they take crit, supports, cards, keystones and the rest like the cloud's own hit
 function onVenomSwarmTarget(creature, target)
 	local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.25) + 3)
-	creature:addDamageCondition(target, CONDITION_POISON, DAMAGELIST_LOGARITHMIC_DAMAGE, dmg)
+	ChaosSpell.scriptedDot(creature:getId(), target:getId(), "blightswarm", COMBAT_EARTHDAMAGE, 8, 2000, dmg,
+		CONST_ME_HITBYPOISON)
 	return true
 end
 

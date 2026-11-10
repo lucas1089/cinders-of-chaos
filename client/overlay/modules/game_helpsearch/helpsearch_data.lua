@@ -39,6 +39,7 @@ HelpSearchData = {
 		["goals"] = {menu = "Adventure > Next Goals", words = {en = "level up leveling what next where to hunt", pt = "subir de nível upar o que fazer onde caçar"}},
 		["passive"] = {level = 12, menu = "Character > Passive Tree", words = {en = "points build talents starter builds recommended auto build import code mastery spell modifier", pt = "pontos build talentos builds iniciais recomendadas auto build importar código maestria modificador de magia"}},
 		["spellbook"] = {menu = "Character > Spellbook", words = {en = "spells attack hotkeys", pt = "magias feitiços ataque atalhos"}},
+		["spelldamage"] = {words = {en = "spell damage scaling magic level skill weapon attack level modifiers passive tree support runes cards charms uniques sets how strong", pt = "dano das magias escala nível mágico magic level skill arma ataque nível modificadores árvore passiva runas de suporte cartas charms únicos conjuntos quão forte"}},
 		["bestiary"] = {menu = "Hunt > Bestiary"},
 		["professions"] = {level = 20, menu = "Economy > Professions"},
 		["defence"] = {words = {en = "resistance resistances resist armour armor dodge block suppression penalty level 250 500 fire cold lightning chaos damage taken", pt = "resistência resistências resistir armadura esquiva bloqueio supressão penalidade nível 250 500 fogo frio raio caos dano sofrido"}},

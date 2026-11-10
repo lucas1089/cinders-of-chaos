@@ -30393,6 +30393,96 @@ once-per-install data step). **Tests:** `tests/monster_defence_test.lua`, `tests
 `game_monsterbar/monsterbarstyle_test.lua`. **Not verified:** a live server (the event order is read from the engine source, not
 observed), the client chips in the real client, the pt-BR texts by a speaker.
 
+## Spell scaling (O468) (`spell_scaling_config.lua`, `spell_scaling_core.lua`, `tests/spell_inputs_test.lua`, `tests/spell_scaling_test.lua`, `tests/spell_paths_test.lua`, `tools/patch_stock_spell_inputs.py`)
+
+Owner 2026-11-10 (translated): "How are the players' spells scaling? It needs to be by skill, magic level and character level.
+They also need to take the modifiers and the passive tree into account. Also the support runes, the cards and everything else."
+A read-only audit came first (every spell cast on a mocked engine, the order of the damage events, a matrix of source against
+damage path). The rule below was proposed and the owner answered "go ahead like that". Computed and mocked, never run on a
+live server or in a client.
+
+**The rule.** A caster spell (Mystic, Elementalist, Illusionist, Necromancer lines, the caster heals) reads the character level
+and the magic level: the magic level is that class's skill, nothing is added. A weapon spell (Warrior, Ranger, Thief, Monk
+lines, the weapon spells of any class) reads the level, the weapon skill with the weapon's attack, and a magic level share. The
+hybrids that read all three already (Templar line, Ranger holy spells) stay as they are.
+
+**The magic level share.** One number in one file: `spell_scaling_config.lua` `mlShare = {per = 300, normalise = true, ref = ...}`.
+A weapon spell's base damage is multiplied by `(1 + ML / per)` and, while `normalise` is on, divided by `(1 + refML(level) / per)`.
+`refML` is the typical weapon class magic level, linear between the anchors of `rotation_sim.py` ANCHORS `ml_other`
+(`tests/spell_scaling_test.lua` reads both and fails when they drift). So a typical character deals what it dealt before (the
+measured tables stay valid) and every magic level above or below typical moves a weapon spell by about 0.33%. Pure logic:
+`spell_scaling_core.lua` (`ChaosSpellScaling.factor`, `forPlayer`, `refML`). Typical character, +10 magic level: Rift Cleaver
+644 / 1286 / 1733 becomes 665 / 1326 / 1785 at levels 100 / 500 / 1000, Sunspear 628 / 1414 / 1961 becomes 648 / 1457 / 2018,
+Ashen Fist 237 / 477 / 692 becomes 244 / 491 / 712; a caster spell is not touched (Rime Bloom moves by its own magic level term).
+
+**Where it is applied (once per hit, in the helpers).**
+
+| Path | Where |
+|---|---|
+| Attack kit melee, distance, monk schools and the `spell` school with a weapon power | `AttackKit.rawValues` (`_attackkit.lua`) |
+| Attack kit blade and shuriken schools, the Thief line, the pack tools | `ChaosSpell.weaponStrike` (`_common.lua`), which the kit calls with the unscaled values |
+| The SKILLVALUE callback spells (Titan's Wrath, Ground Slam, Leaping Strike, Whirlwind, Anvil Fall, Rampage Leap, Skyfall Cleave) | `ChaosSpell.weaponFormula` |
+| Monk strikes (`MonkSpell.strike`, `values`), Kindled Breath and Mantra of Stone heals | `MonkSpell.rawValues`, the two scripts |
+| Wolf mauls and the companion bite | `ChaosClasses.biteValuesFor`, `autoBiteValuesFor` |
+| Snares and mines | at placement (`_snares.lua`), frozen with the rest |
+
+Not applied: auto attacks, caster spells, the spells that read the magic level already (Templar line, Ranger holy spells, Skewering
+Line), and never twice to one hit. A spell that adds a share of a hit that carried the bonuses is left alone.
+
+**Missing terms.** Lay on Hands has a level term (`layOnHands.perLevel` 0.3, `perMagicLevel` 10 to 5: 297 against 298 for a typical
+Sentinel at level 500). The Iron Sage's Kindled Breath has one (`sageBreath` level x 2 + fist x 24.5, was fist x 33: 3940 against
+3960 at level 500). The two flat base spells get the standard formula through the idempotent install step
+`tools/patch_stock_spell_inputs.py` (step `spells`, after `patch_mystic_stock_fx.py`; `tools/patch_stock_spell_inputs_test.py`):
+Kindling Spark (level 8) `level / 5 + ML x 0.2..0.3 + 7.5..17`, 9.9 to 19.9 for a typical caster at level 8, the old 10 to 20;
+Bewitching Hex (level 60) first tick `level / 5 + ML x 2 + 44.5`, 128 for a typical caster at level 60, each tick adds it again
+(128, 256, 384, 512 shape). Both keep growing with level and magic level, so a high level caster that used them deals more than the
+flat number. The patch was dry-run against a read-only copy of an installed server (`--dry-run`), never written there.
+
+**The guard.** `tests/spell_inputs_test.lua` casts every damage or heal spell of `spells_chaos.xml` on a mocked engine
+(`tests/fixtures/spell_probe_engine.lua`, the real helpers) and fails when its value does not move with the level, the magic level
+and, for a spell of a weapon line, the weapon skill. The spells come from the XML. The only exceptions are named tables with a
+reason each: `NOT_A_HIT` (Bloodrage: its number is the health it costs) and `PROBES`, which read the helper a spell's number comes
+from where the cast needs state the mock lacks (wolf spells need a companion, snares a later burst, Corpse Explosion a corpse, Bone
+Offering a skeleton). Without the share it fails on 59 weapon spells; with it 131 spells with a value pass, 86 of them move with all
+three inputs (the other 45 are casters, whose magic level is their skill).
+
+**Every bonus reaches every player damage path (part B).**
+
+| Hole | Result |
+|---|---|
+| Beastmaster companion bite (`beastmaster.lua`) | closed: ORIGIN_SPELL as the owner inside `ChaosSpellFactor` guard, like the Necromancer's minion hits. Tree, gems, charms, item modifiers, blessings, keystones, the Trials' spell damage, `classDamage` and the monster defence layer run on it; the class spell factor does not. |
+| `wolfFactor` | kept whole. The Trials count a minion hit only when the attacker is the summon (`trials_effects.lua ownerOf`), so `dealMinion` is not applied twice; Pack Alpha and Wolfbond are wolf only. |
+| `companion.autoByLevel` | re-fitted (11 points, 1.658 at level 60 to 2.694 at 1200, was 1 to 0.5): the plain build's bite (no tree, no gear) stays where it was against a monster of the median armour (161 / 301 / 470 at levels 100 / 500 / 1000, within 2% at every level 50-1300, `tests/spell_paths_test.lua`). The raw bite is bigger and `classDamage.beastmaster` (0.85 to 0.39) with the armour of a normal monster take it back. A tree of +40% physical and 60 strength: 161 / 301 / 470 becomes 271 / 507 / 793. |
+| Pet Spark Aura (`pets.lua`) | closed, same way: its own damage, not a share of a hit. Not re-fitted: small hits lose most to armour (about 85% at level 500 against the median monster), the tooltip number is the raw one. |
+| Axe cleave neighbours (`weapon_families.lua`) | left: a guarded share of a hit that carried every bonus. |
+| Damage over time conditions | converted: Blightswarm (8 ticks, 2 s), Witchfire Bolt (4, 3 s), Falling Pyre (5, 3 s), Shattered Psyche (5, 2 s) are `ChaosSpell.scriptedDot` pulses (spell hits inside the cast context): crit, supports, masteries, cards, keystones and uniques apply. A tick is the old condition tick (magic level formula of the script) divided by the class spell factor, which the event puts back, so a typical character without supports or cards deals the old tick (rounded to the point) at every level and class (`tests/spell_paths_test.lua`). A new chain on the same target replaces the old one. The engine's condition icon and its removal by cures are gone. |
+| Support sockets | the six damage spells of the `none` list (9 Rift Cleaver, 38 Mirror Shards, 39 Rending Pounce, 42 Grave Nova, 45 Gutting Slash, 134 Gale Volley) have sockets; 3 of 172 instants have none (Flickerdash, Town Portal, Vigil of Haste). |
+| Snares and mines | a snare keeps the cast context of the spell that placed it (`ChaosSupportsSpell.context`) and raises it around the burst (`ChaosSupportsSpell.run`): the supports and the spell modifier masteries of Snare Trap and Seeker Mine apply. |
+| Necromancer minion hits | left: the supports need the summoning cast's context kept per minion and raised in the think loop (`necro_minions.lua`), more than the small change that was allowed. |
+| `rotation_model.csv` rows | left: judgement, twin_verdict (level / 5, the row has the full level) and sanctified_barrage (level / 10). The scripts are the truth, but each correction turns `rotation_sim.py --check` red (Final Verdict and Twin Verdict alone: Deadeye level 1200 both quests +15.6% against 12-15%; Hail of Dawn: Ranger level 500 attack +14.4% against 1.5-9.0%, level 1200 both quests +38.9%). |
+
+**Model checks.** Every model check passes. `tools/companion_model.py` learned the event factors (owner decision after the first
+version of this change turned its check red): its bite is `autoByLevel` times `event_factor`, the factors the events apply to a
+Beastmaster bite, `classDamage.beastmaster` at the level and the share of the bite that the armour of the median normal monster
+leaves (`monster_defence_config.lua` hitCurve and armourTarget, `defence_config.lua`), all read from the real configs through
+`companion_numbers.lua`. The plain build is where it was (bite dps 30 / 48 / 175 / 226 / 235 / 282 at levels 50 / 100 / 400 / 700 /
+750 / 1000; wolves 19 / 18 / 49 / 47 / 47 / 46% of the damage). The tree and full builds rise because Pack Alpha and the Trials
+make the raw bite bigger and armour keeps more of a big hit: tree 23 / 56 / 54 / 53% became 25 / 58 / 56 / 55% (levels 100 / 400 / 750 /
+1000), full 33 / 68 / 66 / 65% became 38 / 71 / 69 / 68%. The tree's own increments (type percent, strength, gems) are not modelled.
+Two limits of `companion_balance_config.lua` were re-baselined for that, each with a dated comment (2026-11-10, O468: the bite takes
+the tree's bonuses now, review pending in the damage balance round): `shareFull` high 0.70 to 0.74 and `fullOverTree` high 1.40 to
+1.52 (3% headroom). `class_dps_model`, `pack`, `boss`, `tower`, `survival`, `pvp`, `spell_mastery`, `minion`, `card_set`,
+`weapon_family`, `guardian` and `defence_curve` pass untouched.
+
+**Not in this change.** Runes and the stock heals (base scripts, not in the repo), plain health heals (regeneration, set and power
+heals), gear Spell Damage rolling only on wands and rods, the growth of spell damage against monster health.
+
+**Tests.** `tests/spell_inputs_test.lua`, `tests/spell_scaling_test.lua`, `tests/spell_paths_test.lua`, `tests/attack_kit_test.lua`
+(the kit applies the share once), `tests/snares_test.lua`, `tests/supports_test.lua` (the cast context), `tests/classes_test.lua`,
+`tests/templar_test.lua`, `tools/patch_stock_spell_inputs_test.py`. **Not verified:** a live server (the event order and ORIGIN_NONE
+are read from the engine source, not observed), the effect of the missing condition icon, the pt-BR text by a speaker, the
+base scripts of Kindling Spark and Bewitching Hex beyond the read-only copy.
+
 ## Player defence (O464) (`player_defence_config.lua`, `player_defence_core.lua`, `player_defence.lua`, `defence_config.lua`, `tools/patch_base_armor_percent.py`, `tools/patch_base_absorb_player.py`)
 
 Second stage of the combat redesign (owner, 2026-11-10: "for now forget our tests and the caps we put, also the DPS tests and

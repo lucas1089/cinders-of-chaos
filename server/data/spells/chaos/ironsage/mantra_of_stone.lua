@@ -11,7 +11,7 @@ local function pulse(caster, step)
 	local pos = caster:getPosition()
 	-- Deep Mantra (the passive tree, class_tree.lua): its own, stronger timer
 	local sub = ChaosClassTree.has(caster, "ctDeepMantra") and M.ids.subId.mantraDeep or M.ids.subId.mantra
-	local heal = M.mantraHeal(caster:getLevel(), caster:getEffectiveSkillLevel(SKILL_FIST))
+	local heal = math.floor(M.mantraHeal(caster:getLevel(), caster:getEffectiveSkillLevel(SKILL_FIST)) * ChaosSpell.weaponShare(caster)) -- O468: magic level share
 	for _, c in ipairs(ChaosSpell.alliesAround(caster, pos, M.cfg.mantra.radius, false)) do
 		if c:isPlayer() then
 			MonkSpell.timer(c, sub, M.cfg.mantra.pulseMs + 1000)
