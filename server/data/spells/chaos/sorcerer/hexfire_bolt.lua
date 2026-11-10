@@ -42,8 +42,10 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 	if target and target ~= creature then
+		-- O468: the burn is 4 scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.15 + 3), one every
+		-- 3 s: they take crit, supports, cards, keystones and the rest like the bolt
 		local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.15) + 3)
-		creature:addDamageCondition(target, CONDITION_FIRE, DAMAGELIST_VARYING_PERIOD, dmg, {10, 12}, 4)
+		ChaosSpell.scriptedDot(creature:getId(), target:getId(), "witchfire", COMBAT_FIREDAMAGE, 4, 3000, dmg, CONST_ME_HITBYFIRE)
 	end
 	return true
 end

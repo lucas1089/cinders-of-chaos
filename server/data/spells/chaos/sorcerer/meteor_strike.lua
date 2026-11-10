@@ -18,9 +18,11 @@ local function impact(casterId, pos, min, max)
 	local ring = M ~= nil and M.send(pos, "big_shock_fire_7")
 	local tile = Fx("fire_nova", CONST_ME_FIREAREA)
 	doAreaCombat(caster, COMBAT_FIREDAMAGE, pos, area, -math.floor(min), -math.floor(max), M and M.tileFx(ring, tile) or tile)
+	-- O468: the burn is 5 scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.2 + 5), one every
+	-- 3 s: they take crit, supports, cards, keystones and the rest like the meteor
 	local dmg = math.max(3, math.floor(caster:getMagicLevel() * 0.2) + 5)
 	for _, c in ipairs(ChaosSpell.enemiesAround(caster, pos, 2)) do
-		caster:addDamageCondition(c, CONDITION_FIRE, DAMAGELIST_VARYING_PERIOD, dmg, {10, 12}, 5)
+		ChaosSpell.scriptedDot(casterId, c:getId(), "fallingpyre", COMBAT_FIREDAMAGE, 5, 3000, dmg, CONST_ME_HITBYFIRE)
 	end
 end
 

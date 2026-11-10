@@ -243,7 +243,7 @@ doTargetCombatHealth = doTargetCombat
 doCombat = function() return true end
 local depth = 0
 function addEvent(fn, ms, ...)
-	if depth > 8 or type(fn) ~= "function" then return 0 end
+	if depth > 16 or type(fn) ~= "function" then return 0 end
 	local old = delay
 	delay = delay + (tonumber(ms) or 0)
 	depth = depth + 1
@@ -318,6 +318,25 @@ function Probe.cast(script)
 		local ok3, e3 = run({number = 0, type = VARIANT_POSITION, x = 100 + P.tgt, y = 100, z = 7})
 		if not ok3 then res.err = tostring(e3) end
 		collect()
+	end
+	return res
+end
+
+-- run fn() against the mock and return what it handed to the engine, like cast() (for a callback of a loaded script)
+function Probe.record(fn)
+	for i = #out, 1, -1 do out[i] = nil end
+	delay = 0
+	local res = {hits = {}, heals = {}}
+	local ok, err = xpcall(fn, function(e) return debug.traceback(tostring(e), 2):sub(1, 300) end)
+	if not ok then res.err = tostring(err) end
+	for _, l in ipairs(out) do
+		local fld = {}
+		for x in (l .. "\t"):gmatch("([^\t]*)\t") do fld[#fld + 1] = x end
+		if fld[1] == "HIT" then
+			res.hits[#res.hits + 1] = {via = fld[2], ctype = fld[3], lo = tonumber(fld[4]), hi = tonumber(fld[5]), origin = fld[6], delay = tonumber(fld[7])}
+		elseif fld[1] == "HEAL" then
+			res.heals[#res.heals + 1] = {via = fld[2], lo = tonumber(fld[3]) or 0, hi = tonumber(fld[4]) or tonumber(fld[3]) or 0, delay = tonumber(fld[5]) or 0}
+		end
 	end
 	return res
 end
