@@ -136,9 +136,14 @@ C.sets = {
 -- give that item level (the hunting model of professions_config.lua balance; tests/gamble_test.lua checks every level
 -- 8-1500 stays between `balance.minShare` and `balance.maxShare`). A gold sink: a whole stock of 14 costs about two and
 -- a half hours of hunting, so nobody buys every crate of every window.
+-- O471 (2026-11-10): the item level of a drop follows a flatter curve (chaos_item_mods.lua itemLevel.curve), so the gold
+-- points moved to the item level the SAME monster level gives now (a piece is priced at its item level minus the spread,
+-- itemLevel.spread below): the price at a hunting level is what it was, within the whole item levels. Before:
+-- {1, 1500} {4, 3000} {5, 3600} {12, 8300} {18, 13000} {22, 20000} {36, 56000} {54, 97000} {67, 150000} {74, 300000}
+-- {90, 850000} {106, 1100000} {118, 1350000} {123, 1500000} {136, 1650000} {150, 1800000}
 C.price = {
-	curve = {{1, 1500}, {4, 3000}, {5, 3600}, {12, 8300}, {18, 13000}, {22, 20000}, {36, 56000}, {54, 97000},
-		{67, 150000}, {74, 300000}, {90, 850000}, {106, 1100000}, {118, 1350000}, {123, 1500000}, {136, 1650000},
+	curve = {{1, 1500}, {4, 3000}, {5, 3600}, {11, 8300}, {17, 13000}, {20, 20000}, {33, 56000}, {49, 97000},
+		{61, 150000}, {67, 300000}, {82, 850000}, {99, 1100000}, {112, 1350000}, {118, 1500000}, {142, 1650000},
 		{150, 1800000}},
 	slot = {weapon = 1.3, armor = 1.15, shield = 1.0, helmet = 1.0, legs = 1.0, boots = 0.9, amulet = 1.1, ring = 1.1,
 		quiver = 1.0},

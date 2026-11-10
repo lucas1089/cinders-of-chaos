@@ -554,6 +554,26 @@ No variant is more than +40% over the default in its specialty (computed). A lev
 has none. Every list casts on every 2 s group cooldown and the helper rules stay: a variant is a different list, not a faster bot. The
 numbers are computed, not measured (`server/data/spells/README.md` "Rotation variants (O446)"). The Unity player uses the default.
 
+## Ceilings on critical hits, runes and penetration (O471, 2026-11-10)
+
+Part of the balance round (owner: "the source of damage must be more balanced"). It changes what a build can stack, not what
+a build is.
+
+- **Critical hits.** A character counts at most 45 points of critical chance and 150% extra damage, all sources together
+  (gear, gems, the tree, Paragon, buffs, Keen Edge). The two gear modifiers roll on weapons, necklaces and rings only. The
+  crit builds of this page (the Cascade builds of the Thief, Ninja, Monk and Templar lines, Cutthroat, Twin Fangs, Iaido
+  Striker, Hundred Fists, the Deadeye's crossbow) keep working: their crit chance sits at 15 to 40 points, under the cap.
+  What loses is the stack: a build that used badge and quiver crit to reach 70 points and an amount near 300 now counts 45 and
+  150 and loses about 30% of its damage. Chance above 45 and damage above 150 are wasted; put the points elsewhere.
+- **Damage runes.** A Mythic Brand, Echo, Hex or Keen Edge rune counts as a Legendary one (brand 50%, Echo 30%, Hex 6%,
+  Keen Edge 6%). The Mythic rune is still the best to find for the other supports. For these four, a Legendary rune does the
+  same, so do not pay for the upgrade.
+- **Penetration.** At most 20 points of physical and 20 of elemental penetration. The Sunder rune adds to the elemental 20
+  after the gear: 12 points on the gear leave it 8. A build that stacked three penetration prefixes wastes the third.
+- **Gear.** Items drop at a higher item level late in the game (144 at monster level 2000, was 138) and a bit lower in the
+  middle (82 at monster level 500, was 90), and a high tier is more likely than a low one (each tier 1.35 times the one
+  below it). Items you own did not change.
+
 ## Leveling notes
 
 - Keystones need their paths. The leaves at 8 or 9 points are early picks (96, 99, 102 and 105 too); 253, 262, 355 and

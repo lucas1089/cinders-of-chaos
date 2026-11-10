@@ -353,8 +353,9 @@ end
 local function pct(x) return string.format("%.0f%%", x * 100) end
 print("Roulette spin against its token (minutes of hunting; orbs, sockets, gold, exercise chests and unique chests counted)")
 for _, r in ipairs(M.rows()) do
-	ok(r.ratio >= V.band.min and r.ratio <= V.band.max, string.format("%s at level %d: value %.1f / cost %.1f = %.2f is in %.2f-%.2f",
-		r.key, r.level, r.value, r.cost, r.ratio, V.band.min, V.band.max))
+	local band = M.bandFor(r.level)
+	ok(r.ratio >= band.min and r.ratio <= band.max, string.format("%s at level %d: value %.1f / cost %.1f = %.2f is in %.2f-%.2f",
+		r.key, r.level, r.value, r.cost, r.ratio, band.min, band.max))
 	if r.level == 1000 then
 		print(string.format("  %-8s level %d: %5.1f min of prizes for %5.1f min of tokens (x%.2f): %.2f orbs, %.0f gold, "
 			.. "cards/badges/cosmetics/units not counted", r.key, r.level, r.value, r.cost, r.ratio, r.spin.orbs, r.spin.gold))
@@ -370,7 +371,10 @@ for _, key in ipairs(M.KEYS) do
 	local cfg = M.load(key)
 	local a, b = M.spin(cfg, 650).minutes, M.spin(cfg, 2000).minutes
 	ok(b >= a * 0.95, key .. ": a spin at level 2000 is not worth less than at 650")
-	ok(b <= a * 1.35, key .. ": and not far more")
+	-- O470 (2026-11-10): 1.45, was 1.35. The planned kills per hour at 650 is 1164 (was 836, the step at the end of the base
+	-- pool), so a spin at 650 is worth 46-77 minutes now and the one at 2000 is 1.30 (exercise), 1.35 (premium), 1.37
+	-- (crystal), 1.42 (boss) of it
+	ok(b <= a * 1.45, key .. ": and not far more")
 end
 
 -- before: what the counted value of a spin was (the chests by price; the Moist gear, the cosmetics and the units are not counted

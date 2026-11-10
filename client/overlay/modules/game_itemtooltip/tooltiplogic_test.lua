@@ -645,6 +645,38 @@ local gem = L.card({ name = 'flawless ruby', rarity = 3, rarityName = 'Rare', de
 eq(gem.kind, 'RARE', 'gem: the rarity as kind')
 eq(gem.extras[1].rows[1].text, 'A gem for a socket.', 'gem: description')
 
+-- ---------------------------------------------------------------- O471: the character cap on a modifier line
+eq(L.capText({}), '', 'no cap, no text')
+eq(L.capText({ cap = 45 }), ' (character cap 45)', 'the cap of the critical chance')
+eq(L.capText({ cap = 150, over = true }), ' (over the character cap of 150)', 'over it')
+local capTip = {
+  key = '9:9', id = 2160, name = 'old badge', kind = 'other', rarity = 4, rarityName = 'Rare', level = 100, maxTier = 4,
+  sides = { p = 2, s = 0, max = 2 },
+  mods = {
+    { k = 'rarity_criticalHitChance', l = 'Critical Strike Chance', t = 'Critical Strike Chance +7%', v = 7, g = 'single',
+      lo = 7, hi = 8, tr = 8, sd = 'p', cap = 45, over = true },
+    { k = 'chaos_mod_physpen', l = 'Physical Penetration', t = 'Physical Penetration +9%', v = 9, g = 'chaos', lo = 9, hi = 9,
+      tr = 6, sd = 'p', cap = 20, bd = true }
+  }
+}
+local capLines = L.lines(capTip, { level = 60 })
+local capAll = {}
+for i, l in ipairs(capLines) do capAll[i] = l.text end
+capAll = table.concat(capAll, '|')
+eq(capAll:find('T8 Critical Strike Chance +7% [7-8] (over the character cap of 45)', 1, true) ~= nil, true, 'the line says it is over the cap')
+eq(capAll:find('T6 Physical Penetration +9% [9] (character cap 20) [bound]', 1, true) ~= nil, true, 'the cap before [bound]')
+local critLine
+for _, l in ipairs(capLines) do
+  if l.text:find('Critical Strike Chance', 1, true) then critLine = l end
+end
+eq(critLine.parts[7], ' (over the character cap of 45)', 'the cap text is a part of its own')
+eq(critLine.parts[8], L.COLORS.red, 'red when over')
+local groups = L.modGroups(capTip)
+eq(groups[1].rows[1].parts[3], ' (over the character cap of 45)', 'the group row carries the cap too')
+eq(groups[1].rows[2].parts[3], ' (character cap 20)', 'a row with a bound modifier and a cap')
+eq(groups[1].rows[2].parts[5], ' [bound]', 'then the bound mark')
+eq(groups[1].rows[2].parts[4], L.COLORS.dim, 'the cap in the dim colour')
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

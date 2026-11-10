@@ -289,8 +289,8 @@ eq(armor:getCustomAttribute("ct_rarity_physicalabsorb"), 3, "tier stored")
 eq(armor:getCustomAttribute("rarity_physicalAbsorb"), 4, "the value of T3 (4-4 since O464: the physical reduction ladder 2-2 .. 7-8)")
 eq(res.text, "Golden Armor of Sanctity gained Physical +4% (T3) (suffix).")
 eq(armor:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Suffixes: Physical +4% (T3); Holy +2% (T2)")
--- the tier roll: highest dice = the last row (T1)
-dice = {1, 270, 1}
+-- the tier roll: highest dice = the last row (T1). O471: the weights are 1.35^(t-1), T3 182 + T2 135 + T1 100 = 417
+dice = {1, 417, 1}
 ok, res = C.apply("exalted", armor)
 eq(res.added.tier, 1, "highest tier dice: T1")
 eq(res.added.key, "rarity_fistSkill", "two suffixes on a Rare item: the first prefix")

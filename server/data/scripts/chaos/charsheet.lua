@@ -47,6 +47,9 @@ function K.read(player)
 			if type(t.crit) == "table" then
 				raw.critChance = t.crit.chance and t.crit.chance.total
 				raw.critAmount = t.crit.amount and t.crit.amount.total
+				-- O471: what the sources give, over the caps (the sheet says "cap" when the total was cut)
+				raw.critChanceRaw = t.crit.chance and t.crit.chance.capped and t.crit.chance.raw or nil
+				raw.critAmountRaw = t.crit.amount and t.crit.amount.capped and t.crit.amount.raw or nil
 			end
 			raw.attackSpeed = type(t.attackSpeed) == "table" and t.attackSpeed.total or nil
 			raw.damage = {}

@@ -80,9 +80,9 @@ M.config = {
 	-- the item level a tier needs (T1 .. T8). O461 (owner 2026-11-10): {1, 15, 30, 50, 70, 90, 110, 130}, was {.., 95, 120, 140}:
 	-- the top tier drops from a boss of monster level 1000 (item level 133) and not only from the three rarest sources
 	tierLevels = {1, 15, 30, 50, 70, 90, 110, 130},
-	-- roll weight of each tier: equal (O461). Every tier the item level allows can roll: the old window of the best five
-	-- tiers and the weights 100 .. 12 are gone, so a piece of item level 150 rolls T1 .. T8 with one chance in eight each
-	tierWeights = {100, 100, 100, 100, 100, 100, 100, 100},
+	-- roll weight of each tier among the tiers the item level allows. O461: equal. O471 (2026-11-10): 1.35^(t-1), a tilt toward
+	-- the high tiers (a piece of item level 150 rolls T8 in 816 of 3024 parts, T1 in 100); the ranges of the tiers are unchanged
+	tierWeights = {100, 135, 182, 246, 332, 448, 605, 816},
 	-- today's five tiers on the new scale (old tier t = new tier oldTiers[t])
 	oldTiers = {2, 3, 4, 5, 6},
 	-- the version of the modifier numbers an item carries ("chaos_modv" on the item, M.VERSION): 1 = the ranges before O461
@@ -97,6 +97,18 @@ M.config = {
 	-- together, in percent of the maximum per second
 	leech = {maxPct = 20, windowMs = 1000},
 
+	-- O471 (owner 2026-11-10, "the source of damage must be more balanced"): ceilings on what one character brings from every
+	-- source together, gear, gems, passive tree, Paragon, buffs and runes included.
+	--   crit: the critical chance in points and the extra damage of a critical hit in percent. The engine rolls and adds them from
+	--   its own totals (engine patch 0004, combat.cpp), so data/scripts/chaos/crit_cap.lua cuts the hit where the engine has
+	--   made it: a critical hit above the chance cap loses its crit with the share the cap leaves out, one above the damage cap
+	--   keeps only the capped extra (M.critKeep, M.critFactor). The scripted crits (Keen Edge, quiver Critical Strike with Bows)
+	--   only get the room the cap leaves (M.critRoom). Before: no cap, a dedicated build reached 71% and an amount of 300.
+	--   penetration: the points of physical and of elemental penetration, the `cap` of physpen and elepen below; the Sunder
+	--   support counts into the elemental total (M.penLeft: it gets what the items leave of the cap).
+	crit = {chanceCap = 45, amountCap = 150},
+	penetration = {cap = 20},
+
 	-- per rarity (ChaosRarity order: Common, Uncommon, Magic, Rare, Legendary, Divine): how many modifiers a new item
 	-- gets, and how many prefixes and how many suffixes it may carry at most (the orbs fill up to 2 x sides). Before the
 	-- seven rarities (2026-10-18) the 15 rarities had 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6 modifiers
@@ -110,8 +122,11 @@ M.config = {
 	-- along `curve` ({monster level, item level}, straight lines in between), plus the bonuses, at most `max`
 	itemLevel = {
 		max = 150,
-		curve = {{1, 1}, {10, 5}, {25, 12}, {50, 22}, {100, 36}, {200, 54}, {350, 74}, {500, 90}, {700, 106},
-			{900, 118}, {1100, 128}, {1500, 136}, {3000, 142}, {6000, 145}},
+		-- O471 (2026-11-10): the gear keeps growing past monster level 1000 (the last tier opens for a legendary boss drop at
+		-- monster level about 900, for a rare drop at about 1250); before: {50, 22} {100, 36} {200, 54} {350, 74} {500, 90}
+		-- {700, 106} {900, 118} {1100, 128} {1500, 136} {3000, 142} {6000, 145}
+		curve = {{1, 1}, {10, 5}, {25, 12}, {50, 21}, {100, 33}, {200, 50}, {350, 68}, {500, 82}, {700, 98},
+			{900, 112}, {1100, 122}, {1500, 134}, {2000, 144}, {2200, 148}, {6000, 150}},
 		tierBonus = {normal = 0, magic = 2, rare = 4, legendary = 7, boss = 10},
 		riftPerTier = 1, -- + rift tier x this (a kill inside a rift, the rift's chest), at most riftMax
 		riftMax = 15,
@@ -136,7 +151,9 @@ M.config = {
 		profession = {side = "suffix", weight = 1, -- fishing, crafting, woodcutting, mining, herbalism, smithing
 			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}}},
 		-- the two critical modifiers (O461) are independent: the chance writes the engine chance attribute alone (points),
-		-- the damage the engine amount attribute alone (percent). The tree keeps granting the pair.
+		-- the damage the engine amount attribute alone (percent). The tree keeps granting the pair. O471: they roll on the
+		-- weapon, the necklace and the ring only (ChaosCrafting.singles kinds); a badge or a quiver that has one keeps it, and
+		-- it counts, under the caps of config.crit.
 		critchance = {side = "prefix", weight = 6,
 			tiers = {{2, 2}, {3, 3}, {4, 4}, {5, 5}, {5, 6}, {6, 6}, {7, 7}, {7, 8}}},
 		critdamage = {side = "prefix", weight = 6,
@@ -228,11 +245,12 @@ M.config = {
 			kinds = {weapon = true, other = true},
 			tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}}},
 		-- penetration (O464): physical = points off the armour share of the monster, elemental = points off its resistance
-		-- after the cap (down to -100); both in the monster defence layer, no module cap
-		{key = "physpen", label = "Physical Penetration", fmt = "pct", side = "prefix", weight = 4,
+		-- after the cap (down to -100); both in the monster defence layer. O471: all worn pieces, sets, uniques and the veiled
+		-- modifier together give at most `cap` points of each kind (config.penetration.cap, kept equal by a test)
+		{key = "physpen", label = "Physical Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 20, -- O471: 20 points in total
 			kinds = {weapon = true, jewel = true},
 			tiers = {{3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 8}, {9, 9}, {10, 11}, {11, 12}}},
-		{key = "elepen", label = "Elemental Penetration", fmt = "pct", side = "prefix", weight = 4,
+		{key = "elepen", label = "Elemental Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 20, -- O471: 20 points in total
 			kinds = {weapon = true, jewel = true},
 			tiers = {{3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 8}, {9, 9}, {10, 11}, {11, 12}}},
 		-- a hit that leaves a normal monster at or below this share of its health kills it; the highest worn value counts
@@ -1582,6 +1600,81 @@ function M.totals(items, extra)
 		t[def.key] = def.cap and clamp(t[def.key], 0, def.cap) or math.max(0, t[def.key])
 	end
 	return t
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- O471: the character caps on critical hits and penetration (config.crit, config.penetration)
+-- ---------------------------------------------------------------------------------------------------------------
+-- the totals the engine reads for a hit (chance in points, amount in percent) against the caps:
+-- {chance, amount (what counts), rawChance, rawAmount (what the sources give), chanceCap, amountCap, chanceCapped, amountCapped}
+-- Tools (tools/crit_reach.lua), the character sheet (passivetree_totals_core.lua) and the hit (data/scripts/chaos/crit_cap.lua)
+-- all read it.
+function M.critTotals(chance, amount)
+	local c = M.config.crit
+	chance, amount = math.max(0, tonumber(chance) or 0), math.max(0, tonumber(amount) or 0)
+	return {chance = math.min(chance, c.chanceCap), amount = math.min(amount, c.amountCap), rawChance = chance, rawAmount = amount,
+		chanceCap = c.chanceCap, amountCap = c.amountCap, chanceCapped = chance > c.chanceCap, amountCapped = amount > c.amountCap}
+end
+
+-- the share of the critical hits the engine rolls that stay critical hits: 1 up to the chance cap, cap / chance above it (the
+-- engine rolled at `chance`, the character is allowed `cap`, so the share the cap leaves out is struck off at random)
+function M.critKeep(chance)
+	chance = tonumber(chance) or 0
+	local cap = M.config.crit.chanceCap
+	if chance <= cap or chance <= 0 then
+		return 1
+	end
+	return cap / chance
+end
+
+-- the factor of a critical hit's damage when the engine added `amount` percent and the character is allowed the cap:
+-- (100 + cap) / (100 + amount) above the cap, 1 below. thinned = true: the hit stops being critical, the whole extra goes
+function M.critFactor(amount, thinned)
+	amount = math.max(0, tonumber(amount) or 0)
+	if thinned then
+		return 100 / (100 + amount)
+	end
+	local cap = M.config.crit.amountCap
+	if amount <= cap then
+		return 1
+	end
+	return (100 + cap) / (100 + amount)
+end
+
+-- the chance in points a scripted critical hit (Keen Edge, the quiver) may still have when the engine's chance is `engineChance`
+-- and the scripts before it rolled `before` points: the three are independent rolls, so the room is what keeps
+-- 1 - (1 - engine)(1 - before)(1 - own) at the cap, at least 0
+function M.critRoom(engineChance, before)
+	local cap = M.config.crit.chanceCap
+	local c = math.min(100, math.max(0, tonumber(engineChance) or 0))
+	local b = math.min(100, math.max(0, tonumber(before) or 0))
+	local have = 100 * (1 - (1 - c / 100) * (1 - b / 100))
+	if have >= cap - 1e-9 then
+		return 0
+	end
+	return (cap - have) / (1 - have / 100)
+end
+
+-- the damages of a critical hit the engine made at totals (chance, amount), cut to the caps: primary, secondary, state
+-- ("kept" under both caps, "cut" the extra cut to the amount cap, "thinned" the crit taken off). rand() = 0 .. 1 (math.random)
+function M.critHit(primary, secondary, chance, amount, rand)
+	local t = M.critTotals(chance, amount)
+	if not t.chanceCapped and not t.amountCapped then
+		return primary, secondary, "kept"
+	end
+	local thinned = t.chanceCapped and (rand or math.random)() >= M.critKeep(chance)
+	local f = M.critFactor(amount, thinned)
+	local function cut(v)
+		v = tonumber(v) or 0
+		local a = floor(math.abs(v) * f + 0.5)
+		return v < 0 and -a or a
+	end
+	return cut(primary), cut(secondary), thinned and "thinned" or (f < 1 and "cut" or "kept")
+end
+
+-- the points of elemental penetration the Sunder support may add to the items' `elepen` (the cap counts both together)
+function M.penLeft(elepen)
+	return math.max(0, M.config.penetration.cap - (tonumber(elepen) or 0))
 end
 
 -- ---------------------------------------------------------------------------------------------------------------

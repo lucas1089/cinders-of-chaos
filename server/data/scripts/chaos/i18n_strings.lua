@@ -2749,6 +2749,8 @@ return {
 		["Attack speed: +%s%%"] = "Velocidade de ataque: +%s%%",
 		["Critical chance: %s%%"] = "Chance de crítico: %s%%",
 		["Critical damage: +%s%%"] = "Dano crítico: +%s%%",
+		["Critical chance: %s%% (cap; your sources give %s%%)"] = "Chance de crítico: %s%% (limite; suas fontes dão %s%%)",
+		["Critical damage: +%s%% (cap; your sources give +%s%%)"] = "Dano crítico: +%s%% (limite; suas fontes dão +%s%%)",
 		["Life leech: %s%% chance, %s%% of the hit"] = "Roubo de vida: %s%% de chance, %s%% do golpe",
 		["Mana leech: %s%% chance, %s%% of the hit"] = "Roubo de mana: %s%% de chance, %s%% do golpe",
 		["%s damage: +%s%%"] = "Dano %s: +%s%%",

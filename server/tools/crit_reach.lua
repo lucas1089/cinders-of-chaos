@@ -4,9 +4,11 @@
 -- items on every slot". This tool computes the ceilings from the same tables the game rolls with:
 --   * gear: since O461 two modifiers of their own, "Critical Strike Chance" (data/lib/chaos_item_mods.lua
 --     config.engine.critchance: points per tier, written to the engine's chance attribute alone) and "Critical Strike Damage"
---     (config.engine.critdamage: the engine's amount attribute alone), each one per item, on the weapon, the necklace, the
---     ring, the badge and the quiver (ChaosCrafting.singles kinds). Quality no longer touches a modifier (it raises the base
---     bonus), so there is no quality line
+--     (config.engine.critdamage: the engine's amount attribute alone), each one per item, on the weapon, the necklace and the
+--     ring (ChaosCrafting.singles kinds; O471 took the badge and the quiver out, items that already carry one keep it).
+--     Quality no longer touches a modifier (it raises the base bonus), so there is no quality line
+--   * the caps of O471 (ChaosItemMods.config.crit: chance 45, extra damage 150, every source together, data/scripts/chaos/
+--     crit_cap.lua cuts the hit): a reach above a cap is shown as the cap, "capped" lines
 --   * gems: the most a character gets from all gems (chaos_gems_config.lua effects.crit.cap / cap2)
 --   * the passive tree: the sum of the criticalHitChance / criticalHitAmount of every node the class may take (a ceiling:
 --     a real path to all of them costs more points than a character owns), per class
@@ -31,9 +33,10 @@ local function load()
 		dofile("data/lib/chaos_gems_config.lua")
 end
 
--- slots that can carry the critical modifiers (kinds weapon, jewel, other, quiver): the weapon, the quiver of a bow, the necklace,
--- the one ring and the badge
-R.SLOTS = {"weapon", "quiver", "necklace", "ring", "badge"}
+-- slots that can carry the critical modifiers (kinds weapon, jewel): the weapon, the necklace and the one ring. Before O471 the
+-- quiver of a bow and the badge carried them too (R.OLD_SLOTS, only for the "before" line)
+R.SLOTS = {"weapon", "necklace", "ring"}
+R.OLD_SLOTS = 5
 -- the best Vocation Trial node's critical chance (trials_nodes.lua: Focus Break 5; the others give 4) and the Keen Edge mastery
 R.TRIAL_CHANCE, R.TRIAL_AMOUNT = 5, 30
 R.KEEN_EDGE_CHANCE, R.KEEN_EDGE_AMOUNT = 2, 5
@@ -94,6 +97,20 @@ function R.compute()
 	out.gearT7 = {max = n * out.t7.chanceHi, avg = n * ((out.t7.chanceLo + out.t7.chanceHi) / 2)}
 	-- crit damage ceiling
 	out.amountCeiling = out.gear.amountMax + R.TRIAL_AMOUNT + R.KEEN_EDGE_AMOUNT + out.gems.amount
+	-- O471: the caps. What a build gets is the smaller of its sources and the cap; the model and the hit share M.critTotals
+	out.cap = {chance = M.config.crit.chanceCap, amount = M.config.crit.amountCap}
+	local function capped(chance, amount)
+		local t = M.critTotals(chance, amount or 0)
+		return t.chance, t.amount
+	end
+	out.capped = {}
+	out.capped.ceiling, out.capped.amountCeiling = capped(out.ceiling, out.amountCeiling)
+	out.capped.dedicated = capped(out.dedicated)
+	out.capped.casual = capped(out.casual)
+	-- before: five slots (the quiver and the badge too), no cap
+	local before = R.OLD_SLOTS
+	out.before = {slots = before, dedicated = before * ((lo + hi) / 2) + out.treeMedian * 0.7 + R.TRIAL_CHANCE + R.KEEN_EDGE_CHANCE +
+		out.gems.chance / 2, amountCeiling = before * topDmg[2] + R.TRIAL_AMOUNT + R.KEEN_EDGE_AMOUNT + out.gems.amount}
 	return out
 end
 
@@ -113,6 +130,10 @@ function R.report(o)
 	add("  ceiling (everything at its best) %.0f; dedicated build %.0f; casual build %.0f", o.ceiling, o.dedicated, o.casual)
 	add("  suggested threshold for a passive that needs critical chance: %d%%", o.suggestedThreshold)
 	add("  critical damage ceiling from gear, gems, trial, mastery: %d (+ Paragon 15 + mastery)", o.amountCeiling)
+	add("  caps (O471): chance %d, extra damage %d; capped: ceiling %.0f, dedicated build %.0f, casual build %.0f, damage ceiling %d",
+		o.cap.chance, o.cap.amount, o.capped.ceiling, o.capped.dedicated, o.capped.casual, o.capped.amountCeiling)
+	add("  before O471: %d slots, no cap: dedicated build %.0f, damage ceiling %d", o.before.slots, o.before.dedicated,
+		o.before.amountCeiling)
 	return table.concat(lines, "\n")
 end
 
@@ -120,7 +141,11 @@ if arg and arg[0] and arg[0]:find("crit_reach", 1, true) then
 	local o = R.compute()
 	print(R.report(o))
 	if arg[1] == "--check" then
-		local ok = o.gear.max == 40 and o.ceiling > o.dedicated and o.dedicated > o.casual
+		-- three slots of at most 8 points; the raw sources are ordered; the caps hold: a dedicated build reaches the chance cap
+		-- (it is the point of a dedicated build) and a casual one stays under it; the damage ceiling is the cap
+		local ok = o.gear.max == 3 * 8 and o.ceiling > o.dedicated and o.dedicated > o.casual
+			and o.capped.ceiling == o.cap.chance and o.capped.dedicated == o.cap.chance and o.capped.casual < o.cap.chance
+			and o.capped.amountCeiling == o.cap.amount
 		os.exit(ok and 0 or 1)
 	end
 end

@@ -70,7 +70,7 @@ function TT.build(player, bonuses)
 	return {
 		attributes = named(player, PassiveTotalsCore.attributes(bonuses, a)),
 		damage = named(player, PassiveTotalsCore.damage(bonuses, a)),
-		crit = PassiveTotalsCore.crit(bonuses, chance, amount),
+		crit = PassiveTotalsCore.crit(bonuses, chance, amount, ChaosItemMods and ChaosItemMods.config and ChaosItemMods.config.crit),
 		attackSpeed = PassiveTotalsCore.attackSpeed(bonuses, ChaosItemMods and ChaosItemMods.playerBonus and
 			ChaosItemMods.playerBonus(player, "gearspeed") or 0,
 			ChaosPassiveEffectsConfig and ChaosPassiveEffectsConfig.maxAttackSpeed,

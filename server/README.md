@@ -3044,10 +3044,12 @@ Protocol (opcode 65): `paragonMastery {key, n}`, `paragonConvert {n}` in; `parag
 `exchange {ratio, treeFree, converted}`. Build codes carry the category stats only (`buildshare.lua`); loadouts check both.
 
 **Totals** (`passivetree_totals.lua`, rules `passivetree_totals_core.lua`): request `statTotals`, answer `statTotals
-{attributes[], damage[], crit {chance {total, tree, other}, amount {total, tree, paragon, other}}}` (rate limit 300 ms). The
-crit totals are the engine's own value (gear, gems, blessings, tree, Paragon). Client: `totals.lua`, `totalsview.lua`.
+{attributes[], damage[], crit {chance {total, tree, other, raw, cap, capped}, amount {total, tree, paragon, other, raw, cap,
+capped}}}` (rate limit 300 ms). The crit totals are the engine's own value (gear, gems, blessings, tree, Paragon) under the
+caps of O471 (`total` counts, `raw` is what the sources give, `capped` = true when it was cut). Client: `totals.lua`, `totalsview.lua`.
 
-**Critical reach** (`luajit tools/crit_reach.lua`, from the item mod, crafting, gem and tree tables). The T8 critical modifier
+**Critical reach** (`luajit tools/crit_reach.lua`, from the item mod, crafting, gem and tree tables; the table below is the
+state of O146, the numbers of today are in "Critical, rune and penetration ceilings (O471)": three slots, caps 45 and 150). The T8 critical modifier
 (item level 140+) rolls amount 8-10 and gives chance 5-7 (9 at +30% quality) on each of 8 slots:
 
 | Source | Critical chance |
@@ -13213,8 +13215,9 @@ see "Infinite arrows and quivers".
 into `combatPowerLevel`, which the client frame and the stock scripts read; items from before have only
 `combatPowerLevel`, which counts as the item level. The level of a drop is the dropping monster's level
 (`Monster:getMonsterLevel`; a monster without one: its hunting level in `bounty_pool.lua`, else 1.6 x sqrt(experience)
-raised by health / 60, the estimate of `tools/gen_bounty_pool.py`) along the curve `itemLevel.curve` (level 1 -> 1, 50 ->
-22, 100 -> 36, 200 -> 54, 500 -> 90, 900 -> 118, 1500 -> 136, 6000 -> 145), plus: Magic +2, Rare +4, Legendary +7 (Divine as Legendary), boss +10;
+raised by health / 60, the estimate of `tools/gen_bounty_pool.py`) along the curve `itemLevel.curve` (O471, 2026-11-10: level 1 -> 1, 50 ->
+21, 100 -> 33, 200 -> 50, 500 -> 82, 900 -> 112, 1500 -> 134, 2000 -> 144, 2200 -> 148, 6000 -> 150; before 22, 36, 54, 90, 118,
+136 and 145 at 6000), plus: Magic +2, Rare +4, Legendary +7 (Divine as Legendary), boss +10;
 inside a rift +1 per rift tier (at most +15), an Omen guardian arena +15 more; capped at 150. World boss drops and rewards
 are fixed at 145 (`worldBoss`), the tutorial's gear at 5 (`tutorial`), rift chest and coffer gear use the rift boss's
 level (else the top of the tier's window) with the rift bonuses, the treasure goblin its area level as a Legendary.
@@ -13225,9 +13228,11 @@ level (Erasure and Fate too); an item without any level gets one from the item t
 
 **Tiers.** Eight per modifier, T1 the lowest, T8 the highest. A tier needs an item level (`tierLevels`): T1 1, T2 15, T3 30,
 T4 50, T5 70, T6 90, T7 110, T8 130 (O461; before 1, 15, 30, 50, 70, 95, 120, 140). **Every tier the item level allows can
-roll, all with the same weight** (`tierWeights` 100 each; before only the best five tiers rolled, weighted 100 .. 12):
-at item level 150 each of T1 .. T8 comes one time in eight, at item level 40 T1, T2 and T3 one time in three. A boss of
-monster level 1000 (item level 133) rolls T8. A modifier may have a gate of its own (`def.minTier`): the weapon's Mana
+roll, tilted toward the top** (`tierWeights` 1.35^(t-1): 100, 135, 182, 246, 332, 448, 605, 816, O471; O461 had them equal,
+before that only the best five tiers rolled, weighted 100 .. 12): at item level 150 T8 comes 28.5 times in 100 and T1 3.5,
+at item level 40 T3 43.6, T2 32.4 and T1 24.0. The ranges of the tiers did not change. The Codex, the tooltips and the
+orbs read the same weights (`M.tierRows`, `M.tierChances`, `M.rollTier`). A boss of monster level 1000 (item level 127)
+rolls T7 at most; T8 opens for a boss of about 1060, for a Rare of about 1230 and for a normal monster of about 1370. A modifier may have a gate of its own (`def.minTier`): the weapon's Mana
 Leech does not roll below T4. Inside a modifier **the ranges never overlap and narrow toward the top** where the numbers
 allow (a tier starts above the end of the tier before); the ladders the owner gave as they are (worn Attack Speed,
 Cooldown Reduction, Experience, Critical Strike Chance) may touch. The ranges of each version are kept: version 1 (until
@@ -13273,7 +13278,8 @@ against the Chaos types in one list (`ChaosCrafting.affixes()`):
 weaponsmith, jewelsmith) and the life and mana leech PAIRS are `noRoll` since O461: the rows stay to read old items.
 Critical Strike Chance and Critical Strike Damage are two modifiers of their own that each write ONE engine attribute
 (`rarity_criticalHitChance`, `rarity_criticalHitAmount`; `customs/rarity/base_rarity.lua` makes one condition per
-attribute when the item is worn, so neither needs the other); kinds weapon, jewel, other (the badge) and quiver. The
+attribute when the item is worn, so neither needs the other); kinds weapon and jewel (necklace, ring) since O471 (before:
+also other = the badge, and quiver; items that carry one keep it, see "Critical, rune and penetration ceilings (O471)"). The
 tree still grants the pair.)
 
 **The Chaos modifiers** (kind = which items may roll it: weapon, shield, helmet, armor, legs, boots, jewel = amulet or ring,
@@ -13302,8 +13308,8 @@ elements, ...) and the energy shield have their own tables in their sections. Ge
 | poisonchance | Chance to Poison +N% | prefix | other, quiver, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | chillchance | Chance to Chill +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | shockchance | Chance to Shock +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
-| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | none (O464) |
-| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | none (O464) |
+| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | 20 (O471) |
+| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | 20 (O471) |
 | execute | Executes Monsters below N% Health | prefix | weapon (does not stack) | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | none |
 | dot | Damage over Time +N% | prefix | jewel, other, weapon | 7-11 | 12-13 | 14-15 | 16-17 | 18-19 | 20-21 | 22-23 | 24-26 | none |
 | attackspeed | Attack Speed +N% | suffix | weapon | 5-7 | 8-10 | 11-13 | 14-16 | 17-19 | 20-22 | 23-25 | 26-27 | none |
@@ -13423,7 +13429,7 @@ in `docs/drafts/`). What changed:
 - *Other config follow-ups*: the Void Orb's implicit pools lost Mana Cost Reduction, the crafted gear's item level maximum
   is 89 (it must stay under the T6 gate, now 90), the charms' `gearRef` of Life and Mana on Kill follow the new T8 tops,
   the keystone speed rule counts the boots' top 35, `tools/crit_reach.lua` models the two critical modifiers on the five
-  slots that carry them, the Codex data keeps `tierWindow` as the number of tiers (both clients read it).
+  slots that carried them (O471: three slots and the caps), the Codex data keeps `tierWindow` as the number of tiers (both clients read it).
 
 **Skipped on purpose**: none of the approved stats were dropped. Not done: a stat that adds the ailment chance to spells that
 deal no damage to the target (the chance needs a damaging hit). (Mana-shield damage: since O464 the player defence layer
@@ -13454,6 +13460,94 @@ the rarity as a text for the length of that pass (`ChaosCrafting.shield`); `Chao
 number the next tick, and `ChaosCrafting.unshield` does the same for an item that is moved first (`onItemMoved`, autoloot).
 Readers go through `tonumber`. Items that leave a corpse before the pass go through `ChaosLoot.finalizeRarity`
 (autoloot, Rarity Autoloot, the pouch).
+
+## Critical, rune and penetration ceilings, gear growth (O471)
+
+Owner, 2026-11-10: "the source of damage must be more balanced", "the passive tree must cover less, equipment covers the rest",
+"you can do everything". The design is `SP/dmgcurve/design/design.md` sections B1, B3, B4 (scratch, not in git); this is the
+gear and ceilings package of the balance round. Lua only, no engine patch, no new opcode, no new item mark: values and tiers
+of items players own do not change (nothing is rerolled, deleted or upgraded on touch).
+
+**1. Item level curve** (`chaos_item_mods.lua` `itemLevel.curve`). Monster level to item level, straight lines between:
+1 -> 1, 10 -> 5, 25 -> 12, 50 -> 21, 100 -> 33, 200 -> 50, 350 -> 68, 500 -> 82, 700 -> 98, 900 -> 112, 1100 -> 122, 1500 -> 134,
+2000 -> 144, 2200 -> 148, 6000 -> 150 (before 22, 36, 54, 74, 90, 106, 118, 128, 136, 142 at 3000, 145 at 6000). Tier gates
+unchanged (1, 15, 30, 50, 70, 90, 110, 130). The additions stay (Magic +2, Rare +4, Legendary +7, boss +10, rift, Omen). The
+design's table assumed "legendary boss +17"; the code takes one addition (a boss is +10), so the caps below are the code's.
+`loot.lua L.dropLevel` needed no change (it calls `M.sourceLevel`). The Gambler's price points
+(`gamble_config.lua` `price.curve`) moved with the curve (same gold at the same hunting level, within the whole item
+levels the price steps in): `{4, 3000} {5, 3600} {11, 8300} {17, 13000} {20, 20000} {33, 56000} {49, 97000} {61, 150000} {67,
+300000} {82, 850000} {99, 1100000} {112, 1350000} {118, 1500000} {142, 1650000}` (was `12 18 22 36 54 67 74 90 106 118 123 136`).
+The sale price of a gear drop (`1 + item level / 200`, `chaos_item_prices.lua`) follows the item level: a normal drop sells for
+1.9% less at monster level 300 and 1000 and 1.8% more at 2000.
+
+**2. Tier tilt** (`tierWeights`). The weight of tier t among the tiers the item level allows is 1.35^(t-1): `100, 135, 182, 246,
+332, 448, 605, 816` (the exact power for T8 is 817.2; the design's list is kept). The ranges of the tiers are unchanged. One
+function reads them for every roll: `M.tierRows` (every orb that rolls a modifier or a new tier, the Void Orb's implicit,
+`ChaosCrafting.forge` for drops), `M.tierChances` (Codex, wiki), the Codex view of the
+client (`codexview.lua` reads `tierWeights` from the generated data). The item tooltip's "up to T3" and the orb previews
+(`C.tierSpan`) show the span of tiers, which the weights do not change. The veiled modifier's tiers have their own table.
+
+**3. Critical hits.** Critical Strike Chance and Critical Strike Damage (`ChaosCrafting.singles`) roll on weapon and jewel
+(necklace, ring) only; before also on other (the badge) and quiver. A character counts at most 45 points of critical chance
+and 150% extra damage on a critical hit, **every source together**: gear, gems, passive tree, Paragon, blessings, buffs.
+(`ChaosItemMods.config.crit`.) Where the totals are read: the engine adds the critical chance and amount of all conditions and
+item attributes in `Player::getSpecialSkill` and rolls the crit in `combat.cpp` (engine patch 0004) before any Lua event, so a
+script cannot change the sum. `data/scripts/chaos/crit_cap.lua` therefore cuts the hit where the engine made it
+(`onHealthChange` gets the raised damage and `critical`, patch 0001): a critical hit of a player over the chance cap stays
+critical with probability cap / chance, else the crit is taken off (damage / (1 + amount / 100)); one over the amount cap keeps
+only the capped extra (`M.critHit`, `M.critKeep`, `M.critFactor`). The event goes on a target (monster or player) from an
+`onTargetCombat` callback only while the attacker is over a cap. The scripted crits, Keen Edge (`supports.lua`) and the quiver's
+Critical Strike with Bows (`weapon_styles.lua`), only get the room the cap leaves (`M.critRoom`: the independent rolls together
+make 45). The character sheet and the tree window show the counted total and `cap` (`charsheet.lua`, `passivetree_totals_core.lua`);
+the item tooltip's critical and penetration lines carry `cap` and `over` (`item_tooltip_core.lua` `T.capOf`, client `tooltiplogic.lua`).
+`tools/crit_reach.lua --check` reads the same numbers (three slots, `M.critTotals`).
+Not exact: the crit that is taken off still carries `critical = true` for the events after it (Surge, Critical Echo), and the
+armour of the monster defence layer (event order -150) has seen the larger hit before the crit is cut (a flat armour reduction is
+not linear in the hit). Items owned: a badge or a quiver that already has one of the modifiers keeps it and it counts, under the caps.
+
+**4. Damage runes.** Brand (five elements), Echo, Hex and Keen Edge count at most their level 4 (Legendary) value
+(`chaos_supports_config.lua` `levelCeiling`, `S.countedLevel`, read by `S.values`, so every effect, text and the free support of
+a mastery follow): brand 50 (not 60), Echo 30 (35), Hex 6 (8), Keen Edge 6 (8). A Mythic rune keeps its name, colour and level;
+its effect text shows the value that counts, the support window, the use message and the item description add
+"Counts as Legendary: the damage runes count at most their level 4 value." (`S.ceilingNote`, `runeView` `note`,
+`install_supports.py`). The Codex row of level 5 shows the counted value. Owned Mythic runes keep working at the Legendary value.
+
+**5. Penetration.** `physpen` and `elepen` have `cap = 20` in the item module (`M.totals`): worn pieces, item sets, uniques, the
+veiled modifier and the quiver together give at most 20 points of each kind. The monster defence layer and the PvP defence layer
+read it through `ChaosItemMods.playerBonus`. The **Sunder** support counts into the elemental total: the items first, Sunder gets
+`20 - elepen` points at most (`M.penLeft`, `supports.lua`): 0 worn points leaves Sunder its 14 (Legendary) to 18 (Mythic) points,
+12 worn points leave it 8. Physical penetration has no other source.
+
+**Before / after** (computed with the tools of the repo: `M.sourceLevel`, `M.tierChances`, the `weapondamage` ranges, `crit_reach.lua`;
+Rare drop = curve + 4, boss = curve + 10; "mean weapon damage" = the mean of the middle of the weapon damage ranges over the
+tiers the item level allows, weighted):
+
+| monster level | item level normal | Rare | boss | top tier Rare | boss | mean tier of a Rare drop | mean Weapon Damage of a Rare drop | chance of the best allowed tier |
+|---:|---|---|---|---|---|---|---|---|
+| 100 | 36 -> 33 | 40 -> 37 | 46 -> 43 | T3 -> T3 | T3 -> T3 | 2.00 -> 2.20 | 20.5% -> 21.7% | 33.3% -> 43.6% |
+| 300 | 67 -> 62 | 71 -> 66 | 77 -> 72 | T5 -> T4 | T5 -> T5 | 3.00 -> 2.87 | 27.1% -> 26.1% | 20.0% -> 37.1% |
+| 500 | 90 -> 82 | 94 -> 86 | 100 -> 92 | T6 -> T5 | T6 -> T6 | 3.50 -> 3.58 | 30.3% -> 30.9% | 16.7% -> 33.4% |
+| 700 | 106 -> 98 | 110 -> 102 | 116 -> 108 | T7 -> T6 | T7 -> T6 | 4.00 -> 4.33 | 33.5% -> 35.7% | 14.3% -> 31.0% |
+| 1000 | 123 -> 117 | 127 -> 121 | 133 -> 127 | T7 -> T7 | T8 -> T7 | 4.00 -> 5.12 | 33.5% -> 40.7% | 14.3% -> 29.5% |
+| 2000 | 138 -> 144 | 142 -> 148 | 148 -> 150 | T8 -> T8 | T8 -> T8 | 4.50 -> 5.94 | 36.6% -> 45.8% | 12.5% -> 28.5% |
+| 100 / 300 / 500 / 700 / 1000 / 2000 | critical chance of a dedicated build: 71 -> 45, extra damage ceiling 300 -> 150 | | | | | | | |
+
+(Level 100 to 2000 weapon damage means: the design's table, 20 -> 22, 27 -> 26, 30 -> 31, 34 -> 36, 34 -> 41, 37 -> 46, reproduced.
+The critical factor of a dedicated build, 1 + chance x amount: about 2.4 before (the design's figure; chance 71, amount near 200),
+1 + 0.45 x 1.5 = 1.675 after. Runes at Mythic: brand -17%, Echo -14%, Hex -25%, Keen Edge -25% of the rune's own value.
+Penetration: a build that stacked 33 points counts 20.)
+
+**Models.** `weapon_coverage.lua --check`, `gear_coverage.lua --check`, `unique_pace_model.lua --check`, `loot_model.lua --check`,
+`card_set_model.py`, `spell_mastery_model.py`, `class_dps_model.py`, `weapon_family_model.py`, `survival_model.py`, `pvp_model.py`,
+`crit_reach.lua --check` and `unique_passives_model.lua --check` stay green unchanged: none of them reads the critical or
+penetration totals of a character (they read the measured class table), and the item level curve moves the item level of a drop,
+which they do not model. The effect of the ceilings on the typical character is for the final re-fit of the round.
+
+**Not verified.** Nothing ran on a live server. Not measured: the real crit and damage numbers of a hit with the cut (the maths is
+unit tested with a seeded generator, the engine's own roll and the order of the Lua events are read from the patches, not run); that
+the base rarity script reads a badge's or quiver's attributes as it did (unchanged, not touched); the size of the hit the monster
+armour layer sees before the crit is cut; the Unity client reads the same generated Codex data (`Codex.json`, run by
+`unity/Core.Tests`), not the cap lines of the item tooltip (there is no Unity item tooltip change in this package).
 
 ## Legendary powers (`data/lib/chaos_powers.lua`, `data/scripts/chaos/item_powers.lua`)
 
@@ -15757,17 +15851,19 @@ measure on the beta). Crystal tokens: 15 / 5 per run = 3 Tower Defense runs of `
 | Crystal | 5 per run (3.0 runs for 15) | 45.0 min |
 
 **Value of the prizes.** Counted: crafting orbs and sockets in kills of a level 100+ monster that the loot layer needs for the same drops (the
-O148 rule), divided by the hunter's kills per hour (`paceKillsPerHour.scaled` of `spawn_tuning.json`: 836 at level 650, 869 at 1000, 813 at
+O148 rule), divided by the hunter's kills per hour (`paceKillsPerHour.scaled` of `spawn_tuning.json`: 1,164 at level 650 since O470, it was 836; 869 at 1000, 813 at
 1600, 789 at 2000); gold in hours of hunting gold (0.2 h per unit, a minute count that does not depend on the level); an exercise chest as its
 vendor price against the hunting gold per hour; a unique chest as 200 minutes (about one unique per 3.4 hours of Rare and Legendary kills at
 level 1500, O148). Not counted: cards, badges, catalysts, cosmetics and units (they are not a time), so the figures are a floor.
 
 | Roulette | Before (level 1000) | Now: 650 / 1000 / 1500 / 2000 | Value / cost at 1000 |
 |---|---|---|---|
-| Boss (O148, unchanged) | 60.1 min of 63.7 | 62.3 / 60.1 / 63.7 / 65.7 min | 0.94 |
-| Exercise | 2.6 min of 84.0 (x0.03) | 81.8 / 79.4 / 83.1 / 85.1 min | 0.95 |
-| Premium | 0 counted of 98.6 (14 cosmetics) | 99.8 / 96.8 / 101.9 / 104.6 min | 0.98 |
-| Crystal | 0 counted of 45.0 (21 Moist pieces, 2 units) | 46.2 / 44.8 / 47.2 / 48.5 min | 0.99 |
+| Boss (O148, unchanged) | 60.1 min of 63.7 | 46.3 / 60.1 / 63.7 / 65.7 min | 0.94 |
+| Exercise | 2.6 min of 84.0 (x0.03) | 63.6 / 79.4 / 83.1 / 85.1 min | 0.95 |
+| Premium | 0 counted of 98.6 (14 cosmetics) | 77.3 / 96.8 / 101.9 / 104.6 min | 0.98 |
+| Crystal | 0 counted of 45.0 (21 Moist pieces, 2 units) | 35.4 / 44.8 / 47.2 / 48.5 min | 0.99 |
+
+O470 (2026-11-10): only the 650 column moved (the plan there was 836, it is 1,164 now; the band at 650 is 0.70 - 1.35).
 
 At level 1000 one spin now pays on average: boss 1.16 orbs + 717,000 gold; exercise 1.32 orbs + 3.3M gold (and 2-5 sockets in 6% of the
 spins); premium 1.44 orbs + 2.8M gold; crystal 0.96 orbs + 1.1M gold. The Boss Roulette needed no change: at 8 minutes per boss kill its
@@ -20434,6 +20530,10 @@ Basics page "Pack combat"):
 --check` fails above 3 times). `spawn_tuning.json` `model.paceKillsPerHour.scaled` is now 836 / 846 / 869 / 819 / 813 / 789.
 Experience, gold and goal pace per hour are the O108 ones (`progression_model.lua --check`, `loot_model.lua --check`).
 Generated area points and bosses are unchanged. Deploy: `files` and `spawns` install steps and a server restart; the client codex page (`codex_data.lua`) and the website wiki data were regenerated.
+
+**Late sets without the step (O470, 2026-11-10).** The `scaled` health, experience, loot, goal and notable points of 657 to 900, the
+plan `paceKillsPerHour.scaled` and the base set's seam changed: see "Monster health curve (O470)" at the end. The O138 figures
+above are what the levels from 1000 up still are.
 
 These come on top of the engine's x(1 + 0.0074 L) health and x0.03 L experience of a monster with a level of its own.
 Loot: `pace_config.lua` (and "Loot by monster level").
@@ -30793,3 +30893,94 @@ reduction, dodge, block and spell suppression; the Skills window's Armor and Dam
 `Player::blockHit` (one point of rounding per piece), the client windows in the real client, the pt-BR texts by a speaker. The
 balance models were not touched: the survival, PvP, guardian and tower models read the old armour and absorb and say nothing
 about this layer yet.
+
+## Monster health curve (O470) (`pace_config.lua`, `tools/spawn_tuning.json`, `tests/monster_health_curve_test.lua`)
+
+Owner 2026-11-10 (translated): the jump "is not intended. Make a more balanced curve." Computed from the repo's own models. Nothing
+ran on a live server.
+
+**What was found.** The health of a typical hunt monster (`tools/pack_model.py`: the median of the base pool x `base.health` up to
+hunting level 657, where the base pool ends, then `SCALED_HEALTH` x `scaled.health`) was 5,372 at 650 and 12,262 at 658: x2.28 in one
+level, x2.3 over any 20 levels from 638 to 657. The planned kills per hour fell 31% there (1,210 to 837), a pack of the median class
+took 2.6 s at 650 and 5.8 s at 670, and the minutes per level had a bump of +15% at 650-690 (12.0 at 650, 13.8 at 670, 14.6 at 680,
+13.4 at 700, 11.3 at 800).
+
+**What changed.**
+
+- `scaled.health`: the late curve starts at the base set's 5,372 at 657 and its log-slope falls from 3.6 to 1.8 at 1000. Points
+  `{657, 0.0606} {670, 0.0650} {700, 0.0681} {800, 0.0770} {900, 0.0795}`; 1000 and up are as before (`{1000, 0.080}` ...). The
+  curve is `y = 5,372 exp(s0 x + (s1 - s0) x^2 / (2 X))` with x = ln(L / 657), X = ln(1000 / 657), s1 = 1.8 and s0 = 3.58 from
+  y(1000) = 16,620; the multiplier at a point is y / `SCALED_HEALTH`. Between the points the product is within 0.1% of the formula.
+- The base set is not touched. The study's design asked for +4% to +8% up to 600 and +20% at 650. A smaller change meets the rule
+  (no rise above x1.31 over 20 levels from level 110, above x1.12 from 600), so nothing below 657 moves.
+- `spawn_tuning.json` `paceKillsPerHour.scaled`: `[600, 836] [657, 1210] [670, 1195] [700, 1160] [800, 1055] [900, 960]`, then
+  `[1000, 869]` as before (it began at 650 with 836). The plan is the pack model's kills per hour of the median class at the new
+  health (2,563 at 657; 2,537 / 2,480 / 2,311 / 2,180 at 670 / 700 / 800 / 900; 1,992 at 1000, unchanged) x a ratio that falls
+  from the base plan's 0.472 at 657 to the unchanged 0.436 at 1000 (0.471 / 0.468 / 0.457 / 0.440, rounded). The base list is as
+  before. `roulette_value_config.lua` `kph` is a copy (a test keeps them equal).
+- Per kill, `scaled.loot`, `scaled.notable` and `scaled.goal` are the old points x the old plan / the new plan (loot and notable
+  x0.69 at 657 to x0.89 at 900, goal x1.45 to x1.12): loot, Rare+ gear and the goal pace per hour hold. The notable share is 0.72
+  at 700 and 1 at 1000 (it was 1 from 700). `coins` and `junkKeep` are shares on top of `loot` and are not touched.
+- `scaled.xp` was solved on the model: `tools/progression_model.lua` (the median of the pool hunts' experience per hour in the
+  window 0.8-1.1 L) with coordinate descent on the points 657 / 700 / 800 / 900 against a target of 9.87 at 600 (as before), a
+  line to 11.0 at 650, then 11.3 / 11.6 / 11.8 / 12.0 at 670 / 700 / 800 / 900 and 12.48 at 1000 (as before), 6x the weight on
+  those marks, a smoothness term on the log slope of the points and no point below 0.0323 (the 1000 value): `{600, 0.0495}
+  {657, 0.0486} {700, 0.0437} {800, 0.0323} {1000, 0.0323}`. The points up to 600 are the old line. The pool's medians are lumpy
+  by 5% from level to level (today's 590 and 600 differ by 5%), so the fit is held to the 25-level means: within 4%.
+- The level-scaled monsters of the pool below 657 (fifteen, levels 530-650) keep their old points up to 600 (an added point at 600
+  on the old line for health, xp, loot, goal and the plan) and meet the new curve at 657. Real ones, `tools/pace_scan.lua`: 590
+  8.3k as before, 610 8.9k to 8.0k, 630 9.6k to 6.7k, 650 10.2k to 5.1k, 670 10.2k to 4.9k, 700 11.1k to 5.8k, 750 12.3k to 7.5k,
+  850 14.0k to 10.7k, 900 15.2k to 12.7k. That is a dip of the real hunts at 610-670 which the model's typical monster does not
+  show. The other way was to lower these fifteen to the typical curve from 430 on (-34% at 530): not done, for the owner to say.
+
+**Before and after** (model numbers; the base set to 657, the level-scaled set above; the pack is the median class's, P = 8):
+
+| Level | Health before | after | Planned kills per hour before | after | Minutes a level before | after | Pack seconds before | after |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 478 | 478 | 1,580 | 1,580 | 1.05 | 1.05 | 2.17 | 2.17 |
+| 300 | 1,775 | 1,775 | 1,283 | 1,283 | 3.48 | 3.48 | 2.13 | 2.13 |
+| 500 | 4,359 | 4,359 | 1,210 | 1,210 | 6.73 | 6.73 | 2.60 | 2.60 |
+| 600 | 4,837 | 4,837 | 1,210 | 1,210 | 9.87 | 9.74 | 2.51 | 2.51 |
+| 650 | 5,372 | 5,372 | 1,210 | 1,210 | 11.99 | 11.31 | 2.63 | 2.63 |
+| 670 | 12,050 | 5,759 | 837 | 1,195 | 13.77 | 11.57 | 5.77 | 2.76 |
+| 700 | 12,760 | 6,684 | 839 | 1,160 | 13.45 | 11.87 | 5.91 | 3.10 |
+| 800 | 14,300 | 10,010 | 846 | 1,055 | 11.29 | 11.24 | 6.00 | 4.20 |
+| 900 | 16,044 | 13,427 | 857 | 960 | 11.28 | 11.53 | 6.18 | 5.17 |
+| 1000 | 16,620 | 16,620 | 869 | 869 | 12.48 | 12.65 | 5.80 | 5.80 |
+| 1300 | 22,032 | 22,032 | 819 | 819 | 11.54 | 11.54 | 6.01 | 6.01 |
+| 2000 | 34,394 | 34,394 | 789 | 789 | 11.01 | 11.01 | 6.21 | 6.21 |
+
+Minutes a level are `progression_model.lua` (levels 8-1000: 120.2 h before, 116.7 h now). At 1000 the model gives 12.65 against
+12.48 (+1.4%: the window of 1000 holds hunts of 800-900). Up to 600 the model moves at most 3% in the 25-level mean (540-600: 8.76
+against 8.96); single levels move more where today's curve has a lump (590: 9.75 against 10.38; 580: 9.14 against 9.55). The
+largest rise over 20 levels is x1.31 from level 110 (at 196, as before) and x1.12 from 600 (at 613); it was x2.31 at 638. Below
+level 110 the relative rise is above x1.35 before and after (x1.6 at 100: small numbers and the pool's lumps), not touched. A
+pack of the median class dies in 2.5 s at 600, 2.6 s at 650, 2.8 / 3.1 / 4.2 / 5.2 / 5.8 s at 670 / 700 / 800 / 900 / 1000: no step.
+
+**Limits that pinned the old step (changed, dated O470 in the files).**
+
+| Limit | Old | New | Model |
+|---|---|---|---|
+| `pace_test.lua` scaled xp per health (engine factors), 650 and 700 | at most 1.6 | at most 2.6 (800 and up 1.6) | 2.34 at 650, 2.18 at 700, 1.52 at 800 (1.20 at 650 before) |
+| `roulette_value_config.lua` band at level 650 (`bandAt`) | 0.80 - 1.35 | 0.70 - 1.35 | boss 0.73, exercise 0.76, premium 0.78, crystal 0.79 (1.01 - 1.13 before); 1000 and up as before |
+| `roulette_pools_test.lua` spin at 2000 against 650 | at most x1.35 | at most x1.45 | x1.30 exercise, x1.35 premium, x1.37 crystal, x1.42 boss |
+| `loot_by_level_test.lua` scaled `notable` | 1 from 700 | per hour as before to 1000 (within 5%), 1 from 1000 | 0.72 at 700, 0.80 at 800, 0.89 at 900 |
+
+The roulette numbers move because the orb half of a spin is priced in hunting minutes at the plan's kills per hour, and the plan at
+650 is 1,164 now (836 under the step): the spin at 650 is worth 46 - 77 minutes against its 64 - 99 minute token.
+
+**What is held** (all green): `tools/loot_model.lua --check` (it sees the base stock monsters up to 650 only: unchanged to the
+digit), `unique_pace_model.lua`, `store_model.lua`, `skill_model.lua`, `pack_model.py --check` (late pack against base: at most
+3x; 0.79x at 670, was 1.64x), `boss_model.py`, `tower_model.py`, `guardian_model.py`, `survival_model.py`, `minion_model.py`,
+`companion_model.py`, `class_dps_model.py`, `pvp_model.py`, `defence_curve.py`. `tests/monster_health_curve_test.lua` holds the rule
+(luajit and lua5.3): the typical monster from the pool and `SCALED_HEALTH`, no rise above x1.35 over 20 levels from 110 and x1.15
+from 600, no fall under the highest before it of more than 6% (4% from 600; the pool median drops 3.5% from 606 to 607, as
+before), up to 600 within 10% of a table of today's values, 1000 and up unchanged, the two sets within 10% at the seam
+(x1.005), the plans meeting at the seam and the scaled plan only falling to 1000.
+
+**Not verified.** No server was started and nothing was played: these are model numbers (the pool median, `SCALED_HEALTH` and the
+pack model are inputs, not measurements; the base monster files are not in git, the pool's health column stands for them). The loot
+model has no level-scaled loot tables above 650, so loot, Rare+ gear and goals above 650 hold per hour by construction (the ratio of
+the plans), not by a measured band. The real level-scaled monsters of 610-670 (above) and the real hunts' medians were not
+measured. The experience per hour of single level-scaled hunts at 640-700 rises 28-42% (the step held them down: 836 kills an hour
+against the base's 1,210); the median that the model holds does not.
