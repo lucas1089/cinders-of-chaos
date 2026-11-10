@@ -94,8 +94,16 @@ function P:getSkillPercent() return 25 end
 Game = {getExperienceForLevel = function(l) return l * 100 end}
 ChaosCombatStats = {compute = function() return {attack = 10, damage = 50, defense = 5, armor = 6, mitigation = 0.1} end}
 ChaosDeathRecap = {resistOf = function(_, el) return el == "fire" and 25 or 0 end}
+-- O473: a damage row of the totals carries the one additive damage pool: the sheet shows its soft cap result, not the tree's number
+ChaosPassiveTotals = {build = function()
+	return {crit = {chance = {total = 5}, amount = {total = 50}}, damage = {{k = "incrementFire", eff = 40, pool = {raw = 90, eff = 90}},
+		{k = "incrementIce", eff = 20}}}
+end}
 dofile("data/scripts/chaos/charsheet.lua")
 local r = K.read(P)
+eq(r.damage[1].k, "fire", "the fire row")
+eq(r.damage[1].pct, 90, "the pool's number, not the tree's 40 (O473)")
+eq(r.damage[2].pct, 20, "a row without a pool keeps the tree's number")
 eq(r.maxHit, 777, "highest hit from the storage")
 eq(r.maxHealth, 4000, "max health")
 eq(r.attack, 10, "attack from the combat stats")

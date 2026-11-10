@@ -30682,8 +30682,9 @@ swing ratio). Healing never takes the pool: the tree's Healing and intelligence 
 with), `masteries` (supports.lua `S.masteryPoolRaw`, the cast context's spell), `uniques` (unique_passives.lua `M.poolRaw`). The
 core clamps each entry to its cap and the entries of one group to the group cap (`extras`), adds the tree, and takes the soft cap
 once. `static` is the same source without a target (Paragon, gems, the card set of that element): the character sheet's physical hit
-factor (`combat_stats.lua`) and the tree totals window (`passivetree_totals.lua` `TT.pool`, a `pool` field of every damage row:
-`{raw, eff, parts}`) use it; the client lines are `totalsview.lua`. A source that depends on the hit (a unique's condition, a charm's
+factor (`combat_stats.lua`), the tree totals window (`passivetree_totals.lua` `TT.pool`, a `pool` field of every damage row:
+`{raw, eff, parts}`; the client lines are `totalsview.lua`) and the damage bonus lines of Character Info and Inspect (`charsheet.lua` reads
+`pool.eff`) use it. A source that depends on the hit (a unique's condition, a charm's
 family, the sword's stacks, a mastery's spell) shows in the help card and the Codex page only.
 
 **Every path once.** The pool is built in that one event and nowhere else (`tests/damage_pool_test.lua` reads the source files for
