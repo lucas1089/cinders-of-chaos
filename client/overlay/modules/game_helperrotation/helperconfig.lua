@@ -293,11 +293,14 @@ end
 
 -- ---------------------------------------------------------------- the overlay's g_settings nodes (config.otml)
 
--- Auto rotation (autorotation_ui.lua, node chaos_helper_spells): { autoUpdate = bool, ignored = { [spell id] = true } }
+-- Auto rotation (autorotation_ui.lua, node chaos_helper_spells): { autoUpdate = bool, ignored = { [spell id] = true },
+-- variant = 'default' | 'single' | 'pack' | 'mines' (the rotation variant, O446; ChaosAutoRotation.VARIANT_NAMES) }
+HC.VARIANTS = { default = true, single = true, pack = true, mines = true }
 function HC.spellPrefs(entry)
-  local out = { autoUpdate = false, ignored = {} }
+  local out = { autoUpdate = false, ignored = {}, variant = 'default' }
   if type(entry) ~= 'table' then return out end
   out.autoUpdate = entry.autoUpdate == true or entry.autoUpdate == 'true'
+  if type(entry.variant) == 'string' and HC.VARIANTS[entry.variant] then out.variant = entry.variant end
   local n = 0
   if type(entry.ignored) == 'table' then
     local keys = {}

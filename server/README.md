@@ -2544,6 +2544,14 @@ at level 8 since 2026-10-17). The snares are flagged `utility` in
 `rotation_model.csv`: no preset takes them. Assumption: the
 4 s attack group cooldowns of the supreme strikes and the big stock area spells stay (balance); the rotations leave
 those spells out.
+**Rotation variants (O446).** `rotation_sim.py --write` also writes the `ChaosAutoRotationData.variants` block of
+`autorotation_data.lua` after the default block: per class and level breakpoint a `single` (best on 1 target), `pack` (best on 5
+targets) and, for the six classes that hold Seeker Mine, `mines` set, each with its change against the default in percent
+(computed). The default block is byte for byte what it was; `server/data/spells/rotation_default_digest.txt` holds its sha256 and
+`rotation_sim.py --check` fails when it moves (`--write-digest` when it is meant to). `--check` also holds every variant to its
+rules (spells the class holds at the level, a cast every 2 s, the mana runway, the ladder, at most +40% in the specialty, a price
+on the other count for single and pack); `--variants [--table]` prints the numbers. No new opcode, spell, cooldown or damage:
+`server/data/spells/README.md` "Rotation variants (O446)".
 
 ## Free spells (`tools/patch_free_spells.py`, install step `spells`)
 

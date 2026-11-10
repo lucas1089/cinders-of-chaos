@@ -1126,6 +1126,8 @@ Cinders of Chaos ships its own client, built for these systems:
   with a link to the download.
 - **The client's helper is allowed while you play.** Healing, spell rules and the auto rotation are part of the
   official client. Leaving it running for hours with nobody at the keyboard counts as botting (Rules 2.2 and 7.4).
+  The Auto rotation has variants (helper window, beside Auto setup): One target for bosses, Groups for packs and Mines for
+  mine builds, each with its price in numbers. They are other lists, not a faster bot.
 - **Two characters per IP at most.** While a second character is online from the same IP, neither can queue for a
   dungeon, enter the Infinity Tower or the arena, attack players, or give and take party bonuses.
 - **Anti-bot checks:** the server watches for patterns no human keeps up for long (perfect spell rhythm, instant

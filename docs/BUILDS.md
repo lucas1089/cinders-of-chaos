@@ -367,6 +367,24 @@ new numbers.
   next switch), no passive points yet, below the loadouts' level. No new opcode: the actions `autobuildSlots` and
   `autobuildSaveSlot` of the passive tree's opcode 65, reusing the loadouts' own checks. server/README.md "Loadouts".
 
+## Rotation variants (O446)
+
+The helper's Auto setup and Auto rotation cast one list of at most 5 attack spells. You can now pick another list, so that a build
+plays with low attention. In the helper window, left of the Auto setup button, a small choice shows **Default**, **One target**,
+**Groups** and **Mines** (only what your class has). One line next to it gives the price in numbers, for example "Bosses +9%, groups
+-16%"; the tip has the long text. The choice is saved per character. Press Auto setup or Auto rotation to apply it.
+
+- **Default**: the balanced list. It does not change.
+- **One target**: the best list against a boss. Groups pay the price.
+- **Groups**: the best list against a pack of five. One target pays the price.
+- **Mines** (Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai): throws Seeker Mine every 6 s and lets the fuse set it off, with the
+  best attack spells around it. For mine builds. The burst comes up to 9 s late and a pack that keeps moving costs a third of the
+  mine damage.
+
+No variant is more than +40% over the default in its specialty (computed). A level or class with no variant uses the default; the Lich
+has none. Every list casts on every 2 s group cooldown and the helper rules stay: a variant is a different list, not a faster bot. The
+numbers are computed, not measured (`server/data/spells/README.md` "Rotation variants (O446)"). The Unity player uses the default.
+
 ## Leveling notes
 
 - Keystones need their paths. The leaves at 8 or 9 points are early picks (96, 99, 102 and 105 too); 253, 262, 355 and

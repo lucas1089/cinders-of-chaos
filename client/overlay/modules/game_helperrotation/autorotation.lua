@@ -27,6 +27,72 @@ function A.classOf(vocId)
   return d and d.classes and d.classes[vocId] or nil
 end
 
+-- The rotation variants (O446, owner 2026-11-09: "the Auto rotation gets variants so that a build can be played with low
+-- attention"). The default set stays the default; a variant is another list from the data's `variants` block (written by
+-- rotation_sim.py next to the default), for the levels where it exists. A client with no `variants` block, a character with no
+-- choice and a level with no entry get the default, as before. The choice is kept per character (autorotation_ui.lua).
+A.VARIANT_DEFAULT = 'default'
+A.VARIANT_NAMES = { 'single', 'pack', 'mines' } -- after 'default', in the order the choice shows them
+
+-- a name the data knows, else 'default' (a hand-edited or old config never breaks the button)
+function A.variantName(name)
+  for _, n in ipairs(A.VARIANT_NAMES) do
+    if n == name then return n end
+  end
+  return A.VARIANT_DEFAULT
+end
+
+-- the variant's entry for a class and level: { level, upTo, gap, spells, creatures, one, five [, moving] } or nil (no variant
+-- here: the default set). An entry runs from its level up to, not including, upTo (nil: no end).
+function A.variantFor(vocId, level, name)
+  name = A.variantName(name)
+  local d = data()
+  local list = name ~= A.VARIANT_DEFAULT and d and d.variants and d.variants.classes and d.variants.classes[vocId]
+  list = list and list[name]
+  for _, e in ipairs(list or {}) do
+    if e.level <= (level or 0) and (e.upTo == nil or (level or 0) < e.upTo) then
+      return e
+    end
+  end
+  return nil
+end
+
+-- the variants a class has at some level, in the choice's order: { 'single', ... } (what the choice lists for the class)
+function A.variantNames(vocId)
+  local d = data()
+  local c = d and d.variants and d.variants.classes and d.variants.classes[vocId]
+  local out = {}
+  for _, n in ipairs(A.VARIANT_NAMES) do
+    if c and c[n] and #c[n] > 0 then out[#out + 1] = n end
+  end
+  return out
+end
+
+-- the variants a class has at a level, in the choice's order: { { name, entry }, ... } (the default is not in it)
+function A.variantsAt(vocId, level)
+  local out = {}
+  for _, n in ipairs(A.VARIANT_NAMES) do
+    local e = A.variantFor(vocId, level, n)
+    if e then out[#out + 1] = { name = n, entry = e } end
+  end
+  return out
+end
+
+-- the table of spell numbers: the main one and the spells only a variant holds (Seeker Mine of the mines variant)
+local merged, mergedFrom, mergedExtra = nil, nil, nil
+function A.spellTable()
+  local d = data()
+  local base = d and d.spells or {}
+  local extra = d and d.variants and d.variants.spells
+  if not extra or next(extra) == nil then return base end
+  if merged and mergedFrom == base and mergedExtra == extra then return merged end
+  merged = {}
+  for id, s in pairs(extra) do merged[id] = s end
+  for id, s in pairs(base) do merged[id] = s end
+  mergedFrom, mergedExtra = base, extra
+  return merged
+end
+
 -- the preset of the highest level at or below `level`, and its index
 function A.presetFor(vocId, level)
   local c = A.classOf(vocId)
@@ -46,7 +112,7 @@ end
 -- cooldowns, the cast spell's group cooldown on the attack group, secondary groups and cast times, from a fresh start.
 -- The Monk finishers' chi is not counted (Ashen Fist, cooldown 2 s, is in every Monk set).
 function A.gap(ids, spells)
-  spells = spells or (data() and data().spells) or {}
+  spells = spells or A.spellTable()
   local list = {}
   for _, id in ipairs(ids) do
     local s = spells[id]
@@ -95,7 +161,7 @@ end
 -- ids with the area spells first, then the others, each group in its order; creatures follow their spell.
 -- Returns ids, creatures, moved (true when the order changed)
 function A.areaFirst(ids, creatures, spells)
-  spells = spells or (data() and data().spells) or {}
+  spells = spells or A.spellTable()
   local outIds, outCreatures, rest, restCreatures = {}, {}, {}, {}
   for i, id in ipairs(ids) do
     if spells[id] and spells[id].area then
@@ -118,7 +184,10 @@ function A.areaFirst(ids, creatures, spells)
 end
 
 -- the rotation for a character: vocId (the server's), level, canCast(id) -> true when the character can cast the spell
--- (knows it, its class and level). Returns { level, ids, creatures, gap, changed } or nil, reason.
+-- (knows it, its class and level). Returns { level, ids, creatures, gap, changed, variant, vs } or nil, reason.
+-- opts.variant: 'single', 'pack' or 'mines' (A.variantFor): the variant's set replaces the preset's where the class has one
+-- at this level, else the default set is used; `variant` of the result is the name that was applied (nil: the default set) and
+-- `vs` its numbers against the default ({ one, five [, moving] }, percent, computed). The top-up below is the same.
 function A.select(vocId, level, canCast, opts)
   local c = A.classOf(vocId)
   if not c then
@@ -127,6 +196,11 @@ function A.select(vocId, level, canCast, opts)
   local preset, index = A.presetFor(vocId, level)
   if not preset then
     return nil, 'level'
+  end
+  local base, applied = preset, nil
+  local entry = A.variantFor(vocId, level, opts and opts.variant)
+  if entry then
+    preset, applied = entry, A.variantName(opts.variant)
   end
   canCast = canCast or function() return true end
   local ids, creatures, seen, changed = {}, {}, {}, false
@@ -144,7 +218,7 @@ function A.select(vocId, level, canCast, opts)
   -- the preset's: earlier presets newest first, then the later ones. Those only fire while the ones above wait;
   -- an area spell among them casts on one monster too (O430), like the preset's own area spells.
   -- opts.topUp == false: the preset alone (the level-up check only looks for new spells, it never tops up)
-  local spells = (data() and data().spells) or {}
+  local spells = A.spellTable()
   local order = {}
   if not (opts and opts.topUp == false) then
     for j = index - 1, 1, -1 do order[#order + 1] = j end
@@ -204,7 +278,8 @@ function A.select(vocId, level, canCast, opts)
     table.insert(ids, 1, ultimate)
     table.insert(creatures, 1, 1)
   end
-  return { level = preset.level, ids = ids, creatures = creatures, gap = gap, changed = changed, ultimate = ultimate }
+  return { level = base.level, ids = ids, creatures = creatures, gap = gap, changed = changed, ultimate = ultimate,
+    variant = applied, vs = applied and { one = preset.one, five = preset.five, moving = preset.moving } or nil }
 end
 
 -- the helper's shooter rules (magic_shooter_panel.lua getFormData) of a selection; nameOf(id), wordsOf(id)
@@ -388,6 +463,49 @@ function A.message(sel, nameOf)
     names[#names + 1] = nameOf and nameOf(id) or tostring(id)
   end
   return tr('Rotation set: %s (max gap %.1f s)', table.concat(names, ' > '), sel.gap)
+end
+
+-- The texts of the variant choice (autosetup_ui.lua): the name in the list, one line with the price (the numbers of the data:
+-- the change against the default set on one target and on groups, computed by rotation_sim.py, not measured), and the long
+-- tip. Every text goes through tr() with its pt-BR line in client_chaos_locale/pt_br.lua.
+function A.variantTitle(name)
+  name = A.variantName(name)
+  if name == 'single' then return tr('One target') end
+  if name == 'pack' then return tr('Groups') end
+  if name == 'mines' then return tr('Mines') end
+  return tr('Default')
+end
+
+-- entry: A.variantFor's result (nil: the class has no such variant at this level)
+function A.variantHint(name, entry)
+  name = A.variantName(name)
+  if name == A.VARIANT_DEFAULT then return tr('Balanced: one target and groups') end
+  if not entry then return tr('Not at your level: default set') end
+  if name == 'single' then return tr('Bosses %+d%%, groups %+d%%', entry.one, entry.five) end
+  if name == 'pack' then return tr('Groups %+d%%, bosses %+d%%', entry.five, entry.one) end
+  return tr('Mines: groups %+d%%, bosses %+d%%', entry.five, entry.one)
+end
+
+function A.variantTip(name)
+  name = A.variantName(name)
+  local head = tr('The Auto rotation list: pick one, then press Auto setup or Auto rotation. Every list holds at most 5 attack spells and casts every 2 s; a variant trades damage on the other target count (computed, not measured). A level with no variant uses the default.')
+  local body
+  if name == 'single' then
+    body = tr('One target: the best list against a boss. Use it when you fight one big monster at a time. Groups take the hit.')
+  elseif name == 'pack' then
+    body = tr('Groups: the best list against a pack of five. Use it for dense packs. One target takes the hit.')
+  elseif name == 'mines' then
+    body = tr('Mines: throws Seeker Mine every 6 s and lets its fuse set it off, with the best attack spells around it. For builds that lay mines. The burst comes up to 9 s late and a pack that keeps moving costs a third of the mine damage.')
+  else
+    body = tr('Default: the balanced list, good on one target and on groups.')
+  end
+  return head .. '\n' .. body
+end
+
+-- a line for the result box: nil for the default set
+function A.variantLine(sel)
+  if not (sel and sel.variant) then return nil end
+  return tr('Rotation variant: %s.', A.variantTitle(sel.variant))
 end
 
 -- Which label the "Auto-update my spells" box can show in the room it has (the presets row, between the Set Key /

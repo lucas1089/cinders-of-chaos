@@ -4420,3 +4420,156 @@ Not in the table, not measured: what the sword's extra swings are worth (more ro
 second is the same by construction), the daze's effect on the damage a clubber takes (a stunned monster of a pack cannot attack for
 0.7 s: at most 18.9% of its time; the real share is lower and not measured), and the cleave against a real pack (the share of the hit that
 lands on a neighbour is the number above, every neighbour takes its share of the hit after the styles).
+
+
+## Rotation variants (O446, owner 2026-11-09; computed, not measured)
+
+The Auto rotation gets variants, so that a build can be played with low attention and not only with the default set. A variant is
+another list of at most 5 attack spells of the same pool, found by `rotation_sim.py` and written next to the default in
+`client/overlay/modules/game_helperrotation/autorotation_data.lua` (the `ChaosAutoRotationData.variants` block, after the default
+block). Nothing was run live. Every number below is the simulator's: the standing dummies, no tree, no gear, no auto attack, the
+data pool of the helper (line spell quest attacks in from their level). `class_dps_measured.csv` and every balance model read the
+default sets only and did not move.
+
+- **default**: today's set, byte for byte. `server/data/spells/rotation_default_digest.txt` holds the sha256 of the default block
+  (`rotation_sim.py --check` fails when it moves; `--write-digest` writes it, only when the default rows are meant to move). The
+  digest was written from the file as it was before the variants (`d4af8197...`): the default rows are identical, the variants
+  block only adds lines after them.
+- **single**: the best set on 1 target (a boss). **pack**: the best set on 5 targets. **mines**: only for the six classes that hold
+  Seeker Mine (Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai), the best score (1 target + 0.25 x 5 targets) of a set that holds
+  Seeker Mine. The search is exhaustive over every set of at most 5 spells of the pool, a debuff kept up always in it.
+- **Rules.** A variant keeps the default's rules: spells the class holds at the level, a cast on every 2 s attack group cooldown
+  (a few defaults hold a longer gap, see the findings; a variant never does), the mana runway of 15 s (or the default's own when it
+  is shorter), the cooldown ladder (no spell changes). Owner rule: at most +40% over the default in its specialty, never above (the best
+  set under the cap is the variant); flag above +25%. A single or pack variant gains at least 5% in its specialty and pays at
+  least 3% on the other count. A variant that comes out as the default at a level is not listed there. The data keeps one entry
+  per level breakpoint of the class, valid up to the next one (`upTo`).
+- **Mines.** The simulator models a mine as place, wait, detonate from `snares_config.lua`: Seeker Mine is one attack cast (cooldown
+  6 s, group 2 s, 65 mana), armed 0.8 s later, and goes off when Detonate Mines is cast (1 s, no group, 20 mana: it takes no attack
+  slot) or, with nobody casting it, when its fuse ends, 8 s after it is armed: 8.8 s after the throw at the latest. At a throw per
+  cooldown a mine lives that long, so two are out at once (the cap is 5) and a pack of five fits the burst (8 targets). The
+  damage per second does not depend on when a mine goes off, only on how often it is thrown, so the model counts it like any spell
+  of that cooldown and the helper needs no Detonate Mines rule: the fuse is the rhythm (a burst timed by hand gains position, not
+  damage per second, and the model cannot price position). The price of a mine is outside the standing dummies: the burst comes
+  up to 8.8 s late and a pack that keeps moving costs the snares a third (measured: README "Snares, vigils and Hollow Vessel measured in
+  game", -32% and -34%). The table shows that third applied to the mine's own part of the 5-target damage (`moving`). The mines variant
+  has no gain and no price filter: it differs from the default by the mine, and it is for the builds that lay mines (Snarewright's
+  Creed +25%, Fusewright's Charm +10%: their bonuses are not in these numbers).
+- **What the Deadeye gets back.** The default of the Deadeye at level 100 lost 14.1% on 1 target and 11.4% on 5 targets when it traded
+  Skewering Line for the mines (section "Ranger line mines (O455)"). The mines variant at level 100 is +18.2% / +39.0% over that
+  default (118.5 / 454.1 against 100.2 / 326.6): +1.5% / +23.2% over the default it had before the trade, so it gives all of it back
+  and more. The same at level 60: +12.9% / +24.3%; 160: +11.9% / +32.6%; 200: +5.9% / +17.1%.
+
+Per class at levels 100 / 500 / 1000, the variant against the default, 1 target / 5 targets (`rotation_sim.py --variants --table`; "none"
+= the default at that level, "-" = no Seeker Mine; mines: the 5-target change on a moving pack in brackets; flag = over +25%):
+
+| Class | Level | Default, 1 target / 5 targets | One target | Groups | Mines (moving pack, 5 targets) |
+|---|---:|---:|---:|---:|---:|
+| Warrior | 100 | 138 / 504 | none | none | - |
+| Warrior | 500 | 499 / 1766 | +9% / -16% | -10% / +9% | - |
+| Warrior | 1000 | 715 / 2497 | +8% / -17% | -12% / +8% | - |
+| Juggernaut | 100 | 138 / 504 | none | none | - |
+| Juggernaut | 500 | 478 / 1817 | +16% / -18% | -5% / +7% | - |
+| Juggernaut | 1000 | 749 / 2604 | +8% / -17% | -12% / +8% | - |
+| Berserker | 100 | 144 / 528 | none | none | - |
+| Berserker | 500 | 461 / 2155 | +28% / -26% flag | none | - |
+| Berserker | 1000 | 658 / 2866 | +26% / -22% flag | -5% / +6% | - |
+| Ranger | 100 | 117 / 369 | none | none | +16% / +35% (+22%) flag |
+| Ranger | 500 | 967 / 1910 | +6% / -25% | none | +1% / +4% (-4%) |
+| Ranger | 1000 | 1672 / 3216 | none | none | +1% / +4% (-2%) |
+| Deadeye | 100 | 100 / 327 | none | none | +18% / +39% (+25%) flag |
+| Deadeye | 500 | 1539 / 2291 | none | none | -9% / -8% (-15%) |
+| Deadeye | 1000 | 2290 / 3536 | +8% / -26% | none | +1% / -3% (-9%) |
+| Beastmaster | 100 | 127 / 415 | none | none | +18% / +39% (+25%) flag |
+| Beastmaster | 500 | 464 / 1590 | +6% / -14% | none | -0% / +8% (+1%) |
+| Beastmaster | 1000 | 720 / 2541 | +7% / -12% | none | -1% / +7% (+0%) |
+| Mystic | 100 | 353 / 830 | none | -46% / +8% | - |
+| Mystic | 500 | 653 / 2542 | +27% / -40% flag | none | - |
+| Mystic | 1000 | 830 / 3179 | +21% / -26% | none | - |
+| Elementalist | 100 | 114 / 516 | +8% / -12% | none | - |
+| Elementalist | 500 | 695 / 3476 | none | none | - |
+| Elementalist | 1000 | 815 / 4076 | none | none | - |
+| Illusionist | 100 | 191 / 420 | none | none | - |
+| Illusionist | 500 | 671 / 2235 | none | -11% / +7% | - |
+| Illusionist | 1000 | 864 / 2935 | none | -7% / +9% | - |
+| Thief | 100 | 190 / 422 | none | none | -4% / +24% (+14%) |
+| Thief | 500 | 511 / 1343 | +22% / -26% | none | +7% / -5% (-17%) |
+| Thief | 1000 | 681 / 1792 | +23% / -26% | none | +7% / -5% (-17%) |
+| Ninja | 100 | 210 / 354 | none | none | -7% / +40% (+22%) flag |
+| Ninja | 500 | 599 / 2391 | +14% / -19% | none | -4% / +2% (-4%) |
+| Ninja | 1000 | 811 / 3249 | +15% / -28% | none | -4% / +3% (-4%) |
+| Samurai | 100 | 192 / 348 | none | none | -8% / +5% (-18%) |
+| Samurai | 500 | 551 / 1650 | +38% / -33% flag | -12% / +8% | +11% / -13% (-24%) |
+| Samurai | 1000 | 714 / 2329 | +38% / -50% flag | none | +16% / -15% (-26%) |
+| Necromancer | 100 | 130 / 473 | +25% / -29% | none | - |
+| Necromancer | 500 | 431 / 1278 | none | -27% / +9% | - |
+| Necromancer | 1000 | 680 / 2142 | +6% / -19% | none | - |
+| Lich | 100 | 226 / 353 | none | none | - |
+| Lich | 500 | 678 / 1668 | none | none | - |
+| Lich | 1000 | 1128 / 2665 | none | none | - |
+| Bone Lord | 100 | 101 / 171 | none | none | - |
+| Bone Lord | 500 | 448 / 1612 | +7% / -20% | none | - |
+| Bone Lord | 1000 | 787 / 2865 | none | none | - |
+| Monk | 100 | 199 / 729 | +6% / -50% | none | - |
+| Monk | 500 | 483 / 1748 | none | none | - |
+| Monk | 1000 | 673 / 2475 | none | none | - |
+| Shadowfist | 100 | 134 / 495 | +14% / -57% | none | - |
+| Shadowfist | 500 | 450 / 1210 | none | -32% / +15% | - |
+| Shadowfist | 1000 | 647 / 1748 | none | -17% / +16% | - |
+| Iron Sage | 100 | 199 / 729 | +6% / -50% | none | - |
+| Iron Sage | 500 | 473 / 2127 | +6% / -8% | -10% / +5% | - |
+| Iron Sage | 1000 | 660 / 3026 | +6% / -57% | -9% / +5% | - |
+| Templar | 100 | 173 / 784 | none | none | - |
+| Templar | 500 | 477 / 2008 | none | none | - |
+| Templar | 1000 | 667 / 2837 | +7% / -20% | none | - |
+| Inquisitor | 100 | 207 / 417 | none | none | - |
+| Inquisitor | 500 | 489 / 1801 | +11% / -30% | none | - |
+| Inquisitor | 1000 | 695 / 2570 | +10% / -30% | none | - |
+| Sentinel | 100 | 173 / 484 | none | none | - |
+| Sentinel | 500 | 417 / 1966 | +20% / -45% | none | - |
+| Sentinel | 1000 | 611 / 2838 | +18% / -39% | none | - |
+
+| Class | One target | Groups | Mines |
+|---|---|---|---|
+| Warrior | 4 of 18 levels, from 220 | 6 of 18 levels, from 260 | - |
+| Juggernaut | 5 of 18 levels, from 220 | 6 of 18 levels, from 260 | - |
+| Berserker | 5 of 18 levels, from 340 | 4 of 18 levels, from 190 | - |
+| Ranger | 2 of 15 levels, from 500 | none | 10 of 15 levels, from 60 |
+| Deadeye | 2 of 16 levels, from 200 | 1 of 16 levels, from 240 | 11 of 16 levels, from 60 |
+| Beastmaster | 4 of 18 levels, from 400 | none | 13 of 18 levels, from 60 |
+| Mystic | 6 of 16 levels, from 150 | 3 of 16 levels, from 100 | - |
+| Elementalist | 4 of 17 levels, from 50 | none | - |
+| Illusionist | 1 of 18 levels, from 250 | 8 of 18 levels, from 210 | - |
+| Thief | 6 of 16 levels, from 200 | none | 12 of 16 levels, from 60 |
+| Ninja | 8 of 15 levels, from 150 | 2 of 15 levels, from 270 | 11 of 15 levels, from 60 |
+| Samurai | 8 of 15 levels, from 130 | 5 of 15 levels, from 200 | 11 of 15 levels, from 60 |
+| Necromancer | 6 of 18 levels, from 90 | 5 of 18 levels, from 135 | - |
+| Lich | none | none | - |
+| Bone Lord | 6 of 19 levels, from 150 | 1 of 19 levels, from 250 | - |
+| Monk | 5 of 18 levels, from 90 | 2 of 18 levels, from 250 | - |
+| Shadowfist | 6 of 17 levels, from 100 | 4 of 17 levels, from 150 | - |
+| Iron Sage | 9 of 17 levels, from 90 | 3 of 17 levels, from 500 | - |
+| Templar | 6 of 17 levels, from 80 | 3 of 17 levels, from 160 | - |
+| Inquisitor | 7 of 17 levels, from 120 | none | - |
+| Sentinel | 7 of 18 levels, from 150 | 2 of 18 levels, from 250 | - |
+
+The second table is where each class has a variant: levels with an entry out of the level breakpoints of the class (the levels where a preset
+can change), and the first of them. In all, 107 single, 55 pack and 68 mines entries.
+
+**Findings** (nothing was changed for them, owner rule):
+- **A set better than the default on both counts.** At 16 level breakpoints a set with Seeker Mine beats the default on both counts by
+  3% or more: Ranger 60 and 100, Deadeye 60, 100, 160, 200, 240, Beastmaster 60, 100, 110, 140, 160, 220, 240, 300, 320 (the Ranger
+  at 60: +16.3% / +53.8%, over the cap, the variant takes the best set under it). The default holds no mine because
+  `rotation_model.csv` flags the snares `utility` (a second pass decision of 2026-10-14), and the Deadeye's trade of Skewering Line
+  for the mine (O455) left it four spells at level 100. By the owner rule the default is wrong there; it is not changed here. The
+  mines variant is listed at those levels with its real numbers, so the price column shows none: its price is the late burst and the
+  moving pack. Decide whether the default should hold the mine.
+- **Defaults with a gap over 2 s** (the rule of 2 s was a preference, not a check): Ranger 280, 300 (5.00 s), Deadeye 280 to 600
+  (5.00 s), Elementalist 300 (3.00), 500 and 600 (5.00), Illusionist 110 (3.00), Thief 230 and 300 (3.00), Bone Lord 270 to 1000 (5.00),
+  Sentinel 230 (3.00). `rotation_sim.py --variants` prints them. A variant never has a gap over 2 s, so at these levels a variant can
+  beat the default with a shorter gap (the Deadeye mines at level 500 is -9% / -8% against a default with a 5 s gap, for example).
+- 23 variant entries are over +25% in their specialty (flag): Berserker single 500 and 1000, the mines of the Ranger line and Ninja and
+  Samurai at levels 60 to 160, Mystic single 200 to 600, Samurai single 230 to 1000, Shadowfist single 250 and 300. None is over +40%
+  (the Ninja mines at level 100 is +39.8%, the Samurai single +38%); `--check` fails on any.
+- The Samurai mines variant at level 100 is the two-spell set Seeker Mine > Shuriken Toss: the four-spell set with Blade Flurry is
+  +44.5% on 5 targets, over the cap.

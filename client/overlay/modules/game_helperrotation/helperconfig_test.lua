@@ -160,6 +160,20 @@ eq(p.ignored[12], true, 'ignored id'); eq(p.ignored[13], true, 'ignored id from 
 eq(p.ignored.x, nil, 'text key dropped'); eq(p.ignored[14], nil, 'not true: dropped'); eq(p.ignored[-1], nil, 'negative dropped')
 eq(p.ignored[2], nil, 'fraction dropped')
 eq(HC.spellPrefs('x').autoUpdate, false, 'bad entry: defaults'); eq(next(HC.spellPrefs(nil).ignored), nil, 'nil entry')
+-- the rotation variant of the character (O446): one of the four names, else the default
+eq(HC.spellPrefs(nil).variant, 'default', 'no entry: the default variant'); eq(HC.spellPrefs({}).variant, 'default', 'no variant saved')
+for _, v in ipairs({ 'default', 'single', 'pack', 'mines' }) do eq(HC.spellPrefs({ variant = v }).variant, v, 'variant ' .. v) end
+for _, v in ipairs({ 'fast', '', 5, true, {}, 'Mines', 'mines ' }) do eq(HC.spellPrefs({ variant = v }).variant, 'default', 'bad variant ' .. tostring(v) .. ': the default') end
+eq(HC.spellPrefs({ variant = 'pack', autoUpdate = true }).autoUpdate, true, 'the variant leaves the other choices alone')
+do -- the names the config accepts are the names the rotation knows
+  dofile(dir .. 'autorotation.lua')
+  local n = 0
+  for name in pairs(HC.VARIANTS) do
+    n = n + 1
+    eq(ChaosAutoRotation.variantName(name), name == 'default' and 'default' or name, 'the rotation knows ' .. name)
+  end
+  eq(n, #ChaosAutoRotation.VARIANT_NAMES + 1, 'the config lists the default and every name of the rotation')
+end
 local big = { ignored = {} }
 for i = 1, 2000 do big.ignored[i] = true end
 local n = 0

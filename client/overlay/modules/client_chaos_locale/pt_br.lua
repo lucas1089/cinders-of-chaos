@@ -3700,6 +3700,21 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Set up healing, tools, shooter, timers and support spells for your class and level in one click\n(only spells you can cast and potions you may drink). Right-click: undo the last Auto setup."] = "Configura cura, ferramentas, ataque, timers e magias de suporte para sua classe e nível em um clique\n(só magias que você pode usar e poções que pode beber). Clique direito: desfaz a última configuração automática.",
   ["Shooter: %d attack spells."] = "Ataque: %d magias de ataque.",
   ["Shooter: no attack spell at this level yet."] = "Ataque: ainda nenhuma magia de ataque neste nível.",
+  -- Auto rotation variants (O446): the choice beside the Auto setup button
+  ["One target"] = "Um alvo",
+  ["Groups"] = "Grupos",
+  ["Mines"] = "Minas",
+  ["Balanced: one target and groups"] = "Equilibrada: um alvo e grupos",
+  ["Not at your level: default set"] = "Não neste nível: lista padrão",
+  ["Bosses %+d%%, groups %+d%%"] = "Chefes %+d%%, grupos %+d%%",
+  ["Groups %+d%%, bosses %+d%%"] = "Grupos %+d%%, chefes %+d%%",
+  ["Mines: groups %+d%%, bosses %+d%%"] = "Minas: grupos %+d%%, chefes %+d%%",
+  ["The Auto rotation list: pick one, then press Auto setup or Auto rotation. Every list holds at most 5 attack spells and casts every 2 s; a variant trades damage on the other target count (computed, not measured). A level with no variant uses the default."] = "A lista da Rotação automática: escolha uma e use Configuração automática ou Rotação automática. Toda lista tem no máximo 5 magias de ataque e lança a cada 2 s; uma variante troca dano na outra contagem de alvos (calculado, não medido). Um nível sem variante usa a padrão.",
+  ["One target: the best list against a boss. Use it when you fight one big monster at a time. Groups take the hit."] = "Um alvo: a melhor lista contra um chefe. Use quando enfrenta um monstro grande por vez. Os grupos pagam o preço.",
+  ["Groups: the best list against a pack of five. Use it for dense packs. One target takes the hit."] = "Grupos: a melhor lista contra um grupo de cinco. Use em grupos densos. Um alvo paga o preço.",
+  ["Mines: throws Seeker Mine every 6 s and lets its fuse set it off, with the best attack spells around it. For builds that lay mines. The burst comes up to 9 s late and a pack that keeps moving costs a third of the mine damage."] = "Minas: lança a Seeker Mine a cada 6 s e deixa o pavio detoná-la, com as melhores magias de ataque ao redor. Para builds que plantam minas. A explosão vem até 9 s depois e um grupo que não para custa um terço do dano da mina.",
+  ["Default: the balanced list, good on one target and on groups."] = "Padrão: a lista equilibrada, boa em um alvo e em grupos.",
+  ["Rotation variant: %s."] = "Variante da rotação: %s.",
   ["Timers: %d buffs."] = "Timers: %d buffs.",
   -- base game_helper window (mods/game_helper, base patch 0105: the compact window): the sidebar, the Tools tab, the
   -- Settings tab and the Alarm Settings window
