@@ -404,9 +404,61 @@ function R.describe(cfg, key)
 		bonus[#bonus + 1] = "+" .. b.experience .. "% experience"
 	end
 	local t = R.tierInfo(cfg, key.tier)
-	return string.format("Modifiers: %s. Rewards: %s. Opens a rift of tier %d (level %d+). Use it in a protection zone; your party within %d sqm comes along.",
+	local rec = R.warnLevel(cfg, key.tier) -- O476: one line with the recommended solo level, none when the warning is off
+	return string.format("Modifiers: %s. Rewards: %s. Opens a rift of tier %d (level %d+).%s Use it in a protection zone; your party within %d sqm comes along.",
 		#lines > 0 and table.concat(lines, "; ") or "none", #bonus > 0 and table.concat(bonus, ", ") or "normal",
-		key.tier, t.minLevel, cfg.partyRange)
+		key.tier, t.minLevel, rec and string.format(" Recommended: level %d alone, or a party.", rec) or "", cfg.partyRange)
+end
+
+-- ---------------------------------------------------------------- level warning (O476, rift_config.lua `warn`)
+-- the recommended SOLO level of a tier (warn.levels; a tier past the table takes the last one); nil when the warning is off
+function R.warnLevel(cfg, tier)
+	local w = cfg and cfg.warn
+	if not w or w.enabled == false or type(w.levels) ~= "table" or #w.levels == 0 then
+		return nil
+	end
+	return tonumber(w.levels[math.min(R.clampTier(cfg, tier), #w.levels)])
+end
+
+-- does the key carry a modifier that makes the monsters or the guardian hit harder (warn.hot)
+function R.warnHot(cfg, mods)
+	local hot = cfg and cfg.warn and cfg.warn.hot
+	for _, m in ipairs(mods or {}) do
+		for _, k in ipairs(hot or {}) do
+			if m.key == k then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- who is warned when a run starts: `level` below the key's recommended level and the party that entered (`partySize`
+-- players) smaller than warn.partySize. Returns the recommended level and whether the key's modifiers raise the damage
+-- (the warning's second sentence, folded into the same line), or nil for no warning. An Omen key (key.omen) has none.
+function R.warnEntry(cfg, key, level, partySize)
+	if not key or key.omen then
+		return nil
+	end
+	local rec = R.warnLevel(cfg, key.tier)
+	if not rec or (tonumber(level) or 0) >= rec or (tonumber(partySize) or 1) >= (cfg.warn.partySize or 2) then
+		return nil
+	end
+	return rec, R.warnHot(cfg, key.mods)
+end
+
+-- the tip after a death: the recommended level when the dead player was below it, the killer was a guardian and the
+-- player has not had the tip in this run (entry.tipped); marks the entry. nil: no tip.
+function R.warnTip(cfg, key, level, killedByGuardian, entry)
+	if not killedByGuardian or not entry or entry.tipped or not key or key.omen then
+		return nil
+	end
+	local rec = R.warnLevel(cfg, key.tier)
+	if not rec or (tonumber(level) or 0) >= rec then
+		return nil
+	end
+	entry.tipped = true
+	return rec
 end
 
 -- ===================================================================== effects
