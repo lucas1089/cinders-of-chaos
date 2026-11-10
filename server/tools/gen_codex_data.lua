@@ -2302,7 +2302,7 @@ function Gen.build(D)
 	-- the Class filter: the class lines a unique's power works for (a unique for every class is in each of them)
 	local uniqueClasses = {{"", "Any class"}}
 	for _, key in ipairs(D.passives.lineOrder) do
-		uniqueClasses[#uniqueClasses + 1] = {key, ChaosUniquePassivesText.lineName[key][1]}
+		uniqueClasses[#uniqueClasses + 1] = {key, ChaosUniquePassivesText.lineName[key][1] .. " line"}
 	end
 	local setLevels = {{"", "Any level"}}
 	for _, lv in ipairs({100, 200, 300, 400, 800}) do

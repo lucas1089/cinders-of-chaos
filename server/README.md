@@ -4031,7 +4031,7 @@ power, the class lines or the limit of active powers, and the Item Finder did no
 - **Level window core.** `unique_window_core.lua` holds the window rule (`range`, `levels`, `curveAt`); `loot.lua`
   `L.openLevelMult`, the Codex, the wiki and the Item Finder read it, so the rule has one copy.
 - **First unique line.** `unique_intro.lua`: `ChaosUniqueIntro.found(player)` sends one line the first time a character finds a
-  unique (storage 7103080, block 7103080 - 7103089): "A unique is a named item with fixed stats and one power of its own.
+  unique (storage 7103090, block 7103090 - 7103099): "A unique is a named item with fixed stats and one power of its own.
   Right-click it and choose Open in Codex to see what it does." Called from the loot of a kill (`loot.lua`), the first-unique
   gift (`retention_loot.lua`), set pieces, the Conquest vendor, the raid, the Ascended fights, the world boss, pocket bosses and
   invasions. Not called from treasure goblins, cursed chests, rifts and Omen chests (the first unique of a hunt comes from

@@ -13947,13 +13947,13 @@ CodexData = {
 					match = "has",
 					options = {
 						{"", "Any class"},
-						{"warrior", "Warrior"},
-						{"ranger", "Ranger"},
-						{"mystic", "Mystic"},
-						{"thief", "Thief"},
-						{"monk", "Monk"},
-						{"necromancer", "Necromancer"},
-						{"templar", "Templar"}
+						{"warrior", "Warrior line"},
+						{"ranger", "Ranger line"},
+						{"mystic", "Mystic line"},
+						{"thief", "Thief line"},
+						{"monk", "Monk line"},
+						{"necromancer", "Necromancer line"},
+						{"templar", "Templar line"}
 					}
 				},
 				{
