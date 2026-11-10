@@ -30600,11 +30600,14 @@ the scripted ticks.
 attack before the modifier in `chaos_wdbase`; a unique holds its spec's attack. `ChaosCrafting.growWeapon` (data/lib/chaos_crafting.lua,
 called first by `ChaosCrafting.upgradeItem`: every read, move and login refresh of the item) moves such an item by the change of its
 base, once: new attack = stored + (new base - old base) with the pairs of `data/lib/chaos_weapon_growth.lua`
-(`tools/gen_weapon_growth.py`; 192 set, relic, level 800 and fist types and 29 uniques). Weapon Damage: the base moves, the attack is worked out
+(`tools/gen_weapon_growth.py`; 325 types, 192 of ours and 133 stock weapons of the growth step, and 29 uniques). Weapon Damage: the base moves, the attack is worked out
 again with the percent that stays. A unique moves only when it holds the old spec's number. Quality, tier, rolled values and
 corruption stay (`tests/weapon_growth_touch_test.lua`). The type must already carry the new attack (else the next touch does it), the
 mark is its own `chaos_wgrow`, not the modifier version, because bumping that version would run the O461 / O464 range upgrade over every
-item again. To chain it into a version mark, call `C.growWeapon` from the step of the new mark.
+item again. To chain it into a version mark, call `C.growWeapon` from the step of the new mark. The archery migration (`archery.lua`
+`A.migrate`, on login and when a launcher is taken into a hand) reads a stored attack under the type's as an item made before the
+ammunition was built in and adds the band's ammunition. With a higher type attack every rolled launcher of the numbers before would
+read so, so `A.migrate` calls `growWeapon` first (`tests/archery_test.lua`): a rolled bow of 74 + 3 becomes 140 + 3, not 205 + 3.
 
 **Auto attack power and style factors, regenerated.** `weapon_sim.py` now multiplies the reference rotation of the class by W, since the
 real spells grow and the model's typical character (`rotation_sim.py` ANCHORS) has the old attack. `weapon_power_config.lua`: distance

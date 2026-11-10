@@ -175,8 +175,24 @@ eq(armor:getCustomAttribute("chaos_wgrow"), nil, "not marked")
 C.setGrowthTable(nil)
 
 -- ---------------------------------------------------------------- 8. the real table: every row follows the rule
+local stock, ours = 0, 0
 for id, row in pairs(T.types) do
 	ok(row[2] > row[1], "type " .. id .. " grew")
+	if id < 36654 then stock = stock + 1 else ours = ours + 1 end
+end
+ok(stock > 100 and ours > 150, "the table lists the stock weapons of the growth step (" .. stock .. ") and ours (" .. ours .. ")")
+-- a rolled STOCK weapon, from the real table: stored = the stock attack before + the bonus; the type carries the grown attack now
+do
+	local sid, row
+	for id, r in pairs(T.types) do
+		if id < 36654 and (not sid or id < sid) then sid, row = id, r end
+	end
+	TYPES[sid] = {name = "a stock weapon", weaponType = 1, attack = row[2], slot = 48}
+	C.setGrowthTable(T)
+	local item, b = rolled(sid, row[1], 3, 100)
+	ok(C.upgradeItem(item), "a rolled stock weapon is touched")
+	eq(item:getAttribute(ITEM_ATTRIBUTE_ATTACK), row[2] + b, "stock id " .. sid .. ": " .. row[1] .. " + " .. b .. " became " .. row[2] .. " + " .. b)
+	C.setGrowthTable(nil)
 end
 for id, row in pairs(T.uniques) do
 	ok(row[2] > row[1], "unique " .. id .. " grew")
