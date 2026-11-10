@@ -215,6 +215,7 @@ local function apply(ctx, mode)
     or tr('Tools: eat food.')
   lines[#lines + 1] = plan.rotation and tr('Shooter: %d attack spells.'):format(#plan.rotation.ids)
     or tr('Shooter: no attack spell at this level yet.')
+  if plan.rotation and A.variantLine(plan.rotation) then lines[#lines + 1] = A.variantLine(plan.rotation) end
   lines[#lines + 1] = tr('Targeting: every monster, Auto Target and Magic Shooter on.')
   lines[#lines + 1] = tr('Timers: %d buffs.'):format(#plan.timers)
   if support() then lines[#lines + 1] = tr('Support spells: %d.'):format(#plan.support) end
@@ -250,7 +251,7 @@ function W.run(waited)
     return ok and (tonumber(n) or 0) > 0
   end
   local plan = S.plan({ vocId = voc, level = level, canCast = canCast, has = has, held = ChaosEverfullHeld and ChaosEverfullHeld.get() or nil,
-    heals = A.heals(voc, level, canCast), rotation = (A.select(voc, level, canCast, { topUp = true })),
+    heals = A.heals(voc, level, canCast), rotation = (A.select(voc, level, canCast, { topUp = true, variant = U.getVariant() })),
     support = support() and support().plan() })
   local profile = H.getShooterProfile and H.getShooterProfile()
   local c = A.classOf(voc)
@@ -278,13 +279,89 @@ function W.run(waited)
   return true
 end
 
+-- The rotation variant choice (O446): a small drop-down left of the button and one line with the price, in the same top row
+-- (no window growth). The choice is kept per character (ChaosAutoRotationUI.getVariant) and read by the next Auto setup or Auto
+-- rotation click; a level or class with no variant uses the default (ChaosAutoRotation.select).
+W.VARIANT_ID = 'chaosAutoVariant'
+W.HINT_ID = 'chaosAutoVariantHint'
+
+local function variantWidgets()
+  local root = g_ui.getRootWidget()
+  return root and root:recursiveGetChildById(W.VARIANT_ID), root and root:recursiveGetChildById(W.HINT_ID)
+end
+
+-- redraws the choice for the character's class and level: the options (default and what the class has), the selection, the
+-- price line and the tip. Cheap: the poll calls it every 2 s.
+function W.refreshVariant()
+  local combo, hint = variantWidgets()
+  local player = g_game.getLocalPlayer()
+  if not (combo and hint and player) then return end
+  local voc, level = player:getVocation(), player:getLevel()
+  local names = A.variantNames(voc)
+  local chosen = U.getVariant()
+  local listed = chosen == A.VARIANT_DEFAULT
+  for _, n in ipairs(names) do listed = listed or n == chosen end
+  if not listed then -- the class changed: a choice it does not have goes back to the default
+    chosen = A.VARIANT_DEFAULT
+    U.setVariant(chosen)
+  end
+  local sig = tostring(voc) .. ':' .. table.concat(names, ',')
+  if combo.chaosSig ~= sig then
+    combo.chaosSig = sig
+    combo.chaosBusy = true
+    if combo.clearOptions then combo:clearOptions() end
+    combo:addOption(A.variantTitle(A.VARIANT_DEFAULT), A.VARIANT_DEFAULT, true)
+    for _, n in ipairs(names) do combo:addOption(A.variantTitle(n), n, true) end
+    combo.chaosBusy = false
+  end
+  combo.chaosBusy = true
+  combo:setCurrentOptionByData(chosen, true)
+  combo.chaosBusy = false
+  local show = #names > 0
+  combo:setVisible(show)
+  hint:setVisible(show)
+  hint:setText(A.variantHint(chosen, A.variantFor(voc, level, chosen)))
+  local tip = A.variantTip(chosen)
+  combo:setTooltip(tip)
+  hint:setTooltip(tip)
+end
+
+local function addVariantChoice(parent, button)
+  if variantWidgets() then return end
+  local combo = g_ui.createWidget('ChaosComboBox', parent)
+  combo:setId(W.VARIANT_ID)
+  combo:setWidth(110)
+  combo:setHeight(20)
+  combo:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+  combo:addAnchor(AnchorRight, button:getId(), AnchorLeft)
+  combo:setMarginRight(6)
+  combo.onOptionChange = function(self, text, data)
+    if self.chaosBusy then return end
+    U.setVariant(data)
+    W.refreshVariant()
+  end
+  local hint = g_ui.createWidget('ChaosHelperHint', parent)
+  hint:setId(W.HINT_ID)
+  hint:setTextAlign(AlignRight)
+  hint:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+  hint:addAnchor(AnchorRight, W.VARIANT_ID, AnchorLeft)
+  hint:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  hint:setMarginRight(8)
+  W.refreshVariant()
+end
+
 -- the button, in the helper window's top row (autoSetupHost)
 function W.addButton()
   local root = g_ui.getRootWidget()
   local win = root and root:recursiveGetChildById('helperWindow')
   local parent = win and win:recursiveGetChildById('autoSetupHost')
   if not parent then return false end
-  if parent:getChildById(W.BUTTON_ID) then return true end
+  local have = parent:getChildById(W.BUTTON_ID)
+  if have then
+    addVariantChoice(parent, have)
+    W.refreshVariant()
+    return true
+  end
   local b = g_ui.createWidget('Button', parent)
   b:setId(W.BUTTON_ID)
   b:setText(tr('Auto setup'))
@@ -301,12 +378,15 @@ function W.addButton()
       return true
     end
   end
+  addVariantChoice(parent, b)
   return true
 end
 
 function W.terminate()
   closeBox()
   local root = g_ui.getRootWidget()
-  local b = root and root:recursiveGetChildById(W.BUTTON_ID)
-  if b then b:destroy() end
+  for _, id in ipairs({ W.HINT_ID, W.VARIANT_ID, W.BUTTON_ID }) do
+    local b = root and root:recursiveGetChildById(id)
+    if b then b:destroy() end
+  end
 end

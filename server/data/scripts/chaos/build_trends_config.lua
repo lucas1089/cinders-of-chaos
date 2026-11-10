@@ -54,6 +54,9 @@ return {
 		arBarbed = "Barbed Quiver", arOpeningShot = "Opening Shot", arHobble = "Hobbling Shot",
 		ksShadowTwin = "Shadow Twin", ksViperVerdict = "Viper's Verdict", ksCorpseBlast = "Corpse Detonation",
 		ksReapersToll = "Reaper's Toll", ksSeventhPalm = "Seventh Palm", ksPiercingPalm = "Piercing Palm",
-		ksRadiantRebuke = "Radiant Rebuke", ksDawnchain = "Dawnchain"
+		ksRadiantRebuke = "Radiant Rebuke", ksDawnchain = "Dawnchain",
+		-- the class sections of the Warrior, Ranger and Mystic lines (O449)
+		ksUnbrokenLine = "Unbroken Line", ksOpenVeins = "Open Veins", ksLoneMark = "Lone Mark", ksWolfbond = "Wolfbond",
+		ksConvergence = "Convergence", ksPhantomDouble = "Phantom Double"
 	}
 }

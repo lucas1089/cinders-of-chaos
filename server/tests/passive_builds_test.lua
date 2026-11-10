@@ -527,6 +527,106 @@ do
 	end
 end
 
+-- ------------------------------------------------------------------------------------------------ into a loadout slot (O448)
+-- pick: the build of the character's class; another class's id and unknown ids are refused with their reason
+do
+	check(Core.pick(data, "warrior", "warrior_slayer") == Core.find(data, "warrior", "warrior_slayer"), "pick: an own Recommended build")
+	check(Core.pick(data, "warrior", "focus_damage") ~= nil, "pick: an own Focus build")
+	local b, why = Core.pick(data, "warrior", "ranger_stormquiver")
+	check(b == nil and why == "class", "pick: a build of another class is refused as class")
+	b, why = Core.pick(data, "warrior", "focus_snares")
+	check(b == nil and why == "class", "pick: a Focus theme the class does not have is refused as class")
+	b, why = Core.pick(data, "warrior", "no_such_build")
+	check(b == nil and why == "unknown", "pick: unknown id")
+	for _, bad in ipairs({"", 5, {}, string.rep("x", 61)}) do
+		b, why = Core.pick(data, "warrior", bad)
+		check(b == nil and why == "unknown", "pick: a malformed id is unknown")
+	end
+	b, why = Core.pick(data, nil, "warrior_slayer")
+	check(b == nil and why == "class", "pick: no class of the character refuses a real build")
+end
+-- planSlot: the tree part, cut to the points; the character's own tree is never read
+do
+	local slayer = Core.find(data, "warrior", "warrior_slayer")
+	local sp, why = Core.planSlot(tree, slayer, {classKey = "warrior", points = 248})
+	check(sp and #sp.ids == #slayer.order and sp.left == 0 and sp.keystones == 2, "planSlot: a legal build whole")
+	sp = Core.planSlot(tree, slayer, {classKey = "warrior", points = 40})
+	check(sp and #sp.ids == 40 and sp.left == #slayer.order - 40, "planSlot: cut to the points")
+	local same = sp ~= nil
+	for i = 1, 40 do
+		same = same and sp.ids[i] == slayer.order[i]
+	end
+	check(same, "planSlot: the first 40 nodes in build order")
+	sp, why = Core.planSlot(tree, slayer, {classKey = "warrior", points = 0})
+	check(sp == nil and why == "empty", "planSlot: no points, nothing to write")
+	sp, why = Core.planSlot(tree, slayer, {classKey = "ninja", points = 248})
+	check(sp == nil and why == "class", "planSlot: a warrior build for a ninja is refused")
+	sp, why = Core.planSlot(tree, Core.find(data, "ranger", "ranger_stormquiver"), {classKey = "warrior", points = 248})
+	check(sp == nil and why == "class", "planSlot: a ranger build for a warrior is refused")
+	local broken = {id = "x", kind = "role", order = {slayer.order[1], 9999, slayer.order[2]}, masteries = {}, top = {}}
+	sp, why = Core.planSlot(tree, broken, {classKey = "warrior", points = 248})
+	check(sp == nil and why == "class", "planSlot: an unknown node makes the build illegal")
+	-- four keystones: refused whole, with the tree's text, and nothing trimmed
+	local function route(classKey, targets)
+		local parent, queue, head, seenIds, index = {}, {tree.root}, 1, {[tree.root] = true}, {[tree.root] = 0}
+		while head <= #queue do
+			local cur = queue[head]; head = head + 1
+			for _, nb in ipairs(tree.nodes[cur].n) do
+				local node = tree.nodes[nb]
+				if not seenIds[nb] and (not node.c or node.c[classKey]) and (not PC.isKeystone(node) or targets[nb]) then
+					seenIds[nb] = true; parent[nb] = cur; queue[#queue + 1] = nb; index[nb] = #queue
+				end
+			end
+		end
+		local set, list = {}, {}
+		for target in pairs(targets) do
+			local id = target
+			while id and id ~= tree.root do
+				if not set[id] then set[id] = true; list[#list + 1] = id end
+				id = parent[id]
+			end
+		end
+		table.sort(list, function(a, b) return index[a] < index[b] end)
+		return list
+	end
+	local four = {id = "ranger_four", kind = "role", order = route("deadeye", {[561] = true, [599] = true, [621] = true, [624] = true}),
+		masteries = {}, top = {}}
+	check(PC.countKeystones(tree, four.order) == 4 and #four.order <= 248, "planSlot: the test build holds 4 keystones")
+	local pl
+	sp, why, pl = Core.planSlot(tree, four, {classKey = "deadeye", points = 248})
+	check(sp == nil and why == "cap" and pl.capText == "You can hold at most 3 keystones. Refund one to take another.",
+		"planSlot: 4 keystones are refused with the cap text")
+	-- cut before the fourth keystone it fits: the cap counts what the slot would hold
+	local three = {id = "ranger_three", kind = "role", masteries = {}, top = {}, order = {}}
+	local seen3 = 0
+	for _, id in ipairs(four.order) do
+		if PC.isKeystone(tree.nodes[id]) then
+			seen3 = seen3 + 1
+			if seen3 == 4 then break end
+		end
+		three.order[#three.order + 1] = id
+	end
+	sp = Core.planSlot(tree, three, {classKey = "deadeye", points = 248})
+	check(sp and sp.keystones == 3, "planSlot: 3 keystones are legal")
+	-- masteries: a mastery node of the build takes the build's choice
+	local ninjaBuild = {id = "m", kind = "role", order = {626, 627, 628, 665}, masteries = {[665] = 3}, top = {}}
+	sp = Core.planSlot(tree, ninjaBuild, {classKey = "ninja", points = 10})
+	check(sp and sp.masteries[665] == 3, "planSlot: the build's mastery choice")
+end
+-- every committed build of every class is a legal slot at the points of the audit's cuts (23, 73, 123, 248)
+do
+	local bad = 0
+	for classKey, list in pairs(data.classes) do
+		for _, b in ipairs(list) do
+			for _, points in ipairs({23, 73, 123, 248}) do
+				local sp, why = Core.planSlot(tree, b, {classKey = classKey, points = points})
+				if not sp then bad = bad + 1; print("planSlot refused " .. classKey .. " " .. b.id .. " at " .. points .. ": " .. tostring(why)) end
+			end
+		end
+	end
+	check(bad == 0, "planSlot: every build is legal at every cut of the starter guide")
+end
+
 -- ------------------------------------------------------------------------------------------------ handlers
 local events = {}
 local function object(name)
@@ -748,6 +848,63 @@ clock = clock + 300 -- past the generic 200 ms per-action limit, inside the buil
 ext.onExtendedOpcode(p, OP, {action = "autobuildApply", data = {build = "ninja_phantom", mode = "add", cost = 0}})
 for _, s in ipairs(sent) do if s.action == "autobuildError" then errors = errors + 1 end end
 check(#inserts == 1 and errors == 1, "the second apply inside a second is refused")
+
+-- into a loadout slot (O448): two more actions of the same opcode, wired to the loadouts' own functions (their rules are
+-- tested above and in loadouts_test.lua). Every request is answered; a refusal carries the slot and the build.
+do
+	ChaosLoadouts = nil
+	res = call("autobuildSlots")
+	check(res.autobuildError and not res.autobuildSlots, "slots: without the loadouts the request is still answered")
+	res = call("autobuildSaveSlot", {build = "ninja_twin_fangs", slot = 1})
+	check(res.autobuildError and not res.autobuildSlotSaved, "save to a slot: without the loadouts it is refused")
+	local seen, stateSent = nil, 0
+	ChaosLoadouts = {
+		slotChoices = function(player)
+			return {slots = {{slot = 1, empty = true, locked = false, active = false}}, limit = 5, max = 8, level = player:getLevel(), minLevel = 15}
+		end,
+		saveBuild = function(player, slot, build, confirm)
+			seen = {slot = slot, build = build, confirm = confirm}
+			if slot == 2 and not confirm then
+				return false, "Slot 2 already holds Old. Confirm to replace its passive tree.", {confirm = true, name = "Old"}
+			elseif slot == 99 or slot < 1 then
+				return false, "That loadout slot does not exist."
+			end
+			return true, "Saved Twin Fangs in loadout slot " .. slot .. ": 5 passive nodes.", {"3 more nodes of the build need more points."}
+		end,
+		sendState = function() stateSent = stateSent + 1 end
+	}
+	res = call("autobuildSlots")
+	check(res.autobuildSlots and res.autobuildSlots.limit == 5 and #res.autobuildSlots.slots == 1 and res.autobuildSlots.level == p.level,
+		"slots: the choices of the loadouts")
+	res = call("autobuildSaveSlot", {build = "ninja_twin_fangs", slot = 1})
+	local saved = res.autobuildSlotSaved
+	check(saved and saved.slot == 1 and saved.build == "ninja_twin_fangs" and saved.message:find("Saved Twin Fangs", 1, true)
+		and saved.lines[1] and seen.confirm == false and stateSent == 1, "save to a slot: saved, the loadouts window told")
+	res = call("autobuildSaveSlot", {build = "ninja_twin_fangs", slot = 2})
+	check(res.autobuildError and res.autobuildError.needConfirm == true and res.autobuildError.name == "Old" and res.autobuildError.slot == 2
+		and not res.autobuildSlotSaved and seen.confirm == false, "save to a slot: a held slot asks to confirm")
+	res = call("autobuildSaveSlot", {build = "ninja_twin_fangs", slot = 2, confirm = true})
+	check(res.autobuildSlotSaved and seen.confirm == true, "save to a slot: confirmed")
+	res = call("autobuildSaveSlot", {build = "ninja_twin_fangs", slot = "2", confirm = "yes"})
+	check(res.autobuildError and seen.confirm == false, "save to a slot: only the boolean true confirms")
+	res = call("autobuildSaveSlot", {build = "ninja_twin_fangs", slot = 99})
+	check(res.autobuildError and res.autobuildError.message == "That loadout slot does not exist." and not res.autobuildError.needConfirm,
+		"save to a slot: a refusal is the loadouts' text")
+	res = call("autobuildSaveSlot", {build = "ninja_twin_fangs", slot = 1e300})
+	check(res.autobuildError and seen.slot == 0, "save to a slot: an absurd slot number is a plain 0, refused by the rules")
+	res = call("autobuildSaveSlot", "x")
+	check(res.autobuildError, "save to a slot: malformed")
+	res = call("autobuildSaveSlot", {build = {}, slot = 1})
+	check(seen.build == nil, "save to a slot: a malformed build id reaches the rules as nil")
+	-- the limit: two requests inside a second, the second is refused and answered
+	clock = clock + 2000
+	sent = {}
+	ext.onExtendedOpcode(p, OP, {action = "autobuildSaveSlot", data = {build = "ninja_twin_fangs", slot = 1}})
+	clock = clock + 300
+	ext.onExtendedOpcode(p, OP, {action = "autobuildSaveSlot", data = {build = "ninja_twin_fangs", slot = 1}})
+	check(#sent >= 2 and sent[#sent].action == "autobuildError" and sent[#sent].data.slot == 1, "save to a slot: too fast is answered")
+	ChaosLoadouts = nil
+end
 
 if failures > 0 then
 	error(failures .. " of " .. checks .. " checks failed")

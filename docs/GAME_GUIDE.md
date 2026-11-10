@@ -204,8 +204,8 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   | Mystic, Elementalist | *Arcane Echo*: area spells can cast a second time | *Elemental Overload*: switch elements for more damage |
   | Illusionist | *Shared Phantasm*: marked enemies take more from your party, and the party heals from it | *Inspiring Illusion*: a party damage aura |
 
-- **Class sections:** the Thief, Necromancer, Monk and Templar lines each have a section of their own, with three line
-  nodes and a path for each ascension that ends in a keystone. Six points reach one:
+- **Class sections:** every line has a section of its own (the Warrior, Ranger and Mystic lines since 2026-11-10), with
+  three line nodes, a mastery node and a path for each ascension that ends in a keystone. Six points reach one:
 
   | Ascended class | Keystone |
   |---|---|
@@ -217,6 +217,12 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   | Iron Sage | *Flowing Mercy*: Kindled Breath also heals the next most hurt party member |
   | Inquisitor | *Divine Verdict*: Radiant Strikes judge their target |
   | Sentinel | *Bastion*: a stronger, wider aura, and Aegis of Faith covers the party |
+  | Juggernaut | *Unbroken Line*: with a shield, less damage taken for each enemy next to you |
+  | Berserker | *Open Veins*: two-handed hits make the target bleed |
+  | Deadeye | *Lone Mark*: bow and crossbow hits on a target alone hit harder, in a crowd weaker |
+  | Beastmaster | *Wolfbond*: your companions and the wolf spells hit 20% harder, your own bow weaker |
+  | Elementalist | *Convergence*: elemental spells hit harder into a crowd, weaker on a lone target |
+  | Illusionist | *Phantom Double*: spell hits can strike a second time |
 
   Before you ascend, both paths show as locked, so you can plan ahead.
 - **Build codes:** export your tree as a short code (the passive tree's Build Code panel) and import someone else's. The
@@ -234,6 +240,8 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   your action bar. Five slots, a sixth at level 200 and a seventh at level 500, earned and never sold. The Chaos Pact adds an eighth. Switching is free,
   out of combat and outside instances, with a short channel outside protection zones. A saved tree was paid for once,
   so a switch never dodges a respec price.
+  The Auto build panel of the passive tree can save a recommended build into a free slot (Save to a loadout slot): only the tree
+  of the slot is written, its gear and runes stay, and your live tree does not change. The website has a Starter Builds guide.
 - **Paragon:** after level 1000 every level gives a Paragon point. You spend them on small, capped bonuses in four
   categories (Offense, Defense, Utility and Fortune: damage, critical damage, health, damage reduction, movement speed,
   mana, gold find and item find), so there is always something to gain.
@@ -1124,6 +1132,8 @@ Cinders of Chaos ships its own client, built for these systems:
   with a link to the download.
 - **The client's helper is allowed while you play.** Healing, spell rules and the auto rotation are part of the
   official client. Leaving it running for hours with nobody at the keyboard counts as botting (Rules 2.2 and 7.4).
+  The Auto rotation has variants (helper window, beside Auto setup): One target for bosses, Groups for packs and Mines for
+  mine builds, each with its price in numbers. They are other lists, not a faster bot.
 - **Two characters per IP at most.** While a second character is online from the same IP, neither can queue for a
   dungeon, enter the Infinity Tower or the arena, attack players, or give and take party bonuses.
 - **Anti-bot checks:** the server watches for patterns no human keeps up for long (perfect spell rhythm, instant

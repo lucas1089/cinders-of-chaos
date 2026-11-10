@@ -52,8 +52,8 @@ end
 --   "archetype"  an ar* flag in the node's own stats (the build archetypes, rounds 1 to 3)               24 nodes
 --   "pair"       ks* flags only in the class variants (`v`): the nodes 621 and 624, one keystone per class   2 nodes
 --   "line"       a ks* flag in the own stats of a node several classes may take (369, 376, 383, 390)       4 nodes
---   "ascension"  a ks* flag in the own stats of a node one class may take (the class sections)             8 nodes
--- All four count: a keystone is a keystone whatever its price or its place on the map, and the client marks the same 38
+--   "ascension"  a ks* flag in the own stats of a node one class may take (the class sections)             14 nodes
+-- All four count: a keystone is a keystone whatever its price or its place on the map, and the client marks the same 44
 -- nodes with isKeystone. Mastery nodes (node.m) and the ct* class notables never count. The cap is per character (the
 -- active preset); a loadout or a build code is checked the same way when it is loaded or imported.
 local kindMemo = setmetatable({}, {__mode = "k"})

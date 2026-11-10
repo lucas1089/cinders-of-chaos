@@ -1,5 +1,5 @@
 -- luajit treekeystones_test.lua && lua5.3 treekeystones_test.lua (CI runs every client module test from the repo root)
--- The keystone cap's counting (treekeystones.lua, O447) on the real tree (treedata/nodes.lua): the 38 keystones, the
+-- The keystone cap's counting (treekeystones.lua, O447) on the real tree (treedata/nodes.lua): the 44 keystones, the
 -- count of saved and planned nodes, the keystones of a path, and the pin of the client's default cap to the server's
 -- passivetree_config.lua keystoneMax.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
@@ -27,13 +27,13 @@ eq(K.max(3), 3, 'the server number'); eq(K.max(2), 2, 'a lower cap'); eq(K.max(0
 eq(K.max(nil), 3, 'no number: the default'); eq(K.max('x'), 3, 'text: the default'); eq(K.max(-1), 3, 'negative: the default')
 eq(K.max(2.5), 3, 'fraction: the default')
 
--- the tree: 38 keystones, none of them a mastery
+-- the tree: 44 keystones (38 before the class sections of the Warrior, Ranger and Mystic lines, O449), none of them a mastery
 local keystones, masteries = {}, 0
 for id, node in ipairs(nodes) do
   if node.isKeystone then keystones[#keystones + 1] = id end
   if node.isMastery and node.isKeystone then masteries = masteries + 1 end
 end
-eq(#keystones, 38, 'the tree has 38 keystones')
+eq(#keystones, 44, 'the tree has 44 keystones')
 eq(masteries, 0, 'no mastery is a keystone')
 
 -- held: saved set + planned list, an id in both counts once, other nodes and unknown ids are ignored
@@ -43,7 +43,7 @@ eq(K.held(nodes, {[a] = true}, {b, c}), 3, 'saved and planned')
 eq(K.held(nodes, {[a] = true}, {a, b}), 2, 'in both: once')
 eq(K.held(nodes, {[a] = false}, {2, 9999}), 0, 'a false entry, a plain node, an unknown id')
 eq(K.held(nodes, nil, nil), 0, 'nothing')
-eq(K.held(nodes, {[665] = true, [666] = true}), 0, 'masteries are no keystones')
+eq(K.held(nodes, {[665] = true, [666] = true, [703] = true, [704] = true, [705] = true}), 0, 'masteries are no keystones')
 
 -- a path: only the keystones not owned yet
 eq(K.newOnPath(nodes, {}, {2, a, b}), 2, 'two new keystones on the path')

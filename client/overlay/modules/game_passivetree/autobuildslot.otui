@@ -1,0 +1,43 @@
+// Slot picker of the Auto build panel's "Save to a loadout slot" (autobuild.lua, O448). Ornate skin styles from client_chaos_theme.
+ChaosWindow
+  id: autoBuildSlotWindow
+  !text: tr('Save to a loadout slot')
+  size: 400 250
+  anchors.centerIn: parent
+  @onEscape: modules.game_passivetree.closeSlotWindow()
+
+  ChaosLabel
+    id: introText
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 110
+    text-wrap: true
+    text-auto-resize: false
+    text-align: topLeft
+
+  ChaosComboBox
+    id: slotCombo
+    anchors.top: introText.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 24
+    menu-height: 160
+    menu-scroll: true
+
+  ChaosButton
+    id: saveButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 120
+    !text: tr('Save')
+    @onClick: modules.game_passivetree.saveSlotOk()
+
+  ChaosButton
+    id: cancelButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 110
+    !text: tr('Cancel')
+    @onClick: modules.game_passivetree.closeSlotWindow()

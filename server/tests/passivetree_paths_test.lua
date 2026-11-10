@@ -186,7 +186,7 @@ end
 do
 	local count = 0
 	for _ in pairs(tree.nodes) do count = count + 1 end
-	eq(count, 644, "644 nodes (640 + the four flask nodes of O251)")
+	eq(count, 674, "674 nodes (640 + the four flask nodes of O251 + the 30 nodes of the Warrior, Ranger and Mystic class sections of O449)")
 	local seen, queue = {[tree.root] = true}, {tree.root}
 	local i = 1
 	while queue[i] do
@@ -195,7 +195,7 @@ do
 		end
 		i = i + 1
 	end
-	eq(#queue, 644, "all 644 nodes are connected to the root")
+	eq(#queue, 674, "all 674 nodes are connected to the root")
 end
 
 -- ----------------------------------------------------------------------------------------------- the migration

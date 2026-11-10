@@ -1160,11 +1160,37 @@ function getTreeIcons()
 			x = 704,
 			y = 0
 		},
+		-- the class sections of the Warrior, Ranger and Mystic lines (O449, nodes 674-705): more cells of the same atlas
+		ntHardenedSinew = {x = 162, y = 135, w = 27, h = 27}, -- node 674, atlas cell A5.6
+		ntBattleScarred = {x = 216, y = 135, w = 27, h = 27}, -- node 675, atlas cell A5.8
+		ntIronboundGrip = {x = 54, y = 54, w = 27, h = 27}, -- node 676, atlas cell A2.2
+		ntAnvilOfPatience = {x = 27, y = 135, w = 27, h = 27}, -- node 677, atlas cell A5.1
+		ntRampart = {x = 621, y = 216, w = 27, h = 27}, -- node 678, atlas cell A8.23
+		ntRendingStrikes = {x = 675, y = 27, w = 27, h = 27}, -- node 680, atlas cell A1.25
+		ntRaggedEdge = {x = 729, y = 27, w = 27, h = 27}, -- node 681, atlas cell A1.27
+		ntLightfootStride = {x = 135, y = 189, w = 27, h = 27}, -- node 684, atlas cell A7.5
+		ntSeasonedShafts = {x = 486, y = 216, w = 27, h = 27}, -- node 685, atlas cell A8.18
+		ntHawksPatience = {x = 783, y = 189, w = 27, h = 27}, -- node 686, atlas cell A7.29
+		ntLongSight = {x = 378, y = 216, w = 27, h = 27}, -- node 687, atlas cell A8.14
+		ntDeadAim = {x = 621, y = 162, w = 27, h = 27}, -- node 688, atlas cell A6.23
+		ntPackInstinct = {x = 567, y = 189, w = 27, h = 27}, -- node 690, atlas cell A7.21
+		ntAlphasBite = {x = 297, y = 189, w = 27, h = 27}, -- node 691, atlas cell A7.11
+		ntArcaneStudy = {x = 513, y = 162, w = 27, h = 27}, -- node 694, atlas cell A6.19
+		ntPrismaticVeins = {x = 135, y = 108, w = 27, h = 27}, -- node 695, atlas cell A4.5
+		ntQuietReservoir = {x = 189, y = 108, w = 27, h = 27}, -- node 696, atlas cell A4.7
+		ntPrismaticMind = {x = 837, y = 162, w = 27, h = 27}, -- node 697, atlas cell A6.31
+		ntTempestVeins = {x = 567, y = 135, w = 27, h = 27}, -- node 698, atlas cell A5.21
+		ntVeilweaver = {x = 189, y = 216, w = 27, h = 27}, -- node 700, atlas cell A8.7
+		ntMirrorMind = {x = 243, y = 216, w = 27, h = 27}, -- node 701, atlas cell A8.9
 		-- class section start images: client/tools/gen_keystone_icons.py (START: the start medallion and an atlas icon)
 		csThief = {file = "/images/passivetree/classstart_thief", w = 150, h = 150, x = 0, y = 0},
 		csNecromancer = {file = "/images/passivetree/classstart_necromancer", w = 150, h = 150, x = 0, y = 0},
 		csMonk = {file = "/images/passivetree/classstart_monk", w = 150, h = 150, x = 0, y = 0},
 		csTemplar = {file = "/images/passivetree/classstart_templar", w = 150, h = 150, x = 0, y = 0},
+		-- the Warrior, Ranger and Mystic sections draw no image of their own (O449): the start image of another line
+		csWarrior = {file = "/images/passivetree/classstart_monk", w = 150, h = 150, x = 0, y = 0},
+		csRanger = {file = "/images/passivetree/classstart_thief", w = 150, h = 150, x = 0, y = 0},
+		csMystic = {file = "/images/passivetree/classstart_templar", w = 150, h = 150, x = 0, y = 0},
 		ksImmovable = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 768, y = 0},
 		ksUndyingRage = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 832, y = 0},
 		ksHuntersFocus = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 896, y = 0},

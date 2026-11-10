@@ -11,6 +11,9 @@
 --     three line nodes and two ascended paths of three nodes, each ending in the ascended class's keystone. The start
 --     node is not a node of the server's data: its edges are the root's (node 1), so the section grows from the start
 --     like any other branch and every connectivity check (save, refund, build codes) works unchanged.
+--   * since O449 the same for the Warrior, Ranger and Mystic lines (nodes 673-705: start nodes 673 / 683 / 693, line nodes,
+--     paths, masteries 703-705); their keystones are ks flags read from the passive bonuses (section_keystones_core.lua), only
+--     Wolfbond (the wolf factor, read in the spells' Lua state) has a bit and numbers here.
 --   * a second keystone for each of those four lines, for the base class and both ascended classes, on main tree
 --     leaves (383 Blackblood Creed, 369 Covenant of the Grave, 390 Scarred Discipline, 376 Penitent's Wrath).
 --   Nodes a class may hold are marked in the data (`c` = {[class key] = true}); nodes without `c` are for everyone.
@@ -42,7 +45,11 @@ M.keys = {
 	"ctNerveStrike", "ctDeepMantra", "ctBurningZeal", "ctSanctuary",
 	-- the second keystone of the Thief, Necromancer, Monk and Templar lines (any class of the line; main tree nodes 383,
 	-- 369, 390, 376, converted from mythic leaves in 2026-10)
-	"ksBlackbloodCreed", "ksGraveCovenant", "ksScarredDiscipline", "ksPenitentWrath"
+	"ksBlackbloodCreed", "ksGraveCovenant", "ksScarredDiscipline", "ksPenitentWrath",
+	-- the keystone of the Beastmaster's class section (O449): the wolf factor is read in the spells' Lua state. The five
+	-- other keystones of the Warrior, Ranger and Mystic sections are read from the passive bonuses by the keystone script
+	-- (section_keystones_config.lua), they need no bit here
+	"ksWolfbond"
 }
 M.bit = {}
 for i, key in ipairs(M.keys) do
@@ -112,6 +119,9 @@ M.fx = {
 	-- Templar line (376): a melee / ranged hit taken is answered with a holy strike on the attacker for share x the
 	-- damage taken + perMagicLevel x magic level, at most one every icdMs; the own defence aura's reduction x auraScale
 	ksPenitentWrath = {share = 0.40, perMagicLevel = 4, icdMs = 500, auraScale = 0.5},
+	-- Beastmaster section keystone (O449, node 692): every wolf hit (the companions' bites and the wolf spells) x (1 + bonus)
+	-- more, together with Pack Alpha's factor (ChaosClasses.wolfFactor); price: the owner's own bow and crossbow hits x price
+	ksWolfbond = {bonus = 0.20, price = 0.92},
 }
 
 -- The lines that were tuned without a tree (their kits matched the other classes' numbers with tree points): every

@@ -219,6 +219,48 @@ t = R.prepare(smite, model, 'Templar', 300)[0].dmg
 w = R.evaluate(model[smite[0]['words']]['dmg'], R.stats('Templar', 300))
 check(abs(t - 0.57 * w) < 1e-6, 'Templar 300: Radiant Smite x0.57 in the simulation (%.1f, %.1f)' % (t, w))
 
+# the rotation variants (O446): single, pack and mines next to the default, which never moves
+check(R.mine_classes(spells) == ['Ranger', 'Deadeye', 'Beastmaster', 'Thief', 'Ninja', 'Samurai'],
+      'Seeker Mine: the Ranger line and the Thief line hold it, nobody else')
+mc = R.mine_cfg()
+check(mc['armMs'] == 800 and mc['fuseMs'] == 8000 and mc['cap'] == 5 and mc['maxTargets'] == 8 and mc['damageFactor'] == 1.15,
+      'the mine numbers are read from snares_config.lua: %s' % mc)
+mine_row = [s for s in spells if s['words'] == R.MINE_WORDS][0]
+live, life = R.mine_rhythm(mine_row['cooldown'] / 1000.0)
+check(abs(life - 8.8) < 1e-9 and live == 2 and live <= mc['cap'], 'a mine lives 8.8 s, two are out at a 6 s throw rate, the cap is 5')
+check(model[R.MINE_WORDS]['t5'] <= mc['maxTargets'], 'a pack of the model fits a mine burst')
+check(R.default_digest(spells, model) == R.read_digest(), 'the default block is what rotation_default_digest.txt holds')
+saved_digest = R.read_digest
+R.read_digest = lambda: '0' * 64
+check(any('default rows' in b for b in R.variants_check(spells, model)), 'a moved default block is caught')
+R.read_digest = saved_digest
+bad = R.variants_check(spells, model)
+check(bad == [], 'the variants keep their rules: %s' % bad[:3])
+# the rules of the choice on synthetic sets: the cap, the price, the gain, the mine, the ties
+def fake(ids, d1, d5, mine=False):
+    return {'rot': [type('S', (), {'id': i, 'words': R.MINE_WORDS if mine and i == 100 else 'w%d' % i})() for i in ids],
+            'gap': 2.0, 'd1': d1, 'd5': d5, 'run': 99.0, 'mine5': 0.0, 'mine': mine}
+sets = [fake([1], 100, 100), fake([1, 2], 135, 80), fake([3], 160, 50), fake([4], 102, 50), fake([5], 120, 99),
+        fake([6, 7], 80, 138), fake([6], 80, 138), fake([8], 80, 180), fake([100, 9], 90, 130, True), fake([100], 200, 150, True),
+        fake([100, 10], 120, 104, True)]
+found, both = R.choose_variants(sets, 100.0, 100.0, True)
+check([s.id for s in found['single']['rot']] == [1, 2], 'single: +35% with a price (the +60% set is over the cap, +2% is no gain, a -1% price is none)')
+check([s.id for s in found['pack']['rot']] == [6, 7], 'pack: +38%, a tie takes the bigger set')
+check([s.id for s in found['mines']['rot']] == [100, 10], 'mines: the best score under the cap on both counts')
+check(both is not None and [s.id for s in both['rot']] == [100], 'a set better on both counts is a finding (the one furthest above on its weaker count)')
+found, both = R.choose_variants(sets[:1], 100.0, 100.0, False)
+check(found == {'single': None, 'pack': None} and both is None, 'the default alone: no variant, no finding')
+check(R.VAR_MAX_GAIN == 0.40 and R.VAR_FLAG_GAIN == 0.25, 'the owner rule: +40% at most, flag above +25%')
+pool4 = [p for p in R.prepare(R.class_spells(spells, 'Mystic', 300), model, 'Mystic', 300) if not p.keep][:4]
+rows = list(R.all_sets(pool4))
+check(len(rows) == 4 + 6 + 4 + 1 and all(len(r) <= R.MAX_SPELLS for r in rows), 'all_sets: every combination of 1 to 4 of 4 spells')
+for cls, _, _ in R.CLASSES:
+    for name, ents in R.variant_entries(spells, model, cls).items():
+        for e in ents:
+            check(R.variant_level(spells, model, cls, e['level'])['default'] is not None, '%s %s: a default at its level' % (cls, name))
+            check(e['one'] <= 100 * R.VAR_MAX_GAIN + 1e-9 and e['five'] <= 100 * R.VAR_MAX_GAIN + 1e-9,
+                  '%s %s %d: never above +40%%' % (cls, name, e['level']))
+
 # the client data is up to date
 text = R.client_data(spells, model)
 check(open(R.CLIENT_DATA, encoding='utf-8').read() == text,

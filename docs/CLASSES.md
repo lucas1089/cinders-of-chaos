@@ -1052,13 +1052,47 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Monk | Inner Discipline | Iron Knuckles (physical +6, strength +2), Swift Palm (crit chance +2, crit amount +4), Still Water (healing +6, spirit +3), Stone Body (vitality +4, physical absorb +2) |
   | Templar | Sacred Oath | Oath of Flame (holy +6, strength +2), Oath of the Wall (shielding +2, physical absorb +2, all elements absorb +1), Oath of Mercy (healing +6, vitality +3) |
 
-  The Warrior, Ranger and Mystic lines have no class section and no mastery yet. Rules and saved data: server/README.md
-  "Passive tree planner and mastery nodes". Measured 2026-10-12 (`server/data/spells/README.md` "Line keystones,
+  Since O449 (2026-11-10) the Warrior, Ranger and Mystic lines have a section and a mastery too (nodes 673-705, below).
+  Rules and saved data: server/README.md "Passive tree planner and mastery nodes". Measured 2026-10-12 (`server/data/spells/README.md` "Line keystones,
   masteries and weapons measured in game"): each damage choice adds 2-4% to its own damage type (Venom Glands earth
   +5.3%, Withering Touch death +3.9%, Iron Knuckles physical +3.9%, Oath of Flame holy +3.8%; the crit choices about +1%),
   a build 1-3%, below the spread of a rotation run. Light Step's dexterity was over the cap of a typical Thief build at
   level 300 (only its speed counted there); since the attribute caps went up (2026-10-22: dexterity cap 80, the points past
   20 at 1/15 of an old point) it adds about 0.2% to weapon hits there.
+- **Class sections for every line (O449, 2026-11-10): 21 of 21 classes.** The Warrior, Ranger and Mystic lines had none; nine
+  classes (Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist) had no start node, no
+  ascension path and no mastery. Now each line has what the four others have, in the same place and shape: a start node (nodes
+  673, 683, 693), three line nodes, two ascended paths of two notables and a keystone each, one mastery (703, 704, 705). Six
+  keystones, each with a price; the notables, line nodes and masteries are plain tree stats, at or below the median of the
+  nodes of the same kind in the four older sections (line nodes 7, plain notables 8, mastery effects 7, the sum of the stat
+  values). The base class sees both paths locked and takes its own after the ascension. Mystic and Elementalist share the main
+  tree stats (one variant key); they differ in their sections: the Elementalist has a path, the Mystic none.
+
+  | Ascended | Notables | Keystone |
+  |---|---|---|
+  | Juggernaut | Anvil of Patience (vitality +5, physical absorb +2), Rampart (shielding +3, all absorb +1) | **Unbroken Line**: with a shield, melee and ranged hits taken deal 2% less for each enemy next to you (4 at most, 8%); your weapon hits deal 5% less |
+  | Berserker | Rending Strikes (physical +6, strength +2), Ragged Edge (crit chance +1, crit amount +6) | **Open Veins**: two-handed melee weapon hits make the target bleed for 50% of the hit over 4 s; those hits deal 8% less |
+  | Deadeye | Long Sight (distance +3, dexterity +2), Dead Aim (crit chance +2, crit amount +6) | **Lone Mark**: bow and crossbow hits on a target with no other enemy within 2 sqm deal 12% more, with another enemy there 8% less |
+  | Beastmaster | Pack Instinct (vitality +4, spirit +3), Alpha's Bite (physical +6, spirit +2) | **Wolfbond**: the companions' bites and the wolf spells deal 20% more (with Pack Alpha's 35%: x1.62); your own bow and crossbow hits deal 8% less |
+  | Elementalist | Prismatic Mind (all elements +3, magic level +2), Tempest Veins (crit chance +1, crit amount +6) | **Convergence**: elemental spell hits on a target with 2 or more other enemies within 2 sqm deal 12% more, on a target with none 7% less |
+  | Illusionist | Veilweaver (healing +6, spirit +2), Mirror Mind (intelligence +3, magic level +2) | **Phantom Double**: a spell hit has a 20% chance to be struck again 0.4 s later by your double for 60% of the hit (once a second); your spell hits deal 5% less |
+
+  Line nodes: Warrior Hardened Sinew, Battle-Scarred, Ironbound Grip; Ranger Lightfoot Stride, Seasoned Shafts, Hawk's Patience;
+  Mystic Arcane Study, Prismatic Veins, Quiet Reservoir (plain tree stats). Masteries:
+
+  | Line | Mastery | Effects |
+  |---|---|---|
+  | Warrior | Warbound Discipline (703) | Hammerfall (physical +6, strength +1), Tempered Hide (vitality +4, physical absorb +2), Cruel Edge (crit chance +2, crit amount +4), Shield Drill (shielding +2, physical absorb +2) |
+  | Ranger | Hunter's Discipline (704) | Steady Aim (crit chance +2, crit amount +5), Fleet Foot (dexterity +3, speed +20), Forest Hide (vitality +4, physical absorb +2), Hard Tips (physical +5, dexterity +2) |
+  | Mystic | Arcane Discipline (705) | Pyre Touch (fire +6, magic level +1), Frost Touch (ice +6, magic level +1), Storm Touch (energy +6, magic level +1), Still Mind (healing +5, spirit +2) |
+
+  Every keystone is a thin combination of hooks that exist: a damage factor that depends on what stands near the target or the
+  player (Immovable, Hunter's Focus), Barbed Quiver's bleed, Shadow Twin's second strike, Pack Alpha's wolf factor. They count
+  toward the cap of 3 keystones (44 keystones in the tree now, 14 of them in class sections). No node, keystone or number that
+  existed changed and no id was reused, so no saved tree or build code is touched. Numbers: `section_keystones_config.lua`
+  (Wolfbond: `class_tree.lua`), computed, not measured in game: `server/data/spells/README.md` "Class sections of the Warrior,
+  Ranger and Mystic lines (O449)". Rules, tests and what the models read: server/README.md "Passive tree: class sections of the
+  Warrior, Ranger and Mystic lines (O449)".
 - **Line keystones** (2026-10): the Thief, Necromancer, Monk and Templar lines had one keystone per ascended class (in the
   section) and none for the base class, the other three lines two. Each of these lines now has a second keystone for
   another play style, for the base class and both ascended classes, on a converted mythic leaf of the main tree (18-21

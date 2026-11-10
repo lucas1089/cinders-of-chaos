@@ -498,6 +498,31 @@ function C.planSave(arm, slot, cfg)
 	return {slot = slot, copy = hasActive and active ~= slot, activate = not hasActive, cost = 0}
 end
 
+-- write the tree of a Recommended or Focus build into `slot` (O448, the Auto build list's "Save to a loadout slot"): only the
+-- tree column of the slot is written, the live build is never read or changed. Gear, Paragon and runes of the slot stay as they
+-- were. The slot rules are save's: it must exist and be earned (limit). Two more: the active slot holds the live build and is
+-- parked into on the next switch, so a tree written there would be lost (refused), and a slot that holds something is only
+-- replaced when the player confirmed (confirm == true). arm = {active, limit, slots = {[slot] = {name, runes}}}.
+-- Returns {slot, overwrite, name = the held name or nil} or nil + a text ("locked" for the locked text) + extra
+-- ({confirm = true, name} when the player has to confirm). Nothing is written here: the caller writes on success only.
+function C.planBuildSave(arm, slot, confirm, cfg)
+	local state = C.slotState(slot, arm.limit, cfg)
+	if state == "invalid" then
+		return nil, msg(cfg, "noSlot")
+	end
+	if state == "locked" then
+		return nil, "locked"
+	end
+	local row = (arm.slots or {})[slot]
+	if row and (arm.active or 0) == slot then
+		return nil, msg(cfg, "activeSlot")
+	end
+	if row and confirm ~= true then
+		return nil, msg(cfg, "replaceFirst", slot, tostring(row.name or "")), {confirm = true, name = row.name}
+	end
+	return {slot = slot, overwrite = row ~= nil, name = row and row.name or nil}
+end
+
 -- delete `slot`: refused while it holds support runes (they would be lost); deleting the active loadout keeps the
 -- live build as it is (it is just not saved any more)
 function C.planDelete(arm, slot, cfg)

@@ -37,7 +37,7 @@ HelpSearchData = {
 		["factions"] = {level = 40},
 		["gamble"] = {level = 40},
 		["goals"] = {menu = "Adventure > Next Goals", words = {en = "level up leveling what next where to hunt", pt = "subir de nível upar o que fazer onde caçar"}},
-		["passive"] = {level = 12, menu = "Character > Passive Tree", words = {en = "points build talents", pt = "pontos build talentos"}},
+		["passive"] = {level = 12, menu = "Character > Passive Tree", words = {en = "points build talents starter builds recommended auto build import code", pt = "pontos build talentos builds iniciais recomendadas auto build importar código"}},
 		["spellbook"] = {menu = "Character > Spellbook", words = {en = "spells attack hotkeys", pt = "magias feitiços ataque atalhos"}},
 		["bestiary"] = {menu = "Hunt > Bestiary"},
 		["professions"] = {level = 20, menu = "Economy > Professions"},

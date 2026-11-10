@@ -33,3 +33,4 @@ Cada exemplo funciona com a classe base e brilha mais com uma ascensão.
 - Keystones precisam do caminho até eles. Planeje antes de gastar.
 - O planejador do cliente mostra o custo em pontos e deixa você salvar e compartilhar o código da build.
 - Veja todos os keystones e notáveis na [referência da árvore](wiki:tab:tree).
+- Três builds para cada classe, com códigos de importação, estão no guia [Builds iniciais](page:starterbuilds).

@@ -61,7 +61,8 @@ for id in pairs(tree.nodes) do
 		all[#all + 1] = id
 	end
 end
-check(#B.encode({classId = 3, nodes = all}) < 130, "whole tree code is short")
+-- the bitset runs up to the highest node id: 705 since O449 (672 before, a code of 124 characters), so 130 characters now
+check(#B.encode({classId = 3, nodes = all}) < 136, "whole tree code is short")
 check(B.extract("look [build " .. code .. "] nice") == code, "extract from a build link")
 check(B.decode("  " .. code .. " ") ~= nil, "surrounding spaces ignored")
 

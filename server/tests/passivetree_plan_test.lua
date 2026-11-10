@@ -64,7 +64,7 @@ for id, node in pairs(tree.nodes) do
 	end
 end
 table.sort(masteryIds)
-check(table.concat(masteryIds, ",") == "665,666,667,668", "one mastery per class section: " .. table.concat(masteryIds, ","))
+check(table.concat(masteryIds, ",") == "665,666,667,668,703,704,705", "one mastery per class section: " .. table.concat(masteryIds, ","))
 check(C.nodeStats(tree.nodes[665], nil, 2).dexterity == 3, "the chosen effect's stats")
 check(C.nodeStats(tree.nodes[665], nil, nil) == nil, "no effect without a choice")
 check(C.nodeStats(tree.nodes[665], nil, 9) == nil, "no effect for a choice it does not have")

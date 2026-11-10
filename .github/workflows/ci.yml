@@ -1468,6 +1468,14 @@ jobs:
           luajit tools/gen_guide_data.lua --check
           lua5.3 tools/gen_guide_data.lua --check  # Lua 5.3 must give the same bytes
 
+      - name: Starter Builds guide data is up to date with the Recommended builds (O448)
+        # website guide/starter_builds_data.json from passive_builds_config.lua, passive_builds_data.lua and
+        # tools/starter_builds_config.lua; a percent sign or DPS in a text, an illegal cut or a wrong spell stops it
+        run: |
+          cd server
+          luajit tools/gen_starter_builds.lua --check
+          lua5.3 tools/gen_starter_builds.lua --check  # Lua 5.3 must give the same bytes
+
       - name: Card descriptions are up to date with the card config (gen_card_descriptions.lua)
         run: |
           cd server
@@ -1539,6 +1547,13 @@ jobs:
 
       - name: No references to other servers or clients
         run: python3 -I tools/ci/check_names.py
+
+      - name: No merge conflict markers left in a tracked file
+        run: |
+          if git grep -nE '^(<<<<<<< |>>>>>>> )' -- . ; then
+            echo "merge conflict markers found" >&2
+            exit 1
+          fi
 
   live-pair:
     name: Live sprite pair (check_pair.py on windows-assets)

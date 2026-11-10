@@ -176,4 +176,68 @@ function V.confirmText(preview)
     num(reset.removed), priceText(reset))
 end
 
+-- ------------------------------------------------------------------------------------------------ save to a loadout slot (O448)
+-- "Save to a loadout slot": the picked build's tree goes into a loadout slot the player picks. The server decides everything
+-- (passive_builds.lua autobuildSlots / autobuildSaveSlot, loadouts.lua saveBuild); this is the text and the list of slots.
+--   autobuildSlots {slots = [{slot, name, empty, locked, active}], limit, max, level, minLevel, nextUnlock}
+--   autobuildSlotSaved {message, lines, slot, build}
+--   autobuildError {message, slot, build, needConfirm, name} answers a save the server refused (a slot answer has a slot)
+function V.note()
+  return tr('Only the passive tree of the slot is written. Its gear, runes and Paragon stay as they were, and your live tree does not change.')
+end
+
+-- the slots the picker offers: not locked, not the active one (it holds the live build). {slot, name, empty, text}
+function V.slotRows(choices)
+  local rows = {}
+  for _, s in ipairs(type(choices) == 'table' and type(choices.slots) == 'table' and choices.slots or {}) do
+    if not s.locked and not s.active then
+      local what = s.empty and tr('(empty)') or tostring(s.name or '?')
+      rows[#rows + 1] = {slot = num(s.slot), name = s.name, empty = s.empty and true or false,
+        text = tr('Slot %d - %s', num(s.slot), what)}
+    end
+  end
+  return rows
+end
+
+-- the line shown when no slot can be picked
+function V.noSlotText(choices)
+  local c = type(choices) == 'table' and choices or {}
+  if num(c.minLevel) > 0 and num(c.level) < num(c.minLevel) then
+    return tr('Loadouts open at level %d.', num(c.minLevel))
+  end
+  if c.nextUnlock then
+    return tr('No loadout slot is free to pick: the active one holds your live build and the others are locked. One more opens at level %d.', num(c.nextUnlock))
+  end
+  return tr('No loadout slot is free to pick: the active one holds your live build and the others are locked.')
+end
+
+-- the picker's text: what is written and what is not
+function V.pickText(build)
+  return tr('Save %s into one of your loadout slots.', tostring(build and (build.name or build.id) or '?')) .. '\n' .. V.note()
+end
+
+-- the question before a held slot is replaced
+function V.replaceText(slot, name, buildName)
+  return tr('Slot %d holds %s.\nReplace its passive tree with %s?', num(slot), tostring(name or '?'), tostring(buildName or '?')) .. '\n' ..
+    V.note()
+end
+
+-- the server's answer after a save: its message and its extra lines
+function V.savedText(data)
+  local lines = {}
+  if type(data) == 'table' then
+    if data.message and data.message ~= '' then lines[#lines + 1] = data.message end
+    for _, l in ipairs(type(data.lines) == 'table' and data.lines or {}) do
+      if l and l ~= '' then lines[#lines + 1] = l end
+    end
+  end
+  if #lines == 0 then lines[1] = tr('Build saved.') end
+  return table.concat(lines, '\n')
+end
+
+-- is this autobuildError the answer to a save into a slot? (a preview or apply error never has a slot)
+function V.isSlotAnswer(data)
+  return type(data) == 'table' and data.slot ~= nil
+end
+
 return V

@@ -77,7 +77,11 @@ ChaosPassiveBuildsConfig = {
 	-- The defense theme has no tag: the Recommended tank roles of the classes stay what they were. The keystones of the
 	-- class sections (Living Shadow, Way of the Blade, Hoarded Souls, Bone Colossus, Hundred Hands, Flowing Mercy, Divine
 	-- Verdict, Bastion) are not tagged: a theme build never walks through the class notables in front of them (a flagged
-	-- node is a choice), and the Recommended builds of those classes hold them.
+	-- node is a choice), and the Recommended builds of those classes hold them. The six keystones of the class sections of
+	-- the Warrior, Ranger and Mystic lines (O449) are tagged, because no Recommended build of those classes holds them
+	-- (the roles are another task's) and the coverage test wants every keystone in a build; their notables are plain stats.
+	-- Each is tagged for a theme that no Recommended role of its class fills with (a role takes the keystones of its fill's
+	-- theme), so no Recommended build gets a keystone through the tag: only the Focus builds of the theme do.
 	keystoneThemes = {
 		-- the damage types (2026-10-30)
 		arContagion = {"earth"}, ksBlackbloodCreed = {"earth"}, ksViperVerdict = {"earth"},
@@ -99,7 +103,10 @@ ChaosPassiveBuildsConfig = {
 		arEarthbreaker = {"pack"}, arRampage = {"pack"}, ksCleavingArc = {"pack"}, ksRicochet = {"pack"},
 		ksArcaneEcho = {"pack"}, arEffigy = {"pack"}, ksPiercingPalm = {"pack"},
 		arExecutioner = {"single"}, ksHuntersFocus = {"single"}, ksDeadeye = {"single"}, arLongshot = {"single"},
-		arOpeningShot = {"single"}, ksShadowTwin = {"single"}, ksSeventhPalm = {"single"}, ksOverload = {"single"}
+		arOpeningShot = {"single"}, ksShadowTwin = {"single"}, ksSeventhPalm = {"single"}, ksOverload = {"single"},
+		-- the class sections of the Warrior, Ranger and Mystic lines (O449)
+		ksUnbrokenLine = {"pack"}, ksOpenVeins = {"physical"}, ksLoneMark = {"physical"}, ksWolfbond = {"pack"},
+		ksConvergence = {"pack"}, ksPhantomDouble = {"single"}
 	},
 
 	-- Focus themes. stats = {stat or group name = weight}; nodes = {[id] = score} for the nodes a theme names (they may

@@ -2,7 +2,7 @@
 ChaosWindow
   id: autoBuildWindow
   !text: tr('Auto build')
-  size: 420 380
+  size: 420 410
   anchors.top: parent.top
   anchors.right: parent.right
   margin-top: 80
@@ -30,12 +30,23 @@ ChaosWindow
     anchors.top: sep.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: applyButton.top
+    anchors.bottom: saveSlotButton.top
     margin-top: 8
     margin-bottom: 8
     text-wrap: true
     text-auto-resize: false
     text-align: topLeft
+
+  ChaosButton
+    id: saveSlotButton
+    anchors.bottom: applyButton.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 6
+    !text: tr('Save to a loadout slot')
+    !tooltip: tr('Keep this build in one of your loadout slots for later. Your live tree does not change.')
+    enabled: false
+    @onClick: modules.game_passivetree.saveToSlotAutoBuild()
 
   ChaosButton
     id: applyButton

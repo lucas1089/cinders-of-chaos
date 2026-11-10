@@ -269,10 +269,10 @@ all 62 that hold one; the last keystone of any build arrives by 73 points.
 Owner decision of 2026-11-09: a character holds at most 3 keystones. The rule is in before the beta wipe of 2026-11-18,
 so no refund event is needed beyond the login refund below. The number is `keystoneMax` in `passivetree_config.lua`.
 
-- **What counts.** Every node the tree data marks as a keystone, 38 nodes. 24 archetype keystones (the three rounds), the
-  pair 621 and 624 (one keystone per class), the 4 line keystones (369, 376, 383, 390) and the 8 class section keystones.
+- **What counts.** Every node the tree data marks as a keystone, 38 nodes (44 since O449). 24 archetype keystones (the three rounds), the
+  pair 621 and 624 (one keystone per class), the 4 line keystones (369, 376, 383, 390) and the 8 class section keystones (14 since O449).
   Masteries and class notables do not count. The code reads the data (`passivetree_core.lua` `keystoneKind`) and the
-  client marks the same 38 nodes. Paragon, Vocation Trial nodes and the Rift Atlas (its own cap of 1) are not tree keystones.
+  client marks the same 38 nodes (44 since O449). Paragon, Vocation Trial nodes and the Rift Atlas (its own cap of 1) are not tree keystones.
 - **Where it is checked.** One core function, `checkKeystones`, at every door that writes a tree: a plain save, a plan,
   a build code import, an Auto build, a loadout load. Apply on top of a tree adds the build to the keystones you hold, so it
   can be refused; Reset and apply always fits. A refused action changes nothing and says "You can hold at most 3
@@ -284,6 +284,37 @@ so no refund event is needed beyond the login refund below. The number is `keyst
   before and stop at 3 now: Deadeye Single target and Juggernaut Retaliation.
 - **Hollow Palm.** Hollow Vessel and Aether Edge are 2 keystones. It stays legal and as it is.
 - **The window.** "Keystones 2/3" sits beside the points. A keystone you cannot take says why in its tooltip.
+
+## Class sections for every line (O449)
+
+Nine classes had no class section: Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist,
+Illusionist. Now all 21 classes have a start node, line nodes, an ascended path with a keystone and a mastery (docs/CLASSES.md
+"Class sections for every line (O449)"). The six new keystones count toward the cap of 3, so a section keystone is a real pick:
+
+| Class | Keystone | Play style |
+|---|---|---|
+| Juggernaut | Unbroken Line | stand in a pack with a shield: less damage taken for each enemy next to you |
+| Berserker | Open Veins | two-handed hits that bleed |
+| Deadeye | Lone Mark | one isolated target, away from the pack |
+| Beastmaster | Wolfbond | let the wolves do the work: they hit more, your bow less |
+| Elementalist | Convergence | elemental spells into a crowd |
+| Illusionist | Phantom Double | spells that strike twice |
+
+- **Same numbers rule as the other sections.** Notables, line nodes and masteries are plain tree stats at or below the median
+  of the older sections; each keystone has a price. A specialised build stays under +40% of the class default in its
+  specialty: the largest direct gain is +20% (Wolfbond, on the wolves' share of the damage only).
+- **Builds.** The Auto build generator takes the new nodes where they lie on a path. 153 of the 464 builds changed: 22 of the
+  63 Recommended roles and 131 Focus builds, all of the nine classes and every one on a path with a new line node or notable
+  (a build that takes the first line node is shifted behind it). The 311 builds of the other twelve classes are the same bytes as
+  before. Every build still holds 1 to 3 keystones. No Recommended build holds a section keystone: the roles are not changed here.
+  Each new keystone is in the Focus build of one theme (`keystoneThemes`: Unbroken Line, Convergence and Wolfbond `pack`, Open
+  Veins and Lone Mark `physical`, Phantom Double `single`), a theme that no Recommended role of that class fills with. A role
+  that would now want a section keystone, for the owner of the roles: Juggernaut Unbreakable or Pyre Walker (Unbroken Line),
+  Berserker Crusher (Open Veins), Deadeye Marked Target (Lone Mark), Beastmaster Pack Leader (Wolfbond), Elementalist
+  Overloaded (Convergence), Illusionist Illusory Striker (Phantom Double).
+- **Saved trees and build codes.** Nothing moved, no id was reused: no refund, no version bump (`reworked` stays at 6, build
+  code format 6). A tree or loadout saved before stays valid. The class check at login still strips nodes of another line.
+- **Not done.** No round 4 keystone (O450), no spell modifier mastery (O451). Computed, not measured in game.
 
 ## Weapon families (O454)
 
@@ -335,6 +366,55 @@ need the rarer tier 3 and 4 cards. In damage the set costs little: against the b
 2.2% to 3.4%; eleven classes are level with it because their card spells are not in their rotation or the bonus is not damage;
 the Beastmaster and Mystic lead by less than half a point. The worst case, all of a class's damage being of the set's
 element, is 6% of its damage per second. Nothing here was measured in game.
+
+## Starter builds guide and Save to a loadout slot (O448)
+
+The build audit found that the game says builds exist but not what to do with them. Two answers, both words and plain actions, no
+new numbers.
+
+- **The guide.** A website page, `page?plugin=chaos&p=starterbuilds`, English and pt-BR. Per class, its three Recommended builds:
+  name and kind, what it does (the build's own line, up to its price), how it plays (two or three short sentences), the price
+  in words, the keystones by name with the point of the build each one arrives at, the spells to lean on (from the class kit),
+  what to wear (the sword, axe or club of the Warrior, Thief and Templar lines, O454), a card set that fits when one is
+  reachable (O453) and four import codes. The data is generated: `cd server && luajit tools/gen_starter_builds.lua` writes
+  `website/overlay/plugins/chaos/guide/starter_builds_data.json` from the build data and `tools/starter_builds_config.lua`, the
+  hand-written words. `--check` is in CI. The page is `starter_builds_lib.php` and `pages/starterbuilds.php`. The wiki tree
+  guide links it, the How it works Passive Tree card and the help search name it.
+- **No figures.** The guide is qualitative: a percent sign or the letters DPS in a text stops the generator and the tests. The
+  price line of a Recommended build in the game has percent figures, so the guide writes its own price in words. A point or a
+  level is a plain fact and is allowed (a keystone arrives at point 25).
+- **The codes.** Each build is cut at 23, 73, 123 and 248 points, levels 100, 300, 500 and 1000. A code is the first N nodes of the
+  build in order, written with `ChaosBuildShare.encode` (format CB6, the Build Code window imports it). Every cut is checked
+  with the tree rules of the loadouts (`PassiveBuildsCore.planSlot`: known nodes, the class's own, each node touching the start
+  or an earlier node, at most 3 keystones) and decoded again. A cut that is not a legal tree would be dropped and listed;
+  none is dropped today: 63 builds, 252 codes. The class mark of a code is the class line (Warrior, Ranger, Mystic, Thief);
+  the Monk, Necromancer and Templar lines share mark 0, so the game accepts such a code on any of those three lines and stops
+  the nodes the class cannot hold.
+- **Save to a loadout slot.** The Auto build panel of the passive tree has a button for the picked build. The player picks a slot,
+  the build's tree cut to the character's points is written into it, named after the build. The live tree does not change, and
+  only the tree of the slot is written: its gear, runes, Paragon and icon stay as they were (the panel says so). A slot that
+  holds something is replaced only after a confirm. Refused, with nothing changed: another class's build, a build over the
+  keystone cap, a slot that does not exist or is not earned, the active slot (it holds the live build and is written over on the
+  next switch), no passive points yet, below the loadouts' level. No new opcode: the actions `autobuildSlots` and
+  `autobuildSaveSlot` of the passive tree's opcode 65, reusing the loadouts' own checks. server/README.md "Loadouts".
+
+## Rotation variants (O446)
+
+The helper's Auto setup and Auto rotation cast one list of at most 5 attack spells. You can now pick another list, so that a build
+plays with low attention. In the helper window, left of the Auto setup button, a small choice shows **Default**, **One target**,
+**Groups** and **Mines** (only what your class has). One line next to it gives the price in numbers, for example "Bosses +9%, groups
+-16%"; the tip has the long text. The choice is saved per character. Press Auto setup or Auto rotation to apply it.
+
+- **Default**: the balanced list. It does not change.
+- **One target**: the best list against a boss. Groups pay the price.
+- **Groups**: the best list against a pack of five. One target pays the price.
+- **Mines** (Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai): throws Seeker Mine every 6 s and lets the fuse set it off, with the
+  best attack spells around it. For mine builds. The burst comes up to 9 s late and a pack that keeps moving costs a third of the
+  mine damage.
+
+No variant is more than +40% over the default in its specialty (computed). A level or class with no variant uses the default; the Lich
+has none. Every list casts on every 2 s group cooldown and the helper rules stay: a variant is a different list, not a faster bot. The
+numbers are computed, not measured (`server/data/spells/README.md` "Rotation variants (O446)"). The Unity player uses the default.
 
 ## Leveling notes
 

@@ -101,5 +101,35 @@ eq(V.onError({build = 'a', tries = V.MAX_TRIES}, {build = 'a', retry = true}), '
 eq(V.onError(pend, {message = 'not your class', build = 'a'}), 'fail', 'refused')
 eq(V.onError(pend, {message = 'old server'}), 'fail', 'an error without a build answers the pending one')
 
+-- save to a loadout slot (O448)
+do
+  local choices = {slots = {{slot = 1, empty = true}, {slot = 2, name = 'Live', active = true}, {slot = 3, name = 'Boss run'},
+    {slot = 4, empty = true, locked = true}, {slot = 5, name = 'Old', active = true, locked = true}}, level = 100, minLevel = 15, nextUnlock = 200}
+  local r = V.slotRows(choices)
+  eq(#r, 2, 'slot rows: the free slots only')
+  eq(r[1].slot, 1, 'slot rows: first slot'); eq(r[1].empty, true, 'slot rows: empty'); eq(r[1].text, 'Slot 1 - (empty)', 'slot rows: empty text')
+  eq(r[2].slot, 3, 'slot rows: held slot'); eq(r[2].empty, false, 'slot rows: held'); eq(r[2].name, 'Boss run', 'slot rows: name')
+  eq(r[2].text, 'Slot 3 - Boss run', 'slot rows: held text')
+  eq(#V.slotRows(nil), 0, 'slot rows: nothing yet'); eq(#V.slotRows({}), 0, 'slot rows: no list'); eq(#V.slotRows({slots = 'x'}), 0, 'slot rows: a bad list')
+  eq(V.slotRows({slots = {{slot = 2}}})[1].text, 'Slot 2 - ?', 'slot rows: a held slot without a name')
+  eq(V.noSlotText(choices), 'No loadout slot is free to pick: the active one holds your live build and the others are locked. One more opens at level 200.', 'no slot: with the next level')
+  eq(V.noSlotText({level = 600, minLevel = 15}), 'No loadout slot is free to pick: the active one holds your live build and the others are locked.', 'no slot: nothing more to unlock')
+  eq(V.noSlotText({level = 10, minLevel = 15}), 'Loadouts open at level 15.', 'no slot: below the loadouts level')
+  eq(V.noSlotText(nil), 'No loadout slot is free to pick: the active one holds your live build and the others are locked.', 'no slot: nil')
+  local intro = V.pickText({id = 'w_slayer', name = 'Slayer'})
+  eq(intro:find('Save Slayer into one of your loadout slots.', 1, true) ~= nil, true, 'pick text: the build')
+  eq(intro:find('gear, runes and Paragon stay as they were', 1, true) ~= nil, true, 'pick text: gear and runes stay')
+  eq(intro:find('your live tree does not change', 1, true) ~= nil, true, 'pick text: the live tree stays')
+  eq(V.pickText({id = 'w_slayer'}):find('Save w_slayer', 1, true) ~= nil, true, 'pick text: the id when there is no name')
+  local ask = V.replaceText(3, 'Boss run', 'Slayer')
+  eq(ask:find('Slot 3 holds Boss run.', 1, true) ~= nil, true, 'replace text: slot and held name')
+  eq(ask:find('Replace its passive tree with Slayer?', 1, true) ~= nil, true, 'replace text: the question')
+  eq(ask:find('gear, runes and Paragon stay as they were', 1, true) ~= nil, true, 'replace text: what stays')
+  eq(V.savedText({message = 'Saved.', lines = {'A', '', 'B'}}), 'Saved.\nA\nB', 'saved text: message and lines')
+  eq(V.savedText({}), 'Build saved.', 'saved text: a fallback'); eq(V.savedText(nil), 'Build saved.', 'saved text: nil')
+  eq(V.isSlotAnswer({message = 'x', slot = 3}), true, 'a slot answer'); eq(V.isSlotAnswer({message = 'x', build = 'a'}), false, 'a preview error')
+  eq(V.isSlotAnswer(nil), false, 'no answer'); eq(V.isSlotAnswer('x'), false, 'a string')
+end
+
 if fails > 0 then os.exit(1) end
 print('autobuildview_test: ok')

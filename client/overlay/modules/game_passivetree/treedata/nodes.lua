@@ -13049,6 +13049,257 @@ function getTreeNodes()
 			},
 			out = {}
 		},
+		--- Class sections of the Warrior, Ranger and Mystic lines (673-705, O449): the same shape and place as 625-664 (one start
+		--- node, three line nodes, two ascended paths of two notables and a keystone, one mastery per line, 665-668). Plain tree
+		--- stats only but for the six keystones: their flags and numbers are in server/data/scripts/chaos/section_keystones_config.lua
+		--- (Wolfbond also in class_tree.lua). Icons are cells that already exist (icons.lua, gen_keystone_icons.py REUSED / NOTABLES).
+		--- 673: Warrior section ---
+		{
+			isStartNode = true, group = 104, icon = "csWarrior", name = "Warrior", line = "warrior", inputs = {}, out = {674}
+		},
+		--- 674 ---
+		{
+			orbit = 3, orbitDist = 110, orbitIndex = 0, group = 104, isRare = true,
+			name = "Hardened Sinew", icon = "ntHardenedSinew", line = "warrior", classes = {"warrior", "juggernaut", "berserker"},
+			customStats = {strength = 4, vitality = 3},
+			inputs = {673}, out = {675}
+		},
+		--- 675 ---
+		{
+			orbit = 4, orbitDist = 205, orbitIndex = 0, group = 104, isRare = true,
+			name = "Battle-Scarred", icon = "ntBattleScarred", line = "warrior", classes = {"warrior", "juggernaut", "berserker"},
+			customStats = {incrementPhysical = 6, absorbPhysical = 1},
+			inputs = {674}, out = {676}
+		},
+		--- 676 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
+			name = "Ironbound Grip", icon = "ntIronboundGrip", line = "warrior", classes = {"warrior", "juggernaut", "berserker"},
+			customStats = {axeSkill = 2, clubSkill = 2, strength = 3},
+			inputs = {675}, out = {677, 680, 703}
+		},
+		--- 677 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 315, group = 104, isMythic = true,
+			name = "Anvil of Patience", icon = "ntAnvilOfPatience", line = "warrior", classes = {"juggernaut"},
+			customStats = {vitality = 5, absorbPhysical = 2},
+			inputs = {676}, out = {678}
+		},
+		--- 678 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 270, group = 104, isMythic = true,
+			name = "Rampart", icon = "ntRampart", line = "warrior", classes = {"juggernaut"},
+			customStats = {shieldingSkill = 3, absorbAllElements = 1},
+			inputs = {677}, out = {679}
+		},
+		--- 679 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 225, group = 104, isDivine = true, isKeystone = true,
+			name = "Unbroken Line", icon = "ksBastion", line = "warrior", classes = {"juggernaut"},
+			customStats = {ksUnbrokenLine = 1},
+			stats = {"With a shield, melee and ranged hits taken deal 2%", "less for each enemy next to you (4 at most, 8%).", "Your weapon hits deal 5% less."},
+			inputs = {678}, out = {}
+		},
+		--- 680 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 45, group = 104, isMythic = true,
+			name = "Rending Strikes", icon = "ntRendingStrikes", line = "warrior", classes = {"berserker"},
+			customStats = {incrementPhysical = 6, strength = 2},
+			inputs = {676}, out = {681}
+		},
+		--- 681 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 90, group = 104, isMythic = true,
+			name = "Ragged Edge", icon = "ntRaggedEdge", line = "warrior", classes = {"berserker"},
+			customStats = {criticalHitChance = 1, criticalHitAmount = 6},
+			inputs = {680}, out = {682}
+		},
+		--- 682 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 135, group = 104, isDivine = true, isKeystone = true,
+			name = "Open Veins", icon = "arSanguine", line = "warrior", classes = {"berserker"},
+			customStats = {ksOpenVeins = 1},
+			stats = {"Two-handed melee weapon hits make the target", "bleed for 50% of the hit over 4 s.", "Those hits deal 8% less."},
+			inputs = {681}, out = {}
+		},
+		--- 683: Ranger section ---
+		{
+			isStartNode = true, group = 104, icon = "csRanger", name = "Ranger", line = "ranger", inputs = {}, out = {684}
+		},
+		--- 684 ---
+		{
+			orbit = 3, orbitDist = 110, orbitIndex = 0, group = 104, isRare = true,
+			name = "Lightfoot Stride", icon = "ntLightfootStride", line = "ranger", classes = {"ranger", "deadeye", "beastmaster"},
+			customStats = {dexterity = 4, speed = 200},
+			inputs = {683}, out = {685}
+		},
+		--- 685 ---
+		{
+			orbit = 4, orbitDist = 205, orbitIndex = 0, group = 104, isRare = true,
+			name = "Seasoned Shafts", icon = "ntSeasonedShafts", line = "ranger", classes = {"ranger", "deadeye", "beastmaster"},
+			customStats = {incrementPhysical = 3, dexterity = 2, absorbPhysical = 1},
+			inputs = {684}, out = {686}
+		},
+		--- 686 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
+			name = "Hawk's Patience", icon = "ntHawksPatience", line = "ranger", classes = {"ranger", "deadeye", "beastmaster"},
+			customStats = {distanceSkill = 3, criticalHitChance = 1, dexterity = 2},
+			inputs = {685}, out = {687, 690, 704}
+		},
+		--- 687 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 315, group = 104, isMythic = true,
+			name = "Long Sight", icon = "ntLongSight", line = "ranger", classes = {"deadeye"},
+			customStats = {distanceSkill = 3, dexterity = 2},
+			inputs = {686}, out = {688}
+		},
+		--- 688 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 270, group = 104, isMythic = true,
+			name = "Dead Aim", icon = "ntDeadAim", line = "ranger", classes = {"deadeye"},
+			customStats = {criticalHitChance = 2, criticalHitAmount = 6},
+			inputs = {687}, out = {689}
+		},
+		--- 689 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 225, group = 104, isDivine = true, isKeystone = true,
+			name = "Lone Mark", icon = "ksSharedPhantasm", line = "ranger", classes = {"deadeye"},
+			customStats = {ksLoneMark = 1},
+			stats = {"Bow and crossbow hits on a target with no other", "enemy within 2 sqm deal 12% more. On a target", "with another enemy there they deal 8% less."},
+			inputs = {688}, out = {}
+		},
+		--- 690 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 45, group = 104, isMythic = true,
+			name = "Pack Instinct", icon = "ntPackInstinct", line = "ranger", classes = {"beastmaster"},
+			customStats = {vitality = 4, spirit = 3},
+			inputs = {686}, out = {691}
+		},
+		--- 691 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 90, group = 104, isMythic = true,
+			name = "Alpha's Bite", icon = "ntAlphasBite", line = "ranger", classes = {"beastmaster"},
+			customStats = {incrementPhysical = 6, spirit = 2},
+			inputs = {690}, out = {692}
+		},
+		--- 692 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 135, group = 104, isDivine = true, isKeystone = true,
+			name = "Wolfbond", icon = "ksPackAlpha", line = "ranger", classes = {"beastmaster"},
+			customStats = {ksWolfbond = 1},
+			stats = {"Your companions' bites and the wolf spells deal", "20% more. Your own bow and crossbow hits", "deal 8% less."},
+			inputs = {691}, out = {}
+		},
+		--- 693: Mystic section ---
+		{
+			isStartNode = true, group = 104, icon = "csMystic", name = "Mystic", line = "mystic", inputs = {}, out = {694}
+		},
+		--- 694 ---
+		{
+			orbit = 3, orbitDist = 110, orbitIndex = 0, group = 104, isRare = true,
+			name = "Arcane Study", icon = "ntArcaneStudy", line = "mystic", classes = {"mystic", "elementalist", "illusionist"},
+			customStats = {magicSkill = 2, intelligence = 3},
+			inputs = {693}, out = {695}
+		},
+		--- 695 ---
+		{
+			orbit = 4, orbitDist = 205, orbitIndex = 0, group = 104, isRare = true,
+			name = "Prismatic Veins", icon = "ntPrismaticVeins", line = "mystic", classes = {"mystic", "elementalist", "illusionist"},
+			customStats = {multiIncrement = 3, vitality = 3},
+			inputs = {694}, out = {696}
+		},
+		--- 696 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
+			name = "Quiet Reservoir", icon = "ntQuietReservoir", line = "mystic", classes = {"mystic", "elementalist", "illusionist"},
+			customStats = {spirit = 4, vitality = 3},
+			inputs = {695}, out = {697, 700, 705}
+		},
+		--- 697 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 315, group = 104, isMythic = true,
+			name = "Prismatic Mind", icon = "ntPrismaticMind", line = "mystic", classes = {"elementalist"},
+			customStats = {multiIncrement = 3, magicSkill = 2},
+			inputs = {696}, out = {698}
+		},
+		--- 698 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 270, group = 104, isMythic = true,
+			name = "Tempest Veins", icon = "ntTempestVeins", line = "mystic", classes = {"elementalist"},
+			customStats = {criticalHitChance = 1, criticalHitAmount = 6},
+			inputs = {697}, out = {699}
+		},
+		--- 699 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 225, group = 104, isDivine = true, isKeystone = true,
+			name = "Convergence", icon = "ksOverload", line = "mystic", classes = {"elementalist"},
+			customStats = {ksConvergence = 1},
+			stats = {"Elemental spell hits on a target with 2 or more", "other enemies within 2 sqm deal 12% more. On a", "target with none they deal 7% less."},
+			inputs = {698}, out = {}
+		},
+		--- 700 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 45, group = 104, isMythic = true,
+			name = "Veilweaver", icon = "ntVeilweaver", line = "mystic", classes = {"illusionist"},
+			customStats = {incrementHealth = 6, spirit = 2},
+			inputs = {696}, out = {701}
+		},
+		--- 701 ---
+		{
+			orbit = 1, orbitDist = 300, orbitIndex = 90, group = 104, isMythic = true,
+			name = "Mirror Mind", icon = "ntMirrorMind", line = "mystic", classes = {"illusionist"},
+			customStats = {intelligence = 3, magicSkill = 2},
+			inputs = {700}, out = {702}
+		},
+		--- 702 ---
+		{
+			orbit = 2, orbitDist = 300, orbitIndex = 135, group = 104, isDivine = true, isKeystone = true,
+			name = "Phantom Double", icon = "ksInspiringIllusion", line = "mystic", classes = {"illusionist"},
+			customStats = {ksPhantomDouble = 1},
+			stats = {"Your spell hits have a 20% chance to be struck", "again 0.4 s later by your double for 60% of the", "hit (once a second). Your spell hits deal 5% less."},
+			inputs = {701}, out = {}
+		},
+		--- 703-705: the mastery node of each new class section (above its third line node), like 665-668 ---
+		--- 703 ---
+		{
+			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
+			name = "Warbound Discipline", icon = "msInnerDiscipline", line = "warrior", classes = {"warrior", "juggernaut", "berserker"},
+			stats = {"Mastery: choose one effect when you take it."},
+			masteries = {
+				{name = "Hammerfall", customStats = {incrementPhysical = 6, strength = 1}},
+				{name = "Tempered Hide", customStats = {vitality = 4, absorbPhysical = 2}},
+				{name = "Cruel Edge", customStats = {criticalHitChance = 2, criticalHitAmount = 4}},
+				{name = "Shield Drill", customStats = {shieldingSkill = 2, absorbPhysical = 2}}
+			},
+			inputs = {676}, out = {}
+		},
+		--- 704 ---
+		{
+			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
+			name = "Hunter's Discipline", icon = "msShadowDiscipline", line = "ranger", classes = {"ranger", "deadeye", "beastmaster"},
+			stats = {"Mastery: choose one effect when you take it."},
+			masteries = {
+				{name = "Steady Aim", customStats = {criticalHitChance = 2, criticalHitAmount = 5}},
+				{name = "Fleet Foot", customStats = {dexterity = 3, speed = 200}},
+				{name = "Forest Hide", customStats = {vitality = 4, absorbPhysical = 2}},
+				{name = "Hard Tips", customStats = {incrementPhysical = 5, dexterity = 2}}
+			},
+			inputs = {686}, out = {}
+		},
+		--- 705 ---
+		{
+			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
+			name = "Arcane Discipline", icon = "msSacredOath", line = "mystic", classes = {"mystic", "elementalist", "illusionist"},
+			stats = {"Mastery: choose one effect when you take it."},
+			masteries = {
+				{name = "Pyre Touch", customStats = {incrementFire = 6, magicSkill = 1}},
+				{name = "Frost Touch", customStats = {incrementIce = 6, magicSkill = 1}},
+				{name = "Storm Touch", customStats = {incrementEnergy = 6, magicSkill = 1}},
+				{name = "Still Mind", customStats = {incrementHealth = 5, spirit = 2}}
+			},
+			inputs = {696}, out = {}
+		},
 }
 end
 

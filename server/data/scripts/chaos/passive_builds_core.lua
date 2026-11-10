@@ -7,6 +7,8 @@
 --   PassiveBuildsCore.find(data, classKey, id)              the build {id, kind, order, masteries, top} or nil
 --   PassiveBuildsCore.summary(cfg, top, T)                  "Fire damage +52, Fire resist +35": the main stats of a build
 --   PassiveBuildsCore.plan(tree, build, ctx)                what applying a build does (see there)
+--   PassiveBuildsCore.pick(data, classKey, id)              the build of the class, or nil + "unknown" | "class" (O448)
+--   PassiveBuildsCore.planSlot(tree, build, ctx)            the tree part of a loadout slot for a build (O448, see there)
 --
 -- A build is an ORDER of node ids in which every node touches the start or an earlier node, so every prefix is a legal
 -- build: a character takes as many as it has points for.
@@ -194,6 +196,54 @@ function M.plan(tree, build, ctx)
 		ids = order, added = added, kept = kept, removed = removed, skipped = skipped, masteries = masteries,
 		treeReset = #removed > 0, wanted = #build.order, changed = #added > 0 or #removed > 0,
 		keystones = keystones, overCap = overCap, capText = overCap and tc.keystoneRefusal() or nil
+	}
+end
+
+-- ------------------------------------------------------------------------------------------------ into a loadout slot (O448)
+-- pick(data, classKey, id): the build `id` of the character's class, or nil + "unknown" (no such build) / "class" (it is a
+-- build of another class: a Recommended id names its class, a Focus id exists for several, none of them this one's).
+function M.pick(data, classKey, id)
+	if type(id) ~= "string" or id == "" or #id > 60 then
+		return nil, "unknown"
+	end
+	local own = classKey and M.find(data, classKey, id)
+	if own then
+		return own
+	end
+	for key, builds in pairs(data.classes or {}) do
+		if key ~= classKey then
+			for _, b in ipairs(builds) do
+				if b.id == id then
+					return nil, "class"
+				end
+			end
+		end
+	end
+	return nil, "unknown"
+end
+
+-- planSlot(tree, build, ctx): the tree part of a loadout slot for `build`: what Reset and apply would build on an empty
+-- tree, the first `ctx.points` nodes of the build in order, masteries as the build says. ctx = {classKey, points}.
+-- The tree of the character is never read: the live tree does not change, a slot only gets a copy.
+-- Returns {ids, masteries, keystones, wanted, left} or nil + why ("class": a node of the build is not the class's, or
+-- unknown / disconnected: a build that is not legal; "cap": more keystones than the cap, with `capText`; "empty": no
+-- points, nothing to write) and the plan.
+function M.planSlot(tree, build, ctx)
+	local plan = M.plan(tree, build, {classKey = ctx.classKey, current = {}, points = ctx.points, reset = true})
+	for _, s in ipairs(plan.skipped) do
+		if s.why ~= "points" then
+			return nil, "class", plan
+		end
+	end
+	if plan.overCap then
+		return nil, "cap", plan
+	end
+	if #plan.ids == 0 then
+		return nil, "empty", plan
+	end
+	return {
+		ids = plan.ids, masteries = plan.masteries, keystones = plan.keystones, wanted = plan.wanted,
+		left = math.max(0, plan.wanted - #plan.ids)
 	}
 end
 

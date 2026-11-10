@@ -54,6 +54,11 @@ NEEDS = {
     'ksDivineVerdict': 'a radiant strike (the Templar line) and a 1 in n chance',
     'ksScarredDiscipline': 'an enemy that hits the character',
     'ksHundredHands': 'a focus critical hit (Shadowfist)',
+    'ksUnbrokenLine': 'a shield and an enemy that hits the character in melee or at range (2% less for each enemy next to the character)',
+    'ksOpenVeins': 'two-handed melee weapon hits',
+    'ksLoneMark': 'bow or crossbow hits',
+    'ksConvergence': 'elemental spell hits',
+    'ksPhantomDouble': 'spell hits (20% chance, at most one a second)',
     'arAetherEdge': 'weapon hits and an energy shield',
     'arBarbed': 'distance weapon hits',
     'arCascade': 'a critical hit and a second enemy next to the target',
@@ -79,6 +84,7 @@ NEEDS = {
 # every other keystone flag: why no bot can see it work (the report prints this as "not observable")
 NO_PROBE = {
     'ksPackAlpha': 'companion damage and damage taken: factors on the companion, no row of its own',
+    'ksWolfbond': 'companion damage and the price of the own distance hits: factors, no row of its own',
     'ksInspiringIllusion': 'needs a party: it buffs the other members, never the illusionist',
     'ksGraveCovenant': 'a change of the minions and corpses, no row or total a client can read',
     'ksBlackbloodCreed': 'a change of the Thief combat rules, no row or total a client can read',

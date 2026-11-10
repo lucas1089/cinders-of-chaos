@@ -219,7 +219,7 @@ local function savePrefs(p)
   if not name then return end
   local ignored = {}
   for id, v in pairs(p.ignored or {}) do if v then ignored[tonumber(id) or id] = true end end
-  node[name] = { autoUpdate = p.autoUpdate == true, ignored = ignored }
+  node[name] = { autoUpdate = p.autoUpdate == true, ignored = ignored, variant = A.variantName(p.variant) }
   g_settings.setNode(SETTINGS_NODE, node)
   if g_settings.save then g_settings.save() end -- on disk now: a crash or a death screen close keeps it
 end
@@ -234,6 +234,18 @@ function U.setAutoUpdate(on)
   savePrefs(p)
 end
 
+-- the rotation variant this character chose (O446): 'default', 'single', 'pack' or 'mines'; kept per character with the
+-- other choices of this node, the default until the player picks one
+function U.getVariant()
+  return A.variantName(prefs().variant)
+end
+
+function U.setVariant(name)
+  local p = prefs()
+  p.variant = A.variantName(name)
+  savePrefs(p)
+end
+
 -- fill the shooter (and the healing tab) when the player clicks Auto rotation; `quiet` is only used by the level-up
 -- path with "Auto-update my spells" on
 function U.run(quiet)
@@ -244,7 +256,7 @@ function U.run(quiet)
   end
   local canCast, refused = canCastFor(player)
   -- the top-up to 5 spells only on a click; the opt-in level-up update keeps the class preset
-  local sel, why = A.select(player:getVocation(), player:getLevel(), canCast, { topUp = not quiet })
+  local sel, why = A.select(player:getVocation(), player:getLevel(), canCast, { topUp = not quiet, variant = U.getVariant() })
   if not sel then
     if not quiet then
       say(why == 'class' and tr('Auto rotation: no rotation for this class.') or
@@ -265,7 +277,8 @@ function U.run(quiet)
     end
     save()
     local text = A.message(sel, nameOf)
-    g_logger.info('[auto rotation] ' .. text)
+    g_logger.info('[auto rotation] ' .. text .. (sel.variant and (' variant ' .. sel.variant) or ''))
+    if A.variantLine(sel) then text = text .. '\n' .. A.variantLine(sel) end
     local why = {}
     for id, r in pairs(refused) do
       why[#why + 1] = id .. ':' .. r
@@ -446,7 +459,7 @@ function U.onLevelUp()
   if not (H and player and H.getShooterProfile) then return 'none' end
   local profile = H.getShooterProfile()
   if not profile then return 'none' end
-  local sel = A.select(player:getVocation(), player:getLevel(), canCastFor(player), { topUp = false })
+  local sel = A.select(player:getVocation(), player:getLevel(), canCastFor(player), { topUp = false, variant = U.getVariant() })
   local p = prefs()
   local action, newIds = A.levelUpAction(sel, profile.rules, profile[A.MARKER], p)
   if action == 'apply' then

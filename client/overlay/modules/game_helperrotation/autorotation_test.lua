@@ -374,6 +374,148 @@ do
   end
 end
 
+-- ---------------------------------------------------------------- the rotation variants (O446)
+-- the data: a block next to the default, which is untouched (the generator's digest holds the default rows; the shape here)
+do
+  local V = D.variants
+  ok(V and V.classes and V.names, 'the data has a variants block')
+  eq(table.concat(V.names, ','), table.concat(A.VARIANT_NAMES, ','), 'the names of the data are the names of the module')
+  local MINES = { [3] = true, [7] = true, [15] = true, [11] = true, [12] = true, [13] = true } -- the classes that hold Seeker Mine
+  local entries, withMines = 0, 0
+  local lookup = A.spellTable()
+  for vocId, byName in pairs(V.classes) do
+    local c = D.classes[vocId]
+    ok(c, 'variants of a known class ' .. tostring(vocId))
+    for name, list in pairs(byName) do
+      local known = false
+      for _, n in ipairs(A.VARIANT_NAMES) do known = known or n == name end
+      ok(known, c.name .. ': variant name ' .. name)
+      if name == 'mines' then ok(MINES[vocId], c.name .. ' holds Seeker Mine') end
+      local last = 0
+      for i, e in ipairs(list) do
+        entries = entries + 1
+        local tag = c.name .. ' ' .. name .. ' ' .. e.level
+        ok(e.level > last, tag .. ': by level')
+        last = e.level
+        ok(e.upTo == nil or e.upTo > e.level, tag .. ': upTo after level')
+        if i < #list then ok(e.upTo and e.upTo <= list[i + 1].level, tag .. ': no overlap with the next') else ok(e.upTo == nil or e.upTo > e.level, tag .. ': last entry') end
+        ok(#e.spells >= 1 and #e.spells <= A.MAX_SPELLS, tag .. ': 1-5 spells')
+        eq(#e.creatures, #e.spells, tag .. ': a monster count per spell')
+        local seen, mine, chi = {}, false, false
+        for _, id in ipairs(e.spells) do
+          ok(lookup[id], tag .. ': spell ' .. id .. ' has its numbers')
+          ok(not seen[id], tag .. ': no spell twice')
+          seen[id] = true
+          mine = mine or id == 100
+          chi = chi or (lookup[id] and lookup[id].chi)
+        end
+        for _, n in ipairs(e.creatures) do eq(n, 1, tag .. ': one monster') end
+        eq(mine, name == 'mines', tag .. ': Seeker Mine in the mines variant and nowhere else')
+        if mine then withMines = withMines + 1; ok(V.spells[100] and not D.spells[100], 'Seeker Mine is in the variant table, not the default one') end
+        if not chi then eq(A.gap(e.spells), e.gap, tag .. ': Lua gap = generated gap') end
+        ok(e.gap <= 2, tag .. ': a cast every 2 s')
+        -- the owner's rules: at most +40% in the specialty, a visible price on the other count (single, pack)
+        ok(e.one <= 40 and e.five <= 40, tag .. ': never above +40%')
+        if name == 'single' then ok(e.one >= 5 and e.five <= -3, tag .. ': gain on one target, price on groups') end
+        if name == 'pack' then ok(e.five >= 5 and e.one <= -3, tag .. ': gain on groups, price on one target') end
+        eq(name == 'mines', e.moving ~= nil, tag .. ': the moving pack number only for the mines')
+        -- never the default set of that level
+        local p = A.presetFor(vocId, e.level)
+        ok(p and table.concat(p.spells, ',') ~= table.concat(e.spells, ','), tag .. ': not the default set')
+      end
+    end
+  end
+  ok(entries > 100 and withMines > 5, 'the data holds variants: ' .. entries .. ' entries, ' .. withMines .. ' with mines')
+  ok(not D.spells[99] and not D.spells[100], 'no snare in the default table')
+end
+
+-- the lookup: by class, level and name; the level edges follow level / upTo; a bad name or no entry is nothing
+do
+  local list = D.variants.classes[4].single -- Warrior
+  local e = list[1]
+  eq(A.variantFor(4, e.level, 'single'), e, 'the entry at its level')
+  eq(A.variantFor(4, e.level - 1, 'single'), nil, 'nothing below it')
+  eq(A.variantFor(4, e.upTo - 1, 'single'), e, 'the entry up to upTo')
+  ok(A.variantFor(4, e.upTo, 'single') ~= e, 'not at upTo')
+  eq(A.variantFor(4, 1000, 'single'), list[#list], 'the last entry has no end')
+  eq(A.variantFor(4, 99999, 'single'), list[#list], 'at any level above')
+  eq(A.variantFor(4, 500, 'default'), nil, 'the default is no variant')
+  eq(A.variantFor(4, 500, 'mines'), nil, 'a Warrior has no mines')
+  eq(A.variantFor(4, 500, 'fast'), nil, 'an unknown name')
+  eq(A.variantFor(4, 500, nil), nil, 'no name')
+  eq(A.variantFor(999, 500, 'single'), nil, 'an unknown class')
+  eq(A.variantName('pack'), 'pack', 'a known name'); eq(A.variantName('x'), 'default', 'an unknown name: default')
+  eq(A.variantName(nil), 'default', 'no name: default'); eq(A.variantName(5), 'default', 'a number: default')
+  eq(table.concat(A.variantNames(4), ','), 'single,pack', 'the Warrior has single and pack')
+  eq(table.concat(A.variantNames(11), ','), 'single,mines', 'the Thief has single and mines')
+  eq(#A.variantNames(21), 0, 'the Lich has none')
+  eq(#A.variantNames(999), 0, 'an unknown class has none')
+  local at500 = A.variantsAt(4, 500)
+  eq(#at500, 2, 'two variants of the Warrior at 500'); eq(at500[1].name, 'single', 'in the choice order'); eq(at500[2].name, 'pack', 'then pack')
+end
+
+-- select with a variant: the variant's set where there is one, the default everywhere else
+do
+  local all = function() return true end
+  local noUlt = function(id) return id ~= D.classes[4].ultimate end
+  local plain = A.select(4, 500, noUlt)
+  local single = A.select(4, 500, noUlt, { variant = 'single' })
+  local e = A.variantFor(4, 500, 'single')
+  eq(single.variant, 'single', 'the variant that was applied'); eq(single.vs.one, e.one, 'its price: one target'); eq(single.vs.five, e.five, 'groups')
+  local ids = A.areaFirst(e.spells, e.creatures)
+  eq(table.concat(single.ids, ','), table.concat(ids, ','), 'the variant set, area spells first')
+  eq(single.gap, A.gap(single.ids), 'its gap'); eq(single.changed, false, 'unchanged')
+  ok(table.concat(single.ids, ',') ~= table.concat(plain.ids, ','), 'not the default set')
+  eq(plain.variant, nil, 'no variant without a choice'); eq(plain.vs, nil, 'and no numbers')
+  eq(single.level, plain.level, 'the level of the default preset')
+  -- a level with no entry, an unknown name and the default name: the default set, byte for byte
+  local d1 = A.select(4, 100, noUlt)
+  eq(table.concat(A.select(4, 100, noUlt, { variant = 'single' }).ids, ','), table.concat(d1.ids, ','), 'no entry at level 100: the default')
+  eq(A.select(4, 100, noUlt, { variant = 'single' }).variant, nil, 'and no variant applied')
+  eq(table.concat(A.select(4, 500, noUlt, { variant = 'fast' }).ids, ','), table.concat(plain.ids, ','), 'an unknown name: the default')
+  eq(table.concat(A.select(4, 500, noUlt, { variant = 'default' }).ids, ','), table.concat(plain.ids, ','), 'the default name: the default')
+  eq(table.concat(A.select(4, 500, noUlt, { variant = 'mines' }).ids, ','), table.concat(plain.ids, ','), 'a variant the class lacks: the default')
+  -- a spell the character cannot cast is replaced like in a preset, the rest of the variant stays
+  local missing = e.spells[2]
+  local cut = A.select(4, 500, function(id) return id ~= missing and noUlt(id) end, { variant = 'single' })
+  eq(cut.changed, true, 'a spell missing: changed')
+  for _, id in ipairs(cut.ids) do ok(id ~= missing, 'the missing spell is out') end
+  eq(cut.gap, A.gap(cut.ids), 'the gap simulated again')
+  -- no top-up: the variant alone (the level-up check)
+  local bare = A.select(4, 500, noUlt, { variant = 'single', topUp = false })
+  eq(#bare.ids, #e.spells, 'topUp false: the variant alone')
+  -- the mines: Seeker Mine is in the list, known to the gap check and to areaFirst through the merged table
+  local m = A.variantFor(11, 1000, 'mines')
+  local thief = A.select(11, 1000, all, { variant = 'mines' })
+  eq(thief.variant, 'mines', 'the Thief picks the mines variant'); eq(thief.vs.moving, m.moving, 'with the moving pack number')
+  local has = false
+  for _, id in ipairs(thief.ids) do has = has or id == 100 end
+  ok(has, 'Seeker Mine is in the Thief rotation'); eq(thief.gap, A.gap(thief.ids), 'its gap, mine included')
+  ok(A.spellTable()[100] and A.spellTable()[100].area, 'the merged table knows Seeker Mine as an area spell')
+  eq(A.spellTable()[99], nil, 'and no Snare Trap')
+  eq(A.spellTable()[D.classes[4].presets[1].spells[1]], D.spells[D.classes[4].presets[1].spells[1]], 'the main numbers win')
+  -- a client with no variants block behaves as before
+  local saved = D.variants
+  D.variants = nil
+  eq(A.variantFor(4, 500, 'single'), nil, 'no block: no variant'); eq(#A.variantNames(4), 0, 'no block: no names')
+  eq(A.spellTable(), D.spells, 'no block: the table is the main one')
+  eq(table.concat(A.select(4, 500, noUlt, { variant = 'single' }).ids, ','), table.concat(plain.ids, ','), 'no block: the default set')
+  D.variants = saved
+end
+
+-- the texts: the price is the numbers of the entry
+do
+  eq(A.variantHint('single', { one = 9, five = -16 }), 'Bosses +9%, groups -16%', 'single: bosses first')
+  eq(A.variantHint('pack', { one = -10, five = 8 }), 'Groups +8%, bosses -10%', 'pack: groups first')
+  eq(A.variantHint('mines', { one = -5, five = 24 }), 'Mines: groups +24%, bosses -5%', 'mines')
+  eq(A.variantHint('mines', nil), 'Not at your level: default set', 'no entry: says so')
+  eq(A.variantHint('default', nil), 'Balanced: one target and groups', 'the default')
+  eq(A.variantTitle('single'), 'One target', 'title'); eq(A.variantTitle('x'), 'Default', 'unknown: default')
+  eq(A.variantLine({}), nil, 'no line without a variant'); eq(A.variantLine({ variant = 'pack' }), 'Rotation variant: Groups.', 'the result line')
+  ok(A.variantTip('mines'):find('Seeker Mine'), 'the mines tip names the spell')
+  for _, n in ipairs({ 'default', 'single', 'pack', 'mines' }) do ok(#A.variantHint(n, { one = 1, five = 1 }) <= 40, n .. ' hint fits one line') end
+end
+
 if fails > 0 then
   error(fails .. ' failure(s)')
 end

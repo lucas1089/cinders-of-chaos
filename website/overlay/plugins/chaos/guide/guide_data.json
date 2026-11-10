@@ -249,7 +249,7 @@
 			"level": 12,
 			"menu": "Character > Passive Tree",
 			"rows": [
-				{"id": "what", "text": {"en": "A big tree of small bonuses. Start next to the centre and take nodes that touch the ones you have. Plan first, then press Apply Plan.", "pt-BR": "Uma grande árvore de pequenos bônus. Comece perto do centro e pegue nós vizinhos aos que já tem. Planeje antes e depois clique em Aplicar plano."}},
+				{"id": "what", "text": {"en": "A big tree of small bonuses. Start next to the centre and take nodes that touch the ones you have. Plan first, then press Apply Plan. The Auto build button offers three Recommended builds for your class, and the Starter Builds guide on the website lists them with import codes.", "pt-BR": "Uma grande árvore de pequenos bônus. Comece perto do centro e pegue nós vizinhos aos que já tem. Planeje antes e depois clique em Aplicar plano. O botão Auto build oferece três builds recomendadas para a sua classe, e o guia Builds iniciais do site as lista com códigos de importação."}},
 				{"id": "who", "text": {"en": "Every player. Your first point comes at level 12, then one more every 4 levels.", "pt-BR": "Todo jogador. Seu primeiro ponto chega no nível 12, depois mais um a cada 4 níveis."}},
 				{"id": "often", "text": {"en": "Adding a node is free. Taking nodes back is free below level 50; after that a single node or a full reset costs gold.", "pt-BR": "Adicionar um nó é grátis. Tirar nós é grátis abaixo do nível 50; depois disso um nó ou uma redistribuição total custa ouro."}}
 			]
