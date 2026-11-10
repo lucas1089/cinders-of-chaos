@@ -195,6 +195,12 @@ is as it was: the survival model takes the median of the role builds. Several ot
 resistances with the damage nodes) for the same reason; the Ranger, Deadeye and Inquisitor live longer than before, and
 no class lives shorter.
 
+**Resistances since O464.** The four resistances (Fire, Cold, Lightning, Chaos) add up every source of the old per-type
+absorbs at full value; the nodes still read "Fire resist", "All resists" and so on. The 63 Recommended builds give from the tree
+alone, before the penalty (-30 from level 250, -60 from 500): Fire mean 14.8 (max 37), Cold 33.9 (85), Lightning 35.3 (98),
+Chaos 51.7 (116); the physical reduction 36.8 (75). A build of level 500 or more needs gear for its resistances; the survival and
+class models were not re-run on this (the owner reads the result first).
+
 These builds are legal, different from each other and free of the known traps. No model measures the damage of a keystone
 choice, so none of them is proven strong. Left out of every Recommended build: Open Hand Creed, Aether Edge and Hollow
 Vessel (a price for no gain, or a pool that does not hold; the Hollow Palm that combines the last two stays as it is,

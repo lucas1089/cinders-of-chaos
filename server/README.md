@@ -892,6 +892,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103050 - 7103059 | Hunt warnings (`hunt_warnings_config.lua` `storage`, `Chaos.storage.huntWarnLast`, O323): +0 os.time of the last warning shown to the character; +1..9 free |
 | 7103060 - 7103069 | new player survey (`survey_config.lua` `storage`, `Chaos.storage.survey`, O374): +0 bit mask of the survey stages (bit 0 = level 20, bit 1 = level 50) already handled for the character's account (a cache of `chaos_survey`); +1..9 free |
 | 7103070 - 7103079 | Wandering Merchant (`invasion_config.lua` `worldEvents.merchant.storageBase`, O399): +0..+9 the stop + 1 in which the character bought the item at that place of `items` (one of each per stop) |
+| 7103080 - 7103089 | player defence (`player_defence_config.lua` `storage`, O464): +0 the last level the character was told about the resistance penalty (once per level); +1..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -13183,7 +13184,8 @@ against the Chaos types in one list (`ChaosCrafting.affixes()`):
 
 | group | side | weight | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| absorb | suffix | 3 | 2 | 2-4 | 3-5 | 4-6 | 5-8 | 6-10 | 8-12 | 10-14 |
+| absorb (the nine per-type rows: no longer rolled since O464, read on old items) | suffix | 3 | 2 | 2-4 | 3-5 | 4-6 | 5-8 | 6-10 | 8-12 | 10-14 |
+| physabsorb (the physical row, armour and shields, O464) | suffix | 3 | 2 | 3 | 4 | 5 | 5-6 | 6 | 7 | 7-8 |
 | skill | prefix | 3 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 7-10 |
 | profession (fishing, crafting) | suffix | 1 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 7-10 |
 | critchance (points) | prefix | 6 | 2 | 3 | 4 | 5 | 5-6 | 6 | 7 | 7-8 |
@@ -13199,25 +13201,32 @@ tree still grants the pair.)
 
 **The Chaos modifiers** (kind = which items may roll it: weapon, shield, helmet, armor, legs, boots, jewel = amulet or ring,
 other = the badge, quiver; cap = the most a character gets from everything equipped, "none" = the module holds no cap since
-O461; stage 2 rows (the absorbs, dodge, block, reflect, thorns, damage taken, penetration, energy shield) and the rows the
-owner left alone keep theirs). The legendary powers, the quiver modifiers (bow speed, bow critical chance, the four arrow
+O461; O464 took the caps of the defence rows (the caps that count are the player defence layer's: dodge 75, block 75,
+spell suppression 100, resistance 75, physical total 90) and the rows the owner left alone keep theirs). The legendary powers, the quiver modifiers (bow speed, bow critical chance, the four arrow
 elements, ...) and the energy shield have their own tables in their sections. Generated from the config on 2026-11-10.
 
 | key | text | side | kinds | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | cap |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | bossdamage | Damage to Elites and Bosses +N% | prefix | jewel, quiver, weapon | 2-5 | 4-7 | 6-10 | 9-13 | 11-16 | 14-18 | 16-20 | 18-22 | none |
-| dodge | Dodge +N% | prefix | armor, boots, legs, other, shield | 1-2 | 2 | 2-3 | 2-4 | 3-5 | 3-5 | 4-6 | 5-7 | 10 |
-| reflect | Reflect Damage +N% | prefix | armor, shield | 2-3 | 3-4 | 4-5 | 5-6 | 6-8 | 7-9 | 8-10 | 9-11 | 15 |
-| thorns | Thorns +N | prefix | armor, legs, shield | 2-6 | 5-12 | 12-24 | 24-45 | 40-75 | 60-110 | 90-150 | 120-190 | 250 |
-| monsterreduction | Damage Taken from Monsters -N% | prefix | armor, helmet, legs, shield | 1-2 | 2 | 2-3 | 3-4 | 3-5 | 4-6 | 5-7 | 6-8 | 12 |
-| block | Block Chance +N% | prefix | shield | 2-3 | 3-5 | 4-6 | 5-8 | 7-10 | 8-11 | 9-12 | 11-14 | 15 |
+| dodge | Dodge +N% | prefix | armor, boots, legs, other, shield | 2-3 | 3-4 | 4-5 | 5-6 | 6-7 | 7-8 | 8-9 | 10-11 | none (O464) |
+| reflect | Reflect Damage +N% | prefix | armor, shield | 2-2 | 3-3 | 4-4 | 5-5 | 6-7 | 8-8 | 9-10 | 11-11 | none (O464) |
+| thorns | Thorns +N | prefix | armor, legs, shield | 2-6 | 7-12 | 13-24 | 25-45 | 46-75 | 76-110 | 111-150 | 151-190 | none (O464) |
+| monsterreduction | Damage Taken from Monsters -N% | prefix | armor, helmet, legs, shield | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | none (O464) |
+| block | Block Chance +N% | prefix | shield | 8-9 | 10-11 | 12-13 | 14-15 | 15-16 | 16-17 | 17-18 | 18-20 | none (O464) |
+| armour | Armour +N | prefix | armor, boots, helmet, legs, shield | 3-5 | 6-9 | 10-14 | 15-20 | 21-27 | 28-35 | 36-44 | 45-52 | none (O464) |
+| spellsuppress | Spell Suppression +N% | suffix | armor, boots, helmet, other | 8-9 | 10-11 | 12-13 | 14-15 | 16-17 | 18-19 | 20-21 | 22 | none (O464) |
+| fireres | Fire Resistance +N% | suffix | armor, boots, helmet, jewel, legs, other, shield | 6-11 | 12-17 | 18-23 | 24-29 | 30-35 | 36-41 | 42-45 | 46-48 | none (O464) |
+| coldres | Cold Resistance +N% | suffix | the same | 6-11 | 12-17 | 18-23 | 24-29 | 30-35 | 36-41 | 42-45 | 46-48 | none (O464) |
+| lightningres | Lightning Resistance +N% | suffix | the same | 6-11 | 12-17 | 18-23 | 24-29 | 30-35 | 36-41 | 42-45 | 46-48 | none (O464) |
+| chaosres | Chaos Resistance +N% (weight 1.5) | suffix | the same | 5-8 | 9-12 | 13-16 | 17-20 | 21-24 | 25-28 | 29-31 | 32-35 | none (O464) |
+| allres | All Elemental Resistances +N% | suffix | jewel, other, shield | 3-4 | 5-6 | 7-8 | 9-10 | 11-12 | 13-14 | 15 | 16 | none (O464) |
 | bleedchance | Chance to Bleed +N% | prefix | other, quiver, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | ignitechance | Chance to Ignite +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | poisonchance | Chance to Poison +N% | prefix | other, quiver, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | chillchance | Chance to Chill +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | shockchance | Chance to Shock +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
-| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
-| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
+| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | none (O464) |
+| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | none (O464) |
 | execute | Executes Monsters below N% Health | prefix | weapon (does not stack) | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | none |
 | dot | Damage over Time +N% | prefix | jewel, other, weapon | 7-11 | 12-13 | 14-15 | 16-17 | 18-19 | 20-21 | 22-23 | 24-26 | none |
 | attackspeed | Attack Speed +N% | suffix | weapon | 5-7 | 8-10 | 11-13 | 14-16 | 17-19 | 20-22 | 23-25 | 26-27 | none |
@@ -13253,14 +13262,18 @@ elements, ...) and the energy shield have their own tables in their sections. Ge
 - *Ailments* (bleed physical, ignite fire, poison earth): on every hit of yours on a monster the chance rolls; a hit
   starts a condition owned by you that deals 40% of the hit over 4 ticks of 1 s (`config.ailment`). Chill slows the monster
   by 30% for 3 s, shock makes it take 15% more damage from everyone for 4 s. Condition ticks never start ailments.
-- *Penetration*: the monster's resistance (`MonsterType:getElementList`) counts that many points lower for physical /
-  every other damage type, with the maths of the Sunder support (`M.penetrate`, never below 0, immune stays immune).
+- *Penetration* (O464: moved to the monster defence layer, "Player defence (O464)"): `elepen` takes that many points off
+  the monster's effective resistance after its cap of 75, down to -100 (it can beat an immunity that became a 40 or 75
+  and turn a resistance into a weakness); `physpen` takes that many points off its armour share, never below 0.
 - *Execute*: a hit that leaves a non-boss monster at or below N% of its health kills it (not bosses, world bosses, rift or
   Omen guardians).
 - *Damage over time*: +N% on the damage of conditions you own.
 - *Health / mana on hit*: flat, on every landed hit on a monster. *Health regeneration*: N per second, healed every 3 s by
   the equipment check.
-- *Block*: N% chance that a physical melee or ranged hit does nothing (spells are not blocked); shields only.
+- *Block* (O464): N% chance that an attack hit (melee, ranged, wand; any damage type) does nothing; spells, burns, poison and
+  fields are not blocked; shields only. *Dodge* the same for every kind that rolls it. *Spell suppression*: a chance that a
+  spell hit deals 50% less. *Armour*: flat, added to the armour of the worn pieces. The four resistances and the rest of
+  the order: "Player defence (O464)".
 - *Cooldown / mana cost reduction*: the spell side. Through `ChaosSpellEvents` (below) the cost is reduced when the spell is
   checked and the spell's own cooldown shortened as it is set; they add to the Thrift and Quickening supports and stay
   under those supports' caps (30%) and the 1 s cooldown floor.
@@ -13325,7 +13338,7 @@ in `docs/drafts/`). What changed:
   a leech pair becomes the Lua modifier of the item's kind (the weapon's own on a weapon) at the same tier, the engine
   attributes of the pair removed; the item may end with one modifier more than its rarity allows; rows that left the pool
   (Gold Find, Item Find, Mana Cost Reduction, six professions) and modifiers without a stored tier (before 2026-10-18)
-  keep their numbers; the description is written again. **Never upgraded** (`C.hasFixedValues`): uniques and set pieces
+  keep their numbers; the description is written again. Version 3 (O464): see "Player defence (O464)", item upgrade. **Never upgraded** (`C.hasFixedValues`): uniques and set pieces
   (`chaos_unique`, `chaos_set`, a spec name), the vendor gear of the raid (`chaos_raid`) and the factions
   (`chaos_faction`), store-bound and store items. Vendor gear made after the change is written with the middle of the
   new range of its tier (`factions_config.lua`, `raid_config.lua`), the two helmets that had Health Regeneration (not on a
@@ -13335,9 +13348,10 @@ in `docs/drafts/`). What changed:
   the keystone speed rule counts the boots' top 35, `tools/crit_reach.lua` models the two critical modifiers on the five
   slots that carry them, the Codex data keeps `tierWindow` as the number of tiers (both clients read it).
 
-**Skipped on purpose**: none of the approved stats were dropped. Not done: mana-shield damage (dodge, block, reflect and the
-reduction act on health damage only), and a stat that adds the ailment chance to spells that deal no damage to the target
-(the chance needs a damaging hit).
+**Skipped on purpose**: none of the approved stats were dropped. Not done: a stat that adds the ailment chance to spells that
+deal no damage to the target (the chance needs a damaging hit). (Mana-shield damage: since O464 the player defence layer
+works on the amount the mana pays too, through the `zdefence` mana shield provider; reflect and thorns still act on health
+damage only.)
 
 **Loot filter, tooltips, bench, salvage.** The loot filter has a rule "glow on a modifier of tier T+" (settings bits 22-25,
 `tier`); the rarity data of a corpse item (`x`) is "Item Level 57; Sword +2 (T3); ..." and `t` is its best tier. The rich
@@ -30196,7 +30210,7 @@ Example: a boss with physical 60 and a 100 hit raw (the engine leaves 40): armou
 | Bulwark (block) | yes | no | no | no | no | yes |
 
 A field is a condition: its damage arrives as ticks (`ORIGIN_CONDITION`). The weapon's element part (the secondary) takes the
-element rules only. Penetration (`item_mods.lua`) is not in this table: it is the player stage's.
+element rules only. Penetration (O464) is in the layer: the player's `physpen` and `elepen` (see "Player defence (O464)").
 
 **Ranks** (`monster_tiers.lua` `ChaosTiers`, the three ranks above normal):
 
@@ -30291,7 +30305,7 @@ Armour and the 30 on seven types cancel in the hunts at level 1,000 (a physical 
 30-46", 44 before); every other model passes unchanged, but none of them knows the new layer: their results say nothing about
 it yet.
 
-**Waits for the player stage.** The player's armour (engine patch 0016, flat share) by hit size, the absorb storages and
+**Done in the player stage (O464, "Player defence (O464)"; the text below is what O462 left open).** The player's armour (engine patch 0016, flat share) by hit size, the absorb storages and
 equipment absorb as one resistance with one cap, dodge and block of the player, spell block, penetration (`item_mods.lua`
 `penetrate` re-derives the raw hit from the file's resistance and the value this layer left: right for a capped normal monster,
 off by the rank bonus on an elite and on a Resistant one, and it still cannot beat an immunity; it should call
@@ -30305,3 +30319,158 @@ once-per-install data step). **Tests:** `tests/monster_defence_test.lua`, `tests
 `tests/monster_tiers_test.lua` (rank table), `tools/patch_monster_resists_test.py`, `tools/defence_curve.py --check`, the client
 `game_monsterbar/monsterbarstyle_test.lua`. **Not verified:** a live server (the event order is read from the engine source, not
 observed), the client chips in the real client, the pt-BR texts by a speaker.
+
+## Player defence (O464) (`player_defence_config.lua`, `player_defence_core.lua`, `player_defence.lua`, `defence_config.lua`, `tools/patch_base_armor_percent.py`, `tools/patch_base_absorb_player.py`)
+
+Second stage of the combat redesign (owner, 2026-11-10: "for now forget our tests and the caps we put, also the DPS tests and
+the class objectives: I want to see how everything ends up after these changes, then we rethink"; the resistance plan was
+approved the same day). It is the PLAYER side: the order in which a player defends, four resistances with a penalty by level,
+armour by hit size, the defence modifiers of equipment and penetration. Nothing here ran on a live server.
+
+**The order of a hit on a player.** One first Lua layer, `ChaosPlayerDefence` (login event `Chaos0ZPlayerDefenceLogin`), runs
+before every other healthchange event of the player but the three damage multipliers of the monster stage (the late-game boost,
+the rift run, the rank multiplier, which already arrive before it). `tests/defence_order_test.lua --list` prints the order.
+
+1. The engine: immunity, the shield's block (the player's defence value, as before), and the item absorb of the worn pieces
+   (see "What still runs in the engine").
+2. `ChaosPlayerDefence`:
+   1. The engine's item absorb is divided out again (the hit is the raw hit; the same absorb is one of the sources below).
+   2. Avoidance, for hits only, never for a condition tick or a field: **dodge** (an attack hit: a monster's melee or ranged
+      attack, a player's weapon hit; any damage type; at most 75), **block** (an attack hit, any type; at most `blockCap` 75 of
+      `defence_config.lua`), **spell suppression** (a spell hit; at most 100; a suppressed hit deals 50% less). A dodged or
+      blocked hit deals nothing and the later steps never see it.
+   3. Mitigation by type, each part of the hit on its own: a physical part loses `armour share + physical reduction` (at most
+      `physicalReductionCap` 90), the armour share being `A / (A + armourHitFactor x H)` with `armourHitFactor` 0.07, H the
+      physical part as it arrives, A the armour; a fire, cold, lightning or chaos part loses its resistance. A condition tick or
+      a field gets no avoidance and no armour: a physical tick meets the physical reduction (at most 90), the others their
+      resistance.
+3. The older events, unchanged: damage taken from monsters, blessings, gems, charms, sets, keystones, unique passives ...
+4. The mana shield (the engine hands the hit to the mana first; `ChaosManaShield` provider `zdefence` runs this layer on the
+   amount the mana pays, the health event leaves the rest alone), the energy shield, the health.
+5. **Last Breath** (`ChaosPowersLastBreath`, login event `ChaosZLastBreathLogin`, sorts after every other Chaos login) is the
+   last event of the player: it sees the damage that would really land. It was a part of `ChaosPowersTaken`, the 24th of 33.
+
+Still behind the layer (they scale a hit, and armour does not see their share): the invasion, area generator, waystone
+modifier, descent and dungeon hit multipliers, and the events that are not registered at login (arena, battleground, boss
+mechanics, Omen). `tests/defence_order_test.lua` pins what is first and what is last.
+
+**The four resistances.** Fire = fire. Cold = ice, water, drown. Lightning = energy, holy, arcane. Chaos = earth, death, life
+drain, mana drain. Physical is not a resistance: it has armour and the physical reduction. Monsters keep defending per engine
+type. The resistance of a group is
+
+`sum of sources - level penalty - area penalty`, held at `resistCap` (75) + the raise of the cap - the lowering of the cap,
+then `- the attacker's penetration`, never below -100 (`resistFloor`). It may be negative: the hit rises.
+
+Level penalty (`player_defence_config.lua` `penalty`, one switch `enabled`): 0 below level 250, -30 from 250, -60 from 500, on
+all four resistances. The player is told once per level at login and on a level up at levels 240-249 and 490-499 ("Warning:
+at level 250 all your resistances drop by 30 points. Raise them before you get there."), and when a mark is crossed
+("Your resistances now carry a penalty of 30 points (level 250). Raise them with gear and the passive tree."), in English and
+pt-BR (`i18n_strings.lua`). The last level told is the player storage 7103080 (`storage.lastWarned`). The rift modifier
+**Frayed Wards** (`rift_config.lua`, tiers I-V: 5, 10, 15, 20, 25) lowers the cap of the players inside the run by that many
+points (`ChaosPlayerDefence.hooks.capDelta`); `hooks.area` is the place of a sum penalty of an area (0 now).
+
+**Every source, in ONE reader** (`ChaosPlayerDefence.state(player, pvp)`, cached 1 s, cleared when an item moves, at login and on a
+level up). Each counts at its full value toward the group of its type; an "all elements" source counts toward Fire, Cold and
+Lightning, not Chaos.
+
+| Source | Where it comes from | Counts toward |
+|---|---|---|
+| Worn pieces' item absorb | the `absorbPercent` abilities of the item types (stock items, the 20 item sets of `install_gear_sets.py`, relic sets, jewellery; may be negative: a weakness) | the group of its type; physical: the physical reduction |
+| Gear rarity absorb | the two absorb storages 977544-977555 (base_rarity.lua writes the `rarity_*Absorb` attributes of every rolled item, unique and set piece; uniques and sets are not upgraded) | the same |
+| Passive tree, Paragon | the second storages 977562-977575 (`ChaosPassiveAbsorbPercent`: a type's absorb + all elements + the Paragon reduction, held at 75 per type by the tree) | the same |
+| Item modifiers | `fireres`, `coldres`, `lightningres`, `chaosres` (rolled, T1-T8), `allres` (Fire, Cold and Lightning), the physical absorb row | the group; all elements; physical |
+| Item sets | `ChaosItemSets.resistances` (`S.totals` res, the PvP share `resPvp` against a player or a player's summon, at most 90 each) | the group of its element |
+| Charms | `ChaosCharms.resistOf` (the `res_*` effects of placed charms) | the group of its element |
+| Gems | `ChaosGems.resistOf` (`res_*` of the socketed gems; `res_all` is already spread over the elements) | the group of its element |
+
+The older events of item sets, charms and gems, and the base script's absorb event, no longer take a player's resistance
+(they ask `ChaosPlayerDefence.active()`); switch the layer off in the config and the old rules work again. Not folded, on
+purpose: the veiled modifier Ashen Ward ("X% less elemental damage from monsters": it is a damage taken multiplier, step 3),
+cards (they act on the player's damage), blessings, factions and raid (their gear carries modifiers, which are counted), potions
+(no per-type absorb of their own).
+
+*The totals of the 63 Recommended builds, from the tree alone, before the penalty* (`absorb` of the nodes, each type held at 75
+as the tree does, folded into the group at full value; gear and the other sources come on top): Fire mean 14.8 / max 37; Cold
+mean 33.9 / max 85; Lightning mean 35.3 / max 98; Chaos mean 51.7 / max 116; the physical reduction mean 36.8 / max 75. With
+the penalty of level 500 and no gear a mean build is at -45, -26, -25 and -8.
+
+**Armour.** A = the armour of the worn pieces (the item's own attribute, else the type's) plus the Armour modifier. The
+vocation multiplier of the engine (0.9 to 1.15, `vocations.xml`) is not readable from Lua and is left out. The engine's armour
+share is off for players: `tools/patch_base_armor_percent.py` sets `armorPercentMax = 0` in `config.lua` (the cap of the
+engine's share becomes 0; `armorPercent` stays true: false brings the stock flat armour back). Monsters as defenders keep the
+engine's stock formula.
+
+*Armour check at level 1,000, no Armour modifier and a full T8 set (helmet, armour, legs, boots, shield at 45-52 each, about
++243):* a typical monster hit of the level is 807 (the mean melee hit of the hunt monsters), a boss hit assumed 5 x that.
+
+| Class | Armour | Typical hit, no modifier | Typical hit, full T8 | Boss hit, no modifier | Boss hit, full T8 |
+|---|---:|---:|---:|---:|---:|
+| low (Mystic) | 84 | 59.9% | 85.3% | 23.0% | 53.7% |
+| median (Ninja) | 90 | 61.4% | 85.5% | 24.1% | 54.1% |
+| high (Sentinel) | 109 | 65.9% | 86.2% | 27.9% | 55.5% |
+
+(target: about 60% and about 85% against the typical hit: met.) `tests/player_defence_test.lua --table` prints the share of a
+small, a median and a five times median hit for a low, a median and a high armour character at levels 100, 500 and 1,000.
+
+**What still runs in the engine.** Immunity; the shield's block of the player's defence value (`Creature::blockHit`, melee
+only, as before); the item absorb of the worn pieces (`Player::blockHit`, each piece on what the previous left) and engine
+patch 0049's ceiling (equipment and storages together at most 75): these have no switch in Lua and ran before any event, so
+the layer divides the engine's share out (`ChaosPlayerDefenceCore.engineKeep` replays the arithmetic of patch 0049; the
+rounding of one point per piece stays, so a hit under 100 may be a point off) and counts the same absorb as a source. The
+engine's armour is off (config), the base script's last absorb event returns a player's hit unchanged while the layer is on
+(`tools/patch_base_absorb_player.py`, marker `-- Chaos: the absorb is the player defence layer's`), the Chaos events of
+sets, charms and gems skip the resistance. Nothing is taken twice; `tests/player_defence_test.lua` proves the arithmetic, the
+two patch tools their own part.
+
+**What a layer ignores (a player is hit).**
+
+| Layer | Attack hit (melee, ranged, wand) | Spell hit | Scripted hit (no origin) | Field or condition tick |
+|---|---|---|---|---|
+| Dodge | yes | no | no | no |
+| Block (modifier) | yes | no | no | no |
+| Spell suppression | no | yes | no | no |
+| Armour share | yes (physical part) | yes (physical part) | no | no |
+| Physical reduction (cap 90) | yes | yes | yes | physical ticks yes |
+| Fire, cold, lightning, chaos resistance | yes | yes | yes | yes |
+| Penetration of a player attacker (PvP) | yes | yes | yes | yes (elemental) |
+
+Class evasion (Thief, Ninja, Samurai, Monk lines) is a dodge source of the layer (`ChaosPlayerDefenceSources`, registered by
+`thief_combat.lua` and `monk_combat.lua`; Living Shadow opens through the `onDodge` hook); their own rolls are skipped while
+the layer is on. A dodge is ONE roll against the sum. Healing and untyped damage are never touched.
+
+**Penetration** (`physpen`, `elepen`) moved out of the dealt hook of `item_mods.lua` into the monster layer
+(`monster_defence.lua` `ctx.pen`, `ctx.physPen`): elemental penetration comes off the monster's effective resistance after its
+cap, down to -100; physical penetration comes off the monster's armour share (never below 0), not off the file's physical
+percent. No rounded value is re-derived. In PvP the same two numbers of a player attacker lower the defender's resistance and
+armour share. The Sunder support keeps its own penetration (it re-derives from the file's percent, as before).
+
+**Equipment rows** (ranges in `docs/drafts/patchnotes-player-defence.md`, table in `server/README.md` "Item modifiers"). New
+rows: `fireres`, `coldres`, `lightningres` (6-11 .. 46-48), `chaosres` (5-8 .. 32-35, half the weight), `allres` (3-4 .. 16-16,
+jewel, other, shield), `armour` (3-5 .. 45-52, flat, prefix), `spellsuppress` (8-9 .. 22-22); the physical absorb row is
+2-2 .. 7-8 on armour and shields only; dodge 2-3 .. 10-11, block 8-9 .. 18-20, penetration 3-3 .. 11-12, energy shield recharge
+24-25 .. 37-38; the other defence rows are made non-overlapping. The nine per-type absorb rows left the roll pool (`noRoll`;
+they still read on the items that carry them). None of these rows has a module cap.
+
+**Item upgrade** (version mark 3, `chaos_modv`, `ChaosCrafting.upgradeItem`): an item of version 0, 1 or 2 with a rarity is
+upgraded the first time it is read or moved, once. An old per-type absorb becomes the resistance of its group at the same tier
+and the same place in its range (Fire to `fireres`; Ice, Water, Drown to `coldres`; Energy, Holy, Arcane to `lightningres`;
+Earth, Death to `chaosres`); two of one group on an item become one, the higher tier (then the higher value), and a bound row
+binds the new one. The other rows keep tier and relative position (a value 40% of the way up the old range is 40% of the way up
+the new one). Uniques, set pieces, raid and faction vendor gear and store items are never changed. Three worked examples are in
+`tests/modifier_upgrade_test.lua` section 7.
+
+**Install.** `python3 -I server/tools/install_all.py SERVER_DIR --only absorbplayer,armourlayer` (two idempotent steps: the base
+absorb event and `config.lua armorPercentMax = 0`; the admin app has no button, they are once-per-install steps).
+**Tests:** `tests/player_defence_test.lua`, `tests/defence_order_test.lua`, `tests/modifier_upgrade_test.lua`,
+`tests/monster_defence_test.lua` (penetration), `tests/rift_test.lua` (Frayed Wards), `tests/charsheet_test.lua`,
+`tools/patch_base_armor_percent_test.py`, `tools/patch_base_absorb_player_test.py`.
+
+**Where the player reads it.** The character sheet (Info & Services > Character Info, `sheet`, and Inspect Player): the four
+resistances with their sources, the level penalty and the result, the armour share against a typical hit, the physical
+reduction, dodge, block and spell suppression; the Skills window's Armor and Damage reduction rows; the item tooltip help lines
+(Alt); the Codex page "How you defend"; the "Defence and resistances" card of the help search.
+
+**Not verified:** a live server (the event order is read from the engine source), the engine's item absorb undo against the real
+`Player::blockHit` (one point of rounding per piece), the client windows in the real client, the pt-BR texts by a speaker. The
+balance models were not touched: the survival, PvP, guardian and tower models read the old armour and absorb and say nothing
+about this layer yet.

@@ -479,7 +479,9 @@ Ascension at level 100 (the Ascendant Oracle, data/scripts/chaos/ascension.lua).
 `data/scripts/chaos/thief_combat.lua` (rules in `classes.lua`, numbers in `Chaos.classes`, chaos_constants.lua):
 
 - **Evasion** (passive): 8% Thief, 12% Ninja, 5% Samurai chance to dodge a melee or ranged hit (monster attacks and player weapons),
-  shown with `ChaosCombatFx.dodge`. Measured: 4 dodges in a 20 s fight against three Behemoths.
+  shown with `ChaosCombatFx.dodge`. Measured: 4 dodges in a 20 s fight against three Behemoths. Since O464 the evasion is one of the
+  dodge sources of the player defence layer (gear, sets and the class evasion add up; ONE roll against the sum, at most 75, attack
+  hits only; `server/README.md` "Player defence (O464)"): the numbers of the class do not change.
 - **Weapon strikes**: the damaging spells deal their physical damage with a weapon origin (melee or ranged), so the weapon rules apply to
   them too: the stealth crit, Poison Blades, the Bushido crit, and the Ninja's off-hand strike after Shadow Step.
 - **Area strikes** (2026-10-15, `chaos/_blades.lua`): Blade Flurry (all three, a weapon strike on every monster around
