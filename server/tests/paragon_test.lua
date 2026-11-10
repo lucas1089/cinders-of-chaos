@@ -158,14 +158,14 @@ eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 102, "Paragon alone"
 applyAll(p, {})
 eq(added[7220], nil, "removed"); eq(speed(), 0, "speed removed"); eq(st[977563], 0, "reduction removed")
 
--- damage: Paragon multiplies after the tree's bonuses, never healing
-eq(ChaosParagonDamageMultiplier({paragonDamage = 10}, COMBAT_FIREDAMAGE), 1.1, "damage multiplier")
-eq(ChaosParagonDamageMultiplier({paragonDamage = 10}, COMBAT_HEALING), 1, "no healing")
-eq(ChaosParagonDamageMultiplier({}, COMBAT_FIREDAMAGE), 1, "none")
+-- damage: O473: Paragon damage is a source of the additive damage pool (raw percent next to the tree's), never healing
+eq(ChaosParagonDamageRaw({paragonDamage = 10}, COMBAT_FIREDAMAGE), 10, "damage raw")
+eq(ChaosParagonDamageRaw({paragonDamage = 10}, COMBAT_HEALING), 0, "no healing")
+eq(ChaosParagonDamageRaw({}, COMBAT_FIREDAMAGE), 0, "none")
 ChaosPassiveCache[7] = {incrementFire = 10, paragonDamage = 10}
 local atk = {isPlayer = function() return true end, getId = function() return 7 end}
 local d1 = registered["ChaosPassiveDealt"].onHealthChange({}, atk, -1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, 0)
-eq(d1, -1210, "fire: tree +10% x Paragon +10%")
+eq(d1, -1200, "fire: tree +10 and Paragon +10 add into one pool: x1.20 (was x1.21)")
 local h1 = registered["ChaosPassiveDealt"].onHealthChange({}, atk, 1000, COMBAT_HEALING, 0, COMBAT_NONE, 0)
 eq(h1, 1000, "heal unchanged")
 

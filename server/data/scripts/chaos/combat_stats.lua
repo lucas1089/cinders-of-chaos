@@ -144,7 +144,7 @@ local function physicalAbsorb(player, protection)
 	return math.min(75, storage)
 end
 
--- the factor the passive tree puts on a physical weapon hit (passivetree_effects.lua dealt.onHealthChange)
+-- the factor the passive tree and the damage pool put on a physical weapon hit (passivetree_effects.lua dealt.onHealthChange)
 local function treeFactor(player, kind)
 	local bonuses = ChaosPassiveCache and ChaosPassiveCache[player:getId()]
 	if not bonuses or not ChaosPassiveDamagePercent then
@@ -154,8 +154,10 @@ local function treeFactor(player, kind)
 		local phys = g("COMBAT_PHYSICALDAMAGE") or 1
 		local origin = kind == "distance" and (g("ORIGIN_RANGED") or 2) or (g("ORIGIN_MELEE") or 1)
 		local line = ChaosPassiveLineFactor and ChaosPassiveLineFactor(player) or 1
-		return (1 + ChaosPassiveDamagePercent(bonuses, phys) / 100) * ChaosPassiveStatMultiplier(bonuses, phys, origin)
-			* ChaosParagonDamageMultiplier(bonuses, phys) * line
+		-- O473: the pool (the tree, gems, Paragon and the other sources that hold without a target), then the multipliers
+		local pool = ChaosDamagePool and select(4, ChaosDamagePool.sheet(player, phys, ChaosPassiveDamageRaw(bonuses, phys, origin)))
+			or 1 + ChaosPassiveDamagePercent(bonuses, phys) / 100
+		return pool * ChaosPassiveStatMultiplier(bonuses, phys, origin) * line
 	end)
 	return ok and tonumber(m) or 1
 end

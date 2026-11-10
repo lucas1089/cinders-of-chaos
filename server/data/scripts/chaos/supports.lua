@@ -512,6 +512,36 @@ local function reprisal(player, attacker, amount, origin)
 	end, 0)
 end
 
+-- ---------------------------------------------------------------- the damage pool (O473)
+-- A spell modifier mastery whose support is a plain damage one (data/lib/chaos_spell_masteries_config.lua `damage`: the three
+-- brands) is no free support any more: while its own spell is cast it adds `each` raw percent (damage_pool_config.lua
+-- sources.masteries) to the additive damage pool of the hits of that cast, at most `cap` for all the masteries held. Provider
+-- "masteries" of damage_pool_core.lua; asked by ChaosPassiveDealt. Never for a tick, a heal, a hit on oneself or a proc.
+function S.masteryPoolRaw(attacker, creature, origin)
+	if S.depth > 0 or origin == ORIGIN_CONDITION or not attacker or not attacker:isPlayer() then
+		return 0
+	end
+	if creature and creature.getId and creature:getId() == attacker:getId() then
+		return 0
+	end
+	local choice = S.masteryChoice(attacker)
+	if not choice or not (S.mastery.damage or {})[choice.support] then
+		return 0
+	end
+	local serial, spellId = S.ctxDecode(attacker:getStorageValue(cfg.storageContext))
+	if not serial or spellId ~= choice.spell then
+		return 0
+	end
+	local pc = ChaosDamagePoolConfig and ChaosDamagePoolConfig.sources.masteries
+	return pc and pc.each or 3
+end
+if not ChaosDamagePool then
+	dofile("data/scripts/chaos/damage_pool_core.lua")
+end
+ChaosDamagePool.register("masteries", function(hit)
+	return S.masteryPoolRaw(hit.attacker, hit.creature, hit.origin)
+end)
+
 -- ---------------------------------------------------------------- the damage event
 local event = CreatureEvent("ChaosSupportsHit")
 function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critical)

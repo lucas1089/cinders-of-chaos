@@ -40,7 +40,13 @@ ChaosUniquePassivesConfig = {
 
 	-- limits of tools/unique_passives_model.lua --check (the expected power gain of a passive: damage dealt x survivability)
 	model = {
-		minGain = 1.03, maxGain = 1.55, -- one passive, on the line it is made for
+		-- O473 (2026-11-10): minGain 1.03 -> 0.90. The "more damage" part of a passive of the families lowlife, overflow, opener, focus,
+		-- statscale, crowd, stacks and mark is now at most 10 raw percent of the damage pool (damage_pool_config.lua), its price (a "less")
+		-- stays as it was: 29 passives fall under 1.03 on a line they work for (the lowest 0.93: Seat Kept Warm, lowlife, warrior; 15 of
+		-- the 26 that fall under at their own item level are under 1.0, `unique_passives_model.lua --list`). tools/unique_passives_model.lua reads the split now (gain = prices x (1 + pool part) x survival). The owner
+		-- decides whether the prices of those passives are cut (README "Increased damage pool (O473)" lists them); the best five of a
+		-- line (below) stay inside their limits (1.46 to 2.94).
+		minGain = 0.90, maxGain = 1.55, -- one passive, on the line it is made for
 		bestFiveMin = 1.35, bestFiveMax = 3.2, -- the best five (one per family) of a class line in a level band
 		bands = {{1, 100}, {101, 400}, {401, 900}, {901, 1600}, {1601, 99999}},
 	},

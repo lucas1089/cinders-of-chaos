@@ -29,6 +29,10 @@ What each effect does to a spell hit (the same rules as scripts/chaos/supports.l
   hex         +value% damage from everyone for 4 s on the monsters the spell hit; uptime = 4 s / the seconds between two casts
 Levels 100, 500 and 1000 (class_dps_measured.csv); a spell the class does not have at the level is skipped.
 
+O473 (2026-11-10): a choice whose support is a brand (config `damage`) is not a free support: while its spell is cast it adds
+`each` (3) raw percent to the additive damage pool (damage_pool_config.lua sources.masteries, at most 12 for masteries). The model
+counts it as the brand did, the spell's damage +3% (the largest it can be: the pool's soft cap only lowers it). CAP below counts raw
+pool percent for those rows.
 Owner rule (2026-11-10): no build above +40% over its class default in its specialty. The limit of this model is stricter, so
 that a choice fits under the cap next to keystones: every choice at most +15% of the class damage on its own (CAP).
 --check exits 1 on a problem (a gain over CAP, a choice whose spell no class of the line can cast, a hole).
@@ -48,6 +52,7 @@ sys.path.insert(0, HERE)
 import rotation_sim as R  # noqa: E402
 
 CONFIG = os.path.join(REPO, 'server', 'data', 'lib', 'chaos_spell_masteries_config.lua')
+POOL = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'damage_pool_config.lua')
 SUPPORTS = os.path.join(REPO, 'server', 'data', 'lib', 'chaos_supports_config.lua')
 MEASURED = os.path.join(REPO, 'server', 'data', 'spells', 'class_dps_measured.csv')
 LEVELS = (100, 500, 1000)
@@ -71,6 +76,12 @@ def load_config(path=CONFIG):
            'strength': int(re.search(r'\n\tstrength = (\d+)', text).group(1))}
     block = re.search(r'\n\treduce = \{(.*?)\n\t\}', text, re.S).group(1)
     cfg['reduce'] = {k: re.findall(r'"(\w+)"', v) for k, v in re.findall(r'(\w+) = \{([^}]*)\}', block)}
+    # O473 (2026-11-10): the damage choices (the brands) are entries of the additive damage pool: +each raw, no free support
+    dmg = re.search(r'\n\tdamage = \{([^}]*)\}', text)
+    cfg['damage'] = set(re.findall(r'(\w+) = true', dmg.group(1))) if dmg else set()
+    pool = open(POOL, encoding='utf-8').read()
+    cfg['pool_each'] = int(re.search(r'masteries = \{[^}]*each = (\d+)', pool).group(1))
+    cfg['pool_cap'] = int(re.search(r'masteries = \{[^}]*cap = (\d+)', pool).group(1))
     rows = []
     for m in re.finditer(r'\{id = (\d+), line = "(\w+)", node = (\d+), effect = (\d+), name = "([^"]+)", spell = (\d+), '
                          r'support = "(\w+)"\}', text):
@@ -98,6 +109,10 @@ def load_supports(path=SUPPORTS):
 def free_effect(cfg, supports, key):
     """{'value', 'value2'} of the free support: the rune's numbers at the config tier, the fields of `reduce` cut to the strength
     (rounded down, at least 1): the same rule as ChaosSupports.freeEffect in data/lib/chaos_supports.lua"""
+    if key in cfg.get('damage', ()):
+        # a pool entry: +each raw percent on the hits of the spell. Counted as the brand's "the spell's damage +value%": the most it can
+        # add (the soft cap of the pool only makes it smaller)
+        return {'value': cfg['pool_each'], 'value2': None}
     s = supports[key]
     e = {'value': s['values'][cfg['tier'] - 1], 'value2': s['values2'][cfg['tier'] - 1] if s['values2'] else None}
     for f in cfg['reduce'][key]:
@@ -268,7 +283,7 @@ def problems(rows=None):
     bad = []
     cfg = d['cfg']
     for c in cfg['choices']:
-        if c['support'] not in d['supports'] or c['support'] not in cfg['reduce']:
+        if c['support'] not in d['supports'] or (c['support'] not in cfg['reduce'] and c['support'] not in cfg['damage']):
             bad.append('%s: support %s is unknown or not reduced' % (c['name'], c['support']))
             continue
         nums, own = choice_numbers(c)
@@ -293,7 +308,9 @@ def table():
         e = free_effect(cfg, d['supports'], c['support'])
         rune = d['supports'][c['support']]
         parts = []
-        for f in cfg['reduce'][c['support']]:
+        if c['support'] in cfg['damage']:
+            parts.append('no free rune: +%d increased damage in the pool (O473)' % cfg['pool_each'])
+        for f in cfg['reduce'].get(c['support'], []):
             full = rune['values'][cfg['tier'] - 1] if f == 'value' else rune['values2'][cfg['tier'] - 1]
             parts.append('%d instead of %d' % (e[f], full))
         lines.append('| %s | %s | %s | %s | Common | none, reduced: %s | %+.0f%% / %+.0f%% | %+.1f%% / %+.1f%% |' % (

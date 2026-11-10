@@ -892,6 +892,28 @@ eq(me.storage[mcfg.storage], nil, "no spell modifier: storage -1")
 eq(next(S.effectsFor(me, 203)), nil, "and no effect")
 eq(ChaosSpellMasteries.idOf({spellMod = 99}), -1, "an id the config does not know is none")
 
+-- O473: a damage choice (a brand) is a pool entry while its spell is cast, no free support
+do
+	local demon2 = newCreature({pos = {x = 55, y = 50, z = 7}, health = 5000})
+	me.storage[mcfg.storage] = 5 -- Hallowed Ground: Blessed Earth (spell 216), dawnbrand
+	S.refreshActive(me)
+	eq(next(S.effectsFor(me, 216)), nil, "choice 5: no free brand on Blessed Earth (O473)")
+	me.storage[cfg.storageContext] = S.ctxEncode(9, 216)
+	eq(S.masteryPoolRaw(me, demon2, ORIGIN_SPELL), 3, "while Blessed Earth is cast: +3 raw")
+	eq(ChaosDamagePool.raws({attacker = me, creature = demon2, origin = ORIGIN_SPELL, cache = {}}, COMBAT_HOLYDAMAGE, "primary").masteries, 3,
+		"the provider of the damage pool")
+	eq(S.masteryPoolRaw(me, demon2, ORIGIN_CONDITION), 0, "never on a tick")
+	eq(S.masteryPoolRaw(me, me, ORIGIN_SPELL), 0, "never on oneself")
+	me.storage[cfg.storageContext] = S.ctxEncode(9, 201)
+	eq(S.masteryPoolRaw(me, demon2, ORIGIN_SPELL), 0, "another spell: nothing")
+	me.storage[cfg.storageContext] = S.ctxEncode(9, 216)
+	me.storage[mcfg.storage] = 1 -- Gorehook fork: a free support, not increased damage
+	eq(S.masteryPoolRaw(me, demon2, ORIGIN_SPELL), 0, "a free support choice adds nothing to the pool")
+	me.storage[mcfg.storage] = nil
+	me.storage[cfg.storageContext] = nil
+	S.refreshActive(me)
+end
+
 -- the loot hook
 local corpseItems = {}
 local corpse = {addItem = function(_, id, n) corpseItems[#corpseItems + 1] = id return true end}

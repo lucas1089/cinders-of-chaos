@@ -31,7 +31,8 @@ sup = M.load_supports()
 ok(cfg['tier'] == 1 and cfg['strength'] == 75, 'tier 1, strength 75')
 ok([c['id'] for c in cfg['choices']] == list(range(1, 21)), '20 choices with ids 1..20')
 for c in cfg['choices']:
-    ok(c['support'] in sup and c['support'] in cfg['reduce'], '%s: a support the config reduces' % c['name'])
+    # O473: the brands are damage choices (pool entries), the rest are supports the config reduces
+    ok(c['support'] in sup and (c['support'] in cfg['reduce'] or c['support'] in cfg['damage']), '%s: a support the config reduces or a damage choice' % c['name'])
     ok(1 <= c['effect'] <= 7, '%s: the effect position' % c['name'])
 ok(len(sup) == 20, '20 supports parsed (%d)' % len(sup))
 ok(sup['fork']['values2'][0] == 35 and sup['quickening']['values'][0] == 6 and sup['hex']['values'][0] == 3, 'Common numbers')
@@ -39,13 +40,16 @@ ok(sup['dawnbrand']['group'] == 'brand' and sup['dawnbrand']['element'] == 'holy
 
 # the free effect: the rune's numbers at tier 1, the reduced fields at 75% rounded down (data/lib/chaos_supports.lua freeEffect)
 want = {'fork': (1, 26), 'breadth': (1, 26), 'shatter': (15, None), 'quickening': (4, None), 'hex': (2, None), 'echo': (11, 50),
-        'dawnbrand': (15, None), 'gravebrand': (15, None), 'stormbrand': (15, None)}
+        'dawnbrand': (3, None), 'gravebrand': (3, None), 'stormbrand': (3, None)}
+ok(cfg['damage'] == {'dawnbrand', 'gravebrand', 'stormbrand'} and cfg['pool_each'] == 3 and cfg['pool_cap'] == 12,
+   'O473: the brands are pool entries, +3 raw each, at most 12')
 for key, (v, v2) in want.items():
     e = M.free_effect(cfg, sup, key)
     ok(e['value'] == v and e['value2'] == v2, '%s: free effect %r' % (key, e))
     rune = sup[key]
     ok(e['value'] <= rune['values'][0], '%s: value never above the Common rune' % key)
     ok(e['value2'] is None or e['value2'] <= rune['values2'][0], '%s: value2 never above the Common rune' % key)
+    ok((key in cfg['damage']) == (key in ('dawnbrand', 'gravebrand', 'stormbrand')), '%s: damage choice or free support' % key)
 ok({c['support'] for c in cfg['choices']} == set(want), 'the choices use exactly the supports of the table')
 
 # one cast of a synthetic spell

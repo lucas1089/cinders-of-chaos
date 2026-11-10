@@ -1811,6 +1811,16 @@ function Gen.supportEntries(D)
 					{"World boss", string.format("%d for every eligible player.", cfg.rewards.worldboss.count)}}},
 				-- last, so that a support without the section leaves no hole in the list
 				mods[t.key] and {h = "Spell modifier masteries", p = (function()
+					if S.mastery.damage and S.mastery.damage[t.key] then
+						-- O473: a brand choice is increased damage of the one damage pool, no free support
+						local pool = dofile("data/scripts/chaos/damage_pool_config.lua")
+						local list = {string.format("A mastery effect of the passive tree adds %d increased damage to one named spell while it is cast. It joins the one additive damage pool of the tree and gear, at most %d from masteries, and gives no free %s.",
+							pool.sources.masteries.each, pool.sources.masteries.cap, t.name)}
+						for _, line in ipairs(mods[t.key]) do
+							list[#list + 1] = line .. "."
+						end
+						return list
+					end
 					local free = S.freeEffect(t.key)
 					local effect = t.text:gsub("%%(%d)", function(n)
 						return tostring(n == "1" and free.value or free.value2)

@@ -105,16 +105,32 @@ function F.tempoHaste(stacks)
 end
 
 -- the multiplier of a hit swung with `stacks` stacks: the interval it was swung at over the interval without tempo (1 when
--- the cap held the swing back, so a capped swing is not lighter for nothing), times 1 + the edge of the stacks
+-- the cap held the swing back, so a capped swing is not lighter for nothing). O473: the edge of the stacks is no multiplier any
+-- more, it is raw percent of the additive damage pool (F.tempoEdge)
 function F.tempoFactor(stacks, intervalNow, intervalBase)
-	local t = tempoCfg()
-	stacks = math.max(0, math.min(t.maxStacks, num(stacks)))
 	local ratio = 1
 	intervalNow, intervalBase = num(intervalNow), num(intervalBase)
 	if intervalBase > 0 and intervalNow > 0 and intervalNow < intervalBase then
 		ratio = intervalNow / intervalBase
 	end
-	return ratio * (1 + num(t.edge) * stacks / t.maxStacks)
+	return ratio
+end
+
+-- O473: the edge of the stacks the swing had, as raw percent of the additive damage pool: edge x 100 x stacks / maxStacks
+-- (2 at full stacks)
+function F.tempoEdge(stacks)
+	local t = tempoCfg()
+	stacks = math.max(0, math.min(t.maxStacks, num(stacks)))
+	return num(t.edge) * 100 * stacks / t.maxStacks
+end
+
+-- the stacks the NEXT hit on `targetId` at `now` will be swung with: what F.tempoStep returns as `before`, without changing the state
+function F.tempoPeek(state, targetId, now, pvp)
+	local t = tempoCfg()
+	if not state or state.target ~= targetId or not state.last or now - state.last > t.windowMs then
+		return 0
+	end
+	return math.min(F.tempoMax(pvp), state.stacks or 0)
 end
 
 -- ----------------------------------------------------------------------------------------------------------- axe: cleave

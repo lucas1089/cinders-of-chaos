@@ -47,41 +47,62 @@ local function clamp(x, lo, hi)
 	return math.max(lo, math.min(hi, x))
 end
 
+-- O473 (2026-11-10): the "more damage" part of a passive of the families lowlife, overflow, opener, focus, statscale, crowd, stacks and
+-- mark is raw percent of the one additive damage pool: each passive at most EACH, all together at most POOLCAP
+-- (damage_pool_config.lua sources.uniques). gain() returns the multiplicative part d (the prices, critrule, convert), the survival
+-- part s and the expected raw percent of the pool part (as a fraction); one passive alone is d x (1 + pool) x s.
+local POOL = dofile("data/scripts/chaos/damage_pool_config.lua").sources.uniques
+local EACH, POOLCAP = POOL.each, POOL.cap
+local function pb(x)
+	return math.min(x, EACH)
+end
+
 -- (dealt multiplier, survive multiplier) of one passive for a class line at a level
 local function gain(e, line, level)
 	local o = A.origin[line]
 	local crit = A.critChance + ownCrit(e.id) / 100
 	local f = e.family
-	local d, s = 1, 1
+	local d, s, pool = 1, 1, 0
 	if f == "convert" then
 		local pf = A.physical[line]
 		d = 1 + pf * e.share / 100 * e.bonus / 100 - (1 - pf) * e.other / 100 * 0.5
 	elseif f == "lowlife" then
-		d = 1 + A.lowLifeTime * e.bonus / 100 - A.highLifeTime * e.malus / 100
+		d = 1 - A.highLifeTime * e.malus / 100
+		pool = A.lowLifeTime * pb(e.bonus) / 100
 	elseif f == "overflow" then
-		d = 1 + A.fullManaTime * e.bonus / 100 - A.emptyManaTime * e.malus / 100
+		d = 1 - A.emptyManaTime * e.malus / 100
+		pool = A.fullManaTime * pb(e.bonus) / 100
 	elseif f == "opener" then
 		local up = e.side == "above" and A.hitAbove90 or 0.3
 		local down = e.side == "above" and A.hitBelow25 or 0.35
-		d = 1 + up * e.bonus / 100 - down * e.malus / 100
+		d = 1 - down * e.malus / 100
+		pool = up * pb(e.bonus) / 100
 	elseif f == "focus" then
-		local sum = 0
+		local sum, psum = 0, 0
 		for i = 1, A.chain do
-			sum = sum + (i == 1 and (1 - e.first / 100) or (1 + math.min(e.max, i - 1) * e.perStack / 100))
+			if i == 1 then
+				sum = sum + (1 - e.first / 100)
+			else
+				sum = sum + 1
+				psum = psum + pb(math.min(e.max, i - 1) * e.perStack) / 100
+			end
 		end
 		d = sum / A.chain
+		pool = psum / A.chain
 	elseif f == "statscale" then
 		local share = e.origin == "any" and 1 or (o[e.origin] or 0)
 		local pct = math.min(e.cap, math.floor(math.max(0, A.stat(e.stat, level) - e.from) / e.per) * e.bonusPer)
-		d = 1 + share * pct / 100
+		pool = share * pb(pct) / 100
 	elseif f == "critrule" then
 		d = 1 + crit * e.crit / 100 - (1 - crit) * e.plain / 100
 		s = 1 + A.hitsPerSec * crit * (e.heal / 100) * 0.3 * A.healWeight / 10
 	elseif f == "crowd" then
 		if e.mode == "pack" then
-			d = 1 + 0.8 * math.min(e.max, A.nearbyMonsters) * e.per / 100 - 0.2 * e.alone / 100
+			d = 1 - 0.2 * e.alone / 100
+			pool = 0.8 * pb(math.min(e.max, A.nearbyMonsters) * e.per) / 100
 		else
-			d = 1 + 0.25 * e.bonus / 100 - 0.35 * e.malus / 100
+			d = 1 - 0.35 * e.malus / 100
+			pool = 0.25 * pb(e.bonus) / 100
 		end
 	elseif f == "extra" then
 		local share = e.origin == "any" and 1 or (o[e.origin] or 0)
@@ -97,7 +118,7 @@ local function gain(e, line, level)
 	elseif f == "stacks" then
 		local rate = e.trigger == "kill" and A.killsPerSec or A.hitsPerSec * crit
 		local avg = math.min(e.max, e.windowMs / 1000 * rate)
-		d = 1 + avg * e.perStack / 100
+		pool = pb(avg * e.perStack) / 100
 		s = 1 / (1 + avg * e.takenPerStack / 100)
 	elseif f == "feast" then
 		local perSec = math.min(e.capPerSec, A.killsPerSec * e.onKill)
@@ -120,7 +141,8 @@ local function gain(e, line, level)
 		s = (1 + math.min(CFG.mendMaxPct, perSec) / 100 * A.healWeight * 1.4) * (1 - e.healLess / 100 * A.healShare)
 	elseif f == "mark" then
 		local frac = math.min(1, e.max / 2.5)
-		d = 1 + frac * e.bonus / 100 - (1 - frac) * e.unmarked / 100
+		d = 1 - (1 - frac) * e.unmarked / 100
+		pool = frac * pb(e.bonus) / 100
 	elseif f == "nova" then
 		local rate = e.on == "kill" and A.killsPerSec or (e.on == "crit" and A.hitsPerSec * crit or A.hurtPerSec)
 		local ev = math.min(1000 / e.icdMs, rate)
@@ -133,12 +155,12 @@ local function gain(e, line, level)
 	if e.takenMore then
 		s = s / (1 + e.takenMore / 100)
 	end
-	return d, s
+	return d, s, pool
 end
 
 local function totalGain(e, line, level)
-	local d, s = gain(e, line, level)
-	return d * s
+	local d, s, pool = gain(e, line, level)
+	return d * (1 + pool) * s
 end
 
 local mode = arg and arg[1]
@@ -269,22 +291,24 @@ for _, line in ipairs(CFG.lineOrder) do
 		for _, id in ipairs(ids) do
 			local e = C.entry(CFG, id)
 			if e.lv >= band[1] and e.lv <= band[2] and C.worksFor(CFG, e, line) then
-				local d, sv = gain(e, line, math.max(e.lv, 20))
-				list[#list + 1] = {e = e, g = d * sv, d = d, s = sv}
+				local d, sv, pool = gain(e, line, math.max(e.lv, 20))
+				list[#list + 1] = {e = e, g = d * (1 + pool) * sv, d = d, s = sv, pool = pool}
 			end
 		end
 		table.sort(list, function(a, b) return a.g > b.g end)
-		local sum, bestD, bestS, fam, used = 0, 1, 1, {}, 0
+		local sum, bestD, bestS, fam, used, bestPool = 0, 1, 1, {}, 0, 0
 		for _, r in ipairs(list) do
 			sum = sum + r.g
 			if used < CFG.maxActive and not fam[r.e.family] then
 				fam[r.e.family] = true
 				used = used + 1
-				bestD, bestS = bestD * r.d, bestS * r.s
+				bestD, bestS, bestPool = bestD * r.d, bestS * r.s, bestPool + r.pool
 			end
 		end
-		-- the engine's clamps: damage dealt in [dealtFloor, dealtCap], damage taken in [takenFloor, takenCeil]
-		local best = clamp(bestD, CFG.dealtFloor, CFG.dealtCap) * clamp(bestS, 1 / CFG.takenCeil, 1 / CFG.takenFloor)
+		-- the engine's clamps: the multiplicative part in [dealtFloor, dealtCap], the pool part at most POOLCAP raw (O473), damage taken
+		-- in [takenFloor, takenCeil]
+		local best = clamp(bestD, CFG.dealtFloor, CFG.dealtCap) * (1 + math.min(bestPool, POOLCAP / 100))
+			* clamp(bestS, 1 / CFG.takenCeil, 1 / CFG.takenFloor)
 		local avg = #list > 0 and sum / #list or 1
 		print(string.format("%-12s %-12s %5d %9.3f %9.3f", line, band[1] .. "-" .. band[2], #list, avg, best))
 		if #list < 3 then

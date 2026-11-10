@@ -842,7 +842,11 @@ do
 			ok(b.pct > 0 and b.pct <= S.damagePartMax, name .. ": the damage part is at most " .. S.damagePartMax .. "%")
 		end
 	end
-	eq(S.damagePartMax, 6, "the cap of a damage part is 6%")
+	eq(S.damagePartMax, 4, "the cap of a damage part is 4% (O473: the cap of the card set entry of the damage pool)")
+	do
+		local pc = dofile("data/scripts/chaos/damage_pool_config.lua")
+		eq(pc.sources.cardSets.cap, S.damagePartMax, "the pool cap of a card set is the damage part cap")
+	end
 	-- smaller than the snare of the same element (snares_config.lua)
 	local sn = dofile("data/scripts/chaos/snares_config.lua").effects
 	ok(S.by.Fire.pct < sn.burnShare * 100, "Fire: smaller than the burn of the snare")
@@ -1080,8 +1084,22 @@ do
 		return t
 	end
 	local hitEvent = registered.ChaosCardsHit
+	-- O473: the hit event keeps the set's effects; the damage part of the Fire set is an entry of the additive damage pool
+	-- (M.poolRaw, provider "cardSets"), so hitOf adds it the way ChaosPassiveDealt does: 1 + soft(raw) / 100 on a damage part
 	local function hitOf(p, t, pd, pt, sd, st, origin)
-		return hitEvent.onHealthChange(t, p, pd, pt, sd, st or 0, origin or 2)
+		pd, pt, sd, st = hitEvent.onHealthChange(t, p, pd, pt, sd, st or 0, origin or 2)
+		local function part(d, ty)
+			if not d or d >= 0 or not ty then
+				return d
+			end
+			local raw = M.poolRaw(p, t, ty, origin or 2)
+			if raw <= 0 then
+				return d
+			end
+			local _, sum = ChaosDamagePool.combine({cardSets = raw}, 0, ty)
+			return -math.floor(-d * ChaosDamagePool.factor(sum) + 1e-6)
+		end
+		return part(pd, pt), pt, part(sd, st), st
 	end
 
 	-- Ranger line (vocation 3): the Fire set is Sanctum Burst, Frostfall Rune and Dawnpiercer at tier 1
