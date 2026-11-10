@@ -46,12 +46,12 @@
 		</defense>
 	</defenses>
 	<elements>
-		<element energyPercent="60"/>
-		<element earthPercent="60"/>	
-		<element holyPercent="60"/>
-		<element deathPercent="60"/>
-		<element icePercent="60"/>
-		<element firePercent="60"/>
+		<element energyPercent="40"/>
+		<element earthPercent="40"/>	
+		<element holyPercent="40"/>
+		<element deathPercent="40"/>
+		<element icePercent="40"/>
+		<element firePercent="40"/>
 	</elements>
 	<immunities>
       	<immunity lifedrain="1"/>

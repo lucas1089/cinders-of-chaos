@@ -181,12 +181,30 @@ breaks("a Founder Pack off its price anchor", "the anchor is 499", function() lo
 breaks("a grand pack at the first pack's price", "x the first", function() local v = fg.cost; fg.cost = 600; return function() fg.cost = v end end)
 breaks("a Founder Pack that can be gifted", "must not be giftable", function() local v = fp.gift; fp.gift = nil; return function() fp.gift = v end end)
 breaks("a Founder Pack bought twice", "once per account", function() local v = fp.oncePerAccount; fp.oncePerAccount = nil; return function() fp.oncePerAccount = v end end)
-breaks("a Founder Pack without its window", "window differs", function() local v = fp.availableUntil; fp.availableUntil = nil; return function() fp.availableUntil = v end end)
+-- the launch is open in the shipped config (O463): the pack must be "not yet on sale" with no window
+check(env.founder.open == true and fp.availableSoon == true and fp.availableFrom == nil and fp.availableUntil == nil, "open: the packs have no window and are not on sale")
+breaks("a Founder Pack that could be sold while the launch is open", "launch is open", function() local v = fp.availableSoon; fp.availableSoon = nil; return function() fp.availableSoon = v end end)
+breaks("a Founder Pack with a window while the launch is open", "launch is open", function() local v = fp.availableUntil; fp.availableUntil = "2031-04-11 18:00"; return function() fp.availableUntil = v end end)
+-- with a launch date set (an example): the window rules
+local envSet = M.load({launch = "2031-03-14 18:00"})
+local baseSet = M.problems(envSet)
+for _, p in ipairs(baseSet) do print("problem (set): " .. p) end
+check(#baseSet == 0, "the real store passes every rule with a launch date set")
+local fpSet = envSet.byKey["founder:pack"]
+check(fpSet.availableFrom == "2031-03-14 18:00" and fpSet.availableUntil == "2031-04-11 18:00" and not fpSet.availableSoon, "set: the window is launch to launch + 28 days")
+local function breaksSet(label, text, change)
+	local undo = change()
+	local problems = M.problems(envSet)
+	undo()
+	check(has(problems, text), label .. " is caught (" .. text .. ")")
+end
+breaksSet("a Founder Pack without its window", "window differs", function() local v = fpSet.availableUntil; fpSet.availableUntil = nil; return function() fpSet.availableUntil = v end end)
+breaksSet("a Founder Pack that is marked not yet on sale", "window differs", function() fpSet.availableSoon = true; return function() fpSet.availableSoon = nil end end)
 breaks("a Founder Pack with an item in it", "neither a cosmetic piece nor Pact days", function()
 	fp.parts[#fp.parts + 1] = {kind = "item", id = 7590, count = 100, cost = 50}
 	return function() fp.parts[#fp.parts] = nil end end)
 breaks("a Founder Pack with too many Pact days", "Pact days", function() local v = env.founder.tiers[1].pactDays; env.founder.tiers[1].pactDays = 30; return function() env.founder.tiers[1].pactDays = v end end)
-breaks("a Founder Pack sold for too long", "days (", function() local v = env.founder["end"]; env.founder["end"] = "2027-03-01 15:00"; return function() env.founder["end"] = v end end)
+breaksSet("a Founder Pack sold for too long", "days (", function() local v = envSet.founder["end"]; envSet.founder["end"] = "2032-03-01 15:00"; return function() envSet.founder["end"] = v end end)
 breaks("a Founder piece that is not a cosmetic", "not a cosmetic", function()
 	local e; for _, x in ipairs(env.exclusives.exclusives) do if x.key == "wings_gold_peacock" then e = x end end
 	local v = e.kind; e.kind = "pet"; return function() e.kind = v end end)

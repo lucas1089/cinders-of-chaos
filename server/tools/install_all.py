@@ -236,6 +236,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   basemonsters tools/patch_base_monsters.py      load warnings of the base monsters: speed spells below -1000 clamped, loot
                names with their article by item id, unknown races mapped, fire and physical immunity -> 30% resistance
                (README "Base server start warnings"; after itemnames)
+  monsterresists tools/patch_monster_resists.py  the resistance data of the monsters: a normal monster's element percents at most 40,
+               a boss's at most 75, an immunity to a damage type becomes that number, the flat 30 on seven types is thinned to
+               three (chosen by a hash of the name), weaknesses stay (README "Monster defence (O462)"; after basemonsters)
   baselooks    tools/patch_base_looks.py         pair 30 sheet looks and pair 33 kit looks on matching base monsters (rows of family
                "base" of client/tools/sprites/monster_looks/picks.csv; README "Pack 30 monsters in the hunts")
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
@@ -1179,6 +1182,14 @@ def step_baselooks(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('basemonsters') + 1, 'baselooks')  # sheet / kit looks on base monsters (names: monsternames)
+
+
+def step_monsterresists(server, data, ctx):
+    args = [tool('patch_monster_resists.py'), data, '--quiet'] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_monster_resists.py'))
+
+
+STEPS.insert(STEPS.index('basemonsters') + 1, 'monsterresists')  # resistance caps 40 / 75 in every monster file (O462)
 
 
 def step_gnometeleports(server, data, ctx):

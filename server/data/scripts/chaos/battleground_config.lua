@@ -128,9 +128,10 @@ return {
 	-- ------------------------------------------------------------------ PvP seasons (arena_season.lua)
 	season = {
 		weeks = 8, -- season length
-		-- season 1 starts here, the launch (Fri 20 Nov 2026 15:00, server local time; owner 2026-10-29); season n =
-		-- floor((now - epoch) / length) + 1. Season 1 ends Fri 15 Jan 2027 15:00. Before the epoch it is season 1 (not started).
-		epoch = {year = 2026, month = 11, day = 20, hour = 15},
+		-- season 1 starts here, the launch (server local time; owner 2026-10-29); season n = floor((now - epoch) / length) + 1.
+		-- Season 1 ends `weeks` weeks later. Before the epoch it is season 1 (not started). The epoch is the one launch value
+		-- (launch_config.lua, O463): nil while the launch is open, and then it is season 1 with no start and no end.
+		epoch = dofile("data/scripts/chaos/launch_core.lua").parts(0),
 		brackets = {"1v1", "2v2", "3v3", "bg"},
 		bracketNames = {["1v1"] = "Arena 1v1", ["2v2"] = "Arena 2v2", ["3v3"] = "Arena 3v3", bg = "Battleground"},
 		-- Glicko-lite: rating r and deviation rd. One rated match = one Glicko-1 period against the other team's

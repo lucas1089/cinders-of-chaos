@@ -1,7 +1,8 @@
 # Beta readiness: go / no-go checklist
 
 Written 2026-10-14 from what the repository holds. Dates are the proposal of docs/OWNER_TODO.md "Dates":
-open beta weekends Sat 31 Oct and Sat 7 Nov 2026, launch Fri 20 Nov 2026 15:00 (UTC-3).
+open beta weekends Sat 31 Oct and Sat 7 Nov 2026. The launch date is on hold (owner, 2026-11-10; docs/LAUNCH.md "Launch date:
+on hold"); L below is the launch day, with no date yet.
 The full beta plan is docs/BETA.md. The install steps are docs/LAUNCH.md. This file only says what must be true, who
 does it and how to check it.
 
@@ -20,7 +21,7 @@ VPS timezone, which keys the VPS holds. Those rows stay open until the owner con
 |---|---|
 | **B** Blocker for beta | No beta on 31 Oct without it. Done by **Wed 28 Oct**. |
 | **S** Should before beta | The beta can open without it, with the listed fallback. Target **Fri 30 Oct**. |
-| **L** Before launch | Needed by **Wed 18 Nov**, the wipe and launch install. |
+| **L** Before launch | Needed by L-2 (a Wednesday), the wipe and launch install. |
 | **N** Nice to have | No date. |
 
 Owner = the project owner: a decision, an account, a key, a text or money. Dev = the developer.
@@ -35,7 +36,7 @@ closed staff-only weekend.
 | B1 | **Beta host.** Game server with a fast core (3 GHz+), 16 GB RAM, MariaDB on local NVMe. Choice in docs/HOSTING.md. | Owner | `fio` fsync test of LAUNCH.md section 2 prints a few ms or less. |
 | B2 | **Domain and HTTPS.** Site address `https://...` and a DNS name for the game. | Owner | `curl -I https://<site>` gives 200 with a valid certificate. The play host resolves. |
 | B3 | **Beta dates and owner decisions in docs/BETA.md.** Open or closed, the wipe scope, test coins, Blood Moon on or off. Partly decided: the owner confirmed the launch date and the wipe on 2026-10-29 (BETA.md status line). Other choices are still marked "Owner decides". | Owner | BETA.md has no "Owner decides" left. |
-| B4 | **Season 1 start.** Done 2026-10-29: `season_config.lua` starts Season 1 with the launch, 20 Nov 2026 15:00, to 19 Feb 2027; the PvP epoch is the launch too. | Dev (done) | `/season status` on the beta server: not started. `season_test.lua` passes. |
+| B4 | **Season 1 start.** Done 2026-10-29: `season_config.lua` starts Season 1 with the launch and runs it 91 days; the PvP epoch is the launch too. Both read `launch_config.lua`, which is "open" until the owner sets the date (2026-11-10). | Dev (done) | `/season status` on the beta server: not started. `season_test.lua` passes. |
 | B5 | **Pace rebalance committed or switched off.** `pace.lua`, `pace_core.lua`, `pace_config.lua` and `tests/pace_test.lua` are untracked work in progress. `enabled = true`. ROADMAP #151 says LIVECHECK. `chaos_update.sh` refuses a dirty checkout. | Dev | `git status --short` clean on the beta tag. CI green. One live hunt with pace on. |
 | B6 | **Load test with packs.** Done for 300 (`01330d01`, server/README.md "Load test with area classes"). Full map, pace on, 73% area classes, on a 4 vCPU 2.1 GHz box that also ran the bots. 300 bots pass: lag about 60 ms, p95 about 105 ms, no 500 ms stall after the loot filter fix. 400 bots fail on that box: lag about 70 ms, p95 about 165 ms, 2-5 stalls. The beta stays at `maxPlayers` 300. The launch cap is L5. | Dev | Done for 300. Repeat on the beta host: `loadtest.py setup --spread`, `run --hunt --classes` at 300 bots, then `loadtest.py cleanup`. Fallback for load is a lower `maxPlayers`, not `pace_config.lua` `enabled = false` (pace off is heavier). |
 | B7 | **CI green and a clean install** on the beta commit. | Dev | All CLAUDE.md checks pass. `install_all.py --dry-run`, real run, second run reports 0 changes. |
@@ -84,7 +85,7 @@ closed staff-only weekend.
 | L7 | **Pace calibration.** Walk times from the beta hunt tracker; `pace_config.lua` `scale` (xp 1.3, loot 1.2 from the live check of 2026-10-14). Elementalist, Mystic, Berserker and Beastmaster model at 1.3-1.6x the median class: owner decision 2026-10-14, keep them as they are through the beta and decide from real data (options: less area damage, which also touches PvP, or a per-class experience factor). | Owner, Dev | Telemetry XP/h and gold/h per band and per class near the leveling model. |
 | L8 | **Classes in progress.** C2, C3, C4 polish, Necromancer effect skins. Decide what ships. | Owner | ROADMAP C rows say done or deferred. |
 | L9 | **Chronicle.** Story and goal sizes approved 2026-10-14 (owner delegated). The Breach, the Ossuary Stair and the Memorial plaza are placed by install step `contentareas`; gates in the capital temple's upper hall. Left: look at them in game. | Dev | `/chronicle` lists both areas as placed; `/memorial` says the plaza is placed; the three portals stand in the hall. |
-| L10 | **Release client.** Final `client_build`, updater on, dress rehearsal Thu 19 Nov (LAUNCH.md section 13). | Dev, staff | Section 13 steps all pass. |
+| L10 | **Release client.** Final `client_build`, updater on, dress rehearsal on L-1 (LAUNCH.md section 13). | Dev, staff | Section 13 steps all pass. |
 | L11 | **Gateways** if S1 slipped, and a new backend IP. | Owner, Dev | As S1. |
 
 ## Nice to have (N)
@@ -136,5 +137,5 @@ closed staff-only weekend.
 | Fri 30 Oct 20:00 | B20 smoke test. Go or no-go. |
 | Sat 31 Oct 15:00 | Weekend 1 opens. |
 | Sat 7 Nov 15:00 | Weekend 2 opens. |
-| Wed 18 Nov | Every L row done. Wipe and launch install. |
-| Fri 20 Nov 15:00 | Launch. |
+| L-2 (Wed) | Every L row done. Wipe and launch install. |
+| L (Fri) 15:00 | Launch. The date is on hold. |

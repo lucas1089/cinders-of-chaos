@@ -120,7 +120,7 @@ $j = json_decode($raw, true);
 check(is_array($j) && count($j['sections']) >= 8, 'the guide has its sections');
 $ids = array_map(static function ($s) { return $s['id']; }, (array)$j['sections']);
 foreach (array('start', 'apply', 'code', 'rules', 'brand', 'kit', 'obs', 'promo', 'checklist') as $want) { check(in_array($want, $ids, true), "guide section: $want"); }
-$allowed = array('share', 'bonus', 'support', 'hold', 'orderCap', 'monthlyCap', 'bonusDays', 'launch', 'end', 'discord');
+$allowed = array('share', 'bonus', 'support', 'hold', 'orderCap', 'monthlyCap', 'bonusDays', 'launch', 'end', 'launchWhen', 'discord');
 $leaf = static function ($v, $f) use (&$leaf) { if (is_array($v) && isset($v['en'])) { $f($v); } elseif (is_array($v)) { foreach ($v as $x) { $leaf($x, $f); } } };
 $leaf($j, static function ($pair) use ($allowed) {
 	check(($pair['pt-BR'] ?? '') !== '' && ($pair['en'] ?? '') !== '', 'guide text in both languages: ' . substr((string)($pair['en'] ?? ''), 0, 40));
@@ -139,10 +139,19 @@ foreach (array('pt-BR', 'en') as $lang) {
 	check(strpos($text, 'https://discord.gg/example') !== false, "$lang guide: the Discord link of CHAOS_DISCORD_URL");
 	check(strpos(json_encode(chaos_creators_guide($lang, 'javascript:alert(1)')), 'javascript:') === false, "$lang guide: only an https Discord link");
 }
+// the launch is open (O463, launch_config.lua): no dates, "em breve" / "coming soon", the window described without dates
 $ptGuide = chaos_creators_guide_numbers('pt-BR');
-check($ptGuide['launch'] === '20/11/2026 15:00' && $ptGuide['end'] === '20/12/2026 15:00', 'pt-BR launch window dates: ' . $ptGuide['launch'] . ' to ' . $ptGuide['end']);
+check($ptGuide['launch'] === 'em breve' && $ptGuide['end'] === 'em breve' && $ptGuide['launchWhen'] === 'data em breve', 'pt-BR launch window while the launch is open: ' . $ptGuide['launch'] . ' to ' . $ptGuide['end']);
 $enGuide = chaos_creators_guide_numbers('en');
-check($enGuide['launch'] === '20 Nov 2026, 15:00' && $enGuide['end'] === '20 Dec 2026, 15:00', 'en launch window dates');
+check($enGuide['launch'] === 'coming soon' && $enGuide['end'] === 'coming soon' && $enGuide['launchWhen'] === 'date coming soon', 'en launch window while the launch is open');
+$ptText = json_encode(chaos_creators_guide('pt-BR'), JSON_UNESCAPED_UNICODE);
+check(strpos($ptText, 'data em breve') !== false && preg_match('#\d{2}/\d{2}/20\d\d#', $ptText) === 0, 'the pt-BR guide has no date while the launch is open');
+// with an example launch (never the owner's date): the dates come back, 30 days apart
+$ptSet = chaos_creators_guide_numbers('pt-BR', '', 'return {launch = "2031-03-14 15:00"}');
+check($ptSet['launch'] === '14/03/2031 15:00' && $ptSet['end'] === '13/04/2031 15:00' && $ptSet['launchWhen'] === 'de 14/03/2031 15:00 até 13/04/2031 15:00', 'pt-BR launch window dates with a launch: ' . $ptSet['launch'] . ' to ' . $ptSet['end']);
+$enSet = chaos_creators_guide_numbers('en', '', 'return {launch = "2031-03-14 15:00"}');
+check($enSet['launch'] === '14 Mar 2031, 15:00' && $enSet['end'] === '13 Apr 2031, 15:00' && $enSet['launchWhen'] === 'from 14 Mar 2031, 15:00 to 13 Apr 2031, 15:00', 'en launch window dates with a launch');
+check(strpos(chaos_creators_text(array('pt-BR' => 'x {launchWhen} {bonus}% {share}%', 'en' => 'y'), 'pt-BR', 'return {launch = "2031-03-14 15:00"}'), 'x de 14/03/2031 15:00 até 13/04/2031 15:00 15% 10%') === 0, 'creators_text fills the window and the percents');
 
 // the Python side quotes the same numbers
 $py = array();

@@ -90,7 +90,7 @@
         },
         {
           "file": "server/data/scripts/chaos/creator_codes_config.lua",
-          "has": "launchBonusStart = \"2026-11-20 15:00\""
+          "has": "launchBonusStart = dofile(\"data/scripts/chaos/launch_core.lua\").stamp(0)"
         },
         {
           "file": "server/data/scripts/chaos/creator_codes_config.lua",
@@ -102,8 +102,8 @@
         "en": "Launch-window bonus"
       },
       "text": {
-        "pt-BR": "Nas doações creditadas nos primeiros 30 dias depois do lançamento (de 20/11/2026 15:00 a 20/12/2026), a sua parte é de 15% das moedas, em vez de 10%. Os limites por doação e por mês continuam valendo, e um código com porcentagem própria mantém a dele.",
-        "en": "For donations credited in the first 30 days after the launch (from 20 Nov 2026, 15:00 to 20 Dec 2026), your share is 15% of the coins instead of 10%. The caps per donation and per month still apply, and a code with its own percentage keeps it."
+        "pt-BR": "Nas doações creditadas nos primeiros {bonusDays} dias depois do lançamento ({launchWhen}), a sua parte é de {bonus}% das moedas, em vez de {share}%. Os limites por doação e por mês continuam valendo, e um código com porcentagem própria mantém a dele.",
+        "en": "For donations credited in the first {bonusDays} days after the launch ({launchWhen}), your share is {bonus}% of the coins instead of {share}%. The caps per donation and per month still apply, and a code with its own percentage keeps it."
       }
     },
     {

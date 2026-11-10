@@ -169,11 +169,32 @@ ok(rowText("siege", "often", "pt"):find("sábado às 20:00", 1, true), "siege: p
 ok(rowText("invasion", "often", "en"):find("Wednesday 19:30 and Sunday 17:30", 1, true), "invasion: schedule"); count()
 ok(rowText("bosses", "often", "en"):find("03:00, 09:00, 15:00, 21:00", 1, true), "world boss hours"); count()
 ok(rowText("tower", "death", "en"):find("never lose items", 1, true), "death rule text"); count()
-ok(rowText("season", "often", "pt"):find("20/11/2026", 1, true), "season dates"); count()
+-- the launch is open (O463, launch_config.lua): the season card says "coming soon", with no date, in both languages
+ok(rowText("season", "often", "pt"):find("Season of Ash chega em breve.", 1, true), "season: pt says coming soon while the launch is open"); count()
+ok(rowText("season", "often", "en"):find("Season of Ash is coming soon.", 1, true), "season: en says coming soon while the launch is open"); count()
+ok(not rowText("season", "often", "pt"):find("%d%d/%d%d/20%d%d"), "season: no date while the launch is open"); count()
 ok(rowText("descent", "often", "pt"):find("50.000", 1, true), "pt thousands"); count()
 ok(rowText("pets", "what", "en"):find("companion", 1, true), "unlock card text is the entry's own"); count()
 ok(rowText("passive", "who", "en"):find("level 12, then one more every 4 levels", 1, true), "passive: first point"); count()
 ok(rowText("transmog", "often", "pt"):find("2.000", 1, true), "transmog: pt thousands"); count()
+
+-- with an example launch the season card has its dates again, from the launch to 13 weeks later
+do
+	ChaosLaunch.override = {launch = "2031-03-14 15:00"}
+	local C3 = Gen.load()
+	ChaosLaunch.override = nil
+	local d3 = Gen.build(C3, P)
+	local seasonCard
+	for _, f in ipairs(d3.features) do
+		if f.key == "season" then seasonCard = f end
+	end
+	local often
+	for _, r in ipairs(seasonCard.rows) do
+		if r.id == "often" then often = r end
+	end
+	eq(often.en, "Season of Ash runs from 14 Mar 2031 to 13 Jun 2031. Only one season runs at a time.", "season card en with a launch"); count()
+	eq(often.pt, "Season of Ash vai de 14/03/2031 a 13/06/2031. Só uma temporada roda por vez.", "season card pt with a launch"); count()
+end
 
 -- the numbers are derived: change a config, the text follows
 do

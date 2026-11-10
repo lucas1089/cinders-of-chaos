@@ -42,12 +42,12 @@
 		</defense>
 	</defenses>
 	<elements>
-		<element physicalPercent="55"/>
+		<element physicalPercent="40"/>
 		<element firePercent="35"/>
 		<element energyPercent="35"/>
 		<element icePercent="35"/>
 		<element earthPercent="35"/>
-		<element deathPercent="55"/>
+		<element deathPercent="40"/>
 	</elements>
 	<voices interval="5000" chance="10">
 		<voice sentence="The dusk is mine to eat!"/>

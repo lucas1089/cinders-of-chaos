@@ -144,7 +144,11 @@ local function renderSeason(list)
     addLabel(list, 'BgWrap', tr('PvP seasons are not running on this server.'), '#8c8070')
     return
   end
-  addLabel(list, 'BgHead', tr('PvP Season %d: ends in %s', season.id or 1, V.span((season.endsIn or 0) - (now() - stateAt))), '#ff9a3c')
+  if season.endsIn == nil then
+    addLabel(list, 'BgHead', tr('PvP Season %d: coming soon', season.id or 1), '#ff9a3c')
+  else
+    addLabel(list, 'BgHead', tr('PvP Season %d: ends in %s', season.id or 1, V.span(season.endsIn - (now() - stateAt))), '#ff9a3c')
+  end
   addLabel(list, 'BgWrap', tr('A season lasts %d weeks. Each bracket has its own rating; the first %d rated matches place you. At the ' ..
     'end the best placed bracket decides your tier and rewards, then every rating is pulled halfway back to 1500. Ratings of %d and ' ..
     'more lose %d a week after %d days without a rated match of that bracket (never below %d).', season.weeks or 8, season.placement or 5,

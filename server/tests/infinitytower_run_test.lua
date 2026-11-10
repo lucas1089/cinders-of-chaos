@@ -57,8 +57,8 @@ function Game.createMonster(name, pos)
   return m
 end
 function MonsterType(name) return name ~= "ghost-of-nothing" end
--- the stock tier multiplies the health by its hp (monster_tiers.lua ChaosTiers)
-ChaosTiers = {magic = {hp = 2.0}, rare = {hp = 3.5}, legendary = {hp = 6.0}}
+-- the stock tier multiplies the health by its hp (monster_tiers.lua ChaosTiers, O462: x2.48 / x4.90 / x7.98)
+ChaosTiers = {magic = {hp = 2.48}, rare = {hp = 4.90}, legendary = {hp = 7.98}}
 ChaosApplyTier = function(m, tier) m.tier = tier; m.maxHp = math.floor(m.maxHp * ChaosTiers[tier].hp); m.hp = m.maxHp; return true end
 
 local recorded = {}

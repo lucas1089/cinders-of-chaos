@@ -31,7 +31,7 @@
 	<elements>
 		<element physicalPercent="0" />
 		<element firePercent="0" />
-		<element energyPercent="80" />
+		<element energyPercent="40" />
 		<element earthPercent="-20" />
 		<element icePercent="0" />
 		<element holyPercent="0" />

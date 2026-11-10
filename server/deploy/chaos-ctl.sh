@@ -176,9 +176,11 @@
 #                               read-only: one line per check, OK, WARN or FAIL, a name and one sentence, then a summary line;
 #                               exit 1 when any is FAIL. beta_config and beta_mode switches off, no beta coins cron, payments
 #                               (no mock, a live provider), no zz_* / ztest* file, timezone, maxPlayers (--max-players N makes a
-#                               different value FAIL), the dates of Season 1, the PvP season, the Founder Pack and the creator
-#                               bonus against the launch (--launch moves it), client guard key and mode (presence only, the key
-#                               is never printed), the launch patch notes, counts of players / accounts / coins in the database,
+#                               different value FAIL), the launch date itself (launch_config.lua, O463: "open" is a WARN that says
+#                               no launch date is set; --launch overrides it), the dates of Season 1, the PvP season, the Founder
+#                               Pack and the creator bonus against it (open: they wait, OK), client guard key and mode (presence
+#                               only, the key is never printed), the launch patch notes (skipped while open), counts of players /
+#                               accounts / coins in the database,
 #                               the newest backup, the checkout. --json: one JSON line. Changes nothing
 #                               (server/deploy/launch_check.py)
 #   gm-logs [N] [PLAYER]        staff logs: "@staff" (names with a log), "@files" (SERVER/data/logs), "@commands PLAYER"

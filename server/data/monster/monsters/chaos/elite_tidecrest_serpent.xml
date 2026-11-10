@@ -42,6 +42,7 @@
     	</defense>
   	</defenses>
 	<elements>
+		<element drownPercent="40"/>
 		<element firePercent="30"/>
 		<element energyPercent="30"/>
 		<element earthPercent="30"/>
@@ -49,7 +50,6 @@
 		<element deathPercent="30"/>
 	</elements>
   	<immunities>
-		<immunity drown="1" />
 		<immunity paralyze="1" />
 		<immunity invisible="1" />
   	</immunities>

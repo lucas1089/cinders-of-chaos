@@ -398,6 +398,35 @@ def m_juggernaut(c):
     bi.m_up_arrow(c, 13, 5, 0.75, A)
 
 
+def m_forged(motif):
+    """Emberforged, Frostforged, Stormforged (O462): the element's motif with a small up arrow, the damage that is added"""
+    def draw(c):
+        motif(c)
+        bi.m_up_arrow(c, 21, 15, 0.45, B)
+    return draw
+
+
+def m_plated(c):
+    bi.shield(c, 5, 3, 21, 23, A)                                        # a plated shield: rivets and a seam
+    c.line([(5.5, 11), (20.5, 11)], AD, 1)
+    c.px(['h', '', '', '', '', '', '', '', 'h'], 8, 6, {'h': AH})
+    c.px(['h', '', '', '', '', '', '', '', 'h'], 17, 6, {'h': AH})
+
+
+def m_resistant(c):
+    bi.shield(c, 5, 3, 21, 23, A)                                        # a shield with an element star
+    bi.star(c, 13, 11, 5, 2.2, B)
+    c.px(['W'], 13, 11, {'W': W_})
+
+
+def m_ruthless(c):
+    bi.m_blessing_crit(c)                                                # a reticle with a burst: the critical hit
+
+
+def m_bulwark(c):
+    bi.m_ironhold(c)                                                     # a banded tower shield: the block
+
+
 def m_unknown(c):
     bi.skull(c, 6, 6)
 
@@ -409,6 +438,10 @@ MODS = {  # key: (motif, ramps); keys of ChaosMods (server monster_tiers.lua)
     'stoneskin': (m_stoneskin, 'bone'), 'reflective': (bi.m_reprisal, 'steel', 'arcane'),
     'regenerating': (bi.m_regen, 'nature'), 'swift': (bi.m_haste, 'wind', 'wood'),
     'explosive': (m_explosive, 'ember'), 'juggernaut': (m_juggernaut, 'blood', 'steel'),
+    'emberforged': (m_forged(bi.m_burning), 'blood', 'ember'), 'frostforged': (m_forged(bi.m_freezing), 'water', 'frost'),
+    'stormforged': (m_forged(bi.m_energy), 'energy', 'arcane'), 'plated': (m_plated, 'steel'),
+    'resistant': (m_resistant, 'steel', 'arcane'), 'ruthless': (m_ruthless, 'blood', 'bone'),
+    'bulwark': (m_bulwark, 'steel', 'bone'),
     'unknown': (m_unknown, 'bone'),
 }
 

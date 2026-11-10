@@ -34,13 +34,13 @@
 	<defenses armor="70" defense="70">
 	</defenses>
 	<elements>
+		<element drownPercent="40"/>
 		<element earthPercent="20" />
 		<element icePercent="20" />
 		<element holyPercent="-20" />
 		<element deathPercent="20" />
 	</elements>
 	<immunities>
-		<immunity drown="1" />
 		<immunity invisible="1" />
 	</immunities>
 	<voices interval="5000" chance="10">

@@ -2,6 +2,7 @@
 -- Returned as a table, loaded as Chaos.seasonConfig (and by server/tests/season_test.lua). Data only, no engine calls.
 -- Server local time. See server/README.md "Seasons".
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
+local LC = dofile("data/scripts/chaos/launch_core.lua")
 return {
 	-- DB tables (server/sql/chaos_season.sql)
 	tables = {
@@ -21,14 +22,20 @@ return {
 	-- tag: shown in the look text ("[S1]") and in the client. modifier (optional): shown in the window;
 	-- expMult (optional) multiplies the monster experience of that season's characters (needs patch_base_events.py,
 	-- like every Chaos experience bonus). nil = no modifier.
+	-- Season 1 follows the one launch value (launch_config.lua, launch_core.lua; O463): it starts with the launch and ends
+	-- lengthDays (91 days, 13 weeks) later; Season 2 starts the next day (planned). While the launch is open the season has
+	-- no dates: `open = true`, no start, no finish (season_core.lua: status "soon", it does not start by itself). `lengthDays` is the
+	-- length a season started by hand (/season start, the admin action) runs when it has no finish.
 	seasons = {
 		{
 			id = 1,
 			name = "Season of Ash",
 			tag = "[S1]",
-			start = 20261120, -- the launch, Fri 20 Nov 2026 15:00 (owner 2026-10-29)
-			finish = 20270219, -- 13 weeks; Season 2 starts the next day, 20 Feb 2027 15:00 (planned)
-			hour = 15,
+			open = LC.isOpen() or nil,
+			start = LC.ymd(0),
+			finish = LC.ymd(91), -- start + lengthDays (tests/launch_test.lua checks they agree)
+			lengthDays = 91,
+			hour = LC.hour(),
 			modifier = {
 				name = "Ashfall",
 				description = "Season characters gain 10% more experience from monsters.",

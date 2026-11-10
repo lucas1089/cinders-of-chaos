@@ -63,9 +63,9 @@ reg{id = "season_start", name = "Season: start now", description = "Starts the g
 		local cfg = Chaos.seasonConfig
 		if S.current() then return false, S.current().name .. " is already running." end
 		local t = os.time()
-		local s = p.season > 0 and S.byId(cfg.seasons, p.season) or S.upcoming(cfg.seasons, t, S.ov)
+		local s = p.season > 0 and S.byId(cfg.seasons, p.season) or S.upcoming(cfg.seasons, t, S.ov) or S.soon(cfg.seasons, t, S.ov)
 		if not s then return false, "No such or no upcoming season in season_config.lua." end
-		local _, finish = S.times(s, S.ov)
+		local finish = S.finishIfStarted(s, t, S.ov)
 		if not finish or finish <= t then return false, s.name .. "'s end date has passed: change it in season_config.lua." end
 		seasonOverride(actor, cfg.configPrefix .. s.id .. "_start", S)
 		return true, s.name .. " starts with the next season check.", seasonLines(S)

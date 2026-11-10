@@ -44,11 +44,11 @@
 	</defenses>
 	<elements>
 		<element physicalPercent="35"/>
-		<element firePercent="55"/>
+		<element firePercent="40"/>
 		<element energyPercent="35"/>
 		<element icePercent="35"/>
 		<element earthPercent="35"/>
-		<element deathPercent="55"/>
+		<element deathPercent="40"/>
 	</elements>
 	<voices interval="5000" chance="10">
 		<voice sentence="The horn calls."/>

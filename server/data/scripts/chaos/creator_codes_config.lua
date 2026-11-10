@@ -19,8 +19,10 @@ return {
 	-- launch window (owner decision 2026-10-29): a donation credited in the first launchBonusDays days from
 	-- launchBonusStart (server local time, the launch) earns launchBonusPct % instead of sharePct. A code with its own
 	-- % keeps it. orderCap and monthlyCap still apply. launchBonusPct = 0 switches the bonus off.
+	-- launchBonusStart is the one launch value (launch_config.lua, O463): nil while the launch is open, and then the bonus is
+	-- off (creator_codes_core.lua bonusWindow has no window). The website reads this key too (creator_lib.php).
 	launchBonusPct = 15,
-	launchBonusStart = "2026-11-20 15:00",
+	launchBonusStart = dofile("data/scripts/chaos/launch_core.lua").stamp(0),
 	launchBonusDays = 30,
 	-- a code chosen by a donor applies to that account's donations for this many days (then the donor picks again)
 	supportDays = 30,

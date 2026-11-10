@@ -132,8 +132,9 @@ for _, cat in ipairs(cfg.categories) do
 		if o.kind == "item" and o.id == 28095 then
 			ok(o.seasonBlocked, "double experience potions are not for season characters")
 		end
-		if o.oncePerAccount and o.availableUntil then
-			ok(o.gift == false and o.availableFrom and not o.maxLevel, "limited packs: a window, not giftable") -- Founder Pack (O322)
+		if o.oncePerAccount and (o.availableUntil or o.availableSoon) then
+			-- Founder Pack (O322): a window, or (the launch is open, O463) availableSoon and no window at all
+			ok(o.gift == false and (o.availableFrom or o.availableSoon) and not o.maxLevel, "limited packs: a window, not giftable")
 			for _, p in ipairs(o.parts) do
 				ok(p.kind == "exclusive" or p.kind == "pact", "a limited pack gives cosmetics and Pact days only")
 			end
@@ -1341,10 +1342,15 @@ do
 end
 
 -- ------------------------------------------------------------------ Founder Pack (O322): a window, one per account and tier, the grant
+-- The window rules need a launch date: an example launch (O463; the shipped one is "open", tested after this block).
+local FOUNDER_EXAMPLE = {launch = "2031-03-14 18:00"}
+ChaosLaunch.override = FOUNDER_EXAMPLE
+loadShop()
+Shop = ChaosShop
 do
 	local FC = dofile("data/scripts/chaos/founder_config.lua")
 	local T0, T1 = K.parseTime(FC.start), K.parseTime(FC["end"])
-	eq(FC.start, "2026-11-20 15:00", "the launch: 20/11/2026 15:00") eq(FC["end"], "2026-12-18 15:00", "four weeks later")
+	eq(FC.start, "2031-03-14 18:00", "the launch value") eq(FC["end"], "2031-04-11 18:00", "four weeks later")
 	eq(T1 - T0, 28 * 86400, "the sale lasts four weeks")
 	-- core: the window
 	local offer = {availableFrom = FC.start, availableUntil = FC["end"]}
@@ -1352,11 +1358,11 @@ do
 	eq(K.windowState(offer, T1 - 1), nil, "one second before the end") eq(K.windowState(offer, T1), "late", "at the end")
 	eq(K.windowState({}, T1 + 99999), nil, "an offer without a window is always on")
 	eq(K.windowState({availableUntil = FC["end"]}, T0 - 99999), nil, "no start: on until the end")
-	eq(K.windowNote(offer, "en"), "Available until 2026-12-18 15:00.", "the end date, English")
-	eq(K.windowNote(offer, "pt-BR"), "Disponível até 18/12/2026 15:00.", "the end date, pt-BR")
+	eq(K.windowNote(offer, "en"), "Available until 2031-04-11 18:00.", "the end date, English")
+	eq(K.windowNote(offer, "pt-BR"), "Disponível até 11/04/2031 18:00.", "the end date, pt-BR")
 	eq(K.windowNote({}, "en"), nil, "no note without an end")
 	local bad = table.concat(K.validate({categories = {{name = "X", offers = {{kind = "premium", days = 1, cost = 1,
-		availableFrom = "2026-12-18 15:00", availableUntil = "2026-11-20 15:00"}}}}}), ";")
+		availableFrom = "2031-04-11 18:00", availableUntil = "2031-03-14 18:00"}}}}}), ";")
 	ok(bad:find("not after availableFrom", 1, true), "an end before the start is a problem")
 
 	-- the exclusives of the pack: a mocked ChaosExclusives (exclusives.lua) records the grants
@@ -1393,14 +1399,14 @@ do
 	ok(c, "shown at the start") eq(e.cost, 499, "price 499")
 	request(P, "get_page", {category = c, page = page})
 	local view = last("category_page").data.offers[i]
-	eq(view.description:find("Available until 2026-12-18 15:00.", 1, true), 1, "the end date leads the text")
+	eq(view.description:find("Available until 2031-04-11 18:00.", 1, true), 1, "the end date leads the text")
 	ok(view.description:find("14 days of Chaos Pact", 1, true), "the Pact days are told")
 	ok(Chaos.setLang, "the language switch is there")
 	do
 		Chaos.setLang(P, "pt-BR")
 		request(P, "get_page", {category = c, page = page})
 		local pt = last("category_page").data.offers[i].description
-		eq(pt:find("Disponível até 18/12/2026 15:00.", 1, true), 1, "pt-BR: disponível até")
+		eq(pt:find("Disponível até 11/04/2031 18:00.", 1, true), 1, "pt-BR: disponível até")
 		ok(pt:find("Uma vez por conta, nunca mais vendido", 1, true), "pt-BR text: " .. pt)
 		Chaos.setLang(P, "en")
 	end
@@ -1462,5 +1468,24 @@ do
 	eq(DB.coins[G.account], 2000, "no coins taken for a gift")
 	clock = realTime({year = 2026, month = 10, day = 29, hour = 15, min = 0, sec = 0})
 end
+
+-- ------------------------------------------------------------------ the launch is open (O463): the Founder Pack is not on sale at all
+ChaosLaunch.override = {launch = "open"}
+loadShop()
+Shop = ChaosShop
+do
+	ok(Shop.byKey["founder:pack"] and Shop.byKey["founder:grand"], "open: the offers exist in the config")
+	eq(Shop.byKey["founder:pack"].availableSoon, true, "open: marked not yet on sale")
+	eq(Shop.byKey["founder:pack"].availableFrom, nil, "open: no window start") eq(Shop.byKey["founder:pack"].availableUntil, nil, "open: no window end")
+	local P = newPlayer("Open Founder", {level = 400})
+	for _, when in ipairs({realTime({year = 2026, month = 11, day = 20, hour = 16, min = 0, sec = 0}), realTime({year = 2031, month = 1, day = 1, hour = 0, min = 0, sec = 0})}) do
+		clock = when
+		ok(not find(P, "founder:pack") and not find(P, "founder:grand"), "open: hidden at any date")
+		for _, cat in ipairs(Shop.view(P)) do ok(cat.name ~= "Founder Pack", "open: no Founder Pack category at any date") end
+		eq(K.windowState(Shop.byKey["founder:pack"], when), "early", "open: the buy path sees it as not yet on sale (shop.lua windowState)")
+	end
+	clock = realTime({year = 2026, month = 10, day = 29, hour = 15, min = 0, sec = 0})
+end
+ChaosLaunch.override = nil
 
 print("shop_test: ok")

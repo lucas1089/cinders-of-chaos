@@ -485,7 +485,7 @@ function seasonTalk.onSay(player, words, param)
 	else
 		local season, finish = currentSeason()
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Tower Season %d ends %s. Last season paid out: %s.",
-			season, os.date("%Y-%m-%d %H:%M", finish), tostring(getConfig(cfg.seasonEnd.configKey) or Chaos.t(player, "none"))))
+			season, finish and os.date("%Y-%m-%d %H:%M", finish) or Chaos.t(player, "Coming soon"), tostring(getConfig(cfg.seasonEnd.configKey) or Chaos.t(player, "none"))))
 	end
 	return false
 end

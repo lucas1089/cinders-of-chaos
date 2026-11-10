@@ -3,7 +3,12 @@
 -- convergence, soft reset, decay, placement, tiers and season rewards; matchmaking (realm and bracket groups, parties
 -- kept whole, role and rating balance, fairness over random queues), the estimated wait; normalisation, capture,
 -- score, waves, AFK, honor, deserter, vendor; the Ember Wells map (symmetry, paths, enclosed graveyards, no overlap).
+-- the shipped launch is "open" (O463): the season maths run on an example launch, the open state is tested after them
+local LAUNCH = dofile("data/scripts/chaos/launch_core.lua")
+LAUNCH.override = {launch = "2031-03-14 18:00"}
 local cfg = dofile("data/scripts/chaos/battleground_config.lua")
+LAUNCH.override = nil
+local cfgOpen = dofile("data/scripts/chaos/battleground_config.lua")
 local pf = dofile("data/scripts/chaos/party_finder_config.lua")
 dofile("data/scripts/chaos/battleground_core.lua")
 local K = ChaosBattlegroundCore
@@ -57,6 +62,15 @@ eq(e1, epoch + len, "season 1 ends after 8 weeks")
 eq((K.seasonOf(cfg, epoch + len)), 2, "season 2 at the end of season 1")
 eq((K.seasonOf(cfg, epoch + 3 * len + 100)), 4, "season 4")
 eq((K.seasonOf(cfg, epoch - 86400)), 1, "before the epoch: season 1 (not started)")
+eq(epoch, os.time({year = 2031, month = 3, day = 14, hour = 18, min = 0, sec = 0}), "the epoch is the launch value")
+-- the launch is open: no epoch, season 1 with no start and no end, nothing counts down at any time
+eq(cfgOpen.season.epoch, nil, "open: no epoch in the shipped config")
+eq(K.epoch(cfgOpen), nil, "open: K.epoch is nil")
+for _, when in ipairs({0, epoch, epoch + 5 * len, 4102444800}) do
+  local oid, ostart, oend = K.seasonOf(cfgOpen, when)
+  eq(oid, 1, "open: season 1 at any time")
+  eq(ostart, nil, "open: no start") eq(oend, nil, "open: no end")
+end
 
 -- ====================================================================== Glicko-lite
 local S = cfg.season

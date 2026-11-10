@@ -287,7 +287,13 @@ P.features = {
 	{key = "season", title = {"Seasons", "Temporadas"}, window = "game_season",
 		values = function(C, H)
 			local S = C.season.seasons[1]
-			return {maxLvl = C.season.join.maxLevel, name = S.name, start = H.date(S.start), finish = H.date(S.finish),
+			-- while the launch date is open (O463, launch_config.lua) the season has no dates: "coming soon", no fake date
+			local runs = {en = "is coming soon", pt = "chega em breve"}
+			if S.start and S.finish then
+				local a, b = H.date(S.start), H.date(S.finish)
+				runs = {en = "runs from " .. a.en .. " to " .. b.en, pt = "vai de " .. a.pt .. " a " .. b.pt}
+			end
+			return {maxLvl = C.season.join.maxLevel, name = S.name, runs = runs,
 				xp = H.round((S.modifier.expMult - 1) * 100)}
 		end,
 		who = {"Only a new character of level {maxLvl} or less can join, with the Join button. It starts from nothing: items and bank are wiped. Season characters play apart from the normal ones.",
@@ -296,8 +302,8 @@ P.features = {
 			"Uma trilha de recompensas, rankings e títulos da temporada. {name}: +{xp}% de experiência dos monstros."},
 		death = {"Normal season characters follow the normal death rules. In Hardcore mode you have one life.",
 			"Personagens de temporada normais seguem as regras normais de morte. No modo Hardcore você tem uma vida."},
-		often = {"{name} runs from {start} to {finish}. Only one season runs at a time.",
-			"{name} vai de {start} a {finish}. Só uma temporada roda por vez."}},
+		often = {"{name} {runs}. Only one season runs at a time.",
+			"{name} {runs}. Só uma temporada roda por vez."}},
 
 	{key = "factions", title = {"Factions", "Facções"}, window = "game_factions", unlocks = {"factions"},
 		goals = {"trusted", "honored", "revered", "exalted"},

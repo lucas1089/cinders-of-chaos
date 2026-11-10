@@ -196,19 +196,33 @@ function chaos_creators_streamer_url(string $path): string {
  * The numbers the partner guide quotes, from creator_codes_config.lua (chaos_creator_config) and the Discord link
  * (CHAOS_DISCORD_URL, only an https one). Mirrors website/tools/gen_streamer_kit.py code_numbers().
  */
-function chaos_creators_guide_numbers(string $lang, string $discord = ''): array {
-	$cfg = chaos_creator_config();
+function chaos_creators_guide_numbers(string $lang, string $discord = '', ?string $launchText = null): array {
+	$cfg = chaos_creator_config($launchText);
 	$days = (int)$cfg['launchBonusDays'];
 	$dt = DateTimeImmutable::createFromFormat('!Y-m-d H:i', (string)$cfg['launchBonusStart'], new DateTimeZone('America/Sao_Paulo'));
 	$pt = $lang === 'pt-BR';
 	$fmt = $pt ? 'd/m/Y H:i' : 'd M Y, H:i';
 	$discordOk = preg_match('#^https://[^\s<>"\']+$#', $discord) === 1;
+	// while the launch is open (O463) there is no date: "Em breve" / "Coming soon", and the window is not described with dates
+	$soon = $pt ? 'em breve' : 'coming soon';
+	$launch = $dt ? $dt->format($fmt) : $soon;
+	$end = $dt ? $dt->modify('+' . $days . ' days')->format($fmt) : $soon;
 	return array(
 		'share' => (int)$cfg['sharePct'], 'bonus' => (int)$cfg['launchBonusPct'], 'support' => (int)$cfg['supportDays'], 'hold' => (int)$cfg['holdDays'],
 		'orderCap' => (int)$cfg['orderCap'], 'monthlyCap' => (int)$cfg['monthlyCap'], 'bonusDays' => $days,
-		'launch' => $dt ? $dt->format($fmt) : '', 'end' => $dt ? $dt->modify('+' . $days . ' days')->format($fmt) : '',
+		'launch' => $launch, 'end' => $end,
+		'launchWhen' => $dt ? ($pt ? 'de ' . $launch . ' até ' . $end : 'from ' . $launch . ' to ' . $end) : ($pt ? 'data em breve' : 'date coming soon'),
 		'discord' => $discordOk ? $discord : ($pt ? 'o link será publicado nesta página' : 'the link will be posted on this page'),
 	);
+}
+
+/** A {bi} text of the creator data with its {tokens} filled from chaos_creators_guide_numbers (the launch window, the %). */
+function chaos_creators_text($pair, ?string $lang = null, ?string $launchText = null): string {
+	$lang = $lang ?? chaos_lang();
+	$nums = chaos_creators_guide_numbers($lang, '', $launchText);
+	return (string)preg_replace_callback('/\{([A-Za-z]+)\}/', static function ($m) use ($nums) {
+		return (string)($nums[$m[1]] ?? $m[0]);
+	}, chaos_bi($pair, $lang));
 }
 
 /** partner_guide.json in one language with the {tokens} filled: {title, intro, sections: [{id, title, blocks: [[kind, text|[texts]]]}]}. */

@@ -808,8 +808,9 @@ local function removePlayer(run, id, mode)
 	if player then
 		unwither(player, entry)
 		player:unregisterEvent("ChaosRiftPlayerDeath")
-		player:unregisterEvent("ChaosRiftPlayerHit")
-		player:unregisterEvent("ChaosRiftPlayerMana")
+		-- ChaosRiftPlayerHit and ChaosRiftPlayerMana stay on the player (registered at login by Chaos0RiftHitLogin, so
+		-- that the run's damage multipliers are among the first events: O462). Both pass a hit through when the
+		-- attacker is no monster of a run of this player.
 		player:unregisterEvent("ChaosRiftPlayerKill")
 		if run.restart and mode ~= "dead" then
 			-- a clean shutdown (RF.interrupt): out to the temple, where the character is saved
@@ -3015,6 +3016,19 @@ function poolStart.onStartup()
 	return true
 end
 poolStart:register()
+
+-- The run's damage multipliers (Brutality, tiers, party, Dread Guardian, density, hexes ...) must reach the player before
+-- any reduction of the player (O462): the events are registered at LOGIN, by a login event whose name sorts right
+-- after "Chaos0MonsterDamageLogin" and before "Chaos0TierLogin" (the engine runs the login events in name order and a
+-- creature's events in registration order). Before, they were registered when a run began, the last of the player's
+-- events. Entering a run registers them again (a no-op).
+local hitLogin = CreatureEvent("Chaos0RiftHitLogin")
+function hitLogin.onLogin(player)
+	player:registerEvent("ChaosRiftPlayerHit")
+	player:registerEvent("ChaosRiftPlayerMana")
+	return true
+end
+hitLogin:register()
 
 local login = CreatureEvent("ChaosRiftLogin")
 function login.onLogin(player)

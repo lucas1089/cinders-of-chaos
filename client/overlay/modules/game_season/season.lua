@@ -63,6 +63,8 @@ local function updateTimer()
     window.timerLabel:setText(tr('Ends in %s', formatTime((tonumber(s.endsIn) or 0) - passed)))
   elseif s.status == 'upcoming' then
     window.timerLabel:setText(tr('Starts in %s', formatTime((tonumber(s.startsIn) or 0) - passed)))
+  elseif s.status == 'soon' then
+    window.timerLabel:setText(tr('Starts: Coming soon'))
   else
     window.timerLabel:setText(tr('Ended'))
   end
@@ -103,7 +105,7 @@ local function showState()
     text = tr('This character can join %s: it starts over with nothing and plays only with %s characters until the end.', s.name or '', s.name or '')
   elseif s.status == 'active' then
     text = tostring(mine.reason or '')
-  elseif s.status == 'upcoming' then
+  elseif s.status == 'upcoming' or s.status == 'soon' then
     text = tr('The season has not started yet. Make a fresh character to join it when it starts.')
   else
     text = tr('The season has ended. Its rewards stay on your account.')

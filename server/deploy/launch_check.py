@@ -16,13 +16,17 @@ Checks (name: FAIL / WARN rule), server/README.md "Launch check (O440)":
   test_files      zz_* / ztest* under data/scripts, ztest* in the server folder: FAIL, at most 5 listed
   timezone        chaos_timezone.py: FAIL when the machine is not on America/Sao_Paulo (UTC-3), or CHAOS_TIMEZONE
   max_players     config.lua maxPlayers: WARN "owner decision: 300 or 400"; with --max-players N: FAIL when different
-  dates_season    season_config.lua Season 1 start and end: FAIL when the start is not the launch (LAUNCH, --launch)
-  dates_pvp       battleground_config.lua PvP season epoch: WARN when it is not the launch
-  dates_founder   founder_config.lua window: FAIL when the start is not the launch
-  dates_creator   creator_codes_config.lua launch bonus window: WARN when it does not start at the launch
+  launch_date     launch_config.lua (O463, the one launch value): "open" = WARN "no launch date is set" (the owner's hold of
+                  2026-11-10; the checks below still run, those that need the date say what they skip); a date = OK; FAIL when
+                  unreadable, not a date, off the hour, or different from --launch
+  dates_season    season_config.lua Season 1: the start is the launch. Open: OK (it waits, no start in the file); a date: OK;
+                  FAIL when the file has its own date that is not the launch, or follows another value than the launch
+  dates_pvp       battleground_config.lua PvP season epoch: the same rule, WARN where season is FAIL
+  dates_founder   founder_config.lua window: the same rule as the season (FAIL); open = the pack is not on sale
+  dates_creator   creator_codes_config.lua launch bonus window: the same rule as PvP (WARN); open = the bonus is off
   client_guard    config.lua clientGuardMode and the key (CHAOS_CLIENT_KEY of the env file, clientGuardKey, a key file):
                   FAIL without a key, with mode off or a dev key allowed; WARN in log mode
-  patch_notes     data/patchnotes/LAUNCHDATE.md and .pt-br.md: WARN when missing
+  patch_notes     data/patchnotes/LAUNCHDATE.md and .pt-br.md: WARN when missing; OK "not checked" while no launch date is set
   database        counts only: players, accounts, accounts with coins, players_online, chaos_beta_testers: WARN when
                   there are players or coins (expected before the wipe, not after it)
   backup          newest file of the backup folder: FAIL when none, WARN when 24 hours old or more
@@ -33,6 +37,7 @@ per count) and `pay NAME VALUE` (the pay-status lines). Nothing here runs SQL or
 
 usage: python3 -I server/deploy/launch_check.py --server DIR [--env-file F] [--backup-dir D] [--repo D] [--cron-file F]
            [--launch "YYYY-MM-DD HH:MM"] [--max-players N] [--env-file F] [--json] < facts
+The launch is read from launch_config.lua of the server folder; --launch only overrides it (a moved date to check against).
 """
 import argparse
 import datetime
@@ -47,8 +52,12 @@ sys.dont_write_bytecode = True   # read only: no __pycache__ in the checkout
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tools'))
 import chaos_timezone  # noqa: E402
 
-# the launch, local time of the server (Brasilia, UTC-3): Fri 2026-11-20 15:00. --launch changes it.
-LAUNCH = '2026-11-20 15:00'
+# The launch is NOT a constant here (O463): it is the one value of launch_config.lua in the server folder, "open" or
+# "YYYY-MM-DD HH:MM" (local time of the server, Brasilia, UTC-3). --launch overrides it. These are the days from the launch to
+# the moments worked out from it, as launch_config.lua `offsets` (read from the file when it has them).
+OFFSETS = {'freeze': -5, 'wipe': -2, 'rehearsal': -1, 'founderEnd': 28}
+SEASON1_DAYS = 91   # season_config.lua lengthDays (Season 1 ends that many days after the launch)
+LAUNCH_FILE = 'launch_config.lua'
 BACKUP_MAX_HOURS = 24
 LIST_MAX = 5
 CRON_FILE = '/etc/cron.d/chaos-beta-coins'
@@ -158,6 +167,38 @@ def fmt(dt):
 
 def parse_launch(s):
     return datetime.datetime.strptime(s.strip(), '%Y-%m-%d %H:%M')
+
+
+OPEN = 'open'
+
+
+def read_launch_config(text):
+    """launch_config.lua (O463) -> {'launch': None | datetime, 'open': bool, 'raw': str | None, 'offsets': {...}} or None when
+    the text is None. A value that is not "open" and not a date has launch None, open False and its text in 'raw': the caller
+    reports it. The one value must be on one line in double quotes."""
+    if text is None:
+        return None
+    t = strip_comments(text)
+    raw = lua_value(t, 'launch')
+    raw = raw if isinstance(raw, str) else None
+    offsets = dict(OFFSETS)
+    block = lua_table(t, 'offsets')
+    if block:
+        for k in OFFSETS:
+            v = lua_value(block, k)
+            if isinstance(v, int) and not isinstance(v, bool):
+                offsets[k] = v
+    launch = None
+    if raw is not None and raw != OPEN:
+        try:
+            launch = parse_launch(raw)
+        except ValueError:
+            launch = None
+    return {'launch': launch, 'open': raw == OPEN, 'raw': raw, 'offsets': offsets}
+
+
+def launch_text(launch):
+    return 'open (no date)' if launch is None else fmt(launch)
 
 
 def env_has(text, key):
@@ -301,11 +342,71 @@ def check_max_players(text, want, path='config.lua'):
     return ok(name, 'maxPlayers = %d, as expected.' % v)
 
 
-def check_dates_season(text, launch, path='season_config.lua'):
+def check_launch_date(text, given, path=LAUNCH_FILE):
+    """text: launch_config.lua or None; given: the --launch datetime or None. Returns the check."""
+    name = 'launch_date'
+    if text is None:
+        return unreadable(name, path)
+    c = read_launch_config(text)
+    if c['raw'] is None:
+        return unreadable(name, "'launch' in %s (one line: launch = \"open\" or \"YYYY-MM-DD HH:MM\")" % path)
+    if not c['open'] and c['launch'] is None:
+        return fail(name, '%s: launch = "%s" is neither "open" nor a real "YYYY-MM-DD HH:MM". Fix it (docs/LAUNCH.md).' % (path, c['raw']))
+    if c['launch'] is not None and c['launch'].minute != 0:
+        return fail(name, '%s: launch %s is not on the hour: Season 1, PvP season 1 and the Tower season start at an hour.'
+                    % (path, fmt(c['launch'])))
+    if c['launch'] is None:
+        if given is None:
+            return warn(name, 'no launch date is set (launch = "open" in %s, owner hold of 2026-11-10). Nothing starts by itself on a '
+                        'launch date; the checks that need the date are skipped. Set it: docs/LAUNCH.md "Launch date: on hold".' % path)
+        return warn(name, '%s is open (no launch date) but --launch %s was given: the date checks compare the configs with %s.'
+                    % (path, fmt(given), fmt(given)))
+    if given is not None and given != c['launch']:
+        return fail(name, '%s says the launch is %s, --launch says %s.' % (path, fmt(c['launch']), fmt(given)))
+    return ok(name, 'the launch is %s (server local time), the one value of %s.' % (fmt(c['launch']), path))
+
+
+def effective_launch(text, given):
+    """The launch the date checks use: --launch when given, else the one value of launch_config.lua (None = open). And the
+    launch the config itself says (None = open or unreadable)."""
+    c = read_launch_config(text)
+    cfg_launch = c['launch'] if c else None
+    return (given if given is not None else cfg_launch), cfg_launch
+
+
+SAME = object()
+
+
+def follows_launch(t):
+    """True when a config reads the one launch value (launch_core.lua) instead of holding its own date (comments cut)."""
+    return 'launch_core.lua' in t
+
+
+def _follow(name, severity, what, launch, cfg_launch, derived):
+    """The decision of a config that reads the one launch value. `derived` = text for a set launch (derived dates)."""
+    bad = fail if severity == 'FAIL' else warn
+    if cfg_launch is SAME:
+        cfg_launch = launch
+    if cfg_launch != launch:
+        return bad(name, '%s follows launch_config.lua, which says %s, not %s.' % (what, launch_text(cfg_launch), launch_text(launch)))
+    if launch is None:
+        return ok(name, '%s waits for the launch date: it follows launch_config.lua (open), no date in the file.' % what)
+    return ok(name, '%s follows launch_config.lua: %s.' % (what, derived))
+
+
+def check_dates_season(text, launch, path='season_config.lua', cfg_launch=SAME, offsets=None):
     name = 'dates_season'
     if text is None:
         return unreadable(name, path)
     t = strip_comments(text)
+    offsets = offsets or OFFSETS
+    if follows_launch(t):
+        derived = ''
+        if launch is not None:
+            days = lua_value(t, 'lengthDays')
+            days = days if isinstance(days, int) and not isinstance(days, bool) else SEASON1_DAYS
+            derived = 'Season 1 runs %s to %s' % (fmt(launch), fmt(launch + datetime.timedelta(days=days)))
+        return _follow(name, 'FAIL', 'Season 1', launch, cfg_launch, derived)
     block = lua_table(t, 'seasons')
     chunk = None
     if block:
@@ -322,6 +423,9 @@ def check_dates_season(text, launch, path='season_config.lua'):
     finish = to_datetime(lua_value(chunk, 'finish'), hour)
     if start is None or finish is None:
         return unreadable(name, 'start and finish of Season 1 in %s' % path)
+    if launch is None:
+        return fail(name, 'Season 1 has its own date (%s to %s) in %s while the launch is open: it would start by itself. '
+                    'Read the one launch value (launch_core.lua).' % (fmt(start), fmt(finish), path))
     text_ = 'Season 1 runs %s to %s (server local time).' % (fmt(start), fmt(finish))
     if start != launch:
         return fail(name, 'Season 1 starts %s, not at the launch %s. Season 1 to %s (server local time).'
@@ -329,12 +433,21 @@ def check_dates_season(text, launch, path='season_config.lua'):
     return ok(name, text_)
 
 
-def check_dates_pvp(text, launch, path='battleground_config.lua'):
+def check_dates_pvp(text, launch, path='battleground_config.lua', cfg_launch=SAME, offsets=None):
     name = 'dates_pvp'
     if text is None:
         return unreadable(name, path)
     t = strip_comments(text)
     season = lua_table(t, 'season')
+    if follows_launch(t):
+        derived = ''
+        weeks = lua_value(season, 'weeks') if season else None
+        if launch is not None:
+            end = ''
+            if isinstance(weeks, int) and not isinstance(weeks, bool) and weeks > 0:
+                end = ' to %s' % fmt(launch + datetime.timedelta(weeks=weeks))
+            derived = 'PvP Season 1 runs %s%s' % (fmt(launch), end)
+        return _follow(name, 'WARN', 'PvP Season 1', launch, cfg_launch, derived)
     epoch = lua_table(season, 'epoch') if season else None
     weeks = lua_value(season, 'weeks') if season else None
     if not epoch:
@@ -347,16 +460,28 @@ def check_dates_pvp(text, launch, path='battleground_config.lua'):
     end = ''
     if isinstance(weeks, int) and not isinstance(weeks, bool) and weeks > 0:
         end = ' to %s' % fmt(start + datetime.timedelta(weeks=weeks))
+    if launch is None:
+        return warn(name, 'PvP Season 1 has its own epoch (%s) in %s while the launch is open. Read the one launch value.'
+                    % (fmt(start), path))
     if start != launch:
         return warn(name, 'PvP Season 1 starts %s%s, not at the launch %s.' % (fmt(start), end, fmt(launch)))
     return ok(name, 'PvP Season 1 runs %s%s (server local time).' % (fmt(start), end))
 
 
-def check_dates_founder(text, launch, path='founder_config.lua'):
+def check_dates_founder(text, launch, path='founder_config.lua', cfg_launch=SAME, offsets=None):
     name = 'dates_founder'
     if text is None:
         return unreadable(name, path)
     t = strip_comments(text)
+    offsets = offsets or OFFSETS
+    if follows_launch(t):
+        derived = ''
+        if launch is not None:
+            derived = 'the Founder Pack is on sale %s to %s' % (fmt(launch), fmt(launch + datetime.timedelta(days=offsets['founderEnd'])))
+        r = _follow(name, 'FAIL', 'the Founder Pack', launch, cfg_launch, derived)
+        if r[0] == 'OK' and launch is None:
+            return ok(name, 'the Founder Pack is not on sale: it follows launch_config.lua (open), no sale window.')
+        return r
     m = re.search(r'(?m)^[ \t]*local[ \t]+START[ \t]*=[ \t]*"([^"\n]*)"', t)
     sv = m.group(1) if m else lua_value(t, 'start')
     m = re.search(r'(?m)^[ \t]*local[ \t]+END[ \t]*=[ \t]*"([^"\n]*)"', t)
@@ -364,21 +489,37 @@ def check_dates_founder(text, launch, path='founder_config.lua'):
     start, end = to_datetime(sv), to_datetime(ev)
     if start is None or end is None:
         return unreadable(name, 'the Founder Pack window in %s' % path)
+    if launch is None:
+        return fail(name, 'the Founder Pack has its own window (%s to %s) in %s while the launch is open: it would go on sale by '
+                    'itself. Read the one launch value.' % (fmt(start), fmt(end), path))
     if start != launch:
         return fail(name, 'the Founder Pack starts %s, not at the launch %s (ends %s).' % (fmt(start), fmt(launch), fmt(end)))
     return ok(name, 'the Founder Pack is on sale %s to %s (server local time).' % (fmt(start), fmt(end)))
 
 
-def check_dates_creator(text, launch, path='creator_codes_config.lua'):
+def check_dates_creator(text, launch, path='creator_codes_config.lua', cfg_launch=SAME, offsets=None):
     name = 'dates_creator'
     if text is None:
         return unreadable(name, path)
     t = strip_comments(text)
-    start = to_datetime(lua_value(t, 'launchBonusStart'))
     days = lua_value(t, 'launchBonusDays')
+    if follows_launch(t):
+        if not isinstance(days, int) or isinstance(days, bool):
+            return unreadable(name, 'launchBonusDays in %s' % path)
+        derived = ''
+        if launch is not None:
+            derived = 'the creator launch bonus runs %s to %s' % (fmt(launch), fmt(launch + datetime.timedelta(days=days)))
+        r = _follow(name, 'WARN', 'the creator launch bonus', launch, cfg_launch, derived)
+        if r[0] == 'OK' and launch is None:
+            return ok(name, 'the creator launch bonus is off: it follows launch_config.lua (open), no window.')
+        return r
+    start = to_datetime(lua_value(t, 'launchBonusStart'))
     if start is None or not isinstance(days, int) or isinstance(days, bool):
         return unreadable(name, 'the creator launch bonus window in %s' % path)
     end = start + datetime.timedelta(days=days)
+    if launch is None:
+        return warn(name, 'the creator launch bonus has its own start (%s) in %s while the launch is open. Read the one launch value.'
+                    % (fmt(start), path))
     if start != launch:
         return warn(name, 'the creator launch bonus starts %s, not at the launch %s (%d days).' % (fmt(start), fmt(launch), days))
     return ok(name, 'the creator launch bonus runs %s to %s (server local time).' % (fmt(start), fmt(end)))
@@ -417,6 +558,8 @@ def patch_note_names(launch):
 
 def check_patch_notes(server, launch):
     name = 'patch_notes'
+    if launch is None:
+        return ok(name, 'not checked: no launch date is set, so there is no launch patch note to look for.')
     folder = os.path.join(server, 'data', 'patchnotes')
     names = patch_note_names(launch)
     missing = [n for n in names if not os.path.isfile(os.path.join(folder, n))]
@@ -538,7 +681,10 @@ def git_runner(cmd):
 def run_all(opts, facts, now, zone_info=None, runner=None):
     """Every check, in order, as a list of (status, name, text). zone_info: {'names', 'offset'} (the machine's)."""
     cfg = os.path.join(opts.server, 'data', 'scripts', 'chaos')
-    launch = parse_launch(opts.launch)
+    launch_text_ = read_text(os.path.join(cfg, LAUNCH_FILE))
+    given = parse_launch(opts.launch) if opts.launch else None
+    launch, cfg_launch = effective_launch(launch_text_, given)
+    offsets = (read_launch_config(launch_text_) or {}).get('offsets') or OFFSETS
     env_text = read_text(opts.env_file) if opts.env_file else None
     config_text = read_text(os.path.join(opts.server, 'config.lua'))
     res = [
@@ -553,10 +699,11 @@ def run_all(opts, facts, now, zone_info=None, runner=None):
         zone_info = {'names': chaos_timezone.read_zone_names(), 'offset': chaos_timezone.local_offset(now)}
     res.append(check_timezone(zone_info['names'], zone_info['offset'], zone, chaos_timezone.expected_offset(zone, now)))
     res.append(check_max_players(config_text, opts.max_players))
-    res.append(check_dates_season(read_text(os.path.join(cfg, 'season_config.lua')), launch))
-    res.append(check_dates_pvp(read_text(os.path.join(cfg, 'battleground_config.lua')), launch))
-    res.append(check_dates_founder(read_text(os.path.join(cfg, 'founder_config.lua')), launch))
-    res.append(check_dates_creator(read_text(os.path.join(cfg, 'creator_codes_config.lua')), launch))
+    res.append(check_launch_date(launch_text_, given))
+    res.append(check_dates_season(read_text(os.path.join(cfg, 'season_config.lua')), launch, cfg_launch=cfg_launch, offsets=offsets))
+    res.append(check_dates_pvp(read_text(os.path.join(cfg, 'battleground_config.lua')), launch, cfg_launch=cfg_launch, offsets=offsets))
+    res.append(check_dates_founder(read_text(os.path.join(cfg, 'founder_config.lua')), launch, cfg_launch=cfg_launch, offsets=offsets))
+    res.append(check_dates_creator(read_text(os.path.join(cfg, 'creator_codes_config.lua')), launch, cfg_launch=cfg_launch, offsets=offsets))
     key_file_ok = False
     if config_text is not None:
         kf = lua_value(strip_comments(config_text), 'clientGuardKeyFile')
@@ -591,8 +738,9 @@ def report_text(results):
 
 
 def report_json(results, launch):
+    """launch: the launch text ("YYYY-MM-DD HH:MM"), or None while no launch date is set (O463)."""
     c = counts(results)
-    return json.dumps({'ok': c['FAIL'] == 0, 'launch': launch, 'fail': c['FAIL'], 'warn': c['WARN'], 'okCount': c['OK'],
+    return json.dumps({'ok': c['FAIL'] == 0, 'launch': launch, 'launchOpen': launch is None, 'fail': c['FAIL'], 'warn': c['WARN'], 'okCount': c['OK'],
                        'checks': [{'status': s, 'name': n, 'text': t} for s, n, t in results]}, ensure_ascii=False)
 
 
@@ -603,14 +751,16 @@ def parse_args(argv):
     p.add_argument('--backup-dir', default='/var/backups/chaos')
     p.add_argument('--repo', default='', help='the checkout the server was installed from')
     p.add_argument('--cron-file', default=CRON_FILE)
-    p.add_argument('--launch', default=LAUNCH, help='the launch, server local time "YYYY-MM-DD HH:MM" (default %s)' % LAUNCH)
+    p.add_argument('--launch', default='', help='the launch, server local time "YYYY-MM-DD HH:MM". Default: the one value of '
+                   'launch_config.lua in the server folder ("open" = no date)')
     p.add_argument('--max-players', type=int, default=None, help='the maxPlayers the owner decided: FAIL when config.lua differs')
     p.add_argument('--json', action='store_true')
     a = p.parse_args(argv)
-    try:
-        parse_launch(a.launch)
-    except ValueError:
-        p.error('--launch must be "YYYY-MM-DD HH:MM"')
+    if a.launch:
+        try:
+            parse_launch(a.launch)
+        except ValueError:
+            p.error('--launch must be "YYYY-MM-DD HH:MM"')
     return a
 
 
@@ -620,7 +770,9 @@ def main(argv, stdin_text=None, now=None, zone_info=None, runner=None):
         stdin_text = '' if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read()
     now = time.time() if now is None else now
     results = run_all(opts, parse_facts(stdin_text), now, zone_info, runner)
-    print(report_json(results, opts.launch) if opts.json else report_text(results))
+    launch, _ = effective_launch(read_text(os.path.join(opts.server, 'data', 'scripts', 'chaos', LAUNCH_FILE)),
+                                 parse_launch(opts.launch) if opts.launch else None)
+    print(report_json(results, fmt(launch) if launch else None) if opts.json else report_text(results))
     return exit_code(results)
 
 

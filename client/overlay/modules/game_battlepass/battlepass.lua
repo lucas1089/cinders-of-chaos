@@ -57,6 +57,8 @@ local function updateTimer()
     window.timerLabel:setText(tr('Season over: claim within %s', PassView.formatTime(PassView.left(s.claimEndsIn, 0, passed))))
   elseif s.status == 'upcoming' then
     window.timerLabel:setText(tr('Starts in %s', PassView.formatTime(PassView.left(s.startsIn, 0, passed))))
+  elseif s.status == 'soon' then
+    window.timerLabel:setText(tr('Starts: Coming soon'))
   else
     window.timerLabel:setText('')
   end

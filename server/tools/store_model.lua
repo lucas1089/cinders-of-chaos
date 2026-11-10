@@ -16,8 +16,11 @@ end})
 PLAYERSEX_FEMALE, PLAYERSEX_MALE = 0, 1
 CONST_ME_FIREWORK_YELLOW = 29
 
-function M.load()
+-- launchOverride (tests): a ChaosLaunch config table, e.g. {launch = "2031-03-14 18:00"}; nil reads launch_config.lua (O463)
+function M.load(launchOverride)
 	local env = {}
+	ChaosLaunch = ChaosLaunch or dofile("data/scripts/chaos/launch_core.lua")
+	ChaosLaunch.override = launchOverride
 	env.rules = dofile("data/scripts/chaos/store_balance_config.lua")
 	env.coins = dofile("data/scripts/chaos/shop_coins_config.lua")
 	dofile("data/scripts/chaos/shop_core.lua")
@@ -36,6 +39,7 @@ function M.load()
 	env.apo = dofile("data/scripts/chaos/apothecary_config.lua")
 	env.runes = dofile("data/lib/chaos_rune_supply.lua")
 	env.potions = dofile("data/scripts/chaos/potions_config.lua")
+	ChaosLaunch.override = nil
 	dofile("data/lib/chaos_item_prices.lua")
 	env.prices = ChaosItemPrices
 	-- chaos_constants.lua needs the engine; read the two tables the model uses out of its text
@@ -488,7 +492,12 @@ function M.problems(env)
 			end
 			if o.kind ~= "bundle" or not o.oncePerAccount then bad("%s: must be a bundle bought once per account", o.key) end
 			if o.gift ~= false then bad("%s: must not be giftable", o.key) end
-			if o.availableFrom ~= env.founder.start or o.availableUntil ~= env.founder["end"] then bad("%s: the sale window differs from founder_config.lua", o.key) end
+			if env.founder.open then
+				-- the launch date is open (O463): no window at all, and the pack must not be sellable
+				if not o.availableSoon or o.availableFrom or o.availableUntil then bad("%s: the launch is open, so the pack must be availableSoon with no sale window", o.key) end
+			elseif o.availableSoon or o.availableFrom ~= env.founder.start or o.availableUntil ~= env.founder["end"] then
+				bad("%s: the sale window differs from founder_config.lua", o.key)
+			end
 			pieces[o.key] = 0
 			for _, p in ipairs(o.parts or {}) do
 				if type(p) ~= "table" or (p.kind ~= "exclusive" and p.kind ~= "pact") then
@@ -774,7 +783,11 @@ function M.report(env)
 		line("- Loot Bag + Auto Seller + Rarity Autoloot + pouches + Ration: %d coins for the first character, %d for each other one", list, half)
 	end
 
-	print("\nFounder Pack (O322): on sale " .. env.founder.start .. " to " .. env.founder["end"] .. " (server time), then never again")
+	if env.founder.open then
+		print("\nFounder Pack (O322): not on sale yet, the launch date is open (O463); on sale for four weeks from the launch, then never again")
+	else
+		print("\nFounder Pack (O322): on sale " .. env.founder.start .. " to " .. env.founder["end"] .. " (server time), then never again")
+	end
 	print("| Pack | Coins | About | Pieces | Pact days | Pact days worth | Title |")
 	print("|---|---|---|---|---|---|---|")
 	for _, t in ipairs(env.founder.tiers) do

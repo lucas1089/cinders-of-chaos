@@ -75,16 +75,25 @@ foreach (array('sharePct', 'supportDays', 'holdDays', 'orderCap', 'monthlyCap', 
 }
 check($cfg['enabled'] === true, 'enabled read');
 check($cfg['sharePct'] === 10, 'the base share is 10% (the stale default 5 is gone)');
-// the launch window (owner 2026-10-29): 15% instead of 10% for 30 days from 20 Nov 2026 15:00 (America/Sao_Paulo)
-check($cfg['launchBonusPct'] === 15 && $cfg['launchBonusStart'] === '2026-11-20 15:00' && $cfg['launchBonusDays'] === 30, 'launch window read from the Lua file');
-$launch = (new DateTimeImmutable('2026-11-20T15:00:00-03:00'))->getTimestamp();
+// the launch window (owner 2026-10-29): 15% instead of 10% for 30 days from the launch. The launch is the one value of
+// launch_config.lua (O463): "open" in the shipped file (owner 2026-11-10), so the bonus is off; an example launch is injected.
+check($cfg['launchBonusPct'] === 15 && $cfg['launchBonusDays'] === 30, 'the bonus numbers are read from the Lua file');
+check($cfg['launchBonusStart'] === '' && chaos_creator_bonus_window($cfg) === null, 'the launch is open: no launch bonus window');
+$someTime = (new DateTimeImmutable('2026-11-25T12:00:00-03:00'))->getTimestamp();
+check(chaos_creator_pct_at(array('pct' => 0), $cfg, $someTime) === 10 && chaos_creator_pct_at(array('pct' => 8), $cfg, $someTime) === 8, 'open: the base share (a code with its own % keeps it)');
+foreach (array('', 'return {}', 'return {launch = "soon"}', 'return {launch = "2031-02-30 15:00"}') as $broken) {
+	check(chaos_creator_config($broken)['launchBonusStart'] === '', 'a missing or broken launch value reads as open: ' . $broken);
+}
+$cfg = chaos_creator_config('return {launch = "2031-03-14 15:00"}');
+check($cfg['launchBonusPct'] === 15 && $cfg['launchBonusStart'] === '2031-03-14 15:00' && $cfg['launchBonusDays'] === 30, 'launch window read from the launch value');
+$launch = (new DateTimeImmutable('2031-03-14T15:00:00-03:00'))->getTimestamp();
 check(chaos_creator_bonus_window($cfg) === array($launch, $launch + 30 * 86400 - 1), 'the window: 30 days from the launch');
 check(chaos_creator_pct_at(array('pct' => 0), $cfg, $launch - 1) === 10, 'a second before the launch: 10');
 check(chaos_creator_pct_at(array('pct' => 0), $cfg, $launch) === 15, 'at the launch: 15');
 check(chaos_creator_pct_at(array('pct' => 0), $cfg, $launch + 30 * 86400 - 1) === 15, 'last second of the window: 15');
 check(chaos_creator_pct_at(array('pct' => 0), $cfg, $launch + 30 * 86400) === 10, 'after the window: 10');
 check(chaos_creator_pct_at(array('pct' => 8), $cfg, $launch + 5) === 8, 'a code with its own % keeps it');
-check(chaos_creator_bonus_window(array('launchBonusPct' => 0, 'launchBonusStart' => '2026-11-20 15:00', 'launchBonusDays' => 30)) === null, 'pct 0: off');
+check(chaos_creator_bonus_window(array('launchBonusPct' => 0, 'launchBonusStart' => '2031-03-14 15:00', 'launchBonusDays' => 30)) === null, 'pct 0: off');
 check(chaos_creator_bonus_window(array('launchBonusPct' => 15, 'launchBonusStart' => 'soon', 'launchBonusDays' => 30)) === null, 'a bad date: off');
 check($cfg['adminGroup'] === 5, 'administrators: group 5');
 

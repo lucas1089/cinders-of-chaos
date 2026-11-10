@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 # Launch rehearsal on a shifted clock (O441, docs/LAUNCH.md "Launch rehearsal", server/README.md "Launch rehearsal (O441)").
-# The launch is Fri 2026-11-20 15:00 Brasilia time. This runs the REAL server with the REAL committed configs under a shifted
+# The launch date is the one value of server/data/scripts/chaos/launch_config.lua (O463). While it is "open" (no date, the owner's
+# hold of 2026-11-10) there is nothing to rehearse: this script refuses before it starts anything, and says so. Set the date in
+# launch_config.lua (docs/LAUNCH.md "Launch date: on hold"), install it, then run it. This runs the REAL server with the REAL committed configs under a shifted
 # clock (libfaketime, TZ America/Sao_Paulo), a few minutes before each launch boundary, and reads what a player gets with a
 # headless client (tools/ci/launch_rehearsal_probe.py). The dates, the plan and the decision of each check are in
 # tools/ci/launch_rehearsal_core.py (unit test: launch_rehearsal_test.py, runs without a server).
 #
 # Checks (one OK / FAIL line each, observed values, no names, no passwords, no log lines):
 #   start_line     the O439 start line shows the shifted local time and offset -180, no warning
-#   founder        the Founder Pack is not in the store before 2026-11-20 15:00, is after, and goes at 2026-12-18 15:00
+#   founder        the Founder Pack is not in the store before the launch, is after, and goes four weeks later
 #   season         Season 1 upcoming before 15:00, active after, one automatic start (log, broadcast)
 #   season_once    a restart after the start: no second start, no reset of the season characters and their progress
 #   pvp            PvP Season 1 not started before the epoch, running after, ends in the configured weeks
 #   creator        the share of a donation by the instant it was credited: base, launch pct, launch pct, base
 #   weekend        the Weekend Ritual is off before Fri 18:00, on after (announced once), on before Sun 23:59, off after
 #   save           the 06:00 server save notice fires once at the crossing, then the engine stops once
-#   launch_check   server/deploy/launch_check.py under the shifted clock: the four date checks and the timezone are OK
+#   launch_check   server/deploy/launch_check.py under the shifted clock: launch_date, the four date checks and the timezone are OK
 #
 # Where the server comes from (one of):
 #   CI     UL_ASSETS=DIR (checkout of windows-assets) and LR_WORK=DIR: tools/ci/unity_live_check.sh --serve-only brings up a
@@ -37,6 +39,10 @@ set -euo pipefail
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 CORE="$REPO/tools/ci/launch_rehearsal_core.py"
 PROBE="$REPO/tools/ci/launch_rehearsal_probe.py"
+die() { printf '::error::%s\n' "$*" >&2; exit 1; }
+# the launch, from the checkout's launch_config.lua; "open" = no date = nothing to rehearse: refuse before anything starts
+# (exit 3 of the core, its message is on stderr)
+LAUNCH_AT=$(python3 -I "$CORE" launch --server "$REPO/server") || die "no launch date to rehearse (see above): set launch in server/data/scripts/chaos/launch_config.lua"
 : "${LR_WORK:?LR_WORK: a work folder outside the repository}"
 mkdir -p "$LR_WORK"
 WORK=$(cd "$LR_WORK" && pwd)
@@ -46,10 +52,8 @@ OUT=$(cd "$OUT" && pwd)
 OBS="$WORK/obs"
 ZONE=America/Sao_Paulo
 SAVE_TIME=${LR_SAVE_TIME:-06:00}
-LAUNCH_AT="2026-11-20 15:00"
 
 log() { printf '== %s\n' "$*"; }
-die() { printf '::error::%s\n' "$*" >&2; exit 1; }
 
 TFS_PID=""
 UL_BASE=""
@@ -158,6 +162,7 @@ LOGIN_PORT=$(cfg_value loginProtocolPort); LOGIN_PORT=${LOGIN_PORT:-7171}
 GAME_PORT=$(cfg_value gameProtocolPort); GAME_PORT=${GAME_PORT:-7172}
 if pgrep -x tfs >/dev/null 2>&1; then die "a tfs is already running on this machine"; fi
 log "the plan, from the configs of the installed server"
+[ "$(python3 -I "$CORE" launch --server "$SERVER")" = "$LAUNCH_AT" ] || die "the installed server has another launch date than the checkout (install_all.py again)"
 PLAN=$(python3 -I "$CORE" plan --server "$SERVER" --save-time "$SAVE_TIME")
 printf '%s\n' "$PLAN" | cut -f1,2 | sed 's/^/   /'
 

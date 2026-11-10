@@ -115,8 +115,8 @@
        "en": "Caps: {orderCap} coins per donation and {monthlyCap} a month."
       },
       {
-       "pt-BR": "Janela de lançamento: nas doações creditadas nos primeiros {bonusDays} dias depois do lançamento, de {launch} até {end}, a sua parte é de {bonus}% em vez de {share}%.",
-       "en": "Launch window: for donations credited in the first {bonusDays} days after the launch, from {launch} to {end}, your share is {bonus}% instead of {share}%."
+       "pt-BR": "Janela de lançamento: nas doações creditadas nos primeiros {bonusDays} dias depois do lançamento, {launchWhen}, a sua parte é de {bonus}% em vez de {share}%.",
+       "en": "Launch window: for donations credited in the first {bonusDays} days after the launch, {launchWhen}, your share is {bonus}% instead of {share}%."
       },
       {
        "pt-BR": "O seu próprio código, a mesma conexão e o mesmo pagador não contam.",

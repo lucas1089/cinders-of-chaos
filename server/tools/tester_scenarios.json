@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 66,
+  "opcode": 67,
   "out": 38,
-  "passive": 101,
+  "passive": 102,
   "place": 15,
   "staff": 17
  },
@@ -9859,7 +9859,8 @@
    "out": false,
    "skip": [],
    "systems": [
-    "manashield"
+    "manashield",
+    "monster_defence"
    ]
   },
   "nameplate": {
@@ -11890,6 +11891,15 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "launch": {
+   "files": [
+    "chaos_constants.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "leaderboard": {
    "files": [
     "leaderboard.lua"
@@ -12103,6 +12113,17 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "monster_defence": {
+   "files": [
+    "monster_defence.lua",
+    "monster_tiers.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "monsterbar"
+   ],
+   "talkactions": []
   },
   "monster_levels": {
    "files": [

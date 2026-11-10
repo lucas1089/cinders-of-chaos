@@ -366,9 +366,10 @@ texts are in `server/data/scripts/chaos/founder_config.lua`. The limits are in `
 | Founder Pack | 499 | R$ 49,90 | 2 (Gold Peacock Wings, Royal Coronet) | 14 (140) | Founder | no |
 | Grand Founder Pack | 999 | R$ 99,90 | 4 (Pyre Seraph Wings, Phoenix Plume Cape, Double Halo, Founder frame) | 30 (299) | Grand Founder | yes |
 
-- **Window.** From 20/11/2026 15:00 to 18/12/2026 15:00, server time (four weeks, proposed; the owner may move the end date in
-  the config). Before the start and from the end on, the store hides the packs and refuses a purchase, also from a stale
-  window. The offer text starts with "Disponível até 18/12/2026 15:00." (English: "Available until 2026-12-18 15:00.").
+- **Window.** From the launch to four weeks after it, server time (proposed; the owner may move the end date in `launch_config.lua`
+  `offsets.founderEnd`). While the launch date is open (owner, 2026-11-10) there is no window and the packs are not on sale. Before
+  the start and from the end on, the store hides the packs and refuses a purchase, also from a stale
+  window. The offer text starts with "Disponível até DD/MM/AAAA HH:MM." (English: "Available until YYYY-MM-DD HH:MM.") with the end date.
   The calendar page lists the sale (`website/tools/calendar_source.json`, event `founder`).
 - **Prices.** One coin is about R$ 0,10, so 499 and 999 coins are R$ 49,90 and R$ 99,90. 499 is also the price of the Pacto
   Completo for 30 days. The grand pack costs 2.0 times the first and gives more pieces. The model allows 1% around the

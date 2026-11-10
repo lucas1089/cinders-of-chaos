@@ -28,7 +28,7 @@ Até {{multiclient.perIp}} por conexão. O segundo não ataca jogadores, não en
 
 ## Quando começa a temporada?
 
-A {{season.name}} vai de {{season.start}} a {{season.finish}}. Veja [Temporadas e rankings](wiki:guide:seasons).
+A {{season.name}} {{season.runsPt}}. Veja [Temporadas e rankings](wiki:guide:seasons).
 
 ## Achei um bug. O que faço?
 

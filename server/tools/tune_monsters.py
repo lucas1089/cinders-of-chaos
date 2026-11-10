@@ -39,6 +39,7 @@ sys.path.insert(0, HERE)
 sys.dont_write_bytecode = True
 from fix_monster_xml import DAMAGE_SPELLS, _set_attr, _num
 import monster_fire_resist as fire
+import patch_monster_resists as resists
 
 LATE_ELEMENTS = [('physicalPercent', -15), ('holyPercent', -15), ('firePercent', 20), ('energyPercent', 20),
                  ('icePercent', 20), ('earthPercent', 20), ('deathPercent', 10)]
@@ -419,6 +420,20 @@ def main(argv):
             elif not table:
                 open(p, 'w', encoding='utf-8', newline='').write(new)
                 print('tuned', rel)
+    # O462: the resistance caps of every monster file of ours (40 a normal monster, 75 a boss, the flat 30 on seven types
+    # thinned to three): patch_monster_resists.py holds the rule, the install step `monsterresists` applies it to the
+    # base server's monsters. After the rows above: the rule has the last word.
+    for p, _ in fire_resist_files():
+        t = open(p, encoding='utf-8', errors='surrogateescape', newline='').read()
+        new, counts, notes = (resists.xml if p.endswith('.xml') else resists.lua)(t)
+        if new != t:
+            bad += 1
+            rel = os.path.relpath(p, os.path.dirname(HERE)).replace(os.sep, '/')
+            if check:
+                print('not up to date (resistance caps %d / %d):' % (resists.CAP_NORMAL, resists.CAP_BOSS), rel)
+            elif not table:
+                open(p, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
+                print('resistances:', rel + ':', '; '.join(notes))
     if check:
         print('monster tuning:', 'up to date' if not bad else '%d file(s) to tune' % bad)
         return 1 if bad else 0

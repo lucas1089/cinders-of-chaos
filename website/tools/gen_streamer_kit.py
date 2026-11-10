@@ -36,6 +36,7 @@ OUT = os.path.join(REPO, "website", "overlay", "plugins", "chaos", "assets", "st
 OBS_FILES = ("obs-overlay.html", "obs-overlay.js")
 LOGO = os.path.join(REPO, "website", "overlay", "layouts", "chaos", "assets", "img", "logo.png")
 CFG = os.path.join(REPO, "server", "data", "scripts", "chaos", "creator_codes_config.lua")
+LAUNCH_CFG = os.path.join(REPO, "server", "data", "scripts", "chaos", "launch_config.lua")
 ROOT = "streamer"
 
 SERVER = "Cinders of Chaos"
@@ -73,24 +74,45 @@ def lua_number(text, key):
     return int(float(m.group(1)))
 
 
-def code_numbers():
-    """The creator code numbers the guide quotes, read from the server config (the single source)."""
+def launch_value(text=None):
+    """The launch as a datetime, or None while it is open (launch_config.lua, O463: the one value). text: a launch_config.lua text
+    (tests); default the repository's file."""
+    sys.path.insert(0, os.path.join(REPO, "server", "deploy"))
+    import launch_check as lck  # noqa: E402
+    if text is None:
+        with open(LAUNCH_CFG, encoding="utf-8") as f:
+            text = f.read()
+    c = lck.read_launch_config(text)
+    if c is None or c["raw"] is None:
+        raise SystemExit("gen_streamer_kit: no launch value in launch_config.lua")
+    return c["launch"]
+
+
+def code_numbers(launch_text=None):
+    """The creator code numbers the guide quotes, read from the server config (the single source). While the launch is open
+    (launch_config.lua) the dates say "Em breve" / "Coming soon" and the window has no dates."""
     with open(CFG, encoding="utf-8") as f:
         lua = f.read()
-    m = re.search(r'^\s*launchBonusStart\s*=\s*"(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})"', lua, re.M)
-    if not m:
-        raise SystemExit("gen_streamer_kit: launchBonusStart not found in creator_codes_config.lua")
-    start = datetime.datetime(*[int(v) for v in m.groups()])
+    start = launch_value(launch_text)
     days = lua_number(lua, "launchBonusDays")
-    end = start + datetime.timedelta(days=days)
-    return {
+    out = {
         "share": lua_number(lua, "sharePct"), "bonus": lua_number(lua, "launchBonusPct"), "support": lua_number(lua, "supportDays"),
         "hold": lua_number(lua, "holdDays"), "orderCap": lua_number(lua, "orderCap"), "monthlyCap": lua_number(lua, "monthlyCap"),
         "bonusDays": days,
         "discord_pt-BR": "o link está na página Programa de Criadores do site", "discord_en": "the link is on the Creator Program page of the site",
+    }
+    if start is None:
+        out.update({"launch_pt-BR": "em breve", "launch_en": "coming soon", "end_pt-BR": "em breve", "end_en": "coming soon",
+                    "launchWhen_pt-BR": "data em breve", "launchWhen_en": "date coming soon"})
+        return out
+    end = start + datetime.timedelta(days=days)
+    out.update({
         "launch_pt-BR": start.strftime("%d/%m/%Y %H:%M"), "launch_en": start.strftime("%d %b %Y, %H:%M"),
         "end_pt-BR": end.strftime("%d/%m/%Y %H:%M"), "end_en": end.strftime("%d %b %Y, %H:%M"),
-    }
+    })
+    out["launchWhen_pt-BR"] = "de %s até %s" % (out["launch_pt-BR"], out["end_pt-BR"])
+    out["launchWhen_en"] = "from %s to %s" % (out["launch_en"], out["end_en"])
+    return out
 
 
 def fill(text, lang, nums):

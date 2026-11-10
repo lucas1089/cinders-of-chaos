@@ -1731,6 +1731,7 @@ return {
 		["You claimed the %d point Infinity Tower reward."] = "Você pegou a recompensa de %d pontos da Infinity Tower.",
 		["Tower Season %d ends %s. Last season paid out: %s."] =
 			"A Tower Season %d acaba em %s. Última temporada paga: %s.",
+		["Coming soon"] = "Em breve",
 		["You are already inside the tower."] = "Você já está dentro da torre.",
 		["You need level %d to enter the Infinity Tower."] = "Você precisa do nível %d para entrar na Infinity Tower.",
 		["Only the party leader can start the tower."] = "Só o líder da party pode começar a torre.",
@@ -6750,6 +6751,8 @@ return {
 			"%s %s em andamento: faltam %s.",
 		["%s %s starts in %s."] =
 			"%s %s começa em %s.",
+		["%s %s: coming soon."] =
+			"%s %s: em breve.",
 		["Modifier %s: %s"] =
 			"Modificador %s: %s",
 		["This character is a season character."] =
@@ -8820,6 +8823,8 @@ return {
 			"Pyre Seraph Wings, a Phoenix Plume Cape, o Double Halo, a moldura de placa Founder e o título Grand Founder, seus para sempre",
 		["%s is not on sale yet."] =
 			"%s ainda não está à venda.",
+		["Founder Pack, a limited sale, coming soon"] =
+			"Founder Pack, uma venda limitada, em breve",
 		["%s is no longer on sale."] =
 			"%s não está mais à venda.",
 		-- Victory emote lines (O318, cosmetics_config.lua emote say; Chaos.yell sends each viewer the line in own language)

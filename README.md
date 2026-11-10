@@ -10,12 +10,12 @@ O guia do jogo para jogadores agora está em [docs/GAME_GUIDE.md](docs/GAME_GUID
 | 31/10/2026 15:00 | Beta, primeiro fim de semana |
 | 07/11/2026 15:00 | Beta, segundo fim de semana |
 | Entre o beta e o lançamento | Wipe completo do beta (a tabela `chaos_beta_testers` fica) |
-| 20/11/2026 15:00 | Lançamento. Começam a Season 1, a Season 1 de PvP e o Founder Pack |
-| 18/12/2026 15:00 | Fim do Founder Pack, nunca mais volta |
-| 20/12/2026 | Fim do bônus de 15% dos criadores (30 dias depois do lançamento) |
-| 15/01/2027 | Fim da Season 1 de PvP |
-| 19/02/2027 | Fim da Season 1 |
-| 20/02/2027 15:00 | Season 2 (planejada) |
+| Em breve (data em aberto, decisão de 10/11/2026) | Lançamento. Começam a Season 1, a Season 1 de PvP e o Founder Pack. Para fixar a data: uma linha em `launch_config.lua` (docs/LAUNCH.md) |
+| 4 semanas depois do lançamento | Fim do Founder Pack, nunca mais volta |
+| 30 dias depois do lançamento | Fim do bônus de 15% dos criadores |
+| 8 semanas depois do lançamento | Fim da Season 1 de PvP |
+| 13 semanas depois do lançamento | Fim da Season 1 |
+| Dia seguinte ao fim da Season 1, 15:00 | Season 2 (planejada) |
 
 Patch notes toda quarta. Weekend Ritual toda sexta 18:00 até domingo 23:59, boss no sábado 19:00.
 
@@ -28,7 +28,7 @@ O que o repositório não prova (estado do VPS, chaves) fica aberto até você c
 - [ ] Antes de ligar o servidor do lançamento: app admin, aba Comandos > Ações rápidas > Conferir lançamento > Conferir (shell: `chaos-ctl.sh launch-check`). Nenhuma linha FAIL.
 - [x] Mandar a posição (x, y, z) ou a área das escadas sem descida. Feito: a captura de 26/10 virou o O264 (445 destinos sem chão achados por ferramenta e corrigidos, posição exata da captura sem confirmar; ROADMAP).
 
-### Antes do lançamento (20/11)
+### Antes do lançamento (data em aberto)
 - [ ] Decisões em aberto antes do lançamento (maxPlayers, parte dos criadores, wipe depois do lançamento, Founder Pack): lista em [docs/OWNER_TODO.md](docs/OWNER_TODO.md), seção "Open owner decisions before launch".
 - [ ] Testar ao vivo o que entrou em 29/10: Loot Bag com mais de 250 itens (páginas), janela de cosméticos, TRY ON da loja, `/weekend status|off|on`, stash sem piscar, salvage de um clique.
 - [ ] Certificado de assinatura de código (SSL.com IV ou OV com eSigner). Credenciais só como secrets do GitHub.

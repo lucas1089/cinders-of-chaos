@@ -1442,8 +1442,13 @@ All three are in the menu The World, the sitemap and the SEO descriptions.
   part is `website/tools/calendar_source.json` (events, wipe rules, open questions). The tool also checks its dates
   against docs/OWNER_TODO.md and docs/BETA.md and fails when they disagree. `--check` runs in CI. Test:
   `gen_calendar_data_test.py` and `tests/chaos_calendar_page_test.php`.
-- Season 1 starts with the launch (20 Nov 2026 15:00) and ends 19 Feb 2027, PvP season 1 starts with the launch, and
-  Season 2 is the day after Season 1 ends (planned). `gen_calendar_data.py` fails when the config or the source drifts
+- The launch date is on hold (owner, 2026-11-10): the one value is `launch_config.lua` of the game server (`launch = "open"` or a
+  date; the site reads it with `plugins/chaos/launch_lib.php`, the generators with `launch_check.read_launch_config`). While it is
+  open the wipe, the launch, the Founder Pack sale, Season 1, PvP season 1, the Tower season and Season 2 are listed as "Coming
+  soon" ("Em breve"), never dropped and never with a made-up date; the creator pages, the promo kit launch post, the streamer kit
+  and the media kit fact sheet say the same. With a date: Season 1 starts with the launch and ends 91 days later, PvP season 1
+  starts with the launch, and Season 2 is the day after Season 1 ends (planned). Set the date: docs/LAUNCH.md "Launch date: on hold".
+  `gen_calendar_data.py` fails when the config or the source drifts
   from that (a season that does not start at the launch, a launch not marked confirmed). The patch note weekday
   (Wednesday) is in `calendar_source.json`; the page shows it and the first regular note after the launch.
 - The page, the home page and the wiki season guide say: your character is permanent, seasons are optional, the legacy is
