@@ -62,6 +62,7 @@ $headings = $data['headings'];
 			<?php $wikiLang = $lang === 'en' ? '&amp;l=en' : ''; ?>
 			<li><a href="page?plugin=chaos&amp;p=wiki&amp;t=guide%3Astart<?= $wikiLang ?>"><?= chaos_h(chaos_t('Getting started: account, client and the first levels')) ?></a></li>
 			<li><a href="page?plugin=chaos&amp;p=wiki&amp;t=guide%3Aleveling<?= $wikiLang ?>"><?= chaos_h(chaos_t('Leveling guide: where to hunt at each level')) ?></a></li>
+			<li><a href="page?plugin=chaos&amp;p=starterbuilds<?= $wikiLang ?>"><?= chaos_h(chaos_t('Starter builds')) ?></a></li>
 			<li><a href="downloads"><?= chaos_h(chaos_t('Download the client')) ?></a></li>
 		</ul>
 	</div>

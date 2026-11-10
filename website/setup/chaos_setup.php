@@ -257,6 +257,9 @@ $out .= "menu: Start Here\n";
 // the player wiki (plugins/chaos/pages/wiki.php): guides and the reference generated from the game data
 $menu('Wiki', 'page?plugin=chaos&p=wiki', 'fa-book', 14);
 $out .= "menu: Wiki\n";
+// the Starter Builds guide (plugins/chaos/pages/starterbuilds.php, O448): three Recommended builds per class, next to the guide and the wiki
+$menu('Starter Builds', 'page?plugin=chaos&p=starterbuilds', 'fa-sitemap', 14);
+$out .= "menu: Starter Builds\n";
 $world = $menu('The World', 'serverinfo?world', 'fa-fire', 15);
 $menu('Server Info', 'serverinfo', 'fa-book', 1, $world);
 $menu('Patch Notes', 'page?plugin=chaos&p=patchnotes', 'fa-file-text-o', 2, $world);
