@@ -25,7 +25,7 @@ return {
 
 	-- kills per hour of one hunter by hunting level: tools/spawn_tuning.json model.paceKillsPerHour.scaled (a test keeps
 	-- them equal)
-	kph = {{650, 836}, {800, 846}, {1000, 869}, {1300, 819}, {1600, 813}, {2000, 789}},
+	kph = {{600, 836}, {657, 1210}, {670, 1195}, {700, 1160}, {800, 1055}, {900, 960}, {1000, 869}, {1300, 819}, {1600, 813}, {2000, 789}},
 
 	-- the levels the figures are held at (the tokens drop from level 509 monsters up)
 	levels = {650, 1000, 1500, 2000},
@@ -44,4 +44,8 @@ return {
 
 	-- value / cost a roulette has to stay within at every level (the gold and the pace of the level move it a little)
 	band = {min = 0.80, max = 1.35},
+	-- O470 (2026-11-10): the band of one level where it differs. At 650 the planned kills per hour is 1164 now (it was 836: the
+	-- plan fell 31% where the base pool ends, the step O470 removed), so the orbs of a spin cost fewer minutes of hunting:
+	-- the spin is worth 0.73 (boss), 0.76, 0.78, 0.79 of its token there (was 1.01 - 1.13 at 836). 1000 and up are unchanged.
+	bandAt = {[650] = {min = 0.70, max = 1.35}},
 }

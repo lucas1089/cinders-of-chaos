@@ -3438,6 +3438,11 @@ healing needed; the burst is the same). If the late hunts turn out too easy in t
 rifts, waystones, invasions, the raid and the arena are not paced and are not affected (their fights stay as long as they
 were; the rift health budget is its own model).
 
+O470 (2026-11-10): the late health stood 2.2 times above the base set's at the seam (hunting level 657); the `scaled` points of
+657 to 900 (health, experience, loot, goal, notable) and the plan `paceKillsPerHour.scaled` were refitted and the step is gone: a
+pack of the median class dies in 2.8 s at 670 (5.8 s before), 3.1 s at 700, 4.2 s at 800, 5.2 s at 900, as before from 1000. The
+figures above for 650 to 900 are the ones before; server/README.md "Monster health curve (O470)" has the new ones.
+
 **2. Class curve (the early dips and the level 200 spikes).** One factor per class could not hold levels 30-200 and
 300-1000 together. `spell_factor_config.lua` now has `byLevel[vocation]`: {level, factor} points (flat below the first,
 linear between points, the last point's value above; `spell_factor_core.lua` `forVocation(voc, cfg, level)`, the event
