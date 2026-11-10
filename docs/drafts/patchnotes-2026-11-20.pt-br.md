@@ -1,3 +1,5 @@
+> EM ESPERA (dono, 10/11/2026): a data do lançamento está em aberto. A data no nome deste arquivo e na linha Date abaixo é o plano antigo; troque pela data real quando for decidida (docs/LAUNCH.md "Launch date: on hold").
+
 # Lançamento: a Season of Ash começa
 Date: 2026-11-20
 Kind: news

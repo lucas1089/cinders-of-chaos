@@ -157,8 +157,11 @@ def read_seasons(path):
         if sid is None:
             continue
         hour = lua_field(part, 'hour') or 0
+        # start and finish are None while the launch date is open (O463: the config reads the one launch value); a season
+        # started by hand (/season start) then runs lengthDays from its start, like season_core.lua S.times
         out.append({'id': sid, 'name': lua_field(part, 'name') or ('Season %d' % sid), 'tag': lua_field(part, 'tag') or '',
-                    'start': to_unix(lua_field(part, 'start'), hour), 'finish': to_unix(lua_field(part, 'finish'), hour)})
+                    'start': to_unix(lua_field(part, 'start'), hour), 'finish': to_unix(lua_field(part, 'finish'), hour),
+                    'length': lua_field(part, 'lengthDays')})
     return out
 
 
@@ -182,6 +185,9 @@ def parse_windows(lines, seasons):
         if len(p) >= 4 and p[0] == 'sw' and num(p[1]) in by_id:
             w = by_id[num(p[1])]
             w['start'], w['finish'] = num(p[2], w['start']), num(p[3], w['finish'])
+    for w in by_id.values():
+        if w['start'] and not w['finish'] and isinstance(w.get('length'), int) and w['length'] > 0:
+            w['finish'] = w['start'] + w['length'] * 86400
     return [by_id[k] for k in sorted(by_id)]
 
 

@@ -1,5 +1,5 @@
 {
- "note": "Texts of the social / forum promo kit (gen_promo_kit.py). dates: leave empty to draw no date line. After a change run python3 -I website/tools/gen_promo_kit.py.",
+ "note": "Texts of the social / forum promo kit (gen_promo_kit.py). dates: leave empty to draw no date line; an empty launch date follows server/data/scripts/chaos/launch_config.lua (Em breve / Coming soon while it is open, the date once it is set). After a change run python3 -I website/tools/gen_promo_kit.py.",
  "site": "www.cindersofchaos.com",
  "dates": {
   "pt-BR": {"beta": "", "launch": ""},

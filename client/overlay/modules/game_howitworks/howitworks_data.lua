@@ -99,7 +99,7 @@ HowData = {
 			{id = "who", en = "Only a new character of level 7 or less can join, with the Join button. It starts from nothing: items and bank are wiped. Season characters play apart from the normal ones.", pt = "Só um personagem novo de nível 7 ou menos pode entrar, com o botão Entrar. Ele começa do zero: itens e banco são apagados. Personagens de temporada jogam separados dos normais."},
 			{id = "drops", en = "A reward track, rankings and season titles. Season of Ash: +10% experience from monsters.", pt = "Uma trilha de recompensas, rankings e títulos da temporada. Season of Ash: +10% de experiência dos monstros."},
 			{id = "death", en = "Normal season characters follow the normal death rules. In Hardcore mode you have one life.", pt = "Personagens de temporada normais seguem as regras normais de morte. No modo Hardcore você tem uma vida."},
-			{id = "often", en = "Season of Ash runs from 20 Nov 2026 to 19 Feb 2027. Only one season runs at a time.", pt = "Season of Ash vai de 20/11/2026 a 19/02/2027. Só uma temporada roda por vez."}
+			{id = "often", en = "Season of Ash is coming soon. Only one season runs at a time.", pt = "Season of Ash chega em breve. Só uma temporada roda por vez."}
 		}},
 		{key = "factions", title = {en = "Factions", pt = "Facções"}, window = "game_factions", unlocks = {"factions"}, goals = {"trusted", "honored", "revered", "exalted"}, rows = {
 			{id = "who", en = "Level 40+. Reputation you earn before that is kept. Nothing is locked: even a Hostile faction still talks and trades.", pt = "Nível 40+. A reputação ganha antes disso fica guardada. Nada fica trancado: até uma facção Hostil ainda fala e negocia."},

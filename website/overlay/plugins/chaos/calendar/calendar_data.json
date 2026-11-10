@@ -1,6 +1,7 @@
 {
  "generatedBy": "website/tools/gen_calendar_data.py (do not edit by hand)",
  "sources": [
+  "server/data/scripts/chaos/launch_config.lua",
   "server/data/scripts/chaos/season_config.lua",
   "server/data/scripts/chaos/battleground_config.lua",
   "server/data/scripts/chaos/chaos_constants.lua",
@@ -9,6 +10,10 @@
  ],
  "timezone": "UTC-3",
  "timezoneName": "America/Sao_Paulo",
+ "launch": {
+  "open": true,
+  "at": null
+ },
  "events": [
   {
    "id": "beta1",
@@ -23,10 +28,10 @@
     "pt-BR": "Qualquer pessoa cria uma conta no site e joga com o cliente oficial. Não há chave: o beta é aberto. Doações ficam desligadas e cada conta recebe moedas de teste.",
     "en": "Anyone makes an account on the site and plays with the official client. There is no key: the beta is open. Donations are off and every account gets test coins."
    },
+   "patchnoteReady": true,
    "start": "2026-10-31T15:00:00-03:00",
    "hasTime": true,
-   "end": "2026-11-01T23:00:00-03:00",
-   "patchnoteReady": true
+   "end": "2026-11-01T23:00:00-03:00"
   },
   {
    "id": "beta2",
@@ -41,62 +46,64 @@
     "pt-BR": "Os personagens do primeiro fim de semana continuam. Entre os dois fins de semana saem as correções, com uma nota de patch curta.",
     "en": "Characters from the first weekend stay. Fixes ship between the two weekends, with a short patch note."
    },
+   "patchnoteReady": true,
    "start": "2026-11-07T15:00:00-03:00",
    "hasTime": true,
-   "end": "2026-11-08T23:00:00-03:00",
-   "patchnoteReady": true
+   "end": "2026-11-08T23:00:00-03:00"
   },
   {
    "id": "wipe",
    "kind": "wipe",
-   "status": "plan",
+   "status": "open",
    "patchnote": "",
    "title": {
     "pt-BR": "Wipe do beta e instalação de lançamento",
     "en": "Beta wipe and launch install"
    },
    "text": {
-    "pt-BR": "Um único wipe completo entre o beta e o lançamento: todos os personagens e itens do beta são apagados. As regras do que fica e do que zera estão mais abaixo.",
-    "en": "One full wipe between the beta and the launch: all beta characters and items are deleted. The rules for what stays and what resets are further down."
+    "pt-BR": "A data ainda não foi definida. Um único wipe completo entre o beta e o lançamento: todos os personagens e itens do beta são apagados, dois dias antes do lançamento. As regras do que fica e do que zera estão mais abaixo.",
+    "en": "The date is not set yet. One full wipe between the beta and the launch: all beta characters and items are deleted, two days before the launch. The rules for what stays and what resets are further down."
    },
-   "start": "2026-11-18T00:00:00-03:00",
-   "hasTime": false,
-   "patchnoteReady": false
+   "patchnoteReady": false,
+   "start": null,
+   "soon": true,
+   "hasTime": false
   },
   {
    "id": "launch",
    "kind": "launch",
-   "status": "confirmed",
-   "patchnote": "2026-11-20",
+   "status": "open",
+   "patchnote": "",
    "title": {
     "pt-BR": "Lançamento",
     "en": "Launch"
    },
    "text": {
-    "pt-BR": "Data confirmada pelo dono. Sai a nota de patch do lançamento e a Season 1 começa junto, no mesmo horário.",
-    "en": "Date confirmed by the owner. The launch patch note goes out and Season 1 starts with it, at the same time."
+    "pt-BR": "A data do lançamento ainda não foi definida (decisão do dono, 10/11/2026). Quando sair, a nota de patch do lançamento e a Season 1 começam juntas, no mesmo horário.",
+    "en": "The launch date is not set yet (owner decision, 10 Nov 2026). When it is, the launch patch note goes out and Season 1 starts with it, at the same time."
    },
-   "start": "2026-11-20T15:00:00-03:00",
-   "hasTime": true,
-   "patchnoteReady": false
+   "patchnoteReady": false,
+   "start": null,
+   "soon": true,
+   "hasTime": false
   },
   {
    "id": "founder",
    "kind": "sale",
-   "status": "plan",
+   "status": "open",
    "patchnote": "",
    "title": {
     "pt-BR": "Pacote Fundador (venda limitada)",
     "en": "Founder Pack (limited sale)"
    },
    "text": {
-    "pt-BR": "Dois pacotes de cosméticos que nunca voltam, com título de Fundador, uma moldura de placa e dias de Chaos Pact. Um por conta e por pacote, só do lançamento até 18/12/2026 às 15:00. Sem poder, sem orbs de sorte, sem itens prontos.",
-    "en": "Two packs of cosmetics that never return, with a Founder title, a name plate frame and days of Chaos Pact. One per account and pack, sold only from the launch until 18 Dec 2026 at 15:00. No power, no luck orbs, no finished items."
+    "pt-BR": "Dois pacotes de cosméticos que nunca voltam, com título de Fundador, uma moldura de placa e dias de Chaos Pact. Um por conta e por pacote, em venda limitada a partir do lançamento. Ainda não está à venda: a janela sai com a data do lançamento. Sem poder, sem orbs de sorte, sem itens prontos.",
+    "en": "Two packs of cosmetics that never return, with a Founder title, a name plate frame and days of Chaos Pact. One per account and pack, in a limited sale from the launch. Not on sale yet: the window comes with the launch date. No power, no luck orbs, no finished items."
    },
-   "start": "2026-11-20T15:00:00-03:00",
-   "hasTime": true,
-   "end": "2026-12-18T15:00:00-03:00",
-   "patchnoteReady": false
+   "patchnoteReady": false,
+   "start": null,
+   "soon": true,
+   "hasTime": false
   }
  ],
  "seasons": [
@@ -104,39 +111,21 @@
    "id": 1,
    "name": "Season of Ash",
    "tag": "[S1]",
-   "start": "2026-11-20T15:00:00-03:00",
-   "finish": "2027-02-19T15:00:00-03:00",
+   "start": null,
+   "finish": null,
    "lengthDays": 91,
    "lengthWeeks": 13,
-   "startsAtLaunch": true,
-   "proposed": {
-    "start": "2026-11-20T15:00:00-03:00",
-    "finish": "2027-02-19T15:00:00-03:00"
-   },
-   "firstSeason": true
+   "soon": true,
+   "firstSeason": true,
+   "startsAtLaunch": true
   }
  ],
  "cycles": [
   {
    "id": "pvp",
    "lengthDays": 56,
-   "windows": [
-    {
-     "n": 1,
-     "start": "2026-11-20T15:00:00-03:00",
-     "end": "2027-01-15T15:00:00-03:00"
-    },
-    {
-     "n": 2,
-     "start": "2027-01-15T15:00:00-03:00",
-     "end": "2027-03-12T15:00:00-03:00"
-    },
-    {
-     "n": 3,
-     "start": "2027-03-12T15:00:00-03:00",
-     "end": "2027-05-07T15:00:00-03:00"
-    }
-   ],
+   "soon": true,
+   "windows": [],
    "title": {
     "pt-BR": "Temporadas de PvP (arena e battleground)",
     "en": "PvP seasons (arena and battleground)"
@@ -149,23 +138,8 @@
   {
    "id": "tower",
    "lengthDays": 30,
-   "windows": [
-    {
-     "n": 1,
-     "start": "2026-11-20T15:00:00-03:00",
-     "end": "2026-12-20T15:00:00-03:00"
-    },
-    {
-     "n": 2,
-     "start": "2026-12-20T15:00:00-03:00",
-     "end": "2027-01-19T15:00:00-03:00"
-    },
-    {
-     "n": 3,
-     "start": "2027-01-19T15:00:00-03:00",
-     "end": "2027-02-18T15:00:00-03:00"
-    }
-   ],
+   "soon": true,
+   "windows": [],
    "title": {
     "pt-BR": "Temporadas da Infinity Tower",
     "en": "Infinity Tower seasons"
@@ -179,6 +153,7 @@
    "id": "weekly",
    "lengthDays": 7,
    "windows": [],
+   "soon": false,
    "title": {
     "pt-BR": "Reset semanal",
     "en": "Weekly reset"
@@ -191,16 +166,17 @@
  ],
  "nextSeason": {
   "id": 2,
-  "status": "plan",
+  "status": "open",
   "title": {
    "pt-BR": "Season 2",
    "en": "Season 2"
   },
   "text": {
-   "pt-BR": "Começa no dia seguinte ao fim da Season 1. Nome, modificador e o que passa para ela ainda são a definir.",
-   "en": "Starts the day after Season 1 ends. Its name, modifier and what carries into it are still to be set."
+   "pt-BR": "Começa no dia seguinte ao fim da Season 1, que ainda não tem data. Nome, modificador e o que passa para ela ainda são a definir.",
+   "en": "Starts the day after Season 1 ends, which has no date yet. Its name, modifier and what carries into it are still to be set."
   },
-  "start": "2027-02-20T15:00:00-03:00"
+  "start": null,
+  "soon": true
  },
  "patchnotes": {
   "cadence": "weekly",
@@ -209,7 +185,7 @@
    "pt-BR": "quarta-feira",
    "en": "Wednesday"
   },
-  "firstRegular": "2026-11-25",
+  "firstRegular": null,
   "count": 9,
   "latest": "2026-11-13",
   "title": {
@@ -354,6 +330,13 @@
   }
  },
  "open": [
+  {
+   "id": "launch-date",
+   "text": {
+    "pt-BR": "Data do lançamento: a definir. O dono deixou o lançamento em aberto por enquanto (10/11/2026); o wipe do beta, o Pacote Fundador, a Season 1 e a temporada 1 de PvP seguem a data quando ela sair.",
+    "en": "Launch date: to be set. The owner left the launch open for now (10 Nov 2026); the beta wipe, the Founder Pack, Season 1 and PvP season 1 follow the date when it comes."
+   }
+  },
   {
    "id": "season2",
    "text": {

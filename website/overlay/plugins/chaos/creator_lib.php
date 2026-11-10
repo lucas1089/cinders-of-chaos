@@ -45,14 +45,19 @@ function chaos_lua_config_fields(string $relative, array $defaults): array {
 }
 
 /**
- * creator_codes_config.lua: enabled, sharePct, launchBonusPct, launchBonusStart, launchBonusDays, supportDays, holdDays,
- * orderCap, monthlyCap, adminGroup.
+ * creator_codes_config.lua: enabled, sharePct, launchBonusPct, launchBonusDays, supportDays, holdDays, orderCap, monthlyCap,
+ * adminGroup. launchBonusStart is the one launch value of launch_config.lua (O463): 'YYYY-MM-DD HH:MM', or '' while the
+ * launch is open (then the bonus is off, as on the game server). $launchText injects a launch_config.lua text (tests).
  */
-function chaos_creator_config(): array {
-	return chaos_lua_config_fields('scripts/chaos/creator_codes_config.lua', array(
-		'enabled' => true, 'sharePct' => 10, 'launchBonusPct' => 15, 'launchBonusStart' => '2026-11-20 15:00', 'launchBonusDays' => 30,
+function chaos_creator_config(?string $launchText = null): array {
+	require_once __DIR__ . '/launch_lib.php';
+	$cfg = chaos_lua_config_fields('scripts/chaos/creator_codes_config.lua', array(
+		'enabled' => true, 'sharePct' => 10, 'launchBonusPct' => 15, 'launchBonusDays' => 30,
 		'supportDays' => 30, 'holdDays' => 14, 'orderCap' => 500, 'monthlyCap' => 5000, 'adminGroup' => 5,
 	));
+	$launch = chaos_launch_config($launchText);
+	$cfg['launchBonusStart'] = $launch['launch'] !== null ? $launch['launch']->format('Y-m-d H:i') : '';
+	return $cfg;
 }
 
 /**

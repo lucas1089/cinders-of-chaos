@@ -316,6 +316,9 @@ local function shownJourney(player)
 	if not season and S.upcoming then
 		season = S.upcoming(Chaos.seasonConfig.seasons, t, S.ov)
 	end
+	if not season and S.soon then
+		season = S.soon(Chaos.seasonConfig.seasons, t, S.ov) -- the launch is open (O463): no date yet
+	end
 	return season and K.journeyOf(cfg, season.id) or nil, nil, season
 end
 

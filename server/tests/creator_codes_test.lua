@@ -5,7 +5,16 @@
 -- checked to agree on the tables.
 dofile("data/scripts/chaos/creator_codes_core.lua")
 local C = ChaosCreatorCore
-local cfg = dofile("data/scripts/chaos/creator_codes_config.lua")
+local LAUNCH = dofile("data/scripts/chaos/launch_core.lua")
+local function loadCfg(override)
+	LAUNCH.override = override
+	local c = dofile("data/scripts/chaos/creator_codes_config.lua")
+	LAUNCH.override = nil
+	return c
+end
+-- the shipped launch is "open" (O463): the window is tested with an example launch, the open state right after
+local shipped = loadCfg(nil)
+local cfg = loadCfg({launch = "2031-03-14 18:00"})
 
 local n = 0
 local function eq(a, b, m)
@@ -41,11 +50,11 @@ eq(C.share(100000, 5, cfg), cfg.orderCap, "capped per donation")
 eq(C.share(-5, 5, cfg), 0, "never negative")
 eq(C.pctOf({pct = 0}, cfg), cfg.sharePct, "default %")
 eq(C.pctOf({pct = 8}, cfg), 8, "the code's own %")
--- launch window (owner 2026-10-29): 15% instead of 10% for 30 days from the launch, 20 Nov 2026 15:00
+-- launch window (owner 2026-10-29): 15% instead of 10% for 30 days from the launch (an example launch here)
 eq(cfg.sharePct, 10, "base share 10")
 eq(cfg.launchBonusPct, 15, "launch window share 15")
 local first, last = C.bonusWindow(cfg)
-local launch = os.time({year = 2026, month = 11, day = 20, hour = 15, min = 0, sec = 0})
+local launch = os.time({year = 2031, month = 3, day = 14, hour = 18, min = 0, sec = 0})
 eq(first, launch, "the window opens at the launch")
 eq(last, launch + 30 * 86400 - 1, "the window lasts 30 days")
 eq(C.pctOf({pct = 0}, cfg, launch - 1), 10, "a second before the launch: base")
@@ -57,8 +66,16 @@ eq(C.pctOf({pct = 8}, cfg, launch + 5), 8, "a code's own % keeps winning")
 eq(C.share(1000, C.pctOf({pct = 0}, cfg, launch + 5), cfg), 150, "15% of 1000 in the window")
 eq(C.share(1000, C.pctOf({pct = 0}, cfg, last + 1), cfg), 100, "10% of 1000 after it")
 eq(C.share(100000, C.pctOf({pct = 0}, cfg, launch + 5), cfg), cfg.orderCap, "the order cap still applies")
-eq(C.bonusWindow({launchBonusPct = 0, launchBonusStart = "2026-11-20 15:00", launchBonusDays = 30}), nil, "pct 0 switches it off")
+eq(C.bonusWindow({launchBonusPct = 0, launchBonusStart = "2031-03-14 18:00", launchBonusDays = 30}), nil, "pct 0 switches it off")
 eq(C.bonusWindow({launchBonusPct = 15, launchBonusStart = "soon", launchBonusDays = 30}), nil, "a bad date switches it off")
+-- the launch is open (O463): the shipped config has no start, so there is no window and the bonus is off
+eq(shipped.launchBonusStart, nil, "open: no launch bonus start")
+eq(shipped.launchBonusPct, 15, "open: the % waits in the config")
+eq(C.bonusWindow(shipped), nil, "open: no launch window")
+local anyTime = os.time({year = 2026, month = 11, day = 25, hour = 12, min = 0, sec = 0})
+eq(C.pctOf({pct = 0}, shipped, anyTime), 10, "open: a donation earns the base % at any time")
+eq(C.pctOf({pct = 0}, shipped, launch + 5), 10, "open: not even on the days of an example launch")
+eq(C.pctOf({pct = 8}, shipped, anyTime), 8, "open: a code's own % still wins")
 
 -- ---------------------------------------------------------------- the donor's pick window
 local sup = {set_at = 1000, expires_at = 1000 + cfg.supportDays * 86400}

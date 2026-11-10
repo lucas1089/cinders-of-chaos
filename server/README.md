@@ -4681,8 +4681,8 @@ The client window's "Top Rank Rewards" podium (Gold, Silver and Copper Tower Che
 season. Before 12 Oct 2026 no script paid it.
 
 - **Seasons.** `K.seasonOf`: fixed `seasonLengthDays` (30) windows from `seasonEpoch`, a unix time or `{year, month,
-  day, hour}` in server local time; before the epoch it is season 1. The epoch is the launch (Fri 20 Nov 2026 15:00,
-  docs/BETA.md section 5); it was 1 Jan 2025, which made the launch season 22. The tower does not follow the realm
+  day, hour}` in server local time; before the epoch it is season 1. The epoch is the launch (the one value of
+  `launch_config.lua`, "Launch date (O463)"; none while it is open: season 1, no end; docs/BETA.md section 5); it was 1 Jan 2025, which made the launch season 22. The tower does not follow the realm
   Seasons of `season_config.lua`: those last 13 weeks, have gaps between them and staff can start or end them by hand,
   while the tower's points, milestones and ranking reset every 30 days. Changing the epoch renumbers the seasons in
   `chaos_tower_players`: only on a wiped database.
@@ -5265,7 +5265,8 @@ Files: `founder_config.lua` (dates, tiers, the store category), `founder_core.lu
 title source), `tests/founder_test.lua`, the window and grant tests in `tests/shop_test.lua`, the limits in
 `store_balance_config.lua` `founder`, `tools/store_model.lua --check`.
 
-- **Window.** `start` 2026-11-20 15:00 and `end` 2026-12-18 15:00, server time. Both go to the offers as `availableFrom` and
+- **Window.** `start` is the launch and `end` four weeks later (`launch_config.lua`, "Launch date (O463)"), server time; while the launch
+  is open there is neither and the offers carry `availableSoon` instead (not on sale). Both go to the offers as `availableFrom` and
   `availableUntil`, a general offer field (`ChaosShopCore.windowState(offer, now)`, `windowNote`). `Shop.view` hides an offer
   outside its window, `offerProblem` refuses it before any coin is taken ("is not on sale yet", "is no longer on sale"), and
   the offer text starts with "Available until ..." (pt-BR "Disponível até 18/12/2026 15:00."). Move the end date in
@@ -7019,7 +7020,7 @@ account gives the creator `sharePct` (10, decided 2026-10-14, docs/PRICES.md) % 
 Chaos Coins in game. The donor's pack is never reduced. Owner decision 2026-10-13: paid in coins in game, not money.
 
 - **Launch window (owner, 2026-10-29).** A donation credited in the first `launchBonusDays` (30) days from
-  `launchBonusStart` (`"2026-11-20 15:00"`, the launch, server time) earns `launchBonusPct` (15) % instead of `sharePct` (10).
+  `launchBonusStart` (the launch, server time: the one value of `launch_config.lua`; nil while it is open, then there is no window) earns `launchBonusPct` (15) % instead of `sharePct` (10).
   `C.pctOf(codeRow, cfg, at)` takes the donation's credited time (`o.credited` in `CC.match`, the settle fallback uses
   `u.credited`); a code with its own % keeps it; `orderCap` (500) and `monthlyCap` still apply, so a 5000-coin pack is
   capped in the window too. `launchBonusPct = 0` switches it off. The website reads the same three fields
@@ -16530,7 +16531,7 @@ The weekly **Battleground** leaderboard counts wins (title Wellkeeper); achievem
 potions (60) and 50 ultimate health potions (120), and three cosmetics (`cosmetics_config.lua` source `pvp`): kill effect
 Honor Brand (3000), loot labels Warbanner (2000), chat name Gladiator Steel (2500). Nothing with power above PvE gear.
 
-**PvP seasons** (`arena_season.lua`, `ChaosPvpSeason`). 8 weeks each from the epoch, the launch, Fri 20 Nov 2026 15:00 (`season.weeks`,
+**PvP seasons** (`arena_season.lua`, `ChaosPvpSeason`). 8 weeks each from the epoch, the launch (`launch_config.lua`; none while it is open: season 1, no end) (`season.weeks`,
 `season.epoch`). A rating per bracket (`1v1`, `2v2`, `3v3`, `bg`): **Glicko-lite**, start 1500, deviation 350; one rated
 match is one Glicko-1 period against the other team's average rating and root-mean-square deviation (a leaver scores 0);
 the deviation never drops below 75 (about +/-15 between equals) and grows by 35 per idle week. The first **5 matches** of
@@ -20715,7 +20716,7 @@ game": 300 is reached in 3-7 hours of play, 600 in 20-45).
 
 | When | 1-50 | 50-150 | 150-300 | 300-600 | 600-1000 | 1000+ |
 |---|---|---|---|---|---|---|
-| Launch evening (20 Nov): hunters | 51 | 102 | 136 | 51 | 0 | 0 |
+| Launch evening: hunters | 51 | 102 | 136 | 51 | 0 | 0 |
 | load before / after | 10% / 7% | 21% / 16% | 25% / 18% | 36% / 20% | | |
 | Week 1 (27 Nov): hunters | 14 | 20 | 51 | 136 | 68 | 0 |
 | load before / after | 3% / 2% | 4% / 3% | 9% / 7% | **96% / 55%** | 11% / 10% | |
@@ -25108,7 +25109,7 @@ The story text and these sizes were approved on 2026-10-14 (owner delegated, doc
 Chronicler is Archivist Maelis (one name; she answers "chronicle" and "cronista", `archivist_maelis.lua`).
 
 **Goal sizes** (2026-10-14, after pack combat; computed, not measured). Assumptions: Season 1 starts with the launch
-(20 Nov) and ends 31 Jan (72 days; the owner set 19 Feb, 91 days, on 2026-10-29, so the goals have more room than computed); 150 online at the evening peak (the middle of the expected 100-300), about 2.5 x
+(the date is open, 2026-11-10) and ends 31 Jan (72 days; the owner set 19 Feb, 91 days, on 2026-10-29, so the goals have more room than computed); 150 online at the evening peak (the middle of the expected 100-300), about 2.5 x
 that many players a day and 13 x it in player-hours a day (1,950 at 150); the leveling model of "Pack combat (pace)"
 (level 300 in 3-7 hours of play, 600 in 20-45, 800 in about 40, 925+ in about 55-70; boosted about 40% less). Only
 the open chapter counts, so each goal counts what happens in its own window (a level goal counts characters that cross
@@ -28552,7 +28553,7 @@ Part of the retention pass (docs/superpowers/specs/2026-10-26-retention-design.m
 
 ## Retention by creation day (O437) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `tools/progress_metrics.py`)
 
-Owner request 2026-11-09 (pt-BR), before the 2026-11-20 launch: D1 / D7 / D30 return rates per creation day, without names, account ids, IPs or chat. It extends the progress metrics (O253) and the funnel (O258): same table, same flush, same exclusions (tester bots and staff), no opcode, no new table, no gameplay change. Admin app: Painel > card "Funil dos jogadores" (section "Retenção por dia de criação", filled by the same "Atualizar métricas" button) and desktop Jogadores > "Métricas dos jogadores" (table "Retenção por dia de criação"); `chaos-ctl.sh metrics [--json]`.
+Owner request 2026-11-09 (pt-BR), before the launch (date on hold, 2026-11-10): D1 / D7 / D30 return rates per creation day, without names, account ids, IPs or chat. It extends the progress metrics (O253) and the funnel (O258): same table, same flush, same exclusions (tester bots and staff), no opcode, no new table, no gameplay change. Admin app: Painel > card "Funil dos jogadores" (section "Retenção por dia de criação", filled by the same "Atualizar métricas" button) and desktop Jogadores > "Métricas dos jogadores" (table "Retenção por dia de criação"); `chaos-ctl.sh metrics [--json]`.
 
 - **What the data can say.** The base `players` table has `lastlogin` and `onlinetime` and no creation date, and a login history does not exist anywhere (the base keeps the last login only). So the day of each return cannot be read from SQL. The server counts it when it happens instead: the first login ever stores the cohort day (O258, storage 7102831); every later login of a counted character calls `ChaosMetrics.retainCheck(cohort, flags, today, cfg)`, which says which windows that login falls in (k = today - cohort day, server day). Windows (`retainWindows`, flags in storage 7102835, one bit each, so a character counts once per window):
   - `d1`: logged in on day 1, the next calendar day (the real D1);
@@ -29785,10 +29786,46 @@ the password only in a temporary 0600 option file). Run it with `python3 -I`.
   call, dry run, execute, idempotence, rollback, verify; a fake runner, no database). Rehearsed once on a real MariaDB
   with a dump of a small installed server (counts in ROADMAP O438).
 
+## Launch date (O463) (`data/scripts/chaos/launch_config.lua`, `launch_core.lua`, `tests/launch_test.lua`)
+
+Owner, 2026-11-10: "Leave the launch of the game open for now. We will solve everything we need first. Then we review the launch."
+So the launch has no date. One value holds it: `launch_config.lua`, the line `launch = "open"` or `launch = "YYYY-MM-DD HH:MM"` (server
+local time, America/Sao_Paulo, on the hour). `launch_core.lua` (`ChaosLaunch`, pure, Lua 5.1 / LuaJIT / 5.3, no `os.time`) reads it:
+`isOpen`, `stamp(days)`, `ymd(days)`, `parts(days)`, `hour()`, `text(days, lang)` ("Coming soon" / "Em breve" while open), `validate`.
+A missing, broken or off-the-hour value fails closed: it reads as open. Tests set `ChaosLaunch.override = {launch = ...}`.
+
+Readers, each from that one value (no other file holds a launch date):
+
+| Reader | Open (no date) | With a date |
+|---|---|---|
+| `founder_config.lua` | `open = true`, no `start` or `end`; every offer has `availableSoon` (`ChaosShopCore.windowState` returns "early": the store hides it, refuses it); the wardrobe text says "coming soon" | `start` = launch, `end` = launch + `offsets.founderEnd` (28 days); `availableFrom` / `availableUntil` |
+| `creator_codes_config.lua` `launchBonusStart` | nil: no window, the base share | the launch; `launchBonusDays` (30) long |
+| `season_config.lua` Season 1 | `open = true`, no `start`, no `finish`, `lengthDays = 91`: `ChaosSeason.status` is `"soon"`; it does not start by itself; `/season start` still starts it (it then runs `lengthDays`; `S.finishIfStarted`); season uniques drop for nobody | `start = LC.ymd(0)`, `finish = LC.ymd(91)`, `hour` = the launch hour |
+| `battleground_config.lua` `season.epoch` | nil: `K.seasonOf` gives season 1, no start, no end (no countdown) | `parts(0)` |
+| `chaos_constants.lua` `Chaos.tower.seasonEpoch` | nil: Tower season 1, no end (`K.seasonOf`; the window says "Season Ends In: Coming soon") | `parts(0)` |
+| `weekend_config.lua` | unchanged: its epoch (2026-01-02) never followed the launch | unchanged |
+
+Clients: Season window "Starts: Coming soon" (`status = "soon"`), pass window the same, PvP panel "PvP Season N: coming soon",
+Tower "Season Ends In: Coming soon", each with its pt-BR line. The How it works card of the season and the wiki and guide
+sentences are generated from the configs (`gen_howitworks_data.lua`, `gen_wiki_data.lua` facts `season.runsEn` and friends,
+`gen_guide_data.lua`). Website: `plugins/chaos/launch_lib.php` reads the same file; the calendar, the seasons page, the creator
+pages, the promo kit and the streamer kit say "Coming soon" ("Em breve").
+
+Owner tools: `launch_check.py` has the check `launch_date` (WARN "no launch date is set" while open; OK with a date; FAIL when
+unreadable, not a date, off the hour, or different from `--launch`), and its date checks accept a config that reads the one value
+(open: OK, it waits; a date: OK with the derived dates; a config with its own literal date while open: FAIL for the season and the
+Founder Pack, WARN for PvP and the creator bonus). The patch note check is skipped while open (OK, "not checked"). The rehearsal
+(`launch_rehearsal_core.py`) refuses while open (exit 3); with a date it works out its boundary table from the value and the lengths
+of the configs. Set the date: docs/LAUNCH.md "Launch date: on hold". Tests: `tests/launch_test.lua`, and each system's own test with
+an example launch (founder, shop, store_model, creator_codes, season, battleground, battleground_flow, infinitytower_season,
+howitworks_gen), `deploy/launch_check_test.py`, `tools/ci/launch_rehearsal_test.py`, `website/tools/gen_calendar_data_test.py`,
+`website/tests/chaos_launch_test.php`, `chaos_calendar_page_test.php`, `chaos_creator_test.php`, `chaos_streamer_kit_test.php`.
+Not run: a game client, a browser, the Android card, the VPS.
+
 ## Timezone guard (O439) (`tools/chaos_timezone.py`, `chaos/timezone.lua`, `timezone_core.lua`, `timezone_config.lua`, `chaos-ctl.sh timezone`)
 
 The game reads the machine's **local** time: `weekend_config.lua`, `founder_config.lua`, `season_config.lua`, the creator launch
-bonus and the 06:00 save. The launch is Fri 2026-11-20 15:00 Brasilia time (UTC-3). A VPS left in UTC starts all of it 3 hours
+bonus and the 06:00 save. The launch is at 15:00 Brasilia time (UTC-3); its date is on hold (`launch_config.lua`). A VPS left in UTC starts all of it 3 hours
 late, silently. Three guards, one expected zone: `America/Sao_Paulo`, UTC offset -180 minutes.
 
 * **One place.** Deploy side: `server/tools/chaos_timezone.py` (`DEFAULT_ZONE`, `DEFAULT_OFFSET_MIN`, and an optional
@@ -29841,17 +29878,18 @@ never a guess.
 | `test_files` | `zz_*` and `ztest*` under `data/scripts`, `ztest*` in the server folder | any (5 listed) | |
 | `timezone` | `chaos_timezone.py` (see Timezone guard) | not on the expected zone and offset | |
 | `max_players` | `config.lua` `maxPlayers` | with `--max-players N`: a different value | without the flag, always: "owner decision: 300 or 400" |
-| `dates_season` | `season_config.lua` Season 1 start and end | the start is not the launch | |
-| `dates_pvp` | `battleground_config.lua` `season.epoch`, `weeks` | cannot read | the epoch is not the launch |
-| `dates_founder` | `founder_config.lua` start and end | the start is not the launch | |
-| `dates_creator` | `creator_codes_config.lua` `launchBonusStart`, `launchBonusDays` | cannot read | the start is not the launch |
+| `launch_date` | `launch_config.lua` `launch` (O463) | unreadable, not a date, off the hour, or different from `--launch` | `"open"`: "no launch date is set" |
+| `dates_season` | `season_config.lua` Season 1 (follows the launch, or its own date) | its own date that is not the launch, or any own date while the launch is open | |
+| `dates_pvp` | `battleground_config.lua` `season.epoch`, `weeks` | cannot read | the epoch is not the launch, or its own while open |
+| `dates_founder` | `founder_config.lua` (follows the launch, or its own window) | its own start that is not the launch, or any own window while open | |
+| `dates_creator` | `creator_codes_config.lua` `launchBonusStart`, `launchBonusDays` | cannot read | the start is not the launch, or its own while open |
 | `client_guard` | `config.lua` `clientGuardMode`, `clientGuardAllowDevKey`; the key: `CHAOS_CLIENT_KEY` of the env file, `clientGuardKey`, `clientGuardKeyFile` | mode off or not set; a dev key allowed; no key | mode `log` |
-| `patch_notes` | `data/patchnotes/LAUNCHDATE.md` and `.pt-br.md` | | either missing |
+| `patch_notes` | `data/patchnotes/LAUNCHDATE.md` and `.pt-br.md` | | either missing; skipped (OK, "not checked") while no launch date is set |
 | `database` | counts only: players, accounts, accounts with coins, `players_online`, `chaos_beta_testers` | a count cannot be read | players or coins above 0 (expected before the wipe, not after it) |
 | `backup` | the newest file of the backup folder (`CHAOS_BACKUP_DIR`, `backup.sh`) | none | 24 hours old or more |
 | `checkout` | the checkout of `CHAOS_REPO`: branch, short commit, clean or dirty | not a checkout | dirty, or not on `main` (a detached head at the commit `main` points to counts as main) |
 
-The launch time is a constant at the top of the tool (`LAUNCH`, 2026-11-20 15:00, server local time); `--launch` moves it. The
+The launch is the one value of `launch_config.lua` of the server folder (`launch = "open"` or a date, server local time); `--launch` overrides it. The
 dates are printed as the configs say them, in server local time, so a wrong machine zone is the `timezone` line's job. The client
 key is only tested for presence: it is never printed, logged or hashed. No names, ids or rows reach the output, only counts.
 
@@ -29869,7 +29907,7 @@ key is only tested for presence: it is never printed, logged or hashed. No names
 The unit tests of the launch systems pin the clock on a mocked engine. This runs the real `tfs` with the committed configs under a
 shifted clock and crosses each launch boundary by waiting for it. Nothing in `server/` or a config is changed.
 
-**Clock.** libfaketime, `apt-get install -y faketime`. `tfs` starts with `LD_PRELOAD=libfaketime.so.1`, `FAKETIME="@2026-11-20 14:58:00"`
+**Clock.** libfaketime, `apt-get install -y faketime`. `tfs` starts with `LD_PRELOAD=libfaketime.so.1`, `FAKETIME="@<launch minus 2 minutes>"`
 and `TZ=America/Sao_Paulo`, two minutes before the boundary. The rate is 1: the clock ticks at real speed from the fake start, so every
 engine timer keeps its meaning, and the runs wait about two real minutes per boundary. `FAKETIME_DONT_FAKE_MONOTONIC=1` keeps the
 monotonic clock real. The binary needs no change: it is dynamic, and `os.time`, the scheduler and the `time` globalevent all follow
@@ -29879,12 +29917,12 @@ the character is reset before each one.
 
 **Runs, from the configs** (`launch_rehearsal_core.py plan`, dates read with the readers of `deploy/launch_check.py`): the launch
 minute, a restart four minutes later, Fri 18:00 (weekend on), Sun 23:59 (weekend off), the 06:00 save of the next day (the save time
-is set the way the VPS setup does it, `prod_config.py --save-time`), and Fri 2026-12-18 15:00 (Founder closes).
+is set the way the VPS setup does it, `prod_config.py --save-time`), and launch + 28 days (Founder closes). While the launch is open the tool refuses (exit 3, "no launch date is set").
 
 | Check | Observed through | Rule |
 |---|---|---|
 | `start_line` | the `>> Timezone:` line, parsed to a time and an offset | the shifted local time, offset -180, no warning line |
-| `founder` | store opcode 218, the category list | no Founder category before 2026-11-20 15:00, one after, none after 2026-12-18 15:00 |
+| `founder` | store opcode 218, the category list | no Founder category before the launch, one after, none after launch + 28 days |
 | `season` | season opcode 246 `state`, the broadcast, the log, the database | `upcoming` then `active`, countdowns within 90 s of the fake clock, one start line, one broadcast |
 | `season_once` | a restart after the start, a sentinel season character with progress in the database | no second start, no end or migrate row, sentinel and progress unchanged, member count matches |
 | `pvp` | battleground opcode 200 `state`, `season.endsIn` | more than the 8 weeks before the epoch, less after, season 1, countdown within 90 s |

@@ -13,8 +13,13 @@
 -- offer ("Available until ..." / "Disponivel ate ...", shop_core.lua windowNote). A tier is bought once (oncePerAccount).
 -- The two tiers are independent: the Grand Founder Pack does not hold the first pack's pieces.
 
-local START = "2026-11-20 15:00" -- launch, server time
-local END = "2026-12-18 15:00" -- four weeks later; nothing is sold from this moment on
+-- The window follows the one launch value (launch_config.lua, launch_core.lua; O463): START is the launch, END is four weeks later
+-- (offsets.founderEnd); nothing is sold from END on. While the launch is "open" there is no window and the pack is NOT on sale:
+-- `open = true` below, and every offer carries availableSoon (shop_core.lua windowState reads it as "not yet", hidden and refused).
+local LC = dofile("data/scripts/chaos/launch_core.lua")
+local OPEN = LC.isOpen()
+local START = LC.stamp(0) -- the launch, server time; nil while the launch is open
+local END = LC.stamp(LC.offset("founderEnd")) -- nothing is sold from this moment on
 
 -- the Pact's own list price per day sets the value shown for the Pact days of a pack
 local okPact, pact = pcall(dofile, "data/scripts/chaos/pact_config.lua")
@@ -29,10 +34,11 @@ local cfg = {
 	-- the coins not recovered are at least minShortfallPct of the pack's price (a small refund must not cost a pack). The
 	-- sale stays used up: the account cannot buy the pack again.
 	revoke = {minShortfallPct = 50, table = "chaos_founder_revokes"},
+	open = OPEN or nil, -- true while the launch date is open: no sale window, nothing on sale
 	start = START,
 	["end"] = END,
 	-- the "how" text of the pieces in the wardrobe's Collection tab
-	how = "Founder Pack, on sale 2026-11-20 to 2026-12-18 only",
+	how = OPEN and "Founder Pack, a limited sale, coming soon" or ("Founder Pack, on sale " .. START:sub(1, 10) .. " to " .. END:sub(1, 10) .. " only"),
 
 	tiers = {
 		{key = "founder:pack", name = "Founder Pack", cost = 499, icon = 2160,
@@ -57,7 +63,8 @@ for _, t in ipairs(cfg.tiers) do
 	parts[#parts + 1] = {kind = "pact", days = t.pactDays, cost = pactCost(t.pactDays), required = true,
 		name = t.pactDays .. " days of the Chaos Pact"}
 	offers[#offers + 1] = {kind = "bundle", key = t.key, oncePerAccount = true, gift = false, cost = t.cost, name = t.name,
-		icon = t.icon, description = t.description, parts = parts, availableFrom = START, availableUntil = END}
+		icon = t.icon, description = t.description, parts = parts, availableFrom = START, availableUntil = END,
+		availableSoon = OPEN or nil}
 end
 cfg.store = {pack = {name = "Founder Pack", icon = {item = 2160}, offers = offers}}
 

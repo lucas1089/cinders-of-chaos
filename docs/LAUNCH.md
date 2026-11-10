@@ -1,5 +1,65 @@
 # Launch checklist: from the stock downloads to a public Cinders of Chaos server
 
+## Launch date: on hold (owner, 2026-11-10)
+
+Owner, 2026-11-10 (translated): "Leave the launch of the game open for now. We will solve everything we need first. Then we
+review the launch." And: "Yes, you can set those things to 'coming soon' until we settle the dates." So there is no launch
+date. The plan below was Fri 2026-11-20 15:00 Brasilia time. Read every "launch day", "L-2" and "Wed / Thu / Fri" below as
+relative to the day the owner sets.
+
+**The one value.** `server/data/scripts/chaos/launch_config.lua`, the line `launch = "open"`. The game server (`launch_core.lua`),
+the website, the generators and the owner tools all read that one line. Nothing else holds the launch date.
+
+**What "open" does.** Nothing starts by itself on a launch date and nothing prints one. Everything that works on the beta
+server today keeps working.
+
+| System | While `launch = "open"` |
+|---|---|
+| Founder Pack | Not on sale. The store hides it and refuses it (`availableSoon`). No sale window shows. The wardrobe says "Founder Pack, a limited sale, coming soon". |
+| Creator launch bonus | Off. Donations earn the base share (10%). The creator pages say "Launch bonus: coming soon". |
+| Season 1 (Season of Ash) | Status `soon`: no start, no end, it does not start by itself. The windows say "Starts: Coming soon" ("Começa: em breve"). `/season start 1` still starts it by hand and it then runs 91 days. |
+| PvP season 1, Tower season 1 | Season 1 with no end and no countdown. Ratings, points and rewards work as on the beta. |
+| Weekend Ritual | Unchanged. It never followed the launch (its epoch is 2026-01-02). |
+| Website calendar | The wipe, the launch, the Founder Pack sale, Season 1, PvP, the Tower and Season 2 are listed as "Coming soon" ("Em breve"), with no date. |
+| Promo and streamer kit, guides, wiki | "Coming soon" ("Em breve") where a date was. |
+| `chaos-ctl.sh launch-check` | One WARN line, `launch_date`: "no launch date is set". The checks that need the date say so and are skipped; all others run. Exit stays 0 without a FAIL. |
+| Launch rehearsal | Refuses with a clear message (exit 3). There is nothing to rehearse. |
+
+**Set the date again: one change.** Edit that one line to `launch = "YYYY-MM-DD HH:MM"`: Brasilia time (UTC-3), on the hour,
+for example a Friday at 15:00. Everything follows it, as documented before:
+
+| Moment | Rule |
+|---|---|
+| Content freeze | launch - 5 days (a Sunday) |
+| Beta wipe and launch install | launch - 2 days (a Wednesday) |
+| Launch rehearsal | launch - 1 day (a Thursday) |
+| Founder Pack sale | launch to launch + 28 days |
+| Creator launch bonus | launch for 30 days |
+| Season 1 | launch to launch + 91 days (13 weeks); Season 2 the day after |
+| PvP season 1 | launch for 8 weeks |
+| Tower season 1 | launch, 30-day cycles |
+
+The offsets are `offsets` in `launch_config.lua`; the 91, the 8 and the 30 are `lengthDays` of `season_config.lua`, `weeks` of
+`battleground_config.lua`, `launchBonusDays` of `creator_codes_config.lua`. Then regenerate what carries the date (each tool
+has a `--check`; CI runs them):
+```
+python3 -I website/tools/gen_calendar_data.py                  # website calendar_data.json
+python3 -I website/tools/gen_promo_kit.py                      # launch post date line (the fx venv)
+python3 -I website/tools/gen_streamer_kit.py                   # streamer kit texts (the fx venv)
+python3 -I website/tools/gen_media_kit.py                      # media kit manifest
+cd server && luajit tools/gen_howitworks_data.lua && luajit tools/gen_guide_data.lua && luajit tools/gen_wiki_data.lua
+luajit unity/tools/gen_info_data.lua                           # from the repository root
+```
+Then copy the launch patch note draft (`docs/drafts/patchnotes-2026-11-20.md` and the `.pt-br.md` twin; the file names keep the
+old date) to `server/data/patchnotes/<launch date>.md`, fix its `Date:` line, run `install_all.py`, and run the server tests
+(`tests/launch_test.lua` and the ones for founder, creator codes, season and battleground cover both states).
+The admin app has no button that sets the date: it is a line in the repository. Commit it, then Painel > Atualizar servidor
+puts it on the server. Check it with Comandos > Ações rápidas > Conferir lançamento (shell: `chaos-ctl.sh launch-check`):
+`launch_date` turns OK and shows the date. The owner prose (`docs/BETA.md`, `docs/OWNER_TODO.md`, the ROADMAP rows) keeps
+no date as a fact; the owner writes the real day there when it is set.
+
+The dated plan below stays as the plan relative to the launch day.
+
 This is the order to follow on launch day, and the list of what must be checked before the doors open. Everything
 here was run on the test server, except where a step says otherwise (the systemd units and the Windows client
 workflow could not be run in the build environment).
@@ -392,13 +452,15 @@ Painel > Atualizar servidor.
 
 ### Clock rehearsal (O441)
 
-`tools/ci/launch_rehearsal.sh` runs the real server with the committed configs under a shifted clock (libfaketime, `TZ=America/Sao_Paulo`)
+`tools/ci/launch_rehearsal.sh` needs a launch date: while `launch_config.lua` says `open` it refuses (exit 3, "no launch date is set").
+It runs the real server with the committed configs under a shifted clock (libfaketime, `TZ=America/Sao_Paulo`)
 and crosses each launch boundary by waiting for it. A headless client reads what a player gets. Manual workflow: Actions > Launch
 rehearsal. About 30 minutes of waiting on top of the server install. Report: one line per check, dates and counts only.
 
 What it proves, on the real server:
 - The O439 start line shows the shifted local time and offset -180, no warning.
-- The Founder Pack is not in the store at 2026-11-20 14:58, is there at 15:01, and is gone at 2026-12-18 15:01.
+- The Founder Pack is not in the store two minutes before the launch, is there one minute after it, and is gone one minute after
+  the end of the sale (launch + 28 days).
 - Season 1 is upcoming before 15:00, active after, starts once (log line, broadcast, database row), and a restart after the start
   starts nothing again and leaves the season characters and their progress alone.
 - PvP Season 1 is not started before the epoch, runs after it, and ends after the configured weeks.
@@ -407,7 +469,7 @@ What it proves, on the real server:
   not on the clock of the server, so this proves the zone and the window edges.
 - The Weekend Ritual is off before Fri 18:00, on after (announced once), on before Sun 23:59, off after.
 - The server save notice fires once at 06:00, and the engine stops once, five minutes later.
-- `launch_check.py` reads the four dates as OK under the same clock.
+- `launch_check.py` reads `launch_date` and the four dates as OK under the same clock.
 
 What it does not prove: the VPS itself (its real zone, `timedatectl`, the service manager, the real database clock), payments (no
 provider is called, no coins are bought), the real client (the probe is a headless protocol client, it sees no window), the
@@ -580,7 +642,8 @@ Desligar (or Desligar e reiniciar), must be `false` at launch too. Turning one o
 **Check it in one go, before the first start of the launch server (O440):** `chaos-ctl.sh launch-check` (admin app: Comandos >
 Ações rápidas > Conferir lançamento > Conferir). It reads the installed server and changes nothing. It checks the two beta
 switches, the beta coins cron, the payment providers (no mock), test files, the clock zone, `maxPlayers`, the dates of Season 1,
-the PvP season, the Founder Pack and the creator bonus against Fri 2026-11-20 15:00, the client guard key and mode (presence
+the PvP season, the Founder Pack and the creator bonus against the launch (`launch_config.lua`; while it is "open" they wait and
+`launch_date` is one WARN), the client guard key and mode (presence
 only), the launch patch notes, counts in the database, the newest backup and the checkout. Exit 1 when any line is `FAIL`;
 `WARN` lines are decisions or expected counts (players and coins are expected before the wipe, not after it). Pass
 `--max-players 400` (or 300) once the owner decides, so a different value fails. The wipe of the beta data is a separate tool.

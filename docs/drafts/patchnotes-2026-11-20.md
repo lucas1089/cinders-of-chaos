@@ -1,3 +1,5 @@
+> ON HOLD (owner, 2026-11-10): the launch date is open. The date in this file name and in the Date line below is the old plan; set the real date when it is decided (docs/LAUNCH.md "Launch date: on hold").
+
 # Launch: the Season of Ash begins
 Date: 2026-11-20
 Kind: news

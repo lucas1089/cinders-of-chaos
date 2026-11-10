@@ -3313,17 +3313,19 @@ def test_launch_check():
                 f.write(text)
         put(os.path.join(cfg, 'beta_config.lua'), 'return {enabled = false}\n')
         put(os.path.join(cfg, 'beta_mode_config.lua'), 'return {enabled = false}\n')
+        # the configs read the one launch value (O463); an example launch, the owner's date is never pinned here
+        put(os.path.join(cfg, 'launch_config.lua'), 'return {\n\tlaunch = "2031-03-14 18:00"\n}\n')
+        lc = 'dofile("data/scripts/chaos/launch_core.lua")'
         put(os.path.join(cfg, 'season_config.lua'),
-            'return {seasons = {{id = 1, start = 20261120, finish = 20270219, hour = 15}}}\n')
-        put(os.path.join(cfg, 'battleground_config.lua'),
-            'return {season = {weeks = 8, epoch = {year = 2026, month = 11, day = 20, hour = 15}}}\n')
-        put(os.path.join(cfg, 'founder_config.lua'), 'local START = "2026-11-20 15:00"\nlocal END = "2026-12-18 15:00"\n')
+            'return {seasons = {{id = 1, start = %s.ymd(0), finish = %s.ymd(91), lengthDays = 91, hour = 18}}}\n' % (lc, lc))
+        put(os.path.join(cfg, 'battleground_config.lua'), 'return {season = {weeks = 8, epoch = %s.parts(0)}}\n' % lc)
+        put(os.path.join(cfg, 'founder_config.lua'), 'local START = %s.stamp(0)\nlocal END = %s.stamp(28)\n' % (lc, lc))
         put(os.path.join(cfg, 'creator_codes_config.lua'),
-            'return {launchBonusStart = "2026-11-20 15:00", launchBonusDays = 30}\n')
+            'return {launchBonusStart = %s.stamp(0), launchBonusDays = 30}\n' % lc)
         put(os.path.join(server, 'config.lua'),
             'maxPlayers = 400\nclientGuardMode = "enforce"\nclientGuardKey = os.getenv("CHAOS_CLIENT_KEY") or ""\n'
             'clientGuardAllowDevKey = false\n')
-        for n in ('2026-11-20.md', '2026-11-20.pt-br.md'):
+        for n in ('2031-03-14.md', '2031-03-14.pt-br.md'):
             put(os.path.join(server, 'data', 'patchnotes', n), 'x\n')
         dump = os.path.join(bdir, 'db', 'chaos-db-x-1.sql.gz')
         put(dump, '')
@@ -3373,9 +3375,9 @@ def test_launch_check():
         before = snapshot()
         r = run('launch-check', '--max-players', '400')
         s = st(r)
-        check(r.returncode == 0 and len(s) == 16 and set(s.values()) == {'OK'},
-              'launch-check: a good installation, 16 OK, exit 0: ' + r.stdout + r.stderr)
-        check(r.stdout.splitlines()[-1] == 'launch check: 0 FAIL, 0 WARN, 16 OK', 'launch-check: the summary line: ' + r.stdout)
+        check(r.returncode == 0 and len(s) == 17 and set(s.values()) == {'OK'},
+              'launch-check: a good installation, 17 OK, exit 0: ' + r.stdout + r.stderr)
+        check(r.stdout.splitlines()[-1] == 'launch check: 0 FAIL, 0 WARN, 17 OK', 'launch-check: the summary line: ' + r.stdout)
         check(snapshot() == before, 'launch-check changes nothing on disk')
         c = calls()
         check('SELECT COUNT(*) FROM players' in c and 'FROM chaos_shop_coins WHERE coins > 0' in c
@@ -3396,12 +3398,29 @@ def test_launch_check():
         except ValueError:
             d = {}
             check(False, 'launch-check --json: valid JSON: ' + r.stdout)
-        check(r.returncode == 0 and r.stdout.count('\n') == 1 and d.get('ok') is True and d.get('okCount') == 16
-              and d.get('fail') == 0, 'launch-check --json: one line: ' + r.stdout)
-        r = run('launch-check', '--max-players', '400', '--launch', '2026-12-04 15:00')
+        check(r.returncode == 0 and r.stdout.count('\n') == 1 and d.get('ok') is True and d.get('okCount') == 17
+              and d.get('fail') == 0 and d.get('launch') == '2031-03-14 18:00', 'launch-check --json: one line: ' + r.stdout)
+        r = run('launch-check', '--max-players', '400', '--launch', '2031-04-04 18:00')
         s = st(r)
-        check(r.returncode == 1 and s.get('dates_season') == 'FAIL' and s.get('dates_founder') == 'FAIL'
-              and s.get('patch_notes') == 'WARN', 'launch-check --launch moves the expected date: ' + r.stdout)
+        check(r.returncode == 1 and s.get('launch_date') == 'FAIL' and s.get('dates_season') == 'FAIL'
+              and s.get('dates_founder') == 'FAIL' and s.get('patch_notes') == 'WARN',
+              'launch-check --launch moves the expected date: ' + r.stdout)
+        # the launch is open (O463): one WARN says so, exit 0, the rest still runs
+        put(os.path.join(cfg, 'launch_config.lua'), 'return {\n\tlaunch = "open"\n}\n')
+        r = run('launch-check', '--max-players', '400')
+        s = st(r)
+        check(r.returncode == 0 and len(s) == 17 and s.get('launch_date') == 'WARN' and 'no launch date is set' in r.stdout
+              and [k for k, v in s.items() if v == 'WARN'] == ['launch_date']
+              and r.stdout.splitlines()[-1] == 'launch check: 0 FAIL, 1 WARN, 16 OK',
+              'launch-check: open, one WARN that says no launch date is set, exit 0: ' + r.stdout)
+        r = run('launch-check', '--json', '--max-players', '400')
+        try:
+            d = json.loads(r.stdout)
+        except ValueError:
+            d = {}
+        check(d.get('launch') is None and d.get('launchOpen') is True and d.get('ok') is True and d.get('warn') == 1,
+              'launch-check --json: open has launch null: ' + r.stdout)
+        put(os.path.join(cfg, 'launch_config.lua'), 'return {\n\tlaunch = "2031-03-14 18:00"\n}\n')
 
         # one thing wrong at a time
         put(os.path.join(cfg, 'beta_config.lua'), 'return {enabled = true}\n')
@@ -3429,7 +3448,7 @@ def test_launch_check():
         check(r.returncode == 1 and st(r).get('database') == 'FAIL' and 'beta_testers (no-table)' in r.stdout,
               'launch-check: a missing table fails only that count: ' + r.stdout)
         r = run('launch-check', '--max-players', '400', extra={'STUB_DB_FAIL': '1'})
-        check(r.returncode == 1 and st(r).get('database') == 'FAIL' and 'players (database)' in r.stdout and len(st(r)) == 16,
+        check(r.returncode == 1 and st(r).get('database') == 'FAIL' and 'players (database)' in r.stdout and len(st(r)) == 17,
               'launch-check: the database down: FAIL, no crash, every other check ran: ' + r.stdout)
         r = run('launch-check', '--max-players', '400', extra={'STUB_GIT_DIRTY': '1'})
         check(r.returncode == 0 and st(r).get('checkout') == 'WARN' and 'dirty' in r.stdout,

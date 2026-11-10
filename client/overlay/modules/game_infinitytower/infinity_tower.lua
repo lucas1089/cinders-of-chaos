@@ -768,7 +768,9 @@ function populateSeasonInfos(data)
       local now = os.time()
       if endLabel then
           local remainEnd = targetSeasonEnd - now
-          if remainEnd > 0 then
+          if targetSeasonEnd <= 0 then
+              endLabel:setText(tr('Season Ends In: Coming soon'))
+          elseif remainEnd > 0 then
               endLabel:setText(tr('Season Ends In: %s', formatTimeRemaining(remainEnd)))
           else
               endLabel:setText(tr("Season Ends In: Finished"))

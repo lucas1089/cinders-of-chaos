@@ -59,7 +59,7 @@ $state = static function (string $s): string {
 			<?php foreach ($data['benefits'] as $b): ?>
 				<tr id="benefit-<?= chaos_h($b['id']) ?>">
 					<td><strong><?= chaos_h(chaos_bi($b['title'])) ?></strong></td>
-					<td><?= chaos_h(chaos_bi($b['text'])) ?></td>
+					<td><?= chaos_h(chaos_creators_text($b['text'])) ?></td>
 					<td><?= chaos_h($state((string)$b['status'])) ?></td>
 				</tr>
 			<?php endforeach; ?>

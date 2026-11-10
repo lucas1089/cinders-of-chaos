@@ -8,11 +8,16 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 Item 6 of 2026-10-14 ("Decida tudo sobre o item 6"): the developers decided every pure game or design question below;
 each is under "Decided" with its reason. Left here: what needs the owner's own answer or a real-world action.
 
-- [x] **Dates.** Confirmed 2026-10-29 (below); both beta weekends are over.
-  - **Confirmed by the owner, 2026-10-29:** launch on 20 Nov 2026 at 15:00 (UTC-3).
+- [ ] **Launch date: on hold (owner, 2026-11-10).** "Leave the launch of the game open for now. We will solve everything we
+  need first. Then we review the launch." Nothing in the game, the website or the promo material starts on, or names, a
+  launch date: it all says "Coming soon" ("Em breve"). To set the date, change one line, `launch = "open"` in
+  `server/data/scripts/chaos/launch_config.lua`, and run the commands of docs/LAUNCH.md "Launch date: on hold". The admin app
+  has no button for it (Painel > Atualizar servidor puts the file on the server). Then write the real day in this list.
+- [x] **Dates.** Confirmed 2026-10-29 (below); both beta weekends are over; the launch day itself is on hold (above).
+  - **Confirmed by the owner, 2026-10-29:** Season 1 and PvP Season 1 start with the launch; one full wipe before it.
   - Open betas on the weekends of 31 Oct and 7 Nov. The beta is open, with no keys.
-  - Season 1 runs from the launch, 20 Nov 2026 15:00, to 19 Feb 2027 (13 weeks); done in `season_config.lua`. PvP
-    Season 1 starts at the launch too (`battleground_config.lua`). Season 2 is planned for 20 Feb 2027 15:00.
+  - Season 1 runs 13 weeks from the launch; done in `season_config.lua`. PvP
+    Season 1 starts at the launch too (`battleground_config.lua`). Season 2 is planned for the day after Season 1 ends.
     The Chronicle's goal sizes assume the launch start (server/README.md "The Ashen Chronicle", "Goal sizes").
   - Patch notes come out every Wednesday.
   - Wipe: one full wipe between the beta and the launch (all beta characters and items). After the launch, permanent

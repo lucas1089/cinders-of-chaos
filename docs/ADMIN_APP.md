@@ -226,8 +226,8 @@ Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]
 - **Conferir lançamento** (`launch-check`; Comandos > Ações rápidas > cartão Conferir lançamento > Conferir; O440): lê o servidor
   instalado e não muda nada. Mostra uma linha de resumo ("3 falhas, 2 avisos" ou "Tudo certo para o lançamento") e as linhas
   com as falhas primeiro: beta e modo beta desligados, cron das moedas de teste ausente, pagamentos sem mock, arquivos de
-  teste, fuso horário, `maxPlayers`, datas da Season 1, da temporada PvP, do Founder Pack e do bônus dos criadores contra
-  sex 20/11/2026 15:00, chave e modo do guarda do client (só presença: a chave nunca aparece), patch notes do lançamento,
+  teste, fuso horário, `maxPlayers`, a data do lançamento (`launch_config.lua`; "em aberto" é um aviso: "nenhuma data de lançamento
+  definida"), datas da Season 1, da temporada PvP, do Founder Pack e do bônus dos criadores contra ela, chave e modo do guarda do client (só presença: a chave nunca aparece), patch notes do lançamento,
   contagens do banco (sem nomes), backup de menos de 24 horas e a versão instalada. Copiar leva o resultado para o
   clipboard. O app precisa ser recompilado para ter o cartão. No desktop: VPS e manutenção > Conferir lançamento > Conferir
   (as linhas do próprio comando). Detalhes das regras: server/README.md "Launch check (O440)".

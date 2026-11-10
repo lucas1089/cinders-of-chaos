@@ -4,7 +4,9 @@
 
 Built from the repository's own art, like the streamer kit (gen_streamer_kit.py, gen_site_art.py): the backdrop, the gold
 panel, the wordmark, the class badges, the same fonts. Nothing third-party. Texts and dates: website/tools/promo_source.json
-(an empty date draws no date line). Needs Pillow and numpy. Deterministic.
+(an empty date draws no date line, except the launch post: an empty `dates.launch` follows the one launch value of
+server/data/scripts/chaos/launch_config.lua, O463, so it reads "Em breve" / "Coming soon" while the launch is open, and the
+launch date and hour once it is set). Needs Pillow and numpy. Deterministic.
 
 COMMITTED in website/overlay/plugins/chaos/assets/promo/, checked by --check in CI (fx venv):
   post/      beta-1080.LANG.jpg, launch-1080.LANG.jpg (1080x1080, Instagram / Facebook / Discord)
@@ -48,10 +50,23 @@ def headline(img, gsa, cx, y, text, size, width):
     gsa.gold_text(img, (cx, y), text, gsa.fit(size, "display", text, width), anchor="mm", glow=0.5, spacing=3)
 
 
+def launch_date_line(gsk, lang, launch_text=None):
+    """The date line of the launch post when promo_source.json leaves it empty: the one launch value (launch_config.lua), or
+    "Em breve" / "Coming soon" while the launch is open (O463)."""
+    launch = gsk.launch_value(launch_text)
+    if launch is None:
+        return "Em breve" if lang == "pt-BR" else "Coming soon"
+    if lang == "pt-BR":
+        return launch.strftime("%d/%m/%Y %H:%M") + " (Brasília)"
+    return launch.strftime("%d %b %Y, %H:%M") + " (Brasília)"
+
+
 def make_event_post(gsk, gsa, src, lang, kind, W, H, seed):
     """A beta or launch poster: wordmark, headline, date line, subline, features, class badges, site."""
     t = src["text"][lang]
     date = src["dates"][lang].get(kind, "")
+    if kind == "launch" and not date:
+        date = launch_date_line(gsk, lang)
     img = gsk.scene(gsa, W, H, 0.32, 0.5, seed)
     gsa.panel(img, (24, 24, W - 24, H - 24), corner=48, fill_alpha=0, gold=True)
     tall = H > W

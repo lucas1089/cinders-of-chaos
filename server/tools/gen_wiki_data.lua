@@ -1732,11 +1732,12 @@ function W.offerSprite(o)
 	return false
 end
 
--- a category whose offers all have a sale window (availableUntil, the Founder Pack, O322) is left out: the wiki lists what the
--- store always sells, and a limited pack would stay on the page after its sale
+-- a category whose offers all have a sale window (availableUntil, the Founder Pack, O322) or are not on sale yet (availableSoon,
+-- the launch date is open, O463) is left out: the wiki lists what the store always sells, and a limited pack would stay on the
+-- page after its sale
 function W.timeLimited(cat)
 	for _, o in ipairs(cat.offers or {}) do
-		if not o.availableUntil then
+		if not o.availableUntil and not o.availableSoon then
 			return false
 		end
 	end
@@ -2052,8 +2053,15 @@ function W.facts(D, vocs, spells, T, typeCount)
 		n = tonumber(n) or 0
 		return string.format("%04d-%02d-%02d", floor(n / 10000), floor(n / 100) % 100, n % 100)
 	end
-	f["season.start"] = s1 and ymd(s1.start) or ""
-	f["season.finish"] = s1 and ymd(s1.finish) or ""
+	-- the launch date can be open (O463, launch_config.lua): Season 1 then has no dates and the guides say "coming soon"; the
+	-- sentences below are per language because a fact is one string for both
+	local dated = s1 and s1.start ~= nil and s1.finish ~= nil
+	f["season.start"] = dated and ymd(s1.start) or ""
+	f["season.finish"] = dated and ymd(s1.finish) or ""
+	f["season.runsEn"] = dated and ("runs from " .. ymd(s1.start) .. " to " .. ymd(s1.finish)) or "is coming soon"
+	f["season.runsPt"] = dated and ("vai de " .. ymd(s1.start) .. " a " .. ymd(s1.finish)) or "chega em breve"
+	f["season.rangeEn"] = dated and ("from " .. ymd(s1.start) .. " to " .. ymd(s1.finish)) or "coming soon"
+	f["season.rangePt"] = dated and ("de " .. ymd(s1.start) .. " a " .. ymd(s1.finish)) or "em breve"
 	f["season.modifier"] = s1 and s1.modifier and s1.modifier.description or ""
 	f["season.modifierName"] = s1 and s1.modifier and s1.modifier.name or ""
 	f["season.joinMaxLevel"] = D.season.join.maxLevel

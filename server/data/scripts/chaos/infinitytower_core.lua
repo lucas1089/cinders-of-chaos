@@ -1,8 +1,8 @@
 -- Infinity Tower seasons and the season-end top 3 chests: pure logic (no engine API). infinitytower.lua uses it,
 -- tests/infinitytower_season_test.lua checks it. Numbers: Chaos.tower in chaos_constants.lua (seasonEpoch,
 -- seasonLengthDays, seasonEnd). Overview: server/README.md "Infinity Tower season rewards".
---   K.epoch(cfg)                         the epoch as unix time (a number, or {year, month, day, hour} in server local time)
---   K.seasonOf(cfg, now)                 -> season number (1 before the epoch), its start, its end
+--   K.epoch(cfg)                         the epoch as unix time (a number, or {year, month, day, hour} in server local time); nil: none (open)
+--   K.seasonOf(cfg, now)                 -> season number (1 before the epoch), its start, its end (1, nil, nil with no epoch)
 --   K.places(rows, staffGroup)           ranked rows with `place`: best floor desc, then best time asc; staff left out;
 --                                        equal floor AND time share a place (1, 1, 3); rows without a floor are left out
 --   K.awards(rows, seasonEnd)            -> {{guid, place, floor, time, chest}} for places 1..#chests
@@ -32,11 +32,18 @@ function K.epoch(cfg)
 	if type(e) == "table" then
 		return os.time({year = e.year, month = e.month, day = e.day, hour = e.hour or 0, min = e.min or 0, sec = 0})
 	end
+	if e == nil then
+		return nil -- no epoch: the launch date is open (O463)
+	end
 	return tonumber(e) or 0
 end
 
+-- no epoch (the launch date is open): season 1 with no start and no end, so nothing counts down and no season ends
 function K.seasonOf(cfg, now)
 	local epoch = K.epoch(cfg)
+	if not epoch then
+		return 1, nil, nil
+	end
 	local length = cfg.seasonLengthDays * 86400
 	local number = math.floor((now - epoch) / length) + 1
 	if number < 1 then

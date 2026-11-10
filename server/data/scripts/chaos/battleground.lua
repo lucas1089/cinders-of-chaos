@@ -1510,7 +1510,7 @@ function B.stateOf(player)
 	if ChaosPvpSeason and ChaosPvpSeason.viewOf then
 		local id, _, finish_ = ChaosPvpSeason.current()
 		local ok, view = pcall(ChaosPvpSeason.viewOf, guid)
-		data.season = {id = id, endsIn = finish_ - now, brackets = ok and view or {}, order = cfg.season.brackets,
+		data.season = {id = id, endsIn = finish_ and (finish_ - now) or nil, brackets = ok and view or {}, order = cfg.season.brackets,
 			tiers = K.rewardPreview(cfg), placement = cfg.season.placementMatches,
 			decay = cfg.season.decay, weeks = cfg.season.weeks}
 	end

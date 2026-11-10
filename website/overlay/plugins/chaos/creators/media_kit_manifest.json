@@ -3,8 +3,8 @@
  "zip": {
   "name": "cinders-of-chaos-media-kit.zip",
   "path": "press/cinders-of-chaos-media-kit.zip",
-  "bytes": 8858929,
-  "sha256": "8841e6fd9376fcb2c9125c3cd6cf203560bdfb8ed889c65a00b3e88a429d2a01"
+  "bytes": 8873860,
+  "sha256": "0a5e81c2faf4dbc159ce47309020a39759a5588c6b6626d095b7aff2457efdb6"
  },
  "files": [
   {
@@ -44,13 +44,13 @@
   },
   {
    "name": "fact-sheet.en.txt",
-   "bytes": 1679,
-   "sha256": "a8b12254e3ba76c8b012f9e163227c86ac81bbc3421d594db83cc16a929dd566"
+   "bytes": 1669,
+   "sha256": "b6650dd6cb940a24fe69ec41a9badc598630153fb408912e12d24fc1c89ea489"
   },
   {
    "name": "ficha-tecnica.pt-BR.txt",
-   "bytes": 1773,
-   "sha256": "c0eb1f1270fdb5fd1e4544317a2235a95907968b7d54c0a4ad2aaa3b6ecdba13"
+   "bytes": 1757,
+   "sha256": "df95fc617116594fad16cfd4710dc6e3063d8876df8fec244dfca79862cdd0a1"
   },
   {
    "name": "logo.png",
@@ -159,13 +159,13 @@
   },
   {
    "name": "social/post/launch-1080.en.jpg",
-   "bytes": 246290,
-   "sha256": "549b04e57ec4db78af44a9f69c890757a62306678f7a96e08bcb824bed8cdeeb"
+   "bytes": 254567,
+   "sha256": "789a969a912bf9655e607ec642fcda43fdba20ba61f0474e9addc12ac44d2e06"
   },
   {
    "name": "social/post/launch-1080.pt-BR.jpg",
-   "bytes": 255588,
-   "sha256": "0e1f85212317adbb72e6cd2b44af9c1093d65ab0c5c40770937a45d9ef5d2128"
+   "bytes": 262340,
+   "sha256": "89d90fdfb2c49304b1f3568fb63a3ee81fe70335c42606ca5e220b10e7e13dfc"
   },
   {
    "name": "social/story/beta-1080x1920.en.jpg",
@@ -244,8 +244,8 @@
   },
   {
    "name": "streamer/chat/chat-commands.txt",
-   "bytes": 2142,
-   "sha256": "e23347ad58e17ed91f0261550ac1e15490f94eceaf08e5f16ce2c05af2df0eb0"
+   "bytes": 2127,
+   "sha256": "c2e80f46b965bf13b19a59bd4aa4d864964cb045018926734bdd6325eb1d661e"
   },
   {
    "name": "streamer/discord/icon-circle-512.png",
@@ -254,13 +254,13 @@
   },
   {
    "name": "streamer/guide/guia-do-parceiro.pt-BR.md",
-   "bytes": 5627,
-   "sha256": "b54136cfde24e3fa10cb90f115662d69e7b3bae9a7af04c42872db9a6334b9c0"
+   "bytes": 5599,
+   "sha256": "2fb6521f9871999fa6cfca039e6a32f31859233b809f7bf76b894af75a37bd14"
   },
   {
    "name": "streamer/guide/partner-guide.en.md",
-   "bytes": 5380,
-   "sha256": "5a3942daf93f0bd33d448dd0e71e86921c0efbf28745b0a41b5b1ddd360f8ffc"
+   "bytes": 5351,
+   "sha256": "30e9fcdf5927229e401c747dd8c3cf429501f4c1bef37b9516fa40f13a37b0a3"
   },
   {
    "name": "streamer/obs-overlay.html",
