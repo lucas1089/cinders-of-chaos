@@ -1,22 +1,30 @@
 #!/usr/bin/env python3
-"""Store inbox icons: three PixelLab redraws, 32 x 32, drawn IN PLACE over client items 38608 (Loot Bag), 38609 (Orbs
-Pouch) and 38611 (Everfull Ration) of pair 34 (client/MANIFEST.md "Store inbox icons"). Server ids 32081, 32082, 32084
-and their client ids stay, so items already owned and the store icons show the new art after the pair is rebuilt.
+"""Store inbox icons: four PixelLab redraws, 32 x 32, drawn IN PLACE over client items 38608 (Loot Bag), 38609 (Orbs
+Pouch), 38610 (Rift Key Pouch) and 38611 (Everfull Ration) of pair 34 (client/MANIFEST.md "Store inbox icons"). Server ids
+32081, 32082, 32083, 32084 and their client ids stay, so items already owned and the store icons show the new art after the
+pair is rebuilt (pair 62).
 
-    python3 -I gen_inbox_icons_art.py build [--src DIR] [--pick loot=a,orbs=a,ration=a] [--check]
+    python3 -I gen_inbox_icons_art.py build [--src DIR] [--pick loot=a,orbs=b,keys=a,ration=b] [--check]
 
-Owner request (pt-BR, 2026-10-29): "refaca esses icones no pixellab" about the Store Inbox window, which shows the Everfull
-Ration (a roast on a plate), the Orbs Pouch (a violet pouch) and the Loot Bag (a brown coin sack). Our own PixelLab prompts
-(Pro, 32 x 32, no background, 64 candidates a call; the palette parameter was the theme palette of the old look, the style
-image the old tile where the upload took it). Three candidates a look were kept (a, b, c); the first is committed, the owner
-may pick another with --pick. The pixels are PixelLab's: nothing is repainted or recoloured, only alpha is made 0 / 255 and
-the colour under alpha 0 is cleared. Every look is judged by style_check against the SAME theme palette as before (Loot Bag
-gildcrown, Orbs Pouch rimewraith, Everfull Ration cinderwrought) and `build` refuses a failing one.
+First request (owner, pt-BR, 2026-10-29): "refaca esses icones no pixellab" about the Store Inbox window, which shows the
+Everfull Ration (a roast on a plate), the Orbs Pouch (a violet pouch) and the Loot Bag (a brown coin sack). Our own PixelLab
+prompts (Pro, 32 x 32, no background, 64 candidates a call; the palette parameter was the theme palette of the old look, the
+style image the old tile where the upload took it). Three candidates a look were kept (a, b, c).
+Second request (owner, 2026-11-10, translated): "change these sprites please, they are very ugly", with a screenshot of the
+four icons. The owner saw the comparison sheet and chose: Ration b, Orbs b, Loot a. For the Rift Key Pouch the owner asked for
+a new drawing and allowed PixelLab. One Create Image Pro call (32 x 32, no background, 64 candidates) with our own prompt "a
+small round drawstring pouch of steel-blue leather, tied with a gold cord, one large ornate golden key hanging on the front"
+and the azurevigil theme palette without its ten purple, pink and green accent colours; three candidates were kept, a is the
+pick. The defaults of --pick are the owner's picks (loot=a, orbs=b, ration=b, keys=a). To use another candidate, run build
+again with --src and --pick (client/MANIFEST.md "Store inbox icons" has the commands), then rebuild the pair.
+The pixels are PixelLab's: nothing is repainted or recoloured, only alpha is made 0 / 255 and the colour under alpha 0 is
+cleared. Every look is judged by style_check against a theme palette (Loot Bag gildcrown, Orbs Pouch rimewraith, Rift Key
+Pouch azurevigil, Everfull Ration cinderwrought) and `build` refuses a failing one.
 `build --src DIR` copies <key>_<letter>.png from DIR to art_import/inbox_icons/<key>.png (the committed sources, about 1 KB
 each). Without --src the committed copies are used (CI). `--check` compares and writes nothing.
 
-Outputs (committed): art_import/inbox_icons.png (atlas, 3 x 1 cells in LOOKS order), art_import/inbox_icons.csv (things file
-of import_art_things.py, mode redraw, flags as the old things file) and art_import/inbox_icons.sums. Credit: docs/CREDITS.md
+Outputs (committed): art_import/inbox_icons.png (atlas, 4 x 1 cells in LOOKS order), art_import/inbox_icons.csv (things file
+of import_art_things.py, mode redraw, flags as the store items file) and art_import/inbox_icons.sums. Credit: docs/CREDITS.md
 "Tools" (PixelLab; art_import/inbox_icons_sources.csv). Deterministic: numpy and Pillow only.
 """
 import argparse, csv, hashlib, io, os, shutil, sys
@@ -36,9 +44,12 @@ SUMS = os.path.join(ART, 'inbox_icons.sums')
 LOOKS = (
     ('inbox_loot', 'loot bag', 'gildcrown', 10325, 32081, 38608),
     ('inbox_orbs', 'orbs pouch', 'rimewraith', 8861, 32082, 38609),
+    ('inbox_keys', 'rift key pouch', 'azurevigil', 7343, 32083, 38610),
     ('inbox_ration', 'everfull ration', 'cinderwrought', 3583, 32084, 38611),
 )
-SHORT = {'inbox_loot': 'loot', 'inbox_orbs': 'orbs', 'inbox_ration': 'ration'}
+SHORT = {'inbox_loot': 'loot', 'inbox_orbs': 'orbs', 'inbox_keys': 'keys', 'inbox_ration': 'ration'}
+# the owner's picks (2026-11-10): the candidate letter of each look
+PICKS = 'loot=a,orbs=b,keys=a,ration=b'
 HEADER = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode',
           'server_id', 'extra']
 
@@ -101,8 +112,8 @@ def build(src_dir):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('cmd', choices=['build'])
-    ap.add_argument('--src', default=None, help='the folder of the candidates: <loot|orbs|ration>_<a|b|c>.png')
-    ap.add_argument('--pick', default='loot=a,orbs=a,ration=a', help='the candidate letter of each look (with --src)')
+    ap.add_argument('--src', default=None, help='the folder of the candidates: <loot|orbs|keys|ration>_<a|b|c>.png')
+    ap.add_argument('--pick', default=PICKS, help='the candidate letter of each look (with --src)')
     ap.add_argument('--check', action='store_true', help='compare with the committed files, write nothing')
     a = ap.parse_args()
     if a.src and a.check:
@@ -113,8 +124,11 @@ def main():
         import tempfile
         tmp = tempfile.mkdtemp()
         picks = dict(p.split('=') for p in a.pick.split(','))
+        bad = sorted(set(picks) - set(SHORT.values()))
+        if bad:
+            sys.exit('--pick names no look: %s (looks: %s)' % (', '.join(bad), ', '.join(SHORT.values())))
         for short in SHORT.values():
-            p = os.path.join(a.src, '%s_%s.png' % (short, picks.get(short, 'a')))
+            p = os.path.join(a.src, '%s_%s.png' % (short, picks.get(short, dict(p.split('=') for p in PICKS.split(','))[short])))
             if not os.path.exists(p):
                 sys.exit('missing %s' % p)
             with open(os.path.join(tmp, short + '.png'), 'wb') as f:
