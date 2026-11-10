@@ -120,7 +120,8 @@ local function creatureSayCallback(cid, type, msg)
 				return true
 			end
 		end
-		if has(text, "upgrade", "everfull", "task", "quest") then
+		-- "melhorar" / "melhoria": a pt-BR player says the word the card and the toast use (O465); the answer is the same
+		if has(text, "upgrade", "everfull", "task", "quest", "melhorar", "melhoria") then
 			local list = PT.upgradeOffers(player)
 			if #list == 0 then
 				pending[cid] = nil

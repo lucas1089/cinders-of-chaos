@@ -62,7 +62,8 @@ G.words = {
 	lootfilter = {"loot drops colours", "saque drops cores"},
 	tower = {"orbs floors", "orbes andares"},
 	arena = {"pvp orbs", "pvp orbes"},
-	mentor = {"help new player", "ajuda jogador novo"}
+	mentor = {"help new player", "ajuda jogador novo"},
+	potions = {"potion upgrade improve pot flask everfull health mana spirit apothecary veyra", "poção pocao melhorar pot frasco everfull vida mana espírito boticária"}
 }
 
 -- the headings of the website page (the client has its own tr() texts)

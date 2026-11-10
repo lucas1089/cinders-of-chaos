@@ -59,6 +59,7 @@ HelpSearchData = {
 		["transmog"] = {level = 30, menu = "Character > Transmog"},
 		["nemesis"] = {level = 50, menu = "Hunt > Nemesis"},
 		["pact"] = {menu = "Character > Chaos Pact"},
+		["potions"] = {words = {en = "potion upgrade improve pot flask everfull health mana spirit apothecary veyra", pt = "poção pocao melhorar pot frasco everfull vida mana espírito boticária"}},
 		["shop"] = {menu = "Economy > Store", words = {en = "coins buy premium", pt = "moedas comprar"}},
 		["market"] = {level = 8, menu = "Economy > Market", words = {en = "sell buy trade gold", pt = "vender comprar trocar ouro"}},
 		["crafting"] = {level = 20, menu = "Economy > Crafting Bench", words = {en = "orbs upgrade gear modifiers gems", pt = "orbes melhorar equipamento modificadores gemas"}},

@@ -73,7 +73,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | **paladin** | | | | | | | |
 | 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 12 | 50 | 6s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
 | 215 | Skewering Line | `kah sag lanc` | R, D, BM | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; every target takes a Dawnpiercer hit since 2026-10-20 (distance skill x attack 0.042-0.065, magic level 1.0-1.6; was 0.0195-0.0325, no magic level). |
-| 216 | Blessed Earth | `drai vas sol hal` | R, D, BM | 100 | 350 | 9s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
+| 216 | Blessed Earth | `drai vas sol hal` | R, D, BM | 100 | 350 | 9s | Consecrates the ground around you for 6s and follows you (O466): holy damage to enemies within 2 sqm of where you stand each second, allies there are healed half as much. |
 | 217 | Lightward | `tor sol ghar` | R, D, BM | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
 | 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 11s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
 | 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 13s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
@@ -4723,7 +4723,7 @@ With the Recommended builds of O442 the median pool is 1842 at 100, 10968 at 500
   Iron Will is applied by `data/scripts/chaos/spell_guard.lua` (an onHealthChange event that checks the condition sub id 71009). Crimson Covenant/Banner Call/Red Frenzy use
   `CONDITION_ATTRIBUTES` with distinct sub ids so they stack with each other and with stock buffs.
 - No stock `playSound` calls are made, so the spells are silent unless you add them.
-- Ticking zones (Blessed Earth, Grove, Frozen Crypt) store the position at cast time and stop when the caster dies or logs out.
+- Ticking zones (Grove, Frozen Crypt) store the position at cast time and stop when the caster dies or logs out. Blessed Earth does not: since O466 each pulse is centred on the caster's position at that moment (`tests/blessed_earth_test.lua`).
 - Knight spells need a wielded weapon (`needweapon=1`); Vaulting Cleave teleports through anything that is not a blocking tile, it does not path-check.
 
 ## Client side (not implemented)
