@@ -4,7 +4,7 @@
      the three omens' mechanics and end in the Last Cinder; the telegraphed hits, adds, hazards and the enrage are
      scripted (uber_config.lua). Numbers: server/README.md "Ascended Omens and the Cinderheart". -->
 <monster name="Ysgrath the Cinderheart" nameDescription="Ysgrath the Cinderheart" race="fire" experience="15000000" speed="290" manacost="0">
-	<health now="1650000" max="1650000" />
+	<health now="3795000" max="3795000" />
 	<look type="2126" corpse="6068" />
 	<targetchange interval="4000" chance="15" />
 	<flags>

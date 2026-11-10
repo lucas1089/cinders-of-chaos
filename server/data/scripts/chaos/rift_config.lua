@@ -139,7 +139,10 @@ return {
 		live = {base = 75, perExtraPlayer = 10, per100 = 1.25, max = 265},
 		reinforce = {perTick = 2, minDistance = 16, window = 90, visit = 10},
 		populate = {perStep = 20, stepMs = 100},
-		model = {dps5 = 5240, dps5Exp = 1.35, dps1 = 2600, dps1Exp = 1.1, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
+		-- O475 (2026-11-10): dps1 2600 -> 3892 and 1.1 -> 1.20, dps5 5240 -> 13096 (exponent 1.35 as before): the typical damage of the
+		-- balance round on one boss and on a pack at the tiers' minimum levels, x gear = what a guardian (55 s) and a pack (225 s) take
+		-- (tools/boss_length_model.py --derive; the design's fit for the guardian was 13,200 and 1.51 on its own typical damage)
+		model = {dps5 = 13096, dps5Exp = 1.35, dps1 = 3892, dps1Exp = 1.2, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
 			packSeconds = 225, guardianSeconds = 55, tierHp = {magic = 2.0, rare = 3.5, legendary = 6.0},
 			walk = {sweep = 1.8}},
 		-- O427: one number, or {base, perTier, min} (base + perTier x (tier - 1), at least min). Before: 0.6 flat. The pack of a
@@ -162,8 +165,26 @@ return {
 	--   lootPerExtraPlayer    percent on the Chaos loot rate of the rift's kills and on the Sealed Coffer, at most lootCap
 	party = {healthPerExtraPlayer = 1.0, damagePerExtraPlayer = 0.10, rewardPerExtraPlayer = 12.5, rewardCap = 50,
 		lootPerExtraPlayer = 5, lootCap = 20},
+	-- O476 (2026-11-10, owner: "a player takes a very large hit in the rift, maybe warn that it is not for the level or needs a
+	-- party"): the level warning (server/README.md "Rifts", Level warning). `levels` = the recommended SOLO level of each tier
+	-- (tier 11 and up: the 11th entry on). A key shows it in its look text; a player who enters below it, in a party of fewer
+	-- than `partySize`, is warned once when the run starts; a player below it who dies to the guardian gets one tip. The
+	-- numbers are DERIVED, not chosen: the rule is guardian_model.py warn_levels (the lowest level, in steps of 5 from the
+	-- tier's entry level, at which the guardian that 9 draws in 10 do not exceed rolls at most 60% of the median class's pool
+	-- in one hit after its armour and absorbs, and the model's pressure is at most its value in the middle of the tier's
+	-- monster window; the top of the window when no level up to it works; never below the tier under it), `partySize` the
+	-- smallest party that takes the guardian's pressure per head at the entry level down to a solo player's at the middle of
+	-- the window. `python3 -I server/tools/guardian_model.py --check` fails when these drift from it; `--warn` prints them.
+	warn = {
+		enabled = true,
+		partySize = 2,
+		-- the key modifiers that raise a monster's or the guardian's hit (Part A: x1.4 to x2.5 on one hit); a warning to a key
+		-- with one adds a sentence about it (the model's worst case reads the same list)
+		hot = {"brutality", "dread", "keen", "emberbrand", "frostbrand", "stormbrand", "searing", "flaying"},
+		levels = {180, 240, 290, 420, 520, 640, 740, 760, 860, 990, 990, 990, 990, 1000, 1025}
+	},
 	-- monster tiers inside a rift (percent per monster, before the Elites modifier; x (1 + perTier x tier))
-	elite = {magic = 10, rare = 3, legendary = 0.6, perTier = 0.05},
+	elite ={magic = 10, rare = 3, legendary = 0.6, perTier = 0.05},
 
 	-- rift tier -> monster level window of the bounty pool (bounty_pool.lua "level") and the level needed to enter.
 	-- Tiers above #tiers reuse the last window and add `beyond` per tier (health, damage, rewards).

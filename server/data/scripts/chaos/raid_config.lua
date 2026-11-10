@@ -86,7 +86,9 @@ return {
 	-- the balance model (raid_core.lua killTime): refDps of a well-geared level 1000 character (uber_config.lua model),
 	-- uptime = share of the fight spent hitting the boss (mechanics move you); a fifth of a raid heals or tanks at
 	-- supportShare of the damage
-	model = {refDps = 3000, uptime = 0.75, supportEvery = 5, supportShare = 0.6},
+	-- O475 (2026-11-10): refDps 3000 -> 6900, the Omen guardian factor x2.30 (tools/boss_length_model.py); the raid bosses keep their health
+	-- and so fight 2.3 times shorter in the model: the enrage times stay above them (README "Final re-fit of the balance round (O475)")
+	model = {refDps = 6900, uptime = 0.75, supportEvery = 5, supportShare = 0.6},
 
 	-- ------------------------------------------------------------------ fallen players
 	-- a lethal hit inside the raid is caught: the player lands in the entry hall, healed, and cannot come back into a

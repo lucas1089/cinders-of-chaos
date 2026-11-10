@@ -18,7 +18,14 @@ return {
 	-- ChaosPassiveDealt). The one additive damage pool and the weapon, gear and tier changes of the same round raise typical damage; a
 	-- duel keeps today's length. The design's first fit: it is re-fitted when every package of the round is in. Monsters, heals and hits
 	-- on monsters are never scaled. tools/pvp_model.py reads this table.
-	damageScale = {{100, 1.00}, {200, 0.94}, {300, 0.89}, {500, 0.79}, {700, 0.76}, {1000, 0.48}, {1500, 0.52}, {2000, 0.46}},
+	-- O475 (2026-11-10, the final re-fit of the round, old values {100, 1.00} {200, 0.94} {300, 0.89} {500, 0.79} {700, 0.76} {1000, 0.48}
+	-- {1500, 0.52} {2000, 0.46}, the design's first fit): the model's median class damage before / after the round (class_dps_model.py,
+	-- the weapon growth, the gear, the dots and the pool of the typical profile): 607 / 491 at 100, 1194 / 1093 at 200, 1761 / 1657 at
+	-- 300, 3084 / 3138 at 500, 4416 / 4662 at 700, 6017 / 8882 at 1000, 8814 / 12843 at 1500, 11612 / 17824 at 2000. The scale is that
+	-- ratio, so seconds to kill hold what the model had before the round (python3 -I server/tools/pvp_model.py --scale prints it,
+	-- --check holds the table to within 1.5% of it). It is above 1 up to level 300: the pool takes more from the typical
+	-- character there than the weapon growth gives back, and a duel keeps its length.
+	damageScale = {{100, 1.24}, {200, 1.09}, {300, 1.06}, {500, 0.98}, {700, 0.95}, {1000, 0.68}, {1500, 0.69}, {2000, 0.65}},
 
 	-- the levels of the table and of the check (class_dps_model.py measures 100, 500 and 1000; survival_model.py has builds for them)
 	levels = {100, 500, 1000},
@@ -51,12 +58,12 @@ return {
 	-- no class wins or loses more than this share of its 20 duels (damage race, no healing). A draw is neither
 	duelShareMax = 0.90,
 
+	-- O475 (2026-11-10): three rows left with the round's re-fit (the Deadeye's burst at 500 and 1000: 0.83 and 0.76 now, were 0.93 and 1.01; the Iron
+	-- Sage's 19 losses at 1000: 18 now): the class damage of the round moves a class by its own factor. Fewer exceptions, the limits are as they were.
 	-- the classes that are outside a limit today, each with its value of today as the limit (so a worse state fails)
 	exceptions = {
 		-- O444: burst. The Deadeye's best set opens with its long cooldown hits inside 3 s (2.4 and 2.55 times its average damage
 		-- per second): it deals 0.93 of the median class's pool at 500 and 1.00 at 1000, a one shot in the opening window
-		["Deadeye@500"] = {burst = 0.93},
-		["Deadeye@1000"] = {burst = 1.01},
 		-- O444: burst at level 100, the sets have 4 or 5 spells and the pools are small: 0.98 and 0.96.
 		-- O442: the Recommended builds reach a keystone in their first 23 to 30 points and hold fewer health nodes there, so the
 		-- median pool at level 100 fell from 1924 to 1842 (-4%; levels 500 and 1000 moved under 2%). The same bursts read 1.011
@@ -81,7 +88,6 @@ return {
 		-- survival_model.py names too): the Inquisitor loses all 20 at 1000 and 19 at 500, the Iron Sage 19 at 500 and 1000
 		["Inquisitor@500"] = {losses = 19},
 		["Inquisitor@1000"] = {losses = 20},
-		["Iron Sage@500"] = {losses = 19},
-		["Iron Sage@1000"] = {losses = 19}
+		["Iron Sage@500"] = {losses = 19}
 	}
 }

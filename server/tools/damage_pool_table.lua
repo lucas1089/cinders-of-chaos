@@ -28,7 +28,8 @@ local function lin(points, x)
 	return points[#points][2]
 end
 
-local LEVELS = {100, 300, 500, 700, 1000, 2000}
+-- O475 (2026-11-10): 200, 850 and 1500 added so the typical row has the levels of the weapon growth table (class_dps_model.py reads it)
+local LEVELS = {100, 200, 300, 500, 700, 850, 1000, 1500, 2000}
 -- the tree's raw damage percent of the hit's type, with the worn Spell Damage (the soft cap sits on this sum)
 local TREE = {
 	fresh = {{100, 10}, {300, 20}, {500, 30}, {700, 40}, {1000, 50}, {2000, 60}},
@@ -76,6 +77,24 @@ local function after(profile, level)
 	return 1 + soft(raw) / 100
 end
 
+-- O475 (2026-11-10): the typical row, as a csv class_dps_model.py reads (server/data/spells/pool_typical.csv): the tree's raw damage
+-- percent of the typical profile, the damage factor of the old product and of the one pool. The final re-fit of the round uses the
+-- ratio after / before as the pool step of the typical character (the profiles are assumed, see the header). --csv prints it,
+-- --check fails when the committed file is not what this script prints.
+local function typical_csv()
+	local out = {"level,tree_raw,before,after,fresh_before,fresh_after,invested_before,invested_after"}
+	for _, level in ipairs(LEVELS) do
+		out[#out + 1] = string.format("%d,%.1f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", level, lin(TREE.typical, level),
+			before("typical", level), after("typical", level), before("fresh", level), after("fresh", level),
+			before("invested", level), after("invested", level))
+	end
+	return table.concat(out, "\n") .. "\n"
+end
+if arg and arg[1] == "--csv" then
+	io.write(typical_csv())
+	return
+end
+
 local rows, bad = {}, {}
 local lines = {"| Level | Profile | Before (product) | After (one pool) | After / before |", "|---:|---|---:|---:|---:|"}
 for _, level in ipairs(LEVELS) do
@@ -92,6 +111,12 @@ for _, level in ipairs(LEVELS) do
 end
 print(table.concat(lines, "\n"))
 if arg and arg[1] == "--check" then
+	local f = io.open("data/spells/pool_typical.csv", "r")
+	local committed = f and f:read("*a") or ""
+	if f then f:close() end
+	if committed ~= typical_csv() then
+		bad[#bad + 1] = "data/spells/pool_typical.csv is out of date (luajit tools/damage_pool_table.lua --csv > data/spells/pool_typical.csv)"
+	end
 	for _, m in ipairs(bad) do print("FAIL " .. m) end
 	if #bad > 0 then os.exit(1) end
 	print("damage pool table: ok (the pool never raises a profile over the old product; a fresh character moves under 3%)")

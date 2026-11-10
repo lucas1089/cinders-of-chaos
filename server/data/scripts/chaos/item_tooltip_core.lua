@@ -555,6 +555,35 @@ function T.chargeInfo(charges, typeCharges)
 end
 
 -- a unique's passive as a block of its own (owner 2026-11-01: "deixe esse texto especial mais em evidência"): the
+-- O475 (2026-11-10): the passive line of a unique from the CURRENT config, whatever the stored description says. The line is written
+-- into the description when the item is made (tools/gen_unique_specs.py), so an owned copy keeps the numbers of its day (O473
+-- repriced 28 passives: the exact text is no longer in it). The line starts at "<Name>: " and ends before " (Requires level N" (or
+-- " (Requer nivel N") or at the end. `en` is the current English line (ChaosUniquePassivesCore.text), `name` the passive's English
+-- name. Returns the description with the current line in the place of the stored one, and true when a line was replaced; the
+-- description as it was and false when the exact line is in it already (nothing to do) or no "<Name>: " is in it (then the
+-- caller keeps the old behaviour: no block). A name that appears twice is left alone (the first "<Name>: " would be a guess).
+function T.refreshPassive(desc, en, name)
+	if type(desc) ~= "string" or type(en) ~= "string" or en == "" or type(name) ~= "string" or name == "" then
+		return desc, false
+	end
+	if desc:find(en, 1, true) then
+		return desc, false
+	end
+	local key = name .. ": "
+	local from = desc:find(key, 1, true)
+	if not from or desc:find(key, from + 1, true) then
+		return desc, false
+	end
+	local to = #desc
+	for _, req in ipairs({" (Requires level ", " (Requer n\195\173vel "}) do
+		local r = desc:find(req, from, true)
+		if r and r - 1 < to then
+			to = r - 1
+		end
+	end
+	return desc:sub(1, from - 1) .. en .. desc:sub(to + 1), true
+end
+
 -- passive text (texts = its line in each language, "Name: rule. For: ...") found in the description -> {name, text
 -- (the rule without the name), flavor (the rest of the description)}; nil when no text is in it. tip.desc keeps the
 -- whole text for a client that does not know the block.
@@ -1033,8 +1062,10 @@ function T.riftKey(item, tip)
 	end
 	local info = R.tierInfo(cfg, key.tier)
 	tip.req = {level = info.minLevel}
-	tip.desc = clip(string.format("Rewards: %s. Opens a rift of tier %d. Use it in a protection zone; your party within %d sqm comes along.",
-		#bonus > 0 and table.concat(bonus, ", ") or "normal", key.tier, cfg.partyRange or 8), 300)
+	local rec = R.warnLevel and R.warnLevel(cfg, key.tier) -- O476: the recommended solo level, as in the look text
+	tip.desc = clip(string.format("Rewards: %s. Opens a rift of tier %d.%s Use it in a protection zone; your party within %d sqm comes along.",
+		#bonus > 0 and table.concat(bonus, ", ") or "normal", key.tier,
+		rec and string.format(" Recommended: level %d alone, or a party.", rec) or "", cfg.partyRange or 8), 300)
 	return true
 end
 

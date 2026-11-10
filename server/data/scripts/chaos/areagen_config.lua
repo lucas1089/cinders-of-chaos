@@ -570,7 +570,10 @@ return {
 			-- (was x10, 1.13M, 8:40); the
 			-- difficulty multiplies it by bossHealth and the trash by trashHealth, not by the table's 100-1300%. The model:
 			-- dungeons_difficulty.lua D.runSeconds, server/README.md "Solo kill times"
-			boss = {monster = "Garack", name = "Vault Keeper Ossrim", level = 900, healthMult = 2.88, damageMult = 1.4},
+			-- O475 (2026-11-10): healthMult 2.88 -> 5.00 (and 2.91 -> 5.96, 2.88 -> 5.86, 2.83 -> 5.83, 2.87 -> 6.06 for the deep dungeons below):
+			-- 150 s for the typical character of the balance round, D.dps(level + 25) = 3,993 at 850 ... (tools/boss_length_model.py
+			-- --derive); the boss is 567k / 818k / 1.03M / 1.27M / 1.60M (was 327k / 399k / 507k / 615k / 760k)
+			boss = {monster = "Garack", name = "Vault Keeper Ossrim", level = 900, healthMult = 5.00, damageMult = 1.4},
 			dungeon = {id = 5, level = 800, party = 1, time = 900, title = "The Hollow Vault",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {76, 85, 93, 101, 109, 118},
 				loot = {{id = 2160, count = 12}},
@@ -608,7 +611,7 @@ return {
 				monsters = {{"Scaleborn", 3}, {"Ice Lich", 3}, {"Spirit of Purity", 2}, {"Twisted Shaper", 2},
 					{"Celestial Wyrm", 2}}},
 			-- 15,000 x (1 + 0.0074 x 1100) x 2.91 = 399k: 2:30 at 2,660 (level 1025)
-			boss = {monster = "Ossivane the Gravecage", name = "Ossivane the Gravecage", level = 1100, healthMult = 2.91,
+			boss = {monster = "Ossivane the Gravecage", name = "Ossivane the Gravecage", level = 1100, healthMult = 5.96,
 				damageMult = 1.4},
 			dungeon = {id = 6, level = 1000, party = 1, time = 900, title = "The Marrow Crypts",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {94, 101, 108, 115, 122, 129},
@@ -629,7 +632,7 @@ return {
 				spawntime = 0, level = {1300, 1350},
 				monsters = {{"Facetis", 3}, {"Thal", 3}, {"Silicron", 2}, {"Winterstride", 2}, {"Gloamfang Ravager", 2}}},
 			-- 15,500 x (1 + 0.0074 x 1400) x 2.88 = 507k: 2:30 at 3,383 (level 1325)
-			boss = {monster = "Forgewarden Kharzun", name = "Forgewarden Kharzun", level = 1400, healthMult = 2.88,
+			boss = {monster = "Forgewarden Kharzun", name = "Forgewarden Kharzun", level = 1400, healthMult = 5.86,
 				damageMult = 1.4},
 			dungeon = {id = 7, level = 1300, party = 1, time = 900, title = "The Iron Crucible",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {55, 61, 66, 72, 77, 83},
@@ -651,7 +654,7 @@ return {
 				monsters = {{"Bloodantler Fiend", 3}, {"Cinderskull Reaver", 3}, {"Rimeshroud Revenant", 2},
 					{"Cinderhorn Juggernaut", 2}, {"Wraithbone Stalker", 2}}},
 			-- 16,000 x (1 + 0.0074 x 1700) x 2.83 = 615k: 2:30 at 4,106 (level 1625)
-			boss = {monster = "Vaelith the Fallen Seraph", name = "Vaelith the Fallen Seraph", level = 1700, healthMult = 2.83,
+			boss = {monster = "Vaelith the Fallen Seraph", name = "Vaelith the Fallen Seraph", level = 1700, healthMult = 5.83,
 				damageMult = 1.4},
 			dungeon = {id = 8, level = 1600, party = 1, time = 900, title = "The Fallen Sanctum",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {46, 51, 56, 61, 66, 71},
@@ -675,7 +678,7 @@ return {
 			-- 16,000 x (1 + 0.0074 x 2100) x 2.87 = 760k: 2:30 at 5,070 (level 2025). Chained: speed 0, it never leaves
 			-- its throne (its look has one facing)
 			boss = {monster = "Azhkarrath the Chained Wyrm", name = "Azhkarrath the Chained Wyrm", level = 2100,
-				healthMult = 2.87, damageMult = 1.4},
+				healthMult = 6.06, damageMult = 1.4},
 			dungeon = {id = 9, level = 2000, party = 1, time = 900, title = "The Pyre Throne",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {72, 78, 84, 89, 95, 101},
 				loot = {{id = 2160, count = 30}},

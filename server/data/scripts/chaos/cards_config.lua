@@ -113,13 +113,16 @@ C.lineClasses = {
 -- `damage` and `poison` are the damage parts: at most damagePartMax percent of the damage of their element.
 -- O473 (2026-11-10): damagePartMax 6 -> 4, the cap of the card set entry of the damage pool (damage_pool_config.lua sources.cardSets);
 -- the Fire set's 4 and the Earth poison's 4 are at it.
+-- O475 (2026-11-10): the Fire set's damage part 4 -> 3.5 (the owner's rule of card_set_model.py: a set that leads its best mixed build is
+-- lowered): with the damage of the round the Mystic's fire set led by +0.61% on 5 targets against the 0.5 points AHEAD is back at;
+-- at 3.5 no set leads by 0.5 (card_set_model.py --check).
 C.sets = {
 	need = 3,
 	damagePartMax = 4,
 	pvpScale = 1 / 3,
 	order = {"Fire", "Earth", "Death", "Holy", "Energy"},
 	by = {
-		Fire = {kind = "damage", pct = 4},
+		Fire = {kind = "damage", pct = 3.5},
 		Earth = {kind = "poison", pct = 4, ticks = 4},
 		Death = {kind = "leech", pct = 1.5, maxShare = 1},
 		Holy = {kind = "heal", pct = 0.5, cooldownMs = 3000},

@@ -1004,12 +1004,12 @@ do
 			ok(#t > 20 and not t:find("%%[sd]"), "set text " .. name .. " " .. lang .. ": " .. t)
 		end
 	end
-	eq(K.setBonusText("en", "Fire"), "Your Fire damage: +4% increased damage (a card set adds at most 4 to the one damage pool).", "Fire text")
+	eq(K.setBonusText("en", "Fire"), "Your Fire damage: +3.5% increased damage (a card set adds at most 4 to the one damage pool).", "Fire text")
 	eq(K.setBonusText("en", "Energy"), "Your Energy hits slow the target by 15% for 1.5 seconds.", "Energy text")
 	eq(K.setBonusText("en", "Earth"), "Your Earth hits poison the target for 4% of the hit over 4 seconds.", "Earth text")
 	eq(K.setBonusText("en", "Death"), "Your Death hits heal you for 1.5% of the damage, at most 1% of your maximum health a hit.", "Death text")
 	eq(K.setBonusText("en", "Holy"), "Your Holy hits heal you for 0.5% of your maximum health, at most once every 3 seconds.", "Holy text")
-	eq(K.setBonusText("pt-BR", "Fire"), "Seu dano de Fogo: +4% de dano aumentado (um conjunto de cartas soma no máximo 4 ao conjunto de dano).", "Fire text pt-BR")
+	eq(K.setBonusText("pt-BR", "Fire"), "Seu dano de Fogo: +3.5% de dano aumentado (um conjunto de cartas soma no máximo 4 ao conjunto de dano).", "Fire text pt-BR")
 	eq(K.setBonusText("en", "Ice"), "", "Ice has no set text")
 	eq(K.setLine("en", st3), "Card set Death is on with 3 cards: Your Death hits heal you for 1.5% of the damage, at most 1% of your maximum health a hit.",
 		"the line of a set that is on")
@@ -1032,10 +1032,10 @@ do
 	for id in pairs(C.cards) do ok(K.description("en", id):sub(-#K.HINT) == K.HINT, "description ends with the hint " .. id) end
 
 	-- the numbers, pure
-	eq(K.setExtra("Fire", "damage", -100, false), -4, "Fire: 4% more of a hit of 100") eq(K.setExtra("Fire", "damage", -1000, false), -40, "of 1000")
-	eq(K.setExtra("Fire", "damage", 100, false), 4, "the sign is kept") eq(K.setExtra("Fire", "damage", 0, false), 0, "no hit")
+	eq(K.setExtra("Fire", "damage", -100, false), -3, "Fire: 3.5% more of a hit of 100 (3, rounded toward zero)") eq(K.setExtra("Fire", "damage", -1000, false), -35, "of 1000")
+	eq(K.setExtra("Fire", "damage", 100, false), 3, "the sign is kept") eq(K.setExtra("Fire", "damage", 0, false), 0, "no hit")
 	eq(K.setExtra("Fire", "damage", -100, true), -1, "PvP: a third of the bonus")
-	eq(K.setExtra("Fire", "damage", -1000, true), -13, "PvP: 13 of 1000 (4% / 3, rounded toward zero)")
+	eq(K.setExtra("Fire", "damage", -1000, true), -11, "PvP: 11 of 1000 (3.5% / 3, rounded toward zero)")
 	eq(K.setExtra("Earth", "damage", -100, false), 0, "another kind has no damage part")
 	eq(K.setExtra("Earth", "poison", -100, false), -4, "Earth: poison 4% of the hit") eq(K.setExtra("Death", "damage", -100, false), 0, "Death: no damage part")
 	eq(K.setExtra("Ice", "damage", -100, false), 0, "Ice: nothing") eq(K.setExtra("Fire", "poison", -100, false), 0, "Fire has no poison part")
@@ -1115,16 +1115,16 @@ do
 	a = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
 	eq(a, -100, "2 cards: no bonus")
 	M.use(ranger, it[3])
-	ok(lastMsg(ranger):find("Card set Fire is on with 3 cards: Your Fire damage: +4% increased damage", 1, true) ~= nil, "three cards: the set is on: " .. lastMsg(ranger))
+	ok(lastMsg(ranger):find("Card set Fire is on with 3 cards: Your Fire damage: +3.5% increased damage", 1, true) ~= nil, "three cards: the set is on: " .. lastMsg(ranger))
 	eq(M.sets[ranger:getId()].element, "Fire", "the cache says Fire")
 	-- the hit: the primary part, the secondary part, never another element
 	a, b = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
-	eq(a, -104, "Fire: 4% more (primary)") eq(b, COMBAT_FIREDAMAGE, "the type is kept")
+	eq(a, -103, "Fire: 3.5% more (primary)") eq(b, COMBAT_FIREDAMAGE, "the type is kept")
 	local c, d
 	a, b, c, d = hitOf(ranger, mon, 0, COMBAT_PHYSICALDAMAGE, -200, COMBAT_FIREDAMAGE)
-	eq(c, -208, "Fire: 4% more (secondary part)") eq(a, 0, "the primary part stays")
+	eq(c, -207, "Fire: 3.5% more (secondary part)") eq(a, 0, "the primary part stays")
 	a, b, c, d = hitOf(ranger, mon, -100, COMBAT_PHYSICALDAMAGE, -100, COMBAT_FIREDAMAGE)
-	eq(a, -100, "the physical part is untouched") eq(c, -104, "only the Fire part grows")
+	eq(a, -100, "the physical part is untouched") eq(c, -103, "only the Fire part grows")
 	for name, ctype in pairs({Earth = COMBAT_EARTHDAMAGE, Ice = COMBAT_ICEDAMAGE, Holy = COMBAT_HOLYDAMAGE, Death = COMBAT_DEATHDAMAGE,
 			Energy = COMBAT_ENERGYDAMAGE, Physical = COMBAT_PHYSICALDAMAGE}) do
 		eq((hitOf(ranger, mon, -100, ctype, 0, 0)), -100, name .. " damage is never changed by the Fire set")
@@ -1132,7 +1132,7 @@ do
 	eq((hitOf(ranger, mon, 100, COMBAT_FIREDAMAGE, 0, 0)), 100, "a positive amount (a heal) is untouched")
 	eq((hitOf(ranger, mon, -100, COMBAT_HEALING, 0, 0)), -100, "a healing type is untouched")
 	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0, ORIGIN_CONDITION)), -100, "a damage over time tick is untouched")
-	eq((hitOf(ranger, target(true), -1000, COMBAT_FIREDAMAGE, 0, 0)), -1013, "PvP: a third of the bonus (13 of 1000)")
+	eq((hitOf(ranger, target(true), -1000, COMBAT_FIREDAMAGE, 0, 0)), -1011, "PvP: a third of the bonus (11 of 1000)")
 	eq((ranger.getId and hitEvent.onHealthChange(ranger, ranger, -100, COMBAT_FIREDAMAGE, 0, 0, 2)), -100, "a hit on yourself is untouched")
 	eq((hitEvent.onHealthChange(mon, nil, -100, COMBAT_FIREDAMAGE, 0, 0, 2)), -100, "no attacker: untouched")
 	-- another player has no set
@@ -1141,7 +1141,7 @@ do
 	-- the convert card and the set together: Dawnpiercer turns a physical hit into Fire (the secondary part), then +4%
 	ranger.storage[ctxKey] = 5 * 1000 + 214
 	a, b, c, d = hitOf(ranger, mon, -100, COMBAT_PHYSICALDAMAGE, 0, 0)
-	eq(a, 0, "Dawnpiercer: the hit moved") eq(c, -104, "to Fire, and 4% more") eq(d, COMBAT_FIREDAMAGE, "as Fire")
+	eq(a, 0, "Dawnpiercer: the hit moved") eq(c, -103, "to Fire, and 3.5% more") eq(d, COMBAT_FIREDAMAGE, "as Fire")
 	ranger.storage[ctxKey] = -1
 
 	-- swapping a card: off turns the set off at once and says so; on again turns it on
@@ -1151,7 +1151,7 @@ do
 	eq(M.sets[ranger:getId()].element, nil, "no set after the card went off")
 	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "the bonus is gone with the card")
 	M.use(ranger, it[3])
-	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -104, "the bonus is back with the card")
+	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -103, "the bonus is back with the card")
 	-- the same card twice: the second copy is refused, the count stays 3
 	local copy = put(ranger.backpack, newItem(f1))
 	M.use(ranger, copy)
@@ -1175,7 +1175,7 @@ do
 	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "a loose card is no card on: no bonus")
 	-- a card that left the decks (dropped on death): the sweep turns it off and the bonus goes
 	M.use(q, qit[3])
-	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -104, "three cards on: the bonus")
+	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -103, "three cards on: the bonus")
 	qit[3].parent = nil
 	qdeck.kids = {qit[1], qit[2]}
 	M.sweep(q)

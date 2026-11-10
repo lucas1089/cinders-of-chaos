@@ -266,6 +266,16 @@ text = R.client_data(spells, model)
 check(open(R.CLIENT_DATA, encoding='utf-8').read() == text,
       'autorotation_data.lua up to date (python3 -I server/tools/rotation_sim.py --write)')
 
+# O475: the typical character after the weapon growth is a switch, the default is the character before it
+base_all = R.analyse(spells, model, 'Warrior', 1000)['all']['dps1']
+with R.grown_stats():
+    grown_all = R.analyse(spells, model, 'Warrior', 1000)['all']['dps1']
+    caster = R.analyse(spells, model, 'Necromancer', 1000)['all']['dps1']
+check(1.8 < grown_all / base_all < 2.3, 'a Warrior at 1000 deals x1.8 to x2.3 with the grown attack (%.2f)' % (grown_all / base_all))
+check(R.analyse(spells, model, 'Warrior', 1000)['all']['dps1'] == base_all, 'the switch is off again after the block')
+base_nec = R.analyse(spells, model, 'Necromancer', 1000)['all']['dps1']
+check(abs(caster / base_nec - 2.20) < 0.01, 'a caster line gets W on its Chaos spells (x2.20 at 1000): %.3f' % (caster / base_nec))
+
 if fails:
     for f in fails:
         print('FAIL ' + f)

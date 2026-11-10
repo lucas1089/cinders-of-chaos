@@ -174,6 +174,49 @@ def stats(cls, level):
             'SANCT': pack_scale('sanctified'), 'WAVE': pack_scale('shieldWave')}
 
 
+class grown_stats(object):
+    """`with grown_stats():` the typical character AFTER the weapon growth of O472 (weapon_growth.py): the weapon attack and the fist
+    times a(level), the wolf bite and every Chaos spell of a caster class times W(level) (the caster factor, spell_scaling_core.lua;
+    a stock spell of the base scripts does not take it). Everything else of this tool is the typical character BEFORE the growth on
+    purpose (O475, 2026-11-10): the growth is one factor on the weapon term, and with it the best sets of 30 class and level points
+    change and nine cooldowns of the ladder move (Reaping Gyre 6 -> 4 s, Scything Arc 4 -> 6 s ...), which would rewrite the
+    helper's preset data and the cooldowns for no gain a player asked for. class_dps_model.py reads the difference through this switch.
+    The analysis cache is cleared on entry and exit."""
+    def __enter__(self):
+        global stats, prepare
+        import weapon_growth as WG
+        self.saved = (stats, prepare)
+        base_stats, base_prepare = stats, prepare
+
+        def grown(cls, level):
+            e = dict(base_stats(cls, level))
+            a, w = WG.weapon_a(level), WG.weapon_w(level)
+            e['ATK'] *= a
+            e['FIST'] *= a
+            e['P'] = e['SK'] * (e['FIST'] if CLASS_KIND[cls] == 'fist' else e['ATK'])
+            e['BITE'] *= w
+            return e
+
+        def grown_prepare(spells, model, cls, level, ultimates=False, allow=()):
+            out = base_prepare(spells, model, cls, level, ultimates, allow)
+            if CLASS_KIND[cls] == 'caster':
+                w = WG.weapon_w(level)
+                for p in out:
+                    if p.chaos:
+                        p.dmg *= w
+                        p.dmg5 *= w
+            return out
+        stats, prepare = grown, grown_prepare
+        _ANALYSED.clear()
+        return self
+
+    def __exit__(self, *exc):
+        global stats, prepare
+        stats, prepare = self.saved
+        _ANALYSED.clear()
+        return False
+
+
 @functools.lru_cache(maxsize=None)
 def spell_factors():
     """{vocation id: factor} of ChaosSpellFactorConfig.byVocation (spell_factor_config.lua): the factor from the last
