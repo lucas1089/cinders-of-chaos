@@ -47,6 +47,8 @@ G.words = {
 	goals = {"level up leveling what next where to hunt", "subir de nível upar o que fazer onde caçar"},
 	passive = {"points build talents starter builds recommended auto build import code mastery spell modifier", "pontos build talentos builds iniciais recomendadas auto build importar código maestria modificador de magia"},
 	spellbook = {"spells attack hotkeys", "magias feitiços ataque atalhos"},
+	spelldamage = {"spell damage scaling magic level skill weapon attack level modifiers passive tree support runes cards charms uniques sets how strong",
+		"dano das magias escala nível mágico magic level skill arma ataque nível modificadores árvore passiva runas de suporte cartas charms únicos conjuntos quão forte"},
 	townportal = {"town city temple go back", "cidade templo voltar"},
 	stash = {"storage depot items", "depósito guardar itens"},
 	crafting = {"orbs upgrade gear modifiers gems", "orbes melhorar equipamento modificadores gemas"},

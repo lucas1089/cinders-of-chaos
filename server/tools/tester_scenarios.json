@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 67,
   "out": 38,
-  "passive": 102,
+  "passive": 103,
   "place": 15,
   "staff": 17
  },
@@ -12831,7 +12831,17 @@
   },
   "spell_factor": {
    "files": [
+    "beastmaster.lua",
     "templar_combat.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "spell_scaling": {
+   "files": [
+    "classes.lua"
    ],
    "kind": "passive",
    "opcodes": [],

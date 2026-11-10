@@ -201,5 +201,6 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
   - Art pack names may appear only in `docs/CREDITS.md` and the files generated from it.
 - Every third-party asset, font, library or tool that ships goes into `docs/CREDITS.md`. Then run `gen_credits.py`.
 - No real account data or player logs in the repo.
+- A player spell that deals damage or heals reads the character level and the magic level; a spell of a weapon line also reads the weapon skill (a magic level share, `spell_scaling_config.lua`). `server/tests/spell_inputs_test.lua` casts every spell of `spells_chaos.xml` and fails when one ignores an input (O468).
 - When telling the owner to run a VPS step, say first if the admin app (`android/`) can do it, and where (tab > card > button).
   Give the shell command only as a fallback. Any `chaos-ctl.sh` command the owner runs often should get a button there.
