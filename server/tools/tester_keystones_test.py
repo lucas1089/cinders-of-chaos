@@ -469,7 +469,7 @@ ok(labels['ksOvergrowth']['observe'] is False and labels['ksOvergrowth']['why'],
 # the observable count the report names (O255): flags with a row of their own, over the nodes of the table
 shown = sum(1 for v in sc['classes'].values() for r in v if r['kind'] == 'keystone' and r['probe']['mode'] == 'combatlog')
 allks = sum(1 for v in sc['classes'].values() for r in v if r['kind'] == 'keystone')
-ok(shown >= 190 and allks == 248, 'observable keystone nodes: %d of %d' % (shown, allks))
+ok(shown >= 190 and allks == 272, 'observable keystone nodes: %d of %d' % (shown, allks))
 print('observable keystone nodes: %d of %d' % (shown, allks))
 log_cfg = open(os.path.join(CHAOS, 'combatlog_config.lua')).read()
 ok('["passivetree_keystones.lua"] = {name = "Keystones", kind = "p"' in log_cfg, 'the combat log keeps the "Keystones" fallback label')

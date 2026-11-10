@@ -122,6 +122,7 @@ START = [  # (line, atlas cell): the start node of each class section
 # (nodes.lua `icon`: 673 csWarrior = Monk's fist; 683 csRanger = Thief's hood; 693 csMystic = Templar's cross; 679 ksBastion,
 # 682 arSanguine, 689 ksSharedPhantasm, 692 ksPackAlpha, 699 ksOverload, 702 ksInspiringIllusion; the masteries 703, 704, 705
 # msInnerDiscipline, msShadowDiscipline, msSacredOath). The wiki draws an icon file for each of those keys that already exist.
+# O450: the three round 4 keystones 706, 707, 708 reuse the cells of arHobble, arVigils and ksUndyingRage: no new cell, no new PNG.
 REUSED = {'csWarrior': 'classstart_monk', 'csRanger': 'classstart_thief', 'csMystic': 'classstart_templar'}
 
 NOTABLES = [  # (icon key, node, atlas cell)

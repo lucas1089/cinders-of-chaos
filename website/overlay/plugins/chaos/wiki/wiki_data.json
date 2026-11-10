@@ -399,9 +399,9 @@
 		"support.sockets": 3,
 		"tower.pointsPerFloor": "1,000",
 		"tower.seasonDays": 30,
-		"tree.keystones": 64,
+		"tree.keystones": 67,
 		"tree.levelsPerPoint": 4,
-		"tree.nodes": 673,
+		"tree.nodes": 676,
 		"tree.notables": 134,
 		"tree.points1000": 248,
 		"tree.points300": 73,
@@ -719,6 +719,10 @@
 								["Hobbling Shot", "Ranger, Deadeye, Beastmaster"],
 								["Longshot", "Ranger, Deadeye, Beastmaster"],
 								[
+									"Momentum",
+									"Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage"
+								],
+								[
 									"Open Hand Creed",
 									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
@@ -735,6 +739,7 @@
 								"tree:624:paladin",
 								"tree:447",
 								"tree:561",
+								"tree:706",
 								"tree:109",
 								"tree:599",
 								"tree:621:paladin",
@@ -884,6 +889,10 @@
 							"w": [40, 60],
 							"rows": [
 								["Arcane Echo", "Mystic, Elementalist"],
+								[
+									"Attunement",
+									"Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
+								],
 								["Cascade Edge", "every class"],
 								[
 									"Covenant of Vigils",
@@ -915,6 +924,7 @@
 							],
 							"links": [
 								"tree:621:sorcerer",
+								"tree:707",
 								"tree:78",
 								"tree:99",
 								"tree:262",
@@ -1067,6 +1077,10 @@
 								["Cascade Edge", "every class"],
 								["Contagion Rite", "Thief, Ninja, Samurai"],
 								[
+									"Momentum",
+									"Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage"
+								],
+								[
 									"Open Hand Creed",
 									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
@@ -1080,6 +1094,7 @@
 								"tree:383",
 								"tree:78",
 								"tree:107",
+								"tree:706",
 								"tree:109",
 								"tree:81",
 								"tree:621:thief",
@@ -1221,6 +1236,11 @@
 									"Iron Tithe",
 									"Warrior, Juggernaut, Berserker, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel"
 								],
+								[
+									"Momentum",
+									"Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage"
+								],
+								["Open Wounds", "Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel"],
 								["Piercing Palm", "Monk, Shadowfist, Iron Sage"],
 								["Sanguine Covenant", "every class"],
 								["Scarred Discipline", "Monk, Shadowfist, Iron Sage"],
@@ -1232,6 +1252,8 @@
 								"tree:78",
 								"tree:96",
 								"tree:102",
+								"tree:706",
+								"tree:708",
 								"tree:624:monk",
 								"tree:81",
 								"tree:390",
@@ -1367,6 +1389,10 @@
 							"cols": ["Keystone", "Classes"],
 							"w": [40, 60],
 							"rows": [
+								[
+									"Attunement",
+									"Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
+								],
 								["Cascade Edge", "every class"],
 								["Corpse Detonation", "Necromancer, Lich, Bone Lord"],
 								[
@@ -1395,6 +1421,7 @@
 								]
 							],
 							"links": [
+								"tree:707",
 								"tree:78",
 								"tree:621:necromancer",
 								"tree:99",
@@ -1540,6 +1567,10 @@
 							"w": [40, 60],
 							"rows": [
 								["Aether Edge", "Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel"],
+								[
+									"Attunement",
+									"Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
+								],
 								["Cascade Edge", "every class"],
 								[
 									"Covenant of Vigils",
@@ -1558,6 +1589,7 @@
 									"Open Hand Creed",
 									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
+								["Open Wounds", "Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel"],
 								["Penitent's Wrath", "Templar, Inquisitor, Sentinel"],
 								["Pyre Oath", "Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel"],
 								["Radiant Rebuke", "Templar, Inquisitor, Sentinel"],
@@ -1571,12 +1603,14 @@
 							],
 							"links": [
 								"tree:362",
+								"tree:707",
 								"tree:78",
 								"tree:99",
 								"tree:624:templar",
 								"tree:96",
 								"tree:102",
 								"tree:109",
+								"tree:708",
 								"tree:376",
 								"tree:108",
 								"tree:621:templar",
@@ -6465,6 +6499,28 @@
 					"icon": "wiki/i/tr-ksArcaneEcho.png"
 				},
 				{
+					"id": "tree:707",
+					"name": "Attunement",
+					"sub": "Keystone. Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Mystic, Necromancer and Templar lines: the element your tree favours most deals 11% more. Your other elements (fire, ice, energy, earth, death, holy) deal 15% less."
+							]
+						},
+						{
+							"h": "Who",
+							"p": [
+								"Classes: Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel."
+							]
+						}
+					],
+					"icon": "wiki/i/tr-arVigils.png"
+				},
+				{
 					"id": "tree:542",
 					"name": "Barbed Quiver",
 					"sub": "Keystone. Ranger, Deadeye, Beastmaster.",
@@ -7006,6 +7062,28 @@
 					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
+					"id": "tree:706",
+					"name": "Momentum",
+					"sub": "Keystone. Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Ranger, Thief and Monk lines: your hits deal 1% more for every 5% of movement speed above your base, up to 10% more. A unique that scales with speed does not add: the larger counts. You take 8% more damage."
+							]
+						},
+						{
+							"h": "Who",
+							"p": [
+								"Classes: Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage."
+							]
+						}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
 					"id": "tree:109",
 					"name": "Open Hand Creed",
 					"sub": "Keystone. Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel.",
@@ -7043,6 +7121,23 @@
 						{"h": "Who", "p": ["Classes: Berserker."]}
 					],
 					"icon": "wiki/i/tr-arSanguine.png"
+				},
+				{
+					"id": "tree:708",
+					"name": "Open Wounds",
+					"sub": "Keystone. Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Monk and Templar lines: melee hits with bare fists or a one-handed weapon make the target bleed for 40% of the hit over 4 s. Those hits deal 8% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel."]}
+					],
+					"icon": "wiki/i/tr-ksUndyingRage.png"
 				},
 				{
 					"id": "tree:599",

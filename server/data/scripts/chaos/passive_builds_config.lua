@@ -106,7 +106,16 @@ ChaosPassiveBuildsConfig = {
 		arOpeningShot = {"single"}, ksShadowTwin = {"single"}, ksSeventhPalm = {"single"}, ksOverload = {"single"},
 		-- the class sections of the Warrior, Ranger and Mystic lines (O449)
 		ksUnbrokenLine = {"pack"}, ksOpenVeins = {"physical"}, ksLoneMark = {"physical"}, ksWolfbond = {"pack"},
-		ksConvergence = {"pack"}, ksPhantomDouble = {"single"}
+		ksConvergence = {"pack"}, ksPhantomDouble = {"single"},
+		-- the round 4 keystones (O450), each in themes that no Recommended role of a class that may hold it fills with (a role
+		-- takes the keystones of its fill's theme, and no role may change): Momentum in single target and area clearing
+		-- (not "mobility": the Shadowfist's Shadow Step fills with it), Attunement in four of the six element themes (not
+		-- "death": the Necromancer's Death Mage fills with it; not "holy": Radiant Rebuke, Dawnchain and Sigil of Cinders
+		-- already fill the three places of a Templar line holy build, and a fourth took Radiant Rebuke out of every build,
+		-- which the coverage test refuses; "earth" and "energy" are the Thief line's and Ranger line's roles, which cannot hold
+		-- it), Open Wounds in physical. The roles that would want them are listed in docs/BUILDS.md.
+		arMomentum = {"single", "pack"}, arAttunement = {"fire", "ice", "energy", "earth"},
+		arOpenWounds = {"physical"}
 	},
 
 	-- Focus themes. stats = {stat or group name = weight}; nodes = {[id] = score} for the nodes a theme names (they may

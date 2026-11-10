@@ -1509,6 +1509,35 @@ only (about +7% of the class total at level 1000). The class order of `class_dps
 `survival_model.py` and `pvp_model.py` slightly (server/README.md "Passive tree: class sections of the Warrior, Ranger and Mystic
 lines (O449)").
 
+### Round 4 keystones (O450, 2026-11-10, computed)
+
+Nothing here was run on a server or measured. The rules are in `round4_keystones_core.lua`, the numbers in
+`round4_keystones_config.lua`; `tests/round4_keystones_test.lua` computes every figure below from them. Net = the factor on the
+damage you deal in the keystone's own specialty, price included. The owner's rule is at most +40% over the class default in the
+specialty; the worst stack is the keystone with two others of the median size (+12% each, Lone Mark and Convergence).
+
+| Keystone | Class lines | Gain | Price | Net | Worst stack |
+|---|---|---|---|---|---|
+| Momentum | Ranger, Thief, Monk | +1% per 5% of speed above the base, 10% at most (the unique items' statscale rule) | damage taken x1.08 | x1.10 at the fastest legal speed | x1.380 |
+| Attunement | Mystic, Necromancer, Templar | the favoured element x1.11 | the other elements x0.85 | x1.11 with one element; x0.915 with four in equal parts | x1.392 |
+| Open Wounds | Monk, Templar | a bleed of 40% of the hit over 4 s, one bleed at a time | those hits x0.92 | a hit every 2 s: 0.92 x (1 + 0.40 x 2/4) = x1.104; every 333 ms: x0.95; every 10 s: x1.288 | x1.385 |
+
+Momentum at the fastest legal speed (items 12%, Paragon 10%, Vigil of Haste 15%, the tree's 80 speed points, and with Banner Call 10%
+and Ember of Haste 25%; the walk speed stops at `maxPlayerSpeed` 2600). The vocation base is 220; the Ninja's 232 changes the percent by less
+than one point:
+
+| Level | Base speed | Sustained above the base | Gain | With Banner Call and Ember | Gain |
+|---|---|---|---|---|---|
+| 100 | 517 | 52.5% | +10% | 87.5% | +10% |
+| 500 | 1217 | 43.6% | +8% | 78.6% | +10% |
+| 1000 | 1717 | 41.7% | +8% | 51.4% (top speed 2600) | +10% |
+
+The gain is capped, so a mount, a future source of speed or any other addition cannot pass +10%; the keystone gives nothing on top of
+a speed-scaling unique (Short Ways Home, Road of Blood, Down Never Back, Parting Undergrowth, Rooftop Run, Dust Never Settles, Endless
+Road, Road Turns to Ash: +20% to +40%): the larger counts. The price is paid by the one who runs, in damage taken. Older keystones
+can pass +40% together (Longshot +30% with Hobbling Shot +20% on a hobbled target) without these; that is not changed here.
+No balance model reads the tree builds that changed (55 Focus builds; no Recommended role changed), so no model row moved.
+
 ### Line keystones and the path notables (2026-10-12, computed; the measured values are above)
 
 The keystones were measured on 2026-10-12: "Line keystones, masteries and weapons measured in game" above (Blackblood

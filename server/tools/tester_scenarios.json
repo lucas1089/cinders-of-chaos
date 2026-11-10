@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 100,
+  "passive": 101,
   "place": 15,
   "staff": 17
  },
@@ -190,6 +190,28 @@
       "mode": "combatlog",
       "needs": "fist hits (no weapon in the hands)",
       "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
       "tab": "dealt"
      }
     },
@@ -1006,6 +1028,32 @@
      }
     },
     {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "arEffigy",
      "id": 262,
      "kind": "keystone",
@@ -1340,6 +1388,28 @@
       "mode": "combatlog",
       "needs": "fist hits (no weapon in the hands)",
       "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
       "tab": "dealt"
      }
     },
@@ -1784,6 +1854,32 @@
      }
     },
     {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "arEffigy",
      "id": 262,
      "kind": "keystone",
@@ -2109,6 +2205,32 @@
       "mode": "combatlog",
       "needs": "fist hits (no weapon in the hands)",
       "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
       "tab": "dealt"
      }
     },
@@ -2465,6 +2587,59 @@
      }
     },
     {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arOpenWounds",
+     "id": 708,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      161
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits with bare fists or a one-handed weapon",
+      "row": "k:Keystone: Open Wounds",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "ksPenitentWrath",
      "id": 376,
      "kind": "keystone",
@@ -2774,6 +2949,55 @@
       "mode": "combatlog",
       "needs": "a critical hit and a second enemy next to the target",
       "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arOpenWounds",
+     "id": 708,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      161
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits with bare fists or a one-handed weapon",
+      "row": "k:Keystone: Open Wounds",
       "tab": "dealt"
      }
     },
@@ -3482,6 +3706,32 @@
      }
     },
     {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "arEffigy",
      "id": 262,
      "kind": "keystone",
@@ -3774,6 +4024,55 @@
       "mode": "combatlog",
       "needs": "a critical hit and a second enemy next to the target",
       "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arOpenWounds",
+     "id": 708,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      161
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits with bare fists or a one-handed weapon",
+      "row": "k:Keystone: Open Wounds",
       "tab": "dealt"
      }
     },
@@ -4092,6 +4391,32 @@
      }
     },
     {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "arEffigy",
      "id": 262,
      "kind": "keystone",
@@ -4369,6 +4694,32 @@
       "mode": "combatlog",
       "needs": "fist hits (no weapon in the hands)",
       "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
       "tab": "dealt"
      }
     },
@@ -4711,6 +5062,28 @@
      }
     },
     {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "ksBlackbloodCreed",
      "id": 383,
      "kind": "keystone",
@@ -4966,6 +5339,28 @@
       "mode": "combatlog",
       "needs": "fist hits (no weapon in the hands)",
       "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
       "tab": "dealt"
      }
     },
@@ -5388,6 +5783,28 @@
      }
     },
     {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "ksBlackbloodCreed",
      "id": 383,
      "kind": "keystone",
@@ -5712,6 +6129,59 @@
      }
     },
     {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arOpenWounds",
+     "id": 708,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      161
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits with bare fists or a one-handed weapon",
+      "row": "k:Keystone: Open Wounds",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "ksPenitentWrath",
      "id": 376,
      "kind": "keystone",
@@ -6023,6 +6493,55 @@
       "mode": "combatlog",
       "needs": "a critical hit and a second enemy next to the target",
       "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arOpenWounds",
+     "id": 708,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      161
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits with bare fists or a one-handed weapon",
+      "row": "k:Keystone: Open Wounds",
       "tab": "dealt"
      }
     },
@@ -6368,6 +6887,59 @@
      }
     },
     {
+     "flag": "arAttunement",
+     "id": 707,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      223,
+      220,
+      219
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell or weapon hits of an element, with an element increment in the tree",
+      "row": "k:Keystone: Attunement",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arOpenWounds",
+     "id": 708,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      161
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits with bare fists or a one-handed weapon",
+      "row": "k:Keystone: Open Wounds",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "ksPenitentWrath",
      "id": 376,
      "kind": "keystone",
@@ -6687,6 +7259,28 @@
       "mode": "combatlog",
       "needs": "fist hits (no weapon in the hands)",
       "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arMomentum",
+     "id": 706,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "any hit while moving faster than the base speed (1% per 5% above it)",
+      "row": "k:Keystone: Momentum",
       "tab": "dealt"
      }
     },
@@ -11616,6 +12210,13 @@
    "opcodes": [
     "rightClickEquip"
    ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "round4_keystones": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },

@@ -735,6 +735,10 @@ function getTreeGroups()
 		{ orbit = 0, x = -1422, y = -599, nodes = {} },
 		--- group 108: flask branch node 672 (O251) ---
 		{ orbit = 0, x = -1359, y = -635, nodes = {} },
+		--- groups 109-111: round 4 keystones 706 Momentum, 707 Attunement, 708 Open Wounds (O450), one node each ---
+		{ orbit = 0, x = 1173, y = -528, nodes = {} },
+		{ orbit = 0, x = 218, y = 1549, nodes = {} },
+		{ orbit = 0, x = -1528, y = 757, nodes = {} },
 	}
 end
 

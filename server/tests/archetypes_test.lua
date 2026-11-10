@@ -33,7 +33,8 @@ dofile("data/scripts/chaos/archetypes_core.lua")
 local C, A = ChaosArchetypesConfig, ChaosArchetypesCore
 
 -- ------------------------------------------------------------------------------------------------ core: prices
-eq(#A.FLAGS, 24, "twenty-four keystones (twelve, four of the second round, eight of the third)")
+eq(#C.nodes, 24, "twenty-four converted leaves (twelve, four of the second round, eight of the third)")
+eq(#A.FLAGS, 27, "twenty-seven keystones: those 24 and the three new nodes of the fourth round (O450, round4_keystones_test.lua)")
 local all = {}
 for _, f in ipairs(A.FLAGS) do all[f] = true end
 local f1 = A.flagsOf({arPyreOath = 1, strength = 3})
@@ -484,7 +485,8 @@ if fh then
 	local src = io.open("../client/overlay/modules/game_passivetree/passivetree.lua"):read("*a")
 	for _, f in ipairs(A.FLAGS) do check(src:find(f .. " = \"", 1, true) ~= nil, "client name of " .. f) end
 	local icons = io.open("../client/overlay/modules/game_passivetree/treedata/icons.lua"):read("*a")
-	for _, f in ipairs(A.FLAGS) do check(icons:find(f .. " = {", 1, true) ~= nil, "icon of " .. f) end
+	-- the 24 converted leaves each have a cell of their own; the three new nodes of the fourth round reuse cells (O450)
+	for _, n in ipairs(C.nodes) do check(icons:find(n.flag .. " = {", 1, true) ~= nil, "icon of " .. n.flag) end
 else
 	print("(client tree not found: tooltip check skipped)")
 end
@@ -569,6 +571,8 @@ local function mk(kind, opt)
 	function m:getName() return c.name end
 	function m:getLevel() return c.level end
 	function m:getMagicLevel() return c.ml end
+	function m:getStepSpeed() return c.step or 200 end -- the clamped walk speed (Momentum, O450)
+	function m:getBaseSpeed() return c.base or 200 end
 	function m:getEnergyShield() return c.es end
 	function m:setEnergyShield(v) c.es = math.max(0, math.min(v, c.maxEs or 0)) end
 	function m:getMaxEnergyShield() return c.maxEs or 0 end
@@ -655,8 +659,9 @@ function Condition(t)
 	return cd
 end
 function ItemType(id)
-	return {getWeaponType = function() return id == 2400 and WEAPON_SWORD or (id == 8851 and WEAPON_DISTANCE or WEAPON_SHIELD) end,
-		getSlotPosition = function() return id == 8851 and SLOTP_TWO_HAND or 0 end, getId = function() return id end}
+	-- 2400 a one-handed sword, 2401 a two-handed sword (O450), 8851 a crossbow
+	return {getWeaponType = function() return (id == 2400 or id == 2401) and WEAPON_SWORD or (id == 8851 and WEAPON_DISTANCE or WEAPON_SHIELD) end,
+		getSlotPosition = function() return (id == 8851 or id == 2401) and SLOTP_TWO_HAND or 0 end, getId = function() return id end}
 end
 WEAPON_NONE = 0
 ChaosArchery = {kindOfType = function(it) return it:getId() == 8851 and "crossbow" or nil end}
@@ -1189,6 +1194,95 @@ eq(slows, 1, "hobble: not slowed again while it lasts")
 NOW = NOW + 3500
 eq(hitBy(ranger, mark, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 920, "hobble: over after 3 s")
 math.random = realRandom
+
+-- ------------------------------------------------------------------------------------------------ the fourth round (O450)
+-- Momentum: the unique items' statscale rule on the speed above the base; the price is the damage taken
+creatures, dealt, conditionsAdded = {}, {}, {}
+local runner = mk("player", {hp = 5000, maxHp = 5000, pos = P(2500, 2500), slots = {[CONST_SLOT_LEFT] = sword}})
+setTree(runner, {arMomentum = 1})
+local dummy = mk("monster", {hp = 9000000, pos = P(2501, 2500)})
+runner.c.base, runner.c.step = 1000, 1500
+eq(hitBy(runner, dummy, 1000), 1100, "momentum: 50% above the base, the most: +10%")
+runner.c.step = 1240
+eq(hitBy(runner, dummy, 1000), 1040, "momentum: 24% above: four whole steps of 5%, +4%")
+runner.c.step = 1049
+eq(hitBy(runner, dummy, 1000), 1000, "momentum: 4.9% above: no step yet")
+runner.c.step = 1000
+eq(hitBy(runner, dummy, 1000), 1000, "momentum: at the base: nothing")
+runner.c.step = 600
+eq(hitBy(runner, dummy, 1000), 1000, "momentum: slowed: nothing, never a malus")
+runner.c.step = 2600
+eq(hitBy(runner, dummy, 1000), 1100, "momentum: at the engine's top speed: still the cap")
+runner.c.step = 1500
+eq(hitBy(runner, dummy, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 1100, "momentum: a spell hit too")
+runner.c.pvpOk = nil
+local rival = mk("player", {hp = 5000, pos = P(2502, 2500)})
+rival.c.pvpOk = true
+eq(hitBy(runner, rival, 1000), 1033, "momentum: against a player a third of the gain")
+eq(hitBy(runner, dummy, 1000, COMBAT_FIREDAMAGE, ORIGIN_CONDITION), 1000, "momentum: a damage over time tick is not a hit")
+-- a speed-scaling unique and Momentum do not add: the larger counts
+ChaosUniquePassives = {speedScale = function() return 1.40 end}
+eq(hitBy(runner, dummy, 1000), 1000, "momentum: next to a unique that gives +40% on speed it adds nothing")
+ChaosUniquePassives = {speedScale = function() return 1.05 end}
+eq(hitBy(runner, dummy, 1000), 1047, "momentum: next to a unique of +5%: only the part over it (1.10 / 1.05)")
+ChaosUniquePassives = nil
+-- the price: the damage taken x1.08, also the mana shield part, and the rest of a hit that mana event scaled is left alone
+runner.c.events.ChaosArchetypesHit = true
+eq(math.abs(hitEv.onHealthChange(runner, dummy, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), 1080,
+	"momentum: 8% more damage taken")
+eq(ChaosManaShield.providers.momentum.hit(runner, dummy, 1000), 1080, "momentum: the mana shield part takes 8% more too")
+ChaosManaShield.mark(runner:getId(), dummy:getId(), ChaosManaShield.now(), {"momentum"})
+eq(math.abs(hitEv.onHealthChange(runner, dummy, -500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), 500,
+	"momentum: the rest of a mana shield hit")
+setTree(runner, {})
+eq(hitBy(runner, dummy, 1000), 1000, "momentum: without the keystone nothing")
+
+-- Attunement: the element the tree favours most deals more, the other elements less
+local caster = mk("player", {hp = 5000, pos = P(2600, 2600)})
+setTree(caster, {arAttunement = 1, incrementFire = 6, incrementIce = 3})
+local victim = mk("monster", {hp = 9000000, pos = P(2601, 2600)})
+eq(hitBy(caster, victim, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 1110, "attunement: the favoured element (fire) +11%")
+eq(hitBy(caster, victim, 1000, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 850, "attunement: another element -15%")
+eq(hitBy(caster, victim, 1000, COMBAT_HOLYDAMAGE, ORIGIN_SPELL), 850, "attunement: holy is an element too")
+eq(hitBy(caster, victim, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL), 1000, "attunement: physical is not an element")
+setTree(caster, {arAttunement = 1, incrementFire = 3, incrementIce = 3})
+eq(hitBy(caster, victim, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 1110, "attunement: a tie goes to the first (fire)")
+eq(hitBy(caster, victim, 1000, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 850, "attunement: and the other pays")
+setTree(caster, {arAttunement = 1, strength = 5})
+eq(hitBy(caster, victim, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 1000, "attunement: a tree with no element increment locks nothing: no gain")
+eq(hitBy(caster, victim, 1000, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 1000, "attunement: and no price")
+setTree(caster, {incrementFire = 6})
+eq(hitBy(caster, victim, 1000, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 1000, "attunement: without the keystone nothing")
+
+-- Open Wounds: fist and one-handed melee hits bleed, a two-handed weapon and a bow do not
+local twoHander = {getId = function() return 2401 end}
+local brawler = mk("player", {hp = 5000, pos = P(2700, 2700), slots = {[CONST_SLOT_LEFT] = sword}})
+setTree(brawler, {arOpenWounds = 1})
+local bag = mk("monster", {hp = 9000000, pos = P(2701, 2700)})
+conditionsAdded = {}
+eq(hitBy(brawler, bag, 1000), 920, "open wounds: a one-handed hit x0.92")
+runEvents()
+local wound
+for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_BLEEDING then wound = ca end end
+check(wound and wound.target == bag:getId() and wound.cond.value == -92 and wound.cond.rounds == 4 and wound.cond.ms == 1000
+	and wound.cond.params[CONDITION_PARAM_OWNER] == brawler:getId(), "open wounds: 40% of 920 over 4 ticks, owned by the player")
+brawler.c.slots = {}
+conditionsAdded = {}
+eq(hitBy(brawler, bag, 1000), 920, "open wounds: bare fists too")
+runEvents()
+local fistBleeds = 0
+for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_BLEEDING then fistBleeds = fistBleeds + 1 end end
+eq(fistBleeds, 1, "open wounds: a fist hit bleeds")
+brawler.c.slots = {[CONST_SLOT_LEFT] = twoHander}
+conditionsAdded = {}
+eq(hitBy(brawler, bag, 1000), 1000, "open wounds: a two-handed weapon is not touched (Open Veins is the Berserker's)")
+runEvents()
+local twoBleeds = 0
+for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_BLEEDING then twoBleeds = twoBleeds + 1 end end
+eq(twoBleeds, 0, "open wounds: no bleed from a two-handed weapon")
+brawler.c.slots = {[CONST_SLOT_LEFT] = sword}
+eq(hitBy(brawler, bag, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 1000, "open wounds: a spell hit is not touched")
+eq(hitBy(brawler, bag, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 1000, "open wounds: a ranged hit is not touched")
 
 -- ------------------------------------------------------------------------------------------------ spawn registration
 -- the engine runs onSpawn before the placement: the monster's id is 0 until it is placed. The events must still land on

@@ -57,6 +57,8 @@ return {
 		ksRadiantRebuke = "Radiant Rebuke", ksDawnchain = "Dawnchain",
 		-- the class sections of the Warrior, Ranger and Mystic lines (O449)
 		ksUnbrokenLine = "Unbroken Line", ksOpenVeins = "Open Veins", ksLoneMark = "Lone Mark", ksWolfbond = "Wolfbond",
-		ksConvergence = "Convergence", ksPhantomDouble = "Phantom Double"
+		ksConvergence = "Convergence", ksPhantomDouble = "Phantom Double",
+		-- the round 4 keystones (O450)
+		arMomentum = "Momentum", arAttunement = "Attunement", arOpenWounds = "Open Wounds"
 	}
 }

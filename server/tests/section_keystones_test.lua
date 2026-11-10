@@ -161,8 +161,8 @@ for _, node in pairs(tree.nodes) do
 	local kind = Core.keystoneKind(node)
 	if kind then kinds[kind] = (kinds[kind] or 0) + 1; total = total + 1 end
 end
-eq(kinds.ascension, 14, "14 class section keystones"); eq(kinds.archetype, 24, "24 archetype keystones"); eq(kinds.line, 4, "4 line keystones")
-eq(kinds.pair, 2, "2 pair nodes"); eq(total, 44, "44 keystones in all")
+eq(kinds.ascension, 14, "14 class section keystones"); eq(kinds.archetype, 27, "27 archetype keystones (24, and the 3 of round 4, O450)"); eq(kinds.line, 4, "4 line keystones")
+eq(kinds.pair, 2, "2 pair nodes"); eq(total, 47, "47 keystones in all (44 before round 4)")
 local function reach(class)
 	local list = {}
 	for id = 673, 705 do
@@ -176,9 +176,11 @@ check(reach("mystic") ~= reach("illusionist") and reach("elementalist") ~= reach
 check(reach("juggernaut") ~= reach("berserker") and reach("deadeye") ~= reach("beastmaster"), "the ascended classes of the other two lines differ too")
 
 -- nothing of the old tree changed: no node below 673 links a new node but the root (which gained the three first line nodes)
+-- and, since O450, the three parents of the round 4 keystones, each with its one new link: 120 to 706, 219 to 707, 161 to 708
+local ROUND4_PARENT = {[120] = 706, [219] = 707, [161] = 708}
 for id, node in pairs(tree.nodes) do
 	if id < 673 and id ~= tree.root then
-		for _, o in ipairs(node.n) do check(o < 673, "old node " .. id .. " links no new node (" .. o .. ")") end
+		for _, o in ipairs(node.n) do check(o < 673 or ROUND4_PARENT[id] == o, "old node " .. id .. " links no new node (" .. o .. ")") end
 	end
 end
 eq(#tree.nodes[tree.root].n, 13, "the root has its 7 neighbours and the first line node of each of the 6 sections (3 old, 3 new)") -- 2-7 and 6 more
@@ -275,7 +277,7 @@ else
 	-- the keystones are the ones the client marks isKeystone (44 in all), and the icons are cells that exist
 	local keystones = 0
 	for _, cn in pairs(nodes) do if cn.isKeystone then keystones = keystones + 1 end end
-	eq(keystones, 44, "the client marks 44 keystones")
+	eq(keystones, 47, "the client marks 47 keystones (44 before round 4, O450)")
 	dofile("../client/overlay/modules/game_passivetree/treedata/icons.lua")
 	local icons = getTreeIcons()
 	for id = 673, 705 do

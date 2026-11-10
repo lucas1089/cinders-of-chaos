@@ -225,6 +225,11 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   | Illusionist | *Phantom Double*: spell hits can strike a second time |
 
   Before you ascend, both paths show as locked, so you can plan ahead.
+- **Keystones for a play style (O450):** three more keystones sit out in the open, each with a price. *Momentum* (Ranger, Thief
+  and Monk lines): your hits deal more the faster you move above your base speed, and you take more damage. *Attunement*
+  (Mystic, Necromancer and Templar lines): the element your tree favours most hits harder and your other elements weaker.
+  *Open Wounds* (Monk and Templar lines): fist and one-handed melee hits make the target bleed, and hit a little weaker. They
+  count toward the three keystones you may hold.
 - **Build codes:** export your tree as a short code (the passive tree's Build Code panel) and import someone else's. The
   tree previews it first, with the points needed against the points you have.
 - **Respec:** right-click a node to refund just that node, or reset the whole tree. Both are priced by your level: a

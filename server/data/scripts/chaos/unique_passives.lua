@@ -232,6 +232,23 @@ local function statsOf(p)
 		shield = sh, level = p:getLevel()}
 end
 
+-- the damage factor the worn speed-scaling uniques (statscale on speed) give a hit of `origin`: 1 without one. The round 4
+-- keystone Momentum does not add to it: the larger of the two counts (archetypes.lua, round4_keystones_core.lua; O450).
+function M.speedScale(player, origin)
+	local st = actOf(player)
+	if not st then
+		return 1
+	end
+	local best = 1
+	for _, e in ipairs(st.act) do
+		if e.family == "statscale" and e.stat == "speed" and (e.origin == "any" or e.origin == origin) then
+			local pct = math.min(e.cap, math.floor(math.max(0, (statsOf(player).speed or 0) - (e.from or 0)) / e.per) * e.bonusPer)
+			best = math.max(best, 1 + pct / 100)
+		end
+	end
+	return best
+end
+
 -- the monsters near a character (not the target), cached crowdCacheMs
 local function crowd(st, p, target, t)
 	local c = st.crowd

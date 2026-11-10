@@ -269,10 +269,10 @@ all 62 that hold one; the last keystone of any build arrives by 73 points.
 Owner decision of 2026-11-09: a character holds at most 3 keystones. The rule is in before the beta wipe of 2026-11-18,
 so no refund event is needed beyond the login refund below. The number is `keystoneMax` in `passivetree_config.lua`.
 
-- **What counts.** Every node the tree data marks as a keystone, 38 nodes (44 since O449). 24 archetype keystones (the three rounds), the
+- **What counts.** Every node the tree data marks as a keystone, 38 nodes (44 since O449, 47 since O450). 24 archetype keystones (the three rounds), the
   pair 621 and 624 (one keystone per class), the 4 line keystones (369, 376, 383, 390) and the 8 class section keystones (14 since O449).
   Masteries and class notables do not count. The code reads the data (`passivetree_core.lua` `keystoneKind`) and the
-  client marks the same 38 nodes (44 since O449). Paragon, Vocation Trial nodes and the Rift Atlas (its own cap of 1) are not tree keystones.
+  client marks the same 38 nodes (44 since O449, 47 since O450). Paragon, Vocation Trial nodes and the Rift Atlas (its own cap of 1) are not tree keystones.
 - **Where it is checked.** One core function, `checkKeystones`, at every door that writes a tree: a plain save, a plan,
   a build code import, an Auto build, a loadout load. Apply on top of a tree adds the build to the keystones you hold, so it
   can be refused; Reset and apply always fits. A refused action changes nothing and says "You can hold at most 3
@@ -315,6 +315,72 @@ Illusionist. Now all 21 classes have a start node, line nodes, an ascended path 
 - **Saved trees and build codes.** Nothing moved, no id was reused: no refund, no version bump (`reworked` stays at 6, build
   code format 6). A tree or loadout saved before stays valid. The class check at login still strips nodes of another line.
 - **Not done.** No round 4 keystone (O450), no spell modifier mastery (O451). Computed, not measured in game.
+
+## Round 4 keystones (O450)
+
+The owner approved speed builds ("Speed builds go ahead: Momentum") and wants several ways to play each class. Three new keystones
+open play styles the tree did not have: a build that runs, a build that casts one element, a bleed for fists and one-handed
+weapons. Each is a thin reuse of a hook that exists, each has a price, each counts toward the cap of 3 (47 keystones in the tree
+now, 27 of the archetype kind). Computed, not measured in game.
+
+| Keystone | Node | Who can take it | Gain | Price | Worst stack against +40% |
+|---|---|---|---|---|---|
+| Momentum | 706 | Ranger, Thief and Monk lines | your hits deal 1% more for every 5% of movement speed above your base, 10% at most | you take 8% more damage | 1.10 x 1.12 x 1.12 = 1.380, +38.0% |
+| Attunement | 707 | Mystic, Necromancer and Templar lines | the element your tree favours most deals 11% more | every other element (fire, ice, energy, earth, death, holy) deals 15% less | 1.11 x 1.12 x 1.12 = 1.392, +39.2% |
+| Open Wounds | 708 | Monk and Templar lines | melee hits with bare fists or a one-handed weapon bleed for 40% of the hit over 4 s | those hits deal 8% less | 1.104 x 1.12 x 1.12 = 1.385, +38.5% |
+
+- **The stack.** A character holds 3 keystones, so the worst legal stack is the keystone and two others of the median size of the
+  flat damage gains of the rounds before (Lone Mark and Convergence, +12% each). The test builds it from the configs
+  (`tests/round4_keystones_test.lua`). The gain of each is its net factor in its own specialty: Momentum at the fastest legal
+  speed, Attunement for a build of one element, Open Wounds on one target over a long fight with a hit every 2 s (the next hit
+  replaces the bleed, so 2 s of 4 s pay out: 0.92 x (1 + 0.40 x 0.5)). Older keystones can pass +40% alone or together
+  (Longshot +30% with Hobbling Shot +20%); that is not changed here.
+- **Momentum.** Hook: the `statscale` family of the unique items (`unique_passives_core.lua`), fed with the speed above the base
+  in percent of the base, whole steps of 5% like the uniques. The speed in use is the clamped walk speed, the base is the
+  engine's (`data/lib/chaos_speed.lua`: vocation 220 + 50 + 2.5 a level to 300, then 1 a level). The gain is the same at every
+  level because it follows the percent. A speed-scaling unique (Short Ways Home to Endless Road, +20% to +40%) and Momentum do
+  not add: the larger counts, so the keystone adds nothing on top of one. Against players a third of the gain.
+  The price is on the damage you take, also through the mana shield (the provider `momentum`, like Rampage's).
+- **The fastest legal speed.** Every source in a fight, in percent of the base: items, gems and sets 12 (`movespeed` cap),
+  Paragon 10 (20 points x 0.5%), Vigil of Haste 15, Banner Call 10 for 12 s, Ember of Haste 25, the tree's speed nodes 80 speed
+  points (`maxSpeed`). Charms add speed out of combat only. Mounts add a flat speed in the stock mounts file, which this
+  repository does not hold: the cap of the gain and the engine's top walk speed (`maxPlayerSpeed` 2600) hold whatever they add.
+
+  | Level | Base speed | Sustained (items, Paragon, vigil, tree) | Gain | With Banner Call and Ember | Gain |
+  |---|---|---|---|---|---|
+  | 100 | 517 | 52.5% above | +10% | 87.5% | +10% |
+  | 500 | 1217 | 43.6% | +8% | 78.6% | +10% |
+  | 1000 | 1717 | 41.7% | +8% | 51.4% (the engine's top speed) | +10% |
+
+- **Attunement.** Hook: the price rule of Winter's Lattice (a factor on the type of each damage half, `A.typeFactor`), now with a
+  gain for one element. The locked element is the largest `incrementX` of your tree (fire, ice, energy, earth, death, holy; the
+  first of that list on a tie), so no window is needed and the Auto builds of an element theme lock that element. A tree with
+  no element increment locks nothing: no gain, no price. Physical and drain are not elements. A kit of four elements in equal
+  parts loses (1.11 + 3 x 0.85) / 4 = 0.915, so the keystone asks for one element.
+- **Open Wounds.** Hook: the bleed of Barbed Quiver (`addBleed`, a stronger bleed replaces a weaker). It is the Monk and Templar
+  lines' bleed: Open Veins is the Berserker's and needs a two-handed weapon, so no class holds both. The Warrior line gets no
+  second bleed keystone: it differs from Open Veins in numbers only.
+- **Where they sit.** Three new nodes appended, ids 706 to 708, each in a group of its own (109 to 111), each a side branch of an
+  existing node out in the open: 706 of the Speed node 120, 707 of Frostbitten Will 219, 708 of Iron Communion 161. The three
+  parents gained one link each; no node moved, no node was converted. Icons are cells that exist (Hobbling Shot's, Covenant of
+  Vigils', Undying Rage's): no new PNG.
+- **Saved trees and build codes.** Nothing changed that a saved tree reads: `reworked` stays at 6, build code format 6, no
+  refund, no old code is touched. A whole-tree code is 130 characters, as before. Converting an existing leaf instead would
+  have needed version 7 and format 7: every character holding the leaf is refunded at its next login and old codes would
+  drop it.
+- **Builds.** Each is tagged for Focus themes that no Recommended role of a class that may hold it fills with (a role takes the
+  keystones of its fill's theme, and no role may change): Momentum for single target and area clearing, Attunement for fire,
+  ice, energy and earth (not holy: Radiant Rebuke, Dawnchain and Sigil of Cinders fill the three places of a Templar line holy
+  build already), Open Wounds for physical. 55 of the 464 builds changed, all Focus builds, each now holds one of the new
+  keystones (Momentum 13 builds, Attunement 36, Open Wounds 6); the 63 Recommended builds are the same bytes as before.
+  Every build still holds 1 to 3 keystones. Roles that would now want one, for the owner of the roles: Momentum in Shadowfist
+  Shadow Step (it fills with the mobility theme), Ranger Sharpshooter, Ninja Phantom, Thief Cutthroat, Monk Fist Flurry;
+  Attunement in Necromancer Death Mage (death theme), Elementalist Overloaded, Mystic Arcanist, Inquisitor Ember Brand;
+  Open Wounds in Monk Fist Flurry and Templar Zealot.
+- **Left out.** Lone Wolf and Pack Tactics for the Beastmaster: how many wolves are out belongs to the companion spells and
+  `companion_balance_config.lua`, which `companion_model.py` bounds, and Wolfbond already trades the own bow for the wolves; a
+  second choice would need a spell change. Conjured Host for the Mystic line: no class of the line holds a summon (the
+  Illusionist's Hall of Mirrors is three decoys for 10 s), and a summon system is not for this close to launch.
 
 ## Weapon families (O454)
 

@@ -76,5 +76,9 @@ return {
 		arThornbound = {name = "Thornbound Oath", kind = "p", tab = "dealt"},
 		arVigils = {name = "Covenant of Vigils", kind = "k", tab = "dealt"},
 		arWinterLattice = {name = "Winter's Lattice", kind = "p", tab = "dealt"},
+		-- the fourth round (round4_keystones_core.lua, O450): factors on hits already counted, and a bleed
+		arMomentum = {name = "Momentum", kind = "k", tab = "dealt"},
+		arAttunement = {name = "Attunement", kind = "k", tab = "dealt"},
+		arOpenWounds = {name = "Open Wounds", kind = "k", tab = "dealt"},
 	},
 }

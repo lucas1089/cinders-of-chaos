@@ -2,7 +2,7 @@
 -- The server enforces it (server/data/scripts/chaos/passivetree_core.lua checkKeystones) and sends the live number as
 -- sendNodes `keystoneMax`; this file only counts what the window shows and tells the player before the server has to
 -- refuse. Pure logic, no client API (tested by treekeystones_test.lua, which pins DEFAULT_MAX to the server config).
--- A keystone is a node the tree data marks isKeystone: the same 44 nodes the server counts. Masteries and class notables
+-- A keystone is a node the tree data marks isKeystone: the same 47 nodes the server counts. Masteries and class notables
 -- are not keystones.
 TreeKeystones = {}
 local T = TreeKeystones

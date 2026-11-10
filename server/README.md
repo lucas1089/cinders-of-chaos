@@ -3257,6 +3257,47 @@ positions of 625-668 (the seven sections share one place, the client shows the p
   classes, none has an irrelevant node), `passivetree_keystone_cap_test.lua`, `wolf_spells_test.lua`, `passive_builds_test.lua`.
 - Not run on a live server, no client was run: the glue is tested against mocks.
 
+## Passive tree: round 4 keystones (O450) (`round4_keystones_*.lua`, `archetypes.lua`, docs/BUILDS.md "Round 4 keystones (O450)")
+Three keystones that open play styles the tree did not have (build audit A3, owner: "Speed builds go ahead: Momentum"): Momentum
+(706), Attunement (707), Open Wounds (708). They are `ar*` flags, so they are archetype keystones for the cap (47 keystones in
+the tree, 27 of that kind), held in the archetype flag storage (`Chaos.storage.archetypeFlags`, bits 25 to 27) and applied by the
+archetypes' hit event. They are new nodes, not converted leaves, so they are not in `archetypes_config.lua` `nodes` (that list is
+the leaves that were refunded once): `archetypes_core.lua` appends their flags to `A.FLAGS`, and the last lines of
+`archetypes_config.lua` copy their number tables and class lists in.
+- **Files.** Numbers `round4_keystones_config.lua` (also the nodes, the class lists, and the `rule` table the test reads),
+  rules `round4_keystones_core.lua` (pure: `ChaosRound4`), glue in `archetypes.lua` (`attack`, `defend`, the mana shield
+  provider `momentum`), `unique_passives.lua` `M.speedScale`, labels `keystone_labels_config.lua`, names `build_trends_config.lua`.
+  The client tooltips (`treedata/nodes.lua`) repeat the numbers; `tests/round4_keystones_test.lua` checks that they match.
+- **Momentum.** `R.speedAbovePct(stepSpeed, baseSpeed)` = the walk speed over the base, in percent of the base. `R.momentumFactor`
+  runs `ChaosUniquePassivesCore.dealt` on a `statscale` entry (per 5, +1% each, cap 10) so the gain is the unique items' own rule.
+  `ctx.momentum` goes into `A.hitFactor` on every direct hit (not damage over time, not an archetype's own damage). A worn
+  speed-scaling unique (`ChaosUniquePassives.speedScale`, the larger factor of its `statscale` entries on `speed`) and Momentum do
+  not add: the keystone's factor is divided by the unique's, never below 1. The price, damage taken x1.08, is in `defend` and in the
+  mana shield provider, like Rampage's. Against a player a third of the gain (`pvpScale`, the uniques' rule).
+- **Attunement.** `R.lockedElement(bonuses)` = the largest `incrementFire/Ice/Energy/Earth/Death/Holy` of the passive cache, nil
+  when the tree has none. `ctx.attuned` goes into `A.typeFactor`: the locked element x1.11, the other five x0.85, physical and
+  drain untouched. Every damage half of every hit and tick passes it, like Winter's Lattice's price.
+- **Open Wounds.** A melee hit (not a spell, not ranged) with bare fists or a weapon that does not take both hands: the hit x0.92,
+  then `addBleed` with 40% of the hit over 4 ticks of 1 s, the Barbed Quiver bleed (a stronger bleed replaces a weaker).
+- **The +40% rule.** `R.momentumNet`, `R.attunementNet`, `R.openWoundsNet(intervalMs)` are the net gains in each keystone's own
+  specialty; the test stacks each with two keystones of +12% (Lone Mark and Convergence) and asserts at most +40%: 1.380, 1.392,
+  1.385. For Momentum it also builds the fastest legal speed at levels 100, 500 and 1000 from every source, each number checked
+  against the file that holds it (items cap 12, Paragon 10, Vigil of Haste 15, Banner Call 10, Ember of Haste 25, the tree's
+  `maxSpeed` 80, the engine's top walk speed 2600): the gain is +10% at the cap and +8% to +10% without Banner Call and Ember.
+- **Saved data.** Three nodes appended (ids 706 to 708, groups 109 to 111), each a side branch of an existing node (120, 219, 161;
+  each gained one link). No node was converted: `reworked` stays at 6, build code format 6, a whole-tree code is 130
+  characters as before. `buildshare_test.lua` needed no change.
+- **Build generator.** `passive_builds_config.lua` `keystoneThemes` names them for themes no Recommended role of a class that may
+  hold them fills with: Momentum single and pack, Attunement fire, ice, energy, earth, Open Wounds physical. 55 Focus
+  builds changed (each holds one of the three now), no role changed, so `survival_model.py` and `pvp_model.py` did not move.
+  The other models do not read the tree.
+- **Left out.** Lone Wolf and Pack Tactics (the wolf count is the companion spells' and `companion_balance_config.lua`'s, bounded
+  by `companion_model.py`; Wolfbond is the Beastmaster's trade already), Conjured Host (no summon in the Mystic line's kit).
+- Tests: `round4_keystones_test.lua`, `archetypes_test.lua` (the glue against mocks), `unique_passives_test.lua` (`speedScale`),
+  `passivetree_keystone_cap_test.lua`, `section_keystones_test.lua`, `passivetree_paths_test.lua`,
+  `passivetree_layout_test.lua`, `passive_builds_test.lua`, `server/tools/tester_keystones_test.py` (272 keystone nodes).
+- Not run on a live server, no client was run.
+
 ## Passive tree planner and mastery nodes (`passivetree_core.lua`, `passivetree_config.lua`, client `game_passivetree`)
 The tree window plans a whole allocation and applies it in one request; four mastery nodes let the player pick one
 effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.lua` and the tree data.
@@ -3323,7 +3364,7 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
 ## Passive tree: keystone cap (O447) (`passivetree_core.lua`, `passivetree_config.lua` `keystoneMax`)
 Owner decision of 2026-11-09: a character holds at most 3 keystones. Nothing in the tree, no node, number or position changed.
 - **What counts.** `ChaosPassiveTreeCore.keystoneKind(node)` reads the tree data: a node whose own stats or class variants
-  (`v`) carry a `ks*` or `ar*` flag. Four kinds, 38 nodes: `archetype` (24, `ar*` in `s`), `pair` (621 and 624, `ks*` only in
+  (`v`) carry a `ks*` or `ar*` flag. Four kinds, 38 nodes (47 since O450): `archetype` (24, 27 since O450, `ar*` in `s`), `pair` (621 and 624, `ks*` only in
   `v`), `line` (369, 376, 383, 390: `ks*` in `s`, several classes), `ascension` (14 class section keystones, 8 before O449: `ks*` in `s`, one
   class). The `ct*` class notables and the masteries (`m`) do not count. The client marks the same 38 nodes `isKeystone`
   (`tests/passivetree_keystone_cap_test.lua` compares both lists).

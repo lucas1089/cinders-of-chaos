@@ -607,6 +607,22 @@ do
 	eq(player.health, 500, "a summon's death feeds nothing")
 	events.ChaosUPKill.onKill(player, mon)
 	eq(player.health, 530, "a kill heals 3%")
+	-- speedScale (O450): the factor of the worn speed-scaling unique, which the round 4 keystone Momentum does not add to
+	player.getSpeed = function() return 1000 end
+	wear("convert", {elem = "fire", share = 50, bonus = 20, other = 10})
+	eq(ChaosUniquePassives.speedScale(player, "melee"), 1, "speedScale: no speed-scaling unique: 1")
+	wear("statscale", {stat = "speed", from = 200, per = 10, bonusPer = 1, cap = 25, origin = "any"})
+	eq(ChaosUniquePassives.speedScale(player, "melee"), 1.25, "speedScale: speed 1000 saturates the unique at its cap")
+	player.getSpeed = function() return 300 end
+	eq(ChaosUniquePassives.speedScale(player, "spell"), 1.10, "speedScale: 100 above 200, 1% per 10: +10%")
+	player.getSpeed = function() return 150 end
+	eq(ChaosUniquePassives.speedScale(player, "melee"), 1, "speedScale: below `from`: 1")
+	wear("statscale", {stat = "speed", from = 200, per = 10, bonusPer = 1, cap = 25, origin = "ranged"})
+	player.getSpeed = function() return 1000 end
+	eq(ChaosUniquePassives.speedScale(player, "melee"), 1, "speedScale: a ranged-only unique gives a melee hit nothing")
+	eq(ChaosUniquePassives.speedScale(player, "ranged"), 1.25, "speedScale: and a ranged hit its factor")
+	wear("statscale", {stat = "maxMana", from = 0, per = 100, bonusPer = 1, cap = 40, origin = "any"})
+	eq(ChaosUniquePassives.speedScale(player, "melee"), 1, "speedScale: a statscale on another stat is not a speed one")
 	events.ChaosUPLogout.onLogout(player)
 	eq(ChaosUniquePassives.states[1], nil, "logout clears the state")
 end
