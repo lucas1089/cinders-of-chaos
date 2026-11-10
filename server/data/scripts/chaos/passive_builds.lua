@@ -189,6 +189,9 @@ local function preview(player, data)
 	local function side(plan, extra)
 		extra.nodes, extra.added, extra.skipped = plan.ids, #plan.added, countWhy(plan, "points")
 		extra.other = #plan.skipped - extra.skipped
+		-- the keystone cap (O447): the keystones the tree would hold, and the refusal when that is over the cap
+		extra.keystones = plan.keystones
+		extra.capText = plan.overCap and Chaos.tx(player, plan.capText) or nil
 		return extra
 	end
 	local masteries = st.T.core.toList(add.masteries)
@@ -222,13 +225,18 @@ function P.apply(player, buildId, mode, seenCost)
 		return nil, Chaos.t(player, "Malformed request.")
 	end
 	local plan = planFor(st, build, reset)
+	if plan.overCap then
+		-- the keystone cap (O447): the build and the keystones already held come to more than the cap. Nothing is
+		-- trimmed and nothing is paid; "Reset and apply" starts from nothing and always fits.
+		return nil, Chaos.tx(player, plan.capText)
+	end
 	if not plan.changed then
 		return nil, Chaos.t(player, "Nothing would change: you already have this build, or you have no free points.")
 	end
 	-- the same checks as a normal save (known ids, class, connected, points owned)
 	local ids, invalid = st.T.validateNodes(player, plan.ids)
 	if not ids then
-		return nil, invalid
+		return nil, Chaos.tx(player, invalid)
 	end
 	local R = ChaosRespec
 	local cost, free = 0, nil

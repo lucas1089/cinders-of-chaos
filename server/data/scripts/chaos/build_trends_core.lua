@@ -95,7 +95,8 @@ function K.representative(members)
 	return best
 end
 
--- chars = {{id, class (the class tab key: base class id), level, nodes, flags}} -> {[class] = {total, builds = {{signature,
+-- chars = {{id, class (the class tab key: base class id), level, nodes, flags, overCap (keystone cap, O447: counted in
+-- the total, never listed)}} -> {[class] = {total, builds = {{signature,
 -- flags, count, share (per mille of the class), level (average, rounded), rep (the representative member)}}}}; builds
 -- sorted most played first (then the higher average level, then the signature); only cfg.top builds of at least
 -- cfg.minCount characters
@@ -111,15 +112,19 @@ function K.group(chars, cfg)
 				byClass[key] = cl
 			end
 			cl.total = cl.total + 1
-			local sig = K.signature(ch.flags)
-			local b = cl.buckets[sig]
-			if not b then
-				b = {signature = sig, flags = ch.flags or {}, members = {}, levelSum = 0}
-				cl.buckets[sig] = b
-				cl.order[#cl.order + 1] = sig
+			-- the keystone cap (O447): a tree over it (a beta character not yet refunded at login) is never listed as
+			-- a build; it still counts in the class total
+			if not ch.overCap then
+				local sig = K.signature(ch.flags)
+				local b = cl.buckets[sig]
+				if not b then
+					b = {signature = sig, flags = ch.flags or {}, members = {}, levelSum = 0}
+					cl.buckets[sig] = b
+					cl.order[#cl.order + 1] = sig
+				end
+				b.members[#b.members + 1] = ch
+				b.levelSum = b.levelSum + (tonumber(ch.level) or 0)
 			end
-			b.members[#b.members + 1] = ch
-			b.levelSum = b.levelSum + (tonumber(ch.level) or 0)
 		end
 	end
 	local out = {}

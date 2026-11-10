@@ -3255,6 +3255,35 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   369, 376, 383, 390 (the line keystones). Version 2: 77, 78, 81, 82, 106-109, 253, 262, 355, 362 (the build
   archetype keystones, "Build archetypes" below). A new character only records the version.
 
+## Passive tree: keystone cap (O447) (`passivetree_core.lua`, `passivetree_config.lua` `keystoneMax`)
+Owner decision of 2026-11-09: a character holds at most 3 keystones. Nothing in the tree, no node, number or position changed.
+- **What counts.** `ChaosPassiveTreeCore.keystoneKind(node)` reads the tree data: a node whose own stats or class variants
+  (`v`) carry a `ks*` or `ar*` flag. Four kinds, 38 nodes: `archetype` (24, `ar*` in `s`), `pair` (621 and 624, `ks*` only in
+  `v`), `line` (369, 376, 383, 390: `ks*` in `s`, several classes), `ascension` (8 class section keystones: `ks*` in `s`, one
+  class). The `ct*` class notables and the masteries (`m`) do not count. The client marks the same 38 nodes `isKeystone`
+  (`tests/passivetree_keystone_cap_test.lua` compares both lists).
+- **One function at every door.** `checkKeystones(tree, ids)` gives true or nil + "You can hold at most 3 keystones. Refund one
+  to take another." (pt-BR in `i18n_strings.lua`). Doors: `validatePlan` (planApply, saved + planned), `validateNodes` of
+  `passivetree.lua` (the plain save `sendNodes`, the final check of a plan, a build code apply and an Auto build apply all end
+  there), `buildshare_core.lua` `B.plan` (a code over the cap is refused whole, before the points are looked at),
+  `passive_builds_core.lua` `M.plan` (`overCap`, `capText`; `P.apply` refuses and the preview carries `capText` per side),
+  `loadouts.lua` `keystoneRefusal` (in `L.load` before the channel and again in `L.switch`; the saved loadout is never
+  trimmed), `pact.lua` `buildLoad` (a saved build slot over the cap is not offered for import). No GM path sets a tree: the
+  admin actions only call `resetAll`.
+- **Old trees.** `passivetree.lua` `refundOverCap` runs at every login after the other refunds: a preset over the cap is
+  emptied for free, with a message that names the keystones held and the points back. A tree at or under the cap is never
+  written, and a second login finds an empty tree. Trending builds: a character over the cap is counted in the class total
+  and listed in no build (`K.group` `overCap`); a snapshot row over the cap is not sent (`BT.latest`).
+- **Generator.** `tools/gen_passive_builds.lua` `Gen.grow` takes no keystone, and no path through one, past the cap, and a
+  role whose targets need more is an error. `tests/passive_builds_test.lua` asserts it for every build and every prefix, 1 to 3
+  for the Recommended builds (the Templar Shield Wall holds none, as it was), and that the Hollow Palm holds 2.
+- **Client.** `sendNodes` carries `keystoneMax` (an added field of the existing payload, no new opcode). The window shows
+  "Keystones 2/3" in the toolbar (`treekeystones.lua`, `passivetree.lua` `refreshTreeKeystones`), a keystone that cannot be
+  taken says so in its tooltip, and the planner refuses a click whose path would pass the cap. The Unity client is not changed:
+  it shows the server's text through `planResult`, `sendMessage` and `buildError`, and has no counter.
+- Tests: `tests/passivetree_keystone_cap_test.lua`, `passive_builds_test.lua`, `loadouts_test.lua`, `build_trends_test.lua`,
+  client `treekeystones_test.lua`, `autobuildview_test.lua`. Not run live.
+
 ## Passive tree notables on the paths (2026-10, client `treedata/nodes.lua`)
 Runs of three or more small nodes along a path (outside the class sections and the ring next to the start) had one
 node turned into a notable with its own name and a combined effect; 27 nodes in all, spread over every damage type,

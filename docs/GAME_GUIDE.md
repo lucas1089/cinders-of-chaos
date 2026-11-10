@@ -178,11 +178,12 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
 ![The passive tree and the Paragon window](docs/images/feature_passive_tree.png)
 
 - **Passive tree:** over 600 nodes and one point every four levels (about 248 at level 1000), so you can never take
-  everything and every build is a choice.
+  everything and every build is a choice. A character holds at most three keystones, the big nodes that change how you
+  play (O447): refund one to take another. The window shows "Keystones 2/3".
 - **Auto build:** the button in the tree window offers three Recommended builds for your class and one Focus build per
   theme. Since O442 the three Recommended builds are three different ways to play (Warrior: Slayer, Bulwark, Bloodied),
   each walking to its own one to three keystones, and each says in one line what it does and what it costs. The Focus list
-  reaches every keystone your class may hold. Every build is only a start: you can still change any node.
+  reaches every keystone your class may hold, three at most in one build. Every build is only a start: you can still change any node.
 - **Boss points:** the first kill of each great boss gives one more passive point, ten in all: the five world bosses, your
   Ascension Trial's warden and four ancient demon lords of the deep world.
 - **Keystones that change how you play.** Two keystones at the edge of the tree take a different form for each class:

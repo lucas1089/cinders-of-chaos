@@ -11,6 +11,13 @@
 -- A build is an ORDER of node ids in which every node touches the start or an earlier node, so every prefix is a legal
 -- build: a character takes as many as it has points for.
 
+if not ChaosPassiveTreeCore then
+	dofile("data/scripts/chaos/passivetree_core.lua")
+end
+if not ChaosPassiveTreeConfig then
+	dofile("data/scripts/chaos/passivetree_config.lua")
+end
+
 PassiveBuildsCore = PassiveBuildsCore or {}
 local M = PassiveBuildsCore
 
@@ -97,7 +104,8 @@ end
 -- not touch the nodes taken so far is skipped with its reason ("class", "unknown", "disconnected"), the ones that do not
 -- fit the points with "points".
 -- Returns {ids = final allocation, added = new ids in order, kept = ids held that stay, removed = ids taken back,
---          skipped = {{id, why}}, masteries = {[id] = choice}, treeReset = bool, wanted = #build.order, changed = bool}
+--          skipped = {{id, why}}, masteries = {[id] = choice}, treeReset = bool, wanted = #build.order, changed = bool,
+--          keystones = n of the final allocation, overCap = bool (more than the keystone cap: refused whole), capText}
 function M.plan(tree, build, ctx)
 	local held, heldList = {}, {}
 	for _, id in ipairs(ctx.current or {}) do
@@ -176,9 +184,16 @@ function M.plan(tree, build, ctx)
 			masteries[id] = (build.masteries or {})[id] or 1
 		end
 	end
+	-- the keystone cap (O447): what the character would hold after the build. A build never holds more than the cap
+	-- itself (gen_passive_builds.lua), but Apply adds it to the keystones already held. Over the cap the whole build is
+	-- refused (nothing is trimmed): `overCap` and `capText` say so, P.apply and the preview read them.
+	local tc = ChaosPassiveTreeCore
+	local keystones = tc.countKeystones(tree, order)
+	local overCap = keystones > tc.keystoneMax()
 	return {
 		ids = order, added = added, kept = kept, removed = removed, skipped = skipped, masteries = masteries,
-		treeReset = #removed > 0, wanted = #build.order, changed = #added > 0 or #removed > 0
+		treeReset = #removed > 0, wanted = #build.order, changed = #added > 0 or #removed > 0,
+		keystones = keystones, overCap = overCap, capText = overCap and tc.keystoneRefusal() or nil
 	}
 end
 

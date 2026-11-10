@@ -983,6 +983,9 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
 ### Phase 2b (done): per-class passive trees (C4)
 
+- **Keystone cap (O447, owner 2026-11-09).** Every keystone below (the 621 / 624 pair, the class section and line keystones,
+  the archetype keystones of docs/BUILDS.md) counts toward one limit: a character holds at most 3 keystones. Before this a
+  class could take all of its keystones from about level 500. Rules and checks: docs/BUILDS.md "Keystone cap (O447)".
 - **Per-class keystone variants** on the two keystone nodes 621 (Wrath) and 624 (Resolve), for the Warrior, Ranger and Mystic lines
   (`ChaosClasses.keystoneKey`): the base classes keep the old pair; each ascended class of the Warrior and Ranger lines swaps the
   keystone that does not fit it:

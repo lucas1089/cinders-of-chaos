@@ -5298,6 +5298,11 @@ return {
 			"Essa maestria não tem esse efeito.",
 		["That effect is already chosen."] =
 			"Esse efeito já está escolhido.",
+		-- the keystone cap (O447; passivetree_core.lua checkKeystones, passivetree.lua refundOverCap)
+		["You can hold at most %d keystones. Refund one to take another."] =
+			"Você pode ter no máximo %d keystones. Devolva um para pegar outro.",
+		["Your passive tree held %d keystones; a character may hold at most %d. All %d points were refunded for free. Open the tree to spend them again, or use Auto build."] =
+			"Sua árvore passiva tinha %d keystones; um personagem pode ter no máximo %d. Todos os %d pontos foram devolvidos de graça. Abra a árvore para gastá-los de novo, ou use o Auto build.",
 		-- Transmog (transmog_core.lua, transmog.lua)
 		["There is no item in that slot."] =
 			"Não há item nesse slot.",

@@ -43,6 +43,12 @@ end
 if not ChaosLoadoutsCore then
 	dofile("data/scripts/chaos/loadouts_core.lua")
 end
+if not ChaosPassiveTreeConfig then
+	dofile("data/scripts/chaos/passivetree_config.lua") -- the keystone cap of a load (O447)
+end
+if not ChaosPassiveTreeCore then
+	dofile("data/scripts/chaos/passivetree_core.lua")
+end
 
 ChaosLoadouts = ChaosLoadouts or {}
 local L = ChaosLoadouts
@@ -714,6 +720,25 @@ local function refreshOthers(player)
 	end
 end
 
+-- The keystone cap (O447): a saved loadout that holds more keystones than a character may (saved before the rule) is
+-- refused as a whole, with the tree's text. What counts is what the load would put live: the saved tree after the checks
+-- of validateTree (nodes of another class, nodes that left the tree and the ones over the points are refunded as before).
+-- Nothing is trimmed in silence and nothing changes. Returns the refusal text or nil.
+local function keystoneRefusal(player, row)
+	local PC = ChaosPassiveTreeCore
+	if not PC or not PC.checkKeystones then
+		return nil
+	end
+	local kept = Core.validateTree(treeData(), Core.parseNodes(row.tree),
+		{classKey = classKey(player), points = totalPoints(player), allowed = allowedFn()})
+	local ok, text = PC.checkKeystones(treeData(), kept)
+	if not ok then
+		return text -- English; result() translates it for the player
+	end
+	return nil
+end
+L.keystoneRefusal = keystoneRefusal
+
 -- do the switch now (the checks were made; made again here for a channel that just ended)
 function L.switch(player, target)
 	local guid = player:getGuid()
@@ -723,6 +748,10 @@ function L.switch(player, target)
 		return false, why == "locked" and Core.lockedText(player:getLevel()) or why
 	end
 	local targetRow = rows[target]
+	local capText = keystoneRefusal(player, targetRow)
+	if capText then
+		return false, capText
+	end
 	local liveIds, presetRow = liveTree(player)
 	local liveMasteries = presetRow and presetRow.masteries or {}
 	local livePar = liveParagon(player)
@@ -850,6 +879,11 @@ function L.load(player, target)
 	local plan, why = Core.planLoad(armOf(player, rows), target)
 	if not plan then
 		return false, why == "locked" and Core.lockedText(player:getLevel()) or why
+	end
+	-- the keystone cap (O447): refused before the channel starts, not after the wait
+	local capText = keystoneRefusal(player, rows[target])
+	if capText then
+		return false, capText
 	end
 	local mode, reason = Core.switchGate({
 		level = player:getLevel(), inCombat = inCombat(player), busy = L.busy(player), inPz = inPz(player),

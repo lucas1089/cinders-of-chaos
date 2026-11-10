@@ -54,6 +54,17 @@ preview.reset.free = nil
 text = V.detail(b, state, preview)
 eq(text:find('Price: free.', 1, true) ~= nil, true, 'free below the level')
 
+-- the keystone cap (O447): Apply on top of the keystones held would go past it: the server's line replaces the Apply line
+local capLine = 'You can hold at most 3 keystones. Refund one to take another.'
+preview.add = {added = 80, skipped = 0, other = 0, keystones = 4, capText = capLine}
+preview.reset = {added = 5, removed = 3, cost = 0, nodes = {1}, keystones = 3}
+text = V.detail(b, state, preview)
+eq(text:find(capLine, 1, true) ~= nil, true, 'the cap line is shown')
+eq(text:find('Apply: adds', 1, true), nil, 'no Apply line over the cap')
+eq(text:find('Reset and apply: takes back 3 nodes', 1, true) ~= nil, true, 'Reset and apply is still offered')
+eq(V.canApply(preview), false, 'over the cap: no Apply')
+eq(V.canReset(preview), true, 'over the cap: Reset and apply still works')
+
 eq(V.canApply(nil), false, 'no preview, no apply')
 eq(V.canApply({add = {added = 0}}), false, 'nothing to add')
 eq(V.canApply({add = {added = 3}}), true, 'something to add')

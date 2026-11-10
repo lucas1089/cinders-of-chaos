@@ -638,6 +638,16 @@ local function buildLoad(player, data)
 	if not row then
 		return message(player, "That build slot is empty.", true)
 	end
+	-- the keystone cap (O447): a slot saved before the rule can hold more keystones than a character may. It stays in the
+	-- slot (never trimmed) but is not offered for import; the import itself refuses it too (buildshare_core.lua plan).
+	local PC, TI = ChaosPassiveTreeCore, ChaosPassiveTree and ChaosPassiveTree.internal
+	local build = PC and TI and TI.getTree and ChaosBuildShare and ChaosBuildShare.decode(row.code)
+	if build and build.nodes then
+		local ok, text = PC.checkKeystones(TI.getTree(), build.nodes)
+		if not ok then
+			return message(player, text, true)
+		end
+	end
 	send(player, "buildCode", {slot = slot, code = row.code})
 end
 

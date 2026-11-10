@@ -364,10 +364,12 @@ for classKey in pairs(Chaos.classes.ids) do
 		end
 		local inBuild = {}
 		for _, id in ipairs(b.order) do inBuild[id] = true end
+		-- a build that already holds the most keystones a character may (O447) leaves the other tagged ones out
+		local atCap = ChaosPassiveTreeCore.countKeystones(tree, b.order) >= ChaosPassiveTreeCore.keystoneMax()
 		for id, node in pairs(tree.nodes) do
 			if not node.m and (not node.c or node.c[classKey]) and tagged(node, classKey, themeKey) then
 				tagChecks = tagChecks + 1
-				check(inBuild[id], b.id .. " (" .. classKey .. ") skips the keystone " .. id .. " tagged for " .. themeKey)
+				check(inBuild[id] or atCap, b.id .. " (" .. classKey .. ") skips the keystone " .. id .. " tagged for " .. themeKey)
 			end
 		end
 	end
@@ -417,6 +419,113 @@ plan = Core.plan(tree, m, {classKey = "ninja", current = {}, points = 10})
 check(plan.masteries[665] == 3 and #plan.added == 4, "mastery choice from the build")
 plan = Core.plan(tree, m, {classKey = "ninja", current = {626, 627, 628, 665}, currentMasteries = {[665] = 1}, points = 10, reset = true})
 check(plan.masteries[665] == 1 and not plan.treeReset, "a held mastery keeps its choice")
+
+-- ------------------------------------------------------------------------------------------------ keystone cap (O447)
+-- No committed build holds more keystones than the cap, for any prefix (any point budget), Recommended builds hold 1 to 3.
+-- The count is the tree core's: the same function the server checks a save, a plan, a code, a loadout with.
+local PC = ChaosPassiveTreeCore
+local ksMax = PC.keystoneMax()
+check(ksMax == 3, "the owner decision of 2026-11-09: the cap is 3")
+local ksBuilds, ksRoles, ksTop = 0, 0, 0
+for classKey, list in pairs(data.classes) do
+	for _, b in ipairs(list) do
+		ksBuilds = ksBuilds + 1
+		local running, seen = 0, {}
+		for _, id in ipairs(b.order) do
+			if PC.isKeystone(tree.nodes[id]) and not seen[id] then
+				seen[id] = true
+				running = running + 1
+				check(running <= ksMax, classKey .. " " .. b.id .. " takes keystone " .. id .. " past the cap")
+			end
+		end
+		check(PC.countKeystones(tree, b.order) == running, classKey .. " " .. b.id .. " counts the same both ways")
+		ksTop = math.max(ksTop, running)
+		if b.kind == "role" then
+			ksRoles = ksRoles + 1
+			-- O442: a Recommended build holds 1 to 3 keystones; the one named exception is the Templar tank, which holds none
+			-- and is as it was (docs/BUILDS.md: 62 of the 63 builds hold one)
+			local floor = b.id == "templar_shield_wall" and 0 or 1
+			check(running >= floor and running <= 3, classKey .. " " .. b.id .. " (Recommended) holds " .. floor .. " to 3 keystones, not " .. running)
+		end
+	end
+end
+check(ksBuilds > 400 and ksRoles >= 60 and ksTop == 3, "the cap check saw every build: " .. ksBuilds .. " builds, " .. ksRoles .. " roles, most " .. ksTop)
+-- the generator itself holds the cap: a theme that scores all four keystones of a Deadeye still stops at 3
+do
+	local ks = {561, 599, 621, 624}
+	local scores = {}
+	for _, id in ipairs(ks) do scores[id] = 50 end
+	local st = Gen.grow(ctx, {weights = Gen.weights(cfg, cfg.themes[1], "ranger"), nodeScores = scores, targets = {},
+		classKey = "deadeye", lineKey = "ranger", variant = "deadeye", budget = 248})
+	check(st and PC.countKeystones(tree, st.order) == 3, "four wanted keystones: the build stops at 3: " .. tostring(st and PC.countKeystones(tree, st.order)))
+	-- role targets over the cap are a config error, not a silent trim
+	local _, capErr = Gen.grow(ctx, {weights = {}, targets = {561, 599, 621, 624}, classKey = "deadeye", lineKey = "ranger",
+		variant = "deadeye", budget = 248})
+	check(capErr and capErr:find("cap"), "targets over the cap are an error: " .. tostring(capErr))
+end
+-- Hollow Palm (Shadowfist with Hollow Vessel 96 and Aether Edge 362) holds 2 keystones and stays legal
+do
+	local function route(classKey, targets)
+		local set, order, parent = {}, {}, {}
+		local queue, head, seen = {tree.root}, 1, {[tree.root] = true}
+		while head <= #queue do
+			local cur = queue[head]; head = head + 1
+			for _, nb in ipairs(tree.nodes[cur].n) do
+				local node = tree.nodes[nb]
+				if not seen[nb] and (not node.c or node.c[classKey]) and not PC.isKeystone(node) or (not seen[nb] and targets[nb]) then
+					seen[nb] = true; parent[nb] = cur; queue[#queue + 1] = nb
+				end
+			end
+		end
+		for target in pairs(targets) do
+			local id = target
+			while id and id ~= tree.root do
+				if not set[id] then set[id] = true; order[#order + 1] = id end
+				id = parent[id]
+			end
+		end
+		table.sort(order)
+		return order
+	end
+	local ids = route("shadowfist", {[96] = true, [362] = true})
+	check(PC.countKeystones(tree, ids) == 2, "Hollow Palm holds exactly 2 keystones: " .. PC.countKeystones(tree, ids))
+	check(PC.checkKeystones(tree, ids) == true, "Hollow Palm is under the cap")
+	local result = PC.validatePlan(tree, {}, {}, {nodes = ids}, {classKey = "shadowfist", points = 400,
+		allowed = function(node, key) return not node.c or node.c[key] == true end})
+	check(result and #result.added == #ids, "the Hollow Palm plan is accepted whole")
+end
+-- Apply on top of a tree that holds keystones: a build that would take the total past the cap is refused whole
+do
+	local held = {}
+	local sorted = {}
+	for _, id in ipairs(data.classes.warrior[1].order) do sorted[#sorted + 1] = id end
+	local function firstWith(classKey, pred)
+		for _, b in ipairs(data.classes[classKey]) do
+			if pred(b) then return b end
+		end
+	end
+	local three = firstWith("warrior", function(b) return PC.countKeystones(tree, b.order) == 3 end)
+	local other = firstWith("warrior", function(b)
+		if b == three then return false end
+		local _, mine = PC.countKeystones(tree, b.order)
+		local _, theirs = PC.countKeystones(tree, three and three.order or {})
+		local have = {}
+		for _, id in ipairs(theirs) do have[id] = true end
+		for _, id in ipairs(mine) do if not have[id] then return true end end
+		return false
+	end)
+	if three and other then
+		local p1 = Core.plan(tree, three, {classKey = "warrior", current = {}, points = 400})
+		check(not p1.overCap and p1.keystones == 3, "a 3 keystone build on a clean tree is legal")
+		local p2 = Core.plan(tree, other, {classKey = "warrior", current = p1.ids, points = 800})
+		check(p2.overCap and p2.capText == "You can hold at most 3 keystones. Refund one to take another.",
+			"Apply on top of 3 keystones: a build with another keystone is refused whole (" .. p2.keystones .. ")")
+		local p3 = Core.plan(tree, other, {classKey = "warrior", current = p1.ids, points = 800, reset = true})
+		check(not p3.overCap, "Reset and apply starts from nothing and always fits")
+	else
+		check(false, "the test needs a warrior build with 3 keystones and another with a different one")
+	end
+end
 
 -- ------------------------------------------------------------------------------------------------ handlers
 local events = {}

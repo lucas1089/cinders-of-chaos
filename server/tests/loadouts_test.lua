@@ -886,6 +886,57 @@ request("load", {slot = "x"})
 has(lastOf("result").text, "does not exist", "bad slot")
 request("nope", {})
 
+-- the keystone cap (O447): a loadout saved before the rule that holds 4 keystones is refused as a whole, with the tree's
+-- text, before the channel and before anything is written; one with 3 loads
+do
+	local gid = player:getGuid()
+	local function route(targets)
+		local parent, queue, head, seenIds = {}, {tree.root}, 1, {[tree.root] = true}
+		while head <= #queue do
+			local cur = queue[head]; head = head + 1
+			for _, nb in ipairs(tree.nodes[cur].n) do
+				if not seenIds[nb] and (not tree.nodes[nb].c or targets[nb]) then
+					seenIds[nb] = true; parent[nb] = cur; queue[#queue + 1] = nb
+				end
+			end
+		end
+		local set, list = {}, {}
+		for target in pairs(targets) do
+			local id = target
+			while id and id ~= tree.root do
+				if not set[id] then set[id] = true; list[#list + 1] = id end
+				id = parent[id]
+			end
+		end
+		table.sort(list)
+		return list
+	end
+	local four, three = route({[77] = true, [78] = true, [81] = true, [109] = true}), route({[77] = true, [78] = true, [81] = true})
+	check(#four > 0 and #four <= player.points, "the route to four keystones fits the points: " .. #four .. " of " .. player.points)
+	eq(ChaosPassiveTreeCore.countKeystones(tree, four), 4, "the test tree holds 4 keystones")
+	local liveBefore, appliedBefore = table.concat(presets[gid] or {}, ","), applied
+	local emptyRow = {name = "Old", icon = "", voc = 4, paragon = "", supports = "", gear = "", serial = 0, undo = "", updated = 0}
+	DB[gid][4] = {slot = 4, name = "Four", icon = emptyRow.icon, voc = 4, tree = C.formatNodes(four), paragon = "", supports = "",
+		gear = "", serial = 0, undo = "", updated = 0}
+	pzFlag = true
+	storages[7100572] = os.time() - cfg.cooldownSeconds - 1
+	request("load", {slot = 4})
+	res = lastOf("result")
+	eq(res.ok, false, "four keystones: the load is refused")
+	eq(res.text, "You can hold at most 3 keystones. Refund one to take another.", "the refusal text of the tree")
+	eq(table.concat(presets[gid] or {}, ","), liveBefore, "refused: the live tree is as it was")
+	eq(applied, appliedBefore, "refused: nothing was applied")
+	eq(DB[gid][4].tree, C.formatNodes(four), "refused: the saved loadout is not trimmed")
+	eq(LO.switch(player, 4), false, "the switch itself refuses too (a channel that just ended)")
+	eq(select(2, LO.switch(player, 4)), "You can hold at most 3 keystones. Refund one to take another.", "switch: the same text")
+	DB[gid][4].tree = C.formatNodes(three)
+	storages[7100572] = os.time() - cfg.cooldownSeconds - 1
+	request("load", {slot = 4})
+	res = lastOf("result")
+	eq(res.ok, true, "three keystones: the load works")
+	eq(ChaosPassiveTreeCore.countKeystones(tree, presets[gid]), 3, "the live tree holds the 3")
+end
+
 print(string.format("loadouts_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

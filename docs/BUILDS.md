@@ -185,7 +185,7 @@ and Hollow Palm; Templar Choir Herald, Tithebound and Hollow Vessel.
 The Auto build button of the passive tree offers three Recommended builds per class (`passive_builds_config.lua` `roles`).
 Since O442 they are three different ways to play, not three stat fills: each walks to its own one to three keystones,
 and no two builds of a class hold the same set (`tests/passive_builds_test.lua`). The Focus list reaches every other
-keystone a class may hold (five new themes: Traps and mines, Party support, Retaliation, Area clearing, Single target). The
+keystone a class may hold, three at most in one build (five new themes: Traps and mines, Party support, Retaliation, Area clearing, Single target). The
 list shows the build's line under its name: what it does and what it costs. The tank build of a class, where it had one,
 is as it was: the survival model takes the median of the role builds. Several other builds use the Hybrid fill (health and
 resistances with the damage nodes) for the same reason; the Ranger, Deadeye and Inquisitor live longer than before, and
@@ -263,6 +263,27 @@ all 62 that hold one; the last keystone of any build arrives by 73 points.
 | Sentinel | **Bastion** (tank) | Bastion | Bastion widens your aura and covers the party. | little damage. |
 |  | **Reliquary Keeper** (support) | Reliquary Vow | A Reliquary Warden follows you: it heals and buffs the party and burns enemies. | your own damage is 10% weaker. |
 |  | **Retributor** (retaliation) | Thorns, Thornbound Oath, Penitent's Wrath | Thorns, Thornbound Oath and Penitent's Wrath: attackers pay for every hit. | your damage is 10% weaker, your aura is halved. |
+
+## Keystone cap (O447)
+
+Owner decision of 2026-11-09: a character holds at most 3 keystones. The rule is in before the beta wipe of 2026-11-18,
+so no refund event is needed beyond the login refund below. The number is `keystoneMax` in `passivetree_config.lua`.
+
+- **What counts.** Every node the tree data marks as a keystone, 38 nodes. 24 archetype keystones (the three rounds), the
+  pair 621 and 624 (one keystone per class), the 4 line keystones (369, 376, 383, 390) and the 8 class section keystones.
+  Masteries and class notables do not count. The code reads the data (`passivetree_core.lua` `keystoneKind`) and the
+  client marks the same 38 nodes. Paragon, Vocation Trial nodes and the Rift Atlas (its own cap of 1) are not tree keystones.
+- **Where it is checked.** One core function, `checkKeystones`, at every door that writes a tree: a plain save, a plan,
+  a build code import, an Auto build, a loadout load. Apply on top of a tree adds the build to the keystones you hold, so it
+  can be refused; Reset and apply always fits. A refused action changes nothing and says "You can hold at most 3
+  keystones. Refund one to take another."
+- **Old saves.** A loadout or build code that holds 4 or more is refused whole, never trimmed. A character over the cap at
+  login gets its whole tree back for free, once, with a message. The trending builds list no build over the cap.
+- **Builds.** The generator never takes a fourth keystone, for any point budget (`tests/passive_builds_test.lua`).
+  Recommended builds hold 1 to 3; the Templar Shield Wall holds none, as it was. Two Focus builds took a fourth keystone
+  before and stop at 3 now: Deadeye Single target and Juggernaut Retaliation.
+- **Hollow Palm.** Hollow Vessel and Aether Edge are 2 keystones. It stays legal and as it is.
+- **The window.** "Keystones 2/3" sits beside the points. A keystone you cannot take says why in its tooltip.
 
 ## Leveling notes
 

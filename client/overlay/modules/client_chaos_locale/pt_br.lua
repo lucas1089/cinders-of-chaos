@@ -4342,6 +4342,10 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Class: %s"] = "Classe: %s",
   ["Requires: %s."] = "Requer: %s.",
   ["Your class has no keystone here."] = "Sua classe não tem keystone aqui.",
+  -- the keystone cap (O447; game_passivetree treekeystones.lua, passivetree.lua, planner.lua, autobuildview.lua)
+  ["Keystones %d/%d"] = "Keystones %d/%d",
+  ["You can hold at most %d keystones. Refund one to take another."] = "Você pode ter no máximo %d keystones. Devolva um para pegar outro.",
+  ["Apply: not possible."] = "Aplicar: não é possível.",
   ["Hold Alt for what each bonus does."] = "Segure Alt para ver o que cada bônus faz.",
   ["Open these cards the first time a window opens"] = "Abrir estes cartões na primeira vez que uma janela abre",
   -- game_crafting Guide window (craftguide.lua, craftguideview.lua)

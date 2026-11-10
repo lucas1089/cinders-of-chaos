@@ -253,8 +253,12 @@ local function layoutToolbar(bar)
 	end
 	-- the Primary / Secondary line starts after the counters
 	local points, boss, header = bar:getChildById("points"), bar:getChildById("bossPoints"), bar:getChildById("statHeader")
+	local keystones = bar:getChildById("keystones")
 	if header and points then
 		local margin = 24
+		if keystones and keystones:isExplicitlyVisible() then
+			margin = margin + 16 + keystones:getWidth() -- the keystone counter sits between the points and the boss points
+		end
 		if boss and boss:isExplicitlyVisible() then
 			margin = margin + 16 + boss:getWidth()
 		end
@@ -304,6 +308,59 @@ local function setTreePointsText()
 		label:setText(tr('%s points', formatShortNumber(pointsOwned)))
 	end
 	layoutTreeToolbar()
+end
+
+-- The keystone cap (O447): a character holds at most `keystoneMax` keystones. The number comes with every sendNodes
+-- (server passivetree_config.lua keystoneMax); treekeystones.lua counts the saved and planned keystones of the window.
+local keystoneMax = 3 -- TreeKeystones.DEFAULT_MAX (treekeystones.lua pins it to the server's config); sendNodes sets the live one
+local keystoneCapped = false
+
+-- the keystones held now: the saved ones and the planned ones (the own tree only)
+function getTreeKeystones()
+	local plannedIds = plannerIds and plannerIds() or {}
+	return TreeKeystones.held(treeData.nodes or {}, getTreeSaved(), plannedIds), keystoneMax
+end
+
+-- the line a keystone's tooltip gets when the cap is full
+function getTreeKeystoneCapText()
+	return tr("You can hold at most %d keystones. Refund one to take another.", keystoneMax)
+end
+
+-- the counter "Keystones 2/3" in the toolbar and the cap note in the tooltips of the keystones not taken. Called after
+-- every change of the saved or planned nodes (applyAllocation, the planner).
+function refreshTreeKeystones()
+	local label = window and window:recursiveGetChildById("keystones")
+	if not label then
+		return
+	end
+	local held, max = getTreeKeystones()
+	if isTreeReadOnly() then
+		label:setVisible(false)
+		label:setText("")
+	else
+		label:setText(tr("Keystones %d/%d", held, max))
+		label:setColor(held >= max and "#d8a03a" or "#f0d79a")
+		label:setTooltip(getTreeKeystoneCapText())
+		label:setVisible(true)
+	end
+	local capped = held >= max
+	if capped ~= keystoneCapped then
+		keystoneCapped = capped
+		-- the tooltips of the keystones that are not taken say why they cannot be
+		for id, node in pairs(treeData.nodes or {}) do
+			local widget = node.isKeystone and getTreeNodeWidget(id)
+			if widget and not widget:isDestroyed() then
+				setNodeTooltip(widget, node)
+			end
+		end
+	end
+	layoutTreeToolbar()
+end
+
+-- true when taking `extra` more keystones (the ones on a path to a clicked node) would go past the cap
+function treeKeystonesOver(extra)
+	local held, max = getTreeKeystones()
+	return TreeKeystones.over(held, extra, max)
 end
 
 function create()
@@ -553,6 +610,10 @@ function setNodeTooltip(widget, node)
 		-- keystones: the class's own description lines under the stats (a class node: its own lines)
 		for _, line in ipairs(TreeText.lines((vocationNode and vocationNode.stats) or ((node.classes or node.isKeystone) and node.stats) or {})) do
 			table.insert(texts, line)
+		end
+		-- the keystone cap (O447): a keystone that is not held cannot be taken while the cap is full
+		if node.isKeystone and keystoneCapped and not viewing and not node.alloc and not node.planned and not node.locked then
+			table.insert(texts, tr("You can hold at most %d keystones. Refund one to take another.", keystoneMax))
 		end
 		if node.locked then
 			local names = {}
@@ -1524,6 +1585,9 @@ function updateNodes(data)
 			savedIds[id] = true
 		end
 	end
+	-- the keystone cap and the counter (O447)
+	keystoneMax = TreeKeystones.max(data.keystoneMax)
+	refreshTreeKeystones()
 	if type(data.vocation) == "string" then
 		serverVocation = data.vocation
 	end

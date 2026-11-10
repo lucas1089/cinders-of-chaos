@@ -11,6 +11,10 @@
 --   ChaosPassiveTreeCore.checkMasteryChange(tree, current, masteries, id, choice)  changing the effect of a saved mastery
 --   ChaosPassiveTreeCore.reworkedSince(list, seen, tree, variantKey) / dropNodes(tree, ids, drop)   the free refund of reworked nodes
 --   ChaosPassiveTreeCore.debt(held, total)           nodes held above the points owned (0 or more); never a reason to remove any
+--   ChaosPassiveTreeCore.keystoneKind(node)          "archetype" | "pair" | "line" | "ascension" | nil (O447, see "keystones")
+--   ChaosPassiveTreeCore.countKeystones(tree, ids)   how many keystones a node set holds (the number the cap limits)
+--   ChaosPassiveTreeCore.checkKeystones(tree, ids, cfg)   true, or nil + the refusal text + "keystones" (the cap of O447)
+--   ChaosPassiveTreeCore.overCapPresets(tree, rows, cfg)   the saved presets that hold more keystones than the cap
 --
 -- Saved allocation text (the `nodes` column of chaos_passive_tree and the `tree` column of chaos_loadouts):
 --   "2,3,9"              node ids (root excluded), as before
@@ -25,7 +29,7 @@ ChaosPassiveTreeCore = ChaosPassiveTreeCore or {}
 local M = ChaosPassiveTreeCore
 
 local function config(cfg)
-	return cfg or ChaosPassiveTreeConfig or {maxPlanNodes = 300}
+	return cfg or ChaosPassiveTreeConfig or {maxPlanNodes = 300, keystoneMax = 3}
 end
 
 local function int(value)
@@ -39,6 +43,124 @@ end
 -- nodes held above the points owned (O190: a lost level makes this positive; the allocation stays, see passivetree.lua)
 function M.debt(held, total)
 	return math.max(0, (tonumber(held) or 0) - math.max(0, tonumber(total) or 0))
+end
+
+-- ------------------------------------------------------------------------------------------------ keystones (O447)
+-- Owner decision 2026-11-09: a character holds at most config.keystoneMax (3) keystones. What counts is read from the
+-- tree data, never from a list: a node is a keystone when its stats, or the stats of one of its class variants, carry a
+-- keystone flag (ks* or ar*; the ct* flags are class notables, not keystones). The kinds and what they hold today:
+--   "archetype"  an ar* flag in the node's own stats (the build archetypes, rounds 1 to 3)               24 nodes
+--   "pair"       ks* flags only in the class variants (`v`): the nodes 621 and 624, one keystone per class   2 nodes
+--   "line"       a ks* flag in the own stats of a node several classes may take (369, 376, 383, 390)       4 nodes
+--   "ascension"  a ks* flag in the own stats of a node one class may take (the class sections)             8 nodes
+-- All four count: a keystone is a keystone whatever its price or its place on the map, and the client marks the same 38
+-- nodes with isKeystone. Mastery nodes (node.m) and the ct* class notables never count. The cap is per character (the
+-- active preset); a loadout or a build code is checked the same way when it is loaded or imported.
+local kindMemo = setmetatable({}, {__mode = "k"})
+
+local function flagPrefix(stats)
+	local found
+	for stat in pairs(stats or {}) do
+		if type(stat) == "string" then
+			if stat:match("^ar%u") then
+				return "ar"
+			elseif stat:match("^ks%u") then
+				found = "ks"
+			end
+		end
+	end
+	return found
+end
+
+local function classCount(node)
+	local n = 0
+	for _ in pairs(node.c or {}) do
+		n = n + 1
+	end
+	return n
+end
+
+function M.keystoneKind(node)
+	if type(node) ~= "table" or M.isMastery(node) then
+		return nil
+	end
+	local memo = kindMemo[node]
+	if memo ~= nil then
+		return memo or nil
+	end
+	local kind = false
+	local own = flagPrefix(node.s)
+	if own == "ar" then
+		kind = "archetype"
+	elseif own == "ks" then
+		kind = classCount(node) == 1 and "ascension" or "line"
+	else
+		for _, stats in pairs(node.v or {}) do
+			if flagPrefix(stats) then
+				kind = "pair"
+				break
+			end
+		end
+	end
+	kindMemo[node] = kind
+	return kind or nil
+end
+
+function M.isKeystone(node)
+	return M.keystoneKind(node) ~= nil
+end
+
+-- the keystones among ids (a list, or a set {[id] = true}; the root and unknown ids are ignored, an id twice counts
+-- once): count, list of ids (sorted)
+function M.countKeystones(tree, ids)
+	local list, seen = {}, {}
+	local function take(id)
+		id = int(id)
+		if id and not seen[id] and id ~= tree.root and M.keystoneKind(tree.nodes[id]) then
+			seen[id] = true
+			list[#list + 1] = id
+		end
+	end
+	for key, value in pairs(ids or {}) do
+		if type(value) == "boolean" then
+			take(key)
+		else
+			take(value)
+		end
+	end
+	table.sort(list)
+	return #list, list
+end
+
+function M.keystoneMax(cfg)
+	local max = int(config(cfg).keystoneMax)
+	return max and max >= 0 and max or 3
+end
+
+-- the refusal every door gives (English; i18n_strings.lua has the pt-BR line)
+function M.keystoneRefusal(cfg)
+	return string.format("You can hold at most %d keystones. Refund one to take another.", M.keystoneMax(cfg))
+end
+
+-- true when ids hold no more keystones than the cap, else nil, the refusal text, "keystones", the count
+function M.checkKeystones(tree, ids, cfg)
+	local count = M.countKeystones(tree, ids)
+	if count > M.keystoneMax(cfg) then
+		return nil, M.keystoneRefusal(cfg), "keystones", count
+	end
+	return true
+end
+
+-- rows = {{preset, name, nodes = {ids}}}: the ones over the cap, as {preset, keystones = n}
+function M.overCapPresets(tree, rows, cfg)
+	local out = {}
+	for _, row in ipairs(rows or {}) do
+		local count = M.countKeystones(tree, row.nodes)
+		if count > M.keystoneMax(cfg) then
+			out[#out + 1] = {preset = row.preset, keystones = count}
+		end
+	end
+	return out
 end
 
 -- ------------------------------------------------------------------------------------------------ saved text
@@ -237,7 +359,7 @@ end
 -- saved one changes through checkMasteryChange, which is priced).
 -- Returns {ids = saved then planned (list), added = planned (list), masteries = saved + planned choices (map)} or
 -- nil, error text, error code ("malformed", "empty", "size", "unknown", "duplicate", "owned", "class", "points",
--- "disconnected", "mastery").
+-- "disconnected", "keystones" (saved + planned hold more keystones than config.keystoneMax), "mastery").
 function M.validatePlan(tree, current, currentMasteries, plan, ctx, cfg)
 	cfg = config(cfg)
 	ctx = ctx or {}
@@ -302,6 +424,11 @@ function M.validatePlan(tree, current, currentMasteries, plan, ctx, cfg)
 		if not reached[id] then
 			return nil, string.format("Node %d is not connected to your allocated nodes.", id), "disconnected"
 		end
+	end
+	-- the keystone cap (O447): saved + planned, a plan that goes over it is refused whole
+	local capOk, capText, capCode = M.checkKeystones(tree, all, cfg)
+	if not capOk then
+		return nil, capText, capCode
 	end
 	local choices, err = M.toMap(plan.masteries)
 	if not choices then
