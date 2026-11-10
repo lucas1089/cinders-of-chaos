@@ -29629,6 +29629,42 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   (CI builds the header cut out of the patch). The patch applies on top of 0079-0087 of an already patched tree (luascript.cpp with
   fuzz 2). **Not tested:** a full build with the patch, a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.
 
+## Death and spawn effects (O456) (`deathfx_core.lua`, `deathfx_config.lua`, `deathfx.lua`, `tests/deathfx_test.lua`)
+
+Review of the animations 2026-11-10, owner approved: a monster died and appeared with no effect of its own (the loot bag of O435 replaced
+the body). Visual only: no damage, area, timing, loot or spawn rule moves. Nothing here ran on a live server.
+
+* **Hooks reused, none added.** The death is the CreatureEvent `ChaosCosmeticsDeath` of `cosmetics.lua` (registered once per monster by its
+  `onSpawn` callback; the kill cosmetics and the boss victory emote ride on it): it now also calls `ChaosDeathFx.onDeath(creature)`. The
+  spawn is the same file's EventCallback `onSpawn` (before the placement): `ChaosDeathFx.onSpawn(monster, position, startup, artificial)`.
+  `deathfx.lua` registers nothing; both calls are wrapped in `pcall`, and an engine or a server without the file sends nothing.
+* **Death.** One effect on the monster's tile by race (`MonsterType:race()`, the XML `race`): blood the blood splash 390 (2x2, 747 ms),
+  undead the bone burst 584 (3x3, 720 ms), fire the fire blast 803 (3x3, 700 ms), energy the lightning blast 798 (3x3, 630 ms), venom the
+  venom blast 811 (3x2, 700 ms). A boss (`MonsterType:isBoss()`) gets the large soft effect of its race instead: blood geyser 655 (5x5),
+  void nova 647 (7x7), fire shockwave 638 (7x7), lightning burst 652 (7x7), venom nova 645 (7x7), 600 to 910 ms. Chosen by eye on sheets of
+  pair 60 (all centred at the offsets in the config, the ones of the `ChaosVfx` rows; the test compares id, offset and length with the libs).
+* **Spawn.** A 1x1 puff of pair 50 by race, 400 to 700 ms: blood 4174, undead 4156, fire 4141, energy 4195, venom 4157. Only a map respawn.
+  Engine patch 0041 already adds a `CONST_ME_TELEPORT` to a respawn a player sees, so the puff is small and sits on top of it; if a live look
+  shows it is too much, `spawn.enabled = false` in the config and a reload.
+* **Cases.** Skipped on purpose: a creature with a master (player summons, Beastmaster wolves, Necromancer minions, a boss's adds: no body,
+  and they come in packs); a monster of an unknown race; the server start (`startup`); a monster another script created (`artificial`: rift
+  and tower packs, dungeons, generated areas, event monsters, summons), which have their own marks and could spawn 30 at once; a boss on
+  spawn (a world boss arrival already sends its own large effect). Rift, tower and guardian monsters do get the death effect, one
+  at a time like any monster, under the budget below.
+* **Cost.** One Lua call and at most one `Position:sendMagicEffect` (spectators of the tile only) per death and per respawn that passes the
+  rules, no timer, no storage, no database. A token bucket per kind caps what starts in one instant: deaths `capacity = 8`, 12 a second;
+  spawns 6 and 6 a second; a pack that dies together shows the first 8 effects and skips the rest. Bosses skip the bucket.
+* **Config.** `deathfx_config.lua`: `enabled`, `death.enabled`, `death.effects`, `death.boss`, `death.budget`, `spawn.enabled`, `spawn.skipStartup`,
+  `spawn.skipArtificial`, `spawn.effects`, `spawn.budget`. An effect is `{id, dx, dy, ms}`: the id of the client pair and the offset it is sent at.
+* **Death Mage.** `monsters/chaos/death_mage.xml` pointed at look 1539, which has no art facing east or west in the pair, so the monster was
+  invisible when it turned sideways. It now wears look 1541 (the skull-robed Dark Sorcerer look, 3x3, draws in all 4 directions; Dark Sorcerer
+  is level 810 to 850, a different band). The XML keeps a comment to return to 1539 once a pair draws it. Guard: `client/tools/sprites/check_pair.py`
+  rule `monster-look-blank-dir` (client/MANIFEST.md "Sprite tools").
+* **Tests.** `tests/deathfx_test.lua`: the shipped config, the effect per race, bosses, masters, the spawn rules, the budget on a pack and on a
+  long stream, the glue on a mocked engine, the hooks in `cosmetics.lua`, the config against the libs. **Not tested:** a kill or a respawn
+  in a client, the look on a live screen, whether `artificial` is false for a map respawn in the built engine (read from src-patch 0041 and
+  TFS 1.4: `Spawn::spawnMonster` passes false, `Game.createMonster` true).
+
 ## Launch wipe (O438) (`deploy/launch_wipe.py`, `deploy/launch_wipe_tables.json`)
 
 The beta wipe of docs/BETA.md section 9 as a tool, run as root on the game server with the game stopped. Python 3

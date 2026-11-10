@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Death Mage" nameDescription="a death mage" race="blood" experience="180000" speed="450" manacost="0">
 	<health now="250000" max="250000"/>
-	<look type="1539" corpse="6068" />
+	<!-- Look 1539 (skull robe, green staff) has no art facing east or west in the pair, so the monster vanished when it turned sideways. Return to 1539 once a pair draws it in all 4 directions (O456). Look 1541 draws in all 4 and reads as a skull-robed death mage. -->
+	<look type="1541" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
 	<flags>
 		<flag summonable="0"/>

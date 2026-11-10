@@ -115,6 +115,7 @@ class Case:
 
 def run(c, *paths, **kw):
     kw.setdefault('auras', {2})
+    kw.setdefault('monsters', {})
     return cp.check(*paths, **kw)
 
 
@@ -331,9 +332,52 @@ def test_append(c):
            {('outfit', 1561), ('outfit', 2132), ('outfit', 2133), ('outfit', 2134), ('item', 100)}, 'parse_allow')
 
 
+def test_monster_looks(c):
+    """O456: a monster look must draw in all 4 directions of its walk and idle groups."""
+    recs, items, outfits, effects, missiles = good_parts()
+    # 3: walk group of 2 phases, 4 directions; east and west blank in both phases (the Death Mage case)
+    no_side = entry(b'', [group([1, 0, 1, 0, 1, 0, 1, 0], px=4, phases=2, gtype=1)], outfit=True)
+    # 4: east blank in phase 0 only, west art in phase 1 only: every direction draws in some frame
+    some = entry(b'', [group([1, 0, 1, 1, 1, 1, 1, 0], px=4, phases=2, gtype=1)], outfit=True)
+    # 5: idle group blank facing north, walk group fine
+    idle_bad = entry(b'', [group([0, 1, 1, 1], px=4, gtype=0), group([1, 1, 1, 1], px=4, gtype=1)], outfit=True)
+    # 6: one direction pattern, art; 7: one direction pattern, empty slot (record 5)
+    one_ok = entry(b'', [group([1], gtype=1)], outfit=True)
+    one_bad = entry(b'', [group([5], gtype=1)], outfit=True)
+    p = c.pair(recs, items, outfits + [no_side, some, idle_bad, one_ok, one_bad], effects, missiles)
+    r = run(c, *p, monsters={1: ['Good'], 2: ['Aura']})
+    expect(r.ok and not r.codes('error'), f'looks that draw everywhere pass: {r.text()}')
+    r = run(c, *p, monsters={3: ['Death Mage']})
+    expect('monster-look-blank-dir' in r.codes('error') and 'facing E,W' in r.text() and 'Death Mage' in r.text(),
+           f'east and west blank is an error: {r.text()}')
+    r = run(c, *p, monsters={4: ['Some']})
+    expect(r.ok, f'a direction that draws in one frame passes: {r.text()}')
+    r = run(c, *p, monsters={5: ['Idle']})
+    expect('idle group draws nothing facing N' in r.text() and not r.ok, f'a blank idle direction: {r.text()}')
+    r = run(c, *p, monsters={6: ['One']})
+    expect(r.ok, 'a one-pattern look with art passes')
+    r = run(c, *p, monsters={7: ['Blank']})
+    expect('facing all' in r.text() and not r.ok, f'a one-pattern look with an empty slot: {r.text()}')
+    r = run(c, *p, monsters={99: ['Ghost']})
+    expect(r.ok and 'monster-look-missing' in r.codes('warning'), 'a look the pair lacks is a warning')
+    r = run(c, *p, monsters={3: ['Death Mage']}, old=p, new_only=True)
+    expect('monster-look-blank-dir' not in r.codes('error'), 'append-only mode skips the monster rule')
+    # the reader of the monster XML files
+    d = os.path.join(c.dir, 'monsters')
+    os.makedirs(os.path.join(d, 'sub'))
+    open(os.path.join(d, 'a.xml'), 'w').write('<monster name="A" race="blood"><look type="12" corpse="1"/></monster>')
+    open(os.path.join(d, 'sub', 'b.xml'), 'w').write('<monster name="B"><look typeex="2160"/></monster>')
+    open(os.path.join(d, 'sub', 'c.xml'), 'w').write('<monster name="C"><look type="12"/></monster>')
+    open(os.path.join(d, 'sub', 'd.xml'), 'w').write('<monster name="D"><look type="0"/></monster>')
+    got = cp.monster_looks(d)
+    expect(got == {12: ['A', 'C']}, f'monster_looks reads type= only: {got}')
+    # the repository's own monster files all name a look the checker can read
+    expect(len(cp.monster_looks()) > 100, 'the repository monster files give more than 100 looks')
+
+
 def main():
     c = Case()
-    for f in (test_good, test_counts, test_flags, test_animation, test_masks, test_spr, test_append):
+    for f in (test_good, test_counts, test_flags, test_animation, test_masks, test_spr, test_append, test_monster_looks):
         f(c)
     import shutil
     shutil.rmtree(c.dir, ignore_errors=True)

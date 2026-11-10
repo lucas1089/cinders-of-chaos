@@ -758,6 +758,10 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	if not ok then
 		print("[Chaos cosmetics] victory failed: " .. tostring(err))
 	end
+	-- the race effect of the death (deathfx.lua, O456): this event is the one death hook of monsters, so it rides here
+	if ChaosDeathFx and ChaosDeathFx.onDeath then
+		pcall(ChaosDeathFx.onDeath, creature)
+	end
 	if not killer or not killer.isPlayer or not killer:isPlayer() then
 		return true
 	end
@@ -774,6 +778,10 @@ if EventCallback then
 	spawn.onSpawn = function(self, position, startup, artificial)
 		if not self:getMaster() then
 			self:registerEvent("ChaosCosmeticsDeath")
+		end
+		-- the respawn puff by race (deathfx.lua, O456); a map respawn only, the rules are in deathfx_core.lua
+		if ChaosDeathFx and ChaosDeathFx.onSpawn then
+			pcall(ChaosDeathFx.onSpawn, self, position, startup, artificial)
 		end
 		return true
 	end

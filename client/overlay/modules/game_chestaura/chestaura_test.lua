@@ -59,6 +59,48 @@ local function check_strip(path, frames, px, what)
   eq(w, frames * px, what .. ': strip width'); eq(h, px, what .. ': strip height')
 end
 for id, def in pairs(L.CHESTS) do check_strip(L.chestPath(def.art), L.CHEST_FRAMES, def.px, 'chest ' .. id) end
+for id, def in pairs(L.PICKUPS) do check_strip(L.artPath(def), L.CHEST_FRAMES, def.px, 'pickup ' .. id) end
+
+-- ---------------------------------------------------------------- pickups and the two other cursed chest looks (O456)
+eq(L.chestOf(44396).art, 'portal_glow', 'the Ember portal glows'); eq(L.chestOf(44397).art, 'globe_health', 'the health globe glows')
+eq(L.chestOf(44398).art, 'globe_mana', 'the mana globe glows'); eq(L.chestOf(6068).art, 'bag_glint', 'the loot bag glints')
+for _, id in ipairs({ 44396, 44397, 44398, 6068 }) do
+  eq(L.chestOf(id).pickup, true, 'pickup ' .. id .. ' counts against the cap'); eq(L.chestOf(id).px, 64, 'pickup ' .. id .. ' is a 64 px strip')
+  eq(L.chestOf(id).big, nil, 'pickup ' .. id .. ' is one tile')
+  eq(L.CHESTS[id], nil, 'pickup ' .. id .. ' is no chest')
+end
+eq(L.chestOf(38758).pickup, nil, 'a chest is no pickup (no cap)')
+eq(L.artPath(L.chestOf(44397)), '/modules/game_chestaura/images/pickup/globe_health.png', 'pickup strip path')
+eq(L.artPath(L.chestOf(38758)), '/modules/game_chestaura/images/chest/reward_sigil.png', 'chest strip path')
+eq(L.pickupPath('bag_glint'), '/modules/game_chestaura/images/pickup/bag_glint.png', 'pickup path')
+-- the other two looks of the cursed chest: the same smoke, 2 x 2 items, centred on the corner like the coffer
+for _, id in ipairs({ 38643, 38644 }) do
+  eq(L.chestOf(id).art, 'cursed_smoke', 'cursed chest look ' .. id); eq(L.chestOf(id).big, true, id .. ' is a 2 x 2 item'); eq(L.chestOf(id).px, 64, id .. ' strip 64 px')
+  local csize, cml, cmt = L.chestBox(L.chestOf(id), 32)
+  eq(csize, 64, id .. ' widget 64 (its 2 x 2 footprint)'); eq(cml, -32, id .. ' centred on the corner of its tile'); eq(cmt, -32, id .. ' same vertically')
+end
+local psize, pml, pmt = L.chestBox(L.chestOf(6068), 32)
+eq(psize, 64, 'bag widget 64'); eq(pml, -16, 'bag centred on its tile'); eq(pmt, -16, 'same vertically')
+-- the cap: the nearest PICKUP_CAP win, ties by key, nothing flickers
+eq(L.PICKUP_CAP, 24, 'cap of 24 pickup widgets')
+local crowd = {}
+for i = 1, 40 do crowd[#crowd + 1] = { key = 'k' .. string.format('%02d', i), dist = (i % 8) + 1 } end
+local want = L.nearest(crowd, 24)
+local n = 0
+for _ in pairs(want) do n = n + 1 end
+eq(n, 24, '40 bags in view: 24 glow')
+local worst, bestOut = 0, 99
+for _, e in ipairs(crowd) do
+  if want[e.key] then worst = math.max(worst, e.dist) else bestOut = math.min(bestOut, e.dist) end
+end
+eq(worst <= bestOut, true, 'every bag that glows is at least as near as every bag that does not')
+local again = L.nearest(crowd, 24)
+local same = true
+for _, e in ipairs(crowd) do if (want[e.key] == true) ~= (again[e.key] == true) then same = false end end
+eq(same, true, 'the same crowd gives the same choice')
+local few = L.nearest({ { key = 'a', dist = 3 }, { key = 'b', dist = 1 } }, 24)
+eq(few.a and few.b, true, 'under the cap everything glows'); eq(next(L.nearest({}, 24)), nil, 'nothing in view: nothing'); eq(next(L.nearest({ { key = 'a', dist = 1 } }, 0)), nil, 'cap 0: nothing')
+eq(L.distance({ x = 10, y = 10, z = 7 }, { x = 13, y = 8, z = 7 }), 3, 'Chebyshev distance'); eq(L.distance({ x = 1, y = 1, z = 7 }, { x = 1, y = 1, z = 6 }), nil, 'another floor')
 for line = 1, #L.LINES do
   check_strip(L.footPath(line), L.FOOT_FRAMES, L.FOOT_PX, 'foot ' .. L.LINES[line])
   check_strip(L.framePath(line), 1, L.FRAME_PX, 'frame ' .. L.LINES[line])

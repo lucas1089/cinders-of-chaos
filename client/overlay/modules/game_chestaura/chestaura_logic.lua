@@ -34,14 +34,60 @@ L.CHESTS = {
   [38758] = { art = 'reward_sigil', px = 64 },                 -- the reward chest, one tile (server 32311)
   [38642] = { art = 'cursed_smoke', px = 64 },                 -- the cursed chest (server 32281)
   [38657] = { art = 'coffer_smoke', px = 128, big = true },    -- the Sealed Coffer on the big gold chest (server 32312, the retired 2 x 2 look of pair 45)
+  -- the other two looks of the cursed chest (pair 43, 2 x 2 items, server 32282 B a still and 32283 C an 8 phase loop; pair 53 left them in the
+  -- pair for chests already on a map, a new chest rolls 38642 only): the same smoke, 64 px = the 2 x 2 footprint, centred on the corner of the tile
+  [38643] = { art = 'cursed_smoke', px = 64, big = true },
+  [38644] = { art = 'cursed_smoke', px = 64, big = true },
 }
 
+-- Pickups on the floor (O456): one static frame each, so they wear a glow of the same kind (a floor widget, the same loop and timer). 64 px
+-- strips in images/pickup/, centred on the item's tile. A `pickup` entry counts against PICKUP_CAP: loot bags come in dozens.
+--   44396 the Ember portal (server 32090), 44397 the health globe (32088), 44398 the mana globe (32089): items of pair 55
+--   6068  the loot bag (the monster corpse of O435, server/README.md "Loot bag instead of corpses")
+L.PICKUPS = {
+  [44396] = { art = 'portal_glow', px = 64, pickup = true },
+  [44397] = { art = 'globe_health', px = 64, pickup = true },
+  [44398] = { art = 'globe_mana', px = 64, pickup = true },
+  [6068] = { art = 'bag_glint', px = 64, pickup = true },
+}
+L.PICKUP_CAP = 24         -- floor widgets for pickups at once; a bigger crowd of bags in view: the nearest 24 glint, the rest stay plain
+
 function L.chestOf(clientId)
-  return L.CHESTS[clientId]
+  return L.CHESTS[clientId] or L.PICKUPS[clientId]
 end
 
 function L.chestPath(art)
   return '/modules/game_chestaura/images/chest/' .. art .. '.png'
+end
+
+function L.pickupPath(art)
+  return '/modules/game_chestaura/images/pickup/' .. art .. '.png'
+end
+
+-- the strip of an entry of CHESTS or PICKUPS
+function L.artPath(def)
+  return def.pickup and L.pickupPath(def.art) or L.chestPath(def.art)
+end
+
+-- Which pickups get a widget: `list` = {{key, dist}} of the pickups in view (dist: Chebyshev tiles from the player); the `cap` nearest
+-- ones (ties by key, so the choice does not flicker), as a set {[key] = true}. Pure.
+function L.nearest(list, cap)
+  cap = cap or L.PICKUP_CAP
+  local sorted = {}
+  for _, e in ipairs(list) do sorted[#sorted + 1] = e end
+  table.sort(sorted, function(a, b)
+    if a.dist ~= b.dist then return a.dist < b.dist end
+    return tostring(a.key) < tostring(b.key)
+  end)
+  local out = {}
+  for i = 1, math.min(cap, #sorted) do out[sorted[i].key] = true end
+  return out
+end
+
+-- Chebyshev distance of two positions on one floor (nil when the floors differ)
+function L.distance(a, b)
+  if type(a) ~= 'table' or type(b) ~= 'table' or a.z ~= b.z then return nil end
+  return math.max(math.abs(a.x - b.x), math.abs(a.y - b.y))
 end
 
 -- 1 Templar, 2 Inquisitor, 3 Sentinel (the server's lineOf)
