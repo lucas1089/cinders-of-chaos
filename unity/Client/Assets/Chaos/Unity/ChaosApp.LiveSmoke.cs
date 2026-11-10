@@ -53,6 +53,7 @@ namespace Chaos.Client
             LiveSmokeEnv cfg;
             readonly LiveSmokeReport rep = new LiveSmokeReport();
             Phase phase = Phase.Start;
+            int said;
             bool logHooked;
             double startedAt, phaseAt;
             readonly int[] extCount = new int[256];
@@ -241,6 +242,12 @@ namespace Chaos.Client
                     case Phase.FirstFight: StepFirstFight(); break;
                     case Phase.NewLogout: StepNewLogout(); break;
                     case Phase.Settle:
+                        // CHAOS_LIVE_SAY: one line every 800 ms, then the settle starts again so the answers are in before the shot
+                        if (said < cfg.Say.Count)
+                        {
+                            if (NowMs - phaseAt >= 800) { app.session.Say(cfg.Say[said++]); phaseAt = NowMs; if (said == cfg.Say.Count) Debug.Log("chaos live smoke: said " + said + " lines (CHAOS_LIVE_SAY)"); }
+                            break;
+                        }
                         if (NowMs - phaseAt >= SettleMs)
                         {
                             rep.TilesDrawn = LiveSmokePlan.TilesDrawn(app.world, (int)ViewTilesW, (int)ViewTilesH);
