@@ -414,6 +414,27 @@ P.features = {
 		often = {"A node is ready for you again {respawn} minutes after you use it, and nobody can take it from you. The broker pays full price for {full} of each material a day, then {late}% up to {top}.",
 			"Um ponto de coleta fica pronto de novo para você {respawn} minutos depois de usar, e ninguém pode tirá-lo de você. O broker paga o preço cheio por {full} de cada material por dia, depois {late}% até {top}."}},
 
+	-- O464: how a hit on the character is worked out (player_defence_config.lua, defence_config.lua). No window of its own: it is
+	-- found by the help search; the character sheet shows the numbers
+	{key = "defence", title = {"Defence and resistances", "Defesa e resistências"},
+		values = function(C, H)
+			local P, D = C.playerDefence, C.defence
+			return {cap = D.resistCap, phys = D.physicalReductionCap, m1 = P.penalty.marks[1].level, p1 = P.penalty.marks[1].points,
+				m2 = P.penalty.marks[2].level, p2 = P.penalty.marks[2].points, w1 = P.penalty.marks[1].warnFrom,
+				w2 = P.penalty.marks[2].warnFrom, dodge = P.dodgeCap, block = D.blockCap, less = P.suppressLess,
+				share = P.tree.share * 100, tcap = P.tree.cap}
+		end,
+		what = {"A hit is worked out in this order: dodge and block can stop an attack, spell suppression takes {less}% off a spell, then armour and your physical reduction take a share off a physical hit (at most {phys}% together) and your resistance takes a share off the other kinds.",
+			"Um golpe é calculado nesta ordem: esquiva e bloqueio podem parar um ataque, a supressão de magia tira {less}% de um feitiço, depois a armadura e a sua redução física tiram uma parte de um golpe físico (no máximo {phys}% juntas) e a sua resistência tira uma parte dos outros tipos."},
+		who = {"Every character. Four resistances: Fire, Cold (ice, water, drowning), Lightning (energy, holy, arcane) and Chaos (earth, death, life drain, mana drain). Physical has armour instead.",
+			"Todo personagem. Quatro resistências: Fire, Cold (gelo, água, afogamento), Lightning (energia, sagrado, arcano) e Chaos (terra, morte, drenagem de vida e de mana). O físico tem armadura no lugar."},
+		levels = {"From level {m1} every resistance loses {p1} points and from level {m2} it loses {p2}. You are told from level {w1} and from level {w2}, and when you cross the mark. A negative resistance makes you take more damage.",
+			"A partir do nível {m1} toda resistência perde {p1} pontos e a partir do nível {m2} perde {p2}. Você é avisado a partir do nível {w1} e do nível {w2}, e quando passa da marca. Uma resistência negativa faz você sofrer mais dano."},
+		drops = {"Resistances, armour, dodge, block and spell suppression come from gear, the passive tree, sets, gems and charms. A resistance counts at most {cap}%. The passive tree counts {share}% of its points toward a resistance, at most {tcap}. Dodge and block count at most {dodge}% and {block}%.",
+			"Resistências, armadura, esquiva, bloqueio e supressão de magia vêm de equipamento, da árvore passiva, de conjuntos, gemas e amuletos. Uma resistência conta no máximo {cap}%. A árvore passiva conta {share}% dos seus pontos para uma resistência, no máximo {tcap}. Esquiva e bloqueio contam no máximo {dodge}% e {block}%."},
+		often = {"The character sheet (Info & Services, Character Info) shows each resistance with its sources, the penalty and the result, and your armour, dodge, block and spell suppression.",
+			"A ficha do personagem (Info & Services, Character Info) mostra cada resistência com as fontes, a penalidade e o resultado, e a sua armadura, esquiva, bloqueio e supressão de magia."}},
+
 	{key = "charms", title = {"Charms", "Amuletos"}, window = "game_charms",
 		values = function(C, H)
 			local K = C.charms
@@ -648,6 +669,47 @@ P.features = {
 			"Enquanto estiver ativo: +{xp}% de experiência dos monstros, a stamina volta x{stam} mais rápido, mais espaço e depósito, e {marks} Pact Marks por dia para visuais."},
 		often = {"Claim the Marks in this window once a day while the Pact runs; a missed day is not paid later.",
 			"Pegue as Marks nesta janela uma vez por dia enquanto o Pact estiver ativo; um dia perdido não é pago depois."}},
+
+	{key = "potions", title = {"Potion upgrades", "Melhoria de poções"},
+		values = function(C, H)
+			local P = C.potions
+			local function tier(line, n)
+				for _, e in ipairs(P.everfull) do
+					if e.line == line and e.tier == n then
+						return e
+					end
+				end
+				error("potions_config.lua: no " .. line .. " tier " .. n)
+			end
+			-- the card says one level and one material count for every line: stop when the config stops saying so
+			for n = 2, 4 do
+				assert(tier("health", n).level == tier("mana", n).level and tier("health", n).level == tier("spirit", n).level,
+					"the potion card names one level per tier: the lines differ at tier " .. n)
+			end
+			assert(tier("spirit", 1).level == 0, "the card says the first spirit flask needs no level")
+			assert(tier("spirit", 1).materialName == "health potions", "the card says the first spirit flask takes health potions")
+			assert(tier("mana", 4).materialCount == tier("spirit", 4).materialCount, "the supreme mana and spirit flasks take the same count")
+			assert(tier("health", 2).materialCount == nil and tier("spirit", 1).materialCount == nil,
+				"the card says the other tiers take upgrade.materials potions")
+			local lo, hi
+			for _, e in ipairs(P.everfull) do
+				lo = (not lo or e.price < lo) and e.price or lo
+				hi = (not hi or e.price > hi) and e.price or hi
+			end
+			local pct, coins = P.amount.everfullPct, P.upgrade.coins
+			return {npc = C.apothecary.npc, l2 = tier("health", 2).level, l3 = tier("health", 3).level,
+				l4 = tier("health", 4).level, p1 = pct[1], p2 = pct[2], p3 = pct[3], p4 = pct[4],
+				mat = P.upgrade.materials, matTop = tier("mana", 4).materialCount,
+				c1 = coins[1], c2 = coins[2], c3 = coins[3], c4 = coins[4], rmin = H.big(lo), rmax = H.big(hi)}
+		end,
+		what = {"Your Everfull health and mana potions never run out. Upgrade one and the new flask replaces the old one. A better tier gives a bigger share of your maximum on every drink: {p1}% on the first flask, then {p2}%, {p3}% and {p4}% on the great, ultimate and supreme ones, plus the potion's own roll.",
+			"Suas poções Everfull de vida e de mana nunca acabam. Melhore uma e o frasco novo substitui o antigo. Um tier melhor dá uma parte maior do seu máximo a cada gole: {p1}% no primeiro frasco, depois {p2}%, {p3}% e {p4}% nos frascos great, ultimate e supreme, além do valor próprio da poção."},
+		who = {"Every character. Health and mana: great at level {l2}, ultimate at level {l3}, supreme at level {l4}. The spirit line gives health and mana in one drink: it starts from your health flask at any level, then climbs the same tiers. Go one tier at a time. There is no way back.",
+			"Todo personagem. Vida e mana: great no nível {l2}, ultimate no nível {l3}, supreme no nível {l4}. A linha spirit dá vida e mana num gole só: começa no seu frasco de vida, em qualquer nível, e sobe pelos mesmos tiers. Um tier por vez. Não há volta."},
+		death = {"A death never takes your flasks: they are bound to you. If one is lost anyway, say \"lost\" to {npc}. She gives back your highest tier for gold: {rmin} for the first flask, up to {rmax} for the supreme.",
+			"Uma morte nunca leva os seus frascos: eles são ligados a você. Se um se perder mesmo assim, diga \"lost\" a {npc}. Ela devolve o seu tier mais alto por ouro: {rmin} pelo primeiro frasco, até {rmax} pelo supreme."},
+		often = {"Each tier once per character. Ask {npc} in the hub for an \"upgrade\": she takes your flask and {mat} ordinary potions of the new tier (great health potions for a great health flask). The first spirit flask takes {mat} health potions, and the supreme mana and spirit flasks take {matTop} ultimate ones. The store sells the same swap for Chaos Coins, with no potions needed: {c1} for the first spirit flask, then {c2}, {c3} and {c4} by tier.",
+			"Cada tier uma vez por personagem. Peça um \"upgrade\" a {npc} no hub: ela leva o seu frasco e {mat} poções comuns do novo tier (great health potions para um frasco great health). O primeiro frasco spirit leva {mat} health potions, e os frascos supreme de mana e spirit levam {matTop} ultimate. A loja vende a mesma troca por Chaos Coins, sem precisar das poções: {c1} pelo primeiro frasco spirit, depois {c2}, {c3} e {c4} por tier."}},
 
 	{key = "shop", title = {"Store", "Loja"}, window = "game_shop",
 		what = {"The Chaos store. Prices are in Chaos Coins, kept for the whole account.",

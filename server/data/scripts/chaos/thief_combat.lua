@@ -53,6 +53,23 @@ end
 
 local scripted = false -- guard: true while this file deals its own strikes
 
+-- O464: the evasion of the Thief line is one of the dodge sources of the player defence layer (player_defence.lua adds all the
+-- sources up, rolls ONE dodge of the sum for attack hits and calls the hooks of the class when it dodged: Living Shadow opens)
+ChaosPlayerDefenceSources = ChaosPlayerDefenceSources or {dodge = {}, onDodge = {}}
+ChaosPlayerDefenceSources.dodge.thief = function(player)
+	local voc = player:getVocation():getId()
+	if not C.isThiefLine(voc) then
+		return 0
+	end
+	return 100 * C.dodgeChance(voc, CT.value(player, "ctFleetShadow", "evasion") + QB.evadeBonus(player),
+		CT.value(player, "ksBlackbloodCreed", "evasionScale", 1))
+end
+ChaosPlayerDefenceSources.onDodge.thief = function(player)
+	if C.isThiefLine(player:getVocation():getId()) and CT.has(player, "ksLivingShadow") then
+		C.livingOpen(player:getId(), C.now())
+	end
+end
+
 local function hasCond(creature, ctype, subId)
 	return creature:getCondition(ctype, CONDITIONID_COMBAT, subId) ~= nil
 end
@@ -291,7 +308,9 @@ local function onDefence(player, attacker, primaryDamage, primaryType, secondary
 
 	-- Evasion
 	-- Shroud of Knives adds its evasion to the line's (quest_buffs_core.lua)
-	if C.dodges(voc, isWeapon, math.random(), CT.value(player, "ctFleetShadow", "evasion") + QB.evadeBonus(player),
+	-- (O464: with the player defence layer on, it rolled the dodge before this event and this roll is skipped)
+	local layer = ChaosPlayerDefence and ChaosPlayerDefence.active()
+	if not layer and C.dodges(voc, isWeapon, math.random(), CT.value(player, "ctFleetShadow", "evasion") + QB.evadeBonus(player),
 			CT.value(player, "ksBlackbloodCreed", "evasionScale", 1)) then
 		if ChaosCombatFx then
 			ChaosCombatFx.dodge(player)

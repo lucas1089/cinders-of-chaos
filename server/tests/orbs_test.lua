@@ -403,7 +403,7 @@ C.addQuality(old, 10)
 eq(old:getCustomAttribute("rarity_swordSkill"), 3, "an old modifier without a tier keeps its number (the legacy tables)")
 C.addQuality(old, 10)
 eq(old:getCustomAttribute("rarity_swordSkill"), 3, "and quality 20 does not scale it")
-eq(old:getCustomAttribute("chaos_modv"), 2, "reading marked the item")
+eq(old:getCustomAttribute("chaos_modv"), 3, "reading marked the item")
 eq(M.scaleQuality(5, 20), 6); eq(M.scaleQuality(10, 7), 11); eq(M.scaleQuality(1, 20), 1); eq(M.scaleQuality(0, 20), 0)
 eq(select(2, C.check("whetstone", put(newItem(2400)))), "needRarity")
 -- an item with no attack, defence or armour of its own type has nothing for the quality to act on

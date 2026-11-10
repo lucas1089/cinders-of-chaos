@@ -119,6 +119,10 @@ eq(say("upgrade"):find("I have no upgrade", 1, true) ~= nil, true, "no flask: no
 local base = hold(32085)
 player.level = 79
 eq(say("upgrade"):find("level 80", 1, true) ~= nil, true, "level 79: the great tier is offered, with its level")
+-- O465: the pt-BR words give the same answer as "upgrade"
+eq(say("quero melhorar"), say("upgrade"), "melhorar is an upgrade")
+eq(say("melhoria"), say("upgrade"), "melhoria is an upgrade")
+say("no")
 player.level = 100
 -- two ways from the starting health flask at level 80: health or spirit (O247: the spirit line starts at tier 1)
 local r = say("I want an upgrade")

@@ -39,7 +39,7 @@
 		{"level": 300, "cards": ["bosses"]},
 		{"level": 800, "cards": ["raid"]}
 	],
-	"anytime": ["weeklychest", "embercache", "season", "spelldamage", "bestiary", "achievements", "itemfinder", "guild", "pact", "shop"],
+	"anytime": ["weeklychest", "embercache", "season", "spelldamage", "bestiary", "defence", "achievements", "itemfinder", "guild", "pact", "potions", "shop"],
 	"cards": {
 		"tower": {
 			"title": {"en": "Infinity Tower", "pt-BR": "Infinity Tower"},
@@ -296,6 +296,18 @@
 				{"id": "often", "text": {"en": "A node is ready for you again 6 minutes after you use it, and nobody can take it from you. The broker pays full price for 100 of each material a day, then 50% up to 200.", "pt-BR": "Um ponto de coleta fica pronto de novo para você 6 minutos depois de usar, e ninguém pode tirá-lo de você. O broker paga o preço cheio por 100 de cada material por dia, depois 50% até 200."}}
 			]
 		},
+		"defence": {
+			"title": {"en": "Defence and resistances", "pt-BR": "Defesa e resistências"},
+			"level": null,
+			"menu": null,
+			"rows": [
+				{"id": "what", "text": {"en": "A hit is worked out in this order: dodge and block can stop an attack, spell suppression takes 50% off a spell, then armour and your physical reduction take a share off a physical hit (at most 90% together) and your resistance takes a share off the other kinds.", "pt-BR": "Um golpe é calculado nesta ordem: esquiva e bloqueio podem parar um ataque, a supressão de magia tira 50% de um feitiço, depois a armadura e a sua redução física tiram uma parte de um golpe físico (no máximo 90% juntas) e a sua resistência tira uma parte dos outros tipos."}},
+				{"id": "who", "text": {"en": "Every character. Four resistances: Fire, Cold (ice, water, drowning), Lightning (energy, holy, arcane) and Chaos (earth, death, life drain, mana drain). Physical has armour instead.", "pt-BR": "Todo personagem. Quatro resistências: Fire, Cold (gelo, água, afogamento), Lightning (energia, sagrado, arcano) e Chaos (terra, morte, drenagem de vida e de mana). O físico tem armadura no lugar."}},
+				{"id": "levels", "text": {"en": "From level 250 every resistance loses 30 points and from level 500 it loses 60. You are told from level 240 and from level 490, and when you cross the mark. A negative resistance makes you take more damage.", "pt-BR": "A partir do nível 250 toda resistência perde 30 pontos e a partir do nível 500 perde 60. Você é avisado a partir do nível 240 e do nível 490, e quando passa da marca. Uma resistência negativa faz você sofrer mais dano."}},
+				{"id": "drops", "text": {"en": "Resistances, armour, dodge, block and spell suppression come from gear, the passive tree, sets, gems and charms. A resistance counts at most 75%. The passive tree counts 50% of its points toward a resistance, at most 30. Dodge and block count at most 75% and 75%.", "pt-BR": "Resistências, armadura, esquiva, bloqueio e supressão de magia vêm de equipamento, da árvore passiva, de conjuntos, gemas e amuletos. Uma resistência conta no máximo 75%. A árvore passiva conta 50% dos seus pontos para uma resistência, no máximo 30. Esquiva e bloqueio contam no máximo 75% e 75%."}},
+				{"id": "often", "text": {"en": "The character sheet (Info & Services, Character Info) shows each resistance with its sources, the penalty and the result, and your armour, dodge, block and spell suppression.", "pt-BR": "A ficha do personagem (Info & Services, Character Info) mostra cada resistência com as fontes, a penalidade e o resultado, e a sua armadura, esquiva, bloqueio e supressão de magia."}}
+			]
+		},
 		"charms": {
 			"title": {"en": "Charms", "pt-BR": "Amuletos"},
 			"level": 15,
@@ -472,6 +484,17 @@
 				{"id": "who", "text": {"en": "Every account. One purchase gives 30 days; more purchases add time. The experience bonus does not reach season characters.", "pt-BR": "Toda conta. Uma compra dá 30 dias; mais compras somam tempo. O bônus de experiência não vale para personagens de temporada."}},
 				{"id": "drops", "text": {"en": "While it runs: +10% experience from monsters, stamina comes back x1.5 faster, more storage and room, and 5 Pact Marks a day for looks.", "pt-BR": "Enquanto estiver ativo: +10% de experiência dos monstros, a stamina volta x1.5 mais rápido, mais espaço e depósito, e 5 Pact Marks por dia para visuais."}},
 				{"id": "often", "text": {"en": "Claim the Marks in this window once a day while the Pact runs; a missed day is not paid later.", "pt-BR": "Pegue as Marks nesta janela uma vez por dia enquanto o Pact estiver ativo; um dia perdido não é pago depois."}}
+			]
+		},
+		"potions": {
+			"title": {"en": "Potion upgrades", "pt-BR": "Melhoria de poções"},
+			"level": null,
+			"menu": null,
+			"rows": [
+				{"id": "what", "text": {"en": "Your Everfull health and mana potions never run out. Upgrade one and the new flask replaces the old one. A better tier gives a bigger share of your maximum on every drink: 6% on the first flask, then 8%, 10% and 12% on the great, ultimate and supreme ones, plus the potion's own roll.", "pt-BR": "Suas poções Everfull de vida e de mana nunca acabam. Melhore uma e o frasco novo substitui o antigo. Um tier melhor dá uma parte maior do seu máximo a cada gole: 6% no primeiro frasco, depois 8%, 10% e 12% nos frascos great, ultimate e supreme, além do valor próprio da poção."}},
+				{"id": "who", "text": {"en": "Every character. Health and mana: great at level 80, ultimate at level 130, supreme at level 200. The spirit line gives health and mana in one drink: it starts from your health flask at any level, then climbs the same tiers. Go one tier at a time. There is no way back.", "pt-BR": "Todo personagem. Vida e mana: great no nível 80, ultimate no nível 130, supreme no nível 200. A linha spirit dá vida e mana num gole só: começa no seu frasco de vida, em qualquer nível, e sobe pelos mesmos tiers. Um tier por vez. Não há volta."}},
+				{"id": "death", "text": {"en": "A death never takes your flasks: they are bound to you. If one is lost anyway, say \"lost\" to Veyra the Apothecary. She gives back your highest tier for gold: 100 for the first flask, up to 21,000 for the supreme.", "pt-BR": "Uma morte nunca leva os seus frascos: eles são ligados a você. Se um se perder mesmo assim, diga \"lost\" a Veyra the Apothecary. Ela devolve o seu tier mais alto por ouro: 100 pelo primeiro frasco, até 21.000 pelo supreme."}},
+				{"id": "often", "text": {"en": "Each tier once per character. Ask Veyra the Apothecary in the hub for an \"upgrade\": she takes your flask and 40 ordinary potions of the new tier (great health potions for a great health flask). The first spirit flask takes 40 health potions, and the supreme mana and spirit flasks take 60 ultimate ones. The store sells the same swap for Chaos Coins, with no potions needed: 20 for the first spirit flask, then 30, 50 and 70 by tier.", "pt-BR": "Cada tier uma vez por personagem. Peça um \"upgrade\" a Veyra the Apothecary no hub: ela leva o seu frasco e 40 poções comuns do novo tier (great health potions para um frasco great health). O primeiro frasco spirit leva 40 health potions, e os frascos supreme de mana e spirit levam 60 ultimate. A loja vende a mesma troca por Chaos Coins, sem precisar das poções: 20 pelo primeiro frasco spirit, depois 30, 50 e 70 por tier."}}
 			]
 		},
 		"shop": {

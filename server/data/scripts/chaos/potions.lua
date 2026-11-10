@@ -134,9 +134,47 @@ end
 forget:type("logout")
 forget:register()
 
+-- ---------------------------------------------------------------- the upgrade hint (O465)
+-- ONE toast and chat line when a character reaches the level of an Everfull tier it can take and does not own (README
+-- "Potions", "Upgrade hint (O465)"; rules potions_core.lua hintDue, numbers potions_config.lua hint). On level-up at once;
+-- at login a few seconds later, for a character that is already past it. Once per tier: ChaosPotions.hint writes the mark
+-- first, so the login check after a level-up check (or the other way round) finds nothing to say.
+local function hintNow(player)
+	local ok, err = pcall(PT.hint, player)
+	if not ok then
+		print("[potions] upgrade hint for " .. tostring(player:getName()) .. " failed: " .. tostring(err))
+	end
+end
+
+local function hintLater(player)
+	local h = PT.cfg().hint
+	if not (h and h.enabled) or type(addEvent) ~= "function" then
+		return
+	end
+	local pid = player:getId()
+	addEvent(function()
+		local p = Player(pid)
+		if p then
+			hintNow(p)
+		end
+	end, h.delayMs or 6000)
+end
+
+local advance = CreatureEvent("ChaosPotionsAdvance")
+function advance.onAdvance(player, skill, oldLevel, newLevel)
+	if skill == SKILL_LEVEL and newLevel > oldLevel then
+		hintNow(player)
+	end
+	return true
+end
+advance:type("advance")
+advance:register()
+
 local login = CreatureEvent("ChaosPotionsLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosPotionsForget")
+	player:registerEvent("ChaosPotionsAdvance")
+	hintLater(player)
 	local c = PT.cfg()
 	local okR, errR = pcall(PT.rebind, player)
 	if not okR then

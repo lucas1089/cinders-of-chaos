@@ -18,6 +18,9 @@
 --   ruined                                         true on an item an Orb of Ruin ruined: no orb changes it any more
 --   corrupted                                      true on an item a Void Orb corrupted: no orb changes it any more
 --   unique = {name, set = {key, name, have, total, pieces, bonuses}}  uniques only; set: a set piece (T.setInfo)
+--   passive = {name, text, flavor, fit, warn}      a unique's power as a block (T.splitPassive); fit = the line "Works for your
+--                                                  class." / "Asleep: ..." (item_tooltip.lua, O467), warn = it sleeps
+--   codex = "unique:<id>" | "set:<key>"            the Codex page of a unique or set piece (T.codexId, O467)
 --   set = {..., tier, tiers}  a plain item that is a piece of an open set (pair 28): the same block, the active tier
 --   base = [{k, l, v, fmt}]                        attack, defense, armour, hit chance, range, attack speed, element,
 --                                                  the item type's own bonuses (skills, protections, speed, ...)
@@ -567,6 +570,19 @@ function T.splitPassive(desc, texts, name)
 			local flavor = (desc:sub(1, from - 1) .. " " .. desc:sub(to + 1)):gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "")
 			return {name = name, text = rule, flavor = flavor}
 		end
+	end
+	return nil
+end
+
+-- the Codex page that explains a unique (O467; right-click > Open in Codex in client game_codex): "unique:<item id>" when
+-- the Codex has a page for it (byId = ChaosUniqueById, the list tools/gen_codex_data.lua builds the Uniques tab from), else
+-- "set:<set key>" for a set piece (set = tip.unique.set), else nil
+function T.codexId(id, byId, set)
+	if type(byId) == "table" and byId[id] then
+		return "unique:" .. tostring(id)
+	end
+	if type(set) == "table" and type(set.key) == "string" and set.key ~= "" then
+		return "set:" .. set.key
 	end
 	return nil
 end

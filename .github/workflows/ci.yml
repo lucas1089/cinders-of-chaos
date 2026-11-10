@@ -1158,6 +1158,12 @@ jobs:
       - name: Base rain off in config.lua (patch_base_rain.py, install_all step baserain)
         run: python3 -I server/tools/patch_base_rain_test.py
 
+      - name: Engine armour off for players (patch_base_armor_percent.py, install_all step armourlayer, O464)
+        run: python3 -I server/tools/patch_base_armor_percent_test.py
+
+      - name: Base absorb event leaves a player to the player defence layer (patch_base_absorb_player.py, install_all step absorbplayer, O464)
+        run: python3 -I server/tools/patch_base_absorb_player_test.py
+
       - name: Base waypoints open for everyone (patch_base_waypoints.py, install_all step waypoints, O386)
         run: python3 -I server/tools/patch_base_waypoints_test.py
 

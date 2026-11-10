@@ -427,6 +427,36 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local st, t = stateOf(creature), now()
+	if pw.emberstep and attacker and P.hardHit(total, creature:getMaxHealth()) and creature:getHealth() > total
+			and P.roll(pw.emberstep) and P.ready(st.cd, "emberstep", t, CFG.emberstep.cooldownMs) then
+		local id = creature:getId()
+		addEvent(function() -- after the hit: the blink must not run inside the damage call
+			local p = Player(id)
+			if p and p:getHealth() > 0 then
+				emberStep(p)
+			end
+		end, 0)
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+taken:register()
+
+-- Last Breath (O464): a lethal hit leaves the player at a share of the health. A separate event of the player that runs after
+-- EVERY damage multiplier and reduction (login event "ChaosZLastBreathLogin" sorts after every other Chaos login event), so the
+-- lethal test sees the damage that would really land. It was a part of ChaosPowersTaken, in the middle of the order.
+local lastBreathEv = CreatureEvent("ChaosPowersLastBreath")
+function lastBreathEv.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	if guard or primaryType == COMBAT_HEALING or not creature:isPlayer() then
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
+	local pw = powersOf(creature)
+	if not (pw and pw.lastbreath) then
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
+	local total = math.abs(primaryDamage) + math.abs(secondaryDamage)
+	if total <= 0 then
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
 	if pw.lastbreath then
 		-- health + energy shield: the shield (engine patch 0015) takes its part after this event
 		local newDamage, healTo = P.lastBreath(creature:getHealth() + (creature.getEnergyShield and creature:getEnergyShield() or 0),
@@ -448,19 +478,17 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			return primaryDamage, primaryType, secondaryDamage, secondaryType
 		end
 	end
-	if pw.emberstep and attacker and P.hardHit(total, creature:getMaxHealth()) and creature:getHealth() > total
-			and P.roll(pw.emberstep) and P.ready(st.cd, "emberstep", t, CFG.emberstep.cooldownMs) then
-		local id = creature:getId()
-		addEvent(function() -- after the hit: the blink must not run inside the damage call
-			local p = Player(id)
-			if p and p:getHealth() > 0 then
-				emberStep(p)
-			end
-		end, 0)
-	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
-taken:register()
+lastBreathEv:register()
+
+local lastBreathLogin = CreatureEvent("ChaosZLastBreathLogin")
+function lastBreathLogin.onLogin(player)
+	player:registerEvent("ChaosPowersLastBreath")
+	return true
+end
+lastBreathLogin:type("login")
+lastBreathLogin:register()
 
 -- item_mods.lua: a dodged or blocked hit (kind "dodge" / "block")
 M.onAvoid = function(player, attacker, kind)

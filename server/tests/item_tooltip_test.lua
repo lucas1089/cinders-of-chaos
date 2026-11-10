@@ -236,7 +236,7 @@ sword:setCustomAttribute("rarity", 4) -- Epic: tier 2
 sword:setCustomAttribute("combatPowerLevel", 37)
 sword:setCustomAttribute("rarity_physicalAbsorb", 2)
 sword:setCustomAttribute("rarity_swordSkill", 1)
-sword:setCustomAttribute("chaos_modv", 2) -- numbers of O461: read as they are, not upgraded (the upgrade has its own tests)
+sword:setCustomAttribute("chaos_modv", 3) -- numbers of O461: read as they are, not upgraded (the upgrade has its own tests)
 sword:setCustomAttribute("rarity_criticalHitChance", 2)
 sword:setCustomAttribute("rarity_criticalHitAmount", 1)
 sword:setCustomAttribute("rarity_elementfire", 7)
@@ -588,6 +588,15 @@ do
 	eq(T.splitPassive("Plain text.", {en}, "Hungry Blade"), nil, "no passive text in it")
 	eq(T.splitPassive(nil, {en}, "Hungry Blade"), nil, "no description")
 	eq(T.splitPassive(en, {en}, ""), nil, "no name")
+end
+
+-- the Codex page of a unique or set piece (O467): the unique page when the Codex has one, else the set page
+do
+	eq(T.codexId(8209, {[8209] = {}}, nil), "unique:8209", "a unique with a page")
+	eq(T.codexId(8209, {[8209] = {}}, {key = "ember"}), "unique:8209", "a set piece with a unique page: the unique page")
+	eq(T.codexId(7384, {[8209] = {}}, {key = "ember"}), "set:ember", "a set piece without one: its set page")
+	eq(T.codexId(7384, {[8209] = {}}, nil), nil, "no page at all")
+	eq(T.codexId(7384, nil, {key = ""}), nil, "an empty set key is no page")
 end
 
 print(string.format("item_tooltip_test: %d checks OK", checks))

@@ -254,6 +254,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the real map and writes nothing)
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
                type (README "Absorb ceiling"; matches engine patch 0049)
+  absorbplayer tools/patch_base_absorb_player.py the base absorb event returns a player's hit unchanged while the player defence layer
+               is on: the layer applies the same storages first (README "Player defence (O464)"; after absorbceiling)
+  armourlayer  tools/patch_base_armor_percent.py config.lua armorPercentMax = 0: the engine's armour share of a player is off, the player
+               defence layer works the armour out by hit size (README "Player defence (O464)")
   openpotions  tools/patch_open_potions.py       every class drinks every health, mana and spirit potion: the vocation lists
                of the base potions.lua and the class words of the Look texts go, the level gates stay (README "Open
                potions"; after the vocations step)
@@ -1243,6 +1247,22 @@ def step_absorbceiling(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('annihilatorsolo') + 1, 'absorbceiling')  # the absorb ceiling (75 percent) in the base event
+
+
+def step_absorbplayer(server, data, ctx):
+    args = [tool('patch_base_absorb_player.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_absorb_player.py'))
+
+
+STEPS.insert(STEPS.index('absorbceiling') + 1, 'absorbplayer')  # the player defence layer takes the absorb (O464): after the ceiling patch
+
+
+def step_armourlayer(server, data, ctx):
+    args = [tool('patch_base_armor_percent.py'), server] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_armor_percent.py'))
+
+
+STEPS.insert(STEPS.index('absorbplayer') + 1, 'armourlayer')  # config.lua armorPercentMax = 0 (O464)
 
 
 def step_badges(server, data, ctx):

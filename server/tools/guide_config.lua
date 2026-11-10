@@ -53,6 +53,8 @@ G.words = {
 	stash = {"storage depot items", "depósito guardar itens"},
 	crafting = {"orbs upgrade gear modifiers gems", "orbes melhorar equipamento modificadores gemas"},
 	codex = {"orbs gems modifiers rules uniques", "orbes gemas modificadores regras únicos"},
+	defence = {"resistance resistances resist armour armor dodge block suppression penalty level 250 500 fire cold lightning chaos damage taken",
+		"resistência resistências resistir armadura esquiva bloqueio supressão penalidade nível 250 500 fogo frio raio caos dano sofrido"},
 	bounty = {"contracts tasks gold orbs", "contratos tarefas ouro orbes"},
 	daily = {"login reward streak", "recompensa login sequência"},
 	partyfinder = {"group party team", "grupo time"},
@@ -62,7 +64,8 @@ G.words = {
 	lootfilter = {"loot drops colours", "saque drops cores"},
 	tower = {"orbs floors", "orbes andares"},
 	arena = {"pvp orbs", "pvp orbes"},
-	mentor = {"help new player", "ajuda jogador novo"}
+	mentor = {"help new player", "ajuda jogador novo"},
+	potions = {"potion upgrade improve pot flask everfull health mana spirit apothecary veyra", "poção pocao melhorar pot frasco everfull vida mana espírito boticária"}
 }
 
 -- the headings of the website page (the client has its own tr() texts)

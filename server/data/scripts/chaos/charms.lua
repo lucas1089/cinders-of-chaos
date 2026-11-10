@@ -858,6 +858,12 @@ targetCb.onTargetCombat = function(creature, target)
 end
 targetCb:register()
 
+-- the resistance of the placed charms to a damage type (percent), for the player defence layer (O464)
+function CH.resistOf(player, ctype)
+	local st = CH.players[player:getGuid()]
+	return st and st.own and Core.resistPct(cfg, st.own, ctype) or 0
+end
+
 local taken = CreatureEvent("ChaosCharmsTaken")
 function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if primaryType == COMBAT_HEALING or not creature:isPlayer() then
@@ -867,11 +873,13 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if not st or not st.own then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	local r1 = Core.resistPct(cfg, st.own, primaryType)
+	-- O464: a player's resistances are a source of the player defence layer (ChaosPlayerDefence), not reduced here
+	local layer = ChaosPlayerDefence and ChaosPlayerDefence.active()
+	local r1 = layer and 0 or Core.resistPct(cfg, st.own, primaryType)
 	if r1 > 0 then
 		primaryDamage = Core.reduce(primaryDamage, r1)
 	end
-	local r2 = Core.resistPct(cfg, st.own, secondaryType)
+	local r2 = layer and 0 or Core.resistPct(cfg, st.own, secondaryType)
 	if r2 > 0 then
 		secondaryDamage = Core.reduce(secondaryDamage, r2)
 	end

@@ -5,7 +5,9 @@
 --           paragon (points), title (active title text), bestiary {points, rank}, bosses {got, total},
 --           pvp {name, tier, rating}, collection (score), passive {spent, total},
 --           combat {attack, hit, maxHit, attackSpeed, critChance, critAmount, lifeLeech {chance, amount}, manaLeech,
---           damage = [{k, pct}], defense, armor, mitigation, resist = [{k, pct}], maxHealth, maxMana, moveSpeed}
+--           damage = [{k, pct}], defense, armor, mitigation, resist = [{k, pct}], maxHealth, maxMana, moveSpeed;
+--           O464: resist rows are fire, cold, lightning, chaos with sum and penalty, and defence = {armourShare, reduction,
+--           dodge, block, suppress, penalty, cap} (percent)}
 --           (public by owner decision 2026-11-06, O423)}
 --   equip  {name, rows = [{slot, tip}], part}      (parts packets of equipment follow a result; each fits one message,
 --          a single big row comes in parts "S..", "P..", "E.." like the tree, joined by L.joinPart)
@@ -120,8 +122,10 @@ function L.stats(d)
 end
 
 L.TYPE_NAMES = { physical = 'Physical', fire = 'Fire', energy = 'Energy', earth = 'Earth', ice = 'Ice', holy = 'Holy', death = 'Death',
-  water = 'Water', arcane = 'Arcane', drown = 'Drowning', lifedrain = 'Life drain', manadrain = 'Mana drain' }
-L.TYPE_ORDER = { 'physical', 'fire', 'energy', 'earth', 'ice', 'holy', 'death', 'water', 'arcane', 'drown', 'lifedrain', 'manadrain' }
+  water = 'Water', arcane = 'Arcane', drown = 'Drowning', lifedrain = 'Life drain', manadrain = 'Mana drain',
+  cold = 'Cold', lightning = 'Lightning', chaos = 'Chaos' } -- O464: the four resistances are fire, cold, lightning and chaos
+L.TYPE_ORDER = { 'physical', 'fire', 'cold', 'lightning', 'chaos', 'energy', 'earth', 'ice', 'holy', 'death', 'water', 'arcane', 'drown',
+  'lifedrain', 'manadrain' }
 
 local function pct(v)
   v = tonumber(v) or 0
@@ -167,14 +171,34 @@ function L.combatStats(d)
   if has(c.defense) then add(def, tr('Defense'), L.numberText(c.defense)) end
   if has(c.armor) then add(def, tr('Armor'), L.numberText(c.armor)) end
   if has(c.mitigation) then add(def, tr('Damage reduction'), pct(c.mitigation) .. '%') end
+  local d = type(c.defence) == 'table' and c.defence or nil
+  if d then
+    add(def, tr('Armor share against a typical hit'), pct(d.armourShare) .. '%')
+    add(def, tr('Physical reduction'), pct(d.reduction) .. '%')
+    add(def, tr('Dodge'), pct(d.dodge) .. '%')
+    add(def, tr('Block'), pct(d.block) .. '%')
+    add(def, tr('Spell suppression'), pct(d.suppress) .. '%')
+  end
   if has(c.maxHealth) then add(def, tr('Maximum health'), L.numberText(c.maxHealth)) end
   if has(c.maxMana) then add(def, tr('Maximum mana'), L.numberText(c.maxMana)) end
   if has(c.moveSpeed) then add(def, tr('Movement speed'), L.numberText(c.moveSpeed)) end
   local rmap = byType(c.resist)
+  local rrow = {}
+  for _, row in ipairs(type(c.resist) == 'table' and c.resist or {}) do
+    if type(row) == 'table' and type(row.k) == 'string' then rrow[row.k] = row end
+  end
   for _, key in ipairs(L.TYPE_ORDER) do
     local v = rmap[key]
-    if v then add(res, tr(L.TYPE_NAMES[key]), pct(v) .. '%', v < 0 and C.red or C.good) end
+    if v then
+      local text = pct(v) .. '%'
+      local r = rrow[key]
+      if r and r.sum ~= nil then -- O464: the result, then the sum of the sources minus the penalty of the level
+        text = text .. string.format(' (%s - %s)', pct(r.sum), pct(r.penalty or 0))
+      end
+      add(res, tr(L.TYPE_NAMES[key]), text, v < 0 and C.red or C.good)
+    end
   end
+  if d and (tonumber(d.cap) or 75) ~= 75 then add(res, tr('Maximum resistance'), pct(d.cap) .. '%') end
   return {
     { title = tr('Offense'), rows = off },
     { title = tr('Defense'), rows = def },

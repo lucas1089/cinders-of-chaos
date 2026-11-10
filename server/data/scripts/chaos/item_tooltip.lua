@@ -228,7 +228,31 @@ local function answer(player, data)
 					if e then
 						local okP, texts = pcall(function() return {UC.text(UF, e, "pt-BR"), UC.text(UF, e, "en")} end)
 						tip.passive = okP and T.splitPassive(tip.desc, texts, e.name) or nil
+						-- does the power work for the viewer, and while it is worn: does it count (O467; the same
+						-- activeSet the passives use). Worn = the item sits in an inventory slot a passive counts.
+						if tip.passive and voc and ChaosClasses and ChaosClasses.lineKey then
+							local okF, text, warn = pcall(function()
+								local p = T.decodePos(req.pos)
+								local UP = ChaosUniquePassives
+								local worn = p and p.kind == "slot" and UP and UP.isPassiveSlot and UP.isPassiveSlot(p.slot) or false
+								local ids = worn and UP.wornIds(player) or {}
+								local info = UC.explain(UF, ids, ChaosClasses.lineKey(voc:getId()), item:getId(), worn)
+								return UC.fitText(info, function(k, ...)
+									return Chaos.t and Chaos.t(player, k, ...) or (select("#", ...) > 0 and k:format(...) or k)
+								end, function(id)
+									local spec = ChaosUniqueSpecs and ChaosUniqueSpecs[id]
+									return spec and spec.name
+								end)
+							end)
+							if okF and text then
+								tip.passive.fit, tip.passive.warn = text, warn or nil
+							end
+						end
 					end
+				end
+				-- the Codex page of a unique or set piece: right-click > Open in Codex (T.codexId, O467)
+				if type(tip) == "table" and type(tip.unique) == "table" then
+					tip.codex = T.codexId(item:getId(), ChaosUniqueById, tip.unique.set)
 				end
 				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
 				row.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)

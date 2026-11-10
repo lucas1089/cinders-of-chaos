@@ -23,8 +23,11 @@ Gen.SOURCES = {
 	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
 	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua",
 	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua",
+	"data/scripts/chaos/defence_config.lua", "data/scripts/chaos/player_defence_config.lua",
 	"data/scripts/chaos/lore_data.lua", "data/scripts/chaos/chronicle_text.lua",
-	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua"
+	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua",
+	"data/scripts/chaos/unique_passives_config.lua", "data/scripts/chaos/unique_window_core.lua",
+	"data/scripts/chaos/unique_pace_config.lua", "data/scripts/chaos/retention_loot_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -293,8 +296,20 @@ function Gen.load()
 	D.pocket = dofile("data/scripts/chaos/pocketboss_config.lua") -- pocket bosses (pocketboss.lua): the Pocket bosses page
 	D.uniques = ChaosUniqueItems
 	D.specs = ChaosUniqueSpecs
+	-- O467: the unique powers (class lines, the limit of active powers), the level window of a leveling unique, its pace
+	-- and the first unique of a character: the Uniques tab and the Basics page "Uniques" read them
+	dofile("data/scripts/chaos/unique_passives_text.lua")
+	dofile("data/scripts/chaos/unique_passives_core.lua")
+	D.passives = dofile("data/scripts/chaos/unique_passives_config.lua")
+	dofile("data/scripts/chaos/unique_window_core.lua")
+	D.uniquePace = dofile("data/scripts/chaos/unique_pace_config.lua")
+	D.retention = dofile("data/scripts/chaos/retention_loot_config.lua")
+	dofile("data/scripts/chaos/goals_core.lua") -- ChaosGoalsCore.oneIn / int: "about 1 in 2,000"
 	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
 	D.worldBoss = Chaos and Chaos.worldBoss
+	-- the defence numbers (O464): the player's layer and the numbers a monster shares with it
+	D.defence = dofile("data/scripts/chaos/defence_config.lua")
+	D.playerDefence = dofile("data/scripts/chaos/player_defence_config.lua")
 	-- Conquest Tokens (conquest.lua): the vendor's price of every unique and set piece, the bad-luck protection
 	dofile("data/scripts/chaos/conquest_core.lua")
 	D.conquest = dofile("data/scripts/chaos/conquest_config.lua")
@@ -324,6 +339,7 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- shared names
 -- ---------------------------------------------------------------------------------------------------------------
+Gen.UNIQUE_LEVEL_STEPS = 8 -- the Level filter of the Uniques tab (Gen.levelSteps)
 Gen.KINDS = {
 	{"weapon", "Weapons"}, {"shield", "Shields"}, {"helmet", "Helmets"}, {"armor", "Body armour"}, {"legs", "Legs"},
 	{"boots", "Boots"}, {"jewel", "Jewellery (amulets, rings)"}, {"other", "Other gear (gloves, belts...)"},
@@ -421,9 +437,13 @@ local function affixOverview(D, a)
 	local M = D.M
 	local top = a.tiers[#a.tiers]
 	local p = {}
-	if a.group == "absorb" then
-		p[#p + 1] = string.format("Absorbs a share of the %s damage you take (shown on the item as \"%s +N%%\"). All your %s absorb together, gear and passives, is capped at %d%%.",
-			a.label:lower(), a.label, a.label:lower(), M.config.absorbCeiling or 75)
+	if a.group == "absorb" and not a.noRoll then
+		p[#p + 1] = "Takes a share off the physical damage you take, on top of your armour. Armour and this reduction together never take more than 90% of a physical hit."
+		p[#p + 1] = "On an item: " .. a.label .. " +" .. Gen.range(top[1], top[2]) .. "% (T8)."
+	elseif a.group == "absorb" then
+		p[#p + 1] = string.format("An older modifier that no longer rolls. It counts toward the resistance of its group (%s) at its full value, and an item that carries it gets the matching resistance modifier when it is next touched.",
+			({Fire = "Fire", Ice = "Cold", Water = "Cold", Drown = "Cold", Energy = "Lightning", Holy = "Lightning", Arcane = "Lightning",
+				Earth = "Chaos", Death = "Chaos"})[a.label] or "its group")
 	elseif a.group == "skill" then
 		local skill = a.key:match("^rarity_(%a+)Skill$") or ""
 		if PROFESSIONS[skill] then
@@ -477,6 +497,28 @@ local function affixNotes(D, a, isPower)
 	if isPower then
 		notes[#notes + 1] = string.format("A legendary power: only on items of rarity %s or better, %d per item.",
 			C.rarityName(M.config.powers.minRarity), M.config.powers.maxPerItem)
+	end
+	if a.chaosKey == "armour" then
+		notes[#notes + 1] = "Flat armour, added to the armour of the pieces you wear. Armour takes A / (A + 0.07 x the hit) off a physical hit: a lot of a small hit, little of a big one. Armour and the physical reduction together never take more than 90%."
+	elseif a.chaosKey == "dodge" then
+		notes[#notes + 1] = "A chance to avoid an attack hit completely (a monster's melee and ranged attack, a player's weapon hit), any damage type. All your dodge together counts at most 75%. It never avoids a spell, a burn, poison or a field."
+	elseif a.chaosKey == "block" then
+		notes[#notes + 1] = "A chance to block an attack hit completely, any damage type. All your block together counts at most 75%. It never blocks a spell, a burn, poison or a field."
+	elseif a.chaosKey == "spellsuppress" then
+		notes[#notes + 1] = "A chance that a spell hit deals 50% less. All your spell suppression together counts at most 100%. It does not touch attacks, burns, poison or fields."
+	elseif a.chaosKey == "fireres" or a.chaosKey == "coldres" or a.chaosKey == "lightningres" or a.chaosKey == "chaosres" or a.chaosKey == "allres" then
+		notes[#notes + 1] = "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."
+		local PDC = D.playerDefence
+		if PDC and PDC.tree then
+			notes[#notes + 1] = string.format("The passive tree and Paragon count %s%% of their points toward a resistance, at most %s points from the tree; gear, sets, gems and charms count in full.", Gen.num((PDC.tree and PDC.tree.share or 1) * 100), Gen.num(PDC.tree and PDC.tree.cap or 0))
+		end
+		if a.chaosKey == "allres" then
+			notes[#notes + 1] = "Counts for Fire, Cold and Lightning, not for Chaos."
+		end
+	elseif a.chaosKey == "physpen" then
+		notes[#notes + 1] = "Takes this many points off the armour share of the monster you hit (never below 0)."
+	elseif a.chaosKey == "elepen" then
+		notes[#notes + 1] = "Takes this many points off the monster's resistance after its limit of 75, down to -100: it can turn a resistance into a weakness."
 	end
 	if a.chaosKey == "attackspeed" then
 		local cap = D.G.config.effects.attackspeed.cap
@@ -1246,6 +1288,79 @@ local function riftLootTiers(D)
 	return "tiers " .. table.concat(parts, ", ")
 end
 
+-- O467: the level window rule of a leveling unique (loot_config.lua unique.openLevel, unique_window_core.lua): the monster
+-- levels it also drops in besides its listed monsters, the weakest tier that rolls it and its chance there at its own level.
+-- nil for an entry the rule does not apply to (no window, or no monster list: it drops from any monster anyway). The wiki
+-- reads the same table (tools/gen_wiki_data.lua W.uniqueEffort).
+function Gen.uniqueWindow(D, u)
+	local lu = D.loot.unique
+	local W = ChaosUniqueWindow
+	if type(u.monsters) ~= "table" or #u.monsters == 0 then
+		return nil
+	end
+	local lo, hi = W.levels(lu.openLevel, u)
+	if not lo then
+		return nil
+	end
+	local tier
+	for _, t in ipairs(TIER_ORDER) do
+		if (lu.tierRank[t] or 0) >= (lu.tierRank[u.minTier] or 0) and (lu.tierMult[t] or 0) > 0 then
+			tier = t
+			break
+		end
+	end
+	if not tier then
+		return nil
+	end
+	local mult = W.curveAt(lu.openLevel.mult, u.level)
+	local p = math.min(lu.maxChance, (tonumber(u.chance) or 0) * lu.tierMult[tier] * mult) / 10000
+	return {lo = Chaos.huntingLevel(lo), hi = Chaos.huntingLevel(hi), level = Chaos.huntingLevel(u.level),
+		tier = TIER_NAME[tier]:lower(), n = ChaosGoalsCore.oneIn(p)}
+end
+
+-- the class lines a unique's power works for, in the order of the passive config ({"warrior", "thief"}), and every = all
+-- seven (unique_passives_core.lua; nil for a unique without a passive)
+function Gen.uniqueLines(D, id)
+	local e = ChaosUniquePassivesCore.entry(D.passives, id)
+	if not e then
+		return nil
+	end
+	local lines = {}
+	for _, key in ipairs(D.passives.lineOrder) do
+		if ChaosUniquePassivesCore.worksFor(D.passives, e, key) then
+			lines[#lines + 1] = key
+		end
+	end
+	return lines, #lines == #D.passives.lineOrder
+end
+
+-- the steps of the Level filter of the Uniques tab, derived from the levels the uniques really have: the level under
+-- which every 1/steps of the list lies, rounded up to a number a player reads at a glance (10s up to 100, 50s up to 400,
+-- 100s up to 1000, 200s above), the last step being the highest level itself
+function Gen.levelSteps(levels, steps)
+	local sorted = {}
+	for _, v in ipairs(levels) do
+		sorted[#sorted + 1] = v
+	end
+	table.sort(sorted)
+	local n = #sorted
+	if n == 0 then
+		return {}
+	end
+	local out, last = {}, 0
+	for i = 1, steps - 1 do
+		local v = sorted[math.max(1, math.ceil(n * i / steps))]
+		local unit = v <= 100 and 10 or v <= 400 and 50 or v <= 1000 and 100 or 200
+		v = math.ceil(v / unit) * unit
+		if v > last and v < sorted[n] then
+			out[#out + 1] = v
+			last = v
+		end
+	end
+	out[#out + 1] = sorted[n]
+	return out
+end
+
 function Gen.uniqueEntries(D)
 	local lu = D.loot.unique
 	local worldBosses = {}
@@ -1284,6 +1399,14 @@ function Gen.uniqueEntries(D)
 			u.bossOnly and "" or "", table.concat(chances, ", "))}
 		if #monsters > 0 then
 			sources[#sources + 1] = {u.bossOnly and "Bosses" or "Monsters", table.concat(monsters, ", ") .. "."}
+		end
+		-- a leveling unique also drops from other monsters near its level (O342, O467)
+		local win = Gen.uniqueWindow(D, u)
+		if win then
+			sources[#sources + 1] = {"Level window", string.format(
+				"Also drops from any other monster of level %d to %d that is %s or stronger, not only the listed ones. " ..
+				"At a level %d monster that is about 1 in %s %s kills (before item find); the chance changes with the monster's level.",
+				win.lo, win.hi, win.tier, win.level, Gen.num(win.n), win.tier)}
 		end
 		if #wbs > 0 then
 			local wb = D.worldBoss.reward
@@ -1328,6 +1451,15 @@ function Gen.uniqueEntries(D)
 			local text = #lines == 1 and lines[1] or (table.concat(lines, ", ", 1, #lines - 1) .. " and " .. lines[#lines])
 			itemRows[#itemRows + 1] = {"Worn by", text .. " lines"}
 		end
+		-- who the power works for (O467): the class lines of its passive, "Every class" when it lists all of them
+		local powerLines, powerAll = Gen.uniqueLines(D, u.id)
+		if powerLines then
+			local names = {}
+			for _, key in ipairs(powerLines) do
+				names[#names + 1] = ChaosUniquePassivesText.lineName[key][1]
+			end
+			itemRows[#itemRows + 1] = {"Power works for", powerAll and "Every class" or table.concat(names, ", ")}
+		end
 		itemRows[#itemRows + 1] = {"Drops from", TIER_NAME[u.minTier] .. (u.bossOnly and " (bosses only)" or " monsters and stronger")}
 		local p = {}
 		if spec then
@@ -1336,7 +1468,8 @@ function Gen.uniqueEntries(D)
 		out[#out + 1] = {id = "unique:" .. u.id, name = u.name, color = COLORS.unique,
 			sub = string.format("%s, level %d.%s", SLOT_NAME[u.slot] or u.slot, u.level,
 				#stats > 0 and (" " .. table.concat(stats, ", ")) or ""),
-			f = {kind = {kind}, level = u.level, source = u.bossOnly and "boss" or "monster", season = u.season and "season" or nil},
+			f = {kind = {kind}, level = u.level, source = u.bossOnly and "boss" or "monster", season = u.season and "season" or nil,
+				class = powerLines},
 			items = {u.id},
 			sections = {
 				{h = "Description", p = p},
@@ -1713,6 +1846,41 @@ function Gen.basicsEntries(D)
 			string.format("Orbs change items (Orbs tab); the crafting bench shows what each would do. Legendary powers roll only from %s.",
 				C.rarityName(M.config.powers.minRarity)),
 			"Uniques have fixed stats and are never changed by orbs."}}})
+	-- O467: what a unique is, what its power does and where it comes from. Every number is read from the configs.
+	local lu, up, ret = D.loot.unique, D.passives, D.retention.firstUnique
+	local tierNames = {}
+	for _, t in ipairs(TIER_ORDER) do
+		if (lu.tierMult[t] or 0) > 0 then
+			tierNames[#tierNames + 1] = TIER_NAME[t]:lower()
+		end
+	end
+	local open, pace = lu.openLevel, D.uniquePace.target
+	local where = {
+		string.format("Monsters: %s monsters can drop a unique, at most %d per kill.%s", sentenceList(tierNames), lu.maxPerKill,
+			(lu.tierMult.normal or 0) == 0 and " Normal monsters never do." or ""),
+		string.format("A leveling unique (level %d or lower, no minimum monster level) also drops from most monsters near its level: from %d%% of its level up to %s times its level plus %d. In a hunt of the right level that is about 1 unique in %d to %d kills (before item find).",
+			open.maxItemLevel, math.floor((1 - open.below) * 100 + 0.5), Gen.num(open.above), open.aboveFlat, pace.min, pace.max),
+		string.format("An endgame unique (it has a minimum monster level) drops from any monster of that level or higher, at %d%% of its chance.",
+			math.floor(lu.open.mult * 100 + 0.5)),
+		string.format("A character of level %d or lower finds a unique of its class at kill number %d, once per character.",
+			ret.maxLevel, ret.kills),
+		"Bosses, world bosses, rift and Omen chests, the raid, the Ember Descent and the Conquest vendor give uniques too. The page of a unique lists how it can be found."}
+	add("uniques", "Uniques", "What a unique is, what its power does and where it comes from.", {
+		{h = "What a unique is", p = {
+			"A unique is a named item with fixed stats. No orb changes it.",
+			"Every unique has one power of its own, the orange block under its text. It is not a stat: it changes how you play.",
+			"The power works only for the classes listed after \"For:\" in its text. A unique with no \"For:\" works for every class. A class line includes its ascended classes.",
+			"Every class its class row allows can wear the item. When your class is not on the power's list, the power sleeps and only the stats count.",
+			"The tooltip tells which it is: \"Works for your class.\" or \"Asleep: your class is not in its list.\""}},
+		{h = "How many powers work at once", p = {
+			string.format("At most %d unique powers work at once, and only one of each family. A family is a kind of effect: two uniques of the same kind do not add up.",
+				up.maxActive),
+			"When two worn uniques share a family, the stronger one wins (the one with the higher level) and the other sleeps.",
+			"The tooltip of a unique you wear says \"Active.\" or tells why its power sleeps."}},
+		{h = "Where uniques come from", p = where},
+		{h = "Reading one", p = {
+			"Hover over a unique to read it. Hold Ctrl to compare it with the item you wear in that slot. Hold Alt to read what each line means.",
+			"Right-click a unique and choose Open in Codex to open its page here, or Where to find to see where it drops."}}})
 	local rows = {}
 	for rank = 1, #C.config.rarityNames do
 		local r = ChaosRarity.idOfRank(rank)
@@ -1755,9 +1923,36 @@ function Gen.basicsEntries(D)
 			"Orbs keep the item level."},
 			cols = {"Monster level", "Item level"}, w = {50, 50}, rows = crows}})
 	add("sides", "Prefixes and suffixes", "What a prefix and a suffix are.", {
-		{h = "Sides", p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, block, dodge, reflect, thorns, penetration, ailments, maximum life and mana...).",
-			"Suffixes: utility, resistances and speed (absorbs, leech, attack and movement speed, life and mana on kill or hit, mana regeneration, attributes, experience...).",
+		{h = "Sides", p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, armour, block, dodge, reflect, thorns, penetration, ailments, maximum life and mana...).",
+			"Suffixes: utility, resistances and speed (the four resistances, spell suppression, physical reduction, leech, attack and movement speed, life and mana on kill or hit, mana regeneration, attributes, experience...).",
 			"A new item is rolled until its count or both sides are full; the Orb of Grafting only adds on a side that is open. An Orb of Ruin can give one extra slot on one side."}}})
+	-- how a player defends (player_defence_config.lua, defence_config.lua, server/README.md "Player defence (O464)")
+	do
+		local PDC = D.playerDefence
+		local DEF = D.defence
+		if PDC and DEF then
+			local marks = {}
+			for _, m in ipairs(PDC.penalty.marks) do
+				marks[#marks + 1] = string.format("level %d: -%d", m.level, m.points)
+			end
+			add("defence", "How you defend", "The order of a hit on your character, the four resistances and the armour.", {
+				{h = "The order of a hit", p = {
+					"1. Avoidance, for hits only (never a burn, poison or a field): dodge for attacks (a monster's melee and ranged attacks, a player's weapon hits), block for attacks, spell suppression for spells (a suppressed spell deals " .. PDC.suppressLess .. "% less).",
+					"2. Mitigation by damage type: a physical hit loses its armour share plus your physical reduction (at most " .. DEF.physicalReductionCap .. "% together); fire, cold, lightning and chaos hits lose their resistance.",
+					"3. Then the other bonuses (damage taken from monsters, blessings, gems, charms, sets ...), the mana shield, the energy shield and your health. Last Breath works last of all."}},
+				{h = "Armour", p = {
+					string.format("Armour takes A / (A + %s x H) off a physical hit of size H: a lot of a small hit, little of a big one.", Gen.num(DEF.armourHitFactor)),
+					"A is the armour of the pieces you wear plus the Armour modifier. The passive tree's and the items' physical reduction add to the armour share."}},
+				{h = "The four resistances", p = {
+					"Fire: fire. Cold: ice, water, drowning. Lightning: energy, holy, arcane. Chaos: earth, death, life drain, mana drain. Physical is not a resistance: it has armour and the physical reduction.",
+					"Every source adds up (gear, the passive tree, Paragon, item sets, gems, charms); all elements count for Fire, Cold and Lightning, not for Chaos.",
+					PDC.tree and string.format("The passive tree and Paragon count %s%% of their points toward a resistance, at most %s points from the tree; gear, sets, gems and charms count in full.", Gen.num((PDC.tree and PDC.tree.share or 1) * 100), Gen.num(PDC.tree and PDC.tree.cap or 0)) or "The passive tree and Paragon count in full.",
+					string.format("The penalty by level (%s) comes off the sum; the result is held at %d (a rift modifier can lower that); a player attacker's penetration comes off after that, down to %d. A negative resistance raises the damage you take.",
+						table.concat(marks, ", "), DEF.resistCap, DEF.resistFloor),
+					"You are told at login and when you level up between 240 and 249 and between 490 and 499, and when you cross a mark."}},
+				{h = "Where to read it", p = {"The character sheet (Info & Services > Character Info, and Inspect Player) shows each resistance with its sum, the penalty and the result, the armour, dodge, block and spell suppression."}}})
+		end
+	end
 	-- Conquest Tokens (conquest_config.lua, server/README.md "Conquest Tokens, the Conquest vendor and bad-luck protection")
 	local cq = D.conquest
 	if cq and cq.enabled ~= false then
@@ -2093,9 +2288,21 @@ function Gen.build(D)
 	local sideOpts = {{"", "Any side"}, {"prefix", "Prefixes"}, {"suffix", "Suffixes"}}
 	local groupOpts = {{"", "Any group"}, {"chaos", "Chaos"}, {"absorb", "Absorbs"}, {"skill", "Skills"},
 		{"single", "Critical hits"}, {"special", "Critical / leech"}, {"element", "Weapon elements"}}
+	-- the Level filter of the Uniques tab covers the whole range the uniques have (O467: it stopped at 150, the uniques
+	-- reach 2400); the steps come from the levels of the list
 	local uniqueLevels = {{"", "Any level"}}
-	for _, lv in ipairs({50, 70, 90, 110, 130, 150}) do
+	local uniqueList = Gen.uniqueEntries(D)
+	local levelsSeen = {}
+	for _, e in ipairs(uniqueList) do
+		levelsSeen[#levelsSeen + 1] = e.f.level
+	end
+	for _, lv in ipairs(Gen.levelSteps(levelsSeen, Gen.UNIQUE_LEVEL_STEPS)) do
 		uniqueLevels[#uniqueLevels + 1] = {Gen.num(lv), "Level " .. lv .. " or lower"}
+	end
+	-- the Class filter: the class lines a unique's power works for (a unique for every class is in each of them)
+	local uniqueClasses = {{"", "Any class"}}
+	for _, key in ipairs(D.passives.lineOrder) do
+		uniqueClasses[#uniqueClasses + 1] = {key, ChaosUniquePassivesText.lineName[key][1] .. " line"}
 	end
 	local setLevels = {{"", "Any level"}}
 	for _, lv in ipairs({100, 200, 300, 400, 800}) do
@@ -2123,8 +2330,9 @@ function Gen.build(D)
 			{key = "group", label = "Group", match = "eq", options = {{"", "Everything"}, {"orb", "Crafting orbs"},
 				{"currency", "Currency"}, {"rift", "Rift and omen items"}}}}},
 		{id = "gems", name = "Gems", entries = Gen.gemEntries(D), filters = {}},
-		{id = "uniques", name = "Uniques", entries = Gen.uniqueEntries(D), filters = {
+		{id = "uniques", name = "Uniques", entries = uniqueList, filters = {
 			{key = "kind", label = "Kind", match = "has", options = kindOpts},
+			{key = "class", label = "Class", match = "has", options = options(uniqueClasses)},
 			{key = "level", label = "Level", match = "max", options = uniqueLevels},
 			{key = "source", label = "Source", match = "eq", options = {{"", "Any source"}, {"monster", "Monsters"},
 				{"boss", "Bosses only"}}}}},

@@ -32,7 +32,7 @@ Gen.SOURCES = {"tools/howitworks_config.lua", "data/scripts/chaos/unlocks_config
 	"data/scripts/chaos/party_finder_config.lua", "data/scripts/chaos/pact_config.lua", "data/scripts/chaos/nemesis_config.lua",
 	"data/scripts/chaos/townportal_config.lua", "data/scripts/chaos/lootfilter_config.lua",
 	"data/scripts/chaos/itemfinder_config.lua", "data/scripts/chaos/achievements_data.lua", "data/scripts/chaos/guild_config.lua",
-	"data/scripts/chaos/respec_config.lua"}
+	"data/scripts/chaos/respec_config.lua", "data/scripts/chaos/potions_config.lua", "data/scripts/chaos/apothecary_config.lua"}
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- pure helpers
@@ -186,7 +186,9 @@ function Gen.load()
 		nemesis = loadConfig("nemesis_config"), townportal = loadConfig("townportal_config"),
 		lootfilter = loadConfig("lootfilter_config"), itemfinder = loadConfig("itemfinder_config"),
 		achievements = loadConfig("achievements_data"), guild = loadConfig("guild_config"),
-		respec = loadConfig("respec_config"), passive = Chaos.passive, autoloot = Chaos.autoloot,
+		respec = loadConfig("respec_config"), potions = loadConfig("potions_config"),
+		apothecary = loadConfig("apothecary_config"), passive = Chaos.passive, autoloot = Chaos.autoloot,
+		defence = loadConfig("defence_config"), playerDefence = loadConfig("player_defence_config"),
 		spellscaling = loadConfig("spell_scaling_config")
 	}
 	C.towerRun = scanNumbers("data/scripts/chaos/infinitytower_run.lua",

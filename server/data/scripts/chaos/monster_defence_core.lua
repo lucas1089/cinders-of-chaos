@@ -126,8 +126,9 @@ function C.physicalFactor(def, p0, arm, mod)
 end
 
 -- the effective resistance (percent) of an element: the monster's percent plus the rank bonus, raised to modValue (the
--- Resistant modifier's number, for its element), at most def.resistCap; then penetration off it. Not clamped at 0:
--- penetration beyond the resistance turns it into a weakness.
+-- Resistant modifier's number, for its element), at most def.resistCap; then penetration off it, down to def.resistFloor
+-- (-100). Not clamped at 0: penetration beyond the resistance turns it into a weakness (O464: no re-derivation of a rounded
+-- value any more, the engine's element percent is divided out in C.elementFactor).
 function C.effectiveResist(def, base, bonus, modValue, pen)
 	local r = (base or 0) + (bonus or 0)
 	if modValue and modValue > r then
@@ -136,7 +137,11 @@ function C.effectiveResist(def, base, bonus, modValue, pen)
 	if r > def.resistCap then
 		r = def.resistCap
 	end
-	return r - (pen or 0)
+	r = r - (pen or 0)
+	if def.resistFloor and r < def.resistFloor then
+		r = def.resistFloor
+	end
+	return r
 end
 
 -- the multiplier on an element part that arrived (the engine took `base` percent): the wanted resistance `eff`
@@ -167,7 +172,8 @@ C.untouched = untouched
 
 -- One hit on a monster. ctx: {def, cfg, k (engine constants: physical, healing, undefined, none, manadrain, lifedrain,
 -- melee, ranged, spell, condition), A (the armour value), set (C.modSet of the monster or nil), bonus (rank resistance
--- bonus), resistOf(ctype) -> the monster's element percent, pen (penetration, 0 in the first stage), rand(n) -> 1..n}.
+-- bonus), resistOf(ctype) -> the monster's element percent, pen (the player's elemental penetration, percent points off the
+-- capped resistance), physPen (its physical penetration: points off the armour share, down to 0), rand(n) -> 1..n}.
 -- hit: {primary, ptype, secondary, stype, origin}. Returns primary, secondary, info {blocked = true | nil}.
 -- Origins: melee and ranged are weapon hits (and a monster summon's attacks), spell a spell, condition a tick (a field
 -- is a tick too: its damage comes from a condition).
@@ -188,7 +194,7 @@ function C.defend(ctx, hit)
 		end
 		local m
 		if ctype == k.physical then
-			local arm = armoured and C.armourReduction(def, ctx.A, abs(value)) or 0
+			local arm = armoured and max(0, C.armourReduction(def, ctx.A, abs(value)) - (ctx.physPen or 0) / 100) or 0
 			local mod = set and set.physReduction and cfg.mods.physReduction / 100 or 0
 			m = C.physicalFactor(def, ctx.resistOf(ctype), arm, mod)
 		else

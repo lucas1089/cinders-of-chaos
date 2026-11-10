@@ -731,6 +731,9 @@ function A.deliver(player, run)
 						ChaosMakeUnique(item)
 					end
 					inbox = giveEx(player, item) or inbox
+					if ChaosUniqueIntro then -- O467
+						pcall(ChaosUniqueIntro.found, player)
+					end
 					found[#found + 1] = "{" .. e.name .. "}"
 				end
 			end
