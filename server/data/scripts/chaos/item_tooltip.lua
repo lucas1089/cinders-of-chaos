@@ -157,6 +157,15 @@ local function answer(player, data)
 	if not okSkill then
 		wielder.level = nil
 	end
+	-- O471: is the viewer over a character cap of critical chance or damage (crit_cap.lua reads the engine's totals)
+	local over
+	if ChaosCritCap and ChaosCritCap.engineTotals and ChaosItemMods and ChaosItemMods.critTotals then
+		local okC, c, a = pcall(ChaosCritCap.engineTotals, player)
+		if okC and c then
+			local t = ChaosItemMods.critTotals(c, a)
+			over = {chance = t.chanceCapped or nil, amount = t.amountCapped or nil}
+		end
+	end
 	local out = {}
 	for i = 1, n do
 		local req = type(list[i]) == "table" and list[i] or {}
@@ -176,7 +185,8 @@ local function answer(player, data)
 				local ok, a = pcall(item.getClientAttributes, item)
 				attrs = ok and a or nil
 			end
-			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs, wielder = wielder, setState = setState})
+			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs, wielder = wielder, setState = setState,
+				over = over})
 			if ok then
 				-- a card: what it gives and how to use it, in the player's language (cards_core.lua K.description; the item
 				-- type's own text is the English one tools/patch_badges.py installs)

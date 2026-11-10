@@ -273,6 +273,20 @@ eq(byKey.rarity_elementfire.tr, 3) eq(byKey.rarity_elementfire.sd, "p")
 eq(tip.mods[1].sd, "p", "prefixes first") eq(tip.mods[#tip.mods].sd, "s", "suffixes last")
 eq(byKey.rarity_criticalHitChance.t, "Critical Strike Chance +2%") eq(byKey.rarity_criticalHitChance.g, "single")
 eq(byKey.rarity_criticalHitAmount.t, "Critical Strike Damage +1%") eq(byKey.rarity_criticalHitAmount.sd, "p")
+-- O471: the critical modifiers carry the character caps (45 / 150), "over" only when the viewer's total is above them
+eq(byKey.rarity_criticalHitChance.cap, 45, "the chance cap on the line") eq(byKey.rarity_criticalHitAmount.cap, 150, "the damage cap")
+eq(byKey.rarity_criticalHitChance.over, nil, "not over: no flag") eq(byKey.chaos_mod_lifeonkill.cap, nil, "other modifiers have no cap")
+do
+	local t2 = T.build(sword, {over = {chance = true}})
+	local by2 = {}
+	for _, m in ipairs(t2.mods) do by2[m.k] = m end
+	eq(by2.rarity_criticalHitChance.over, true, "the viewer is over the chance cap") eq(by2.rarity_criticalHitAmount.over, nil, "but not the damage cap")
+	local pen = newItem(3400)
+	pen:setCustomAttribute("rarity", 4) pen:setCustomAttribute("chaos_modv", 3) pen:setCustomAttribute("combatPowerLevel", 100)
+	M.set(pen, "physpen", 9, 6)
+	local t3 = T.build(pen, {})
+	eq(t3.mods[1].cap, 20, "penetration: 20 points in total")
+end
 local lok = byKey.chaos_mod_lifeonkill
 local r = M.legacy.lifeonkill[3] -- no stored tier: the range it was rolled in (before the ranges were raised)
 eq(lok.t, "Life on Kill +15") eq(lok.g, "chaos") eq(lok.lo, r[1]) eq(lok.hi, r[2]) eq(lok.tr, 3) eq(lok.sd, "s")

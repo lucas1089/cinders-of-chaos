@@ -203,6 +203,19 @@ function L.rarityColor(r)
   return L.RARITY_COLORS[tonumber(r) or 0]
 end
 
+-- O471: the character cap of a modifier (server item_tooltip_core.lua T.capOf: critical chance 45, critical damage 150,
+-- penetration 20): m.cap, and m.over when the wearer's total is above it. '' for a modifier without one
+function L.capText(m)
+  local cap = tonumber(m and m.cap)
+  if not cap then
+    return ''
+  end
+  if m.over then
+    return ' ' .. string.format(tr('(over the character cap of %d)'), cap)
+  end
+  return ' ' .. string.format(tr('(character cap %d)'), cap)
+end
+
 function L.tierColor(t)
   return L.TIER_COLORS[tonumber(t) or 0] or L.COLORS.dim
 end
@@ -306,19 +319,30 @@ function L.lines(tip, ctx)
     if m.lo and m.hi then
       range = m.lo == m.hi and string.format(' [%d]', m.lo) or string.format(' [%d-%d]', m.lo, m.hi)
     end
+    -- O471: a modifier with a character cap (critical chance and damage, penetration): the cap, and "over" when the wearer's
+    -- total is above it (the server sends cap / over; see ChaosItemMods.config.crit and .penetration)
+    local capText = L.capText(m)
     local parts
     if m.tr then
       local tag = string.format('T%d ', m.tr)
       local bound = m.bd and ' [bound]' or ''
       parts = { tag, L.tierColor(m.tr), m.t, color, range, C.dim }
+      if capText ~= '' then
+        parts[#parts + 1] = capText
+        parts[#parts + 1] = m.over and C.red or C.dim
+      end
       if m.bd then
         parts[#parts + 1] = bound
         parts[#parts + 1] = C.bound
       end
-      add(tag .. m.t .. range .. bound, color, first, parts)
+      add(tag .. m.t .. range .. capText .. bound, color, first, parts)
     else
-      parts = range ~= '' and { m.t, color, range, C.dim } or nil
-      add(m.t .. range, color, first, parts)
+      parts = (range ~= '' or capText ~= '') and { m.t, color, range, C.dim } or nil
+      if parts and capText ~= '' then
+        parts[#parts + 1] = capText
+        parts[#parts + 1] = m.over and C.red or C.dim
+      end
+      add(m.t .. range .. capText, color, first, parts)
     end
     first = false
   end
@@ -791,12 +815,19 @@ function L.modGroups(tip)
     local color = (m.sd == 'i' and C.corrupted) or (m.pw and C.power) or (m.g == 'chaos' and C.chaos)
       or (m.g == 'element' and C.element) or C.mod
     local row = { kind = 'mod', text = tostring(m.t or ''), color = color, range = rangeText(m.lo, m.hi) }
+    local capText = L.capText(m)
+    if capText ~= '' then
+      -- the cap rides after the text in its own colour (red when the wearer is over it)
+      row.parts = { row.text, color, capText, m.over and C.red or C.dim }
+    end
     if m.tr then
       row.tag = 'T' .. trim(m.tr)
       row.top = tonumber(tip.maxTier) ~= nil and tonumber(m.tr) == tonumber(tip.maxTier)
     end
     if m.bd then
-      row.parts = { row.text, color, ' [bound]', C.bound }
+      row.parts = row.parts or { row.text, color }
+      row.parts[#row.parts + 1] = ' [bound]'
+      row.parts[#row.parts + 1] = C.bound
     end
     group.rows[#group.rows + 1] = row
   end

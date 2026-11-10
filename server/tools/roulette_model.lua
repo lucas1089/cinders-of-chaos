@@ -58,6 +58,11 @@ function M.kph(level)
 	return K.curve(V.kph, level)
 end
 
+-- the band a spin at this level has to stay within (O470: `bandAt` holds the levels with a band of their own)
+function M.bandFor(level)
+	return (V.bandAt or {})[level] or V.band
+end
+
 -- the hunting gold per hour of the level (the Boss Roulette's curve, the same as gamble_config.lua balance.hunting)
 function M.goldPerHour(level)
 	return K.curve(M.load("boss").gold.hunting, level)
@@ -149,7 +154,8 @@ for _, r in ipairs(rows) do
 	else
 		what = string.format("%d token = %.1f kills", cfg.tokenCount, cfg.tokenCount / (t.chance * t.count))
 	end
-	local bad = r.ratio < V.band.min or r.ratio > V.band.max
+	local band = M.bandFor(r.level)
+	local bad = r.ratio < band.min or r.ratio > band.max
 	if bad then
 		fails = fails + 1
 	end

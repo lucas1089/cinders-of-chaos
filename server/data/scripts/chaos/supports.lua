@@ -614,16 +614,30 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critic
 			end
 		end
 	end
-	-- Sunder
+	-- Sunder. O471: the elemental penetration of a character is at most 20 points, the worn pieces' first (monster_defence.lua
+	-- takes theirs off the capped resistance); Sunder gets what they leave of the 20
 	if fx.sunder and resOf then
-		pd = S.penetrate(pd, resOf(pt), fx.sunder.value)
+		local pen = fx.sunder.value
+		local IM = ChaosItemMods
+		if IM and IM.penLeft and IM.playerBonus then
+			pen = math.min(pen, IM.penLeft(IM.playerBonus(attacker, "elepen")))
+		end
+		pd = S.penetrate(pd, resOf(pt), pen)
 		if sd ~= 0 then
-			sd = S.penetrate(sd, resOf(st), fx.sunder.value)
+			sd = S.penetrate(sd, resOf(st), pen)
 		end
 	end
-	-- Keen Edge
+	-- Keen Edge. O471: it only gets the room the critical chance cap of 45 leaves after the engine's own chance
+	-- (ChaosItemMods.critRoom, data/scripts/chaos/crit_cap.lua)
 	local crit = critical == true
-	if fx.keenedge and not crit and S.roll(fx.keenedge.value) then
+	local keenChance = fx.keenedge and fx.keenedge.value or 0
+	if keenChance > 0 and not crit then
+		local IM, CC = ChaosItemMods, ChaosCritCap
+		if IM and IM.critRoom and CC and CC.engineTotals then
+			keenChance = math.min(keenChance, IM.critRoom(CC.engineTotals(attacker) or 0))
+		end
+	end
+	if fx.keenedge and not crit and S.roll(keenChance) then
 		crit = true
 		local m = fx.keenedge.value2 or 50
 		pd, sd = S.scale(pd, m), S.scale(sd, m)
@@ -683,7 +697,7 @@ local function runeView(id, count)
 	local r = S.runeOf(id)
 	return {id = id, clientId = clientIdOf(id), key = r.type.key, name = S.runeName(id), level = r.level,
 		color = S.levelColor(id), text = S.effectText(id), fits = S.fitsText(r.type), count = count,
-		combine = r.level < S.LEVELS}
+		combine = r.level < S.LEVELS, note = S.ceilingNote(id)}
 end
 
 local function socketsOf(player, info)
@@ -1110,7 +1124,8 @@ local function onUseRune(player, item, fromPosition, target, toPosition, isHotke
 		end
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).%s", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type),
-			S.runeOf(id).level < S.LEVELS and Chaos.t(player, " To combine three into one of the next level: use the stack, then left-click the same stack.") or ""))
+			S.runeOf(id).level < S.LEVELS and Chaos.t(player, " To combine three into one of the next level: use the stack, then left-click the same stack.")
+				or (S.ceilingNote(id) ~= "" and " " .. Chaos.tx(player, S.ceilingNote(id)) or "")))
 	end
 	sendState(player)
 	sendBar(player)

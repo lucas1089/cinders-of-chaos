@@ -454,11 +454,15 @@ local function affixOverview(D, a)
 			p[#p + 1] = string.format("Raises your %s skill while the item is worn.", a.label:lower())
 		end
 	elseif a.group == "single" then
+		local cc = D.M.config.crit
 		if a.label == "Critical Strike Chance" then
 			p[#p + 1] = "Raises your chance to hit critically while the item is worn, in percentage points. It rolls on its own: the damage of a critical hit is the other modifier."
+			p[#p + 1] = string.format("Cap: your critical chance counts at most %d points in all, from every source together (gear, gems, the passive tree, Paragon, buffs, Keen Edge).", cc.chanceCap)
 		else
 			p[#p + 1] = "Raises the extra damage of your critical hits while the item is worn, in percent. It rolls on its own: the chance to hit critically is the other modifier."
+			p[#p + 1] = string.format("Cap: the extra damage of your critical hits counts at most %d%% in all, from every source together (gear, gems, the passive tree, Paragon, buffs).", cc.amountCap)
 		end
+		p[#p + 1] = "It rolls on weapons, necklaces and rings. A badge or a quiver that already carries it keeps it, and it counts under the cap."
 		p[#p + 1] = "On an item: " .. a.label .. " +" .. Gen.range(top[1], top[2]) .. "% (T8)."
 	elseif a.group == "special" then
 		if a.label == "Critical Chance" then
@@ -1807,6 +1811,12 @@ function Gen.supportEntries(D)
 		if cfg.caps[t.key] then
 			p[#p + 1] = string.format("Cap on one spell: %d.", cfg.caps[t.key])
 		end
+		if cfg.levelCeiling and cfg.levelCeiling[t.key] then
+			p[#p + 1] = string.format("A Mythic rune counts as Legendary: %s", (cfg.ceilingNote:gsub("^Counts as Legendary: ", "")))
+		end
+		if t.key == "sunder" then
+			p[#p + 1] = string.format("Your elemental penetration is at most %d points in all: the worn pieces count first, Sunder adds what is left.", D.M.config.penetration.cap)
+		end
 		out[#out + 1] = {id = "support:" .. t.key, name = t.name, color = cfg.levelColors[4],
 			sub = S.levelsText(t.key), f = {kind = t.fits},
 			sections = {
@@ -1966,7 +1976,8 @@ function Gen.basicsEntries(D)
 		odds[#odds + 1] = {Gen.num(lv), Gen.oddsText(M, lv)}
 	end
 	add("tiers", "Tiers", "T1-T8: the item level each tier needs and the odds.", {
-		{h = "Tiers", p = {"A modifier rolls among every tier its item level allows. All tiers weigh the same, so the best tier is as likely as any other. A few modifiers have a gate of their own (the weapon's Mana Leech does not roll below T4)."},
+		{h = "Tiers", p = {string.format("A modifier rolls among every tier its item level allows. Each tier weighs 1.35 times the one below it (T1 %s, T8 %s), so the best tier the item level allows is the most likely one, and the lowest still rolls. A few modifiers have a gate of their own (the weapon's Mana Leech does not roll below T4).",
+			Gen.num(M.config.tierWeights[1]), Gen.num(M.config.tierWeights[M.config.maxTier]))},
 			cols = {"Tier", "Item level", "Weight"}, w = {30, 35, 35}, rows = trows},
 		{h = "Odds by item level", cols = {"Item level", "Tier odds"}, w = {22, 78}, rows = odds}})
 	local il = M.config.itemLevel

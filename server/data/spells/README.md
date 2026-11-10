@@ -3438,6 +3438,11 @@ healing needed; the burst is the same). If the late hunts turn out too easy in t
 rifts, waystones, invasions, the raid and the arena are not paced and are not affected (their fights stay as long as they
 were; the rift health budget is its own model).
 
+O470 (2026-11-10): the late health stood 2.2 times above the base set's at the seam (hunting level 657); the `scaled` points of
+657 to 900 (health, experience, loot, goal, notable) and the plan `paceKillsPerHour.scaled` were refitted and the step is gone: a
+pack of the median class dies in 2.8 s at 670 (5.8 s before), 3.1 s at 700, 4.2 s at 800, 5.2 s at 900, as before from 1000. The
+figures above for 650 to 900 are the ones before; server/README.md "Monster health curve (O470)" has the new ones.
+
 **2. Class curve (the early dips and the level 200 spikes).** One factor per class could not hold levels 30-200 and
 300-1000 together. `spell_factor_config.lua` now has `byLevel[vocation]`: {level, factor} points (flat below the first,
 linear between points, the last point's value above; `spell_factor_core.lua` `forVocation(voc, cfg, level)`, the event
@@ -5093,6 +5098,19 @@ Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `
   Cry 340, Prismatic Rupture 500.
 - **Not modelled.** Resistances (a brand's element against a monster that resists it), crits, kills (nothing here depends on one),
   the mana a faster Quickening costs, the other spells that a set leaves out.
+
+## Ceilings on critical hits, damage runes and penetration (O471, owner 2026-11-10; computed, not measured)
+
+What this package moves in the numbers quoted on this page: a character counts at most 45 points of critical chance and 150%
+extra critical damage (every source), at most 20 points of physical and of elemental penetration (the Sunder rune included in
+the elemental), and a Mythic brand, Echo, Hex or Keen Edge rune counts at its Legendary value (brand 50, Echo 30, Hex 6, Keen
+Edge 6). The measured class table `class_dps_measured.csv` and the models that read it (class DPS, weapon families, survival,
+PvP, card sets) are unchanged: `rotation_sim.py` and `class_dps_model.py` read neither a rune nor a critical or penetration total.
+`spell_mastery_model.py` reads a Common rune at the mastery tier, below the ceiling, so it does not move either. The only quoted number that depends on the item level curve is the
+hunting-level to item-level pairs of the energy shield text above (item level 150 with a boss and a rift bonus at level 1000):
+with the flatter curve a boss of level 1000 is item level 127, plus a rift 15, plus an Omen 15: 150 after the cap, so the
+statement holds. The critical reach (`luajit tools/crit_reach.lua`): three slots, a dedicated build 71 -> 45 (the cap), the
+damage ceiling 300 -> 150. server/README.md "Critical, rune and penetration ceilings, gear growth (O471)".
 
 ## Spell scaling (O468, owner 2026-11-10; computed, not measured)
 
