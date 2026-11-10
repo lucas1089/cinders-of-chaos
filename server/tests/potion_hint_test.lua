@@ -205,7 +205,7 @@ check(registered.ChaosPotionsLogin ~= nil, "the login event is still registered"
 local ann = mkPlayer(1, 80)
 registered.ChaosPotionsAdvance.onAdvance(ann, SKILL_LEVEL, 79, 80)
 eq(#toasts, 1, "one toast") eq(#ann.msgs, 1, "one chat line")
-eq(toasts[1].kind, "newplayer", "the new-adventurer toast kind (the hints of the first hour use it)")
+eq(toasts[1].kind, "milestone", "the level toast kind: the hint fires when the level of a tier is reached")
 eq(toasts[1].title, "Potion upgrade", "its title")
 check(toasts[1].text:find("Everfull Great Health Potion, Everfull Great Mana Potion", 1, true) ~= nil, "both lines in the one toast")
 eq(ann.msgs[1], toasts[1].title .. ": " .. toasts[1].text, "the chat line is the toast")

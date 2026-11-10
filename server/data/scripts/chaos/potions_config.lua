@@ -100,7 +100,7 @@ ChaosPotionsConfig = {
 	},
 
 	-- O465 upgrade hint (README "Potions", "Upgrade hint (O465)"): players did not find out that the Everfull potions can be
-	-- upgraded. One toast (the notifications module, kind "newplayer", plus the same line in the chat) when a character
+	-- upgraded. One toast (the notifications module, kind "milestone", the level toast, plus the same line in the chat) when a character
 	-- reaches the level of a tier it does not own yet: on level-up, and a few seconds after login for a character already
 	-- past it. Once per tier and character (the mark is set before the message). Only the tier the character can take NOW
 	-- is named (its flask is the tier's `from`), so a line the character does not use (a mana flask kept at the first tier

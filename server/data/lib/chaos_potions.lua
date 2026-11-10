@@ -488,7 +488,7 @@ function PT.hint(player)
 	end)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, title .. ": " .. text)
 	if ChaosNotify and ChaosNotify.send then
-		ChaosNotify.send(player, title, text, "newplayer")
+		ChaosNotify.send(player, title, text, "milestone")
 	end
 	return due
 end

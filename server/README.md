@@ -6500,7 +6500,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 - **Upgrade hint (O465).** Player feedback on the test server 2026-11-10: players did not find out that the Everfull potions can be
   upgraded. Two parts. The How it works card "Potion upgrades" (`tools/howitworks_config.lua`; every number is read from
   `potions_config.lua` and `apothecary_config.lua` by `gen_howitworks_data.lua`, which stops when the config stops fitting a sentence) is found by Help Search
-  (keywords in `tools/guide_config.lua`). And one toast, once per tier and character: the notifications module's "newplayer" kind
+  (keywords in `tools/guide_config.lua`). And one toast, once per tier and character: the notifications module's "milestone" kind
   plus the same line in the chat, in the player's language (`Chaos.t`; texts in `i18n_strings.lua`).
   - **When.** On every level-up (`ChaosPotionsAdvance`), and `hint.delayMs` (6 s) after login for a character already past a tier
     (`ChaosPotionsLogin`). Nothing else.
