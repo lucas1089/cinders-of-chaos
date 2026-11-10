@@ -1556,6 +1556,10 @@ return {
 		-- Everfull potions (potions.lua, data/lib/chaos_potions.lua)
 		["You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."] =
 			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas nunca acabam.",
+		-- the upgrade hint (potions_core.lua hintMessage, data/lib/chaos_potions.lua hint; O465)
+		["Potion upgrade"] = "Melhoria de poção",
+		["Your Everfull potion can be upgraded: %s. Ask %s in the hub, or buy the swap in the store. How it works explains it: open Help Search (Alt+F) and type \"potion\"."] =
+			"Sua poção Everfull pode ser melhorada: %s. Fale com %s no hub, ou compre a troca na loja. Como funciona explica: abra Buscar Ajuda (Alt+F) e digite \"poção\".",
 		-- Everfull potion tiers (potions.lua, data/lib/chaos_potions.lua, Veyra the Apothecary; O245)
 		["Only characters of level %d or above may drink this fluid."] =
 			"Só personagens de nível %d ou mais podem beber este líquido.",
@@ -7322,8 +7326,8 @@ return {
 			"Uma bomba que estoura numa nuvem ao redor do conjurador.",
 		["A volley that lands in a circle of 2 sqm around the target."] =
 			"Uma saraivada que cai num círculo de 2 sqm ao redor do alvo.",
-		["Consecrates the caster's tile for 6s. Each second holy damage hits enemies within 2 sqm and allies (party, own summons, caster) standing in it are healed a little."] =
-			"Consagra o quadrado do conjurador por 6 s. A cada segundo dano sagrado atinge os inimigos a até 2 sqm, e os aliados (grupo, invocados próprios, conjurador) que estiverem nele são curados um pouco.",
+		["Consecrates the ground around the caster for 6s, and the zone follows the caster. Each second holy damage hits enemies within 2 sqm of the caster, and allies (party, own summons, caster) within 2 sqm of the caster are healed a little."] =
+			"Consagra o chão ao redor do conjurador por 6 s, e a zona acompanha o conjurador. A cada segundo dano sagrado atinge os inimigos a até 2 sqm do conjurador, e os aliados (grupo, invocados próprios, conjurador) a até 2 sqm do conjurador são curados um pouco.",
 		["Cleanses harmful conditions and grants 8s of strong regeneration."] =
 			"Purifica condições nocivas e dá 8 s de regeneração forte.",
 		["A volley of arrows in a line 6 sqm long."] =

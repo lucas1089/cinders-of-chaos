@@ -3438,7 +3438,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Consecrates the caster's tile for 6s. Each second holy damage hits enemies within 2 sqm and allies (party, own summons, caster) standing in it are healed a little."
+								"Consecrates the ground around the caster for 6s, and the zone follows the caster. Each second holy damage hits enemies within 2 sqm of the caster, and allies (party, own summons, caster) within 2 sqm of the caster are healed a little."
 							]
 						},
 						{

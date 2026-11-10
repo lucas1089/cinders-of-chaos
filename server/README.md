@@ -882,6 +882,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
 | 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2 .. +5 retired (the flask charges, O242, gone in O273; a leftover value is never read); +6..9 free |
 | 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +9 the upgrade to the entry at that place among the entries with a `from` (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health, spirit tier 1, supreme mana, supreme spirit: O247) was done (1); the block is full, a new upgrade needs a new block |
+| 7102520 - 7102529 | Everfull upgrade hints (`potions_config.lua` `hint.storageBase`, O465): +0 .. +9 the hint of the entry at that place among the entries with a `from` (the same places as the block above) was shown (1) |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7102830 - 7102835 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); +3 the last hunt (O258: the stable id of the hunt place the character last killed in); +4 = 7102834 the last system used (O374: the 1-based index in `systems`, read by the new-player funnel); +5 = 7102835 the retention windows counted (O437: bit i = `retainWindows[i + 1]`: d1, d2_7, d8_30, in7, in30); 7102836 - 7102839 free |
@@ -6496,6 +6497,28 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 - **Install:** `tools/install_potions.py DATA_DIR [--dry-run]` (step `potions` of `install_all.py`, after `runes`, before
   `itemprices`; idempotent; `items.otb.bak` keeps the original; it also removes the Everfull shop entries and the ShopModule hook
   an earlier run added, and warns about a hook it does not know). `tools/gen_item_prices.py` marks both ids `bound` (never priced).
+- **Upgrade hint (O465).** Player feedback on the test server 2026-11-10: players did not find out that the Everfull potions can be
+  upgraded. Two parts. The How it works card "Potion upgrades" (`tools/howitworks_config.lua`; every number is read from
+  `potions_config.lua` and `apothecary_config.lua` by `gen_howitworks_data.lua`, which stops when the config stops fitting a sentence) is found by Help Search
+  (keywords in `tools/guide_config.lua`). And one toast, once per tier and character: the notifications module's "milestone" kind
+  plus the same line in the chat, in the player's language (`Chaos.t`; texts in `i18n_strings.lua`).
+  - **When.** On every level-up (`ChaosPotionsAdvance`), and `hint.delayMs` (6 s) after login for a character already past a tier
+    (`ChaosPotionsLogin`). Nothing else.
+  - **What is due** (`ChaosPotionsCore.hintDue`, pure, `tests/potion_hint_test.lua`): a tier with a `from` whose level is at least
+    `hint.minTierLevel` (1: the first spirit potion needs no level and is never hinted) and at most the character's level, that the
+    character does not own (the upgrade flag), was not told about (the hint mark), and whose previous flask the character holds (worked
+    out from the flags: a flask is held when its own flag is set, or it is a tier 1 flask, and no tier made from it was earned). So a
+    health-flask character hears of the health and mana lines and never of the spirit line, and only the step it can take today (great
+    before ultimate, even at level 500). One tier per line, one message for all lines. A tier missing from items.otb is skipped.
+  - **Once.** The mark of every named tier is written before the message. A level-up and a login check in one go give one message.
+    The next tier is told when it becomes doable (after the swap, at the next level-up or login).
+  - **Switch and numbers.** `potions_config.lua` `hint = {enabled, minTierLevel, delayMs, storageBase}`.
+  - **Storage.** 7102520 - 7102529: +0 .. +9 the hint of the entry at that place among the entries with a `from` (the place of its
+    upgrade flag). Table "Storage keys".
+  - **Veyra.** Her greeting and her "upgrade" answer already explain the swap, its cost and the level. Added only the words
+    "melhorar" and "melhoria" as the same keyword (a pt-BR player types them). `tests/veyra_upgrade_test.lua`.
+  - **Not done:** the card has no window, so no "?" button opens it (Help Search and the toast point to it); the beginner guide has no tip
+    for it (its steps are the first steps of a new character). Not run on a live server or in a client.
 - **Tests:** `tests/potions_test.lua` (the rules and the O245 tiers: config, check rules, swap, rollbacks, store service; drinking on a mocked engine: healed, not consumed, no flask, the exhaust;
   the kit and login grant; the restore; the stock potions.lua patched by the tool: no flask, a higher tier still
   used up, the exhaust unchanged), `tools/install_potions_test.py` (a synthetic base server: items, NPCs, the old

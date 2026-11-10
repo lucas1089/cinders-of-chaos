@@ -1,5 +1,8 @@
--- Blessed Earth: consecrates the caster's tile for 6s. Each second holy damage hits enemies within 2 sqm
--- and allies (party, own summons, caster) standing in it are healed a little.
+-- Blessed Earth: consecrates the ground around the caster for 6s, and the zone follows the caster. Each second holy damage hits enemies within 2 sqm
+-- of the caster, and allies (party, own summons, caster) within 2 sqm of the caster are healed a little.
+
+-- O466: every pulse is centred on where the caster stands at that moment (damage, heal and the picture); before, the
+-- zone stayed on the tile of the cast. Still 6 pulses a second apart, ending when the caster dies or logs out.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE2X2)
@@ -9,14 +12,12 @@ function onCastSpell(creature, variant, isHotkey)
 	if not player then
 		return false
 	end
-	local p = player:getPosition()
-	local center = {x = p.x, y = p.y, z = p.z}
 	local power, ml = player:getEffectiveSkillLevel(SKILL_DISTANCE) * ChaosSpell.distanceAttack(player), player:getMagicLevel()
 	local min = player:getLevel() / 5 + power * 0.00325 + ml * 0.4 + 8
 	local max = player:getLevel() / 5 + power * 0.0052 + ml * 0.6 + 15
 
 	ChaosSpell.pulse(player:getId(), 6, 1000, function(caster, step)
-		local pos = Position(center)
+		local pos = caster:getPosition() -- the zone follows the caster (O466)
 		if step % 2 == 1 then
 			ChaosSpell.vfxOr(pos, "holy_seal", "holy_cross", CONST_ME_HOLYAREA)
 		end
