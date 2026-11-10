@@ -208,7 +208,18 @@ function S.gather(player)
 end
 
 function S.compute(player)
-	return S.build(S.gather(player), cfg)
+	local out = S.build(S.gather(player), cfg)
+	-- O464: the armour and the mitigation row are the player defence layer's: the armour of the worn pieces plus the Armour
+	-- modifier, and what armour (against a typical monster hit of the level) and the physical reduction take off a physical hit
+	local PD = rawget(_G, "ChaosPlayerDefence")
+	if out and PD and PD.active and PD.active() and PD.sheet then
+		local ok, d = pcall(PD.sheet, player)
+		if ok and type(d) == "table" then
+			out.armor = d.armor
+			out.mitigation = math.floor(d.physical * 100 + 0.5) / 10000
+		end
+	end
+	return out
 end
 
 -- send the numbers now (force: even when they did not change)

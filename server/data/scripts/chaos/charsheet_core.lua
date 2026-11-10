@@ -12,12 +12,16 @@ local K = ChaosCharSheet
 
 -- the damage and resistance types shown, in this order: key -> name
 K.TYPES = {physical = "Physical", fire = "Fire", energy = "Energy", earth = "Earth", ice = "Ice", holy = "Holy", death = "Death",
-	water = "Water", arcane = "Arcane", drown = "Drowning", lifedrain = "Life drain", manadrain = "Mana drain"}
-K.ORDER = {"physical", "fire", "energy", "earth", "ice", "holy", "death", "water", "arcane", "drown", "lifedrain", "manadrain"}
+	water = "Water", arcane = "Arcane", drown = "Drowning", lifedrain = "Life drain", manadrain = "Mana drain",
+	cold = "Cold", lightning = "Lightning", chaos = "Chaos"}
+K.ORDER = {"physical", "fire", "cold", "lightning", "chaos", "energy", "earth", "ice", "holy", "death", "water", "arcane", "drown",
+	"lifedrain", "manadrain"}
 
 -- raw = what charsheet.lua read: attack, hit, maxHit, attackSpeed (percent), critChance, critAmount (percent),
 -- lifeLeech / manaLeech = {chance, amount}, damage = [{k, pct}] (damage bonus per type), defense, armor, mitigation (share
--- 0 .. 1), resist = [{k, pct}] (per element, may be negative), maxHealth, maxMana, moveSpeed.
+-- 0 .. 1; O464: the physical total against a typical hit), resist = [{k, pct}] (per element, may be negative; O464: the four
+-- groups fire, cold, lightning, chaos, each with sum and penalty), defence = {armourShare, reduction, dodge, block, suppress,
+-- penalty, cap} (O464, percent), maxHealth, maxMana, moveSpeed.
 -- Numbers only (one decimal), type keys plain words, no zero offence rows; nil when nothing is left. A new table.
 function K.clean(raw)
 	raw = type(raw) == "table" and raw or {}
@@ -45,7 +49,11 @@ function K.clean(raw)
 			local k = type(row) == "table" and type(row.k) == "string" and row.k:match("^%a+$") or nil
 			local v = n(row.pct, lo, 1000)
 			if k and v and v ~= 0 and #out < 12 then
-				out[#out + 1] = {k = k, pct = v}
+				local r = {k = k, pct = v}
+				if row.sum ~= nil then
+					r.sum, r.penalty = n(row.sum, -1000, 1000) or 0, n(row.penalty, 0, 1000) or 0
+				end
+				out[#out + 1] = r
 			end
 		end
 		return #out > 0 and out or nil
@@ -57,6 +65,12 @@ function K.clean(raw)
 		mitigation = raw.mitigation and pos(tonumber(raw.mitigation) * 100, 100) or nil, resist = list(raw.resist, -1000),
 		maxHealth = pos(raw.maxHealth), maxMana = pos(raw.maxMana), moveSpeed = pos(raw.moveSpeed)
 	}
+	if type(raw.defence) == "table" then
+		local d = raw.defence
+		out.defence = {armourShare = n(d.armourShare, 0, 100) or 0, reduction = n(d.reduction, -100, 1000) or 0,
+			dodge = n(d.dodge, 0, 100) or 0, block = n(d.block, 0, 100) or 0, suppress = n(d.suppress, 0, 100) or 0,
+			penalty = n(d.penalty, 0, 1000) or 0, cap = n(d.cap, 0, 1000) or 75}
+	end
 	if next(out) == nil then
 		return nil
 	end
@@ -149,6 +163,14 @@ function K.text(sheet, character, tx)
 	if sheet.mitigation then
 		def[#def + 1] = tx("Physical damage taken from monsters: -%s%%", pct(sheet.mitigation))
 	end
+	if sheet.defence then
+		local d = sheet.defence
+		def[#def + 1] = tx("Armor share against a typical hit: %s%%", pct(d.armourShare))
+		def[#def + 1] = tx("Physical reduction: %s%%", pct(d.reduction))
+		def[#def + 1] = tx("Dodge: %s%%", pct(d.dodge))
+		def[#def + 1] = tx("Block: %s%%", pct(d.block))
+		def[#def + 1] = tx("Spell suppression: %s%%", pct(d.suppress))
+	end
 	if sheet.maxHealth then
 		def[#def + 1] = tx("Maximum health: %s", K.number(sheet.maxHealth))
 	end
@@ -162,10 +184,24 @@ function K.text(sheet, character, tx)
 
 	local res = {}
 	local rmap = byType(sheet.resist)
+	local rows = {}
+	for _, row in ipairs(sheet.resist or {}) do
+		rows[row.k] = row
+	end
 	for _, key in ipairs(K.ORDER) do
 		if rmap[key] then
-			res[#res + 1] = tx("%s: %s%%", typeName(tx, key), pct(rmap[key]))
+			local row = rows[key]
+			if row and row.sum ~= nil then
+				-- O464: the sum of the sources, the penalty of the level, the result (at most the cap)
+				res[#res + 1] = tx("%s: %s%% (sources %s%%, level penalty -%s%%)", typeName(tx, key), pct(rmap[key]), pct(row.sum),
+					pct(row.penalty))
+			else
+				res[#res + 1] = tx("%s: %s%%", typeName(tx, key), pct(rmap[key]))
+			end
 		end
+	end
+	if sheet.defence and (sheet.defence.cap or 75) ~= 75 then
+		res[#res + 1] = tx("Maximum resistance: %s%%", pct(sheet.defence.cap))
 	end
 	parts[#parts + 1] = block(tx, "Resistances", res)
 
