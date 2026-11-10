@@ -400,13 +400,35 @@ function ChaosSpell.pshoot(fromPos, toPos, pname, vname, name, fallback)
 	end
 end
 
+-- O472: the factor on a CASTER's damage spell for the weapon growth: 1 + (W(level) - 1) x min(1.2, wand / mean wand of the level)
+-- (spell_scaling_config.lua weaponGrowth and caster; a wand of the level's band gives W, none gives 1). A caster's spell does not
+-- read the wand, so this is how the weapon growth reaches it. Apply it once to the hit of a spell that reads the magic level only
+-- (the Mystic, Elementalist, Illusionist and Necromancer lines); never to a heal, a weapon spell (it has the weapon's attack) or a
+-- hybrid (the Templar line and the Ranger's holy spells read the weapon already).
+function ChaosSpell.casterShare(player)
+	local S = ChaosSpellScaling
+	return S and S.casterForPlayer and S.casterForPlayer(player) or 1
+end
+
+-- the same share on a hit's min and max (positive values in, positive values out)
+function ChaosSpell.casterScale(player, min, max)
+	local k = ChaosSpell.casterShare(player)
+	return min * k, max * k
+end
+
 -- Damage helper: returns positive min, max from the usual TFS level/magic-level formula, times `scale` (default 1,
--- the per-spell balance factor: the whole value scales, the level part included).
-function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)
+-- the per-spell balance factor: the whole value scales, the level part included), times the caster's weapon growth
+-- (ChaosSpell.casterShare, O472). A heal uses mlHealValues: healing does not take the growth.
+function ChaosSpell.mlHealValues(player, mlMin, mlMax, baseMin, baseMax, scale)
 	local l = player:getLevel() / 5
 	local m = player:getMagicLevel()
 	scale = scale or 1
 	return (l + m * mlMin + baseMin) * scale, (l + m * mlMax + baseMax) * scale
+end
+
+function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)
+	local min, max = ChaosSpell.mlHealValues(player, mlMin, mlMax, baseMin, baseMax, scale)
+	return ChaosSpell.casterScale(player, min, max)
 end
 
 -- O468: the factor on a WEAPON spell's base damage for the caster's magic level: (1 + ML / 300), divided by the same for the
@@ -939,7 +961,11 @@ end
 -- weapon) or Chaos.classes.shuriken.defaultAttack
 function ChaosSpell.shurikenPower(player)
 	local skill = math.max(ChaosSpell.meleeSkillLevel(player), player:getEffectiveSkillLevel(SKILL_DISTANCE))
-	local attack = (Chaos and Chaos.classes and Chaos.classes.shuriken.defaultAttack) or 50
+	-- O472: the shuriken needs no star, so its attack is a number of ours, and a thrown weapon grows with the level like every weapon:
+	-- the default attack times a(level) (spell_scaling_core.lua S.weaponA; the throwing stars of the base are out of the game)
+	local S = ChaosSpellScaling
+	local attack = ((Chaos and Chaos.classes and Chaos.classes.shuriken.defaultAttack) or 50)
+		* (S and S.weaponA and S.weaponA(player:getLevel()) or 1)
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
 		local it = item and ItemType(item:getId())

@@ -47,12 +47,18 @@ function K.read(player)
 			if type(t.crit) == "table" then
 				raw.critChance = t.crit.chance and t.crit.chance.total
 				raw.critAmount = t.crit.amount and t.crit.amount.total
+				-- O471: what the sources give, over the caps (the sheet says "cap" when the total was cut)
+				raw.critChanceRaw = t.crit.chance and t.crit.chance.capped and t.crit.chance.raw or nil
+				raw.critAmountRaw = t.crit.amount and t.crit.amount.capped and t.crit.amount.raw or nil
 			end
 			raw.attackSpeed = type(t.attackSpeed) == "table" and t.attackSpeed.total or nil
 			raw.damage = {}
 			for _, row in ipairs(type(t.damage) == "table" and t.damage or {}) do
 				local key = tostring(row.k):gsub("^increment", "")
-				raw.damage[#raw.damage + 1] = {k = key:lower(), pct = row.eff}
+				-- O473: the damage bonus of a type is the one additive damage pool (tree, Spell Damage, Paragon, gems, the card set)
+				-- after the soft cap, not the tree's own number
+				local eff = type(row.pool) == "table" and tonumber(row.pool.eff) or row.eff
+				raw.damage[#raw.damage + 1] = {k = key:lower(), pct = eff}
 			end
 		end
 	end

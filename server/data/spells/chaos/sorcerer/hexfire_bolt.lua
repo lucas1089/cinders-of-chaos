@@ -15,6 +15,8 @@ combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, ChaosVfxMissile and CONST_ANI_N
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 3.0) + 15) * 1.2
 	local max = ((level / 5) + (magicLevel * 5.0) + 30) * 1.2
+	-- O472: the weapon growth of a caster (ChaosSpell.casterShare: W(level) x the wand of the hands)
+	min, max = ChaosSpell.casterScale(player, min, max)
 	return -min, -max
 end
 
@@ -49,7 +51,7 @@ function onCastSpell(creature, variant, isHotkey)
 		local D = ChaosDot
 		local lo, hi = onGetFormulaValues(creature, creature:getLevel(), creature:getMagicLevel())
 		local side = D.cfg().side
-		local old = math.max(2, math.floor(creature:getMagicLevel() * 0.15) + 3)
+		local old = math.max(2, math.floor(creature:getMagicLevel() * 0.15) + 3) * ChaosSpell.casterShare(creature) -- O472
 		ChaosSpell.scriptedDot(creature:getId(), target:getId(), "witchfire", COMBAT_FIREDAMAGE, side.ticks, side.tickMs,
 			D.sideTick(-lo, -hi, side), CONST_ME_HITBYFIRE, {raw = true, pvp = D.pvpSideOpts("witchfire", old)})
 	end

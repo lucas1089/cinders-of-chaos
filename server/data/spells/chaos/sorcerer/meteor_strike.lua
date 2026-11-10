@@ -25,7 +25,7 @@ local function impact(casterId, pos, min, max)
 	local D = ChaosDot
 	local side = D.cfg().side
 	local tick = D.sideTick(min, max, side)
-	local old = math.max(3, math.floor(caster:getMagicLevel() * 0.2) + 5)
+	local old = math.max(3, math.floor(caster:getMagicLevel() * 0.2) + 5) * ChaosSpell.casterShare(caster) -- O472
 	for _, c in ipairs(ChaosSpell.enemiesAround(caster, pos, 2)) do
 		ChaosSpell.scriptedDot(casterId, c:getId(), "fallingpyre", COMBAT_FIREDAMAGE, side.ticks, side.tickMs, tick,
 			CONST_ME_HITBYFIRE, {raw = true, pvp = D.pvpSideOpts("fallingpyre", old)})

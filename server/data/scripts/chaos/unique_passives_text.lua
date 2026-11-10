@@ -50,6 +50,24 @@ local function f(x)
 	return (tostring(x):gsub("%.0$", ""))
 end
 
+-- O473: the "more damage" part of a passive is raw percent of the one additive damage pool: at most `each` for one passive, `cap` for
+-- all (damage_pool_config.lua sources.uniques). The sentences say "increased damage" and name the cap.
+local function poolNumbers()
+	local c = rawget(_G, "ChaosDamagePoolConfig")
+	if not c and dofile then
+		local ok, loaded = pcall(dofile, "data/scripts/chaos/damage_pool_config.lua")
+		c = ok and loaded or nil
+	end
+	local u = c and c.sources and c.sources.uniques
+	return u and u.each or 10, u and u.cap or 40
+end
+-- "+10% increased damage (at most 10 for one unique power, 40 for all)" for a bonus of `v` percent
+local function inc(v, i)
+	local each, cap = poolNumbers()
+	return pick(i, string.format("+%s%% increased damage (at most %s for one unique power, %s for all)", f(math.min(v, each)), f(each), f(cap)),
+		string.format("+%s%% de dano aumentado (no máximo %s por poder único, %s no total)", f(math.min(v, each)), f(each), f(cap)))
+end
+
 T.family = {}
 local F = T.family
 
@@ -61,45 +79,45 @@ function F.convert(e, _, i)
 end
 
 function F.lowlife(e, _, i)
-	return pick(i, string.format("Below %s%% health you deal %s%% more damage.", f(e.at), f(e.bonus)),
-		string.format("Abaixo de %s%% de vida você causa %s%% a mais de dano.", f(e.at), f(e.bonus)))
+	return pick(i, string.format("Below %s%% health you deal %s.", f(e.at), inc(e.bonus, 1)),
+		string.format("Abaixo de %s%% de vida você causa %s.", f(e.at), inc(e.bonus, 2)))
 		.. (e.malus > 0 and pick(i, string.format(" Above %s%% health you deal %s%% less.", f(e.malusAt), f(e.malus)),
 		string.format(" Acima de %s%% de vida você causa %s%% a menos.", f(e.malusAt), f(e.malus))) or "")
 end
 
 function F.overflow(e, _, i)
-	return pick(i, string.format("At %s%% mana or more you deal %s%% more damage.", f(e.at), f(e.bonus)),
-		string.format("Com %s%% de mana ou mais você causa %s%% a mais de dano.", f(e.at), f(e.bonus)))
+	return pick(i, string.format("At %s%% mana or more you deal %s.", f(e.at), inc(e.bonus, 1)),
+		string.format("Com %s%% de mana ou mais você causa %s.", f(e.at), inc(e.bonus, 2)))
 		.. (e.malus > 0 and pick(i, string.format(" At %s%% mana or less you deal %s%% less.", f(e.malusAt), f(e.malus)),
 		string.format(" Com %s%% de mana ou menos você causa %s%% a menos.", f(e.malusAt), f(e.malus))) or "")
 end
 
 function F.opener(e, _, i)
 	if e.side == "above" then
-		return pick(i, string.format("Targets at %s%% health or more take %s%% more damage from you.", f(e.at), f(e.bonus)),
-			string.format("Alvos com %s%% de vida ou mais sofrem %s%% a mais de dano seu.", f(e.at), f(e.bonus)))
+		return pick(i, string.format("Against targets at %s%% health or more you deal %s.", f(e.at), inc(e.bonus, 1)),
+			string.format("Contra alvos com %s%% de vida ou mais você causa %s.", f(e.at), inc(e.bonus, 2)))
 			.. (e.malus > 0 and pick(i, string.format(" Targets at %s%% or less take %s%% less.", f(e.malusAt), f(e.malus)),
 			string.format(" Alvos com %s%% ou menos sofrem %s%% a menos.", f(e.malusAt), f(e.malus))) or "")
 	end
-	return pick(i, string.format("Targets at %s%% health or less take %s%% more damage from you.", f(e.at), f(e.bonus)),
-		string.format("Alvos com %s%% de vida ou menos sofrem %s%% a mais de dano seu.", f(e.at), f(e.bonus)))
+	return pick(i, string.format("Against targets at %s%% health or less you deal %s.", f(e.at), inc(e.bonus, 1)),
+		string.format("Contra alvos com %s%% de vida ou menos você causa %s.", f(e.at), inc(e.bonus, 2)))
 		.. (e.malus > 0 and pick(i, string.format(" Targets at %s%% or more take %s%% less.", f(e.malusAt), f(e.malus)),
 		string.format(" Alvos com %s%% ou mais sofrem %s%% a menos.", f(e.malusAt), f(e.malus))) or "")
 end
 
 function F.focus(e, _, i)
-	return pick(i, string.format("Each hit in a row on one target deals %s%% more, up to %s hits. The first hit on a new target deals %s%% less.",
-		f(e.perStack), f(e.max), f(e.first)),
-		string.format("Cada golpe seguido no mesmo alvo causa %s%% a mais, até %s golpes. O primeiro golpe em um alvo novo causa %s%% a menos.",
-		f(e.perStack), f(e.max), f(e.first)))
+	return pick(i, string.format("Each hit in a row on one target adds %s%% increased damage, up to %s hits, %s. The first hit on a new target deals %s%% less.",
+		f(e.perStack), f(e.max), inc(e.perStack * e.max, 1), f(e.first)),
+		string.format("Cada golpe seguido no mesmo alvo soma %s%% de dano aumentado, até %s golpes, %s. O primeiro golpe em um alvo novo causa %s%% a menos.",
+		f(e.perStack), f(e.max), inc(e.perStack * e.max, 2), f(e.first)))
 end
 
 function F.statscale(e, _, i)
 	local s, o = STAT[e.stat] or {e.stat, e.stat}, ORIGIN[e.origin] or ORIGIN.any
-	return pick(i, string.format("Your %s deal %s%% more damage per %s %s%s, up to %s%%.", o[1], f(e.bonusPer), f(e.per), s[1],
-		e.from > 0 and (" above " .. f(e.from)) or "", f(e.cap)),
-		string.format("Seus %s causam %s%% a mais de dano a cada %s de %s%s, até %s%%.", o[2], f(e.bonusPer), f(e.per), s[2],
-		e.from > 0 and (" acima de " .. f(e.from)) or "", f(e.cap)))
+	return pick(i, string.format("Your %s deal %s%% increased damage per %s %s%s, up to %s%%: %s.", o[1], f(e.bonusPer), f(e.per), s[1],
+		e.from > 0 and (" above " .. f(e.from)) or "", f(e.cap), inc(e.cap, 1)),
+		string.format("Seus %s causam %s%% de dano aumentado a cada %s de %s%s, até %s%%: %s.", o[2], f(e.bonusPer), f(e.per), s[2],
+		e.from > 0 and (" acima de " .. f(e.from)) or "", f(e.cap), inc(e.cap, 2)))
 end
 
 function F.critrule(e, _, i)
@@ -111,15 +129,15 @@ end
 
 function F.crowd(e, _, i)
 	if e.mode == "pack" then
-		return pick(i, string.format("You deal %s%% more damage per other monster within %s tiles, up to %s. Alone you deal %s%% less.",
-			f(e.per), f(e.radius), f(e.max), f(e.alone)),
-			string.format("Você causa %s%% a mais de dano por outro monstro a %s passos, até %s. Sozinho você causa %s%% a menos.",
-			f(e.per), f(e.radius), f(e.max), f(e.alone)))
+		return pick(i, string.format("You deal %s%% increased damage per other monster within %s tiles, up to %s, %s. Alone you deal %s%% less.",
+			f(e.per), f(e.radius), f(e.max), inc(e.per * e.max, 1), f(e.alone)),
+			string.format("Você causa %s%% de dano aumentado por outro monstro a %s passos, até %s, %s. Sozinho você causa %s%% a menos.",
+			f(e.per), f(e.radius), f(e.max), inc(e.per * e.max, 2), f(e.alone)))
 	end
-	return pick(i, string.format("Against one target alone you deal %s%% more damage. Among %s or more monsters you deal %s%% less.",
-		f(e.bonus), f(e.many), f(e.malus)),
-		string.format("Contra um único alvo você causa %s%% a mais de dano. Entre %s ou mais monstros você causa %s%% a menos.",
-		f(e.bonus), f(e.many), f(e.malus)))
+	return pick(i, string.format("Against one target alone you deal %s. Among %s or more monsters you deal %s%% less.",
+		inc(e.bonus, 1), f(e.many), f(e.malus)),
+		string.format("Contra um único alvo você causa %s. Entre %s ou mais monstros você causa %s%% a menos.",
+		inc(e.bonus, 2), f(e.many), f(e.malus)))
 end
 
 function F.extra(e, _, i)
@@ -159,10 +177,10 @@ end
 
 function F.stacks(e, _, i)
 	local trig = e.trigger == "crit" and pick(i, "critical hit", "golpe crítico") or pick(i, "kill", "morte")
-	return pick(i, string.format("Each %s adds a stack for %s s, up to %s: %s%% more damage dealt per stack.",
-		trig, f(e.windowMs / 1000), f(e.max), f(e.perStack)),
-		string.format("Cada %s dá um acúmulo por %s s, até %s: %s%% a mais de dano causado por acúmulo.",
-		trig, f(e.windowMs / 1000), f(e.max), f(e.perStack)))
+	return pick(i, string.format("Each %s adds a stack for %s s, up to %s: %s%% increased damage dealt per stack, %s.",
+		trig, f(e.windowMs / 1000), f(e.max), f(e.perStack), inc(e.perStack * e.max, 1)),
+		string.format("Cada %s dá um acúmulo por %s s, até %s: %s%% de dano aumentado causado por acúmulo, %s.",
+		trig, f(e.windowMs / 1000), f(e.max), f(e.perStack), inc(e.perStack * e.max, 2)))
 		.. opt(e.takenPerStack, string.format(" Each stack also adds %s%% damage taken.", f(e.takenPerStack)),
 		string.format(" Cada acúmulo também soma %s%% de dano recebido.", f(e.takenPerStack)), i)
 end
@@ -220,10 +238,10 @@ function F.mend(e, _, i)
 end
 
 function F.mark(e, _, i)
-	return pick(i, string.format("Your hits mark the target for %s s, up to %s at once. Marked monsters take %s%% more damage from you.",
-		f(e.ms / 1000), f(e.max), f(e.bonus)),
-		string.format("Seus golpes marcam o alvo por %s s, até %s ao mesmo tempo. Monstros marcados sofrem %s%% a mais de dano seu.",
-		f(e.ms / 1000), f(e.max), f(e.bonus)))
+	return pick(i, string.format("Your hits mark the target for %s s, up to %s at once. Against marked monsters you deal %s.",
+		f(e.ms / 1000), f(e.max), inc(e.bonus, 1)),
+		string.format("Seus golpes marcam o alvo por %s s, até %s ao mesmo tempo. Contra monstros marcados você causa %s.",
+		f(e.ms / 1000), f(e.max), inc(e.bonus, 2)))
 		.. opt(e.unmarked, string.format(" Others take %s%% less.", f(e.unmarked)),
 		string.format(" Os demais sofrem %s%% a menos.", f(e.unmarked)), i)
 end

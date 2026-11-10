@@ -195,15 +195,38 @@ local function marked(S, id, now)
 	return at ~= nil and at > now
 end
 
--- the multiplier on a direct hit of the character (1 = unchanged). Procs and condition ticks never get one.
-function C.dealt(cfg, S, act, ctx)
+-- O473 (2026-11-10): what a unique passive does to the damage it deals falls on one of two sides.
+--   POOL (the "more damage" part, now "increased damage"): lowlife, overflow, opener, focus, statscale, crowd, stacks and mark. The
+--   bonus of the passive while its condition holds is raw percent of the additive damage pool (damage_pool_core.lua): its own value
+--   at most `each` (10) per passive, all passives together at most `cap` (40), numbers: damage_pool_config.lua sources.uniques.
+--   The 1.8 product cap of dealtCap is gone for them.
+--   MULTIPLICATIVE (unchanged): convert (a conversion: the converted part's bonus is C.convertPlan, the price on the other
+--   elements stays), critrule (the critical hit rule is a crit multiplier, its price on plain hits too), minionPact (its price on
+--   the owner's own spells), and every PRICE: the malus of lowlife, overflow, opener, the first hit of focus, the alone / many of
+--   crowd, the unmarked hit of mark, dealtLess. They keep the clamp [dealtFloor, dealtCap].
+--   No damage dealt part (nothing here): extra, nova, spread, ward, feast, hitcap, immunity, riposte, panic, manashield, mend.
+C.POOL_FAMILIES = {lowlife = true, overflow = true, opener = true, focus = true, statscale = true, crowd = true, stacks = true,
+	mark = true}
+
+local function poolNumbers(cfg)
+	local pc = ChaosDamagePoolConfig and ChaosDamagePoolConfig.sources and ChaosDamagePoolConfig.sources.uniques
+	return (pc and pc.each) or 10, (pc and pc.cap) or 40
+end
+
+-- Split the effect of the active passives on one direct hit into the pool part and the multiplier (O473). Returns raw (the
+-- raw percent the unique passives add to the pool: each passive's bonus at most `each`, all at most `cap`; 0 when none), mult (the
+-- multiplicative remainder: prices, critrule, convert's price, minionPact), list ({id, name, family, bonus, raw} per passive that
+-- gives a bonus now). Procs and condition ticks never get one. Stateful for focus (the stack count), like C.dealt always was:
+-- call it once per hit.
+function C.dealtSplit(cfg, S, act, ctx)
 	cfg = cfgOf(cfg)
 	if ctx.proc or ctx.dot or #act == 0 then
-		return 1
+		return 0, 1, {}
 	end
-	local now, m = ctx.now, 1
+	local each, cap = poolNumbers(cfg)
+	local now, m, raw, list = ctx.now, 1, 0, {}
 	for _, e in ipairs(act) do
-		local f, k = e.family, 1
+		local f, k, bonus = e.family, 1, 0
 		if f == "convert" then
 			-- the converted part's bonus is in C.convertPlan; here only the price on the other elements
 			if ctx.elem ~= "physical" and ctx.elem ~= e.elem then
@@ -211,28 +234,36 @@ function C.dealt(cfg, S, act, ctx)
 			end
 		elseif f == "lowlife" then
 			if ctx.selfPct < e.at then
-				k = 1 + e.bonus / 100
+				bonus = e.bonus
 			elseif ctx.selfPct > e.malusAt then
 				k = 1 - e.malus / 100
 			end
 		elseif f == "overflow" then
 			if ctx.manaPct >= e.at then
-				k = 1 + e.bonus / 100
+				bonus = e.bonus
 			elseif ctx.manaPct <= e.malusAt then
 				k = 1 - e.malus / 100
 			end
 		elseif f == "opener" then
 			local p = ctx.targetPct
 			if e.side == "above" then
-				k = p >= e.at and 1 + e.bonus / 100 or (p <= e.malusAt and 1 - e.malus / 100 or 1)
+				if p >= e.at then
+					bonus = e.bonus
+				elseif p <= e.malusAt then
+					k = 1 - e.malus / 100
+				end
 			else
-				k = p <= e.at and 1 + e.bonus / 100 or (p >= e.malusAt and 1 - e.malus / 100 or 1)
+				if p <= e.at then
+					bonus = e.bonus
+				elseif p >= e.malusAt then
+					k = 1 - e.malus / 100
+				end
 			end
 		elseif f == "focus" then
 			local fo = S.focus
 			if fo.target == ctx.targetId and now - fo.last <= e.resetMs then
 				fo.stacks = min(e.max, fo.stacks + 1)
-				k = 1 + fo.stacks * e.perStack / 100
+				bonus = fo.stacks * e.perStack
 			else
 				fo.target, fo.stacks = ctx.targetId, 0
 				k = 1 - e.first / 100
@@ -241,27 +272,34 @@ function C.dealt(cfg, S, act, ctx)
 		elseif f == "statscale" then
 			if e.origin == "any" or e.origin == ctx.origin then
 				local v = (ctx.stats and ctx.stats[e.stat]) or 0
-				local pct = min(e.cap, floor(max(0, v - e.from) / e.per) * e.bonusPer)
-				k = 1 + pct / 100
+				bonus = min(e.cap, floor(max(0, v - e.from) / e.per) * e.bonusPer)
 			end
 		elseif f == "critrule" then
 			k = ctx.crit and 1 + e.crit / 100 or 1 - e.plain / 100
 		elseif f == "crowd" then
 			local n = ctx.others or 0
 			if e.mode == "pack" then
-				k = n == 0 and 1 - e.alone / 100 or 1 + min(e.max, n) * e.per / 100
+				if n == 0 then
+					k = 1 - e.alone / 100
+				else
+					bonus = min(e.max, n) * e.per
+				end
 			else
-				k = n == 0 and 1 + e.bonus / 100 or (n >= e.many and 1 - e.malus / 100 or 1)
+				if n == 0 then
+					bonus = e.bonus
+				elseif n >= e.many then
+					k = 1 - e.malus / 100
+				end
 			end
 		elseif f == "stacks" then
-			k = 1 + stackCount(S, e, now) * e.perStack / 100
+			bonus = stackCount(S, e, now) * e.perStack
 		elseif f == "minionPact" then
 			if ctx.origin == "spell" then
 				k = 1 - e.own / 100
 			end
 		elseif f == "mark" then
 			if marked(S, ctx.targetId, now) then
-				k = 1 + e.bonus / 100
+				bonus = e.bonus
 			else
 				k = 1 - e.unmarked / 100
 			end
@@ -269,13 +307,33 @@ function C.dealt(cfg, S, act, ctx)
 		if e.dealtLess and e.dealtLess > 0 then
 			k = k * (1 - e.dealtLess / 100)
 		end
+		if bonus > 0 then
+			local r = min(bonus, each)
+			list[#list + 1] = {id = e.id, name = e.name, family = e.family, bonus = bonus, raw = r}
+			raw = raw + r
+		end
 		m = m * k
 	end
+	raw = min(raw, cap)
 	m = min(cfg.dealtCap, max(cfg.dealtFloor, m))
-	if ctx.targetPlayer and m > 1 then
-		m = 1 + (m - 1) * cfg.pvpScale
+	if ctx.targetPlayer then
+		raw = raw * cfg.pvpScale
 	end
-	return m
+	return raw, m, list
+end
+
+-- the most one passive adds to the damage pool (O473)
+function C.poolEach()
+	local e = poolNumbers()
+	return e
+end
+
+-- the multiplier on a direct hit of the character if the pool were only the unique passives (1 = unchanged): the pool part as
+-- 1 + raw / 100 times the multiplicative remainder. The glue uses it for the converted part's strike and when no pool ran for the
+-- hit (a player with no passive tree state): then nothing was counted twice.
+function C.dealt(cfg, S, act, ctx)
+	local raw, m = C.dealtSplit(cfg, S, act, ctx)
+	return m * (1 + raw / 100)
 end
 
 -- a hit that landed (after dealt): marks and fight clock. Call once per direct hit.

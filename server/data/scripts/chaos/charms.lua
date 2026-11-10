@@ -815,9 +815,25 @@ local function anyFamily(st)
 	return false
 end
 
+-- O473: Damage to a monster family (a charm) of a player's own hit is one entry of the additive damage pool (damage_pool_core.lua,
+-- the entry shares its cap with the weapon family's); the hits of a player's SUMMONS keep the event below (a summon has no tree).
+function CH.poolRaw(player, creature)
+	if not creature or not creature.isMonster or not creature:isMonster() then
+		return 0
+	end
+	local st = CH.players[player:getGuid()]
+	return st and Core.familyPct(st.own, familyOf(creature)) or 0
+end
+if not ChaosDamagePool then
+	dofile("data/scripts/chaos/damage_pool_core.lua")
+end
+ChaosDamagePool.register("charms", function(hit)
+	return CH.poolRaw(hit.attacker, hit.creature)
+end)
+
 local dealt = CreatureEvent("ChaosCharmsDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
-	if primaryType == COMBAT_HEALING or not creature:isMonster() then
+	if primaryType == COMBAT_HEALING or not creature:isMonster() or (attacker and attacker:isPlayer()) then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local p = playerOf(attacker)

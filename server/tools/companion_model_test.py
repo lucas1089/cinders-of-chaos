@@ -103,8 +103,9 @@ cfg = P.pace()
 for lv in (800, 1000, 1200):
     area = P.damage(M.CLASS, lv, frame='c4')[1] * M.cleave(lv)
     e = P.damage('Elementalist', lv, frame='c4')[1]
+    e = e * M.growth(lv)   # O472: the other classes grow by W as well (the model of them is not re-fitted yet)
     ok(area <= e * 1.5, 'level %d: the rebuilt Beastmaster is not far above the Elementalist on a pack (%.0f against %.0f)' % (lv, area, e))
-    ok(P.damage(M.CLASS, lv, frame='c4')[0] < P.damage('Deadeye', lv, frame='c4')[0], 'level %d: the Deadeye is above the rebuilt Beastmaster on one target' % lv)
+    ok(P.damage(M.CLASS, lv, frame='c4')[0] < P.damage('Deadeye', lv, frame='c4')[0] * M.growth(lv), 'level %d: the Deadeye is above the rebuilt Beastmaster on one target' % lv)
 
 # O468: the bite is the owner's ORIGIN_SPELL (classDamage and the armour of the median normal monster apply), and autoByLevel was
 # re-fitted so the PLAIN build's bite dps is the one before O468 (autoByLevel 1 / 0.88 / 0.56 / 0.5, no event factors): within 2%

@@ -49,14 +49,19 @@ near(W.hitFactor(100, true, "crossbow", nil), W.factor("crossbow", 100), 1e-9, "
 
 -- ------------------------------------------------------------------ the damage per second at levels 8 .. 300
 -- the model of weapon_sim.py: tier attack by level (install_gear_sets.py CURVES), skill 10 + 0.4 x (level - 8)
-local anchors = {8, 50, 100, 200, 400, 700, 1000, 1500, 2000}
+-- O472: the attack and bow curves have the anchors of the weapon growth (WEAPON_ANCHORS); the hit chance keeps ANCHORS
+local anchors = {
+	attack = {8, 50, 100, 200, 300, 400, 500, 700, 850, 1000, 1500, 2000},
+	bow = {8, 50, 100, 200, 300, 400, 500, 700, 850, 1000, 1500, 2000},
+	hit = {8, 50, 100, 200, 400, 700, 1000, 1500, 2000}
+}
 local curves = {
-	attack = {16, 40, 46, 49, 53, 57, 61, 65, 69},
-	bow = {31, 38, 68, 71, 73, 76, 79, 82, 85},
+	attack = {16, 40, 46, 57, 67, 75, 81, 94, 118, 147, 168, 199},
+	bow = {31, 38, 68, 83, 94, 103, 111, 125, 155, 191, 212, 245},
 	hit = {90, 93, 95, 95, 96, 96, 97, 97, 98}
 }
 local function curve(name, level)
-	return W.interp(anchors, curves[name], level)
+	return W.interp(anchors[name], curves[name], level)
 end
 local function maxHit(level, skill, attack)
 	return math.floor(level / 5) + ((skill / 4 + 1) * (attack / 3) * 1.03)

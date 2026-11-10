@@ -15,6 +15,8 @@ combat:setArea(createCombatArea(AREA_CIRCLE3X3))
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 2.4) + 18)
 	local max = ((level / 5) + (magicLevel * 4.1) + 36)
+	-- O472: the weapon growth of a caster (ChaosSpell.casterShare: W(level) x the wand of the hands)
+	min, max = ChaosSpell.casterScale(player, min, max)
 	return -min, -max
 end
 
@@ -24,7 +26,7 @@ end
 -- 8 ticks 2 s apart (ChaosDotConfig.pvp).
 function onVenomSwarmTarget(creature, target)
 	local D = ChaosDot
-	local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.25) + 3)
+	local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.25) + 3) * ChaosSpell.casterShare(creature) -- O472
 	local swarm = D.cfg().swarm
 	ChaosSpell.scriptedDot(creature:getId(), target:getId(), "blightswarm", COMBAT_EARTHDAMAGE, swarm.ticks, swarm.tickMs,
 		D.swarmTick(dmg, swarm), CONST_ME_HITBYPOISON, {pvp = D.pvpSideOpts("blightswarm", dmg)})

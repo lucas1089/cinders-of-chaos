@@ -265,10 +265,15 @@ for _, key in ipairs({"healing", "goblinchance", "multishot", "bowdistance"}) do
 	assert(M.byKey[key].cap, key .. ": unchanged, keeps its cap")
 end
 -- O464: the defence rows lost their module caps (the caps are the player defence layer's and the engine's)
-for _, key in ipairs({"dodge", "block", "reflect", "thorns", "monsterreduction", "physpen", "elepen", "energyshield",
+for _, key in ipairs({"dodge", "block", "reflect", "thorns", "monsterreduction", "energyshield",
 		"energyshieldpct", "esrecharge", "lastbreath", "frostward", "armour", "spellsuppress", "fireres", "coldres", "lightningres",
 		"chaosres", "allres"}) do
 	eq(M.byKey[key].cap, nil, key .. ": no cap of the module (O464)")
+end
+-- O471: the two penetration rows get a module cap again: 20 points of each kind from every source together
+for _, key in ipairs({"physpen", "elepen"}) do
+	eq(M.byKey[key].cap, 20, key .. ": 20 points in total (O471)")
+	eq(M.byKey[key].cap, M.config.penetration.cap, key .. ": the row follows config.penetration")
 end
 -- the roll rules: tier ranges never overlap and narrow toward the top (a row whose ladder was given as it is may touch)
 local STAGE1 = {"attackspeed", "gearspeed", "bowspeed", "movespeed", "bowcrit", "bleedchance", "ignitechance", "poisonchance",
@@ -428,14 +433,17 @@ eq(#rows, 8, "every tier the item level allows can roll"); eq(rows[1][1], 8, "be
 eq(#M.tierRows(40), 3, "T1-T3 at item level 40")
 eq(#M.tierRows(150, 4), 5, "a modifier gated at T4 rolls T4 .. T8 on an item of level 150")
 eq(#M.tierRows(40, 4), 0, "and nothing on an item that allows T3 at most")
--- all tiers weigh the same (O461)
-for t = 2, 8 do
-	eq(M.config.tierWeights[t], M.config.tierWeights[t - 1], "weights are equal")
+-- O471 (2026-11-10): the weight of tier t is 1.35^(t-1), rounded (O461 had them equal)
+local wantW = {100, 135, 182, 246, 332, 448, 605, 816}
+for t = 1, 8 do
+	eq(M.config.tierWeights[t], wantW[t], "tier weight T" .. t)
+	eq(math.abs(M.config.tierWeights[t] - 100 * 1.35 ^ (t - 1)) <= 1.5, true, "the weight follows 1.35^(t-1) (T8: 816, the exact power 817.2)")
 end
 local ch = M.tierChances(150)
-eq(ch[8], 12.5, "T8 at item level 150: one chance in eight"); eq(ch[4], 12.5); eq(ch[1], 12.5, "T1 can still roll at 150")
+eq(ch[8], 28.5, "T8 at item level 150: 816 of 2864"); eq(ch[4], 8.6); eq(ch[1], 3.5, "T1 can still roll at 150")
 eq(M.tierChances(10)[1], 100, "item level 10: only T1")
-eq(M.tierChances(133)[8], 12.5, "a boss of monster level 1000 (item level 133) rolls the top tier")
+eq(M.tierChances(133)[8], 28.5, "T8 opens at item level 130")
+eq(M.tierChances(40)[3], 43.6, "item level 40 (T1-T3): 182 of 417")
 -- the roll: forced dice pick the tiers
 eq(M.rollTier(150, function(a, b) return a end), 8, "lowest dice: the first row (best tier)")
 eq(M.rollTier(150, function(a, b) return b end), 1, "highest dice: the last row")
@@ -502,11 +510,21 @@ eq(M.maxBinds(1), 1); eq(M.maxBinds(4), 1); eq(M.maxBinds(5), 2); eq(M.maxBinds(
 eq(M.qualityCap(5), 20); eq(M.qualityCap(10), 30); eq(M.qualityCap(9), 20, "an old Eternal: below Divine") eq(M.qualityCap(11), 30, "an old Phantasmal: Divine's")
 
 -- ---------------------------------------------------------------- item level of a drop
-eq(M.levelFromMonster(1), 1); eq(M.levelFromMonster(50), 22); eq(M.levelFromMonster(75), 29, "between 50 and 100")
-eq(M.levelFromMonster(1100), 128); eq(M.levelFromMonster(99999), 145)
+-- O471 (2026-11-10): the curve of the design, one number per mark of the owner's table
+eq(M.levelFromMonster(1), 1); eq(M.levelFromMonster(50), 21); eq(M.levelFromMonster(75), 27, "between 50 and 100")
+eq(M.levelFromMonster(100), 33); eq(M.levelFromMonster(200), 50); eq(M.levelFromMonster(350), 68); eq(M.levelFromMonster(500), 82)
+eq(M.levelFromMonster(700), 98); eq(M.levelFromMonster(900), 112); eq(M.levelFromMonster(1000), 117, "between 900 and 1100")
+eq(M.levelFromMonster(1100), 122); eq(M.levelFromMonster(1500), 134); eq(M.levelFromMonster(2000), 144)
+eq(M.levelFromMonster(2200), 148, "the gear keeps growing past monster level 1000"); eq(M.levelFromMonster(99999), 150)
+local prevLv = 0
+for lv = 1, 3000 do
+	local il = M.levelFromMonster(lv)
+	assert(il >= prevLv, "the item level never falls with the monster level (" .. lv .. ")")
+	prevLv = il
+end
 eq(M.sourceLevel({monsterLevel = 42}), 18, "a Dragon: 12 + 10 x 17 / 25")
 eq(M.sourceLevel({monsterLevel = 42, tier = "legendary"}), 25, "+7 legendary")
-eq(M.sourceLevel({monsterLevel = 1000, tier = "legendary", riftTier = 10}), 140, "a legendary in a tier 10 rift: T8")
+eq(M.sourceLevel({monsterLevel = 1000, tier = "legendary", riftTier = 10}), 134, "a legendary in a tier 10 rift: T8")
 eq(M.sourceLevel({monsterLevel = 1100, tier = "boss", riftTier = 15, omen = true}), 150, "capped")
 eq(M.sourceLevel({monsterLevel = 5, riftTier = 99}), M.levelFromMonster(5) + 15, "rift bonus capped")
 eq(M.sourceLevel({worldBoss = true}), 145)
@@ -800,7 +818,7 @@ player.health, player.mana = 100, 0
 -- O464: penetration is the monster defence layer's (tests/monster_defence_test.lua), not this event's: the hit stays as it is
 eq(dealt.onHealthChange(orc, player, 80, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 80, "no penetration here any more")
 eq(M.playerBonus(player, "physpen"), 10, "the totals still carry physical penetration for the monster layer")
-eq(M.playerBonus(player, "elepen"), 25, "... and elemental penetration")
+eq(M.playerBonus(player, "elepen"), 20, "... and elemental penetration: 25 points worn, 20 count (O471, the cap of the totals)")
 eq(player.health, 107, "health on hit"); eq(player.mana, 3, "mana on hit")
 local _, _, sIce = dealt.onHealthChange(orc, player, 0, COMBAT_PHYSICALDAMAGE, 50, COMBAT_ICEDAMAGE, ORIGIN_SPELL)
 eq(sIce, 50, "the secondary part is not changed here either")

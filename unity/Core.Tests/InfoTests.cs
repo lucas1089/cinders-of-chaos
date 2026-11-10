@@ -714,12 +714,12 @@ namespace Chaos.Core.Tests
             check(CodexView.LevelOf(new Dictionary<string, string> { { ilvl.Key, "100" } }, mods.Filters) == 100 && CodexView.LevelOf(null, mods.Filters) == null, "codex: the chosen item level");
             check(CodexView.MaxTier(1, d) == 1 && CodexView.MaxTier(14, d) == 1 && CodexView.MaxTier(15, d) == 2 && CodexView.MaxTier(140, d) == 8 && CodexView.MaxTier(1000, d) == 8, "codex: the top tier of an item level");
             var rowsAt140 = CodexView.TierRows(140, d);
-            // O461: every tier the item level allows rolls, each with the same weight (no window of five)
+            // O461: every tier the item level allows rolls (no window of five); O471: tier t weighs 1.35^(t-1), T8 816 of 2864
             check(rowsAt140.Count == 8 && rowsAt140[0].Key == 8 && rowsAt140[7].Key == 1 && CodexView.TierRows(60, d).Count == 4 && CodexView.TierRows(1, d).Count == 1, "codex: the tiers that roll, best first, every tier the item level allows");
             var ch = CodexView.TierChances(140, d);
             double sum = 0;
             foreach (var v in ch.Values) sum += v;
-            check(Math.Abs(sum - 100) < 0.6 && ch[8] == 12.5 && ch[1] == 12.5, "codex: the chances add up to 100, equal per tier (" + sum + ")");
+            check(Math.Abs(sum - 100) < 0.6 && ch[8] == 28.5 && ch[1] == 3.5 && ch[4] == 8.6, "codex: the chances add up to 100, tilted toward the top tier (" + sum + ")");
             var entry = mods.Entries.First(e => e.Tv != null);
             check(CodexView.Subline(entry, null, d) == entry.Sub && CodexView.Subline(entry, 140, d).StartsWith("Item level 140: T1-T8: "), "codex: the list line at an item level");
             var tiers = entry.Sections.Select(s => CodexView.Section(s, d)).First(s => s != null && s.Tiers);

@@ -135,6 +135,13 @@ return {
 			text = "The spell heals %1%% more"},
 	},
 
+	-- O471 (2026-11-10): the damage runes count at most this level's value in a hit. A Mythic rune (level 5) stays what it is, shows
+	-- its own level and name, and counts as a Legendary one (level 4): brand 50 (not 60), Echo 30 (35), Hex 6 (8), Keen Edge 6 (8).
+	-- The values of level 5 stay in `values` above (the Mythic row of the Codex shows the value that counts). Sunder is no entry
+	-- here: its points count into the penetration total of 20 (ChaosItemMods.penLeft). Owned Mythic runes keep working.
+	levelCeiling = {emberbrand = 4, rimebrand = 4, dawnbrand = 4, gravebrand = 4, stormbrand = 4, keenedge = 4, echo = 4, hex = 4},
+	ceilingNote = "Counts as Legendary: the damage runes count at most their level 4 value.",
+
 	-- caps on the summed value of one support key on one spell (with option 2, extra sources may add up)
 	caps = {quickening = 30, thrift = 30, keenedge = 13, echo = 40, bloodthirst = 8, siphon = 40, sunder = 25,
 		hex = 10, mercy = 25},

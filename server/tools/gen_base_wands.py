@@ -7,12 +7,16 @@ The engine does not give weapons.xml numbers to Lua, so the item tooltip (item_t
 the stock wands' and rods' min and max from this table. Source: data/items/base_weapons.csv (kind wand or rod, columns
 wmin and wmax; re-run tools/survey_base_weapons.py on an installed server when a base weapon changes). --check fails
 when the committed file differs from what this script writes.
+O472: the CSV holds the damage before the weapon growth; the step tools/patch_stock_weapon_growth.py sets the weapons.xml damage of a
+wand or rod of a level above 100 to the CSV's times a(level), so this table has the grown numbers.
 """
 import csv
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import weapon_growth as WG  # noqa: E402  (O472: the stock wands grow with the level, patch_stock_weapon_growth.py)
 SERVER = os.path.dirname(HERE)
 SRC = os.path.join(SERVER, 'data', 'items', 'base_weapons.csv')
 OUT = os.path.join(SERVER, 'data', 'lib', 'chaos_base_wands.lua')
@@ -31,8 +35,11 @@ def rows(path=SRC):
                 continue
             try:
                 iid, lo, hi = int(r['id']), int(r['wmin'] or 0), int(r['wmax'] or 0)
+                level = int(r.get('level') or 0)
             except (KeyError, ValueError):
                 continue
+            if level > 100:
+                lo, hi = WG.grown(lo, level), WG.grown(hi, level)
             if hi > 0:
                 out.append((iid, min(lo, hi), max(lo, hi)))
     return sorted(out)

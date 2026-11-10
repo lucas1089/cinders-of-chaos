@@ -3438,6 +3438,11 @@ healing needed; the burst is the same). If the late hunts turn out too easy in t
 rifts, waystones, invasions, the raid and the arena are not paced and are not affected (their fights stay as long as they
 were; the rift health budget is its own model).
 
+O470 (2026-11-10): the late health stood 2.2 times above the base set's at the seam (hunting level 657); the `scaled` points of
+657 to 900 (health, experience, loot, goal, notable) and the plan `paceKillsPerHour.scaled` were refitted and the step is gone: a
+pack of the median class dies in 2.8 s at 670 (5.8 s before), 3.1 s at 700, 4.2 s at 800, 5.2 s at 900, as before from 1000. The
+figures above for 650 to 900 are the ones before; server/README.md "Monster health curve (O470)" has the new ones.
+
 **2. Class curve (the early dips and the level 200 spikes).** One factor per class could not hold levels 30-200 and
 300-1000 together. `spell_factor_config.lua` now has `byLevel[vocation]`: {level, factor} points (flat below the first,
 linear between points, the last point's value above; `spell_factor_core.lua` `forVocation(voc, cfg, level)`, the event
@@ -5040,6 +5045,12 @@ Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `
 - **Free effect.** The Common rune of the support, the percent field cut to 75% (rounded down): Fork 1 enemy for 26%, Breadth 26%,
   Shatter 15%, Hex 2%, Echo 11% chance for 50%, Quickening 4%, the brands 15%. No support has a price, so the effect is reduced, and
   the tooltip says so.
+- **O473 (2026-11-10): the brands are pool entries.** The four brand choices (Hallowed Ground, Storm Rupture, Grave Wail, Bell of
+  Dawn) are no free support any more: while their spell is cast they add +3 raw to the one additive damage pool
+  (`damage_pool_config.lua` `masteries`, at most 12; config `damage`). The model counts the effect as the brand did, the spell's
+  damage +3% (the pool's soft cap only lowers it), so their rows below read +3% / +3% per spell and +0.4 to +1.1% of the class damage,
+  down from +15% / +15% and +1.9 to +5.4%. `spell_mastery_model.py` CAP (15% of the class damage per choice) now counts raw pool
+  percent for these rows; nothing was re-baselined, the rows fall far under it.
 - **Spell gain** (one cast, a pack of 5 as in `rotation_model.csv`): a brand +15% on both counts, Echo +5.5%, Fork one more enemy for
   26% of the hit (a single target spell: +26% on the pack), Shatter 4 neighbours for 15% (+60% on the pack), Breadth the enemies the
   spell missed (+17% for a spell that hits 3 of 5), Hex and Quickening are not a change of one cast. Fork, Shatter and Breadth give
@@ -5060,22 +5071,22 @@ Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `
 | Echoing Slam | spell not yet cast | +1.2% / +1.8% | +1.2% / +1.8% | 6 of 6 |
 | Wide Cry | spell not yet cast | +0.0% / +3.0% | +0.0% / +2.9% | 1 of 6 |
 | Splintering Spear | spell not yet cast | +0.0% / +4.7% | +0.0% / +4.1% | 2 of 6 |
-| Hallowed Ground | +2.3% / +5.4% | +1.9% / +4.0% | +2.1% / +4.3% | 9 of 9 |
+| Hallowed Ground | +0.5% / +1.1% | +0.4% / +0.8% | +0.4% / +0.9% | 9 of 9 |
 | Hunter's Mark | +1.3% / +0.3% | +1.3% / +0.3% | +1.3% / +0.3% | 3 of 9 |
 | Crimson Fork | spell not yet cast | +0.0% / +2.2% | +0.0% / +2.4% | 2 of 6 |
-| Storm Rupture | spell not yet cast | +2.1% / +3.2% | +1.9% / +3.1% | 3 of 6 |
+| Storm Rupture | spell not yet cast | +0.4% / +0.6% | +0.4% / +0.6% | 3 of 6 |
 | Twin Toss | +0.0% / +11.2% | +0.0% / +7.2% | +0.0% / +7.0% | 9 of 9 |
 | Wide Smoke | spell not yet cast | +0.0% / +3.2% | +0.0% / +3.0% | 2 of 6 |
 | Echoing Flurry | +0.7% / +2.4% | +0.7% / +1.5% | +0.8% / +1.5% | 9 of 9 |
 | Cursed Marrow | +1.0% / +0.2% | +1.0% / +0.2% | +1.0% / +0.2% | 2 of 9 |
-| Grave Wail | spell not yet cast | +2.3% / +4.7% | +2.3% / +4.4% | 3 of 6 |
+| Grave Wail | spell not yet cast | +0.5% / +0.9% | +0.5% / +0.9% | 3 of 6 |
 | Splintered Rot | spell not yet cast | +0.0% / +5.2% | +0.0% / +5.3% | 3 of 6 |
 | Wide Mist | spell not yet cast | +0.0% / +4.1% | +0.0% / +3.9% | 6 of 6 |
 | Splitting Palm | +0.0% / +5.5% | +0.0% / +4.6% | +0.0% / +4.3% | 5 of 9 |
 | Quick Heel | +0.0% / +0.0% | +1.6% / +1.8% | +1.6% / +1.8% | 3 of 9 |
 | Echoing Ground | +1.0% / +2.9% | +1.1% / +1.9% | +1.2% / +2.0% | 9 of 9 |
 | Marked Cut | +1.0% / +0.2% | +1.0% / +0.2% | +1.0% / +0.2% | 3 of 9 |
-| Bell of Dawn | spell not yet cast | +2.4% / +3.7% | +2.3% / +3.5% | 4 of 6 |
+| Bell of Dawn | spell not yet cast | +0.5% / +0.7% | +0.5% / +0.7% | 4 of 6 |
 
 - **Reading.** The largest gain is Twin Toss on 5 targets at level 100 (+11.2%, a Thief with few spells, Shuriken Toss cast every
   2 s). From level 500 no choice is over +7.2%. Hex is about +1% on one target (4 s over a 7 to 10 s cooldown, 2%). Quickening
@@ -5087,6 +5098,19 @@ Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `
   Cry 340, Prismatic Rupture 500.
 - **Not modelled.** Resistances (a brand's element against a monster that resists it), crits, kills (nothing here depends on one),
   the mana a faster Quickening costs, the other spells that a set leaves out.
+
+## Ceilings on critical hits, damage runes and penetration (O471, owner 2026-11-10; computed, not measured)
+
+What this package moves in the numbers quoted on this page: a character counts at most 45 points of critical chance and 150%
+extra critical damage (every source), at most 20 points of physical and of elemental penetration (the Sunder rune included in
+the elemental), and a Mythic brand, Echo, Hex or Keen Edge rune counts at its Legendary value (brand 50, Echo 30, Hex 6, Keen
+Edge 6). The measured class table `class_dps_measured.csv` and the models that read it (class DPS, weapon families, survival,
+PvP, card sets) are unchanged: `rotation_sim.py` and `class_dps_model.py` read neither a rune nor a critical or penetration total.
+`spell_mastery_model.py` reads a Common rune at the mastery tier, below the ceiling, so it does not move either. The only quoted number that depends on the item level curve is the
+hunting-level to item-level pairs of the energy shield text above (item level 150 with a boss and a rift bonus at level 1000):
+with the flatter curve a boss of level 1000 is item level 127, plus a rift 15, plus an Omen 15: 150 after the cap, so the
+statement holds. The critical reach (`luajit tools/crit_reach.lua`): three slots, a dedicated build 71 -> 45 (the cap), the
+damage ceiling 300 -> 150. server/README.md "Critical, rune and penetration ceilings, gear growth (O471)".
 
 ## Spell scaling (O468, owner 2026-11-10; computed, not measured)
 
@@ -5261,3 +5285,31 @@ move that spell (then change `spells_chaos.xml`, `docs/CLASSES.md` "Cooldown lad
 The model (`class_dps_model.py`, `rotation_sim.py`) always counted a dot in full, so it never saw the loss on a hunt monster. After this change
 what the model counts lands in a pack (33 to 100%, 100% from level 500 for most dots), on a rare, a boss and a guardian (100%), and 33 to 100% on one hunt
 monster. Falling Pyre stays at 0% on a hunt monster below level 1000: its meteor lands at 1.2 s, it is a spell for rares, bosses and packs.
+
+## Weapon growth (O472, owner 2026-11-10; computed, not measured)
+
+The weapon values grow with the level (server README "Weapon growth (O472)"): W(level) 1.00 up to 100, 1.14 at 200, 1.26 at 300, 1.42
+at 500, 1.55 at 700, 1.85 at 850, 2.20 at 1000, 2.35 at 1500, 2.60 at 2000; an attack grows by a = 1 + (W - 1) / 0.85 (x1.49 at 500,
+x2.41 at 1000). A caster takes W as a factor on its spells with a wand or rod of its level band (1 + (W - 1) x min(1.2, wand / mean wand
+of the level), 1 without a wand). The tables of this file are measured with the attack and the wand of before and are not rewritten:
+they are the "before" of the numbers below until the model round re-fits them.
+
+Typical character of `rotation_sim.py` ANCHORS on the probe engine (`tests/fixtures/spell_probe_engine.lua`), weapon attack x a, caster with a wand of the band:
+
+| Spell | Level 500 | Level 1000 |
+|---|---|---|
+| Rift Cleaver (Warrior) | 1286 -> 1858 (x1.44) | 1733 -> 3856 (x2.23) |
+| Sunspear (Ranger) | 1414 -> 2048 (x1.45) | 1960 -> 4403 (x2.25) |
+| Hallowed Cut (Templar) | 1373 -> 1977 (x1.44) | 1846 -> 4093 (x2.22) |
+| Gorehook (Warrior, scripted, level heavy) | 1462 -> 1910 (x1.31) | 2235 -> 3892 (x1.74) |
+| Gutting Slash (Thief) | 725 -> 1020 (x1.41) | 1004 -> 2098 (x2.09) |
+| Phantom Needles (Illusionist) | 1972 -> 2801 (x1.42) | 2506 -> 5514 (x2.20) |
+| Marrow Bolt (Necromancer) | 1001 -> 1421 (x1.42) | 1306 -> 2873 (x2.20) |
+| Rime Bloom (Mystic) | 610 -> 866 (x1.42) | 836 -> 1840 (x2.20) |
+| Auto attack, melee max hit | 721 -> 1028 (x1.43) | 1003 -> 2138 (x2.13) |
+| Auto attack, distance max hit | 810 -> 1160 (x1.43) | 1152 -> 2495 (x2.17) |
+| Monk bare fist max hit | 659 -> 935 (x1.42) | 942 -> 1989 (x2.11) |
+
+A weapon spell grows a little more than W (its level term is small and its weapon term carries a), a level heavy one less. The auto attack
+lift of `weapon_power_config.lua` was regenerated with the reference rotation times W: distance 1.63 and wand 1.95 at level 1000 (was
+1.49 and 2.14).

@@ -215,7 +215,9 @@ eq(epicFork, 32148, "epic fork id")
 eq(S.runeName(epicFork), "Epic Fork Rune", "rune name")
 eq(S.itemName(fork.index, 3, true), "epic fork runes", "items.xml plural")
 eq(S.effectText(epicFork), "The hit forks to 2 more enemies within 3 sqm for 45% of it", "effect text")
-eq(S.effectText(S.runeId(1, 5)), "60% of the spell's damage is added as extra fire damage", "brand text")
+eq(S.effectText(S.runeId(1, 5)), "50% of the spell's damage is added as extra fire damage", "brand text: O471, a Mythic brand counts as Legendary")
+eq(S.effectText(S.runeId(1, 4)), "50% of the spell's damage is added as extra fire damage", "the Legendary brand")
+eq(S.effectText(S.runeId(1, 3)), "40% of the spell's damage is added as extra fire damage", "the Epic brand")
 eq(S.levelsText("quickening"), "Cooldown -6/9/12/15/18%", "levels text")
 eq(S.levelColor(S.runeId(1, 5)), cfg.levelColors[5], "mythic colour")
 ok(S.description(fork.index, 5):find("Fits single target spells%.") ~= nil, "description fits")
@@ -272,6 +274,56 @@ eq(select(2, S.canSocket(sock(ember), 1, quick, "area")), S.reasons.full, "full"
 eq(select(2, S.canSocket(sock(), 1, quick, "area", 2)), S.reasons.locked, "closed socket")
 eq(select(2, S.canSocket(sock(), 1, 12345, "area")), S.reasons.notRune, "not a rune")
 eq(select(2, S.canSocket(sock(), 1, quick, nil)), S.reasons.noSpell, "no kind")
+
+-- ---------------------------------------------------------------- O471: the damage runes count at most their level 4 value
+do
+	local ceil = cfg.levelCeiling
+	local want = {emberbrand = 4, rimebrand = 4, dawnbrand = 4, gravebrand = 4, stormbrand = 4, keenedge = 4, echo = 4, hex = 4}
+	for key, lv in pairs(want) do
+		eq(ceil[key], lv, key .. " has a ceiling at level 4")
+	end
+	local n = 0
+	for _ in pairs(ceil) do n = n + 1 end
+	eq(n, 8, "the brands, Keen Edge, Echo and Hex have one, nothing else")
+	for key in pairs(want) do
+		local t = S.byKey[key]
+		local mythic, legendary = S.runeId(t.index, 5), S.runeId(t.index, 4)
+		local m1, m2 = S.values(mythic)
+		local l1, l2 = S.values(legendary)
+		eq(m1, l1, key .. ": a Mythic rune counts as a Legendary one"); eq(m2, l2, key .. ": the second value too")
+		eq(m1, t.values[4], key .. ": the value of level 4"); ok(t.values[5] > t.values[4], key .. ": level 5 stays in the table")
+		eq(S.runeOf(mythic).level, 5, key .. ": the rune stays Mythic"); ok(S.runeName(mythic):find("Mythic", 1, true), key .. ": its name")
+		eq(S.levelColor(mythic), cfg.levelColors[5], key .. ": its colour")
+		eq(S.effectText(mythic), S.effectText(legendary), key .. ": the text names the value that counts")
+		ok(S.ceilingNote(mythic):find("Counts as Legendary", 1, true) ~= nil, key .. ": the Mythic tooltip says which value counts")
+		eq(S.ceilingNote(legendary), "", key .. ": a Legendary rune needs no note")
+		eq(S.ceilingNote(S.runeId(t.index, 1)), "", key .. ": nor a Common one")
+		local fxm = S.effects({mythic})[key]
+		eq(fxm.value, math.min(t.values[4], cfg.caps[key] or 1e9), key .. ": the summed effect counts level 4")
+		eq(fxm.level, 5, key .. ": the effect still reports the rune's level")
+	end
+	eq(S.levelsText("emberbrand"), "20/30/40/50/50% of the spell's damage is added as extra fire damage", "the levels text shows what counts")
+	eq(S.levelsText("hex"), "Monsters hit take +3/4/5/6/6% damage from everyone for 4 s (the strongest hex counts)", "hex levels text")
+	eq(S.values(S.runeId(S.byKey.emberbrand.index, 5)), 50, "brand 50, not 60")
+	eq(S.values(S.runeId(S.byKey.echo.index, 5)), 30, "echo 30, not 35")
+	eq(S.values(S.runeId(S.byKey.hex.index, 5)), 6, "hex 6, not 8")
+	eq(S.values(S.runeId(S.byKey.keenedge.index, 5)), 6, "keen edge 6, not 8")
+	-- the other supports keep their level 5 values
+	eq(S.values(S.runeId(S.byKey.quickening.index, 5)), 18, "quickening level 5 unchanged")
+	eq(S.values(S.runeId(S.byKey.fork.index, 5)), 3, "fork level 5 unchanged")
+	eq(S.values(S.runeId(S.byKey.sunder.index, 5)), 18, "sunder level 5 unchanged (it counts into the penetration cap)")
+	eq(S.values(S.runeId(S.byKey.mercy.index, 5)), 18, "mercy unchanged")
+	-- two Mythic brands never exist (one brand per spell); a Mythic echo and a Legendary echo add the counted values
+	eq(S.effects({S.runeId(S.byKey.echo.index, 5), S.runeId(S.byKey.echo.index, 5)}).echo.value, cfg.caps.echo, "two echoes: 60, cap 40")
+	-- the free support of a mastery counts at the ceiling too (its tier is level 1: nothing changes)
+	for key in pairs(S.mastery.reduce) do
+		local t, freeE = S.byKey[key], S.freeEffect(key)
+		if t and freeE then
+			eq(freeE.value >= 1, true, key .. ": a free effect")
+			ok(S.mastery.tier <= (cfg.levelCeiling[key] or 5), key .. ": the mastery tier is under the ceiling, nothing changes")
+		end
+	end
+end
 
 -- ---------------------------------------------------------------- effects and caps
 local fx = S.effects({ember, quick, 0})
@@ -609,18 +661,18 @@ S.random = function(a, b) return b end -- no Keen Edge
 me.storage[cfg.storageContext] = S.ctxEncode(5, 201)
 local a, at, b, bt = hit(demon, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
 eq(a, 100, "physical part stays whole"); eq(b, 20, "fire part added after the fire resistance"); eq(bt, COMBAT_FIREDAMAGE, "fire")
--- the hit hexed the demon: +8% from anyone (also without a context)
+-- the hit hexed the demon: +6% from anyone (the Mythic hex counts as Legendary) (also without a context)
 me.storage[cfg.storageContext] = nil
 local other = newCreature({player = true, level = 50, pos = {x = 53, y = 50, z = 7}, health = 100})
-eq((hit(demon, other, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)), 108, "hexed: +8% from everyone")
+eq((hit(demon, other, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)), 106, "hexed: +6% from everyone (a Mythic hex counts as Legendary: O471)")
 -- no context: no brand
-eq((hit(demon, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)), 108, "weapon hit: only the hex")
+eq((hit(demon, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)), 106, "weapon hit: only the hex")
 -- Keen Edge crits
 S.random = function(a, b) return a end
 me.storage[cfg.storageContext] = S.ctxEncode(6, 201)
 a, at, b = hit(demon, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
--- hex first (108), brand 40% (43 added, 21 after the fire resistance), then the crit +50% on both parts
-eq(a, 162, "crit on the whole physical part"); eq(b, 31, "crit on the added fire part")
+-- hex first (106), brand 40% (42 added, 21 after the fire resistance), then the crit +50% on both parts
+eq(a, 159, "crit on the whole physical part"); eq(b, 31, "crit on the added fire part")
 me.storage[cfg.storageContext] = nil
 flushEvents()
 
@@ -891,6 +943,79 @@ ChaosSpellMasteries.apply(me, {})
 eq(me.storage[mcfg.storage], nil, "no spell modifier: storage -1")
 eq(next(S.effectsFor(me, 203)), nil, "and no effect")
 eq(ChaosSpellMasteries.idOf({spellMod = 99}), -1, "an id the config does not know is none")
+
+-- O473: a damage choice (a brand) is a pool entry while its spell is cast, no free support
+do
+	local demon2 = newCreature({pos = {x = 55, y = 50, z = 7}, health = 5000})
+	me.storage[mcfg.storage] = 5 -- Hallowed Ground: Blessed Earth (spell 216), dawnbrand
+	S.refreshActive(me)
+	eq(next(S.effectsFor(me, 216)), nil, "choice 5: no free brand on Blessed Earth (O473)")
+	me.storage[cfg.storageContext] = S.ctxEncode(9, 216)
+	eq(S.masteryPoolRaw(me, demon2, ORIGIN_SPELL), 3, "while Blessed Earth is cast: +3 raw")
+	eq(ChaosDamagePool.raws({attacker = me, creature = demon2, origin = ORIGIN_SPELL, cache = {}}, COMBAT_HOLYDAMAGE, "primary").masteries, 3,
+		"the provider of the damage pool")
+	eq(S.masteryPoolRaw(me, demon2, ORIGIN_CONDITION), 0, "never on a tick")
+	eq(S.masteryPoolRaw(me, me, ORIGIN_SPELL), 0, "never on oneself")
+	me.storage[cfg.storageContext] = S.ctxEncode(9, 201)
+	eq(S.masteryPoolRaw(me, demon2, ORIGIN_SPELL), 0, "another spell: nothing")
+	me.storage[cfg.storageContext] = S.ctxEncode(9, 216)
+	me.storage[mcfg.storage] = 1 -- Gorehook fork: a free support, not increased damage
+	eq(S.masteryPoolRaw(me, demon2, ORIGIN_SPELL), 0, "a free support choice adds nothing to the pool")
+	me.storage[mcfg.storage] = nil
+	me.storage[cfg.storageContext] = nil
+	S.refreshActive(me)
+end
+
+-- O471: Sunder counts into the elemental penetration cap of 20 (the worn pieces first), Keen Edge into the critical chance cap
+-- of 45 (the engine's own chance first). Both ask the item module (ChaosItemMods.penLeft / critRoom) and crit_cap.lua.
+do
+	local savedIM, savedCC = ChaosItemMods, ChaosCritCap
+	dofile("data/lib/chaos_item_mods.lua")
+	local IM = ChaosItemMods
+	IM.playerBonus = function(p, key) return p.pen and p.pen[key] or 0 end
+	ChaosCritCap = {engineTotals = function(p) return p.engineCrit or 0, 0 end}
+	for i = 1, 3 do S.setRune(me, 201, i, 0) end
+	S.setRune(me, 201, 1, S.runeId(S.byKey.sunder.index, 5)) -- 18 points off the resistance of the spell's element
+	S.refreshActive(me)
+	local golem = newCreature({name = "Cap Golem", pos = {x = 80, y = 80, z = 7}, health = 90000, res = {[COMBAT_FIREDAMAGE] = 50}})
+	registered.targetCombat(me, golem)
+	me.storage[cfg.storageContext] = S.ctxEncode(60, 201)
+	me.pen = nil
+	local f1 = hit(golem, me, 100, COMBAT_FIREDAMAGE, 0, 0, ORIGIN_SPELL)
+	eq(f1, S.penetrate(100, 50, 18), "no worn penetration: Sunder gives its 18 points (100 -> 136)")
+	me.pen = {elepen = 12}
+	local f2 = hit(golem, me, 100, COMBAT_FIREDAMAGE, 0, 0, ORIGIN_SPELL)
+	eq(f2, S.penetrate(100, 50, 8), "12 worn points: Sunder gets the 8 that are left of the 20")
+	me.pen = {elepen = 20}
+	eq((hit(golem, me, 100, COMBAT_FIREDAMAGE, 0, 0, ORIGIN_SPELL)), 100, "20 worn points: Sunder adds nothing")
+	me.pen = {elepen = 5, physpen = 20}
+	eq((hit(golem, me, 100, COMBAT_FIREDAMAGE, 0, 0, ORIGIN_SPELL)), S.penetrate(100, 50, 15), "physical penetration is another kind: it does not count")
+	me.pen = nil
+	-- Keen Edge: 8% (Mythic counts 6), dice that always crit
+	for i = 1, 3 do S.setRune(me, 201, i, 0) end
+	S.setRune(me, 201, 1, S.runeId(S.byKey.keenedge.index, 5))
+	S.refreshActive(me)
+	local chances = {}
+	local oldRoll = S.roll
+	S.roll = function(chance) chances[#chances + 1] = chance return false end
+	me.engineCrit = 0
+	hit(golem, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
+	eq(chances[#chances], 6, "no engine chance: Keen Edge rolls its own 6 (a Mythic rune counts as Legendary)")
+	me.engineCrit = 42
+	hit(golem, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
+	ok(math.abs(chances[#chances] - (45 - 42) / (1 - 0.42)) < 1e-9, "42 from the engine: the room that keeps the total at 45 (" .. tostring(chances[#chances]) .. ")")
+	me.engineCrit = 45
+	hit(golem, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
+	eq(chances[#chances], 0, "at the cap: Keen Edge has no room")
+	me.engineCrit = 90
+	hit(golem, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
+	eq(chances[#chances], 0, "over it: none")
+	S.roll = oldRoll
+	me.engineCrit = nil
+	me.storage[cfg.storageContext] = nil
+	flushEvents()
+	ChaosItemMods, ChaosCritCap = savedIM, savedCC
+end
 
 -- the loot hook
 local corpseItems = {}

@@ -123,9 +123,19 @@ function A.weaponShare(player, spec)
 	return 1
 end
 
+-- O472: a caster spell of the kit (the magic school: it reads the magic level only) takes the caster's weapon growth, W(level) x the wand
+-- of the hands (ChaosSpell.casterShare). The necro school takes it inside ChaosNecro.values (necro_lib.lua spellFactor), the
+-- templar school reads the weapon already.
+function A.casterShare(player, spec)
+	if spec.school == "magic" then
+		return ChaosSpell.casterShare(player)
+	end
+	return 1
+end
+
 function A.rawValues(player, spec, chiScale)
 	local lo, hi = A.baseValues(player, spec, chiScale)
-	local k = A.weaponShare(player, spec)
+	local k = A.weaponShare(player, spec) * A.casterShare(player, spec)
 	return lo * k, hi * k
 end
 

@@ -26,7 +26,7 @@ Found a bug? Use System > Report a Bug in the game, or tell us on Discord. Every
 
 ## Changes
 
-- **Better tiers.** Every tier your item level allows can roll, and each is as likely as any other. Before, only the best
+- **Better tiers.** Every tier your item level allows can roll. Since 2026-11-10 (O471) each tier is 1.35 times as likely as the one below it. Before, only the best
   five could. The top tier now comes from item level 130, so bosses of level 1000 and up can drop it.
 - **Clean ranges.** A higher tier never rolls lower than the tier below it.
 - **Critical hits are two modifiers.** Critical Strike Chance and Critical Strike Damage roll on their own. They can be on

@@ -51,15 +51,23 @@ return {
 		{"Berserker", "1700-2400+", "two-handed only: 2 swords, 7 axes, 2 clubs, only the axe has 3"},
 	},
 
-	-- the tier of a level: the attack of the equipment sets at that level (tools/install_gear_sets.py ANCHORS and
-	-- CURVES; tools/weapon_sim.py calls it "one tier"; tools/weapon_coverage_test.py checks they are equal). One-handed
+	-- the tier of a level: the attack of the equipment sets at that level (tools/install_gear_sets.py WEAPON_ANCHORS and
+	-- WEAPON_CURVES; tools/weapon_sim.py calls it "one tier"; tests/weapon_coverage_test.lua checks they are equal). One-handed
 	-- melee = attack, two-handed = attack + 3, bow = bow, crossbow = bow + 3, wand and rod = the mean damage.
-	anchors = {8, 50, 100, 200, 400, 700, 1000, 1500, 2000},
+	-- O472 (2026-11-10): the curves are the ones before (anchors 8, 50, 100, 200, 400, 700, 1000, 1500, 2000; attack 16, 40, 46, 49,
+	-- 53, 57, 61, 65, 69; bow 31, 38, 68, 71, 73, 76, 79, 82, 85; wand 16, 40, 62, 85, 98, 108, 118, 128, 138) times the weapon
+	-- growth a = 1 + (W - 1) / 0.85 of spell_scaling_config.lua `weaponGrowth`, anchors of W (300, 500, 850) added
+	anchors = {8, 50, 100, 200, 300, 400, 500, 700, 850, 1000, 1500, 2000},
 	curves = {
-		attack = {16, 40, 46, 49, 53, 57, 61, 65, 69},
-		bow = {31, 38, 68, 71, 73, 76, 79, 82, 85},
-		wand = {16, 40, 62, 85, 98, 108, 118, 128, 138}
+		attack = {16, 40, 46, 57, 67, 75, 81, 94, 118, 147, 168, 199},
+		bow = {31, 38, 68, 83, 94, 103, 111, 125, 155, 191, 212, 245},
+		wand = {16, 40, 62, 99, 119, 138, 151, 178, 226, 285, 331, 398}
 	},
+
+	-- O472 (2026-11-10): the stock weapons grow with the level (tools/patch_stock_weapon_growth.py; base_weapons.csv holds the numbers
+	-- before): the audit applies the same rule. A weapon of these kinds, no charges, required level above fromLevel (attack and element
+	-- damage); with `wands`, a wand or rod of a level above fromLevel (min and max damage)
+	stockGrowth = {fromLevel = 100, kinds = {sword = true, axe = true, club = true, bow = true, crossbow = true}, wands = true},
 
 	-- the classes (docs/CLASSES.md): line, class, weapon families it uses, and a restriction
 	--   melee = sword, axe, club (one melee skill); launcher = bow, crossbow; wand = wands and rods; fist; throw

@@ -20,7 +20,8 @@ def ok(cond, msg):
 
 cfg = M.load_config()
 ok(len(cfg['families']) == 11, '11 convert lines (%d)' % len(cfg['families']))
-ok(cfg['need'] == 3 and cfg['cap'] == 6, 'a set is 3 cards, the damage part cap is 6')
+# O473 (2026-11-10): the cap is 4 raw percent of the one additive damage pool (damage_pool_config.lua sources.cardSets), was 6
+ok(cfg['need'] == 3 and cfg['cap'] == 4, 'a set is 3 cards, the damage part cap is 4 (a raw pool percent)')
 ok(set(cfg['sets']) == {'fire', 'earth', 'death', 'holy', 'energy'}, 'five sets: %s' % sorted(cfg['sets']))
 ok({r['kind'] for r in cfg['sets'].values()} == {'damage', 'poison', 'leech', 'heal', 'slow'}, 'five kinds, one each')
 for el, row in cfg['sets'].items():
@@ -64,7 +65,7 @@ ok(M.problems(rows, mult) == [], 'the shipped state passes: %s' % M.problems(row
 for r in rows:
     ok(r['mixed'] is not None and r['set'] is not None, '%s: both builds found' % r['class'])
     ok(r['legendary'][0] > 0.02 and r['legendary'][1] > 0.02, '%s: a legendary card is worth over 2%%' % r['class'])
-    ok(abs(r['cap'][0] - 0.06 * r['dps'][0]) < 1e-6, '%s: the worst case is 6%% of the damage per second' % r['class'])
+    ok(abs(r['cap'][0] - 0.04 * r['dps'][0]) < 1e-6, '%s: the worst case is 4%% of the damage per second' % r['class'])
     for i in (0, 1):
         ok(abs((1 + r['set']['v'][i]) / (1 + r['mixed']['v'][i]) - 1) <= M.TOLERANCE, '%s: the set is within 10%% of the mixed build' % r['class'])
     ok(r['set']['cards'] >= 3 or r['set']['element'] is None, '%s: a set takes 3 cards or more' % r['class'])

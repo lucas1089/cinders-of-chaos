@@ -68,7 +68,8 @@ return {
 		-- the wolves' share of the Beastmaster's damage in a hunt (bites alive and in contact + the wolf spells' casts, over
 		-- all damage) per build: a plain bow Beastmaster stays a bow class (the arrows are most of it), a fully invested one
 		-- is a necromancer with wolves (tester report 2026-10-29: a Ranger's main skill is 60-70% of its damage)
-		sharePlain = {0.25, 0.50},
+		-- sharePlain high 0.50 -> 0.52 (model 0.505 at level 400, +3% headroom): 2026-11-10, O472 (companion_model.py `GROWTH`): the weapon growth makes the plain bite a bigger hit and the armour of the median monster keeps more of a big hit
+		sharePlain = {0.25, 0.52},
 		shareTree = {0.35, 0.60},
 		-- shareFull high 0.70 -> 0.74 (model 0.714 at level 400, +3% headroom): 2026-11-10, O468: the bite takes the tree's bonuses now (owner: every bonus counts); review pending in the damage balance round
 		shareFull = {0.55, 0.74},

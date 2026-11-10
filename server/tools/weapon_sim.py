@@ -155,7 +155,7 @@ def spread(level, factors, k=1.0, styles=None):
 def fist_ratio(level):
     """a Monk's bare fists against one hand (monk_chi_core.lua cfg.unarmed: attack 40 + 0.025 per level, at most 60; the
     class factor meleeDamage 1.1-1.2 left out, the Thief line has its own just the same)"""
-    fist = min(60.0, 40.0 + 0.025 * level)
+    fist = min(60.0, 40.0 + 0.025 * level) * G.weapon_a(level)   # O472: times the weapon growth a(level), as the weapons
     s = skill_at(level)
     return max_hit(level, s, fist) / float(max_hit(level, s, attack_of('melee1', level)))
 
@@ -274,7 +274,7 @@ def typed_mean_hit(kind, level, skill):
     if kind == 'wand':
         return G.curve('wand', level)
     if kind == 'fist':
-        attack = min(60.0, 40.0 + 0.025 * level)   # monk_chi_core.lua cfg.unarmed
+        attack = min(60.0, 40.0 + 0.025 * level) * G.weapon_a(level)   # monk_chi_core.lua cfg.unarmed, times a(level) (O472)
         return max_hit(level, skill, attack) / 2.0
     top = max_hit(level, skill, attack_of(kind, level))
     low = min(top, -(-level // 5)) if kind == 'bow' else 0
@@ -359,7 +359,9 @@ def reference_dps(cls, level):
             held[words] = dict(model[words], dmg=expr)
         _REF['held'] = held
     best = _REF['R'].analyse(spells, _REF['held'], cls, level)['best']
-    return best['dps1'] if best else 0.0
+    # O472: rotation_sim's typical character has the attack and the wand of before the weapon growth; the spells of the real game
+    # grow by W(level) (a weapon spell through the attack, a caster spell through the caster factor), so the reference does too
+    return best['dps1'] * G.weapon_w(level) if best else 0.0
 
 
 def power_factors():

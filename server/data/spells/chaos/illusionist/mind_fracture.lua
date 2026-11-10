@@ -15,6 +15,8 @@ combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, ChaosVfxMissile and CONST_ANI_N
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 5.7) + 55) * 1.4
 	local max = ((level / 5) + (magicLevel * 9.7) + 100) * 1.4
+	-- O472: the weapon growth of a caster (ChaosSpell.casterShare: W(level) x the wand of the hands)
+	min, max = ChaosSpell.casterScale(player, min, max)
 	return -min, -max
 end
 
@@ -51,7 +53,7 @@ function onCastSpell(creature, variant, isHotkey)
 		local D = ChaosDot
 		local lo, hi = onGetFormulaValues(creature, creature:getLevel(), creature:getMagicLevel())
 		local side = D.cfg().side
-		local old = math.max(3, math.floor(creature:getMagicLevel() * 0.3) + 4)
+		local old = math.max(3, math.floor(creature:getMagicLevel() * 0.3) + 4) * ChaosSpell.casterShare(creature) -- O472
 		ChaosSpell.scriptedDot(creature:getId(), target:getId(), "shatteredpsyche", COMBAT_DEATHDAMAGE, side.ticks, side.tickMs,
 			D.sideTick(-lo, -hi, side), CONST_ME_SMALLCLOUDS, {raw = true, pvp = D.pvpSideOpts("shatteredpsyche", old)})
 		ChaosSpell.slow(target, 2500, 0.3)

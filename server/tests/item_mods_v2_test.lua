@@ -214,7 +214,8 @@ ok(not js.gearspeed and not js.lifeonhit, "jewels: no worn attack speed, no heal
 local bts = candidateKeys(boots)
 ok(bts.movespeed and bts.rarityfind and bts.maxlife and not bts.gearspeed, "boots")
 local os_ = candidateKeys(other)
-ok(os_.gearspeed and os_.rarity_criticalHitChance and os_.lifeleech and os_.cdr, "the badge and the like")
+ok(os_.gearspeed and os_.lifeleech and os_.cdr, "the badge and the like")
+ok(not os_.rarity_criticalHitChance and not os_.rarity_criticalHitAmount, "O471: no critical modifier on the badge any more")
 ok(candidateKeys(shield).regen and candidateKeys(legs).regen, "regen stays on shields and legs")
 -- the weapon's mana leech does not roll below T4 (item level 50)
 eq(candidateKeys(sword, 5, 49).manaleechw, nil, "item level 49: no weapon mana leech")
@@ -261,11 +262,63 @@ local low = newItem(2400)
 for _, m in ipairs(C.forge(low, 5, 20, lcg(5))) do
 	ok(m.tier <= 2, "item level 20: T1 and T2 only")
 end
--- the top tier from a boss of monster level 1000 (item level 133): T8 can roll at 130
+-- O471 (2026-11-10): the item level curve is flatter, so the top tier (item level 130) opens later: a boss of monster level
+-- 1000 is item level 127 (T7), a boss of 1100 is 132 (T8), a Rare of about 1250 is 130 (T8), a normal monster of 1500 is 134
 local bossLevel = M.sourceLevel({monsterLevel = 1000, tier = "boss"})
-eq(bossLevel, 133, "a boss of level 1000")
-eq(M.maxTierFor(bossLevel), 8, "rolls T8")
-eq(M.maxTierFor(M.sourceLevel({monsterLevel = 1000})), 7, "a normal monster of level 1000 (item level 123): T7")
+eq(bossLevel, 127, "a boss of level 1000")
+eq(M.maxTierFor(bossLevel), 7, "rolls T7 at most")
+eq(M.maxTierFor(M.sourceLevel({monsterLevel = 1100, tier = "boss"})), 8, "a boss of level 1100 (item level 132): T8")
+eq(M.maxTierFor(M.sourceLevel({monsterLevel = 1000})), 7, "a normal monster of level 1000 (item level 117): T7")
+
+-- the tier cap by monster level and by source (the table of design B1): item level = curve + bonus, tier = the gates
+-- 1, 15, 30, 50, 70, 90, 110, 130. Columns: normal, magic, rare, legendary, boss
+local caps = {
+	[100] = {3, 3, 3, 3, 3}, [300] = {4, 4, 4, 4, 5}, [500] = {5, 5, 5, 5, 6}, [700] = {6, 6, 6, 6, 6},
+	[900] = {7, 7, 7, 7, 7}, [1000] = {7, 7, 7, 7, 7}, [1100] = {7, 7, 7, 7, 8}, [1250] = {7, 7, 8, 8, 8},
+	[1500] = {8, 8, 8, 8, 8}, [2000] = {8, 8, 8, 8, 8}, [2200] = {8, 8, 8, 8, 8}
+}
+local srcNames = {"normal", "magic", "rare", "legendary", "boss"}
+for lv, row in pairs(caps) do
+	for i, name in ipairs(srcNames) do
+		eq(M.maxTierFor(M.sourceLevel({monsterLevel = lv, tier = name})), row[i], "tier cap, monster level " .. lv .. ", " .. name)
+	end
+end
+-- the item level of a normal drop at the marks of the curve (the additions are the old ones: 0 / 2 / 4 / 7 / 10)
+local ilvls = {[100] = 33, [300] = 62, [500] = 82, [700] = 98, [1000] = 117, [1500] = 134, [2000] = 144}
+for lv, want in pairs(ilvls) do
+	eq(M.sourceLevel({monsterLevel = lv}), want, "item level of a normal drop at monster level " .. lv)
+end
+eq(M.config.itemLevel.tierBonus.magic, 2); eq(M.config.itemLevel.tierBonus.rare, 4)
+eq(M.config.itemLevel.tierBonus.legendary, 7); eq(M.config.itemLevel.tierBonus.boss, 10)
+
+-- the tilt: with a seeded generator the share of each tier follows its weight (O471: 1.35^(t-1))
+do
+	local seed = 20261110
+	local function rng(a, b) -- a small linear congruential generator, the same on every interpreter
+		seed = (seed * 1103515245 + 12345) % 2147483648
+		return a + math.floor(seed / 2147483648 * (b - a + 1))
+	end
+	local counts, n = {}, 60000
+	for _ = 1, n do
+		local t = M.rollTier(150, rng)
+		counts[t] = (counts[t] or 0) + 1
+	end
+	local ch = M.tierChances(150)
+	for t = 1, 8 do
+		local share = (counts[t] or 0) * 100 / n
+		ok(math.abs(share - ch[t]) < 1.0, "T" .. t .. " share " .. share .. " follows " .. ch[t])
+	end
+	ok(counts[8] > counts[7] and counts[7] > counts[6] and counts[2] > counts[1], "every tier rolls more often than the one below")
+	-- the top tier is 8.2 times as likely as the bottom one (816 / 100)
+	ok(counts[8] / counts[1] > 7.0 and counts[8] / counts[1] < 9.5, "T8 about 8.2 times T1")
+	-- an item level that allows three tiers: 100 / 135 / 182 of 417
+	local c3 = {}
+	for _ = 1, n do
+		local t = M.rollTier(40, rng)
+		c3[t] = (c3[t] or 0) + 1
+	end
+	ok(math.abs(c3[3] * 100 / n - 43.6) < 1.0 and math.abs(c3[1] * 100 / n - 24.0) < 1.0, "item level 40: T3 43.6, T1 24.0 percent")
+end
 
 -- ---------------------------------------------------------------- the value is stored as rolled: quality never multiplies it
 local q = newItem(2400)

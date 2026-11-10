@@ -108,13 +108,26 @@ ok(F.tempoClear(st), "clearing stacks reports that there were some")
 ok(not F.tempoClear(st), "and nothing the second time")
 eq(F.tempoHaste(3), 3 * t.stackPct, "the haste of three stacks")
 eq(F.tempoHaste(0), 0, "none: none")
--- the factor: the interval ratio, times the edge of the stacks
+-- the factor: the interval ratio only (O473: the edge of the stacks is raw percent of the additive damage pool, F.tempoEdge)
 near(F.tempoFactor(0, 1000, 1000), 1, 1e-12, "no stack: the hit as it is")
-near(F.tempoFactor(t.maxStacks, 800, 1000), 0.8 * (1 + t.edge), 1e-12, "full stacks at 20% haste: lighter by the ratio, plus the edge")
-near(F.tempoFactor(t.maxStacks, 1000, 1000), 1 + t.edge, 1e-12, "a capped swing is not lighter, only the edge")
-near(F.tempoFactor(2, 960, 1000), 0.96 * (1 + t.edge * 2 / t.maxStacks), 1e-12, "two stacks")
-near(F.tempoFactor(99, 1000, 1000), 1 + t.edge, 1e-12, "more stacks than the maximum count as the maximum")
-near(F.tempoFactor(1, nil, nil), 1 + t.edge / t.maxStacks, 1e-12, "intervals unknown: only the edge")
+near(F.tempoFactor(t.maxStacks, 800, 1000), 0.8, 1e-12, "full stacks at 20% haste: lighter by the ratio")
+near(F.tempoFactor(t.maxStacks, 1000, 1000), 1, 1e-12, "a capped swing is not lighter")
+near(F.tempoFactor(2, 960, 1000), 0.96, 1e-12, "two stacks")
+near(F.tempoFactor(99, 1000, 1000), 1, 1e-12, "more stacks than the maximum")
+near(F.tempoFactor(1, nil, nil), 1, 1e-12, "intervals unknown: the hit as it is")
+near(F.tempoEdge(0), 0, 1e-12, "the edge: no stack, none")
+near(F.tempoEdge(t.maxStacks), t.edge * 100, 1e-12, "the edge at full stacks: raw percent of the pool")
+near(F.tempoEdge(2), t.edge * 100 * 2 / t.maxStacks, 1e-12, "the edge of two stacks")
+near(F.tempoEdge(99), t.edge * 100, 1e-12, "more stacks than the maximum count as the maximum")
+do -- the stacks the next hit will be swung with, without changing the state
+	local st2 = {}
+	eq(F.tempoPeek(st2, 1, 0, false), 0, "peek: no state, no stacks")
+	F.tempoStep(st2, 1, 0, false) F.tempoStep(st2, 1, 500, false) F.tempoStep(st2, 1, 1000, false)
+	eq(F.tempoPeek(st2, 1, 1500, false), 3, "peek: the stacks before the next hit (three hits: three)")
+	eq(F.tempoPeek(st2, 2, 1500, false), 0, "peek: another target starts over")
+	eq(F.tempoPeek(st2, 1, 1000 + t.windowMs + 1, false), 0, "peek: a pause over the window starts over")
+	eq(st2.stacks, 3, "peek changes nothing")
+end
 -- the damage per second over a long fight on one target: the haste and the lighter hits cancel, the edge is what is left
 do
 	local state, time, damage, base = {}, 0, 0, 1000
@@ -129,7 +142,7 @@ do
 	end
 	local dps = damage / (time / 1000)
 	local baseline = 100 / (interval0 / 1000)
-	ok(dps / baseline >= 1.0 and dps / baseline <= 1 + t.edge + 1e-9, "the sword's damage per second on one target is today's plus at most the edge (" .. dps / baseline .. ")")
+	ok(math.abs(dps / baseline - 1) < 1e-3, "the sword's damage per second on one target without the edge is today's (" .. dps / baseline .. "), the edge is in the pool")
 	eq(stacks, t.maxStacks, "(full stacks at the end)")
 end
 
@@ -204,7 +217,7 @@ do
 	near(plan.factor, 1, 1e-12, "a sword's first hit: as it is") eq(plan.haste, t.stackPct, "one stack of haste") eq(plan.stacks, 1, "one stack")
 	eq(plan.cleave, nil, "no cleave") eq(plan.daze, nil, "no daze")
 	plan = F.plan(s, ctx("sword", {now = 2000, intervalNow = 960}))
-	near(plan.factor, 0.96 * (1 + t.edge / t.maxStacks), 1e-12, "the second hit: lighter by the swing")
+	near(plan.factor, 0.96, 1e-12, "the second hit: lighter by the swing")
 	eq(plan.haste, 2 * t.stackPct, "two stacks")
 	-- a player target: the stacks stop at half
 	s = {}
@@ -727,7 +740,9 @@ do
 	clock = clock + 1000
 	local h2 = swing(warrior, target, BIG)
 	-- vocation 1000 ms, item 2000 ms: base 1000; with 4% haste 960 ms
-	near2(h2, plain * 0.96 * (1 + t.edge / t.maxStacks), "the second hit is lighter by the ratio of the swings, plus the edge")
+	near2(h2, plain * 0.96, "the second hit is lighter by the ratio of the swings (the edge is a pool entry)")
+	near(Glue.poolRaw(warrior, target, ORIGIN_MELEE), t.edge * 100 * 2 / t.maxStacks, 1e-9, "the pool entry: the edge of the two stacks before the next hit")
+	eq(Glue.poolRaw(warrior, target, ORIGIN_RANGED), 0, "no edge for a ranged hit")
 	-- on to full stacks
 	local last
 	for i = 1, 8 do
@@ -735,8 +750,9 @@ do
 		last = swing(warrior, target, BIG)
 	end
 	eq(IM.playerSpeed[warrior.id].tempo, t.maxStacks * t.stackPct, "full stacks: the maximum haste")
-	near2(last, plain * 0.8 * (1 + t.edge), "full stacks: a hit swung at 800 ms is 0.8 of the plain one, plus the edge")
-	near((last / 0.8) / plain, 1 + t.edge, 0.001, "its damage per second is the plain one plus the edge")
+	near2(last, plain * 0.8, "full stacks: a hit swung at 800 ms is 0.8 of the plain one")
+	near((last / 0.8) / plain, 1, 0.001, "its damage per second is the plain one (the edge is in the pool)")
+	near(Glue.poolRaw(warrior, target, ORIGIN_MELEE), t.edge * 100, 1e-9, "the pool entry at full stacks: the whole edge")
 	-- a new target starts over: the plain hit again, one stack
 	clock = clock + 800
 	local h3 = swing(warrior, target2, BIG)
@@ -761,7 +777,7 @@ do
 	eq(IM.playerSpeed[capped.id].total, IM.config.playerSpeedCap, "at the cap the haste adds nothing")
 	clock = clock + 1000
 	local ch = swing(capped, target, BIG)
-	near2(ch, cappedPlain * (1 + t.edge / t.maxStacks), "a capped swing is as heavy as ever: only the edge of the stack")
+	near2(ch, cappedPlain, "a capped swing is as heavy as ever")
 	-- the timer: after the window with no hit the haste is gone
 	local pending = 0
 	for _, e in ipairs(queue) do
@@ -800,7 +816,7 @@ do
 	eq(swing(twoH, target, BIG), plain2, "a two-handed sword's first hit: the plain two-handed hit")
 	clock = clock + 1000
 	local hh = swing(twoH, target, BIG)
-	near2(hh, plain2 * 0.96 * (1 + t.edge / t.maxStacks), "its second hit: lighter by the swing as the one-handed one")
+	near2(hh, plain2 * 0.96, "its second hit: lighter by the swing as the one-handed one")
 	-- another weapon in the hands ends the tempo at once
 	wield(twoH, 2)
 	clock = clock + 100

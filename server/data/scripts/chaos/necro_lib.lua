@@ -399,6 +399,16 @@ function M.minionFactor(player, kind, field)
 	if kind == "golem" then
 		f = f * (1 + CT.value(player, "ksBoneColossus", field))
 	end
+	-- O472: a minion's hit reads the level and the magic level like the owner's spells and has no weapon term, so the weapon growth
+	-- reaches it the same way: x the caster factor (W(level) x the owner's wand or rod; spell_scaling_config.lua caster.minions switches
+	-- it off). Not its health.
+	if field == "hit" then
+		local S = rawget(_G, "ChaosSpellScaling")
+		local cc = rawget(_G, "ChaosSpellScalingConfig")
+		if S and cc and cc.caster and cc.caster.minions then
+			f = f * M.casterShare(player)
+		end
+	end
 	return f
 end
 
@@ -420,9 +430,20 @@ function M.hoard(player)
 	return N.soulHoard(cfg(), classKey, N.totalCap(cfg(), classKey, player:getLevel(), M.capBonus(player)), M.count(player), tree)
 end
 
--- the factor of the own spells' damage: Soul Hoard (Lich) x Covenant of the Grave
+-- O472: the Necromancer line's weapon growth: W(level) x the wand or rod of the hands (ChaosSpell.casterShare, the same factor as every
+-- caster spell; data/scripts/chaos/spell_scaling_core.lua). 1 when that core cannot be loaded
+function M.casterShare(player)
+	if not rawget(_G, "ChaosSpellScaling") then
+		pcall(dofile, "data/scripts/chaos/spell_scaling_config.lua")
+		pcall(dofile, "data/scripts/chaos/spell_scaling_core.lua")
+	end
+	local S = rawget(_G, "ChaosSpellScaling")
+	return S and S.casterForPlayer and S.casterForPlayer(player) or 1
+end
+
+-- the factor of the own spells' damage: Soul Hoard (Lich) x Covenant of the Grave x the caster's weapon growth (O472)
 function M.spellFactor(player)
-	return M.hoard(player) * M.ownSpellFactor(player)
+	return M.hoard(player) * M.ownSpellFactor(player) * M.casterShare(player)
 end
 
 function M.values(player, f, extra)

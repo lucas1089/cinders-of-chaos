@@ -225,6 +225,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   throwables   tools/patch_base_throwables.py    the stackable throwing weapons (spear, throwing star, royal spear, ...;
                data/lib/chaos_throwables.lua) leave monster loot, NPC shops and script rewards (README "Throwing weapons";
                after archery, whose functions it uses)
+  weapongrowth tools/patch_stock_weapon_growth.py  the stock weapons grow with the level (O472, README "Weapon growth (O472)"): attack
+               and element damage of a sword, axe, club, bow or crossbow, min and max of a wand or rod, of a level above 100,
+               times the weapon growth a(level) (items.xml, weapons.xml; the numbers before are kept in a comment, so a second
+               run changes nothing and survey_base_weapons.py still reads the stock snapshot; after archery, whose launcher
+               attack it grows)
   uniqueequip  tools/install_unique_equip.py     the uniques with an equip rule of their own (chaos_items.xml equipLevel /
                equipLines: the second round's archetype uniques) get it: their base items' Equip entries in
                movements.xml check the looser rule and a movement script holds each copy to its own (unique or
@@ -1165,6 +1170,14 @@ def step_spells(server, data, ctx):
 
 def step_archery(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_archery.py'), data], 'patch_base_archery.py'))
+
+
+def step_weapongrowth(server, data, ctx):
+    args = [tool('patch_stock_weapon_growth.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_stock_weapon_growth.py'))
+
+
+STEPS.insert(STEPS.index('throwables') + 1, 'weapongrowth')  # O472: after archery (the launchers' attack holds the ammunition) and throwables
 
 
 def step_throwables(server, data, ctx):

@@ -13,6 +13,13 @@
 -- with "Class@100") and carries a `-- O444:` note with the gap; an exception holds today's value, so it catches a class getting worse
 -- and is deleted when the class is fixed.
 return {
+	-- O473 (2026-11-10): the damage a player (or a summon or companion of a player) deals to ANOTHER player is multiplied by this factor
+	-- of the ATTACKER's level, geometric between two rows ({level, factor}; pvp_scale_core.lua, applied once in passivetree_effects.lua
+	-- ChaosPassiveDealt). The one additive damage pool and the weapon, gear and tier changes of the same round raise typical damage; a
+	-- duel keeps today's length. The design's first fit: it is re-fitted when every package of the round is in. Monsters, heals and hits
+	-- on monsters are never scaled. tools/pvp_model.py reads this table.
+	damageScale = {{100, 1.00}, {200, 0.94}, {300, 0.89}, {500, 0.79}, {700, 0.76}, {1000, 0.48}, {1500, 0.52}, {2000, 0.46}},
+
 	-- the levels of the table and of the check (class_dps_model.py measures 100, 500 and 1000; survival_model.py has builds for them)
 	levels = {100, 500, 1000},
 

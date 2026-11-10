@@ -3,7 +3,9 @@
 --   * who wears what: the worn items with the custom attribute chaos_unique whose id has a passive; refreshed at login,
 --     on every inventory move and every refreshMs (an item that left a slot without a move event);
 --   * ChaosUPDealt (onHealthChange) on the wild monsters a character attacks: damage dealt (multipliers, convert, extra
---     hits, ward gain, marks, stacks, spread bookkeeping);
+--     hits, ward gain, marks, stacks, spread bookkeeping). O473: the "more damage" part of a passive is no multiplier here any
+--     more: it is raw percent of the additive damage pool (M.poolRaw, a provider of damage_pool_core.lua that ChaosPassiveDealt
+--     asks first, once per hit); this event applies what is left (the prices, critrule, convert's price) that the provider kept;
 --   * ChaosUPTaken (onHealthChange) on the character: damage taken (immunity, caps, mana shield, ward, panic), the
 --     riposte and the hurt nova, the healing price;
 --   * ChaosUPKill (onKill): kill stacks, ward, feast, kill nova, spread;
@@ -259,7 +261,8 @@ function M.speedScale(player, origin)
 	for _, e in ipairs(st.act) do
 		if e.family == "statscale" and e.stat == "speed" and (e.origin == "any" or e.origin == origin) then
 			local pct = math.min(e.cap, math.floor(math.max(0, (statsOf(player).speed or 0) - (e.from or 0)) / e.per) * e.bonusPer)
-			best = math.max(best, 1 + pct / 100)
+			-- O473: the passive adds at most `each` raw percent to the damage pool
+			best = math.max(best, 1 + math.min(pct, (C.poolEach and C.poolEach()) or pct) / 100)
 		end
 	end
 	return best
@@ -281,19 +284,20 @@ local function crowd(st, p, target, t)
 end
 
 -- ------------------------------------------------------------------------------------------------ hits you deal
-local dealt = CreatureEvent("ChaosUPDealt")
-function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin, critical)
+-- the context of one direct hit of a character with passives (the same for the pool provider and for this event). Returns the
+-- state and the ctx, or nil when no passive reacts to this hit. Never changes anything.
+local function hitContext(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin, critical)
 	if guard or primaryType == COMBAT_HEALING or not attacker or not attacker:isPlayer() or not wild(creature) then
-		return primaryDamage, primaryType, secondaryDamage, secondaryType
+		return nil
 	end
 	local st = actOf(attacker)
 	if not st then
-		return primaryDamage, primaryType, secondaryDamage, secondaryType
+		return nil
 	end
-	local t, S, act = now(), st.S, st.act
+	local t = now()
 	local total = math.abs(primaryDamage) + math.abs(secondaryDamage)
 	if total <= 0 then
-		return primaryDamage, primaryType, secondaryDamage, secondaryType
+		return nil
 	end
 	local ctx = {now = t, origin = originName(origin), elem = TYPE_NAME[primaryType] or "other", crit = critical == true,
 		proc = isProc(), dot = ChaosDot ~= nil and ChaosDot.isTick(origin, attacker, creature) or origin == ORIGIN_CONDITION,
@@ -302,6 +306,44 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		manaPct = attacker:getMaxMana() > 0 and math.floor(attacker:getMana() * 100 / attacker:getMaxMana()) or 0,
 		maxHealth = attacker:getMaxHealth(), health = attacker:getHealth(), maxMana = attacker:getMaxMana(),
 		mana = attacker:getMana()}
+	return st, ctx
+end
+
+-- O473: the pool provider. ChaosPassiveDealt runs before this event on every hit of a player; it asks once per part of the hit.
+-- The first ask works the split out (the state of focus moves once) and keeps the multiplicative rest for this event; the second
+-- ask of the same hit returns the same raw percent. 0 for a hit no passive reacts to (a proc, a condition tick, a heal).
+function M.poolRaw(hit)
+	local memo = hit.cache.uniques
+	if memo ~= nil then
+		return memo and memo.raw or 0
+	end
+	hit.cache.uniques = false
+	local h = hit
+	local st, ctx = hitContext(h.creature, h.attacker, h.primaryDamage or 0, h.primaryType, h.secondaryDamage or 0,
+		h.secondaryType, h.origin, h.critical)
+	if not st or ctx.dot or ctx.proc then
+		return 0
+	end
+	ctx.others = C.find(st.act, "crowd") and crowd(st, h.attacker, h.creature, ctx.now) or 0
+	local raw, mult, list = C.dealtSplit(CFG, st.S, st.act, ctx)
+	hit.cache.uniques = {raw = raw, mult = mult}
+	st.pending = {targetId = ctx.targetId, at = ctx.now, mult = mult, raw = raw, list = list}
+	return raw
+end
+if not ChaosDamagePool then
+	dofile("data/scripts/chaos/damage_pool_core.lua")
+end
+ChaosDamagePool.register("uniques", function(hit)
+	return M.poolRaw(hit)
+end)
+
+local dealt = CreatureEvent("ChaosUPDealt")
+function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin, critical)
+	local st, ctx = hitContext(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin, critical)
+	if not st then
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
+	local t, S, act, total = ctx.now, st.S, st.act, ctx.damage
 	if ctx.dot then
 		-- a condition tick of yours on a monster: bookkeeping for the spread, no multiplier
 		C.noteAfflict(CFG, S, act, creature:getId(), total, t)
@@ -311,13 +353,23 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	ctx.others = C.find(act, "crowd") and crowd(st, attacker, creature, t) or 0
-	local m = C.dealt(CFG, S, act, ctx)
+	-- O473: the pool part was counted in ChaosPassiveDealt (same hit, same target, a moment ago): here only the multiplicative
+	-- rest. No pool pass for this hit (no passive tree state of the player): the old way, both parts as one multiplier, once.
+	local pend = st.pending
+	st.pending = nil
+	local m, full
+	if pend and pend.targetId == ctx.targetId and t - pend.at <= 250 then
+		m, full = pend.mult, pend.mult * (1 + pend.raw / 100)
+	else
+		m = C.dealt(CFG, S, act, ctx)
+		full = m
+	end
 	local plan = C.convertPlan(act, ctx)
 	if plan and primaryType == COMBAT_PHYSICALDAMAGE then
 		local part = math.floor(math.abs(primaryDamage) * plan.share)
 		if part > 0 then
 			primaryDamage = scale(primaryDamage, 1 - plan.share)
-			local extra = math.floor(part * plan.mult * m)
+			local extra = math.floor(part * plan.mult * full)
 			local target = creature
 			local pid = attacker:getId()
 			strike(attacker, target, NAME_TYPE[plan.elem], extra, CONST_ME_NONE)

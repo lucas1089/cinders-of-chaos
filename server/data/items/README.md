@@ -146,12 +146,12 @@ level 800).
 | name | slot | id | stock item | level | classes | stats | built-in modifiers |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Hoarfen Bow | distance | 13873 | shimmer bow | 40 | Ranger line | attack 40, hitChance 95, range 6, skillDist 2 | attackspeed:6, chillchance:10, lifeonkill:20 |
-| Moonlit Gallows Bow | distance | 26765 | exowing bow | 900 | Ranger line | attack 83, hitChance 99, range 7, skillDist 6, criticalHitChance 5, criticalHitAmount 20 | attackspeed:12, physpen:14, bleedchance:18, echoshot:18 |
-| Hollow Throne Claymore | sword | 25880 | slayer of mayhem | 1550 | Warrior, Templar | attack 73, defense 38, skillSword 6, criticalHitChance 6, criticalHitAmount 30 | attackspeed:12, bossdamage:20, physpen:18, bloodrush:4 |
-| Gravetide Arbalest | distance | 25886 | crossbow of mayhem | 1800 | Ranger line | attack 92, hitChance 95, range 6, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:12, physpen:18, poisonchance:20, hunterrush:22 |
-| Emberhowl Greataxe | axe | 25882 | chopper of mayhem | 1950 | Warrior, Templar | attack 77, defense 36, skillAxe 7, lifeLeechChance 10, lifeLeechAmount 8 | bleedchance:24, dot:42, lifeonhit:50, crimsonburst:20 |
-| Wake-Heron Longbow | distance | 25885 | bow of mayhem | 2100 | Ranger line | attack 91, hitChance 98, range 7, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:14, elepen:18, dot:40, echoshot:20 |
-| Bellringer of the Last Vigil | club | 25884 | hammer of mayhem | 2200 | Warrior, Templar | attack 78, defense 36, skillClub 7 | shockchance:22, execute:8, monsterreduction:6, arclightning:20 |
+| Moonlit Gallows Bow | distance | 26765 | exowing bow | 900 | Ranger line | attack 178, hitChance 99, range 7, skillDist 6, criticalHitChance 5, criticalHitAmount 20 | attackspeed:12, physpen:14, bleedchance:18, echoshot:18 |
+| Hollow Throne Claymore | sword | 25880 | slayer of mayhem | 1550 | Warrior, Templar | attack 191, defense 38, skillSword 6, criticalHitChance 6, criticalHitAmount 30 | attackspeed:12, bossdamage:20, physpen:18, bloodrush:4 |
+| Gravetide Arbalest | distance | 25886 | crossbow of mayhem | 1800 | Ranger line | attack 255, hitChance 95, range 6, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:12, physpen:18, poisonchance:20, hunterrush:22 |
+| Emberhowl Greataxe | axe | 25882 | chopper of mayhem | 1950 | Warrior, Templar | attack 220, defense 36, skillAxe 7, lifeLeechChance 10, lifeLeechAmount 8 | bleedchance:24, dot:42, lifeonhit:50, crimsonburst:20 |
+| Wake-Heron Longbow | distance | 25885 | bow of mayhem | 2100 | Ranger line | attack 262, hitChance 98, range 7, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:14, elepen:18, dot:40, echoshot:20 |
+| Bellringer of the Last Vigil | club | 25884 | hammer of mayhem | 2200 | Warrior, Templar | attack 225, defense 36, skillClub 7 | shockchance:22, execute:8, monsterreduction:6, arclightning:20 |
 
 ### Leveling and endgame uniques (2026-10-23)
 
@@ -183,10 +183,10 @@ Fractalis; mid 1600-2000: Frostreaver, Rhazgor; high 2100-2500: Morgrath, Nyxdra
 
 | name | slot | id | stock item | level | classes | stats | built-in modifiers |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Ashfall Verdict | sword | 8931 | the epiphany | 1300 | Warrior, Thief, Monk, Templar | attack 72, defense 36, extraDef 3, skillSword 6, criticalHitChance 7, criticalHitAmount 30 | attackspeed:15, bossdamage:20, physpen:20, critecho:22 |
-| Wyrmgrave Cleaver | axe | 25881 | axe of mayhem | 1500 | Warrior, Thief, Monk, Templar | attack 74, defense 33, skillAxe 6, lifeLeechChance 10, lifeLeechAmount 8 | bleedchance:25, dot:44, lifeonhit:55, bloodrush:4 |
-| Maul of the Sunken Choir | club | 14334 | giant smithhammer | 1800 | Warrior, Thief, Monk, Templar | attack 76, defense 34, skillClub 7 | shockchance:24, execute:8, monsterreduction:6, arclightning:22 |
-| Stormherald's Recurve | distance | 22417 | umbral bow | 1600 | Ranger | attack 88, hitChance 97, range 7, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:14, elepen:20, chillchance:20, echoshot:22 |
+| Ashfall Verdict | sword | 8931 | the epiphany | 1300 | Warrior, Thief, Monk, Templar | attack 182, defense 36, extraDef 3, skillSword 6, criticalHitChance 7, criticalHitAmount 30 | attackspeed:15, bossdamage:20, physpen:20, critecho:22 |
+| Wyrmgrave Cleaver | axe | 25881 | axe of mayhem | 1500 | Warrior, Thief, Monk, Templar | attack 192, defense 33, skillAxe 6, lifeLeechChance 10, lifeLeechAmount 8 | bleedchance:25, dot:44, lifeonhit:55, bloodrush:4 |
+| Maul of the Sunken Choir | club | 14334 | giant smithhammer | 1800 | Warrior, Thief, Monk, Templar | attack 211, defense 34, skillClub 7 | shockchance:24, execute:8, monsterreduction:6, arclightning:22 |
+| Stormherald's Recurve | distance | 22417 | umbral bow | 1600 | Ranger | attack 234, hitChance 97, range 7, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:14, elepen:20, chillchance:20, echoshot:22 |
 | Diadem of the Ninth Pyre | head | 24744 | enchanted werewolf helmet | 1400 | Mystic, Necromancer | armor 16, magicPoints 8, absorbPercentFire 8 | cdr:15, manacost:15, ignitechance:20, crimsonburst:20 |
 | Vestments of the Hollow Choir | body | 2656 | blue robe | 2000 | Mystic, Necromancer | armor 28, magicPoints 10, absorbPercentDeath 10, absorbPercentPhysical 6 | dot:45, regen:65, manaonhit:45, smolderaura:30 |
 | Bastion of the Last Dawn | body | 2472 | magic plate armor | 2200 | Warrior, Templar | armor 33, skillShield 6, absorbPercentPhysical 10, absorbPercentFire 6 | monsterreduction:8, reflect:10, thorns:220, lastbreath:45 |

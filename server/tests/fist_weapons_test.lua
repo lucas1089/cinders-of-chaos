@@ -41,9 +41,10 @@ for _, id in ipairs(F.ids) do
 		uniqueTop = math.max(uniqueTop, it.attack)
 	end
 end
--- only the uniques go above the bare-fist cap by more than the end tiers (attackMax 60, level 800+)
-eq(F.items[36659].attack > M.cfg.unarmed.attackMax, true, "the Pyre unique tops the cap")
-eq(F.items[36658].attack < M.cfg.unarmed.attackMax, true, "tier 5 is passed by bare fists at level 800")
+-- only the uniques go above the bare-fist attack by more than the end tiers. O472: the bare fist's attack grows with the level (the
+-- cap 60 is times the weapon growth a(level), 115 at level 800) and so does every fist weapon's attack
+eq(F.items[36659].attack > M.fistAttack(F.items[36659].level) * 1.05, true, "the Pyre unique tops the bare fist of its level by more than 5%")
+eq(F.items[36658].attack < M.fistAttack(800), true, "tier 5 is passed by bare fists at level 800")
 eq(uniqueTop > plainTop, true, "an endgame unique tops every plain tier")
 -- coverage: a Monk finds a fist weapon at every level band 1..2400 (no gap wider than 500 levels between wearable tiers)
 local gap, prev = 0, 0
@@ -56,7 +57,7 @@ eq(gap <= 500, true, "no gap above 500 levels, widest " .. gap)
 eq(F.items[F.ids[1]].level, 1, "a fist weapon at level 1")
 eq(F.items[F.ids[#F.ids]].level >= 2000, true, "an endgame fist weapon")
 -- a fist weapon raises the spell strikes' fist power too
-eq(M.fistPower(300, 110, 50) > M.fistPower(300, 110, 0), true, "fist power")
+eq(M.fistPower(300, 110, F.items[36657].attack) > M.fistPower(300, 110, 0), true, "fist power (the level 300 tier: O472 attack 65)")
 
 -- ------------------------------------------------------------------ loot rows added once (mocked engine)
 local types, added = {["monk"] = {}, ["dark monk"] = {}}, {}

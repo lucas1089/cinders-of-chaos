@@ -116,11 +116,15 @@ eq(A.reflect({landed = 1000, ownMaxHealth = 5000, boss = true, bossState = bs, o
 	"next second")
 
 -- Open Hand Creed
-near(A.fistAttack(300), 47.5, "fist attack at 300")
-near(A.fistAttack(2000), 60, "capped at 60")
+if not ChaosMonk then dofile("data/scripts/chaos/monk_chi_core.lua") end
+-- O472: the fist attack is the level value times the weapon growth a(level) (ChaosMonk.weaponGrowth), as the Monk's
+local g300, g2000 = ChaosMonk.weaponGrowth(300), ChaosMonk.weaponGrowth(2000)
+near(A.fistAttack(300), 47.5 * g300, "fist attack at 300")
+near(A.fistAttack(2000), 60 * g2000, "capped at 60, times the growth")
+near(A.fistAttack(100), 42.5, "no growth up to level 100")
 eq(A.openHandFactor(300, 50, 110, 1, false, false), nil, "neither keystone nor unique")
 local ohK = A.openHandFactor(300, 50, 110, 1, true, false)
-local want = A.maxWeaponDamage(300, 110, 47.5, 1) * C.arOpenHand.damage / A.maxWeaponDamage(300, 50, 7, 1)
+local want = A.maxWeaponDamage(300, 110, 47.5 * g300, 1) * C.arOpenHand.damage / A.maxWeaponDamage(300, 50, 7, 1)
 near(ohK, want, "keystone factor: best skill, fist attack, +40% (O452: was +10%)")
 near(A.openHandFactor(300, 50, 110, 1, false, true), want / C.arOpenHand.damage * 1.1 * 0.8, "unique alone: 80% of the old 1.10, not of the keystone's damage (O452)")
 near(A.openHandFactor(300, 50, 110, 1, true, true), want * 1.1, "both: +10% more")
@@ -131,12 +135,12 @@ local mask = A.mask({arOpenHand = true, arReliquary = true})
 check(A.maskHas(mask, "arOpenHand") and A.maskHas(mask, "arReliquary") and not A.maskHas(mask, "arPyreOath"), "mask")
 check(not A.maskHas(-1, "arOpenHand"), "no storage")
 check(mask < 2 ^ 31, "fits a storage")
-near(A.openHandAttack(300, true, false), 47.5 * C.arOpenHand.damage, "strikes: fist attack +36%")
-near(A.openHandAttack(300, false, true), 47.5 * 1.1 * 0.8, "strikes: the ring alone (unchanged by O452)")
+near(A.openHandAttack(300, true, false), 47.5 * g300 * C.arOpenHand.damage, "strikes: fist attack +36%")
+near(A.openHandAttack(300, false, true), 47.5 * g300 * 1.1 * 0.8, "strikes: the ring alone (unchanged by O452)")
 eq(A.openHandAttack(300, false, false), nil, "strikes: nothing")
 local sp = {getStorageValue = function() return A.mask({arOpenHand = true}) end, getLevel = function() return 1000 end,
 	getSlotItem = function() return nil end}
-near(A.spellOpenHandAttack(sp), 60 * C.arOpenHand.damage, "the spells read the storage (level 1000: 60 x 1.36)")
+near(A.spellOpenHandAttack(sp), 60 * ChaosMonk.weaponGrowth(1000) * C.arOpenHand.damage, "the spells read the storage (level 1000: 60 x a(1000) x 1.36)")
 sp.getVocation = function() return {getId = function() return 11 end} end
 eq(A.spellOpenHandAttack(sp), nil, "the Thief line keeps the base attack for its strike spells (O452)")
 

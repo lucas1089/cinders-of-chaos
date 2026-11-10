@@ -102,7 +102,8 @@ C.lineClasses = {
 -- Ice (no class casts three Ice lines: Warrior and Elementalist lines have two at most, tests/cards_test.lua --sets). Every
 -- bonus is one hook the engine files already have and smaller than the same effect of the snare of that element
 -- (snares_config.lua `effects`):
---   damage   hits of the element deal pct% more (primary and secondary part, never another element, no damage over time)
+--   damage   hits of the element deal pct% increased damage: raw percent of the one additive damage pool (O473, damage_pool_config.lua),
+--            primary and secondary part, never another element, no damage over time
 --   slow     hits of the element slow the target by percent for ms (the snare's ice slow: 40% for 3000 ms)
 --   poison   hits of the element poison the target for pct% of the hit over ticks seconds (the snare: 36% over 6)
 --   leech    hits of the element heal the owner pct% of the damage, at most maxShare% of the maximum health a hit (the snare: 4%)
@@ -110,9 +111,11 @@ C.lineClasses = {
 -- Against players (PvP): damage and poison x pvpScale (the rule of the unique passives, unique_passives_config.lua); the slow
 -- is not applied to a player; the heals are the same and the engine's healing rules apply to them as to any heal.
 -- `damage` and `poison` are the damage parts: at most damagePartMax percent of the damage of their element.
+-- O473 (2026-11-10): damagePartMax 6 -> 4, the cap of the card set entry of the damage pool (damage_pool_config.lua sources.cardSets);
+-- the Fire set's 4 and the Earth poison's 4 are at it.
 C.sets = {
 	need = 3,
-	damagePartMax = 6,
+	damagePartMax = 4,
 	pvpScale = 1 / 3,
 	order = {"Fire", "Earth", "Death", "Holy", "Energy"},
 	by = {

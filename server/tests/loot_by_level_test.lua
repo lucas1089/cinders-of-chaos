@@ -84,8 +84,17 @@ for L = 20, 2000, 10 do
 		-- loot share below pool level 325, every notable drop from 350), the scaled set keeps its own
 		if scaled and L <= 650 then
 			near(f.notable, f.loot, 1e-9, tag .. ": below 650 the notable drops keep the loot factor")
+		elseif scaled and L >= 1000 then
+			eq(f.notable, 1, tag .. ": from 1000 every notable drop stays")
 		elseif scaled and L >= 700 then
-			eq(f.notable, 1, tag .. ": from 700 every notable drop stays")
+			-- O470 (2026-11-10): was `eq(f.notable, 1)` from 700. The planned kills per hour of the scaled set at 700-900 is 14-38%
+			-- above what it was (1160 / 1055 / 960 against 839 / 846 / 858: the health curve has no step now), so the notable share
+			-- is the old 1 x the old plan / the new plan: the Rare+ gear and the rare drops per hour are what they were, and 1 again
+			-- at 1000 (the points {700, 0.7235}, {800, 0.8019}, {900, 0.8932} of pace_config.lua scaled.notable)
+			local kNew = P.lin(LM.killsTable().scaled, L, 1)
+			local kOld = P.lin({{650, 836}, {800, 846}, {1000, 869}}, L, 1)
+			near(f.notable * kNew / kOld, 1, 0.05, tag .. ": the notable drops per hour are what they were (" .. f.notable .. ")")
+			check(f.notable < 1, tag .. ": below 1 until 1000")
 		elseif not scaled and L >= 50 and L <= 360 then
 			near(f.notable, LM.oldNotable(cfg, L), 0.03, tag .. ": base notable drops at the rate from before the pool scale")
 		elseif not scaled and L >= 350 then
