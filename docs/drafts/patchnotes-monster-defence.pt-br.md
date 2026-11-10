@@ -29,12 +29,12 @@ para morrer. As caçadas comuns continuam parecidas.
 
 - **Sete modificadores de monstro** para monstros mágicos, raros, lendários e chefes. Cada um tem um ícone na barra do
   monstro.
-  - **Emberforged, Frostforged, Stormforged:** metade de cada golpe físico é somada como dano de fogo, gelo ou energia. A sua
+  - **Forjado em Brasa, Forjado em Gelo, Forjado em Tempestade:** metade de cada golpe físico é somada como dano de fogo, gelo ou energia. A sua
     resistência e proteção contra esse elemento reduzem a parte somada.
-  - **Plated:** recebe metade do dano físico.
-  - **Resistant:** resiste a um elemento em 75%. O elemento é sorteado quando o monstro aparece.
-  - **Ruthless:** um golpe em cinco é crítico e causa 150%.
-  - **Bulwark:** metade dos golpes de arma contra ele não causam dano. Magias e dano ao longo do tempo nunca são bloqueados.
+  - **Blindado:** recebe metade do dano físico.
+  - **Resistente:** resiste a um elemento em 75%. O elemento é sorteado quando o monstro aparece.
+  - **Impiedoso:** um golpe em cinco é crítico e causa 150%.
+  - **Baluarte:** metade dos golpes de arma contra ele não causam dano. Magias e dano ao longo do tempo nunca são bloqueados.
 
 ## Conhecido
 

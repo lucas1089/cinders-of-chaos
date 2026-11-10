@@ -6,7 +6,7 @@ usage: python3 -I patch_monster_resists.py DATA_DIR [--check] [--dry-run] [--qui
 DATA_DIR is the server's data folder. Every monster file under DATA_DIR/monster (XML and Lua) is read, except the pets
 (monsters/chaos/pets: allies, never a target) and the monsters the physical rule leaves alone (not attackable, or immune
 to every damage type: event and quest creatures that are invulnerable by design; tools/monster_physical_resist.py).
-The rule (owner, 2026-11-10: "a normal monster never passes 40, a boss never passes 75"):
+The rule (O462: a normal monster never passes 40, a boss never passes 75):
 
   * a NORMAL monster: every positive element percent is at most 40; an immunity to a damage type (XML <immunity fire="1"/>
     or name="fire", Lua {type = "fire", combat = true}, or a percent of 100 and more) becomes 40

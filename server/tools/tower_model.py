@@ -51,6 +51,7 @@ SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CHAOS = os.path.join(SERVER, 'data', 'scripts', 'chaos')
 BALANCE = os.path.join(CHAOS, 'infinitytower_balance_config.lua')
 TIERS = os.path.join(CHAOS, 'monster_tiers.lua')
+DEFENCE_CORE = os.path.join(CHAOS, 'monster_defence_core.lua')
 POOL = os.path.join(CHAOS, 'bounty_pool.lua')
 PACE = os.path.join(CHAOS, 'pace_config.lua')
 RUN = os.path.join(CHAOS, 'infinitytower_run.lua')
@@ -117,14 +118,23 @@ def balance(text=None):
 # ------------------------------------------------------------------------------------------------ monster tiers
 def tier_info(cfg=None):
     """({tier: health x}, {tier: average modifier count}, average health effect of one modifier) from monster_tiers.lua;
-    with a config the tower's own tier health (`tierHealth`) replaces the stock x2 / x3.5 / x6"""
+    with a config the tower's own tier health (`tierHealth`) replaces the stock x2.48 / x4.90 / x7.98"""
     t = read(TIERS)
     hp = dict((k, float(v)) for k, v in re.findall(r'\n\t(magic|rare|legendary) = \{label = "\w+", hp = ([0-9.]+)', t))
     cnt = dict((k, (int(a) + int(b)) / 2.0) for k, a, b in
                re.findall(r'(magic|rare|legendary) = \{(\d), (\d)\}', t.split('modCount =', 1)[1].split('\n', 1)[0]))
     block = t.split('ChaosMods = {', 1)[1].split('\nChaosModList', 1)[0]
+    # The modifiers of the defence layer (O462, monster_defence_core.lua C.MOD: Plated, Bulwark, Resistant and the others)
+    # have no `hp` or `taken` field: what they do depends on the damage type of the hit, which this model does not follow.
+    # They are left out of the average, not counted as "no effect": counting them as 1.0 thinned the average and moved the
+    # median class at level 800 from floor 44 to 53 with no change in the tower. The armour by hit size of that layer is
+    # not in this model either. Review pending: the balance models are gone through again after the combat redesign
+    # (owner, 2026-11-10: the tests, caps and class targets are set aside for now).
+    layer = set(re.findall(r'\n\t(\w+) = \{', read(DEFENCE_CORE).split('C.MOD = {', 1)[1].split('\n}', 1)[0]))
     effects = []
     for body in re.split(r'\n\t(?=[a-z]+ = \{name = ")', block)[1:]:
+        if body.split(' = ', 1)[0] in layer:
+            continue
         h = re.search(r'\bhp = ([0-9.]+)', body)
         k = re.search(r'\btaken = ([0-9.]+)', body)
         effects.append((float(h.group(1)) if h else 1.0) / (float(k.group(1)) if k else 1.0))
