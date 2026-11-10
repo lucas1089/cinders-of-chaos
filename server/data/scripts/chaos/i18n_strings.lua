@@ -7326,8 +7326,8 @@ return {
 			"Uma bomba que estoura numa nuvem ao redor do conjurador.",
 		["A volley that lands in a circle of 2 sqm around the target."] =
 			"Uma saraivada que cai num círculo de 2 sqm ao redor do alvo.",
-		["Consecrates the caster's tile for 6s. Each second holy damage hits enemies within 2 sqm and allies (party, own summons, caster) standing in it are healed a little."] =
-			"Consagra o quadrado do conjurador por 6 s. A cada segundo dano sagrado atinge os inimigos a até 2 sqm, e os aliados (grupo, invocados próprios, conjurador) que estiverem nele são curados um pouco.",
+		["Consecrates the ground around the caster for 6s, and the zone follows the caster. Each second holy damage hits enemies within 2 sqm of the caster, and allies (party, own summons, caster) within 2 sqm of the caster are healed a little."] =
+			"Consagra o chão ao redor do conjurador por 6 s, e a zona acompanha o conjurador. A cada segundo dano sagrado atinge os inimigos a até 2 sqm do conjurador, e os aliados (grupo, invocados próprios, conjurador) a até 2 sqm do conjurador são curados um pouco.",
 		["Cleanses harmful conditions and grants 8s of strong regeneration."] =
 			"Purifica condições nocivas e dá 8 s de regeneração forte.",
 		["A volley of arrows in a line 6 sqm long."] =
