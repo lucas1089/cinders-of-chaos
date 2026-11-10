@@ -5088,6 +5088,19 @@ Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `
 - **Not modelled.** Resistances (a brand's element against a monster that resists it), crits, kills (nothing here depends on one),
   the mana a faster Quickening costs, the other spells that a set leaves out.
 
+## Ceilings on critical hits, damage runes and penetration (O471, owner 2026-11-10; computed, not measured)
+
+What this package moves in the numbers quoted on this page: a character counts at most 45 points of critical chance and 150%
+extra critical damage (every source), at most 20 points of physical and of elemental penetration (the Sunder rune included in
+the elemental), and a Mythic brand, Echo, Hex or Keen Edge rune counts at its Legendary value (brand 50, Echo 30, Hex 6, Keen
+Edge 6). The measured class table `class_dps_measured.csv` and the models that read it (class DPS, weapon families, survival,
+PvP, card sets) are unchanged: `rotation_sim.py` and `class_dps_model.py` read neither a rune nor a critical or penetration total.
+`spell_mastery_model.py` reads a Common rune at the mastery tier, below the ceiling, so it does not move either. The only quoted number that depends on the item level curve is the
+hunting-level to item-level pairs of the energy shield text above (item level 150 with a boss and a rift bonus at level 1000):
+with the flatter curve a boss of level 1000 is item level 127, plus a rift 15, plus an Omen 15: 150 after the cap, so the
+statement holds. The critical reach (`luajit tools/crit_reach.lua`): three slots, a dedicated build 71 -> 45 (the cap), the
+damage ceiling 300 -> 150. server/README.md "Critical, rune and penetration ceilings, gear growth (O471)".
+
 ## Spell scaling (O468, owner 2026-11-10; computed, not measured)
 
 Server side: `server/README.md` "Spell scaling (O468)". What this file adds is the shape of the formulas and the note on the

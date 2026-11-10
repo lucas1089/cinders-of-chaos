@@ -3044,10 +3044,12 @@ Protocol (opcode 65): `paragonMastery {key, n}`, `paragonConvert {n}` in; `parag
 `exchange {ratio, treeFree, converted}`. Build codes carry the category stats only (`buildshare.lua`); loadouts check both.
 
 **Totals** (`passivetree_totals.lua`, rules `passivetree_totals_core.lua`): request `statTotals`, answer `statTotals
-{attributes[], damage[], crit {chance {total, tree, other}, amount {total, tree, paragon, other}}}` (rate limit 300 ms). The
-crit totals are the engine's own value (gear, gems, blessings, tree, Paragon). Client: `totals.lua`, `totalsview.lua`.
+{attributes[], damage[], crit {chance {total, tree, other, raw, cap, capped}, amount {total, tree, paragon, other, raw, cap,
+capped}}}` (rate limit 300 ms). The crit totals are the engine's own value (gear, gems, blessings, tree, Paragon) under the
+caps of O471 (`total` counts, `raw` is what the sources give, `capped` = true when it was cut). Client: `totals.lua`, `totalsview.lua`.
 
-**Critical reach** (`luajit tools/crit_reach.lua`, from the item mod, crafting, gem and tree tables). The T8 critical modifier
+**Critical reach** (`luajit tools/crit_reach.lua`, from the item mod, crafting, gem and tree tables; the table below is the
+state of O146, the numbers of today are in "Critical, rune and penetration ceilings (O471)": three slots, caps 45 and 150). The T8 critical modifier
 (item level 140+) rolls amount 8-10 and gives chance 5-7 (9 at +30% quality) on each of 8 slots:
 
 | Source | Critical chance |
@@ -13209,8 +13211,9 @@ see "Infinite arrows and quivers".
 into `combatPowerLevel`, which the client frame and the stock scripts read; items from before have only
 `combatPowerLevel`, which counts as the item level. The level of a drop is the dropping monster's level
 (`Monster:getMonsterLevel`; a monster without one: its hunting level in `bounty_pool.lua`, else 1.6 x sqrt(experience)
-raised by health / 60, the estimate of `tools/gen_bounty_pool.py`) along the curve `itemLevel.curve` (level 1 -> 1, 50 ->
-22, 100 -> 36, 200 -> 54, 500 -> 90, 900 -> 118, 1500 -> 136, 6000 -> 145), plus: Magic +2, Rare +4, Legendary +7 (Divine as Legendary), boss +10;
+raised by health / 60, the estimate of `tools/gen_bounty_pool.py`) along the curve `itemLevel.curve` (O471, 2026-11-10: level 1 -> 1, 50 ->
+21, 100 -> 33, 200 -> 50, 500 -> 82, 900 -> 112, 1500 -> 134, 2000 -> 144, 2200 -> 148, 6000 -> 150; before 22, 36, 54, 90, 118,
+136 and 145 at 6000), plus: Magic +2, Rare +4, Legendary +7 (Divine as Legendary), boss +10;
 inside a rift +1 per rift tier (at most +15), an Omen guardian arena +15 more; capped at 150. World boss drops and rewards
 are fixed at 145 (`worldBoss`), the tutorial's gear at 5 (`tutorial`), rift chest and coffer gear use the rift boss's
 level (else the top of the tier's window) with the rift bonuses, the treasure goblin its area level as a Legendary.
@@ -13221,9 +13224,11 @@ level (Erasure and Fate too); an item without any level gets one from the item t
 
 **Tiers.** Eight per modifier, T1 the lowest, T8 the highest. A tier needs an item level (`tierLevels`): T1 1, T2 15, T3 30,
 T4 50, T5 70, T6 90, T7 110, T8 130 (O461; before 1, 15, 30, 50, 70, 95, 120, 140). **Every tier the item level allows can
-roll, all with the same weight** (`tierWeights` 100 each; before only the best five tiers rolled, weighted 100 .. 12):
-at item level 150 each of T1 .. T8 comes one time in eight, at item level 40 T1, T2 and T3 one time in three. A boss of
-monster level 1000 (item level 133) rolls T8. A modifier may have a gate of its own (`def.minTier`): the weapon's Mana
+roll, tilted toward the top** (`tierWeights` 1.35^(t-1): 100, 135, 182, 246, 332, 448, 605, 816, O471; O461 had them equal,
+before that only the best five tiers rolled, weighted 100 .. 12): at item level 150 T8 comes 28.5 times in 100 and T1 3.5,
+at item level 40 T3 43.6, T2 32.4 and T1 24.0. The ranges of the tiers did not change. The Codex, the tooltips and the
+orbs read the same weights (`M.tierRows`, `M.tierChances`, `M.rollTier`). A boss of monster level 1000 (item level 127)
+rolls T7 at most; T8 opens for a boss of about 1060, for a Rare of about 1230 and for a normal monster of about 1370. A modifier may have a gate of its own (`def.minTier`): the weapon's Mana
 Leech does not roll below T4. Inside a modifier **the ranges never overlap and narrow toward the top** where the numbers
 allow (a tier starts above the end of the tier before); the ladders the owner gave as they are (worn Attack Speed,
 Cooldown Reduction, Experience, Critical Strike Chance) may touch. The ranges of each version are kept: version 1 (until
@@ -13269,7 +13274,8 @@ against the Chaos types in one list (`ChaosCrafting.affixes()`):
 weaponsmith, jewelsmith) and the life and mana leech PAIRS are `noRoll` since O461: the rows stay to read old items.
 Critical Strike Chance and Critical Strike Damage are two modifiers of their own that each write ONE engine attribute
 (`rarity_criticalHitChance`, `rarity_criticalHitAmount`; `customs/rarity/base_rarity.lua` makes one condition per
-attribute when the item is worn, so neither needs the other); kinds weapon, jewel, other (the badge) and quiver. The
+attribute when the item is worn, so neither needs the other); kinds weapon and jewel (necklace, ring) since O471 (before:
+also other = the badge, and quiver; items that carry one keep it, see "Critical, rune and penetration ceilings (O471)"). The
 tree still grants the pair.)
 
 **The Chaos modifiers** (kind = which items may roll it: weapon, shield, helmet, armor, legs, boots, jewel = amulet or ring,
@@ -13298,8 +13304,8 @@ elements, ...) and the energy shield have their own tables in their sections. Ge
 | poisonchance | Chance to Poison +N% | prefix | other, quiver, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | chillchance | Chance to Chill +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | shockchance | Chance to Shock +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
-| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | none (O464) |
-| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | none (O464) |
+| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | 20 (O471) |
+| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | 20 (O471) |
 | execute | Executes Monsters below N% Health | prefix | weapon (does not stack) | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | none |
 | dot | Damage over Time +N% | prefix | jewel, other, weapon | 7-11 | 12-13 | 14-15 | 16-17 | 18-19 | 20-21 | 22-23 | 24-26 | none |
 | attackspeed | Attack Speed +N% | suffix | weapon | 5-7 | 8-10 | 11-13 | 14-16 | 17-19 | 20-22 | 23-25 | 26-27 | none |
@@ -13419,7 +13425,7 @@ in `docs/drafts/`). What changed:
 - *Other config follow-ups*: the Void Orb's implicit pools lost Mana Cost Reduction, the crafted gear's item level maximum
   is 89 (it must stay under the T6 gate, now 90), the charms' `gearRef` of Life and Mana on Kill follow the new T8 tops,
   the keystone speed rule counts the boots' top 35, `tools/crit_reach.lua` models the two critical modifiers on the five
-  slots that carry them, the Codex data keeps `tierWindow` as the number of tiers (both clients read it).
+  slots that carried them (O471: three slots and the caps), the Codex data keeps `tierWindow` as the number of tiers (both clients read it).
 
 **Skipped on purpose**: none of the approved stats were dropped. Not done: a stat that adds the ailment chance to spells that
 deal no damage to the target (the chance needs a damaging hit). (Mana-shield damage: since O464 the player defence layer
@@ -13450,6 +13456,94 @@ the rarity as a text for the length of that pass (`ChaosCrafting.shield`); `Chao
 number the next tick, and `ChaosCrafting.unshield` does the same for an item that is moved first (`onItemMoved`, autoloot).
 Readers go through `tonumber`. Items that leave a corpse before the pass go through `ChaosLoot.finalizeRarity`
 (autoloot, Rarity Autoloot, the pouch).
+
+## Critical, rune and penetration ceilings, gear growth (O471)
+
+Owner, 2026-11-10: "the source of damage must be more balanced", "the passive tree must cover less, equipment covers the rest",
+"you can do everything". The design is `SP/dmgcurve/design/design.md` sections B1, B3, B4 (scratch, not in git); this is the
+gear and ceilings package of the balance round. Lua only, no engine patch, no new opcode, no new item mark: values and tiers
+of items players own do not change (nothing is rerolled, deleted or upgraded on touch).
+
+**1. Item level curve** (`chaos_item_mods.lua` `itemLevel.curve`). Monster level to item level, straight lines between:
+1 -> 1, 10 -> 5, 25 -> 12, 50 -> 21, 100 -> 33, 200 -> 50, 350 -> 68, 500 -> 82, 700 -> 98, 900 -> 112, 1100 -> 122, 1500 -> 134,
+2000 -> 144, 2200 -> 148, 6000 -> 150 (before 22, 36, 54, 74, 90, 106, 118, 128, 136, 142 at 3000, 145 at 6000). Tier gates
+unchanged (1, 15, 30, 50, 70, 90, 110, 130). The additions stay (Magic +2, Rare +4, Legendary +7, boss +10, rift, Omen). The
+design's table assumed "legendary boss +17"; the code takes one addition (a boss is +10), so the caps below are the code's.
+`loot.lua L.dropLevel` needed no change (it calls `M.sourceLevel`). The Gambler's price points
+(`gamble_config.lua` `price.curve`) moved with the curve (same gold at the same hunting level, within the whole item
+levels the price steps in): `{4, 3000} {5, 3600} {11, 8300} {17, 13000} {20, 20000} {33, 56000} {49, 97000} {61, 150000} {67,
+300000} {82, 850000} {99, 1100000} {112, 1350000} {118, 1500000} {142, 1650000}` (was `12 18 22 36 54 67 74 90 106 118 123 136`).
+The sale price of a gear drop (`1 + item level / 200`, `chaos_item_prices.lua`) follows the item level: a normal drop sells for
+1.9% less at monster level 300 and 1000 and 1.8% more at 2000.
+
+**2. Tier tilt** (`tierWeights`). The weight of tier t among the tiers the item level allows is 1.35^(t-1): `100, 135, 182, 246,
+332, 448, 605, 816` (the exact power for T8 is 817.2; the design's list is kept). The ranges of the tiers are unchanged. One
+function reads them for every roll: `M.tierRows` (every orb that rolls a modifier or a new tier, the Void Orb's implicit,
+`ChaosCrafting.forge` for drops), `M.tierChances` (Codex, wiki), the Codex view of the
+client (`codexview.lua` reads `tierWeights` from the generated data). The item tooltip's "up to T3" and the orb previews
+(`C.tierSpan`) show the span of tiers, which the weights do not change. The veiled modifier's tiers have their own table.
+
+**3. Critical hits.** Critical Strike Chance and Critical Strike Damage (`ChaosCrafting.singles`) roll on weapon and jewel
+(necklace, ring) only; before also on other (the badge) and quiver. A character counts at most 45 points of critical chance
+and 150% extra damage on a critical hit, **every source together**: gear, gems, passive tree, Paragon, blessings, buffs.
+(`ChaosItemMods.config.crit`.) Where the totals are read: the engine adds the critical chance and amount of all conditions and
+item attributes in `Player::getSpecialSkill` and rolls the crit in `combat.cpp` (engine patch 0004) before any Lua event, so a
+script cannot change the sum. `data/scripts/chaos/crit_cap.lua` therefore cuts the hit where the engine made it
+(`onHealthChange` gets the raised damage and `critical`, patch 0001): a critical hit of a player over the chance cap stays
+critical with probability cap / chance, else the crit is taken off (damage / (1 + amount / 100)); one over the amount cap keeps
+only the capped extra (`M.critHit`, `M.critKeep`, `M.critFactor`). The event goes on a target (monster or player) from an
+`onTargetCombat` callback only while the attacker is over a cap. The scripted crits, Keen Edge (`supports.lua`) and the quiver's
+Critical Strike with Bows (`weapon_styles.lua`), only get the room the cap leaves (`M.critRoom`: the independent rolls together
+make 45). The character sheet and the tree window show the counted total and `cap` (`charsheet.lua`, `passivetree_totals_core.lua`);
+the item tooltip's critical and penetration lines carry `cap` and `over` (`item_tooltip_core.lua` `T.capOf`, client `tooltiplogic.lua`).
+`tools/crit_reach.lua --check` reads the same numbers (three slots, `M.critTotals`).
+Not exact: the crit that is taken off still carries `critical = true` for the events after it (Surge, Critical Echo), and the
+armour of the monster defence layer (event order -150) has seen the larger hit before the crit is cut (a flat armour reduction is
+not linear in the hit). Items owned: a badge or a quiver that already has one of the modifiers keeps it and it counts, under the caps.
+
+**4. Damage runes.** Brand (five elements), Echo, Hex and Keen Edge count at most their level 4 (Legendary) value
+(`chaos_supports_config.lua` `levelCeiling`, `S.countedLevel`, read by `S.values`, so every effect, text and the free support of
+a mastery follow): brand 50 (not 60), Echo 30 (35), Hex 6 (8), Keen Edge 6 (8). A Mythic rune keeps its name, colour and level;
+its effect text shows the value that counts, the support window, the use message and the item description add
+"Counts as Legendary: the damage runes count at most their level 4 value." (`S.ceilingNote`, `runeView` `note`,
+`install_supports.py`). The Codex row of level 5 shows the counted value. Owned Mythic runes keep working at the Legendary value.
+
+**5. Penetration.** `physpen` and `elepen` have `cap = 20` in the item module (`M.totals`): worn pieces, item sets, uniques, the
+veiled modifier and the quiver together give at most 20 points of each kind. The monster defence layer and the PvP defence layer
+read it through `ChaosItemMods.playerBonus`. The **Sunder** support counts into the elemental total: the items first, Sunder gets
+`20 - elepen` points at most (`M.penLeft`, `supports.lua`): 0 worn points leaves Sunder its 14 (Legendary) to 18 (Mythic) points,
+12 worn points leave it 8. Physical penetration has no other source.
+
+**Before / after** (computed with the tools of the repo: `M.sourceLevel`, `M.tierChances`, the `weapondamage` ranges, `crit_reach.lua`;
+Rare drop = curve + 4, boss = curve + 10; "mean weapon damage" = the mean of the middle of the weapon damage ranges over the
+tiers the item level allows, weighted):
+
+| monster level | item level normal | Rare | boss | top tier Rare | boss | mean tier of a Rare drop | mean Weapon Damage of a Rare drop | chance of the best allowed tier |
+|---:|---|---|---|---|---|---|---|---|
+| 100 | 36 -> 33 | 40 -> 37 | 46 -> 43 | T3 -> T3 | T3 -> T3 | 2.00 -> 2.20 | 20.5% -> 21.7% | 33.3% -> 43.6% |
+| 300 | 67 -> 62 | 71 -> 66 | 77 -> 72 | T5 -> T4 | T5 -> T5 | 3.00 -> 2.87 | 27.1% -> 26.1% | 20.0% -> 37.1% |
+| 500 | 90 -> 82 | 94 -> 86 | 100 -> 92 | T6 -> T5 | T6 -> T6 | 3.50 -> 3.58 | 30.3% -> 30.9% | 16.7% -> 33.4% |
+| 700 | 106 -> 98 | 110 -> 102 | 116 -> 108 | T7 -> T6 | T7 -> T6 | 4.00 -> 4.33 | 33.5% -> 35.7% | 14.3% -> 31.0% |
+| 1000 | 123 -> 117 | 127 -> 121 | 133 -> 127 | T7 -> T7 | T8 -> T7 | 4.00 -> 5.12 | 33.5% -> 40.7% | 14.3% -> 29.5% |
+| 2000 | 138 -> 144 | 142 -> 148 | 148 -> 150 | T8 -> T8 | T8 -> T8 | 4.50 -> 5.94 | 36.6% -> 45.8% | 12.5% -> 28.5% |
+| 100 / 300 / 500 / 700 / 1000 / 2000 | critical chance of a dedicated build: 71 -> 45, extra damage ceiling 300 -> 150 | | | | | | | |
+
+(Level 100 to 2000 weapon damage means: the design's table, 20 -> 22, 27 -> 26, 30 -> 31, 34 -> 36, 34 -> 41, 37 -> 46, reproduced.
+The critical factor of a dedicated build, 1 + chance x amount: about 2.4 before (the design's figure; chance 71, amount near 200),
+1 + 0.45 x 1.5 = 1.675 after. Runes at Mythic: brand -17%, Echo -14%, Hex -25%, Keen Edge -25% of the rune's own value.
+Penetration: a build that stacked 33 points counts 20.)
+
+**Models.** `weapon_coverage.lua --check`, `gear_coverage.lua --check`, `unique_pace_model.lua --check`, `loot_model.lua --check`,
+`card_set_model.py`, `spell_mastery_model.py`, `class_dps_model.py`, `weapon_family_model.py`, `survival_model.py`, `pvp_model.py`,
+`crit_reach.lua --check` and `unique_passives_model.lua --check` stay green unchanged: none of them reads the critical or
+penetration totals of a character (they read the measured class table), and the item level curve moves the item level of a drop,
+which they do not model. The effect of the ceilings on the typical character is for the final re-fit of the round.
+
+**Not verified.** Nothing ran on a live server. Not measured: the real crit and damage numbers of a hit with the cut (the maths is
+unit tested with a seeded generator, the engine's own roll and the order of the Lua events are read from the patches, not run); that
+the base rarity script reads a badge's or quiver's attributes as it did (unchanged, not touched); the size of the hit the monster
+armour layer sees before the crit is cut; the Unity client reads the same generated Codex data (`Codex.json`, run by
+`unity/Core.Tests`), not the cap lines of the item tooltip (there is no Unity item tooltip change in this package).
 
 ## Legendary powers (`data/lib/chaos_powers.lua`, `data/scripts/chaos/item_powers.lua`)
 
