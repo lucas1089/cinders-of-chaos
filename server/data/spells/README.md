@@ -1497,7 +1497,7 @@ sized under the signature keystones of the other lines; the sums use the rules i
 | Keystone | Class | Gain | Price | Net, computed |
 |---|---|---|---|---|
 | Unbroken Line | Juggernaut | damage taken -8% with 4 enemies next to a shield (-2% each); Immovable alone is -8% / -16% | weapon hits -5% | defensive: about 8% of the damage taken in a pack for 5% of the weapon damage |
-| Open Veins | Berserker | a bleed of 50% of the hit over 4 s, one bleed at a time | two-handed hits -8% | a hit every 2 s: +25% of a hit, -8%: about +17% on a target that lives (Barbed Quiver: +30% -10%, +20%) |
+| Open Veins | Berserker | a bleed of 50% of the hit over 4 s, one bleed at a time | two-handed hits -8% | a hit every 2 s: +25% of a hit, the hit x0.92: about +15% on a target that lives (Barbed Quiver: +30%, the hit x0.90: +17%) |
 | Lone Mark | Deadeye | +12% on a target alone (Hunter's Focus up to +20%) | -8% in a crowd | single target +12%, a pack -8%; the class order of one target is not moved by the tree |
 | Wolfbond | Beastmaster | the wolf factor x1.20, with Pack Alpha x1.62 | own bow hits -8% | with the wolves' share of the damage in `companion_model.py` (23% at 100, 53% at 1000 with the tree): -1.6% at 100, +6.8% at 1000 |
 | Convergence | Elementalist | +12% on a target with 2 or more others within 2 sqm | -7% on a lone target | a pack +12%, a lone target -7% |
@@ -4398,6 +4398,165 @@ prints levels 100, 500 and 1000 (the medians: level 100: 1 target 318 against 60
 | Sentinel | 6600 | 5156 | +92% / -14% | 18155 | 13429 | +160% / -2% |
 | median | 3431 | 6017 | | 6989 | 13731 | |
 
+### Class DPS measured again (O459, 2026-11-10)
+
+Measure and report. No balance number, model or limit was changed. Question: does `class_dps_model.py`, the 2026-11-06 table moved by computed factors, match the game now? The factors are `classDamage`, the extra target factor, the O429 auto attack gain, and the kit changes of O454, O455 and O446 that the model leaves out.
+
+**Short answer.** No, not row by row. The model is low at the median by 5% to 10% in all six columns. Of 126 rows, 66 differ by more than 10% and 26 by more than 25%. The measured table has 26 rows outside the band of the level median; the modelled table has none. The causes found are the tree builds, rows of the old table that were outliers, and a Thief row. The Deadeye at level 100 agrees with the model within the spread.
+
+| Level | 1 target measured | modelled | 5 targets measured | modelled |
+|---|---:|---:|---:|---:|
+| 100 | 638 | 607 | 1082 | 1008 |
+| 500 | 3397 | 3084 | 8507 | 7761 |
+| 1000 | 6378 | 6017 | 14706 | 13731 |
+
+Medians of the 21 classes in damage per second. Display scale is x1, so a player sees the same numbers.
+
+**Rig.** Same method as the measurement of 2026-11-06 ("Class DPS balance (O430)" above; its report is not in git): 63 characters, one per class and level, 60 s windows on training dummies with 2,000,000,000 health, the main dummy one tile away, 5 targets are the main dummy and four beside it, the helper's Auto setup rotation cast by a protocol bot, all 21 characters of a level at once. 4 samples a row, 126 rows. Half range of the 4 samples: median 3.8% of the mean, mean 4.8%, 84 rows under 5%, 114 under 10%, largest 20.9% (Ranger 1000, 1 target), then Thief 500 (20.5%), Ranger 100 (15.8%), Ranger 500 (13.9%), Deadeye 1000 (13.0%), Samurai 500 (12.5%). Load before each run 0.03 to 1.3, never near 6. No character died or moved a dummy; Ninja teleports (Shadow Step) in 8 of 504 character runs, as before.
+
+What differs from 2026-11-06, in order of weight:
+- The 63 characters were gone with the rig database. They were rebuilt by the same rule: gear plan regenerated and identical (`gen_plan.lua`, byte for byte), skills 101 / 119 / 140, magic level 10 / 19 / 40 and 89 / 111 / 140 for the six casters, stat window 10 / 20 / 20, level by `addExperience`, the same build ids, no boots at level 100. Same account unlocks for the Monk, Necromancer and Templar lines.
+- The build ids no longer name the same trees. O442 rewrote the Recommended builds (targets, fill, kind) and O449 to O451 added keystones and tags. Of the 19 role builds used, 15 hold other targets now (`slayer` 621 became 621 and 409, `ossuary_fury` 642 became 624 and 621, `zealot` 376 became 624 and 376, `retributor` became a retaliation build, and so on), 3 keep their targets and 1 is gone. The 2 Focus builds (Necromancer, Iron Sage) are theme builds. The Deadeye's `hunters_focus` is gone; `marked_target` (624, 621, 561) was used, the first Recommended role, with Hunter's Focus (621) as `hunters_focus` had. Rebuilding the old trees node by node was not possible: the old targets resolve against a changed tree.
+- The helper rotation is now the "every list spell" mode of the old report: since O430 every rule has a monster count of 1 (checked in the rotation printed for each run). So the 1 target column is that mode and the old helper 1 target column no longer exists. The 5 target column is unchanged in kind. Item 4 of the task (the every list spell mode) is therefore the same measurement and was not run twice.
+- Rotations and support spells are the same as 2026-11-06 for all classes except the Deadeye, whose Skewering Line is gone (4 spells at level 100). Seeker Mine is cast by hand and in no rotation.
+- Server: engine binary of 2026-11-09 (not rebuilt, src-patches unchanged since 0089 of 2026-11-08), data synced with `install_all.py`, client guard set to `off` in the rig `config.lua` only. The old rig was a build of 2026-11-03. Src-patch 0088 (attack interval floor 1000 ms to 333 ms, speed bonus cap 40% to 76%, dated 2026-11-06 18:33) was not in the old rig and the model does not compute it.
+- Rig faults found and fixed before the numbers below. A first pass of 5 samples was thrown away: a character that logs out in a fight stays in the arena, the next level's characters killed it (PvP world), and the death penalty took levels and skills. The harness now removes each character at the end of a run; the clean passes have no deaths. The Vigil of Clarity is a toggle that survives a logout, so every second run had it off; the harness switches it off before a run so the bot's one cast turns it on. The old report had the same toggle between its two final passes.
+
+**Table.** Mean of 4 samples, [min-max], the value of `class_dps_model.dps()`, the gap measured over modelled, and each class against its level median, measured and modelled. A star on the gap means it is larger than the half range of the 4 samples. OUT means outside the band of the level median (+-30% at 100, +-25% at 500 and 1000). 28 of 126 gaps are inside the half range.
+
+Level 100 (band +-30%). Median of the 21 classes, measured / modelled: 1 target 638 / 607, 5 targets 1082 / 1008.
+
+| Class | 1 target measured (min-max) | modelled | gap | vs median, measured / modelled | 5 targets measured (min-max) | modelled | gap | vs median, measured / modelled |
+|---|---:|---:|---:|---|---:|---:|---:|---|
+| Warrior | 614 [598-625] | 605 | +1% | -4% / -0% | 1162 [1100-1232] | 1200 | -3% | +7% / +19% |
+| Juggernaut | 547 [537-563] | 515 | +6% * | -14% / -15% | 1082 [1027-1126] | 1041 | +4% | +0% / +3% |
+| Berserker | 678 [638-710] | 678 | -0% | +6% / +12% | 1383 [1350-1437] | 1206 | +15% * | +28% / +20% |
+| Ranger | 659 [557-765] | 713 | -8% | +3% / +18% | 738 [646-802] | 817 | -10% | -32% OUT / -19% |
+| Deadeye | 704 [615-774] | 704 | +0% | +10% / +16% | 761 [722-820] | 813 | -6% | -30% / -19% |
+| Beastmaster | 699 [662-744] | 673 | +4% | +10% / +11% | 1466 [1441-1524] | 1196 | +23% * | +35% OUT / +19% |
+| Mystic | 553 [546-557] | 504 | +10% * | -13% / -17% | 1292 [1280-1303] | 1202 | +8% * | +19% / +19% |
+| Elementalist | 636 [630-640] | 511 | +24% * | -0% / -16% | 1283 [1258-1295] | 1008 | +27% * | +19% / +0% |
+| Illusionist | 672 [656-688] | 655 | +3% * | +5% / +8% | 1310 [1289-1322] | 1209 | +8% * | +21% / +20% |
+| Thief | 704 [668-748] | 631 | +12% * | +10% / +4% | 860 [806-903] | 812 | +6% * | -20% / -19% |
+| Ninja | 597 [562-623] | 726 | -18% * | -6% / +20% | 710 [694-733] | 817 | -13% * | -34% OUT / -19% |
+| Samurai | 795 [747-839] | 725 | +10% * | +25% / +20% | 871 [848-909] | 793 | +10% * | -20% / -21% |
+| Necromancer | 727 [722-734] | 700 | +4% * | +14% / +15% | 1290 [1272-1304] | 1210 | +7% * | +19% / +20% |
+| Lich | 649 [640-655] | 607 | +7% * | +2% / +0% | 1068 [1059-1080] | 1053 | +1% * | -1% / +4% |
+| Bone Lord | 460 [453-467] | 592 | -22% * | -28% / -2% | 673 [639-703] | 972 | -31% * | -38% OUT / -4% |
+| Monk | 476 [432-509] | 514 | -7% | -25% / -15% | 1025 [938-1061] | 1037 | -1% | -5% / +3% |
+| Shadowfist | 455 [444-472] | 489 | -7% * | -29% / -19% | 850 [786-887] | 886 | -4% | -21% / -12% |
+| Iron Sage | 530 [508-546] | 487 | +9% * | -17% / -20% | 1173 [1090-1226] | 1236 | -5% | +8% / +23% |
+| Templar | 638 [616-677] | 489 | +31% * | +0% / -19% | 1432 [1346-1503] | 939 | +52% * | +32% OUT / -7% |
+| Inquisitor | 900 [865-944] | 609 | +48% * | +41% OUT / +0% | 1110 [1054-1159] | 808 | +37% * | +3% / -20% |
+| Sentinel | 630 [619-642] | 517 | +22% * | -1% / -15% | 893 [860-918] | 807 | +11% * | -17% / -20% |
+
+Level 500 (band +-25%). Median of the 21 classes, measured / modelled: 1 target 3397 / 3084, 5 targets 8507 / 7761.
+
+| Class | 1 target measured (min-max) | modelled | gap | vs median, measured / modelled | 5 targets measured (min-max) | modelled | gap | vs median, measured / modelled |
+|---|---:|---:|---:|---|---:|---:|---:|---|
+| Warrior | 3291 [3250-3387] | 3485 | -6% * | -3% / +13% | 7679 [7530-8109] | 7161 | +7% * | -10% / -8% |
+| Juggernaut | 3489 [3373-3550] | 3225 | +8% * | +3% / +5% | 9048 [8723-9319] | 7761 | +17% * | +6% / +0% |
+| Berserker | 3361 [3101-3532] | 2746 | +22% * | -1% / -11% | 10353 [10036-10756] | 8878 | +17% * | +22% / +14% |
+| Ranger | 4199 [3581-4750] | 3484 | +21% * | +24% / +13% | 8932 [8595-9308] | 7868 | +14% * | +5% / +1% |
+| Deadeye | 4648 [4250-5027] | 3441 | +35% * | +37% OUT / +12% | 7021 [6524-7499] | 6642 | +6% | -17% / -14% |
+| Beastmaster | 2411 [2358-2538] | 2626 | -8% * | -29% OUT / -15% | 10315 [9682-11249] | 8852 | +17% * | +21% / +14% |
+| Mystic | 5431 [5084-5685] | 2505 | +117% * | +60% OUT / -19% | 14951 [14584-15315] | 9148 | +63% * | +76% OUT / +18% |
+| Elementalist | 3397 [3002-3597] | 2641 | +29% * | +0% / -14% | 8507 [7396-9130] | 8493 | +0% | +0% / +9% |
+| Illusionist | 2632 [2503-2774] | 2641 | -0% | -23% / -14% | 8344 [8145-8506] | 9129 | -9% * | -2% / +18% |
+| Thief | 4066 [3393-5059] | 3543 | +15% | +20% / +15% | 5625 [5072-6325] | 6437 | -13% * | -34% OUT / -17% |
+| Ninja | 3017 [2862-3148] | 3517 | -14% * | -11% / +14% | 8251 [7572-8778] | 6610 | +25% * | -3% / -15% |
+| Samurai | 5728 [5139-6569] | 3341 | +71% * | +69% OUT / +8% | 13958 [13368-14402] | 6639 | +110% * | +64% OUT / -14% |
+| Necromancer | 3832 [3724-3976] | 3525 | +9% * | +13% / +14% | 6586 [6559-6636] | 6688 | -2% * | -23% / -14% |
+| Lich | 3769 [3746-3801] | 2627 | +43% * | +11% / -15% | 8780 [8534-8972] | 7315 | +20% * | +3% / -6% |
+| Bone Lord | 2595 [2491-2654] | 3300 | -21% * | -24% / +7% | 4859 [4201-5291] | 6725 | -28% * | -43% OUT / -13% |
+| Monk | 3327 [3202-3453] | 3084 | +8% * | -2% / +0% | 6419 [6158-6604] | 6620 | -3% | -25% / -15% |
+| Shadowfist | 3169 [3101-3270] | 3446 | -8% * | -7% / +12% | 6662 [6396-7031] | 6609 | +1% | -22% / -15% |
+| Iron Sage | 2979 [2842-3136] | 2641 | +13% * | -12% / -14% | 7889 [7621-7997] | 8078 | -2% | -7% / +4% |
+| Templar | 3860 [3823-3943] | 2645 | +46% * | +14% / -14% | 11050 [10881-11337] | 8898 | +24% * | +30% OUT / +15% |
+| Inquisitor | 3472 [3389-3531] | 2644 | +31% * | +2% / -14% | 9192 [8844-9542] | 9129 | +1% | +8% / +18% |
+| Sentinel | 3331 [3208-3445] | 2631 | +27% * | -2% / -15% | 9185 [9020-9565] | 8586 | +7% * | +8% / +11% |
+
+Level 1000 (band +-25%). Median of the 21 classes, measured / modelled: 1 target 6378 / 6017, 5 targets 14706 / 13731.
+
+| Class | 1 target measured (min-max) | modelled | gap | vs median, measured / modelled | 5 targets measured (min-max) | modelled | gap | vs median, measured / modelled |
+|---|---:|---:|---:|---|---:|---:|---:|---|
+| Warrior | 7242 [6980-7403] | 6868 | +5% * | +14% / +14% | 16586 [15778-17229] | 13259 | +25% * | +13% / -3% |
+| Juggernaut | 6097 [5885-6320] | 6837 | -11% * | -4% / +14% | 15062 [14434-15564] | 13088 | +15% * | +2% / -5% |
+| Berserker | 6712 [6532-7028] | 5590 | +20% * | +5% / -7% | 18408 [17424-18989] | 15565 | +18% * | +25% OUT / +13% |
+| Ranger | 7815 [6238-9508] | 6853 | +14% | +23% / +14% | 12274 [11608-12674] | 11704 | +5% * | -17% / -15% |
+| Deadeye | 11388 [9289-12245] | 7252 | +57% * | +79% OUT / +21% | 13571 [12206-15027] | 10628 | +28% * | -8% / -23% |
+| Beastmaster | 6053 [5571-6551] | 5292 | +14% * | -5% / -12% | 23231 [21282-25029] | 15396 | +51% * | +58% OUT / +12% |
+| Mystic | 5518 [5465-5577] | 5123 | +8% * | -13% / -15% | 16445 [15759-17034] | 15091 | +9% * | +12% / +10% |
+| Elementalist | 5456 [4883-5791] | 5179 | +5% | -14% / -14% | 14706 [14324-15482] | 15330 | -4% * | +0% / +12% |
+| Illusionist | 4716 [4686-4758] | 5189 | -9% * | -26% OUT / -14% | 12558 [12286-12731] | 14706 | -15% * | -15% / +7% |
+| Thief | 3955 [3593-4353] | 6771 | -42% * | -38% OUT / +13% | 6212 [6050-6323] | 11888 | -48% * | -58% OUT / -13% |
+| Ninja | 5778 [5463-6024] | 6779 | -15% * | -9% / +13% | 16331 [15842-17351] | 11819 | +38% * | +11% / -14% |
+| Samurai | 7261 [6886-7769] | 6552 | +11% * | +14% / +9% | 19756 [19224-19983] | 11784 | +68% * | +34% OUT / -14% |
+| Necromancer | 6571 [6532-6615] | 6800 | -3% * | +3% / +13% | 14048 [13379-14565] | 14178 | -1% | -4% / +3% |
+| Lich | 7059 [6950-7266] | 6017 | +17% * | +11% / +0% | 16267 [15725-16718] | 14110 | +15% * | +11% / +3% |
+| Bone Lord | 4613 [4427-4741] | 6012 | -23% * | -28% OUT / -0% | 9387 [9054-10104] | 12476 | -25% * | -36% OUT / -9% |
+| Monk | 6933 [6470-7250] | 6901 | +0% | +9% / +15% | 14087 [13781-14367] | 13731 | +3% * | -4% / +0% |
+| Shadowfist | 6415 [6005-7069] | 6574 | -2% | +1% / +9% | 12073 [11542-12659] | 11784 | +2% | -18% / -14% |
+| Iron Sage | 5476 [5383-5550] | 5557 | -1% | -14% / -8% | 14679 [14253-14942] | 15061 | -3% * | -0% / +10% |
+| Templar | 6378 [5980-6780] | 5159 | +24% * | +0% / -14% | 17207 [16567-17870] | 14948 | +15% * | +17% / +9% |
+| Inquisitor | 6693 [6300-6898] | 5146 | +30% * | +5% / -14% | 15599 [14949-15903] | 14382 | +8% * | +6% / +5% |
+| Sentinel | 4566 [4317-4752] | 5156 | -11% * | -28% OUT / -14% | 10629 [10488-10920] | 13429 | -21% * | -28% OUT / -2% |
+
+**Outside the band, measured.** 26 rows, none of them in the modelled table. Level 100: Ranger 5 targets -32%, Beastmaster 5 targets +35%, Ninja 5 targets -34%, Bone Lord 5 targets -38%, Templar 5 targets +32%, Inquisitor 1 target +41%. Level 500: Deadeye 1 target +37%, Beastmaster 1 target -29%, Mystic +60% and +76%, Thief 5 targets -34%, Samurai +69% and +64%, Bone Lord 5 targets -43%, Templar 5 targets +30%. Level 1000: Berserker 5 targets +25%, Deadeye 1 target +79%, Beastmaster 5 targets +58%, Illusionist 1 target -26%, Thief -38% and -58%, Samurai 5 targets +34%, Bone Lord -28% and -36%, Sentinel -28% and -28%. The modelled value of each of these rows is in the table above (all inside the band).
+
+**Deadeye and Ranger at level 100 on the new kit.** The model carries the old measurement of both classes, so the derived loss of the Deadeye's trade (Skewering Line for Seeker Mine, -14.1% on 1 target and -11.4% on 5 targets in `rotation_sim.py`) is not in its numbers. Measured against the model:
+
+| | 1 target measured [min-max] | modelled | gap | 5 targets measured [min-max] | modelled | gap |
+|---|---:|---:|---:|---:|---:|---:|
+| Deadeye | 704 [615-774] | 704 | +0.1% | 761 [722-820] | 813 | -6.4% |
+| Ranger | 659 [557-765] | 713 | -7.6% | 738 [646-802] | 817 | -9.7% |
+
+Against the old table (every list spell for 1 target, helper for 5 targets): Deadeye 704 against 1012 and 761 against 1012, ratios 0.70 and 0.75; Ranger 659 against 1153 and 738 against 1101, ratios 0.57 and 0.67. The model's own ratios to the old table are 0.70 and 0.80 for the Deadeye and 0.62 and 0.74 for the Ranger (the `classDamage` 0.54 and 0.48 and the auto gain). So the Deadeye is at the model without any trade loss (1.00 and 0.94 of it) and the Ranger, whose set did not change, is at 0.92 and 0.90 of it. The Deadeye against the Ranger of the same line: +8% and +4%, not -14% and -11%. With the loss the model would say 605 and 720; the 1 target samples reach down to 615 and the 5 target samples to 722. Reading: the trade costs the Deadeye nothing visible at level 100. Caveat: both classes also changed build (`marked_target` holds 624, 621 and 561, the old `hunters_focus` only 621; `sharpshooter` gained 561), which raises both and is not separated here.
+
+**Deadeye pin.** The measured Deadeye agrees with the model within the spread at 1 target (+0.1%, half range 11%) and at 5 targets (-6.4%, half range 6.5%), so the sentence "until the class is measured again" was replaced by this result (Ranger line mines section). The `Deadeye@100` exception in `pvp_balance_config.lua` stays: without it `pvp_model.py --check` fails with "Deadeye level 100, burst: 0.97 against the limit 0.90" and nothing else changes. The model reads the damage per second of the old kit and the opening share of the new set, whose average fell 14% in `rotation_sim.py`. The measurement says the average did not fall, so the opening share would be the old 0.83 and the row would not be needed. For the exception to go, `pvp_model.py` would have to take the opening to average ratio of the Deadeye's level 100 set from the old kit (0.83) or the set's average from a measured source; both are model changes, not made here. `Deadeye@1000` is untouched.
+
+**Where model and measurement disagree by more than the spread, and why.** Evidence marks: measured (a run in this section), read (from code and config), inferred (not isolated).
+
+- Whole table, +5% to +10% at the median (median gap 3.9 to 14.7% by column, level 500 1 target the highest): the model is low. Candidates: the auto gain of O429 is understated for builds that carry attack speed nodes, and src-patch 0088 (floor 333 ms, cap 76%) is not computed; neither was isolated. Auto attack only and spells only runs were tried and dropped: a spell without an attack target does nothing for the Lich, Monk, Shadowfist and Necromancer lines, and an auto only run is 20% to 150% above the model's auto term while the sum of the two parts is far from the full run, so the split cannot test the O429 term. (inferred)
+- Tree builds, the largest single cause (measured). Another Recommended build of the same class and level moves the damage by -44% to +83%. Table below, 2 samples for the other build. Bone Lord: the old `ossuary_fury` took 642, which is `bone_army` now, and `bone_army` lands near the model (-2% at 500 and +10% at 1000 on 1 target) while the new `ossuary_fury` is 21% and 23% low. Lich 500: `soul_reaper` -6% of the model, `rot_curser` +43%. Templar: `pyre_walker` +3% at 500, `zealot` +46%. Deadeye 1000 1 target: `cascade_hunter` +1%, `marked_target` +57%. Sentinel: `retributor` is a retaliation build now and sits at -11% and -21% of the model at 1000, `bastion` at -2% and -9%. Beastmaster, Ranger and Ninja move 24% to 83% between their builds.
+- Not a build matter, the model is off in both builds (measured): Mystic at 500 on 1 target (+117% with `arcanist`, +47% with `mana_weaver`), Samurai at 500 on 1 target (+71% with `iaido_striker`, +125% with `bloodblade`) and on 5 targets at 500 and 1000 (+110% and +68%), Inquisitor at 500 and 1000 on 1 target (+31% and +30%, +34% and +40% with `ember_brand`), Thief at 1000 on 1 target (-42% with `venomblade`, -41% with `cutthroat`). The old table has a low outlier at Mystic 500 (every list spell 512 at 100, 1109 at 500, 3737 at 1000: 2.2 times for the first step where most classes show 4 to 10 times) and the `classDamage` point of 2.08 at 500 was fitted to it; the new Mystic at 500 is 5431, as high as at 1000 (5518). The Samurai 5 target rows are 2 to 5 times the old values where the model multiplies by 1.22 to 2.24 (500: 2817 became 13958); cause not found, and both builds are far above the model. The Thief at 1000 is 3955 (4010 with `cutthroat`), the same as at 500 (4066), with the same gear as the Ninja and Samurai (identical weapon ids) who reach 5778 and 7261; the model has 6771. Cause not found; the old Thief row (7340, an outlier up in the old report) times `classDamage` 0.78 carries the error. (inferred for the Mystic point, measured for the Samurai and Thief rows, cause open)
+- O429 (base attack intervals): no row points at it alone. The model gain of 1.44 to 1.54 is the biggest model term and the median offset is +5% to +10%, but nothing separates it from 0088 and the builds.
+- O454 (weapon families): not visible. The weapon families are damage neutral by design; Thief, Ninja and Samurai wear the same sword at 1000 and differ by 1.5 to 1.8 times, which is a class matter, not a family one. (read)
+- O455 and O446: the Deadeye result above. The default rotation sets did not change, as stated; the printed rotations match the old ones except the Deadeye. (measured)
+
+**Build experiment** (measured, 2 samples for the other build, 1 and 5 targets, damage per second; default / other / modelled):
+
+| Class | Level | Default build | Other build | 1 target: default / other / modelled | 5 targets: default / other / modelled |
+|---|---:|---|---|---|---|
+| Thief | 500 | venomblade | cutthroat | 4066 / 4085 / 3543 | 5625 / 9877 / 6437 |
+| Ninja | 500 | twin_fangs | phantom | 3017 / 5511 / 3517 | 8251 / 9487 / 6610 |
+| Samurai | 500 | iaido_striker | bloodblade | 5728 / 7530 / 3341 | 13958 / 13254 / 6639 |
+| Sentinel | 500 | retributor | bastion | 3331 / 3895 / 2631 | 9185 / 10236 / 8586 |
+| Inquisitor | 500 | judge | ember_brand | 3472 / 3553 / 2644 | 9192 / 9887 / 9129 |
+| Templar | 500 | zealot | pyre_walker | 3860 / 2721 / 2645 | 11050 / 8198 / 8898 |
+| Deadeye | 500 | marked_target | cascade_hunter | 4648 / 2705 / 3441 | 7021 / 6532 / 6642 |
+| Beastmaster | 500 | wild_volley | pack_leader | 2411 / 1825 / 2626 | 10315 / 5739 / 8852 |
+| Bone Lord | 500 | ossuary_fury | bone_army | 2595 / 3218 / 3300 | 4859 / 5540 / 6725 |
+| Lich | 500 | rot_curser | soul_reaper | 3769 / 2461 / 2627 | 8780 / 5271 / 7315 |
+| Ranger | 500 | sharpshooter | stormquiver | 4199 / 2414 / 3484 | 8932 / 7633 / 7868 |
+| Mystic | 500 | arcanist | mana_weaver | 5431 / 3683 / 2505 | 14951 / 8714 / 9148 |
+| Thief | 1000 | venomblade | cutthroat | 3955 / 4010 / 6771 | 6212 / 10076 / 11888 |
+| Ninja | 1000 | twin_fangs | phantom | 5778 / 10591 / 6779 | 16331 / 17574 / 11819 |
+| Samurai | 1000 | iaido_striker | bloodblade | 7261 / 9318 / 6552 | 19756 / 16907 / 11784 |
+| Sentinel | 1000 | retributor | bastion | 4566 / 5034 / 5156 | 10629 / 12216 / 13429 |
+| Inquisitor | 1000 | judge | ember_brand | 6693 / 7202 / 5146 | 15599 / 17713 / 14382 |
+| Templar | 1000 | zealot | pyre_walker | 6378 / 4702 / 5159 | 17207 / 13436 / 14948 |
+| Deadeye | 1000 | marked_target | cascade_hunter | 11388 / 7297 / 7252 | 13571 / 12768 / 10628 |
+| Beastmaster | 1000 | wild_volley | pack_leader | 6053 / 6576 / 5292 | 23231 / 17866 / 15396 |
+| Bone Lord | 1000 | ossuary_fury | bone_army | 4613 / 6594 / 6012 | 9387 / 12441 / 12476 |
+| Lich | 1000 | rot_curser | soul_reaper | 7059 / 5495 / 6017 | 16267 / 11094 / 14110 |
+| Ranger | 1000 | sharpshooter | stormquiver | 7815 / 4676 / 6853 | 12274 / 16483 / 11704 |
+| Mystic | 1000 | arcanist | mana_weaver | 5518 / 4506 / 5123 | 16445 / 11080 / 15091 |
+
+**Smallest change that brings the model back to the measurement (proposed, not applied).** Re-anchor the table instead of tuning factors: in `class_dps_measured.csv` put the 126 measured means into `every_spell_1t` and `helper_5t` (and `helper_1t` as the same number as `every_spell_1t`), set `auto_share_1t`, `auto_share_5t` and `extra_share_5t` to 0 and `class_damage_before` to the `classDamage` of today. Then `model()` returns the measurement and the O429 gain, the extra target factor and the class factors drop out of the formula until the next change. Consequences, because the measured table is not inside the band: `class_dps_model.py --check` fails for the 26 rows above, and `boss_model.py`, `pack_model.py`, `tower_model.py`, `survival_model.py`, `pvp_model.py` and the Infinity Tower curves read `dps()` and move with it. That is a balance decision for the owner, not a model repair. A smaller step that keeps the structure: correct only the rows that are off in both builds, that is `classDamage` of the Mystic at 500 (2.08 would be 1.2 to 1.3 to put it on the median), the Samurai 5 target rows, the Inquisitor on 1 target, and the Thief at 1000 on 1 target; the build rows (Bone Lord, Templar, Lich, Deadeye, Beastmaster, Sentinel) belong to the builds, not to the class factors. The honest limit stays: one build per class decides the table, and the builds move a class by up to +-80%.
+
+**Not measured.** Levels between 100, 500 and 1000. The real client helper (a protocol bot casts, as in 2026-11-06). The every list spell mode as a second run, because it is the helper mode now (item 4 of the task); the whole run took about 3 hours, the faulty first pass and the build experiment included, so the 4 hour limit did not decide. Auto attack and spell parts apart (see above). The old trees node by node. Gems, runes, orbs, uniques, potions, resistances and monster levels, as before. Unity and the Android admin app were not involved. The harness and the raw results stay out of git.
+
 ### PvP model (O444, 2026-11-09; COMPUTED, not measured)
 
 `server/tools/pvp_model.py --check` (limits and named exceptions: `data/scripts/chaos/pvp_balance_config.lua`; method and inputs: README of the
@@ -4472,7 +4631,8 @@ The client side is done in `client/overlay/modules/game_chaosspells` (spell list
 
 ### Warrior and Ranger line keystones (2026-10-20, computed, not measured in game)
 
-Numbers are in `archetypes_config.lua`. Executioner's Verdict: x0.60 above 15% health, x0.90 on the rest, kill below.
+Numbers are in `archetypes_config.lua`. Executioner's Verdict: hits x0.90 while the target is above 60% health, full
+damage from 60% down, and a hit that would leave a monster at 15% or less kills it. Never on a boss.
 Earthbreaker: 3 hits x0.90 and the 4th x1.50, plus a 60% slam on up to 6 monsters, so single target 1.05 per hit.
 Rampage: 5 stacks give +30% damage and +20% damage taken. Last Stand: one lethal hit per 90 s, then 5 s of -40%.
 Longshot: +30% at 7 sqm, x0.85 at 2 sqm or less. Barbed Quiver: hit x0.90 plus 60% bleed, 1.50 of a hit over 4 s.
@@ -4550,9 +4710,9 @@ the Beastmaster's Auto setup data and its modelled DPS do not move. Mine damage 
 Derived, not measured: `class_dps_measured.csv` was measured on the old kit and is not changed. The mines are cast by hand and
 in no Auto rotation, so they add nothing to the modelled DPS. The Deadeye row of the model is the old measurement; the
 rotation_sim ratio of its new best set (1 target -14.1%, 5 targets -11.4% at level 100, no change at 500 and 1000) puts it at
-+0% / -29% of the median at level 100 (band 30%), still inside. That ratio is a derived number. No live measure of the new kit exists yet.
++0% / -29% of the median at level 100 (band 30%), still inside. That ratio is a derived number. The live measure of 2026-11-10 is in "Class DPS measured again (O459)" and does not show it.
 The PvP model reads the same sets: the Deadeye's level 100 opening share rises from 0.83 to 0.97 because the set's average
-fell, not because the opening hits more. `pvp_balance_config.lua` names it (`Deadeye@100`, burst 0.98) until the class is measured again.
+fell, not because the opening hits more. `pvp_balance_config.lua` names it (`Deadeye@100`, burst 0.98). Measured again on 2026-11-10 (O459, "Class DPS measured again"): the Deadeye at level 100 deals what the model says within the spread, 704 against 704 on 1 target and 761 against 813 on 5 targets, so the derived loss of the trade does not show. The row stays, because without it `pvp_model.py --check` fails at 0.97 against the limit 0.90.
 
 Mine damage of a Ranger line character: `snares_config.lua` damage with power = the best of distance skill x distance attack,
 blade and shuriken power (`_snares.lua` `M.power`), the same formula and the same input as Snare Trap, which the line already

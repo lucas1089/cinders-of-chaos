@@ -38,6 +38,10 @@ older than format 4 leave the first twelve out, codes older than format 5 the la
 | Iron Tithe | 102 | Warrior, Monk and Templar lines | vigils reserve maximum health instead of mana, at 60% of their share, and work 50% stronger on you | they cover you alone; no effect next to Hollow Vessel | the vigil uniques above |
 | Hollow Vessel | 96 | Mystic, Necromancer, Monk and Templar lines | maximum health is 100; energy shield: the items' +50%, plus 110% of the health given up (the full health, the tree's percent included; half of it with Aether Edge, the Hollow Palm); it recharges 15% of its maximum a second faster and starts 1 s after a hit; no poison and no life drain hurt you | heals, potions, leech and regeneration fill only the 100 health; the pool is 11% to 17% bigger than health and shield before (measured), and it only comes back by recharge | Stillheart Robe: the items' shield +40% more. Hollowglass Diadem: recharge +10% a second and the 1 s start, also without it |
 
+Open Hand Creed and weapon keystones. With no weapon in the hands, a keystone that acts on a weapon's hits gives
+nothing. The Ranger line's Longshot, Barbed Quiver, Opening Shot, Hobbling Shot and Stormstring read a bow, crossbow or
+thrown weapon hit, and a fist is none. The tooltips do not say so.
+
 All chain reactions share one work budget: 24 spreads a server tick, 40 per chain, a queue of 200. A packed
 screen cannot stall the game loop. See `server/README.md` "Game loop stalls" for the numbers behind it. The snares
 have the same kind of budget (below).
@@ -301,8 +305,9 @@ Illusionist. Now all 21 classes have a start node, line nodes, an ascended path 
 | Illusionist | Phantom Double | spells that strike twice |
 
 - **Same numbers rule as the other sections.** Notables, line nodes and masteries are plain tree stats at or below the median
-  of the older sections; each keystone has a price. A specialised build stays under +40% of the class default in its
-  specialty: the largest direct gain is +20% (Wolfbond, on the wolves' share of the damage only).
+  of the older sections; each keystone has a price. Each of these keystones alone stays under +40% of the class default in
+  its specialty: the largest direct gain is +20% (Wolfbond, on the wolves' share of the damage only). Held with an older
+  keystone a build can pass it: Wolfbond multiplies Pack Alpha, x1.62 on the wolves together.
 - **Builds.** The Auto build generator takes the new nodes where they lie on a path. 153 of the 464 builds changed: 22 of the
   63 Recommended roles and 131 Focus builds, all of the nine classes and every one on a path with a new line node or notable
   (a build that takes the first line node is shifted behind it). The 311 builds of the other twelve classes are the same bytes as

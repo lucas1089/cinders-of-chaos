@@ -156,5 +156,13 @@ check(strpos((string)file_get_contents(CHAOS_TEST_REPO . '/website/setup/write_s
 check(strpos((string)file_get_contents($plugin . '/wiki/guides/tree.en.md'), 'p=starterbuilds') !== false
 	&& strpos((string)file_get_contents($plugin . '/wiki/guides/tree.pt-BR.md'), 'page:starterbuilds') !== false, 'the tree guide links the page in both languages');
 
+// the menu entry (setup/chaos_setup.php, next to Start Here and Wiki) and the beginner guide's "Read more" list
+$setupSrc = (string)file_get_contents(CHAOS_TEST_REPO . '/website/setup/chaos_setup.php');
+check(strpos($setupSrc, "\$menu('Starter Builds', 'page?plugin=chaos&p=starterbuilds'") !== false, 'the site menu links the page');
+$guideEn = chaos_render_page('guide', 'en');
+$guidePt = chaos_render_page('guide', 'pt-BR');
+check(strpos($guideEn, 'p=starterbuilds&amp;l=en">Starter builds</a>') !== false, 'the beginner guide links the page in English');
+check(strpos($guidePt, 'p=starterbuilds">Builds iniciais</a>') !== false, 'the beginner guide links the page in Portuguese');
+
 echo $failed ? "chaos_starterbuilds_page_test: $failed of $checks checks failed\n" : "chaos_starterbuilds_page_test: $checks checks OK\n";
 exit($failed ? 1 : 0);
