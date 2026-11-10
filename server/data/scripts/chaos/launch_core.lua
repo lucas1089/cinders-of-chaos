@@ -27,7 +27,11 @@ function L.config()
 	if type(L.override) == "table" then
 		return L.override
 	end
+	-- the server folder is the working directory; the client tests run from the repository root
 	local ok, cfg = pcall(dofile, "data/scripts/chaos/launch_config.lua")
+	if not ok then
+		ok, cfg = pcall(dofile, "server/data/scripts/chaos/launch_config.lua")
+	end
 	if ok and type(cfg) == "table" then
 		return cfg
 	end

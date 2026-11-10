@@ -679,6 +679,17 @@ Chaos.dungeons = {
 	}
 }
 
+-- the launch (launch_core.lua, O463). The server folder is the working directory; the client tests run from the
+-- repository root.
+local launchCore
+do
+	local ok, core = pcall(dofile, "data/scripts/chaos/launch_core.lua")
+	if not ok then
+		ok, core = pcall(dofile, "server/data/scripts/chaos/launch_core.lua")
+	end
+	launchCore = ok and core or dofile("data/scripts/chaos/launch_core.lua") -- fails with the real error
+end
+
 Chaos.tower = {
 	-- Season = fixed-length window counted from seasonEpoch (infinitytower_core.lua K.seasonOf): a unix time or
 	-- {year, month, day, hour} in server local time. Before the epoch it is season 1. The tower keeps its own 30-day
@@ -688,7 +699,7 @@ Chaos.tower = {
 	-- 22). While the launch is open there is no epoch: it is season 1 with no end (infinitytower_core.lua K.seasonOf), the
 	-- tower works as on the beta and no countdown is shown. Changing the epoch renumbers the seasons of chaos_tower_players:
 	-- only on a wiped database.
-	seasonEpoch = dofile("data/scripts/chaos/launch_core.lua").parts(0),
+	seasonEpoch = launchCore.parts(0),
 	seasonLengthDays = 30,
 	-- Season end (infinitytower.lua ChaosTower.checkSeasons; server/README.md "Infinity Tower season rewards"): the top
 	-- 3 of the ended season's ranking (best floor, then best time; equal floor and time share the place; staff and
