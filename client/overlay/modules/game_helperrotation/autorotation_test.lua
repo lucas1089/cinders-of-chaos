@@ -448,7 +448,8 @@ do
   eq(A.variantName(nil), 'default', 'no name: default'); eq(A.variantName(5), 'default', 'a number: default')
   eq(table.concat(A.variantNames(4), ','), 'single,pack', 'the Warrior has single and pack')
   eq(table.concat(A.variantNames(11), ','), 'single,mines', 'the Thief has single and mines')
-  eq(#A.variantNames(21), 0, 'the Lich has none')
+  -- O474: the Lich's default set moved with the dot rule (Soul Rot x1.5, Blightbrand x1.25), so a one target set now differs from it
+  eq(table.concat(A.variantNames(21), ','), 'single', 'the Lich has one target (it had none before O474)')
   eq(#A.variantNames(999), 0, 'an unknown class has none')
   local at500 = A.variantsAt(4, 500)
   eq(#at500, 2, 'two variants of the Warrior at 500'); eq(at500[1].name, 'single', 'in the choice order'); eq(at500[2].name, 'pack', 'then pack')

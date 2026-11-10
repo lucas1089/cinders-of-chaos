@@ -30752,7 +30752,7 @@ player-against-player hit applies to a scripted tick as it did to a pulse (a tic
 accepted and ticks harmlessly (the cure and icon rule rests on it; `dot_config.lua icon.enabled = false` switches it off), that
 `doTargetCombat` with ORIGIN_CONDITION behaves as an engine tick for the stacks, how the engine meets an equal condition type with another
 sub id, the kill times of the landing table (a model that predates O470's health curve), the Monte Carlo of the dot build (the audit's
-hit streams), the pt-BR texts by a speaker. The combat log row name "(over time)" is English only, as the other source names are.
+hit streams), the pt-BR texts by a speaker, the cost of the stack beats (one event per 0.5 s for every type and target a player has stacks on, never measured). The combat log row name "(over time)" is English only, as the other source names are.
 **Not done:** a jump for gear ailments (the spread uniques cover them), an icon on a gear ailment (monsters only), the final model re-fit.
 
 **Tests.** `tests/dot_core_test.lua` (predicate, flag, sizes, jump, stacks, PvP table, icon helpers, the copies of the numbers),
