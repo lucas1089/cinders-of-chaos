@@ -71,6 +71,9 @@ local TYPES = {fire = "COMBAT_FIREDAMAGE", ice = "COMBAT_ICEDAMAGE", energy = "C
 local AREA_FX = {fire = "CONST_ME_FIREAREA", ice = "CONST_ME_ICEAREA", energy = "CONST_ME_ENERGYAREA",
 	earth = "CONST_ME_GREEN_RINGS", death = "CONST_ME_MORTAREA", holy = "CONST_ME_HOLYAREA",
 	physical = "CONST_ME_EXPLOSIONAREA"}
+-- the mark of a mine that was just set, in the colour of its element (it was the fire comet for every element)
+local MINE_MARK = {fire = "CONST_ME_FIREATTACK", ice = "CONST_ME_ICEATTACK", energy = "CONST_ME_ENERGYHIT",
+	earth = "CONST_ME_POISONAREA", death = "CONST_ME_MORTAREA", holy = "CONST_ME_HOLYDAMAGE", physical = "CONST_ME_HITAREA"}
 local SHOT = {fire = "CONST_ANI_FIRE", ice = "CONST_ANI_ICE", energy = "CONST_ANI_ENERGY", earth = "CONST_ANI_EARTH",
 	death = "CONST_ANI_DEATH", holy = "CONST_ANI_HOLY", physical = "CONST_ANI_LARGEROCK"}
 local function const(name, fallback)
@@ -357,7 +360,7 @@ function M.cast(creature, kind, variant)
 	if from.x ~= pos.x or from.y ~= pos.y then
 		from:sendDistanceEffect(pos, const(SHOT[element], CONST_ANI_SMALLSTONE or 1))
 	end
-	pos:sendMagicEffect(kind == "trap" and (CONST_ME_BLOCKHIT or CONST_ME_POFF) or (CONST_ME_FIREATTACK or CONST_ME_POFF))
+	pos:sendMagicEffect(kind == "trap" and (CONST_ME_BLOCKHIT or CONST_ME_POFF) or const(MINE_MARK[element], CONST_ME_FIREATTACK or CONST_ME_POFF))
 	player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR or 1, tr(player, "%s %s (%s): %d of %d.",
 		kind == "trap" and "Trap" or "Mine", "set", element, S.count(M.state, player:getId(), kind), S.cap(kind, mods)))
 	schedule()

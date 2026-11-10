@@ -871,6 +871,11 @@ jobs:
           python3 -I tools/ci/check_rotation_kit.py
           python3 -I tools/ci/check_rotation_kit_test.py
 
+      - name: A spell shows no effect of another element, measured with the real scripts (O457; check_spell_fx.py; needs lua5.3)
+        run: |
+          python3 -I tools/ci/check_spell_fx.py
+          python3 -I tools/ci/check_spell_fx_test.py
+
       - name: Loot by monster level keeps gold and items per hour of every band (loot_model.lua; loot_bands.py)
         run: |
           python3 -I server/tools/loot_bands_test.py

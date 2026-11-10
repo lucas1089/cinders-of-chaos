@@ -114,7 +114,32 @@ end
 if not ChaosPack29Vfx then
 	pcall(dofile, 'data/lib/chaos_pack29_vfx.lua')
 end
+-- The spell effects pass (data/lib/chaos_fx_pass.lua, O457): a spell's own new effect for a name, asked before every
+-- other swap below; nil when the switch is off or the spell has no entry
+if not ChaosFxPass then
+	pcall(dofile, 'data/lib/chaos_fx_pass.lua')
+end
+local function pass(kind, name)
+	local F, W = ChaosFxPass, ChaosSupportsSpell
+	if type(name) ~= "string" or not F or not F.swapFor or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	if not pid then
+		return nil
+	end
+	local ok, alt = pcall(F.swapFor, spellId, kind, name)
+	return ok and alt or nil
+end
+-- for a script that sends a class effect itself (ChaosSpell.classFx): the pass name for `name`, else nil
+function ChaosSpell.passFx(name)
+	return pass("fx", name)
+end
 local function pack29(kind, name)
+	local own = pass(kind, name)
+	if own then
+		return own
+	end
 	local Q, W = ChaosPack29Fx, ChaosSupportsSpell
 	if type(name) ~= "string" or not Q or not Q.swapFor or not Q.PAIR29 or not W or not W.cast then
 		return nil
@@ -188,6 +213,11 @@ local function wrapFx()
 			local alt = skinned("fx", name)
 			if alt and ChaosFx and ChaosFx[alt] then
 				return raw(alt, fallback)
+			end
+			local own = pass("fx", name) -- the effects pass (O457), the same rule: only a picture with offset 0,0
+			local oe = own and ChaosVfx and ChaosVfx[own]
+			if oe and oe.dx == 0 and oe.dy == 0 then
+				return oe.id
 			end
 			local cls = classFx(name) -- a class effect sent on the tile itself (offset 0,0) can stand in for the id
 			local e = cls and ChaosVfx and ChaosVfx[cls]

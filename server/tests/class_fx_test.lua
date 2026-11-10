@@ -188,7 +188,8 @@ eq(effects[#effects].x, P.x + 1, "at its offset tile")
 ok(Fx("void_eye", 1) ~= ChaosVfx.shadowfist_mark.id, "Fx: a 3x3 class effect does not stand in for an id")
 vocOf[4] = 3
 castPid, castSpell = 4, 219
-eq(Fx("holy_smite", 1), ChaosVfx.ranger_arrowfall.id, "Hail of Dawn: the arrowfall on every tile")
+-- the effects pass (O457, data/lib/chaos_fx_pass.lua) comes first: Hail of Dawn shows the gold spark, the class table still names the arrowfall
+eq(Fx("holy_smite", 1), ChaosVfx.p50_gold_spark_4467.id, "Hail of Dawn: the gold spark of the pass on every tile")
 castPid, castSpell = 4, 218
 ok(Fx("holy_smite", 1) ~= ChaosVfx.deadeye_mark.id, "a Ranger has no Final Verdict mark")
 vocOf[5] = 14

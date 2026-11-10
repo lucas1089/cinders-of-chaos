@@ -49,7 +49,10 @@ function onCastSpell(creature, variant, isHotkey)
 		player:teleportTo(spots[1].pos)
 		ChaosSpell.shoot(from, spots[1].pos, "blood_spear", CONST_ANI_WHIRLWINDAXE)
 	end
-	ChaosSpell.vfxDir(tpos, "heavy_cleave", ChaosSpell.dirTo(player:getPosition(), tpos))
+	-- the effects pass (data/lib/chaos_fx_pass.lua) may name a picture of its own for the cleave
+	if not (ChaosSpell.passFx("heavy_cleave") and ChaosSpell.vfx(tpos, "heavy_cleave")) then
+		ChaosSpell.vfxDir(tpos, "heavy_cleave", ChaosSpell.dirTo(player:getPosition(), tpos))
+	end
 	-- the class effect on the slammed spot (server/README.md "Class signature effects"): the combat's own effect id is
 	-- fixed when the script loads, outside any cast, so the swap is asked here
 	local cls = not ChaosSpell.skinned("fx", "ground_slam") and ChaosSpell.classFx("ground_slam")
