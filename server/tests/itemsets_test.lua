@@ -393,7 +393,7 @@ local rolled = newItem(2400)
 rolled.custom.rarity = 5
 rolled.custom.chaos_mod_bleedchance = 28
 wear(p, {[CONST_SLOT_RIGHT] = rolled, [CONST_SLOT_LEFT] = piece(27658)})
-eq(cache[p:getId()].bleedchance, M.byKey.bleedchance.cap, "items 28 + set 10 capped at 30")
+eq(cache[p:getId()].bleedchance, 38, "items 28 + set 10: 38 (O461: no cap of the module on the ailment chances; the roll clamps at 100)")
 wear(p, {[CONST_SLOT_RIGHT] = false, [CONST_SLOT_LEFT] = false})
 -- level: a level 250 character wearing level 300 pieces gets nothing, at 300 it does (the 3 s check)
 local low = newPlayer(250)

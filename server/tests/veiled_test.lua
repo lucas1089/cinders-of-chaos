@@ -134,7 +134,7 @@ for _, def in ipairs(CFG.pool) do
 	-- caps: the best roll of every effect fits under its cap
 	for _, e in ipairs(V.effectValues(def, def.tiers[#def.tiers][2])) do
 		local cap = CFG.hookCaps[e.k] or M.byKey[e.k].cap
-		ok(e.v <= cap, def.key .. ": " .. e.k .. " " .. e.v .. " under its cap " .. cap)
+		ok(cap == nil or e.v <= cap, def.key .. ": " .. e.k .. " " .. e.v .. " under its cap " .. tostring(cap)) -- O461: a row may have none
 	end
 	if V.isHook(def) then
 		hooks = hooks + 1
@@ -386,7 +386,7 @@ eq(own.veil_firststrike, 40, "two Veilpiercers (44) capped at 40")
 eq(own.veil_gravebound, 16)
 eq(own.veil_hexbreaker, 0, "every hook key present")
 local totals = M.totals({boots, amulet, armor}, V.merge(nil, cat))
-eq(totals.movespeed, 12, "item 9 + veiled 10 under the catalogue cap 12")
+eq(totals.movespeed, 19, "item 9 + veiled 10: the catalogue has no movement speed cap any more (O461)")
 eq(totals.dodge, 5)
 eq(V.merge({a = 1}, {a = 2, b = 3}).a, 3); eq(V.merge(nil, nil), nil)
 -- an excluded item never counts

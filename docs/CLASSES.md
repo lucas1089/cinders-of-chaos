@@ -870,6 +870,11 @@ Open for the Monk:
 Holy melee with a party defence aura; the tank-support alternative to the Juggernaut. Ascension with the Ascendant Oracle
 at level 100+ (the same rules as the other classes).
 
+(O464, every class: the defence is the player defence layer's, `server/README.md` "Player defence (O464)": four resistances,
+armour by hit size, dodge and block for attack hits, spell suppression for spells. The `armor` multiplier of a vocation
+(0.9 to 1.15, `vocations.xml`) is not readable from Lua and is not in the armour the layer uses; the class evasion of the
+Thief, Ninja, Samurai and Monk lines is one of the dodge sources.)
+
 | id | Name | client byte | hp / mana / cap per level | weapon hits | defense / armor |
 |---|---|---|---|---|---|
 | 23 | Templar | 9 | 14 / 8 / 25 | 1.0 | 1.05 |

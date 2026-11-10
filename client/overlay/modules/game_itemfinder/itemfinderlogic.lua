@@ -218,3 +218,14 @@ function L.menuThing(lookThing, useThing)
   end
   return nil
 end
+
+-- "Open in Codex" in the item menu (O467): the Codex page id of the item under the menu, from the tooltip module
+-- (tooltip.codexIdOf(item): the server's tip.codex of the tip the player has seen); nil for an item without a page
+function L.codexPage(tooltip, lookThing, useThing)
+  if type(tooltip) ~= 'table' or type(tooltip.codexIdOf) ~= 'function' then return nil end
+  local thing = L.menuThing(lookThing, useThing)
+  if not thing then return nil end
+  local ok, id = pcall(tooltip.codexIdOf, thing)
+  if ok and type(id) == 'string' and id ~= '' then return id end
+  return nil
+end

@@ -11,15 +11,24 @@
 --   elites and bosses  damage dealt to magic / rare / legendary monsters and bosses (onHealthChange on the target,
 --                      registered by onTargetCombat, like passivetree_effects.lua)
 --   life / mana on kill  CreatureEvent onKill, monsters only
---   dodge, block, reflect, thorns, damage taken from monsters  onHealthChange on the player (hits from creatures)
+--   dodge, block       the player defence layer (player_defence.lua, O464): avoidance of attack hits
+--   penetration        the monster defence layer (monster_defence.lua, O464): physpen off the armour share, elepen off the
+--                      capped resistance
+--   reflect, thorns, damage taken from monsters  onHealthChange on the player (hits from creatures)
 --   healing done       onHealthChange on the healed player (the healer's bonus)
---   on your hits       onHealthChange on the target (registered by onTargetCombat): penetration (physical / elemental:
---                      the monster's resistance counts that many points lower, as the Sunder support), damage over time
+--   on your hits       onHealthChange on the target (registered by onTargetCombat): damage over time
 --                      (hits of conditions you own), execute (a non-boss monster your hit leaves at or below N% health
 --                      dies), health / mana on hit, and the ailment chances: bleeding (physical), ignite (fire), poison
 --                      (earth) deal a share of the hit over a few seconds (conditions owned by you), chill slows, shock
 --                      makes the monster take more damage from everyone for a few seconds
 --   health regeneration  the equipment check every 3 s heals 3 x the total
+--   mana regeneration  the same check gives the percent of the vocation's own mana regeneration of those 3 s (manaregen)
+--   maximum life / mana  one CONDITION_ATTRIBUTES each (sub ids 7222 / 7223), flat points, like the tree's vitality / spirit
+--   strength, dexterity, intelligence and spell damage  handed to the passive tree's numbers (passivetree_effects.lua: the
+--                      same character stat curves and the same damage increment, so the tree's soft caps hold the sums)
+--   life / mana leech  a share of the damage of your hits (tenths of a percent, no chance), at most 20% of the maximum per
+--                      second together; damage over time does not leech (lifeleech, lifeleechw, manaleech, manaleechw)
+--   weapon damage      local to the weapon: its attack attribute (chaos_item_mods.lua M.syncWeaponDamage)
 --   quiver             counts only while a bow or crossbow is held (ChaosItemMods.fits); its base's implicit modifiers
 --                      join the totals like set bonuses; archery.lua applies Distance Fighting and Attack Speed with
 --                      Bows, weapon_styles.lua the critical strike, element share and extra projectile
@@ -110,6 +119,43 @@ local function applySpeed(player, state, totals)
 	end
 end
 
+-- maximum life and mana of the worn pieces: one flat CONDITION_ATTRIBUTES each, replaced when the number changes (the tree's
+-- vitality and spirit are 7220 / 7221, the gems 7240)
+local POOLS = {
+	maxlife = {CONDITION_PARAM_STAT_MAXHITPOINTS, 7222},
+	maxmana = {CONDITION_PARAM_STAT_MAXMANAPOINTS, 7223}
+}
+local INT32_MAX = 2147483647
+
+function M.applyPools(player, totals)
+	local state = applied[player:getId()]
+	state.pools = state.pools or {}
+	for key, info in pairs(POOLS) do
+		local want = math.max(0, math.min(INT32_MAX, math.floor(totals[key] or 0)))
+		if want ~= (state.pools[key] or 0) then
+			player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, info[2], true)
+			if want > 0 then
+				local c = Condition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT)
+				c:setTicks(-1)
+				c:setParameter(CONDITION_PARAM_SUBID, info[2])
+				c:setParameter(info[1], want)
+				player:addCondition(c)
+			end
+			state.pools[key] = want
+		end
+	end
+end
+
+-- Strength, Dexterity, Intelligence and Spell Damage go onto the passive tree's bonus table (passivetree_effects.lua reads
+-- bonuses.gearStrength ... in the character stat curves and the damage increment); applyAll copies them again after a tree save
+function M.feedTree(player, totals)
+	local b = ChaosPassiveCache and ChaosPassiveCache[player:getId()]
+	if b then
+		b.gearStrength, b.gearDexterity = totals.strength or 0, totals.dexterity or 0
+		b.gearIntelligence, b.gearSpell = totals.intelligence or 0, totals.spelldamage or 0
+	end
+end
+
 function M.refresh(player, force)
 	local id = player:getId()
 	local state = applied[id] or {speed = 0, sig = nil}
@@ -154,13 +200,18 @@ function M.refresh(player, force)
 	if ChaosGems and ChaosGems.totals then
 		local gemTotals = ChaosGems.totals(items)
 		local def = M.byKey.movespeed
-		totals.movespeed = math.min(def and def.cap or 12, (totals.movespeed or 0) + (gemTotals.movespeed or 0))
+		totals.movespeed = (totals.movespeed or 0) + (gemTotals.movespeed or 0)
+		if def and def.cap then
+			totals.movespeed = math.min(def.cap, totals.movespeed)
+		end
 		if ChaosGems.applyTotals then
 			ChaosGems.applyTotals(player, gemTotals)
 		end
 	end
 	cache[id] = totals
 	applySpeed(player, state, totals)
+	M.applyPools(player, totals)
+	M.feedTree(player, totals)
 	if ChaosEnergyShield and ChaosEnergyShield.apply then
 		ChaosEnergyShield.apply(player, totals) -- maximum and recharge of the energy shield (engine patch 0015)
 	end
@@ -188,6 +239,10 @@ moved.onItemMoved = function(player, item, count, fromPosition, toPosition, from
 	if ChaosCrafting and ChaosCrafting.unshield and ChaosCrafting.unshield(item) then
 		M.sendUpdate(item)
 	end
+	-- an item of the numbers before O461 (no version mark) gets today's when it moves (it is read first anyway)
+	if ChaosCrafting and ChaosCrafting.upgradeItem then
+		ChaosCrafting.upgradeItem(item)
+	end
 	local inv = CONTAINER_POSITION or 0xFFFF
 	local fromSlot = fromPosition.x == inv and math.floor(fromPosition.y / 64) % 2 == 0
 	local toSlot = toPosition.x == inv and math.floor(toPosition.y / 64) % 2 == 0
@@ -212,11 +267,25 @@ local function heal(creature, amount)
 	end
 end
 
+local regenFrac = {} -- player id -> the part of a mana point the last tick could not give
+
 local function regenerate(player)
 	local totals = cache[player:getId()]
 	local per = totals and totals.regen or 0
 	if per > 0 and player:getHealth() > 0 and player:getHealth() < player:getMaxHealth() then
 		heal(player, M.regenAmount(per, CHECK_INTERVAL))
+	end
+	-- Mana Regeneration: a percent more of the vocation's own regeneration, in the same tick
+	local pct = totals and totals.manaregen or 0
+	if pct > 0 and player:getHealth() > 0 and player:getMana() < player:getMaxMana() then
+		local voc = player:getVocation()
+		local id = player:getId()
+		local amount, frac = M.manaRegenAmount(voc and voc:getManaGainAmount() or 0, voc and voc:getManaGainTicks() or 0, pct,
+			CHECK_INTERVAL, regenFrac[id])
+		regenFrac[id] = frac
+		if amount > 0 then
+			player:addMana(amount)
+		end
 	end
 end
 
@@ -283,39 +352,12 @@ local function playerOf(creature)
 	return master and master:isPlayer() and master or nil
 end
 
--- monster resistances (MonsterType:getElementList: combat type -> percent), cached by name
-local resCache = {}
-local function resistance(creature, ctype)
-	local name = typeNameOf(creature):lower()
-	local r = resCache[name]
-	if r == nil then
-		local ok, list = pcall(function()
-			local t = creature:getType()
-			return t and t:getElementList()
-		end)
-		r = ok and type(list) == "table" and list or false
-		resCache[name] = r
-	end
-	return r and tonumber(r[ctype]) or 0
-end
-
 local NOT_ELEMENTAL = {}
 for _, n in ipairs({"COMBAT_PHYSICALDAMAGE", "COMBAT_HEALING", "COMBAT_LIFEDRAIN", "COMBAT_MANADRAIN", "COMBAT_NONE",
 		"COMBAT_UNDEFINEDDAMAGE"}) do
 	if _G[n] then
 		NOT_ELEMENTAL[_G[n]] = true
 	end
-end
-
-local function penetrate(creature, value, ctype, totals)
-	if value == 0 or not ctype then
-		return value
-	end
-	local pen = ctype == COMBAT_PHYSICALDAMAGE and totals.physpen or (not NOT_ELEMENTAL[ctype] and totals.elepen) or 0
-	if pen > 0 then
-		return M.penetrate(value, resistance(creature, ctype), pen)
-	end
-	return value
 end
 
 -- shocked monsters: id -> until (ms)
@@ -385,12 +427,53 @@ local function chill(target)
 	end
 end
 
+-- life and mana leech (lifeleech ... in tenths of a percent): the share of the damage a hit of yours dealt, healed at once. The
+-- weapon's own modifier ("w") counts the hits of weapon attacks only (melee, ranged, wand), the other every hit. Damage over
+-- time never reaches this (the caller). Together they give back at most config.leech.maxPct of the maximum per second
+-- (M.leechLimit); the part of a point a hit cannot give is carried over to the next one (M.leechGain).
+local leechState = {} -- player id -> {lifeFrac, manaFrac, life = {t0, got}, mana = {t0, got}}
+local function leech(player, creature, totals, hit, origin)
+	local weapon = origin == ORIGIN_MELEE or origin == ORIGIN_RANGED or origin == ORIGIN_WAND
+	local lifeT = (totals.lifeleech or 0) + (weapon and totals.lifeleechw or 0)
+	local manaT = (totals.manaleech or 0) + (weapon and totals.manaleechw or 0)
+	if lifeT <= 0 and manaT <= 0 then
+		return
+	end
+	local id = player:getId()
+	local st = leechState[id]
+	if not st then
+		st = {life = {}, mana = {}}
+		leechState[id] = st
+	end
+	-- only what the target had left counts
+	local dealt = math.min(hit, math.max(0, creature:getHealth()))
+	if lifeT > 0 and player:getHealth() > 0 then
+		local want = M.leechGain(st.life, dealt, lifeT)
+		if want > 0 then
+			local give = M.leechLimit(st.life, now(), player:getMaxHealth(), want)
+			if give > 0 then
+				heal(player, give)
+			end
+		end
+	end
+	if manaT > 0 then
+		local want = M.leechGain(st.mana, dealt, manaT)
+		if want > 0 then
+			local give = M.leechLimit(st.mana, now(), player:getMaxMana(), want)
+			if give > 0 then
+				player:addMana(give)
+			end
+		end
+	end
+end
+
 local function roll(pct)
 	return pct > 0 and math.random(1, 100) <= pct
 end
 
 -- after a hit of yours landed: health / mana on hit and the ailment rolls
-local function onHit(creature, player, totals, hit)
+local function onHit(creature, player, totals, hit, origin)
+	leech(player, creature, totals, hit, origin)
 	if (totals.lifeonhit or 0) > 0 then
 		heal(player, totals.lifeonhit)
 	end
@@ -414,8 +497,8 @@ local function onHit(creature, player, totals, hit)
 end
 
 -- the keys that need the hit event on the target (any of them > 0)
-local OFFENCE = {"bossdamage", "physpen", "elepen", "execute", "dot", "lifeonhit", "manaonhit", "bleedchance",
-	"ignitechance", "poisonchance", "chillchance", "shockchance"}
+local OFFENCE = {"bossdamage", "execute", "dot", "lifeonhit", "manaonhit", "bleedchance",
+	"ignitechance", "poisonchance", "chillchance", "shockchance", "lifeleech", "lifeleechw", "manaleech", "manaleechw"}
 local function offensive(totals)
 	if not totals then
 		return false
@@ -437,8 +520,6 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	local p = playerOf(attacker)
 	local totals = p and cache[p:getId()]
 	if totals then
-		primaryDamage = penetrate(creature, primaryDamage, primaryType, totals)
-		secondaryDamage = penetrate(creature, secondaryDamage, secondaryType, totals)
 		local pct = totals.bossdamage or 0
 		if pct > 0 and isElite(creature) then
 			primaryDamage = M.scale(primaryDamage, pct)
@@ -472,7 +553,7 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			packFx(creature:getPosition(), "item_execute", CONST_ME_MORTAREA or 18)
 		end
 		if hit > 0 and origin ~= ORIGIN_CONDITION and p == attacker then
-			onHit(creature, p, totals, hit)
+			onHit(creature, p, totals, hit, origin)
 		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
@@ -525,7 +606,9 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if not totals then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	if (totals.dodge or 0) > 0 and math.random(1, 100) <= totals.dodge then
+	-- O464: dodge and block are the player defence layer's (avoidance of attack hits); these rolls stay for the switch off
+	local layer = ChaosPlayerDefence and ChaosPlayerDefence.active()
+	if not layer and (totals.dodge or 0) > 0 and math.random(1, 100) <= totals.dodge then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 		if M.onAvoid then
 			M.onAvoid(creature, attacker, "dodge", math.abs(primaryDamage) + math.abs(secondaryDamage)) -- Glacial Ward (item_powers.lua), sets
@@ -533,7 +616,7 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return 0, primaryType, 0, secondaryType
 	end
 	-- block: physical hits of a weapon or a claw (melee and ranged attacks), all of it
-	if (totals.block or 0) > 0 and primaryType == COMBAT_PHYSICALDAMAGE
+	if not layer and (totals.block or 0) > 0 and primaryType == COMBAT_PHYSICALDAMAGE
 			and (origin == ORIGIN_MELEE or origin == ORIGIN_RANGED) and math.random(1, 100) <= totals.block then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 		if M.onAvoid then
@@ -714,6 +797,8 @@ local logout = CreatureEvent("ChaosItemModsLogout")
 function logout.onLogout(player)
 	applied[player:getId()] = nil
 	cache[player:getId()] = nil
+	leechState[player:getId()] = nil
+	regenFrac[player:getId()] = nil
 	if ChaosGems and ChaosGems.forget then
 		ChaosGems.forget(player)
 	end

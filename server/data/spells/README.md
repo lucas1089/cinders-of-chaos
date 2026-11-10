@@ -479,7 +479,9 @@ Ascension at level 100 (the Ascendant Oracle, data/scripts/chaos/ascension.lua).
 `data/scripts/chaos/thief_combat.lua` (rules in `classes.lua`, numbers in `Chaos.classes`, chaos_constants.lua):
 
 - **Evasion** (passive): 8% Thief, 12% Ninja, 5% Samurai chance to dodge a melee or ranged hit (monster attacks and player weapons),
-  shown with `ChaosCombatFx.dodge`. Measured: 4 dodges in a 20 s fight against three Behemoths.
+  shown with `ChaosCombatFx.dodge`. Measured: 4 dodges in a 20 s fight against three Behemoths. Since O464 the evasion is one of the
+  dodge sources of the player defence layer (gear, sets and the class evasion add up; ONE roll against the sum, at most 75, attack
+  hits only; `server/README.md` "Player defence (O464)"): the numbers of the class do not change.
 - **Weapon strikes**: the damaging spells deal their physical damage with a weapon origin (melee or ranged), so the weapon rules apply to
   them too: the stealth crit, Poison Blades, the Bushido crit, and the Ninja's off-hand strike after Shadow Step.
 - **Area strikes** (2026-10-15, `chaos/_blades.lua`): Blade Flurry (all three, a weapon strike on every monster around
@@ -2111,6 +2113,10 @@ equal):
 
 ### Badge slot (replaces the second ring, 2026-10-21; computed, not measured in game)
 
+*Since O461 (2026-11-10) the numbers of the gear modifiers named here are those of version 1; see "Equipment modifiers
+version 2 (O461)" below for the table of today. The badge rolls the worn Attack Speed (T8 15-16), the two critical modifiers
+and the leech modifiers of the Lua list; the stock badge attributes in the table below are unchanged.*
+
 The badge slot (server/README.md "Badge slot") took the second ring slot's place: one ring and one badge. What a
 character loses: the second ring's rolls and its stock ring (a second skill ring +4, a second time ring +60 speed). What
 it gains: the badge's base stats, plus its own rarity rolls. A badge is gear of kind "other": it rolls the engine
@@ -2141,6 +2147,9 @@ the base numbers; a badge is about one ring's rolls plus a tier's base stats, an
 
 ### Second ring (the ammunition slot as a second ring slot, 2026-10-11)
 
+*Version 1 numbers (until O461, 2026-11-10): the table below is history. The caps it names are gone for most rows; see
+"Equipment modifiers version 2 (O461)" below.*
+
 Every character may wear two rings (server/README.md "Second ring slot"). The Chaos modifiers a ring may roll are summed
 under the catalogue's caps. Ceiling of each such modifier from the slots that may roll it (tier 8 and tier 5 maximum per
 item, every source rolling it; `tests/archery_test.lua` checks that the tier 8 ceiling needs no second ring):
@@ -2168,6 +2177,105 @@ two might rings would absorb 40% physical and magic damage instead of 20%. Owner
 `Player::queryAdd` (src-patch 0023) refuses a second one in either ring slot ("You can only wear one might ring at a
 time."), and a character who wore two keeps the one in slot 9 (the other goes to the backpack or the inbox at login;
 server/README.md "Second ring slot"). So the might ring stays at 20% absorbed; every other stock ring still stacks.
+
+### Equipment modifiers version 2 (O461, 2026-11-10; computed with the method of `budget.py`, not measured in game)
+
+Owner 2026-11-10: the modifier numbers follow new ladders and roll rules as closely as the engine allows, "forget our tests and the
+caps we put, also the DPS tests and the class objectives, I want to see how everything ends up, then we rethink". Stage 1 is
+done: offence, sustain, speed, utility, the roll rules, quality, new modifiers (server/README.md "Equipment modifiers version
+2"). Stage 2 (the defence rows and the combat order) is not. **No model, class, monster, spell or tree number changed and no
+model limit was edited. None of the models reads gear modifiers** (`survival_model.py` says "Not in it: gear modifiers and
+gems"; `class_dps_model.py` measures the base set), so every `--check` stays green while real power moves. The table below
+is the only place that shows how far.
+
+**Method** (the same as the research that preceded O461; every constant is READ from the repository, COMPUTED from a model or
+ASSUMED). Baseline: a median class at level 1000 with its tree build and no modifier on gear (class DPS 6,017 on one target and
+13,731 on five, median health 17,004, mana 14,369, heal 4,313 a second, the pack of hunt 993). Best sets by greedy search over
+the nine slots (weapon, shield, helmet, armor, legs, boots, amulet, ring, badge), three objectives (damage, toughness,
+balanced), a class that fights with its auto attack (sword, 0.40 of its damage on one target) and one that casts (0.13).
+"Today" is version 1 with its caps and the quality multiplier; "v2" is the table of the end of stage 1 with the stage 2 rows
+as they were (their caps stay). Quality does nothing to modifiers in v2 and raises the base bonus (the attack, defence
+and armour it adds; not counted here). Assumed: the Weapon Damage share of a hit (the weapon term of the hit formula
+`level/5 + (skill/4+1)(attack/3)1.03` rises by the percent), a spell class's tree increment of 40 raw (Spell Damage goes through
+the soft cap 150 / 60), the tree's points for the three attributes (76, 67, 54: the mean of the Recommended builds),
+leech held at 20% of the maximum health a second. Not counted: the 12 legendary powers, gems, sets, charms, uniques, Paragon.
+
+**Result** (damage is a multiplier on the baseline; effective health = health / damage taken in the hunt 993 pack):
+
+| Set | 1 target | 5 targets | Boss | Effective health | Extra heal/s | Attack interval (ms) |
+|---|---|---|---|---|---|---|
+| Divine 6, T8 top, best damage, auto class | x6.5 -> x4.9 | x5.0 -> x3.6 | x8.5 -> x7.0 | x1.6 -> x1.6 | 789 -> 0 | 917 -> 683 |
+| Divine 6, T8 top, best damage, spell class | x5.5 -> x4.5 | x5.8 -> x4.8 | x7.1 -> x6.4 | x1.6 -> x1.6 | 640 -> 0 | 917 -> 683 |
+| Divine 6, T8 top, best toughness, auto class | x3.9 -> x1.1 | x3.1 -> x1.1 | x3.5 -> x1.1 | x5.7 -> x7.0 | 3223 -> 0 | 1112 -> 1242 |
+| Divine 6, T8 top, balanced, auto class | x5.6 -> x4.2 | x4.3 -> x3.3 | x7.2 -> x6.1 | x4.9 -> x4.9 | 27761 -> 2091 | 930 -> 683 |
+| Divine 6, T8 top, balanced, spell class | x4.8 -> x4.1 | x5.1 -> x4.6 | x6.1 -> x5.9 | x4.8 -> x4.9 | 29616 -> 2506 | 1242 -> 1242 |
+| Legendary 5, T8 top, best damage, auto class | x5.8 -> x4.9 | x4.5 -> x3.6 | x7.5 -> x7.0 | x1.6 -> x1.4 | 686 -> 0 | 917 -> 683 |
+| Legendary 5, T8 top, best damage, spell class | x5.0 -> x4.5 | x5.3 -> x4.8 | x6.5 -> x6.4 | x1.6 -> x1.6 | 567 -> 0 | 917 -> 683 |
+| Legendary 5, T8 top, best toughness, auto class | x2.8 -> x1.1 | x2.4 -> x1.1 | x2.8 -> x1.1 | x5.3 -> x6.1 | 1939 -> 0 | 1138 -> 1242 |
+| Legendary 5, T8 top, balanced, auto class | x4.1 -> x3.6 | x3.5 -> x2.9 | x5.2 -> x5.2 | x4.0 -> x4.3 | 13483 -> 2091 | 1242 -> 683 |
+| Legendary 5, T8 top, balanced, spell class | x4.0 -> x3.8 | x4.3 -> x4.2 | x5.0 -> x5.5 | x3.8 -> x4.1 | 13077 -> 2426 | 1242 -> 1242 |
+| Realistic Rare 4, T5-T6 mean, best damage, auto class | x2.5 -> x3.4 | x2.4 -> x2.8 | x3.2 -> x4.5 | x1.2 -> x1.1 | 211 -> 0 | 995 -> 826 |
+| Realistic Rare 4, T5-T6 mean, best damage, spell class | x2.4 -> x3.1 | x2.6 -> x3.3 | x3.2 -> x4.0 | x1.2 -> x1.1 | 204 -> 0 | 995 -> 826 |
+| Realistic Rare 4, T5-T6 mean, best toughness, auto class | x1.2 -> x1.0 | x1.2 -> x1.0 | x1.2 -> x1.0 | x2.5 -> x2.5 | 31 -> 0 | 1242 -> 1242 |
+| Realistic Rare 4, T5-T6 mean, balanced, auto class | x1.8 -> x3.0 | x1.9 -> x2.5 | x2.3 -> x3.8 | x1.8 -> x1.8 | 2499 -> 684 | 1242 -> 826 |
+| Realistic Rare 4, T5-T6 mean, balanced, spell class | x1.9 -> x2.9 | x2.1 -> x3.0 | x2.5 -> x3.7 | x1.7 -> x1.8 | 2759 -> 778 | 1242 -> 1242 |
+
+How to read it:
+- The best damage sets of the top gear fall (x6.5 -> x4.9 on one target, Divine, auto class; Legendary x5.8 -> x4.9). Most of
+  it is the missing quality: version 1 multiplied every modifier by 1.3 (Divine, quality 30) or 1.2 (Legendary, quality 20),
+  which is about the size of the fall. Critical Strike Damage per slot rose from 10 to 38, but only five slots carry it
+  (the pair was on all nine) and the chance stays at 8 points a slot; attack speed rose (917 -> 683 ms); Execute 10, the
+  ailment chances and the new attributes add. The best toughness set has no damage left (x1.1) and reaches x7.0
+  effective health, mostly from Maximum Life (about +5,200) on top of the unchanged absorbs.
+- The sustain of a balanced set falls from +27,800 to +2,100 health a second: the quadratic engine leech pair is gone and the
+  Lua leech is held at 20% of the maximum a second.
+- The realistic Rare set (four modifiers, T5-T6, no quality) moves up the most: balanced x1.8 -> x3.0 on one target, best damage
+  x2.5 -> x3.4. The reason is the ladders: a T5 or T6 attack speed is 17-22 now (7-11 before), ailments 34-43 (11-18),
+  Health Regeneration 153-313 (16-36). The distance between a normal hunt's gear and the best gear fell; a normal drop
+  at level 1000 is T7 at most, a boss T8.
+
+**Economy and utility maxima** (slots that can roll it x the T8 top; the module no longer holds a cap):
+
+| Stat | Slots | Today (capped) | v2 |
+|---|---|---|---|
+| Experience | amulet, ring | +15 (cap) | +6 (jewels only, T8 3) |
+| Rarity Find | helmet, amulet, ring, boots | +40 (cap) | +104 (4 x 26) |
+| Gold Find, Item Find | none | +40, +25 | not rollable (sets, charms and uniques still add under the old caps; the tree's Item Find still counts under `itemFindMaxPercent` 300) |
+| Movement Speed | boots | +12 | +35 (one slot; the engine's 2600 limit binds at about +57%) |
+| Cooldown Reduction | helmet, amulet, ring, badge | 20 (cap) | 80 in the module; the supports cap 30 and the 1000 ms floor still hold |
+| Attack speed | weapon, badge | 15 + 10 | 27 + 16 (tree 15: 58 of the engine's 76) |
+| Critical Strike Chance (points) | weapon, quiver, amulet, ring, badge | pair: 8 slots x 7 | 5 x 8 = 40 (+ the tree's 11 on average) |
+| Critical Strike Damage | the same five | 8 x 10 | 5 x 38 = 190 (+ the tree's 13 on average) |
+| Ailment chances | weapon, badge | 30 (cap) each | 110 on two slots; the roll clamps at 100 |
+| Life Leech | helmet, amulet, ring, badge + weapon | pair, quadratic | 4 x 1.2% + 4.5% = 9.3% of damage dealt, held at 20% of the maximum health a second |
+| Maximum Life | armor, shield, helmet, legs, boots, amulet, ring | none | 7 x 748 = 5,236 (31% of the median level 1000 health; the owner's list expected about 35% to 40%: seven slots roll it, not nine; not retuned) |
+| Maximum Mana | amulet, ring, helmet, armor | none | 4 x 747 = 2,988 (21% of the median mana) |
+| Mana Regeneration | helmet, amulet, ring | none | 3 x 69 = +207% of the class's own regeneration |
+| Strength, Dexterity, Intelligence | armor, helmet, legs, boots, amulet, ring, shield | none | 7 x 18 = 126 points of one stat on top of the tree's, through the tree's curve and soft cap |
+| Spell Damage | wand or rod | none | +38% before the tree's soft cap on the sum |
+| Weapon Damage | one weapon with an attack | none | +60% of that weapon's attack value |
+
+**Health Regeneration** (T8 is 3.5% to 4.1% of the median level 1000 health, 17,004; every lower tier the same share of the
+median health of the level where a normal drop first reaches the tier's item level; T8's level is the brief's 1000, a normal drop
+reaches item level 130 at monster level 1200, a boss at 940):
+
+| tier | item level | normal monster level | median health | range | share |
+|---|---|---|---|---|---|
+| T1 | 1 | 1 | 259 | 9-11 | 3.5% to 4.2% |
+| T2 | 15 | 32 | 553 | 19-23 | 3.4% to 4.2% |
+| T3 | 30 | 79 | 1,106 | 39-45 | 3.5% to 4.1% |
+| T4 | 50 | 178 | 2,552 | 89-105 | 3.5% to 4.1% |
+| T5 | 70 | 320 | 4,379 | 153-180 | 3.5% to 4.1% |
+| T6 | 90 | 500 | 7,640 | 267-313 | 3.5% to 4.1% |
+| T7 | 110 | 767 | 12,383 | 433-508 | 3.5% to 4.1% |
+| T8 | 130 | 1000 | 17,004 | 595-697 | 3.5% to 4.1% |
+
+Maximum Mana follows the same rule on the median mana with 4.9% to 5.2% at T8: 6, 18-19, 41-43, 97-103, 185-197, 301-319,
+523-555, 704-747. The order of magnitude to keep in mind: a full set of T8 regeneration (three slots) gives 1,785 to 2,091 health
+a second, 10% to 12% of the median health.
+
+What to hold back, if the owner wants a limit later (the biggest moves, in order): Critical Strike Damage, attack speed, the
+ailment chances, Maximum Life and the regeneration ladder. Nothing was held back in this round.
 
 ### PvP (tested with two characters on the test server)
 

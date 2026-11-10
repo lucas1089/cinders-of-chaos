@@ -164,10 +164,11 @@ h(player); eq(#player.sent, 2, "answered again"); eq(player.sent[2].data.crit.ch
 -- ------------------------------------------------------------------------------------------------ the crit reach model
 local R = dofile("tools/crit_reach.lua")
 local o = R.compute()
-eq(o.t8.chanceLo, 5, "T8 chance low"); eq(o.t8.chanceHi, 7, "T8 chance high"); eq(o.t8.amountHi, 10, "T8 amount high")
-eq(o.slots, 8, "eight slots"); eq(o.gear.max, 56, "8 x 7"); eq(o.gear.min, 40, "8 x 5"); eq(o.gear.avg, 48, "8 x 6")
-eq(o.t8.chanceHiQuality, 9, "7 at +30% quality"); eq(o.gear.maxQuality, 72, "8 x 9")
-eq(o.t7.chanceHi, 6, "T7 high"); eq(o.gearT7.max, 48, "T7 everywhere")
+-- O461: Critical Strike Chance and Damage are two modifiers (points and percent) on the weapon, quiver, necklace, ring and badge
+eq(o.t8.chanceLo, 7, "T8 chance low"); eq(o.t8.chanceHi, 8, "T8 chance high"); eq(o.t8.amountLo, 35, "T8 damage low"); eq(o.t8.amountHi, 38, "T8 damage high")
+eq(o.slots, 5, "five slots"); eq(o.gear.max, 40, "5 x 8"); eq(o.gear.min, 35, "5 x 7"); eq(o.gear.avg, 37.5, "5 x 7.5")
+eq(o.gear.amountMax, 190, "5 x 38")
+eq(o.t7.chanceHi, 7, "T7 high"); eq(o.gearT7.max, 35, "T7 everywhere")
 ok(o.treeBest >= o.treeMedian and o.treeMedian >= o.treeWorst and o.treeWorst > 0, "tree crit sums ordered")
 ok(o.casual < o.dedicated and o.dedicated < o.ceiling, "casual < dedicated < ceiling")
 ok(o.suggestedThreshold % 5 == 0 and o.suggestedThreshold > o.casual and o.suggestedThreshold < o.dedicated, "threshold between the builds")

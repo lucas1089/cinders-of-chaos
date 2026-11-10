@@ -166,12 +166,22 @@ targetCb.onTargetCombat = function(creature, target)
 end
 targetCb:register()
 
+-- the resistance of the socketed gems to a damage type (percent), for the player defence layer (O464)
+function G.resistOf(player, ctype)
+	local t = cache[player:getId()]
+	return t and RESKEY[ctype] and tonumber(t[RESKEY[ctype]]) or 0
+end
+
 local taken = CreatureEvent("ChaosGemsTaken")
 function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if primaryType == COMBAT_HEALING then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local t = cache[creature:getId()]
+	-- O464: a player's resistances are a source of the player defence layer (ChaosPlayerDefence), not reduced here
+	if t and ChaosPlayerDefence and ChaosPlayerDefence.active() then
+		t = nil
+	end
 	if t then
 		local a = RESKEY[primaryType] and t[RESKEY[primaryType]] or 0
 		if a > 0 and primaryDamage ~= 0 then

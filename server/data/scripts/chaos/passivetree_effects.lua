@@ -154,7 +154,9 @@ function ChaosSoftCap(raw, cap, H)
 end
 
 -- the damage percent a combat type gets from the tree before the soft cap (the sum the stat window shows as raw)
-function ChaosPassiveDamageRaw(bonuses, combatType)
+-- O461: `origin` (optional) adds the worn Spell Damage modifier (bonuses.gearSpell, written by item_mods.lua and applyAll) to the
+-- sum for the hits of a spell or a wand: it joins the tree's increment here, so the soft cap below holds the sum. Never on healing.
+function ChaosPassiveDamageRaw(bonuses, combatType, origin)
 	local stat = INCREMENT[combatType]
 	if not stat then
 		return 0
@@ -163,19 +165,23 @@ function ChaosPassiveDamageRaw(bonuses, combatType)
 	if IS_ELEMENT[combatType] then
 		pct = pct + (bonuses.multiIncrement or 0)
 	end
+	if origin and combatType ~= COMBAT_HEALING and (bonuses.gearSpell or 0) > 0
+			and (origin == ORIGIN_SPELL or origin == ORIGIN_WAND) then
+		pct = pct + bonuses.gearSpell
+	end
 	return math.max(0, pct)
 end
 
-function ChaosPassiveDamagePercent(bonuses, combatType)
-	return ChaosSoftCap(ChaosPassiveDamageRaw(bonuses, combatType), cfg.maxDamagePercent, cfg.softCap.damagePercentH)
+function ChaosPassiveDamagePercent(bonuses, combatType, origin)
+	return ChaosSoftCap(ChaosPassiveDamageRaw(bonuses, combatType, origin), cfg.maxDamagePercent, cfg.softCap.damagePercentH)
 end
 
 -- A Necromancer minion's hit (O348, owner 2026-10-31: "make the minions count the death damage"): the hit is dealt as the
 -- owner with the minion's own type (physical for the warrior and the golem, energy for the mage, ...), so it took only
 -- that type's percent. It now also takes the tree's death damage percent, summed before the soft cap. A death hit (the
 -- shade) is counted once; healing and no type get nothing extra.
-function ChaosPassiveMinionDamagePercent(bonuses, combatType)
-	local raw = ChaosPassiveDamageRaw(bonuses, combatType)
+function ChaosPassiveMinionDamagePercent(bonuses, combatType, origin)
+	local raw = ChaosPassiveDamageRaw(bonuses, combatType, origin)
 	if combatType ~= COMBAT_DEATHDAMAGE and combatType ~= COMBAT_HEALING and combatType ~= COMBAT_NONE then
 		-- the death stat, and the all-element stat once (an element hit has it already)
 		raw = raw + math.max(0, bonuses.incrementDeath or 0)
@@ -273,6 +279,14 @@ function ChaosPassiveConditionValue(bonuses, stat)
 	return math.floor(v + 1e-6)
 end
 
+-- the points of a character stat: the tree's (+ trials, paragon) and the worn pieces' Strength / Dexterity / Intelligence
+-- modifiers (O461; bonuses.gearStrength ... are written by item_mods.lua and applyAll), one sum for the same curve
+function ChaosPassivePoints(bonuses, stat)
+	local gear = stat == "strength" and bonuses.gearStrength or stat == "dexterity" and bonuses.gearDexterity
+		or stat == "intelligence" and bonuses.gearIntelligence or 0
+	return (bonuses[stat] or 0) + (gear or 0)
+end
+
 -- ---------------------------------------------------------------- applying
 local function setCondition(player, stat, value)
 	local info = CONDITIONS[stat]
@@ -354,12 +368,12 @@ end
 function ChaosPassiveStatMultiplier(bonuses, combatType, origin)
 	local m
 	if combatType == COMBAT_PHYSICALDAMAGE then
-		m = 1 + ChaosPassiveCharStat(bonuses.strength, "strength") / 230
+		m = 1 + ChaosPassiveCharStat(ChaosPassivePoints(bonuses, "strength"), "strength") / 230
 	else
-		m = 1 + ChaosPassiveCharStat(bonuses.intelligence, "intelligence") / 230
+		m = 1 + ChaosPassiveCharStat(ChaosPassivePoints(bonuses, "intelligence"), "intelligence") / 230
 	end
 	if WEAPON_ORIGIN[origin] then
-		m = m / (1 - ChaosPassiveCharStat(bonuses.dexterity, "dexterity") / 100)
+		m = m / (1 - ChaosPassiveCharStat(ChaosPassivePoints(bonuses, "dexterity"), "dexterity") / 100)
 	end
 	return m
 end
@@ -377,6 +391,10 @@ local function applyAll(player, bonuses)
 	local id = player:getId()
 	local state = applied[id] or {speed = 0}
 	applied[id] = state
+	-- the worn pieces' Strength, Dexterity, Intelligence and Spell Damage (item_mods.lua totals) ride on the same table
+	local gear = ChaosItemModsCache and ChaosItemModsCache[id]
+	bonuses.gearStrength, bonuses.gearDexterity = gear and gear.strength or 0, gear and gear.dexterity or 0
+	bonuses.gearIntelligence, bonuses.gearSpell = gear and gear.intelligence or 0, gear and gear.spelldamage or 0
 	ChaosPassiveCache[id] = bonuses
 	-- the tree's Healing for the potion scripts (another Lua state): potions_config.lua storage.healingPct
 	if not ChaosPotionsConfig then
@@ -499,9 +517,9 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			-- a minion's hit (necro_minions.lua raises ChaosNecroMinions.dealing around it) also takes the death percent
 			local NM = rawget(_G, "ChaosNecroMinions")
 			local pctOf = (NM and (NM.dealing or 0) > 0) and ChaosPassiveMinionDamagePercent or ChaosPassiveDamagePercent
-			local m1 = (1 + pctOf(bonuses, primaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)
+			local m1 = (1 + pctOf(bonuses, primaryType, origin) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)
 				* ChaosParagonDamageMultiplier(bonuses, primaryType) * (primaryType == COMBAT_HEALING and 1 or line)
-			local m2 = (1 + pctOf(bonuses, secondaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin)
+			local m2 = (1 + pctOf(bonuses, secondaryType, origin) / 100) * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin)
 				* ChaosParagonDamageMultiplier(bonuses, secondaryType) * (secondaryType == COMBAT_HEALING and 1 or line)
 			if m1 ~= 1 then
 				primaryDamage = scale(primaryDamage, m1)

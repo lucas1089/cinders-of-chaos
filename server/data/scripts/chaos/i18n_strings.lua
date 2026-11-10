@@ -2775,6 +2775,17 @@ return {
 		["Drowning"] = "Afogamento",
 		["Life drain"] = "Drenagem de vida",
 		["Mana drain"] = "Drenagem de mana",
+		-- the four resistances and the defence rows of the character sheet (O464, player_defence.lua)
+		["Cold"] = "Frio",
+		["Lightning"] = "Raio",
+		["Chaos"] = "Caos",
+		["Armor share against a typical hit: %s%%"] = "Armadura contra um golpe típico: %s%%",
+		["Physical reduction: %s%%"] = "Redução física: %s%%",
+		["Dodge: %s%%"] = "Esquiva: %s%%",
+		["Block: %s%%"] = "Bloqueio: %s%%",
+		["Spell suppression: %s%%"] = "Supressão de magia: %s%%",
+		["%s: %s%% (sources %s%%, level penalty -%s%%)"] = "%s: %s%% (fontes %s%%, penalidade de nível -%s%%)",
+		["Maximum resistance: %s%%"] = "Resistência máxima: %s%%",
 		["Fist Fighting"] = "Fist Fighting",
 		["Club Fighting"] = "Club Fighting",
 		["Sword Fighting"] = "Sword Fighting",
@@ -3022,6 +3033,29 @@ return {
 			"Recebe essa porcentagem a menos de dano de mana drain, no máximo 75%.",
 		["Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each."] =
 			"Soma essa porcentagem à resistência de todos os elementos (fogo, gelo, energia, terra, morte, sagrado, água, arcano), no máximo 75 por cento cada.",
+		-- O464: the tree counts half of a resistance point, at most 30 (passivetree_stats_config.lua TREE_NOTE)
+		["Takes this percent less fire damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de fogo, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less ice damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de gelo, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less energy damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de energia, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less earth damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de terra, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less death damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de morte, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less holy damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano sagrado, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less arcane damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano arcano, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less water damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de água, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less life drain damage, at most 75%. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de life drain, no máximo 75%. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less mana drain damage, at most 75%. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de mana drain, no máximo 75%. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Soma essa porcentagem à resistência de todos os elementos (fogo, gelo, energia, terra, morte, sagrado, água, arcano), no máximo 75 por cento cada. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
 		["Raises your crafting skill; no combat effect."] =
 			"Aumenta seu skill de criação; sem efeito em combate.",
 		["Raises your armorsmith skill; no combat effect."] =
@@ -5844,6 +5878,16 @@ return {
 		-- O260: the first unique, the drop feed, the personal records
 		["Something heavy and old lies in the corpse: %s. It is yours."] = "Algo pesado e antigo jaz no corpo: %s. É seu.",
 		["%s (Lv %d) found %s!"] = "%s (Nv %d) encontrou %s!",
+		-- O467: a unique explains itself (unique_passives_core.lua C.fitText: the line under the passive of a unique's
+		-- tooltip; unique_intro_config.lua: the one-time line at the first unique)
+		["Works for your class."] = "Funciona para a sua classe.",
+		["Works for every class."] = "Funciona para todas as classes.",
+		["Asleep: your class is not in its list."] = "Inativo: a sua classe não está na lista.",
+		["Active."] = "Ativo.",
+		["Asleep: %s is stronger."] = "Inativo: %s é mais forte.",
+		["Asleep: only %d unique powers work at once."] = "Inativo: só %d poderes únicos funcionam ao mesmo tempo.",
+		["A unique is a named item with fixed stats and one power of its own. Right-click it and choose Open in Codex to see what it does."] =
+			"Um único é um item com nome, atributos fixos e um poder próprio. Clique com o botão direito e escolha Abrir no Codex para ver o que ele faz.",
 		["Nobody can speak in the Drops channel."] = "Ninguém pode falar no canal Drops.",
 		["New record: %s: %s (was %s)"] = "Novo recorde: %s: %s (era %s)",
 		["Best Drop Rarity"] = "Melhor raridade de drop",
@@ -7626,6 +7670,19 @@ return {
 			"Death Blast: %d%% de chance ao matar de explodir",
 		["Dodge +%d%%"] =
 			"Esquiva +%d%%",
+		-- O464: the defence modifiers
+		["Armour +%d"] =
+			"Armadura +%d",
+		["Spell Suppression +%d%%"] =
+			"Supressão de magia +%d%%",
+		["Cold Resistance +%d%%"] =
+			"Resistência a frio +%d%%",
+		["Lightning Resistance +%d%%"] =
+			"Resistência a raio +%d%%",
+		["Chaos Resistance +%d%%"] =
+			"Resistência ao caos +%d%%",
+		["All Elemental Resistances +%d%%"] =
+			"Todas as resistências elementais +%d%%",
 		["Damage over Time +%d%%"] =
 			"Dano ao longo do tempo +%d%%",
 		["Echo Shot: %d%% chance on a ranged hit to shoot again"] =
@@ -7989,6 +8046,8 @@ return {
 			"Chão gelado sob os jogadores: %d%% da vida máxima por segundo e lentidão",
 		["Marked storm strikes near the players: %d%% of max health"] =
 			"Tempestades marcadas caem perto dos jogadores: %d%% da vida máxima",
+		["Players' maximum resistances are lowered by %d"] =
+			"As resistências máximas dos jogadores são reduzidas em %d",
 		["Modifiers:"] =
 			"Modificadores:",
 		["Rewards:"] =
@@ -9012,5 +9071,10 @@ return {
 			"Machado: golpe em arco. 14%% de cada golpe se divide entre os monstros ao lado do alvo. Custa 2,5%% de dano contra um alvo. Melhor contra grupos.",
 		["Club: impact. A hit has a 25%% chance to daze a monster: it cannot attack for 0.7 s, then rests for 3 s. A boss is only slowed. Costs 2.5%% damage on one target."] =
 			"Clava: impacto. Um golpe tem 25%% de chance de atordoar um monstro: ele não ataca por 0,7 s e depois descansa por 3 s. Um chefe só fica lento. Custa 2,5%% de dano contra um alvo.",
+		-- Player defence (player_defence.lua, the resistance penalty by level, O464)
+		["Warning: at level %d all your resistances drop by %d points. Raise them before you get there."] =
+			"Atenção: no nível %d todas as suas resistências caem %d pontos. Aumente-as antes de chegar lá.",
+		["Your resistances now carry a penalty of %d points (level %d). Raise them with gear and the passive tree."] =
+			"Suas resistências agora têm uma penalidade de %d pontos (nível %d). Aumente-as com equipamentos e a árvore passiva.",
 	},
 }

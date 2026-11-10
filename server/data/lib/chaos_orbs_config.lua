@@ -88,10 +88,10 @@ return {
 			weapon = {"bossdamage", "attackspeed", "execute", "physpen", "elepen"},
 			shield = {"block", "reflect", "monsterreduction"},
 			armor = {"monsterreduction", "reflect", "regen", "thorns"},
-			helmet = {"monsterreduction", "cdr", "manacost"},
+			helmet = {"monsterreduction", "cdr"}, -- O461: Mana Cost Reduction left the roll pool
 			legs = {"monsterreduction", "thorns", "dodge"},
 			boots = {"movespeed", "dodge"},
-			jewel = {"bossdamage", "cdr", "manacost", "experience"},
+			jewel = {"bossdamage", "cdr", "experience"},
 			other = {"dot", "dodge", "cdr"},
 			quiver = {"bossdamage", "physpen", "elepen"}
 		}

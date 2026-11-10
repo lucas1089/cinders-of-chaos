@@ -475,6 +475,20 @@ for name, el in pairs({COMBAT_PHYSICALDAMAGE = "physical", COMBAT_FIREDAMAGE = "
 	end
 end
 
+-- the resistances of the worn sets (element name -> percent, at most 90 each), for the player defence layer (O464): pvp = the
+-- attacker is a player or a player's summon (the PvP share)
+function S.resistances(player, pvp)
+	local c = cache[player:getId()]
+	local res = c and c.totals and (pvp and c.totals.resPvp or c.totals.res)
+	local out = {}
+	for el, v in pairs(res or {}) do
+		if v > 0 then
+			out[el] = math.min(v, 90)
+		end
+	end
+	return out
+end
+
 local taken = CreatureEvent("ChaosItemSetsTaken")
 function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if guard then
@@ -494,6 +508,10 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	-- against a player or a player's summon the PvP share of the resistances (S.totals resPvp)
 	local pvp = attacker and playerOf(attacker) ~= nil
 	local res = c and c.totals and (pvp and c.totals.resPvp or c.totals.res)
+	-- O464: a player's resistances are one of the sources of the player defence layer (ChaosPlayerDefence), not reduced here
+	if ChaosPlayerDefence and ChaosPlayerDefence.active() then
+		res = nil
+	end
 	if res and next(res) then
 		local r1, r2 = res[ELEMENT[primaryType] or ""] or 0, res[ELEMENT[secondaryType] or ""] or 0
 		if r1 > 0 then
@@ -563,6 +581,9 @@ function S.grantChase(player, source, key, ctx, rand)
 		ChaosMakeUnique(item)
 	end
 	local inbox = give(player, item)
+	if ChaosUniqueIntro then -- O467
+		pcall(ChaosUniqueIntro.found, player)
+	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You found %s, a piece of %s.%s", hit.piece.name,
 		hit.set.name, inbox and Chaos.t(player, " Your backpack was full: it is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)

@@ -66,6 +66,8 @@ P.config = {
 local CFG = P.config
 
 local PCT = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}
+-- O464: Glacial Ward was one of the PCT rows with these ends, not overlapping now (the version 2 ranges: M.v2.mods.frostward)
+local FROSTWARD = {{2, 3}, {4, 5}, {6, 7}, {8, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 16}}
 local SPLASH = {{10, 15}, {15, 20}, {20, 25}, {25, 30}, {30, 40}, {40, 50}, {50, 60}, {60, 75}}
 
 -- the catalogue. kinds: which items may roll it (chaos_item_mods.lua M.kindOf)
@@ -73,8 +75,8 @@ P.defs = {
 	{key = "deathblast", label = "Death Blast", text = "Death Blast: %d%% chance on kill to explode", fmt = "pct",
 		side = "prefix", weight = 3, cap = 25, kinds = {weapon = true, jewel = true}, tiers = PCT},
 	{key = "frostward", label = "Glacial Ward", text = "Glacial Ward: %d%% chance when you dodge or block for a frost nova",
-		fmt = "pct", side = "prefix", weight = 3, cap = 30, kinds = {shield = true, armor = true, legs = true, boots = true,
-		other = true}, tiers = PCT},
+		fmt = "pct", side = "prefix", weight = 3, kinds = {shield = true, armor = true, legs = true, boots = true,
+		other = true}, tiers = FROSTWARD},
 	{key = "echoshot", label = "Echo Shot", text = "Echo Shot: %d%% chance on a ranged hit to shoot again", fmt = "pct",
 		side = "prefix", weight = 2, cap = 25, kinds = {weapon = true}, ranged = true, tiers = PCT},
 	{key = "critecho", label = "Critical Echo", text = "Critical Echo: %d%% chance on a critical hit to strike again",
@@ -93,8 +95,8 @@ P.defs = {
 		fmt = "pct", side = "suffix", weight = 3, cap = 25, kinds = {weapon = true, jewel = true, helmet = true},
 		tiers = PCT},
 	{key = "lastbreath", label = "Last Breath", text = "Last Breath: a lethal hit leaves you at %d%% health (once per 5 minutes)",
-		fmt = "pct", side = "suffix", weight = 2, cap = 50, kinds = {armor = true, helmet = true, shield = true,
-		jewel = true, legs = true}, tiers = {{10, 15}, {15, 20}, {20, 25}, {25, 30}, {30, 35}, {35, 40}, {40, 45}, {45, 50}}},
+		fmt = "pct", side = "suffix", weight = 2, kinds = {armor = true, helmet = true, shield = true,
+		jewel = true, legs = true}, tiers = {{10, 15}, {16, 20}, {21, 25}, {26, 30}, {31, 35}, {36, 40}, {41, 45}, {46, 50}}},
 	{key = "emberstep", label = "Ember Step", text = "Ember Step: %d%% chance when hit hard to blink away in flames",
 		fmt = "pct", side = "suffix", weight = 3, cap = 30, kinds = {boots = true, legs = true, armor = true, jewel = true},
 		tiers = {{4, 6}, {6, 8}, {8, 10}, {10, 13}, {12, 16}, {15, 19}, {18, 23}, {22, 28}}},

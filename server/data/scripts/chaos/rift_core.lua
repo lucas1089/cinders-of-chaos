@@ -435,7 +435,9 @@ function R.effects(cfg, mods, tier)
 		-- reflect, one brood, guardian nova share, breach chance (percent), hexes, no mana, ground {kind, element,
 		-- percent}, storm share
 		brand = nil, crit = 0, physResist = 0, fester = 0, spite = 0, brood = false, wrath = 0, breach = 0, hexElem = 0,
-		hexPhys = 0, sap = 0, noMana = false, ground = nil, storm = 0}
+		hexPhys = 0, sap = 0, noMana = false, ground = nil, storm = 0,
+		-- O464: points off the players' maximum resistances (Frayed Wards)
+		maxResistLower = 0}
 	for _, m in ipairs(mods or {}) do
 		local v = m.value
 		local brand = cfg.brands and cfg.brands[m.key]
@@ -468,6 +470,8 @@ function R.effects(cfg, mods, tier)
 			fx.ground = {kind = m.key, element = el, percent = v}
 		elseif m.key == "veilstorm" then
 			fx.storm = v / 100
+		elseif m.key == "frayed" then
+			fx.maxResistLower = fx.maxResistLower + v
 		end
 		if m.key == "vitality" then
 			fx.health = fx.health * (1 + v / 100)

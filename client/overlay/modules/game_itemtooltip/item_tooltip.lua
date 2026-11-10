@@ -712,3 +712,13 @@ function terminate()
   if pollEvent then removeEvent(pollEvent) pollEvent = nil end
   reset()
 end
+
+-- the Codex page of an item the player has hovered (O467; game_codex asks it for the right-click entry Open in Codex): the
+-- id the server put in the tip of a unique or set piece (tip.codex, L.codexId), nil for any other item or one whose tip
+-- is not here yet
+function codexIdOf(item)
+  if not item then return nil end
+  local ok, d = pcall(describe, item)
+  if not ok or not d then return nil end
+  return L.codexId(L.cacheGet(cache, d.key, now()))
+end

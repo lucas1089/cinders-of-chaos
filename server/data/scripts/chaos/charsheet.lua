@@ -5,7 +5,7 @@
 --   weapon attack, average hit, defence, armour, damage reduction   ChaosCombatStats.compute (combat_stats.lua)
 --   critical chance and damage, attack speed, damage bonus per type ChaosPassiveTotals.build (passivetree_totals.lua)
 --   life and mana leech                                              the engine's special skills
---   resistances                                                      ChaosDeathRecap.resistOf (deathrecap.lua)
+--   resistances, armour, dodge, block, suppression                   ChaosPlayerDefence.sheet (player_defence.lua, O464)
 --   highest hit                                                      storage Chaos.storage.maxHit, written by combatlog.lua
 --                                                                    (the biggest single hit dealt, raised once per record)
 --   maximum health and mana, movement speed                          the player
@@ -62,11 +62,22 @@ function K.read(player)
 	end
 	raw.lifeLeech = {chance = special("SPECIALSKILL_LIFELEECHCHANCE"), amount = special("SPECIALSKILL_LIFELEECHAMOUNT")}
 	raw.manaLeech = {chance = special("SPECIALSKILL_MANALEECHCHANCE"), amount = special("SPECIALSKILL_MANALEECHAMOUNT")}
-	local R = ChaosDeathRecap
-	if R and R.resistOf then
-		raw.resist = {}
-		for _, el in ipairs(RESIST) do
-			raw.resist[#raw.resist + 1] = {k = el, pct = pcallv(R.resistOf, player, el)}
+	local PD = rawget(_G, "ChaosPlayerDefence")
+	local d = PD and PD.active and PD.active() and PD.sheet and pcallv(PD.sheet, player)
+	if type(d) == "table" then
+		-- O464: the four resistances (sum, penalty, result), the armour, dodge, block and spell suppression
+		raw.resist = d.resist
+		raw.armor = d.armor
+		raw.mitigation = d.physical / 100
+		raw.defence = {armourShare = d.armourShare, reduction = d.reduction, dodge = d.dodge, block = d.block, suppress = d.suppress,
+			penalty = d.penalty, cap = d.cap}
+	else
+		local R = ChaosDeathRecap
+		if R and R.resistOf then
+			raw.resist = {}
+			for _, el in ipairs(RESIST) do
+				raw.resist[#raw.resist + 1] = {k = el, pct = pcallv(R.resistOf, player, el)}
+			end
 		end
 	end
 	local key = Chaos.storage.maxHit

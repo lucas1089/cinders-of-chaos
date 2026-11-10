@@ -940,6 +940,9 @@ function W.deliver(player, r)
 				ChaosMakeUnique(item)
 			end
 			inboxUsed = giveEx(player, item) or inboxUsed
+			if ChaosUniqueIntro then -- O467
+				pcall(ChaosUniqueIntro.found, player)
+			end
 			local e = ChaosUniqueById and ChaosUniqueById[r.unique]
 			parts[#parts + 1] = "the unique " .. (e and e.name or itemName(r.unique))
 			announce(ChaosI18n.msg("%s received the unique %s from the world boss!", player:getName(), e and e.name or itemName(r.unique)), false)
