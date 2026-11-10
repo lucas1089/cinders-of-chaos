@@ -250,6 +250,10 @@ local function answer(player, data)
 						end
 					end
 				end
+				-- the Codex page of a unique or set piece: right-click > Open in Codex (T.codexId, O467)
+				if type(tip) == "table" and type(tip.unique) == "table" then
+					tip.codex = T.codexId(item:getId(), ChaosUniqueById, tip.unique.set)
+				end
 				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
 				row.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)
 				-- where it comes from (itemfinder.lua F.brief): the first two sources, the expected effort, a token price

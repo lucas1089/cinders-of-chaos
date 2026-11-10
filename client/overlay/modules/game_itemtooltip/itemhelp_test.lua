@@ -45,6 +45,12 @@ assert(at('T5: the tier, T1 weak to T8 best.') < at('Dodge: a chance to avoid an
 -- a unique, a set piece, a plain item, rubbish
 assert(H.lines({ unique = { name = 'X' } }, tr)[1]:find('^Unique:'), 'unique')
 assert(H.lines({ unique = { name = 'X', set = {} } }, tr)[1]:find('^Set:'), 'set unique')
+-- a unique with a Codex page says what the power is and points to the Codex (O467)
+do
+  local line = H.lines({ unique = { name = 'X' }, codex = 'unique:8209' }, tr)[1]
+  assert(line:find('^Unique:') and line:find('one power', 1, true) and line:find('Open in Codex', 1, true), 'unique with a page')
+  assert(#line < 200, 'one or two short sentences')
+end
 assert(#H.lines({ name = 'stone' }, tr) == 0, 'nothing to explain')
 assert(#H.lines(nil, tr) == 0, 'nil tip')
 assert(H.modLine({ k = 'unknown_key' }, H.modTexts(tr), H.groupTexts(tr)) == nil, 'unknown key, no group')

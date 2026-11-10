@@ -9577,6 +9577,50 @@
 					"icon": "wiki/i/top-inventory.png"
 				},
 				{
+					"id": "basics:uniques",
+					"name": "Uniques",
+					"sub": "What a unique is, what its power does and where it comes from.",
+					"color": "#d6c9ae",
+					"sections": [
+						{
+							"h": "What a unique is",
+							"p": [
+								"A unique is a named item with fixed stats. No orb changes it.",
+								"Every unique has one power of its own, the orange block under its text. It is not a stat: it changes how you play.",
+								"The power works only for the classes listed after \"For:\" in its text. A unique with no \"For:\" works for every class. A class line includes its ascended classes.",
+								"Every class its class row allows can wear the item. When your class is not on the power's list, the power sleeps and only the stats count.",
+								"The tooltip tells which it is: \"Works for your class.\" or \"Asleep: your class is not in its list.\""
+							]
+						},
+						{
+							"h": "How many powers work at once",
+							"p": [
+								"At most 5 unique powers work at once, and only one of each family. A family is a kind of effect: two uniques of the same kind do not add up.",
+								"When two worn uniques share a family, the stronger one wins (the one with the higher level) and the other sleeps.",
+								"The tooltip of a unique you wear says \"Active.\" or tells why its power sleeps."
+							]
+						},
+						{
+							"h": "Where uniques come from",
+							"p": [
+								"Monsters: magic, rare, legendary and boss monsters can drop a unique, at most 1 per kill. Normal monsters never do.",
+								"A leveling unique (level 700 or lower, no minimum monster level) also drops from most monsters near its level: from 90% of its level up to 2 times its level plus 10. In a hunt of the right level that is about 1 unique in 1500 to 2500 kills (before item find).",
+								"An endgame unique (it has a minimum monster level) drops from any monster of that level or higher, at 50% of its chance.",
+								"A character of level 60 or lower finds a unique of its class at kill number 150, once per character.",
+								"Bosses, world bosses, rift and Omen chests, the raid, the Ember Descent and the Conquest vendor give uniques too. The page of a unique lists how it can be found."
+							]
+						},
+						{
+							"h": "Reading one",
+							"p": [
+								"Hover over a unique to read it. Hold Ctrl to compare it with the item you wear in that slot. Hold Alt to read what each line means.",
+								"Right-click a unique and choose Open in Codex to open its page here, or Where to find to see where it drops."
+							]
+						}
+					],
+					"icon": "wiki/i/top-help.png"
+				},
+				{
 					"id": "basics:rarity",
 					"name": "Rarity",
 					"sub": "Modifier counts and limits per rarity.",
@@ -20180,6 +20224,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "120"],
+								["Power works for", "Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -20194,11 +20239,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 108 to 250 drops it too: about 1 in 360 rare kills at a level 120 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 108 to 250 that is rare or stronger, not only the listed ones. At a level 120 monster that is about 1 in 360 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -20252,6 +20301,7 @@
 							"rows": [
 								["Slot", "Sword"],
 								["Required level", "12"],
+								["Power works for", "Warrior, Monk, Templar"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -20266,11 +20316,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 11 to 34 drops it too: about 1 in 4000 magic kills at a level 12 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 11 to 34 that is magic or stronger, not only the listed ones. At a level 12 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -20334,6 +20388,7 @@
 								["Slot", "Sword"],
 								["Required level", "1300"],
 								["Worn by", "Warrior, Thief, Monk and Templar lines"],
+								["Power works for", "Warrior, Thief, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -20403,6 +20458,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "25"],
+								["Power works for", "Every class"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -20417,11 +20473,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 23 to 60 drops it too: about 1 in 4000 magic kills at a level 25 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 23 to 60 that is magic or stronger, not only the listed ones. At a level 25 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -20486,6 +20546,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "1900"],
+								["Power works for", "Warrior, Ranger, Mystic, Thief, Monk, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -20568,6 +20629,7 @@
 								["Slot", "Body armour"],
 								["Required level", "2200"],
 								["Worn by", "Warrior and Templar lines"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -20649,6 +20711,7 @@
 								["Slot", "Club"],
 								["Required level", "2200"],
 								["Worn by", "Warrior and Templar lines"],
+								["Power works for", "Warrior, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -20718,6 +20781,7 @@
 							"rows": [
 								["Slot", "Sword"],
 								["Required level", "90"],
+								["Power works for", "Warrior, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -20732,11 +20796,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters. Any other monster of level 81 to 190 drops it too: about 1 in 560 rare kills at a level 90 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 81 to 190 that is rare or stronger, not only the listed ones. At a level 90 monster that is about 1 in 560 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -20787,6 +20855,7 @@
 							"rows": [
 								["Slot", "Boots"],
 								["Required level", "80"],
+								["Power works for", "Warrior, Ranger, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -20801,11 +20870,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 72 to 170 drops it too: about 1 in 830 rare kills at a level 80 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Hand of Cursed Fate."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 72 to 170 that is rare or stronger, not only the listed ones. At a level 80 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -20854,7 +20927,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "weapon"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "weapon"],
+								["Required level", "300"],
+								["Power works for", "Warrior"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -20920,6 +20998,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "300"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Boss (bosses only)"]
 							]
 						},
@@ -20984,7 +21063,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Legs"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Legs"],
+								["Required level", "300"],
+								["Power works for", "Warrior, Templar"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -21047,7 +21131,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Boots"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Boots"],
+								["Required level", "300"],
+								["Power works for", "Warrior, Thief"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -21110,7 +21199,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Helmet"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Helmet"],
+								["Required level", "300"],
+								["Power works for", "Warrior, Thief"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -21176,6 +21270,7 @@
 							"rows": [
 								["Slot", "Club"],
 								["Required level", "90"],
+								["Power works for", "Warrior, Monk"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -21190,11 +21285,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters. Any other monster of level 81 to 190 drops it too: about 1 in 560 rare kills at a level 90 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 81 to 190 that is rare or stronger, not only the listed ones. At a level 90 monster that is about 1 in 560 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21245,6 +21344,7 @@
 							"rows": [
 								["Slot", "Helmet"],
 								["Required level", "60"],
+								["Power works for", "Ranger, Mystic, Necromancer"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -21259,11 +21359,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters. Any other monster of level 54 to 130 drops it too: about 1 in 3850 magic kills at a level 60 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Warlock, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 54 to 130 that is magic or stronger, not only the listed ones. At a level 60 monster that is about 1 in 3850 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21314,6 +21418,7 @@
 							"rows": [
 								["Slot", "Helmet"],
 								["Required level", "150"],
+								["Power works for", "Mystic, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -21328,11 +21433,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 135 to 310 drops it too: about 1 in 300 rare kills at a level 150 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 135 to 310 that is rare or stronger, not only the listed ones. At a level 150 monster that is about 1 in 300 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21383,6 +21492,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "50"],
+								["Power works for", "Thief"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -21397,11 +21507,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters. Any other monster of level 45 to 110 drops it too: about 1 in 3700 magic kills at a level 50 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Bonelord, Elder Bonelord, Skeleton Warrior, Undead Gladiator, Crypt Shambler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 45 to 110 that is magic or stronger, not only the listed ones. At a level 50 monster that is about 1 in 3700 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21455,6 +21569,7 @@
 							"rows": [
 								["Slot", "Fist weapon"],
 								["Required level", "26"],
+								["Power works for", "Monk"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -21469,11 +21584,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 24 to 62 drops it too: about 1 in 4000 magic kills at a level 26 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 24 to 62 that is magic or stronger, not only the listed ones. At a level 26 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21537,7 +21656,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Amulet"], ["Required level", "2400"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Amulet"],
+								["Required level", "2400"],
+								["Power works for", "Every class"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -21603,6 +21727,7 @@
 								["Slot", "Helmet"],
 								["Required level", "200"],
 								["Worn by", "Warrior, Mystic, Necromancer, Monk and Templar lines"],
+								["Power works for", "Mystic, Necromancer, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -21617,11 +21742,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 180 to 410 drops it too: about 1 in 65 legendary kills at a level 200 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 180 to 410 that is legendary or stronger, not only the listed ones. At a level 200 monster that is about 1 in 65 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21672,6 +21801,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "30"],
+								["Power works for", "Thief, Monk"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -21686,11 +21816,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters. Any other monster of level 27 to 70 drops it too: about 1 in 3350 magic kills at a level 30 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Barbarian Headsplitter, Gladiator, Valkyrie, Stalker, Assassin, Ghoul, Pirate Skeleton, Scar Tribe Shaman, Dark Apprentice, Gazer, Tortoise, Firestarter."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 27 to 70 that is magic or stronger, not only the listed ones. At a level 30 monster that is about 1 in 3350 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21741,6 +21875,7 @@
 							"rows": [
 								["Slot", "Wand / rod"],
 								["Required level", "10"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -21755,11 +21890,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 9 to 30 drops it too: about 1 in 4000 magic kills at a level 10 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 9 to 30 that is magic or stronger, not only the listed ones. At a level 10 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21810,7 +21949,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Axe"], ["Required level", "130"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Axe"],
+								["Required level", "130"],
+								["Power works for", "Warrior, Templar"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -21882,6 +22026,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "80"],
+								["Power works for", "Warrior, Thief, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -21896,11 +22041,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 72 to 170 drops it too: about 1 in 830 rare kills at a level 80 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 72 to 170 that is rare or stronger, not only the listed ones. At a level 80 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -21966,7 +22115,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Ring"], ["Required level", "1000"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Ring"],
+								["Required level", "1000"],
+								["Power works for", "Warrior, Mystic, Templar"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -22027,6 +22181,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "80"],
+								["Power works for", "Warrior, Ranger, Thief, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -22041,11 +22196,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 72 to 170 drops it too: about 1 in 830 rare kills at a level 80 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 72 to 170 that is rare or stronger, not only the listed ones. At a level 80 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -22094,7 +22253,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Helmet"], ["Required level", "400"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Helmet"],
+								["Required level", "400"],
+								["Power works for", "Mystic, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -22157,7 +22321,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Legs"], ["Required level", "400"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Legs"],
+								["Required level", "400"],
+								["Power works for", "Mystic, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -22223,6 +22392,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "400"],
+								["Power works for", "Mystic, Necromancer, Templar"],
 								["Drops from", "Boss (bosses only)"]
 							]
 						},
@@ -22287,7 +22457,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Boots"], ["Required level", "400"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Boots"],
+								["Required level", "400"],
+								["Power works for", "Warrior, Monk, Templar"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -22350,7 +22525,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Ring"], ["Required level", "400"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Ring"],
+								["Required level", "400"],
+								["Power works for", "Templar"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -22413,7 +22593,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "weapon"], ["Required level", "400"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "weapon"],
+								["Required level", "400"],
+								["Power works for", "Warrior"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -22480,6 +22665,7 @@
 								["Slot", "Shield"],
 								["Required level", "1650"],
 								["Worn by", "Mystic and Necromancer lines"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -22550,6 +22736,7 @@
 								["Slot", "Helmet"],
 								["Required level", "470"],
 								["Worn by", "Mystic and Necromancer lines"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -22564,11 +22751,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 2,500 legendary kills, ~1 in 1,650 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 2,500 legendary kills, ~1 in 1,650 boss kills of the listed monsters. Any other monster of level 423 to 950 drops it too: about 1 in 790 rare kills at a level 470 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Umbral Arcanist, Bloodspark Adept, Mirethorn Hexer, Waterglow Conjurer, Mystic Baguemage, Spellreaper Pyrarch, Sineater Pyrarch, Hexwhisker Cat, Barrow Haunt, Thornhex Crone."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 423 to 950 that is rare or stronger, not only the listed ones. At a level 470 monster that is about 1 in 790 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -22619,6 +22810,7 @@
 							"rows": [
 								["Slot", "Helmet"],
 								["Required level", "100"],
+								["Power works for", "Warrior, Mystic, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -22633,11 +22825,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 155 legendary kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Hand of Cursed Fate."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is legendary or stronger, not only the listed ones. At a level 100 monster that is about 1 in 155 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -22688,6 +22884,7 @@
 							"rows": [
 								["Slot", "Helmet"],
 								["Required level", "1550"],
+								["Power works for", "Warrior, Mystic, Necromancer, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -22758,6 +22955,7 @@
 								["Slot", "Legs"],
 								["Required level", "840"],
 								["Worn by", "Mystic lines"],
+								["Power works for", "Mystic"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -22830,6 +23028,7 @@
 							"rows": [
 								["Slot", "Sword"],
 								["Required level", "10"],
+								["Power works for", "Thief, Monk"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -22844,11 +23043,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 9 to 30 drops it too: about 1 in 4000 magic kills at a level 10 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 9 to 30 that is magic or stronger, not only the listed ones. At a level 10 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -22900,6 +23103,7 @@
 								["Slot", "Amulet"],
 								["Required level", "820"],
 								["Worn by", "Thief lines"],
+								["Power works for", "Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -22981,6 +23185,7 @@
 							"rows": [
 								["Slot", "Fist weapon"],
 								["Required level", "2000"],
+								["Power works for", "Monk"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -23062,6 +23267,7 @@
 								["Slot", "Helmet"],
 								["Required level", "1400"],
 								["Worn by", "Mystic and Necromancer lines"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -23131,6 +23337,7 @@
 							"rows": [
 								["Slot", "Distance weapon"],
 								["Required level", "110"],
+								["Power works for", "Ranger"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -23145,11 +23352,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters. Any other monster of level 99 to 230 drops it too: about 1 in 130 legendary kills at a level 110 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 99 to 230 that is legendary or stronger, not only the listed ones. At a level 110 monster that is about 1 in 130 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -23201,6 +23412,7 @@
 								["Slot", "Legs"],
 								["Required level", "480"],
 								["Worn by", "Thief lines"],
+								["Power works for", "Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -23215,11 +23427,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 2,500 legendary kills, ~1 in 1,650 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 2,500 legendary kills, ~1 in 1,650 boss kills of the listed monsters. Any other monster of level 432 to 970 drops it too: about 1 in 790 rare kills at a level 480 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Babayaga, Brinebrute Pyrarch, Duskhorn Drake, Pyroquill, Blazefang, Gorgulith, Armorcoil, Hexwhisker Cat, Toxic Mauler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 432 to 970 that is rare or stronger, not only the listed ones. At a level 480 monster that is about 1 in 790 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -23267,7 +23483,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Legs"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Legs"],
+								["Required level", "300"],
+								["Power works for", "Ranger, Thief, Monk"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -23330,7 +23551,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Helmet"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Helmet"],
+								["Required level", "300"],
+								["Power works for", "Thief, Monk"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -23393,7 +23619,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "weapon"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "weapon"],
+								["Required level", "300"],
+								["Power works for", "Thief"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -23459,6 +23690,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "300"],
+								["Power works for", "Thief, Monk"],
 								["Drops from", "Boss (bosses only)"]
 							]
 						},
@@ -23526,7 +23758,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "weapon"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "weapon"],
+								["Required level", "300"],
+								["Power works for", "Thief"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -23589,7 +23826,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Boots"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Boots"],
+								["Required level", "300"],
+								["Power works for", "Thief"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -23663,6 +23905,7 @@
 							"rows": [
 								["Slot", "Wand / rod"],
 								["Required level", "140"],
+								["Power works for", "Mystic, Monk, Templar"],
 								["Drops from", "Boss (bosses only)"]
 							]
 						},
@@ -23734,6 +23977,7 @@
 								["Slot", "Boots"],
 								["Required level", "430"],
 								["Worn by", "Thief lines"],
+								["Power works for", "Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -23748,11 +23992,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 1,250 legendary kills, ~1 in 830 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 1,250 legendary kills, ~1 in 830 boss kills of the listed monsters. Any other monster of level 387 to 870 drops it too: about 1 in 390 rare kills at a level 430 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Gallows Fledgling, Armored Giant, Velomire, Fire Man, Demibeast, Helm Hunter, Bloodfang Reaver, Saltkin Raider, Many Faces, Hazardous Phantom."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 387 to 870 that is rare or stronger, not only the listed ones. At a level 430 monster that is about 1 in 390 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -23803,6 +24051,7 @@
 							"rows": [
 								["Slot", "Shield"],
 								["Required level", "120"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -23817,11 +24066,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 108 to 250 drops it too: about 1 in 360 rare kills at a level 120 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 108 to 250 that is rare or stronger, not only the listed ones. At a level 120 monster that is about 1 in 360 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -23873,6 +24126,7 @@
 								["Slot", "Shield"],
 								["Required level", "900"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -23955,6 +24209,7 @@
 								["Slot", "Axe"],
 								["Required level", "1950"],
 								["Worn by", "Warrior and Templar lines"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -24027,6 +24282,7 @@
 							"rows": [
 								["Slot", "Legs"],
 								["Required level", "80"],
+								["Power works for", "Mystic, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -24041,11 +24297,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 72 to 170 drops it too: about 1 in 830 rare kills at a level 80 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 72 to 170 that is rare or stronger, not only the listed ones. At a level 80 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -24097,6 +24357,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "600"],
+								["Power works for", "Mystic, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -24111,11 +24372,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 210 legendary kills, ~1 in 140 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 210 legendary kills, ~1 in 140 boss kills of the listed monsters. Any other monster of level 540 to 1210 drops it too: about 1 in 110 rare kills at a level 600 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Bonelich, Tombwraith, Cinderclaw, Scaledrake, Grave Sentinel, Frost Behemoth, Archon, Bonecleaver, Sapphire Warrior, Seraphiel, Blackblade, Wraith Archer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 540 to 1210 that is rare or stronger, not only the listed ones. At a level 600 monster that is about 1 in 110 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -24166,6 +24431,7 @@
 							"rows": [
 								["Slot", "Shield"],
 								["Required level", "90"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -24180,11 +24446,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 81 to 190 drops it too: about 1 in 670 rare kills at a level 90 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 81 to 190 that is rare or stronger, not only the listed ones. At a level 90 monster that is about 1 in 670 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -24236,6 +24506,7 @@
 							"rows": [
 								["Slot", "Axe"],
 								["Required level", "80"],
+								["Power works for", "Warrior, Monk"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -24250,11 +24521,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 72 to 170 drops it too: about 1 in 830 rare kills at a level 80 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 72 to 170 that is rare or stronger, not only the listed ones. At a level 80 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -24314,7 +24589,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Amulet"], ["Required level", "1000"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Amulet"],
+								["Required level", "1000"],
+								["Power works for", "Mystic, Thief, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -24369,7 +24649,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Amulet"], ["Required level", "120"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Amulet"],
+								["Required level", "120"],
+								["Power works for", "Mystic, Templar"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -24448,6 +24733,7 @@
 							"rows": [
 								["Slot", "Distance weapon"],
 								["Required level", "12"],
+								["Power works for", "Ranger"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -24462,11 +24748,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 11 to 34 drops it too: about 1 in 4000 magic kills at a level 12 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 11 to 34 that is magic or stronger, not only the listed ones. At a level 12 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -24518,6 +24808,7 @@
 								["Slot", "Shield"],
 								["Required level", "6"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -24532,11 +24823,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters. Any other monster of level 6 to 22 drops it too: about 1 in 3350 magic kills at a level 6 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Wolf, Troll, Goblin, Orc, Bear, Skeleton, Elf, Dwarf, Bandit, Orc Spearman, Goblin Scavenger, Winter Wolf."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 6 to 22 that is magic or stronger, not only the listed ones. At a level 6 monster that is about 1 in 3350 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -24588,6 +24883,7 @@
 								["Slot", "Amulet"],
 								["Required level", "150"],
 								["Worn by", "Ranger and Thief lines"],
+								["Power works for", "Ranger, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -24602,11 +24898,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 135 to 310 drops it too: about 1 in 300 rare kills at a level 150 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 135 to 310 that is rare or stronger, not only the listed ones. At a level 150 monster that is about 1 in 300 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -24654,7 +24954,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "weapon"], ["Required level", "600"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "weapon"],
+								["Required level", "600"],
+								["Power works for", "Ranger"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -24720,6 +25025,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "600"],
+								["Power works for", "Ranger"],
 								["Drops from", "Boss (bosses only)"]
 							]
 						},
@@ -24784,7 +25090,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Helmet"], ["Required level", "600"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Helmet"],
+								["Required level", "600"],
+								["Power works for", "Ranger, Thief"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -24847,7 +25158,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Legs"], ["Required level", "600"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Legs"],
+								["Required level", "600"],
+								["Power works for", "Ranger, Mystic"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -24913,6 +25229,7 @@
 							"rows": [
 								["Slot", "Distance weapon"],
 								["Required level", "60"],
+								["Power works for", "Ranger"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -24927,11 +25244,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters. Any other monster of level 54 to 130 drops it too: about 1 in 3850 magic kills at a level 60 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 54 to 130 that is magic or stronger, not only the listed ones. At a level 60 monster that is about 1 in 3850 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -24982,6 +25303,7 @@
 							"rows": [
 								["Slot", "Sword"],
 								["Required level", "70"],
+								["Power works for", "Warrior, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -24996,11 +25318,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 63 to 150 drops it too: about 1 in 1050 rare kills at a level 70 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 63 to 150 that is rare or stronger, not only the listed ones. At a level 70 monster that is about 1 in 1050 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -25051,6 +25377,7 @@
 							"rows": [
 								["Slot", "Club"],
 								["Required level", "100"],
+								["Power works for", "Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -25065,11 +25392,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 500 rare kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is rare or stronger, not only the listed ones. At a level 100 monster that is about 1 in 500 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -25120,6 +25451,7 @@
 							"rows": [
 								["Slot", "Fist weapon"],
 								["Required level", "650"],
+								["Power works for", "Monk"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -25134,11 +25466,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters. Any other monster of level 585 to 1310 drops it too: about 1 in 90 legendary kills at a level 650 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 585 to 1310 that is legendary or stronger, not only the listed ones. At a level 650 monster that is about 1 in 90 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -25190,6 +25526,7 @@
 								["Slot", "Body armour"],
 								["Required level", "860"],
 								["Worn by", "Necromancer lines"],
+								["Power works for", "Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -25272,6 +25609,7 @@
 								["Slot", "Distance weapon"],
 								["Required level", "1800"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -25352,6 +25690,7 @@
 								["Slot", "Sword"],
 								["Required level", "600"],
 								["Worn by", "Thief lines"],
+								["Power works for", "Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -25366,11 +25705,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters. Any other monster of level 540 to 1210 drops it too: about 1 in 220 rare kills at a level 600 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 540 to 1210 that is rare or stronger, not only the listed ones. At a level 600 monster that is about 1 in 220 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -25422,6 +25765,7 @@
 								["Slot", "Shield"],
 								["Required level", "38"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -25436,11 +25780,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters. Any other monster of level 35 to 86 drops it too: about 1 in 1500 magic kills at a level 38 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hunter, Cyclops, Gargoyle, Mummy, Orc Berserker, Dark Magician, Vampire, Ghost, Witch, Crypt Shambler, Fire Devil, Elf Arcanist."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 35 to 86 that is magic or stronger, not only the listed ones. At a level 38 monster that is about 1 in 1500 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -25502,6 +25850,7 @@
 							"rows": [
 								["Slot", "Fist weapon"],
 								["Required level", "1400"],
+								["Power works for", "Monk"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -25580,6 +25929,7 @@
 							"rows": [
 								["Slot", "Boots"],
 								["Required level", "1200"],
+								["Power works for", "Warrior, Ranger, Thief, Monk"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -25649,6 +25999,7 @@
 							"rows": [
 								["Slot", "Legs"],
 								["Required level", "1650"],
+								["Power works for", "Warrior, Thief, Monk"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -25726,6 +26077,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "35"],
+								["Power works for", "Warrior, Monk, Templar"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -25740,11 +26092,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 32 to 80 drops it too: about 1 in 2300 magic kills at a level 35 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 32 to 80 that is magic or stronger, not only the listed ones. At a level 35 monster that is about 1 in 2300 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -25798,6 +26154,7 @@
 							"rows": [
 								["Slot", "Axe"],
 								["Required level", "100"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -25812,11 +26169,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 155 legendary kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is legendary or stronger, not only the listed ones. At a level 100 monster that is about 1 in 155 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -25870,6 +26231,7 @@
 							"rows": [
 								["Slot", "Axe"],
 								["Required level", "15"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -25884,11 +26246,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 14 to 40 drops it too: about 1 in 4000 magic kills at a level 15 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 14 to 40 that is magic or stronger, not only the listed ones. At a level 15 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -25939,6 +26305,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "80"],
+								["Power works for", "Warrior, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -25953,11 +26320,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 72 to 170 drops it too: about 1 in 830 rare kills at a level 80 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 72 to 170 that is rare or stronger, not only the listed ones. At a level 80 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -26008,6 +26379,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "90"],
+								["Power works for", "Warrior, Necromancer, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -26022,11 +26394,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 81 to 190 drops it too: about 1 in 670 rare kills at a level 90 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 81 to 190 that is rare or stronger, not only the listed ones. At a level 90 monster that is about 1 in 670 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -26077,6 +26453,7 @@
 							"rows": [
 								["Slot", "Distance weapon"],
 								["Required level", "50"],
+								["Power works for", "Ranger, Thief"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -26091,11 +26468,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters. Any other monster of level 45 to 110 drops it too: about 1 in 3700 magic kills at a level 50 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Massive Fire Elemental, Dragon Lord, Blazebringer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 45 to 110 that is magic or stronger, not only the listed ones. At a level 50 monster that is about 1 in 3700 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -26146,6 +26527,7 @@
 							"rows": [
 								["Slot", "Distance weapon"],
 								["Required level", "100"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -26160,11 +26542,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 500 rare kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Massive Fire Elemental, Dragon Lord, Blazebringer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is rare or stronger, not only the listed ones. At a level 100 monster that is about 1 in 500 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -26217,6 +26603,7 @@
 								["Slot", "Body armour"],
 								["Required level", "780"],
 								["Worn by", "Thief lines"],
+								["Power works for", "Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -26298,6 +26685,7 @@
 								["Slot", "Distance weapon"],
 								["Required level", "40"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -26312,11 +26700,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 36 to 90 drops it too: about 1 in 1600 magic kills at a level 40 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 36 to 90 that is magic or stronger, not only the listed ones. At a level 40 monster that is about 1 in 1600 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -26377,7 +26769,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Helmet"], ["Required level", "1000"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Helmet"],
+								["Required level", "1000"],
+								["Power works for", "Mystic, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -26444,6 +26841,7 @@
 								["Slot", "Shield"],
 								["Required level", "1900"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -26525,6 +26923,7 @@
 								["Slot", "Sword"],
 								["Required level", "1550"],
 								["Worn by", "Warrior and Templar lines"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -26595,6 +26994,7 @@
 								["Slot", "Shield"],
 								["Required level", "14"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -26609,11 +27009,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters. Any other monster of level 13 to 38 drops it too: about 1 in 3350 magic kills at a level 14 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Orc Warrior, Minotaur, Minotaur Archer, Elf Scout, Amazon, Poacher, Hunter, Wild Warrior, Gang Member, Dwarf Soldier, Troll Champion, War Wolf."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 13 to 38 that is magic or stronger, not only the listed ones. At a level 14 monster that is about 1 in 3350 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -26665,6 +27069,7 @@
 								["Slot", "Helmet"],
 								["Required level", "250"],
 								["Worn by", "Mystic, Necromancer, Monk and Templar lines"],
+								["Power works for", "Mystic, Monk, Necromancer, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -26679,11 +27084,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 225 to 510 drops it too: about 1 in 40 legendary kills at a level 250 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 225 to 510 that is legendary or stronger, not only the listed ones. At a level 250 monster that is about 1 in 40 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -26731,7 +27140,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Ring"], ["Required level", "250"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Ring"],
+								["Required level", "250"],
+								["Power works for", "Ranger, Mystic, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -26794,7 +27208,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Amulet"], ["Required level", "250"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Amulet"],
+								["Required level", "250"],
+								["Power works for", "Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -26860,6 +27279,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "250"],
+								["Power works for", "Warrior, Ranger, Necromancer"],
 								["Drops from", "Boss (bosses only)"]
 							]
 						},
@@ -26924,7 +27344,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Helmet"], ["Required level", "250"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Helmet"],
+								["Required level", "250"],
+								["Power works for", "Ranger, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -26990,6 +27415,7 @@
 							"rows": [
 								["Slot", "Helmet"],
 								["Required level", "20"],
+								["Power works for", "Mystic, Necromancer, Templar"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -27004,11 +27430,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 18 to 50 drops it too: about 1 in 4000 magic kills at a level 20 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 18 to 50 that is magic or stronger, not only the listed ones. At a level 20 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -27059,6 +27489,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "60"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -27073,11 +27504,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters. Any other monster of level 54 to 130 drops it too: about 1 in 2550 magic kills at a level 60 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 54 to 130 that is magic or stronger, not only the listed ones. At a level 60 monster that is about 1 in 2550 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -27128,6 +27563,7 @@
 							"rows": [
 								["Slot", "Helmet"],
 								["Required level", "70"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -27142,11 +27578,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 63 to 150 drops it too: about 1 in 1050 rare kills at a level 70 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 63 to 150 that is rare or stronger, not only the listed ones. At a level 70 monster that is about 1 in 1050 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -27198,6 +27638,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "400"],
+								["Power works for", "Warrior, Thief, Monk"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -27212,11 +27653,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 360 to 810 drops it too: about 1 in 55 legendary kills at a level 400 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 360 to 810 that is legendary or stronger, not only the listed ones. At a level 400 monster that is about 1 in 55 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -27267,6 +27712,7 @@
 							"rows": [
 								["Slot", "Shield"],
 								["Required level", "25"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -27281,11 +27727,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 23 to 60 drops it too: about 1 in 4000 magic kills at a level 25 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 23 to 60 that is magic or stronger, not only the listed ones. At a level 25 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -27337,6 +27787,7 @@
 								["Slot", "Shield"],
 								["Required level", "720"],
 								["Worn by", "Mystic and Necromancer lines"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -27417,6 +27868,7 @@
 							"rows": [
 								["Slot", "Legs"],
 								["Required level", "1700"],
+								["Power works for", "Every class"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -27489,6 +27941,7 @@
 							"rows": [
 								["Slot", "Club"],
 								["Required level", "70"],
+								["Power works for", "Necromancer"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -27503,11 +27956,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters. Any other monster of level 63 to 150 drops it too: about 1 in 2650 magic kills at a level 70 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 63 to 150 that is magic or stronger, not only the listed ones. At a level 70 monster that is about 1 in 2650 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -27559,6 +28016,7 @@
 								["Slot", "Shield"],
 								["Required level", "880"],
 								["Worn by", "Necromancer lines"],
+								["Power works for", "Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -27640,6 +28098,7 @@
 								["Slot", "Club"],
 								["Required level", "1800"],
 								["Worn by", "Warrior, Thief, Monk and Templar lines"],
+								["Power works for", "Warrior, Thief, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -27709,6 +28168,7 @@
 							"rows": [
 								["Slot", "Boots"],
 								["Required level", "70"],
+								["Power works for", "Warrior, Thief, Monk"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -27723,11 +28183,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 63 to 150 drops it too: about 1 in 1050 rare kills at a level 70 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 63 to 150 that is rare or stronger, not only the listed ones. At a level 70 monster that is about 1 in 1050 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -27781,6 +28245,7 @@
 							"rows": [
 								["Slot", "Club"],
 								["Required level", "110"],
+								["Power works for", "Monk, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -27795,11 +28260,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters. Any other monster of level 99 to 230 drops it too: about 1 in 130 legendary kills at a level 110 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 99 to 230 that is legendary or stronger, not only the listed ones. At a level 110 monster that is about 1 in 130 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -27847,7 +28316,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Ring"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Ring"],
+								["Required level", "300"],
+								["Power works for", "Ranger, Mystic"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -27910,7 +28384,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Helmet"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Helmet"],
+								["Required level", "300"],
+								["Power works for", "Mystic, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -27973,7 +28452,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Shield"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Shield"],
+								["Required level", "300"],
+								["Power works for", "Mystic, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -28039,6 +28523,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "300"],
+								["Power works for", "Mystic, Necromancer, Templar"],
 								["Drops from", "Boss (bosses only)"]
 							]
 						},
@@ -28103,7 +28588,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Legs"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Legs"],
+								["Required level", "300"],
+								["Power works for", "Ranger, Mystic"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -28166,7 +28656,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Boots"], ["Required level", "300"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Boots"],
+								["Required level", "300"],
+								["Power works for", "Mystic, Necromancer, Templar"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -28244,6 +28739,7 @@
 								["Slot", "Sword"],
 								["Required level", "1900"],
 								["Worn by", "Thief lines"],
+								["Power works for", "Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -28326,6 +28822,7 @@
 								["Slot", "Distance weapon"],
 								["Required level", "900"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -28405,6 +28902,7 @@
 							"rows": [
 								["Slot", "Sword"],
 								["Required level", "28"],
+								["Power works for", "Thief"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -28419,11 +28917,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 26 to 66 drops it too: about 1 in 4000 magic kills at a level 28 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 26 to 66 that is magic or stronger, not only the listed ones. At a level 28 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -28474,6 +28976,7 @@
 							"rows": [
 								["Slot", "Helmet"],
 								["Required level", "100"],
+								["Power works for", "Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -28488,11 +28991,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 500 rare kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is rare or stronger, not only the listed ones. At a level 100 monster that is about 1 in 500 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -28544,6 +29051,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "110"],
+								["Power works for", "Necromancer"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -28558,11 +29066,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 99 to 230 drops it too: about 1 in 150 legendary kills at a level 110 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 99 to 230 that is legendary or stronger, not only the listed ones. At a level 110 monster that is about 1 in 150 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -28616,6 +29128,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "30"],
+								["Power works for", "Mystic, Monk, Templar"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -28630,11 +29143,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 27 to 70 drops it too: about 1 in 4000 magic kills at a level 30 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 27 to 70 that is magic or stronger, not only the listed ones. At a level 30 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -28697,6 +29214,7 @@
 								["Slot", "Sword"],
 								["Required level", "1250"],
 								["Worn by", "Thief lines"],
+								["Power works for", "Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -28766,6 +29284,7 @@
 							"rows": [
 								["Slot", "Sword"],
 								["Required level", "60"],
+								["Power works for", "Thief"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -28780,11 +29299,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters. Any other monster of level 54 to 130 drops it too: about 1 in 3850 magic kills at a level 60 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 54 to 130 that is magic or stronger, not only the listed ones. At a level 60 monster that is about 1 in 3850 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -28836,6 +29359,7 @@
 								["Slot", "Shield"],
 								["Required level", "1200"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -28905,6 +29429,7 @@
 							"rows": [
 								["Slot", "Legs"],
 								["Required level", "90"],
+								["Power works for", "Ranger, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -28919,11 +29444,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 81 to 190 drops it too: about 1 in 670 rare kills at a level 90 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 81 to 190 that is rare or stronger, not only the listed ones. At a level 90 monster that is about 1 in 670 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -28975,6 +29504,7 @@
 								["Slot", "Shield"],
 								["Required level", "180"],
 								["Worn by", "Warrior, Mystic, Necromancer, Monk and Templar lines"],
+								["Power works for", "Warrior, Mystic, Monk, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -28989,11 +29519,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 162 to 370 drops it too: about 1 in 90 legendary kills at a level 180 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 162 to 370 that is legendary or stronger, not only the listed ones. At a level 180 monster that is about 1 in 90 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29047,6 +29581,7 @@
 							"rows": [
 								["Slot", "Shield"],
 								["Required level", "110"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -29061,11 +29596,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 310 legendary kills, ~1 in 210 boss kills of the listed monsters. Any other monster of level 99 to 230 drops it too: about 1 in 130 legendary kills at a level 110 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Juggernaut, Behemoth, Minotaur, Orc Warlord, Dragon Lord, Hand of Cursed Fate."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 99 to 230 that is legendary or stronger, not only the listed ones. At a level 110 monster that is about 1 in 130 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29117,6 +29656,7 @@
 								["Slot", "Amulet"],
 								["Required level", "520"],
 								["Worn by", "Necromancer lines"],
+								["Power works for", "Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -29131,11 +29671,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 2,500 legendary kills, ~1 in 1,650 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 2,500 legendary kills, ~1 in 1,650 boss kills of the listed monsters. Any other monster of level 468 to 1050 drops it too: about 1 in 810 rare kills at a level 520 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Bloodshade Reaper, Dybuk, Malvaroth, Lamenting Shade, Barrowbone Reaver, Barrow Haunt, Barrowbone Archer, Hodag, Lochtag, Oznik."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 468 to 1050 that is rare or stronger, not only the listed ones. At a level 520 monster that is about 1 in 810 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29186,6 +29730,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "60"],
+								["Power works for", "Ranger, Thief, Monk"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -29200,11 +29745,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters. Any other monster of level 54 to 130 drops it too: about 1 in 3850 magic kills at a level 60 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 54 to 130 that is magic or stronger, not only the listed ones. At a level 60 monster that is about 1 in 3850 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29255,6 +29804,7 @@
 							"rows": [
 								["Slot", "Boots"],
 								["Required level", "20"],
+								["Power works for", "Ranger, Thief, Monk"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -29269,11 +29819,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 18 to 50 drops it too: about 1 in 4000 magic kills at a level 20 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 18 to 50 that is magic or stronger, not only the listed ones. At a level 20 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29324,6 +29878,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "450"],
+								["Power works for", "Every class"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -29338,11 +29893,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 210 legendary kills, ~1 in 140 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 210 legendary kills, ~1 in 140 boss kills of the listed monsters. Any other monster of level 405 to 910 drops it too: about 1 in 65 rare kills at a level 450 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Alpha Demon, Hellflayer, Skullshade, Deathrattle, Guardian of Tales, Arcwarden of Tales, Ruby Archer, Butcher Ogre, Skullcrusher Demon, Demon of the Depths, Frost Larva, Azure Guard."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 405 to 910 that is rare or stronger, not only the listed ones. At a level 450 monster that is about 1 in 65 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29394,6 +29953,7 @@
 								["Slot", "Helmet"],
 								["Required level", "540"],
 								["Worn by", "Thief lines"],
+								["Power works for", "Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -29408,11 +29968,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 2,500 legendary kills, ~1 in 1,650 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 2,500 legendary kills, ~1 in 1,650 boss kills of the listed monsters. Any other monster of level 486 to 1090 drops it too: about 1 in 830 rare kills at a level 540 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Nightfang Widow, Shadowcrystal Widow, Hellmaw Brute, Hodag, Lochtag, Shadowvein Wrym, Mossfang Drake, Gloomstinger, Mirethorn Hexer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 486 to 1090 that is rare or stronger, not only the listed ones. At a level 540 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29464,6 +30028,7 @@
 								["Slot", "Shield"],
 								["Required level", "12"],
 								["Worn by", "Mystic and Necromancer lines"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -29478,11 +30043,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 85 legendary kills, ~1 in 55 boss kills of the listed monsters. Any other monster of level 11 to 34 drops it too: about 1 in 3350 magic kills at a level 12 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Goblin, Orc, Dwarf, Skeleton, Elf, Troll, Minotaur, Orc Spearman, Dark Apprentice, Crazed Dwarf, Larva, Swampling."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 11 to 34 that is magic or stronger, not only the listed ones. At a level 12 monster that is about 1 in 3350 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29533,6 +30102,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "1600"],
+								["Power works for", "Every class"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -29602,6 +30172,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "150"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -29616,11 +30187,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 135 to 310 drops it too: about 1 in 110 legendary kills at a level 150 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 135 to 310 that is legendary or stronger, not only the listed ones. At a level 150 monster that is about 1 in 110 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -29680,6 +30255,7 @@
 								["Slot", "Shield"],
 								["Required level", "2100"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -29750,6 +30326,7 @@
 								["Slot", "Shield"],
 								["Required level", "750"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -29823,6 +30400,7 @@
 								["Slot", "Shield"],
 								["Required level", "1600"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -29905,6 +30483,7 @@
 								["Slot", "Shield"],
 								["Required level", "1500"],
 								["Worn by", "Warrior and Templar lines"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -29974,6 +30553,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "220"],
+								["Power works for", "Mystic, Monk, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -29988,11 +30568,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 198 to 450 drops it too: about 1 in 55 legendary kills at a level 220 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 198 to 450 that is legendary or stronger, not only the listed ones. At a level 220 monster that is about 1 in 55 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30043,6 +30627,7 @@
 							"rows": [
 								["Slot", "Wand / rod"],
 								["Required level", "80"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -30057,11 +30642,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 72 to 170 drops it too: about 1 in 830 rare kills at a level 80 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 72 to 170 that is rare or stronger, not only the listed ones. At a level 80 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30113,6 +30702,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "70"],
+								["Power works for", "Every class"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -30127,11 +30717,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 63 to 150 drops it too: about 1 in 1050 rare kills at a level 70 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 63 to 150 that is rare or stronger, not only the listed ones. At a level 70 monster that is about 1 in 1050 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30182,6 +30776,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "150"],
+								["Power works for", "Ranger, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -30196,11 +30791,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 135 to 310 drops it too: about 1 in 300 rare kills at a level 150 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 135 to 310 that is rare or stronger, not only the listed ones. At a level 150 monster that is about 1 in 300 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30260,7 +30859,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Sword"], ["Required level", "1000"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Sword"],
+								["Required level", "1000"],
+								["Power works for", "Every class"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -30321,6 +30925,7 @@
 							"rows": [
 								["Slot", "Wand / rod"],
 								["Required level", "100"],
+								["Power works for", "Warrior"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -30335,11 +30940,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 500 rare kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is rare or stronger, not only the listed ones. At a level 100 monster that is about 1 in 500 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30390,6 +30999,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "90"],
+								["Power works for", "Ranger, Mystic, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -30404,11 +31014,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters. Any other monster of level 81 to 190 drops it too: about 1 in 830 rare kills at a level 90 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 81 to 190 that is rare or stronger, not only the listed ones. At a level 90 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30460,6 +31074,7 @@
 								["Slot", "Ring"],
 								["Required level", "760"],
 								["Worn by", "Necromancer lines"],
+								["Power works for", "Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -30530,6 +31145,7 @@
 								["Slot", "Shield"],
 								["Required level", "1400"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -30600,6 +31216,7 @@
 								["Slot", "Boots"],
 								["Required level", "120"],
 								["Worn by", "Ranger and Thief lines"],
+								["Power works for", "Ranger, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -30614,11 +31231,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 108 to 250 drops it too: about 1 in 360 rare kills at a level 120 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 108 to 250 that is rare or stronger, not only the listed ones. At a level 120 monster that is about 1 in 360 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30678,6 +31299,7 @@
 							"rows": [
 								["Slot", "Sword"],
 								["Required level", "120"],
+								["Power works for", "Warrior, Thief, Necromancer"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -30692,11 +31314,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 280 legendary kills, ~1 in 185 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 280 legendary kills, ~1 in 185 boss kills of the listed monsters. Any other monster of level 108 to 250 drops it too: about 1 in 100 legendary kills at a level 120 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 108 to 250 that is legendary or stronger, not only the listed ones. At a level 120 monster that is about 1 in 100 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30750,6 +31376,7 @@
 							"rows": [
 								["Slot", "Wand / rod"],
 								["Required level", "120"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -30764,11 +31391,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 108 to 250 drops it too: about 1 in 130 legendary kills at a level 120 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 108 to 250 that is legendary or stronger, not only the listed ones. At a level 120 monster that is about 1 in 130 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30819,6 +31450,7 @@
 							"rows": [
 								["Slot", "Shield"],
 								["Required level", "130"],
+								["Power works for", "Warrior, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -30833,11 +31465,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 117 to 270 drops it too: about 1 in 120 legendary kills at a level 130 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 117 to 270 that is legendary or stronger, not only the listed ones. At a level 130 monster that is about 1 in 120 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30888,6 +31524,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "400"],
+								["Power works for", "Ranger, Thief, Monk"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -30902,11 +31539,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 360 to 810 drops it too: about 1 in 55 legendary kills at a level 400 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 360 to 810 that is legendary or stronger, not only the listed ones. At a level 400 monster that is about 1 in 55 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -30958,6 +31599,7 @@
 								["Slot", "Body armour"],
 								["Required level", "300"],
 								["Worn by", "Mystic, Necromancer, Monk and Templar lines"],
+								["Power works for", "Mystic, Monk, Necromancer, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -30972,11 +31614,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 270 to 610 drops it too: about 1 in 25 legendary kills at a level 300 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 270 to 610 that is legendary or stronger, not only the listed ones. At a level 300 monster that is about 1 in 25 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31027,6 +31673,7 @@
 							"rows": [
 								["Slot", "Distance weapon"],
 								["Required level", "70"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31041,11 +31688,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 63 to 150 drops it too: about 1 in 1050 rare kills at a level 70 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 63 to 150 that is rare or stronger, not only the listed ones. At a level 70 monster that is about 1 in 1050 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31109,6 +31760,7 @@
 								["Slot", "Distance weapon"],
 								["Required level", "1600"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31181,6 +31833,7 @@
 							"rows": [
 								["Slot", "Club"],
 								["Required level", "15"],
+								["Power works for", "Monk, Templar"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -31195,11 +31848,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 14 to 40 drops it too: about 1 in 4000 magic kills at a level 15 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 14 to 40 that is magic or stronger, not only the listed ones. At a level 15 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31253,6 +31910,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "100"],
+								["Power works for", "Mystic, Monk, Necromancer"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -31267,11 +31925,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 180 legendary kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is legendary or stronger, not only the listed ones. At a level 100 monster that is about 1 in 180 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31322,6 +31984,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "150"],
+								["Power works for", "Warrior, Ranger, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31336,11 +31999,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 830 legendary kills, ~1 in 560 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 830 legendary kills, ~1 in 560 boss kills of the listed monsters. Any other monster of level 135 to 310 drops it too: about 1 in 510 rare kills at a level 150 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 135 to 310 that is rare or stronger, not only the listed ones. At a level 150 monster that is about 1 in 510 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31392,6 +32059,7 @@
 							"rows": [
 								["Slot", "weapon"],
 								["Required level", "150"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31406,11 +32074,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 830 legendary kills, ~1 in 560 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 830 legendary kills, ~1 in 560 boss kills of the listed monsters. Any other monster of level 135 to 310 drops it too: about 1 in 510 rare kills at a level 150 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 135 to 310 that is rare or stronger, not only the listed ones. At a level 150 monster that is about 1 in 510 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31462,6 +32134,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "150"],
+								["Power works for", "Warrior, Ranger, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31476,11 +32149,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 830 legendary kills, ~1 in 560 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 830 legendary kills, ~1 in 560 boss kills of the listed monsters. Any other monster of level 135 to 310 drops it too: about 1 in 510 rare kills at a level 150 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 135 to 310 that is rare or stronger, not only the listed ones. At a level 150 monster that is about 1 in 510 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31532,6 +32209,7 @@
 							"rows": [
 								["Slot", "Boots"],
 								["Required level", "150"],
+								["Power works for", "Ranger, Thief"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31546,11 +32224,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 830 legendary kills, ~1 in 560 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 830 legendary kills, ~1 in 560 boss kills of the listed monsters. Any other monster of level 135 to 310 drops it too: about 1 in 510 rare kills at a level 150 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian, Owlbear, Dire Bear."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 135 to 310 that is rare or stronger, not only the listed ones. At a level 150 monster that is about 1 in 510 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31603,6 +32285,7 @@
 								["Slot", "Body armour"],
 								["Required level", "740"],
 								["Worn by", "Mystic lines"],
+								["Power works for", "Mystic"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31672,6 +32355,7 @@
 							"rows": [
 								["Slot", "Shield"],
 								["Required level", "100"],
+								["Power works for", "Mystic, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31686,11 +32370,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 630 rare kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is rare or stronger, not only the listed ones. At a level 100 monster that is about 1 in 630 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31741,6 +32429,7 @@
 							"rows": [
 								["Slot", "Helmet"],
 								["Required level", "1800"],
+								["Power works for", "Mystic, Monk, Necromancer, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -31807,7 +32496,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Ring"], ["Required level", "120"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Ring"],
+								["Required level", "120"],
+								["Power works for", "Mystic, Thief, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -31876,6 +32570,7 @@
 							"rows": [
 								["Slot", "Amulet"],
 								["Required level", "180"],
+								["Power works for", "Every class"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -31890,11 +32585,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 162 to 370 drops it too: about 1 in 250 rare kills at a level 180 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 162 to 370 that is rare or stronger, not only the listed ones. At a level 180 monster that is about 1 in 250 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -31958,6 +32657,7 @@
 								["Slot", "Body armour"],
 								["Required level", "2000"],
 								["Worn by", "Mystic and Necromancer lines"],
+								["Power works for", "Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -32027,6 +32727,7 @@
 							"rows": [
 								["Slot", "Fist weapon"],
 								["Required level", "14"],
+								["Power works for", "Monk"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -32041,11 +32742,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 13 to 38 drops it too: about 1 in 4000 magic kills at a level 14 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 13 to 38 that is magic or stronger, not only the listed ones. At a level 14 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -32096,7 +32801,12 @@
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Slot", "Helmet"], ["Required level", "120"], ["Drops from", "Boss (bosses only)"]]
+							"rows": [
+								["Slot", "Helmet"],
+								["Required level", "120"],
+								["Power works for", "Mystic, Thief, Necromancer"],
+								["Drops from", "Boss (bosses only)"]
+							]
 						},
 						{
 							"h": "Sources",
@@ -32175,6 +32885,7 @@
 							"rows": [
 								["Slot", "Legs"],
 								["Required level", "130"],
+								["Power works for", "Mystic, Monk, Necromancer"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -32189,11 +32900,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 117 to 270 drops it too: about 1 in 120 legendary kills at a level 130 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 117 to 270 that is legendary or stronger, not only the listed ones. At a level 130 monster that is about 1 in 120 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -32244,6 +32959,7 @@
 							"rows": [
 								["Slot", "Boots"],
 								["Required level", "100"],
+								["Power works for", "Ranger, Thief, Monk"],
 								["Drops from", "Legendary monsters and stronger"]
 							]
 						},
@@ -32258,11 +32974,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 360 legendary kills, ~1 in 240 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 180 legendary kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Demon, Hellhound, Fire Devil, Hellfire Fighter, Diabolic Imp, Hellspawn, Defiler, Destroyer."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is legendary or stronger, not only the listed ones. At a level 100 monster that is about 1 in 180 legendary kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -32326,6 +33046,7 @@
 								["Slot", "Distance weapon"],
 								["Required level", "2100"],
 								["Worn by", "Ranger lines"],
+								["Power works for", "Ranger"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -32395,6 +33116,7 @@
 							"rows": [
 								["Slot", "Legs"],
 								["Required level", "18"],
+								["Power works for", "Warrior, Ranger, Thief"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -32409,11 +33131,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 100 legendary kills, ~1 in 65 boss kills of the listed monsters. Any other monster of level 17 to 46 drops it too: about 1 in 4000 magic kills at a level 18 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 17 to 46 that is magic or stronger, not only the listed ones. At a level 18 monster that is about 1 in 4000 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -32467,6 +33193,7 @@
 							"rows": [
 								["Slot", "Ring"],
 								["Required level", "90"],
+								["Power works for", "Thief, Monk, Necromancer"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -32481,11 +33208,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 630 legendary kills, ~1 in 420 boss kills of the listed monsters. Any other monster of level 81 to 190 drops it too: about 1 in 830 rare kills at a level 90 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 81 to 190 that is rare or stronger, not only the listed ones. At a level 90 monster that is about 1 in 830 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -32536,6 +33267,7 @@
 							"rows": [
 								["Slot", "Sword"],
 								["Required level", "40"],
+								["Power works for", "Warrior, Thief, Monk"],
 								["Drops from", "Magic monsters and stronger"]
 							]
 						},
@@ -32550,11 +33282,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 420 legendary kills, ~1 in 280 boss kills of the listed monsters. Any other monster of level 36 to 90 drops it too: about 1 in 6650 magic kills at a level 40 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Skeleton Warrior, Demon Skeleton, Lich, Undead Gladiator, Crypt Shambler."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 36 to 90 that is magic or stronger, not only the listed ones. At a level 40 monster that is about 1 in 6650 magic kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -32606,6 +33342,7 @@
 							"rows": [
 								["Slot", "Body armour"],
 								["Required level", "100"],
+								["Power works for", "Warrior, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},
@@ -32620,11 +33357,15 @@
 								],
 								[
 									"Expected effort",
-									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters (before item find; rift and Omen chests roll it too)."
+									"~1 in 500 legendary kills, ~1 in 330 boss kills of the listed monsters. Any other monster of level 90 to 210 drops it too: about 1 in 500 rare kills at a level 100 monster (before item find; rift and Omen chests roll it too)."
 								],
 								[
 									"Monsters",
 									"Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker."
+								],
+								[
+									"Level window",
+									"Also drops from any other monster of level 90 to 210 that is rare or stronger, not only the listed ones. At a level 100 monster that is about 1 in 500 rare kills (before item find); the chance changes with the monster's level."
 								],
 								[
 									"Rift chest",
@@ -32688,6 +33429,7 @@
 								["Slot", "Axe"],
 								["Required level", "1500"],
 								["Worn by", "Warrior, Thief, Monk and Templar lines"],
+								["Power works for", "Warrior, Thief, Monk, Templar"],
 								["Drops from", "Rare monsters and stronger"]
 							]
 						},

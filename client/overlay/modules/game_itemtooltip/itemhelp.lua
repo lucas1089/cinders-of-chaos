@@ -140,6 +140,9 @@ function H.lines(tip, tr)
 
   if tip.unique and tip.unique.set then
     add(tr('Set: wear more pieces of the set for extra bonuses.'))
+  elseif tip.unique and tip.codex then
+    -- what the power is and where to read it (O467)
+    add(tr('Unique: a named item with fixed stats and one power that changes how you play. Right-click it and choose Open in Codex to read what the power does.'))
   elseif tip.unique then
     add(tr('Unique: a named item with fixed modifiers, often with a power of its own.'))
   elseif type(tip.rarityName) == 'string' then

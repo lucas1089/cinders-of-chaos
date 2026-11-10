@@ -876,6 +876,19 @@ do
 	dofile("data/scripts/chaos/bestiary_core.lua")
 	ChaosPoi = {all = {{k = "hunt", n = "Hunting: Dragon (level 100-140)"}}}
 	ChaosLoot, ChaosLootConfig, ChaosGemsConfig, ChaosShopConfig, Crafting = nil, nil, nil, nil, nil
+	-- O467: a unique is a copy of a stock item, the engine knows its id by the stock name (chaos_items.xml: "stock content
+	-- finds these ids by their stock names"). 8209 is a stock "crimson sword" and the unique Soulreaper; 8210 a stock
+	-- "ember mace" and the leveling unique Cinder-Wick (level 20)
+	nameOf[8209], nameOf[8210] = "crimson sword", "ember mace"
+	nameOf[8211], nameOf[8212], nameOf[8213] = "plain axe", "boss axe", "deep helmet"
+	ChaosLoot = {uniqueList = function()
+		return {{id = 8209, name = "Soulreaper", minTier = "legendary", chance = 150, monsters = {"dragon"}, level = 120},
+			{id = 8210, name = "Cinder-Wick", minTier = "magic", chance = 100, level = 20, monsters = {"rat"}},
+			{id = 8211, name = "Anywhere Blade", minTier = "magic", chance = 100, level = 20},
+			{id = 8212, name = "Bossblade", minTier = "boss", chance = 100, level = 20, bossOnly = true, monsters = {"rat"}},
+			{id = 8213, name = "Deep Crown", minTier = "legendary", chance = 100, level = 900, minMonsterLevel = 900}}
+	end}
+	ChaosUniqueSpecs = {[8209] = {name = "Soulreaper"}, [8210] = {name = "Cinder-Wick"}}
 
 	local printed = {}
 	local realPrint = print
@@ -905,6 +918,30 @@ do
 		end
 	end
 	check(summary, "the build prints its numbers")
+
+	-- O467: a unique is found by its own name and by its stock name. Before the fix the record carried the stock name
+	-- only: a search for "soulreaper" found nothing, one for "crimson sword" found the unique under that name.
+	local soulHits = K.search(idx, "soulreaper")
+	check(soulHits.total == 1 and soulHits.rows[1].id == 8209, "a unique is found by its own name (found " .. soulHits.total .. ")")
+	check(K.search(idx, "crimson sword").total == 1, "and by its stock name")
+	check(K.search(idx, "cinder-wick").total == 1 and K.search(idx, "cinder wick").total == 1, "a name with a hyphen, with and without it")
+	eq(soulHits.rows[1] and soulHits.rows[1].name, "Soulreaper (crimson sword)", "the row names both")
+	eq(K.search(idx, "ember mace").rows[1].id, 8210, "the second unique by its stock name")
+	do
+		local drop = idx.items[8209].rows.drop
+		eq(drop[1].n, "Unique drop", "the unique drop row")
+		local win = idx.items[8210].rows.drop[1]
+		check(win.d:find("also any other monster of level 18-50", 1, true) ~= nil,
+			"a leveling unique names its level window rule: " .. tostring(win.d))
+		check(drop[1].d:find("also any other monster of level 108-250", 1, true) ~= nil,
+			"also the one with a monster list: " .. tostring(drop[1].d))
+		-- no window row where the rule does not apply: an entry with no monster list (it drops from any monster anyway), a
+		-- boss-only one and an endgame one (the other rule, O148)
+		for _, id in ipairs({8211, 8212, 8213}) do
+			check(idx.items[id].rows.drop[1].d:find("other monster of level", 1, true) == nil,
+				"no window row for " .. id .. ": " .. tostring(idx.items[id].rows.drop[1].d))
+		end
+	end
 
 	-- the opcode
 	local sent = {}

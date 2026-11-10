@@ -25,7 +25,9 @@ Gen.SOURCES = {
 	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua",
 	"data/scripts/chaos/defence_config.lua", "data/scripts/chaos/player_defence_config.lua",
 	"data/scripts/chaos/lore_data.lua", "data/scripts/chaos/chronicle_text.lua",
-	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua"
+	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua",
+	"data/scripts/chaos/unique_passives_config.lua", "data/scripts/chaos/unique_window_core.lua",
+	"data/scripts/chaos/unique_pace_config.lua", "data/scripts/chaos/retention_loot_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -294,6 +296,15 @@ function Gen.load()
 	D.pocket = dofile("data/scripts/chaos/pocketboss_config.lua") -- pocket bosses (pocketboss.lua): the Pocket bosses page
 	D.uniques = ChaosUniqueItems
 	D.specs = ChaosUniqueSpecs
+	-- O467: the unique powers (class lines, the limit of active powers), the level window of a leveling unique, its pace
+	-- and the first unique of a character: the Uniques tab and the Basics page "Uniques" read them
+	dofile("data/scripts/chaos/unique_passives_text.lua")
+	dofile("data/scripts/chaos/unique_passives_core.lua")
+	D.passives = dofile("data/scripts/chaos/unique_passives_config.lua")
+	dofile("data/scripts/chaos/unique_window_core.lua")
+	D.uniquePace = dofile("data/scripts/chaos/unique_pace_config.lua")
+	D.retention = dofile("data/scripts/chaos/retention_loot_config.lua")
+	dofile("data/scripts/chaos/goals_core.lua") -- ChaosGoalsCore.oneIn / int: "about 1 in 2,000"
 	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
 	D.worldBoss = Chaos and Chaos.worldBoss
 	-- the defence numbers (O464): the player's layer and the numbers a monster shares with it
@@ -328,6 +339,7 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- shared names
 -- ---------------------------------------------------------------------------------------------------------------
+Gen.UNIQUE_LEVEL_STEPS = 8 -- the Level filter of the Uniques tab (Gen.levelSteps)
 Gen.KINDS = {
 	{"weapon", "Weapons"}, {"shield", "Shields"}, {"helmet", "Helmets"}, {"armor", "Body armour"}, {"legs", "Legs"},
 	{"boots", "Boots"}, {"jewel", "Jewellery (amulets, rings)"}, {"other", "Other gear (gloves, belts...)"},
@@ -1276,6 +1288,79 @@ local function riftLootTiers(D)
 	return "tiers " .. table.concat(parts, ", ")
 end
 
+-- O467: the level window rule of a leveling unique (loot_config.lua unique.openLevel, unique_window_core.lua): the monster
+-- levels it also drops in besides its listed monsters, the weakest tier that rolls it and its chance there at its own level.
+-- nil for an entry the rule does not apply to (no window, or no monster list: it drops from any monster anyway). The wiki
+-- reads the same table (tools/gen_wiki_data.lua W.uniqueEffort).
+function Gen.uniqueWindow(D, u)
+	local lu = D.loot.unique
+	local W = ChaosUniqueWindow
+	if type(u.monsters) ~= "table" or #u.monsters == 0 then
+		return nil
+	end
+	local lo, hi = W.levels(lu.openLevel, u)
+	if not lo then
+		return nil
+	end
+	local tier
+	for _, t in ipairs(TIER_ORDER) do
+		if (lu.tierRank[t] or 0) >= (lu.tierRank[u.minTier] or 0) and (lu.tierMult[t] or 0) > 0 then
+			tier = t
+			break
+		end
+	end
+	if not tier then
+		return nil
+	end
+	local mult = W.curveAt(lu.openLevel.mult, u.level)
+	local p = math.min(lu.maxChance, (tonumber(u.chance) or 0) * lu.tierMult[tier] * mult) / 10000
+	return {lo = Chaos.huntingLevel(lo), hi = Chaos.huntingLevel(hi), level = Chaos.huntingLevel(u.level),
+		tier = TIER_NAME[tier]:lower(), n = ChaosGoalsCore.oneIn(p)}
+end
+
+-- the class lines a unique's power works for, in the order of the passive config ({"warrior", "thief"}), and every = all
+-- seven (unique_passives_core.lua; nil for a unique without a passive)
+function Gen.uniqueLines(D, id)
+	local e = ChaosUniquePassivesCore.entry(D.passives, id)
+	if not e then
+		return nil
+	end
+	local lines = {}
+	for _, key in ipairs(D.passives.lineOrder) do
+		if ChaosUniquePassivesCore.worksFor(D.passives, e, key) then
+			lines[#lines + 1] = key
+		end
+	end
+	return lines, #lines == #D.passives.lineOrder
+end
+
+-- the steps of the Level filter of the Uniques tab, derived from the levels the uniques really have: the level under
+-- which every 1/steps of the list lies, rounded up to a number a player reads at a glance (10s up to 100, 50s up to 400,
+-- 100s up to 1000, 200s above), the last step being the highest level itself
+function Gen.levelSteps(levels, steps)
+	local sorted = {}
+	for _, v in ipairs(levels) do
+		sorted[#sorted + 1] = v
+	end
+	table.sort(sorted)
+	local n = #sorted
+	if n == 0 then
+		return {}
+	end
+	local out, last = {}, 0
+	for i = 1, steps - 1 do
+		local v = sorted[math.max(1, math.ceil(n * i / steps))]
+		local unit = v <= 100 and 10 or v <= 400 and 50 or v <= 1000 and 100 or 200
+		v = math.ceil(v / unit) * unit
+		if v > last and v < sorted[n] then
+			out[#out + 1] = v
+			last = v
+		end
+	end
+	out[#out + 1] = sorted[n]
+	return out
+end
+
 function Gen.uniqueEntries(D)
 	local lu = D.loot.unique
 	local worldBosses = {}
@@ -1314,6 +1399,14 @@ function Gen.uniqueEntries(D)
 			u.bossOnly and "" or "", table.concat(chances, ", "))}
 		if #monsters > 0 then
 			sources[#sources + 1] = {u.bossOnly and "Bosses" or "Monsters", table.concat(monsters, ", ") .. "."}
+		end
+		-- a leveling unique also drops from other monsters near its level (O342, O467)
+		local win = Gen.uniqueWindow(D, u)
+		if win then
+			sources[#sources + 1] = {"Level window", string.format(
+				"Also drops from any other monster of level %d to %d that is %s or stronger, not only the listed ones. " ..
+				"At a level %d monster that is about 1 in %s %s kills (before item find); the chance changes with the monster's level.",
+				win.lo, win.hi, win.tier, win.level, Gen.num(win.n), win.tier)}
 		end
 		if #wbs > 0 then
 			local wb = D.worldBoss.reward
@@ -1358,6 +1451,15 @@ function Gen.uniqueEntries(D)
 			local text = #lines == 1 and lines[1] or (table.concat(lines, ", ", 1, #lines - 1) .. " and " .. lines[#lines])
 			itemRows[#itemRows + 1] = {"Worn by", text .. " lines"}
 		end
+		-- who the power works for (O467): the class lines of its passive, "Every class" when it lists all of them
+		local powerLines, powerAll = Gen.uniqueLines(D, u.id)
+		if powerLines then
+			local names = {}
+			for _, key in ipairs(powerLines) do
+				names[#names + 1] = ChaosUniquePassivesText.lineName[key][1]
+			end
+			itemRows[#itemRows + 1] = {"Power works for", powerAll and "Every class" or table.concat(names, ", ")}
+		end
 		itemRows[#itemRows + 1] = {"Drops from", TIER_NAME[u.minTier] .. (u.bossOnly and " (bosses only)" or " monsters and stronger")}
 		local p = {}
 		if spec then
@@ -1366,7 +1468,8 @@ function Gen.uniqueEntries(D)
 		out[#out + 1] = {id = "unique:" .. u.id, name = u.name, color = COLORS.unique,
 			sub = string.format("%s, level %d.%s", SLOT_NAME[u.slot] or u.slot, u.level,
 				#stats > 0 and (" " .. table.concat(stats, ", ")) or ""),
-			f = {kind = {kind}, level = u.level, source = u.bossOnly and "boss" or "monster", season = u.season and "season" or nil},
+			f = {kind = {kind}, level = u.level, source = u.bossOnly and "boss" or "monster", season = u.season and "season" or nil,
+				class = powerLines},
 			items = {u.id},
 			sections = {
 				{h = "Description", p = p},
@@ -1743,6 +1846,41 @@ function Gen.basicsEntries(D)
 			string.format("Orbs change items (Orbs tab); the crafting bench shows what each would do. Legendary powers roll only from %s.",
 				C.rarityName(M.config.powers.minRarity)),
 			"Uniques have fixed stats and are never changed by orbs."}}})
+	-- O467: what a unique is, what its power does and where it comes from. Every number is read from the configs.
+	local lu, up, ret = D.loot.unique, D.passives, D.retention.firstUnique
+	local tierNames = {}
+	for _, t in ipairs(TIER_ORDER) do
+		if (lu.tierMult[t] or 0) > 0 then
+			tierNames[#tierNames + 1] = TIER_NAME[t]:lower()
+		end
+	end
+	local open, pace = lu.openLevel, D.uniquePace.target
+	local where = {
+		string.format("Monsters: %s monsters can drop a unique, at most %d per kill.%s", sentenceList(tierNames), lu.maxPerKill,
+			(lu.tierMult.normal or 0) == 0 and " Normal monsters never do." or ""),
+		string.format("A leveling unique (level %d or lower, no minimum monster level) also drops from most monsters near its level: from %d%% of its level up to %s times its level plus %d. In a hunt of the right level that is about 1 unique in %d to %d kills (before item find).",
+			open.maxItemLevel, math.floor((1 - open.below) * 100 + 0.5), Gen.num(open.above), open.aboveFlat, pace.min, pace.max),
+		string.format("An endgame unique (it has a minimum monster level) drops from any monster of that level or higher, at %d%% of its chance.",
+			math.floor(lu.open.mult * 100 + 0.5)),
+		string.format("A character of level %d or lower finds a unique of its class at kill number %d, once per character.",
+			ret.maxLevel, ret.kills),
+		"Bosses, world bosses, rift and Omen chests, the raid, the Ember Descent and the Conquest vendor give uniques too. The page of a unique lists how it can be found."}
+	add("uniques", "Uniques", "What a unique is, what its power does and where it comes from.", {
+		{h = "What a unique is", p = {
+			"A unique is a named item with fixed stats. No orb changes it.",
+			"Every unique has one power of its own, the orange block under its text. It is not a stat: it changes how you play.",
+			"The power works only for the classes listed after \"For:\" in its text. A unique with no \"For:\" works for every class. A class line includes its ascended classes.",
+			"Every class its class row allows can wear the item. When your class is not on the power's list, the power sleeps and only the stats count.",
+			"The tooltip tells which it is: \"Works for your class.\" or \"Asleep: your class is not in its list.\""}},
+		{h = "How many powers work at once", p = {
+			string.format("At most %d unique powers work at once, and only one of each family. A family is a kind of effect: two uniques of the same kind do not add up.",
+				up.maxActive),
+			"When two worn uniques share a family, the stronger one wins (the one with the higher level) and the other sleeps.",
+			"The tooltip of a unique you wear says \"Active.\" or tells why its power sleeps."}},
+		{h = "Where uniques come from", p = where},
+		{h = "Reading one", p = {
+			"Hover over a unique to read it. Hold Ctrl to compare it with the item you wear in that slot. Hold Alt to read what each line means.",
+			"Right-click a unique and choose Open in Codex to open its page here, or Where to find to see where it drops."}}})
 	local rows = {}
 	for rank = 1, #C.config.rarityNames do
 		local r = ChaosRarity.idOfRank(rank)
@@ -2150,9 +2288,21 @@ function Gen.build(D)
 	local sideOpts = {{"", "Any side"}, {"prefix", "Prefixes"}, {"suffix", "Suffixes"}}
 	local groupOpts = {{"", "Any group"}, {"chaos", "Chaos"}, {"absorb", "Absorbs"}, {"skill", "Skills"},
 		{"single", "Critical hits"}, {"special", "Critical / leech"}, {"element", "Weapon elements"}}
+	-- the Level filter of the Uniques tab covers the whole range the uniques have (O467: it stopped at 150, the uniques
+	-- reach 2400); the steps come from the levels of the list
 	local uniqueLevels = {{"", "Any level"}}
-	for _, lv in ipairs({50, 70, 90, 110, 130, 150}) do
+	local uniqueList = Gen.uniqueEntries(D)
+	local levelsSeen = {}
+	for _, e in ipairs(uniqueList) do
+		levelsSeen[#levelsSeen + 1] = e.f.level
+	end
+	for _, lv in ipairs(Gen.levelSteps(levelsSeen, Gen.UNIQUE_LEVEL_STEPS)) do
 		uniqueLevels[#uniqueLevels + 1] = {Gen.num(lv), "Level " .. lv .. " or lower"}
+	end
+	-- the Class filter: the class lines a unique's power works for (a unique for every class is in each of them)
+	local uniqueClasses = {{"", "Any class"}}
+	for _, key in ipairs(D.passives.lineOrder) do
+		uniqueClasses[#uniqueClasses + 1] = {key, ChaosUniquePassivesText.lineName[key][1]}
 	end
 	local setLevels = {{"", "Any level"}}
 	for _, lv in ipairs({100, 200, 300, 400, 800}) do
@@ -2180,8 +2330,9 @@ function Gen.build(D)
 			{key = "group", label = "Group", match = "eq", options = {{"", "Everything"}, {"orb", "Crafting orbs"},
 				{"currency", "Currency"}, {"rift", "Rift and omen items"}}}}},
 		{id = "gems", name = "Gems", entries = Gen.gemEntries(D), filters = {}},
-		{id = "uniques", name = "Uniques", entries = Gen.uniqueEntries(D), filters = {
+		{id = "uniques", name = "Uniques", entries = uniqueList, filters = {
 			{key = "kind", label = "Kind", match = "has", options = kindOpts},
+			{key = "class", label = "Class", match = "has", options = options(uniqueClasses)},
 			{key = "level", label = "Level", match = "max", options = uniqueLevels},
 			{key = "source", label = "Source", match = "eq", options = {{"", "Any source"}, {"monster", "Monsters"},
 				{"boss", "Bosses only"}}}}},

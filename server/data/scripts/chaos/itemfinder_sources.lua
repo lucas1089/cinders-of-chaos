@@ -22,6 +22,9 @@
 --                 starter kits and level gifts, season pass and journey); S.rewards runs them all, each in a pcall,
 --                 and returns the errors. Audit: server/tests/itemfinder_test.lua (every item a config gives has a row)
 
+if not ChaosUniqueWindow then
+	dofile("data/scripts/chaos/unique_window_core.lua") -- the level window of a leveling unique (O467)
+end
 ChaosItemFinderSources = ChaosItemFinderSources or {}
 local S = ChaosItemFinderSources
 local K = ChaosItemFinderCore
@@ -210,6 +213,15 @@ function S.lootLayer(lootCfg, gems, uniques, emit, monsterName)
 			(u.bossOnly and "bosses only" or (from .. " and better")) ..
 			((tonumber(u.minMonsterLevel) or 0) > 0 and (", monster level " .. Chaos.huntingLevel(u.minMonsterLevel) .. "+") or "") ..
 			(u.season and ", season characters" or "")
+		-- O342, O467: a leveling unique that lists monsters also drops from any other monster near its level (loot.lua
+		-- L.openLevelMult; the window is unique_window_core.lua's). An entry without a monster list drops from any monster
+		-- already, a boss-only or endgame entry has no window.
+		if type(u.monsters) == "table" and #u.monsters > 0 then
+			local lo, hi = ChaosUniqueWindow.levels(lootCfg and lootCfg.unique and lootCfg.unique.openLevel, u)
+			if lo then
+				d = d .. "; also any other monster of level " .. Chaos.huntingLevel(lo) .. "-" .. Chaos.huntingLevel(hi)
+			end
+		end
 		-- p: the chance per kill of the weakest tier that rolls it (the expected effort of the tooltip, K.brief)
 		local tier = u.bossOnly and "boss" or "legendary"
 		local per = (tonumber(u.chance) or 0) * (tonumber(um[tier]) or tonumber(um.legendary) or 1)

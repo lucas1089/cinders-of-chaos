@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 67,
   "out": 38,
-  "passive": 103,
+  "passive": 105,
   "place": 15,
   "staff": 17
  },
@@ -13087,10 +13087,28 @@
    ],
    "why": "staff command only (/ascended); testers are never staff"
   },
+  "unique_intro": {
+   "files": [
+    "unique_intro.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "unique_passives": {
    "files": [
     "unique_passives.lua",
     "unique_passives_text.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "unique_window": {
+   "files": [
+    "loot.lua"
    ],
    "kind": "passive",
    "opcodes": [],

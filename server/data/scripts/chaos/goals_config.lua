@@ -55,6 +55,21 @@ end
 local MILESTONES = ChaosMilestonesCore.goals(dofile("data/scripts/chaos/milestones_config.lua"),
 	dofile("data/scripts/chaos/achievements_data.lua"))
 
+-- the pace of a leveling unique (unique_pace_config.lua `aim`: kills of a hunt at the right level per unique, O342) for the
+-- effort of "Find a unique item" (O467): 2000 -> "2,000" / "2.000"
+local UNIQUE_KILLS = dofile("data/scripts/chaos/unique_pace_config.lua").aim
+local function thousands(n, sep)
+	local s = tostring(math.floor(n + 0.5))
+	while true do
+		local out, k = s:gsub("^(-?%d+)(%d%d%d)", "%1" .. sep .. "%2")
+		s = out
+		if k == 0 then
+			break
+		end
+	end
+	return s
+end
+
 -- "Reach level n", unlocked at `from` (the band before n, or the milestone before n). A milestone level says its title
 -- and its cache.
 local function lvl(n, from)
@@ -452,8 +467,11 @@ C.goals = {
 	{key = "unique1", level = 200, stat = "unique_found", target = 1,
 		title = T("Find a unique item", "Encontre um item único"),
 		why = T("Uniques have fixed stats no orb can roll.", "Únicos têm atributos fixos que nenhum orbe consegue."),
-		where = win("game_codex"), effort = T("Luck: about 1 in several hundred legendary kills; or buy it with Conquest Tokens.",
-			"Sorte: cerca de 1 em várias centenas de abates lendários; ou compre com Conquest Tokens.")},
+		where = win("game_codex"),
+		effort = T("A hunt at your level drops about 1 unique in " .. thousands(UNIQUE_KILLS, ",") ..
+			" kills, from most monsters. Or buy one with Conquest Tokens.",
+			"Uma caçada no seu nível solta cerca de 1 único a cada " .. thousands(UNIQUE_KILLS, ".") ..
+			" abates, de quase todos os monstros. Ou compre um com Conquest Tokens.")},
 	{key = "tower10", level = 200, stat = "tower_floor", target = 10,
 		title = T("Clear 10 floors of the Infinity Tower", "Conclua 10 andares da Infinity Tower"),
 		why = T("Season ranks and milestone rewards.", "Ranking da temporada e recompensas por marcos."),

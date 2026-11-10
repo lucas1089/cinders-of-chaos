@@ -351,6 +351,17 @@ local function hookMenu()
     safe('menuCondition', function(_, lookThing, useThing)
       return L.menuThing(lookThing, useThing) ~= nil
     end))
+  -- a unique or set piece: its page in the Codex (O467). The page id is the server's tip.codex of the tooltip the player is
+  -- looking at (game_itemtooltip codexIdOf); the Codex loads on first use, so the entry lives here and not in game_codex
+  gi.addMenuHook('chaosCodex', tr('Open in Codex'),
+    safe('codexMenu', function(_, lookThing, useThing)
+      local id = L.codexPage(modules.game_itemtooltip, lookThing, useThing)
+      local m = id and codexModule()
+      if m then m.open(id) end
+    end),
+    safe('codexMenuCondition', function(_, lookThing, useThing)
+      return L.codexPage(modules.game_itemtooltip, lookThing, useThing) ~= nil
+    end))
   hooked = true
 end
 

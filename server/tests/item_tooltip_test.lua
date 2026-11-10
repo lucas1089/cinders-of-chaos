@@ -590,4 +590,13 @@ do
 	eq(T.splitPassive(en, {en}, ""), nil, "no name")
 end
 
+-- the Codex page of a unique or set piece (O467): the unique page when the Codex has one, else the set page
+do
+	eq(T.codexId(8209, {[8209] = {}}, nil), "unique:8209", "a unique with a page")
+	eq(T.codexId(8209, {[8209] = {}}, {key = "ember"}), "unique:8209", "a set piece with a unique page: the unique page")
+	eq(T.codexId(7384, {[8209] = {}}, {key = "ember"}), "set:ember", "a set piece without one: its set page")
+	eq(T.codexId(7384, {[8209] = {}}, nil), nil, "no page at all")
+	eq(T.codexId(7384, nil, {key = ""}), nil, "an empty set key is no page")
+end
+
 print(string.format("item_tooltip_test: %d checks OK", checks))

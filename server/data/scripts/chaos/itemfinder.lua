@@ -75,7 +75,15 @@ local function itemInfo(id)
 	if not it or it:getId() == 0 then
 		return nil
 	end
-	return it:getName(), it:getClientId()
+	local name = it:getName()
+	-- A unique is a copy of a stock item: the engine knows its id by the stock name ("crimson sword"), so a search for
+	-- the unique's own name found nothing (O467). The record is named by both ("Soulreaper (crimson sword)"): either
+	-- name finds it, the window shows both.
+	local spec = ChaosUniqueSpecs and ChaosUniqueSpecs[id]
+	if spec and type(spec.name) == "string" and spec.name ~= "" and name ~= "" then
+		name = spec.name .. " (" .. name .. ")"
+	end
+	return name, it:getClientId()
 end
 
 local function towns()

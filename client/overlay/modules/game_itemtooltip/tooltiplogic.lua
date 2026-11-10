@@ -220,6 +220,15 @@ function L.classText(voc)
   return voc
 end
 
+-- the Codex page id of a tip ('unique:8209' or 'set:key', the server's tip.codex), nil when the tip has none or an id of
+-- another shape (O467)
+function L.codexId(tip)
+  local id = type(tip) == 'table' and tip.codex or nil
+  if type(id) ~= 'string' then return nil end
+  if id:match('^unique:%d+$') or id:match('^set:[%w_%-]+$') then return id end
+  return nil
+end
+
 -- the kind line of a tooltip: 'Legendary Wand' / 'Unique Quiver' / 'Set Ring' (nil when nothing is known) and the slot
 -- line when the slot reads 'Where: What' (the server's quiver: 'Off-hand: Quiver'; the kind line names what, the slot
 -- line says where it is worn)

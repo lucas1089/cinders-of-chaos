@@ -2710,8 +2710,16 @@ function W.uniqueEffort(D, u)
 		return nil
 	end
 	local where = (u.monsters and #u.monsters > 0) and " of the listed monsters" or ""
-	return table.concat(parts, ", ") .. where .. (u.ascended and " (before item find)." or
-		" (before item find; rift and Omen chests roll it too).")
+	local tail = u.ascended and " (before item find)." or " (before item find; rift and Omen chests roll it too)."
+	-- O467: a leveling unique also drops from any other monster near its level (loot_config.lua unique.openLevel). The
+	-- effort used to count the listed monsters only: "~1 in 280 legendary kills of the listed monsters (before item find;
+	-- rift and Omen chests roll it too)." It now says the window too, from the same table as the Codex's Level window row.
+	local win = Gen.uniqueWindow(D, u)
+	if win then
+		return string.format("%s%s. Any other monster of level %d to %d drops it too: about 1 in %s %s kills at a level %d monster%s",
+			table.concat(parts, ", "), where, win.lo, win.hi, num(win.n), win.tier, win.level, tail)
+	end
+	return table.concat(parts, ", ") .. where .. tail
 end
 
 function W.addUniqueEffort(D, tab)

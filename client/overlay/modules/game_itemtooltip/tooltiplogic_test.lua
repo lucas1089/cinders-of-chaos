@@ -213,6 +213,13 @@ do
   eq(L.dropSetTips(cache), 1, 'only the tip with a power line is dropped')
   eq(L.cacheGet(cache, 'v', 0) ~= nil, true, 'a tip without one stays')
 end
+-- the Codex page of a tip (the server's tip.codex): a unique page or a set page, nothing else
+eq(L.codexId({ codex = 'unique:8209' }), 'unique:8209', 'a unique page id')
+eq(L.codexId({ codex = 'set:cinderstorm' }), 'set:cinderstorm', 'a set page id')
+eq(L.codexId({ codex = 'orb:ruin' }), nil, 'another page: refused')
+eq(L.codexId({ codex = 12 }), nil, 'not a string')
+eq(L.codexId({}), nil, 'no id')
+eq(L.codexId(nil), nil, 'no tip')
 -- the class row goes through the translation: the prefix and the words 'all classes' (the class names stay)
 do
   local saved = rawget(_G, 'tr')
