@@ -1,0 +1,194 @@
+kind,id,op,args,reason,review
+effect,1,trim,share=0.08;floor=4;of=9;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_2 1 A; fx_ranger_2 1 A
+effect,3,trim,share=0.08;floor=4;of=13;keep=1-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_1 3 C; fx_monk_1 3 C
+effect,4,trim,share=0.08;floor=4;of=13;keep=1-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_4 4 B; fx_necro_3 4 B
+effect,5,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,missiles_1 5 A; edge_1 5 B
+effect,7,trim,share=0.08;floor=4;of=11;keep=1-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,short_walk_2 7 B; dark_on_green_2 7 B
+effect,9,trim,share=0.08;floor=4;of=12;keep=0-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,10,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,flagged_6 10 B; fx_top30_shared_1 10 B
+effect,11,trim,share=0.08;floor=4;of=16;keep=3-14,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_4 11 B; missiles_1 11 A
+effect,12,trim,share=0.08;floor=4;of=10;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_3 12 A; fx_monk_2 12 A
+effect,13,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_1 13 B
+effect,14,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,15,trim,share=0.08;floor=4;of=17;keep=0-14,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_2 15 A; missiles_1 15 A
+effect,16,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_5 16 A
+effect,18,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_1 18 B; fx_monk_2 18 B
+effect,21,trim,share=0.08;floor=4;of=11;keep=1-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,flagged_1 21 C; fx_top30_shared_3 21 B
+effect,32,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_monk_3 32 B
+effect,35,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_3 35 A; fx_monk_1 35 A
+effect,37,trim,share=0.08;floor=4;of=12;keep=1-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_2 37 B; fx_monk_2 37 A
+effect,38,trim,share=0.08;floor=4;of=10;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_6 38 A; missiles_1 38 A
+effect,39,trim,share=0.08;floor=4;of=11;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_1 39 B; fx_necro_2 39 A
+effect,40,trim,share=0.08;floor=4;of=10;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_3 40 A; fx_monk_2 40 A
+effect,42,trim,share=0.08;floor=4;of=11;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,44,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_4 44 A; fx_monk_2 44 A
+effect,48,trim,share=0.08;floor=4;of=12;keep=0-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,short_walk_1 48 B; monsters_top_2 48 B
+effect,49,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_thief_2 49 B; short_walk_3 49 B
+effect,50,trim,share=0.08;floor=4;of=11;keep=1-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_ranger_3 50 A; edge_1 50 B
+effect,185,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_1 185 B
+effect,372,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_2 372 A; mounts_1 372 A
+effect,379,trim,share=0.08;floor=4;of=11;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_5 379 A; mounts_1 379 A
+effect,382,trim,share=0.08;floor=4;of=13;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_5 382 B
+effect,383,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_monk_4 383 B; ground_1 383 A
+effect,388,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,mounts_2 388 A; ground_1 388 A
+effect,389,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,mounts_2 389 A
+effect,390,trim,share=0.08;floor=4;of=9;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_ranger_1 390 B; mounts_2 390 A
+effect,391,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_3 391 B; fx_monk_4 391 B
+effect,392,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_1 392 B; fx_necro_3 392 B
+effect,393,trim,share=0.08;floor=4;of=9;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_2 393 B; fx_monk_3 393 C
+effect,394,trim,share=0.08;floor=4;of=11;keep=0-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_3 394 C
+effect,396,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_4 396 B
+effect,397,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_1 397 A; fx_necro_1 397 B
+effect,400,trim,share=0.08;floor=4;of=11;keep=0-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_thief_3 400 A; ground_1 400 A
+effect,401,trim,share=0.08;floor=4;of=11;keep=1-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_4 401 A; mounts_2 401 A
+effect,402,trim,share=0.08;floor=4;of=11;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_2 402 A; fx_necro_2 402 A
+effect,403,trim,share=0.08;floor=4;of=11;keep=1-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_2 403 A; fx_ranger_1 403 A
+effect,404,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_1 404 C
+effect,405,trim,share=0.08;floor=4;of=14;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_2 405 B; mounts_2 405 A
+effect,406,trim,share=0.08;floor=4;of=12;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,mounts_2 406 A
+effect,409,trim,share=0.08;floor=4;of=37;keep=0-36,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_1 409 B; fx_necro_2 409 C
+effect,412,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,flagged_6 412 C; fx_top30_shared_4 412 B
+effect,413,trim,share=0.08;floor=4;of=13;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_1 413 A; fx_monk_3 413 A
+effect,414,trim,share=0.08;floor=4;of=9;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_2 414 B; fx_monk_1 414 A
+effect,415,trim,share=0.08;floor=4;of=14;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_3 415 C; fx_ranger_2 415 B
+effect,417,trim,share=0.08;floor=4;of=15;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,452,trim,share=0.08;floor=4;of=16;keep=1-15,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,flagged_5 452 A; fx_monk_4 452 A
+effect,453,trim,share=0.08;floor=4;of=16;keep=0-15,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_1 453 A
+effect,456,trim,share=0.08;floor=4;of=17;keep=2-15,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_2 456 B; ground_2 456 A
+effect,460,trim,share=0.08;floor=4;of=16;keep=0-14,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_3 460 A; ground_2 460 B
+effect,461,trim,share=0.08;floor=4;of=11;keep=1-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_2 461 A
+effect,464,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_3 464 A
+effect,470,trim,share=0.08;floor=4;of=12;keep=0-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_3 470 B; ground_2 470 B
+effect,482,trim,share=0.08;floor=4;of=12;keep=1-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_3 482 C
+effect,483,trim,share=0.08;floor=4;of=12;keep=1-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_monk_1 483 B; ground_3 483 A
+effect,486,trim,share=0.08;floor=4;of=10;keep=1-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_thief_2 486 A
+effect,494,trim,share=0.08;floor=4;of=12;keep=1-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_4 494 C; fx_thief_3 494 C
+effect,502,trim,share=0.08;floor=4;of=10;keep=1-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_ranger_1 502 B; fx_thief_3 502 B
+effect,510,trim,share=0.08;floor=4;of=10;keep=1-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_warrior_2 510 A
+effect,524,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_3 524 B; fx_top30_shared_2 524 B
+effect,525,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_3 525 B; ground_3 525 B
+effect,530,trim,share=0.08;floor=4;of=23;keep=1-22,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_2 530 B; ground_3 530 A
+effect,531,trim,share=0.08;floor=4;of=6;keep=0-5,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,flagged_6 531 A; fx_shortest30_1 531 B
+effect,533,trim,share=0.08;floor=4;of=8;keep=0-5,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_1 533 B; fx_monk_3 533 B
+effect,534,trim,share=0.08;floor=4;of=8;keep=0-5,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_1 534 B; fx_monk_1 534 B
+effect,535,trim,share=0.08;floor=4;of=8;keep=0-5,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_1 535 B; fx_monk_3 535 B
+effect,537,trim,share=0.08;floor=4;of=10;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_2 537 A
+effect,538,trim,share=0.08;floor=4;of=10;keep=2-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_2 538 B
+effect,539,trim,share=0.08;floor=4;of=10;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_2 539 B; fx_mystic_3 539 B
+effect,540,trim,share=0.08;floor=4;of=10;keep=2-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_2 540 B; fx_mystic_3 540 B
+effect,552,trim,share=0.08;floor=4;of=10;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_2 552 B
+effect,555,trim,share=0.08;floor=4;of=15;keep=2-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_2 555 A
+effect,556,trim,share=0.08;floor=4;of=15;keep=2-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_1 556 A
+effect,557,trim,share=0.08;floor=4;of=16;keep=2-15,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_1 557 B
+effect,584,trim,share=0.08;floor=4;of=9;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_top30_shared_4 584 A; fx_necro_1 584 A
+effect,585,trim,share=0.08;floor=4;of=14;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_3 585 B
+effect,598,trim,share=0.08;floor=4;of=7;keep=0-6,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_1 598 C; fx_warrior_1 598 B
+effect,599,trim,share=0.08;floor=4;of=7;keep=0-6,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_1 599 B
+effect,600,trim,share=0.08;floor=4;of=6;keep=0-5,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_1 600 C; fx_ranger_1 600 C
+effect,602,trim,share=0.08;floor=4;of=8;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_3 602 B
+effect,610,trim,share=0.08;floor=4;of=7;keep=0-6,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_2 610 B; fx_thief_1 610 B
+effect,612,trim,share=0.08;floor=4;of=8;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,613,trim,share=0.08;floor=4;of=7;keep=0-6,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_2 613 A; fx_thief_1 613 B
+effect,614,trim,share=0.08;floor=4;of=8;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,flagged_1 614 A; ground_3 614 B
+effect,615,trim,share=0.08;floor=4;of=8;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_1 615 B
+effect,617,trim,share=0.08;floor=4;of=7;keep=0-6,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,flagged_2 617 B; fx_shortest30_2 617 A
+effect,618,trim,share=0.08;floor=4;of=8;keep=1-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_4 618 B
+effect,619,trim,share=0.08;floor=4;of=8;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,633,trim,share=0.08;floor=4;of=13;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_3 633 C; ground_4 633 B
+effect,638,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_3 638 B; fx_mystic_1 638 B
+effect,639,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_4 639 B; fx_mystic_1 639 B
+effect,640,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_4 640 B; fx_mystic_5 640 B
+effect,641,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_4 641 B; fx_templar_3 641 B
+effect,642,trim,share=0.08;floor=4;of=10;keep=0-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_warrior_2 642 B; ground_4 642 A
+effect,644,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_5 644 A; mounts_5 644 A
+effect,645,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_2 645 B; ground_5 645 A
+effect,646,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_3 646 B
+effect,647,trim,share=0.08;floor=4;of=13;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_4 647 A; mounts_5 647 A
+effect,648,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,mounts_5 648 A; ground_5 648 A
+effect,649,trim,share=0.08;floor=4;of=12;keep=1-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_ranger_1 649 B; mounts_5 649 A
+effect,653,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_ranger_1 653 A; fx_templar_1 653 A
+effect,654,trim,share=0.08;floor=4;of=13;keep=1-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_4 654 B; ground_5 654 A
+effect,674,trim,share=0.08;floor=4;of=17;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_monk_1 674 B; mounts_6 674 A
+effect,675,trim,share=0.08;floor=4;of=15;keep=1-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_thief_1 675 B; monsters_top_2 675 B
+effect,678,trim,share=0.08;floor=4;of=11;keep=1-9,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_thief_2 678 B; ground_6 678 B
+effect,684,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_monk_3 684 B
+effect,685,trim,share=0.08;floor=4;of=14;keep=0-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_monk_3 685 B; mounts_6 685 A
+effect,686,trim,share=0.08;floor=4;of=16;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_1 686 B; mounts_7 686 A
+effect,689,trim,share=0.08;floor=4;of=14;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_2 689 C; mounts_6 689 A
+effect,695,trim,share=0.08;floor=4;of=15;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_1 695 B
+effect,700,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,708,trim,share=0.08;floor=4;of=17;keep=3-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_1 708 B
+effect,709,trim,share=0.08;floor=4;of=21;keep=0-18,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_1 709 A; ground_6 709 A
+effect,711,trim,share=0.08;floor=4;of=15;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_1 711 B
+effect,712,trim,share=0.08;floor=4;of=16;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_1 712 A
+effect,713,trim,share=0.08;floor=4;of=16;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_templar_1 713 B
+effect,714,trim,share=0.08;floor=4;of=16;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,715,trim,share=0.08;floor=4;of=15;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_warrior_1 715 B; ground_6 715 A
+effect,716,trim,share=0.08;floor=4;of=14;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,717,trim,share=0.08;floor=4;of=17;keep=2-15,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_warrior_1 717 C
+effect,721,trim,share=0.08;floor=4;of=14;keep=2-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_warrior_1 721 B
+effect,728,trim,share=0.08;floor=4;of=15;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,mounts_7 728 A
+effect,729,trim,share=0.08;floor=4;of=14;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,730,trim,share=0.08;floor=4;of=14;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_2 730 B
+effect,739,trim,share=0.08;floor=4;of=14;keep=0-10,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_monk_1 739 B; mounts_7 739 B
+effect,742,trim,share=0.08;floor=4;of=12;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_4 742 A
+effect,748,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_7 748 B
+effect,749,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_7 749 B
+effect,750,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,751,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_7 751 A
+effect,752,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,754,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_7 754 C
+effect,756,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,757,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_necro_1 757 C; ground_7 757 C
+effect,761,trim,share=0.08;floor=4;of=16;keep=0-15,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_1 761 B; mounts_7 761 A
+effect,762,trim,share=0.08;floor=4;of=17;keep=0-14,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_2 762 A; mounts_8 762 A
+effect,765,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,766,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_2 766 B
+effect,771,trim,share=0.08;floor=4;of=16;keep=0-15,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_4 771 B
+effect,772,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,ground_7 772 A
+effect,773,trim,share=0.08;floor=4;of=16;keep=0-15,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_4 773 A; ground_7 773 A
+effect,774,trim,share=0.08;floor=4;of=24;keep=0-23,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_4 774 A; ground_7 774 A
+effect,775,trim,share=0.08;floor=4;of=16;keep=0-14,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_4 775 A
+effect,778,trim,share=0.08;floor=4;of=15;keep=1-14,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,798,trim,share=0.08;floor=4;of=9;keep=0-5,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_3 798 A; fx_mystic_1 798 A
+effect,799,trim,share=0.08;floor=4;of=10;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_4 799 A; fx_mystic_5 799 A
+effect,800,trim,share=0.08;floor=4;of=9;keep=0-7,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_3 800 A; fx_mystic_5 800 A
+effect,803,trim,share=0.08;floor=4;of=10;keep=0-6,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_4 803 B; fx_templar_2 803 A
+effect,809,trim,share=0.08;floor=4;of=8;keep=0-5,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_3 809 B; fx_top30_shared_3 809 B
+effect,810,trim,share=0.08;floor=4;of=10;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_shortest30_4 810 B; fx_top30_shared_3 810 B
+effect,811,trim,share=0.08;floor=4;of=10;keep=0-8,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_ranger_3 811 B
+effect,2867,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,2888,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_2 2888 B
+effect,2906,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,3342,trim,share=0.08;floor=4;of=13;keep=0-11,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_monk_2 3342 B
+effect,3793,trim,share=0.08;floor=4;of=16;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,3794,trim,share=0.08;floor=4;of=15;keep=0-12,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_ranger_2 3794 B
+effect,3864,trim,share=0.08;floor=4;of=14;keep=0-13,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_warrior_2 3864 B
+effect,3896,trim,share=0.08;floor=4;of=47;keep=1-43,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,fx_mystic_2 3896 B
+effect,3897,trim,share=0.08;floor=4;of=47;keep=2-45,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,3953,trim,share=0.08;floor=4;of=25;keep=0-24,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,3965,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,3968,trim,share=0.08;floor=4;of=17;keep=0-16,near empty frames at the start or end (under 8% of the peak opaque pixels); the kept frames keep their durations,not graded
+effect,2906,dedupe,"share=0.04;of=24;keep=0,1,2,3,4,5,6,7,8,9,10,12,13,15,16,17,18,19,20,21,22,23;band=1394-1992",near duplicate frames (under 4% of the pixels differ from the last kept frame); total time stays within 70% of before,not graded
+effect,3896,dedupe,"share=0.04;of=42;keep=0,1,2,3,4,5,6,7,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,32,36,37,38,39,40,41;band=2440-3486",near duplicate frames (under 4% of the pixels differ from the last kept frame); total time stays within 70% of before,fx_mystic_2 3896 B
+effect,393,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_top30_shared_2 393 B; fx_monk_3 393 C
+effect,394,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_necro_3 394 C
+effect,433,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_mystic_2 433 C; ground_1 433 A
+effect,441,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_necro_4 441 C; ground_1 441 B
+effect,539,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_shortest30_2 539 B; fx_mystic_3 539 B
+effect,540,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_shortest30_2 540 B; fx_mystic_3 540 B
+effect,610,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_shortest30_2 610 B; fx_thief_1 610 B
+effect,633,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_mystic_3 633 C; ground_4 633 B
+effect,754,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",ground_7 754 C
+effect,757,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the effect own mid tone, hue kept",fx_necro_1 757 C; ground_7 757 C
+outfit,1487,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the own mid tone, hue kept",auras_3 1487 C
+outfit,1514,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the own mid tone, hue kept",auras_1 1514 C
+outfit,2405,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the own mid tone, hue kept",wings_2 2405 C
+outfit,2473,lift,k=0.4;vmid_min=120,"dark on dark ground: darkest shades lifted toward the own mid tone, hue kept",wings_4 2473 C; edgezoom_2 2473 C
+effect,803,clear_color,"frame=3;rgb=129,129,129;expect=175","a flat grey disc fills the hole of the ring in frame 3 (review: stray grey, frame 4 counting from 1); removed so the hole shows as in the next frame",fx_shortest30_4 803 B; fx_templar_2 803 A
+effect,810,clear_color,"frame=6;rgb=130,126,123;expect=94","a flat grey blob inside the dark core in frame 6 (review: stray grey, frame 7 counting from 1); removed",fx_shortest30_4 810 B; fx_top30_shared_3 810 B
+outfit,261,clear_color,"group=1;dir=2;frame=1;rgb=0,0,254;expect=1","Ice Golem: one pure blue pixel (0,0,254) off the teal palette on the left edge of the body outline, walk frame 1 facing south (coordinator review); touches the outline, so not isolated; removed",short_walk_3 261 C; monsters_top_6 261 C
+outfit,261,clear_color,"group=1;dir=1;frame=1;rgb=0,0,254;expect=1",the same stray pixel mirrored in the east view of walk frame 1,short_walk_3 261 C; monsters_top_6 261 C
+outfit,261,clear_color,"group=0;dir=2;frame=0;rgb=0,0,254;expect=1",the same stray pixel in the idle frame facing south,short_walk_3 261 C; monsters_top_6 261 C
+outfit,261,clear_color,"group=0;dir=1;frame=0;rgb=0,0,254;expect=1",the same stray pixel in the idle frame facing east,short_walk_3 261 C; monsters_top_6 261 C
+outfit,1538,pulse,n=6;amp=0.5;ms=250,"one flat frame on a 5x5 boss: a slow brightness pulse over 6 phases (never darker than the still), animateAlways; it does not make it walk",flagged_7 1538 C; bosses_1 1538 D

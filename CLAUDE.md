@@ -150,6 +150,7 @@ python3 -I client/tools/sprites/gen_fx_send_offsets.py --check       # -> data/l
 python3 -I launcher/tools/gen_launcher_art.py --check            # launcher banner and icon from docs/brand (O339; CI uses the fx venv)
 python3 -I desktop/tools/gen_admin_art.py --check               # desktop admin app header strip and icon from docs/brand (O344; CI uses the fx venv)
 python3 -I client/tools/sprites/gen_portal_art.py build --check && python3 -I client/tools/sprites/gen_portal_art_test.py  # pickup looks of pair 55: Ember portal, health and mana globe (CI uses the fx venv)
+python3 -I client/tools/sprites/anim_fixes_test.py   # animation fixes by rule on the art we have (pair 61, O458): trim, dedupe, lift, stray pixels, idle pulse; the table pair_fixes/anim_fixes.csv, the run: client/MANIFEST.md "Pair 61" (CI uses the fx venv)
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

@@ -3945,6 +3945,81 @@ warnings of pair 59. `gen_outfit_anchors.py` and `gen_info_lift.py` against pair
 - **Preview.** `gen_temple_art.py preview --out DIR`: every piece at 2x on dark and light, and a 13 x 13 room built from the 32 px
   pieces in the layout of the owner's mockup (not committed).
 
+### Pair 61: pair 60 with the animation fixes (`anim_fixes.py`, `pair_fixes/anim_fixes.csv`; built 2026-11-10, not on windows-assets yet; O458)
+Owner 2026-11-10 (animation review, grades C and D): "fix the C and D the way you judge best". Pair 61 does what an exact, repeatable
+operation on the art we already have can do. Nothing is drawn, no outside service is used, nothing is uploaded. `anim_fixes.py` applies the
+table `pair_fixes/anim_fixes.csv` (kind, id, op, args, reason, review row: 193 rows, 178 things) to a copy of pair 60. Each row checks its
+premise (a trim row carries the frames the rule must keep, a colour row the pixel count it must remove), so a table for another pair stops
+the run. Every thing not in the table stays byte-identical (52,596 of 52,774, printed). Tests: `anim_fixes_test.py` (synthetic pair, CI).
+- **Trim (170 effects, 364 frames).** Leading and trailing frames under 8% of the effect's peak opaque pixels, at least 4 frames left, the
+  kept frames keep their durations. Applied to the 191 spell effects (effects.tsv of the review) except 783 (a status aura, see below).
+  Examples: 415 crit_burst 14 to 8, 3 POFF 13 to 8, 11 teleport 16 to 11, 654 13 to 10, 538 and 540 lose the dust lead. Checked on 15
+  before and after sheets. The rule does not cut the thin streak that leads 494 (7 to 18% of its peak): that is art, not an empty frame.
+- **Dedupe (2 effects).** 3896 47 to 33 frames (3,486 to 2,739 ms) and 2906 24 to 22: frames that differ from the last kept one by under 4% of
+  the pixels. The listed "holds one picture" effects (404, 445, 433, 441, 409, 447, 435, 396, 633, 757) differ by more than that between all
+  neighbours (they turn or pulse), so by this rule they have no true duplicates and none is cut. 761 (a flicker pattern) and the short 393 and 618
+  were dropped by eye. A held ward or field is right to hold; the sibling task re-points the fast spells.
+- **Lift (14 things).** Dark shades toward the thing's own mid tone, hue kept (`k` 0.4, mid tone at least V 120): effects 393, 394, 433, 441,
+  539, 540, 610, 633, 754, 757 and outfits 1487 (Ashen Murmuration), 1514 (Umbral Smoke), 2405, 2473 (wings). Kept after looking at dark ground:
+  539, 540, 610, 394, 393 (streaks now read), 1487, 2405 clearly better; 433, 441, 633, 754, 757 and 2473 slightly. 936 (Bats) did not change
+  visibly and was dropped. The first try, k 0.7, flattened the art (393, 394, 754, 757 became blobs) and was dropped.
+- **Stray pixels (6 rows).** 803 frame 3: a flat grey disc (129,129,129, 175 px) filled the ring's hole. 810 frame 6: a grey blob (94 px) in
+  the dark core. The review counted frames from 1. Ice Golem 261: one pure blue pixel (0,0,254) on the left edge of the body outline in four
+  frames (idle and walk 1, facing south and east); it touches the outline, so it is not isolated, and it is the only pixel of that colour.
+- **Idle pulse (Nyxareth 1538).** 6 phases of 250 ms, brightness 1 to 1.5 and back (never darker than the still), animateAlways set in the dat.
+  Reads as a breathing glow beside the flat still; it does not make the boss walk.
+- **Looked at and dropped.** *Rim light* on class bodies and dark monsters (Berserker, Ninja, Samurai, Sandcrawler 350, Bog Frog 412,
+  Cinderskull Reaver 2219, Insect Swarm 349): the rim takes the body's mid tone and turns the dark outline brown or tan; on green ground the
+  classes lose their outline. They stay as they are. *Registration* (Thal 1485, Skaldra 1534, Wyvern 239): the frames differ by pose (a coiling
+  tail, a wing sweep), not by a registration error; centring them would remove the motion. *Upscale* (Skaldra 1534, Ulthar 2127, Vharzul 3361,
+  Golden Dragon 1530): the union box of the art is already 77 to 117 px wide in a 128 or 160 px canvas, so an exact x2 does not fit. *Two frame
+  walkers* (A, A raised, B, B raised on Hydra 121, Ice Golem 261, Dark Torturer 234): the large bodies fill their cell to the top and bottom row
+  (121 and 234 have no room), a 1 px bob on the one that fits (261) is not a visible walk; dropped, the whole list needs new frames. *Wing
+  ping-pong*: the loops of 2411, 2436, 2433, 2470 and 101 other wings read as closed cycles; no seam stands out by eye or by a step ratio (2 to 5).
+  *Capes and head accessories*: below.
+- **Capes (2569 to 2657) and head accessories (2477 to 2568), from the draw rule** (an aura frame pixel lands at x - dx - (w-1)*16, y - dy -
+  (h-1)*16 from the tile's top left; the body at x - dx - (w-1)*32, y - dy - (h-1)*32; the rule of "Aura displacement" above; the engine source is
+  not in the repository, the rule is the one the pair tools use). The review's preview was right: the pieces are placed by the tile, not by the
+  body. The median head piece centres at x -6.2, y -5.5 (p10 to p90 -11.2 to -0.6, -11.1 to 1.9). The head centre of the 21 male class looks
+  (top of the body plus 6) is at y -24 to -3 and x -19.0 to +2.4: to put the median piece on the head needs dx -12.9 to +8.6 and dy -18.5 to +2.5
+  (median +3.6, -2.5; the female looks differ again, head x -21.3 to +4.0). One value (+4, -2) puts 13 of 21 within 4 px and leaves 8 (Illusionist
+  16 px, Warrior 16, Shadowfist 10, Iron Sage 8, Necromancer 8, Berserker and Juggernaut 5 to 7). That is a compromise, so no displacement was set.
+  A per class offset needs the client to read the wearer's look (a base patch, not a dat field). Capes: with the body at 0, 0 about 23% of a cape
+  shows past the body of a class look; no shift in a +-16 px grid is a cape (it only slides off the body): the art is 64 to 96 px for a 32 px
+  figure and needs scaling to the 2x2 bodies (new art or an engine scale). Scholar Capelet 2639 does draw: 1x1, 24 phases, layer 0 on every
+  direction, layer 1 on north and west (1,164 to 4,608 px); the review's preview showed nothing because the 32 px piece lies behind the 2x2 body.
+- **Look 1539 (Death Mage).** North and south have art, east and west hold sprite id 0 in all 9 phases. It does not come from
+  `gen_pack37_looks.py` (that pack is looks 2668 and up): it is a stock-range look (sprite ids 485,175 to 485,288, no other look shares them), byte
+  identical to the base client's pair (statement of "Pair warning fixes"). The base art has no side views; a mirror of north or south is not a
+  side view, so nothing was invented. Needs new art (or the server uses a look that draws in four directions).
+- **Cut wings 2142, 2227, 2230 and mount 1239.** Not checked against a source: their art is the pack's own frame and the cut is in the sheet, so
+  it needs new art.
+```
+python3 -I client/tools/sprites/anim_fixes.py --ours-dat pair60/Tibia.dat --ours-spr pair60/Tibia.spr --out-dir pair61 \
+    --expect-dat-md5 a158f6e6af5ed94148c73c03a854e575 --changes-out client/tools/sprites/pair_fixes/pair61_changes.csv
+python3 -I client/tools/sprites/check_pair.py pair61/Tibia.dat pair61/Tibia.spr --old pair60/Tibia.dat pair60/Tibia.spr \
+    --allow-changed "effect:ID,...;outfit:261,1487,1514,1538,2405,2473"   # the effect ids are the effect rows of pair61_changes.csv
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair61/Tibia.dat pair61/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair61/Tibia.dat pair61/Tibia.spr
+```
+Output **pair 61**: dat 11c963fe238c71a7c59d817949f7f2c2 (8,828,000 bytes), spr 0d908e898d9fda8d0f818b78258eb6a3 (1,135,916,992 bytes;
+949,180 sprites: 1,869 appended), the same counts of things (44,549 items, 3,370 outfits, 4,701 effects, 253 missiles). 172 effects and 6
+outfits changed, 52,596 entries byte-identical, the verification of `anim_fixes.py` passed (new sprites pixel-identical, 4,000 old sprites
+unchanged). `check_pair.py --old` with exactly those 178 ids allowed: 0 errors, 3,964 warnings, the same lines as pair 60 (INFO only: 2,610 old
+sprite records no thing uses, up from 30). The changes (phases, durations, sprite slots) are in `pair_fixes/pair61_changes.csv`.
+- **Switch to pair 61** (not done; nothing in the repository expects pair 61 and `chaosClientPair` stays 60): 1. build the pair with the
+  commands above from pair 60 (md5 above); 2. `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 61 and commit what they rewrite
+  (`client_chaos_charselect/outfit_anchors.lua`, `client_chaos_infolift/info_lifts.lua`; against pair 61 only the dat md5 line changes, checked on this
+  build; the two files are in the scratchpad folder `pair61_generated`); 3. ship the
+  client update with pair 61, then set `chaosClientPair` to 61 (admin app: Comandos > "Par do cliente" > Gravar 61) so the guards agree.
+  `gen_fx_send_offsets.py --check` needs nothing (no frame moved inside its cell). No server script waits for an effect's length: the declared `ms`
+  of `ChaosVfx` (117 trimmed ids, up to 1,162 ms longer than the drawn effect, 115 of them still declare the pair 60 length) is only read by the status aura chain
+  (`chaos_pack29_vfx.lua`, ids 780 to 795, none trimmed: 783 was left out for it) and sent to the client as a hint. A client on pair 60 with a
+  server that already expects pair 61 draws the old art.
+- Checked offline: before and after contact sheets (old strip above the new, every changed thing). Not checked in a live client: timing of the
+  shorter effects, the idle pulse of 1538 (needs the `animateAlways` attribute from the dat, as patch 0189 reads it), the lifted colours on a
+  real map.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
