@@ -300,7 +300,7 @@ function A.openHandFactor(level, fistSkill, bestSkill, attackFactor, keystone, u
 	if keystone then
 		m = o.damage * (unique and (1 + o.uniqueBonus) or 1)
 	elseif unique then
-		m = o.damage * o.uniqueEnable
+		m = (o.uniqueBase or o.damage) * o.uniqueEnable
 	else
 		return nil
 	end
@@ -318,7 +318,7 @@ function A.openHandAttack(level, keystone, unique)
 	if keystone then
 		return A.fistAttack(level) * o.damage * (unique and (1 + o.uniqueBonus) or 1)
 	elseif unique then
-		return A.fistAttack(level) * o.damage * o.uniqueEnable
+		return A.fistAttack(level) * (o.uniqueBase or o.damage) * o.uniqueEnable
 	end
 	return nil
 end
@@ -351,6 +351,13 @@ function A.spellOpenHandAttack(player)
 		return nil
 	end
 	local keystone = A.maskHas(player:getStorageValue(cfg().storage), "arOpenHand")
+	local voc = player.getVocation and player:getVocation()
+	local vid = voc and voc.getId and voc:getId()
+	for _, v in ipairs(cfg().arOpenHand.noStrikeVocations or {}) do
+		if vid == v then
+			return nil
+		end
+	end
 	local unique = false
 	for id, key in pairs(cfg().uniques) do
 		if key == "openHand" then
@@ -597,9 +604,11 @@ function A.burnSpread(record, now)
 end
 
 -- ------------------------------------------------------------------------------------------------ Aether Edge
-function A.aetherAmount(shield, unique)
+-- hollow: the holder also has Hollow Vessel (the Hollow Palm): the share stays `share`; without it `aloneShare` applies
+function A.aetherAmount(shield, unique, hollow)
 	local a = cfg().arAetherEdge
-	return math.floor(math.max(0, shield or 0) * (a.share + (unique and a.uniqueShare or 0)))
+	local share = hollow and a.share or (a.aloneShare or a.share)
+	return math.floor(math.max(0, shield or 0) * (share + (unique and a.uniqueShare or 0)))
 end
 
 function A.aetherHealthPercent()
@@ -637,13 +646,20 @@ function A.hollowCut(maxHealth, applied)
 end
 
 -- the maximum energy shield: the items' maximum (ChaosEnergyShield.maximum), the health given up, the unique worn
-function A.hollowShield(itemMax, givenUp, keystone, stillheart)
+-- aether: the holder also has Aether Edge (the Hollow Palm): the formula is the one it always was. vitality: the tree's health
+-- percent; a holder without Aether Edge counts the full health as given up (O452: the cut is taken before the percent, which
+-- was lost) and `aloneFromHealth` of it comes back as shield.
+function A.hollowShield(itemMax, givenUp, keystone, stillheart, aether, vitality)
 	local h = cfg().arHollowVessel
 	if not keystone then
 		return itemMax or 0
 	end
 	local more = h.more + (stillheart and h.uniqueMore or 0)
-	return math.floor((itemMax or 0) * (1 + more) + (givenUp or 0) * h.fromHealth + 1e-9)
+	if aether or not h.aloneFromHealth then
+		return math.floor((itemMax or 0) * (1 + more) + (givenUp or 0) * h.fromHealth + 1e-9)
+	end
+	local full = ((givenUp or 0) + h.health) * (1 + math.max(0, vitality or 0) / 100) - h.health
+	return math.floor((itemMax or 0) * (1 + more) + math.max(0, full) * h.aloneFromHealth + 1e-9)
 end
 
 -- the recharge per mille added (keystone, Hollowglass Diadem)

@@ -110,8 +110,13 @@ ChaosArchetypesConfig = {
 	-- is fine), your fist hits use the Monk's fist attack (attackBase + attackPerLevel x level, at most attackMax) and
 	-- your best melee skill (fist, sword, axe or club), x damage. The engine's fist hit has attack engineAttack.
 	-- Unique Knuckles of the Unbound: the same without the keystone at x uniqueEnable; with it x (1 + uniqueBonus).
-	arOpenHand = {attackBase = 40, attackPerLevel = 0.025, attackMax = 60, damage = 1.10, engineAttack = 7,
-		uniqueEnable = 0.80, uniqueBonus = 0.10},
+	-- O452: damage 1.10 -> 1.36. Giving up the weapon cost the Templar line 3-14% on one target; at 1.36 it gains +4 to +21%
+	-- (data/spells/README.md "Weak keystones re-measured (O452)").
+	arOpenHand = {attackBase = 40, attackPerLevel = 0.025, attackMax = 60, damage = 1.36, engineAttack = 7,
+		uniqueEnable = 0.80, uniqueBonus = 0.10, uniqueBase = 1.10,
+		-- the Thief line's strike spells read an empty hand as a blade of this attack: with the keystone they gained +114% to +159%
+		-- (O452, measured), far over the +40% rule; their spells keep the base attack 20 there (the fist hits still grow)
+		noStrikeVocations = {11, 12, 13}},
 
 	-- Contagion Rite (Thief line): a monster that dies while your poison is on it (a poison tick of yours within
 	-- recentMs) spreads it to up to `targets` monsters within `radius`: `ticks` ticks of share x its last tick, every
@@ -137,7 +142,8 @@ ChaosArchetypesConfig = {
 	-- shatters: enemies within `radius` take share x its maximum health as ice damage, at most perLevel x your level a
 	-- burst. A burst that kills shatters again (the chain budget caps the work). Price: your fire and energy damage
 	-- x otherElements. Unique Shard of the Long Winter: share +uniqueShare, radius +uniqueRadius.
-	arWinterLattice = {share = 0.06, perLevel = 12, radius = 2, recentMs = 2000, otherElements = 0.70,
+	-- O452: share 0.06 -> 0.05 (an Elementalist on a dying pack gained +15% at level 500 and +35% at 1000, above the +25% goal).
+	arWinterLattice = {share = 0.05, perLevel = 12, radius = 2, recentMs = 2000, otherElements = 0.70,
 		uniqueShare = 0.02, uniqueRadius = 1},
 
 	-- Effigy Covenant (Mystic and Necromancer lines): an attack spell that hits minTargets or more raises a Cinder
@@ -159,15 +165,17 @@ ChaosArchetypesConfig = {
 	-- pulseShare x the hit that branded it; when the bearer dies the sigil jumps to the nearest enemy within
 	-- jumpRadius, and an ignited monster that dies spreads its burn to spreadTargets enemies within spreadRadius
 	-- (the chain budget caps the work, at most spreadGenerations deep). Price: your damage that is not fire or holy
-	-- x otherDamage. Unique Brand of the Ashen Choir: pulses x (1 + uniquePulse).
+	-- x otherDamage. Unique Brand of the Ashen Choir: pulses x (1 + uniquePulse). O452: a cast on the bearer that already
+	-- carries the sigil keeps the pulse clock (every cast used to start it over: one pulse in three casts).
 	arCinderSigil = {igniteShare = 0.15, igniteTicks = 4, igniteTickMs = 1000, durationMs = 8000, pulseMs = 1000,
 		pulseShare = 0.05, pulseRadius = 1, jumpRadius = 3, spreadTargets = 2, spreadRadius = 2, spreadGenerations = 3,
 		otherDamage = 0.80, uniquePulse = 0.25},
 
 	-- Aether Edge (Monk and Templar lines): your weapon and fist hits add share x your current energy shield as energy
 	-- damage. Price: your maximum health x maxHealth (a condition, sub id below). Unique Aetherbound Plate: share
+	-- (O452: without Hollow Vessel the share is aloneShare 0.33, was 0.06 (a hit cap per hit was tried and does not bound the gain: the Sentinel passed +50%); with it, the Hollow Palm, `share` stays: owner decision 2026-11-09)
 	-- +uniqueShare.
-	arAetherEdge = {share = 0.06, maxHealth = 0.80, subId = 71090, uniqueShare = 0.04},
+	arAetherEdge = {share = 0.06, maxHealth = 0.80, subId = 71090, uniqueShare = 0.04, aloneShare = 0.33},
 
 	-- Reliquary Vow (Templar line): a Reliquary Warden (a summon that follows you, cannot be attacked; gone in a
 	-- protection zone, back outside) pulses every pulseMs: party members and you within healRadius heal healShare x
@@ -195,8 +203,11 @@ ChaosArchetypesConfig = {
 	-- Rimefloor, Veilstorm, the Wrathful Guardian's nova) counts health + maximum shield for you.
 	-- Unique Stillheart Robe: more +uniqueMore. Unique Hollowglass Diadem: recharge +diademRecharge per mille, and the
 	-- early start without the keystone too.
+	-- O452: a holder WITHOUT Aether Edge counts the full health given up (the tree's vitality percent included) and gets aloneFromHealth
+	-- of it back as shield (the cut was taken before the percent, which was lost: pool -32% to -62%; now +11% to +17%). With Aether Edge
+	-- (the Hollow Palm, owner decision 2026-11-09) fromHealth and more are used as before.
 	arHollowVessel = {health = 100, fromHealth = 0.5, more = 0.5, recharge = 150, earlyMs = 1000, subId = 71091,
-		uniqueMore = 0.4, diademRecharge = 100},
+		uniqueMore = 0.4, diademRecharge = 100, aloneFromHealth = 1.1},
 
 	-- The third round (2026-10-20): four keystones each for the Warrior and the Ranger line, which had two fewer than the
 	-- Monk, Thief and Templar lines (beta feedback). Every one is a leaf of the main tree that was a mythic leaf (reworked

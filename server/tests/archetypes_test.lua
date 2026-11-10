@@ -120,9 +120,9 @@ near(A.fistAttack(300), 47.5, "fist attack at 300")
 near(A.fistAttack(2000), 60, "capped at 60")
 eq(A.openHandFactor(300, 50, 110, 1, false, false), nil, "neither keystone nor unique")
 local ohK = A.openHandFactor(300, 50, 110, 1, true, false)
-local want = A.maxWeaponDamage(300, 110, 47.5, 1) * 1.1 / A.maxWeaponDamage(300, 50, 7, 1)
-near(ohK, want, "keystone factor: best skill, fist attack, +10%")
-near(A.openHandFactor(300, 50, 110, 1, false, true), want / 1.1 * 1.1 * 0.8, "unique alone: 80%")
+local want = A.maxWeaponDamage(300, 110, 47.5, 1) * C.arOpenHand.damage / A.maxWeaponDamage(300, 50, 7, 1)
+near(ohK, want, "keystone factor: best skill, fist attack, +40% (O452: was +10%)")
+near(A.openHandFactor(300, 50, 110, 1, false, true), want / C.arOpenHand.damage * 1.1 * 0.8, "unique alone: 80% of the old 1.10, not of the keystone's damage (O452)")
 near(A.openHandFactor(300, 50, 110, 1, true, true), want * 1.1, "both: +10% more")
 check(ohK > 3, "the fist hit grows a lot (" .. ohK .. ")")
 
@@ -131,12 +131,14 @@ local mask = A.mask({arOpenHand = true, arReliquary = true})
 check(A.maskHas(mask, "arOpenHand") and A.maskHas(mask, "arReliquary") and not A.maskHas(mask, "arPyreOath"), "mask")
 check(not A.maskHas(-1, "arOpenHand"), "no storage")
 check(mask < 2 ^ 31, "fits a storage")
-near(A.openHandAttack(300, true, false), 47.5 * 1.1, "strikes: fist attack +10%")
-near(A.openHandAttack(300, false, true), 47.5 * 1.1 * 0.8, "strikes: the ring alone")
+near(A.openHandAttack(300, true, false), 47.5 * C.arOpenHand.damage, "strikes: fist attack +36%")
+near(A.openHandAttack(300, false, true), 47.5 * 1.1 * 0.8, "strikes: the ring alone (unchanged by O452)")
 eq(A.openHandAttack(300, false, false), nil, "strikes: nothing")
 local sp = {getStorageValue = function() return A.mask({arOpenHand = true}) end, getLevel = function() return 1000 end,
 	getSlotItem = function() return nil end}
-near(A.spellOpenHandAttack(sp), 66, "the spells read the storage (level 1000: 60 x 1.1)")
+near(A.spellOpenHandAttack(sp), 60 * C.arOpenHand.damage, "the spells read the storage (level 1000: 60 x 1.36)")
+sp.getVocation = function() return {getId = function() return 11 end} end
+eq(A.spellOpenHandAttack(sp), nil, "the Thief line keeps the base attack for its strike spells (O452)")
 
 -- the chain queue
 local q = A.newQueue()
@@ -173,7 +175,7 @@ check(arcs == 3 and share == 0.40, "storm arcs")
 arcs, share = A.stormArcs(false, true)
 check(arcs == 1 and share == 0.25, "the bow alone")
 eq(A.stormArcs(false, false), nil, "nothing")
-eq(A.shatterAmount(20000, 300), 1200, "6% of 20000")
+eq(A.shatterAmount(20000, 300), 1000, "5% of 20000 (O452: was 6%)")
 eq(A.shatterAmount(200000, 300), 3600, "at most 12 x level")
 eq(A.shatterRadius(true), 3, "the wand: +1 sqm")
 
@@ -215,8 +217,12 @@ check(bsp and bsp.targets == 2 and bsp.gen == 1, "burn spread")
 eq(A.burnSpread({owner = 1, tick = 50, at = 1000, gen = 3}, 1500), nil, "3 deep at most")
 
 -- Aether Edge, Reliquary Vow
-eq(A.aetherAmount(800), 48, "6% of the shield")
-eq(A.aetherAmount(800, true), 80, "10% with the plate")
+eq(A.aetherAmount(800), 264, "alone: 33% of the shield (O452: was 6%)")
+eq(A.aetherAmount(800, true), 296, "alone with the plate: 37%")
+eq(A.aetherAmount(2400, true), 888, "the most an item set can give (2,400) with the Plate: 888 a hit")
+-- the Hollow Palm (Aether Edge with Hollow Vessel) keeps the numbers it had before O452: 6%, 10% with the plate
+eq(A.aetherAmount(800, nil, true), 48, "with Hollow Vessel: 6% of the shield (the Hollow Palm, unchanged)")
+eq(A.aetherAmount(800, true, true), 80, "with Hollow Vessel and the plate: 10% (the Hollow Palm, unchanged)")
 eq(A.aetherHealthPercent(), 80, "health 80%")
 eq(A.relicHeal(10000, 30), 120, "0.6% + 2 x ml")
 eq(A.relicDamage(300, 30), 270, "0.6 x level + 3 x ml")
@@ -229,9 +235,18 @@ eq(A.hollowCut(5000, 0), 5000 - H.health, "cut: down to the fixed health")
 eq(A.hollowCut(H.health, 4900), 4900, "cut: the applied one is part of the maximum")
 eq(A.hollowCut(60, 0), 0, "below the fixed health: nothing")
 eq(A.hollowShield(740, 0, false, false), 740, "no keystone: the items' shield")
-eq(A.hollowShield(740, 1874, true, false), math.floor(740 * (1 + H.more) + 1874 * H.fromHealth), "items +50%, half the health")
-eq(A.hollowShield(740, 1874, true, true), math.floor(740 * (1 + H.more + H.uniqueMore) + 1874 * H.fromHealth),
+-- without Aether Edge (O452): the full health given up (the tree's percent included) comes back x aloneFromHealth
+eq(A.hollowShield(740, 1874, true, false), math.floor(740 * (1 + H.more) + 1874 * H.aloneFromHealth), "items +50%, 110% of the health")
+eq(A.hollowShield(740, 1874, true, false, false, 50), math.floor(740 * (1 + H.more) + ((1874 + 100) * 1.5 - 100) * H.aloneFromHealth),
+	"the tree's health percent counts as health given up")
+eq(A.hollowShield(740, 1874, true, true), math.floor(740 * (1 + H.more + H.uniqueMore) + 1874 * H.aloneFromHealth),
 	"the robe: the items' part +40% more")
+-- the Hollow Palm (Aether Edge too): the formula it always had, whatever the vitality
+eq(A.hollowShield(740, 1874, true, false, true), math.floor(740 * (1 + H.more) + 1874 * H.fromHealth), "Hollow Palm: half the health, as before")
+eq(A.hollowShield(740, 1874, true, false, true, 50), math.floor(740 * 1.5 + 1874 * 0.5), "Hollow Palm: vitality changes nothing")
+eq(A.hollowShield(2000, 7340, true, false, true), 2000 * 1.5 + 7340 * 0.5, "Hollow Palm numbers pinned: 0.5 and 0.5")
+eq(H.fromHealth, 0.5, "the Hollow Palm's fromHealth is still 0.5")
+eq(H.more, 0.5, "the Hollow Palm's more is still 0.5")
 eq(A.hollowRecharge(true, false), H.recharge, "recharge")
 eq(A.hollowRecharge(true, true), H.recharge + H.diademRecharge, "recharge with the diadem")
 eq(A.hollowRecharge(false, true), H.diademRecharge, "the diadem alone")
@@ -439,7 +454,7 @@ if fh then
 	has(106, math.floor(C.arCinderSigil.durationMs / 1000) .. " s"); has(106, C.arCinderSigil.pulseRadius .. " sqm")
 	has(106, pct(C.arCinderSigil.pulseShare)); has(106, C.arCinderSigil.spreadTargets .. " more")
 	has(106, pct(1 - C.arCinderSigil.otherDamage) .. " less")
-	has(362, pct(C.arAetherEdge.share)); has(362, pct(1 - C.arAetherEdge.maxHealth) .. " less")
+	has(362, pct(C.arAetherEdge.share)); has(362, pct(1 - C.arAetherEdge.maxHealth) .. " less"); has(362, pct(C.arAetherEdge.aloneShare))
 	has(253, math.floor(C.arReliquary.pulseMs / 1000) .. " s"); has(253, C.arReliquary.healRadius .. " sqm")
 	has(253, string.format("%g", C.arReliquary.healShare * 100) .. "%"); has(253, C.arReliquary.healPerMagicLevel .. " x your magic")
 	has(253, "+" .. pct(C.arReliquary.partyDamage)); has(253, math.floor(C.arReliquary.buffMs / 1000) .. " s")
@@ -453,7 +468,7 @@ if fh then
 	has(99, pct(1 - VC.keystone.ownDamage) .. " less")
 	has(102, pct(VC.tithe.healthShare)); has(102, pct(VC.tithe.self - 1) .. " stronger"); has(102, "Hollow Vessel")
 	has(96, "health is " .. C.arHollowVessel.health); has(96, "+" .. pct(C.arHollowVessel.more))
-	has(96, pct(C.arHollowVessel.fromHealth) .. " of the health"); has(96, pct(C.arHollowVessel.recharge / 1000))
+	has(96, pct(C.arHollowVessel.fromHealth) .. " of the health"); has(96, pct(C.arHollowVessel.aloneFromHealth) .. " of the health given up"); has(96, pct(C.arHollowVessel.recharge / 1000))
 	has(96, math.floor(C.arHollowVessel.earlyMs / 1000) .. " s after")
 	-- the third round
 	has(428, pct(C.arExecutioner.threshold)); has(428, "above " .. pct(C.arExecutioner.priceAbove))
@@ -801,7 +816,7 @@ NOW = NOW + 100
 runEvents(NOW)
 local shatter
 for _, d in ipairs(dealt) do if d.target == m2:getId() and d.source == "shatter" then shatter = d end end
-check(shatter and shatter.amount == 1200 and shatter.type == COMBAT_ICEDAMAGE, "shatter 6% of 20000 as ice")
+check(shatter and shatter.amount == 1000 and shatter.type == COMBAT_ICEDAMAGE, "shatter 5% of 20000 as ice")
 
 -- Cascade Edge and Stormstring: a crossbow crit
 creatures, dealt = {}, {}
@@ -870,6 +885,13 @@ local ign = 0
 for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_FIRE then ign = ign + 1; eq(ca.cond.value, -37, "ignite tick") end end
 eq(ign, 1, "one ignite")
 check(M.state[inq:getId()] and M.state[inq:getId()].sigil and M.state[inq:getId()].sigil.bearer == s1:getId(), "branded")
+-- a second cast on the bearer renews the hit and the time but keeps the pulse clock (O452: before, it started over)
+local clock = M.state[inq:getId()].sigil.nextPulse
+NOW = NOW + 400
+hitBy(inq, s1, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL)
+runEvents()
+eq(M.state[inq:getId()].sigil.nextPulse, clock, "a cast on the bearer keeps the pulse clock")
+check(M.state[inq:getId()].sigil.untilTime > clock, "the time is renewed")
 NOW = NOW + 1100
 dealt = {}
 registered.ChaosArchetypesThink.onThink(1000)
@@ -891,8 +913,16 @@ check(cond and cond.params[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT] == 80, "max
 local am = mk("monster", {hp = 90000, pos = P(101, 100)})
 hitBy(monk, am, 500, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
 runEvents()
-check(dealt[1] and dealt[1].amount == 36 and dealt[1].type == COMBAT_ENERGYDAMAGE and dealt[1].source == "aether",
-	"6% of the shield as energy")
+check(dealt[1] and dealt[1].amount == 198 and dealt[1].type == COMBAT_ENERGYDAMAGE and dealt[1].source == "aether",
+	"33% of the shield as energy (alone)")
+-- the Hollow Palm: Aether Edge with Hollow Vessel keeps 6% of the shield as before O452
+setTree(monk, {arAetherEdge = 1, arHollowVessel = 1})
+monk.c.es = 600
+dealt = {}
+hitBy(monk, am, 500, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+runEvents()
+check(dealt[1] and dealt[1].amount == math.floor(monk.c.es * C.arAetherEdge.share) and dealt[1].source == "aether",
+	"with Hollow Vessel: 6% of the shield (the Hollow Palm, unchanged)")
 setTree(monk, {})
 check(monk:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, C.arAetherEdge.subId) == nil, "removed with the keystone")
 
@@ -983,7 +1013,7 @@ setTree(lich, {arHollowVessel = 1})
 local hc = lich:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, C.arHollowVessel.subId)
 check(hc and hc.params[CONDITION_PARAM_STAT_MAXHITPOINTS] == -(1974 - 100), "health cut to 100")
 eq(lich:getMaxHealth(), 100, "maximum health 100")
-eq(lich:getMaxEnergyShield(), math.floor(740 * 1.5 + 1874 * 0.5), "shield: items +50% and half the health")
+eq(lich:getMaxEnergyShield(), math.floor(740 * 1.5 + 1874 * 1.1), "shield: items +50% and 110% of the health (no Aether Edge)")
 eq(lich:getEnergyShieldRecharge(), 200 + 150, "recharge +15% a second")
 -- a level up: the maximum without the cut grows by 30; the think renews the cut
 lich.c.maxHp = 2004
@@ -1033,7 +1063,7 @@ local robe = {getId = function() return 27390 end, getCustomAttribute = function
 lich.c.slots[CONST_SLOT_ARMOR] = robe
 M.refreshUniques(lich)
 runEvents()
-eq(lich:getMaxEnergyShield(), math.floor(740 * 1.9 + 1904 * 0.5), "the robe: the items' part 90% more")
+eq(lich:getMaxEnergyShield(), math.floor(740 * 1.9 + 1904 * 1.1), "the robe: the items' part 90% more")
 -- the keystone goes: the health comes back, the shield is the items' again
 setTree(lich, {})
 check(lich:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, C.arHollowVessel.subId) == nil, "the cut removed")

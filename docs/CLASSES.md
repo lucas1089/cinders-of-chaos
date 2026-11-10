@@ -1215,9 +1215,9 @@ healers. Measured in game (2026-10-13) the snares passed the Elementalist in are
 snare rows are computed again (the best, a Mine-layer Deadeye, now -43% in area on the computed rows and about -3% /
 -18% at level 300 / 1000 when the halving is applied to the measured snare share; measured again after the halving:
 the Mine-layer Deadeye 3372 in area at level 300, the Mine-layer Ranger 10536 at level 1000, just under the
-Elementalist's 3496 / 10837-11275). **Flag (measured, not applied):** the Hollow Palm with the Aetherbound Plate deals
-5342 on one target at level 1000, 14% over the Deadeye's 4670-4685 (computed 4367); proposed fix: Aether Edge counts
-only the items' part of the shield while Hollow Vessel is held (about 4300 then). The vigils, Iron Tithe and Hollow
+Elementalist's 3496 / 10837-11275). **Owner decision 2026-11-09: the Hollow Palm stays as it is.** Measured: the Hollow Palm with the Aetherbound Plate deals
+5342 on one target at level 1000, 14% over the Deadeye's 4670-4685 (computed 4367). O452 changed Aether Edge only
+for a holder without Hollow Vessel. The vigils, Iron Tithe and Hollow
 Vessel's shield, recharge and immunities measured as written.
 
 ### Balance with the trees
