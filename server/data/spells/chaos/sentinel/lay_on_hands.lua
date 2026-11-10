@@ -1,4 +1,4 @@
--- Lay on Hands: a great heal on one party member within 5 sqm: 35% of its maximum health + magic level x 10. Say a name
+-- Lay on Hands: a great heal on one party member within 5 sqm: 35% of its maximum health + level x 0.3 + magic level x 5. Say a name
 -- to choose (saen gal manh "Name"); without one it goes to the party member (or the Sentinel) with the lowest health
 -- share. Long cooldown.
 -- Numbers: ChaosTemplar.cfg.layOnHands.
@@ -42,7 +42,7 @@ function onCastSpell(creature, variant, isHotkey)
 		local id = T.pickHealTarget(list)
 		target = id and Player(id) or player
 	end
-	local amount = T.layOnHandsAmount(target:getMaxHealth(), player:getMagicLevel())
+	local amount = T.layOnHandsAmount(target:getMaxHealth(), player:getMagicLevel(), player:getLevel())
 	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "holy_arrow", CONST_ANI_SMALLHOLY)
 	ChaosSpell.healTarget(player, target, amount, amount, Fx("holy_spiral", CONST_ME_HOLYAREA))
 	ChaosSpell.vfx(target:getPosition(), "healing_bloom")

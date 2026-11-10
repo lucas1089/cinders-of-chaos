@@ -207,6 +207,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                                                  Sanctum Burst, Radiant Shard; spells README "Area damage is uniform")
                tools/patch_mystic_stock_fx.py    Mystic line effects in the base Bewitching Hex and Arcane Ripple
                                                  scripts (spells/README_FX.md "Mystic line effects")
+               tools/patch_stock_spell_inputs.py the flat base spells Kindling Spark and Bewitching Hex read the level
+                                                 and the magic level (the old number for a typical caster at the level
+                                                 the spell is learned; spells README "Spell scaling (O468)")
                tools/patch_free_spells.py        every spell and rune free: no premium flag in spells.xml or the
                                                  revscripts, no premium test in the NPC spell teachers (README
                                                  "Free spells")
@@ -1145,6 +1148,9 @@ def step_spells(server, data, ctx):
         lines += more
     if ok:
         ok, more = run_tool([tool('patch_mystic_stock_fx.py'), data], 'patch_mystic_stock_fx.py')
+        lines += more
+    if ok:
+        ok, more = run_tool([tool('patch_stock_spell_inputs.py'), data], 'patch_stock_spell_inputs.py')
         lines += more
     if ok:
         ok, more = run_tool([tool('patch_free_spells.py'), data], 'patch_free_spells.py')

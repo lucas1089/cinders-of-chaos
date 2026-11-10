@@ -100,6 +100,7 @@ python3 -I client/tools/gen_aura_art.py --check     # chest and Templar aura str
 python3 -I client/tools/gen_toast_art.py --check    # toast icons of game_chaosnotify (O317; CI uses the fx venv)
 python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lua (install_all step baserain)
 python3 -I server/tools/patch_spell_ids_test.py      # stock spell ids below 256; a retired spell's new id is free for a Chaos spell (install_all step spells)
+python3 -I server/tools/patch_stock_spell_inputs_test.py   # Kindling Spark and Bewitching Hex read level and magic level, the old number for a typical caster at the level learned (O468; install_all step spells)
 python3 -I server/tools/monster_level_patch_test.py   # src-patch 0082: monster level = middle of the <level> range, no level skull (O326)
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
 python3 -I client/tools/rml_window_audit.py && python3 -I client/tools/rml_window_audit_test.py   # which windows the RmlUi mirror draws and which stay classic, from the .otui files (O406; --otui)

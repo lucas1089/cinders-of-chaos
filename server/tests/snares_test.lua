@@ -279,6 +279,7 @@ end
 local slowed = {}
 local DIR = {[EAST] = {1, 0}, [WEST] = {-1, 0}, [NORTH] = {0, -1}, [SOUTH] = {0, 1}}
 ChaosSpell = {
+	weaponShare = function() return 1 end, -- O468: the magic level share of a weapon spell (tests/spell_scaling_test.lua)
 	isEnemy = function(caster, t) return t:isMonster() and t:getMaster() == nil end,
 	distanceAttack = function() return 45 end, bladePower = function() return 1000 end,
 	shurikenPower = function() return 2000 end,

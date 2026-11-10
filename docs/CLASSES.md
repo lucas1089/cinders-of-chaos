@@ -124,7 +124,7 @@ after it (2026-10-24, server/README.md "Necromancer summons"). The Necromancer m
 grow with the chi spent; evasion; light armour.
 - **Shadowfist**: Pressure Points (a stacking debuff: the target takes more from Monks), Shadowfist Flurry (2 + 1 hit per chi),
   focus: after a finisher, crit chance 2.5% per chi spent for 4 s (12.5% at 5 chi).
-- **Iron Sage** (the second healer): Kindled Breath heals the most hurt party member (fist x 33 at 5 chi, +60%
+- **Iron Sage** (the second healer): Kindled Breath heals the most hurt party member (level x 2 + fist x 24.5 at 5 chi, +60%
   over 6 s), Mantra of Stone (party aura: -8% damage taken, and every 2 s a heal of level + fist x 26 on the party), Chi Ward
   (an absorb shield on a party member or itself), Iron Palm (a stun); more health and armour.
 
@@ -891,7 +891,7 @@ everything the Warrior wears; potions of the Elite Knight and the Royal Paladin.
   3 sqm, heals 10% of the damage dealt, at most 5% max health per cast), Zealotry (20 s: each melee hit adds a stack, +4%
   damage per stack up to +40%, gone 3 s after the last hit; **no spell casts it since O254**, Crusader's Sweep took its id).
 - Sentinel: Rebuke (taunt within 4 sqm, 25% slow), Aegis of Faith (with a shield: -40% damage taken for 5 s), Lay on Hands
-  (a party member or itself within 5 sqm: 35% of its maximum health + magic level x 10; 60 s cooldown), Shield Wave (a
+  (a party member or itself within 5 sqm: 35% of its maximum health + level x 0.3 + magic level x 5; 60 s cooldown), Shield Wave (a
   Radiant Smite on the target and 2x it on everything in the 3 x 3 tiles in front, 2026-10-15).
 - Templar only: Sanctified Ground (3 holy pulses around the cast tile: the target a third of a Radiant Smite each, the
   rest of the pack 2.5x it, 2026-10-15).

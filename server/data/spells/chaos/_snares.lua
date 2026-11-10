@@ -345,6 +345,9 @@ function M.cast(creature, kind, variant)
 		return ChaosSpell.cancel(player, "You cannot place a snare in a protection zone.")
 	end
 	local min, max = S.damage(player:getLevel(), M.power(player), kind, element, mods)
+	-- O468: a snare is a weapon spell: the magic level share of the placer, frozen with the rest at placement
+	local share = ChaosSpell.weaponShare(player)
+	min, max = math.floor(min * share), math.floor(max * share)
 	local t = now()
 	local armedAt = t + S.armMs(kind, mods)
 	local snare = {kind = kind, owner = player:getId(), pos = {x = pos.x, y = pos.y, z = pos.z}, element = element,

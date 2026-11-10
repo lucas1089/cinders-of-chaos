@@ -1,7 +1,7 @@
 -- Wild Bond: call your companion (a war wolf; 2 from level 400). Companions already out are called back to your side
 -- and healed for half their health.
 --
--- The Beastmaster's companion: its health scales with your level, its bites with your level and distance skill, and
+-- The Beastmaster's companion: its health scales with your level, its bites with your level, distance skill and magic level, and
 -- it attacks your target (data/scripts/chaos/beastmaster.lua, numbers in Chaos.classes.companion).
 dofile('data/spells/scripts/chaos/_common.lua')
 ChaosSpell.loadClasses()

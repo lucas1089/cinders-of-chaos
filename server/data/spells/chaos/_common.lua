@@ -17,6 +17,11 @@ end
 if ChaosFxMissile then
 	ChaosFxMissile.holy_arrow = ChaosFxMissile.holy_arrow or ChaosFxMissile.holy_bolt
 end
+-- O468: the magic level share of weapon spells (data/scripts/chaos/spell_scaling_core.lua)
+if not ChaosSpellScaling then
+	pcall(dofile, 'data/scripts/chaos/spell_scaling_config.lua')
+	pcall(dofile, 'data/scripts/chaos/spell_scaling_core.lua')
+end
 if ChaosSpell then
 	return
 end
@@ -397,6 +402,22 @@ function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)
 	local m = player:getMagicLevel()
 	scale = scale or 1
 	return (l + m * mlMin + baseMin) * scale, (l + m * mlMax + baseMax) * scale
+end
+
+-- O468: the factor on a WEAPON spell's base damage for the caster's magic level: (1 + ML / 300), divided by the same for the
+-- typical magic level at the caster's level, so a typical character deals what it dealt before (spell_scaling_config.lua
+-- mlShare). Apply it once to the hit of a spell that reads a weapon skill; never to a caster spell (its magic level is its
+-- skill), a Templar or Ranger holy spell (they read the magic level already) or an auto attack.
+function ChaosSpell.weaponShare(player)
+	local S = ChaosSpellScaling
+	return S and S.forPlayer(player) or 1
+end
+
+-- the onGetFormulaValues of a SKILLVALUE callback spell: the positive min, max of the script's formula in, the negative values
+-- the engine wants out, with the weapon share applied
+function ChaosSpell.weaponFormula(player, min, max)
+	local k = ChaosSpell.weaponShare(player)
+	return -min * k, -max * k
 end
 
 -- Damage helper for skill based spells (melee / distance).
@@ -808,6 +829,9 @@ function ChaosSpell.weaponStrike(caster, target, min, max, effect, origin)
 		local voc = caster:getVocation()
 		k = k * SF.forVocation(voc and voc:getId() or 0, nil, caster:getLevel())
 	end
+	-- O468: the magic level share of a weapon spell (once, here: the blade and shuriken schools of the attack kit and the Thief
+	-- line's scripts all deal their strike through this function)
+	k = k * ChaosSpell.weaponShare(caster)
 	min, max = min * k, max * k
 	-- the strike's numbers come from ChaosSpell.meleeSkillLevel already: weapon_styles.lua must not apply the melee skill
 	-- rule (the ratio of the best skill to the weapon's own) to it a second time; it reads this storage during the call
