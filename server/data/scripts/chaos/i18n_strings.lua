@@ -5874,6 +5874,16 @@ return {
 		-- O260: the first unique, the drop feed, the personal records
 		["Something heavy and old lies in the corpse: %s. It is yours."] = "Algo pesado e antigo jaz no corpo: %s. É seu.",
 		["%s (Lv %d) found %s!"] = "%s (Nv %d) encontrou %s!",
+		-- O467: a unique explains itself (unique_passives_core.lua C.fitText: the line under the passive of a unique's
+		-- tooltip; unique_intro_config.lua: the one-time line at the first unique)
+		["Works for your class."] = "Funciona para a sua classe.",
+		["Works for every class."] = "Funciona para todas as classes.",
+		["Asleep: your class is not in its list."] = "Inativo: a sua classe não está na lista.",
+		["Active."] = "Ativo.",
+		["Asleep: %s is stronger."] = "Inativo: %s é mais forte.",
+		["Asleep: only %d unique powers work at once."] = "Inativo: só %d poderes únicos funcionam ao mesmo tempo.",
+		["A unique is a named item with fixed stats and one power of its own. Right-click it and choose Open in Codex to see what it does."] =
+			"Um único é um item com nome, atributos fixos e um poder próprio. Clique com o botão direito e escolha Abrir no Codex para ver o que ele faz.",
 		["Nobody can speak in the Drops channel."] = "Ninguém pode falar no canal Drops.",
 		["New record: %s: %s (was %s)"] = "Novo recorde: %s: %s (era %s)",
 		["Best Drop Rarity"] = "Melhor raridade de drop",

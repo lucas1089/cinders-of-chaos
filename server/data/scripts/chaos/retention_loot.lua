@@ -154,6 +154,9 @@ local function giveFirstUnique(state, owner, corpse, corpsePos, L, bonus)
 	bonus[#bonus + 1] = "{" .. entry.name .. "}"
 	corpsePos:sendMagicEffect(globalByName(f.effect, f.fallbackEffect))
 	owner:sendTextMessage(globalByName("MESSAGE_EVENT_ADVANCE", 19), Chaos.t(owner, f.message, entry.name))
+	if ChaosUniqueIntro then -- O467: what a unique is and where to read its power, once per character
+		pcall(ChaosUniqueIntro.found, owner)
+	end
 	state.gift = item
 end
 

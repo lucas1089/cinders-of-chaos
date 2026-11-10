@@ -1327,6 +1327,9 @@ function V.deliver(player, r)
 				ChaosMakeUnique(item)
 			end
 			inboxUsed = giveEx(player, item) or inboxUsed
+			if ChaosUniqueIntro then -- O467
+				pcall(ChaosUniqueIntro.found, player)
+			end
 			parts[#parts + 1] = "the unique " .. tostring(e.name)
 			announce(ChaosI18n.msg("%s received the unique %s for defending %s!", player:getName(), tostring(e.name), tostring(r.areaName)), false)
 		end

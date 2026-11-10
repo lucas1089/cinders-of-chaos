@@ -749,6 +749,10 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Click: hide the description."] = "Clique: esconder a descrição.",
   ["Click: show the description in the row."] = "Clique: mostrar a descrição na linha.",
   ["Unique"] = "Única",
+  -- O467: the class row of an item tooltip (the class names stay in English) and the Set kind
+  ["For %s"] = "Para %s",
+  ["all classes"] = "todas as classes",
+  ["Set"] = "Conjunto",
   ["Rift Key"] = "Rift Key",
   ["Rarity %d"] = "Raridade %d",
   ["In the salvage batch"] = "No lote de salvage",

@@ -566,6 +566,9 @@ local function buyUnique(player, o)
 		return refuse(player, "tokens")
 	end
 	local inbox = giveEx(player, item)
+	if ChaosUniqueIntro then -- O467
+		pcall(ChaosUniqueIntro.found, player)
+	end
 	Chaos.saveCharacter(player)
 	X.saw(player, o.id)
 	return result(player, true, Chaos.t(player, "You bought %s for %d Conquest Tokens.%s", o.name, o.price,

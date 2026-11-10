@@ -1318,6 +1318,9 @@ function X.deliver(player, b, idx)
 				ChaosMakeUnique(item)
 			end
 			inbox = giveEx(player, item) or inbox
+			if ChaosUniqueIntro then -- O467
+				pcall(ChaosUniqueIntro.found, player)
+			end
 			lines[#lines + 1] = "{" .. u.name .. "}"
 			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s in %s!", player:getName(), u.name, cfg.name)
 		end

@@ -64,14 +64,21 @@ end
 
 -- the active passives of a character: the worn unique ids (a list, repeats allowed), its class line. A passive of
 -- another line sleeps, a family counts once (the highest item level wins, then the lower id), at most maxActive.
+-- Second result (O467, what the tooltip says): why[id] = {state = "active"} | {state = "class"} (the line is not in the
+-- passive's list) | {state = "family", by = id of the entry of the same family that wins} | {state = "cap"} (maxActive
+-- is full). One function picks the active ones and tells why, so the tooltip has no rule of its own.
 function C.activeSet(cfg, ids, lineKey)
 	cfg = cfgOf(cfg)
-	local list, seen = {}, {}
+	local list, seen, why = {}, {}, {}
 	for _, id in ipairs(ids or {}) do
 		local e = C.entry(cfg, id)
-		if e and not seen[id] and C.worksFor(cfg, e, lineKey) then
+		if e and not seen[id] then
 			seen[id] = true
-			list[#list + 1] = e
+			if C.worksFor(cfg, e, lineKey) then
+				list[#list + 1] = e
+			else
+				why[id] = {state = "class"}
+			end
 		end
 	end
 	table.sort(list, function(a, b)
@@ -82,12 +89,61 @@ function C.activeSet(cfg, ids, lineKey)
 	end)
 	local out, fam = {}, {}
 	for _, e in ipairs(list) do
-		if #out < cfg.maxActive and not fam[e.family] then
-			fam[e.family] = true
+		if fam[e.family] then
+			why[e.id] = {state = "family", by = fam[e.family]}
+		elseif #out >= cfg.maxActive then
+			why[e.id] = {state = "cap"}
+		else
+			fam[e.family] = e.id
 			out[#out + 1] = e
+			why[e.id] = {state = "active"}
 		end
 	end
-	return out
+	return out, why
+end
+
+-- What a unique's tooltip says about its power for the viewer (O467). ids = the worn unique ids, lineKey = the viewer's
+-- class line, itemId = the unique shown, worn = the viewer wears that very item. Returns {every, fit, state, by, max}:
+-- every = the passive lists all seven lines, fit = it works for the viewer's line, state / by = the verdict of
+-- activeSet for a worn item that fits (nil otherwise).
+function C.explain(cfg, ids, lineKey, itemId, worn)
+	cfg = cfgOf(cfg)
+	local e = C.entry(cfg, itemId)
+	if not e or not lineKey then
+		return nil
+	end
+	local info = {every = #e.lines >= 7, fit = C.worksFor(cfg, e, lineKey), max = cfg.maxActive}
+	if worn and info.fit then
+		local have = {}
+		for _, id in ipairs(ids or {}) do
+			have[#have + 1] = id
+		end
+		have[#have + 1] = itemId -- the shown item counts even when the caller's list missed it (activeSet ignores repeats)
+		local _, why = C.activeSet(cfg, have, lineKey)
+		local w = why[itemId]
+		info.state, info.by = w and w.state, w and w.by
+	end
+	return info
+end
+
+-- the line of a tooltip from C.explain: returns text, warn (warn = the power sleeps). t(key, ...) translates an
+-- English key (Chaos.t of the viewer); nameOf(id) is the name of a unique item. Keys are in i18n_strings.lua.
+function C.fitText(info, t, nameOf)
+	if type(info) ~= "table" then
+		return nil
+	end
+	if not info.fit then
+		return t("Asleep: your class is not in its list."), true
+	end
+	local s = info.every and t("Works for every class.") or t("Works for your class.")
+	if info.state == "active" then
+		return s .. " " .. t("Active."), false
+	elseif info.state == "family" then
+		return s .. " " .. t("Asleep: %s is stronger.", nameOf(info.by) or "?"), true
+	elseif info.state == "cap" then
+		return s .. " " .. t("Asleep: only %d unique powers work at once.", info.max), true
+	end
+	return s, false
 end
 
 function C.find(act, family)

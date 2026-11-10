@@ -182,6 +182,57 @@ local all = {}
 for _, l in ipairs(lines) do all[#all + 1] = l.text end
 eq(table.concat(all, ' '):find('Hungry Blade: Each', 1, true), nil, 'the passive is not repeated in the flavour')
 eq(table.concat(all, ' '):find('Every soul it cuts', 1, true) ~= nil, true, 'flavour kept')
+-- does the power work for the viewer (O467): the line under the rule, normal text or the warning colour
+reaper.passive.fit = 'Works for your class. Active.'
+lines = L.lines(reaper)
+found = {}
+for _, l in ipairs(lines) do found[l.text] = l end
+eq(found['Works for your class. Active.'] ~= nil and found['Works for your class. Active.'].color, L.COLORS.text, 'fit line in normal text')
+local fitAt, ruleAt
+for i, l in ipairs(lines) do
+  if l.text == 'Works for your class. Active.' then fitAt = i end
+  if l.text:find('Each kill restores', 1, true) then ruleAt = i end
+end
+eq(fitAt ~= nil and ruleAt ~= nil and fitAt > ruleAt, true, 'the fit line comes under the rule')
+reaper.passive.fit, reaper.passive.warn = 'Asleep: your class is not in its list.', true
+lines = L.lines(reaper)
+found = {}
+for _, l in ipairs(lines) do found[l.text] = l end
+eq(found['Asleep: your class is not in its list.'] ~= nil and found['Asleep: your class is not in its list.'].color, L.COLORS.red,
+  'an asleep power in the warning colour')
+local fitCard = L.card({ name = 'x', unique = { name = 'x' }, passive = { name = 'P', text = 'Rule.', flavor = 'F.', fit = 'Asleep: Y is stronger.', warn = true } }, {})
+local rows
+for _, g in ipairs(fitCard.extras) do if g.caption == 'P' then rows = g.rows end end
+eq(rows ~= nil and rows[#rows].text, 'Asleep: Y is stronger.', 'card: the fit line ends the passive group')
+eq(rows ~= nil and rows[#rows].color, L.COLORS.red, 'card: in the warning colour')
+-- the cache: a tip with a power line is forgotten when the equipment changes (it names the worn uniques)
+do
+  local cache = L.newCache()
+  L.cachePut(cache, 'u', { name = 'U', passive = { name = 'P', text = 'R', fit = 'Active.' } }, false, 0)
+  L.cachePut(cache, 'v', { name = 'V', passive = { name = 'P', text = 'R' } }, false, 0)
+  eq(L.dropSetTips(cache), 1, 'only the tip with a power line is dropped')
+  eq(L.cacheGet(cache, 'v', 0) ~= nil, true, 'a tip without one stays')
+end
+-- the class row goes through the translation: the prefix and the words 'all classes' (the class names stay)
+do
+  local saved = rawget(_G, 'tr')
+  rawset(_G, 'tr', function(s, ...)
+    local pt = { ['For %s'] = 'Para %s', ['all classes'] = 'todas as classes', ['Set'] = 'Conjunto', ['Unique'] = 'Única' }
+    s = pt[s] or s
+    if select('#', ...) > 0 then return string.format(s, ...) end
+    return s
+  end)
+  eq(L.classText('all classes'), 'todas as classes', 'all classes translated')
+  eq(L.classText('Mystic, Necromancer'), 'Mystic, Necromancer', 'class names untouched')
+  local classLines = L.lines({ name = 'Ring', slot = 'Ring', req = { voc = 'all classes' } })
+  local cl
+  for _, l in ipairs(classLines) do if l.text:find('^Para') then cl = l.text end end
+  eq(cl, 'Para todas as classes', 'the class row in pt-BR')
+  eq(L.kindText({ unique = { set = {} }, slot = 'Ring' }):find('Conjunto', 1, true) ~= nil, true, 'the Set kind in pt-BR')
+  local chips = L.reqChips({ voc = 'all classes' }, {})
+  eq(chips[1].text, 'todas as classes', 'the chip of all classes in pt-BR')
+  rawset(_G, 'tr', saved)
+end
 -- an older server (no passive block): the description as before
 reaper.passive = nil
 all = {}

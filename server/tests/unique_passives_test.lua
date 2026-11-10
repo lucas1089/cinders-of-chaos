@@ -138,6 +138,70 @@ do
 	eq(#C.activeSet(CFG, {a.id}, "nonsense"), 0, "an unknown line has none")
 end
 
+-- ---------------------------------------------------------------- what the tooltip says (O467): the same activeSet, with why
+do
+	local a = mk("lowlife", {lv = 50}, "W")
+	local b = mk("lowlife", {lv = 90}, "WR")
+	local c = mk("focus", {lv = 10}, "R")
+	local act, why = C.activeSet(CFG, {a.id, b.id, c.id}, "warrior")
+	eq(#act, 1, "activeSet keeps its first result")
+	eq(why[b.id].state, "active", "why: the winner is active")
+	eq(why[a.id].state, "family", "why: the weaker of a family sleeps")
+	eq(why[a.id].by, b.id, "why: and names the winner")
+	eq(why[c.id].state, "class", "why: another line's passive sleeps for the class")
+	-- the cap: maxActive + 1 families on one line; the lowest level is the one over the limit
+	local ids, low = {}, nil
+	for i, f in ipairs({"convert", "lowlife", "overflow", "opener", "focus", "statscale"}) do
+		local e = mk(f, {lv = 100 + i})
+		ids[#ids + 1] = e.id
+		low = low or e
+	end
+	local act2, why2 = C.activeSet(CFG, ids, "mystic")
+	eq(#act2, CFG.maxActive, "the cap holds")
+	eq(why2[low.id].state, "cap", "why: the weakest family is over the limit")
+	-- explain: not worn = only the class; worn = the verdict of activeSet
+	eq(C.explain(CFG, {}, nil, a.id, false), nil, "explain: no class line, nothing to say")
+	eq(C.explain(CFG, {}, "warrior", 424242, false), nil, "explain: no passive, nothing to say")
+	local n = C.explain(CFG, {}, "warrior", a.id, false)
+	ok(n.fit and not n.every and n.state == nil, "explain: a carried unique of the class works, no state")
+	ok(not C.explain(CFG, {}, "ranger", a.id, false).fit, "explain: another class does not fit")
+	local w = C.explain(CFG, {a.id, b.id}, "warrior", a.id, true)
+	eq(w.state, "family", "explain: worn, beaten in its family")
+	eq(w.by, b.id, "explain: by the winner")
+	eq(C.explain(CFG, {a.id, b.id}, "warrior", b.id, true).state, "active", "explain: worn winner is active")
+	eq(C.explain(CFG, {}, "warrior", b.id, true).state, "active", "explain: the shown item counts when the list missed it")
+	eq(C.explain(CFG, ids, "mystic", low.id, true).state, "cap", "explain: worn over the limit")
+	eq(C.explain(CFG, ids, "mystic", low.id, true).max, CFG.maxActive, "explain: names the limit")
+	ok(C.explain(CFG, {}, "warrior", mk("convert", {}, "ALL").id, false).every, "explain: every class line")
+	-- the lines: English keys, formatted by t, the winner by name
+	local function t(key, ...)
+		return select("#", ...) > 0 and key:format(...) or key
+	end
+	local function nameOf(id)
+		return id == b.id and "Winner Blade" or nil
+	end
+	local s, warn = C.fitText(C.explain(CFG, {}, "warrior", a.id, false), t, nameOf)
+	eq(s, "Works for your class.", "line: works"); eq(warn, false, "line: works is no warning")
+	s, warn = C.fitText(C.explain(CFG, {}, "ranger", a.id, false), t, nameOf)
+	eq(s, "Asleep: your class is not in its list.", "line: class asleep"); eq(warn, true, "line: asleep warns")
+	s = C.fitText(C.explain(CFG, {a.id, b.id}, "warrior", b.id, true), t, nameOf)
+	eq(s, "Works for your class. Active.", "line: worn and active")
+	s, warn = C.fitText(C.explain(CFG, {a.id, b.id}, "warrior", a.id, true), t, nameOf)
+	eq(s, "Works for your class. Asleep: Winner Blade is stronger.", "line: worn, a stronger unique wins"); eq(warn, true, "line: family warns")
+	s = C.fitText(C.explain(CFG, ids, "mystic", low.id, true), t, nameOf)
+	eq(s, "Works for every class. Asleep: only " .. CFG.maxActive .. " unique powers work at once.", "line: worn over the limit (these test passives list every line)")
+	s = C.fitText(C.explain(CFG, {}, "warrior", mk("convert", {}, "ALL").id, false), t, nameOf)
+	eq(s, "Works for every class.", "line: every class")
+	eq(C.fitText(nil, t, nameOf), nil, "line: nothing to say")
+	-- every real passive: `every` is true exactly when the item text has no "For:" part, and fit follows the lines
+	for id, raw in pairs(real) do
+		local info = C.explain(CFG, {}, "warrior", id, false)
+		local text = C.text(CFG, C.entry(CFG, id), "en")
+		eq(info.every, text:find("For: ", 1, true) == nil, "every matches the text of " .. id)
+		eq(info.fit, C.entry(CFG, id).lines:find("W", 1, true) ~= nil, "fit follows the lines of " .. id)
+	end
+end
+
 -- ---------------------------------------------------------------- damage you deal
 do
 	local S = C.newState()
@@ -543,7 +607,10 @@ do
 	item.getCustomAttribute = function() return nil end
 	ChaosUniquePassives.refresh(player)
 	eq((events.ChaosUPDealt.onHealthChange(mon, player, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE, false)), -100, "a plain copy has no passive")
+	eq(#ChaosUniquePassives.wornIds(player), 0, "wornIds: a plain copy is not listed")
 	item.getCustomAttribute = function(_, k) return k == "chaos_unique" and 1 or nil end
+	eq(#ChaosUniquePassives.wornIds(player), 1, "wornIds: a real unique copy is listed (O467: the tooltip asks it)")
+	ok(ChaosUniquePassives.isPassiveSlot(CONST_SLOT_RING) and not ChaosUniquePassives.isPassiveSlot(-5), "isPassiveSlot")
 	-- another class line: the passive sleeps
 	ChaosClasses.lineKey = function() return "warrior" end
 	ChaosUniquePassives.refresh(player)

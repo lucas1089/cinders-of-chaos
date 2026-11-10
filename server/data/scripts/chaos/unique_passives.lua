@@ -111,8 +111,8 @@ local function stateOf(player)
 	return st
 end
 
-function M.refresh(player)
-	local st = stateOf(player)
+-- the ids of the real unique copies a player wears (a list); the tooltip of a worn unique asks it too (O467)
+function M.wornIds(player)
 	local ids = {}
 	for _, slot in ipairs(SLOTS) do
 		local item = player:getSlotItem(slot)
@@ -123,6 +123,22 @@ function M.refresh(player)
 			end
 		end
 	end
+	return ids
+end
+
+-- is this inventory slot one whose unique counts for the passives (the tooltip: a worn unique shows its state)
+function M.isPassiveSlot(slot)
+	for _, s in ipairs(SLOTS) do
+		if s == slot then
+			return true
+		end
+	end
+	return false
+end
+
+function M.refresh(player)
+	local st = stateOf(player)
+	local ids = M.wornIds(player)
 	local voc = player:getVocation()
 	st.line = ChaosClasses and ChaosClasses.lineKey and voc and ChaosClasses.lineKey(voc:getId()) or nil
 	st.act = st.line and C.activeSet(CFG, ids, st.line) or {}
