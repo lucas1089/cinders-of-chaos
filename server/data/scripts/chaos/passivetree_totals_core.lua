@@ -11,9 +11,11 @@
 --   PassiveTotalsCore.damage(bonuses, api)       [{k, raw, eff, cap}] for physical and every element with a percent
 --       raw = the percent the tree gives to the type (its increment + all-elements), eff = after the soft cap, cap = 150
 --   PassiveTotalsCore.crit(bonuses, gearChance, gearAmount)
---       {chance = {total, tree, other}, amount = {total, tree, paragon, other}}: `total` is what the engine rolls with
---       (tree, Paragon, gear, gems, blessings together); tree / paragon are the shares of the passive tree and Paragon;
---       other = total - tree - paragon (gear and the rest). A nil total (no engine API) counts the tree and Paragon only.
+--       {chance = {total, tree, other, raw, cap, capped}, amount = {total, tree, paragon, other, raw, cap, capped}}: `raw` is what
+--       the engine rolls with (tree, Paragon, gear, gems, blessings together), `total` what counts in a hit, raw under the
+--       caps of O471 (the 4th argument {chanceCap, amountCap}; `cap` and `capped` = true when raw is over it); tree / paragon
+--       are the shares of the passive tree and Paragon; other = raw - tree - paragon (gear and the rest). A nil total (no
+--       engine API) counts the tree and Paragon only.
 -- `api` = {charStat = fn(points, stat), softCap = fn(raw, cap, H), cfg = ChaosPassiveEffectsConfig, damageRaw = fn(bonuses,
 -- combatType), damagePercent = fn(bonuses, combatType), types = {{statKey, combatType}, ...}}.
 -- Lua 5.1 / LuaJIT and Lua 5.3.
@@ -53,15 +55,20 @@ function M.damage(bonuses, api)
 	return out
 end
 
-function M.crit(bonuses, gearChance, gearAmount)
+function M.crit(bonuses, gearChance, gearAmount, caps)
 	local treeChance = bonuses.criticalHitChance or 0
 	local treeAmount = bonuses.criticalHitAmount or 0
 	local paragon = bonuses.paragonCritDamage or 0
 	local chance = gearChance ~= nil and math.max(gearChance, treeChance) or treeChance
 	local amount = gearAmount ~= nil and math.max(gearAmount, treeAmount + paragon) or treeAmount + paragon
+	-- O471: the character caps (ChaosItemMods.config.crit {chanceCap, amountCap}). `total` is what counts in a hit, `raw` what
+	-- the sources give; the shares (tree, Paragon, other) are the raw ones, so the row can say "over the cap"
+	local cc, ac = caps and tonumber(caps.chanceCap), caps and tonumber(caps.amountCap)
 	return {
-		chance = {total = round(chance), tree = round(treeChance), other = round(chance - treeChance)},
-		amount = {total = round(amount), tree = round(treeAmount), paragon = round(paragon), other = round(amount - treeAmount - paragon)}
+		chance = {total = round(cc and math.min(chance, cc) or chance), tree = round(treeChance), other = round(chance - treeChance),
+			raw = round(chance), cap = cc, capped = cc ~= nil and chance > cc or nil},
+		amount = {total = round(ac and math.min(amount, ac) or amount), tree = round(treeAmount), paragon = round(paragon),
+			other = round(amount - treeAmount - paragon), raw = round(amount), cap = ac, capped = ac ~= nil and amount > ac or nil}
 	}
 end
 

@@ -299,6 +299,10 @@ local function styled(creature, attacker, primaryDamage, primaryType, secondaryD
 
 	-- the quiver: critical strike, element share, extra projectile
 	local crit = bonus(attacker, "bowcrit")
+	if crit > 0 and ChaosItemMods and ChaosItemMods.critRoom and ChaosCritCap and ChaosCritCap.engineTotals then
+		-- O471: the critical chance of a character is at most 45 points, the engine's own chance first (crit_cap.lua)
+		crit = math.min(crit, ChaosItemMods.critRoom(ChaosCritCap.engineTotals(attacker) or 0))
+	end
 	if crit > 0 and math.random(1, 100) <= crit then
 		primaryDamage = A.critHit(primaryDamage)
 		secondaryDamage = A.critHit(secondaryDamage)

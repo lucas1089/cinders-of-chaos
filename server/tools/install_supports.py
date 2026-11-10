@@ -73,6 +73,13 @@ def read_config(path=CONFIG):
                      'text': m.group(3)})
     cfg['supports'] = sups
     assert sups, 'chaos_supports_config.lua: no supports found'
+    # O471: the damage runes count at most this level's value (a Mythic rune counts as Legendary)
+    lc = re.search(r'levelCeiling\s*=\s*\{([^}]*)\}', text)
+    cfg['levelCeiling'] = {k: int(v) for k, v in re.findall(r'(\w+)\s*=\s*(\d+)', lc.group(1))} if lc else {}
+    cn = re.search(r'ceilingNote\s*=\s*"((?:[^"\\]|\\.)*)"', text)
+    cfg['ceilingNote'] = cn.group(1) if cn else ''
+    for key, lv in cfg['levelCeiling'].items():
+        assert any(x['key'] == key for x in sups), 'levelCeiling names an unknown support: %s' % key
     assert len(cfg['levelNames']) == cfg['levels'], 'one level name per level'
     for s in sups:
         assert len(s['values']) == cfg['levels'], '%s: one value per level' % s['key']
@@ -86,14 +93,22 @@ def fill(text, v1, v2):
     return text.replace('%%', '%')
 
 
+def counted_level(cfg, s, level):
+    """the level whose value a rune counts at (chaos_supports.lua S.countedLevel)"""
+    return min(level, cfg.get('levelCeiling', {}).get(s['key'], level))
+
+
 def description(cfg, s, level):
-    v1 = s['values'][level - 1]
-    v2 = s['values2'][level - 1] if s['values2'] else None
+    counted = counted_level(cfg, s, level)
+    v1 = s['values'][counted - 1]
+    v2 = s['values2'][counted - 1] if s['values2'] else None
     fits = ', '.join(KIND_NAMES.get(k, k) for k in s['fits'])
     effect = fill(s['text'], v1, v2)
     text = 'A support rune for a spell socket: %s. Fits %s spells.' % (effect[:1].lower() + effect[1:], fits)
     if level < cfg['levels']:
         text += ' Three of them combine into one of the next level: use the stack, then left-click the same stack.'
+    if counted < level and cfg.get('ceilingNote'):
+        text += ' ' + cfg['ceilingNote']
     return text + ' Use it to open the spell supports (Character > Spell Supports).'
 
 

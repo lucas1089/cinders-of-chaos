@@ -188,11 +188,14 @@ C.specials = {
 -- one engine attribute each, rolled alone (O461): Critical Strike Chance (points) and Critical Strike Damage (percent). The base
 -- script (customs/rarity/base_rarity.lua) turns each attribute into its own condition when the item is worn, so neither needs
 -- the other. `engine` = the group of ChaosItemMods.config.engine that holds the tiers.
+-- O471 (2026-11-10): both roll on the weapon, the necklace and the ring only (before: also the badge and the quiver). Items
+-- that already carry one keep it: readMods reads every attribute an item has, whatever its kind allows. The character caps
+-- are in ChaosItemMods.config.crit.
 C.singles = {
 	{key = "rarity_criticalHitChance", label = "Critical Strike Chance", engine = "critchance",
-		kinds = {weapon = true, jewel = true, other = true, quiver = true}},
+		kinds = {weapon = true, jewel = true}},
 	{key = "rarity_criticalHitAmount", label = "Critical Strike Damage", engine = "critdamage",
-		kinds = {weapon = true, jewel = true, other = true, quiver = true}}
+		kinds = {weapon = true, jewel = true}}
 }
 C.elements = {
 	{key = "rarity_elementfire", label = "Fire"},

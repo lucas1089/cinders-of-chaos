@@ -60,7 +60,8 @@ function K.clean(raw)
 	end
 	local out = {
 		attack = pos(raw.attack), hit = pos(raw.hit), maxHit = pos(raw.maxHit), attackSpeed = pos(raw.attackSpeed, 100),
-		critChance = pos(raw.critChance, 100), critAmount = pos(raw.critAmount, 10000), lifeLeech = pair(raw.lifeLeech),
+		critChance = pos(raw.critChance, 100), critAmount = pos(raw.critAmount, 10000),
+		critChanceRaw = pos(raw.critChanceRaw, 1000), critAmountRaw = pos(raw.critAmountRaw, 100000), lifeLeech = pair(raw.lifeLeech),
 		manaLeech = pair(raw.manaLeech), damage = list(raw.damage, 0), defense = pos(raw.defense), armor = pos(raw.armor),
 		mitigation = raw.mitigation and pos(tonumber(raw.mitigation) * 100, 100) or nil, resist = list(raw.resist, -1000),
 		maxHealth = pos(raw.maxHealth), maxMana = pos(raw.maxMana), moveSpeed = pos(raw.moveSpeed)
@@ -133,11 +134,20 @@ function K.text(sheet, character, tx)
 	if sheet.attackSpeed then
 		off[#off + 1] = tx("Attack speed: +%s%%", pct(sheet.attackSpeed))
 	end
+	-- O471: the caps (chance 45, damage 150, ChaosItemMods.config.crit): a total that was cut says so, with what the sources give
 	if sheet.critChance then
-		off[#off + 1] = tx("Critical chance: %s%%", pct(sheet.critChance))
+		if sheet.critChanceRaw and sheet.critChanceRaw > sheet.critChance then
+			off[#off + 1] = tx("Critical chance: %s%% (cap; your sources give %s%%)", pct(sheet.critChance), pct(sheet.critChanceRaw))
+		else
+			off[#off + 1] = tx("Critical chance: %s%%", pct(sheet.critChance))
+		end
 	end
 	if sheet.critAmount then
-		off[#off + 1] = tx("Critical damage: +%s%%", pct(sheet.critAmount))
+		if sheet.critAmountRaw and sheet.critAmountRaw > sheet.critAmount then
+			off[#off + 1] = tx("Critical damage: +%s%% (cap; your sources give +%s%%)", pct(sheet.critAmount), pct(sheet.critAmountRaw))
+		else
+			off[#off + 1] = tx("Critical damage: +%s%%", pct(sheet.critAmount))
+		end
 	end
 	if sheet.lifeLeech then
 		off[#off + 1] = tx("Life leech: %s%% chance, %s%% of the hit", pct(sheet.lifeLeech.chance), pct(sheet.lifeLeech.amount))
