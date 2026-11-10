@@ -6,8 +6,8 @@
 
 return {
 	enabled = true,
-	-- player storage 7103080 (block 7103080 - 7103089, README "Storage keys"): 1 once the line was shown, else unset
-	storage = 7103080,
+	-- player storage 7103090 (block 7103090 - 7103099, README "Storage keys"): 1 once the line was shown, else unset
+	storage = 7103090,
 	-- English; the pt-BR text is in i18n_strings.lua. The first sentence says what a unique is, the second where to read
 	-- what this one does (the right-click entry of client game_codex, "Open in Codex").
 	text = "A unique is a named item with fixed stats and one power of its own. Right-click it and choose Open in Codex to see what it does.",

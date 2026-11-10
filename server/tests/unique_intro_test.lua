@@ -27,7 +27,7 @@ ok(not K.due(cfg, 1), "shown: not due")
 ok(not K.due(cfg, K.SHOWN), "the shown value is not due")
 ok(not K.due({enabled = false}, nil), "off: never")
 ok(not K.due(nil, nil), "no config: never")
-eq(cfg.storage, 7103080, "the storage key of the README block 7103080 - 7103089")
+eq(cfg.storage, 7103090, "the storage key of the README block 7103090 - 7103099")
 
 -- the storage key is free: no other config or constant of the server uses it
 local function readFile(path)
@@ -39,11 +39,11 @@ end
 do
 	local hits = 0
 	for _, path in ipairs({"data/scripts/chaos/chaos_constants.lua", "data/scripts/chaos/retention_loot_config.lua"}) do
-		for _ in readFile(path):gmatch("7103080") do
+		for _ in readFile(path):gmatch("7103090") do
 			hits = hits + 1
 		end
 	end
-	eq(hits, 0, "no other file holds 7103080")
+	eq(hits, 0, "no other file holds 7103090")
 end
 
 -- ---------------------------------------------------------------- the glue on a mocked player

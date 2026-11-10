@@ -893,6 +893,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103060 - 7103069 | new player survey (`survey_config.lua` `storage`, `Chaos.storage.survey`, O374): +0 bit mask of the survey stages (bit 0 = level 20, bit 1 = level 50) already handled for the character's account (a cache of `chaos_survey`); +1..9 free |
 | 7103070 - 7103079 | Wandering Merchant (`invasion_config.lua` `worldEvents.merchant.storageBase`, O399): +0..+9 the stop + 1 in which the character bought the item at that place of `items` (one of each per stop) |
 | 7103080 - 7103089 | player defence (`player_defence_config.lua` `storage`, O464): +0 the last level the character was told about the resistance penalty (once per level); +1..9 free |
+| 7103090 - 7103099 | the first unique line (`unique_intro_config.lua` `storage`, O467): +0 is 1 once the character read what a unique is; +1..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -3997,6 +3998,55 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
 | 2200 | Bastion of the Last Dawn | Dawn Broke Here | panic | Warrior, Templar |
 | 2200 | Bellringer of the Last Vigil | Hour Without End | mend | Warrior, Monk, Templar |
 | 2400 | Choirless Pendant | Silence Left Behind | feast | all |
+
+## Uniques explain themselves (O467)
+A player on the test server held 14 uniques and could not tell what they were. Before this, a unique's tooltip never said
+whether its power worked for the viewer, nothing led from the item to its Codex page, the Codex did not explain the
+power, the class lines or the limit of active powers, and the Item Finder did not know a unique by its own name.
+- **Tooltip line.** `item_tooltip.lua` adds `tip.passive.fit` (and `warn` when the power sleeps) under the passive block:
+  "Works for your class." / "Works for every class." (normal text) or "Asleep: your class is not in its list." (warning
+  colour). For a unique the viewer WEARS it adds the state of the limit: "Active.", "Asleep: <unique> is stronger." (the
+  worn unique that wins the family) or "Asleep: only 5 unique powers work at once." The rule is not copied:
+  `ChaosUniquePassivesCore.activeSet` (the function the passives use) returns the reason per item as a second result
+  (`why[id] = {state = active | class | family (by) | cap}`), `C.explain` and `C.fitText` turn it into the line. Worn
+  means the hovered item sits in an inventory slot a passive counts (`ChaosUniquePassives.isPassiveSlot`, decoded from the
+  request's `pos`); the worn uniques come from `ChaosUniquePassives.wornIds` (the same list `refresh` uses). The client
+  drops cached tips with a power line when the equipment changes (`L.dropSetTips`). The lines are English keys of
+  `i18n_strings.lua` (`Chaos.t`). The same unique worn twice counts once (activeSet ignores a repeated id), so both copies
+  read "Active.".
+- **Class row.** The client puts "For %s" and "all classes" through `tr()` (pt-BR "Para %s", "todas as classes"); the kind
+  text "Set" too ("Conjunto"). The class names stay English.
+- **Open in Codex.** `tip.codex` = `unique:<item id>` (the page exists for every entry of `ChaosUniqueById`) or `set:<key>`
+  for a set piece without a unique page (`T.codexId`). Client: `game_itemtooltip` `codexIdOf(item)` reads it from the tip cache
+  (the player has hovered the item), `game_itemfinder` adds the menu entry `Open in Codex` (the Codex is a lazy module, so
+  the entry cannot live there) and opens the page. Items on the ground have no tooltip, so no entry. 18 of the 196 uniques have
+  no Uniques page (raid, Descent and set-only pieces): their set piece gets the set page, the others no entry.
+- **Codex.** Basics page "Uniques" (what a unique is, the power and its classes, how many powers work at once and how the
+  winner is picked, where uniques come from, Ctrl compares and Alt explains; every number from the configs). The Uniques tab
+  has a Class filter (`f.class` = the class lines of the passive) and its Level filter derives its steps from the levels of the
+  uniques (`Gen.levelSteps`, 8 steps up to the highest level: it stopped at 150, the uniques reach 2400). Item row "Power works
+  for". A leveling unique that lists monsters gets the Sources row "Level window" (`Gen.uniqueWindow`): the monster levels it
+  also drops in and its chance at its own level. The wiki shows the same rows (it reads the Codex data) and its "Expected
+  effort" for those uniques says the window too (it counted the listed monsters only).
+- **Level window core.** `unique_window_core.lua` holds the window rule (`range`, `levels`, `curveAt`); `loot.lua`
+  `L.openLevelMult`, the Codex, the wiki and the Item Finder read it, so the rule has one copy.
+- **First unique line.** `unique_intro.lua`: `ChaosUniqueIntro.found(player)` sends one line the first time a character finds a
+  unique (storage 7103080, block 7103080 - 7103089): "A unique is a named item with fixed stats and one power of its own.
+  Right-click it and choose Open in Codex to see what it does." Called from the loot of a kill (`loot.lua`), the first-unique
+  gift (`retention_loot.lua`), set pieces, the Conquest vendor, the raid, the Ascended fights, the world boss, pocket bosses and
+  invasions. Not called from treasure goblins, cursed chests, rifts and Omen chests (the first unique of a hunt comes from
+  `loot.lua` or the gift long before).
+- **Item Finder.** `itemInfo` names a unique record "Soulreaper (crimson sword)": either name finds it (the engine knows the id by
+  the stock name; before, a search for "soulreaper" found nothing). The unique source line of a leveling unique with a monster
+  list says "also any other monster of level A-B". The finder's rows are English only, as before.
+- **Alt help.** The help line of a unique with a Codex page says what the power is and points to the Codex.
+- **Goals.** "Find a unique item" says "A hunt at your level drops about 1 unique in 2,000 kills, from most monsters. Or buy one
+  with Conquest Tokens." (2,000 = `unique_pace_config.lua` `aim`; it said "about 1 in several hundred legendary kills").
+- Tests: `tests/unique_passives_test.lua` (why, explain, the lines in both keys), `tests/unique_intro_test.lua`,
+  `tests/unique_open_level_test.lua` (the window in words), `tests/item_tooltip_test.lua` (`T.codexId`),
+  `tests/codex_gen_test.lua` (page, filters, rows, numbers from the configs), `tests/wiki_unique_effort_test.lua`,
+  `tests/itemfinder_test.lua` (the unique by its own name, the window line), client `tooltiplogic_test.lua`,
+  `itemhelp_test.lua`, `itemfinderlogic_test.lua`. Install: Lua only, no new opcode, no engine patch.
 
 ## Thief dual wield, attack speed and daggers (2026-10-23)
 Owner: "thief deveriam ser criados já com dual wield de daggers. devem atacar mais rápido que a outras classes, empatado com o monk"
