@@ -32,7 +32,7 @@ ok(cfg['levels'] == [100, 500, 1000], 'levels 100, 500, 1000')
 for k in ('burstSeconds', 'drawBand', 'physicalShare', 'burstMax', 'killMin', 'killMax', 'dieMin', 'sustainMax', 'duelShareMax'):
     ok(k in cfg, 'config: %s is read' % k)
 ok(0 < cfg['drawBand'] < 0.5 and 0 < cfg['physicalShare'] < 1 and cfg['killMin'] < cfg['killMax'], 'config: sane parameters')
-ok(cfg['exceptions']['Deadeye@1000']['burst'] > cfg['burstMax'], 'config: an exception row is read and is above the limit')
+ok(cfg['exceptions']['Deadeye@100']['burst'] > cfg['burstMax'], 'config: an exception row is read and is above the limit')
 ok(all(k.split('@')[0] in P.NAMES for k in cfg['exceptions']), 'config: every exception names a class')
 ok(all(int(k.split('@')[1]) in cfg['levels'] for k in cfg['exceptions'] if '@' in k), 'config: every exception level is a level of the table')
 ok(text.count('-- O444:') >= 4 and 'COMPUTED, NOT MEASURED' in text, 'config: the exceptions carry O444 notes and it says computed')
@@ -90,7 +90,7 @@ level = 500
 base = {'dps': {(c, level): 2000.0 for c in P.NAMES}, 'burst': {(c, level): 1.5 for c in P.NAMES},
         'layers': {(c, level): dict(lay) for c in P.NAMES}}
 syn = dict(cfg, levels=[level], exceptions={})
-res = P.solve(base, syn, rule)
+res = P.solve(base, syn, rule, scaled=False)
 r = res[level]['rows']['Warrior']
 ok(r['wins'] == 0 and r['losses'] == 0 and r['draws'] == 20, 'identical classes: every duel is a draw')
 ok(abs(r['kill0'] - 10000 / (2000 * 0.5)) < 1e-9, 'kill: pool over the damage after the PvP half (10 s)')
@@ -98,14 +98,14 @@ ok(abs(r['burst'] - 3 * 2000 * 1.5 * 0.5 / 10000) < 1e-9, 'burst: 3 s x damage x
 ok(r['kill1'] == r['kill0'] and r['sustain'] == 0.0, 'no healing: the same time and no sustain')
 strong = {k: dict(v) for k, v in base.items()}
 strong['dps'][('Deadeye', level)] = 6000.0
-res2 = P.solve(strong, syn, rule)
+res2 = P.solve(strong, syn, rule, scaled=False)
 r2 = res2[level]['rows']
 ok(r2['Deadeye']['wins'] == 20 and r2['Warrior']['losses'] == 1, 'one stronger class wins its 20 duels, the others lose one')
 ok(r2['Deadeye']['burst'] > 1.0, 'a class with 3x the damage (a burst of 1.35) one-shots the median class in the burst window (burst above 1)')
 healed = {k: dict(v) for k, v in base.items()}
 for c in P.NAMES:
     healed['layers'][(c, level)] = dict(lay, heal=3000.0)  # x0.7 = 2100 a second against 1000 taken
-r3 = P.solve(healed, syn, rule)[level]['rows']['Warrior']
+r3 = P.solve(healed, syn, rule, scaled=False)[level]['rows']['Warrior']
 ok(r3['kill1'] == P.INF and r3['die1'] == P.INF and abs(r3['sustain'] - 2100.0 / 1000.0) < 1e-9 and r3['kill0'] < P.INF,
    'healing above the damage: never with healing, finite without; sustain is healing over damage')
 ok(r3['wins'] == 0 and r3['draws'] == 20 and r3['drawsHeal'] == 20, 'healing above the damage: every duel a draw')
@@ -113,7 +113,7 @@ ok(r3['wins'] == 0 and r3['draws'] == 20 and r3['drawsHeal'] == 20, 'healing abo
 # ---- the limits
 ok(P.limit(cfg, 'Warrior', 'burst', 500) == cfg['burstMax'] and P.limit(cfg, 'Warrior', 'wins', 500) == cfg['duelShareMax'] * 20,
    'limit: the general one, the duel share of the 20 duels')
-ok(P.limit(cfg, 'Deadeye', 'burst', 1000) == cfg['exceptions']['Deadeye@1000']['burst'] and P.limit(cfg, 'Illusionist', 'burst', 1000) == cfg['burstMax'],  # O455 named Deadeye@100 too: the probe is a class with one level named
+ok(P.limit(cfg, 'Deadeye', 'burst', 100) == cfg['exceptions']['Deadeye@100']['burst'] and P.limit(cfg, 'Deadeye', 'burst', 1000) == cfg['burstMax'],  # O455 named Deadeye@100 too: the probe is a class with one level named
    'limit: an exception with a level is for that level only')
 own = P.config(text.replace('exceptions = {', 'exceptions = {\n\t\t["Warrior"] = {killMin = 1},', 1))
 ok(P.limit(own, 'Warrior', 'killMin', 100) == 1 and P.limit(own, 'Warrior', 'killMin', 1000) == 1,
@@ -123,7 +123,7 @@ ok(P.passes('killMin', 5, 4) and not P.passes('killMin', 3, 4) and P.passes('bur
 ok(P.problems(res, syn) == [], 'problems: identical classes break no limit')
 ok(any('Deadeye level 500, burst' in b for b in P.problems(res2, syn)), 'problems: a one shot class is named')
 tight = dict(syn, duelShareMax=0.5)
-ok(any('wins' in b for b in P.problems(P.solve(strong, tight, rule), tight)), 'problems: a class that wins more than the share of its duels fails')
+ok(any('wins' in b for b in P.problems(P.solve(strong, tight, rule, scaled=False), tight)), 'problems: a class that wins more than the share of its duels fails')
 nr = P.near(res, dict(syn, killMin=9.5))
 ok(any(m == 'killMin' for _, _, m, _, _ in nr), 'near: a class within 10% of a minimum is listed')
 ok(P.near(res, syn) == [], 'near: nothing within 10% of the limits of identical classes')
@@ -155,14 +155,21 @@ for key, row in cfg['exceptions'].items():
 ok(all(t['rows'][c]['sustain'] > 1.0 for t in real.values() for c in P.NAMES),
    'O444 finding: sustain is above 1 for all 63 class rows (delete this when it is not)')
 # O473: the PvP damage scale table (pvp_scale_core.lua applies it; the model only reads and checks its shape)
-ok(cfg['damageScale'] == [(100, 1.0), (200, 0.94), (300, 0.89), (500, 0.79), (700, 0.76), (1000, 0.48), (1500, 0.52), (2000, 0.46)],
+ok(cfg['damageScale'] == [(100, 1.24), (200, 1.09), (300, 1.06), (500, 0.98), (700, 0.95), (1000, 0.68), (1500, 0.69), (2000, 0.65)],
    'O473: the damage scale table is read')
 ok(P.scale_problems(cfg) == [], 'O473: the scale table is well formed')
-ok(P.damage_scale(100, cfg) == 1.0 and abs(P.damage_scale(500, cfg) - 0.79) < 1e-12 and abs(P.damage_scale(5000, cfg) - 0.46) < 1e-12,
-   'O473: the scale at the rows and above the last')
-ok(abs(P.damage_scale(150, cfg) - math.exp(0.5 * math.log(0.94))) < 1e-12, 'O473: geometric between two rows, as pvp_scale_core.lua')
-ok(P.scale_problems({'damageScale': [(100, 1.0), (50, 0.9)]}) != [] and P.scale_problems({'damageScale': [(100, 1.2)]}) != []
-   and P.scale_problems({}) != [], 'O473: a descending level, a factor over 1 and no table are problems')
+ok(P.damage_scale(100, cfg) == 1.24 and abs(P.damage_scale(500, cfg) - 0.98) < 1e-12 and abs(P.damage_scale(5000, cfg) - 0.65) < 1e-12,
+   'O475: the re-fitted scale at the rows and above the last')
+ok(abs(P.damage_scale(150, cfg) - math.exp(0.5 * math.log(1.24) + 0.5 * math.log(1.09))) < 1e-12, 'O473: geometric between two rows, as pvp_scale_core.lua')
+ok(P.scale_problems({'damageScale': [(100, 1.0), (50, 0.9)]}) != [] and P.scale_problems({'damageScale': [(100, 2.5)]}) != []
+   and P.scale_problems({}) != [], 'O473: a descending level, a factor over 2 and no table are problems')
+ok(P.scale_problems({'damageScale': [(100, 1.0)]}) != [], 'O475: a factor that is not the fit is a problem')
+for lv in (100, 200, 300, 500, 700, 1000, 1500, 2000):
+    ok(abs(P.damage_scale(lv, cfg) / P.fit_scale(lv) - 1) < 0.015, 'O475: level %d: the table is the fit (%.3f / %.3f)' % (lv, P.damage_scale(lv, cfg), P.fit_scale(lv)))
+# the seconds to kill hold what they were before the round
+before = P.solve(P.inputs([500], rnd=False), cfg, P.rules(), [500], scaled=False)[500]
+after = P.solve(P.inputs([500]), cfg, P.rules(), [500])[500]
+ok(abs(after['median']['dps'] / before['median']['dps'] - 1) < 0.01, 'O475: the median class deals what it dealt at 500 once the scale is in')
 ok(P.main(['--check']) == 0, 'the CLI check passes')
 
 if fails:

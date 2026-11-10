@@ -50,7 +50,7 @@ LEVEL = 500
 SLOTS = 5
 LEGENDARY_STAT = 15
 TOLERANCE = 0.10          # a set and a mixed build within 10% of each other
-AHEAD = 0.007             # a set may lead the best mixed build by less than this (0.7 points: inside the weights' guess, see the header)
+AHEAD = 0.005             # a set may lead the best mixed build by less than this (0.5 points; O475: back from 0.7 of O474)
 # O474 (2026-11-10): was 0.005. The damage over time rule (side dots 0.30 x the hit) moved the best set of the Mystic at level 500 to the
 # fire spells (Witchfire Bolt, Falling Pyre): the fire set leads the best mixed build by +0.4% on 1 target and +0.61% on 5 targets
 # (was +0.26% / +0.36%). A native-element lead cannot be lowered away (the header); the limit follows by 0.2 points. Model: card_set_model

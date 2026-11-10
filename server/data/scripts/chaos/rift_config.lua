@@ -139,7 +139,10 @@ return {
 		live = {base = 75, perExtraPlayer = 10, per100 = 1.25, max = 265},
 		reinforce = {perTick = 2, minDistance = 16, window = 90, visit = 10},
 		populate = {perStep = 20, stepMs = 100},
-		model = {dps5 = 5240, dps5Exp = 1.35, dps1 = 2600, dps1Exp = 1.1, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
+		-- O475 (2026-11-10): dps1 2600 -> 3892 and 1.1 -> 1.20, dps5 5240 -> 13096 (exponent 1.35 as before): the typical damage of the
+		-- balance round on one boss and on a pack at the tiers' minimum levels, x gear = what a guardian (55 s) and a pack (225 s) take
+		-- (tools/boss_length_model.py --derive; the design's fit for the guardian was 13,200 and 1.51 on its own typical damage)
+		model = {dps5 = 13096, dps5Exp = 1.35, dps1 = 3892, dps1Exp = 1.2, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
 			packSeconds = 225, guardianSeconds = 55, tierHp = {magic = 2.0, rare = 3.5, legendary = 6.0},
 			walk = {sweep = 1.8}},
 		-- O427: one number, or {base, perTier, min} (base + perTier x (tier - 1), at least min). Before: 0.6 flat. The pack of a

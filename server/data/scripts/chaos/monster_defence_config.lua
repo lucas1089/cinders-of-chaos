@@ -11,20 +11,22 @@ return {
 	-- python3 -I server/tools/defence_curve.py --lua prints the rows, --check compares them (CI). The method: the median
 	-- over the 21 classes of the damage weighted mean hit (weapon hit = dps x auto share x attack interval, spell hit =
 	-- dps x (1 - auto share) x 2 s) from class_dps_model.py.
+	-- O475 (2026-11-10): regenerated for the damage of the balance round (class_dps_model.py after O472 to O474: median hit 7169 -> 9993
+	-- at 1000, 576 -> 464 at 100, 3645 -> 3658 at 500; the pool takes back what the weapon growth gives at low levels).
 	hitCurve = {
-		{level = 1, hit = 5},
-		{level = 10, hit = 51},
-		{level = 30, hit = 165},
-		{level = 60, hit = 347},
-		{level = 100, hit = 576},
-		{level = 200, hit = 1252},
-		{level = 300, hit = 1951},
-		{level = 500, hit = 3645},
-		{level = 750, hit = 5566},
-		{level = 1000, hit = 7169},
-		{level = 1500, hit = 10503},
-		{level = 2000, hit = 13836},
-		{level = 2500, hit = 17170}
+		{level = 1, hit = 4},
+		{level = 10, hit = 41},
+		{level = 30, hit = 133},
+		{level = 60, hit = 279},
+		{level = 100, hit = 464},
+		{level = 200, hit = 1138},
+		{level = 300, hit = 1816},
+		{level = 500, hit = 3658},
+		{level = 750, hit = 5971},
+		{level = 1000, hit = 9993},
+		{level = 1500, hit = 14449},
+		{level = 2000, hit = 20053},
+		{level = 2500, hit = 24884}
 	},
 
 	-- percent of the median class hit of the monster's level that the monster's armour removes. A boss is every kind of

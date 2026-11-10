@@ -2062,6 +2062,130 @@ five dummies 9,938 -> 9,885, pack 5,191 -> 5,039; all inside the spread. The for
 **Doc check.** `docs/BUILDS.md` said the Hollow Vessel pool is "20-40% smaller"; measured -32% to -62%. A first reading in this section said the Hollowglass Diadem cannot be worn by the Monk line: wrong. A stock copy is refused,
 a unique copy is worn (checked: a Shadowfist wears it once it is marked unique), so the Hollow Palm row naming the Plate and the Diadem stands.
 
+### Keystone combinations measured (O460, 2026-11-10)
+
+Measure and report. No balance number, config, spell or tree data was changed. The O460 audit computed, as a worst case with nothing measured in combination, that three keystones together often pass the owner's rule of 2026-11-09: a specialised build up to +40% over its class's default build in its specialty, with a visible price, at most 3 keystones. Six of the audit's top combinations were measured on the real local server. Test only, nothing of the rig is in the repo.
+
+**Short answer.** No case is over +40% against the default build, at level 1000 or at level 500. At level 1000 the best is the Templar on a dying pack, +21% [+16..+25]. Three cases are under the default in most rows: the Beastmaster with Open Hand Creed loses 66% to 84%, the Berserker loses 10% to 30% on dummies, the Deadeye loses 3% to 17%. The audit's computed gains of +45% to +93% sustained are seen nowhere. The keystones alone, build B against build C, have no mean over +40% at level 1000; the largest are Ranger 6 sqm one target +39% [+25..+55] and Deadeye 6 sqm five targets +34% [+15..+53]. At level 500 the largest is the same Ranger row, +34% [+11..+57].
+
+**Rig.** Local server, engine binary of 2026-11-09, data synced with `install_all.py` from the tree before the balance round (O470 to O475 are not in these numbers: the ratios between builds of one class are what was measured), client guard off for the run only. Characters made from level 8 by the rule of the O459 run: skills 119 / 140, magic level 19 / 40, Bone Lord 111 / 140, stat window 10 / 20 / 20, the gear plan of the 2026-11-06 DPS run, the same helper Auto setup rotation and support plan cast by a protocol bot. 21 characters of a level run in the same minute on separate sites, so every ratio is variant against baseline of the same sample. A sample is 60 s after a 15 s warm-up and the support plan, which puts wolves, golem, minions and Warden out. 4 samples a row at levels 1000 and 500, the hitters row of level 1000 has 5. The bracket is the lowest and highest ratio of the samples; the mean is the ratio of the mean damage per second. Health taken off the monsters, overkill not counted. Load read before every run; a run started only under 2.0 after waiting for 1.5; the machine ran other batteries and some runs finished under higher load, the load of each run is in the result file.
+
+Builds, per case, on the same character, gear and skills:
+- A: the first role of `passive_builds_config.lua` as the Auto build button applies it, all points of the level, 248 nodes at 1000 and 123 at 500.
+- B: the keystones of the case on their cheapest path by shortest path where nodes that A holds count nothing, then A's order of nodes without any other keystone node, up to the same points. The keystone costs the last nodes of A.
+- C: the nodes of B minus the keystone nodes. The three points stay unspent. The gain of the keystones alone is B against C.
+- D, cases 1 to 3 only: C with empty hands. B against D is the gain of Open Hand Creed alone, with the same empty hands.
+- Hands: B and D wear no weapon. A and C wear the plan's weapon. The Templar keeps its shield, the Bone Lord its book, the Beastmaster its quiver.
+
+| Case | Class | Build id of A | Keystones of A | Keystones of B and C's path | Nodes only in B | Nodes only in A |
+|---|---|---|---|---|---|---|
+| 1 | Beastmaster | `beastmaster_pack_leader` | Stormstring, Pack Alpha | Open Hand Creed 109, Pack Alpha 624, Wolfbond 692 | 79, 109, 684, 685, 686, 690, 691, 692 | 82, 509, 513, 515, 525, 526, 527, 529 |
+| 2 | Templar | `templar_zealot` | Dawnchain, Penitent's Wrath | Open Hand Creed 109, Reliquary Vow 253, Radiant Rebuke 621 | 45, 72, 79, 109, 253, 621 | 376, 416, 418, 420, 421, 624 |
+| 3 | Bone Lord | `bonelord_bone_army` | Bone Colossus, Covenant of the Grave | Open Hand Creed 109, Bone Colossus 644, Covenant of the Grave 369 | 109 | 5 |
+| 4 | Deadeye | `deadeye_marked_target` | Deadeye 624, Hunter's Focus 621, Longshot 561 | Barbed Quiver 542, Longshot 561, Hunter's Focus 621 | 536, 542 | 451, 624 |
+| 5 | Berserker | `berserker_rage_engine` | Undying Rage 624, Cleaving Arc 621 | Executioner's Verdict 428, Rampage 466, Open Veins 682 | 425, 428, 462, 466, 681, 682 | 33, 40, 210, 214, 621, 624 |
+| 6 | Ranger | `ranger_sharpshooter` | Deadeye 624, Longshot 561 | Longshot 561, Hobbling Shot 447 | 18 nodes: 352, 353, 363, 364, 366, 429 to 432, 435, 436, 437, 439, 441, 442, 443, 446, 447 | 18 nodes: 37, 84, 117, 119, 158, 162, 246, 300, 310, 312, 314, 316, 350, 404, 405, 407, 567, 624 |
+
+The node lists of A, B and C, and the gear of each character, are in the session folder `SP/o460/builds/`. The default build of the Bone Lord already holds Bone Colossus and Covenant of the Grave, so B differs from A there by Open Hand Creed and one path node. The default builds of the Deadeye and the Ranger already hold Longshot.
+
+**Conditions.** What could act, read from the tally of the combat log notes, from a probe on the hit factor of the keystones, and from the summons.
+- Open Hand Creed: B and D wear no weapon. Every spell of the rotation still casts and hits with empty hands. The Beastmaster's spells read the bow: they land for hundreds a cast without it, the rotation of the Templar and the Bone Lord keeps its numbers. The fist attack acted, about 45 notes a minute.
+- Pack Alpha, Wolfbond: 2 War Wolves out all run. They have no combat log label, so their gain is not seen apart from the class number.
+- Bone Colossus, Covenant of the Grave: Bone Golem and 3 risen minions out, 4 to 7 summons on average.
+- Reliquary Vow: the Warden is out and acted. Its party bonus needs a party and there is none here.
+- Radiant Rebuke: needs hits on the character. In the hitters rig it blocked 5 times a minute against one hitter and 75 against five. Dummies never hit, so it does nothing there.
+- Longshot: acted at both distances. 2 sqm measured at exactly 2.0, the x0.85 price. 7 sqm could not be built: at 7 tiles no bow or crossbow hit lands, the server says "Creature is not reachable" and the probe counts zero distance hits. The reach is 6. The far rows are at 6 sqm, Longshot +24%, not the +30% cap.
+- Hobbling Shot: 20% to 25% of the distance hits were on a hobbled target. Barbed Quiver: acted on every hit, about 70 notes a minute. Hunter's Focus: acted, about 35 notes a minute, the dummy lives.
+- Rampage: only in the dying pack, 5 stacks on average, hit factor 1.23. On a dummy nothing dies and it has no stack. Executioner's Verdict: the price acted on hits above 60% health in every mode; its kill gain only shows in the pack. Open Veins: acted, 52 notes a minute on a dummy.
+- Hitters rig: one or five test monsters of 100,000,000 health, a fixed hit of 1,112 physical and 662 fire every 2 s at level 1000, 532 and 188 at level 500, the character healed to full every 200 ms. Dying pack: five monsters of 16,600 health, a dead one put back at once. Dummies: 2,000,000,000 health, one tile away for melee, 2 sqm for the bows, 6 sqm far; five targets are the main dummy and four beside it.
+
+**Table, level 1000.** Mean [min-max] damage per second of k samples, then ratios of the means with the lowest and highest ratio of the samples. Bows at 2 sqm or 6 sqm as named. Targets 5: the main dummy and four beside it.
+
+| Case | Class | Condition | Targets | k | A mean [min-max] | B | C | D (no hands, no keystones) | B vs A | B vs C | B vs D |
+|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 1 | Beastmaster | dummy, adjacent | 1 | 4 | 6447 [6086-6768] | 2217 [2139-2296] | 6341 [6213-6479] | 1018 [957-1070] | -66% [-68..-63] | -65% [-66..-64] | +118% [+100..+129] |
+| 1 | Beastmaster | dummy, adjacent | 5 | 4 | 19561 [18982-20943] | 3109 [2913-3249] | 17715 [16795-18847] | 1781 [1583-1969] | -84% [-85..-83] | -82% [-84..-81] | +75% [+59..+105] |
+| 1 | Beastmaster | dying pack | 5 | 4 | 9702 [8900-10247] | 2632 [2505-2751] | 8324 [7546-9301] | 1567 [1410-1721] | -73% [-76..-69] | -68% [-73..-64] | +68% [+56..+80] |
+| 2 | Templar | dummy, adjacent | 1 | 4 | 6379 [6262-6714] | 6217 [6032-6380] | 6782 [6594-7248] | 2105 [2044-2210] | -3% [-5..+1] | -8% [-12..-3] | +195% [+189..+211] |
+| 2 | Templar | dummy, adjacent | 5 | 4 | 17258 [17172-17392] | 18490 [18135-18980] | 15973 [15002-16423] | 6404 [6118-6566] | +7% [+5..+11] | +16% [+13..+21] | +189% [+183..+196] |
+| 2 | Templar | dying pack | 5 | 4 | 12732 [12250-13243] | 15422 [14802-15835] | 12085 [11878-12322] | 5634 [5446-5941] | +21% [+16..+25] | +28% [+25..+31] | +174% [+158..+191] |
+| 2 | Templar | hitters on the character | 1 | 4 | 6526 [6160-6929] | 5981 [5802-6180] | 6530 [6118-6813] | 2071 [2014-2157] | -8% [-16..+0] | -8% [-10..-5] | +189% [+176..+200] |
+| 2 | Templar | hitters on the character | 5 | 5 | 17072 [16120-17474] | 18733 [18510-19002] | 15344 [15137-15767] | 6094 [5962-6224] | +10% [+6..+16] | +22% [+21..+24] | +207% [+200..+217] |
+| 3 | Bone Lord | dummy, adjacent | 1 | 4 | 6480 [6300-6660] | 7055 [6878-7238] | 5592 [5514-5658] | 5019 [4948-5065] | +9% [+3..+13] | +26% [+24..+29] | +41% [+37..+43] |
+| 3 | Bone Lord | dummy, adjacent | 5 | 4 | 11655 [11424-11792] | 12812 [11972-13651] | 11378 [10729-11723] | 10268 [9784-10648] | +10% [+2..+19] | +13% [+10..+16] | +25% [+21..+35] |
+| 3 | Bone Lord | dying pack | 5 | 4 | 10862 [10045-11795] | 10137 [9222-11669] | 10313 [9473-11139] | 9510 [9226-9795] | -7% [-22..+4] | -2% [-17..+23] | +7% [-4..+23] |
+| 4 | Deadeye | dummy, 2 sqm | 1 | 4 | 12675 [11222-13548] | 10590 [9953-11685] | 11183 [9165-12752] | - | -16% [-24..-7] | -5% [-10..+9] | - |
+| 4 | Deadeye | dummy, 2 sqm | 5 | 4 | 12281 [11157-13570] | 11932 [11614-12315] | 12697 [12457-13020] | - | -3% [-14..+10] | -6% [-11..-4] | - |
+| 4 | Deadeye | dummy, 6 sqm | 1 | 4 | 15480 [14054-16862] | 13921 [11226-15450] | 10717 [8952-11531] | - | -10% [-33..+4] | +30% [-3..+73] | - |
+| 4 | Deadeye | dummy, 6 sqm | 5 | 4 | 16003 [13503-18146] | 13289 [12226-14335] | 9890 [8863-10628] | - | -17% [-26..+6] | +34% [+15..+53] | - |
+| 4 | Deadeye | dying pack | 5 | 4 | 5983 [5203-6486] | 5407 [4678-5920] | 6488 [6046-7313] | - | -10% [-22..+14] | -17% [-27..-2] | - |
+| 5 | Berserker | dummy, adjacent | 1 | 4 | 6302 [6016-6811] | 5671 [5505-6035] | 6004 [5898-6145] | - | -10% [-11..-7] | -6% [-9..+1] | - |
+| 5 | Berserker | dummy, adjacent | 5 | 4 | 18002 [17608-18808] | 12524 [12151-12792] | 13904 [13463-14267] | - | -30% [-33..-27] | -10% [-12..-5] | - |
+| 5 | Berserker | dying pack | 5 | 4 | 11814 [11004-12434] | 12140 [11488-13313] | 9948 [9491-10209] | - | +3% [-3..+13] | +22% [+14..+30] | - |
+| 6 | Ranger | dummy, 2 sqm | 1 | 4 | 7570 [6950-8996] | 7839 [7088-8817] | 6704 [5591-7729] | - | +4% [-2..+12] | +17% [-1..+58] | - |
+| 6 | Ranger | dummy, 2 sqm | 5 | 4 | 12062 [11421-13010] | 11663 [10256-12629] | 11605 [10745-12702] | - | -3% [-13..+9] | +0% [-19..+16] | - |
+| 6 | Ranger | dummy, 6 sqm | 1 | 4 | 11072 [9246-12698] | 10055 [9403-11103] | 7240 [7095-7524] | - | -9% [-23..+2] | +39% [+25..+55] | - |
+| 6 | Ranger | dummy, 6 sqm | 5 | 4 | 13783 [10962-16710] | 13052 [12256-13791] | 10025 [9339-11016] | - | -5% [-17..+19] | +30% [+25..+40] | - |
+| 6 | Ranger | dying pack | 5 | 4 | 7124 [6652-7986] | 6816 [6528-7198] | 6330 [5418-7000] | - | -4% [-18..+4] | +8% [-7..+21] | - |
+
+
+**Against the audit.** The audit computed each combination against the same class with none of its keystones, from single-keystone figures, as a product on the damage the keystones act on. Computed figures next to the measured ones, level 1000. Cells are the near dummy with one target, the near dummy with five targets, and the dying pack of five, build B against the default build A and against its own path C:
+
+| Case | Combination | Audit sustained peak, bound peak, class total bound | B against A | B against C |
+|---|---|---|---|---|
+| 1 | Beastmaster, Open Hand Creed + Pack Alpha + Wolfbond | +93%, +96%, +64% | -66% / -84% / -73% | -65% / -82% / -68% |
+| 2 | Templar, Open Hand Creed + Reliquary Vow + Radiant Rebuke | +89%, +87%, +86% | -3% / +7% / +21% | -8% / +16% / +28% |
+| 3 | Bone Lord, Open Hand Creed + Bone Colossus + Covenant of the Grave | +83%, +138%, +104% | +9% / +10% / -7% | +26% / +13% / -2% |
+| 4 | Deadeye, Barbed Quiver + Longshot + Hunter's Focus | +83%, +125%, +26% | -16% / -3% / -10% | -5% / -6% / -17% |
+| 5 | Berserker, Executioner's Verdict + Rampage + Open Veins | +67%, +101%, +50% | -10% / -30% / +3% | -6% / -10% / +22% |
+| 6 | Ranger, Longshot + Hobbling Shot | +45%, +56%, +10% | +4% / -3% / -4% | +17% / +0% / +8% |
+
+The far rows at 6 sqm and the hitters rows are in the full table. Reading of the differences, from the tally and the probes above:
+- Open Hand Creed. The audit gave it a fist stream of x1.36 that replaces the weapon stream. That holds for a class whose damage is its melee hit. The Beastmaster's damage is the bow's and its spells read the bow: with empty hands it keeps about a third of its damage. Open Hand Creed alone, B against D, is +118% / +75% / +68% on the Beastmaster, so the keystone works; it lifts a character that gave up its main source and cannot lift it above the default. The Templar and the Bone Lord keep their spells: B against A is -8% to +21% for the Templar and -7% to +10% for the Bone Lord, and B against D is +144% to +208% for the Templar.
+- Baseline. The audit's baseline held none of these keystones. The default builds already hold Pack Alpha, Bone Colossus with Covenant of the Grave, and Longshot with Hunter's Focus, so a part of the audit's gain is in A already. At 2 sqm Longshot is a x0.85 price: the Deadeye and the Ranger lose against C there, which has no Longshot, and gain only at 6 sqm.
+- Deadeye. Barbed Quiver with Longshot and Hunter's Focus against its path: +30% [-3..+73] on one target and +34% [+15..+53] on five at 6 sqm, -5% and -6% at 2 sqm, -17% in the pack. Against A, which holds the same Longshot and Hunter's Focus and the Deadeye keystone, it is -3% to -17%: Barbed Quiver replaces the Deadeye keystone and pays a x0.90 hit.
+- Ranger. Hobbling Shot hobbled 20% to 25% of the distance hits; its price x0.92 acts on all the others. Longshot and Hobbling Shot against the path: +39% [+25..+55] at 6 sqm on one target, +30% on five, +17% [-1..+58] at 2 sqm. Against A, which already holds Longshot, it is -9% to +4%.
+- Templar. Reliquary Vow with Radiant Rebuke and Open Hand Creed against the path: +16% to +28% in groups, -8% on one target. The Warden acted and Radiant Rebuke blocked, 75 times a minute against five hitters; against A, which holds Dawnchain and Penitent's Wrath, the net is +7% to +21% in groups and -3% to -8% on one target.
+- Berserker. Rampage reaches 5 stacks and a hit factor of 1.23 only in the pack, and only after kills. In the pack the three keystones gain +22% [+14..+30] against the path and +3% [-3..+13] against A; on dummies they are a price, -6% and -10% against the path, and -10% and -30% against A, which holds Cleaving Arc.
+- Reading of the audit's own figures, not measured: bleeds, slams and procs scale with slow hits; Barbed Quiver and Open Veins give most at a hit every 4 s or slower, the Auto setup rotation hits faster. The audit added independent sources, the Warden and the nova, at estimates; measured they are small against the class's own damage. The audit's peak is on the acted-on stream; a class's damage is spells, auto attack and minions together, so the total moves less.
+
+**Not measured, or not as asked.**
+- 7 sqm: the bows do not reach it. Level 100. Radiant Rebuke on a character under party buffs, and Reliquary Vow's party bonus. The wolves, the golem and the minions apart from the class total: they carry no combat log label. Auto setup as a player has it in the client: a protocol bot casts, as in O459. Gems, runes, orbs, uniques, potions, resistances and monster levels, as before. Other builds of the same classes: another build of one class moves damage by -44% to +83% in O459, so these rows are for the build ids above only.
+- The first pass was thrown away. A test wrapper of the hit factor stopped the factors of Longshot, Barbed Quiver, Hobbling Shot, Rampage, Executioner's Verdict and Open Hand's fist hit from acting; the tally had no note for them. Its level 500 pass went with it. Every row here is from the second pass.
+- The Templar's heal spell heals a hitter now and then. One sample of the one-hitter row at level 1000 had a negative reading and was dropped for all builds of that row; an extra sample was run, so that row has 4 samples and the five-hitter row 5.
+
+**Smallest number change to bring a case back to +40%.** None is needed. By this measurement no case is over +40% against the default build, at level 1000 or 500, and no bracket reaches it except single samples. Proposal only, nothing applied, for a reading of the rule against build C, the keystones alone: the largest means are Ranger 6 sqm one target +39% at level 1000 and +34% at level 500, and Deadeye 6 sqm five targets +34% and +26%. Both are Longshot at 6 sqm with a second bow keystone. Longshot `perSqm` .06 to .05 would lower the bow hit at 6 sqm from x1.24 to x1.20, by arithmetic and not measured; `cap` does not act at 6 sqm.
+
+
+**Level 500.** The same six cases, the same builds by id with 123 nodes, 4 samples a row, no hitters row of the Templar apart from the table. No case is over +40% against the default build: the best means are the Berserker pack +12% [+7..+20], the Bone Lord pack +8% [-4..+29] and the Deadeye pack +4% [-11..+33]. The Beastmaster loses 38% to 75%, the Templar 14% to 19% outside the pack, the Berserker 29% on five dummies. The keystones alone, B against C, are largest for the Ranger at 6 sqm on one target, +34% [+11..+57], and the Deadeye at 6 sqm, +29% [+2..+69] and +26% [+5..+50]; the Berserker pack +34% [+30..+38].
+
+| Case | Class | Condition | Targets | k | A mean [min-max] | B | C | D (no hands, no keystones) | B vs A | B vs C | B vs D |
+|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|
+| 1 | Beastmaster | dummy, adjacent | 1 | 4 | 1890 [1797-1970] | 1168 [1063-1208] | 1997 [1921-2069] | 602 [595-608] | -38% [-46..-33] | -41% [-48..-37] | +94% [+76..+103] |
+| 1 | Beastmaster | dummy, adjacent | 5 | 4 | 6932 [6502-7471] | 1751 [1660-1894] | 6607 [5716-7120] | 1053 [976-1107] | -75% [-78..-73] | -73% [-77..-67] | +66% [+50..+78] |
+| 1 | Beastmaster | dying pack | 5 | 4 | 3606 [3346-3756] | 1405 [1354-1486] | 3108 [2975-3312] | 870 [822-926] | -61% [-64..-59] | -55% [-57..-50] | +61% [+47..+73] |
+| 2 | Templar | dummy, adjacent | 1 | 4 | 3790 [3580-4009] | 3270 [3215-3317] | 3814 [3616-3981] | 1166 [1134-1193] | -14% [-19..-7] | -14% [-18..-8] | +181% [+170..+191] |
+| 2 | Templar | dummy, adjacent | 5 | 4 | 10476 [10017-11069] | 8717 [8466-8963] | 9674 [9268-10059] | 3072 [2953-3266] | -17% [-19..-13] | -10% [-14..-6] | +184% [+174..+192] |
+| 2 | Templar | dying pack | 5 | 4 | 6586 [6210-6952] | 6610 [6324-6836] | 6217 [6166-6276] | 2624 [2450-2779] | +0% [-5..+5] | +6% [+2..+10] | +152% [+143..+179] |
+| 2 | Templar | hitters on the character | 1 | 4 | 3796 [3737-3905] | 3270 [3158-3389] | 3790 [3708-3871] | 1152 [1122-1203] | -14% [-16..-10] | -14% [-18..-11] | +184% [+163..+202] |
+| 2 | Templar | hitters on the character | 5 | 4 | 11074 [10938-11304] | 8979 [8544-9543] | 9167 [8224-9670] | 3115 [3063-3207] | -19% [-22..-14] | -2% [-8..+16] | +188% [+179..+198] |
+| 3 | Bone Lord | dummy, adjacent | 1 | 4 | 3118 [3063-3208] | 2960 [2897-3014] | 2787 [2731-2816] | 2165 [2118-2212] | -5% [-7..-2] | +6% [+5..+8] | +37% [+35..+40] |
+| 3 | Bone Lord | dummy, adjacent | 5 | 4 | 5639 [5311-6328] | 5426 [5166-5779] | 5525 [5439-5573] | 4711 [4569-4784] | -4% [-15..+9] | -2% [-7..+6] | +15% [+12..+21] |
+| 3 | Bone Lord | dying pack | 5 | 4 | 3917 [3590-4721] | 4229 [3606-4623] | 3827 [3646-4005] | 3701 [3362-4116] | +8% [-4..+29] | +11% [-2..+16] | +14% [+1..+27] |
+| 4 | Deadeye | dummy, 2 sqm | 1 | 4 | 4363 [3769-4901] | 4162 [3809-4322] | 4235 [3998-4446] | - | -5% [-14..+13] | -2% [-12..+8] | - |
+| 4 | Deadeye | dummy, 2 sqm | 5 | 4 | 7601 [7098-7915] | 6969 [6081-8110] | 6922 [6163-7444] | - | -8% [-23..+14] | +1% [-9..+11] | - |
+| 4 | Deadeye | dummy, 6 sqm | 1 | 4 | 5557 [4611-6091] | 5359 [4648-6153] | 4160 [3643-4576] | - | -4% [-23..+27] | +29% [+2..+69] | - |
+| 4 | Deadeye | dummy, 6 sqm | 5 | 4 | 8548 [7828-9976] | 7670 [7189-8311] | 6091 [5554-6851] | - | -10% [-17..-0] | +26% [+5..+50] | - |
+| 4 | Deadeye | dying pack | 5 | 4 | 2583 [2025-3250] | 2684 [2390-2891] | 3010 [2715-3375] | - | +4% [-11..+33] | -11% [-20..+2] | - |
+| 5 | Berserker | dummy, adjacent | 1 | 4 | 3264 [3069-3480] | 2842 [2709-2968] | 3133 [3001-3231] | - | -13% [-15..-10] | -9% [-14..-6] | - |
+| 5 | Berserker | dummy, adjacent | 5 | 4 | 9993 [9788-10141] | 7045 [6920-7235] | 8099 [7818-8310] | - | -29% [-31..-27] | -13% [-15..-11] | - |
+| 5 | Berserker | dying pack | 5 | 4 | 5393 [5081-5792] | 6017 [5735-6200] | 4501 [4152-4784] | - | +12% [+7..+20] | +34% [+30..+38] | - |
+| 6 | Ranger | dummy, 2 sqm | 1 | 4 | 4233 [3544-5182] | 3473 [3163-3722] | 3974 [3419-4352] | - | -18% [-32..-7] | -13% [-27..+9] | - |
+| 6 | Ranger | dummy, 2 sqm | 5 | 4 | 9224 [8694-10096] | 7168 [6621-7484] | 8668 [7704-9715] | - | -22% [-27..-18] | -17% [-23..-9] | - |
+| 6 | Ranger | dummy, 6 sqm | 1 | 4 | 6153 [5438-6813] | 4579 [4099-4980] | 3418 [2990-4011] | - | -26% [-31..-19] | +34% [+11..+57] | - |
+| 6 | Ranger | dummy, 6 sqm | 5 | 4 | 10471 [9705-11134] | 8771 [6900-9952] | 7778 [7168-8192] | - | -16% [-38..+3] | +13% [-14..+39] | - |
+| 6 | Ranger | dying pack | 5 | 4 | 3334 [3206-3554] | 3447 [3105-4246] | 3761 [3304-4132] | - | +3% [-7..+19] | -8% [-22..+6] | - |
+
 ### Infinite arrows (bows and crossbows without ammunition, 2026-10-11)
 
 Bows and crossbows fire without ammunition (server/README.md "Infinite arrows and quivers"). The install tool gives each
@@ -5313,3 +5437,24 @@ Typical character of `rotation_sim.py` ANCHORS on the probe engine (`tests/fixtu
 A weapon spell grows a little more than W (its level term is small and its weapon term carries a), a level heavy one less. The auto attack
 lift of `weapon_power_config.lua` was regenerated with the reference rotation times W: distance 1.63 and wand 1.95 at level 1000 (was
 1.49 and 2.14).
+
+## Final re-fit of the balance round (O475, 2026-11-10; computed, not measured)
+
+The measured table (`class_dps_measured.csv`, 2026-11-06) is the character BEFORE the round. `class_dps_model.py` moves it by four steps computed from the real files
+(`--steps` prints them, `--round-before` the model before, `--spread` the pool part of the spread); the full tables and the limits that moved are in server/README.md
+"Final re-fit of the balance round (O475)". The numbers below replace the ones of "Class DPS balance (O430)" for the model after the round.
+
+The median class, 1 target / 5 targets, before -> after the round: 100: 607 / 1,008 -> 491 / 819; 500: 3,084 / 7,761 -> 3,138 / 7,547; 1000: 6,017 / 13,731 -> 8,882 / 20,212;
+2000: 11,612 / 26,501 -> 17,824 / 41,750. The steps at level 1000 for a weapon class: weapon x2.0 (the attack grows by a(level), the spells by about x1.99 on the model's
+formulas, the auto attack more), dots x1.00, gear x1.05, pool x0.67. A caster: weapon x2.20 (W), dots x1.00 to x1.04 (the Mystic 1.04), gear x1.02, pool x0.67.
+
+Bands (+-25%, +-30% at 100) after the round and the O475 extra target factors (`spell_factor_config.lua` `extra`: Ranger 1000 1.6 -> 2.0, Deadeye 1000 2.5 -> 4.3, Mystic 500 0.5 -> 0.42):
+1 target: the highest are the Ninja and Samurai +19% at 100, the Thief and Necromancer +14% at 500, the Monk and Necromancer +16% at 1000; the lowest the Shadowfist and Iron Sage -20% at 100,
+the Beastmaster -17% at 500, the Inquisitor -14% at 1000. 5 targets: the highest the Iron Sage +22% at 100, the Illusionist +23% at 500, the Mystic +21% at 1000; the lowest the Samurai -22% at 100,
+the Deadeye -20% at 500 and 1000 (the Ranger -20% at 1000). Without the extra factors three numbers were out: Ranger 1000 5 targets -30%, Deadeye 1000 5 targets -38%, Mystic 500 5 targets +33%.
+
+The pool step is the least certain: the typical profile of `tools/damage_pool_table.lua` (one 30% unique power, a 12% gem, charms 3%, a tree supply of 25 raw at 100 to 170 at 2000) gives x0.81 at
+100, x0.71 at 500, x0.67 at 1000 and the same for every class. A character with no extras (the measured test character) would not feel it. Measured builds should replace the profile.
+
+Bosses for the typical character (`boss_length_model.py`): the damage on one boss is the median class x 0.60 (a boss lets half of the physical half and 70% of the elemental half through):
+295 at 100, 994 at 300, 1,883 at 500, 3,993 at 850, 5,329 at 1000, 10,694 at 2000. A dungeon boss takes 150 s, a rift guardian 53-59 s, the Omen guardian 318 s at level 1000.

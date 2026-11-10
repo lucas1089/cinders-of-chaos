@@ -29,7 +29,10 @@ function S.factor(level, cfg)
 	if #pts == 0 then
 		return 1
 	end
-	level = tonumber(level) or 0
+	level = tonumber(level)
+	if not level then
+		return 1 -- O475: the first row is no longer 1, so an unknown level must not take it
+	end
 	if level <= pts[1][1] then
 		return pts[1][2]
 	end

@@ -217,7 +217,8 @@ for _, level in ipairs({100, 500, 1000}) do
 			local H = math.floor(hit[2] + 0.5)
 			local got = defend(ctxOf({A = A, level = level}), H, K.physical, ORIGIN_MELEE)
 			local share = A / (A + 0.07 * H)
-			near(got, H * (1 - share), 1, "armour table " .. level .. " " .. kind .. " " .. hit[1])
+			-- O475: the hit curve of the round is lower at level 100 (464, was 576): a small hit leaves a few points, where the layer's whole percent of the share shows (1.3 at most)
+			near(got, H * (1 - share), 1.5, "armour table " .. level .. " " .. kind .. " " .. hit[1])
 			table_rows[#table_rows + 1] = string.format("%5d %-6s A %3d  %-9s %6d -> %6d  armour %5.1f%%", level, kind, A, hit[1], H, got,
 				100 * share)
 		end

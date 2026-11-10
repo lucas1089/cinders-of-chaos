@@ -31104,7 +31104,7 @@ unchanged) once: factor = 1 + soft(sum) / 100. A character with no bonus gets ex
 | Unique passives | the "more damage" part of the passive while its condition holds: its own value | 10 each, 40 in all |
 | Gems | the gem's damage value of the hit's type | 25 per element, physical 12 (was 40 and 12) |
 | Spell masteries | a damage mastery (the four brand choices) while its spell is cast | +3 each, 12 |
-| Card set | the Fire set's damage part for a Fire hit (x1/3 against a player) | 4 (was 6) |
+| Card set | the Fire set's damage part for a Fire hit (x1/3 against a player) | 4 (was 6; the Fire set itself 3.5 since O475) |
 | Charms and weapon family | Damage to the monster's family (a charm); the sword's tempo edge (0.4 a stack, 2 at 5 stacks) | 6 together |
 | Paragon | `paragonDamage` (0.5 a point to 40 points, the mastery term 6 ln(1 + r / 50) as before) | as before |
 
@@ -31169,7 +31169,7 @@ own numbers. A unique keeps its passive, the text of its description is regenera
 character. No upgrade on touch is needed, so no new `chaos_modv` mark.
 
 **PvP scale.** `pvp_balance_config.lua` `damageScale` = {100 1.00} {200 0.94} {300 0.89} {500 0.79} {700 0.76} {1000 0.48} {1500 0.52}
-{2000 0.46} (the design's first fit, to be re-fitted when every package is in). `pvp_scale_core.lua` `ChaosPvpScale.forHit(owner,
+{2000 0.46} (the design's first fit; re-fitted in O475 to {100 1.24} {200 1.09} {300 1.06} {500 0.98} {700 0.95} {1000 0.68} {1500 0.69} {2000 0.65}, see "Final re-fit of the balance round (O475)"). `pvp_scale_core.lua` `ChaosPvpScale.forHit(owner,
 target, attacker)`: a hit that a player, or a summon or companion of a player (the owner's level), deals to ANOTHER player is
 multiplied by the factor of the ATTACKER's level, geometric between two rows (the logarithm of the factor is linear in the level,
 as `display_scale_core.lua`), flat outside. It is applied once, in `ChaosPassiveDealt`, after the pool (both parts of the hit). A
@@ -31363,3 +31363,117 @@ model has no level-scaled loot tables above 650, so loot, Rare+ gear and goals a
 the plans), not by a measured band. The real level-scaled monsters of 610-670 (above) and the real hunts' medians were not
 measured. The experience per hour of single level-scaled hunts at 640-700 rises 28-42% (the step held them down: 836 kills an hour
 against the base's 1,210); the median that the model holds does not.
+
+## Final re-fit of the balance round (O475) (`class_dps_model.py` steps, `boss_length_model.py`, `pvp_model.py` `--scale`, `pvp_balance_config.lua` `damageScale`, `infinitytower_balance_config.lua`, `data/spells/pool_typical.csv`)
+
+Owner 2026-11-10 (translated): "You can do everything." The last package of the damage round (O470 health curve, O471 gear and ceilings, O472
+weapon growth, O473 one pool and the PvP scale, O474 damage over time). Computed from the repo's own models, never run on a live server.
+
+**What the models learn.** `class_dps_model.py` is still the one source of class damage. Its measured table (before the round) is moved by four
+named steps, each computed from the real files (`round_factor(class, level)`, 1 and 5 targets, a line in log level and log factor between the
+levels 100 / 200 / 300 / 500 / 700 / 850 / 1000 / 1500 / 2000, flat outside; `python3 -I server/tools/class_dps_model.py --steps` prints them):
+
+| Step | From | What it does |
+|---|---|---|
+| weapon | `weapon_growth.py` W(level), `rotation_sim.grown_stats()`, `weapon_power_config.lua` | weapon classes: the attack and the fist times a(level), the wolf bite times W; the six caster classes: every Chaos spell times W (a stock spell does not); the auto attack of the weapon kind; all on the measured rotation (every Chaos attack spell on cooldown). Healing never |
+| dots | `rotation_sim.LADDER_HOLD` (the damage of before of the six spells) against the rows now | the model counts a dot in full: +0 to +12% (Lich +4 to +10%, Mystic +5%, Elementalist +2%, the rest 0) |
+| gear | `chaos_item_mods.lua` (item level curve, tier weights, Weapon Damage and Spell Damage ranges) against the curve and equal weights of before O471 | the mean Weapon Damage of a Rare drop (weapon classes) or Spell Damage (casters, through the soft cap): x1.00 to x1.05 |
+| pool | `tools/damage_pool_table.lua` typical profile, `data/spells/pool_typical.csv` | the one pool against the old product for the typical profile: x0.80 at 100, 0.71 at 500, 0.67 at 1000, 0.66 at 2000 |
+
+The critical caps (45 / 150) and the rune ceiling do not touch the typical character (one critical slot, runes under level 4): `CRIT_STEP` 1.
+Skill growth above 1000 (the optional E8 of the design) was not done. `--before` prints the measured table, `--round-before` the model of before the round.
+**The pool step is the least certain number and the biggest surprise.** The typical profile of `damage_pool_table.lua` is assumed (one 30% unique power, a 12% gem,
+charms 3%, a tree supply of 25 raw at 100 to 170 at 2000) and the same for every class, so what the pool does to a class with a rich or a poor tree is not
+modelled, and the typical character LOSES 33% to the pool at 1000. With it the typical damage rises x1.48 at 1000 (the design said about x2; the design's typical
+profile lost 6% to the pool). With a typical character that holds no extras (the measured test character had a passive tree build and gear only) the step
+would be x1.0 and the typical damage x2.2 at 1000. Measured builds should replace the profile (O473 said the same).
+
+**Typical damage, the median class, before and after the round** (1 target / 5 targets):
+
+| Level | 1 target before | after | x | 5 targets before | after | x |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 607 | 491 | 0.81 | 1,008 | 819 | 0.81 |
+| 300 | 1,761 | 1,657 | 0.94 | 4,054 | 3,804 | 0.94 |
+| 500 | 3,084 | 3,138 | 1.02 | 7,761 | 7,547 | 0.97 |
+| 700 | 4,416 | 4,662 | 1.06 | 10,062 | 10,704 | 1.06 |
+| 1000 | 6,017 | 8,882 | 1.48 | 13,731 | 20,212 | 1.47 |
+| 1500 | 8,814 | 12,843 | 1.46 | 20,116 | 29,866 | 1.48 |
+| 2000 | 11,612 | 17,824 | 1.53 | 26,501 | 41,750 | 1.58 |
+
+**Spread** (`--spread`; the damage pool of the three profiles of `damage_pool_table.lua` only, no critical hit, no runes, no gear tier: the design's 2.4
+includes those): invested / typical 3.32 -> 1.35 at 1000 (2.50 -> 1.52 at 100, 3.58 -> 1.46 at 500, 3.16 -> 1.32 at 2000), fresh / typical 0.36 -> 0.54 at 1000
+(0.59 -> 0.73 at 100, 0.40 -> 0.57 at 500, 0.36 -> 0.55 at 2000).
+
+**The class band.** `class_dps_model.py --check` (+-25% of the median, +-30% at 100) was green before the round; after the steps three numbers fell out (the weapon
+growth lifts the Ranger line by 1.2 and the Mystic line by 1.6 at 1000 against 1.5 for the median class): Ranger 5 targets at 1000 -30%, Deadeye 5 targets at 1000
+-38%, Mystic 5 targets at 500 +33%. The lever is `spell_factor_config.lua` `extra` (the extra target factor, 5 target numbers only), the smallest change that
+puts each at about 20% of the median: Ranger 1000 1.6 -> 2.0, Deadeye 1000 2.5 -> 4.3, Mystic 500 0.5 -> 0.42. `classDamage` was not touched. The Hollow Palm build stays as it was.
+
+**Models.** Every model of the list reads `class_dps_model.dps()` and is green: `pack_model`, `boss_model`, `tower_model`, `guardian_model`, `survival_model`,
+`minion_model`, `companion_model`, `weapon_family_model`, `card_set_model`, `spell_mastery_model`, `pvp_model`, `defence_curve`. `companion_model.py` already reads
+`weapon_growth.py` (its `GROWTH` switch is the shared W, the same table as the class step), so it was left; `minion_model.py` stays in the C4 frame (a class of before
+against a class of before: W is a factor on the whole Necromancer line). `rotation_sim.py` ANCHORS, the sets, the ladder and `rotation_default_digest.txt` are the
+typical character BEFORE the growth on purpose (`rotation_sim.grown_stats()` is the switch the class step uses): with the attack grown 30 class and level best sets
+change and nine cooldowns of the ladder move (Reaping Gyre 6 -> 4 s, Scything Arc 4 -> 6, Rift Cleaver 11 -> 12, Gorehook 12 -> 11, Arrowstorm 10 -> 11, Iaido Sweep
+10 -> 11, Lance of Vigil 11 -> 12, Consecration 12 -> 11, Rampart Quake 10 -> 11), which would rewrite the helper's presets for nothing a player asked for. The Lua
+models (`unique_passives_model`, `crit_reach`, `loot_model`, `progression_model`, `skill_model`, `store_model`, `roulette_model`, `unique_pace_model`,
+`weapon_coverage`, `gear_coverage`, `rift_layout_model`) read no player damage (grep) and are untouched and green. `defence_curve.py --lua` regenerated the hit curve that
+sizes monster armour (`monster_defence_config.lua`): 464 at 100 (was 576), 3,658 at 500 (3,645), 9,993 at 1000 (7,169), 20,053 at 2000 (13,836).
+**LADDER_HOLD and the wand row** (kept): without the hold seven cooldowns of the six spells move (Witchfire Bolt 7 -> 9 s, Falling Pyre 10 -> 11, Soul Rot 11 -> 13,
+Blightbrand 12 -> 13, Briar Prison 8 -> 7, Tempest Fan 9 -> 8, Crypt Collapse 13 -> 12) and the wand's auto attack power rises from 1.74 / 1.75 / 1.83 / 1.95 / 2.12 at
+levels 200 / 300 / 500 / 1000 / 2000 to 2.05 / 2.17 / 2.25 / 2.25 / 2.25 (the cap of the share). Unchanged by the re-fit: the hold still keeps both where they were.
+
+**Pack seconds** (the median class, a pack of 8, `pack_model.pack_clear`), before -> after: 100: 2.17 -> 2.69, 300: 2.13 -> 2.27, 500: 2.61 -> 2.57, 600: 2.56 -> 2.38,
+650: 2.68 -> 2.45, 700: 3.12 -> 2.83, 800: 4.20 -> 3.40, 900: 5.11 -> 3.81, 1000: 5.79 -> 3.93, 1300: 6.00 -> 4.12, 2000: 6.21 -> 4.06. Hunt monsters are not touched.
+Below level 500 the packs are slower than before (the pool step), from 600 faster.
+
+**Boss lengths** (`boss_length_model.py --derive` / `--check`; the typical damage on one boss is the median class x 0.60, a boss lets through half of the physical
+half and 70% of the elemental half: `armourTarget.boss` 50, `physicalShare` 0.5, an assumed mean resistance 30; on a pack x 0.80):
+
+| What | Before | After | Seconds for the typical character |
+|---|---|---|---|
+| `D.dps` (`dungeons_difficulty.lua`) | 913 at 300, 2,600 at 1000, 2.41 a level above | a table {100 295} {200 656} {300 994} {500 1,883} {700 2,797} {850 3,993} {1000 5,329} {1500 7,706} {2000 10,694} | the 850 row is where W bends |
+| Dungeon bosses `healthMult` (Vault, Marrow, Crucible, Sanctum, Throne) | 2.88 / 2.91 / 2.88 / 2.83 / 2.87: 327k / 399k / 507k / 615k / 760k | 5.00 / 5.96 / 5.86 / 5.83 / 6.06: 567k / 817k / 1.03M / 1.27M / 1.60M | 151 / 150 / 150 / 153 / 148 s (old health on the new damage: 87 / 73 / 74 / 74 / 70 s) |
+| Rift guardian (`rift_config.lua` `density.model`) | dps1 2,600, exponent 1.1; dps5 5,240, 1.35 | dps1 3,892, 1.20; dps5 13,096, 1.35 (a power law fitted over the tiers' minimum levels) | 53 / 59 / 57 / 49 s at level 100 / 300 / 500 / 900 (55 planned; the fit is within 11%); packs keep `packSeconds` 225 |
+| Omen guardian XML health | 500,000 | 1,150,000 (x2.30) | 318 s solo at level 1000 (5:18; the old health on the new damage: 138 s) |
+| Ascended Omens, Cinderheart XML | 1.2M, 1.65M | 2.76M, 3.795M (the same x2.30) | the targets of `uber_config.lua` hold: `refDps` 3,000 -> 6,900, `healerDps` 2,000 -> 4,600 |
+| Raid bosses XML (Ulthar, Morwen, Colossus, Vhoss, Varkhul) and `raid_config.lua` `refDps` | 4.0 / 4.4 / 4.8 / 5.0 / 7.2M, 3,000 | 9.2 / 10.12 / 11.04 / 11.5 / 16.56M, 6,900 | the model's enrage margin of `raid_test.lua` holds (5 players finish about 20% before the enrage) |
+
+Raid adds, world bosses (limit 45 minutes, group content), Tower Defense, battleground and arena monsters were checked and left: none has a model that reads class
+damage and a documented target the new damage breaks (world bosses fight shorter in a group, the limit is a ceiling; the raid adds are 42-90k and only die sooner).
+`areagen_test.lua` (the run seconds of every dungeon) and `raid_test.lua` follow.
+
+**Infinity Tower.** `tower_model.py --derive` for the damage after the round needs the hunt time it follows: the `clear` rows were re-fitted to the hunt pack seconds above
+(`{1, 2.6} {12, 2.4} {24, 2.5} {28, 2.9} {40, 3.8} {60, 4.1} {90, 4.2} {120, 4.2}`, were `{1, 2.5} {12, 3.5} {24, 5} {28, 8.5} {40, 9.5} {60, 10.5} {120, 11}` against
+packs of 3 to 11 s). `health`, `bossHealth`, `lootShare` and `killGold` are the `--derive` lines: health at floor 1 629 -> 793, floor 20 3,450 -> 6,880, floor 40 8,580 -> 24,300,
+floor 80 13,400 -> 44,100, floor 120 15,400 -> 53,700; boss health at floor 10 35,100 -> 56,500, floor 50 153,000 -> 431,000, floor 120 317,000 -> 1,200,000. `curveTol` 2.4
+-> 1.10 (`--derive` prints 1.00 x the committed curves; 2.27 at worst before). Reach of the median class by player level (floor): 100: 1 (1), 300: 12 -> 11, 500: 22 -> 22,
+800: 44 -> 34, 1000: 54 -> 44, 1500: 93 -> 74, 2000: 120 -> 93; the weakest class at 800 reaches 34 -> 28; the target "level 800 reaches floor 30-46" holds.
+
+**PvP.** `pvp_model.py` applies the damage scale of the attacker's level (`solve(scaled=True)`), with the new class damage and the toughness of `survival_model.py` (O464); `--round-before`
+prints the model of before the round, `--scale` the fit. `fit_scale(level)` = the median class damage before / after the round: the scale that holds the seconds to kill where
+they were, and `scale_problems` holds the table within 1.5% of it. `damageScale` re-fitted (the design's first fit in brackets): 100: 1.24 (1.00), 200: 1.09 (0.94), 300: 1.06 (0.89),
+500: 0.98 (0.79), 700: 0.95 (0.76), 1000: 0.68 (0.48), 1500: 0.69 (0.52), 2000: 0.65 (0.46). Above 1 up to level 300: the pool takes more than the weapon growth gives back there; the
+shape rule of `scale_problems` allows (0, 2] now (was (0, 1]). Seconds to kill the median class with no healing (median over the classes), before -> after with the scale: 100: 6.75 -> 6.72, 500: 8.59 -> 8.61,
+1000: 10.11 -> 10.07 (without the scale 8.33, 8.44, 6.85); seconds to die 8.57 -> 8.53, 12.11 -> 12.15, 13.86 -> 13.81. At the other rows (200, 300, 700, 1500, 2000) the layers are not modelled,
+the seconds move by the ratio fit / table: 0.996 to 1.003. `pvp_scale_core.lua` `S.factor(nil)` is 1 now (the first row is not 1 any more). `pvp_balance_config.lua` limits are as they were; three exception rows left because the numbers they pinned
+are inside the general limit now (Deadeye burst at 500 0.93 -> 0.83 and at 1000 1.01 -> 0.76, Iron Sage losses at 1000 19 -> 18): `pvp_model.py --check` is green. Battleground normalisation untouched.
+
+**Owned unique items.** `ChaosItemTooltip.refreshPassive(desc, enText, name)` (`item_tooltip_core.lua`, called in `item_tooltip.lua` before the pt-BR substitution and the O467
+block) puts the current English passive line in the place of the stored one: the exact current text if it is there, else from `<Name>: ` to before ` (Requires level` / ` (Requer nível` (or the
+end); a name that appears twice is left alone. The pt-BR line, the block and the O467 explanation then find the current text. Tested with an old stored line
+(`item_tooltip_test.lua`); the glue in `item_tooltip.lua` (a pcall around it) was not run in an engine.
+
+**Card sets.** `card_set_model.py` `AHEAD` back to 0.005 (O474 had 0.007). The Mystic's fire set still led its best mixed build by +0.61% on 5 targets, so by the owner's rule the Fire set's damage
+part is lowered, `cards_config.lua` `sets.by.Fire.pct` 4 -> 3.5 (smallest of the steps tried: 3.5, 3.25, 3 all pass); an integer hit rounds toward zero, so a hit of 100 gets +3.
+
+**Limits and numbers re-baselined** (each dated O475 in its file): `damageScale` (above); `pvp_model.py` scale shape (0, 1] -> (0, 2]; `infinitytower_balance_config.lua` `curveTol` 2.4 -> 1.10 (model 1.00),
+`clear`, `health`, `bossHealth`, `lootShare`, `killGold`; `monster_defence_config.lua` `hitCurve`; `spell_factor_config.lua` `extra` (3 points); `cards_config.lua` Fire 4 -> 3.5 and `AHEAD` 0.007 -> 0.005;
+`dungeons_difficulty.lua` `D.model`, `areagen_config.lua` five `healthMult`, `rift_config.lua` `density.model`, the XML health of 3 Omen guardians, 3 Ascended Omens, the Cinderheart and 5 raid bosses,
+`uber_config.lua` and `raid_config.lua` `refDps` (`healerDps`). Test bounds that pinned the old numbers: `spell_factor_test.lua` extra factor range 0.5 - 3 -> 0.4 - 4.5 (the fit has Deadeye 4.3 and Mystic 0.42), `spell_paths_test.lua` the plain bite after armour within 3% -> 20% of the old one (worst 16.43% at 1000: the armour follows the regenerated hit curve), `companion_model_test.py` the plain bite dps within 2% -> 20% of the one before O468 (-16% to +8%, same cause), `player_defence_test.lua` armour table tolerance 1 -> 1.5 points (a small hit at 100: 9 against 7.7). No class band, no limit of `pack_model`, `boss_model`, `survival_model`, `guardian_model` was loosened. Tests rewritten to the new numbers:
+`class_dps_model_test.py`, `tower_model_test.py`, `card_set_model_test.py`, `pvp_scale_test.lua`, `raid_test.lua`, `cards_test.lua`; new: `boss_length_model_test.py`, the `refreshPassive` block of `item_tooltip_test.lua`.
+
+**Not verified.** Nothing ran on a live server or in a client: every number is a model number. The pool step (assumed profile), the boss defence (0.60 and 0.80: an assumed mean resistance), the rift fit
+(a power law over ten levels, within 11% of 55 s), the Omen heal (380 a second, the top of the documented 330-380), the raid adds and the world bosses (left), the tower reach (the hunt pack seconds follow a
+model that predates the real levels' medians), the per-class effect of the pool (not modelled), the unique tooltip glue in an engine, the pt-BR text by a speaker. Not done: skill growth above level 1000 (design E8, owner's
+optional item).

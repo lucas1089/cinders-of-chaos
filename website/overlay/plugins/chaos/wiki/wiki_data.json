@@ -9699,14 +9699,14 @@
 							"cols": ["Attacker level", "Factor"],
 							"w": [50, 50],
 							"rows": [
-								["100", "x1.00"],
-								["200", "x0.94"],
-								["300", "x0.89"],
-								["500", "x0.79"],
-								["700", "x0.76"],
-								["1000", "x0.48"],
-								["1500", "x0.52"],
-								["2000", "x0.46"]
+								["100", "x1.24"],
+								["200", "x1.09"],
+								["300", "x1.06"],
+								["500", "x0.98"],
+								["700", "x0.95"],
+								["1000", "x0.68"],
+								["1500", "x0.69"],
+								["2000", "x0.65"]
 							]
 						}
 					],
@@ -44835,7 +44835,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "1,200,000"], ["Experience", "6,000,000"]]
+							"rows": [["Health", "2,760,000"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]},
 						{
@@ -44869,7 +44869,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "1,200,000"], ["Experience", "6,000,000"]]
+							"rows": [["Health", "2,760,000"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]},
 						{
@@ -44907,7 +44907,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "1,200,000"], ["Experience", "6,000,000"]]
+							"rows": [["Health", "2,760,000"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]},
 						{
@@ -46047,7 +46047,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "4,000,000"], ["Experience", "2,500,000"]]
+							"rows": [["Health", "9,200,000"], ["Experience", "2,500,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -46534,7 +46534,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "500,000"], ["Experience", "2,000,000"]]
+							"rows": [["Health", "1,150,000"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]},
 						{
@@ -46568,7 +46568,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "4,400,000"], ["Experience", "2,700,000"]]
+							"rows": [["Health", "10,120,000"], ["Experience", "2,700,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -46896,7 +46896,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "500,000"], ["Experience", "2,000,000"]]
+							"rows": [["Health", "1,150,000"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]},
 						{
@@ -47127,7 +47127,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "500,000"], ["Experience", "2,000,000"]]
+							"rows": [["Health", "1,150,000"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]},
 						{
@@ -47161,7 +47161,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "4,800,000"], ["Experience", "2,900,000"]]
+							"rows": [["Health", "11,040,000"], ["Experience", "2,900,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -47297,7 +47297,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "7,200,000"], ["Experience", "6,000,000"]]
+							"rows": [["Health", "16,560,000"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -47351,7 +47351,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "5,000,000"], ["Experience", "3,100,000"]]
+							"rows": [["Health", "11,500,000"], ["Experience", "3,100,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -47373,7 +47373,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "1,650,000"], ["Experience", "15,000,000"]]
+							"rows": [["Health", "3,795,000"], ["Experience", "15,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]},
 						{

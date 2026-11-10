@@ -201,6 +201,19 @@ local function answer(player, data)
 						tip.note = noteText
 					end
 				end
+				-- O475: the passive line of an OWNED copy is the one of the day it was made: put the current English line in its place
+				-- (by the passive's id and name, whatever the stored numbers say), so the pt-BR line below and the block after it find it
+				if type(tip) == "table" and type(tip.desc) == "string" and ChaosUniquePassivesCore and ChaosUniquePassivesConfig then
+					local e0 = ChaosUniquePassivesCore.entry(ChaosUniquePassivesConfig, item:getId())
+					if e0 then
+						local okR, fresh = pcall(function()
+							return (T.refreshPassive(tip.desc, ChaosUniquePassivesCore.text(ChaosUniquePassivesConfig, e0, "en"), e0.name))
+						end)
+						if okR and type(fresh) == "string" then
+							tip.desc = fresh
+						end
+					end
+				end
 				-- a unique's passive line in the player's language (unique_passives_text.lua; the description holds the English one)
 				if type(tip) == "table" and type(tip.desc) == "string" and ChaosUniquePassivesCore and ChaosUniquePassivesConfig
 						and Chaos.lang and Chaos.lang(player) == "pt-BR" then

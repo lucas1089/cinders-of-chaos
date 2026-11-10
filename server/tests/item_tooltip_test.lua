@@ -604,6 +604,27 @@ do
 	eq(T.splitPassive(en, {en}, ""), nil, "no name")
 end
 
+-- O475: an owned copy keeps the passive line of the day it was made; the tooltip renders the current one by the passive's name
+do
+	local cur = "Hungry Blade: Each kill restores 9% of your maximum health. For: Warrior, Thief."
+	local oldDesc = "Every soul it cuts feeds the blade. Hungry Blade: Each kill restores 7.1% of your maximum health. For: Warrior, Thief. (Requires level 120.)"
+	local fresh, found = T.refreshPassive(oldDesc, cur, "Hungry Blade")
+	eq(fresh, "Every soul it cuts feeds the blade. " .. cur .. " (Requires level 120.)", "an old stored line becomes the current one")
+	eq(found, true, "and it says so")
+	local p = T.splitPassive(fresh, {cur}, "Hungry Blade")
+	eq(p.text, "Each kill restores 9% of your maximum health. For: Warrior, Thief.", "the block of the explanation reads the current rule")
+	eq(p.flavor, "Every soul it cuts feeds the blade. (Requires level 120.)", "the flavour is kept")
+	local same, f2 = T.refreshPassive("Flavour. " .. cur .. " (Requires level 120.)", cur, "Hungry Blade")
+	eq(f2, false, "the current line in it: nothing to do")
+	eq(same, "Flavour. " .. cur .. " (Requires level 120.)", "and the text is unchanged")
+	eq(T.refreshPassive("Flavour only.", cur, "Hungry Blade"), "Flavour only.", "no line of this name: unchanged")
+	local twice = "Hungry Blade: a. Hungry Blade: b."
+	eq(T.refreshPassive(twice, cur, "Hungry Blade"), twice, "a name twice: left alone")
+	eq(T.refreshPassive("Hungry Blade: Each kill restores 7.1% of your maximum health.", cur, "Hungry Blade"), cur, "no requirement part: the line runs to the end")
+	eq(T.refreshPassive("Uma alma. Hungry Blade: Cada morte restaura 7.1%. (Requer n\195\173vel 120.)", cur, "Hungry Blade"), "Uma alma. " .. cur .. " (Requer n\195\173vel 120.)", "the pt-BR requirement marker ends the line too")
+	eq(T.refreshPassive(nil, cur, "Hungry Blade"), nil, "no description")
+end
+
 -- the Codex page of a unique or set piece (O467): the unique page when the Codex has one, else the set page
 do
 	eq(T.codexId(8209, {[8209] = {}}, nil), "unique:8209", "a unique with a page")

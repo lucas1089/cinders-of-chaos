@@ -150,7 +150,8 @@ for id, pts in pairs(C.extra) do
 		eq(pts[i][1] > pts[i - 1][1], true, "extra curve " .. id .. " rises in level")
 	end
 	for _, pt in ipairs(pts) do
-		eq(pt[2] >= 0.5 and pt[2] <= 3, true, "extra curve " .. id .. " stays between 0.5 and 3")
+		-- O475 (2026-11-10): was 0.5 to 3. The weapon growth moved three 5 target numbers out of the class band; the fit is Deadeye 4.3 at 1000 and Mystic 0.42 at 500
+		eq(pt[2] >= 0.4 and pt[2] <= 4.5, true, "extra curve " .. id .. " stays between 0.4 and 4.5")
 	end
 end
 -- the first target of a cast and the others: the hits of one cast come inside the window

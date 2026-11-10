@@ -435,7 +435,7 @@ second element is a choice.
 | Energy | Energy hits slow the target | 15% for 1.5 s | tier 3 to 4 | Mystic, Necromancer line, Elementalist |
 
 Each number is smaller than the snare of the same element (burn 30%, poison 36% over 6 s, leech 4%, party heal 2%, ice slow
-40% for 3 s). A damage part never goes over +4 of its own element (6% before O473: the Fire set is a raw entry of the one damage pool, at most 4) and never touches another element. Damage over time is
+40% for 3 s). A damage part never goes over +4 of its own element (6% before O473: the Fire set is a raw entry of the one damage pool, at most 4; the Fire set itself gives 3.5 since O475) and never touches another element. Damage over time is
 never changed. Against players the damage and poison are a third; the slow does not work on players.
 
 **Price.** A set takes 3 of your 5 slots and locks the three lines of your class to one element. Most classes have exactly
