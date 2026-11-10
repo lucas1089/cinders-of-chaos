@@ -65,7 +65,7 @@ local function setMods(mods)
     local image, tip = S.mod(name)
     local chip = g_ui.createWidget('MonsterBarModChip', box)
     chip:setImageSource(image)
-    chip:setTooltip(tip)
+    chip:setTooltip(tr(tip)) -- run-time key: the chip texts of monsterbarstyle.lua S.MODS are in pt_br.lua
   end
   box:setVisible(box:getChildCount() > 0)
 end
