@@ -33,6 +33,26 @@ return {
 	reraise = 4,
 	fight = 55,
 
+	-- O476 (2026-11-10): the guardian's single hit and the level warning (tools/guardian_model.py --hits / --warn, the stored
+	-- levels in rift_config.lua `warn`, server/README.md "Rifts", Level warning). The hit chain reads the config as it is
+	-- (guardian.damage, tiers, party) and the legendary rank of monster_tiers.lua; the base hits are the committed snapshot
+	-- data/spells/guardian_hits.csv (tools/survey_guardian_hits.py on an installed server).
+	hit = {
+		-- the engine's monster level bonus (config.lua monsterBonusDamage 0.0015 a level): x (1 + this x its level) on a monster's
+		-- hit. The live engine of 2026-11-10 runs it TWICE (Game::combatChangeHealth runs again after the health events, measured:
+		-- a fixed 40 hit of a level 950 monster cost 235); another change fixes the engine, so the rule counts it once, like the
+		-- other models. With `enginePasses = 2` (or --passes 2) the levels are the ones of the engine before the fix.
+		engineBonus = 0.0015, enginePasses = 1,
+		-- the rule reads the guardian that this share of the draws does not exceed (by hit size, weighted by the odds that the
+		-- type is the strongest of the run's three: the two stock types of tier 3 with 8M health and hits of 8-11k are 1.7%)
+		quantile = 0.9,
+		-- the rule: the biggest roll of that guardian, after the median class's armour and absorbs, at most this share of its
+		-- pool (health, plus mana for a mana shield class); the shareCap of the marked attacks (rift_config.lua guardian.kit)
+		oneHit = 0.6,
+		-- the levels the rule looks at (the stored levels are multiples of it)
+		step = 5
+	},
+
 	-- limits of --check (a guardian at the tier's level, the median class)
 	limits = {
 		-- seconds to die with no healing, a rift guardian by tier, the Omen guardian (tighter)

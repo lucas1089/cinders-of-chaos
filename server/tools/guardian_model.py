@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The guardian and rift pack model (O427; computed, not measured in game; server/README.md "Rifts", Guardian damage).
 
-usage: python3 -I server/tools/guardian_model.py [--legacy] [--tiers 1,5,10,15] [--check]
+usage: python3 -I server/tools/guardian_model.py [--legacy] [--tiers 1,5,10,15] [--check] [--hits] [--warn] [--passes N]
 
 Owner report 2026-11-06: "the rift bosses hit too little, you can solo them with the Necromancer", then "make the Omen
 bosses hit harder", "the rift monsters are weak too, put more monsters". The model answers, per rift tier and for the Omen
@@ -31,7 +31,7 @@ The model, per tier t and the geared median class at the tier's level:
             of them on the minions by the aggro weights, x minion.factor: the front minion lives health / that; the owner's
             share of the damage while the minions stand = (1 - focus) + focus x splash. Before: factor 0.25, splash 0.
 """
-import json, os, re, statistics, subprocess, sys
+import csv, itertools, json, math, os, re, statistics, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -150,12 +150,18 @@ def trio(level, dps, focus, factor, splash, nbal, reraise):
             'owner': (1 - focus) + focus * splash, 'uptime': front / (front + reraise)}
 
 
+def tier_inputs(tier, bal, d, nbal, mons, pool, nums):
+    """(base, hits, marks) of a tier: the guardian's hits per second before the player's layers and the marked share"""
+    t = nums['tiers'][tier - 1]
+    base = window_dps(d, bal, t['pick'], tier, nbal, mons, pool)
+    hits = base * bal['legendaryDamage'] * t['tierDamage'] * t['guardian']
+    return base, hits, t['marksKit'] * bal['marksTaken']
+
+
 def run_tier(tier, legacy, bal, d, nbal, mons, pool, nums, ntables):
     t = nums['tiers'][tier - 1]
     pl = t['minLevel']
-    base = window_dps(d, bal, t['pick'], tier, nbal, mons, pool)
-    hits = base * bal['legendaryDamage'] * t['tierDamage'] * t['guardian']
-    marks = t['marksKit'] * bal['marksTaken']
+    base, hits, marks = tier_inputs(tier, bal, d, nbal, mons, pool, nums)
     med = median_class(pl, bal['split'], hits, marks)
     pack_dps = base * bal['pack'] * t['packDamage'] * t['tierDamage'] * bal['packTierMean']
     pack = median_class(pl, bal['split'], pack_dps, 0)
@@ -189,6 +195,324 @@ def compute(legacy=False, tiers=None):
     tiers = tiers or bal['tiers']
     rows = [run_tier(t, legacy, bal, d, nbal, mons, pool, nums, None) for t in tiers]
     return {'bal': bal, 'rows': rows, 'omen': run_omen(legacy, bal, nbal, nums), 'nums': nums}
+
+
+# ------------------------------------------------------------------------------------------------ O476: single hit, warning
+HITS = os.path.join(SERVER, 'data', 'spells', 'guardian_hits.csv')
+MON_TIERS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'monster_tiers.lua')
+
+
+def hit_rows():
+    """[{name, level, mlevel, melee_max, ...}] of data/spells/guardian_hits.csv (tools/survey_guardian_hits.py)"""
+    rows = []
+    with open(HITS, encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            row = {'name': r['name'], 'level': int(r['level']), 'mlevel': int(r['mlevel'])}
+            for k in ('melee_max', 'melee_mean', 'elem_max', 'elem_mean'):
+                row[k] = float(r[k])
+            rows.append(row)
+    return rows
+
+
+def rank_damage(rank='legendary'):
+    """the damage factor of a monster rank (monster_tiers.lua ChaosTiers; the model's legendaryDamage is the older 2.0)"""
+    m = re.search(r'\b%s = \{label = "[A-Za-z]+", hp = [0-9.]+, speed = \d+, damage = ([0-9.]+)' % rank, S.read(MON_TIERS))
+    return float(m.group(1))
+
+
+def candidates(rows, nums, tier):
+    """the rows the rift draws a guardian from (rift_core.lua R.pickTypes): the pool entries of the tier's window, widened
+    by widenStep up to five times while fewer than `types` are in it; sorted by (level, name), the order that makes the
+    strongest of three the guardian"""
+    h = nums['hit']
+    lo, hi = nums['tiers'][tier - 1]['pick']
+    out = [r for r in rows if lo <= r['level'] <= hi]
+    widen = 0
+    while len(out) < h['types'] and widen < 5:
+        widen += 1
+        lo, hi = lo - h['widenStep'], hi + h['widenStep']
+        out = [r for r in rows if lo <= r['level'] <= hi]
+    return sorted(out, key=lambda r: (r['level'], r['name']))
+
+
+def guardian_odds(cands, types=3):
+    """[(row, probability)]: the guardian is the last of `types` distinct random picks of the sorted list, so the one at
+    index i is it with chance C(i, types - 1) / C(n, types)"""
+    n = len(cands)
+    if n < types:
+        return [(c, 1.0 / n) for c in cands]
+    total = math.comb(n, types)
+    return [(c, math.comb(i, types - 1) / total) for i, c in enumerate(cands)]
+
+
+def chain(row, kind, tier, nums, bal, d, party=1):
+    """one roll of the guardian's biggest attack of `kind` ('melee' or 'elem') as the player gets it before its own
+    layers, no modifier on the monster or the key: the XML roll, x the engine's level bonus (enginePasses times), x the
+    late-game boost (melee and physical only), x the legendary rank, x guardian.damage, x the tier's own damage (above 10),
+    x the party's. The single application, as the code intends it."""
+    h = bal['hit']
+    t = nums['tiers'][tier - 1]
+    v = row[kind + '_max']
+    if row['mlevel'] > 0:
+        v *= (1 + h['engineBonus'] * row['mlevel']) ** h['enginePasses']
+    if kind == 'melee':
+        v *= 1 + S.boost_percent(d['boost']['points'], row['level']) / 100.0
+    v *= rank_damage() * t['guardian'] * t['tierDamage'] * (1 + nums['party']['damagePerExtraPlayer'] * (party - 1))
+    return v
+
+
+def worst_mods(nums, tier, kind):
+    """(monster factor, key factor, key modifiers): the biggest one-hit multiplier the monster's four legendary modifiers
+    (Brutal x1.4, Berserker x1.5 under half health, Ruthless a x1.5 critical hit, Emberforged / Frostforged / Stormforged
+    +50% of a physical weapon hit as an element) and a key of the tier (up to maxMods modifiers, each with its top value in
+    the tier's window, one per group, Brutality, Dread Guardian, Keen Fangs, a brand, a hex) can add"""
+    mon = 1.4 * 1.5 * 1.5 * (1.5 if kind == 'melee' else 1.0)
+    h = nums['hit']
+    window = next(w for w in h['modWindow'] if tier <= w[0])
+    top = window[2]
+    opts = {}
+    for m in h['mods']:
+        if m['key'] not in nums['warn']['hot']:
+            continue
+        if tier < (m.get('minTier') or 1):
+            continue
+        v = m['tiers'][top - 1] / 100.0
+        if m['key'] == 'keen':
+            mult = h['critMult']
+        elif m['key'] == 'flaying' and kind != 'melee':
+            mult = 1.0
+        elif m['key'] == 'searing' and kind == 'melee':
+            mult = 1.0
+        else:
+            mult = 1 + v
+        opts[m['key']] = (m.get('group') or m['key'], mult)
+    names = sorted(opts)
+    best = (1.0, ())
+    for n in range(1, h['maxMods'] + 1):
+        for combo in itertools.combinations(names, n):
+            groups = [opts[k][0] for k in combo]
+            if len(set(groups)) < len(groups):
+                continue
+            f = 1.0
+            for k in combo:
+                f *= opts[k][1]
+            if f > best[0]:
+                best = (f, combo)
+    return mon, best[0], best[1]
+
+
+def preload(levels):
+    """one Lua dump for all the levels (survival_model.dump keys by the level list)"""
+    d = S.dump(levels)
+    for lv in levels:
+        S._dump[(int(lv),)] = d
+    return d
+
+
+_class_rows = {}
+
+
+def class_rows(level, split, hits, marks):
+    """the class rows at a level under a tier's hits (the build of each class is the median one under them), cached"""
+    key = (level, round(hits, 3), round(marks, 6))
+    if key not in _class_rows:
+        _class_rows[key] = median_class(level, split, hits, marks)['rows']
+    return _class_rows[key]
+
+
+def layered(rows, hit, kind):
+    """the median over the classes of (the hit after the class's armour and absorbs, no dodge or block) / its pool"""
+    vals = []
+    for r in rows:
+        if kind == 'melee':
+            k = (1 - r['armourRed']) * (1 - r['absorbPhys'])
+        else:
+            k = 1 - r['absorbElem']
+        vals.append(hit * k * r['toughness'] / r['pool'])
+    return statistics.median(vals)
+
+
+def item_share(rows, it, nums, tier, worst):
+    """a guardian item's biggest roll (the bigger of its two kinds after the layers; worst: with the worst modifiers) over
+    the median class's pool"""
+    best = 0.0
+    for kind in ('melee', 'elem'):
+        v = it[kind]
+        if v <= 0:
+            continue
+        if worst:
+            mon, key, _ = worst_mods(nums, tier, kind)
+            v *= mon * key
+        best = max(best, layered(rows, v, kind))
+    return best
+
+
+def tier_hits(tier, nums, bal, d, hrows, party=1):
+    """per tier: the candidates with their raw rolls and odds, the biggest, the typical (median by odds) and the quantile one"""
+    cands = candidates(hrows, nums, tier)
+    odds = guardian_odds(cands, nums['hit']['types'])
+    items = []
+    for c, p in odds:
+        m = chain(c, 'melee', tier, nums, bal, d, party) if c['melee_max'] > 0 else 0.0
+        e = chain(c, 'elem', tier, nums, bal, d, party) if c['elem_max'] > 0 else 0.0
+        items.append({'row': c, 'p': p, 'melee': m, 'elem': e, 'top': max(m, e)})
+    items.sort(key=lambda x: x['top'])
+    acc, q, med = 0.0, None, None
+    for it in items:
+        acc += it['p']
+        if med is None and acc >= 0.5:
+            med = it
+        if q is None and acc >= bal['hit']['quantile'] - 1e-9:
+            q = it
+    return {'items': items, 'biggest': items[-1], 'typical': med, 'quantile': q, 'count': len(items)}
+
+
+def share_at(level, item, split, hits, marks, nums, tier):
+    """the item's bigger kind, layered, over the median class's pool at `level`; and the median class (its pressure)"""
+    med = median_class(level, split, hits, marks)
+    return item_share(med['rows'], item, nums, tier, False), med
+
+
+def warn_levels():
+    """{'levels': [level of tiers 1..maxTier], 'partySize': n, 'detail': [...]} by the rule of rift_config.lua `warn`:
+    the recommended solo level of a tier is the lowest level, from the tier's entry level up in steps of hit.step, at which
+    (1) the guardian that `quantile` of the draws do not exceed rolls its biggest hit, after the median class's armour and
+    absorbs, at most `oneHit` of that class's pool, and (2) the guardian's pressure on the median class (its damage against
+    its healing, the model's `press`) is at most the pressure at the middle of the tier's monster window; the top of the
+    window when no level up to it does; never below the level of the tier under it. partySize: the smallest party at which a player at the tier's entry level takes,
+    per head, no more pressure than a solo player in the middle of the window (the guardian's hits shared by n, x (1 + the
+    party's damage step x (n - 1)) each), at most the party limit"""
+    nums = numbers(False)
+    bal = nums['bal']
+    h = bal['hit']
+    d0 = S.dump([1007])
+    nbal = M.dump([50])['balance']
+    mons, pool = S.scaled_monsters(), pool_rows()
+    hrows = hit_rows()
+    d = preload(sorted(set(range(100, 1131, h['step']))))
+    out, detail, worst_share = [], [], 0.0
+    for tier in range(1, nums['hit']['maxTier'] + 1):
+        t = nums['tiers'][tier - 1]
+        base, hits, marks = tier_inputs(tier, bal, d0, nbal, mons, pool, nums)
+        th = tier_hits(tier, nums, bal, d, hrows)
+        lo, hi = t['pick']
+        mid = int(round((lo + hi) / 2.0 / h['step']) * h['step'])
+        p_mid = median_class(mid, bal['split'], hits, marks)['pressure']
+        pick, one = None, 0.0
+        for lv in range(t['minLevel'], hi + 1, h['step']):
+            one, med = share_at(lv, th['quantile'], bal['split'], hits, marks, nums, tier)
+            if one <= h['oneHit'] and med['pressure'] <= p_mid + 1e-9:
+                pick = lv
+                break
+        why = 'rule'
+        if pick is None:
+            pick, why = hi, 'window top'
+        if out and pick < out[-1]:
+            pick, why = out[-1], 'tier below'
+        p_min = median_class(t['minLevel'], bal['split'], hits, marks)['pressure']
+        worst_share = max(worst_share, p_min / p_mid if p_mid > 0 else 0.0)
+        out.append(pick)
+        detail.append({'tier': tier, 'level': pick, 'why': why, 'mid': mid, 'pMid': p_mid, 'pMin': p_min, 'share': one,
+                       'quantile': th['quantile']['row']['name'], 'qHit': th['quantile']['top'], 'count': th['count']})
+    size = None
+    step = nums['party']['damagePerExtraPlayer']
+    for n in range(2, nums['hit']['maxPlayers'] + 1):
+        if (1 + step * (n - 1)) / n * worst_share <= 1.0:
+            size = n
+            break
+    return {'levels': out, 'partySize': size or nums['hit']['maxPlayers'], 'detail': detail, 'worstShare': worst_share}
+
+
+def hit_table(tiers=None):
+    """Part A: per tier the biggest, the typical and the quantile guardian roll, and each over the median class's pool at
+    the tier's entry level, the middle of its window and its top; solo and a party of 5; no modifier and the worst ones"""
+    nums = numbers(False)
+    bal = nums['bal']
+    h = bal['hit']
+    d0 = S.dump([1007])
+    nbal = M.dump([50])['balance']
+    mons, pool = S.scaled_monsters(), pool_rows()
+    hrows = hit_rows()
+    d = preload(sorted(set(range(100, 1131, h['step']))))
+    out = []
+    for tier in tiers or range(1, nums['hit']['maxTier'] + 1):
+        t = nums['tiers'][tier - 1]
+        base, hits, marks = tier_inputs(tier, bal, d0, nbal, mons, pool, nums)
+        lo, hi = t['pick']
+        levels = [t['minLevel'], int(round((lo + hi) / 2.0 / h['step']) * h['step']), hi]
+        row = {'tier': tier, 'levels': levels}
+        for party in (1, 5):
+            th = tier_hits(tier, nums, bal, d, hrows, party)
+            for tag in ('biggest', 'typical', 'quantile'):
+                it = th[tag]
+                rows_mid = class_rows(levels[1], bal['split'], hits, marks)
+                kinds = [k for k in ('melee', 'elem') if it[k] > 0]
+                kind = max(kinds, key=lambda k: layered(rows_mid, it[k], k))
+                mon, key, combo = worst_mods(nums, tier, kind)
+                cell = {'name': it['row']['name'], 'kind': kind, 'raw': it[kind], 'worst': it[kind] * mon * key,
+                        'combo': combo, 'share': [], 'worstShare': [], 'pool': [], 'okLevel': None}
+                for lv in levels:
+                    rows_c = class_rows(lv, bal['split'], hits, marks)
+                    cell['pool'].append(statistics.median(r['pool'] for r in rows_c))
+                    cell['share'].append(item_share(rows_c, it, nums, tier, False))
+                    cell['worstShare'].append(item_share(rows_c, it, nums, tier, True))
+                for lv in range(t['minLevel'], 1131, h['step']):
+                    if item_share(class_rows(lv, bal['split'], hits, marks), it, nums, tier, False) <= h['oneHit']:
+                        cell['okLevel'] = lv
+                        break
+                row[(tag, party)] = cell
+            row[('count', party)] = th['count']
+        out.append(row)
+    return out
+
+
+def print_hits(rows):
+    print("Part A, raw roll of the guardian's biggest attack before the player (solo; a party of 5 is x1.4; worst = the worst")
+    print('modifiers of the monster and of a key of the tier), the biggest / typical (median draw) / 90th percentile guardian:')
+    print('%-4s %4s  %-9s %8s %8s  %-9s %8s %8s  %-9s %8s %8s' % ('tier', 'n', 'biggest', 'raw', 'worst', 'typical', 'raw',
+                                                                  'worst', 'q90', 'raw', 'worst'))
+    for r in rows:
+        c = [r[(k, 1)] for k in ('biggest', 'typical', 'quantile')]
+        print('%-4d %4d  %-9.9s %8.0f %8.0f  %-9.9s %8.0f %8.0f  %-9.9s %8.0f %8.0f' % (
+            r['tier'], r[('count', 1)], c[0]['name'], c[0]['raw'], c[0]['worst'], c[1]['name'], c[1]['raw'], c[1]['worst'],
+            c[2]['name'], c[2]['raw'], c[2]['worst']))
+    print("\nHit after the median class's armour and absorbs over its pool (health + mana for a mana shield class), at the")
+    print("tier's entry level / middle of the window / top; solo, then a party of 5 (the hits x1.4); unmodified | worst modifiers:")
+    for tag in ('biggest', 'typical', 'quantile'):
+        print('-- %s guardian' % tag)
+        print('%-4s %-17s %-23s %-23s %-23s %-23s' % ('tier', 'levels', 'solo', 'solo worst', 'party5', 'party5 worst'))
+        for r in rows:
+            def f(party, key):
+                return '/'.join('%.2f' % x for x in r[(tag, party)][key])
+            print('%-4d %-17s %-23s %-23s %-23s %-23s' % (r['tier'], '/'.join(str(x) for x in r['levels']),
+                  f(1, 'share'), f(1, 'worstShare'), f(5, 'share'), f(5, 'worstShare')))
+    print('\nlowest level (steps of 5, from the entry level, to 1130) at which that hit, solo and unmodified, is at most 60%')
+    print('of the median class pool; - = none up to 1130 (solo | party of 5):')
+    print('%-4s %-18s %-18s %-18s' % ('tier', 'biggest', 'typical', 'q90'))
+    for r in rows:
+        def ok(tag):
+            return '%s | %s' % tuple(str(r[(tag, p)]['okLevel'] or '-') for p in (1, 5))
+        print('%-4d %-18s %-18s %-18s' % (r['tier'], ok('biggest'), ok('typical'), ok('quantile')))
+    print('\npool of the median class at those levels: ' + '; '.join(
+        't%d %s' % (r['tier'], '/'.join('%.0f' % x for x in r[('typical', 1)]['pool'])) for r in rows))
+
+
+def check_warn(nums):
+    """errors: the stored `warn` block of rift_config.lua against the rule"""
+    errors = []
+    stored = nums.get('warn')
+    if not stored:
+        return ['rift_config.lua has no `warn` block']
+    got = warn_levels()
+    want = got['levels']
+    if list(stored.get('levels') or []) != want:
+        errors.append('warn.levels is %s, the rule gives %s (python3 -I server/tools/guardian_model.py --warn)' % (
+            stored.get('levels'), want))
+    if stored.get('partySize') != got['partySize']:
+        errors.append('warn.partySize is %s, the rule gives %s' % (stored.get('partySize'), got['partySize']))
+    return errors
+
+
 
 
 def check(res):
@@ -259,11 +583,29 @@ def main(argv):
     if '--tiers' in argv:
         tiers = [int(x) for x in argv[argv.index('--tiers') + 1].split(',')]
     legacy = '--legacy' in argv
+    if '--passes' in argv:  # the engine's level bonus counted this many times (1 = as the models and the fixed engine, 2 = the live engine of before)
+        numbers(False)['bal']['hit']['enginePasses'] = int(argv[argv.index('--passes') + 1])
+    if '--hits' in argv:
+        print_hits(hit_table(tiers))
+        return 0
+    if '--warn' in argv:
+        w = warn_levels()
+        print('recommended solo level by tier (rule: guardian_model.py warn_levels): %s' % w['levels'])
+        print('partySize %d (worst pressure at the entry level over the middle of the window: %.2f)' % (
+            w['partySize'], w['worstShare']))
+        print('%-4s %6s %6s %-10s %-22s %7s %6s %6s %6s' % ('tier', 'level', 'mid', 'from', 'q90 guardian', 'q90 hit', 'share',
+                                                          'p mid', 'p min'))
+        for r in w['detail']:
+            print('%-4d %6d %6d %-10s %-22.22s %7.0f %6.2f %6.2f %6.2f' % (
+                r['tier'], r['level'], r['mid'], r['why'], r['quantile'], r['qHit'], r['share'], r['pMid'], r['pMin']))
+        return 0
     res = compute(legacy, tiers)
     print('# %s' % ('before O427' if legacy else 'now'))
     report(res)
     if '--check' in argv:
         errors = check(res)
+        if not legacy and tiers is None:
+            errors += check_warn(numbers(False))
         for e in errors:
             print('FAIL ' + e)
         print('guardian check: %s' % ('%d failure(s)' % len(errors) if errors else 'ok'))

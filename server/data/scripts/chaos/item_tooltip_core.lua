@@ -1033,8 +1033,10 @@ function T.riftKey(item, tip)
 	end
 	local info = R.tierInfo(cfg, key.tier)
 	tip.req = {level = info.minLevel}
-	tip.desc = clip(string.format("Rewards: %s. Opens a rift of tier %d. Use it in a protection zone; your party within %d sqm comes along.",
-		#bonus > 0 and table.concat(bonus, ", ") or "normal", key.tier, cfg.partyRange or 8), 300)
+	local rec = R.warnLevel and R.warnLevel(cfg, key.tier) -- O476: the recommended solo level, as in the look text
+	tip.desc = clip(string.format("Rewards: %s. Opens a rift of tier %d.%s Use it in a protection zone; your party within %d sqm comes along.",
+		#bonus > 0 and table.concat(bonus, ", ") or "normal", key.tier,
+		rec and string.format(" Recommended: level %d alone, or a party.", rec) or "", cfg.partyRange or 8), 300)
 	return true
 end
 

@@ -979,8 +979,11 @@ jobs:
       - name: Every class lives in a pack of its late hunt, at least 0.45 x the median class, and the median class out-heals it (survival_model.py --check and its test; survival_balance_config.lua, O367)
         run: python3 -I server/tools/survival_model.py --check && python3 -I server/tools/survival_model_test.py
 
-      - name: Rift guardians and packs hit the median class within limits, a Necromancer's trio is no wall (guardian_model.py --check; guardian_balance_config.lua, O427)
+      - name: Rift guardians and packs hit the median class within limits, a Necromancer's trio is no wall, the stored level warning is the rule (guardian_model.py --check; guardian_balance_config.lua, O427, O476)
         run: python3 -I server/tools/guardian_model.py --check
+
+      - name: Rift level warning, guardian hit chain and the snapshot of the guardian hits (guardian_model_test.py, survey_guardian_hits_test.py; O476)
+        run: python3 -I server/tools/guardian_model_test.py && python3 -I server/tools/survey_guardian_hits_test.py
 
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)

@@ -2165,6 +2165,12 @@ return {
 			"Você precisa estar numa zona de proteção para abrir um rift.",
 		["You need level %d to open an omen arena."] = "Você precisa do nível %d para abrir uma arena de omen.",
 		["You need level %d to open a tier %d rift."] = "Você precisa do nível %d para abrir um rift tier %d.",
+		["Warning: this rift is above your level (recommended %d alone). Its guardian can kill in one hit. Bring a party or use a lower tier key."] =
+			"Aviso: este rift está acima do seu nível (recomendado: %d sozinho). O guardião pode matar com um único golpe. Leve um grupo ou use uma chave de tier menor.",
+		["Warning: this rift is above your level (recommended %d alone). Its guardian can kill in one hit. Its modifiers make monsters hit harder. Bring a party or use a lower tier key."] =
+			"Aviso: este rift está acima do seu nível (recomendado: %d sozinho). O guardião pode matar com um único golpe. Os modificadores fazem os monstros baterem mais forte. Leve um grupo ou use uma chave de tier menor.",
+		["Tip: a guardian can kill in one hit below the recommended level (%d alone). Bring a party or use a lower tier key next time."] =
+			"Dica: um guardião pode matar com um único golpe abaixo do nível recomendado (%d sozinho). Da próxima vez, leve um grupo ou use uma chave de tier menor.",
 		["The rifts are still forming. Try again in a few seconds."] =
 			"Os rifts ainda estão se formando. Tente de novo em alguns segundos.",
 		["Every rift is open right now. Try again in a moment."] =
@@ -8086,6 +8092,8 @@ return {
 			"+%d%% de experiência",
 		["Opens a rift of tier %d (level %d+)"] =
 			"Abre um rift de tier %d (nível %d+)",
+		["Recommended: level %d alone, or a party"] =
+			"Recomendado: nível %d sozinho, ou em grupo",
 		["Use it in a protection zone; your party within %d sqm comes along"] =
 			"Use numa zona de proteção; o seu grupo num raio de %d sqm vai junto",
 		["It hums with the name %s"] =

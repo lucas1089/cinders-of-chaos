@@ -192,6 +192,35 @@ local function say(run, text)
 	end
 end
 
+-- O476: the level warning (rift_core.lua R.warnEntry / R.warnTip, rift_config.lua `warn`). One line to each player who
+-- enters below the key's recommended level in a party smaller than warn.partySize; the modifiers that raise the damage
+-- are folded into the same line.
+local function warnEntry(run, group)
+	local cfg = C()
+	for _, m in ipairs(group) do
+		local rec, hot = R.warnEntry(cfg, run.key, m:getLevel(), #group)
+		if rec then
+			m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, hot and
+				ChaosI18n.msg("Warning: this rift is above your level (recommended %d alone). Its guardian can kill in one hit. Its modifiers make monsters hit harder. Bring a party or use a lower tier key.", rec) or
+				ChaosI18n.msg("Warning: this rift is above your level (recommended %d alone). Its guardian can kill in one hit. Bring a party or use a lower tier key.", rec)))
+		end
+	end
+end
+RF._warnEntry = warnEntry
+
+-- a death to a guardian below the recommended level: one tip a run and player, after the death lines
+local function warnTip(run, player, killer, mostDamage)
+	local entry = run.players[player:getId()]
+	local boss = run.bossIds
+	local byGuardian = boss and ((killer and boss[killer:getId()]) or (mostDamage and boss[mostDamage:getId()])) or false
+	local rec = R.warnTip(C(), run.key, entry and entry.level or player:getLevel(), byGuardian, entry)
+	if rec then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, ChaosI18n.msg(
+			"Tip: a guardian can kill in one hit below the recommended level (%d alone). Bring a party or use a lower tier key next time.", rec)))
+	end
+end
+RF._warnTip = warnTip
+
 -- ======================================================================== keys
 function RF.readKey(item)
 	if not item or item:getActionId() ~= C().key.actionId then
@@ -2242,7 +2271,8 @@ local function enter(run, group)
 	local L = run.L
 	for i, m in ipairs(group) do
 		local entryPos = m:getPosition()
-		run.players[m:getId()] = {id = m:getId(), guid = m:getGuid(), name = m:getName(), entry = entryPos, xp = {base = 0}}
+		run.players[m:getId()] = {id = m:getId(), guid = m:getGuid(), name = m:getName(), entry = entryPos, xp = {base = 0},
+			level = m:getLevel()}
 		RF.runOf[m:getId()] = run
 		m:registerEvent("ChaosRiftPlayerDeath")
 		m:registerEvent("ChaosRiftPlayerHit")
@@ -2376,6 +2406,7 @@ function RF.open(player, item)
 	if run.queue and #run.queue > 0 then
 		say(run, ChaosI18n.msg("%d more packs gather ahead of you as you advance.", #run.queue))
 	end
+	warnEntry(run, group) -- O476
 	sendHud(run, "start")
 	run.hudAt = os.time() + cfg.hudEvery
 	addEvent(tick, 1000, slot, run.id)
@@ -2843,8 +2874,21 @@ function RF.guardianHitMult(attacker)
 	return (run.fx.damage or 1) * (run.fx.boss or 1) * (run.fx.guardian or 1)
 end
 
+-- the hit a mana shield took, per player: {attacker id, time}. With a mana shield the engine hands the WHOLE hit to the
+-- mana events first (Game::combatChangeHealth) and only what the mana could not take to the health events, so the same
+-- hit came through scaleHit twice and the rest after the mana was scaled again (O476: a level 264 mage lost 2.91k mana and
+-- 4.12k health to one hit that should have cost 4.2k in all; the guardian's x3.14 had run twice on the part the health
+-- paid). The mana event marks the hit; the health event of the same hit (same attacker, within 10 ms, mana now empty)
+-- leaves it as it is. monster_damage.lua does the same for the late-game boost.
+local manaScaled = {}
+RF._manaScaled = manaScaled
+
+local function nowMs()
+	return os.mtime and os.mtime() or os.time() * 1000
+end
+
 -- damage taken by players from rift monsters: Brutality and the tiers above the table
-local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, viaMana)
 	-- a guardian's splash through a summon (necro_minions.lua, O427) is already scaled by the run: no second pass
 	local splash = ChaosNecroMinions and ChaosNecroMinions.splashing
 	local run = attacker and not reflecting and not splash and RF.monsterRun[attacker:getId()]
@@ -2853,6 +2897,23 @@ local function scaleHit(creature, attacker, primaryDamage, primaryType, secondar
 		local entry = run.players[creature:getId()]
 		if entry and (entry.shieldUntil or 0) > os.time() then
 			return 0, primaryType, 0, secondaryType
+		end
+		local cid = creature:getId()
+		local mark = manaScaled[cid]
+		manaScaled[cid] = nil
+		if mark and not viaMana and mark.attacker == attacker:getId() and math.abs(nowMs() - mark.at) <= 10 and creature:getMana() == 0 then
+			return primaryDamage, primaryType, secondaryDamage, secondaryType -- the mana event scaled this hit already
+		end
+		if viaMana then
+			-- the health event of this hit follows inside the same engine call; the mark ends with it (the next dispatcher
+			-- cycle), so it can never reach another hit
+			local m = {attacker = attacker:getId(), at = nowMs()}
+			manaScaled[cid] = m
+			addEvent(function(id, mark)
+				if manaScaled[id] == mark then
+					manaScaled[id] = nil
+				end
+			end, 1, cid, m)
 		end
 		-- Brutality, tiers, party, Dread Guardian, density, Keen Fangs, brands, hexes (rift_core.lua R.monsterHit)
 		local info
@@ -2893,14 +2954,14 @@ playerHit:register()
 
 local playerMana = CreatureEvent("ChaosRiftPlayerMana")
 function playerMana.onManaChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
-	return scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+	return scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, true)
 end
 playerMana:register()
 
 -- a death inside: the normal death of the engine (losses, blessings, the death window), one shared life less. With lives
 -- left the character comes back at the rift's entrance at its next login (login below); the last life collapses it.
 local playerDeath = CreatureEvent("ChaosRiftPlayerDeath")
-function playerDeath.onDeath(player)
+function playerDeath.onDeath(player, corpse, killer, mostDamageKiller)
 	local run = RF.runOf[player:getId()]
 	if not run then
 		return true
@@ -2912,10 +2973,12 @@ function playerDeath.onDeath(player)
 		RF.revive[guid] = run
 		say(run, ChaosI18n.msg(left == 1 and "%s has fallen: %d shared life left." or "%s has fallen: %d shared lives left.",
 			player:getName(), left))
+		warnTip(run, player, killer, mostDamageKiller) -- O476
 		sendHud(run, "update") -- the fallen player too (removed next)
 		removePlayer(run, player:getId(), "dead")
 	elseif left == 0 then
 		say(run, ChaosI18n.msg("%s has fallen, and with them the rift's last life.", player:getName()))
+		warnTip(run, player, killer, mostDamageKiller) -- O476
 		-- the dying player leaves first (no teleport inside the death event), then the rift collapses
 		run.state = "failed"
 		run.endMsg = ChaosI18n.msg(run.omen and "%s The arena collapses and the key is lost." or
@@ -2929,6 +2992,7 @@ function playerDeath.onDeath(player)
 		end
 	else
 		say(run, ChaosI18n.msg("%s has fallen in the rift.", player:getName()))
+		warnTip(run, player, killer, mostDamageKiller) -- O476
 		removePlayer(run, player:getId(), "dead") -- after the seal: normal death rules, the engine sends them to the temple
 	end
 	return true
@@ -2950,7 +3014,7 @@ local function revive(player)
 		return false
 	end
 	local id = player:getId()
-	run.players[id] = {id = id, guid = guid, name = player:getName(), entry = f.entry, xp = {base = 0},
+	run.players[id] = {id = id, guid = guid, name = player:getName(), entry = f.entry, xp = {base = 0}, level = player:getLevel(),
 		shieldUntil = os.time() + C().lives.shieldSeconds}
 	RF.runOf[id] = run
 	player:registerEvent("ChaosRiftPlayerDeath")

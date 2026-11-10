@@ -1,0 +1,758 @@
+name,level,mlevel,melee_max,melee_mean,elem_max,elem_mean
+Spit Nettle,7,0,0,0,40,27.5
+Water Buffalo,7,0,30,15.0,0,0
+Despair,8,0,289,164.5,0,0
+Crazed Beggar,9,0,25,12.5,0,0
+Crocodile,10,0,40,20.0,0,0
+Elf,10,0,25,12.5,0,0
+Orc Spearman,10,0,30,15.0,0,0
+Marsh Stalker,11,0,10,5.0,0,0
+Meadow Strider,11,0,13,6.5,0,0
+Minotaur,11,0,45,22.5,0,0
+Minotaur Bruiser,11,0,45,22.5,0,0
+Orc Warrior,11,0,60,30.0,0,0
+Scar Tribe Warrior,11,0,25,12.5,0,0
+Smuggler,11,0,60,30.0,0,0
+Amazon,12,0,45,22.5,0,0
+Boar,12,0,50,25.0,0,0
+Dwarf Miner,12,0,35,17.5,0,0
+Gnarlhound,12,0,70,35.0,0,0
+Minotaur Poacher,12,0,20,10.0,0,0
+Nomad,12,0,80,40.0,0,0
+Toad,12,0,30,15.0,0,0
+War Wolf,12,0,50,25.0,0,0
+Wild Warrior,12,0,70,35.0,0,0
+Bandit,13,0,45,22.5,0,0
+Carrion Worm,13,0,45,22.5,0,0
+Dwarf Soldier,13,0,70,35.0,0,0
+Gang Member,13,0,70,35.0,0,0
+Ladybug,13,0,4,2.0,20,10.0
+Minotaur Archer,13,0,80,40.0,0,0
+Slug,13,0,44,22.0,40,22.5
+Elf Scout,14,0,80,40.0,0,0
+Firestarter,14,0,15,7.5,21,10.5
+Barbarian Brutetamer,15,0,34,17.0,0,0
+Barbarian Headsplitter,15,0,60,30.0,0,0
+Barbarian Skullhunter,15,0,60,30.0,0,0
+Gazer,15,0,15,7.5,35,30.0
+Ghoul,15,0,70,35.0,27,21.0
+Gladiator,15,0,90,45.0,0,0
+Pirate Skeleton,15,0,50,25.0,0,0
+Scar Tribe Shaman,15,0,10,5.0,30,17.5
+Stalker,15,0,70,35.0,30,25.0
+Tortoise,15,0,50,25.0,0,0
+Valkyrie,15,0,70,35.0,0,0
+Assassin,16,0,120,60.0,0,0
+Damaged Worker Golem,16,0,45,22.5,0,0
+Dark Apprentice,16,0,60,30.0,26,14.0
+Howler Ape,16,0,55,27.5,0,0
+Minotaur Occultist,16,0,10,5.0,20,10.0
+Novice of the Cult,16,0,65,32.5,80,50.0
+Saltkin Mantassin Scout,16,0,110,55.0,0,0
+Gorehide Ape,17,0,60,30.0,0,0
+Lesser Fire Devil,17,0,25,12.5,36,30.0
+Lizard Sentinel,17,0,70,35.0,0,0
+Orc Rider,17,0,130,65.0,0,0
+Orc Shaman,17,0,15,7.5,45,25.0
+Drownkin worker,18,0,80,40.0,0,0
+Ghost,18,0,80,40.0,45,32.5
+Juvenile Cyclops,18,0,45,22.5,0,0
+Manta Ray,18,0,99,49.5,75,45.0
+Pirate Marauder,18,0,140,70.0,0,0
+Scarab,18,0,75,37.5,35,17.5
+Tarantula,18,0,90,45.0,0,0
+Tarnished Spirit,18,0,80,40.0,45,32.5
+White Shade,18,0,8,4.0,6,5.0
+Witch,18,0,20,10.0,75,52.5
+Chitterkin,19,0,30,15.0,90,75.0
+Dark Monk,19,0,100,50.0,50,35.0
+Fire Devil,19,0,35,17.5,90,75.0
+Troll Legionnaire,19,0,130,65.0,0,0
+Wilting Leaf Golem,19,0,120,60.0,0,0
+Blood Crab,20,0,110,55.0,0,0
+Cyclops,20,0,105,52.5,0,0
+Drownkin Scout,20,0,100,50.0,100,70.0
+Elephant,20,0,100,50.0,0,0
+Frost Giant,20,0,110,55.0,0,0
+Frost Giantess,20,0,90,45.0,0,0
+Gargoyle,20,0,65,32.5,0,0
+Gnawling Charlatan,20,0,100,50.0,0,0
+Gorebloom,20,0,100,50.0,130,85.0
+Greater Death Minion,20,0,85,42.5,40,35.0
+Hunter,20,0,100,50.0,0,0
+Killer Rabbit,20,0,100,50.0,0,0
+Lizard Templar,20,0,70,35.0,0,0
+Mammoth,20,0,110,55.0,0,0
+Minotaur Guard,20,0,100,50.0,0,0
+Minotaur Mage,20,0,20,10.0,105,77.5
+Mummy,20,0,85,42.5,40,35.0
+Mutated Human,20,0,90,45.0,60,55.0
+Slime,20,0,110,55.0,0,0
+Stone Golem,20,0,110,55.0,0,0
+Terramite,20,0,100,50.0,16,10.5
+Terror Bird,20,0,90,45.0,0,0
+Thornback Tortoise,20,0,110,55.0,0,0
+Bonelord,21,0,5,2.5,50,40.0
+Dwarf Guard,21,0,140,70.0,0,0
+Elf Arcanist,21,0,70,35.0,85,77.5
+Mercury Blob,21,0,75,37.5,30,20.0
+Pirate Cutthroat,21,0,170,85.0,0,0
+Swillgut,21,0,110,55.0,135,83.5
+Vampire Pig,21,0,100,50.0,55,45.0
+Barbarian Bloodwalker,22,0,240,120.0,0,0
+Crypt Shambler,22,0,140,70.0,55,41.5
+Dark Magician,22,0,40,20.0,40,22.5
+Dragon Hatchling,22,0,55,27.5,90,75.0
+Furious Troll,22,0,100,50.0,0,0
+Ghoulish Hyaena,22,0,112,56.0,0,0
+Orc Berserker,22,0,200,100.0,0,0
+Blue Djinn,23,0,110,55.0,105,82.5
+Cyclops Drone,23,0,105,52.5,0,0
+Doom Deer,23,0,100,50.0,55,45.0
+Green Djinn,23,0,110,55.0,105,77.5
+Iron Servant,23,0,60,30.0,0,0
+Lizard Snakecharmer,23,0,30,15.0,110,80.0
+Mad Scientist,23,0,35,17.5,56,38.0
+Monk,23,0,130,65.0,0,0
+Orc Marauder,23,0,100,50.0,0,0
+Saltkin Constrictor Scout,23,0,135,67.5,0,0
+Tomb Servant,23,0,130,65.0,55,47.5
+Berserker Chicken,24,0,200,100.0,70,55.5
+Fire Elemental,24,0,100,50.0,160,102.5
+Acid Blob,25,0,80,40.0,60,50.0
+Demon Skeleton,25,0,185,92.5,50,40.0
+Evil Sheep,25,0,90,45.0,0,0
+Forest Fury,25,0,125,62.5,0,0
+Pirate Buccaneer,25,0,160,80.0,0,0
+Pirate Ghost,25,0,100,50.0,80,60.0
+Saltkin Constrictor,25,0,150,75.0,90,70.0
+Cyclops Smith,26,0,150,75.0,0,0
+Dwarf Geomancer,26,0,100,50.0,110,80.0
+Gnawling Skirmisher,26,0,110,55.0,0,0
+Mechanical Fighter,26,0,500,250.0,0,0
+Orc Leader,26,0,185,92.5,0,0
+Elder Bonelord,27,0,55,27.5,90,67.5
+Ice Golem,27,0,220,110.0,85,67.5
+Lancer Beetle,27,0,115,57.5,90,45.0
+Zombie,27,0,130,65.0,49,39.5
+Acolyte of the Cult,28,0,100,50.0,120,90.0
+Death Blob,28,0,100,50.0,0,0
+Haunted Treeling,28,0,150,75.0,100,77.5
+Vampire,28,0,150,75.0,200,125.0
+Sacred Spider,29,0,160,80.0,80,65.0
+Pirate Corsair,30,0,170,85.0,0,0
+Swarmer,30,0,102,51.0,110,80.0
+Adept of the Cult,32,0,90,45.0,150,110.0
+Clay Guardian,32,0,125,62.5,150,90.0
+Efreet,32,0,110,55.0,120,92.5
+Marid,32,0,90,45.0,250,175.0
+Noble Lion,32,0,165,82.5,0,0
+Saltkin Mantassin,32,0,138,69.0,0,0
+Saltkin Predator Scout,32,0,193,96.5,0,0
+Shadow Pupil,32,0,70,35.0,80,70.0
+Priestess,33,0,75,37.5,120,87.5
+Blazing Fire Elemental,34,0,100,50.0,205,135.0
+Charged Energy Elemental,34,0,100,50.0,168,134.0
+Earth Elemental,34,0,110,55.0,105,88.5
+Golden Servant,34,0,100,50.0,150,120.0
+Muddy Earth Elemental,34,0,160,80.0,155,90.0
+Mutated Rat,34,0,158,79.0,85,65.0
+Slick Water Elemental,34,0,175,87.5,220,110.0
+Wailing Widow,34,0,120,60.0,110,85.0
+Gnawling Vanguard,35,0,140,70.0,100,75.0
+Grave Guard,35,0,147,73.5,0,0
+Crystalcrusher,36,0,167,83.5,260,185.0
+Enlightened of the Cult,36,0,100,50.0,185,127.5
+Nightstalker,36,0,90,45.0,170,115.0
+Wyvern,36,0,120,60.0,0,0
+Charger,38,0,175,87.5,452,288.5
+Elder Mummy,38,0,120,60.0,130,65.0
+Energy Elemental,38,0,175,87.5,252,188.5
+Enraged Crystal Golem,38,0,150,75.0,0,0
+Bonebeast,39,0,200,100.0,90,70.0
+Ice Witch,39,0,60,30.0,130,95.0
+Necromancer,39,0,80,40.0,120,90.0
+Saltkin Pincher Scout,39,0,240,120.0,0,0
+Mutated Bat,40,0,168,84.0,180,125.0
+Ogre Savage,40,0,240,120.0,0,0
+Ogre Shaman,40,0,150,75.0,200,145.0
+Dragon Lord Hatchling,41,0,90,45.0,125,107.5
+Insectoid Worker,41,0,163,81.5,0,0
+Orc Warlord,41,0,250,125.0,0,0
+Water Elemental,41,0,160,80.0,235,180.0
+Diamond Servant,42,0,100,50.0,170,147.5
+Dragon,42,0,120,60.0,170,135.0
+Sandstone Scorpion,42,0,193,96.5,0,0
+Shark,42,0,175,87.5,0,0
+Sludgebrass Blob,42,0,110,55.0,180,132.5
+Ancient Scarab,43,0,210,105.0,145,80.0
+Blood Hand,44,0,158,79.0,100,75.0
+Death Priest,44,0,80,40.0,250,185.0
+Frost Dragon Hatchling,44,0,160,80.0,110,85.0
+Mutated Tiger,44,0,200,100.0,0,0
+Rot Elemental,44,0,170,85.0,250,200.0
+Bog Raider,45,0,180,90.0,175,137.5
+Ogre Brute,45,0,210,105.0,0,0
+Roaring Lion,45,0,130,65.0,0,0
+Saltkin Hydromancer,45,0,80,40.0,240,205.0
+Saltkin Hydromancer Scout,45,0,80,40.0,240,205.0
+Thundertusk,45,0,280,215.0,100,87.5
+Undead Gladiator,45,0,250,125.0,0,0
+Vampire Viscount,45,0,150,75.0,100,75.0
+Waspoid,46,0,248,124.0,180,145.0
+Banshee,48,0,100,50.0,350,202.5
+Blood Priest,48,0,80,40.0,100,80.0
+Brimhorn Demon,48,0,113,56.5,170,150.0
+Brimstone Bug,48,0,213,106.5,310,225.0
+Crystal Spider,48,0,250,125.0,100,75.0
+Foxmouse,48,0,90,45.0,215,145.0
+Giant Spider,48,0,300,150.0,70,55.0
+Hollowhorn Demon,48,0,143,71.5,170,150.0
+Hornsworn Warrior,48,0,220,110.0,200,175.0
+Killer Caiman,48,0,180,90.0,0,0
+Lich,48,0,75,37.5,245,222.5
+Vicious Squire,48,0,230,115.0,0,0
+Wiggler,48,0,200,100.0,270,225.0
+Gravedigger,49,0,320,160.0,300,237.5
+Massive Earth Elemental,49,0,169,132.0,145,122.0
+Massive Energy Elemental,49,0,175,87.5,615,442.5
+Mindrot,50,0,100,50.0,170,131.5
+Blood Beast,51,0,230,115.0,105,85.0
+Crawler,51,0,228,114.0,180,140.0
+Drownkin Spellsinger,51,0,152,76.0,350,265.0
+Young Sea Serpent,51,0,200,100.0,250,130.0
+Vampire Bride,52,0,190,95.0,150,105.0
+Ashkarn,53,0,235,117.5,340,267.5
+Drillworm,53,0,300,150.0,300,225.0
+Gryphon,53,0,350,175.0,450,350.0
+Lizard Legionnaire,53,0,200,100.0,0,0
+Massive Water Elemental,53,0,220,110.0,450,390.0
+Spitter,53,0,150,75.0,160,130.0
+Hero,55,0,240,120.0,0,0
+Lost Thrower,55,0,301,150.5,0,0
+Renegade Knight,55,0,245,122.5,0,0
+Rift Worm,55,0,160,80.0,0,0
+Saltkin Pincher,55,0,342,171.0,0,0
+Vicious Manbat,55,0,250,175.0,0,0
+Warpmaw,57,0,203,101.5,250,200.0
+Worker Golem,57,0,240,120.0,0,0
+Blistering Fire Elemental,58,0,350,175.0,510,287.5
+Jagged Earth Elemental,58,0,300,150.0,250,175.0
+Lizard Dragon Priest,58,0,50,25.0,190,157.5
+Overcharged Energy Elemental,58,0,200,100.0,300,150.0
+Roaring Water Elemental,58,0,225,112.5,320,280.0
+Souleater,58,0,210,105.0,200,150.0
+Instable Arcspark,59,0,420,210.0,350,237.5
+Nightmare Scion,59,0,140,70.0,180,147.5
+Massive Fire Elemental,60,0,300,150.0,700,450.0
+Metal Gargoyle,60,0,235,117.5,230,177.5
+Lizard High Guard,61,0,306,153.0,0,0
+Arcspark,62,0,300,150.0,700,525.0
+Drownkin Warrior,62,0,300,150.0,0,0
+Vile Grandmaster,62,0,260,130.0,0,0
+Worm Priestess,62,0,150,75.0,300,250.0
+Wyrm,63,0,235,117.5,220,160.0
+Rift Brood,64,0,255,127.5,400,300.0
+Saltkin Predator,64,0,473,236.5,0,0
+Werebadger,64,0,170,85.0,150,85.5
+Lizard Warbound,66,0,349,174.5,375,297.5
+Minotaur Hunter,66,0,150,75.0,260,210.0
+Devourer,67,0,260,130.0,160,105.0
+Eternal Guardian,68,0,300,150.0,0,0
+Lost Basher,68,0,351,175.5,0,0
+Lost Husher,68,0,0,0,300,225.0
+Sludgebrass Anemone,68,0,175,87.5,200,150.0
+Sludgebrass Brigand,70,0,300,150.0,0,0
+Werewolf,70,0,350,175.0,200,140.0
+Earworm,72,0,240,120.0,450,385.0
+Rift Scythe,72,0,979,489.5,600,300.0
+Sludgebrass Bandit,72,0,300,150.0,0,0
+Wereboar,72,0,300,150.0,0,0
+Dragon Lord,73,0,230,115.0,230,190.0
+Drownkin Guard,73,0,400,200.0,150,125.0
+Frost Dragon,73,0,225,112.5,380,277.5
+Hydra,73,0,270,135.0,320,193.0
+Nightfiend,73,0,45,22.5,0,0
+Spectre,73,0,308,154.0,550,425.0
+Werebear,73,0,400,200.0,335,200.0
+Nightmare,74,0,150,75.0,350,250.0
+Breach Brood,75,0,450,225.0,400,284.0
+Dragonling,75,0,210,105.0,250,185.0
+Lizard Chosen,75,0,360,180.0,340,265.0
+Minotaur Amazon,75,0,150,75.0,150,100.0
+Sludgebrass Golem,75,0,480,240.0,245,185.0
+Walker,75,0,175,87.5,245,185.0
+Rustheap Golem,77,0,320,160.0,210,160.0
+Sea Serpent,77,0,250,125.0,300,180.0
+Shock Head,77,0,798,399.0,300,250.0
+White Lion,77,0,350,300.0,400,350.0
+Gravax,78,0,500,250.0,0,0
+Werelion,78,0,300,150.0,410,355.0
+Wyrmblood Warmaster,78,0,300,150.0,520,380.0
+the Bovine Headsman,78,0,400,200.0,280,207.5
+Behemoth,80,0,455,227.5,0,0
+Destroyer,80,0,500,250.0,0,0
+Elder Wyrm,80,0,350,175.0,300,250.0
+Werelioness,80,0,300,150.0,410,355.0
+Hellspawn,81,0,352,176.0,175,162.5
+Hornbrute,82,0,300,150.0,235,192.5
+Humongous Fungus,82,0,330,165.0,350,265.0
+Skitterfang,82,0,298,149.0,310,230.0
+Tidecrest Serpent,82,0,530,265.0,285,242.5
+Enslaved Dwarf,83,0,501,250.5,0,0
+Magma Crawler,83,0,203,101.5,1100,700.0
+War Golem,84,0,550,275.0,220,192.5
+Armorback,86,0,150,75.0,0,0
+Diabolic Imp,86,0,240,120.0,430,365.0
+Hideous Fungus,86,0,450,225.0,550,400.0
+Minion Of Kaldrevoth,86,0,390,195.0,700,525.0
+Stone Devourer,86,0,990,495.0,460,345.0
+Drownkin Elite,88,0,400,200.0,0,0
+Serpent Spawn,88,0,250,125.0,500,350.0
+Spark of Destruction,88,0,630,315.0,415,292.5
+Wyrmblood Spellweaver,89,0,252,126.0,480,360.0
+Coastal Catcher,91,0,150,112.5,150,112.5
+Shredmaw,93,0,700,350.0,0,0
+Werepanther,93,0,250,125.0,450,325.0
+Betrayed Wraith,95,0,450,225.0,0,0
+Ripper Spectre,95,0,370,185.0,460,390.0
+Defiler,97,0,240,120.0,270,215.0
+Weretiger,97,0,400,200.0,500,450.0
+Hellfire Fighter,100,0,520,260.0,1500,946.0
+Retching Horror,100,0,400,200.0,350,275.0
+Werecrocodile,100,0,500,250.0,400,275.0
+Infernalist,101,0,150,125.0,250,200.0
+Lost Soul,101,0,420,210.0,210,125.0
+Skitterfang Elite,101,0,349,174.5,0,0
+Warlock,101,0,130,65.0,230,190.0
+Dawnfire Asura,102,0,269,134.5,200,125.0
+Medusa,102,0,450,225.0,500,375.0
+Midnight Asura,102,0,269,134.5,200,125.0
+Drownkin Tyrant,104,0,501,250.5,215,197.5
+Gazer Spectre,104,0,350,175.0,400,350.0
+Ogre Rowdy,104,0,450,225.0,450,325.0
+Wyrmblood Abomination,104,0,420,210.0,630,470.0
+Wyrmblood Elite,104,0,354,177.0,550,395.0
+Feverdream,106,0,450,225.0,300,275.0
+Lost Berserker,106,0,501,250.5,0,0
+Phantasm,106,0,475,237.5,610,430.0
+Bloodthirsty Buccaneer,107,0,200,150.0,350,285.0
+Flimsy Lost Soul,107,0,500,300.0,550,350.0
+Fury,107,0,510,255.0,700,410.0
+Lizard Magistrate,107,0,60,30.0,0,0
+Lizard Noble,107,0,30,15.0,250,185.0
+Choking Fear,110,0,499,249.5,500,375.0
+Ironblight,110,0,300,150.0,350,305.0
+White Weretiger,112,0,480,240.0,520,435.0
+Infected Weeper,113,0,280,140.0,700,475.0
+Ogre Ruffian,113,0,450,225.0,0,0
+Weeper,113,0,450,225.0,1000,700.0
+Bone Archer,114,25,450,225.0,0,0
+Feral Werecrocodile,114,0,750,375.0,800,600.0
+Manticore,114,0,500,250.0,500,400.0
+Silencer,114,0,315,157.5,0,0
+Cursed Prospector,116,0,200,150.0,550,425.0
+Angry Parrot,119,0,1250,800.0,1200,775.0
+Gorgemaw,119,0,900,450.0,0,0
+Grim Reaper,119,0,320,160.0,720,535.0
+Ogre Sage,119,0,450,225.0,300,250.0
+Bone Ruthless,120,25,180,90.0,350,220.0
+Bone Scarvenger,120,25,280,140.0,400,300.0
+Mean Lost Soul,120,0,500,300.0,550,425.0
+Orewalker,120,0,1500,750.0,0,0
+Bone Berserker,122,25,500,290.0,0,0
+Dark Torturer,122,0,781,390.5,0,0
+Terrordream,123,0,450,225.0,500,425.0
+Bone Mage,124,25,369,184.5,400,240.0
+Burster Spectre,124,0,400,200.0,400,350.0
+Bone Warrior,125,25,330,165.0,400,200.0
+Hand of Cursed Fate,125,0,520,260.0,880,550.0
+Hive Overseer,125,0,450,225.0,80,70.0
+Young Goanna,125,0,230,115.0,490,395.0
+Demon Outcast,126,0,400,200.0,550,450.0
+Bone Slicer,127,25,600,375.0,250,175.0
+Bone Knight,129,250,250,125.0,320,242.5
+Ghastly Dragon,130,0,603,301.5,250,185.0
+Goggle Cake,130,0,750,475.0,800,587.5
+Skeleton Elite Warrior,130,0,450,375.0,450,375.0
+Bone Master,131,25,400,300.0,150,75.0
+Hellhound,132,0,520,260.0,976,663.0
+Nible Maw,132,0,499,299.5,1000,650.0
+Usurper Archer,132,0,430,215.0,545,352.5
+Undead Elite Gladiator,133,0,550,275.0,500,400.0
+Freakish Lost Soul,134,0,500,300.0,550,425.0
+Usurper Warlock,134,0,250,125.0,450,325.0
+Black Sphinx Acolyte,136,0,400,200.0,450,425.0
+Demon,137,0,500,250.0,480,390.0
+Usurper Knight,137,0,500,250.0,450,325.0
+Adult Goanna,138,0,350,175.0,550,500.0
+Plaguesmith,138,0,539,269.5,350,225.0
+Death Dragon,139,0,615,307.5,700,450.0
+Undead Dragon,139,0,480,240.0,700,500.0
+Evil Prospector,142,0,500,300.0,550,400.0
+Priestess of the Wild Sun,142,0,350,175.0,500,400.0
+Son of Pestrogh,142,0,473,236.5,390,370.0
+Sphinx,142,0,400,200.0,500,350.0
+Talon Paladin,142,0,550,475.0,450,400.0
+Vexclaw,142,0,550,275.0,490,395.0
+Floating Savant,143,0,200,150.0,630,560.0
+Cobra Assassin,146,0,450,225.0,380,340.0
+Crypt Warden,147,0,500,250.0,480,340.0
+Blightwalker,148,0,490,245.0,405,312.5
+Fleshrend,148,0,600,300.0,460,345.0
+Cobra Scout,149,0,500,250.0,450,400.0
+Lava Golem,150,0,400,200.0,700,525.0
+Mauler,150,0,490,320.0,700,400.0
+Naval Cavalry,150,0,300,225.0,450,335.0
+Talon Knight,150,0,400,200.0,500,450.0
+Lamassu,152,0,550,275.0,490,420.0
+Malevolent,152,0,600,350.0,730,565.0
+Cobra Vizier,153,0,480,240.0,520,435.0
+Fleshcarver,154,0,470,235.0,555,417.5
+Biting Book,155,0,1210,605.0,0,0
+Cliff Strider,157,0,1000,500.0,0,0
+Ironhorn Alchemist,157,0,400,312.5,550,375.0
+Ironhorn Forgepriest,157,0,380,240.0,540,345.0
+Grimeleech,158,0,565,332.5,375,300.0
+Herk the Ironhorn,158,0,350,175.0,500,385.0
+Black Dragon,163,5,330,255.0,630,405.0
+Feral Sphinx,163,0,450,225.0,580,490.0
+Ironhorn Brute,166,0,600,450.0,570,345.0
+Burning Gladiator,167,0,550,275.0,500,400.0
+Candy Horror,167,0,1110,555.0,1200,600.0
+Mega Dragon,167,0,400,200.0,590,430.0
+Reflect Spider,167,5,650,425.0,400,300.0
+Candy Floss Elemental,170,0,400,275.0,700,410.0
+Knowledge Elemental,175,0,400,250.0,680,440.0
+Netheria Dragon,175,5,777,488.5,570,360.0
+Venom Spider,177,5,400,200.0,600,400.0
+Wardragon,180,0,480,240.0,690,420.0
+Emerald Mage,183,0,520,410.0,605,377.5
+Aberration of the Depths,187,5,450,225.0,700,440.0
+Giant Hornet,192,5,400,290.0,650,400.0
+Ink Blob,192,0,0,0,505,382.5
+Colossal Ice Monkey,197,5,630,315.0,590,445.0
+Azure Guard,200,5,675,387.5,550,450.0
+Orcaruz,200,200,650,455.0,600,480.0
+Shadowreaper,200,0,800,400.0,850,525.0
+Alpha Demon,217,5,520,260.0,790,545.0
+Animated Feather,217,0,200,150.0,780,490.0
+Brontosaurus,217,5,360,230.0,550,369.0
+Sunstone Vanguard,217,0,700,525.0,700,525.0
+Angry Sugar Fairy,223,0,666,388.5,1000,775.0
+Fenmaw,225,225,1100,875.0,1000,750.0
+Frost Larva,225,0,3200,2100.0,1300,900.0
+Ruby Archer,225,0,700,400.0,550,400.0
+Butcher Ogre,226,5,520,260.0,976,663.0
+Guardian of Tales,230,0,550,375.0,775,587.5
+Arcwarden of Tales,233,0,550,280.0,555,327.5
+Deathrattle,233,0,690,445.0,705,462.5
+Hellflayer,233,0,1000,500.0,550,425.0
+Skullshade,233,0,666,499.5,850,552.5
+Ruthless Spider,243,5,500,250.0,550,325.0
+Demon of the Depths,246,5,400,200.0,550,450.0
+Skullcrusher Demon,246,5,400,275.0,700,550.0
+Leviathan's Fury,250,0,780,545.0,750,535.0
+Thokkar,250,0,850,575.0,900,600.0
+Burning Book,262,0,900,700.0,850,625.0
+Energetic Book,263,0,700,450.0,680,440.0
+Phantom Shade,263,0,11000,9750.0,10000,7600.0
+Shadowgeist,263,0,7500,6250.0,8300,6650.0
+Bonecleaver,267,0,800,500.0,650,450.0
+Sagittarius,267,0,450,225.0,800,575.0
+Sapphire Warrior,267,0,700,450.0,400,300.0
+Seraphiel,267,0,750,475.0,800,525.0
+Icecold Book,271,0,200,150.0,980,665.0
+Blackblade,275,0,600,300.0,888,504.0
+Squid Warden,275,0,300,200.0,680,440.0
+Cursed Book,277,0,880,555.0,575,487.5
+Aeliana,283,0,880,540.0,980,590.0
+Archon,283,0,1000,650.0,750,515.0
+Rage Squid,283,0,500,250.0,475,337.5
+Juggernaut,284,0,1470,735.0,0,0
+Rhino of the Depths,286,5,800,550.0,800,450.0
+Grugnor,287,0,950,625.0,990,657.5
+Doombone,289,0,600,400.0,1000,645.0
+Bonelich,300,0,1000,600.0,1100,925.0
+Brain Squid,300,0,200,150.0,505,352.5
+Frost Behemoth,300,0,600,425.0,700,450.0
+Tombwraith,300,0,720,460.0,920,610.0
+Urzog,300,0,900,450.0,390,270.0
+Wraith Archer,300,0,1800,1250.0,1800,1325.0
+Krag'lok,304,0,0,0,905,582.5
+Cinderclaw,308,0,0,0,850,600.0
+Fangclaw,308,0,800,555.0,910,697.5
+Lyrael,308,0,1200,699.5,800,650.0
+Oroniel,308,0,1000,500.0,950,550.0
+Scaledrake,308,0,501,300.5,775,462.5
+Sludgejaw,308,0,1040,695.0,840,570.0
+Krulmash,313,0,750,525.0,800,580.0
+Sight of Surrender,313,0,1100,550.0,800,650.0
+Blightbearer,315,0,1050,525.0,1150,725.0
+Gorthak,317,0,1050,525.0,900,500.0
+Lurkskin,317,0,0,0,820,485.0
+Icebound Abomination,320,0,750,375.0,1200,900.0
+Frostfang Aberration,325,0,750,375.0,800,675.0
+Grave Sentinel,325,0,1600,1100.0,1905,1262.5
+Elder Bloodjaw,326,0,490,245.0,405,312.5
+Oozing Carcass,330,0,900,450.0,1000,800.0
+Grothar,331,0,840,420.0,670,415.0
+Shadow Reaper,331,0,1250,775.0,910,655.0
+Pale Lancer,332,0,1720,1160.0,1780,1365.0
+Glacial Behemoth,333,0,1013,506.5,900,750.0
+Grimbone,335,0,0,0,805,585.0
+Meandering Mushroom,338,0,1200,1025.0,1400,1250.0
+Nightglass Emitter,338,0,0,0,1050,825.0
+Oozing Corpus,338,0,1050,525.0,1250,1025.0
+Sporeback Beetle,342,0,0,0,1100,900.0
+Rotten Corpse-grub,343,0,700,425.0,1100,800.0
+Converter,344,0,950,475.0,1150,925.0
+Nightglass Matter,344,0,800,400.0,1300,1050.0
+Nightglass Striker,344,0,0,0,1100,850.0
+Bloated Corpse-grub,346,0,600,300.0,1100,825.0
+Nightglass Source,346,0,1000,500.0,1100,900.0
+Slinkhide,347,0,900,450.0,1100,925.0
+Nightglass Construct,349,0,1000,725.0,1000,725.0
+Sopping Carcass,349,0,800,400.0,1100,925.0
+Bonecrusher,350,0,1800,1150.0,1800,1250.0
+Mok'gosh,353,0,0,0,960,580.0
+Sopping Corpus,353,0,1000,500.0,1100,925.0
+Wandering Pillar,358,0,0,0,1100,950.0
+Walking Pillar,360,0,900,775.0,1100,875.0
+Cleftfiend,363,0,950,475.0,1150,925.0
+Frosted Dragon,363,0,1555,1117.5,1600,1150.0
+Infernal Phantom,363,0,0,0,1250,1025.0
+Branchy Crawler,367,0,1000,725.0,1000,725.0
+Rotten Golem,367,0,950,475.0,1200,975.0
+Frostbite Behemoth,368,0,1200,850.0,900,607.5
+Courage Leech,371,0,1000,500.0,1100,900.0
+Mould Phantom,371,0,0,0,1100,950.0
+Cloak Of Terror,379,0,800,400.0,1300,1050.0
+Vibrant Phantom,379,0,0,0,1100,900.0
+Mounted Mage Goblin,383,0,700,550.0,1775,1087.5
+Infernal Demon,387,0,1050,525.0,1250,1025.0
+Scalebreaker,387,0,820,410.0,976,663.0
+Giant Tortoise,391,0,500,300.0,650,475.0
+Sunfang Croaker,392,0,1780,1065.0,1200,850.0
+Bony Sea Devil,400,0,600,300.0,1100,825.0
+Saltkin Raider,401,0,999,849.5,1750,1300.0
+Distorted Phantom,406,0,0,0,1100,850.0
+Druid's Apparition,406,0,1000,500.0,1000,825.0
+Knight's Apparition,406,0,1000,500.0,1100,925.0
+Many Faces,406,0,800,400.0,1100,850.0
+Paladin's Apparition,406,0,900,775.0,1100,875.0
+Sorcerer's Apparition,406,0,800,400.0,1100,925.0
+Bat Goblin,407,0,1210,805.0,1800,1200.0
+Bloodfang Reaver,409,0,1800,1250.0,1600,1125.0
+Mounted Archer Goblin,409,0,1100,750.0,1500,1090.0
+Tomb Guardian,409,0,1300,975.0,1760,1230.0
+Belzaroth,415,0,1250,825.0,1500,1125.0
+Capricious Phantom,415,0,0,0,1050,825.0
+Nyxion,415,0,900,450.0,1300,900.0
+Turbulent Elemental,415,0,900,450.0,1100,925.0
+Bloodthirst Bulgeye,416,0,1900,1275.0,1800,1250.0
+Bogspike Lancer,416,0,1900,1250.0,1650,1075.0
+Hooded Colossus,416,0,3500,2185.0,2705,2112.5
+Mossblade Hopper,416,0,1800,1100.0,1800,1300.0
+Mystic Baguemage,416,0,0,0,1400,1200.0
+Fire Man,419,0,1500,1200.0,1700,1050.0
+Spellreaper Pyrarch,423,0,1400,1010.0,1500,1075.0
+Swamp Monster,423,0,1720,1160.0,1420,960.0
+Velomire,426,0,1850,1325.0,1950,1600.0
+Gallows Fledgling,430,430,520,420.0,0,0
+Armored Giant,436,0,970,720.0,1790,1230.0
+Demibeast,436,0,1600,1150.0,1900,1300.0
+Frost Hydra,436,0,1670,1270.0,1950,1385.0
+Hellhunter Pyrarch,436,0,1400,950.0,0,0
+Mechanic Goblin,436,0,1600,1050.0,1685,1142.5
+Mountain Goblin,436,0,1420,1010.0,1210,1005.0
+Saltkin Looter,443,0,1500,1150.0,1900,1275.0
+Saltkin Plunderer,443,0,1400,1199.5,2000,1385.0
+Sineater Pyrarch,443,0,1700,1100.0,1550,1075.0
+Warpdread,443,0,1800,1110.0,1800,1200.0
+Mounted Warrior Goblin,446,0,1480,1090.0,1575,987.5
+Axebringer Fiend,449,0,2000,1150.0,2000,1575.0
+Broodrider Pyrarch,449,0,1750,1175.0,1880,1255.0
+Enforced Mountain Goblin,449,0,1500,1200.0,2230,1515.0
+Hazardous Phantom,449,0,1200,1025.0,1400,1250.0
+Rootling Amber Shaper,455,0,2200,1450.0,2400,1500.0
+Thranvale,455,0,1900,1350.0,1700,1260.0
+Rootling Bug Tracker,457,0,1415,1057.5,1415,1007.5
+Hedgehog,462,0,1750,1125.0,1985,1342.5
+Helm Hunter,467,0,1800,1250.0,1650,1225.0
+Nexlurith,468,0,2000,1375.0,1900,1350.0
+Barrow Haunt,470,470,330,275.0,590,475.0
+Gallows Raven,470,470,480,390.0,0,0
+Rootling Nutshell,473,0,1450,1175.0,1415,1007.5
+Armorcoil,474,0,1900,1450.0,1850,1350.0
+Blazefang,474,0,1900,1475.0,1500,1150.0
+Bloodspark Adept,474,0,1500,1125.0,2100,1400.0
+Gorgulith,474,0,888,634.0,1850,1150.0
+Mirethorn Hexer,474,0,1950,1400.0,2480,1740.0
+Mossfang Drake,474,0,1779,1289.5,2100,1400.0
+Spiked Enforcer,474,0,1900,1475.0,1500,1100.0
+Toxic Mauler,474,0,1400,1100.0,3000,2000.0
+Umbral Arcanist,474,0,1800,1275.0,2300,1450.0
+Waterglow Conjurer,474,0,1650,1225.0,2350,1675.0
+Babayaga,480,0,1300,1125.0,1600,1150.0
+Brinebrute Pyrarch,480,0,900,700.0,2222,1499.5
+Duskhorn Drake,480,0,1900,1250.0,1800,1325.0
+Hexwhisker Cat,480,480,440,370.0,520,420.0
+Pyroquill,480,0,1750,1525.0,1650,1400.0
+Shadowcrystal Widow,480,0,1555,1055.0,2000,1450.0
+Pitlord Incarnate,495,0,2200,1600.0,2770,1775.0
+Ashfang Wrym,498,0,1800,1400.0,1870,1360.0
+Shadowvein Wrym,498,0,1850,1325.0,2580,1590.0
+Stormvein Wrym,498,0,2000,1500.0,2700,1750.0
+Viridscale Wrym,498,0,1600,1200.0,2100,1525.0
+Bloodshade Reaper,501,0,0,0,2230,1465.0
+Hellmaw Brute,509,0,2200,1600.0,2310,1680.0
+Nightfang Widow,509,0,1680,1290.0,2300,1550.0
+Pyrrhaxis,509,0,1750,1250.0,1900,1400.0
+Voidwagner,509,0,1400,1100.0,2000,1750.0
+Dybuk,512,0,1300,1050.0,1350,1075.0
+Hodag,512,0,3000,1875.0,1350,1125.0
+Lochtag,512,0,1250,975.0,1300,1125.0
+Malvaroth,526,0,1800,1350.0,1925,1262.5
+Snallygaster,529,0,1490,1145.0,1500,1250.0
+Barrowbone Archer,530,530,700,560.0,620,500.0
+Gloomstinger,537,0,2500,1950.0,1700,1325.0
+Oznik,539,0,2000,1500.0,1330,1065.0
+Ashmaw Raider,550,550,760,635.0,0,0
+Barrowbone Reaver,550,550,780,650.0,620,510.0
+Strawhusk Stalker,550,550,720,600.0,0,0
+Charged Mechanic Goblin,563,0,1600,1000.0,1700,1075.0
+Stonebark Titan,563,0,3000,2250.0,3850,2600.0
+Ashmaw Bonecaller,570,570,390,325.0,790,630.0
+Lamenting Shade,570,570,460,380.0,740,600.0
+Thornhex Crone,570,570,320,260.0,780,630.0
+Aegis Sentinel,578,0,3000,2250.0,2700,1850.0
+Snake Master,588,0,5500,4500.0,6600,5050.0
+Mange Hound,590,590,740,625.0,0,0
+Reapmoon Lycan,590,590,820,670.0,640,530.0
+Slagback Hound,590,590,890,735.0,850,685.0
+Embermaw Archon,598,0,2400,1925.0,2600,1825.0
+Ashbound Thrall,610,610,920,760.0,880,700.0
+Gourdmaw Brute,610,610,960,800.0,880,720.0
+Slagborer,610,610,810,675.0,770,620.0
+Flarevein Wyrm,612,0,2000,1400.0,2900,1950.0
+Glacial Hellcharger,612,0,2200,1850.0,3300,2100.0
+Inferno Juggernaut,612,0,2777,2098.5,4000,2900.0
+Nightflare Dreadknight,612,0,3400,2200.0,3200,2000.0
+Plague Warbringer,612,0,2700,1850.0,3800,2525.0
+Ashmaw Warlord,630,630,950,785.0,930,745.0
+Slagborer Queen,650,650,980,810.0,940,750.0
+Pyrrhaxis Master,657,0,3100,2000.0,2650,1925.0
+Cunning Hyaena,670,670,820,655.0,720,580.0
+Orclops Ravager,670,670,970,795.0,0,0
+Shaper Matriarch,670,670,400,330.0,470,390.0
+Mercenary,690,690,830,680.0,0,0
+Grove Keeper,700,700,590,490.0,630,470.0
+Mercenary Ranger,710,710,760,650.0,850,695.0
+Blazebringer,720,720,390,295.0,430,355.0
+Elite Spider,730,730,720,540.0,860,645.0
+Garack,730,730,700,575.0,760,555.0
+Thornveil Wraith,730,730,720,540.0,860,645.0
+Cursed Ape,750,750,880,660.0,0,0
+Gallows Oak,750,750,880,660.0,0,0
+Ironbound Troll,750,750,880,660.0,0,0
+Shroud Brood,770,770,870,690.0,900,735.0
+Webbound Crawler,770,770,870,690.0,900,735.0
+Dreamgorger,780,780,980,740.0,830,665.0
+Swamp Snapper,780,780,1060,875.0,1080,805.0
+Black Stag,790,790,730,575.0,910,605.0
+Blight Hound,790,790,730,575.0,910,605.0
+Captain Bloodbeard,810,810,930,695.0,0,0
+Ironmask Taskmaster,810,810,930,695.0,0,0
+Loricate Orger,810,810,980,800.0,830,710.0
+Frost Maiden,820,820,340,280.0,340,290.0
+Dark Sorcerer,830,830,630,500.0,840,645.0
+Rootbound Pilgrim,830,830,630,500.0,840,645.0
+Royal Man,830,830,1050,790.0,0,0
+Tundra Troll,830,830,500,425.0,530,375.0
+Gashrunner,850,850,960,720.0,0,0
+Ironhook Corsair,850,850,960,720.0,0,0
+Ironmask Brander,850,850,960,720.0,0,0
+Caged Convict,870,870,980,490.0,0,0
+Ironmask Bannerman,870,870,980,490.0,0,0
+Scourgejaw,870,870,980,490.0,0,0
+Azure Dragon,880,880,460,380.0,520,400.0
+Chained Runt,890,890,420,210.0,990,705.0
+Stormy Seadevil,890,890,420,210.0,990,705.0
+Golden Lord,900,900,1130,920.0,0,0
+Leechwing,910,910,1010,775.0,1010,775.0
+Nexweaver,910,910,1010,775.0,1010,775.0
+Lacewing Moth,920,920,1020,890.0,1150,955.0
+Acid Hydra,930,930,920,765.0,1020,815.0
+Blight Bloom,930,930,920,765.0,1020,815.0
+Crypt Crab,930,930,920,765.0,1020,815.0
+Jungle Beasts,940,940,750,640.0,870,650.0
+Mutated Visco,950,950,900,735.0,950,805.0
+Reedgrave,950,950,900,735.0,950,805.0
+Elite Ice Dragon,960,0,16000,12500.0,18000,14500.0
+Elite Ice Witch,960,0,16000,12500.0,18000,14000.0
+Elite Yeti,960,0,16000,12500.0,16000,14250.0
+Ice Dragon,960,0,11000,9000.0,14000,11500.0
+Lady bug,960,960,830,680.0,800,685.0
+Elite Tidecrest Serpent,970,970,780,655.0,1060,865.0
+Bloom Husk,980,980,1020,875.0,1320,1130.0
+Dawn Strayer,980,980,820,680.0,840,650.0
+Deepforge Fiend,980,980,820,680.0,840,650.0
+Elite Twisted Shaper,980,980,1020,875.0,1320,1130.0
+Grindmaw the Mauler,980,980,1150,945.0,1320,1045.0
+Geode Seer,1000,1000,1080,900.0,990,810.0
+Ice Lich,1000,1000,1080,900.0,990,810.0
+Rimecairn,1020,1020,790,630.0,1100,825.0
+Scaleborn,1020,1020,790,630.0,1100,825.0
+Quicksilver Wraith,1040,1040,1110,890.0,1050,860.0
+Spirit of Purity,1040,1040,1110,890.0,1050,860.0
+Rustguard,1060,1060,1130,940.0,1410,1270.0
+Twisted Shaper,1060,1060,1130,940.0,1410,1270.0
+Celestial Wyrm,1080,1080,1100,905.0,1140,1000.0
+Slagheart,1080,1080,1100,905.0,1140,1000.0
+Vorkhaz,1100,1100,1120,945.0,1160,900.0
+Bellhelm Zealot,1120,1120,1180,920.0,1110,885.0
+Jungle Warrior,1120,1120,1180,920.0,1110,885.0
+Slagborer Reaver,1120,1120,1180,920.0,1110,885.0
+Black Vixen,1140,1140,1080,945.0,1190,1000.0
+Masque Dancer,1140,1140,1080,945.0,1190,1000.0
+Wax Penitent,1140,1140,1080,945.0,1190,1000.0
+Gildguard Revenant,1160,1160,990,905.0,1210,1100.0
+Golden Dragon,1160,1160,990,905.0,1210,1100.0
+Grave Lantern,1180,1180,1120,925.0,1520,1275.0
+Spiky Carnivor,1180,1180,1120,925.0,1520,1275.0
+Carrion Drake,1200,1200,1210,1035.0,1550,1330.0
+Vyrm,1200,1200,1210,1035.0,1550,1330.0
+Winterstride,1220,1220,1130,970.0,1260,975.0
+Pit Delver,1240,1240,1220,1015.0,1270,1040.0
+Pitgnawer,1240,1240,1220,1015.0,1270,1040.0
+Reliquary Urn,1240,1240,1220,1015.0,1270,1040.0
+Silicron,1240,1240,1220,1015.0,1270,1040.0
+Veiled Crawler,1240,1240,1220,1015.0,1270,1040.0
+Wan Sentry,1240,1240,1220,1015.0,1270,1040.0
+Corpselight Lurker,1260,1260,1030,900.0,1610,1375.0
+Dirge Herald,1260,1260,1030,900.0,1610,1375.0
+Maw Grub,1260,1260,1030,900.0,1610,1375.0
+Thal,1260,1260,1030,900.0,1610,1375.0
+Blightcrown Matron,1280,1280,1300,1105.0,1300,1105.0
+Facetis,1280,1280,1300,1105.0,1300,1105.0
+Limb Hoarder,1280,1280,1300,1105.0,1300,1105.0
+Nailcrown Regent,1280,1280,1300,1105.0,1300,1105.0
+Gloamfang Ravager,1300,1300,1320,1120.0,0,0
+Gorebristle,1300,1300,1320,1120.0,0,0
+Rimeshroud Revenant,1400,1400,630,525.0,1400,1190.0
+Ashveil Hierarch,1500,1500,1180,995.0,1480,1260.0
+Bonepicker,1500,1500,1180,995.0,1480,1260.0
+Cinderskull Reaver,1500,1500,1180,995.0,1480,1260.0
+Bloodantler Fiend,1600,1600,1170,975.0,1560,1325.0
+Hollowhorn,1600,1600,1170,975.0,1560,1325.0
+Cinderhorn Juggernaut,1700,1700,1640,1355.0,1390,1145.0
+Oathbroken Colossus,1700,1700,1640,1355.0,1390,1145.0
+Siege Behemoth,1700,1700,1640,1355.0,1390,1145.0
+Gnawbone Swarm,1800,1800,1200,985.0,1720,1460.0
+Ironmask Warbreaker,1800,1800,1200,985.0,1720,1460.0
+Wraithbone Stalker,1800,1800,1200,985.0,1720,1460.0
+Gnarlback,1900,1900,1350,1125.0,1800,1530.0
+Mirecoil Wyrm,1900,1900,1350,1125.0,1800,1530.0
+Pyre Stork,2000,2000,1500,1265.0,1880,1600.0
+Pyrewing Tyrant,2000,2000,1500,1265.0,1880,1600.0
