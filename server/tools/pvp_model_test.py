@@ -7,6 +7,7 @@ usage: python3 -I server/tools/pvp_model_test.py   (luajit for the survival numb
 import os
 import shutil
 import subprocess
+import math
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -153,6 +154,15 @@ for key, row in cfg['exceptions'].items():
 # anyone drinks. When this fails the healing was fixed: tighten sustainMax in pvp_balance_config.lua to 1.0 and delete this line
 ok(all(t['rows'][c]['sustain'] > 1.0 for t in real.values() for c in P.NAMES),
    'O444 finding: sustain is above 1 for all 63 class rows (delete this when it is not)')
+# O473: the PvP damage scale table (pvp_scale_core.lua applies it; the model only reads and checks its shape)
+ok(cfg['damageScale'] == [(100, 1.0), (200, 0.94), (300, 0.89), (500, 0.79), (700, 0.76), (1000, 0.48), (1500, 0.52), (2000, 0.46)],
+   'O473: the damage scale table is read')
+ok(P.scale_problems(cfg) == [], 'O473: the scale table is well formed')
+ok(P.damage_scale(100, cfg) == 1.0 and abs(P.damage_scale(500, cfg) - 0.79) < 1e-12 and abs(P.damage_scale(5000, cfg) - 0.46) < 1e-12,
+   'O473: the scale at the rows and above the last')
+ok(abs(P.damage_scale(150, cfg) - math.exp(0.5 * math.log(0.94))) < 1e-12, 'O473: geometric between two rows, as pvp_scale_core.lua')
+ok(P.scale_problems({'damageScale': [(100, 1.0), (50, 0.9)]}) != [] and P.scale_problems({'damageScale': [(100, 1.2)]}) != []
+   and P.scale_problems({}) != [], 'O473: a descending level, a factor over 1 and no table are problems')
 ok(P.main(['--check']) == 0, 'the CLI check passes')
 
 if fails:

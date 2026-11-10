@@ -22,14 +22,25 @@
 --     Speed under the player cap; the engine's rules of patch 0011 hold on top (all attack speed bonuses together shorten
 --     the interval by at most 40%, one attack per second at most). Dexterity stays the damage equal above.
 -- Paragon (paragon.lua) adds its percentages to the same bonus table (keys paragonX) and they are summed here with the
--- tree's, never applied on their own: damage (a multiplier after the tree's), crit damage (+ criticalHitAmount, one
+-- tree's, never applied on their own: damage (O473: one source of the additive damage pool, below), crit damage (+ criticalHitAmount, one
 -- condition), max health / mana (+ vitality / spirit, one condition each, sub ids 7220 / 7221), damage reduction
 -- (+ every absorb storage), item find (+ the item-find storage), speed (% of base speed + the tree's flat speed).
 -- Gold find is paragon.lua's own onDropLoot.
+-- O473 (2026-11-10): the damage a hit takes from this file is ONE additive pool (damage_pool_core.lua): the tree's increments, the
+-- worn Spell Damage, Paragon damage and the other sources that register a provider (unique passives, gems, card sets, charms, the
+-- sword's tempo edge, damage masteries) add raw percent into one sum, the soft cap below applies once, factor 1 + soft(sum) / 100.
+-- The same event scales a hit between players by the attacker's level (pvp_scale_core.lua, pvp_balance_config.lua).
 -- All numbers that turn a node value into a game value are in cfg below. Not run on a server.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+
+if not ChaosDamagePool then
+	dofile("data/scripts/chaos/damage_pool_core.lua")
+end
+if not ChaosPvpScale then
+	dofile("data/scripts/chaos/pvp_scale_core.lua")
 end
 
 ChaosPassiveTree = ChaosPassiveTree or {}
@@ -180,7 +191,7 @@ end
 -- owner with the minion's own type (physical for the warrior and the golem, energy for the mage, ...), so it took only
 -- that type's percent. It now also takes the tree's death damage percent, summed before the soft cap. A death hit (the
 -- shade) is counted once; healing and no type get nothing extra.
-function ChaosPassiveMinionDamagePercent(bonuses, combatType, origin)
+function ChaosPassiveMinionDamageRaw(bonuses, combatType, origin)
 	local raw = ChaosPassiveDamageRaw(bonuses, combatType, origin)
 	if combatType ~= COMBAT_DEATHDAMAGE and combatType ~= COMBAT_HEALING and combatType ~= COMBAT_NONE then
 		-- the death stat, and the all-element stat once (an element hit has it already)
@@ -189,16 +200,21 @@ function ChaosPassiveMinionDamagePercent(bonuses, combatType, origin)
 			raw = raw + math.max(0, bonuses.multiIncrement or 0)
 		end
 	end
-	return ChaosSoftCap(raw, cfg.maxDamagePercent, cfg.softCap.damagePercentH)
+	return raw
 end
 
--- Paragon damage: every damage type, not healing (multiplies after the tree's own bonuses)
-function ChaosParagonDamageMultiplier(bonuses, combatType)
-	local pct = bonuses.paragonDamage or 0
+function ChaosPassiveMinionDamagePercent(bonuses, combatType, origin)
+	return ChaosSoftCap(ChaosPassiveMinionDamageRaw(bonuses, combatType, origin), cfg.maxDamagePercent, cfg.softCap.damagePercentH)
+end
+
+-- Paragon damage: every damage type, not healing. O473: the raw percent a hit gets into the additive damage pool (it multiplied
+-- after the tree's bonuses before). 0 for healing and no type.
+function ChaosParagonDamageRaw(bonuses, combatType)
+	local pct = bonuses and bonuses.paragonDamage or 0
 	if pct <= 0 or combatType == COMBAT_HEALING or combatType == COMBAT_NONE then
-		return 1
+		return 0
 	end
-	return 1 + pct / 100
+	return pct
 end
 
 -- tree absorb + Paragon damage reduction (all types), whole percent: the absorb event reads integer storages
@@ -472,8 +488,38 @@ if not ChaosQuestBuffs then
 end
 
 -- ---------------------------------------------------------------- damage dealt / healing
+-- the Paragon damage is a source of the pool (the other sources register from their own files)
+ChaosDamagePool.register("paragon", function(hit, combatType)
+	local bonuses = ChaosPassiveCache[hit.attacker:getId()]
+	return ChaosParagonDamageRaw(bonuses, combatType)
+end, function(player, combatType)
+	return ChaosParagonDamageRaw(ChaosPassiveCache[player:getId()], combatType)
+end)
+
+-- The pool of one part of a hit (O473): the tree's raw sum (the minion's own sum while a Necromancer minion deals) plus every
+-- registered source, the soft cap once. Returns the factor, the raw sum and the list of entries (the character sheet shows them).
+function ChaosPassivePoolPart(hit, bonuses, combatType, which, minion)
+	local treeRaw = 0
+	if bonuses then
+		treeRaw = (minion and ChaosPassiveMinionDamageRaw or ChaosPassiveDamageRaw)(bonuses, combatType, hit.origin)
+	end
+	return ChaosDamagePool.part(hit, combatType, which, treeRaw)
+end
+
+-- the owner of a hit that a summon of a player deals (the player itself: the attacker), nil for a monster of the wild
+local function ownerOf(attacker)
+	if not attacker then
+		return nil
+	end
+	if attacker:isPlayer() then
+		return attacker
+	end
+	local master = attacker.getMaster and attacker:getMaster()
+	return master and master.isPlayer and master:isPlayer() and master or nil
+end
+
 local dealt = CreatureEvent("ChaosPassiveDealt")
-function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin, critical)
 	-- keystone procs (passivetree_keystones.lua) are a share of a hit that already had these bonuses
 	local procActive = ChaosKeystones and ChaosKeystones.depth and ChaosKeystones.depth > 0
 	if attacker and attacker:isPlayer() and not procActive then
@@ -511,21 +557,50 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			end
 		end
 		local bonuses = ChaosPassiveCache[attacker:getId()]
+		-- O473: the pool. Every source of "increased damage" adds raw percent into one sum per damage part; the soft cap applies
+		-- once. The attributes, the class factor and the other multipliers stay outside it. Only a hit that deals something asks.
+		local hit = {attacker = attacker, creature = creature, origin = origin, critical = critical, primaryType = primaryType,
+			secondaryType = secondaryType, primaryDamage = primaryDamage, secondaryDamage = secondaryDamage, cache = {}}
+		-- a minion's hit (necro_minions.lua raises ChaosNecroMinions.dealing around it) also takes the death percent
+		local NM = rawget(_G, "ChaosNecroMinions")
+		local minion = NM and (NM.dealing or 0) > 0
+		local pool1 = primaryDamage ~= 0 and ChaosPassivePoolPart(hit, bonuses, primaryType, "primary", minion) or 1
+		local pool2 = secondaryDamage ~= 0 and ChaosPassivePoolPart(hit, bonuses, secondaryType, "secondary", minion) or 1
+		local m1, m2 = pool1, pool2
 		if bonuses then
 			-- the factor of the classes tuned without a tree (class_tree.lua classDamage); not on healing
 			local line = ChaosPassiveLineFactor(attacker)
-			-- a minion's hit (necro_minions.lua raises ChaosNecroMinions.dealing around it) also takes the death percent
-			local NM = rawget(_G, "ChaosNecroMinions")
-			local pctOf = (NM and (NM.dealing or 0) > 0) and ChaosPassiveMinionDamagePercent or ChaosPassiveDamagePercent
-			local m1 = (1 + pctOf(bonuses, primaryType, origin) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)
-				* ChaosParagonDamageMultiplier(bonuses, primaryType) * (primaryType == COMBAT_HEALING and 1 or line)
-			local m2 = (1 + pctOf(bonuses, secondaryType, origin) / 100) * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin)
-				* ChaosParagonDamageMultiplier(bonuses, secondaryType) * (secondaryType == COMBAT_HEALING and 1 or line)
-			if m1 ~= 1 then
-				primaryDamage = scale(primaryDamage, m1)
+			m1 = pool1 * ChaosPassiveStatMultiplier(bonuses, primaryType, origin) * (primaryType == COMBAT_HEALING and 1 or line)
+			m2 = pool2 * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin) * (secondaryType == COMBAT_HEALING and 1 or line)
+		end
+		-- O473: damage between players is scaled by the attacker's level (pvp_scale_core.lua); a heal and a hit on a monster never
+		local pvp = ChaosPvpScale.forHit(attacker, creature, attacker)
+		if pvp ~= 1 then
+			if primaryType ~= COMBAT_HEALING and primaryType ~= COMBAT_NONE then
+				m1 = m1 * pvp
 			end
-			if m2 ~= 1 then
-				secondaryDamage = scale(secondaryDamage, m2)
+			if secondaryType ~= COMBAT_HEALING and secondaryType ~= COMBAT_NONE then
+				m2 = m2 * pvp
+			end
+		end
+		if m1 ~= 1 then
+			primaryDamage = scale(primaryDamage, m1)
+		end
+		if m2 ~= 1 then
+			secondaryDamage = scale(secondaryDamage, m2)
+		end
+	elseif attacker and not procActive then
+		-- a summon or a companion of a player that hits a player follows its owner's level (monsters of the wild never scale)
+		local owner = ownerOf(attacker)
+		if owner then
+			local pvp = ChaosPvpScale.forHit(owner, creature, attacker)
+			if pvp ~= 1 then
+				if primaryType ~= COMBAT_HEALING and primaryType ~= COMBAT_NONE then
+					primaryDamage = scale(primaryDamage, pvp)
+				end
+				if secondaryType ~= COMBAT_HEALING and secondaryType ~= COMBAT_NONE then
+					secondaryDamage = scale(secondaryDamage, pvp)
+				end
 			end
 		end
 	end

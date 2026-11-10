@@ -735,10 +735,10 @@ do
 	eq(ChaosSiege.whenText(at), "Saturday 20:00", "siege date in English")
 	dofile("data/scripts/chaos/charms_core.lua")
 	local CC, ccfg = ChaosCharmsCore, dofile("data/scripts/chaos/charms_config.lua")
-	eq(CC.text(ccfg, "dmg_undead", 3, "pt-BR"), "Dano a Mortos-vivos +3%", "charm modifier in pt-BR")
+	eq(CC.text(ccfg, "dmg_undead", 3, "pt-BR"), "Dano aumentado a Mortos-vivos +3%", "charm modifier in pt-BR")
 	eq(CC.text(ccfg, "rifttime", 20, "pt-BR"), "Tempo do Rift +20 s", "charm text with its own format in pt-BR")
 	eq(CC.text(ccfg, "lifeonkill", 8, "pt-BR"), "Vida ao Abater +8", "flat charm modifier in pt-BR")
-	eq(CC.text(ccfg, "dmg_undead", 3), "Damage to Undead +3%", "charm modifier in English")
+	eq(CC.text(ccfg, "dmg_undead", 3), "Increased damage to Undead +3%", "charm modifier in English (O473: increased damage)")
 	for _, u in pairs(ccfg.unlocks) do check(pt[u.text] ~= nil, "charm unlock without pt-BR: " .. u.text) end
 	for _, def in ipairs(ccfg.pool) do check(pt[def.text or def.label] ~= nil, "charm modifier without pt-BR: " .. (def.text or def.label)) end
 	for _, def in pairs(ccfg.extraKeys) do check(pt[def.label] ~= nil, "charm extra modifier without pt-BR: " .. def.label) end
@@ -882,8 +882,8 @@ do
 		nCh = nCh + 1
 	end
 	check(nCh >= 20, "the charms are checked (" .. nCh .. ")")
-	eq(D.translate("Radiant, item level 12, 2x2 cells. Damage to Dragons +3%. Place it in your charm grid (Character > Charms).", trp),
-		"Radiant, nível de item 12, 2x2 células. Dano a Dragões +3%. Coloque na sua grade de charms (Personagem > Charms).", "a charm look in pt-BR")
+	eq(D.translate("Radiant, item level 12, 2x2 cells. Increased damage to Dragons +3%. Place it in your charm grid (Character > Charms).", trp),
+		"Radiant, nível de item 12, 2x2 células. Dano aumentado a Dragões +3%. Coloque na sua grade de charms (Personagem > Charms).", "a charm look in pt-BR")
 
 	-- faction offers: the gear line, the aura and the mount, the recipe gold
 	eq(D.translate("Issued by the quartermaster of Veiled Choir. Item Level: 5.", trp), "Emitido pelo intendente de Veiled Choir. Nível do item: 5.",

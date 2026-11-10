@@ -1,7 +1,9 @@
 -- Totals of the passive tree window (O146), no client API, tested by totalsview_test.lua. The server sends
 --   statTotals {attributes = [{k, n, raw, eff, cap, effect}], damage = [{k, n, raw, eff, cap}],
 --               crit = {chance = {total, tree, other}, amount = {total, tree, paragon, other}}}
--- (server/data/scripts/chaos/passivetree_totals.lua). `raw` is what the nodes give, `eff` what counts after the soft cap
+-- (server/data/scripts/chaos/passivetree_totals.lua). O473: a damage row may carry pool = {raw, eff, parts = [{n, raw, cap}]}, the one
+-- additive damage pool of that type (tree, Spell Damage, Paragon, gems, the card set), shown instead of the tree's own numbers.
+-- `raw` is what the nodes give, `eff` what counts after the soft cap
 -- (full value up to `cap`, smaller gains without limit past it). The crit rows show the engine's own total, gear included.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 TotalsView = {}
@@ -35,7 +37,19 @@ function V.lines(data)
     end
   end
   for _, row in ipairs(data.damage or {}) do
-    if over(row) then
+    local pool = type(row.pool) == 'table' and tonumber(row.pool.raw) and row.pool or nil
+    if pool then
+      -- O473: the one additive damage pool: the sum of the sources that hold without a target, the soft cap once, then the parts
+      local cap = tonumber(row.cap) or 0
+      if pool.raw > cap then
+        add(tr('%s: +%s%% increased damage -> +%s%% effective (full value up to +%s%%)', row.n or row.k, V.num(pool.raw), V.num(pool.eff), V.num(cap)), V.OVER)
+      else
+        add(tr('%s: +%s%% increased damage (full value up to +%s%%)', row.n or row.k, V.num(pool.raw), V.num(cap)))
+      end
+      local parts = {}
+      for _, part in ipairs(pool.parts or {}) do parts[#parts + 1] = string.format('%s +%s', part.n or '?', V.num(part.raw)) end
+      if #parts > 1 then add('  ' .. table.concat(parts, ', ')) end
+    elseif over(row) then
       add(tr('%s: +%s%% -> +%s%% effective (full value up to +%s%%)', row.n or row.k, V.num(row.raw), V.num(row.eff), V.num(row.cap)), V.OVER)
     else
       add(tr('%s: +%s%% (full value up to +%s%%)', row.n or row.k, V.num(row.raw), V.num(row.cap)))

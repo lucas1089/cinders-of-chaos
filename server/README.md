@@ -3775,6 +3775,7 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
   extra, nova, riposte, spread (hits that start from a hit, a kill or a hurt); ward, hitcap, immunity, panic, manashield,
   feast, mend (defence, each with a price such as less healing received); stacks, mark (a state you build);
   minionPact (Necromancer). Every number of a family is in the config comment.
+- **O473 (2026-11-10).** The "more damage" part of eight families (lowlife, overflow, opener, focus, statscale, crowd, stacks, mark) is increased damage of the one damage pool now, 10 at most for a passive and 40 for all; the 1.8 clamp below holds the multiplicative rest (prices, critrule, convert, minionPact). See "Increased damage pool (O473)".
 - **Safety.** The product of the damage multipliers is clamped to 0.5-1.8, the damage taken to 0.4-1.5, the bonus against
   players is 1/3. Condition ticks and procs get no multiplier and start no passive (guard flag plus `ChaosKeystones.depth` /
   `ChaosSpellFactor.depth` / `ChaosPowers.depth`, the same guard as the legendary powers). Every proc has an internal
@@ -7463,7 +7464,7 @@ the basic melee attack. The rule of the owner: class damage does not move, so `c
 
 | Family | Trait | Number | Price | Boss | PvP |
 |---|---|---|---|---|---|
-| Sword | Tempo: each hit on the same target adds a stack of swing speed, each hit is lighter by the same share | 5 stacks of +4% attack speed (+20%), window 3 s, a hit less than 150 ms after a stack gives none; hits at full stacks are +2% (the edge) | none; a new target or a pause of 3 s starts over | same as a monster | half the stacks (2) and half the edge |
+| Sword | Tempo: each hit on the same target adds a stack of swing speed, each hit is lighter by the same share | 5 stacks of +4% attack speed (+20%), window 3 s, a hit less than 150 ms after a stack gives none; hits at full stacks are +2 increased damage (the edge; O473: a raw entry of the damage pool shared with the charms, 6 at most together) | none; a new target or a pause of 3 s starts over | same as a monster | half the stacks (2) and half the edge |
 | Axe | Cleave: a share of each hit is split among the monsters next to the target | 14% of the hit in all (the pool), each of up to 8 neighbours takes pool / number | -2.5% on every hit | same as a monster | no cleave and no price |
 | Club | Impact: a chance on a hit to daze a monster | 25% a hit: it cannot attack and stands still for 0.7 s, then rests 3 s (no daze, no Iron Palm) | -2.5% on every hit | slowed only: 15% a hit, 25% slow for 1 s, then 8 s of rest | no daze and no price |
 
@@ -9951,6 +9952,7 @@ Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was ru
 | Holy | Holy hits heal you | 0.5% of your maximum health, once every 3 s | 2% of the party | `addHealth` with a cooldown per player |
 | Energy | Energy hits slow the target | 15% for 1.5 s | the ice snare: 40% for 3 s | `ChaosSpell.slow` |
 
+  O473: `damagePartMax` is 4 now and the Fire damage part is a raw entry of the one damage pool (`ChaosCards.poolRaw`), no longer a multiplier in this event.
   The damage parts (`damage`, `poison`) are at most `damagePartMax` 6% of the damage of their own element; the test pins it and
   that each set has its own kind of effect. A damage over time tick is never changed or counted, and a hit of another element
   never gets the bonus. The effects run in `ChaosCardsHit`, the event that already sat on the monsters a player attacks: after
@@ -13970,6 +13972,8 @@ multi-use flag on the small diamond sprite: `client/tools/sprites/set_multiuse.p
 (its default list now holds client 3028 next to the two orbs). All numbers: `chaos_gems_config.lua`; tests:
 `tests/gems_test.lua` (ids, effects, socket counts, socketing, totals and caps, description, the Orb of Sockets and the
 other orbs, combining, drop and reward rolls, and `gems.lua` against a mocked engine).
+
+**O473 (2026-11-10).** The damage gems are raw percent of the one additive damage pool: at most 25 per element (was 40), physical 12. A player's own hit takes them in `ChaosPassiveDealt` (`G.poolRaw`); the hits of a player's summons keep the old event. See "Increased damage pool (O473)".
 
 **Items.** Seven gem types in five tiers, Chipped, Flawed, Polished, Flawless and Perfect. Each type and tier has its
 own server id, 32001..32035 = 32001 + (type - 1) x 5 + (tier - 1): ruby 32001-05, sapphire 32006-10, emerald 32011-15,
@@ -30893,6 +30897,193 @@ reduction, dodge, block and spell suppression; the Skills window's Armor and Dam
 `Player::blockHit` (one point of rounding per piece), the client windows in the real client, the pt-BR texts by a speaker. The
 balance models were not touched: the survival, PvP, guardian and tower models read the old armour and absorb and say nothing
 about this layer yet.
+
+## Increased damage pool (O473) (`damage_pool_config.lua`, `damage_pool_core.lua`, `pvp_scale_core.lua`, `pvp_balance_config.lua` `damageScale`, `tests/damage_pool_test.lua`, `tests/pvp_scale_test.lua`, `tools/damage_pool_table.lua`)
+
+Owner 2026-11-10 (translated): "Smooth that out. The source of damage must be more balanced." and, on the design of the damage round
+(typical damage about doubles at level 1000, a heavily invested build falls to about 0.45 of today, the spread invested / typical goes
+from 11x to about 2.4x): "You can do everything." Package O473 of that round: one additive pool for increased damage, and the PvP
+scale. The other packages (O470 monster health, O471 gear growth and ceilings, O472 weapon values) and the later work (bosses,
+the final model re-fit, damage over time) are not here. Computed and mocked, never run on a live server or in a client.
+
+**The rule.** Before, the passive tree, the unique passives, the gems, the card set, the charms, the sword edge and Paragon each
+multiplied the hit. Now they ADD raw percent into ONE sum per damage part of a hit. The sum takes the soft cap of the tree (150, H 60,
+unchanged) once: factor = 1 + soft(sum) / 100. A character with no bonus gets exactly 1.
+
+| Source | What it adds (raw percent) | Most |
+|---|---|---|
+| Passive tree and worn Spell Damage | the tree's increase of the type, the all-element increase, Spell Damage for a spell or wand hit (as before) | soft cap |
+| Unique passives | the "more damage" part of the passive while its condition holds: its own value | 10 each, 40 in all |
+| Gems | the gem's damage value of the hit's type | 25 per element, physical 12 (was 40 and 12) |
+| Spell masteries | a damage mastery (the four brand choices) while its spell is cast | +3 each, 12 |
+| Card set | the Fire set's damage part for a Fire hit (x1/3 against a player) | 4 (was 6) |
+| Charms and weapon family | Damage to the monster's family (a charm); the sword's tempo edge (0.4 a stack, 2 at 5 stacks) | 6 together |
+| Paragon | `paragonDamage` (0.5 a point to 40 points, the mastery term 6 ln(1 + r / 50) as before) | as before |
+
+Stays multiplicative, unchanged: strength, intelligence and dexterity, the weapon and its Weapon Damage, critical hits, support runes
+(brand, echo, hex, keen edge ...), the class factors (`classDamage`, the class spell factor, the extra target factor), the skill terms,
+the O468 scaling factor, the monster defence, every price (the "less" of a unique passive, the weapon family's `single`, the sword's
+swing ratio). Healing never takes the pool: the tree's Healing and intelligence only.
+
+**Where it is built.** `passivetree_effects.lua` `ChaosPassiveDealt`, the one event every player hit passes: for each damage part
+(primary, secondary) it asks `ChaosDamagePool.part` (`damage_pool_core.lua`) with the tree's raw sum
+(`ChaosPassiveDamageRaw`, or `ChaosPassiveMinionDamageRaw` while a Necromancer minion deals). Every source registers a provider with
+`ChaosDamagePool.register(name, fn, static)`: `paragon` (passivetree_effects.lua), `gems` (gems.lua), `cardSets` (cards.lua
+`M.poolRaw`), `charms` (charms.lua `CH.poolRaw`), `families` (weapon_families.lua `G.poolRaw`, the stacks the next hit will be swung
+with), `masteries` (supports.lua `S.masteryPoolRaw`, the cast context's spell), `uniques` (unique_passives.lua `M.poolRaw`). The
+core clamps each entry to its cap and the entries of one group to the group cap (`extras`), adds the tree, and takes the soft cap
+once. `static` is the same source without a target (Paragon, gems, the card set of that element): the character sheet's physical hit
+factor (`combat_stats.lua`), the tree totals window (`passivetree_totals.lua` `TT.pool`, a `pool` field of every damage row:
+`{raw, eff, parts}`; the client lines are `totalsview.lua`) and the damage bonus lines of Character Info and Inspect (`charsheet.lua` reads
+`pool.eff`) use it. A source that depends on the hit (a unique's condition, a charm's
+family, the sword's stacks, a mastery's spell) shows in the help card and the Codex page only.
+
+**Every path once.** The pool is built in that one event and nowhere else (`tests/damage_pool_test.lua` reads the source files for
+it): spells, weapon spells, the auto attack, the scripted damage over time pulses of O468, snares and mines, the Beastmaster bite, the
+pet aura and the Necromancer minion hits (all `ORIGIN_SPELL` inside the class spell factor's guard, dealt as the owner), condition
+ticks and `ORIGIN_NONE` hits that reach the event. A keystone proc (a share of a hit that carried the pool) is skipped, as the tree
+always did. The old multiplier of each source is gone: gems.lua and charms.lua keep their event only for the hits of a player's
+SUMMONS (a summon has no tree: those hits keep the old multiplier, with the new gem cap), the card set's damage part and the sword's
+edge are no longer applied in the hit events, `ChaosParagonDamageMultiplier` is gone, `ChaosUPDealt` applies only the multiplicative
+rest of a passive. The axe cleave neighbours (a guarded share of a hit that had the pool) are left, as in O468.
+
+**Unique passives: which side each family fell on** (196 passives). The pool part of a passive is its own bonus while its condition
+holds, at most 10 for one passive and 40 for all (`unique_passives_core.lua` `C.dealtSplit`; the old `C.dealt` returns pool and rest
+as one number for the glue's fallback and the convert strike). The 1.8 product cap (`dealtCap`) stays for the multiplicative rest. A
+price is never a pool entry. Against a player the pool part is x1/3 (`pvpScale`; the glue never asks for a player: wild monsters only).
+
+| Family | Passives | Side |
+|---|---:|---|
+| lowlife | 7 | pool bonus (its own value, at most 10); the malus stays a price |
+| overflow | 5 | pool bonus; the malus stays a price |
+| opener | 12 | pool bonus; the malus stays a price |
+| focus | 7 | pool bonus per stack (at most 10 in all); the first hit's price stays |
+| statscale | 13 | pool bonus (at most 10) |
+| crowd | 7 | pool bonus; the alone / many price stays |
+| stacks | 8 | pool bonus (at most 10 in all); the taken price stays |
+| mark | 9 | pool bonus; the unmarked price stays |
+| convert | 12 | multiplier: the conversion (`C.convertPlan`) and the price on other elements, unchanged |
+| critrule | 10 | multiplier: the critical hit rule is a crit multiplier, unchanged |
+| minionPact | 6 | multiplier: the minions' hit and the price on own spells, unchanged |
+| extra, feast, hitcap, immunity, manashield, mend, nova, panic, riposte, spread, ward | 100 | no damage dealt part: unchanged (some carry a `dealtLess` price, which stays) |
+
+68 passives have a pool part. The design's "+10 each" and the source's own value disagree for most of them (a passive of 40 to 69%
+becomes 10 at most, one of 5 to 8% stays at its own value): the rule is the smaller of the two, and the item text says so ("+10%
+increased damage (at most 10 for one unique power, 40 for all)", `unique_passives_text.lua`, written into the descriptions by
+`tools/gen_unique_specs.py`: 196 specs and the pt-BR Codex block regenerated). Gems: element caps 40 -> 25, physical 12 stays
+(`chaos_gems_config.lua`). Card sets: `cards_config.lua` `damagePartMax` 6 -> 4. Spell masteries: `chaos_spell_masteries_config.lua`
+`damage` lists the three brand supports (four choices), they leave `reduce`: no free brand, +3 raw while the spell is cast. Charms:
+the cap of a charm family stays 15 (the config validity rule needs the best roll under it); the pool takes 6 of it with the sword edge.
+Single cards (convert lines, Grand Mending): none gives increased damage (a conversion and a heal), so none is in the pool.
+
+**Players' items.** None is rerolled or deleted and no stored value changes: every number above is read at the hit from the item's
+own numbers. A unique keeps its passive, the text of its description is regenerated for new copies; an old copy may show the old line (the glue reads the config, not the text). Gems socketed in an item keep their text, the caps hold at the
+character. No upgrade on touch is needed, so no new `chaos_modv` mark.
+
+**PvP scale.** `pvp_balance_config.lua` `damageScale` = {100 1.00} {200 0.94} {300 0.89} {500 0.79} {700 0.76} {1000 0.48} {1500 0.52}
+{2000 0.46} (the design's first fit, to be re-fitted when every package is in). `pvp_scale_core.lua` `ChaosPvpScale.forHit(owner,
+target, attacker)`: a hit that a player, or a summon or companion of a player (the owner's level), deals to ANOTHER player is
+multiplied by the factor of the ATTACKER's level, geometric between two rows (the logarithm of the factor is linear in the level,
+as `display_scale_core.lua`), flat outside. It is applied once, in `ChaosPassiveDealt`, after the pool (both parts of the hit). A
+monster's hit, a heal, a hit on a monster and damage to oneself are never scaled; a keystone proc is a share of a scaled hit. The
+battleground's own level normalisation (`battleground_config.lua`) stays: it is a separate step. `tools/pvp_model.py` reads and
+checks the table (`damage_scale`, `scale_problems`) but does not apply it: the model's class damage is not the typical damage after
+the round yet, so the scale alone would only lengthen every duel (left for the final re-fit).
+
+**Text.** Item and gem lines: the unique power lines, the card set line, the weapon family's sword line, the charm labels
+("Increased damage to Dragons"), the Paragon descriptions and the mastery texts now say increased damage and name the caps. Gem
+labels keep "Fire Damage" (written into the descriptions of owned items): the Codex gem page names the cap. New: Codex Basics page
+"Increased damage" (`gen_codex_data.lua`), How it works card "Increased damage" (`howitworks_config.lua`, numbers from
+`damage_pool_config.lua` and `pvp_balance_config.lua`), its help search words (`guide_config.lua`), the pool lines of the tree totals
+window, pt-BR for all of it (`pt_br.lua`, `i18n_strings.lua`). Patch note lines: `server/data/patchnotes/2026-11-13.md` and
+`.pt-br.md`.
+
+**Before and after (computed by `tools/damage_pool_table.lua` from ASSUMED profiles, not measured).** The damage factor of one stack
+of sources, product of the old multipliers against the one pool. The profiles are inputs (tree raw 10 to 60 fresh, 25 to 170 typical, 50
+to 520 invested; one unique power typical, four invested; gems 12 / 36; Paragon 0.5 a point; a card set, charms 15 and a sword edge for
+the invested one), not the final model. The table says what the rule does to a stack, not what the game will show.
+
+| Level | Profile | Before (product) | After (one pool) | After / before |
+|---:|---|---:|---:|---:|
+| 100 | fresh | 1.10 | 1.10 | 1.00 |
+| 100 | typical | 1.87 | 1.50 | 0.80 |
+| 100 | invested | 4.68 | 2.28 | 0.49 |
+| 300 | fresh | 1.20 | 1.20 | 1.00 |
+| 300 | typical | 2.52 | 1.90 | 0.75 |
+| 300 | invested | 7.90 | 2.95 | 0.37 |
+| 500 | fresh | 1.30 | 1.30 | 1.00 |
+| 500 | typical | 3.22 | 2.30 | 0.71 |
+| 500 | invested | 11.53 | 3.35 | 0.29 |
+| 700 | fresh | 1.40 | 1.40 | 1.00 |
+| 700 | typical | 3.63 | 2.55 | 0.70 |
+| 700 | invested | 12.77 | 3.57 | 0.28 |
+| 1000 | fresh | 1.50 | 1.50 | 1.00 |
+| 1000 | typical | 4.12 | 2.78 | 0.67 |
+| 1000 | invested | 13.69 | 3.76 | 0.27 |
+| 2000 | fresh | 1.60 | 1.60 | 1.00 |
+| 2000 | typical | 4.41 | 2.89 | 0.66 |
+
+PvP scale (the factor of the attacker's level):
+
+| Level | 100 | 300 | 500 | 700 | 1000 | 2000 |
+|---|---:|---:|---:|---:|---:|---:|
+| Factor | 1.00 | 0.89 | 0.79 | 0.76 | 0.48 | 0.46 |
+
+**Models and limits.** Green and untouched: `class_dps_model`, `companion_model`, `minion_model`, `weapon_family_model` (its edge is
+read from the config, the pool entry is below its 3% band), `survival_model`, `pack_model`, `boss_model`, `tower_model`,
+`guardian_model`, `card_set_model` (the cap 6 -> 4 is read, every set is at it). Changed for this package:
+
+| What | Old | New | Why (model) |
+|---|---|---|---|
+| `unique_passives_config.lua` `model.minGain` | 1.03 | 1.03 (restored) | prices of 28 passives cut so each is at 1.03 on every line (table below); ten (`bonusBound`) cannot reach it with no price at all, they are held to 1.0 |
+| `unique_passives_model.lua` | prices x (1 + bonus) | prices x (1 + pool part) x survival, the pool part held at 10 each and 40 in all | the passives' dealt gain follows the rule |
+| `spell_mastery_model.py` | brands free at 15 | brands +3 raw (a pool entry, `damage`) | the choices fall to +0.4 to +1.1% of the class damage; CAP 15% untouched |
+| `card_set_model_test.py` | damage part cap 6 | 4 | `cards_config.lua damagePartMax` |
+| `pvp_model.py` | no scale | reads and checks `damageScale` (not applied) | the final re-fit applies it with the typical damage |
+
+**Repriced unique passives (O473, owner follow-up: no unique may make its wearer weaker).** `unique_passives_model.lua --reprice` cut the price (the "less" part) of every passive under 1.03 on a line it works for, to the largest whole percent that gives 1.03 on all its lines. 28 passives: 13 to a smaller price, 15 to a price of 0. A bonus is never raised above the 10 raw entry. Ten passives stay under 1.03 even with no price (their bonus alone is 1.012 for lowlife, 1.025 for crowd): Pilgrim's Resolve (already 0), Ninth Hall Quench, Grave Vow, Seat Kept Warm, Soundless Step, Altar Quench, Wind-Borne, Swallowed Light, Unfound, Saint Walked On. `model.bonusBound` holds them to 1.0. "Gain before the pool" is the old model at the item's own level, the other two columns at the check level (the higher of the item level and 20), worst line.
+
+| Passive | Family | Price cut (old -> new, percent) | Gain before the pool | Gain with the pool, old price | Gain after the cut |
+|---|---|---|---:|---:|---:|
+| Last Hall Ember (2133) | stacks | takenPerStack 4 -> 2 | 1.10 | 1.004 | 1.050 |
+| Silver Whisper (2402) | opener | malus 5 -> 3 | 1.13 | 1.027 | 1.030 |
+| Last Words (2440) | opener | malus 10 -> 0 | 1.13 | 0.994 | 1.030 |
+| Nothing Inside (2493) | overflow | malus 20 -> 9 | 1.22 | 1.014 | 1.031 |
+| Ninth Hall Quench (7384) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| Put the Tyrant Down (7402) | opener | malus 15 -> 0 | 1.16 | 0.976 | 1.030 |
+| Broken Shields (7422) | opener | malus 15 -> 0 | 1.16 | 0.976 | 1.030 |
+| Last Rites (7697) | opener | malus 10 -> 0 | 1.21 | 0.994 | 1.030 |
+| One Shot (8849) | opener | malus 12 -> 3 | 1.24 | 1.016 | 1.030 |
+| Judges of Ash (8931) | opener | malus 18 -> 0 | 1.18 | 0.965 | 1.030 |
+| Grave Vow (10510) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| Horn-Bind (21693) | stacks | takenPerStack 3 -> 2 | 1.09 | 1.026 | 1.050 |
+| Answering Voice (22474) | overflow | malus 15 -> 9 | 1.16 | 1.021 | 1.031 |
+| Argument Ender (23590) | opener | malus 12 -> 0 | 1.14 | 0.987 | 1.030 |
+| Sworn on a Wound (25175) | stacks | takenPerStack 4 -> 2 | 1.08 | 1.004 | 1.050 |
+| First Cut (25423) | opener | malus 5 -> 3 | 1.24 | 1.027 | 1.030 |
+| Seat Kept Warm (25880) | lowlife | malus 18 -> 0 | 1.04 | 0.930 | 1.012 |
+| Nothing It Watches Walks (25885) | opener | malus 18 -> 3 | 1.32 | 1.007 | 1.030 |
+| Soundless Step (26133) | crowd | malus 20 -> 0 | 1.09 | 0.953 | 1.025 |
+| Hangman's Rope (27474) | opener | malus 15 -> 3 | 1.29 | 1.012 | 1.030 |
+| Altar Quench (27658) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| One More (27676) | stacks | takenPerStack 3 -> 2 | 1.10 | 1.015 | 1.042 |
+| Wind-Borne (27694) | crowd | malus 12 -> 0 | 1.08 | 0.982 | 1.025 |
+| Light That Is Not There (28106) | overflow | malus 15 -> 9 | 1.16 | 1.021 | 1.031 |
+| Swallowed Light (28112) | crowd | malus 20 -> 0 | 1.09 | 0.953 | 1.025 |
+| Unwritten Chapter (29572) | overflow | malus 20 -> 9 | 1.22 | 1.014 | 1.031 |
+| Unfound (29868) | lowlife | malus 12 -> 0 | 1.06 | 0.957 | 1.012 |
+| Saint Walked On (36659) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+
+Left red for the final re-fit: none went red because of this package.
+
+**Not verified.** A live server (the order of the events, the 8th `critical` argument of the damage event and `ORIGIN_NONE` are read from
+the engine source), a client (the tree totals lines), the pt-BR text by a speaker, the profile numbers of the table above (assumed), the
+duel lengths with the scale (the model does not apply it), the soft cap on a real character's sum. The unique passive text changes
+the length of the longest line (`#en < 330` in `tests/unique_passives_test.lua` holds). **Tests:** `tests/damage_pool_test.lua`,
+`tests/pvp_scale_test.lua`, `tests/unique_passives_test.lua`, `tests/gems_test.lua`, `tests/charms_test.lua`, `tests/cards_test.lua`,
+`tests/weapon_families_test.lua`, `tests/supports_test.lua`, `tests/spell_masteries_test.lua`, `tests/paragon_test.lua`,
+`tests/softcap_test.lua`, the client `totalsview_test.lua` and `treespellmods_test.lua`, `tools/spell_mastery_model_test.py`,
+`tools/card_set_model_test.py`, `tools/pvp_model_test.py`.
 
 ## Monster health curve (O470) (`pace_config.lua`, `tools/spawn_tuning.json`, `tests/monster_health_curve_test.lua`)
 

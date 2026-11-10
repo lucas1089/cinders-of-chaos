@@ -244,32 +244,52 @@ local function setEffects(attackerId, targetId, element, dealt, attackerFallback
 end
 M.setEffects = setEffects
 
--- (pd, pt, sd, st) after the set bonus of the player who deals the hit: the damage part of the set's element (Fire: more
--- damage) and the effects that follow the hit (Energy slow, Earth poison, Death leech, Holy heal). A hit of another element, a
+-- O473: the damage part of the card set that is on, as raw percent of the additive damage pool for a hit of `combatType`
+-- (damage_pool_core.lua provider "cardSets"): the set's pct for a hit of its element when its kind is damage (Fire), x the PvP
+-- scale against a player; never for a damage over time tick. At most damage_pool_config.lua sources.cardSets.cap.
+function M.poolRaw(attacker, creature, combatType, origin)
+	local state = M.sets[attacker:getId()]
+	if not state or not state.element or origin == ORIGIN_CONDITION or not combatType then
+		return 0
+	end
+	if creature and creature.getId and creature:getId() == attacker:getId() then
+		return 0
+	end
+	local element = elementOfType(combatType)
+	if not element or not setOn(state, element) then
+		return 0
+	end
+	local b = K.setBonus(element)
+	if not b or b.kind ~= "damage" then
+		return 0
+	end
+	return b.pct * K.setScale(creature and isPlayerObject(creature))
+end
+if not ChaosDamagePool then
+	dofile("data/scripts/chaos/damage_pool_core.lua")
+end
+ChaosDamagePool.register("cardSets", function(hit, combatType)
+	return M.poolRaw(hit.attacker, hit.creature, combatType, hit.origin)
+end, function(player, combatType)
+	return M.poolRaw(player, nil, combatType, nil)
+end)
+
+-- (pd, pt, sd, st) after the set effects of the player who deals the hit: the effects that follow the hit (Energy slow, Earth
+-- poison, Death leech, Holy heal); the Fire set's damage part is in the damage pool (M.poolRaw). A hit of another element, a
 -- player without a set and a damage over time tick are untouched (the event never calls this for a tick).
 function M.applySet(attacker, creature, pd, pt, sd, st)
 	local state = M.sets[attacker:getId()]
 	if not state or not state.element or creature:getId() == attacker:getId() then
 		return pd, pt, sd, st
 	end
-	local vsPlayer = isPlayerObject(creature)
 	local dealt = 0
 	local effect
 	for _, part in ipairs({{"pd", pd, pt}, {"sd", sd, st}}) do
 		local element = part[3] and elementOfType(part[3])
 		if element and part[2] and part[2] < 0 and setOn(state, element) then
-			local b = K.setBonus(element)
-			if b.kind == "damage" then
-				local extra = K.setExtra(element, "damage", part[2], vsPlayer)
-				if part[1] == "pd" then
-					pd = pd + extra
-				else
-					sd = sd + extra
-				end
-				dealt = dealt + math.abs(part[2] + extra)
-			else
-				dealt = dealt + math.abs(part[2])
-			end
+			-- O473: the damage part of a set (Fire: more damage) is a raw percent of the additive damage pool now (M.poolRaw below,
+			-- asked by ChaosPassiveDealt); here only the effects that follow the hit
+			dealt = dealt + math.abs(part[2])
 			effect = element
 		end
 	end

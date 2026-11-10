@@ -68,13 +68,15 @@ return {
 
 	-- effects: label, format (pct "+N%", flat "+N", pair "+N% / +M%"), the most a character gets from all gems (and,
 	-- for movespeed, from the Chaos item modifier of the same name too: chaos_item_mods.lua caps it at 12)
+	-- O473 (2026-11-10): the damage effects are raw percent of the one additive damage pool (damage_pool_config.lua): 25 (physical 12),
+	-- was 40 (physical 12) as a separate multiplier
 	effects = {
-		dmg_fire = {label = "Fire Damage", fmt = "pct", cap = 40},
-		dmg_ice = {label = "Ice Damage", fmt = "pct", cap = 40},
-		dmg_earth = {label = "Earth Damage", fmt = "pct", cap = 40},
-		dmg_death = {label = "Death Damage", fmt = "pct", cap = 40},
-		dmg_energy = {label = "Energy Damage", fmt = "pct", cap = 40},
-		dmg_holy = {label = "Holy Damage", fmt = "pct", cap = 40},
+		dmg_fire = {label = "Fire Damage", fmt = "pct", cap = 25},
+		dmg_ice = {label = "Ice Damage", fmt = "pct", cap = 25},
+		dmg_earth = {label = "Earth Damage", fmt = "pct", cap = 25},
+		dmg_death = {label = "Death Damage", fmt = "pct", cap = 25},
+		dmg_energy = {label = "Energy Damage", fmt = "pct", cap = 25},
+		dmg_holy = {label = "Holy Damage", fmt = "pct", cap = 25},
 		dmg_physical = {label = "Physical Damage", fmt = "pct", cap = 12},
 		res_fire = {label = "Fire Resistance", fmt = "pct", cap = 30},
 		res_ice = {label = "Ice Resistance", fmt = "pct", cap = 30},

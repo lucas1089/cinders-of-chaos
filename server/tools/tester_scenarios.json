@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 67,
+  "opcode": 68,
   "out": 38,
-  "passive": 106,
+  "passive": 107,
   "place": 15,
   "staff": 17
  },
@@ -10591,7 +10591,8 @@
    "out": false,
    "skip": [],
    "systems": [
-    "combine"
+    "combine",
+    "damage_pool"
    ]
   },
   "survey": {
@@ -11386,6 +11387,19 @@
    ],
    "talkactions": [
     "/daily"
+   ]
+  },
+  "damage_pool": {
+   "files": [
+    "gems.lua",
+    "supports.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "supports"
+   ],
+   "talkactions": [
+    "/supports"
    ]
   },
   "daybook": {
@@ -12466,6 +12480,13 @@
    "talkactions": [
     "/professions"
    ]
+  },
+  "pvp_scale": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "pvpzone": {
    "files": [

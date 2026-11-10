@@ -35,7 +35,8 @@ local byNode, lines = {}, {}
 for i, c in ipairs(M.choices) do
 	eq(c.id, i, "ids are 1.. in order, never reused")
 	ok(S.byKey[c.support], c.name .. ": a support that exists")
-	ok(M.reduce[c.support], c.name .. ": the support has a reduced field")
+	-- O473: a brand choice is a pool entry (M.damage), no free support: it has no reduced field
+	ok(M.reduce[c.support] or (M.damage or {})[c.support], c.name .. ": the support has a reduced field or is a damage choice")
 	byNode[c.node] = byNode[c.node] or {}
 	table.insert(byNode[c.node], c)
 	lines[c.line] = (lines[c.line] or 0) + 1
@@ -100,9 +101,15 @@ for node, list in pairs(pinned) do
 end
 
 -- ---------------------------------------------------------------- the free support: never above a Common rune
-local expected = {fork = {1, 26}, breadth = {1, 26}, shatter = {15}, quickening = {4}, hex = {2}, echo = {11, 50}, dawnbrand = {15},
-	gravebrand = {15}, stormbrand = {15}}
+local expected = {fork = {1, 26}, breadth = {1, 26}, shatter = {15}, quickening = {4}, hex = {2}, echo = {11, 50}}
+-- O473 (2026-11-10): the three brands are damage choices: increased damage in the one pool, no free support
+eq(M.damage.dawnbrand and M.damage.gravebrand and M.damage.stormbrand, true, "the three brands are damage choices")
+eq(M.damage.fork, nil, "fork is a free support still")
 for _, c in ipairs(M.choices) do
+	if M.damage[c.support] then
+		eq(S.freeEffect(c.support), nil, c.name .. ": no free brand any more (a pool entry)")
+		goto continue
+	end
 	local free = S.freeEffect(c.support)
 	local rune = S.byKey[c.support]
 	ok(free and free.free, c.name .. ": a free effect")
@@ -123,12 +130,15 @@ for _, c in ipairs(M.choices) do
 	if e[2] then
 		eq(free.value2, e[2], c.name .. ": value2")
 	end
+	::continue::
 end
 ok(S.freeEffect("hex").value <= 3 and S.freeEffect("quickening").value <= 6, "below the caps of the supports")
 eq(S.freeEffect("keenedge"), nil, "a support the config does not reduce gives nothing")
 eq(S.freeEffect("nope"), nil, "an unknown support gives nothing")
--- the element of a brand stays
-eq(S.freeEffect("dawnbrand").element, "holy", "dawnbrand: holy"); eq(S.freeEffect("gravebrand").element, "death", "gravebrand: death")
+-- the pool numbers of the damage choices (damage_pool_config.lua sources.masteries)
+local poolCfg = dofile("data/scripts/chaos/damage_pool_config.lua")
+eq(poolCfg.sources.masteries.each, 3, "a damage mastery: +3 raw")
+eq(poolCfg.sources.masteries.cap, 12, "at most 12 from masteries")
 
 -- the kinds: Fork, Shatter fit single only, Breadth area only; a spell the override does not name must take a support that fits
 -- both damage kinds (its kind comes from the spellbook parse, the strikes and spells of the Chaos kit are damage)
@@ -200,9 +210,11 @@ local function rune(key, l) return S.runeId(S.byKey[key].index, l) end
 fx = S.spellEffects(withRunes(20, 128, {rune("emberbrand", 1)}), 128, 160)
 ok(fx.emberbrand and not fx.dawnbrand, "a real Emberbrand: the free Dawnbrand does not join it")
 fx = S.spellEffects(withRunes(20, 128, {rune("dawnbrand", 1)}), 128, 160)
-eq(fx.dawnbrand.value, 20, "the real Common Dawnbrand 20% over the free 15%")
+eq(fx.dawnbrand.value, 20, "the real Common Dawnbrand 20%: the choice adds no free brand (it is +3 in the pool)")
+ok(not fx.dawnbrand.free, "the rune")
 fx = S.spellEffects(withRunes(20, 128, {rune("keenedge", 1)}), 128, 160)
-ok(fx.dawnbrand and fx.dawnbrand.free and fx.keenedge, "another support: both")
+ok(fx.keenedge and not fx.dawnbrand, "another support: only the rune, the choice gives no free brand")
+eq(next(S.spellEffects(player(20), 128, 160)), nil, "the choice alone: no free support (O473)")
 -- a spell the character cannot socket yet (level below the spell) is no concern: the free effect is the same effect table
 eq(S.effects({}, 3).fork, nil, "S.effects itself knows nothing of the mastery")
 

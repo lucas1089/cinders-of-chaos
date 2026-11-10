@@ -55,7 +55,10 @@ function K.read(player)
 			raw.damage = {}
 			for _, row in ipairs(type(t.damage) == "table" and t.damage or {}) do
 				local key = tostring(row.k):gsub("^increment", "")
-				raw.damage[#raw.damage + 1] = {k = key:lower(), pct = row.eff}
+				-- O473: the damage bonus of a type is the one additive damage pool (tree, Spell Damage, Paragon, gems, the card set)
+				-- after the soft cap, not the tree's own number
+				local eff = type(row.pool) == "table" and tonumber(row.pool.eff) or row.eff
+				raw.damage[#raw.damage + 1] = {k = key:lower(), pct = eff}
 			end
 		end
 	end

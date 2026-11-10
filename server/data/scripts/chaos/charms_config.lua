@@ -83,7 +83,10 @@ C.shapeWeights = {{"small", 50}, {"tall", 20}, {"wide", 20}, {"grand", 10}}
 -- cap: the most every placed charm gives together. gearRef: the best roll of one gear slot (T8 high) of the matching
 -- gear modifier (raised on 2026-10-18, owner item 78); the best charm roll must stay below it. weight: roll weight.
 local function family(key, name)
-	return {key = "dmg_" .. key, family = key, label = "Damage to " .. name, fmt = "pct", range = {1, 3}, cap = 15,
+	-- O473: the damage to a family is raw percent of the one additive damage pool: the pool takes at most 6 of it together with the
+	-- sword's edge (damage_pool_config.lua groups.extras). The charms' own cap stays 15 (the validity rule: the best charm roll is
+	-- under it); what the charms hold above 6 counts for nothing, the Codex says so
+	return {key = "dmg_" .. key, family = key, label = "Increased damage to " .. name, fmt = "pct", range = {1, 3}, cap = 15,
 		gearRef = 22, weight = 4, group = "family"}
 end
 local function element(key, name, combat)

@@ -842,7 +842,11 @@ do
 			ok(b.pct > 0 and b.pct <= S.damagePartMax, name .. ": the damage part is at most " .. S.damagePartMax .. "%")
 		end
 	end
-	eq(S.damagePartMax, 6, "the cap of a damage part is 6%")
+	eq(S.damagePartMax, 4, "the cap of a damage part is 4% (O473: the cap of the card set entry of the damage pool)")
+	do
+		local pc = dofile("data/scripts/chaos/damage_pool_config.lua")
+		eq(pc.sources.cardSets.cap, S.damagePartMax, "the pool cap of a card set is the damage part cap")
+	end
 	-- smaller than the snare of the same element (snares_config.lua)
 	local sn = dofile("data/scripts/chaos/snares_config.lua").effects
 	ok(S.by.Fire.pct < sn.burnShare * 100, "Fire: smaller than the burn of the snare")
@@ -1000,12 +1004,12 @@ do
 			ok(#t > 20 and not t:find("%%[sd]"), "set text " .. name .. " " .. lang .. ": " .. t)
 		end
 	end
-	eq(K.setBonusText("en", "Fire"), "Your Fire damage is 4% higher.", "Fire text")
+	eq(K.setBonusText("en", "Fire"), "Your Fire damage: +4% increased damage (a card set adds at most 4 to the one damage pool).", "Fire text")
 	eq(K.setBonusText("en", "Energy"), "Your Energy hits slow the target by 15% for 1.5 seconds.", "Energy text")
 	eq(K.setBonusText("en", "Earth"), "Your Earth hits poison the target for 4% of the hit over 4 seconds.", "Earth text")
 	eq(K.setBonusText("en", "Death"), "Your Death hits heal you for 1.5% of the damage, at most 1% of your maximum health a hit.", "Death text")
 	eq(K.setBonusText("en", "Holy"), "Your Holy hits heal you for 0.5% of your maximum health, at most once every 3 seconds.", "Holy text")
-	eq(K.setBonusText("pt-BR", "Fire"), "Seu dano de Fogo é 4% maior.", "Fire text pt-BR")
+	eq(K.setBonusText("pt-BR", "Fire"), "Seu dano de Fogo: +4% de dano aumentado (um conjunto de cartas soma no máximo 4 ao conjunto de dano).", "Fire text pt-BR")
 	eq(K.setBonusText("en", "Ice"), "", "Ice has no set text")
 	eq(K.setLine("en", st3), "Card set Death is on with 3 cards: Your Death hits heal you for 1.5% of the damage, at most 1% of your maximum health a hit.",
 		"the line of a set that is on")
@@ -1080,8 +1084,22 @@ do
 		return t
 	end
 	local hitEvent = registered.ChaosCardsHit
+	-- O473: the hit event keeps the set's effects; the damage part of the Fire set is an entry of the additive damage pool
+	-- (M.poolRaw, provider "cardSets"), so hitOf adds it the way ChaosPassiveDealt does: 1 + soft(raw) / 100 on a damage part
 	local function hitOf(p, t, pd, pt, sd, st, origin)
-		return hitEvent.onHealthChange(t, p, pd, pt, sd, st or 0, origin or 2)
+		pd, pt, sd, st = hitEvent.onHealthChange(t, p, pd, pt, sd, st or 0, origin or 2)
+		local function part(d, ty)
+			if not d or d >= 0 or not ty then
+				return d
+			end
+			local raw = M.poolRaw(p, t, ty, origin or 2)
+			if raw <= 0 then
+				return d
+			end
+			local _, sum = ChaosDamagePool.combine({cardSets = raw}, 0, ty)
+			return -math.floor(-d * ChaosDamagePool.factor(sum) + 1e-6)
+		end
+		return part(pd, pt), pt, part(sd, st), st
 	end
 
 	-- Ranger line (vocation 3): the Fire set is Sanctum Burst, Frostfall Rune and Dawnpiercer at tier 1
@@ -1097,7 +1115,7 @@ do
 	a = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
 	eq(a, -100, "2 cards: no bonus")
 	M.use(ranger, it[3])
-	ok(lastMsg(ranger):find("Card set Fire is on with 3 cards: Your Fire damage is 4% higher.", 1, true) ~= nil, "three cards: the set is on: " .. lastMsg(ranger))
+	ok(lastMsg(ranger):find("Card set Fire is on with 3 cards: Your Fire damage: +4% increased damage", 1, true) ~= nil, "three cards: the set is on: " .. lastMsg(ranger))
 	eq(M.sets[ranger:getId()].element, "Fire", "the cache says Fire")
 	-- the hit: the primary part, the secondary part, never another element
 	a, b = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
