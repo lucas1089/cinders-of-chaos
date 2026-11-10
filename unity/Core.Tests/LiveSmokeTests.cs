@@ -34,6 +34,8 @@ namespace Chaos.Core.Tests
             e = LiveSmokeEnv.Read(Env("CHAOS_LIVE_HOST", "10.0.0.5", "CHAOS_LIVE_PORT", "27171", "CHAOS_LIVE_ACCOUNT", " acc ", "CHAOS_LIVE_PASSWORD", "pw", "CHAOS_LIVE_CHARACTER", "Live Aldric A", "CHAOS_LIVE_IDENTITY", "Chaos"));
             check(e.Ok && e.Host == "10.0.0.5" && e.Port == 27171 && e.Account == "acc" && e.Character == "Live Aldric A" && e.Identity == "chaos", "live smoke env: every variable read, the identity in any case");
             check(!LiveSmokeEnv.Read(Env()).Ok && LiveSmokeEnv.Read(Env()).Errors.Count == 2, "live smoke env: no account and no password are two errors");
+            var say = LiveSmokeEnv.Read(Env("CHAOS_LIVE_ACCOUNT", "a", "CHAOS_LIVE_PASSWORD", "p", "CHAOS_LIVE_SAY", " /testkit knight |  | /goto Cinderhold, temple "));
+            check(say.Ok && say.Say.Count == 2 && say.Say[0] == "/testkit knight" && say.Say[1] == "/goto Cinderhold, temple" && e.Say.Count == 0, "live smoke env: CHAOS_LIVE_SAY splits at '|', keeps commas, drops empty lines; unset says nothing");
             check(!LiveSmokeEnv.Read(Env("CHAOS_LIVE_ACCOUNT", "a", "CHAOS_LIVE_PASSWORD", "p", "CHAOS_LIVE_PORT", "0")).Ok, "live smoke env: port 0 refused");
             check(!LiveSmokeEnv.Read(Env("CHAOS_LIVE_ACCOUNT", "a", "CHAOS_LIVE_PASSWORD", "p", "CHAOS_LIVE_PORT", "12x")).Ok, "live smoke env: a port that is not a number refused");
             check(!LiveSmokeEnv.Read(Env("CHAOS_LIVE_ACCOUNT", "a", "CHAOS_LIVE_PASSWORD", "p", "CHAOS_LIVE_IDENTITY", "other")).Ok, "live smoke env: an unknown identity refused");
