@@ -3396,7 +3396,7 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   server.
 
 ## Snares (`data/spells/chaos/_snares.lua`, `snares_core.lua`, `snares_config.lua`, docs/BUILDS.md "Snares")
-Traps and mines for the Ranger and Thief lines (2026-10-12): Snare Trap (spell 99, `drai snar`, level 40), Seeker Mine
+Traps and mines for the Ranger and Thief lines (2026-10-12; the mines are in the Ranger and Deadeye kits since O455, the Beastmaster has none): Snare Trap (spell 99, `drai snar`, level 40), Seeker Mine
 (100, `kah snar`, level 60), Detonate Mines (104, `vok snar`, level 60). A snare is a record in the spells' Lua state
 (`ChaosSnares.state`): kind, owner, position, element, its hit, when it arms and ends. Nothing is created on the map.
 

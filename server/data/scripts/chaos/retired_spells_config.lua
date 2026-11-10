@@ -22,7 +22,7 @@ return {
 		"Hammerfall Palm", "Skyfang", "Greater Ember Lash", "Greater Arc Bolt", "Greater Frostbite", "Greater Thornlash",
 		"Supreme Ember Lash", "Supreme Arc Bolt", "Supreme Frostbite", "Supreme Thornlash", "Warlord's Resolve", "Second Wind",
 		"Greater Second Wind", "Gravity Snare", "Riftbolt", "Sunder Guard", "Bog Splatter", "Rime Breath", "Arcane Stitch",
-		"Static Sting", "Searing Gust", "Duelist's Oath",
+		"Static Sting", "Searing Gust", "Duelist's Oath", "Radiant Shard",
 		-- retire_cure_spells.py (their ids went to Tautstring, Ironhold and Wildstride)
 		"Hawkeye", "Bulwark", "Windrunner"
 	},

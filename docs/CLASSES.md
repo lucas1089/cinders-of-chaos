@@ -410,8 +410,8 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Warrior | 27 | 15 | Bonebreaker 8, Reaping Gyre 14, Earthbreaker 20, Scything Arc 70, Butcher's Gyre 90, Vaulting Cleave 170, Colossus Fall 260, Headsman's Hurl 300 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Ironhold 55, Bloodlust 60, Red Frenzy 100, Iron Bellow 120 |
 | Juggernaut | 30 | 15 | Bonebreaker 8, Reaping Gyre 14, Earthbreaker 20, Scything Arc 70, Butcher's Gyre 90, Colossus Fall 260, Headsman's Hurl 300, Anvil Fall 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Taunt of Iron 20, Ironhold 55, Iron Bellow 120, Bastion Cry 340 |
 | Berserker | 30 | 15 | Bonebreaker 8, Reaping Gyre 14, Earthbreaker 20, Scything Arc 70, Butcher's Gyre 90, Skyfall Cleave 190, Colossus Fall 260, Headsman's Hurl 300, Rampage Leap 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Bloodlust 60, Red Frenzy 100, Bloodrage 120 |
-| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280, Radiant Shard 300 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140, Hallowed Ground 300 |
-| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Skewering Line 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140 |
+| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Seeker Mine 60, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Detonate Mines 60, Lightward 140, Hallowed Ground 300 |
+| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Seeker Mine 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Detonate Mines 60, Lightward 140 |
 | Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Blessed Earth 100, Feral Command 110, Pack Howl 220, Rending Pounce 240, Pack Frenzy 320 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
 | Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 14, Arcane Ripple 14, Blightswarm 25, Witchfire Bolt 20, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 20 | Ward of the Mind 14*, Galeborne Stride 20, Ironbark Hide 60 |
 | Elementalist | 45 | 14 | Kindling Spark 8, Rime Bloom 14, Witchfire Bolt 20, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14*, Galeborne Stride 20, Crimson Covenant 90 |
@@ -429,6 +429,14 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Inquisitor | 6 | 6 | Radiant Smite 8, Consecration 14, Judgement 100, Purging Nova 120 | Vow of Mending 20 | Zealotry 150 |
 | Sentinel | 7 | 7 | Radiant Smite 8, Consecration 14, Shield Wave 150 | Vow of Mending 20, Lay on Hands 150 | Rebuke 100, Aegis of Faith 120 |
 
+Ranger line mines (O455, 2026-11-09, owner: "Ranger pode ter minas"): the Ranger and the Deadeye hold Seeker Mine and Detonate Mines again.
+Seeker Mine is an attack spell, so each of them traded one attack spell out and every class keeps 13. The Ranger gave up Radiant Shard
+(retired, no class keeps it; it sat in no Auto rotation). The Deadeye gave up Skewering Line (the Ranger keeps it). Detonate Mines is
+a support spell: the cap is 24 spells, not the 15 of the counts above, so nobody traded for it (own spells now: Ranger 21, Deadeye 20,
+pinned in `patch_spell_cap_test.py`). The Beastmaster has no mines: every attack spell it could trade broke a model check
+(see server/data/spells/README.md "Ranger line mines (O455)"). The Count columns of this table are from before the later spells
+and the 24 cap and are stale.
+
 * Ward of the Mind (stock Magic Shield, the classic one: the mana takes a hit first, the health only the rest) is
   outside the 15 (`patch_spell_cap.py` `OUTSIDE_CAP`, owner 2026-10-21: "somente pra mages e rangers", the
   Necromancer counted as a mage): the Mystic, Necromancer and Ranger lines have it, no other class. Soulward (level 80, 15 s, with mana
@@ -441,8 +449,9 @@ Dropped, per line (each spell left the classes named; "retired" = no class keeps
   Second Wind, Warlord's Resolve, Greater Second Wind, Ruinous Cleave, Duelist's Oath (all retired but Minor Mending);
   the Juggernaut also Bloodlust, Red Frenzy, Vaulting Cleave; the Berserker also Taunt of Iron, Ironhold, Vaulting Cleave.
 - Ranger line: Arcane Stitch, Deep Mending, Unveil, Shielding Communion, Dawnbolt, Second Wind, Greater Second Wind,
-  Glare of Dawn, Greater Phantom Javelin (retired), Seeker Mine and Detonate Mines (the Thief line keeps them); the
-  Deadeye and Beastmaster also Radiant Shard and Hallowed Ground, the Beastmaster also Skewering Line.
+  Glare of Dawn, Greater Phantom Javelin (retired), Radiant Shard (retired since O455, traded for Seeker Mine); the
+  Deadeye and Beastmaster also Hallowed Ground, the Deadeye also Skewering Line (O455), the Beastmaster also Skewering Line.
+  Seeker Mine and Detonate Mines are back in the Ranger and Deadeye kits since O455 (the Beastmaster does not hold them).
 - Mystic line: the level 1 spells (Bog Splatter, Rime Breath, Searing Gust, Static Sting), the strike families (Arc
   Bolt, Riftbolt, Thornlash, Ember Lash, Frostbite, Gravetouch, Hammerfall Palm and their Greater and Supreme ranks),
   the waves and beams (Cinder Fan, Glacier Fan, Greater Glacier Fan, Bramble Fan, Stormlance, Thunder Lance, Lance of the
@@ -1133,7 +1142,8 @@ add at most +10%), the Juggernaut the tankiest.
 The three families left out at first: snares (traps and mines), vigils (auras that reserve mana) and a life on the
 energy shield alone. Four more keystones on the ends of the four other elemental clusters (96, 99, 102, 105; refunded
 once, build code format 5), six uniques, seven spells (Snare Trap, Seeker Mine, Detonate Mines for the Ranger and
-Thief lines; four vigils for every class). Guide docs/BUILDS.md; rules server/README.md "Build archetypes", "Snares",
+Thief lines; four vigils for every class). The mines left the Ranger line in the spell cap and came back to the Ranger and
+Deadeye on 2026-11-09 (O455); the measured mine numbers of the Mine-layer rows predate the cap. Guide docs/BUILDS.md; rules server/README.md "Build archetypes", "Snares",
 "Vigils"; computed numbers server/data/spells/README.md "Snares, vigils and Hollow Vessel", measured in game
 2026-10-13 in "Snares, vigils and Hollow Vessel measured in game".
 

@@ -85,7 +85,7 @@ do
 		end
 	end
 	if n ~= 14 then error("spell_ids_test: " .. n .. " NEW_IDS rows parsed, 14 expected") end
-	if live ~= 5 then error("spell_ids_test: " .. live .. " moved spells keep an id, 5 expected (34 37 46 53 85)") end
+	if live ~= 4 then error("spell_ids_test: " .. live .. " moved spells keep an id, 4 expected (37 46 53 85; 34 Radiant Shard retired by O455)") end
 end
 -- the three ids are really switched off: their conjure scripts are in the archery config
 local arch = io.open("data/lib/chaos_archery_config.lua"):read("*a")

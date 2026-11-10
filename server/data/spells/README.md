@@ -4333,3 +4333,34 @@ numbers of this file are unaffected (spells never use the auto attack interval; 
 are the weapon models: `weapon_sim.py` uses the weapons' own intervals (2000 ms and up), where the factor is 1. A min-maxed
 build gains +41% to +56% auto attack damage per second over the old best build (1 swing per second), a typical build up to
 1.45 - 1.73x of the same class without speed. Not measured on a live server.
+
+## Ranger line mines (O455)
+
+Owner, 2026-11-09: "Ranger pode ter minas". Seeker Mine (100) and Detonate Mines (104) are in the Ranger and Deadeye kits again
+(the Thief line kept them). The Beastmaster is left out: see "Beastmaster" below.
+
+Rule: Seeker Mine is an attack spell, so a class that takes it trades one attack spell out (13 per class,
+`tools/ci/check_attack_counts.py`). The traded spell is picked by `rotation_sim.py` (best set of 5 per level, score = 1 target +
+0.25 x 5 targets), not in an Auto preset or card, not an identity spell, and it must keep the cooldown ladder
+(`rotation_sim.py --ladder --check`, no spell changes its cooldown) and the class DPS band (`class_dps_model.py --check`).
+Detonate Mines is a support spell; the cap is 24, so there is no trade for it.
+
+| Class | Traded out | Score loss, mean over levels (worst) | At 100 / 500 / 1000 | Other candidates |
+|---|---|---|---|---|
+| Ranger | Radiant Shard (level 300, retired) | 0.0% (0.0%) | 0 / 0 / 0 | Arrowstorm 2.4%, Skewering Line 6.2%, Blessed Earth 6.6% (band breach at 100), Sunspear 13.1% |
+| Deadeye | Skewering Line (level 60) | 4.9% (17.3%) | 1 target -14% / 0 / 0, 5 targets -11% / 0 / 0 | Sunspear 4.9% but it moves Blessed Earth and Sunspear off the ladder, Gale Volley 1.8% breaks the band at 1000 (5 targets -26%) |
+
+Beastmaster: Packhunter's Dart is the data minimum (0.5%) but only the Beastmaster has it, and taking it out moves the level 400
+best set to Pack Frenzy, so `companion_model.py --check` fails (wolves 51% of the damage, limit 50%). Blessed Earth fails the
+same check at 1000 (146%, limit 140%). Sunspear is outside the DPS band at 500 on 1 target (-25.3%). Sanctum Burst and
+Dawnpiercer are named in card texts and fall off the ladder. Nothing could be traded within the rules, so the Beastmaster
+keeps its kit and holds no mines.
+
+Derived, not measured: `class_dps_measured.csv` was measured on the old kit and is not changed. The mines are cast by hand and
+in no Auto rotation, so they add nothing to the modelled DPS. The Deadeye row of the model is the old measurement; the
+rotation_sim ratio of its new best set (1 target -14.1%, 5 targets -11.4% at level 100, no change at 500 and 1000) puts it at
++0% / -29% of the median at level 100 (band 30%), still inside. That ratio is a derived number. A live re-measure is O452.
+
+Mine damage of a Ranger line character: `snares_config.lua` damage with power = the best of distance skill x distance attack,
+blade and shuriken power (`_snares.lua` `M.power`), the same formula and the same input as Snare Trap, which the line already
+casts; no class or weapon check. A mine is the trap hit x 1.15. At the same level and power it hits the same as a Thief's.

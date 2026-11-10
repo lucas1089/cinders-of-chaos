@@ -59,7 +59,6 @@
 	</instant>
 	<instant group="attack" spellid="215" name="Skewering Line" words="kah sag lanc" level="60" mana="90" premium="0" direction="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/paladin/piercing_volley.lua">
 		<vocation name="Ranger" />
-		<vocation name="Deadeye" />
 	</instant>
 	<instant group="attack" spellid="216" name="Blessed Earth" words="drai vas sol hal" level="100" mana="210" premium="0" selftarget="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/paladin/consecration.lua">
 		<vocation name="Ranger" />
@@ -484,11 +483,15 @@
 		<vocation name="Samurai" />
 	</instant>
 	<instant group="attack" spellid="100" name="Seeker Mine" words="kah snar" level="60" mana="65" premium="0" params="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/shared/seeker_mine.lua">
+		<vocation name="Ranger" />
+		<vocation name="Deadeye" />
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
 	</instant>
 	<instant group="support" spellid="104" name="Detonate Mines" words="vok snar" level="60" mana="20" premium="0" aggressive="0" selftarget="1" cooldown="1000" groupcooldown="0" needlearn="0" script="chaos/shared/detonate_mines.lua">
+		<vocation name="Ranger" />
+		<vocation name="Deadeye" />
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />

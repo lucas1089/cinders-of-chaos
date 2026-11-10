@@ -51,7 +51,7 @@ the tile, so nothing can be picked up and nothing is saved.
 |---|---|---|---|
 | Snare Trap | `drai snar` | 40 | throws a trap up to 4 sqm, onto your target or straight ahead; it arms after 0.6 s; the first monster within 1 sqm sets it off; the burst hits up to 8 enemies within 2 sqm. At most 3; a trap lasts 20 s |
 | Seeker Mine | `kah snar` | 60 | throws a mine the same way; it arms after 0.8 s and waits for Detonate Mines or its 8 s fuse; its burst is 1.15 times a trap's. At most 5 |
-| Detonate Mines | `vok snar` | 60 | every armed mine of yours goes off, 0.1 s apart |
+| Detonate Mines | `vok snar` | 60 | every armed mine of yours goes off, 0.1 s apart. Ranger and Deadeye hold both mines again since O455 (the Beastmaster does not); the Mine-layer numbers predate the spell cap |
 
 - **The element.** Say it after the words: `drai snar "fire"`. Fire burns, ice slows by 40%, energy reaches 1 sqm
   farther at 85% of the hit, earth poisons, death drains 4% of the damage as health, holy heals you and party

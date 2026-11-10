@@ -464,9 +464,10 @@ for key, id in pairs(C.spells) do
 		if key ~= "detonate" then
 			check(block:find('params="1"', 1, true) and not block:find('selftarget="1"', 1, true), key .. ": a parameter, no selftarget")
 		end
-		-- the 15-spell cap (2026-10-20): the Ranger line keeps Snare Trap only, the Thief line all three
+		-- the 15-spell cap (2026-10-20) took the mines from the Ranger line; O455 (2026-11-09) gave them back to the Ranger and the
+		-- Deadeye: they and the Thief line hold all three, the Beastmaster Snare Trap only
 		for _, v in ipairs({"Ranger", "Deadeye", "Beastmaster", "Thief", "Ninja", "Samurai"}) do
-			local has = key == "trap" or (v ~= "Ranger" and v ~= "Deadeye" and v ~= "Beastmaster")
+			local has = key == "trap" or v ~= "Beastmaster"
 			check((block:find('"' .. v .. '"', 1, true) ~= nil) == has, key .. (has and " for the " or " not for the ") .. v)
 		end
 		check(not block:find('"Warrior"', 1, true), key .. ": not the Warrior")

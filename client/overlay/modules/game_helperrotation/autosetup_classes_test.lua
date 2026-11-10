@@ -94,7 +94,7 @@ for name, id in pairs(CLASSES) do
   for sid in pairs(reach) do eq(attack[id][sid], true, name .. ': preset spell ' .. sid .. ' is an attack spell of the class') end
   -- a character that can cast only some (not learned yet) still gets what it can, never fewer than it can cast up to 5
   local low = 0
-  for sid in pairs(attack[id]) do if entries[sid].level <= 150 then low = low + 1 end end
+  for sid in pairs(attack[id]) do if not CAST_BY_HAND[sid] and entries[sid].level <= 150 then low = low + 1 end end
   local sel = A.select(id, 150, canCastFor(id, 150, function() return 0 end), { topUp = true })
   eq(sel and #sel.ids or 0, math.min(low, A.MAX_SPELLS), name .. ': level 150 rotation holds what the class can cast')
   -- the ultimate is learned at level 1200: not before, then on top of the 5 at any level above (also without topping up)
