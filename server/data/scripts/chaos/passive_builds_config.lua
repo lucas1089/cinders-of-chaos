@@ -41,9 +41,10 @@ ChaosPassiveBuildsConfig = {
 	-- past the knee scores what it is worth there (strength 0.2 of a point before the knee's 0.8)
 	statCurve = {knee = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50},
 		max = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50}, kneeShare = 0.8},
-	-- stats that never score (crafting, and the stat the engine gives nothing for)
+	-- stats that never score (crafting, the stat the engine gives nothing for, and spellMod: a spell modifier mastery effect, O451,
+	-- is no number to weigh; no build picks one, a role would have to name it in `masteries`)
 	ignored = {"craftingSkill", "herbalistSkill", "woodcuttingSkill", "miningSkill", "armorsmithSkill", "jewelsmithSkill",
-		"weaponsmithSkill", "wisdom"},
+		"weaponsmithSkill", "wisdom", "spellMod"},
 
 	-- stat groups used by the themes
 	groups = {

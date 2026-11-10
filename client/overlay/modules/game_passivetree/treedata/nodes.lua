@@ -12924,6 +12924,9 @@ function getTreeNodes()
 		--- effects; the player picks one when planning it (free) and can change it later for the single-node refund price.
 		--- Each effect is about one notable's worth of ordinary tree stats (no new combat code): server/README.md
 		--- "Mastery nodes", numbers here only (the generator writes them to passivetree_data.lua `m`).
+		--- O451: 2 or 3 effects were appended to each mastery node (703 to 705 too): `spellMod` = an id of the server's
+		--- data/lib/chaos_spell_masteries_config.lua, one spell gets a free support effect; the words are in treespellmods.lua.
+		--- Never reorder or insert before the old effects: a saved choice, a build code and a loadout hold the position.
 		--- 665 ---
 		{
 			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
@@ -12933,7 +12936,10 @@ function getTreeNodes()
 				{name = "Keen Edge", customStats = {criticalHitChance = 2, criticalHitAmount = 5}},
 				{name = "Light Step", customStats = {dexterity = 3, speed = 200}},
 				{name = "Tough Hide", customStats = {vitality = 4, absorbPhysical = 2}},
-				{name = "Venom Glands", customStats = {incrementEarth = 6, incrementPhysical = 3}}
+				{name = "Venom Glands", customStats = {incrementEarth = 6, incrementPhysical = 3}},
+				{name = "Twin Toss", customStats = {spellMod = 9}},
+				{name = "Wide Smoke", customStats = {spellMod = 10}},
+				{name = "Echoing Flurry", customStats = {spellMod = 11}}
 			},
 			inputs = {628}, out = {}
 		},
@@ -12945,7 +12951,10 @@ function getTreeNodes()
 			masteries = {
 				{name = "Withering Touch", customStats = {incrementDeath = 6, magicSkill = 1}},
 				{name = "Ossified Hide", customStats = {absorbPhysical = 3, vitality = 3}},
-				{name = "Soul Well", customStats = {spirit = 5, absorbDeath = 2}}
+				{name = "Soul Well", customStats = {spirit = 5, absorbDeath = 2}},
+				{name = "Cursed Marrow", customStats = {spellMod = 12}},
+				{name = "Grave Wail", customStats = {spellMod = 13}},
+				{name = "Splintered Rot", customStats = {spellMod = 14}}
 			},
 			inputs = {638}, out = {}
 		},
@@ -12958,7 +12967,10 @@ function getTreeNodes()
 				{name = "Iron Knuckles", customStats = {incrementPhysical = 6, strength = 2}},
 				{name = "Swift Palm", customStats = {criticalHitChance = 2, criticalHitAmount = 4}},
 				{name = "Still Water", customStats = {incrementHealth = 6, spirit = 3}},
-				{name = "Stone Body", customStats = {vitality = 4, absorbPhysical = 2}}
+				{name = "Stone Body", customStats = {vitality = 4, absorbPhysical = 2}},
+				{name = "Wide Mist", customStats = {spellMod = 15}},
+				{name = "Splitting Palm", customStats = {spellMod = 16}},
+				{name = "Quick Heel", customStats = {spellMod = 17}}
 			},
 			inputs = {648}, out = {}
 		},
@@ -12970,7 +12982,10 @@ function getTreeNodes()
 			masteries = {
 				{name = "Oath of Flame", customStats = {incrementHoly = 6, strength = 2}},
 				{name = "Oath of the Wall", customStats = {shieldingSkill = 2, absorbPhysical = 2, absorbAllElements = 1}},
-				{name = "Oath of Mercy", customStats = {incrementHealth = 6, vitality = 3}}
+				{name = "Oath of Mercy", customStats = {incrementHealth = 6, vitality = 3}},
+				{name = "Echoing Ground", customStats = {spellMod = 18}},
+				{name = "Marked Cut", customStats = {spellMod = 19}},
+				{name = "Bell of Dawn", customStats = {spellMod = 20}}
 			},
 			inputs = {658}, out = {}
 		},
@@ -13270,7 +13285,10 @@ function getTreeNodes()
 				{name = "Hammerfall", customStats = {incrementPhysical = 6, strength = 1}},
 				{name = "Tempered Hide", customStats = {vitality = 4, absorbPhysical = 2}},
 				{name = "Cruel Edge", customStats = {criticalHitChance = 2, criticalHitAmount = 4}},
-				{name = "Shield Drill", customStats = {shieldingSkill = 2, absorbPhysical = 2}}
+				{name = "Shield Drill", customStats = {shieldingSkill = 2, absorbPhysical = 2}},
+				{name = "Gore Fork", customStats = {spellMod = 1}},
+				{name = "Echoing Slam", customStats = {spellMod = 2}},
+				{name = "Wide Cry", customStats = {spellMod = 3}}
 			},
 			inputs = {676}, out = {}
 		},
@@ -13283,7 +13301,10 @@ function getTreeNodes()
 				{name = "Steady Aim", customStats = {criticalHitChance = 2, criticalHitAmount = 5}},
 				{name = "Fleet Foot", customStats = {dexterity = 3, speed = 200}},
 				{name = "Forest Hide", customStats = {vitality = 4, absorbPhysical = 2}},
-				{name = "Hard Tips", customStats = {incrementPhysical = 5, dexterity = 2}}
+				{name = "Hard Tips", customStats = {incrementPhysical = 5, dexterity = 2}},
+				{name = "Splintering Spear", customStats = {spellMod = 4}},
+				{name = "Hallowed Ground", customStats = {spellMod = 5}},
+				{name = "Hunter's Mark", customStats = {spellMod = 6}}
 			},
 			inputs = {686}, out = {}
 		},
@@ -13296,7 +13317,9 @@ function getTreeNodes()
 				{name = "Pyre Touch", customStats = {incrementFire = 6, magicSkill = 1}},
 				{name = "Frost Touch", customStats = {incrementIce = 6, magicSkill = 1}},
 				{name = "Storm Touch", customStats = {incrementEnergy = 6, magicSkill = 1}},
-				{name = "Still Mind", customStats = {incrementHealth = 5, spirit = 2}}
+				{name = "Still Mind", customStats = {incrementHealth = 5, spirit = 2}},
+				{name = "Crimson Fork", customStats = {spellMod = 7}},
+				{name = "Storm Rupture", customStats = {spellMod = 8}}
 			},
 			inputs = {696}, out = {}
 		},

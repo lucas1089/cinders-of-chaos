@@ -8,7 +8,7 @@
 -- The class lanes (treedata/classlanes.lua, tools/gen_class_lanes.lua) are stored in the same `v` for the plain nodes: the stats
 -- a node gives one class instead of its own. Run gen_class_lanes.lua BEFORE this when the tree or the stat lists changed.
 -- node.classes (the classes that may take the node) is stored as `c` = {[class key] = true} (class_tree.lua checks it).
--- A mastery node (node.masteries = {{name, customStats}, ...}: 2-4 effects, the player picks one) is stored as
+-- A mastery node (node.masteries = {{name, customStats}, ...}: 2-7 effects, 4 until O451, the player picks one) is stored as
 -- `m` = {{customStats of effect 1}, {effect 2}, ...} in that order (passivetree_core.lua; never reorder, only append).
 -- Start nodes (isStartNode) other than the root are the start of a class section: they are not stored; their edges
 -- go to the root instead, so the section connects to the root like any other branch. Hidden nodes (node.hidden: a stray
@@ -101,7 +101,7 @@ for _, id in ipairs(ids) do
   end
   local m = {}
   if n.masteries then
-    assert(#n.masteries >= 2 and #n.masteries <= 4, "mastery node " .. id .. ": 2 to 4 effects")
+    assert(#n.masteries >= 2 and #n.masteries <= 7, "mastery node " .. id .. ": 2 to 7 effects")
     for i, effect in ipairs(n.masteries) do
       assert(type(effect.customStats) == "table" and next(effect.customStats), "mastery node " .. id .. " effect " .. i .. ": stats")
       local ms = statList(effect.customStats)

@@ -383,7 +383,75 @@ function S.effects(runes, count)
 	return out
 end
 
--- the effects of a player's spell, the open sockets only (level = character level, spellLevel = the spell's)
+-- ---------------------------------------------------------------------------------------------------------------
+-- spell modifier masteries (O451): a mastery effect of the passive tree gives ONE named spell a free support effect
+-- (data/lib/chaos_spell_masteries_config.lua: the choices, the tier, the strength). The tree listener
+-- (data/scripts/chaos/spell_masteries.lua) writes the id of the held choice to a player storage; this file reads it in both
+-- Lua states, so every place that asks for the effects of a spell (hit effects, cost, cooldown) sees the free support.
+-- ---------------------------------------------------------------------------------------------------------------
+S.mastery = dofile("data/lib/chaos_spell_masteries_config.lua")
+S.masteryById = {}
+for _, c in ipairs(S.mastery.choices) do
+	S.masteryById[c.id] = c
+end
+
+-- the effect a free support gives: {value, value2, element, level, key, free = true}; the rune's numbers at the config tier,
+-- the fields of `reduce` cut to `strength` percent (rounded down, at least 1). nil for a support the config does not reduce
+function S.freeEffect(key)
+	local t = S.byKey[key]
+	local m = S.mastery
+	local fields = m.reduce[key]
+	if not t or not fields then
+		return nil
+	end
+	local e = {value = t.values[m.tier] or 0, value2 = t.values2 and t.values2[m.tier] or nil, element = t.element,
+		level = m.tier, key = key, free = true}
+	for _, f in ipairs(fields) do
+		if e[f] then
+			e[f] = math.max(1, floor(e[f] * m.strength / 100 + 1e-6))
+		end
+	end
+	return e
+end
+
+-- the held choice of a player (a row of the config) or nil; the storage holds its id
+function S.masteryChoice(player)
+	local id = storage(player, S.mastery.storage)
+	return id and id > 0 and S.masteryById[id] or nil
+end
+
+-- one effect table (S.effects) with the free support of `spellId` added. A real rune of the same support keeps its place
+-- when it is as strong (the free one never adds to it, the stronger one counts); a brand never joins another brand (one
+-- brand per spell, like the window).
+function S.addFree(out, choice, spellId)
+	if not choice or choice.spell ~= spellId then
+		return out
+	end
+	local free = S.freeEffect(choice.support)
+	if not free then
+		return out
+	end
+	local own = out[free.key]
+	if own then
+		if free.value > own.value or (free.value == own.value and (free.value2 or 0) > (own.value2 or 0)) then
+			out[free.key] = free
+		end
+		return out
+	end
+	local group = S.byKey[free.key].group
+	if group then
+		for key in pairs(out) do
+			if S.byKey[key] and S.byKey[key].group == group then
+				return out
+			end
+		end
+	end
+	out[free.key] = free
+	return out
+end
+
+-- the effects of a player's spell, the open sockets only (level = character level, spellLevel = the spell's), and the free
+-- support of the spell modifier mastery the player holds
 function S.spellEffects(player, spellId, spellLevel)
 	local sock = S.read(player, spellId)
 	if not sock then
@@ -391,7 +459,8 @@ function S.spellEffects(player, spellId, spellLevel)
 	end
 	local level = 0
 	pcall(function() level = player:getLevel() end)
-	return S.effects(sock.runes, S.socketCount(level, spellLevel or 0, sock.opened))
+	local out = S.effects(sock.runes, S.socketCount(level, spellLevel or 0, sock.opened))
+	return S.addFree(out, S.masteryChoice(player), tonumber(spellId))
 end
 
 -- ---------------------------------------------------------------------------------------------------------------

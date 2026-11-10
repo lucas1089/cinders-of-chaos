@@ -893,6 +893,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103060 - 7103069 | new player survey (`survey_config.lua` `storage`, `Chaos.storage.survey`, O374): +0 bit mask of the survey stages (bit 0 = level 20, bit 1 = level 50) already handled for the character's account (a cache of `chaos_survey`); +1..9 free |
 | 7103070 - 7103079 | Wandering Merchant (`invasion_config.lua` `worldEvents.merchant.storageBase`, O399): +0..+9 the stop + 1 in which the character bought the item at that place of `items` (one of each per stop) |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
+| 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
 
@@ -3360,6 +3361,44 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   (`ChaosLoadouts.dropNodes`), for free, with one message. It runs before the class check of the login. Version 1:
   369, 376, 383, 390 (the line keystones). Version 2: 77, 78, 81, 82, 106-109, 253, 262, 355, 362 (the build
   archetype keystones, "Build archetypes" below). A new character only records the version.
+
+## Passive tree: spell modifier masteries (O451) (`data/lib/chaos_spell_masteries_config.lua`, `chaos_supports.lua`, `spell_masteries.lua`, `tools/spell_mastery_model.py`)
+A second kind of mastery effect: one named spell gets a free support effect, so a spell can change how it plays without loot luck.
+Nothing was run on a live server; every number is computed, not measured. Player view: docs/BUILDS.md "Spell modifier masteries (O451)".
+- **Data.** Each of the seven mastery nodes (665, 666, 667, 668, 703, 704, 705) got 2 or 3 effects appended after the old ones, 20 in
+  all. An effect is `{spellMod = id}` (one stat, the id of a row of `chaos_spell_masteries_config.lua` `choices`). The client data
+  `treedata/nodes.lua` holds the name; `gen_passivetree_data.lua` writes the server's `m` lists. An existing effect keeps its position
+  (the saved text `id:choice`, the build code and the loadouts read the position), so no tree version, no refund and no format change.
+  `passivetree_config.lua` `maxMasteryChoices` is 7 (4 before): the effects a node may list. A character still holds one effect per
+  mastery node and a line has one node.
+- **The spell.** One that all three classes of the line cast, from `rotation_sim.py` (Mystic, Elementalist and Illusionist share only
+  two, so the Mystic line has two choices). A test checks that no spell is in the no-socket list and that a support that fits one
+  kind only sits on a spell whose kind is named in `chaos_supports_config.lua` `kindOverride`.
+- **The free support.** `ChaosSupports.freeEffect(key)` is the rune of the config `tier` (1, Common: runes of that tier drop at every
+  band, `chaos_gems_config.lua` `drop.levelWeights`) with the fields of `reduce` cut to `strength` percent (75, rounded down, at least 1).
+  No support has a price, so the effect is weaker instead: Fork 26% (rune 35%), Breadth 26%, Shatter 15% (20%), Hex 2% (3%), Echo 11%
+  (15%), Quickening 4% (6%), the brands 15% (20%). The client text says "A reduced X rune, free".
+- **How it enters the cast.** One hook where every spell reads its supports: `ChaosSupports.spellEffects(player, spellId, spellLevel)`
+  merges `addFree(effects, choice, spellId)` into the effects of the rune sockets. The hit effects, the cost and the cooldown all ask
+  that function, in the scripts state (`supports.lua` `effectsFor`) and in the spell state (`_supports.lua`), so nothing else changed.
+  The tree listener `spell_masteries.lua` (after every login, save, reset, changed effect, loadout switch) writes the held id to storage
+  7109993 and calls `ChaosSupports.refreshActive`, which clears the cached effects and keeps the hit effects on for a player with
+  no rune. The spell state reads the storage, as it reads the class flags.
+- **Stacking.** The free effect takes no socket. A real rune of the same support on that spell wins when it is as strong or stronger:
+  the two never add and the cap of the support holds. A brand never joins a real brand, one brand per spell.
+- **Model.** `tools/spell_mastery_model.py` (`--check`, `--table`, `--detail ID`), test `tools/spell_mastery_model_test.py`. Spell gain per
+  cast, rotation gain on the best legal sets that hold the spell (`rotation_sim.variant_level`), class gain with the auto attack share of
+  `class_dps_measured.csv`. Limit of the model: +15% of the class damage per choice on 1 and 5 targets. The largest is Twin Toss, +11.2%
+  on 5 targets at level 100. Quickening gains about nothing in a rotation on the 2 s attack group. Not measured in game.
+- **Tests.** `tests/spell_masteries_test.lua` (ids, positions, old effects pinned, free numbers, never above a Common rune, kinds, the merge
+  with real runes, the listener, the client names), `tests/supports_test.lua` (the glue: Fork forks to one enemy for 26%, a real rune wins),
+  client `treespellmods_test.lua` (the words and the numbers against the server config). `passivetree_plan_test.lua` and
+  `buildshare_test.lua` moved from effect 5 and 7 (now real effects) to 8 as the effect a node does not have.
+- **Clients.** The main client: the picker lists the effects with the spell and the support text (client `treespellmods.lua`, pt-BR in
+  `pt_br.lua`); the window grew with the list (130 + 52 per effect, up to 7). Unity: its generated tree data carries each effect as its
+  plain text line, the server applies the effect as for any player; the Unity effect list was not run with 7 entries.
+- **Not changed.** No support rune, mastery effect, keystone, spell, rotation, card, weapon, loadout or balance limit moved. The
+  Recommended builds pick no spell modifier (`gen_passive_builds.lua` ties go to the first effect), so `passive_builds_data.lua` is the same.
 
 ## Passive tree: keystone cap (O447) (`passivetree_core.lua`, `passivetree_config.lua` `keystoneMax`)
 Owner decision of 2026-11-09: a character holds at most 3 keystones. Nothing in the tree, no node, number or position changed.

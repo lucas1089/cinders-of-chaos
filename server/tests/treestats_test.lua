@@ -74,7 +74,7 @@ eq(#S.never(nil, lineIds), #lineIds, "a line without characters: every node")
 -- descriptions
 eq(S.describe(tree.nodes[393]), "absorbFire+1 incrementFire+3", "a notable")
 eq(S.describe(tree.nodes[383]), "ksBlackbloodCreed", "a keystone by its key")
-eq(S.describe(tree.nodes[665]), "mastery (4 effects)", "a mastery")
+eq(S.describe(tree.nodes[665]), "mastery (7 effects)", "a mastery (4 effects before O451, 7 with the spell modifiers)")
 eq(S.describe(tree.nodes[621]), "variants (20 classes)", "the per-class keystone (variant keys: Mystic and Elementalist share one)")
 -- the report
 local lines = S.report(stats, tree, ctx, "warrior", "300-499", 3, 5)

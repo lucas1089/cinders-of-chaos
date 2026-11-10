@@ -12,7 +12,7 @@ ChaosPassiveTreeConfig = {
 	-- one node, a plan, a build code, an Auto build, a loadout. The client's counter reads it from sendNodes.
 	keystoneMax = 3,
 	-- a mastery node offers 2 to this many effects (the generator and the tests check the data against it)
-	maxMasteryChoices = 4,
+	maxMasteryChoices = 7, -- effects per mastery node (4 until O451: the spell modifier effects of 2-3 more per node; a character still holds one)
 	-- changing the effect of a saved mastery costs the single-node refund price of respec.lua (free below its
 	-- freeBelowLevel); a choice made while the node is planned is free
 	masteryChangeUsesNodePrice = true,

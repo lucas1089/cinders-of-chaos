@@ -1053,6 +1053,12 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Templar | Sacred Oath | Oath of Flame (holy +6, strength +2), Oath of the Wall (shielding +2, physical absorb +2, all elements absorb +1), Oath of Mercy (healing +6, vitality +3) |
 
   Since O449 (2026-11-10) the Warrior, Ranger and Mystic lines have a section and a mastery too (nodes 673-705, below).
+  Since O451 (2026-11-10) each mastery also offers two or three **spell modifier** effects, appended after the ones above
+  (position 5 to 7, or 4 to 6 for the Necromancer and Templar). A spell modifier gives one spell that the three classes of the
+  line cast a free support effect, a Common rune a little weaker, no socket (docs/BUILDS.md "Spell modifier masteries (O451)").
+  Effect ids: Warrior (703) Gore Fork, Echoing Slam, Wide Cry; Ranger (704) Splintering Spear, Hallowed Ground, Hunter's Mark;
+  Mystic (705) Crimson Fork, Storm Rupture; Thief (665) Twin Toss, Wide Smoke, Echoing Flurry; Necromancer (666) Cursed Marrow,
+  Grave Wail, Splintered Rot; Monk (667) Wide Mist, Splitting Palm, Quick Heel; Templar (668) Echoing Ground, Marked Cut, Bell of Dawn.
   Rules and saved data: server/README.md "Passive tree planner and mastery nodes". Measured 2026-10-12 (`server/data/spells/README.md` "Line keystones,
   masteries and weapons measured in game"): each damage choice adds 2-4% to its own damage type (Venom Glands earth
   +5.3%, Withering Touch death +3.9%, Iron Knuckles physical +3.9%, Oath of Flame holy +3.8%; the crit choices about +1%),

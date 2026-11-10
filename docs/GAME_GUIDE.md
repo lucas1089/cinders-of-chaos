@@ -141,8 +141,9 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   hit a little harder to keep the late game honest.
 - **Crits and leech that mean what they say:** a 10% chance fires on 10% of hits. Critical hits, dodges, blocks and
   reflects show their own effect over the target.
-- **Attack speed:** nobody swings faster than three times a second, and only a fully built Shadowfist gets there; a fast
-  swing hits for less, and leech heals at most about once a second, however many hits land.
+- **Attack speed:** nobody swings faster than three times a second, and a class gets there only with every source of
+  attack speed near its maximum. A hit keeps its full damage at any speed. Leech heals at most about once a second,
+  however many hits land.
 - **Weapon styles:** two-handed weapons swing slower and hit much harder; bow shots splash onto the creatures around
   the target, crossbow bolts hit only their target. Bows and crossbows never run out of shots (see Archery and quivers).
 - **Sword, axe and club (Warrior, Thief and Templar lines):** each has a trait. The *sword* swings faster with every hit on the
@@ -267,6 +268,10 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
 - **Five levels**, from Common to Mythic. Three runes of one support and level combine into one of the next.
 - Runes drop from monsters (more from tiered ones and bosses), from rift chests and from bounties. The store sells none.
 - Your action bar shows a coloured pip for each rune on a spell.
+- **Without a rune:** the mastery node of your class line (in the class section of the passive tree) has two or three effects
+  that give one named spell a free support effect, for example Gorehook that forks or Bastion Cry that reaches the enemies it
+  missed. It is the effect of a Common rune, a little weaker, and it takes no socket. A real rune of the same support on that
+  spell counts when it is stronger; the two never add. You hold one mastery effect at a time.
 
 ## Cards and card sets
 

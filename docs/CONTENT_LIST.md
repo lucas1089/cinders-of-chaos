@@ -38,7 +38,7 @@ Rules for this list:
 | Gems | 7 (+ sockets) | Codex "Gems" |
 | Profession materials | 20 | Codex "Materials" |
 | Passive tree nodes | 677 (root included; 663 before the class sections of O449 and the round 4 keystones of O450) | `passivetree_data.lua` |
-| of these: notables / keystone entries / masteries | 123 / 46 / 4 | wiki "Passive tree" tab |
+| of these: notables / keystone entries / masteries | 134 / 67 / 7 | wiki "Passive tree" tab |
 | Paragon stats | 8 | server/README.md "Paragon" |
 | Charm kinds | 4 shapes + 4 uniques | server/README.md "Charms" |
 | Achievements | 189 in 11 categories | server/README.md "Achievements" |
@@ -633,6 +633,6 @@ Other open placement work (docs/CONTENT.md "For the owner"):
 
 - Many systems are "done" on unit and mocked-engine tests only. ROADMAP.md says which ones.
 - The 66 Boss Spawns entries count the fixed list only. World, tower, trial, dungeon and invasion bosses are added at runtime.
-- Keystone entries (46) include variants: some keystones appear once per class.
+- Keystone entries (67) include variants: some keystones appear once per class.
 - The Codex "Orbs" count (24) mixes crafting orbs, keys and currencies.
 - Achievements (173) and base quest lines (35 / 310) are taken from the docs, not recounted.

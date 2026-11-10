@@ -49,7 +49,7 @@ local masteryIds = {}
 for id, node in pairs(tree.nodes) do
 	if C.isMastery(node) then
 		masteryIds[#masteryIds + 1] = id
-		check(#node.m >= 2 and #node.m <= cfg.maxMasteryChoices, "mastery " .. id .. " has 2-4 effects")
+		check(#node.m >= 2 and #node.m <= cfg.maxMasteryChoices, "mastery " .. id .. " has 2-" .. cfg.maxMasteryChoices .. " effects (4 before O451, 7 with the spell modifier effects)")
 		check(node.s == nil and node.v == nil, "mastery " .. id .. " has no own stats")
 		check(node.c ~= nil, "mastery " .. id .. " belongs to a class line")
 		for i, effect in ipairs(node.m) do
@@ -59,7 +59,12 @@ for id, node in pairs(tree.nodes) do
 				check(not stat:match("^ks") and not stat:match("^ct"), "mastery effects are ordinary stats")
 				sum = sum + 1
 			end
-			check(sum >= 2, "mastery " .. id .. " effect " .. i .. " has stats")
+			if effect.spellMod then
+				-- a spell modifier effect (O451) is exactly one stat, the id of a choice of chaos_spell_masteries_config.lua
+				check(sum == 1, "mastery " .. id .. " effect " .. i .. " is a spell modifier and nothing else")
+			else
+				check(sum >= 2, "mastery " .. id .. " effect " .. i .. " has stats")
+			end
 		end
 	end
 end
@@ -137,8 +142,8 @@ check(code == "class", "no class: no class nodes")
 -- mastery rules
 r, err, code = plan({626, 627, 628}, {}, {665}, nil, ctx("thief"))
 check(code == "mastery" and err:find("Choose an effect"), "a mastery needs a choice: " .. tostring(err))
-r, err, code = plan({626, 627, 628}, {}, {665}, {{id = 665, choice = 5}}, ctx("thief"))
-check(code == "mastery" and err:find("no effect 5"), "a choice it does not have: " .. tostring(err))
+r, err, code = plan({626, 627, 628}, {}, {665}, {{id = 665, choice = 8}}, ctx("thief"))
+check(code == "mastery" and err:find("no effect 8"), "a choice it does not have: " .. tostring(err))
 r, err, code = plan({626, 627, 628}, {}, {665}, {{id = 665, choice = 0}}, ctx("thief"))
 check(code == "mastery", "choice 0 is no effect")
 r = plan({626, 627, 628}, {}, {665}, {{id = 665, choice = 3}}, ctx("thief"))
@@ -166,7 +171,7 @@ ok, err = C.checkMasteryChange(tree, {626, 627, 628, 665}, {[665] = 1}, 665, 1)
 check(not ok and err:find("already"), "the same effect: " .. tostring(err))
 ok, err = C.checkMasteryChange(tree, {626, 627, 628}, {}, 665, 1)
 check(not ok and err:find("not allocated"), "not allocated: " .. tostring(err))
-ok, err = C.checkMasteryChange(tree, {626, 627, 628, 665}, {[665] = 1}, 665, 7)
+ok, err = C.checkMasteryChange(tree, {626, 627, 628, 665}, {[665] = 1}, 665, 8)
 check(not ok and err:find("no such"), "no such effect")
 ok, err = C.checkMasteryChange(tree, {2}, {}, 2, 1)
 check(not ok and err:find("not a mastery"), "not a mastery")

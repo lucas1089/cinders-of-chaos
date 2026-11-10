@@ -2950,6 +2950,9 @@ return {
 			"+1 nível de skill de distância por ponto: dano e precisão de arco, besta e arremesso.",
 		["+1 magic level per point: stronger spells, healing and runes."] =
 			"+1 magic level por ponto: magias, curas e runas mais fortes.",
+		["Spell modifier"] = "Modificador de magia",
+		["A mastery effect: one named spell gets a free support effect, the effect of a Common support rune at reduced strength. It takes no rune slot and never adds to a real rune of the same support."] =
+			"Um efeito de maestria: uma magia nomeada ganha um efeito de suporte de graça, o efeito de uma runa de suporte Common com força reduzida. Não ocupa slot de runa e nunca soma a uma runa de verdade do mesmo suporte.",
 		["+1 shielding skill level per point: you block more of the hits you take with a shield."] =
 			"+1 nível de escudo por ponto: você bloqueia mais dos golpes que recebe com um escudo.",
 		["Percent chance that a hit is critical, rolled once against the sum of tree, gear and gems."] =

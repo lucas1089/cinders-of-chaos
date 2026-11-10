@@ -257,8 +257,8 @@ plan = assert(B.plan(tree, oldCode, {classId = 4, current = mNodes, currentMaste
 check(plan.masteries[665] == 4 and not plan.treeChange, "a version 1 code keeps the held effect")
 plan = assert(B.plan(tree, oldCode, thief))
 check(plan.masteries[665] == 1 and #plan.notes == 1 and plan.notes[1]:find("first effect"), "no effect named: the first, with a note")
-plan, err = B.plan(tree, assert(B.decode(B.encode({classId = 4, nodes = mNodes, masteries = {[665] = 7}}))), thief)
-check(not plan and err:find("effect 7"), "an effect the mastery does not have: " .. tostring(err))
+plan, err = B.plan(tree, assert(B.decode(B.encode({classId = 4, nodes = mNodes, masteries = {[665] = 8}}))), thief)
+check(not plan and err:find("effect 8"), "an effect the mastery does not have: " .. tostring(err))
 plan, err = B.plan(tree, assert(B.decode(B.encode({classId = 4, nodes = {626}, masteries = {[626] = 1}}))), thief)
 check(not plan and err:find("not a mastery"), "a choice for a plain node: " .. tostring(err))
 

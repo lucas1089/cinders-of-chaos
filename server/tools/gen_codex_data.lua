@@ -1592,6 +1592,15 @@ function Gen.supportEntries(D)
 	for _, t in ipairs(TIER_ORDER) do
 		dropParts[#dropParts + 1] = TIER_NAME[t] .. " " .. Gen.per10k(cfg.drop.chance[t])
 	end
+	-- the spell modifier masteries (O451) that give a spell this support for free: the client's words name the spells
+	local mods = {}
+	dofile("../client/overlay/modules/game_passivetree/treespellmods.lua")
+	for _, c in ipairs(S.mastery.choices) do
+		local row = TreeSpellMods.rows[c.id]
+		mods[c.support] = mods[c.support] or {}
+		table.insert(mods[c.support], string.format("%s line, mastery effect %s: %s", c.line:sub(1, 1):upper() .. c.line:sub(2), c.name,
+			row.spell))
+	end
 	for i, t in ipairs(cfg.supports) do
 		local rows = {}
 		for lv = 1, cfg.levels do
@@ -1619,7 +1628,20 @@ function Gen.supportEntries(D)
 					{"Bounty board", string.format("Hunt %d%%, elite %d%%, boss %d%% per finished contract.", cfg.rewards.bounty.chance.hunt,
 						cfg.rewards.bounty.chance.elite, cfg.rewards.bounty.chance.boss)},
 					{"Rift chest", string.format("%s + %s per rift tier.", Gen.num(cfg.rewards.rift.base), Gen.num(cfg.rewards.rift.perTier))},
-					{"World boss", string.format("%d for every eligible player.", cfg.rewards.worldboss.count)}}}
+					{"World boss", string.format("%d for every eligible player.", cfg.rewards.worldboss.count)}}},
+				-- last, so that a support without the section leaves no hole in the list
+				mods[t.key] and {h = "Spell modifier masteries", p = (function()
+					local free = S.freeEffect(t.key)
+					local effect = t.text:gsub("%%(%d)", function(n)
+						return tostring(n == "1" and free.value or free.value2)
+					end):gsub("%%%%", "%%")
+					local list = {string.format("A mastery effect of the passive tree gives one named spell this support for free: %s, the effect of a %s rune at %d%% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+						effect:sub(1, 1):lower() .. effect:sub(2), cfg.levelNames[S.mastery.tier], S.mastery.strength)}
+					for _, line in ipairs(mods[t.key]) do
+						list[#list + 1] = line .. "."
+					end
+					return list
+				end)()} or nil
 			}}
 	end
 	return sortByName(out)
