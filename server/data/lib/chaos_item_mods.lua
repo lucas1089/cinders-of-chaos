@@ -1524,19 +1524,6 @@ function M.experience(exp, pct)
 	return floor((tonumber(exp) or 0) * (100 + (tonumber(pct) or 0)) / 100 + 1e-9)
 end
 
--- penetration: a hit that the monster's resistance r (percent) reduced, as if r were pen points lower (never below 0;
--- an immune monster stays immune). Same maths as the Sunder support (chaos_supports.lua S.penetrate).
-function M.penetrate(value, r, pen)
-	r, pen = tonumber(r) or 0, tonumber(pen) or 0
-	if r <= 0 or r >= 100 or pen <= 0 then
-		return value
-	end
-	local rNew = math.max(0, r - pen)
-	local raw = math.abs(value) * 100 / (100 - r)
-	local a = floor(raw * (100 - rNew) / 100 + 1e-6)
-	return value < 0 and -a or a
-end
-
 -- damage per tick of an ailment caused by a hit of `hit` (whole points, at least 1)
 function M.ailmentTick(hit)
 	local a = M.config.ailment

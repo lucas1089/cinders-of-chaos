@@ -765,12 +765,13 @@ eq(target(player, orc), RETURNVALUE_NOERROR)
 eq(orc.registered.ChaosItemModsDealt, true, "any offensive modifier registers the hit event")
 math.random = function(a, b) return b end -- no ailment
 player.health, player.mana = 100, 0
--- physical: 20% resistance, 10 points ignored: 80 landed = 100 raw -> 90
-eq(dealt.onHealthChange(orc, player, 80, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 90, "physical penetration")
+-- O464: penetration is the monster defence layer's (tests/monster_defence_test.lua), not this event's: the hit stays as it is
+eq(dealt.onHealthChange(orc, player, 80, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 80, "no penetration here any more")
+eq(M.playerBonus(player, "physpen"), 10, "the totals still carry physical penetration for the monster layer")
+eq(M.playerBonus(player, "elepen"), 25, "... and elemental penetration")
 eq(player.health, 107, "health on hit"); eq(player.mana, 3, "mana on hit")
--- ice: 50% resistance, 25 ignored: 50 landed = 100 raw -> 75
 local _, _, sIce = dealt.onHealthChange(orc, player, 0, COMBAT_PHYSICALDAMAGE, 50, COMBAT_ICEDAMAGE, ORIGIN_SPELL)
-eq(sIce, 75, "elemental penetration on the secondary part")
+eq(sIce, 50, "the secondary part is not changed here either")
 -- damage over time: hits of conditions you own, no on-hit
 player.health = 100
 eq(dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), 60, "+20% damage over time")
@@ -792,7 +793,7 @@ orc.health = 100000
 dealt.onHealthChange(orc, player, 400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 local kinds = {}
 for _, c in ipairs(conditions) do kinds[c.c.kind] = c.c end
-eq(kinds[CONDITION_BLEEDING].value, -M.ailmentTick(450), "bleeding: a share of the hit (400 -> 450 after penetration) per tick")
+eq(kinds[CONDITION_BLEEDING].value, -M.ailmentTick(400), "bleeding: a share of the hit per tick")
 eq(kinds[CONDITION_BLEEDING].params[CONDITION_PARAM_OWNER], player:getId(), "owned by the player")
 eq(kinds[CONDITION_BLEEDING].rounds, 4)
 eq(kinds[CONDITION_PARALYZE].formula[1], -0.3, "chill slows by 30%")
@@ -845,8 +846,7 @@ equip(hood, CONST_SLOT_HEAD)
 local eqT = M.totals(M.equippedItems(player))
 eq(eqT.cdr, 8, "the spell side reads the equipped items"); eq(eqT.manacost, 6)
 unequip(CONST_SLOT_HEAD)
-eq(M.penetrate(80, 20, 10), 90); eq(M.penetrate(80, 0, 10), 80, "no resistance, nothing to ignore")
-eq(M.penetrate(80, 100, 10), 80, "immune stays immune"); eq(M.penetrate(80, 5, 10), 84, "never below 0 resistance")
+eq(M.penetrate, nil, "the re-derivation of a rounded hit left the file with the penetration move (O464)")
 
 -- logout forgets everything
 events.ChaosItemModsLogout.onLogout(player)

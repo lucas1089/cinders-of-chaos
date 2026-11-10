@@ -18,9 +18,9 @@
 --   that level loses 25% (normal and magic), 40% (rare, legendary, nemesis) or 50% (bosses: monster type flag isboss,
 --   world bosses, rift and Omen guardians, tower bosses, waystone tier bosses). Weapon hits and spells, never a
 --   condition tick (a field is one). The XML armor and defence stay the engine's flat subtraction (under 1% of a late hit).
--- * Penetration: this layer passes 0. item_mods.lua still takes its penetration in its own event (the player stage moves
---   it to ChaosMonsterDefence.effectiveResist). Until then its re-derivation of the raw hit from the monster's XML
---   resistance is off by the cap and the rank bonus: it works on the hit as this layer left it.
+-- * Penetration (O464): the attacking player's item modifiers physpen and elepen. Elemental penetration is taken off the
+--   monster's effective resistance AFTER its cap, down to -100; physical penetration is taken off the armour share, down to
+--   0. item_mods.lua no longer has a penetration of its own.
 --
 -- Exports: ChaosMonsterDefence.effectiveResist(monster, combatType, penetration), .armourOf(monster), .classOf(monster),
 -- .levelOf(monster), .isBossLike(monster), .playerAbsorb(player, combatType) (the ONE reader of a player's absorb for
@@ -218,7 +218,7 @@ end
 -- A player's absorb (percent) for the element a modifier adds to a hit: the worn items' absorbPercent, each applied to
 -- what the previous one left, as the engine's Player::blockHit does. The storages (gear rolls, passive tree) and the
 -- gems, charms and sets are the later events of the player, which see the added part as a typed secondary and reduce it
--- like any other. THE ONE small function the player stage replaces.
+-- like any other. O464: the player defence layer reduces the added part itself, so this returns 0 while the layer is on.
 local WORN_SLOTS = {1, 2, 4, 5, 6, 7, 8, 9, 10, 13}
 local function absorbIndex(ctype)
 	local i = 1
@@ -229,6 +229,12 @@ local function absorbIndex(ctype)
 	return i
 end
 function MD.playerAbsorb(player, ctype)
+	-- O464: with the player defence layer on, the added part is a typed secondary like any other and the layer (the next
+	-- healthchange event of the player) takes the resistance of its group off it: taking the worn pieces' absorb here as well
+	-- would reduce it twice
+	if ChaosPlayerDefence and ChaosPlayerDefence.active and ChaosPlayerDefence.active() then
+		return 0
+	end
 	local idx = absorbIndex(ctype)
 	local keep = 1
 	for _, slot in ipairs(WORN_SLOTS) do
@@ -245,6 +251,10 @@ function MD.playerAbsorb(player, ctype)
 end
 
 local ctxBox = {k = K}
+local function penetrationOf(player, key)
+	local IM = ChaosItemMods
+	return player and IM and IM.playerBonus and tonumber(IM.playerBonus(player, key)) or 0
+end
 local function rand(n)
 	return math.random(n)
 end
@@ -264,7 +274,10 @@ function ev.onHealthChange(creature, attacker, primaryDamage, primaryType, secon
 	ctx.def, ctx.cfg, ctx.set = def(), cfg(), set
 	ctx.A = armourIn(e, creature, class)
 	ctx.bonus = class == "elite" and cfg().rankResistBonus or 0
-	ctx.pen = 0 -- penetration is the player stage's: item_mods.lua takes its own, later
+	-- penetration (O464): the attacking player's (or its summon's master's) item modifiers. Elemental: points off the capped
+	-- resistance, physical: points off the armour share
+	local p = playerOf(attacker)
+	ctx.pen, ctx.physPen = penetrationOf(p, "elepen"), penetrationOf(p, "physpen")
 	local list = e.list
 	ctx.resistOf = function(ctype) return list and tonumber(list[ctype]) or 0 end
 	ctx.elementName = function(ctype) return ELEMENT_NAME[ctype] end

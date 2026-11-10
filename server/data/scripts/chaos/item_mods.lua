@@ -11,10 +11,12 @@
 --   elites and bosses  damage dealt to magic / rare / legendary monsters and bosses (onHealthChange on the target,
 --                      registered by onTargetCombat, like passivetree_effects.lua)
 --   life / mana on kill  CreatureEvent onKill, monsters only
---   dodge, block, reflect, thorns, damage taken from monsters  onHealthChange on the player (hits from creatures)
+--   dodge, block       the player defence layer (player_defence.lua, O464): avoidance of attack hits
+--   penetration        the monster defence layer (monster_defence.lua, O464): physpen off the armour share, elepen off the
+--                      capped resistance
+--   reflect, thorns, damage taken from monsters  onHealthChange on the player (hits from creatures)
 --   healing done       onHealthChange on the healed player (the healer's bonus)
---   on your hits       onHealthChange on the target (registered by onTargetCombat): penetration (physical / elemental:
---                      the monster's resistance counts that many points lower, as the Sunder support), damage over time
+--   on your hits       onHealthChange on the target (registered by onTargetCombat): damage over time
 --                      (hits of conditions you own), execute (a non-boss monster your hit leaves at or below N% health
 --                      dies), health / mana on hit, and the ailment chances: bleeding (physical), ignite (fire), poison
 --                      (earth) deal a share of the hit over a few seconds (conditions owned by you), chill slows, shock
@@ -350,39 +352,12 @@ local function playerOf(creature)
 	return master and master:isPlayer() and master or nil
 end
 
--- monster resistances (MonsterType:getElementList: combat type -> percent), cached by name
-local resCache = {}
-local function resistance(creature, ctype)
-	local name = typeNameOf(creature):lower()
-	local r = resCache[name]
-	if r == nil then
-		local ok, list = pcall(function()
-			local t = creature:getType()
-			return t and t:getElementList()
-		end)
-		r = ok and type(list) == "table" and list or false
-		resCache[name] = r
-	end
-	return r and tonumber(r[ctype]) or 0
-end
-
 local NOT_ELEMENTAL = {}
 for _, n in ipairs({"COMBAT_PHYSICALDAMAGE", "COMBAT_HEALING", "COMBAT_LIFEDRAIN", "COMBAT_MANADRAIN", "COMBAT_NONE",
 		"COMBAT_UNDEFINEDDAMAGE"}) do
 	if _G[n] then
 		NOT_ELEMENTAL[_G[n]] = true
 	end
-end
-
-local function penetrate(creature, value, ctype, totals)
-	if value == 0 or not ctype then
-		return value
-	end
-	local pen = ctype == COMBAT_PHYSICALDAMAGE and totals.physpen or (not NOT_ELEMENTAL[ctype] and totals.elepen) or 0
-	if pen > 0 then
-		return M.penetrate(value, resistance(creature, ctype), pen)
-	end
-	return value
 end
 
 -- shocked monsters: id -> until (ms)
@@ -522,7 +497,7 @@ local function onHit(creature, player, totals, hit, origin)
 end
 
 -- the keys that need the hit event on the target (any of them > 0)
-local OFFENCE = {"bossdamage", "physpen", "elepen", "execute", "dot", "lifeonhit", "manaonhit", "bleedchance",
+local OFFENCE = {"bossdamage", "execute", "dot", "lifeonhit", "manaonhit", "bleedchance",
 	"ignitechance", "poisonchance", "chillchance", "shockchance", "lifeleech", "lifeleechw", "manaleech", "manaleechw"}
 local function offensive(totals)
 	if not totals then
@@ -545,8 +520,6 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	local p = playerOf(attacker)
 	local totals = p and cache[p:getId()]
 	if totals then
-		primaryDamage = penetrate(creature, primaryDamage, primaryType, totals)
-		secondaryDamage = penetrate(creature, secondaryDamage, secondaryType, totals)
 		local pct = totals.bossdamage or 0
 		if pct > 0 and isElite(creature) then
 			primaryDamage = M.scale(primaryDamage, pct)
@@ -633,7 +606,9 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if not totals then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	if (totals.dodge or 0) > 0 and math.random(1, 100) <= totals.dodge then
+	-- O464: dodge and block are the player defence layer's (avoidance of attack hits); these rolls stay for the switch off
+	local layer = ChaosPlayerDefence and ChaosPlayerDefence.active()
+	if not layer and (totals.dodge or 0) > 0 and math.random(1, 100) <= totals.dodge then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 		if M.onAvoid then
 			M.onAvoid(creature, attacker, "dodge", math.abs(primaryDamage) + math.abs(secondaryDamage)) -- Glacial Ward (item_powers.lua), sets
@@ -641,7 +616,7 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return 0, primaryType, 0, secondaryType
 	end
 	-- block: physical hits of a weapon or a claw (melee and ranged attacks), all of it
-	if (totals.block or 0) > 0 and primaryType == COMBAT_PHYSICALDAMAGE
+	if not layer and (totals.block or 0) > 0 and primaryType == COMBAT_PHYSICALDAMAGE
 			and (origin == ORIGIN_MELEE or origin == ORIGIN_RANGED) and math.random(1, 100) <= totals.block then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 		if M.onAvoid then

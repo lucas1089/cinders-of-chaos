@@ -7,9 +7,11 @@
 --   remove at most this percent of a physical hit.
 -- resistCap: the highest element resistance (percent) after the rank bonus. Penetration is taken off after it.
 -- blockCap: the highest chance (percent) to block an attack hit.
+-- resistFloor: the lowest a resistance goes after penetration (a negative resistance raises the damage taken).
 return {
 	armourHitFactor = 0.07,
 	physicalReductionCap = 90,
 	resistCap = 75,
-	blockCap = 75
+	blockCap = 75,
+	resistFloor = -100
 }

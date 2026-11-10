@@ -2771,6 +2771,17 @@ return {
 		["Drowning"] = "Afogamento",
 		["Life drain"] = "Drenagem de vida",
 		["Mana drain"] = "Drenagem de mana",
+		-- the four resistances and the defence rows of the character sheet (O464, player_defence.lua)
+		["Cold"] = "Frio",
+		["Lightning"] = "Raio",
+		["Chaos"] = "Caos",
+		["Armor share against a typical hit: %s%%"] = "Armadura contra um golpe típico: %s%%",
+		["Physical reduction: %s%%"] = "Redução física: %s%%",
+		["Dodge: %s%%"] = "Esquiva: %s%%",
+		["Block: %s%%"] = "Bloqueio: %s%%",
+		["Spell suppression: %s%%"] = "Supressão de magia: %s%%",
+		["%s: %s%% (sources %s%%, level penalty -%s%%)"] = "%s: %s%% (fontes %s%%, penalidade de nível -%s%%)",
+		["Maximum resistance: %s%%"] = "Resistência máxima: %s%%",
 		["Fist Fighting"] = "Fist Fighting",
 		["Club Fighting"] = "Club Fighting",
 		["Sword Fighting"] = "Sword Fighting",
@@ -7622,6 +7633,19 @@ return {
 			"Death Blast: %d%% de chance ao matar de explodir",
 		["Dodge +%d%%"] =
 			"Esquiva +%d%%",
+		-- O464: the defence modifiers
+		["Armour +%d"] =
+			"Armadura +%d",
+		["Spell Suppression +%d%%"] =
+			"Supressão de magia +%d%%",
+		["Cold Resistance +%d%%"] =
+			"Resistência a frio +%d%%",
+		["Lightning Resistance +%d%%"] =
+			"Resistência a raio +%d%%",
+		["Chaos Resistance +%d%%"] =
+			"Resistência ao caos +%d%%",
+		["All Elemental Resistances +%d%%"] =
+			"Todas as resistências elementais +%d%%",
 		["Damage over Time +%d%%"] =
 			"Dano ao longo do tempo +%d%%",
 		["Echo Shot: %d%% chance on a ranged hit to shoot again"] =
@@ -7985,6 +8009,8 @@ return {
 			"Chão gelado sob os jogadores: %d%% da vida máxima por segundo e lentidão",
 		["Marked storm strikes near the players: %d%% of max health"] =
 			"Tempestades marcadas caem perto dos jogadores: %d%% da vida máxima",
+		["Players' maximum resistances are lowered by %d"] =
+			"As resistências máximas dos jogadores são reduzidas em %d",
 		["Modifiers:"] =
 			"Modificadores:",
 		["Rewards:"] =
@@ -9008,5 +9034,10 @@ return {
 			"Machado: golpe em arco. 14%% de cada golpe se divide entre os monstros ao lado do alvo. Custa 2,5%% de dano contra um alvo. Melhor contra grupos.",
 		["Club: impact. A hit has a 25%% chance to daze a monster: it cannot attack for 0.7 s, then rests for 3 s. A boss is only slowed. Costs 2.5%% damage on one target."] =
 			"Clava: impacto. Um golpe tem 25%% de chance de atordoar um monstro: ele não ataca por 0,7 s e depois descansa por 3 s. Um chefe só fica lento. Custa 2,5%% de dano contra um alvo.",
+		-- Player defence (player_defence.lua, the resistance penalty by level, O464)
+		["Warning: at level %d all your resistances drop by %d points. Raise them before you get there."] =
+			"Atenção: no nível %d todas as suas resistências caem %d pontos. Aumente-as antes de chegar lá.",
+		["Your resistances now carry a penalty of %d points (level %d). Raise them with gear and the passive tree."] =
+			"Suas resistências agora têm uma penalidade de %d pontos (nível %d). Aumente-as com equipamentos e a árvore passiva.",
 	},
 }
