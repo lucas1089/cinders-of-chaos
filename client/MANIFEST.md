@@ -2595,7 +2595,7 @@ pair 62 on (the store item looks of pair 34 stay in the file, unused). The windo
   (a roast on a plate). The Gem Pouch (server 32095) keeps the stock jewelled backpack look, no sprite of ours.
 - **Art.** PixelLab Pro, 32 x 32, no background, 64 candidates a call. Loot Bag, Orbs Pouch and Everfull Ration: the theme palette of the old
   look as the palette (gildcrown, rimewraith, cinderwrought; docs/SPRITE_STYLE.md), three candidates each (a, b, c) shown on a comparison
-  sheet. The owner chose Ration b, Orbs b, Loot a. Rift Key Pouch: the owner asked for a new drawing and allowed PixelLab. One call, our own
+  sheet. The owner chose Ration b, Orbs b, Loot a (the candidate files; on the sheet the owner saw they were C, C and A). Rift Key Pouch: the owner asked for a new drawing and allowed PixelLab. One call, our own
   prompt "a small round drawstring pouch of steel-blue leather, tied with a gold cord, one large ornate golden key hanging on the front",
   the azurevigil theme palette without its ten purple, pink and green accent colours; three candidates kept, a is the pick. All twelve pass
   `style_check.py check --theme <theme>`; `build` refuses a look that fails. PixelLab's pixels, not repainted. The picks are committed as
@@ -4041,7 +4041,7 @@ sprite records no thing uses, up from 30). The changes (phases, durations, sprit
   shorter effects, the idle pulse of 1538 (needs the `animateAlways` attribute from the dat, as patch 0189 reads it), the lifted colours on a
   real map.
 
-### Pair 62: pair 61 with the four store inbox icons redrawn (`gen_inbox_icons_art.py`, `art_import/inbox_icons*`; built 2026-11-10, not on windows-assets yet; O469)
+### Pair 62: pair 61 with the four store inbox icons redrawn (`gen_inbox_icons_art.py`, `art_import/inbox_icons*`; built 2026-11-10, on windows-assets 0b2abff; O469)
 Owner 2026-11-10: "change these sprites please, they are very ugly" (the Store Inbox icons). Section "Store inbox icons" has the art and the
 picks. Pair 62 is pair 61 with the items 38608 to 38611 redrawn in place by `redraw_items.py` (the commands are in that section). Nothing else
 changes: ids, flag bytes, items.otb and items.xml stay.
@@ -4051,8 +4051,8 @@ Output **pair 62**: dat fd203501bac0e622da3b4e473c3f7dd7 (8,828,000 bytes), spr 
 other entry byte-identical, flags kept, new sprites pixel-identical, 3,000 old sprites unchanged. `check_pair.py --old` with exactly those four
 items allowed: 0 errors, 3,964 warnings (the lines of pair 61).
 - **Archive parts** (the recipe of pair 58: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of Tibia.dat and
-  Tibia.spr streamed into `xz -9 -T3`, `split -b 95M -d -a 2`; the recipe gives pair 61's tar sha256 on pair 61): built, not pushed (the push to
-  windows-assets needs the owner's approval):
+  Tibia.spr streamed into `xz -9 -T3`, `split -b 95M -d -a 2`; the recipe gives pair 61's tar sha256 on pair 61; owner's go 2026-11-10, "Pode publicar o par 62."; pushed to
+  windows-assets as **0b2abff**, only the two part files and their lines of `SHA256SUMS.parts` change):
   - part00 99,614,720 bytes, sha256 `65d447a8bfb8110ccf47f16b11fd26023ec56de496a6f872e9f8e1a0b95559a3`
   - part01 30,496,492 bytes, sha256 `9c3fcbf02e1fa00e1e7e2c4afd4bf1352902cbb3a1c6f5ae7eb9ba1a0592ad20`
   - joined `things-1098.tar.xz` (130,111,212 bytes) sha256 `717d3c060c5c1175bc0a186f4eef4cc7bd71601d39747fcb114acc7c5ad47d33`;
@@ -4062,7 +4062,7 @@ items allowed: 0 errors, 3,964 warnings (the lines of pair 61).
   `client_chaos_infolift/info_lifts.lua`, `unity/.../Core/InfoLiftData.cs` through `gen_info_data.lua`: only the dat md5 lines change);
   `server/tools/client_pair.py` `PAIR_ASSETS` is 62 with the new dat md5. The steps of the CI job "Live sprite pair" ran on pair 62 offline:
   `check_pair.py`, the item wire table, the recolour sheets, the two tables, the dungeon banners, the website sprite images.
-- **Switch on** (after the owner approves the push and the client package ships pair 62): set `chaosClientPair` to 62 (admin app: Comandos >
+- **Switch on** (after the client package ships pair 62): set `chaosClientPair` to 62 (admin app: Comandos >
   "Par do cliente" > Gravar 62; shell: `chaos-ctl.sh client-pair set 62`). No install step waits for pair 62. A client on pair 61 or older draws
   the old store item looks for 38608 to 38611.
 - Checked offline: pair 61 and pair 62 frames of the four items read back from the built pair, on the client's item cell (scratchpad only).
