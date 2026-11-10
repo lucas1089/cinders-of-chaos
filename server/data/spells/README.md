@@ -4334,7 +4334,6 @@ are the weapon models: `weapon_sim.py` uses the weapons' own intervals (2000 ms 
 build gains +41% to +56% auto attack damage per second over the old best build (1 swing per second), a typical build up to
 1.45 - 1.73x of the same class without speed. Not measured on a live server.
 
-<<<<<<< HEAD
 ## Ranger line mines (O455)
 
 Owner, 2026-11-09: "Ranger pode ter minas". Seeker Mine (100) and Detonate Mines (104) are in the Ranger and Deadeye kits again
@@ -4370,7 +4369,6 @@ fell, not because the opening hits more. `pvp_balance_config.lua` names it (`Dea
 Mine damage of a Ranger line character: `snares_config.lua` damage with power = the best of distance skill x distance attack,
 blade and shuriken power (`_snares.lua` `M.power`), the same formula and the same input as Snare Trap, which the line already
 casts; no class or weapon check. A mine is the trap hit x 1.15. At the same level and power it hits the same as a Thief's.
-=======
 
 ## Weapon families (O454, owner 2026-11-10; computed, not measured)
 
@@ -4422,4 +4420,3 @@ Not in the table, not measured: what the sword's extra swings are worth (more ro
 second is the same by construction), the daze's effect on the damage a clubber takes (a stunned monster of a pack cannot attack for
 0.7 s: at most 18.9% of its time; the real share is lower and not measured), and the cleave against a real pack (the share of the hit that
 lands on a neighbour is the number above, every neighbour takes its share of the hit after the styles).
->>>>>>> 9c9be15a (Weapon families: sword tempo, axe cleave, club daze, damage neutral (O454))

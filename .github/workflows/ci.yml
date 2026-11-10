@@ -1540,6 +1540,13 @@ jobs:
       - name: No references to other servers or clients
         run: python3 -I tools/ci/check_names.py
 
+      - name: No merge conflict markers left in a tracked file
+        run: |
+          if git grep -nE '^(<<<<<<< |>>>>>>> )' -- . ; then
+            echo "merge conflict markers found" >&2
+            exit 1
+          fi
+
   live-pair:
     name: Live sprite pair (check_pair.py on windows-assets)
     # the pair is on this repository's windows-assets branch, which the default read token reaches; pull requests from

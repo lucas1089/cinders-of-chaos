@@ -35,6 +35,7 @@ for t in client/overlay/modules/*/*_test.lua; do luajit "$t" && lua5.3 "$t"; don
 python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
+! git grep -nE '^(<<<<<<< |>>>>>>> )' -- .   # no merge conflict markers left in a tracked file
 python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
 python3 -I tools/ci/check_desktop_commands.py   # desktop admin app (O312) table names the same chaos-ctl commands as android/
 python3 -I desktop/tools/sign_release_test.py   # desktop admin app signed self-update: the Python signer and desktop/src/sign.rs share one vector; key must be the compiled-in one
