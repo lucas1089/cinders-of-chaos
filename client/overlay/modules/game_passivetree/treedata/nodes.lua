@@ -1856,10 +1856,12 @@ function getTreeNodes()
 			stats = {
 				"Mystic, Necromancer, Monk and Templar lines: your",
 				"maximum health is 100. Your energy shield: the",
-				"items' +50%, plus 50% of the health given up. It",
+				"items' +50%, plus 110% of the health given up (50%",
+				"of the health if you also hold Aether Edge). It",
 				"recharges 15% of its maximum a second faster and",
 				"starts 1 s after a hit. No poison, no life drain",
-				"can hurt you. Heals and leech fill only the 100."
+				"can hurt you. Heals, potions and leech fill only",
+				"the 100."
 			},
 			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 			inputs = {
@@ -2170,7 +2172,8 @@ function getTreeNodes()
 				"Every line but the Monk's. With no weapon in your",
 				"hands (a shield is fine) your fists hit with the",
 				"Monk's fist attack (40 + level / 40, at most 60)",
-				"and your best melee skill, +10% damage."
+				"and your best melee skill, +36% damage. The Thief line's",
+				"strike spells keep their weapon attack."
 			},
 			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "thief", "ninja", "samurai", "necromancer", "lich", "bonelord", "templar", "inquisitor", "sentinel"},
 			inputs = {
@@ -6831,7 +6834,7 @@ function getTreeNodes()
 			stats = {
 				"Mystic and Necromancer lines: a monster that dies",
 				"within 2 s of your ice hit shatters: enemies within",
-				"2 sqm take 6% of its maximum health as ice damage",
+				"2 sqm take 5% of its maximum health as ice damage",
 				"(at most 12 x your level). Kills shatter again.",
 				"Your fire and energy damage is 30% less."
 			},
@@ -6970,8 +6973,8 @@ function getTreeNodes()
 			},
 			stats = {
 				"Monk and Templar lines: your weapon and fist hits",
-				"add 6% of your current energy shield as energy",
-				"damage.",
+				"add 33% of your current energy shield as energy",
+				"damage (6% if you also hold Hollow Vessel).",
 				"Your maximum health is 20% less."
 			},
 			classes = {"monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},

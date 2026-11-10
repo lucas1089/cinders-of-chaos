@@ -1870,13 +1870,11 @@ vigil; the fixed hits above can.
   level 300 in area (-15%), the Hollow Palm at level 1000 (+13%) and with the Plate (+22% / +21%). All but the
   Hollow Palm rows stay below every leader: no change proposed for them (flag noted, the measured values are the
   reference).
-- **Flag (class order): the Hollow Palm with the Plate at level 1000 (5,342) passes the Deadeye (4,670-4,685) by
+- **Class order: the Hollow Palm with the Plate at level 1000 (5,342) passes the Deadeye (4,670-4,685) by
   14%**; without the Plate it is level with it (4,623, -1%). The Tithebound Shadowfist at level 1000 (4,477) is 4%
   behind, inside the 8-10% the owner wants. Aether Edge's energy is 858 / 1,426 a second of it: it reads the whole
-  shield, and Hollow Vessel's shield is mostly health given up. Proposed fix (not applied): Aether Edge counts only
-  the items' part of the shield (`hollowShield`'s item term) when Hollow Vessel is held. From the measured share the
-  Plate row then comes to about 4,300 (Deadeye +9%) and the plain Hollow Palm to about 4,000. A cap on the Plate
-  (10% -> 7%) alone would not do: about 4,915.
+  shield, and Hollow Vessel's shield is mostly health given up. Owner decision 2026-11-09: the Hollow Palm stays as it is
+  (the fix proposed here is dropped).
 
 **Hollow Vessel** (keystone 96 forced, items' energy shield 740 at level 300 / 1,500 at level 1000; "without": the C4
 build with the same items; pool = health + maximum shield):
@@ -1921,6 +1919,146 @@ build with the same items; pool = health + maximum shield):
   and the Diadem, shield 2,343 (computed 2,343), recharge 45% a second.
 
 The aura check (Scarlet Glimmer, look 712) is in server/README.md "Exclusives".
+
+### Weak keystones re-measured (O452, 2026-11-10)
+
+The build audit named five keystone choices that pay a price for no gain. Measured on the real local server, tuned where numbers or one rule could
+do it. Goal: against the same class and level with its default Recommended build (the first role of `passive_builds_config.lua`), a keystone build
+gains +8% to +25% in its specialty and keeps its price; never above +40%. Owner decisions of 2026-11-09 kept: the Hollow Palm stays as it is, a
+specialised build may be up to +40%.
+
+**Rig (test-only, not in the repo).** Characters of Elementalist, Shadowfist, Inquisitor, Templar, Sentinel, Lich, Monk (and Berserker, Thief for Open Hand)
+at level 500 and 1000, made in a private database from level 8, skills 119 / 140, magic level of the casters 111 / 140, stat window 20, the gear plan of the
+2026-11-06 DPS run. Energy shield of the items 960 / 1500 (the C4 assumption) on every character, the baseline too. The tree: the default Recommended build
+with all the points of the level (123 / 248 nodes); a keystone build is the same list with the cheapest path to the keystone first, so the keystone costs the
+last nodes of the default build (the cost of the path is inside every number). Rotation of the helper's Auto setup. Modes: one dummy, five dummies (they
+never die) and a dying pack (five monsters of 4,400 / 16,600 health, a dead one put back at once; damage = health taken off, overkill not counted). Samples
+of 60 s after a 15 s warm-up; all characters of a level run in the same minute, so every ratio is variant against baseline of the same sample; three samples
+per cell, the bracket is the lowest and highest ratio. Load under 6. Survival: no healing, hunt monsters as `survival_model.py` (per monster 266 / 556 physical
+and 94 / 331 fire damage a second before armour at level 500 / 1000), 2 or 4 next to the character, seconds until a hit would kill, at most 90 s. The
+Hollowglass Diadem was not worn in the rig (it only adds recharge); the Knuckles of the Unbound were (a unique copy, made unique before it is equipped).
+
+**Numbers and rules changed** (`archetypes_config.lua`, `archetypes_core.lua`, `archetypes.lua`):
+
+| What | Old | New | Why |
+|---|---|---|---|
+| Aether Edge, share without Hollow Vessel (`aloneShare`) | 0.06 | 0.33 | +2% for 20% less health; the Hollow Palm keeps `share` 0.06 and the Plate +0.04 |
+| Open Hand Creed `damage` | 1.10 | 1.36 | -3% to -12% for giving up the weapon |
+| Open Hand Creed, the Knuckles alone (`uniqueBase`, new) | 0.8 x 1.10 | 0.8 x 1.10 | the unique keeps the factor it had; with the keystone it is x1.10 more of `damage` as before |
+| Open Hand Creed, strike spells of the Thief line (`noStrikeVocations`, new) | fist attack x damage | base attack 20 | the keystone gave the Thief +114% to +159% |
+| Winter's Lattice `share` | 0.06 | 0.05 | a dying pack +35% at level 1000, over the goal |
+| Sigil of Cinders, pulse clock | restarted by every cast | kept while the bearer is the same | a caster pulsed once in three casts |
+| Hollow Vessel, health given up (`aloneFromHealth`, new) | 0.5 of the health after the cut | 1.1 of the full health, tree percent included | the shield lost the tree's vitality percent |
+
+**Aether Edge** (one target, variant against default, mean of 3, bracket; all measured):
+
+| Class | Level | Typical (items' shield 960 / 1500) before | after | Most the items can give (2,400 with the Plate) |
+|---|---|---|---|---|
+| Shadowfist | 500 | +8% [+5..+10] | +11% [+7..+15] | +41% [+38..+45] |
+| Shadowfist | 1000 | -6% [-10..-2] | +5% [-2..+12] | +19% [+18..+22] |
+| Inquisitor | 500 | -6% [-10..-2] | +7% [+6..+9] | +19% [+17..+22] |
+| Inquisitor | 1000 | +0% [-1..+2] | +16% [+13..+23] | +17% [+11..+21] |
+| Templar | 500 | -6% [-7..-5] | +3% [+2..+4] | +14% [+13..+16] |
+| Templar | 1000 | +1% [-2..+3] | +8% [+6..+9] | +11% [+6..+13] |
+| Sentinel | 500 | -3% [-13..+3] | +12% [+9..+16] | +41% [+35..+45] |
+| Sentinel | 1000 | -2% [-5..+2] | +15% [+12..+17] | +38% [+37..+39] |
+
+Shield sources, from the code (`chaos_item_mods.lua`, `chaos_energy_shield.lua`): the only sources of maximum energy shield are the item modifiers
+"Maximum Energy Shield" (flat, cap 1,500) and "+% Maximum Energy Shield" (cap 60), on helmet, body armour, shield and jewels (amulet, ring). No set, gem, card, tree
+node or unique adds shield (grepped). At level 1000 (item level 150 with a boss and a rift bonus, tier 8: 360-480 a roll) five items reach the 1,500 cap, so 1,500 x 1.6 = 2,400. At level 500 (item
+level at most 115, tier 6: 195-270 a roll) five items give at most 1,350 flat, x1.6 = 2,160. The Aetherbound Plate is body armour and holds one of the five slots.
+The Stillheart Robe and Hollow Vessel are not available to this path. So the most is 2,160 (level 500) and 2,400 (level 1000), share 0.33 + 0.04 = 0.37 with the Plate. The rig used
+2,400 and the Plate at both levels (a little over the level 500 reach), so the last column is a safe upper bound. At the first value, 0.50, the same case measured Shadowfist +63%, Sentinel +54% / +58%
+(level 500 / 1000); the gain is linear in the shield (0.2 to 0.6 tried). A cap on the energy per hit as a share of the hit (`aloneCap`) was tried at 0.30 and 0.80 and does not bound it: at 0.30 it took
+the typical gain to nothing, at 0.80 the Sentinel stayed at +48% to +55%, so no cap is in the rule; the share is the guard. At 0.33 the worst case is the Sentinel at level 1000, +38% (its default build is the
+tank build). At level 500 the rig's 2,400 is 10% over the reach of 2,160: the two +41% rows scale to about +36% there. Typical rows under +8% are the price of that guard (Templar level 500, Shadowfist level 1000): the path to the keystone costs up to 10 nodes of the default build.
+
+**Open Hand Creed** (one target, mean of 3):
+
+| Class | Level | Keystone before (1.10) | Keystone after (1.36) | Keystone and Knuckles of the Unbound after |
+|---|---|---|---|---|
+| Inquisitor | 500 | -9% [-9..-8] | +10% / +16% (measured at 1.33 / 1.38; the level 500 baseline was re-rolled in the 1.36 pass, a weaker unique weapon) | +16% / +23% (1.33 / 1.38) |
+| Inquisitor | 1000 | -7% [-9..-5] | +18% [+17..+19] | +29% [+24..+34] |
+| Templar | 500 | -12% [-13..-10] | +10% [+5..+16] | +19% [+17..+21] |
+| Templar | 1000 | -3% [-7..-2] | +19% [+17..+21] | +33% [+29..+40] |
+| Sentinel | 500 | -6% [-11..-3] | +15% [+14..+16] | +30% [+25..+37] |
+| Sentinel | 1000 | -2% [-5..+2] | +21% [+21..+22] | +33% [+29..+38] |
+
+The code, said exactly: a fist hit and a strike spell of an empty hand use factor `damage` with the keystone alone, `uniqueBase` x `uniqueEnable` (1.10 x 0.80 = 0.88, as before O452) with
+the Knuckles alone, `damage` x `1 + uniqueBonus` with both. Before the first O452 pass the unique alone would have become 0.8 x 1.40 = 1.12; it stays 0.88 on purpose, so the unique is no keystone in disguise. With both,
+the factor is 1.36 x 1.10 = about 1.50. The worst row with both is +30% (Sentinel level 1000); `damage` was lowered from 1.40 (Templar level 1000 +38% with the unique, spread to +45%) until the worst measured row with the
+unique was at most +35%. Not wanted and not done: the +40% for a class that loses a two-hander or an off-hand:
+
+| Class | Level | Keystone, 1 target |
+|---|---|---|
+| Berserker | 500 | -51% [-55..-48] |
+| Berserker | 1000 | -56% [-59..-52] |
+| Thief | 500 | -8% [-15..-2] |
+| Thief | 1000 | +10% [-14..+38] |
+
+The Berserker loses its two-hander and the keystone is simply bad for it. The Thief line reads an empty hand as a blade of the fist attack in its strike spells: without the guard the Thief gained
++114% (level 1000) and +159% (level 500); with `noStrikeVocations` its spells keep the base attack 20 and it is neutral. The Ninja and the Samurai use the same blade code and the same guard (measured: the Thief only).
+The Warrior and the Juggernaut were not measured (their one-hand weapon is the Templar's).
+
+**Other rows** (dying pack, mean of 3, from the first O452 pass; the numbers of Lattice and Sigil did not change after it):
+
+| Keystone | Class | Level | 1 target dummy before | after | 5 targets dummy before | after | dying pack of 5 before | after |
+|---|---|---|---|---|---|---|---|---|
+| Sigil of Cinders | Elementalist | 500 | -11% [-12..-9] | -11% [-13..-10] | -15% [-18..-12] | -9% [-12..-6] | -21% [-37..-12] | -14% [-25..-6] |
+| Sigil of Cinders | Elementalist | 1000 | -16% [-20..-13] | -12% [-13..-11] | -13% [-14..-12] | -18% [-22..-13] | -13% [-24..-6] | -19% [-22..-16] |
+| Winter's Lattice | Elementalist | 500 | -13% [-13..-12] | -14% [-14..-13] | -14% [-15..-13] | -12% [-14..-11] | +15% [+11..+18] | +6% [-0..+10] |
+| Winter's Lattice | Elementalist | 1000 | -12% [-14..-10] | -8% [-10..-7] | -13% [-20..-6] | -12% [-16..-5] | +35% [+24..+48] | +16% [+7..+27] |
+
+Lattice: `share` 0.06 -> 0.05. Sigil of Cinders on an Elementalist did not move beyond the spread after the clock fix (one target -11% / -12%, five dummies -9% / -18%, pack -14% / -19% at level 500 / 1000;
+before -11% / -16%, -15% / -13%, -21% / -13%): the Elementalist's damage is almost all ice and energy, the x0.8 price costs 16-18%, the ignite adds under 3%, the pulses about 1%. With no price the build gains +2%.
+It is an Inquisitor and Templar keystone and a poor pick for an Elementalist (BUILDS.md). It would need a pulse of about 120% a second, or a pulse that reads the whole cast: open.
+The Inquisitor and Templar default builds hold Sigil of Cinders already (the path to their class nodes crosses node 106).
+
+**Hollow Vessel** (96). Cause: the cut of the health is taken before the tree's vitality percent, so a build with 30% to 45% tree health lost that share (an Elementalist at level 500 counted 3,217 of 4,589).
+Rule, for a holder without Aether Edge: the health given up counts the full health, the tree's percent included (`ChaosPassiveMaxPercent`), and 110% of it comes back as shield (`aloneFromHealth`).
+A holder with Aether Edge, the Hollow Palm, takes the old formula in the same function (`hollowShield(..., aether = true)`): the items x1.5 + half the cut, a unit test pins 2,000 x 1.5 + 7,340 x 0.5. Price, said in the tooltip:
+heals, potions and leech fill only the 100 health, and the shield only comes back by recharge. Pool (health + maximum shield) and seconds alive against the default build, mean of 3 (before = the old formula):
+
+| Class | Level | Monsters | Pool before / default | Pool after | Change | Seconds alive before (change) | after (change) |
+|---|---|---|---|---|---|---|---|
+| Elementalist | 500 | 2 | 3098 / 5549 | 6495 | +17% | 6.6 s vs 9.7 s (-32%) | 11.8 s vs 9.9 s (+20%) |
+| Shadowfist | 500 | 2 | 5210 / 11786 | 13390 | +15% | 12.9 s vs 26.5 s (-51%) | 31.5 s vs 22.7 s (+40%) |
+| Inquisitor | 500 | 2 | 5506 / 11520 | 13069 | +14% | 14.8 s vs 30.2 s (-50%) | 28.5 s vs 26.4 s (+8%) |
+| Templar | 500 | 2 | 5804 / 11966 | 13730 | +16% | 25.8 s vs 53.8 s (-52%) | 66.2 s vs 49.8 s (+33%) |
+| Sentinel | 500 | 2 | 5816 / 14128 | 16052 | +14% | 42.0 s vs 51.6 s (-20%) | 49.4 s vs 53.6 s (-8%) |
+| Lich | 500 | 2 | 3680 / 5547 | 6480 | +17% | 7.1 s vs 12.3 s (-38%) | 11.6 s vs 9.8 s (+19%) |
+| Monk | 500 | 2 | 5208 / 11741 | 13062 | +11% | 29.6 s vs 50.5 s (-44%) | 49.2 s vs 47.6 s (+3%) |
+| Elementalist | 500 | 4 | 3098 / 5549 | 6495 | +17% | 2.8 s vs 4.8 s (-41%) | 5.6 s vs 4.9 s (+15%) |
+| Shadowfist | 500 | 4 | 5210 / 11786 | 13390 | +14% | 5.9 s vs 12.4 s (-52%) | 15.2 s vs 11.6 s (+33%) |
+| Inquisitor | 500 | 4 | 5506 / 11520 | 13069 | +15% | 6.2 s vs 12.3 s (-49%) | 13.5 s vs 11.6 s (+17%) |
+| Templar | 500 | 4 | 5804 / 11966 | 13730 | +16% | 12.7 s vs 21.5 s (-40%) | 27.5 s vs 21.9 s (+26%) |
+| Sentinel | 500 | 4 | 5816 / 14128 | 16052 | +14% | 8.4 s vs 21.2 s (-61%) | 22.5 s vs 19.7 s (+15%) |
+| Lich | 500 | 4 | 3680 / 5547 | 6480 | +17% | 3.5 s vs 4.9 s (-29%) | 5.6 s vs 4.7 s (+21%) |
+| Monk | 500 | 4 | 5208 / 11741 | 13062 | +11% | 10.9 s vs 22.0 s (-50%) | 25.9 s vs 23.7 s (+9%) |
+| Elementalist | 1000 | 2 | 5413 / 10889 | 12655 | +16% | 5.0 s vs 8.5 s (-41%) | 13.5 s vs 9.9 s (+36%) |
+| Shadowfist | 1000 | 2 | 9622 / 23421 | 26436 | +13% | 13.3 s vs 32.9 s (-60%) | 41.6 s vs 31.8 s (+31%) |
+| Inquisitor | 1000 | 2 | 10220 / 24315 | 26913 | +12% | 8.9 s vs 23.6 s (-62%) | 38.4 s vs 21.5 s (+82%) |
+| Templar | 1000 | 2 | 10819 / 25706 | 28480 | +11% | 18.5 s vs 35.8 s (-48%) | 36.4 s vs 37.5 s (-3%) |
+| Sentinel | 1000 | 2 | 10827 / 28018 | 31506 | +12% | 22.2 s vs 48.1 s (-53%) | 37.6 s vs 51.6 s (-26%) |
+| Lich | 1000 | 2 | 6592 / 10831 | 12514 | +16% | 5.4 s vs 12.8 s (-50%) | 10.7 s vs 8.7 s (+27%) |
+| Monk | 1000 | 2 | 9622 / 23450 | 26468 | +13% | 17.4 s vs 39.9 s (-56%) | 45.2 s vs 32.1 s (+45%) |
+| Elementalist | 1000 | 4 | 5413 / 10889 | 12655 | +16% | 4.6 s vs 6.4 s (-35%) | 5.4 s vs 4.8 s (+14%) |
+| Shadowfist | 1000 | 4 | 9622 / 23421 | 26436 | +13% | 10.6 s vs 18.5 s (-45%) | 17.5 s vs 16.0 s (+10%) |
+| Inquisitor | 1000 | 4 | 10220 / 24315 | 26913 | +12% | 7.5 s vs 12.2 s (-41%) | 11.2 s vs 11.6 s (-3%) |
+| Templar | 1000 | 4 | 10819 / 25706 | 28480 | +11% | 11.9 s vs 20.3 s (-43%) | 20.8 s vs 18.0 s (+15%) |
+| Sentinel | 1000 | 4 | 10827 / 28018 | 31506 | +12% | 10.5 s vs 24.2 s (-58%) | 20.7 s vs 21.3 s (-3%) |
+| Lich | 1000 | 4 | 6592 / 10831 | 12514 | +16% | 4.6 s vs 6.2 s (-33%) | 5.7 s vs 4.4 s (+31%) |
+| Monk | 1000 | 4 | 9622 / 23450 | 26468 | +13% | 10.1 s vs 19.8 s (-51%) | 19.1 s vs 17.5 s (+9%) |
+
+The pool is the number the rule moves (+11% to +17%); seconds alive follow it with large spread (the first sample of a level 1000 row runs long for both builds) and lose where a class heals or regenerates a lot
+(Sentinel, Inquisitor at level 1000, four monsters), which is the price. The Lich was the risk: its build has no vitality nodes, so the old formula was nearly right for it; it lands at +16%.
+
+**Hollow Palm, unchanged** (Shadowfist, Aether Edge and Hollow Vessel, Aetherbound Plate; measured without the Diadem): shield pool 4,371 (level 500) and 8,063 (level 1000), before and after the first O452 pass, read from the same setup line.
+Damage per second, mean of 3, before -> after (default Shadowfist in brackets): level 500 one target 2,036 -> 1,983 (1,570 / 1,698), five dummies 3,784 -> 3,563, pack 1,924 -> 1,913; level 1000 one target 5,437 -> 5,669 (4,737 / 4,615),
+five dummies 9,938 -> 9,885, pack 5,191 -> 5,039; all inside the spread. The formula is unchanged by computation (`aetherAmount(shield, plate, true)` 6% / 10%, `hollowShield(..., true)` 0.5 and 0.5; tests pin both).
+
+**Doc check.** `docs/BUILDS.md` said the Hollow Vessel pool is "20-40% smaller"; measured -32% to -62%. A first reading in this section said the Hollowglass Diadem cannot be worn by the Monk line: wrong. A stock copy is refused,
+a unique copy is worn (checked: a Shadowfist wears it once it is marked unique), so the Hollow Palm row naming the Plate and the Diadem stands.
 
 ### Infinite arrows (bows and crossbows without ammunition, 2026-10-11)
 

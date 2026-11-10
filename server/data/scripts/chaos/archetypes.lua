@@ -181,6 +181,7 @@ local function onTree(player, bonuses)
 	local flags, any = A.flagsOf(bonuses)
 	local pid = player:getId()
 	M.flags[pid] = any and flags or nil
+	M.vitality[pid] = ChaosPassiveMaxPercent and bonuses and ChaosPassiveMaxPercent(bonuses, "vitality") or 0
 	local mask = A.mask(flags)
 	if player:getStorageValue(cfg().storage) ~= mask then
 		player:setStorageValue(cfg().storage, mask) -- for the spells' Lua state (Open Hand)
@@ -418,6 +419,7 @@ end
 M.state = state
 
 local relicBuffs = {} -- member id -> until time
+M.vitality = M.vitality or {} -- player id -> the tree's health percent (Hollow Vessel counts it as health given up)
 M.hollow = M.hollow or {} -- player id -> {cut = the health given up} (Hollow Vessel)
 M.lastHit = M.lastHit or {} -- player id -> ms of the last hit taken (Hollow Vessel, Hollowglass Diadem)
 
@@ -492,7 +494,9 @@ ChaosEnergyShieldModifiers.archetypes = function(player, totals, maximum, rechar
 		return maximum, recharge
 	end
 	local cut = keystone and M.hollow[pid] and M.hollow[pid].cut or 0
-	return A.hollowShield(maximum, cut, keystone, hasUnique(pid, "stillheart")), recharge + A.hollowRecharge(keystone, diadem)
+	local aether = flags ~= nil and flags.arAetherEdge == true
+	return A.hollowShield(maximum, cut, keystone, hasUnique(pid, "stillheart"), aether, M.vitality[pid]),
+		recharge + A.hollowRecharge(keystone, diadem)
 end
 
 local function engineDelay()
@@ -587,8 +591,12 @@ end
 -- ------------------------------------------------------------------------------------------------ sigils
 local function brand(player, target, hit)
 	local s = stateOf(player:getId())
+	local old = s.sigil
+	-- a cast on the bearer that already carries the sigil renews its time and its hit but keeps the pulse clock: before
+	-- (O452) every cast started the clock over, and a caster casting every 1.6 s let only one cast in three pulse
+	local keep = old and old.bearer == target:getId() and old.nextPulse or nil
 	s.sigil = {bearer = target:getId(), hit = hit, untilTime = now() + cfg().arCinderSigil.durationMs,
-		nextPulse = now() + cfg().arCinderSigil.pulseMs}
+		nextPulse = keep or (now() + cfg().arCinderSigil.pulseMs)}
 	target:getPosition():sendMagicEffect(fx("holy_cross", CONST_ME_HOLYDAMAGE or CONST_ME_POFF))
 end
 
@@ -1004,7 +1012,8 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 
 	-- Aether Edge: weapon and fist hits add energy from the energy shield
 	if flags.arAetherEdge and (oname == "melee" or oname == "ranged") then
-		local extra = A.aetherAmount(player.getEnergyShield and player:getEnergyShield() or 0, hasUnique(pid, "aetherPlate"))
+		local extra = A.aetherAmount(player.getEnergyShield and player:getEnergyShield() or 0, hasUnique(pid, "aetherPlate"),
+			flags.arHollowVessel == true)
 		if extra > 0 then
 			addEvent(function()
 				local p, c = Player(pid), Creature(cid)
@@ -1348,7 +1357,7 @@ local function cleanup(pid)
 	end
 	state[pid], M.flags[pid], M.uniques[pid], castBuffer[pid], relicBuffs[pid] = nil, nil, nil, nil, nil
 	hobbleMarks[pid] = nil
-	M.hollow[pid], M.lastHit[pid] = nil, nil
+	M.hollow[pid], M.lastHit[pid], M.vitality[pid] = nil, nil, nil
 	-- the snares live on the spells' side; when it shares this Lua state they go at once (else at its next visit)
 	if ChaosSnares and ChaosSnares.clearOwner then
 		pcall(ChaosSnares.clearOwner, pid)
