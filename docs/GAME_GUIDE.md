@@ -179,6 +179,10 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
 
 - **Passive tree:** over 600 nodes and one point every four levels (about 248 at level 1000), so you can never take
   everything and every build is a choice.
+- **Auto build:** the button in the tree window offers three Recommended builds for your class and one Focus build per
+  theme. Since O442 the three Recommended builds are three different ways to play (Warrior: Slayer, Bulwark, Bloodied),
+  each walking to its own one to three keystones, and each says in one line what it does and what it costs. The Focus list
+  reaches every keystone your class may hold. Every build is only a start: you can still change any node.
 - **Boss points:** the first kill of each great boss gives one more passive point, ten in all: the five world bosses, your
   Ascension Trial's warden and four ancient demon lords of the deep world.
 - **Keystones that change how you play.** Two keystones at the edge of the tree take a different form for each class:
@@ -221,7 +225,7 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   and survive tree resets.
 - **Loadouts** (Character > Loadouts, or the Loadouts button of the passive tree): save whole builds and switch between
   them. A loadout holds the passive tree, the Paragon points, the support runes in your spells, an equipment set and
-  your action bar. Three slots, a fourth at level 200 and a fifth at level 500, earned and never sold. Switching is free,
+  your action bar. Five slots, a sixth at level 200 and a seventh at level 500, earned and never sold. The Chaos Pact adds an eighth. Switching is free,
   out of combat and outside instances, with a short channel outside protection zones. A saved tree was paid for once,
   so a switch never dodges a respec price.
 - **Paragon:** after level 1000 every level gives a Paragon point. You spend them on small, capped bonuses in four
@@ -277,7 +281,7 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
 - **Veiled modifiers:** rare and better drops from the high content (rifts, the raid, the Ascended bosses) can carry a
   hidden modifier slot. The **Orb of Unveiling** shows you three modifiers from a veiled pool of twenty; you keep the
   one you choose, for good.
-- **About 50 uniques** with fixed, build-defining stats and a socket of their own. Some only drop from bosses, some only
+- **196 uniques** with fixed, build-defining stats and a socket of their own. Some only drop from bosses, some only
   for season characters while the season runs. The raid, the Ember Descent and the Ascended bosses add their own.
 - **Rich item tooltips:** hover an item to see its rarity, item level, its prefixes and suffixes, every modifier with
   its tier ("T5") and the value range of that tier, quality, bound modifiers, sockets and gems, unique set and

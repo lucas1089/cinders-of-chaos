@@ -21,7 +21,7 @@ Agreed with the owner (2026-10, the role rebalance): the Iron Sage is the second
 - Tank: Juggernaut (the tankiest); Sentinel (tank-support: a little less tough, the party takes less damage); Samurai (duelist
   off-tank: parries, a guard while countering, taunts; below the Juggernaut and the Sentinel; since 2026-10-28 also a burst
   class on one target)
-- Single target: Deadeye (the best), Ninja, Lich, Shadowfist (the burst classes lead), Thief, Ranger, Inquisitor; the burst
+- Single target: Deadeye (the best at level 1000 only since O430, see "Balance target" below), Ninja, Lich, Shadowfist (the burst classes lead), Thief, Ranger, Inquisitor; the burst
   classes farm packs slowest
 - Area damage: Elementalist (the best), Berserker, Bone Lord, Beastmaster (the pure area classes farm packs fastest and give up
   single target damage); the Mystic is the area base class
@@ -42,8 +42,14 @@ Agreed with the owner (2026-10, the role rebalance): the Iron Sage is the second
 
 Strength and weakness of every class: "Class identity (2026-10-28)" below.
 
-Balance target, as today: Deadeye best single target, Elementalist best area damage, Juggernaut the tankiest;
-a party with an Illusionist out-damages the same party without one.
+Balance target since O430: every class within +-25% of the level median DPS on 1 and 5 targets at levels 100, 500 and 1000
+(`server/tools/class_dps_model.py --check`); no class leads by rule. O444 made the boss, pack and tower models read that one source.
+What its numbers say (computed from the measured table of 2026-11-06, not re-measured): the Deadeye is the best single target class
+only at level 1000 (+21% of the median, the next is the Monk at +15%); it ranks 4th at level 100 (+16%, the Ninja and Samurai +20%)
+and 7th at 500 (+12%, the Thief +15%), and on 5 targets it ranks 17th, 16th and last (-19%, -14%, -23%). The Elementalist is not the
+best area damage class at any measured level (5 targets: +0%, +9%, +12%, ranks 11th, 8th, 3rd; the Iron Sage +23% at 100, the Mystic,
+Illusionist and Inquisitor +18% at 500, the Berserker +13% at 1000). The Juggernaut the tankiest and a party with an Illusionist
+out-damaging the same party without one are not touched by this.
 
 ## Class kits (first draft)
 
@@ -263,7 +269,7 @@ without changing the ladder's order: Templar and Sentinel x0.6, Inquisitor, Elem
 and Shadowfist x0.7, Necromancer x0.8, Beastmaster x1.25 (it lost most to the ladder). Table:
 `server/data/scripts/chaos/spell_factor_config.lua`; spell hits only (not weapon hits, healing, minions, the Templar
 line's holy strike on a weapon hit, conditions); numbers: server/data/spells/README.md "Class spell factor". The
-balance targets hold: the Deadeye has the best single target, the Elementalist the best area damage.
+balance targets held then: the Deadeye the best single target, the Elementalist the best area damage (not since O430, see "Balance target" near the top).
 Since 2026-10-24 (C2 / C3 close-out) the Thief, Ninja and Samurai have a curve too (end values 0.91 / 1.09 / 1.05), applied to
 their spell strikes inside `ChaosSpell.weaponStrike` (auto attacks stay unscaled), so every one of the 21 classes keeps its
 best-set spell score within about 1% of its value before the attack kit at levels 100-1000 (the Thief line was +12% to -11%
@@ -1202,6 +1208,13 @@ target, the Beastmaster's wolves, the Necromancer's minions) but inside +-25% of
 helper casts every spell of its rotation on a boss, `classDamage` and the new extra target factor were retuned per class, the
 Beastmaster's bite follows its owner's level. `server/data/spells/README.md` "Class DPS balance (O430)" has the cause and the numbers
 of each class, `server/tools/class_dps_model.py --check` holds the band. Not measured after the change.
+
+O444 (2026-11-09): `boss_model.py`, `pack_model.py` and `tower_model.py` took their class damage from a table of their own (the C4
+measurement of 2026-10-11 times the class identity pass below), which put the Sentinel at 1.80 of the Deadeye on a boss while
+`class_dps_model.py` has it at -14% of the median on 1 target. They read `class_dps_model.py` now. The identity bands below (boss damage
+against the Deadeye, kills per hour against the median class of before the pass, the Deadeye and the Elementalist 8% ahead) are gone:
+`boss_balance_config.lua` holds every class within +-25% of the level median on a boss and on packs. The final table below is the
+identity pass as it was, in the C4 frame (`pack_model.py --frames` prints that frame next to today's numbers).
 
 ### Class identity (2026-10-28)
 

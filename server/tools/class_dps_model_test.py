@@ -57,6 +57,24 @@ ok(med[500][0] > statistics.median(rows[(c, 500)]['helper_1t'] for c in M.KEY), 
 # the extra target curves of the config are read by the sim tool
 ok(R.extra_factor('Deadeye', 1000) == 2.5 and R.extra_factor('Warrior', 1000) == 1.0, 'rotation_sim.extra_factor reads spell_factor_config.lua')
 
+# O444: dps() and median_dps(), the one source of the boss, pack and tower models
+for cls in M.KEY:
+    for lv in M.LEVELS:
+        ok(abs(M.dps(cls, lv)[0] - out[(cls, lv)]['1t']) < 1e-6 and abs(M.dps(cls, lv)[1] - out[(cls, lv)]['5t']) < 1e-6,
+           '%s level %d: dps() is the model at a measured level' % (cls, lv))
+    ok(M.dps(cls, 50)[0] < M.dps(cls, 100)[0] < M.dps(cls, 300)[0] < M.dps(cls, 500)[0] < M.dps(cls, 800)[0] < M.dps(cls, 1000)[0] < M.dps(cls, 1500)[0],
+       '%s: damage rises with the level through the anchors and above 1000' % cls)
+ok(M.dps('Warrior', 0) == (0.0, 0.0) and M.dps('Warrior', -5)[0] == 0.0, 'no damage at level 0')
+ok(abs(M.dps('Ninja', 1500)[0] / M.dps('Ninja', 1000)[0] - (1 + 500 * M.GROWTH_ABOVE_1000)) < 1e-9, 'above 1000 a straight line, the same share for every class')
+for lv in M.LEVELS:
+    ok(abs(M.median_dps(lv)[0] - med[lv][0]) < 1e-6 and abs(M.median_dps(lv)[1] - med[lv][1]) < 1e-6, 'median_dps at level %d is the table median' % lv)
+# in between the line stays inside the band of the neighbouring anchors: the 300 / 800 ratios to the median are within +-25%
+for lv in (300, 800, 1200):
+    m1, m5 = M.median_dps(lv)
+    ok(all(0.75 <= M.dps(c, lv)[0] / m1 <= 1.25 for c in M.KEY), 'level %d: every class within +-25%% of the median on 1 target (%s)' % (
+        lv, [c for c in M.KEY if not 0.75 <= M.dps(c, lv)[0] / m1 <= 1.25]))
+    ok(all(0.70 <= M.dps(c, lv)[1] / m5 <= 1.30 for c in M.KEY), 'level %d: every class within +-30%% of the median on 5 targets' % lv)
+
 if fails:
     print('class_dps_model_test: %d failed' % fails)
     sys.exit(1)

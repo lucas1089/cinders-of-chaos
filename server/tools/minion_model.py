@@ -296,8 +296,10 @@ def model_class(key, level, build=None, legacy=False, tree=None, levels=None):
     d5 = kappa5 * (s5 + wand + tree * nominal5 * alive)
     full1 = kappa1 * (s1 + wand + tree * nominal1)
     full5 = kappa5 * (s5 + wand + tree * nominal5)
-    med1 = statistics.median(P.damage(n_, level)[0] for n_ in P.C4)
-    med5 = statistics.median(P.damage(n_, level)[1] for n_ in P.C4)
+    # O444: this model rebuilds the Necromancer from the C4 data of 2026-10-11, so the median it compares with is the C4 frame's
+    # (pack_model frame='c4'), not class_dps_model.py's; the boss, pack and tower models read the latter
+    med1 = statistics.median(P.damage(n_, level, frame='c4')[0] for n_ in P.C4)
+    med5 = statistics.median(P.damage(n_, level, frame='c4')[1] for n_ in P.C4)
     return {
         'class': key, 'level': level, 'build': build or bal['defaultBuild'], 'kinds': kinds, 'rows': rows,
         'ml': R.stats(cls, level)['ML'], 'spells1': s1, 'spells5': s5, 'wand': wand, 'c4minions': c4,
@@ -318,14 +320,14 @@ def kills_per_hour(cls, level, d1, d5):
     health = lin(P.SCALED_HEALTH, level) if scaled else P.median_health(c['mons'], level)
     real = P.damage
 
-    def patched(name, L, kit=True, tune=True):
+    def patched(name, L, kit=True, tune=True, frame='c4'):
         if name == cls and L == level:
             return d1, d5
-        return real(name, L, kit, tune)
+        return real(name, L, kit, tune, frame)
     P.damage = patched
     try:
-        mine = P.kills_per_hour(cls, level, scaled, c['cfg'], health)[0]
-        med = statistics.median(P.kills_per_hour(n, level, scaled, c['cfg'], health)[0] for n in P.C4)
+        mine = P.kills_per_hour(cls, level, scaled, c['cfg'], health, frame='c4')[0]
+        med = statistics.median(P.kills_per_hour(n, level, scaled, c['cfg'], health, frame='c4')[0] for n in P.C4)
     finally:
         P.damage = real
     return mine, med, mine / med

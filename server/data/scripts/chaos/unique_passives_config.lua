@@ -263,6 +263,19 @@ ChaosUniquePassivesConfig = {
 	[29559] = {lv = 800, name = "Everything Behind Lived", family = "ward", lines = "WP", onHit = 8, onKill = 5, cap = 28, reflect = 50, healLess = 30}, -- Ashwarden Bulwark
 	[29560] = {lv = 800, name = "Down They Stayed", family = "statscale", lines = "WPK", stat = "shield", per = 15, bonusPer = 1, cap = 40, origin = "melee"}, -- Ashwarden Visor
 	[29561] = {lv = 800, name = "Ash in the Seams", family = "immunity", lines = "WPKTR", kind = "fire", more = 12}, -- Ashwarden Cuirass
+	[27687] = {lv = 430, name = "Dust Never Settles", family = "statscale", lines = "T", stat = "speed", from = 700, per = 25, bonusPer = 1, cap = 20, origin = "any"}, -- Dustroad Treads
+	[12630] = {lv = 470, name = "Echo Hex", family = "extra", lines = "MN", origin = "spell", pct = 30, targets = 1, radius = 3, cost = "mana", costPct = 1, icdMs = 1000}, -- Cowl of Hollow Echoes
+	[27645] = {lv = 480, name = "Dry Powder", family = "nova", lines = "T", on = "kill", elem = "fire", base = 40, perLevel = 0.6, targets = 4, radius = 2, icdMs = 4000, selfCost = 0}, -- Dry Powder Breeches
+	[14333] = {lv = 520, name = "Ossuary Ward", family = "ward", lines = "N", onHit = 8, onKill = 4, cap = 22, healLess = 30}, -- Ossuary Warden's Amulet
+	[26774] = {lv = 540, name = "Trail of Rot", family = "spread", lines = "T", elem = "poison", targets = 3, radius = 2, share = 90, ticks = 5, dealtLess = 5}, -- Plaguerunner's Cowl
+	[25411] = {lv = 720, name = "One Page Open", family = "focus", lines = "MN", perStack = 4, max = 5, first = 10}, -- Lectern of the Open Page
+	[15489] = {lv = 740, name = "Deep Well", family = "statscale", lines = "M", stat = "maxMana", from = 1000, per = 200, bonusPer = 1, cap = 24, origin = "spell"}, -- Tidewrack Mantle
+	[7697] = {lv = 760, name = "Last Rites", family = "opener", lines = "N", side = "below", at = 25, bonus = 80, malusAt = 80, malus = 10}, -- Signet of Last Rites
+	[8872] = {lv = 780, name = "Last Word", family = "riposte", lines = "T", elem = "physical", pct = 80, minHit = 3, icdMs = 2000}, -- Hem of the Last Word
+	[25423] = {lv = 820, name = "First Cut", family = "opener", lines = "T", side = "above", at = 90, bonus = 70, malusAt = 25, malus = 5}, -- Cutthroat's Locket
+	[26804] = {lv = 840, name = "Cup Overfull", family = "manashield", lines = "M", share = 40, reserve = 5, dealtLess = 12}, -- Cupbearer's Greaves
+	[26762] = {lv = 860, name = "Brood Pact", family = "minionPact", lines = "N", hit = 40, health = 60, own = 30}, -- Gravemother's Shawl
+	[6433] = {lv = 880, name = "Lid Closed", family = "hitcap", lines = "N", cap = 10, healLess = 20}, -- Lidbound Bulwark
 	[26765] = {lv = 900, name = "Gallows Beam", family = "mark", lines = "R", max = 3, bonus = 40, unmarked = 12}, -- Moonlit Gallows Bow
 	[27663] = {lv = 900, name = "Glow at the Knots", family = "convert", lines = "R", elem = "fire", share = 60, bonus = 30, other = 15}, -- Ember-Lashed Quiver
 	[2123] = {lv = 1000, name = "Last Coal of a Sovereign", family = "nova", lines = "WPM", on = "kill", elem = "fire", base = 90, perLevel = 1.2, targets = 7, icdMs = 3000, selfCost = 0.6}, -- Cinderheart Signet

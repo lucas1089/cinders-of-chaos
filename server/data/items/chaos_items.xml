@@ -2237,4 +2237,172 @@
 		<attribute key="equipLevel" value="1650" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- 12630: stock "cobra crown", unique at level 470; Mystic and Necromancer line -->
+	<item id="12630" article="a" name="Cowl of Hollow Echoes">
+		<attribute key="weight" value="900" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="14" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="maxManaPoints" value="600" />
+		<attribute key="absorbPercentDeath" value="5" />
+		<attribute key="description" value="Say a curse once and it keeps saying itself. (Requires level 470.)" />
+		<attribute key="equipLevel" value="470" />
+		<attribute key="equipLines" value="Mystic,Necromancer" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25411: stock "book of lies", unique at level 720; Mystic and Necromancer line -->
+	<item id="25411" article="a" name="Lectern of the Open Page">
+		<attribute key="weight" value="2400" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="24" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="maxManaPoints" value="700" />
+		<attribute key="absorbPercentEnergy" value="5" />
+		<attribute key="description" value="It stays open at one page, and that page has one name on it. (Requires level 720.)" />
+		<attribute key="equipLevel" value="720" />
+		<attribute key="equipLines" value="Mystic,Necromancer" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 15489: stock "calopteryx cape", unique at level 740; Mystic line -->
+	<item id="15489" article="a" name="Tidewrack Mantle">
+		<attribute key="weight" value="2600" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="20" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="maxManaPoints" value="1400" />
+		<attribute key="absorbPercentIce" value="6" />
+		<attribute key="description" value="A tide of mana left it here, and the tide has not gone out. (Requires level 740.)" />
+		<attribute key="equipLevel" value="740" />
+		<attribute key="equipLines" value="Mystic" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26804: stock "gnome legs", unique at level 840; Mystic line -->
+	<item id="26804" article="a" name="Cupbearer's Greaves">
+		<attribute key="weight" value="1800" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="15" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="maxManaPoints" value="1100" />
+		<attribute key="absorbPercentEnergy" value="6" />
+		<attribute key="description" value="It pours mana into the blow before the blow lands. The cup is always full. (Requires level 840.)" />
+		<attribute key="equipLevel" value="840" />
+		<attribute key="equipLines" value="Mystic" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 14333: stock "demonbone amulet", unique at level 520; Necromancer line -->
+	<item id="14333" article="an" name="Ossuary Warden's Amulet">
+		<attribute key="weight" value="700" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="absorbPercentDeath" value="7" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="maxManaPoints" value="450" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="description" value="Every bone it guards pays rent in blows it will not let through. (Requires level 520.)" />
+		<attribute key="equipLevel" value="520" />
+		<attribute key="equipLines" value="Necromancer" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7697: stock "suspicious signet ring", unique at level 760; Necromancer line -->
+	<item id="7697" article="a" name="Signet of Last Rites">
+		<attribute key="weight" value="90" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="criticalHitChance" value="3" />
+		<attribute key="criticalHitAmount" value="14" />
+		<attribute key="description" value="It waits for the last breath of a thing, then takes it. (Requires level 760.)" />
+		<attribute key="equipLevel" value="760" />
+		<attribute key="equipLines" value="Necromancer" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 6433: stock "necromancer shield", unique at level 880; Necromancer line -->
+	<item id="6433" article="a" name="Lidbound Bulwark">
+		<attribute key="weight" value="4200" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="34" />
+		<attribute key="absorbPercentPhysical" value="8" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="maxHitPoints" value="1200" />
+		<attribute key="description" value="The coffin lid never opened for anything that struck it hard. (Requires level 880.)" />
+		<attribute key="equipLevel" value="880" />
+		<attribute key="equipLines" value="Necromancer" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26762: stock "netherwave armor", unique at level 860; Necromancer line -->
+	<item id="26762" article="a" name="Gravemother's Shawl">
+		<attribute key="weight" value="2800" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="22" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="maxHitPoints" value="1500" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="description" value="She counts her children by the cold in the room. (Requires level 860.)" />
+		<attribute key="equipLevel" value="860" />
+		<attribute key="equipLines" value="Necromancer" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27687: stock "feverbloom boots", unique at level 430; Thief line -->
+	<item id="27687" article="a" name="Dustroad Treads">
+		<attribute key="weight" value="1100" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="4" />
+		<attribute key="absorbPercentIce" value="6" />
+		<attribute key="criticalHitChance" value="2" />
+		<attribute key="description" value="The dust never settles behind them. You were never there. (Requires level 430.)" />
+		<attribute key="equipLevel" value="430" />
+		<attribute key="equipLines" value="Thief" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25423: stock "Vhalkareth's amulet", unique at level 820; Thief line -->
+	<item id="25423" article="a" name="Cutthroat's Locket">
+		<attribute key="weight" value="500" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="criticalHitChance" value="4" />
+		<attribute key="criticalHitAmount" value="18" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="description" value="One portrait inside: whoever it is, they never saw you coming. (Requires level 820.)" />
+		<attribute key="equipLevel" value="820" />
+		<attribute key="equipLines" value="Thief" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26774: stock "ashborne helmet", unique at level 540; Thief line -->
+	<item id="26774" article="a" name="Plaguerunner's Cowl">
+		<attribute key="weight" value="1000" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="15" />
+		<attribute key="absorbPercentEarth" value="6" />
+		<attribute key="criticalHitChance" value="2" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="description" value="A fever follows the runner, and a runner always has a fever to spare. (Requires level 540.)" />
+		<attribute key="equipLevel" value="540" />
+		<attribute key="equipLines" value="Thief" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8872: stock "belted cape", unique at level 780; Thief line -->
+	<item id="8872" article="a" name="Hem of the Last Word">
+		<attribute key="weight" value="2000" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="20" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="maxHitPoints" value="1200" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="description" value="Hit it and it answers. It always gets the last word. (Requires level 780.)" />
+		<attribute key="equipLevel" value="780" />
+		<attribute key="equipLines" value="Thief" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27645: stock "bast legs", unique at level 480; Thief line -->
+	<item id="27645" article="a" name="Dry Powder Breeches">
+		<attribute key="weight" value="1400" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="12" />
+		<attribute key="absorbPercentFire" value="5" />
+		<attribute key="criticalHitChance" value="2" />
+		<attribute key="skillSword" value="1" />
+		<attribute key="description" value="Keep the powder dry, keep the fuse short, and let the kill light it. (Requires level 480.)" />
+		<attribute key="equipLevel" value="480" />
+		<attribute key="equipLines" value="Thief" />
+		<attribute key="showattributes" value="1" />
+	</item>
 </items>

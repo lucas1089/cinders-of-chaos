@@ -85,21 +85,26 @@ ok(M.totals(750, 'full')['wolf1'] > 1.6 * M.totals(750, 'tree')['wolf1'], 'the T
 # damage, 10-12% in the tester's report); the share of the wolves is what the model gives now
 ok(M.totals(750, 'full')['topshare'] < 0.30, 'the main wolf spell is a share of the damage, the wolves together the main part')
 
-# the pack model: the Beastmaster's total is the model's tree build; other classes untouched; tune off untouched
+# the pack model: in the C4 frame (O444: companion_model.py rebuilds the Beastmaster in it; the boss, pack and tower models read
+# class_dps_model.py, whose Beastmaster number holds the wolves) the Beastmaster's total is the model's tree build; other classes
+# untouched; tune off untouched
 raw = P._damage('Beastmaster', 400, True, False)
 ok(P.damage('Beastmaster', 400, True, False) == raw, 'tune off: the measured numbers')
-ok(P.damage('Warrior', 400) == P._damage('Warrior', 400), 'other classes: untouched')
-d1, d5 = P.damage('Beastmaster', 400)
+ok(P.damage('Warrior', 400, frame='c4') == P._damage('Warrior', 400), 'other classes: untouched')
+ok(P.damage('Beastmaster', 400) != P.damage('Beastmaster', 400, frame='c4'), 'O444: the live frame is class_dps_model.py, the C4 frame is the one rebuilt here')
+d1, d5 = P.damage('Beastmaster', 400, frame='c4')
 t = M.totals(400, 'tree')
 ok(abs(d1 - t['total1']) < 1e-6 and abs(d5 - t['total5']) < 1e-6, 'pack model: Beastmaster = the model\'s tree build')
 ok(abs(t['total5c'] / t['head5c'] - 1) < 0.70, 'level 400: a pack of 5 moved by the O430 balance only (cut by class_dps_model.py, within 70%)')
-# a pure area class: the lead of the Elementalist on a pack holds (pack_model.py --check has the same rule at 300 800 1000 1200)
+# O444: the leader rules (the Elementalist 8% ahead on a pack, the Deadeye ahead on one target) were retired by O430 and are gone from
+# pack_model.py and boss_model.py; class_dps_model.py holds every class to the level median. The Beastmaster rebuilt here still
+# stays under the top of the C4 frame's pack classes and the Deadeye, as a sanity bound on the rebuild
 cfg = P.pace()
 for lv in (800, 1000, 1200):
-    area = P.damage(M.CLASS, lv)[1] * M.cleave(lv)
-    e = P.damage('Elementalist', lv)[1]
-    ok(area * 1.08 <= e * 1.0001, 'level %d: the Beastmaster is not the top pack class (%.0f x 1.08 against the Elementalist\'s %.0f)' % (lv, area, e))
-    ok(P.damage(M.CLASS, lv)[0] < P.damage('Deadeye', lv)[0], 'level %d: the Deadeye leads on one target' % lv)
+    area = P.damage(M.CLASS, lv, frame='c4')[1] * M.cleave(lv)
+    e = P.damage('Elementalist', lv, frame='c4')[1]
+    ok(area <= e * 1.5, 'level %d: the rebuilt Beastmaster is not far above the Elementalist on a pack (%.0f against %.0f)' % (lv, area, e))
+    ok(P.damage(M.CLASS, lv, frame='c4')[0] < P.damage('Deadeye', lv, frame='c4')[0], 'level %d: the Deadeye is above the rebuilt Beastmaster on one target' % lv)
 
 # a retuned config fails the check: bites back to the old ones, or wolves with no investment
 saved = dict(c)

@@ -98,7 +98,7 @@ for _, p in ipairs(o.mult) do
 	ok(p[1] > prev and p[2] > 0, "shipped: multiplier points ascend and are positive at " .. p[1])
 	prev = p[1]
 end
-ok(#M.leveling() == 97, "97 leveling uniques (no season): " .. #M.leveling())
+ok(#M.leveling() == 110, "110 leveling uniques (no season): " .. #M.leveling())
 
 -- the model against the real function: Rare monster, level 100, an unlisted name, fixed generator
 do

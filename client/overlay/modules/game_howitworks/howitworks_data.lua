@@ -153,7 +153,7 @@ HowData = {
 		}},
 		{key = "loadouts", title = {en = "Loadouts", pt = "Loadouts"}, window = "game_loadouts", unlocks = {"loadouts"}, rows = {
 			{id = "what", en = "Save your build and switch to another one: passive tree, Paragon points, the support runes of your spells and a set of gear.", pt = "Salve a sua build e troque para outra: árvore passiva, pontos de Paragon, as runas de suporte das magias e um conjunto de equipamento."},
-			{id = "who", en = "Level 15+. 3 slots, one more at level 200 and at level 500, and 1 more while the Chaos Pact runs.", pt = "Nível 15+. 3 espaços, mais um no nível 200 e no nível 500, e mais 1 enquanto o Chaos Pact estiver ativo."},
+			{id = "who", en = "Level 15+. 5 slots, one more at level 200 and at level 500, and 1 more while the Chaos Pact runs.", pt = "Nível 15+. 5 espaços, mais um no nível 200 e no nível 500, e mais 1 enquanto o Chaos Pact estiver ativo."},
 			{id = "often", en = "A switch is free. Out of combat and never inside an instance: at once in a safe zone, elsewhere after 3 seconds standing still. Then wait 60 seconds for the next one.", pt = "Trocar é grátis. Fora de combate e nunca dentro de uma instância: na hora numa zona segura, fora dela após 3 segundos parado. Depois espere 60 segundos para a próxima."}
 		}},
 		{key = "townportal", title = {en = "Town Portal", pt = "Portal da Cidade"}, window = "game_townportal", rows = {
