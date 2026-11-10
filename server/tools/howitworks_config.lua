@@ -357,6 +357,17 @@ P.features = {
 		often = {"New spells open as you level up; Available soon lists the next ones. A few line spells need a quest first: the spell names the teacher and the level.",
 			"Magias novas abrem conforme você sobe de nível; Em breve mostra as próximas. Algumas magias de linha pedem uma quest antes: a magia mostra o mestre e o nível."}},
 
+	-- O468: what a spell's damage is made of; the magic level share of a weapon class is read from spell_scaling_config.lua
+	{key = "spelldamage", title = {"Spell damage", "Dano das magias"},
+		values = function(C, H)
+			local pct = 100 / C.spellscaling.mlShare.per
+			return {pct = {en = string.format("%.2f", pct), pt = (string.format("%.2f", pct):gsub("%.", ","))}}
+		end,
+		what = {"A spell's damage starts from your level, your magic level and, for a weapon class, your weapon skill and attack. A caster's magic level is its skill. Every magic level adds about {pct}% to the spells of a weapon class. Class, passive tree, gear modifiers, gems, support runes, cards, charms, uniques and sets raise it more.",
+			"O dano de uma magia parte do seu nível, do nível mágico e, numa classe de arma, da skill e do ataque da arma. O nível mágico do conjurador é a skill dele. Cada nível mágico soma cerca de {pct}% às magias de uma classe de arma. Classe, árvore passiva, modificadores, gemas, runas de suporte, cartas, charms, únicos e conjuntos aumentam mais."},
+		who = {"Every class. Mystic, Elementalist, Illusionist and Necromancer lines scale with level and magic level. Warrior, Ranger, Thief and Monk lines scale with level, weapon skill and weapon attack, and a little with magic level. Templar spells use all three.",
+			"Toda classe. As linhas Mystic, Elementalist, Illusionist e Necromancer crescem com o nível e o nível mágico. As linhas Warrior, Ranger, Thief e Monk crescem com o nível, a skill e o ataque da arma, e um pouco com o nível mágico. As magias da linha Templar usam os três."}},
+
 	{key = "bestiary", title = {"Bestiary", "Bestiário"}, window = "game_bestiary", goals = {"task1", "known25", "completed10"},
 		values = function(C, H)
 			local B = C.bestiary

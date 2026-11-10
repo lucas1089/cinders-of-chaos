@@ -39,7 +39,7 @@
 		{"level": 300, "cards": ["bosses"]},
 		{"level": 800, "cards": ["raid"]}
 	],
-	"anytime": ["weeklychest", "embercache", "season", "bestiary", "defence", "achievements", "itemfinder", "guild", "pact", "potions", "shop"],
+	"anytime": ["weeklychest", "embercache", "season", "spelldamage", "bestiary", "defence", "achievements", "itemfinder", "guild", "pact", "potions", "shop"],
 	"cards": {
 		"tower": {
 			"title": {"en": "Infinity Tower", "pt-BR": "Infinity Tower"},
@@ -262,6 +262,15 @@
 				{"id": "what", "text": {"en": "Every spell of the game: its words, level, mana, cooldown and the area it hits. Search by name or words, or show only your class.", "pt-BR": "Todas as magias do jogo: palavras, nível, mana, recarga e a área que atinge. Busque pelo nome ou pelas palavras, ou mostre só a sua classe."}},
 				{"id": "who", "text": {"en": "Every player. No spell needs premium.", "pt-BR": "Todo jogador. Nenhuma magia pede premium."}},
 				{"id": "often", "text": {"en": "New spells open as you level up; Available soon lists the next ones. A few line spells need a quest first: the spell names the teacher and the level.", "pt-BR": "Magias novas abrem conforme você sobe de nível; Em breve mostra as próximas. Algumas magias de linha pedem uma quest antes: a magia mostra o mestre e o nível."}}
+			]
+		},
+		"spelldamage": {
+			"title": {"en": "Spell damage", "pt-BR": "Dano das magias"},
+			"level": null,
+			"menu": null,
+			"rows": [
+				{"id": "what", "text": {"en": "A spell's damage starts from your level, your magic level and, for a weapon class, your weapon skill and attack. A caster's magic level is its skill. Every magic level adds about 0.33% to the spells of a weapon class. Class, passive tree, gear modifiers, gems, support runes, cards, charms, uniques and sets raise it more.", "pt-BR": "O dano de uma magia parte do seu nível, do nível mágico e, numa classe de arma, da skill e do ataque da arma. O nível mágico do conjurador é a skill dele. Cada nível mágico soma cerca de 0,33% às magias de uma classe de arma. Classe, árvore passiva, modificadores, gemas, runas de suporte, cartas, charms, únicos e conjuntos aumentam mais."}},
+				{"id": "who", "text": {"en": "Every class. Mystic, Elementalist, Illusionist and Necromancer lines scale with level and magic level. Warrior, Ranger, Thief and Monk lines scale with level, weapon skill and weapon attack, and a little with magic level. Templar spells use all three.", "pt-BR": "Toda classe. As linhas Mystic, Elementalist, Illusionist e Necromancer crescem com o nível e o nível mágico. As linhas Warrior, Ranger, Thief e Monk crescem com o nível, a skill e o ataque da arma, e um pouco com o nível mágico. As magias da linha Templar usam os três."}}
 			]
 		},
 		"bestiary": {

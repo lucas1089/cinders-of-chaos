@@ -279,6 +279,7 @@ end
 local slowed = {}
 local DIR = {[EAST] = {1, 0}, [WEST] = {-1, 0}, [NORTH] = {0, -1}, [SOUTH] = {0, 1}}
 ChaosSpell = {
+	weaponShare = function() return 1 end, -- O468: the magic level share of a weapon spell (tests/spell_scaling_test.lua)
 	isEnemy = function(caster, t) return t:isMonster() and t:getMaster() == nil end,
 	distanceAttack = function() return 45 end, bladePower = function() return 1000 end,
 	shurikenPower = function() return 2000 end,
@@ -334,6 +335,48 @@ local burns = 0
 for _, a in ipairs(added) do if a.cond.type == CONDITION_FIRE then burns = burns + 1; check(a.cond.rounds == 4, "a 4 s burn") end end
 eq(burns, 2, "both burn")
 eq(#G.state.list, 0, "the trap is spent")
+
+-- O468: a snare keeps the cast context of the spell that placed it and raises it around its burst, so the supports and the
+-- spell modifier masteries of that spell apply to its hits (ChaosSupportsSpell.context / run, data/spells/chaos/_supports.lua)
+do
+	reset()
+	local ctx = {value = 7001, pid = 1, spell = C.spells.trap}
+	local raised, inCtx, seen = {}, nil, {}
+	ChaosSupportsSpell = {
+		context = function() return ctx end,
+		run = function(pid, c, fn, ...)
+			raised[#raised + 1] = {pid = pid, ctx = c}
+			inCtx = c
+			local r = fn(...)
+			inCtx = nil
+			return r
+		end,
+	}
+	local realHit = doTargetCombat
+	doTargetCombat = function(...)
+		seen[#seen + 1] = inCtx or false
+		return realHit(...)
+	end
+	local rg = mk("player", {hp = 3000, pos = P(100, 100)})
+	local tg = mk("monster", {hp = 90000, pos = P(102, 100)})
+	rg.c.target = tg
+	cast(rg, "trap", "fire")
+	check(G.state.list[1].ctx == ctx, "the snare keeps the cast context of the spell that placed it")
+	advance(1000)
+	eq(#raised, 1, "the burst raised the context once")
+	check(raised[1] and raised[1].ctx == ctx and raised[1].pid == rg:getId(), "the stored context of the placer")
+	check(#seen >= 1 and seen[1] == ctx, "the hit ran inside the context")
+	doTargetCombat = realHit
+	ChaosSupportsSpell = nil
+	reset()
+	rg = mk("player", {hp = 3000, pos = P(100, 100)})
+	tg = mk("monster", {hp = 90000, pos = P(102, 100)})
+	rg.c.target = tg
+	cast(rg, "trap", "fire")
+	check(G.state.list[1].ctx == nil, "without the supports there is no context to keep")
+	advance(1000)
+	check(#dealt >= 1, "and the burst still hits")
+end
 
 -- the remembered element; a wall between the trap and a monster; ice slows
 reset()

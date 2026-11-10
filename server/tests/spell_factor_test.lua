@@ -198,7 +198,7 @@ do
 	-- run the real function on a mocked engine: a level 300 Ninja strike is x0.90
 	local env = setmetatable({}, {__index = _G})
 	local got
-	env.ChaosSpell = {canAttack = function() return true end}
+	env.ChaosSpell = {canAttack = function() return true end, weaponShare = function() return 1 end} -- O468: the magic level share is spell_scaling_test.lua's
 	env.Chaos = {classes = {}, storage = {}}
 	env.doTargetCombat = function(c, t, ct, lo, hi) got = {lo, hi}; return true end
 	env.COMBAT_PHYSICALDAMAGE, env.ORIGIN_MELEE = 1, 2

@@ -316,7 +316,9 @@ local function player(props)
 	return p
 end
 
+local shareMock = 1 -- the magic level share of a weapon spell (ChaosSpell.weaponShare, O468) the mock hands out
 ChaosSpell = {
+	weaponShare = function() return shareMock end,
 	cancel = function(pl, msg) cancels[#cancels + 1] = msg; return false end,
 	targetOf = function(v) return v and v.target end,
 	canAttack = function(c, t) return t ~= c and t.health > 0 and not t.safe end,
@@ -728,6 +730,36 @@ do
 	near(at(750), 0.65, 0.0001, "a curve: linear between points")
 	near(at(1500), 0.9, 0.0001, "a curve: the last point's value above it")
 	F["Keepfall"].Warrior = saved
+end
+
+-- O468: a weapon spell of the kit is multiplied by the magic level share (ChaosSpell.weaponShare) once: the melee, distance,
+-- monk schools and the "spell" school with a weapon power here; the blade and shuriken schools in ChaosSpell.weaponStrike, which
+-- the kit hands the unscaled values; the magic, necro and templar schools read the magic level themselves
+do
+	local function total(key, share)
+		reset()
+		shareMock = share
+		local p = player()
+		p.chi = 5
+		local t = creature(101, 100)
+		A.cast(key, p, {target = t})
+		local sum = 0
+		for _, c in ipairs(calls) do
+			if c.lo then sum = sum + math.abs(c.lo) + math.abs(c.hi or 0) end
+		end
+		shareMock = 1
+		return sum
+	end
+	for _, key in ipairs({"riftcleaver", "sunspear", "hollowknuckle", "smokebomb", "gorehook"}) do
+		local a, b = total(key, 1), total(key, 1.25)
+		ok(a > 0, key .. " deals damage")
+		near(b / a, 1.25, 0.002, key .. " takes the weapon share once")
+	end
+	for _, key in ipairs({"phantomneedles", "marrowbolt", "hallowedcut", "crescentcut", "razorrain"}) do
+		local a, b = total(key, 1), total(key, 1.25)
+		ok(a > 0, key .. " deals damage")
+		near(b / a, 1, 0.0001, key .. " is not scaled by the kit (a caster or hybrid school, or the weapon strike does it)")
+	end
 end
 
 -- every kit spell casts cleanly against a crowd, on a mocked engine

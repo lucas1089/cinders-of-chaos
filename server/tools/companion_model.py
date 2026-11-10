@@ -164,16 +164,40 @@ def uptime(level, legacy=False):
     return min(1.0, health(c, level, legacy, bal) / incoming)
 
 
+def event_factor(level, raw):
+    """O468: what the damage events do to a bite of `raw` points now that it is dealt as the owner's ORIGIN_SPELL (beastmaster.lua):
+    classDamage.beastmaster at the level (class_tree.lua) x the share of the bite the armour of a normal monster of the level leaves
+    (monster_defence_core.lua: A = f / (1 - f) x armourHitFactor x hitCurve(level), kept = H / (c x hit + H), f = armourTarget.normal).
+    Every number is read from the real configs through companion_numbers.lua. The tree's own increments are not modelled: the
+    builds here differ by the wolf factor, which is part of `raw`"""
+    d = dump((100,))
+    cd = class_factor(level, d['classDamage']['beastmaster'])
+    pts = d['monsterDefence']['hitCurve']
+    lv = max(1, level)
+    a, b = pts[0], pts[1]
+    for i in range(1, len(pts)):
+        a, b = pts[i - 1], pts[i]
+        if lv <= b['level']:
+            break
+    e = (math.log(b['hit']) - math.log(a['hit'])) / (math.log(b['level']) - math.log(a['level']))
+    hit = a['hit'] * (lv / a['level']) ** e
+    f = d['monsterDefence']['armourTarget']['normal'] / 100.0
+    k = f / (1 - f) * hit
+    return cd * (raw / (k + raw) if raw > 0 else 1.0)
+
+
 def companion_dps(level, legacy=False, factor=1.0, head=False):
-    """raw damage per second of the companions' own bites in a hunt (dealt without an event: no class factor), x the wolf factor;
-    head: the bite of the state before O332 (config before.autoLevel / autoSkill)"""
+    """damage per second of the companions' own bites in a hunt, x the wolf factor; head / legacy: the states before O332 / O306,
+    dealt without an event (no class factor, no armour). The current bite is dealt as ORIGIN_SPELL since O468: x event_factor()
+    (classDamage and the armour of the median normal monster); head: the bite before O332 (config before.autoLevel / autoSkill)"""
     c, bal = conf()
     skill = R.stats(CLASS, level)['SK']
     if head:
         b = level * bal['before']['autoLevel'] + skill * bal['before']['autoSkill']
     else:
         b = bite(c, level, skill, legacy, bal)
-    return cap(c, level) * b / (c['biteMs'] / 1000.0) * bal['contact'] * uptime(level, legacy) * factor
+    ev = 1.0 if (head or legacy) else event_factor(level, b * factor)
+    return cap(c, level) * b * ev / (c['biteMs'] / 1000.0) * bal['contact'] * uptime(level, legacy) * factor
 
 
 def class_factor(level, points):

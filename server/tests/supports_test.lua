@@ -350,10 +350,10 @@ eq(S.eligible(entries)[1], nil, "stockSpells = false: Chaos spells only")
 ok(S.eligible(entries)[201], "chaos spell stays")
 cfg.stockSpells = true
 -- utility spells (cfg.none, owner 2026-11-06): no sockets; runes in them come back at login
-local util = S.parseSpellsXml([[<spells><instant spellid="45" name="Fleetfoot" words="ruan ul" level="14" script="support/haste.lua" />
+local util = S.parseSpellsXml([[<spells><instant spellid="20" name="Fleetfoot" words="ruan ul" level="14" script="support/haste.lua" />
 	<instant spellid="254" name="Town Portal" words="ash domh" level="1" script="chaos/town_portal.lua" /></spells>]])
 local uel = S.eligible(util)
-eq(uel[45], nil, "haste: no sockets"); eq(uel[254], nil, "Town Portal: no sockets")
+eq(uel[20], nil, "haste: no sockets"); eq(uel[254], nil, "Town Portal: no sockets")
 do
 	local p = newCreature({level = 300})
 	creatures[p.id] = nil -- not on the map
@@ -465,6 +465,19 @@ eq(W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function(c) return c == 
 local okErr = pcall(W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function() error("boom") end), caster, {})
 eq(okErr, false, "error passes through")
 eq(caster.storage[cfg.storageContext], nil, "context cleared after an error")
+-- O468: W.context() is the context of the cast that runs now; W.run raises one that was kept (snares: _snares.lua)
+do
+	local kept
+	W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function() kept = W.context(); return true end)(caster, {})
+	ok(kept and kept.spell == 201 and kept.pid == caster:getId(), "context(): the running cast")
+	eq(W.context(), nil, "no context outside a cast")
+	local inside, nested
+	W.run(caster:getId(), kept, function() inside = caster:getStorageValue(cfg.storageContext); nested = W.context() end)
+	eq(select(2, S.ctxDecode(inside)), 201, "run(): the kept context is the one the hit events read")
+	ok(nested == kept, "and context() sees it")
+	eq(caster.storage[cfg.storageContext], nil, "cleared after run()")
+	eq(W.context(), nil, "and nothing is left")
+end
 for i = 1, 3 do S.setRune(caster, 201, i, 0) end
 -- the hook: a chunk loaded with the engine's chunk name defines onCastSpell on a private env -> wrapped when the
 -- script is a known spell, left alone otherwise

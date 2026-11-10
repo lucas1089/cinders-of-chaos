@@ -111,7 +111,7 @@ near(T.judgementFactor(true, true), 1.2); near(T.judgementFactor(false, true), 1
 -- ------------------------------------------------------------------ heals and spells
 eq(T.novaHeal(10000, 20000), 1000, "10% of the damage")
 eq(T.novaHeal(100000, 20000), 1000, "at most 5% of the maximum health")
-eq(T.layOnHandsAmount(10000, 50), 4000)
+eq(T.layOnHandsAmount(10000, 50, 100), 3780) -- 35% + level x 0.3 + magic level x 5 (O468)
 eq(T.vowAmount(10000, 300, 20), 800 + 60 + 80)
 eq(T.pickHealTarget({{id = 1, health = 50, maxHealth = 100}, {id = 2, health = 30, maxHealth = 100},
 	{id = 3, health = 30, maxHealth = 100}}), 2, "lowest share, first on a tie")

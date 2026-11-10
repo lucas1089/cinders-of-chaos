@@ -5,8 +5,9 @@
 -- A snare is a spot in memory, not an item: nothing is created on the map, nothing is saved. One scheduler (addEvent
 -- every scan.tickMs, running only while snares exist) visits at most scan.perTick snares a tick (round robin) and fires
 -- at most scan.burstsPerTick bursts; a visit drops the snare when its owner logged out, died, changed floor, went past
--- the leash or into a protection zone. The scheduler runs outside any spell's cast context (the supports' raw addEvent),
--- so a snare's hits are not a cast of the spell (no support effects, no Effigy, no Sigil); the snare's hits set the
+-- the leash or into a protection zone. The scheduler runs outside any spell's cast context (the supports' raw addEvent);
+-- O468: a snare keeps the context of the cast that placed it and raises it around its burst, so the supports and the spell
+-- modifier masteries of that spell (Snare Trap, Seeker Mine) apply to its hits. The snare's hits set the
 -- storage marker snares_config.lua storage.hit on the owner while they are dealt, which the scripts' side reads
 -- (Snarewright's Creed: the price spares them). The combat log still names them by their spell (ChaosCombatLog.asSpell,
 -- combatlog.lua): Snare Trap, Seeker Mine, Detonate Mines for the mines it sets off.
@@ -237,13 +238,22 @@ local function burst(snare)
 		end
 	end
 	setMarker(owner, true)
+	-- O468: the hits run inside the cast context of the spell that placed the snare, so the supports and the spell modifier
+	-- masteries socketed in it apply (the scheduler itself runs outside any cast, on purpose: see the top of this file)
+	local W = ChaosSupportsSpell
+	local inCast = hits
+	if snare.ctx and W and W.run then
+		inCast = function()
+			return W.run(snare.owner, snare.ctx, hits)
+		end
+	end
 	-- the combat log (combatlog.lua, the same Lua state) names the hits by the snare's spell
 	local CLog = ChaosCombatLog
 	local ok, err
 	if CLog and CLog.asSpell then
-		ok, err = pcall(CLog.asSpell, owner:getId(), S.spellOf(snare), hits)
+		ok, err = pcall(CLog.asSpell, owner:getId(), S.spellOf(snare), inCast)
 	else
-		ok, err = pcall(hits)
+		ok, err = pcall(inCast)
 	end
 	setMarker(owner, false)
 	if not ok then
@@ -345,10 +355,16 @@ function M.cast(creature, kind, variant)
 		return ChaosSpell.cancel(player, "You cannot place a snare in a protection zone.")
 	end
 	local min, max = S.damage(player:getLevel(), M.power(player), kind, element, mods)
+	-- O468: a snare is a weapon spell: the magic level share of the placer, frozen with the rest at placement
+	local share = ChaosSpell.weaponShare(player)
+	min, max = math.floor(min * share), math.floor(max * share)
 	local t = now()
 	local armedAt = t + S.armMs(kind, mods)
 	local snare = {kind = kind, owner = player:getId(), pos = {x = pos.x, y = pos.y, z = pos.z}, element = element,
 		min = min, max = max, placed = t, armedAt = armedAt, untilTime = armedAt + S.lifeMs(kind, mods)}
+	-- O468: the cast context of the spell that placed it (nil without the supports), raised around the burst
+	local W = ChaosSupportsSpell
+	snare.ctx = W and W.context and W.context() or nil
 	local ok, gone = S.add(M.state, snare, S.cap(kind, mods))
 	if not ok then
 		return ChaosSpell.cancel(player, "There are too many snares here already.")

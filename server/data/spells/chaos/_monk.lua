@@ -69,20 +69,27 @@ function MonkSpell.meleeTarget(player, variant)
 	return target
 end
 
+-- O468: the strike formula of the Monk line with the magic level share of a weapon spell (ChaosSpell.weaponShare)
+function MonkSpell.rawValues(player, f, scale)
+	local min, max = M.strikeValues(player:getLevel(), MonkSpell.power(player), f, scale)
+	local k = ChaosSpell.weaponShare(player)
+	return min * k, max * k
+end
+
 -- a Monk strike: physical damage, ORIGIN_SPELL (monk_combat.lua treats a Monk's spell damage as its strikes:
 -- Pressure Points and the Shadowfist focus crit apply, no chi from it). f = ChaosMonk.formula.<name>
 function MonkSpell.strike(player, target, f, scale, effect)
 	if not ChaosSpell.canAttack(player, target) then
 		return false
 	end
-	local min, max = M.strikeValues(player:getLevel(), MonkSpell.power(player), f, scale)
+	local min, max = MonkSpell.rawValues(player, f, scale)
 	return doTargetCombat(player, target, COMBAT_PHYSICALDAMAGE, -math.floor(min), -math.floor(max),
 		effect or CONST_ME_HITAREA, ORIGIN_SPELL)
 end
 
 -- min, max for an area strike (doAreaCombat), same formula
 function MonkSpell.values(player, f, scale)
-	local min, max = M.strikeValues(player:getLevel(), MonkSpell.power(player), f, scale)
+	local min, max = MonkSpell.rawValues(player, f, scale)
 	return math.floor(min), math.floor(max)
 end
 

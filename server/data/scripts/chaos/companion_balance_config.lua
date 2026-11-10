@@ -70,14 +70,16 @@ return {
 		-- is a necromancer with wolves (tester report 2026-10-29: a Ranger's main skill is 60-70% of its damage)
 		sharePlain = {0.25, 0.50},
 		shareTree = {0.35, 0.60},
-		shareFull = {0.55, 0.70},
+		-- shareFull high 0.70 -> 0.74 (model 0.714 at level 400, +3% headroom): 2026-11-10, O468: the bite takes the tree's bonuses now (owner: every bonus counts); review pending in the damage balance round
+		shareFull = {0.55, 0.74},
 		-- below `earlyBelow` (before Pack Howl, Rending Pounce and the second companion) the wolves are the bites and Feral Command
 		earlyBelow = 220,
 		shareEarlyPlain = {0.12, 0.35}, shareEarlyTree = {0.15, 0.45},
 		-- the total damage of the plain and the full build against the tree build (1 target): a plain Beastmaster is not much
 		-- behind (the bows carry it), a full one is ahead for what it invested, not by far (the Trials give every class its
 		-- own boost)
-		plainOverTree = {0.75, 1.0}, fullOverTree = {1.0, 1.40},
+		-- fullOverTree high 1.40 -> 1.52 (model 1.469 at level 400, +3% headroom): 2026-11-10, O468: the bite takes the tree's bonuses now (owner: every bonus counts); review pending in the damage balance round
+		plainOverTree = {0.75, 1.0}, fullOverTree = {1.0, 1.52},
 		-- the tree build's total after the change against the state before O332 (O306: the class total of that tuning), on a
 		-- pack of 5 (with the pack cleave of each state) and on 1 target (the pack and boss bands of pack_model.py /
 		-- boss_model.py hold the class itself: a pure area class has the lower boss band, and the lead of the Elementalist
