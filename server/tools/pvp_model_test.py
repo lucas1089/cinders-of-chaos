@@ -112,7 +112,7 @@ ok(r3['wins'] == 0 and r3['draws'] == 20 and r3['drawsHeal'] == 20, 'healing abo
 # ---- the limits
 ok(P.limit(cfg, 'Warrior', 'burst', 500) == cfg['burstMax'] and P.limit(cfg, 'Warrior', 'wins', 500) == cfg['duelShareMax'] * 20,
    'limit: the general one, the duel share of the 20 duels')
-ok(P.limit(cfg, 'Deadeye', 'burst', 1000) == cfg['exceptions']['Deadeye@1000']['burst'] and P.limit(cfg, 'Deadeye', 'burst', 100) == cfg['burstMax'],
+ok(P.limit(cfg, 'Deadeye', 'burst', 1000) == cfg['exceptions']['Deadeye@1000']['burst'] and P.limit(cfg, 'Illusionist', 'burst', 1000) == cfg['burstMax'],  # O455 named Deadeye@100 too: the probe is a class with one level named
    'limit: an exception with a level is for that level only')
 own = P.config(text.replace('exceptions = {', 'exceptions = {\n\t\t["Warrior"] = {killMin = 1},', 1))
 ok(P.limit(own, 'Warrior', 'killMin', 100) == 1 and P.limit(own, 'Warrior', 'killMin', 1000) == 1,

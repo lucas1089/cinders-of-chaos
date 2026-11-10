@@ -4362,7 +4362,9 @@ the Beastmaster's Auto setup data and its modelled DPS do not move. Mine damage 
 Derived, not measured: `class_dps_measured.csv` was measured on the old kit and is not changed. The mines are cast by hand and
 in no Auto rotation, so they add nothing to the modelled DPS. The Deadeye row of the model is the old measurement; the
 rotation_sim ratio of its new best set (1 target -14.1%, 5 targets -11.4% at level 100, no change at 500 and 1000) puts it at
-+0% / -29% of the median at level 100 (band 30%), still inside. That ratio is a derived number. A live re-measure is O452.
++0% / -29% of the median at level 100 (band 30%), still inside. That ratio is a derived number. No live measure of the new kit exists yet.
+The PvP model reads the same sets: the Deadeye's level 100 opening share rises from 0.83 to 0.97 because the set's average
+fell, not because the opening hits more. `pvp_balance_config.lua` names it (`Deadeye@100`, burst 0.98) until the class is measured again.
 
 Mine damage of a Ranger line character: `snares_config.lua` damage with power = the best of distance skill x distance attack,
 blade and shuriken power (`_snares.lua` `M.power`), the same formula and the same input as Snare Trap, which the line already
