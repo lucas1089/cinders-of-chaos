@@ -801,6 +801,52 @@ for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_POISON then
 check(spreads <= 3 + 9 + 27 + 81 and spreads <= C.chain.perChain * 3, "bounded spreads (" .. spreads .. ")")
 check(wave <= 6, "the chain ends (" .. wave .. " waves)")
 
+-- O474: Contagion Rite and the Sigil of Cinders see a scripted tick of a dot spell as a damage over time tick (the four side dots were
+-- spell hits since O468, which these systems do not read)
+do
+	dofile("data/scripts/chaos/dot_config.lua")
+	dofile("data/scripts/chaos/dot_core.lua")
+	creatures, dealt, conditionsAdded = {}, {}, {}
+	local th = mk("player", {hp = 4000, pos = P(700, 700)})
+	setTree(th, {arContagion = 1})
+	local crowd = {}
+	for i = 0, 5 do crowd[#crowd + 1] = mk("monster", {hp = 30, pos = P(701 + (i % 3), 701 + math.floor(i / 3))}) end
+	for _, m in ipairs(crowd) do m.c.events.ChaosArchetypesDeath = true end
+	ChaosDot.run(th, crowd[1], function() hitBy(th, crowd[1], 20, COMBAT_EARTHDAMAGE, ORIGIN_SPELL) end)
+	crowd[1].c.hp = 0
+	registered.ChaosArchetypesDeath.onDeath(crowd[1])
+	runEvents(NOW + 60)
+	local poisonedBy = 0
+	for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_POISON then poisonedBy = poisonedBy + 1 end end
+	eq(poisonedBy, 3, "O474: the death of a monster that a scripted poison tick marked poisons 3")
+	-- a plain spell hit marks nothing
+	creatures, dealt, conditionsAdded = {}, {}, {}
+	local th2 = mk("player", {hp = 4000, pos = P(720, 720)})
+	setTree(th2, {arContagion = 1})
+	local crowd2 = {}
+	for i = 0, 5 do crowd2[#crowd2 + 1] = mk("monster", {hp = 30, pos = P(721 + (i % 3), 721 + math.floor(i / 3))}) end
+	for _, m in ipairs(crowd2) do m.c.events.ChaosArchetypesDeath = true end
+	hitBy(th2, crowd2[1], 20, COMBAT_EARTHDAMAGE, ORIGIN_SPELL)
+	crowd2[1].c.hp = 0
+	registered.ChaosArchetypesDeath.onDeath(crowd2[1])
+	runEvents(NOW + 60)
+	eq(#conditionsAdded, 0, "a plain earth spell hit marks nothing for Contagion")
+	-- the Sigil: a scripted fire tick never ignites (an engine burn does not either); it marks the burn for the spread
+	creatures, dealt, conditionsAdded = {}, {}, {}
+	local inq2 = mk("player", {hp = 4000, pos = P(740, 740)})
+	setTree(inq2, {arCinderSigil = 1})
+	local b1 = mk("monster", {hp = 90000, pos = P(741, 740)})
+	ChaosDot.run(inq2, b1, function() hitBy(inq2, b1, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL) end)
+	runEvents()
+	local ignites = 0
+	for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_FIRE then ignites = ignites + 1 end end
+	eq(ignites, 0, "O474: a scripted fire tick does not ignite again (four to eight extra ignites a cast before)")
+	check(not (M.state[inq2:getId()] and M.state[inq2:getId()].sigil), "and does not brand")
+	hitBy(inq2, b1, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL)
+	runEvents()
+	check(M.state[inq2:getId()] and M.state[inq2:getId()].sigil, "the direct hit of the spell does")
+end
+
 -- the shatter: an ice-hit monster that dies bursts on its neighbours
 creatures, dealt = {}, {}
 local mage = mk("player", {hp = 2000, pos = P(300, 300), level = 300})

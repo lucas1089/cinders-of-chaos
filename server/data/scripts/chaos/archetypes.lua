@@ -862,6 +862,9 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	local pid = player:getId()
 	local source = M.source
 	local oname = originName(origin)
+	if oname == "spell" and ChaosDot and ChaosDot.isTick(origin, player, creature) then
+		oname = "condition" -- O474: a scripted tick of a dot spell is a damage over time tick like an engine condition's
+	end
 	if oname == "spell" and not source and not castContext(player) then
 		oname = "other"
 	end

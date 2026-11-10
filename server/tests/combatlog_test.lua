@@ -564,6 +564,23 @@ engineHit(hero, dragon, COMBAT_FIREDAMAGE, 5, ORIGIN_SPELL)
 r = heroRows(DMG)
 eq(r["Witchfire Bolt"].total, 300, "spell between precast and cast")
 eq(r["Other"].total, 5, "after the cast: other")
+-- O474: a scripted tick of a dot spell (the tick flag of dot_core.lua, raised while the spell deals it) is a row of its own
+do
+	dofile("data/scripts/chaos/dot_config.lua")
+	dofile("data/scripts/chaos/dot_core.lua")
+	local store = {}
+	local realGet, realSet = hero.getStorageValue, hero.setStorageValue
+	hero.getStorageValue = function(_, k) local v = store[k]; if v == nil then return -1 end return v end
+	hero.setStorageValue = function(_, k, v) store[k] = v end
+	ChaosSpellEvents.onSpellPreCast(hero, "Witchfire Bolt", 201, 1, true, 70, 0)
+	local before = heroRows(DMG)["Witchfire Bolt"] and heroRows(DMG)["Witchfire Bolt"].total or 0
+	ChaosDot.run(hero, dragon, function() engineHit(hero, dragon, COMBAT_FIREDAMAGE, 11, ORIGIN_SPELL) end)
+	ChaosSpellEvents.onSpellCast(hero, "Witchfire Bolt", 201, 1, true, 70, 0)
+	local rr = heroRows(DMG)
+	eq(rr["Witchfire Bolt (over time)"] and rr["Witchfire Bolt (over time)"].total, 11, "O474: the tick is the row '<spell> (over time)'")
+	eq(rr["Witchfire Bolt"].total, before, "and the spell's own row does not take it")
+	hero.getStorageValue, hero.setStorageValue = realGet, realSet
+end
 -- a failed cast never reaches onSpellCast: the context is gone after the dispatcher tick
 ChaosSpellEvents.onSpellPreCast(hero, "Witchfire Bolt", 201, 1, true, 70, 0)
 runEvents()

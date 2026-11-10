@@ -282,8 +282,14 @@ function ev.onHealthChange(creature, attacker, primaryDamage, primaryType, secon
 	ctx.resistOf = function(ctype) return list and tonumber(list[ctype]) or 0 end
 	ctx.elementName = function(ctype) return ELEMENT_NAME[ctype] end
 	ctx.rand = rand
+	-- O474: a scripted tick of a dot spell is a damage over time tick: it skips the armour as an engine condition does and
+	-- still meets the resistance (a direct hit is unchanged)
+	local hitOrigin = origin
+	if origin ~= ORIGIN_CONDITION and ChaosDot and ChaosDot.isTick(origin, p, creature) then
+		hitOrigin = ORIGIN_CONDITION
+	end
 	local pd, sd, info = C.defend(ctx, {primary = primaryDamage, ptype = primaryType, secondary = secondaryDamage,
-		stype = secondaryType, origin = origin})
+		stype = secondaryType, origin = hitOrigin})
 	if info.blocked and CONST_ME_BLOCKHIT then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 	end

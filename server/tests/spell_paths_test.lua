@@ -128,45 +128,90 @@ do
 end
 
 -- ====================================================================================== B3: damage over time as pulses
+-- O474: the side dots deal 6 ticks 300 ms apart worth 0.30 x the spell's own hit together (the class spell factor stays: the tick is
+-- a share of the hit as dealt), Blightswarm its old total in 6 ticks; against a player the old timing and size; the rest of a dot
+-- moves on to the nearest living monster when its host dies; a tick is marked for the damage events while it is dealt.
 do
+	local DOT = dofile("data/scripts/chaos/dot_config.lua")
+	dofile("data/scripts/chaos/dot_core.lua")
 	local CASTER_VOC = {witchfire = 1, blightswarm = 1, fallingpyre = 1, psyche = 10}
 	local SPELLS = {
-		{key = "witchfire", script = "chaos/sorcerer/hexfire_bolt.lua", ticks = 4, ms = 3000, ctype = "fire",
-			tick = function(ml) return math.max(2, math.floor(ml * 0.15) + 3) end},
-		{key = "fallingpyre", script = "chaos/sorcerer/meteor_strike.lua", ticks = 5, ms = 3000, ctype = "fire",
-			tick = function(ml) return math.max(3, math.floor(ml * 0.2) + 5) end},
-		{key = "psyche", script = "chaos/illusionist/mind_fracture.lua", ticks = 5, ms = 2000, ctype = "death",
-			tick = function(ml) return math.max(3, math.floor(ml * 0.3) + 4) end},
-		{key = "blightswarm", script = "chaos/druid/venom_swarm.lua", ticks = 8, ms = 2000, ctype = "earth", callback = "onVenomSwarmTarget",
-			tick = function(ml) return math.max(2, math.floor(ml * 0.25) + 3) end},
+		{key = "witchfire", script = "chaos/sorcerer/hexfire_bolt.lua", ctype = "fire", side = true, first = 300,
+			old = {ticks = 4, ms = 3000, tick = function(ml) return math.max(2, math.floor(ml * 0.15) + 3) end}},
+		{key = "fallingpyre", script = "chaos/sorcerer/meteor_strike.lua", ctype = "fire", side = true, first = 1200 + 300,
+			old = {ticks = 5, ms = 3000, tick = function(ml) return math.max(3, math.floor(ml * 0.2) + 5) end}},
+		{key = "psyche", script = "chaos/illusionist/mind_fracture.lua", ctype = "death", side = true, first = 300,
+			old = {ticks = 5, ms = 2000, tick = function(ml) return math.max(3, math.floor(ml * 0.3) + 4) end}},
+		{key = "blightswarm", script = "chaos/druid/venom_swarm.lua", ctype = "earth", callback = "onVenomSwarmTarget", first = 300,
+			old = {ticks = 8, ms = 2000, tick = function(ml) return math.max(2, math.floor(ml * 0.25) + 3) end}},
 	}
+	local function cast(sp, level, ml)
+		Probe.set({voc = CASTER_VOC[sp.key], lvl = level, ml = ml, wtype = "none", hpNow = 3000})
+		local res = Probe.cast(sp.script)
+		if sp.callback then -- the mock's Combat:execute does not run the target callback: call it for the one target
+			res = Probe.record(function() _G[sp.callback](Probe.caster, Probe.target) end)
+		end
+		return res
+	end
 	for _, sp in ipairs(SPELLS) do
 		local src = readAll("data/spells/" .. sp.script)
 		ok(not src:find("addDamageCondition", 1, true), sp.script .. " deals no engine condition any more")
 		ok(src:find("ChaosSpell.scriptedDot", 1, true), sp.script .. " deals scripted ticks")
 		for _, level in ipairs({100, 500, 1000}) do
 			local ml = interp(ANCHORS.ml_caster, level)
-			Probe.set({voc = CASTER_VOC[sp.key], lvl = level, ml = ml, wtype = "none", hpNow = 3000})
-			local res = Probe.cast(sp.script)
-			if sp.callback then -- the mock's Combat:execute does not run the target callback: call it for the one target
-				res = Probe.record(function() _G[sp.callback](Probe.caster, Probe.target) end)
-			end
+			local res = cast(sp, level, ml)
 			ok(not res.err, sp.script .. " casts at level " .. level .. ": " .. tostring(res.err))
-			local ticks = {}
+			local ticks, hit = {}, nil
 			for _, h in ipairs(res.hits) do
-				if h.via == "doTargetCombat" then ticks[#ticks + 1] = h end
+				if h.via == "doTargetCombat" then ticks[#ticks + 1] = h elseif not hit then hit = (math.abs(h.lo) + math.abs(h.hi)) / 2 end
 			end
-			ok(#ticks == sp.ticks, sp.script .. ": " .. sp.ticks .. " ticks at level " .. level .. " (" .. #ticks .. ")")
-			local want = sp.tick(ml)
+			local want = sp.side and DOT.side or DOT.swarm
+			ok(#ticks == want.ticks, sp.script .. ": " .. want.ticks .. " ticks at level " .. level .. " (" .. #ticks .. ")")
+			local f = ChaosSpellFactor.forVocation(CASTER_VOC[sp.key], nil, level)
+			local total = 0
 			for i, h in ipairs(ticks) do
 				ok(h.origin == "spell" and h.ctype == sp.ctype, sp.script .. " tick " .. i .. " is a spell hit of its element")
-				-- the damage event multiplies a spell hit by the class spell factor; the tick was divided by it first
-				local f = ChaosSpellFactor.forVocation(CASTER_VOC[sp.key], nil, level)
-				near(math.abs(h.lo) * f, want, 0.05, sp.script .. " tick " .. i .. " at level " .. level .. " (the old condition tick, class factor " .. string.format("%.2f", f) .. " put back)")
-				ok(h.delay == i * sp.ms or (sp.key == "fallingpyre" and h.delay == 1200 + i * sp.ms), sp.script .. " tick " .. i .. " is due " .. sp.ms .. " ms after the last")
+				ok(h.delay == sp.first + (i - 1) * want.tickMs, sp.script .. " tick " .. i .. " is due " .. want.tickMs ..
+					" ms after the last (first at " .. sp.first .. "): " .. tostring(h.delay))
+				total = total + math.abs(h.lo)
+			end
+			if sp.side then
+				ok(hit and hit > 0, sp.script .. " has its own hit")
+				-- the side dot is `share` of the hit as dealt: no class factor taken off the tick
+				near(total / hit, DOT.side.share, 0.04, sp.script .. " at level " .. level .. ": the dot is 0.30 x the hit (" ..
+					string.format("%.3f", total / hit) .. ")")
+			else
+				-- Blightswarm: the old total (8 old ticks, the class factor put back) in 6 ticks
+				near(total * f, sp.old.ticks * sp.old.tick(ml), 0.05, sp.script .. " at level " .. level .. ": the old total of 8 ticks")
 			end
 		end
 	end
+
+	-- against a player: the old ticks, gap and size, the first tick one gap after the cast, no class factor trick lost
+	local Pmock = setmetatable({}, {__index = function(t, k) return Probe.target[k] end})
+	Pmock.isPlayer = function() return true end
+	Pmock.isMonster = function() return false end
+	Pmock.getPlayer = function(self) return self end
+	Pmock.getCondition = function() return true end -- the icon stands
+	local realCreature = Creature
+	for _, sp in ipairs(SPELLS) do
+		local level = 500
+		local ml = interp(ANCHORS.ml_caster, level)
+		Creature = function(id) if id == 2 then return Pmock end return realCreature(id) end
+		local res = cast(sp, level, ml)
+		Creature = realCreature
+		ok(not res.err, sp.script .. " casts on a player: " .. tostring(res.err))
+		local ticks = {}
+		for _, h in ipairs(res.hits) do if h.via == "doTargetCombat" then ticks[#ticks + 1] = h end end
+		ok(#ticks == sp.old.ticks, sp.script .. " on a player: the old " .. sp.old.ticks .. " ticks (" .. #ticks .. ")")
+		local f = ChaosSpellFactor.forVocation(CASTER_VOC[sp.key], nil, level)
+		for i, h in ipairs(ticks) do
+			near(math.abs(h.lo) * f, sp.old.tick(ml), 0.05, sp.script .. " on a player: the old tick " .. i)
+			local first = sp.key == "fallingpyre" and 1200 or 0
+			ok(h.delay == first + i * sp.old.ms, sp.script .. " on a player: the old gap of " .. sp.old.ms .. " ms (" .. tostring(h.delay) .. ")")
+		end
+	end
+
 	-- a new chain on the same target replaces the old one (a condition is refreshed)
 	do
 		Probe.set({voc = 1, lvl = 500, ml = 113})
@@ -177,6 +222,129 @@ do
 		local n = 0
 		for _, h in ipairs(res.hits) do if h.via == "doTargetCombat" then n = n + 1 end end
 		ok(n == 4, "the newest chain deals its ticks")
+	end
+
+	-- the one engine: first tick at once, the flag raised around every tick, the jump, the cure, the recast
+	do
+		local world, log, store = {}, {}, {}
+		local function mk(id, x, player)
+			local c = {id = id, x = x, hp = 100, player = player or false}
+			c.getId = function() return c.id end
+			c.getPosition = function() return Position(c.x, 100, 7) end
+			c.getHealth = function() return c.hp end
+			c.isPlayer = function() return c.player end
+			c.isMonster = function() return not c.player end
+			c.getMaster = function() return c.master end
+			c.getTile = function() return nil end
+			c.getPlayer = function() return c.player and c or nil end
+			c.getCondition = function(_, kind, id, sub) return c.icon and c.icon[kind .. ":" .. sub] or nil end
+			c.addCondition = function() return true end
+			world[id] = c
+			return c
+		end
+		local caster = Probe.caster
+		caster.setStorageValue = function(_, k, v) store[k] = v end
+		caster.getStorageValue = function(_, k) return store[k] or -1 end
+		caster.isPlayer = function() return true end
+		local realCreature2, realTargetCombat, realSpectators = Creature, doTargetCombat, Game.getSpectators
+		local realCan = ChaosSpell.canAttack
+		ChaosSpell.canAttack = function(c, t) return t ~= c and t:getHealth() > 0 end -- the PvP rules are ChaosSpell.canAttack's own
+		Creature = function(id) if world[id] then return world[id] end return realCreature2(id) end
+		Game.getSpectators = function() local l = {}; for _, c in pairs(world) do l[#l + 1] = c end; table.sort(l, function(x, y) return x.id < y.id end); return l end
+		doTargetCombat = function(cid, tgt, ctype, lo, hi, effect, origin)
+			tgt.hp = tgt.hp + lo
+			log[#log + 1] = {target = tgt.id, v = -lo, tick = ChaosDot.isTick(ORIGIN_SPELL, caster, tgt), hp = tgt.hp}
+			return true
+		end
+		local function run(opts, id, key, first, ticks, tickMs, v)
+			log = {}
+			Probe.record(function()
+				ChaosSpell.scriptedDot(1, id, key, COMBAT_FIREDAMAGE, ticks or 6, tickMs or 300, v or 10, 1, opts)
+			end)
+			return log
+		end
+		-- first tick at once
+		world = {}
+		local host = mk(50, 101)
+		local l = run({firstMs = 0, raw = true}, 50, "t1")
+		ok(#l == 6, "six ticks")
+		ok(l[1].tick, "the first tick is flagged as a damage over time tick while it is dealt")
+		ok(store[DOT.storage] == -1 or store[DOT.storage] == nil, "and the flag is down again after it")
+		ok(not ChaosDot.isTick(ORIGIN_SPELL, caster, host), "a hit outside a tick is a plain hit")
+		-- the host dies at tick 2: the other 4 go on the nearest living monster within 3 squares, never a player or a summon
+		world = {}
+		local a, near1, far, pl, sm = mk(60, 101), mk(61, 103), mk(62, 105), mk(63, 102, true), mk(64, 102)
+		sm.master = pl
+		a.hp = 20 -- two ticks of 10
+		l = run({firstMs = 0, raw = true}, 60, "t2")
+		local on = {}
+		for _, e in ipairs(l) do on[e.target] = (on[e.target] or 0) + 1 end
+		ok(on[60] == 2 and on[61] == 4, "the host takes 2 ticks, the nearest monster the other 4 (" .. tostring(on[60]) .. ", " .. tostring(on[61]) .. ")")
+		ok(not on[62] and not on[63] and not on[64], "not the far monster, the player or the player's summon")
+		-- no new ticks: the total stays 6
+		ok(#l == 6, "no new ticks: 6 in all")
+		-- nothing within 3 squares: it ends
+		world = {}
+		a, far = mk(60, 101), mk(62, 108)
+		a.hp = 20
+		l = run({firstMs = 0, raw = true}, 60, "t3")
+		ok(#l == 2, "no neighbour within 3 squares: the dot ends with its host (" .. #l .. ")")
+		-- a monster that already carries the same dot is not picked (its own chain goes on)
+		world = {}
+		a, near1, far = mk(60, 101), mk(61, 102), mk(62, 104)
+		a.hp = 20
+		ChaosSpell.dots["t4:1:61"] = 12345
+		l = run({firstMs = 0, raw = true}, 60, "t4")
+		on = {}
+		for _, e in ipairs(l) do on[e.target] = (on[e.target] or 0) + 1 end
+		ok(on[62] == 4 and not on[61], "the rest goes past a monster that carries the dot already (" .. tostring(on[62]) .. ")")
+		ChaosSpell.dots["t4:1:61"] = nil
+		-- a dead host at the first tick: the dot of a bolt that killed its target moves on at once
+		world = {}
+		a, near1 = mk(60, 101), mk(61, 102)
+		a.hp = 0
+		l = run({raw = true}, 60, "t5")
+		ok(#l == 6 and l[1].target == 61, "a target that the hit itself killed passes the whole dot on")
+		-- against a player: the matching condition icon shows, a cure ends the dot, no jump
+		world = {}
+		local foe = mk(70, 101, true)
+		foe.icon = {}
+		local added = {}
+		foe.addCondition = function(_, c) added[#added + 1] = c; foe.icon[c.kind .. ":" .. c.sub] = c; return true end
+		local realCondition = Condition
+		Condition = function(kind) local c = {kind = kind, params = {}}; c.setParameter = function(_, k, v) c.params[k] = v; if k == CONDITION_PARAM_SUBID then c.sub = v end end
+			c.addDamage = function(_, r, ms, v) c.rounds, c.interval, c.value = r, ms, v end; return c end
+		local killed = false
+		l = {}
+		log = {}
+		Probe.record(function()
+			ChaosSpell.scriptedDot(1, 70, "t6", COMBAT_FIREDAMAGE, 6, 300, 10, 1, {raw = true, firstMs = 0})
+		end)
+		Condition = realCondition
+		ok(#added == 1 and added[1].kind == CONDITION_FIRE, "a player target gets the zero-damage burning condition (the icon)")
+		ok(added[1].value == 0 and added[1].sub == DOT.icon.subId, "with no damage and its own sub id")
+		ok(added[1].params[CONDITION_PARAM_OWNER] == 1, "owned by the caster")
+		ok(#log == 6, "six ticks on a player while the icon stands")
+		-- a cure removes the icon: the next tick does not land
+		world = {}
+		foe = mk(71, 101, true)
+		foe.icon = {}
+		foe.addCondition = function(_, c) foe.icon[c.kind .. ":" .. c.sub] = c; return true end
+		Condition = function(kind) local c = {kind = kind}; c.setParameter = function(_, k, v) if k == CONDITION_PARAM_SUBID then c.sub = v end end
+			c.addDamage = function() end; return c end
+		local ticksSeen = 0
+		doTargetCombat = function(cid, tgt, ctype, lo, hi)
+			ticksSeen = ticksSeen + 1
+			if ticksSeen == 2 then foe.icon = {} end -- the cure
+			return true
+		end
+		Probe.record(function()
+			ChaosSpell.scriptedDot(1, 71, "t7", COMBAT_FIREDAMAGE, 6, 300, 10, 1, {raw = true, firstMs = 0})
+		end)
+		Condition = realCondition
+		ok(ticksSeen == 2, "a cure ends the dot on a player (" .. ticksSeen .. " ticks)")
+		Creature, doTargetCombat, Game.getSpectators = realCreature2, realTargetCombat, realSpectators
+		ChaosSpell.canAttack = realCan
 	end
 end
 

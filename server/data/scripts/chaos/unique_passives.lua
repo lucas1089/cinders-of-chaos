@@ -296,7 +296,8 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local ctx = {now = t, origin = originName(origin), elem = TYPE_NAME[primaryType] or "other", crit = critical == true,
-		proc = isProc(), dot = origin == ORIGIN_CONDITION, targetId = creature:getId(), targetPlayer = false,
+		proc = isProc(), dot = ChaosDot ~= nil and ChaosDot.isTick(origin, attacker, creature) or origin == ORIGIN_CONDITION,
+		targetId = creature:getId(), targetPlayer = false,
 		targetPct = pct(creature), selfPct = pct(attacker), damage = total, stats = statsOf(attacker),
 		manaPct = attacker:getMaxMana() > 0 and math.floor(attacker:getMana() * 100 / attacker:getMaxMana()) or 0,
 		maxHealth = attacker:getMaxHealth(), health = attacker:getHealth(), maxMana = attacker:getMaxMana(),
@@ -417,7 +418,8 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local fromMonster = attacker ~= nil and attacker:isMonster() and attacker:getMaster() == nil
-	local ctx = {now = t, dmg = total, elem = TYPE_NAME[primaryType] or "other", dot = origin == ORIGIN_CONDITION,
+	local ctx = {now = t, dmg = total, elem = TYPE_NAME[primaryType] or "other",
+		dot = ChaosDot ~= nil and ChaosDot.isTick(origin, attacker, creature) or origin == ORIGIN_CONDITION,
 		fromMonster = fromMonster, maxHealth = creature:getMaxHealth(), health = creature:getHealth(),
 		maxMana = creature:getMaxMana(), mana = creature:getMana(), level = creature:getLevel()}
 	local out = C.incoming(CFG, st.S, st.act, ctx)

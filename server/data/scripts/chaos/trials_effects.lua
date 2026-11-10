@@ -68,6 +68,14 @@ local function originKind(origin)
 	return "other"
 end
 
+-- O474: one predicate for "a damage over time tick" (dot_core.lua): an engine condition tick or a scripted tick of a dot spell
+local function isDotTick(origin, attacker, creature)
+	if ChaosDot then
+		return ChaosDot.isTick(origin, attacker, creature)
+	end
+	return origin == ORIGIN_CONDITION
+end
+
 local function guarded(fn, ...)
 	T.depth = T.depth + 1
 	local K = ChaosKeystones
@@ -217,7 +225,7 @@ end
 
 -- ---------------------------------------------------------------- the player (or a summon) hits
 local function attack(owner, isMinion, b, creature, pd, pt, sd, st, origin)
-	local kind = isMinion and "minion" or originKind(origin)
+	local kind = isMinion and "minion" or (isDotTick(origin, owner, creature) and "dot" or originKind(origin))
 	local s = stateOf(owner:getId())
 	local names = typeNames()
 	local ctx = {origin = kind, ctype = names[pt], hpRatio = ratio(owner), targetRatio = ratio(creature),

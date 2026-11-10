@@ -690,6 +690,28 @@ do
 	eq(ChaosUniquePassives.speedScale(player, "ranged"), 1.25, "speedScale: and a ranged hit its factor")
 	wear("statscale", {stat = "maxMana", from = 0, per = 100, bonusPer = 1, cap = 40, origin = "any"})
 	eq(ChaosUniquePassives.speedScale(player, "melee"), 1, "speedScale: a statscale on another stat is not a speed one")
+	-- O474: a scripted tick of a dot spell is a damage over time tick for the spread uniques (it was a spell hit since O468)
+	do
+		dofile("data/scripts/chaos/dot_config.lua")
+		dofile("data/scripts/chaos/dot_core.lua")
+		local store = {}
+		function player:getStorageValue(k) local v = store[k]; if v == nil then return -1 end return v end
+		function player:setStorageValue(k, v) store[k] = v end
+		wear("spread", {elem = "fire", targets = 3, radius = 2, share = 50, ticks = 4, tickMs = 1000, recentMs = 4000, dealtLess = 0})
+		local S = ChaosUniquePassives.states[1].S
+		S.afflict[2] = nil
+		events.ChaosUPDealt.onHealthChange(mon, player, -40, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL, false)
+		eq(S.afflict[2], nil, "a plain spell hit afflicts nothing")
+		local tickOut
+		ChaosDot.run(player, mon, function()
+			tickOut = events.ChaosUPDealt.onHealthChange(mon, player, -40, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL, false)
+		end)
+		eq(tickOut, -40, "O474: a scripted tick is no hit: no multiplier on it")
+		ok(S.afflict[2] ~= nil, "O474: but the spread unique notes the burning monster")
+		S.afflict[2] = nil
+		events.ChaosUPDealt.onHealthChange(mon, player, -40, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION, false)
+		ok(S.afflict[2] ~= nil, "an engine condition tick still does")
+	end
 	events.ChaosUPLogout.onLogout(player)
 	eq(ChaosUniquePassives.states[1], nil, "logout clears the state")
 end

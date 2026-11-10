@@ -49,6 +49,8 @@ G.words = {
 	spellbook = {"spells attack hotkeys", "magias feitiços ataque atalhos"},
 	spelldamage = {"spell damage scaling magic level skill weapon attack level modifiers passive tree support runes cards charms uniques sets how strong",
 		"dano das magias escala nível mágico magic level skill arma ataque nível modificadores árvore passiva runas de suporte cartas charms únicos conjuntos quão forte"},
+	dot = {"damage over time dot burn burning poison bleed bleeding curse ignite ticks stack armour armor chance to bleed ignite poison jump nearby enemy dies",
+		"dano ao longo do tempo queimadura veneno sangramento maldição acumular armadura chance de sangrar incendiar envenenar pulsos passa inimigo próximo morre"},
 	townportal = {"town city temple go back", "cidade templo voltar"},
 	stash = {"storage depot items", "depósito guardar itens"},
 	crafting = {"orbs upgrade gear modifiers gems", "orbes melhorar equipamento modificadores gemas"},

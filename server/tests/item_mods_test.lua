@@ -808,6 +808,31 @@ eq(sIce, 50, "the secondary part is not changed here either")
 player.health = 100
 eq(dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), 60, "+20% damage over time")
 eq(player.health, 100, "a condition tick is no hit")
+-- O474: a scripted tick of a dot spell is the same (ChaosDot raises the flag around it): +20%, no health on hit, no ailment roll
+do
+	local store = {}
+	function player:getStorageValue(k) local v = store[k]; if v == nil then return -1 end return v end
+	function player:setStorageValue(k, v) store[k] = v end
+	player.health = 100
+	local realRandom2 = math.random
+	math.random = function(a, b) return a end -- every roll would hit
+	local before = #conditions
+	local stacksBefore = 0
+	for _ in pairs(M.stackBook) do stacksBefore = stacksBefore + 1 end
+	local got
+	ChaosDot.run(player, orc, function()
+		got = dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	end)
+	math.random = realRandom2
+	eq(got, 60, "O474: a scripted tick takes +20% damage over time too")
+	eq(player.health, 100, "and gives no health on hit")
+	local stacksAfter = 0
+	for _ in pairs(M.stackBook) do stacksAfter = stacksAfter + 1 end
+	eq(stacksAfter, stacksBefore, "and rolls no ailment")
+	eq(#conditions, before, "(no chill either)")
+	-- the same hit outside a tick is a plain hit
+	eq(dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 50, "a plain spell hit takes no damage over time bonus")
+end
 -- execute: a non-boss monster left at or below 5% dies
 orc.health = 5400
 eq(dealt.onHealthChange(orc, player, 500, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 5400, "4900 of 100000 left: executed")
@@ -825,12 +850,108 @@ orc.health = 100000
 dealt.onHealthChange(orc, player, 400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 local kinds = {}
 for _, c in ipairs(conditions) do kinds[c.c.kind] = c.c end
-eq(kinds[CONDITION_BLEEDING].value, -M.ailmentTick(400), "bleeding: a share of the hit per tick")
-eq(kinds[CONDITION_BLEEDING].params[CONDITION_PARAM_OWNER], player:getId(), "owned by the player")
-eq(kinds[CONDITION_BLEEDING].rounds, 4)
+-- O474: a gear ailment is a stack of scripted ORIGIN_CONDITION ticks owned by the player, no engine condition
+eq(kinds[CONDITION_BLEEDING], nil, "O474: bleeding is no engine condition any more (it stacks)")
 eq(kinds[CONDITION_PARALYZE].formula[1], -0.3, "chill slows by 30%")
 eq(kinds[CONDITION_FIRE], nil, "no ignite chance, no ignite")
-eq(M.ailmentTick(400), 40, "40% of 400 over 4 ticks")
+eq(M.ailmentTick(400), 40, "40% of 400 over 4 ticks (the item sets' condition keeps its own rounds)")
+do
+	local D, DC = ChaosDot, ChaosDotConfig
+	local byId = {[player:getId()] = player, [orc:getId()] = orc}
+	local realPlayerFn, realCreatureFn, realDTC = Player, rawget(_G, "Creature"), doTargetCombat
+	Player = function(id) return byId[id] end
+	rawset(_G, "Creature", function(id) return byId[id] end)
+	local dealtTicks = {}
+	function doTargetCombat(cid, tgt, ctype, lo, hi, effect, origin)
+		dealtTicks[#dealtTicks + 1] = {from = cid, to = tgt, ctype = ctype, v = -lo, origin = origin}
+		return true
+	end
+	local function beats(maxBeats)
+		local ran = 0
+		while ran < maxBeats do
+			local t
+			for i, timer in ipairs(timers) do
+				if timer.ms == DC.ailment.interval then t = table.remove(timers, i) break end
+			end
+			if not t then break end
+			ran = ran + 1
+			t.fn((table.unpack or unpack)(t.args))
+		end
+		return ran
+	end
+	local slots = 0
+	for _ in pairs(M.stackBook) do slots = slots + 1 end
+	eq(slots, 1, "one bleed stack was put on the orc by the forced roll above")
+	local shockedUntil = M.shocked[orc:getId()]
+	M.shocked[orc:getId()] = 0 -- the forced roll above shocked it (+15% for everyone): not what is measured here
+	M.set(weapon, "chillchance", 0); M.set(weapon, "shockchance", 0)
+	M.refresh(player)
+	timers = {}
+	M.stackBook = M.stackBook
+	for k in pairs(M.stackBook) do M.stackBook[k] = nil end
+	-- one proc: a stack of 40% of the hit over 8 ticks, 0.5 s apart, ORIGIN_CONDITION, physical, owned by the player
+	math.random = function(a, b) return a end
+	orc.health = 100000
+	dealtTicks = {}
+	dealt.onHealthChange(orc, player, 400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	local first
+	for _, timer in ipairs(timers) do if timer.ms == DC.ailment.interval then first = timer end end
+	eq(first ~= nil, true, "the first tick is one interval (0.5 s) after the proc")
+	eq(beats(20), 8, "eight ticks")
+	eq(#dealtTicks, 8, "each dealt as damage")
+	local total = 0
+	for _, t in ipairs(dealtTicks) do
+		total = total + t.v
+		eq(t.origin, ORIGIN_CONDITION, "as a condition tick (everything that reads one keeps working)")
+		eq(t.ctype, COMBAT_PHYSICALDAMAGE, "of the bleed's element")
+		eq(t.from, player, "owned by the player")
+	end
+	eq(total, 8 * D.ailmentTick(400, M.config.ailment.share, DC.ailment.rounds), "40% of the hit in all, as before")
+	eq(total, 160, "160 of a hit of 400")
+	eq(next(M.stackBook), nil, "and the stack is gone")
+	-- three procs make three stacks that tick together; a fourth replaces the weakest
+	dealtTicks = {}
+	timers = {}
+	for _, hit in ipairs({400, 800, 1200}) do
+		dealt.onHealthChange(orc, player, hit, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	end
+	eq(beats(1), 1, "one beat")
+	eq(dealtTicks[1].v, 20 + 40 + 60, "the three stacks tick together on one beat")
+	dealt.onHealthChange(orc, player, 2000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	dealtTicks = {}
+	beats(1)
+	eq(dealtTicks[1].v, 40 + 60 + 100, "a fourth stack (100) replaced the weakest (20)")
+	-- a hit weaker than all three is dropped
+	dealt.onHealthChange(orc, player, 40, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	dealtTicks = {}
+	beats(1)
+	eq(dealtTicks[1].v, 40 + 60 + 100, "a weaker fourth is dropped")
+	-- another type is its own stack list
+	M.set(weapon, "ignitechance", 10)
+	M.refresh(player)
+	dealtTicks = {}
+	dealt.onHealthChange(orc, player, 800, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	beats(2) -- the bleed stacks' beat, then the new ignite stack's
+	local types = {}
+	for _, t in ipairs(dealtTicks) do types[t.ctype] = (types[t.ctype] or 0) + t.v end
+	eq(types[COMBAT_FIREDAMAGE], 40, "the ignite is its own stack (40 of 800 over 8)")
+	eq(types[COMBAT_PHYSICALDAMAGE] ~= nil and types[COMBAT_PHYSICALDAMAGE] > 0, true, "next to the running bleed stacks")
+	-- a dead target ends it
+	orc.health = 0
+	dealtTicks = {}
+	beats(3)
+	eq(#dealtTicks, 0, "a dead target takes no more ticks")
+	eq(next(M.stackBook), nil, "no stack outlives its target")
+	orc.health = 100000
+	for k in pairs(M.stackBook) do M.stackBook[k] = nil end
+	timers = {}
+	Player, doTargetCombat = realPlayerFn, realDTC
+	rawset(_G, "Creature", realCreatureFn)
+	M.set(weapon, "ignitechance", 0)
+	M.set(weapon, "chillchance", 10); M.set(weapon, "shockchance", 10)
+	M.refresh(player)
+	M.shocked[orc:getId()] = shockedUntil
+end
 -- shocked: +15% damage from everyone
 math.random = function(a, b) return b end
 local other2 = newCreature("player")

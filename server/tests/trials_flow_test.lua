@@ -256,6 +256,35 @@ do
 	ChaosArchetypes, math.random = savedA, savedRandom
 end
 
+-- O474: the Trials' "damage over time" nodes (dealDot) reach a scripted tick of a dot spell; "spell damage" (dealSpell) does not
+do
+	dofile("data/scripts/chaos/dot_config.lua")
+	dofile("data/scripts/chaos/dot_core.lua")
+	local nodeEvent
+	for _, e in ipairs(registered) do
+		if e.name == "ChaosTrialNodes" then nodeEvent = e end
+	end
+	local store = {}
+	local owner = {getId = function() return 610 end, isPlayer = function() return true end, getHealth = function() return 1000 end,
+		getMaxHealth = function() return 1000 end, getMaster = function() return nil end,
+		getStorageValue = function(_, k) local v = store[k]; if v == nil then return -1 end return v end,
+		setStorageValue = function(_, k, v) store[k] = v end}
+	local foe = {getId = function() return 9610 end, isPlayer = function() return false end, getHealth = function() return 1000 end,
+		getMaxHealth = function() return 1000 end, getMaster = function() return nil end}
+	local savedCache = ChaosPassiveCache
+	ChaosPassiveCache = {[610] = {trialNodes = 1, dealSpell = 10, dealDot = 50}}
+	local plain = nodeEvent.onHealthChange(foe, owner, -100, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	eq(plain, -110, "a plain spell hit takes the spell damage node (+10%)")
+	local tick
+	ChaosDot.run(owner, foe, function()
+		tick = nodeEvent.onHealthChange(foe, owner, -100, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	end)
+	eq(tick, -150, "O474: a scripted tick takes the damage over time node (+50%) and not the spell one")
+	eq(nodeEvent.onHealthChange(foe, owner, -100, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), -150,
+		"an engine condition tick takes it as before")
+	ChaosPassiveCache = savedCache
+end
+
 -- O187: the Marked Cutthroat and the other trial monsters. Kills are credited, nothing else stands in a running chamber.
 do
 	eq(ChaosTierConfig.skip["trial thrall"], true, "the thralls get no tier (so no ambush copy)")

@@ -368,6 +368,23 @@ P.features = {
 		who = {"Every class. Mystic, Elementalist, Illusionist and Necromancer lines scale with level and magic level. Warrior, Ranger, Thief and Monk lines scale with level, weapon skill and weapon attack, and a little with magic level. Templar spells use all three.",
 			"Toda classe. As linhas Mystic, Elementalist, Illusionist e Necromancer crescem com o nível e o nível mágico. As linhas Warrior, Ranger, Thief e Monk crescem com o nível, a skill e o ataque da arma, e um pouco com o nível mágico. As magias da linha Templar usam os três."}},
 
+	-- O474: damage over time; every number is read from dot_config.lua
+	{key = "dot", title = {"Damage over time", "Dano ao longo do tempo"},
+		values = function(C, H)
+			local D = C.dot
+			local function pct(x) return math.floor(x * 100 + 0.5) end
+			return {share = pct(D.side.share), ticks = D.side.ticks, tickMs = D.side.tickMs, kitMs = D.kit.tickMs,
+				stacks = D.ailment.maxStacks, aRounds = D.ailment.rounds, aMs = D.ailment.interval, radius = D.jump.radius}
+		end,
+		what = {"Burning, poison, bleeding and curses keep hurting after the hit. Each tick ignores armour; only resistance counts. A tick gives no life or mana on hit and rolls no ailment. The Damage over Time modifier on gear raises every tick, the ticks of your spells too.",
+			"Queimadura, veneno, sangramento e maldições continuam ferindo depois do golpe. Cada pulso ignora a armadura; só a resistência conta. Um pulso não dá vida nem mana por golpe e não sorteia ailment. O modificador Damage over Time do equipamento aumenta todo pulso, inclusive os das suas magias."},
+		who = {"Witchfire Bolt, Falling Pyre, Shattered Psyche and Blightswarm leave a burn, curse or poison worth {share}% of their own hit in {ticks} ticks, {tickMs} ms apart. Gorehook, Dreamrot, Venom Spiral, Blightbrand, Martyr's Pyre, Crimson Covenant, Withering Curse and Soul Rot tick every {kitMs} ms or faster, the first tick at once.",
+			"Witchfire Bolt, Falling Pyre, Shattered Psyche e Blightswarm deixam uma queimadura, maldição ou veneno que vale {share}% do próprio golpe em {ticks} pulsos, com {tickMs} ms entre eles. Gorehook, Dreamrot, Venom Spiral, Blightbrand, Martyr's Pyre, Crimson Covenant, Withering Curse e Soul Rot pulsam a cada {kitMs} ms ou menos, o primeiro na hora."},
+		drops = {"Chance to Bleed, Ignite and Poison on gear stack: up to {stacks} of one kind on one monster, each {aRounds} ticks of {aMs} ms. A fourth replaces the weakest.",
+			"Chance to Bleed, Ignite e Poison do equipamento se acumulam: até {stacks} do mesmo tipo em um monstro, cada um com {aRounds} pulsos de {aMs} ms. O quarto troca o mais fraco."},
+		often = {"When the target of a spell's damage over time dies, what is left moves to the nearest living monster within {radius} squares. Never to a player, and it adds no new ticks. Against players every damage over time works as it did before.",
+			"Quando o alvo do dano ao longo do tempo de uma magia morre, o que sobrou passa ao monstro vivo mais próximo a até {radius} quadrados. Nunca a um jogador, e não cria pulsos novos. Contra jogadores todo dano ao longo do tempo funciona como antes."}},
+
 	{key = "bestiary", title = {"Bestiary", "Bestiário"}, window = "game_bestiary", goals = {"task1", "known25", "completed10"},
 		values = function(C, H)
 			local B = C.bestiary

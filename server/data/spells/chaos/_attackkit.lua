@@ -24,7 +24,6 @@ AttackKit = {}
 local A = AttackKit
 local K = ChaosAttackKitCore
 A.dots = {}
-local tokens = 0
 
 local COMBAT = {
 	physical = COMBAT_PHYSICALDAMAGE, holy = COMBAT_HOLYDAMAGE, earth = COMBAT_EARTHDAMAGE,
@@ -236,27 +235,31 @@ local function critMult(player, target, spec)
 end
 
 -- ------------------------------------------------------------------------------------------- damage over time
+-- O474: the first tick at once, then every spec.tickMs (attack_kit_config.lua, ChaosDotConfig.kit), on ChaosSpell.dotChain: when
+-- the host dies the rest moves on to the nearest living monster within 3 squares. Against a PLAYER the old gap, first tick and
+-- size (ChaosDotConfig.pvp.kit) and no jump.
 local function startDot(player, target, key, spec, lo, hi, effect)
-	if spec.school == "necro" then
-		return NecroSpell.dot(player:getId(), target:getId(), key, spec.ticks, spec.tickMs, lo, hi, COMBAT[spec.ctype], effect)
+	local D = ChaosDot
+	local tickMs, firstMs = spec.tickMs, 0
+	local radius = D and D.cfg().jump and D.cfg().jump.radius or 0
+	if D and target:isPlayer() then
+		local old = D.pvpKit(key)
+		if old then
+			tickMs, firstMs, lo, hi = old.tickMs or tickMs, old.firstMs or 0, lo * old.mult, hi * old.mult
+		end
+		radius = 0
 	end
-	tokens = tokens + 1
-	local token = tokens
-	local slot = key .. ":" .. player:getId() .. ":" .. target:getId()
-	A.dots[slot] = token
-	local casterId, targetId = player:getId(), target:getId()
-	ChaosSpell.pulse(casterId, spec.ticks, spec.tickMs, function(caster, step)
-		local host = Creature(targetId)
-		if A.dots[slot] ~= token or not host or host:getHealth() <= 0 then
-			A.dots[slot] = nil
-			return false
-		end
-		A.hit(caster, host, spec, lo, hi, effect)
-		if step >= spec.ticks then
-			A.dots[slot] = nil
-		end
-		return true
-	end)
+	if spec.school == "necro" then
+		return NecroSpell.dot(player:getId(), target:getId(), key, spec.ticks, tickMs, lo, hi, COMBAT[spec.ctype], effect, radius,
+			firstMs)
+	end
+	ChaosSpell.dotChain({
+		casterId = player:getId(), targetId = target:getId(), key = key, registry = A.dots, ticks = spec.ticks, tickMs = tickMs,
+		firstMs = firstMs, jumpRadius = radius, ctype = COMBAT[spec.ctype],
+		deal = function(caster, host)
+			A.hit(caster, host, spec, lo, hi, effect)
+		end,
+	})
 	return true
 end
 
