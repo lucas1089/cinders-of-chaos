@@ -115,7 +115,7 @@ sword:setCustomAttribute(M.bindAttr("rarity_criticalHitChance"), 1) -- the pair 
 eq(M.versionOf(sword), 0, "no version mark")
 eq(C.needsUpgrade(sword), true)
 eq(C.upgradeItem(sword), true, "upgraded")
-eq(M.versionOf(sword), 2, "marked")
+eq(M.versionOf(sword), 3, "marked")
 eq(C.needsUpgrade(sword), false); eq(C.upgradeItem(sword), false, "once")
 -- attack speed: T4 {5,7} -> {14,16}, the rolled 5 is the bottom
 eq(modValue(sword, "attackspeed"), 14, "Attack Speed: rolled 5 of T4 5-7 (the 7 stored was the quality's) -> 14 of 14-16")
@@ -215,7 +215,7 @@ ancient:setCustomAttribute(M.attr("attackspeed"), 9) -- no tier mark: the tier f
 ancient:setCustomAttribute("rarity_swordSkill", 2)
 ancient:setCustomAttribute("rarity_criticalHitChance", 3); ancient:setCustomAttribute("rarity_criticalHitAmount", 4)
 local am = C.readMods(ancient)
-eq(M.versionOf(ancient), 2, "reading marked it")
+eq(M.versionOf(ancient), 3, "reading marked it")
 eq(modValue(ancient, "attackspeed"), 9, "a modifier without a tier mark keeps its number")
 eq(ancient:getCustomAttribute("ct_chaos_mod_attackspeed"), nil, "and has no mark written: the legacy tables still read its tier")
 eq(M.tierOf(ancient, "attackspeed"), 6, "T6 of the legacy table (7-10), as before")
@@ -231,7 +231,7 @@ eq(ancient:getCustomAttribute("rarity_criticalHitAmount"), 28, "Critical Strike 
 local viaRead = oldItem(2400, 4, 60)
 oldMod(viaRead, "attackspeed", 6, 4)
 M.read(viaRead)
-eq(M.versionOf(viaRead), 2, "ChaosItemMods.read upgrades")
+eq(M.versionOf(viaRead), 3, "ChaosItemMods.read upgrades")
 eq(modValue(viaRead, "attackspeed"), 15, "5-7 -> 14-16: 6 is the middle")
 local viaMods = oldItem(2400, 4, 60)
 oldMod(viaMods, "attackspeed", 7, 4)
@@ -240,7 +240,7 @@ eq(modValue(viaMods, "attackspeed"), 16, "ChaosCrafting.readMods upgrades: 7 is 
 -- a new item is rolled in today's numbers and marked
 local forged = newItem(2400)
 C.forge(forged, 4, 100, function(a, b) return b end)
-eq(M.versionOf(forged), 2, "a forged item carries the mark")
+eq(M.versionOf(forged), 3, "a forged item carries the mark")
 eq(C.needsUpgrade(forged), false)
 local before2 = forged:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
 C.readMods(forged)
@@ -252,7 +252,7 @@ oldMod(oldRare, "attackspeed", 6, 4)
 oldRare:setCustomAttribute("rarity_criticalHitChance", 3); oldRare:setCustomAttribute("rarity_criticalHitAmount", 5)
 oldRare:setCustomAttribute("ct_rarity_criticalhitchance", 4)
 local okC, why = C.check("exalted", oldRare)
-eq(M.versionOf(oldRare), 2, "an orb's check reads the item")
+eq(M.versionOf(oldRare), 3, "an orb's check reads the item")
 eq(okC, true, "a Rare item with the pair (two prefixes) and attack speed (a suffix): a suffix is still open")
 -- the item may end with one modifier more than its rarity allows: a Common item with a pair is two prefixes after the upgrade
 local common = oldItem(2400, 1, 60)
@@ -263,6 +263,100 @@ eq(M.modCount(common:getCustomAttribute("rarity")), 1)
 okC, why = C.check("exalted", common)
 eq(okC, false); eq(why, "full", "and no room for more")
 eq(C.check("annulment", common), true, "an Orb of Unmaking still works: it takes one of the two")
+
+-- ---------------------------------------------------------------- 7. O464: the defence rows (version 2 -> 3)
+-- an item of version 2 (O461): each per-type absorb became the resistance of its group at the same tier and the same place in the
+-- range; two of one group on one item became one (the higher tier); the other rows keep tier and relative position
+local function v2Item(id, rarity, level)
+	local it = oldItem(id, rarity, level)
+	it:setCustomAttribute("chaos_modv", 2)
+	return it
+end
+local function engineMod(it, key, value, tier)
+	it:setCustomAttribute(key, value)
+	it:setCustomAttribute("ct_" .. key:lower(), tier)
+end
+-- worked example A: a Rare armour with fire 6 (T5 of 5-8), ice 4 (T3 of 3-5), water 8 (T5, the top), physical 8 (T6 of 6-10), dodge 4
+-- (T4 of 2-4: the top)
+local armorA = v2Item(2466, 4, 100)
+engineMod(armorA, "rarity_fireAbsorb", 6, 5)
+engineMod(armorA, "rarity_iceAbsorb", 4, 3)
+engineMod(armorA, "rarity_waterAbsorb", 8, 5)
+engineMod(armorA, "rarity_physicalAbsorb", 8, 6)
+oldMod(armorA, "dodge", 4, 4)
+eq(C.needsUpgrade(armorA), true, "version 2 is below 3")
+eq(C.upgradeItem(armorA), true, "upgraded")
+eq(M.versionOf(armorA), 3, "marked 3")
+eq(modValue(armorA, "fireres"), 32, "fire absorb 6 (a third of T5 5-8) -> a third of T5 30-35: 32")
+eq(armorA:getCustomAttribute("ct_chaos_mod_fireres"), 5, "the tier stays")
+eq(armorA:getCustomAttribute("rarity_fireAbsorb"), nil, "the old row is gone")
+eq(modValue(armorA, "coldres"), 35, "ice (T3) and water (T5) become one cold resistance: the higher tier, water's top 8 -> 35")
+eq(armorA:getCustomAttribute("ct_chaos_mod_coldres"), 5, "the higher tier")
+eq(armorA:getCustomAttribute("rarity_iceAbsorb"), nil, "ice is gone"); eq(armorA:getCustomAttribute("rarity_waterAbsorb"), nil, "water is gone")
+eq(armorA:getCustomAttribute("rarity_physicalAbsorb"), 6, "physical 8 of T6 6-10 (half way) -> T6 6-6: 6")
+eq(armorA:getCustomAttribute("ct_rarity_physicalabsorb"), 6, "the tier stays")
+eq(modValue(armorA, "dodge"), 6, "dodge 4 of T4 2-4 (the top) -> the top of T4 5-6")
+eq(#C.readMods(armorA), 4, "five rows became four modifiers")
+ok(armorA:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Fire Resistance +32%", 1, true), "the description is written again: "
+	.. armorA:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION))
+-- worked example B: an energy, a holy, an earth and a death absorb on a Legendary helmet: lightning and chaos; a bound one binds
+local helmB = v2Item(2471, 5, 110)
+engineMod(helmB, "rarity_energyAbsorb", 10, 8) -- T8 10-14: the bottom
+engineMod(helmB, "rarity_holyAbsorb", 12, 7)  -- T7 8-12: the top
+engineMod(helmB, "rarity_earthAbsorb", 3, 3)   -- T3 3-5: the bottom
+engineMod(helmB, "rarity_deathAbsorb", 4, 3)   -- T3 3-5: half way
+helmB:setCustomAttribute(M.bindAttr("rarity_holyAbsorb"), 1)
+eq(C.upgradeItem(helmB), true)
+eq(modValue(helmB, "lightningres"), 46, "energy (T8, the bottom) and holy (T7): the higher tier, T8: the bottom of 46-48")
+eq(helmB:getCustomAttribute("ct_chaos_mod_lightningres"), 8)
+eq(M.isBound(helmB, "chaos_mod_lightningres"), true, "a bound row binds the one it became")
+eq(modValue(helmB, "chaosres"), 15, "earth and death (both T3): the higher value, death's half way of 3-5 -> half way of 13-16: 15, earth's bottom 13: death's 15 wins")
+eq(helmB:getCustomAttribute("ct_chaos_mod_chaosres"), 3)
+-- worked example C: a version 1 item with quality (the quality comes off first) and an item from before the tiers
+local armorC = oldItem(2466, 4, 100, 20) -- quality 20
+engineMod(armorC, "rarity_earthAbsorb", 7, 4) -- stored 7 = 6 x 1.2 (rounded): the raw 6, the top of T4 4-6
+armorC:setCustomAttribute("cv_rarity_earthabsorb", 6)
+eq(C.upgradeItem(armorC), true)
+eq(modValue(armorC, "chaosres"), 20, "version 1: the quality comes off (6), the top of T4 4-6 -> the top of T4 17-20")
+eq(M.versionOf(armorC), 3)
+local ancientC = oldItem(2466, 4, 60) -- no tier mark at all: the legacy ranges read its tier
+ancientC:setCustomAttribute("rarity_holyAbsorb", 3)
+eq(C.upgradeItem(ancientC), true)
+local lr = modValue(ancientC, "lightningres")
+ok(lr and lr >= 6 and lr <= 48, "an item without a tier mark: the tier from the legacy ranges, a number in the new range: " .. tostring(lr))
+eq(ancientC:getCustomAttribute("rarity_holyAbsorb"), nil, "the old row is gone")
+-- fixed values are never touched: a unique keeps its per-type absorb (the layer counts it as a source)
+local uniq = v2Item(2466, 4, 100)
+uniq:setCustomAttribute("chaos_unique", 1)
+uniq:setCustomAttribute("chaos_modv", 0)
+uniq:removeCustomAttribute("chaos_modv")
+engineMod(uniq, "rarity_fireAbsorb", 6, 5)
+eq(C.needsUpgrade(uniq), false, "a unique is not upgraded")
+eq(C.upgradeItem(uniq), false)
+eq(uniq:getCustomAttribute("rarity_fireAbsorb"), 6, "and keeps its fire absorb")
+eq(M.versionOf(uniq), 0, "no mark")
+-- an item that already has the new resistance of the group: the higher tier wins as well
+local armorD = v2Item(2466, 4, 100)
+engineMod(armorD, "rarity_iceAbsorb", 14, 8) -- T8 10-14: the top
+eq(C.upgradeItem(armorD), true)
+eq(modValue(armorD, "coldres"), 48, "the top of T8 -> the top of 46-48")
+-- rows that did not move their tier only change number: thorns T6 60-110 (at 100) -> T6 76-110
+local armorE = v2Item(2466, 4, 100)
+oldMod(armorE, "thorns", 85, 6)
+oldMod(armorE, "monsterreduction", 5, 6)
+oldMod(armorE, "block", 10, 5)
+C.upgradeItem(armorE)
+eq(modValue(armorE, "thorns"), C.remapValue(85, {60, 110}, {76, 110}), "thorns: the same place in the new range")
+eq(modValue(armorE, "monsterreduction"), 6, "damage taken from monsters 5 of T6 4-6 -> T6 6-6")
+eq(modValue(armorE, "block"), C.remapValue(10, {7, 10}, {15, 16}), "block T5: 7-10 -> 15-16")
+-- an item upgraded at version 2 does not get the quality moved a second time
+local armorF = v2Item(2466, 4, 100)
+armorF:setCustomAttribute(M.QUALITY, 20)
+armorF:setAttribute(ITEM_ATTRIBUTE_ARMOR, 30)
+engineMod(armorF, "rarity_fireAbsorb", 5, 5)
+C.upgradeItem(armorF)
+eq(armorF:getAttribute(ITEM_ATTRIBUTE_ARMOR), 30, "version 2 carries the quality on the base bonus already: not moved again")
+eq(modValue(armorF, "fireres"), 30, "the bottom of T5 stays the bottom: 30")
 
 -- ---------------------------------------------------------------- the worked examples (the report quotes them)
 if os.getenv("UPGRADE_PRINT") then

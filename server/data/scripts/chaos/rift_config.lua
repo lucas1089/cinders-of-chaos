@@ -295,7 +295,12 @@ return {
 			tiers = {2, 3, 4, 5, 6}, weight = 50, minTier = 2, reward = {quantity = 4.5, rarity = 3}},
 		{key = "veilstorm", side = "suffix", name = "Veilstorm", text = "Marked storm strikes near the players: %d%% of max health",
 			range = {10, 30}, step = 5, tiers = {10, 15, 20, 25, 30}, weight = 50, minTier = 3,
-			reward = {quantity = 0.8, rarity = 0.4}}
+			reward = {quantity = 0.8, rarity = 0.4}},
+		-- O464 (appended: the crash refund marker stores a modifier by its index): the players' maximum resistances are lowered
+		-- by this many points (the cap of 75 of the four resistances, player_defence.lua hooks.capDelta); tiers I-V: 5 .. 25
+		{key = "frayed", side = "suffix", name = "Frayed Wards", text = "Players' maximum resistances are lowered by %d",
+			range = {5, 25}, step = 5, tiers = {5, 10, 15, 20, 25}, weight = 50, minTier = 2,
+			reward = {quantity = 0.4, rarity = 0.4}, note = "Hardest on characters that sit at the cap of every resistance."}
 	},
 	-- which modifier tiers a key rolls: {up to key tier, lowest, highest}. A value is drawn evenly from the bottom of the
 	-- lowest to the top of the highest tier (a modifier with fewer tiers stops at its last). Keys of tier 1-5 (and orbs

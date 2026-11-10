@@ -186,7 +186,8 @@ function Gen.load()
 		nemesis = loadConfig("nemesis_config"), townportal = loadConfig("townportal_config"),
 		lootfilter = loadConfig("lootfilter_config"), itemfinder = loadConfig("itemfinder_config"),
 		achievements = loadConfig("achievements_data"), guild = loadConfig("guild_config"),
-		respec = loadConfig("respec_config"), passive = Chaos.passive, autoloot = Chaos.autoloot
+		respec = loadConfig("respec_config"), passive = Chaos.passive, autoloot = Chaos.autoloot,
+		defence = loadConfig("defence_config"), playerDefence = loadConfig("player_defence_config")
 	}
 	C.towerRun = scanNumbers("data/scripts/chaos/infinitytower_run.lua",
 		{"maxPartySize", "floorTimeLimit", "bossFloorTimeMult", "runTimeLimit"})

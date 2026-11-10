@@ -236,7 +236,7 @@ sword:setCustomAttribute("rarity", 4) -- Epic: tier 2
 sword:setCustomAttribute("combatPowerLevel", 37)
 sword:setCustomAttribute("rarity_physicalAbsorb", 2)
 sword:setCustomAttribute("rarity_swordSkill", 1)
-sword:setCustomAttribute("chaos_modv", 2) -- numbers of O461: read as they are, not upgraded (the upgrade has its own tests)
+sword:setCustomAttribute("chaos_modv", 3) -- numbers of O461: read as they are, not upgraded (the upgrade has its own tests)
 sword:setCustomAttribute("rarity_criticalHitChance", 2)
 sword:setCustomAttribute("rarity_criticalHitAmount", 1)
 sword:setCustomAttribute("rarity_elementfire", 7)

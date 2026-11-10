@@ -305,7 +305,7 @@
 		"invasion.minLevel": 30,
 		"invasion.on": true,
 		"item.maxItemLevel": 150,
-		"item.modifiers": 78,
+		"item.modifiers": 76,
 		"item.powers": 12,
 		"item.powersFrom": "Legendary",
 		"item.qualityCap": 20,
@@ -374,7 +374,7 @@
 		"rift.maxMods": 3,
 		"rift.maxPlayers": 5,
 		"rift.maxTier": 15,
-		"rift.mods": 36,
+		"rift.mods": 37,
 		"rift.omenKeyCost": 60,
 		"rift.omenMinTier": 6,
 		"season.finish": "",
@@ -9696,13 +9696,52 @@
 						{
 							"h": "Sides",
 							"p": [
-								"Prefixes: damage and defence (skills, critical hits, weapon elements, block, dodge, reflect, thorns, penetration, ailments, maximum life and mana...).",
-								"Suffixes: utility, resistances and speed (absorbs, leech, attack and movement speed, life and mana on kill or hit, mana regeneration, attributes, experience...).",
+								"Prefixes: damage and defence (skills, critical hits, weapon elements, armour, block, dodge, reflect, thorns, penetration, ailments, maximum life and mana...).",
+								"Suffixes: utility, resistances and speed (the four resistances, spell suppression, physical reduction, leech, attack and movement speed, life and mana on kill or hit, mana regeneration, attributes, experience...).",
 								"A new item is rolled until its count or both sides are full; the Orb of Grafting only adds on a side that is open. An Orb of Ruin can give one extra slot on one side."
 							]
 						}
 					],
 					"icon": "wiki/i/k-steel-twin.png"
+				},
+				{
+					"id": "basics:defence",
+					"name": "How you defend",
+					"sub": "The order of a hit on your character, the four resistances and the armour.",
+					"color": "#d6c9ae",
+					"sections": [
+						{
+							"h": "The order of a hit",
+							"p": [
+								"1. Avoidance, for hits only (never a burn, poison or a field): dodge for attacks (a monster's melee and ranged attacks, a player's weapon hits), block for attacks, spell suppression for spells (a suppressed spell deals 50% less).",
+								"2. Mitigation by damage type: a physical hit loses its armour share plus your physical reduction (at most 90% together); fire, cold, lightning and chaos hits lose their resistance.",
+								"3. Then the other bonuses (damage taken from monsters, blessings, gems, charms, sets ...), the mana shield, the energy shield and your health. Last Breath works last of all."
+							]
+						},
+						{
+							"h": "Armour",
+							"p": [
+								"Armour takes A / (A + 0.07 x H) off a physical hit of size H: a lot of a small hit, little of a big one.",
+								"A is the armour of the pieces you wear plus the Armour modifier. The passive tree's and the items' physical reduction add to the armour share."
+							]
+						},
+						{
+							"h": "The four resistances",
+							"p": [
+								"Fire: fire. Cold: ice, water, drowning. Lightning: energy, holy, arcane. Chaos: earth, death, life drain, mana drain. Physical is not a resistance: it has armour and the physical reduction.",
+								"Every source adds up (gear, the passive tree, Paragon, item sets, gems, charms); all elements count for Fire, Cold and Lightning, not for Chaos.",
+								"The penalty by level (level 250: -30, level 500: -60) comes off the sum; the result is held at 75 (a rift modifier can lower that); a player attacker's penetration comes off after that, down to -100. A negative resistance raises the damage you take.",
+								"You are told at login and when you level up between 240 and 249 and between 490 and 499, and when you cross a mark."
+							]
+						},
+						{
+							"h": "Where to read it",
+							"p": [
+								"The character sheet (Info & Services > Character Info, and Inspect Player) shows each resistance with its sum, the penalty and the result, the armour, dodge, block and spell suppression."
+							]
+						}
+					],
+					"icon": "wiki/i/top-help.png"
 				},
 				{
 					"id": "basics:conquest",
@@ -9940,57 +9979,54 @@
 			"name": "Modifiers",
 			"entries": [
 				{
-					"id": "mod:rarity_arcaneabsorb",
-					"name": "Arcane Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
+					"id": "mod:chaos_mod_allres",
+					"name": "All Elemental Resistances",
+					"sub": "Suffix, Shield, Jewel, Other. +3-4% (T1) to +16% (T8)",
+					"color": "#ff70c0",
+					"group": "chaos",
 					"sections": [
 						{
 							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the arcane damage you take (shown on the item as \"Arcane +N%\"). All your arcane absorb together, gear and passives, is capped at 75%."
-							]
+							"p": ["Chaos modifier, suffix.", "On an item: All Elemental Resistances +16% (T8)."]
 						},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
+								["T1", "1+", "+3-4%", "100"],
+								["T2", "15+", "+5-6%", "100"],
+								["T3", "30+", "+7-8%", "100"],
+								["T4", "50+", "+9-10%", "100"],
+								["T5", "70+", "+11-12%", "100"],
+								["T6", "90+", "+13-14%", "100"],
+								["T7", "110+", "+15%", "100"],
+								["T8", "130+", "+16%", "100"]
 							],
 							"tiers": true
 						},
-						{"h": "Rolls on", "p": ["Any gear."]},
+						{
+							"h": "Rolls on",
+							"p": ["Shields, Jewellery (amulets, rings) and Other gear (gloves, belts...)."]
+						},
 						{
 							"h": "Chance per roll on a fresh item",
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
+								["Shield", "3 of 111.5", "2.7%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
 							]
 						},
 						{
 							"h": "Rules",
 							"p": [
 								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
+								"An item carries each modifier once at most.",
+								"Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take.",
+								"Counts for Fire, Cold and Lightning, not for Chaos."
 							]
 						},
 						{
@@ -10057,7 +10093,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-shield.png",
+					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "suffix"
 				},
 				{
@@ -10094,14 +10130,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 187", "1.1%"],
-								["Shield", "2 of 119", "1.7%"],
-								["Helmet", "2 of 128", "1.6%"],
-								["Armour", "2 of 111", "1.8%"],
-								["Legs", "2 of 87", "2.3%"],
-								["Boots", "2 of 83", "2.4%"],
-								["Jewel", "2 of 161", "1.2%"],
-								["Other", "2 of 120", "1.7%"]
+								["Weapon", "2 of 157", "1.3%"],
+								["Shield", "2 of 111.5", "1.8%"],
+								["Helmet", "2 of 119.5", "1.7%"],
+								["Armour", "2 of 105.5", "1.9%"],
+								["Legs", "2 of 73.5", "2.7%"],
+								["Boots", "2 of 74.5", "2.7%"],
+								["Jewel", "2 of 144.5", "1.4%"],
+								["Other", "2 of 108.5", "1.8%"]
 							]
 						},
 						{
@@ -10180,6 +10216,119 @@
 					"side": "prefix"
 				},
 				{
+					"id": "mod:chaos_mod_armour",
+					"name": "Armour",
+					"sub": "Prefix, Shield, Helmet, Armour, Legs, Boots. +3-5 (T1) to +45-52 (T8)",
+					"color": "#ff70c0",
+					"group": "chaos",
+					"sections": [
+						{"h": "Overview", "p": ["Chaos modifier, prefix.", "On an item: Armour +45-52 (T8)."]},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+3-5", "100"],
+								["T2", "15+", "+6-9", "100"],
+								["T3", "30+", "+10-14", "100"],
+								["T4", "50+", "+15-20", "100"],
+								["T5", "70+", "+21-27", "100"],
+								["T6", "90+", "+28-35", "100"],
+								["T7", "110+", "+36-44", "100"],
+								["T8", "130+", "+45-52", "100"]
+							],
+							"tiers": true
+						},
+						{"h": "Rolls on", "p": ["Shields, Helmets, Body armour, Legs and Boots."]},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [
+								["Shield", "6 of 111.5", "5.4%"],
+								["Helmet", "6 of 119.5", "5%"],
+								["Armour", "6 of 105.5", "5.7%"],
+								["Legs", "6 of 73.5", "8.2%"],
+								["Boots", "6 of 74.5", "8.1%"]
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most.",
+								"Flat armour, added to the armour of the pieces you wear. Armour takes A / (A + 0.07 x the hit) off a physical hit: a lot of a small hit, little of a big one. Armour and the physical reduction together never take more than 90%."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open prefix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								[
+									"Orb of Fate",
+									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
+								],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-rift.png",
+					"side": "prefix"
+				},
+				{
 					"id": "mod:chaos_mod_attackspeed",
 					"name": "Attack Speed",
 					"sub": "Suffix, Weapon. +5-7% (T1) to +26-27% (T8)",
@@ -10212,7 +10361,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "20 of 187", "10.7%"]]
+							"rows": [["Weapon", "20 of 157", "12.7%"]]
 						},
 						{
 							"h": "Rules",
@@ -10322,7 +10471,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Other", "16 of 120", "13.3%"]]
+							"rows": [["Other", "16 of 108.5", "14.7%"]]
 						},
 						{
 							"h": "Rules",
@@ -10510,31 +10659,27 @@
 				{
 					"id": "mod:chaos_mod_block",
 					"name": "Block Chance",
-					"sub": "Prefix, Shield. +2-3% (T1) to +11-14% (T8)",
+					"sub": "Prefix, Shield. +8-9% (T1) to +18-20% (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
 						{
 							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Block Chance +11-14% (T8).",
-								"Cap: at most 15% from all equipped items together."
-							]
+							"p": ["Chaos modifier, prefix.", "On an item: Block Chance +18-20% (T8)."]
 						},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "+2-3%", "100"],
-								["T2", "15+", "+3-5%", "100"],
-								["T3", "30+", "+4-6%", "100"],
-								["T4", "50+", "+5-8%", "100"],
-								["T5", "70+", "+7-10%", "100"],
-								["T6", "90+", "+8-11%", "100"],
-								["T7", "110+", "+9-12%", "100"],
-								["T8", "130+", "+11-14%", "100"]
+								["T1", "1+", "+8-9%", "100"],
+								["T2", "15+", "+10-11%", "100"],
+								["T3", "30+", "+12-13%", "100"],
+								["T4", "50+", "+14-15%", "100"],
+								["T5", "70+", "+15-16%", "100"],
+								["T6", "90+", "+16-17%", "100"],
+								["T7", "110+", "+17-18%", "100"],
+								["T8", "130+", "+18-20%", "100"]
 							],
 							"tiers": true
 						},
@@ -10544,13 +10689,14 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Shield", "8 of 119", "6.7%"]]
+							"rows": [["Shield", "8 of 111.5", "7.2%"]]
 						},
 						{
 							"h": "Rules",
 							"p": [
 								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
+								"An item carries each modifier once at most.",
+								"A chance to block an attack hit completely, any damage type. All your block together counts at most 75%. It never blocks a spell, a burn, poison or a field."
 							]
 						},
 						{
@@ -10657,8 +10803,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 187", "2.1%"],
-								["Other", "4 of 120", "3.3%"],
+								["Weapon", "4 of 157", "2.5%"],
+								["Other", "4 of 108.5", "3.7%"],
 								["Quiver", "4 of 97", "4.1%"]
 							]
 						},
@@ -10770,7 +10916,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 187", "2.1%"], ["Other", "4 of 120", "3.3%"]]
+							"rows": [["Weapon", "4 of 157", "2.5%"], ["Other", "4 of 108.5", "3.7%"]]
 						},
 						{
 							"h": "Rules",
@@ -10880,7 +11026,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 187", "2.1%"], ["Other", "4 of 120", "3.3%"]]
+							"rows": [["Weapon", "4 of 157", "2.5%"], ["Other", "4 of 108.5", "3.7%"]]
 						},
 						{
 							"h": "Rules",
@@ -10994,8 +11140,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 187", "2.1%"],
-								["Other", "4 of 120", "3.3%"],
+								["Weapon", "4 of 157", "2.5%"],
+								["Other", "4 of 108.5", "3.7%"],
 								["Quiver", "4 of 97", "4.1%"]
 							]
 						},
@@ -11107,7 +11253,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 187", "2.1%"], ["Other", "4 of 120", "3.3%"]]
+							"rows": [["Weapon", "4 of 157", "2.5%"], ["Other", "4 of 108.5", "3.7%"]]
 						},
 						{
 							"h": "Rules",
@@ -11185,6 +11331,252 @@
 					"side": "prefix"
 				},
 				{
+					"id": "mod:chaos_mod_chaosres",
+					"name": "Chaos Resistance",
+					"sub": "Suffix, Shield, Helmet, Armour, Legs, Boots, Jewel, Other. +5-8% (T1) to +32-35% (T8)",
+					"color": "#ff70c0",
+					"group": "chaos",
+					"sections": [
+						{
+							"h": "Overview",
+							"p": ["Chaos modifier, suffix.", "On an item: Chaos Resistance +32-35% (T8)."]
+						},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+5-8%", "100"],
+								["T2", "15+", "+9-12%", "100"],
+								["T3", "30+", "+13-16%", "100"],
+								["T4", "50+", "+17-20%", "100"],
+								["T5", "70+", "+21-24%", "100"],
+								["T6", "90+", "+25-28%", "100"],
+								["T7", "110+", "+29-31%", "100"],
+								["T8", "130+", "+32-35%", "100"]
+							],
+							"tiers": true
+						},
+						{
+							"h": "Rolls on",
+							"p": [
+								"Shields, Helmets, Body armour, Legs, Boots, Jewellery (amulets, rings) and Other gear (gloves, belts...)."
+							]
+						},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [
+								["Shield", "1.5 of 111.5", "1.3%"],
+								["Helmet", "1.5 of 119.5", "1.3%"],
+								["Armour", "1.5 of 105.5", "1.4%"],
+								["Legs", "1.5 of 73.5", "2%"],
+								["Boots", "1.5 of 74.5", "2%"],
+								["Jewel", "1.5 of 144.5", "1%"],
+								["Other", "1.5 of 108.5", "1.4%"]
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most.",
+								"Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open suffix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								[
+									"Orb of Fate",
+									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
+								],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-rift.png",
+					"side": "suffix"
+				},
+				{
+					"id": "mod:chaos_mod_coldres",
+					"name": "Cold Resistance",
+					"sub": "Suffix, Shield, Helmet, Armour, Legs, Boots, Jewel, Other. +6-11% (T1) to +46-48% (T8)",
+					"color": "#ff70c0",
+					"group": "chaos",
+					"sections": [
+						{
+							"h": "Overview",
+							"p": ["Chaos modifier, suffix.", "On an item: Cold Resistance +46-48% (T8)."]
+						},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+6-11%", "100"],
+								["T2", "15+", "+12-17%", "100"],
+								["T3", "30+", "+18-23%", "100"],
+								["T4", "50+", "+24-29%", "100"],
+								["T5", "70+", "+30-35%", "100"],
+								["T6", "90+", "+36-41%", "100"],
+								["T7", "110+", "+42-45%", "100"],
+								["T8", "130+", "+46-48%", "100"]
+							],
+							"tiers": true
+						},
+						{
+							"h": "Rolls on",
+							"p": [
+								"Shields, Helmets, Body armour, Legs, Boots, Jewellery (amulets, rings) and Other gear (gloves, belts...)."
+							]
+						},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most.",
+								"Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open suffix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								[
+									"Orb of Fate",
+									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
+								],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-rift.png",
+					"side": "suffix"
+				},
+				{
 					"id": "mod:chaos_mod_cdr",
 					"name": "Cooldown Reduction",
 					"sub": "Suffix, Helmet, Jewel, Other. +6-8% (T1) to +18-20% (T8)",
@@ -11221,9 +11613,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "4 of 128", "3.1%"],
-								["Jewel", "4 of 161", "2.5%"],
-								["Other", "4 of 120", "3.3%"]
+								["Helmet", "4 of 119.5", "3.3%"],
+								["Jewel", "4 of 144.5", "2.8%"],
+								["Other", "4 of 108.5", "3.7%"]
 							]
 						},
 						{
@@ -11334,14 +11726,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 187", "0.5%"],
-								["Shield", "1 of 119", "0.8%"],
-								["Helmet", "1 of 128", "0.8%"],
-								["Armour", "1 of 111", "0.9%"],
-								["Legs", "1 of 87", "1.1%"],
-								["Boots", "1 of 83", "1.2%"],
-								["Jewel", "1 of 161", "0.6%"],
-								["Other", "1 of 120", "0.8%"]
+								["Weapon", "1 of 157", "0.6%"],
+								["Shield", "1 of 111.5", "0.9%"],
+								["Helmet", "1 of 119.5", "0.8%"],
+								["Armour", "1 of 105.5", "0.9%"],
+								["Legs", "1 of 73.5", "1.4%"],
+								["Boots", "1 of 74.5", "1.3%"],
+								["Jewel", "1 of 144.5", "0.7%"],
+								["Other", "1 of 108.5", "0.9%"]
 							]
 						},
 						{
@@ -11461,9 +11853,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 187", "3.2%"],
-								["Jewel", "6 of 161", "3.7%"],
-								["Other", "6 of 120", "5%"],
+								["Weapon", "6 of 157", "3.8%"],
+								["Jewel", "6 of 144.5", "4.2%"],
+								["Other", "6 of 108.5", "5.5%"],
 								["Quiver", "6 of 97", "6.2%"]
 							]
 						},
@@ -11694,9 +12086,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 187", "3.2%"],
-								["Jewel", "6 of 161", "3.7%"],
-								["Other", "6 of 120", "5%"],
+								["Weapon", "6 of 157", "3.8%"],
+								["Jewel", "6 of 144.5", "4.2%"],
+								["Other", "6 of 108.5", "5.5%"],
 								["Quiver", "6 of 97", "6.2%"]
 							]
 						},
@@ -11778,31 +12170,27 @@
 				{
 					"id": "mod:chaos_mod_monsterreduction",
 					"name": "Damage Taken from Monsters",
-					"sub": "Prefix, Shield, Helmet, Armour, Legs. -1-2% (T1) to -6-8% (T8)",
+					"sub": "Prefix, Shield, Helmet, Armour, Legs. -1% (T1) to -8% (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
 						{
 							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Damage Taken from Monsters -6-8% (T8).",
-								"Cap: at most 12% from all equipped items together."
-							]
+							"p": ["Chaos modifier, prefix.", "On an item: Damage Taken from Monsters -8% (T8)."]
 						},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "-1-2%", "100"],
+								["T1", "1+", "-1%", "100"],
 								["T2", "15+", "-2%", "100"],
-								["T3", "30+", "-2-3%", "100"],
-								["T4", "50+", "-3-4%", "100"],
-								["T5", "70+", "-3-5%", "100"],
-								["T6", "90+", "-4-6%", "100"],
-								["T7", "110+", "-5-7%", "100"],
-								["T8", "130+", "-6-8%", "100"]
+								["T3", "30+", "-3%", "100"],
+								["T4", "50+", "-4%", "100"],
+								["T5", "70+", "-5%", "100"],
+								["T6", "90+", "-6%", "100"],
+								["T7", "110+", "-7%", "100"],
+								["T8", "130+", "-8%", "100"]
 							],
 							"tiers": true
 						},
@@ -11813,10 +12201,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "6 of 119", "5%"],
-								["Helmet", "6 of 128", "4.7%"],
-								["Armour", "6 of 111", "5.4%"],
-								["Legs", "6 of 87", "6.9%"]
+								["Shield", "6 of 111.5", "5.4%"],
+								["Helmet", "6 of 119.5", "5%"],
+								["Armour", "6 of 105.5", "5.7%"],
+								["Legs", "6 of 73.5", "8.2%"]
 							]
 						},
 						{
@@ -11930,9 +12318,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 187", "2.1%"],
-								["Jewel", "4 of 161", "2.5%"],
-								["Other", "4 of 120", "3.3%"]
+								["Weapon", "4 of 157", "2.5%"],
+								["Jewel", "4 of 144.5", "2.8%"],
+								["Other", "4 of 108.5", "3.7%"]
 							]
 						},
 						{
@@ -12046,8 +12434,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 187", "3.2%"],
-								["Jewel", "6 of 161", "3.7%"],
+								["Weapon", "6 of 157", "3.8%"],
+								["Jewel", "6 of 144.5", "4.2%"],
 								["Quiver", "6 of 97", "6.2%"]
 							]
 						},
@@ -12126,127 +12514,6 @@
 					"side": "prefix"
 				},
 				{
-					"id": "mod:rarity_deathabsorb",
-					"name": "Death Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the death damage you take (shown on the item as \"Death +N%\"). All your death absorb together, gear and passives, is capped at 75%."
-							]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open suffix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								[
-									"Orb of Fate",
-									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
-								],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-shadow-shield.png",
-					"side": "suffix"
-				},
-				{
 					"id": "mod:rarity_elementdeath",
 					"name": "Death Weapon Damage",
 					"sub": "Prefix, Weapon. +2-4% (T1) to +33-52% (T8)",
@@ -12280,14 +12547,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 187", "1.1%"],
-								["Shield", "2 of 119", "1.7%"],
-								["Helmet", "2 of 128", "1.6%"],
-								["Armour", "2 of 111", "1.8%"],
-								["Legs", "2 of 87", "2.3%"],
-								["Boots", "2 of 83", "2.4%"],
-								["Jewel", "2 of 161", "1.2%"],
-								["Other", "2 of 120", "1.7%"]
+								["Weapon", "2 of 157", "1.3%"],
+								["Shield", "2 of 111.5", "1.8%"],
+								["Helmet", "2 of 119.5", "1.7%"],
+								["Armour", "2 of 105.5", "1.9%"],
+								["Legs", "2 of 73.5", "2.7%"],
+								["Boots", "2 of 74.5", "2.7%"],
+								["Jewel", "2 of 144.5", "1.4%"],
+								["Other", "2 of 108.5", "1.8%"]
 							]
 						},
 						{
@@ -12399,12 +12666,12 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"]
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"]
 							]
 						},
 						{
@@ -12598,31 +12865,24 @@
 				{
 					"id": "mod:chaos_mod_dodge",
 					"name": "Dodge",
-					"sub": "Prefix, Shield, Armour, Legs, Boots, Other. +1-2% (T1) to +5-7% (T8)",
+					"sub": "Prefix, Shield, Armour, Legs, Boots, Other. +2-3% (T1) to +10-11% (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Dodge +5-7% (T8).",
-								"Cap: at most 10% from all equipped items together."
-							]
-						},
+						{"h": "Overview", "p": ["Chaos modifier, prefix.", "On an item: Dodge +10-11% (T8)."]},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "+1-2%", "100"],
-								["T2", "15+", "+2%", "100"],
-								["T3", "30+", "+2-3%", "100"],
-								["T4", "50+", "+2-4%", "100"],
-								["T5", "70+", "+3-5%", "100"],
-								["T6", "90+", "+3-5%", "100"],
-								["T7", "110+", "+4-6%", "100"],
-								["T8", "130+", "+5-7%", "100"]
+								["T1", "1+", "+2-3%", "100"],
+								["T2", "15+", "+3-4%", "100"],
+								["T3", "30+", "+4-5%", "100"],
+								["T4", "50+", "+5-6%", "100"],
+								["T5", "70+", "+6-7%", "100"],
+								["T6", "90+", "+7-8%", "100"],
+								["T7", "110+", "+8-9%", "100"],
+								["T8", "130+", "+10-11%", "100"]
 							],
 							"tiers": true
 						},
@@ -12636,18 +12896,19 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "5 of 119", "4.2%"],
-								["Armour", "5 of 111", "4.5%"],
-								["Legs", "5 of 87", "5.7%"],
-								["Boots", "5 of 83", "6%"],
-								["Other", "5 of 120", "4.2%"]
+								["Shield", "5 of 111.5", "4.5%"],
+								["Armour", "5 of 105.5", "4.7%"],
+								["Legs", "5 of 73.5", "6.8%"],
+								["Boots", "5 of 74.5", "6.7%"],
+								["Other", "5 of 108.5", "4.6%"]
 							]
 						},
 						{
 							"h": "Rules",
 							"p": [
 								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
+								"An item carries each modifier once at most.",
+								"A chance to avoid an attack hit completely (a monster's melee and ranged attack, a player's weapon hit), any damage type. All your dodge together counts at most 75%. It never avoids a spell, a burn, poison or a field."
 							]
 						},
 						{
@@ -12716,248 +12977,6 @@
 					],
 					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
-				},
-				{
-					"id": "mod:rarity_drownabsorb",
-					"name": "Drown Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the drown damage you take (shown on the item as \"Drown +N%\"). All your drown absorb together, gear and passives, is capped at 75%."
-							]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open suffix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								[
-									"Orb of Fate",
-									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
-								],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-water-shield.png",
-					"side": "suffix"
-				},
-				{
-					"id": "mod:rarity_earthabsorb",
-					"name": "Earth Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the earth damage you take (shown on the item as \"Earth +N%\"). All your earth absorb together, gear and passives, is capped at 75%."
-							]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open suffix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								[
-									"Orb of Fate",
-									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
-								],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-poison-shield.png",
-					"side": "suffix"
 				},
 				{
 					"id": "mod:chaos_mod_arrowearth",
@@ -13102,14 +13121,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 187", "1.1%"],
-								["Shield", "2 of 119", "1.7%"],
-								["Helmet", "2 of 128", "1.6%"],
-								["Armour", "2 of 111", "1.8%"],
-								["Legs", "2 of 87", "2.3%"],
-								["Boots", "2 of 83", "2.4%"],
-								["Jewel", "2 of 161", "1.2%"],
-								["Other", "2 of 120", "1.7%"]
+								["Weapon", "2 of 157", "1.3%"],
+								["Shield", "2 of 111.5", "1.8%"],
+								["Helmet", "2 of 119.5", "1.7%"],
+								["Armour", "2 of 105.5", "1.9%"],
+								["Legs", "2 of 73.5", "2.7%"],
+								["Boots", "2 of 74.5", "2.7%"],
+								["Jewel", "2 of 144.5", "1.4%"],
+								["Other", "2 of 108.5", "1.8%"]
 							]
 						},
 						{
@@ -13190,31 +13209,27 @@
 				{
 					"id": "mod:chaos_mod_elepen",
 					"name": "Elemental Penetration",
-					"sub": "Prefix, Weapon, Jewel, Quiver. +2-4% (T1) to +17-22% (T8)",
+					"sub": "Prefix, Weapon, Jewel, Quiver. +3% (T1) to +11-12% (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
 						{
 							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Elemental Penetration +17-22% (T8).",
-								"Cap: at most 25% from all equipped items together."
-							]
+							"p": ["Chaos modifier, prefix.", "On an item: Elemental Penetration +11-12% (T8)."]
 						},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "+2-4%", "100"],
-								["T2", "15+", "+3-5%", "100"],
-								["T3", "30+", "+5-7%", "100"],
-								["T4", "50+", "+7-10%", "100"],
-								["T5", "70+", "+9-13%", "100"],
-								["T6", "90+", "+11-15%", "100"],
-								["T7", "110+", "+14-18%", "100"],
-								["T8", "130+", "+17-22%", "100"]
+								["T1", "1+", "+3%", "100"],
+								["T2", "15+", "+4%", "100"],
+								["T3", "30+", "+5%", "100"],
+								["T4", "50+", "+6%", "100"],
+								["T5", "70+", "+7-8%", "100"],
+								["T6", "90+", "+9%", "100"],
+								["T7", "110+", "+10-11%", "100"],
+								["T8", "130+", "+11-12%", "100"]
 							],
 							"tiers": true
 						},
@@ -13228,8 +13243,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 187", "2.1%"],
-								["Jewel", "4 of 161", "2.5%"],
+								["Weapon", "4 of 157", "2.5%"],
+								["Jewel", "4 of 144.5", "2.8%"],
 								["Quiver", "4 of 97", "4.1%"]
 							]
 						},
@@ -13237,7 +13252,8 @@
 							"h": "Rules",
 							"p": [
 								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
+								"An item carries each modifier once at most.",
+								"Takes this many points off the monster's resistance after its limit of 75, down to -100: it can turn a resistance into a weakness."
 							]
 						},
 						{
@@ -13306,127 +13322,6 @@
 					],
 					"icon": "wiki/i/k-arcane-rift.png",
 					"side": "prefix"
-				},
-				{
-					"id": "mod:rarity_energyabsorb",
-					"name": "Energy Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the energy damage you take (shown on the item as \"Energy +N%\"). All your energy absorb together, gear and passives, is capped at 75%."
-							]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open suffix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								[
-									"Orb of Fate",
-									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
-								],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-light-shield.png",
-					"side": "suffix"
 				},
 				{
 					"id": "mod:chaos_mod_arrowenergy",
@@ -13571,14 +13466,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 187", "1.1%"],
-								["Shield", "2 of 119", "1.7%"],
-								["Helmet", "2 of 128", "1.6%"],
-								["Armour", "2 of 111", "1.8%"],
-								["Legs", "2 of 87", "2.3%"],
-								["Boots", "2 of 83", "2.4%"],
-								["Jewel", "2 of 161", "1.2%"],
-								["Other", "2 of 120", "1.7%"]
+								["Weapon", "2 of 157", "1.3%"],
+								["Shield", "2 of 111.5", "1.8%"],
+								["Helmet", "2 of 119.5", "1.7%"],
+								["Armour", "2 of 105.5", "1.9%"],
+								["Legs", "2 of 73.5", "2.7%"],
+								["Boots", "2 of 74.5", "2.7%"],
+								["Jewel", "2 of 144.5", "1.4%"],
+								["Other", "2 of 108.5", "1.8%"]
 							]
 						},
 						{
@@ -13689,7 +13584,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 187", "1.6%"]]
+							"rows": [["Weapon", "3 of 157", "1.9%"]]
 						},
 						{
 							"h": "Rules",
@@ -13796,7 +13691,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Jewel", "4 of 161", "2.5%"]]
+							"rows": [["Jewel", "4 of 144.5", "2.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -13988,31 +13883,27 @@
 				{
 					"id": "mod:chaos_mod_esrecharge",
 					"name": "Faster Energy Shield Recharge",
-					"sub": "Suffix, Shield, Helmet, Armour, Jewel. +5-8% (T1) to +36-45% (T8)",
+					"sub": "Suffix, Shield, Helmet, Armour, Jewel. +24-25% (T1) to +37-38% (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
 						{
 							"h": "Overview",
-							"p": [
-								"Chaos modifier, suffix.",
-								"On an item: Faster Energy Shield Recharge +36-45% (T8).",
-								"Cap: at most 100% from all equipped items together."
-							]
+							"p": ["Chaos modifier, suffix.", "On an item: Faster Energy Shield Recharge +37-38% (T8)."]
 						},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "+5-8%", "100"],
-								["T2", "15+", "+8-12%", "100"],
-								["T3", "30+", "+12-16%", "100"],
-								["T4", "50+", "+16-20%", "100"],
-								["T5", "70+", "+20-25%", "100"],
-								["T6", "90+", "+25-30%", "100"],
-								["T7", "110+", "+30-36%", "100"],
-								["T8", "130+", "+36-45%", "100"]
+								["T1", "1+", "+24-25%", "100"],
+								["T2", "15+", "+26-27%", "100"],
+								["T3", "30+", "+28-29%", "100"],
+								["T4", "50+", "+30-31%", "100"],
+								["T5", "70+", "+32-33%", "100"],
+								["T6", "90+", "+34-35%", "100"],
+								["T7", "110+", "+36%", "100"],
+								["T8", "130+", "+37-38%", "100"]
 							],
 							"tiers": true
 						},
@@ -14023,10 +13914,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "4 of 119", "3.4%"],
-								["Helmet", "4 of 128", "3.1%"],
-								["Armour", "4 of 111", "3.6%"],
-								["Jewel", "4 of 161", "2.5%"]
+								["Shield", "4 of 111.5", "3.6%"],
+								["Helmet", "4 of 119.5", "3.3%"],
+								["Armour", "4 of 105.5", "3.8%"],
+								["Jewel", "4 of 144.5", "2.8%"]
 							]
 						},
 						{
@@ -14101,127 +13992,6 @@
 						}
 					],
 					"icon": "wiki/i/k-arcane-rift.png",
-					"side": "suffix"
-				},
-				{
-					"id": "mod:rarity_fireabsorb",
-					"name": "Fire Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the fire damage you take (shown on the item as \"Fire +N%\"). All your fire absorb together, gear and passives, is capped at 75%."
-							]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open suffix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								[
-									"Orb of Fate",
-									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
-								],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-fire-shield.png",
 					"side": "suffix"
 				},
 				{
@@ -14334,6 +14104,129 @@
 					"side": "prefix"
 				},
 				{
+					"id": "mod:chaos_mod_fireres",
+					"name": "Fire Resistance",
+					"sub": "Suffix, Shield, Helmet, Armour, Legs, Boots, Jewel, Other. +6-11% (T1) to +46-48% (T8)",
+					"color": "#ff70c0",
+					"group": "chaos",
+					"sections": [
+						{
+							"h": "Overview",
+							"p": ["Chaos modifier, suffix.", "On an item: Fire Resistance +46-48% (T8)."]
+						},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+6-11%", "100"],
+								["T2", "15+", "+12-17%", "100"],
+								["T3", "30+", "+18-23%", "100"],
+								["T4", "50+", "+24-29%", "100"],
+								["T5", "70+", "+30-35%", "100"],
+								["T6", "90+", "+36-41%", "100"],
+								["T7", "110+", "+42-45%", "100"],
+								["T8", "130+", "+46-48%", "100"]
+							],
+							"tiers": true
+						},
+						{
+							"h": "Rolls on",
+							"p": [
+								"Shields, Helmets, Body armour, Legs, Boots, Jewellery (amulets, rings) and Other gear (gloves, belts...)."
+							]
+						},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most.",
+								"Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open suffix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								[
+									"Orb of Fate",
+									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
+								],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-rift.png",
+					"side": "suffix"
+				},
+				{
 					"id": "mod:rarity_elementfire",
 					"name": "Fire Weapon Damage",
 					"sub": "Prefix, Weapon. +2-4% (T1) to +33-52% (T8)",
@@ -14367,14 +14260,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 187", "1.1%"],
-								["Shield", "2 of 119", "1.7%"],
-								["Helmet", "2 of 128", "1.6%"],
-								["Armour", "2 of 111", "1.8%"],
-								["Legs", "2 of 87", "2.3%"],
-								["Boots", "2 of 83", "2.4%"],
-								["Jewel", "2 of 161", "1.2%"],
-								["Other", "2 of 120", "1.7%"]
+								["Weapon", "2 of 157", "1.3%"],
+								["Shield", "2 of 111.5", "1.8%"],
+								["Helmet", "2 of 119.5", "1.7%"],
+								["Armour", "2 of 105.5", "1.9%"],
+								["Legs", "2 of 73.5", "2.7%"],
+								["Boots", "2 of 74.5", "2.7%"],
+								["Jewel", "2 of 144.5", "1.4%"],
+								["Other", "2 of 108.5", "1.8%"]
 							]
 						},
 						{
@@ -14486,14 +14379,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 187", "0.5%"],
-								["Shield", "1 of 119", "0.8%"],
-								["Helmet", "1 of 128", "0.8%"],
-								["Armour", "1 of 111", "0.9%"],
-								["Legs", "1 of 87", "1.1%"],
-								["Boots", "1 of 83", "1.2%"],
-								["Jewel", "1 of 161", "0.6%"],
-								["Other", "1 of 120", "0.8%"]
+								["Weapon", "1 of 157", "0.6%"],
+								["Shield", "1 of 111.5", "0.9%"],
+								["Helmet", "1 of 119.5", "0.8%"],
+								["Armour", "1 of 105.5", "0.9%"],
+								["Legs", "1 of 73.5", "1.4%"],
+								["Boots", "1 of 74.5", "1.3%"],
+								["Jewel", "1 of 144.5", "0.7%"],
+								["Other", "1 of 108.5", "0.9%"]
 							]
 						},
 						{
@@ -14601,14 +14494,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
+								["Weapon", "3 of 157", "1.9%"],
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
 							]
 						},
 						{
@@ -14723,9 +14616,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "5 of 187", "2.7%"],
-								["Shield", "5 of 119", "4.2%"],
-								["Jewel", "5 of 161", "3.1%"]
+								["Weapon", "5 of 157", "3.2%"],
+								["Shield", "5 of 111.5", "4.5%"],
+								["Jewel", "5 of 144.5", "3.5%"]
 							]
 						},
 						{
@@ -14836,9 +14729,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "6 of 119", "5%"],
-								["Armour", "6 of 111", "5.4%"],
-								["Legs", "6 of 87", "6.9%"]
+								["Shield", "6 of 111.5", "5.4%"],
+								["Armour", "6 of 105.5", "5.7%"],
+								["Legs", "6 of 73.5", "8.2%"]
 							]
 						},
 						{
@@ -14949,7 +14842,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "5 of 187", "2.7%"], ["Quiver", "5 of 97", "5.2%"]]
+							"rows": [["Weapon", "5 of 157", "3.2%"], ["Quiver", "5 of 97", "5.2%"]]
 						},
 						{
 							"h": "Rules",
@@ -15026,127 +14919,6 @@
 					"side": "suffix"
 				},
 				{
-					"id": "mod:rarity_holyabsorb",
-					"name": "Holy Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the holy damage you take (shown on the item as \"Holy +N%\"). All your holy absorb together, gear and passives, is capped at 75%."
-							]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open suffix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								[
-									"Orb of Fate",
-									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
-								],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-holy-shield.png",
-					"side": "suffix"
-				},
-				{
 					"id": "mod:rarity_elementholy",
 					"name": "Holy Weapon Damage",
 					"sub": "Prefix, Weapon. +2-4% (T1) to +33-52% (T8)",
@@ -15180,14 +14952,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 187", "1.1%"],
-								["Shield", "2 of 119", "1.7%"],
-								["Helmet", "2 of 128", "1.6%"],
-								["Armour", "2 of 111", "1.8%"],
-								["Legs", "2 of 87", "2.3%"],
-								["Boots", "2 of 83", "2.4%"],
-								["Jewel", "2 of 161", "1.2%"],
-								["Other", "2 of 120", "1.7%"]
+								["Weapon", "2 of 157", "1.3%"],
+								["Shield", "2 of 111.5", "1.8%"],
+								["Helmet", "2 of 119.5", "1.7%"],
+								["Armour", "2 of 105.5", "1.9%"],
+								["Legs", "2 of 73.5", "2.7%"],
+								["Boots", "2 of 74.5", "2.7%"],
+								["Jewel", "2 of 144.5", "1.4%"],
+								["Other", "2 of 108.5", "1.8%"]
 							]
 						},
 						{
@@ -15264,127 +15036,6 @@
 					],
 					"icon": "wiki/i/k-holy-burst.png",
 					"side": "prefix"
-				},
-				{
-					"id": "mod:rarity_iceabsorb",
-					"name": "Ice Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the ice damage you take (shown on the item as \"Ice +N%\"). All your ice absorb together, gear and passives, is capped at 75%."
-							]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open suffix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								[
-									"Orb of Fate",
-									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
-								],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-frost-shield.png",
-					"side": "suffix"
 				},
 				{
 					"id": "mod:chaos_mod_arrowice",
@@ -15529,14 +15180,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 187", "1.1%"],
-								["Shield", "2 of 119", "1.7%"],
-								["Helmet", "2 of 128", "1.6%"],
-								["Armour", "2 of 111", "1.8%"],
-								["Legs", "2 of 87", "2.3%"],
-								["Boots", "2 of 83", "2.4%"],
-								["Jewel", "2 of 161", "1.2%"],
-								["Other", "2 of 120", "1.7%"]
+								["Weapon", "2 of 157", "1.3%"],
+								["Shield", "2 of 111.5", "1.8%"],
+								["Helmet", "2 of 119.5", "1.7%"],
+								["Armour", "2 of 105.5", "1.9%"],
+								["Legs", "2 of 73.5", "2.7%"],
+								["Boots", "2 of 74.5", "2.7%"],
+								["Jewel", "2 of 144.5", "1.4%"],
+								["Other", "2 of 108.5", "1.8%"]
 							]
 						},
 						{
@@ -15648,12 +15299,12 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"]
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"]
 							]
 						},
 						{
@@ -15765,9 +15416,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "6 of 128", "4.7%"],
-								["Jewel", "6 of 161", "3.7%"],
-								["Other", "6 of 120", "5%"]
+								["Helmet", "6 of 119.5", "5%"],
+								["Jewel", "6 of 144.5", "4.2%"],
+								["Other", "6 of 108.5", "5.5%"]
 							]
 						},
 						{
@@ -15878,7 +15529,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "6 of 187", "3.2%"]]
+							"rows": [["Weapon", "6 of 157", "3.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -15993,9 +15644,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 187", "3.2%"],
-								["Helmet", "6 of 128", "4.7%"],
-								["Jewel", "6 of 161", "3.7%"],
+								["Weapon", "6 of 157", "3.8%"],
+								["Helmet", "6 of 119.5", "5%"],
+								["Jewel", "6 of 144.5", "4.2%"],
 								["Quiver", "6 of 97", "6.2%"]
 							]
 						},
@@ -16004,6 +15655,129 @@
 							"p": [
 								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
 								"An item carries each modifier once at most."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open suffix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								[
+									"Orb of Fate",
+									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
+								],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-rift.png",
+					"side": "suffix"
+				},
+				{
+					"id": "mod:chaos_mod_lightningres",
+					"name": "Lightning Resistance",
+					"sub": "Suffix, Shield, Helmet, Armour, Legs, Boots, Jewel, Other. +6-11% (T1) to +46-48% (T8)",
+					"color": "#ff70c0",
+					"group": "chaos",
+					"sections": [
+						{
+							"h": "Overview",
+							"p": ["Chaos modifier, suffix.", "On an item: Lightning Resistance +46-48% (T8)."]
+						},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+6-11%", "100"],
+								["T2", "15+", "+12-17%", "100"],
+								["T3", "30+", "+18-23%", "100"],
+								["T4", "50+", "+24-29%", "100"],
+								["T5", "70+", "+30-35%", "100"],
+								["T6", "90+", "+36-41%", "100"],
+								["T7", "110+", "+42-45%", "100"],
+								["T8", "130+", "+46-48%", "100"]
+							],
+							"tiers": true
+						},
+						{
+							"h": "Rolls on",
+							"p": [
+								"Shields, Helmets, Body armour, Legs, Boots, Jewellery (amulets, rings) and Other gear (gloves, belts...)."
+							]
+						},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most.",
+								"Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."
 							]
 						},
 						{
@@ -16107,14 +15881,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
+								["Weapon", "3 of 157", "1.9%"],
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
 							]
 						},
 						{
@@ -16228,9 +16002,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "6 of 128", "4.7%"],
-								["Jewel", "6 of 161", "3.7%"],
-								["Other", "6 of 120", "5%"]
+								["Helmet", "6 of 119.5", "5%"],
+								["Jewel", "6 of 144.5", "4.2%"],
+								["Other", "6 of 108.5", "5.5%"]
 							]
 						},
 						{
@@ -16341,7 +16115,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "6 of 187", "3.2%"]]
+							"rows": [["Weapon", "6 of 157", "3.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -16454,7 +16228,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "4 of 128", "3.1%"], ["Jewel", "4 of 161", "2.5%"]]
+							"rows": [["Helmet", "4 of 119.5", "3.3%"], ["Jewel", "4 of 144.5", "2.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -16561,7 +16335,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "5 of 187", "2.7%"], ["Quiver", "5 of 97", "5.2%"]]
+							"rows": [["Weapon", "5 of 157", "3.2%"], ["Quiver", "5 of 97", "5.2%"]]
 						},
 						{
 							"h": "Rules",
@@ -16674,9 +16448,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 187", "3.2%"],
-								["Helmet", "6 of 128", "4.7%"],
-								["Jewel", "6 of 161", "3.7%"],
+								["Weapon", "6 of 157", "3.8%"],
+								["Helmet", "6 of 119.5", "5%"],
+								["Jewel", "6 of 144.5", "4.2%"],
 								["Quiver", "6 of 97", "6.2%"]
 							]
 						},
@@ -16757,17 +16531,13 @@
 				{
 					"id": "mod:chaos_mod_energyshield",
 					"name": "Maximum Energy Shield",
-					"sub": "Prefix, Shield, Helmet, Armour, Jewel. +12-25 (T1) to +360-480 (T8)",
+					"sub": "Prefix, Shield, Helmet, Armour, Jewel. +12-25 (T1) to +361-480 (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
 						{
 							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Maximum Energy Shield +360-480 (T8).",
-								"Cap: at most 1500 from all equipped items together."
-							]
+							"p": ["Chaos modifier, prefix.", "On an item: Maximum Energy Shield +361-480 (T8)."]
 						},
 						{
 							"h": "Tiers",
@@ -16775,13 +16545,13 @@
 							"w": [14, 22, 40, 24],
 							"rows": [
 								["T1", "1+", "+12-25", "100"],
-								["T2", "15+", "+25-50", "100"],
-								["T3", "30+", "+50-85", "100"],
-								["T4", "50+", "+85-135", "100"],
-								["T5", "70+", "+135-195", "100"],
-								["T6", "90+", "+195-270", "100"],
-								["T7", "110+", "+270-360", "100"],
-								["T8", "130+", "+360-480", "100"]
+								["T2", "15+", "+26-50", "100"],
+								["T3", "30+", "+51-85", "100"],
+								["T4", "50+", "+86-135", "100"],
+								["T5", "70+", "+136-195", "100"],
+								["T6", "90+", "+196-270", "100"],
+								["T7", "110+", "+271-360", "100"],
+								["T8", "130+", "+361-480", "100"]
 							],
 							"tiers": true
 						},
@@ -16792,10 +16562,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "6 of 119", "5%"],
-								["Helmet", "6 of 128", "4.7%"],
-								["Armour", "6 of 111", "5.4%"],
-								["Jewel", "6 of 161", "3.7%"]
+								["Shield", "6 of 111.5", "5.4%"],
+								["Helmet", "6 of 119.5", "5%"],
+								["Armour", "6 of 105.5", "5.7%"],
+								["Jewel", "6 of 144.5", "4.2%"]
 							]
 						},
 						{
@@ -16875,17 +16645,13 @@
 				{
 					"id": "mod:chaos_mod_energyshieldpct",
 					"name": "Maximum Energy Shield",
-					"sub": "Prefix, Shield, Helmet, Armour, Jewel. +2-4% (T1) to +20-28% (T8)",
+					"sub": "Prefix, Shield, Helmet, Armour, Jewel. +2-4% (T1) to +26-28% (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
 						{
 							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Maximum Energy Shield +20-28% (T8).",
-								"Cap: at most 60% from all equipped items together."
-							]
+							"p": ["Chaos modifier, prefix.", "On an item: Maximum Energy Shield +26-28% (T8)."]
 						},
 						{
 							"h": "Tiers",
@@ -16893,13 +16659,13 @@
 							"w": [14, 22, 40, 24],
 							"rows": [
 								["T1", "1+", "+2-4%", "100"],
-								["T2", "15+", "+4-6%", "100"],
-								["T3", "30+", "+6-9%", "100"],
-								["T4", "50+", "+8-12%", "100"],
-								["T5", "70+", "+10-15%", "100"],
-								["T6", "90+", "+13-19%", "100"],
-								["T7", "110+", "+16-23%", "100"],
-								["T8", "130+", "+20-28%", "100"]
+								["T2", "15+", "+5-7%", "100"],
+								["T3", "30+", "+8-10%", "100"],
+								["T4", "50+", "+11-13%", "100"],
+								["T5", "70+", "+14-17%", "100"],
+								["T6", "90+", "+18-21%", "100"],
+								["T7", "110+", "+22-25%", "100"],
+								["T8", "130+", "+26-28%", "100"]
 							],
 							"tiers": true
 						},
@@ -16910,10 +16676,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "4 of 119", "3.4%"],
-								["Helmet", "4 of 128", "3.1%"],
-								["Armour", "4 of 111", "3.6%"],
-								["Jewel", "4 of 161", "2.5%"]
+								["Shield", "4 of 111.5", "3.6%"],
+								["Helmet", "4 of 119.5", "3.3%"],
+								["Armour", "4 of 105.5", "3.8%"],
+								["Jewel", "4 of 144.5", "2.8%"]
 							]
 						},
 						{
@@ -17027,12 +16793,12 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "8 of 119", "6.7%"],
-								["Helmet", "8 of 128", "6.3%"],
-								["Armour", "8 of 111", "7.2%"],
-								["Legs", "8 of 87", "9.2%"],
-								["Boots", "8 of 83", "9.6%"],
-								["Jewel", "8 of 161", "5%"]
+								["Shield", "8 of 111.5", "7.2%"],
+								["Helmet", "8 of 119.5", "6.7%"],
+								["Armour", "8 of 105.5", "7.6%"],
+								["Legs", "8 of 73.5", "10.9%"],
+								["Boots", "8 of 74.5", "10.7%"],
+								["Jewel", "8 of 144.5", "5.5%"]
 							]
 						},
 						{
@@ -17144,9 +16910,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "5 of 128", "3.9%"],
-								["Armour", "5 of 111", "4.5%"],
-								["Jewel", "5 of 161", "3.1%"]
+								["Helmet", "5 of 119.5", "4.2%"],
+								["Armour", "5 of 105.5", "4.7%"],
+								["Jewel", "5 of 144.5", "3.5%"]
 							]
 						},
 						{
@@ -17258,14 +17024,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
+								["Weapon", "3 of 157", "1.9%"],
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
 							]
 						},
 						{
@@ -17372,7 +17138,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Boots", "10 of 83", "12%"]]
+							"rows": [["Boots", "10 of 74.5", "13.4%"]]
 						},
 						{
 							"h": "Rules",
@@ -17452,7 +17218,7 @@
 				{
 					"id": "mod:rarity_physicalabsorb",
 					"name": "Physical Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
+					"sub": "Suffix, Shield, Armour. +2% (T1) to +7-8% (T8)",
 					"color": "#7fa8ff",
 					"group": "absorb",
 					"sections": [
@@ -17460,7 +17226,8 @@
 							"h": "Overview",
 							"p": [
 								"Absorb, suffix.",
-								"Absorbs a share of the physical damage you take (shown on the item as \"Physical +N%\"). All your physical absorb together, gear and passives, is capped at 75%."
+								"Takes a share off the physical damage you take, on top of your armour. Armour and this reduction together never take more than 90% of a physical hit.",
+								"On an item: Physical +7-8% (T8)."
 							]
 						},
 						{
@@ -17469,32 +17236,23 @@
 							"w": [14, 22, 40, 24],
 							"rows": [
 								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
+								["T2", "15+", "+3%", "100"],
+								["T3", "30+", "+4%", "100"],
+								["T4", "50+", "+5%", "100"],
+								["T5", "70+", "+5-6%", "100"],
+								["T6", "90+", "+6%", "100"],
+								["T7", "110+", "+7%", "100"],
+								["T8", "130+", "+7-8%", "100"]
 							],
 							"tiers": true
 						},
-						{"h": "Rolls on", "p": ["Any gear."]},
+						{"h": "Rolls on", "p": ["Shields and Body armour."]},
 						{
 							"h": "Chance per roll on a fresh item",
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
+							"rows": [["Shield", "3 of 111.5", "2.7%"], ["Armour", "3 of 105.5", "2.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -17573,31 +17331,27 @@
 				{
 					"id": "mod:chaos_mod_physpen",
 					"name": "Physical Penetration",
-					"sub": "Prefix, Weapon, Jewel, Quiver. +2-4% (T1) to +17-22% (T8)",
+					"sub": "Prefix, Weapon, Jewel, Quiver. +3% (T1) to +11-12% (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
 						{
 							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Physical Penetration +17-22% (T8).",
-								"Cap: at most 25% from all equipped items together."
-							]
+							"p": ["Chaos modifier, prefix.", "On an item: Physical Penetration +11-12% (T8)."]
 						},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "+2-4%", "100"],
-								["T2", "15+", "+3-5%", "100"],
-								["T3", "30+", "+5-7%", "100"],
-								["T4", "50+", "+7-10%", "100"],
-								["T5", "70+", "+9-13%", "100"],
-								["T6", "90+", "+11-15%", "100"],
-								["T7", "110+", "+14-18%", "100"],
-								["T8", "130+", "+17-22%", "100"]
+								["T1", "1+", "+3%", "100"],
+								["T2", "15+", "+4%", "100"],
+								["T3", "30+", "+5%", "100"],
+								["T4", "50+", "+6%", "100"],
+								["T5", "70+", "+7-8%", "100"],
+								["T6", "90+", "+9%", "100"],
+								["T7", "110+", "+10-11%", "100"],
+								["T8", "130+", "+11-12%", "100"]
 							],
 							"tiers": true
 						},
@@ -17611,8 +17365,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 187", "2.1%"],
-								["Jewel", "4 of 161", "2.5%"],
+								["Weapon", "4 of 157", "2.5%"],
+								["Jewel", "4 of 144.5", "2.8%"],
 								["Quiver", "4 of 97", "4.1%"]
 							]
 						},
@@ -17620,7 +17374,8 @@
 							"h": "Rules",
 							"p": [
 								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
+								"An item carries each modifier once at most.",
+								"Takes this many points off the armour share of the monster you hit (never below 0)."
 							]
 						},
 						{
@@ -17724,14 +17479,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
+								["Weapon", "3 of 157", "1.9%"],
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
 							]
 						},
 						{
@@ -17839,9 +17594,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "4 of 128", "3.1%"],
-								["Boots", "4 of 83", "4.8%"],
-								["Jewel", "4 of 161", "2.5%"]
+								["Helmet", "4 of 119.5", "3.3%"],
+								["Boots", "4 of 74.5", "5.4%"],
+								["Jewel", "4 of 144.5", "2.8%"]
 							]
 						},
 						{
@@ -17921,31 +17676,24 @@
 				{
 					"id": "mod:chaos_mod_reflect",
 					"name": "Reflect Damage",
-					"sub": "Prefix, Shield, Armour. +2-3% (T1) to +9-11% (T8)",
+					"sub": "Prefix, Shield, Armour. +2% (T1) to +11% (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Reflect Damage +9-11% (T8).",
-								"Cap: at most 15% from all equipped items together."
-							]
-						},
+						{"h": "Overview", "p": ["Chaos modifier, prefix.", "On an item: Reflect Damage +11% (T8)."]},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "+2-3%", "100"],
-								["T2", "15+", "+3-4%", "100"],
-								["T3", "30+", "+4-5%", "100"],
-								["T4", "50+", "+5-6%", "100"],
-								["T5", "70+", "+6-8%", "100"],
-								["T6", "90+", "+7-9%", "100"],
-								["T7", "110+", "+8-10%", "100"],
-								["T8", "130+", "+9-11%", "100"]
+								["T1", "1+", "+2%", "100"],
+								["T2", "15+", "+3%", "100"],
+								["T3", "30+", "+4%", "100"],
+								["T4", "50+", "+5%", "100"],
+								["T5", "70+", "+6-7%", "100"],
+								["T6", "90+", "+8%", "100"],
+								["T7", "110+", "+9-10%", "100"],
+								["T8", "130+", "+11%", "100"]
 							],
 							"tiers": true
 						},
@@ -17955,7 +17703,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Shield", "5 of 119", "4.2%"], ["Armour", "5 of 111", "4.5%"]]
+							"rows": [["Shield", "5 of 111.5", "4.5%"], ["Armour", "5 of 105.5", "4.7%"]]
 						},
 						{
 							"h": "Rules",
@@ -18065,14 +17813,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
+								["Weapon", "3 of 157", "1.9%"],
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"],
+								["Other", "3 of 108.5", "2.8%"]
 							]
 						},
 						{
@@ -18182,7 +17930,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "6 of 187", "3.2%"]]
+							"rows": [["Weapon", "6 of 157", "3.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -18260,6 +18008,121 @@
 					"side": "prefix"
 				},
 				{
+					"id": "mod:chaos_mod_spellsuppress",
+					"name": "Spell Suppression",
+					"sub": "Suffix, Helmet, Armour, Boots, Other. +8-9% (T1) to +22% (T8)",
+					"color": "#ff70c0",
+					"group": "chaos",
+					"sections": [
+						{
+							"h": "Overview",
+							"p": ["Chaos modifier, suffix.", "On an item: Spell Suppression +22% (T8)."]
+						},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+8-9%", "100"],
+								["T2", "15+", "+10-11%", "100"],
+								["T3", "30+", "+12-13%", "100"],
+								["T4", "50+", "+14-15%", "100"],
+								["T5", "70+", "+16-17%", "100"],
+								["T6", "90+", "+18-19%", "100"],
+								["T7", "110+", "+20-21%", "100"],
+								["T8", "130+", "+22%", "100"]
+							],
+							"tiers": true
+						},
+						{"h": "Rolls on", "p": ["Helmets, Body armour, Boots and Other gear (gloves, belts...)."]},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [
+								["Helmet", "5 of 119.5", "4.2%"],
+								["Armour", "5 of 105.5", "4.7%"],
+								["Boots", "5 of 74.5", "6.7%"],
+								["Other", "5 of 108.5", "4.6%"]
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most.",
+								"A chance that a spell hit deals 50% less. All your spell suppression together counts at most 100%. It does not touch attacks, burns, poison or fields."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open suffix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								[
+									"Orb of Fate",
+									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
+								],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-rift.png",
+					"side": "suffix"
+				},
+				{
 					"id": "mod:chaos_mod_strength",
 					"name": "Strength",
 					"sub": "Suffix, Shield, Helmet, Armour, Legs, Boots, Jewel. +2-4 (T1) to +17-18 (T8)",
@@ -18293,12 +18156,12 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"]
+								["Shield", "3 of 111.5", "2.7%"],
+								["Helmet", "3 of 119.5", "2.5%"],
+								["Armour", "3 of 105.5", "2.8%"],
+								["Legs", "3 of 73.5", "4.1%"],
+								["Boots", "3 of 74.5", "4%"],
+								["Jewel", "3 of 144.5", "2.1%"]
 							]
 						},
 						{
@@ -18379,31 +18242,24 @@
 				{
 					"id": "mod:chaos_mod_thorns",
 					"name": "Thorns",
-					"sub": "Prefix, Shield, Armour, Legs. +2-6 (T1) to +120-190 (T8)",
+					"sub": "Prefix, Shield, Armour, Legs. +2-6 (T1) to +151-190 (T8)",
 					"color": "#ff70c0",
 					"group": "chaos",
 					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Chaos modifier, prefix.",
-								"On an item: Thorns +120-190 (T8).",
-								"Cap: at most 250 from all equipped items together."
-							]
-						},
+						{"h": "Overview", "p": ["Chaos modifier, prefix.", "On an item: Thorns +151-190 (T8)."]},
 						{
 							"h": "Tiers",
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
 								["T1", "1+", "+2-6", "100"],
-								["T2", "15+", "+5-12", "100"],
-								["T3", "30+", "+12-24", "100"],
-								["T4", "50+", "+24-45", "100"],
-								["T5", "70+", "+40-75", "100"],
-								["T6", "90+", "+60-110", "100"],
-								["T7", "110+", "+90-150", "100"],
-								["T8", "130+", "+120-190", "100"]
+								["T2", "15+", "+7-12", "100"],
+								["T3", "30+", "+13-24", "100"],
+								["T4", "50+", "+25-45", "100"],
+								["T5", "70+", "+46-75", "100"],
+								["T6", "90+", "+76-110", "100"],
+								["T7", "110+", "+111-150", "100"],
+								["T8", "130+", "+151-190", "100"]
 							],
 							"tiers": true
 						},
@@ -18414,9 +18270,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "6 of 119", "5%"],
-								["Armour", "6 of 111", "5.4%"],
-								["Legs", "6 of 87", "6.9%"]
+								["Shield", "6 of 111.5", "5.4%"],
+								["Armour", "6 of 105.5", "5.7%"],
+								["Legs", "6 of 73.5", "8.2%"]
 							]
 						},
 						{
@@ -18530,7 +18386,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "3 of 128", "2.3%"], ["Jewel", "3 of 161", "1.9%"]]
+							"rows": [["Helmet", "3 of 119.5", "2.5%"], ["Jewel", "3 of 144.5", "2.1%"]]
 						},
 						{
 							"h": "Rules",
@@ -18607,127 +18463,6 @@
 					"side": "suffix"
 				},
 				{
-					"id": "mod:rarity_waterabsorb",
-					"name": "Water Absorb",
-					"sub": "Suffix, any gear. +2% (T1) to +10-14% (T8)",
-					"color": "#7fa8ff",
-					"group": "absorb",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": [
-								"Absorb, suffix.",
-								"Absorbs a share of the water damage you take (shown on the item as \"Water +N%\"). All your water absorb together, gear and passives, is capped at 75%."
-							]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+2%", "100"],
-								["T2", "15+", "+2-4%", "100"],
-								["T3", "30+", "+3-5%", "100"],
-								["T4", "50+", "+4-6%", "100"],
-								["T5", "70+", "+5-8%", "100"],
-								["T6", "90+", "+6-10%", "100"],
-								["T7", "110+", "+8-12%", "100"],
-								["T8", "130+", "+10-14%", "100"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 187", "1.6%"],
-								["Shield", "3 of 119", "2.5%"],
-								["Helmet", "3 of 128", "2.3%"],
-								["Armour", "3 of 111", "2.7%"],
-								["Legs", "3 of 87", "3.4%"],
-								["Boots", "3 of 83", "3.6%"],
-								["Jewel", "3 of 161", "1.9%"],
-								["Other", "3 of 120", "2.5%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open suffix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								[
-									"Orb of Fate",
-									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
-								],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-water-shield.png",
-					"side": "suffix"
-				},
-				{
 					"id": "mod:rarity_elementwater",
 					"name": "Water Weapon Damage",
 					"sub": "Prefix, Weapon. +2-4% (T1) to +33-52% (T8)",
@@ -18761,14 +18496,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 187", "1.1%"],
-								["Shield", "2 of 119", "1.7%"],
-								["Helmet", "2 of 128", "1.6%"],
-								["Armour", "2 of 111", "1.8%"],
-								["Legs", "2 of 87", "2.3%"],
-								["Boots", "2 of 83", "2.4%"],
-								["Jewel", "2 of 161", "1.2%"],
-								["Other", "2 of 120", "1.7%"]
+								["Weapon", "2 of 157", "1.3%"],
+								["Shield", "2 of 111.5", "1.8%"],
+								["Helmet", "2 of 119.5", "1.7%"],
+								["Armour", "2 of 105.5", "1.9%"],
+								["Legs", "2 of 73.5", "2.7%"],
+								["Boots", "2 of 74.5", "2.7%"],
+								["Jewel", "2 of 144.5", "1.4%"],
+								["Other", "2 of 108.5", "1.8%"]
 							]
 						},
 						{
@@ -18879,7 +18614,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "6 of 187", "3.2%"]]
+							"rows": [["Weapon", "6 of 157", "3.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -19004,7 +18739,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 207", "1.4%"], ["Jewel", "3 of 187", "1.6%"]]
+							"rows": [["Weapon", "3 of 177", "1.7%"], ["Jewel", "3 of 170.5", "1.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -19124,9 +18859,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 207", "1.4%"],
-								["Jewel", "3 of 187", "1.6%"],
-								["Other", "3 of 132", "2.3%"]
+								["Weapon", "3 of 177", "1.7%"],
+								["Jewel", "3 of 170.5", "1.8%"],
+								["Other", "3 of 120.5", "2.5%"]
 							]
 						},
 						{
@@ -19244,9 +18979,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 207", "1.4%"],
-								["Helmet", "3 of 139", "2.2%"],
-								["Jewel", "3 of 187", "1.6%"]
+								["Weapon", "3 of 177", "1.7%"],
+								["Helmet", "3 of 130.5", "2.3%"],
+								["Jewel", "3 of 170.5", "1.8%"]
 							]
 						},
 						{
@@ -19363,7 +19098,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 207", "1.4%"], ["Jewel", "3 of 187", "1.6%"]]
+							"rows": [["Weapon", "3 of 177", "1.7%"], ["Jewel", "3 of 170.5", "1.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -19479,7 +19214,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 207", "1.4%"], ["Jewel", "3 of 187", "1.6%"]]
+							"rows": [["Weapon", "3 of 177", "1.7%"], ["Jewel", "3 of 170.5", "1.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -19595,7 +19330,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "2 of 207", "1%"]]
+							"rows": [["Weapon", "2 of 177", "1.1%"]]
 						},
 						{
 							"h": "Rules",
@@ -19712,10 +19447,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Armour", "3 of 122", "2.5%"],
-								["Legs", "3 of 98", "3.1%"],
-								["Boots", "3 of 92", "3.3%"],
-								["Jewel", "3 of 187", "1.6%"]
+								["Armour", "3 of 116.5", "2.6%"],
+								["Legs", "3 of 84.5", "3.6%"],
+								["Boots", "3 of 83.5", "3.6%"],
+								["Jewel", "3 of 170.5", "1.8%"]
 							]
 						},
 						{
@@ -19796,7 +19531,7 @@
 				{
 					"id": "power:frostward",
 					"name": "Glacial Ward",
-					"sub": "Legendary power. Prefix, Shield, Armour, Legs, Boots, Other. 2-3% (T1) to 12-16% (T8)",
+					"sub": "Legendary power. Prefix, Shield, Armour, Legs, Boots, Other. 2-3% (T1) to 15-16% (T8)",
 					"color": "#ff9a3c",
 					"group": "power",
 					"sections": [
@@ -19805,9 +19540,9 @@
 							"p": [
 								"When a monster's hit is dodged or blocked: an ice nova around you, 100 + 1 x your level damage to up to 8 monsters within 2 sqm, slowed by 35% for 3 s.",
 								"Value: the chance on a dodge or block.",
-								"On an item: Glacial Ward: 12-16% chance when you dodge or block for a frost nova (T8).",
+								"On an item: Glacial Ward: 15-16% chance when you dodge or block for a frost nova (T8).",
 								"Internal cooldown: 4 s.",
-								"Cap: at most 30% from all equipped items together."
+								"Cap: at most 0% from all equipped items together."
 							]
 						},
 						{
@@ -19816,13 +19551,13 @@
 							"w": [14, 22, 40, 24],
 							"rows": [
 								["T1", "1+", "2-3%", "100"],
-								["T2", "15+", "3-4%", "100"],
-								["T3", "30+", "4-6%", "100"],
-								["T4", "50+", "5-7%", "100"],
-								["T5", "70+", "6-9%", "100"],
-								["T6", "90+", "8-11%", "100"],
-								["T7", "110+", "10-13%", "100"],
-								["T8", "130+", "12-16%", "100"]
+								["T2", "15+", "4-5%", "100"],
+								["T3", "30+", "6-7%", "100"],
+								["T4", "50+", "8%", "100"],
+								["T5", "70+", "9-10%", "100"],
+								["T6", "90+", "11-12%", "100"],
+								["T7", "110+", "13-14%", "100"],
+								["T8", "130+", "15-16%", "100"]
 							],
 							"tiers": true
 						},
@@ -19836,11 +19571,11 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "3 of 124", "2.4%"],
-								["Armour", "3 of 122", "2.5%"],
-								["Legs", "3 of 98", "3.1%"],
-								["Boots", "3 of 92", "3.3%"],
-								["Other", "3 of 132", "2.3%"]
+								["Shield", "3 of 116.5", "2.6%"],
+								["Armour", "3 of 116.5", "2.6%"],
+								["Legs", "3 of 84.5", "3.6%"],
+								["Boots", "3 of 83.5", "3.6%"],
+								["Other", "3 of 120.5", "2.5%"]
 							]
 						},
 						{
@@ -19961,10 +19696,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "3 of 139", "2.2%"],
-								["Boots", "3 of 92", "3.3%"],
-								["Jewel", "3 of 187", "1.6%"],
-								["Other", "3 of 132", "2.3%"]
+								["Helmet", "3 of 130.5", "2.3%"],
+								["Boots", "3 of 83.5", "3.6%"],
+								["Jewel", "3 of 170.5", "1.8%"],
+								["Other", "3 of 120.5", "2.5%"]
 							]
 						},
 						{
@@ -20045,7 +19780,7 @@
 				{
 					"id": "power:lastbreath",
 					"name": "Last Breath",
-					"sub": "Legendary power. Suffix, Shield, Helmet, Armour, Legs, Jewel. 10-15% (T1) to 45-50% (T8)",
+					"sub": "Legendary power. Suffix, Shield, Helmet, Armour, Legs, Jewel. 10-15% (T1) to 46-50% (T8)",
 					"color": "#ff9a3c",
 					"group": "power",
 					"sections": [
@@ -20054,9 +19789,9 @@
 							"p": [
 								"A hit that would kill you leaves you at the power's share of your health instead. The cooldown is kept over logout.",
 								"Value: the health left, percent of your maximum.",
-								"On an item: Last Breath: a lethal hit leaves you at 45-50% health (once per 5 minutes) (T8).",
+								"On an item: Last Breath: a lethal hit leaves you at 46-50% health (once per 5 minutes) (T8).",
 								"Internal cooldown: 300 s.",
-								"Cap: at most 50% from all equipped items together."
+								"Cap: at most 0% from all equipped items together."
 							]
 						},
 						{
@@ -20065,13 +19800,13 @@
 							"w": [14, 22, 40, 24],
 							"rows": [
 								["T1", "1+", "10-15%", "100"],
-								["T2", "15+", "15-20%", "100"],
-								["T3", "30+", "20-25%", "100"],
-								["T4", "50+", "25-30%", "100"],
-								["T5", "70+", "30-35%", "100"],
-								["T6", "90+", "35-40%", "100"],
-								["T7", "110+", "40-45%", "100"],
-								["T8", "130+", "45-50%", "100"]
+								["T2", "15+", "16-20%", "100"],
+								["T3", "30+", "21-25%", "100"],
+								["T4", "50+", "26-30%", "100"],
+								["T5", "70+", "31-35%", "100"],
+								["T6", "90+", "36-40%", "100"],
+								["T7", "110+", "41-45%", "100"],
+								["T8", "130+", "46-50%", "100"]
 							],
 							"tiers": true
 						},
@@ -20085,11 +19820,11 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "2 of 124", "1.6%"],
-								["Helmet", "2 of 139", "1.4%"],
-								["Armour", "2 of 122", "1.6%"],
-								["Legs", "2 of 98", "2%"],
-								["Jewel", "2 of 187", "1.1%"]
+								["Shield", "2 of 116.5", "1.7%"],
+								["Helmet", "2 of 130.5", "1.5%"],
+								["Armour", "2 of 116.5", "1.7%"],
+								["Legs", "2 of 84.5", "2.4%"],
+								["Jewel", "2 of 170.5", "1.2%"]
 							]
 						},
 						{
@@ -20206,7 +19941,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 207", "1.4%"]]
+							"rows": [["Weapon", "3 of 177", "1.7%"]]
 						},
 						{
 							"h": "Rules",
@@ -20328,11 +20063,11 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "3 of 139", "2.2%"],
-								["Armour", "3 of 122", "2.5%"],
-								["Legs", "3 of 98", "3.1%"],
-								["Jewel", "3 of 187", "1.6%"],
-								["Other", "3 of 132", "2.3%"]
+								["Helmet", "3 of 130.5", "2.3%"],
+								["Armour", "3 of 116.5", "2.6%"],
+								["Legs", "3 of 84.5", "3.6%"],
+								["Jewel", "3 of 170.5", "1.8%"],
+								["Other", "3 of 120.5", "2.5%"]
 							]
 						},
 						{
@@ -38993,6 +38728,40 @@
 						{"h": "Modifier tiers", "p": ["No tiers: value 1-2."]}
 					],
 					"icon": "wiki/i/rm-suffix-fragile.png"
+				},
+				{
+					"id": "rift:frayed",
+					"name": "Frayed Wards",
+					"sub": "Players' maximum resistances are lowered by 5-25",
+					"color": "#c0a0ff",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Players' maximum resistances are lowered by 5-25.",
+								"Reward bonus: +0.4% quantity, +0.4% rarity per point.",
+								"Suffix: the players or the area get worse.",
+								"Hardest on characters that sit at the cap of every resistance.",
+								"Roll weight 50; on keys of tier 2 or higher."
+							]
+						},
+						{
+							"h": "Modifier tiers",
+							"p": [
+								"The tier follows from the value; keys of tier 1-5 roll I-III, keys of tier 6-10 roll I-IV, keys of tier 11-15 roll II-V."
+							],
+							"cols": ["Tier", "Value", "Raises the bonus caps"],
+							"w": [16, 34, 50],
+							"rows": [
+								["I", "5", ""],
+								["II", "10", ""],
+								["III", "15", ""],
+								["IV", "20", "caps +8/+8/+6"],
+								["V", "25", "caps +16/+16/+12"]
+							]
+						}
+					],
+					"icon": "wiki/i/rm-suffix-frayed.png"
 				},
 				{
 					"id": "rift:frostbrand",

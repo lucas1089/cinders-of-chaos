@@ -23,6 +23,7 @@ Gen.SOURCES = {
 	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
 	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua",
 	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua",
+	"data/scripts/chaos/defence_config.lua", "data/scripts/chaos/player_defence_config.lua",
 	"data/scripts/chaos/lore_data.lua", "data/scripts/chaos/chronicle_text.lua",
 	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua"
 }
@@ -295,6 +296,9 @@ function Gen.load()
 	D.specs = ChaosUniqueSpecs
 	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
 	D.worldBoss = Chaos and Chaos.worldBoss
+	-- the defence numbers (O464): the player's layer and the numbers a monster shares with it
+	D.defence = dofile("data/scripts/chaos/defence_config.lua")
+	D.playerDefence = dofile("data/scripts/chaos/player_defence_config.lua")
 	-- Conquest Tokens (conquest.lua): the vendor's price of every unique and set piece, the bad-luck protection
 	dofile("data/scripts/chaos/conquest_core.lua")
 	D.conquest = dofile("data/scripts/chaos/conquest_config.lua")
@@ -421,9 +425,13 @@ local function affixOverview(D, a)
 	local M = D.M
 	local top = a.tiers[#a.tiers]
 	local p = {}
-	if a.group == "absorb" then
-		p[#p + 1] = string.format("Absorbs a share of the %s damage you take (shown on the item as \"%s +N%%\"). All your %s absorb together, gear and passives, is capped at %d%%.",
-			a.label:lower(), a.label, a.label:lower(), M.config.absorbCeiling or 75)
+	if a.group == "absorb" and not a.noRoll then
+		p[#p + 1] = "Takes a share off the physical damage you take, on top of your armour. Armour and this reduction together never take more than 90% of a physical hit."
+		p[#p + 1] = "On an item: " .. a.label .. " +" .. Gen.range(top[1], top[2]) .. "% (T8)."
+	elseif a.group == "absorb" then
+		p[#p + 1] = string.format("An older modifier that no longer rolls. It counts toward the resistance of its group (%s) at its full value, and an item that carries it gets the matching resistance modifier when it is next touched.",
+			({Fire = "Fire", Ice = "Cold", Water = "Cold", Drown = "Cold", Energy = "Lightning", Holy = "Lightning", Arcane = "Lightning",
+				Earth = "Chaos", Death = "Chaos"})[a.label] or "its group")
 	elseif a.group == "skill" then
 		local skill = a.key:match("^rarity_(%a+)Skill$") or ""
 		if PROFESSIONS[skill] then
@@ -477,6 +485,24 @@ local function affixNotes(D, a, isPower)
 	if isPower then
 		notes[#notes + 1] = string.format("A legendary power: only on items of rarity %s or better, %d per item.",
 			C.rarityName(M.config.powers.minRarity), M.config.powers.maxPerItem)
+	end
+	if a.chaosKey == "armour" then
+		notes[#notes + 1] = "Flat armour, added to the armour of the pieces you wear. Armour takes A / (A + 0.07 x the hit) off a physical hit: a lot of a small hit, little of a big one. Armour and the physical reduction together never take more than 90%."
+	elseif a.chaosKey == "dodge" then
+		notes[#notes + 1] = "A chance to avoid an attack hit completely (a monster's melee and ranged attack, a player's weapon hit), any damage type. All your dodge together counts at most 75%. It never avoids a spell, a burn, poison or a field."
+	elseif a.chaosKey == "block" then
+		notes[#notes + 1] = "A chance to block an attack hit completely, any damage type. All your block together counts at most 75%. It never blocks a spell, a burn, poison or a field."
+	elseif a.chaosKey == "spellsuppress" then
+		notes[#notes + 1] = "A chance that a spell hit deals 50% less. All your spell suppression together counts at most 100%. It does not touch attacks, burns, poison or fields."
+	elseif a.chaosKey == "fireres" or a.chaosKey == "coldres" or a.chaosKey == "lightningres" or a.chaosKey == "chaosres" or a.chaosKey == "allres" then
+		notes[#notes + 1] = "Your resistances: Fire (fire), Cold (ice, water, drowning), Lightning (energy, holy, arcane), Chaos (earth, death, life drain, mana drain). Every source adds up: gear, the passive tree, sets, gems and charms. From level 250 each resistance loses 30 points and from level 500 60, then the result is held at 75 (a rift modifier can lower that), and the penetration of a player attacker comes off it. A negative resistance raises the damage you take."
+		if a.chaosKey == "allres" then
+			notes[#notes + 1] = "Counts for Fire, Cold and Lightning, not for Chaos."
+		end
+	elseif a.chaosKey == "physpen" then
+		notes[#notes + 1] = "Takes this many points off the armour share of the monster you hit (never below 0)."
+	elseif a.chaosKey == "elepen" then
+		notes[#notes + 1] = "Takes this many points off the monster's resistance after its limit of 75, down to -100: it can turn a resistance into a weakness."
 	end
 	if a.chaosKey == "attackspeed" then
 		local cap = D.G.config.effects.attackspeed.cap
@@ -1755,9 +1781,35 @@ function Gen.basicsEntries(D)
 			"Orbs keep the item level."},
 			cols = {"Monster level", "Item level"}, w = {50, 50}, rows = crows}})
 	add("sides", "Prefixes and suffixes", "What a prefix and a suffix are.", {
-		{h = "Sides", p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, block, dodge, reflect, thorns, penetration, ailments, maximum life and mana...).",
-			"Suffixes: utility, resistances and speed (absorbs, leech, attack and movement speed, life and mana on kill or hit, mana regeneration, attributes, experience...).",
+		{h = "Sides", p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, armour, block, dodge, reflect, thorns, penetration, ailments, maximum life and mana...).",
+			"Suffixes: utility, resistances and speed (the four resistances, spell suppression, physical reduction, leech, attack and movement speed, life and mana on kill or hit, mana regeneration, attributes, experience...).",
 			"A new item is rolled until its count or both sides are full; the Orb of Grafting only adds on a side that is open. An Orb of Ruin can give one extra slot on one side."}}})
+	-- how a player defends (player_defence_config.lua, defence_config.lua, server/README.md "Player defence (O464)")
+	do
+		local PDC = D.playerDefence
+		local DEF = D.defence
+		if PDC and DEF then
+			local marks = {}
+			for _, m in ipairs(PDC.penalty.marks) do
+				marks[#marks + 1] = string.format("level %d: -%d", m.level, m.points)
+			end
+			add("defence", "How you defend", "The order of a hit on your character, the four resistances and the armour.", {
+				{h = "The order of a hit", p = {
+					"1. Avoidance, for hits only (never a burn, poison or a field): dodge for attacks (a monster's melee and ranged attacks, a player's weapon hits), block for attacks, spell suppression for spells (a suppressed spell deals " .. PDC.suppressLess .. "% less).",
+					"2. Mitigation by damage type: a physical hit loses its armour share plus your physical reduction (at most " .. DEF.physicalReductionCap .. "% together); fire, cold, lightning and chaos hits lose their resistance.",
+					"3. Then the other bonuses (damage taken from monsters, blessings, gems, charms, sets ...), the mana shield, the energy shield and your health. Last Breath works last of all."}},
+				{h = "Armour", p = {
+					string.format("Armour takes A / (A + %s x H) off a physical hit of size H: a lot of a small hit, little of a big one.", Gen.num(DEF.armourHitFactor)),
+					"A is the armour of the pieces you wear plus the Armour modifier. The passive tree's and the items' physical reduction add to the armour share."}},
+				{h = "The four resistances", p = {
+					"Fire: fire. Cold: ice, water, drowning. Lightning: energy, holy, arcane. Chaos: earth, death, life drain, mana drain. Physical is not a resistance: it has armour and the physical reduction.",
+					"Every source adds up (gear, the passive tree, Paragon, item sets, gems, charms); all elements count for Fire, Cold and Lightning, not for Chaos.",
+					string.format("The penalty by level (%s) comes off the sum; the result is held at %d (a rift modifier can lower that); a player attacker's penetration comes off after that, down to %d. A negative resistance raises the damage you take.",
+						table.concat(marks, ", "), DEF.resistCap, DEF.resistFloor),
+					"You are told at login and when you level up between 240 and 249 and between 490 and 499, and when you cross a mark."}},
+				{h = "Where to read it", p = {"The character sheet (Info & Services > Character Info, and Inspect Player) shows each resistance with its sum, the penalty and the result, the armour, dodge, block and spell suppression."}}})
+		end
+	end
 	-- Conquest Tokens (conquest_config.lua, server/README.md "Conquest Tokens, the Conquest vendor and bad-luck protection")
 	local cq = D.conquest
 	if cq and cq.enabled ~= false then

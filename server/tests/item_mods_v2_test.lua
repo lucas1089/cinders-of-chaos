@@ -273,7 +273,7 @@ q:setCustomAttribute(M.QUALITY, 20)
 local m = C.writeAffix(q, C.affixOf("chaos_mod_attackspeed"), 3, 12)
 eq(m.value, 12, "returned as rolled"); eq(q:getCustomAttribute("chaos_mod_attackspeed"), 12, "stored as rolled")
 eq(q:getCustomAttribute("cv_chaos_mod_attackspeed"), nil, "no raw copy")
-eq(q:getCustomAttribute("chaos_modv"), 2, "the version mark")
+eq(q:getCustomAttribute("chaos_modv"), 3, "the version mark")
 local ct = C.writeAffix(q, C.affixOf("rarity_criticalHitAmount"), 5, 27)
 eq(q:getCustomAttribute("rarity_criticalHitAmount"), 27, "critical damage alone: the engine amount attribute")
 eq(q:getCustomAttribute("rarity_criticalHitChance"), nil, "and no chance with it")
@@ -337,7 +337,25 @@ M.set(ex1, "attackspeed", 27, 8); M.set(ex2, "attackspeed", 27, 8)
 eq(M.totals({ex1, ex2}).attackspeed, 54, "no cap of the module: 27 + 27")
 M.set(ex1, "bleedchance", 55, 8); M.set(ex2, "bleedchance", 55, 8)
 eq(M.totals({ex1, ex2}).bleedchance, 110, "the chance is not capped here (the roll clamps at 100)")
-eq(M.totals({}, {dodge = 99}).dodge, 10, "stage 2 rows keep their caps")
+eq(M.totals({}, {dodge = 99}).dodge, 99, "O464: the defence rows have no module cap either (the player defence layer caps dodge at 75)")
+eq(M.totals({}, {healing = 99}).healing, 20, "a row nobody changed keeps its cap")
+
+-- ---------------------------------------------------------------- a half weight (Chaos Resistance: 1.5), O464
+do
+	local seen = {}
+	local rows = {{entry = "a", weight = 3}, {entry = "b", weight = 1.5}}
+	eq(M.pick(rows, function(lo, hi) seen[#seen + 1] = hi; return hi end), "b", "the highest roll is the last row")
+	eq(seen[1], 9, "a total of 4.5 is rolled in half points: 1 .. 9 (a whole number: Lua 5.3 refuses a fraction)")
+	eq(M.pick(rows, function(lo, hi) return lo end), "a", "the lowest roll is the first row")
+	eq(M.pick(rows, function(lo, hi) return 6 end), "a", "half point 6 of 9 is 3.0: still the first row (3)")
+	eq(M.pick(rows, function(lo, hi) return 7 end), "b", "half point 7 of 9 is 3.5: the second row")
+	local whole = {{entry = "a", weight = 3}, {entry = "b", weight = 2}}
+	M.pick(whole, function(lo, hi) seen.whole = hi; return lo end)
+	eq(seen.whole, 5, "whole weights are rolled as before")
+	ChaosCrafting.random = function(lo, hi) seen.crafting = hi; return hi end
+	eq(ChaosCrafting.weighted({{"x", 3}, {"y", 1.5}}), "y", "ChaosCrafting.weighted takes half points too")
+	eq(seen.crafting, 9, "in half points")
+end
 
 -- ---------------------------------------------------------------- the leech maths
 local st = {}

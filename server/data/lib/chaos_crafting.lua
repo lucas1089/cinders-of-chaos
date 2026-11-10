@@ -136,17 +136,21 @@ C.config = {
 -- ---------------------------------------------------------------------------------------------------------------
 -- modifier catalogue (keys and labels exactly as item.cpp writes them)
 -- ---------------------------------------------------------------------------------------------------------------
+-- O464: only the physical absorb still rolls (armour and shields, its own ladder `physabsorb`: it adds to the armour share
+-- as the physical reduction). The nine per-type rows (noRoll) are read on the items that carry one: the player defence layer
+-- counts each as a source of the resistance of its group, and an item that is upgraded gets the resistance modifier of its
+-- group instead (ChaosCrafting.upgradeItem, M.absorbToResist).
 C.absorbs = {
-	{key = "rarity_physicalAbsorb", label = "Physical"},
-	{key = "rarity_energyAbsorb", label = "Energy"},
-	{key = "rarity_earthAbsorb", label = "Earth"},
-	{key = "rarity_fireAbsorb", label = "Fire"},
-	{key = "rarity_drownAbsorb", label = "Drown"},
-	{key = "rarity_iceAbsorb", label = "Ice"},
-	{key = "rarity_holyAbsorb", label = "Holy"},
-	{key = "rarity_deathAbsorb", label = "Death"},
-	{key = "rarity_waterAbsorb", label = "Water"},
-	{key = "rarity_arcaneAbsorb", label = "Arcane"}
+	{key = "rarity_physicalAbsorb", label = "Physical", engine = "physabsorb", kinds = {armor = true, shield = true}},
+	{key = "rarity_energyAbsorb", label = "Energy", noRoll = true},
+	{key = "rarity_earthAbsorb", label = "Earth", noRoll = true},
+	{key = "rarity_fireAbsorb", label = "Fire", noRoll = true},
+	{key = "rarity_drownAbsorb", label = "Drown", noRoll = true},
+	{key = "rarity_iceAbsorb", label = "Ice", noRoll = true},
+	{key = "rarity_holyAbsorb", label = "Holy", noRoll = true},
+	{key = "rarity_deathAbsorb", label = "Death", noRoll = true},
+	{key = "rarity_waterAbsorb", label = "Water", noRoll = true},
+	{key = "rarity_arcaneAbsorb", label = "Arcane", noRoll = true}
 }
 -- one melee skill (server/README.md "One melee skill"; beta report 2026-10-22): sword, axe and club modifiers are one
 -- "Melee" modifier, distance is "Ranged". The base rarity script gives a melee modifier to all three engine skills
@@ -254,7 +258,7 @@ function C.affixes()
 		list[#list + 1] = row
 	end
 	for _, a in ipairs(C.absorbs) do
-		add({key = a.key, group = "absorb", label = a.label}, E.absorb, "absorb")
+		add({key = a.key, group = "absorb", label = a.label, kinds = a.kinds, noRoll = a.noRoll}, E[a.engine or "absorb"], "absorb")
 	end
 	for _, s in ipairs(C.skills) do
 		local name = s.kind == "profession" and "profession" or "skill"
@@ -816,7 +820,7 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- rolls
 -- ---------------------------------------------------------------------------------------------------------------
-function C.weighted(rows) -- rows = {{value, weight}, ...}
+function C.weighted(rows) -- rows = {{value, weight}, ...}; a weight may be a half (the Chaos Resistance modifier: 1.5)
 	local total = 0
 	for _, r in ipairs(rows) do
 		total = total + r[2]
@@ -824,7 +828,9 @@ function C.weighted(rows) -- rows = {{value, weight}, ...}
 	if total <= 0 then
 		return nil
 	end
-	local roll, acc = C.random(1, total), 0
+	-- whole points: the random source takes whole numbers (Lua 5.3 refuses a fraction); halves are counted in half points
+	local unit = total == math.floor(total) and 1 or 2
+	local roll, acc = C.random(1, math.floor(total * unit + 0.5)) / unit, 0
 	for _, r in ipairs(rows) do
 		acc = acc + r[2]
 		if roll <= acc then
@@ -1212,8 +1218,30 @@ end
 
 local upgrading = false
 
+-- the range a modifier had before this upgrade, by the version the item carries (from): `stored` = it has a tier mark
+local function rangesBefore(m, a, stored, from)
+	if not stored then
+		-- an item from before 2026-10-18: the legacy ranges (its number stays, its tier is read from them)
+		return m.group == "chaos" and (M.legacy[m.chaosKey] or a.tiers) or (a.legacy or a.tiers)
+	end
+	if m.group == "chaos" then
+		if from < 2 then
+			return M.v1.mods[m.chaosKey] or M.v2.mods[m.chaosKey] or a.tiers
+		end
+		return M.v2.mods[m.chaosKey] or a.tiers
+	end
+	if m.key:lower() == "rarity_physicalabsorb" then
+		return M.v2.engine.absorb -- the physical row has its own ladder since O464
+	end
+	return a.tiers
+end
+
+local RESIST_ORDER = {"fireres", "coldres", "lightningres", "chaosres"}
+
 local function upgradeNow(item)
-	local q = M.qualityOf(item)
+	local from = M.versionOf(item)
+	-- the quality of an item below version 2 sits in every value (O461): taken off and moved to the base bonus
+	local q = from < M.config.qualityFrom and M.qualityOf(item) or 0
 	local kind = M.kindOf(item)
 	local later = {} -- what to write once the old attributes are gone: {attr or chaos, value, tier, bound}
 	local function dropKey(attrKey)
@@ -1234,7 +1262,7 @@ local function upgradeNow(item)
 
 	-- the critical pair: chance and amount of the engine, one modifier before, two now
 	local cc, ca = C.customNumber(item, "rarity_criticalHitChance"), C.customNumber(item, "rarity_criticalHitAmount")
-	if cc ~= 0 or ca ~= 0 then
+	if from < 2 and (cc ~= 0 or ca ~= 0) then
 		local t, stored = tierOfPair("rarity_criticalHitChance", ca ~= 0 and ca or cc, M.legacyEngine.critical)
 		local oldR = M.tierRange(stored and M.v1.engine.critical or M.legacyEngine.critical, t)
 		local raw = undoQuality(item, "rarity_criticalHitChance", ca ~= 0 and ca or cc, q, oldR)
@@ -1251,7 +1279,7 @@ local function upgradeNow(item)
 	-- the leech pairs: one Lua modifier each now
 	for _, s in ipairs(C.specials) do
 		local lc, la = C.customNumber(item, s.key), C.customNumber(item, s.key2)
-		if lc ~= 0 or la ~= 0 then
+		if from < 2 and (lc ~= 0 or la ~= 0) then
 			local t, stored = tierOfPair(s.key, la ~= 0 and la or lc, M.legacyEngine.leech)
 			local oldR = M.tierRange(stored and M.v1.engine.leech or M.legacyEngine.leech, t)
 			local raw = undoQuality(item, s.key, la ~= 0 and la or lc, q, oldR)
@@ -1272,8 +1300,7 @@ local function upgradeNow(item)
 			local stored = M.storedTier(item, m.key) ~= nil
 			-- a modifier with a stored tier was rolled in the ranges of version 1; one without (an item from before 2026-10-18)
 			-- keeps its number and its tier from the legacy tables, as it did when the ranges were raised then
-			local oldR = M.tierRange(stored and (m.group == "chaos" and (M.v1.mods[m.chaosKey] or a.tiers) or a.tiers)
-				or (m.group == "chaos" and (M.legacy[m.chaosKey] or a.tiers) or (a.legacy or a.tiers)), m.tier)
+			local oldR = M.tierRange(rangesBefore(m, a, stored, from), m.tier)
 			local newR = M.tierRange(a.tiers, m.tier)
 			local raw = undoQuality(item, m.key, m.value, q, oldR)
 			local v = stored and C.remapValue(raw, oldR, newR) or raw
@@ -1291,6 +1318,40 @@ local function upgradeNow(item)
 				end
 			end
 			removeCustom(item, M.rawAttr(m.key))
+		end
+	end
+	-- O464: the nine per-type absorb rows became the resistance of their group, at the same tier and the same place in its
+	-- range; two of one group on an item become one (the higher tier, then the higher value); a bound row binds the new one
+	if from < 3 then
+		local best = {}
+		local old = M.config.oldTiers
+		for _, a in ipairs(C.absorbs) do
+			local target = M.absorbToResist[a.key:lower()]
+			local v = target and C.customNumber(item, a.key) or 0
+			if v ~= 0 then
+				local stored = M.storedTier(item, a.key)
+				local t = stored or M.tierOfValue(M.legacyEngine.absorb, v, old[1], old[#old])
+				local oldR = M.tierRange(stored and M.v2.engine.absorb or M.legacyEngine.absorb, t)
+				local raw = undoQuality(item, a.key, v, q, oldR)
+				local nv = C.remapValue(raw, oldR, M.tierRange(M.byKey[target].tiers, t))
+				local bound = M.isBound(item, a.key)
+				local cur = best[target]
+				if not cur then
+					best[target] = {tier = t, value = nv, bound = bound}
+				else
+					cur.bound = cur.bound or bound
+					if t > cur.tier or (t == cur.tier and nv > cur.value) then
+						cur.tier, cur.value = t, nv
+					end
+				end
+				dropKey(a.key)
+			end
+		end
+		for _, target in ipairs(RESIST_ORDER) do
+			local w = best[target]
+			if w then
+				later[#later + 1] = {chaos = target, tier = w.tier, value = w.value, bound = w.bound}
+			end
 		end
 	end
 	for _, w in ipairs(later) do

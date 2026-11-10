@@ -86,9 +86,13 @@ M.config = {
 	-- today's five tiers on the new scale (old tier t = new tier oldTiers[t])
 	oldTiers = {2, 3, 4, 5, 6},
 	-- the version of the modifier numbers an item carries ("chaos_modv" on the item, M.VERSION): 1 = the ranges before O461
-	-- (2026-11-10), quality multiplying every value, the critical and leech pairs; 2 = the ranges, rules and modifiers of
-	-- today. An item with modifiers and without the mark is upgraded when it is read (ChaosCrafting.upgradeItem)
-	modVersion = 2,
+	-- (2026-11-10), quality multiplying every value, the critical and leech pairs; 2 = O461 (the offence, sustain, speed and
+	-- utility rows, the roll rules); 3 = O464 (the defence rows: four resistances, armour, dodge, block, spell suppression,
+	-- penetration, energy shield, the powers Last Breath and Glacial Ward). An item with modifiers and a lower mark is
+	-- upgraded when it is read (ChaosCrafting.upgradeItem)
+	modVersion = 3,
+	-- the first version whose items carry the quality on the base bonus (O461): older ones carry it in every value
+	qualityFrom = 2,
 	-- life and mana leech (the Lua modifiers lifeleech, lifeleechw, manaleech, manaleechw): the most they give back to a player
 	-- together, in percent of the maximum per second
 	leech = {maxPct = 20, windowMs = 1000},
@@ -120,8 +124,13 @@ M.config = {
 	-- the engine's modifier types (absorbs, skills, critical / leech pairs, weapon elements; chaos_crafting.lua) get
 	-- tiers too. The values replace item.cpp's ranges per rarity; old items keep theirs.
 	engine = {
-		absorb = {side = "suffix", weight = 3,
+		-- the nine per-type absorb rows left the roll pool in O464 (the four resistances replaced them: the Chaos modifiers
+		-- fireres, coldres, lightningres, chaosres, allres); the group stays to read the items that carry one
+		absorb = {side = "suffix", weight = 3, retired = true,
 			tiers = {{2, 2}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}}},
+		-- the physical absorb row (armour and shields only): the physical reduction that adds to the armour share (O464)
+		physabsorb = {side = "suffix", weight = 3,
+			tiers = {{2, 2}, {3, 3}, {4, 4}, {5, 5}, {5, 6}, {6, 6}, {7, 7}, {7, 8}}},
 		skill = {side = "prefix", weight = 3, -- fist, club, sword, axe, distance, shielding, magic level
 			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}}},
 		profession = {side = "suffix", weight = 1, -- fishing, crafting, woodcutting, mining, herbalism, smithing
@@ -157,21 +166,52 @@ M.config = {
 		{key = "bossdamage", label = "Damage to Elites and Bosses", fmt = "pct", side = "prefix", weight = 6,
 			kinds = {weapon = true, jewel = true},
 			tiers = {{2, 5}, {4, 7}, {6, 10}, {9, 13}, {11, 16}, {14, 18}, {16, 20}, {18, 22}}},
-		{key = "dodge", label = "Dodge", fmt = "pct", side = "prefix", weight = 5, cap = 10,
+		-- O464 (the player defence layer): dodge counts for attack hits at most 75 percent, block at most `blockCap` of
+		-- defence_config.lua, spell suppression at most 100 (player_defence_config.lua); no module cap here any more
+		{key = "dodge", label = "Dodge", fmt = "pct", side = "prefix", weight = 5,
 			kinds = {armor = true, legs = true, boots = true, shield = true, other = true},
-			tiers = {{1, 2}, {2, 2}, {2, 3}, {2, 4}, {3, 5}, {3, 5}, {4, 6}, {5, 7}}},
-		{key = "reflect", label = "Reflect Damage", fmt = "pct", side = "prefix", weight = 5, cap = 15,
+			tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 8}, {8, 9}, {10, 11}}},
+		{key = "reflect", label = "Reflect Damage", fmt = "pct", side = "prefix", weight = 5,
 			kinds = {armor = true, shield = true},
-			tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}, {9, 11}}},
-		{key = "thorns", label = "Thorns", fmt = "flat", side = "prefix", weight = 6, cap = 250,
+			tiers = {{2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 7}, {8, 8}, {9, 10}, {11, 11}}},
+		{key = "thorns", label = "Thorns", fmt = "flat", side = "prefix", weight = 6,
 			kinds = {armor = true, shield = true, legs = true},
-			tiers = {{2, 6}, {5, 12}, {12, 24}, {24, 45}, {40, 75}, {60, 110}, {90, 150}, {120, 190}}},
+			tiers = {{2, 6}, {7, 12}, {13, 24}, {25, 45}, {46, 75}, {76, 110}, {111, 150}, {151, 190}}},
 		{key = "monsterreduction", label = "Damage Taken from Monsters", fmt = "less", side = "prefix", weight = 6,
-			cap = 12, kinds = {armor = true, helmet = true, legs = true, shield = true},
-			tiers = {{1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}}},
-		{key = "block", label = "Block Chance", fmt = "pct", side = "prefix", weight = 8, cap = 15,
+			kinds = {armor = true, helmet = true, legs = true, shield = true},
+			tiers = {{1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}}},
+		{key = "block", label = "Block Chance", fmt = "pct", side = "prefix", weight = 8,
 			kinds = {shield = true},
-			tiers = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {8, 11}, {9, 12}, {11, 14}}},
+			tiers = {{8, 9}, {10, 11}, {12, 13}, {14, 15}, {15, 16}, {16, 17}, {17, 18}, {18, 20}}},
+		-- flat armour (O464): the number the player defence layer's armour share is worked out from, plus the armour of the
+		-- worn pieces: reduction = armour / (armour + 0.07 x the hit), see "Player defence (O464)"
+		{key = "armour", label = "Armour", fmt = "flat", side = "prefix", weight = 6,
+			kinds = {armor = true, helmet = true, legs = true, boots = true, shield = true},
+			tiers = {{3, 5}, {6, 9}, {10, 14}, {15, 20}, {21, 27}, {28, 35}, {36, 44}, {45, 52}}},
+		-- spell suppression (O464): the chance that a spell hit deals 50 percent less (a monster's elemental and scripted
+		-- spells, a player's spells in PvP), at most 100
+		{key = "spellsuppress", label = "Spell Suppression", fmt = "pct", side = "suffix", weight = 5,
+			kinds = {armor = true, helmet = true, boots = true, other = true},
+			tiers = {{8, 9}, {10, 11}, {12, 13}, {14, 15}, {16, 17}, {18, 19}, {20, 21}, {22, 22}}},
+		-- the four resistances (O464): a sum of every source, minus the penalty of the level (-30 from 250, -60 from 500),
+		-- at most 75, see "Player defence (O464)". Fire = fire; Cold = ice, water, drown; Lightning = energy, holy, arcane;
+		-- Chaos = earth, death, life drain, mana drain. The nine per-type absorb rows are gone from the roll pool.
+		{key = "fireres", label = "Fire Resistance", fmt = "pct", side = "suffix", weight = 3,
+			kinds = {helmet = true, armor = true, legs = true, boots = true, jewel = true, other = true, shield = true},
+			tiers = {{6, 11}, {12, 17}, {18, 23}, {24, 29}, {30, 35}, {36, 41}, {42, 45}, {46, 48}}},
+		{key = "coldres", label = "Cold Resistance", fmt = "pct", side = "suffix", weight = 3,
+			kinds = {helmet = true, armor = true, legs = true, boots = true, jewel = true, other = true, shield = true},
+			tiers = {{6, 11}, {12, 17}, {18, 23}, {24, 29}, {30, 35}, {36, 41}, {42, 45}, {46, 48}}},
+		{key = "lightningres", label = "Lightning Resistance", fmt = "pct", side = "suffix", weight = 3,
+			kinds = {helmet = true, armor = true, legs = true, boots = true, jewel = true, other = true, shield = true},
+			tiers = {{6, 11}, {12, 17}, {18, 23}, {24, 29}, {30, 35}, {36, 41}, {42, 45}, {46, 48}}},
+		-- half the weight of one of the three (1.5: ChaosCrafting.weighted takes half points)
+		{key = "chaosres", label = "Chaos Resistance", fmt = "pct", side = "suffix", weight = 1.5,
+			kinds = {helmet = true, armor = true, legs = true, boots = true, jewel = true, other = true, shield = true},
+			tiers = {{5, 8}, {9, 12}, {13, 16}, {17, 20}, {21, 24}, {25, 28}, {29, 31}, {32, 35}}},
+		{key = "allres", label = "All Elemental Resistances", fmt = "pct", side = "suffix", weight = 3,
+			kinds = {jewel = true, other = true, shield = true},
+			tiers = {{3, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 15}, {16, 16}}},
 		{key = "bleedchance", label = "Chance to Bleed", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, other = true},
 			tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}}},
@@ -187,12 +227,14 @@ M.config = {
 		{key = "shockchance", label = "Chance to Shock", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, other = true},
 			tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}}},
-		{key = "physpen", label = "Physical Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 25,
+		-- penetration (O464): physical = points off the armour share of the monster, elemental = points off its resistance
+		-- after the cap (down to -100); both in the monster defence layer, no module cap
+		{key = "physpen", label = "Physical Penetration", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, jewel = true},
-			tiers = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}}},
-		{key = "elepen", label = "Elemental Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 25,
+			tiers = {{3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 8}, {9, 9}, {10, 11}, {11, 12}}},
+		{key = "elepen", label = "Elemental Penetration", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, jewel = true},
-			tiers = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}}},
+			tiers = {{3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 8}, {9, 9}, {10, 11}, {11, 12}}},
 		-- a hit that leaves a normal monster at or below this share of its health kills it; the highest worn value counts
 		-- (stack = "max"): two pieces do not add
 		{key = "execute", label = "Execute", text = "Executes Monsters below %d%% Health", side = "prefix", weight = 3,
@@ -370,6 +412,7 @@ M.config = {
 			thorns = {"Thorned", "Briarbound"},
 			monsterreduction = {"Steadfast", "Unyielding"},
 			block = {"Guarded", "Impregnable"},
+			armour = {"Armored", "Dreadplated"},
 			bleedchance = {"Serrated", "Flaying"},
 			ignitechance = {"Smoldering", "Cindering"},
 			poisonchance = {"Venomous", "Noxious"},
@@ -417,6 +460,12 @@ M.config = {
 			emberstep = {"of the Emberstep", "of the Phoenix"},
 			hunterrush = {"of the Hunt", "of the Wild Hunt"},
 			smolderaura = {"of Smoulder", "of the Pyre"},
+			fireres = {"of Warmth", "of the Furnace"},
+			coldres = {"of the Thaw", "of the Hearthfire"},
+			lightningres = {"of Insulation", "of the Lightning Rod"},
+			chaosres = {"of Shadows", "of the Nightveil"},
+			allres = {"of Prisms", "of the Prismatic Ward"},
+			spellsuppress = {"of Dampening", "of the Nullifier"},
 			bowspeed = {"of the Quickdraw", "of the Rapid Volley"},
 			esrecharge = {"of Renewal", "of the Wellwarden"},
 			-- O461: the Lua leech modifiers (suffix), attributes (suffix), maximum life and mana, spell and weapon damage (prefix)
@@ -622,6 +671,39 @@ M.v1 = {
 		critical = {{2, 2}, {2, 3}, {2, 5}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 10}},
 		leech = {{2, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 9}, {7, 10}}
 	}
+}
+
+-- The ranges of version 2 (O461, until the defence stage O464): the rows O464 changed. Only those are listed. The upgrade of an
+-- item below version 3 reads the old range here and the new one in config, so a value keeps its place inside its tier.
+-- energyshield, energyshieldpct, esrecharge, frostward and lastbreath are rows of chaos_energy_shield.lua and chaos_powers.lua
+-- (their own files hold the new numbers). `absorb` is the engine group of the per-type absorb rows: all ten of them had these
+-- ranges (the physical one has its own group since O464, `physabsorb`).
+M.v2 = {
+	mods = {
+		dodge = {{1, 2}, {2, 2}, {2, 3}, {2, 4}, {3, 5}, {3, 5}, {4, 6}, {5, 7}},
+		reflect = {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}, {9, 11}},
+		thorns = {{2, 6}, {5, 12}, {12, 24}, {24, 45}, {40, 75}, {60, 110}, {90, 150}, {120, 190}},
+		monsterreduction = {{1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}},
+		block = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {8, 11}, {9, 12}, {11, 14}},
+		physpen = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}},
+		elepen = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}},
+		energyshield = {{12, 25}, {25, 50}, {50, 85}, {85, 135}, {135, 195}, {195, 270}, {270, 360}, {360, 480}},
+		energyshieldpct = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+		esrecharge = {{5, 8}, {8, 12}, {12, 16}, {16, 20}, {20, 25}, {25, 30}, {30, 36}, {36, 45}},
+		frostward = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+		lastbreath = {{10, 15}, {15, 20}, {20, 25}, {25, 30}, {30, 35}, {35, 40}, {40, 45}, {45, 50}}
+	},
+	engine = {
+		absorb = {{2, 2}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}}
+	}
+}
+
+-- the per-type absorb rows (engine attribute, lower case) that became a resistance in O464, and the modifier each one turned
+-- into. The physical row stays a row of its own (new numbers). Two rows of one group on one item become one.
+M.absorbToResist = {
+	rarity_fireabsorb = "fireres", rarity_iceabsorb = "coldres", rarity_waterabsorb = "coldres", rarity_drownabsorb = "coldres",
+	rarity_energyabsorb = "lightningres", rarity_holyabsorb = "lightningres", rarity_arcaneabsorb = "lightningres",
+	rarity_earthabsorb = "chaosres", rarity_deathabsorb = "chaosres"
 }
 
 -- the range a modifier of this file had in version 1 at tier t (the current one when the row did not change)
@@ -1041,7 +1123,7 @@ local function cutValue(item, def, v, tier)
 	end
 	local hi = M.tierRange(def.tiers, tier)[2]
 	local q = M.qualityOf(item)
-	if q > 0 and M.versionOf(item) < M.config.modVersion then
+	if q > 0 and M.versionOf(item) < M.config.qualityFrom then
 		hi = M.scaleQuality(hi, q) -- version 1: the stored value carries the quality
 	end
 	return math.min(v, hi)
@@ -1368,7 +1450,9 @@ local function pick(rows, rand)
 	if total <= 0 then
 		return nil
 	end
-	local roll, acc = rand(1, total), 0
+	-- whole points for the random source (Lua 5.3 refuses a fraction); a half weight (Chaos Resistance, 1.5) counts in halves
+	local unit = total == floor(total) and 1 or 2
+	local roll, acc = rand(1, floor(total * unit + 0.5)) / unit, 0
 	for _, r in ipairs(rows) do
 		acc = acc + r.weight
 		if roll <= acc then

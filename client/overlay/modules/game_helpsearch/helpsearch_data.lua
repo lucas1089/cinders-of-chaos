@@ -41,6 +41,7 @@ HelpSearchData = {
 		["spellbook"] = {menu = "Character > Spellbook", words = {en = "spells attack hotkeys", pt = "magias feitiços ataque atalhos"}},
 		["bestiary"] = {menu = "Hunt > Bestiary"},
 		["professions"] = {level = 20, menu = "Economy > Professions"},
+		["defence"] = {words = {en = "resistance resistances resist armour armor dodge block suppression penalty level 250 500 fire cold lightning chaos damage taken", pt = "resistência resistências resistir armadura esquiva bloqueio supressão penalidade nível 250 500 fogo frio raio caos dano sofrido"}},
 		["charms"] = {level = 15, menu = "Character > Charms"},
 		["achievements"] = {menu = "Character > Achievements"},
 		["loadouts"] = {level = 15, menu = "Character > Loadouts"},

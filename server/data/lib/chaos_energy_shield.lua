@@ -31,15 +31,17 @@ E.config = {
 -- (10 per level: ~3,200; a Mystic ~1,700: 28-45%, a Warrior ~4,700: 10-16%); at level 1000 (item level 128+, T3/T4 ..
 -- T7/T8) four at T7 and a T7 percent roll give ~1,580, 15% of ~10,200 (Mystic 30%). Caps: 1,500 flat, +60%.
 E.defs = {
-	{key = "energyshield", label = "Maximum Energy Shield", fmt = "flat", side = "prefix", weight = 6, cap = 1500,
+	-- O464: no module cap (they were 1,500, 60 and 100); the tiers do not overlap (the version 2 ranges: M.v2.mods); the
+	-- recharge is the new 24 .. 38 ladder (the engine's own limit: the whole shield per second, `maxPerMille`)
+	{key = "energyshield", label = "Maximum Energy Shield", fmt = "flat", side = "prefix", weight = 6,
 		kinds = {armor = true, shield = true, helmet = true, jewel = true},
-		tiers = {{12, 25}, {25, 50}, {50, 85}, {85, 135}, {135, 195}, {195, 270}, {270, 360}, {360, 480}}},
-	{key = "energyshieldpct", label = "Maximum Energy Shield", fmt = "pct", side = "prefix", weight = 4, cap = 60,
+		tiers = {{12, 25}, {26, 50}, {51, 85}, {86, 135}, {136, 195}, {196, 270}, {271, 360}, {361, 480}}},
+	{key = "energyshieldpct", label = "Maximum Energy Shield", fmt = "pct", side = "prefix", weight = 4,
 		kinds = {armor = true, shield = true, helmet = true, jewel = true},
-		tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}}},
-	{key = "esrecharge", label = "Faster Energy Shield Recharge", fmt = "pct", side = "suffix", weight = 4, cap = 100,
+		tiers = {{2, 4}, {5, 7}, {8, 10}, {11, 13}, {14, 17}, {18, 21}, {22, 25}, {26, 28}}},
+	{key = "esrecharge", label = "Faster Energy Shield Recharge", fmt = "pct", side = "suffix", weight = 4,
 		kinds = {armor = true, shield = true, helmet = true, jewel = true},
-		tiers = {{5, 8}, {8, 12}, {12, 16}, {16, 20}, {20, 25}, {25, 30}, {30, 36}, {36, 45}}}
+		tiers = {{24, 25}, {26, 27}, {28, 29}, {30, 31}, {32, 33}, {34, 35}, {36, 36}, {37, 38}}}
 }
 E.keys = {}
 for _, def in ipairs(E.defs) do

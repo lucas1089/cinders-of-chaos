@@ -25,17 +25,25 @@ function H.modTexts(tr)
   tr = translate(tr)
   return {
     bossdamage = tr('Damage to Elites and Bosses: more damage to elite monsters and bosses.'),
-    dodge = tr('Dodge: a chance that a hit misses you.'),
+    dodge = tr('Dodge: a chance to avoid an attack completely.'),
     reflect = tr('Reflect Damage: sends a part of the damage you take back to the attacker.'),
     thorns = tr('Thorns: a monster that hits you takes this much damage.'),
     monsterreduction = tr('Damage Taken from Monsters: monsters hurt you less.'),
-    block = tr('Block Chance: a chance to stop a hit with your shield.'),
+    block = tr('Block Chance: a chance to block an attack completely.'),
+    spellsuppress = tr('Spell Suppression: a chance that a spell hits you for half damage.'),
+    armour = tr('Armour: adds to your armour. It takes more off small hits than off big ones.'),
+    fireres = tr('Fire Resistance: you take less fire damage.'),
+    coldres = tr('Cold Resistance: you take less ice, water and drowning damage.'),
+    lightningres = tr('Lightning Resistance: you take less energy, holy and arcane damage.'),
+    chaosres = tr('Chaos Resistance: you take less earth, death, life drain and mana drain damage.'),
+    allres = tr('All Elemental Resistances: adds to your fire, cold and lightning resistance.'),
+    rarity_physicalabsorb = tr('Physical Reduction: takes a share off the physical damage you take, on top of your armour.'),
     bleedchance = tr('Chance to Bleed: your hits can make the target bleed over time.'),
     ignitechance = tr('Chance to Ignite: your hits can set the target on fire.'),
     poisonchance = tr('Chance to Poison: your hits can poison the target.'),
     chillchance = tr('Chance to Chill: your hits can slow the target down.'),
     shockchance = tr('Chance to Shock: a shocked monster takes more damage from everyone.'),
-    physpen = tr('Physical Penetration: your physical hits ignore a part of the monster\'s resistance.'),
+    physpen = tr('Physical Penetration: your physical hits ignore a part of the monster\'s armour.'),
     elepen = tr('Elemental Penetration: your elemental hits ignore a part of the monster\'s resistance.'),
     execute = tr('Execute: a monster below this share of its health dies at once.'),
     dot = tr('Damage over Time: bleeding, burning and poison you cause hurt more.'),
@@ -92,7 +100,7 @@ end
 function H.groupTexts(tr)
   tr = translate(tr)
   return {
-    absorb = tr('Absorb: takes away a share of the damage of that element you take.'),
+    absorb = tr('Absorb: counts toward the resistance of its group: fire, cold, lightning or chaos.'),
     skill = tr('Skill bonus: adds levels to that skill, as if you trained it.'),
     element = tr('Element damage: adds damage of that element to your hits.'),
   }

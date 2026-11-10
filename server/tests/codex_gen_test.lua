@@ -170,7 +170,14 @@ eq(ids["mod:chaos_mod_goldfind"], nil, "Gold Find left the roll pool: no page");
 eq(ids["mod:chaos_mod_manacost"], nil, "Mana Cost Reduction left the roll pool: no page"); count()
 eq(ids["mod:rarity_miningskill"], nil, "the six crafting professions left the roll pool: no page"); count()
 eq(loaded.tierWindow, M.config.maxTier, "every tier rolls: the window as wide as the table"); count()
-eq(ids["mod:rarity_physicalabsorb"].f.kind[8], "other", "absorbs on any gear"); count()
+eq(#ids["mod:rarity_physicalabsorb"].f.kind, 2, "O464: the physical reduction rolls on armour and shields only"); count()
+eq(ids["mod:rarity_physicalabsorb"].f.kind[1] .. "," .. ids["mod:rarity_physicalabsorb"].f.kind[2], "shield,armor", "O464: shield and armour"); count()
+eq(ids["mod:rarity_fireabsorb"], nil, "O464: the per-type absorbs left the roll pool: no page"); count()
+eq(#ids["mod:chaos_mod_fireres"].f.kind, 7, "O464: a resistance rolls on seven kinds"); count()
+eq(ids["mod:chaos_mod_fireres"].tv[8], "+46-48%", "O464: fire resistance T8"); count()
+eq(ids["mod:chaos_mod_allres"].tv[1], "+3-4%", "O464: all resistances T1"); count()
+eq(ids["mod:chaos_mod_armour"].tv[8], "+45-52", "O464: armour T8, flat"); count()
+ok(ids["basics:defence"] ~= nil, "O464: the page How you defend"); count()
 
 -- links and shared sections resolve
 for id, e in pairs(ids) do
