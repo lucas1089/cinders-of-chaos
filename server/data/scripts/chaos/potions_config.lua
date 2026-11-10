@@ -99,6 +99,18 @@ ChaosPotionsConfig = {
 		coins = {[1] = 20, [2] = 30, [3] = 50, [4] = 70}
 	},
 
+	-- O465 upgrade hint (README "Potions", "Upgrade hint (O465)"): players did not find out that the Everfull potions can be
+	-- upgraded. One toast (the notifications module, kind "newplayer", plus the same line in the chat) when a character
+	-- reaches the level of a tier it does not own yet: on level-up, and a few seconds after login for a character already
+	-- past it. Once per tier and character (the mark is set before the message). Only the tier the character can take NOW
+	-- is named (its flask is the tier's `from`), so a line the character does not use (a mana flask kept at the first tier
+	-- is no reason to talk of the spirit line) says nothing; one message holds every line (never two toasts at once).
+	-- enabled: the switch. minTierLevel: a tier below this level is never hinted (the first spirit potion needs no level,
+	-- and a hint at level 1 would only be noise). delayMs: the wait after login, so the toast does not hide behind the
+	-- login messages. storageBase: +0 .. +9 the hint of the entry at that place among the entries with a `from` (the place
+	-- of its upgrade flag), block 7102520 - 7102529 (server/README.md "Storage keys").
+	hint = {enabled = true, minTierLevel = 1, delayMs = 6000, storageBase = 7102520},
+
 	-- the potion exhaust: CONDITION_EXHAUST_HEAL for the action interval - 100 ms; only the Everfull potions add it,
 	-- stock potions are paced by the potion cooldown channel (patch 0042); exhaustMs is used when the engine's config
 	-- cannot be read

@@ -1556,6 +1556,10 @@ return {
 		-- Everfull potions (potions.lua, data/lib/chaos_potions.lua)
 		["You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."] =
 			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas nunca acabam.",
+		-- the upgrade hint (potions_core.lua hintMessage, data/lib/chaos_potions.lua hint; O465)
+		["Potion upgrade"] = "Melhoria de poção",
+		["Your Everfull potion can be upgraded: %s. Ask %s in the hub, or buy the swap in the store. How it works explains it: open Help Search (Alt+F) and type \"potion\"."] =
+			"Sua poção Everfull pode ser melhorada: %s. Fale com %s no hub, ou compre a troca na loja. Como funciona explica: abra Buscar Ajuda (Alt+F) e digite \"poção\".",
 		-- Everfull potion tiers (potions.lua, data/lib/chaos_potions.lua, Veyra the Apothecary; O245)
 		["Only characters of level %d or above may drink this fluid."] =
 			"Só personagens de nível %d ou mais podem beber este líquido.",

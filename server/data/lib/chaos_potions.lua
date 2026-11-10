@@ -447,3 +447,48 @@ end
 function PT.forgetHeld(player)
 	PT.heldSent[player:getId()] = nil
 end
+
+-- ---------------------------------------------------------------- the upgrade hint (O465, README "Potions", "Upgrade hint")
+-- Which tiers the character should hear about now, from its level and its storages: the earned flags of the upgrades
+-- and the hint marks (potions_config.lua hint). No message, no change. A list of entries, in config order.
+function PT.hintDue(player)
+	local c = PT.cfg()
+	if not (c.hint and c.hint.enabled) then
+		return {}
+	end
+	local earned, hinted = {}, {}
+	for _, e in ipairs(K.upgradeTargets(c)) do
+		earned[e.id] = player:getStorageValue(K.upgradeStorage(c, e.id)) == 1
+		hinted[e.id] = player:getStorageValue(K.hintStorage(c, e.id)) == 1
+	end
+	local out = {}
+	for _, e in ipairs(K.hintDue(c, {level = player:getLevel(), earned = earned, hinted = hinted})) do
+		if PT.installed(e.id) then -- a tier missing from items.otb is not for sale either
+			out[#out + 1] = e
+		end
+	end
+	return out
+end
+
+-- The hint: ONE toast and chat line for everything due (the mark of each named tier is written first, so a crash never
+-- repeats it). The callers are the level-up event and the login event (potions.lua). Returns the entries named.
+function PT.hint(player)
+	local due = PT.hintDue(player)
+	if #due == 0 then
+		return due
+	end
+	local c = PT.cfg()
+	for _, e in ipairs(due) do
+		player:setStorageValue(K.hintStorage(c, e.id), 1)
+	end
+	local okA, A = pcall(dofile, "data/scripts/chaos/apothecary_config.lua")
+	local npc = okA and type(A) == "table" and A.npc or "Veyra the Apothecary"
+	local title, text = K.hintMessage(c, due, npc, function(key, ...)
+		return Chaos.t(player, key, ...)
+	end)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, title .. ": " .. text)
+	if ChaosNotify and ChaosNotify.send then
+		ChaosNotify.send(player, title, text, "newplayer")
+	end
+	return due
+end
