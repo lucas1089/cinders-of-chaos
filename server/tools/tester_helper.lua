@@ -1347,9 +1347,14 @@ end
 -- ---------------------------------------------------------------- O278 unique passives, live
 -- "!tester unique": a real unique copy (custom attribute chaos_unique) of an item whose passive is a damage multiplier
 -- with no state to build (UNIQUE_FAMILIES) and works for the tester's class line goes into an empty slot. A plain hit to settle the
--- class's per-hit state, then one hit of a tenth of a fresh monster's health before it is worn, one on a second fresh monster after; the multiplier the glue's
--- own ChaosUniquePassivesCore.dealt returned on the second hit is caught. Item and monsters are removed again.
--- Answers {id, family, line, slot, active = {families}, m, crit, lostBefore, lostAfter, hit} or {err}
+-- class's per-hit state, then one hit of a tenth of a fresh monster's health before it is worn, one on a second fresh monster after; the multiplier the game's
+-- own rule gave the second hit is caught. Item and monsters are removed again.
+-- O473: a passive's bonus is raw percent of the damage pool now, its price stays a multiplier. Every monster has ChaosPassiveDealt
+-- from its spawn, so the pool asks ChaosUniquePassivesCore.dealtSplit first and ChaosUPDealt only applies the multiplier it kept:
+-- ChaosUniquePassivesCore.dealt is not called on such a hit. Caught are the split (raw, mult) and the pool factor of the hit
+-- before and of the hit after (ChaosDamagePool.part, primary part): m = mult x pool after / pool before. A hit no pool pass saw
+-- (the old way) still answers through ChaosUniquePassivesCore.dealt.
+-- Answers {id, family, line, slot, active = {families}, m, raw, mult, crit, lostBefore, lostAfter, hit} or {err}
 local UNIQUE_FAMILIES = {critrule = true, opener = true, lowlife = true, overflow = true}
 local SLOT_OF = { -- ItemType:getSlotPosition() bit -> CONST_SLOT_*; hands are left alone (the tester's weapon)
 	{1, CONST_SLOT_HEAD}, {2, CONST_SLOT_NECKLACE}, {8, CONST_SLOT_ARMOR}, {64, CONST_SLOT_LEGS},
@@ -1375,7 +1380,7 @@ local function probeHit(player, spot, capture)
 	pcall(Chaos.registerOnce, m, "ChaosUPDealt")
 	local before = m:getHealth()
 	local d = math.max(1, math.floor(m:getMaxHealth() / 10))
-	capture.m, capture.crit = nil, nil
+	capture.m, capture.crit, capture.raw, capture.mult, capture.pool = nil, nil, nil, nil, nil
 	pcall(doTargetCombatHealth, player:getId(), m, COMBAT_ENERGYDAMAGE, -d, -d, CONST_ME_NONE)
 	local lost = before - m:getHealth()
 	m:remove()
@@ -1419,11 +1424,29 @@ function commands.unique(player)
 		return tell(player, "unique", {err = "no free tile next to the tester"})
 	end
 	local capture = {}
-	local real = C.dealt
+	local real, realSplit = C.dealt, C.dealtSplit
+	local POOL = ChaosDamagePool
+	local realPart = POOL and POOL.part
 	C.dealt = function(cfg, S, act, ctx)
 		local m = real(cfg, S, act, ctx)
 		capture.m, capture.crit = m, ctx and ctx.crit
 		return m
+	end
+	if realSplit then
+		C.dealtSplit = function(cfg, S, act, ctx)
+			local raw, mult, list = realSplit(cfg, S, act, ctx)
+			capture.raw, capture.mult, capture.crit = raw, mult, ctx and ctx.crit
+			return raw, mult, list
+		end
+	end
+	if realPart then
+		POOL.part = function(hit, combatType, which, treeRaw)
+			local factor, sum, list = realPart(hit, combatType, which, treeRaw)
+			if which == "primary" and hit and hit.attacker and hit.attacker.getId and hit.attacker:getId() == player:getId() then
+				capture.pool = factor
+			end
+			return factor, sum, list
+		end
 	end
 	local out = {line = line}
 	local capWas
@@ -1432,6 +1455,7 @@ function commands.unique(player)
 		-- the plain hit twice, the passive explained the third exactly): the baseline is a second plain hit on a fresh monster
 		out.lostFirst, out.hit = probeHit(player, spot, capture)
 		out.lostBefore = probeHit(player, spot, capture)
+		local poolBefore = capture.pool
 		-- the first candidate the slot takes (the engine refuses some for the class or a slot rule: live run 2026-11-01)
 		local pick, slot, refused = nil, nil, {}
 		for _, e in ipairs(cands) do
@@ -1470,13 +1494,22 @@ function commands.unique(player)
 		end
 		out.lostAfter = probeHit(player, spot, capture)
 		out.m, out.crit = capture.m, capture.crit
+		if out.m == nil and capture.mult ~= nil then
+			-- the pool way: the multiplier the event applied times what the passive's raw percent moved the pool's factor
+			local before, after = poolBefore or 1, capture.pool or 1
+			out.m = capture.mult * (before > 0 and after / before or 1)
+			out.raw, out.mult = capture.raw, capture.mult
+		end
 		local worn = player:getSlotItem(slot)
 		if worn and worn:getId() == pick.id then
 			worn:remove()
 		end
 		UP.refresh(player)
 	end)
-	C.dealt = real
+	C.dealt, C.dealtSplit = real, realSplit
+	if realPart then
+		POOL.part = realPart
+	end
 	if capWas then
 		player:setCapacity(capWas)
 	end
