@@ -711,7 +711,7 @@ function C.fairness(cfg, wcfg, opt)
 	opt = opt or {}
 	local bands = dofile("tools/loot_bands_data.lua")
 	local weapons = {}
-	for _, r in ipairs(W.csv("data/items/base_weapons.csv")) do
+	for _, r in ipairs(W.stockWeapons(wcfg)) do
 		weapons[tonumber(r.id)] = r
 	end
 	local FAMILY = {sword = "melee", axe = "melee", club = "melee", bow = "launcher", crossbow = "launcher", wand = "wand", throw = "throw"}

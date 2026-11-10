@@ -56,14 +56,14 @@ def stat(key, name):
     return dict(by[key]['stats']).get(name)
 
 
-check([stat('w800_gravesong_bow', k) for k in ('attack', 'hitChance', 'skillDist', 'attackspeed', 'range')] == [77, 96, 3, 3000, 6], 'gravesong bow: attack 77, hit 96, skill 3')
+check([stat('w800_gravesong_bow', k) for k in ('attack', 'hitChance', 'skillDist', 'attackspeed', 'range')] == [149, 96, 3, 3000, 6], 'gravesong bow: attack 149 (O472, was 77), hit 96, skill 3')
 check(stat('w800_gravesong_bow', 'shootType') == 'onyxarrow' and stat('w800_bonehinge_arbalest', 'shootType') == 'drillbolt', 'death missiles')
-check([stat('w800_last_ember_recurve', k) for k in ('attack', 'hitChance', 'skillDist')] == [85, 98, 5], 'last-ember recurve: attack 85, hit 98, skill 5')
-check(stat('w800_thornwarden_crossbow', 'attack') == 85, 'a crossbow is the bow curve + 3')
-check(by['w800_cinderbloom_wand']['wand'] == (95, 129, 25, 'fire') and stat('w800_cinderbloom_wand', 'magiclevelpoints') == 3, 'cinderbloom wand: 95-129, mana 25, ML +3')
-check(by['w800_wyrmtongue_focus']['wand'] == (117, 159, 33, 'energy') and stat('w800_wyrmtongue_focus', 'magiclevelpoints') == 4, 'wyrmtongue focus: 117-159, mana 33, ML +4')
-check([stat('w800_gravewrought_greatsword', k) for k in ('attack', 'elementDeath', 'defense', 'skillSword', 'attackspeed')] == [40, 22, 37, 3, 3000], 'greatsword: 40 + death 22, defense 37')
-check([stat('w800_dirgebell_maul', k) for k in ('attack', 'elementHoly', 'defense', 'skillClub')] == [42, 22, 38, 3], 'maul: 42 + holy 22, defense 38')
+check([stat('w800_last_ember_recurve', k) for k in ('attack', 'hitChance', 'skillDist')] == [245, 98, 5], 'last-ember recurve: attack 245 (O472, was 85), hit 98, skill 5')
+check(stat('w800_thornwarden_crossbow', 'attack') == 214, 'a crossbow is the bow curve + 3 (O472: 211 + 3, was 82 + 3)')
+check(by['w800_cinderbloom_wand']['wand'] == (187, 253, 25, 'fire') and stat('w800_cinderbloom_wand', 'magiclevelpoints') == 3, 'cinderbloom wand: 187-253 (O472, was 95-129), mana 25, ML +3')
+check(by['w800_wyrmtongue_focus']['wand'] == (338, 458, 33, 'energy') and stat('w800_wyrmtongue_focus', 'magiclevelpoints') == 4, 'wyrmtongue focus: 338-458 (O472, was 117-159), mana 33, ML +4')
+check([stat('w800_gravewrought_greatsword', k) for k in ('attack', 'elementDeath', 'defense', 'skillSword', 'attackspeed')] == [79, 42, 37, 3, 3000], 'greatsword: 79 + death 42 (O472, was 40 + 22), defense 37')
+check([stat('w800_dirgebell_maul', k) for k in ('attack', 'elementHoly', 'defense', 'skillClub')] == [94, 51, 38, 3], 'maul: 94 + holy 51 (O472, was 42 + 22), defense 38')
 check(not any(k.startswith('lifeleech') for r in rows for k, _v in r['stats']), 'no leech: that is the Bloodmoon set alone')
 # every weapon is 100% of the tier of its own level (the weapon audit's 80% rule, tools/weapon_coverage_config.lua)
 for r in rows:
@@ -87,7 +87,7 @@ check('slotType" value="two-handed"' in new and 'weaponType" value="distance"' i
 check('ammoType' not in new, 'launchers fire without ammunition')
 again, note = T.patch_xml(new, rows)
 check(again == new and 'up to date' in note, 'items.xml block up to date on a second run')
-check(T.patch_xml(new.replace('value="77"', 'value="70"'), rows)[0] == new, 'items.xml block rewritten when a number changed')
+check(T.patch_xml(new.replace('value="149"', 'value="70"'), rows)[0] == new, 'items.xml block rewritten when a number changed')
 raises(lambda: T.patch_xml(xml.replace('2400', '48412'), rows), 'an items.xml entry outside the block stops the script')
 mv = '<movements>\n</movements>\n'
 nm, note = T.patch_moves(mv, rows)
@@ -97,7 +97,7 @@ raises(lambda: T.patch_moves('<movements>\n<movevent event="Equip" itemid="48412
 wx = '<weapons>\n</weapons>\n'
 nw, note = T.patch_weapons(wx, rows)
 check(nw.count('<distance ') == 13 and nw.count('<wand ') == 18 and nw.count('<melee ') == 3, 'weapons.xml: 13 launchers, 18 wands and rods, 3 melee')
-check('<wand id="48425" level="830" mana="25" min="95" max="129" type="fire">' in nw, 'weapons.xml: a wand with its damage, mana and element')
+check('<wand id="48425" level="830" mana="25" min="187" max="253" type="fire">' in nw, 'weapons.xml: a wand with its damage, mana and element (O472: 187-253, was 95-129)')
 check(T.patch_weapons(nw, rows)[0] == nw, 'weapons.xml idempotent')
 
 # ---- the generated Lua is up to date, and the class loot families carry the bases

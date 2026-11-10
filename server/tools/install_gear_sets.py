@@ -41,6 +41,7 @@ import os, re, shutil, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import weapon_growth as WG  # noqa: E402  (O472: W(level) and the attack growth a(level))
 from install_pack_items import read_manifest, patch_otb, verify_otb  # noqa: E402
 from install_dark_tiles import xml_escape  # noqa: E402
 from install_fist_weapons import replace_block as _replace_block  # noqa: E402
@@ -125,15 +126,34 @@ CURVES = {   # value at each anchor level; linear between them, flat outside
     'speed': (0, 5, 10, 15, 20, 25, 30, 35, 40),       # boots
     'shield': (14, 24, 30, 35, 39, 43, 47, 51, 55),    # defense (stock: 37-39 at 150-300, 53 at 350)
     'spellbook': (8, 12, 15, 18, 21, 24, 27, 30, 33),  # defense (stock: 20-27 at 220-400)
-    'attack': (16, 40, 46, 49, 53, 57, 61, 65, 69),    # one-handed melee (stock: 43-54 at 55-120, 56 at 300, 71 at 1000)
     'defense': (10, 20, 25, 28, 30, 32, 34, 36, 38),   # one-handed melee
-    'bow': (31, 38, 68, 71, 73, 76, 79, 82, 85),       # launcher attack (archery bands: 29-38 below 90, 65 + own from 90)
     'hit': (90, 93, 95, 95, 96, 96, 97, 97, 98),       # launcher hit chance
-    'wand': (16, 40, 62, 85, 98, 108, 118, 128, 138),  # mean wand damage (stock: 80-100 at 150, 87-125 at 220-400)
     'mana': (2, 7, 13, 18, 21, 24, 27, 30, 33),        # mana per wand shot (stock: 19-22 at 150-400)
     'absorb': (2, 3, 4, 5, 6, 7, 8, 9, 10),            # % of the set's element on body and amulet (half on others)
     'jewel': (1, 1, 2, 2, 3, 3, 4, 4, 5),              # amulet armour; ring armour and physical % one lower (min 0)
 }
+# O472 (2026-11-10, owner: "You can do everything"; design B5): the weapon values grow with the level. The weapon factor W(level)
+# (server/data/scripts/chaos/spell_scaling_config.lua `weaponGrowth`: 1.00 up to level 100, 1.14 at 200, 1.26 at 300, 1.42 at 500,
+# 1.55 at 700, 1.85 at 850, 2.20 at 1000, 2.35 at 1500, 2.60 at 2000, straight in the logarithm of the level between the rows, flat
+# above 2000) multiplies the weapon term of a hit. A hit is about 85% skill x attack, so a weapon's attack grows by
+# a = 1 + (W - 1) / 0.85. The three weapon curves below are the old ones (OLD_WEAPON_CURVES) times a at the anchors, with the anchors
+# of W added (300, 500, 850); tests/weapon_growth_test.lua and install_gear_sets_test.py hold them to the rule.
+WEAPON_ANCHORS = (8, 50, 100, 200, 300, 400, 500, 700, 850, 1000, 1500, 2000)
+WEAPON_CURVES = {
+    'attack': (16, 40, 46, 57, 67, 75, 81, 94, 118, 147, 168, 199),         # one-handed melee (was 49 at 200, 57 at 700, 61 at 1000)
+    'bow': (31, 38, 68, 83, 94, 103, 111, 125, 155, 191, 212, 245),         # launcher attack (was 71 at 200, 76 at 700, 79 at 1000)
+    'wand': (16, 40, 62, 99, 119, 138, 151, 178, 226, 285, 331, 398),       # mean wand damage (was 85 at 200, 108 at 700, 118 at 1000)
+}
+# the curves before O472 on the old anchors (ANCHORS): the base of the growth rule and of the upgrade on touch (chaos_weapon_growth.lua)
+OLD_WEAPON_CURVES = {
+    'attack': (16, 40, 46, 49, 53, 57, 61, 65, 69),
+    'bow': (31, 38, 68, 71, 73, 76, 79, 82, 85),
+    'wand': (16, 40, 62, 85, 98, 108, 118, 128, 138),
+}
+# the weapon factor W by level (weapon_growth.py; the same table as data/scripts/chaos/spell_scaling_config.lua `weaponGrowth`)
+WEAPON_GROWTH = WG.WEAPON_GROWTH
+weapon_w, weapon_a = WG.weapon_w, WG.weapon_a
+
 FIT_SHARE = {'H': 1.0, 'M': 0.9, 'C': 0.8, 'A': 0.9}   # armour of a fit against heavy
 ELEMENT_SHARE = 0.35                                    # melee: this share of the attack is the set's element
 STEPS = {   # bonus = how many of these levels the piece has reached
@@ -155,14 +175,38 @@ PLURAL_NOUNS = ('boots', 'sabatons', 'treads', 'striders', 'sollerets', 'walkers
                 'cuisses', 'greaves', 'leggings', 'chausses', 'breeches', 'legguards', 'trousers', 'legwraps')
 
 
-def curve(name, level):
-    ys = CURVES[name]
-    if level <= ANCHORS[0]:
+def _line(xs, ys, level):
+    if level <= xs[0]:
         return float(ys[0])
-    for (x0, y0), (x1, y1) in zip(zip(ANCHORS, ys), zip(ANCHORS[1:], ys[1:])):
+    for (x0, y0), (x1, y1) in zip(zip(xs, ys), zip(xs[1:], ys[1:])):
         if level <= x1:
             return y0 + (y1 - y0) * (level - x0) / float(x1 - x0)
     return float(ys[-1])
+
+
+def curve(name, level):
+    if name in WEAPON_CURVES:
+        return _line(WEAPON_ANCHORS, WEAPON_CURVES[name], level)
+    return _line(ANCHORS, CURVES[name], level)
+
+
+class old_weapon_curves(object):
+    """`with old_weapon_curves():` the weapon curves of before O472 (the install tools and the growth table's `old` numbers)"""
+    def __enter__(self):
+        global WEAPON_ANCHORS, WEAPON_CURVES
+        self.saved = (WEAPON_ANCHORS, WEAPON_CURVES)
+        WEAPON_ANCHORS, WEAPON_CURVES = ANCHORS, OLD_WEAPON_CURVES
+        return self
+
+    def __exit__(self, *exc):
+        global WEAPON_ANCHORS, WEAPON_CURVES
+        WEAPON_ANCHORS, WEAPON_CURVES = self.saved
+        return False
+
+
+def old_weapon_curve(name, level):
+    """the weapon curve before O472 (attack, bow, wand)"""
+    return _line(ANCHORS, OLD_WEAPON_CURVES[name], level)
 
 
 def rnd(x):

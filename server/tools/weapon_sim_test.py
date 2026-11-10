@@ -63,7 +63,7 @@ check(W.interp((10, 20), (1.0, 3.0), 15) == 2.0 and W.interp((10, 20), (1.0, 3.0
       and W.interp((10, 20), (1.0, 3.0), 50) == 3.0, 'interpolation: linear, flat outside')
 
 # sword, axe and club: one tier attack (the equipment sets have no per-type curve)
-check(set(W.G.CURVES) >= {'attack', 'bow', 'hit'}, 'the sets\' curves')
+check(set(W.G.CURVES) | set(W.G.WEAPON_CURVES) >= {'attack', 'bow', 'hit', 'wand'}, 'the sets\' curves (O472: the weapon curves are WEAPON_CURVES)')
 check(W.TYPE_FACTOR == {'sword': 1.0, 'axe': 1.0, 'club': 1.0}, 'no type factor as shipped')
 
 # the config file

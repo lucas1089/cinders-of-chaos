@@ -25,6 +25,8 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import weapon_growth as WG  # noqa: E402  (O472: the marker comments of the stock weapon growth)
 SERVER = os.path.dirname(HERE)
 OUT = os.path.join(SERVER, 'data', 'items', 'base_weapons.csv')
 CONFIG = os.path.join(SERVER, 'data', 'lib', 'chaos_archery_config.lua')
@@ -107,8 +109,14 @@ def equip_rules(movements_xml):
 
 
 def survey(data_dir):
-    items = weapon_items(read(os.path.join(data_dir, 'items', 'items.xml')))
-    entries = weapon_entries(read(os.path.join(data_dir, 'weapons', 'weapons.xml')))
+    items_text = read(os.path.join(data_dir, 'items', 'items.xml'))
+    weapons_text = read(os.path.join(data_dir, 'weapons', 'weapons.xml'))
+    items = weapon_items(items_text)
+    entries = weapon_entries(weapons_text)
+    # O472: the stock weapons grow with the level (patch_stock_weapon_growth.py): the snapshot keeps the numbers BEFORE the growth,
+    # which the step leaves in a comment at the end of items.xml and weapons.xml
+    before_items = WG.read_items_block(items_text)
+    before_wands = WG.read_wands_block(weapons_text)
     equips = equip_rules(read(os.path.join(data_dir, 'movements', 'movements.xml')))
     launchers = launcher_kinds()
     crossbow_words = crossbow_word_list()
@@ -135,6 +143,10 @@ def survey(data_dir):
         two = a.get('slottype', '') == 'two-handed'
         attack = int(a.get('attack', 0) or 0)
         element = sum(int(a.get(k, 0) or 0) for k in ELEMENTS)
+        if wid in before_items:
+            attack, element = before_items[wid][0], sum(before_items[wid][1].values())
+        if wid in before_wands:
+            e = dict(e, min=before_wands[wid][0], max=before_wands[wid][1])
         if wt == 'distance':
             if wid in launchers:
                 kind = launchers[wid]

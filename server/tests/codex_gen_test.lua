@@ -238,7 +238,7 @@ ok(sources.rows[1][2]:find("Legendary 40%%") ~= nil, "loot_config chance: " .. s
 
 -- a unique: stats from the specs, drop chances by tier
 local soul = ids["unique:8209"]
-ok(soul.sub:find("Attack 52") ~= nil, "unique stats " .. soul.sub); count()
+ok(soul.sub:find("Attack 54") ~= nil, "unique stats (O472: attack 52 x a(120) = 54) " .. soul.sub); count()
 eq(soul.f.level, 120, "unique level"); count()
 eq(soul.f.kind[1], "weapon", "unique kind"); count()
 
