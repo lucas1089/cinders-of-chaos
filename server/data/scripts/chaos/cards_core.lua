@@ -71,6 +71,17 @@ K.TEXT = {
 	widen = "While on, %s reaches a wider area (step %d of 4).",
 	bow = "While on, %s lasts %d seconds longer and gives %d more percentage points of distance skill.",
 	legendary = "Needs %s. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time.",
+	-- card sets (O453): the line of Character Info, the message after a card is turned on or off, the card text
+	set_on = "Card set %s is on with %s cards: %s",
+	set_progress = "Card set %s: %s of %s cards. The bonus: %s",
+	set_none = "No card set yet. %s cards of one element, one for each spell you cast, give a set bonus.",
+	set_off = "Card set %s is off.",
+	setcard = "It counts for the %s card set. With %s cards of one element, one for each spell you cast, you get a bonus.",
+	set_damage = "Your %s damage is %s%% higher.",
+	set_slow = "Your %s hits slow the target by %s%% for %s seconds.",
+	set_poison = "Your %s hits poison the target for %s%% of the hit over %s seconds.",
+	set_leech = "Your %s hits heal you for %s%% of the damage, at most %s%% of your maximum health a hit.",
+	set_heal = "Your %s hits heal you for %s%% of your maximum health, at most once every %s seconds.",
 }
 
 -- the hint every card description ends with (tools/patch_badges.py CARD_HINT is the same text; tests compare them)
@@ -114,12 +125,234 @@ function K.bonusText(lang, id)
 	return ""
 end
 
--- the item description of a card: what it gives and how to use it
+-- ---------------------------------------------------------------- card sets (O453)
+-- Pure rules: which cards count for a set, the state of a player's cards, the bonus numbers and texts. The engine glue
+-- (cards.lua) applies the bonus at the hit; tests/cards_test.lua tests every rule here.
+local S = C.sets
+K.sets = S
+
+-- the number as a short text: 5 -> "5", 1.5 -> "1.5"
+local function num(n)
+	return string.format("%g", n)
+end
+
+-- The element a card counts for in a set: the element of a convert card whose element has a set bonus. Nil for a card with
+-- no element (heal, melee, widen, bow, legendary), for an element with no set (Drown: one line only) and for no card.
+function K.setElement(id)
+	local c = C.cards[tonumber(id) or -1]
+	if c and c.kind == "convert" and c.element and S.by[c.element] then
+		return c.element
+	end
+	return nil
+end
+
+-- does the class (a name of C.classes) cast the spells of a convert line
+local lineSets = {}
+for spell, names in pairs(C.lineClasses) do
+	local set = {}
+	for _, n in ipairs(names) do
+		set[n] = true
+	end
+	lineSets[spell] = set
+end
+function K.castsLine(className, fam)
+	local set = lineSets[fam.spell]
+	return set ~= nil and set[className] == true
+end
+
+-- the name of a class by vocation id (C.classes); nil for an id that is no class
+function K.classNameOf(vocId)
+	vocId = tonumber(vocId)
+	for _, row in ipairs(C.classes) do
+		if row.id == vocId then
+			return row.name
+		end
+	end
+	return nil
+end
+
+-- The cards that count for a class: one per convert line the class casts, the highest card of the line that is on (a lower card
+-- of the same line is overridden by it, so it counts for nothing). isOn(card id) -> true when the card is on. Each entry:
+-- {line, spell, tier, id, element}; element is nil when that card has no set element (Drown).
+function K.effectiveCards(isOn, className)
+	local out = {}
+	for f, fam in ipairs(C.families) do
+		if fam.kind == "convert" and K.castsLine(className, fam) then
+			for t = 4, 1, -1 do
+				if isOn(fam.ids[t]) then
+					out[#out + 1] = {line = f, spell = fam.spell, tier = t, id = fam.ids[t], element = K.setElement(fam.ids[t])}
+					break
+				end
+			end
+		end
+	end
+	return out
+end
+
+-- The state of the sets of a class for the cards that are on: {counts = {element = cards}, active = {{element, count}}
+-- (at most S.maxSets, the most cards first, then S.order), element/count = the first active one, best = {element, count} the
+-- element with the most cards while no set is on (ties by S.order), nil with no card of an element}. With 4 or 5 cards of the
+-- element the bonus is the same: one tier only.
+function K.setState(isOn, className)
+	local counts = {}
+	for _, e in ipairs(K.effectiveCards(isOn, className)) do
+		if e.element then
+			counts[e.element] = (counts[e.element] or 0) + 1
+		end
+	end
+	local list, best = {}, nil
+	for rank, el in ipairs(S.order) do
+		local n = counts[el] or 0
+		if n >= S.need then
+			list[#list + 1] = {element = el, count = n, rank = rank}
+		end
+		if n > 0 and (not best or n > best.count) then
+			best = {element = el, count = n}
+		end
+	end
+	table.sort(list, function(a, b)
+		if a.count ~= b.count then
+			return a.count > b.count
+		end
+		return a.rank < b.rank
+	end)
+	local state = {counts = counts, active = {}, best = best}
+	for i = 1, math.min(#list, S.maxSets) do
+		state.active[i] = {element = list[i].element, count = list[i].count}
+	end
+	if state.active[1] then
+		state.element, state.count = state.active[1].element, state.active[1].count
+	end
+	return state
+end
+
+-- the text two equal states share, to tell the player only when the set changes
+function K.setKey(state)
+	if not state then
+		return ""
+	end
+	if state.element then
+		local parts = {}
+		for i, a in ipairs(state.active) do
+			parts[i] = a.element
+		end
+		return "on:" .. table.concat(parts, ",")
+	end
+	-- the player is told about progress from 2 cards on (one card of an element is not news)
+	return state.best and state.best.count >= 2 and ("progress:" .. state.best.element .. state.best.count) or ""
+end
+
+-- the bonus of an element (a row of S.by), nil when the element has none
+function K.setBonus(element)
+	return S.by[element]
+end
+
+-- the factor of a bonus number against a target: 1 against monsters, S.pvpScale against a player
+function K.setScale(vsPlayer)
+	return vsPlayer and S.pvpScale or 1
+end
+
+-- A damage part (damage or poison) of a set on a hit: the extra amount (same sign as the hit, rounded toward zero). pct of
+-- the part of the hit that is of the element, x the PvP scale. Zero for a hit of another element, for no set, for a kind that
+-- has no damage part.
+function K.setExtra(element, kind, amount, vsPlayer)
+	local b = S.by[element]
+	if not b or b.kind ~= kind or (kind ~= "damage" and kind ~= "poison") or not amount or amount == 0 then
+		return 0
+	end
+	local a = math.floor(math.abs(amount) * b.pct * K.setScale(vsPlayer) / 100 + 1e-6)
+	return amount < 0 and -a or a
+end
+
+-- the health a Death set leeches from a hit of `dealt` damage (a positive number), at most maxShare percent of the maximum
+function K.setLeech(element, dealt, maxHealth)
+	local b = S.by[element]
+	if not b or b.kind ~= "leech" or not dealt or dealt <= 0 then
+		return 0
+	end
+	local n = math.floor(dealt * b.pct / 100 + 1e-6)
+	return math.max(0, math.min(n, math.floor((maxHealth or 0) * b.maxShare / 100)))
+end
+
+-- the health a Holy set heals on a hit (a share of the maximum health)
+function K.setHeal(element, maxHealth)
+	local b = S.by[element]
+	if not b or b.kind ~= "heal" then
+		return 0
+	end
+	return math.max(0, math.floor((maxHealth or 0) * b.pct / 100 + 1e-6))
+end
+
+-- the slow of an Ice set against a target: percent (0..1 for the engine) and milliseconds; nil against a player
+function K.setSlow(element, vsPlayer)
+	local b = S.by[element]
+	if not b or b.kind ~= "slow" or vsPlayer then
+		return nil
+	end
+	return b.percent / 100, b.ms
+end
+
+-- the bonus of an element in a sentence
+function K.setBonusText(lang, element)
+	local b = S.by[element]
+	if not b then
+		return ""
+	end
+	local el = word(lang, element)
+	if b.kind == "damage" then
+		return T(lang, K.TEXT.set_damage, el, num(b.pct))
+	elseif b.kind == "slow" then
+		return T(lang, K.TEXT.set_slow, el, num(b.percent), num(b.ms / 1000))
+	elseif b.kind == "poison" then
+		return T(lang, K.TEXT.set_poison, el, num(b.pct), num(b.ticks))
+	elseif b.kind == "leech" then
+		return T(lang, K.TEXT.set_leech, el, num(b.pct), num(b.maxShare))
+	elseif b.kind == "heal" then
+		return T(lang, K.TEXT.set_heal, el, num(b.pct), num(b.cooldownMs / 1000))
+	end
+	return ""
+end
+
+-- the line for a state: the set that is on, else the progress, else how to get one
+function K.setLine(lang, state)
+	if state and state.element then
+		return T(lang, K.TEXT.set_on, word(lang, state.element), num(state.count), K.setBonusText(lang, state.element))
+	end
+	if state and state.best then
+		return T(lang, K.TEXT.set_progress, word(lang, state.best.element), num(state.best.count), num(S.need),
+			K.setBonusText(lang, state.best.element))
+	end
+	return T(lang, K.TEXT.set_none, num(S.need))
+end
+
+-- what to tell a player after a card went on or off: nil when the set did not change. before and after are states.
+function K.setMessage(lang, before, after)
+	if K.setKey(before) == K.setKey(after) then
+		return nil
+	end
+	if before and before.element and not (after and after.element) then
+		return T(lang, K.TEXT.set_off, word(lang, before.element))
+	end
+	return K.setLine(lang, after)
+end
+
+-- the state of the sets for a reconcile plan (the cards that are on) and a class name
+function K.planSetState(plan, className)
+	local active = (plan and plan.active) or {}
+	return K.setState(function(id) return active[id] ~= nil end, className)
+end
+
+-- the item description of a card: what it gives, the set it counts for, and how to use it
 function K.description(lang, id)
 	if not K.isCard(id) then
 		return ""
 	end
-	return K.bonusText(lang, id) .. " " .. T(lang, K.HINT)
+	local text = K.bonusText(lang, id)
+	local el = K.setElement(id)
+	if el then
+		text = text .. " " .. T(lang, K.TEXT.setcard, word(lang, el), num(S.need))
+	end
+	return text .. " " .. T(lang, K.HINT)
 end
 
 -- the seller's prices for the no-deck text: {id, price, level} per deck from apothecary_config.lua
@@ -367,6 +600,12 @@ function K.statusText(lang, st)
 	end
 	for _, id in ipairs(onIds) do
 		add("  " .. nameOf(id) .. ": " .. K.bonusText(lang, id))
+	end
+	-- the card set (O453): needs the class; a caller without one (st.vocId nil) gets no set line
+	local className = K.classNameOf(st.vocId)
+	if className then
+		add("")
+		add(K.setLine(lang, K.planSetState(plan, className)))
 	end
 	-- cards in decks that are off, one line each copy; then the loose ones
 	local offList, looseList = {}, {}

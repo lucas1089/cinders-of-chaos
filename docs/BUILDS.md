@@ -303,6 +303,39 @@ the weapon has the line. Every affected class has three or more weapons of at le
 Berserker (two-handed only: levels 1-20, 1000-1300 and 1700-2400+ have one family with three or more). The table of weapons per
 family per band: server/README.md "Weapon families (O454)".
 
+## Card sets (O453)
+
+A card swaps the element of one spell. That was numbers only. Now three cards of one element give a small bonus, so a
+second element is a choice.
+
+- You turn on at most 5 cards. A set needs **3 cards of one element**, one for each spell line your class casts. The highest
+  card of a line that is on gives the line its element. A lower card of the same line, a second copy of a card, a card of a
+  spell your class cannot cast, a card that is off or sits outside the deck: none of them counts.
+- **One tier only.** 4 or 5 cards give the bonus of 3. **One set at a time:** five slots hold no second set of three.
+- A heal, melee, widen, bow or legendary card has no element. Ice (no class has three Ice lines) and Drown have no set.
+- Character Info (Character > Character Info) names the set and shows the progress, for example "2 of 3 cards". Turning a
+  card on or off tells you when the set turns on or off. The card text names its set.
+
+| Set | You get | Number | Cards that carry it | Who can reach it |
+|---|---|---|---|---|
+| Fire | Fire hits deal more | +4% of the Fire part of the hit | tier 1 of 7 lines | Ranger, Mystic, Necromancer, Monk and Templar lines, Elementalist |
+| Earth | Earth hits poison | 4% of the hit over 4 s | tier 1 to 3 | Warrior, Ranger and Templar lines |
+| Death | Death hits heal you | 1.5% of the damage, at most 1% of your health a hit | tier 3 to 4 | every class |
+| Holy | Holy hits heal you | 0.5% of your health, once every 3 s | tier 1 to 2 | Elementalist |
+| Energy | Energy hits slow the target | 15% for 1.5 s | tier 3 to 4 | Mystic, Necromancer line, Elementalist |
+
+Each number is smaller than the snare of the same element (burn 30%, poison 36% over 6 s, leech 4%, party heal 2%, ice slow
+40% for 3 s). A damage part never goes over +6% of its own element and never touches another element. Damage over time is
+never changed. Against players the damage and poison are a third; the slow does not work on players.
+
+**Price.** A set takes 3 of your 5 slots and locks the three lines of your class to one element. Most classes have exactly
+3 lines, so a set uses all of them and leaves 2 slots for the legendary card and one buff or heal card. Death and Energy
+need the rarer tier 3 and 4 cards. In damage the set costs little: against the best mixed build at level 500 (computed, see
+`server/README.md` "Card sets (O453)") the Warrior line is 0.5 to 0.8% behind, the Templar line 1.1 to 2.0%, the Illusionist
+2.2% to 3.4%; eleven classes are level with it because their card spells are not in their rotation or the bonus is not damage;
+the Beastmaster and Mystic lead by less than half a point. The worst case, all of a class's damage being of the set's
+element, is 6% of its damage per second. Nothing here was measured in game.
+
 ## Leveling notes
 
 - Keystones need their paths. The leaves at 8 or 9 points are early picks (96, 99, 102 and 105 too); 253, 262, 355 and

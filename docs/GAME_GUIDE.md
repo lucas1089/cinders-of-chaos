@@ -255,6 +255,14 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
 - Runes drop from monsters (more from tiered ones and bosses), from rift chests and from bounties. The store sells none.
 - Your action bar shows a coloured pip for each rune on a spell.
 
+## Cards and card sets
+
+Cards go into a deck you carry. Veyra the Apothecary sells decks. Use a card to turn it on, use it again to turn it off.
+At most five cards are on. Most cards change the element of one spell. Three cards of one element, one for each spell line
+your class casts, make a **card set** with a small bonus: more Fire damage, poison for Earth, a leech for Death, a heal for
+Holy, a short slow for Energy. Four or five cards give the same bonus as three. Character > Character Info names your set and
+shows the progress. The card text says which set it counts for.
+
 ## Items and loot
 
 > *"The Chaos seeps into everything it touches. Most of it is rust. Some of it glows."*

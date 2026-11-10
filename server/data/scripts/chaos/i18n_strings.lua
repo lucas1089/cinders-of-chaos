@@ -3709,6 +3709,27 @@ return {
 			"Precisa de %s. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
 		["Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks."] =
 			"Use para colocá-la em um deck que você carrega e ativá-la, use de novo para desativá-la. Veyra the Apothecary vende decks.",
+		-- Card sets (O453; cards_core.lua)
+		["Card set %s is on with %s cards: %s"] =
+			"Conjunto de cartas %s ativo com %s cartas: %s",
+		["Card set %s: %s of %s cards. The bonus: %s"] =
+			"Conjunto de cartas %s: %s de %s cartas. O bônus: %s",
+		["No card set yet. %s cards of one element, one for each spell you cast, give a set bonus."] =
+			"Nenhum conjunto de cartas ainda. %s cartas de um elemento, uma para cada magia que você lança, dão um bônus de conjunto.",
+		["Card set %s is off."] =
+			"Conjunto de cartas %s desativado.",
+		["It counts for the %s card set. With %s cards of one element, one for each spell you cast, you get a bonus."] =
+			"Conta para o conjunto de cartas %s. Com %s cartas de um elemento, uma para cada magia que você lança, você ganha um bônus.",
+		["Your %s damage is %s%% higher."] =
+			"Seu dano de %s é %s%% maior.",
+		["Your %s hits slow the target by %s%% for %s seconds."] =
+			"Seus golpes de %s reduzem a velocidade do alvo em %s%% por %s segundos.",
+		["Your %s hits poison the target for %s%% of the hit over %s seconds."] =
+			"Seus golpes de %s envenenam o alvo por %s%% do golpe em %s segundos.",
+		["Your %s hits heal you for %s%% of the damage, at most %s%% of your maximum health a hit."] =
+			"Seus golpes de %s curam você em %s%% do dano, no máximo %s%% da sua vida máxima por golpe.",
+		["Your %s hits heal you for %s%% of your maximum health, at most once every %s seconds."] =
+			"Seus golpes de %s curam você em %s%% da sua vida máxima, no máximo uma vez a cada %s segundos.",
 		["magic level"] =
 			"nível mágico",
 		["distance skill"] =

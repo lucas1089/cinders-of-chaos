@@ -9685,6 +9685,87 @@ Follow-ups of O142. Deploy: `badges` and `files` installer steps and a server re
 - `card_descriptions.csv`, the codex and wiki data, tester scenarios and wiki art are regenerated; pt-BR texts are built
   from the same spell lists.
 
+### Card sets (O453)
+
+Build audit A9: a second element was numbers only. Three cards of one element now give one small bonus. Lua only: no new
+card, art, opcode, table, storage key or engine patch. Deploy: `files` (revscripts and `cards_config.lua`) and `badges` (the
+card texts of `items.xml`) installer steps and a server restart. Admin app: tab Painel > card Atualizar servidor > button
+Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was run on a live server.
+
+- **Facts the design rests on** (`tests/cards_test.lua`, `luajit tests/cards_test.lua --sets`). A character has 5 card slots
+  (`maxActive`). The 60 common cards are 15 lines of 4 tiers; only the highest card of a line that is on does anything. Element
+  is a property of the 44 cards of the 11 convert lines (`cards_config.lua` families `elements`, one per tier); the other 32
+  cards (heal, melee, widen, bow, 16 legendary) have none. Every class has exactly 3 convert lines it can cast (Frostfall Rune
+  is cast by all; Elementalist 6), listed in `lineClasses` and checked against `spells_chaos.xml`, `stock_spells.csv` and the
+  spell cap. Cards per element: Fire 7, Earth 6, Ice 6, Death 11, Holy 6, Energy 7, Drown 1. Death is on every line, so a Death
+  set is reachable for all 21 classes. Fire needs the Ranger, Mystic, Necromancer, Monk or Templar line or the Elementalist;
+  Earth the Warrior, Ranger or Templar line; Energy the Mystic, the Necromancer line or the Elementalist; Holy the Elementalist
+  only; Ice no class (two lines at most). Ice and Drown have no set. Tiers: Fire is tier 1 on all 7 lines, Holy tier 1 to 2,
+  Earth tier 1 to 3, Death and Energy tier 3 to 4. The island reward gives tiers by weights 40 / 30 / 20 / 10
+  (`pocketboss_config.lua cardTiers`), so Death and Energy sets need the rarer cards. Where else cards drop (the base
+  monsters' loot, tasks) is not in the repository: the drop levels of the tiers are not verified.
+- **The rule** (`cards_core.lua`). `K.setElement(id)` is the pure element of a card for sets (a convert card whose element has a
+  set, else nil). `K.effectiveCards(isOn, className)` takes, per convert line the class casts, the highest card that is on;
+  a lower card of the same line counts for nothing, a card of a spell the class cannot cast counts for nothing, a second copy
+  never counts (the card storage is one per card). `K.setState` counts them per element: a set is on with 3 or more cards of
+  one element. One tier only: 4 or 5 cards give the bonus of 3. `maxSets = floor(maxActive / need)` is 1: five slots hold no
+  second set of three. The state also keeps the progress (the element with most cards) for the text.
+- **The bonuses** (`cards_config.lua` `sets`, one hook each, smaller than the snare of the same element, `snares_config.lua`):
+
+| Set | Bonus | Number | The snare | Hook |
+|---|---|---|---|---|
+| Fire | Fire hits deal more | +4% of the Fire part of the hit | burn 30% of the hit over 4 s | `onHealthChange` scale of the primary and secondary part |
+| Earth | Earth hits poison | 4% of the hit over 4 s | 36% over 6 s | `CONDITION_POISON`, owned by the player, a new one replaces a weaker one |
+| Death | Death hits heal you | 1.5% of the damage, at most 1% of your maximum health a hit | 4% | `addHealth` |
+| Holy | Holy hits heal you | 0.5% of your maximum health, once every 3 s | 2% of the party | `addHealth` with a cooldown per player |
+| Energy | Energy hits slow the target | 15% for 1.5 s | the ice snare: 40% for 3 s | `ChaosSpell.slow` |
+
+  The damage parts (`damage`, `poison`) are at most `damagePartMax` 6% of the damage of their own element; the test pins it and
+  that each set has its own kind of effect. A damage over time tick is never changed or counted, and a hit of another element
+  never gets the bonus. The effects run in `ChaosCardsHit`, the event that already sat on the monsters a player attacks: after
+  the convert cards moved the hit, `ChaosCards.applySet` scales the part of the hit that is of the element and queues the
+  slow, poison, leech or heal with `addEvent`. No C++ and no new combat hook.
+- **PvP.** The cards had no PvP rule: a convert card works the same against a player. The set follows the rule of the unique
+  passives (`unique_passives_config.lua pvpScale`, same constant, tested): damage and poison x 1/3 against a player; the slow is
+  not applied to a player (no new crowd control); the heals are the same, the engine's healing rules apply to them as to any
+  heal. The model computes none of this.
+- **State.** `ChaosCards.refreshSet` keeps one state per player, refreshed by every reconcile (`ChaosCards.push`: a card turned on
+  or off, login, the `deck` command, the sweep every 60 s). A card that left the decks (death) keeps its storage until the next
+  sweep, so convert cards and the set last up to 60 s after it; this was always so for the cards. The cache is cleared at logout.
+  Without a vocation id (a test player) there is no set.
+- **What the player sees.** The deck window has no text line and the client is not changed. Character Info (`deck`) has a line under
+  the cards that are on: the set that is on with its bonus, else the progress ("Card set Fire: 2 of 3 cards. The bonus: ...").
+  A card turned on or off tells the player when the set turns on or off, and the progress from 2 cards on. Every card of a set
+  element names its set in the item text (`card_descriptions.csv`, regenerated; the tooltip uses the same text per language).
+  The cards payload of opcode 172 is unchanged. Unity (frozen): the same server text messages and item texts; no field was added
+  that it would have to read. Texts: `i18n_strings.lua` (pt-BR "Conjunto de cartas").
+- **Not in Codex, wiki, How it works or the guide.** None of them has a text about the deck cards today (the "How it works"
+  cards are help cards of the client), so their generators have nothing to change.
+- **Price, computed** (`tools/card_set_model.py --check`, `card_set_model_test.py`, CI; computed, not measured). No other model reads
+  the cards: `class_dps_model.py`, the pack, boss, tower, survival, PvP, guardian, minion and companion models are not moved by this
+  change and stay as they were. This model takes the class damage per second at level 500 (`class_dps_model.dps`), the share of
+  each spell in the every-spell rotation (`rotation_sim.py`), the native element of each spell (client `spelldata.lua`) and the
+  mean damage taken multiplier of each element over the Chaos monsters (`data/monster/monsters/chaos`: physical 0.883, Fire 0.806,
+  Ice 0.850, Earth 0.819, Energy 0.831, Holy 0.920, Death 0.794; the base server's monsters are not in the repository, so this is the
+  only resistance data). A convert card is worth share x (multiplier of the new element / multiplier of the native one - 1). A
+  legendary card is +15 to the main stat all the time (upper bound), Bloodlust and Tautstring +7% and +8% skill all the time. The
+  best build with every bonus off ("mixed") is searched over every element choice of the 5 cards and compared with the best build
+  that makes a set (damage parts counted, leech, heal and slow not valued). Result at level 500, set against mixed on 1 / 5 targets:
+  Warrior line -0.6 to -0.5% / -0.8 to -0.5%, Ranger -0.1%, Illusionist -2.2% / -3.4%, Templar line -1.3 to -1.1% / -2.0 to -1.5%,
+  Beastmaster +0.4% / +0.1%, Mystic +0.1% / +0.2%, the other 11 classes 0.0%. A 0.0% class has either no spell of its convert
+  lines in the measured kit (the cards change nothing for it) or a set that gives no damage part (leech, heal, slow: not valued)
+  while the mixed build can hold the same cards. Where the cards change nothing the set costs no damage: its price is 3 of the 5
+  slots, which no damaging card would fill, and the element lock. A lead below 0.5 points passes the check (the weights are a
+  guess); the Beastmaster's lead cannot be lowered away (its native element is Earth and its convert lines are not in its kit:
+  at 2% it still leads by 0.18%). Worst case
+  (all the damage of the set's element): 6% of the class's damage per second, at most 213 (Thief, 1 target) and 549 (Mystic, 5
+  targets); the configured damage parts are 4%, two thirds of that. `python3 -I server/tools/card_set_model.py` prints the table.
+- **Tests.** `tests/cards_test.lua` (config shape, the cap, smaller than the snares, the PvP constant, `setElement` over all 76 cards,
+  `lineClasses` against the spell data, reachability of every class, detection with 2, 3, 4, 5 cards, a card of a spell the class
+  cannot cast, the lower card of a line, a second copy, a card in a deck that is off, a loose card, a card that left the decks,
+  swapping a card, two sets only with six slots, the texts in both languages, the hit event for each bonus, PvP, login and logout),
+  `tools/card_set_model_test.py`.
+
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
 Orange name labels over tiles (owner 2026-10-18: the area of the new NPCs should show their names in orange text).
