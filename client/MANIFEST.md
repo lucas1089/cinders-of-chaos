@@ -2583,27 +2583,39 @@ md5s and manifests.
   8337f0877f164208cc938409beb6b8ea4e3d6acea8efc38e40502f6242ee82b5, packed twice with the same sha256; unpacks to the
   md5s above. Pushed to windows-assets at 584dab51 on 2026-10-21 (on 1c7c58df; the owner allowed new pairs without asking).
 - A client on pair 33 or older draws nothing for 38608-38611: ship the new pair with the server change.
+- From pair 62 on, items 38608-38611 show the inbox icon art ("Store inbox icons", redrawn in place); the looks of this section stay in the file, unused.
 - Previews (before, after, before as the grey shader drew it): scratchpad only. Not run in a client.
 
-## Store inbox icons (next pair after 56: items 38608, 38609, 38611 redrawn in place, `tools/sprites/gen_inbox_icons_art.py`, `art_import/inbox_icons*`; sources committed 2026-10-29, pair not built yet)
-Owner request 2026-10-29 (pt-BR): "refaca esses icones no pixellab" for the Store Inbox window. It shows three store items:
-- Loot Bag: client 38608, server 32081 (a brown leather coin sack). Orbs Pouch: client 38609, server 32082 (a violet pouch, cyan orb).
-  Everfull Ration: client 38611, server 32084 (the roast on a plate). The Gem Pouch (server 32095) keeps the stock jewelled backpack look, no sprite of ours.
-- **Art.** PixelLab Pro, 32 x 32, no background, 64 candidates a call, the theme palette of the old look as the palette (Loot Bag gildcrown, Orbs
-  Pouch rimewraith, Everfull Ration cinderwrought; docs/SPRITE_STYLE.md). Three candidates a look were kept (a, b, c); the first is committed as
-  `art_import/inbox_icons/{loot,orbs,ration}.png`. All nine pass `style_check.py check --theme <theme>`. PixelLab's pixels, owner to pick, not repainted.
-  Credit: docs/CREDITS.md "Tools" (PixelLab).
-- **Pick another.** `python3 -I client/tools/sprites/gen_inbox_icons_art.py build --src DIR --pick loot=b,orbs=a,ration=c` (DIR holds
-  `<loot|orbs|ration>_<a|b|c>.png`). `build --check` (CI) rebuilds the atlas, things file (mode redraw) and sums from the committed sources.
-- **How into the pair.** Same step as pair 53, on the newest pair (ids and flags stay, so no server change; the old sprites stay, unused):
+## Store inbox icons (pair 62: items 38608-38611 redrawn in place, `tools/sprites/gen_inbox_icons_art.py`, `art_import/inbox_icons*`; built 2026-11-10, owner's picks; O469)
+Owner request 2026-10-29 (pt-BR): "refaca esses icones no pixellab" for the Store Inbox window. Owner 2026-11-10 (translated, with a
+screenshot of the four icons): "change these sprites please, they are very ugly". Items 38608 to 38611 show the inbox icon art from
+pair 62 on (the store item looks of pair 34 stay in the file, unused). The window shows four store items:
+- Loot Bag: client 38608, server 32081 (a brown leather coin sack). Orbs Pouch: client 38609, server 32082 (a dark violet pouch, cyan orb).
+  Rift Key Pouch: client 38610, server 32083 (a steel-blue pouch, gold cord, a golden key). Everfull Ration: client 38611, server 32084
+  (a roast on a plate). The Gem Pouch (server 32095) keeps the stock jewelled backpack look, no sprite of ours.
+- **Art.** PixelLab Pro, 32 x 32, no background, 64 candidates a call. Loot Bag, Orbs Pouch and Everfull Ration: the theme palette of the old
+  look as the palette (gildcrown, rimewraith, cinderwrought; docs/SPRITE_STYLE.md), three candidates each (a, b, c) shown on a comparison
+  sheet. The owner chose Ration b, Orbs b, Loot a. Rift Key Pouch: the owner asked for a new drawing and allowed PixelLab. One call, our own
+  prompt "a small round drawstring pouch of steel-blue leather, tied with a gold cord, one large ornate golden key hanging on the front",
+  the azurevigil theme palette without its ten purple, pink and green accent colours; three candidates kept, a is the pick. All twelve pass
+  `style_check.py check --theme <theme>`; `build` refuses a look that fails. PixelLab's pixels, not repainted. The picks are committed as
+  `art_import/inbox_icons/{loot,orbs,keys,ration}.png`. Credit: docs/CREDITS.md "Tools" (PixelLab); the row of each look:
+  `art_import/inbox_icons_sources.csv`.
+- **Pick another.** `python3 -I client/tools/sprites/gen_inbox_icons_art.py build --src DIR --pick loot=a,orbs=b,keys=c,ration=b` (DIR holds
+  `<loot|orbs|keys|ration>_<a|b|c>.png`; the defaults of `--pick` are the owner's picks). It rewrites the four sources, the atlas (4 x 1),
+  the things file and the sums; commit them, then rebuild the pair (below) and raise `client_pair.py` `PAIR_ASSETS_DAT_MD5` (the dat md5
+  changes with the sprite ids). `build --check` (CI) rebuilds the atlas, things file (mode redraw) and sums from the committed sources.
+- **How into the pair.** `redraw_items.py` (the pair 53 step; ids and flags stay, so no server change; the old sprites stay, unused):
 ```
-python3 -I client/tools/sprites/redraw_items.py --dat pairN/Tibia.dat --spr pairN/Tibia.spr --out-dir pairN1 \
+python3 -I client/tools/sprites/redraw_items.py --dat pair61/Tibia.dat --spr pair61/Tibia.spr --out-dir pair62 \
     --item 38608=client/tools/sprites/art_import/inbox_icons/loot.png --item 38609=client/tools/sprites/art_import/inbox_icons/orbs.png \
-    --item 38611=client/tools/sprites/art_import/inbox_icons/ration.png
-python3 -I client/tools/sprites/check_pair.py pairN1/Tibia.dat pairN1/Tibia.spr --old pairN/Tibia.dat pairN/Tibia.spr --allow-changed 'item:38608,38609,38611'
+    --item 38610=client/tools/sprites/art_import/inbox_icons/keys.png --item 38611=client/tools/sprites/art_import/inbox_icons/ration.png
+python3 -I client/tools/sprites/check_pair.py pair62/Tibia.dat pair62/Tibia.spr --old pair61/Tibia.dat pair61/Tibia.spr \
+    --allow-changed 'item:38608,38609,38610,38611'
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair62/Tibia.dat pair62/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair62/Tibia.dat pair62/Tibia.spr
 ```
-  then `gen_outfit_anchors.py` and `gen_info_lift.py` as for every pair, pack, push to windows-assets (owner approval) and rebuild with `windows-package.yml`.
-  Not run against a pair yet.
+  The result is "Pair 62" below.
 
 ## Jewelry looks (pair 35: items 38612-38640, `tools/sprites/gen_jewelry_art.py`, `art_import/jewelry.*`; built 2026-10-22, on windows-assets 099b9a2, owner approved)
 Owner request 2026-10-22: "use sprites de rings e necklaces dos nossos assets". The 29 loot bases of rings and
@@ -4028,6 +4040,33 @@ sprite records no thing uses, up from 30). The changes (phases, durations, sprit
 - Checked offline: before and after contact sheets (old strip above the new, every changed thing). Not checked in a live client: timing of the
   shorter effects, the idle pulse of 1538 (needs the `animateAlways` attribute from the dat, as patch 0189 reads it), the lifted colours on a
   real map.
+
+### Pair 62: pair 61 with the four store inbox icons redrawn (`gen_inbox_icons_art.py`, `art_import/inbox_icons*`; built 2026-11-10, not on windows-assets yet; O469)
+Owner 2026-11-10: "change these sprites please, they are very ugly" (the Store Inbox icons). Section "Store inbox icons" has the art and the
+picks. Pair 62 is pair 61 with the items 38608 to 38611 redrawn in place by `redraw_items.py` (the commands are in that section). Nothing else
+changes: ids, flag bytes, items.otb and items.xml stay.
+Input pair 61 (dat 11c963fe238c71a7c59d817949f7f2c2, spr 0d908e898d9fda8d0f818b78258eb6a3).
+Output **pair 62**: dat fd203501bac0e622da3b4e473c3f7dd7 (8,828,000 bytes), spr ed1a1c5193c9dd1e74da61adc89f3fdb (1,135,924,984 bytes;
+949,184 sprites: 4 appended, ids 949181 to 949184), the same counts of things as pair 61. `redraw_items.py` verified: output parses, every
+other entry byte-identical, flags kept, new sprites pixel-identical, 3,000 old sprites unchanged. `check_pair.py --old` with exactly those four
+items allowed: 0 errors, 3,964 warnings (the lines of pair 61).
+- **Archive parts** (the recipe of pair 58: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of Tibia.dat and
+  Tibia.spr streamed into `xz -9 -T3`, `split -b 95M -d -a 2`; the recipe gives pair 61's tar sha256 on pair 61): built, not pushed (the push to
+  windows-assets needs the owner's approval):
+  - part00 99,614,720 bytes, sha256 `65d447a8bfb8110ccf47f16b11fd26023ec56de496a6f872e9f8e1a0b95559a3`
+  - part01 30,496,492 bytes, sha256 `9c3fcbf02e1fa00e1e7e2c4afd4bf1352902cbb3a1c6f5ae7eb9ba1a0592ad20`
+  - joined `things-1098.tar.xz` (130,111,212 bytes) sha256 `717d3c060c5c1175bc0a186f4eef4cc7bd71601d39747fcb114acc7c5ad47d33`;
+    `things-1098.tar` sha256 `5c44bdf0e07e32ecba568c7118e5d87f64e103fcdc7d1f76cf1e606c2c16deaf`. Decompressing the joined parts gives the dat
+    and spr md5s above (checked).
+- **In the repository:** `gen_outfit_anchors.py` and `gen_info_lift.py` ran against pair 62 (`client_chaos_charselect/outfit_anchors.lua`,
+  `client_chaos_infolift/info_lifts.lua`, `unity/.../Core/InfoLiftData.cs` through `gen_info_data.lua`: only the dat md5 lines change);
+  `server/tools/client_pair.py` `PAIR_ASSETS` is 62 with the new dat md5. The steps of the CI job "Live sprite pair" ran on pair 62 offline:
+  `check_pair.py`, the item wire table, the recolour sheets, the two tables, the dungeon banners, the website sprite images.
+- **Switch on** (after the owner approves the push and the client package ships pair 62): set `chaosClientPair` to 62 (admin app: Comandos >
+  "Par do cliente" > Gravar 62; shell: `chaos-ctl.sh client-pair set 62`). No install step waits for pair 62. A client on pair 61 or older draws
+  the old store item looks for 38608 to 38611.
+- Checked offline: pair 61 and pair 62 frames of the four items read back from the built pair, on the client's item cell (scratchpad only).
+  Not seen in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
