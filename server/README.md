@@ -1488,7 +1488,7 @@ Everything adjustable is in `chaos_constants.lua`: rewards, limits, boss names, 
 When the tier is applied: the engine runs `onSpawn` before the placement and gives a monster its id only at the placement, so nothing keyed by the id can be written in `onSpawn`. The natural roll is decided there and the monster gets a think event for that tier (`ChaosTierRollMagic` / `Rare` / `Legendary` / `Boss`); at its first think, after the placement, the tier is applied and the event removes itself. A map respawn or `Game.createMonster` thinks within about a second; a startup spawn once a player comes near. A tier set in between (`ChaosApplyTier`: rift, invasion, tower) wins over the roll. Ambush copies get their tier right after `Game.createMonster` returns. Loading the script drops any entry an older version left under id 0 in `ChaosTierState` (the table survives a reload, so a server that ran the old roll would otherwise keep it). `tests/monster_tiers_test.lua` runs the file against a mocked engine whose `getId()` is 0 until the placement. Checked in game: a forced legendary roll lands under the monster's id with modifiers, monster bar tier and announcement; a normal kill after it still brings an ambush.
 
 ### Modifiers and shaders (monster_tiers.lua)
-Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Thirteen modifiers in `ChaosMods`: Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
+Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
 
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
@@ -4428,7 +4428,7 @@ and there was no reward per floor.
 - The tower is excluded from `pace.lua`, so floors held the stock pool health, while a hunt pack is thinned to 0.36 - 0.21
   of it. With 12-16 monsters and tier chances that rose every floor, a floor held 4x, 12x and 24x the health of an outside
   pack of the same species at floors 15, 25 and 35.
-- A single legendary monster (health x6 plus modifiers such as Juggernaut x1.6 and Stoneskin) is the minute-per-monster report.
+- A single legendary monster (health x6, x7.98 since O462, plus modifiers such as Juggernaut x1.6 and Stoneskin) is the minute-per-monster report.
 - The wall at floor 29: floor 30 held Zeburoth, who heals 1,750 health a second. A median class below about level 1100
   cannot out-damage that, so the fight never ended (`never` in the table). Ashvoran (floor 90) is the same.
 - Damage taken was the stock monster damage, not the pace curve of the hunts.
@@ -4440,7 +4440,7 @@ and there was no reward per floor.
   (the unit test diffs them with the config).
 - 4 monsters on floor 1 up to 9 from floor 120 (was 12-16), two more for every player after the first. A boss floor has a third
   as helpers.
-- Tiers: health x1.5 magic, x2.2 rare, x3.5 legendary in the tower (stock x2, x3.5, x6; `infinitytower_run.lua` sets the health
+- Tiers: health x1.5 magic, x2.2 rare, x3.5 legendary in the tower (stock x2.48, x4.90, x7.98 since O462, x2, x3.5, x6 before; `infinitytower_run.lua` sets the health
   before the stock tier applies). The chances rise slowly (legendary 1% on floor 30, 4% on floor 120).
 - Bosses in a new order, the healers last: the Ashen Count, the Grey Widow, Massacre, Vharagoth, Moloveth, Vhalkareth,
   Jungle's Revenge, Ssylvath the Corruptor, Pestrogh, Morgashal (floor 100), Zeburoth (110), Ashvoran (120).
@@ -26736,7 +26736,7 @@ of Cinderhold). The giver is Archivist Maelis
 - **Elite (O396).** `{kind = "elite", pos, radius, monster, name}`: go to a place (revealed on the map like a visit) and
   kill a named elite. The visit watch list also holds the characters with an open elite step; at the place
   `T.raiseElite` makes `monster` with the shown name `name` (`Chaos.createMonsterNamed`, at `pos`, else next to the
-  character) and forces the tier `elite.tier` (rare: x3.5 health, x1.5 damage, 2-3 modifiers; `ChaosApplyTier`). One per
+  character) and forces the tier `elite.tier` (rare: x4.90 health since O462, x3.5 before, x1.5 damage, 2-3 modifiers; `ChaosApplyTier`). One per
   name at a time (`T.elites`); it is removed after `elite.lifeSec` (600 s) and does not rise again within
   `elite.againSec` (20 s). The kill counts by the shown name only (`M.matches`), so a plain monster of the type does not;
   the party shares it like any kill. `M.problems`: an elite needs pos, monster and name, and the name must differ from
@@ -30018,3 +30018,206 @@ effect that already is in the pair. No art, no pair, no engine patch, no opcode;
 * **Not verified:** a live client (draw order, real ground, the look of each effect in the real size, the offsets of the
   p50 names, which come from the registry); Raise Dead, Raise Bone Warrior, Archer and Mage and Banner of Bones need corpses or
   minions, so the probe does not run them (the pass is the same call path).
+
+## Monster defence (O462) (`defence_config.lua`, `monster_defence_config.lua`, `monster_defence_core.lua`, `monster_defence.lua`, `tools/defence_curve.py`, `tools/patch_monster_resists.py`)
+
+First stage of the combat redesign (owner, 2026-11-10: "monster attacks and defences, what they ignore, what they do not
+ignore, the order of defence"; "for now forget our tests and the caps we put, also the DPS tests and the class objectives:
+I want to see how everything ends up, then we rethink"). This stage is the MONSTER side: how a monster takes a hit from a
+player, the monster ranks and the monsters' resistance data. The player side (the player's armour, absorb, dodge, block,
+penetration) is the next stage. Nothing here ran on a live server.
+
+**Shared numbers.** `defence_config.lua` is the one file: `armourHitFactor` 0.07, `physicalReductionCap` 90, `resistCap` 75,
+`blockCap` 75. No other file holds a copy; the player stage reads the same file.
+
+**How the order of events is decided (read in the engine source, `creatureevent.cpp`, `creature.cpp`).** The server runs the
+login events in the order of a `std::map` keyed by the event NAME (byte order). Each login event calls `player:registerEvent`
+for its healthchange events, and `Creature::registerCreatureEvent` appends to the creature's list. `getCreatureEvents` hands the
+list over in that order. So a player's events run in the order of (login event name, position of the `registerEvent` call); an
+event registered later, outside a login, is last. A monster's events run in registration order: the engine registers the XML
+`<script>` events in the constructor (first), the Lua scripts register theirs in `onSpawn` or later.
+`tests/defence_order_test.lua` reads the Lua sources this way (`--list` prints the order).
+
+**Order of a hit on a monster (a player, a summon or a companion hits it).**
+
+1. Engine: immunity (a 100 percent stops the hit here), the monster's flat armour and defence (stock formula, kept: under 1% of
+   a late hit), the monster's element percent from its file (the physical percent is one of them).
+2. `ChaosMonsterDefence`, the first Lua event of every monster (onSpawn callback at index -150; a monster that never passes
+   onSpawn, such as a monster's summon, gets it at the first hit that targets it):
+   1. Bulwark: a weapon hit is blocked, both its parts. Never a spell, a tick or a field.
+   2. The physical part: armour by hit size, the monster's own physical percent and Plated, inside one cap of
+      `physicalReductionCap`. Weapon hits and physical spells, not ticks or fields.
+   3. Each element part: one resistance, `min(resistCap, the monster's percent + the rank bonus)`, raised to 75 on the drawn
+      element of Resistant, then penetration off it. All origins, ticks and fields too. The engine took the file's percent
+      already, so the layer multiplies by `(1 - effective / 100) / (1 - file percent / 100)`.
+3. The older monster events, unchanged: item modifier penetration, shock, execute, Stoneskin and Reflective, rift Warding and
+   Ironhide, boss mechanics, waystone modifiers.
+
+**Armour by hit size.** `reduction = A / (A + armourHitFactor x H)`, H the physical part as it arrives. A big hit loses less of
+itself. A is not the XML armor: it is sized so that the MEDIAN CLASS HIT of the monster's level loses 25% (a normal monster, a
+magic one too), 40% (rare, legendary, nemesis) or 50% (a boss): `A = f / (1 - f) x 0.07 x median hit`, f 0.25, 0.40, 0.50.
+A boss is every kind the code treats as one: the type flag `isboss` (area, quest and world bosses), the world boss, a rift
+guardian, an Omen guardian, a tower boss, a waystone tier boss. The level is the nameplate (hunting) level, else the level of
+`monster_damage.lua`.
+
+**The median class hit** (`monster_defence_config.lua` `hitCurve`, derived by `python3 -I server/tools/defence_curve.py`, which
+`--check` holds to the class damage model in CI). Per class at level 100, 500 and 1000, from `class_dps_model.py` (the measured
+`class_dps_measured.csv` moved by the changes since): the damage per second on one target; the auto attack's share `a` of it;
+a weapon hit is `dps x a x I`, one swing every I seconds (the vocation's attack speed, 0.9 to 1.3 s); a spell hit is
+`dps x (1 - a) x 2 s`, one cast on every attack group cooldown (the helper's rotation casts on every cooldown); the class hit is
+the damage weighted mean `a x weapon hit + (1 - a) x spell hit`. The median over the 21 classes: 576 at level 100, 3,645 at 500,
+7,169 at 1,000 (median weapon hit 242 / 984 / 1,946, median spell hit 759 / 4,589 / 8,970). Between the levels the ratio of hit
+to median dps is a line in log level and the model's own growth carries it; the config lists 13 anchors (level 1 to 2,500) with a
+straight line in log level and log hit between two. A per-monster override (`armourOverride`, by lower case type name) is empty.
+
+| Level | Median hit | A normal | A elite | A boss |
+|---:|---:|---:|---:|---:|
+| 100 | 576 | 13.4 | 26.9 | 40.3 |
+| 500 | 3,645 | 85.0 | 170.1 | 255.2 |
+| 1,000 | 7,169 | 167.3 | 334.6 | 501.8 |
+
+**Percent of a physical hit that armour removes** (`tests/monster_defence_test.lua --table` prints it; small = 0.2 x median,
+big = 5 x median; the table is the test, armour alone, no file resistance):
+
+| Level | Monster | Small hit | Median hit | 5 x median hit |
+|---:|---|---:|---:|---:|
+| 100 | normal | 62.6% (115 to 43) | 25.0% (576 to 432) | 6.3% (2,880 to 2,700) |
+| 100 | elite | 76.5% (to 27) | 39.9% (to 346) | 11.8% (to 2,541) |
+| 100 | boss | 83.5% (to 19) | 50.0% (to 288) | 16.7% (to 2,400) |
+| 500 | normal | 62.6% (729 to 273) | 25.0% (3,645 to 2,734) | 6.2% (18,225 to 17,086) |
+| 500 | elite | 77.0% (to 168) | 40.0% (to 2,187) | 11.8% (to 16,081) |
+| 500 | boss | 83.4% (to 121) | 50.0% (to 1,823) | 16.7% (to 15,188) |
+| 1,000 | normal | 62.5% (1,434 to 538) | 25.0% (7,169 to 5,377) | 6.2% (35,845 to 33,605) |
+| 1,000 | elite | 76.9% (to 331) | 40.0% (to 4,301) | 11.8% (to 31,628) |
+| 1,000 | boss | 83.3% (to 239) | 50.0% (to 3,585) | 16.7% (to 29,871) |
+
+A weapon class swings small hits (the median weapon hit is 0.42 of the class hit at level 100) and loses more to armour than a
+spell class, whose casts are big.
+
+**The physical cap.** The total of the file's physical percent, armour and Plated never passes 90 percent:
+`1 - (1 - p0) x (1 - armour) x (1 - Plated)`, and when it would, the layer takes the hit back up to 10 percent of the raw hit.
+Example: a boss with physical 60 and a 100 hit raw (the engine leaves 40): armour would take nearly all the rest, the layer leaves 10.
+
+**What ignores what.**
+
+| Layer | Weapon hit | Physical spell | Elemental spell | Field | Condition tick | Summon hit |
+|---|---|---|---|---|---|---|
+| Immunity (engine) | yes | yes | yes | yes | yes | yes |
+| Flat armour of the XML (engine) | yes | only spells with `blockarmor` | no | no | no | yes |
+| Defence of the XML (engine) | melee weapons only | no | no | no | no | melee |
+| Armour by hit size | yes | yes | no | no | no | yes (an attack of a player's monster is melee or ranged) |
+| The file's physical percent and the 90 cap | yes | yes | no | physical ticks yes | physical ticks yes | yes |
+| Plated (50% less physical) | yes | yes | no | physical ticks yes | physical ticks yes | yes |
+| Element resistance, rank bonus, Resistant, cap 75 | its element part | no (physical) | yes | yes | yes | its element |
+| Bulwark (block) | yes | no | no | no | no | yes |
+
+A field is a condition: its damage arrives as ticks (`ORIGIN_CONDITION`). The weapon's element part (the secondary) takes the
+element rules only. Penetration (`item_mods.lua`) is not in this table: it is the player stage's.
+
+**Ranks** (`monster_tiers.lua` `ChaosTiers`, the three ranks above normal):
+
+| Rank | Health before | Health now | Damage before | Damage now |
+|---|---:|---:|---:|---:|
+| Magic | x2.0 | x2.48 | x1.25 | x1.30 |
+| Rare | x3.5 | x4.90 | x1.50 | x1.50 |
+| Legendary | x6.0 | x7.98 | x2.00 | x1.70 |
+
+Speed and experience are unchanged. The rank bonus on the element resistance is +15 for rare, legendary and nemesis (the elite
+ranks); magic and bosses get none (a boss's data is capped at 75 instead). The Infinity Tower keeps its own tier health
+(`tierHealth`: it divides by the stock number before the tier multiplies); the legendary rift guardian is x3 x 7.98.
+
+**The rank damage multiplier reaches the player first.** Before, `ChaosTierHit` was the 28th of the 33 healthchange events registered at login and the
+rift run's multipliers (`ChaosRiftPlayerHit`, registered when a run begins) the last one, behind every reduction. Now the login
+events are `Chaos0MonsterDamageLogin` (late-game boost, pace, waystone tier and tower floor damage), `Chaos0RiftHitLogin` (the
+run's Brutality, tiers, party, Dread Guardian, density, hexes; it registers the two rift events at login and they stay on the
+player, both pass a hit through when the attacker is no monster of a run) and `Chaos0TierLogin` (rank, Ruthless, the extra
+element): the first three healthchange events of every player, in that order, before every other login event. A hit-size armour
+of the player stage sees the real hit. Still behind the reductions, for the player stage: the invasion, area generator, waystone
+modifier, descent and dungeon hit multipliers. `tests/defence_order_test.lua` proves it from the sources.
+
+**Rank modifiers** (`ChaosMods` in `monster_tiers.lua`, rules in `monster_defence_core.lua` `C.MOD`, numbers in
+`monster_defence_config.lua` `mods`; rolled like the older ones: magic 1-2, rare 2-3, legendary 3-4, boss 4-5):
+
+| Modifier | Effect | Where |
+|---|---|---|
+| Emberforged, Frostforged, Stormforged | 50% of the physical damage of each melee or ranged hit is added as fire, ice or energy | `ChaosTierHit`: the added part is the secondary, reduced by the player's equipment absorb for that element |
+| Plated | 50% less physical damage taken | the layer, inside the physical cap |
+| Resistant | resistance 75 to one element, drawn when it is rolled (fire, ice, energy, earth, death, holy) | the layer, inside `resistCap` |
+| Ruthless | 20% of its hits (weapon, spell) deal 150% | `ChaosTierHit` and the mana shield provider |
+| Bulwark | 50% (at most `blockCap`) of weapon hits against it deal nothing | the layer |
+
+Not added: speed, stun, ailment immunity (owner). "More health" already exists: Juggernaut (+60%). "Added elemental damage" has
+the rift brands (Emberbrand, Frostbrand, Stormbrand: a share of the whole hit, in `rift.lua`), "physical reduction" has Ironhide
+(rift), "critical" has Keen Fangs (rift), "element resistance" has Warding (all elements, rift) and Stoneskin (-30% of
+everything); all kept, none of them goes through this layer. The extra element is not added to a hit that a mana shield takes
+(Ruthless counts there). The added part goes through `ChaosMonsterDefence.playerAbsorb(player, combatType)`: the worn items'
+`absorbPercent` for the element, each on what the previous left, as the engine's `Player::blockHit`. It is ONE small function and
+the player stage replaces it. The storages, gems, charms and sets are later events of the player, which see the added part as a
+typed secondary and reduce it like any other. Client: `game_monsterbar` shows a chip with a tooltip for each (art:
+`client/tools/gen_monsterbar_art.py`, pt-BR in `pt_br.lua`); the Unity client names them by the server's name and keeps the
+English tooltip until its table has them (not edited here).
+
+**Resistance data** (`tools/patch_monster_resists.py`, install step `monsterresists` after `basemonsters`; our own files in the
+repository through `tools/tune_monsters.py`, which owns them, and `tools/ci/check_content.py` fails on a file the rule would
+change). A normal monster's element percents are at most 40 and an immunity to a damage type becomes 40; a boss's (the file flag
+`isboss`) are at most 75 and an immunity becomes 75; the high-level set with a flat 30 on the seven types (physical, fire, ice,
+energy, earth, death, holy) keeps 30 on three of them, chosen by the SHA-256 of `name:type` (lower case name, the same on every
+run and machine), the other four become 0; weaknesses stay; life drain and mana drain are no element. Left alone: pets, monsters
+that are not attackable, monsters immune to every damage type. Bleeding stays immune where physical was. `--check` and
+`--dry-run` change nothing. At runtime the layer caps at 75 whatever the file says, and a rift guardian, a hunt monster in the
+data, is a boss for the layer (cap 75, no bonus) while its file stays at 40. Our 114 files changed: 61 percents capped,
+49 immunities turned into rows, 48 flat 30 sets thinned. A dry run on the installed server of 2026-11-10 (1,789 monster files):
+987 files, 579 capped, 881 immunities (most of them drown and earth), 61 flat 30 sets. Examples (before, after):
+
+| Monster | Before | After |
+|---|---|---|
+| Acid Hydra | all seven 30 | earth, ice, physical 30; fire, energy, death, holy 0 |
+| Black Stag | all seven 30 | fire, ice, holy 30; the other four 0 |
+| Gloomfire | six elements 60 | six elements 40 |
+| Pyrewing Tyrant | fire 55, energy 55 | fire 40, energy 40 |
+| Cinderhorn Juggernaut | physical 55, fire 55 | physical 40, fire 40 |
+| Necro Lich Shade | death 100 (immune), drown immune | death 40, drown 40 |
+| Ancient Fungus | immune to earth | earth 40 |
+| Hollow Rider (boss) | drown immune | drown 75 |
+| Skaldra the Rime Queen (world boss) | immune to ice | ice 75 |
+| Captain Bloodbeard | all seven 30, drown immune | physical, earth, death 30; fire, energy, holy, ice 0; drown 40 |
+
+**Time to kill, before and after** (computed with the method of the research report, per monster of the hunting band, median
+class damage from `class_dps_model.py`; a physical class hits at the median hit size; an elemental class takes the mean damage
+factor over the six elements; a pack is 7 monsters against the 5 target damage; the rift boss is a guardian, 3 x legendary
+health, boss armour):
+
+| Level | Target | Physical class | Elemental class |
+|---:|---|---|---|
+| 100 | one monster | 0.9 s to 1.1 s | 0.9 s to 0.9 s |
+| 100 | pack of 7 | 3.8 s to 4.8 s | 3.7 s to 3.6 s |
+| 100 | rift boss | 16.0 s to 40.7 s | 15.9 s to 20.6 s |
+| 500 | one monster | 1.5 s to 2.0 s | 1.4 s to 1.4 s |
+| 500 | pack of 7 | 4.3 s to 5.6 s | 3.9 s to 3.8 s |
+| 500 | rift boss | 27.8 s to 72.2 s | 25.0 s to 33.0 s |
+| 1,000 | one monster | 3.6 s to 3.6 s | 3.6 s to 2.9 s |
+| 1,000 | pack of 7 | 11.0 s to 11.1 s | 11.0 s to 9.0 s |
+| 1,000 | rift boss | 64.7 s to 129.4 s | 64.3 s to 70.4 s |
+
+Armour and the 30 on seven types cancel in the hunts at level 1,000 (a physical class); the boss takes about twice as long
+(health x7.98 against x6.0 and 50% armour); an elemental class meets less resistance at level 1,000.
+
+**Balance models.** No model, test or limit was changed (owner: look at the result first). `tower_model.py --check` turns red
+(its reading of the stock tier health from `monster_tiers.lua` changed: "median class at level 800 gets to floor 53, wanted
+30-46", 44 before); every other model passes unchanged, but none of them knows the new layer: their results say nothing about
+it yet.
+
+**Waits for the player stage.** The player's armour (engine patch 0016, flat share) by hit size, the absorb storages and
+equipment absorb as one resistance with one cap, dodge and block of the player, spell block, penetration (`item_mods.lua`
+`penetrate` re-derives the raw hit from the file's resistance and the value this layer left: right for a capped normal monster,
+off by the rank bonus on an elite and on a Resistant one, and it still cannot beat an immunity; it should call
+`ChaosMonsterDefence.effectiveResist(monster, type, penetration)` and the layer then takes the penetration), the damage taken
+chain, Last Breath's place, the hit multipliers named above, and the replacement of `playerAbsorb`. The engine's monster level
+bonus (x(1 + 0.0015 L) on a monster's hit in `combatChangeHealth`, suspected to apply twice because of the re-entry after the
+events) is not touched and nothing here relies on it.
+
+**Install.** `python3 -I server/tools/install_all.py SERVER_DIR --only monsterresists` (the admin app has no button: a
+once-per-install data step). **Tests:** `tests/monster_defence_test.lua`, `tests/defence_order_test.lua`,
+`tests/monster_tiers_test.lua` (rank table), `tools/patch_monster_resists_test.py`, `tools/defence_curve.py --check`, the client
+`game_monsterbar/monsterbarstyle_test.lua`. **Not verified:** a live server (the event order is read from the engine source, not
+observed), the client chips in the real client, the pt-BR texts by a speaker.
