@@ -39,7 +39,7 @@ for id, spec in pairs(SPECS) do
 			check(not seen[m[1]], spec.name .. ": " .. tostring(m[1]) .. " once")
 			seen[m[1]] = true
 			check(type(m[2]) == "number" and m[2] > 0, spec.name .. ": " .. tostring(m[1]) .. " above 0")
-			if def then
+			if def and def.cap then -- O461: most rows have no cap of their own any more
 				check(m[2] <= def.cap, spec.name .. ": " .. m[1] .. " " .. m[2] .. " within the cap " .. def.cap)
 			end
 		end

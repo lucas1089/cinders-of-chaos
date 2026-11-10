@@ -163,7 +163,7 @@ return {
 			{key = "vigil_recipe", kind = "recipe", rank = "honored", name = "Recipe: Pyre Distillation", price = 100000,
 				craft = {inputs = {{id = SHARD, count = 40}}, tokens = 3, gold = 10000, output = {{id = FATE, count = 1}}}},
 			{key = "vigil_helm", kind = "gear", rank = "honored", name = "Vigil Warden's Helm", price = 250000, tokens = 10,
-				id = 2491, itemKind = "helmet", rarity = 4, level = 100, mods = {{"monsterreduction", 5}, {"regen", 5}, {"lifeonkill", 5}}},
+				id = 2491, itemKind = "helmet", rarity = 4, level = 100, mods = {{"monsterreduction", 5}, {"maxlife", 5}, {"lifeonkill", 5}}}, -- O461: Health Regeneration left the helmet; Maximum Life takes its place
 			{key = "vigil_fate2", kind = "orbs", rank = "revered", name = "Pyre-Sealed Fate", price = 300000, weekly = 2,
 				items = {{id = FATE, count = 2}}},
 			{key = "vigil_plate", kind = "gear", rank = "revered", name = "Vigil Pyreplate", price = 600000, tokens = 20,

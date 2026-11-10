@@ -564,7 +564,7 @@ end
 local function auraOf(it) for _, m in ipairs(M.read(it)) do if m.key == "smolderaura" then return m.value, m.tier end end end
 local v, tr = auraOf(auraItem(250, 7))
 eq(v, 28, "an old T7 roll of 250 reads 28 (the T7 top)"); eq(tr, 7)
-eq(auraOf(auraItem(250, 7, 20)), M.scaleQuality(28, 20), "with quality: the top x the quality")
+eq(auraOf(auraItem(250, 7, 20)), 28, "with quality 20: the top of the tier (O461: quality no longer multiplies a modifier; the upgrade takes it off)")
 v, tr = auraOf(auraItem(400))
 eq(v, 35, "an old roll without a stored tier: its old range gives the tier (T8)"); eq(tr, 8)
 eq(auraOf(auraItem(30, 8)), 30, "a new roll stays as it is")

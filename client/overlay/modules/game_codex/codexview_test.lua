@@ -133,7 +133,7 @@ for _, x in ipairs(V.list(mods, '', { kind = 'boots' }, D.shared)) do
   for _, k in ipairs(x.f.kind) do if k == 'boots' then ok = true end end
   eq(ok, true, 'boots filter: ' .. x.id)
 end
-eq(V.subline(e, 150, D), 'Item level 150: T4-T8: +5-7% to +13-15%', 'attack speed at 150')
+eq(V.subline(e, 150, D), 'Item level 150: T1-T8: +5-7% to +26-27%', 'attack speed at 150 (O461: every tier the item level allows rolls, no window of five)')
 local _, unique = V.find(D, 'unique:8209')
 eq(unique.name, 'Soulreaper', 'unique entry')
 eq(#V.list(D.tabs[5], 'soulreaper', { level = '130' }, D.shared), 1, 'unique by level')

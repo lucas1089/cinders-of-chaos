@@ -24,7 +24,7 @@ CodexData = {
 				{"Void Orb", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
-				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
+				{"Whetstone", "Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."}
 			},
 			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:void", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
@@ -47,7 +47,7 @@ CodexData = {
 				{"Void Orb", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
-				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
+				{"Whetstone", "Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."}
 			},
 			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:void", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
@@ -70,7 +70,7 @@ CodexData = {
 				{"Void Orb", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
-				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
+				{"Whetstone", "Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."}
 			},
 			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:void", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
@@ -93,7 +93,7 @@ CodexData = {
 				{"Void Orb", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
-				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
+				{"Whetstone", "Does not change its value: quality raises the item's attack, defence and armour, +1% per stone, up to 20% (30% from Divine)."}
 			},
 			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:void", "orb:binding", "orb:ruin", "orb:whetstone"}
 		}
@@ -128,13 +128,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -145,14 +145,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -183,13 +183,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-9%", "90"},
-								{"T3", "30+", "+7-13%", "80"},
-								{"T4", "50+", "+10-18%", "65"},
-								{"T5", "70+", "+15-24%", "50"},
-								{"T6", "95+", "+20-30%", "35"},
-								{"T7", "120+", "+26-39%", "22"},
-								{"T8", "140+", "+33-52%", "12"}
+								{"T2", "15+", "+4-9%", "100"},
+								{"T3", "30+", "+7-13%", "100"},
+								{"T4", "50+", "+10-18%", "100"},
+								{"T5", "70+", "+15-24%", "100"},
+								{"T6", "90+", "+20-30%", "100"},
+								{"T7", "110+", "+26-39%", "100"},
+								{"T8", "130+", "+33-52%", "100"}
 							},
 							tiers = true
 						},
@@ -200,14 +200,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 177", "1.1%"},
-								{"Shield", "2 of 128", "1.6%"},
-								{"Helmet", "2 of 139", "1.4%"},
-								{"Armour", "2 of 119", "1.7%"},
-								{"Legs", "2 of 101", "2%"},
-								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 182", "1.1%"},
-								{"Other", "2 of 137", "1.5%"}
+								{"Weapon", "2 of 187", "1.1%"},
+								{"Shield", "2 of 119", "1.7%"},
+								{"Helmet", "2 of 128", "1.6%"},
+								{"Armour", "2 of 111", "1.8%"},
+								{"Legs", "2 of 87", "2.3%"},
+								{"Boots", "2 of 83", "2.4%"},
+								{"Jewel", "2 of 161", "1.2%"},
+								{"Other", "2 of 120", "1.7%"}
 							}
 						},
 						{
@@ -218,92 +218,30 @@ CodexData = {
 					}
 				},
 				{
-					id = "mod:rarity_armorsmithskill",
-					name = "Armorsmithing Skill",
-					color = "#9fdc7f",
-					sub = "Suffix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "suffix",
-					f = {
-						group = "skill",
-						side = "suffix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
-					sections = {
-						{
-							h = "Overview",
-							p = {"Skill, suffix.", "Raises the Armorsmithing profession skill while the item is worn."}
-						},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Any gear."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "1 of 177", "0.6%"},
-								{"Shield", "1 of 128", "0.8%"},
-								{"Helmet", "1 of 139", "0.7%"},
-								{"Armour", "1 of 119", "0.8%"},
-								{"Legs", "1 of 101", "1%"},
-								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 182", "0.5%"},
-								{"Other", "1 of 137", "0.7%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:suffix"}
-					}
-				},
-				{
 					id = "mod:chaos_mod_attackspeed",
 					name = "Attack Speed",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon. +2-3% (T1) to +13-15% (T8)",
+					sub = "Suffix, Weapon. +5-7% (T1) to +26-27% (T8)",
 					group = "chaos",
 					side = "suffix",
 					f = {group = "chaos", side = "suffix", kind = {"weapon"}},
-					tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {7, 9}, {9, 11}, {11, 13}, {13, 15}},
-					tv = {"+2-3%", "+3-4%", "+4-6%", "+5-7%", "+7-9%", "+9-11%", "+11-13%", "+13-15%"},
+					tiers = {{5, 7}, {8, 10}, {11, 13}, {14, 16}, {17, 19}, {20, 22}, {23, 25}, {26, 27}},
+					tv = {"+5-7%", "+8-10%", "+11-13%", "+14-16%", "+17-19%", "+20-22%", "+23-25%", "+26-27%"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Attack Speed +13-15% (T8).", "Cap: at most 15% from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Attack Speed +26-27% (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+2-3%", "100"},
-								{"T2", "15+", "+3-4%", "90"},
-								{"T3", "30+", "+4-6%", "80"},
-								{"T4", "50+", "+5-7%", "65"},
-								{"T5", "70+", "+7-9%", "50"},
-								{"T6", "95+", "+9-11%", "35"},
-								{"T7", "120+", "+11-13%", "22"},
-								{"T8", "140+", "+13-15%", "12"}
+								{"T1", "1+", "+5-7%", "100"},
+								{"T2", "15+", "+8-10%", "100"},
+								{"T3", "30+", "+11-13%", "100"},
+								{"T4", "50+", "+14-16%", "100"},
+								{"T5", "70+", "+17-19%", "100"},
+								{"T6", "90+", "+20-22%", "100"},
+								{"T7", "110+", "+23-25%", "100"},
+								{"T8", "130+", "+26-27%", "100"}
 							},
 							tiers = true
 						},
@@ -313,7 +251,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "20 of 177", "11.3%"}}
+							rows = {{"Weapon", "20 of 187", "10.7%"}}
 						},
 						{
 							h = "Rules",
@@ -326,40 +264,37 @@ CodexData = {
 					id = "mod:chaos_mod_gearspeed",
 					name = "Attack Speed",
 					color = "#ff70c0",
-					sub = "Suffix, Jewel, Other. +1% (T1) to +5-7% (T8)",
+					sub = "Suffix, Other. +5-6% (T1) to +15-16% (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"jewel", "other"}},
-					tiers = {{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}},
-					tv = {"+1%", "+1-2%", "+2%", "+2-3%", "+3-4%", "+3-5%", "+4-6%", "+5-7%"},
+					f = {group = "chaos", side = "suffix", kind = {"other"}},
+					tiers = {{5, 6}, {7, 8}, {9, 10}, {11, 11}, {12, 12}, {13, 13}, {14, 15}, {15, 16}},
+					tv = {"+5-6%", "+7-8%", "+9-10%", "+11%", "+12%", "+13%", "+14-15%", "+15-16%"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Attack Speed +5-7% (T8).", "Cap: at most 10% from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Attack Speed +15-16% (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+1%", "100"},
-								{"T2", "15+", "+1-2%", "90"},
-								{"T3", "30+", "+2%", "80"},
-								{"T4", "50+", "+2-3%", "65"},
-								{"T5", "70+", "+3-4%", "50"},
-								{"T6", "95+", "+3-5%", "35"},
-								{"T7", "120+", "+4-6%", "22"},
-								{"T8", "140+", "+5-7%", "12"}
+								{"T1", "1+", "+5-6%", "100"},
+								{"T2", "15+", "+7-8%", "100"},
+								{"T3", "30+", "+9-10%", "100"},
+								{"T4", "50+", "+11%", "100"},
+								{"T5", "70+", "+12%", "100"},
+								{"T6", "90+", "+13%", "100"},
+								{"T7", "110+", "+14-15%", "100"},
+								{"T8", "130+", "+15-16%", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Jewellery (amulets, rings) and Other gear (gloves, belts...)."}},
+						{h = "Rolls on", p = {"Other gear (gloves, belts...)."}},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Jewel", "16 of 182", "8.8%"}, {"Other", "16 of 137", "11.7%"}}
+							rows = {{"Other", "16 of 120", "13.3%"}}
 						},
 						{
 							h = "Rules",
@@ -372,30 +307,30 @@ CodexData = {
 					id = "mod:chaos_mod_bowspeed",
 					name = "Attack Speed with Bows",
 					color = "#ff70c0",
-					sub = "Suffix, Quiver. +1-2% (T1) to +8-10% (T8)",
+					sub = "Suffix, Quiver. +5-6% (T1) to +15-16% (T8)",
 					group = "chaos",
 					side = "suffix",
 					f = {group = "chaos", side = "suffix", kind = {"quiver"}},
-					tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}},
-					tv = {"+1-2%", "+2-3%", "+3-4%", "+4-5%", "+5-6%", "+6-8%", "+7-9%", "+8-10%"},
+					tiers = {{5, 6}, {7, 8}, {9, 10}, {11, 11}, {12, 12}, {13, 13}, {14, 15}, {15, 16}},
+					tv = {"+5-6%", "+7-8%", "+9-10%", "+11%", "+12%", "+13%", "+14-15%", "+15-16%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Attack Speed with Bows +8-10% (T8).", "Cap: at most 12% from all equipped items together."}
+							p = {"Chaos modifier, suffix.", "On an item: Attack Speed with Bows +15-16% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+1-2%", "100"},
-								{"T2", "15+", "+2-3%", "90"},
-								{"T3", "30+", "+3-4%", "80"},
-								{"T4", "50+", "+4-5%", "65"},
-								{"T5", "70+", "+5-6%", "50"},
-								{"T6", "95+", "+6-8%", "35"},
-								{"T7", "120+", "+7-9%", "22"},
-								{"T8", "140+", "+8-10%", "12"}
+								{"T1", "1+", "+5-6%", "100"},
+								{"T2", "15+", "+7-8%", "100"},
+								{"T3", "30+", "+9-10%", "100"},
+								{"T4", "50+", "+11%", "100"},
+								{"T5", "70+", "+12%", "100"},
+								{"T6", "90+", "+13%", "100"},
+								{"T7", "110+", "+14-15%", "100"},
+								{"T8", "130+", "+15-16%", "100"}
 							},
 							tiers = true
 						},
@@ -405,7 +340,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Quiver", "8 of 85", "9.4%"}}
+							rows = {{"Quiver", "8 of 97", "8.2%"}}
 						},
 						{
 							h = "Rules",
@@ -435,13 +370,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-3%", "100"},
-								{"T2", "15+", "+3-5%", "90"},
-								{"T3", "30+", "+4-6%", "80"},
-								{"T4", "50+", "+5-8%", "65"},
-								{"T5", "70+", "+7-10%", "50"},
-								{"T6", "95+", "+8-11%", "35"},
-								{"T7", "120+", "+9-12%", "22"},
-								{"T8", "140+", "+11-14%", "12"}
+								{"T2", "15+", "+3-5%", "100"},
+								{"T3", "30+", "+4-6%", "100"},
+								{"T4", "50+", "+5-8%", "100"},
+								{"T5", "70+", "+7-10%", "100"},
+								{"T6", "90+", "+8-11%", "100"},
+								{"T7", "110+", "+9-12%", "100"},
+								{"T8", "130+", "+11-14%", "100"}
 							},
 							tiers = true
 						},
@@ -451,7 +386,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Shield", "8 of 128", "6.3%"}}
+							rows = {{"Shield", "8 of 119", "6.7%"}}
 						},
 						{
 							h = "Rules",
@@ -464,30 +399,30 @@ CodexData = {
 					id = "mod:chaos_mod_bleedchance",
 					name = "Chance to Bleed",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Other, Quiver. +3-5% (T1) to +20-25% (T8)",
+					sub = "Prefix, Weapon, Other, Quiver. +18-21% (T1) to +50-55% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"weapon", "other", "quiver"}},
-					tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
-					tv = {"+3-5%", "+5-7%", "+7-10%", "+9-13%", "+11-16%", "+14-18%", "+17-21%", "+20-25%"},
+					tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}},
+					tv = {"+18-21%", "+22-25%", "+26-29%", "+30-33%", "+34-38%", "+39-43%", "+44-49%", "+50-55%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Chance to Bleed +20-25% (T8).", "Cap: at most 30% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Chance to Bleed +50-55% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+3-5%", "100"},
-								{"T2", "15+", "+5-7%", "90"},
-								{"T3", "30+", "+7-10%", "80"},
-								{"T4", "50+", "+9-13%", "65"},
-								{"T5", "70+", "+11-16%", "50"},
-								{"T6", "95+", "+14-18%", "35"},
-								{"T7", "120+", "+17-21%", "22"},
-								{"T8", "140+", "+20-25%", "12"}
+								{"T1", "1+", "+18-21%", "100"},
+								{"T2", "15+", "+22-25%", "100"},
+								{"T3", "30+", "+26-29%", "100"},
+								{"T4", "50+", "+30-33%", "100"},
+								{"T5", "70+", "+34-38%", "100"},
+								{"T6", "90+", "+39-43%", "100"},
+								{"T7", "110+", "+44-49%", "100"},
+								{"T8", "130+", "+50-55%", "100"}
 							},
 							tiers = true
 						},
@@ -501,9 +436,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 177", "2.3%"},
-								{"Other", "4 of 137", "2.9%"},
-								{"Quiver", "4 of 85", "4.7%"}
+								{"Weapon", "4 of 187", "2.1%"},
+								{"Other", "4 of 120", "3.3%"},
+								{"Quiver", "4 of 97", "4.1%"}
 							}
 						},
 						{
@@ -517,30 +452,30 @@ CodexData = {
 					id = "mod:chaos_mod_chillchance",
 					name = "Chance to Chill",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Other. +3-5% (T1) to +20-25% (T8)",
+					sub = "Prefix, Weapon, Other. +18-21% (T1) to +50-55% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"weapon", "other"}},
-					tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
-					tv = {"+3-5%", "+5-7%", "+7-10%", "+9-13%", "+11-16%", "+14-18%", "+17-21%", "+20-25%"},
+					tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}},
+					tv = {"+18-21%", "+22-25%", "+26-29%", "+30-33%", "+34-38%", "+39-43%", "+44-49%", "+50-55%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Chance to Chill +20-25% (T8).", "Cap: at most 30% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Chance to Chill +50-55% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+3-5%", "100"},
-								{"T2", "15+", "+5-7%", "90"},
-								{"T3", "30+", "+7-10%", "80"},
-								{"T4", "50+", "+9-13%", "65"},
-								{"T5", "70+", "+11-16%", "50"},
-								{"T6", "95+", "+14-18%", "35"},
-								{"T7", "120+", "+17-21%", "22"},
-								{"T8", "140+", "+20-25%", "12"}
+								{"T1", "1+", "+18-21%", "100"},
+								{"T2", "15+", "+22-25%", "100"},
+								{"T3", "30+", "+26-29%", "100"},
+								{"T4", "50+", "+30-33%", "100"},
+								{"T5", "70+", "+34-38%", "100"},
+								{"T6", "90+", "+39-43%", "100"},
+								{"T7", "110+", "+44-49%", "100"},
+								{"T8", "130+", "+50-55%", "100"}
 							},
 							tiers = true
 						},
@@ -550,7 +485,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 177", "2.3%"}, {"Other", "4 of 137", "2.9%"}}
+							rows = {{"Weapon", "4 of 187", "2.1%"}, {"Other", "4 of 120", "3.3%"}}
 						},
 						{
 							h = "Rules",
@@ -563,30 +498,30 @@ CodexData = {
 					id = "mod:chaos_mod_ignitechance",
 					name = "Chance to Ignite",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Other. +3-5% (T1) to +20-25% (T8)",
+					sub = "Prefix, Weapon, Other. +18-21% (T1) to +50-55% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"weapon", "other"}},
-					tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
-					tv = {"+3-5%", "+5-7%", "+7-10%", "+9-13%", "+11-16%", "+14-18%", "+17-21%", "+20-25%"},
+					tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}},
+					tv = {"+18-21%", "+22-25%", "+26-29%", "+30-33%", "+34-38%", "+39-43%", "+44-49%", "+50-55%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Chance to Ignite +20-25% (T8).", "Cap: at most 30% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Chance to Ignite +50-55% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+3-5%", "100"},
-								{"T2", "15+", "+5-7%", "90"},
-								{"T3", "30+", "+7-10%", "80"},
-								{"T4", "50+", "+9-13%", "65"},
-								{"T5", "70+", "+11-16%", "50"},
-								{"T6", "95+", "+14-18%", "35"},
-								{"T7", "120+", "+17-21%", "22"},
-								{"T8", "140+", "+20-25%", "12"}
+								{"T1", "1+", "+18-21%", "100"},
+								{"T2", "15+", "+22-25%", "100"},
+								{"T3", "30+", "+26-29%", "100"},
+								{"T4", "50+", "+30-33%", "100"},
+								{"T5", "70+", "+34-38%", "100"},
+								{"T6", "90+", "+39-43%", "100"},
+								{"T7", "110+", "+44-49%", "100"},
+								{"T8", "130+", "+50-55%", "100"}
 							},
 							tiers = true
 						},
@@ -596,7 +531,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 177", "2.3%"}, {"Other", "4 of 137", "2.9%"}}
+							rows = {{"Weapon", "4 of 187", "2.1%"}, {"Other", "4 of 120", "3.3%"}}
 						},
 						{
 							h = "Rules",
@@ -609,30 +544,30 @@ CodexData = {
 					id = "mod:chaos_mod_poisonchance",
 					name = "Chance to Poison",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Other, Quiver. +3-5% (T1) to +20-25% (T8)",
+					sub = "Prefix, Weapon, Other, Quiver. +18-21% (T1) to +50-55% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"weapon", "other", "quiver"}},
-					tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
-					tv = {"+3-5%", "+5-7%", "+7-10%", "+9-13%", "+11-16%", "+14-18%", "+17-21%", "+20-25%"},
+					tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}},
+					tv = {"+18-21%", "+22-25%", "+26-29%", "+30-33%", "+34-38%", "+39-43%", "+44-49%", "+50-55%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Chance to Poison +20-25% (T8).", "Cap: at most 30% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Chance to Poison +50-55% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+3-5%", "100"},
-								{"T2", "15+", "+5-7%", "90"},
-								{"T3", "30+", "+7-10%", "80"},
-								{"T4", "50+", "+9-13%", "65"},
-								{"T5", "70+", "+11-16%", "50"},
-								{"T6", "95+", "+14-18%", "35"},
-								{"T7", "120+", "+17-21%", "22"},
-								{"T8", "140+", "+20-25%", "12"}
+								{"T1", "1+", "+18-21%", "100"},
+								{"T2", "15+", "+22-25%", "100"},
+								{"T3", "30+", "+26-29%", "100"},
+								{"T4", "50+", "+30-33%", "100"},
+								{"T5", "70+", "+34-38%", "100"},
+								{"T6", "90+", "+39-43%", "100"},
+								{"T7", "110+", "+44-49%", "100"},
+								{"T8", "130+", "+50-55%", "100"}
 							},
 							tiers = true
 						},
@@ -646,9 +581,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 177", "2.3%"},
-								{"Other", "4 of 137", "2.9%"},
-								{"Quiver", "4 of 85", "4.7%"}
+								{"Weapon", "4 of 187", "2.1%"},
+								{"Other", "4 of 120", "3.3%"},
+								{"Quiver", "4 of 97", "4.1%"}
 							}
 						},
 						{
@@ -662,30 +597,30 @@ CodexData = {
 					id = "mod:chaos_mod_shockchance",
 					name = "Chance to Shock",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Other. +3-5% (T1) to +20-25% (T8)",
+					sub = "Prefix, Weapon, Other. +18-21% (T1) to +50-55% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"weapon", "other"}},
-					tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
-					tv = {"+3-5%", "+5-7%", "+7-10%", "+9-13%", "+11-16%", "+14-18%", "+17-21%", "+20-25%"},
+					tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}},
+					tv = {"+18-21%", "+22-25%", "+26-29%", "+30-33%", "+34-38%", "+39-43%", "+44-49%", "+50-55%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Chance to Shock +20-25% (T8).", "Cap: at most 30% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Chance to Shock +50-55% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+3-5%", "100"},
-								{"T2", "15+", "+5-7%", "90"},
-								{"T3", "30+", "+7-10%", "80"},
-								{"T4", "50+", "+9-13%", "65"},
-								{"T5", "70+", "+11-16%", "50"},
-								{"T6", "95+", "+14-18%", "35"},
-								{"T7", "120+", "+17-21%", "22"},
-								{"T8", "140+", "+20-25%", "12"}
+								{"T1", "1+", "+18-21%", "100"},
+								{"T2", "15+", "+22-25%", "100"},
+								{"T3", "30+", "+26-29%", "100"},
+								{"T4", "50+", "+30-33%", "100"},
+								{"T5", "70+", "+34-38%", "100"},
+								{"T6", "90+", "+39-43%", "100"},
+								{"T7", "110+", "+44-49%", "100"},
+								{"T8", "130+", "+50-55%", "100"}
 							},
 							tiers = true
 						},
@@ -695,7 +630,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 177", "2.3%"}, {"Other", "4 of 137", "2.9%"}}
+							rows = {{"Weapon", "4 of 187", "2.1%"}, {"Other", "4 of 120", "3.3%"}}
 						},
 						{
 							h = "Rules",
@@ -708,30 +643,30 @@ CodexData = {
 					id = "mod:chaos_mod_cdr",
 					name = "Cooldown Reduction",
 					color = "#ff70c0",
-					sub = "Suffix, Helmet, Jewel, Other. +2-3% (T1) to +13-16% (T8)",
+					sub = "Suffix, Helmet, Jewel, Other. +6-8% (T1) to +18-20% (T8)",
 					group = "chaos",
 					side = "suffix",
 					f = {group = "chaos", side = "suffix", kind = {"helmet", "jewel", "other"}},
-					tiers = {{2, 3}, {3, 4}, {4, 6}, {6, 8}, {8, 10}, {9, 12}, {11, 14}, {13, 16}},
-					tv = {"+2-3%", "+3-4%", "+4-6%", "+6-8%", "+8-10%", "+9-12%", "+11-14%", "+13-16%"},
+					tiers = {{6, 8}, {8, 10}, {10, 12}, {12, 14}, {14, 15}, {15, 16}, {16, 18}, {18, 20}},
+					tv = {"+6-8%", "+8-10%", "+10-12%", "+12-14%", "+14-15%", "+15-16%", "+16-18%", "+18-20%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Cooldown Reduction +13-16% (T8).", "Cap: at most 20% from all equipped items together."}
+							p = {"Chaos modifier, suffix.", "On an item: Cooldown Reduction +18-20% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+2-3%", "100"},
-								{"T2", "15+", "+3-4%", "90"},
-								{"T3", "30+", "+4-6%", "80"},
-								{"T4", "50+", "+6-8%", "65"},
-								{"T5", "70+", "+8-10%", "50"},
-								{"T6", "95+", "+9-12%", "35"},
-								{"T7", "120+", "+11-14%", "22"},
-								{"T8", "140+", "+13-16%", "12"}
+								{"T1", "1+", "+6-8%", "100"},
+								{"T2", "15+", "+8-10%", "100"},
+								{"T3", "30+", "+10-12%", "100"},
+								{"T4", "50+", "+12-14%", "100"},
+								{"T5", "70+", "+14-15%", "100"},
+								{"T6", "90+", "+15-16%", "100"},
+								{"T7", "110+", "+16-18%", "100"},
+								{"T8", "130+", "+18-20%", "100"}
 							},
 							tiers = true
 						},
@@ -745,9 +680,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "4 of 139", "2.9%"},
-								{"Jewel", "4 of 182", "2.2%"},
-								{"Other", "4 of 137", "2.9%"}
+								{"Helmet", "4 of 128", "3.1%"},
+								{"Jewel", "4 of 161", "2.5%"},
+								{"Other", "4 of 120", "3.3%"}
 							}
 						},
 						{
@@ -782,13 +717,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T2", "15+", "+2-3", "100"},
+								{"T3", "30+", "+2-4", "100"},
+								{"T4", "50+", "+3-5", "100"},
+								{"T5", "70+", "+4-6", "100"},
+								{"T6", "90+", "+5-8", "100"},
+								{"T7", "110+", "+6-9", "100"},
+								{"T8", "130+", "+7-10", "100"}
 							},
 							tiers = true
 						},
@@ -799,14 +734,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 177", "0.6%"},
-								{"Shield", "1 of 128", "0.8%"},
-								{"Helmet", "1 of 139", "0.7%"},
-								{"Armour", "1 of 119", "0.8%"},
-								{"Legs", "1 of 101", "1%"},
-								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 182", "0.5%"},
-								{"Other", "1 of 137", "0.7%"}
+								{"Weapon", "1 of 187", "0.5%"},
+								{"Shield", "1 of 119", "0.8%"},
+								{"Helmet", "1 of 128", "0.8%"},
+								{"Armour", "1 of 111", "0.9%"},
+								{"Legs", "1 of 87", "1.1%"},
+								{"Boots", "1 of 83", "1.2%"},
+								{"Jewel", "1 of 161", "0.6%"},
+								{"Other", "1 of 120", "0.8%"}
 							}
 						},
 						{
@@ -818,59 +753,54 @@ CodexData = {
 				},
 				{
 					id = "mod:rarity_criticalhitchance",
-					name = "Critical Hit",
+					name = "Critical Strike Chance",
 					color = "#f6cf72",
-					sub = "Prefix, any gear. 1% chance, +2% (T1) to 5-7% chance, +8-10% (T8)",
-					group = "special",
+					sub = "Prefix, Weapon, Jewel, Other, Quiver. +2% (T1) to +7-8% (T8)",
+					group = "single",
 					side = "prefix",
-					f = {
-						group = "special",
-						side = "prefix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{2, 2}, {2, 3}, {2, 5}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 10}},
-					tv = {"1% chance, +2%", "1-2% chance, +2-3%", "1-3% chance, +2-5%", "2-3% chance, +3-5%", "3-4% chance, +4-6%", "3-5% chance, +5-8%", "4-6% chance, +6-9%", "5-7% chance, +8-10%"},
+					f = {group = "single", side = "prefix", kind = {"weapon", "jewel", "other", "quiver"}},
+					tiers = {{2, 2}, {3, 3}, {4, 4}, {5, 5}, {5, 6}, {6, 6}, {7, 7}, {7, 8}},
+					tv = {"+2%", "+3%", "+4%", "+5%", "+5-6%", "+6%", "+7%", "+7-8%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Critical / leech, prefix.", "A pair: a chance to hit critically and the extra damage of a critical hit. The amount is the rolled value; the chance is about two thirds of it."}
+							p = {"Critical hit, prefix.", "Raises your chance to hit critically while the item is worn, in percentage points. It rolls on its own: the damage of a critical hit is the other modifier.", "On an item: Critical Strike Chance +7-8% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "1% chance, +2%", "100"},
-								{"T2", "15+", "1-2% chance, +2-3%", "90"},
-								{"T3", "30+", "1-3% chance, +2-5%", "80"},
-								{"T4", "50+", "2-3% chance, +3-5%", "65"},
-								{"T5", "70+", "3-4% chance, +4-6%", "50"},
-								{"T6", "95+", "3-5% chance, +5-8%", "35"},
-								{"T7", "120+", "4-6% chance, +6-9%", "22"},
-								{"T8", "140+", "5-7% chance, +8-10%", "12"}
+								{"T1", "1+", "+2%", "100"},
+								{"T2", "15+", "+3%", "100"},
+								{"T3", "30+", "+4%", "100"},
+								{"T4", "50+", "+5%", "100"},
+								{"T5", "70+", "+5-6%", "100"},
+								{"T6", "90+", "+6%", "100"},
+								{"T7", "110+", "+7%", "100"},
+								{"T8", "130+", "+7-8%", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Any gear."}},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Jewellery (amulets, rings), Other gear (gloves, belts...) and Quivers (with a bow or crossbow)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "8 of 177", "4.5%"},
-								{"Shield", "8 of 128", "6.3%"},
-								{"Helmet", "8 of 139", "5.8%"},
-								{"Armour", "8 of 119", "6.7%"},
-								{"Legs", "8 of 101", "7.9%"},
-								{"Boots", "8 of 88", "9.1%"},
-								{"Jewel", "8 of 182", "4.4%"},
-								{"Other", "8 of 137", "5.8%"}
+								{"Weapon", "6 of 187", "3.2%"},
+								{"Jewel", "6 of 161", "3.7%"},
+								{"Other", "6 of 120", "5%"},
+								{"Quiver", "6 of 97", "6.2%"}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Chance and amount roll together and count as one modifier with one tier."}
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Rolls alone: the other critical modifier is a separate one with its own tier."}
 						},
 						{ref = "orbs:prefix"}
 					}
@@ -879,30 +809,30 @@ CodexData = {
 					id = "mod:chaos_mod_bowcrit",
 					name = "Critical Strike Chance with Bows",
 					color = "#ff70c0",
-					sub = "Prefix, Quiver. +1-2% (T1) to +8-10% (T8)",
+					sub = "Prefix, Quiver. +2-3% (T1) to +8-9% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
-					tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 8}, {8, 10}},
-					tv = {"+1-2%", "+2-3%", "+3-4%", "+4-5%", "+5-6%", "+6-7%", "+7-8%", "+8-10%"},
+					tiers = {{2, 3}, {4, 4}, {5, 5}, {5, 5}, {6, 6}, {7, 7}, {7, 7}, {8, 9}},
+					tv = {"+2-3%", "+4%", "+5%", "+5%", "+6%", "+7%", "+7%", "+8-9%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Critical Strike Chance with Bows +8-10% (T8).", "Cap: at most 20% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Critical Strike Chance with Bows +8-9% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+1-2%", "100"},
-								{"T2", "15+", "+2-3%", "90"},
-								{"T3", "30+", "+3-4%", "80"},
-								{"T4", "50+", "+4-5%", "65"},
-								{"T5", "70+", "+5-6%", "50"},
-								{"T6", "95+", "+6-7%", "35"},
-								{"T7", "120+", "+7-8%", "22"},
-								{"T8", "140+", "+8-10%", "12"}
+								{"T1", "1+", "+2-3%", "100"},
+								{"T2", "15+", "+4%", "100"},
+								{"T3", "30+", "+5%", "100"},
+								{"T4", "50+", "+5%", "100"},
+								{"T5", "70+", "+6%", "100"},
+								{"T6", "90+", "+7%", "100"},
+								{"T7", "110+", "+7%", "100"},
+								{"T8", "130+", "+8-9%", "100"}
 							},
 							tiers = true
 						},
@@ -912,11 +842,65 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Quiver", "7 of 85", "8.2%"}}
+							rows = {{"Quiver", "7 of 97", "7.2%"}}
 						},
 						{
 							h = "Rules",
 							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:rarity_criticalhitamount",
+					name = "Critical Strike Damage",
+					color = "#f6cf72",
+					sub = "Prefix, Weapon, Jewel, Other, Quiver. +8-12% (T1) to +35-38% (T8)",
+					group = "single",
+					side = "prefix",
+					f = {group = "single", side = "prefix", kind = {"weapon", "jewel", "other", "quiver"}},
+					tiers = {{8, 12}, {13, 16}, {17, 20}, {21, 24}, {25, 28}, {29, 31}, {32, 34}, {35, 38}},
+					tv = {"+8-12%", "+13-16%", "+17-20%", "+21-24%", "+25-28%", "+29-31%", "+32-34%", "+35-38%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Critical hit, prefix.", "Raises the extra damage of your critical hits while the item is worn, in percent. It rolls on its own: the chance to hit critically is the other modifier.", "On an item: Critical Strike Damage +35-38% (T8)."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+8-12%", "100"},
+								{"T2", "15+", "+13-16%", "100"},
+								{"T3", "30+", "+17-20%", "100"},
+								{"T4", "50+", "+21-24%", "100"},
+								{"T5", "70+", "+25-28%", "100"},
+								{"T6", "90+", "+29-31%", "100"},
+								{"T7", "110+", "+32-34%", "100"},
+								{"T8", "130+", "+35-38%", "100"}
+							},
+							tiers = true
+						},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Jewellery (amulets, rings), Other gear (gloves, belts...) and Quivers (with a bow or crossbow)."}
+						},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {
+								{"Weapon", "6 of 187", "3.2%"},
+								{"Jewel", "6 of 161", "3.7%"},
+								{"Other", "6 of 120", "5%"},
+								{"Quiver", "6 of 97", "6.2%"}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Rolls alone: the other critical modifier is a separate one with its own tier."}
 						},
 						{ref = "orbs:prefix"}
 					}
@@ -942,13 +926,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "-1-2%", "100"},
-								{"T2", "15+", "-2%", "90"},
-								{"T3", "30+", "-2-3%", "80"},
-								{"T4", "50+", "-3-4%", "65"},
-								{"T5", "70+", "-3-5%", "50"},
-								{"T6", "95+", "-4-6%", "35"},
-								{"T7", "120+", "-5-7%", "22"},
-								{"T8", "140+", "-6-8%", "12"}
+								{"T2", "15+", "-2%", "100"},
+								{"T3", "30+", "-2-3%", "100"},
+								{"T4", "50+", "-3-4%", "100"},
+								{"T5", "70+", "-3-5%", "100"},
+								{"T6", "90+", "-4-6%", "100"},
+								{"T7", "110+", "-5-7%", "100"},
+								{"T8", "130+", "-6-8%", "100"}
 							},
 							tiers = true
 						},
@@ -959,10 +943,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "6 of 128", "4.7%"},
-								{"Helmet", "6 of 139", "4.3%"},
-								{"Armour", "6 of 119", "5%"},
-								{"Legs", "6 of 101", "5.9%"}
+								{"Shield", "6 of 119", "5%"},
+								{"Helmet", "6 of 128", "4.7%"},
+								{"Armour", "6 of 111", "5.4%"},
+								{"Legs", "6 of 87", "6.9%"}
 							}
 						},
 						{
@@ -976,30 +960,30 @@ CodexData = {
 					id = "mod:chaos_mod_dot",
 					name = "Damage over Time",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Jewel, Other. +4-7% (T1) to +36-48% (T8)",
+					sub = "Prefix, Weapon, Jewel, Other. +7-11% (T1) to +24-26% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"weapon", "jewel", "other"}},
-					tiers = {{4, 7}, {7, 11}, {10, 15}, {14, 20}, {18, 26}, {23, 32}, {29, 39}, {36, 48}},
-					tv = {"+4-7%", "+7-11%", "+10-15%", "+14-20%", "+18-26%", "+23-32%", "+29-39%", "+36-48%"},
+					tiers = {{7, 11}, {12, 13}, {14, 15}, {16, 17}, {18, 19}, {20, 21}, {22, 23}, {24, 26}},
+					tv = {"+7-11%", "+12-13%", "+14-15%", "+16-17%", "+18-19%", "+20-21%", "+22-23%", "+24-26%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Damage over Time +36-48% (T8).", "Cap: at most 60% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Damage over Time +24-26% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+4-7%", "100"},
-								{"T2", "15+", "+7-11%", "90"},
-								{"T3", "30+", "+10-15%", "80"},
-								{"T4", "50+", "+14-20%", "65"},
-								{"T5", "70+", "+18-26%", "50"},
-								{"T6", "95+", "+23-32%", "35"},
-								{"T7", "120+", "+29-39%", "22"},
-								{"T8", "140+", "+36-48%", "12"}
+								{"T1", "1+", "+7-11%", "100"},
+								{"T2", "15+", "+12-13%", "100"},
+								{"T3", "30+", "+14-15%", "100"},
+								{"T4", "50+", "+16-17%", "100"},
+								{"T5", "70+", "+18-19%", "100"},
+								{"T6", "90+", "+20-21%", "100"},
+								{"T7", "110+", "+22-23%", "100"},
+								{"T8", "130+", "+24-26%", "100"}
 							},
 							tiers = true
 						},
@@ -1013,9 +997,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 177", "2.3%"},
-								{"Jewel", "4 of 182", "2.2%"},
-								{"Other", "4 of 137", "2.9%"}
+								{"Weapon", "4 of 187", "2.1%"},
+								{"Jewel", "4 of 161", "2.5%"},
+								{"Other", "4 of 120", "3.3%"}
 							}
 						},
 						{
@@ -1038,7 +1022,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Damage to Elites and Bosses +18-22% (T8).", "Cap: at most 30% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Damage to Elites and Bosses +18-22% (T8)."}
 						},
 						{
 							h = "Tiers",
@@ -1046,13 +1030,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-5%", "100"},
-								{"T2", "15+", "+4-7%", "90"},
-								{"T3", "30+", "+6-10%", "80"},
-								{"T4", "50+", "+9-13%", "65"},
-								{"T5", "70+", "+11-16%", "50"},
-								{"T6", "95+", "+14-18%", "35"},
-								{"T7", "120+", "+16-20%", "22"},
-								{"T8", "140+", "+18-22%", "12"}
+								{"T2", "15+", "+4-7%", "100"},
+								{"T3", "30+", "+6-10%", "100"},
+								{"T4", "50+", "+9-13%", "100"},
+								{"T5", "70+", "+11-16%", "100"},
+								{"T6", "90+", "+14-18%", "100"},
+								{"T7", "110+", "+16-20%", "100"},
+								{"T8", "130+", "+18-22%", "100"}
 							},
 							tiers = true
 						},
@@ -1066,9 +1050,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 177", "3.4%"},
-								{"Jewel", "6 of 182", "3.3%"},
-								{"Quiver", "6 of 85", "7.1%"}
+								{"Weapon", "6 of 187", "3.2%"},
+								{"Jewel", "6 of 161", "3.7%"},
+								{"Quiver", "6 of 97", "6.2%"}
 							}
 						},
 						{
@@ -1103,13 +1087,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -1120,14 +1104,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -1158,13 +1142,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-9%", "90"},
-								{"T3", "30+", "+7-13%", "80"},
-								{"T4", "50+", "+10-18%", "65"},
-								{"T5", "70+", "+15-24%", "50"},
-								{"T6", "95+", "+20-30%", "35"},
-								{"T7", "120+", "+26-39%", "22"},
-								{"T8", "140+", "+33-52%", "12"}
+								{"T2", "15+", "+4-9%", "100"},
+								{"T3", "30+", "+7-13%", "100"},
+								{"T4", "50+", "+10-18%", "100"},
+								{"T5", "70+", "+15-24%", "100"},
+								{"T6", "90+", "+20-30%", "100"},
+								{"T7", "110+", "+26-39%", "100"},
+								{"T8", "130+", "+33-52%", "100"}
 							},
 							tiers = true
 						},
@@ -1175,14 +1159,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 177", "1.1%"},
-								{"Shield", "2 of 128", "1.6%"},
-								{"Helmet", "2 of 139", "1.4%"},
-								{"Armour", "2 of 119", "1.7%"},
-								{"Legs", "2 of 101", "2%"},
-								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 182", "1.1%"},
-								{"Other", "2 of 137", "1.5%"}
+								{"Weapon", "2 of 187", "1.1%"},
+								{"Shield", "2 of 119", "1.7%"},
+								{"Helmet", "2 of 128", "1.6%"},
+								{"Armour", "2 of 111", "1.8%"},
+								{"Legs", "2 of 87", "2.3%"},
+								{"Boots", "2 of 83", "2.4%"},
+								{"Jewel", "2 of 161", "1.2%"},
+								{"Other", "2 of 120", "1.7%"}
 							}
 						},
 						{
@@ -1190,6 +1174,63 @@ CodexData = {
 							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "At most 1 weapon element per weapon, and only on a weapon with an attack and no element of its own."}
 						},
 						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_dexterity",
+					name = "Dexterity",
+					color = "#ff70c0",
+					sub = "Suffix, Shield, Helmet, Armour, Legs, Boots, Jewel. +2-4 (T1) to +17-18 (T8)",
+					group = "chaos",
+					side = "suffix",
+					f = {
+						group = "chaos",
+						side = "suffix",
+						kind = {"shield", "helmet", "armor", "legs", "boots", "jewel"}
+					},
+					tiers = {{2, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 16}, {17, 18}},
+					tv = {"+2-4", "+5-6", "+7-8", "+9-10", "+11-12", "+13-14", "+15-16", "+17-18"},
+					sections = {
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Dexterity +17-18 (T8)."}},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+2-4", "100"},
+								{"T2", "15+", "+5-6", "100"},
+								{"T3", "30+", "+7-8", "100"},
+								{"T4", "50+", "+9-10", "100"},
+								{"T5", "70+", "+11-12", "100"},
+								{"T6", "90+", "+13-14", "100"},
+								{"T7", "110+", "+15-16", "100"},
+								{"T8", "130+", "+17-18", "100"}
+							},
+							tiers = true
+						},
+						{
+							h = "Rolls on",
+							p = {"Shields, Helmets, Body armour, Legs, Boots and Jewellery (amulets, rings)."}
+						},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "The points add to the same stat the passive tree raises, on the same curve (and its soft cap)."}
+						},
+						{ref = "orbs:suffix"}
 					}
 				},
 				{
@@ -1213,13 +1254,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1", "100"},
-								{"T2", "15+", "+1-2", "90"},
-								{"T3", "30+", "+2-3", "80"},
-								{"T4", "50+", "+2-4", "65"},
-								{"T5", "70+", "+3-5", "50"},
-								{"T6", "95+", "+4-6", "35"},
-								{"T7", "120+", "+5-7", "22"},
-								{"T8", "140+", "+6-8", "12"}
+								{"T2", "15+", "+1-2", "100"},
+								{"T3", "30+", "+2-3", "100"},
+								{"T4", "50+", "+2-4", "100"},
+								{"T5", "70+", "+3-5", "100"},
+								{"T6", "90+", "+4-6", "100"},
+								{"T7", "110+", "+5-7", "100"},
+								{"T8", "130+", "+6-8", "100"}
 							},
 							tiers = true
 						},
@@ -1229,7 +1270,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Quiver", "8 of 85", "9.4%"}}
+							rows = {{"Quiver", "8 of 97", "8.2%"}}
 						},
 						{
 							h = "Rules",
@@ -1259,13 +1300,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2%", "100"},
-								{"T2", "15+", "+2%", "90"},
-								{"T3", "30+", "+2-3%", "80"},
-								{"T4", "50+", "+2-4%", "65"},
-								{"T5", "70+", "+3-5%", "50"},
-								{"T6", "95+", "+3-5%", "35"},
-								{"T7", "120+", "+4-6%", "22"},
-								{"T8", "140+", "+5-7%", "12"}
+								{"T2", "15+", "+2%", "100"},
+								{"T3", "30+", "+2-3%", "100"},
+								{"T4", "50+", "+2-4%", "100"},
+								{"T5", "70+", "+3-5%", "100"},
+								{"T6", "90+", "+3-5%", "100"},
+								{"T7", "110+", "+4-6%", "100"},
+								{"T8", "130+", "+5-7%", "100"}
 							},
 							tiers = true
 						},
@@ -1279,11 +1320,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "5 of 128", "3.9%"},
-								{"Armour", "5 of 119", "4.2%"},
-								{"Legs", "5 of 101", "5%"},
-								{"Boots", "5 of 88", "5.7%"},
-								{"Other", "5 of 137", "3.6%"}
+								{"Shield", "5 of 119", "4.2%"},
+								{"Armour", "5 of 111", "4.5%"},
+								{"Legs", "5 of 87", "5.7%"},
+								{"Boots", "5 of 83", "6%"},
+								{"Other", "5 of 120", "4.2%"}
 							}
 						},
 						{
@@ -1318,13 +1359,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -1335,14 +1376,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -1377,13 +1418,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -1394,14 +1435,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -1415,30 +1456,30 @@ CodexData = {
 					id = "mod:chaos_mod_arrowearth",
 					name = "Earth Damage with Bows",
 					color = "#ff70c0",
-					sub = "Prefix, Quiver. 2-4% (T1) to 20-28% (T8)",
+					sub = "Prefix, Quiver. 5-10% (T1) to 43-50% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
-					tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
-					tv = {"2-4%", "4-6%", "6-9%", "8-12%", "10-15%", "13-19%", "16-23%", "20-28%"},
+					tiers = {{5, 10}, {11, 16}, {17, 22}, {23, 27}, {28, 32}, {33, 37}, {38, 42}, {43, 50}},
+					tv = {"5-10%", "11-16%", "17-22%", "23-27%", "28-32%", "33-37%", "38-42%", "43-50%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Adds 20-28% of Bow Damage as Earth (T8).", "Cap: at most 40% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Adds 43-50% of Bow Damage as Earth (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "2-4%", "100"},
-								{"T2", "15+", "4-6%", "90"},
-								{"T3", "30+", "6-9%", "80"},
-								{"T4", "50+", "8-12%", "65"},
-								{"T5", "70+", "10-15%", "50"},
-								{"T6", "95+", "13-19%", "35"},
-								{"T7", "120+", "16-23%", "22"},
-								{"T8", "140+", "20-28%", "12"}
+								{"T1", "1+", "5-10%", "100"},
+								{"T2", "15+", "11-16%", "100"},
+								{"T3", "30+", "17-22%", "100"},
+								{"T4", "50+", "23-27%", "100"},
+								{"T5", "70+", "28-32%", "100"},
+								{"T6", "90+", "33-37%", "100"},
+								{"T7", "110+", "38-42%", "100"},
+								{"T8", "130+", "43-50%", "100"}
 							},
 							tiers = true
 						},
@@ -1448,7 +1489,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Quiver", "3 of 85", "3.5%"}}
+							rows = {{"Quiver", "3 of 97", "3.1%"}}
 						},
 						{
 							h = "Rules",
@@ -1478,13 +1519,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-9%", "90"},
-								{"T3", "30+", "+7-13%", "80"},
-								{"T4", "50+", "+10-18%", "65"},
-								{"T5", "70+", "+15-24%", "50"},
-								{"T6", "95+", "+20-30%", "35"},
-								{"T7", "120+", "+26-39%", "22"},
-								{"T8", "140+", "+33-52%", "12"}
+								{"T2", "15+", "+4-9%", "100"},
+								{"T3", "30+", "+7-13%", "100"},
+								{"T4", "50+", "+10-18%", "100"},
+								{"T5", "70+", "+15-24%", "100"},
+								{"T6", "90+", "+20-30%", "100"},
+								{"T7", "110+", "+26-39%", "100"},
+								{"T8", "130+", "+33-52%", "100"}
 							},
 							tiers = true
 						},
@@ -1495,14 +1536,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 177", "1.1%"},
-								{"Shield", "2 of 128", "1.6%"},
-								{"Helmet", "2 of 139", "1.4%"},
-								{"Armour", "2 of 119", "1.7%"},
-								{"Legs", "2 of 101", "2%"},
-								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 182", "1.1%"},
-								{"Other", "2 of 137", "1.5%"}
+								{"Weapon", "2 of 187", "1.1%"},
+								{"Shield", "2 of 119", "1.7%"},
+								{"Helmet", "2 of 128", "1.6%"},
+								{"Armour", "2 of 111", "1.8%"},
+								{"Legs", "2 of 87", "2.3%"},
+								{"Boots", "2 of 83", "2.4%"},
+								{"Jewel", "2 of 161", "1.2%"},
+								{"Other", "2 of 120", "1.7%"}
 							}
 						},
 						{
@@ -1533,13 +1574,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+3-5%", "90"},
-								{"T3", "30+", "+5-7%", "80"},
-								{"T4", "50+", "+7-10%", "65"},
-								{"T5", "70+", "+9-13%", "50"},
-								{"T6", "95+", "+11-15%", "35"},
-								{"T7", "120+", "+14-18%", "22"},
-								{"T8", "140+", "+17-22%", "12"}
+								{"T2", "15+", "+3-5%", "100"},
+								{"T3", "30+", "+5-7%", "100"},
+								{"T4", "50+", "+7-10%", "100"},
+								{"T5", "70+", "+9-13%", "100"},
+								{"T6", "90+", "+11-15%", "100"},
+								{"T7", "110+", "+14-18%", "100"},
+								{"T8", "130+", "+17-22%", "100"}
 							},
 							tiers = true
 						},
@@ -1553,9 +1594,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 177", "2.3%"},
-								{"Jewel", "4 of 182", "2.2%"},
-								{"Quiver", "4 of 85", "4.7%"}
+								{"Weapon", "4 of 187", "2.1%"},
+								{"Jewel", "4 of 161", "2.5%"},
+								{"Quiver", "4 of 97", "4.1%"}
 							}
 						},
 						{
@@ -1590,13 +1631,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -1607,14 +1648,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -1628,30 +1669,30 @@ CodexData = {
 					id = "mod:chaos_mod_arrowenergy",
 					name = "Energy Damage with Bows",
 					color = "#ff70c0",
-					sub = "Prefix, Quiver. 2-4% (T1) to 20-28% (T8)",
+					sub = "Prefix, Quiver. 5-10% (T1) to 43-50% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
-					tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
-					tv = {"2-4%", "4-6%", "6-9%", "8-12%", "10-15%", "13-19%", "16-23%", "20-28%"},
+					tiers = {{5, 10}, {11, 16}, {17, 22}, {23, 27}, {28, 32}, {33, 37}, {38, 42}, {43, 50}},
+					tv = {"5-10%", "11-16%", "17-22%", "23-27%", "28-32%", "33-37%", "38-42%", "43-50%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Adds 20-28% of Bow Damage as Energy (T8).", "Cap: at most 40% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Adds 43-50% of Bow Damage as Energy (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "2-4%", "100"},
-								{"T2", "15+", "4-6%", "90"},
-								{"T3", "30+", "6-9%", "80"},
-								{"T4", "50+", "8-12%", "65"},
-								{"T5", "70+", "10-15%", "50"},
-								{"T6", "95+", "13-19%", "35"},
-								{"T7", "120+", "16-23%", "22"},
-								{"T8", "140+", "20-28%", "12"}
+								{"T1", "1+", "5-10%", "100"},
+								{"T2", "15+", "11-16%", "100"},
+								{"T3", "30+", "17-22%", "100"},
+								{"T4", "50+", "23-27%", "100"},
+								{"T5", "70+", "28-32%", "100"},
+								{"T6", "90+", "33-37%", "100"},
+								{"T7", "110+", "38-42%", "100"},
+								{"T8", "130+", "43-50%", "100"}
 							},
 							tiers = true
 						},
@@ -1661,7 +1702,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Quiver", "3 of 85", "3.5%"}}
+							rows = {{"Quiver", "3 of 97", "3.1%"}}
 						},
 						{
 							h = "Rules",
@@ -1691,13 +1732,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-9%", "90"},
-								{"T3", "30+", "+7-13%", "80"},
-								{"T4", "50+", "+10-18%", "65"},
-								{"T5", "70+", "+15-24%", "50"},
-								{"T6", "95+", "+20-30%", "35"},
-								{"T7", "120+", "+26-39%", "22"},
-								{"T8", "140+", "+33-52%", "12"}
+								{"T2", "15+", "+4-9%", "100"},
+								{"T3", "30+", "+7-13%", "100"},
+								{"T4", "50+", "+10-18%", "100"},
+								{"T5", "70+", "+15-24%", "100"},
+								{"T6", "90+", "+20-30%", "100"},
+								{"T7", "110+", "+26-39%", "100"},
+								{"T8", "130+", "+33-52%", "100"}
 							},
 							tiers = true
 						},
@@ -1708,14 +1749,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 177", "1.1%"},
-								{"Shield", "2 of 128", "1.6%"},
-								{"Helmet", "2 of 139", "1.4%"},
-								{"Armour", "2 of 119", "1.7%"},
-								{"Legs", "2 of 101", "2%"},
-								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 182", "1.1%"},
-								{"Other", "2 of 137", "1.5%"}
+								{"Weapon", "2 of 187", "1.1%"},
+								{"Shield", "2 of 119", "1.7%"},
+								{"Helmet", "2 of 128", "1.6%"},
+								{"Armour", "2 of 111", "1.8%"},
+								{"Legs", "2 of 87", "2.3%"},
+								{"Boots", "2 of 83", "2.4%"},
+								{"Jewel", "2 of 161", "1.2%"},
+								{"Other", "2 of 120", "1.7%"}
 							}
 						},
 						{
@@ -1729,30 +1770,30 @@ CodexData = {
 					id = "mod:chaos_mod_execute",
 					name = "Execute",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon. 1-2% (T1) to 7-9% (T8)",
+					sub = "Prefix, Weapon. 10% (T1) to 10% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"weapon"}},
-					tiers = {{1, 2}, {2, 3}, {3, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 9}},
-					tv = {"1-2%", "2-3%", "3%", "3-4%", "4-5%", "5-6%", "6-7%", "7-9%"},
+					tiers = {{10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}},
+					tv = {"10%", "10%", "10%", "10%", "10%", "10%", "10%", "10%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Executes Monsters below 7-9% Health (T8).", "Cap: at most 10% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Executes Monsters below 10% Health (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "1-2%", "100"},
-								{"T2", "15+", "2-3%", "90"},
-								{"T3", "30+", "3%", "80"},
-								{"T4", "50+", "3-4%", "65"},
-								{"T5", "70+", "4-5%", "50"},
-								{"T6", "95+", "5-6%", "35"},
-								{"T7", "120+", "6-7%", "22"},
-								{"T8", "140+", "7-9%", "12"}
+								{"T1", "1+", "10%", "100"},
+								{"T2", "15+", "10%", "100"},
+								{"T3", "30+", "10%", "100"},
+								{"T4", "50+", "10%", "100"},
+								{"T5", "70+", "10%", "100"},
+								{"T6", "90+", "10%", "100"},
+								{"T7", "110+", "10%", "100"},
+								{"T8", "130+", "10%", "100"}
 							},
 							tiers = true
 						},
@@ -1762,11 +1803,11 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 177", "1.7%"}}
+							rows = {{"Weapon", "3 of 187", "1.6%"}}
 						},
 						{
 							h = "Rules",
-							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Does not stack: the highest value of the pieces you wear counts. Bosses, guardians and the world boss are proof."}
 						},
 						{ref = "orbs:prefix"}
 					}
@@ -1775,40 +1816,37 @@ CodexData = {
 					id = "mod:chaos_mod_experience",
 					name = "Experience",
 					color = "#ff70c0",
-					sub = "Suffix, Helmet, Jewel. +1-2% (T1) to +8-11% (T8)",
+					sub = "Suffix, Jewel. +1% (T1) to +3% (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"helmet", "jewel"}},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 11}},
-					tv = {"+1-2%", "+2-3%", "+2-4%", "+3-5%", "+4-6%", "+5-8%", "+6-9%", "+8-11%"},
+					f = {group = "chaos", side = "suffix", kind = {"jewel"}},
+					tiers = {{1, 1}, {1, 1}, {1, 2}, {1, 2}, {2, 2}, {2, 3}, {2, 3}, {3, 3}},
+					tv = {"+1%", "+1%", "+1-2%", "+1-2%", "+2%", "+2-3%", "+2-3%", "+3%"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Experience +8-11% (T8).", "Cap: at most 15% from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Experience +3% (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+1-2%", "100"},
-								{"T2", "15+", "+2-3%", "90"},
-								{"T3", "30+", "+2-4%", "80"},
-								{"T4", "50+", "+3-5%", "65"},
-								{"T5", "70+", "+4-6%", "50"},
-								{"T6", "95+", "+5-8%", "35"},
-								{"T7", "120+", "+6-9%", "22"},
-								{"T8", "140+", "+8-11%", "12"}
+								{"T1", "1+", "+1%", "100"},
+								{"T2", "15+", "+1%", "100"},
+								{"T3", "30+", "+1-2%", "100"},
+								{"T4", "50+", "+1-2%", "100"},
+								{"T5", "70+", "+2%", "100"},
+								{"T6", "90+", "+2-3%", "100"},
+								{"T7", "110+", "+2-3%", "100"},
+								{"T8", "130+", "+3%", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Helmets and Jewellery (amulets, rings)."}},
+						{h = "Rolls on", p = {"Jewellery (amulets, rings)."}},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 182", "2.2%"}}
+							rows = {{"Jewel", "4 of 161", "2.5%"}}
 						},
 						{
 							h = "Rules",
@@ -1838,13 +1876,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+3-5%", "90"},
-								{"T3", "30+", "+4-7%", "80"},
-								{"T4", "50+", "+6-9%", "65"},
-								{"T5", "70+", "+7-11%", "50"},
-								{"T6", "95+", "+9-13%", "35"},
-								{"T7", "120+", "+11-16%", "22"},
-								{"T8", "140+", "+14-20%", "12"}
+								{"T2", "15+", "+3-5%", "100"},
+								{"T3", "30+", "+4-7%", "100"},
+								{"T4", "50+", "+6-9%", "100"},
+								{"T5", "70+", "+7-11%", "100"},
+								{"T6", "90+", "+9-13%", "100"},
+								{"T7", "110+", "+11-16%", "100"},
+								{"T8", "130+", "+14-20%", "100"}
 							},
 							tiers = true
 						},
@@ -1854,7 +1892,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Quiver", "6 of 85", "7.1%"}}
+							rows = {{"Quiver", "6 of 97", "6.2%"}}
 						},
 						{
 							h = "Rules",
@@ -1884,13 +1922,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+5-8%", "100"},
-								{"T2", "15+", "+8-12%", "90"},
-								{"T3", "30+", "+12-16%", "80"},
-								{"T4", "50+", "+16-20%", "65"},
-								{"T5", "70+", "+20-25%", "50"},
-								{"T6", "95+", "+25-30%", "35"},
-								{"T7", "120+", "+30-36%", "22"},
-								{"T8", "140+", "+36-45%", "12"}
+								{"T2", "15+", "+8-12%", "100"},
+								{"T3", "30+", "+12-16%", "100"},
+								{"T4", "50+", "+16-20%", "100"},
+								{"T5", "70+", "+20-25%", "100"},
+								{"T6", "90+", "+25-30%", "100"},
+								{"T7", "110+", "+30-36%", "100"},
+								{"T8", "130+", "+36-45%", "100"}
 							},
 							tiers = true
 						},
@@ -1901,10 +1939,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "4 of 128", "3.1%"},
-								{"Helmet", "4 of 139", "2.9%"},
-								{"Armour", "4 of 119", "3.4%"},
-								{"Jewel", "4 of 182", "2.2%"}
+								{"Shield", "4 of 119", "3.4%"},
+								{"Helmet", "4 of 128", "3.1%"},
+								{"Armour", "4 of 111", "3.6%"},
+								{"Jewel", "4 of 161", "2.5%"}
 							}
 						},
 						{
@@ -1939,13 +1977,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -1956,14 +1994,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -1977,30 +2015,30 @@ CodexData = {
 					id = "mod:chaos_mod_arrowfire",
 					name = "Fire Damage with Bows",
 					color = "#ff70c0",
-					sub = "Prefix, Quiver. 2-4% (T1) to 20-28% (T8)",
+					sub = "Prefix, Quiver. 5-10% (T1) to 43-50% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
-					tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
-					tv = {"2-4%", "4-6%", "6-9%", "8-12%", "10-15%", "13-19%", "16-23%", "20-28%"},
+					tiers = {{5, 10}, {11, 16}, {17, 22}, {23, 27}, {28, 32}, {33, 37}, {38, 42}, {43, 50}},
+					tv = {"5-10%", "11-16%", "17-22%", "23-27%", "28-32%", "33-37%", "38-42%", "43-50%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Adds 20-28% of Bow Damage as Fire (T8).", "Cap: at most 40% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Adds 43-50% of Bow Damage as Fire (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "2-4%", "100"},
-								{"T2", "15+", "4-6%", "90"},
-								{"T3", "30+", "6-9%", "80"},
-								{"T4", "50+", "8-12%", "65"},
-								{"T5", "70+", "10-15%", "50"},
-								{"T6", "95+", "13-19%", "35"},
-								{"T7", "120+", "16-23%", "22"},
-								{"T8", "140+", "20-28%", "12"}
+								{"T1", "1+", "5-10%", "100"},
+								{"T2", "15+", "11-16%", "100"},
+								{"T3", "30+", "17-22%", "100"},
+								{"T4", "50+", "23-27%", "100"},
+								{"T5", "70+", "28-32%", "100"},
+								{"T6", "90+", "33-37%", "100"},
+								{"T7", "110+", "38-42%", "100"},
+								{"T8", "130+", "43-50%", "100"}
 							},
 							tiers = true
 						},
@@ -2010,7 +2048,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Quiver", "3 of 85", "3.5%"}}
+							rows = {{"Quiver", "3 of 97", "3.1%"}}
 						},
 						{
 							h = "Rules",
@@ -2040,13 +2078,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-9%", "90"},
-								{"T3", "30+", "+7-13%", "80"},
-								{"T4", "50+", "+10-18%", "65"},
-								{"T5", "70+", "+15-24%", "50"},
-								{"T6", "95+", "+20-30%", "35"},
-								{"T7", "120+", "+26-39%", "22"},
-								{"T8", "140+", "+33-52%", "12"}
+								{"T2", "15+", "+4-9%", "100"},
+								{"T3", "30+", "+7-13%", "100"},
+								{"T4", "50+", "+10-18%", "100"},
+								{"T5", "70+", "+15-24%", "100"},
+								{"T6", "90+", "+20-30%", "100"},
+								{"T7", "110+", "+26-39%", "100"},
+								{"T8", "130+", "+33-52%", "100"}
 							},
 							tiers = true
 						},
@@ -2057,14 +2095,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 177", "1.1%"},
-								{"Shield", "2 of 128", "1.6%"},
-								{"Helmet", "2 of 139", "1.4%"},
-								{"Armour", "2 of 119", "1.7%"},
-								{"Legs", "2 of 101", "2%"},
-								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 182", "1.1%"},
-								{"Other", "2 of 137", "1.5%"}
+								{"Weapon", "2 of 187", "1.1%"},
+								{"Shield", "2 of 119", "1.7%"},
+								{"Helmet", "2 of 128", "1.6%"},
+								{"Armour", "2 of 111", "1.8%"},
+								{"Legs", "2 of 87", "2.3%"},
+								{"Boots", "2 of 83", "2.4%"},
+								{"Jewel", "2 of 161", "1.2%"},
+								{"Other", "2 of 120", "1.7%"}
 							}
 						},
 						{
@@ -2099,13 +2137,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T2", "15+", "+2-3", "100"},
+								{"T3", "30+", "+2-4", "100"},
+								{"T4", "50+", "+3-5", "100"},
+								{"T5", "70+", "+4-6", "100"},
+								{"T6", "90+", "+5-8", "100"},
+								{"T7", "110+", "+6-9", "100"},
+								{"T8", "130+", "+7-10", "100"}
 							},
 							tiers = true
 						},
@@ -2116,14 +2154,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 177", "0.6%"},
-								{"Shield", "1 of 128", "0.8%"},
-								{"Helmet", "1 of 139", "0.7%"},
-								{"Armour", "1 of 119", "0.8%"},
-								{"Legs", "1 of 101", "1%"},
-								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 182", "0.5%"},
-								{"Other", "1 of 137", "0.7%"}
+								{"Weapon", "1 of 187", "0.5%"},
+								{"Shield", "1 of 119", "0.8%"},
+								{"Helmet", "1 of 128", "0.8%"},
+								{"Armour", "1 of 111", "0.9%"},
+								{"Legs", "1 of 87", "1.1%"},
+								{"Boots", "1 of 83", "1.2%"},
+								{"Jewel", "1 of 161", "0.6%"},
+								{"Other", "1 of 120", "0.8%"}
 							}
 						},
 						{
@@ -2155,13 +2193,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T2", "15+", "+2-3", "100"},
+								{"T3", "30+", "+2-4", "100"},
+								{"T4", "50+", "+3-5", "100"},
+								{"T5", "70+", "+4-6", "100"},
+								{"T6", "90+", "+5-8", "100"},
+								{"T7", "110+", "+6-9", "100"},
+								{"T8", "130+", "+7-10", "100"}
 							},
 							tiers = true
 						},
@@ -2172,14 +2210,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -2187,60 +2225,6 @@ CodexData = {
 							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
 						},
 						{ref = "orbs:prefix"}
-					}
-				},
-				{
-					id = "mod:chaos_mod_goldfind",
-					name = "Gold Find",
-					color = "#ff70c0",
-					sub = "Suffix, Helmet, Legs, Jewel, Other. +2-5% (T1) to +24-34% (T8)",
-					group = "chaos",
-					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"helmet", "legs", "jewel", "other"}},
-					tiers = {{2, 5}, {4, 7}, {5, 10}, {7, 14}, {11, 18}, {14, 23}, {19, 28}, {24, 34}},
-					tv = {"+2-5%", "+4-7%", "+5-10%", "+7-14%", "+11-18%", "+14-23%", "+19-28%", "+24-34%"},
-					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Gold Find +24-34% (T8).", "Cap: at most 40% from all equipped items together."}
-						},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+2-5%", "100"},
-								{"T2", "15+", "+4-7%", "90"},
-								{"T3", "30+", "+5-10%", "80"},
-								{"T4", "50+", "+7-14%", "65"},
-								{"T5", "70+", "+11-18%", "50"},
-								{"T6", "95+", "+14-23%", "35"},
-								{"T7", "120+", "+19-28%", "22"},
-								{"T8", "140+", "+24-34%", "12"}
-							},
-							tiers = true
-						},
-						{
-							h = "Rolls on",
-							p = {"Helmets, Legs, Jewellery (amulets, rings) and Other gear (gloves, belts...)."}
-						},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Helmet", "5 of 139", "3.6%"},
-								{"Legs", "5 of 101", "5%"},
-								{"Jewel", "5 of 182", "2.7%"},
-								{"Other", "5 of 137", "3.6%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:suffix"}
 					}
 				},
 				{
@@ -2264,13 +2248,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-3%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+5-8%", "65"},
-								{"T5", "70+", "+7-10%", "50"},
-								{"T6", "95+", "+9-13%", "35"},
-								{"T7", "120+", "+11-15%", "22"},
-								{"T8", "140+", "+13-18%", "12"}
+								{"T2", "15+", "+2-3%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+5-8%", "100"},
+								{"T5", "70+", "+7-10%", "100"},
+								{"T6", "90+", "+9-13%", "100"},
+								{"T7", "110+", "+11-15%", "100"},
+								{"T8", "130+", "+13-18%", "100"}
 							},
 							tiers = true
 						},
@@ -2281,9 +2265,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "5 of 177", "2.8%"},
-								{"Shield", "5 of 128", "3.9%"},
-								{"Jewel", "5 of 182", "2.7%"}
+								{"Weapon", "5 of 187", "2.7%"},
+								{"Shield", "5 of 119", "4.2%"},
+								{"Jewel", "5 of 161", "3.1%"}
 							}
 						},
 						{
@@ -2297,48 +2281,43 @@ CodexData = {
 					id = "mod:chaos_mod_regen",
 					name = "Health Regeneration",
 					color = "#ff70c0",
-					sub = "Suffix, Shield, Helmet, Armour, Legs, Jewel. +2-4 (T1) to +44-70 (T8)",
+					sub = "Suffix, Shield, Armour, Legs. +9-11 (T1) to +595-697 (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"shield", "helmet", "armor", "legs", "jewel"}},
-					tiers = {{2, 4}, {4, 7}, {7, 12}, {11, 18}, {16, 26}, {23, 36}, {32, 48}, {44, 70}},
-					tv = {"+2-4", "+4-7", "+7-12", "+11-18", "+16-26", "+23-36", "+32-48", "+44-70"},
+					f = {group = "chaos", side = "suffix", kind = {"shield", "armor", "legs"}},
+					tiers = {{9, 11}, {19, 23}, {39, 45}, {89, 105}, {153, 180}, {267, 313}, {433, 508}, {595, 697}},
+					tv = {"+9-11", "+19-23", "+39-45", "+89-105", "+153-180", "+267-313", "+433-508", "+595-697"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Health Regeneration +44-70 per Second (T8).", "Cap: at most 120 from all equipped items together."}
+							p = {"Chaos modifier, suffix.", "On an item: Health Regeneration +595-697 per Second (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+2-4", "100"},
-								{"T2", "15+", "+4-7", "90"},
-								{"T3", "30+", "+7-12", "80"},
-								{"T4", "50+", "+11-18", "65"},
-								{"T5", "70+", "+16-26", "50"},
-								{"T6", "95+", "+23-36", "35"},
-								{"T7", "120+", "+32-48", "22"},
-								{"T8", "140+", "+44-70", "12"}
+								{"T1", "1+", "+9-11", "100"},
+								{"T2", "15+", "+19-23", "100"},
+								{"T3", "30+", "+39-45", "100"},
+								{"T4", "50+", "+89-105", "100"},
+								{"T5", "70+", "+153-180", "100"},
+								{"T6", "90+", "+267-313", "100"},
+								{"T7", "110+", "+433-508", "100"},
+								{"T8", "130+", "+595-697", "100"}
 							},
 							tiers = true
 						},
-						{
-							h = "Rolls on",
-							p = {"Shields, Helmets, Body armour, Legs and Jewellery (amulets, rings)."}
-						},
+						{h = "Rolls on", p = {"Shields, Body armour and Legs."}},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "6 of 128", "4.7%"},
-								{"Helmet", "6 of 139", "4.3%"},
-								{"Armour", "6 of 119", "5%"},
-								{"Legs", "6 of 101", "5.9%"},
-								{"Jewel", "6 of 182", "3.3%"}
+								{"Shield", "6 of 119", "5%"},
+								{"Armour", "6 of 111", "5.4%"},
+								{"Legs", "6 of 87", "6.9%"}
 							}
 						},
 						{
@@ -2352,16 +2331,16 @@ CodexData = {
 					id = "mod:chaos_mod_lifeonhit",
 					name = "Health on Hit",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon, Jewel, Other, Quiver. +2-4 (T1) to +36-63 (T8)",
+					sub = "Suffix, Weapon, Quiver. +2-4 (T1) to +104-119 (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"weapon", "jewel", "other", "quiver"}},
-					tiers = {{2, 4}, {4, 7}, {5, 11}, {9, 16}, {13, 23}, {18, 32}, {25, 45}, {36, 63}},
-					tv = {"+2-4", "+4-7", "+5-11", "+9-16", "+13-23", "+18-32", "+25-45", "+36-63"},
+					f = {group = "chaos", side = "suffix", kind = {"weapon", "quiver"}},
+					tiers = {{2, 4}, {6, 10}, {12, 20}, {24, 36}, {40, 55}, {60, 78}, {82, 100}, {104, 119}},
+					tv = {"+2-4", "+6-10", "+12-20", "+24-36", "+40-55", "+60-78", "+82-100", "+104-119"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Health on Hit +36-63 (T8).", "Cap: at most 120 from all equipped items together."}
+							p = {"Chaos modifier, suffix.", "On an item: Health on Hit +104-119 (T8)."}
 						},
 						{
 							h = "Tiers",
@@ -2369,90 +2348,23 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4", "100"},
-								{"T2", "15+", "+4-7", "90"},
-								{"T3", "30+", "+5-11", "80"},
-								{"T4", "50+", "+9-16", "65"},
-								{"T5", "70+", "+13-23", "50"},
-								{"T6", "95+", "+18-32", "35"},
-								{"T7", "120+", "+25-45", "22"},
-								{"T8", "140+", "+36-63", "12"}
+								{"T2", "15+", "+6-10", "100"},
+								{"T3", "30+", "+12-20", "100"},
+								{"T4", "50+", "+24-36", "100"},
+								{"T5", "70+", "+40-55", "100"},
+								{"T6", "90+", "+60-78", "100"},
+								{"T7", "110+", "+82-100", "100"},
+								{"T8", "130+", "+104-119", "100"}
 							},
 							tiers = true
 						},
-						{
-							h = "Rolls on",
-							p = {"Weapons, Jewellery (amulets, rings), Other gear (gloves, belts...) and Quivers (with a bow or crossbow)."}
-						},
+						{h = "Rolls on", p = {"Weapons and Quivers (with a bow or crossbow)."}},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "5 of 177", "2.8%"},
-								{"Jewel", "5 of 182", "2.7%"},
-								{"Other", "5 of 137", "3.6%"},
-								{"Quiver", "5 of 85", "5.9%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:suffix"}
-					}
-				},
-				{
-					id = "mod:rarity_herbalistskill",
-					name = "Herbalism Skill",
-					color = "#9fdc7f",
-					sub = "Suffix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "suffix",
-					f = {
-						group = "skill",
-						side = "suffix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
-					sections = {
-						{
-							h = "Overview",
-							p = {"Skill, suffix.", "Raises the Herbalism profession skill while the item is worn."}
-						},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Any gear."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "1 of 177", "0.6%"},
-								{"Shield", "1 of 128", "0.8%"},
-								{"Helmet", "1 of 139", "0.7%"},
-								{"Armour", "1 of 119", "0.8%"},
-								{"Legs", "1 of 101", "1%"},
-								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 182", "0.5%"},
-								{"Other", "1 of 137", "0.7%"}
-							}
+							rows = {{"Weapon", "5 of 187", "2.7%"}, {"Quiver", "5 of 97", "5.2%"}}
 						},
 						{
 							h = "Rules",
@@ -2486,13 +2398,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -2503,14 +2415,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -2541,13 +2453,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-9%", "90"},
-								{"T3", "30+", "+7-13%", "80"},
-								{"T4", "50+", "+10-18%", "65"},
-								{"T5", "70+", "+15-24%", "50"},
-								{"T6", "95+", "+20-30%", "35"},
-								{"T7", "120+", "+26-39%", "22"},
-								{"T8", "140+", "+33-52%", "12"}
+								{"T2", "15+", "+4-9%", "100"},
+								{"T3", "30+", "+7-13%", "100"},
+								{"T4", "50+", "+10-18%", "100"},
+								{"T5", "70+", "+15-24%", "100"},
+								{"T6", "90+", "+20-30%", "100"},
+								{"T7", "110+", "+26-39%", "100"},
+								{"T8", "130+", "+33-52%", "100"}
 							},
 							tiers = true
 						},
@@ -2558,14 +2470,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 177", "1.1%"},
-								{"Shield", "2 of 128", "1.6%"},
-								{"Helmet", "2 of 139", "1.4%"},
-								{"Armour", "2 of 119", "1.7%"},
-								{"Legs", "2 of 101", "2%"},
-								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 182", "1.1%"},
-								{"Other", "2 of 137", "1.5%"}
+								{"Weapon", "2 of 187", "1.1%"},
+								{"Shield", "2 of 119", "1.7%"},
+								{"Helmet", "2 of 128", "1.6%"},
+								{"Armour", "2 of 111", "1.8%"},
+								{"Legs", "2 of 87", "2.3%"},
+								{"Boots", "2 of 83", "2.4%"},
+								{"Jewel", "2 of 161", "1.2%"},
+								{"Other", "2 of 120", "1.7%"}
 							}
 						},
 						{
@@ -2600,13 +2512,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -2617,14 +2529,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -2638,30 +2550,30 @@ CodexData = {
 					id = "mod:chaos_mod_arrowice",
 					name = "Ice Damage with Bows",
 					color = "#ff70c0",
-					sub = "Prefix, Quiver. 2-4% (T1) to 20-28% (T8)",
+					sub = "Prefix, Quiver. 5-10% (T1) to 43-50% (T8)",
 					group = "chaos",
 					side = "prefix",
 					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
-					tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
-					tv = {"2-4%", "4-6%", "6-9%", "8-12%", "10-15%", "13-19%", "16-23%", "20-28%"},
+					tiers = {{5, 10}, {11, 16}, {17, 22}, {23, 27}, {28, 32}, {33, 37}, {38, 42}, {43, 50}},
+					tv = {"5-10%", "11-16%", "17-22%", "23-27%", "28-32%", "33-37%", "38-42%", "43-50%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Chaos modifier, prefix.", "On an item: Adds 20-28% of Bow Damage as Ice (T8).", "Cap: at most 40% from all equipped items together."}
+							p = {"Chaos modifier, prefix.", "On an item: Adds 43-50% of Bow Damage as Ice (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "2-4%", "100"},
-								{"T2", "15+", "4-6%", "90"},
-								{"T3", "30+", "6-9%", "80"},
-								{"T4", "50+", "8-12%", "65"},
-								{"T5", "70+", "10-15%", "50"},
-								{"T6", "95+", "13-19%", "35"},
-								{"T7", "120+", "16-23%", "22"},
-								{"T8", "140+", "20-28%", "12"}
+								{"T1", "1+", "5-10%", "100"},
+								{"T2", "15+", "11-16%", "100"},
+								{"T3", "30+", "17-22%", "100"},
+								{"T4", "50+", "23-27%", "100"},
+								{"T5", "70+", "28-32%", "100"},
+								{"T6", "90+", "33-37%", "100"},
+								{"T7", "110+", "38-42%", "100"},
+								{"T8", "130+", "43-50%", "100"}
 							},
 							tiers = true
 						},
@@ -2671,7 +2583,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Quiver", "3 of 85", "3.5%"}}
+							rows = {{"Quiver", "3 of 97", "3.1%"}}
 						},
 						{
 							h = "Rules",
@@ -2701,13 +2613,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-9%", "90"},
-								{"T3", "30+", "+7-13%", "80"},
-								{"T4", "50+", "+10-18%", "65"},
-								{"T5", "70+", "+15-24%", "50"},
-								{"T6", "95+", "+20-30%", "35"},
-								{"T7", "120+", "+26-39%", "22"},
-								{"T8", "140+", "+33-52%", "12"}
+								{"T2", "15+", "+4-9%", "100"},
+								{"T3", "30+", "+7-13%", "100"},
+								{"T4", "50+", "+10-18%", "100"},
+								{"T5", "70+", "+15-24%", "100"},
+								{"T6", "90+", "+20-30%", "100"},
+								{"T7", "110+", "+26-39%", "100"},
+								{"T8", "130+", "+33-52%", "100"}
 							},
 							tiers = true
 						},
@@ -2718,14 +2630,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 177", "1.1%"},
-								{"Shield", "2 of 128", "1.6%"},
-								{"Helmet", "2 of 139", "1.4%"},
-								{"Armour", "2 of 119", "1.7%"},
-								{"Legs", "2 of 101", "2%"},
-								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 182", "1.1%"},
-								{"Other", "2 of 137", "1.5%"}
+								{"Weapon", "2 of 187", "1.1%"},
+								{"Shield", "2 of 119", "1.7%"},
+								{"Helmet", "2 of 128", "1.6%"},
+								{"Armour", "2 of 111", "1.8%"},
+								{"Legs", "2 of 87", "2.3%"},
+								{"Boots", "2 of 83", "2.4%"},
+								{"Jewel", "2 of 161", "1.2%"},
+								{"Other", "2 of 120", "1.7%"}
 							}
 						},
 						{
@@ -2736,165 +2648,154 @@ CodexData = {
 					}
 				},
 				{
-					id = "mod:chaos_mod_itemfind",
-					name = "Item Find",
+					id = "mod:chaos_mod_intelligence",
+					name = "Intelligence",
 					color = "#ff70c0",
-					sub = "Suffix, Helmet, Jewel. +2% (T1) to +13-19% (T8)",
+					sub = "Suffix, Shield, Helmet, Armour, Legs, Boots, Jewel. +2-4 (T1) to +17-18 (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"helmet", "jewel"}},
-					tiers = {{2, 2}, {2, 3}, {3, 5}, {4, 7}, {5, 10}, {7, 13}, {10, 16}, {13, 19}},
-					tv = {"+2%", "+2-3%", "+3-5%", "+4-7%", "+5-10%", "+7-13%", "+10-16%", "+13-19%"},
-					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Item Find +13-19% (T8).", "Cap: at most 25% from all equipped items together."}
-						},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-3%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-7%", "65"},
-								{"T5", "70+", "+5-10%", "50"},
-								{"T6", "95+", "+7-13%", "35"},
-								{"T7", "120+", "+10-16%", "22"},
-								{"T8", "140+", "+13-19%", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Helmets and Jewellery (amulets, rings)."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 182", "2.2%"}}
-						},
-						{
-							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:suffix"}
-					}
-				},
-				{
-					id = "mod:rarity_jewelsmithskill",
-					name = "Jewelsmithing Skill",
-					color = "#9fdc7f",
-					sub = "Suffix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "suffix",
 					f = {
-						group = "skill",
+						group = "chaos",
 						side = "suffix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
+						kind = {"shield", "helmet", "armor", "legs", "boots", "jewel"}
 					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
+					tiers = {{2, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 16}, {17, 18}},
+					tv = {"+2-4", "+5-6", "+7-8", "+9-10", "+11-12", "+13-14", "+15-16", "+17-18"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Skill, suffix.", "Raises the Jewelsmithing profession skill while the item is worn."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Intelligence +17-18 (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T1", "1+", "+2-4", "100"},
+								{"T2", "15+", "+5-6", "100"},
+								{"T3", "30+", "+7-8", "100"},
+								{"T4", "50+", "+9-10", "100"},
+								{"T5", "70+", "+11-12", "100"},
+								{"T6", "90+", "+13-14", "100"},
+								{"T7", "110+", "+15-16", "100"},
+								{"T8", "130+", "+17-18", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Any gear."}},
+						{
+							h = "Rolls on",
+							p = {"Shields, Helmets, Body armour, Legs, Boots and Jewellery (amulets, rings)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 177", "0.6%"},
-								{"Shield", "1 of 128", "0.8%"},
-								{"Helmet", "1 of 139", "0.7%"},
-								{"Armour", "1 of 119", "0.8%"},
-								{"Legs", "1 of 101", "1%"},
-								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 182", "0.5%"},
-								{"Other", "1 of 137", "0.7%"}
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "The points add to the same stat the passive tree raises, on the same curve (and its soft cap)."}
 						},
 						{ref = "orbs:suffix"}
 					}
 				},
 				{
-					id = "mod:rarity_lifeleechchance",
+					id = "mod:chaos_mod_lifeleech",
 					name = "Life Leech",
-					color = "#f6cf72",
-					sub = "Suffix, any gear. 1% chance, +2% (T1) to 5-7% chance, +7-10% (T8)",
-					group = "special",
+					color = "#ff70c0",
+					sub = "Suffix, Helmet, Jewel, Other. +0.2-0.4% (T1) to +1-1.2% (T8)",
+					group = "chaos",
 					side = "suffix",
-					f = {
-						group = "special",
-						side = "suffix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{2, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 9}, {7, 10}},
-					tv = {"1% chance, +2%", "1-2% chance, +2-3%", "1-3% chance, +2-4%", "2-3% chance, +3-5%", "3-4% chance, +4-6%", "3-5% chance, +5-7%", "4-6% chance, +6-9%", "5-7% chance, +7-10%"},
+					f = {group = "chaos", side = "suffix", kind = {"helmet", "jewel", "other"}},
+					tiers = {{2, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {8, 8}, {9, 9}, {10, 12}},
+					tv = {"+0.2-0.4%", "+0.5%", "+0.6%", "+0.7%", "+0.8%", "+0.8%", "+0.9%", "+1-1.2%"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Critical / leech, suffix.", "A pair: a chance to leech and the share of the damage you deal that comes back as health. The amount is the rolled value; the chance is about two thirds of it."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Life Leech +1-1.2% (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "1% chance, +2%", "100"},
-								{"T2", "15+", "1-2% chance, +2-3%", "90"},
-								{"T3", "30+", "1-3% chance, +2-4%", "80"},
-								{"T4", "50+", "2-3% chance, +3-5%", "65"},
-								{"T5", "70+", "3-4% chance, +4-6%", "50"},
-								{"T6", "95+", "3-5% chance, +5-7%", "35"},
-								{"T7", "120+", "4-6% chance, +6-9%", "22"},
-								{"T8", "140+", "5-7% chance, +7-10%", "12"}
+								{"T1", "1+", "+0.2-0.4%", "100"},
+								{"T2", "15+", "+0.5%", "100"},
+								{"T3", "30+", "+0.6%", "100"},
+								{"T4", "50+", "+0.7%", "100"},
+								{"T5", "70+", "+0.8%", "100"},
+								{"T6", "90+", "+0.8%", "100"},
+								{"T7", "110+", "+0.9%", "100"},
+								{"T8", "130+", "+1-1.2%", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Any gear."}},
+						{
+							h = "Rolls on",
+							p = {"Helmets, Jewellery (amulets, rings) and Other gear (gloves, belts...)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 177", "3.4%"},
-								{"Shield", "6 of 128", "4.7%"},
-								{"Helmet", "6 of 139", "4.3%"},
-								{"Armour", "6 of 119", "5%"},
-								{"Legs", "6 of 101", "5.9%"},
-								{"Boots", "6 of 88", "6.8%"},
-								{"Jewel", "6 of 182", "3.3%"},
-								{"Other", "6 of 137", "4.4%"}
+								{"Helmet", "6 of 128", "4.7%"},
+								{"Jewel", "6 of 161", "3.7%"},
+								{"Other", "6 of 120", "5%"}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Chance and amount roll together and count as one modifier with one tier."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "A share of the damage your hits deal, given back at once (no chance roll). The value is in tenths of a percent: 4 is 0.4%. All your leech together gives back at most 20% of your maximum per second. Damage over time does not leech."}
+						},
+						{ref = "orbs:suffix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_lifeleechw",
+					name = "Life Leech with Weapon",
+					color = "#ff70c0",
+					sub = "Suffix, Weapon. +2-2.4% (T1) to +3.5-4.5% (T8)",
+					group = "chaos",
+					side = "suffix",
+					f = {group = "chaos", side = "suffix", kind = {"weapon"}},
+					tiers = {{20, 24}, {25, 26}, {27, 28}, {29, 30}, {31, 32}, {33, 33}, {34, 34}, {35, 45}},
+					tv = {"+2-2.4%", "+2.5-2.6%", "+2.7-2.8%", "+2.9-3%", "+3.1-3.2%", "+3.3%", "+3.4%", "+3.5-4.5%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, suffix.", "On an item: Life Leech with Weapon +3.5-4.5% (T8)."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+2-2.4%", "100"},
+								{"T2", "15+", "+2.5-2.6%", "100"},
+								{"T3", "30+", "+2.7-2.8%", "100"},
+								{"T4", "50+", "+2.9-3%", "100"},
+								{"T5", "70+", "+3.1-3.2%", "100"},
+								{"T6", "90+", "+3.3%", "100"},
+								{"T7", "110+", "+3.4%", "100"},
+								{"T8", "130+", "+3.5-4.5%", "100"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Weapons."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Weapon", "6 of 187", "3.2%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "A share of the damage your hits deal, given back at once (no chance roll). The value is in tenths of a percent: 4 is 0.4%. All your leech together gives back at most 20% of your maximum per second. Damage over time does not leech.", "Local to the weapon: it counts the hits of weapon attacks only, not spells."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -2903,30 +2804,27 @@ CodexData = {
 					id = "mod:chaos_mod_lifeonkill",
 					name = "Life on Kill",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon, Helmet, Jewel, Quiver. +4-9 (T1) to +160-260 (T8)",
+					sub = "Suffix, Weapon, Helmet, Jewel, Quiver. +4-9 (T1) to +330-430 (T8)",
 					group = "chaos",
 					side = "suffix",
 					f = {group = "chaos", side = "suffix", kind = {"weapon", "helmet", "jewel", "quiver"}},
-					tiers = {{4, 9}, {9, 18}, {18, 36}, {36, 70}, {60, 100}, {85, 150}, {120, 200}, {160, 260}},
-					tv = {"+4-9", "+9-18", "+18-36", "+36-70", "+60-100", "+85-150", "+120-200", "+160-260"},
+					tiers = {{4, 9}, {12, 20}, {25, 40}, {50, 80}, {90, 140}, {150, 220}, {230, 320}, {330, 430}},
+					tv = {"+4-9", "+12-20", "+25-40", "+50-80", "+90-140", "+150-220", "+230-320", "+330-430"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Life on Kill +160-260 (T8).", "Cap: at most 300 from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Life on Kill +330-430 (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+4-9", "100"},
-								{"T2", "15+", "+9-18", "90"},
-								{"T3", "30+", "+18-36", "80"},
-								{"T4", "50+", "+36-70", "65"},
-								{"T5", "70+", "+60-100", "50"},
-								{"T6", "95+", "+85-150", "35"},
-								{"T7", "120+", "+120-200", "22"},
-								{"T8", "140+", "+160-260", "12"}
+								{"T2", "15+", "+12-20", "100"},
+								{"T3", "30+", "+25-40", "100"},
+								{"T4", "50+", "+50-80", "100"},
+								{"T5", "70+", "+90-140", "100"},
+								{"T6", "90+", "+150-220", "100"},
+								{"T7", "110+", "+230-320", "100"},
+								{"T8", "130+", "+330-430", "100"}
 							},
 							tiers = true
 						},
@@ -2940,10 +2838,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 177", "3.4%"},
-								{"Helmet", "6 of 139", "4.3%"},
-								{"Jewel", "6 of 182", "3.3%"},
-								{"Quiver", "6 of 85", "7.1%"}
+								{"Weapon", "6 of 187", "3.2%"},
+								{"Helmet", "6 of 128", "4.7%"},
+								{"Jewel", "6 of 161", "3.7%"},
+								{"Quiver", "6 of 97", "6.2%"}
 							}
 						},
 						{
@@ -2975,13 +2873,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T2", "15+", "+2-3", "100"},
+								{"T3", "30+", "+2-4", "100"},
+								{"T4", "50+", "+3-5", "100"},
+								{"T5", "70+", "+4-6", "100"},
+								{"T6", "90+", "+5-8", "100"},
+								{"T7", "110+", "+6-9", "100"},
+								{"T8", "130+", "+7-10", "100"}
 							},
 							tiers = true
 						},
@@ -2992,14 +2890,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -3010,110 +2908,143 @@ CodexData = {
 					}
 				},
 				{
-					id = "mod:chaos_mod_manacost",
-					name = "Mana Cost Reduction",
+					id = "mod:chaos_mod_manaleech",
+					name = "Mana Leech",
 					color = "#ff70c0",
-					sub = "Suffix, Helmet, Armour, Jewel. +2-3% (T1) to +17-21% (T8)",
+					sub = "Suffix, Helmet, Jewel, Other. +0.2-0.4% (T1) to +0.6-0.8% (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"helmet", "armor", "jewel"}},
-					tiers = {{2, 3}, {3, 5}, {5, 7}, {7, 10}, {9, 12}, {11, 15}, {14, 18}, {17, 21}},
-					tv = {"+2-3%", "+3-5%", "+5-7%", "+7-10%", "+9-12%", "+11-15%", "+14-18%", "+17-21%"},
+					f = {group = "chaos", side = "suffix", kind = {"helmet", "jewel", "other"}},
+					tiers = {{2, 4}, {5, 5}, {5, 5}, {5, 5}, {6, 6}, {6, 6}, {6, 6}, {6, 8}},
+					tv = {"+0.2-0.4%", "+0.5%", "+0.5%", "+0.5%", "+0.6%", "+0.6%", "+0.6%", "+0.6-0.8%"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Mana Cost Reduction +17-21% (T8).", "Cap: at most 25% from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Mana Leech +0.6-0.8% (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+2-3%", "100"},
-								{"T2", "15+", "+3-5%", "90"},
-								{"T3", "30+", "+5-7%", "80"},
-								{"T4", "50+", "+7-10%", "65"},
-								{"T5", "70+", "+9-12%", "50"},
-								{"T6", "95+", "+11-15%", "35"},
-								{"T7", "120+", "+14-18%", "22"},
-								{"T8", "140+", "+17-21%", "12"}
+								{"T1", "1+", "+0.2-0.4%", "100"},
+								{"T2", "15+", "+0.5%", "100"},
+								{"T3", "30+", "+0.5%", "100"},
+								{"T4", "50+", "+0.5%", "100"},
+								{"T5", "70+", "+0.6%", "100"},
+								{"T6", "90+", "+0.6%", "100"},
+								{"T7", "110+", "+0.6%", "100"},
+								{"T8", "130+", "+0.6-0.8%", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Helmets, Body armour and Jewellery (amulets, rings)."}},
+						{
+							h = "Rolls on",
+							p = {"Helmets, Jewellery (amulets, rings) and Other gear (gloves, belts...)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "4 of 139", "2.9%"},
-								{"Armour", "4 of 119", "3.4%"},
-								{"Jewel", "4 of 182", "2.2%"}
+								{"Helmet", "6 of 128", "4.7%"},
+								{"Jewel", "6 of 161", "3.7%"},
+								{"Other", "6 of 120", "5%"}
 							}
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "A share of the damage your hits deal, given back at once (no chance roll). The value is in tenths of a percent: 4 is 0.4%. All your leech together gives back at most 20% of your maximum per second. Damage over time does not leech."}
 						},
 						{ref = "orbs:suffix"}
 					}
 				},
 				{
-					id = "mod:rarity_manaleechchance",
-					name = "Mana Leech",
-					color = "#f6cf72",
-					sub = "Suffix, any gear. 1% chance, +2% (T1) to 5-7% chance, +7-10% (T8)",
-					group = "special",
+					id = "mod:chaos_mod_manaleechw",
+					name = "Mana Leech with Weapon",
+					color = "#ff70c0",
+					sub = "Suffix, Weapon. +2.6-3.2% (T1) to +2.6-3.2% (T8)",
+					group = "chaos",
 					side = "suffix",
-					f = {
-						group = "special",
-						side = "suffix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{2, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 9}, {7, 10}},
-					tv = {"1% chance, +2%", "1-2% chance, +2-3%", "1-3% chance, +2-4%", "2-3% chance, +3-5%", "3-4% chance, +4-6%", "3-5% chance, +5-7%", "4-6% chance, +6-9%", "5-7% chance, +7-10%"},
+					f = {group = "chaos", side = "suffix", kind = {"weapon"}},
+					tiers = {{26, 32}, {26, 32}, {26, 32}, {26, 32}, {26, 32}, {26, 32}, {26, 32}, {26, 32}},
+					tv = {"+2.6-3.2%", "+2.6-3.2%", "+2.6-3.2%", "+2.6-3.2%", "+2.6-3.2%", "+2.6-3.2%", "+2.6-3.2%", "+2.6-3.2%"},
 					sections = {
 						{
 							h = "Overview",
-							p = {"Critical / leech, suffix.", "A pair: a chance to leech and the share of the damage you deal that comes back as mana. The amount is the rolled value; the chance is about two thirds of it."}
+							p = {"Chaos modifier, suffix.", "On an item: Mana Leech with Weapon +2.6-3.2% (T8)."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "1% chance, +2%", "100"},
-								{"T2", "15+", "1-2% chance, +2-3%", "90"},
-								{"T3", "30+", "1-3% chance, +2-4%", "80"},
-								{"T4", "50+", "2-3% chance, +3-5%", "65"},
-								{"T5", "70+", "3-4% chance, +4-6%", "50"},
-								{"T6", "95+", "3-5% chance, +5-7%", "35"},
-								{"T7", "120+", "4-6% chance, +6-9%", "22"},
-								{"T8", "140+", "5-7% chance, +7-10%", "12"}
+								{"T1", "1+", "+2.6-3.2%", "100"},
+								{"T2", "15+", "+2.6-3.2%", "100"},
+								{"T3", "30+", "+2.6-3.2%", "100"},
+								{"T4", "50+", "+2.6-3.2%", "100"},
+								{"T5", "70+", "+2.6-3.2%", "100"},
+								{"T6", "90+", "+2.6-3.2%", "100"},
+								{"T7", "110+", "+2.6-3.2%", "100"},
+								{"T8", "130+", "+2.6-3.2%", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Any gear."}},
+						{h = "Rolls on", p = {"Weapons."}},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "6 of 177", "3.4%"},
-								{"Shield", "6 of 128", "4.7%"},
-								{"Helmet", "6 of 139", "4.3%"},
-								{"Armour", "6 of 119", "5%"},
-								{"Legs", "6 of 101", "5.9%"},
-								{"Boots", "6 of 88", "6.8%"},
-								{"Jewel", "6 of 182", "3.3%"},
-								{"Other", "6 of 137", "4.4%"}
-							}
+							rows = {{"Weapon", "6 of 187", "3.2%"}}
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Chance and amount roll together and count as one modifier with one tier."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Gated: only on an item level that allows T4 (50) or better.", "A share of the damage your hits deal, given back at once (no chance roll). The value is in tenths of a percent: 4 is 0.4%. All your leech together gives back at most 20% of your maximum per second. Damage over time does not leech.", "Local to the weapon: it counts the hits of weapon attacks only, not spells.", "Does not roll below T4."}
+						},
+						{ref = "orbs:suffix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_manaregen",
+					name = "Mana Regeneration",
+					color = "#ff70c0",
+					sub = "Suffix, Helmet, Jewel. +10-19% (T1) to +60-69% (T8)",
+					group = "chaos",
+					side = "suffix",
+					f = {group = "chaos", side = "suffix", kind = {"helmet", "jewel"}},
+					tiers = {{10, 19}, {20, 26}, {27, 33}, {34, 40}, {41, 47}, {48, 53}, {54, 59}, {60, 69}},
+					tv = {"+10-19%", "+20-26%", "+27-33%", "+34-40%", "+41-47%", "+48-53%", "+54-59%", "+60-69%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, suffix.", "On an item: Mana Regeneration +60-69% (T8)."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+10-19%", "100"},
+								{"T2", "15+", "+20-26%", "100"},
+								{"T3", "30+", "+27-33%", "100"},
+								{"T4", "50+", "+34-40%", "100"},
+								{"T5", "70+", "+41-47%", "100"},
+								{"T6", "90+", "+48-53%", "100"},
+								{"T7", "110+", "+54-59%", "100"},
+								{"T8", "130+", "+60-69%", "100"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Helmets and Jewellery (amulets, rings)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Helmet", "4 of 128", "3.1%"}, {"Jewel", "4 of 161", "2.5%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Percent more of the mana regeneration of your own class, paid in the same tick as health regeneration."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -3122,48 +3053,37 @@ CodexData = {
 					id = "mod:chaos_mod_manaonhit",
 					name = "Mana on Hit",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon, Jewel, Other, Quiver. +2 (T1) to +25-40 (T8)",
+					sub = "Suffix, Weapon, Quiver. +1-2 (T1) to +52-60 (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"weapon", "jewel", "other", "quiver"}},
-					tiers = {{2, 2}, {2, 4}, {4, 7}, {5, 11}, {9, 14}, {13, 21}, {18, 29}, {25, 40}},
-					tv = {"+2", "+2-4", "+4-7", "+5-11", "+9-14", "+13-21", "+18-29", "+25-40"},
+					f = {group = "chaos", side = "suffix", kind = {"weapon", "quiver"}},
+					tiers = {{1, 2}, {3, 5}, {6, 10}, {12, 18}, {20, 28}, {30, 39}, {41, 50}, {52, 60}},
+					tv = {"+1-2", "+3-5", "+6-10", "+12-18", "+20-28", "+30-39", "+41-50", "+52-60"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Mana on Hit +25-40 (T8).", "Cap: at most 80 from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Mana on Hit +52-60 (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+2", "100"},
-								{"T2", "15+", "+2-4", "90"},
-								{"T3", "30+", "+4-7", "80"},
-								{"T4", "50+", "+5-11", "65"},
-								{"T5", "70+", "+9-14", "50"},
-								{"T6", "95+", "+13-21", "35"},
-								{"T7", "120+", "+18-29", "22"},
-								{"T8", "140+", "+25-40", "12"}
+								{"T1", "1+", "+1-2", "100"},
+								{"T2", "15+", "+3-5", "100"},
+								{"T3", "30+", "+6-10", "100"},
+								{"T4", "50+", "+12-18", "100"},
+								{"T5", "70+", "+20-28", "100"},
+								{"T6", "90+", "+30-39", "100"},
+								{"T7", "110+", "+41-50", "100"},
+								{"T8", "130+", "+52-60", "100"}
 							},
 							tiers = true
 						},
-						{
-							h = "Rolls on",
-							p = {"Weapons, Jewellery (amulets, rings), Other gear (gloves, belts...) and Quivers (with a bow or crossbow)."}
-						},
+						{h = "Rolls on", p = {"Weapons and Quivers (with a bow or crossbow)."}},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "5 of 177", "2.8%"},
-								{"Jewel", "5 of 182", "2.7%"},
-								{"Other", "5 of 137", "3.6%"},
-								{"Quiver", "5 of 85", "5.9%"}
-							}
+							rows = {{"Weapon", "5 of 187", "2.7%"}, {"Quiver", "5 of 97", "5.2%"}}
 						},
 						{
 							h = "Rules",
@@ -3176,30 +3096,27 @@ CodexData = {
 					id = "mod:chaos_mod_manaonkill",
 					name = "Mana on Kill",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon, Helmet, Jewel, Quiver. +2-5 (T1) to +110-170 (T8)",
+					sub = "Suffix, Weapon, Helmet, Jewel, Quiver. +2-5 (T1) to +150-195 (T8)",
 					group = "chaos",
 					side = "suffix",
 					f = {group = "chaos", side = "suffix", kind = {"weapon", "helmet", "jewel", "quiver"}},
-					tiers = {{2, 5}, {5, 10}, {10, 20}, {20, 40}, {35, 65}, {50, 95}, {80, 130}, {110, 170}},
-					tv = {"+2-5", "+5-10", "+10-20", "+20-40", "+35-65", "+50-95", "+80-130", "+110-170"},
+					tiers = {{2, 5}, {6, 10}, {12, 20}, {25, 40}, {45, 65}, {70, 100}, {105, 145}, {150, 195}},
+					tv = {"+2-5", "+6-10", "+12-20", "+25-40", "+45-65", "+70-100", "+105-145", "+150-195"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Mana on Kill +110-170 (T8).", "Cap: at most 200 from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Mana on Kill +150-195 (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-5", "100"},
-								{"T2", "15+", "+5-10", "90"},
-								{"T3", "30+", "+10-20", "80"},
-								{"T4", "50+", "+20-40", "65"},
-								{"T5", "70+", "+35-65", "50"},
-								{"T6", "95+", "+50-95", "35"},
-								{"T7", "120+", "+80-130", "22"},
-								{"T8", "140+", "+110-170", "12"}
+								{"T2", "15+", "+6-10", "100"},
+								{"T3", "30+", "+12-20", "100"},
+								{"T4", "50+", "+25-40", "100"},
+								{"T5", "70+", "+45-65", "100"},
+								{"T6", "90+", "+70-100", "100"},
+								{"T7", "110+", "+105-145", "100"},
+								{"T8", "130+", "+150-195", "100"}
 							},
 							tiers = true
 						},
@@ -3213,10 +3130,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 177", "3.4%"},
-								{"Helmet", "6 of 139", "4.3%"},
-								{"Jewel", "6 of 182", "3.3%"},
-								{"Quiver", "6 of 85", "7.1%"}
+								{"Weapon", "6 of 187", "3.2%"},
+								{"Helmet", "6 of 128", "4.7%"},
+								{"Jewel", "6 of 161", "3.7%"},
+								{"Quiver", "6 of 97", "6.2%"}
 							}
 						},
 						{
@@ -3247,13 +3164,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+12-25", "100"},
-								{"T2", "15+", "+25-50", "90"},
-								{"T3", "30+", "+50-85", "80"},
-								{"T4", "50+", "+85-135", "65"},
-								{"T5", "70+", "+135-195", "50"},
-								{"T6", "95+", "+195-270", "35"},
-								{"T7", "120+", "+270-360", "22"},
-								{"T8", "140+", "+360-480", "12"}
+								{"T2", "15+", "+25-50", "100"},
+								{"T3", "30+", "+50-85", "100"},
+								{"T4", "50+", "+85-135", "100"},
+								{"T5", "70+", "+135-195", "100"},
+								{"T6", "90+", "+195-270", "100"},
+								{"T7", "110+", "+270-360", "100"},
+								{"T8", "130+", "+360-480", "100"}
 							},
 							tiers = true
 						},
@@ -3264,10 +3181,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "6 of 128", "4.7%"},
-								{"Helmet", "6 of 139", "4.3%"},
-								{"Armour", "6 of 119", "5%"},
-								{"Jewel", "6 of 182", "3.3%"}
+								{"Shield", "6 of 119", "5%"},
+								{"Helmet", "6 of 128", "4.7%"},
+								{"Armour", "6 of 111", "5.4%"},
+								{"Jewel", "6 of 161", "3.7%"}
 							}
 						},
 						{
@@ -3298,13 +3215,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-6%", "90"},
-								{"T3", "30+", "+6-9%", "80"},
-								{"T4", "50+", "+8-12%", "65"},
-								{"T5", "70+", "+10-15%", "50"},
-								{"T6", "95+", "+13-19%", "35"},
-								{"T7", "120+", "+16-23%", "22"},
-								{"T8", "140+", "+20-28%", "12"}
+								{"T2", "15+", "+4-6%", "100"},
+								{"T3", "30+", "+6-9%", "100"},
+								{"T4", "50+", "+8-12%", "100"},
+								{"T5", "70+", "+10-15%", "100"},
+								{"T6", "90+", "+13-19%", "100"},
+								{"T7", "110+", "+16-23%", "100"},
+								{"T8", "130+", "+20-28%", "100"}
 							},
 							tiers = true
 						},
@@ -3315,15 +3232,119 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "4 of 128", "3.1%"},
-								{"Helmet", "4 of 139", "2.9%"},
-								{"Armour", "4 of 119", "3.4%"},
-								{"Jewel", "4 of 182", "2.2%"}
+								{"Shield", "4 of 119", "3.4%"},
+								{"Helmet", "4 of 128", "3.1%"},
+								{"Armour", "4 of 111", "3.6%"},
+								{"Jewel", "4 of 161", "2.5%"}
 							}
 						},
 						{
 							h = "Rules",
 							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_maxlife",
+					name = "Maximum Life",
+					color = "#ff70c0",
+					sub = "Prefix, Shield, Helmet, Armour, Legs, Boots, Jewel. +3-6 (T1) to +693-748 (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {
+						group = "chaos",
+						side = "prefix",
+						kind = {"shield", "helmet", "armor", "legs", "boots", "jewel"}
+					},
+					tiers = {{3, 6}, {7, 12}, {14, 24}, {36, 60}, {88, 130}, {198, 260}, {469, 560}, {693, 748}},
+					tv = {"+3-6", "+7-12", "+14-24", "+36-60", "+88-130", "+198-260", "+469-560", "+693-748"},
+					sections = {
+						{h = "Overview", p = {"Chaos modifier, prefix.", "On an item: Maximum Life +693-748 (T8)."}},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+3-6", "100"},
+								{"T2", "15+", "+7-12", "100"},
+								{"T3", "30+", "+14-24", "100"},
+								{"T4", "50+", "+36-60", "100"},
+								{"T5", "70+", "+88-130", "100"},
+								{"T6", "90+", "+198-260", "100"},
+								{"T7", "110+", "+469-560", "100"},
+								{"T8", "130+", "+693-748", "100"}
+							},
+							tiers = true
+						},
+						{
+							h = "Rolls on",
+							p = {"Shields, Helmets, Body armour, Legs, Boots and Jewellery (amulets, rings)."}
+						},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {
+								{"Shield", "8 of 119", "6.7%"},
+								{"Helmet", "8 of 128", "6.3%"},
+								{"Armour", "8 of 111", "7.2%"},
+								{"Legs", "8 of 87", "9.2%"},
+								{"Boots", "8 of 83", "9.6%"},
+								{"Jewel", "8 of 161", "5%"}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Flat points on top of your maximum from level and the passive tree."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_maxmana",
+					name = "Maximum Mana",
+					color = "#ff70c0",
+					sub = "Prefix, Helmet, Armour, Jewel. +6 (T1) to +704-747 (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"helmet", "armor", "jewel"}},
+					tiers = {{6, 6}, {18, 19}, {41, 43}, {97, 103}, {185, 197}, {301, 319}, {523, 555}, {704, 747}},
+					tv = {"+6", "+18-19", "+41-43", "+97-103", "+185-197", "+301-319", "+523-555", "+704-747"},
+					sections = {
+						{h = "Overview", p = {"Chaos modifier, prefix.", "On an item: Maximum Mana +704-747 (T8)."}},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+6", "100"},
+								{"T2", "15+", "+18-19", "100"},
+								{"T3", "30+", "+41-43", "100"},
+								{"T4", "50+", "+97-103", "100"},
+								{"T5", "70+", "+185-197", "100"},
+								{"T6", "90+", "+301-319", "100"},
+								{"T7", "110+", "+523-555", "100"},
+								{"T8", "130+", "+704-747", "100"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Helmets, Body armour and Jewellery (amulets, rings)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {
+								{"Helmet", "5 of 128", "3.9%"},
+								{"Armour", "5 of 111", "4.5%"},
+								{"Jewel", "5 of 161", "3.1%"}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Flat points on top of your maximum from level and the passive tree."}
 						},
 						{ref = "orbs:prefix"}
 					}
@@ -3350,13 +3371,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T2", "15+", "+2-3", "100"},
+								{"T3", "30+", "+2-4", "100"},
+								{"T4", "50+", "+3-5", "100"},
+								{"T5", "70+", "+4-6", "100"},
+								{"T6", "90+", "+5-8", "100"},
+								{"T7", "110+", "+6-9", "100"},
+								{"T8", "130+", "+7-10", "100"}
 							},
 							tiers = true
 						},
@@ -3367,14 +3388,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -3385,92 +3406,30 @@ CodexData = {
 					}
 				},
 				{
-					id = "mod:rarity_miningskill",
-					name = "Mining Skill",
-					color = "#9fdc7f",
-					sub = "Suffix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "suffix",
-					f = {
-						group = "skill",
-						side = "suffix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
-					sections = {
-						{
-							h = "Overview",
-							p = {"Skill, suffix.", "Raises the Mining profession skill while the item is worn."}
-						},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Any gear."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "1 of 177", "0.6%"},
-								{"Shield", "1 of 128", "0.8%"},
-								{"Helmet", "1 of 139", "0.7%"},
-								{"Armour", "1 of 119", "0.8%"},
-								{"Legs", "1 of 101", "1%"},
-								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 182", "0.5%"},
-								{"Other", "1 of 137", "0.7%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:suffix"}
-					}
-				},
-				{
 					id = "mod:chaos_mod_movespeed",
 					name = "Movement Speed",
 					color = "#ff70c0",
-					sub = "Suffix, Boots. +2-3% (T1) to +10-12% (T8)",
+					sub = "Suffix, Boots. +10% (T1) to +35% (T8)",
 					group = "chaos",
 					side = "suffix",
 					f = {group = "chaos", side = "suffix", kind = {"boots"}},
-					tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 7}, {6, 8}, {8, 10}, {9, 11}, {10, 12}},
-					tv = {"+2-3%", "+3-4%", "+4-5%", "+5-7%", "+6-8%", "+8-10%", "+9-11%", "+10-12%"},
+					tiers = {{10, 10}, {13, 13}, {16, 16}, {20, 20}, {24, 24}, {28, 28}, {32, 32}, {35, 35}},
+					tv = {"+10%", "+13%", "+16%", "+20%", "+24%", "+28%", "+32%", "+35%"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Movement Speed +10-12% (T8).", "Cap: at most 12% from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Movement Speed +35% (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+2-3%", "100"},
-								{"T2", "15+", "+3-4%", "90"},
-								{"T3", "30+", "+4-5%", "80"},
-								{"T4", "50+", "+5-7%", "65"},
-								{"T5", "70+", "+6-8%", "50"},
-								{"T6", "95+", "+8-10%", "35"},
-								{"T7", "120+", "+9-11%", "22"},
-								{"T8", "140+", "+10-12%", "12"}
+								{"T1", "1+", "+10%", "100"},
+								{"T2", "15+", "+13%", "100"},
+								{"T3", "30+", "+16%", "100"},
+								{"T4", "50+", "+20%", "100"},
+								{"T5", "70+", "+24%", "100"},
+								{"T6", "90+", "+28%", "100"},
+								{"T7", "110+", "+32%", "100"},
+								{"T8", "130+", "+35%", "100"}
 							},
 							tiers = true
 						},
@@ -3480,11 +3439,11 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Boots", "10 of 88", "11.4%"}}
+							rows = {{"Boots", "10 of 83", "12%"}}
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Shares its 12% cap with the emerald gems' movement speed."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Adds to the emerald gems' movement speed (the gems hold their own 12% cap)."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -3514,13 +3473,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -3531,14 +3490,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -3569,13 +3528,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+3-5%", "90"},
-								{"T3", "30+", "+5-7%", "80"},
-								{"T4", "50+", "+7-10%", "65"},
-								{"T5", "70+", "+9-13%", "50"},
-								{"T6", "95+", "+11-15%", "35"},
-								{"T7", "120+", "+14-18%", "22"},
-								{"T8", "140+", "+17-22%", "12"}
+								{"T2", "15+", "+3-5%", "100"},
+								{"T3", "30+", "+5-7%", "100"},
+								{"T4", "50+", "+7-10%", "100"},
+								{"T5", "70+", "+9-13%", "100"},
+								{"T6", "90+", "+11-15%", "100"},
+								{"T7", "110+", "+14-18%", "100"},
+								{"T8", "130+", "+17-22%", "100"}
 							},
 							tiers = true
 						},
@@ -3589,9 +3548,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 177", "2.3%"},
-								{"Jewel", "4 of 182", "2.2%"},
-								{"Quiver", "4 of 85", "4.7%"}
+								{"Weapon", "4 of 187", "2.1%"},
+								{"Jewel", "4 of 161", "2.5%"},
+								{"Quiver", "4 of 97", "4.1%"}
 							}
 						},
 						{
@@ -3623,13 +3582,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T2", "15+", "+2-3", "100"},
+								{"T3", "30+", "+2-4", "100"},
+								{"T4", "50+", "+3-5", "100"},
+								{"T5", "70+", "+4-6", "100"},
+								{"T6", "90+", "+5-8", "100"},
+								{"T7", "110+", "+6-9", "100"},
+								{"T8", "130+", "+7-10", "100"}
 							},
 							tiers = true
 						},
@@ -3640,14 +3599,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -3661,40 +3620,41 @@ CodexData = {
 					id = "mod:chaos_mod_rarityfind",
 					name = "Rarity Find",
 					color = "#ff70c0",
-					sub = "Suffix, Helmet, Jewel. +2-5% (T1) to +24-34% (T8)",
+					sub = "Suffix, Helmet, Boots, Jewel. +6-10% (T1) to +21-26% (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"helmet", "jewel"}},
-					tiers = {{2, 5}, {4, 7}, {5, 10}, {9, 14}, {11, 18}, {14, 23}, {19, 28}, {24, 34}},
-					tv = {"+2-5%", "+4-7%", "+5-10%", "+9-14%", "+11-18%", "+14-23%", "+19-28%", "+24-34%"},
+					f = {group = "chaos", side = "suffix", kind = {"helmet", "boots", "jewel"}},
+					tiers = {{6, 10}, {11, 12}, {13, 14}, {15, 16}, {17, 18}, {19, 19}, {20, 20}, {21, 26}},
+					tv = {"+6-10%", "+11-12%", "+13-14%", "+15-16%", "+17-18%", "+19%", "+20%", "+21-26%"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Chaos modifier, suffix.", "On an item: Rarity Find +24-34% (T8).", "Cap: at most 40% from all equipped items together."}
-						},
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Rarity Find +21-26% (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+2-5%", "100"},
-								{"T2", "15+", "+4-7%", "90"},
-								{"T3", "30+", "+5-10%", "80"},
-								{"T4", "50+", "+9-14%", "65"},
-								{"T5", "70+", "+11-18%", "50"},
-								{"T6", "95+", "+14-23%", "35"},
-								{"T7", "120+", "+19-28%", "22"},
-								{"T8", "140+", "+24-34%", "12"}
+								{"T1", "1+", "+6-10%", "100"},
+								{"T2", "15+", "+11-12%", "100"},
+								{"T3", "30+", "+13-14%", "100"},
+								{"T4", "50+", "+15-16%", "100"},
+								{"T5", "70+", "+17-18%", "100"},
+								{"T6", "90+", "+19%", "100"},
+								{"T7", "110+", "+20%", "100"},
+								{"T8", "130+", "+21-26%", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Helmets and Jewellery (amulets, rings)."}},
+						{h = "Rolls on", p = {"Helmets, Boots and Jewellery (amulets, rings)."}},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 182", "2.2%"}}
+							rows = {
+								{"Helmet", "4 of 128", "3.1%"},
+								{"Boots", "4 of 83", "4.8%"},
+								{"Jewel", "4 of 161", "2.5%"}
+							}
 						},
 						{
 							h = "Rules",
@@ -3724,13 +3684,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-3%", "100"},
-								{"T2", "15+", "+3-4%", "90"},
-								{"T3", "30+", "+4-5%", "80"},
-								{"T4", "50+", "+5-6%", "65"},
-								{"T5", "70+", "+6-8%", "50"},
-								{"T6", "95+", "+7-9%", "35"},
-								{"T7", "120+", "+8-10%", "22"},
-								{"T8", "140+", "+9-11%", "12"}
+								{"T2", "15+", "+3-4%", "100"},
+								{"T3", "30+", "+4-5%", "100"},
+								{"T4", "50+", "+5-6%", "100"},
+								{"T5", "70+", "+6-8%", "100"},
+								{"T6", "90+", "+7-9%", "100"},
+								{"T7", "110+", "+8-10%", "100"},
+								{"T8", "130+", "+9-11%", "100"}
 							},
 							tiers = true
 						},
@@ -3740,7 +3700,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Shield", "5 of 128", "3.9%"}, {"Armour", "5 of 119", "4.2%"}}
+							rows = {{"Shield", "5 of 119", "4.2%"}, {"Armour", "5 of 111", "4.5%"}}
 						},
 						{
 							h = "Rules",
@@ -3774,13 +3734,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T2", "15+", "+2-3", "100"},
+								{"T3", "30+", "+2-4", "100"},
+								{"T4", "50+", "+3-5", "100"},
+								{"T5", "70+", "+4-6", "100"},
+								{"T6", "90+", "+5-8", "100"},
+								{"T7", "110+", "+6-9", "100"},
+								{"T8", "130+", "+7-10", "100"}
 							},
 							tiers = true
 						},
@@ -3791,14 +3751,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -3806,6 +3766,106 @@ CodexData = {
 							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
 						},
 						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_spelldamage",
+					name = "Spell Damage",
+					color = "#ff70c0",
+					sub = "Prefix, Weapon. +4-7% (T1) to +34-38% (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"weapon"}},
+					tiers = {{4, 7}, {8, 11}, {12, 15}, {16, 19}, {20, 24}, {25, 29}, {30, 33}, {34, 38}},
+					tv = {"+4-7%", "+8-11%", "+12-15%", "+16-19%", "+20-24%", "+25-29%", "+30-33%", "+34-38%"},
+					sections = {
+						{h = "Overview", p = {"Chaos modifier, prefix.", "On an item: Spell Damage +34-38% (T8)."}},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+4-7%", "100"},
+								{"T2", "15+", "+8-11%", "100"},
+								{"T3", "30+", "+12-15%", "100"},
+								{"T4", "50+", "+16-19%", "100"},
+								{"T5", "70+", "+20-24%", "100"},
+								{"T6", "90+", "+25-29%", "100"},
+								{"T7", "110+", "+30-33%", "100"},
+								{"T8", "130+", "+34-38%", "100"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Weapons."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Weapon", "6 of 187", "3.2%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Only a weapon that casts (a wand or rod) rolls it. It adds to the damage increment of the passive tree for your spells and wand hits, so the tree's soft cap holds the sum."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_strength",
+					name = "Strength",
+					color = "#ff70c0",
+					sub = "Suffix, Shield, Helmet, Armour, Legs, Boots, Jewel. +2-4 (T1) to +17-18 (T8)",
+					group = "chaos",
+					side = "suffix",
+					f = {
+						group = "chaos",
+						side = "suffix",
+						kind = {"shield", "helmet", "armor", "legs", "boots", "jewel"}
+					},
+					tiers = {{2, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 16}, {17, 18}},
+					tv = {"+2-4", "+5-6", "+7-8", "+9-10", "+11-12", "+13-14", "+15-16", "+17-18"},
+					sections = {
+						{h = "Overview", p = {"Chaos modifier, suffix.", "On an item: Strength +17-18 (T8)."}},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+2-4", "100"},
+								{"T2", "15+", "+5-6", "100"},
+								{"T3", "30+", "+7-8", "100"},
+								{"T4", "50+", "+9-10", "100"},
+								{"T5", "70+", "+11-12", "100"},
+								{"T6", "90+", "+13-14", "100"},
+								{"T7", "110+", "+15-16", "100"},
+								{"T8", "130+", "+17-18", "100"}
+							},
+							tiers = true
+						},
+						{
+							h = "Rolls on",
+							p = {"Shields, Helmets, Body armour, Legs, Boots and Jewellery (amulets, rings)."}
+						},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "The points add to the same stat the passive tree raises, on the same curve (and its soft cap)."}
+						},
+						{ref = "orbs:suffix"}
 					}
 				},
 				{
@@ -3829,13 +3889,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-6", "100"},
-								{"T2", "15+", "+5-12", "90"},
-								{"T3", "30+", "+12-24", "80"},
-								{"T4", "50+", "+24-45", "65"},
-								{"T5", "70+", "+40-75", "50"},
-								{"T6", "95+", "+60-110", "35"},
-								{"T7", "120+", "+90-150", "22"},
-								{"T8", "140+", "+120-190", "12"}
+								{"T2", "15+", "+5-12", "100"},
+								{"T3", "30+", "+12-24", "100"},
+								{"T4", "50+", "+24-45", "100"},
+								{"T5", "70+", "+40-75", "100"},
+								{"T6", "90+", "+60-110", "100"},
+								{"T7", "110+", "+90-150", "100"},
+								{"T8", "130+", "+120-190", "100"}
 							},
 							tiers = true
 						},
@@ -3846,9 +3906,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "6 of 128", "4.7%"},
-								{"Armour", "6 of 119", "5%"},
-								{"Legs", "6 of 101", "5.9%"}
+								{"Shield", "6 of 119", "5%"},
+								{"Armour", "6 of 111", "5.4%"},
+								{"Legs", "6 of 87", "6.9%"}
 							}
 						},
 						{
@@ -3879,13 +3939,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+9-15%", "100"},
-								{"T2", "15+", "+15-23%", "90"},
-								{"T3", "30+", "+21-30%", "80"},
-								{"T4", "50+", "+27-41%", "65"},
-								{"T5", "70+", "+33-50%", "50"},
-								{"T6", "95+", "+42-60%", "35"},
-								{"T7", "120+", "+53-75%", "22"},
-								{"T8", "140+", "+68-90%", "12"}
+								{"T2", "15+", "+15-23%", "100"},
+								{"T3", "30+", "+21-30%", "100"},
+								{"T4", "50+", "+27-41%", "100"},
+								{"T5", "70+", "+33-50%", "100"},
+								{"T6", "90+", "+42-60%", "100"},
+								{"T7", "110+", "+53-75%", "100"},
+								{"T8", "130+", "+68-90%", "100"}
 							},
 							tiers = true
 						},
@@ -3895,7 +3955,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "3 of 139", "2.2%"}, {"Jewel", "3 of 182", "1.6%"}}
+							rows = {{"Helmet", "3 of 128", "2.3%"}, {"Jewel", "3 of 161", "1.9%"}}
 						},
 						{
 							h = "Rules",
@@ -3929,13 +3989,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2%", "100"},
-								{"T2", "15+", "+2-4%", "90"},
-								{"T3", "30+", "+3-5%", "80"},
-								{"T4", "50+", "+4-6%", "65"},
-								{"T5", "70+", "+5-8%", "50"},
-								{"T6", "95+", "+6-10%", "35"},
-								{"T7", "120+", "+8-12%", "22"},
-								{"T8", "140+", "+10-14%", "12"}
+								{"T2", "15+", "+2-4%", "100"},
+								{"T3", "30+", "+3-5%", "100"},
+								{"T4", "50+", "+4-6%", "100"},
+								{"T5", "70+", "+5-8%", "100"},
+								{"T6", "90+", "+6-10%", "100"},
+								{"T7", "110+", "+8-12%", "100"},
+								{"T8", "130+", "+10-14%", "100"}
 							},
 							tiers = true
 						},
@@ -3946,14 +4006,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 177", "1.7%"},
-								{"Shield", "3 of 128", "2.3%"},
-								{"Helmet", "3 of 139", "2.2%"},
-								{"Armour", "3 of 119", "2.5%"},
-								{"Legs", "3 of 101", "3%"},
-								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 182", "1.6%"},
-								{"Other", "3 of 137", "2.2%"}
+								{"Weapon", "3 of 187", "1.6%"},
+								{"Shield", "3 of 119", "2.5%"},
+								{"Helmet", "3 of 128", "2.3%"},
+								{"Armour", "3 of 111", "2.7%"},
+								{"Legs", "3 of 87", "3.4%"},
+								{"Boots", "3 of 83", "3.6%"},
+								{"Jewel", "3 of 161", "1.9%"},
+								{"Other", "3 of 120", "2.5%"}
 							}
 						},
 						{
@@ -3984,13 +4044,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+2-4%", "100"},
-								{"T2", "15+", "+4-9%", "90"},
-								{"T3", "30+", "+7-13%", "80"},
-								{"T4", "50+", "+10-18%", "65"},
-								{"T5", "70+", "+15-24%", "50"},
-								{"T6", "95+", "+20-30%", "35"},
-								{"T7", "120+", "+26-39%", "22"},
-								{"T8", "140+", "+33-52%", "12"}
+								{"T2", "15+", "+4-9%", "100"},
+								{"T3", "30+", "+7-13%", "100"},
+								{"T4", "50+", "+10-18%", "100"},
+								{"T5", "70+", "+15-24%", "100"},
+								{"T6", "90+", "+20-30%", "100"},
+								{"T7", "110+", "+26-39%", "100"},
+								{"T8", "130+", "+33-52%", "100"}
 							},
 							tiers = true
 						},
@@ -4001,14 +4061,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 177", "1.1%"},
-								{"Shield", "2 of 128", "1.6%"},
-								{"Helmet", "2 of 139", "1.4%"},
-								{"Armour", "2 of 119", "1.7%"},
-								{"Legs", "2 of 101", "2%"},
-								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 182", "1.1%"},
-								{"Other", "2 of 137", "1.5%"}
+								{"Weapon", "2 of 187", "1.1%"},
+								{"Shield", "2 of 119", "1.7%"},
+								{"Helmet", "2 of 128", "1.6%"},
+								{"Armour", "2 of 111", "1.8%"},
+								{"Legs", "2 of 87", "2.3%"},
+								{"Boots", "2 of 83", "2.4%"},
+								{"Jewel", "2 of 161", "1.2%"},
+								{"Other", "2 of 120", "1.7%"}
 							}
 						},
 						{
@@ -4019,121 +4079,46 @@ CodexData = {
 					}
 				},
 				{
-					id = "mod:rarity_weaponsmithskill",
-					name = "Weaponsmithing Skill",
-					color = "#9fdc7f",
-					sub = "Suffix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "suffix",
-					f = {
-						group = "skill",
-						side = "suffix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
+					id = "mod:chaos_mod_weapondamage",
+					name = "Weapon Damage",
+					color = "#ff70c0",
+					sub = "Prefix, Weapon. +13-16% (T1) to +57-60% (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"weapon"}},
+					tiers = {{13, 16}, {19, 22}, {25, 28}, {32, 35}, {39, 42}, {45, 48}, {51, 54}, {57, 60}},
+					tv = {"+13-16%", "+19-22%", "+25-28%", "+32-35%", "+39-42%", "+45-48%", "+51-54%", "+57-60%"},
 					sections = {
-						{
-							h = "Overview",
-							p = {"Skill, suffix.", "Raises the Weaponsmithing profession skill while the item is worn."}
-						},
+						{h = "Overview", p = {"Chaos modifier, prefix.", "On an item: Weapon Damage +57-60% (T8)."}},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
+								{"T1", "1+", "+13-16%", "100"},
+								{"T2", "15+", "+19-22%", "100"},
+								{"T3", "30+", "+25-28%", "100"},
+								{"T4", "50+", "+32-35%", "100"},
+								{"T5", "70+", "+39-42%", "100"},
+								{"T6", "90+", "+45-48%", "100"},
+								{"T7", "110+", "+51-54%", "100"},
+								{"T8", "130+", "+57-60%", "100"}
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Any gear."}},
+						{h = "Rolls on", p = {"Weapons."}},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "1 of 177", "0.6%"},
-								{"Shield", "1 of 128", "0.8%"},
-								{"Helmet", "1 of 139", "0.7%"},
-								{"Armour", "1 of 119", "0.8%"},
-								{"Legs", "1 of 101", "1%"},
-								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 182", "0.5%"},
-								{"Other", "1 of 137", "0.7%"}
-							}
+							rows = {{"Weapon", "6 of 187", "3.2%"}}
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Local to the weapon: percent more of this weapon's own attack value. Only a weapon that hits with an attack value rolls it, not a wand or rod."}
 						},
-						{ref = "orbs:suffix"}
-					}
-				},
-				{
-					id = "mod:rarity_woodcuttingskill",
-					name = "Woodcutting Skill",
-					color = "#9fdc7f",
-					sub = "Suffix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "suffix",
-					f = {
-						group = "skill",
-						side = "suffix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
-					sections = {
-						{
-							h = "Overview",
-							p = {"Skill, suffix.", "Raises the Woodcutting profession skill while the item is worn."}
-						},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Any gear."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "1 of 177", "0.6%"},
-								{"Shield", "1 of 128", "0.8%"},
-								{"Helmet", "1 of 139", "0.7%"},
-								{"Armour", "1 of 119", "0.8%"},
-								{"Legs", "1 of 101", "1%"},
-								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 182", "0.5%"},
-								{"Other", "1 of 137", "0.7%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:suffix"}
+						{ref = "orbs:prefix"}
 					}
 				}
 			},
@@ -4170,7 +4155,7 @@ CodexData = {
 						{"chaos", "Chaos"},
 						{"absorb", "Absorbs"},
 						{"skill", "Skills"},
-						{"special", "Critical / leech"},
+						{"single", "Critical hits"},
 						{"element", "Weapon elements"}
 					}
 				},
@@ -4185,9 +4170,9 @@ CodexData = {
 						{"30", "Item level 30 (T3)"},
 						{"50", "Item level 50 (T4)"},
 						{"70", "Item level 70 (T5)"},
-						{"95", "Item level 95 (T6)"},
-						{"120", "Item level 120 (T7)"},
-						{"140", "Item level 140 (T8)"},
+						{"90", "Item level 90 (T6)"},
+						{"110", "Item level 110 (T7)"},
+						{"130", "Item level 130 (T8)"},
 						{"150", "Item level 150"}
 					}
 				}
@@ -4218,13 +4203,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "2-3%", "100"},
-								{"T2", "15+", "3-4%", "90"},
-								{"T3", "30+", "4-6%", "80"},
-								{"T4", "50+", "5-7%", "65"},
-								{"T5", "70+", "6-9%", "50"},
-								{"T6", "95+", "8-11%", "35"},
-								{"T7", "120+", "10-13%", "22"},
-								{"T8", "140+", "12-16%", "12"}
+								{"T2", "15+", "3-4%", "100"},
+								{"T3", "30+", "4-6%", "100"},
+								{"T4", "50+", "5-7%", "100"},
+								{"T5", "70+", "6-9%", "100"},
+								{"T6", "90+", "8-11%", "100"},
+								{"T7", "110+", "10-13%", "100"},
+								{"T8", "130+", "12-16%", "100"}
 							},
 							tiers = true
 						},
@@ -4234,7 +4219,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 197", "1.5%"}, {"Jewel", "3 of 208", "1.4%"}}
+							rows = {{"Weapon", "3 of 207", "1.4%"}, {"Jewel", "3 of 187", "1.6%"}}
 						},
 						{
 							h = "Rules",
@@ -4264,13 +4249,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "1%", "100"},
-								{"T2", "15+", "1%", "90"},
-								{"T3", "30+", "1-2%", "80"},
-								{"T4", "50+", "2%", "65"},
-								{"T5", "70+", "2-3%", "50"},
-								{"T6", "95+", "3%", "35"},
-								{"T7", "120+", "3-4%", "22"},
-								{"T8", "140+", "4-5%", "12"}
+								{"T2", "15+", "1%", "100"},
+								{"T3", "30+", "1-2%", "100"},
+								{"T4", "50+", "2%", "100"},
+								{"T5", "70+", "2-3%", "100"},
+								{"T6", "90+", "3%", "100"},
+								{"T7", "110+", "3-4%", "100"},
+								{"T8", "130+", "4-5%", "100"}
 							},
 							tiers = true
 						},
@@ -4284,9 +4269,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 197", "1.5%"},
-								{"Jewel", "3 of 208", "1.4%"},
-								{"Other", "3 of 149", "2%"}
+								{"Weapon", "3 of 207", "1.4%"},
+								{"Jewel", "3 of 187", "1.6%"},
+								{"Other", "3 of 132", "2.3%"}
 							}
 						},
 						{
@@ -4317,13 +4302,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "2-3%", "100"},
-								{"T2", "15+", "3-4%", "90"},
-								{"T3", "30+", "4-6%", "80"},
-								{"T4", "50+", "5-7%", "65"},
-								{"T5", "70+", "6-9%", "50"},
-								{"T6", "95+", "8-11%", "35"},
-								{"T7", "120+", "10-13%", "22"},
-								{"T8", "140+", "12-16%", "12"}
+								{"T2", "15+", "3-4%", "100"},
+								{"T3", "30+", "4-6%", "100"},
+								{"T4", "50+", "5-7%", "100"},
+								{"T5", "70+", "6-9%", "100"},
+								{"T6", "90+", "8-11%", "100"},
+								{"T7", "110+", "10-13%", "100"},
+								{"T8", "130+", "12-16%", "100"}
 							},
 							tiers = true
 						},
@@ -4334,9 +4319,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 197", "1.5%"},
-								{"Helmet", "3 of 150", "2%"},
-								{"Jewel", "3 of 208", "1.4%"}
+								{"Weapon", "3 of 207", "1.4%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Jewel", "3 of 187", "1.6%"}
 							}
 						},
 						{
@@ -4367,13 +4352,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "3-5%", "100"},
-								{"T2", "15+", "5-7%", "90"},
-								{"T3", "30+", "6-9%", "80"},
-								{"T4", "50+", "8-11%", "65"},
-								{"T5", "70+", "10-14%", "50"},
-								{"T6", "95+", "12-17%", "35"},
-								{"T7", "120+", "15-20%", "22"},
-								{"T8", "140+", "18-25%", "12"}
+								{"T2", "15+", "5-7%", "100"},
+								{"T3", "30+", "6-9%", "100"},
+								{"T4", "50+", "8-11%", "100"},
+								{"T5", "70+", "10-14%", "100"},
+								{"T6", "90+", "12-17%", "100"},
+								{"T7", "110+", "15-20%", "100"},
+								{"T8", "130+", "18-25%", "100"}
 							},
 							tiers = true
 						},
@@ -4383,7 +4368,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 197", "1.5%"}, {"Jewel", "3 of 208", "1.4%"}}
+							rows = {{"Weapon", "3 of 207", "1.4%"}, {"Jewel", "3 of 187", "1.6%"}}
 						},
 						{
 							h = "Rules",
@@ -4413,13 +4398,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "2-3%", "100"},
-								{"T2", "15+", "3-4%", "90"},
-								{"T3", "30+", "4-6%", "80"},
-								{"T4", "50+", "5-7%", "65"},
-								{"T5", "70+", "6-9%", "50"},
-								{"T6", "95+", "8-11%", "35"},
-								{"T7", "120+", "10-13%", "22"},
-								{"T8", "140+", "12-16%", "12"}
+								{"T2", "15+", "3-4%", "100"},
+								{"T3", "30+", "4-6%", "100"},
+								{"T4", "50+", "5-7%", "100"},
+								{"T5", "70+", "6-9%", "100"},
+								{"T6", "90+", "8-11%", "100"},
+								{"T7", "110+", "10-13%", "100"},
+								{"T8", "130+", "12-16%", "100"}
 							},
 							tiers = true
 						},
@@ -4429,7 +4414,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 197", "1.5%"}, {"Jewel", "3 of 208", "1.4%"}}
+							rows = {{"Weapon", "3 of 207", "1.4%"}, {"Jewel", "3 of 187", "1.6%"}}
 						},
 						{
 							h = "Rules",
@@ -4459,13 +4444,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "2-3%", "100"},
-								{"T2", "15+", "3-4%", "90"},
-								{"T3", "30+", "4-6%", "80"},
-								{"T4", "50+", "5-7%", "65"},
-								{"T5", "70+", "6-9%", "50"},
-								{"T6", "95+", "8-11%", "35"},
-								{"T7", "120+", "10-13%", "22"},
-								{"T8", "140+", "12-16%", "12"}
+								{"T2", "15+", "3-4%", "100"},
+								{"T3", "30+", "4-6%", "100"},
+								{"T4", "50+", "5-7%", "100"},
+								{"T5", "70+", "6-9%", "100"},
+								{"T6", "90+", "8-11%", "100"},
+								{"T7", "110+", "10-13%", "100"},
+								{"T8", "130+", "12-16%", "100"}
 							},
 							tiers = true
 						},
@@ -4475,7 +4460,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "2 of 197", "1%"}}
+							rows = {{"Weapon", "2 of 207", "1%"}}
 						},
 						{
 							h = "Rules",
@@ -4505,13 +4490,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "4-6%", "100"},
-								{"T2", "15+", "6-8%", "90"},
-								{"T3", "30+", "8-10%", "80"},
-								{"T4", "50+", "10-13%", "65"},
-								{"T5", "70+", "12-16%", "50"},
-								{"T6", "95+", "15-19%", "35"},
-								{"T7", "120+", "18-23%", "22"},
-								{"T8", "140+", "22-28%", "12"}
+								{"T2", "15+", "6-8%", "100"},
+								{"T3", "30+", "8-10%", "100"},
+								{"T4", "50+", "10-13%", "100"},
+								{"T5", "70+", "12-16%", "100"},
+								{"T6", "90+", "15-19%", "100"},
+								{"T7", "110+", "18-23%", "100"},
+								{"T8", "130+", "22-28%", "100"}
 							},
 							tiers = true
 						},
@@ -4522,10 +4507,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Armour", "3 of 130", "2.3%"},
-								{"Legs", "3 of 112", "2.7%"},
-								{"Boots", "3 of 97", "3.1%"},
-								{"Jewel", "3 of 208", "1.4%"}
+								{"Armour", "3 of 122", "2.5%"},
+								{"Legs", "3 of 98", "3.1%"},
+								{"Boots", "3 of 92", "3.3%"},
+								{"Jewel", "3 of 187", "1.6%"}
 							}
 						},
 						{
@@ -4556,13 +4541,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "2-3%", "100"},
-								{"T2", "15+", "3-4%", "90"},
-								{"T3", "30+", "4-6%", "80"},
-								{"T4", "50+", "5-7%", "65"},
-								{"T5", "70+", "6-9%", "50"},
-								{"T6", "95+", "8-11%", "35"},
-								{"T7", "120+", "10-13%", "22"},
-								{"T8", "140+", "12-16%", "12"}
+								{"T2", "15+", "3-4%", "100"},
+								{"T3", "30+", "4-6%", "100"},
+								{"T4", "50+", "5-7%", "100"},
+								{"T5", "70+", "6-9%", "100"},
+								{"T6", "90+", "8-11%", "100"},
+								{"T7", "110+", "10-13%", "100"},
+								{"T8", "130+", "12-16%", "100"}
 							},
 							tiers = true
 						},
@@ -4576,11 +4561,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "3 of 133", "2.3%"},
-								{"Armour", "3 of 130", "2.3%"},
-								{"Legs", "3 of 112", "2.7%"},
-								{"Boots", "3 of 97", "3.1%"},
-								{"Other", "3 of 149", "2%"}
+								{"Shield", "3 of 124", "2.4%"},
+								{"Armour", "3 of 122", "2.5%"},
+								{"Legs", "3 of 98", "3.1%"},
+								{"Boots", "3 of 92", "3.3%"},
+								{"Other", "3 of 132", "2.3%"}
 							}
 						},
 						{
@@ -4611,13 +4596,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "4-6%", "100"},
-								{"T2", "15+", "6-8%", "90"},
-								{"T3", "30+", "8-10%", "80"},
-								{"T4", "50+", "10-13%", "65"},
-								{"T5", "70+", "12-16%", "50"},
-								{"T6", "95+", "15-19%", "35"},
-								{"T7", "120+", "18-23%", "22"},
-								{"T8", "140+", "22-28%", "12"}
+								{"T2", "15+", "6-8%", "100"},
+								{"T3", "30+", "8-10%", "100"},
+								{"T4", "50+", "10-13%", "100"},
+								{"T5", "70+", "12-16%", "100"},
+								{"T6", "90+", "15-19%", "100"},
+								{"T7", "110+", "18-23%", "100"},
+								{"T8", "130+", "22-28%", "100"}
 							},
 							tiers = true
 						},
@@ -4631,10 +4616,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "3 of 150", "2%"},
-								{"Boots", "3 of 97", "3.1%"},
-								{"Jewel", "3 of 208", "1.4%"},
-								{"Other", "3 of 149", "2%"}
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Boots", "3 of 92", "3.3%"},
+								{"Jewel", "3 of 187", "1.6%"},
+								{"Other", "3 of 132", "2.3%"}
 							}
 						},
 						{
@@ -4665,13 +4650,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "10-15%", "100"},
-								{"T2", "15+", "15-20%", "90"},
-								{"T3", "30+", "20-25%", "80"},
-								{"T4", "50+", "25-30%", "65"},
-								{"T5", "70+", "30-35%", "50"},
-								{"T6", "95+", "35-40%", "35"},
-								{"T7", "120+", "40-45%", "22"},
-								{"T8", "140+", "45-50%", "12"}
+								{"T2", "15+", "15-20%", "100"},
+								{"T3", "30+", "20-25%", "100"},
+								{"T4", "50+", "25-30%", "100"},
+								{"T5", "70+", "30-35%", "100"},
+								{"T6", "90+", "35-40%", "100"},
+								{"T7", "110+", "40-45%", "100"},
+								{"T8", "130+", "45-50%", "100"}
 							},
 							tiers = true
 						},
@@ -4685,11 +4670,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "2 of 133", "1.5%"},
-								{"Helmet", "2 of 150", "1.3%"},
-								{"Armour", "2 of 130", "1.5%"},
-								{"Legs", "2 of 112", "1.8%"},
-								{"Jewel", "2 of 208", "1%"}
+								{"Shield", "2 of 124", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 122", "1.6%"},
+								{"Legs", "2 of 98", "2%"},
+								{"Jewel", "2 of 187", "1.1%"}
 							}
 						},
 						{
@@ -4720,13 +4705,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "2-3%", "100"},
-								{"T2", "15+", "3-4%", "90"},
-								{"T3", "30+", "4-6%", "80"},
-								{"T4", "50+", "5-7%", "65"},
-								{"T5", "70+", "6-9%", "50"},
-								{"T6", "95+", "8-11%", "35"},
-								{"T7", "120+", "10-13%", "22"},
-								{"T8", "140+", "12-16%", "12"}
+								{"T2", "15+", "3-4%", "100"},
+								{"T3", "30+", "4-6%", "100"},
+								{"T4", "50+", "5-7%", "100"},
+								{"T5", "70+", "6-9%", "100"},
+								{"T6", "90+", "8-11%", "100"},
+								{"T7", "110+", "10-13%", "100"},
+								{"T8", "130+", "12-16%", "100"}
 							},
 							tiers = true
 						},
@@ -4736,7 +4721,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 197", "1.5%"}}
+							rows = {{"Weapon", "3 of 207", "1.4%"}}
 						},
 						{
 							h = "Rules",
@@ -4766,13 +4751,13 @@ CodexData = {
 							w = {14, 22, 40, 24},
 							rows = {
 								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+3-4", "80"},
-								{"T4", "50+", "+5-7", "65"},
-								{"T5", "70+", "+8-12", "50"},
-								{"T6", "95+", "+13-20", "35"},
-								{"T7", "120+", "+20-28", "22"},
-								{"T8", "140+", "+28-35", "12"}
+								{"T2", "15+", "+2-3", "100"},
+								{"T3", "30+", "+3-4", "100"},
+								{"T4", "50+", "+5-7", "100"},
+								{"T5", "70+", "+8-12", "100"},
+								{"T6", "90+", "+13-20", "100"},
+								{"T7", "110+", "+20-28", "100"},
+								{"T8", "130+", "+28-35", "100"}
 							},
 							tiers = true
 						},
@@ -4786,11 +4771,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "3 of 150", "2%"},
-								{"Armour", "3 of 130", "2.3%"},
-								{"Legs", "3 of 112", "2.7%"},
-								{"Jewel", "3 of 208", "1.4%"},
-								{"Other", "3 of 149", "2%"}
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 122", "2.5%"},
+								{"Legs", "3 of 98", "3.1%"},
+								{"Jewel", "3 of 187", "1.6%"},
+								{"Other", "3 of 132", "2.3%"}
 							}
 						},
 						{
@@ -4835,9 +4820,9 @@ CodexData = {
 						{"30", "Item level 30 (T3)"},
 						{"50", "Item level 50 (T4)"},
 						{"70", "Item level 70 (T5)"},
-						{"95", "Item level 95 (T6)"},
-						{"120", "Item level 120 (T7)"},
-						{"140", "Item level 140 (T8)"},
+						{"90", "Item level 90 (T6)"},
+						{"110", "Item level 110 (T7)"},
+						{"130", "Item level 130 (T8)"},
 						{"150", "Item level 150"}
 					}
 				}
@@ -5243,16 +5228,16 @@ CodexData = {
 					id = "orb:whetstone",
 					name = "Whetstone",
 					color = "#e8b84a",
-					sub = "+1% quality: every modifier value is multiplied by the quality, up to 20% (30% from Divine rarity).",
+					sub = "+1% quality: the attack, defence and armour the rarity added to the item rise by the quality, up to 20% (30% from Divine rarity).",
 					f = {group = "orb"},
 					sections = {
 						{
 							h = "What it does",
-							p = {"+1% quality: every modifier value is multiplied by the quality, up to 20% (30% from Divine rarity)."}
+							p = {"+1% quality: the attack, defence and armour the rarity added to the item rise by the quality, up to 20% (30% from Divine rarity)."}
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and a modifier, below its quality cap (20%, 30% from Divine).", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and an attack, defence or armour of its own, below its quality cap (20%, 30% from Divine).", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "Sources",
@@ -5344,7 +5329,7 @@ CodexData = {
 						},
 						{
 							h = "Outcomes",
-							p = {"The item is corrupted first, then one outcome is rolled. Corrupted implicits by kind: Weapon: Damage to Elites and Bosses, Attack Speed, Execute, Physical Penetration, Elemental Penetration; Shield: Block Chance, Reflect Damage, Damage Taken from Monsters; Armour: Damage Taken from Monsters, Reflect Damage, Health Regeneration, Thorns; Helmet: Damage Taken from Monsters, Cooldown Reduction, Mana Cost Reduction; Legs: Damage Taken from Monsters, Thorns, Dodge; Boots: Movement Speed, Dodge; Jewel: Damage to Elites and Bosses, Cooldown Reduction, Mana Cost Reduction, Experience; Other: Damage over Time, Dodge, Cooldown Reduction; Quiver: Damage to Elites and Bosses, Physical Penetration, Elemental Penetration."},
+							p = {"The item is corrupted first, then one outcome is rolled. Corrupted implicits by kind: Weapon: Damage to Elites and Bosses, Attack Speed, Execute, Physical Penetration, Elemental Penetration; Shield: Block Chance, Reflect Damage, Damage Taken from Monsters; Armour: Damage Taken from Monsters, Reflect Damage, Health Regeneration, Thorns; Helmet: Damage Taken from Monsters, Cooldown Reduction; Legs: Damage Taken from Monsters, Thorns, Dodge; Boots: Movement Speed, Dodge; Jewel: Damage to Elites and Bosses, Cooldown Reduction, Experience; Other: Damage over Time, Dodge, Cooldown Reduction; Quiver: Damage to Elites and Bosses, Physical Penetration, Elemental Penetration."},
 							cols = {"Outcome", "Chance", "What happens"},
 							w = {18, 12, 70},
 							rows = {
@@ -6105,7 +6090,7 @@ CodexData = {
 					id = "unique:8931",
 					name = "Ashfall Verdict",
 					color = "#ff9c3a",
-					sub = "Sword, level 1300. Attack 72, Defense 36, Extra Defense +3, Critical Hit: chance +7%, damage +30%, Melee +6, Attack Speed +15%, Damage to Elites and Bosses +20%, Physical Penetration +20%, Critical Echo: 22% chance on a critical hit to strike again",
+					sub = "Sword, level 1300. Attack 72, Defense 36, Extra Defense +3, Melee +6, Attack Speed +15%, Damage to Elites and Bosses +20%, Physical Penetration +20%, Critical Echo: 22% chance on a critical hit to strike again",
 					f = {kind = {"weapon"}, level = 1300, source = "monster"},
 					sections = {
 						{
@@ -6114,7 +6099,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 72", "Defense 36", "Extra Defense +3", "Critical Hit: chance +7%, damage +30%", "Melee +6", "Attack Speed +15%", "Damage to Elites and Bosses +20%", "Physical Penetration +20%", "Critical Echo: 22% chance on a critical hit to strike again"}
+							p = {"Attack 72", "Defense 36", "Extra Defense +3", "Melee +6", "Attack Speed +15%", "Damage to Elites and Bosses +20%", "Physical Penetration +20%", "Critical Echo: 22% chance on a critical hit to strike again"}
 						},
 						{
 							h = "Item",
@@ -6193,7 +6178,7 @@ CodexData = {
 					id = "unique:22516",
 					name = "Band of the Severed Star",
 					color = "#ff9c3a",
-					sub = "Ring, level 1900. Melee +4, Melee +4, Critical Hit: chance +6%, damage +30%, Ranged +4, Fist +4, Magic Level +4, Melee +4, Damage to Elites and Bosses +22%, Executes Monsters below 8% Health, Item Find +15%, Death Blast: 22% chance on kill to explode",
+					sub = "Ring, level 1900. Melee +4, Melee +4, Ranged +4, Fist +4, Magic Level +4, Melee +4, Damage to Elites and Bosses +22%, Executes Monsters below 8% Health, Item Find +15%, Death Blast: 22% chance on kill to explode",
 					f = {kind = {"jewel"}, level = 1900, source = "monster"},
 					sections = {
 						{
@@ -6202,7 +6187,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Melee +4", "Melee +4", "Critical Hit: chance +6%, damage +30%", "Ranged +4", "Fist +4", "Magic Level +4", "Melee +4", "Damage to Elites and Bosses +22%", "Executes Monsters below 8% Health", "Item Find +15%", "Death Blast: 22% chance on kill to explode"}
+							p = {"Melee +4", "Melee +4", "Ranged +4", "Fist +4", "Magic Level +4", "Melee +4", "Damage to Elites and Bosses +22%", "Executes Monsters below 8% Health", "Item Find +15%", "Death Blast: 22% chance on kill to explode"}
 						},
 						{
 							h = "Item",
@@ -6330,17 +6315,14 @@ CodexData = {
 					id = "unique:11395",
 					name = "Bloodmoon Edge",
 					color = "#ff9c3a",
-					sub = "Sword, level 90. Attack 44, Defense 22, Critical Hit: chance +5%, damage +25%, Melee +3",
+					sub = "Sword, level 90. Attack 44, Defense 22, Melee +3",
 					f = {kind = {"weapon"}, level = 90, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Forged under a crimson moon; it never dries. Crimson Tide: Critical hits deal 74% more damage. Other hits deal 12% less. A critical hit heals 3% of its damage. For: Warrior, Thief. (Requires level 90.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 44", "Defense 22", "Critical Hit: chance +5%, damage +25%", "Melee +3"}
-						},
+						{h = "Stats", p = {"Attack 44", "Defense 22", "Melee +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -6417,17 +6399,14 @@ CodexData = {
 					id = "unique:27658",
 					name = "Bloodsworn Greataxe",
 					color = "#ff9c3a",
-					sub = "weapon, level 300. Attack 58, Defense 30, Melee +3, Critical Hit: chance +5%, damage +25%",
+					sub = "weapon, level 300. Attack 58, Defense 30, Melee +3",
 					f = {kind = {"other"}, level = 300, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Its edge was quenched in the Blood Colossus's altar and never quite dried. Altar Quench: Below 40% health you deal 98% more damage. Above 75% health you deal 15% less. For: Warrior. (Requires level 300.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 58", "Defense 30", "Melee +3", "Critical Hit: chance +5%, damage +25%"}
-						},
+						{h = "Stats", p = {"Attack 58", "Defense 30", "Melee +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -6500,14 +6479,14 @@ CodexData = {
 					id = "unique:28100",
 					name = "Bloodsworn Legplates",
 					color = "#ff9c3a",
-					sub = "Legs, level 300. Armor 11, Critical Hit: chance +3%, damage +10%",
+					sub = "Legs, level 300. Armor 11",
 					f = {kind = {"legs"}, level = 300, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Plates that tighten when blood runs down them. Tightening Plates: Each kill restores 7.1% of your maximum health, at most 21% per second. Healing on you is 45% lower. For: Warrior, Templar. (Requires level 300.)"}
 						},
-						{h = "Stats", p = {"Armor 11", "Critical Hit: chance +3%, damage +10%"}},
+						{h = "Stats", p = {"Armor 11"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -6614,17 +6593,14 @@ CodexData = {
 					id = "unique:7379",
 					name = "Bonegrinder",
 					color = "#ff9c3a",
-					sub = "Club, level 90. Attack 58, Defense 18, Melee +5, Critical Hit: chance +5%, damage +25%",
+					sub = "Club, level 90. Attack 58, Defense 18, Melee +5",
 					f = {kind = {"weapon"}, level = 90, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A skull on a pole. The skull is grinning, the pole is not. Grinding Wheel: You deal 7% more damage per other monster within 3 tiles, up to 5. Alone you deal 15% less. For: Warrior, Monk. (Requires level 90.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 58", "Defense 18", "Melee +5", "Critical Hit: chance +5%, damage +25%"}
-						},
+						{h = "Stats", p = {"Attack 58", "Defense 18", "Melee +5"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7082,7 +7058,7 @@ CodexData = {
 					id = "unique:2123",
 					name = "Cinderheart Signet",
 					color = "#ff9c3a",
-					sub = "Ring, level 1000. Melee +3, Melee +3, Critical Hit: chance +6%, damage +25%, Ranged +3, Fire Absorb +12%, Fist +3, Life Leech: chance +6%, amount +6%, Magic Level +3, Physical Absorb +5%, Melee +3, Damage to Elites and Bosses +20%, Chance to Ignite +22%, Life on Kill +200, Death Blast: 20% chance on kill to explode",
+					sub = "Ring, level 1000. Melee +3, Melee +3, Ranged +3, Fire Absorb +12%, Fist +3, Life Leech: chance +6%, amount +6%, Magic Level +3, Physical Absorb +5%, Melee +3, Damage to Elites and Bosses +20%, Chance to Ignite +22%, Life on Kill +200, Death Blast: 20% chance on kill to explode",
 					f = {kind = {"jewel"}, level = 1000, source = "boss"},
 					sections = {
 						{
@@ -7091,7 +7067,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Melee +3", "Melee +3", "Critical Hit: chance +6%, damage +25%", "Ranged +3", "Fire Absorb +12%", "Fist +3", "Life Leech: chance +6%, amount +6%", "Magic Level +3", "Physical Absorb +5%", "Melee +3", "Damage to Elites and Bosses +20%", "Chance to Ignite +22%", "Life on Kill +200", "Death Blast: 20% chance on kill to explode"}
+							p = {"Melee +3", "Melee +3", "Ranged +3", "Fire Absorb +12%", "Fist +3", "Life Leech: chance +6%, amount +6%", "Magic Level +3", "Physical Absorb +5%", "Melee +3", "Damage to Elites and Bosses +20%", "Chance to Ignite +22%", "Life on Kill +200", "Death Blast: 20% chance on kill to explode"}
 						},
 						{
 							h = "Item",
@@ -7654,17 +7630,14 @@ CodexData = {
 					id = "unique:25423",
 					name = "Cutthroat's Locket",
 					color = "#ff9c3a",
-					sub = "Amulet, level 820. Critical Hit: chance +4%, damage +18%, Physical Absorb +5%, Melee +2",
+					sub = "Amulet, level 820. Physical Absorb +5%, Melee +2",
 					f = {kind = {"jewel"}, level = 820, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"One portrait inside: whoever it is, they never saw you coming. First Cut: Targets at 90% health or more take 70% more damage from you. Targets at 25% or less take 5% less. For: Thief. (Requires level 820.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Critical Hit: chance +4%, damage +18%", "Physical Absorb +5%", "Melee +2"}
-						},
+						{h = "Stats", p = {"Physical Absorb +5%", "Melee +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7700,7 +7673,7 @@ CodexData = {
 					id = "unique:40012",
 					name = "Dawnless Gauntlets",
 					color = "#ff9c3a",
-					sub = "Fist weapon, level 2000. Attack 70, Defense 42, Critical Hit: chance +8%, damage +30%, Fist +6, Physical Absorb +5%, Damage to Elites and Bosses +20%, Damage over Time +30%, Health Regeneration +40 per Second, Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)",
+					sub = "Fist weapon, level 2000. Attack 70, Defense 42, Fist +6, Physical Absorb +5%, Damage to Elites and Bosses +20%, Damage over Time +30%, Health Regeneration +40 per Second, Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)",
 					f = {kind = {"weapon"}, level = 2000, source = "monster"},
 					sections = {
 						{
@@ -7709,7 +7682,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 70", "Defense 42", "Critical Hit: chance +8%, damage +30%", "Fist +6", "Physical Absorb +5%", "Damage to Elites and Bosses +20%", "Damage over Time +30%", "Health Regeneration +40 per Second", "Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)"}
+							p = {"Attack 70", "Defense 42", "Fist +6", "Physical Absorb +5%", "Damage to Elites and Bosses +20%", "Damage over Time +30%", "Health Regeneration +40 per Second", "Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)"}
 						},
 						{
 							h = "Item",
@@ -7833,17 +7806,14 @@ CodexData = {
 					id = "unique:27645",
 					name = "Dry Powder Breeches",
 					color = "#ff9c3a",
-					sub = "Legs, level 480. Armor 12, Critical Hit: chance +2%, damage 0%, Fire Absorb +5%, Melee +1",
+					sub = "Legs, level 480. Armor 12, Fire Absorb +5%, Melee +1",
 					f = {kind = {"legs"}, level = 480, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Keep the powder dry, keep the fuse short, and let the kill light it. Dry Powder: On a kill, a fire nova hits up to 4 monsters within 2 tiles for 40 plus 0.6 per level, every 4 s. For: Thief. (Requires level 480.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Armor 12", "Critical Hit: chance +2%, damage 0%", "Fire Absorb +5%", "Melee +1"}
-						},
+						{h = "Stats", p = {"Armor 12", "Fire Absorb +5%", "Melee +1"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7955,17 +7925,14 @@ CodexData = {
 					id = "unique:7404",
 					name = "Duskstalker Fang",
 					color = "#ff9c3a",
-					sub = "weapon, level 300. Attack 42, Defense 12, Critical Hit: chance +3%, damage +15%, Melee +2",
+					sub = "weapon, level 300. Attack 42, Defense 12, Melee +2",
 					f = {kind = {"other"}, level = 300, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"The first of a pair. It wants the other one in your off hand. First of a Pair: Each hit in a row on one target deals 8% more, up to 6 hits. The first hit on a new target deals 12% less. For: Thief. (Requires level 300.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 42", "Defense 12", "Critical Hit: chance +3%, damage +15%", "Melee +2"}
-						},
+						{h = "Stats", p = {"Attack 42", "Defense 12", "Melee +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8117,7 +8084,7 @@ CodexData = {
 					id = "unique:29866",
 					name = "Duskweaver Wand",
 					color = "#ff9c3a",
-					sub = "Wand / rod, level 140. Range 6, Critical Hit: chance +8%, damage +15%, Magic Level +6, Mana Leech: chance +8%, amount +10%, Physical Absorb +8%",
+					sub = "Wand / rod, level 140. Range 6, Magic Level +6, Mana Leech: chance +8%, amount +10%, Physical Absorb +8%",
 					f = {kind = {"weapon"}, level = 140, source = "boss"},
 					sections = {
 						{
@@ -8126,7 +8093,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Range 6", "Critical Hit: chance +8%, damage +15%", "Magic Level +6", "Mana Leech: chance +8%, amount +10%", "Physical Absorb +8%"}
+							p = {"Range 6", "Magic Level +6", "Mana Leech: chance +8%, amount +10%", "Physical Absorb +8%"}
 						},
 						{
 							h = "Item",
@@ -8163,14 +8130,14 @@ CodexData = {
 					id = "unique:27687",
 					name = "Dustroad Treads",
 					color = "#ff9c3a",
-					sub = "Boots, level 430. Armor 4, Critical Hit: chance +2%, damage 0%, Ice Absorb +6%",
+					sub = "Boots, level 430. Armor 4, Ice Absorb +6%",
 					f = {kind = {"boots"}, level = 430, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"The dust never settles behind them. You were never there. Dust Never Settles: Your hits deal 1% more damage per 25 speed above 700, up to 20%. For: Thief. (Requires level 430.)"}
 						},
-						{h = "Stats", p = {"Armor 4", "Critical Hit: chance +2%, damage 0%", "Ice Absorb +6%"}},
+						{h = "Stats", p = {"Armor 4", "Ice Absorb +6%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8379,17 +8346,14 @@ CodexData = {
 					id = "unique:28690",
 					name = "Emberwake Locket",
 					color = "#ff9c3a",
-					sub = "Amulet, level 600. Critical Hit: chance +3%, damage +12%, Fire Absorb +8%, Physical Absorb +4%",
+					sub = "Amulet, level 600. Fire Absorb +8%, Physical Absorb +4%",
 					f = {kind = {"jewel"}, level = 600, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"It opens onto a very small, very patient fire. Small Patient Fire: While you fight, you and your party within 3 tiles heal 3% of their health every 2.5 s. Other healing on you is 15% lower. For: Templar, Mystic, Monk. (Requires level 600.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Critical Hit: chance +3%, damage +12%", "Fire Absorb +8%", "Physical Absorb +4%"}
-						},
+						{h = "Stats", p = {"Fire Absorb +8%", "Physical Absorb +4%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8466,17 +8430,14 @@ CodexData = {
 					id = "unique:2440",
 					name = "Executioner's Reckoning",
 					color = "#ff9c3a",
-					sub = "Axe, level 80. Attack 50, Defense 18, Melee +3, Critical Hit: chance +7%, damage +30%",
+					sub = "Axe, level 80. Attack 50, Defense 18, Melee +3",
 					f = {kind = {"weapon"}, level = 80, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"The last thing many a condemned man heard was its song. Last Words: Targets at 30% health or less take 55% more damage from you. Targets at 80% or more take 10% less. For: Warrior, Monk. (Requires level 80.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 50", "Defense 18", "Melee +3", "Critical Hit: chance +7%, damage +30%"}
-						},
+						{h = "Stats", p = {"Attack 50", "Defense 18", "Melee +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8511,7 +8472,7 @@ CodexData = {
 					id = "unique:2171",
 					name = "Eye of the Unbroken Storm",
 					color = "#ff9c3a",
-					sub = "Amulet, level 1000. Armor 4, Critical Hit: chance +4%, damage +15%, Ranged +5, Energy Absorb +12%, Magic Level +4, Chance to Shock +22%, Elemental Penetration +18%, Experience +6%, Arc Lightning: 22% chance on hit to arc to 3 monsters nearby",
+					sub = "Amulet, level 1000. Armor 4, Ranged +5, Energy Absorb +12%, Magic Level +4, Chance to Shock +22%, Elemental Penetration +18%, Experience +6%, Arc Lightning: 22% chance on hit to arc to 3 monsters nearby",
 					f = {kind = {"jewel"}, level = 1000, source = "boss"},
 					sections = {
 						{
@@ -8520,7 +8481,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Armor 4", "Critical Hit: chance +4%, damage +15%", "Ranged +5", "Energy Absorb +12%", "Magic Level +4", "Chance to Shock +22%", "Elemental Penetration +18%", "Experience +6%", "Arc Lightning: 22% chance on hit to arc to 3 monsters nearby"}
+							p = {"Armor 4", "Ranged +5", "Energy Absorb +12%", "Magic Level +4", "Chance to Shock +22%", "Elemental Penetration +18%", "Experience +6%", "Arc Lightning: 22% chance on hit to arc to 3 monsters nearby"}
 						},
 						{
 							h = "Item",
@@ -8678,14 +8639,14 @@ CodexData = {
 					id = "unique:7890",
 					name = "Fusewright's Charm",
 					color = "#ff9c3a",
-					sub = "Amulet, level 150. Critical Hit: chance +2%, damage +8%, Fire Absorb +6%",
+					sub = "Amulet, level 150. Fire Absorb +6%",
 					f = {kind = {"jewel"}, level = 150, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"It ticks when no one is listening. Snares: two more mines may be out, they hit 10% harder and their fuse burns 4 s longer. Slow Burn: A monster that dies with your fire damage on it passes it to 3 monsters within 2 tiles: 94% of the last tick for 4 ticks. Your direct hits deal 6% less. For: Ranger, Thief. (Requires level 150. Ranger and Thief lines.)"}
 						},
-						{h = "Stats", p = {"Critical Hit: chance +2%, damage +8%", "Fire Absorb +6%"}},
+						{h = "Stats", p = {"Fire Absorb +6%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8721,17 +8682,14 @@ CodexData = {
 					id = "unique:27474",
 					name = "Gallows Arbalest",
 					color = "#ff9c3a",
-					sub = "weapon, level 600. Attack 78, Range 6, Critical Hit: chance +4%, damage +15%, Ranged +3",
+					sub = "weapon, level 600. Attack 78, Range 6, Ranged +3",
 					f = {kind = {"other"}, level = 600, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Its string was a hangman's rope. It still pulls tight on its own. Hangman's Rope: Targets at 95% health or more take 90% more damage from you. Targets at 50% or less take 15% less. For: Ranger. (Requires level 600.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 78", "Range 6", "Critical Hit: chance +4%, damage +15%", "Ranged +3"}
-						},
+						{h = "Stats", p = {"Attack 78", "Range 6", "Ranged +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8842,14 +8800,14 @@ CodexData = {
 					id = "unique:28114",
 					name = "Gallows Leggings",
 					color = "#ff9c3a",
-					sub = "Legs, level 600. Armor 10, Critical Hit: chance +3%, damage +10%",
+					sub = "Legs, level 600. Armor 10",
 					f = {kind = {"legs"}, level = 600, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Made for standing still a long time on a cold scaffold. Standing Still: Each hit in a row on one target deals 8% more, up to 6 hits. The first hit on a new target deals 15% less. For: Ranger, Mystic. (Requires level 600.)"}
 						},
-						{h = "Stats", p = {"Armor 10", "Critical Hit: chance +3%, damage +10%"}},
+						{h = "Stats", p = {"Armor 10"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8964,14 +8922,14 @@ CodexData = {
 					id = "unique:23590",
 					name = "Gorehammer",
 					color = "#ff9c3a",
-					sub = "Club, level 100. Attack 66, Defense 20, Critical Hit: chance +8%, damage +30%",
+					sub = "Club, level 100. Attack 66, Defense 20",
 					f = {kind = {"weapon"}, level = 100, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A two-handed argument that ends all debate. Argument Ender: Targets at 35% health or less take 60% more damage from you. Targets at 85% or more take 12% less. For: Templar, Monk. (Requires level 100.)"}
 						},
-						{h = "Stats", p = {"Attack 66", "Defense 20", "Critical Hit: chance +8%, damage +30%"}},
+						{h = "Stats", p = {"Attack 66", "Defense 20"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9006,17 +8964,14 @@ CodexData = {
 					id = "unique:36659",
 					name = "Grasp of the Pyre Saint",
 					color = "#ff9c3a",
-					sub = "Fist weapon, level 650. Attack 64, Defense 24, Critical Hit: chance +4%, damage +15%, Fire Absorb +6%, Fist +5",
+					sub = "Fist weapon, level 650. Attack 64, Defense 24, Fire Absorb +6%, Fist +5",
 					f = {kind = {"weapon"}, level = 650, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A saint walked into the pyre and did not stop; only the hand came back out. Saint Walked On: Below 30% health you deal 98% more damage. Above 70% health you deal 15% less. For: Monk. (Requires level 650, Monks only.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 64", "Defense 24", "Critical Hit: chance +4%, damage +15%", "Fire Absorb +6%", "Fist +5"}
-						},
+						{h = "Stats", p = {"Attack 64", "Defense 24", "Fire Absorb +6%", "Fist +5"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9094,7 +9049,7 @@ CodexData = {
 					id = "unique:25886",
 					name = "Gravetide Arbalest",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 1800. Attack 92, Hit Chance 95, Range 6, Critical Hit: chance +8%, damage +30%, Ranged +7, Attack Speed +12%, Physical Penetration +18%, Chance to Poison +20%, Hunter's Rush: 22% chance on kill for haste (4 s)",
+					sub = "Distance weapon, level 1800. Attack 92, Hit Chance 95, Range 6, Ranged +7, Attack Speed +12%, Physical Penetration +18%, Chance to Poison +20%, Hunter's Rush: 22% chance on kill for haste (4 s)",
 					f = {kind = {"weapon"}, level = 1800, source = "monster"},
 					sections = {
 						{
@@ -9103,7 +9058,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 92", "Hit Chance 95", "Range 6", "Critical Hit: chance +8%, damage +30%", "Ranged +7", "Attack Speed +12%", "Physical Penetration +18%", "Chance to Poison +20%", "Hunter's Rush: 22% chance on kill for haste (4 s)"}
+							p = {"Attack 92", "Hit Chance 95", "Range 6", "Ranged +7", "Attack Speed +12%", "Physical Penetration +18%", "Chance to Poison +20%", "Hunter's Rush: 22% chance on kill for haste (4 s)"}
 						},
 						{
 							h = "Item",
@@ -9140,7 +9095,7 @@ CodexData = {
 					id = "unique:2404",
 					name = "Gravewhisper Stiletto",
 					color = "#ff9c3a",
-					sub = "Sword, level 600. Attack 56, Defense 31, Critical Hit: chance +5%, damage +25%, Melee +3, Attack Speed +10%, Chance to Poison +16%, Health on Hit +30",
+					sub = "Sword, level 600. Attack 56, Defense 31, Melee +3, Attack Speed +10%, Chance to Poison +16%, Health on Hit +30",
 					f = {kind = {"weapon"}, level = 600, source = "monster"},
 					sections = {
 						{
@@ -9149,7 +9104,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 56", "Defense 31", "Critical Hit: chance +5%, damage +25%", "Melee +3", "Attack Speed +10%", "Chance to Poison +16%", "Health on Hit +30"}
+							p = {"Attack 56", "Defense 31", "Melee +3", "Attack Speed +10%", "Chance to Poison +16%", "Health on Hit +30"}
 						},
 						{
 							h = "Item",
@@ -9229,7 +9184,7 @@ CodexData = {
 					id = "unique:40011",
 					name = "Gravewind Talons",
 					color = "#ff9c3a",
-					sub = "Fist weapon, level 1400. Attack 68, Defense 38, Critical Hit: chance +6%, damage +25%, Fist +4, Physical Penetration +14%, Health on Hit +45, Damage to Elites and Bosses +16%, Bloodrush: each kill adds 5% damage (5 stacks, 6 s)",
+					sub = "Fist weapon, level 1400. Attack 68, Defense 38, Fist +4, Physical Penetration +14%, Health on Hit +45, Damage to Elites and Bosses +16%, Bloodrush: each kill adds 5% damage (5 stacks, 6 s)",
 					f = {kind = {"weapon"}, level = 1400, source = "monster"},
 					sections = {
 						{
@@ -9238,7 +9193,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 68", "Defense 38", "Critical Hit: chance +6%, damage +25%", "Fist +4", "Physical Penetration +14%", "Health on Hit +45", "Damage to Elites and Bosses +16%", "Bloodrush: each kill adds 5% damage (5 stacks, 6 s)"}
+							p = {"Attack 68", "Defense 38", "Fist +4", "Physical Penetration +14%", "Health on Hit +45", "Damage to Elites and Bosses +16%", "Bloodrush: each kill adds 5% damage (5 stacks, 6 s)"}
 						},
 						{
 							h = "Item",
@@ -9538,17 +9493,14 @@ CodexData = {
 					id = "unique:41642",
 					name = "Heartbleed Pendant",
 					color = "#ff9c3a",
-					sub = "Amulet, level 90. Critical Hit: chance +4%, damage +20%, Life Leech: chance +5%, amount +6%",
+					sub = "Amulet, level 90. Life Leech: chance +5%, amount +6%",
 					f = {kind = {"jewel"}, level = 90, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Each beat is a drop of someone else's life. Borrowed Beat: Each kill restores 6.4% of your maximum health, at most 19% per second. Healing on you is 40% lower. For: Warrior, Necromancer, Templar. (Requires level 90.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Critical Hit: chance +4%, damage +20%", "Life Leech: chance +5%, amount +6%"}
-						},
+						{h = "Stats", p = {"Life Leech: chance +5%, amount +6%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9625,17 +9577,14 @@ CodexData = {
 					id = "unique:16111",
 					name = "Hellspite Arbalest",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 100. Attack 80, Range 6, Critical Hit: chance +4%, damage +20%, Ranged +4",
+					sub = "Distance weapon, level 100. Attack 80, Range 6, Ranged +4",
 					f = {kind = {"weapon"}, level = 100, season = "season", source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Its bolts scream on the way down. Screaming Bolts: Critical hits deal 74% more damage. Other hits deal 12% less. For: Ranger. (Requires level 100.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 80", "Range 6", "Critical Hit: chance +4%, damage +20%", "Ranged +4"}
-						},
+						{h = "Stats", p = {"Attack 80", "Range 6", "Ranged +4"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9845,7 +9794,7 @@ CodexData = {
 					id = "unique:25880",
 					name = "Hollow Throne Claymore",
 					color = "#ff9c3a",
-					sub = "Sword, level 1550. Attack 73, Defense 38, Critical Hit: chance +6%, damage +30%, Melee +6, Attack Speed +12%, Damage to Elites and Bosses +20%, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
+					sub = "Sword, level 1550. Attack 73, Defense 38, Melee +6, Attack Speed +12%, Damage to Elites and Bosses +20%, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
 					f = {kind = {"weapon"}, level = 1550, source = "monster"},
 					sections = {
 						{
@@ -9854,7 +9803,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 73", "Defense 38", "Critical Hit: chance +6%, damage +30%", "Melee +6", "Attack Speed +12%", "Damage to Elites and Bosses +20%", "Physical Penetration +18%", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
+							p = {"Attack 73", "Defense 38", "Melee +6", "Attack Speed +12%", "Damage to Elites and Bosses +20%", "Physical Penetration +18%", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
 						},
 						{
 							h = "Item",
@@ -10259,14 +10208,14 @@ CodexData = {
 					id = "unique:28023",
 					name = "Knuckles of the Unbound",
 					color = "#ff9c3a",
-					sub = "Ring, level 400. Critical Hit: chance +3%, damage +10%, Fist +6",
+					sub = "Ring, level 400. Fist +6",
 					f = {kind = {"jewel"}, level = 400, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Worn on the hand that never held a blade. Your bare fists hit as with the Open Hand Creed at 80% without the keystone; with it, 10% harder. Hand That Never Held: Each hit in a row on one target deals 8% more, up to 6 hits. The first hit on a new target deals 10% less. For: Monk, Thief, Warrior. (Requires level 400.)"}
 						},
-						{h = "Stats", p = {"Critical Hit: chance +3%, damage +10%", "Fist +6"}},
+						{h = "Stats", p = {"Fist +6"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -10884,7 +10833,7 @@ CodexData = {
 					id = "unique:27193",
 					name = "Misericorde of the Pale Vow",
 					color = "#ff9c3a",
-					sub = "Sword, level 1900. Attack 68, Defense 38, Critical Hit: chance +7%, damage +30%, Melee +5, Attack Speed +14%, Health on Hit +45, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
+					sub = "Sword, level 1900. Attack 68, Defense 38, Melee +5, Attack Speed +14%, Health on Hit +45, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
 					f = {kind = {"weapon"}, level = 1900, source = "monster"},
 					sections = {
 						{
@@ -10893,7 +10842,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 68", "Defense 38", "Critical Hit: chance +7%, damage +30%", "Melee +5", "Attack Speed +14%", "Health on Hit +45", "Physical Penetration +18%", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
+							p = {"Attack 68", "Defense 38", "Melee +5", "Attack Speed +14%", "Health on Hit +45", "Physical Penetration +18%", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
 						},
 						{
 							h = "Item",
@@ -10930,7 +10879,7 @@ CodexData = {
 					id = "unique:26765",
 					name = "Moonlit Gallows Bow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 900. Attack 83, Hit Chance 99, Range 7, Critical Hit: chance +5%, damage +20%, Ranged +6, Attack Speed +12%, Physical Penetration +14%, Chance to Bleed +18%, Echo Shot: 18% chance on a ranged hit to shoot again",
+					sub = "Distance weapon, level 900. Attack 83, Hit Chance 99, Range 7, Ranged +6, Attack Speed +12%, Physical Penetration +14%, Chance to Bleed +18%, Echo Shot: 18% chance on a ranged hit to shoot again",
 					f = {kind = {"weapon"}, level = 900, source = "monster"},
 					sections = {
 						{
@@ -10939,7 +10888,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 83", "Hit Chance 99", "Range 7", "Critical Hit: chance +5%, damage +20%", "Ranged +6", "Attack Speed +12%", "Physical Penetration +14%", "Chance to Bleed +18%", "Echo Shot: 18% chance on a ranged hit to shoot again"}
+							p = {"Attack 83", "Hit Chance 99", "Range 7", "Ranged +6", "Attack Speed +12%", "Physical Penetration +14%", "Chance to Bleed +18%", "Echo Shot: 18% chance on a ranged hit to shoot again"}
 						},
 						{
 							h = "Item",
@@ -11150,7 +11099,7 @@ CodexData = {
 					id = "unique:2411",
 					name = "Nightbloom Stiletto",
 					color = "#ff9c3a",
-					sub = "Sword, level 1250. Attack 64, Defense 35, Critical Hit: chance +6%, damage +28%, Melee +4, Attack Speed +15%, Chance to Poison +24%, Physical Penetration +18%, Critical Echo: 20% chance on a critical hit to strike again",
+					sub = "Sword, level 1250. Attack 64, Defense 35, Melee +4, Attack Speed +15%, Chance to Poison +24%, Physical Penetration +18%, Critical Echo: 20% chance on a critical hit to strike again",
 					f = {kind = {"weapon"}, level = 1250, source = "monster"},
 					sections = {
 						{
@@ -11159,7 +11108,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 64", "Defense 35", "Critical Hit: chance +6%, damage +28%", "Melee +4", "Attack Speed +15%", "Chance to Poison +24%", "Physical Penetration +18%", "Critical Echo: 20% chance on a critical hit to strike again"}
+							p = {"Attack 64", "Defense 35", "Melee +4", "Attack Speed +15%", "Chance to Poison +24%", "Physical Penetration +18%", "Critical Echo: 20% chance on a critical hit to strike again"}
 						},
 						{
 							h = "Item",
@@ -11196,17 +11145,14 @@ CodexData = {
 					id = "unique:2412",
 					name = "Nightfang Katana",
 					color = "#ff9c3a",
-					sub = "Sword, level 60. Attack 32, Defense 16, Extra Defense +2, Critical Hit: chance +4%, damage +20%, Melee +2",
+					sub = "Sword, level 60. Attack 32, Defense 16, Extra Defense +2, Melee +2",
 					f = {kind = {"weapon"}, level = 60, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Quick as a whisper in the crypt, and as final. Crypt Whisper: Critical hits deal 67% more damage. Other hits deal 10% less. For: Thief. (Requires level 60.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 32", "Defense 16", "Extra Defense +2", "Critical Hit: chance +4%, damage +20%", "Melee +2"}
-						},
+						{h = "Stats", p = {"Attack 32", "Defense 16", "Extra Defense +2", "Melee +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -11580,17 +11526,14 @@ CodexData = {
 					id = "unique:26774",
 					name = "Plaguerunner's Cowl",
 					color = "#ff9c3a",
-					sub = "Helmet, level 540. Armor 15, Critical Hit: chance +2%, damage 0%, Earth Absorb +6%, Melee +2",
+					sub = "Helmet, level 540. Armor 15, Earth Absorb +6%, Melee +2",
 					f = {kind = {"helmet"}, level = 540, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A fever follows the runner, and a runner always has a fever to spare. Trail of Rot: A monster that dies with your poison damage on it passes it to 3 monsters within 2 tiles: 90% of the last tick for 5 ticks. Your direct hits deal 5% less. For: Thief. (Requires level 540.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Armor 15", "Critical Hit: chance +2%, damage 0%", "Earth Absorb +6%", "Melee +2"}
-						},
+						{h = "Stats", p = {"Armor 15", "Earth Absorb +6%", "Melee +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -12060,14 +12003,14 @@ CodexData = {
 					id = "unique:21691",
 					name = "Rotbloom Phial",
 					color = "#ff9c3a",
-					sub = "Amulet, level 150. Critical Hit: chance +2%, damage 0%, Earth Absorb +8%",
+					sub = "Amulet, level 150. Earth Absorb +8%",
 					f = {kind = {"jewel"}, level = 150, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"The flower inside has never stopped growing. Contagion Rite: your poison spreads to one more monster and one step deeper. Never-Stopping Flower: A monster that dies with your poison damage on it passes it to 4 monsters within 2 tiles: 100% of the last tick for 4 ticks. Your direct hits deal 6% less. For: Thief, Ranger. (Requires level 150.)"}
 						},
-						{h = "Stats", p = {"Critical Hit: chance +2%, damage 0%", "Earth Absorb +8%"}},
+						{h = "Stats", p = {"Earth Absorb +8%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -12102,7 +12045,7 @@ CodexData = {
 					id = "unique:2408",
 					name = "Sanguine Crescent",
 					color = "#ff9c3a",
-					sub = "Sword, level 1000. Attack 78, Defense 38, Critical Hit: chance +8%, damage +30%, Life Leech: chance +10%, amount +8%, Melee +8, Attack Speed +12%, Health on Hit +60, Damage to Elites and Bosses +18%, Crimson Burst: 20% chance on hit to heal 4% of your health",
+					sub = "Sword, level 1000. Attack 78, Defense 38, Life Leech: chance +10%, amount +8%, Melee +8, Attack Speed +12%, Health on Hit +60, Damage to Elites and Bosses +18%, Crimson Burst: 20% chance on hit to heal 4% of your health",
 					f = {kind = {"weapon"}, level = 1000, source = "boss"},
 					sections = {
 						{
@@ -12111,7 +12054,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 78", "Defense 38", "Critical Hit: chance +8%, damage +30%", "Life Leech: chance +10%, amount +8%", "Melee +8", "Attack Speed +12%", "Health on Hit +60", "Damage to Elites and Bosses +18%", "Crimson Burst: 20% chance on hit to heal 4% of your health"}
+							p = {"Attack 78", "Defense 38", "Life Leech: chance +10%, amount +8%", "Melee +8", "Attack Speed +12%", "Health on Hit +60", "Damage to Elites and Bosses +18%", "Crimson Burst: 20% chance on hit to heal 4% of your health"}
 						},
 						{
 							h = "Item",
@@ -12229,17 +12172,14 @@ CodexData = {
 					id = "unique:7697",
 					name = "Signet of Last Rites",
 					color = "#ff9c3a",
-					sub = "Ring, level 760. Critical Hit: chance +3%, damage +14%, Death Absorb +6%, Magic Level +2",
+					sub = "Ring, level 760. Death Absorb +6%, Magic Level +2",
 					f = {kind = {"jewel"}, level = 760, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"It waits for the last breath of a thing, then takes it. Last Rites: Targets at 25% health or less take 80% more damage from you. Targets at 80% or more take 10% less. For: Necromancer. (Requires level 760.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Critical Hit: chance +3%, damage +14%", "Death Absorb +6%", "Magic Level +2"}
-						},
+						{h = "Stats", p = {"Death Absorb +6%", "Magic Level +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -12406,7 +12346,7 @@ CodexData = {
 					id = "unique:29571",
 					name = "Soulshackle Scepter",
 					color = "#ff9c3a",
-					sub = "Wand / rod, level 120. Range 6, Critical Hit: chance +7%, damage +12%, Death Absorb +8%, Magic Level +5, Mana Leech: chance +7%, amount +8%",
+					sub = "Wand / rod, level 120. Range 6, Death Absorb +8%, Magic Level +5, Mana Leech: chance +7%, amount +8%",
 					f = {kind = {"weapon"}, level = 120, source = "monster"},
 					sections = {
 						{
@@ -12415,7 +12355,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Range 6", "Critical Hit: chance +7%, damage +12%", "Death Absorb +8%", "Magic Level +5", "Mana Leech: chance +7%, amount +8%"}
+							p = {"Range 6", "Death Absorb +8%", "Magic Level +5", "Mana Leech: chance +7%, amount +8%"}
 						},
 						{
 							h = "Item",
@@ -12493,14 +12433,14 @@ CodexData = {
 					id = "unique:28049",
 					name = "Splintered Instant",
 					color = "#ff9c3a",
-					sub = "Ring, level 400. Critical Hit: chance +6%, damage +20%",
+					sub = "Ring, level 400.",
 					f = {kind = {"jewel"}, level = 400, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A moment cracked in two; one half keeps happening. Cascade Edge: the burst deals 25% more of the critical hit and comes 0.2 s sooner. Crack in Time: On a critical hit, a energy nova hits up to 6 monsters within 2 tiles for 70 plus 1.2 per level, every 3 s. Costs 0.5% health, never below 35%. For: Thief, Monk, Ranger. (Requires level 400.)"}
 						},
-						{h = "Stats", p = {"Critical Hit: chance +6%, damage +20%"}},
+						{h = "Stats", p = {"The base item's own stats (no extra stats of its own)."}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -12620,7 +12560,7 @@ CodexData = {
 					id = "unique:22417",
 					name = "Stormherald's Recurve",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 1600. Attack 88, Hit Chance 97, Range 7, Critical Hit: chance +8%, damage +30%, Ranged +7, Attack Speed +14%, Elemental Penetration +20%, Chance to Chill +20%, Echo Shot: 22% chance on a ranged hit to shoot again",
+					sub = "Distance weapon, level 1600. Attack 88, Hit Chance 97, Range 7, Ranged +7, Attack Speed +14%, Elemental Penetration +20%, Chance to Chill +20%, Echo Shot: 22% chance on a ranged hit to shoot again",
 					f = {kind = {"weapon"}, level = 1600, source = "monster"},
 					sections = {
 						{
@@ -12629,7 +12569,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 88", "Hit Chance 97", "Range 7", "Critical Hit: chance +8%, damage +30%", "Ranged +7", "Attack Speed +14%", "Elemental Penetration +20%", "Chance to Chill +20%", "Echo Shot: 22% chance on a ranged hit to shoot again"}
+							p = {"Attack 88", "Hit Chance 97", "Range 7", "Ranged +7", "Attack Speed +14%", "Elemental Penetration +20%", "Chance to Chill +20%", "Echo Shot: 22% chance on a ranged hit to shoot again"}
 						},
 						{
 							h = "Item",
@@ -13346,7 +13286,7 @@ CodexData = {
 					id = "unique:25885",
 					name = "Wake-Heron Longbow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 2100. Attack 91, Hit Chance 98, Range 7, Critical Hit: chance +8%, damage +30%, Ranged +7, Attack Speed +14%, Elemental Penetration +18%, Damage over Time +40%, Echo Shot: 20% chance on a ranged hit to shoot again",
+					sub = "Distance weapon, level 2100. Attack 91, Hit Chance 98, Range 7, Ranged +7, Attack Speed +14%, Elemental Penetration +18%, Damage over Time +40%, Echo Shot: 20% chance on a ranged hit to shoot again",
 					f = {kind = {"weapon"}, level = 2100, source = "monster"},
 					sections = {
 						{
@@ -13355,7 +13295,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 91", "Hit Chance 98", "Range 7", "Critical Hit: chance +8%, damage +30%", "Ranged +7", "Attack Speed +14%", "Elemental Penetration +18%", "Damage over Time +40%", "Echo Shot: 20% chance on a ranged hit to shoot again"}
+							p = {"Attack 91", "Hit Chance 98", "Range 7", "Ranged +7", "Attack Speed +14%", "Elemental Penetration +18%", "Damage over Time +40%", "Echo Shot: 20% chance on a ranged hit to shoot again"}
 						},
 						{
 							h = "Item",
@@ -13479,17 +13419,14 @@ CodexData = {
 					id = "unique:22690",
 					name = "Widowmaker",
 					color = "#ff9c3a",
-					sub = "Sword, level 40. Attack 24, Defense 12, Extra Defense +2, Critical Hit: chance +3%, damage +15%",
+					sub = "Sword, level 40. Attack 24, Defense 12, Extra Defense +2",
 					f = {kind = {"weapon"}, level = 40, season = "season", source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Slim, patient and well-used; its owners all died young. Widow's Patience: Each hit in a row on one target deals 6% more, up to 5 hits. The first hit on a new target deals 10% less. For: Thief, Monk, Warrior. (Requires level 40.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 24", "Defense 12", "Extra Defense +2", "Critical Hit: chance +3%, damage +15%"}
-						},
+						{h = "Stats", p = {"Attack 24", "Defense 12", "Extra Defense +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -17760,18 +17697,18 @@ CodexData = {
 					sections = {
 						{
 							h = "Tiers",
-							p = {"A modifier rolls among the best 5 tiers its item level allows, weighted (higher tiers are rarer)."},
+							p = {"A modifier rolls among every tier its item level allows. All tiers weigh the same, so the best tier is as likely as any other. A few modifiers have a gate of their own (the weapon's Mana Leech does not roll below T4)."},
 							cols = {"Tier", "Item level", "Weight"},
 							w = {30, 35, 35},
 							rows = {
 								{"T1", "1", "100"},
-								{"T2", "15", "90"},
-								{"T3", "30", "80"},
-								{"T4", "50", "65"},
-								{"T5", "70", "50"},
-								{"T6", "95", "35"},
-								{"T7", "120", "22"},
-								{"T8", "140", "12"}
+								{"T2", "15", "100"},
+								{"T3", "30", "100"},
+								{"T4", "50", "100"},
+								{"T5", "70", "100"},
+								{"T6", "90", "100"},
+								{"T7", "110", "100"},
+								{"T8", "130", "100"}
 							}
 						},
 						{
@@ -17780,14 +17717,14 @@ CodexData = {
 							w = {22, 78},
 							rows = {
 								{"1", "T1 100%"},
-								{"15", "T2 47.4%, T1 52.6%"},
-								{"30", "T3 29.6%, T2 33.3%, T1 37%"},
-								{"50", "T4 19.4%, T3 23.9%, T2 26.9%, T1 29.9%"},
-								{"70", "T5 13%, T4 16.9%, T3 20.8%, T2 23.4%, T1 26%"},
-								{"95", "T6 10.9%, T5 15.6%, T4 20.3%, T3 25%, T2 28.1%"},
-								{"120", "T7 8.7%, T6 13.9%, T5 19.8%, T4 25.8%, T3 31.7%"},
-								{"140", "T8 6.5%, T7 12%, T6 19%, T5 27.2%, T4 35.3%"},
-								{"150", "T8 6.5%, T7 12%, T6 19%, T5 27.2%, T4 35.3%"}
+								{"15", "T2 50%, T1 50%"},
+								{"30", "T3 33.3%, T2 33.3%, T1 33.3%"},
+								{"50", "T4 25%, T3 25%, T2 25%, T1 25%"},
+								{"70", "T5 20%, T4 20%, T3 20%, T2 20%, T1 20%"},
+								{"90", "T6 16.7%, T5 16.7%, T4 16.7%, T3 16.7%, T2 16.7%, T1 16.7%"},
+								{"110", "T7 14.3%, T6 14.3%, T5 14.3%, T4 14.3%, T3 14.3%, T2 14.3%, T1 14.3%"},
+								{"130", "T8 12.5%, T7 12.5%, T6 12.5%, T5 12.5%, T4 12.5%, T3 12.5%, T2 12.5%, T1 12.5%"},
+								{"150", "T8 12.5%, T7 12.5%, T6 12.5%, T5 12.5%, T4 12.5%, T3 12.5%, T2 12.5%, T1 12.5%"}
 							}
 						}
 					}
@@ -17830,7 +17767,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Sides",
-							p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, block, dodge, reflect, thorns, penetration, ailments...).", "Suffixes: utility, resistances and speed (absorbs, leech, attack and movement speed, life and mana on kill or hit, find, experience...).", "A new item is rolled until its count or both sides are full; the Orb of Grafting only adds on a side that is open. An Orb of Ruin can give one extra slot on one side."}
+							p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, block, dodge, reflect, thorns, penetration, ailments, maximum life and mana...).", "Suffixes: utility, resistances and speed (absorbs, leech, attack and movement speed, life and mana on kill or hit, mana regeneration, attributes, experience...).", "A new item is rolled until its count or both sides are full; the Orb of Grafting only adds on a side that is open. An Orb of Ruin can give one extra slot on one side."}
 						}
 					}
 				},
@@ -17895,7 +17832,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Quality",
-							p = {"Each Whetstone adds 1% quality, up to 20% (30% from Divine). Every modifier value is multiplied by (100 + quality) / 100, rounded."},
+							p = {"Each Whetstone adds 1% quality, up to 20% (30% from Divine). Quality multiplies the base bonus the rarity gave the item (its attack, defence and armour) by (100 + quality) / 100, rounded; it does not change a modifier."},
 							links = {"orb:whetstone"}
 						},
 						{
@@ -18781,8 +18718,8 @@ CodexData = {
 			}
 		}
 	},
-	tierLevels = {1, 15, 30, 50, 70, 95, 120, 140},
-	tierWeights = {100, 90, 80, 65, 50, 35, 22, 12},
-	tierWindow = 5
+	tierLevels = {1, 15, 30, 50, 70, 90, 110, 130},
+	tierWeights = {100, 100, 100, 100, 100, 100, 100, 100},
+	tierWindow = 8
 }
 return CodexData

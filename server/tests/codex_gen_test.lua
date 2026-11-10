@@ -154,12 +154,22 @@ for _, tab in ipairs({tabs.modifiers, tabs.powers}) do
 end
 local speed = ids["mod:chaos_mod_attackspeed"]
 eq(speed.side, "suffix", "attack speed side"); count()
-eq(speed.tv[8], "+13-15%", "attack speed T8"); count()
+eq(speed.tv[8], "+26-27%", "attack speed T8"); count()
 eq(speed.f.kind[1], "weapon", "attack speed on weapons"); count()
 eq(#speed.f.kind, 1, "attack speed only on weapons"); count()
+-- O461: the critical pair is two modifiers, each with its own page and numbers
 local crit = ids["mod:rarity_criticalhitchance"]
-eq(crit.name, "Critical Hit", "critical pair name"); count()
-eq(crit.tv[8], "5-7% chance, +8-10%", "critical T8 (chance two thirds)"); count()
+eq(crit.name, "Critical Strike Chance", "critical chance name"); count()
+eq(crit.tv[8], "+7-8%", "critical chance T8, in points"); count()
+local critDmg = ids["mod:rarity_criticalhitamount"]
+eq(critDmg.name, "Critical Strike Damage", "critical damage name"); count()
+eq(critDmg.tv[8], "+35-38%", "critical damage T8"); count()
+eq(critDmg.f.kind[1] ~= nil, true, "kinds of the critical damage"); count()
+eq(ids["mod:chaos_mod_lifeleech"].tv[8], "+1-1.2%", "the Lua life leech in percent: T8 10-12 tenths"); count()
+eq(ids["mod:chaos_mod_goldfind"], nil, "Gold Find left the roll pool: no page"); count()
+eq(ids["mod:chaos_mod_manacost"], nil, "Mana Cost Reduction left the roll pool: no page"); count()
+eq(ids["mod:rarity_miningskill"], nil, "the six crafting professions left the roll pool: no page"); count()
+eq(loaded.tierWindow, M.config.maxTier, "every tier rolls: the window as wide as the table"); count()
 eq(ids["mod:rarity_physicalabsorb"].f.kind[8], "other", "absorbs on any gear"); count()
 
 -- links and shared sections resolve

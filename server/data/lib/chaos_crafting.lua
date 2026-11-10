@@ -12,9 +12,10 @@
 --                                        show that one); an item from before item levels has only "combatPowerLevel"
 --   attack/defense/armor/hit chance      raised once by a small bonus of the rarity and the item level
 --   one custom attribute per modifier    the engine's types: rarity_<x>Absorb (percent), rarity_<skill>Skill,
---                                        rarity_maglevelSkill, rarity_criticalHitChance + rarity_criticalHitAmount
---                                        (always a pair, same for mana and life leech), rarity_element<x> (weapons
---                                        only, % extra damage); and the Chaos types "chaos_mod_<key>"
+--                                        rarity_maglevelSkill, rarity_criticalHitChance and rarity_criticalHitAmount
+--                                        (two modifiers since O461, each alone; the old pair of one chance and one
+--                                        amount survives for leech on items not upgraded yet), rarity_element<x>
+--                                        (weapons only, % extra damage); and the Chaos types "chaos_mod_<key>"
 --   "ct_<attribute key>" per modifier    its tier, T1 (lowest) .. T8 (chaos_item_mods.lua); missing on old items: the
 --                                        tier then follows from the value
 --   the description attribute           "Item Level: 57. Prefixes: Sword +2 (T3); Critical Chance +1%, Critical Hit
@@ -161,21 +162,33 @@ C.skills = {
 	{key = "rarity_shieldSkill", label = "Shielding", kind = "combat"},
 	{key = "rarity_fishingSkill", label = "Fishing", kind = "profession"},
 	{key = "rarity_craftingSkill", label = "Crafting", kind = "profession"},
-	{key = "rarity_woodcuttingSkill", label = "Woodcutting", kind = "profession"},
-	{key = "rarity_miningSkill", label = "Mining", kind = "profession"},
-	{key = "rarity_herbalistSkill", label = "Herbalism", kind = "profession"},
-	{key = "rarity_armorsmithSkill", label = "Armorsmithing", kind = "profession"},
-	{key = "rarity_weaponsmithSkill", label = "Weaponsmithing", kind = "profession"},
-	{key = "rarity_jewelsmithSkill", label = "Jewelsmithing", kind = "profession"},
+	-- the six crafting professions left the roll pool in O461 (only the crafting bench read them; fishing and crafting stay);
+	-- the rows stay to read the items that carry one
+	{key = "rarity_woodcuttingSkill", label = "Woodcutting", kind = "profession", noRoll = true},
+	{key = "rarity_miningSkill", label = "Mining", kind = "profession", noRoll = true},
+	{key = "rarity_herbalistSkill", label = "Herbalism", kind = "profession", noRoll = true},
+	{key = "rarity_armorsmithSkill", label = "Armorsmithing", kind = "profession", noRoll = true},
+	{key = "rarity_weaponsmithSkill", label = "Weaponsmithing", kind = "profession", noRoll = true},
+	{key = "rarity_jewelsmithSkill", label = "Jewelsmithing", kind = "profession", noRoll = true},
 	{key = "rarity_maglevelSkill", label = "Magic", kind = "combat"}
 }
+-- the pairs of one engine chance and one engine amount that are ONE modifier: only the life and mana leech pairs of items
+-- from before O461 (noRoll: the Lua modifiers lifeleech ... replaced them); ChaosCrafting.upgradeItem turns a pair into one
+-- of those. The critical pair is two modifiers since O461 (C.singles).
 C.specials = {
-	{key = "rarity_criticalHitChance", key2 = "rarity_criticalHitAmount", label = "Critical Chance", label2 = "Critical Hit",
-		kind = "critical"},
 	{key = "rarity_manaLeechChance", key2 = "rarity_manaLeechAmount", label = "Mana Chance", label2 = "Mana Amount",
-		kind = "leech"},
+		kind = "leech", noRoll = true},
 	{key = "rarity_lifeLeechChance", key2 = "rarity_lifeLeechAmount", label = "Life Chance", label2 = "Life Amount",
-		kind = "leech"}
+		kind = "leech", noRoll = true}
+}
+-- one engine attribute each, rolled alone (O461): Critical Strike Chance (points) and Critical Strike Damage (percent). The base
+-- script (customs/rarity/base_rarity.lua) turns each attribute into its own condition when the item is worn, so neither needs
+-- the other. `engine` = the group of ChaosItemMods.config.engine that holds the tiers.
+C.singles = {
+	{key = "rarity_criticalHitChance", label = "Critical Strike Chance", engine = "critchance",
+		kinds = {weapon = true, jewel = true, other = true, quiver = true}},
+	{key = "rarity_criticalHitAmount", label = "Critical Strike Damage", engine = "critdamage",
+		kinds = {weapon = true, jewel = true, other = true, quiver = true}}
 }
 C.elements = {
 	{key = "rarity_elementfire", label = "Fire"},
@@ -248,11 +261,18 @@ function C.affixes()
 		add({key = s.key, group = "skill", label = s.label, noRoll = s.noRoll}, E[name], name)
 	end
 	for _, s in ipairs(C.specials) do
-		add({key = s.key, key2 = s.key2, group = "special", label = s.label, label2 = s.label2}, E[s.kind], s.kind)
+		add({key = s.key, key2 = s.key2, group = "special", label = s.label, label2 = s.label2, noRoll = s.noRoll}, E[s.kind],
+			s.kind)
+	end
+	for _, s in ipairs(C.singles) do
+		local row = {key = s.key, group = "single", label = s.label, kinds = s.kinds}
+		add(row, E[s.engine], s.engine)
+		row.legacy = nil -- the old ranges belong to the pair: a lone value reads from today's tiers until it is upgraded
 	end
 	for _, def in ipairs(M.config.mods) do
 		list[#list + 1] = {key = M.attr(def.key), chaosKey = def.key, group = "chaos", label = def.label, side = def.side,
-			weight = def.weight, tiers = def.tiers, legacy = M.legacy[def.key], kinds = def.kinds, def = def}
+			weight = def.weight, tiers = def.tiers, legacy = M.legacy[def.key], kinds = def.kinds, def = def,
+			noRoll = def.noRoll, needs = def.needs, minTier = def.minTier}
 	end
 	for _, e in ipairs(C.elements) do
 		add({key = e.key, group = "element", label = e.label}, E.element, "element")
@@ -268,7 +288,8 @@ end
 -- every custom attribute key a rolled item may carry (rarity, item level, each modifier and its tier mark): what a
 -- script that copies an item by hand (the Guild Stash) must copy
 function C.attributeKeys()
-	local out = {"rarity", M.ILVL, "combatPowerLevel", M.QUALITY, M.RUINED, M.EXTRA, M.CORRUPTED, M.IMPLICIT, M.NAME_MARK}
+	local out = {"rarity", M.ILVL, "combatPowerLevel", M.QUALITY, M.RUINED, M.EXTRA, M.CORRUPTED, M.IMPLICIT, M.NAME_MARK,
+		M.VERSION, M.WEAPON_BASE}
 	for _, a in ipairs(C.affixes()) do
 		out[#out + 1] = a.key
 		if a.key2 then
@@ -357,6 +378,7 @@ end
 -- {group, key, key2, label, label2, value, value2, tier, side, lo, hi, chaosKey, affix, implicit}. The corrupted implicit
 -- of a Void Orb (chaos_orbs.lua) has side "implicit" and implicit = true: it takes no prefix or suffix slot.
 function C.readMods(item)
+	C.upgradeItem(item) -- an item of an older version gets today's numbers before anything reads them (see below)
 	local mods = {}
 	local implicitKey = M.implicitKey(item)
 	local function push(m, affix, tierValue)
@@ -400,6 +422,12 @@ function C.readMods(item)
 				C.affixOf(s.key), v2 ~= 0 and v2 or v)
 		end
 	end
+	for _, s in ipairs(C.singles) do
+		local v = C.customNumber(item, s.key)
+		if v ~= 0 then
+			push({group = "single", key = s.key, label = s.label, value = v}, C.affixOf(s.key), v)
+		end
+	end
 	for _, m in ipairs(M.read(item)) do
 		push({group = "chaos", key = M.attr(m.key), chaosKey = m.key, label = m.label, value = m.value},
 			C.affixOf(M.attr(m.key)), m.value)
@@ -428,7 +456,7 @@ end
 
 -- text of one modifier, as item.cpp writes it into the description
 function C.modText(m)
-	if m.group == "absorb" then
+	if m.group == "absorb" or m.group == "single" then
 		return string.format("%s +%d%%", m.label, m.value)
 	elseif m.group == "skill" then
 		return string.format("%s +%d", m.label, m.value)
@@ -622,13 +650,17 @@ function C.candidates(item, rarity, mods, opts)
 	local open = {prefix = p < M.sideLimitOf(item, "prefix", rarity) + extra,
 		suffix = s < M.sideLimitOf(item, "suffix", rarity) + extra}
 	local kind = M.kindOf(item)
+	local it = itemType(item)
 	local elementOk = elements < C.config.maxElements and C.canHaveElement(item)
 	local powerOk = rarity >= M.config.powers.minRarity and powers < M.config.powers.maxPerItem
+	-- the best tier the item level allows (opts.level, else the item's own): a modifier with a gate above it (minTier) cannot roll
+	local top = M.maxTierFor(opts and opts.level or C.orbLevel(item))
 	local out = {}
 	for _, a in ipairs(C.affixes()) do
 		local isPower = a.def and M.isPower(a.def)
-		if not have[a.key:lower()] and open[a.side] and M.allowed(a, kind) and (a.group ~= "element" or elementOk)
-				and (not isPower or powerOk) and not a.noRoll and not (melee and C.MELEE_KEYS[a.key:lower()]) then
+		if not have[a.key:lower()] and open[a.side] and M.allowed(a, kind, it) and (a.group ~= "element" or elementOk)
+				and (not isPower or powerOk) and not a.noRoll and not (melee and C.MELEE_KEYS[a.key:lower()])
+				and (a.minTier or 1) <= top then
 			out[#out + 1] = {entry = a, weight = a.weight}
 		end
 	end
@@ -659,7 +691,7 @@ C.reasons = {
 	hasBound = "Bound modifiers stop this orb: use an Orb of Erasure first.",
 	maxRarity = "This item has the highest rarity already.",
 	qualityFull = "This item has all the quality it can get.",
-	needMods = "This item has no modifier for the quality to act on.",
+	needMods = "This item has no attack, defence or armour for the quality to act on.", -- O461: quality acts on the base bonus
 	ruinNothing = "Nothing left to risk: the item has no modifier an Orb of Ruin could improve.",
 	keyNeedNone = "This orb works only on a Rift Key without modifiers.",
 	keyNoMods = "This Rift Key has no modifiers.",
@@ -831,47 +863,40 @@ local function removeCustom(item, key)
 	pcall(function() item:removeCustomAttribute(key) end)
 end
 
--- write one modifier of `affix` at `tier` (the value rolled inside the tier unless given; `value` is always the value
--- before quality). With item quality q the item carries value x (100 + q) / 100, rounded, and keeps the rolled value
--- under "cv_<key>" so the next quality step starts from it. Returns the modifier.
+-- write one modifier of `affix` at `tier` (the value rolled inside the tier unless given). Since O461 the value is stored as
+-- rolled: item quality no longer multiplies it (it acts on the base bonus, C.applyBaseBonus), and the version mark says the
+-- item follows today's numbers. A raw "cv_" value of an older item goes. Returns the modifier.
 function C.writeAffix(item, affix, tier, value, rand)
 	rand = rand or C.random
 	local r = M.tierRange(affix.tiers, tier)
 	value = value or rand(r[1], r[2])
-	local q = M.qualityOf(item)
-	local function eff(v)
-		return q > 0 and M.scaleQuality(v, q) or v
-	end
 	local m = {group = affix.group, key = affix.key, key2 = affix.key2, label = affix.label, label2 = affix.label2,
 		chaosKey = affix.chaosKey, side = affix.side, tier = tier, lo = r[1], hi = r[2], affix = affix,
 		bound = M.isBound(item, affix.key), power = affix.def and M.isPower(affix.def) or false}
 	if affix.group == "chaos" then
-		M.set(item, affix.chaosKey, eff(value), tier)
-		m.value = eff(value)
+		M.set(item, affix.chaosKey, value, tier)
+		m.value = value
 	elseif affix.group == "special" then
-		m.value, m.value2 = eff(C.specialChance(value)), eff(value)
+		m.value, m.value2 = C.specialChance(value), value
 		item:setCustomAttribute(affix.key, m.value)
 		item:setCustomAttribute(affix.key2, m.value2)
 		M.setTier(item, affix.key, tier)
 		m.lo, m.hi, m.lo2, m.hi2 = C.specialChance(r[1]), C.specialChance(r[2]), r[1], r[2]
 	else
-		item:setCustomAttribute(affix.key, eff(value))
+		item:setCustomAttribute(affix.key, value)
 		M.setTier(item, affix.key, tier)
-		m.value = eff(value)
+		m.value = value
 	end
-	if q > 0 then
-		item:setCustomAttribute(M.rawAttr(affix.key), value)
-	else
-		removeCustom(item, M.rawAttr(affix.key))
-	end
+	removeCustom(item, M.rawAttr(affix.key))
+	item:setCustomAttribute(M.VERSION, M.config.modVersion)
 	return m
 end
 
--- roll one modifier of `affix` on an item of item level `level`: the tier among those the level allows, the value
--- inside the tier
+-- roll one modifier of `affix` on an item of item level `level`: the tier among those the level allows (and its own gate
+-- allows), the value inside the tier
 function C.rollAffix(item, affix, level, rand)
 	rand = rand or C.random
-	return C.writeAffix(item, affix, M.rollTier(level, rand), nil, rand)
+	return C.writeAffix(item, affix, M.rollTier(level, rand, affix.minTier), nil, rand)
 end
 
 -- add `n` random modifiers (the rarity's side limits, the item's kind). Returns the added ones.
@@ -879,7 +904,7 @@ function C.rollAffixes(item, rarity, level, n, rand)
 	rand = rand or C.random
 	local added = {}
 	for _ = 1, n or 0 do
-		local affix = M.pick(C.candidates(item, rarity), rand)
+		local affix = M.pick(C.candidates(item, rarity, nil, {level = level}), rand)
 		if not affix then
 			break
 		end
@@ -930,6 +955,9 @@ function C.clearMods(item)
 	end
 	removeCustom(item, M.EXTRA)
 	removeCustom(item, M.IMPLICIT)
+	-- nothing old is left: whatever is written next follows today's numbers, and no read may upgrade the item in between
+	-- (a forge sets the rarity and the base bonus before its first modifier)
+	item:setCustomAttribute(M.VERSION, M.config.modVersion)
 end
 
 -- the modifier of an item under this attribute key (as C.readMods returns it) or nil
@@ -974,8 +1002,8 @@ function C.rerollTiers(item, rand, only)
 	C.rewriteDescription(item)
 end
 
--- the Orb of Whetstone: `stones` x the configured percent more quality, up to the cap of the item's rarity. Every value
--- is worked out again from the value it was rolled at. Returns the new quality, the old one.
+-- the Orb of Whetstone: `stones` x the configured percent more quality, up to the cap of the item's rarity. Quality acts on the
+-- base bonus (attack, defence, armour) since O461, not on the modifiers. Returns the new quality, the old one.
 function C.addQuality(item, stones)
 	local old = M.qualityOf(item)
 	local rarity = C.rarityOf(item)
@@ -983,30 +1011,7 @@ function C.addQuality(item, stones)
 	return C.setQuality(item, q)
 end
 
--- set the item quality to q (0 .. the highest cap; the caller checks the cap of the rarity: a Void Orb goes past it)
--- and work every value out again from the value it was rolled at. Returns the new quality, the old one.
-function C.setQuality(item, q)
-	local old = M.qualityOf(item)
-	q = math.max(0, math.min(M.config.quality.capHigh, math.floor(tonumber(q) or 0)))
-	if q == old then
-		return q, old
-	end
-	local mods = C.readMods(item)
-	local raws = {}
-	for i, m in ipairs(mods) do
-		raws[i] = C.rawValue(item, m) -- before the quality changes (a stored raw value, else the value as it is)
-	end
-	item:setCustomAttribute(M.QUALITY, q)
-	for i, m in ipairs(mods) do
-		if m.affix then
-			C.writeAffix(item, m.affix, m.tier, raws[i], nil) -- the tier is stored by this call too (old items had none)
-		end
-	end
-	C.rewriteDescription(item)
-	return q, old
-end
-
--- the base stat bonus of a rarity at an item level (item.cpp's formula)
+-- the base bonus of a rarity at an item level (item.cpp's formula)
 function C.baseBonusOf(rarity, level)
 	local b = ChaosRarity.at(C.config.baseBonus, rarity)
 	if not b then
@@ -1015,27 +1020,89 @@ function C.baseBonusOf(rarity, level)
 	return b[1] + math.floor((tonumber(level) or 0) * (b[2] - b[1] + 1) / 100)
 end
 
+-- the base bonus with the item's quality q percent: rounded to the nearest whole number, never below the bonus itself (O461:
+-- quality multiplies the base bonus by (100 + q) / 100; it used to multiply every modifier value)
+function C.qualityBonus(bonus, q)
+	bonus, q = math.floor(tonumber(bonus) or 0), tonumber(q) or 0
+	if bonus <= 0 or q <= 0 then
+		return bonus
+	end
+	return math.max(bonus, math.floor(bonus * (100 + q) / 100 + 0.5))
+end
+
+-- the stats the base bonus raises and the quality acts on: the item type's method and the attribute, attack, defence, armour
+-- (the hit chance takes the plain bonus; quality does not touch it)
+local function baseStats()
+	return {{ITEM_ATTRIBUTE_ATTACK, "getAttack"}, {ITEM_ATTRIBUTE_DEFENSE, "getDefense"}, {ITEM_ATTRIBUTE_ARMOR, "getArmor"}}
+end
+
+-- true when the item has an attack, defence or armour of its type for the quality to act on
+function C.hasBaseStat(item)
+	local it = itemType(item)
+	if not it then
+		return false
+	end
+	for _, row in ipairs(baseStats()) do
+		if row[1] and typeNumber(it, row[2]) > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+-- set the item quality to q (0 .. the highest cap; the caller checks the cap of the rarity: a Void Orb goes past it). The attack,
+-- defence and armour move by the change of the quality share of the base bonus (what is on the item stays, so a +N upgrade or
+-- another script's change is kept). Returns the new quality, the old one.
+function C.setQuality(item, q)
+	local old = M.qualityOf(item)
+	q = math.max(0, math.min(M.config.quality.capHigh, math.floor(tonumber(q) or 0)))
+	if q == old then
+		return q, old
+	end
+	local bonus = C.baseBonusOf(C.rarityOf(item), C.levelOf(item))
+	local delta = C.qualityBonus(bonus, q) - C.qualityBonus(bonus, old)
+	M.unscaleWeapon(item) -- the weapon's own attack first: Weapon Damage is worked out again from it below
+	if delta ~= 0 then
+		for _, row in ipairs(baseStats()) do
+			if row[1] then
+				local ok, cur = pcall(function() return item:getAttribute(row[1]) end)
+				cur = ok and tonumber(cur) or 0
+				if cur > 0 then
+					item:setAttribute(row[1], math.max(1, cur + delta))
+				end
+			end
+		end
+	end
+	item:setCustomAttribute(M.QUALITY, q)
+	M.syncWeaponDamage(item)
+	C.rewriteDescription(item)
+	return q, old
+end
+
 -- attack / defense / armor / hit chance = the item type's + the bonus (only on a fresh item: the forge of a drop or
--- of an orb's new copy)
+-- of an orb's new copy). The attack, defence and armour carry the item's quality (C.qualityBonus).
 function C.applyBaseBonus(item, rarity, level)
 	local it = itemType(item)
 	local bonus = C.baseBonusOf(rarity, level)
 	if not it or bonus <= 0 then
 		return
 	end
-	local function raise(attr, method)
+	local withQuality = C.qualityBonus(bonus, M.qualityOf(item))
+	local function raise(attr, method, add)
 		local base = typeNumber(it, method)
 		if attr and base > 0 then
-			item:setAttribute(attr, base + bonus)
+			item:setAttribute(attr, base + add)
 		end
 	end
-	raise(ITEM_ATTRIBUTE_ATTACK, "getAttack")
-	raise(ITEM_ATTRIBUTE_DEFENSE, "getDefense")
-	raise(ITEM_ATTRIBUTE_ARMOR, "getArmor")
+	raise(ITEM_ATTRIBUTE_ATTACK, "getAttack", withQuality)
+	raise(ITEM_ATTRIBUTE_DEFENSE, "getDefense", withQuality)
+	raise(ITEM_ATTRIBUTE_ARMOR, "getArmor", withQuality)
+	-- the attack was written over: a Weapon Damage modifier on the item takes the new attack as its base
+	M.syncWeaponDamage(item, true)
 	-- a bow or crossbow fires with its type's own hit chance (the engine reads no item attribute for it any more:
 	-- chaos_archery_core.lua), so a raised value would only show a number it does not use
 	if not (ChaosArchery and ChaosArchery.isLauncherType(it)) then
-		raise(ITEM_ATTRIBUTE_HITCHANCE, "getHitChance")
+		raise(ITEM_ATTRIBUTE_HITCHANCE, "getHitChance", bonus)
 	end
 end
 
@@ -1069,6 +1136,212 @@ function C.orbLevel(item)
 	end
 	local it = itemType(item)
 	return M.sourceLevel({monsterLevel = math.max(1, it and typeNumber(it, "getMinReqLevel") or 1)})
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- upgrade of an item of an older version (O461, 2026-11-10)
+-- ---------------------------------------------------------------------------------------------------------------
+-- The ranges, the quality rule and the critical and leech modifiers changed while the beta server was live and is not wiped.
+-- An item that carries modifiers and no version mark (M.VERSION = "chaos_modv") is upgraded the first time something reads it
+-- (C.readMods, M.read: totals, tooltips, orbs, the market; and when it is moved, item_mods.lua), once, in place:
+--   * every modifier keeps its tier and its place inside the tier's range: a value 40% of the way from the low to the high end of
+--     the old range is 40% of the way inside the new range (rounded; the same range keeps the value);
+--   * the quality share goes: the value is the one rolled before the quality (the "cv_" value, else the quality taken off again)
+--     and the quality moves to the base bonus instead (attack, defence, armour);
+--   * a critical pair (chance and amount) becomes the two modifiers Critical Strike Chance and Critical Strike Damage at the
+--     pair's tier; a life or mana leech pair becomes the Lua modifier of the item's kind (the weapon's own on a weapon) at the
+--     same tier, and the engine attributes of the pair are removed. The item may end with one modifier more than its rarity
+--     allows;
+--   * modifiers that left the roll pool (gold find, item find, mana cost, six professions) stay as they are;
+--   * the description is written again; the legacy tables still read the tier of an item without a tier mark.
+-- Items whose numbers are fixed by design are never touched (C.hasFixedValues): uniques and set pieces (chaos_unique, chaos_set),
+-- the vendor gear of the raid (chaos_raid) and the factions (chaos_faction), store items and store-bound items.
+local FIXED_MARKS = {"chaos_unique", "chaos_set", "chaos_raid", "chaos_faction", "chaos_storebound"}
+
+function C.hasFixedValues(item)
+	if C.isUnique(item) then
+		return true
+	end
+	for _, k in ipairs(FIXED_MARKS) do
+		if custom(item, k) ~= nil then
+			return true
+		end
+	end
+	local ok, store = pcall(function() return item:isStoreItem() end)
+	return ok and store == true
+end
+
+-- true when this item still has to be upgraded (cheap: the version mark first)
+function C.needsUpgrade(item)
+	if not item or M.versionOf(item) >= M.config.modVersion then
+		return false
+	end
+	if C.rarityOf(item) == 0 then
+		return false -- no rarity, no rolled modifiers
+	end
+	return not C.hasFixedValues(item)
+end
+
+-- a value at the same place of another range: `value` in {lo, hi} -> the same share of {nlo, nhi}, whole numbers
+function C.remapValue(value, old, new)
+	if old[1] == new[1] and old[2] == new[2] then
+		return math.max(new[1], math.min(new[2], value))
+	end
+	local share
+	if old[2] <= old[1] then
+		share = 0.5
+	else
+		share = math.max(0, math.min(1, (value - old[1]) / (old[2] - old[1])))
+	end
+	return math.floor(new[1] + share * (new[2] - new[1]) + 0.5 + 1e-9)
+end
+
+-- the value a modifier had before the item's quality (version 1 multiplied every modifier by it): the stored raw value, else
+-- the quality taken off again inside the old range
+local function undoQuality(item, attrKey, value, q, old)
+	if q <= 0 then
+		return value
+	end
+	local cv = C.customNumber(item, M.rawAttr(attrKey))
+	if cv > 0 then
+		return math.floor(cv)
+	end
+	local inv = math.floor(value * 100 / (100 + q) + 0.5)
+	return math.max(old[1], math.min(old[2], inv))
+end
+
+local upgrading = false
+
+local function upgradeNow(item)
+	local q = M.qualityOf(item)
+	local kind = M.kindOf(item)
+	local later = {} -- what to write once the old attributes are gone: {attr or chaos, value, tier, bound}
+	local function dropKey(attrKey)
+		removeCustom(item, attrKey)
+		removeCustom(item, M.tierAttr(attrKey))
+		removeCustom(item, M.rawAttr(attrKey))
+		removeCustom(item, M.bindAttr(attrKey))
+	end
+	local function tierOfPair(chanceKey, amountValue, legacyRanges)
+		local t = M.storedTier(item, chanceKey)
+		local stored = t ~= nil
+		if not t then
+			local old = M.config.oldTiers
+			t = M.tierOfValue(legacyRanges, amountValue, old[1], old[#old])
+		end
+		return t, stored
+	end
+
+	-- the critical pair: chance and amount of the engine, one modifier before, two now
+	local cc, ca = C.customNumber(item, "rarity_criticalHitChance"), C.customNumber(item, "rarity_criticalHitAmount")
+	if cc ~= 0 or ca ~= 0 then
+		local t, stored = tierOfPair("rarity_criticalHitChance", ca ~= 0 and ca or cc, M.legacyEngine.critical)
+		local oldR = M.tierRange(stored and M.v1.engine.critical or M.legacyEngine.critical, t)
+		local raw = undoQuality(item, "rarity_criticalHitChance", ca ~= 0 and ca or cc, q, oldR)
+		local bound = M.isBound(item, "rarity_criticalHitChance")
+		local E = M.config.engine
+		later[#later + 1] = {attr = "rarity_criticalHitChance", tier = t, bound = bound,
+			value = C.remapValue(raw, oldR, M.tierRange(E.critchance.tiers, t))}
+		later[#later + 1] = {attr = "rarity_criticalHitAmount", tier = t, bound = bound,
+			value = C.remapValue(raw, oldR, M.tierRange(E.critdamage.tiers, t))}
+		dropKey("rarity_criticalHitChance")
+		dropKey("rarity_criticalHitAmount")
+	end
+
+	-- the leech pairs: one Lua modifier each now
+	for _, s in ipairs(C.specials) do
+		local lc, la = C.customNumber(item, s.key), C.customNumber(item, s.key2)
+		if lc ~= 0 or la ~= 0 then
+			local t, stored = tierOfPair(s.key, la ~= 0 and la or lc, M.legacyEngine.leech)
+			local oldR = M.tierRange(stored and M.v1.engine.leech or M.legacyEngine.leech, t)
+			local raw = undoQuality(item, s.key, la ~= 0 and la or lc, q, oldR)
+			local life = s.key:lower():find("life", 1, true) ~= nil
+			local key = (life and "lifeleech" or "manaleech") .. (kind == "weapon" and "w" or "")
+			local def = M.byKey[key]
+			later[#later + 1] = {chaos = key, tier = t, bound = M.isBound(item, s.key),
+				value = C.remapValue(raw, oldR, M.tierRange(def.tiers, t))}
+			dropKey(s.key)
+			dropKey(s.key2)
+		end
+	end
+
+	-- every other modifier: same tier, same place in the new range, without the quality share
+	for _, m in ipairs(C.readMods(item)) do
+		local a = m.affix
+		if a and m.group ~= "single" and m.group ~= "special" and not a.noRoll then
+			local stored = M.storedTier(item, m.key) ~= nil
+			-- a modifier with a stored tier was rolled in the ranges of version 1; one without (an item from before 2026-10-18)
+			-- keeps its number and its tier from the legacy tables, as it did when the ranges were raised then
+			local oldR = M.tierRange(stored and (m.group == "chaos" and (M.v1.mods[m.chaosKey] or a.tiers) or a.tiers)
+				or (m.group == "chaos" and (M.legacy[m.chaosKey] or a.tiers) or (a.legacy or a.tiers)), m.tier)
+			local newR = M.tierRange(a.tiers, m.tier)
+			local raw = undoQuality(item, m.key, m.value, q, oldR)
+			local v = stored and C.remapValue(raw, oldR, newR) or raw
+			-- a row whose range did not change and no quality to take off: nothing to write (a value above its range, cut when
+			-- read, stays as it is stored)
+			local untouched = stored and q <= 0 and oldR[1] == newR[1] and oldR[2] == newR[2]
+			if not untouched and (v ~= m.value or stored) then
+				if m.group == "chaos" then
+					M.set(item, m.chaosKey, v, stored and m.tier or nil)
+				else
+					item:setCustomAttribute(m.key, v)
+					if stored then
+						M.setTier(item, m.key, m.tier)
+					end
+				end
+			end
+			removeCustom(item, M.rawAttr(m.key))
+		end
+	end
+	for _, w in ipairs(later) do
+		if w.chaos then
+			M.set(item, w.chaos, w.value, w.tier)
+			if w.bound then
+				M.setBound(item, M.attr(w.chaos), true)
+			end
+		else
+			item:setCustomAttribute(w.attr, w.value)
+			M.setTier(item, w.attr, w.tier)
+			if w.bound then
+				M.setBound(item, w.attr, true)
+			end
+		end
+	end
+
+	-- the quality share moves to the base bonus: attack, defence and armour of the item
+	if q > 0 then
+		local bonus = C.baseBonusOf(C.rarityOf(item), C.levelOf(item))
+		local delta = C.qualityBonus(bonus, q) - bonus
+		if delta > 0 then
+			for _, row in ipairs(baseStats()) do
+				if row[1] then
+					local ok, cur = pcall(function() return item:getAttribute(row[1]) end)
+					cur = ok and tonumber(cur) or 0
+					if cur > 0 then
+						item:setAttribute(row[1], cur + delta)
+					end
+				end
+			end
+		end
+	end
+	item:setCustomAttribute(M.VERSION, M.config.modVersion)
+	M.syncWeaponDamage(item)
+	C.rewriteDescription(item)
+	return true
+end
+
+-- upgrade the item if it needs it. Returns true when something changed. Never raises: an item that fails stays as it was.
+function C.upgradeItem(item)
+	if upgrading or not C.needsUpgrade(item) then
+		return false
+	end
+	upgrading = true
+	local ok, changed = pcall(upgradeNow, item)
+	upgrading = false
+	return ok and changed or false
+end
+M.upgradeFn = function(item)
+	return C.upgradeItem(item)
 end
 
 -- a new item of id with this rarity (0 = plain, keeps only the level) and item level, rolled by C.forge. For every

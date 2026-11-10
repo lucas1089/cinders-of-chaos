@@ -181,3 +181,39 @@ do
   assert(v and v <= 2147483647 and v > 0, "mana flat value fits int32")
   assert(v == 2147483647, "clamped at the int32 maximum (6e9 mana x 50%)")
 end
+
+-- O461: the worn pieces' Strength, Dexterity, Intelligence and Spell Damage ride on the tree's numbers (bonuses.gear*), through
+-- the same curves and the same increment, so the tree's soft caps hold the sums
+assertEq(ChaosPassivePoints({strength = 50, gearStrength = 10}, "strength"), 60, "tree points + worn points")
+assertEq(ChaosPassivePoints({dexterity = 5, gearStrength = 10}, "dexterity"), 5, "each stat has its own gear number")
+assertEq(ChaosPassivePoints({gearIntelligence = 7}, "intelligence"), 7, "gear alone")
+assertEq(ChaosPassiveStatMultiplier({strength = 50, gearStrength = 10}, COMBAT_PHYSICALDAMAGE, 0),
+  ChaosPassiveStatMultiplier({strength = 60}, COMBAT_PHYSICALDAMAGE, 0), "10 worn points count like 10 tree points")
+assertEq(ChaosPassiveStatMultiplier({gearIntelligence = 60}, COMBAT_FIREDAMAGE, 0), 1 + 48 / 230, "worn intelligence on the curve")
+assert(ChaosPassiveStatMultiplier({dexterity = 80, gearDexterity = 40}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE) > 1.25,
+  "worn dexterity past the cap still adds through the soft cap")
+-- spell damage: added to the increment of a spell or wand hit, never to a melee hit or to healing
+local spellB = {incrementFire = 100, gearSpell = 100}
+assertEq(ChaosPassiveDamageRaw(spellB, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 200, "tree 100 + worn 100 on a spell")
+assertEq(ChaosPassiveDamageRaw(spellB, COMBAT_FIREDAMAGE, ORIGIN_WAND), 200, "and on a wand hit")
+assertEq(ChaosPassiveDamageRaw(spellB, COMBAT_FIREDAMAGE, ORIGIN_MELEE), 100, "not on a melee hit")
+assertEq(ChaosPassiveDamageRaw(spellB, COMBAT_FIREDAMAGE), 100, "no origin (the stat window): the tree's number")
+assertEq(ChaosPassiveDamageRaw({incrementHealth = 10, gearSpell = 50}, COMBAT_HEALING, ORIGIN_SPELL), 10, "never on healing")
+assertEq(ChaosPassiveDamagePercent(spellB, COMBAT_FIREDAMAGE, ORIGIN_SPELL),
+  ChaosSoftCap(200, E.maxDamagePercent, E.softCap.damagePercentH), "the sum goes through the soft cap: 150 + 60 ln(1 + 50 / 60)")
+assert(ChaosPassiveDamagePercent(spellB, COMBAT_FIREDAMAGE, ORIGIN_SPELL) < 200, "the soft cap bites on the sum")
+assertEq(ChaosPassiveMinionDamagePercent({incrementFire = 10, gearSpell = 20}, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 30,
+  "a minion's spell hit takes it too")
+-- applyAll copies the totals of the worn pieces (ChaosItemModsCache) onto the table
+do
+  ChaosItemModsCache = {[7] = {strength = 12, dexterity = 3, intelligence = 9, spelldamage = 25}}
+  local pg = mkPlayer()
+  local tb = {strength = 1}
+  ChaosPassiveTree.listeners[1](pg, tb)
+  assertEq(tb.gearStrength, 12, "gear strength copied"); assertEq(tb.gearDexterity, 3); assertEq(tb.gearIntelligence, 9)
+  assertEq(tb.gearSpell, 25, "gear spell damage copied")
+  ChaosItemModsCache = nil
+  local tb2 = {}
+  ChaosPassiveTree.listeners[1](pg, tb2)
+  assertEq(tb2.gearStrength, 0, "no worn pieces: zero")
+end

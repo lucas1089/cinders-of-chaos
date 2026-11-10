@@ -236,6 +236,7 @@ sword:setCustomAttribute("rarity", 4) -- Epic: tier 2
 sword:setCustomAttribute("combatPowerLevel", 37)
 sword:setCustomAttribute("rarity_physicalAbsorb", 2)
 sword:setCustomAttribute("rarity_swordSkill", 1)
+sword:setCustomAttribute("chaos_modv", 2) -- numbers of O461: read as they are, not upgraded (the upgrade has its own tests)
 sword:setCustomAttribute("rarity_criticalHitChance", 2)
 sword:setCustomAttribute("rarity_criticalHitAmount", 1)
 sword:setCustomAttribute("rarity_elementfire", 7)
@@ -256,11 +257,11 @@ do
 	eq(ct.desc, "An amplifier of the old badge rite.", "its description")
 end
 eq(tip.tier, nil, "no rarity tier any more")
-eq(tip.sides.p, 3) eq(tip.sides.s, 2) eq(tip.sides.max, 2, "Rare: two of each (an old item may carry more)")
+eq(tip.sides.p, 4, "skill, critical chance, critical damage, element") eq(tip.sides.s, 2) eq(tip.sides.max, 2, "Rare: two of each (an old item may carry more)")
 eq(tip.cmp[1], 6) eq(tip.cmp[2], 5)
 eq(tip.base[1].k, "attack") eq(tip.base[1].v, 50, "attack from the item, not the type")
 eq(tip.base[2].k, "defense") eq(tip.base[2].v, 35)
-eq(#tip.mods, 5, "absorb, skill, critical pair, Chaos modifier, element")
+eq(#tip.mods, 6, "absorb, skill, critical chance, critical damage (two modifiers since O461), Chaos modifier, element")
 local byKey = {}
 for _, m in ipairs(tip.mods) do
 	byKey[m.k] = m
@@ -270,8 +271,8 @@ eq(byKey.rarity_physicalAbsorb.tr, 2, "tier from the value (an old item)") eq(by
 eq(byKey.rarity_elementfire.lo, 5, "the range of its tier") eq(byKey.rarity_elementfire.hi, 9)
 eq(byKey.rarity_elementfire.tr, 3) eq(byKey.rarity_elementfire.sd, "p")
 eq(tip.mods[1].sd, "p", "prefixes first") eq(tip.mods[#tip.mods].sd, "s", "suffixes last")
-eq(byKey.rarity_criticalHitChance.t, "Critical Chance +2%, Critical Hit +1%")
-eq(byKey.rarity_criticalHitChance.v2, 1)
+eq(byKey.rarity_criticalHitChance.t, "Critical Strike Chance +2%") eq(byKey.rarity_criticalHitChance.g, "single")
+eq(byKey.rarity_criticalHitAmount.t, "Critical Strike Damage +1%") eq(byKey.rarity_criticalHitAmount.sd, "p")
 local lok = byKey.chaos_mod_lifeonkill
 local r = M.legacy.lifeonkill[3] -- no stored tier: the range it was rolled in (before the ranges were raised)
 eq(lok.t, "Life on Kill +15") eq(lok.g, "chaos") eq(lok.lo, r[1]) eq(lok.hi, r[2]) eq(lok.tr, 3) eq(lok.sd, "s")
@@ -282,7 +283,7 @@ local stats = {}
 for _, s in ipairs(tip.stats) do
 	stats[s.k] = s
 end
-eq(stats.attack.v, 50) eq(stats.rarity_criticalHitAmount.v, 1, "pair split into two numbers")
+eq(stats.attack.v, 50) eq(stats.rarity_criticalHitAmount.v, 1, "its own number") eq(stats.rarity_criticalHitChance.v, 2)
 eq(stats.rarity_elementfire.l, "Fire Damage") eq(stats.gem_dmg_fire.v, 9, "gem effect in the compare numbers")
 eq(stats.chaos_mod_lifeonkill.fmt, nil, "flat Chaos modifier") eq(stats.rarity_swordSkill.v, 1)
 eq(tip.req.level, 80) eq(tip.req.voc, "knights") eq(tip.weight, 45)

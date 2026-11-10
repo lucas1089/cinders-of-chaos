@@ -228,7 +228,7 @@ return {
 		slots = 5,
 		pool = {
 			{key = "v_helm", kind = "gear", name = "Sepulchre Warden Helm", price = 120, weekly = 1,
-				id = 2491, itemKind = "helmet", rarity = 4, level = 130, mods = {{"monsterreduction", 7}, {"regen", 7}, {"lifeonkill", 7}}},
+				id = 2491, itemKind = "helmet", rarity = 4, level = 130, mods = {{"monsterreduction", 7}, {"maxlife", 7}, {"lifeonkill", 7}}}, -- O461: Maximum Life instead of Health Regeneration (not on helmets any more)
 			{key = "v_plate", kind = "gear", name = "Sepulchre Ashplate", price = 160, weekly = 1,
 				id = 2487, itemKind = "armor", rarity = 4, level = 130, mods = {{"monsterreduction", 7}, {"thorns", 7}, {"regen", 7}}},
 			{key = "v_legs", kind = "gear", name = "Sepulchre Greaves", price = 140, weekly = 1,

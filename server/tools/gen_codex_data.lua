@@ -199,8 +199,16 @@ end
 -- value texts of modifiers
 -- ---------------------------------------------------------------------------------------------------------------
 -- the value of a Chaos modifier (chaos_item_mods.lua def) for a range, short: "+1-3%", "+4-8", "-1-2%", "1-2%"
+-- the tenths of a percent of the Lua leech modifiers (fmt "permille") as percent: 4 -> 0.4
+function Gen.tenths(v)
+	return Gen.num((tonumber(v) or 0) / 10)
+end
+
 function Gen.chaosValue(def, lo, hi)
 	local r = Gen.range(lo, hi)
+	if def.fmt == "permille" then
+		return "+" .. Gen.range(Gen.tenths(lo), Gen.tenths(hi)) .. "%"
+	end
 	if def.text then
 		if def.text:find("%%d%%%%") then
 			return r .. "%"
@@ -226,6 +234,9 @@ end
 -- the whole line of a Chaos modifier with a range in place of the number ("Attack Speed +11-14%")
 function Gen.chaosLine(def, lo, hi)
 	local r = Gen.range(lo, hi)
+	if def.fmt == "permille" then
+		return def.label .. " +" .. Gen.range(Gen.tenths(lo), Gen.tenths(hi)) .. "%"
+	end
 	if def.text then
 		return (def.text:gsub("%%d", r):gsub("%%%%", "%%"))
 	elseif def.fmt == "flat" then
@@ -325,7 +336,7 @@ local ANY_KINDS = #Gen.KINDS - 1
 local TIER_ORDER = {"normal", "magic", "rare", "legendary", "boss"}
 local TIER_NAME = {normal = "Normal", magic = "Magic", rare = "Rare", legendary = "Legendary", boss = "Boss"}
 
-local COLORS = {absorb = "#7fa8ff", skill = "#9fdc7f", special = "#f6cf72", element = "#ff8a5a", chaos = "#ff70c0",
+local COLORS = {absorb = "#7fa8ff", skill = "#9fdc7f", special = "#f6cf72", single = "#f6cf72", element = "#ff8a5a", chaos = "#ff70c0",
 	power = "#ff9a3c", orb = "#e8b84a", currency = "#c0a0ff", rift = "#c0a0ff", unique = "#ff9c3a", basics = "#d6c9ae", lore = "#c9a27a"}
 
 local function kindsOf(kinds)
@@ -422,6 +433,13 @@ local function affixOverview(D, a)
 		else
 			p[#p + 1] = string.format("Raises your %s skill while the item is worn.", a.label:lower())
 		end
+	elseif a.group == "single" then
+		if a.label == "Critical Strike Chance" then
+			p[#p + 1] = "Raises your chance to hit critically while the item is worn, in percentage points. It rolls on its own: the damage of a critical hit is the other modifier."
+		else
+			p[#p + 1] = "Raises the extra damage of your critical hits while the item is worn, in percent. It rolls on its own: the chance to hit critically is the other modifier."
+		end
+		p[#p + 1] = "On an item: " .. a.label .. " +" .. Gen.range(top[1], top[2]) .. "% (T8)."
 	elseif a.group == "special" then
 		if a.label == "Critical Chance" then
 			p[#p + 1] = "A pair: a chance to hit critically and the extra damage of a critical hit. The amount is the rolled value; the chance is about two thirds of it."
@@ -452,6 +470,10 @@ local function affixNotes(D, a, isPower)
 	if a.group == "special" then
 		notes[#notes + 1] = "Chance and amount roll together and count as one modifier with one tier."
 	end
+	if a.minTier then
+		notes[#notes + 1] = string.format("Gated: only on an item level that allows T%d (%d) or better.", a.minTier,
+			M.config.tierLevels[a.minTier])
+	end
 	if isPower then
 		notes[#notes + 1] = string.format("A legendary power: only on items of rarity %s or better, %d per item.",
 			C.rarityName(M.config.powers.minRarity), M.config.powers.maxPerItem)
@@ -460,7 +482,7 @@ local function affixNotes(D, a, isPower)
 		local cap = D.G.config.effects.attackspeed.cap
 		notes[#notes + 1] = string.format("Local to the weapon: it shortens that weapon's attack interval. With topaz gems at most %d%% on one weapon.", cap)
 	elseif a.chaosKey == "movespeed" then
-		notes[#notes + 1] = string.format("Shares its %d%% cap with the emerald gems' movement speed.", D.G.config.effects.movespeed.cap)
+		notes[#notes + 1] = string.format("Adds to the emerald gems' movement speed (the gems hold their own %d%% cap).", D.G.config.effects.movespeed.cap)
 	elseif a.chaosKey == "bleedchance" or a.chaosKey == "ignitechance" or a.chaosKey == "poisonchance" then
 		local ail = M.config.ailment
 		notes[#notes + 1] = string.format("The ailment deals %d%% of the hit that caused it over %d ticks of %s.", ail.share,
@@ -474,6 +496,31 @@ local function affixNotes(D, a, isPower)
 			Gen.seconds(ail.shockMs))
 	elseif a.chaosKey == "regen" then
 		notes[#notes + 1] = string.format("Paid every %s.", Gen.seconds(M.config.regenEvery))
+	elseif a.chaosKey == "execute" then
+		notes[#notes + 1] = "Does not stack: the highest value of the pieces you wear counts. Bosses, guardians and the world boss are proof."
+	elseif a.chaosKey == "lifeleech" or a.chaosKey == "manaleech" or a.chaosKey == "lifeleechw" or a.chaosKey == "manaleechw" then
+		local L = M.config.leech
+		notes[#notes + 1] = string.format("A share of the damage your hits deal, given back at once (no chance roll). The value is in tenths of a percent: 4 is 0.4%%. All your leech together gives back at most %d%% of your maximum per second. Damage over time does not leech.",
+			L.maxPct)
+		if a.chaosKey == "lifeleechw" or a.chaosKey == "manaleechw" then
+			notes[#notes + 1] = "Local to the weapon: it counts the hits of weapon attacks only, not spells."
+		end
+		if a.minTier then
+			notes[#notes + 1] = string.format("Does not roll below T%d.", a.minTier)
+		end
+	elseif a.chaosKey == "maxlife" or a.chaosKey == "maxmana" then
+		notes[#notes + 1] = "Flat points on top of your maximum from level and the passive tree."
+	elseif a.chaosKey == "manaregen" then
+		notes[#notes + 1] = "Percent more of the mana regeneration of your own class, paid in the same tick as health regeneration."
+	elseif a.chaosKey == "strength" or a.chaosKey == "dexterity" or a.chaosKey == "intelligence" then
+		notes[#notes + 1] = "The points add to the same stat the passive tree raises, on the same curve (and its soft cap)."
+	elseif a.chaosKey == "spelldamage" then
+		notes[#notes + 1] = "Only a weapon that casts (a wand or rod) rolls it. It adds to the damage increment of the passive tree for your spells and wand hits, so the tree's soft cap holds the sum."
+	elseif a.chaosKey == "weapondamage" then
+		notes[#notes + 1] = "Local to the weapon: percent more of this weapon's own attack value. Only a weapon that hits with an attack value rolls it, not a wand or rod."
+	end
+	if a.group == "single" then
+		notes[#notes + 1] = "Rolls alone: the other critical modifier is a separate one with its own tier."
 	end
 	return notes
 end
@@ -548,8 +595,8 @@ local function affixOrbs(D, a, isPower)
 	add("ruin", ruin.ruin > 0 and string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing, %d%% ruined.",
 		ruin.improve, ruin.tiers, ruin.nothing, ruin.ruin) or string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing; it never ruins the item.",
 		ruin.improve, ruin.tiers, ruin.nothing))
-	add("whetstone", string.format("Quality multiplies its value: +%d%% per stone, up to %d%% (%d%% from %s).", q.perStone,
-		q.cap, q.capHigh, C.rarityName(q.highFrom)))
+	add("whetstone", string.format("Does not change its value: quality raises the item's attack, defence and armour, +%d%% per stone, up to %d%% (%d%% from %s).",
+		q.perStone, q.cap, q.capHigh, C.rarityName(q.highFrom)))
 	return rows, links
 end
 
@@ -579,8 +626,8 @@ function Gen.modifierEntry(D, a)
 	for t, r in ipairs(a.tiers) do
 		e.tiers[t] = {r[1], r[2]}
 	end
-	local groupName = ({absorb = "Absorb", skill = "Skill", special = "Critical / leech", element = "Weapon element",
-		chaos = "Chaos modifier"})[a.group]
+	local groupName = ({absorb = "Absorb", skill = "Skill", special = "Critical / leech", single = "Critical hit",
+		element = "Weapon element", chaos = "Chaos modifier"})[a.group]
 	e.sub = string.format("%s, %s. %s (T1) to %s (T8)", a.side == "prefix" and "Prefix" or "Suffix",
 		#kinds == ANY_KINDS and "any gear" or table.concat(kindNames(kinds, true), ", "), tv[1], tv[#tv])
 	e.f = {side = a.side, kind = kinds, group = isPower and "power" or a.group}
@@ -910,7 +957,7 @@ function Gen.orbEntries(D)
 		ruin = "Only an item with a rarity and a modifier; a ruined item can never be changed again.",
 		void = string.format("Only a %s or better item that is not locked, not a store item and not corrupted yet. A corrupted item can never be changed by an orb again (it can still be worn, sold, stashed and salvaged).",
 			C.rarityName(ChaosRarity.idOfRank(O.config.void.minRank))),
-		whetstone = string.format("Only an item with a rarity and a modifier, below its quality cap (%d%%, %d%% from %s).",
+		whetstone = string.format("Only an item with a rarity and an attack, defence or armour of its own, below its quality cap (%d%%, %d%% from %s).",
 			M.config.quality.cap, M.config.quality.capHigh, C.rarityName(M.config.quality.highFrom)),
 		unveiling = "Only an item with a veiled modifier that is not revealed yet. The three choices are rolled once and stay the same every time the window opens."
 	}
@@ -1684,12 +1731,12 @@ function Gen.basicsEntries(D)
 		trows[t] = {"T" .. t, Gen.num(M.config.tierLevels[t]), Gen.num(M.config.tierWeights[t])}
 	end
 	local odds = {}
-	for _, lv in ipairs({1, 15, 30, 50, 70, 95, 120, 140, 150}) do
+	for _, lv in ipairs({1, 15, 30, 50, 70, 90, 110, 130, 150}) do
 		odds[#odds + 1] = {Gen.num(lv), Gen.oddsText(M, lv)}
 	end
 	add("tiers", "Tiers", "T1-T8: the item level each tier needs and the odds.", {
-		{h = "Tiers", p = {string.format("A modifier rolls among the best %d tiers its item level allows, weighted (higher tiers are rarer).",
-			M.config.tierWindow)}, cols = {"Tier", "Item level", "Weight"}, w = {30, 35, 35}, rows = trows},
+		{h = "Tiers", p = {"A modifier rolls among every tier its item level allows. All tiers weigh the same, so the best tier is as likely as any other. A few modifiers have a gate of their own (the weapon's Mana Leech does not roll below T4)."},
+			cols = {"Tier", "Item level", "Weight"}, w = {30, 35, 35}, rows = trows},
 		{h = "Odds by item level", cols = {"Item level", "Tier odds"}, w = {22, 78}, rows = odds}})
 	local il = M.config.itemLevel
 	local crows = {}
@@ -1708,8 +1755,8 @@ function Gen.basicsEntries(D)
 			"Orbs keep the item level."},
 			cols = {"Monster level", "Item level"}, w = {50, 50}, rows = crows}})
 	add("sides", "Prefixes and suffixes", "What a prefix and a suffix are.", {
-		{h = "Sides", p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, block, dodge, reflect, thorns, penetration, ailments...).",
-			"Suffixes: utility, resistances and speed (absorbs, leech, attack and movement speed, life and mana on kill or hit, find, experience...).",
+		{h = "Sides", p = {"Prefixes: damage and defence (skills, critical hits, weapon elements, block, dodge, reflect, thorns, penetration, ailments, maximum life and mana...).",
+			"Suffixes: utility, resistances and speed (absorbs, leech, attack and movement speed, life and mana on kill or hit, mana regeneration, attributes, experience...).",
 			"A new item is rolled until its count or both sides are full; the Orb of Grafting only adds on a side that is open. An Orb of Ruin can give one extra slot on one side."}}})
 	-- Conquest Tokens (conquest_config.lua, server/README.md "Conquest Tokens, the Conquest vendor and bad-luck protection")
 	local cq = D.conquest
@@ -1756,7 +1803,7 @@ function Gen.basicsEntries(D)
 	local q = M.config.quality
 	local ruin = D.O.config.ruin
 	add("quality", "Quality, binding and ruin", "Whetstones, bound modifiers and the Orb of Ruin.", {
-		{h = "Quality", p = {string.format("Each Whetstone adds %d%% quality, up to %d%% (%d%% from %s). Every modifier value is multiplied by (100 + quality) / 100, rounded.",
+		{h = "Quality", p = {string.format("Each Whetstone adds %d%% quality, up to %d%% (%d%% from %s). Quality multiplies the base bonus the rarity gave the item (its attack, defence and armour) by (100 + quality) / 100, rounded; it does not change a modifier.",
 			q.perStone, q.cap, q.capHigh, C.rarityName(q.highFrom))}, links = {"orb:whetstone"}},
 		{h = "Binding", p = {"A bound modifier is left alone by Tempering, Unmaking, Excision, Reforging and Upheaval. Only an Orb of Erasure frees it (and wipes the item). An item with a bound modifier refuses the Orb of Fate."}, links = {"orb:binding"}},
 		{h = "Corruption", p = {string.format("The Void Orb corrupts a %s or better item for good: no orb changes it afterwards, and the tooltip shows Corrupted. Then: %s. A locked or store item is refused.",
@@ -2045,7 +2092,7 @@ function Gen.build(D)
 	ilvlOpts[#ilvlOpts + 1] = {Gen.num(M.config.itemLevel.max), "Item level " .. M.config.itemLevel.max}
 	local sideOpts = {{"", "Any side"}, {"prefix", "Prefixes"}, {"suffix", "Suffixes"}}
 	local groupOpts = {{"", "Any group"}, {"chaos", "Chaos"}, {"absorb", "Absorbs"}, {"skill", "Skills"},
-		{"special", "Critical / leech"}, {"element", "Weapon elements"}}
+		{"single", "Critical hits"}, {"special", "Critical / leech"}, {"element", "Weapon elements"}}
 	local uniqueLevels = {{"", "Any level"}}
 	for _, lv in ipairs({50, 70, 90, 110, 130, 150}) do
 		uniqueLevels[#uniqueLevels + 1] = {Gen.num(lv), "Level " .. lv .. " or lower"}
@@ -2105,7 +2152,8 @@ function Gen.build(D)
 		rarities = C.config.rarityNames,
 		tierLevels = M.config.tierLevels,
 		tierWeights = M.config.tierWeights,
-		tierWindow = M.config.tierWindow,
+		-- since O461 every tier the item level allows rolls: the window is as wide as the table (both clients read this number)
+		tierWindow = M.config.maxTier,
 		shared = D.shared,
 		tabs = tabs
 	}

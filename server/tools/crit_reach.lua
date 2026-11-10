@@ -2,10 +2,11 @@
 --
 -- Beta feedback: "my crit (about 28%) from gear does not show in the tree window; reaching 70-80% is unviable even with T8
 -- items on every slot". This tool computes the ceilings from the same tables the game rolls with:
---   * gear: the engine modifier "Critical Chance / Critical Hit" (data/lib/chaos_item_mods.lua config.engine.critical:
---     amount per tier; the chance is ChaosCrafting.specialChance(amount) = floor((2 x amount + 1) / 3)), one per item, on
---     any of the 8 equipment slots (head, necklace, armor, both hands, legs, boots, ring; the quiver cannot roll it),
---     scaled by item quality (Whetstone) up to config.quality.capHigh (30%) on Divine and better items
+--   * gear: since O461 two modifiers of their own, "Critical Strike Chance" (data/lib/chaos_item_mods.lua
+--     config.engine.critchance: points per tier, written to the engine's chance attribute alone) and "Critical Strike Damage"
+--     (config.engine.critdamage: the engine's amount attribute alone), each one per item, on the weapon, the necklace, the
+--     ring, the badge and the quiver (ChaosCrafting.singles kinds). Quality no longer touches a modifier (it raises the base
+--     bonus), so there is no quality line
 --   * gems: the most a character gets from all gems (chaos_gems_config.lua effects.crit.cap / cap2)
 --   * the passive tree: the sum of the criticalHitChance / criticalHitAmount of every node the class may take (a ceiling:
 --     a real path to all of them costs more points than a character owns), per class
@@ -30,8 +31,9 @@ local function load()
 		dofile("data/lib/chaos_gems_config.lua")
 end
 
--- slots that can carry the engine critical modifier
-R.SLOTS = {"head", "necklace", "armor", "left hand", "right hand", "legs", "boots", "ring"}
+-- slots that can carry the critical modifiers (kinds weapon, jewel, other, quiver): the weapon, the quiver of a bow, the necklace,
+-- the one ring and the badge
+R.SLOTS = {"weapon", "quiver", "necklace", "ring", "badge"}
 -- the best Vocation Trial node's critical chance (trials_nodes.lua: Focus Break 5; the others give 4) and the Keen Edge mastery
 R.TRIAL_CHANCE, R.TRIAL_AMOUNT = 5, 30
 R.KEEN_EDGE_CHANCE, R.KEEN_EDGE_AMOUNT = 2, 5
@@ -39,23 +41,20 @@ R.KEEN_EDGE_CHANCE, R.KEEN_EDGE_AMOUNT = 2, 5
 function R.compute()
 	local M, C, Classes, ClassTree, tree, gems = load()
 	local out = {}
-	local tiers = M.config.engine.critical.tiers
-	local top = tiers[M.config.maxTier]
-	local lo, hi = C.specialChance(top[1]), C.specialChance(top[2])
-	local q = M.config.quality.capHigh
-	out.t8 = {amountLo = top[1], amountHi = top[2], chanceLo = lo, chanceHi = hi,
-		chanceHiQuality = M.scaleQuality(hi, q), amountHiQuality = M.scaleQuality(top[2], q), qualityPercent = q,
+	local E = M.config.engine
+	local top, topDmg = E.critchance.tiers[M.config.maxTier], E.critdamage.tiers[M.config.maxTier]
+	local lo, hi = top[1], top[2]
+	out.t8 = {chanceLo = lo, chanceHi = hi, amountLo = topDmg[1], amountHi = topDmg[2],
 		itemLevel = M.config.tierLevels[M.config.maxTier]}
-	local t7 = tiers[M.config.maxTier - 1]
-	out.t7 = {chanceLo = C.specialChance(t7[1]), chanceHi = C.specialChance(t7[2]), itemLevel = M.config.tierLevels[M.config.maxTier - 1]}
+	local t7 = E.critchance.tiers[M.config.maxTier - 1]
+	out.t7 = {chanceLo = t7[1], chanceHi = t7[2], itemLevel = M.config.tierLevels[M.config.maxTier - 1]}
 	out.slots = #R.SLOTS
 	local n = out.slots
 	out.gear = {
-		min = n * lo, -- all eight slots T8, the lowest roll
+		min = n * lo, -- every slot T8, the lowest roll
 		avg = n * ((lo + hi) / 2),
 		max = n * hi, -- the highest roll everywhere
-		maxQuality = n * out.t8.chanceHiQuality, -- the highest roll, every item at the quality cap
-		amountMax = n * top[2], amountMaxQuality = n * out.t8.amountHiQuality
+		amountMax = n * topDmg[2]
 	}
 	out.gems = {chance = gems.effects.crit.cap, amount = gems.effects.crit.cap2}
 	-- the passive tree, per class: the sum of every crit node the class may take, with the class's variant stats
@@ -83,18 +82,18 @@ function R.compute()
 	out.treeBest, out.treeWorst, out.treeMedian = best, worst, median[math.ceil(#median / 2)]
 	-- totals: a ceiling (everything at its best) and two builds
 	local extra = R.TRIAL_CHANCE + R.KEEN_EDGE_CHANCE + out.gems.chance
-	out.ceiling = out.gear.maxQuality + best + extra
-	-- a dedicated build: crit on six of the eight slots at an average T8 roll, the tree's crit nodes along the way (the
+	out.ceiling = out.gear.max + best + extra
+	-- a dedicated build: crit on every slot that can carry it at an average T8 roll, the tree's crit nodes along the way (the
 	-- median class takes about 70% of its crit nodes with the path), the trial node, Keen Edge, gems at half
-	out.dedicated = 6 * ((lo + hi) / 2) + out.treeMedian * 0.7 + R.TRIAL_CHANCE + R.KEEN_EDGE_CHANCE + out.gems.chance / 2
-	-- a casual crit build: three slots
-	out.casual = 3 * ((lo + hi) / 2) + out.treeMedian * 0.4
+	out.dedicated = n * ((lo + hi) / 2) + out.treeMedian * 0.7 + R.TRIAL_CHANCE + R.KEEN_EDGE_CHANCE + out.gems.chance / 2
+	-- a casual crit build: two slots
+	out.casual = 2 * ((lo + hi) / 2) + out.treeMedian * 0.4
 	-- a threshold a gated passive may ask: halfway between the casual and the dedicated build, rounded down to 5
 	out.suggestedThreshold = 5 * math.floor((out.casual + out.dedicated) / 2 / 5)
-	-- the same gear with T7 only (item level 136 drops, a level 1500 hunt: the tier window tops out at T7)
+	-- the same gear with T7 only (item level 110 to 129 drops: a level 1000 hunt without the boss bonus)
 	out.gearT7 = {max = n * out.t7.chanceHi, avg = n * ((out.t7.chanceLo + out.t7.chanceHi) / 2)}
 	-- crit damage ceiling
-	out.amountCeiling = out.gear.amountMaxQuality + R.TRIAL_AMOUNT + R.KEEN_EDGE_AMOUNT + out.gems.amount
+	out.amountCeiling = out.gear.amountMax + R.TRIAL_AMOUNT + R.KEEN_EDGE_AMOUNT + out.gems.amount
 	return out
 end
 
@@ -104,12 +103,11 @@ function R.report(o)
 		lines[#lines + 1] = string.format(...)
 	end
 	add("Critical chance reach (O146)")
-	add("  T8 modifier (item level %d+): amount %d-%d, chance %d-%d per item (%d at +%d%% quality)", o.t8.itemLevel,
-		o.t8.amountLo, o.t8.amountHi, o.t8.chanceLo, o.t8.chanceHi, o.t8.chanceHiQuality, o.t8.qualityPercent)
-	add("  gear, %d slots all T8: lowest roll %d, average %.0f, highest roll %d, highest roll + quality %d", o.slots, o.gear.min,
-		o.gear.avg, o.gear.max, o.gear.maxQuality)
-	add("  gear with T7 only (item level %d+, the best a level 1500 hunt drops without bonuses): chance %d-%d per item, %d slots: "
-		.. "average %.0f, highest %d", o.t7.itemLevel, o.t7.chanceLo, o.t7.chanceHi, o.slots, o.gearT7.avg, o.gearT7.max)
+	add("  T8 modifiers (item level %d+): damage %d-%d, chance %d-%d points per item", o.t8.itemLevel,
+		o.t8.amountLo, o.t8.amountHi, o.t8.chanceLo, o.t8.chanceHi)
+	add("  gear, %d slots all T8: lowest roll %d, average %.1f, highest roll %d", o.slots, o.gear.min, o.gear.avg, o.gear.max)
+	add("  gear with T7 only (item level %d+): chance %d-%d per item, %d slots: average %.1f, highest %d", o.t7.itemLevel,
+		o.t7.chanceLo, o.t7.chanceHi, o.slots, o.gearT7.avg, o.gearT7.max)
 	add("  gems: at most %d chance, %d damage", o.gems.chance, o.gems.amount)
 	add("  tree (every crit node of the class): best %d, median %d, worst %d", o.treeBest, o.treeMedian, o.treeWorst)
 	add("  ceiling (everything at its best) %.0f; dedicated build %.0f; casual build %.0f", o.ceiling, o.dedicated, o.casual)
@@ -122,7 +120,7 @@ if arg and arg[0] and arg[0]:find("crit_reach", 1, true) then
 	local o = R.compute()
 	print(R.report(o))
 	if arg[1] == "--check" then
-		local ok = o.gear.max == 56 and o.ceiling > o.dedicated and o.dedicated > o.casual
+		local ok = o.gear.max == 40 and o.ceiling > o.dedicated and o.dedicated > o.casual
 		os.exit(ok and 0 or 1)
 	end
 end

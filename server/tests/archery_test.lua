@@ -304,7 +304,7 @@ for id, q in pairs(A_CFG.quivers) do
 	for key, v in pairs(q[2]) do
 		local def = M.byKey[key]
 		ok(def and def.kinds and def.kinds.quiver, "quiver " .. id .. " implicit " .. key .. " is a quiver modifier")
-		ok(def and v <= def.cap, "quiver " .. id .. " implicit " .. key .. " under the cap")
+		ok(def and (def.cap == nil or v <= def.cap), "quiver " .. id .. " implicit " .. key .. " under the cap (O461: most have none)")
 	end
 end
 -- the pool: quiver modifiers and the shared ones, never the engine's open ones; weapons never get quiver modifiers
@@ -320,8 +320,11 @@ end
 for _, key in ipairs(A_CFG.sharedMods) do
 	ok(qpool[key], "quivers roll the shared " .. key)
 end
-ok(not qpool["rarity_distanceSkill"] and not qpool["rarity_criticalHitChance"] and not qpool["rarity_fireAbsorb"],
-	"no engine modifier on a quiver (the base rarity script would apply it without a bow)")
+ok(not qpool["rarity_distanceSkill"] and not qpool["rarity_fireAbsorb"] and not qpool["rarity_lifeLeechChance"],
+	"no engine skill or absorb on a quiver (the base rarity script would apply it without a bow)")
+-- O461 (owner list): the two critical modifiers name the quiver among their kinds; the base script applies them while the
+-- quiver is worn, like the badge's
+ok(qpool["rarity_criticalHitChance"] and qpool["rarity_criticalHitAmount"], "a quiver rolls Critical Strike Chance and Damage")
 ok(not qpool.movespeed and not qpool.attackspeed, "no boots or weapon modifiers")
 ok(wpool.attackspeed and wpool["rarity_distanceSkill"], "weapons keep theirs")
 
@@ -341,7 +344,7 @@ for _, level in ipairs({5, 40, 100, 145}) do
 		local top = M.maxTierFor(level)
 		for _, m in ipairs(added) do
 			ok(m.affix and M.allowed(m.affix, "quiver"), "rolled " .. tostring(m.key) .. " is a quiver modifier")
-			ok(m.tier <= top and m.tier >= math.max(1, top - M.config.tierWindow + 1),
+			ok(m.tier <= top and m.tier >= (m.affix.minTier or 1), -- O461: every tier the level allows, no window
 				"item level " .. level .. " gate: T" .. m.tier)
 		end
 		local p, s = C.sideCounts(C.readMods(q))
@@ -417,7 +420,7 @@ ok(keys >= 1, "the ring rolled modifiers")
 local WORN = {weapon = 1, shield = 1, helmet = 1, armor = 1, legs = 1, boots = 1, jewel = 2, other = 1}
 local short = {}
 for _, def in ipairs(M.config.mods) do
-	if def.kinds and def.kinds.jewel and def.cap then
+	if def.kinds and def.kinds.jewel and def.cap and not def.noRoll then
 		local n = 0
 		for k, c in pairs(WORN) do
 			if def.kinds[k] then n = n + c end
