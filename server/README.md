@@ -30565,7 +30565,7 @@ every class and band is a set weapon (100% of the tier) except the casters' stoc
 | Snares and mines | skill x weapon attack at placement | level x 0.2 + power x 0.045 + 10: 472 -> 651 (x1.38) | 695 -> 1380 (x1.99) |
 | Caster spells (below) | the caster factor | x1.42 at the band's wand | x2.20 |
 | Necromancer minions | the caster factor on the hit | x1.42 | x2.20 |
-| Beastmaster wolves and the companion bite | **not reached**: they read level and distance skill, no weapon (O468) | x1.00 | x1.00 |
+| Beastmaster wolf maul, companion bite and pet aura | follow-up: `1 + (W - 1) x min(1.2, bow attack / bow curve of the level)` in the raw value (`ChaosClasses.wolfGrowth`, `ChaosSpellScaling.wolfFactor`; switch `caster.wolves`; `caster.bowMean` = the bow curve); no weapon gives 1 | x1.42 with a band bow (plain bite dps 180 -> 299) | x2.20 (282 -> 851) |
 | Healing | never | x1.00 | x1.00 |
 
 **Casters.** A caster's spell does not read the wand, so the growth is one factor on the spell:
@@ -30615,6 +30615,12 @@ real spells grow and the model's typical character (`rotation_sim.py` ANCHORS) h
 1.95 / 2.12 (was 1.76 / 1.81 / 1.92 / 2.14 / 2.35), melee and fist 1. `weapon_balance_config.lua`: the two-handed factor 1.516 at 100
 to 1.582 at 2000 (was 1.543). The flat +3 of a two-handed weapon matters less at high attack, the factor keeps the style on its target.
 
+**Beastmaster follow-up.** The wolves are 46 to 68% of a Beastmaster's damage, so the maul, the companion bite and the pet aura take the growth
+of the bow in the owner's hands (raw value, so the O468 event factors see it). `companion_model.py` has `GROWTH` (x W on the wolves, the
+bite and the bow spells, and on its own references of before, so its limits keep bounding a build against the class); the plain
+build against the Ranger (both x W): 0.594 -> 0.616 at level 500, 0.628 -> 0.672 at 1000 (the armour keeps more of a bigger bite). One limit moved: `companion_balance_config.lua` `sharePlain`
+high 0.50 -> 0.52 (model 0.505 at level 400), dated O472. `tests/weapon_growth_test.lua` casts a band bow, a better bow and no bow at 100, 500, 1000.
+
 **Models.** Run, all unchanged and green: `weapon_family_model.py`, `class_dps_model.py`, `companion_model.py`, `minion_model.py`,
 `survival_model.py`, `pvp_model.py`, `defence_curve.py`, `pack_model.py`, `boss_model.py`, `tower_model.py`, `guardian_model.py`,
 `skill_model.lua`, `store_model.lua`, `weapon_sim.py --check` and `--power --check`. They read the measured table
@@ -30625,7 +30631,7 @@ factor in the damage model. Nothing was re-baselined for this package.
 **Not verified.** A live server (the item touch, the install step on a real `items.xml`, the event order); a client (tooltips read the
 tables and the item attribute); the pt-BR text by a speaker. Open: the unique wands keep the damage of their stock base, so the
 Duskweaver Wand (a level 140 unique on a high level stock base, 434 mean before the growth) is an outlier that now grows with its base;
-the stock caster spells and the Beastmaster wolves do not take W; `rotation_model.csv`, the rotation simulator and the Auto setup rotation
+the stock caster spells do not take W; `rotation_model.csv`, the rotation simulator and the Auto setup rotation
 data do not know the growth.
 
 ## Player defence (O464) (`player_defence_config.lua`, `player_defence_core.lua`, `player_defence.lua`, `defence_config.lua`, `tools/patch_base_armor_percent.py`, `tools/patch_base_absorb_player.py`)

@@ -122,6 +122,72 @@ function S.casterFactor(level, wandMean, c)
 	return 1 + (S.weaponW(level, c) - 1) * math.min(cc.cap or 1.2, wandMean / mean)
 end
 
+-- the Beastmaster's growth: the same 1 + (W - 1) x min(cap, weapon / mean) with the attack of the owner's bow or weapon and the bow curve
+function S.bowMeanOfLevel(level, c)
+	local cc = (c or ChaosSpellScalingConfig).caster
+	local pts = cc and cc.bowMean
+	if not pts or #pts == 0 then
+		return 0
+	end
+	level = tonumber(level) or 0
+	if level <= pts[1][1] then
+		return pts[1][2]
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if level <= b[1] then
+			return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+		end
+	end
+	return pts[#pts][2]
+end
+
+function S.wolfFactor(level, attack, c)
+	c = c or ChaosSpellScalingConfig
+	local mean = S.bowMeanOfLevel(level, c)
+	attack = tonumber(attack) or 0
+	if not c or not c.caster or mean <= 0 or attack <= 0 then
+		return 1
+	end
+	return 1 + (S.weaponW(level, c) - 1) * math.min(c.caster.cap or 1.2, attack / mean)
+end
+
+-- the best attack of a bow or melee weapon in a player's hands (the item's own attribute, else its type's), nil without one
+function S.equippedWeaponAttack(player)
+	if not player or not player.getSlotItem or not rawget(_G, "ItemType") then
+		return nil
+	end
+	local best
+	for _, slot in ipairs({rawget(_G, "CONST_SLOT_LEFT"), rawget(_G, "CONST_SLOT_RIGHT")}) do
+		local ok, item = pcall(player.getSlotItem, player, slot)
+		if ok and item then
+			local okT, it = pcall(function() return ItemType(item:getId()) end)
+			local okW, wt = pcall(function() return it:getWeaponType() end)
+			local wand, shield, ammo = rawget(_G, "WEAPON_WAND"), rawget(_G, "WEAPON_SHIELD"), rawget(_G, "WEAPON_AMMO")
+			if okT and okW and wt ~= nil and wt ~= 0 and wt ~= wand and wt ~= shield and wt ~= ammo then
+				local a = 0
+				pcall(function() a = tonumber(item:getAttribute(rawget(_G, "ITEM_ATTRIBUTE_ATTACK"))) or 0 end)
+				if a <= 0 then
+					pcall(function() a = tonumber(it:getAttack()) or 0 end)
+				end
+				if a > 0 and (not best or a > best) then
+					best = a
+				end
+			end
+		end
+	end
+	return best
+end
+
+-- the factor on a Beastmaster's wolves, bite and aura (1 with the switch off or without a weapon)
+function S.wolfForPlayer(player, c)
+	c = c or ChaosSpellScalingConfig
+	if not player or not player.getLevel or not c or not c.caster or not c.caster.wolves then
+		return 1
+	end
+	return S.wolfFactor(player:getLevel(), S.equippedWeaponAttack(player), c)
+end
+
 -- the wands and rods: S.wands[server id] = {min, max}, the weapons.xml damage the engine does not give to Lua. The stock ones are
 -- data/lib/chaos_base_wands.lua (tools/gen_base_wands.py), ours the generated item tables (tools/install_*.py --lua). Built once.
 S.wandFiles = {"data/lib/chaos_base_wands.lua", "data/lib/chaos_gear_sets_items.lua", "data/lib/chaos_relic_sets_items.lua",

@@ -108,6 +108,10 @@ do
 		ok(cfg.caster.wandMean[i] and cfg.caster.wandMean[i][1] == level and cfg.caster.wandMean[i][2] == wand[i], "caster.wandMean point " .. i)
 	end
 	ok(#cfg.caster.wandMean == #newA, "same number of wandMean points")
+	local bow = list("WEAPON_CURVES", "bow")
+	for i, level in ipairs(newA) do
+		ok(cfg.caster.bowMean[i] and cfg.caster.bowMean[i][1] == level and cfg.caster.bowMean[i][2] == bow[i], "caster.bowMean point " .. i)
+	end
 	-- the numbers of the design, the ones that are old x a to the unit
 	local attack = list("WEAPON_CURVES", "attack")
 	local at = {}
@@ -289,6 +293,37 @@ do
 			cfg.caster.minions = false
 			near(L.minionFactor(p, "skeleton", "hit"), hit0, 1e-9, "caster.minions = false leaves the minion hit as it was (" .. level .. ")")
 			cfg.caster.minions = true
+		end
+	end
+end
+
+-- the Beastmaster's wolves: the maul, the companion bite (and the pet aura through ChaosClasses.wolfGrowth) take 1 + (W - 1) x min(1.2,
+-- bow attack / bow curve of the level); no weapon gives 1; caster.wolves = false leaves them as they were
+do
+	local C = ChaosClasses
+	ok(C and C.biteValuesFor and C.autoBiteValuesFor and C.wolfGrowth, "classes.lua is loaded by the wolf spells on the probe")
+	if C then
+		for _, level in ipairs({100, 500, 1000}) do
+			local mean = S.bowMeanOfLevel(level)
+			local W = S.weaponW(level)
+			local function bite(fn, wtype, atk)
+				local p = profile(level, false)
+				p.dist = interp(ANCHORS.skill, level)
+				p.wtype, p.atk = wtype, atk or 50
+				Probe.set(p); Probe.set({voc = 15})
+				local lo, hi = fn(Player(1))
+				return (lo + hi) / 2
+			end
+			for name, fn in pairs({maul = C.biteValuesFor, companion = C.autoBiteValuesFor}) do
+				local none = bite(fn, "none")
+				local band = bite(fn, "distance", mean)
+				local better = bite(fn, "distance", mean * 3)
+				near(band / none, W, 0.01 * W, name .. " at " .. level .. ": a bow of the band gives W")
+				near(better / none, 1 + (W - 1) * 1.2, 0.01 * W, name .. " at " .. level .. ": a far better bow gives 20% more of the growth")
+				cfg.caster.wolves = false
+				near(bite(fn, "distance", mean) / none, 1, 1e-9, name .. " at " .. level .. ": the switch off gives the bite of before")
+				cfg.caster.wolves = true
+			end
 		end
 	end
 end

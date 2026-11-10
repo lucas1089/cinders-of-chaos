@@ -38,6 +38,12 @@ ChaosSpellScalingConfig = {
 		-- the Necromancer line's minion hits (necro_lib.lua minionFactor) take the caster factor too: they read the level and the magic
 		-- level like the owner's spells and have no weapon term; false leaves them as they were
 		minions = true,
+		-- the Beastmaster's wolves, companion bite and pet aura (classes.lua biteValuesFor / autoBiteValuesFor, pets.lua) take the same
+		-- growth keyed on the attack of the owner's bow or weapon against `bowMean` (the bow curve of install_gear_sets.py): a bow of the
+		-- band gives W, none gives 1; false leaves them as they were
+		wolves = true,
+		bowMean = {{8, 31}, {50, 38}, {100, 68}, {200, 83}, {300, 94}, {400, 103}, {500, 111}, {700, 125}, {850, 155}, {1000, 191},
+			{1500, 212}, {2000, 245}},
 		wandMean = {{8, 16}, {50, 40}, {100, 62}, {200, 99}, {300, 119}, {400, 138}, {500, 151}, {700, 178}, {850, 226},
 			{1000, 285}, {1500, 331}, {2000, 398}},
 	},

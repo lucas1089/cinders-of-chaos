@@ -68,6 +68,9 @@ check(tuple(pairs) == WG.WEAPON_GROWTH, 'spell_scaling_config.lua weaponGrowth i
 mean = [(int(a), int(b)) for a, b in re.findall(r'\{(\d+), (\d+)\}', re.search(r'wandMean = \{(.*?)\},\n\t\},', cfg, re.S).group(1))]
 check(mean == list(zip(GS.WEAPON_ANCHORS, GS.WEAPON_CURVES['wand'])), 'caster.wandMean is the wand curve of the install tool')
 
+bow = [(int(a), int(b)) for a, b in re.findall(r'\{(\d+), (\d+)\}', re.search(r'bowMean = \{(.*?)\},\n\t\twandMean', cfg, re.S).group(1))]
+check(bow == list(zip(GS.WEAPON_ANCHORS, GS.WEAPON_CURVES['bow'])), 'caster.bowMean is the bow curve of the install tool')
+
 # ---- an install made with the OLD numbers moves to the new ones, a second run changes nothing
 MANIFESTS = {
     'gear sets': (GS, lambda: GS.rows_of(GS.DEFAULT_MANIFEST), '<items>\n</items>\n', '<weapons>\n</weapons>\n'),
