@@ -30374,12 +30374,18 @@ three inputs (the other 45 are casters, whose magic level is their skill).
 | Necromancer minion hits | left: the supports need the summoning cast's context kept per minion and raised in the think loop (`necro_minions.lua`), more than the small change that was allowed. |
 | `rotation_model.csv` rows | left: judgement, twin_verdict (level / 5, the row has the full level) and sanctified_barrage (level / 10). The scripts are the truth, but each correction turns `rotation_sim.py --check` red (Final Verdict and Twin Verdict alone: Deadeye level 1200 both quests +15.6% against 12-15%; Hail of Dawn: Ranger level 500 attack +14.4% against 1.5-9.0%, level 1200 both quests +38.9%). |
 
-**Model checks.** Every check named in the brief is green except `tools/companion_model.py --check`, which went red with the
-`autoByLevel` re-fit: the model reads `autoByLevel` as the bite and knows nothing of the event factors, so its plain, tree and full
-shares of the wolves rose from 46 / 53 / 65% to 69 / 75 / 83% at level 1000 (49 / 56 / 68% to 68 / 74 / 83% at 400) while the real
-plain bite did not move. Not edited, as asked. `class_dps_model.py --check`, `pack`, `boss`, `tower`, `survival`, `pvp`,
-`spell_mastery`, `minion`, `card_set`, `weapon_family`, `guardian` and `defence_curve` pass. No model, threshold or measured table was
-touched. Open: the owner decides whether the companion model learns the event factors or the bite keeps the old numbers.
+**Model checks.** Every model check passes. `tools/companion_model.py` learned the event factors (owner decision after the first
+version of this change turned its check red): its bite is `autoByLevel` times `event_factor`, the factors the events apply to a
+Beastmaster bite, `classDamage.beastmaster` at the level and the share of the bite that the armour of the median normal monster
+leaves (`monster_defence_config.lua` hitCurve and armourTarget, `defence_config.lua`), all read from the real configs through
+`companion_numbers.lua`. The plain build is where it was (bite dps 30 / 48 / 175 / 226 / 235 / 282 at levels 50 / 100 / 400 / 700 /
+750 / 1000; wolves 19 / 18 / 49 / 47 / 47 / 46% of the damage). The tree and full builds rise because Pack Alpha and the Trials
+make the raw bite bigger and armour keeps more of a big hit: tree 23 / 56 / 54 / 53% became 25 / 58 / 56 / 55% (levels 100 / 400 / 750 /
+1000), full 33 / 68 / 66 / 65% became 38 / 71 / 69 / 68%. The tree's own increments (type percent, strength, gems) are not modelled.
+Two limits of `companion_balance_config.lua` were re-baselined for that, each with a dated comment (2026-11-10, O468: the bite takes
+the tree's bonuses now, review pending in the damage balance round): `shareFull` high 0.70 to 0.74 and `fullOverTree` high 1.40 to
+1.52 (3% headroom). `class_dps_model`, `pack`, `boss`, `tower`, `survival`, `pvp`, `spell_mastery`, `minion`, `card_set`,
+`weapon_family`, `guardian` and `defence_curve` pass untouched.
 
 **Not in this change.** Runes and the stock heals (base scripts, not in the repo), plain health heals (regeneration, set and power
 heals), gear Spell Damage rolling only on wands and rods, the growth of spell damage against monster health.

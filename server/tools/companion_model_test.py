@@ -106,6 +106,18 @@ for lv in (800, 1000, 1200):
     ok(area <= e * 1.5, 'level %d: the rebuilt Beastmaster is not far above the Elementalist on a pack (%.0f against %.0f)' % (lv, area, e))
     ok(P.damage(M.CLASS, lv, frame='c4')[0] < P.damage('Deadeye', lv, frame='c4')[0], 'level %d: the Deadeye is above the rebuilt Beastmaster on one target' % lv)
 
+# O468: the bite is the owner's ORIGIN_SPELL (classDamage and the armour of the median normal monster apply), and autoByLevel was
+# re-fitted so the PLAIN build's bite dps is the one before O468 (autoByLevel 1 / 0.88 / 0.56 / 0.5, no event factors): within 2%
+OLD_AUTO = [(60, 1.0), (100, 0.88), (500, 0.56), (1000, 0.5)]
+for lv in (100, 400, 750, 1000):
+    sk = R.stats(M.CLASS, lv)['SK']
+    old_bite = (lv * c['autoLevel'] + sk * c['autoSkill']) * R.interp(OLD_AUTO, lv)
+    new_dps = M.companion_dps(lv)
+    ref = M.cap(c, lv) * old_bite / (c['biteMs'] / 1000.0) * M.conf()[1]['contact'] * M.uptime(lv)
+    ok(abs(new_dps / ref - 1) < 0.02, 'level %d: the plain bite dps is the one before O468 (%.1f against %.1f)' % (lv, new_dps, ref))
+    ok(M.event_factor(lv, 1000) < 1.0, 'level %d: the events cut a bite (classDamage x armour)' % lv)
+    ok(M.companion_dps(lv, factor=1.5) / new_dps > 1.5, 'level %d: a wolf factor raises the bite more than its own size (armour keeps more of a big hit)' % lv)
+
 # a retuned config fails the check: bites back to the old ones, or wolves with no investment
 saved = dict(c)
 c['autoLevel'], c['autoSkill'] = 5.0, 9.0

@@ -5124,6 +5124,6 @@ now. Their rows of `rotation_model.csv` add the old tick sums (8, 4, 4 and 5 tic
 still hold for a typical character without supports.
 
 **Beastmaster bites.** The bite is dealt as the owner (ORIGIN_SPELL inside the spell factor guard) and takes `classDamage` and the
-monster defence layer; `companion.autoByLevel` was re-fitted to keep the plain build's bite, so the model of the wolves
-(`tools/companion_model.py`) reads a bigger bite than the real game deals after the events and its `--check` is red (see the
-server README). Nothing of the model was edited.
+monster defence layer; `companion.autoByLevel` was re-fitted to keep the plain build's bite, and `tools/companion_model.py` multiplies
+the bite by the same event factors (`event_factor`), so its plain numbers are the old ones and its tree and full numbers include
+what the tree now gives the bite (server README "Spell scaling (O468)").
