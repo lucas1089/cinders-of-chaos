@@ -485,6 +485,7 @@
 	<instant group="attack" spellid="100" name="Seeker Mine" words="kah snar" level="60" mana="65" premium="0" params="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/shared/seeker_mine.lua">
 		<vocation name="Ranger" />
 		<vocation name="Deadeye" />
+		<vocation name="Beastmaster" />
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
@@ -492,6 +493,7 @@
 	<instant group="support" spellid="104" name="Detonate Mines" words="vok snar" level="60" mana="20" premium="0" aggressive="0" selftarget="1" cooldown="1000" groupcooldown="0" needlearn="0" script="chaos/shared/detonate_mines.lua">
 		<vocation name="Ranger" />
 		<vocation name="Deadeye" />
+		<vocation name="Beastmaster" />
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />

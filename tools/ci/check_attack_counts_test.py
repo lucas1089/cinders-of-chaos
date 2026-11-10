@@ -56,6 +56,14 @@ ok(any('unknown vocation Bard' in b for b in C.problems(unknown, 2)), 'an unknow
 none = full(2) + [{'name': 'Orphan', 'group': 'attack', 'vocations': []}]
 ok(any('no vocation' in b for b in C.problems(none, 2)), 'an attack spell with no class fails')
 
+# the one named exception: the Beastmaster has one more; a second exception or a missing one fails
+ok(set(C.EXCEPTIONS) == {'Beastmaster'} and C.EXCEPTIONS['Beastmaster'][0] == 14 and C.EXCEPTIONS['Beastmaster'][1],
+   'exactly one named exception, the Beastmaster with 14 and a reason')
+bm = [{'name': 'Mine', 'group': 'attack', 'vocations': ['Beastmaster']}]
+ok(C.problems(full(13) + bm) == [], 'the Beastmaster with 14 passes')
+ok(any('Beastmaster has 13' in b for b in C.problems(full(13))), 'the Beastmaster with 13 fails')
+ok(any('Monk has 14' in b for b in C.problems(full(13) + bm + [{'name': 'X', 'group': 'attack', 'vocations': ['Monk']}])),
+   'another class with 14 fails')
 ok(C.main([]) == 0, 'the repository passes')
 
 if fails:

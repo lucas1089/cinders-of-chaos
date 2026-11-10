@@ -4337,10 +4337,10 @@ build gains +41% to +56% auto attack damage per second over the old best build (
 ## Ranger line mines (O455)
 
 Owner, 2026-11-09: "Ranger pode ter minas". Seeker Mine (100) and Detonate Mines (104) are in the Ranger and Deadeye kits again
-(the Thief line kept them). The Beastmaster is left out: see "Beastmaster" below.
+(the Thief line kept them). The Beastmaster holds them as extra spells, no trade (owner 2026-11-10): see "Beastmaster" below.
 
 Rule: Seeker Mine is an attack spell, so a class that takes it trades one attack spell out (13 per class,
-`tools/ci/check_attack_counts.py`). The traded spell is picked by `rotation_sim.py` (best set of 5 per level, score = 1 target +
+`tools/ci/check_attack_counts.py`; the one named exception is the Beastmaster, 14). The traded spell is picked by `rotation_sim.py` (best set of 5 per level, score = 1 target +
 0.25 x 5 targets), not in an Auto preset or card, not an identity spell, and it must keep the cooldown ladder
 (`rotation_sim.py --ladder --check`, no spell changes its cooldown) and the class DPS band (`class_dps_model.py --check`).
 Detonate Mines is a support spell; the cap is 24, so there is no trade for it.
@@ -4353,8 +4353,11 @@ Detonate Mines is a support spell; the cap is 24, so there is no trade for it.
 Beastmaster: Packhunter's Dart is the data minimum (0.5%) but only the Beastmaster has it, and taking it out moves the level 400
 best set to Pack Frenzy, so `companion_model.py --check` fails (wolves 51% of the damage, limit 50%). Blessed Earth fails the
 same check at 1000 (146%, limit 140%). Sunspear is outside the DPS band at 500 on 1 target (-25.3%). Sanctum Burst and
-Dawnpiercer are named in card texts and fall off the ladder. Nothing could be traded within the rules, so the Beastmaster
-keeps its kit and holds no mines.
+Dawnpiercer are named in card texts and fall off the ladder. Nothing could be traded within the rules, so the owner decided on
+2026-11-10 ("Beastmaster b, minas troca"): the Beastmaster holds Seeker Mine and Detonate Mines as EXTRA spells, 14 attack spells, no
+trade. The exception is data in `check_attack_counts.py` (`EXCEPTIONS`, with the reason). With the mines added the cooldown ladder
+(`rotation_sim.py --ladder --check`) and `companion_model.py --check` pass unchanged: the mines are `utility` rows, in no preset, so
+the Beastmaster's Auto setup data and its modelled DPS do not move. Mine damage is the Ranger line's: same formula (see below).
 
 Derived, not measured: `class_dps_measured.csv` was measured on the old kit and is not changed. The mines are cast by hand and
 in no Auto rotation, so they add nothing to the modelled DPS. The Deadeye row of the model is the old measurement; the

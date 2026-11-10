@@ -64,7 +64,8 @@ for name, id in pairs(CLASSES) do
   classes = classes + 1
   local want = 0
   for _ in pairs(attack[id]) do want = want + 1 end
-  eq(want, 13, name .. ': 13 attack spells in the data')
+  -- 13 attack spells per class; the Beastmaster has 14 (the mines as an extra, owner 2026-11-10: check_attack_counts.py EXCEPTIONS)
+  eq(want, name == 'Beastmaster' and 14 or 13, name .. ': attack spells in the data')
   -- the rotation at a high level, with and without the client folding ascension ids onto a base class
   for _, translate in ipairs({ false, function(v) return v == 12 and 11 or (v == 13 and 11 or 0) end }) do
     local sel = A.select(id, 2000, canCastFor(id, 2000, translate or function() return 0 end), { topUp = true })

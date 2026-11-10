@@ -7,9 +7,10 @@ cooldown ladder, the rotation model, the helper and the spellbook already use, s
 Command, Corpse Explosion and the strikes that carry a debuff. Minions, supports and healing are not counted.
 
 Checks:
- - every one of the 21 vocations has exactly ATTACK_SPELLS (13) attack spells;
- - the three classes of a line (a base class and its two ascensions) have the same count, and every line the same as
-   the others (this follows from the first check but names the line that is off);
+ - every one of the 21 vocations has exactly ATTACK_SPELLS (13) attack spells, except the classes named in EXCEPTIONS
+   (the Beastmaster, 14, with the owner's reason);
+ - the three classes of a line (a base class and its two ascensions) have the same count once the named exception is
+   taken off, and every line the same as the others (this names the line that is off);
  - every attack spell has a vocation list and no vocation outside the 21.
 usage: python3 -I tools/ci/check_attack_counts.py [--table]      (--table prints the count of every class)
 """
@@ -22,6 +23,15 @@ sys.path.insert(0, os.path.join(REPO, 'server', 'tools'))
 import rotation_sim as R  # noqa: E402
 
 ATTACK_SPELLS = 13
+# The one named exception to the rule (data, so a second one cannot slip in without a reason): class -> (count, reason).
+EXCEPTIONS = {
+    'Beastmaster': (14, 'owner 2026-11-10: the Beastmaster holds the mines as an extra attack spell, no trade (O455)'),
+}
+
+
+def want_for(cls, want=ATTACK_SPELLS):
+    """the attack spell count a class needs: ATTACK_SPELLS, or its named exception"""
+    return EXCEPTIONS[cls][0] if want == ATTACK_SPELLS and cls in EXCEPTIONS else want
 
 
 def counts(spells):
@@ -53,11 +63,12 @@ def problems(spells, want=ATTACK_SPELLS):
         dup = sorted({n for n in names if names.count(n) > 1})
         if dup:
             bad.append('%s lists %s twice' % (cls, ', '.join(dup)))
-        if len(names) != want:
-            bad.append('%s has %d attack spells, every class needs %d' % (cls, len(names), want))
+        need = want_for(cls, want)
+        if len(names) != need:
+            bad.append('%s has %d attack spells, it needs %d' % (cls, len(names), need))
     lines = {}
     for cls, line, _ in R.CLASSES:
-        lines.setdefault(line, []).append(len(have[cls]))
+        lines.setdefault(line, []).append(len(have[cls]) - (want_for(cls, want) - want))
     for line, ns in lines.items():
         if len(set(ns)) != 1:
             bad.append('the %s line differs between its base class and its ascensions: %s' % (line, ns))
@@ -75,7 +86,8 @@ def main(argv):
         print('FAIL', b)
     if bad:
         return 1
-    print('check_attack_counts: all %d classes have %d attack spells' % (len(R.CLASSES), ATTACK_SPELLS))
+    print('check_attack_counts: all %d classes have %d attack spells%s' % (len(R.CLASSES), ATTACK_SPELLS,
+          ''.join(', %s %d (%s)' % (c, n, why) for c, (n, why) in sorted(EXCEPTIONS.items()))))
     return 0
 
 

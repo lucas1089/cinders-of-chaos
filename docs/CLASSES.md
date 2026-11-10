@@ -345,7 +345,7 @@ quests, level 800 buffs".
 | Templar | Mantle of Dawn (178) | 20 s | damage taken -15%, the holy strike after a melee hit +20% |
 
 **Line spell quests, phase 3 (2026-10-28)**: the level 1200 ultimate of each line, taught by the quest, shared by the base class and
-both ascensions. Every class and ascension has **13 attack spells** now (`ATTACK_SPELLS` 13). Cooldown 35 to 50 s, group cooldown 2 s,
+both ascensions. Every class and ascension has **13 attack spells** now (`ATTACK_SPELLS` 13; the Beastmaster 14 since O455, the one named exception). Cooldown 35 to 50 s, group cooldown 2 s,
 mana 3 x the reference spell, off the cooldown ladder, and **not one of the 5 spells of a rotation**: the helper casts it when it is ready
 on top of the 5. Each adds about 9% of the best set's score at level 1200 (the level 500 attack about 4.5%, so a full quester is about 13 to 15% stronger; a character without the quests is unchanged) (boss bursts for the Thief, Monk and Ranger lines, area for
 the Mystic and Necromancer, mixed for the Warrior and Templar). Numbers: server/data/spells/README.md "Line spell quests, level 1200
@@ -412,7 +412,7 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Berserker | 30 | 15 | Bonebreaker 8, Reaping Gyre 14, Earthbreaker 20, Scything Arc 70, Butcher's Gyre 90, Skyfall Cleave 190, Colossus Fall 260, Headsman's Hurl 300, Rampage Leap 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Bloodlust 60, Red Frenzy 100, Bloodrage 120 |
 | Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Seeker Mine 60, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Detonate Mines 60, Lightward 140, Hallowed Ground 300 |
 | Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Seeker Mine 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Detonate Mines 60, Lightward 140 |
-| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Blessed Earth 100, Feral Command 110, Pack Howl 220, Rending Pounce 240, Pack Frenzy 320 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
+| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Blessed Earth 100, Feral Command 110, Pack Howl 220, Seeker Mine 60, Rending Pounce 240, Pack Frenzy 320 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Detonate Mines 60, Wild Bond 100, Lightward 140 |
 | Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 14, Arcane Ripple 14, Blightswarm 25, Witchfire Bolt 20, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 20 | Ward of the Mind 14*, Galeborne Stride 20, Ironbark Hide 60 |
 | Elementalist | 45 | 14 | Kindling Spark 8, Rime Bloom 14, Witchfire Bolt 20, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14*, Galeborne Stride 20, Crimson Covenant 90 |
 | Illusionist | 57 | 15 | Kindling Spark 8, Arcane Ripple 14, Bewitching Hex 60, Shattered Psyche 110, Nightburst 210, Primordial Squall 250, Tear in the Weave 280 | Minor Mending 8, Purifying Wellspring 20, Mirror Mend 60, Lucid Reverie 120, Verdant Sanctuary 180 | Ward of the Mind 14*, Hall of Mirrors 40, Moonfang Pack 120, Wraithshroud 150 |
@@ -430,11 +430,13 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Sentinel | 7 | 7 | Radiant Smite 8, Consecration 14, Shield Wave 150 | Vow of Mending 20, Lay on Hands 150 | Rebuke 100, Aegis of Faith 120 |
 
 Ranger line mines (O455, 2026-11-09, owner: "Ranger pode ter minas"): the Ranger and the Deadeye hold Seeker Mine and Detonate Mines again.
-Seeker Mine is an attack spell, so each of them traded one attack spell out and every class keeps 13. The Ranger gave up Radiant Shard
+Seeker Mine is an attack spell, so each of them traded one attack spell out and keeps 13. The Ranger gave up Radiant Shard
 (retired, no class keeps it; it sat in no Auto rotation). The Deadeye gave up Skewering Line (the Ranger keeps it). Detonate Mines is
 a support spell: the cap is 24 spells, not the 15 of the counts above, so nobody traded for it (own spells now: Ranger 21, Deadeye 20,
-pinned in `patch_spell_cap_test.py`). The Beastmaster has no mines: every attack spell it could trade broke a model check
-(see server/data/spells/README.md "Ranger line mines (O455)"). The Count columns of this table are from before the later spells
+pinned in `patch_spell_cap_test.py`). The Beastmaster (owner 2026-11-10, "Beastmaster b, minas troca") holds both mines as extra
+spells with no trade (22 own spells): no attack spell could leave it within the model checks, see server/data/spells/README.md
+"Ranger line mines (O455)". It is the one named exception of the attack count rule: **14** attack spells, every other class 13
+(`EXCEPTIONS` in `tools/ci/check_attack_counts.py`, with its reason). The Count columns of this table are from before the later spells
 and the 24 cap and are stale.
 
 * Ward of the Mind (stock Magic Shield, the classic one: the mana takes a hit first, the health only the rest) is
@@ -451,7 +453,7 @@ Dropped, per line (each spell left the classes named; "retired" = no class keeps
 - Ranger line: Arcane Stitch, Deep Mending, Unveil, Shielding Communion, Dawnbolt, Second Wind, Greater Second Wind,
   Glare of Dawn, Greater Phantom Javelin (retired), Radiant Shard (retired since O455, traded for Seeker Mine); the
   Deadeye and Beastmaster also Hallowed Ground, the Deadeye also Skewering Line (O455), the Beastmaster also Skewering Line.
-  Seeker Mine and Detonate Mines are back in the Ranger and Deadeye kits since O455 (the Beastmaster does not hold them).
+  Seeker Mine and Detonate Mines are back in the Ranger and Deadeye kits since O455 (the Beastmaster holds them as extras, 14 attack spells, the one exception to the count of 13).
 - Mystic line: the level 1 spells (Bog Splatter, Rime Breath, Searing Gust, Static Sting), the strike families (Arc
   Bolt, Riftbolt, Thornlash, Ember Lash, Frostbite, Gravetouch, Hammerfall Palm and their Greater and Supreme ranks),
   the waves and beams (Cinder Fan, Glacier Fan, Greater Glacier Fan, Bramble Fan, Stormlance, Thunder Lance, Lance of the

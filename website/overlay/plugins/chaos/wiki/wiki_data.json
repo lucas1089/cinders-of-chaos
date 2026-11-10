@@ -647,8 +647,8 @@
 								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Seeker Mine", "kah snar", "60", "65", "6 s", "Ranger, Deadeye"],
-								["Detonate Mines", "vok snar", "60", "20", "1 s", "Ranger, Deadeye"],
+								["Seeker Mine", "kah snar", "60", "65", "6 s", "whole line"],
+								["Detonate Mines", "vok snar", "60", "20", "1 s", "whole line"],
 								["Tautstring", "vyr sag", "60", "180", "30 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Skewering Line", "kah sag lanc", "60", "90", "8 s", "Ranger"],
@@ -2626,7 +2626,7 @@
 								["Mana", "65"],
 								["Cooldown", "6 s"],
 								["Kind", "Attack"],
-								["Classes", "Ranger, Deadeye, Thief, Ninja, Samurai"]
+								["Classes", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"]
 							]
 						}
 					],
@@ -2654,7 +2654,7 @@
 								["Mana", "20"],
 								["Cooldown", "1 s"],
 								["Kind", "Support"],
-								["Classes", "Ranger, Deadeye, Thief, Ninja, Samurai"]
+								["Classes", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"]
 							]
 						}
 					],

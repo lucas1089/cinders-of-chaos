@@ -14,7 +14,7 @@ local CLASSES = {
   Thief = 11, Ninja = 12, Samurai = 13, Berserker = 14, Beastmaster = 15, Monk = 17, Shadowfist = 18,
   ['Iron Sage'] = 19, Necromancer = 20, Lich = 21, ['Bone Lord'] = 22, Templar = 23, Inquisitor = 24, Sentinel = 25
 }
-local ATTACK_SPELLS = 13
+local ATTACK_SPELLS = 13 -- the Beastmaster has 14: the mines as an extra (owner 2026-11-10, check_attack_counts.py EXCEPTIONS)
 local GROUP = { attack = 1, healing = 2, support = 3 }
 
 dofile(here .. '../game_chaosspells/spelldata.lua')
@@ -55,25 +55,26 @@ end
 local classes = 0
 for name, id in pairs(CLASSES) do
   classes = classes + 1
+  local WANT = name == 'Beastmaster' and ATTACK_SPELLS + 1 or ATTACK_SPELLS
   local attack = list(id, 2000, 'learned', 'attack')
   local support = list(id, 2000, 'learned', 'support')
   local all = list(id, 2000, 'learned', 'all')
-  eq(#attack, ATTACK_SPELLS, name .. ' (' .. id .. '): Learned + Attack')
+  eq(#attack, WANT, name .. ' (' .. id .. '): Learned + Attack')
   eq(#attack + #support, #all, name .. ': every learned spell is an attack or a support spell')
-  eq(#list(id, 2000, 'vocation', 'attack'), ATTACK_SPELLS, name .. ': My vocation + Attack')
-  eq(#list(id, 2000, 'all', 'attack') >= ATTACK_SPELLS, true, name .. ': All spells + Attack')
+  eq(#list(id, 2000, 'vocation', 'attack'), WANT, name .. ': My vocation + Attack')
+  eq(#list(id, 2000, 'all', 'attack') >= WANT, true, name .. ': All spells + Attack')
   eq(#list(id, 2000, 'soon', 'all'), 0, name .. ': nothing is "available soon" at level 2000')
   eq(#list(id, 2000, 'runes', 'all'), 0, name .. ': no rune entries in this data')
   for _, s in ipairs(attack) do eq(C.kindOf(s), 'attack', name .. ' ' .. s.name) end
   -- a level 1 character has the first spells only, never more than the high level one
-  eq(#list(id, 1, 'learned', 'attack') <= ATTACK_SPELLS, true, name .. ': level 1')
+  eq(#list(id, 1, 'learned', 'attack') <= WANT, true, name .. ': level 1')
   -- every attack spell of the class is learned by the time its last one unlocks
   local last = 0
   for _, s in ipairs(attack) do last = math.max(last, s.level) end
-  eq(#list(id, last, 'learned', 'attack'), ATTACK_SPELLS, name .. ': all ' .. ATTACK_SPELLS .. ' at level ' .. last)
+  eq(#list(id, last, 'learned', 'attack'), WANT, name .. ': all ' .. WANT .. ' at level ' .. last)
   local atLast = 0
   for _, s in ipairs(attack) do if s.level == last then atLast = atLast + 1 end end
-  eq(#list(id, last - 1, 'learned', 'attack'), ATTACK_SPELLS - atLast, name .. ': one short at level ' .. (last - 1))
+  eq(#list(id, last - 1, 'learned', 'attack'), WANT - atLast, name .. ': one short at level ' .. (last - 1))
 end
 eq(classes, 21, 'the 21 classes')
 
