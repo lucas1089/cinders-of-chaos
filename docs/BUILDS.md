@@ -285,6 +285,24 @@ so no refund event is needed beyond the login refund below. The number is `keyst
 - **Hollow Palm.** Hollow Vessel and Aether Edge are 2 keystones. It stays legal and as it is.
 - **The window.** "Keystones 2/3" sits beside the points. A keystone you cannot take says why in its tooltip.
 
+## Weapon families (O454)
+
+Sword, axe and club hit the same before (one melee skill). Now each has a trait on the basic melee attack and a price, for the
+Warrior, Thief and Templar lines. Spells, fists and the Monk line stay as they are. Class damage does not move: on one target every
+family is within 3% of before and none is 5% above another; the axe gives at most +12% of the basic attack on a pack, which is under
++5% of any class's damage on 5 targets (computed, not measured).
+
+| Family | Trait | Number | Price | Boss | Against players |
+|---|---|---|---|---|---|
+| Sword | Tempo: hits on the same target speed up the swing, each hit is lighter by the same share | up to +20% attack speed in 5 steps, +2% damage at full stacks, a new target or 3 s without a hit starts over | none | the same | half the stacks |
+| Axe | Cleave: part of the hit is split among the monsters next to the target | 14% of the hit in all, split among up to 8 neighbours | 2.5% less damage | the same | nothing is split, no price |
+| Club | Impact: a hit may daze a monster | 25% a hit, it cannot attack for 0.7 s, then 3 s of rest | 2.5% less damage | only slowed (25% for 1 s, 15% a hit, 8 s of rest) | no daze, no price |
+
+Pick: sword to kill one big target, axe to clear packs, club to take less damage from the monsters in front of you. The tooltip of
+the weapon has the line. Every affected class has three or more weapons of at least two families in every level band except the
+Berserker (two-handed only: levels 1-20, 1000-1300 and 1700-2400+ have one family with three or more). The table of weapons per
+family per band: server/README.md "Weapon families (O454)".
+
 ## Leveling notes
 
 - Keystones need their paths. The leaves at 8 or 9 points are early picks (96, 99, 102 and 105 too); 253, 262, 355 and

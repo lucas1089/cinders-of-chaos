@@ -38,6 +38,9 @@ end
 if not ChaosMonk then
 	dofile("data/scripts/chaos/monk_chi_core.lua") -- the fist weapons' DPS line (item_tooltip_core.lua T.fistDps)
 end
+if not ChaosWeaponFamilies then
+	dofile("data/scripts/chaos/weapon_families_core.lua") -- the family line of a sword, axe or club (O454)
+end
 if not ChaosWeaponSkill then
 	dofile("data/scripts/chaos/weapon_skill_core.lua")
 end
@@ -179,6 +182,14 @@ local function answer(player, data)
 				-- type's own text is the English one tools/patch_badges.py installs)
 				if ChaosCardsCore and type(tip) == "table" and ChaosCardsCore.isCard(item:getId()) then
 					tip.desc = ChaosCardsCore.description(Chaos.lang and Chaos.lang(player) or nil, item:getId())
+				end
+				-- a sword's, axe's or club's family line in the player's language (weapon_families_core.lua F.note; the quiver's note
+				-- has no translation and stays English)
+				if type(tip) == "table" and type(tip.note) == "string" and Chaos.lang and Chaos.tx and Chaos.lang(player) ~= "en" then
+					local okN, noteText = pcall(Chaos.tx, player, tip.note)
+					if okN and type(noteText) == "string" then
+						tip.note = noteText
+					end
 				end
 				-- a unique's passive line in the player's language (unique_passives_text.lua; the description holds the English one)
 				if type(tip) == "table" and type(tip.desc) == "string" and ChaosUniquePassivesCore and ChaosUniquePassivesConfig

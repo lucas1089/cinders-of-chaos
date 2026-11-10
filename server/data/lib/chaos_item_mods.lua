@@ -1054,7 +1054,18 @@ function M.setPlayerAttackSpeed(player, source, pct)
 	local row = M.playerSpeed[id] or {}
 	M.playerSpeed[id] = row
 	row[source] = tonumber(pct) or 0
-	row.total = M.playerSpeedTotal(row)
+	-- the sum of the sources only: the row also holds the last total and the shown one, which are not sources (before O454 the old
+	-- total was summed into the new one, so a second call with the same source raised the bonus up to the cap)
+	local sources = {}
+	for k, v in pairs(row) do
+		if k ~= "total" and k ~= "shown" then
+			sources[k] = v
+		end
+	end
+	row.total = M.playerSpeedTotal(sources)
+	-- what the tooltips and the interval line show: without the short haste of a sword's tempo (weapon_families.lua)
+	sources.tempo = nil
+	row.shown = M.playerSpeedTotal(sources)
 	if type(player.setAttackSpeedBonus) == "function" then
 		pcall(player.setAttackSpeedBonus, player, row.total)
 	end
@@ -1065,7 +1076,7 @@ end
 function M.playerAttackSpeed(player)
 	local ok, id = pcall(function() return player:getId() end)
 	local row = ok and M.playerSpeed[id]
-	return row and row.total or 0
+	return row and (row.shown or row.total) or 0
 end
 
 function M.clearPlayerAttackSpeed(player)

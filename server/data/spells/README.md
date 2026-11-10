@@ -4334,6 +4334,7 @@ are the weapon models: `weapon_sim.py` uses the weapons' own intervals (2000 ms 
 build gains +41% to +56% auto attack damage per second over the old best build (1 swing per second), a typical build up to
 1.45 - 1.73x of the same class without speed. Not measured on a live server.
 
+<<<<<<< HEAD
 ## Ranger line mines (O455)
 
 Owner, 2026-11-09: "Ranger pode ter minas". Seeker Mine (100) and Detonate Mines (104) are in the Ranger and Deadeye kits again
@@ -4369,3 +4370,56 @@ fell, not because the opening hits more. `pvp_balance_config.lua` names it (`Dea
 Mine damage of a Ranger line character: `snares_config.lua` damage with power = the best of distance skill x distance attack,
 blade and shuriken power (`_snares.lua` `M.power`), the same formula and the same input as Snare Trap, which the line already
 casts; no class or weapon check. A mine is the trap hit x 1.15. At the same level and power it hits the same as a Thief's.
+=======
+
+## Weapon families (O454, owner 2026-11-10; computed, not measured)
+
+Sword, axe and club get a trait each on the basic melee attack (server/README.md "Weapon families (O454)"); the class damage the
+balance models rest on does not move. `class_dps_measured.csv` does not record which melee family each class was measured with
+(the text above names a magic longsword for the Warrior, a sword for the Thief, two swords for the Ninja, one-handed and shield
+for the Templar), so every family stays within 3% of today on one target. `python3 -I server/tools/weapon_family_model.py --check`
+(CI) holds it, `--table` prints the rows below. The share of a class's damage that is the basic attack is the measured
+`auto_share` moved by the swing rate gain of O429, as `class_dps_model.py` does; the 1 target and 5 target numbers are the model's
+`class_dps_model.py` rows times the family change. The test layout of 5 targets is the main dummy and four around it.
+
+One target, against today: sword 1.020 (full stacks, edge included), axe 0.975, club 0.975; highest over lowest 1.046.
+Five targets (main target and four around it): axe +11.2% of the basic attack; a pack of any size: at most +11.2%.
+Daze: 25% a hit, 0.7 s without attacking, 3.0 s of rest: held at most 18.9% of the time; a boss: 15% a hit, a 25% slow for 1.0 s, then 8.0 s of rest.
+
+Per class and level (1 target now = `class_dps_model` row; sword at full stacks; the axe on 5 targets with four neighbours):
+
+| Class | Level | Basic attack share 1 / 5 targets | 1 target now | sword | axe | club | 5 targets now | axe, 5 targets |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| Warrior | 100 | 48% / 19% | 605 | 611 (+1.0%) | 598 (-1.2%) | 598 (-1.2%) | 1200 | 1226 (+2.2%) |
+| Warrior | 500 | 34% / 14% | 3485 | 3509 (+0.7%) | 3456 (-0.9%) | 3456 (-0.9%) | 7161 | 7273 (+1.6%) |
+| Warrior | 1000 | 34% / 14% | 6868 | 6915 (+0.7%) | 6811 (-0.8%) | 6811 (-0.8%) | 13259 | 13464 (+1.6%) |
+| Juggernaut | 100 | 48% / 19% | 515 | 520 (+1.0%) | 509 (-1.2%) | 509 (-1.2%) | 1041 | 1063 (+2.2%) |
+| Juggernaut | 500 | 35% / 13% | 3225 | 3248 (+0.7%) | 3197 (-0.9%) | 3197 (-0.9%) | 7761 | 7870 (+1.4%) |
+| Juggernaut | 1000 | 32% / 13% | 6837 | 6882 (+0.6%) | 6782 (-0.8%) | 6782 (-0.8%) | 13088 | 13281 (+1.5%) |
+| Berserker | 100 | 47% / 19% | 678 | 684 (+0.9%) | 670 (-1.2%) | 670 (-1.2%) | 1206 | 1231 (+2.1%) |
+| Berserker | 500 | 36% / 11% | 2746 | 2766 (+0.7%) | 2721 (-0.9%) | 2721 (-0.9%) | 8878 | 8985 (+1.2%) |
+| Berserker | 1000 | 36% / 11% | 5590 | 5630 (+0.7%) | 5540 (-0.9%) | 5540 (-0.9%) | 15565 | 15762 (+1.3%) |
+| Thief | 100 | 48% / 29% | 631 | 638 (+1.0%) | 624 (-1.2%) | 624 (-1.2%) | 812 | 838 (+3.3%) |
+| Thief | 500 | 45% / 22% | 3543 | 3576 (+0.9%) | 3503 (-1.1%) | 3503 (-1.1%) | 6437 | 6594 (+2.4%) |
+| Thief | 1000 | 47% / 23% | 6771 | 6834 (+0.9%) | 6692 (-1.2%) | 6692 (-1.2%) | 11888 | 12188 (+2.5%) |
+| Ninja | 100 | 48% / 36% | 726 | 733 (+1.0%) | 717 (-1.2%) | 717 (-1.2%) | 817 | 849 (+4.0%) |
+| Ninja | 500 | 39% / 13% | 3517 | 3545 (+0.8%) | 3482 (-1.0%) | 3482 (-1.0%) | 6610 | 6707 (+1.5%) |
+| Ninja | 1000 | 40% / 14% | 6779 | 6834 (+0.8%) | 6710 (-1.0%) | 6710 (-1.0%) | 11819 | 11998 (+1.5%) |
+| Samurai | 100 | 44% / 31% | 725 | 732 (+0.9%) | 717 (-1.1%) | 717 (-1.1%) | 793 | 820 (+3.4%) |
+| Samurai | 500 | 35% / 15% | 3341 | 3364 (+0.7%) | 3312 (-0.9%) | 3312 (-0.9%) | 6639 | 6752 (+1.7%) |
+| Samurai | 1000 | 38% / 16% | 6552 | 6602 (+0.8%) | 6490 (-1.0%) | 6490 (-1.0%) | 11784 | 11994 (+1.8%) |
+| Templar | 100 | 44% / 15% | 489 | 493 (+0.9%) | 483 (-1.1%) | 483 (-1.1%) | 939 | 955 (+1.6%) |
+| Templar | 500 | 37% / 12% | 2645 | 2665 (+0.7%) | 2621 (-0.9%) | 2621 (-0.9%) | 8898 | 9014 (+1.3%) |
+| Templar | 1000 | 37% / 12% | 5159 | 5197 (+0.7%) | 5111 (-0.9%) | 5111 (-0.9%) | 14948 | 15140 (+1.3%) |
+| Inquisitor | 100 | 40% / 24% | 609 | 614 (+0.8%) | 603 (-1.0%) | 603 (-1.0%) | 808 | 830 (+2.7%) |
+| Inquisitor | 500 | 35% / 13% | 2644 | 2663 (+0.7%) | 2621 (-0.9%) | 2621 (-0.9%) | 9129 | 9258 (+1.4%) |
+| Inquisitor | 1000 | 35% / 13% | 5146 | 5182 (+0.7%) | 5101 (-0.9%) | 5101 (-0.9%) | 14382 | 14582 (+1.4%) |
+| Sentinel | 100 | 44% / 22% | 517 | 521 (+0.9%) | 511 (-1.1%) | 511 (-1.1%) | 807 | 827 (+2.4%) |
+| Sentinel | 500 | 38% / 12% | 2631 | 2651 (+0.8%) | 2606 (-1.0%) | 2606 (-1.0%) | 8586 | 8697 (+1.3%) |
+| Sentinel | 1000 | 38% / 12% | 5156 | 5194 (+0.8%) | 5107 (-0.9%) | 5107 (-0.9%) | 13429 | 13601 (+1.3%) |
+
+Not in the table, not measured: what the sword's extra swings are worth (more rolls of on-hit effects, hit by hit; the damage per
+second is the same by construction), the daze's effect on the damage a clubber takes (a stunned monster of a pack cannot attack for
+0.7 s: at most 18.9% of its time; the real share is lower and not measured), and the cleave against a real pack (the share of the hit that
+lands on a neighbour is the number above, every neighbour takes its share of the hit after the styles).
+>>>>>>> 9c9be15a (Weapon families: sword tempo, axe cleave, club daze, damage neutral (O454))

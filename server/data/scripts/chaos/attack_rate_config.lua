@@ -5,7 +5,7 @@ return {
 	-- player, whatever the swing rate. At the old floor (1 swing per second) they could trigger once per second.
 	procPerSecond = 1.5,
 	limits = {offhand = 1.5, fistOffhand = 1.5, bloodrage = 1.5, cleavingArc = 1.5, ricochet = 1.5, radiant = 1.5,
-		undyingRage = 1.5},
+		undyingRage = 1.5, axeCleave = 1.5},
 
 	-- Skill training stays where it was (O429): a weapon swing is one skill try, so lower base intervals would train a
 	-- skill faster per hour. The tries of weapon use (fist, melee, distance; not exercise weapons, which are not swings) are

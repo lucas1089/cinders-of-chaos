@@ -53,6 +53,7 @@ return {
 		["item_powers.lua"] = {name = "Legendary powers", kind = "p", icon = "power"},
 		["rarity_elements.lua"] = {name = "Item elements", kind = "p", icon = "elements"},
 		["weapon_styles.lua"] = {name = "Arrow splash", kind = "p", icon = "distance"},
+		["weapon_families.lua"] = {name = "Axe cleave", kind = "p", icon = "axe"},
 		["berserker_combat.lua"] = {name = "Bloodrage cleave", kind = "p", icon = "axe"},
 		["thief_combat.lua"] = {name = "Thief strikes", kind = "p", icon = "sword"},
 		["templar_combat.lua"] = {name = "Templar smite", kind = "p", icon = "power"},

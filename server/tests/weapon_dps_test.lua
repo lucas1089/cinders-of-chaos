@@ -38,6 +38,10 @@ near(D.estimate({level = 100, skill = 60, attack = 50, interval = 3000, launcher
 	(20 + D.maxHit(100, 60, 50)) / 2 / 3, 1e-9, "no hit chance")
 -- more skill, more damage
 ok(D.estimate({level = 100, skill = 90, attack = 40, interval = 2000}) > D.estimate({level = 100, skill = 70, attack = 40, interval = 2000}), "skill raises it")
+-- the family price of weapon_families_core.lua (O454): the caller passes it for a wielder that gets the traits
+near(D.estimate({level = 100, skill = 70, attack = 40, interval = 2000, familyFactor = 0.975}), 274 / 2 / 2 * 0.975, 1e-9, "the axe's price")
+near(D.estimate({level = 100, skill = 70, attack = 40, interval = 2000, familyFactor = 1}), 274 / 2 / 2, 1e-9, "the sword's: none")
+near(D.estimate({level = 100, skill = 70, attack = 40, interval = 2000, familyFactor = 0}), 274 / 2 / 2, 1e-9, "a bad number: none")
 -- nothing to estimate
 ok(D.estimate({level = 100, skill = 70, attack = 0, interval = 2000}) == nil, "no attack")
 ok(D.estimate({level = 100, skill = 70, attack = 40, interval = 0}) == nil, "no interval")

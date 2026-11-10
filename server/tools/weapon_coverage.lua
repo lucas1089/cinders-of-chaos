@@ -5,6 +5,7 @@
 --   luajit tools/weapon_coverage.lua --access        the weapons whose class list leaves out a class that uses their family (O329)
 --   luajit tools/weapon_coverage.lua --md            the markdown table of server/README.md
 --   luajit tools/weapon_coverage.lua --list [Class]  every weapon option, per class (or one class)
+--   luajit tools/weapon_coverage.lua --families      weapons per family (sword/axe/club) per band per class (O454)
 --   luajit tools/weapon_coverage.lua --check         exit 1 when a class has a band with too few weapons or only weak
 --                                                     ones (tools/weapon_coverage_config.lua), or when the README table
 --                                                     is out of date (CI, both interpreters)
@@ -650,11 +651,132 @@ function C.list(cfg, A, only)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
+-- weapon families (O454): sword, axe and club per class and band
+-- ---------------------------------------------------------------------------------------------------------------
+C.FAMILY_KINDS = {"sword", "axe", "club"}
+
+-- rows = {class, cells = {{sword = n, axe = n, club = n, families = number with at least familyMinOptions}}} for the classes
+-- of the lines that get the traits (config familyLines)
+function C.familyRows(cfg, A)
+	local lines = {}
+	for _, l in ipairs(cfg.familyLines or {}) do
+		lines[l] = true
+	end
+	local rows = {}
+	for _, row in ipairs(A.rows) do
+		if lines[row.line] then
+			local out = {class = row.class, line = row.line, cells = {}}
+			for i, cell in ipairs(row.cells) do
+				local c = {sword = 0, axe = 0, club = 0, families = 0}
+				for _, w in ipairs(cell.list) do
+					if c[w.kind] ~= nil and w.family == "melee" then
+						c[w.kind] = c[w.kind] + 1
+					end
+				end
+				for _, k in ipairs(C.FAMILY_KINDS) do
+					if c[k] >= cfg.familyMinOptions then
+						c.families = c.families + 1
+					end
+				end
+				out.cells[i] = c
+			end
+			rows[#rows + 1] = out
+		end
+	end
+	return rows
+end
+
+local function familyGap(cfg, class, bandLabel)
+	for _, g in ipairs(cfg.familyKnownGaps or {}) do
+		if g[1] == class and g[2] == bandLabel then
+			return g[3]
+		end
+	end
+	return nil
+end
+
+-- the cells under familyMinFamilies that are no known gap, and the known gaps that are none: {class, band, text}
+function C.familyFailures(cfg, rows)
+	local out, seen = {}, {}
+	for _, row in ipairs(rows) do
+		for i, c in ipairs(row.cells) do
+			local band = cfg.bands[i][3]
+			local gap = c.families < cfg.familyMinFamilies
+			local known = familyGap(cfg, row.class, band)
+			if gap and not known then
+				out[#out + 1] = {class = row.class, band = band, text = string.format("only %d family(ies) with %d or more weapons (%d/%d/%d sword/axe/club)",
+					c.families, cfg.familyMinOptions, c.sword, c.axe, c.club)}
+			elseif known and not gap then
+				out[#out + 1] = {class = row.class, band = band, text = "listed in familyKnownGaps but no gap any more: remove it"}
+			end
+			if known then
+				seen[row.class .. "|" .. band] = true
+			end
+		end
+	end
+	for _, g in ipairs(cfg.familyKnownGaps or {}) do
+		if not seen[g[1] .. "|" .. g[2]] then
+			out[#out + 1] = {class = g[1], band = g[2], text = "listed in familyKnownGaps but there is no such class or band"}
+		end
+	end
+	return out
+end
+
+-- "27/12/16", with ! on a cell under the threshold and * on a known gap
+function C.familyCellText(cfg, row, i)
+	local c = row.cells[i]
+	local t = string.format("%d/%d/%d", c.sword, c.axe, c.club)
+	if c.families < cfg.familyMinFamilies then
+		t = t .. (familyGap(cfg, row.class, cfg.bands[i][3]) and "*" or "!")
+	end
+	return t
+end
+
+function C.familyMarkdown(cfg, rows)
+	local head, sep = {"Class"}, {"---"}
+	for _, b in ipairs(cfg.bands) do
+		head[#head + 1] = b[3]
+		sep[#sep + 1] = "---:"
+	end
+	local lines = {"| " .. table.concat(head, " | ") .. " |", "|" .. table.concat(sep, "|") .. "|"}
+	for _, row in ipairs(rows) do
+		local cells = {row.class}
+		for i = 1, #row.cells do
+			cells[#cells + 1] = C.familyCellText(cfg, row, i)
+		end
+		lines[#lines + 1] = "| " .. table.concat(cells, " | ") .. " |"
+	end
+	return table.concat(lines, "\n") .. "\n"
+end
+
+function C.familyText(cfg, rows)
+	local out = {}
+	local head = string.format("%-11s", "class")
+	for _, b in ipairs(cfg.bands) do
+		head = head .. string.format(" %11s", b[3])
+	end
+	out[#out + 1] = head
+	for _, row in ipairs(rows) do
+		local s = string.format("%-11s", row.class)
+		for i = 1, #row.cells do
+			s = s .. string.format(" %11s", C.familyCellText(cfg, row, i))
+		end
+		out[#out + 1] = s
+	end
+	out[#out + 1] = ""
+	out[#out + 1] = "cell = obtainable weapons in the band the class may wield: swords / axes / clubs. ! = fewer than " .. cfg.familyMinFamilies
+	out[#out + 1] = "families with " .. cfg.familyMinOptions .. " or more weapons, * = the same, a known gap (familyKnownGaps)"
+	return table.concat(out, "\n") .. "\n"
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
 -- the README block
 -- ---------------------------------------------------------------------------------------------------------------
 C.README = "README.md"
 C.BEGIN = "<!-- weapon-coverage:begin (luajit tools/weapon_coverage.lua --write) -->"
 C.END = "<!-- weapon-coverage:end -->"
+C.FAM_BEGIN = "<!-- weapon-families:begin (luajit tools/weapon_coverage.lua --write) -->"
+C.FAM_END = "<!-- weapon-families:end -->"
 
 function C.readmeBlock(cfg, A)
 	return C.BEGIN .. "\n\n" .. C.markdown(cfg, A) .. "\n" .. C.END
@@ -673,6 +795,19 @@ function C.readmeReplace(text, block)
 	return text:sub(1, a - 1) .. block .. text:sub(bEnd + 1)
 end
 
+function C.familyBlock(cfg, rows)
+	return C.FAM_BEGIN .. "\n\n" .. C.familyMarkdown(cfg, rows) .. "\n" .. C.FAM_END
+end
+
+function C.familyReplace(text, block)
+	local a = plainFind(text, C.FAM_BEGIN)
+	local _, bEnd = plainFind(text, C.FAM_END, a or 1)
+	if not a or not bEnd then
+		return nil
+	end
+	return text:sub(1, a - 1) .. block .. text:sub(bEnd + 1)
+end
+
 function C.main(args)
 	local cfg = dofile("tools/weapon_coverage_config.lua")
 	local D = C.load(cfg)
@@ -684,6 +819,8 @@ function C.main(args)
 		local list = C.accessProblems(cfg, D)
 		io.write(table.concat(list, "\n") .. (#list > 0 and "\n" or ""))
 		io.write(string.format("%d weapons checked, %d access problems\n", #D.weapons, #list))
+	elseif mode == "--families" then
+		io.write(C.familyText(cfg, C.familyRows(cfg, A)))
 	elseif mode == "--list" then
 		io.write(C.list(cfg, A, args[2]))
 	elseif mode == "--write" or mode == "--check" then
@@ -693,11 +830,17 @@ function C.main(args)
 			io.stderr:write("server/README.md has no weapon-coverage block (markers " .. C.BEGIN .. ")\n")
 			os.exit(1)
 		end
+		local famRows = C.familyRows(cfg, A)
+		new = C.familyReplace(new, C.familyBlock(cfg, famRows))
+		if not new then
+			io.stderr:write("server/README.md has no weapon-families block (markers " .. C.FAM_BEGIN .. ")\n")
+			os.exit(1)
+		end
 		if mode == "--write" then
 			local f = assert(io.open(C.README, "wb"))
 			f:write(new)
 			f:close()
-			io.write("server/README.md weapon coverage table written\n")
+			io.write("server/README.md weapon coverage and weapon families tables written\n")
 			return
 		end
 		local bad = false
@@ -706,9 +849,13 @@ function C.main(args)
 			io.stderr:write(string.format("weapon coverage: %s, levels %s: %s (%d option(s)%s)\n", f.class, f.band, f.flag, f.n,
 				f.best and string.format(", best %d%% of the tier", floor(f.best * 100 + 0.5)) or ""))
 		end
+		for _, f in ipairs(C.familyFailures(cfg, famRows)) do
+			bad = true
+			io.stderr:write(string.format("weapon families: %s, levels %s: %s\n", f.class, f.band, f.text))
+		end
 		if new ~= text then
 			bad = true
-			io.stderr:write("server/README.md weapon coverage table is out of date: luajit tools/weapon_coverage.lua --write\n")
+			io.stderr:write("server/README.md weapon coverage or weapon families table is out of date: luajit tools/weapon_coverage.lua --write\n")
 		end
 		for _, n in ipairs(D.notes) do
 			bad = true

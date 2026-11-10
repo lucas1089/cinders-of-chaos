@@ -145,6 +145,11 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   swing hits for less, and leech heals at most about once a second, however many hits land.
 - **Weapon styles:** two-handed weapons swing slower and hit much harder; bow shots splash onto the creatures around
   the target, crossbow bolts hit only their target. Bows and crossbows never run out of shots (see Archery and quivers).
+- **Sword, axe and club (Warrior, Thief and Templar lines):** each has a trait. The *sword* swings faster with every hit on the
+  same target, up to 20%, and hits a little harder at full speed: best on one target. The *axe* splits 14% of each hit among
+  the monsters next to the target and costs 2.5% damage on one: best in packs. The *club* may daze a monster (25% a hit, it
+  cannot attack for 0.7 s, then 3 s of rest) and costs 2.5% damage; a boss is only slowed. Against players the axe and club
+  change nothing. The weapon's tooltip says it.
 - **Cast times for the big spells:** Doomtide and Primordial Squall take 1.5 seconds to cast, Hail of Dawn and Colossus
   Fall 1 second, and hit harder for it. A cast bar over your character counts down (other players see a small one over
   you). Moving, a paralysis, casting another spell, opening a town portal or dying interrupts the cast and gives you the

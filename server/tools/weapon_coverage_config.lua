@@ -37,6 +37,20 @@ return {
 	-- cells that may stay below the threshold on purpose: {"Class", "band label", "why"}. Empty = none.
 	knownGaps = {},
 
+	-- Weapon families (O454, weapon_families_config.lua): sword, axe and club each have a trait, so the choice is real only when a
+	-- class has weapons of at least familyMinFamilies of them in a band, each family with at least familyMinOptions (obtainable,
+	-- the class may wield them). `familyLines` = the lines that get the traits (the Monk line keeps its fists). --check fails
+	-- on a class and band under it that is not in familyKnownGaps, and on a known gap that is no gap any more. No item is
+	-- added for a gap: it is reported (server/README.md "Weapon families (O454)").
+	familyLines = {"Warrior", "Thief", "Templar"},
+	familyMinOptions = 3,
+	familyMinFamilies = 2,
+	familyKnownGaps = {
+		{"Berserker", "1-20", "two-handed only: 2 swords, 4 axes, 2 clubs at level 1-20, only the axe has 3"},
+		{"Berserker", "1000-1300", "two-handed only: 8 swords, 2 axes, 2 clubs, only the sword has 3"},
+		{"Berserker", "1700-2400+", "two-handed only: 2 swords, 7 axes, 2 clubs, only the axe has 3"},
+	},
+
 	-- the tier of a level: the attack of the equipment sets at that level (tools/install_gear_sets.py ANCHORS and
 	-- CURVES; tools/weapon_sim.py calls it "one tier"; tools/weapon_coverage_test.py checks they are equal). One-handed
 	-- melee = attack, two-handed = attack + 3, bow = bow, crossbow = bow + 3, wand and rod = the mean damage.

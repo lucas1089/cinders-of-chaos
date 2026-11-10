@@ -8961,5 +8961,12 @@ return {
 			"Você já está em uma fila de dungeon.",
 		["solo"] = "sozinho",
 		["party"] = "em grupo",
+		-- Weapon families (weapon_families_core.lua F.note, the weapon tooltip line, O454); the percent signs are %% as in a fixed text
+		["Sword: tempo. Each hit on the same target speeds up your swing, up to 20%% faster, and adds up to 2%% damage. Best on one target. A new target starts over."] =
+			"Espada: tempo. Cada golpe no mesmo alvo acelera o seu ataque, até 20%% mais rápido, e soma até 2%% de dano. Melhor contra um alvo. Um novo alvo recomeça.",
+		["Axe: cleave. 14%% of each hit is split among the monsters next to the target. Costs 2.5%% damage on one target. Best in packs."] =
+			"Machado: golpe em arco. 14%% de cada golpe se divide entre os monstros ao lado do alvo. Custa 2,5%% de dano contra um alvo. Melhor contra grupos.",
+		["Club: impact. A hit has a 25%% chance to daze a monster: it cannot attack for 0.7 s, then rests for 3 s. A boss is only slowed. Costs 2.5%% damage on one target."] =
+			"Clava: impacto. Um golpe tem 25%% de chance de atordoar um monstro: ele não ataca por 0,7 s e depois descansa por 3 s. Um chefe só fica lento. Custa 2,5%% de dano contra um alvo.",
 	},
 }

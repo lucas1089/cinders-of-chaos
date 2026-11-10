@@ -1708,7 +1708,7 @@ rate; **O429 (owner 2026-11-06) lowered the class base intervals and removed tha
 | Tree + worn pieces together (patch 0078 player bonus, counted like dexterity points) | 45 (was 12): tree 15 + about four good pieces |
 | All bonuses together (engine `maxPlayerAttackSpeedBonus`) | -76% of the vocation-scaled interval (was 40) |
 | Hard floor of everything (engine `minPlayerAttackInterval`) | 333 ms = 3 attacks per second (was 1000) |
-| Ninja / Monk off-hand strike, Bloodrage cleave, Cleaving Arc, Ricochet, Templar radiant strike | each at most 1.5 triggers per second per player (`attack_rate_config.lua` `limits`); was one per swing, so at most 1 per second under the old floor |
+| Ninja / Monk off-hand strike, Bloodrage cleave, Cleaving Arc, Ricochet, Templar radiant strike, the axe's cleave (O454) | each at most 1.5 triggers per second per player (`attack_rate_config.lua` `limits`); was one per swing, so at most 1 per second under the old floor |
 | Arcane Echo keystone, support repeats, Reprisal, Monk chi per auto hit | unchanged: a 3 s cooldown, one repeat per cast, a cooldown, one chi per 2 s |
 | Shadowfist Flurry | 2 + chi hits, one every 200 ms (a spell, not an auto attack; unchanged) |
 | Pets, Beastmaster companion, Necromancer minions (hit as their owner) | one hit per 2 - 2.5 s each (their own timers; unchanged) |
@@ -7223,6 +7223,90 @@ The IP is the player's own one behind the gateways too: engine patch 0025 takes 
 - Bows splash: creatures around the target take 50% of the hit (normal PvP / protection zone rules). Crossbows hit only
   their target. Which kind a launcher is comes from `data/lib/chaos_archery_config.lua` (bows and crossbows fire without
   ammunition: "Infinite arrows and quivers" below).
+- Sword, axe and club are three families with a trait each since O454 (the next section): tempo, cleave, impact. Bows and
+  crossbows keep the splash and the single target hit above.
+
+## Weapon families (O454: `weapon_families_core.lua`, `weapon_families_config.lua`, `weapon_families.lua`, `weapon_styles.lua`, `tools/weapon_family_model.py`)
+
+Build audit 2026-11-09 (A10, owner: several ways to play each class): sword, axe and club were numbers only, one melee skill
+uses the best of the three (`melee_skill_core.lua`) and a weapon of one tier hits like another. Each family now has a trait on
+the basic melee attack. The rule of the owner: class damage does not move, so `class_dps_measured.csv` and
+`class_dps_model.py --check` hold untouched.
+
+| Family | Trait | Number | Price | Boss | PvP |
+|---|---|---|---|---|---|
+| Sword | Tempo: each hit on the same target adds a stack of swing speed, each hit is lighter by the same share | 5 stacks of +4% attack speed (+20%), window 3 s, a hit less than 150 ms after a stack gives none; hits at full stacks are +2% (the edge) | none; a new target or a pause of 3 s starts over | same as a monster | half the stacks (2) and half the edge |
+| Axe | Cleave: a share of each hit is split among the monsters next to the target | 14% of the hit in all (the pool), each of up to 8 neighbours takes pool / number | -2.5% on every hit | same as a monster | no cleave and no price |
+| Club | Impact: a chance on a hit to daze a monster | 25% a hit: it cannot attack and stands still for 0.7 s, then rests 3 s (no daze, no Iron Palm) | -2.5% on every hit | slowed only: 15% a hit, 25% slow for 1 s, then 8 s of rest | no daze and no price |
+
+- **Who.** The Warrior, Thief and Templar lines: vocations 4, 8, 14, 11, 12, 13, 23, 24, 25 (`vocations` in the config). Not the
+  Monk line (17, 18, 19: fists and chi), not fists and fist weapons, not bows, crossbows, wands or rods, not a player with no
+  weapon (Open Hand Creed), not a spell's weapon strike (storage `weaponStrike` = 1), not an extra hit of a keystone
+  (`ChaosKeystones.depth` above 0), not an off-hand hit within 150 ms of the swing that gave a stack. One-handed and
+  two-handed weapons are the same: the level's two-handed factor stays and the family factor comes on top.
+- **Where.** `weapon_styles.lua` calls `ChaosWeaponFamiliesGlue.hit` (`weapon_families.lua`) at the end of its melee rules, so a
+  family sees the hit as it lands. `weapon_families_core.lua` decides (pure, `tests/weapon_families_test.lua`), the glue does
+  it. The cleave and the daze run one tick later (`addEvent` 0). An error in the glue is printed and the hit stays as it is.
+- **Sword.** The haste is real: the player attack speed bonus of engine patch 0078 gets a source `tempo`
+  (`ChaosItemMods.setPlayerAttackSpeed(player, "tempo", percent)`). The swing is faster, so each hit is multiplied by the
+  interval it was swung at over the interval without the tempo (computed with `ChaosItemMods.effectiveInterval`, one with the
+  live bonus and one with `row.shown`, the sources without the tempo) and the edge of its stacks: the damage per second does
+  not move and the sword gets its edge only at full stacks. The cap of patch 0011 and the 3 attacks per second floor hold: where
+  they hold the swing is not faster and the hit is not lighter (the edge stays). `row.shown` is what the tooltips and "Your
+  Attack Interval" read, so the haste does not show there. A timer (one per player) ends the haste when no hit has come for the
+  window, and an axe or club hit ends it at once. What the sword gets for it is more swings a second at the same damage: more
+  rolls of every on-hit effect (crit, leech, chance procs, rage), within the per second limits of `attack_rate_config.lua`.
+- **Axe.** One call of `Game.getSpectators` with range 1 around the target (the call the extra projectile uses), only for an
+  axe hit on a monster and at most 1.5 times a second per player (`ChaosAttackRate.gate(pid, "axeCleave")`, the limit every
+  on-hit extra has). Neighbours: monsters, alive, not a player's summon. Each takes `pool / number` of the hit after the styles
+  with `doTargetCombatHealth` (ORIGIN_NONE, inside the keystone guard: no tree bonus twice, no tempo, no cleave of a cleave).
+  The damage shows in the combat log as "Axe cleave". Cleaving Arc and Bloodrage keep their own shares and add to it.
+- **Club.** The stun is a `CONDITION_PARALYZE` with sub id 71034, the one `monk_combat.lua` cancels a monster's attacks for, and
+  the rest is the `CONDITION_ATTRIBUTES` timer 71035 of Iron Palm, so a clubber and a Monk share it: a monster is held at most
+  `stunMs / (stunMs + immuneMs)` = 18.9% of the time, however many clubbers hit it. A boss (`MonsterType:isBoss`, or more than 50000
+  maximum health, the Monk's rule) gets a 25% slow (sub id 71095) and its own rest (sub id 71096). Hard cap: `weapon_family_model.py`
+  holds the uptime under 20% and a boss's under 12%. The nearest thing to "a brief interrupt of the next attack" the Lua layer can
+  do without C++ is this stun (the monster cannot start an attack while the condition lasts); it needed no engine change.
+- **PvP.** Following the snares (monsters only, `tests/snares_test.lua`) and the Monk's Iron Palm (a player has its own rules): the cleave and the daze
+  never touch a player, and the axe and the club do not pay their price against a player, so PvP damage is what it was before
+  O454. The sword's tempo is a swing speed with the damage per second kept, so it stays on against a player at half the stacks
+  (2) and half the edge: the burst of the first 3 seconds does not move. `pvp_model.py --check` reads none of it.
+- **Tooltip.** A weapon of the three types shows one gold line (`tip.note`, the field the quiver note uses, drawn by `game_itemtooltip`
+  and by the Unity client alike): "Sword: tempo. ...", "Axe: cleave. ...", "Club: impact. ..." (`ChaosWeaponFamilies.note`, numbers
+  from the config), in pt-BR through `Chaos.tx` and `i18n_strings.lua` (`item_tooltip.lua`). Not shown to a Monk line viewer. The
+  "Estimated DPS" line of an axe or club pays the price for a viewer of the three lines (`familyFactor` of
+  `weapon_dps_core.lua`); the sword's tempo and the axe's cleave are not in it.
+- **Helper and Auto rotation.** Unchanged and unaware: the Auto rotation casts spells and never reads the weapon, the families
+  act on the basic attack.
+- **Neighbours of this change.** `ChaosItemMods.setPlayerAttackSpeed` summed its own last total into the new one, so calling it
+  twice with one source (a login, then a point in the tree) raised the player attack speed bonus up to the cap of 45. It sums the
+  sources only now (a bug fix that goes with the tempo source; `tests/weapon_families_test.lua`).
+- **Numbers and limits.** All in `weapon_families_config.lua`; `python3 -I tools/weapon_family_model.py --check` (CI) holds
+  them: each family within 3% of today on one target and no family 5% above another (sword 1.020 at full stacks, axe 0.975, club
+  0.975: 1.046), the axe at most +12% of the basic attack on a pack of any size (+11.2%) and under +5% of every affected class's
+  5 target damage (the most: Ninja at level 100, +4.0%), no family moves a class's 1 target damage by more than 3%.
+  Computed, not measured: the class table is in server/data/spells/README.md "Weapon families (O454)". Nothing here ran on a
+  live server.
+- **Weapons per family.** `luajit tools/weapon_coverage.lua --families` prints it and `--check` holds it: every one of the nine
+  classes has three or more weapons of at least two families in every level band (`familyMinOptions` 3, `familyMinFamilies` 2).
+  The Berserker, two-handed only, has one family with three or more in three bands: levels 1-20 (the axe), 1000-1300 (the sword)
+  and 1700-2400+ (the axe). Listed in `familyKnownGaps`, no item added. The table is `swords / axes / clubs`, a star is a known gap.
+
+<!-- weapon-families:begin (luajit tools/weapon_coverage.lua --write) -->
+
+| Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Warrior | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Juggernaut | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Berserker | 2/4/2* | 8/12/9 | 8/14/12 | 6/6/6 | 8/8/6 | 4/5/2 | 3/3/2 | 8/2/2* | 4/3/1 | 2/7/2* |
+| Thief | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
+| Ninja | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
+| Samurai | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
+| Templar | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Inquisitor | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Sentinel | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+
+<!-- weapon-families:end -->
 
 ## Weapon damage scales with skills (`weapon_skill_core.lua`, `weapon_skill_config.lua`, `weapon_styles.lua`)
 
@@ -14554,7 +14638,9 @@ Owner question: does every class have enough weapons? The audit answers it from 
   `chaos_weapons800.lua` (the 34 weapons above level 800, their own monster rows are the source it counts), the base recipes and the Chaos monster loot.
 - **Check (CI).** `cd server && luajit tools/weapon_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
   `minOptions` (3) weapons in a band, or its best one is under `minPower` (80%) of the tier, unless the cell is listed in
-  `weapon_coverage_config.lua` (`knownGaps`, `handledElsewhere`). It fails too when the table below is out of date. Tighten
+  `weapon_coverage_config.lua` (`knownGaps`, `handledElsewhere`). It fails too when the table below is out of date. It also holds the
+  weapon families (O454): three or more weapons of at least two of sword, axe and club per band for the nine classes of the
+  Warrior, Thief and Templar lines (`--families` prints them, `familyKnownGaps` lists the Berserker's three, "Weapon families"). Tighten
   the numbers in that file. Other commands: `--md` (the table), `--list [Class]` (every weapon of a class by band), `--write`
   (rewrite the table below).
 - **Gaps found and filled.** Before: Berserker had no weapon at 1500+, Elementalist and Illusionist one, the Ranger line,

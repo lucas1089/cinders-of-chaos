@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 97,
+  "passive": 98,
   "place": 15,
   "staff": 17
  },
@@ -11586,6 +11586,16 @@
   },
   "weapon_dps": {
    "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "weapon_families": {
+   "files": [
+    "weapon_families.lua",
+    "weapon_styles.lua"
+   ],
    "kind": "passive",
    "opcodes": [],
    "talkactions": [],

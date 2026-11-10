@@ -481,6 +481,12 @@ one- or two-handed, is open to the Warrior, Thief, Monk and Templar lines (the B
 class rule); armour, shields, launchers, wands and rods keep their lists. Of the same tier, a two-handed melee weapon deals 1.07x the
 damage per second of one hand + shield at every level (it was +28% at level 8 and +13% from level 75); launchers and the Monk's
 early fists are still ahead (server/data/spells/README.md "Weapon damage per second": owner decision).
+**Weapon families (O454):** sword, axe and club are not the same weapon for the Warrior, Thief and Templar lines (the Monk line keeps its
+fists). Sword: tempo, each hit on one target speeds up the swing (up to +20%) and is lighter by the same share, a little more damage at full
+stacks (+2%); best on one target. Axe: cleave, 14% of each hit is split among the monsters next to the target, 2.5% less damage on one
+target; best in packs. Club: impact, a 25% chance on a hit to daze a monster so it cannot attack for 0.7 s, then 3 s of rest, 2.5% less
+damage; a boss is only slowed. Against players the axe and the club change nothing and the sword has half the stacks. Class damage does not
+move (server/README.md "Weapon families (O454)").
 **Training weapons (owner, 2026-10-23)**: the exercise weapons on a training dummy: one **melee** weapon (the sword and club
 ones are the same item now) for the Warrior, Thief and Templar lines, which trains the melee skill; a **fist** weapon for the Monk
 line only (owner 2026-10-28: "monk também não tem training weapon"), which trains fist fighting; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines

@@ -228,4 +228,52 @@ do
 	eq(#problems(nolist), 0, "no list: everyone")
 end
 
+-- ---------------------------------------------------------------- weapon families (O454): sword, axe and club per class and band
+do
+	eq(cfg.familyMinOptions >= 3 and cfg.familyMinFamilies >= 2, true, "families: three weapons in at least two of them")
+	eq(#cfg.familyLines, 3, "the Warrior, Thief and Templar lines get the traits (not the Monk line)")
+	for _, l in ipairs(cfg.familyLines) do
+		eq(l ~= "Monk", true, "the Monk line is not a family line")
+	end
+	local D = C.load(cfg)
+	local A = C.audit(cfg, D)
+	local rows = C.familyRows(cfg, A)
+	eq(#rows, 9, "nine classes in the family table")
+	local names = {}
+	for _, r in ipairs(rows) do
+		names[#names + 1] = r.class
+		eq(#r.cells, #cfg.bands, r.class .. " has a cell per band")
+	end
+	eq(table.concat(names, ","), "Warrior,Juggernaut,Berserker,Thief,Ninja,Samurai,Templar,Inquisitor,Sentinel", "the classes, in order")
+	eq(#C.familyFailures(cfg, rows), 0, "the shipped data passes (the Berserker gaps are listed)")
+	-- the numbers of one cell agree with the plain audit
+	for _, r in ipairs(rows) do
+		for i, cell in ipairs(A.rows[1].cells) do
+			local c = r.cells[i]
+			local audit
+			for _, ar in ipairs(A.rows) do
+				if ar.class == r.class then
+					audit = ar.cells[i]
+				end
+			end
+			-- the Thief line also has throwing weapons (family "throw"), which are no melee family
+			eq(c.sword + c.axe + c.club <= audit.n, true, r.class .. " band " .. i .. ": the three families are in the band")
+			if r.line ~= "Thief" then
+				eq(c.sword + c.axe + c.club, audit.n, r.class .. " band " .. i .. ": and are the whole band")
+			end
+		end
+	end
+	-- a gap that is not listed fails, a listed one that is not a gap fails too
+	local fake = {{class = "X", cells = {{sword = 5, axe = 1, club = 0, families = 1}}}}
+	local f1 = C.familyFailures(cfg, fake)
+	eq(#f1 >= 1 and f1[1].text:find("only 1 family", 1, true) ~= nil, true, "an unlisted one-family cell fails")
+	local good = {{class = "Berserker", cells = {{sword = 5, axe = 4, club = 0, families = 2}}}}
+	local f2 = C.familyFailures(cfg, good)
+	eq(f2[1] and f2[1].text:find("no gap any more", 1, true) ~= nil, true, "a known gap that is not one any more fails")
+	eq(C.familyCellText(cfg, rows[3], 1), "2/4/2*", "a known gap is starred")
+	eq(C.familyCellText(cfg, rows[1], 1), "27/12/16", "a plain cell is three numbers")
+	eq(C.familyMarkdown(cfg, rows):find("| Berserker | 2/4/2* |", 1, true) ~= nil, true, "the markdown table")
+	eq(C.familyText(cfg, rows):find("Sentinel", 1, true) ~= nil, true, "the plain table")
+end
+
 print("weapon_coverage_test: " .. n .. " checks ok")
