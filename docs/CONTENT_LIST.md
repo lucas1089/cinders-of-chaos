@@ -37,7 +37,7 @@ Rules for this list:
 | Orbs, keys and currencies | 24 | Codex "Orbs" |
 | Gems | 7 (+ sockets) | Codex "Gems" |
 | Profession materials | 20 | Codex "Materials" |
-| Passive tree nodes | 663 (root included) | `passivetree_data.lua` |
+| Passive tree nodes | 677 (root included; 663 before the class sections of O449 and the round 4 keystones of O450) | `passivetree_data.lua` |
 | of these: notables / keystone entries / masteries | 123 / 46 / 4 | wiki "Passive tree" tab |
 | Paragon stats | 8 | server/README.md "Paragon" |
 | Charm kinds | 4 shapes + 4 uniques | server/README.md "Charms" |
@@ -84,7 +84,7 @@ Status per class item (ROADMAP.md "Then: class rework"):
 
 Progression systems:
 
-- **Passive tree.** 663 nodes, about 248 points at level 1000. Class sections, keystones, notables.
+- **Passive tree.** 677 nodes, about 248 points at level 1000. Class sections, keystones, notables.
 - **Keystones per class.** Two per line where planned (#2, #106). Done.
 - **Path notables.** 27 small nodes turned into named notables (#105). Done.
 - **Mastery nodes.** 4, pick one effect each (#103). Done.

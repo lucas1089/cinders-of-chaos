@@ -2376,7 +2376,7 @@ function getTreeNodes()
 				122, 121
 			},
 			out = {
-				121
+				121, 706
 			}
 		},
 		--- 121 ---
@@ -3159,7 +3159,7 @@ function getTreeNodes()
 				164
 			},
 			out = {
-				160
+				160, 708
 			}
 		},
 		--- 162 ---
@@ -4219,7 +4219,7 @@ function getTreeNodes()
 				220
 			},
 			out = {
-				244
+				244, 707
 			}
 		},
 		--- 220 ---
@@ -13299,6 +13299,38 @@ function getTreeNodes()
 				{name = "Still Mind", customStats = {incrementHealth = 5, spirit = 2}}
 			},
 			inputs = {696}, out = {}
+		},
+		--- Round 4 keystones (706-708, O450): three new nodes, each in a group of its own (109-111) and a side branch of an existing
+		--- node (120 Speed, 219 Frostbitten Will, 161 Iron Communion; the parent's `out` list gained the link, nothing else of it
+		--- changed). No node was converted: no reworked version, no refund, build codes stay valid. Flags and numbers:
+		--- server/data/scripts/chaos/round4_keystones_config.lua (archetypes_config.lua appends them); effects in archetypes.lua.
+		--- Icons are cells that already exist (arHobble, arVigils, ksUndyingRage).
+		--- 706 ---
+		{
+			orbit = 0, orbitDist = 0, orbitIndex = 0, group = 109, isDivine = true, isKeystone = true,
+			name = "Momentum", icon = "arHobble",
+			customStats = {arMomentum = 1},
+			stats = {"Ranger, Thief and Monk lines: your hits deal 1% more", "for every 5% of movement speed above your base, up to", "10% more. A unique that scales with speed does not add:", "the larger counts. You take 8% more damage."},
+			classes = {"ranger", "deadeye", "beastmaster", "thief", "ninja", "samurai", "monk", "shadowfist", "ironsage"},
+			inputs = {120}, out = {}
+		},
+		--- 707 ---
+		{
+			orbit = 0, orbitDist = 0, orbitIndex = 0, group = 110, isDivine = true, isKeystone = true,
+			name = "Attunement", icon = "arVigils",
+			customStats = {arAttunement = 1},
+			stats = {"Mystic, Necromancer and Templar lines: the element your", "tree favours most deals 11% more. Your other elements", "(fire, ice, energy, earth, death, holy) deal 15% less."},
+			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "templar", "inquisitor", "sentinel"},
+			inputs = {219}, out = {}
+		},
+		--- 708 ---
+		{
+			orbit = 0, orbitDist = 0, orbitIndex = 0, group = 111, isDivine = true, isKeystone = true,
+			name = "Open Wounds", icon = "ksUndyingRage",
+			customStats = {arOpenWounds = 1},
+			stats = {"Monk and Templar lines: melee hits with bare fists or a", "one-handed weapon make the target bleed for 40% of", "the hit over 4 s. Those hits deal 8% less."},
+			classes = {"monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
+			inputs = {161}, out = {}
 		},
 }
 end

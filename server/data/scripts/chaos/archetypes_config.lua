@@ -252,4 +252,16 @@ ChaosArchetypesConfig = {
 	},
 }
 
+-- The fourth round (O450, 2026-11-10): Momentum, Attunement and Open Wounds, nodes 706-708, three new nodes (nothing converted,
+-- no version bump, so they are not in `nodes` above: that list is the converted leaves, refunded once). Their numbers and classes
+-- are in round4_keystones_config.lua; copied here so every reader of this config sees them. archetypes_core.lua adds their
+-- flags to its list after the 24 above, so each has the next bit of the flag storage (27 bits in all).
+do
+	local r4 = dofile("data/scripts/chaos/round4_keystones_config.lua")
+	for _, n in ipairs(r4.nodes) do
+		ChaosArchetypesConfig[n.flag] = r4[n.flag]
+		ChaosArchetypesConfig.classes[n.flag] = r4.classes[n.flag]
+	end
+end
+
 return ChaosArchetypesConfig

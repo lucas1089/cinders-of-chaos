@@ -5,6 +5,10 @@
 
 ChaosArchetypesConfig = ChaosArchetypesConfig or dofile("data/scripts/chaos/archetypes_config.lua")
 
+if not ChaosRound4 then
+	dofile("data/scripts/chaos/round4_keystones_core.lua") -- Momentum, Attunement, Open Wounds (O450)
+end
+
 ChaosArchetypesCore = ChaosArchetypesCore or {}
 local A = ChaosArchetypesCore
 A.cfg = ChaosArchetypesConfig
@@ -15,6 +19,10 @@ end
 -- the flags in the order of the nodes (also the order of the client's names)
 A.FLAGS = {}
 for _, n in ipairs(ChaosArchetypesConfig.nodes) do
+	A.FLAGS[#A.FLAGS + 1] = n.flag
+end
+-- the round 4 keystones (O450) are new nodes, not converted leaves: their flags follow the 24 of the rounds 1 to 3
+for _, n in ipairs(ChaosRound4Config.nodes) do
 	A.FLAGS[#A.FLAGS + 1] = n.flag
 end
 
@@ -137,6 +145,14 @@ function A.hitFactor(flags, ctx)
 		if flags.arRampage then
 			m = m * A.rampageDealt(ctx.rampage)
 		end
+		-- the fourth round (O450): Momentum's gain on a direct hit (ctx.momentum, the factor the glue read of the speed) and
+		-- Open Wounds' price on a fist or one-handed melee hit (ctx.woundHit)
+		if flags.arMomentum and ctx.momentum and ctx.origin ~= "condition" then
+			m = m * ctx.momentum
+		end
+		if flags.arOpenWounds and ctx.woundHit then
+			m = m * ChaosRound4.openWoundsPrice()
+		end
 		-- the Ranger line: ctx.distWeapon = a bow, crossbow or thrown weapon hit (not a wand)
 		if ctx.distWeapon and ctx.origin == "ranged" then
 			if flags.arLongshot then
@@ -165,6 +181,10 @@ function A.typeFactor(flags, ctype, ctx)
 	end
 	if flags.arCinderSigil and ctype ~= "fire" and ctype ~= "holy" and not (ctx and ctx.source == "sigil") then
 		m = m * c.arCinderSigil.otherDamage
+	end
+	-- Attunement (O450): ctx.attuned = the element the tree favours (nil: none)
+	if flags.arAttunement and ctx and ctx.attuned then
+		m = m * ChaosRound4.attunementFactor(ctype, ctx.attuned)
 	end
 	return m
 end

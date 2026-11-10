@@ -1,7 +1,7 @@
 -- Run from the server/ folder: luajit tests/passivetree_keystone_cap_test.lua (and lua5.3; CI runs both). Mock engine API.
 -- The keystone cap of the passive tree (O447, owner decision of 2026-11-09): a character holds at most
 -- ChaosPassiveTreeConfig.keystoneMax (3) keystones.
---   * what counts, read from the tree data: 44 nodes in four kinds, the same 44 the client marks isKeystone; masteries and
+--   * what counts, read from the tree data: 47 nodes in four kinds (44 before the round 4 keystones, O450), the same 47 the client marks isKeystone; masteries and
 --     class notables do not;
 --   * the core: countKeystones, checkKeystones, validatePlan (saved + planned), overCapPresets;
 --   * the doors of passivetree.lua: a plain save, planApply, sendNodes carries the cap; a refusal changes nothing;
@@ -86,11 +86,14 @@ for id, node in pairs(tree.nodes) do
 	end
 end
 table.sort(ids)
-eq(kinds.archetype, 24, "24 archetype keystones (rounds 1 to 3)")
+eq(kinds.archetype, 27, "27 archetype keystones (rounds 1 to 3, and Momentum, Attunement, Open Wounds of round 4, O450)")
 eq(kinds.pair, 2, "2 nodes with a keystone per class (621, 624)")
 eq(kinds.line, 4, "4 line keystones (369, 376, 383, 390)")
 eq(kinds.ascension, 14, "14 class section keystones (8 of the Thief, Necromancer, Monk and Templar lines, 6 of O449)")
-eq(#ids, 44, "44 keystone nodes")
+eq(#ids, 47, "47 keystone nodes")
+for _, id in ipairs({706, 707, 708}) do
+	eq(Core.keystoneKind(tree.nodes[id]), "archetype", id .. " a round 4 keystone is an archetype keystone")
+end
 eq(Core.keystoneKind(tree.nodes[621]), "pair", "621")
 eq(Core.keystoneKind(tree.nodes[369]), "line", "369")
 eq(Core.keystoneKind(tree.nodes[631]), "ascension", "631 Living Shadow")

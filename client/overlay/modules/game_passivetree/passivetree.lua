@@ -2358,7 +2358,9 @@ KEYSTONE_NAMES = {
 	ksRadiantRebuke = "Radiant Rebuke", ksDawnchain = "Dawnchain",
 	-- the keystones of the class sections of the Warrior, Ranger and Mystic lines (server section_keystones_config.lua, O449)
 	ksUnbrokenLine = "Unbroken Line", ksOpenVeins = "Open Veins", ksLoneMark = "Lone Mark", ksWolfbond = "Wolfbond",
-	ksConvergence = "Convergence", ksPhantomDouble = "Phantom Double"
+	ksConvergence = "Convergence", ksPhantomDouble = "Phantom Double",
+	-- the round 4 keystones (server round4_keystones_config.lua, O450)
+	arMomentum = "Momentum", arAttunement = "Attunement", arOpenWounds = "Open Wounds"
 }
 -- class notables of the class sections (their effect is in the node's own tooltip lines)
 CLASS_NOTABLE_NAMES = {

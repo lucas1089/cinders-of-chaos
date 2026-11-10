@@ -1088,7 +1088,9 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
   Every keystone is a thin combination of hooks that exist: a damage factor that depends on what stands near the target or the
   player (Immovable, Hunter's Focus), Barbed Quiver's bleed, Shadow Twin's second strike, Pack Alpha's wolf factor. They count
-  toward the cap of 3 keystones (44 keystones in the tree now, 14 of them in class sections). No node, keystone or number that
+  toward the cap of 3 keystones (44 keystones in the tree after O449, 14 of them in class sections; 47 since O450, which
+  added three more that belong to no section: Momentum for the Ranger, Thief and Monk lines, Attunement for the Mystic,
+  Necromancer and Templar lines, Open Wounds for the Monk and Templar lines, docs/BUILDS.md "Round 4 keystones (O450)"). No node, keystone or number that
   existed changed and no id was reused, so no saved tree or build code is touched. Numbers: `section_keystones_config.lua`
   (Wolfbond: `class_tree.lua`), computed, not measured in game: `server/data/spells/README.md` "Class sections of the Warrior,
   Ranger and Mystic lines (O449)". Rules, tests and what the models read: server/README.md "Passive tree: class sections of the

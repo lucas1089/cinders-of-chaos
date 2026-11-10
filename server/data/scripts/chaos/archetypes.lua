@@ -21,6 +21,11 @@
 --     stack, the monster's death event), Last Stand (a hit taken is cut, the healing price), Longshot, Barbed Quiver (a
 --     bleed condition), Opening Shot and Hobbling Shot (a slow condition and a mark per target).
 --
+--   * the fourth round (O450, 2026-11-10): Momentum (the unique items' statscale rule on the speed above the base; its price
+--     is the damage taken, like Rampage's, also through the mana shield), Attunement (a factor on the type of each damage
+--     half, like Winter's Lattice's price) and Open Wounds (the Barbed Quiver bleed on a fist or one-handed melee hit).
+--     Rules: round4_keystones_core.lua.
+--
 -- Damage of the archetypes, and the guards:
 --   * shares of a hit (Cascade, arcs, effigy and sigil pulses, the reflect) are dealt with ChaosKeystones.depth up, like
 --     the keystone procs: no passive bonus a second time, no keystone, no archetype reacts to them;
@@ -66,6 +71,7 @@ local KL = ChaosKeystoneLabels
 ChaosArchetypes = ChaosArchetypes or {}
 local M = ChaosArchetypes
 local A = ChaosArchetypesCore
+local R4 = ChaosRound4 -- Momentum, Attunement, Open Wounds (round4_keystones_core.lua, O450)
 local function cfg()
 	return ChaosArchetypesConfig
 end
@@ -714,6 +720,16 @@ function M.warriorDefence(player, flags, attacker, pd, sd)
 	return pd, sd
 end
 
+-- Momentum's price: the damage taken x1.08. A hit a mana shield took got it in the mana event already (manashield.lua, the
+-- provider below): the rest is left as it is, like Rampage's.
+function M.momentumDefence(player, attacker, pd, sd)
+	if attacker and ChaosManaShield and ChaosManaShield.scaled and ChaosManaShield.scaled(player, attacker, "momentum") then
+		return pd, sd
+	end
+	local m = R4.momentumTaken()
+	return A.scale(pd, m), A.scale(sd, m)
+end
+
 -- a player is hit: Thornbound Oath, Sanguine Covenant's healing price, Hollow Vessel's immunities
 local function defend(player, flags, attacker, pd, pt, sd, st, origin)
 	if pt == COMBAT_HEALING then
@@ -737,6 +753,9 @@ local function defend(player, flags, attacker, pd, pt, sd, st, origin)
 		if before ~= math.abs(pd) + math.abs(sd) then
 			KL.note(player, "arHollowVessel", before - math.abs(pd) - math.abs(sd))
 		end
+	end
+	if flags.arMomentum then
+		pd, sd = M.momentumDefence(player, attacker, pd, sd)
 	end
 	if flags.arRampage or flags.arLastStand then
 		pd, sd = M.warriorDefence(player, flags, attacker, pd, sd)
@@ -816,7 +835,7 @@ end
 -- factor). Only the flags that have a note row of their own (keystone_labels_config.lua kind k).
 local FACTOR_FLAGS = {}
 for _, flag in ipairs({"arVigils", "arSnarewright", "arContagion", "arExecutioner", "arRampage", "arLongshot",
-		"arOpeningShot", "arHobble", "arBarbed"}) do
+		"arOpeningShot", "arHobble", "arBarbed", "arMomentum", "arOpenWounds"}) do
 	FACTOR_FLAGS[#FACTOR_FLAGS + 1] = {flag = flag, only = {[flag] = true}}
 end
 local function noteFactors(player, flags, ctx, before)
@@ -856,6 +875,24 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	local bow = weapon ~= nil and oname == "ranged" and isBow(weapon)
 	local snare = flags.arSnarewright and player:getStorageValue(A.snaresConfig().storage.hit) == 1 or false
 	local ctx = {origin = oname, bow = bow, critical = critical == true, source = source, snare = snare}
+	-- the fourth round (O450): the speed above the base for Momentum, the favoured element for Attunement, a fist or
+	-- one-handed melee hit for Open Wounds
+	if not source then
+		if flags.arMomentum and oname ~= "condition" then
+			local ok, step = pcall(player.getStepSpeed or player.getSpeed, player)
+			local above = R4.speedAbovePct(ok and step or 0, player:getBaseSpeed())
+			local f = R4.momentumAgainstUnique(R4.momentumFactor(above, creature:isPlayer()),
+				ChaosUniquePassives and ChaosUniquePassives.speedScale and ChaosUniquePassives.speedScale(player, oname) or 1)
+			ctx.momentum = f ~= 1 and f or nil
+		end
+		if flags.arOpenWounds and oname == "melee" then
+			local twoHanded = weapon ~= nil and bit and SLOTP_TWO_HAND and bit.band(weapon:getSlotPosition(), SLOTP_TWO_HAND) ~= 0
+			ctx.woundHit = R4.bleeds(oname, weapon ~= nil, twoHanded == true)
+		end
+	end
+	if flags.arAttunement then
+		ctx.attuned = R4.lockedElement(ChaosPassiveCache[pid])
+	end
 	local t0 = now()
 	local cid0 = creature:getId()
 	-- the third round: what the Warrior and Ranger keystones read of the hit
@@ -884,6 +921,14 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 		m = m * slamMult
 	end
 	local m1, m2 = m * A.typeFactor(flags, typeName(pt), ctx), m * A.typeFactor(flags, typeName(st), ctx)
+	if flags.arAttunement and ctx.attuned and KL.sink then
+		local only = {arAttunement = true}
+		local d = math.abs(pd) * math.abs(A.typeFactor(only, typeName(pt), ctx) - 1)
+			+ math.abs(sd) * math.abs(A.typeFactor(only, typeName(st), ctx) - 1)
+		if d > 0 then
+			KL.note(player, "arAttunement", d)
+		end
+	end
 	-- the Reliquary Warden's party buff and the vigils (Wrath)
 	local rb = A.relicBuff(relicBuffs, pid, now())
 	if ChaosVigils and ChaosVigils.any(pid) then
@@ -1001,6 +1046,20 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 		end
 	end
 
+	-- Open Wounds: a fist or one-handed melee hit bleeds (the Barbed Quiver bleed, on the hit after the price)
+	if flags.arOpenWounds and ctx.woundHit then
+		local tick, ticks, tickMs = R4.bleedOf(amount)
+		if tick then
+			addEvent(function()
+				local p, c = Player(pid), Creature(cid)
+				if p and c and validTarget(p, c) then
+					addBleed(p, c, tick, ticks, tickMs)
+					KL.note(p, "arOpenWounds", tick * ticks)
+				end
+			end, 0)
+		end
+	end
+
 	-- Hobbling Shot: a distance weapon hit may slow its target
 	if flags.arHobble and ctx.distWeapon and A.hobbleRoll(hobbleMarks, cid, t) then
 		addEvent(function()
@@ -1084,6 +1143,19 @@ ChaosManaShield.provide("rampage", {
 		end
 		local stacks = A.rampageStacks(stateOf(player:getId()).rampage, now())
 		return stacks > 0 and A.scale(amount, A.rampageTaken(stacks)) or amount
+	end
+})
+
+ChaosManaShield.provide("momentum", {
+	hit = function(player, attacker, amount)
+		if ChaosKeystones.depth > 0 then
+			return nil
+		end
+		local flags = flagsOf(player:getId())
+		if not flags or not flags.arMomentum then
+			return nil
+		end
+		return A.scale(amount, R4.momentumTaken())
 	end
 })
 

@@ -1,5 +1,5 @@
 -- luajit treekeystones_test.lua && lua5.3 treekeystones_test.lua (CI runs every client module test from the repo root)
--- The keystone cap's counting (treekeystones.lua, O447) on the real tree (treedata/nodes.lua): the 44 keystones, the
+-- The keystone cap's counting (treekeystones.lua, O447) on the real tree (treedata/nodes.lua): the 47 keystones, the
 -- count of saved and planned nodes, the keystones of a path, and the pin of the client's default cap to the server's
 -- passivetree_config.lua keystoneMax.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
@@ -27,13 +27,13 @@ eq(K.max(3), 3, 'the server number'); eq(K.max(2), 2, 'a lower cap'); eq(K.max(0
 eq(K.max(nil), 3, 'no number: the default'); eq(K.max('x'), 3, 'text: the default'); eq(K.max(-1), 3, 'negative: the default')
 eq(K.max(2.5), 3, 'fraction: the default')
 
--- the tree: 44 keystones (38 before the class sections of the Warrior, Ranger and Mystic lines, O449), none of them a mastery
+-- the tree: 47 keystones (44 before the round 4 keystones of O450, 38 before the class sections of O449), none of them a mastery
 local keystones, masteries = {}, 0
 for id, node in ipairs(nodes) do
   if node.isKeystone then keystones[#keystones + 1] = id end
   if node.isMastery and node.isKeystone then masteries = masteries + 1 end
 end
-eq(#keystones, 44, 'the tree has 44 keystones')
+eq(#keystones, 47, 'the tree has 47 keystones (44 before the round 4 keystones, O450)')
 eq(masteries, 0, 'no mastery is a keystone')
 
 -- held: saved set + planned list, an id in both counts once, other nodes and unknown ids are ignored
