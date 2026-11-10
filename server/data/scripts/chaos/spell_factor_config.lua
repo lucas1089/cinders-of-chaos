@@ -97,11 +97,16 @@ ChaosSpellFactorConfig = {
 	-- with one factor: a class that is far ahead on one target but not on a pack (Deadeye, Ranger, Thief, Ninja) gets a factor
 	-- above 1, a class built on area spells that is far ahead on a pack but behind on one target (Mystic, Elementalist,
 	-- Beastmaster, Templar, Sentinel) one below 1. Fitted with server/tools/class_dps_model.py (model, not measured).
+	-- O475 (2026-11-10, the final re-fit of the balance round): the weapon growth of O472 lifts a class by its own factor (the Ranger line
+	-- 1.2 and the Mystic line 1.6 at level 1000 against 1.5 for the median class, class_dps_model.py --steps), which put three
+	-- 5 target numbers outside the band: Ranger at 1000 (-30%) and Deadeye at 1000 (-38%) below it, Mystic at 500 (+33%) above it.
+	-- The smallest change on this lever, each to about 20% of the median: Ranger 1000 1.6 -> 2.0, Deadeye 1000 2.5 -> 4.3,
+	-- Mystic 500 0.5 -> 0.42. One target numbers and every other row are untouched.
 	extra = {
-		[1] = {{60, 1}, {100, 0.75}, {500, 0.5}, {1000, 0.7}},  -- Mystic
-		[3] = {{60, 1}, {100, 1.7}, {500, 1}, {1000, 1.6}},  -- Ranger
+		[1] = {{60, 1}, {100, 0.75}, {500, 0.42}, {1000, 0.7}},  -- Mystic
+		[3] = {{60, 1}, {100, 1.7}, {500, 1}, {1000, 2.0}},  -- Ranger
 		[5] = {{60, 1}, {100, 1}, {500, 0.55}, {1000, 0.75}},  -- Elementalist
-		[7] = {{60, 1}, {100, 1.6}, {500, 1.5}, {1000, 2.5}},  -- Deadeye
+		[7] = {{60, 1}, {100, 1.6}, {500, 1.5}, {1000, 4.3}},  -- Deadeye
 		[11] = {{60, 1}, {100, 1}, {500, 1}, {1000, 1.3}},  -- Thief
 		[12] = {{60, 1}, {100, 1.25}, {500, 1.25}, {1000, 1.1}},  -- Ninja
 		[15] = {{60, 1}, {100, 1}, {500, 0.85}, {1000, 0.55}},  -- Beastmaster

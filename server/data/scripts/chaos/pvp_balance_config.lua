@@ -18,7 +18,14 @@ return {
 	-- ChaosPassiveDealt). The one additive damage pool and the weapon, gear and tier changes of the same round raise typical damage; a
 	-- duel keeps today's length. The design's first fit: it is re-fitted when every package of the round is in. Monsters, heals and hits
 	-- on monsters are never scaled. tools/pvp_model.py reads this table.
-	damageScale = {{100, 1.00}, {200, 0.94}, {300, 0.89}, {500, 0.79}, {700, 0.76}, {1000, 0.48}, {1500, 0.52}, {2000, 0.46}},
+	-- O475 (2026-11-10, the final re-fit of the round, old values {100, 1.00} {200, 0.94} {300, 0.89} {500, 0.79} {700, 0.76} {1000, 0.48}
+	-- {1500, 0.52} {2000, 0.46}, the design's first fit): the model's median class damage before / after the round (class_dps_model.py,
+	-- the weapon growth, the gear, the dots and the pool of the typical profile): 607 / 491 at 100, 1194 / 1093 at 200, 1761 / 1657 at
+	-- 300, 3084 / 3138 at 500, 4416 / 4662 at 700, 6017 / 8882 at 1000, 8814 / 12843 at 1500, 11612 / 17824 at 2000. The scale is that
+	-- ratio, so seconds to kill hold what the model had before the round (python3 -I server/tools/pvp_model.py --scale prints it,
+	-- --check holds the table to within 1.5% of it). It is above 1 up to level 300: the pool takes more from the typical
+	-- character there than the weapon growth gives back, and a duel keeps its length.
+	damageScale = {{100, 1.24}, {200, 1.09}, {300, 1.06}, {500, 0.98}, {700, 0.95}, {1000, 0.68}, {1500, 0.69}, {2000, 0.65}},
 
 	-- the levels of the table and of the check (class_dps_model.py measures 100, 500 and 1000; survival_model.py has builds for them)
 	levels = {100, 500, 1000},

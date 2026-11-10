@@ -3,7 +3,7 @@
      the telegraphed big hits, phases, adds, hazards and the enrage are scripted (uber_config.lua). The untelegraphed
      radius 6 hit, the self-heal and the invisibility of the omen are gone. Numbers: server/README.md "Ascended Omens and the Cinderheart". -->
 <monster name="Ascended Morvane" nameDescription="Ascended Morvane" race="undead" experience="6000000" speed="280" manacost="0">
-	<health now="1200000" max="1200000" />
+	<health now="2760000" max="2760000" />
 	<look type="2117" corpse="6068" />
 	<targetchange interval="5000" chance="12" />
 	<flags>
