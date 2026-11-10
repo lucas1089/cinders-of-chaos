@@ -20,6 +20,8 @@ namespace Chaos.Core
         public string NewAccount = "", NewPassword = "", NewCharacter = "";
         public bool HasNewPlayer => NewAccount.Length > 0 && NewPassword.Length > 0 && NewCharacter.Length > 0;
         public int Port = 7171;
+        /// <summary>CHAOS_LIVE_SAY: lines said in the default channel right after the entry, before the walk (a GM's /testkit, for example), split at '|'.</summary>
+        public readonly List<string> Say = new List<string>();
         public readonly List<string> Errors = new List<string>();
         public bool Ok => Errors.Count == 0;
 
@@ -50,6 +52,8 @@ namespace Chaos.Core
             e.NewCharacter = V("CHAOS_LIVE_NEW_CHARACTER");
             int given = (e.NewAccount.Length > 0 ? 1 : 0) + (e.NewPassword.Length > 0 ? 1 : 0) + (e.NewCharacter.Length > 0 ? 1 : 0);
             if (given != 0 && given != 3) e.Errors.Add("set all of CHAOS_LIVE_NEW_ACCOUNT, CHAOS_LIVE_NEW_PASSWORD and CHAOS_LIVE_NEW_CHARACTER, or none");
+            foreach (string line in V("CHAOS_LIVE_SAY").Split('|'))
+                if (line.Trim().Length > 0) e.Say.Add(line.Trim().Length > 255 ? line.Trim().Substring(0, 255) : line.Trim());
             return e;
         }
 
