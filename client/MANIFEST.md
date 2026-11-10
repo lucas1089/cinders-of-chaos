@@ -3945,7 +3945,7 @@ warnings of pair 59. `gen_outfit_anchors.py` and `gen_info_lift.py` against pair
 - **Preview.** `gen_temple_art.py preview --out DIR`: every piece at 2x on dark and light, and a 13 x 13 room built from the 32 px
   pieces in the layout of the owner's mockup (not committed).
 
-### Pair 61: pair 60 with the animation fixes (`anim_fixes.py`, `pair_fixes/anim_fixes.csv`; built 2026-11-10, not on windows-assets yet; O458)
+### Pair 61: pair 60 with the animation fixes (`anim_fixes.py`, `pair_fixes/anim_fixes.csv`; built 2026-11-10, on windows-assets 46b5109; O458)
 Owner 2026-11-10 (animation review, grades C and D): "fix the C and D the way you judge best". Pair 61 does what an exact, repeatable
 operation on the art we already have can do. Nothing is drawn, no outside service is used, nothing is uploaded. `anim_fixes.py` applies the
 table `pair_fixes/anim_fixes.csv` (kind, id, op, args, reason, review row: 193 rows, 178 things) to a copy of pair 60. Each row checks its
@@ -4007,11 +4007,20 @@ Output **pair 61**: dat 11c963fe238c71a7c59d817949f7f2c2 (8,828,000 bytes), spr 
 outfits changed, 52,596 entries byte-identical, the verification of `anim_fixes.py` passed (new sprites pixel-identical, 4,000 old sprites
 unchanged). `check_pair.py --old` with exactly those 178 ids allowed: 0 errors, 3,964 warnings, the same lines as pair 60 (INFO only: 2,610 old
 sprite records no thing uses, up from 30). The changes (phases, durations, sprite slots) are in `pair_fixes/pair61_changes.csv`.
-- **Switch to pair 61** (not done; nothing in the repository expects pair 61 and `chaosClientPair` stays 60): 1. build the pair with the
-  commands above from pair 60 (md5 above); 2. `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 61 and commit what they rewrite
-  (`client_chaos_charselect/outfit_anchors.lua`, `client_chaos_infolift/info_lifts.lua`; against pair 61 only the dat md5 line changes, checked on this
-  build; the two files are in the scratchpad folder `pair61_generated`); 3. ship the
-  client update with pair 61, then set `chaosClientPair` to 61 (admin app: Comandos > "Par do cliente" > Gravar 61) so the guards agree.
+- **Archive parts** (the recipe of pair 58; owner's go 2026-11-10, "Já pode fazer o par novo"; pushed to windows-assets as **46b5109**,
+  only the two part files and their lines of `SHA256SUMS.parts` change):
+  - part00 99,614,720 bytes, sha256 `8019b922c9d0f88f5779bab87c021f8eb62fd7bd85b66b63e0709a2c76c731cd`
+  - part01 30,474,556 bytes, sha256 `8775c5444a372817dc9f7264d372e6032c923bf9ed1c4bc9b7cba48147659487`
+  - joined `things-1098.tar.xz` (130,089,276 bytes) sha256 `aa30c50c5c0dab7e04fbebf1e5b101a266e6a3055f281115d1ff89da5abdbb40`;
+    `things-1098.tar` sha256 `d132f4957cc1a18721d4b9b108a06e76b50791fd17aae6d4a8228667e9f647ba`. Decompressing the joined parts gives
+    that tar sha256 and the dat md5 above (checked).
+- **In the repository:** `gen_outfit_anchors.py` and `gen_info_lift.py` ran against pair 61 (`client_chaos_charselect/outfit_anchors.lua`,
+  `client_chaos_infolift/info_lifts.lua`, and the Unity copy `Core/InfoLiftData.cs`: only the dat md5 lines change);
+  `server/tools/client_pair.py` `PAIR_ASSETS` is 61 with the new dat md5. Every step of the CI job "Live sprite pair" ran on pair 61
+  before the push: `check_pair.py` 0 errors, the item wire table, the recolour sheets, the two tables, the dungeon banners, the website
+  sprite images.
+- **Switch on:** publish a client update with pair 61 (the Windows package, the owner's step), then set `chaosClientPair` to 61 (admin
+  app: Comandos > "Par do cliente" > Gravar 61) so the guards agree. No install step waits for pair 61.
   `gen_fx_send_offsets.py --check` needs nothing (no frame moved inside its cell). No server script waits for an effect's length: the declared `ms`
   of `ChaosVfx` (117 trimmed ids, up to 1,162 ms longer than the drawn effect, 115 of them still declare the pair 60 length) is only read by the status aura chain
   (`chaos_pack29_vfx.lua`, ids 780 to 795, none trimmed: 783 was left out for it) and sent to the client as a hint. A client on pair 60 with a
