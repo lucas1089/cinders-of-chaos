@@ -4,6 +4,10 @@
 --                  chest, golden smoke, 128 px, centred on its 2 x 2 footprint). A floor widget (Tile:setFloorWidget, base patch
 --                  0078: under the chest, creatures and walls); the 12 frames switch by image-clip on one timer. There is no
 --                  message: the client finds the chests itself.
+--   pickup glows   (O456) the same floor widget and loop under the Ember portal 44396, the health and mana globes 44397 / 44398 and the
+--                  loot bag 6068 (ChestAuraLogic.PICKUPS, strips in images/pickup/). One widget per pickup in view, at most
+--                  PICKUP_CAP (24) at once, the nearest to the player; the chests 38643 / 38644 (the other cursed chest looks) are in
+--                  CHESTS now. The same option covers them.
 --   foot aura      the Templar line's sigil under the feet of every Templar-line player the server names (a creature bottom widget,
 --                  Creature:addBottomWidget: drawn under the outfit, follows the walk); 24 frames at 250 ms, a slow turn, in the
 --                  line's tint.
@@ -323,16 +327,26 @@ local function dropChestWidget(c)
   dropFloorWidget(w, tile)
 end
 
+-- floor widgets of pickups alive now (the cap of O456 counts these)
+local function pickupWidgets()
+  local n = 0
+  for _, c in pairs(chests) do
+    if c.def.pickup and alive(c.widget) then n = n + 1 end
+  end
+  return n
+end
+
 local function placeChest(c)
   if alive(c.widget) then return end
   c.widget = nil
   if not floorApi() then return end
+  if c.def.pickup and pickupWidgets() >= L.PICKUP_CAP then return end -- the nearest ones win at the next check (maintainChests)
   local tile = g_map.getTile(c.pos)
   if not tile then return end
   if tile:getFloorWidget() ~= nil then return end -- a footprint, a stain or a range frame: tried again at the next check
   local size, ml, mt = L.chestBox(c.def, spriteSize())
   local w = g_ui.createWidget('UIWidget')
-  w:setImageSource(L.chestPath(c.def.art))
+  w:setImageSource(L.artPath(c.def))
   w:setImageClip(L.clip(L.frameIndex(now(), L.CHEST_FRAME_MS, L.CHEST_FRAMES), c.def.px))
   w:setImageSmooth(true)
   w:resize(size, size)
@@ -402,16 +416,28 @@ local function maintainChests()
   local mine = localPos()
   if not mine then return end
   local vw, vh = visibleDim()
+  -- pass 1: forget what is gone, take the widget of what left the view; collect the pickups in view (O456: at most PICKUP_CAP get one,
+  -- the nearest to the player, so a field of loot bags costs a fixed number of widgets)
+  local inView, near = {}, {}
   for key, c in pairs(chests) do
     local tile = g_map.getTile(c.pos)
     if not tile or not tileHasChest(tile, c.id) then
       dropChestWidget(c)
       chests[key] = nil
     elseif L.onScreen(c.pos, mine, vw, vh) then
-      placeChest(c)
+      inView[#inView + 1] = c
+      if c.def.pickup then near[#near + 1] = { key = L.tileKey(c.pos), dist = L.distance(c.pos, mine) or 0 } end
     else
       dropChestWidget(c)
     end
+  end
+  local want = L.nearest(near, L.PICKUP_CAP)
+  for _, c in ipairs(inView) do
+    if c.def.pickup and not want[L.tileKey(c.pos)] then dropChestWidget(c) end
+  end
+  -- pass 2: the widgets that should be there (the cap is checked inside placeChest, after the drops above)
+  for _, c in ipairs(inView) do
+    if not c.def.pickup or want[L.tileKey(c.pos)] then placeChest(c) end
   end
 end
 
@@ -599,11 +625,13 @@ end
 
 function getStats()
   local nc, nf, ns, nm = 0, 0, 0, 0
-  for _ in pairs(chests) do nc = nc + 1 end
+  for _, c in pairs(chests) do
+    if not c.def.pickup then nc = nc + 1 end
+  end
   for _ in pairs(feet) do nf = nf + 1 end
   for _ in pairs(server) do ns = ns + 1 end
   for _ in pairs(smoke) do nm = nm + 1 end
-  return { enabled = enabled, chests = nc, feet = nf, frames = frameCount(), templars = ns, smoke = nm, floorApi = floorApi(), callback = callbackOn() }
+  return { enabled = enabled, chests = nc, pickups = pickupWidgets(), feet = nf, frames = frameCount(), templars = ns, smoke = nm, floorApi = floorApi(), callback = callbackOn() }
 end
 
 function init()

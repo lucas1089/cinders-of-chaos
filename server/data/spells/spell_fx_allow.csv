@@ -1,0 +1,15 @@
+spell_id,spell,effect_id,effect,reason
+24,Phantom Needles,799,blast_arcane,the energy line is drawn as arcane light
+152,Prismatic Rupture,799,blast_arcane,the energy line is drawn as arcane light
+154,Eclipse of Ruin,640,big_shock_lightning_7,a frost and lightning spell: the ice nova comes with a bolt shock
+67,Mistborne Strike,4579,p50_purple_cloud_4579,a mist of shadow around the strike (it was the shadow cloud 394)
+89,Tidal Palm,383,frost_ripple,a water palm drawn as a cold ripple
+113,Blightbrand,401,poison_flame,the necromancer's venom burns on a death spell
+127,Martyr's Pyre,803,blast_fire3,a holy fire: the martyr burns in gold-white flame
+177,Pyre of Absolution,803,blast_fire3,a holy fire: the pyre of the absolved
+141,Rampart Quake,414,shockwave,the plain shockwave ring under the holy dome of a shield quake
+149,Moonshard Rain,4400,p50_ice_shard_sparks_4400,shards of moon crystal fall: a volley that is physical damage
+228,Shattered Psyche,464,arcane_hit,a psychic blow drawn as an arcane flash
+228,Shattered Psyche,771,psyche_fracture,a psychic blow drawn as an arcane prism
+231,Tear in the Weave,546,px195_arcane,a tear in the weave drawn as arcane light
+231,Tear in the Weave,775,weave_crush,a tear in the weave drawn as arcane light

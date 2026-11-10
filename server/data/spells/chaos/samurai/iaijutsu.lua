@@ -41,7 +41,10 @@ function onCastSpell(creature, variant, isHotkey)
 	if not ChaosSpell.canAttack(player, target) then
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER)
 	end
-	player:getPosition():sendMagicEffect(CONST_ME_YELLOWENERGY)
+	-- the draw gathers in gold: stock effect 49 is named yellow but draws blue (O457), the gold rune ring runs the same 0.8 s
+	if not ChaosSpell.vfx(player:getPosition(), "p50_yellow_rune_ring_1_4144") then
+		player:getPosition():sendMagicEffect(CONST_ME_YELLOWENERGY)
+	end
 	addEvent(strike, CHARGE_MS, player:getId(), target:getId())
 	return true
 end

@@ -58,6 +58,7 @@ python3 -I tools/ci/check_attack_counts.py   # every class has 13 attack spells;
 python3 -I tools/ci/check_class_access.py && python3 -I tools/ci/check_class_access_test.py   # the client offers what the server casts: spell lists of all 21 classes, cap table, Auto setup spells (O329; the client logic with the real vocation fold: client/overlay/modules/game_spellbook/spellbook_access_test.lua in the client loop; weapon class lists: cd server && luajit tools/weapon_coverage.lua --access, also part of --check)
 python3 -I tools/ci/check_spell_icons.py && python3 -I tools/ci/check_spell_icons_test.py   # every spell of spelldata.lua has a drawn cell in the 3 spell icon sheets (O157)
 python3 -I tools/ci/check_rotation_kit.py && python3 -I tools/ci/check_rotation_kit_test.py   # every attack spell of the kit and of each class is in Auto setup's rotation data, area rule by shape (O157)
+python3 -I tools/ci/check_spell_fx.py && python3 -I tools/ci/check_spell_fx_test.py   # a spell sends no effect of another element: spelldata element against the tags of spell_fx_elements.csv, measured with the real scripts in tools/ci/spell_fx_probe.lua (lua5.3), reasons in spell_fx_allow.csv, the effects pass data/lib/chaos_fx_pass.lua (O457; tests/fx_pass_test.lua runs in the server loop)
 cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check  # smooth leveling: stages, minutes per level 8-2200, hunts in reach (limits: data/scripts/chaos/progression_config.lua); no flag prints the table, --spells the unlock gaps
 python3 -I server/tools/audit_hunt_transitions_test.py   # hunt transition audit maths on synthetic spawns (O323; the run on a map: README "Hunt warnings (O323)"; warnings: tests/hunt_warnings_test.lua in the server loop)
 python3 -I server/tools/area_import_test.py   # imported hunts (O335): committed chunks, spawns, exit portal, boxes; extract needs the source map (not in git)
@@ -150,6 +151,7 @@ python3 -I client/tools/sprites/gen_fx_send_offsets.py --check       # -> data/l
 python3 -I launcher/tools/gen_launcher_art.py --check            # launcher banner and icon from docs/brand (O339; CI uses the fx venv)
 python3 -I desktop/tools/gen_admin_art.py --check               # desktop admin app header strip and icon from docs/brand (O344; CI uses the fx venv)
 python3 -I client/tools/sprites/gen_portal_art.py build --check && python3 -I client/tools/sprites/gen_portal_art_test.py  # pickup looks of pair 55: Ember portal, health and mana globe (CI uses the fx venv)
+python3 -I client/tools/sprites/anim_fixes_test.py   # animation fixes by rule on the art we have (pair 61, O458): trim, dedupe, lift, stray pixels, idle pulse; the table pair_fixes/anim_fixes.csv, the run: client/MANIFEST.md "Pair 61" (CI uses the fx venv)
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

@@ -210,6 +210,8 @@ jobs:
           python3 -I client/tools/sprites/gen_reward_chest_art_test.py
           # in-place item redraw (redraw_items.py on a synthetic pair, pair 53)
           /tmp/fxenv/bin/python -I client/tools/sprites/redraw_items_test.py
+          # animation fixes by rule on the art we have (pair 61, O458): trim, dedupe, lift, stray pixels, idle pulse on a synthetic pair
+          /tmp/fxenv/bin/python -I client/tools/sprites/anim_fixes_test.py
           # the support rune looks of pair 46 (100 PixelLab rune stones, 1 x 1 items) and the support icons: committed sources,
           # atlas, things file and sums match the generator, each look passes style_check, ids agree with the config
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_support_runes_art.py build --check
@@ -868,6 +870,11 @@ jobs:
           # every attack spell of the kit and of every class is known to Auto setup, area / single rule from its shape (O157)
           python3 -I tools/ci/check_rotation_kit.py
           python3 -I tools/ci/check_rotation_kit_test.py
+
+      - name: A spell shows no effect of another element, measured with the real scripts (O457; check_spell_fx.py; needs lua5.3)
+        run: |
+          python3 -I tools/ci/check_spell_fx.py
+          python3 -I tools/ci/check_spell_fx_test.py
 
       - name: Loot by monster level keeps gold and items per hour of every band (loot_model.lua; loot_bands.py)
         run: |

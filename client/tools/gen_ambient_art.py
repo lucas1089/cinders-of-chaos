@@ -8,6 +8,8 @@ rectangles the engine already batches, with no particle system, no per-speck Lua
   mote_far.png   / mote_near.png    pale green-yellow soft glows (fireflies and motes in forest and swamp)
   dust_far.png   / dust_near.png    faint warm grey specks (caves)
 
+O456: the ember and dust specks were 1 to 3 pixels at 0.2 to 0.5 alpha and could not be seen on grass; they are now a bright round
+core with a glow of 4 and 6 px (embers) and soft pale discs of 3.6 and 5.4 px radius (dust), at the same counts.
 The count of specks per tile is the cap of the effect: COUNTS below (ember 12 + 5, mote 9 + 4, dust 16 + 6 per tile, so a
 kind shows at most 17 / 13 / 22 specks for each 512 x 512 pixels of the game window). chaosambient_logic.lua L.ART names the
 same numbers and its test compares them with this file. Positions come from a fixed pseudo random sequence, keep a minimum
@@ -27,12 +29,12 @@ OUT = os.path.join(os.path.dirname(HERE), 'overlay', 'modules', 'game_chaosweath
 SIZE = 512         # chaosambient_logic.lua L.TILE is the same number
 # name, kind, specks per tile, radius in pixels (the glow reaches this far), peak alpha range, colour, min distance
 LAYERS = [
-    ('ember_far', 'ember', 12, 2.3, (150, 205), (255, 140, 50), 70),
-    ('ember_near', 'ember', 5, 3.6, (190, 245), (255, 170, 70), 110),
+    ('ember_far', 'ember', 12, 4.2, (185, 235), (255, 140, 50), 70),
+    ('ember_near', 'ember', 5, 6.4, (215, 255), (255, 170, 70), 110),
     ('mote_far', 'mote', 9, 4.2, (95, 140), (190, 235, 120), 80),
     ('mote_near', 'mote', 4, 7.0, (130, 185), (210, 245, 140), 120),
-    ('dust_far', 'dust', 16, 1.9, (55, 95), (205, 190, 165), 60),
-    ('dust_near', 'dust', 6, 2.8, (80, 125), (215, 200, 175), 100),
+    ('dust_far', 'dust', 16, 3.6, (120, 170), (238, 226, 202), 60),
+    ('dust_near', 'dust', 6, 5.4, (150, 205), (245, 234, 210), 100),
 ]
 COUNTS = {name: count for name, _kind, count, _r, _a, _c, _d in LAYERS}
 
@@ -83,11 +85,18 @@ def draw(kind, count, radius, alpha, color, min_dist, seed):
                 if a > 0:
                     put(px, hx + dx, hy + dy, color, a)
         if kind == 'ember':
-            # a bright core pixel and a two to four pixel tail under it (the spark rises, the tail trails below)
-            put(px, hx, hy, (255, 235, 170), min(255, peak + 20))
-            tail = 2 + rng.next(3)
-            for i in range(1, tail + 1):
-                put(px, hx, hy + i, color, int(peak * 0.45 * (1.0 - i / (tail + 1.0))))
+            # a bright round core (a disc of radius 1 far, 2 near) and a three to six pixel tail under it (the spark rises, the
+            # tail trails below; O456: the specks were 1 to 3 pixels and nearly invisible on grass, so core, glow and tail grew)
+            core = max(1, int(radius / 3.0))
+            for dy in range(-core, core + 1):
+                for dx in range(-core, core + 1):
+                    if math.hypot(dx, dy) <= core + 0.3:
+                        put(px, hx + dx, hy + dy, (255, 238, 180), min(255, peak + 20))
+            tail = 3 + rng.next(4)
+            for i in range(core + 1, core + tail + 1):
+                a = int(peak * 0.6 * (1.0 - (i - core) / (tail + 1.0)))
+                for dx in range(-(core - 1), core):
+                    put(px, hx + dx, hy + i, color, a)
     return img
 
 

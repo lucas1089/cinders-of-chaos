@@ -9,6 +9,12 @@ fixed seed (no reference art, nothing third-party). A filmstrip is one row of sq
   chest/cursed_smoke.png     64 px x 12   the cursed chest (client 38642): a dark pool, violet smoke rising, a few embers (no ring)
   chest/coffer_smoke.png    128 px x 12   the Sealed Coffer on the big gold chest (client 38657, 2 x 2): golden smoke with coins of
                                           light, a gold pool (no ring); centred on the chest's 2 x 2 footprint
+  pickup/portal_glow.png     64 px x 12   the Ember portal on the floor (client 44396, one tile; O456): a violet pool that breathes, two rings that
+                                          widen and fade, motes rising
+  pickup/globe_health.png    64 px x 12   the health globe (client 44397): a red pool with a heartbeat, a ring with a travelling glint, light rising
+  pickup/globe_mana.png      64 px x 12   the mana globe (client 44398): a blue pool that breathes slowly, a ring with a travelling glint, twinkles
+  pickup/bag_glint.png       64 px x 12   the loot bag (client 6068, any number of them in view): a small warm pool and gold twinkles, kept faint
+                                          so that a screen full of bags stays calm
   foot/templar_sigil.png     64 px x 24   the Templar line's foot aura, one turn of 24 frames (6 s at 250 ms): a ring with a slow
   foot/inquisitor_sigil.png               travelling highlight and a dashed sigil, in the line's tint (holy gold, white and ember,
   foot/sentinel_sigil.png                 steel and blue); the total light is the same in every frame
@@ -17,6 +23,7 @@ fixed seed (no reference art, nothing third-party). A filmstrip is one row of sq
   frame/sentinel.png                     middle is empty), so the client draws one widget of (2r + 1) x (2r + 1) tiles for a Templar
                                          whose aura has radius r (4, 3 and 5, more with the passive tree), no matter which r
 
+The pickup strips (O456) are drawn the same way as the chest ones and played by the same module on the same 12 frame, 200 ms loop.
 The chest and foot pictures are 1x (64 px cover two tiles of 32 px; the client scales them with the map); the frame is 3 tiles
 across with a 1 tile border. The module's loops are 12 frames (chests) and 24 frames (foot): client/overlay/modules/game_chestaura/chestaura_logic.lua
 keeps the same counts and sizes (chestaura_test.lua checks the files against them).
@@ -190,6 +197,77 @@ def coffer_smoke(n, p):
     return out
 
 
+# ---------------------------------------------------------------- pickups (O456: a loop of N frames, 64 px, centred on the item's tile)
+def portal_glow(n, p):
+    """Ember portal (client 44396): a violet pool that breathes, two rings that widen and fade, motes rising from the stone ring."""
+    out = canvas(n)
+    c = n / 2
+    cy = c + 4
+    breathe = 0.5 + 0.5 * math.sin(2 * math.pi * p)
+    over(out, pool(n, c, cy, 28, 19, (130, 60, 230), 0.40 + 0.16 * breathe, 1.2))
+    over(out, pool(n, c, cy, 17, 11, (200, 150, 255), 0.26 + 0.16 * breathe))
+    for k in range(2):
+        life = (p + k / 2.0) % 1.0
+        rad = 9 + 16 * life
+        over(out, ring(n, c, cy, rad, rad * 0.64, (210, 165, 255), 0.95 * (1 - life) ** 1.1, width=1.3, glow=2.6))
+    for k in range(4):
+        life = (p + k / 4.0) % 1.0
+        x = c + (-11, 9, -4, 13)[k] + 2.5 * math.sin(2 * math.pi * (life + k))
+        over(out, blob(n, x, cy + 2 - 24 * life, 1.5, (226, 190, 255), 0.9 * math.sin(math.pi * life)))
+    return out
+
+
+def globe(n, p, main, light, beat):
+    """A globe on the floor (health: beat=True, a heartbeat, two pulses a loop; mana: a slow breath): a pool of `main`, a ring with a
+    travelling glint, a light mote rising and twinkles in `light`."""
+    out = canvas(n)
+    c = n / 2
+    cy = c + 4
+    if beat:
+        pulse = max(math.exp(-((p - 0.12) / 0.09) ** 2), 0.75 * math.exp(-((p - 0.36) / 0.09) ** 2))
+    else:
+        pulse = 0.5 + 0.5 * math.sin(2 * math.pi * p)
+    over(out, pool(n, c, cy, 28, 19, main, 0.34 + 0.20 * pulse, 1.2))
+    over(out, pool(n, c, cy, 17, 11, light, 0.16 + 0.14 * pulse))
+    over(out, ring(n, c, cy, 21, 14, main, 0.55, width=1.1, glow=2.2, arc=(2 * math.pi * p, 0.8, 0.9)))
+    for k in range(2):
+        life = (p + k / 2.0) % 1.0
+        x = c + (-9 if k == 0 else 10) + 2 * math.sin(2 * math.pi * (life + k))
+        over(out, blob(n, x, cy + 2 - 22 * life, 1.5, light, 0.9 * math.sin(math.pi * life)))
+    for k in range(3):
+        a = 2 * math.pi * (k + 0.3) / 3 + 0.5
+        over(out, star(n, c + 21 * math.cos(a), cy + 14 * math.sin(a), 4.5, light, 0.85 * tw(p, 1, k / 3.0)))
+    return out
+
+
+def globe_health(n, p):
+    return globe(n, p, (255, 70, 60), (255, 200, 190), True)
+
+
+def globe_mana(n, p):
+    return globe(n, p, (70, 140, 255), (190, 225, 255), False)
+
+
+def bag_glint(n, p):
+    """Loot bag (client 6068): a small warm pool and gold twinkles at three fixed spots, one after the other. Faint on purpose."""
+    out = canvas(n)
+    c = n / 2
+    cy = c + 4
+    over(out, pool(n, c, cy, 25, 16, (255, 190, 70), 0.36 + 0.08 * math.sin(2 * math.pi * p), 1.2))
+    # the twinkles sit at the rim, outside the sack (the floor widget is drawn under the item)
+    for k, (dx, dy) in enumerate(((-19, -3), (19, -7), (-8, 13), (11, 13))):
+        over(out, star(n, c + dx, cy + dy, 6.5, (255, 240, 190), 0.95 * tw(p, 1, k / 4.0)))
+    return out
+
+
+PICKUP = {
+    'portal_glow': (64, portal_glow),
+    'globe_health': (64, globe_health),
+    'globe_mana': (64, globe_mana),
+    'bag_glint': (64, bag_glint),
+}
+
+
 # ---------------------------------------------------------------- foot auras (steady; a slow travelling highlight)
 F = 24   # frames of one slow turn (6 s at 250 ms); the total light stays the same, only the bright stretch moves
 FOOT = {
@@ -278,6 +356,9 @@ def build():
     for key, (n, fn) in CHEST.items():
         frames = [fn(n, i / N) for i in range(N)]
         res[('chest', key)] = (n, frames, strip(frames, n))
+    for key, (n, fn) in PICKUP.items():
+        frames = [fn(n, i / N) for i in range(N)]
+        res[('pickup', key)] = (n, frames, strip(frames, n))
     for k in FOOT:
         frames = [foot(64, i / F, k) for i in range(F)]
         res[('foot', k + '_sigil')] = (64, frames, strip(frames, 64))
@@ -346,12 +427,12 @@ def preview(res, pair, outdir):
         ImageDraw.Draw(im).text((3, 0), text, fill=(255, 255, 255, 255))
         return im
 
-    def scene(gid, cid, key, f, big, text):
+    def scene(gid, cid, key, f, big, text, kind='chest'):
         tiles = 4 if big else 3
         base = floor(gid, tiles, tiles)
         mx = my = tiles // 2 * 32
         if key:
-            a = aura(key, 'chest', f)   # centred on the chest's tile, or on the corner of its 2 x 2 footprint
+            a = aura(key, kind, f)   # centred on the chest's tile, or on the corner of its 2 x 2 footprint
             base.alpha_composite(a, (mx + 16 - a.width // 2 + (-16 if big else 0), my + 16 - a.height // 2 + (-16 if big else 0)))
         base.alpha_composite(item(cid), (mx - (32 if big else 0), my - (32 if big else 0)))
         return label(base.resize((base.width * Z, base.height * Z), Image.NEAREST), text)
@@ -370,6 +451,21 @@ def preview(res, pair, outdir):
             x += c.width + 6
         rows.append(row)
     sheet_rows(rows, os.path.join(outdir, 'chest_auras.png'))
+
+    # the pickups (O456): each item with no glow, then three frames of its glow, on three floors
+    rows = []
+    for title, cid, key in (('ember portal 44396', 44396, 'portal_glow'), ('health globe 44397', 44397, 'globe_health'),
+                            ('mana globe 44398', 44398, 'globe_mana'), ('loot bag 6068', 6068, 'bag_glint')):
+        cells = [scene(floors[0], cid, None, 0, False, 'no glow')]
+        cells += [scene(g, cid, key, f, False, '%s f%d' % (key, f), 'pickup') for g, f in zip(floors, (0, 4, 8))]
+        row = Image.new('RGBA', (sum(c.width for c in cells) + 6 * len(cells), cells[0].height + 14), (24, 24, 28, 255))
+        ImageDraw.Draw(row).text((4, 1), title, fill=(255, 220, 120, 255))
+        x = 0
+        for c in cells:
+            row.alpha_composite(c, (x, 14))
+            x += c.width + 6
+        rows.append(row)
+    sheet_rows(rows, os.path.join(outdir, 'pickup_glows.png'))
 
     def outfit(look, colors):
         t = d.outfits[look - 1]

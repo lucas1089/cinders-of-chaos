@@ -29629,6 +29629,42 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   (CI builds the header cut out of the patch). The patch applies on top of 0079-0087 of an already patched tree (luascript.cpp with
   fuzz 2). **Not tested:** a full build with the patch, a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.
 
+## Death and spawn effects (O456) (`deathfx_core.lua`, `deathfx_config.lua`, `deathfx.lua`, `tests/deathfx_test.lua`)
+
+Review of the animations 2026-11-10, owner approved: a monster died and appeared with no effect of its own (the loot bag of O435 replaced
+the body). Visual only: no damage, area, timing, loot or spawn rule moves. Nothing here ran on a live server.
+
+* **Hooks reused, none added.** The death is the CreatureEvent `ChaosCosmeticsDeath` of `cosmetics.lua` (registered once per monster by its
+  `onSpawn` callback; the kill cosmetics and the boss victory emote ride on it): it now also calls `ChaosDeathFx.onDeath(creature)`. The
+  spawn is the same file's EventCallback `onSpawn` (before the placement): `ChaosDeathFx.onSpawn(monster, position, startup, artificial)`.
+  `deathfx.lua` registers nothing; both calls are wrapped in `pcall`, and an engine or a server without the file sends nothing.
+* **Death.** One effect on the monster's tile by race (`MonsterType:race()`, the XML `race`): blood the blood splash 390 (2x2, 747 ms),
+  undead the bone burst 584 (3x3, 720 ms), fire the fire blast 803 (3x3, 700 ms), energy the lightning blast 798 (3x3, 630 ms), venom the
+  venom blast 811 (3x2, 700 ms). A boss (`MonsterType:isBoss()`) gets the large soft effect of its race instead: blood geyser 655 (5x5),
+  void nova 647 (7x7), fire shockwave 638 (7x7), lightning burst 652 (7x7), venom nova 645 (7x7), 600 to 910 ms. Chosen by eye on sheets of
+  pair 60 (all centred at the offsets in the config, the ones of the `ChaosVfx` rows; the test compares id, offset and length with the libs).
+* **Spawn.** A 1x1 puff of pair 50 by race, 400 to 700 ms: blood 4174, undead 4156, fire 4141, energy 4195, venom 4157. Only a map respawn.
+  Engine patch 0041 already adds a `CONST_ME_TELEPORT` to a respawn a player sees, so the puff is small and sits on top of it; if a live look
+  shows it is too much, `spawn.enabled = false` in the config and a reload.
+* **Cases.** Skipped on purpose: a creature with a master (player summons, Beastmaster wolves, Necromancer minions, a boss's adds: no body,
+  and they come in packs); a monster of an unknown race; the server start (`startup`); a monster another script created (`artificial`: rift
+  and tower packs, dungeons, generated areas, event monsters, summons), which have their own marks and could spawn 30 at once; a boss on
+  spawn (a world boss arrival already sends its own large effect). Rift, tower and guardian monsters do get the death effect, one
+  at a time like any monster, under the budget below.
+* **Cost.** One Lua call and at most one `Position:sendMagicEffect` (spectators of the tile only) per death and per respawn that passes the
+  rules, no timer, no storage, no database. A token bucket per kind caps what starts in one instant: deaths `capacity = 8`, 12 a second;
+  spawns 6 and 6 a second; a pack that dies together shows the first 8 effects and skips the rest. Bosses skip the bucket.
+* **Config.** `deathfx_config.lua`: `enabled`, `death.enabled`, `death.effects`, `death.boss`, `death.budget`, `spawn.enabled`, `spawn.skipStartup`,
+  `spawn.skipArtificial`, `spawn.effects`, `spawn.budget`. An effect is `{id, dx, dy, ms}`: the id of the client pair and the offset it is sent at.
+* **Death Mage.** `monsters/chaos/death_mage.xml` pointed at look 1539, which has no art facing east or west in the pair, so the monster was
+  invisible when it turned sideways. It now wears look 1541 (the skull-robed Dark Sorcerer look, 3x3, draws in all 4 directions; Dark Sorcerer
+  is level 810 to 850, a different band). The XML keeps a comment to return to 1539 once a pair draws it. Guard: `client/tools/sprites/check_pair.py`
+  rule `monster-look-blank-dir` (client/MANIFEST.md "Sprite tools").
+* **Tests.** `tests/deathfx_test.lua`: the shipped config, the effect per race, bosses, masters, the spawn rules, the budget on a pack and on a
+  long stream, the glue on a mocked engine, the hooks in `cosmetics.lua`, the config against the libs. **Not tested:** a kill or a respawn
+  in a client, the look on a live screen, whether `artificial` is false for a map respawn in the built engine (read from src-patch 0041 and
+  TFS 1.4: `Spawn::spawnMonster` passes false, `Game.createMonster` true).
+
 ## Launch wipe (O438) (`deploy/launch_wipe.py`, `deploy/launch_wipe_tables.json`)
 
 The beta wipe of docs/BETA.md section 9 as a tool, run as root on the game server with the game stopped. Python 3
@@ -29792,3 +29828,75 @@ probe account, local test data), and `LR_DB_DUMP` to dump the database before an
 * **Tests:** `tools/ci/launch_rehearsal_test.py`, in `ci.yml` next to the launch check: the boundary table, every decision with passing
   and failing inputs, the report, the probe parsing, and rules of the script (strict mode, guarded `rm`, no log lines).
 * **Not verified:** the VPS (its zone and its service manager), payments, the real client, a rate above 1.
+
+## Spell effects pass (O457)
+
+Owner 2026-11-10: review the animations, fix what needs no new pair. A review by eye of every spell effect (contact sheets of the
+old and the new picture on dark and on green ground, not run in a client) found spells with an effect of the wrong element,
+long still pictures on quick hits, specks for big moves and the same picture twice in one cast. Every fix points the spell at an
+effect that already is in the pair. No art, no pair, no engine patch, no opcode; no damage, area, cooldown, mana or range moves.
+
+* **Where:** `data/lib/chaos_fx_pass.lua`, a table spell id -> `fx` -> {old name = new `ChaosVfx` name}. `ChaosSpell.pack29`
+  (`data/spells/chaos/_common.lua`) asks it first, before the Mystic, pair 29, pair 36, large, class and pair 27 swaps; a cosmetic
+  skin still wins. `ChaosSpell.fx / vfx / vfxOr` keep their send shape (a name a kit spell sends on every tile of a wave or a
+  line is still sent on every tile, and every new picture there is as small as the old one or smaller); the `Fx()` wrapper uses an
+  entry only when the new picture has send offset 0,0. The registry holds the send offset of every new name, so
+  `chaos_fx_send_offsets.lua` needs no row (`gen_fx_send_offsets.py --check` passes). Switch `ChaosFxPass.ON`. Test: `tests/fx_pass_test.lua`.
+* **Scripts that name a constant or a class effect themselves:** `iaijutsu.lua` (the charge was stock effect 49, named yellow
+  energy and drawn blue; now the gold rune ring, 800 ms like the charge), `rampage_leap.lua` and `skyfall_cleave.lua` (ask the
+  pass), `_snares.lua` (a mine just set showed the fire comet for every element; now `MINE_MARK`, the hit effect of its element).
+* **Guard:** `tools/ci/check_spell_fx.py` (CI "checks"). The client spell list gives 94 spells an element; every effect id a spell
+  sends has an element tag in `data/spells/spell_fx_elements.csv` (or `any`); a spell sends only its own element or `any`, unless a
+  row of `data/spells/spell_fx_allow.csv` gives the reason (a holy fire, a frost and lightning spell, a psychic blow drawn arcane).
+  What a spell sends is measured: `tools/ci/spell_fx_probe.lua` runs the real script of each chaos spell (once per vocation) in a
+  recording mock with the real libraries, so the swap layers decide the ids. 3 spells send nothing in the mock (Umbral Stride,
+  Corpse Explosion, Bone Offering: they need a state); the count may only fall. The probe found one more mismatch that the review
+  did not list: Whirling Heel showed the holy shock 641 of `chaos_big_fx.lua`. Test: `tools/ci/check_spell_fx_test.py`.
+
+| Spell | Was | Now | Why |
+|---|---|---|---|
+| Dawnpiercer, Lance of Vigil | blast_magical 810 (blue arcane) | p50_gold_comet_burst 4293 | holy on an arcane blast |
+| Sunspear, Hallowed Cut, Dawnbreaker Shot | 810 | p50_yellow_spike_burst 4551 | holy |
+| Heretic's Brand | 810 | holy_hit 467 (gold cross) | holy |
+| Gale Volley (each tile) | crit_burst 415 (red) | p50_whirlwind_1 4147 | wind, not a critical hit mark |
+| Arrowstorm | 415 | p50_white_whirl 4495 | wind volley |
+| Moonshard Rain | 415 | p50_ice_shard_sparks 4400 | moon crystal shards |
+| Razor Rain | 415 | p50_white_arc_slash 4416 | razor discs |
+| Crypt Collapse | blast_ground 809 (orange) | p50_dust_cloud 4328 | a collapse of dust on a death spell |
+| Skysplitter Fist, Heaven's Ninth Gate | meteor_strike 376 (fire comet) | p50_white_energy_orb 4638, p50_gold_orbit_rings 4386 | chi, not fire |
+| Bell of Reckoning | holy_cross 404 (2 s still) | p50_yellow_rune_ring 4144 (800 ms) | quick hit |
+| Crusader's Sweep, Penitent Lash (each tile) | 404 on every tile | p50_gold_sparkle_burst 4190, p50_gold_swirl_sparks 4128 (1x1) | a carpet of 3x3 suns for 2 s |
+| Censer Swing | holy_seal 445 (2 s still) | p50_yellow_spike_burst 4551 | quick hit |
+| Soulrend Beam (each tile, first tile) | void_eye 396, void_rift 441 (2 s still) | p50_purple_spiky_ring 4584, p50_purple_flame_ball 4574 | quick beam |
+| Wraithwind, Soulflay Wave, Mistborne Strike | shadow_cloud 394 (near black) | p50_purple_cloud 4579 | unreadable on dark ground |
+| Wraithwind, Soulflay Wave (first tile) | plague_mist 435 (2 s still) | p50_pale_green_wisp_spirals 4505 | quick wave |
+| Dreamrot, Smoke Bomb | shadow_smoke 393 (near black) | p50_purple_cloud 4579, p50_grey_smoke_ball 4573 | unreadable on dark ground |
+| Raise Dead, Raise Bone Warrior, Archer, Mage | necro_seal 447 (2 s still) | p50_skull_ghost 4235 | cast often |
+| Gravewail | 447 | p50_purple_spiky_ring 4584 | quick hit |
+| Earthbreaker | slam_earth 717 (faint specks) | p50_dust_burst_with_spark 4426 | a slam |
+| Bulwark Slam | blunt_smash 482, blast_ground 809 | 4551, p50_yellow_rune_ring 4144 | holy shield smash |
+| Crescent Cut, Eclipse Edge | heavy_cleave_e 494 (a streak) | p50_white_scythe_slash 4537 | a cleave |
+| Keepfall, Rift Cleaver, Rampage Leap | 494 | p50_white_arc_slash 4417, 4417, 4416 | a cleave |
+| Skyfall Cleave (landing spot) | berserker_cleave 598 | p50_red_claw_arc 4616 | a cleave |
+| Hail of Dawn (each tile) | ranger_arrowfall 600 (1x1 specks) | p50_gold_spark 4467 | an arrow rain |
+| Banner of Bones (each minion) | bonelord_rally 590 (1x1) | p50_purple_spiky_ring 4584 | a rally |
+| Shield Wave | shieldwave_bash_e 689 (a shrinking shield) | p50_gold_ring_pulse 4260 | a wave |
+| Whirling Heel | big_shock_holy_5 641 | w_impact_whirlwind 3887 (the pair 36 name, hidden by the large effect) | holy on a Monk strike, found by the guard |
+| Cleaving Heel | blood_slash 391 = the engine's hit effect 10 | monk_heel 616 | the same picture twice |
+| Marrow Bolt, Ossuary Surge, Splinter Volley | necro_skull 397 = the death hit 18 | 4235, 4574, 4575 | the same picture twice |
+| Iaijutsu | stock 49 (blue) | p50_yellow_rune_ring 4144 | named yellow, drawn blue |
+| Seeker Mine | fire comet 37 on every element | the hit effect of its element | wrong element |
+
+* **Rows of the review not changed:** the fire comet 37 and the fire, poison, ice and energy mix on Chi Lance, Heaven's Ninth Gate
+  and Mistborne Strike (the audit read the names of the strings in the shared kit script; the real Chi Lance sends shockwave 414 and
+  ki_hit_blue 532); the grey POFF 3 and BLOCKHIT 4 on Aegis of Faith, Chi Ward and Detonate Mines (the cancel puff and the fallback of
+  `vfxOr`; the casts send dawn_aegis, ironsage_ward and shield_bubble); skull_orb 125 (the last fallback of the missile chains);
+  Banner of Bones on the blue portal 409 (no spell sends 409 now); the same picture under 403 and 50, and 481 and 32 (no spell
+  sends both; Iron Palm sends hammer_steel, word_stunned, stun_stars, cond_stunned); 433 and 3896 (Frozen Crypt is a 5 s zone with
+  six pulses, a hold fits), 633 and 757 (a curse mark shows while the curse ticks); 539 and 540 (no spell sends them: class and pack
+  swaps replace them); Reaping Gyre (its combat effect is set when the script loads, on every tile; no per-spell swap reaches it).
+* **For a new pair:** 610 ninja_vanish and the dark redraws of 433, 633, 757 (no brighter picture of the same element exists
+  in the pair), a blood slash of its own for the combat effect of Reaping Gyre.
+* **Not verified:** a live client (draw order, real ground, the look of each effect in the real size, the offsets of the
+  p50 names, which come from the registry); Raise Dead, Raise Bone Warrior, Archer and Mage and Banner of Bones need corpses or
+  minions, so the probe does not run them (the pass is the same call path).

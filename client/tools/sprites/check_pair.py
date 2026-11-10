@@ -18,6 +18,12 @@ Errors (exit 1):
           count, bytes after the last missile.
   spr     a header or offset table that does not fit, an offset into the table or past the end, a record whose pixel
           runs do not decode to at most 32x32 pixels with exactly the record's bytes (truncated or overlong sprite).
+  monster a look named by a monster XML of server/data/monster (<look type=N>) that draws nothing in one of the 4
+          directions of its walk or idle group (blank = no opaque pixel in every frame of that direction; the monster
+          is invisible when it turns that way; O456, Death Mage look 1539 had no east or west art). Looks with one
+          direction pattern are checked once. A look the pair does not hold is a warning. Skipped with --new-only.
+          The command line reads the monster files of this repository; check() as a library runs the rule only
+          when it is given `monsters` (a synthetic or partial pair has no monster list of its own).
   append  (--old) a dat or spr signature that changed, a category or the sprite count that shrank, an old thing whose
           entry bytes changed (unless listed in --allow-changed), an old sprite record whose bytes changed.
 Warnings (odd but valid): duplicate or unordered flags, item flags on an outfit, effect or missile (also the usual
@@ -43,6 +49,7 @@ import argparse
 import csv
 import mmap
 import os
+import re
 import struct
 import sys
 
@@ -537,6 +544,54 @@ def check_masks(outfits, spr, rep, bpp, auras):
                      + ' '.join(f'{v:06x}' for v in sorted(odd)))
 
 
+def monster_looks(root=None):
+    """{outfit id: [monster names]} of every <look type=N> in the monster XML files of server/data/monster."""
+    base = root or os.path.join(REPO, 'server', 'data', 'monster')
+    out = {}
+    for dp, _dn, fns in os.walk(base):
+        for fn in sorted(fns):
+            if not fn.endswith('.xml'):
+                continue
+            with open(os.path.join(dp, fn), encoding='utf-8', errors='replace') as f:
+                text = f.read()
+            m = re.search(r'<look\b[^>]*\btype="(\d+)"', text)
+            if not m or int(m.group(1)) == 0:
+                continue
+            n = re.search(r'<monster\b[^>]*\bname="([^"]*)"', text)
+            out.setdefault(int(m.group(1)), []).append(n.group(1) if n else fn)
+    return out
+
+
+def check_monster_looks(outfits, spr, rep, bpp, looks):
+    """every monster look draws in all 4 directions of its walk and idle groups (blank = no opaque pixel in every
+    frame of that direction: layer 0, base pattern, no mount)."""
+    by_id = {t.id: t for t in outfits}
+    seen = {}
+
+    def drawn(sid):
+        if sid not in seen:
+            seen[sid] = bool(sid and sid <= spr.count and mask_pixels(spr, sid, bpp))
+        return seen[sid]
+
+    for lid in sorted(looks):
+        names = ', '.join(sorted(set(looks[lid]))[:3])
+        t = by_id.get(lid)
+        if t is None:
+            rep.warn('monster-look-missing', f'outfit {lid}', f'named by {names}, not in the pair')
+            continue
+        for g in t.groups:
+            gname = 'walk' if g.gtype == 1 or len(t.groups) == 1 else 'idle'
+            blank = []
+            for x in range(min(g.px, 4) if g.px >= 4 else 1):
+                ok = any(drawn(g.sprites[sprite_index(g, x, 0, 0, 0, ph, ww, hh)])
+                         for ph in range(g.phases) for hh in range(g.h) for ww in range(g.w))
+                if not ok:
+                    blank.append('NESW'[x] if g.px >= 4 else 'all')
+            if blank:
+                rep.error('monster-look-blank-dir', f'outfit {lid}',
+                          f'{gname} group draws nothing facing {",".join(blank)} (monster: {names})')
+
+
 def default_auras():
     out = set()
     d = os.path.join(REPO, 'server', 'data', 'XML')
@@ -572,7 +627,8 @@ def parse_allow(spec):
     return out
 
 
-def check(dat_path, spr_path, old=None, new_only=False, allow_changed=(), auras=None, rgb=None, examples=5):
+def check(dat_path, spr_path, old=None, new_only=False, allow_changed=(), auras=None, rgb=None, examples=5,
+          monsters=None):
     """Full check of a pair (optionally append-only against old=(dat, spr)). Returns a Report."""
     rep = Report(examples)
     auras = default_auras() if auras is None else set(auras)
@@ -617,6 +673,8 @@ def check(dat_path, spr_path, old=None, new_only=False, allow_changed=(), auras=
     outs = [t for t in things['outfit'] if not (new_only and old_ids is not None and ('outfit', t.id) in old_ids)]
     check_masks(outs, spr, rep, bpp, auras)
     if not new_only:
+        if monsters:
+            check_monster_looks(things['outfit'], spr, rep, bpp, monsters)
         used_records = {s for s in used if 0 < s <= spr.count} - empty
         unused = spr.count - len(empty) - len(used_records)
         if unused > 0:
@@ -715,7 +773,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     auras = None if a.aura_looks is None else {int(x) for x in a.aura_looks.split(',') if x.strip()}
     rep = check(a.dat, a.spr, old=a.old, new_only=a.new_only, allow_changed=parse_allow(a.allow_changed),
-                auras=auras, rgb=a.rgb, examples=a.examples)
+                auras=auras, rgb=a.rgb, examples=a.examples, monsters=monster_looks())
     print(rep.text(a.verbose))
     return 0 if rep.ok else 1
 
