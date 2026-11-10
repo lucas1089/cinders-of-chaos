@@ -1488,6 +1488,27 @@ ordinary node (1-2 of a stat), so a tree build of 73 / 248 points changes by one
 ("Line keystones, masteries and weapons measured in game" above): each damage choice +2-4% on its own damage type, a
 build 1-3%, below the spread of a run; as sized.
 
+### Class sections of the Warrior, Ranger and Mystic lines (O449, 2026-11-10, computed)
+
+Nothing here was run on a server or measured. The notables, line nodes and mastery effects are plain tree stats at or below the
+median of the older sections (line nodes 7, plain notables 8, mastery effects 7 by the sum of the stat values). The keystones are
+sized under the signature keystones of the other lines; the sums use the rules in `section_keystones_config.lua`.
+
+| Keystone | Class | Gain | Price | Net, computed |
+|---|---|---|---|---|
+| Unbroken Line | Juggernaut | damage taken -8% with 4 enemies next to a shield (-2% each); Immovable alone is -8% / -16% | weapon hits -5% | defensive: about 8% of the damage taken in a pack for 5% of the weapon damage |
+| Open Veins | Berserker | a bleed of 50% of the hit over 4 s, one bleed at a time | two-handed hits -8% | a hit every 2 s: +25% of a hit, -8%: about +17% on a target that lives (Barbed Quiver: +30% -10%, +20%) |
+| Lone Mark | Deadeye | +12% on a target alone (Hunter's Focus up to +20%) | -8% in a crowd | single target +12%, a pack -8%; the class order of one target is not moved by the tree |
+| Wolfbond | Beastmaster | the wolf factor x1.20, with Pack Alpha x1.62 | own bow hits -8% | with the wolves' share of the damage in `companion_model.py` (23% at 100, 53% at 1000 with the tree): -1.6% at 100, +6.8% at 1000 |
+| Convergence | Elementalist | +12% on a target with 2 or more others within 2 sqm | -7% on a lone target | a pack +12%, a lone target -7% |
+| Phantom Double | Illusionist | 20% x 60% = +12% of a spell hit | spells -5% | about +6% |
+
+The two largest direct gains, Lone Mark and Convergence, are +12% in the case they were made for; Wolfbond's +20% is on the wolves
+only (about +7% of the class total at level 1000). The class order of `class_dps_model.py` does not read the tree (the measured table
+`class_dps_measured.csv` has no tree nodes), so no row moved; the Recommended builds that take the new line nodes moved
+`survival_model.py` and `pvp_model.py` slightly (server/README.md "Passive tree: class sections of the Warrior, Ranger and Mystic
+lines (O449)").
+
 ### Line keystones and the path notables (2026-10-12, computed; the measured values are above)
 
 The keystones were measured on 2026-10-12: "Line keystones, masteries and weapons measured in game" above (Blackblood

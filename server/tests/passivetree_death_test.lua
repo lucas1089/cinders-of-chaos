@@ -177,6 +177,15 @@ do
 	local CC = ChaosClasses
 	local drop = Core.laneDiff(tree, CC.keystoneKey(RANGER), CC.keystoneKey(BEAST))
 	local alloc = allocate("beastmaster", 120)
+	-- the Beastmaster's own class section (690-692, O449) is no node a Ranger may hold: the tree of the unascended Ranger below
+	-- keeps every node it may have, so those leave the fixture (the nodes the lane changes are plain nodes, all still there)
+	do
+		local keep = {}
+		for _, id in ipairs(alloc) do
+			if ChaosClassTree.allowed(tree.nodes[id], "ranger") then keep[#keep + 1] = id end
+		end
+		alloc = keep
+	end
 	local function expected()
 		local kept = Core.dropNodes(tree, alloc, drop)
 		return Core.formatAlloc(kept, {}), #alloc - #kept

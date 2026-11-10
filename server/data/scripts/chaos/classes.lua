@@ -349,13 +349,14 @@ function M.biteValues(level, distanceSkill, factor)
 	return math.floor(avg * (1 - c.spread)), math.floor(avg * (1 + c.spread))
 end
 
--- O332: the factor on every hit of this owner's wolves, bites and spells' mauls: the Pack Alpha keystone (class_tree.lua)
+-- O332: the factor on every hit of this owner's wolves, bites and spells' mauls: the Pack Alpha keystone (class_tree.lua) and
+-- the Beastmaster section's Wolfbond (O449, x1.20; each multiplies)
 -- times the Vocation Trials' minion damage (percent, mirrored by passivetree_effects.lua into the storage `minionStorage`:
 -- the spell scripts run in another Lua state and cannot read the passive cache). 1 without either. Tester report
 -- 2026-10-29: the Trials' minion damage never reached a wolf (a bite and a maul are dealt as the owner, and the Trials
 -- count a hit as a minion's only when its attacker is the summon itself).
 function M.wolfFactor(player)
-	local f = 1 + ChaosClassTree.value(player, "ksPackAlpha", "bonus")
+	local f = (1 + ChaosClassTree.value(player, "ksPackAlpha", "bonus")) * (1 + ChaosClassTree.value(player, "ksWolfbond", "bonus"))
 	local key = cfg().companion.minionStorage
 	if key and player.getStorageValue then
 		local ok, pct = pcall(player.getStorageValue, player, key)

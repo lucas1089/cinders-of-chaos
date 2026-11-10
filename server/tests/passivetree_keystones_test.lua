@@ -342,6 +342,122 @@ eq(#heals, 1, "one Shared Phantasm heal per tick and member")
 eq(heals[1].target, 8, "the party member is healed"); eq(heals[1].attacker, 7, "by the illusionist")
 eq(heals[1].amount, math.floor(1200 * cfg.phantasm.leech) + math.floor(1120 * cfg.phantasm.leech), "4% of the marked hits")
 
+
+-- ---------------------------------------------------------------- class sections of the Warrior, Ranger and Mystic lines (O449)
+for id in pairs(creatures) do creatures[id] = nil end
+local SK, skc = ChaosSectionKeystones, ChaosSectionKeystonesConfig
+local added = {}
+local function track(c) c.addCondition = function(self, cond) added[#added + 1] = {target = self.id, cond = cond} end return c end
+Condition = function(t)
+  local o = {type = t, params = {}}
+  function o:setParameter(k, v) self.params[k] = v end
+  function o:addDamage(ticks, ms, v) self.damage = {ticks = ticks, ms = ms, value = v} end
+  return o
+end
+-- Juggernaut, Unbroken Line: with a shield 2% less for each enemy within 1 sqm (4 at most); the price is on weapon hits
+local jug = mkCreature(101, pos(700, 700), "player")
+jug.slots[CONST_SLOT_RIGHT] = item(710, WEAPON_SHIELD)
+ChaosPassiveCache[101] = {ksUnbrokenLine = 1}
+local j1 = mkCreature(110, pos(701, 700), "monster")
+eq(ev.onHealthChange(jug, j1, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 980, "Unbroken Line: one enemy next to you")
+mkCreature(111, pos(699, 700), "monster"); mkCreature(112, pos(700, 701), "monster")
+eq(ev.onHealthChange(jug, j1, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 940, "three enemies next to you, a ranged hit")
+mkCreature(113, pos(699, 699), "monster"); mkCreature(114, pos(701, 701), "monster")
+eq(ev.onHealthChange(jug, j1, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 920, "five enemies: the cap is 4 (8%)")
+mkCreature(115, pos(702, 700), "monster")
+eq(ev.onHealthChange(jug, j1, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 920, "an enemy two tiles away does not count")
+eq(ev.onHealthChange(jug, j1, 1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "a spell is not reduced")
+jug.slots[CONST_SLOT_RIGHT] = nil
+eq(ev.onHealthChange(jug, j1, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1000, "no shield, no Unbroken Line")
+jug.slots[CONST_SLOT_RIGHT] = item(710, WEAPON_SHIELD)
+eq(ev.onHealthChange(j1, jug, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 950, "the price: weapon hits x0.95")
+eq(ev.onHealthChange(j1, jug, 1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "spells are not priced")
+
+-- Berserker, Open Veins: a two-handed melee weapon hit x0.92 and a bleed of 50% over 4 ticks of 1 s
+for id in pairs(creatures) do creatures[id] = nil end
+local bers = mkCreature(120, pos(710, 710), "player")
+bers.slots[CONST_SLOT_LEFT] = item(720, WEAPON_SWORD, SLOTP_TWO_HAND)
+ChaosPassiveCache[120] = {ksOpenVeins = 1}
+local victim = track(mkCreature(121, pos(711, 710), "monster"))
+eq(ev.onHealthChange(victim, bers, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 920, "Open Veins: the price")
+runEvents()
+eq(#added, 1, "one bleed"); eq(added[1].target, 121, "on the target")
+eq(added[1].cond.type, CONDITION_BLEEDING, "a bleeding condition"); eq(added[1].cond.params[CONDITION_PARAM_OWNER], 120, "the bearer's")
+eq(added[1].cond.damage.ticks, 4, "4 ticks"); eq(added[1].cond.damage.ms, 1000, "1 s apart"); eq(added[1].cond.damage.value, -115, "50% of 920 / 4")
+eq(ev.onHealthChange(victim, bers, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1000, "a ranged hit does not bleed")
+eq(ev.onHealthChange(victim, bers, 1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "a spell does not bleed")
+bers.slots[CONST_SLOT_LEFT] = item(721, WEAPON_SWORD, 0); added = {}
+eq(ev.onHealthChange(victim, bers, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1000, "one-handed: no price")
+runEvents(); eq(#added, 0, "one-handed: no bleed")
+bers.slots[CONST_SLOT_LEFT] = nil
+eq(ev.onHealthChange(victim, bers, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1000, "no weapon: nothing")
+eq(ev.onHealthChange(victim, bers, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), 1000, "the bleed itself is not hit again")
+
+-- Deadeye, Lone Mark: a bow hit on a target alone x1.12, with another enemy within 2 sqm x0.92
+for id in pairs(creatures) do creatures[id] = nil end
+local dead = mkCreature(130, pos(720, 720), "player")
+dead.slots[CONST_SLOT_LEFT] = item(2456, WEAPON_DISTANCE, SLOTP_TWO_HAND)
+ChaosPassiveCache[130] = {ksLoneMark = 1}
+local lone = mkCreature(131, pos(726, 720), "monster")
+eq(ev.onHealthChange(lone, dead, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1120, "Lone Mark: alone")
+mkCreature(132, pos(729, 720), "monster")
+eq(ev.onHealthChange(lone, dead, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1120, "another enemy 3 tiles away: still alone")
+local near1 = mkCreature(133, pos(728, 721), "monster")
+eq(ev.onHealthChange(lone, dead, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 920, "another enemy within 2 sqm: the price")
+near1.p = pos(740, 740)
+mkCreature(134, pos(725, 720), "player") -- a player PvP does not allow is no enemy
+eq(ev.onHealthChange(lone, dead, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1120, "a player is no enemy")
+eq(ev.onHealthChange(lone, dead, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1000, "melee is not a bow hit")
+dead.slots[CONST_SLOT_LEFT] = item(2457, WEAPON_WAND, 0)
+eq(ev.onHealthChange(lone, dead, 1000, COMBAT_ENERGYDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1000, "a wand is not a bow")
+
+-- Beastmaster, Wolfbond: the own distance weapon hits x0.92 (the gain is the wolf factor, wolf_spells_test.lua)
+for id in pairs(creatures) do creatures[id] = nil end
+local beast = mkCreature(140, pos(730, 730), "player")
+beast.slots[CONST_SLOT_LEFT] = item(2456, WEAPON_DISTANCE, SLOTP_TWO_HAND)
+ChaosPassiveCache[140] = {ksWolfbond = 1}
+local prey = mkCreature(141, pos(735, 730), "monster")
+eq(ev.onHealthChange(prey, beast, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 920, "Wolfbond: the price")
+eq(ev.onHealthChange(prey, beast, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1000, "melee is not priced")
+eq(ev.onHealthChange(prey, beast, 1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "spells are not priced")
+
+-- Elementalist, Convergence: an elemental spell hit x1.12 with 2 other enemies within 2 sqm, x0.93 alone, else as it is
+for id in pairs(creatures) do creatures[id] = nil end
+local elem = mkCreature(150, pos(740, 740), "player")
+ChaosPassiveCache[150] = {ksConvergence = 1}
+local c1 = mkCreature(151, pos(745, 740), "monster")
+eq(ev.onHealthChange(c1, elem, 1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 930, "Convergence: alone")
+mkCreature(152, pos(746, 741), "monster")
+eq(ev.onHealthChange(c1, elem, 1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "one other enemy: neither")
+mkCreature(153, pos(744, 739), "monster")
+eq(ev.onHealthChange(c1, elem, 1000, COMBAT_ICEDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1120, "two other enemies")
+eq(ev.onHealthChange(c1, elem, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "a physical spell hit: nothing")
+eq(ev.onHealthChange(c1, elem, 1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1000, "a weapon hit: nothing")
+
+-- Illusionist, Phantom Double: spell hits x0.95 and 20% to be struck again 0.4 s later for 60% (at most one a second)
+for id in pairs(creatures) do creatures[id] = nil end
+local ill = mkCreature(160, pos(750, 750), "player")
+ChaosPassiveCache[160] = {ksPhantomDouble = 1}
+local d1m = mkCreature(161, pos(755, 750), "monster")
+dealt = {}
+eq(ev.onHealthChange(d1m, ill, 1000, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 950, "Phantom Double: the price")
+eq(#queue, 1, "the double is queued"); eq(queue[1].delay, skc.ksPhantomDouble.delayMs, "0.4 s later")
+runEvents()
+eq(#dealt, 1, "one strike"); eq(dealt[1].target, 161); eq(dealt[1].amount, -570, "60% of the hit after the price"); eq(dealt[1].type, COMBAT_DEATHDAMAGE)
+eq(dealt[1].origin, ORIGIN_SPELL, "a proc"); eq(dealt[1].depth, 1, "guard up: the strike strikes nothing")
+dealt = {}
+ev.onHealthChange(d1m, ill, 1000, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
+eq(#dealt, 0, "the cooldown of 1 s")
+NOW = NOW + skc.ksPhantomDouble.icdMs
+ev.onHealthChange(d1m, ill, 1000, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
+eq(#dealt, 1, "cooldown over")
+math.random = function() return 100 end; NOW = NOW + 5000; dealt = {}
+eq(ev.onHealthChange(d1m, ill, 1000, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 950, "the price is paid on every hit")
+runEvents(); eq(#dealt, 0, "a failed roll: no strike")
+math.random = function() return 1 end
+eq(ev.onHealthChange(d1m, ill, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1000, "a weapon hit: nothing")
+for id in pairs(creatures) do creatures[id] = nil end
+
 -- ---------------------------------------------------------------- per-vocation stats in the generated data
 local data = dofile("data/scripts/chaos/passivetree_data.lua")
 local expected = {

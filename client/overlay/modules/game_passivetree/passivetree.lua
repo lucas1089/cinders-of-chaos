@@ -1944,15 +1944,15 @@ local function special(title, color, lines)
 end
 
 local vocationSpecials = {
-	warrior = special("Warrior", "#FFA500", {"Melee, heavy armour, the most health.", "Keystones: Cleaving Arc, Bulwark.", "Ascends: Juggernaut or Berserker."}),
-	juggernaut = special("Juggernaut", "#FFA500", {"The tank: taunts, damage reduction,", "shield block. Keystones: Immovable,", "Bulwark."}),
-	berserker = special("Berserker", "#FFA500", {"Two-handed area damage, rage as", "health drops. Keystones: Cleaving Arc,", "Undying Rage."}),
-	ranger = special("Ranger", "#FFFF00", {"Bows and crossbows. Keystones:", "Ricochet, Deadeye.", "Ascends: Deadeye or Beastmaster."}),
-	deadeye = special("Deadeye", "#FFFF00", {"The top single-target damage.", "Keystones: Hunter's Focus,", "Deadeye."}),
-	beastmaster = special("Beastmaster", "#FFFF00", {"Companions beside you, bow with", "arrow splash. Keystones: Ricochet,", "Pack Alpha."}),
-	mystic = special("Mystic", "#00FFFF", {"Spells, wands and rods. Keystones:", "Arcane Echo, Elemental Overload.", "Ascends: Elementalist or Illusionist."}),
-	elementalist = special("Elementalist", "#00FFFF", {"The top area damage. Keystones:", "Arcane Echo, Elemental Overload."}),
-	illusionist = special("Illusionist", "#B070FF", {"The best healer, party attack buffs.", "Keystones: Shared Phantasm,", "Inspiring Illusion."}),
+	warrior = special("Warrior", "#FFA500", {"Melee, heavy armour, the most health.", "Keystones: Cleaving Arc, Bulwark.", "Class section (top left): Juggernaut", "and Berserker paths after ascension.", "Ascends: Juggernaut or Berserker."}),
+	juggernaut = special("Juggernaut", "#FFA500", {"The tank: taunts, damage reduction,", "shield block. Keystones: Immovable,", "Bulwark. Class section (top left),", "keystone Unbroken Line."}),
+	berserker = special("Berserker", "#FFA500", {"Two-handed area damage, rage as", "health drops. Keystones: Cleaving Arc,", "Undying Rage. Class section (top left),", "keystone Open Veins."}),
+	ranger = special("Ranger", "#FFFF00", {"Bows and crossbows. Keystones:", "Ricochet, Deadeye.", "Class section (top left): Deadeye", "and Beastmaster paths after ascension.", "Ascends: Deadeye or Beastmaster."}),
+	deadeye = special("Deadeye", "#FFFF00", {"The top single-target damage.", "Keystones: Hunter's Focus,", "Deadeye. Class section (top left),", "keystone Lone Mark."}),
+	beastmaster = special("Beastmaster", "#FFFF00", {"Companions beside you, bow with", "arrow splash. Keystones: Ricochet,", "Pack Alpha. Class section (top left),", "keystone Wolfbond."}),
+	mystic = special("Mystic", "#00FFFF", {"Spells, wands and rods. Keystones:", "Arcane Echo, Elemental Overload.", "Class section (top left): Elementalist", "and Illusionist paths after ascension.", "Ascends: Elementalist or Illusionist."}),
+	elementalist = special("Elementalist", "#00FFFF", {"The top area damage. Keystones:", "Arcane Echo, Elemental Overload.", "Class section (top left),", "keystone Convergence."}),
+	illusionist = special("Illusionist", "#B070FF", {"The best healer, party attack buffs.", "Keystones: Shared Phantasm,", "Inspiring Illusion. Class section", "(top left), keystone Phantom Double."}),
 	thief = special("Thief", "#C0C0C0", {"Light blades, shurikens, stealth.", "Class section (top left): Ninja", "and Samurai paths after ascension.", "Line keystone: Blackblood Creed.", "Wrath / Resolve: Shadow Twin,", "Viper's Verdict."}),
 	ninja = special("Ninja", "#C0C0C0", {"Dual daggers, evasion, shadow.", "Class section (top left), keystone", "Living Shadow; Blackblood Creed;", "Shadow Twin, Viper's Verdict."}),
 	samurai = special("Samurai", "#C0C0C0", {"Duelist off-tank: parries, counters,", "taunts. Class section (top left),", "keystone Way of the Blade;", "Blackblood Creed; Shadow Twin,", "Viper's Verdict."}),
@@ -2355,7 +2355,10 @@ KEYSTONE_NAMES = {
 	-- 621 / 624 of the Thief, Necromancer, Monk and Templar lines (server class_keystones_config.lua)
 	ksShadowTwin = "Shadow Twin", ksViperVerdict = "Viper's Verdict", ksCorpseBlast = "Corpse Detonation",
 	ksReapersToll = "Reaper's Toll", ksSeventhPalm = "Seventh Palm", ksPiercingPalm = "Piercing Palm",
-	ksRadiantRebuke = "Radiant Rebuke", ksDawnchain = "Dawnchain"
+	ksRadiantRebuke = "Radiant Rebuke", ksDawnchain = "Dawnchain",
+	-- the keystones of the class sections of the Warrior, Ranger and Mystic lines (server section_keystones_config.lua, O449)
+	ksUnbrokenLine = "Unbroken Line", ksOpenVeins = "Open Veins", ksLoneMark = "Lone Mark", ksWolfbond = "Wolfbond",
+	ksConvergence = "Convergence", ksPhantomDouble = "Phantom Double"
 }
 -- class notables of the class sections (their effect is in the node's own tooltip lines)
 CLASS_NOTABLE_NAMES = {

@@ -1,7 +1,7 @@
 -- Run from the server/ folder: luajit tests/passivetree_keystone_cap_test.lua (and lua5.3; CI runs both). Mock engine API.
 -- The keystone cap of the passive tree (O447, owner decision of 2026-11-09): a character holds at most
 -- ChaosPassiveTreeConfig.keystoneMax (3) keystones.
---   * what counts, read from the tree data: 38 nodes in four kinds, the same 38 the client marks isKeystone; masteries and
+--   * what counts, read from the tree data: 44 nodes in four kinds, the same 44 the client marks isKeystone; masteries and
 --     class notables do not;
 --   * the core: countKeystones, checkKeystones, validatePlan (saved + planned), overCapPresets;
 --   * the doors of passivetree.lua: a plain save, planApply, sendNodes carries the cap; a refusal changes nothing;
@@ -89,17 +89,20 @@ table.sort(ids)
 eq(kinds.archetype, 24, "24 archetype keystones (rounds 1 to 3)")
 eq(kinds.pair, 2, "2 nodes with a keystone per class (621, 624)")
 eq(kinds.line, 4, "4 line keystones (369, 376, 383, 390)")
-eq(kinds.ascension, 8, "8 class section keystones")
-eq(#ids, 38, "38 keystone nodes")
+eq(kinds.ascension, 14, "14 class section keystones (8 of the Thief, Necromancer, Monk and Templar lines, 6 of O449)")
+eq(#ids, 44, "44 keystone nodes")
 eq(Core.keystoneKind(tree.nodes[621]), "pair", "621")
 eq(Core.keystoneKind(tree.nodes[369]), "line", "369")
 eq(Core.keystoneKind(tree.nodes[631]), "ascension", "631 Living Shadow")
+for _, id in ipairs({679, 682, 689, 692, 699, 702}) do
+	eq(Core.keystoneKind(tree.nodes[id]), "ascension", id .. " a class section keystone of the Warrior, Ranger or Mystic line")
+end
 eq(Core.keystoneKind(tree.nodes[77]), "archetype", "77")
 -- masteries and class notables never count, nor plain nodes (with or without class lanes)
-for _, id in ipairs({665, 666, 667, 668}) do
+for _, id in ipairs({665, 666, 667, 668, 703, 704, 705}) do
 	eq(Core.keystoneKind(tree.nodes[id]), nil, "mastery " .. id .. " is no keystone")
 end
-for _, id in ipairs({629, 630, 633, 639, 640, 642, 643, 650, 653, 660, 663}) do
+for _, id in ipairs({629, 630, 633, 639, 640, 642, 643, 650, 653, 660, 663, 677, 678, 680, 681, 687, 688, 690, 691, 697, 698, 700, 701}) do
 	eq(Core.keystoneKind(tree.nodes[id]), nil, "class notable " .. id .. " is no keystone")
 end
 eq(Core.keystoneKind(tree.nodes[2]), nil, "a plain node with class lanes is no keystone")

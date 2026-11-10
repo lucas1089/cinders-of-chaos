@@ -45,6 +45,15 @@
 --                                                      your weapon hits x0.90
 --   templar / inquisitor (624)         ksDawnchain     melee weapon hits chain holy light to the nearest enemy within 3 sqm
 --                                                      for 55%, then 55% of that; your spells x0.90
+--   Since O449 the class sections of the Warrior, Ranger and Mystic lines have a keystone each (section_keystones_core.lua,
+--   numbers section_keystones_config.lua, Wolfbond class_tree.lua fx; glue: sectionHit, the shield check in `defend` and the
+--   spell branch of `attack`):
+--   juggernaut    ksUnbrokenLine  with a shield, melee and ranged hits taken -2% per enemy within 1 sqm (4 at most); weapon hits x0.95
+--   berserker     ksOpenVeins     two-handed melee weapon hits bleed 50% over 4 s; those hits x0.92
+--   deadeye       ksLoneMark      bow and crossbow hits x1.12 on a target with no other enemy within 2 sqm, x0.92 with one
+--   beastmaster   ksWolfbond      the wolf factor x1.20 (classes.lua); the own bow and crossbow hits x0.92
+--   elementalist  ksConvergence   elemental spell hits x1.12 on a target with 2+ other enemies within 2 sqm, x0.93 with none
+--   illusionist   ksPhantomDouble spell hits 20% to be struck again 0.4 s later for 60% (once a second); spell hits x0.95
 -- The numbers are in `cfg` below (the new pair's in class_keystones_config.lua); the client tooltips (treedata/nodes.lua) repeat them and the unit test checks that.
 --
 -- Recursion: every extra hit (cleave, ricochet, echo, phantom, reflect, thorns) is dealt from an addEvent
@@ -290,6 +299,10 @@ if not ChaosClassKeystones then
 	dofile("data/scripts/chaos/class_keystones_core.lua")
 end
 local CK = ChaosClassKeystones
+if not ChaosSectionKeystones then
+	dofile("data/scripts/chaos/section_keystones_core.lua")
+end
+local SK = ChaosSectionKeystones -- the six keystones of the class sections of the Warrior, Ranger and Mystic lines (O449)
 
 -- combat_fx.lua (crit / dodge / reflect visuals) when it is loaded; throttled there and safe with nil
 local function combatFx(kind, arg)
@@ -458,6 +471,71 @@ local function shadowStrike(pid, targetId, amount, ctype)
 		target:getPosition():sendMagicEffect(fx("shadow_smoke", CONST_ME_MORTAREA))
 		procDamage(p, target, ctype, amount, CONST_ME_NONE, "ksShadowTwin")
 	end
+end
+
+-- ---- Warrior, Ranger and Mystic class sections (O449, section_keystones_core.lua)
+-- Open Veins: a bleed of the player's on the target (Barbed Quiver's: a stronger one replaces a weaker, the engine's rule)
+local function openVein(pid, targetId, tick, ticks, tickMs)
+	local p, target = Player(pid), Creature(targetId)
+	if not (p and target and target:getHealth() > 0 and validTarget(p, target)) then
+		return
+	end
+	if not (Condition and CONDITION_BLEEDING) then
+		return
+	end
+	local c = Condition(CONDITION_BLEEDING)
+	c:setParameter(CONDITION_PARAM_OWNER, pid)
+	c:setParameter(CONDITION_PARAM_DELAYED, true)
+	c:addDamage(ticks, tickMs, -tick)
+	target:addCondition(c)
+	target:getPosition():sendMagicEffect(CONST_ME_DRAWBLOOD or CONST_ME_POFF)
+	KL.note(p, "ksOpenVeins", tick * ticks)
+end
+
+-- Phantom Double: the double strikes the same target again (Shadow Twin's strike with this keystone's name)
+local function phantomStrike(pid, targetId, amount, ctype)
+	local p, target = Player(pid), Creature(targetId)
+	if p and target and validTarget(p, target) then
+		target:getPosition():sendMagicEffect(fx("shadow_smoke", CONST_ME_MORTAREA))
+		procDamage(p, target, ctype, amount, CONST_ME_NONE, "ksPhantomDouble")
+	end
+end
+
+-- the other enemies of the player within radius of the creature (Lone Mark, Convergence)
+local function othersNear(player, creature, radius)
+	local pos = creature:getPosition()
+	return SK.crowd(candidatesAround(player, pos, radius, false), pos, creature:getId(), radius)
+end
+
+-- the keystones of the class sections on a weapon hit; pd, sd already carry the other events' bonuses. The prices of
+-- Unbroken Line and Wolfbond are plain factors (like Shadow Twin's: no combat log row), the others note what they changed.
+local function sectionHit(player, b, creature, pd, pt, sd, origin, weapon)
+	local wt = weapon and weapon:getWeaponType() or nil
+	if b.ksUnbrokenLine then
+		local m = SK.unbrokenPrice()
+		pd, sd = K.scale(pd, m), K.scale(sd, m)
+	end
+	if origin == ORIGIN_MELEE and b.ksOpenVeins and weapon and MELEE_WEAPON[wt] and isTwoHanded(weapon) then
+		local m = SK.openVeinsPrice()
+		pd, sd = K.scale(pd, m), K.scale(sd, m)
+		local tick, ticks, tickMs = SK.bleedOf(math.abs(pd) + math.abs(sd))
+		if tick then
+			addEvent(openVein, 0, player:getId(), creature:getId(), tick, ticks, tickMs)
+		end
+	end
+	if origin == ORIGIN_RANGED and weapon and wt == WEAPON_DISTANCE then
+		if b.ksWolfbond then
+			local m = SK.wolfbondPrice()
+			pd, sd = K.scale(pd, m), K.scale(sd, m)
+		end
+		if b.ksLoneMark then
+			local m = SK.loneMarkFactor(othersNear(player, creature, SK.cfg.ksLoneMark.radius))
+			local before = math.abs(pd) + math.abs(sd)
+			pd, sd = K.scale(pd, m), K.scale(sd, m)
+			noteFactor(player, "ksLoneMark", before, pd, sd)
+		end
+	end
+	return pd, sd
 end
 
 -- ---- Necromancer line: Corpse Detonation (from the death event below)
@@ -757,6 +835,16 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 	if origin ~= ORIGIN_MELEE and origin ~= ORIGIN_RANGED then
 		return pd, sd
 	end
+	if b.ksUnbrokenLine and hasShield(player) then -- the class section of the Warrior line (O449)
+		local radius = SK.cfg.ksUnbrokenLine.radius
+		local pos = player:getPosition()
+		local m = SK.unbrokenFactor(SK.crowd(candidatesAround(player, pos, radius, false), pos, nil, radius))
+		if m ~= 1 then
+			local before = math.abs(pd) + math.abs(sd)
+			pd, sd = K.scale(pd, m), K.scale(sd, m)
+			noteFactor(player, "ksUnbrokenLine", before, pd, sd)
+		end
+	end
 	local total = math.abs(pd) + math.abs(sd)
 	if b.ksRadiantRebuke and hasShield(player) then
 		local s = stateOf(player:getId())
@@ -865,12 +953,21 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 
 	if origin == ORIGIN_MELEE or origin == ORIGIN_RANGED then
 		local classKs = CK.holds(b)
-		if not (classKs or b.ksCleavingArc or b.ksRicochet or b.ksDeadeye or b.ksUndyingRage or b.ksHuntersFocus) then
+		local sectionKs = SK.holds(b)
+		if not (classKs or sectionKs or b.ksCleavingArc or b.ksRicochet or b.ksDeadeye or b.ksUndyingRage or b.ksHuntersFocus) then
 			return pd, sd
 		end
 		local weapon = handWeapon(player)
 		if classKs then -- the Thief, Necromancer, Monk and Templar lines (an error never breaks the hit)
 			local ok, a, c = pcall(classHit, player, b, creature, pd, pt, sd, origin, weapon)
+			if ok then
+				pd, sd = a, c
+			else
+				print("[ChaosKeystones] " .. tostring(a))
+			end
+		end
+		if sectionKs then -- the class sections of the Warrior, Ranger and Mystic lines (an error never breaks the hit)
+			local ok, a, c = pcall(sectionHit, player, b, creature, pd, pt, sd, origin, weapon)
 			if ok then
 				pd, sd = a, c
 			else
@@ -936,6 +1033,22 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 				end
 			end
 		end
+		if b.ksConvergence and ELEMENTS[pt] then -- the class section of the Mystic line, Elementalist (O449)
+			local m = SK.convergenceFactor(othersNear(player, creature, SK.cfg.ksConvergence.radius))
+			if m ~= 1 then
+				local before = math.abs(pd) + math.abs(sd)
+				pd, sd = K.scale(pd, m), K.scale(sd, m)
+				noteFactor(player, "ksConvergence", before, pd, sd)
+			end
+		end
+		if b.ksPhantomDouble then -- the class section of the Mystic line, Illusionist (O449): the strike is of the hit after the price
+			local m = SK.phantomPrice()
+			pd, sd = K.scale(pd, m), K.scale(sd, m)
+			local strike = SK.phantomStrike(stateOf(pid), math.abs(pd) + math.abs(sd), now())
+			if strike > 0 then
+				addEvent(phantomStrike, SK.cfg.ksPhantomDouble.delayMs, pid, creature:getId(), strike, procType(pt))
+			end
+		end
 		local amount = math.abs(pd) + math.abs(sd)
 		if b.ksArcaneEcho then
 			recordEcho(pid, creature, amount, procType(pt))
@@ -973,7 +1086,7 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	end
 	if creature:isPlayer() then
 		local b = ChaosPassiveCache[creature:getId()]
-		if b and (b.ksBulwark or b.ksThorns or b.ksImmovable or b.ksShadowTwin or b.ksRadiantRebuke) then
+		if b and (b.ksBulwark or b.ksThorns or b.ksImmovable or b.ksShadowTwin or b.ksRadiantRebuke or b.ksUnbrokenLine) then
 			local ok, a, c = pcall(defend, creature, b, attacker, pd, pt, sd, st, origin) -- an error never breaks the hit
 			if ok then
 				pd, sd = a, c

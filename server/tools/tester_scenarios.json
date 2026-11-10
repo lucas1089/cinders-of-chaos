@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 98,
+  "passive": 99,
   "place": 15,
   "staff": 17
  },
@@ -31,6 +31,67 @@
       "needs": "any hit that is not a snare",
       "row": "k:Keystone: Snarewright's Creed",
       "tab": "dealt"
+     }
+    },
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "criticalHitAmount": 5,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "dexterity": 3
+       },
+       "other": [
+        "speed"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "dexterity": 2,
+        "incrementPhysical": 5
+       },
+       "other": []
+      }
+     ],
+     "id": 704,
+     "kind": "mastery",
+     "path": [
+      684,
+      685,
+      686
+     ]
+    },
+    {
+     "flag": "ksWolfbond",
+     "id": 692,
+     "kind": "keystone",
+     "path": [
+      684,
+      685,
+      686,
+      690,
+      691
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "companion damage and the price of the own distance hits: factors, no row of its own"
      }
     },
     {
@@ -371,6 +432,50 @@
    ],
    "berserker": [
     {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementPhysical": 6,
+        "strength": 1
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "criticalHitAmount": 4,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 4,
+       "observable": {},
+       "other": [
+        "absorbPhysical",
+        "shieldingSkill"
+       ]
+      }
+     ],
+     "id": 703,
+     "kind": "mastery",
+     "path": [
+      674,
+      675,
+      676
+     ]
+    },
+    {
      "flag": "arIronTithe",
      "id": 102,
      "kind": "keystone",
@@ -384,6 +489,24 @@
      "probe": {
       "mode": "none",
       "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksOpenVeins",
+     "id": 682,
+     "kind": "keystone",
+     "path": [
+      674,
+      675,
+      676,
+      680,
+      681
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "two-handed melee weapon hits",
+      "row": "k:Keystone: Open Veins",
+      "tab": "dealt"
      }
     },
     {
@@ -1059,6 +1182,69 @@
      }
     },
     {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "criticalHitAmount": 5,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "dexterity": 3
+       },
+       "other": [
+        "speed"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "dexterity": 2,
+        "incrementPhysical": 5
+       },
+       "other": []
+      }
+     ],
+     "id": 704,
+     "kind": "mastery",
+     "path": [
+      684,
+      685,
+      686
+     ]
+    },
+    {
+     "flag": "ksLoneMark",
+     "id": 689,
+     "kind": "keystone",
+     "path": [
+      684,
+      685,
+      686,
+      687,
+      688
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "bow or crossbow hits",
+      "row": "k:Keystone: Lone Mark",
+      "tab": "dealt"
+     }
+    },
+    {
      "flag": "arSanguine",
      "id": 81,
      "kind": "keystone",
@@ -1398,6 +1584,53 @@
    ],
    "elementalist": [
     {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementFire": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "incrementIce": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "incrementEnergy": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "spirit": 2
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      }
+     ],
+     "id": 705,
+     "kind": "mastery",
+     "path": [
+      694,
+      695,
+      696
+     ]
+    },
+    {
      "flag": "arHollowVessel",
      "id": 96,
      "kind": "keystone",
@@ -1428,6 +1661,24 @@
       "mode": "combatlog",
       "needs": "any hit",
       "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "ksConvergence",
+     "id": 699,
+     "kind": "keystone",
+     "path": [
+      694,
+      695,
+      696,
+      697,
+      698
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "elemental spell hits",
+      "row": "k:Keystone: Convergence",
       "tab": "dealt"
      }
     },
@@ -1662,6 +1913,53 @@
    ],
    "illusionist": [
     {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementFire": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "incrementIce": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "incrementEnergy": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "spirit": 2
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      }
+     ],
+     "id": 705,
+     "kind": "mastery",
+     "path": [
+      694,
+      695,
+      696
+     ]
+    },
+    {
      "flag": "arHollowVessel",
      "id": 96,
      "kind": "keystone",
@@ -1692,6 +1990,24 @@
       "mode": "combatlog",
       "needs": "any hit",
       "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "ksPhantomDouble",
+     "id": 702,
+     "kind": "keystone",
+     "path": [
+      694,
+      695,
+      696,
+      700,
+      701
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "spell hits (20% chance, at most one a second)",
+      "row": "p:Keystone: Phantom Double",
       "tab": "dealt"
      }
     },
@@ -2592,6 +2908,50 @@
    ],
    "juggernaut": [
     {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementPhysical": 6,
+        "strength": 1
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "criticalHitAmount": 4,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 4,
+       "observable": {},
+       "other": [
+        "absorbPhysical",
+        "shieldingSkill"
+       ]
+      }
+     ],
+     "id": 703,
+     "kind": "mastery",
+     "path": [
+      674,
+      675,
+      676
+     ]
+    },
+    {
      "flag": "arIronTithe",
      "id": 102,
      "kind": "keystone",
@@ -2605,6 +2965,24 @@
      "probe": {
       "mode": "none",
       "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksUnbrokenLine",
+     "id": 679,
+     "kind": "keystone",
+     "path": [
+      674,
+      675,
+      676,
+      677,
+      678
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a shield and an enemy that hits the character in melee or at range (2% less for each enemy next to the character)",
+      "row": "k:Keystone: Unbroken Line",
+      "tab": "taken"
      }
     },
     {
@@ -3532,6 +3910,53 @@
    ],
    "mystic": [
     {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementFire": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "incrementIce": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "incrementEnergy": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "spirit": 2
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      }
+     ],
+     "id": 705,
+     "kind": "mastery",
+     "path": [
+      694,
+      695,
+      696
+     ]
+    },
+    {
      "flag": "arHollowVessel",
      "id": 96,
      "kind": "keystone",
@@ -4399,6 +4824,51 @@
       "row": "k:Keystone: Snarewright's Creed",
       "tab": "dealt"
      }
+    },
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "criticalHitAmount": 5,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "dexterity": 3
+       },
+       "other": [
+        "speed"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "dexterity": 2,
+        "incrementPhysical": 5
+       },
+       "other": []
+      }
+     ],
+     "id": 704,
+     "kind": "mastery",
+     "path": [
+      684,
+      685,
+      686
+     ]
     },
     {
      "flag": "arSanguine",
@@ -6319,6 +6789,50 @@
     }
    ],
    "warrior": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementPhysical": 6,
+        "strength": 1
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "criticalHitAmount": 4,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 4,
+       "observable": {},
+       "other": [
+        "absorbPhysical",
+        "shieldingSkill"
+       ]
+      }
+     ],
+     "id": 703,
+     "kind": "mastery",
+     "path": [
+      674,
+      675,
+      676
+     ]
+    },
     {
      "flag": "arIronTithe",
      "id": 102,
@@ -11163,6 +11677,15 @@
    "talkactions": [
     "/seasonpass"
    ]
+  },
+  "section_keystones": {
+   "files": [
+    "class_tree.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "service_npcs": {
    "files": [

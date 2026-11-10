@@ -5,9 +5,9 @@
 --     have none) is a server link and every server link is a client link;
 --   * drawing: every link is drawn (the client draws connectors from `out` only), except the root's own links (its
 --     nodes sit on its ring); no node lists itself;
---   * class sections (625-664): each line's nodes are reachable from its start only through its own section, and link
+--   * class sections (625-664 and 673-702, O449): each line's nodes are reachable from its start only through its own section, and link
 --     to nothing outside it;
---   * layout, for nodes seen together (the four class sections share one place; each player sees only its line):
+--   * layout, for nodes seen together (the seven class sections share one place; each player sees only its line):
 --     no two nodes overlap, no straight link runs through a third node, no shown node is without links, every node's
 --     group exists; the class sections keep clear of the rest of the tree.
 -- Node positions are computed as the client does (passivetree.lua: group centre + orbit radius at orbitIndex degrees);
@@ -167,7 +167,7 @@ for line, start in pairs(starts) do
 		end
 	end
 end
-check(sectionCount == 4, "four class sections")
+check(sectionCount == 7, "seven class sections (the Warrior, Ranger and Mystic lines since O449)")
 
 -- ------------------------------------------------------------------ layout
 local ids = {}

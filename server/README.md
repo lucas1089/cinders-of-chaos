@@ -1330,7 +1330,8 @@ passivetree
   and node 239, a stray copy of the original tree on top of 240 with no links, is `hidden`; the generator records 1024 stat entries,
   per-class keystone variants included). `server/tests/passivetree_layout_test.lua` checks the whole tree: every client link is a
   server link and the other way round, every link is drawn (the client draws from `out` lists), no overlapping nodes, no line
-  through a node, no node without links, and the class sections reachable only through themselves.
+  through a node, no node without links, and the class sections reachable only through themselves. O449 added 33 nodes
+  (673-705, 705 in the client, 674 on the server: the three new start nodes fold into the root).
   Every link is also listed on both ends in `nodes.lua` (2026-10-21): 50 -> 115 and 365 -> 364 were listed on one end only.
   The server had them (its links are undirected), but the window let a node join only through its own lists, so a saved
   allocation down 50 -> 115 (skipping 116) showed 115 and everything past it dim, and the planner priced those saved
@@ -3200,6 +3201,62 @@ variant the server applies (the client's own vocation number did not match: an E
 - Tests: `server/tests/class_tree_test.lua` (flags, sanitize, the generated data, tooltips against the numbers, the class rules),
   `passivetree_keystones_test.lua`, `buildshare_test.lua`, `classes_test.lua`.
 
+## Passive tree: class sections of the Warrior, Ranger and Mystic lines (O449) (`section_keystones_*.lua`, client `treedata`)
+Nine classes had no class section (docs/CLASSES.md "Class sections for every line (O449)"). Now the Warrior, Ranger and Mystic
+lines have the shape of the four older ones: 673 / 683 / 693 start (not a server node: its edges are the root's), 3 line nodes,
+two ascended paths of two notables and a keystone, one mastery. Nodes 673-702 and the masteries 703-705, all in group 104 at the
+positions of 625-668 (the seven sections share one place, the client shows the player's line). Ids appended, nothing moved.
+- **Effects.** Notables, line nodes and mastery effects are ordinary tree stats (no new combat code), at or below the median of the
+  same kind in the older sections (`tests/section_keystones_test.lua` computes the medians from the data). The six keystones are
+  ks flags of the `ascension` kind (`ChaosPassiveTreeCore.keystoneKind`: one class may take the node), so the cap of 3 counts
+  them (44 keystones in all, 14 of this kind). Rules in `section_keystones_core.lua` (pure), numbers in
+  `section_keystones_config.lua` (Wolfbond: `class_tree.lua` `fx`, the wolf factor is read in the spells' Lua state: the 28th
+  bit of the flag storage), glue in `passivetree_keystones.lua` (`sectionHit`, `defend`, the spell branch of `attack`; an error never breaks
+  a hit). Each reuses a hook that exists: the factor on a hit (Immovable, Hunter's Focus), Barbed Quiver's bleed
+  (`CONDITION_BLEEDING`, a stronger one replaces a weaker), Shadow Twin's second strike (`procDamage`, the `ChaosKeystones.depth`
+  guard keeps a proc from triggering one), `ChaosClasses.wolfFactor`.
+
+  | Node | Keystone | Class | Rule |
+  |---|---|---|---|
+  | 679 | Unbroken Line | Juggernaut | with a shield, a melee or ranged hit taken x(1 - 2% per enemy within 1 sqm, at most 4); price: melee and ranged weapon hits x0.95 |
+  | 682 | Open Veins | Berserker | a two-handed melee weapon hit bleeds 50% over 4 ticks of 1 s; price: those hits x0.92 |
+  | 689 | Lone Mark | Deadeye | a bow or crossbow hit x1.12 on a target with no other enemy within 2 sqm, x0.92 with another there |
+  | 692 | Wolfbond | Beastmaster | `wolfFactor` x1.20 (with Pack Alpha x1.35: x1.62); price: the own distance weapon hits x0.92 |
+  | 699 | Convergence | Elementalist | an elemental spell hit x1.12 with 2 or more other enemies within 2 sqm of the target, x0.93 with none |
+  | 702 | Phantom Double | Illusionist | a spell hit 20% to be struck again 0.4 s later for 60% (at most one a second); price: spell hits x0.95 |
+- **Saved data.** No node, link, id or number of an existing node changed, so `passivetree_config.lua` `reworked` stays at version 6
+  and the build code format at 6 (`buildshare_core.lua`): a saved tree, a loadout and every old code stay valid, nothing is
+  refunded. A bitset code runs up to the highest id (705): a whole-tree code is 130 characters, was 124. The login check
+  (`ChaosClassTree.sanitize`) still removes nodes of another line.
+- **Build generator.** The medians the generator scores with (`Gen.context`) come from every stat of the tree; the new values were
+  chosen to leave every median where it was (`absorbPhysical` 1, `criticalHitChance` 1, `incrementPhysical` 3 stay), so the
+  builds of the other twelve classes did not move (311 of 464 builds are the same bytes). 153 changed: 22 Recommended roles and
+  131 Focus builds of the nine classes, each on a path with a new node (`tools/gen_passive_builds.lua`). The six keystones are in
+  `keystoneThemes` (a Focus build of the theme takes them) for themes no Recommended role of that class fills with, so no
+  Recommended build holds one.
+- **What the models read.** `class_dps_model.py` (its measured table has no tree) and the boss, pack, tower, minion, companion
+  and guardian models do not read the tree: no row moved. `survival_model.py` and `pvp_model.py` read the Recommended role builds
+  (the role of median burst per class), so the changed roles moved them. Survival (computed, hunt levels 670 to 1000): only the
+  rows of the nine classes moved. The largest: Berserker health at level 757 16299 -> 13957 (-14.4%, the new line nodes take the
+  place of health nodes in its roles), Juggernaut 18063 -> 16665 (-7.7%), Deadeye at 1007 12948 -> 13572 (+4.8%), Ranger -1% to
+  +0%; the median row 12162 -> 12230 at 677. Every limit of `survival_balance_config.lua` holds. PvP: at level 100 the median
+  physical absorb fell 0.02 -> 0.0 when the Elementalist's median role changed, which moved every burst by about 0.01 and put
+  three pinned exceptions (Beastmaster, Illusionist, Necromancer at 100) over their pins; Seasoned Shafts (685) carries 1 physical
+  absorb, so the Ranger's role at level 100 holds it and the median is 0.01 again: every burst within 0.005 of before, the check
+  passes. No limit and no pin was changed.
+- **Texts and icons.** Every tooltip line has a pt-BR entry (`client_chaos_locale/pt_br.lua`; node names are proper names, like the
+  older sections'). Icons are cells of the existing atlas and keystone sheet (`gen_keystone_icons.py` `NOTABLES`, `REUSED`): the
+  line nodes and notables clip 21 atlas cells no other icon uses, the six keystones reuse a keystone cell (Bastion, Sanguine
+  Covenant, Shared Phantasm, Pack Alpha, Overload, Inspiring Illusion), the masteries the Monk's, the Thief's and the Templar's
+  mastery icon, the start nodes the Monk's, the Thief's and the Templar's start image. No new PNG, and the wiki draws no new
+  icon (only its tree banner `wiki/hero/tab-tree.webp` was drawn again: it picks icons by the order of the entries). The wiki,
+  Codex, guide and the Unity `PassiveTree.json` are generated from the same data.
+- Tests: `section_keystones_test.lua` (pure rules, numbers against the client tooltips, the generated data, sizes against the
+  medians), `passivetree_keystones_test.lua` (the engine glue against mocked creatures), `class_tree_test.lua`,
+  `passivetree_layout_test.lua`, `passivetree_paths_test.lua` (every route to the new nodes is at least 70% relevant for its
+  classes, none has an irrelevant node), `passivetree_keystone_cap_test.lua`, `wolf_spells_test.lua`, `passive_builds_test.lua`.
+- Not run on a live server, no client was run: the glue is tested against mocks.
+
 ## Passive tree planner and mastery nodes (`passivetree_core.lua`, `passivetree_config.lua`, client `game_passivetree`)
 The tree window plans a whole allocation and applies it in one request; four mastery nodes let the player pick one
 effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.lua` and the tree data.
@@ -3253,7 +3310,7 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   choice), the effect changed for 9,000 gold at level 105, a forged disconnected plan refused, a plan over the points,
   search, zoom, a version 2 code exported and previewed on another character, the inspected tree read-only and a
   private character refused. Screenshots in the session's scratchpad (`treework/shots`).
-- Not done: the Warrior, Ranger and Mystic lines have no class section and so no mastery yet; the masteries were not
+- Not done (until O449, which gave the Warrior, Ranger and Mystic lines a section and a mastery: nodes 703-705): the masteries were not
   measured on the dummies (one node of 73 / 248 points; each effect is sized like a notable of its section).
 - **Reworked nodes.** A node whose meaning changes a lot keeps its id and is listed in `passivetree_config.lua`
   `reworked` (`{version, ids}`, append only). At the first login after a version (`Chaos.storage.passiveRework`, 7100023,
@@ -3267,7 +3324,7 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
 Owner decision of 2026-11-09: a character holds at most 3 keystones. Nothing in the tree, no node, number or position changed.
 - **What counts.** `ChaosPassiveTreeCore.keystoneKind(node)` reads the tree data: a node whose own stats or class variants
   (`v`) carry a `ks*` or `ar*` flag. Four kinds, 38 nodes: `archetype` (24, `ar*` in `s`), `pair` (621 and 624, `ks*` only in
-  `v`), `line` (369, 376, 383, 390: `ks*` in `s`, several classes), `ascension` (8 class section keystones: `ks*` in `s`, one
+  `v`), `line` (369, 376, 383, 390: `ks*` in `s`, several classes), `ascension` (14 class section keystones, 8 before O449: `ks*` in `s`, one
   class). The `ct*` class notables and the masteries (`m`) do not count. The client marks the same 38 nodes `isKeystone`
   (`tests/passivetree_keystone_cap_test.lua` compares both lists).
 - **One function at every door.** `checkKeystones(tree, ids)` gives true or nil + "You can hold at most 3 keystones. Refund one

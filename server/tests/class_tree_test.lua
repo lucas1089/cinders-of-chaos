@@ -65,6 +65,10 @@ local SECTIONS = {
 	necromancer = {first = 635, classes = {"necromancer", "lich", "bonelord"}, a = "lich", b = "bonelord", ka = "ksHoardedSouls", kb = "ksBoneColossus"},
 	monk = {first = 645, classes = {"monk", "shadowfist", "ironsage"}, a = "shadowfist", b = "ironsage", ka = "ksHundredHands", kb = "ksFlowingMercy"},
 	templar = {first = 655, classes = {"templar", "inquisitor", "sentinel"}, a = "inquisitor", b = "sentinel", ka = "ksDivineVerdict", kb = "ksBastion"},
+	-- the Warrior, Ranger and Mystic lines (O449): the same shape; their numbers: section_keystones_test.lua
+	warrior = {first = 673, classes = {"warrior", "juggernaut", "berserker"}, a = "juggernaut", b = "berserker", ka = "ksUnbrokenLine", kb = "ksOpenVeins"},
+	ranger = {first = 683, classes = {"ranger", "deadeye", "beastmaster"}, a = "deadeye", b = "beastmaster", ka = "ksLoneMark", kb = "ksWolfbond"},
+	mystic = {first = 693, classes = {"mystic", "elementalist", "illusionist"}, a = "elementalist", b = "illusionist", ka = "ksConvergence", kb = "ksPhantomDouble"},
 }
 local rootLinks = {}
 for _, id in ipairs(tree.nodes[tree.root].n) do rootLinks[id] = true end
@@ -255,7 +259,7 @@ if fh then
 		for _, k in ipairs(nodes[id].classes) do eq(tree.nodes[id].c[k], true, "client classes of " .. id .. ": " .. k) end
 	end
 	-- class lists on the client nodes match the server data
-	for id = 625, 664 do
+	for _, id in ipairs((function() local l = {} for i = 625, 664 do l[#l + 1] = i end for i = 673, 702 do l[#l + 1] = i end return l end)()) do
 		local n, s = nodes[id], tree.nodes[id]
 		if n.isStartNode then
 			eq(s, nil, "start " .. id)

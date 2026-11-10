@@ -204,8 +204,8 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   | Mystic, Elementalist | *Arcane Echo*: area spells can cast a second time | *Elemental Overload*: switch elements for more damage |
   | Illusionist | *Shared Phantasm*: marked enemies take more from your party, and the party heals from it | *Inspiring Illusion*: a party damage aura |
 
-- **Class sections:** the Thief, Necromancer, Monk and Templar lines each have a section of their own, with three line
-  nodes and a path for each ascension that ends in a keystone. Six points reach one:
+- **Class sections:** every line has a section of its own (the Warrior, Ranger and Mystic lines since 2026-11-10), with
+  three line nodes, a mastery node and a path for each ascension that ends in a keystone. Six points reach one:
 
   | Ascended class | Keystone |
   |---|---|
@@ -217,6 +217,12 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   | Iron Sage | *Flowing Mercy*: Kindled Breath also heals the next most hurt party member |
   | Inquisitor | *Divine Verdict*: Radiant Strikes judge their target |
   | Sentinel | *Bastion*: a stronger, wider aura, and Aegis of Faith covers the party |
+  | Juggernaut | *Unbroken Line*: with a shield, less damage taken for each enemy next to you |
+  | Berserker | *Open Veins*: two-handed hits make the target bleed |
+  | Deadeye | *Lone Mark*: bow and crossbow hits on a target alone hit harder, in a crowd weaker |
+  | Beastmaster | *Wolfbond*: your companions and the wolf spells hit 20% harder, your own bow weaker |
+  | Elementalist | *Convergence*: elemental spells hit harder into a crowd, weaker on a lone target |
+  | Illusionist | *Phantom Double*: spell hits can strike a second time |
 
   Before you ascend, both paths show as locked, so you can plan ahead.
 - **Build codes:** export your tree as a short code (the passive tree's Build Code panel) and import someone else's. The

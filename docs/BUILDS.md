@@ -269,10 +269,10 @@ all 62 that hold one; the last keystone of any build arrives by 73 points.
 Owner decision of 2026-11-09: a character holds at most 3 keystones. The rule is in before the beta wipe of 2026-11-18,
 so no refund event is needed beyond the login refund below. The number is `keystoneMax` in `passivetree_config.lua`.
 
-- **What counts.** Every node the tree data marks as a keystone, 38 nodes. 24 archetype keystones (the three rounds), the
-  pair 621 and 624 (one keystone per class), the 4 line keystones (369, 376, 383, 390) and the 8 class section keystones.
+- **What counts.** Every node the tree data marks as a keystone, 38 nodes (44 since O449). 24 archetype keystones (the three rounds), the
+  pair 621 and 624 (one keystone per class), the 4 line keystones (369, 376, 383, 390) and the 8 class section keystones (14 since O449).
   Masteries and class notables do not count. The code reads the data (`passivetree_core.lua` `keystoneKind`) and the
-  client marks the same 38 nodes. Paragon, Vocation Trial nodes and the Rift Atlas (its own cap of 1) are not tree keystones.
+  client marks the same 38 nodes (44 since O449). Paragon, Vocation Trial nodes and the Rift Atlas (its own cap of 1) are not tree keystones.
 - **Where it is checked.** One core function, `checkKeystones`, at every door that writes a tree: a plain save, a plan,
   a build code import, an Auto build, a loadout load. Apply on top of a tree adds the build to the keystones you hold, so it
   can be refused; Reset and apply always fits. A refused action changes nothing and says "You can hold at most 3
@@ -284,6 +284,37 @@ so no refund event is needed beyond the login refund below. The number is `keyst
   before and stop at 3 now: Deadeye Single target and Juggernaut Retaliation.
 - **Hollow Palm.** Hollow Vessel and Aether Edge are 2 keystones. It stays legal and as it is.
 - **The window.** "Keystones 2/3" sits beside the points. A keystone you cannot take says why in its tooltip.
+
+## Class sections for every line (O449)
+
+Nine classes had no class section: Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist,
+Illusionist. Now all 21 classes have a start node, line nodes, an ascended path with a keystone and a mastery (docs/CLASSES.md
+"Class sections for every line (O449)"). The six new keystones count toward the cap of 3, so a section keystone is a real pick:
+
+| Class | Keystone | Play style |
+|---|---|---|
+| Juggernaut | Unbroken Line | stand in a pack with a shield: less damage taken for each enemy next to you |
+| Berserker | Open Veins | two-handed hits that bleed |
+| Deadeye | Lone Mark | one isolated target, away from the pack |
+| Beastmaster | Wolfbond | let the wolves do the work: they hit more, your bow less |
+| Elementalist | Convergence | elemental spells into a crowd |
+| Illusionist | Phantom Double | spells that strike twice |
+
+- **Same numbers rule as the other sections.** Notables, line nodes and masteries are plain tree stats at or below the median
+  of the older sections; each keystone has a price. A specialised build stays under +40% of the class default in its
+  specialty: the largest direct gain is +20% (Wolfbond, on the wolves' share of the damage only).
+- **Builds.** The Auto build generator takes the new nodes where they lie on a path. 153 of the 464 builds changed: 22 of the
+  63 Recommended roles and 131 Focus builds, all of the nine classes and every one on a path with a new line node or notable
+  (a build that takes the first line node is shifted behind it). The 311 builds of the other twelve classes are the same bytes as
+  before. Every build still holds 1 to 3 keystones. No Recommended build holds a section keystone: the roles are not changed here.
+  Each new keystone is in the Focus build of one theme (`keystoneThemes`: Unbroken Line, Convergence and Wolfbond `pack`, Open
+  Veins and Lone Mark `physical`, Phantom Double `single`), a theme that no Recommended role of that class fills with. A role
+  that would now want a section keystone, for the owner of the roles: Juggernaut Unbreakable or Pyre Walker (Unbroken Line),
+  Berserker Crusher (Open Veins), Deadeye Marked Target (Lone Mark), Beastmaster Pack Leader (Wolfbond), Elementalist
+  Overloaded (Convergence), Illusionist Illusory Striker (Phantom Double).
+- **Saved trees and build codes.** Nothing moved, no id was reused: no refund, no version bump (`reworked` stays at 6, build
+  code format 6). A tree or loadout saved before stays valid. The class check at login still strips nodes of another line.
+- **Not done.** No round 4 keystone (O450), no spell modifier mastery (O451). Computed, not measured in game.
 
 ## Weapon families (O454)
 

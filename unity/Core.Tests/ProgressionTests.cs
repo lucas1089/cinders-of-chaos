@@ -64,7 +64,7 @@ namespace Chaos.Core.Tests
             var d = tree.Data;
             check(d.Nodes.Count > 600 && d.Nodes.ContainsKey(1) && d.Nodes[1].IsStart, "passive tree: " + d.Nodes.Count + " nodes, node 1 is the root");
             int starts = d.Ordered.Count(n => n.IsStart), keystones = d.Ordered.Count(n => n.Type == 'd'), masteries = d.Ordered.Count(n => n.IsMastery);
-            check(starts == 5 && masteries == 4 && keystones >= 30, "passive tree: 5 start nodes, 4 masteries, keystones (" + starts + "/" + masteries + "/" + keystones + ")");
+            check(starts == 8 && masteries == 7 && keystones >= 30, "passive tree: 8 start nodes (the root and seven class sections), 7 masteries, keystones (" + starts + "/" + masteries + "/" + keystones + ")");
             // links are symmetric over the shown graph
             tree.Line = "";
             var adj = tree.Graph();
@@ -82,7 +82,9 @@ namespace Chaos.Core.Tests
             var thiefStart = d.Ordered.First(n => n.IsStart && n.Line == "thief");
             tree.Line = "thief";
             check(tree.Shown(thiefStart) && !tree.Shown(d.Ordered.First(n => n.IsStart && n.Line == "monk")) && tree.Starts().Count() == 2, "passive tree: a class section shows to its own line");
-            tree.Line = "warrior";
+            tree.Line = "warrior"; // every line has a section since O449 (the Warrior, Ranger and Mystic lines were the three without)
+            check(tree.Starts().Count() == 2 && tree.Shown(d.Ordered.First(n => n.IsStart && n.Line == "warrior")), "passive tree: the Warrior line has its own class section");
+            tree.Line = "nonesuch";
             check(tree.Starts().Count() == 1, "passive tree: a line without a section starts at the root only");
             check(d.Ordered.Where(n => n.Hidden).All(n => !tree.Shown(n)), "passive tree: hidden nodes are never shown");
         }

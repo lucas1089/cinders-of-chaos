@@ -43,6 +43,13 @@ return {
 		ksDivineVerdict = {name = "Divine Verdict", kind = "k", tab = "dealt"},
 		ksScarredDiscipline = {name = "Scarred Discipline", kind = "k", tab = "taken"},
 		ksHundredHands = {name = "Hundred Hands", kind = "k", tab = "dealt"},
+		-- the class sections of the Warrior, Ranger and Mystic lines (section_keystones_core.lua, O449). Wolfbond has no row:
+		-- its gain is in the wolves' hits (the spells' Lua state) and its price a plain factor
+		ksUnbrokenLine = {name = "Unbroken Line", kind = "k", tab = "taken"},
+		ksOpenVeins = {name = "Open Veins", kind = "k", tab = "dealt"},
+		ksLoneMark = {name = "Lone Mark", kind = "k", tab = "dealt"},
+		ksConvergence = {name = "Convergence", kind = "k", tab = "dealt"},
+		ksPhantomDouble = {name = "Phantom Double", kind = "p", tab = "dealt"},
 		-- build archetype keystones (archetypes.lua)
 		arAetherEdge = {name = "Aether Edge", kind = "p", tab = "dealt"},
 		arBarbed = {name = "Barbed Quiver", kind = "k", tab = "dealt"},

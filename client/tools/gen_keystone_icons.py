@@ -17,7 +17,7 @@ as the small ones.
  * START (class section start nodes 625, 635, 645, 655): classstart_<line>.png, 150x150, written next to the sheet:
    the root start node's medallion (PSGroupBackground95.png) scaled down, the class icon set into its centre.
  * NOTABLES (notable and mastery frames: the 27 path notables, the class section notables, 619-623, the masteries
-   665-668): no new image; treedata/icons.lua clips them from skills.png like the small nodes. --check verifies those
+   665-668, and since O449 the notables of the Warrior, Ranger and Mystic sections 674-702): no new image; treedata/icons.lua clips them from skills.png like the small nodes. --check verifies those
    clips and the keystone cells; --lua prints the entries.
 Each icon is used once, and none of them is used by a small node. Deterministic. Needs Pillow."""
 import os, re, sys
@@ -117,6 +117,13 @@ START = [  # (line, atlas cell): the start node of each class section
     ('thief', 'A1.12'), ('necromancer', 'B14.0'), ('monk', 'B22.1'), ('templar', 'A0.29'),
 ]
 
+# O449: the class sections of the Warrior, Ranger and Mystic lines draw no new image. Their start nodes show the start image of
+# another line (icon key -> the image it reuses, treedata/icons.lua) and their six keystones the cell of an existing keystone
+# (nodes.lua `icon`: 673 csWarrior = Monk's fist; 683 csRanger = Thief's hood; 693 csMystic = Templar's cross; 679 ksBastion,
+# 682 arSanguine, 689 ksSharedPhantasm, 692 ksPackAlpha, 699 ksOverload, 702 ksInspiringIllusion; the masteries 703, 704, 705
+# msInnerDiscipline, msShadowDiscipline, msSacredOath). The wiki draws an icon file for each of those keys that already exist.
+REUSED = {'csWarrior': 'classstart_monk', 'csRanger': 'classstart_thief', 'csMystic': 'classstart_templar'}
+
 NOTABLES = [  # (icon key, node, atlas cell)
     # class sections: Thief
     ('ntLightFeet', 626, 'A5.12'), ('ntVenomCraft', 627, 'A9.15'), ('ntShadowBorn', 628, 'A7.4'),
@@ -137,6 +144,16 @@ NOTABLES = [  # (icon key, node, atlas cell)
     # the masteries of the class sections
     ('msShadowDiscipline', 665, 'A3.14'), ('msGraveMastery', 666, 'B23.16'), ('msInnerDiscipline', 667, 'B31.13'),
     ('msSacredOath', 668, 'B10.0'),
+    # the class sections of the Warrior, Ranger and Mystic lines (O449): cells of the atlas no other icon uses
+    ('ntHardenedSinew', 674, 'A5.6'), ('ntBattleScarred', 675, 'A5.8'), ('ntIronboundGrip', 676, 'A2.2'),
+    ('ntAnvilOfPatience', 677, 'A5.1'), ('ntRampart', 678, 'A8.23'), ('ntRendingStrikes', 680, 'A1.25'),
+    ('ntRaggedEdge', 681, 'A1.27'),
+    ('ntLightfootStride', 684, 'A7.5'), ('ntSeasonedShafts', 685, 'A8.18'), ('ntHawksPatience', 686, 'A7.29'),
+    ('ntLongSight', 687, 'A8.14'), ('ntDeadAim', 688, 'A6.23'), ('ntPackInstinct', 690, 'A7.21'),
+    ('ntAlphasBite', 691, 'A7.11'),
+    ('ntArcaneStudy', 694, 'A6.19'), ('ntPrismaticVeins', 695, 'A4.5'), ('ntQuietReservoir', 696, 'A4.7'),
+    ('ntPrismaticMind', 697, 'A6.31'), ('ntTempestVeins', 698, 'A5.21'), ('ntVeilweaver', 700, 'A8.7'),
+    ('ntMirrorMind', 701, 'A8.9'),
     # the notables next to the keystones 621 and 624
     ('ntGatheringFury', 619, 'A3.1'), ('ntEdgeOfRuin', 620, 'B33.20'), ('ntIronResolve', 622, 'A2.5'),
     ('ntUnbrokenWill', 623, 'B12.7'),
@@ -202,6 +219,10 @@ def check(icons_lua):
         got = dict((k, int(v)) for k, v in re.findall(r'\b([xywh]) = (\d+)', m.group(1))) if m else None
         if got != want:
             errors.append('%s (node %d): icons.lua has %s, the atlas cell %s is %s' % (key, node, got, c, want))
+    for key, image in REUSED.items():
+        m = re.search(r'\b%s = \{([^}]*)\}' % key, text)
+        if not m or '/images/passivetree/%s"' % image not in m.group(1):
+            errors.append('%s: icons.lua does not reuse %s' % (key, image))
     for i, (key, _) in enumerate(KEYSTONES):
         m = re.search(r'\b%s = \{([^}]*)\}' % key, text)
         if not m or 'x = %d,' % (i * CELL) not in m.group(1) or '/images/passivetree/keystones' not in m.group(1):
