@@ -40,13 +40,14 @@ ChaosUniquePassivesConfig = {
 
 	-- limits of tools/unique_passives_model.lua --check (the expected power gain of a passive: damage dealt x survivability)
 	model = {
-		-- O473 (2026-11-10): minGain 1.03 -> 0.90. The "more damage" part of a passive of the families lowlife, overflow, opener, focus,
-		-- statscale, crowd, stacks and mark is now at most 10 raw percent of the damage pool (damage_pool_config.lua), its price (a "less")
-		-- stays as it was: 29 passives fall under 1.03 on a line they work for (the lowest 0.93: Seat Kept Warm, lowlife, warrior; 15 of
-		-- the 26 that fall under at their own item level are under 1.0, `unique_passives_model.lua --list`). tools/unique_passives_model.lua reads the split now (gain = prices x (1 + pool part) x survival). The owner
-		-- decides whether the prices of those passives are cut (README "Increased damage pool (O473)" lists them); the best five of a
-		-- line (below) stay inside their limits (1.46 to 2.94).
-		minGain = 0.90, maxGain = 1.55, -- one passive, on the line it is made for
+		-- O473 (2026-11-10): prices of 28 passives cut (a "less" part lowered to the largest whole percent that keeps the passive at minGain
+		-- 1.03 on every line it works for; 13 of them to a smaller price, 15 of them to 0), because the "more damage" part is at most 10 raw
+		-- percent of the damage pool now (damage_pool_config.lua) and the old prices outweighed it. Ten passives (`bonusBound`) stay under
+		-- 1.03 even with no price: their bonus alone, held at 10 raw, is worth 1.012 (lowlife) or 1.025 (crowd). A bonus is never raised
+		-- above the pool entry, so these ten are held to "never weaker than 1.0" instead. The best five of a line keep their limits.
+		-- tools/unique_passives_model.lua --reprice finds the prices; server/README.md "Increased damage pool (O473)" lists them.
+		bonusBound = {7384, 10292, 10510, 25880, 26133, 27658, 27694, 28112, 29868, 36659}, bonusBoundMin = 1.0,
+		minGain = 1.03, maxGain = 1.55, -- one passive, on the line it is made for
 		bestFiveMin = 1.35, bestFiveMax = 3.2, -- the best five (one per family) of a class line in a level band
 		bands = {{1, 100}, {101, 400}, {401, 900}, {901, 1600}, {1601, 99999}},
 	},
@@ -139,27 +140,27 @@ ChaosUniquePassivesConfig = {
 	[10294] = {lv = 25, name = "Lantern Ward", family = "hitcap", lines = "WP", cap = 25, healLess = 10}, -- Lantern-Ward Buckler
 	[10502] = {lv = 25, name = "Second Dawn", family = "panic", lines = "ALL", below = 30, reduce = 40, ms = 4000, icdMs = 90000}, -- Band of the Second Dawn
 	[40010] = {lv = 26, name = "Door-Hinge Counter", family = "riposte", lines = "K", elem = "physical", pct = 89, minHit = 3, icdMs = 3000, capPerLevel = 2.2}, -- Chapel-Iron Knuckles
-	[2402] = {lv = 28, name = "Silver Whisper", family = "opener", lines = "T", side = "above", at = 90, bonus = 40, malusAt = 25, malus = 5}, -- Moonlit Shiv
+	[2402] = {lv = 28, name = "Silver Whisper", family = "opener", lines = "T", side = "above", at = 90, bonus = 40, malusAt = 25, malus = 3}, -- Moonlit Shiv
 	[11393] = {lv = 30, name = "Moth to Flame", family = "mend", lines = "MPK", heal = 2.9, tickMs = 2500, radius = 3, healLess = 15}, -- Moth-Lantern Pendant
 	[26185] = {lv = 30, name = "Knuckle Spark", family = "critrule", lines = "KT", crit = 76, plain = 8}, -- Cinder Knuckle Band
 	[21692] = {lv = 35, name = "Gutter Mercy", family = "ward", lines = "WPK", onHit = 6, onKill = 3, cap = 15, healLess = 20}, -- Gutter-Saint's Mail
-	[27694] = {lv = 38, name = "Wind-Borne", family = "crowd", lines = "R", mode = "duel", bonus = 50, malus = 12, radius = 3, many = 3}, -- Gravewind Quiver
+	[27694] = {lv = 38, name = "Wind-Borne", family = "crowd", lines = "R", mode = "duel", bonus = 50, malus = 0, radius = 3, many = 3}, -- Gravewind Quiver
 	[13873] = {lv = 40, name = "Fen Frost", family = "convert", lines = "R", elem = "ice", share = 50, bonus = 20, other = 10}, -- Hoarfen Bow
 	[22690] = {lv = 40, name = "Widow's Patience", family = "focus", lines = "TKW", perStack = 6, max = 5, first = 10}, -- Widowmaker
 	[11374] = {lv = 50, name = "Scarab Swarm", family = "spread", lines = "T", elem = "poison", targets = 2, radius = 2, share = 97, ticks = 4, dealtLess = 8}, -- Carrion Scarab Amulet
 	[19390] = {lv = 50, name = "Damned Flight", family = "convert", lines = "RT", elem = "fire", share = 60, bonus = 20, other = 10}, -- Hellspear of the Damned
 	[2412] = {lv = 60, name = "Crypt Whisper", family = "critrule", lines = "T", crit = 67, plain = 10}, -- Nightfang Katana
 	[3972] = {lv = 60, name = "Evil Eye", family = "mark", lines = "MNR", max = 3, bonus = 25, unmarked = 8}, -- Bonelord's Gaze
-	[8849] = {lv = 60, name = "One Shot", family = "opener", lines = "R", side = "above", at = 95, bonus = 75, malusAt = 40, malus = 12}, -- Gallowsbolt Crossbow
+	[8849] = {lv = 60, name = "One Shot", family = "opener", lines = "R", side = "above", at = 95, bonus = 75, malusAt = 40, malus = 3}, -- Gallowsbolt Crossbow
 	[10296] = {lv = 60, name = "Skull Pall", family = "immunity", lines = "TRK", kind = "poison", more = 12}, -- Pall of Skulls
-	[21693] = {lv = 60, name = "Horn-Bind", family = "stacks", lines = "WP", trigger = "kill", perStack = 7, max = 4, takenPerStack = 3}, -- Hornbinder Ring
+	[21693] = {lv = 60, name = "Horn-Bind", family = "stacks", lines = "WP", trigger = "kill", perStack = 7, max = 4, takenPerStack = 2}, -- Hornbinder Ring
 	[2496] = {lv = 70, name = "Hornsworn Oath", family = "hitcap", lines = "WP", cap = 18, healLess = 20}, -- Hornsworn Helm
 	[3961] = {lv = 70, name = "Lich's Grasp", family = "spread", lines = "N", elem = "death", targets = 3, radius = 2, share = 94, ticks = 4, dealtLess = 10}, -- Lichfang Staff
 	[8858] = {lv = 70, name = "Stormcall", family = "extra", lines = "R", origin = "ranged", elem = "energy", pct = 50, targets = 2, radius = 3, cost = "health", costPct = 0.5, icdMs = 700}, -- Stormcaller Recurve
 	[11426] = {lv = 70, name = "Notched Edge", family = "spread", lines = "WT", elem = "bleed", targets = 3, radius = 2, share = 97, ticks = 4, dealtLess = 10}, -- Gorecleaver
 	[27288] = {lv = 70, name = "Tiny Fangs", family = "riposte", lines = "WTK", elem = "physical", pct = 74, minHit = 3, icdMs = 2500, capPerLevel = 1.9}, -- Maw Treads
 	[41640] = {lv = 70, name = "One Spark", family = "panic", lines = "ALL", below = 25, reduce = 50, ms = 5000, icdMs = 75000}, -- Ring of the Last Ember
-	[2440] = {lv = 80, name = "Last Words", family = "opener", lines = "WK", side = "below", at = 30, bonus = 55, malusAt = 80, malus = 10}, -- Executioner's Reckoning
+	[2440] = {lv = 80, name = "Last Words", family = "opener", lines = "WK", side = "below", at = 30, bonus = 55, malusAt = 80, malus = 0}, -- Executioner's Reckoning
 	[8892] = {lv = 80, name = "Cinder Coat", family = "immunity", lines = "WPKTR", kind = "fire", more = 15}, -- Cindermail Coat
 	[10314] = {lv = 80, name = "Claw of Fire", family = "convert", lines = "WPT", elem = "fire", share = 50, bonus = 37, other = 12}, -- Cinderclaw Band
 	[13760] = {lv = 80, name = "Seam of the World", family = "nova", lines = "MN", on = "crit", elem = "death", base = 50, perLevel = 1.2, targets = 5, icdMs = 3000, selfCost = 0.5}, -- Riftcaller
@@ -168,7 +169,7 @@ ChaosUniquePassivesConfig = {
 	[41641] = {lv = 80, name = "Never-Cooling Coal", family = "statscale", lines = "WPK", stat = "maxHealth", per = 200, bonusPer = 2.9, cap = 35, origin = "melee", healLess = 15}, -- Heart of Cinders
 	[3975] = {lv = 90, name = "Fire Asks Permission", family = "ward", lines = "WP", onHit = 6, onKill = 5, cap = 20, reflect = 40, healLess = 25}, -- Emberwarden
 	[7379] = {lv = 90, name = "Grinding Wheel", family = "crowd", lines = "WK", mode = "pack", per = 7, max = 5, alone = 15}, -- Bonegrinder
-	[10510] = {lv = 90, name = "Grave Vow", family = "lowlife", lines = "TKN", at = 30, bonus = 98, malusAt = 75, malus = 15}, -- Widow's Last Vow
+	[10510] = {lv = 90, name = "Grave Vow", family = "lowlife", lines = "TKN", at = 30, bonus = 98, malusAt = 75, malus = 0}, -- Widow's Last Vow
 	[11395] = {lv = 90, name = "Crimson Tide", family = "critrule", lines = "WT", crit = 74, plain = 12, heal = 3}, -- Bloodmoon Edge
 	[27228] = {lv = 90, name = "Hollow Bark", family = "immunity", lines = "RMN", kind = "poison", more = 15}, -- Shroud of the Hollow Wood
 	[27693] = {lv = 90, name = "Berry Juice", family = "spread", lines = "TR", elem = "poison", targets = 3, radius = 2, share = 94, ticks = 4, dealtLess = 6}, -- Nightshade Leggings
@@ -176,10 +177,10 @@ ChaosUniquePassivesConfig = {
 	[7462] = {lv = 100, name = "Burning Crown", family = "nova", lines = "MPW", on = "kill", elem = "fire", base = 60, perLevel = 1.2, targets = 6, icdMs = 3000, selfCost = 0.5}, -- Crown of Cinders
 	[10301] = {lv = 100, name = "Reaper's Reach", family = "extra", lines = "WP", origin = "melee", pct = 50, targets = 2, radius = 2, cost = "health", costPct = 0.6, icdMs = 700}, -- Harvester of Sorrows
 	[16111] = {lv = 100, name = "Screaming Bolts", family = "critrule", lines = "R", crit = 74, plain = 12}, -- Hellspite Arbalest
-	[22474] = {lv = 100, name = "Answering Voice", family = "overflow", lines = "MN", at = 75, bonus = 40, malusAt = 35, malus = 15}, -- Tome of Whispers
-	[23590] = {lv = 100, name = "Argument Ender", family = "opener", lines = "PK", side = "below", at = 35, bonus = 60, malusAt = 85, malus = 12}, -- Gorehammer
+	[22474] = {lv = 100, name = "Answering Voice", family = "overflow", lines = "MN", at = 75, bonus = 40, malusAt = 35, malus = 9}, -- Tome of Whispers
+	[23590] = {lv = 100, name = "Argument Ender", family = "opener", lines = "PK", side = "below", at = 35, bonus = 60, malusAt = 85, malus = 0}, -- Gorehammer
 	[24851] = {lv = 100, name = "Void Pool", family = "manashield", lines = "MNK", share = 35, reserve = 5, dealtLess = 10}, -- Tear of the Void
-	[26133] = {lv = 100, name = "Soundless Step", family = "crowd", lines = "TRK", mode = "duel", bonus = 63, malus = 20, radius = 3, many = 3}, -- Voidwalker Boots
+	[26133] = {lv = 100, name = "Soundless Step", family = "crowd", lines = "TRK", mode = "duel", bonus = 63, malus = 0, radius = 3, many = 3}, -- Voidwalker Boots
 	[26756] = {lv = 100, name = "Rime Heart", family = "convert", lines = "W", elem = "ice", share = 60, bonus = 25, other = 15}, -- Shard of the Long Winter
 	[27231] = {lv = 100, name = "Burial Linen", family = "minionPact", lines = "N", hit = 30, health = 40, own = 20}, -- Mortis Cowl
 	[27295] = {lv = 100, name = "Remembering Hand", family = "riposte", lines = "WPK", elem = "death", pct = 73, minHit = 3, icdMs = 2500, capPerLevel = 1.8}, -- Wraithplate
@@ -194,13 +195,13 @@ ChaosUniquePassivesConfig = {
 	[27675] = {lv = 120, name = "Looks Back", family = "mark", lines = "MNT", max = 3, bonus = 35, unmarked = 10}, -- Visage of the Pale King
 	[28115] = {lv = 120, name = "Footfall Debt", family = "stacks", lines = "RT", trigger = "crit", perStack = 10, max = 5, windowMs = 5000, takenPerStack = 3}, -- Snarewalker Greaves
 	[29571] = {lv = 120, name = "Rattling Cage", family = "statscale", lines = "MN", stat = "maxMana", per = 150, bonusPer = 1.4, cap = 35, origin = "spell"}, -- Soulshackle Scepter
-	[29868] = {lv = 120, name = "Unfound", family = "lowlife", lines = "TMN", at = 40, bonus = 92, malusAt = 80, malus = 12}, -- Veil of the Wraith
+	[29868] = {lv = 120, name = "Unfound", family = "lowlife", lines = "TMN", at = 40, bonus = 92, malusAt = 80, malus = 0}, -- Veil of the Wraith
 	[8925] = {lv = 130, name = "Dying Star", family = "convert", lines = "WP", elem = "fire", share = 60, bonus = 33, other = 15}, -- Cinderbrand Axe
 	[15413] = {lv = 130, name = "Paid In Full", family = "riposte", lines = "WP", elem = "physical", pct = 70, minHit = 3, icdMs = 2000}, -- Spitethorn Bulwark
 	[28020] = {lv = 130, name = "Between Stars", family = "immunity", lines = "MNK", kind = "energy", more = 15}, -- Voidscale Legguards
 	[29866] = {lv = 140, name = "Last-Light Shroud", family = "mend", lines = "MPK", heal = 2.7, tickMs = 2000, radius = 3, healLess = 20}, -- Duskweaver Wand
 	[2500] = {lv = 150, name = "Living Vine", family = "riposte", lines = "RTW", elem = "earth", pct = 73, minHit = 3, icdMs = 2500, capPerLevel = 1.8}, -- Thornwake Jerkin
-	[7384] = {lv = 150, name = "Ninth Hall Quench", family = "lowlife", lines = "WP", at = 35, bonus = 94, malusAt = 70, malus = 15}, -- Emberfall Blade
+	[7384] = {lv = 150, name = "Ninth Hall Quench", family = "lowlife", lines = "WP", at = 35, bonus = 94, malusAt = 70, malus = 0}, -- Emberfall Blade
 	[7890] = {lv = 150, name = "Slow Burn", family = "spread", lines = "RT", elem = "fire", targets = 3, radius = 2, share = 94, ticks = 4, dealtLess = 6}, -- Fusewright's Charm
 	[7891] = {lv = 150, name = "Down Never Back", family = "statscale", lines = "WTK", stat = "speed", from = 200, per = 10, bonusPer = 1, cap = 30, origin = "any"}, -- Ashwalker Treads
 	[8881] = {lv = 150, name = "Giant's Pyre", family = "hitcap", lines = "WP", cap = 15, healLess = 25}, -- Pyreheart Mantle
@@ -211,7 +212,7 @@ ChaosUniquePassivesConfig = {
 	[28691] = {lv = 150, name = "Prick and Heal", family = "feast", lines = "RTW", res = "health", onKill = 6, capPerSec = 18, healLess = 35}, -- Thornwake Loop
 	[15453] = {lv = 180, name = "Oath Under the Banner", family = "mend", lines = "PKMW", heal = 2.7, tickMs = 2000, radius = 4, healLess = 20}, -- Oathkeeper's Standard
 	[27652] = {lv = 180, name = "Drinks First", family = "ward", lines = "ALL", onHit = 12, onKill = 4, cap = 28, healLess = 40}, -- Vein of the Unsated
-	[2133] = {lv = 200, name = "Last Hall Ember", family = "stacks", lines = "WTK", trigger = "kill", perStack = 8.4, max = 6, takenPerStack = 4}, -- Heart of the Descent
+	[2133] = {lv = 200, name = "Last Hall Ember", family = "stacks", lines = "WTK", trigger = "kill", perStack = 8.4, max = 6, takenPerStack = 2}, -- Heart of the Descent
 	[27667] = {lv = 200, name = "Conductor's Rest", family = "nova", lines = "PMN", on = "hurt", elem = "holy", base = 60, perLevel = 1.2, minHit = 5, targets = 6, icdMs = 4000, selfCost = 0}, -- Choirmaster's Circlet
 	[27251] = {lv = 220, name = "Kneeling Smoke", family = "mend", lines = "PMK", heal = 3, tickMs = 2500, radius = 4, healLess = 15}, -- Reliquary Censer
 	[2129] = {lv = 250, name = "One Tooth per Pact", family = "minionPact", lines = "N", hit = 30, health = 40, own = 20}, -- Hollowpack Fang Chain
@@ -220,24 +221,24 @@ ChaosUniquePassivesConfig = {
 	[24741] = {lv = 250, name = "Covenant Furs", family = "crowd", lines = "RWN", mode = "pack", per = 7, max = 5, alone = 12}, -- Hollowpack Hide
 	[26808] = {lv = 250, name = "Fed Bond", family = "feast", lines = "NMR", res = "mana", onKill = 7.5, capPerSec = 22, dealtLess = 8, healLess = 10}, -- Hollowpack Bond
 	[27668] = {lv = 250, name = "Cold Light", family = "manashield", lines = "MNKP", share = 40, reserve = 5, dealtLess = 10}, -- Hollowglass Diadem
-	[7402] = {lv = 300, name = "Put the Tyrant Down", family = "opener", lines = "WP", side = "below", at = 30, bonus = 70, malusAt = 85, malus = 15}, -- Pyre Cleaver
+	[7402] = {lv = 300, name = "Put the Tyrant Down", family = "opener", lines = "WP", side = "below", at = 30, bonus = 70, malusAt = 85, malus = 0}, -- Pyre Cleaver
 	[7404] = {lv = 300, name = "First of a Pair", family = "focus", lines = "T", perStack = 8, max = 6, first = 12}, -- Duskstalker Fang
 	[7418] = {lv = 300, name = "Where the Fang Was", family = "extra", lines = "T", origin = "melee", pct = 60, targets = 1, radius = 2, cost = "health", costPct = 0.5, icdMs = 500}, -- Duskstalker Sting
 	[11301] = {lv = 300, name = "Blades Slide Off", family = "riposte", lines = "TK", elem = "physical", pct = 70, minHit = 3, icdMs = 2000}, -- Duskstalker Jerkin
 	[11304] = {lv = 300, name = "Rooftop Run", family = "statscale", lines = "TKR", stat = "speed", from = 200, per = 8, bonusPer = 1, cap = 30, origin = "any"}, -- Duskstalker Breeches
-	[25175] = {lv = 300, name = "Sworn on a Wound", family = "stacks", lines = "WP", trigger = "kill", perStack = 7.8, max = 5, takenPerStack = 4}, -- Bloodsworn Hauberk
+	[25175] = {lv = 300, name = "Sworn on a Wound", family = "stacks", lines = "WP", trigger = "kill", perStack = 7.8, max = 5, takenPerStack = 2}, -- Bloodsworn Hauberk
 	[25410] = {lv = 300, name = "Smiles When You Bleed", family = "critrule", lines = "WT", crit = 81, plain = 10, heal = 4}, -- Bloodsworn Visage
 	[27249] = {lv = 300, name = "Dust Does Not Hear", family = "critrule", lines = "T", crit = 81, plain = 10}, -- Duskstalker Tabi
 	[27390] = {lv = 300, name = "Bloodless Body", family = "hitcap", lines = "MNKP", cap = 15, healLess = 25}, -- Stillheart Robe
-	[27658] = {lv = 300, name = "Altar Quench", family = "lowlife", lines = "W", at = 40, bonus = 98, malusAt = 75, malus = 15}, -- Bloodsworn Greataxe
+	[27658] = {lv = 300, name = "Altar Quench", family = "lowlife", lines = "W", at = 40, bonus = 98, malusAt = 75, malus = 0}, -- Bloodsworn Greataxe
 	[28100] = {lv = 300, name = "Tightening Plates", family = "feast", lines = "WP", res = "health", onKill = 7.1, capPerSec = 21, healLess = 45}, -- Bloodsworn Legplates
 	[28101] = {lv = 300, name = "Red Prints", family = "spread", lines = "WT", elem = "bleed", targets = 3, radius = 2, share = 96, ticks = 4, dealtLess = 10}, -- Bloodsworn Treads
-	[28106] = {lv = 300, name = "Light That Is Not There", family = "overflow", lines = "MN", at = 70, bonus = 40, malusAt = 30, malus = 15}, -- Mirrorweave Circlet
+	[28106] = {lv = 300, name = "Light That Is Not There", family = "overflow", lines = "MN", at = 70, bonus = 40, malusAt = 30, malus = 9}, -- Mirrorweave Circlet
 	[28107] = {lv = 300, name = "Spun Twice", family = "ward", lines = "MNP", onHit = 8, onKill = 5, cap = 25, healLess = 30}, -- Mirrorweave Robe
 	[28108] = {lv = 300, name = "Heartbeat Early", family = "focus", lines = "MR", perStack = 7, max = 6, first = 12}, -- Mirrorweave Skirt
 	[28109] = {lv = 300, name = "Two Sets of Footprints", family = "nova", lines = "MNP", on = "hurt", elem = "energy", base = 70, perLevel = 1.2, minHit = 5, targets = 6, icdMs = 4000, selfCost = 0}, -- Mirrorweave Slippers
 	[28111] = {lv = 300, name = "Every Page Shows the Reader", family = "extra", lines = "MN", origin = "spell", pct = 50, targets = 2, radius = 3, cost = "mana", costPct = 3, icdMs = 700}, -- Mirrorweave Codex
-	[28112] = {lv = 300, name = "Swallowed Light", family = "crowd", lines = "TK", mode = "duel", bonus = 64, malus = 20, radius = 3, many = 3}, -- Duskstalker Cowl
+	[28112] = {lv = 300, name = "Swallowed Light", family = "crowd", lines = "TK", mode = "duel", bonus = 64, malus = 0, radius = 3, many = 3}, -- Duskstalker Cowl
 	[28125] = {lv = 300, name = "No Front No Back", family = "critrule", lines = "MR", crit = 81, plain = 10}, -- Mirrorweave Band
 	[7894] = {lv = 400, name = "Same Storm Twice", family = "manashield", lines = "MN", share = 35, reserve = 5, dealtLess = 10}, -- Cinderstorm Kilt
 	[7899] = {lv = 400, name = "Never Burnt", family = "immunity", lines = "MNP", kind = "fire", more = 12}, -- Cinderstorm Mantle
@@ -254,16 +255,16 @@ ChaosUniquePassivesConfig = {
 	[26198] = {lv = 450, name = "Walked In Walked Out", family = "panic", lines = "ALL", below = 25, reduce = 50, ms = 5000, icdMs = 60000}, -- Pilgrim's Reliquary
 	[2404] = {lv = 600, name = "Quiet Work", family = "critrule", lines = "T", crit = 66, plain = 10, heal = 3}, -- Gravewhisper Stiletto
 	[15407] = {lv = 600, name = "One Bolt per Pocket", family = "extra", lines = "R", origin = "ranged", pct = 55, targets = 2, radius = 3, cost = "health", costPct = 0.6, icdMs = 600}, -- Gallows Coat
-	[27474] = {lv = 600, name = "Hangman's Rope", family = "opener", lines = "R", side = "above", at = 95, bonus = 90, malusAt = 50, malus = 15}, -- Gallows Arbalest
+	[27474] = {lv = 600, name = "Hangman's Rope", family = "opener", lines = "R", side = "above", at = 95, bonus = 90, malusAt = 50, malus = 3}, -- Gallows Arbalest
 	[28114] = {lv = 600, name = "Standing Still", family = "focus", lines = "RM", perStack = 8, max = 6, resetMs = 4000, first = 15}, -- Gallows Leggings
 	[28690] = {lv = 600, name = "Small Patient Fire", family = "mend", lines = "PMK", heal = 3, tickMs = 2500, radius = 3, healLess = 15}, -- Emberwake Locket
 	[29470] = {lv = 600, name = "Face Unseen", family = "mark", lines = "RT", max = 4, bonus = 35, unmarked = 12}, -- Gallows Hood
-	[36659] = {lv = 650, name = "Saint Walked On", family = "lowlife", lines = "K", at = 30, bonus = 98, malusAt = 70, malus = 15}, -- Grasp of the Pyre Saint
+	[36659] = {lv = 650, name = "Saint Walked On", family = "lowlife", lines = "K", at = 30, bonus = 98, malusAt = 70, malus = 0}, -- Grasp of the Pyre Saint
 	[27696] = {lv = 750, name = "Shattered Volley", family = "extra", lines = "R", origin = "ranged", pct = 55, targets = 2, radius = 3, cost = "health", costPct = 0.6, icdMs = 600}, -- Quiver of Shattered Skies
 	[2124] = {lv = 800, name = "Every Curse First", family = "spread", lines = "MN", elem = "death", targets = 4, radius = 3, share = 80, ticks = 5, dealtLess = 6}, -- Eye of the Hexmaw
 	[2498] = {lv = 800, name = "Expected Throne", family = "hitcap", lines = "WP", cap = 15, healLess = 25}, -- Crown of the Last Sovereign
 	[2504] = {lv = 800, name = "Creak and Hold", family = "hitcap", lines = "WPK", cap = 15, healLess = 25}, -- Marrowforged Greaves
-	[7422] = {lv = 800, name = "Broken Shields", family = "opener", lines = "WP", side = "below", at = 30, bonus = 70, malusAt = 85, malus = 15}, -- Gravewarden's Verdict
+	[7422] = {lv = 800, name = "Broken Shields", family = "opener", lines = "WP", side = "below", at = 30, bonus = 70, malusAt = 85, malus = 0}, -- Gravewarden's Verdict
 	[8865] = {lv = 800, name = "Warm and Wrong", family = "mend", lines = "MPKN", heal = 2.9, tickMs = 2500, radius = 4, healLess = 15}, -- Shroud of the Ash-Sister
 	[27403] = {lv = 800, name = "Oath in Stone", family = "riposte", lines = "WPK", elem = "holy", pct = 70, minHit = 3, icdMs = 2000}, -- Ashwarden Seal
 	[29559] = {lv = 800, name = "Everything Behind Lived", family = "ward", lines = "WP", onHit = 8, onKill = 5, cap = 28, reflect = 50, healLess = 30}, -- Ashwarden Bulwark
@@ -276,9 +277,9 @@ ChaosUniquePassivesConfig = {
 	[26774] = {lv = 540, name = "Trail of Rot", family = "spread", lines = "T", elem = "poison", targets = 3, radius = 2, share = 90, ticks = 5, dealtLess = 5}, -- Plaguerunner's Cowl
 	[25411] = {lv = 720, name = "One Page Open", family = "focus", lines = "MN", perStack = 4, max = 5, first = 10}, -- Lectern of the Open Page
 	[15489] = {lv = 740, name = "Deep Well", family = "statscale", lines = "M", stat = "maxMana", from = 1000, per = 200, bonusPer = 1, cap = 24, origin = "spell"}, -- Tidewrack Mantle
-	[7697] = {lv = 760, name = "Last Rites", family = "opener", lines = "N", side = "below", at = 25, bonus = 80, malusAt = 80, malus = 10}, -- Signet of Last Rites
+	[7697] = {lv = 760, name = "Last Rites", family = "opener", lines = "N", side = "below", at = 25, bonus = 80, malusAt = 80, malus = 0}, -- Signet of Last Rites
 	[8872] = {lv = 780, name = "Last Word", family = "riposte", lines = "T", elem = "physical", pct = 80, minHit = 3, icdMs = 2000}, -- Hem of the Last Word
-	[25423] = {lv = 820, name = "First Cut", family = "opener", lines = "T", side = "above", at = 90, bonus = 70, malusAt = 25, malus = 5}, -- Cutthroat's Locket
+	[25423] = {lv = 820, name = "First Cut", family = "opener", lines = "T", side = "above", at = 90, bonus = 70, malusAt = 25, malus = 3}, -- Cutthroat's Locket
 	[26804] = {lv = 840, name = "Cup Overfull", family = "manashield", lines = "M", share = 40, reserve = 5, dealtLess = 12}, -- Cupbearer's Greaves
 	[26762] = {lv = 860, name = "Brood Pact", family = "minionPact", lines = "N", hit = 40, health = 60, own = 30}, -- Gravemother's Shawl
 	[6433] = {lv = 880, name = "Lid Closed", family = "hitcap", lines = "N", cap = 10, healLess = 20}, -- Lidbound Bulwark
@@ -287,23 +288,23 @@ ChaosUniquePassivesConfig = {
 	[2123] = {lv = 1000, name = "Last Coal of a Sovereign", family = "nova", lines = "WPM", on = "kill", elem = "fire", base = 90, perLevel = 1.2, targets = 7, icdMs = 3000, selfCost = 0.6}, -- Cinderheart Signet
 	[2171] = {lv = 1000, name = "Seer's Last Sight", family = "nova", lines = "MNT", on = "crit", elem = "energy", base = 90, perLevel = 1.2, targets = 7, icdMs = 3000, selfCost = 0.6}, -- Eye of the Unbroken Storm
 	[2408] = {lv = 1000, name = "Drinks Before You", family = "ward", lines = "ALL", onHit = 14, onKill = 5, cap = 30, healLess = 45}, -- Sanguine Crescent
-	[2493] = {lv = 1000, name = "Nothing Inside", family = "overflow", lines = "MN", at = 75, bonus = 55, malusAt = 40, malus = 20}, -- Hollow Crown of Morvane
+	[2493] = {lv = 1000, name = "Nothing Inside", family = "overflow", lines = "MN", at = 75, bonus = 55, malusAt = 40, malus = 9}, -- Hollow Crown of Morvane
 	[2646] = {lv = 1200, name = "Endless Road", family = "statscale", lines = "WRTK", stat = "speed", from = 200, per = 6, bonusPer = 1, cap = 40, origin = "any"}, -- Greaves of the Endless Road
 	[27686] = {lv = 1200, name = "Never Fewer Than You Need", family = "extra", lines = "R", origin = "ranged", pct = 54, targets = 3, radius = 3, cost = "health", costPct = 0.7, icdMs = 600}, -- Nightglass Quiver
 	[2411] = {lv = 1250, name = "Opens Once After Dark", family = "spread", lines = "T", elem = "poison", targets = 4, radius = 3, share = 94, ticks = 5, dealtLess = 14}, -- Nightbloom Stiletto
-	[8931] = {lv = 1300, name = "Judges of Ash", family = "opener", lines = "WTKP", side = "below", at = 30, bonus = 80, malusAt = 85, malus = 18}, -- Ashfall Verdict
+	[8931] = {lv = 1300, name = "Judges of Ash", family = "opener", lines = "WTKP", side = "below", at = 30, bonus = 80, malusAt = 85, malus = 0}, -- Ashfall Verdict
 	[24744] = {lv = 1400, name = "Eight Pyres Before", family = "nova", lines = "MN", on = "kill", elem = "fire", base = 100, perLevel = 1.2, targets = 8, icdMs = 3000, selfCost = 0.7}, -- Diadem of the Ninth Pyre
 	[27695] = {lv = 1400, name = "Gale Sleeve", family = "stacks", lines = "R", trigger = "crit", perStack = 11, max = 6, windowMs = 5000, takenPerStack = 3}, -- Sleeve of Ashen Gales
 	[40011] = {lv = 1400, name = "Wind Over an Empty Grave", family = "critrule", lines = "K", crit = 66, plain = 12, heal = 4}, -- Gravewind Talons
 	[6391] = {lv = 1500, name = "Hundred Years of Tide", family = "hitcap", lines = "WP", cap = 15, healLess = 25}, -- Rampart of Grey Tides
 	[25881] = {lv = 1500, name = "Wyrm Quench", family = "spread", lines = "WTKP", elem = "bleed", targets = 4, radius = 3, share = 80, ticks = 5, dealtLess = 6}, -- Wyrmgrave Cleaver
 	[15408] = {lv = 1550, name = "Each Ember a Crown", family = "nova", lines = "WPMN", on = "hurt", elem = "fire", base = 100, perLevel = 1.2, minHit = 5, targets = 8, icdMs = 4000, selfCost = 0}, -- Crown of Ten Thousand Cinders
-	[25880] = {lv = 1550, name = "Seat Kept Warm", family = "lowlife", lines = "WP", at = 35, bonus = 97, malusAt = 75, malus = 18}, -- Hollow Throne Claymore
+	[25880] = {lv = 1550, name = "Seat Kept Warm", family = "lowlife", lines = "WP", at = 35, bonus = 97, malusAt = 75, malus = 0}, -- Hollow Throne Claymore
 	[22417] = {lv = 1600, name = "Strand of the Storm", family = "extra", lines = "R", origin = "ranged", elem = "energy", pct = 54, targets = 3, radius = 3, cost = "health", costPct = 0.7, icdMs = 600}, -- Stormherald's Recurve
 	[25174] = {lv = 1600, name = "Oath Outlives the Pyre", family = "panic", lines = "ALL", below = 22, reduce = 55, ms = 5000, icdMs = 55000}, -- Pyre-Sworn Cuirass
-	[27676] = {lv = 1600, name = "One More", family = "stacks", lines = "R", trigger = "kill", perStack = 6.7, max = 8, windowMs = 7000, takenPerStack = 3}, -- Quiver of the Last Volley
+	[27676] = {lv = 1600, name = "One More", family = "stacks", lines = "R", trigger = "kill", perStack = 6.7, max = 8, windowMs = 7000, takenPerStack = 2}, -- Quiver of the Last Volley
 	[28708] = {lv = 1650, name = "Road Turns to Ash", family = "statscale", lines = "WTK", stat = "speed", from = 200, per = 6, bonusPer = 1, cap = 40, origin = "melee"}, -- Greaves of the Final Ash
-	[29572] = {lv = 1650, name = "Unwritten Chapter", family = "overflow", lines = "MN", at = 75, bonus = 55, malusAt = 40, malus = 20}, -- Codex of the Unwritten End
+	[29572] = {lv = 1650, name = "Unwritten Chapter", family = "overflow", lines = "MN", at = 75, bonus = 55, malusAt = 40, malus = 9}, -- Codex of the Unwritten End
 	[2495] = {lv = 1700, name = "Spat Back", family = "immunity", lines = "WPKTRMN", kind = "death", more = 15}, -- Legguards of Unmaking
 	[14334] = {lv = 1800, name = "One Note per Blow", family = "crowd", lines = "WTKP", mode = "pack", per = 9, max = 6, alone = 18}, -- Maul of the Sunken Choir
 	[25886] = {lv = 1800, name = "Tide Brings Something", family = "mark", lines = "R", max = 4, bonus = 45, unmarked = 15}, -- Gravetide Arbalest
@@ -314,7 +315,7 @@ ChaosUniquePassivesConfig = {
 	[25882] = {lv = 1950, name = "Embers Answer", family = "convert", lines = "WP", elem = "fire", share = 70, bonus = 35, other = 15}, -- Emberhowl Greataxe
 	[2656] = {lv = 2000, name = "Choir Sang On", family = "minionPact", lines = "N", hit = 45, health = 60, own = 30}, -- Vestments of the Hollow Choir
 	[40012] = {lv = 2000, name = "Morning That Never Came", family = "ward", lines = "K", onHit = 14, onKill = 6, cap = 32, reflect = 40, healLess = 40}, -- Dawnless Gauntlets
-	[25885] = {lv = 2100, name = "Nothing It Watches Walks", family = "opener", lines = "R", side = "above", at = 95, bonus = 100, malusAt = 50, malus = 18}, -- Wake-Heron Longbow
+	[25885] = {lv = 2100, name = "Nothing It Watches Walks", family = "opener", lines = "R", side = "above", at = 95, bonus = 100, malusAt = 50, malus = 3}, -- Wake-Heron Longbow
 	[28050] = {lv = 2100, name = "Not Allowed to Set", family = "extra", lines = "R", origin = "ranged", pct = 53, targets = 3, radius = 3, cost = "health", costPct = 0.7, icdMs = 550}, -- Quiver of Fallen Constellations
 	[2472] = {lv = 2200, name = "Dawn Broke Here", family = "panic", lines = "WP", below = 22, reduce = 60, ms = 6000, icdMs = 60000}, -- Bastion of the Last Dawn
 	[25884] = {lv = 2200, name = "Hour Without End", family = "mend", lines = "WPK", heal = 3, tickMs = 2500, radius = 4, healLess = 15}, -- Bellringer of the Last Vigil

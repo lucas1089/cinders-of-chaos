@@ -30884,14 +30884,45 @@ read from the config, the pool entry is below its 3% band), `survival_model`, `p
 
 | What | Old | New | Why (model) |
 |---|---|---|---|
-| `unique_passives_config.lua` `model.minGain` | 1.03 | 0.90 | `unique_passives_model.lua` reads the split now; 29 passives fall under 1.03 on a line they work for, the lowest 0.93; the best five stay in 1.46 to 2.94 (limits 1.35 to 3.2) |
+| `unique_passives_config.lua` `model.minGain` | 1.03 | 1.03 (restored) | prices of 28 passives cut so each is at 1.03 on every line (table below); ten (`bonusBound`) cannot reach it with no price at all, they are held to 1.0 |
 | `unique_passives_model.lua` | prices x (1 + bonus) | prices x (1 + pool part) x survival, the pool part held at 10 each and 40 in all | the passives' dealt gain follows the rule |
 | `spell_mastery_model.py` | brands free at 15 | brands +3 raw (a pool entry, `damage`) | the choices fall to +0.4 to +1.1% of the class damage; CAP 15% untouched |
 | `card_set_model_test.py` | damage part cap 6 | 4 | `cards_config.lua damagePartMax` |
 | `pvp_model.py` | no scale | reads and checks `damageScale` (not applied) | the final re-fit applies it with the typical damage |
 
-Passives now worth about nothing or less on a line (the price outweighs the 10 raw), for the owner to price: `unique_passives_model.lua
---list` shows each; the family `lowlife` (Seat Kept Warm 0.93, Ninth Hall Quench, Altar Quench, Saint Walked On), `opener` and `stacks`.
+**Repriced unique passives (O473, owner follow-up: no unique may make its wearer weaker).** `unique_passives_model.lua --reprice` cut the price (the "less" part) of every passive under 1.03 on a line it works for, to the largest whole percent that gives 1.03 on all its lines. 28 passives: 13 to a smaller price, 15 to a price of 0. A bonus is never raised above the 10 raw entry. Ten passives stay under 1.03 even with no price (their bonus alone is 1.012 for lowlife, 1.025 for crowd): Pilgrim's Resolve (already 0), Ninth Hall Quench, Grave Vow, Seat Kept Warm, Soundless Step, Altar Quench, Wind-Borne, Swallowed Light, Unfound, Saint Walked On. `model.bonusBound` holds them to 1.0. "Gain before the pool" is the old model at the item's own level, the other two columns at the check level (the higher of the item level and 20), worst line.
+
+| Passive | Family | Price cut (old -> new, percent) | Gain before the pool | Gain with the pool, old price | Gain after the cut |
+|---|---|---|---:|---:|---:|
+| Last Hall Ember (2133) | stacks | takenPerStack 4 -> 2 | 1.10 | 1.004 | 1.050 |
+| Silver Whisper (2402) | opener | malus 5 -> 3 | 1.13 | 1.027 | 1.030 |
+| Last Words (2440) | opener | malus 10 -> 0 | 1.13 | 0.994 | 1.030 |
+| Nothing Inside (2493) | overflow | malus 20 -> 9 | 1.22 | 1.014 | 1.031 |
+| Ninth Hall Quench (7384) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| Put the Tyrant Down (7402) | opener | malus 15 -> 0 | 1.16 | 0.976 | 1.030 |
+| Broken Shields (7422) | opener | malus 15 -> 0 | 1.16 | 0.976 | 1.030 |
+| Last Rites (7697) | opener | malus 10 -> 0 | 1.21 | 0.994 | 1.030 |
+| One Shot (8849) | opener | malus 12 -> 3 | 1.24 | 1.016 | 1.030 |
+| Judges of Ash (8931) | opener | malus 18 -> 0 | 1.18 | 0.965 | 1.030 |
+| Grave Vow (10510) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| Horn-Bind (21693) | stacks | takenPerStack 3 -> 2 | 1.09 | 1.026 | 1.050 |
+| Answering Voice (22474) | overflow | malus 15 -> 9 | 1.16 | 1.021 | 1.031 |
+| Argument Ender (23590) | opener | malus 12 -> 0 | 1.14 | 0.987 | 1.030 |
+| Sworn on a Wound (25175) | stacks | takenPerStack 4 -> 2 | 1.08 | 1.004 | 1.050 |
+| First Cut (25423) | opener | malus 5 -> 3 | 1.24 | 1.027 | 1.030 |
+| Seat Kept Warm (25880) | lowlife | malus 18 -> 0 | 1.04 | 0.930 | 1.012 |
+| Nothing It Watches Walks (25885) | opener | malus 18 -> 3 | 1.32 | 1.007 | 1.030 |
+| Soundless Step (26133) | crowd | malus 20 -> 0 | 1.09 | 0.953 | 1.025 |
+| Hangman's Rope (27474) | opener | malus 15 -> 3 | 1.29 | 1.012 | 1.030 |
+| Altar Quench (27658) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| One More (27676) | stacks | takenPerStack 3 -> 2 | 1.10 | 1.015 | 1.042 |
+| Wind-Borne (27694) | crowd | malus 12 -> 0 | 1.08 | 0.982 | 1.025 |
+| Light That Is Not There (28106) | overflow | malus 15 -> 9 | 1.16 | 1.021 | 1.031 |
+| Swallowed Light (28112) | crowd | malus 20 -> 0 | 1.09 | 0.953 | 1.025 |
+| Unwritten Chapter (29572) | overflow | malus 20 -> 9 | 1.22 | 1.014 | 1.031 |
+| Unfound (29868) | lowlife | malus 12 -> 0 | 1.06 | 0.957 | 1.012 |
+| Saint Walked On (36659) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+
 Left red for the final re-fit: none went red because of this package.
 
 **Not verified.** A live server (the order of the events, the 8th `critical` argument of the damage event and `ORIGIN_NONE` are read from

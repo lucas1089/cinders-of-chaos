@@ -199,6 +199,53 @@ local function range(e)
 	end
 	return lo, hi
 end
+-- --reprice (O473): for every passive under model.minGain on a line it works for, the largest whole-percent price (the "less" part) that
+-- brings it to minGain on every such line, tried field by field (the family's own price, then dealtLess, healLess, takenMore, then
+-- the other prices). A price that reaches 0 and still falls short goes on to the next field. Prints
+-- "id name family field old new gainBefore gainAfter" lines (worst line); a bonus is never raised.
+local PRICE_FIELDS = {
+	lowlife = {"malus"}, overflow = {"malus"}, opener = {"malus"}, focus = {"first"}, mark = {"unmarked"}, stacks = {"takenPerStack"},
+	crowd = {"alone", "malus"}, convert = {"other"}, critrule = {"plain"}, minionPact = {"own"},
+}
+local COMMON_PRICES = {"dealtLess", "healLess", "takenMore"}
+local function worst(e)
+	local w, wl = 99, nil
+	for _, line in ipairs(CFG.lineOrder) do
+		if C.worksFor(CFG, e, line) then
+			local g = totalGain(e, line, math.max(e.lv, 20))
+			if g < w then w, wl = g, line end
+		end
+	end
+	return w, wl
+end
+if mode == "--reprice" then
+	for _, id in ipairs(ids) do
+		local e = C.entry(CFG, id)
+		local before = worst(e)
+		if before < CFG.model.minGain then
+			local fields = {}
+			for _, f in ipairs(PRICE_FIELDS[e.family] or {}) do
+				if not (e.family == "crowd" and ((e.mode == "pack") ~= (f == "alone"))) then fields[#fields + 1] = f end
+			end
+			for _, f in ipairs(COMMON_PRICES) do fields[#fields + 1] = f end
+			for _, f in ipairs(fields) do
+				local old = e[f]
+				if old and old > 0 and worst(e) < CFG.model.minGain then
+					local v = math.floor(old)
+					if v == old then v = v - 1 end
+					while v > 0 do
+						e[f] = v
+						if worst(e) >= CFG.model.minGain then break end
+						v = v - 1
+					end
+					if v <= 0 then e[f] = 0 end
+					print(string.format("%d\t%s\t%s\t%s\t%s\t%s\t%.3f\t%.3f", id, e.name, e.family, f, tostring(old), tostring(e[f]), before, (worst(e))))
+				end
+			end
+		end
+	end
+	os.exit(0)
+end
 if mode == "--tune" then
 	local LOW, HIGH = 1.08, 1.45
 	for _, id in ipairs(ids) do
@@ -275,9 +322,15 @@ for _, id in ipairs(ids) do
 	for _, line in ipairs(CFG.lineOrder) do
 		if C.worksFor(CFG, e, line) then
 			local g = totalGain(e, line, math.max(e.lv, 20))
-			if g < CFG.model.minGain or g > CFG.model.maxGain then
+			local floor = CFG.model.minGain
+			for _, bid in ipairs(CFG.model.bonusBound or {}) do
+				if bid == id then
+					floor = CFG.model.bonusBoundMin
+				end
+			end
+			if g < floor or g > CFG.model.maxGain then
 				problem(string.format("%d %s (%s, %s): gain %.3f outside %.2f-%.2f", id, e.name, e.family, line, g,
-					CFG.model.minGain, CFG.model.maxGain))
+					floor, CFG.model.maxGain))
 			end
 		end
 	end
