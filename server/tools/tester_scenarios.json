@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 67,
   "out": 38,
-  "passive": 106,
+  "passive": 107,
   "place": 15,
   "staff": 17
  },
@@ -11474,6 +11474,15 @@
     "displayScale"
    ],
    "talkactions": []
+  },
+  "dot": {
+   "files": [
+    "item_mods.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "embercache": {
    "files": [

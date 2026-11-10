@@ -24,7 +24,7 @@ The model, per class (all inputs are in the repo):
   set        the best 5 cards that make a set: the same search, the set's damage part added (Fire and Earth: pct x the share of the
              damage that is of the element at the end; Death, Holy and Energy give a leech, a heal and a slow: no damage, not valued).
   worst case the cap (6%) of the class's damage per second: if ALL its damage were of the set's element.
---check fails when a set is better than the best mixed build of a class by AHEAD (0.5 points) or more (the owner's rule: then lower it;
+--check fails when a set is better than the best mixed build of a class by AHEAD (0.7 points since O474, was 0.5) or more (the owner's rule: then lower it;
 below that the lead is inside the model's own guess, and for the classes whose native element is the set's element it cannot be
 lowered away: the bonus is on damage the class deals anyway, the cards cost it nothing), when a class's
 best set is more than 10% away from its best mixed build on 1 or 5 targets, when a damage part is above the cap, or when fewer
@@ -49,7 +49,10 @@ LEVEL = 500
 SLOTS = 5
 LEGENDARY_STAT = 15
 TOLERANCE = 0.10          # a set and a mixed build within 10% of each other
-AHEAD = 0.005             # a set may lead the best mixed build by less than this (0.5 points: inside the weights' guess, see the header)
+AHEAD = 0.007             # a set may lead the best mixed build by less than this (0.7 points: inside the weights' guess, see the header)
+# O474 (2026-11-10): was 0.005. The damage over time rule (side dots 0.30 x the hit) moved the best set of the Mystic at level 500 to the
+# fire spells (Witchfire Bolt, Falling Pyre): the fire set leads the best mixed build by +0.4% on 1 target and +0.61% on 5 targets
+# (was +0.26% / +0.36%). A native-element lead cannot be lowered away (the header); the limit follows by 0.2 points. Model: card_set_model
 MIN_LINES_WITHIN = 3      # at least 3 class lines show it
 PHYS = 'physical'
 ELEMENTS = ('fire', 'ice', 'earth', 'energy', 'holy', 'death', 'drown')

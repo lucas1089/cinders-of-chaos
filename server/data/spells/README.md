@@ -126,7 +126,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 176 | Raise Bone Mage | `vael oss mynd` | N, L, BL | 16 | 70 | 4s | Raises ONE Risen Mage: range 4, energy bolts, hit x1.35, health x0.6. |
 | 181 | Bone Spear | `kah oss lanc` | N, L, BL | 8 | 30 | 2s | The filler: a bone spear at the target (range 5) that pierces to the creature behind. |
 | 182 | Withering Curse | `kah nyx maled` | N, L, BL | 40 | 120 | 7s | The target takes +15% damage from everyone and rots (Lich: +25%, spreads to 2 more; monsters only, players just rot). |
-| 183 | Soul Rot | `kah nyx putr` | L | 100 | 220 | 11s | 6 s death damage over time that jumps to a new host when the target dies. |
+| 183 | Soul Rot | `kah nyx putr` | L | 100 | 220 | 11s | 6 ticks of death damage, one every 0.4 s from the cast (O474; was 1 s), 50% heavier per tick; the rest moves to a nearby monster when the target dies. |
 | 184 | Life Siphon | `kah sang nyx` | L | 130 | 260 | 6s | Death damage to the target; heals the Lich for 50% of it. |
 | 185 | Corpse Explosion | `drai kadh krak` | L | 160 | 400 | 4s | Corpses near the target burst (needs corpses). |
 | 186 | Bone Golem | `vael gal oss` | BL | 100 | 500 | 30s | Raises the Bone Golem: slams everything next to it, taunts the monsters within 3 sqm. |
@@ -5121,11 +5121,143 @@ Trap 299 / 650 / 944 at levels 100 / 500 / 1000, the same with the share off). A
 own magic level: each point is about 0.33% of a weapon spell. The models do not read the real magic level of a weapon class.
 
 **Damage over time.** The four condition spells (Blightswarm, Witchfire Bolt, Falling Pyre, Shattered Psyche) tick as spell pulses
-now. Their rows of `rotation_model.csv` add the old tick sums (8, 4, 4 and 5 ticks of the condition formula); the scripts deal
-8, 4, 5 and 5, one per 2 to 3 s. The class spell factor is divided out of each tick before the event puts it back, so the rows
-still hold for a typical character without supports.
+now. Their rows of `rotation_model.csv` added the old tick sums (8, 4, 4 and 5 ticks of the condition formula); the scripts dealt
+8, 4, 5 and 5, one per 2 to 3 s. The class spell factor was divided out of each tick before the event puts it back, so the rows
+held for a typical character without supports. **O474 (2026-11-10) replaced this:** see "Damage over time (O474)" below.
 
 **Beastmaster bites.** The bite is dealt as the owner (ORIGIN_SPELL inside the spell factor guard) and takes `classDamage` and the
 monster defence layer; `companion.autoByLevel` was re-fitted to keep the plain build's bite, and `tools/companion_model.py` multiplies
 the bite by the same event factors (`event_factor`), so its plain numbers are the old ones and its tree and full numbers include
 what the tree now gives the bite (server README "Spell scaling (O468)").
+
+## Damage over time (O474)
+
+Computed, not measured: the formulas of `rotation_model.csv` (the typical character of `rotation_sim.py`, the class spell factor in, the median
+of the classes that have the spell) before and after, and the share of the dot that lands before its host dies (kill times of the
+typical character, `SP/dmgcurve/killtime.tsv`, a model that predates the health curve of O470). Rules and numbers: server/README.md
+"Damage over time (O474)", `data/scripts/chaos/dot_config.lua`.
+
+Rows of `rotation_model.csv` that moved: Witchfire Bolt, Falling Pyre and Shattered Psyche are `hit x 1.3` (the hit and a dot of 0.30 x the
+hit; they were the hit plus 4 or 5 old ticks), Soul Rot `x 1.725` (was 1.15), Blightbrand `x 1.25`, Martyr's Pyre `x 1.1`. Blightswarm, the
+other kit dots and Withering Curse keep their row (their totals did not change; the timing is not in the model).
+
+The dot of every dot spell, before / after, the median of the classes that have it (typical character):
+
+| dot | level | own hit | dot before | dot after | dot / hit before | dot / hit after |
+|---|---:|---:|---:|---:|---:|---:|
+| Witchfire Bolt | 100 | 289 | 41 | 86 | 0.14 | 0.30 |
+| Witchfire Bolt | 300 | 500 | 62 | 150 | 0.12 | 0.30 |
+| Witchfire Bolt | 500 | 582 | 67 | 174 | 0.12 | 0.30 |
+| Witchfire Bolt | 700 | 662 | 72 | 198 | 0.11 | 0.30 |
+| Witchfire Bolt | 1000 | 765 | 78 | 229 | 0.10 | 0.30 |
+| Witchfire Bolt | 2000 | 960 | 78 | 288 | 0.08 | 0.30 |
+| Falling Pyre | 300 | 1178 | 86 | 353 | 0.07 | 0.30 |
+| Falling Pyre | 500 | 1306 | 93 | 391 | 0.07 | 0.30 |
+| Falling Pyre | 700 | 1433 | 100 | 429 | 0.07 | 0.30 |
+| Falling Pyre | 1000 | 1587 | 107 | 476 | 0.07 | 0.30 |
+| Falling Pyre | 2000 | 1782 | 107 | 534 | 0.06 | 0.30 |
+| Shattered Psyche | 300 | 1124 | 150 | 337 | 0.13 | 0.30 |
+| Shattered Psyche | 500 | 1303 | 168 | 391 | 0.13 | 0.30 |
+| Shattered Psyche | 700 | 1459 | 183 | 437 | 0.13 | 0.30 |
+| Shattered Psyche | 1000 | 1641 | 198 | 492 | 0.12 | 0.30 |
+| Shattered Psyche | 2000 | 1883 | 198 | 565 | 0.11 | 0.30 |
+| Blightswarm | 100 | 244 | 145 | 145 | 0.60 | 0.60 |
+| Blightswarm | 300 | 436 | 237 | 237 | 0.54 | 0.54 |
+| Blightswarm | 500 | 516 | 261 | 261 | 0.51 | 0.51 |
+| Blightswarm | 700 | 584 | 279 | 279 | 0.48 | 0.48 |
+| Blightswarm | 1000 | 675 | 300 | 300 | 0.45 | 0.45 |
+| Blightswarm | 2000 | 873 | 300 | 300 | 0.34 | 0.34 |
+| Gorehook | 300 | - | 1153 | 1153 | - | - |
+| Gorehook | 500 | - | 1464 | 1464 | - | - |
+| Gorehook | 700 | - | 1872 | 1872 | - | - |
+| Gorehook | 1000 | - | 2347 | 2347 | - | - |
+| Gorehook | 2000 | - | 3397 | 3397 | - | - |
+| Dreamrot | 300 | - | 2088 | 2088 | - | - |
+| Dreamrot | 500 | - | 2567 | 2567 | - | - |
+| Dreamrot | 700 | - | 3027 | 3027 | - | - |
+| Dreamrot | 1000 | - | 3541 | 3541 | - | - |
+| Dreamrot | 2000 | - | 4429 | 4429 | - | - |
+| Venom Spiral | 300 | - | 807 | 807 | - | - |
+| Venom Spiral | 500 | - | 1220 | 1220 | - | - |
+| Venom Spiral | 700 | - | 1510 | 1510 | - | - |
+| Venom Spiral | 1000 | - | 1890 | 1890 | - | - |
+| Venom Spiral | 2000 | - | 2930 | 2930 | - | - |
+| Crimson Covenant | 300 | - | 1207 | 1207 | - | - |
+| Crimson Covenant | 500 | - | 1539 | 1539 | - | - |
+| Crimson Covenant | 700 | - | 1866 | 1866 | - | - |
+| Crimson Covenant | 1000 | - | 2255 | 2255 | - | - |
+| Crimson Covenant | 2000 | - | 3143 | 3143 | - | - |
+| Martyr's Pyre | 300 | - | 829 | 912 | - | - |
+| Martyr's Pyre | 500 | - | 1089 | 1198 | - | - |
+| Martyr's Pyre | 700 | - | 1332 | 1465 | - | - |
+| Martyr's Pyre | 1000 | - | 1670 | 1837 | - | - |
+| Martyr's Pyre | 2000 | - | 2285 | 2514 | - | - |
+| Blightbrand | 300 | - | 995 | 1244 | - | - |
+| Blightbrand | 500 | - | 1388 | 1736 | - | - |
+| Blightbrand | 700 | - | 1736 | 2170 | - | - |
+| Blightbrand | 1000 | - | 2278 | 2847 | - | - |
+| Blightbrand | 2000 | - | 3082 | 3852 | - | - |
+| Withering Curse | 100 | - | 345 | 345 | - | - |
+| Withering Curse | 300 | - | 497 | 497 | - | - |
+| Withering Curse | 500 | - | 820 | 820 | - | - |
+| Withering Curse | 700 | - | 1142 | 1142 | - | - |
+| Withering Curse | 1000 | - | 1671 | 1671 | - | - |
+| Withering Curse | 2000 | - | 3011 | 3011 | - | - |
+| Soul Rot | 100 | - | 684 | 1026 | - | - |
+| Soul Rot | 300 | - | 1095 | 1642 | - | - |
+| Soul Rot | 500 | - | 1527 | 2290 | - | - |
+| Soul Rot | 700 | - | 1952 | 2928 | - | - |
+| Soul Rot | 1000 | - | 2586 | 3880 | - | - |
+| Soul Rot | 2000 | - | 3801 | 5701 | - | - |
+
+Share of the dot that lands before the host dies (typical character; hunt monster = one monster, pack = best case with the jump, rare, dungeon
+boss, rift guardian), before -> after:
+
+| dot | level | hunt monster | pack | rare | dungeon boss | rift guardian |
+|---|---:|---|---|---|---|---|
+| Witchfire Bolt | 100 | 0% -> 33% | 0% -> 100% | 25% -> 100% | 100% -> 100% | 100% -> 100% |
+| Witchfire Bolt | 500 | 0% -> 50% | 0% -> 100% | 50% -> 100% | 100% -> 100% | 100% -> 100% |
+| Witchfire Bolt | 1000 | 0% -> 83% | 0% -> 100% | 75% -> 100% | 100% -> 100% | 100% -> 100% |
+| Falling Pyre | 100 | 0% -> 0% | 0% -> 33% | 0% -> 100% | 100% -> 100% | 100% -> 100% |
+| Falling Pyre | 500 | 0% -> 0% | 0% -> 33% | 20% -> 100% | 100% -> 100% | 100% -> 100% |
+| Falling Pyre | 1000 | 0% -> 17% | 0% -> 100% | 40% -> 100% | 100% -> 100% | 80% -> 100% |
+| Shattered Psyche | 100 | 0% -> 33% | 0% -> 100% | 20% -> 100% | 100% -> 100% | 100% -> 100% |
+| Shattered Psyche | 500 | 0% -> 50% | 0% -> 100% | 60% -> 100% | 100% -> 100% | 100% -> 100% |
+| Shattered Psyche | 1000 | 0% -> 83% | 0% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Blightswarm | 100 | 0% -> 33% | 0% -> 100% | 12% -> 100% | 100% -> 100% | 100% -> 100% |
+| Blightswarm | 500 | 0% -> 50% | 0% -> 100% | 38% -> 100% | 100% -> 100% | 100% -> 100% |
+| Blightswarm | 1000 | 0% -> 83% | 6% -> 100% | 62% -> 100% | 100% -> 100% | 88% -> 100% |
+| Gorehook | 100 | 20% -> 40% | 20% -> 100% | 80% -> 100% | 100% -> 100% | 100% -> 100% |
+| Gorehook | 500 | 40% -> 60% | 40% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Gorehook | 1000 | 40% -> 100% | 40% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Dreamrot | 100 | 17% -> 33% | 17% -> 83% | 67% -> 100% | 100% -> 100% | 100% -> 100% |
+| Dreamrot | 500 | 33% -> 50% | 33% -> 83% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Dreamrot | 1000 | 33% -> 83% | 33% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Venom Spiral | 100 | 20% -> 40% | 20% -> 100% | 80% -> 100% | 100% -> 100% | 100% -> 100% |
+| Venom Spiral | 500 | 40% -> 60% | 40% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Venom Spiral | 1000 | 40% -> 100% | 40% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Crimson Covenant | 100 | 17% -> 33% | 17% -> 83% | 67% -> 100% | 100% -> 100% | 100% -> 100% |
+| Crimson Covenant | 500 | 33% -> 50% | 33% -> 83% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Crimson Covenant | 1000 | 33% -> 83% | 33% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Martyr's Pyre | 100 | 20% -> 40% | 20% -> 100% | 80% -> 100% | 100% -> 100% | 100% -> 100% |
+| Martyr's Pyre | 500 | 40% -> 60% | 40% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Martyr's Pyre | 1000 | 40% -> 100% | 40% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Blightbrand | 100 | 0% -> 33% | 0% -> 83% | 50% -> 100% | 100% -> 100% | 100% -> 100% |
+| Blightbrand | 500 | 17% -> 50% | 17% -> 83% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Blightbrand | 1000 | 17% -> 83% | 17% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Withering Curse | 100 | 0% -> 30% | 0% -> 80% | 30% -> 100% | 100% -> 100% | 100% -> 100% |
+| Withering Curse | 500 | 10% -> 50% | 10% -> 80% | 60% -> 100% | 100% -> 100% | 100% -> 100% |
+| Withering Curse | 1000 | 10% -> 70% | 10% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Soul Rot | 100 | 0% -> 33% | 17% -> 83% | 50% -> 100% | 100% -> 100% | 100% -> 100% |
+| Soul Rot | 500 | 17% -> 50% | 17% -> 83% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+| Soul Rot | 1000 | 17% -> 83% | 50% -> 100% | 100% -> 100% | 100% -> 100% | 100% -> 100% |
+
+**Cooldown ladder.** The ladder ranks every attack spell of a class by the damage of one cast (level 300). The rise of six spells would
+have moved seven cooldowns (Witchfire Bolt 7 -> 9 s, Falling Pyre 10 -> 11, Soul Rot 11 -> 13, Blightbrand 12 -> 13, Briar Prison 8 ->
+7, Tempest Fan 9 -> 8, Crypt Collapse 13 -> 12) and a longer wait would take back what the change is for. `rotation_sim.py`
+`LADDER_HOLD` ranks those six by their damage of before (dated O474, 2026-11-10); no cooldown changed. Remove an entry to let the ladder
+move that spell (then change `spells_chaos.xml`, `docs/CLASSES.md` "Cooldown ladder" and regenerate `spelldata.lua`).
+
+The model (`class_dps_model.py`, `rotation_sim.py`) always counted a dot in full, so it never saw the loss on a hunt monster. After this change
+what the model counts lands in a pack (33 to 100%, 100% from level 500 for most dots), on a rare, a boss and a guardian (100%), and 33 to 100% on one hunt
+monster. Falling Pyre stays at 0% on a hunt monster below level 1000: its meteor lands at 1.2 s, it is a spell for rares, bosses and packs.

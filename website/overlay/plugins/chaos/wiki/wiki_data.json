@@ -2144,7 +2144,12 @@
 					"sub": "\"kah pyr vesh\", level 20, 40 mana, cooldown 7 s",
 					"color": "#9fdc7f",
 					"sections": [
-						{"h": "Effect", "p": ["Single target fire bolt that leaves the target burning."]},
+						{
+							"h": "Effect",
+							"p": [
+								"Single target fire bolt that leaves the target burning for 1.8 s (30% of the bolt's damage); the burn moves to a nearby enemy if the target dies."
+							]
+						},
 						{
 							"h": "Spell",
 							"cols": ["", ""],
@@ -2249,7 +2254,12 @@
 					"sub": "\"drai vex kriv\", level 25, 90 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
-						{"h": "Effect", "p": ["Toxic cloud around the caster, poisons everything it hits."]},
+						{
+							"h": "Effect",
+							"p": [
+								"Toxic cloud around the caster, poisons everything it hits for 1.8 s; the poison moves to a nearby enemy if its target dies."
+							]
+						},
 						{
 							"h": "Spell",
 							"cols": ["", ""],
@@ -2427,7 +2437,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Curse the target (range 6) for 12 s: it takes 15% more damage from everyone and rots (death damage every second, 10 ticks). The Lich's curse amplifies by 25%, rots harder and also curses up to 2 more enemies within 2 sqm of the target. On a player the curse only rots (no amplify). The amplify is applied by data/scripts/chaos/necromancer_combat.lua (ChaosNecroCurse); numbers: necro_config.lua witheringCurse."
+								"Curse the target (range 6) for 12 s: it takes 15% more damage from everyone and rots (death damage every 0.25 s, 10 ticks, the first at once; the rot moves to a nearby enemy if the target dies). The Lich's curse amplifies by 25%, rots harder and also curses up to 2 more enemies within 2 sqm of the target. On a player the curse only rots (no amplify). The amplify is applied by data/scripts/chaos/necromancer_combat.lua (ChaosNecroCurse); numbers: necro_config.lua witheringCurse."
 							]
 						},
 						{
@@ -3354,7 +3364,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Rot the target's soul (range 6): heavy death damage every second for 6 s. If the target dies before the rot ends, the rest jumps to the nearest enemy within 3 sqm. A recast on the same target restarts it. Ticks: (level / 5 + magic level x 1.2..1.6 + 20..40) x 1.15 x the level scale, Soul Hoard included (necro_config.lua soulRot)."
+								"Rot the target's soul (range 6): heavy death damage every 0.4 s for 2.4 s, the first tick at once. If the target dies before the rot ends, the rest moves to a nearby enemy within 3 sqm. A recast on the same target restarts it. (Ticks and the jump are the shared rule of every damage over time, ChaosSpell.dotChain. Against a player: the old gap (1 s), first tick (after 1 s) and size (x1/1.5) and no jump, ChaosDotConfig.pvp.necro.) Ticks: (level / 5 + magic level x 1.2..1.6 + 20..40) x 1.725 (was 1.15, O474) x the level scale, Soul Hoard included (necro_config.lua soulRot)."
 							]
 						},
 						{
@@ -3659,7 +3669,9 @@
 					"sections": [
 						{
 							"h": "Effect",
-							"p": ["Death damage bolt, then a cursing damage-over-time and a short slow."]
+							"p": [
+								"Death damage bolt, then a cursing damage-over-time (30% of the bolt's damage over 1.8 s) and a short slow."
+							]
 						},
 						{
 							"h": "Spell",
@@ -4022,7 +4034,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A hooked blow at the target next to you that opens it; it bleeds for 5 s. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key gorehook): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
+								"A hooked blow at the target next to you that opens it; it bleeds for 2 s, ignores armour and moves to a nearby enemy if the target dies. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key gorehook): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
 							]
 						},
 						{
@@ -4134,7 +4146,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A brand of blight that burns in the target for 6 s. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key blightbrand): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
+								"A brand of blight that burns in the target for 2.4 s; it ignores armour and moves to a nearby enemy if the target dies. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key blightbrand): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
 							]
 						},
 						{
@@ -4190,7 +4202,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Holy fire that burns on the target for 5 s. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key martyrspyre): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
+								"Holy fire that burns on the target for 2 s; it ignores armour and moves to a nearby enemy if the target dies. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key martyrspyre): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
 							]
 						},
 						{
@@ -4241,7 +4253,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A coiled blade of venom; the target is poisoned for 5 s. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key venomspiral): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
+								"A coiled blade of venom; the target is poisoned for 2 s, and the poison ignores armour and moves to a nearby enemy if the target dies. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key venomspiral): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
 							]
 						},
 						{
@@ -4465,7 +4477,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze."
+								"Marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze for 1.8 s (30% of the meteor's damage)."
 							]
 						},
 						{
@@ -4990,7 +5002,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A blood curse that burns the target for 6 s. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key crimsoncovenant): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
+								"A blood curse that burns the target for 2.4 s; it ignores armour and moves to a nearby enemy if the target dies. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key crimsoncovenant): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
 							]
 						},
 						{
@@ -5263,7 +5275,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A rotting dream settles on the target and eats at it for 6 s. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key dreamrot): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
+								"A rotting dream settles on the target and eats at it for 2.4 s; it ignores armour and moves to a nearby enemy if the target dies. One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key dreamrot): the numbers, the shape and the effects are there, the cast is data/spells/chaos/_attackkit.lua."
 							]
 						},
 						{
@@ -10859,7 +10871,7 @@
 							"p": [
 								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
 								"An item carries each modifier once at most.",
-								"The ailment deals 40% of the hit that caused it over 4 ticks of 1 s."
+								"The ailment deals 40% of the hit that caused it over 8 ticks of 0.5 s. Up to 3 of one kind stack on one monster; a fourth replaces the weakest. Each tick ignores armour."
 							]
 						},
 						{
@@ -11079,7 +11091,7 @@
 							"p": [
 								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
 								"An item carries each modifier once at most.",
-								"The ailment deals 40% of the hit that caused it over 4 ticks of 1 s."
+								"The ailment deals 40% of the hit that caused it over 8 ticks of 0.5 s. Up to 3 of one kind stack on one monster; a fourth replaces the weakest. Each tick ignores armour."
 							]
 						},
 						{
@@ -11196,7 +11208,7 @@
 							"p": [
 								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
 								"An item carries each modifier once at most.",
-								"The ailment deals 40% of the hit that caused it over 4 ticks of 1 s."
+								"The ailment deals 40% of the hit that caused it over 8 ticks of 0.5 s. Up to 3 of one kind stack on one monster; a fourth replaces the weakest. Each tick ignores armour."
 							]
 						},
 						{
@@ -12375,7 +12387,8 @@
 							"h": "Rules",
 							"p": [
 								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
+								"An item carries each modifier once at most.",
+								"Raises every damage over time tick you deal: your bleeds, burns and poisons, and the damage over time of your spells (Witchfire Bolt, Gorehook, Soul Rot and the others). A tick ignores armour and gives no life or mana on hit."
 							]
 						},
 						{

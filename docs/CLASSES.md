@@ -108,13 +108,13 @@ pacified the caster for 10 s), became the attack spell Gale Volley in O254 (belo
   Druid-style heals (Purifying Wellspring, Verdant Sanctuary). See "Illusionist healer pass" below.
 
 **Necromancer** (base): Raise Dead (skeletons from empty corpses, or one from nothing for twice the mana), Bone Spear
-(the filler; pierces to the creature behind), Withering Curse (the target takes +15% damage and rots), Grave Nova
+(the filler; pierces to the creature behind), Withering Curse (the target takes +15% damage and rots: 10 ticks 0.25 s apart since O474), Grave Nova
 (level 50, the Necromancer only: death damage on every enemy within 3 sqm of the caster, 2026-10-22). Minions hit as
 their owner, so their damage counts for it. Every minion has two spells, one single target and one area (beta
 2026-10-22; table in server/README.md "Necromancer summons"), and the summoned Risen Warrior taunts like the golem.
 Monsters hit a minion as they hit its owner (the pace damage curve), and minions regenerate, slowly in a fight and fast
 after it (2026-10-24, server/README.md "Necromancer summons"). The Necromancer minion hit factor is 0.92.
-- **Lich**: Soul Rot (a DoT that jumps when the host dies), Life Siphon (heals half the damage), Corpse Explosion; the
+- **Lich**: Soul Rot (6 ticks 0.4 s apart, the first at once, 50% heavier per tick since O474; what is left jumps to a nearby monster when the host dies, as the rest of the damage over time spells do), Life Siphon (heals half the damage), Corpse Explosion; the
   curse is stronger (+25%) and spreads to 2 more. One Lich Shade (ranged death bolts) instead of skeletons, and Soul Hoard:
   +25% spell damage while the shade slot is empty.
 - **Bone Lord**: 5-6 skeletons whose hits splash onto the enemies next to the target, the Bone Golem (slams, taunts),

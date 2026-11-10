@@ -40,6 +40,7 @@ HelpSearchData = {
 		["passive"] = {level = 12, menu = "Character > Passive Tree", words = {en = "points build talents starter builds recommended auto build import code mastery spell modifier", pt = "pontos build talentos builds iniciais recomendadas auto build importar código maestria modificador de magia"}},
 		["spellbook"] = {menu = "Character > Spellbook", words = {en = "spells attack hotkeys", pt = "magias feitiços ataque atalhos"}},
 		["spelldamage"] = {words = {en = "spell damage scaling magic level skill weapon attack level modifiers passive tree support runes cards charms uniques sets how strong", pt = "dano das magias escala nível mágico magic level skill arma ataque nível modificadores árvore passiva runas de suporte cartas charms únicos conjuntos quão forte"}},
+		["dot"] = {words = {en = "damage over time dot burn burning poison bleed bleeding curse ignite ticks stack armour armor chance to bleed ignite poison jump nearby enemy dies", pt = "dano ao longo do tempo queimadura veneno sangramento maldição acumular armadura chance de sangrar incendiar envenenar pulsos passa inimigo próximo morre"}},
 		["bestiary"] = {menu = "Hunt > Bestiary"},
 		["professions"] = {level = 20, menu = "Economy > Professions"},
 		["defence"] = {words = {en = "resistance resistances resist armour armor dodge block suppression penalty level 250 500 fire cold lightning chaos damage taken", pt = "resistência resistências resistir armadura esquiva bloqueio supressão penalidade nível 250 500 fogo frio raio caos dano sofrido"}},

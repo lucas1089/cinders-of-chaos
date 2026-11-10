@@ -579,6 +579,7 @@ do
 	ok(A.cast("blightbrand", p, {target = foe}), "Blightbrand casts on a player")
 	local pd = hits("necrodot")
 	eq(pd[1].tickMs, 1000, "against a player the old gap")
+	eq(pd[1].firstMs, 1000, "and the old first tick (a gap after the cast, the Necromancer line's)")
 	eq(pd[1].radius, 0, "no jump")
 	reset()
 	p = player()

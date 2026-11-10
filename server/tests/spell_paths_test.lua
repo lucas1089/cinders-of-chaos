@@ -4,7 +4,9 @@
 --     onHealthChange event for ORIGIN_NONE); the real passive tree event takes the bite; the refitted `autoByLevel` keeps the
 --     plain build's bite where it was against a monster with the median armour;
 --   * the four damage over time spells (Blightswarm, Witchfire Bolt, Falling Pyre, Shattered Psyche) deal their ticks as spell
---     pulses (ChaosSpell.scriptedDot), the old tick for a typical character at levels 100, 500 and 1000;
+--     pulses (ChaosSpell.scriptedDot). O474 (2026-11-10): the side dots are 0.30 x the hit in 6 ticks 300 ms apart, Blightswarm its old
+--     total in 6 ticks, against a player the old ticks, gaps and size; the engine of every chain (ChaosSpell.dotChain): the first tick
+--     at once, the tick flag, the jump to the nearest monster when the host dies, the condition icon and the cure, the recast;
 --   * the damage spells have support sockets (no attack spell in `none`).
 -- (Snares keeping the cast context: tests/snares_test.lua. The spell inputs: tests/spell_inputs_test.lua.)
 local checks, fails = 0, 0
@@ -209,6 +211,44 @@ do
 			near(math.abs(h.lo) * f, sp.old.tick(ml), 0.05, sp.script .. " on a player: the old tick " .. i)
 			local first = sp.key == "fallingpyre" and 1200 or 0
 			ok(h.delay == first + i * sp.old.ms, sp.script .. " on a player: the old gap of " .. sp.old.ms .. " ms (" .. tostring(h.delay) .. ")")
+		end
+	end
+
+	-- the kit and the Necromancer line's dots end to end (the real scripts on the mocked engine): the first tick at once, the new gaps; against a
+	-- player the old gaps and first ticks
+	do
+		local KIT = {
+			{"chaos/knight/gorehook.lua", 1, 5, 0, 400, 0, 1000}, {"chaos/illusionist/dreamrot.lua", 10, 6, 0, 400, 0, 1000},
+			{"chaos/necromancer/blightbrand.lua", 20, 6, 0, 400, 1000, 1000}, {"chaos/lich/soul_rot.lua", 21, 6, 0, 400, 1000, 1000},
+			{"chaos/necromancer/withering_curse.lua", 20, 10, 0, 250, 1000, 1000},
+		}
+		local realCreature3 = Creature
+		local P2 = setmetatable({}, {__index = function(t, k) return Probe.target[k] end})
+		P2.isPlayer = function() return true end
+		P2.isMonster = function() return false end
+		P2.getPlayer = function(self) return self end
+		P2.getCondition = function() return true end
+		local realCan2 = ChaosSpell.canAttack
+		for _, k in ipairs(KIT) do
+			Probe.set({voc = k[2], lvl = 500, ml = 100, wtype = "sword", hpNow = 3000})
+			local res = Probe.cast(k[1])
+			local d = {}
+			for _, h in ipairs(res.hits) do if h.via == "doTargetCombat" then d[#d + 1] = h.delay end end
+			ok(not res.err and #d == k[3], k[1] .. ": " .. k[3] .. " ticks (" .. #d .. ") " .. tostring(res.err))
+			for i, delay in ipairs(d) do
+				ok(delay == k[4] + (i - 1) * k[5], k[1] .. ": tick " .. i .. " at " .. (k[4] + (i - 1) * k[5]) .. " ms (" .. tostring(delay) .. ")")
+			end
+			Creature = function(id) if id == 2 then return P2 end return realCreature3(id) end
+			ChaosSpell.canAttack = function(c, t) return t ~= c end
+			res = Probe.cast(k[1])
+			Creature = realCreature3
+			ChaosSpell.canAttack = realCan2
+			d = {}
+			for _, h in ipairs(res.hits) do if h.via == "doTargetCombat" then d[#d + 1] = h.delay end end
+			ok(not res.err and #d == k[3], k[1] .. " on a player: " .. k[3] .. " ticks (" .. #d .. ") " .. tostring(res.err))
+			for i, delay in ipairs(d) do
+				ok(delay == k[6] + (i - 1) * k[7], k[1] .. " on a player: tick " .. i .. " at " .. (k[6] + (i - 1) * k[7]) .. " ms, the old timing (" .. tostring(delay) .. ")")
+			end
 		end
 	end
 

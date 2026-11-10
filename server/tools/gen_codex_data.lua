@@ -27,7 +27,7 @@ Gen.SOURCES = {
 	"data/scripts/chaos/lore_data.lua", "data/scripts/chaos/chronicle_text.lua",
 	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua",
 	"data/scripts/chaos/unique_passives_config.lua", "data/scripts/chaos/unique_window_core.lua",
-	"data/scripts/chaos/unique_pace_config.lua", "data/scripts/chaos/retention_loot_config.lua"
+	"data/scripts/chaos/unique_pace_config.lua", "data/scripts/chaos/retention_loot_config.lua", "data/scripts/chaos/dot_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -304,6 +304,7 @@ function Gen.load()
 	dofile("data/scripts/chaos/unique_window_core.lua")
 	D.uniquePace = dofile("data/scripts/chaos/unique_pace_config.lua")
 	D.retention = dofile("data/scripts/chaos/retention_loot_config.lua")
+	D.dot = dofile("data/scripts/chaos/dot_config.lua") -- O474: the gear ailment stacks (the modifier notes)
 	dofile("data/scripts/chaos/goals_core.lua") -- ChaosGoalsCore.oneIn / int: "about 1 in 2,000"
 	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
 	D.worldBoss = Chaos and Chaos.worldBoss
@@ -526,9 +527,11 @@ local function affixNotes(D, a, isPower)
 	elseif a.chaosKey == "movespeed" then
 		notes[#notes + 1] = string.format("Adds to the emerald gems' movement speed (the gems hold their own %d%% cap).", D.G.config.effects.movespeed.cap)
 	elseif a.chaosKey == "bleedchance" or a.chaosKey == "ignitechance" or a.chaosKey == "poisonchance" then
-		local ail = M.config.ailment
-		notes[#notes + 1] = string.format("The ailment deals %d%% of the hit that caused it over %d ticks of %s.", ail.share,
-			ail.rounds, Gen.seconds(ail.interval))
+		local ail, dc = M.config.ailment, D.dot.ailment
+		notes[#notes + 1] = string.format("The ailment deals %d%% of the hit that caused it over %d ticks of %s. Up to %d of one kind stack on one monster; a fourth replaces the weakest. Each tick ignores armour.",
+			ail.share, dc.rounds, Gen.seconds(dc.interval), dc.maxStacks)
+	elseif a.chaosKey == "dot" then
+		notes[#notes + 1] = "Raises every damage over time tick you deal: your bleeds, burns and poisons, and the damage over time of your spells (Witchfire Bolt, Gorehook, Soul Rot and the others). A tick ignores armour and gives no life or mana on hit."
 	elseif a.chaosKey == "chillchance" then
 		local ail = M.config.ailment
 		notes[#notes + 1] = string.format("A chilled monster is %d%% slower for %s.", ail.chillSlow, Gen.seconds(ail.chillMs))

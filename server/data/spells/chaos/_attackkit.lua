@@ -245,7 +245,11 @@ local function startDot(player, target, key, spec, lo, hi, effect)
 	if D and target:isPlayer() then
 		local old = D.pvpKit(key)
 		if old then
-			tickMs, firstMs, lo, hi = old.tickMs or tickMs, old.firstMs or 0, lo * old.mult, hi * old.mult
+			local first = old.firstMs
+			if spec.school == "necro" then
+				first = D.pvpNecro(key).firstMs -- the Necromancer line's dots first ticked a gap after the cast
+			end
+			tickMs, firstMs, lo, hi = old.tickMs or tickMs, first or 0, lo * old.mult, hi * old.mult
 		end
 		radius = 0
 	end

@@ -895,6 +895,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103070 - 7103079 | Wandering Merchant (`invasion_config.lua` `worldEvents.merchant.storageBase`, O399): +0..+9 the stop + 1 in which the character bought the item at that place of `items` (one of each per stop) |
 | 7103080 - 7103089 | player defence (`player_defence_config.lua` `storage`, O464): +0 the last level the character was told about the resistance penalty (once per level); +1..9 free |
 | 7103090 - 7103099 | the first unique line (`unique_intro_config.lua` `storage`, O467): +0 is 1 once the character read what a unique is; +1..9 free |
+| 7103110 | the damage over time tick flag (`dot_config.lua storage`, O474): the id of the creature a scripted tick hits, -1 outside a tick; written by the spells (`ChaosDot.run`), read by the damage events |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -30455,7 +30456,7 @@ three inputs (the other 45 are casters, whose magic level is their skill).
 | `companion.autoByLevel` | re-fitted (11 points, 1.658 at level 60 to 2.694 at 1200, was 1 to 0.5): the plain build's bite (no tree, no gear) stays where it was against a monster of the median armour (161 / 301 / 470 at levels 100 / 500 / 1000, within 2% at every level 50-1300, `tests/spell_paths_test.lua`). The raw bite is bigger and `classDamage.beastmaster` (0.85 to 0.39) with the armour of a normal monster take it back. A tree of +40% physical and 60 strength: 161 / 301 / 470 becomes 271 / 507 / 793. |
 | Pet Spark Aura (`pets.lua`) | closed, same way: its own damage, not a share of a hit. Not re-fitted: small hits lose most to armour (about 85% at level 500 against the median monster), the tooltip number is the raw one. |
 | Axe cleave neighbours (`weapon_families.lua`) | left: a guarded share of a hit that carried every bonus. |
-| Damage over time conditions | converted: Blightswarm (8 ticks, 2 s), Witchfire Bolt (4, 3 s), Falling Pyre (5, 3 s), Shattered Psyche (5, 2 s) are `ChaosSpell.scriptedDot` pulses (spell hits inside the cast context): crit, supports, masteries, cards, keystones and uniques apply. A tick is the old condition tick (magic level formula of the script) divided by the class spell factor, which the event puts back, so a typical character without supports or cards deals the old tick (rounded to the point) at every level and class (`tests/spell_paths_test.lua`). A new chain on the same target replaces the old one. The engine's condition icon and its removal by cures are gone. |
+| Damage over time conditions | converted: Blightswarm (8 ticks, 2 s), Witchfire Bolt (4, 3 s), Falling Pyre (5, 3 s), Shattered Psyche (5, 2 s) are `ChaosSpell.scriptedDot` pulses (spell hits inside the cast context): crit, supports, masteries, cards, keystones and uniques apply. A tick is the old condition tick (magic level formula of the script) divided by the class spell factor, which the event puts back, so a typical character without supports or cards deals the old tick (rounded to the point) at every level and class (`tests/spell_paths_test.lua`). A new chain on the same target replaces the old one. The engine's condition icon and its removal by cures are gone. **O474 (2026-11-10) changed the timing, the sizes, the predicate and the icon: see "Damage over time (O474)".** |
 | Support sockets | the six damage spells of the `none` list (9 Rift Cleaver, 38 Mirror Shards, 39 Rending Pounce, 42 Grave Nova, 45 Gutting Slash, 134 Gale Volley) have sockets; 3 of 172 instants have none (Flickerdash, Town Portal, Vigil of Haste). |
 | Snares and mines | a snare keeps the cast context of the spell that placed it (`ChaosSupportsSpell.context`) and raises it around the burst (`ChaosSupportsSpell.run`): the supports and the spell modifier masteries of Snare Trap and Seeker Mine apply. |
 | Necromancer minion hits | left: the supports need the summoning cast's context kept per minion and raised in the think loop (`necro_minions.lua`), more than the small change that was allowed. |
@@ -30642,3 +30643,119 @@ reduction, dodge, block and spell suppression; the Skills window's Armor and Dam
 `Player::blockHit` (one point of rounding per piece), the client windows in the real client, the pt-BR texts by a speaker. The
 balance models were not touched: the survival, PvP, guardian and tower models read the old armour and absorb and say nothing
 about this layer yet.
+
+## Damage over time (O474) (`dot_config.lua`, `dot_core.lua`, `ChaosSpell.dotChain`, `tests/dot_core_test.lua`)
+
+Owner 2026-11-10 (translated): "Also look at how the damage over time effects are. I think they are well below what they should be."
+A read-only audit confirmed it (four things stacked up): the side dots of Witchfire Bolt, Falling Pyre and Shattered Psyche dealt 9 to
+13% of their own hit over 10 to 15 s and first ticked after 2 to 4.2 s, while a hunt monster lives 0.6 to 1.6 s (so nothing landed);
+kit dots ticked once a second; only Soul Rot moved on when its host died; O468 turned four dots into scripted pulses that were no
+longer seen as damage over time (the gear "Damage over Time" modifier, the trial dot nodes, the 13 spread uniques, Contagion Rite and
+Sigil of Cinders stopped reaching them, and every pulse rolled on-hit ailments and leech); gear ailments added 6 to 7% on a boss;
+physical ticks lost 74 to 84% to monster armour. Every decision below was taken by the orchestrator from the audit; the owner may
+change them. **Every number is in `data/scripts/chaos/dot_config.lua`.** Nothing ran on a live server.
+
+**The rules.**
+
+| Rule | Number | Where |
+|---|---|---|
+| One predicate: "this is a damage over time tick" (`ChaosDot.isTick(origin, attacker, creature)`): an engine condition tick or a scripted tick | the spell scripts run in another Lua state than the damage events, so the scripted tick is marked in the player storage 7103110 (the id of the creature being hit, -1 outside a tick) while `ChaosDot.run` deals it; a hit on another creature during it is a plain hit | `dot_core.lua`, `dot_config.lua storage` |
+| Everything that reads damage over time asks it | the gear "Damage over Time" modifier (`item_mods.lua`), no on-hit roll and no leech on a tick (same file), the Trials' nodes (`trials_effects.lua`), the spread uniques (`unique_passives.lua`), Contagion Rite and Sigil of Cinders (`archetypes.lua`), the monster armour (`monster_defence.lua`), the combat log (`combatlog.lua`: a row "<spell> (over time)") | the sites listed |
+| Side dots (Witchfire Bolt, Falling Pyre, Shattered Psyche) | 6 ticks, 300 ms apart, the first 300 ms after the cast (Falling Pyre: after the impact), together 0.30 x the cast's own hit (the average of the script's min / max formula; the class spell factor is NOT taken off: 0.30 of the hit as dealt). Was 4 or 5 ticks 2 to 3 s apart, 9 to 13% | `side` |
+| Blightswarm | its old total (8 ticks) in 6 ticks 300 ms apart | `swarm` |
+| Kit dots (Gorehook, Dreamrot, Venom Spiral, Blightbrand, Martyr's Pyre, Crimson Covenant) | every 400 ms, the first tick at once (was 1 s); the ticks stay (5 or 6); Blightbrand scale 1 -> 1.25, Martyr's Pyre 1 -> 1.1 | `kit`, `attack_kit_config.lua` |
+| Withering Curse, Soul Rot | the curse every 250 ms (its amplify keeps 12 s), Soul Rot every 400 ms with tick scale 1.15 -> 1.725 (x1.5); every necro dot ticks first at once | `necro`, `necro_config.lua` |
+| A dot moves on when its host dies | the remaining ticks continue on the nearest living MONSTER within 3 squares of where the host died: never a player, never a summon of a player, no new ticks, never onto a monster that already carries the same dot of the same caster (its chain would be replaced). Soul Rot's own rule (`N.rotJump`) became this one | `jump`, `ChaosSpell.dotChain` |
+| A tick skips monster armour (as an engine condition does), resistance still counts; a direct hit is unchanged | | `monster_defence.lua` |
+| Gear ailments (Chance to Bleed / Ignite / Poison) stack | up to 3 per type per target per owner (a fourth replaces the weakest, unless it is weaker than all of them), each 8 ticks 0.5 s apart, together 40% of the hit (`chaos_item_mods.lua ailment.share`, as before); the beat deals the sum of a target's stacks as ORIGIN_CONDITION damage owned by the player; no jump (the spread uniques take the burn on). The item sets and keystones that put their own engine condition (`itemsets.lua`, `S.dotTick`) keep it | `ailment`, `item_mods.lua` |
+| The condition icon | a scripted dot against a PLAYER adds a zero-damage engine condition of the matching type (fire, earth, physical, energy, ice, holy, death -> burning, poison, bleeding, electrified, freezing, dazzled, cursed) with its own sub id 71097 for the length of the dot: the icon shows, and a cure removes it and ends the dot. Monsters show no icon. Delayed, one round, no damage, another sub id, so it never replaces a real condition | `icon`, `dot_core.lua addIcon / iconHeld` |
+| PvP: nothing changes on purpose | against a PLAYER target every dot keeps the old gap, the old first tick and the old size (side dots: the script's old formula; kit and necro dots: 1 s, the old scales back), and never jumps | `pvp` |
+| Monsters' own damage over time against players | untouched | |
+
+**The engine of a chain.** `ChaosSpell.dotChain` (`data/spells/chaos/_common.lua`) is the one engine of every scripted dot:
+`ChaosSpell.scriptedDot` (the four side spells), `AttackKit.startDot` (`_attackkit.lua`, the kit dots) and `NecroSpell.dot` (`_necro.lua`,
+Blightbrand, Withering Curse, Soul Rot). It stops when the caster is gone, a recast replaced the chain (same caster, spell and target),
+or a cure removed the icon of a player. The tick is dealt through the same damage call and events as before, so the O472 / O473 work
+on the spell hit reaches it. The position where the host died is the one of its last tick (or of the cast, when the cast's own hit
+killed it).
+
+**What a dot is worth now** (the full tables are in `server/data/spells/README.md` "Damage over time (O474)"; computed with the formulas
+of `rotation_model.csv`, the typical character of `rotation_sim.py`):
+
+- the dot of Witchfire Bolt at level 500 is 67 -> 174 (0.12 -> 0.30 of its hit), Falling Pyre 93 -> 391, Shattered Psyche 168 -> 391,
+  Soul Rot 1527 -> 2290, Blightbrand 1388 -> 1736, Martyr's Pyre 1089 -> 1198; Blightswarm, Gorehook, Dreamrot, Venom Spiral, Crimson
+  Covenant and Withering Curse keep their totals;
+- what lands on one hunt monster (typical character, level 100 / 500 / 1000): Witchfire Bolt 0 / 0 / 0% -> 33 / 50 / 83%, Dreamrot 17 / 33 /
+  33% -> 33 / 50 / 83%, Gorehook 20 / 40 / 40% -> 40 / 60 / 100%, Soul Rot 0 / 17 / 17% -> 33 / 50 / 83%; in a pack (the rest moves on) 80 to
+  100% from level 500 for every dot but Falling Pyre; 100% on a rare, a boss and a rift guardian for every dot from level 500.
+
+**The best set of a class** (`rotation_sim.py` best set, 1 target / 5 targets, before -> after; * = the set changed; the other 15 classes
+are 0%). The model always counted a dot in full, so these are the model's numbers; what changed on a hunt monster is larger (a dot that
+did not land now does). The set search is jumpy for the Mystic and the Elementalist (a different set is best when two are close):
+
+| class | 100 | 300 | 500 | 700 | 1000 |
+|---|---|---|---|---|---|
+| Mystic | +0.0% / +0.0% | +24.2% / +2.1%* | +23.3% / +1.9%* | +5.5% / +8.0% | +5.3% / +7.8% |
+| Elementalist | +0.0% / +0.0% | -12.5% / +1.4%* | +19.9% / +6.6%* | +19.8% / +6.0%* | +19.8% / +5.4%* |
+| Necromancer | +0.0% / +0.0% | +5.0% / +1.4% | +4.9% / +1.5% | +4.9% / +1.5% | +4.9% / +1.6% |
+| Lich | +10.1% / +9.7% | +3.5% / +5.5%* | +3.8% / +5.9%* | +4.1% / +6.2%* | +4.4% / +6.6%* |
+| Templar | +0.0% / +0.0% | +0.0% / +0.0% | +0.9% / -3.8%* | +1.5% / +0.4% | +1.6% / +0.4% |
+| Sentinel | +0.0% / +0.0% | +0.0% / +0.0% | +0.0% / +0.0% | +0.0% / +0.0% | +4.2% / -0.1%* |
+
+**A dot build against a direct build** (3 slots Chance to Bleed / Ignite / Poison + 3 slots Damage over Time, against Spell Damage + 2
+Elemental Penetration, T6 at 500 and T7 at 1000; median of the 21 classes; computed with the audit's Monte Carlo on its hit streams,
+not measured; before = one condition per type, 4 ticks of 1 s, rolls on every pulse, Damage over Time on conditions only; after = the
+rules above, rolls on casts and auto attacks only, Damage over Time on spell dots too):
+
+The ailment part comes from the audit's Monte Carlo (`SP/dotaudit/ailments_stack.py` on its hit streams, 21 classes, the rule that landed: stack cap 3,
+8 ticks of 0.5 s, 40% of the hit); the part of Damage over Time on the spell dots is estimated from the class's dot share of its set damage
+(audit table, 500 / 1000) times the share that lands (the landing table) times the modifier (+61.5% at 500, +67.5% at 1000). Not re-run on
+this tree. Dot build / direct build (1.00 = equal; direct = x1.54 at 500, x1.64 at 1000):
+
+| | boss 500 | hunt monster 500 | boss 1000 | hunt monster 1000 |
+|---|---:|---:|---:|---:|
+| before (median of 21 classes) | 0.86 | 0.65 | 0.84 | 0.68 |
+| after, median of 21 classes (ailments) | 1.08 | 0.71 | 1.08 | 0.73 |
+| after, Lich (51% / 57% dot share) | 1.28 | 0.81 | 1.31 | 0.93 |
+| after, Necromancer (45% / 50%) | 1.26 | 0.78 | 1.29 | 0.90 |
+| after, Mystic (40% / 41%) | 1.24 | 0.79 | 1.25 | 0.87 |
+| after, Illusionist (42% / 40%) | 1.25 | 0.79 | 1.25 | 0.87 |
+| after, Bone Lord (24% / 29%) | 1.18 | 0.76 | 1.20 | 0.83 |
+
+A dot build is worth it on a boss for every class and a dot caster beats the direct build there by 18 to 31%; on one hunt monster it is still
+below the direct build (0.71 to 0.93): a monster that dies in one to two seconds leaves most of a dot unpaid, which is also why the jump
+exists. The audit asked for a build within +-10% of the direct build on a boss: the median class is at +8%, the dot casters are above it by
+the Damage over Time modifier on their spell dots (decision 3 of the round, the owner's to change).
+
+**Gear that was there before** is unchanged in storage: no item stored a number of this system. The ailment modifiers keep their
+tiers and values; only what an ailment does changed (stacks, 8 ticks). Stacks live in memory (`ChaosItemMods.stackBook`) and end with
+the target, the player's logout or the last tick.
+
+**Models and checks.** Every check of the list ran green after three re-baselines, each dated O474 (2026-11-10) in its file: (1)
+`rotation_sim.py` `LADDER_HOLD`: the cooldown ladder ranks six spells (Witchfire Bolt, Falling Pyre, Shattered Psyche, Soul Rot,
+Blightbrand, Martyr's Pyre) by their damage of before, because the rise would have moved seven cooldowns (Witchfire Bolt 7 -> 9 s,
+Falling Pyre 10 -> 11, Soul Rot 11 -> 13, Blightbrand 12 -> 13, Briar Prison 8 -> 7, Tempest Fan 9 -> 8, Crypt Collapse 13 -> 12) and
+a longer wait would take back the gain; the owner may remove an entry to let the ladder move that spell (model: `rotation_sim.py
+--ladder --check`, `--check` variants); (2) `quest_spell_scale_config.lua`: the quest spell factors of four classes that left their
+bounds (Elementalist Prismatic Rupture 1.06 -> 1.25 and Eclipse of Ruin 1.29 -> 1.60, Lich Funeral of Kings 1.01 -> 1.20, Templar Pyre of
+Absolution 0.85 -> 0.90 and Hammer of Ember Dawn 0.97 -> 1.00, Sentinel Pyre of Absolution 0.78 -> a curve 0.78 / 0.78 / 0.84 / 0.87 at 500 / 800 /
+1000 / 1200 and Hammer of Ember Dawn 0.84 -> 0.95; model: `rotation_sim.py --check`); `autorotation_data.lua` and
+`rotation_default_digest.txt` were rewritten (`--write`, `--write-digest`); (3) `card_set_model.py` `AHEAD` 0.005 -> 0.007: the fire
+set of the Mystic at level 500 leads its best mixed build by +0.4% / +0.61% (was +0.26% / +0.36%) because its best set moved to the fire
+dots (model: card_set_model). Green without a change: class_dps, pack, pvp, minion, spell_mastery, weapon_family, survival, boss, tower,
+guardian, companion, check_spell_fx, check_class_access, check_rotation_kit, check_attack_counts, check_content, check_names,
+check_locales. PvP: `pvp_model.py` reads the class damage of `class_dps_measured.csv` and computes seconds to kill from it: it is
+identical (kill seconds in all 63 rows); the dots against a player keep their old timing and size, and the engine's halving of every
+player-against-player hit applies to a scripted tick as it did to a pulse (a tick is dealt as `doTargetCombat` by the caster).
+
+**Not verified:** a live server, a client or the engine's condition code (not in the repo): that a zero-damage condition of a type is
+accepted and ticks harmlessly (the cure and icon rule rests on it; `dot_config.lua icon.enabled = false` switches it off), that
+`doTargetCombat` with ORIGIN_CONDITION behaves as an engine tick for the stacks, how the engine meets an equal condition type with another
+sub id, the kill times of the landing table (a model that predates O470's health curve), the Monte Carlo of the dot build (the audit's
+hit streams), the pt-BR texts by a speaker. The combat log row name "(over time)" is English only, as the other source names are.
+**Not done:** a jump for gear ailments (the spread uniques cover them), an icon on a gear ailment (monsters only), the final model re-fit.
+
+**Tests.** `tests/dot_core_test.lua` (predicate, flag, sizes, jump, stacks, PvP table, icon helpers, the copies of the numbers),
+`tests/spell_paths_test.lua` (the four scripts: ticks, gaps, totals, PvP, the chain: jump, icon, cure, recast),
+`tests/attack_kit_test.lua`, `tests/necro_test.lua`, `tests/item_mods_test.lua` (stacks, a scripted tick), `tests/monster_defence_test.lua`
+(armour skip), `tests/unique_passives_test.lua`, `tests/archetypes_test.lua`, `tests/trials_flow_test.lua`, `tests/combatlog_test.lua`.
