@@ -1,6 +1,6 @@
 // Seasons (client game_season, extended opcode 246, server season.lua): the overview, the join dialog and the Journey tab.
 //   client -> server  open | sync (3 s after the login) | join {confirm:false} | join {confirm:true, mode} | beat (Hardcore heartbeat) | journey | journeyClose
-//   server -> client  state {season {name, tag, status (active|upcoming|ended), endsIn, startsIn, modifier {name, description}}, mine {seasonal, veteran, eligible, reason,
+//   server -> client  state {season {name, tag, status (active|upcoming|soon|ended; soon: the launch date is open, no start, no finish, O463), endsIn, startsIn, modifier {name, description}}, mine {seasonal, veteran, eligible, reason,
 //                     mode, modeName, hc, heartbeat, fallen {level, cause}}, track [{name, reward, value, progress, unlocked, by}], titles [..], open}
 //                     confirm {text, modes [{key, name, short, warning, ssf, hc}]}  | notice {text}
 //                     journey {none | name, mode, current, preview, why, finished, set, pieces, piecesTotal, chapters [{key, name, state, level, lockedWhy, text, done, total}]}
@@ -161,6 +161,7 @@ namespace Chaos.Core
             string st = CF.T(Season, "status");
             if (st == "active") return Loc.T("Ends in {0}", PassState.FormatTime(CF.N(Season, "endsIn") - passed));
             if (st == "upcoming") return Loc.T("Starts in {0}", PassState.FormatTime(CF.N(Season, "startsIn") - passed));
+            if (st == "soon") return Loc.T("Starts: Coming soon");
             return Loc.T("Ended");
         }
 
@@ -182,7 +183,7 @@ namespace Chaos.Core
             else if (CF.B(mine, "veteran")) text = Loc.T("This character played a season and is a standard character now.");
             else if (CF.B(mine, "eligible")) text = Loc.T("This character can join {0}: it starts over with nothing and plays only with {0} characters until the end.", name);
             else if (status == "active") text = CF.T(mine, "reason");
-            else if (status == "upcoming") text = Loc.T("The season has not started yet. Make a fresh character to join it when it starts.");
+            else if (status == "upcoming" || status == "soon") text = Loc.T("The season has not started yet. Make a fresh character to join it when it starts.");
             else text = Loc.T("The season has ended. Its rewards stay on your account.");
             string line = SeasonJoin.ModeLine(mine);
             return line != null ? text + " " + line : text;

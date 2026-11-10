@@ -346,8 +346,7 @@ namespace Chaos.Client
             else if (b.Tab == "season")
             {
                 if (!(season is Dictionary<string, object>)) { text(Loc.T("PvP seasons are not running on this server."), Eu.Dim, 12, false); return y; }
-                double endsIn = Json.Number(season, "endsIn") - b.Elapsed(now);
-                text(Loc.T("PvP Season {0}: ends in {1}", Json.Get(season, "id") is double sid ? (int)sid : 1, Eg.SpanLong(endsIn)), "#ff9a3c", 14, true);
+                text(BgView.SeasonTitle(season, b.Elapsed(now)), "#ff9a3c", 14, true);
                 var decay = Json.Get(season, "decay");
                 text(Loc.T("A season lasts {0} weeks. Each bracket has its own rating; the first {1} rated matches place you. At the end the best placed bracket decides your tier and rewards, then every rating is pulled halfway back to 1500. Ratings of {2} and more lose {3} a week after {4} days without a rated match of that bracket (never below {2}).",
                     Json.Get(season, "weeks") is double wk ? (int)wk : 8, Json.Get(season, "placement") is double pc ? (int)pc : 5, Json.Get(decay, "from") is double df ? (int)df : 2000,

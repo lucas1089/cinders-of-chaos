@@ -93,7 +93,7 @@ namespace Chaos.Core
             { "Upgrade to {0} for {1} Chaos Coins (the difference to what your account owns)?", "Melhorar para {0} por {1} Moedas do Caos (a diferença para o que sua conta já tem)?" },
             { "Buy {0} for {1} Chaos Coins?", "Comprar {0} por {1} Moedas do Caos?" }, { "Max tier reached", "Nível máximo atingido" },
             { "{0} / {1} XP to tier {2}", "{0} / {1} XP para o nível {2}" }, { "Season ends in {0}", "A temporada termina em {0}" },
-            { "Season over: claim within {0}", "Temporada encerrada: resgate em até {0}" }, { "Starts in {0}", "Começa em {0}" }, { "Season Pass", "Passe da Temporada" },
+            { "Season over: claim within {0}", "Temporada encerrada: resgate em até {0}" }, { "Starts in {0}", "Começa em {0}" }, { "Starts: Coming soon", "Começa: em breve" }, { "Season Pass", "Passe da Temporada" },
             { "Unavailable", "Indisponível" }, { "Upgrade {0}", "Melhorar {0}" }, { "Buy {0}", "Comprar {0}" },
             { "Daily challenges (new in {0})", "Desafios diários (novos em {0})" }, { "Weekly challenges (new in {0})", "Desafios semanais (novos em {0})" },
             { "No season pass is running.", "Nenhum passe de temporada está ativo." }, { "Tier {0} / {1}", "Nível {0} / {1}" }, { "Premium track", "Trilha Premium" },

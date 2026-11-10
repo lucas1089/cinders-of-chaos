@@ -1,6 +1,6 @@
 // Season Pass (client game_battlepass, extended opcode 227, server seasonpass).
 //   client -> server  open | tiers {season} | claim {tier, track (0 free, 1 premium)} | claimAll | buy {what, price, gift?} | giftPrice {what, gift} | frame {on}
-//   server -> client  state {season {id, pass, name, tag, status (active|grace|upcoming|...), endsIn, claimEndsIn, startsIn}, tier, maxTier, into, need, premium,
+//   server -> client  state {season {id, pass, name, tag, status (active|grace|upcoming|soon|...), endsIn, claimEndsIn, startsIn}, tier, maxTier, into, need, premium,
 //                     claimed [freeBits, premiumBits] ("1" per claimed tier), daily {list [{text, target, progress, done, xp}], resetIn}, weekly {..},
 //                     sources [{name, key, today, cap}], coins, frame {name, on}, offers [{what, name, price, full, owned, why, text, contents, look, item}], open}
 //                     tiers {season, total, rows [{tier, free {item?, count?, look?, addons?, kind?, text, color?}, premium {..}}]}  (parts)
@@ -155,7 +155,7 @@ namespace Chaos.Core
             return (int)Math.Floor(into * 100 / need);
         }
 
-        /// <summary>The line above the bars: ends in, claim within, starts in.</summary>
+        /// <summary>The line above the bars: ends in, claim within, starts in, coming soon.</summary>
         public string TimerText(double nowMs)
         {
             double passed = (nowMs - StateAt) / 1000.0;
@@ -164,6 +164,7 @@ namespace Chaos.Core
                 case "active": return Loc.T("Season ends in {0}", FormatTime(Left(CF.N(Season, "endsIn"), passed)));
                 case "grace": return Loc.T("Season over: claim within {0}", FormatTime(Left(CF.N(Season, "claimEndsIn"), passed)));
                 case "upcoming": return Loc.T("Starts in {0}", FormatTime(Left(CF.N(Season, "startsIn"), passed)));
+                case "soon": return Loc.T("Starts: Coming soon");   // the launch date is open (O463): no start, no finish
             }
             return "";
         }
