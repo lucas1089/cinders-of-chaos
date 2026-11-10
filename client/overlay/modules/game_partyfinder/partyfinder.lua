@@ -242,8 +242,11 @@ end
 local function updateWant(act, suggest)
   local f = window.myPanel.form
   local lim = V.limits(act, srv and srv.lim)
-  for _, e in ipairs({ { f.wantTank, 'tank' }, { f.wantHealer, 'healer' }, { f.wantDps, 'dps' } }) do
+  for _, e in ipairs({ { f.wantTank, 'tank' }, { f.wantHealer, 'healer' }, { f.wantDps, 'dps' }, { f.wantSupport, 'support' } }) do
     local combo, r = e[1], e[2]
+    -- O445: a server without the support role would ignore the number: the box stays at 0 and is disabled
+    if not V.hasRole(r) then lim.per[r] = 0 end
+    combo:setEnabled(V.hasRole(r))
     local current = tonumber(comboData(combo)) or 0
     local counts = {}
     for i = 0, lim.per[r] do counts[#counts + 1] = { tostring(i), i } end
@@ -281,6 +284,7 @@ local function formValues()
   local f = window.myPanel.form
   return { a = comboData(f.activity), lo = f.lo:getText(), hi = f.hi:getText(), t = comboData(f.target),
     title = f.title:getText(), tank = comboData(f.wantTank), healer = comboData(f.wantHealer), dps = comboData(f.wantDps),
+    support = comboData(f.wantSupport),
     minLevel = f.minLevel:getText(), maxLevel = f.maxLevel:getText(), nk = comboData(f.notePreset),
     note = f.note:getText(), exp = comboData(f.exp), role = comboData(f.role),
     auto = f.auto:isChecked() }
@@ -309,6 +313,7 @@ local function fillForm(input)
   f.wantTank:setCurrentOptionByData(want.tank or 0, true)
   f.wantHealer:setCurrentOptionByData(want.healer or 0, true)
   f.wantDps:setCurrentOptionByData(want.dps or 0, true)
+  f.wantSupport:setCurrentOptionByData(want.support or 0, true)
   f.minLevel:setText(tostring(input.minLevel or 1))
   f.maxLevel:setText((tonumber(input.maxLevel) or 0) > 0 and tostring(input.maxLevel) or '')
   f.notePreset:setCurrentOptionByData(tonumber(input.nk) or 0, true)

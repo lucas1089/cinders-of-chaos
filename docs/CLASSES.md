@@ -30,6 +30,15 @@ Agreed with the owner (2026-10, the role rebalance): the Iron Sage is the second
   non-healer); the Templar line's aura (all three: party damage reduction; the Sentinel's also heals, and Lay on Hands is the
   biggest emergency heal)
 - Pets: Beastmaster, Bone Lord (the army)
+- Support (the fourth role in the Party Finder, the group queue and the battleground, O445): the classes whose kit buffs the
+  party, wraps it in an aura or curses the enemy. It names a place, it adds no spell. Illusionist (Shared Phantasm and Inspiring
+  Illusion, party attack buffs); Iron Sage (Mantra of Stone, a party aura; Chi Ward on a party member); the Templar line
+  (the party defence aura, all three; the Inquisitor's Judgement too); the Necromancer line (Withering Curse: the target takes
+  more damage from everyone, +15%, the Lich +25%). Support always comes after the roles a class had and is never the main role.
+  Every class keeps the roles it had. Banner Call and the Vigils do not count: every class has them. A group never has to ask
+  for a support. Where a rule counts tanks and healers only (the battleground split) or has a damage slot, a support counts as
+  damage. Support has no score of its own: the server measures no buff or debuff uptime, so a support is scored on its
+  damage like a damage class.
 
 Strength and weakness of every class: "Class identity (2026-10-28)" below.
 

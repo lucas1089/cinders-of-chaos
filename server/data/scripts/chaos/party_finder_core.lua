@@ -7,7 +7,7 @@
 --   party.members are the OTHER members of the character's party (the engine's party, not the listing's).
 -- A listing:
 --   {id, leader = {guid, cid, name, level, voc, vocName, role}, realm, staff, a (activity key), lo, hi, t (target, 0 =
---    any), title, want = {tank, healer, dps}, minLevel, maxLevel (0 = no maximum; O389 level band), note, nk (a fixed
+--    any), title, want = {tank, healer, dps, support}, minLevel, maxLevel (0 = no maximum; O389 level band), note, nk (a fixed
 --    note of cfg.notes, 0 = none; O389), expMin, created, expires, auto, max (group size: 10, raid 15),
 --    members = {{guid, cid, name, level, voc, vocName, role, st = "invited" | "joined", at}, ...} (taken by the listing),
 --    crew = {{guid, name, level, voc, vocName, role}, ...} (in the leader's party without a listing slot),
@@ -24,7 +24,7 @@ K.reasons = {
 	target = "Pick one of the listed targets.",
 	title = "Give your group a short title.",
 	role = "Your class cannot fill that role.",
-	want = "Ask for at least one tank, healer or DPS.",
+	want = "Ask for at least one tank, healer, support or DPS.",
 	perRole = "Too many of one role.",
 	size = "That is more than a full party.",
 	wantBelow = "You already took more of that role.",
@@ -351,7 +351,7 @@ function K.appCount(state, guid)
 end
 
 -- ---------------------------------------------------------------- post / update / close
--- input = {a, lo, hi, t, title, want = {tank, healer, dps}, minLevel, maxLevel, nk, note, exp, role, auto}
+-- input = {a, lo, hi, t, title, want = {tank, healer, dps, support}, minLevel, maxLevel, nk, note, exp, role, auto}
 -- -> listing, "posted" | "updated"   or   nil, reason key
 function K.post(state, cfg, acts, who, input, now)
 	if cfg.enabled == false then

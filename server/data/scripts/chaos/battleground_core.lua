@@ -254,7 +254,7 @@ local function entrySize(e)
 end
 
 local function teamStats(team)
-	local n, sum, roles = 0, 0, {tank = 0, healer = 0, dps = 0}
+	local n, sum, roles = 0, 0, {tank = 0, healer = 0, dps = 0, support = 0}
 	for _, e in ipairs(team) do
 		for _, m in ipairs(e.members) do
 			n = n + 1
@@ -266,7 +266,8 @@ local function teamStats(team)
 end
 K.teamStats = teamStats
 
--- cost of a split: rating difference + roleWeight x (|tanks| + |healers| differences)
+-- cost of a split: rating difference + roleWeight x (|tanks| + |healers| differences); a support (O445) counts as a dps here:
+-- the split balances the two roles that cannot be replaced, not the buffers
 function K.cost(cfg, t1, t2)
 	local _, a1, r1 = teamStats(t1)
 	local _, a2, r2 = teamStats(t2)
@@ -745,7 +746,7 @@ end
 
 function K.parseRole(text)
 	text = tostring(text or ""):lower()
-	if text == "tank" or text == "healer" or text == "dps" then
+	if text == "tank" or text == "healer" or text == "dps" or text == "support" then
 		return text
 	end
 	return nil

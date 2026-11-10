@@ -693,7 +693,7 @@ bounties, rifts, goblins, invasions and daily and weekly challenges. The premium
   - Each win pays an orb, and the first win of the day pays a bonus.
 - **Battleground: Ember Wells** (Adventure > Battleground): 5v5 to 10v10. Take and hold three braziers; the first team to
   1000 points wins.
-  - Teams are balanced by role (tank, healer, damage) and rating. Damage and healing are scaled to your level bracket.
+  - Teams are balanced by tanks, healers and rating. A support counts as damage there. Damage and healing are scaled to your level bracket.
   - The fallen come back with the next wave, and nothing is lost: no items, no experience. Deserters and idlers are
     held back from the queue.
   - **Honor** from matches and a weekly first win buys cosmetics and potions at the honor vendor.
@@ -1034,11 +1034,11 @@ footprints, outlines and the Collection. Everything is looks only and unlocks fo
   fights and the session. The Combat Log window adds hits, crits, averages and elements. Party mode shows everyone's
   DPS and HPS (you can opt out); export a summary to the clipboard or chat.
 - **Party Finder** (Social > Party Finder, or **Alt+L**): post a group for a hunt, a rift tier, a dungeon, a world boss,
-  an Omen, the Infinity Tower, the raid, a trial or anything else, and say which roles you want (tank, healer, damage),
+  an Omen, the Infinity Tower, the raid, a trial or anything else, and say which roles you want (tank, healer, damage, support),
   the level band (a hunt fills in its own) and a note from a short list.
   "Fits my level" keeps the groups whose band you are in.
   Others browse, filter and apply with a role, or queue with "Join as". Accepting sends a real party invite. Raid
-  listings hold 15 players (up to 3 tanks, 4 healers and 12 damage dealers). Mentors can tag their groups.
+  listings hold 15 players (up to 3 tanks, 4 healers, 12 damage dealers and 4 supports). Mentors can tag their groups.
 - **Map overlay:** press **Tab** to lay a see-through map over the game view, centred on your character, with icons for
   your party, the temple, depots and NPCs, rift exits and guardians, treasure goblins, world bosses and invasions. Zoom,
   pan and change the opacity while you keep playing. Inside a rift the layout fills in as you explore it.

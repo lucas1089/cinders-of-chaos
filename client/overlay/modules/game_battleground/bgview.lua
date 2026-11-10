@@ -4,8 +4,8 @@ BgView = {}
 local V = BgView
 
 V.IMAGES = '/images/chaos/battleground/'
-V.ROLE_NAMES = { tank = 'Tank', healer = 'Healer', dps = 'DPS' }
-V.ROLE_COLORS = { tank = '#7fb8e8', healer = '#6fd8a8', dps = '#e8846a' }
+V.ROLE_NAMES = { tank = 'Tank', healer = 'Healer', dps = 'DPS', support = 'Support' }
+V.ROLE_COLORS = { tank = '#7fb8e8', healer = '#6fd8a8', dps = '#e8846a', support = '#c08ae8' }
 V.RESULT_TEXT = { win = 'VICTORY', loss = 'DEFEAT', draw = 'DRAW' }
 V.RESULT_COLOR = { win = '#f6cf72', loss = '#e03a1e', draw = '#d6c9ae' }
 V.REASON_TEXT = { score = 'first to the goal', time = 'time ran out', forfeit = 'the other side left', stop = 'stopped by the staff' }

@@ -421,8 +421,116 @@ check(idsIn(K.list(st, cfg, acts, who(65, ids.warrior), now))[Full.id] ~= nil, "
 local init = K.init(cfg, acts, who(70, ids.ironsage, 321))
 eq(init.my[1], "healer", "init: my roles")
 eq(init.lv, 321, "init: level")
-eq(#init.roles, 3, "init: roles")
+eq(#init.roles, 4, "init: roles")
+eq(init.roles[4].k, "support", "init: the fourth role is support")
+eq(init.roles[4].n, "Support", "init: support name")
+check(init.roles[4].c ~= init.roles[1].c and init.roles[4].c ~= init.roles[2].c and init.roles[4].c ~= init.roles[3].c, "init: support has its own colour")
+eq(init.my[#init.my], "support", "init: the Iron Sage may fill support")
 eq(init.lim.note, cfg.noteMax, "init: note limit")
+
+-- ---------------------------------------------------------------- support, the fourth role (O445)
+-- the roles of every class before O445: each class keeps all of them, in the same order, and a support comes after them
+do
+	local before = {
+		[1] = {"dps", "healer"}, [3] = {"dps"}, [4] = {"tank", "dps"}, [5] = {"dps"}, [7] = {"dps"}, [8] = {"tank", "dps"},
+		[10] = {"healer", "dps"}, [11] = {"dps"}, [12] = {"dps"}, [13] = {"tank", "dps"}, [14] = {"dps"}, [15] = {"dps"},
+		[17] = {"dps"}, [18] = {"dps"}, [19] = {"healer", "dps"}, [20] = {"dps"}, [21] = {"dps"}, [22] = {"dps"},
+		[23] = {"tank", "dps"}, [24] = {"dps"}, [25] = {"tank", "healer"}
+	}
+	local supports = {illusionist = true, ironsage = true, necromancer = true, lich = true, bonelord = true, templar = true,
+		inquisitor = true, sentinel = true}
+	local supportIds = {}
+	for name in pairs(supports) do
+		check(ids[name] ~= nil, "support class " .. name .. " exists")
+		supportIds[ids[name]] = name
+	end
+	for id, was in pairs(before) do
+		local now_ = cfg.classRoles[id]
+		local want = {}
+		for _, r in ipairs(was) do want[#want + 1] = r end
+		if supportIds[id] then
+			want[#want + 1] = "support"
+		end
+		check(now_ ~= nil and #now_ == #want, "class " .. id .. " roles count")
+		for i, r in ipairs(want) do
+			eq(now_ and now_[i], r, "class " .. id .. " role " .. i)
+		end
+		eq(K.mainRole(cfg, id), was[1], "class " .. id .. " keeps its main role")
+		eq(K.canFill(cfg, id, "support"), supportIds[id] ~= nil, "class " .. id .. " support only where the kit has it")
+	end
+	for id, roles in pairs(cfg.classRoles) do
+		check(before[id] ~= nil, "no class added to classRoles: " .. id)
+		check(roles[1] ~= "support", "support is never the first role: " .. id)
+	end
+	local keys = K.roleKeys(cfg)
+	eq(#keys, 4, "four role keys")
+	eq(keys[4], "support", "support is the last key")
+	check(K.isRole(cfg, "support"), "support is a role")
+
+	local sup = K.newState()
+	local ill = who(500, ids.illusionist, 600)
+	local jug = who(501, ids.juggernaut, 600)
+	-- a listing needs no support: the three-role wants of an older client still post
+	local Lold = K.post(sup, cfg, acts, jug, {a = "rift", lo = 1, hi = 2, want = {tank = 0, healer = 1, dps = 2}, role = "tank",
+		exp = 30}, now)
+	check(Lold ~= nil, "a listing without a support key posts")
+	eq(Lold.want.support, 0, "the missing support count is 0")
+	local _, openOld = K.open(cfg, Lold)
+	eq(openOld, 3, "open slots without support")
+	-- support-only wants are a listing too; wants with a support slot
+	local Lsup = K.post(sup, cfg, acts, ill, {a = "dungeon", t = 0, want = {support = 1}, role = "healer", exp = 30}, now)
+	check(Lsup ~= nil, "a support-only listing posts")
+	eq(Lsup.want.support, 1, "the support slot is stored")
+	local rowS = K.row(cfg, acts, Lsup, who(502, ids.deadeye, 300), now)
+	eq(rowS.open.support, 1, "the row carries the open support slot")
+	-- who may apply as support
+	local sOne = who(503, ids.lich, 300)
+	local a1, w1 = K.apply(sup, cfg, who(502, ids.deadeye, 300), Lsup.id, "support", now)
+	eq(w1, "role", "the Deadeye has no support kit")
+	a1, w1 = K.apply(sup, cfg, sOne, Lsup.id, "support", now)
+	check(a1 ~= nil, "the Lich applies as support (" .. tostring(w1) .. ")")
+	local a2, w2 = K.apply(sup, cfg, who(504, ids.sentinel, 300), Lsup.id, "support", now)
+	check(a2 ~= nil, "the Sentinel applies as support (" .. tostring(w2) .. ")")
+	local okAcc = K.decide(sup, cfg, 500, Lsup.id, 503, true, now)
+	check(okAcc ~= nil and okAcc ~= false, "the leader accepts a support")
+	local _, w3 = K.decide(sup, cfg, 500, Lsup.id, 504, true, now)
+	check(w3 ~= nil or K.open(cfg, Lsup).support == 0, "a second support does not fit the one slot")
+	eq(K.open(cfg, Lsup).support, 0, "the support slot is taken")
+	-- a support leader of a listing
+	local Ls2 = K.post(sup, cfg, acts, who(505, ids.necromancer, 400), {a = "rift", lo = 3, hi = 4, want = {dps = 1}, role = "support",
+		exp = 30}, now)
+	check(Ls2 ~= nil and Ls2.leader.role == "support", "a Necromancer leads as support")
+	local _, w4 = K.post(sup, cfg, acts, who(506, ids.deadeye, 400), {a = "rift", lo = 3, hi = 4, want = {dps = 1}, role = "support",
+		exp = 30}, now)
+	eq(w4, "role", "a Deadeye cannot lead as support")
+	-- caps: a rift 0-6 per role, the raid 4 support, the size rule counts support slots
+	local _, w5 = K.post(K.newState(), cfg, acts, who(507, ids.templar, 400), {a = "rift", lo = 1, hi = 2, want = {support = 7},
+		role = "tank", exp = 30}, now)
+	eq(w5, "perRole", "rift: 7 support wanted")
+	local _, w6 = K.post(K.newState(), cfg, acts, who(508, ids.templar, 400), {a = "rift", lo = 1, hi = 2,
+		want = {tank = 2, healer = 2, dps = 3, support = 3}, role = "tank", exp = 30}, now)
+	eq(w6, "size", "rift: support slots count against the size")
+	local _, w7 = K.post(K.newState(), cfg, acts, who(509, ids.templar, 900), {a = "raid", want = {tank = 2, dps = 8, support = 5},
+		role = "tank", exp = 30}, now)
+	eq(w7, "perRole", "raid: 5 support wanted")
+	check(K.post(K.newState(), cfg, acts, who(510, ids.templar, 900), {a = "raid", want = {tank = 2, healer = 3, dps = 5, support = 4},
+		role = "tank", exp = 30}, now) ~= nil, "raid: 4 support wanted fits 15")
+	eq(K.activity(acts, "raid").per.support, 4, "raid: up to 4 support wanted")
+	eq(K.activity(acts, "rift").per.support, cfg.maxPerRole, "rift: maxPerRole support")
+	eq(K.activity(acts, "raid").suggest.support, 0, "the raid form proposes no support")
+	eq(1 + K.activity(acts, "raid").suggest.tank + K.activity(acts, "raid").suggest.healer + K.activity(acts, "raid").suggest.dps
+		+ K.activity(acts, "raid").suggest.support, 15, "the raid suggestion still fills 15")
+	-- the quick join queue takes a support
+	local qs, qw = K.queueJoin(K.newState(), cfg, acts, who(511, ids.ironsage, 300), "support", "", now)
+	check(qs ~= nil, "queued as support (" .. tostring(qw) .. ")")
+	local _, qw2 = K.queueJoin(K.newState(), cfg, acts, who(512, ids.deadeye, 300), "support", "", now)
+	eq(qw2, "role", "queue: a Deadeye cannot queue as support")
+	-- the refusal text names the support
+	check(K.reasons.want:find("support", 1, true) ~= nil, "the want refusal names support")
+	-- a party member who joined without a listing role gets the class's main role, never support
+	eq(K.mainRole(cfg, ids.sentinel), "tank", "Sentinel main role")
+	eq(K.mainRole(cfg, ids.lich), "dps", "Lich main role")
+end
 
 -- ---------------------------------------------------------------- quick join
 st = K.newState() -- (no other listing to match into)

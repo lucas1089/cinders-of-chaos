@@ -182,5 +182,56 @@ eq(inp.maxLevel, 300, 'band top never under the minimum')
 eq(inp.nk, 3, 'fixed note index')
 eq(V.postInput({ hunt }, { a = 'hunt', minLevel = '5', maxLevel = '' }).maxLevel, 0, 'empty top: none')
 
+-- O445: support, the fourth role. The server's list sets the order, a server with three roles still works
+V.setRoles({ { k = 'tank', n = 'Tank', c = '#7fb8e8' }, { k = 'healer', n = 'Healer', c = '#6fd8a8' }, { k = 'dps', n = 'DPS', c = '#e8846a' },
+  { k = 'support', n = 'Support', c = '#c08ae8' } })
+eq(#V.ROLE_ORDER, 4, 'four roles in order')
+eq(V.ROLE_ORDER[4], 'support', 'support last')
+eq(V.roleName('support'), 'Support', 'support name')
+eq(V.roleLetter('support'), 'S', 'support letter')
+eq(V.roleColor('support'), '#c08ae8', 'support colour')
+for _, r in ipairs({ 'tank', 'healer', 'dps' }) do
+  eq(V.roleColor(r) ~= V.roleColor('support'), true, 'support colour differs from ' .. r)
+  eq(V.roleLetter(r) ~= V.roleLetter('support'), true, 'support letter differs from ' .. r)
+end
+eq(V.hasRole('support'), true, 'has support')
+eq(V.hasRole('bard'), false, 'no bard')
+local supRow = { comp = { { n = 'Seris', lv = 400, vn = 'Illusionist', r = 'support', st = 'leader' } },
+  open = { tank = 0, healer = 1, dps = 1, support = 2 } }
+eq(V.openTotal(supRow), 4, 'open total counts support')
+eq(V.openText(supRow), 'Needs 1 Healer, 1 DPS, 2 Support', 'open text names support')
+local supSlots = V.slots(supRow)
+eq(#supSlots, 5, 'slots: member plus four open')
+eq(supSlots[1].role, 'support', 'a support member keeps its role')
+eq(supSlots[5].role, 'support', 'open support slots last')
+eq(V.applyRoles(supRow, { 'healer', 'dps', 'support' })[3], 'support', 'a support class may apply as support')
+eq(#V.applyRoles({ open = { dps = 1 } }, { 'dps', 'support' }), 1, 'no open support: one role to apply as')
+local sIn = V.postInput(acts, { a = 'rift', lo = '1', hi = '2', tank = 0, healer = 1, dps = 2, support = 2, role = 'dps' })
+eq(sIn.want.support, 2, 'post input carries support')
+eq(V.postInput(acts, { a = 'rift', lo = '1', hi = '2', dps = 1 }).want.support, 0, 'no support box: 0')
+eq(V.formSize({ tank = 1, healer = 1, dps = 1, support = 2 }), 6, 'form size counts support')
+local sLim = V.limits(raidAct, { party = 10, perRole = 6 })
+eq(sLim.per.support, 6, 'support cap falls back to lim.perRole')
+sLim = V.limits({ k = 'raid', max = 15, per = { tank = 3, healer = 4, dps = 12, support = 4 } }, nil)
+eq(sLim.per.support, 4, 'raid support cap from the server')
+eq(V.queueText({ r = 'support', a = nil, since = 0 }, acts, 0):find('Support', 1, true) ~= nil, true, 'queue text names support')
+-- the role filter keeps a group that still needs a support
+local fl = V.filter({ { a = 'rift', open = { support = 1 } }, { a = 'rift', open = { dps = 1 } } }, { role = 'support' }, 300)
+eq(#fl, 1, 'role filter: support')
+-- a server with three roles (older than O445): the order is its list, support is not offered
+V.setRoles({ { k = 'tank', n = 'Tank' }, { k = 'healer', n = 'Healer' }, { k = 'dps', n = 'DPS' } })
+eq(#V.ROLE_ORDER, 3, 'older server: three roles')
+eq(V.hasRole('support'), false, 'older server: no support box')
+eq(V.openText({ open = { support = 2 } }), 'Full', 'older server: support slots are not drawn')
+-- an unknown role key from a newer server draws with a letter and the default colour, never an error
+V.setRoles({ { k = 'tank', n = 'Tank' }, { k = 'scout', n = 'Scout' } })
+eq(V.roleName('scout'), 'Scout', 'unknown role: name')
+eq(V.roleLetter('scout'), 'S', 'unknown role: letter')
+eq(V.roleColor('scout'), V.COLORS.text, 'unknown role: default colour')
+eq(V.roleLetter('nothing'), '?', 'a role nobody sent: ?')
+eq(V.roleColor('nothing'), V.COLORS.text, 'a role nobody sent: default colour')
+V.setRoles({})
+eq(#V.ROLE_ORDER, 2, 'an empty list keeps the last order')
+
 if fails > 0 then print(fails .. ' failure(s)') os.exit(1) end
 print('partyfinderview_test: OK')

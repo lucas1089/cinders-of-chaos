@@ -14,15 +14,16 @@ namespace Chaos.Core
 {
     public static class PartyFinderMath
     {
-        public static readonly string[] RoleOrder = { "tank", "healer", "dps" };
+        // O445: support is the fourth role; the form below still asks for tanks, healers and DPS (a listing without a support count is valid)
+        public static readonly string[] RoleOrder = { "tank", "healer", "dps", "support" };
 
         public static string RoleName(string role, object init = null)
         {
             foreach (var r in SFmt.Rows(init, "roles")) if (Json.Text(r, "k") == role && Json.Text(r, "n").Length > 0) return Json.Text(r, "n");
-            switch (role) { case "tank": return "Tank"; case "healer": return "Healer"; case "dps": return "DPS"; default: return role ?? "?"; }
+            switch (role) { case "tank": return "Tank"; case "healer": return "Healer"; case "dps": return "DPS"; case "support": return "Support"; default: return role ?? "?"; }
         }
 
-        public static string RoleLetter(string role) => role == "tank" ? "T" : role == "healer" ? "H" : role == "dps" ? "D" : "?";
+        public static string RoleLetter(string role) => role == "tank" ? "T" : role == "healer" ? "H" : role == "dps" ? "D" : role == "support" ? "S" : "?";
 
         public static string TimeLeft(double seconds)
         {
@@ -327,7 +328,7 @@ namespace Chaos.Core
             int ai = Index("fact"), ri = Index("frole");
             var acts = Acts;
             string actKey = ai > 0 && ai <= acts.Count ? Json.Text(acts[ai - 1], "k") : "";
-            string role = ri >= 1 && ri <= 3 ? PartyFinderMath.RoleOrder[ri - 1] : "";
+            string role = ri >= 1 && ri <= PartyFinderMath.RoleOrder.Length ? PartyFinderMath.RoleOrder[ri - 1] : "";
             bool fits = Text("fits") == "1";
             var mine = new List<object>(); var applied = new List<object>(); var rest = new List<object>();
             foreach (var row in SFmt.Rows(Data, "rows"))
@@ -361,7 +362,7 @@ namespace Chaos.Core
             var acts = Acts;
             var ao = new List<string> { Loc.T("All activities") }; foreach (var a in acts) ao.Add(Json.Text(a, "n"));
             l.Combo(Loc.T("Activity"), "fact", ao);
-            l.Combo(Loc.T("Role"), "frole", new List<string> { Loc.T("Any role"), PartyFinderMath.RoleName("tank", Init), PartyFinderMath.RoleName("healer", Init), PartyFinderMath.RoleName("dps", Init) });
+            l.Combo(Loc.T("Role"), "frole", new List<string> { Loc.T("Any role"), PartyFinderMath.RoleName("tank", Init), PartyFinderMath.RoleName("healer", Init), PartyFinderMath.RoleName("dps", Init), PartyFinderMath.RoleName("support", Init) });
             l.Combo(Loc.T("Level filter"), "fits", new List<string> { Loc.T("Every group"), Loc.T("Only groups my level fits") });
             var rows = FilteredRows();
             l.Section(Data == null ? Loc.T("Loading...") : Loc.T("{0} of {1} groups", rows.Count, SFmt.Rows(Data, "rows").Count));

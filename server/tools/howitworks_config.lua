@@ -518,8 +518,8 @@ P.features = {
 			return {acts = H.join(names), emin = F.expiryMinutes[1], emax = F.expiryMinutes[#F.expiryMinutes],
 				apps = F.maxApplications}
 		end,
-		what = {"Find a group, or players for yours: post what you want to do and the roles you need (tank, healer, damage), or apply to a listing.",
-			"Ache um grupo, ou jogadores para o seu: anuncie o que quer fazer e as funções que precisa (tank, healer, dano), ou candidate-se a um anúncio."},
+		what = {"Find a group, or players for yours: post what you want to do and the roles you need (tank, healer, damage, support), or apply to a listing. Support is the buffs, auras and curses of a class. No group has to ask for it.",
+			"Ache um grupo, ou jogadores para o seu: anuncie o que quer fazer e as funções que precisa (tank, healer, dano, suporte), ou candidate-se a um anúncio. Suporte são os buffs, auras e maldições de uma classe. Nenhum grupo precisa pedir um."},
 		who = {"Every player. Activities: {acts}, or anything else.",
 			"Todo jogador. Atividades: {acts}, ou qualquer outra coisa."},
 		often = {"A listing closes by itself after {emin} to {emax} minutes, as you choose. You can have {apps} applications open at once.",
