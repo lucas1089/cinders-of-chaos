@@ -312,7 +312,7 @@ ChaosPassiveBuildsConfig = {
 		lich = {
 			{id = "rot_curser", name = "Rot Curser", kind = "dot", targets = {639, 640, 641}, fill = "damage",
 				text = "Hoarded Souls with the rot and curse nodes: damage over time. Price: a slow start."},
-			{id = "soul_reaper", name = "Soul Reaper", kind = "single", targets = {624, 621}, fill = "death",
+			{id = "soul_reaper", name = "Soul Reaper", kind = "single", targets = {624, 621}, fill = "hybrid",
 				text = "Reaper's Toll doubles hits on weak monsters, Corpse Detonation blasts every kill. Price: your hits are weaker on healthy monsters."},
 			{id = "lifedrinker", name = "Lifedrinker", kind = "sustain", targets = {640}, fill = "leech",
 				text = "Sanguine leech with Life Siphon. Price: healing from others is 30% lower."}
