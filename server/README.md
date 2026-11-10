@@ -30731,7 +30731,7 @@ the Damage over Time modifier on their spell dots (decision 3 of the round, the 
 tiers and values; only what an ailment does changed (stacks, 8 ticks). Stacks live in memory (`ChaosItemMods.stackBook`) and end with
 the target, the player's logout or the last tick.
 
-**Models and checks.** Every check of the list ran green after three re-baselines, each dated O474 (2026-11-10) in its file: (1)
+**Models and checks.** Every check of the list ran green after four re-baselines, each dated O474 (2026-11-10) in its file: (1)
 `rotation_sim.py` `LADDER_HOLD`: the cooldown ladder ranks six spells (Witchfire Bolt, Falling Pyre, Shattered Psyche, Soul Rot,
 Blightbrand, Martyr's Pyre) by their damage of before, because the rise would have moved seven cooldowns (Witchfire Bolt 7 -> 9 s,
 Falling Pyre 10 -> 11, Soul Rot 11 -> 13, Blightbrand 12 -> 13, Briar Prison 8 -> 7, Tempest Fan 9 -> 8, Crypt Collapse 13 -> 12) and
@@ -30742,7 +30742,10 @@ Absolution 0.85 -> 0.90 and Hammer of Ember Dawn 0.97 -> 1.00, Sentinel Pyre of 
 1000 / 1200 and Hammer of Ember Dawn 0.84 -> 0.95; model: `rotation_sim.py --check`); `autorotation_data.lua` and
 `rotation_default_digest.txt` were rewritten (`--write`, `--write-digest`); (3) `card_set_model.py` `AHEAD` 0.005 -> 0.007: the fire
 set of the Mystic at level 500 leads its best mixed build by +0.4% / +0.61% (was +0.26% / +0.36%) because its best set moved to the fire
-dots (model: card_set_model). Green without a change: class_dps, pack, pvp, minion, spell_mastery, weapon_family, survival, boss, tower,
+dots (model: card_set_model); (4) `weapon_sim.py` `reference_dps`: the wand's auto attack power (`weapon_power_config.lua`, generated, O472's file) follows the
+rotation of the reference class, so the same six spells count at their damage of before there; without it `--power --check` fails and the
+wand row rises by 20 to 25% from level 150 (1.92 -> 2.37 at 500), a wand buff nobody decided (remove the entries of `LADDER_HOLD` to let it follow;
+model: `weapon_sim.py --power --check`). Green without a change: class_dps, pack, pvp, minion, spell_mastery, weapon_family, survival, boss, tower,
 guardian, companion, check_spell_fx, check_class_access, check_rotation_kit, check_attack_counts, check_content, check_names,
 check_locales. PvP: `pvp_model.py` reads the class damage of `class_dps_measured.csv` and computes seconds to kill from it: it is
 identical (kill seconds in all 63 rows); the dots against a player keep their old timing and size, and the engine's halving of every

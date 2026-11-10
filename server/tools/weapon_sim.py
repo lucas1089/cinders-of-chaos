@@ -350,7 +350,15 @@ def reference_dps(cls, level):
         _REF['R'] = R
         _REF['loaded'] = R.load_all()
     spells, model = _REF['loaded']
-    best = _REF['R'].analyse(spells, model, cls, level)['best']
+    if 'held' not in _REF:
+        # O474 (2026-11-10): the six spells whose dot grew (rotation_sim.py LADDER_HOLD) count at their damage of before here too:
+        # the wand's auto attack follows the reference class's rotation, and the dot rule must not lift every wand by 20 to 25%
+        # (the model counts a dot in full; what lands on a hunt monster is less). Remove the entries to let the wand follow.
+        held = dict(model)
+        for words, expr in _REF['R'].LADDER_HOLD.items():
+            held[words] = dict(model[words], dmg=expr)
+        _REF['held'] = held
+    best = _REF['R'].analyse(spells, _REF['held'], cls, level)['best']
     return best['dps1'] if best else 0.0
 
 
