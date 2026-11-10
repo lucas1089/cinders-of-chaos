@@ -32,7 +32,7 @@
 	</defenses>
 	<elements>
 		<element holyPercent="-25"/>
-		<element deathPercent="50"/>
+		<element deathPercent="40"/>
 		<element physicalPercent="10"/>
 		<element firePercent="-10"/>
 	</elements>

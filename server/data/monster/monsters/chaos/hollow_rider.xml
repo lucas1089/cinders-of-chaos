@@ -53,6 +53,7 @@
 		</defense>
 	</defenses>
 	<elements>
+		<element drownPercent="75"/>
 		<element physicalPercent="15"/>
 		<element deathPercent="50"/>
 		<element earthPercent="20"/>
@@ -64,7 +65,6 @@
 	<immunities>
 		<immunity paralyze="1"/>
 		<immunity invisible="1"/>
-		<immunity drown="1"/>
 		<immunity lifedrain="1"/>
 	</immunities>
 	<voices interval="5000" chance="10">

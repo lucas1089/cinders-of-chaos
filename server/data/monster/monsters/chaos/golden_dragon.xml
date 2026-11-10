@@ -40,13 +40,13 @@
 		</defense>
 	</defenses>
 	<elements>
-		<element energyPercent="30"/>
+		<element energyPercent="0"/>
 		<element icePercent="30"/>
 		<element firePercent="30"/>
-		<element physicalPercent="30"/>
+		<element physicalPercent="0"/>
 		<element holyPercent="30"/>
-		<element deathPercent="30"/>
-		<element earthPercent="30"/>
+		<element deathPercent="0"/>
+		<element earthPercent="0"/>
 	</elements>
 	<immunities>
 		<immunity invisible="1"/>

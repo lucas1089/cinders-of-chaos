@@ -47,10 +47,10 @@
 	</defenses>
 	<elements>
 		<element firePercent="35"/>
-		<element energyPercent="55"/>
+		<element energyPercent="40"/>
 		<element icePercent="35"/>
 		<element earthPercent="35"/>
-		<element deathPercent="55"/>
+		<element deathPercent="40"/>
 		<element holyPercent="35"/>
 	</elements>
 	<voices interval="5000" chance="10">

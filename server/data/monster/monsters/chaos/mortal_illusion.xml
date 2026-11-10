@@ -44,6 +44,8 @@
 		</defense>
 	</defenses>
 	<elements>
+		<element earthPercent="40"/>
+		<element drownPercent="40"/>
 		<element physicalPercent="10"/>
 		<element deathPercent="10"/>
 		<element energyPercent="10"/>
@@ -51,10 +53,8 @@
 		<element holyPercent="10"/>
 	</elements>
 	<immunities>
-		<immunity drown="1"/>
 		<immunity paralyze="1"/>
 		<immunity invisible="1"/>
-		<immunity earth="1"/>
 		<immunity drunk="1"/>
 		<immunity outfit="1"/>
 	</immunities>

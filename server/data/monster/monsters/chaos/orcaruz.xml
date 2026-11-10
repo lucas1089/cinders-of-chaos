@@ -43,6 +43,7 @@
         </defense>
     </defenses>
     <elements>
+    	<element earthPercent="40"/>
         <element physicalPercent="15"/>
         <element icePercent="5"/>
         <element firePercent="5"/>
@@ -50,7 +51,6 @@
     </elements>
     <immunities>
         <immunity paralyze="1"/>
-        <immunity earth="1"/>
         <immunity invisible="1"/>
     </immunities>
     <loot>

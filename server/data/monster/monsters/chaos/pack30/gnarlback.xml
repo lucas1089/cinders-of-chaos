@@ -45,8 +45,8 @@
 	<elements>
 		<element physicalPercent="35"/>
 		<element energyPercent="35"/>
-		<element icePercent="55"/>
-		<element earthPercent="55"/>
+		<element icePercent="40"/>
+		<element earthPercent="40"/>
 		<element deathPercent="35"/>
 		<element holyPercent="35"/>
 	</elements>
