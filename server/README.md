@@ -24976,7 +24976,7 @@ Every number is in `loadouts_config.lua`; the rules are in `loadouts_core.lua` (
 Not part of a loadout: the Vocation Trial node picks (`trials.lua`; changing a held node costs a Trial Token and gold, which a free
 switch would dodge) and the trial nodes themselves (they are kept through every tree change anyway).
 
-**Slots.** 4 for everyone (O443: was 3), a 5th at level 200 and a 6th at level 500 (`baseSlots`, `earned`, `maxSlots` 7), and one more while the
+**Slots.** 5 for everyone (O443: was 3), a 6th at level 200 and a 7th at level 500 (`baseSlots`, `earned`, `maxSlots` 8), and one more while the
 Chaos Pact (the VIP) is active (`pactSlots`, owner approval 2026-10-13; `ChaosPactPerks.loadoutBonus`; a slot over the limit
 keeps its loadout, as below). The earned slots are never sold on their own in the store. The Pact's slot is a paid slot in
 effect (a loadout slot is worth respec gold: each one keeps a tree that would otherwise cost a full reset); the owner kept it
@@ -25029,8 +25029,8 @@ At login a database one serial ahead of the storages (the save never happened) i
 (a restored backup) takes the database serial.
 
 **Storages and table.** 7100570 active slot, 7100571 switch serial, 7100572 time of the last switch (7100570 - 7100579 reserved);
-7112000 - 7127999 the runes of the inactive loadouts (8 slots of 2000, above the live sockets 7110000 - 7111999; slot 7 uses 7124000 - 7125999, so one spare slot is left). Table
-`chaos_loadouts`: one row per character and slot (1..7), slot 0 is the character's switch record; `loadouts.lua` also creates it at
+7112000 - 7127999 the runes of the inactive loadouts (8 slots of 2000, above the live sockets 7110000 - 7111999; slot 8 uses 7126000 - 7127999, so the block is full). Table
+`chaos_loadouts`: one row per character and slot (1..8), slot 0 is the character's switch record; `loadouts.lua` also creates it at
 startup.
 
 **Protocol** (JSON `{action, data}`): client `open`, `save {slot, name, icon}`, `load {slot}`, `rename {slot, name, icon}`,

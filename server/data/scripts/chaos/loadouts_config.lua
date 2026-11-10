@@ -4,13 +4,13 @@ ChaosLoadoutsConfig = {
 	-- pactSlots more while the Chaos Pact (VIP) is active (pact_config.lua perks.loadoutSlots, pact_perks.lua; a paid
 	-- slot in effect, kept by the owner on 2026-10-13: "Pode manter"). A slot
 	-- over the limit keeps its saved loadout; it only cannot be loaded or saved until the limit allows it again.
-	baseSlots = 4, -- O443: 3 -> 4, several builds for several ways to play (owner, 2026-11-09)
+	baseSlots = 5, -- O443: 3 -> 5, two more free slots (owner, 2026-11-10: several builds for several ways to play)
 	earned = {
 		{level = 200},
 		{level = 500}
 	},
 	pactSlots = 1,
-	maxSlots = 7, -- baseSlots + #earned + pactSlots; the rune mirror below reserves room for up to runeMirrorSlots
+	maxSlots = 8, -- baseSlots + #earned + pactSlots; the rune mirror below reserves room for up to runeMirrorSlots
 	-- below this the window only explains. O368: 8 -> 15, a few levels after the first passive point (12): saved builds
 	-- mean little before the tree has some points. The top menu shows Loadouts from here on (unlocks_config.lua)
 	minLevel = 15,

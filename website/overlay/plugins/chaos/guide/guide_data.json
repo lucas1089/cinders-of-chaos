@@ -315,7 +315,7 @@
 			"menu": "Character > Loadouts",
 			"rows": [
 				{"id": "what", "text": {"en": "Save your build and switch to another one: passive tree, Paragon points, the support runes of your spells and a set of gear.", "pt-BR": "Salve a sua build e troque para outra: árvore passiva, pontos de Paragon, as runas de suporte das magias e um conjunto de equipamento."}},
-				{"id": "who", "text": {"en": "Level 15+. 4 slots, one more at level 200 and at level 500, and 1 more while the Chaos Pact runs.", "pt-BR": "Nível 15+. 4 espaços, mais um no nível 200 e no nível 500, e mais 1 enquanto o Chaos Pact estiver ativo."}},
+				{"id": "who", "text": {"en": "Level 15+. 5 slots, one more at level 200 and at level 500, and 1 more while the Chaos Pact runs.", "pt-BR": "Nível 15+. 5 espaços, mais um no nível 200 e no nível 500, e mais 1 enquanto o Chaos Pact estiver ativo."}},
 				{"id": "often", "text": {"en": "A switch is free. Out of combat and never inside an instance: at once in a safe zone, elsewhere after 3 seconds standing still. Then wait 60 seconds for the next one.", "pt-BR": "Trocar é grátis. Fora de combate e nunca dentro de uma instância: na hora numa zona segura, fora dela após 3 segundos parado. Depois espere 60 segundos para a próxima."}}
 			]
 		},
