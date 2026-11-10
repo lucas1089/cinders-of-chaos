@@ -83,7 +83,7 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
 ## Recompilar engine (Painel)
 
 O pedido do dono (2026-11-08): "Pode montar o botão de recompilar no app". O engine do servidor (o `tfs`, com todos os
-patches de `server/src-patches/`, hoje até o 0089, o saco de loot) é compilado no GitHub Actions pelo workflow manual
+patches de `server/src-patches/`, hoje até o 0090, o bônus de nível do monstro contado uma vez) é compilado no GitHub Actions pelo workflow manual
 `windows-package.yml`, que publica a prerelease `winpkg-N` com o `CindersOfChaos-Server-Linux.tar.gz`. Antes, alguém tinha
 de abrir a página do workflow e rodá-lo. Agora o cartão **Recompilar engine** (Painel no app do celular; Atualizações >
 Recompilar engine no app do PC), logo abaixo de Atualizar servidor, faz isso e acompanha.

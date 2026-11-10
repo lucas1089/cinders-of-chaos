@@ -267,6 +267,9 @@ server/
   src-patches/0078-player-attack-speed-bonus.patch   engine: Player:getAttackSpeedBonus / setAttackSpeedBonus, a percent counted with
                                       the dexterity points in Player::getAttackSpeed inside the 0011 cap and floor (see "Attack
                                       speed cap"; tools/attack_speed_bonus_patch_test.py)
+  src-patches/0090-monster-level-bonus-once.patch   engine: the monster level damage bonus once per hit, not again on the re-entry after
+                                      the target's health / mana events (see "Monster level bonus once (O477, engine patch
+                                      0090)"; tools/monster_bonus_once_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -22344,7 +22347,8 @@ decision: no skull, and no weaker monsters on average; the complaint is the high
   `maxLevel` (Lua types: our 140 XML files and 210 base Lua types, the 100-600 portal sets among them). The tier
   conditions of the roll are always true (`> 1 || < 20`), so it is uniform `min..max`. The level then adds
   `monsterBonusHealth` x level to health (0.0074), `monsterBonusSpeed` x level to speed (0.0085) and, in `game.cpp`,
-  `monsterBonusDamage` x level (0.0015) to the damage it deals, and sets a skull by level (white 50-100, green 101-200,
+  `monsterBonusDamage` x level (0.0015) to the damage it deals (once per hit since engine patch 0090, see "Monster level
+  bonus once (O477, engine patch 0090)"; before it, twice on a hit to a target with health events), and sets a skull by level (white 50-100, green 101-200,
   yellow 201-300, orange 301-350, red 351-400, black 401+). Two monsters of one type differed by the whole range: at
   level 400 from +0% to +296% health. The skull marked the high rolls.
 - **Fix, engine patch `0082-monster-level-no-skull-no-spread.patch`** (Monster::Monster only). (1) The skull block is
@@ -22369,6 +22373,54 @@ decision: no skull, and no weaker monsters on average; the complaint is the high
   --engine`; no step, no config, no restart of anything else. Without the rebuild nothing changes. Checked:
   `patch -p1 --dry-run < src-patches/0082-monster-level-no-skull-no-spread.patch` on a copy of the patched source tree.
   Guard test: `tools/monster_level_patch_test.py` (patch text, same mean health bonus).
+
+## Monster level bonus once (O477, engine patch 0090)
+Found by the O460 run on the local server (2026-11-10): a fixed 40 hit from a level 950 monster took 235 from a player,
+not 97.
+- **Cause.** `Game::combatChangeHealth` (`src/game.cpp` of the installed tree, patched to 0085) adds `monsterBonusDamage`
+  (0.0015) x the attacker monster's level to `damage.primary` / `secondary` in the damage branch (lines 4656-4662), with
+  no guard. A target with `onHealthChange` events (every player has them) gets the hit run through the events, then
+  patch 0051 sets `damage.firstOrigin = damage.origin`, `damage.origin = ORIGIN_NONE` and the function calls itself
+  again (lines 4757-4764). The second pass ran the bonus block a second time: every monster hit on a player was
+  (1 + 0.0015 x level) squared. `combatChangeMana` has the same block (lines 4897-4906) and the same re-entry after the
+  `onManaChange` events (lines 4922-4924, 4972-4974): a monster's mana drain on a player was doubled the same way.
+- **Where the block ran twice.** `combatChangeHealth`: a hit with `origin != ORIGIN_NONE` on a target that has a
+  health-change event (every player; a monster with a Lua event, such as a waystone mod). `combatChangeMana`: the same
+  with mana-change events. **Where it ran once.** A hit that arrives with `ORIGIN_NONE` (no events are called, one
+  pass), a hit on a target with no event of that type, a heal, and the mana shield events inside `combatChangeHealth`
+  (they do not re-enter). Leech and Lua calls without an attacker never had a monster attacker.
+- **Fix, engine patch `0090-monster-level-bonus-once.patch`** (two lines of `game.cpp`). The block is skipped on the
+  re-entry: `damage.origin == ORIGIN_NONE && damage.firstOrigin != ORIGIN_NONE`. `firstOrigin` is `ORIGIN_NONE` by default
+  (`enums.h`) and is set only in the four places of patch 0051 right before a re-entry, so the first pass of every hit
+  keeps its bonus and the second never adds one. No new field, no config key: `monsterBonusDamage` stays 0.0015.
+- **A fixed hit of 40 by monster level** (`tools/monster_bonus_once_patch_test.py` computes it in the engine's float and
+  rounding):
+
+  | monster level | once (now) | twice (before) | before / now |
+  |---|---|---|---|
+  | 10 | 41 | 42 | 1.02 |
+  | 100 | 46 | 53 | 1.15 |
+  | 300 | 58 | 84 | 1.45 |
+  | 500 | 70 | 123 | 1.76 |
+  | 950 | 97 | 235 | 2.42 |
+  | 1000 | 100 | 250 | 2.50 |
+
+- **Measured** on the local server, a bare level 8 character (50000 health, no items, no events changed) hit by a monster
+  with a fixed 40 earth hit (`<level>` 10 and 950, no armour, no resistance), 40 hits each, the health drop of every hit
+  logged. Before (engine of 2026-11-09): 40 x 42 at level 10 and 40 x 235 at level 950. After (patch 0090 built into
+  that engine): 40 x 41 at level 10 and 40 x 97 at level 950. A target without events could not be made: the Chaos login events and
+  `Chaos.registerOnce` put health events back on a player or a summon after they were removed, so the test rig had no
+  such target and its single-pass case is read from the code, not measured.
+- **What it means.** Every monster hit on a player falls to what the models always assumed (they count the bonus once:
+  `survival_balance_config.lua`, the 0082 section above, `tools/armor_sim.py`): x0.87 at monster level 100, x0.69 at 300,
+  x0.57 at 500, x0.40 at 1000. The live server hit harder than the models by x1.15, x1.45, x1.75 and x2.5 at those
+  levels. A hit on a target without events never had the fault. Monster health, speed and every other number are
+  unchanged. No model, config or balance number was edited; none counted the bonus twice.
+- **Install.** Engine rebuild with patches 0001-0090 (docs/LAUNCH.md section 1; admin app: Painel > Recompilar engine >
+  Recompilar, then Atualizar servidor), `chaos_update.sh --engine`; no step, no config. Without the rebuild nothing
+  changes. Checked: `patch -p1 --dry-run < src-patches/0090-monster-level-bonus-once.patch` on a copy of the patched
+  source tree, built and measured on the local server. Guard test: `tools/monster_bonus_once_patch_test.py` (patch text,
+  table).
 
 ## Item wire bytes and the creature refresh (`item_wire.csv`, `tools/patch_item_wire.py`, engine patch 0083; 2026-10-30)
 Owner, phone: a dead monster stayed drawn for good. Cause: the client throws when one item of a tile or map packet takes

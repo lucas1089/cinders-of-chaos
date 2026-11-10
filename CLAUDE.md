@@ -105,6 +105,7 @@ python3 -I server/tools/patch_base_absorb_player_test.py   # the base absorb eve
 python3 -I server/tools/patch_spell_ids_test.py      # stock spell ids below 256; a retired spell's new id is free for a Chaos spell (install_all step spells)
 python3 -I server/tools/patch_stock_spell_inputs_test.py   # Kindling Spark and Bewitching Hex read level and magic level, the old number for a typical caster at the level learned (O468; install_all step spells)
 python3 -I server/tools/monster_level_patch_test.py   # src-patch 0082: monster level = middle of the <level> range, no level skull (O326)
+python3 -I server/tools/monster_bonus_once_patch_test.py   # src-patch 0090: the monster level damage bonus once per hit, not again on the re-entry after the target's health / mana events; table of a 40 hit once and twice by level (O477)
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
 python3 -I client/tools/rml_window_audit.py && python3 -I client/tools/rml_window_audit_test.py   # which windows the RmlUi mirror draws and which stay classic, from the .otui files (O406; --otui)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test

@@ -1,0 +1,36 @@
+# The monster level damage bonus is added once per hit (O477; server/README.md "Monster level bonus once (O477, engine
+# patch 0090)"). Game::combatChangeHealth adds config.lua monsterBonusDamage * monster level to the hit of a monster in
+# the damage branch, with no guard. A target with onHealthChange events (every player has them) gets the hit run through
+# the events, then combatChangeHealth is called again with origin ORIGIN_NONE (and, since patch 0051, firstOrigin = the
+# old origin): the bonus block ran a second time, so every monster hit on a player was (1 + 0.0015 * level) squared.
+# Game::combatChangeMana has the same block and the same re-entry after the onManaChange events.
+#   * the fix: the block is skipped on the re-entry, that is when origin == ORIGIN_NONE and firstOrigin != ORIGIN_NONE.
+#     firstOrigin is ORIGIN_NONE by default (enums.h) and is set only right before the re-entry, in the four places of
+#     patch 0051 (two in combatChangeHealth, two in combatChangeMana). No new field, no config key;
+#   * a hit that arrives with ORIGIN_NONE, or on a target without events, has one pass and keeps its single bonus;
+#   * the mana shield events inside combatChangeHealth do not re-enter, so nothing else changes.
+# Apply in the server source root after 0001-0089: patch -p1 < 0090-monster-level-bonus-once.patch, then rebuild.
+diff --git a/src/game.cpp b/src/game.cpp
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -4653,7 +4653,9 @@
+ 			return false;
+ 		}
+ 
+-		if (attackerMonster && attackerMonster->getLevel() > 0) {
++		// Chaos (patch 0090): the monster level bonus is added once per hit, on the first pass. The re-entry after the
++		// target's onHealthChange events (origin ORIGIN_NONE, firstOrigin set by patch 0051) must not add it again
++		if (attackerMonster && attackerMonster->getLevel() > 0 && !(damage.origin == ORIGIN_NONE && damage.firstOrigin != ORIGIN_NONE)) {
+             float bonusDmg = g_config.getFloat(ConfigManager::MLVL_BONUSDMG) * attackerMonster->getLevel();
+ 			if (bonusDmg != 0.0) {
+ 				damage.primary.value += std::round(damage.primary.value * bonusDmg);
+@@ -4894,7 +4896,8 @@
+ 		return true;
+ 	}
+ 
+-	if (attackerMonster && attackerMonster->getLevel() > 0) {
++	// Chaos (patch 0090): once per hit, as in combatChangeHealth: not on the re-entry after the onManaChange events
++	if (attackerMonster && attackerMonster->getLevel() > 0 && !(damage.origin == ORIGIN_NONE && damage.firstOrigin != ORIGIN_NONE)) {
+         float bonusDmg = g_config.getFloat(ConfigManager::MLVL_BONUSDMG) * attackerMonster->getLevel();
+ 		if (bonusDmg != 0.0) {
+ 			if (damage.primary.value < 0) {
