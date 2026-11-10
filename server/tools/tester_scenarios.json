@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 99,
+  "passive": 100,
   "place": 15,
   "staff": 17
  },
@@ -10390,6 +10390,15 @@
   },
   "deathadvice": {
    "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "deathfx": {
+   "files": [
+    "deathfx.lua"
+   ],
    "kind": "passive",
    "opcodes": [],
    "talkactions": [],

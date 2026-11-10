@@ -22,6 +22,8 @@ Errors (exit 1):
           directions of its walk or idle group (blank = no opaque pixel in every frame of that direction; the monster
           is invisible when it turns that way; O456, Death Mage look 1539 had no east or west art). Looks with one
           direction pattern are checked once. A look the pair does not hold is a warning. Skipped with --new-only.
+          The command line reads the monster files of this repository; check() as a library runs the rule only
+          when it is given `monsters` (a synthetic or partial pair has no monster list of its own).
   append  (--old) a dat or spr signature that changed, a category or the sprite count that shrank, an old thing whose
           entry bytes changed (unless listed in --allow-changed), an old sprite record whose bytes changed.
 Warnings (odd but valid): duplicate or unordered flags, item flags on an outfit, effect or missile (also the usual
@@ -671,7 +673,8 @@ def check(dat_path, spr_path, old=None, new_only=False, allow_changed=(), auras=
     outs = [t for t in things['outfit'] if not (new_only and old_ids is not None and ('outfit', t.id) in old_ids)]
     check_masks(outs, spr, rep, bpp, auras)
     if not new_only:
-        check_monster_looks(things['outfit'], spr, rep, bpp, monster_looks() if monsters is None else monsters)
+        if monsters:
+            check_monster_looks(things['outfit'], spr, rep, bpp, monsters)
         used_records = {s for s in used if 0 < s <= spr.count} - empty
         unused = spr.count - len(empty) - len(used_records)
         if unused > 0:
@@ -770,7 +773,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     auras = None if a.aura_looks is None else {int(x) for x in a.aura_looks.split(',') if x.strip()}
     rep = check(a.dat, a.spr, old=a.old, new_only=a.new_only, allow_changed=parse_allow(a.allow_changed),
-                auras=auras, rgb=a.rgb, examples=a.examples)
+                auras=auras, rgb=a.rgb, examples=a.examples, monsters=monster_looks())
     print(rep.text(a.verbose))
     return 0 if rep.ok else 1
 

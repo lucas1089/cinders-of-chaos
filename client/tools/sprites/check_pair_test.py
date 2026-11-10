@@ -362,6 +362,9 @@ def test_monster_looks(c):
     expect(r.ok and 'monster-look-missing' in r.codes('warning'), 'a look the pair lacks is a warning')
     r = run(c, *p, monsters={3: ['Death Mage']}, old=p, new_only=True)
     expect('monster-look-blank-dir' not in r.codes('error'), 'append-only mode skips the monster rule')
+    r = cp.check(*p, auras={2})
+    expect(not [k for k in r.codes('error') | r.codes('warning') if k.startswith('monster-look')],
+           f'check() without a monster list leaves the monster rule out: {r.text()}')
     # the reader of the monster XML files
     d = os.path.join(c.dir, 'monsters')
     os.makedirs(os.path.join(d, 'sub'))
