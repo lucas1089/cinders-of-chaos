@@ -15,6 +15,8 @@ combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, ChaosVfxMissile and CONST_ANI_N
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 3.0) + 15) * 1.2
 	local max = ((level / 5) + (magicLevel * 5.0) + 30) * 1.2
+	-- O472: the weapon growth of a caster (ChaosSpell.casterShare: W(level) x the wand of the hands)
+	min, max = ChaosSpell.casterScale(player, min, max)
 	return -min, -max
 end
 
@@ -44,7 +46,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if target and target ~= creature then
 		-- O468: the burn is 4 scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.15 + 3), one every
 		-- 3 s: they take crit, supports, cards, keystones and the rest like the bolt
-		local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.15) + 3)
+		local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.15) + 3) * ChaosSpell.casterShare(creature) -- O472
 		ChaosSpell.scriptedDot(creature:getId(), target:getId(), "witchfire", COMBAT_FIREDAMAGE, 4, 3000, dmg, CONST_ME_HITBYFIRE)
 	end
 	return true

@@ -317,8 +317,10 @@ local function player(props)
 end
 
 local shareMock = 1 -- the magic level share of a weapon spell (ChaosSpell.weaponShare, O468) the mock hands out
+local casterMock = 1 -- the caster's weapon growth (ChaosSpell.casterShare, O472) the mock hands out
 ChaosSpell = {
 	weaponShare = function() return shareMock end,
+	casterShare = function() return casterMock end,
 	cancel = function(pl, msg) cancels[#cancels + 1] = msg; return false end,
 	targetOf = function(v) return v and v.target end,
 	canAttack = function(c, t) return t ~= c and t.health > 0 and not t.safe end,
@@ -755,10 +757,40 @@ do
 		ok(a > 0, key .. " deals damage")
 		near(b / a, 1.25, 0.002, key .. " takes the weapon share once")
 	end
-	for _, key in ipairs({"phantomneedles", "marrowbolt", "hallowedcut", "crescentcut", "razorrain"}) do
+	for _, key in ipairs({"marrowbolt", "hallowedcut", "crescentcut", "razorrain"}) do
 		local a, b = total(key, 1), total(key, 1.25)
 		ok(a > 0, key .. " deals damage")
 		near(b / a, 1, 0.0001, key .. " is not scaled by the kit (a caster or hybrid school, or the weapon strike does it)")
+	end
+end
+
+-- O472: a caster spell of the kit (the magic school) takes the caster's weapon growth (ChaosSpell.casterShare) once and not the weapon
+-- share; no other school takes it (the necro school inside ChaosNecro.values, the weapon schools have the attack, the templar school
+-- reads the weapon)
+do
+	local function total(key, share, caster)
+		reset()
+		shareMock, casterMock = share, caster
+		local p = player()
+		p.chi = 5
+		local t = creature(101, 100)
+		A.cast(key, p, {target = t})
+		local sum = 0
+		for _, c in ipairs(calls) do
+			if c.lo then sum = sum + math.abs(c.lo) + math.abs(c.hi or 0) end
+		end
+		shareMock, casterMock = 1, 1
+		return sum
+	end
+	for _, key in ipairs({"phantomneedles"}) do
+		local a, b = total(key, 1, 1), total(key, 1, 1.4)
+		ok(a > 0, key .. " deals damage")
+		near(b / a, 1.4, 0.002, key .. " takes the caster growth once")
+		near(total(key, 1.25, 1) / a, 1, 0.0001, key .. " takes no weapon share")
+	end
+	for _, key in ipairs({"riftcleaver", "sunspear", "hallowedcut", "marrowbolt", "razorrain", "hollowknuckle"}) do
+		local a, b = total(key, 1, 1), total(key, 1, 1.4)
+		near(b / a, 1, 0.0001, key .. " takes no caster growth")
 	end
 end
 

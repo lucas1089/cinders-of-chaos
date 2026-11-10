@@ -107,16 +107,19 @@ local lo, hi = M.strikeValues(1000, 5000, M.formula.ashenFist)
 near(lo, 200 + 5000 * 0.04 + 20, "level 1000 strike: no level factor")
 
 -- ------------------------------------------------------------------ unarmed
-near(M.fistAttack(300), 47.5); eq(M.fistAttack(1000), cfg.unarmed.attackMax); eq(M.fistAttack(8), 40.2)
+-- O472: the level value (40 + 0.025 per level, at most 60) times the weapon growth a(level) of spell_scaling_core.lua
+local growth = M.weaponGrowth
+near(M.fistAttack(300), 47.5 * growth(300)); near(M.fistAttack(1000), cfg.unarmed.attackMax * growth(1000)); eq(M.fistAttack(8), 40.2)
+near(growth(300), 1 + 0.26 / 0.85, "a(300)", 1e-9); eq(M.fistAttack(100), 42.5, "no growth up to level 100")
 eq(M.fistAttack(300, 80), 80, "a better fist weapon wins")
 near(M.maxWeaponDamage(300, 110, 7), 60 + (28.5 * 7 / 3 * 1.03), "engine formula")
 local f = M.unarmedFactor(MONK, 300, 110, 0, 1)
-near(f, (60 + 28.5 * 47.5 / 3 * 1.03) * 1.2 / (60 + 28.5 * 7 / 3 * 1.03), "fist factor")
-eq(f > 4 and f < 6, true, "about x5 at level 300: " .. f)
+near(f, (60 + 28.5 * M.fistAttack(300) / 3 * 1.03) * 1.2 / (60 + 28.5 * 7 / 3 * 1.03), "fist factor")
+eq(f > 5 and f < 7, true, "about x6 at level 300 (O472: the fist attack grew by a(300) = 1.31, was about x5): " .. f)
 eq(M.unarmedFactor(IS, 300, 110, 0, 1) < f, true, "the iron sage hits softer")
 eq(M.unarmedFactor(MONK, 300, 110, 0, 2) > 0, true, "defensive mode still scales")
 near(M.attackFactor(1), 1); near(M.attackFactor(2), 1.2); near(M.attackFactor(3), 2)
-eq(M.fistPower(300, 110), 110 * 47.5)
+near(M.fistPower(300, 110), 110 * 47.5 * M.weaponGrowth(300))
 
 -- ------------------------------------------------------------------ shadowfist focus, pressure points
 near(M.focusCritChance(5), 0.125); near(M.focusCritChance(1), 0.025); near(M.focusCritChance(0), 0)
@@ -164,16 +167,17 @@ eq(M.dodges(SF, true, 0.0, true), false, "Scarred Discipline takes the evasion a
 -- a fist weapon in each hand: off-hand strike, neutral main hit (owner 2026-11-01)
 eq(M.dualFists(1000, {64, 0}), nil, "one fist weapon: no pair")
 eq(M.dualFists(1000, {0, 0}), nil, "bare fists: no pair")
-local dm, dof = M.dualFists(2200, {62, 67})
-eq(dm, 67, "the better one is the main hand"); eq(dof, 62)
+-- O472: the numbers are the fist weapons' installed attacks (CSV attack x a(level)): 190 and 202 at level 2200, the bare fist is 173 there
+local dm, dof = M.dualFists(2200, {190, 202})
+eq(dm, 202, "the better one is the main hand"); eq(dof, 190)
 local lm, lo = M.dualFists(1000, {41, 43})
-eq(lm, 60, "below the level value both hands use it"); eq(lo, 60)
+near(lm, M.fistAttack(1000), "below the level value both hands use it"); near(lo, M.fistAttack(1000))
 local d = cfg.unarmed.dualFists
 near(M.dualFistNeutral(60, 60), 1 / (1 + d.share), "same attack: cut by 1 / (1 + share)")
 near(M.dualFistNeutral(100, 10), 1 / (1 + d.share * d.minRatio), "a weak off hand counts at minRatio")
 local hit = 1000
-local cut = hit * M.dualFistNeutral(67, 62)
-local total = cut + M.dualFistStrike(cut, 67, 62)
+local cut = hit * M.dualFistNeutral(202, 190)
+local total = cut + M.dualFistStrike(cut, 202, 190)
 eq(math.abs(total - hit) <= 1, true, "neutral: main + off-hand strike = one fist hit (" .. total .. ")")
 eq(M.dualFistStrike(100, 60, 60, true), 2 * M.dualFistStrike(100, 60, 60, false), "against a player doubled")
 eq(M.dualFistStrike(0, 60, 60), 0, "no hit, no strike")

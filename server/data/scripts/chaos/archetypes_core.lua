@@ -288,9 +288,13 @@ function A.maxWeaponDamage(level, skill, attack, attackFactor)
 	return math.floor((level or 0) / 5) + ((((skill or 0) / 4) + 1) * ((attack or 0) / 3) * 1.03) / attackFactor
 end
 
+-- O472: times the weapon growth a(level) of the Monk's fist (ChaosMonk.weaponGrowth): an empty hand grows with the level like a weapon
 function A.fistAttack(level)
 	local o = cfg().arOpenHand
-	return math.min(o.attackMax, o.attackBase + (level or 0) * o.attackPerLevel)
+	if not rawget(_G, "ChaosMonk") then
+		dofile("data/scripts/chaos/monk_chi_core.lua")
+	end
+	return math.min(o.attackMax, o.attackBase + (level or 0) * o.attackPerLevel) * ChaosMonk.weaponGrowth(level)
 end
 
 -- the factor an engine fist hit is scaled by. keystone / unique: what the player has; nil when neither

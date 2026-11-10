@@ -1391,15 +1391,111 @@ local function upgradeNow(item)
 	return true
 end
 
+-- ---------------------------------------------------------------------------------------------------------------
+-- the weapon growth (O472, 2026-11-10)
+-- ---------------------------------------------------------------------------------------------------------------
+-- The attack of a weapon of ours grew with the level (tools/weapon_growth.py; data/lib/chaos_weapon_growth.lua says by how much for each
+-- item type and each unique). The item TYPE follows at the next install and restart, but an item that carries its attack itself does
+-- not: a rolled weapon holds ITEM_ATTRIBUTE_ATTACK = the type's attack + the base bonus (with its quality share and a +N upgrade), a
+-- weapon with the Weapon Damage modifier holds the attack before the modifier in "chaos_wdbase", a unique holds its spec's attack.
+-- The touch (C.upgradeItem: whenever the item is read or moved) moves such an item by the change of its base, once: the new attack is
+-- the stored one plus (new base - old base), so the roll, the quality, the tier and the value of the modifier all stay. The mark is its
+-- own, "chaos_wgrow" = the table's version, not the modifier version above (a mark that would send every item through the
+-- modifier upgrade again); chain it into the version steps when that is wanted. Not undone, never rerolls, never deletes.
+C.GROWN = "chaos_wgrow"
+local growth
+
+local function growthTable()
+	if growth == nil then
+		local ok, t = pcall(dofile, "data/lib/chaos_weapon_growth.lua")
+		growth = ok and type(t) == "table" and t or false
+	end
+	return growth or nil
+end
+
+-- the table can be handed in by a test
+function C.setGrowthTable(t)
+	growth = t or nil
+end
+
+-- the old and new base attack of this item and whether it is a unique (nil: the item has no growth to follow)
+local function growthRow(item, T)
+	local id = item:getId()
+	if C.isUnique(item) then
+		local u = T.uniques and T.uniques[id]
+		if u then
+			return u[1], u[2], true
+		end
+	end
+	local t = T.types and T.types[id]
+	if t then
+		return t[1], t[2], false
+	end
+	return nil
+end
+
+-- move one weapon by the growth of its base. Returns true when its attack changed.
+function C.growWeapon(item)
+	if not item or not ITEM_ATTRIBUTE_ATTACK then
+		return false
+	end
+	local T = growthTable()
+	if not T then
+		return false
+	end
+	local id = item:getId()
+	if not ((T.types and T.types[id]) or (T.uniques and T.uniques[id])) then
+		return false -- not an item the growth changed (the common case: cheap)
+	end
+	if custom(item, C.GROWN) ~= nil then
+		return false
+	end
+	local old, new, unique = growthRow(item, T)
+	if not old or old == new then
+		return false
+	end
+	if not unique then
+		-- the item type must carry the new base already (the install and restart are done): else the next touch does it
+		local it = itemType(item)
+		if not it or typeNumber(it, "getAttack") ~= new then
+			return false
+		end
+	end
+	local delta = new - old
+	local changed = false
+	local base = custom(item, M.WEAPON_BASE)
+	if base then
+		-- a weapon with Weapon Damage: its base moves, the modifier's percent stays, the attack is worked out again
+		base = math.floor(tonumber(base) or 0)
+		if not unique or base == old then
+			item:setCustomAttribute(M.WEAPON_BASE, math.max(1, base + delta))
+			M.syncWeaponDamage(item)
+			changed = true
+		end
+	else
+		local ok, cur = pcall(function() return item:getAttribute(ITEM_ATTRIBUTE_ATTACK) end)
+		cur = ok and tonumber(cur) or 0
+		if cur > 0 and (not unique or cur == old) then
+			item:setAttribute(ITEM_ATTRIBUTE_ATTACK, math.max(1, cur + delta))
+			changed = true
+		end
+	end
+	item:setCustomAttribute(C.GROWN, T.version or 1)
+	return changed
+end
+
 -- upgrade the item if it needs it. Returns true when something changed. Never raises: an item that fails stays as it was.
 function C.upgradeItem(item)
+	-- O472: the weapon growth first (its own mark; also for a unique or a set piece, which the modifier upgrade never touches)
+	local okGrow, grown = pcall(C.growWeapon, item)
+	grown = okGrow and grown or false
 	if upgrading or not C.needsUpgrade(item) then
-		return false
+		return grown
 	end
 	upgrading = true
 	local ok, changed = pcall(upgradeNow, item)
 	upgrading = false
-	return ok and changed or false
+	return (ok and changed or false) or grown
 end
 M.upgradeFn = function(item)
 	return C.upgradeItem(item)

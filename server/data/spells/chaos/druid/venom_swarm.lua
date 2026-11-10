@@ -15,13 +15,15 @@ combat:setArea(createCombatArea(AREA_CIRCLE3X3))
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 2.4) + 18)
 	local max = ((level / 5) + (magicLevel * 4.1) + 36)
+	-- O472: the weapon growth of a caster (ChaosSpell.casterShare: W(level) x the wand of the hands)
+	min, max = ChaosSpell.casterScale(player, min, max)
 	return -min, -max
 end
 
 -- O468: the poison is 8 scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.25 + 3), one
 -- every 2 s: they take crit, supports, cards, keystones and the rest like the cloud's own hit
 function onVenomSwarmTarget(creature, target)
-	local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.25) + 3)
+	local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.25) + 3) * ChaosSpell.casterShare(creature) -- O472
 	ChaosSpell.scriptedDot(creature:getId(), target:getId(), "blightswarm", COMBAT_EARTHDAMAGE, 8, 2000, dmg,
 		CONST_ME_HITBYPOISON)
 	return true
