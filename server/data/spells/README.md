@@ -5313,3 +5313,24 @@ Typical character of `rotation_sim.py` ANCHORS on the probe engine (`tests/fixtu
 A weapon spell grows a little more than W (its level term is small and its weapon term carries a), a level heavy one less. The auto attack
 lift of `weapon_power_config.lua` was regenerated with the reference rotation times W: distance 1.63 and wand 1.95 at level 1000 (was
 1.49 and 2.14).
+
+## Final re-fit of the balance round (O475, 2026-11-10; computed, not measured)
+
+The measured table (`class_dps_measured.csv`, 2026-11-06) is the character BEFORE the round. `class_dps_model.py` moves it by four steps computed from the real files
+(`--steps` prints them, `--round-before` the model before, `--spread` the pool part of the spread); the full tables and the limits that moved are in server/README.md
+"Final re-fit of the balance round (O475)". The numbers below replace the ones of "Class DPS balance (O430)" for the model after the round.
+
+The median class, 1 target / 5 targets, before -> after the round: 100: 607 / 1,008 -> 491 / 819; 500: 3,084 / 7,761 -> 3,138 / 7,547; 1000: 6,017 / 13,731 -> 8,882 / 20,212;
+2000: 11,612 / 26,501 -> 17,824 / 41,750. The steps at level 1000 for a weapon class: weapon x2.0 (the attack grows by a(level), the spells by about x1.99 on the model's
+formulas, the auto attack more), dots x1.00, gear x1.05, pool x0.67. A caster: weapon x2.20 (W), dots x1.00 to x1.04 (the Mystic 1.04), gear x1.02, pool x0.67.
+
+Bands (+-25%, +-30% at 100) after the round and the O475 extra target factors (`spell_factor_config.lua` `extra`: Ranger 1000 1.6 -> 2.0, Deadeye 1000 2.5 -> 4.3, Mystic 500 0.5 -> 0.42):
+1 target: the highest are the Ninja and Samurai +19% at 100, the Thief and Necromancer +14% at 500, the Monk and Necromancer +16% at 1000; the lowest the Shadowfist and Iron Sage -20% at 100,
+the Beastmaster -17% at 500, the Inquisitor -14% at 1000. 5 targets: the highest the Iron Sage +22% at 100, the Illusionist +23% at 500, the Mystic +21% at 1000; the lowest the Samurai -22% at 100,
+the Deadeye -20% at 500 and 1000 (the Ranger -20% at 1000). Without the extra factors three numbers were out: Ranger 1000 5 targets -30%, Deadeye 1000 5 targets -38%, Mystic 500 5 targets +33%.
+
+The pool step is the least certain: the typical profile of `tools/damage_pool_table.lua` (one 30% unique power, a 12% gem, charms 3%, a tree supply of 25 raw at 100 to 170 at 2000) gives x0.81 at
+100, x0.71 at 500, x0.67 at 1000 and the same for every class. A character with no extras (the measured test character) would not feel it. Measured builds should replace the profile.
+
+Bosses for the typical character (`boss_length_model.py`): the damage on one boss is the median class x 0.60 (a boss lets half of the physical half and 70% of the elemental half through):
+295 at 100, 994 at 300, 1,883 at 500, 3,993 at 850, 5,329 at 1000, 10,694 at 2000. A dungeon boss takes 150 s, a rift guardian 53-59 s, the Omen guardian 318 s at level 1000.

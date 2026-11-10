@@ -44,11 +44,7 @@ Strength and weakness of every class: "Class identity (2026-10-28)" below.
 
 Balance target since O430: every class within +-25% of the level median DPS on 1 and 5 targets at levels 100, 500 and 1000
 (`server/tools/class_dps_model.py --check`); no class leads by rule. O444 made the boss, pack and tower models read that one source.
-What its numbers say (computed from the measured table of 2026-11-06, not re-measured): the Deadeye is the best single target class
-only at level 1000 (+21% of the median, the next is the Monk at +15%); it ranks 4th at level 100 (+16%, the Ninja and Samurai +20%)
-and 7th at 500 (+12%, the Thief +15%), and on 5 targets it ranks 17th, 16th and last (-19%, -14%, -23%). The Elementalist is not the
-best area damage class at any measured level (5 targets: +0%, +9%, +12%, ranks 11th, 8th, 3rd; the Iron Sage +23% at 100, the Mystic,
-Illusionist and Inquisitor +18% at 500, the Berserker +13% at 1000). The Juggernaut the tankiest and a party with an Illusionist
+What its numbers say (computed from the measured table of 2026-11-06 moved by the balance round of O470 to O474 and re-fitted in O475, not re-measured): on one target nobody leads by more than +19% (the Ninja and Samurai at 100, the Thief and Necromancer +14% at 500, the Monk and Necromancer +16% at 1000). The Deadeye is +16% at 100 (4th), +1% at 500 and 0% at 1000; on 5 targets it is last at 500 and 1000 (-20%, the Ranger -20% at 1000) after the O475 extra target factors (Deadeye 4.3 at 1000, Ranger 2.0, Mystic 0.42 at 500: the weapon growth had put them at -38%, -30% and +33%). The Elementalist is not the best area damage class at any measured level (5 targets: +0%, +17%, +17%, ranks 11th, 6th, 2nd; the Iron Sage +22% at 100, the Illusionist +23% and the Inquisitor +22% at 500, the Mystic +21% at 1000). The Juggernaut the tankiest and a party with an Illusionist
 out-damaging the same party without one are not touched by this.
 
 ## Class kits (first draft)

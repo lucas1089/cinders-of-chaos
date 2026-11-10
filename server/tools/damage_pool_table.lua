@@ -82,9 +82,11 @@ end
 -- ratio after / before as the pool step of the typical character (the profiles are assumed, see the header). --csv prints it,
 -- --check fails when the committed file is not what this script prints.
 local function typical_csv()
-	local out = {"level,tree_raw,before,after"}
+	local out = {"level,tree_raw,before,after,fresh_before,fresh_after,invested_before,invested_after"}
 	for _, level in ipairs(LEVELS) do
-		out[#out + 1] = string.format("%d,%.1f,%.4f,%.4f", level, lin(TREE.typical, level), before("typical", level), after("typical", level))
+		out[#out + 1] = string.format("%d,%.1f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", level, lin(TREE.typical, level),
+			before("typical", level), after("typical", level), before("fresh", level), after("fresh", level),
+			before("invested", level), after("invested", level))
 	end
 	return table.concat(out, "\n") .. "\n"
 end

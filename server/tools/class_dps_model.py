@@ -437,7 +437,49 @@ def before_table(rows=None):
     return '\n'.join(lines)
 
 
+def spread_rows(levels=ROUND_LEVELS):
+    """[(level, fresh / typical, invested / typical before, after)]: the damage pool of the three profiles of tools/damage_pool_table.lua
+    (assumed profiles, the pool part of the spread only: no critical hit, no runes, no tier of gear), the old product against the one pool"""
+    with open(POOL_CSV, encoding='utf-8') as f:
+        rows = {int(r['level']): r for r in csv.DictReader(f)}
+    out = []
+    for lv in levels:
+        r = rows[lv]
+        out.append((lv, float(r['fresh_before']) / float(r['before']), float(r['fresh_after']) / float(r['after']),
+                    float(r['invested_before']) / float(r['before']), float(r['invested_after']) / float(r['after'])))
+    return out
+
+
+def steps_table():
+    lines = ['| Class | Level | dots | weapon | gear | pool | all (1 target) | all (5 targets) |', '|---|---:|---:|---:|---:|---:|---:|---:|']
+    for cls in KEY:
+        for lv in ROUND_LEVELS:
+            st = round_anchors(cls)[lv]
+            r1, r5 = round_factor(cls, lv)
+            lines.append('| %s | %d | %.2f / %.2f | %.2f / %.2f | %.3f | %.3f | %.2f | %.2f |' % (
+                cls, lv, st['dots'][0], st['dots'][1], st['weapon'][0], st['weapon'][1], st['gear'], st['pool'], r1, r5))
+    lines.append('')
+    lines.append('| Level | median 1 target before | after | median 5 targets before | after |')
+    lines.append('|---:|---:|---:|---:|---:|')
+    for lv in ROUND_LEVELS:
+        b, a = median_dps(lv, rnd=False), median_dps(lv)
+        lines.append('| %d | %.0f | %.0f | %.0f | %.0f |' % (lv, b[0], a[0], b[1], a[1]))
+    return '\n'.join(lines)
+
+
 def main(argv):
+    if '--steps' in argv:
+        print(steps_table())
+        return 0
+    if '--spread' in argv:
+        print('level  fresh / typical before  after   invested / typical before  after   (damage pool only, assumed profiles)')
+        for lv, fb, fa, ib, ia in spread_rows():
+            print('%5d  %22.2f %6.2f   %25.2f %6.2f' % (lv, fb, fa, ib, ia))
+        return 0
+    if '--round-before' in argv:
+        o, m = shipped_before()
+        print(table(o, m))
+        return 0
     if '--before' in argv:
         print(before_table())
         return 0
