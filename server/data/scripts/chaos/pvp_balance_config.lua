@@ -58,12 +58,12 @@ return {
 	-- no class wins or loses more than this share of its 20 duels (damage race, no healing). A draw is neither
 	duelShareMax = 0.90,
 
+	-- O475 (2026-11-10): three rows left with the round's re-fit (the Deadeye's burst at 500 and 1000: 0.83 and 0.76 now, were 0.93 and 1.01; the Iron
+	-- Sage's 19 losses at 1000: 18 now): the class damage of the round moves a class by its own factor. Fewer exceptions, the limits are as they were.
 	-- the classes that are outside a limit today, each with its value of today as the limit (so a worse state fails)
 	exceptions = {
 		-- O444: burst. The Deadeye's best set opens with its long cooldown hits inside 3 s (2.4 and 2.55 times its average damage
 		-- per second): it deals 0.93 of the median class's pool at 500 and 1.00 at 1000, a one shot in the opening window
-		["Deadeye@500"] = {burst = 0.93},
-		["Deadeye@1000"] = {burst = 1.01},
 		-- O444: burst at level 100, the sets have 4 or 5 spells and the pools are small: 0.98 and 0.96.
 		-- O442: the Recommended builds reach a keystone in their first 23 to 30 points and hold fewer health nodes there, so the
 		-- median pool at level 100 fell from 1924 to 1842 (-4%; levels 500 and 1000 moved under 2%). The same bursts read 1.011
@@ -88,7 +88,6 @@ return {
 		-- survival_model.py names too): the Inquisitor loses all 20 at 1000 and 19 at 500, the Iron Sage 19 at 500 and 1000
 		["Inquisitor@500"] = {losses = 19},
 		["Inquisitor@1000"] = {losses = 20},
-		["Iron Sage@500"] = {losses = 19},
-		["Iron Sage@1000"] = {losses = 19}
+		["Iron Sage@500"] = {losses = 19}
 	}
 }

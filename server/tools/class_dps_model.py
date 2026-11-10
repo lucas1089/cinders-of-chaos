@@ -34,6 +34,10 @@ has it at -14% of the median on 1 target). `dps` is the model at the three measu
 a straight line in the logarithm of level and damage (below 100 and between the anchors), then 0.093% a level above 1000
 (the old rule: 2.41 a level over the C4 median 2598 at level 1000; the 500 to 1000 slope of this table is 0.096%). Computed,
 not measured, as everything here.
+
+O475 (2026-11-10): the table above is the typical character BEFORE the balance round of O470 to O474. `dps()`, `median_dps()` and `shipped()` are
+the numbers AFTER it: the round's four steps (weapon growth, dots, gear, pool; the section "O475: the balance round" below) multiply the model at
+any level. `rnd=False`, `shipped_before()` and `--round-before` are the model before. The measured numbers and the class factors are not touched.
 """
 import csv
 import math
@@ -321,7 +325,6 @@ def _kit(cls, level, rows):
 def steps(cls, level):
     """{'dots': (f1, f5), 'weapon': (f1, f5), 'gear': f, 'pool': f, 'crit': f} at one level, from the real files"""
     spells, now_rows, old_rows = _loaded()
-    with_old = {}
     R._ANALYSED.clear()
     s_old = _kit(cls, level, old_rows)
     s_new = _kit(cls, level, now_rows)

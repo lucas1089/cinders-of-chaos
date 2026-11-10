@@ -144,6 +144,18 @@ for name, _, lv, stat, before, after, lo, hi, blo, bhi in W.skills_rows(cfg):
         check(blo == bhi == before, 'wand before: flat whatever the magic level')
 check('wand / rod' in W.skills_report(), 'the skills report lists the wands')
 
+# O475: the state before the weapon growth on request: the old curves, no a(level) on the fist, no W on the reference rotation
+after_wand = W.G.curve('wand', 1000)
+with W.before_growth():
+    before_wand = W.G.curve('wand', 1000)
+    before_fist = W.typed_mean_hit('fist', 1000, 140)
+    before_power = W.power_factors()
+check(before_wand == 118 and after_wand == 285, 'wand mean at 1000: 118 before the growth, 285 after (%s, %s)' % (before_wand, after_wand))
+check(W.G.curve('wand', 1000) == 285 and W.GROWTH['on'], 'the growth is back on after the block')
+check(W.typed_mean_hit('fist', 1000, 140) > before_fist * 2, 'the fist grows with a(level) now')
+check(before_power['wand'][W.POWER_LEVELS.index(1000)] == 2.14 and before_power['distance'][W.POWER_LEVELS.index(1000)] == 1.49,
+      'the power factors before O472 at 1000: wand 2.14, distance 1.49')
+
 if fails:
     for f in fails:
         print('FAIL ' + f)

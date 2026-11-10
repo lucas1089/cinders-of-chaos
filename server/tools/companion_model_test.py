@@ -115,7 +115,9 @@ for lv in (100, 400, 750, 1000):
     old_bite = (lv * c['autoLevel'] + sk * c['autoSkill']) * R.interp(OLD_AUTO, lv)
     new_dps = M.companion_dps(lv)
     ref = M.cap(c, lv) * old_bite / (c['biteMs'] / 1000.0) * M.conf()[1]['contact'] * M.uptime(lv)
-    ok(abs(new_dps / ref - 1) < 0.02, 'level %d: the plain bite dps is the one before O468 (%.1f against %.1f)' % (lv, new_dps, ref))
+    # O475 (2026-11-10): was 2%. The armour of the median normal monster follows the regenerated hit curve (monster_defence_config.lua:
+    # 464 at 100, 9,993 at 1000; was 576 and 7,169), so the same bite meets more armour at 100 and less at 1000: -16% to +8% here (the model's number)
+    ok(abs(new_dps / ref - 1) < 0.20, 'level %d: the plain bite dps is the one before O468 within the armour move of the round (%.1f against %.1f)' % (lv, new_dps, ref))
     ok(M.event_factor(lv, 1000) < 1.0, 'level %d: the events cut a bite (classDamage x armour)' % lv)
     ok(M.companion_dps(lv, factor=1.5) / new_dps > 1.5, 'level %d: a wolf factor raises the bite more than its own size (armour keeps more of a big hit)' % lv)
 

@@ -31388,8 +31388,8 @@ they were, and `scale_problems` holds the table within 1.5% of it. `damageScale`
 500: 0.98 (0.79), 700: 0.95 (0.76), 1000: 0.68 (0.48), 1500: 0.69 (0.52), 2000: 0.65 (0.46). Above 1 up to level 300: the pool takes more than the weapon growth gives back there; the
 shape rule of `scale_problems` allows (0, 2] now (was (0, 1]). Seconds to kill the median class with no healing (median over the classes), before -> after with the scale: 100: 6.75 -> 6.72, 500: 8.59 -> 8.61,
 1000: 10.11 -> 10.07 (without the scale 8.33, 8.44, 6.85); seconds to die 8.57 -> 8.53, 12.11 -> 12.15, 13.86 -> 13.81. At the other rows (200, 300, 700, 1500, 2000) the layers are not modelled,
-the seconds move by the ratio fit / table: 0.996 to 1.003. `pvp_scale_core.lua` `S.factor(nil)` is 1 now (the first row is not 1 any more). `pvp_balance_config.lua` limits and exceptions are
-as they were: `pvp_model.py --check` is green. Battleground normalisation untouched.
+the seconds move by the ratio fit / table: 0.996 to 1.003. `pvp_scale_core.lua` `S.factor(nil)` is 1 now (the first row is not 1 any more). `pvp_balance_config.lua` limits are as they were; three exception rows left because the numbers they pinned
+are inside the general limit now (Deadeye burst at 500 0.93 -> 0.83 and at 1000 1.01 -> 0.76, Iron Sage losses at 1000 19 -> 18): `pvp_model.py --check` is green. Battleground normalisation untouched.
 
 **Owned unique items.** `ChaosItemTooltip.refreshPassive(desc, enText, name)` (`item_tooltip_core.lua`, called in `item_tooltip.lua` before the pt-BR substitution and the O467
 block) puts the current English passive line in the place of the stored one: the exact current text if it is there, else from `<Name>: ` to before ` (Requires level` / ` (Requer nível` (or the
@@ -31402,7 +31402,7 @@ part is lowered, `cards_config.lua` `sets.by.Fire.pct` 4 -> 3.5 (smallest of the
 **Limits and numbers re-baselined** (each dated O475 in its file): `damageScale` (above); `pvp_model.py` scale shape (0, 1] -> (0, 2]; `infinitytower_balance_config.lua` `curveTol` 2.4 -> 1.10 (model 1.00),
 `clear`, `health`, `bossHealth`, `lootShare`, `killGold`; `monster_defence_config.lua` `hitCurve`; `spell_factor_config.lua` `extra` (3 points); `cards_config.lua` Fire 4 -> 3.5 and `AHEAD` 0.007 -> 0.005;
 `dungeons_difficulty.lua` `D.model`, `areagen_config.lua` five `healthMult`, `rift_config.lua` `density.model`, the XML health of 3 Omen guardians, 3 Ascended Omens, the Cinderheart and 5 raid bosses,
-`uber_config.lua` and `raid_config.lua` `refDps` (`healerDps`). No class band, no limit of `pack_model`, `boss_model`, `survival_model`, `guardian_model` was loosened. Tests rewritten to the new numbers:
+`uber_config.lua` and `raid_config.lua` `refDps` (`healerDps`). Test bounds that pinned the old numbers: `spell_factor_test.lua` extra factor range 0.5 - 3 -> 0.4 - 4.5 (the fit has Deadeye 4.3 and Mystic 0.42), `spell_paths_test.lua` the plain bite after armour within 3% -> 20% of the old one (worst 16.43% at 1000: the armour follows the regenerated hit curve), `companion_model_test.py` the plain bite dps within 2% -> 20% of the one before O468 (-16% to +8%, same cause), `player_defence_test.lua` armour table tolerance 1 -> 1.5 points (a small hit at 100: 9 against 7.7). No class band, no limit of `pack_model`, `boss_model`, `survival_model`, `guardian_model` was loosened. Tests rewritten to the new numbers:
 `class_dps_model_test.py`, `tower_model_test.py`, `card_set_model_test.py`, `pvp_scale_test.lua`, `raid_test.lua`, `cards_test.lua`; new: `boss_length_model_test.py`, the `refreshPassive` block of `item_tooltip_test.lua`.
 
 **Not verified.** Nothing ran on a live server or in a client: every number is a model number. The pool step (assumed profile), the boss defence (0.60 and 0.80: an assumed mean resistance), the rift fit
