@@ -11,7 +11,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if not player then
 		return false
 	end
-	local min, max = ChaosSpell.mlValues(player, 12, 20, 90, 190)
+	local min, max = ChaosSpell.mlHealValues(player, 12, 20, 90, 190)
 	ChaosSpell.vfxOr(player:getPosition(), "healing_bloom", "arcane_aura", CONST_ME_MAGIC_BLUE)
 	for _, ally in ipairs(ChaosSpell.alliesAround(player, player:getPosition(), 3, true)) do
 		for _, ctype in ipairs(CLEANSE) do

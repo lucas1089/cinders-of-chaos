@@ -221,23 +221,23 @@ end
 do
 	local S = C.newState()
 	local e = mk("lowlife", {at = 35, bonus = 40, malusAt = 70, malus = 15})
-	near(C.dealt(CFG, S, {e}, ctxOf({selfPct = 20})), 1.4, "low life bonus")
+	near(C.dealt(CFG, S, {e}, ctxOf({selfPct = 20})), 1.1, "low life bonus: its 40 is held at 10 raw (O473)")
 	near(C.dealt(CFG, S, {e}, ctxOf({selfPct = 50})), 1, "between: neutral")
 	near(C.dealt(CFG, S, {e}, ctxOf({selfPct = 90})), 0.85, "high life price")
 end
 do
 	local S = C.newState()
 	local e = mk("overflow", {at = 70, bonus = 35, malusAt = 30, malus = 15})
-	near(C.dealt(CFG, S, {e}, ctxOf({manaPct = 80})), 1.35, "full mana bonus")
+	near(C.dealt(CFG, S, {e}, ctxOf({manaPct = 80})), 1.1, "full mana bonus: 35 held at 10 raw")
 	near(C.dealt(CFG, S, {e}, ctxOf({manaPct = 20})), 0.85, "empty mana price")
 end
 do
 	local S = C.newState()
 	local e = mk("opener", {side = "above", at = 90, bonus = 60, malusAt = 25, malus = 10})
-	near(C.dealt(CFG, S, {e}, ctxOf({targetPct = 100})), 1.6, "opener bonus")
+	near(C.dealt(CFG, S, {e}, ctxOf({targetPct = 100})), 1.1, "opener bonus: 60 held at 10 raw")
 	near(C.dealt(CFG, S, {e}, ctxOf({targetPct = 10})), 0.9, "opener price")
 	local f = mk("opener", {side = "below", at = 30, bonus = 50, malusAt = 90, malus = 10})
-	near(C.dealt(CFG, S, {f}, ctxOf({targetPct = 20})), 1.5, "finisher bonus")
+	near(C.dealt(CFG, S, {f}, ctxOf({targetPct = 20})), 1.1, "finisher bonus: 50 held at 10 raw")
 	near(C.dealt(CFG, S, {f}, ctxOf({targetPct = 95})), 0.9, "finisher price")
 end
 do
@@ -247,15 +247,16 @@ do
 	near(C.dealt(CFG, S, {e}, ctxOf({now = 1500})), 1.1, "second hit")
 	C.dealt(CFG, S, {e}, ctxOf({now = 2000}))
 	C.dealt(CFG, S, {e}, ctxOf({now = 2500}))
-	near(C.dealt(CFG, S, {e}, ctxOf({now = 3000})), 1.3, "capped at max stacks")
+	near(C.dealt(CFG, S, {e}, ctxOf({now = 3000})), 1.1, "capped at max stacks (30 held at 10 raw)")
 	near(C.dealt(CFG, S, {e}, ctxOf({now = 3500, targetId = 2})), 0.8, "a new target starts over")
 	near(C.dealt(CFG, S, {e}, ctxOf({now = 9000, targetId = 2})), 0.8, "the chain resets after resetMs")
 end
 do
 	local S = C.newState()
 	local e = mk("statscale", {stat = "maxMana", from = 0, per = 100, bonusPer = 1, cap = 40, origin = "any"})
-	near(C.dealt(CFG, S, {e}, ctxOf({stats = {maxMana = 1500}})), 1.15, "per 100 points")
-	near(C.dealt(CFG, S, {e}, ctxOf({stats = {maxMana = 99999}})), 1.4, "capped")
+	near(C.dealt(CFG, S, {e}, ctxOf({stats = {maxMana = 1500}})), 1.1, "per 100 points (15 held at 10 raw)")
+	near(C.dealt(CFG, S, {e}, ctxOf({stats = {maxMana = 800}})), 1.08, "per 100 points: 8 is under the 10 raw")
+	near(C.dealt(CFG, S, {e}, ctxOf({stats = {maxMana = 99999}})), 1.1, "capped")
 	local r = mk("statscale", {stat = "speed", from = 200, per = 10, bonusPer = 1, cap = 20, origin = "ranged"})
 	near(C.dealt(CFG, S, {r}, ctxOf({stats = {speed = 300}})), 1, "another origin gets nothing")
 	near(C.dealt(CFG, S, {r}, ctxOf({stats = {speed = 300}, origin = "ranged"})), 1.1, "above `from`")
@@ -277,10 +278,11 @@ do
 	local S = C.newState()
 	local e = mk("crowd", {mode = "pack", radius = 3, per = 6, max = 5, alone = 15})
 	near(C.dealt(CFG, S, {e}, ctxOf({others = 0})), 0.85, "alone price")
-	near(C.dealt(CFG, S, {e}, ctxOf({others = 2})), 1.12, "per monster")
-	near(C.dealt(CFG, S, {e}, ctxOf({others = 40})), 1.3, "capped at max")
+	near(C.dealt(CFG, S, {e}, ctxOf({others = 1})), 1.06, "per monster: 6 is under the 10 raw")
+	near(C.dealt(CFG, S, {e}, ctxOf({others = 2})), 1.10, "per monster: 12 held at 10 raw")
+	near(C.dealt(CFG, S, {e}, ctxOf({others = 40})), 1.1, "capped at max")
 	local d = mk("crowd", {mode = "duel", bonus = 35, malus = 20, many = 3})
-	near(C.dealt(CFG, S, {d}, ctxOf({others = 0})), 1.35, "duel bonus")
+	near(C.dealt(CFG, S, {d}, ctxOf({others = 0})), 1.1, "duel bonus: 35 held at 10 raw")
 	near(C.dealt(CFG, S, {d}, ctxOf({others = 1})), 1, "duel neutral")
 	near(C.dealt(CFG, S, {d}, ctxOf({others = 3})), 0.8, "duel price")
 end
@@ -289,7 +291,7 @@ do
 	local e = mk("mark", {max = 2, bonus = 30, ms = 6000, unmarked = 12})
 	near(C.dealt(CFG, S, {e}, ctxOf({targetId = 1})), 0.88, "unmarked price")
 	C.landed(CFG, S, {e}, ctxOf({targetId = 1}))
-	near(C.dealt(CFG, S, {e}, ctxOf({targetId = 1, now = 12000})), 1.3, "marked bonus")
+	near(C.dealt(CFG, S, {e}, ctxOf({targetId = 1, now = 12000})), 1.1, "marked bonus: 30 held at 10 raw")
 	C.landed(CFG, S, {e}, ctxOf({targetId = 2}))
 	C.landed(CFG, S, {e}, ctxOf({targetId = 3}))
 	near(C.dealt(CFG, S, {e}, ctxOf({targetId = 3})), 0.88, "only max marks at once")
@@ -303,7 +305,7 @@ do
 	for i = 1, 9 do
 		C.kill(CFG, S, {e}, ctxOf({now = 1000 + i}))
 	end
-	near(C.dealt(CFG, S, {e}, ctxOf({now = 2000})), 1.3, "stacks capped at max")
+	near(C.dealt(CFG, S, {e}, ctxOf({now = 2000})), 1.1, "stacks capped at max (30 held at 10 raw)")
 	local inc = C.incoming(CFG, S, {e}, ctxOf({now = 2000, dmg = 100, fromMonster = true}))
 	eq(inc.dmg, 120, "each stack adds damage taken")
 	near(C.dealt(CFG, S, {e}, ctxOf({now = 20000})), 1, "stacks expire")
@@ -317,21 +319,48 @@ do
 	near(C.dealt(CFG, S2, {c}, ctxOf()), 1.1, "a kill is no crit stack")
 end
 do
-	-- the clamps: every multiplier at once
+	-- O473: the clamps. The pool side: each passive at most `each` raw, all together at most `cap`; the multiplicative side keeps
+	-- [dealtFloor, dealtCap]
+	local pool = dofile("data/scripts/chaos/damage_pool_config.lua").sources.uniques
+	eq(pool.each, 10, "a passive adds at most 10 raw")
+	eq(pool.cap, 40, "the passives add at most 40 raw together")
 	local S = C.newState()
 	local act = {}
-	for _, spec in ipairs({{"convert", {bonus = 100, share = 100}}, {"lowlife", {bonus = 100}}, {"opener", {bonus = 100}},
-			{"critrule", {crit = 100}}, {"statscale", {cap = 100, per = 1}}}) do
+	for _, spec in ipairs({{"lowlife", {bonus = 100}}, {"opener", {bonus = 100}}, {"statscale", {cap = 100, per = 1}},
+			{"overflow", {bonus = 100}}, {"mark", {bonus = 100}}, {"crowd", {mode = "duel", bonus = 100}}}) do
 		act[#act + 1] = mk(spec[1], spec[2])
 	end
-	local m = C.dealt(CFG, S, act, ctxOf({selfPct = 1, crit = true, stats = {maxMana = 99999}}))
-	eq(m, CFG.dealtCap, "the damage dealt is capped")
+	local ctx = {selfPct = 1, manaPct = 100, targetPct = 100, others = 0, stats = {maxMana = 99999}}
+	S.marks[1] = 1e9
+	local raw, m, list = C.dealtSplit(CFG, S, act, ctxOf(ctx))
+	eq(#list, 6, "six passives give a bonus")
+	for _, row in ipairs(list) do
+		eq(row.raw, 10, row.family .. ": 100 held at 10 raw")
+	end
+	eq(raw, 40, "six passives: the pool takes 40 at most")
+	eq(m, 1, "no price, no multiplier")
+	-- the multiplicative side: critrule and convert's price stay, with the clamp [dealtFloor, dealtCap]
+	local mult = {mk("critrule", {crit = 100}), mk("lowlife", {bonus = 100})}
+	raw, m = C.dealtSplit(CFG, S, mult, ctxOf({selfPct = 1, crit = true}))
+	eq(m, CFG.dealtCap, "a critical rule: the multiplier is capped at dealtCap")
+	eq(raw, 10, "(and the low life bonus is 10 raw)")
 	local low = {mk("critrule", {crit = 0, plain = 90}), mk("convert", {other = 90, elem = "fire"})}
-	eq(C.dealt(CFG, S, low, ctxOf({elem = "ice"})), CFG.dealtFloor, "the damage dealt has a floor")
-	near(C.dealt(CFG, S, act, ctxOf({selfPct = 1, crit = true, stats = {maxMana = 99999}, targetPlayer = true})),
-		1 + (CFG.dealtCap - 1) * CFG.pvpScale, "a player takes the capped bonus scaled by pvpScale")
-	ok(C.dealt(CFG, S, act, ctxOf({selfPct = 1, crit = true, stats = {maxMana = 99999}, targetPlayer = true}))
-		< C.dealt(CFG, S, act, ctxOf({selfPct = 1, crit = true, stats = {maxMana = 99999}})), "less against players")
+	eq(select(2, C.dealtSplit(CFG, S, low, ctxOf({elem = "ice"}))), CFG.dealtFloor, "the multiplier has a floor")
+	-- a price is a multiplier, never a pool entry
+	raw, m = C.dealtSplit(CFG, S, {mk("lowlife", {at = 35, bonus = 40, malusAt = 70, malus = 15})}, ctxOf({selfPct = 90}))
+	eq(raw, 0, "the price of low life: nothing in the pool") near(m, 0.85, "the price stays a multiplier")
+	-- against a player the pool part is scaled by pvpScale (the glue never asks for a player: it is wild monsters only)
+	raw = C.dealtSplit(CFG, S, act, ctxOf({selfPct = 1, manaPct = 100, targetPct = 100, others = 0, stats = {maxMana = 99999},
+		targetPlayer = true}))
+	near(raw, 40 * CFG.pvpScale, "a player takes the pool part scaled by pvpScale")
+	-- procs and condition ticks: nothing on either side
+	local r0, m0, l0 = C.dealtSplit(CFG, S, act, ctxOf({selfPct = 1, proc = true}))
+	eq(r0, 0, "a proc: no raw") eq(m0, 1, "a proc: no multiplier") eq(#l0, 0, "a proc: no list")
+	-- the family table: every family of the dealt side fell on one side
+	local pool_fams = {}
+	for k in pairs(C.POOL_FAMILIES) do pool_fams[#pool_fams + 1] = k end
+	table.sort(pool_fams)
+	eq(table.concat(pool_fams, ","), "crowd,focus,lowlife,mark,opener,overflow,stacks,statscale", "the pool families")
 end
 
 -- ---------------------------------------------------------------- extra hits
@@ -522,7 +551,12 @@ end
 do
 	local e = mk("lowlife", {at = 33, bonus = 41, malusAt = 71, malus = 0}, "W")
 	local en = C.text(CFG, e, "en")
-	ok(en:find("33%%") and en:find("41%%"), "the line carries the numbers: " .. en)
+	-- O473: the bonus is increased damage of the pool: the line names the condition, the 10 raw it counts (41 is held there) and the caps
+	ok(en:find("33%%") and en:find("+10% increased damage", 1, true) and not en:find("41%%"), "the line carries the numbers: " .. en)
+	ok(en:find("at most 10 for one unique power, 40 for all", 1, true), "and names the caps: " .. en)
+	local small = mk("lowlife", {at = 33, bonus = 7, malusAt = 71, malus = 0}, "W")
+	ok(C.text(CFG, small, "en"):find("+7% increased damage", 1, true), "a bonus under the cap shows its own value")
+	ok(C.text(CFG, e, "pt-BR"):find("dano aumentado", 1, true), "pt-BR says it too")
 	ok(not en:find("less"), "a price of 0 is not written")
 	ok(en:find("For: Warrior"), "the lines are named")
 	ok(C.text(CFG, e, "pt-BR"):find("Só para: Guerreiro"), "pt-BR lines")
@@ -598,7 +632,28 @@ do
 	eq(ChaosUniquePassives.refresh(player).key, "28693", "the worn unique is found")
 	-- First Quarry (opener): +30% on a target at 90% or more
 	local p1, t1, p2, t2 = events.ChaosUPDealt.onHealthChange(mon, player, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE, false)
-	eq(p1, -130, "the opener bonus lands")
+	eq(p1, -110, "the opener bonus lands as one multiplier when no pool pass ran: its 30 held at 10 raw (O473)")
+	-- O473: with the pool pass (ChaosPassiveDealt asks the provider first) the bonus is raw percent of the pool and this event
+	-- applies only the rest (nothing here: a plain opener has no price at 100% health)
+	do
+		local hit = {attacker = player, creature = mon, origin = ORIGIN_MELEE, critical = false, primaryType = COMBAT_PHYSICALDAMAGE,
+			secondaryType = COMBAT_PHYSICALDAMAGE, primaryDamage = -100, secondaryDamage = 0, cache = {}}
+		eq(ChaosDamagePool.raws(hit, COMBAT_PHYSICALDAMAGE, "primary").uniques, 10, "the pool: the opener adds 10 raw")
+		eq(ChaosDamagePool.raws(hit, COMBAT_PHYSICALDAMAGE, "secondary").uniques, 10, "the second part of the same hit: the same 10, once")
+		eq((events.ChaosUPDealt.onHealthChange(mon, player, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE, false)),
+			-100, "the event after the pool pass: nothing counted twice")
+		eq((events.ChaosUPDealt.onHealthChange(mon, player, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE, false)),
+			-110, "the next hit without a pool pass: the fallback again")
+		hit.cache = {}
+		hit.critical = nil
+		local healHit = {attacker = player, creature = mon, origin = ORIGIN_MELEE, primaryType = COMBAT_HEALING,
+			secondaryType = COMBAT_HEALING, primaryDamage = 100, secondaryDamage = 0, cache = {}}
+		eq(ChaosDamagePool.raws(healHit, COMBAT_HEALING, "primary").uniques, nil, "a heal: no unique entry")
+		ChaosKeystones.depth = 1
+		hit.cache = {}
+		eq(ChaosDamagePool.raws(hit, COMBAT_PHYSICALDAMAGE, "primary").uniques, nil, "a proc: no unique entry")
+		ChaosKeystones.depth = 0
+	end
 	-- a proc of another system (keystone depth) gets nothing
 	ChaosKeystones.depth = 1
 	eq((events.ChaosUPDealt.onHealthChange(mon, player, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE, false)), -100, "no bonus on a proc")
@@ -679,7 +734,7 @@ do
 	wear("convert", {elem = "fire", share = 50, bonus = 20, other = 10})
 	eq(ChaosUniquePassives.speedScale(player, "melee"), 1, "speedScale: no speed-scaling unique: 1")
 	wear("statscale", {stat = "speed", from = 200, per = 10, bonusPer = 1, cap = 25, origin = "any"})
-	eq(ChaosUniquePassives.speedScale(player, "melee"), 1.25, "speedScale: speed 1000 saturates the unique at its cap")
+	eq(ChaosUniquePassives.speedScale(player, "melee"), 1.10, "speedScale: speed 1000 saturates the unique at its cap, and the pool takes 10 raw at most (O473)")
 	player.getSpeed = function() return 300 end
 	eq(ChaosUniquePassives.speedScale(player, "spell"), 1.10, "speedScale: 100 above 200, 1% per 10: +10%")
 	player.getSpeed = function() return 150 end
@@ -687,9 +742,31 @@ do
 	wear("statscale", {stat = "speed", from = 200, per = 10, bonusPer = 1, cap = 25, origin = "ranged"})
 	player.getSpeed = function() return 1000 end
 	eq(ChaosUniquePassives.speedScale(player, "melee"), 1, "speedScale: a ranged-only unique gives a melee hit nothing")
-	eq(ChaosUniquePassives.speedScale(player, "ranged"), 1.25, "speedScale: and a ranged hit its factor")
+	eq(ChaosUniquePassives.speedScale(player, "ranged"), 1.10, "speedScale: and a ranged hit its factor (10 raw at most)")
 	wear("statscale", {stat = "maxMana", from = 0, per = 100, bonusPer = 1, cap = 40, origin = "any"})
 	eq(ChaosUniquePassives.speedScale(player, "melee"), 1, "speedScale: a statscale on another stat is not a speed one")
+	-- O474: a scripted tick of a dot spell is a damage over time tick for the spread uniques (it was a spell hit since O468)
+	do
+		dofile("data/scripts/chaos/dot_config.lua")
+		dofile("data/scripts/chaos/dot_core.lua")
+		local store = {}
+		function player:getStorageValue(k) local v = store[k]; if v == nil then return -1 end return v end
+		function player:setStorageValue(k, v) store[k] = v end
+		wear("spread", {elem = "fire", targets = 3, radius = 2, share = 50, ticks = 4, tickMs = 1000, recentMs = 4000, dealtLess = 0})
+		local S = ChaosUniquePassives.states[1].S
+		S.afflict[2] = nil
+		events.ChaosUPDealt.onHealthChange(mon, player, -40, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL, false)
+		eq(S.afflict[2], nil, "a plain spell hit afflicts nothing")
+		local tickOut
+		ChaosDot.run(player, mon, function()
+			tickOut = events.ChaosUPDealt.onHealthChange(mon, player, -40, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL, false)
+		end)
+		eq(tickOut, -40, "O474: a scripted tick is no hit: no multiplier on it")
+		ok(S.afflict[2] ~= nil, "O474: but the spread unique notes the burning monster")
+		S.afflict[2] = nil
+		events.ChaosUPDealt.onHealthChange(mon, player, -40, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION, false)
+		ok(S.afflict[2] ~= nil, "an engine condition tick still does")
+	end
 	events.ChaosUPLogout.onLogout(player)
 	eq(ChaosUniquePassives.states[1], nil, "logout clears the state")
 end

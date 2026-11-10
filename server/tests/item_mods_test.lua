@@ -265,10 +265,15 @@ for _, key in ipairs({"healing", "goblinchance", "multishot", "bowdistance"}) do
 	assert(M.byKey[key].cap, key .. ": unchanged, keeps its cap")
 end
 -- O464: the defence rows lost their module caps (the caps are the player defence layer's and the engine's)
-for _, key in ipairs({"dodge", "block", "reflect", "thorns", "monsterreduction", "physpen", "elepen", "energyshield",
+for _, key in ipairs({"dodge", "block", "reflect", "thorns", "monsterreduction", "energyshield",
 		"energyshieldpct", "esrecharge", "lastbreath", "frostward", "armour", "spellsuppress", "fireres", "coldres", "lightningres",
 		"chaosres", "allres"}) do
 	eq(M.byKey[key].cap, nil, key .. ": no cap of the module (O464)")
+end
+-- O471: the two penetration rows get a module cap again: 20 points of each kind from every source together
+for _, key in ipairs({"physpen", "elepen"}) do
+	eq(M.byKey[key].cap, 20, key .. ": 20 points in total (O471)")
+	eq(M.byKey[key].cap, M.config.penetration.cap, key .. ": the row follows config.penetration")
 end
 -- the roll rules: tier ranges never overlap and narrow toward the top (a row whose ladder was given as it is may touch)
 local STAGE1 = {"attackspeed", "gearspeed", "bowspeed", "movespeed", "bowcrit", "bleedchance", "ignitechance", "poisonchance",
@@ -428,14 +433,17 @@ eq(#rows, 8, "every tier the item level allows can roll"); eq(rows[1][1], 8, "be
 eq(#M.tierRows(40), 3, "T1-T3 at item level 40")
 eq(#M.tierRows(150, 4), 5, "a modifier gated at T4 rolls T4 .. T8 on an item of level 150")
 eq(#M.tierRows(40, 4), 0, "and nothing on an item that allows T3 at most")
--- all tiers weigh the same (O461)
-for t = 2, 8 do
-	eq(M.config.tierWeights[t], M.config.tierWeights[t - 1], "weights are equal")
+-- O471 (2026-11-10): the weight of tier t is 1.35^(t-1), rounded (O461 had them equal)
+local wantW = {100, 135, 182, 246, 332, 448, 605, 816}
+for t = 1, 8 do
+	eq(M.config.tierWeights[t], wantW[t], "tier weight T" .. t)
+	eq(math.abs(M.config.tierWeights[t] - 100 * 1.35 ^ (t - 1)) <= 1.5, true, "the weight follows 1.35^(t-1) (T8: 816, the exact power 817.2)")
 end
 local ch = M.tierChances(150)
-eq(ch[8], 12.5, "T8 at item level 150: one chance in eight"); eq(ch[4], 12.5); eq(ch[1], 12.5, "T1 can still roll at 150")
+eq(ch[8], 28.5, "T8 at item level 150: 816 of 2864"); eq(ch[4], 8.6); eq(ch[1], 3.5, "T1 can still roll at 150")
 eq(M.tierChances(10)[1], 100, "item level 10: only T1")
-eq(M.tierChances(133)[8], 12.5, "a boss of monster level 1000 (item level 133) rolls the top tier")
+eq(M.tierChances(133)[8], 28.5, "T8 opens at item level 130")
+eq(M.tierChances(40)[3], 43.6, "item level 40 (T1-T3): 182 of 417")
 -- the roll: forced dice pick the tiers
 eq(M.rollTier(150, function(a, b) return a end), 8, "lowest dice: the first row (best tier)")
 eq(M.rollTier(150, function(a, b) return b end), 1, "highest dice: the last row")
@@ -502,11 +510,21 @@ eq(M.maxBinds(1), 1); eq(M.maxBinds(4), 1); eq(M.maxBinds(5), 2); eq(M.maxBinds(
 eq(M.qualityCap(5), 20); eq(M.qualityCap(10), 30); eq(M.qualityCap(9), 20, "an old Eternal: below Divine") eq(M.qualityCap(11), 30, "an old Phantasmal: Divine's")
 
 -- ---------------------------------------------------------------- item level of a drop
-eq(M.levelFromMonster(1), 1); eq(M.levelFromMonster(50), 22); eq(M.levelFromMonster(75), 29, "between 50 and 100")
-eq(M.levelFromMonster(1100), 128); eq(M.levelFromMonster(99999), 145)
+-- O471 (2026-11-10): the curve of the design, one number per mark of the owner's table
+eq(M.levelFromMonster(1), 1); eq(M.levelFromMonster(50), 21); eq(M.levelFromMonster(75), 27, "between 50 and 100")
+eq(M.levelFromMonster(100), 33); eq(M.levelFromMonster(200), 50); eq(M.levelFromMonster(350), 68); eq(M.levelFromMonster(500), 82)
+eq(M.levelFromMonster(700), 98); eq(M.levelFromMonster(900), 112); eq(M.levelFromMonster(1000), 117, "between 900 and 1100")
+eq(M.levelFromMonster(1100), 122); eq(M.levelFromMonster(1500), 134); eq(M.levelFromMonster(2000), 144)
+eq(M.levelFromMonster(2200), 148, "the gear keeps growing past monster level 1000"); eq(M.levelFromMonster(99999), 150)
+local prevLv = 0
+for lv = 1, 3000 do
+	local il = M.levelFromMonster(lv)
+	assert(il >= prevLv, "the item level never falls with the monster level (" .. lv .. ")")
+	prevLv = il
+end
 eq(M.sourceLevel({monsterLevel = 42}), 18, "a Dragon: 12 + 10 x 17 / 25")
 eq(M.sourceLevel({monsterLevel = 42, tier = "legendary"}), 25, "+7 legendary")
-eq(M.sourceLevel({monsterLevel = 1000, tier = "legendary", riftTier = 10}), 140, "a legendary in a tier 10 rift: T8")
+eq(M.sourceLevel({monsterLevel = 1000, tier = "legendary", riftTier = 10}), 134, "a legendary in a tier 10 rift: T8")
 eq(M.sourceLevel({monsterLevel = 1100, tier = "boss", riftTier = 15, omen = true}), 150, "capped")
 eq(M.sourceLevel({monsterLevel = 5, riftTier = 99}), M.levelFromMonster(5) + 15, "rift bonus capped")
 eq(M.sourceLevel({worldBoss = true}), 145)
@@ -800,7 +818,7 @@ player.health, player.mana = 100, 0
 -- O464: penetration is the monster defence layer's (tests/monster_defence_test.lua), not this event's: the hit stays as it is
 eq(dealt.onHealthChange(orc, player, 80, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 80, "no penetration here any more")
 eq(M.playerBonus(player, "physpen"), 10, "the totals still carry physical penetration for the monster layer")
-eq(M.playerBonus(player, "elepen"), 25, "... and elemental penetration")
+eq(M.playerBonus(player, "elepen"), 20, "... and elemental penetration: 25 points worn, 20 count (O471, the cap of the totals)")
 eq(player.health, 107, "health on hit"); eq(player.mana, 3, "mana on hit")
 local _, _, sIce = dealt.onHealthChange(orc, player, 0, COMBAT_PHYSICALDAMAGE, 50, COMBAT_ICEDAMAGE, ORIGIN_SPELL)
 eq(sIce, 50, "the secondary part is not changed here either")
@@ -808,6 +826,31 @@ eq(sIce, 50, "the secondary part is not changed here either")
 player.health = 100
 eq(dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), 60, "+20% damage over time")
 eq(player.health, 100, "a condition tick is no hit")
+-- O474: a scripted tick of a dot spell is the same (ChaosDot raises the flag around it): +20%, no health on hit, no ailment roll
+do
+	local store = {}
+	function player:getStorageValue(k) local v = store[k]; if v == nil then return -1 end return v end
+	function player:setStorageValue(k, v) store[k] = v end
+	player.health = 100
+	local realRandom2 = math.random
+	math.random = function(a, b) return a end -- every roll would hit
+	local before = #conditions
+	local stacksBefore = 0
+	for _ in pairs(M.stackBook) do stacksBefore = stacksBefore + 1 end
+	local got
+	ChaosDot.run(player, orc, function()
+		got = dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	end)
+	math.random = realRandom2
+	eq(got, 60, "O474: a scripted tick takes +20% damage over time too")
+	eq(player.health, 100, "and gives no health on hit")
+	local stacksAfter = 0
+	for _ in pairs(M.stackBook) do stacksAfter = stacksAfter + 1 end
+	eq(stacksAfter, stacksBefore, "and rolls no ailment")
+	eq(#conditions, before, "(no chill either)")
+	-- the same hit outside a tick is a plain hit
+	eq(dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 50, "a plain spell hit takes no damage over time bonus")
+end
 -- execute: a non-boss monster left at or below 5% dies
 orc.health = 5400
 eq(dealt.onHealthChange(orc, player, 500, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 5400, "4900 of 100000 left: executed")
@@ -825,12 +868,108 @@ orc.health = 100000
 dealt.onHealthChange(orc, player, 400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 local kinds = {}
 for _, c in ipairs(conditions) do kinds[c.c.kind] = c.c end
-eq(kinds[CONDITION_BLEEDING].value, -M.ailmentTick(400), "bleeding: a share of the hit per tick")
-eq(kinds[CONDITION_BLEEDING].params[CONDITION_PARAM_OWNER], player:getId(), "owned by the player")
-eq(kinds[CONDITION_BLEEDING].rounds, 4)
+-- O474: a gear ailment is a stack of scripted ORIGIN_CONDITION ticks owned by the player, no engine condition
+eq(kinds[CONDITION_BLEEDING], nil, "O474: bleeding is no engine condition any more (it stacks)")
 eq(kinds[CONDITION_PARALYZE].formula[1], -0.3, "chill slows by 30%")
 eq(kinds[CONDITION_FIRE], nil, "no ignite chance, no ignite")
-eq(M.ailmentTick(400), 40, "40% of 400 over 4 ticks")
+eq(M.ailmentTick(400), 40, "40% of 400 over 4 ticks (the item sets' condition keeps its own rounds)")
+do
+	local D, DC = ChaosDot, ChaosDotConfig
+	local byId = {[player:getId()] = player, [orc:getId()] = orc}
+	local realPlayerFn, realCreatureFn, realDTC = Player, rawget(_G, "Creature"), doTargetCombat
+	Player = function(id) return byId[id] end
+	rawset(_G, "Creature", function(id) return byId[id] end)
+	local dealtTicks = {}
+	function doTargetCombat(cid, tgt, ctype, lo, hi, effect, origin)
+		dealtTicks[#dealtTicks + 1] = {from = cid, to = tgt, ctype = ctype, v = -lo, origin = origin}
+		return true
+	end
+	local function beats(maxBeats)
+		local ran = 0
+		while ran < maxBeats do
+			local t
+			for i, timer in ipairs(timers) do
+				if timer.ms == DC.ailment.interval then t = table.remove(timers, i) break end
+			end
+			if not t then break end
+			ran = ran + 1
+			t.fn((table.unpack or unpack)(t.args))
+		end
+		return ran
+	end
+	local slots = 0
+	for _ in pairs(M.stackBook) do slots = slots + 1 end
+	eq(slots, 1, "one bleed stack was put on the orc by the forced roll above")
+	local shockedUntil = M.shocked[orc:getId()]
+	M.shocked[orc:getId()] = 0 -- the forced roll above shocked it (+15% for everyone): not what is measured here
+	M.set(weapon, "chillchance", 0); M.set(weapon, "shockchance", 0)
+	M.refresh(player)
+	timers = {}
+	M.stackBook = M.stackBook
+	for k in pairs(M.stackBook) do M.stackBook[k] = nil end
+	-- one proc: a stack of 40% of the hit over 8 ticks, 0.5 s apart, ORIGIN_CONDITION, physical, owned by the player
+	math.random = function(a, b) return a end
+	orc.health = 100000
+	dealtTicks = {}
+	dealt.onHealthChange(orc, player, 400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	local first
+	for _, timer in ipairs(timers) do if timer.ms == DC.ailment.interval then first = timer end end
+	eq(first ~= nil, true, "the first tick is one interval (0.5 s) after the proc")
+	eq(beats(20), 8, "eight ticks")
+	eq(#dealtTicks, 8, "each dealt as damage")
+	local total = 0
+	for _, t in ipairs(dealtTicks) do
+		total = total + t.v
+		eq(t.origin, ORIGIN_CONDITION, "as a condition tick (everything that reads one keeps working)")
+		eq(t.ctype, COMBAT_PHYSICALDAMAGE, "of the bleed's element")
+		eq(t.from, player, "owned by the player")
+	end
+	eq(total, 8 * D.ailmentTick(400, M.config.ailment.share, DC.ailment.rounds), "40% of the hit in all, as before")
+	eq(total, 160, "160 of a hit of 400")
+	eq(next(M.stackBook), nil, "and the stack is gone")
+	-- three procs make three stacks that tick together; a fourth replaces the weakest
+	dealtTicks = {}
+	timers = {}
+	for _, hit in ipairs({400, 800, 1200}) do
+		dealt.onHealthChange(orc, player, hit, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	end
+	eq(beats(1), 1, "one beat")
+	eq(dealtTicks[1].v, 20 + 40 + 60, "the three stacks tick together on one beat")
+	dealt.onHealthChange(orc, player, 2000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	dealtTicks = {}
+	beats(1)
+	eq(dealtTicks[1].v, 40 + 60 + 100, "a fourth stack (100) replaced the weakest (20)")
+	-- a hit weaker than all three is dropped
+	dealt.onHealthChange(orc, player, 40, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	dealtTicks = {}
+	beats(1)
+	eq(dealtTicks[1].v, 40 + 60 + 100, "a weaker fourth is dropped")
+	-- another type is its own stack list
+	M.set(weapon, "ignitechance", 10)
+	M.refresh(player)
+	dealtTicks = {}
+	dealt.onHealthChange(orc, player, 800, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	beats(2) -- the bleed stacks' beat, then the new ignite stack's
+	local types = {}
+	for _, t in ipairs(dealtTicks) do types[t.ctype] = (types[t.ctype] or 0) + t.v end
+	eq(types[COMBAT_FIREDAMAGE], 40, "the ignite is its own stack (40 of 800 over 8)")
+	eq(types[COMBAT_PHYSICALDAMAGE] ~= nil and types[COMBAT_PHYSICALDAMAGE] > 0, true, "next to the running bleed stacks")
+	-- a dead target ends it
+	orc.health = 0
+	dealtTicks = {}
+	beats(3)
+	eq(#dealtTicks, 0, "a dead target takes no more ticks")
+	eq(next(M.stackBook), nil, "no stack outlives its target")
+	orc.health = 100000
+	for k in pairs(M.stackBook) do M.stackBook[k] = nil end
+	timers = {}
+	Player, doTargetCombat = realPlayerFn, realDTC
+	rawset(_G, "Creature", realCreatureFn)
+	M.set(weapon, "ignitechance", 0)
+	M.set(weapon, "chillchance", 10); M.set(weapon, "shockchance", 10)
+	M.refresh(player)
+	M.shocked[orc:getId()] = shockedUntil
+end
 -- shocked: +15% damage from everyone
 math.random = function(a, b) return b end
 local other2 = newCreature("player")

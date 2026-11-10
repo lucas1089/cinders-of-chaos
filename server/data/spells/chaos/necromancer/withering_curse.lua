@@ -1,5 +1,5 @@
 -- Withering Curse: curse the target (range 6) for 12 s: it takes 15% more damage from everyone and rots (death
--- damage every second, 10 ticks). The Lich's curse amplifies by 25%, rots harder and also curses up to 2 more
+-- damage every 0.25 s, 10 ticks, the first at once; the rot moves to a nearby enemy if the target dies). The Lich's curse amplifies by 25%, rots harder and also curses up to 2 more
 -- enemies within 2 sqm of the target.
 --
 -- On a player the curse only rots (no amplify). The amplify is applied by data/scripts/chaos/necromancer_combat.lua

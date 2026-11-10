@@ -205,10 +205,11 @@ return {
 	graveNova = {mlMin = 1.8, mlMax = 2.8, baseMin = 25, baseMax = 45, scale = 1.0, radius = 3},
 
 	-- Withering Curse: the target takes +amplify more damage from everyone for durationMs, and rots for
-	-- `ticks` x a tick of death damage (one per second). The Lich's curse is stronger and also curses up to
-	-- `spread` more enemies within spreadRadius of the target. Against players: only the rot (no amplify).
+	-- `ticks` x a tick of death damage (one per 0.25 s since O474, the first at once; the amplify keeps its 12 s). The Lich's
+	-- curse is stronger and also curses up to `spread` more enemies within spreadRadius of the target. Against players: only the
+	-- rot (no amplify), at the old gap of 1 s (dot_config.lua pvp.necro).
 	witheringCurse = {
-		durationMs = 12000, ticks = 10, tickMs = 1000,
+		durationMs = 12000, ticks = 10, tickMs = 250, -- tickMs: dot_config.lua necro.curseTickMs
 		amplify = {necromancer = 0.15, bonelord = 0.15, lich = 0.25},
 		spread = {lich = 2}, spreadRadius = 2,
 		tick = {mlMin = 0.25, mlMax = 0.35, baseMin = 5, baseMax = 10, scale = 1.0},
@@ -216,9 +217,10 @@ return {
 	},
 
 	-- Soul Rot (Lich): heavy death damage over time; when the target dies before the rot ends, the remaining
-	-- ticks jump to the nearest enemy within jumpRadius.
-	soulRot = {ticks = 6, tickMs = 1000, jumpRadius = 3,
-		tick = {mlMin = 1.2, mlMax = 1.6, baseMin = 20, baseMax = 40, scale = 1.15}},
+	-- ticks jump to the nearest living monster within jumpRadius (the shared rule, dot_config.lua jump). O474: a tick every
+	-- 0.4 s, the first at once, tick scale 1.15 -> 1.725 (x1.5; dot_config.lua necro).
+	soulRot = {ticks = 6, tickMs = 400, jumpRadius = 3,
+		tick = {mlMin = 1.2, mlMax = 1.6, baseMin = 20, baseMax = 40, scale = 1.725}},
 
 	-- Life Siphon (Lich): `pulses` death strikes `pulseMs` apart; the Lich heals `heal` of the damage dealt
 	lifeSiphon = {pulses = 3, pulseMs = 500, heal = 0.5,

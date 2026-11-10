@@ -6,8 +6,10 @@
 -- the Chaos item modifiers: equip / unequip, login, a check every 3 s) and hands them to ChaosGems.applyTotals:
 --   max health, max mana, critical chance + extra damage, life leech chance + amount
 --                          one CONDITION_ATTRIBUTES (sub id SUBID) with those parameters, replaced when they change
---   element damage         onHealthChange on the target (registered by onTargetCombat): the player's hits (and their
---                          summons') of that combat type, primary and secondary part, +N%
+--   element damage         O473: a source of the additive damage pool (damage_pool_core.lua), +N raw percent of the hit's
+--                          type next to the passive tree's, for the player's own hits. The hits of a player's SUMMONS keep the
+--                          old event on the target (registered by onTargetCombat): +N% of that combat type, primary and
+--                          secondary part (a summon has no tree)
 --   resistances            onHealthChange on the player: hits of that combat type -N%
 --   movement speed         added to the item modifier in item_mods.lua (shared cap)
 --   attack speed           the weapon's own attack interval (chaos_item_mods.lua M.syncAttackSpeed)
@@ -119,9 +121,29 @@ local function hasDamage(t)
 	return false
 end
 
+-- O473: the gem damage of a player's own hit is one entry of the additive damage pool, capped by the effect caps of
+-- chaos_gems_config.lua (25 raw, physical 12). Never against the player itself.
+if not ChaosDamagePool then
+	dofile("data/scripts/chaos/damage_pool_core.lua")
+end
+function G.poolRaw(player, ctype)
+	local key = DMGKEY[ctype]
+	local t = key and cache[player:getId()]
+	return t and tonumber(t[key]) or 0
+end
+ChaosDamagePool.register("gems", function(hit, ctype)
+	if hit.creature == hit.attacker then
+		return 0
+	end
+	return G.poolRaw(hit.attacker, ctype)
+end, function(player, ctype)
+	return G.poolRaw(player, ctype)
+end)
+
 local dealt = CreatureEvent("ChaosGemsDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
-	if primaryType == COMBAT_HEALING then
+	if primaryType == COMBAT_HEALING or (attacker and attacker:isPlayer()) then
+		-- a player's own hit: the pool (ChaosPassiveDealt) holds the gem damage
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local p = playerOf(attacker)

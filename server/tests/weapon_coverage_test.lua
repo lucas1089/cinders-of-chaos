@@ -46,7 +46,7 @@ eq(C.tier(cfg, "sword", 1, 8), 16, "one-handed tier at 8")
 eq(C.tier(cfg, "sword", 2, 8), 19, "two-handed is +3")
 eq(C.tier(cfg, "bow", 2, 100), 68, "bow tier at 100")
 eq(C.tier(cfg, "crossbow", 2, 100), 71, "crossbow is bow +3")
-eq(C.tier(cfg, "sword", 1, 5000), 69, "flat after the last anchor")
+eq(C.tier(cfg, "sword", 1, 5000), 199, "flat after the last anchor (O472: 69 times the weapon growth a(2000) = 2.88)")
 eq(C.curve(cfg, "attack", 75) > 40 and C.curve(cfg, "attack", 75) < 46, true, "linear between anchors")
 
 -- ---------------------------------------------------------------- who may wield what
@@ -131,8 +131,10 @@ eq(#C.failures(small, A), 2, "fewer options needed: only the weak cells fail")
 local f = assert(io.open("tools/install_gear_sets.py", "r"))
 local py = f:read("*a")
 f:close()
-local function pyList(name)
-	local body = py:match("\n" .. name .. " = %(([^)]*)%)") or py:match("'" .. name .. "':%s*%(([^)]*)%)")
+-- O472: the weapon curves (attack, bow, wand) and their anchors are WEAPON_CURVES / WEAPON_ANCHORS of the installer
+local function pyList(name, block)
+	local text = block and (py:match("\n" .. block .. " = %{(.-)\n%}") or error("no " .. block)) or py
+	local body = text:match("\n" .. name .. " = %(([^)]*)%)") or text:match("'" .. name .. "':%s*%(([^)]*)%)")
 	assert(body, "no " .. name .. " in install_gear_sets.py")
 	local t = {}
 	for v in body:gmatch("%d+") do
@@ -140,14 +142,15 @@ local function pyList(name)
 	end
 	return t
 end
-local anchors = pyList("ANCHORS")
+local anchors = pyList("WEAPON_ANCHORS")
 eq(#anchors, #cfg.anchors, "same number of anchors")
 for i, v in ipairs(anchors) do
 	eq(cfg.anchors[i], v, "anchor " .. i)
 end
 for _, name in ipairs({"attack", "bow", "wand"}) do
-	local curve = pyList(name)
+	local curve = pyList(name, "WEAPON_CURVES")
 	eq(#curve, #cfg.curves[name], name .. ": same length")
+	eq(#curve, #anchors, name .. ": one value per anchor")
 	for i, v in ipairs(curve) do
 		eq(cfg.curves[name][i], v, name .. " curve point " .. i)
 	end

@@ -109,6 +109,13 @@ function A.migrate(item)
 		return false
 	end
 	local changed = false
+	-- O472: the weapon growth first (ChaosCrafting.growWeapon moves the attack the item carries by the change of its type's attack, once).
+	-- The legacy rule below takes a stored attack under the type's for an item made before the ammunition was built in; after the
+	-- growth the type's attack is higher, so a rolled launcher of the numbers before it would read as legacy and gain the ammunition twice
+	if ChaosCrafting and ChaosCrafting.growWeapon then
+		local okGrow, grown = pcall(ChaosCrafting.growWeapon, item)
+		changed = okGrow and grown or false
+	end
 	if item:hasAttribute(ITEM_ATTRIBUTE_ATTACK) then
 		local v = A.legacyAttack(item:getAttribute(ITEM_ATTRIBUTE_ATTACK), it:getAttack(), id, it)
 		if v then

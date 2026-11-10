@@ -14,6 +14,8 @@ combat:setArea(createCombatArea(AREA_CIRCLE3X3))
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 2.5) + 23) * 1.2
 	local max = ((level / 5) + (magicLevel * 4.15) + 40) * 1.2
+	-- O472: the weapon growth of a caster (ChaosSpell.casterShare: W(level) x the wand of the hands)
+	min, max = ChaosSpell.casterScale(player, min, max)
 	return -min, -max
 end
 

@@ -54,6 +54,12 @@ if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua
 end
 
+-- O474: the damage over time rules (data/scripts/chaos/dot_core.lua): the tick predicate and the gear ailment stacks
+if not ChaosDot then
+	dofile("data/scripts/chaos/dot_config.lua")
+	dofile("data/scripts/chaos/dot_core.lua")
+end
+
 -- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX, on since 2026-10-13; off: exactly the stock effect as before)
 if not ChaosPackFx then
 	pcall(dofile, "data/lib/chaos_pack_fx.lua")
@@ -392,23 +398,59 @@ local function isShocked(creature)
 end
 
 local DOTS = {
-	bleedchance = {cond = "CONDITION_BLEEDING", effect = "CONST_ME_DRAWBLOOD", use = "item_bleed"},
-	ignitechance = {cond = "CONDITION_FIRE", effect = "CONST_ME_HITBYFIRE", use = "item_ignite"},
-	poisonchance = {cond = "CONDITION_POISON", effect = "CONST_ME_HITBYPOISON", use = "item_poison"}
+	bleedchance = {ctype = "COMBAT_PHYSICALDAMAGE", effect = "CONST_ME_DRAWBLOOD", use = "item_bleed"},
+	ignitechance = {ctype = "COMBAT_FIREDAMAGE", effect = "CONST_ME_HITBYFIRE", use = "item_ignite"},
+	poisonchance = {ctype = "COMBAT_EARTHDAMAGE", effect = "CONST_ME_HITBYPOISON", use = "item_poison"}
 }
+
+-- O474: a gear ailment is a stack, not one engine condition: up to ChaosDotConfig.ailment.maxStacks per type per target per owner
+-- (a fourth replaces the weakest), each `rounds` ticks `interval` ms apart worth `share` % of the hit that caused it together.
+-- The beat of a target deals the sum of its stacks as ORIGIN_CONDITION damage owned by the player, so everything that reads a
+-- condition keeps working (Damage over Time, the spread uniques, Contagion, the combat log, the armour skip). The beat runs on
+-- the item module's own clock (addEvent every `interval`); a target that died or a player who left ends it. No jump on death:
+-- the spread uniques take the burn on.
+local stackBook = {} -- "playerId:key:targetId" -> {list = stacks, pid, cid, ctype}
+M.stackBook = stackBook
+
+local function stackBeat(slot)
+	local rec = stackBook[slot]
+	if not rec then
+		return
+	end
+	local owner, target = Player(rec.pid), Creature(rec.cid)
+	if not owner or owner:getHealth() <= 0 or not target or target:getHealth() <= 0 then
+		stackBook[slot] = nil
+		return
+	end
+	local sum = ChaosDot.stackStep(rec.list)
+	if sum > 0 then
+		doTargetCombat(owner, target, rec.ctype, -sum, -sum, CONST_ME_NONE or 0, ORIGIN_CONDITION)
+	end
+	if #rec.list > 0 and Creature(rec.cid) and Creature(rec.cid):getHealth() > 0 then
+		addEvent(stackBeat, ChaosDotConfig.ailment.interval, slot)
+	else
+		stackBook[slot] = nil
+	end
+end
 
 local function addDot(target, player, key, hit)
 	local d = DOTS[key]
-	local ctype = _G[d.cond]
-	if not ctype or not Condition then
+	local ctype = d.ctype and _G[d.ctype]
+	if not ctype then
 		return
 	end
-	local a = M.config.ailment
-	local c = Condition(ctype)
-	c:setParameter(CONDITION_PARAM_OWNER, player:getId())
-	c:setParameter(CONDITION_PARAM_DELAYED, true)
-	c:addDamage(a.rounds, a.interval, -M.ailmentTick(hit))
-	target:addCondition(c)
+	local a, dc = M.config.ailment, ChaosDotConfig.ailment
+	local slot = player:getId() .. ":" .. key .. ":" .. target:getId()
+	local rec = stackBook[slot]
+	local running = rec ~= nil and #rec.list > 0
+	if not rec then
+		rec = {list = {}, pid = player:getId(), cid = target:getId(), ctype = ctype}
+		stackBook[slot] = rec
+	end
+	ChaosDot.stackAdd(rec.list, ChaosDot.ailmentTick(hit, a.share, dc.rounds), dc.rounds, dc.maxStacks)
+	if not running then
+		addEvent(stackBeat, dc.interval, slot)
+	end
 	packFx(target:getPosition(), d.use, _G[d.effect])
 end
 
@@ -511,6 +553,14 @@ local function offensive(totals)
 	return ChaosVeiled ~= nil and ChaosVeiled.offensive(totals) -- the veiled damage hooks
 end
 
+-- O474: one predicate for "a damage over time tick" (dot_core.lua): an engine condition tick or a scripted tick of a dot spell
+local function isDotTick(origin, attacker, creature)
+	if ChaosDot then
+		return ChaosDot.isTick(origin, attacker, creature)
+	end
+	return origin == ORIGIN_CONDITION
+end
+
 -- your hits on a monster (and shocked monsters' hits from anyone)
 local dealt = CreatureEvent("ChaosItemModsDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
@@ -519,13 +569,14 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	end
 	local p = playerOf(attacker)
 	local totals = p and cache[p:getId()]
+	local tick = p ~= nil and isDotTick(origin, p, creature)
 	if totals then
 		local pct = totals.bossdamage or 0
 		if pct > 0 and isElite(creature) then
 			primaryDamage = M.scale(primaryDamage, pct)
 			secondaryDamage = M.scale(secondaryDamage, pct)
 		end
-		if origin == ORIGIN_CONDITION and (totals.dot or 0) > 0 then
+		if tick and (totals.dot or 0) > 0 then
 			primaryDamage = M.scale(primaryDamage, totals.dot)
 			secondaryDamage = M.scale(secondaryDamage, totals.dot)
 		end
@@ -552,7 +603,7 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			primaryDamage = creature:getHealth()
 			packFx(creature:getPosition(), "item_execute", CONST_ME_MORTAREA or 18)
 		end
-		if hit > 0 and origin ~= ORIGIN_CONDITION and p == attacker then
+		if hit > 0 and not tick and p == attacker then
 			onHit(creature, p, totals, hit, origin)
 		end
 	end

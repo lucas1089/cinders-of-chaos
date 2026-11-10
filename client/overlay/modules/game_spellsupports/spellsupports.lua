@@ -165,8 +165,15 @@ local function runeAt(spell, slot)
   return nil
 end
 
+-- O471: a Mythic damage rune counts as a Legendary one; the server sends the sentence that says so (note, '' for the others)
+local function noteOf(r)
+  local n = type(r.note) == 'string' and r.note or ''
+  return n ~= '' and tr(n) or ''
+end
+
 local function runeTooltip(r)
-  return tipText(tr('%s\n%s.\nFits: %s spells.', r.name or '', r.text or '', r.fits or ''))
+  local note = noteOf(r)
+  return tipText(tr('%s\n%s.\nFits: %s spells.', r.name or '', r.text or '', r.fits or '') .. (note ~= '' and ('\n' .. note) or ''))
 end
 
 -- ---------------------------------------------------------------- pips (list rows and action bar)
@@ -336,8 +343,9 @@ local function showRuneInfo()
     return
   end
   window.runeInfo:setColor(r.color or '#d6c9ae')
+  local note = noteOf(r)
   fitLabel(window.runeInfo, tr('%s (x%d): %s. Fits %s spells.', r.name, tonumber(r.count) or 0,
-    r.text or '', r.fits or ''))
+    r.text or '', r.fits or '') .. (note ~= '' and (' ' .. note) or ''))
   window.combineButton:setEnabled(r.combine == true and (tonumber(r.count) or 0) >= 3)
 end
 

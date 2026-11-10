@@ -97,9 +97,10 @@ check(damage in text, '--derive prints the committed damage line (it does not de
 # O444: the curves derived from the C4 table are stale against class_dps_model.py's damage, by a known and bounded factor
 st = T.stale(cfg, info)
 check(len(st) == len(T.DERIVE_FLOORS) + 12, 'stale: a ratio for every point of health and every boss floor (%d)' % len(st))
-check(all(r > 1.0 for _, _, r in st), 'stale: the median class is stronger now, so --derive wants more health everywhere')
+# O475: the curves are derived again for the damage after the round: no point is stale by more than the rounding of the points
+check(all(1 / 1.1 <= r <= 1.1 for _, _, r in st), 'stale: --derive prints the committed curves within the rounding of the points')
 check(max(r for _, _, r in st) <= cfg['limits']['curveTol'], 'stale: inside limits.curveTol (%g)' % cfg['limits']['curveTol'])
-check(cfg['limits']['curveTol'] > 1.1, 'curveTol is the owner-decision gap of O444 (1.10 once the curves are derived again)')
+check(cfg['limits']['curveTol'] <= 1.1 + 1e-9, 'curveTol is back at the target 1.10 (O475; it was 2.4 under the owner decision of O444)')
 # applying the derive output closes the gap: the same config with the printed lines is no longer stale
 applied = text
 for name, line in zip(('health', 'bossHealth', 'lootShare', 'killGold'), (health, boss_health, share, gold)):

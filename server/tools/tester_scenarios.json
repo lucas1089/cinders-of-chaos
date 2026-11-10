@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 67,
+  "opcode": 68,
   "out": 38,
-  "passive": 106,
+  "passive": 108,
   "place": 15,
   "staff": 17
  },
@@ -10591,7 +10591,8 @@
    "out": false,
    "skip": [],
    "systems": [
-    "combine"
+    "combine",
+    "damage_pool"
    ]
   },
   "survey": {
@@ -11388,6 +11389,19 @@
     "/daily"
    ]
   },
+  "damage_pool": {
+   "files": [
+    "gems.lua",
+    "supports.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "supports"
+   ],
+   "talkactions": [
+    "/supports"
+   ]
+  },
   "daybook": {
    "files": [
     "chaos_constants.lua"
@@ -11474,6 +11488,15 @@
     "displayScale"
    ],
    "talkactions": []
+  },
+  "dot": {
+   "files": [
+    "item_mods.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "embercache": {
    "files": [
@@ -12466,6 +12489,13 @@
    "talkactions": [
     "/professions"
    ]
+  },
+  "pvp_scale": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "pvpzone": {
    "files": [

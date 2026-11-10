@@ -1,4 +1,4 @@
--- Witchfire Bolt: single target fire bolt that leaves the target burning.
+-- Witchfire Bolt: single target fire bolt that leaves the target burning for 1.8 s (30% of the bolt's damage); the burn moves to a nearby enemy if the target dies.
 dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosMysticFx then
 	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
@@ -15,6 +15,8 @@ combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, ChaosVfxMissile and CONST_ANI_N
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 3.0) + 15) * 1.2
 	local max = ((level / 5) + (magicLevel * 5.0) + 30) * 1.2
+	-- O472: the weapon growth of a caster (ChaosSpell.casterShare: W(level) x the wand of the hands)
+	min, max = ChaosSpell.casterScale(player, min, max)
 	return -min, -max
 end
 
@@ -42,10 +44,16 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 	if target and target ~= creature then
-		-- O468: the burn is 4 scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.15 + 3), one every
-		-- 3 s: they take crit, supports, cards, keystones and the rest like the bolt
-		local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.15) + 3)
-		ChaosSpell.scriptedDot(creature:getId(), target:getId(), "witchfire", COMBAT_FIREDAMAGE, 4, 3000, dmg, CONST_ME_HITBYFIRE)
+		-- O468: the burn is scripted ticks (ChaosSpell.scriptedDot): they take crit, supports, cards, keystones and the rest like
+		-- the bolt. O474: 6 ticks 300 ms apart, together 0.30 x the bolt's own hit (ChaosDotConfig.side; the class spell factor is
+		-- not taken off: the share is of the hit as dealt); the rest moves on when the target dies. Against a player the old 4 ticks
+		-- 3 s apart of what the condition dealt (magic level x 0.15 + 3).
+		local D = ChaosDot
+		local lo, hi = onGetFormulaValues(creature, creature:getLevel(), creature:getMagicLevel())
+		local side = D.cfg().side
+		local old = math.max(2, math.floor(creature:getMagicLevel() * 0.15) + 3) * ChaosSpell.casterShare(creature) -- O472
+		ChaosSpell.scriptedDot(creature:getId(), target:getId(), "witchfire", COMBAT_FIREDAMAGE, side.ticks, side.tickMs,
+			D.sideTick(-lo, -hi, side), CONST_ME_HITBYFIRE, {raw = true, pvp = D.pvpSideOpts("witchfire", old)})
 	end
 	return true
 end

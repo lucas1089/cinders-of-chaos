@@ -322,9 +322,23 @@ for _, key in ipairs(A_CFG.sharedMods) do
 end
 ok(not qpool["rarity_distanceSkill"] and not qpool["rarity_fireAbsorb"] and not qpool["rarity_lifeLeechChance"],
 	"no engine skill or absorb on a quiver (the base rarity script would apply it without a bow)")
--- O461 (owner list): the two critical modifiers name the quiver among their kinds; the base script applies them while the
--- quiver is worn, like the badge's
-ok(qpool["rarity_criticalHitChance"] and qpool["rarity_criticalHitAmount"], "a quiver rolls Critical Strike Chance and Damage")
+-- O461 had the two critical modifiers roll on a quiver; O471 (2026-11-10) takes the quiver and the badge out of their kinds
+-- (weapon, necklace and ring only): no new roll, the character caps of ChaosItemMods.config.crit hold what a quiver gives
+ok(not qpool["rarity_criticalHitChance"] and not qpool["rarity_criticalHitAmount"], "a quiver no longer rolls Critical Strike Chance and Damage")
+ok(wpool["rarity_criticalHitChance"] ~= nil and wpool["rarity_criticalHitAmount"] ~= nil, "a weapon still does")
+-- a quiver that already carries one keeps it: the item is read as it is, whatever its kind allows
+do
+	local oldQuiver = newItem(QUIVER)
+	oldQuiver:setCustomAttribute("rarity_criticalHitChance", 5)
+	oldQuiver:setCustomAttribute("rarity_criticalHitAmount", 30)
+	local seenC, seenA
+	for _, m in ipairs(C.readMods(oldQuiver)) do
+		if m.key == "rarity_criticalHitChance" then seenC = m.value end
+		if m.key == "rarity_criticalHitAmount" then seenA = m.value end
+	end
+	eq(seenC, 5, "an old quiver keeps its Critical Strike Chance")
+	eq(seenA, 30, "and its Critical Strike Damage")
+end
 ok(not qpool.movespeed and not qpool.attackspeed, "no boots or weapon modifiers")
 ok(wpool.attackspeed and wpool["rarity_distanceSkill"], "weapons keep theirs")
 
@@ -862,6 +876,27 @@ local unpatched = newItem(27471)
 unpatched.attrs[ITEM_ATTRIBUTE_ATTACK] = 12
 ok(not A.migrate(unpatched), "nothing changes on an unpatched server")
 TYPES[27471].ammoType = AMMO_NONE
+-- O472: the weapon growth makes the launcher type's attack higher (74 -> 140 here). A launcher rolled after the archery patch holds
+-- 74 + 3; it must not read as an old one (stored under the type's) and gain the ammunition again: the touch moves it by the change
+-- of its base first (ChaosCrafting.growWeapon, called by A.migrate), then the legacy rule sees 143 against 140
+do
+	local typeAttack = TYPES[27471].attack
+	TYPES[27471].attack = 140
+	C.setGrowthTable({version = 1, types = {[27471] = {typeAttack, 140}}, uniques = {}})
+	local rolled = newItem(27471)
+	rolled.attrs[ITEM_ATTRIBUTE_ATTACK] = typeAttack + 3
+	ok(A.migrate(rolled), "a rolled launcher of the numbers before is moved")
+	eq(rolled.attrs[ITEM_ATTRIBUTE_ATTACK], 140 + 3, "74 + 3 became 140 + 3, the ammunition is not added a second time")
+	ok(not A.migrate(rolled), "once")
+	local legacy = newItem(27471)
+	legacy.attrs[ITEM_ATTRIBUTE_ATTACK] = 12
+	A.migrate(legacy)
+	eq(legacy.attrs[ITEM_ATTRIBUTE_ATTACK], 140 + 3, "a launcher of before the ammunition: grown, then the band added: the same 140 + 3")
+	local plain = newItem(27471)
+	ok(not A.migrate(plain), "a launcher with no stored attack reads the type")
+	TYPES[27471].attack = typeAttack
+	C.setGrowthTable(nil)
+end
 -- moved into the hands: migrated; ammunition moved into the inventory: refunded
 local moving = newItem(27471)
 moving.attrs[ITEM_ATTRIBUTE_ATTACK] = 10

@@ -605,6 +605,12 @@ local function runAbilities(player, live, pet, rule, pvp, ms)
 	if pet and abilityOn(live, "aura", rule, pvp) and ms >= live.nextAura then
 		local a = cfg.abilities.aura
 		local lo, hi = K.auraDamage(player:getLevel(), level, cfg)
+		-- O472: a Beastmaster's pet takes the same weapon growth as his wolves and bite (ChaosClasses.wolfGrowth)
+		if ChaosClasses and ChaosClasses.wolfGrowth and player.getVocation and player:getVocation()
+				and ChaosClasses.classKey(player:getVocation():getId()) == "beastmaster" then
+			local g = ChaosClasses.wolfGrowth(player)
+			lo, hi = math.floor(lo * g), math.floor(hi * g)
+		end
 		local el = ELEMENT[live.speciesEntry.element] or ELEMENT.physical
 		local hits = 0
 		for _, t in ipairs(threatsOf(player, pet:getPosition(), 1, true)) do

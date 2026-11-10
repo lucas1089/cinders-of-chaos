@@ -24,7 +24,6 @@ AttackKit = {}
 local A = AttackKit
 local K = ChaosAttackKitCore
 A.dots = {}
-local tokens = 0
 
 local COMBAT = {
 	physical = COMBAT_PHYSICALDAMAGE, holy = COMBAT_HOLYDAMAGE, earth = COMBAT_EARTHDAMAGE,
@@ -124,9 +123,19 @@ function A.weaponShare(player, spec)
 	return 1
 end
 
+-- O472: a caster spell of the kit (the magic school: it reads the magic level only) takes the caster's weapon growth, W(level) x the wand
+-- of the hands (ChaosSpell.casterShare). The necro school takes it inside ChaosNecro.values (necro_lib.lua spellFactor), the
+-- templar school reads the weapon already.
+function A.casterShare(player, spec)
+	if spec.school == "magic" then
+		return ChaosSpell.casterShare(player)
+	end
+	return 1
+end
+
 function A.rawValues(player, spec, chiScale)
 	local lo, hi = A.baseValues(player, spec, chiScale)
-	local k = A.weaponShare(player, spec)
+	local k = A.weaponShare(player, spec) * A.casterShare(player, spec)
 	return lo * k, hi * k
 end
 
@@ -236,27 +245,35 @@ local function critMult(player, target, spec)
 end
 
 -- ------------------------------------------------------------------------------------------- damage over time
+-- O474: the first tick at once, then every spec.tickMs (attack_kit_config.lua, ChaosDotConfig.kit), on ChaosSpell.dotChain: when
+-- the host dies the rest moves on to the nearest living monster within 3 squares. Against a PLAYER the old gap, first tick and
+-- size (ChaosDotConfig.pvp.kit) and no jump.
 local function startDot(player, target, key, spec, lo, hi, effect)
-	if spec.school == "necro" then
-		return NecroSpell.dot(player:getId(), target:getId(), key, spec.ticks, spec.tickMs, lo, hi, COMBAT[spec.ctype], effect)
+	local D = ChaosDot
+	local tickMs, firstMs = spec.tickMs, 0
+	local radius = D and D.cfg().jump and D.cfg().jump.radius or 0
+	if D and target:isPlayer() then
+		local old = D.pvpKit(key)
+		if old then
+			local first = old.firstMs
+			if spec.school == "necro" then
+				first = D.pvpNecro(key).firstMs -- the Necromancer line's dots first ticked a gap after the cast
+			end
+			tickMs, firstMs, lo, hi = old.tickMs or tickMs, first or 0, lo * old.mult, hi * old.mult
+		end
+		radius = 0
 	end
-	tokens = tokens + 1
-	local token = tokens
-	local slot = key .. ":" .. player:getId() .. ":" .. target:getId()
-	A.dots[slot] = token
-	local casterId, targetId = player:getId(), target:getId()
-	ChaosSpell.pulse(casterId, spec.ticks, spec.tickMs, function(caster, step)
-		local host = Creature(targetId)
-		if A.dots[slot] ~= token or not host or host:getHealth() <= 0 then
-			A.dots[slot] = nil
-			return false
-		end
-		A.hit(caster, host, spec, lo, hi, effect)
-		if step >= spec.ticks then
-			A.dots[slot] = nil
-		end
-		return true
-	end)
+	if spec.school == "necro" then
+		return NecroSpell.dot(player:getId(), target:getId(), key, spec.ticks, tickMs, lo, hi, COMBAT[spec.ctype], effect, radius,
+			firstMs)
+	end
+	ChaosSpell.dotChain({
+		casterId = player:getId(), targetId = target:getId(), key = key, registry = A.dots, ticks = spec.ticks, tickMs = tickMs,
+		firstMs = firstMs, jumpRadius = radius, ctype = COMBAT[spec.ctype],
+		deal = function(caster, host)
+			A.hit(caster, host, spec, lo, hi, effect)
+		end,
+	})
 	return true
 end
 

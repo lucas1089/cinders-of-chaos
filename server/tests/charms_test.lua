@@ -232,7 +232,7 @@ eq(own.manaonkill, 0, "no harvester, no mana")
 own, gear, sig = C.totals(cfg, {grand("dmg_undead", 9), grand("dmg_undead", 9), {charm = C.rollCharm(cfg, {unique = "gravewarden"})},
 	{charm = C.rollCharm(cfg, {unique = "tally"})}, {charm = C.rollCharm(cfg, {unique = "hoard"})}, grand("res_fire", 6),
 	grand("res_fire", 6)})
-eq(own.dmg_undead, 15, "family capped (9 + 9 + 6 -> 15)")
+eq(own.dmg_undead, 15, "family capped (9 + 9 + 6 -> 15; the damage pool counts 6 of it with the weapon family, O473)")
 eq(own.res_death, 4, "unique resistance")
 eq(own.res_fire, 8, "element capped")
 eq(own.lifeonkill, 12, "tally")
@@ -917,10 +917,19 @@ CH.recompute(player)
 local monster = {name = "Skeleton", isMonster = function() return true end, isPlayer = function() return false end,
 	getType = function() return {race = function() return 3 end} end}
 eq(CH.familyOf(monster), "undead", "skeleton family")
+-- O473: a player's own hit takes Damage to a family from the additive damage pool (provider "charms"); the event keeps the hits of
+-- the player's summons
 local dmg = events.ChaosCharmsDealt.onHealthChange(monster, player, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, 0)
-eq(dmg, -106, "damage to undead +6%")
+eq(dmg, -100, "the event leaves a player's own hit to the pool")
+eq(ChaosDamagePool.raws({attacker = player, creature = monster, origin = 0, cache = {}}, COMBAT_PHYSICALDAMAGE, "primary").charms, 6,
+	"pool: damage to undead +6 raw")
+local summon = {isPlayer = function() return false end, getMaster = function() return player end}
+eq(events.ChaosCharmsDealt.onHealthChange(monster, summon, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, 0), -106,
+	"a summon of the player: damage to undead +6%")
 local dragon = {name = "Dragon Lord", isMonster = function() return true end, getType = function() return {race = function() return 2 end} end}
 eq(events.ChaosCharmsDealt.onHealthChange(dragon, player, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, 0), -100, "no dragon bonus")
+eq(ChaosDamagePool.raws({attacker = player, creature = dragon, origin = 0, cache = {}}, COMBAT_PHYSICALDAMAGE, "primary").charms, nil,
+	"pool: no dragon bonus")
 -- death resistance and the Last Ember
 local attacker = monster
 local p1 = events.ChaosCharmsTaken.onHealthChange(player, attacker, -100, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE or 0, 0)

@@ -30,7 +30,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local o = cfg.boneOffering
 	local min, max = N.offeringValues(cfg, player:getLevel(), player:getMagicLevel(), pick.creature:getHealth())
 	-- Covenant of the Grave: a spell of the owner (the bigger skeleton's health already raised it)
-	local own = L.ownSpellFactor(player)
+	local own = L.ownSpellFactor(player) * L.casterShare(player) -- O472: and the caster's weapon growth
 	min, max = math.floor(min * own), math.floor(max * own)
 	local pos = pick.pos
 	L.dismiss(pick.creature)

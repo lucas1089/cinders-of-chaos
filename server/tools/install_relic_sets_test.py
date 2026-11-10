@@ -65,9 +65,9 @@ def stat(key, name):
     return dict(by[key]['stats']).get(name)
 
 
-check([stat('venomcoil_bow', k) for k in ('attack', 'hitChance', 'skillDist', 'attackspeed', 'range')] == [75, 96, 3, 3000, 6], 'venomcoil bow: attack 75, hit 96, skill 3')
+check([stat('venomcoil_bow', k) for k in ('attack', 'hitChance', 'skillDist', 'attackspeed', 'range')] == [121, 96, 3, 3000, 6], 'venomcoil bow: attack 121 (O472, was 75), hit 96, skill 3')
 check(stat('venomcoil_bow', 'shootType') == 'poisonarrow' and stat('deepdirge_bow', 'shootType') == 'onyxarrow', 'missiles of the set')
-check(by['venomcoil_staff']['wand'][:3] == (90, 122, 23) and by['venomcoil_staff']['wand'][3] == 'earth', 'venomcoil scepter: 90-122, mana 23, earth')
+check(by['venomcoil_staff']['wand'][:3] == (144, 195, 23) and by['venomcoil_staff']['wand'][3] == 'earth', 'venomcoil scepter: 144-195 (O472, was 90-122), mana 23, earth')
 check(by['halogild_staff']['kind'] == 'rod' and by['halogild_staff']['wand'][3] == 'holy' and stat('halogild_staff', 'shootType') == 'smallholy', 'halogild staff is a rod, holy damage and missile')
 check(stat('kilnforged_axe', 'attackspeed') == 3000 and stat('kilnforged_sword', 'attackspeed') is None, 'two-handed axe 3000 ms, sword none')
 check(not any(k.startswith('lifeleech') for r in rows for k, _v in r['stats']), 'no leech: that is the Bloodmoon set alone')
@@ -107,7 +107,7 @@ raises(lambda: T.patch_moves('<movements>\n<movevent event="Equip" itemid="48446
 wx = '<weapons>\n</weapons>\n'
 nw, note = T.patch_weapons(wx, rows)
 check(nw.count('<distance ') == 5 and nw.count('<wand ') == 5 and nw.count('<melee ') == 15, 'weapons.xml: 5 bows, 5 wands and rods, 15 melee')
-check('<wand id="48456" level="640" mana="23" min="90" max="122" type="earth">' in nw, 'weapons.xml: a wand with its damage, mana and element')
+check('<wand id="48456" level="640" mana="23" min="144" max="195" type="earth">' in nw, 'weapons.xml: a wand with its damage, mana and element (O472: 144-195, was 90-122)')
 check(T.patch_weapons(nw, rows)[0] == nw, 'weapons.xml idempotent')
 
 # ---- the generated Lua is up to date

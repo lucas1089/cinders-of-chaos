@@ -36,12 +36,21 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import rotation_sim as R
 import pack_model as P
+import weapon_growth as WG
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CLASS = 'Beastmaster'
 HIT_S = 2.0  # seconds between the hits of a monster (the stock attack interval)
 TRIALS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'trials_nodes.lua')
 WOLF_SPELLS = ('Feral Command', 'Pack Frenzy', 'Pack Howl', 'Rending Pounce')
+# O472: the weapon growth W(level) on a Beastmaster with a bow of its level's band (spell_scaling_config.lua caster.wolves): the wolves'
+# bite, maul and aura take it as a factor in the raw value (so the armour sees the bigger hit), the bow spells and the auto attack
+# through the attack. The measured table has the attack before the growth, so the model multiplies by W; False = the model before O472
+GROWTH = True
+
+
+def growth(level):
+    return WG.weapon_w(level) if GROWTH else 1.0
 BUILDS = ('plain', 'tree', 'full')
 
 
@@ -295,19 +304,20 @@ def totals(level, build='tree'):
     g_head = class_factor(level, _before()['classDamage']) / class_factor(level, base)
     g_old = class_factor(level, bal['legacy']['classDamage']) / class_factor(level, base)
     d1, d5, w1, w5, names, top = best(level, build)
-    bites = companion_dps(level, factor=wolf_factor(build))
-    spell1, spell5 = s2t1 * d1 * g_new, s2t5 * d5 * g_new
-    wolf1, wolf5 = s2t1 * w1 * g_new, s2t5 * w5 * g_new
+    gw = growth(level)
+    bites = companion_dps(level, factor=wolf_factor(build) * gw)
+    spell1, spell5 = s2t1 * d1 * g_new * gw, s2t5 * d5 * g_new * gw
+    wolf1, wolf5 = s2t1 * w1 * g_new * gw, s2t5 * w5 * g_new * gw
     head_bites = companion_dps(level, head=True)
-    head1 = (raw1 - old + head_bites) * g_head
-    head5 = (raw5 - old + head_bites) * g_head
-    before1 = raw1 * g_old
+    head1 = (raw1 - old + head_bites) * g_head * gw   # the references of before also grow: the limits bound a build against the class
+    head5 = (raw5 - old + head_bites) * g_head * gw
+    before1 = raw1 * g_old * gw
     return {'raw1': raw1, 'raw5': raw5, 'old': old, 'bites': bites, 'spell1': spell1, 'spell5': spell5,
-            'wolf1': wolf1, 'wolf5': wolf5, 'top1': s2t1 * top * g_new, 'set': names,
+            'wolf1': wolf1, 'wolf5': wolf5, 'top1': s2t1 * top * g_new * gw, 'set': names,
             'total1': spell1 + bites, 'total5': spell5 + bites, 'total5c': (spell5 + bites) * cleave(level), 'head5c': head5 * cleave(level, head=True),
             'share': (wolf1 + bites) / (spell1 + bites),
             'share5': (wolf5 + bites) / (spell5 + bites), 'spellshare': wolf1 / (spell1 + bites),
-            'bitesshare': bites / (spell1 + bites), 'topshare': s2t1 * top * g_new / (spell1 + bites),
+            'bitesshare': bites / (spell1 + bites), 'topshare': s2t1 * top * g_new * gw / (spell1 + bites),
             'head1': head1, 'head5': head5, 'before1': before1, 's2t1': s2t1, 's2t5': s2t5, 'g_new': g_new,
             'g_head': g_head, 'g_old': g_old, 'cleave': cleave(level)}
 

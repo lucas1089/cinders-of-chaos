@@ -288,10 +288,22 @@ function M.sendChi(player, chi, hide)
 end
 
 -- ------------------------------------------------------------------------------------------------ unarmed
--- the attack value of a Monk's fists at `level` (fistWeaponAttack: the best fist weapon in hand, or 0)
+-- O472: the weapon growth a(level) = 1 + (W - 1) / 0.85 (spell_scaling_core.lua S.weaponA): the bare fist's attack grows with the level the way
+-- the attack of every weapon does (the fist weapons' attack grows at the install, tools/install_fist_weapons.py). 1 up to level 100.
+function M.weaponGrowth(level)
+	if not rawget(_G, "ChaosSpellScaling") then
+		pcall(dofile, "data/scripts/chaos/spell_scaling_config.lua")
+		pcall(dofile, "data/scripts/chaos/spell_scaling_core.lua")
+	end
+	local S = rawget(_G, "ChaosSpellScaling")
+	return S and S.weaponA and S.weaponA(level) or 1
+end
+
+-- the attack value of a Monk's fists at `level` (fistWeaponAttack: the best fist weapon in hand, or 0): the level value (attackBase +
+-- attackPerLevel x level, at most attackMax) times the weapon growth, or the fist weapon's attack when that is higher
 function M.fistAttack(level, fistWeaponAttack)
 	local u = cfg().unarmed
-	local byLevel = math.min(u.attackMax, u.attackBase + (level or 0) * u.attackPerLevel)
+	local byLevel = math.min(u.attackMax, u.attackBase + (level or 0) * u.attackPerLevel) * M.weaponGrowth(level)
 	return math.max(byLevel, fistWeaponAttack or 0)
 end
 

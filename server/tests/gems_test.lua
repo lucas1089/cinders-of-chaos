@@ -469,8 +469,19 @@ eq(p.conds[7240], nil, "removed when nothing is equipped")
 -- damage dealt and taken
 G.applyTotals(p, {dmg_fire = 10, res_ice = 20})
 local monster = {isPlayer = function() return false end, getMaster = function() return nil end}
+-- O473: a player's own hit takes the gem damage from the additive damage pool (provider "gems"), not from this event
 local a, _, b2 = events.ChaosGemsDealt.onHealthChange(monster, p, -100, COMBAT_FIREDAMAGE, -50, COMBAT_ICEDAMAGE, 0)
-eq(a, -110, "fire hit +10%"); eq(b2, -50, "ice part unchanged")
+eq(a, -100, "the event leaves a player's own hit to the pool"); eq(b2, -50, "ice part unchanged")
+local hit = {attacker = p, creature = monster, origin = 0, cache = {}}
+eq(ChaosDamagePool.raws(hit, COMBAT_FIREDAMAGE, "primary").gems, 10, "pool: fire hit +10 raw")
+eq(ChaosDamagePool.raws(hit, COMBAT_ICEDAMAGE, "secondary").gems, nil, "pool: the ice part has no gem damage")
+eq(ChaosDamagePool.raws(hit, COMBAT_HEALING, "primary").gems, nil, "pool: a heal gets none")
+eq(ChaosDamagePool.raws({attacker = p, creature = p, origin = 0, cache = {}}, COMBAT_FIREDAMAGE, "primary").gems, nil, "pool: never against oneself")
+G.applyTotals(p, {dmg_fire = 25, dmg_physical = 12})
+eq(ChaosDamagePool.raws(hit, COMBAT_FIREDAMAGE, "primary").gems, 25, "pool: the cap of one element is 25 raw")
+eq(ChaosGems.config.effects.dmg_fire.cap, 25, "gem fire cap 25 (O473, was 40)")
+eq(ChaosGems.config.effects.dmg_physical.cap, 12, "physical cap 12")
+G.applyTotals(p, {dmg_fire = 10, res_ice = 20})
 local summon = {isPlayer = function() return false end, getMaster = function() return p end}
 eq((events.ChaosGemsDealt.onHealthChange(monster, summon, -100, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, 0)), -110, "summons too")
 eq((events.ChaosGemsDealt.onHealthChange(monster, p, 100, COMBAT_HEALING, 0, COMBAT_NONE, 0)), 100, "heals untouched")

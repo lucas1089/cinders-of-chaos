@@ -87,12 +87,35 @@ end
 
 -- ---------------------------------------------------------------- prices
 eq(K.interp(cfg.price.curve, 1), 1500, "price at item level 1")
-eq(K.interp(cfg.price.curve, 36), 56000, "price at 36")
+-- O471 (2026-11-10): the points sit on the item levels of the flatter item level curve (33 where 36 was, 82 where 90 was)
+eq(K.interp(cfg.price.curve, 33), 56000, "price at 33")
 eq(K.interp(cfg.price.curve, 200), 1800000, "flat past the end")
-eq(K.price(cfg, 36, "armor"), 64400, "armour x1.15")
-eq(K.price(cfg, 36, "weapon"), 72800, "weapon x1.3")
-eq(K.price(cfg, 36, "boots"), 50400, "boots x0.9")
-eq(K.price(cfg, 90, "helmet"), 850000, "helmet at 90")
+eq(K.price(cfg, 33, "armor"), 64400, "armour x1.15")
+eq(K.price(cfg, 33, "weapon"), 72800, "weapon x1.3")
+eq(K.price(cfg, 33, "boots"), 50400, "boots x0.9")
+eq(K.price(cfg, 82, "helmet"), 850000, "helmet at 82")
+-- the rule behind the move: the gold a piece costs at a MONSTER level is what it was before the curve changed (within the
+-- whole item levels the price steps in): the old curves, inline
+do
+	local function line(c, x)
+		if x <= c[1][1] then return c[1][2] end
+		for i = 2, #c do
+			local a, b = c[i - 1], c[i]
+			if x <= b[1] then return a[2] + (b[2] - a[2]) * (x - a[1]) / (b[1] - a[1]) end
+		end
+		return c[#c][2]
+	end
+	local oldItem = {{1, 1}, {10, 5}, {25, 12}, {50, 22}, {100, 36}, {200, 54}, {350, 74}, {500, 90}, {700, 106}, {900, 118},
+		{1100, 128}, {1500, 136}, {3000, 142}, {6000, 145}}
+	local oldPrice = {{1, 1500}, {4, 3000}, {5, 3600}, {12, 8300}, {18, 13000}, {22, 20000}, {36, 56000}, {54, 97000},
+		{67, 150000}, {74, 300000}, {90, 850000}, {106, 1100000}, {118, 1350000}, {123, 1500000}, {136, 1650000}, {150, 1800000}}
+	for _, level in ipairs({30, 50, 100, 150, 200, 300, 400, 500, 700, 900, 1000, 1100, 1300, 1500}) do
+		local was = line(oldPrice, math.max(1, math.floor(line(oldItem, level)) - cfg.itemLevel.spread))
+		local gate = ChaosItemMods.sourceLevel({monsterLevel = level, tier = cfg.itemLevel.tier})
+		local now = K.interp(cfg.price.curve, math.max(1, gate - cfg.itemLevel.spread))
+		check(math.abs(now / was - 1) < 0.15, string.format("the price at monster level %d: %.0f now, %.0f before", level, now, was))
+	end
+end
 for l = 2, 150 do
 	check(K.price(cfg, l, "helmet") >= K.price(cfg, l - 1, "helmet"), "the price rises with the item level " .. l)
 end
@@ -261,8 +284,8 @@ for _, e in ipairs(fixed) do
 end
 -- recorded once under LuaJIT and Lua 5.3; must not change between interpreters or runs (it would move every player's
 -- stock). A change of the pool, the slot weights or the generator changes it: then record the new one.
-eq(table.concat(sig, ","), "27197@67,27197@65,27198@67,28111@61,22424@62,27653@61,29471@64,27227@64,28113@65,28100@63," ..
-	"27692@61,28109@67,28115@67,27211@64", "the stock of a fixed character and window")
+eq(table.concat(sig, ","), "27197@62,27197@60,27198@62,28111@56,22424@57,27653@56,29471@59,27227@59,28113@60,28100@58," ..
+	"27692@56,28109@62,28115@62,27211@59", "the stock of a fixed character and window")
 
 -- ---------------------------------------------------------------- the equipment sets of pair 28
 do

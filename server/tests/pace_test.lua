@@ -92,12 +92,17 @@ end
 local function engineRatio(f, L)
 	return f.xp * math.max(1, 0.03 * L) / (f.health * (1 + 0.0074 * L))
 end
-for _, L in ipairs({650, 800, 1000, 1300, 1600, 2000}) do
+for _, L in ipairs({650, 700, 800, 1000, 1300, 1600, 2000}) do
 	local f = P.factors(cfg, L, true)
 	local r = engineRatio(f, L)
 	-- O138: the late sets lost most of their health (packs die in about 2x a base pack), so the kill pays more per health
 	-- point than a base kill (1.1-1.6), the experience per hour is unchanged (tools/progression_model.lua --check)
-	ok(r >= 1.0 and r <= 1.6, "scaled xp per health with the engine factors at " .. L .. ": " .. r)
+	-- O470 (2026-11-10): up to 2.6 at 650 and 700 (it was 1.6 everywhere; the numbers are 2.34 at 650, 2.18 at 700, 1.52 at 800).
+	-- The level-scaled health at 650-700 is the base set's at 657 now (5372) where it was 2.2x that, and a level-scaled kill
+	-- paid its experience for that 2.2x. The experience of a kill over its health, with both engine factors, is 1.0-1.1 for the
+	-- level-scaled monsters of 650-900 (tools/pace_scan.lua) and 1.15 for the base median at 600
+	local top = L <= 700 and 2.6 or 1.6
+	ok(r >= 1.0 and r <= top, "scaled xp per health with the engine factors at " .. L .. ": " .. r)
 	ok(f.loot >= f.xp, "scaled loot >= xp at " .. L)
 	local g = P.factors(cfg, L, true, true)
 	local rg = engineRatio(g, L)

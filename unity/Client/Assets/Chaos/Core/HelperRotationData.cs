@@ -14,8 +14,8 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(20, 2.00, new[] { 85, 200, 201, 169 }, new[] { 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(25, 2.00, new[] { 207, 85, 200, 201, 169 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(60, 2.00, new[] { 207, 85, 53, 169 }, new[] { 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(150, 2.00, new[] { 204, 210, 207, 228, 53 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(200, 2.00, new[] { 204, 210, 207, 85, 203 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(150, 2.00, new[] { 204, 207, 228, 53, 169 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(200, 2.00, new[] { 204, 210, 207, 203, 228 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(500, 2.00, new[] { 152, 204, 210, 85, 203 }, new[] { 1, 1, 1, 1, 1 }));
               c.Extras.AddRange(new[] { 227 });
               c.Heals.Add(new RotHeal(3, 30));
@@ -62,10 +62,9 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(150, 2.00, new[] { 204, 13, 202, 200, 163 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(200, 2.00, new[] { 204, 13, 202, 200, 203 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(220, 2.00, new[] { 205, 204, 13, 200, 203 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(300, 3.00, new[] { 206, 205, 204, 200, 203 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(420, 2.00, new[] { 146, 206, 205, 200, 163 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(300, 2.00, new[] { 206, 205, 204, 200, 163 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(420, 5.00, new[] { 146, 206, 205, 204, 203 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(500, 5.00, new[] { 146, 206, 152, 205, 204 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(1000, 2.00, new[] { 146, 206, 205, 200, 163 }, new[] { 1, 1, 1, 1, 1 }));
               c.Heals.Add(new RotHeal(3, 30));
               c.Heals.Add(new RotHeal(1, 8));
               classes[5] = c; }
@@ -110,9 +109,10 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(110, 3.00, new[] { 85, 228, 53 }, new[] { 1, 1, 1 }));
               c.Presets.Add(new RotPreset(130, 2.00, new[] { 85, 24, 228, 53, 169 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(170, 2.00, new[] { 38, 85, 24, 53, 169 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(200, 2.00, new[] { 38, 85, 24, 203, 228 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(210, 2.00, new[] { 38, 230, 24, 203, 53 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(250, 2.00, new[] { 38, 230, 213, 24, 53 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(200, 2.00, new[] { 38, 85, 24, 228, 169 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(210, 2.00, new[] { 38, 230, 24, 228, 53 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(230, 2.00, new[] { 38, 230, 24, 203, 53 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(250, 2.00, new[] { 38, 230, 213, 203, 228 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(280, 2.00, new[] { 231, 230, 213, 43, 53 }, new[] { 1, 1, 1, 1, 1 }));
               c.Extras.AddRange(new[] { 152 });
               c.Heals.Add(new RotHeal(208, 20));
@@ -256,9 +256,8 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(100, 2.00, new[] { 182, 107, 183, 106, 181 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(110, 2.00, new[] { 182, 112, 107, 183, 106 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(135, 2.00, new[] { 182, 112, 107, 113, 183 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(270, 2.00, new[] { 182, 193, 112, 107, 113 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(500, 2.00, new[] { 182, 158, 112, 107, 113 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(1000, 2.00, new[] { 182, 158, 112, 107, 183 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(270, 2.00, new[] { 182, 193, 112, 107, 183 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(500, 2.00, new[] { 182, 158, 112, 107, 183 }, new[] { 1, 1, 1, 1, 1 }));
               c.Extras.AddRange(new[] { 118, 184 });
               c.Heals.Add(new RotHeal(103, 300));
               c.Heals.Add(new RotHeal(3, 30));
@@ -271,7 +270,7 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(90, 2.00, new[] { 182, 107, 106, 181 }, new[] { 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(110, 2.00, new[] { 182, 112, 107, 106, 181 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(135, 2.00, new[] { 182, 112, 107, 113, 106 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(150, 2.00, new[] { 182, 188, 112, 107, 106 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(150, 2.00, new[] { 182, 188, 112, 113, 181 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(170, 2.00, new[] { 182, 188, 112, 107, 118 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(210, 2.00, new[] { 182, 119, 112, 107, 118 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(250, 2.00, new[] { 182, 120, 112, 107, 118 }, new[] { 1, 1, 1, 1, 1 }));
@@ -290,7 +289,7 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(120, 2.00, new[] { 190, 126, 122, 137, 121 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(140, 2.00, new[] { 190, 126, 122, 137, 127 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(160, 2.00, new[] { 190, 128, 122, 137, 127 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(190, 2.00, new[] { 190, 128, 122, 137, 129 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(190, 2.00, new[] { 190, 128, 137, 129, 127 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(230, 2.00, new[] { 190, 126, 137, 131, 129 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(250, 2.00, new[] { 250, 190, 137, 131, 129 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(500, 2.00, new[] { 177, 190, 137, 131, 129 }, new[] { 1, 1, 1, 1, 1 }));
@@ -319,7 +318,7 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(150, 2.00, new[] { 190, 122, 170, 127, 189 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(160, 2.00, new[] { 190, 128, 122, 170, 127 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(210, 2.00, new[] { 190, 141, 128, 170, 127 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(230, 3.00, new[] { 190, 141, 128, 170, 131 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(230, 2.00, new[] { 190, 141, 122, 170, 127 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(250, 2.00, new[] { 250, 190, 122, 170, 131 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(500, 2.00, new[] { 190, 141, 128, 170, 127 }, new[] { 1, 1, 1, 1, 1 }));
               c.Extras.AddRange(new[] { 177 });

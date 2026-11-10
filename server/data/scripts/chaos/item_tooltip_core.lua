@@ -24,10 +24,12 @@
 --   set = {..., tier, tiers}  a plain item that is a piece of an open set (pair 28): the same block, the active tier
 --   base = [{k, l, v, fmt}]                        attack, defense, armour, hit chance, range, attack speed, element,
 --                                                  the item type's own bonuses (skills, protections, speed, ...)
---   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd, bd, pw}]  every modifier, the corrupted implicit first, then the
+--   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd, bd, pw, cap, over}]  every modifier, the corrupted implicit first, then the
 --                                                  prefixes: attribute key, label, text, value, group, the value range of
 --                                                  its tier, tier (1..8), side "i" (a Void Orb's implicit) / "p" / "s",
---                                                  bd = bound (Orb of Binding), pw = a legendary power
+--                                                  bd = bound (Orb of Binding), pw = a legendary power; O471: cap = the most a
+--                                                  character gets from all sources of a critical chance (45), critical damage
+--                                                  (150) or penetration (20), over = true when the viewer's total is above it
 --   sockets = {count, max, list = [{name, text, color}]}   empty sockets have no name
 --   veil = {s = "veiled"} | {s = "open", n, t, tr, tn, lo, hi, h}   the veiled slot (chaos_veiled.lua V.tooltip): name,
 --                                                  text, veiled tier 1..4 and its name, its range, h = an effect of its own
@@ -553,6 +555,35 @@ function T.chargeInfo(charges, typeCharges)
 end
 
 -- a unique's passive as a block of its own (owner 2026-11-01: "deixe esse texto especial mais em evidência"): the
+-- O475 (2026-11-10): the passive line of a unique from the CURRENT config, whatever the stored description says. The line is written
+-- into the description when the item is made (tools/gen_unique_specs.py), so an owned copy keeps the numbers of its day (O473
+-- repriced 28 passives: the exact text is no longer in it). The line starts at "<Name>: " and ends before " (Requires level N" (or
+-- " (Requer nivel N") or at the end. `en` is the current English line (ChaosUniquePassivesCore.text), `name` the passive's English
+-- name. Returns the description with the current line in the place of the stored one, and true when a line was replaced; the
+-- description as it was and false when the exact line is in it already (nothing to do) or no "<Name>: " is in it (then the
+-- caller keeps the old behaviour: no block). A name that appears twice is left alone (the first "<Name>: " would be a guess).
+function T.refreshPassive(desc, en, name)
+	if type(desc) ~= "string" or type(en) ~= "string" or en == "" or type(name) ~= "string" or name == "" then
+		return desc, false
+	end
+	if desc:find(en, 1, true) then
+		return desc, false
+	end
+	local key = name .. ": "
+	local from = desc:find(key, 1, true)
+	if not from or desc:find(key, from + 1, true) then
+		return desc, false
+	end
+	local to = #desc
+	for _, req in ipairs({" (Requires level ", " (Requer n\195\173vel "}) do
+		local r = desc:find(req, from, true)
+		if r and r - 1 < to then
+			to = r - 1
+		end
+	end
+	return desc:sub(1, from - 1) .. en .. desc:sub(to + 1), true
+end
+
 -- passive text (texts = its line in each language, "Name: rule. For: ...") found in the description -> {name, text
 -- (the rule without the name), flavor (the rest of the description)}; nil when no text is in it. tip.desc keeps the
 -- whole text for a client that does not know the block.
@@ -696,6 +727,24 @@ function T.wandRows(item, it, w, ms)
 end
 
 -- everything the tooltip shows. opts = {equippedIds = {[server id] = true}, attrs = item:getClientAttributes()}
+-- O471: the character cap of the modifier of a row (ChaosItemMods.config.crit / .penetration), and which of the viewer's
+-- totals it is compared with (opts.over = {chance, amount}, set by item_tooltip.lua from the engine's totals): cap, kind
+function T.capOf(m)
+	local M = ChaosItemMods
+	if not M or not M.config or not M.config.crit then
+		return nil
+	end
+	local k = tostring(m.chaosKey or m.key or ""):lower()
+	if k == "rarity_criticalhitchance" then
+		return M.config.crit.chanceCap, "chance"
+	elseif k == "rarity_criticalhitamount" then
+		return M.config.crit.amountCap, "amount"
+	elseif k == "physpen" or k == "elepen" then
+		return M.config.penetration.cap, "pen"
+	end
+	return nil
+end
+
 function T.build(item, opts)
 	opts = opts or {}
 	local C, M, G = ChaosCrafting, ChaosItemMods, ChaosGems
@@ -842,6 +891,11 @@ function T.build(item, opts)
 				row.bd = m.bound or nil
 			end
 			row.pw = m.power or nil -- a unique's built-in legendary power shows in the power colour too
+			local cap, capKind = T.capOf(m)
+			if cap then
+				row.cap = cap
+				row.over = opts.over and opts.over[capKind] or nil
+			end
 			tip.mods[#tip.mods + 1] = row
 			local fmt = modFmt(m)
 			if m.group == "special" then

@@ -43,12 +43,12 @@ for cls in PM.C4:
         ok(PM.damage(cls, lv) == CD.dps(cls, lv), 'PM.damage is CD.dps: %s at %d' % (cls, lv))
         ok(abs(PM.damage(cls, lv)[0] - CD.shipped()[0][(cls, lv)]['1t']) < 1e-6, 'CD.dps at a measured level is the model: %s %d' % (cls, lv))
 ok(PM.damage('Sentinel', 1000, tune=False)[0] != PM.damage('Sentinel', 1000)[0], 'the C4 frame is still there as tune=False')
-ok(PM.damage('Sentinel', 1000, frame='c4')[0] > 1.2 * PM.damage('Sentinel', 1000)[0], 'the C4 frame had the Sentinel 28% above class_dps_model.py (1.80 of the Deadeye)')
+ok(PM.damage('Sentinel', 1000, frame='c4')[0] > 1.2 * CD.dps('Sentinel', 1000, rnd=False)[0], 'the C4 frame had the Sentinel 28% above class_dps_model.py before the round (1.80 of the Deadeye)')
 
 t = B.table([300, 1000])
 for i, lv in enumerate((300, 1000)):
     ok(abs(statistics.median(t[c][i][1] for c in PM.C4) - 1.0) < 1e-9, 'ratio: the median class of level %d is 1' % lv)
-ok(t['Sentinel'][1][1] < 0.90 and t['Deadeye'][1][1] > 1.10, 'O444: the Sentinel is below the median on a boss at 1000 (was 1.80 of the Deadeye) and the Deadeye above it')
+ok(t['Sentinel'][1][1] < 0.90 and 0.95 < t['Deadeye'][1][1] < 1.10, 'O444: the Sentinel is below the median on a boss at 1000 (was 1.80 of the Deadeye); O475: the Deadeye is at the median (1.21 before the round)')
 ok(abs(t['Sentinel'][1][1] - CD.dps('Sentinel', 1000)[0] / CD.median_dps(1000)[0]) < 1e-9, 'boss ratio is the class_dps_model 1 target ratio')
 ok(PM.damage('Deadeye', 300, tune=False)[0] == 1312 and PM.damage('Deadeye', 1000, tune=False)[0] == 4571, 'c4 frame: the 1-target numbers at 300 and 1000 (untuned)')
 ok(PM.damage('Thief', 300, tune=False)[0] == 870 and PM.damage('Ninja', 1000, tune=False)[0] == 3565 + 35, 'c4 frame: kit change added')
@@ -62,7 +62,7 @@ for cls in ('Warrior', 'Sentinel', 'Beastmaster'):
     ok(CD.dps(cls, 60)[0] < CD.dps(cls, 100)[0] and CD.dps(cls, 0)[0] == 0, '%s: below 100 the line goes down to zero' % cls)
     a, b = CD.dps(cls, 100)[0], CD.dps(cls, 500)[0]
     ok(a < CD.dps(cls, 300)[0] < b, '%s: 300 lies between the measured 100 and 500' % cls)
-    ok(abs(CD.dps(cls, 2000)[0] / CD.dps(cls, 1000)[0] - (1 + 1000 * CD.GROWTH_ABOVE_1000)) < 1e-9, '%s: above 1000 a straight line of %.3f%% a level' % (cls, CD.GROWTH_ABOVE_1000 * 100))
+    ok(abs(CD.dps(cls, 2000, rnd=False)[0] / CD.dps(cls, 1000, rnd=False)[0] - (1 + 1000 * CD.GROWTH_ABOVE_1000)) < 1e-9, '%s: above 1000 a straight line of %.3f%% a level before the round' % (cls, CD.GROWTH_ABOVE_1000 * 100))
 m1, m5 = CD.median_dps(500)
 ok(abs(m1 - CD.shipped()[1][500][0]) < 1e-6 and abs(m5 - CD.shipped()[1][500][1]) < 1e-6, 'median_dps at a measured level is the table median')
 

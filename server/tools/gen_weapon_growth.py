@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""server/data/lib/chaos_weapon_growth.lua: the attack numbers our weapons had before O472 and have now (the upgrade on touch).
+
+usage: python3 -I server/tools/gen_weapon_growth.py [--check]
+
+O472 (2026-11-10) made the weapon values grow with the level (tools/weapon_growth.py). The attack of a weapon item TYPE follows the
+install tools at the next install and restart, but a rolled weapon (a rarity, a quality, a Weapon Damage modifier, a +N upgrade) and a
+unique carry the attack they were made with on the item itself (ITEM_ATTRIBUTE_ATTACK = the type's attack + the base bonus). The touch
+step ChaosCrafting.growWeapon (data/lib/chaos_crafting.lua) moves such an item by the change of its base: new attack = stored + (new
+base - old base), once (the custom attribute `chaos_wgrow`). This table is where the old and new base of every changed item come from:
+
+  types[server id]   = {old, new}  the items.xml `attack` of a weapon of the equipment sets (tools/install_gear_sets.py), the
+                                   weapons above level 800, the relic sets, the fist weapons and the stock weapons that
+                                   tools/patch_stock_weapon_growth.py grows (data/items/base_weapons.csv, the numbers before):
+                                   before O472 and now
+  uniques[server id] = {old, new}  the attack of a unique (data/items/chaos_items.xml -> ChaosUniqueSpecs; keyed by the stock base id
+                                   the unique is made from): before O472 (weapon_growth.py OLD_UNIQUE_ATTACK) and now
+
+Only rows that changed are listed (the attack of a weapon of level 100 or less did not). Wands and rods carry no attack: their damage
+is the weapons.xml entry, which the install tools rewrite. Generated: do not edit by hand.
+"""
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import install_gear_sets as GS  # noqa: E402
+import install_weapons800 as W8  # noqa: E402
+import install_relic_sets as RS  # noqa: E402
+import install_fist_weapons as FW  # noqa: E402
+import weapon_growth as WG  # noqa: E402
+import patch_stock_weapon_growth as SG  # noqa: E402
+
+DATA = os.path.join(os.path.dirname(HERE), 'data')
+OUT = os.path.join(DATA, 'lib', 'chaos_weapon_growth.lua')
+UNIQUES_XML = os.path.join(DATA, 'items', 'chaos_items.xml')
+STOCK_CSV = os.path.join(DATA, 'items', 'base_weapons.csv')
+
+
+def _attack(rows):
+    """{server id: items.xml attack} of the rows of an install tool (the physical attack; wands and rods have none)"""
+    out = {}
+    for r in rows:
+        v = dict(r['stats']).get('attack')
+        if v is not None:
+            out[r['server_id']] = int(v)
+    return out
+
+
+def stock_rows():
+    """{server id: (old, new)} of the stock weapons the growth step changes: the CSV's attack (the numbers before) and the same number
+    grown by the step's rule (a sword, axe, club, bow or crossbow of a level above 100, no charges)"""
+    import csv
+    out = {}
+    with open(STOCK_CSV, newline='', encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            level, attack = int(r['level']), int(r['attack'])
+            if attack > 0 and SG.grows(r['kind'], level, int(r['charges'])):
+                grown = WG.grown(attack, level)
+                if grown != attack:
+                    out[int(r['id'])] = (attack, grown)
+    return out
+
+
+def type_rows():
+    """{server id: (old, new)} of every weapon type whose attack changed: ours and the stock weapons"""
+    new = {}
+    new.update(_attack(GS.rows_of(GS.DEFAULT_MANIFEST)))
+    new.update(_attack(W8.rows_of()))
+    new.update(_attack(RS.rows_of()))
+    with GS.old_weapon_curves():
+        old = {}
+        old.update(_attack(GS.rows_of(GS.DEFAULT_MANIFEST)))
+        old.update(_attack(W8.rows_of()))
+        old.update(_attack(RS.rows_of()))
+    fists = FW.rows_of(FW.DEFAULT_MANIFESTS)
+    for r in fists:
+        new[r['server_id']] = int(r['ex']['attack'])
+        old[r['server_id']] = int(r['ex']['attack_before'])
+    out = {i: (old[i], new[i]) for i in sorted(new) if i in old and old[i] != new[i]}
+    for i, row in stock_rows().items():
+        assert i not in out, 'a stock id that one of our install tools writes: %d' % i
+        out[i] = row
+    return dict(sorted(out.items()))
+
+
+def unique_attack():
+    """{base server id: attack} of the uniques of chaos_items.xml that have one"""
+    text = open(UNIQUES_XML, encoding='utf-8').read()
+    out = {}
+    for m in re.finditer(r'<item id="(\d+)"[^>]*>(.*?)</item>', text, re.S):
+        a = re.search(r'key="attack" value="(\d+)"', m.group(2))
+        if a:
+            out[int(m.group(1))] = int(a.group(1))
+    return out
+
+
+def unique_rows():
+    cur = unique_attack()
+    return {i: (WG.OLD_UNIQUE_ATTACK[i], cur[i]) for i in sorted(WG.OLD_UNIQUE_ATTACK) if i in cur and cur[i] != WG.OLD_UNIQUE_ATTACK[i]}
+
+
+def lua_text():
+    t, u = type_rows(), unique_rows()
+    L = ['-- The weapon attack of before and after O472 (generated by server/tools/gen_weapon_growth.py; do not edit by hand).',
+         '-- types[server id] = {old, new}: the items.xml attack of a weapon of the equipment sets, the weapons above level 800, the',
+         '-- relic sets, the fist weapons and the stock weapons of the growth step. uniques[base server id] = {old, new}: the attack of a',
+         '-- unique (chaos_items.xml).',
+         '-- ChaosCrafting.growWeapon moves a rolled weapon or a unique that carries its attack on the item by (new - old), once.',
+         '-- server/README.md "Weapon growth (O472)".', '', 'return {', '\tversion = 1,', '\ttypes = {']
+    for i, (o, n) in t.items():
+        L.append('\t\t[%d] = {%d, %d},' % (i, o, n))
+    L += ['\t},', '\tuniques = {']
+    for i, (o, n) in u.items():
+        L.append('\t\t[%d] = {%d, %d},' % (i, o, n))
+    L += ['\t},', '}', '']
+    return '\n'.join(L)
+
+
+def main(argv):
+    text = lua_text()
+    if '--check' in argv:
+        if not os.path.isfile(OUT) or open(OUT).read() != text:
+            print('%s is stale: run python3 -I server/tools/gen_weapon_growth.py' % OUT)
+            return 1
+        print('chaos_weapon_growth.lua up to date')
+        return 0
+    open(OUT, 'w').write(text)
+    print('wrote', OUT)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

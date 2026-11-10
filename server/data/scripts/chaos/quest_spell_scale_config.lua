@@ -10,22 +10,27 @@
 -- (Soulflay Wave finds a slot at 500 and none from 880-900 on with one number: the Bone Lord's best set changes there) and the
 -- Beastmaster (Moonshard Rain gained 3% at 500 and 10% at 1200). Class identity pass (2026-10-28): every class now gets about
 -- 4.5% from Q1 at every level from 500 to 1200 (1.5-9% is checked) and 12-15% from both quests at 1200.
+-- O474 (2026-11-10): the damage over time rule (side dots 0.30 x the hit, Blightbrand x1.25, Martyr's Pyre x1.1, Soul Rot x1.5) moved the
+-- best sets of four classes and took the gain of their quest spells out of bounds; refitted with rotation_sim.py --check (the old
+-- value in brackets): Elementalist Prismatic Rupture 1.25 (1.06), Eclipse of Ruin 1.60 (1.29); Lich Funeral of Kings 1.20 (1.01);
+-- Templar Pyre of Absolution 0.90 (0.85), Hammer of Ember Dawn 1.00 (0.97); Sentinel Pyre of Absolution a curve (0.78: its
+-- gain fell from 4.7% at 500 to 0.1% at 1200 with one number), Hammer of Ember Dawn 0.95 (0.84).
 -- Plain table, Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 ChaosQuestSpellScale = {
 	["Keepfall"] = {["Warrior"] = 0.95, ["Juggernaut"] = 0.89, ["Berserker"] = 0.98},
 	["Judgment of Iron"] = {["Warrior"] = 0.86, ["Juggernaut"] = 0.84, ["Berserker"] = 0.85},
 	["Moonshard Rain"] = {["Ranger"] = 0.77, ["Deadeye"] = 0.75, ["Beastmaster"] = {{500, 0.70}, {800, 0.61}, {1000, 0.57}, {1200, 0.54}}},
 	["Dawnbreaker Shot"] = {["Ranger"] = 0.78, ["Deadeye"] = 1.08, ["Beastmaster"] = 0.43},
-	["Prismatic Rupture"] = {["Mystic"] = 0.89, ["Elementalist"] = 1.06, ["Illusionist"] = 1.18},
-	["Eclipse of Ruin"] = {["Mystic"] = 0.78, ["Elementalist"] = 1.29, ["Illusionist"] = 0.87},
+	["Prismatic Rupture"] = {["Mystic"] = 0.89, ["Elementalist"] = 1.25, ["Illusionist"] = 1.18},
+	["Eclipse of Ruin"] = {["Mystic"] = 0.78, ["Elementalist"] = 1.60, ["Illusionist"] = 0.87},
 	["Eclipse Edge"] = {["Thief"] = 1.37, ["Ninja"] = 0.58, ["Samurai"] = 0.83},
 	["Death Between Heartbeats"] = {["Thief"] = 1.00, ["Ninja"] = 0.89, ["Samurai"] = 1.04},
 	["Soulflay Wave"] = {["Necromancer"] = {{500, 0.29}, {800, 0.44}, {1000, 0.53}, {1200, 0.65}}, ["Lich"] = 0.86, ["Bone Lord"] = {{500, 0.17}, {800, 0.32}, {880, 0.35}, {900, 1.26}, {1000, 1.30}, {1200, 1.45}}},
-	["Funeral of Kings"] = {["Necromancer"] = 0.88, ["Lich"] = 1.01, ["Bone Lord"] = 1.03},
+	["Funeral of Kings"] = {["Necromancer"] = 0.88, ["Lich"] = 1.20, ["Bone Lord"] = 1.03},
 	["Thousand-Echo Palm"] = {["Monk"] = 0.85, ["Shadowfist"] = 0.25, ["Iron Sage"] = 1.01},
 	["Heaven's Ninth Gate"] = {["Monk"] = 0.82, ["Shadowfist"] = 0.81, ["Iron Sage"] = 0.82},
-	["Pyre of Absolution"] = {["Templar"] = 0.85, ["Inquisitor"] = 0.69, ["Sentinel"] = 0.78},
-	["Hammer of Ember Dawn"] = {["Templar"] = 0.97, ["Inquisitor"] = 0.71, ["Sentinel"] = 0.84},
+	["Pyre of Absolution"] = {["Templar"] = 0.90, ["Inquisitor"] = 0.69, ["Sentinel"] = {{500, 0.78}, {800, 0.78}, {1000, 0.84}, {1200, 0.87}}},
+	["Hammer of Ember Dawn"] = {["Templar"] = 1.00, ["Inquisitor"] = 0.71, ["Sentinel"] = 0.95},
 }
 
 return ChaosQuestSpellScale

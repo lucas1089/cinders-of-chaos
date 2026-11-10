@@ -895,6 +895,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103070 - 7103079 | Wandering Merchant (`invasion_config.lua` `worldEvents.merchant.storageBase`, O399): +0..+9 the stop + 1 in which the character bought the item at that place of `items` (one of each per stop) |
 | 7103080 - 7103089 | player defence (`player_defence_config.lua` `storage`, O464): +0 the last level the character was told about the resistance penalty (once per level); +1..9 free |
 | 7103090 - 7103099 | the first unique line (`unique_intro_config.lua` `storage`, O467): +0 is 1 once the character read what a unique is; +1..9 free |
+| 7103110 | the damage over time tick flag (`dot_config.lua storage`, O474): the id of the creature a scripted tick hits, -1 outside a tick; written by the spells (`ChaosDot.run`), read by the damage events |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -3044,10 +3045,12 @@ Protocol (opcode 65): `paragonMastery {key, n}`, `paragonConvert {n}` in; `parag
 `exchange {ratio, treeFree, converted}`. Build codes carry the category stats only (`buildshare.lua`); loadouts check both.
 
 **Totals** (`passivetree_totals.lua`, rules `passivetree_totals_core.lua`): request `statTotals`, answer `statTotals
-{attributes[], damage[], crit {chance {total, tree, other}, amount {total, tree, paragon, other}}}` (rate limit 300 ms). The
-crit totals are the engine's own value (gear, gems, blessings, tree, Paragon). Client: `totals.lua`, `totalsview.lua`.
+{attributes[], damage[], crit {chance {total, tree, other, raw, cap, capped}, amount {total, tree, paragon, other, raw, cap,
+capped}}}` (rate limit 300 ms). The crit totals are the engine's own value (gear, gems, blessings, tree, Paragon) under the
+caps of O471 (`total` counts, `raw` is what the sources give, `capped` = true when it was cut). Client: `totals.lua`, `totalsview.lua`.
 
-**Critical reach** (`luajit tools/crit_reach.lua`, from the item mod, crafting, gem and tree tables). The T8 critical modifier
+**Critical reach** (`luajit tools/crit_reach.lua`, from the item mod, crafting, gem and tree tables; the table below is the
+state of O146, the numbers of today are in "Critical, rune and penetration ceilings (O471)": three slots, caps 45 and 150). The T8 critical modifier
 (item level 140+) rolls amount 8-10 and gives chance 5-7 (9 at +30% quality) on each of 8 slots:
 
 | Source | Critical chance |
@@ -3773,6 +3776,7 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
   extra, nova, riposte, spread (hits that start from a hit, a kill or a hurt); ward, hitcap, immunity, panic, manashield,
   feast, mend (defence, each with a price such as less healing received); stacks, mark (a state you build);
   minionPact (Necromancer). Every number of a family is in the config comment.
+- **O473 (2026-11-10).** The "more damage" part of eight families (lowlife, overflow, opener, focus, statscale, crowd, stacks, mark) is increased damage of the one damage pool now, 10 at most for a passive and 40 for all; the 1.8 clamp below holds the multiplicative rest (prices, critrule, convert, minionPact). See "Increased damage pool (O473)".
 - **Safety.** The product of the damage multipliers is clamped to 0.5-1.8, the damage taken to 0.4-1.5, the bonus against
   players is 1/3. Condition ticks and procs get no multiplier and start no passive (guard flag plus `ChaosKeystones.depth` /
   `ChaosSpellFactor.depth` / `ChaosPowers.depth`, the same guard as the legendary powers). Every proc has an internal
@@ -7461,7 +7465,7 @@ the basic melee attack. The rule of the owner: class damage does not move, so `c
 
 | Family | Trait | Number | Price | Boss | PvP |
 |---|---|---|---|---|---|
-| Sword | Tempo: each hit on the same target adds a stack of swing speed, each hit is lighter by the same share | 5 stacks of +4% attack speed (+20%), window 3 s, a hit less than 150 ms after a stack gives none; hits at full stacks are +2% (the edge) | none; a new target or a pause of 3 s starts over | same as a monster | half the stacks (2) and half the edge |
+| Sword | Tempo: each hit on the same target adds a stack of swing speed, each hit is lighter by the same share | 5 stacks of +4% attack speed (+20%), window 3 s, a hit less than 150 ms after a stack gives none; hits at full stacks are +2 increased damage (the edge; O473: a raw entry of the damage pool shared with the charms, 6 at most together) | none; a new target or a pause of 3 s starts over | same as a monster | half the stacks (2) and half the edge |
 | Axe | Cleave: a share of each hit is split among the monsters next to the target | 14% of the hit in all (the pool), each of up to 8 neighbours takes pool / number | -2.5% on every hit | same as a monster | no cleave and no price |
 | Club | Impact: a chance on a hit to daze a monster | 25% a hit: it cannot attack and stands still for 0.7 s, then rests 3 s (no daze, no Iron Palm) | -2.5% on every hit | slowed only: 15% a hit, 25% slow for 1 s, then 8 s of rest | no daze and no price |
 
@@ -7666,6 +7670,9 @@ por favor?" Audit (the base engine is TFS 1.4.2 and no src-patch touches `Weapon
   Monk line is at 53-62% of its rotation already, target 30%); the skill factor applies with the fist skill. Not touched:
   spells, runes, conditions, procs. The tooltip's "Estimated
   DPS" (`weapon_dps_core.lua`) includes both factors when `weapon_power_core.lua` is loaded (`item_tooltip.lua` loads it).
+* O472 (weapon growth): the reference rotation is now times W(level) and the own attack of a kind uses the grown curves, so the
+  lift is: distance 1.00 up to level 200, 1.08 at 300, 1.27 at 500, 1.63 at 1000, 1.98 at 2000; wand 1.74 at 200, 1.83 at 500, 1.95 at
+  1000, 2.12 at 2000; melee and fist 1 ("Weapon growth (O472)").
 * To retune: change `POWER_KINDS` (share, reference class) or `SKILL_POWER` in `tools/weapon_sim.py`, run `--power --write`.
   A class or spell change moves the rotation numbers, `--power --check` (CI) then asks for a new config.
 * Live server: the `files` step and a restart (the scripts are read at start). No database or client change. Not run in game.
@@ -9946,6 +9953,7 @@ Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was ru
 | Holy | Holy hits heal you | 0.5% of your maximum health, once every 3 s | 2% of the party | `addHealth` with a cooldown per player |
 | Energy | Energy hits slow the target | 15% for 1.5 s | the ice snare: 40% for 3 s | `ChaosSpell.slow` |
 
+  O473: `damagePartMax` is 4 now and the Fire damage part is a raw entry of the one damage pool (`ChaosCards.poolRaw`), no longer a multiplier in this event.
   The damage parts (`damage`, `poison`) are at most `damagePartMax` 6% of the damage of their own element; the test pins it and
   that each set has its own kind of effect. A damage over time tick is never changed or counted, and a hit of another element
   never gets the bonus. The effects run in `ChaosCardsHit`, the event that already sat on the monsters a player attacks: after
@@ -12754,9 +12762,10 @@ The bands overlap, so a character always has a set running and the next one star
   next piece of a slot a little higher, never a big jump. Stats are fixed by the level along curves anchored to the
   stock gear of the same level (`CURVES` in the tool; the stock gear stops growing after level 1000, the curves go on
   slowly to 2000): body armour 7 / 13 / 16 / 19 / 25 / 31 at 8 / 100 / 200 / 400 / 1000 / 2000 (medium x0.9, cloth
-  x0.8), one-handed melee attack 16 / 46 / 49 / 53 / 61 / 69 (two-handed +3 and 3 s attacks, as `two_handed.py`), of
-  it 35% the set's element; launchers the archery bands' attack (31 at level 8, 68 at 100, 85 at 2000) and hit
-  chance, the set's missile; wands 16 / 62 / 85 / 98 / 118 / 138 mean damage of the set's element, mana 2-33; shields
+  x0.8), one-handed melee attack 16 / 46 / 57 / 75 / 147 / 199 at 8 / 100 / 200 / 400 / 1000 / 2000 (O472: was 16 / 46 / 49 / 53 /
+  61 / 69; two-handed +3 and 3 s attacks, as `two_handed.py`), of it 35% the set's element; launchers the attack of the bow
+  curve (31 at level 8, 68 at 100, 245 at 2000; was 85) and the hit chance, the set's missile; wands 16 / 62 / 99 / 138 / 285 /
+  398 mean damage of the set's element (was 16 / 62 / 85 / 98 / 118 / 138), mana 2-33 ("Weapon growth (O472)"); shields
   defense 14-55, spellbooks 8-33 with magic level +1 to +5; skills and magic level in steps by level; the set's
   resisted element on body armour and amulet (2-10%, a weakness of half on body armour), half on helmet, legs,
   shield and spellbook; rings physical 1-4%; boots speed 0-40. Bloodmoon weapons leech life (chance and amount 2-6).
@@ -13209,8 +13218,9 @@ see "Infinite arrows and quivers".
 into `combatPowerLevel`, which the client frame and the stock scripts read; items from before have only
 `combatPowerLevel`, which counts as the item level. The level of a drop is the dropping monster's level
 (`Monster:getMonsterLevel`; a monster without one: its hunting level in `bounty_pool.lua`, else 1.6 x sqrt(experience)
-raised by health / 60, the estimate of `tools/gen_bounty_pool.py`) along the curve `itemLevel.curve` (level 1 -> 1, 50 ->
-22, 100 -> 36, 200 -> 54, 500 -> 90, 900 -> 118, 1500 -> 136, 6000 -> 145), plus: Magic +2, Rare +4, Legendary +7 (Divine as Legendary), boss +10;
+raised by health / 60, the estimate of `tools/gen_bounty_pool.py`) along the curve `itemLevel.curve` (O471, 2026-11-10: level 1 -> 1, 50 ->
+21, 100 -> 33, 200 -> 50, 500 -> 82, 900 -> 112, 1500 -> 134, 2000 -> 144, 2200 -> 148, 6000 -> 150; before 22, 36, 54, 90, 118,
+136 and 145 at 6000), plus: Magic +2, Rare +4, Legendary +7 (Divine as Legendary), boss +10;
 inside a rift +1 per rift tier (at most +15), an Omen guardian arena +15 more; capped at 150. World boss drops and rewards
 are fixed at 145 (`worldBoss`), the tutorial's gear at 5 (`tutorial`), rift chest and coffer gear use the rift boss's
 level (else the top of the tier's window) with the rift bonuses, the treasure goblin its area level as a Legendary.
@@ -13221,9 +13231,11 @@ level (Erasure and Fate too); an item without any level gets one from the item t
 
 **Tiers.** Eight per modifier, T1 the lowest, T8 the highest. A tier needs an item level (`tierLevels`): T1 1, T2 15, T3 30,
 T4 50, T5 70, T6 90, T7 110, T8 130 (O461; before 1, 15, 30, 50, 70, 95, 120, 140). **Every tier the item level allows can
-roll, all with the same weight** (`tierWeights` 100 each; before only the best five tiers rolled, weighted 100 .. 12):
-at item level 150 each of T1 .. T8 comes one time in eight, at item level 40 T1, T2 and T3 one time in three. A boss of
-monster level 1000 (item level 133) rolls T8. A modifier may have a gate of its own (`def.minTier`): the weapon's Mana
+roll, tilted toward the top** (`tierWeights` 1.35^(t-1): 100, 135, 182, 246, 332, 448, 605, 816, O471; O461 had them equal,
+before that only the best five tiers rolled, weighted 100 .. 12): at item level 150 T8 comes 28.5 times in 100 and T1 3.5,
+at item level 40 T3 43.6, T2 32.4 and T1 24.0. The ranges of the tiers did not change. The Codex, the tooltips and the
+orbs read the same weights (`M.tierRows`, `M.tierChances`, `M.rollTier`). A boss of monster level 1000 (item level 127)
+rolls T7 at most; T8 opens for a boss of about 1060, for a Rare of about 1230 and for a normal monster of about 1370. A modifier may have a gate of its own (`def.minTier`): the weapon's Mana
 Leech does not roll below T4. Inside a modifier **the ranges never overlap and narrow toward the top** where the numbers
 allow (a tier starts above the end of the tier before); the ladders the owner gave as they are (worn Attack Speed,
 Cooldown Reduction, Experience, Critical Strike Chance) may touch. The ranges of each version are kept: version 1 (until
@@ -13269,7 +13281,8 @@ against the Chaos types in one list (`ChaosCrafting.affixes()`):
 weaponsmith, jewelsmith) and the life and mana leech PAIRS are `noRoll` since O461: the rows stay to read old items.
 Critical Strike Chance and Critical Strike Damage are two modifiers of their own that each write ONE engine attribute
 (`rarity_criticalHitChance`, `rarity_criticalHitAmount`; `customs/rarity/base_rarity.lua` makes one condition per
-attribute when the item is worn, so neither needs the other); kinds weapon, jewel, other (the badge) and quiver. The
+attribute when the item is worn, so neither needs the other); kinds weapon and jewel (necklace, ring) since O471 (before:
+also other = the badge, and quiver; items that carry one keep it, see "Critical, rune and penetration ceilings (O471)"). The
 tree still grants the pair.)
 
 **The Chaos modifiers** (kind = which items may roll it: weapon, shield, helmet, armor, legs, boots, jewel = amulet or ring,
@@ -13298,8 +13311,8 @@ elements, ...) and the energy shield have their own tables in their sections. Ge
 | poisonchance | Chance to Poison +N% | prefix | other, quiver, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | chillchance | Chance to Chill +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
 | shockchance | Chance to Shock +N% | prefix | other, weapon | 18-21 | 22-25 | 26-29 | 30-33 | 34-38 | 39-43 | 44-49 | 50-55 | none |
-| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | none (O464) |
-| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | none (O464) |
+| physpen | Physical Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | 20 (O471) |
+| elepen | Elemental Penetration +N% | prefix | jewel, quiver, weapon | 3 | 4 | 5 | 6 | 7-8 | 9 | 10-11 | 11-12 | 20 (O471) |
 | execute | Executes Monsters below N% Health | prefix | weapon (does not stack) | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | none |
 | dot | Damage over Time +N% | prefix | jewel, other, weapon | 7-11 | 12-13 | 14-15 | 16-17 | 18-19 | 20-21 | 22-23 | 24-26 | none |
 | attackspeed | Attack Speed +N% | suffix | weapon | 5-7 | 8-10 | 11-13 | 14-16 | 17-19 | 20-22 | 23-25 | 26-27 | none |
@@ -13419,7 +13432,7 @@ in `docs/drafts/`). What changed:
 - *Other config follow-ups*: the Void Orb's implicit pools lost Mana Cost Reduction, the crafted gear's item level maximum
   is 89 (it must stay under the T6 gate, now 90), the charms' `gearRef` of Life and Mana on Kill follow the new T8 tops,
   the keystone speed rule counts the boots' top 35, `tools/crit_reach.lua` models the two critical modifiers on the five
-  slots that carry them, the Codex data keeps `tierWindow` as the number of tiers (both clients read it).
+  slots that carried them (O471: three slots and the caps), the Codex data keeps `tierWindow` as the number of tiers (both clients read it).
 
 **Skipped on purpose**: none of the approved stats were dropped. Not done: a stat that adds the ailment chance to spells that
 deal no damage to the target (the chance needs a damaging hit). (Mana-shield damage: since O464 the player defence layer
@@ -13450,6 +13463,94 @@ the rarity as a text for the length of that pass (`ChaosCrafting.shield`); `Chao
 number the next tick, and `ChaosCrafting.unshield` does the same for an item that is moved first (`onItemMoved`, autoloot).
 Readers go through `tonumber`. Items that leave a corpse before the pass go through `ChaosLoot.finalizeRarity`
 (autoloot, Rarity Autoloot, the pouch).
+
+## Critical, rune and penetration ceilings, gear growth (O471)
+
+Owner, 2026-11-10: "the source of damage must be more balanced", "the passive tree must cover less, equipment covers the rest",
+"you can do everything". The design is `SP/dmgcurve/design/design.md` sections B1, B3, B4 (scratch, not in git); this is the
+gear and ceilings package of the balance round. Lua only, no engine patch, no new opcode, no new item mark: values and tiers
+of items players own do not change (nothing is rerolled, deleted or upgraded on touch).
+
+**1. Item level curve** (`chaos_item_mods.lua` `itemLevel.curve`). Monster level to item level, straight lines between:
+1 -> 1, 10 -> 5, 25 -> 12, 50 -> 21, 100 -> 33, 200 -> 50, 350 -> 68, 500 -> 82, 700 -> 98, 900 -> 112, 1100 -> 122, 1500 -> 134,
+2000 -> 144, 2200 -> 148, 6000 -> 150 (before 22, 36, 54, 74, 90, 106, 118, 128, 136, 142 at 3000, 145 at 6000). Tier gates
+unchanged (1, 15, 30, 50, 70, 90, 110, 130). The additions stay (Magic +2, Rare +4, Legendary +7, boss +10, rift, Omen). The
+design's table assumed "legendary boss +17"; the code takes one addition (a boss is +10), so the caps below are the code's.
+`loot.lua L.dropLevel` needed no change (it calls `M.sourceLevel`). The Gambler's price points
+(`gamble_config.lua` `price.curve`) moved with the curve (same gold at the same hunting level, within the whole item
+levels the price steps in): `{4, 3000} {5, 3600} {11, 8300} {17, 13000} {20, 20000} {33, 56000} {49, 97000} {61, 150000} {67,
+300000} {82, 850000} {99, 1100000} {112, 1350000} {118, 1500000} {142, 1650000}` (was `12 18 22 36 54 67 74 90 106 118 123 136`).
+The sale price of a gear drop (`1 + item level / 200`, `chaos_item_prices.lua`) follows the item level: a normal drop sells for
+1.9% less at monster level 300 and 1000 and 1.8% more at 2000.
+
+**2. Tier tilt** (`tierWeights`). The weight of tier t among the tiers the item level allows is 1.35^(t-1): `100, 135, 182, 246,
+332, 448, 605, 816` (the exact power for T8 is 817.2; the design's list is kept). The ranges of the tiers are unchanged. One
+function reads them for every roll: `M.tierRows` (every orb that rolls a modifier or a new tier, the Void Orb's implicit,
+`ChaosCrafting.forge` for drops), `M.tierChances` (Codex, wiki), the Codex view of the
+client (`codexview.lua` reads `tierWeights` from the generated data). The item tooltip's "up to T3" and the orb previews
+(`C.tierSpan`) show the span of tiers, which the weights do not change. The veiled modifier's tiers have their own table.
+
+**3. Critical hits.** Critical Strike Chance and Critical Strike Damage (`ChaosCrafting.singles`) roll on weapon and jewel
+(necklace, ring) only; before also on other (the badge) and quiver. A character counts at most 45 points of critical chance
+and 150% extra damage on a critical hit, **every source together**: gear, gems, passive tree, Paragon, blessings, buffs.
+(`ChaosItemMods.config.crit`.) Where the totals are read: the engine adds the critical chance and amount of all conditions and
+item attributes in `Player::getSpecialSkill` and rolls the crit in `combat.cpp` (engine patch 0004) before any Lua event, so a
+script cannot change the sum. `data/scripts/chaos/crit_cap.lua` therefore cuts the hit where the engine made it
+(`onHealthChange` gets the raised damage and `critical`, patch 0001): a critical hit of a player over the chance cap stays
+critical with probability cap / chance, else the crit is taken off (damage / (1 + amount / 100)); one over the amount cap keeps
+only the capped extra (`M.critHit`, `M.critKeep`, `M.critFactor`). The event goes on a target (monster or player) from an
+`onTargetCombat` callback only while the attacker is over a cap. The scripted crits, Keen Edge (`supports.lua`) and the quiver's
+Critical Strike with Bows (`weapon_styles.lua`), only get the room the cap leaves (`M.critRoom`: the independent rolls together
+make 45). The character sheet and the tree window show the counted total and `cap` (`charsheet.lua`, `passivetree_totals_core.lua`);
+the item tooltip's critical and penetration lines carry `cap` and `over` (`item_tooltip_core.lua` `T.capOf`, client `tooltiplogic.lua`).
+`tools/crit_reach.lua --check` reads the same numbers (three slots, `M.critTotals`).
+Not exact: the crit that is taken off still carries `critical = true` for the events after it (Surge, Critical Echo), and the
+armour of the monster defence layer (event order -150) has seen the larger hit before the crit is cut (a flat armour reduction is
+not linear in the hit). Items owned: a badge or a quiver that already has one of the modifiers keeps it and it counts, under the caps.
+
+**4. Damage runes.** Brand (five elements), Echo, Hex and Keen Edge count at most their level 4 (Legendary) value
+(`chaos_supports_config.lua` `levelCeiling`, `S.countedLevel`, read by `S.values`, so every effect, text and the free support of
+a mastery follow): brand 50 (not 60), Echo 30 (35), Hex 6 (8), Keen Edge 6 (8). A Mythic rune keeps its name, colour and level;
+its effect text shows the value that counts, the support window, the use message and the item description add
+"Counts as Legendary: the damage runes count at most their level 4 value." (`S.ceilingNote`, `runeView` `note`,
+`install_supports.py`). The Codex row of level 5 shows the counted value. Owned Mythic runes keep working at the Legendary value.
+
+**5. Penetration.** `physpen` and `elepen` have `cap = 20` in the item module (`M.totals`): worn pieces, item sets, uniques, the
+veiled modifier and the quiver together give at most 20 points of each kind. The monster defence layer and the PvP defence layer
+read it through `ChaosItemMods.playerBonus`. The **Sunder** support counts into the elemental total: the items first, Sunder gets
+`20 - elepen` points at most (`M.penLeft`, `supports.lua`): 0 worn points leaves Sunder its 14 (Legendary) to 18 (Mythic) points,
+12 worn points leave it 8. Physical penetration has no other source.
+
+**Before / after** (computed with the tools of the repo: `M.sourceLevel`, `M.tierChances`, the `weapondamage` ranges, `crit_reach.lua`;
+Rare drop = curve + 4, boss = curve + 10; "mean weapon damage" = the mean of the middle of the weapon damage ranges over the
+tiers the item level allows, weighted):
+
+| monster level | item level normal | Rare | boss | top tier Rare | boss | mean tier of a Rare drop | mean Weapon Damage of a Rare drop | chance of the best allowed tier |
+|---:|---|---|---|---|---|---|---|---|
+| 100 | 36 -> 33 | 40 -> 37 | 46 -> 43 | T3 -> T3 | T3 -> T3 | 2.00 -> 2.20 | 20.5% -> 21.7% | 33.3% -> 43.6% |
+| 300 | 67 -> 62 | 71 -> 66 | 77 -> 72 | T5 -> T4 | T5 -> T5 | 3.00 -> 2.87 | 27.1% -> 26.1% | 20.0% -> 37.1% |
+| 500 | 90 -> 82 | 94 -> 86 | 100 -> 92 | T6 -> T5 | T6 -> T6 | 3.50 -> 3.58 | 30.3% -> 30.9% | 16.7% -> 33.4% |
+| 700 | 106 -> 98 | 110 -> 102 | 116 -> 108 | T7 -> T6 | T7 -> T6 | 4.00 -> 4.33 | 33.5% -> 35.7% | 14.3% -> 31.0% |
+| 1000 | 123 -> 117 | 127 -> 121 | 133 -> 127 | T7 -> T7 | T8 -> T7 | 4.00 -> 5.12 | 33.5% -> 40.7% | 14.3% -> 29.5% |
+| 2000 | 138 -> 144 | 142 -> 148 | 148 -> 150 | T8 -> T8 | T8 -> T8 | 4.50 -> 5.94 | 36.6% -> 45.8% | 12.5% -> 28.5% |
+| 100 / 300 / 500 / 700 / 1000 / 2000 | critical chance of a dedicated build: 71 -> 45, extra damage ceiling 300 -> 150 | | | | | | | |
+
+(Level 100 to 2000 weapon damage means: the design's table, 20 -> 22, 27 -> 26, 30 -> 31, 34 -> 36, 34 -> 41, 37 -> 46, reproduced.
+The critical factor of a dedicated build, 1 + chance x amount: about 2.4 before (the design's figure; chance 71, amount near 200),
+1 + 0.45 x 1.5 = 1.675 after. Runes at Mythic: brand -17%, Echo -14%, Hex -25%, Keen Edge -25% of the rune's own value.
+Penetration: a build that stacked 33 points counts 20.)
+
+**Models.** `weapon_coverage.lua --check`, `gear_coverage.lua --check`, `unique_pace_model.lua --check`, `loot_model.lua --check`,
+`card_set_model.py`, `spell_mastery_model.py`, `class_dps_model.py`, `weapon_family_model.py`, `survival_model.py`, `pvp_model.py`,
+`crit_reach.lua --check` and `unique_passives_model.lua --check` stay green unchanged: none of them reads the critical or
+penetration totals of a character (they read the measured class table), and the item level curve moves the item level of a drop,
+which they do not model. The effect of the ceilings on the typical character is for the final re-fit of the round.
+
+**Not verified.** Nothing ran on a live server. Not measured: the real crit and damage numbers of a hit with the cut (the maths is
+unit tested with a seeded generator, the engine's own roll and the order of the Lua events are read from the patches, not run); that
+the base rarity script reads a badge's or quiver's attributes as it did (unchanged, not touched); the size of the hit the monster
+armour layer sees before the crit is cut; the Unity client reads the same generated Codex data (`Codex.json`, run by
+`unity/Core.Tests`), not the cap lines of the item tooltip (there is no Unity item tooltip change in this package).
 
 ## Legendary powers (`data/lib/chaos_powers.lua`, `data/scripts/chaos/item_powers.lua`)
 
@@ -13872,6 +13973,8 @@ multi-use flag on the small diamond sprite: `client/tools/sprites/set_multiuse.p
 (its default list now holds client 3028 next to the two orbs). All numbers: `chaos_gems_config.lua`; tests:
 `tests/gems_test.lua` (ids, effects, socket counts, socketing, totals and caps, description, the Orb of Sockets and the
 other orbs, combining, drop and reward rolls, and `gems.lua` against a mocked engine).
+
+**O473 (2026-11-10).** The damage gems are raw percent of the one additive damage pool: at most 25 per element (was 40), physical 12. A player's own hit takes them in `ChaosPassiveDealt` (`G.poolRaw`); the hits of a player's summons keep the old event. See "Increased damage pool (O473)".
 
 **Items.** Seven gem types in five tiers, Chipped, Flawed, Polished, Flawless and Perfect. Each type and tier has its
 own server id, 32001..32035 = 32001 + (type - 1) x 5 + (tier - 1): ruby 32001-05, sapphire 32006-10, emerald 32011-15,
@@ -15037,7 +15140,8 @@ Owner question: does every class have enough weapons? The audit answers it from 
   (two-handed +3, crossbow +3).
 - **Inputs.** `data/items/base_weapons.csv` is a snapshot of the stock weapons of an installed server, made by
   `python3 -I tools/survey_base_weapons.py INSTALLED_DATA` (like `base_item_values.csv`, so CI needs no game data; run it
-  again when `install_all.py` changes a weapon). The rest is in the repo: `chaos_items.xml`, `chaos_unique_specs.lua`,
+  again when `install_all.py` changes a weapon; O472: the file keeps the numbers BEFORE the stock weapon growth of "Weapon growth
+  (O472)", the audit applies `stockGrowth` of `weapon_coverage_config.lua` to its rows). The rest is in the repo: `chaos_items.xml`, `chaos_unique_specs.lua`,
   `chaos_unique_items.lua` (drops), `chaos_gear_sets_items.lua` and `chaos_gear_sets.lua` (sources), `chaos_fist_weapons.lua`,
   `chaos_weapons800.lua` (the 34 weapons above level 800, their own monster rows are the source it counts), the base recipes and the Chaos monster loot.
 - **Check (CI).** `cd server && luajit tools/weapon_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
@@ -15064,27 +15168,27 @@ Owner question: does every class have enough weapons? The audit answers it from 
 
 | Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
-| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
-| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 11/101 | 8/101 | 12/122 | 8/107 | 11/108 |
-| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 13/101 | 10/106 | 13/101 | 13/107 | 15/107 |
-| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 13/101 | 10/106 | 13/101 | 13/107 | 15/107 |
-| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 7/101 | 7/106 | 8/101 | 9/107 | 10/107 |
-| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
-| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 10/145 | 7/100 | 9/153 | 9/100 | 11/100 |
-| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 11/145 | 7/100 | 9/153 | 9/100 | 11/100 |
-| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
-| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
-| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
-| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
-| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
-| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
-| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
-| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
-| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
-| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
-| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
-| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
+| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
+| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
+| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/114 | 11/102 | 8/100 | 12/125 | 8/110 | 11/111 |
+| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/102 | 13/102 | 10/107 | 13/100 | 13/107 | 15/109 |
+| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/102 | 13/102 | 10/107 | 13/100 | 13/107 | 15/109 |
+| Beastmaster | 4/114 | 3/110 | 5/108 | 9/111 | 15/101 | 7/100 | 7/107 | 8/100 | 9/107 | 10/107 |
+| Mystic | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
+| Elementalist | 5/135 | 6/215 | 4/182 | 10/565 | 16/132 | 10/146 | 7/100 | 9/152 | 9/100 | 11/100 |
+| Illusionist | 8/135 | 11/215 | 4/182 | 11/565 | 26/132 | 11/146 | 7/100 | 9/152 | 9/100 | 11/100 |
+| Thief * | 60/325 | 68/140 | 73/149 | 43/137 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
+| Ninja * | 60/325 | 68/140 | 73/149 | 43/137 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
+| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
+| Necromancer | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
+| Lich | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
+| Bone Lord | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
+| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/114 | 29/113 | 17/106 | 27/125 | 22/114 | 30/113 |
+| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/114 | 29/113 | 17/106 | 27/125 | 22/114 | 30/113 |
+| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/114 | 29/113 | 17/106 | 27/125 | 22/114 | 30/113 |
+| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
+| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
+| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
 
 <!-- weapon-coverage:end -->
 
@@ -15752,17 +15856,19 @@ measure on the beta). Crystal tokens: 15 / 5 per run = 3 Tower Defense runs of `
 | Crystal | 5 per run (3.0 runs for 15) | 45.0 min |
 
 **Value of the prizes.** Counted: crafting orbs and sockets in kills of a level 100+ monster that the loot layer needs for the same drops (the
-O148 rule), divided by the hunter's kills per hour (`paceKillsPerHour.scaled` of `spawn_tuning.json`: 836 at level 650, 869 at 1000, 813 at
+O148 rule), divided by the hunter's kills per hour (`paceKillsPerHour.scaled` of `spawn_tuning.json`: 1,164 at level 650 since O470, it was 836; 869 at 1000, 813 at
 1600, 789 at 2000); gold in hours of hunting gold (0.2 h per unit, a minute count that does not depend on the level); an exercise chest as its
 vendor price against the hunting gold per hour; a unique chest as 200 minutes (about one unique per 3.4 hours of Rare and Legendary kills at
 level 1500, O148). Not counted: cards, badges, catalysts, cosmetics and units (they are not a time), so the figures are a floor.
 
 | Roulette | Before (level 1000) | Now: 650 / 1000 / 1500 / 2000 | Value / cost at 1000 |
 |---|---|---|---|
-| Boss (O148, unchanged) | 60.1 min of 63.7 | 62.3 / 60.1 / 63.7 / 65.7 min | 0.94 |
-| Exercise | 2.6 min of 84.0 (x0.03) | 81.8 / 79.4 / 83.1 / 85.1 min | 0.95 |
-| Premium | 0 counted of 98.6 (14 cosmetics) | 99.8 / 96.8 / 101.9 / 104.6 min | 0.98 |
-| Crystal | 0 counted of 45.0 (21 Moist pieces, 2 units) | 46.2 / 44.8 / 47.2 / 48.5 min | 0.99 |
+| Boss (O148, unchanged) | 60.1 min of 63.7 | 46.3 / 60.1 / 63.7 / 65.7 min | 0.94 |
+| Exercise | 2.6 min of 84.0 (x0.03) | 63.6 / 79.4 / 83.1 / 85.1 min | 0.95 |
+| Premium | 0 counted of 98.6 (14 cosmetics) | 77.3 / 96.8 / 101.9 / 104.6 min | 0.98 |
+| Crystal | 0 counted of 45.0 (21 Moist pieces, 2 units) | 35.4 / 44.8 / 47.2 / 48.5 min | 0.99 |
+
+O470 (2026-11-10): only the 650 column moved (the plan there was 836, it is 1,164 now; the band at 650 is 0.70 - 1.35).
 
 At level 1000 one spin now pays on average: boss 1.16 orbs + 717,000 gold; exercise 1.32 orbs + 3.3M gold (and 2-5 sockets in 6% of the
 spins); premium 1.44 orbs + 2.8M gold; crystal 0.96 orbs + 1.1M gold. The Boss Roulette needed no change: at 8 minutes per boss kill its
@@ -20430,6 +20536,10 @@ Basics page "Pack combat"):
 Experience, gold and goal pace per hour are the O108 ones (`progression_model.lua --check`, `loot_model.lua --check`).
 Generated area points and bosses are unchanged. Deploy: `files` and `spawns` install steps and a server restart; the client codex page (`codex_data.lua`) and the website wiki data were regenerated.
 
+**Late sets without the step (O470, 2026-11-10).** The `scaled` health, experience, loot, goal and notable points of 657 to 900, the
+plan `paceKillsPerHour.scaled` and the base set's seam changed: see "Monster health curve (O470)" at the end. The O138 figures
+above are what the levels from 1000 up still are.
+
 These come on top of the engine's x(1 + 0.0074 L) health and x0.03 L experience of a monster with a level of its own.
 Loot: `pace_config.lua` (and "Loot by monster level").
 
@@ -23447,6 +23557,13 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
 ## Fist weapons (`tools/install_fist_weapons.py`, `data/lib/chaos_fist_weapons.lua`, `scripts/chaos/fist_weapons.lua`)
 The Monk line's fist weapons (docs/CLASSES.md "Monk"). Owner 2026-10-23: "creio que o monk nao tem armas pra ele. se nao
 tiver, faca por favor".
+
+* **O472 (2026-11-10): the numbers below are the attack before the weapon growth.** The CSV keeps them; `install_fist_weapons.py`
+  installs `grown(CSV attack, level)` (weapon_growth.py: a(level) = 1.31 at 300, 1.49 at 500, 2.41 at 1000, 2.88 from 2000), and
+  the Monk's bare fist (`ChaosMonk.fistAttack`, `ChaosArchetypesCore.fistAttack`: 40 + 0.025 per level, at most 60) is times the
+  same a(level), so a claw still beats bare fists by the margin it had ("the attack above 60 at level 800" now reads 62 -> 117 against 115).
+  Examples installed: ossuary gauntlet 50 -> 65 (level 300), cinderforged talons 55 -> 82 (500), emberhide claws 62 -> 117 (800),
+  voidglass claws 63 -> 152 (1000), last-dawn claws 67 -> 193 (2200). "Weapon growth (O472)".
 
 * **The gap found.** The Monk did have six fist weapons (levels 8 to 650), but: nothing for levels 1 to 7 and 9 to 59 (the
   kit was empty hands); one unique (level 650) and none to level up with; after level 650 nothing, so a Monk from level 650
@@ -29199,40 +29316,40 @@ nine wands, nine rods and three two-handed melee weapons (a greatsword, a greata
 
 | Server id | Item | Type | Level | Element | Stats | Own monster drops (per 100,000) |
 |---|---|---|---|---|---|---|
-| 48412 | gravesong bow | bow | 820 | death | attack 77, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48413 | emberthorn longbow | bow | 885 | fire | attack 78, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48414 | hollowreed recurve | bow | 950 | earth | attack 79, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48415 | stormlace bow | bow | 1120 | energy | attack 80, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
-| 48416 | veilpiercer bow | bow | 1235 | holy | attack 80, hit 97%, range 6, skill +4 | Winterstride 150 |
-| 48417 | duskpetal longbow | bow | 1420 | earth | attack 82, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48418 | ashen halo bow | bow | 1580 | holy | attack 82, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48419 | throneseeker bow | bow | 1850 | energy | attack 84, hit 98%, range 6, skill +5 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
-| 48420 | last-ember recurve | bow | 2150 | fire | attack 85, hit 98%, range 6, skill +5 | Azhkarrath the Chained Wyrm 1200 |
-| 48421 | bonehinge arbalest | crossbow | 840 | death | attack 80, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48422 | cindergut crossbow | crossbow | 930 | fire | attack 81, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48423 | frostlatch arbalest | crossbow | 1150 | ice | attack 83, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Winterstride 150 |
-| 48424 | thornwarden crossbow | crossbow | 1480 | earth | attack 85, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48425 | cinderbloom wand | wand | 830 | fire | damage 95-129 fire, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48426 | mirewhisper spire | wand | 890 | earth | damage 97-131 earth, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48427 | stormglass scepter | wand | 960 | energy | damage 99-134 energy, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48428 | hoarwick wand | wand | 1080 | ice | damage 102-138 ice, mana 27, magic level +3 | Celestial Wyrm 150, Ossivane the Gravecage 1200 |
-| 48429 | sunscar focus | wand | 1200 | holy | damage 104-140 holy, mana 28, magic level +3 | Winterstride 150 |
-| 48430 | thunderwake scepter | wand | 1400 | energy | damage 107-145 energy, mana 29, magic level +3 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48431 | emberveil spire | wand | 1560 | fire | damage 110-149 fire, mana 30, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48432 | rotcrown wand | wand | 1780 | death | damage 114-154 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
-| 48433 | wyrmtongue focus | wand | 2100 | energy | damage 117-159 energy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
-| 48434 | hushwood rod | rod | 825 | death | damage 95-129 death, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48435 | mirrorbark staff | rod | 885 | ice | damage 97-131 ice, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48436 | dreamthorn branch | rod | 955 | earth | damage 99-134 earth, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48437 | veilhollow crook | rod | 1100 | death | damage 102-138 death, mana 28, magic level +3 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
-| 48438 | glimmerbough rod | rod | 1210 | holy | damage 104-141 holy, mana 28, magic level +3 | Winterstride 150 |
-| 48439 | gloamroot staff | rod | 1390 | earth | damage 107-145 earth, mana 29, magic level +3 | Bloodantler Fiend 150 |
-| 48440 | wraithwillow rod | rod | 1590 | ice | damage 110-149 ice, mana 31, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48441 | nightbloom crook | rod | 1820 | death | damage 114-155 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
-| 48442 | eventide branch | rod | 2080 | holy | damage 117-159 holy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
-| 48443 | gravewrought greatsword | sword2 | 850 | death | attack 40 + death 22, defense 37, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48444 | ashmaw greataxe | axe2 | 910 | fire | attack 41 + fire 22, defense 37, skill +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48445 | dirgebell maul | club2 | 975 | holy | attack 42 + holy 22, defense 38, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48412 | gravesong bow | bow | 820 | death | attack 149, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48413 | emberthorn longbow | bow | 885 | fire | attack 163, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48414 | hollowreed recurve | bow | 950 | earth | attack 179, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48415 | stormlace bow | bow | 1120 | energy | attack 196, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
+| 48416 | veilpiercer bow | bow | 1235 | holy | attack 201, hit 97%, range 6, skill +4 | Winterstride 150 |
+| 48417 | duskpetal longbow | bow | 1420 | earth | attack 209, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48418 | ashen halo bow | bow | 1580 | holy | attack 217, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48419 | throneseeker bow | bow | 1850 | energy | attack 235, hit 98%, range 6, skill +5 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48420 | last-ember recurve | bow | 2150 | fire | attack 245, hit 98%, range 6, skill +5 | Azhkarrath the Chained Wyrm 1200 |
+| 48421 | bonehinge arbalest | crossbow | 840 | death | attack 156, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48422 | cindergut crossbow | crossbow | 930 | fire | attack 177, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48423 | frostlatch arbalest | crossbow | 1150 | ice | attack 200, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Winterstride 150 |
+| 48424 | thornwarden crossbow | crossbow | 1480 | earth | attack 214, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48425 | cinderbloom wand | wand | 830 | fire | damage 187-253 fire, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48426 | mirewhisper spire | wand | 890 | earth | damage 205-278 earth, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48427 | stormglass scepter | wand | 960 | energy | damage 229-310 energy, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48428 | hoarwick wand | wand | 1080 | ice | damage 249-336 ice, mana 27, magic level +3 | Celestial Wyrm 150, Ossivane the Gravecage 1200 |
+| 48429 | sunscar focus | wand | 1200 | holy | damage 258-349 holy, mana 28, magic level +3 | Winterstride 150 |
+| 48430 | thunderwake scepter | wand | 1400 | energy | damage 274-370 energy, mana 29, magic level +3 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48431 | emberveil spire | wand | 1560 | fire | damage 288-390 fire, mana 30, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48432 | rotcrown wand | wand | 1780 | death | damage 313-424 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48433 | wyrmtongue focus | wand | 2100 | energy | damage 338-458 energy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
+| 48434 | hushwood rod | rod | 825 | death | damage 185-251 death, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48435 | mirrorbark staff | rod | 885 | ice | damage 204-276 ice, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48436 | dreamthorn branch | rod | 955 | earth | damage 227-307 earth, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48437 | veilhollow crook | rod | 1100 | death | damage 250-338 death, mana 28, magic level +3 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
+| 48438 | glimmerbough rod | rod | 1210 | holy | damage 259-350 holy, mana 28, magic level +3 | Winterstride 150 |
+| 48439 | gloamroot staff | rod | 1390 | earth | damage 273-369 earth, mana 29, magic level +3 | Bloodantler Fiend 150 |
+| 48440 | wraithwillow rod | rod | 1590 | ice | damage 292-395 ice, mana 31, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48441 | nightbloom crook | rod | 1820 | death | damage 318-430 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48442 | eventide branch | rod | 2080 | holy | damage 338-458 holy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
+| 48443 | gravewrought greatsword | sword2 | 850 | death | attack 79 + death 42, defense 37, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48444 | ashmaw greataxe | axe2 | 910 | fire | attack 86 + fire 47, defense 37, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48445 | dirgebell maul | club2 | 975 | holy | attack 94 + holy 51, defense 38, skill +3 | Dawn Strayer 150, Ice Lich 150 |
 
 * **Drops, in two ways, and not in the sets' level gear pool.**
   1. The bases are in the class loot families of `data/lib/chaos_class_loot.lua` (`L.bases`: bow, crossbow, wand, rod, melee2h):
@@ -29282,11 +29399,11 @@ curves, class lists, loot rules, set bonuses at 2, 4 and 6 pieces, audits and te
 
 | Set | Level (audit band) | Damage element | Resists / weak to | Look | Staff | Key stats at that level |
 |---|---|---|---|---|---|---|
-| Venomcoil (`venomcoil`, ids 48446-48458) | 640 (400-700) | earth | earth / fire | dark green scales, gold trim | wand | helm 10, cuirass 19, boots 4 + speed 24, shield 42, blade 36 + earth 20, greataxe 38 + earth 21, bow 75 / hit 96, scepter 90-122 mana 23 |
-| Hoarglass (`hoarglass`, 48459-48471) | 860 (700-1000) | ice | ice / fire | pale ice-blue steel | wand | helm 12, cuirass 21, boots 5 + speed 28, shield 45, blade 38 + ice 21, greataxe 40 + ice 22, bow 78 / hit 97, scepter 96-130 mana 26 |
-| Kilnforged (`kilnforged`, 48472-48484) | 1400 (1300-1700) | fire | fire / ice | blackened iron, ember seams | wand | helm 14, cuirass 25, boots 6 + speed 34, shield 50, blade 42 + fire 22, greataxe 44 + fire 23, bow 81 / hit 97, scepter 107-145 mana 29 |
-| Halogild (`halogild`, 48485-48497) | 1700 (1700-2400+) | holy | death / earth | polished gold, blue and red gems | rod | helm 15, cuirass 26, boots 6 + speed 37, shield 53, blade 44 + holy 23, greataxe 45 + holy 25, bow 83 / hit 97, staff 112-152 mana 31 |
-| Deepdirge (`deepdirge`, 48498-48510) | 2050 (1700-2400+) | death | death / holy | dark steel, teal abyssal gems | rod | helm 16, cuirass 28, boots 7 + speed 40, shield 55, blade 45 + death 24, greataxe 47 + death 25, bow 85 / hit 98, staff 117-159 mana 33 |
+| Venomcoil (`venomcoil`, ids 48446-48458) | 640 (400-700) | earth | earth / fire | dark green scales, gold trim | wand | helm 10, cuirass 19, boots 4 + speed 24, shield 42, blade 59 + earth 31, greataxe 60 + earth 33, bow 121 / hit 96, scepter 144-195 mana 23 |
+| Hoarglass (`hoarglass`, 48459-48471) | 860 (700-1000) | ice | ice / fire | pale ice-blue steel | wand | helm 12, cuirass 21, boots 5 + speed 28, shield 45, blade 78 + ice 42, greataxe 80 + ice 43, bow 157 / hit 97, scepter 195-264 mana 26 |
+| Kilnforged (`kilnforged`, 48472-48484) | 1400 (1300-1700) | fire | fire / ice | blackened iron, ember seams | wand | helm 14, cuirass 25, boots 6 + speed 34, shield 50, blade 107 + fire 57, greataxe 109 + fire 58, bow 208 / hit 97, scepter 274-370 mana 29 |
+| Halogild (`halogild`, 48485-48497) | 1700 (1700-2400+) | holy | death / earth | polished gold, blue and red gems | rod | helm 15, cuirass 26, boots 6 + speed 37, shield 53, blade 117 + holy 63, greataxe 119 + holy 64, bow 225 / hit 97, staff 304-411 mana 31 |
+| Deepdirge (`deepdirge`, 48498-48510) | 2050 (1700-2400+) | death | death / holy | dark steel, teal abyssal gems | rod | helm 16, cuirass 28, boots 7 + speed 40, shield 55, blade 129 + death 70, greataxe 131 + death 71, bow 245 / hit 98, staff 338-458 mana 33 |
 
   The pieces of a set share its level (a set is worn whole), so the audits see 100% of the tier at every slot. The element, the resisted
   and the weak element and the missiles of a set are in `install_relic_sets.py` `SETS` (a pseudo entry of `install_gear_sets.py`
@@ -30455,7 +30572,7 @@ three inputs (the other 45 are casters, whose magic level is their skill).
 | `companion.autoByLevel` | re-fitted (11 points, 1.658 at level 60 to 2.694 at 1200, was 1 to 0.5): the plain build's bite (no tree, no gear) stays where it was against a monster of the median armour (161 / 301 / 470 at levels 100 / 500 / 1000, within 2% at every level 50-1300, `tests/spell_paths_test.lua`). The raw bite is bigger and `classDamage.beastmaster` (0.85 to 0.39) with the armour of a normal monster take it back. A tree of +40% physical and 60 strength: 161 / 301 / 470 becomes 271 / 507 / 793. |
 | Pet Spark Aura (`pets.lua`) | closed, same way: its own damage, not a share of a hit. Not re-fitted: small hits lose most to armour (about 85% at level 500 against the median monster), the tooltip number is the raw one. |
 | Axe cleave neighbours (`weapon_families.lua`) | left: a guarded share of a hit that carried every bonus. |
-| Damage over time conditions | converted: Blightswarm (8 ticks, 2 s), Witchfire Bolt (4, 3 s), Falling Pyre (5, 3 s), Shattered Psyche (5, 2 s) are `ChaosSpell.scriptedDot` pulses (spell hits inside the cast context): crit, supports, masteries, cards, keystones and uniques apply. A tick is the old condition tick (magic level formula of the script) divided by the class spell factor, which the event puts back, so a typical character without supports or cards deals the old tick (rounded to the point) at every level and class (`tests/spell_paths_test.lua`). A new chain on the same target replaces the old one. The engine's condition icon and its removal by cures are gone. |
+| Damage over time conditions | converted: Blightswarm (8 ticks, 2 s), Witchfire Bolt (4, 3 s), Falling Pyre (5, 3 s), Shattered Psyche (5, 2 s) are `ChaosSpell.scriptedDot` pulses (spell hits inside the cast context): crit, supports, masteries, cards, keystones and uniques apply. A tick is the old condition tick (magic level formula of the script) divided by the class spell factor, which the event puts back, so a typical character without supports or cards deals the old tick (rounded to the point) at every level and class (`tests/spell_paths_test.lua`). A new chain on the same target replaces the old one. The engine's condition icon and its removal by cures are gone. **O474 (2026-11-10) changed the timing, the sizes, the predicate and the icon: see "Damage over time (O474)".** |
 | Support sockets | the six damage spells of the `none` list (9 Rift Cleaver, 38 Mirror Shards, 39 Rending Pounce, 42 Grave Nova, 45 Gutting Slash, 134 Gale Volley) have sockets; 3 of 172 instants have none (Flickerdash, Town Portal, Vigil of Haste). |
 | Snares and mines | a snare keeps the cast context of the spell that placed it (`ChaosSupportsSpell.context`) and raises it around the burst (`ChaosSupportsSpell.run`): the supports and the spell modifier masteries of Snare Trap and Seeker Mine apply. |
 | Necromancer minion hits | left: the supports need the summoning cast's context kept per minion and raised in the think loop (`necro_minions.lua`), more than the small change that was allowed. |
@@ -30482,6 +30599,145 @@ heals), gear Spell Damage rolling only on wands and rods, the growth of spell da
 `tests/templar_test.lua`, `tools/patch_stock_spell_inputs_test.py`. **Not verified:** a live server (the event order and ORIGIN_NONE
 are read from the engine source, not observed), the effect of the missing condition icon, the pt-BR text by a speaker, the
 base scripts of Kindling Spark and Bewitching Hex beyond the read-only copy.
+
+## Weapon growth (O472) (`weapon_growth.py`, `spell_scaling_config.lua` `weaponGrowth` and `caster`, `spell_scaling_core.lua`, `patch_stock_weapon_growth.py`, `gen_weapon_growth.py`, `chaos_crafting.lua` `growWeapon`, `tests/weapon_growth_test.lua`, `tests/weapon_growth_touch_test.lua`)
+
+Owner 2026-11-10 (translated): "You can do everything", on the damage design (typical damage about doubles at level 1000, equipment
+carries a third of the growth). This is package O472 of that round: the weapon values grow with the level. Computed and mocked,
+never run on a live server or in a client.
+
+**The rule.** `W(level)` is the factor on the weapon term of a hit: 1.00 up to level 100, 1.14 at 200, 1.26 at 300, 1.42 at 500,
+1.55 at 700, 1.85 at 850, 2.20 at 1000, 2.35 at 1500, 2.60 at 2000, straight in the logarithm of the level between the rows, flat
+above 2000. It never falls and never rises more than x1.082 over 50 levels (the limit was 1.12). Skill x attack is about 85% of a
+weapon hit, so an attack grows by `a = 1 + (W - 1) / 0.85`: 1.16 at 200, 1.31 at 300, 1.49 at 500, 1.65 at 700, 2.41 at 1000, 2.59
+at 1500, 2.88 at 2000. One table, two copies held equal by tests: `tools/weapon_growth.py` and `spell_scaling_config.lua`
+`weaponGrowth`.
+
+**Before and after** (`tools/install_gear_sets.py` curves, computed with `python3 -I server/tools/weapon_growth.py` functions;
+the old column is the real file before this change, the design's table differs by one point where it rounded):
+
+| level | W | a | one-hand attack | bow | wand mean | bare fist | Shuriken default attack |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 1.00 | 1.00 | 46 -> 46 | 68 -> 68 | 62 -> 62 | 42.5 -> 42.5 | 50 -> 50 |
+| 300 | 1.26 | 1.31 | 51 -> 67 | 72 -> 94 | 92 -> 119 | 47.5 -> 62.0 | 50 -> 65 |
+| 500 | 1.42 | 1.49 | 54 -> 81 | 74 -> 111 | 101 -> 151 | 52.5 -> 78.4 | 50 -> 75 |
+| 700 | 1.55 | 1.65 | 57 -> 94 | 76 -> 125 | 108 -> 178 | 57.5 -> 94.7 | 50 -> 82 |
+| 1000 | 2.20 | 2.41 | 61 -> 147 | 79 -> 191 | 118 -> 285 | 60.0 -> 144.7 | 50 -> 121 |
+| 2000 | 2.60 | 2.88 | 69 -> 199 | 85 -> 245 | 138 -> 398 | 60.0 -> 172.9 | 50 -> 144 |
+
+The design's numbers for a bow at 200 (82) and a wand at 300 (121) are 83 and 119 here: the real old curve at 300 is 91.5 (the
+design took 92) and the product rounds to the nearest whole. Every curve point is the old curve times `a` to within half a point
+(`tools/weapon_growth_test.py`, `tests/weapon_growth_test.lua`); between the anchors a straight line stays within 1.2% of the exact
+product. Two-handed weapons keep +3 attack and crossbows +3 on the bow curve; the hit chance curve is not changed.
+
+**Where the numbers live.**
+
+| What | Where |
+|---|---|
+| Curves of the equipment sets, the weapons above level 800 and the relic sets | `install_gear_sets.py` `WEAPON_ANCHORS`, `WEAPON_CURVES` (attack, bow, wand; 12 anchors, 300 / 500 / 850 added); `OLD_WEAPON_CURVES` keeps the old ones; the two other tools call its `stats_of`. Generated: `chaos_gear_sets_items.lua`, `chaos_weapons800.lua`, `chaos_relic_sets_items.lua` |
+| The audits | `weapon_coverage_config.lua` `anchors`, `curves` (same numbers), `stockGrowth` |
+| Fist weapons | `install_fist_weapons.py`: the CSV keeps the attack before, the installed attack is `grown(CSV, level)`; `chaos_fist_weapons.lua` |
+| Uniques | `data/items/chaos_items.xml`: the 29 weapon uniques of a level above 100 times `a(level)` (the level is `equipLevel` or the "Requires level" of the text), `chaos_unique_specs.lua` regenerated |
+| Auto attack power | `weapon_power_config.lua` and `weapon_balance_config.lua` regenerated by `weapon_sim.py` (see below) |
+| The caster factor | `spell_scaling_config.lua` `caster`, `spell_scaling_core.lua` `casterFactor` |
+
+**Stock weapons of the base server.** The install tools write nothing of the 520 stock weapons (`base_weapons.csv`). Left alone they
+fall below 60% of the tier from level 800 and a class finds almost no usable weapon among them: `gear_coverage.lua --fairness` showed
+Warrior 2.4 / 1.4 / 0.2 usable weapons per 1000 kills at hunting level 800 / 1000 / 1200 against 28 (the one-handed melee loadout; the
+anchors of `chaos_class_loot.lua` cannot make up for it, `--derive` runs into the 3000 cap). So the new install step **weapongrowth**
+(`tools/patch_stock_weapon_growth.py`, after `throwables`) gives them the same growth: a sword, axe, club, bow or crossbow of a
+`weapons.xml` level above 100 without charges gets attack and element damage times `a(level)` in `items.xml`, a wand or rod of a
+level above 100 gets min and max times `a(level)` in `weapons.xml`. The numbers before are kept in one comment at the end of each file;
+every run works from them, so the step is idempotent, a server installed before O472 moves on the first run and a change of the table
+moves it again. `survey_base_weapons.py` reads the comment back, so `base_weapons.csv` stays the stock snapshot and the audits
+(`weapon_coverage.lua` `stockGrowth`, `gear_coverage.lua`) apply the same rule to it; `tools/patch_stock_weapon_growth_test.py` holds
+the Lua rule equal to the step on every row. `gen_base_wands.py` grows the table of the tooltip the same way. Not touched: charge
+weapons, the retired stackable throwing weapons, level 100 and under, the weapons of the Chaos tools (id 36654 and up), element
+damage of a weapon with two element keys is rounded per key (the audit rounds the sum, one point at most).
+Result: `weapon_coverage.lua --check` and `gear_coverage.lua --check` pass without a new anchor; from level 200 the best weapon of
+every class and band is a set weapon (100% of the tier) except the casters' stock wands at 100-105% in 200-700.
+
+**How W reaches each damage path** (typical character of `rotation_sim.py`, probe engine, levels 500 / 1000, before -> after):
+
+| Path | Change | 500 | 1000 |
+|---|---|---|---|
+| Auto attack, melee and distance (engine formula `level / 5 + (skill / 4 + 1) x (attack / 3) x 1.03`) | the attack of the item type grows | max hit 721 -> 1028 (x1.43) / 810 -> 1160 (x1.43) | 1003 -> 2138 (x2.13) / 1152 -> 2495 (x2.17) |
+| Weapon spells through `AttackKit` (Rift Cleaver, Sunspear) and `weaponFormula` | skill x attack of the held weapon | 1286 -> 1858 (x1.44), 1414 -> 2048 (x1.45) | 1733 -> 3856 (x2.23), 1960 -> 4403 (x2.25) |
+| Thief line (`weaponStrike`, Gutting Slash) | the blade in the hand | 725 -> 1020 (x1.41) | 1004 -> 2098 (x2.09) |
+| Shuriken (`shurikenPower`) | the default attack 50 times `a(level)`; the throwing stars are out of the game | x1.49 | x2.41 on the weapon term |
+| Templar and Ranger holy spells (hybrids) | through the attack, not twice (no caster factor) | 1373 -> 1977 (x1.44) | 1846 -> 4093 (x2.22) |
+| Monk (`ChaosMonk.fistAttack`, strikes, unarmed hits, Open Hand Creed) | the level value (40 + 0.025 per level, at most 60) times `a(level)`; a fist weapon is the CSV times `a` | attack 52.5 -> 78.4, max hit 659 -> 935 | 60 -> 144.7, 942 -> 1989 |
+| Snares and mines | skill x weapon attack at placement | level x 0.2 + power x 0.045 + 10: 472 -> 651 (x1.38) | 695 -> 1380 (x1.99) |
+| Caster spells (below) | the caster factor | x1.42 at the band's wand | x2.20 |
+| Necromancer minions | the caster factor on the hit | x1.42 | x2.20 |
+| Beastmaster wolf maul, companion bite and pet aura | follow-up: `1 + (W - 1) x min(1.2, bow attack / bow curve of the level)` in the raw value (`ChaosClasses.wolfGrowth`, `ChaosSpellScaling.wolfFactor`; switch `caster.wolves`; `caster.bowMean` = the bow curve); no weapon gives 1 | x1.42 with a band bow (plain bite dps 180 -> 299) | x2.20 (282 -> 851) |
+| Healing | never | x1.00 | x1.00 |
+
+**Casters.** A caster's spell does not read the wand, so the growth is one factor on the spell:
+`1 + (W(level) - 1) x min(1.2, wand / mean)`. `wand` is the mean damage of the wand or rod in either hand (`weapons.xml` damage from
+`chaos_base_wands.lua`, `chaos_gear_sets_items.lua`, `chaos_relic_sets_items.lua`, `chaos_weapons800.lua`; a wand missing from them
+counts as the level's mean), `mean` the wand curve at the character level (`caster.wandMean`, the same numbers as the install
+curve). A wand of the band gives exactly W, one 10% better 10% more of the growth, a far better one at most 20% more, a weaker one
+less, none gives 1 (`ChaosSpellScaling.casterFactor`, `casterForPlayer`; `ChaosSpell.casterShare`, `casterScale`). Applied once, in
+the helpers, where O468 applies the weapon share:
+
+| Path | Where | Takes it |
+|---|---|---|
+| Damage spells with `ChaosSpell.mlValues` (Falling Pyre, Forked Storm, Doomtide, Frozen Crypt, Glacial Doom, Nightburst, Umbral Stride, Tear in the Weave, Primordial Squall, Briar Prison) | `_common.lua` | yes |
+| LEVELMAGIC callback spells (Rime Bloom, Blightswarm, Witchfire Bolt, Shattered Psyche) | the four scripts, `ChaosSpell.casterScale` | yes |
+| Kit magic school (Phantom Needles, Dreamrot, ...) | `AttackKit.rawValues` | yes |
+| Kit necro school, Bone Spear, Grave Nova, Corpse Explosion, Life Siphon, Soul Rot, Withering Curse ticks | `ChaosNecro.spellFactor` (necro_lib.lua) | yes |
+| Bone Offering | `bone_offering.lua` | yes |
+| Scripted ticks of Blightswarm, Witchfire Bolt, Falling Pyre, Shattered Psyche | the base tick x the factor in each script | yes |
+| Necromancer minion hits and minion spells | `ChaosNecro.minionFactor` (`caster.minions`, true) | yes, a switch in the config turns it off |
+| Heals (Purifying Wellspring and Verdant Sanctuary moved to `ChaosSpell.mlHealValues`, Mirror Mend, Lucid Reverie, Vow of Mending, Shadow Mend, Lay on Hands ...) | | no |
+| Weapon classes, hybrids (Templar line, Ranger holy spells) | | no |
+| Stock caster spells of the base scripts (Pyre Torrent, Tempest Fan, Arcane Ripple, Kindling Spark, Bewitching Hex), the Necromancer archetype `relicDamage`, the Beastmaster wolves | base data or not weapon bound | no (listed, left) |
+
+The minion hit reads level and magic level like the owner's spells and has no weapon term. The class spell factor leaves it out on
+purpose (`F.guard`); without the caster factor the Necromancer line would grow by about half of what the others do, so it takes it.
+`tests/weapon_growth_test.lua` casts every damage spell of the six caster classes and every heal at levels 500 and 1000 on the probe
+engine and checks W with a wand of the band, 1 + 0.2 (W - 1) with a far better one, equal heals, equal weapon class spells and
+the scripted ticks.
+
+**Items owned.** No item is rerolled or deleted. The type's attack follows the install and the restart. A rolled weapon holds
+`ITEM_ATTRIBUTE_ATTACK` = the type's attack + the base bonus (with the quality share and a +N upgrade); a weapon with Weapon Damage holds the
+attack before the modifier in `chaos_wdbase`; a unique holds its spec's attack. `ChaosCrafting.growWeapon` (data/lib/chaos_crafting.lua,
+called first by `ChaosCrafting.upgradeItem`: every read, move and login refresh of the item) moves such an item by the change of its
+base, once: new attack = stored + (new base - old base) with the pairs of `data/lib/chaos_weapon_growth.lua`
+(`tools/gen_weapon_growth.py`; 325 types, 192 of ours and 133 stock weapons of the growth step, and 29 uniques). Weapon Damage: the base moves, the attack is worked out
+again with the percent that stays. A unique moves only when it holds the old spec's number. Quality, tier, rolled values and
+corruption stay (`tests/weapon_growth_touch_test.lua`). The type must already carry the new attack (else the next touch does it), the
+mark is its own `chaos_wgrow`, not the modifier version, because bumping that version would run the O461 / O464 range upgrade over every
+item again. To chain it into a version mark, call `C.growWeapon` from the step of the new mark. The archery migration (`archery.lua`
+`A.migrate`, on login and when a launcher is taken into a hand) reads a stored attack under the type's as an item made before the
+ammunition was built in and adds the band's ammunition. With a higher type attack every rolled launcher of the numbers before would
+read so, so `A.migrate` calls `growWeapon` first (`tests/archery_test.lua`): a rolled bow of 74 + 3 becomes 140 + 3, not 205 + 3.
+
+**Auto attack power and style factors, regenerated.** `weapon_sim.py` now multiplies the reference rotation of the class by W, since the
+real spells grow and the model's typical character (`rotation_sim.py` ANCHORS) has the old attack. `weapon_power_config.lua`: distance
+1.00 / 1.08 / 1.27 / 1.63 / 1.98 at levels 200 / 300 / 500 / 1000 / 2000 (was 1.00 / 1.08 / 1.25 / 1.49 / 1.66), wand 1.74 / 1.75 / 1.83 /
+1.95 / 2.12 (was 1.76 / 1.81 / 1.92 / 2.14 / 2.35), melee and fist 1. `weapon_balance_config.lua`: the two-handed factor 1.516 at 100
+to 1.582 at 2000 (was 1.543). The flat +3 of a two-handed weapon matters less at high attack, the factor keeps the style on its target.
+
+**Beastmaster follow-up.** The wolves are 46 to 68% of a Beastmaster's damage, so the maul, the companion bite and the pet aura take the growth
+of the bow in the owner's hands (raw value, so the O468 event factors see it). `companion_model.py` has `GROWTH` (x W on the wolves, the
+bite and the bow spells, and on its own references of before, so its limits keep bounding a build against the class); the plain
+build against the Ranger (both x W): 0.594 -> 0.616 at level 500, 0.628 -> 0.672 at 1000 (the armour keeps more of a bigger bite). One limit moved: `companion_balance_config.lua` `sharePlain`
+high 0.50 -> 0.52 (model 0.505 at level 400), dated O472. `tests/weapon_growth_test.lua` casts a band bow, a better bow and no bow at 100, 500, 1000.
+
+**Models.** Run, all unchanged and green: `weapon_family_model.py`, `class_dps_model.py`, `companion_model.py`, `minion_model.py`,
+`survival_model.py`, `pvp_model.py`, `defence_curve.py`, `pack_model.py`, `boss_model.py`, `tower_model.py`, `guardian_model.py`,
+`skill_model.lua`, `store_model.lua`, `weapon_sim.py --check` and `--power --check`. They read the measured table
+(`class_dps_measured.csv`) and the typical character of `rotation_sim.py`, which still have the attack and the wand before the growth, so
+none of them sees W. They must be re-fitted with it in the final model round: the typical character's attack and wand, and a growth
+factor in the damage model. Nothing was re-baselined for this package.
+
+**Not verified.** A live server (the item touch, the install step on a real `items.xml`, the event order); a client (tooltips read the
+tables and the item attribute); the pt-BR text by a speaker. Open: the unique wands keep the damage of their stock base, so the
+Duskweaver Wand (a level 140 unique on a high level stock base, 434 mean before the growth) is an outlier that now grows with its base;
+the stock caster spells do not take W; `rotation_model.csv`, the rotation simulator and the Auto setup rotation
+data do not know the growth.
 
 ## Player defence (O464) (`player_defence_config.lua`, `player_defence_core.lua`, `player_defence.lua`, `defence_config.lua`, `tools/patch_base_armor_percent.py`, `tools/patch_base_absorb_player.py`)
 
@@ -30642,3 +30898,514 @@ reduction, dodge, block and spell suppression; the Skills window's Armor and Dam
 `Player::blockHit` (one point of rounding per piece), the client windows in the real client, the pt-BR texts by a speaker. The
 balance models were not touched: the survival, PvP, guardian and tower models read the old armour and absorb and say nothing
 about this layer yet.
+
+## Damage over time (O474) (`dot_config.lua`, `dot_core.lua`, `ChaosSpell.dotChain`, `tests/dot_core_test.lua`)
+
+Owner 2026-11-10 (translated): "Also look at how the damage over time effects are. I think they are well below what they should be."
+A read-only audit confirmed it (four things stacked up): the side dots of Witchfire Bolt, Falling Pyre and Shattered Psyche dealt 9 to
+13% of their own hit over 10 to 15 s and first ticked after 2 to 4.2 s, while a hunt monster lives 0.6 to 1.6 s (so nothing landed);
+kit dots ticked once a second; only Soul Rot moved on when its host died; O468 turned four dots into scripted pulses that were no
+longer seen as damage over time (the gear "Damage over Time" modifier, the trial dot nodes, the 13 spread uniques, Contagion Rite and
+Sigil of Cinders stopped reaching them, and every pulse rolled on-hit ailments and leech); gear ailments added 6 to 7% on a boss;
+physical ticks lost 74 to 84% to monster armour. Every decision below was taken by the orchestrator from the audit; the owner may
+change them. **Every number is in `data/scripts/chaos/dot_config.lua`.** Nothing ran on a live server.
+
+**The rules.**
+
+| Rule | Number | Where |
+|---|---|---|
+| One predicate: "this is a damage over time tick" (`ChaosDot.isTick(origin, attacker, creature)`): an engine condition tick or a scripted tick | the spell scripts run in another Lua state than the damage events, so the scripted tick is marked in the player storage 7103110 (the id of the creature being hit, -1 outside a tick) while `ChaosDot.run` deals it; a hit on another creature during it is a plain hit | `dot_core.lua`, `dot_config.lua storage` |
+| Everything that reads damage over time asks it | the gear "Damage over Time" modifier (`item_mods.lua`), no on-hit roll and no leech on a tick (same file), the Trials' nodes (`trials_effects.lua`), the spread uniques (`unique_passives.lua`), Contagion Rite and Sigil of Cinders (`archetypes.lua`), the monster armour (`monster_defence.lua`), the combat log (`combatlog.lua`: a row "<spell> (over time)") | the sites listed |
+| Side dots (Witchfire Bolt, Falling Pyre, Shattered Psyche) | 6 ticks, 300 ms apart, the first 300 ms after the cast (Falling Pyre: after the impact), together 0.30 x the cast's own hit (the average of the script's min / max formula; the class spell factor is NOT taken off: 0.30 of the hit as dealt). Was 4 or 5 ticks 2 to 3 s apart, 9 to 13% | `side` |
+| Blightswarm | its old total (8 ticks) in 6 ticks 300 ms apart | `swarm` |
+| Kit dots (Gorehook, Dreamrot, Venom Spiral, Blightbrand, Martyr's Pyre, Crimson Covenant) | every 400 ms, the first tick at once (was 1 s); the ticks stay (5 or 6); Blightbrand scale 1 -> 1.25, Martyr's Pyre 1 -> 1.1 | `kit`, `attack_kit_config.lua` |
+| Withering Curse, Soul Rot | the curse every 250 ms (its amplify keeps 12 s), Soul Rot every 400 ms with tick scale 1.15 -> 1.725 (x1.5); every necro dot ticks first at once | `necro`, `necro_config.lua` |
+| A dot moves on when its host dies | the remaining ticks continue on the nearest living MONSTER within 3 squares of where the host died: never a player, never a summon of a player, no new ticks, never onto a monster that already carries the same dot of the same caster (its chain would be replaced). Soul Rot's own rule (`N.rotJump`) became this one | `jump`, `ChaosSpell.dotChain` |
+| A tick skips monster armour (as an engine condition does), resistance still counts; a direct hit is unchanged | | `monster_defence.lua` |
+| Gear ailments (Chance to Bleed / Ignite / Poison) stack | up to 3 per type per target per owner (a fourth replaces the weakest, unless it is weaker than all of them), each 8 ticks 0.5 s apart, together 40% of the hit (`chaos_item_mods.lua ailment.share`, as before); the beat deals the sum of a target's stacks as ORIGIN_CONDITION damage owned by the player; no jump (the spread uniques take the burn on). The item sets and keystones that put their own engine condition (`itemsets.lua`, `S.dotTick`) keep it | `ailment`, `item_mods.lua` |
+| The condition icon | a scripted dot against a PLAYER adds a zero-damage engine condition of the matching type (fire, earth, physical, energy, ice, holy, death -> burning, poison, bleeding, electrified, freezing, dazzled, cursed) with its own sub id 71097 for the length of the dot: the icon shows, and a cure removes it and ends the dot. Monsters show no icon. Delayed, one round, no damage, another sub id, so it never replaces a real condition | `icon`, `dot_core.lua addIcon / iconHeld` |
+| PvP: nothing changes on purpose | against a PLAYER target every dot keeps the old gap, the old first tick and the old size (side dots: the script's old formula; kit and necro dots: 1 s, the old scales back), and never jumps | `pvp` |
+| Monsters' own damage over time against players | untouched | |
+
+**The engine of a chain.** `ChaosSpell.dotChain` (`data/spells/chaos/_common.lua`) is the one engine of every scripted dot:
+`ChaosSpell.scriptedDot` (the four side spells), `AttackKit.startDot` (`_attackkit.lua`, the kit dots) and `NecroSpell.dot` (`_necro.lua`,
+Blightbrand, Withering Curse, Soul Rot). It stops when the caster is gone, a recast replaced the chain (same caster, spell and target),
+or a cure removed the icon of a player. The tick is dealt through the same damage call and events as before, so the O472 / O473 work
+on the spell hit reaches it. The position where the host died is the one of its last tick (or of the cast, when the cast's own hit
+killed it).
+
+**What a dot is worth now** (the full tables are in `server/data/spells/README.md` "Damage over time (O474)"; computed with the formulas
+of `rotation_model.csv`, the typical character of `rotation_sim.py`):
+
+- the dot of Witchfire Bolt at level 500 is 67 -> 174 (0.12 -> 0.30 of its hit), Falling Pyre 93 -> 391, Shattered Psyche 168 -> 391,
+  Soul Rot 1527 -> 2290, Blightbrand 1388 -> 1736, Martyr's Pyre 1089 -> 1198; Blightswarm, Gorehook, Dreamrot, Venom Spiral, Crimson
+  Covenant and Withering Curse keep their totals;
+- what lands on one hunt monster (typical character, level 100 / 500 / 1000): Witchfire Bolt 0 / 0 / 0% -> 33 / 50 / 83%, Dreamrot 17 / 33 /
+  33% -> 33 / 50 / 83%, Gorehook 20 / 40 / 40% -> 40 / 60 / 100%, Soul Rot 0 / 17 / 17% -> 33 / 50 / 83%; in a pack (the rest moves on) 80 to
+  100% from level 500 for every dot but Falling Pyre; 100% on a rare, a boss and a rift guardian for every dot from level 500.
+
+**The best set of a class** (`rotation_sim.py` best set, 1 target / 5 targets, before -> after; * = the set changed; the other 15 classes
+are 0%). The model always counted a dot in full, so these are the model's numbers; what changed on a hunt monster is larger (a dot that
+did not land now does). The set search is jumpy for the Mystic and the Elementalist (a different set is best when two are close):
+
+| class | 100 | 300 | 500 | 700 | 1000 |
+|---|---|---|---|---|---|
+| Mystic | +0.0% / +0.0% | +24.2% / +2.1%* | +23.3% / +1.9%* | +5.5% / +8.0% | +5.3% / +7.8% |
+| Elementalist | +0.0% / +0.0% | -12.5% / +1.4%* | +19.9% / +6.6%* | +19.8% / +6.0%* | +19.8% / +5.4%* |
+| Necromancer | +0.0% / +0.0% | +5.0% / +1.4% | +4.9% / +1.5% | +4.9% / +1.5% | +4.9% / +1.6% |
+| Lich | +10.1% / +9.7% | +3.5% / +5.5%* | +3.8% / +5.9%* | +4.1% / +6.2%* | +4.4% / +6.6%* |
+| Templar | +0.0% / +0.0% | +0.0% / +0.0% | +0.9% / -3.8%* | +1.5% / +0.4% | +1.6% / +0.4% |
+| Sentinel | +0.0% / +0.0% | +0.0% / +0.0% | +0.0% / +0.0% | +0.0% / +0.0% | +4.2% / -0.1%* |
+
+**A dot build against a direct build** (3 slots Chance to Bleed / Ignite / Poison + 3 slots Damage over Time, against Spell Damage + 2
+Elemental Penetration, T6 at 500 and T7 at 1000; median of the 21 classes; computed with the audit's Monte Carlo on its hit streams,
+not measured; before = one condition per type, 4 ticks of 1 s, rolls on every pulse, Damage over Time on conditions only; after = the
+rules above, rolls on casts and auto attacks only, Damage over Time on spell dots too):
+
+The ailment part comes from the audit's Monte Carlo (`SP/dotaudit/ailments_stack.py` on its hit streams, 21 classes, the rule that landed: stack cap 3,
+8 ticks of 0.5 s, 40% of the hit); the part of Damage over Time on the spell dots is estimated from the class's dot share of its set damage
+(audit table, 500 / 1000) times the share that lands (the landing table) times the modifier (+61.5% at 500, +67.5% at 1000). Not re-run on
+this tree. Dot build / direct build (1.00 = equal; direct = x1.54 at 500, x1.64 at 1000):
+
+| | boss 500 | hunt monster 500 | boss 1000 | hunt monster 1000 |
+|---|---:|---:|---:|---:|
+| before (median of 21 classes) | 0.86 | 0.65 | 0.84 | 0.68 |
+| after, median of 21 classes (ailments) | 1.08 | 0.71 | 1.08 | 0.73 |
+| after, Lich (51% / 57% dot share) | 1.28 | 0.81 | 1.31 | 0.93 |
+| after, Necromancer (45% / 50%) | 1.26 | 0.78 | 1.29 | 0.90 |
+| after, Mystic (40% / 41%) | 1.24 | 0.79 | 1.25 | 0.87 |
+| after, Illusionist (42% / 40%) | 1.25 | 0.79 | 1.25 | 0.87 |
+| after, Bone Lord (24% / 29%) | 1.18 | 0.76 | 1.20 | 0.83 |
+
+A dot build is worth it on a boss for every class and a dot caster beats the direct build there by 18 to 31%; on one hunt monster it is still
+below the direct build (0.71 to 0.93): a monster that dies in one to two seconds leaves most of a dot unpaid, which is also why the jump
+exists. The audit asked for a build within +-10% of the direct build on a boss: the median class is at +8%, the dot casters are above it by
+the Damage over Time modifier on their spell dots (decision 3 of the round, the owner's to change).
+
+**Gear that was there before** is unchanged in storage: no item stored a number of this system. The ailment modifiers keep their
+tiers and values; only what an ailment does changed (stacks, 8 ticks). Stacks live in memory (`ChaosItemMods.stackBook`) and end with
+the target, the player's logout or the last tick.
+
+**Models and checks.** Every check of the list ran green after four re-baselines, each dated O474 (2026-11-10) in its file: (1)
+`rotation_sim.py` `LADDER_HOLD`: the cooldown ladder ranks six spells (Witchfire Bolt, Falling Pyre, Shattered Psyche, Soul Rot,
+Blightbrand, Martyr's Pyre) by their damage of before, because the rise would have moved seven cooldowns (Witchfire Bolt 7 -> 9 s,
+Falling Pyre 10 -> 11, Soul Rot 11 -> 13, Blightbrand 12 -> 13, Briar Prison 8 -> 7, Tempest Fan 9 -> 8, Crypt Collapse 13 -> 12) and
+a longer wait would take back the gain; the owner may remove an entry to let the ladder move that spell (model: `rotation_sim.py
+--ladder --check`, `--check` variants); (2) `quest_spell_scale_config.lua`: the quest spell factors of four classes that left their
+bounds (Elementalist Prismatic Rupture 1.06 -> 1.25 and Eclipse of Ruin 1.29 -> 1.60, Lich Funeral of Kings 1.01 -> 1.20, Templar Pyre of
+Absolution 0.85 -> 0.90 and Hammer of Ember Dawn 0.97 -> 1.00, Sentinel Pyre of Absolution 0.78 -> a curve 0.78 / 0.78 / 0.84 / 0.87 at 500 / 800 /
+1000 / 1200 and Hammer of Ember Dawn 0.84 -> 0.95; model: `rotation_sim.py --check`); `autorotation_data.lua` and
+`rotation_default_digest.txt` were rewritten (`--write`, `--write-digest`); (3) `card_set_model.py` `AHEAD` 0.005 -> 0.007: the fire
+set of the Mystic at level 500 leads its best mixed build by +0.4% / +0.61% (was +0.26% / +0.36%) because its best set moved to the fire
+dots (model: card_set_model); (4) `weapon_sim.py` `reference_dps`: the wand's auto attack power (`weapon_power_config.lua`, generated, O472's file) follows the
+rotation of the reference class, so the same six spells count at their damage of before there; without it `--power --check` fails and the
+wand row rises by 20 to 25% from level 150 (1.92 -> 2.37 at 500), a wand buff nobody decided (remove the entries of `LADDER_HOLD` to let it follow;
+model: `weapon_sim.py --power --check`). Green without a change: class_dps, pack, pvp, minion, spell_mastery, weapon_family, survival, boss, tower,
+guardian, companion, check_spell_fx, check_class_access, check_rotation_kit, check_attack_counts, check_content, check_names,
+check_locales. PvP: `pvp_model.py` reads the class damage of `class_dps_measured.csv` and computes seconds to kill from it: it is
+identical (kill seconds in all 63 rows); the dots against a player keep their old timing and size, and the engine's halving of every
+player-against-player hit applies to a scripted tick as it did to a pulse (a tick is dealt as `doTargetCombat` by the caster).
+
+**Not verified:** a live server, a client or the engine's condition code (not in the repo): that a zero-damage condition of a type is
+accepted and ticks harmlessly (the cure and icon rule rests on it; `dot_config.lua icon.enabled = false` switches it off), that
+`doTargetCombat` with ORIGIN_CONDITION behaves as an engine tick for the stacks, how the engine meets an equal condition type with another
+sub id, the kill times of the landing table (a model that predates O470's health curve), the Monte Carlo of the dot build (the audit's
+hit streams), the pt-BR texts by a speaker, the cost of the stack beats (one event per 0.5 s for every type and target a player has stacks on, never measured). The combat log row name "(over time)" is English only, as the other source names are.
+**Not done:** a jump for gear ailments (the spread uniques cover them), an icon on a gear ailment (monsters only), the final model re-fit.
+
+**Tests.** `tests/dot_core_test.lua` (predicate, flag, sizes, jump, stacks, PvP table, icon helpers, the copies of the numbers),
+`tests/spell_paths_test.lua` (the four scripts: ticks, gaps, totals, PvP, the chain: jump, icon, cure, recast),
+`tests/attack_kit_test.lua`, `tests/necro_test.lua`, `tests/item_mods_test.lua` (stacks, a scripted tick), `tests/monster_defence_test.lua`
+(armour skip), `tests/unique_passives_test.lua`, `tests/archetypes_test.lua`, `tests/trials_flow_test.lua`, `tests/combatlog_test.lua`.
+
+## Increased damage pool (O473) (`damage_pool_config.lua`, `damage_pool_core.lua`, `pvp_scale_core.lua`, `pvp_balance_config.lua` `damageScale`, `tests/damage_pool_test.lua`, `tests/pvp_scale_test.lua`, `tools/damage_pool_table.lua`)
+
+Owner 2026-11-10 (translated): "Smooth that out. The source of damage must be more balanced." and, on the design of the damage round
+(typical damage about doubles at level 1000, a heavily invested build falls to about 0.45 of today, the spread invested / typical goes
+from 11x to about 2.4x): "You can do everything." Package O473 of that round: one additive pool for increased damage, and the PvP
+scale. The other packages (O470 monster health, O471 gear growth and ceilings, O472 weapon values) and the later work (bosses,
+the final model re-fit, damage over time) are not here. Computed and mocked, never run on a live server or in a client.
+
+**The rule.** Before, the passive tree, the unique passives, the gems, the card set, the charms, the sword edge and Paragon each
+multiplied the hit. Now they ADD raw percent into ONE sum per damage part of a hit. The sum takes the soft cap of the tree (150, H 60,
+unchanged) once: factor = 1 + soft(sum) / 100. A character with no bonus gets exactly 1.
+
+| Source | What it adds (raw percent) | Most |
+|---|---|---|
+| Passive tree and worn Spell Damage | the tree's increase of the type, the all-element increase, Spell Damage for a spell or wand hit (as before) | soft cap |
+| Unique passives | the "more damage" part of the passive while its condition holds: its own value | 10 each, 40 in all |
+| Gems | the gem's damage value of the hit's type | 25 per element, physical 12 (was 40 and 12) |
+| Spell masteries | a damage mastery (the four brand choices) while its spell is cast | +3 each, 12 |
+| Card set | the Fire set's damage part for a Fire hit (x1/3 against a player) | 4 (was 6; the Fire set itself 3.5 since O475) |
+| Charms and weapon family | Damage to the monster's family (a charm); the sword's tempo edge (0.4 a stack, 2 at 5 stacks) | 6 together |
+| Paragon | `paragonDamage` (0.5 a point to 40 points, the mastery term 6 ln(1 + r / 50) as before) | as before |
+
+Stays multiplicative, unchanged: strength, intelligence and dexterity, the weapon and its Weapon Damage, critical hits, support runes
+(brand, echo, hex, keen edge ...), the class factors (`classDamage`, the class spell factor, the extra target factor), the skill terms,
+the O468 scaling factor, the monster defence, every price (the "less" of a unique passive, the weapon family's `single`, the sword's
+swing ratio). Healing never takes the pool: the tree's Healing and intelligence only.
+
+**Where it is built.** `passivetree_effects.lua` `ChaosPassiveDealt`, the one event every player hit passes: for each damage part
+(primary, secondary) it asks `ChaosDamagePool.part` (`damage_pool_core.lua`) with the tree's raw sum
+(`ChaosPassiveDamageRaw`, or `ChaosPassiveMinionDamageRaw` while a Necromancer minion deals). Every source registers a provider with
+`ChaosDamagePool.register(name, fn, static)`: `paragon` (passivetree_effects.lua), `gems` (gems.lua), `cardSets` (cards.lua
+`M.poolRaw`), `charms` (charms.lua `CH.poolRaw`), `families` (weapon_families.lua `G.poolRaw`, the stacks the next hit will be swung
+with), `masteries` (supports.lua `S.masteryPoolRaw`, the cast context's spell), `uniques` (unique_passives.lua `M.poolRaw`). The
+core clamps each entry to its cap and the entries of one group to the group cap (`extras`), adds the tree, and takes the soft cap
+once. `static` is the same source without a target (Paragon, gems, the card set of that element): the character sheet's physical hit
+factor (`combat_stats.lua`), the tree totals window (`passivetree_totals.lua` `TT.pool`, a `pool` field of every damage row:
+`{raw, eff, parts}`; the client lines are `totalsview.lua`) and the damage bonus lines of Character Info and Inspect (`charsheet.lua` reads
+`pool.eff`) use it. A source that depends on the hit (a unique's condition, a charm's
+family, the sword's stacks, a mastery's spell) shows in the help card and the Codex page only.
+
+**Every path once.** The pool is built in that one event and nowhere else (`tests/damage_pool_test.lua` reads the source files for
+it): spells, weapon spells, the auto attack, the scripted damage over time pulses of O468, snares and mines, the Beastmaster bite, the
+pet aura and the Necromancer minion hits (all `ORIGIN_SPELL` inside the class spell factor's guard, dealt as the owner), condition
+ticks and `ORIGIN_NONE` hits that reach the event. A keystone proc (a share of a hit that carried the pool) is skipped, as the tree
+always did. The old multiplier of each source is gone: gems.lua and charms.lua keep their event only for the hits of a player's
+SUMMONS (a summon has no tree: those hits keep the old multiplier, with the new gem cap), the card set's damage part and the sword's
+edge are no longer applied in the hit events, `ChaosParagonDamageMultiplier` is gone, `ChaosUPDealt` applies only the multiplicative
+rest of a passive. The axe cleave neighbours (a guarded share of a hit that had the pool) are left, as in O468.
+
+**Unique passives: which side each family fell on** (196 passives). The pool part of a passive is its own bonus while its condition
+holds, at most 10 for one passive and 40 for all (`unique_passives_core.lua` `C.dealtSplit`; the old `C.dealt` returns pool and rest
+as one number for the glue's fallback and the convert strike). The 1.8 product cap (`dealtCap`) stays for the multiplicative rest. A
+price is never a pool entry. Against a player the pool part is x1/3 (`pvpScale`; the glue never asks for a player: wild monsters only).
+
+| Family | Passives | Side |
+|---|---:|---|
+| lowlife | 7 | pool bonus (its own value, at most 10); the malus stays a price |
+| overflow | 5 | pool bonus; the malus stays a price |
+| opener | 12 | pool bonus; the malus stays a price |
+| focus | 7 | pool bonus per stack (at most 10 in all); the first hit's price stays |
+| statscale | 13 | pool bonus (at most 10) |
+| crowd | 7 | pool bonus; the alone / many price stays |
+| stacks | 8 | pool bonus (at most 10 in all); the taken price stays |
+| mark | 9 | pool bonus; the unmarked price stays |
+| convert | 12 | multiplier: the conversion (`C.convertPlan`) and the price on other elements, unchanged |
+| critrule | 10 | multiplier: the critical hit rule is a crit multiplier, unchanged |
+| minionPact | 6 | multiplier: the minions' hit and the price on own spells, unchanged |
+| extra, feast, hitcap, immunity, manashield, mend, nova, panic, riposte, spread, ward | 100 | no damage dealt part: unchanged (some carry a `dealtLess` price, which stays) |
+
+68 passives have a pool part. The design's "+10 each" and the source's own value disagree for most of them (a passive of 40 to 69%
+becomes 10 at most, one of 5 to 8% stays at its own value): the rule is the smaller of the two, and the item text says so ("+10%
+increased damage (at most 10 for one unique power, 40 for all)", `unique_passives_text.lua`, written into the descriptions by
+`tools/gen_unique_specs.py`: 196 specs and the pt-BR Codex block regenerated). Gems: element caps 40 -> 25, physical 12 stays
+(`chaos_gems_config.lua`). Card sets: `cards_config.lua` `damagePartMax` 6 -> 4. Spell masteries: `chaos_spell_masteries_config.lua`
+`damage` lists the three brand supports (four choices), they leave `reduce`: no free brand, +3 raw while the spell is cast. Charms:
+the cap of a charm family stays 15 (the config validity rule needs the best roll under it); the pool takes 6 of it with the sword edge.
+Single cards (convert lines, Grand Mending): none gives increased damage (a conversion and a heal), so none is in the pool.
+
+**Players' items.** None is rerolled or deleted and no stored value changes: every number above is read at the hit from the item's
+own numbers. A unique keeps its passive, the text of its description is regenerated for new copies; an old copy may show the old line (the glue reads the config, not the text). Gems socketed in an item keep their text, the caps hold at the
+character. No upgrade on touch is needed, so no new `chaos_modv` mark.
+
+**PvP scale.** `pvp_balance_config.lua` `damageScale` = {100 1.00} {200 0.94} {300 0.89} {500 0.79} {700 0.76} {1000 0.48} {1500 0.52}
+{2000 0.46} (the design's first fit; re-fitted in O475 to {100 1.24} {200 1.09} {300 1.06} {500 0.98} {700 0.95} {1000 0.68} {1500 0.69} {2000 0.65}, see "Final re-fit of the balance round (O475)"). `pvp_scale_core.lua` `ChaosPvpScale.forHit(owner,
+target, attacker)`: a hit that a player, or a summon or companion of a player (the owner's level), deals to ANOTHER player is
+multiplied by the factor of the ATTACKER's level, geometric between two rows (the logarithm of the factor is linear in the level,
+as `display_scale_core.lua`), flat outside. It is applied once, in `ChaosPassiveDealt`, after the pool (both parts of the hit). A
+monster's hit, a heal, a hit on a monster and damage to oneself are never scaled; a keystone proc is a share of a scaled hit. The
+battleground's own level normalisation (`battleground_config.lua`) stays: it is a separate step. `tools/pvp_model.py` reads and
+checks the table (`damage_scale`, `scale_problems`) but does not apply it: the model's class damage is not the typical damage after
+the round yet, so the scale alone would only lengthen every duel (left for the final re-fit).
+
+**Text.** Item and gem lines: the unique power lines, the card set line, the weapon family's sword line, the charm labels
+("Increased damage to Dragons"), the Paragon descriptions and the mastery texts now say increased damage and name the caps. Gem
+labels keep "Fire Damage" (written into the descriptions of owned items): the Codex gem page names the cap. New: Codex Basics page
+"Increased damage" (`gen_codex_data.lua`), How it works card "Increased damage" (`howitworks_config.lua`, numbers from
+`damage_pool_config.lua` and `pvp_balance_config.lua`), its help search words (`guide_config.lua`), the pool lines of the tree totals
+window, pt-BR for all of it (`pt_br.lua`, `i18n_strings.lua`). Patch note lines: `server/data/patchnotes/2026-11-13.md` and
+`.pt-br.md`.
+
+**Before and after (computed by `tools/damage_pool_table.lua` from ASSUMED profiles, not measured).** The damage factor of one stack
+of sources, product of the old multipliers against the one pool. The profiles are inputs (tree raw 10 to 60 fresh, 25 to 170 typical, 50
+to 520 invested; one unique power typical, four invested; gems 12 / 36; Paragon 0.5 a point; a card set, charms 15 and a sword edge for
+the invested one), not the final model. The table says what the rule does to a stack, not what the game will show.
+
+| Level | Profile | Before (product) | After (one pool) | After / before |
+|---:|---|---:|---:|---:|
+| 100 | fresh | 1.10 | 1.10 | 1.00 |
+| 100 | typical | 1.87 | 1.50 | 0.80 |
+| 100 | invested | 4.68 | 2.28 | 0.49 |
+| 300 | fresh | 1.20 | 1.20 | 1.00 |
+| 300 | typical | 2.52 | 1.90 | 0.75 |
+| 300 | invested | 7.90 | 2.95 | 0.37 |
+| 500 | fresh | 1.30 | 1.30 | 1.00 |
+| 500 | typical | 3.22 | 2.30 | 0.71 |
+| 500 | invested | 11.53 | 3.35 | 0.29 |
+| 700 | fresh | 1.40 | 1.40 | 1.00 |
+| 700 | typical | 3.63 | 2.55 | 0.70 |
+| 700 | invested | 12.77 | 3.57 | 0.28 |
+| 1000 | fresh | 1.50 | 1.50 | 1.00 |
+| 1000 | typical | 4.12 | 2.78 | 0.67 |
+| 1000 | invested | 13.69 | 3.76 | 0.27 |
+| 2000 | fresh | 1.60 | 1.60 | 1.00 |
+| 2000 | typical | 4.41 | 2.89 | 0.66 |
+
+PvP scale (the factor of the attacker's level):
+
+| Level | 100 | 300 | 500 | 700 | 1000 | 2000 |
+|---|---:|---:|---:|---:|---:|---:|
+| Factor | 1.00 | 0.89 | 0.79 | 0.76 | 0.48 | 0.46 |
+
+**Models and limits.** Green and untouched: `class_dps_model`, `companion_model`, `minion_model`, `weapon_family_model` (its edge is
+read from the config, the pool entry is below its 3% band), `survival_model`, `pack_model`, `boss_model`, `tower_model`,
+`guardian_model`, `card_set_model` (the cap 6 -> 4 is read, every set is at it). Changed for this package:
+
+| What | Old | New | Why (model) |
+|---|---|---|---|
+| `unique_passives_config.lua` `model.minGain` | 1.03 | 1.03 (restored) | prices of 28 passives cut so each is at 1.03 on every line (table below); ten (`bonusBound`) cannot reach it with no price at all, they are held to 1.0 |
+| `unique_passives_model.lua` | prices x (1 + bonus) | prices x (1 + pool part) x survival, the pool part held at 10 each and 40 in all | the passives' dealt gain follows the rule |
+| `spell_mastery_model.py` | brands free at 15 | brands +3 raw (a pool entry, `damage`) | the choices fall to +0.4 to +1.1% of the class damage; CAP 15% untouched |
+| `card_set_model_test.py` | damage part cap 6 | 4 | `cards_config.lua damagePartMax` |
+| `pvp_model.py` | no scale | reads and checks `damageScale` (not applied) | the final re-fit applies it with the typical damage |
+
+**Repriced unique passives (O473, owner follow-up: no unique may make its wearer weaker).** `unique_passives_model.lua --reprice` cut the price (the "less" part) of every passive under 1.03 on a line it works for, to the largest whole percent that gives 1.03 on all its lines. 28 passives: 13 to a smaller price, 15 to a price of 0. A bonus is never raised above the 10 raw entry. Ten passives stay under 1.03 even with no price (their bonus alone is 1.012 for lowlife, 1.025 for crowd): Pilgrim's Resolve (already 0), Ninth Hall Quench, Grave Vow, Seat Kept Warm, Soundless Step, Altar Quench, Wind-Borne, Swallowed Light, Unfound, Saint Walked On. `model.bonusBound` holds them to 1.0. "Gain before the pool" is the old model at the item's own level, the other two columns at the check level (the higher of the item level and 20), worst line.
+
+| Passive | Family | Price cut (old -> new, percent) | Gain before the pool | Gain with the pool, old price | Gain after the cut |
+|---|---|---|---:|---:|---:|
+| Last Hall Ember (2133) | stacks | takenPerStack 4 -> 2 | 1.10 | 1.004 | 1.050 |
+| Silver Whisper (2402) | opener | malus 5 -> 3 | 1.13 | 1.027 | 1.030 |
+| Last Words (2440) | opener | malus 10 -> 0 | 1.13 | 0.994 | 1.030 |
+| Nothing Inside (2493) | overflow | malus 20 -> 9 | 1.22 | 1.014 | 1.031 |
+| Ninth Hall Quench (7384) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| Put the Tyrant Down (7402) | opener | malus 15 -> 0 | 1.16 | 0.976 | 1.030 |
+| Broken Shields (7422) | opener | malus 15 -> 0 | 1.16 | 0.976 | 1.030 |
+| Last Rites (7697) | opener | malus 10 -> 0 | 1.21 | 0.994 | 1.030 |
+| One Shot (8849) | opener | malus 12 -> 3 | 1.24 | 1.016 | 1.030 |
+| Judges of Ash (8931) | opener | malus 18 -> 0 | 1.18 | 0.965 | 1.030 |
+| Grave Vow (10510) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| Horn-Bind (21693) | stacks | takenPerStack 3 -> 2 | 1.09 | 1.026 | 1.050 |
+| Answering Voice (22474) | overflow | malus 15 -> 9 | 1.16 | 1.021 | 1.031 |
+| Argument Ender (23590) | opener | malus 12 -> 0 | 1.14 | 0.987 | 1.030 |
+| Sworn on a Wound (25175) | stacks | takenPerStack 4 -> 2 | 1.08 | 1.004 | 1.050 |
+| First Cut (25423) | opener | malus 5 -> 3 | 1.24 | 1.027 | 1.030 |
+| Seat Kept Warm (25880) | lowlife | malus 18 -> 0 | 1.04 | 0.930 | 1.012 |
+| Nothing It Watches Walks (25885) | opener | malus 18 -> 3 | 1.32 | 1.007 | 1.030 |
+| Soundless Step (26133) | crowd | malus 20 -> 0 | 1.09 | 0.953 | 1.025 |
+| Hangman's Rope (27474) | opener | malus 15 -> 3 | 1.29 | 1.012 | 1.030 |
+| Altar Quench (27658) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+| One More (27676) | stacks | takenPerStack 3 -> 2 | 1.10 | 1.015 | 1.042 |
+| Wind-Borne (27694) | crowd | malus 12 -> 0 | 1.08 | 0.982 | 1.025 |
+| Light That Is Not There (28106) | overflow | malus 15 -> 9 | 1.16 | 1.021 | 1.031 |
+| Swallowed Light (28112) | crowd | malus 20 -> 0 | 1.09 | 0.953 | 1.025 |
+| Unwritten Chapter (29572) | overflow | malus 20 -> 9 | 1.22 | 1.014 | 1.031 |
+| Unfound (29868) | lowlife | malus 12 -> 0 | 1.06 | 0.957 | 1.012 |
+| Saint Walked On (36659) | lowlife | malus 15 -> 0 | 1.05 | 0.944 | 1.012 |
+
+Left red for the final re-fit: none went red because of this package.
+
+**Not verified.** A live server (the order of the events, the 8th `critical` argument of the damage event and `ORIGIN_NONE` are read from
+the engine source), a client (the tree totals lines), the pt-BR text by a speaker, the profile numbers of the table above (assumed), the
+duel lengths with the scale (the model does not apply it), the soft cap on a real character's sum. The unique passive text changes
+the length of the longest line (`#en < 330` in `tests/unique_passives_test.lua` holds). **Tests:** `tests/damage_pool_test.lua`,
+`tests/pvp_scale_test.lua`, `tests/unique_passives_test.lua`, `tests/gems_test.lua`, `tests/charms_test.lua`, `tests/cards_test.lua`,
+`tests/weapon_families_test.lua`, `tests/supports_test.lua`, `tests/spell_masteries_test.lua`, `tests/paragon_test.lua`,
+`tests/softcap_test.lua`, the client `totalsview_test.lua` and `treespellmods_test.lua`, `tools/spell_mastery_model_test.py`,
+`tools/card_set_model_test.py`, `tools/pvp_model_test.py`.
+
+## Monster health curve (O470) (`pace_config.lua`, `tools/spawn_tuning.json`, `tests/monster_health_curve_test.lua`)
+
+Owner 2026-11-10 (translated): the jump "is not intended. Make a more balanced curve." Computed from the repo's own models. Nothing
+ran on a live server.
+
+**What was found.** The health of a typical hunt monster (`tools/pack_model.py`: the median of the base pool x `base.health` up to
+hunting level 657, where the base pool ends, then `SCALED_HEALTH` x `scaled.health`) was 5,372 at 650 and 12,262 at 658: x2.28 in one
+level, x2.3 over any 20 levels from 638 to 657. The planned kills per hour fell 31% there (1,210 to 837), a pack of the median class
+took 2.6 s at 650 and 5.8 s at 670, and the minutes per level had a bump of +15% at 650-690 (12.0 at 650, 13.8 at 670, 14.6 at 680,
+13.4 at 700, 11.3 at 800).
+
+**What changed.**
+
+- `scaled.health`: the late curve starts at the base set's 5,372 at 657 and its log-slope falls from 3.6 to 1.8 at 1000. Points
+  `{657, 0.0606} {670, 0.0650} {700, 0.0681} {800, 0.0770} {900, 0.0795}`; 1000 and up are as before (`{1000, 0.080}` ...). The
+  curve is `y = 5,372 exp(s0 x + (s1 - s0) x^2 / (2 X))` with x = ln(L / 657), X = ln(1000 / 657), s1 = 1.8 and s0 = 3.58 from
+  y(1000) = 16,620; the multiplier at a point is y / `SCALED_HEALTH`. Between the points the product is within 0.1% of the formula.
+- The base set is not touched. The study's design asked for +4% to +8% up to 600 and +20% at 650. A smaller change meets the rule
+  (no rise above x1.31 over 20 levels from level 110, above x1.12 from 600), so nothing below 657 moves.
+- `spawn_tuning.json` `paceKillsPerHour.scaled`: `[600, 836] [657, 1210] [670, 1195] [700, 1160] [800, 1055] [900, 960]`, then
+  `[1000, 869]` as before (it began at 650 with 836). The plan is the pack model's kills per hour of the median class at the new
+  health (2,563 at 657; 2,537 / 2,480 / 2,311 / 2,180 at 670 / 700 / 800 / 900; 1,992 at 1000, unchanged) x a ratio that falls
+  from the base plan's 0.472 at 657 to the unchanged 0.436 at 1000 (0.471 / 0.468 / 0.457 / 0.440, rounded). The base list is as
+  before. `roulette_value_config.lua` `kph` is a copy (a test keeps them equal).
+- Per kill, `scaled.loot`, `scaled.notable` and `scaled.goal` are the old points x the old plan / the new plan (loot and notable
+  x0.69 at 657 to x0.89 at 900, goal x1.45 to x1.12): loot, Rare+ gear and the goal pace per hour hold. The notable share is 0.72
+  at 700 and 1 at 1000 (it was 1 from 700). `coins` and `junkKeep` are shares on top of `loot` and are not touched.
+- `scaled.xp` was solved on the model: `tools/progression_model.lua` (the median of the pool hunts' experience per hour in the
+  window 0.8-1.1 L) with coordinate descent on the points 657 / 700 / 800 / 900 against a target of 9.87 at 600 (as before), a
+  line to 11.0 at 650, then 11.3 / 11.6 / 11.8 / 12.0 at 670 / 700 / 800 / 900 and 12.48 at 1000 (as before), 6x the weight on
+  those marks, a smoothness term on the log slope of the points and no point below 0.0323 (the 1000 value): `{600, 0.0495}
+  {657, 0.0486} {700, 0.0437} {800, 0.0323} {1000, 0.0323}`. The points up to 600 are the old line. The pool's medians are lumpy
+  by 5% from level to level (today's 590 and 600 differ by 5%), so the fit is held to the 25-level means: within 4%.
+- The level-scaled monsters of the pool below 657 (fifteen, levels 530-650) keep their old points up to 600 (an added point at 600
+  on the old line for health, xp, loot, goal and the plan) and meet the new curve at 657. Real ones, `tools/pace_scan.lua`: 590
+  8.3k as before, 610 8.9k to 8.0k, 630 9.6k to 6.7k, 650 10.2k to 5.1k, 670 10.2k to 4.9k, 700 11.1k to 5.8k, 750 12.3k to 7.5k,
+  850 14.0k to 10.7k, 900 15.2k to 12.7k. That is a dip of the real hunts at 610-670 which the model's typical monster does not
+  show. The other way was to lower these fifteen to the typical curve from 430 on (-34% at 530): not done, for the owner to say.
+
+**Before and after** (model numbers; the base set to 657, the level-scaled set above; the pack is the median class's, P = 8):
+
+| Level | Health before | after | Planned kills per hour before | after | Minutes a level before | after | Pack seconds before | after |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 478 | 478 | 1,580 | 1,580 | 1.05 | 1.05 | 2.17 | 2.17 |
+| 300 | 1,775 | 1,775 | 1,283 | 1,283 | 3.48 | 3.48 | 2.13 | 2.13 |
+| 500 | 4,359 | 4,359 | 1,210 | 1,210 | 6.73 | 6.73 | 2.60 | 2.60 |
+| 600 | 4,837 | 4,837 | 1,210 | 1,210 | 9.87 | 9.74 | 2.51 | 2.51 |
+| 650 | 5,372 | 5,372 | 1,210 | 1,210 | 11.99 | 11.31 | 2.63 | 2.63 |
+| 670 | 12,050 | 5,759 | 837 | 1,195 | 13.77 | 11.57 | 5.77 | 2.76 |
+| 700 | 12,760 | 6,684 | 839 | 1,160 | 13.45 | 11.87 | 5.91 | 3.10 |
+| 800 | 14,300 | 10,010 | 846 | 1,055 | 11.29 | 11.24 | 6.00 | 4.20 |
+| 900 | 16,044 | 13,427 | 857 | 960 | 11.28 | 11.53 | 6.18 | 5.17 |
+| 1000 | 16,620 | 16,620 | 869 | 869 | 12.48 | 12.65 | 5.80 | 5.80 |
+| 1300 | 22,032 | 22,032 | 819 | 819 | 11.54 | 11.54 | 6.01 | 6.01 |
+| 2000 | 34,394 | 34,394 | 789 | 789 | 11.01 | 11.01 | 6.21 | 6.21 |
+
+Minutes a level are `progression_model.lua` (levels 8-1000: 120.2 h before, 116.7 h now). At 1000 the model gives 12.65 against
+12.48 (+1.4%: the window of 1000 holds hunts of 800-900). Up to 600 the model moves at most 3% in the 25-level mean (540-600: 8.76
+against 8.96); single levels move more where today's curve has a lump (590: 9.75 against 10.38; 580: 9.14 against 9.55). The
+largest rise over 20 levels is x1.31 from level 110 (at 196, as before) and x1.12 from 600 (at 613); it was x2.31 at 638. Below
+level 110 the relative rise is above x1.35 before and after (x1.6 at 100: small numbers and the pool's lumps), not touched. A
+pack of the median class dies in 2.5 s at 600, 2.6 s at 650, 2.8 / 3.1 / 4.2 / 5.2 / 5.8 s at 670 / 700 / 800 / 900 / 1000: no step.
+
+**Limits that pinned the old step (changed, dated O470 in the files).**
+
+| Limit | Old | New | Model |
+|---|---|---|---|
+| `pace_test.lua` scaled xp per health (engine factors), 650 and 700 | at most 1.6 | at most 2.6 (800 and up 1.6) | 2.34 at 650, 2.18 at 700, 1.52 at 800 (1.20 at 650 before) |
+| `roulette_value_config.lua` band at level 650 (`bandAt`) | 0.80 - 1.35 | 0.70 - 1.35 | boss 0.73, exercise 0.76, premium 0.78, crystal 0.79 (1.01 - 1.13 before); 1000 and up as before |
+| `roulette_pools_test.lua` spin at 2000 against 650 | at most x1.35 | at most x1.45 | x1.30 exercise, x1.35 premium, x1.37 crystal, x1.42 boss |
+| `loot_by_level_test.lua` scaled `notable` | 1 from 700 | per hour as before to 1000 (within 5%), 1 from 1000 | 0.72 at 700, 0.80 at 800, 0.89 at 900 |
+
+The roulette numbers move because the orb half of a spin is priced in hunting minutes at the plan's kills per hour, and the plan at
+650 is 1,164 now (836 under the step): the spin at 650 is worth 46 - 77 minutes against its 64 - 99 minute token.
+
+**What is held** (all green): `tools/loot_model.lua --check` (it sees the base stock monsters up to 650 only: unchanged to the
+digit), `unique_pace_model.lua`, `store_model.lua`, `skill_model.lua`, `pack_model.py --check` (late pack against base: at most
+3x; 0.79x at 670, was 1.64x), `boss_model.py`, `tower_model.py`, `guardian_model.py`, `survival_model.py`, `minion_model.py`,
+`companion_model.py`, `class_dps_model.py`, `pvp_model.py`, `defence_curve.py`. `tests/monster_health_curve_test.lua` holds the rule
+(luajit and lua5.3): the typical monster from the pool and `SCALED_HEALTH`, no rise above x1.35 over 20 levels from 110 and x1.15
+from 600, no fall under the highest before it of more than 6% (4% from 600; the pool median drops 3.5% from 606 to 607, as
+before), up to 600 within 10% of a table of today's values, 1000 and up unchanged, the two sets within 10% at the seam
+(x1.005), the plans meeting at the seam and the scaled plan only falling to 1000.
+
+**Not verified.** No server was started and nothing was played: these are model numbers (the pool median, `SCALED_HEALTH` and the
+pack model are inputs, not measurements; the base monster files are not in git, the pool's health column stands for them). The loot
+model has no level-scaled loot tables above 650, so loot, Rare+ gear and goals above 650 hold per hour by construction (the ratio of
+the plans), not by a measured band. The real level-scaled monsters of 610-670 (above) and the real hunts' medians were not
+measured. The experience per hour of single level-scaled hunts at 640-700 rises 28-42% (the step held them down: 836 kills an hour
+against the base's 1,210); the median that the model holds does not.
+
+## Final re-fit of the balance round (O475) (`class_dps_model.py` steps, `boss_length_model.py`, `pvp_model.py` `--scale`, `pvp_balance_config.lua` `damageScale`, `infinitytower_balance_config.lua`, `data/spells/pool_typical.csv`)
+
+Owner 2026-11-10 (translated): "You can do everything." The last package of the damage round (O470 health curve, O471 gear and ceilings, O472
+weapon growth, O473 one pool and the PvP scale, O474 damage over time). Computed from the repo's own models, never run on a live server.
+
+**What the models learn.** `class_dps_model.py` is still the one source of class damage. Its measured table (before the round) is moved by four
+named steps, each computed from the real files (`round_factor(class, level)`, 1 and 5 targets, a line in log level and log factor between the
+levels 100 / 200 / 300 / 500 / 700 / 850 / 1000 / 1500 / 2000, flat outside; `python3 -I server/tools/class_dps_model.py --steps` prints them):
+
+| Step | From | What it does |
+|---|---|---|
+| weapon | `weapon_growth.py` W(level), `rotation_sim.grown_stats()`, `weapon_power_config.lua` | weapon classes: the attack and the fist times a(level), the wolf bite times W; the six caster classes: every Chaos spell times W (a stock spell does not); the auto attack of the weapon kind; all on the measured rotation (every Chaos attack spell on cooldown). Healing never |
+| dots | `rotation_sim.LADDER_HOLD` (the damage of before of the six spells) against the rows now | the model counts a dot in full: +0 to +12% (Lich +4 to +10%, Mystic +5%, Elementalist +2%, the rest 0) |
+| gear | `chaos_item_mods.lua` (item level curve, tier weights, Weapon Damage and Spell Damage ranges) against the curve and equal weights of before O471 | the mean Weapon Damage of a Rare drop (weapon classes) or Spell Damage (casters, through the soft cap): x1.00 to x1.05 |
+| pool | `tools/damage_pool_table.lua` typical profile, `data/spells/pool_typical.csv` | the one pool against the old product for the typical profile: x0.80 at 100, 0.71 at 500, 0.67 at 1000, 0.66 at 2000 |
+
+The critical caps (45 / 150) and the rune ceiling do not touch the typical character (one critical slot, runes under level 4): `CRIT_STEP` 1.
+Skill growth above 1000 (the optional E8 of the design) was not done. `--before` prints the measured table, `--round-before` the model of before the round.
+**The pool step is the least certain number and the biggest surprise.** The typical profile of `damage_pool_table.lua` is assumed (one 30% unique power, a 12% gem,
+charms 3%, a tree supply of 25 raw at 100 to 170 at 2000) and the same for every class, so what the pool does to a class with a rich or a poor tree is not
+modelled, and the typical character LOSES 33% to the pool at 1000. With it the typical damage rises x1.48 at 1000 (the design said about x2; the design's typical
+profile lost 6% to the pool). With a typical character that holds no extras (the measured test character had a passive tree build and gear only) the step
+would be x1.0 and the typical damage x2.2 at 1000. Measured builds should replace the profile (O473 said the same).
+
+**Typical damage, the median class, before and after the round** (1 target / 5 targets):
+
+| Level | 1 target before | after | x | 5 targets before | after | x |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 607 | 491 | 0.81 | 1,008 | 819 | 0.81 |
+| 300 | 1,761 | 1,657 | 0.94 | 4,054 | 3,804 | 0.94 |
+| 500 | 3,084 | 3,138 | 1.02 | 7,761 | 7,547 | 0.97 |
+| 700 | 4,416 | 4,662 | 1.06 | 10,062 | 10,704 | 1.06 |
+| 1000 | 6,017 | 8,882 | 1.48 | 13,731 | 20,212 | 1.47 |
+| 1500 | 8,814 | 12,843 | 1.46 | 20,116 | 29,866 | 1.48 |
+| 2000 | 11,612 | 17,824 | 1.53 | 26,501 | 41,750 | 1.58 |
+
+**Spread** (`--spread`; the damage pool of the three profiles of `damage_pool_table.lua` only, no critical hit, no runes, no gear tier: the design's 2.4
+includes those): invested / typical 3.32 -> 1.35 at 1000 (2.50 -> 1.52 at 100, 3.58 -> 1.46 at 500, 3.16 -> 1.32 at 2000), fresh / typical 0.36 -> 0.54 at 1000
+(0.59 -> 0.73 at 100, 0.40 -> 0.57 at 500, 0.36 -> 0.55 at 2000).
+
+**The class band.** `class_dps_model.py --check` (+-25% of the median, +-30% at 100) was green before the round; after the steps three numbers fell out (the weapon
+growth lifts the Ranger line by 1.2 and the Mystic line by 1.6 at 1000 against 1.5 for the median class): Ranger 5 targets at 1000 -30%, Deadeye 5 targets at 1000
+-38%, Mystic 5 targets at 500 +33%. The lever is `spell_factor_config.lua` `extra` (the extra target factor, 5 target numbers only), the smallest change that
+puts each at about 20% of the median: Ranger 1000 1.6 -> 2.0, Deadeye 1000 2.5 -> 4.3, Mystic 500 0.5 -> 0.42. `classDamage` was not touched. The Hollow Palm build stays as it was.
+
+**Models.** Every model of the list reads `class_dps_model.dps()` and is green: `pack_model`, `boss_model`, `tower_model`, `guardian_model`, `survival_model`,
+`minion_model`, `companion_model`, `weapon_family_model`, `card_set_model`, `spell_mastery_model`, `pvp_model`, `defence_curve`. `companion_model.py` already reads
+`weapon_growth.py` (its `GROWTH` switch is the shared W, the same table as the class step), so it was left; `minion_model.py` stays in the C4 frame (a class of before
+against a class of before: W is a factor on the whole Necromancer line). `rotation_sim.py` ANCHORS, the sets, the ladder and `rotation_default_digest.txt` are the
+typical character BEFORE the growth on purpose (`rotation_sim.grown_stats()` is the switch the class step uses): with the attack grown 30 class and level best sets
+change and nine cooldowns of the ladder move (Reaping Gyre 6 -> 4 s, Scything Arc 4 -> 6, Rift Cleaver 11 -> 12, Gorehook 12 -> 11, Arrowstorm 10 -> 11, Iaido Sweep
+10 -> 11, Lance of Vigil 11 -> 12, Consecration 12 -> 11, Rampart Quake 10 -> 11), which would rewrite the helper's presets for nothing a player asked for. The Lua
+models (`unique_passives_model`, `crit_reach`, `loot_model`, `progression_model`, `skill_model`, `store_model`, `roulette_model`, `unique_pace_model`,
+`weapon_coverage`, `gear_coverage`, `rift_layout_model`) read no player damage (grep) and are untouched and green. `defence_curve.py --lua` regenerated the hit curve that
+sizes monster armour (`monster_defence_config.lua`): 464 at 100 (was 576), 3,658 at 500 (3,645), 9,993 at 1000 (7,169), 20,053 at 2000 (13,836).
+**LADDER_HOLD and the wand row** (kept): without the hold seven cooldowns of the six spells move (Witchfire Bolt 7 -> 9 s, Falling Pyre 10 -> 11, Soul Rot 11 -> 13,
+Blightbrand 12 -> 13, Briar Prison 8 -> 7, Tempest Fan 9 -> 8, Crypt Collapse 13 -> 12) and the wand's auto attack power rises from 1.74 / 1.75 / 1.83 / 1.95 / 2.12 at
+levels 200 / 300 / 500 / 1000 / 2000 to 2.05 / 2.17 / 2.25 / 2.25 / 2.25 (the cap of the share). Unchanged by the re-fit: the hold still keeps both where they were.
+
+**Pack seconds** (the median class, a pack of 8, `pack_model.pack_clear`), before -> after: 100: 2.17 -> 2.69, 300: 2.13 -> 2.27, 500: 2.61 -> 2.57, 600: 2.56 -> 2.38,
+650: 2.68 -> 2.45, 700: 3.12 -> 2.83, 800: 4.20 -> 3.40, 900: 5.11 -> 3.81, 1000: 5.79 -> 3.93, 1300: 6.00 -> 4.12, 2000: 6.21 -> 4.06. Hunt monsters are not touched.
+Below level 500 the packs are slower than before (the pool step), from 600 faster.
+
+**Boss lengths** (`boss_length_model.py --derive` / `--check`; the typical damage on one boss is the median class x 0.60, a boss lets through half of the physical
+half and 70% of the elemental half: `armourTarget.boss` 50, `physicalShare` 0.5, an assumed mean resistance 30; on a pack x 0.80):
+
+| What | Before | After | Seconds for the typical character |
+|---|---|---|---|
+| `D.dps` (`dungeons_difficulty.lua`) | 913 at 300, 2,600 at 1000, 2.41 a level above | a table {100 295} {200 656} {300 994} {500 1,883} {700 2,797} {850 3,993} {1000 5,329} {1500 7,706} {2000 10,694} | the 850 row is where W bends |
+| Dungeon bosses `healthMult` (Vault, Marrow, Crucible, Sanctum, Throne) | 2.88 / 2.91 / 2.88 / 2.83 / 2.87: 327k / 399k / 507k / 615k / 760k | 5.00 / 5.96 / 5.86 / 5.83 / 6.06: 567k / 817k / 1.03M / 1.27M / 1.60M | 151 / 150 / 150 / 153 / 148 s (old health on the new damage: 87 / 73 / 74 / 74 / 70 s) |
+| Rift guardian (`rift_config.lua` `density.model`) | dps1 2,600, exponent 1.1; dps5 5,240, 1.35 | dps1 3,892, 1.20; dps5 13,096, 1.35 (a power law fitted over the tiers' minimum levels) | 53 / 59 / 57 / 49 s at level 100 / 300 / 500 / 900 (55 planned; the fit is within 11%); packs keep `packSeconds` 225 |
+| Omen guardian XML health | 500,000 | 1,150,000 (x2.30) | 318 s solo at level 1000 (5:18; the old health on the new damage: 138 s) |
+| Ascended Omens, Cinderheart XML | 1.2M, 1.65M | 2.76M, 3.795M (the same x2.30) | the targets of `uber_config.lua` hold: `refDps` 3,000 -> 6,900, `healerDps` 2,000 -> 4,600 |
+| Raid bosses XML (Ulthar, Morwen, Colossus, Vhoss, Varkhul) and `raid_config.lua` `refDps` | 4.0 / 4.4 / 4.8 / 5.0 / 7.2M, 3,000 | 9.2 / 10.12 / 11.04 / 11.5 / 16.56M, 6,900 | the model's enrage margin of `raid_test.lua` holds (5 players finish about 20% before the enrage) |
+
+Raid adds, world bosses (limit 45 minutes, group content), Tower Defense, battleground and arena monsters were checked and left: none has a model that reads class
+damage and a documented target the new damage breaks (world bosses fight shorter in a group, the limit is a ceiling; the raid adds are 42-90k and only die sooner).
+`areagen_test.lua` (the run seconds of every dungeon) and `raid_test.lua` follow.
+
+**Infinity Tower.** `tower_model.py --derive` for the damage after the round needs the hunt time it follows: the `clear` rows were re-fitted to the hunt pack seconds above
+(`{1, 2.6} {12, 2.4} {24, 2.5} {28, 2.9} {40, 3.8} {60, 4.1} {90, 4.2} {120, 4.2}`, were `{1, 2.5} {12, 3.5} {24, 5} {28, 8.5} {40, 9.5} {60, 10.5} {120, 11}` against
+packs of 3 to 11 s). `health`, `bossHealth`, `lootShare` and `killGold` are the `--derive` lines: health at floor 1 629 -> 793, floor 20 3,450 -> 6,880, floor 40 8,580 -> 24,300,
+floor 80 13,400 -> 44,100, floor 120 15,400 -> 53,700; boss health at floor 10 35,100 -> 56,500, floor 50 153,000 -> 431,000, floor 120 317,000 -> 1,200,000. `curveTol` 2.4
+-> 1.10 (`--derive` prints 1.00 x the committed curves; 2.27 at worst before). Reach of the median class by player level (floor): 100: 1 (1), 300: 12 -> 11, 500: 22 -> 22,
+800: 44 -> 34, 1000: 54 -> 44, 1500: 93 -> 74, 2000: 120 -> 93; the weakest class at 800 reaches 34 -> 28; the target "level 800 reaches floor 30-46" holds.
+
+**PvP.** `pvp_model.py` applies the damage scale of the attacker's level (`solve(scaled=True)`), with the new class damage and the toughness of `survival_model.py` (O464); `--round-before`
+prints the model of before the round, `--scale` the fit. `fit_scale(level)` = the median class damage before / after the round: the scale that holds the seconds to kill where
+they were, and `scale_problems` holds the table within 1.5% of it. `damageScale` re-fitted (the design's first fit in brackets): 100: 1.24 (1.00), 200: 1.09 (0.94), 300: 1.06 (0.89),
+500: 0.98 (0.79), 700: 0.95 (0.76), 1000: 0.68 (0.48), 1500: 0.69 (0.52), 2000: 0.65 (0.46). Above 1 up to level 300: the pool takes more than the weapon growth gives back there; the
+shape rule of `scale_problems` allows (0, 2] now (was (0, 1]). Seconds to kill the median class with no healing (median over the classes), before -> after with the scale: 100: 6.75 -> 6.72, 500: 8.59 -> 8.61,
+1000: 10.11 -> 10.07 (without the scale 8.33, 8.44, 6.85); seconds to die 8.57 -> 8.53, 12.11 -> 12.15, 13.86 -> 13.81. At the other rows (200, 300, 700, 1500, 2000) the layers are not modelled,
+the seconds move by the ratio fit / table: 0.996 to 1.003. `pvp_scale_core.lua` `S.factor(nil)` is 1 now (the first row is not 1 any more). `pvp_balance_config.lua` limits are as they were; three exception rows left because the numbers they pinned
+are inside the general limit now (Deadeye burst at 500 0.93 -> 0.83 and at 1000 1.01 -> 0.76, Iron Sage losses at 1000 19 -> 18): `pvp_model.py --check` is green. Battleground normalisation untouched.
+
+**Owned unique items.** `ChaosItemTooltip.refreshPassive(desc, enText, name)` (`item_tooltip_core.lua`, called in `item_tooltip.lua` before the pt-BR substitution and the O467
+block) puts the current English passive line in the place of the stored one: the exact current text if it is there, else from `<Name>: ` to before ` (Requires level` / ` (Requer nível` (or the
+end); a name that appears twice is left alone. The pt-BR line, the block and the O467 explanation then find the current text. Tested with an old stored line
+(`item_tooltip_test.lua`); the glue in `item_tooltip.lua` (a pcall around it) was not run in an engine.
+
+**Card sets.** `card_set_model.py` `AHEAD` back to 0.005 (O474 had 0.007). The Mystic's fire set still led its best mixed build by +0.61% on 5 targets, so by the owner's rule the Fire set's damage
+part is lowered, `cards_config.lua` `sets.by.Fire.pct` 4 -> 3.5 (smallest of the steps tried: 3.5, 3.25, 3 all pass); an integer hit rounds toward zero, so a hit of 100 gets +3.
+
+**Limits and numbers re-baselined** (each dated O475 in its file): `damageScale` (above); `pvp_model.py` scale shape (0, 1] -> (0, 2]; `infinitytower_balance_config.lua` `curveTol` 2.4 -> 1.10 (model 1.00),
+`clear`, `health`, `bossHealth`, `lootShare`, `killGold`; `monster_defence_config.lua` `hitCurve`; `spell_factor_config.lua` `extra` (3 points); `cards_config.lua` Fire 4 -> 3.5 and `AHEAD` 0.007 -> 0.005;
+`dungeons_difficulty.lua` `D.model`, `areagen_config.lua` five `healthMult`, `rift_config.lua` `density.model`, the XML health of 3 Omen guardians, 3 Ascended Omens, the Cinderheart and 5 raid bosses,
+`uber_config.lua` and `raid_config.lua` `refDps` (`healerDps`). Test bounds that pinned the old numbers: `spell_factor_test.lua` extra factor range 0.5 - 3 -> 0.4 - 4.5 (the fit has Deadeye 4.3 and Mystic 0.42), `spell_paths_test.lua` the plain bite after armour within 3% -> 20% of the old one (worst 16.43% at 1000: the armour follows the regenerated hit curve), `companion_model_test.py` the plain bite dps within 2% -> 20% of the one before O468 (-16% to +8%, same cause), `player_defence_test.lua` armour table tolerance 1 -> 1.5 points (a small hit at 100: 9 against 7.7). No class band, no limit of `pack_model`, `boss_model`, `survival_model`, `guardian_model` was loosened. Tests rewritten to the new numbers:
+`class_dps_model_test.py`, `tower_model_test.py`, `card_set_model_test.py`, `pvp_scale_test.lua`, `raid_test.lua`, `cards_test.lua`; new: `boss_length_model_test.py`, the `refreshPassive` block of `item_tooltip_test.lua`.
+
+**Not verified.** Nothing ran on a live server or in a client: every number is a model number. The pool step (assumed profile), the boss defence (0.60 and 0.80: an assumed mean resistance), the rift fit
+(a power law over ten levels, within 11% of 55 s), the Omen heal (380 a second, the top of the documented 330-380), the raid adds and the world bosses (left), the tower reach (the hunt pack seconds follow a
+model that predates the real levels' medians), the per-class effect of the pool (not modelled), the unique tooltip glue in an engine, the pt-BR text by a speaker. Not done: skill growth above level 1000 (design E8, owner's
+optional item).

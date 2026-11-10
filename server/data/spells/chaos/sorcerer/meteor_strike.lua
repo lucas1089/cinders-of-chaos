@@ -1,4 +1,4 @@
--- Falling Pyre: marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze.
+-- Falling Pyre: marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze for 1.8 s (30% of the meteor's damage).
 dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosMysticFx then
 	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
@@ -18,11 +18,17 @@ local function impact(casterId, pos, min, max)
 	local ring = M ~= nil and M.send(pos, "big_shock_fire_7")
 	local tile = Fx("fire_nova", CONST_ME_FIREAREA)
 	doAreaCombat(caster, COMBAT_FIREDAMAGE, pos, area, -math.floor(min), -math.floor(max), M and M.tileFx(ring, tile) or tile)
-	-- O468: the burn is 5 scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.2 + 5), one every
-	-- 3 s: they take crit, supports, cards, keystones and the rest like the meteor
-	local dmg = math.max(3, math.floor(caster:getMagicLevel() * 0.2) + 5)
+	-- O468: the burn is scripted ticks (ChaosSpell.scriptedDot): they take crit, supports, cards, keystones and the rest like the
+	-- meteor. O474: 6 ticks 300 ms apart from the impact, together 0.30 x the meteor's own hit (ChaosDotConfig.side; the class
+	-- spell factor is not taken off); the rest moves on when the target dies. Against a player the old 5 ticks 3 s apart of what the
+	-- condition dealt (magic level x 0.2 + 5).
+	local D = ChaosDot
+	local side = D.cfg().side
+	local tick = D.sideTick(min, max, side)
+	local old = math.max(3, math.floor(caster:getMagicLevel() * 0.2) + 5) * ChaosSpell.casterShare(caster) -- O472
 	for _, c in ipairs(ChaosSpell.enemiesAround(caster, pos, 2)) do
-		ChaosSpell.scriptedDot(casterId, c:getId(), "fallingpyre", COMBAT_FIREDAMAGE, 5, 3000, dmg, CONST_ME_HITBYFIRE)
+		ChaosSpell.scriptedDot(casterId, c:getId(), "fallingpyre", COMBAT_FIREDAMAGE, side.ticks, side.tickMs, tick,
+			CONST_ME_HITBYFIRE, {raw = true, pvp = D.pvpSideOpts("fallingpyre", old)})
 	end
 end
 

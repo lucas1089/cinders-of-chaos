@@ -196,6 +196,36 @@ local function applyDaze(monsterId, plan)
 	end
 end
 
+-- ----------------------------------------------------------------------------------------------------------- the damage pool
+-- O473: the sword's edge (damage_pool_core.lua provider "families"): the raw percent of the stacks the next basic melee hit on this
+-- target is swung with, 0 for anything else. The hit itself (the interval ratio, the family's single factor) stays in G.hit.
+function G.poolRaw(player, creature, origin)
+	if guard or origin ~= ORIGIN_MELEE then
+		return 0
+	end
+	local K = ChaosKeystones
+	if K and (K.depth or 0) > 0 then
+		return 0
+	end
+	local st = states[player:getId()]
+	if not st then
+		return 0
+	end
+	-- a spell's weapon strike is no basic hit (weapon_styles.lua STRIKE_KEY)
+	local strikeKey = (Chaos and Chaos.storage and Chaos.storage.weaponStrike) or 7100028
+	if player.getStorageValue and player:getStorageValue(strikeKey) == 1 then
+		return 0
+	end
+	local pvp = creature.isPlayer and creature:isPlayer() or false
+	return F.tempoEdge(F.tempoPeek(st, creature:getId(), nowMs(), pvp))
+end
+if not ChaosDamagePool then
+	dofile("data/scripts/chaos/damage_pool_core.lua")
+end
+ChaosDamagePool.register("families", function(hit)
+	return G.poolRaw(hit.attacker, hit.creature, hit.origin)
+end)
+
 -- ----------------------------------------------------------------------------------------------------------------- the hit
 -- player, the monster or player hit, the weapon (ItemType) and its item, the weapon type name ("sword", "axe", "club"), the
 -- hit after weapon_styles.lua's rules, its damage type. Returns the hit.

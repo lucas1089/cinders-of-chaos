@@ -189,7 +189,8 @@ function Gen.load()
 		respec = loadConfig("respec_config"), potions = loadConfig("potions_config"),
 		apothecary = loadConfig("apothecary_config"), passive = Chaos.passive, autoloot = Chaos.autoloot,
 		defence = loadConfig("defence_config"), playerDefence = loadConfig("player_defence_config"),
-		spellscaling = loadConfig("spell_scaling_config")
+		spellscaling = loadConfig("spell_scaling_config"), dot = loadConfig("dot_config"),
+		damagePool = loadConfig("damage_pool_config"), pvp = loadConfig("pvp_balance_config")
 	}
 	C.towerRun = scanNumbers("data/scripts/chaos/infinitytower_run.lua",
 		{"maxPartySize", "floorTimeLimit", "bossFloorTimeMult", "runTimeLimit"})

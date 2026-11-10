@@ -17,7 +17,8 @@ The manifests (default server/data/items/fist_items.csv and fist_claws.csv; --ma
                    and wear new looks, client ids 44399-44408 (install_donor_items.py leaves their nodes to this tool); mode
                    `new4`, three new weapons, client ids 44409-44411, server id = client id + 4000 (48409-48411).
                    These 13 need a client on pair 56 or newer (an older client draws other things or nothing for them)
-Both: name, and in `extra`: article, plural, weight, attack, defense, level, NPC prices (buy: NPCs sell it; sell: NPCs buy
+Both: name, and in `extra`: article, plural, weight, attack (the attack before O472: the installed attack is it times the weapon
+growth a(level) of weapon_growth.py), defense, level, NPC prices (buy: NPCs sell it; sell: NPCs buy
 it), loot (monster:chance per 100000; ...), description, unique (the item is the base of a unique of
 data/items/chaos_items.xml and is in no shop or loot).
 Without the matching client pair (client/MANIFEST.md "Fist weapons and bone effects") the items show as nothing.
@@ -56,6 +57,7 @@ import os, re, shutil, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import client_pair  # noqa: E402
+import weapon_growth as WG  # noqa: E402  (O472)
 from install_pack_items import read_manifest, patch_otb, verify_otb  # noqa: E402
 from install_dark_tiles import xml_escape  # noqa: E402
 
@@ -97,6 +99,8 @@ def rows_of(paths):
                 'a repointed claw keeps its donor server id and wears a pair 56 look (%s)' % r['key']
         for k in ('weight', 'attack', 'defense', 'level'):
             assert r['ex'].get(k, '').isdigit(), '%s: %s missing' % (r['key'], k)
+        # O472: the weapon values grow with the level (weapon_growth.py: attack times a(level), the CSV keeps the attack before)
+        r['ex'] = dict(r['ex'], attack=str(WG.grown(int(r['ex']['attack']), int(r['ex']['level']))), attack_before=r['ex']['attack'])
         r['loot'] = []
         for part in filter(None, (r['ex'].get('loot') or '').split(';')):
             mon, chance = part.rsplit(':', 1)

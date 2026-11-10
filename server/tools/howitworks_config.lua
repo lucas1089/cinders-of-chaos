@@ -363,10 +363,49 @@ P.features = {
 			local pct = 100 / C.spellscaling.mlShare.per
 			return {pct = {en = string.format("%.2f", pct), pt = (string.format("%.2f", pct):gsub("%.", ","))}}
 		end,
-		what = {"A spell's damage starts from your level, your magic level and, for a weapon class, your weapon skill and attack. A caster's magic level is its skill. Every magic level adds about {pct}% to the spells of a weapon class. Class, passive tree, gear modifiers, gems, support runes, cards, charms, uniques and sets raise it more.",
-			"O dano de uma magia parte do seu nível, do nível mágico e, numa classe de arma, da skill e do ataque da arma. O nível mágico do conjurador é a skill dele. Cada nível mágico soma cerca de {pct}% às magias de uma classe de arma. Classe, árvore passiva, modificadores, gemas, runas de suporte, cartas, charms, únicos e conjuntos aumentam mais."},
+		-- O472: the weapon growth reaches a caster's spells through its wand or rod (spell_scaling_config.lua caster)
+		what = {"A spell's damage starts from your level, your magic level and, for a weapon class, your weapon skill and attack. A caster's magic level is its skill. Every magic level adds about {pct}% to the spells of a weapon class. A caster's spells also grow with the level through the wand or rod in its hands. Class, passive tree, gear modifiers, gems, support runes, cards, charms, uniques and sets raise it more.",
+			"O dano de uma magia parte do seu nível, do nível mágico e, numa classe de arma, da skill e do ataque da arma. O nível mágico do conjurador é a skill dele. Cada nível mágico soma cerca de {pct}% às magias de uma classe de arma. As magias de um conjurador também crescem com o nível pela varinha ou bastão nas mãos. Classe, árvore passiva, modificadores, gemas, runas de suporte, cartas, charms, únicos e conjuntos aumentam mais."},
 		who = {"Every class. Mystic, Elementalist, Illusionist and Necromancer lines scale with level and magic level. Warrior, Ranger, Thief and Monk lines scale with level, weapon skill and weapon attack, and a little with magic level. Templar spells use all three.",
 			"Toda classe. As linhas Mystic, Elementalist, Illusionist e Necromancer crescem com o nível e o nível mágico. As linhas Warrior, Ranger, Thief e Monk crescem com o nível, a skill e o ataque da arma, e um pouco com o nível mágico. As magias da linha Templar usam os três."}},
+
+	-- O474: damage over time; every number is read from dot_config.lua
+	{key = "dot", title = {"Damage over time", "Dano ao longo do tempo"},
+		values = function(C, H)
+			local D = C.dot
+			local function pct(x) return math.floor(x * 100 + 0.5) end
+			return {share = pct(D.side.share), ticks = D.side.ticks, tickMs = D.side.tickMs, kitMs = D.kit.tickMs,
+				stacks = D.ailment.maxStacks, aRounds = D.ailment.rounds, aMs = D.ailment.interval, radius = D.jump.radius}
+		end,
+		what = {"Burning, poison, bleeding and curses keep hurting after the hit. Each tick ignores armour; only resistance counts. A tick gives no life or mana on hit and rolls no ailment. The Damage over Time modifier on gear raises every tick, the ticks of your spells too.",
+			"Queimadura, veneno, sangramento e maldições continuam ferindo depois do golpe. Cada pulso ignora a armadura; só a resistência conta. Um pulso não dá vida nem mana por golpe e não sorteia ailment. O modificador Damage over Time do equipamento aumenta todo pulso, inclusive os das suas magias."},
+		who = {"Witchfire Bolt, Falling Pyre, Shattered Psyche and Blightswarm leave a burn, curse or poison worth {share}% of their own hit in {ticks} ticks, {tickMs} ms apart. Gorehook, Dreamrot, Venom Spiral, Blightbrand, Martyr's Pyre, Crimson Covenant, Withering Curse and Soul Rot tick every {kitMs} ms or faster, the first tick at once.",
+			"Witchfire Bolt, Falling Pyre, Shattered Psyche e Blightswarm deixam uma queimadura, maldição ou veneno que vale {share}% do próprio golpe em {ticks} pulsos, com {tickMs} ms entre eles. Gorehook, Dreamrot, Venom Spiral, Blightbrand, Martyr's Pyre, Crimson Covenant, Withering Curse e Soul Rot pulsam a cada {kitMs} ms ou menos, o primeiro na hora."},
+		drops = {"Chance to Bleed, Ignite and Poison on gear stack: up to {stacks} of one kind on one monster, each {aRounds} ticks of {aMs} ms. A fourth replaces the weakest.",
+			"Chance to Bleed, Ignite e Poison do equipamento se acumulam: até {stacks} do mesmo tipo em um monstro, cada um com {aRounds} pulsos de {aMs} ms. O quarto troca o mais fraco."},
+		often = {"When the target of a spell's damage over time dies, what is left moves to the nearest living monster within {radius} squares. Never to a player, and it adds no new ticks. Against players every damage over time works as it did before.",
+			"Quando o alvo do dano ao longo do tempo de uma magia morre, o que sobrou passa ao monstro vivo mais próximo a até {radius} quadrados. Nunca a um jogador, e não cria pulsos novos. Contra jogadores todo dano ao longo do tempo funciona como antes."}},
+	-- O473: the one additive damage pool (damage_pool_config.lua, pvp_balance_config.lua). No window of its own: the help search finds it
+	{key = "increaseddamage", title = {"Increased damage", "Dano aumentado"},
+		values = function(C, H)
+			local P, S = C.damagePool, C.damagePool.sources
+			local at = {}
+			for _, row in ipairs(C.pvp.damageScale) do
+				at[row[1]] = row[2]
+			end
+			local function two(v)
+				return {en = string.format("%.2f", v), pt = (string.format("%.2f", v):gsub("%.", ","))}
+			end
+			return {cap = P.softCap.cap, uniq = S.uniques.each, uniqAll = S.uniques.cap, gem = S.gems.cap, gemPhys = S.gems.capPhysical,
+				mast = S.masteries.each, mastAll = S.masteries.cap, card = S.cardSets.cap, extras = P.groups.extras.cap,
+				p100 = two(at[100]), p1000 = two(at[1000])}
+		end,
+		what = {"All increased damage adds into one pool, and the pool is applied to a hit once. It comes from the passive tree, a wand's Spell Damage, Paragon, unique powers, gems, damage masteries, a card set, charms and the sword's tempo edge. Up to {cap} the pool counts in full, above it each point counts less.",
+			"Todo dano aumentado se soma em um único conjunto, aplicado ao golpe uma vez. Vem da árvore passiva, do Spell Damage de uma varinha, do Paragon, de poderes únicos, gemas, maestrias de dano, um conjunto de cartas, charms e do tempo da espada. Até {cap} o conjunto conta por inteiro, acima disso cada ponto conta menos."},
+		who = {"Every class. Most one source adds: a unique power {uniq} ({uniqAll} for all), gems {gem} per element ({gemPhys} physical), a mastery {mast} ({mastAll} for all), a card set {card}, charms and the sword together {extras}.",
+			"Toda classe. O máximo de cada fonte: um poder único {uniq} ({uniqAll} no total), gemas {gem} por elemento ({gemPhys} no físico), uma maestria {mast} ({mastAll} no total), um conjunto de cartas {card}, charms e a espada juntos {extras}."},
+		often = {"Every hit, once. Strength, the weapon, critical hits, support runes and class damage multiply on their own. Against a player the hit is scaled by your level, x{p100} at level 100 to x{p1000} at level 1000.",
+			"Todo golpe, uma vez. Força, a arma, golpes críticos, runas de apoio e dano de classe multiplicam por conta própria. Contra um jogador o golpe é escalado pelo seu nível, x{p100} no nível 100 a x{p1000} no nível 1000."}},
 
 	{key = "bestiary", title = {"Bestiary", "Bestiário"}, window = "game_bestiary", goals = {"task1", "known25", "completed10"},
 		values = function(C, H)

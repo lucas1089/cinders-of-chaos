@@ -22,6 +22,11 @@ if not ChaosSpellScaling then
 	pcall(dofile, 'data/scripts/chaos/spell_scaling_config.lua')
 	pcall(dofile, 'data/scripts/chaos/spell_scaling_core.lua')
 end
+-- O474: damage over time (data/scripts/chaos/dot_core.lua): the tick flag, the jump rule, the sizes
+if not ChaosDot then
+	pcall(dofile, 'data/scripts/chaos/dot_config.lua')
+	pcall(dofile, 'data/scripts/chaos/dot_core.lua')
+end
 if ChaosSpell then
 	return
 end
@@ -395,13 +400,35 @@ function ChaosSpell.pshoot(fromPos, toPos, pname, vname, name, fallback)
 	end
 end
 
+-- O472: the factor on a CASTER's damage spell for the weapon growth: 1 + (W(level) - 1) x min(1.2, wand / mean wand of the level)
+-- (spell_scaling_config.lua weaponGrowth and caster; a wand of the level's band gives W, none gives 1). A caster's spell does not
+-- read the wand, so this is how the weapon growth reaches it. Apply it once to the hit of a spell that reads the magic level only
+-- (the Mystic, Elementalist, Illusionist and Necromancer lines); never to a heal, a weapon spell (it has the weapon's attack) or a
+-- hybrid (the Templar line and the Ranger's holy spells read the weapon already).
+function ChaosSpell.casterShare(player)
+	local S = ChaosSpellScaling
+	return S and S.casterForPlayer and S.casterForPlayer(player) or 1
+end
+
+-- the same share on a hit's min and max (positive values in, positive values out)
+function ChaosSpell.casterScale(player, min, max)
+	local k = ChaosSpell.casterShare(player)
+	return min * k, max * k
+end
+
 -- Damage helper: returns positive min, max from the usual TFS level/magic-level formula, times `scale` (default 1,
--- the per-spell balance factor: the whole value scales, the level part included).
-function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)
+-- the per-spell balance factor: the whole value scales, the level part included), times the caster's weapon growth
+-- (ChaosSpell.casterShare, O472). A heal uses mlHealValues: healing does not take the growth.
+function ChaosSpell.mlHealValues(player, mlMin, mlMax, baseMin, baseMax, scale)
 	local l = player:getLevel() / 5
 	local m = player:getMagicLevel()
 	scale = scale or 1
 	return (l + m * mlMin + baseMin) * scale, (l + m * mlMax + baseMax) * scale
+end
+
+function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)
+	local min, max = ChaosSpell.mlHealValues(player, mlMin, mlMax, baseMin, baseMax, scale)
+	return ChaosSpell.casterScale(player, min, max)
 end
 
 -- O468: the factor on a WEAPON spell's base damage for the caster's magic level: (1 + ML / 300), divided by the same for the
@@ -683,6 +710,7 @@ end
 -- pulse and did not to a tick, so each tick is divided by it first (dotTick): a typical character without supports or cards deals
 -- the old tick, at every level and class (tests/spell_paths_test.lua), and the crit, supports, cards and the rest are the gain.
 -- A new pulse chain on the same target by the same caster and spell replaces the old one (a condition is refreshed).
+-- O474: every scripted dot (this one, the attack kit's and the Necromancer line's) runs on ChaosSpell.dotChain below.
 ChaosSpell.dots = ChaosSpell.dots or {}
 local dotTokens = 0
 
@@ -699,30 +727,123 @@ function ChaosSpell.dotTick(player, base)
 	return base
 end
 
--- `ticks` hits of `base` (see above) on `targetId`, the first one tickMs after the cast, every tickMs; `key` names the spell
-function ChaosSpell.scriptedDot(casterId, targetId, key, ctype, ticks, tickMs, base, effect)
+-- O474: the one engine of a scripted damage over time (data/scripts/chaos/dot_core.lua, dot_config.lua). `o`:
+--   casterId, targetId, key (names the dot: a recast on the same target by the same caster replaces the running chain),
+--   registry (the table that holds the chain tokens, slot "key:casterId:hostId"), ticks, tickMs, firstMs (the first tick, ms
+--   after the cast: 0 is at once, nil is tickMs), jumpRadius (0 or nil: the dot ends with its host), ctype (the combat type, for
+--   the condition icon), deal(caster, host, step) (one tick; the tick flag is raised around it), onJump(from pos, to creature).
+-- Rules: the chain stops when the caster is gone, a recast replaced it, or (against a player) a cure removed the icon
+-- condition. When the host is dead with ticks left the rest continues on the nearest living monster within jumpRadius of
+-- where the host died (ChaosDot.pickJump: never a player, never a summon of a player, never a monster that already carries
+-- this dot; no new ticks). Returns nothing.
+function ChaosSpell.dotChain(o)
+	local D = ChaosDot
+	local reg, key, casterId = o.registry, o.key, o.casterId
+	local ticks, tickMs = o.ticks, o.tickMs
+	local first = o.firstMs
+	if first == nil then
+		first = tickMs
+	end
+	local radius = o.jumpRadius or 0
+	local function slotOf(id)
+		return key .. ":" .. casterId .. ":" .. id
+	end
 	dotTokens = dotTokens + 1
 	local token = dotTokens
-	local slot = key .. ":" .. casterId .. ":" .. targetId
-	ChaosSpell.dots[slot] = token
-	addEvent(function()
-		ChaosSpell.pulse(casterId, ticks, tickMs, function(caster, step)
-			local host = Creature(targetId)
-			if ChaosSpell.dots[slot] ~= token or not host or host:getHealth() <= 0 then
-				if ChaosSpell.dots[slot] == token then
-					ChaosSpell.dots[slot] = nil
-				end
-				return false
+	reg[slotOf(o.targetId)] = token
+	local start = Creature(o.targetId)
+	local lastPos = start and start:getPosition() or nil
+	-- against a player the matching condition icon shows for the whole dot and a cure ends it
+	local iconType
+	if D and start and start:isPlayer() and o.ctype ~= nil then
+		iconType = D.iconType(o.ctype)
+		if iconType and not D.addIcon(start, iconType, first + ticks * tickMs, casterId) then
+			iconType = nil
+		end
+	end
+	local function jump(caster)
+		if radius <= 0 or not lastPos or not D then
+			return nil
+		end
+		local cands = {}
+		for _, e in ipairs(ChaosSpell.enemiesAround(caster, lastPos, radius)) do
+			local master = e:getMaster()
+			cands[#cands + 1] = {id = e:getId(), pos = e:getPosition(), alive = e:getHealth() > 0, player = e:isPlayer(),
+				summon = master ~= nil and master:isPlayer(), busy = reg[slotOf(e:getId())] ~= nil, creature = e}
+		end
+		return D.pickJump(cands, lastPos, radius)
+	end
+	local function step(hostId, left)
+		local caster = Creature(casterId)
+		if not caster or caster:getHealth() <= 0 then
+			reg[slotOf(hostId)] = nil
+			return
+		end
+		if reg[slotOf(hostId)] ~= token then
+			return -- replaced by a recast
+		end
+		local host = Creature(hostId)
+		if not host or host:getHealth() <= 0 then
+			reg[slotOf(hostId)] = nil
+			local nxt = jump(caster)
+			if not nxt then
+				return
 			end
+			if o.onJump then
+				o.onJump(lastPos, nxt.creature)
+			end
+			hostId, host = nxt.id, nxt.creature
+			reg[slotOf(hostId)] = token
+		elseif iconType and not D.iconHeld(host, iconType) then
+			reg[slotOf(hostId)] = nil
+			return -- cured
+		end
+		lastPos = host:getPosition()
+		if D then
+			D.run(caster, host, o.deal, caster, host, ticks - left + 1)
+		else
+			o.deal(caster, host, ticks - left + 1)
+		end
+		if left > 1 then
+			addEvent(step, tickMs, hostId, left - 1)
+		else
+			reg[slotOf(hostId)] = nil
+		end
+	end
+	if first <= 0 then
+		step(o.targetId, ticks)
+	else
+		addEvent(step, first, o.targetId, ticks)
+	end
+end
+
+-- `ticks` hits of `base` (see above) on `targetId`, the first one firstMs after the cast (default: tickMs), every tickMs; `key`
+-- names the spell. opts: firstMs; jumpRadius (default ChaosDotConfig.jump.radius; 0 = none); raw (true: `base` is dealt as it is,
+-- the class spell factor is not taken off first: a share of the cast's own hit); pvp = {ticks, tickMs, firstMs, base} the old
+-- timing and size against a player target (ChaosDotConfig.pvp), which also never jumps.
+function ChaosSpell.scriptedDot(casterId, targetId, key, ctype, ticks, tickMs, base, effect, opts)
+	opts = opts or {}
+	local D = ChaosDot
+	local raw, firstMs = opts.raw, opts.firstMs
+	local jumpRadius = opts.jumpRadius
+	if jumpRadius == nil then
+		jumpRadius = D and D.cfg().jump and D.cfg().jump.radius or 0
+	end
+	local host = Creature(targetId)
+	local pvp = opts.pvp
+	if pvp and host and host:isPlayer() then
+		ticks, tickMs, base, raw = pvp.ticks or ticks, pvp.tickMs or tickMs, pvp.base or base, false
+		firstMs, jumpRadius = pvp.firstMs or pvp.tickMs or tickMs, 0
+	end
+	ChaosSpell.dotChain({
+		casterId = casterId, targetId = targetId, key = key, registry = ChaosSpell.dots, ticks = ticks, tickMs = tickMs,
+		firstMs = firstMs, jumpRadius = jumpRadius, ctype = ctype,
+		deal = function(caster, target)
 			-- rounded, not cut: the tick is a few dozen, the factor the event puts back would lose up to a point of it
-			local v = math.floor(ChaosSpell.dotTick(caster, base) + 0.5)
-			ChaosSpell.damageTarget(caster, host, ctype, v, v, effect)
-			if step >= ticks then
-				ChaosSpell.dots[slot] = nil
-			end
-			return true
-		end)
-	end, tickMs)
+			local v = math.floor((raw and base or ChaosSpell.dotTick(caster, base)) + 0.5)
+			ChaosSpell.damageTarget(caster, target, ctype, v, v, effect)
+		end,
+	})
 end
 
 -- Remove a creature later (summons / clones).
@@ -840,7 +961,11 @@ end
 -- weapon) or Chaos.classes.shuriken.defaultAttack
 function ChaosSpell.shurikenPower(player)
 	local skill = math.max(ChaosSpell.meleeSkillLevel(player), player:getEffectiveSkillLevel(SKILL_DISTANCE))
-	local attack = (Chaos and Chaos.classes and Chaos.classes.shuriken.defaultAttack) or 50
+	-- O472: the shuriken needs no star, so its attack is a number of ours, and a thrown weapon grows with the level like every weapon:
+	-- the default attack times a(level) (spell_scaling_core.lua S.weaponA; the throwing stars of the base are out of the game)
+	local S = ChaosSpellScaling
+	local attack = ((Chaos and Chaos.classes and Chaos.classes.shuriken.defaultAttack) or 50)
+		* (S and S.weaponA and S.weaponA(player:getLevel()) or 1)
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
 		local it = item and ItemType(item:getId())

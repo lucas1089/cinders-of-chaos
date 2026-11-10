@@ -51,9 +51,11 @@ check(len(uniq) == 5, 'five uniques (Pyre plus four)')
 for r in uniq:
     check(not r['loot'] and not r['ex'].get('buy'), r['key'] + ': a unique base is in no shop and no loot')
 for r in rows:
-    check(41 <= int(r['ex']['attack']) <= 70, r['key'] + ': attack in band')
+    # O472: the attack is the CSV's times the weapon growth a(level) of weapon_growth.py (41 at level 1 .. 202 at level 2000)
+    csv_attack = int(r['ex']['attack'])
+    check(41 <= csv_attack <= 210, r['key'] + ': attack in band')
     if not r['ex'].get('unique'):
-        check(int(r['ex']['attack']) <= 67, r['key'] + ': a plain claw stays under the uniques')
+        check(csv_attack <= max(int(u['ex']['attack']) for u in uniq), r['key'] + ': a plain claw stays under the highest unique')
     if r['ex'].get('buy') and r['ex'].get('sell'):
         check(int(r['ex']['buy']) >= 2 * int(r['ex']['sell']), r['key'] + ': NPC buy at least twice the sell')
     if r['mode'] == 'donor':

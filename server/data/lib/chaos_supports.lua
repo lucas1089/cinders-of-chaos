@@ -94,13 +94,29 @@ function S.spriteOf(typeIndex)
 	return cfg.sprites[cfg.supports[typeIndex].sprite] or cfg.sprites[1]
 end
 
--- value, value2 of a rune
+-- the level whose value a rune of this type counts at (O471, cfg.levelCeiling): the rune's own level, at most the ceiling
+function S.countedLevel(t, level)
+	local c = cfg.levelCeiling and cfg.levelCeiling[t.key]
+	return c and math.min(level, c) or level
+end
+
+-- the sentence that says a rune counts below its own level ("" for a rune that counts at its own)
+function S.ceilingNote(id)
+	local r = S.runeOf(id)
+	if r and S.countedLevel(r.type, r.level) < r.level then
+		return cfg.ceilingNote or ""
+	end
+	return ""
+end
+
+-- value, value2 of a rune (at the level that counts, see S.countedLevel)
 function S.values(id)
 	local r = S.runeOf(id)
 	if not r then
 		return 0, nil
 	end
-	return r.type.values[r.level] or 0, r.type.values2 and r.type.values2[r.level] or nil
+	local lv = S.countedLevel(r.type, r.level)
+	return r.type.values[lv] or 0, r.type.values2 and r.type.values2[lv] or nil
 end
 
 local function fill(text, v1, v2)
@@ -127,8 +143,9 @@ function S.levelsText(key)
 	end
 	local a, b = {}, {}
 	for i = 1, S.LEVELS do
-		a[i] = tostring(t.values[i])
-		b[i] = t.values2 and tostring(t.values2[i]) or nil
+		local lv = S.countedLevel(t, i) -- O471: a Mythic damage rune counts as Legendary
+		a[i] = tostring(t.values[lv])
+		b[i] = t.values2 and tostring(t.values2[lv]) or nil
 	end
 	local function join(list)
 		for i = 2, #list do
@@ -404,7 +421,8 @@ function S.freeEffect(key)
 	if not t or not fields then
 		return nil
 	end
-	local e = {value = t.values[m.tier] or 0, value2 = t.values2 and t.values2[m.tier] or nil, element = t.element,
+	local tier = S.countedLevel(t, m.tier)
+	local e = {value = t.values[tier] or 0, value2 = t.values2 and t.values2[tier] or nil, element = t.element,
 		level = m.tier, key = key, free = true}
 	for _, f in ipairs(fields) do
 		if e[f] then
@@ -756,6 +774,10 @@ function S.description(typeIndex, level)
 		.. effect:sub(2), S.fitsText(t))
 	if level < S.LEVELS then
 		text = text .. " Three of them combine into one of the next level: use the stack, then left-click the same stack."
+	end
+	local note = S.ceilingNote(id)
+	if note ~= "" then
+		text = text .. " " .. note
 	end
 	return text .. " Use it to open the spell supports (Character > Spell Supports)."
 end

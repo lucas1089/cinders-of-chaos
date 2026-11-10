@@ -512,7 +512,7 @@ Chaos.paragon = {
 	levelsPerPointSlow = 6,
 	categories = {
 		{key = "offense", name = "Offense", stats = {
-			{key = "damage", name = "Damage", perPoint = 0.5, maxPoints = 40, desc = "Damage dealt (every damage type, not healing)"},
+			{key = "damage", name = "Damage", perPoint = 0.5, maxPoints = 40, desc = "Increased damage (every damage type, not healing): one source of the damage pool"},
 			{key = "critDamage", name = "Critical Damage", perPoint = 0.3, maxPoints = 50, desc = "Extra damage of critical hits"}}},
 		{key = "defense", name = "Defense", stats = {
 			{key = "health", name = "Max Health", perPoint = 0.5, maxPoints = 40, desc = "Maximum health"},
@@ -537,7 +537,7 @@ Chaos.paragon = {
 		maxRanks = 60000,
 		stats = {
 			{key = "mDamage", category = "offense", name = "Damage Mastery", bonus = "damage", scale = 6, h = 50,
-				desc = "Damage dealt (every damage type, not healing)"},
+				desc = "Increased damage (every damage type, not healing): one source of the damage pool"},
 			{key = "mCritDamage", category = "offense", name = "Critical Damage Mastery", bonus = "critDamage", scale = 8, h = 50,
 				desc = "Extra damage of critical hits"},
 			{key = "mHealth", category = "defense", name = "Health Mastery", bonus = "health", scale = 8, h = 50,

@@ -105,8 +105,9 @@ end
 -- The run model of a generated dungeon (server/README.md "Solo kill times", the dungeons): how long a capable player
 -- at the dungeon's level needs, from config numbers only, so it can be recomputed after any change of monsters, counts
 -- or the damage model.
---   dps(L)           the measured one-target damage of the classes: 913 at level 300, 2,600 at 1000, the same slope
---                    (2.41 a level) above, scaled by the level below 300
+--   dps(L)           the typical one-target damage on a boss (O475, 2026-11-10: the median class after the balance round
+--                    times what a boss lets through, tools/boss_length_model.py; before: the C4 measurement, 913 at level
+--                    300, 2,600 at 1000, 2.41 a level above, scaled by the level below 300)
 --   health(hp, L)    a monster file's health at level L: hp x (1 + 0.0074 L) (the engine's level bonus)
 --   trash(d)         the run's monsters to the gate (progressNeeded, 85%) x their kill time alone x trashHealth[d]
 --                    / aoe (pulls of several at once: 2.3)
@@ -119,14 +120,25 @@ end
 --   packs (pace)     with the run's packs given, the pull factor is the pack's own: a pack of P monsters dies in
 --                    P / (1 + (P - 1) x aoeShare) kill times alone (aoeShare 0.254: the median class adds a quarter of
 --                    its one-target damage on each further target; packs of 4 -> 1.76, 6 -> 2.27, 7 -> 2.52)
-D.model = {aoe = 2.3, aoeShare = 0.254, walk = 90, walkPerPack = 12, dpsAt300 = 913, dpsAt1000 = 2600}
+-- O475 (2026-11-10, the final re-fit of the balance round): `dps` is a table {level, damage}, straight in the logarithm of the
+-- level and of the damage between rows, flat above 2000, scaled by the level below 100. The 850 row is where the weapon growth
+-- bends (class_dps_model.py, weapon_growth.py). python3 -I server/tools/boss_length_model.py --derive prints it, --check holds it.
+-- Before: dpsAt300 = 913, dpsAt1000 = 2600 and the same slope above (the comparison of the rows: 913 / 994 at 300, 2,600 / 5,329 at 1000).
+D.model = {aoe = 2.3, aoeShare = 0.254, walk = 90, walkPerPack = 12,
+	dps = {{100, 295}, {200, 656}, {300, 994}, {500, 1883}, {700, 2797}, {850, 3993}, {1000, 5329}, {1500, 7706}, {2000, 10694}}}
 
 function D.dps(level)
-	local m, L = D.model, tonumber(level) or 1
-	if L <= 300 then
-		return m.dpsAt300 * math.max(L, 1) / 300
+	local rows, L = D.model.dps, tonumber(level) or 1
+	if L <= rows[1][1] then
+		return rows[1][2] * math.max(L, 1) / rows[1][1]
 	end
-	return m.dpsAt300 + (L - 300) * (m.dpsAt1000 - m.dpsAt300) / 700
+	for i = 2, #rows do
+		local a, b = rows[i - 1], rows[i]
+		if L <= b[1] then
+			return a[2] * (b[2] / a[2]) ^ (math.log(L / a[1]) / math.log(b[1] / a[1]))
+		end
+	end
+	return rows[#rows][2]
 end
 
 function D.levelHealth(hp, level)

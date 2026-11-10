@@ -259,6 +259,27 @@ do
 	eq(hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_CONDITION), H, "a physical tick (bleeding): no armour")
 	eq(hit(m, player, H, COMBAT_FIREDAMAGE, ORIGIN_SPELL), H, "an elemental spell: no armour, no resistance on the base 0")
 	eq(hit(m, player, H, COMBAT_FIREDAMAGE, ORIGIN_CONDITION), H, "a fire tick: untouched")
+	-- O474: a scripted tick of a dot spell (Gorehook, the kit and necro dots, the side dots) is a damage over time tick like an
+	-- engine condition's: it skips the armour. A plain hit of the same spell stays armoured; the resistance still applies.
+	do
+		dofile("data/scripts/chaos/dot_config.lua")
+		dofile("data/scripts/chaos/dot_core.lua")
+		local store = {}
+		function player:getStorageValue(k) local v = store[k]; if v == nil then return -1 end return v end
+		function player:setStorageValue(k, v) store[k] = v end
+		local tickHit, tickFire
+		ChaosDot.run(player, m, function()
+			tickHit = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL)
+			tickFire = hit(m, player, H, COMBAT_FIREDAMAGE, ORIGIN_SPELL)
+		end)
+		eq(tickHit, H, "O474: a scripted physical tick skips the armour (it lost 74 to 84% of a Gorehook tick)")
+		eq(tickFire, H, "O474: a scripted fire tick is untouched on a monster with no resistance")
+		eq(hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL), spell, "O474: the same spell's direct hit is armoured as before")
+		local other = spawnMonster("Rotling", {level = 500})
+		local onOther
+		ChaosDot.run(player, m, function() onOther = hit(other, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL) end)
+		ok(onOther < H, "O474: the flag names one target: a hit on another monster is armoured")
+	end
 	-- the weapon's element part is the secondary: element rules only
 	local p, s = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE, 400, COMBAT_FIREDAMAGE)
 	eq(p, melee, "weapon hit with an element part: the physical part is armoured")
@@ -293,6 +314,12 @@ do
 	eq(hit(normal, player, 700, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 700, "normal: base 30 is under the cap, unchanged")
 	-- base 90 (data the install tool has not capped): the cap 75 gives damage back: arrived 100 -> 100 x 0.25 / 0.10 = 250
 	eq(hit(normal, player, 100, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 250, "normal: base 90 is capped at 75")
+	-- O474: a scripted tick skips the armour, not the resistance: the same cap applies to it
+	do
+		local tick
+		ChaosDot.run(player, normal, function() tick = hit(normal, player, 100, COMBAT_ICEDAMAGE, ORIGIN_SPELL) end)
+		eq(tick, 250, "O474: a scripted ice tick still meets the resistance (capped at 75)")
+	end
 	-- a weakness stays
 	eq(hit(normal, player, 1200, COMBAT_ENERGYDAMAGE, ORIGIN_SPELL), 1200, "normal: a weakness is untouched")
 	near(MD.effectiveResist(normal, COMBAT_FIREDAMAGE, 0), 30, 1e-9, "effective resist: normal fire")
