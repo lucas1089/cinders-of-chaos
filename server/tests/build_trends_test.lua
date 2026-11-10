@@ -145,6 +145,20 @@ for _, b in ipairs(K.group(chars, {minCount = 3, top = 5})[4].builds) do
 	ok(b.name == nil and b.id == nil and b.members == nil, "no member list leaves the group")
 end
 eq(next(K.group({}, {})), nil, "no characters, no classes")
+-- the keystone cap (O447): a tree over it is never listed as a build, and still counts in the class total
+do
+	local capped = {}
+	for i = 1, 5 do
+		capped[#capped + 1] = {id = i, class = 4, level = 300, flags = {"ksBulwark", "ksCleavingArc", "ksImmovable", "ksUndyingRage"}, nodes = {1}, overCap = true}
+	end
+	for i = 6, 8 do
+		capped[#capped + 1] = {id = i, class = 4, level = 300, flags = {"ksBulwark"}, nodes = {1}}
+	end
+	local cg = K.group(capped, {minCount = 3, top = 5})
+	eq(cg[4].total, 8, "an over-cap tree counts in the class total")
+	eq(#cg[4].builds, 1, "but five of them are no build")
+	eq(cg[4].builds[1].signature, "ksBulwark", "only the legal build is listed")
+end
 
 -- ====================================================================== the full build code (docs/build_code_vectors.txt)
 local vectors = {}
@@ -311,6 +325,19 @@ do
 	eq(msg and msg.data.at, 1000000, "snapshot time")
 	eq(msg and #msg.data.rows, 1, "rows")
 	eq(msg and msg.data.rows[1].full, "CC1-x", "the full code")
+	-- the keystone cap (O447): a snapshot row of before the rule that holds four keystones is not listed
+	do
+		local overCode = ChaosBuildShare.encode({classId = 1, nodes = {77, 78, 81, 109}})
+		snapRows[2] = {class_base = 4, rank = 2, keystones = "four", count = 5, total = 9, share = 500, avg_level = 300,
+			tree_code = overCode, code = ""}
+		BT.cache = nil
+		ChaosPassiveTree.extraActions.buildTrends(player, {})
+		local m2 = sent[#sent]
+		eq(#m2.data.rows, 1, "the over-cap row is not listed")
+		eq(m2.data.rows[1].keystones, "Bulwark, Cleaving Arc", "the legal row stays")
+		snapRows[2] = nil
+		BT.cache = nil
+	end
 	eq(msg and #msg.data.classes, 2, "class tabs")
 	for _, r in ipairs(msg and msg.data.rows or {}) do
 		ok(r.name == nil and r.id == nil and r.player == nil, "no name or id in the answer")

@@ -6,6 +6,7 @@
 --   mean hit = (min + max) / 2, min 0 for melee and a fifth of the level (rounded up) for a launcher    the hit is a bell curve
 --   hit      = mean hit x the style factor of weapon_styles.lua (two-handed melee, bow, crossbow: weapon_balance_core.lua)
 --              x the auto attack power (level and skill: weapon_power_core.lua) when that script is loaded
+--   hit      = x the family price (O454: familyFactor, the axe and the club 0.975) when the caller passes it
 --   DPS      = hit x hit chance (launchers) / interval in seconds
 -- The attack is the item's own (a rarity roll writes it as an attribute), the skill is the character's best melee skill
 -- (one melee skill) or distance skill, the interval is "Your Attack Interval" of the tooltip. Left out: critical hits, the
@@ -66,6 +67,12 @@ function D.estimate(p)
 		if kind then
 			power = WP.hitFactor(kind, level, p.skill)
 		end
+	end
+	-- the price of the weapon's family (O454, weapon_families_core.lua F.single: the axe and the club hit a little under 1), when the
+	-- caller says the wielder gets the traits; the sword's tempo and the axe's cleave are not in an estimate of one target
+	local family = tonumber(p.familyFactor)
+	if family and family > 0 then
+		power = power * family
 	end
 	return (low + top) / 2 * style * power * chance / (interval / 1000)
 end

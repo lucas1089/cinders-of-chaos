@@ -60,9 +60,11 @@ check(gap_of(spell('a', 20000, cast=2500, dmg='999'), spell('b', 2000)) == 2.5, 
 spells, model = R.load_all()
 check(all(s['words'] in model for s in spells if s['group'] == 'attack'), 'a model row for every attack spell')
 stock = {s['name']: s for s in spells if not s['chaos']}
+import patch_spell_cap as C  # the cap retires some stock spells: a timings row of a retired spell has no stock_spells.csv row (O455: Radiant Shard)
+retired = {name for _, name, keep in C.CAP.values() if not keep}
 for row in P.load():
     s = stock.get(row['name'])
-    check(s is not None, 'stock_spells.csv has %s' % row['name'])
+    check(s is not None or row['name'] in retired, 'stock_spells.csv has %s' % row['name'])
     for a in ('cooldown', 'groupcooldown', 'secondarygroupcooldown', 'level', 'mana'):
         if s and (row.get(a) or '').strip():
             check(s[a] == int(row[a]), 'stock_spells.csv %s %s = spell_timings.csv' % (row['name'], a))

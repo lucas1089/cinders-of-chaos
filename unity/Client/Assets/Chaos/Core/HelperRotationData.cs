@@ -32,7 +32,6 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(220, 2.00, new[] { 22, 216, 124, 19, 215 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(280, 5.00, new[] { 22, 124, 219, 134, 19 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(500, 2.00, new[] { 149, 22, 216, 219, 111 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Extras.AddRange(new[] { 34 });
               c.Heals.Add(new RotHeal(36, 60));
               c.Heals.Add(new RotHeal(125, 35));
               c.Heals.Add(new RotHeal(1, 8));
@@ -74,12 +73,11 @@ namespace Chaos.Core
               c.Presets.Add(new RotPreset(8, 2.00, new[] { 111 }, new[] { 1 }));
               c.Presets.Add(new RotPreset(12, 2.00, new[] { 214, 111 }, new[] { 1, 1 }));
               c.Presets.Add(new RotPreset(20, 2.00, new[] { 124, 214, 111 }, new[] { 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(60, 2.00, new[] { 124, 215, 214, 111 }, new[] { 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(100, 2.00, new[] { 216, 124, 215, 214, 111 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(160, 2.00, new[] { 216, 124, 19, 215, 214 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(200, 4.00, new[] { 216, 124, 218, 19, 214 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(100, 2.00, new[] { 216, 124, 214, 111 }, new[] { 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(160, 2.00, new[] { 216, 124, 19, 214, 111 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(200, 2.00, new[] { 216, 124, 218, 19, 111 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(240, 2.00, new[] { 216, 218, 134, 19, 111 }, new[] { 1, 1, 1, 1, 1 }));
-              c.Presets.Add(new RotPreset(280, 5.00, new[] { 216, 124, 219, 218, 134 }, new[] { 1, 1, 1, 1, 1 }));
+              c.Presets.Add(new RotPreset(280, 5.00, new[] { 216, 219, 218, 134, 19 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(400, 5.00, new[] { 216, 219, 144, 218, 134 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(500, 5.00, new[] { 149, 216, 219, 144, 218 }, new[] { 1, 1, 1, 1, 1 }));
               c.Presets.Add(new RotPreset(1000, 2.00, new[] { 149, 216, 219, 144, 111 }, new[] { 1, 1, 1, 1, 1 }));
@@ -335,7 +333,6 @@ namespace Chaos.Core
             spells[23] = new RotSpell { Id = 23, Name = "Packhunter's Dart", Words = "kah ferh sag", Cooldown = 12000, GroupCooldown = 2000, SecondaryGroup = "", SecondaryCooldown = 0, Cast = 0, Area = false, Chi = false };
             spells[24] = new RotSpell { Id = 24, Name = "Phantom Needles", Words = "kah mynd sag", Cooldown = 11000, GroupCooldown = 2000, SecondaryGroup = "", SecondaryCooldown = 0, Cast = 0, Area = false, Chi = false };
             spells[29] = new RotSpell { Id = 29, Name = "Bastion Cry", Words = "vok gal rhov kor", Cooldown = 13000, GroupCooldown = 2000, SecondaryGroup = "", SecondaryCooldown = 0, Cast = 0, Area = true, Chi = false };
-            spells[34] = new RotSpell { Id = 34, Name = "Radiant Shard", Words = "drai ira vas sol", Cooldown = 9000, GroupCooldown = 2000, SecondaryGroup = "", SecondaryCooldown = 0, Cast = 0, Area = true, Chi = false };
             spells[35] = new RotSpell { Id = 35, Name = "Pack Howl", Words = "drai ferh ulv", Cooldown = 7000, GroupCooldown = 2000, SecondaryGroup = "", SecondaryCooldown = 0, Cast = 0, Area = true, Chi = false };
             spells[37] = new RotSpell { Id = 37, Name = "Headsman's Hurl", Words = "kah rek sang", Cooldown = 13000, GroupCooldown = 2000, SecondaryGroup = "", SecondaryCooldown = 0, Cast = 0, Area = false, Chi = false };
             spells[38] = new RotSpell { Id = 38, Name = "Mirror Shards", Words = "drai umh krak", Cooldown = 12000, GroupCooldown = 2000, SecondaryGroup = "", SecondaryCooldown = 0, Cast = 0, Area = true, Chi = false };

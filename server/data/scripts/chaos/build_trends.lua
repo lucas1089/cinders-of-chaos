@@ -144,7 +144,9 @@ function BT.characters(now)
 			local nodes, masteries = ChaosPassiveTreeCore.parseAlloc(r.nodes)
 			if #nodes > 0 then
 				chars[#chars + 1] = {id = r.id, class = baseOf(r.vocation), voc = r.vocation, level = r.level,
-					nodes = nodes, masteries = masteries, flags = K.keystones(data, nodes, variantKey(r.vocation))}
+					nodes = nodes, masteries = masteries, flags = K.keystones(data, nodes, variantKey(r.vocation)),
+					-- the keystone cap (O447): not listed, counted in the total
+					overCap = not ChaosPassiveTreeCore.checkKeystones(data, nodes)}
 			end
 		end
 	end
@@ -201,11 +203,17 @@ function BT.latest()
 			"`avg_level`, `tree_code`, `code` FROM `%s` WHERE `snapshot` = %d ORDER BY `class_base`, `rank`", cfg.table,
 			cache.snapshot), {{"class_base", "n"}, {"rank", "n"}, {"keystones", "s"}, {"count", "n"}, {"total", "n"},
 			{"share", "n"}, {"avg_level", "n"}, {"tree_code", "s"}, {"code", "s"}})
+		local data = tree()
 		for _, r in ipairs(rows) do
 			local list = cache.byClass[r.class_base] or {total = r.total, rows = {}}
 			cache.byClass[r.class_base] = list
-			list.rows[#list.rows + 1] = {rank = r.rank, share = r.share, count = r.count, level = r.avg_level,
-				keystones = r.keystones, code = r.tree_code, full = r.code ~= "" and r.code or nil}
+			-- the keystone cap (O447): a row of a snapshot made before the rule can hold more keystones than a
+			-- character may; it is not listed (its code would be refused on import anyway)
+			local decoded = ChaosBuildShare.decode(r.tree_code)
+			if not decoded or ChaosPassiveTreeCore.checkKeystones(data, decoded.nodes) then
+				list.rows[#list.rows + 1] = {rank = r.rank, share = r.share, count = r.count, level = r.avg_level,
+					keystones = r.keystones, code = r.tree_code, full = r.code ~= "" and r.code or nil}
+			end
 		end
 	end
 	BT.cache = cache

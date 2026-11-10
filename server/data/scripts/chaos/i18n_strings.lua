@@ -3709,6 +3709,27 @@ return {
 			"Precisa de %s. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
 		["Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks."] =
 			"Use para colocá-la em um deck que você carrega e ativá-la, use de novo para desativá-la. Veyra the Apothecary vende decks.",
+		-- Card sets (O453; cards_core.lua)
+		["Card set %s is on with %s cards: %s"] =
+			"Conjunto de cartas %s ativo com %s cartas: %s",
+		["Card set %s: %s of %s cards. The bonus: %s"] =
+			"Conjunto de cartas %s: %s de %s cartas. O bônus: %s",
+		["No card set yet. %s cards of one element, one for each spell you cast, give a set bonus."] =
+			"Nenhum conjunto de cartas ainda. %s cartas de um elemento, uma para cada magia que você lança, dão um bônus de conjunto.",
+		["Card set %s is off."] =
+			"Conjunto de cartas %s desativado.",
+		["It counts for the %s card set. With %s cards of one element, one for each spell you cast, you get a bonus."] =
+			"Conta para o conjunto de cartas %s. Com %s cartas de um elemento, uma para cada magia que você lança, você ganha um bônus.",
+		["Your %s damage is %s%% higher."] =
+			"Seu dano de %s é %s%% maior.",
+		["Your %s hits slow the target by %s%% for %s seconds."] =
+			"Seus golpes de %s reduzem a velocidade do alvo em %s%% por %s segundos.",
+		["Your %s hits poison the target for %s%% of the hit over %s seconds."] =
+			"Seus golpes de %s envenenam o alvo por %s%% do golpe em %s segundos.",
+		["Your %s hits heal you for %s%% of the damage, at most %s%% of your maximum health a hit."] =
+			"Seus golpes de %s curam você em %s%% do dano, no máximo %s%% da sua vida máxima por golpe.",
+		["Your %s hits heal you for %s%% of your maximum health, at most once every %s seconds."] =
+			"Seus golpes de %s curam você em %s%% da sua vida máxima, no máximo uma vez a cada %s segundos.",
 		["magic level"] =
 			"nível mágico",
 		["distance skill"] =
@@ -5298,6 +5319,11 @@ return {
 			"Essa maestria não tem esse efeito.",
 		["That effect is already chosen."] =
 			"Esse efeito já está escolhido.",
+		-- the keystone cap (O447; passivetree_core.lua checkKeystones, passivetree.lua refundOverCap)
+		["You can hold at most %d keystones. Refund one to take another."] =
+			"Você pode ter no máximo %d keystones. Devolva um para pegar outro.",
+		["Your passive tree held %d keystones; a character may hold at most %d. All %d points were refunded for free. Open the tree to spend them again, or use Auto build."] =
+			"Sua árvore passiva tinha %d keystones; um personagem pode ter no máximo %d. Todos os %d pontos foram devolvidos de graça. Abra a árvore para gastá-los de novo, ou use o Auto build.",
 		-- Transmog (transmog_core.lua, transmog.lua)
 		["There is no item in that slot."] =
 			"Não há item nesse slot.",
@@ -8956,5 +8982,12 @@ return {
 			"Você já está em uma fila de dungeon.",
 		["solo"] = "sozinho",
 		["party"] = "em grupo",
+		-- Weapon families (weapon_families_core.lua F.note, the weapon tooltip line, O454); the percent signs are %% as in a fixed text
+		["Sword: tempo. Each hit on the same target speeds up your swing, up to 20%% faster, and adds up to 2%% damage. Best on one target. A new target starts over."] =
+			"Espada: tempo. Cada golpe no mesmo alvo acelera o seu ataque, até 20%% mais rápido, e soma até 2%% de dano. Melhor contra um alvo. Um novo alvo recomeça.",
+		["Axe: cleave. 14%% of each hit is split among the monsters next to the target. Costs 2.5%% damage on one target. Best in packs."] =
+			"Machado: golpe em arco. 14%% de cada golpe se divide entre os monstros ao lado do alvo. Custa 2,5%% de dano contra um alvo. Melhor contra grupos.",
+		["Club: impact. A hit has a 25%% chance to daze a monster: it cannot attack for 0.7 s, then rests for 3 s. A boss is only slowed. Costs 2.5%% damage on one target."] =
+			"Clava: impacto. Um golpe tem 25%% de chance de atordoar um monstro: ele não ataca por 0,7 s e depois descansa por 3 s. Um chefe só fica lento. Custa 2,5%% de dano contra um alvo.",
 	},
 }

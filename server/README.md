@@ -1708,7 +1708,7 @@ rate; **O429 (owner 2026-11-06) lowered the class base intervals and removed tha
 | Tree + worn pieces together (patch 0078 player bonus, counted like dexterity points) | 45 (was 12): tree 15 + about four good pieces |
 | All bonuses together (engine `maxPlayerAttackSpeedBonus`) | -76% of the vocation-scaled interval (was 40) |
 | Hard floor of everything (engine `minPlayerAttackInterval`) | 333 ms = 3 attacks per second (was 1000) |
-| Ninja / Monk off-hand strike, Bloodrage cleave, Cleaving Arc, Ricochet, Templar radiant strike | each at most 1.5 triggers per second per player (`attack_rate_config.lua` `limits`); was one per swing, so at most 1 per second under the old floor |
+| Ninja / Monk off-hand strike, Bloodrage cleave, Cleaving Arc, Ricochet, Templar radiant strike, the axe's cleave (O454) | each at most 1.5 triggers per second per player (`attack_rate_config.lua` `limits`); was one per swing, so at most 1 per second under the old floor |
 | Arcane Echo keystone, support repeats, Reprisal, Monk chi per auto hit | unchanged: a 3 s cooldown, one repeat per cast, a cooldown, one chi per 2 s |
 | Shadowfist Flurry | 2 + chi hits, one every 200 ms (a spell, not an auto attack; unchanged) |
 | Pets, Beastmaster companion, Necromancer minions (hit as their owner) | one hit per 2 - 2.5 s each (their own timers; unchanged) |
@@ -3255,6 +3255,35 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   369, 376, 383, 390 (the line keystones). Version 2: 77, 78, 81, 82, 106-109, 253, 262, 355, 362 (the build
   archetype keystones, "Build archetypes" below). A new character only records the version.
 
+## Passive tree: keystone cap (O447) (`passivetree_core.lua`, `passivetree_config.lua` `keystoneMax`)
+Owner decision of 2026-11-09: a character holds at most 3 keystones. Nothing in the tree, no node, number or position changed.
+- **What counts.** `ChaosPassiveTreeCore.keystoneKind(node)` reads the tree data: a node whose own stats or class variants
+  (`v`) carry a `ks*` or `ar*` flag. Four kinds, 38 nodes: `archetype` (24, `ar*` in `s`), `pair` (621 and 624, `ks*` only in
+  `v`), `line` (369, 376, 383, 390: `ks*` in `s`, several classes), `ascension` (8 class section keystones: `ks*` in `s`, one
+  class). The `ct*` class notables and the masteries (`m`) do not count. The client marks the same 38 nodes `isKeystone`
+  (`tests/passivetree_keystone_cap_test.lua` compares both lists).
+- **One function at every door.** `checkKeystones(tree, ids)` gives true or nil + "You can hold at most 3 keystones. Refund one
+  to take another." (pt-BR in `i18n_strings.lua`). Doors: `validatePlan` (planApply, saved + planned), `validateNodes` of
+  `passivetree.lua` (the plain save `sendNodes`, the final check of a plan, a build code apply and an Auto build apply all end
+  there), `buildshare_core.lua` `B.plan` (a code over the cap is refused whole, before the points are looked at),
+  `passive_builds_core.lua` `M.plan` (`overCap`, `capText`; `P.apply` refuses and the preview carries `capText` per side),
+  `loadouts.lua` `keystoneRefusal` (in `L.load` before the channel and again in `L.switch`; the saved loadout is never
+  trimmed), `pact.lua` `buildLoad` (a saved build slot over the cap is not offered for import). No GM path sets a tree: the
+  admin actions only call `resetAll`.
+- **Old trees.** `passivetree.lua` `refundOverCap` runs at every login after the other refunds: a preset over the cap is
+  emptied for free, with a message that names the keystones held and the points back. A tree at or under the cap is never
+  written, and a second login finds an empty tree. Trending builds: a character over the cap is counted in the class total
+  and listed in no build (`K.group` `overCap`); a snapshot row over the cap is not sent (`BT.latest`).
+- **Generator.** `tools/gen_passive_builds.lua` `Gen.grow` takes no keystone, and no path through one, past the cap, and a
+  role whose targets need more is an error. `tests/passive_builds_test.lua` asserts it for every build and every prefix, 1 to 3
+  for the Recommended builds (the Templar Shield Wall holds none, as it was), and that the Hollow Palm holds 2.
+- **Client.** `sendNodes` carries `keystoneMax` (an added field of the existing payload, no new opcode). The window shows
+  "Keystones 2/3" in the toolbar (`treekeystones.lua`, `passivetree.lua` `refreshTreeKeystones`), a keystone that cannot be
+  taken says so in its tooltip, and the planner refuses a click whose path would pass the cap. The Unity client is not changed:
+  it shows the server's text through `planResult`, `sendMessage` and `buildError`, and has no counter.
+- Tests: `tests/passivetree_keystone_cap_test.lua`, `passive_builds_test.lua`, `loadouts_test.lua`, `build_trends_test.lua`,
+  client `treekeystones_test.lua`, `autobuildview_test.lua`. Not run live.
+
 ## Passive tree notables on the paths (2026-10, client `treedata/nodes.lua`)
 Runs of three or more small nodes along a path (outside the class sections and the ring next to the start) had one
 node turned into a notable with its own name and a combined effect; 27 nodes in all, spread over every damage type,
@@ -3396,7 +3425,7 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   server.
 
 ## Snares (`data/spells/chaos/_snares.lua`, `snares_core.lua`, `snares_config.lua`, docs/BUILDS.md "Snares")
-Traps and mines for the Ranger and Thief lines (2026-10-12): Snare Trap (spell 99, `drai snar`, level 40), Seeker Mine
+Traps and mines for the Ranger and Thief lines (2026-10-12; the mines are in the Ranger and Deadeye kits since O455, the Beastmaster as extra spells): Snare Trap (spell 99, `drai snar`, level 40), Seeker Mine
 (100, `kah snar`, level 60), Detonate Mines (104, `vok snar`, level 60). A snare is a record in the spells' Lua state
 (`ChaosSnares.state`): kind, owner, position, element, its hit, when it arms and ends. Nothing is created on the map.
 
@@ -7194,6 +7223,90 @@ The IP is the player's own one behind the gateways too: engine patch 0025 takes 
 - Bows splash: creatures around the target take 50% of the hit (normal PvP / protection zone rules). Crossbows hit only
   their target. Which kind a launcher is comes from `data/lib/chaos_archery_config.lua` (bows and crossbows fire without
   ammunition: "Infinite arrows and quivers" below).
+- Sword, axe and club are three families with a trait each since O454 (the next section): tempo, cleave, impact. Bows and
+  crossbows keep the splash and the single target hit above.
+
+## Weapon families (O454: `weapon_families_core.lua`, `weapon_families_config.lua`, `weapon_families.lua`, `weapon_styles.lua`, `tools/weapon_family_model.py`)
+
+Build audit 2026-11-09 (A10, owner: several ways to play each class): sword, axe and club were numbers only, one melee skill
+uses the best of the three (`melee_skill_core.lua`) and a weapon of one tier hits like another. Each family now has a trait on
+the basic melee attack. The rule of the owner: class damage does not move, so `class_dps_measured.csv` and
+`class_dps_model.py --check` hold untouched.
+
+| Family | Trait | Number | Price | Boss | PvP |
+|---|---|---|---|---|---|
+| Sword | Tempo: each hit on the same target adds a stack of swing speed, each hit is lighter by the same share | 5 stacks of +4% attack speed (+20%), window 3 s, a hit less than 150 ms after a stack gives none; hits at full stacks are +2% (the edge) | none; a new target or a pause of 3 s starts over | same as a monster | half the stacks (2) and half the edge |
+| Axe | Cleave: a share of each hit is split among the monsters next to the target | 14% of the hit in all (the pool), each of up to 8 neighbours takes pool / number | -2.5% on every hit | same as a monster | no cleave and no price |
+| Club | Impact: a chance on a hit to daze a monster | 25% a hit: it cannot attack and stands still for 0.7 s, then rests 3 s (no daze, no Iron Palm) | -2.5% on every hit | slowed only: 15% a hit, 25% slow for 1 s, then 8 s of rest | no daze and no price |
+
+- **Who.** The Warrior, Thief and Templar lines: vocations 4, 8, 14, 11, 12, 13, 23, 24, 25 (`vocations` in the config). Not the
+  Monk line (17, 18, 19: fists and chi), not fists and fist weapons, not bows, crossbows, wands or rods, not a player with no
+  weapon (Open Hand Creed), not a spell's weapon strike (storage `weaponStrike` = 1), not an extra hit of a keystone
+  (`ChaosKeystones.depth` above 0), not an off-hand hit within 150 ms of the swing that gave a stack. One-handed and
+  two-handed weapons are the same: the level's two-handed factor stays and the family factor comes on top.
+- **Where.** `weapon_styles.lua` calls `ChaosWeaponFamiliesGlue.hit` (`weapon_families.lua`) at the end of its melee rules, so a
+  family sees the hit as it lands. `weapon_families_core.lua` decides (pure, `tests/weapon_families_test.lua`), the glue does
+  it. The cleave and the daze run one tick later (`addEvent` 0). An error in the glue is printed and the hit stays as it is.
+- **Sword.** The haste is real: the player attack speed bonus of engine patch 0078 gets a source `tempo`
+  (`ChaosItemMods.setPlayerAttackSpeed(player, "tempo", percent)`). The swing is faster, so each hit is multiplied by the
+  interval it was swung at over the interval without the tempo (computed with `ChaosItemMods.effectiveInterval`, one with the
+  live bonus and one with `row.shown`, the sources without the tempo) and the edge of its stacks: the damage per second does
+  not move and the sword gets its edge only at full stacks. The cap of patch 0011 and the 3 attacks per second floor hold: where
+  they hold the swing is not faster and the hit is not lighter (the edge stays). `row.shown` is what the tooltips and "Your
+  Attack Interval" read, so the haste does not show there. A timer (one per player) ends the haste when no hit has come for the
+  window, and an axe or club hit ends it at once. What the sword gets for it is more swings a second at the same damage: more
+  rolls of every on-hit effect (crit, leech, chance procs, rage), within the per second limits of `attack_rate_config.lua`.
+- **Axe.** One call of `Game.getSpectators` with range 1 around the target (the call the extra projectile uses), only for an
+  axe hit on a monster and at most 1.5 times a second per player (`ChaosAttackRate.gate(pid, "axeCleave")`, the limit every
+  on-hit extra has). Neighbours: monsters, alive, not a player's summon. Each takes `pool / number` of the hit after the styles
+  with `doTargetCombatHealth` (ORIGIN_NONE, inside the keystone guard: no tree bonus twice, no tempo, no cleave of a cleave).
+  The damage shows in the combat log as "Axe cleave". Cleaving Arc and Bloodrage keep their own shares and add to it.
+- **Club.** The stun is a `CONDITION_PARALYZE` with sub id 71034, the one `monk_combat.lua` cancels a monster's attacks for, and
+  the rest is the `CONDITION_ATTRIBUTES` timer 71035 of Iron Palm, so a clubber and a Monk share it: a monster is held at most
+  `stunMs / (stunMs + immuneMs)` = 18.9% of the time, however many clubbers hit it. A boss (`MonsterType:isBoss`, or more than 50000
+  maximum health, the Monk's rule) gets a 25% slow (sub id 71095) and its own rest (sub id 71096). Hard cap: `weapon_family_model.py`
+  holds the uptime under 20% and a boss's under 12%. The nearest thing to "a brief interrupt of the next attack" the Lua layer can
+  do without C++ is this stun (the monster cannot start an attack while the condition lasts); it needed no engine change.
+- **PvP.** Following the snares (monsters only, `tests/snares_test.lua`) and the Monk's Iron Palm (a player has its own rules): the cleave and the daze
+  never touch a player, and the axe and the club do not pay their price against a player, so PvP damage is what it was before
+  O454. The sword's tempo is a swing speed with the damage per second kept, so it stays on against a player at half the stacks
+  (2) and half the edge: the burst of the first 3 seconds does not move. `pvp_model.py --check` reads none of it.
+- **Tooltip.** A weapon of the three types shows one gold line (`tip.note`, the field the quiver note uses, drawn by `game_itemtooltip`
+  and by the Unity client alike): "Sword: tempo. ...", "Axe: cleave. ...", "Club: impact. ..." (`ChaosWeaponFamilies.note`, numbers
+  from the config), in pt-BR through `Chaos.tx` and `i18n_strings.lua` (`item_tooltip.lua`). Not shown to a Monk line viewer. The
+  "Estimated DPS" line of an axe or club pays the price for a viewer of the three lines (`familyFactor` of
+  `weapon_dps_core.lua`); the sword's tempo and the axe's cleave are not in it.
+- **Helper and Auto rotation.** Unchanged and unaware: the Auto rotation casts spells and never reads the weapon, the families
+  act on the basic attack.
+- **Neighbours of this change.** `ChaosItemMods.setPlayerAttackSpeed` summed its own last total into the new one, so calling it
+  twice with one source (a login, then a point in the tree) raised the player attack speed bonus up to the cap of 45. It sums the
+  sources only now (a bug fix that goes with the tempo source; `tests/weapon_families_test.lua`).
+- **Numbers and limits.** All in `weapon_families_config.lua`; `python3 -I tools/weapon_family_model.py --check` (CI) holds
+  them: each family within 3% of today on one target and no family 5% above another (sword 1.020 at full stacks, axe 0.975, club
+  0.975: 1.046), the axe at most +12% of the basic attack on a pack of any size (+11.2%) and under +5% of every affected class's
+  5 target damage (the most: Ninja at level 100, +4.0%), no family moves a class's 1 target damage by more than 3%.
+  Computed, not measured: the class table is in server/data/spells/README.md "Weapon families (O454)". Nothing here ran on a
+  live server.
+- **Weapons per family.** `luajit tools/weapon_coverage.lua --families` prints it and `--check` holds it: every one of the nine
+  classes has three or more weapons of at least two families in every level band (`familyMinOptions` 3, `familyMinFamilies` 2).
+  The Berserker, two-handed only, has one family with three or more in three bands: levels 1-20 (the axe), 1000-1300 (the sword)
+  and 1700-2400+ (the axe). Listed in `familyKnownGaps`, no item added. The table is `swords / axes / clubs`, a star is a known gap.
+
+<!-- weapon-families:begin (luajit tools/weapon_coverage.lua --write) -->
+
+| Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Warrior | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Juggernaut | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Berserker | 2/4/2* | 8/12/9 | 8/14/12 | 6/6/6 | 8/8/6 | 4/5/2 | 3/3/2 | 8/2/2* | 4/3/1 | 2/7/2* |
+| Thief | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
+| Ninja | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
+| Samurai | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
+| Templar | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Inquisitor | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Sentinel | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+
+<!-- weapon-families:end -->
 
 ## Weapon damage scales with skills (`weapon_skill_core.lua`, `weapon_skill_config.lua`, `weapon_styles.lua`)
 
@@ -9571,6 +9684,87 @@ Follow-ups of O142. Deploy: `badges` and `files` installer steps and a server re
   vocation, and a wand or rod user wants a mage card either way. No item id lists to keep in step with `chaos_items.xml`.
 - `card_descriptions.csv`, the codex and wiki data, tester scenarios and wiki art are regenerated; pt-BR texts are built
   from the same spell lists.
+
+### Card sets (O453)
+
+Build audit A9: a second element was numbers only. Three cards of one element now give one small bonus. Lua only: no new
+card, art, opcode, table, storage key or engine patch. Deploy: `files` (revscripts and `cards_config.lua`) and `badges` (the
+card texts of `items.xml`) installer steps and a server restart. Admin app: tab Painel > card Atualizar servidor > button
+Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was run on a live server.
+
+- **Facts the design rests on** (`tests/cards_test.lua`, `luajit tests/cards_test.lua --sets`). A character has 5 card slots
+  (`maxActive`). The 60 common cards are 15 lines of 4 tiers; only the highest card of a line that is on does anything. Element
+  is a property of the 44 cards of the 11 convert lines (`cards_config.lua` families `elements`, one per tier); the other 32
+  cards (heal, melee, widen, bow, 16 legendary) have none. Every class has exactly 3 convert lines it can cast (Frostfall Rune
+  is cast by all; Elementalist 6), listed in `lineClasses` and checked against `spells_chaos.xml`, `stock_spells.csv` and the
+  spell cap. Cards per element: Fire 7, Earth 6, Ice 6, Death 11, Holy 6, Energy 7, Drown 1. Death is on every line, so a Death
+  set is reachable for all 21 classes. Fire needs the Ranger, Mystic, Necromancer, Monk or Templar line or the Elementalist;
+  Earth the Warrior, Ranger or Templar line; Energy the Mystic, the Necromancer line or the Elementalist; Holy the Elementalist
+  only; Ice no class (two lines at most). Ice and Drown have no set. Tiers: Fire is tier 1 on all 7 lines, Holy tier 1 to 2,
+  Earth tier 1 to 3, Death and Energy tier 3 to 4. The island reward gives tiers by weights 40 / 30 / 20 / 10
+  (`pocketboss_config.lua cardTiers`), so Death and Energy sets need the rarer cards. Where else cards drop (the base
+  monsters' loot, tasks) is not in the repository: the drop levels of the tiers are not verified.
+- **The rule** (`cards_core.lua`). `K.setElement(id)` is the pure element of a card for sets (a convert card whose element has a
+  set, else nil). `K.effectiveCards(isOn, className)` takes, per convert line the class casts, the highest card that is on;
+  a lower card of the same line counts for nothing, a card of a spell the class cannot cast counts for nothing, a second copy
+  never counts (the card storage is one per card). `K.setState` counts them per element: a set is on with 3 or more cards of
+  one element. One tier only: 4 or 5 cards give the bonus of 3. `maxSets = floor(maxActive / need)` is 1: five slots hold no
+  second set of three. The state also keeps the progress (the element with most cards) for the text.
+- **The bonuses** (`cards_config.lua` `sets`, one hook each, smaller than the snare of the same element, `snares_config.lua`):
+
+| Set | Bonus | Number | The snare | Hook |
+|---|---|---|---|---|
+| Fire | Fire hits deal more | +4% of the Fire part of the hit | burn 30% of the hit over 4 s | `onHealthChange` scale of the primary and secondary part |
+| Earth | Earth hits poison | 4% of the hit over 4 s | 36% over 6 s | `CONDITION_POISON`, owned by the player, a new one replaces a weaker one |
+| Death | Death hits heal you | 1.5% of the damage, at most 1% of your maximum health a hit | 4% | `addHealth` |
+| Holy | Holy hits heal you | 0.5% of your maximum health, once every 3 s | 2% of the party | `addHealth` with a cooldown per player |
+| Energy | Energy hits slow the target | 15% for 1.5 s | the ice snare: 40% for 3 s | `ChaosSpell.slow` |
+
+  The damage parts (`damage`, `poison`) are at most `damagePartMax` 6% of the damage of their own element; the test pins it and
+  that each set has its own kind of effect. A damage over time tick is never changed or counted, and a hit of another element
+  never gets the bonus. The effects run in `ChaosCardsHit`, the event that already sat on the monsters a player attacks: after
+  the convert cards moved the hit, `ChaosCards.applySet` scales the part of the hit that is of the element and queues the
+  slow, poison, leech or heal with `addEvent`. No C++ and no new combat hook.
+- **PvP.** The cards had no PvP rule: a convert card works the same against a player. The set follows the rule of the unique
+  passives (`unique_passives_config.lua pvpScale`, same constant, tested): damage and poison x 1/3 against a player; the slow is
+  not applied to a player (no new crowd control); the heals are the same, the engine's healing rules apply to them as to any
+  heal. The model computes none of this.
+- **State.** `ChaosCards.refreshSet` keeps one state per player, refreshed by every reconcile (`ChaosCards.push`: a card turned on
+  or off, login, the `deck` command, the sweep every 60 s). A card that left the decks (death) keeps its storage until the next
+  sweep, so convert cards and the set last up to 60 s after it; this was always so for the cards. The cache is cleared at logout.
+  Without a vocation id (a test player) there is no set.
+- **What the player sees.** The deck window has no text line and the client is not changed. Character Info (`deck`) has a line under
+  the cards that are on: the set that is on with its bonus, else the progress ("Card set Fire: 2 of 3 cards. The bonus: ...").
+  A card turned on or off tells the player when the set turns on or off, and the progress from 2 cards on. Every card of a set
+  element names its set in the item text (`card_descriptions.csv`, regenerated; the tooltip uses the same text per language).
+  The cards payload of opcode 172 is unchanged. Unity (frozen): the same server text messages and item texts; no field was added
+  that it would have to read. Texts: `i18n_strings.lua` (pt-BR "Conjunto de cartas").
+- **Not in Codex, wiki, How it works or the guide.** None of them has a text about the deck cards today (the "How it works"
+  cards are help cards of the client), so their generators have nothing to change.
+- **Price, computed** (`tools/card_set_model.py --check`, `card_set_model_test.py`, CI; computed, not measured). No other model reads
+  the cards: `class_dps_model.py`, the pack, boss, tower, survival, PvP, guardian, minion and companion models are not moved by this
+  change and stay as they were. This model takes the class damage per second at level 500 (`class_dps_model.dps`), the share of
+  each spell in the every-spell rotation (`rotation_sim.py`), the native element of each spell (client `spelldata.lua`) and the
+  mean damage taken multiplier of each element over the Chaos monsters (`data/monster/monsters/chaos`: physical 0.883, Fire 0.806,
+  Ice 0.850, Earth 0.819, Energy 0.831, Holy 0.920, Death 0.794; the base server's monsters are not in the repository, so this is the
+  only resistance data). A convert card is worth share x (multiplier of the new element / multiplier of the native one - 1). A
+  legendary card is +15 to the main stat all the time (upper bound), Bloodlust and Tautstring +7% and +8% skill all the time. The
+  best build with every bonus off ("mixed") is searched over every element choice of the 5 cards and compared with the best build
+  that makes a set (damage parts counted, leech, heal and slow not valued). Result at level 500, set against mixed on 1 / 5 targets:
+  Warrior line -0.6 to -0.5% / -0.8 to -0.5%, Ranger -0.1%, Illusionist -2.2% / -3.4%, Templar line -1.3 to -1.1% / -2.0 to -1.5%,
+  Beastmaster +0.4% / +0.1%, Mystic +0.1% / +0.2%, the other 11 classes 0.0%. A 0.0% class has either no spell of its convert
+  lines in the measured kit (the cards change nothing for it) or a set that gives no damage part (leech, heal, slow: not valued)
+  while the mixed build can hold the same cards. Where the cards change nothing the set costs no damage: its price is 3 of the 5
+  slots, which no damaging card would fill, and the element lock. A lead below 0.5 points passes the check (the weights are a
+  guess); the Beastmaster's lead cannot be lowered away (its native element is Earth and its convert lines are not in its kit:
+  at 2% it still leads by 0.18%). Worst case
+  (all the damage of the set's element): 6% of the class's damage per second, at most 213 (Thief, 1 target) and 549 (Mystic, 5
+  targets); the configured damage parts are 4%, two thirds of that. `python3 -I server/tools/card_set_model.py` prints the table.
+- **Tests.** `tests/cards_test.lua` (config shape, the cap, smaller than the snares, the PvP constant, `setElement` over all 76 cards,
+  `lineClasses` against the spell data, reachability of every class, detection with 2, 3, 4, 5 cards, a card of a spell the class
+  cannot cast, the lower card of a line, a second copy, a card in a deck that is off, a loose card, a card that left the decks,
+  swapping a card, two sets only with six slots, the texts in both languages, the hit event for each bonus, PvP, login and logout),
+  `tools/card_set_model_test.py`.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
@@ -14525,7 +14719,9 @@ Owner question: does every class have enough weapons? The audit answers it from 
   `chaos_weapons800.lua` (the 34 weapons above level 800, their own monster rows are the source it counts), the base recipes and the Chaos monster loot.
 - **Check (CI).** `cd server && luajit tools/weapon_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
   `minOptions` (3) weapons in a band, or its best one is under `minPower` (80%) of the tier, unless the cell is listed in
-  `weapon_coverage_config.lua` (`knownGaps`, `handledElsewhere`). It fails too when the table below is out of date. Tighten
+  `weapon_coverage_config.lua` (`knownGaps`, `handledElsewhere`). It fails too when the table below is out of date. It also holds the
+  weapon families (O454): three or more weapons of at least two of sword, axe and club per band for the nine classes of the
+  Warrior, Thief and Templar lines (`--families` prints them, `familyKnownGaps` lists the Berserker's three, "Weapon families"). Tighten
   the numbers in that file. Other commands: `--md` (the table), `--list [Class]` (every weapon of a class by band), `--write`
   (rewrite the table below).
 - **Gaps found and filled.** Before: Berserker had no weapon at 1500+, Elementalist and Illusionist one, the Ranger line,

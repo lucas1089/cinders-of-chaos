@@ -81,15 +81,18 @@ local function mkPlayer(vocId, level)
 end
 local function points(level) return math.floor(math.max(0, level - cfg.startLevel) / cfg.levelsPerPoint) end
 
--- a connected allocation of `count` nodes this class may hold (breadth first from the root)
+-- a connected allocation of `count` nodes this class may hold (breadth first from the root). It takes no more keystones
+-- than the cap allows (O447): a tree over the cap is refunded at login, which is not what this file tests.
 local function allocate(classKey, count)
-	local out, seen, queue, head = {}, {[tree.root] = true}, {tree.root}, 1
+	local out, seen, queue, head, keystones = {}, {[tree.root] = true}, {tree.root}, 1, 0
 	while head <= #queue and #out < count do
 		local cur = queue[head]; head = head + 1
 		for _, nb in ipairs(tree.nodes[cur].n or {}) do
-			if not seen[nb] and ChaosClassTree.allowed(tree.nodes[nb], classKey) then
+			local isKs = Core.isKeystone(tree.nodes[nb])
+			if not seen[nb] and ChaosClassTree.allowed(tree.nodes[nb], classKey) and not (isKs and keystones >= Core.keystoneMax()) then
 				seen[nb] = true
 				queue[#queue + 1] = nb
+				keystones = keystones + (isKs and 1 or 0)
 				if #out < count then out[#out + 1] = nb end
 			end
 		end

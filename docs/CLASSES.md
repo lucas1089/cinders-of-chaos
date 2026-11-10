@@ -345,7 +345,7 @@ quests, level 800 buffs".
 | Templar | Mantle of Dawn (178) | 20 s | damage taken -15%, the holy strike after a melee hit +20% |
 
 **Line spell quests, phase 3 (2026-10-28)**: the level 1200 ultimate of each line, taught by the quest, shared by the base class and
-both ascensions. Every class and ascension has **13 attack spells** now (`ATTACK_SPELLS` 13). Cooldown 35 to 50 s, group cooldown 2 s,
+both ascensions. Every class and ascension has **13 attack spells** now (`ATTACK_SPELLS` 13; the Beastmaster 14 since O455, the one named exception). Cooldown 35 to 50 s, group cooldown 2 s,
 mana 3 x the reference spell, off the cooldown ladder, and **not one of the 5 spells of a rotation**: the helper casts it when it is ready
 on top of the 5. Each adds about 9% of the best set's score at level 1200 (the level 500 attack about 4.5%, so a full quester is about 13 to 15% stronger; a character without the quests is unchanged) (boss bursts for the Thief, Monk and Ranger lines, area for
 the Mystic and Necromancer, mixed for the Warrior and Templar). Numbers: server/data/spells/README.md "Line spell quests, level 1200
@@ -410,9 +410,9 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Warrior | 27 | 15 | Bonebreaker 8, Reaping Gyre 14, Earthbreaker 20, Scything Arc 70, Butcher's Gyre 90, Vaulting Cleave 170, Colossus Fall 260, Headsman's Hurl 300 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Ironhold 55, Bloodlust 60, Red Frenzy 100, Iron Bellow 120 |
 | Juggernaut | 30 | 15 | Bonebreaker 8, Reaping Gyre 14, Earthbreaker 20, Scything Arc 70, Butcher's Gyre 90, Colossus Fall 260, Headsman's Hurl 300, Anvil Fall 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Taunt of Iron 20, Ironhold 55, Iron Bellow 120, Bastion Cry 340 |
 | Berserker | 30 | 15 | Bonebreaker 8, Reaping Gyre 14, Earthbreaker 20, Scything Arc 70, Butcher's Gyre 90, Skyfall Cleave 190, Colossus Fall 260, Headsman's Hurl 300, Rampage Leap 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Bloodlust 60, Red Frenzy 100, Bloodrage 120 |
-| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280, Radiant Shard 300 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140, Hallowed Ground 300 |
-| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Skewering Line 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140 |
-| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Blessed Earth 100, Feral Command 110, Pack Howl 220, Rending Pounce 240, Pack Frenzy 320 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
+| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Seeker Mine 60, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Detonate Mines 60, Lightward 140, Hallowed Ground 300 |
+| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Seeker Mine 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Detonate Mines 60, Lightward 140 |
+| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 12, Snare Trap 14, Sanctum Burst 20, Blessed Earth 100, Feral Command 110, Pack Howl 220, Seeker Mine 60, Rending Pounce 240, Pack Frenzy 320 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Detonate Mines 60, Wild Bond 100, Lightward 140 |
 | Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 14, Arcane Ripple 14, Blightswarm 25, Witchfire Bolt 20, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 20 | Ward of the Mind 14*, Galeborne Stride 20, Ironbark Hide 60 |
 | Elementalist | 45 | 14 | Kindling Spark 8, Rime Bloom 14, Witchfire Bolt 20, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14*, Galeborne Stride 20, Crimson Covenant 90 |
 | Illusionist | 57 | 15 | Kindling Spark 8, Arcane Ripple 14, Bewitching Hex 60, Shattered Psyche 110, Nightburst 210, Primordial Squall 250, Tear in the Weave 280 | Minor Mending 8, Purifying Wellspring 20, Mirror Mend 60, Lucid Reverie 120, Verdant Sanctuary 180 | Ward of the Mind 14*, Hall of Mirrors 40, Moonfang Pack 120, Wraithshroud 150 |
@@ -429,6 +429,16 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Inquisitor | 6 | 6 | Radiant Smite 8, Consecration 14, Judgement 100, Purging Nova 120 | Vow of Mending 20 | Zealotry 150 |
 | Sentinel | 7 | 7 | Radiant Smite 8, Consecration 14, Shield Wave 150 | Vow of Mending 20, Lay on Hands 150 | Rebuke 100, Aegis of Faith 120 |
 
+Ranger line mines (O455, 2026-11-09, owner: "Ranger pode ter minas"): the Ranger and the Deadeye hold Seeker Mine and Detonate Mines again.
+Seeker Mine is an attack spell, so each of them traded one attack spell out and keeps 13. The Ranger gave up Radiant Shard
+(retired, no class keeps it; it sat in no Auto rotation). The Deadeye gave up Skewering Line (the Ranger keeps it). Detonate Mines is
+a support spell: the cap is 24 spells, not the 15 of the counts above, so nobody traded for it (own spells now: Ranger 21, Deadeye 20,
+pinned in `patch_spell_cap_test.py`). The Beastmaster (owner 2026-11-10, "Beastmaster b, minas troca") holds both mines as extra
+spells with no trade (22 own spells): no attack spell could leave it within the model checks, see server/data/spells/README.md
+"Ranger line mines (O455)". It is the one named exception of the attack count rule: **14** attack spells, every other class 13
+(`EXCEPTIONS` in `tools/ci/check_attack_counts.py`, with its reason). The Count columns of this table are from before the later spells
+and the 24 cap and are stale.
+
 * Ward of the Mind (stock Magic Shield, the classic one: the mana takes a hit first, the health only the rest) is
   outside the 15 (`patch_spell_cap.py` `OUTSIDE_CAP`, owner 2026-10-21: "somente pra mages e rangers", the
   Necromancer counted as a mage): the Mystic, Necromancer and Ranger lines have it, no other class. Soulward (level 80, 15 s, with mana
@@ -441,8 +451,9 @@ Dropped, per line (each spell left the classes named; "retired" = no class keeps
   Second Wind, Warlord's Resolve, Greater Second Wind, Ruinous Cleave, Duelist's Oath (all retired but Minor Mending);
   the Juggernaut also Bloodlust, Red Frenzy, Vaulting Cleave; the Berserker also Taunt of Iron, Ironhold, Vaulting Cleave.
 - Ranger line: Arcane Stitch, Deep Mending, Unveil, Shielding Communion, Dawnbolt, Second Wind, Greater Second Wind,
-  Glare of Dawn, Greater Phantom Javelin (retired), Seeker Mine and Detonate Mines (the Thief line keeps them); the
-  Deadeye and Beastmaster also Radiant Shard and Hallowed Ground, the Beastmaster also Skewering Line.
+  Glare of Dawn, Greater Phantom Javelin (retired), Radiant Shard (retired since O455, traded for Seeker Mine); the
+  Deadeye and Beastmaster also Hallowed Ground, the Deadeye also Skewering Line (O455), the Beastmaster also Skewering Line.
+  Seeker Mine and Detonate Mines are back in the Ranger and Deadeye kits since O455 (the Beastmaster holds them as extras, 14 attack spells, the one exception to the count of 13).
 - Mystic line: the level 1 spells (Bog Splatter, Rime Breath, Searing Gust, Static Sting), the strike families (Arc
   Bolt, Riftbolt, Thornlash, Ember Lash, Frostbite, Gravetouch, Hammerfall Palm and their Greater and Supreme ranks),
   the waves and beams (Cinder Fan, Glacier Fan, Greater Glacier Fan, Bramble Fan, Stormlance, Thunder Lance, Lance of the
@@ -470,6 +481,12 @@ one- or two-handed, is open to the Warrior, Thief, Monk and Templar lines (the B
 class rule); armour, shields, launchers, wands and rods keep their lists. Of the same tier, a two-handed melee weapon deals 1.07x the
 damage per second of one hand + shield at every level (it was +28% at level 8 and +13% from level 75); launchers and the Monk's
 early fists are still ahead (server/data/spells/README.md "Weapon damage per second": owner decision).
+**Weapon families (O454):** sword, axe and club are not the same weapon for the Warrior, Thief and Templar lines (the Monk line keeps its
+fists). Sword: tempo, each hit on one target speeds up the swing (up to +20%) and is lighter by the same share, a little more damage at full
+stacks (+2%); best on one target. Axe: cleave, 14% of each hit is split among the monsters next to the target, 2.5% less damage on one
+target; best in packs. Club: impact, a 25% chance on a hit to daze a monster so it cannot attack for 0.7 s, then 3 s of rest, 2.5% less
+damage; a boss is only slowed. Against players the axe and the club change nothing and the sword has half the stacks. Class damage does not
+move (server/README.md "Weapon families (O454)").
 **Training weapons (owner, 2026-10-23)**: the exercise weapons on a training dummy: one **melee** weapon (the sword and club
 ones are the same item now) for the Warrior, Thief and Templar lines, which trains the melee skill; a **fist** weapon for the Monk
 line only (owner 2026-10-28: "monk também não tem training weapon"), which trains fist fighting; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines
@@ -972,6 +989,9 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
 ### Phase 2b (done): per-class passive trees (C4)
 
+- **Keystone cap (O447, owner 2026-11-09).** Every keystone below (the 621 / 624 pair, the class section and line keystones,
+  the archetype keystones of docs/BUILDS.md) counts toward one limit: a character holds at most 3 keystones. Before this a
+  class could take all of its keystones from about level 500. Rules and checks: docs/BUILDS.md "Keystone cap (O447)".
 - **Per-class keystone variants** on the two keystone nodes 621 (Wrath) and 624 (Resolve), for the Warrior, Ranger and Mystic lines
   (`ChaosClasses.keystoneKey`): the base classes keep the old pair; each ascended class of the Warrior and Ranger lines swaps the
   keystone that does not fit it:
@@ -1133,7 +1153,8 @@ add at most +10%), the Juggernaut the tankiest.
 The three families left out at first: snares (traps and mines), vigils (auras that reserve mana) and a life on the
 energy shield alone. Four more keystones on the ends of the four other elemental clusters (96, 99, 102, 105; refunded
 once, build code format 5), six uniques, seven spells (Snare Trap, Seeker Mine, Detonate Mines for the Ranger and
-Thief lines; four vigils for every class). Guide docs/BUILDS.md; rules server/README.md "Build archetypes", "Snares",
+Thief lines; four vigils for every class). The mines left the Ranger line in the spell cap and came back to the Ranger and
+Deadeye on 2026-11-09 (O455); the measured mine numbers of the Mine-layer rows predate the cap. Guide docs/BUILDS.md; rules server/README.md "Build archetypes", "Snares",
 "Vigils"; computed numbers server/data/spells/README.md "Snares, vigils and Hollow Vessel", measured in game
 2026-10-13 in "Snares, vigils and Hollow Vessel measured in game".
 

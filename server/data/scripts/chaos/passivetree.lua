@@ -27,7 +27,9 @@
 --
 -- Tree topology comes from passivetree_data.lua (generated from the client's nodes.lua).
 -- The server validates every save: known ids, no duplicates, every node connected to the root
--- (node 1) through other allocated nodes, and #nodes <= points the player owns.
+-- (node 1) through other allocated nodes, and #nodes <= points the player owns, and at most keystoneMax keystones
+-- (O447, passivetree_config.lua; validateNodes ends with it, so the plan, the build code and the Auto build obey it too;
+-- sendNodes carries keystoneMax; a login refunds a tree over the cap for free, refundOverCap).
 --
 -- The node bonuses are applied by passivetree_effects.lua through ChaosPassiveTree.listeners
 -- (called after each save, reset and at login with the summed customStats). You can also read
@@ -138,7 +140,9 @@ local function sendNodes(player, rows)
 		vocation = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil,
 		-- the class (which class nodes it may take) and its line (whose class section the client shows)
 		cls = ChaosPassiveTree.classKey(player),
-		line = ChaosPassiveTree.lineKey(player)
+		line = ChaosPassiveTree.lineKey(player),
+		-- the most keystones a character may hold (O447); the client counts the ones among `nodes` itself
+		keystoneMax = Core.keystoneMax(planCfg)
 	})
 end
 
@@ -182,6 +186,11 @@ local function validateNodes(player, rawNodes)
 	end
 	if count ~= #ids then
 		return nil, "Every allocated node must be connected to the starting node."
+	end
+	-- the keystone cap (O447). Every door that writes a tree ends here: a save, a plan, a build code, an Auto build.
+	local capOk, capText = Core.checkKeystones(tree, seen, planCfg)
+	if not capOk then
+		return nil, capText
 	end
 	return ids
 end
@@ -615,11 +624,43 @@ local function refundLaneChange(player, live)
 end
 ChaosPassiveTree.refundLaneChange = refundLaneChange
 
+-- the keystone cap (O447): a character that holds more keystones than the cap (a beta character made before the rule)
+-- gets its whole tree back for free at the login, once: the cap itself is checked, so a character at or under it is
+-- never touched and a second login finds an empty tree. Every preset row over the cap is emptied (the same write as the
+-- priced reset of handleReset, without the price); the player is told why. Saved loadouts are not touched: a loadout
+-- over the cap is refused when it is loaded (loadouts.lua), with the same text. Returns the number of points refunded.
+local function refundOverCap(player)
+	local tree = getTree()
+	local guid = player:getGuid()
+	local rows = loadPresets(guid)
+	local over = Core.overCapPresets(tree, rows, planCfg)
+	if #over == 0 then
+		return 0
+	end
+	local isOver, worst, refunded = {}, 0, 0
+	for _, entry in ipairs(over) do
+		isOver[entry.preset] = true
+		worst = math.max(worst, entry.keystones)
+	end
+	for _, row in ipairs(rows) do
+		if isOver[row.preset] then
+			refunded = refunded + #row.nodes
+			savePreset(guid, row.preset, row.name, {})
+		end
+	end
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+		"Your passive tree held %d keystones; a character may hold at most %d. All %d points were refunded for free. Open the tree to spend them again, or use Auto build.",
+		worst, Core.keystoneMax(planCfg), refunded))
+	return refunded
+end
+ChaosPassiveTree.refundOverCap = refundOverCap
+
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosPassiveTreeExtended")
 	refundReworked(player)
 	refundLaneChange(player, false)
 	refundForeignNodes(player)
+	refundOverCap(player)
 	noteOverBudget(player)
 	applyBonuses(player)
 	return true

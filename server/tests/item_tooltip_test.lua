@@ -25,6 +25,7 @@ local TYPES = {
 	[2400] = {name = "magic sword", weaponType = 1, attack = 48, defense = 35, slot = 48, level = 80, voc = "knights"},
 	[2431] = {name = "stonecutter axe", weaponType = 3, attack = 50, slot = 48 + 2048, attackSpeed = 2200},
 	[2181] = {name = "test rod", weaponType = 6, slot = 48, level = 26},
+	[2450] = {name = "test club", weaponType = 2, attack = 44, slot = 48},
 	[2466] = {name = "golden armor", armor = 14, slot = 8 + 48, description = "It shines.",
 		abilities = {skills = {0, 0, 0, 0, 0, 0}, stats = {0, 0, 0, 0}, absorbPercent = {[4] = 5}, speed = 0}},
 	[2514] = {name = "mastermind shield", weaponType = WEAPON_SHIELD, defense = 37, slot = 48},
@@ -474,6 +475,27 @@ eq(dpsOf(T.build(knuckles, {wielder = fw})).v < frow.v, true, "Iron Sage x1.1")
 eq(dpsOf(T.build(newItem(2514), {wielder = fw})), nil, "a plain shield has none")
 local twoH = dpsOf(T.build(newItem(2431), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70}}))
 eq(twoH ~= nil, true, "a two-handed axe has one")
+-- the family line of a sword, axe or club (weapon_families_core.lua, O454) and the family's price in the estimate
+dofile("data/scripts/chaos/weapon_families_core.lua")
+local FM = ChaosWeaponFamilies
+eq(T.build(newItem(2400)).note, FM.note("sword"), "a sword carries its tempo line")
+eq(T.build(newItem(2431)).note, FM.note("axe"), "an axe its cleave line")
+eq(T.build(newItem(2450)).note, FM.note("club"), "a club its impact line")
+eq(T.build(newItem(2400), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, vocId = 4}}).note, FM.note("sword"), "a Warrior sees it")
+eq(T.build(newItem(2400), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, vocId = 17}}).note, nil, "a Monk does not (the Monk line is untouched)")
+eq(T.build(newItem(2400), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, vocId = 3}}).note, nil, "nor a Ranger")
+eq(T.build(newItem(2514)).note, nil, "a shield has none")
+eq(T.build(newItem(2181)).note, nil, "a rod has none")
+eq(T.build(newItem(36656)).note, nil, "a fist weapon has none")
+local axeW = {voc = 2000, dex = 0, level = 100, melee = 70}
+local axePlain = dpsOf(T.build(newItem(2431), {wielder = axeW})).v
+axeW.vocId = 17
+eq(dpsOf(T.build(newItem(2431), {wielder = axeW})).v, axePlain, "a Monk's estimate is the plain one")
+axeW.vocId = 4
+local axeFam = dpsOf(T.build(newItem(2431), {wielder = axeW})).v
+eq(axeFam < axePlain and axeFam >= math.floor(axePlain * FM.single("axe")) - 1, true, "a Warrior's axe estimate pays the family price: " .. axeFam .. " of " .. axePlain)
+local swordW = {voc = 2000, dex = 0, level = 100, melee = 70, vocId = 4}
+eq(dpsOf(T.build(newItem(2400), {wielder = swordW})).v, row.v, "a sword's estimate is the plain one (the tempo is not in it)")
 ChaosDisplayScale = {factor = function() return 10 end}
 eq(dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0, level = 100, melee = 70}})).v, row.v * 10, "x the display scale of the level")
 ChaosDisplayScale = nil

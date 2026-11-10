@@ -73,6 +73,58 @@ local families = {
 }
 C.families = families
 
+-- Card sets (O453): which classes cast the spells of each convert line (a card of a line the class cannot cast belongs to no set
+-- of that class). tests/cards_test.lua derives the same table from spells_chaos.xml, stock_spells.csv and the spell cap and
+-- compares. The Frostfall Rune is a rune every class uses.
+C.lineClasses = {
+	["Reaping Gyre"] = {"Warrior", "Juggernaut", "Berserker"},
+	["Rime Bloom"] = {"Mystic", "Elementalist", "Necromancer", "Lich", "Bone Lord"},
+	["Tempest Fan"] = {"Elementalist"},
+	["Sanctum Burst"] = {"Ranger", "Deadeye", "Beastmaster"},
+	["Frostfall Rune"] = {"Warrior", "Juggernaut", "Berserker", "Ranger", "Deadeye", "Beastmaster", "Mystic", "Elementalist",
+		"Illusionist", "Thief", "Ninja", "Samurai", "Necromancer", "Lich", "Bone Lord", "Monk", "Shadowfist", "Iron Sage",
+		"Templar", "Inquisitor", "Sentinel"},
+	["Doomtide"] = {"Elementalist", "Thief", "Ninja", "Samurai"},
+	["Primordial Squall"] = {"Illusionist", "Thief", "Ninja", "Samurai"},
+	["Earthbreaker"] = {"Warrior", "Juggernaut", "Berserker", "Monk", "Shadowfist", "Iron Sage", "Templar", "Inquisitor",
+		"Sentinel"},
+	["Pyre Torrent"] = {"Elementalist"},
+	["Frozen Crypt"] = {"Mystic", "Elementalist", "Illusionist", "Monk", "Shadowfist", "Iron Sage"},
+	["Dawnpiercer"] = {"Ranger", "Deadeye", "Beastmaster", "Necromancer", "Lich", "Bone Lord", "Templar", "Inquisitor",
+		"Sentinel"},
+}
+
+-- Card sets (O453, server/README.md "Card sets (O453)", docs/BUILDS.md "Card sets (O453)"). A set is on while at least `need` of
+-- the cards that are on, one per convert line the class casts (the highest card of the line that is on decides its element),
+-- share one element. One tier only: 4 or 5 cards of the element give the same bonus. One set at a time: the slots (maxActive
+-- 5) allow no second set of 3, so `maxSets` is 1; it follows the slots if they ever grow to 6. A card with no element (heal,
+-- melee, widen, bow and legendary cards) belongs to no set, nor does a card of an element with no bonus: Drown (one line) and
+-- Ice (no class casts three Ice lines: Warrior and Elementalist lines have two at most, tests/cards_test.lua --sets). Every
+-- bonus is one hook the engine files already have and smaller than the same effect of the snare of that element
+-- (snares_config.lua `effects`):
+--   damage   hits of the element deal pct% more (primary and secondary part, never another element, no damage over time)
+--   slow     hits of the element slow the target by percent for ms (the snare's ice slow: 40% for 3000 ms)
+--   poison   hits of the element poison the target for pct% of the hit over ticks seconds (the snare: 36% over 6)
+--   leech    hits of the element heal the owner pct% of the damage, at most maxShare% of the maximum health a hit (the snare: 4%)
+--   heal     hits of the element heal the owner pct% of the maximum health, at most once every cooldownMs (the snare: 2%, the party)
+-- Against players (PvP): damage and poison x pvpScale (the rule of the unique passives, unique_passives_config.lua); the slow
+-- is not applied to a player; the heals are the same and the engine's healing rules apply to them as to any heal.
+-- `damage` and `poison` are the damage parts: at most damagePartMax percent of the damage of their element.
+C.sets = {
+	need = 3,
+	damagePartMax = 6,
+	pvpScale = 1 / 3,
+	order = {"Fire", "Earth", "Death", "Holy", "Energy"},
+	by = {
+		Fire = {kind = "damage", pct = 4},
+		Earth = {kind = "poison", pct = 4, ticks = 4},
+		Death = {kind = "leech", pct = 1.5, maxShare = 1},
+		Holy = {kind = "heal", pct = 0.5, cooldownMs = 3000},
+		Energy = {kind = "slow", percent = 15, ms = 1500},
+	},
+}
+C.sets.maxSets = math.floor(C.maxActive / C.sets.need)
+
 -- id -> {storage, kind, ...}; byTarget[spell id] = the family a "hit" card line acts on
 C.cards = {}
 C.byTarget = {}

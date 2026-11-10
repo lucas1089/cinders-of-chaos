@@ -56,7 +56,7 @@ CAP = {
     'attack/energy_beam.lua': (22, 'Stormlance', ()),
     'attack/great_energy_beam.lua': (23, 'Thunder Lance', ()),
     "attack/hell's_core.lua": (24, 'Infernal Heart', ()),
-    'attack/divine_grenade.lua': (34, 'Radiant Shard', ('Ranger',)),
+    'attack/divine_grenade.lua': (34, 'Radiant Shard', ()),  # retired 2026-11-09 (O455): the Ranger's trade for Seeker Mine; it sat in no Auto rotation
     'attack/grand_death_beam.lua': (35, 'Lance of the Grave', ()),
     'support/creature_illusion.lua': (38, "Skinchanger's Guise", ()),
     'support/strong_haste.lua': (39, 'Galeborne Stride', ()),  # retired 2026-10-23 (O136): the universal Vigil of Haste and Fleetfoot do the same

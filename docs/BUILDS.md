@@ -51,7 +51,7 @@ the tile, so nothing can be picked up and nothing is saved.
 |---|---|---|---|
 | Snare Trap | `drai snar` | 40 | throws a trap up to 4 sqm, onto your target or straight ahead; it arms after 0.6 s; the first monster within 1 sqm sets it off; the burst hits up to 8 enemies within 2 sqm. At most 3; a trap lasts 20 s |
 | Seeker Mine | `kah snar` | 60 | throws a mine the same way; it arms after 0.8 s and waits for Detonate Mines or its 8 s fuse; its burst is 1.15 times a trap's. At most 5 |
-| Detonate Mines | `vok snar` | 60 | every armed mine of yours goes off, 0.1 s apart |
+| Detonate Mines | `vok snar` | 60 | every armed mine of yours goes off, 0.1 s apart. Ranger and Deadeye hold both mines again since O455, the Beastmaster as extras; the Mine-layer numbers predate the spell cap |
 
 - **The element.** Say it after the words: `drai snar "fire"`. Fire burns, ice slows by 40%, energy reaches 1 sqm
   farther at 85% of the hit, earth poisons, death drains 4% of the damage as health, holy heals you and party
@@ -185,7 +185,7 @@ and Hollow Palm; Templar Choir Herald, Tithebound and Hollow Vessel.
 The Auto build button of the passive tree offers three Recommended builds per class (`passive_builds_config.lua` `roles`).
 Since O442 they are three different ways to play, not three stat fills: each walks to its own one to three keystones,
 and no two builds of a class hold the same set (`tests/passive_builds_test.lua`). The Focus list reaches every other
-keystone a class may hold (five new themes: Traps and mines, Party support, Retaliation, Area clearing, Single target). The
+keystone a class may hold, three at most in one build (five new themes: Traps and mines, Party support, Retaliation, Area clearing, Single target). The
 list shows the build's line under its name: what it does and what it costs. The tank build of a class, where it had one,
 is as it was: the survival model takes the median of the role builds. Several other builds use the Hybrid fill (health and
 resistances with the damage nodes) for the same reason; the Ranger, Deadeye and Inquisitor live longer than before, and
@@ -263,6 +263,78 @@ all 62 that hold one; the last keystone of any build arrives by 73 points.
 | Sentinel | **Bastion** (tank) | Bastion | Bastion widens your aura and covers the party. | little damage. |
 |  | **Reliquary Keeper** (support) | Reliquary Vow | A Reliquary Warden follows you: it heals and buffs the party and burns enemies. | your own damage is 10% weaker. |
 |  | **Retributor** (retaliation) | Thorns, Thornbound Oath, Penitent's Wrath | Thorns, Thornbound Oath and Penitent's Wrath: attackers pay for every hit. | your damage is 10% weaker, your aura is halved. |
+
+## Keystone cap (O447)
+
+Owner decision of 2026-11-09: a character holds at most 3 keystones. The rule is in before the beta wipe of 2026-11-18,
+so no refund event is needed beyond the login refund below. The number is `keystoneMax` in `passivetree_config.lua`.
+
+- **What counts.** Every node the tree data marks as a keystone, 38 nodes. 24 archetype keystones (the three rounds), the
+  pair 621 and 624 (one keystone per class), the 4 line keystones (369, 376, 383, 390) and the 8 class section keystones.
+  Masteries and class notables do not count. The code reads the data (`passivetree_core.lua` `keystoneKind`) and the
+  client marks the same 38 nodes. Paragon, Vocation Trial nodes and the Rift Atlas (its own cap of 1) are not tree keystones.
+- **Where it is checked.** One core function, `checkKeystones`, at every door that writes a tree: a plain save, a plan,
+  a build code import, an Auto build, a loadout load. Apply on top of a tree adds the build to the keystones you hold, so it
+  can be refused; Reset and apply always fits. A refused action changes nothing and says "You can hold at most 3
+  keystones. Refund one to take another."
+- **Old saves.** A loadout or build code that holds 4 or more is refused whole, never trimmed. A character over the cap at
+  login gets its whole tree back for free, once, with a message. The trending builds list no build over the cap.
+- **Builds.** The generator never takes a fourth keystone, for any point budget (`tests/passive_builds_test.lua`).
+  Recommended builds hold 1 to 3; the Templar Shield Wall holds none, as it was. Two Focus builds took a fourth keystone
+  before and stop at 3 now: Deadeye Single target and Juggernaut Retaliation.
+- **Hollow Palm.** Hollow Vessel and Aether Edge are 2 keystones. It stays legal and as it is.
+- **The window.** "Keystones 2/3" sits beside the points. A keystone you cannot take says why in its tooltip.
+
+## Weapon families (O454)
+
+Sword, axe and club hit the same before (one melee skill). Now each has a trait on the basic melee attack and a price, for the
+Warrior, Thief and Templar lines. Spells, fists and the Monk line stay as they are. Class damage does not move: on one target every
+family is within 3% of before and none is 5% above another; the axe gives at most +12% of the basic attack on a pack, which is under
++5% of any class's damage on 5 targets (computed, not measured).
+
+| Family | Trait | Number | Price | Boss | Against players |
+|---|---|---|---|---|---|
+| Sword | Tempo: hits on the same target speed up the swing, each hit is lighter by the same share | up to +20% attack speed in 5 steps, +2% damage at full stacks, a new target or 3 s without a hit starts over | none | the same | half the stacks |
+| Axe | Cleave: part of the hit is split among the monsters next to the target | 14% of the hit in all, split among up to 8 neighbours | 2.5% less damage | the same | nothing is split, no price |
+| Club | Impact: a hit may daze a monster | 25% a hit, it cannot attack for 0.7 s, then 3 s of rest | 2.5% less damage | only slowed (25% for 1 s, 15% a hit, 8 s of rest) | no daze, no price |
+
+Pick: sword to kill one big target, axe to clear packs, club to take less damage from the monsters in front of you. The tooltip of
+the weapon has the line. Every affected class has three or more weapons of at least two families in every level band except the
+Berserker (two-handed only: levels 1-20, 1000-1300 and 1700-2400+ have one family with three or more). The table of weapons per
+family per band: server/README.md "Weapon families (O454)".
+
+## Card sets (O453)
+
+A card swaps the element of one spell. That was numbers only. Now three cards of one element give a small bonus, so a
+second element is a choice.
+
+- You turn on at most 5 cards. A set needs **3 cards of one element**, one for each spell line your class casts. The highest
+  card of a line that is on gives the line its element. A lower card of the same line, a second copy of a card, a card of a
+  spell your class cannot cast, a card that is off or sits outside the deck: none of them counts.
+- **One tier only.** 4 or 5 cards give the bonus of 3. **One set at a time:** five slots hold no second set of three.
+- A heal, melee, widen, bow or legendary card has no element. Ice (no class has three Ice lines) and Drown have no set.
+- Character Info (Character > Character Info) names the set and shows the progress, for example "2 of 3 cards". Turning a
+  card on or off tells you when the set turns on or off. The card text names its set.
+
+| Set | You get | Number | Cards that carry it | Who can reach it |
+|---|---|---|---|---|
+| Fire | Fire hits deal more | +4% of the Fire part of the hit | tier 1 of 7 lines | Ranger, Mystic, Necromancer, Monk and Templar lines, Elementalist |
+| Earth | Earth hits poison | 4% of the hit over 4 s | tier 1 to 3 | Warrior, Ranger and Templar lines |
+| Death | Death hits heal you | 1.5% of the damage, at most 1% of your health a hit | tier 3 to 4 | every class |
+| Holy | Holy hits heal you | 0.5% of your health, once every 3 s | tier 1 to 2 | Elementalist |
+| Energy | Energy hits slow the target | 15% for 1.5 s | tier 3 to 4 | Mystic, Necromancer line, Elementalist |
+
+Each number is smaller than the snare of the same element (burn 30%, poison 36% over 6 s, leech 4%, party heal 2%, ice slow
+40% for 3 s). A damage part never goes over +6% of its own element and never touches another element. Damage over time is
+never changed. Against players the damage and poison are a third; the slow does not work on players.
+
+**Price.** A set takes 3 of your 5 slots and locks the three lines of your class to one element. Most classes have exactly
+3 lines, so a set uses all of them and leaves 2 slots for the legendary card and one buff or heal card. Death and Energy
+need the rarer tier 3 and 4 cards. In damage the set costs little: against the best mixed build at level 500 (computed, see
+`server/README.md` "Card sets (O453)") the Warrior line is 0.5 to 0.8% behind, the Templar line 1.1 to 2.0%, the Illusionist
+2.2% to 3.4%; eleven classes are level with it because their card spells are not in their rotation or the bonus is not damage;
+the Beastmaster and Mystic lead by less than half a point. The worst case, all of a class's damage being of the set's
+element, is 6% of its damage per second. Nothing here was measured in game.
 
 ## Leveling notes
 

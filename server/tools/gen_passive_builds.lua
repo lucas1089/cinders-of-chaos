@@ -11,6 +11,16 @@
 -- score), then both kinds grow greedily: every step looks at all nodes reachable through nodes the class may hold and
 -- takes the whole path to the one with the best (score of the path / points of the path), until the budget is spent.
 
+-- The keystone cap (O447): no build holds more keystones than config.keystoneMax of passivetree_config.lua, counted by the
+-- same core function the server checks with. Gen.grow never takes a keystone (or a path through one) past the cap and
+-- refuses role targets that need more; tests/passive_builds_test.lua asserts it for every class, every build, every prefix.
+if not ChaosPassiveTreeConfig then
+	dofile("data/scripts/chaos/passivetree_config.lua")
+end
+if not ChaosPassiveTreeCore then
+	dofile("data/scripts/chaos/passivetree_core.lua")
+end
+
 local Gen = {}
 local OUT_DEFAULT = "data/scripts/chaos/passive_builds_data.lua"
 
@@ -288,8 +298,24 @@ function Gen.grow(ctx, spec)
 		local node = tree.nodes[id]
 		return node and (not node.c or node.c[spec.classKey] == true)
 	end
+	-- the keystone cap (O447): `keystones` counts the ones taken; at the cap no other keystone is reachable
+	local PC = ChaosPassiveTreeCore
+	local keystoneMax, keystones = PC.keystoneMax(), 0
+	local function isKeystone(id)
+		return PC.isKeystone(tree.nodes[id])
+	end
+	local function pathKeystones(path)
+		local n = 0
+		for _, id in ipairs(path) do
+			if isKeystone(id) then
+				n = n + 1
+			end
+		end
+		return n
+	end
 	local function ok(id)
 		return allowed(id) and (allowedTargets[id] or not needsChoice(tree.nodes[id]))
+			and not (keystones >= keystoneMax and isKeystone(id))
 	end
 	-- scores only change when a stat reaches its cap: cached until then
 	local cache, saturated = {}, {}
@@ -341,6 +367,9 @@ function Gen.grow(ctx, spec)
 				choice = spec.masteries and spec.masteries[id] or bestChoice(ctx, node, id, spec.weights, spec.variant)
 			end
 			take(ctx, st, id, spec.weights, spec.nodeScores, spec.variant, choice)
+			if isKeystone(id) then
+				keystones = keystones + 1
+			end
 		end
 		checkSaturation()
 	end
@@ -354,15 +383,20 @@ function Gen.grow(ctx, spec)
 			if #path == 0 then
 				return nil, string.format("target %d is not reachable for class %s", target, spec.classKey)
 			end
+			if keystones + pathKeystones(path) > keystoneMax then
+				return nil, string.format("the targets of class %s hold more than %d keystones (the cap, O447)", spec.classKey,
+					keystoneMax)
+			end
 			add(path)
 		end
 	end
+	local blocked = {} -- nodes whose path would take a keystone past the cap
 	while #st.order < spec.budget do
 		local dist, parent, cum, queue = search(ctx, st, ok, scoreOf)
 		local bestId, bestRatio, bestDist
 		for _, id in ipairs(queue) do
 			local d = dist[id]
-			if d > 0 and (not needsChoice(tree.nodes[id]) or allowedTargets[id]) then
+			if d > 0 and not blocked[id] and (not needsChoice(tree.nodes[id]) or allowedTargets[id]) then
 				local ratio = cum[id] / d
 				if bestId == nil or ratio > bestRatio + 1e-9 or (math.abs(ratio - bestRatio) <= 1e-9 and
 					(d < bestDist or (d == bestDist and id < bestId))) then
@@ -373,7 +407,12 @@ function Gen.grow(ctx, spec)
 		if not bestId then
 			break
 		end
-		add(pathTo(parent, st, bestId))
+		local path = pathTo(parent, st, bestId)
+		if keystones + pathKeystones(path) > keystoneMax then
+			blocked[bestId] = true -- never taken: the next best node is looked at
+		else
+			add(path)
+		end
 	end
 	return st
 end

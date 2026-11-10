@@ -108,6 +108,9 @@ function plannerRefresh()
       end
     end
   end
+  if refreshTreeKeystones then
+    refreshTreeKeystones() -- the keystone counter and the cap note of the tooltips (O447)
+  end
   plannerUpdateBar()
 end
 
@@ -260,6 +263,11 @@ function plannerClick(node)
   local path = TreePlan.findPath(graph(), ownedSet(), node.id, passable)
   if not path then
     sendMessageBox('Planner', tr('No path leads there over nodes your class can take.'))
+    return false
+  end
+  -- the keystone cap (O447): a path that takes the keystones past the cap is not planned; the server would refuse it too
+  if treeKeystonesOver and treeKeystonesOver(TreeKeystones.newOnPath(nodes(), ownedSet(), path)) then
+    sendMessageBox('Planner', getTreeKeystoneCapText())
     return false
   end
   TreePlan.addPath(plan, path)

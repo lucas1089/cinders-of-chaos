@@ -6,6 +6,11 @@ ChaosPassiveTreeConfig = {
 	maxPlanNodes = 300,
 	-- planApply and masteryChoose: at most one request per this many ms (the same as a plain save)
 	rateMs = 1000,
+	-- keystoneMax (O447, owner decision of 2026-11-09): a character holds at most this many keystones (every node the
+	-- tree data marks with a ks* or ar* flag: archetype, 621 / 624, line and class section keystones; masteries and
+	-- class notables do not count, passivetree_core.lua "keystones"). Every door checks it with the same core function:
+	-- one node, a plan, a build code, an Auto build, a loadout. The client's counter reads it from sendNodes.
+	keystoneMax = 3,
 	-- a mastery node offers 2 to this many effects (the generator and the tests check the data against it)
 	maxMasteryChoices = 4,
 	-- changing the effect of a saved mastery costs the single-node refund price of respec.lua (free below its

@@ -633,7 +633,11 @@ function T.dpsRow(item, it, w, ms)
 	end
 	local launcher = isDistance and ChaosArchery and ChaosArchery.kindOfType and ChaosArchery.kindOfType(it) or nil
 	local hasBit = bit and bit.band and bit.band(int(call(it, "getSlotPosition")), int(SLOTP_TWO_HAND or 2048)) ~= 0
+	-- the price of the weapon's family for a wielder that gets the traits (weapon_families_core.lua, O454)
+	local FM = ChaosWeaponFamilies
+	local familyFactor = typeName and FM and FM.affected and w.vocId and FM.affected(w.vocId) and FM.single(typeName) or nil
 	local dps = D.round(D.estimate({
+		familyFactor = familyFactor,
 		level = w.level, skill = typeName and w.melee or w.distance,
 		attack = attrOr(item, ITEM_ATTRIBUTE_ATTACK, call(it, "getAttack")), interval = ms,
 		launcher = launcher, twoHanded = hasBit or false, weaponType = typeName,
@@ -738,6 +742,17 @@ function T.build(item, opts)
 				fmt = r.def.fmt ~= "flat" and "pct" or nil, imp = true}
 		end
 		tip.note = T.QUIVER_NOTE
+	end
+	-- a sword, axe or club: its family's trait (weapon_families_core.lua, O454), for a viewer whose class gets the traits (not
+	-- the Monk line); the server turns the line into the player's language (item_tooltip.lua)
+	if kind == "weapon" and weapon and not weapon.fist and not weapon.launcher and ChaosWeaponFamilies then
+		local FM = ChaosWeaponFamilies
+		local names = {[int(WEAPON_SWORD or 1)] = "sword", [int(WEAPON_CLUB or 2)] = "club", [int(WEAPON_AXE or 3)] = "axe"}
+		local family = FM.familyOf(names[weapon.weaponType])
+		local viewer = opts.wielder
+		if family and FM.config.enabled and (not (viewer and viewer.vocId) or FM.affected(viewer.vocId)) then
+			tip.note = FM.note(family)
+		end
 	end
 	-- weapons: the interval the viewer swings this one at (vocation, dexterity), with the attack speed cap of engine
 	-- patch 0011; "(capped)" when the cap raised it. opts.wielder = {voc = vocation attackspeed, dex = dexterity, bonus = player attack speed bonus %}

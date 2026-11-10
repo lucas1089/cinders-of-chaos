@@ -14,6 +14,9 @@
 --     wand or rod are lifted to their share of the class's spell rotation at high levels, and a melee or launcher hit
 --     also scales with (skill / typical skill) ^ 0.5 on top of the engine's skill term; a spell's weapon strike is not
 --     an auto attack and is left out
+--   * weapon families (O454, weapon_families_core.lua, weapon_families.lua): a sword's hits on one target speed the swing up (tempo),
+--     an axe splits a share of the hit among the monsters next to the target (cleave), a club may daze a monster (impact); the
+--     basic melee hit of the Warrior, Thief and Templar lines only, the axe and the club pay a little on one target
 --   * bows splash: the creatures around the target take arrowSplash of the hit (engine PvP rules apply)
 --   * crossbows hit only their target (no splash)
 --   * the quiver (data/lib/chaos_archery_core.lua), while it counts (a bow or crossbow in the hands): Critical Strike
@@ -271,6 +274,22 @@ local function styled(creature, attacker, primaryDamage, primaryType, secondaryD
 		if power and power ~= 1 then
 			primaryDamage = scale(primaryDamage, power)
 			secondaryDamage = scale(secondaryDamage, power)
+		end
+	end
+	-- the trait of the weapon's family (O454): tempo for a sword, cleave for an axe, impact for a club; the basic melee hit only
+	-- (weapon_families.lua does it, after the rules above, so the cleave is a share of the hit as it lands)
+	if typeName and origin == ORIGIN_MELEE and attacker:getStorageValue(STRIKE_KEY) ~= 1 then
+		local FG = ChaosWeaponFamiliesGlue
+		if FG and FG.hit then
+			local okF, p, s = pcall(FG.hit, attacker, creature, weapon, weaponItem, typeName, primaryDamage, secondaryDamage,
+				primaryType)
+			if okF then
+				if p then
+					primaryDamage, secondaryDamage = p, s
+				end
+			else
+				print("[ChaosWeaponStyle] " .. tostring(p))
+			end
 		end
 	end
 	local kind = origin == ORIGIN_RANGED and launcher or nil

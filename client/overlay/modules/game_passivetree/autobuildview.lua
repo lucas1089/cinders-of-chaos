@@ -1,8 +1,9 @@
 -- Auto build window maths (no client API, tested by autobuildview_test.lua). The server's lists and previews
 -- (server/data/scripts/chaos/passive_builds.lua) come already in the player's language; the labels around them go through tr().
 --   autobuildList {group = "role" | "focus", builds = [{id, name, text, summary, points, fit}], owned, held, free, cap}
---   autobuildPreview {build, name, owned, held, wanted, add = {nodes, added, skipped, other, masteries},
---                     reset = {nodes, added, skipped, other, removed, cost, free, masteries}}
+--   autobuildPreview {build, name, owned, held, wanted, add = {nodes, added, skipped, other, masteries, keystones, capText},
+--                     reset = {nodes, added, skipped, other, removed, cost, free, masteries, keystones, capText}}
+--   capText (O447): the keystone cap's refusal in the player's language when that side would hold too many keystones
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 AutoBuildView = {}
 local V = AutoBuildView
@@ -89,12 +90,17 @@ function V.detail(b, state, preview, note)
   end
   local add, reset = preview.add or {}, preview.reset or {}
   lines[#lines + 1] = ''
-  lines[#lines + 1] = tr('Apply: adds %d nodes, takes nothing back, free.', num(add.added))
-  if num(add.skipped) > 0 then
-    lines[#lines + 1] = tr('%d more nodes of the build need points you do not have yet.', num(add.skipped))
-  end
-  if num(add.other) > 0 then
-    lines[#lines + 1] = tr('%d nodes your class cannot hold are left out.', num(add.other))
+  if add.capText then
+    -- the keystone cap (O447): the build on top of the keystones held would hold too many; the server's own line
+    lines[#lines + 1] = tr('Apply: not possible.') .. ' ' .. tostring(add.capText)
+  else
+    lines[#lines + 1] = tr('Apply: adds %d nodes, takes nothing back, free.', num(add.added))
+    if num(add.skipped) > 0 then
+      lines[#lines + 1] = tr('%d more nodes of the build need points you do not have yet.', num(add.skipped))
+    end
+    if num(add.other) > 0 then
+      lines[#lines + 1] = tr('%d nodes your class cannot hold are left out.', num(add.other))
+    end
   end
   if num(reset.removed) > 0 then
     lines[#lines + 1] = tr('Reset and apply: takes back %d nodes and builds this one (%d nodes). Price: %s.', num(reset.removed),
@@ -157,7 +163,7 @@ end
 
 -- Apply does something when the build adds at least one node; Reset and apply when it adds or takes back something
 function V.canApply(preview)
-  return preview ~= nil and num(preview.add and preview.add.added) > 0
+  return preview ~= nil and num(preview.add and preview.add.added) > 0 and not (preview.add and preview.add.capText)
 end
 function V.canReset(preview)
   return preview ~= nil and (num(preview.reset and preview.reset.added) > 0 or num(preview.reset and preview.reset.removed) > 0)

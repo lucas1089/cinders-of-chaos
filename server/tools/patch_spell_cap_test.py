@@ -81,7 +81,10 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
 # line spell quests, phase 2 (2026-10-28): the level 500 attack of the line, plus one in every class; phase 3: the level 1200
 # ultimate, plus one again; phase 4: the level 800 buff, plus one again (Bone Lord 22 of 24)
 # O350 (2026-10-31): Raise Bone Archer back, plus one in the Necromancer line (Bone Lord 23 of 24)
-PINNED = {'Warrior': 21, 'Juggernaut': 20, 'Berserker': 20, 'Ranger': 20, 'Deadeye': 19, 'Beastmaster': 20,
+# O455 (2026-11-09): the Ranger line holds Seeker Mine and Detonate Mines again; Seeker Mine is an attack spell, so each class
+#   traded one attack spell out for it (Ranger Radiant Shard, retired; Deadeye Skewering Line; the Beastmaster holds both mines as extras, no trade, owner 2026-11-10):
+#   net plus one (Detonate Mines) in Ranger and Deadeye, plus two (both mines) in the Beastmaster
+PINNED = {'Warrior': 21, 'Juggernaut': 20, 'Berserker': 20, 'Ranger': 21, 'Deadeye': 20, 'Beastmaster': 22,
           'Mystic': 18, 'Elementalist': 16, 'Illusionist': 22, 'Thief': 18, 'Ninja': 18, 'Samurai': 20, 'Monk': 15,
           'Shadowfist': 15, 'Iron Sage': 17, 'Necromancer': 21, 'Lich': 21, 'Bone Lord': 23, 'Templar': 15,
           'Inquisitor': 15, 'Sentinel': 18}
@@ -110,7 +113,7 @@ for v in ORDER:
 for name in C.UNIVERSAL:
     if any(name in kit[v] for v in ORDER):
         check(all(name in kit[v] for v in ORDER), name + ': every class has it')
-check(len(C.RETIRED_IDS) == 69, 'retired: %d' % len(C.RETIRED_IDS))
+check(len(C.RETIRED_IDS) == 70, 'retired: %d' % len(C.RETIRED_IDS))
 # Ward of the Mind, the classic mana shield (owner 2026-10-21): the Mystic, Necromancer and Ranger lines only, outside
 # the 15; add_vocations.py gives those nine the spell (the Necromancer through LINE_STOCK_SPELLS, not its conversion)
 import add_vocations as AV  # noqa: E402

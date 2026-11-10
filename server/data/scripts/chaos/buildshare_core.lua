@@ -37,6 +37,18 @@
 ChaosBuildShare = ChaosBuildShare or {}
 local B = ChaosBuildShare
 
+-- the keystone cap of an import (O447) is the passive tree core's, loaded on first use (the client's tests read this file
+-- from the repo root and only encode and decode)
+local function treeCore()
+	if not ChaosPassiveTreeConfig then
+		dofile("data/scripts/chaos/passivetree_config.lua")
+	end
+	if not ChaosPassiveTreeCore then
+		dofile("data/scripts/chaos/passivetree_core.lua")
+	end
+	return ChaosPassiveTreeCore
+end
+
 B.PREFIX = "CB"
 B.VERSION = 6
 B.READS = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true, [6] = true} -- every version ever handed out
@@ -377,6 +389,13 @@ function B.plan(tree, build, ctx)
 			wanted = wanted - 1
 			reworked = reworked + 1
 		end
+	end
+
+	-- the keystone cap (O447): a code that holds more keystones than a character may is refused as a whole, never trimmed
+	-- (a code made before the rule can hold 4 or more). What counts is the code's own node set, whatever the points owned.
+	local capOk, capText = treeCore().checkKeystones(tree, set)
+	if not capOk then
+		return nil, capText
 	end
 
 	local current = {}

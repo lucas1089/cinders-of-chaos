@@ -24,6 +24,10 @@
 --   ChaosCards.push(player, plan, force)   card borders: the card ids that are on go to the client (extended opcode 172
 --        ChaosOpcodes.cardState, action "state", client game_cardborder) at login, when the client asks ("sync") and whenever
 --        the set changes (a card turned on or off, a reconcile that turned one off); an unchanged set is not sent again.
+--   card sets (O453)   three cards of one element (one per convert line the class casts) give a small set bonus: the cache
+--        of each player's set is refreshed with every reconcile (ChaosCards.refreshSet, called by push), the bonus is applied by
+--        the same ChaosCardsHit event (ChaosCards.applySet, for the hits a player deals); the player is told when the set
+--        changes (use) and in Character Info. cards_core.lua has the rules.
 -- No storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866. One opcode, 172.
 -- Lua 5.1 / LuaJIT. Assumed engine API (TFS 1.4): Player:getSlotItem, Container:getSize/getItem, Item:getId/getActionId/
 -- setActionId/moveTo/isContainer/getName.
@@ -120,6 +124,172 @@ function M.reconcile(player, st, quiet)
 	return plan
 end
 
+-- ---------------------------------------------------------------- card sets (O453)
+M.sets = {} -- player id -> the state of the player's card sets (K.setState) as of the last reconcile
+M.holyAt = {} -- player id -> when the Holy set last healed (ms)
+
+local function nowMs()
+	if os.mtime then
+		return os.mtime()
+	end
+	return os.time() * 1000
+end
+
+-- the vocation id of a player (nil when the engine has none: a test player, a creature that is no player)
+local function vocationId(player)
+	local ok, id = pcall(function() return player:getVocation():getId() end)
+	return ok and tonumber(id) or nil
+end
+
+-- the state of the sets for a reconcile plan; the cache keeps it. Returns the old state, the new one.
+function M.refreshSet(player, plan)
+	local pid = player:getId()
+	local before = M.sets[pid]
+	local className = K.classNameOf(vocationId(player))
+	local after = className and K.planSetState(plan, className) or nil
+	M.sets[pid] = after
+	return before, after
+end
+
+-- the element of the set that is on for a player and a hit of this combat type, nil for none
+local ELEMENT_BY_TYPE = {}
+local function elementOfType(ctype)
+	if next(ELEMENT_BY_TYPE) == nil then
+		for name, const in pairs({Fire = "COMBAT_FIREDAMAGE", Earth = "COMBAT_EARTHDAMAGE", Ice = "COMBAT_ICEDAMAGE",
+				Holy = "COMBAT_HOLYDAMAGE", Death = "COMBAT_DEATHDAMAGE", Energy = "COMBAT_ENERGYDAMAGE"}) do
+			local v = rawget(_G, const)
+			if v then
+				ELEMENT_BY_TYPE[v] = name
+			end
+		end
+	end
+	return ELEMENT_BY_TYPE[ctype]
+end
+
+local function isPlayerObject(c)
+	return c ~= nil and type(c.isPlayer) == "function" and c:isPlayer() == true
+end
+
+-- does a set of the player's state have this element on
+local function setOn(state, element)
+	if not state then
+		return false
+	end
+	for _, a in ipairs(state.active) do
+		if a.element == element then
+			return true
+		end
+	end
+	return false
+end
+
+-- run fn(...) a moment later (the engine: addEvent), at once without one (tests)
+local function later(fn, ...)
+	if type(addEvent) == "function" then
+		addEvent(fn, 0, ...)
+	else
+		fn(...)
+	end
+end
+
+-- the creature behind an id a moment later (the engine's Creature is a callable table; none in tests: the object itself)
+local function creatureById(cid, fallback)
+	if rawget(_G, "Creature") ~= nil then
+		local ok, c = pcall(Creature, cid)
+		return ok and c or nil
+	end
+	return fallback
+end
+
+-- the effects of a set that are not a change of the hit: slow, poison, leech, heal. attacker dealt `dealt` (positive) of
+-- `element` to target.
+local function setEffects(attackerId, targetId, element, dealt, attackerFallback, targetFallback)
+	local attacker = creatureById(attackerId, attackerFallback)
+	local target = creatureById(targetId, targetFallback)
+	if not attacker or not target then
+		return
+	end
+	local b = K.setBonus(element)
+	local vsPlayer = isPlayerObject(target)
+	if b.kind == "slow" then
+		local pct, ms = K.setSlow(element, vsPlayer)
+		if pct and rawget(_G, "ChaosSpell") and ChaosSpell.slow then
+			ChaosSpell.slow(target, ms, pct)
+		end
+	elseif b.kind == "poison" then
+		local tick = math.floor(dealt * b.pct * K.setScale(vsPlayer) / 100 / b.ticks + 1e-6)
+		if tick >= 1 and Condition and rawget(_G, "CONDITION_POISON") then
+			local c = Condition(CONDITION_POISON)
+			c:setParameter(CONDITION_PARAM_OWNER, attacker:getId())
+			c:setParameter(CONDITION_PARAM_DELAYED, true)
+			c:addDamage(b.ticks, 1000, -tick)
+			target:addCondition(c)
+		end
+	elseif b.kind == "leech" then
+		local n = K.setLeech(element, dealt, attacker:getMaxHealth())
+		if n > 0 and attacker:getHealth() > 0 then
+			attacker:addHealth(n)
+		end
+	elseif b.kind == "heal" then
+		local pid = attacker:getId()
+		local now = nowMs()
+		if now - (M.holyAt[pid] or -1e12) >= b.cooldownMs and attacker:getHealth() > 0 then
+			local n = K.setHeal(element, attacker:getMaxHealth())
+			if n > 0 then
+				M.holyAt[pid] = now
+				attacker:addHealth(n)
+			end
+		end
+	end
+end
+M.setEffects = setEffects
+
+-- (pd, pt, sd, st) after the set bonus of the player who deals the hit: the damage part of the set's element (Fire: more
+-- damage) and the effects that follow the hit (Energy slow, Earth poison, Death leech, Holy heal). A hit of another element, a
+-- player without a set and a damage over time tick are untouched (the event never calls this for a tick).
+function M.applySet(attacker, creature, pd, pt, sd, st)
+	local state = M.sets[attacker:getId()]
+	if not state or not state.element or creature:getId() == attacker:getId() then
+		return pd, pt, sd, st
+	end
+	local vsPlayer = isPlayerObject(creature)
+	local dealt = 0
+	local effect
+	for _, part in ipairs({{"pd", pd, pt}, {"sd", sd, st}}) do
+		local element = part[3] and elementOfType(part[3])
+		if element and part[2] and part[2] < 0 and setOn(state, element) then
+			local b = K.setBonus(element)
+			if b.kind == "damage" then
+				local extra = K.setExtra(element, "damage", part[2], vsPlayer)
+				if part[1] == "pd" then
+					pd = pd + extra
+				else
+					sd = sd + extra
+				end
+				dealt = dealt + math.abs(part[2] + extra)
+			else
+				dealt = dealt + math.abs(part[2])
+			end
+			effect = element
+		end
+	end
+	if effect and dealt > 0 then
+		local kind = K.setBonus(effect).kind
+		if kind ~= "damage" then
+			later(setEffects, attacker:getId(), creature:getId(), effect, dealt, attacker, creature)
+		end
+	end
+	return pd, pt, sd, st
+end
+
+-- tell the player when the set changed (a card went on or off)
+local function announceSet(player, before, after)
+	local text = K.setMessage(langOf(player), before, after)
+	if text then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
+	end
+end
+
 -- ---------------------------------------------------------------- card borders (client game_cardborder)
 local OPCODE = ChaosOpcodes.cardState
 local lastSent = {} -- player id -> K.stateKey of the set the client was last told
@@ -132,6 +302,7 @@ end
 
 -- tell the client which cards are on; only when the set changed since the last message (or force). true when sent.
 function M.push(player, plan, force)
+	M.refreshSet(player, plan)
 	local ids = K.activeIds(plan)
 	local key = K.stateKey(ids)
 	local pid = player:getId()
@@ -234,7 +405,9 @@ function M.use(player, item)
 	end
 	-- the set of cards on may have changed: the client redraws its borders
 	if action == "on" or action == "move" or action == "off" then
+		local before = M.sets[player:getId()]
 		M.push(player, M.reconcile(player, M.scan(player), true))
+		announceSet(player, before, M.sets[player:getId()])
 	end
 	return true
 end
@@ -244,6 +417,7 @@ ChaosCommands.register("deck", function(player)
 	local st = M.scan(player)
 	M.push(player, M.reconcile(player, st, true))
 	st.sellers = nil
+	st.vocId = vocationId(player)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, K.statusText(langOf(player), st))
 end)
 
@@ -390,10 +564,10 @@ function hit.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 		return pd, pt, sd, st
 	end
 	local serial, spellId = ChaosSupports.ctxDecode(attacker:getStorageValue(ChaosSupports.config.storageContext))
-	if not serial or not C.byTarget[spellId] then
-		return pd, pt, sd, st
+	if serial and C.byTarget[spellId] then
+		pd, pt, sd, st = M.applyHit(attacker, creature, spellId, pd, pt, sd, st)
 	end
-	return M.applyHit(attacker, creature, spellId, pd, pt, sd, st)
+	return M.applySet(attacker, creature, pd, pt, sd, st)
 end
 hit:register()
 
@@ -426,6 +600,8 @@ login:register()
 local logout = CreatureEvent("ChaosCardsLogout")
 function logout.onLogout(player)
 	lastSent[player:getId()] = nil
+	M.sets[player:getId()] = nil
+	M.holyAt[player:getId()] = nil
 	return true
 end
 logout:type("logout")

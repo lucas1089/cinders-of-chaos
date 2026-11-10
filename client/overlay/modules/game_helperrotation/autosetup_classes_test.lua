@@ -64,7 +64,8 @@ for name, id in pairs(CLASSES) do
   classes = classes + 1
   local want = 0
   for _ in pairs(attack[id]) do want = want + 1 end
-  eq(want, 13, name .. ': 13 attack spells in the data')
+  -- 13 attack spells per class; the Beastmaster has 14 (the mines as an extra, owner 2026-11-10: check_attack_counts.py EXCEPTIONS)
+  eq(want, name == 'Beastmaster' and 14 or 13, name .. ': attack spells in the data')
   -- the rotation at a high level, with and without the client folding ascension ids onto a base class
   for _, translate in ipairs({ false, function(v) return v == 12 and 11 or (v == 13 and 11 or 0) end }) do
     local sel = A.select(id, 2000, canCastFor(id, 2000, translate or function() return 0 end), { topUp = true })
@@ -94,7 +95,7 @@ for name, id in pairs(CLASSES) do
   for sid in pairs(reach) do eq(attack[id][sid], true, name .. ': preset spell ' .. sid .. ' is an attack spell of the class') end
   -- a character that can cast only some (not learned yet) still gets what it can, never fewer than it can cast up to 5
   local low = 0
-  for sid in pairs(attack[id]) do if entries[sid].level <= 150 then low = low + 1 end end
+  for sid in pairs(attack[id]) do if not CAST_BY_HAND[sid] and entries[sid].level <= 150 then low = low + 1 end end
   local sel = A.select(id, 150, canCastFor(id, 150, function() return 0 end), { topUp = true })
   eq(sel and #sel.ids or 0, math.min(low, A.MAX_SPELLS), name .. ': level 150 rotation holds what the class can cast')
   -- the ultimate is learned at level 1200: not before, then on top of the 5 at any level above (also without topping up)

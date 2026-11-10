@@ -56,6 +56,11 @@ return {
 		-- (Illusionist), 0.994 (Necromancer) and 0.924 (Beastmaster, was 0.89) against the smaller pool; the pins round up
 		["Illusionist@100"] = {burst = 1.02},
 		["Beastmaster@100"] = {burst = 0.93},
+		-- O455: the Deadeye traded Skewering Line for Seeker Mine, so its level 100 set has 4 spells instead of 5, like the
+		-- Beastmaster's. The first 3 s hold the same two casts as before. The set's average fell about 14% in rotation_sim.py,
+		-- while the damage per second read here is still the measured one of the old kit. The share rises from 0.83 to 0.97
+		-- with no more damage in the opening. Measure the Deadeye again, then drop this row
+		["Deadeye@100"] = {burst = 0.98},
 
 		-- O444: duels, damage race. Wins: the Necromancer line is the highest damage class of its level with a mana shield pool two
 		-- to four times the others' (Ward of the Mind: health plus mana, survival_model.py; the model does not spend that mana on

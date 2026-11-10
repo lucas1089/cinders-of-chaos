@@ -819,5 +819,451 @@ end
 eq(K.bonusText("en", 27502), "While on, Doomtide and Blade Flurry deal Fire damage instead. With several cards of these spells on, the highest one counts.", "two spells")
 eq(K.bonusText("pt-BR", 27502), "Ativa, Doomtide e Blade Flurry causam dano de Fogo no lugar. Com várias cartas destas magias ativas, vale a mais alta.", "two spells pt-BR")
 
+-- ---------------------------------------------------------------- card sets (O453)
+-- Three cards of one element, one per convert line the class casts, give a small bonus. The rules are cards_core.lua's pure
+-- functions (set element of a card, the effective cards of a class, the state, the numbers); the hit is cards.lua's glue.
+do
+	local S = C.sets
+	local names = {Fire = 1, Earth = 1, Death = 1, Holy = 1, Energy = 1}
+	-- the config: five sets, one tier, one set at a time with five slots, the damage parts at most 6%
+	eq(S.need, 3, "3 cards make a set") eq(S.maxSets, 1, "five slots allow one set of 3")
+	ok(S.maxSets * S.need <= C.maxActive, "the sets fit the slots")
+	for name in pairs(S.by) do ok(names[name], "a set for " .. name .. " is one of the five") end
+	for name in pairs(names) do ok(S.by[name] ~= nil, name .. " has its bonus") end
+	ok(S.by.Ice == nil and S.by.Drown == nil, "Ice (no class has three lines) and Drown (one line) have no set")
+	eq(#S.order, 5, "five sets in order")
+	local kinds = {}
+	for _, name in ipairs(S.order) do
+		local b = S.by[name]
+		ok(b ~= nil, name .. " is in the order")
+		ok(not kinds[b.kind], name .. ": each set has its own kind of effect (" .. b.kind .. ")")
+		kinds[b.kind] = true
+		if b.kind == "damage" or b.kind == "poison" then
+			ok(b.pct > 0 and b.pct <= S.damagePartMax, name .. ": the damage part is at most " .. S.damagePartMax .. "%")
+		end
+	end
+	eq(S.damagePartMax, 6, "the cap of a damage part is 6%")
+	-- smaller than the snare of the same element (snares_config.lua)
+	local sn = dofile("data/scripts/chaos/snares_config.lua").effects
+	ok(S.by.Fire.pct < sn.burnShare * 100, "Fire: smaller than the burn of the snare")
+	ok(S.by.Energy.percent < sn.slowPercent * 100 and S.by.Energy.ms < sn.slowMs, "Energy slow: weaker and shorter than the snare's")
+	ok(S.by.Earth.pct < sn.poisonShare * 100 and S.by.Earth.ticks <= sn.poisonTicks, "Earth: less poison than the snare")
+	ok(S.by.Death.pct < sn.deathLeech * 100, "Death: less leech than the snare")
+	ok(S.by.Holy.pct < sn.holyHeal * 100, "Holy: less heal than the snare, and only the owner")
+	eq(S.pvpScale, 1 / 3, "PvP: a third, like the unique passives")
+	eq(dofile("data/scripts/chaos/unique_passives_config.lua").pvpScale, S.pvpScale, "the same PvP scale as the unique passives")
+	local oldMax = C.maxActive
+	C.maxActive = 6
+	eq(math.floor(C.maxActive / S.need), 2, "with six slots two sets would fit")
+	C.maxActive = oldMax
+
+	-- the set element of every card: derived from the convert element, one pure function
+	local withEl, noEl, perEl = 0, 0, {}
+	for id, c in pairs(C.cards) do
+		local el = K.setElement(id)
+		if c.kind == "convert" and c.element and S.by[c.element] then
+			eq(el, c.element, "card " .. id .. " counts for " .. tostring(c.element))
+			withEl = withEl + 1
+			perEl[el] = (perEl[el] or 0) + 1
+		else
+			eq(el, nil, "card " .. id .. " (" .. c.kind .. ", " .. tostring(c.element) .. ") belongs to no set")
+			noEl = noEl + 1
+		end
+		eq(K.setElement(id), K.setElement(tostring(id)), "the id as text gives the same answer")
+	end
+	eq(withEl + noEl, 76, "every card is told") eq(K.setElement(1), nil, "not a card") eq(K.setElement(nil), nil, "no card")
+	-- 44 convert cards: 6 Ice and 1 Drown have no set
+	eq(withEl, 44 - 6 - 1, "37 cards have a set element")
+	eq(perEl.Fire, 7, "7 Fire cards") eq(perEl.Earth, 6, "6 Earth cards") eq(perEl.Death, 11, "11 Death cards")
+	eq(perEl.Holy, 6, "6 Holy cards") eq(perEl.Energy, 7, "7 Energy cards")
+
+	-- the class table of the lines equals what the spell data says
+	for f, fam in ipairs(C.families) do
+		if fam.kind == "convert" then
+			local cfg = {}
+			for _, n in ipairs(C.lineClasses[fam.spell] or {}) do cfg[n] = true end
+			for n in pairs(lineClasses[f]) do ok(cfg[n], fam.spell .. ": " .. n .. " casts it, the table lists it") end
+			for n in pairs(cfg) do ok(lineClasses[f][n], fam.spell .. ": the table lists " .. n .. ", who casts it") end
+		else
+			ok(C.lineClasses[fam.spell] == nil, fam.spell .. ": no line table for a card with no element")
+		end
+	end
+
+	local function card(line, tier) return C.families[line].ids[tier] end
+	local function elementCard(line, el)
+		for t = 1, 4 do if C.families[line].elements[t] == el then return C.families[line].ids[t] end end
+	end
+	local function lineOf(spell)
+		for f, fam in ipairs(C.families) do if fam.spell == spell then return f end end
+	end
+	local function on(...)
+		local set = {}
+		for _, id in ipairs({...}) do set[id] = true end
+		return function(id) return set[id] == true end
+	end
+	local gyre, rime = lineOf("Reaping Gyre"), lineOf("Rime Bloom")
+	local frost, earthb = lineOf("Frostfall Rune"), lineOf("Earthbreaker")
+	local sanct, crypt, doom = lineOf("Sanctum Burst"), lineOf("Frozen Crypt"), lineOf("Doomtide")
+	local tempest, pyre = lineOf("Tempest Fan"), lineOf("Pyre Torrent")
+
+	-- reachability: per class and element the lines that carry it (printed by `luajit tests/cards_test.lua --sets`)
+	local reach, rows2 = {}, {}
+	for _, row in ipairs(C.classes) do
+		local list, lines = {}, 0
+		for _, el in ipairs(S.order) do
+			local n = 0
+			for f, fam in ipairs(C.families) do
+				if fam.kind == "convert" and K.castsLine(row.name, fam) and elementCard(f, el) then n = n + 1 end
+			end
+			if n >= S.need then list[#list + 1] = el end
+			reach[row.name .. el] = n
+		end
+		for _, fam in ipairs(C.families) do
+			if fam.kind == "convert" and K.castsLine(row.name, fam) then lines = lines + 1 end
+		end
+		ok(#list >= 1, row.name .. ": a set is reachable")
+		ok(K.classNameOf(row.id) == row.name, row.name .. ": the name of the vocation id")
+		ok(reach[row.name .. "Death"] >= S.need, row.name .. ": the Death set is reachable")
+		eq(lines, row.name == "Elementalist" and 6 or 3, row.name .. ": convert lines")
+		rows2[#rows2 + 1] = row.name .. " (" .. lines .. " lines): " .. table.concat(list, ", ")
+		eq(reach[row.name .. "Holy"] >= S.need, row.name == "Elementalist", row.name .. ": Holy set only for the Elementalist")
+	end
+	if arg and arg[1] == "--sets" then print(table.concat(rows2, "\n")) end
+	eq(K.classNameOf(99), nil, "no class") eq(K.classNameOf(nil), nil, "no vocation")
+	-- the facts the design rests on
+	eq(reach.WarriorEarth, 3, "Warrior line: Earth set") eq(reach.WarriorFire, 2, "Warrior line: no Fire set")
+	eq(reach.RangerFire, 3, "Ranger line: Fire set") eq(reach.MysticEnergy, 3, "Mystic: Energy set")
+	eq(reach.ElementalistHoly, 5, "Elementalist: Holy set") eq(reach.MysticHoly, 2, "the Mystic has two Holy lines")
+
+	-- detection: Warrior (Reaping Gyre, Frostfall Rune, Earthbreaker), Death at tier 3, 4, 4
+	local d3, d4, d5 = card(gyre, 3), card(frost, 4), card(earthb, 4)
+	eq(C.cards[d3].element, "Death", "Gyre tier 3 is Death") eq(C.cards[d4].element, "Death", "Frostfall tier 4 is Death")
+	eq(C.cards[d5].element, "Death", "Earthbreaker tier 4 is Death")
+	local st3 = K.setState(on(d3, d4, d5), "Warrior")
+	eq(st3.element, "Death", "3 Death cards: the Death set is on") eq(st3.count, 3, "with 3 cards") eq(#st3.active, 1, "one set")
+	local st2 = K.setState(on(d3, d4), "Warrior")
+	eq(st2.element, nil, "2 cards: no set") eq(#st2.active, 0, "no active set") eq(st2.best.element, "Death", "progress: Death")
+	eq(st2.best.count, 2, "2 of 3")
+	eq(K.setState(on(), "Warrior").best, nil, "no card: no progress")
+	eq(K.setState(on(d3, d4, d5), nil).element, nil, "no class: no set")
+	eq(K.setState(on(d3, d4, d5), "Nobody").element, nil, "a name that is no class: no set")
+	-- 4 and 5 cards: one tier only (Elementalist, 6 lines)
+	local e1, e2, e3, e4, e5 = elementCard(rime, "Death"), elementCard(tempest, "Death"), elementCard(frost, "Death"),
+		elementCard(doom, "Death"), elementCard(pyre, "Death")
+	local s4 = K.setState(on(e1, e2, e3, e4), "Elementalist")
+	local s5 = K.setState(on(e1, e2, e3, e4, e5), "Elementalist")
+	eq(s4.element, "Death", "4 cards: on") eq(s5.element, "Death", "5 cards: on") eq(s4.count, 4, "count 4") eq(s5.count, 5, "count 5")
+	eq(K.setBonus(s4.element), K.setBonus(s5.element), "the same bonus with 4 and 5 cards: one tier only")
+	-- a card of a line the class does not cast does not count (Rime Bloom is not a Warrior spell)
+	local rimeDeath = elementCard(rime, "Death")
+	eq(K.setState(on(d3, d4, rimeDeath), "Warrior").element, nil, "a card of a spell the class cannot cast counts for nothing")
+	eq(K.setState(on(d3, d4, rimeDeath), "Warrior").best.count, 2, "only the two castable cards count")
+	-- a card with no element (heal, melee, widen, bow, legendary) counts for no set
+	eq(K.setState(on(d3, d4, 27526, 27514, 27538, 27547), "Warrior").element, nil, "cards with no element make no set")
+	-- the same line twice: the highest card decides, the lower one counts for nothing ("the element changed by another card")
+	local lowEarth = card(frost, 2)
+	eq(C.cards[lowEarth].element, "Earth", "Frostfall tier 2 is Earth")
+	local stTwice = K.setState(on(d3, d4, d5, lowEarth), "Warrior")
+	eq(stTwice.count, 3, "a lower card of Frostfall does not add a card") eq(stTwice.counts.Earth, nil, "and its Earth counts for nothing")
+	local stOver = K.setState(on(card(gyre, 1), card(frost, 4), card(frost, 2), d5), "Warrior")
+	eq(stOver.counts.Death, 2, "Gyre tier 1 is Earth: Frostfall and Earthbreaker are the two Death cards")
+	eq(stOver.counts.Earth, 1, "the Frostfall Earth card is overridden by its tier 4")
+	-- a higher card of another element takes the line out of the set
+	local gyreEnergy = card(gyre, 4)
+	local stHigh = K.setState(on(gyreEnergy, d3, d4, d5), "Warrior")
+	eq(stHigh.counts.Death, 2, "Gyre tier 3 and 4 on: tier 4 (Energy) wins, the Death count is 2")
+	eq(stHigh.element, nil, "and no set is on")
+	-- the Drown card of Tempest Fan has no element: the line counts for nothing
+	local drown = card(tempest, 3)
+	eq(C.cards[drown].element, "Drown", "Tempest Fan tier 3 is Drown")
+	eq(K.setState(on(drown, e1, e3), "Elementalist").counts.Drown, nil, "Drown is no set element")
+	-- two sets at once only if the slots allow 6 cards: five slots, one set; with room for two, both
+	local fire1, fire2, fire3 = elementCard(rime, "Fire"), elementCard(frost, "Fire"), elementCard(doom, "Fire")
+	local both = on(fire1, fire2, fire3, e2, e5, elementCard(crypt, "Death"))
+	eq(#K.setState(both, "Elementalist").active, 1, "six cards in two sets: only one set is on (five slots)")
+	S.maxSets = 2
+	local sBoth2 = K.setState(both, "Elementalist")
+	eq(#sBoth2.active, 2, "with room for two sets both are on")
+	ok(sBoth2.active[1].element ~= sBoth2.active[2].element, "two elements")
+	S.maxSets = 1
+	-- the most cards first, then the order
+	local sTie = K.setState(on(fire1, fire2, fire3, e2, e5, elementCard(crypt, "Death"), e1), "Elementalist")
+	eq(sTie.active[1].element, "Death", "the set with the most cards first")
+
+	-- the keys: a change of the set is news, a plain progress of one card is not
+	eq(K.setKey(nil), "", "no state") eq(K.setKey(st3), "on:Death", "a set on") eq(K.setKey(st2), "progress:Death2", "2 cards")
+	eq(K.setKey(K.setState(on(d3), "Warrior")), "", "one card is not news")
+	-- the texts, every set, both languages
+	for _, name in ipairs(S.order) do
+		for _, lang in ipairs({"en", "pt-BR"}) do
+			local t = K.setBonusText(lang, name)
+			ok(#t > 20 and not t:find("%%[sd]"), "set text " .. name .. " " .. lang .. ": " .. t)
+		end
+	end
+	eq(K.setBonusText("en", "Fire"), "Your Fire damage is 4% higher.", "Fire text")
+	eq(K.setBonusText("en", "Energy"), "Your Energy hits slow the target by 15% for 1.5 seconds.", "Energy text")
+	eq(K.setBonusText("en", "Earth"), "Your Earth hits poison the target for 4% of the hit over 4 seconds.", "Earth text")
+	eq(K.setBonusText("en", "Death"), "Your Death hits heal you for 1.5% of the damage, at most 1% of your maximum health a hit.", "Death text")
+	eq(K.setBonusText("en", "Holy"), "Your Holy hits heal you for 0.5% of your maximum health, at most once every 3 seconds.", "Holy text")
+	eq(K.setBonusText("pt-BR", "Fire"), "Seu dano de Fogo é 4% maior.", "Fire text pt-BR")
+	eq(K.setBonusText("en", "Ice"), "", "Ice has no set text")
+	eq(K.setLine("en", st3), "Card set Death is on with 3 cards: Your Death hits heal you for 1.5% of the damage, at most 1% of your maximum health a hit.",
+		"the line of a set that is on")
+	ok(K.setLine("en", st2):find("Card set Death: 2 of 3 cards.", 1, true) ~= nil, "the progress line")
+	ok(K.setLine("pt-BR", st2):find("Conjunto de cartas Morte: 2 de 3 cartas.", 1, true) ~= nil, "the progress line in pt-BR: " .. K.setLine("pt-BR", st2))
+	ok(K.setLine("en", K.setState(on(), "Warrior")):find("No card set yet.", 1, true) ~= nil, "no card: how to get a set")
+	eq(K.setMessage("en", nil, nil), nil, "nothing changed")
+	eq(K.setMessage("en", st2, st2), nil, "the same progress")
+	ok(K.setMessage("en", st2, st3):find("is on with 3 cards", 1, true) ~= nil, "a set turned on is told")
+	eq(K.setMessage("en", st3, st2), "Card set Death is off.", "a set turned off is told")
+	ok(K.setMessage("pt-BR", st3, st2):find("desativado", 1, true) ~= nil, "off in pt-BR")
+	-- the card texts name the set; the cards with no set element do not
+	ok(K.description("en", d3):find("It counts for the Death card set. With 3 cards of one element, one for each spell you cast, you get a bonus.", 1, true) ~= nil,
+		"a Death card names its set")
+	ok(K.description("en", drown):find("card set", 1, true) == nil, "the Drown card names no set")
+	ok(K.description("en", card(sanct, 2)):find("card set", 1, true) == nil, "an Ice card names no set")
+	ok(K.description("en", 27526):find("card set", 1, true) == nil, "the heal card names no set")
+	ok(K.description("en", 27547):find("card set", 1, true) == nil, "a legendary card names no set")
+	ok(K.description("pt-BR", d3):find("conjunto de cartas Morte", 1, true) ~= nil, "pt-BR card text names the set")
+	for id in pairs(C.cards) do ok(K.description("en", id):sub(-#K.HINT) == K.HINT, "description ends with the hint " .. id) end
+
+	-- the numbers, pure
+	eq(K.setExtra("Fire", "damage", -100, false), -4, "Fire: 4% more of a hit of 100") eq(K.setExtra("Fire", "damage", -1000, false), -40, "of 1000")
+	eq(K.setExtra("Fire", "damage", 100, false), 4, "the sign is kept") eq(K.setExtra("Fire", "damage", 0, false), 0, "no hit")
+	eq(K.setExtra("Fire", "damage", -100, true), -1, "PvP: a third of the bonus")
+	eq(K.setExtra("Fire", "damage", -1000, true), -13, "PvP: 13 of 1000 (4% / 3, rounded toward zero)")
+	eq(K.setExtra("Earth", "damage", -100, false), 0, "another kind has no damage part")
+	eq(K.setExtra("Earth", "poison", -100, false), -4, "Earth: poison 4% of the hit") eq(K.setExtra("Death", "damage", -100, false), 0, "Death: no damage part")
+	eq(K.setExtra("Ice", "damage", -100, false), 0, "Ice: nothing") eq(K.setExtra("Fire", "poison", -100, false), 0, "Fire has no poison part")
+	for _, name in ipairs({"Death", "Holy", "Energy"}) do
+		eq(K.setExtra(name, "damage", -100, false) + K.setExtra(name, "poison", -100, false), 0, name .. ": no damage part")
+	end
+	eq(K.setLeech("Death", 1000, 100000), 15, "Death: 1.5% of 1000") eq(K.setLeech("Death", 1000, 1000), 10, "at most 1% of the maximum health")
+	eq(K.setLeech("Death", -5, 1000), 0, "no damage no leech") eq(K.setLeech("Fire", 1000, 100000), 0, "Fire does not leech")
+	eq(K.setHeal("Holy", 20000), 100, "Holy: 0.5% of 20000") eq(K.setHeal("Death", 20000), 0, "Death does not heal this way")
+	local pct, ms = K.setSlow("Energy", false)
+	eq(pct, 0.15, "Energy: 15% slow") eq(ms, 1500, "for 1.5 s") eq(K.setSlow("Energy", true), nil, "no slow on a player")
+	eq(K.setSlow("Fire", false), nil, "Fire does not slow")
+	eq(K.setScale(true), 1 / 3, "PvP scale") eq(K.setScale(false), 1, "PvE scale")
+end
+
+-- the glue: the set follows the cards that are on, the hit event applies it, the player is told (mocked engine)
+do
+	local S = C.sets
+	local function lineOf(spell)
+		for f, fam in ipairs(C.families) do if fam.spell == spell then return f end end
+	end
+	local function elementCard(spell, el)
+		local fam = C.families[lineOf(spell)]
+		for t = 1, 4 do if fam.elements[t] == el then return fam.ids[t] end end
+	end
+	-- a player of a class with a Bronze Deck holding `ids`, none on yet
+	local function setPlayer(name, vocId, ids)
+		local p = mkPlayer(name)
+		p.getVocation = function() return {getId = function() return vocId end} end
+		p.isPlayer = function() return true end
+		p.health, p.maxHealth = 1000, 20000
+		p.getHealth = function(self) return self.health end
+		p.getMaxHealth = function(self) return self.maxHealth end
+		p.addHealth = function(self, n) self.healed = (self.healed or 0) + n self.health = self.health + n end
+		local deck = put(p.backpack, newItem(27632, {}, 5))
+		local items = {}
+		for i, id in ipairs(ids) do items[i] = put(deck, newItem(id)) end
+		return p, deck, items
+	end
+	local function target(isPlayer)
+		local t = {id = 1000 + #players, conditions = {}}
+		t.getId = function(self) return self.id end
+		t.isPlayer = function() return isPlayer == true end
+		t.isMonster = function() return not isPlayer end
+		t.addCondition = function(self, c) self.conditions[#self.conditions + 1] = c end
+		return t
+	end
+	local hitEvent = registered.ChaosCardsHit
+	local function hitOf(p, t, pd, pt, sd, st, origin)
+		return hitEvent.onHealthChange(t, p, pd, pt, sd, st or 0, origin or 2)
+	end
+
+	-- Ranger line (vocation 3): the Fire set is Sanctum Burst, Frostfall Rune and Dawnpiercer at tier 1
+	local f1, f2, f3 = elementCard("Sanctum Burst", "Fire"), elementCard("Frostfall Rune", "Fire"), elementCard("Dawnpiercer", "Fire")
+	local ranger, deck, it = setPlayer("Rae", 3, {f1, f2, f3})
+	local mon = target(false)
+	local a, b = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
+	eq(a, -100, "no card on: a Fire hit is untouched")
+	M.use(ranger, it[1])
+	ok(lastMsg(ranger):find("You turned on", 1, true) ~= nil, "one card: no set message, only the card's own")
+	M.use(ranger, it[2])
+	ok(lastMsg(ranger):find("Card set Fire: 2 of 3 cards.", 1, true) ~= nil, "two cards: the progress is told: " .. lastMsg(ranger))
+	a = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
+	eq(a, -100, "2 cards: no bonus")
+	M.use(ranger, it[3])
+	ok(lastMsg(ranger):find("Card set Fire is on with 3 cards: Your Fire damage is 4% higher.", 1, true) ~= nil, "three cards: the set is on: " .. lastMsg(ranger))
+	eq(M.sets[ranger:getId()].element, "Fire", "the cache says Fire")
+	-- the hit: the primary part, the secondary part, never another element
+	a, b = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
+	eq(a, -104, "Fire: 4% more (primary)") eq(b, COMBAT_FIREDAMAGE, "the type is kept")
+	local c, d
+	a, b, c, d = hitOf(ranger, mon, 0, COMBAT_PHYSICALDAMAGE, -200, COMBAT_FIREDAMAGE)
+	eq(c, -208, "Fire: 4% more (secondary part)") eq(a, 0, "the primary part stays")
+	a, b, c, d = hitOf(ranger, mon, -100, COMBAT_PHYSICALDAMAGE, -100, COMBAT_FIREDAMAGE)
+	eq(a, -100, "the physical part is untouched") eq(c, -104, "only the Fire part grows")
+	for name, ctype in pairs({Earth = COMBAT_EARTHDAMAGE, Ice = COMBAT_ICEDAMAGE, Holy = COMBAT_HOLYDAMAGE, Death = COMBAT_DEATHDAMAGE,
+			Energy = COMBAT_ENERGYDAMAGE, Physical = COMBAT_PHYSICALDAMAGE}) do
+		eq((hitOf(ranger, mon, -100, ctype, 0, 0)), -100, name .. " damage is never changed by the Fire set")
+	end
+	eq((hitOf(ranger, mon, 100, COMBAT_FIREDAMAGE, 0, 0)), 100, "a positive amount (a heal) is untouched")
+	eq((hitOf(ranger, mon, -100, COMBAT_HEALING, 0, 0)), -100, "a healing type is untouched")
+	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0, ORIGIN_CONDITION)), -100, "a damage over time tick is untouched")
+	eq((hitOf(ranger, target(true), -1000, COMBAT_FIREDAMAGE, 0, 0)), -1013, "PvP: a third of the bonus (13 of 1000)")
+	eq((ranger.getId and hitEvent.onHealthChange(ranger, ranger, -100, COMBAT_FIREDAMAGE, 0, 0, 2)), -100, "a hit on yourself is untouched")
+	eq((hitEvent.onHealthChange(mon, nil, -100, COMBAT_FIREDAMAGE, 0, 0, 2)), -100, "no attacker: untouched")
+	-- another player has no set
+	local other = setPlayer("Oz", 3, {f1})
+	eq((hitOf(other, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "a player with no set: untouched")
+	-- the convert card and the set together: Dawnpiercer turns a physical hit into Fire (the secondary part), then +4%
+	ranger.storage[ctxKey] = 5 * 1000 + 214
+	a, b, c, d = hitOf(ranger, mon, -100, COMBAT_PHYSICALDAMAGE, 0, 0)
+	eq(a, 0, "Dawnpiercer: the hit moved") eq(c, -104, "to Fire, and 4% more") eq(d, COMBAT_FIREDAMAGE, "as Fire")
+	ranger.storage[ctxKey] = -1
+
+	-- swapping a card: off turns the set off at once and says so; on again turns it on
+	M.use(ranger, it[3])
+	ok(lastMsg(ranger):find("Card set Fire: 2 of 3 cards.", 1, true) ~= nil or lastMsg(ranger):find("Card set Fire is off.", 1, true) ~= nil,
+		"a card off: the set is off: " .. lastMsg(ranger))
+	eq(M.sets[ranger:getId()].element, nil, "no set after the card went off")
+	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "the bonus is gone with the card")
+	M.use(ranger, it[3])
+	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -104, "the bonus is back with the card")
+	-- the same card twice: the second copy is refused, the count stays 3
+	local copy = put(ranger.backpack, newItem(f1))
+	M.use(ranger, copy)
+	eq(M.sets[ranger:getId()].count, 3, "a second copy of a card does not make a fourth card")
+	ok(lastMsg(ranger):find("Only one copy counts", 1, true) ~= nil, "the second copy is refused")
+	-- a card of the line with a higher tier of another element replaces it ("the element changed by another card")
+	local ice = elementCard("Sanctum Burst", "Ice")
+	local iceCopy = put(deck, newItem(ice))
+	M.use(ranger, iceCopy)
+	eq(M.sets[ranger:getId()].counts.Fire, 2, "Sanctum Burst Ice (tier 2) replaces its Fire card: 2 Fire cards")
+	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "no bonus when another card changed the element")
+	M.use(ranger, iceCopy)
+	eq(M.sets[ranger:getId()].counts.Fire, 3, "the Ice card off: Fire is back")
+	-- cards in the deck but off, loose, or not carried: no set
+	local q, qdeck, qit = setPlayer("Quin", 3, {f1, f2, f3})
+	M.use(q, qit[1]) M.use(q, qit[2])
+	local looseCard = put(q.backpack, newItem(f3))
+	eq(M.sets[q:getId()].count, nil, "two cards on: no set")
+	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "the third card is in the deck, off: no bonus")
+	M.sweep(q)
+	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "a loose card is no card on: no bonus")
+	-- a card that left the decks (dropped on death): the sweep turns it off and the bonus goes
+	M.use(q, qit[3])
+	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -104, "three cards on: the bonus")
+	qit[3].parent = nil
+	qdeck.kids = {qit[1], qit[2]}
+	M.sweep(q)
+	eq(M.sets[q:getId()].element, nil, "the card left the deck: the set is off after the sweep")
+	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "no bonus without the card")
+	-- the Character Info line
+	local info = status(ranger, "en")
+	ok(info:find("Card set Fire is on with 3 cards:", 1, true) ~= nil, "Character Info names the set: " .. info)
+	ok(status(q, "en"):find("Card set Fire: 2 of 3 cards.", 1, true) ~= nil, "Character Info shows the progress")
+	ok(status(mkPlayer("Nod"), "en"):find("No card set", 1, true) == nil, "a player with no class gets no set line")
+	ok(status(ranger, "pt-BR"):find("Conjunto de cartas Fogo ativo com 3 cartas:", 1, true) ~= nil, "pt-BR Character Info")
+	-- logout forgets the cache
+	registered.ChaosCardsLogout.onLogout(ranger)
+	eq(M.sets[ranger:getId()], nil, "logout clears the set")
+	-- login computes it again
+	registered.ChaosCardsLogin.onLogin(ranger)
+	eq(M.sets[ranger:getId()].element, "Fire", "login: the set is back")
+
+	-- Death leech (Warrior line, vocation 4): Gyre tier 3, Frostfall tier 4, Earthbreaker tier 4
+	local w, _, wit = setPlayer("Wil", 4, {elementCard("Reaping Gyre", "Death"), elementCard("Frostfall Rune", "Death"),
+		elementCard("Earthbreaker", "Death")})
+	for _, item in ipairs(wit) do M.use(w, item) end
+	eq(M.sets[w:getId()].element, "Death", "the Warrior's Death set")
+	w.healed = nil
+	local pd = hitOf(w, mon, -1000, COMBAT_DEATHDAMAGE, 0, 0)
+	eq(pd, -1000, "Death: the hit itself is not changed") eq(w.healed, 15, "Death: 1.5% of the damage dealt healed")
+	w.healed = nil
+	hitOf(w, mon, -1000, COMBAT_FIREDAMAGE, 0, 0)
+	eq(w.healed, nil, "a Fire hit does not leech")
+	w.maxHealth = 1000
+	hitOf(w, mon, -100000, COMBAT_DEATHDAMAGE, 0, 0)
+	eq(w.healed, 10, "the leech stops at 1% of the maximum health")
+	w.health = 0
+	w.healed = nil
+	hitOf(w, mon, -1000, COMBAT_DEATHDAMAGE, 0, 0)
+	eq(w.healed, nil, "a dead player is not healed")
+
+	-- Earth poison (Warrior line): Gyre tier 1, Frostfall tier 2, Earthbreaker tier 2
+	local ep, _, epit = setPlayer("Eve", 4, {elementCard("Reaping Gyre", "Earth"), elementCard("Frostfall Rune", "Earth"),
+		elementCard("Earthbreaker", "Earth")})
+	for _, item in ipairs(epit) do M.use(ep, item) end
+	eq(M.sets[ep:getId()].element, "Earth", "the Warrior's Earth set")
+	local conds = {}
+	Condition = function(kind)
+		local cnd = {kind = kind, params = {}}
+		function cnd:setParameter(k, v) self.params[k] = v end
+		function cnd:addDamage(n, every, per) self.ticks, self.every, self.per = n, every, per end
+		conds[#conds + 1] = cnd
+		return cnd
+	end
+	CONDITION_POISON, CONDITION_PARAM_OWNER, CONDITION_PARAM_DELAYED = 3, 1, 2
+	local pm = target(false)
+	eq((hitOf(ep, pm, -1000, COMBAT_EARTHDAMAGE, 0, 0)), -1000, "Earth: the hit itself is not changed")
+	eq(#pm.conditions, 1, "Earth: one poison on the target") eq(conds[1].ticks, 4, "over 4 seconds") eq(conds[1].every, 1000, "a tick a second")
+	eq(conds[1].per, -10, "4% of 1000 over 4 ticks: 10 a tick") eq(conds[1].params[1], ep:getId(), "owned by the player")
+	hitOf(ep, pm, -1000, COMBAT_FIREDAMAGE, 0, 0)
+	eq(#pm.conditions, 1, "a Fire hit does not poison")
+	hitOf(ep, pm, -1000, COMBAT_EARTHDAMAGE, 0, 0, ORIGIN_CONDITION)
+	eq(#pm.conditions, 1, "a poison tick does not poison again")
+	local pp = target(true)
+	hitOf(ep, pp, -1000, COMBAT_EARTHDAMAGE, 0, 0)
+	eq(conds[#conds].per, -3, "PvP: a third of the poison (3 a tick, rounded down)")
+	Condition = nil
+
+	-- Energy slow (Mystic, vocation 1): Rime Bloom tier 4, Frostfall Rune tier 3, Frozen Crypt tier 4
+	local sl = {}
+	ChaosSpell = {slow = function(t, ms, pct) sl[#sl + 1] = {t = t, ms = ms, pct = pct} end}
+	local my, _, myit = setPlayer("Mia", 1, {elementCard("Rime Bloom", "Energy"), elementCard("Frostfall Rune", "Energy"),
+		elementCard("Frozen Crypt", "Energy")})
+	for _, item in ipairs(myit) do M.use(my, item) end
+	eq(M.sets[my:getId()].element, "Energy", "the Mystic's Energy set")
+	eq((hitOf(my, mon, -1000, COMBAT_ENERGYDAMAGE, 0, 0)), -1000, "Energy: the hit itself is not changed")
+	eq(#sl, 1, "Energy: the target is slowed") eq(sl[1].ms, 1500, "for 1.5 s") eq(sl[1].pct, 0.15, "by 15%")
+	hitOf(my, mon, -1000, COMBAT_FIREDAMAGE, 0, 0)
+	eq(#sl, 1, "a Fire hit does not slow")
+	hitOf(my, target(true), -1000, COMBAT_ENERGYDAMAGE, 0, 0)
+	eq(#sl, 1, "no slow on a player")
+	ChaosSpell = nil
+
+	-- Holy heal (Elementalist, vocation 5): Rime Bloom, Tempest Fan, Doomtide at their Holy tier
+	local el, _, elit = setPlayer("Eli", 5, {elementCard("Rime Bloom", "Holy"), elementCard("Tempest Fan", "Holy"),
+		elementCard("Doomtide", "Holy")})
+	for _, item in ipairs(elit) do M.use(el, item) end
+	eq(M.sets[el:getId()].element, "Holy", "the Elementalist's Holy set")
+	local clock = 100000
+	local realMtime = os.mtime
+	os.mtime = function() return clock end
+	hitOf(el, mon, -1000, COMBAT_HOLYDAMAGE, 0, 0)
+	eq(el.healed, 100, "Holy: 0.5% of the maximum health")
+	hitOf(el, mon, -1000, COMBAT_HOLYDAMAGE, 0, 0)
+	eq(el.healed, 100, "once every 3 seconds: the second hit heals nothing")
+	clock = clock + 3000
+	hitOf(el, mon, -1000, COMBAT_HOLYDAMAGE, 0, 0)
+	eq(el.healed, 200, "3 seconds later: it heals again")
+	os.mtime = realMtime
+
+	-- the set cache of a class with no vocation id (a test player): no set, no error
+	local nv = mkPlayer("Nvi")
+	nv.isPlayer = function() return true end
+	local ndeck = put(nv.backpack, newItem(27632, {}, 5))
+	M.use(nv, put(ndeck, newItem(f1)))
+	eq(M.sets[nv:getId()], nil, "no vocation: no set state")
+	eq((hitOf(nv, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "no vocation: no bonus")
+	-- the event stays registered once, on the monsters a player attacks (the set needs no other event)
+	ok(registered.ChaosCardsHit and registered.ChaosCardsHit.onHealthChange, "the one hit event carries the set")
+end
+
 print(string.format("cards_test: %d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)
