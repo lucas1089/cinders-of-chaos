@@ -202,8 +202,9 @@ jobs:
           if [ ! -e "$exe" ]; then echo "::warning::HD-2D screenshots: no player at $exe"; ls -R build | head -20; exit 1; fi
           sudo chmod -R a+rX build
           sudo chmod a+x "$exe"
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa ffmpeg
+          # a bound on the package install: on 2026-11-10 it hung without a line of output until the job's 120 minutes ran out
+          sudo timeout 600 apt-get update -qq
+          sudo timeout 900 apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa ffmpeg
           pair=""
           if ls assets/things/things-1098.tar.xz.part* >/dev/null 2>&1; then
             (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts) && mkdir -p pair \
@@ -374,8 +375,8 @@ jobs:
           sudo chmod -R a+rX build
           sudo chmod a+x "$exe"
           # the tools of unity-live-check.yml (private MariaDB, numpy and luajit for the content install) and the player's (a virtual display, Mesa)
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq mariadb-server mariadb-client python3-numpy luajit xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa
+          sudo timeout 600 apt-get update -qq
+          sudo timeout 900 apt-get install -y -qq mariadb-server mariadb-client python3-numpy luajit xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa
           sudo systemctl stop mariadb || true
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd 2>/dev/null || true
           # the sprite pair: the one the screenshots step opened, else from the assets of that step
