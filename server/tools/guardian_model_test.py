@@ -107,6 +107,100 @@ finally:
     bal['hit']['oneHit'] = saved
 check(strict != levels and all(a >= b for a, b in zip(strict, levels)), 'a smaller share of the pool asks for more level')
 
+# ---------------------------------------------------------------- O478: the hit cap in the model
+# the share of a roll's average a ceiling leaves: E[min(X, cap)] / E[X], X spread evenly
+check(near(G.uniform_retention(0, 100, 100), 1.0), 'a cap at the top of the range leaves everything')
+check(near(G.uniform_retention(0, 100, 500), 1.0), 'a cap over the range leaves everything')
+check(near(G.uniform_retention(0, 300, 100), 2 * 100 / 300 - (100 / 300) ** 2), 'from 0 to 3 x the cap: 2 c / h - (c / h)^2 = 0.556')
+check(near(G.uniform_retention(100, 100, 50), 0.5), 'a fixed roll over the cap: cap / roll')
+check(near(G.uniform_retention(200, 400, 100), 100 / 300.0), 'a range wholly over the cap: cap / mean')
+check(near(G.uniform_retention(0, 100, 0), 0.0), 'a cap of 0 leaves nothing')
+prev = 1.0
+for cap in (90, 70, 50, 30, 10):
+    cur = G.uniform_retention(20, 100, cap)
+    check(cur <= prev, 'a lower cap never leaves more (%d)' % cap)
+    prev = cur
+
+# the cap block of the numbers dump and its check
+check(nums['cap'] == {'enabled': True, 'share': 0.6}, 'the dump has rift_config.lua guardian.hitCap: %s' % nums.get('cap'))
+check(G.check_cap(nums) == [], 'the stored cap passes: %s' % G.check_cap(nums))
+for label, patch, word in (('no block', None, 'no guardian.hitCap'), ('off', {'enabled': False, 'share': 0.6}, 'enabled is false'),
+                           ('not a boolean', {'enabled': 1, 'share': 0.6}, 'not a boolean'),
+                           ('share over one', {'enabled': True, 'share': 1.5}, 'not a share'),
+                           ('share 0', {'enabled': True, 'share': 0}, 'not a share'),
+                           ('share drift', {'enabled': True, 'share': 0.5}, 'hit.oneHit'),
+                           ('an unread key', {'enabled': True, 'share': 0.6, 'floor': 1}, 'keys the model does not read')):
+    drift = copy.deepcopy(nums)
+    if patch is None:
+        drift.pop('cap')
+    else:
+        drift['cap'] = patch
+    errors = G.check_cap(drift)
+    check(len(errors) >= 1 and any(word in e for e in errors), 'cap drift (%s) is reported: %s' % (label, errors))
+
+# the retention of the typical guardian: 1 with the cap off, under 1 where its hits reach the cap, 1 where they never do
+hrows = G.hit_rows()
+bal0 = nums['bal']
+d1 = G.preload([100, 500, 1000])
+t1 = nums['tiers'][0]
+mons, pool = S.scaled_monsters(), G.pool_rows()
+nb = G.M.dump([50])['balance']
+d0 = S.dump([1007])
+base1, hits1, marks1 = G.tier_inputs(1, bal0, d0, nb, mons, pool, nums)
+th1 = G.tier_hits(1, nums, bal0, d1, hrows)
+rows1 = G.class_rows(t1['minLevel'], bal0['split'], hits1, marks1)
+ret1 = G.retention(rows1, th1['typical'], nums)
+check(0.3 < ret1 < 0.9, 'tier 1 typical guardian at the entry level loses part of its damage to the cap: %.2f' % ret1)
+off = dict(nums, _nocap=True)
+check(G.retention(rows1, th1['typical'], off) == 1.0, '--nocap: retention 1')
+off2 = dict(nums, cap={'enabled': False, 'share': 0.6})
+check(G.retention(rows1, th1['typical'], off2) == 1.0, 'a switched-off cap: retention 1')
+looser = dict(nums, cap={'enabled': True, 'share': 1.2})
+check(G.retention(rows1, th1['typical'], looser) > ret1, 'a looser cap leaves more')
+tighter = dict(nums, cap={'enabled': True, 'share': 0.3})
+check(G.retention(rows1, th1['typical'], tighter) < ret1, 'a tighter cap leaves less')
+
+# the model's columns: the cap lowers the pressure and raises the seconds to die, never the other way; the model of before is whole
+for tr in (1, 5, 10):
+    capped = G.run_tier(tr, False, bal0, d0, nb, mons, pool, nums, None, hrows)
+    check(capped['med']['pressure'] <= capped['med0']['pressure'] + 1e-9, 'tier %d: the cap does not raise the pressure' % tr)
+    check(capped['med']['burst'] >= capped['med0']['burst'] - 1e-9, 'tier %d: the cap does not shorten the seconds to die' % tr)
+    check(0 < capped['ret'] <= 1.0, 'tier %d: retention in (0, 1]: %s' % (tr, capped['ret']))
+    before = G.run_tier(tr, False, bal0, d0, nb, mons, pool, dict(nums, _nocap=True), None, hrows)
+    check(before['ret'] == 1.0 and near(before['med']['pressure'], before['med0']['pressure']), 'tier %d: --nocap is the model of before' % tr)
+    check(near(before['med0']['pressure'], capped['med0']['pressure']), 'tier %d: the uncapped numbers are the same with or without' % tr)
+rt10 = G.run_tier(10, False, bal0, d0, nb, mons, pool, nums, None, hrows)
+check(rt10['ret'] > 0.97, 'tier 10: its guardian is far under the cap, nothing changes: %.3f' % rt10['ret'])
+rt1 = G.run_tier(1, False, bal0, d0, nb, mons, pool, nums, None, hrows)
+check(rt1['med']['pressure'] < bal0['limits']['pressure']['min'], 'tier 1 with the cap is under the pressure band (the named exception)')
+
+# the named exception: --check passes on the repo, and fails when the exception is stale or missing
+res = G.compute(False, [1])
+check(G.check(res) == [], 'tier 1 passes with the exception: %s' % G.check(res))
+stale = copy.deepcopy(res)
+stale['rows'][0]['med']['pressure'] = bal0['limits']['pressure']['min'] + 0.05
+check(any('stale' in e for e in G.check(stale)), 'a stale exception is reported')
+gone = copy.deepcopy(res)
+gone['bal']['limits']['pressureCapped'] = []
+check(any('outside' in e for e in G.check(gone)), 'without the exception tier 1 fails the band')
+low = copy.deepcopy(res)
+low['rows'][0]['med']['pressure'] = low['bal']['limits']['pressureCapped'][0]['min'] - 0.05
+check(any('outside' in e for e in G.check(low)), 'under the exception floor still fails')
+
+# --hits: the hit before and after the cap
+rows = G.capped_table([1, 3, 8])
+for r in rows:
+    for tag in ('biggest', 'quantile'):
+        name, before_share, after_share = r[tag]
+        check(near(after_share, min(before_share, r['share'])), 'tier %d %s: after = min(before, cap share)' % (r['tier'], tag))
+        check(after_share <= r['share'] + 1e-9, 'tier %d %s: never over the cap share' % (r['tier'], tag))
+check(rows[1]['biggest'][1] > 1.0 and rows[1]['biggest'][2] <= 0.6 + 1e-9, 'tier 3: the outlier pool monsters were over the pool, now at the cap')
+check(rows[2]['biggest'][2] == rows[2]['biggest'][1], 'tier 8: a hit under the cap is not cut')
+check(all(r['die'] >= r['die0'] - 1e-9 and r['press'] <= r['press0'] + 1e-9 for r in rows), 'the table columns move the right way')
+
+# the warn rule reads the uncapped hit: the stored levels do not move with the cap
+check(G.check_warn(nums) == [], 'the warn levels still hold with the cap in the config')
+
 if fails:
     print('guardian_model_test: %d failed' % fails)
     sys.exit(1)

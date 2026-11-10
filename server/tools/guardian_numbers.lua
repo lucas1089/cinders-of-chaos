@@ -126,6 +126,7 @@ out.hit = {maxTier = cfg.maxTier, types = cfg.packs.types, widenStep = cfg.widen
 	maxPlayers = cfg.maxPlayers, maxMods = cfg.key.maxMods, modWindow = cfg.modTiers.window, mods = mods,
 	critMult = cfg.keen.critMult, brands = cfg.brands}
 out.warn = cfg.warn
+out.cap = cfg.guardian.hitCap -- O478: the cap of one guardian hit (rift_config.lua), the model's retention step reads it
 bal.legacy = nil
 out.bal = bal
 print(json(out))
