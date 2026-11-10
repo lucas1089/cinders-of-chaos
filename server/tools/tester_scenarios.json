@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 66,
   "out": 38,
-  "passive": 101,
+  "passive": 102,
   "place": 15,
   "staff": 17
  },
@@ -11887,6 +11887,15 @@
    "opcodes": [
     "kiteWalk"
    ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "launch": {
+   "files": [
+    "chaos_constants.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
