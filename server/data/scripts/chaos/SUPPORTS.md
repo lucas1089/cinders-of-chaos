@@ -146,6 +146,14 @@ Then the usual files step copies `scripts/chaos/supports.lua`, `lib/chaos_suppor
   Mine (kind "area" by `kindOverride`) picks the snare's element. A snare's hits come later from a scheduler that uses
   `ChaosSupportsSpell.rawAddEvent` (no cast context), so the other supports do not act on them.
 
+## Spell modifier masteries (O451)
+
+A mastery effect of the passive tree gives one named spell a free support effect (`data/lib/chaos_spell_masteries_config.lua`: 20
+choices, the Common rune at 75% in its percent field, no socket). `ChaosSupports.spellEffects` is the only door: it merges
+`addFree` into the effects of the sockets, so everything above (hit effects, cost, cooldown) sees it. The tree listener
+`spell_masteries.lua` writes the held choice to storage 7109993. A real rune of the same support wins when it is as strong or
+stronger, the two never add, a brand never joins a brand. docs/BUILDS.md "Spell modifier masteries (O451)".
+
 ## Honest caveats
 
 - Damage that a spell leaves to a condition (burning, poison ticks) is not a hit of the spell: no supports on it.

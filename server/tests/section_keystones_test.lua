@@ -121,9 +121,14 @@ for line, sec in pairs(SECTIONS) do
 	eq(Core.keystoneKind(tree.nodes[f + 6]), "ascension", sec.ka .. " is an ascension keystone")
 	eq(Core.keystoneKind(tree.nodes[f + 9]), "ascension", sec.kb .. " is an ascension keystone")
 	for _, i in ipairs({4, 5, 7, 8}) do eq(Core.keystoneKind(tree.nodes[f + i]), nil, "notable " .. (f + i) .. " is no keystone") end
-	-- the mastery hangs on the third line node, like 665 to 668, with 3 or 4 effects
+	-- the mastery hangs on the third line node, like 665 to 668, with 4 effects (O449) and the spell modifier effects after them
+	-- (O451): the Warrior and Ranger lines 4 + 3 = 7, the Mystic line 4 + 2 = 6
 	local m = tree.nodes[sec.mastery]
-	check(m and m.m and #m.m >= 3 and #m.m <= 4, line .. " mastery " .. sec.mastery .. " has 3 or 4 effects")
+	check(m and m.m and #m.m >= 4 and #m.m <= 7, line .. " mastery " .. sec.mastery .. " has 4 effects and the spell modifiers (6 or 7)")
+	eq(m and #m.m, ({[703] = 7, [704] = 7, [705] = 6})[sec.mastery], line .. " mastery " .. sec.mastery .. ": effects in all")
+	for i = 1, 4 do
+		check(m.m[i].spellMod == nil, line .. " mastery " .. sec.mastery .. ": the first four effects are the O449 ones")
+	end
 	eq(m.n[1], f + 3, line .. " mastery hangs on the third line node"); eq(#m.n, 1, "and nothing else")
 	for _, k in ipairs(sec.classes) do eq(m.c[k], true, line .. " mastery for " .. k) end
 	-- the three classes: a keystone and a path only for the ascended class

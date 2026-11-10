@@ -31,6 +31,7 @@ end
 realDofile(mod .. "treeplan.lua")
 realDofile(mod .. "treelanes.lua")
 realDofile(mod .. "treedata.lua")
+realDofile(mod .. "treespellmods.lua") -- the words of the spell modifier masteries (O451), read by getCustomStatString
 
 -- getCustomStatString lives in passivetree.lua, which only defines locals and functions at its top level
 function tr(s, ...) if select("#", ...) > 0 then return string.format(s, ...) end return s end

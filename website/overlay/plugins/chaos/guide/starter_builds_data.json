@@ -19,6 +19,10 @@
       "pt-BR": "As mesmas builds estão na árvore passiva em Auto build. Lá, Save to a loadout slot guarda uma build em um slot de loadout sem mexer na sua árvore atual: só a árvore do slot é gravada, o equipamento e as runas ficam."
     },
     {
+      "en": "Each mastery in a build has an effect picked for it. You can change an effect later for the price of one node. Some effects give one spell of your class a free support effect; they take no rune socket.",
+      "pt-BR": "Cada maestria de uma build já vem com um efeito escolhido. Você pode trocar o efeito depois pelo preço de um nó. Alguns efeitos dão a uma magia da sua classe um efeito de suporte de graça; eles não ocupam socket de runa."
+    },
+    {
       "en": "A code of another class is refused. Monk, Necromancer and Templar lines share one class mark in the code: the game still stops nodes your class cannot hold.",
       "pt-BR": "O código de outra classe é recusado. As linhas Monk, Necromancer e Templar compartilham uma só marca de classe no código: o jogo ainda barra os nós que a sua classe não pode ter."
     }

@@ -61,6 +61,7 @@ ChaosPassiveStatsConfig = {
 		clubSkill = {"Club skill", "+1 club skill level per point: club hit damage and accuracy."},
 		distanceSkill = {"Distance skill", "+1 distance skill level per point: bow, crossbow and throwing damage and accuracy."},
 		magicSkill = {"Magic level", "+1 magic level per point: stronger spells, healing and runes."},
+		spellMod = {"Spell modifier", "A mastery effect: one named spell gets a free support effect, the effect of a Common support rune at reduced strength. It takes no rune slot and never adds to a real rune of the same support."},
 		shieldingSkill = {"Shielding", "+1 shielding skill level per point: you block more of the hits you take with a shield."},
 		skillShield = {"Shielding", "+1 shielding skill level per point: you block more of the hits you take with a shield."},
 		criticalHitChance = {"Crit chance", "Percent chance that a hit is critical, rolled once against the sum of tree, gear and gems."},

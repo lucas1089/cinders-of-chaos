@@ -523,6 +523,7 @@ function W.tree(D, vocs)
 		end
 	end
 	dofile(TREE_DIR .. "treedata/nodes.lua")
+	dofile(TREE_DIR .. "treespellmods.lua") -- the words of the spell modifier masteries (O451), read by getCustomStatString
 	dofile(TREE_DIR .. "passivetree.lua")
 	local nodes = getTreeNodes()
 	local statText = getCustomStatString

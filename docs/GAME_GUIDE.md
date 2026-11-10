@@ -267,6 +267,10 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
 - **Five levels**, from Common to Mythic. Three runes of one support and level combine into one of the next.
 - Runes drop from monsters (more from tiered ones and bosses), from rift chests and from bounties. The store sells none.
 - Your action bar shows a coloured pip for each rune on a spell.
+- **Without a rune:** the mastery node of your class line (in the class section of the passive tree) has two or three effects
+  that give one named spell a free support effect, for example Gorehook that forks or Bastion Cry that reaches the enemies it
+  missed. It is the effect of a Common rune, a little weaker, and it takes no socket. A real rune of the same support on that
+  spell counts when it is stronger; the two never add. You hold one mastery effect at a time.
 
 ## Cards and card sets
 

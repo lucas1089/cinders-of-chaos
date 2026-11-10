@@ -2397,6 +2397,14 @@ function getCustomStatString(t, withKeystones)
 		end
 	end
 
+	-- a spell modifier mastery effect (O451): the spell, the free support and its numbers (treespellmods.lua)
+	if t.spellMod and TreeSpellMods then
+		local line = TreeSpellMods.text(t.spellMod)
+		if line then
+			table.insert(texts, line)
+		end
+	end
+
 	if t.strength then
 		table.insert(texts, tr("+%.1f strength.", t.strength/1))
 	end

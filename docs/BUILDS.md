@@ -433,6 +433,65 @@ need the rarer tier 3 and 4 cards. In damage the set costs little: against the b
 the Beastmaster and Mystic lead by less than half a point. The worst case, all of a class's damage being of the set's
 element, is 6% of its damage per second. Nothing here was measured in game.
 
+## Spell modifier masteries (O451)
+
+A spell changes how it plays through support runes. They come from loot. Now the passive tree has a second way: a mastery
+effect that gives **one named spell a free support effect**. No luck needed.
+
+- Each of the seven mastery nodes (Thief 665, Necromancer 666, Monk 667, Templar 668, Warrior 703, Ranger 704, Mystic 705)
+  gets two or three new effects after the old ones. 20 in all. The old effects keep their place and meaning. A character
+  still holds one effect per mastery node, and one mastery node per line.
+- The spell is one that all three classes of the line cast, so the choice works for the base class and both ascensions. The
+  Mystic line has two: only two attack spells are shared by Mystic, Elementalist and Illusionist.
+- The effect is a **Common rune** of the support, the lowest tier, which drops at every level band. No support has a price,
+  so the number the rune gives in percent is cut to 75% (Fork 35% becomes 26%, Echo 15% becomes 11%). The tooltip says it:
+  "A reduced Fork rune, free." The count of Fork and the radius of Breadth stay.
+- It takes **no rune socket**. A real rune of the same support on that spell counts when it is stronger. The two never add.
+  A brand never joins a real brand: one brand per spell, as in the window.
+- The tree stat is `spellMod`. The tree listener writes the held choice to one storage and the spells read it where they read
+  their supports. No new opcode, no engine patch, no new art. Numbers and choices: `server/data/lib/chaos_spell_masteries_config.lua`.
+- Saved trees, build codes and loadouts stay valid: the effects are appended, so an old id means the same. No version bump, no
+  refund. The limit of effects per node is 7, it was 4. The Recommended builds are unchanged: none of them picks a
+  spell modifier.
+
+Every choice opens a play style. A single target spell forks to the pack, an area spell reaches the enemies it missed, a spell
+echoes, a hit curses, a spell carries an element.
+
+| Class line | Choice | Spell | Support | Tier | Price | Spell gain 1T / 5T | Class gain 1T / 5T |
+|---|---|---|---|---|---|---|---|
+| Warrior | Gore Fork | Gorehook | Fork | Common | none, reduced: 26 instead of 35 | +0% / +26% | +0.0% / +1.8% |
+| Warrior | Echoing Slam | Colossus Fall | Echo | Common | none, reduced: 11 instead of 15 | +5% / +5% | +1.2% / +1.8% |
+| Warrior | Wide Cry | Bastion Cry | Breadth | Common | none, reduced: 26 instead of 35 | +0% / +17% | +0.0% / +3.0% |
+| Ranger | Splintering Spear | Sunspear | Shatter | Common | none, reduced: 15 instead of 20 | +0% / +60% | +0.0% / +4.7% |
+| Ranger | Hallowed Ground | Blessed Earth | Dawnbrand | Common | none, reduced: 15 instead of 20 | +15% / +15% | +2.3% / +5.4% |
+| Ranger | Hunter's Mark | Dawnpiercer | Hex | Common | none, reduced: 2 instead of 3 | +0% / +0% | +1.3% / +0.3% |
+| Mystic | Crimson Fork | Crimson Covenant | Fork | Common | none, reduced: 26 instead of 35 | +0% / +26% | +0.0% / +2.4% |
+| Mystic | Storm Rupture | Prismatic Rupture | Stormbrand | Common | none, reduced: 15 instead of 20 | +15% / +15% | +2.1% / +3.2% |
+| Thief | Twin Toss | Shuriken Toss | Fork | Common | none, reduced: 26 instead of 35 | +0% / +26% | +0.0% / +11.2% |
+| Thief | Wide Smoke | Smoke Bomb | Breadth | Common | none, reduced: 26 instead of 35 | +0% / +17% | +0.0% / +3.2% |
+| Thief | Echoing Flurry | Blade Flurry | Echo | Common | none, reduced: 11 instead of 15 | +5% / +5% | +0.8% / +2.4% |
+| Necromancer | Cursed Marrow | Marrow Bolt | Hex | Common | none, reduced: 2 instead of 3 | +0% / +0% | +1.0% / +0.2% |
+| Necromancer | Grave Wail | Gravewail | Gravebrand | Common | none, reduced: 15 instead of 20 | +15% / +15% | +2.3% / +4.7% |
+| Necromancer | Splintered Rot | Blightbrand | Shatter | Common | none, reduced: 15 instead of 20 | +0% / +60% | +0.0% / +5.3% |
+| Monk | Wide Mist | Mistborne Strike | Breadth | Common | none, reduced: 26 instead of 35 | +0% / +17% | +0.0% / +4.1% |
+| Monk | Splitting Palm | Sundering Palm | Shatter | Common | none, reduced: 15 instead of 20 | +0% / +60% | +0.0% / +5.5% |
+| Monk | Quick Heel | Whirling Heel | Quickening | Common | none, reduced: 4 instead of 6 | +4% / +4% | +1.6% / +1.8% |
+| Templar | Echoing Ground | Consecration | Echo | Common | none, reduced: 11 instead of 15 | +5% / +5% | +1.2% / +2.9% |
+| Templar | Marked Cut | Hallowed Cut | Hex | Common | none, reduced: 2 instead of 3 | +0% / +0% | +1.0% / +0.2% |
+| Templar | Bell of Dawn | Bell of Reckoning | Dawnbrand | Common | none, reduced: 15 instead of 20 | +15% / +15% | +2.4% / +3.7% |
+
+**Gain.** Computed, not measured. No tool measures supports, so the numbers come from the support's own numbers on the rotation
+simulator (`server/tools/spell_mastery_model.py`, `server/data/spells/README.md` "Spell modifier masteries (O451)"). Spell
+gain is one cast of the spell on 1 target and on the pack of 5. Class gain is the best set of at most 5 spells that holds the
+spell, at level 100, 500 and 1000: what the effect adds, as a share of the damage of the default set, times the share that is
+not the auto attack. Hex raises every hit, so its class gain is the share of the damage on the hexed monsters. The largest class
+gain of any choice is +11% (Twin Toss, Thief line, level 100, 5 targets). **Limit of the model: +15% of the class damage per
+choice, tested.** The owner cap of +40% in a specialty holds with room for the keystones.
+
+The Quickening choice does little in a rotation that casts on the 2 s attack group: 4% of a cooldown rarely moves a cast to an
+earlier tick. It is the one choice that is mostly for hand casting. Fork on one target and Breadth and Shatter on a lone target
+give nothing: they are for packs.
+
 ## Starter builds guide and Save to a loadout slot (O448)
 
 The build audit found that the game says builds exist but not what to do with them. Two answers, both words and plain actions, no

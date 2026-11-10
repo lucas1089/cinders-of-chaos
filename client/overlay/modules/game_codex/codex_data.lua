@@ -16349,6 +16349,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: enemies within 1 sqm of the hit ones that the spell missed take 26% of the average hit (max 6), the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Warrior line, mastery effect Wide Cry: Bastion Cry.", "Thief line, mastery effect Wide Smoke: Smoke Bomb.", "Monk line, mastery effect Wide Mist: Mistborne Strike."}
 						}
 					}
 				},
@@ -16393,6 +16397,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra holy damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Ranger line, mastery effect Hallowed Ground: Blessed Earth.", "Templar line, mastery effect Bell of Dawn: Bell of Reckoning."}
 						}
 					}
 				},
@@ -16481,6 +16489,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: 11% chance per cast that the spell's hits strike again 0.5 s later for 50% damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Warrior line, mastery effect Echoing Slam: Colossus Fall.", "Thief line, mastery effect Echoing Flurry: Blade Flurry.", "Templar line, mastery effect Echoing Ground: Consecration."}
 						}
 					}
 				},
@@ -16569,6 +16581,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: the hit forks to 1 more enemies within 3 sqm for 26% of it, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Warrior line, mastery effect Gore Fork: Gorehook.", "Mystic line, mastery effect Crimson Fork: Crimson Covenant.", "Thief line, mastery effect Twin Toss: Shuriken Toss."}
 						}
 					}
 				},
@@ -16613,6 +16629,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra death damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Necromancer line, mastery effect Grave Wail: Gravewail."}
 						}
 					}
 				},
@@ -16657,6 +16677,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: monsters hit take +2% damage from everyone for 4 s (the strongest hex counts), the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Ranger line, mastery effect Hunter's Mark: Dawnpiercer.", "Necromancer line, mastery effect Cursed Marrow: Marrow Bolt.", "Templar line, mastery effect Marked Cut: Hallowed Cut."}
 						}
 					}
 				},
@@ -16789,6 +16813,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: cooldown -4%, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Monk line, mastery effect Quick Heel: Whirling Heel."}
 						}
 					}
 				},
@@ -16921,6 +16949,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: enemies next to the target take 15% of the hit (max 4), the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Ranger line, mastery effect Splintering Spear: Sunspear.", "Necromancer line, mastery effect Splintered Rot: Blightbrand.", "Monk line, mastery effect Splitting Palm: Sundering Palm."}
 						}
 					}
 				},
@@ -17009,6 +17041,10 @@ CodexData = {
 								{"Rift chest", "0.3 + 0.1 per rift tier."},
 								{"World boss", "1 for every eligible player."}
 							}
+						},
+						{
+							h = "Spell modifier masteries",
+							p = {"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra energy damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.", "Mystic line, mastery effect Storm Rupture: Prismatic Rupture."}
 						}
 					}
 				},

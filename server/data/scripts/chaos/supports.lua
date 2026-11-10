@@ -159,6 +159,8 @@ local function refreshActive(player)
 			break
 		end
 	end
+	-- a spell modifier mastery (O451) gives one spell a free support: the hit effects are on for that player too
+	any = any or S.masteryChoice(player) ~= nil
 	active[player:getId()] = any or nil
 	fxCache[player:getId()] = nil
 	return any

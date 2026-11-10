@@ -337,8 +337,8 @@ P.features = {
 			local P = C.passive
 			return {first = P.startLevel + P.levelsPerPoint, per = P.levelsPerPoint, free = C.respec.freeBelowLevel}
 		end,
-		what = {"A big tree of small bonuses. Start next to the centre and take nodes that touch the ones you have. Plan first, then press Apply Plan. The Auto build button offers three Recommended builds for your class, and the Starter Builds guide on the website lists them with import codes.",
-			"Uma grande árvore de pequenos bônus. Comece perto do centro e pegue nós vizinhos aos que já tem. Planeje antes e depois clique em Aplicar plano. O botão Auto build oferece três builds recomendadas para a sua classe, e o guia Builds iniciais do site as lista com códigos de importação."},
+		what = {"A big tree of small bonuses. Start next to the centre and take nodes that touch the ones you have. Plan first, then press Apply Plan. A mastery node lets you pick one effect; some effects give one spell of your class a free support effect. The Auto build button offers three Recommended builds for your class, and the Starter Builds guide on the website lists them with import codes.",
+			"Uma grande árvore de pequenos bônus. Comece perto do centro e pegue nós vizinhos aos que já tem. Planeje antes e depois clique em Aplicar plano. Um nó de maestria deixa você escolher um efeito; alguns dão a uma magia da sua classe um efeito de suporte de graça. O botão Auto build oferece três builds recomendadas para a sua classe, e o guia Builds iniciais do site as lista com códigos de importação."},
 		who = {"Every player. Your first point comes at level {first}, then one more every {per} levels.",
 			"Todo jogador. Seu primeiro ponto chega no nível {first}, depois mais um a cada {per} níveis."},
 		often = {"Adding a node is free. Taking nodes back is free below level {free}; after that a single node or a full reset costs gold.",

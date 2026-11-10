@@ -4623,3 +4623,61 @@ can change), and the first of them. In all, 107 single, 55 pack and 68 mines ent
   (the Ninja mines at level 100 is +39.8%, the Samurai single +38%); `--check` fails on any.
 - The Samurai mines variant at level 100 is the two-spell set Seeker Mine > Shuriken Toss: the four-spell set with Blade Flurry is
   +44.5% on 5 targets, over the cap.
+
+## Spell modifier masteries (O451, owner 2026-11-10; computed, not measured)
+
+Twenty mastery effects, each a free support effect for one spell of its class line (`chaos_spell_masteries_config.lua`; the player
+view is docs/BUILDS.md "Spell modifier masteries (O451)", the rules server/README.md "Passive tree: spell modifier masteries (O451)").
+Nothing here ran on a server. No tool measures supports (`rotation_sim.py` and `class_dps_model.py` do not read a rune), so
+`server/tools/spell_mastery_model.py` computes the gain from the support's own numbers on the rotation simulator.
+
+- **Free effect.** The Common rune of the support, the percent field cut to 75% (rounded down): Fork 1 enemy for 26%, Breadth 26%,
+  Shatter 15%, Hex 2%, Echo 11% chance for 50%, Quickening 4%, the brands 15%. No support has a price, so the effect is reduced, and
+  the tooltip says so.
+- **Spell gain** (one cast, a pack of 5 as in `rotation_model.csv`): a brand +15% on both counts, Echo +5.5%, Fork one more enemy for
+  26% of the hit (a single target spell: +26% on the pack), Shatter 4 neighbours for 15% (+60% on the pack), Breadth the enemies the
+  spell missed (+17% for a spell that hits 3 of 5), Hex and Quickening are not a change of one cast. Fork, Shatter and Breadth give
+  nothing on one target.
+- **Rotation gain.** Every legal set of at most 5 spells of the class's pool (`rotation_sim.variant_level`: a cast at least every 2 s,
+  the mana runway) that holds the spell, with and without the effect. What the effect adds in the set, as a share of the damage of the
+  default set. A set built round the spell is allowed, so the number is the best case of the choice on its own. The class gain is that
+  times 1 minus the auto attack's share of the measured damage (`class_dps_measured.csv`, 1 and 5 targets). Hex adds +value% on the
+  monsters the spell hit for 4 s, so it is the uptime (4 s over the seconds between two casts) times the share of the pack hit, on
+  all damage.
+- **Limit.** At most +15% of the class damage per choice on 1 and 5 targets; `spell_mastery_model.py --check` and
+  `spell_mastery_model_test.py` stop on more. The owner cap is +40% in a specialty, and the keystones sit under it too.
+- **Result** (worst of the three classes of the line, by level; the spell must be learnt: a choice is dead before the spell's level):
+
+| Choice | Class gain at level 100 (1T / 5T) | Level 500 | Level 1000 | Default set holds the spell |
+|---|---|---|---|---|
+| Gore Fork | spell not yet cast | +0.0% / +1.6% | +0.0% / +1.8% | 3 of 6 |
+| Echoing Slam | spell not yet cast | +1.2% / +1.8% | +1.2% / +1.8% | 6 of 6 |
+| Wide Cry | spell not yet cast | +0.0% / +3.0% | +0.0% / +2.9% | 1 of 6 |
+| Splintering Spear | spell not yet cast | +0.0% / +4.7% | +0.0% / +4.1% | 2 of 6 |
+| Hallowed Ground | +2.3% / +5.4% | +1.9% / +4.0% | +2.1% / +4.3% | 9 of 9 |
+| Hunter's Mark | +1.3% / +0.3% | +1.3% / +0.3% | +1.3% / +0.3% | 3 of 9 |
+| Crimson Fork | spell not yet cast | +0.0% / +2.2% | +0.0% / +2.4% | 2 of 6 |
+| Storm Rupture | spell not yet cast | +2.1% / +3.2% | +1.9% / +3.1% | 3 of 6 |
+| Twin Toss | +0.0% / +11.2% | +0.0% / +7.2% | +0.0% / +7.0% | 9 of 9 |
+| Wide Smoke | spell not yet cast | +0.0% / +3.2% | +0.0% / +3.0% | 2 of 6 |
+| Echoing Flurry | +0.7% / +2.4% | +0.7% / +1.5% | +0.8% / +1.5% | 9 of 9 |
+| Cursed Marrow | +1.0% / +0.2% | +1.0% / +0.2% | +1.0% / +0.2% | 2 of 9 |
+| Grave Wail | spell not yet cast | +2.3% / +4.7% | +2.3% / +4.4% | 3 of 6 |
+| Splintered Rot | spell not yet cast | +0.0% / +5.2% | +0.0% / +5.3% | 3 of 6 |
+| Wide Mist | spell not yet cast | +0.0% / +4.1% | +0.0% / +3.9% | 6 of 6 |
+| Splitting Palm | +0.0% / +5.5% | +0.0% / +4.6% | +0.0% / +4.3% | 5 of 9 |
+| Quick Heel | +0.0% / +0.0% | +1.6% / +1.8% | +1.6% / +1.8% | 3 of 9 |
+| Echoing Ground | +1.0% / +2.9% | +1.1% / +1.9% | +1.2% / +2.0% | 9 of 9 |
+| Marked Cut | +1.0% / +0.2% | +1.0% / +0.2% | +1.0% / +0.2% | 3 of 9 |
+| Bell of Dawn | spell not yet cast | +2.4% / +3.7% | +2.3% / +3.5% | 4 of 6 |
+
+- **Reading.** The largest gain is Twin Toss on 5 targets at level 100 (+11.2%, a Thief with few spells, Shuriken Toss cast every
+  2 s). From level 500 no choice is over +7.2%. Hex is about +1% on one target (4 s over a 7 to 10 s cooldown, 2%). Quickening
+  moves a cast only when the cut crosses a group tick of 2 s, so 4% gains little (Quick Heel +1.6%, through the chi cooldowns).
+  Breadth on Razor Rain and Palm Shockwave was dropped: both hit the whole pack of 5, nothing is left to reach (Smoke Bomb and
+  Mistborne Strike hit 3 of 5). Spells open at their level: Dawnpiercer 12, Shuriken Toss 8, Sundering Palm 14, Consecration 14,
+  Blade Flurry 20, Whirling Heel 50, Marrow Bolt 70, Hallowed Cut 80, Blessed Earth 100, Gravewail 110, Gorehook 130, Blightbrand
+  135, Sunspear 160, Bell of Reckoning 160, Mistborne Strike 190, Crimson Covenant 200, Smoke Bomb 200, Colossus Fall 260, Bastion
+  Cry 340, Prismatic Rupture 500.
+- **Not modelled.** Resistances (a brand's element against a monster that resists it), crits, kills (nothing here depends on one),
+  the mana a faster Quickening costs, the other spells that a set leaves out.

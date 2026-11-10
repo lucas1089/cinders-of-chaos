@@ -218,7 +218,7 @@ function openMasteryChoice(node, saved)
       end
     end
   end
-  choiceWindow:setHeight(130 + 46 * #(node.masteries or {}))
+  choiceWindow:setHeight(130 + 52 * #(node.masteries or {})) -- up to 7 effects since O451: three lines of text each
   local remove = choiceWindow.removeButton
   remove:setVisible(not saved)
   remove.onClick = function()

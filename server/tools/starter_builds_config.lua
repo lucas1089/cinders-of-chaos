@@ -24,6 +24,8 @@ S.howTo = {
 		"No jogo abra a árvore passiva, clique em Build Code, cole o código e clique em Import. A prévia mostra o que muda e quanto custa. Apply Build grava. Adicionar nós é grátis; devolver nós custa um respec."},
 	{"The same builds are in the passive tree under Auto build. There, Save to a loadout slot keeps a build in a loadout slot without touching your live tree: only the tree of the slot is written, its gear and runes stay.",
 		"As mesmas builds estão na árvore passiva em Auto build. Lá, Save to a loadout slot guarda uma build em um slot de loadout sem mexer na sua árvore atual: só a árvore do slot é gravada, o equipamento e as runas ficam."},
+	{"Each mastery in a build has an effect picked for it. You can change an effect later for the price of one node. Some effects give one spell of your class a free support effect; they take no rune socket.",
+		"Cada maestria de uma build já vem com um efeito escolhido. Você pode trocar o efeito depois pelo preço de um nó. Alguns efeitos dão a uma magia da sua classe um efeito de suporte de graça; eles não ocupam socket de runa."},
 	{"A code of another class is refused. Monk, Necromancer and Templar lines share one class mark in the code: the game still stops nodes your class cannot hold.",
 		"O código de outra classe é recusado. As linhas Monk, Necromancer e Templar compartilham uma só marca de classe no código: o jogo ainda barra os nós que a sua classe não pode ter."}
 }

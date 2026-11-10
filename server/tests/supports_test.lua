@@ -825,6 +825,60 @@ eq(#sends, 3, "three parts"); eq(sends[1].total, 3, "total"); eq(#sends[1].text,
 eq(#sends[3].text, 1000, "last part"); eq(sends[1].text .. sends[2].text .. sends[3].text, big, "joined again")
 eq(#me.sent, 0, "nothing sent whole")
 
+-- ---------------------------------------------------------------- spell modifier masteries (O451), the glue
+-- The tree listener writes the id of the held choice to cfg-independent storage S.mastery.storage; every place that asks for the
+-- effects of a spell reads it through S.spellEffects. Choice 7 = Crimson Fork: spell 203, Fork at reduced strength (1 enemy, 26%).
+local mcfg = S.mastery
+eq(mcfg.storage, 7109993, "the storage of the held choice")
+catalog[203] = {id = 203, name = "Crimson Covenant", words = "tor nyx cruor", level = 200, kind = "single",
+	vocations = {[1] = true}, mana = 450, cooldown = 10000}
+me.level = 300
+for i = 1, 3 do S.setRune(me, 203, i, 0) end
+me.storage[mcfg.storage] = nil
+S.refreshActive(me)
+eq(next(S.effectsFor(me, 203)), nil, "no choice held: no effect on the spell")
+-- the listener side: the storage is written and the hit effects are on for a player without any rune
+dofile("data/scripts/chaos/spell_masteries.lua")
+for i = 1, 3 do S.setRune(me, 201, i, 0) end
+S.refreshActive(me)
+eq(ChaosSpellMasteries.apply(me, {spellMod = 7}), 7, "the listener returns the id")
+eq(me.storage[mcfg.storage], 7, "and writes it")
+local fx7 = S.effectsFor(me, 203)
+ok(fx7.fork and fx7.fork.free, "Fork on Crimson Covenant, free")
+eq(fx7.fork.value, 1, "one enemy"); eq(fx7.fork.value2, 26, "26% of the hit (the Common rune gives 35%)")
+eq(next(S.effectsFor(me, 201)), nil, "no other spell gets anything")
+local fm1 = newCreature({pos = {x = 60, y = 100, z = 7}, health = 1000})
+local fm2 = newCreature({pos = {x = 61, y = 100, z = 7}, health = 1000})
+local fm3 = newCreature({pos = {x = 63, y = 100, z = 7}, health = 1000})
+registered.targetCombat(me, fm1)
+hits = {}
+me.storage[cfg.storageContext] = S.ctxEncode(30, 203)
+hit(fm1, me, 200, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
+me.storage[cfg.storageContext] = nil
+flushEvents()
+local forked = 0
+for _, h in ipairs(hits) do
+	forked = forked + 1
+	eq(h.amount, -52, "the forked hit is 26% of 200")
+end
+eq(forked, 1, "forks to ONE more enemy, not two")
+-- a real rune of the same support: the stronger one counts, no sum
+S.setRune(me, 203, 1, S.runeId(S.byKey.fork.index, 1)) -- Common Fork: 1 enemy, 35%
+S.refreshActive(me)
+local fxr = S.effectsFor(me, 203)
+eq(fxr.fork.value, 1, "real Common Fork and the free one: 1 enemy, not 2"); eq(fxr.fork.value2, 35, "the rune is the stronger one")
+ok(not fxr.fork.free, "the real rune stays")
+S.setRune(me, 203, 1, 0)
+-- a different choice id: another spell; the same player
+me.storage[mcfg.storage] = 8
+S.refreshActive(me)
+eq(next(S.effectsFor(me, 203)), nil, "choice 8 is for Prismatic Rupture, not Crimson Covenant")
+-- the storage drops: the effect is gone, no leftover
+ChaosSpellMasteries.apply(me, {})
+eq(me.storage[mcfg.storage], nil, "no spell modifier: storage -1")
+eq(next(S.effectsFor(me, 203)), nil, "and no effect")
+eq(ChaosSpellMasteries.idOf({spellMod = 99}), -1, "an id the config does not know is none")
+
 -- the loot hook
 local corpseItems = {}
 local corpse = {addItem = function(_, id, n) corpseItems[#corpseItems + 1] = id return true end}

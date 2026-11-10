@@ -1,6 +1,6 @@
 // The effect choice of a mastery node (planner.lua openMasteryChoice). Ornate skin styles from client_chaos_theme.
 MasteryEffectButton < ChaosButton
-  height: 40
+  height: 46
   text-wrap: true
   text-align: center
 

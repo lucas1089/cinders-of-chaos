@@ -9306,7 +9306,15 @@
 								["Pyre Touch", "+6.0 Fire Damage. +1.0 Magic Level."],
 								["Frost Touch", "+6.0 Ice Damage. +1.0 Magic Level."],
 								["Storm Touch", "+6.0 Energy Damage. +1.0 Magic Level."],
-								["Still Mind", "+2.0 spirit. +5.0 Health Spells."]
+								["Still Mind", "+2.0 spirit. +5.0 Health Spells."],
+								[
+									"Crimson Fork",
+									"Crimson Covenant forks to 1 more enemy within 3 sqm for 26% of the hit. A reduced Fork rune, free."
+								],
+								[
+									"Storm Rupture",
+									"Prismatic Rupture adds 15% of its damage as energy damage. A reduced Stormbrand rune, free."
+								]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Mystic, Elementalist, Illusionist."]}
@@ -9330,7 +9338,19 @@
 							"rows": [
 								["Withering Touch", "+6.0 Death Damage. +1.0 Magic Level."],
 								["Ossified Hide", "+3.0 vitality. +3.0 Physical Absorption."],
-								["Soul Well", "+5.0 spirit. +2.0 Death Absorption."]
+								["Soul Well", "+5.0 spirit. +2.0 Death Absorption."],
+								[
+									"Cursed Marrow",
+									"Marrow Bolt: monsters it hits take +2% damage from everyone for 4 s. A reduced Hex rune, free."
+								],
+								[
+									"Grave Wail",
+									"Gravewail adds 15% of its damage as death damage. A reduced Gravebrand rune, free."
+								],
+								[
+									"Splintered Rot",
+									"Blightbrand: enemies next to the target take 15% of the hit. A reduced Shatter rune, free."
+								]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
@@ -9355,7 +9375,19 @@
 								["Steady Aim", "+2.0 Critical Hit Chance. +5.0 Critical Hit Amount."],
 								["Fleet Foot", "+3.0 dexterity. +20.0 Increased Speed."],
 								["Forest Hide", "+4.0 vitality. +2.0 Physical Absorption."],
-								["Hard Tips", "+2.0 dexterity. +5.0 Physical Damage."]
+								["Hard Tips", "+2.0 dexterity. +5.0 Physical Damage."],
+								[
+									"Splintering Spear",
+									"Sunspear: enemies next to the target take 15% of the hit. A reduced Shatter rune, free."
+								],
+								[
+									"Hallowed Ground",
+									"Blessed Earth adds 15% of its damage as holy damage. A reduced Dawnbrand rune, free."
+								],
+								[
+									"Hunter's Mark",
+									"Dawnpiercer: monsters it hits take +2% damage from everyone for 4 s. A reduced Hex rune, free."
+								]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Ranger, Deadeye, Beastmaster."]}
@@ -9380,7 +9412,19 @@
 								["Iron Knuckles", "+2.0 strength. +6.0 Physical Damage."],
 								["Swift Palm", "+2.0 Critical Hit Chance. +4.0 Critical Hit Amount."],
 								["Still Water", "+3.0 spirit. +6.0 Health Spells."],
-								["Stone Body", "+4.0 vitality. +2.0 Physical Absorption."]
+								["Stone Body", "+4.0 vitality. +2.0 Physical Absorption."],
+								[
+									"Wide Mist",
+									"Mistborne Strike: enemies it missed within 1 sqm take 26% of its hit. A reduced Breadth rune, free."
+								],
+								[
+									"Splitting Palm",
+									"Sundering Palm: enemies next to the target take 15% of the hit. A reduced Shatter rune, free."
+								],
+								[
+									"Quick Heel",
+									"Whirling Heel: its cooldown is 4% shorter. A reduced Quickening rune, free."
+								]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
@@ -9407,7 +9451,19 @@
 									"Oath of the Wall",
 									"+2.0 Physical Absorption. +2.0 Shielding Skill. +1.0 Absorb all Elements."
 								],
-								["Oath of Mercy", "+3.0 vitality. +6.0 Health Spells."]
+								["Oath of Mercy", "+3.0 vitality. +6.0 Health Spells."],
+								[
+									"Echoing Ground",
+									"Consecration: 11% chance that its hits strike again for 50%. A reduced Echo rune, free."
+								],
+								[
+									"Marked Cut",
+									"Hallowed Cut: monsters it hits take +2% damage from everyone for 4 s. A reduced Hex rune, free."
+								],
+								[
+									"Bell of Dawn",
+									"Bell of Reckoning adds 15% of its damage as holy damage. A reduced Dawnbrand rune, free."
+								]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Templar, Inquisitor, Sentinel."]}
@@ -9432,7 +9488,19 @@
 								["Keen Edge", "+2.0 Critical Hit Chance. +5.0 Critical Hit Amount."],
 								["Light Step", "+3.0 dexterity. +20.0 Increased Speed."],
 								["Tough Hide", "+4.0 vitality. +2.0 Physical Absorption."],
-								["Venom Glands", "+3.0 Physical Damage. +6.0 Earth Damage."]
+								["Venom Glands", "+3.0 Physical Damage. +6.0 Earth Damage."],
+								[
+									"Twin Toss",
+									"Shuriken Toss forks to 1 more enemy within 3 sqm for 26% of the hit. A reduced Fork rune, free."
+								],
+								[
+									"Wide Smoke",
+									"Smoke Bomb: enemies it missed within 1 sqm take 26% of its hit. A reduced Breadth rune, free."
+								],
+								[
+									"Echoing Flurry",
+									"Blade Flurry: 11% chance that its hits strike again for 50%. A reduced Echo rune, free."
+								]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
@@ -9457,7 +9525,19 @@
 								["Hammerfall", "+1.0 strength. +6.0 Physical Damage."],
 								["Tempered Hide", "+4.0 vitality. +2.0 Physical Absorption."],
 								["Cruel Edge", "+2.0 Critical Hit Chance. +4.0 Critical Hit Amount."],
-								["Shield Drill", "+2.0 Physical Absorption. +2.0 Shielding Skill."]
+								["Shield Drill", "+2.0 Physical Absorption. +2.0 Shielding Skill."],
+								[
+									"Gore Fork",
+									"Gorehook forks to 1 more enemy within 3 sqm for 26% of the hit. A reduced Fork rune, free."
+								],
+								[
+									"Echoing Slam",
+									"Colossus Fall: 11% chance that its hits strike again for 50%. A reduced Echo rune, free."
+								],
+								[
+									"Wide Cry",
+									"Bastion Cry: enemies it missed within 1 sqm take 26% of its hit. A reduced Breadth rune, free."
+								]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Warrior, Juggernaut, Berserker."]}
@@ -37416,6 +37496,15 @@
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
 							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: enemies within 1 sqm of the hit ones that the spell missed take 26% of the average hit (max 6), the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Warrior line, mastery effect Wide Cry: Bastion Cry.",
+								"Thief line, mastery effect Wide Smoke: Smoke Bomb.",
+								"Monk line, mastery effect Wide Mist: Mistborne Strike."
+							]
 						}
 					],
 					"icon": "wiki/i/sup-breadth.png"
@@ -37471,6 +37560,14 @@
 								["Bounty board", "Hunt 10%, elite 20%, boss 50% per finished contract."],
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
+							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra holy damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Ranger line, mastery effect Hallowed Ground: Blessed Earth.",
+								"Templar line, mastery effect Bell of Dawn: Bell of Reckoning."
 							]
 						}
 					],
@@ -37613,6 +37710,15 @@
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
 							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: 11% chance per cast that the spell's hits strike again 0.5 s later for 50% damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Warrior line, mastery effect Echoing Slam: Colossus Fall.",
+								"Thief line, mastery effect Echoing Flurry: Blade Flurry.",
+								"Templar line, mastery effect Echoing Ground: Consecration."
+							]
 						}
 					],
 					"icon": "wiki/i/sup-echo.png"
@@ -37724,6 +37830,15 @@
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
 							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: the hit forks to 1 more enemies within 3 sqm for 26% of it, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Warrior line, mastery effect Gore Fork: Gorehook.",
+								"Mystic line, mastery effect Crimson Fork: Crimson Covenant.",
+								"Thief line, mastery effect Twin Toss: Shuriken Toss."
+							]
 						}
 					],
 					"icon": "wiki/i/sup-fork.png"
@@ -37779,6 +37894,13 @@
 								["Bounty board", "Hunt 10%, elite 20%, boss 50% per finished contract."],
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
+							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra death damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Necromancer line, mastery effect Grave Wail: Gravewail."
 							]
 						}
 					],
@@ -37850,6 +37972,15 @@
 								["Bounty board", "Hunt 10%, elite 20%, boss 50% per finished contract."],
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
+							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: monsters hit take +2% damage from everyone for 4 s (the strongest hex counts), the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Ranger line, mastery effect Hunter's Mark: Dawnpiercer.",
+								"Necromancer line, mastery effect Cursed Marrow: Marrow Bolt.",
+								"Templar line, mastery effect Marked Cut: Hallowed Cut."
 							]
 						}
 					],
@@ -38014,6 +38145,13 @@
 								["Bounty board", "Hunt 10%, elite 20%, boss 50% per finished contract."],
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
+							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: cooldown -4%, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Monk line, mastery effect Quick Heel: Whirling Heel."
 							]
 						}
 					],
@@ -38196,6 +38334,15 @@
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
 							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: enemies next to the target take 15% of the hit (max 4), the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Ranger line, mastery effect Splintering Spear: Sunspear.",
+								"Necromancer line, mastery effect Splintered Rot: Blightbrand.",
+								"Monk line, mastery effect Splitting Palm: Sundering Palm."
+							]
 						}
 					],
 					"icon": "wiki/i/sup-shatter.png"
@@ -38322,6 +38469,13 @@
 								["Bounty board", "Hunt 10%, elite 20%, boss 50% per finished contract."],
 								["Rift chest", "0.3 + 0.1 per rift tier."],
 								["World boss", "1 for every eligible player."]
+							]
+						},
+						{
+							"h": "Spell modifier masteries",
+							"p": [
+								"A mastery effect of the passive tree gives one named spell this support for free: 15% of the spell's damage is added as extra energy damage, the effect of a Common rune at 75% strength where it has a number to cut. It takes no socket. A rune of the same support on that spell counts when it is stronger; the two never add.",
+								"Mystic line, mastery effect Storm Rupture: Prismatic Rupture."
 							]
 						}
 					],
