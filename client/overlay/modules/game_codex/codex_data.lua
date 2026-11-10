@@ -5935,7 +5935,7 @@ CodexData = {
 					id = "unique:8931",
 					name = "Ashfall Verdict",
 					color = "#ff9c3a",
-					sub = "Sword, level 1300. Attack 72, Defense 36, Extra Defense +3, Melee +6, Attack Speed +15%, Damage to Elites and Bosses +20%, Physical Penetration +20%, Critical Echo: 22% chance on a critical hit to strike again",
+					sub = "Sword, level 1300. Attack 182, Defense 36, Extra Defense +3, Melee +6, Attack Speed +15%, Damage to Elites and Bosses +20%, Physical Penetration +20%, Critical Echo: 22% chance on a critical hit to strike again",
 					f = {
 						class = {"warrior", "thief", "monk", "templar"},
 						kind = {"weapon"},
@@ -5949,7 +5949,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 72", "Defense 36", "Extra Defense +3", "Melee +6", "Attack Speed +15%", "Damage to Elites and Bosses +20%", "Physical Penetration +20%", "Critical Echo: 22% chance on a critical hit to strike again"}
+							p = {"Attack 182", "Defense 36", "Extra Defense +3", "Melee +6", "Attack Speed +15%", "Damage to Elites and Bosses +20%", "Physical Penetration +20%", "Critical Echo: 22% chance on a critical hit to strike again"}
 						},
 						{
 							h = "Item",
@@ -6134,7 +6134,7 @@ CodexData = {
 					id = "unique:25884",
 					name = "Bellringer of the Last Vigil",
 					color = "#ff9c3a",
-					sub = "Club, level 2200. Attack 78, Defense 36, Melee +7, Chance to Shock +22%, Executes Monsters below 8% Health, Damage Taken from Monsters -6%, Arc Lightning: 20% chance on hit to arc to 3 monsters nearby",
+					sub = "Club, level 2200. Attack 225, Defense 36, Melee +7, Chance to Shock +22%, Executes Monsters below 8% Health, Damage Taken from Monsters -6%, Arc Lightning: 20% chance on hit to arc to 3 monsters nearby",
 					f = {class = {"warrior", "monk", "templar"}, kind = {"weapon"}, level = 2200, source = "monster"},
 					sections = {
 						{
@@ -6143,7 +6143,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 78", "Defense 36", "Melee +7", "Chance to Shock +22%", "Executes Monsters below 8% Health", "Damage Taken from Monsters -6%", "Arc Lightning: 20% chance on hit to arc to 3 monsters nearby"}
+							p = {"Attack 225", "Defense 36", "Melee +7", "Chance to Shock +22%", "Executes Monsters below 8% Health", "Damage Taken from Monsters -6%", "Arc Lightning: 20% chance on hit to arc to 3 monsters nearby"}
 						},
 						{
 							h = "Item",
@@ -6269,14 +6269,14 @@ CodexData = {
 					id = "unique:27658",
 					name = "Bloodsworn Greataxe",
 					color = "#ff9c3a",
-					sub = "weapon, level 300. Attack 58, Defense 30, Melee +3",
+					sub = "weapon, level 300. Attack 76, Defense 30, Melee +3",
 					f = {class = {"warrior"}, kind = {"other"}, level = 300, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Its edge was quenched in the Blood Colossus's altar and never quite dried. Altar Quench: Below 40% health you deal 98% more damage. Above 75% health you deal 15% less. For: Warrior. (Requires level 300.)"}
 						},
-						{h = "Stats", p = {"Attack 58", "Defense 30", "Melee +3"}},
+						{h = "Stats", p = {"Attack 76", "Defense 30", "Melee +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -6896,7 +6896,7 @@ CodexData = {
 					id = "unique:8925",
 					name = "Cinderbrand Axe",
 					color = "#ff9c3a",
-					sub = "Axe, level 130. Attack 58, Defense 30, Extra Defense +3, Melee +5, Fire Absorb +10%",
+					sub = "Axe, level 130. Attack 62, Defense 30, Extra Defense +3, Melee +5, Fire Absorb +10%",
 					f = {class = {"warrior", "templar"}, kind = {"weapon"}, level = 130, source = "boss"},
 					sections = {
 						{
@@ -6905,7 +6905,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 58", "Defense 30", "Extra Defense +3", "Melee +5", "Fire Absorb +10%"}
+							p = {"Attack 62", "Defense 30", "Extra Defense +3", "Melee +5", "Fire Absorb +10%"}
 						},
 						{
 							h = "Item",
@@ -7655,7 +7655,7 @@ CodexData = {
 					id = "unique:40012",
 					name = "Dawnless Gauntlets",
 					color = "#ff9c3a",
-					sub = "Fist weapon, level 2000. Attack 70, Defense 42, Fist +6, Physical Absorb +5%, Damage to Elites and Bosses +20%, Damage over Time +30%, Health Regeneration +40 per Second, Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)",
+					sub = "Fist weapon, level 2000. Attack 202, Defense 42, Fist +6, Physical Absorb +5%, Damage to Elites and Bosses +20%, Damage over Time +30%, Health Regeneration +40 per Second, Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)",
 					f = {class = {"monk"}, kind = {"weapon"}, level = 2000, source = "monster"},
 					sections = {
 						{
@@ -7664,7 +7664,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 70", "Defense 42", "Fist +6", "Physical Absorb +5%", "Damage to Elites and Bosses +20%", "Damage over Time +30%", "Health Regeneration +40 per Second", "Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)"}
+							p = {"Attack 202", "Defense 42", "Fist +6", "Physical Absorb +5%", "Damage to Elites and Bosses +20%", "Damage over Time +30%", "Health Regeneration +40 per Second", "Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)"}
 						},
 						{
 							h = "Item",
@@ -7748,14 +7748,14 @@ CodexData = {
 					id = "unique:27230",
 					name = "Doomtide Longbow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 110. Attack 75, Range 6, Death Absorb +6%, Ranged +6",
+					sub = "Distance weapon, level 110. Attack 77, Range 6, Death Absorb +6%, Ranged +6",
 					f = {class = {"ranger"}, kind = {"weapon"}, level = 110, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Strung with something that was once alive; it hums at the dead. Hum of the Dead: Your hits mark the target for 6 s, up to 3 at once. Marked monsters take 30% more damage from you. Others take 10% less. For: Ranger. (Requires level 110.)"}
 						},
-						{h = "Stats", p = {"Attack 75", "Range 6", "Death Absorb +6%", "Ranged +6"}},
+						{h = "Stats", p = {"Attack 77", "Range 6", "Death Absorb +6%", "Ranged +6"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7923,14 +7923,14 @@ CodexData = {
 					id = "unique:7404",
 					name = "Duskstalker Fang",
 					color = "#ff9c3a",
-					sub = "weapon, level 300. Attack 42, Defense 12, Melee +2",
+					sub = "weapon, level 300. Attack 55, Defense 12, Melee +2",
 					f = {class = {"thief"}, kind = {"other"}, level = 300, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"The first of a pair. It wants the other one in your off hand. First of a Pair: Each hit in a row on one target deals 8% more, up to 6 hits. The first hit on a new target deals 12% less. For: Thief. (Requires level 300.)"}
 						},
-						{h = "Stats", p = {"Attack 42", "Defense 12", "Melee +2"}},
+						{h = "Stats", p = {"Attack 55", "Defense 12", "Melee +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8009,7 +8009,7 @@ CodexData = {
 					id = "unique:7418",
 					name = "Duskstalker Sting",
 					color = "#ff9c3a",
-					sub = "weapon, level 300. Attack 44, Defense 20, Life Leech: chance +3%, amount +4%, Melee +2",
+					sub = "weapon, level 300. Attack 57, Defense 20, Life Leech: chance +3%, amount +4%, Melee +2",
 					f = {class = {"thief"}, kind = {"other"}, level = 300, source = "boss"},
 					sections = {
 						{
@@ -8018,7 +8018,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 44", "Defense 20", "Life Leech: chance +3%, amount +4%", "Melee +2"}
+							p = {"Attack 57", "Defense 20", "Life Leech: chance +3%, amount +4%", "Melee +2"}
 						},
 						{
 							h = "Item",
@@ -8278,7 +8278,7 @@ CodexData = {
 					id = "unique:25882",
 					name = "Emberhowl Greataxe",
 					color = "#ff9c3a",
-					sub = "Axe, level 1950. Attack 77, Defense 36, Melee +7, Life Leech: chance +10%, amount +8%, Chance to Bleed +24%, Damage over Time +42%, Health on Hit +50, Crimson Burst: 20% chance on hit to heal 4% of your health",
+					sub = "Axe, level 1950. Attack 220, Defense 36, Melee +7, Life Leech: chance +10%, amount +8%, Chance to Bleed +24%, Damage over Time +42%, Health on Hit +50, Crimson Burst: 20% chance on hit to heal 4% of your health",
 					f = {class = {"warrior", "templar"}, kind = {"weapon"}, level = 1950, source = "monster"},
 					sections = {
 						{
@@ -8287,7 +8287,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 77", "Defense 36", "Melee +7", "Life Leech: chance +10%, amount +8%", "Chance to Bleed +24%", "Damage over Time +42%", "Health on Hit +50", "Crimson Burst: 20% chance on hit to heal 4% of your health"}
+							p = {"Attack 220", "Defense 36", "Melee +7", "Life Leech: chance +10%, amount +8%", "Chance to Bleed +24%", "Damage over Time +42%", "Health on Hit +50", "Crimson Burst: 20% chance on hit to heal 4% of your health"}
 						},
 						{
 							h = "Item",
@@ -8727,14 +8727,14 @@ CodexData = {
 					id = "unique:27474",
 					name = "Gallows Arbalest",
 					color = "#ff9c3a",
-					sub = "weapon, level 600. Attack 78, Range 6, Ranged +3",
+					sub = "weapon, level 600. Attack 123, Range 6, Ranged +3",
 					f = {class = {"ranger"}, kind = {"other"}, level = 600, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Its string was a hangman's rope. It still pulls tight on its own. Hangman's Rope: Targets at 95% health or more take 90% more damage from you. Targets at 50% or less take 15% less. For: Ranger. (Requires level 600.)"}
 						},
-						{h = "Stats", p = {"Attack 78", "Range 6", "Ranged +3"}},
+						{h = "Stats", p = {"Attack 123", "Range 6", "Ranged +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9031,14 +9031,14 @@ CodexData = {
 					id = "unique:36659",
 					name = "Grasp of the Pyre Saint",
 					color = "#ff9c3a",
-					sub = "Fist weapon, level 650. Attack 64, Defense 24, Fire Absorb +6%, Fist +5",
+					sub = "Fist weapon, level 650. Attack 103, Defense 24, Fire Absorb +6%, Fist +5",
 					f = {class = {"monk"}, kind = {"weapon"}, level = 650, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A saint walked into the pyre and did not stop; only the hand came back out. Saint Walked On: Below 30% health you deal 98% more damage. Above 70% health you deal 15% less. For: Monk. (Requires level 650, Monks only.)"}
 						},
-						{h = "Stats", p = {"Attack 64", "Defense 24", "Fire Absorb +6%", "Fist +5"}},
+						{h = "Stats", p = {"Attack 103", "Defense 24", "Fire Absorb +6%", "Fist +5"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9119,7 +9119,7 @@ CodexData = {
 					id = "unique:25886",
 					name = "Gravetide Arbalest",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 1800. Attack 92, Hit Chance 95, Range 6, Ranged +7, Attack Speed +12%, Physical Penetration +18%, Chance to Poison +20%, Hunter's Rush: 22% chance on kill for haste (4 s)",
+					sub = "Distance weapon, level 1800. Attack 255, Hit Chance 95, Range 6, Ranged +7, Attack Speed +12%, Physical Penetration +18%, Chance to Poison +20%, Hunter's Rush: 22% chance on kill for haste (4 s)",
 					f = {class = {"ranger"}, kind = {"weapon"}, level = 1800, source = "monster"},
 					sections = {
 						{
@@ -9128,7 +9128,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 92", "Hit Chance 95", "Range 6", "Ranged +7", "Attack Speed +12%", "Physical Penetration +18%", "Chance to Poison +20%", "Hunter's Rush: 22% chance on kill for haste (4 s)"}
+							p = {"Attack 255", "Hit Chance 95", "Range 6", "Ranged +7", "Attack Speed +12%", "Physical Penetration +18%", "Chance to Poison +20%", "Hunter's Rush: 22% chance on kill for haste (4 s)"}
 						},
 						{
 							h = "Item",
@@ -9166,7 +9166,7 @@ CodexData = {
 					id = "unique:2404",
 					name = "Gravewhisper Stiletto",
 					color = "#ff9c3a",
-					sub = "Sword, level 600. Attack 56, Defense 31, Melee +3, Attack Speed +10%, Chance to Poison +16%, Health on Hit +30",
+					sub = "Sword, level 600. Attack 88, Defense 31, Melee +3, Attack Speed +10%, Chance to Poison +16%, Health on Hit +30",
 					f = {class = {"thief"}, kind = {"weapon"}, level = 600, source = "monster"},
 					sections = {
 						{
@@ -9175,7 +9175,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 56", "Defense 31", "Melee +3", "Attack Speed +10%", "Chance to Poison +16%", "Health on Hit +30"}
+							p = {"Attack 88", "Defense 31", "Melee +3", "Attack Speed +10%", "Chance to Poison +16%", "Health on Hit +30"}
 						},
 						{
 							h = "Item",
@@ -9259,7 +9259,7 @@ CodexData = {
 					id = "unique:40011",
 					name = "Gravewind Talons",
 					color = "#ff9c3a",
-					sub = "Fist weapon, level 1400. Attack 68, Defense 38, Fist +4, Physical Penetration +14%, Health on Hit +45, Damage to Elites and Bosses +16%, Bloodrush: each kill adds 5% damage (5 stacks, 6 s)",
+					sub = "Fist weapon, level 1400. Attack 174, Defense 38, Fist +4, Physical Penetration +14%, Health on Hit +45, Damage to Elites and Bosses +16%, Bloodrush: each kill adds 5% damage (5 stacks, 6 s)",
 					f = {class = {"monk"}, kind = {"weapon"}, level = 1400, source = "monster"},
 					sections = {
 						{
@@ -9268,7 +9268,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 68", "Defense 38", "Fist +4", "Physical Penetration +14%", "Health on Hit +45", "Damage to Elites and Bosses +16%", "Bloodrush: each kill adds 5% damage (5 stacks, 6 s)"}
+							p = {"Attack 174", "Defense 38", "Fist +4", "Physical Penetration +14%", "Health on Hit +45", "Damage to Elites and Bosses +16%", "Bloodrush: each kill adds 5% damage (5 stacks, 6 s)"}
 						},
 						{
 							h = "Item",
@@ -9905,7 +9905,7 @@ CodexData = {
 					id = "unique:25880",
 					name = "Hollow Throne Claymore",
 					color = "#ff9c3a",
-					sub = "Sword, level 1550. Attack 73, Defense 38, Melee +6, Attack Speed +12%, Damage to Elites and Bosses +20%, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
+					sub = "Sword, level 1550. Attack 191, Defense 38, Melee +6, Attack Speed +12%, Damage to Elites and Bosses +20%, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
 					f = {class = {"warrior", "templar"}, kind = {"weapon"}, level = 1550, source = "monster"},
 					sections = {
 						{
@@ -9914,7 +9914,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 73", "Defense 38", "Melee +6", "Attack Speed +12%", "Damage to Elites and Bosses +20%", "Physical Penetration +18%", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
+							p = {"Attack 191", "Defense 38", "Melee +6", "Attack Speed +12%", "Damage to Elites and Bosses +20%", "Physical Penetration +18%", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
 						},
 						{
 							h = "Item",
@@ -10630,7 +10630,7 @@ CodexData = {
 					id = "unique:14334",
 					name = "Maul of the Sunken Choir",
 					color = "#ff9c3a",
-					sub = "Club, level 1800. Attack 76, Defense 34, Melee +7, Chance to Shock +24%, Executes Monsters below 8% Health, Damage Taken from Monsters -6%, Arc Lightning: 22% chance on hit to arc to 3 monsters nearby",
+					sub = "Club, level 1800. Attack 211, Defense 34, Melee +7, Chance to Shock +24%, Executes Monsters below 8% Health, Damage Taken from Monsters -6%, Arc Lightning: 22% chance on hit to arc to 3 monsters nearby",
 					f = {
 						class = {"warrior", "thief", "monk", "templar"},
 						kind = {"weapon"},
@@ -10644,7 +10644,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 76", "Defense 34", "Melee +7", "Chance to Shock +24%", "Executes Monsters below 8% Health", "Damage Taken from Monsters -6%", "Arc Lightning: 22% chance on hit to arc to 3 monsters nearby"}
+							p = {"Attack 211", "Defense 34", "Melee +7", "Chance to Shock +24%", "Executes Monsters below 8% Health", "Damage Taken from Monsters -6%", "Arc Lightning: 22% chance on hit to arc to 3 monsters nearby"}
 						},
 						{
 							h = "Item",
@@ -10726,7 +10726,7 @@ CodexData = {
 					id = "unique:25418",
 					name = "Mawmaker",
 					color = "#ff9c3a",
-					sub = "Club, level 110. Attack 62, Defense 30, Melee +4, Life Leech: chance +7%, amount +6%",
+					sub = "Club, level 110. Attack 63, Defense 30, Melee +4, Life Leech: chance +7%, amount +6%",
 					f = {class = {"monk", "templar"}, kind = {"weapon"}, level = 110, source = "monster"},
 					sections = {
 						{
@@ -10735,7 +10735,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 62", "Defense 30", "Melee +4", "Life Leech: chance +7%, amount +6%"}
+							p = {"Attack 63", "Defense 30", "Melee +4", "Life Leech: chance +7%, amount +6%"}
 						},
 						{
 							h = "Item",
@@ -11031,7 +11031,7 @@ CodexData = {
 					id = "unique:27193",
 					name = "Misericorde of the Pale Vow",
 					color = "#ff9c3a",
-					sub = "Sword, level 1900. Attack 68, Defense 38, Melee +5, Attack Speed +14%, Health on Hit +45, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
+					sub = "Sword, level 1900. Attack 192, Defense 38, Melee +5, Attack Speed +14%, Health on Hit +45, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
 					f = {class = {"thief"}, kind = {"weapon"}, level = 1900, source = "monster"},
 					sections = {
 						{
@@ -11040,7 +11040,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 68", "Defense 38", "Melee +5", "Attack Speed +14%", "Health on Hit +45", "Physical Penetration +18%", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
+							p = {"Attack 192", "Defense 38", "Melee +5", "Attack Speed +14%", "Health on Hit +45", "Physical Penetration +18%", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
 						},
 						{
 							h = "Item",
@@ -11078,7 +11078,7 @@ CodexData = {
 					id = "unique:26765",
 					name = "Moonlit Gallows Bow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 900. Attack 83, Hit Chance 99, Range 7, Ranged +6, Attack Speed +12%, Physical Penetration +14%, Chance to Bleed +18%, Echo Shot: 18% chance on a ranged hit to shoot again",
+					sub = "Distance weapon, level 900. Attack 178, Hit Chance 99, Range 7, Ranged +6, Attack Speed +12%, Physical Penetration +14%, Chance to Bleed +18%, Echo Shot: 18% chance on a ranged hit to shoot again",
 					f = {class = {"ranger"}, kind = {"weapon"}, level = 900, source = "monster"},
 					sections = {
 						{
@@ -11087,7 +11087,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 83", "Hit Chance 99", "Range 7", "Ranged +6", "Attack Speed +12%", "Physical Penetration +14%", "Chance to Bleed +18%", "Echo Shot: 18% chance on a ranged hit to shoot again"}
+							p = {"Attack 178", "Hit Chance 99", "Range 7", "Ranged +6", "Attack Speed +12%", "Physical Penetration +14%", "Chance to Bleed +18%", "Echo Shot: 18% chance on a ranged hit to shoot again"}
 						},
 						{
 							h = "Item",
@@ -11307,7 +11307,7 @@ CodexData = {
 					id = "unique:2411",
 					name = "Nightbloom Stiletto",
 					color = "#ff9c3a",
-					sub = "Sword, level 1250. Attack 64, Defense 35, Melee +4, Attack Speed +15%, Chance to Poison +24%, Physical Penetration +18%, Critical Echo: 20% chance on a critical hit to strike again",
+					sub = "Sword, level 1250. Attack 161, Defense 35, Melee +4, Attack Speed +15%, Chance to Poison +24%, Physical Penetration +18%, Critical Echo: 20% chance on a critical hit to strike again",
 					f = {class = {"thief"}, kind = {"weapon"}, level = 1250, source = "monster"},
 					sections = {
 						{
@@ -11316,7 +11316,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 64", "Defense 35", "Melee +4", "Attack Speed +15%", "Chance to Poison +24%", "Physical Penetration +18%", "Critical Echo: 20% chance on a critical hit to strike again"}
+							p = {"Attack 161", "Defense 35", "Melee +4", "Attack Speed +15%", "Chance to Poison +24%", "Physical Penetration +18%", "Critical Echo: 20% chance on a critical hit to strike again"}
 						},
 						{
 							h = "Item",
@@ -12316,7 +12316,7 @@ CodexData = {
 					id = "unique:2408",
 					name = "Sanguine Crescent",
 					color = "#ff9c3a",
-					sub = "Sword, level 1000. Attack 78, Defense 38, Life Leech: chance +10%, amount +8%, Melee +8, Attack Speed +12%, Health on Hit +60, Damage to Elites and Bosses +18%, Crimson Burst: 20% chance on hit to heal 4% of your health",
+					sub = "Sword, level 1000. Attack 188, Defense 38, Life Leech: chance +10%, amount +8%, Melee +8, Attack Speed +12%, Health on Hit +60, Damage to Elites and Bosses +18%, Crimson Burst: 20% chance on hit to heal 4% of your health",
 					f = {
 						class = {"warrior", "ranger", "mystic", "thief", "monk", "necromancer", "templar"},
 						kind = {"weapon"},
@@ -12330,7 +12330,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 78", "Defense 38", "Life Leech: chance +10%, amount +8%", "Melee +8", "Attack Speed +12%", "Health on Hit +60", "Damage to Elites and Bosses +18%", "Crimson Burst: 20% chance on hit to heal 4% of your health"}
+							p = {"Attack 188", "Defense 38", "Life Leech: chance +10%, amount +8%", "Melee +8", "Attack Speed +12%", "Health on Hit +60", "Damage to Elites and Bosses +18%", "Crimson Burst: 20% chance on hit to heal 4% of your health"}
 						},
 						{
 							h = "Item",
@@ -12590,7 +12590,7 @@ CodexData = {
 					id = "unique:8209",
 					name = "Soulreaper",
 					color = "#ff9c3a",
-					sub = "Sword, level 120. Attack 52, Defense 28, Extra Defense +2, Life Leech: chance +10%, amount +8%, Melee +4",
+					sub = "Sword, level 120. Attack 54, Defense 28, Extra Defense +2, Life Leech: chance +10%, amount +8%, Melee +4",
 					f = {
 						class = {"warrior", "thief", "necromancer"},
 						kind = {"weapon"},
@@ -12604,7 +12604,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 52", "Defense 28", "Extra Defense +2", "Life Leech: chance +10%, amount +8%", "Melee +4"}
+							p = {"Attack 54", "Defense 28", "Extra Defense +2", "Life Leech: chance +10%, amount +8%", "Melee +4"}
 						},
 						{
 							h = "Item",
@@ -12871,7 +12871,7 @@ CodexData = {
 					id = "unique:22417",
 					name = "Stormherald's Recurve",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 1600. Attack 88, Hit Chance 97, Range 7, Ranged +7, Attack Speed +14%, Elemental Penetration +20%, Chance to Chill +20%, Echo Shot: 22% chance on a ranged hit to shoot again",
+					sub = "Distance weapon, level 1600. Attack 234, Hit Chance 97, Range 7, Ranged +7, Attack Speed +14%, Elemental Penetration +20%, Chance to Chill +20%, Echo Shot: 22% chance on a ranged hit to shoot again",
 					f = {class = {"ranger"}, kind = {"weapon"}, level = 1600, source = "monster"},
 					sections = {
 						{
@@ -12880,7 +12880,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 88", "Hit Chance 97", "Range 7", "Ranged +7", "Attack Speed +14%", "Elemental Penetration +20%", "Chance to Chill +20%", "Echo Shot: 22% chance on a ranged hit to shoot again"}
+							p = {"Attack 234", "Hit Chance 97", "Range 7", "Ranged +7", "Attack Speed +14%", "Elemental Penetration +20%", "Chance to Chill +20%", "Echo Shot: 22% chance on a ranged hit to shoot again"}
 						},
 						{
 							h = "Item",
@@ -13053,14 +13053,14 @@ CodexData = {
 					id = "unique:27646",
 					name = "Thornwake Longbow",
 					color = "#ff9c3a",
-					sub = "weapon, level 150. Attack 73, Range 6, Ranged +3",
+					sub = "weapon, level 150. Attack 80, Range 6, Ranged +3",
 					f = {class = {"ranger"}, kind = {"other"}, level = 150, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Briar wood that still grows a thorn after every shot. Briar Shot: Your ranged hits send 55% of their damage at 2 more monsters within 3 tiles of the target. Costs 0.6% health, never below 35%. For: Ranger. (Requires level 150.)"}
 						},
-						{h = "Stats", p = {"Attack 73", "Range 6", "Ranged +3"}},
+						{h = "Stats", p = {"Attack 80", "Range 6", "Ranged +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -13643,7 +13643,7 @@ CodexData = {
 					id = "unique:25885",
 					name = "Wake-Heron Longbow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 2100. Attack 91, Hit Chance 98, Range 7, Ranged +7, Attack Speed +14%, Elemental Penetration +18%, Damage over Time +40%, Echo Shot: 20% chance on a ranged hit to shoot again",
+					sub = "Distance weapon, level 2100. Attack 262, Hit Chance 98, Range 7, Ranged +7, Attack Speed +14%, Elemental Penetration +18%, Damage over Time +40%, Echo Shot: 20% chance on a ranged hit to shoot again",
 					f = {class = {"ranger"}, kind = {"weapon"}, level = 2100, source = "monster"},
 					sections = {
 						{
@@ -13652,7 +13652,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 91", "Hit Chance 98", "Range 7", "Ranged +7", "Attack Speed +14%", "Elemental Penetration +18%", "Damage over Time +40%", "Echo Shot: 20% chance on a ranged hit to shoot again"}
+							p = {"Attack 262", "Hit Chance 98", "Range 7", "Ranged +7", "Attack Speed +14%", "Elemental Penetration +18%", "Damage over Time +40%", "Echo Shot: 20% chance on a ranged hit to shoot again"}
 						},
 						{
 							h = "Item",
@@ -13875,7 +13875,7 @@ CodexData = {
 					id = "unique:25881",
 					name = "Wyrmgrave Cleaver",
 					color = "#ff9c3a",
-					sub = "Axe, level 1500. Attack 74, Defense 33, Melee +6, Life Leech: chance +10%, amount +8%, Chance to Bleed +25%, Damage over Time +44%, Health on Hit +55, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
+					sub = "Axe, level 1500. Attack 192, Defense 33, Melee +6, Life Leech: chance +10%, amount +8%, Chance to Bleed +25%, Damage over Time +44%, Health on Hit +55, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
 					f = {
 						class = {"warrior", "thief", "monk", "templar"},
 						kind = {"weapon"},
@@ -13889,7 +13889,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 74", "Defense 33", "Melee +6", "Life Leech: chance +10%, amount +8%", "Chance to Bleed +25%", "Damage over Time +44%", "Health on Hit +55", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
+							p = {"Attack 192", "Defense 33", "Melee +6", "Life Leech: chance +10%, amount +8%", "Chance to Bleed +25%", "Damage over Time +44%", "Health on Hit +55", "Bloodrush: each kill adds 4% damage (5 stacks, 6 s)"}
 						},
 						{
 							h = "Item",

@@ -363,8 +363,9 @@ P.features = {
 			local pct = 100 / C.spellscaling.mlShare.per
 			return {pct = {en = string.format("%.2f", pct), pt = (string.format("%.2f", pct):gsub("%.", ","))}}
 		end,
-		what = {"A spell's damage starts from your level, your magic level and, for a weapon class, your weapon skill and attack. A caster's magic level is its skill. Every magic level adds about {pct}% to the spells of a weapon class. Class, passive tree, gear modifiers, gems, support runes, cards, charms, uniques and sets raise it more.",
-			"O dano de uma magia parte do seu nível, do nível mágico e, numa classe de arma, da skill e do ataque da arma. O nível mágico do conjurador é a skill dele. Cada nível mágico soma cerca de {pct}% às magias de uma classe de arma. Classe, árvore passiva, modificadores, gemas, runas de suporte, cartas, charms, únicos e conjuntos aumentam mais."},
+		-- O472: the weapon growth reaches a caster's spells through its wand or rod (spell_scaling_config.lua caster)
+		what = {"A spell's damage starts from your level, your magic level and, for a weapon class, your weapon skill and attack. A caster's magic level is its skill. Every magic level adds about {pct}% to the spells of a weapon class. A caster's spells also grow with the level through the wand or rod in its hands. Class, passive tree, gear modifiers, gems, support runes, cards, charms, uniques and sets raise it more.",
+			"O dano de uma magia parte do seu nível, do nível mágico e, numa classe de arma, da skill e do ataque da arma. O nível mágico do conjurador é a skill dele. Cada nível mágico soma cerca de {pct}% às magias de uma classe de arma. As magias de um conjurador também crescem com o nível pela varinha ou bastão nas mãos. Classe, árvore passiva, modificadores, gemas, runas de suporte, cartas, charms, únicos e conjuntos aumentam mais."},
 		who = {"Every class. Mystic, Elementalist, Illusionist and Necromancer lines scale with level and magic level. Warrior, Ranger, Thief and Monk lines scale with level, weapon skill and weapon attack, and a little with magic level. Templar spells use all three.",
 			"Toda classe. As linhas Mystic, Elementalist, Illusionist e Necromancer crescem com o nível e o nível mágico. As linhas Warrior, Ranger, Thief e Monk crescem com o nível, a skill e o ataque da arma, e um pouco com o nível mágico. As magias da linha Templar usam os três."}},
 

@@ -828,9 +828,11 @@ Open for the Necromancer:
   vocation's meleeDamage multiplier, and there is no "fist" weapon type in the item types. So the Monk's unarmed damage is scripted on the
   weapon hook, without an engine patch: `monk_combat.lua` scales a Monk's fist hit (melee origin, nothing in the hands) by (formula with
   the Monk's fist attack x meleeDamage) / (formula with attack 7). The fist attack grows with level: 40 + level x 0.025, at most 60
-  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): twenty-two hand items of weaponType
+  (level 300: 47.5), times the weapon growth a(level) of O472 (x1.31 at 300, x2.41 at 1000, x2.88 from 2000: 62.0 at 300, 144.7 at 1000;
+  server/README.md "Weapon growth (O472)"). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): twenty-two hand items of weaponType
   "shield" with an attack, worn in the shield hand by the Monk line only, from level 1 to 2200; their attack replaces the level
-  value when higher. Plain tiers: splinter claws 41 / level 1 (the starter kit), charred hand wraps 42 / 8, rustiron claws 43 / 35,
+  value when higher. Plain tiers (the attack before O472; the installed attack is it times a(level), 46 -> 50 at 150, 65 at 300, 82 at 500, 152 at 1000):
+  splinter claws 41 / level 1 (the starter kit), charred hand wraps 42 / 8, rustiron claws 43 / 35,
   ashbound cestus 44 / 60, ashen steel claws 45 / 100, ember knuckles 46 / 150, ossuary gauntlet 50 / 300, cinderforged talons 55 /
   500, gravetooth cestus 61 / 750, emberhide claws 62 / 800, hollowfang katars 63 / 950, voidglass claws 63 / 1000, wardenplate
   gauntlet 64 / 1150, stormforged claws 64 / 1250, wyrmbone claws 65 / 1500, gravewrought claws

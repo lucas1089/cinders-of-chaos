@@ -5129,3 +5129,31 @@ still hold for a typical character without supports.
 monster defence layer; `companion.autoByLevel` was re-fitted to keep the plain build's bite, and `tools/companion_model.py` multiplies
 the bite by the same event factors (`event_factor`), so its plain numbers are the old ones and its tree and full numbers include
 what the tree now gives the bite (server README "Spell scaling (O468)").
+
+## Weapon growth (O472, owner 2026-11-10; computed, not measured)
+
+The weapon values grow with the level (server README "Weapon growth (O472)"): W(level) 1.00 up to 100, 1.14 at 200, 1.26 at 300, 1.42
+at 500, 1.55 at 700, 1.85 at 850, 2.20 at 1000, 2.35 at 1500, 2.60 at 2000; an attack grows by a = 1 + (W - 1) / 0.85 (x1.49 at 500,
+x2.41 at 1000). A caster takes W as a factor on its spells with a wand or rod of its level band (1 + (W - 1) x min(1.2, wand / mean wand
+of the level), 1 without a wand). The tables of this file are measured with the attack and the wand of before and are not rewritten:
+they are the "before" of the numbers below until the model round re-fits them.
+
+Typical character of `rotation_sim.py` ANCHORS on the probe engine (`tests/fixtures/spell_probe_engine.lua`), weapon attack x a, caster with a wand of the band:
+
+| Spell | Level 500 | Level 1000 |
+|---|---|---|
+| Rift Cleaver (Warrior) | 1286 -> 1858 (x1.44) | 1733 -> 3856 (x2.23) |
+| Sunspear (Ranger) | 1414 -> 2048 (x1.45) | 1960 -> 4403 (x2.25) |
+| Hallowed Cut (Templar) | 1373 -> 1977 (x1.44) | 1846 -> 4093 (x2.22) |
+| Gorehook (Warrior, scripted, level heavy) | 1462 -> 1910 (x1.31) | 2235 -> 3892 (x1.74) |
+| Gutting Slash (Thief) | 725 -> 1020 (x1.41) | 1004 -> 2098 (x2.09) |
+| Phantom Needles (Illusionist) | 1972 -> 2801 (x1.42) | 2506 -> 5514 (x2.20) |
+| Marrow Bolt (Necromancer) | 1001 -> 1421 (x1.42) | 1306 -> 2873 (x2.20) |
+| Rime Bloom (Mystic) | 610 -> 866 (x1.42) | 836 -> 1840 (x2.20) |
+| Auto attack, melee max hit | 721 -> 1028 (x1.43) | 1003 -> 2138 (x2.13) |
+| Auto attack, distance max hit | 810 -> 1160 (x1.43) | 1152 -> 2495 (x2.17) |
+| Monk bare fist max hit | 659 -> 935 (x1.42) | 942 -> 1989 (x2.11) |
+
+A weapon spell grows a little more than W (its level term is small and its weapon term carries a), a level heavy one less. The auto attack
+lift of `weapon_power_config.lua` was regenerated with the reference rotation times W: distance 1.63 and wand 1.95 at level 1000 (was
+1.49 and 2.14).

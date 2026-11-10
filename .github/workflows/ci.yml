@@ -859,6 +859,11 @@ jobs:
           python3 -I server/tools/weapon_sim.py --check
           python3 -I server/tools/weapon_sim.py --power --check  # weapon_power_config.lua (auto attack power)
           python3 -I server/tools/gen_base_wands.py --check  # data/lib/chaos_base_wands.lua: stock wand damage for the tooltip (O353)
+          # O472: the weapon values grow with the level: W and the curves, the install tools over an old install, the growth table of the
+          # upgrade on touch, the stock weapons' install step (and the Lua audit's rule), the generated table
+          python3 -I server/tools/weapon_growth_test.py
+          python3 -I server/tools/patch_stock_weapon_growth_test.py
+          python3 -I server/tools/gen_weapon_growth.py --check  # data/lib/chaos_weapon_growth.lua
           python3 -I server/tools/add_vocations_melee_test.py
           python3 -I server/tools/monster_fire_resist_test.py
           python3 -I server/tools/monster_physical_resist_test.py  # no hunt monster immune to physical (Thief line bug 2026-11-02)

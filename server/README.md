@@ -7666,6 +7666,9 @@ por favor?" Audit (the base engine is TFS 1.4.2 and no src-patch touches `Weapon
   Monk line is at 53-62% of its rotation already, target 30%); the skill factor applies with the fist skill. Not touched:
   spells, runes, conditions, procs. The tooltip's "Estimated
   DPS" (`weapon_dps_core.lua`) includes both factors when `weapon_power_core.lua` is loaded (`item_tooltip.lua` loads it).
+* O472 (weapon growth): the reference rotation is now times W(level) and the own attack of a kind uses the grown curves, so the
+  lift is: distance 1.00 up to level 200, 1.08 at 300, 1.27 at 500, 1.63 at 1000, 1.98 at 2000; wand 1.74 at 200, 1.83 at 500, 1.95 at
+  1000, 2.12 at 2000; melee and fist 1 ("Weapon growth (O472)").
 * To retune: change `POWER_KINDS` (share, reference class) or `SKILL_POWER` in `tools/weapon_sim.py`, run `--power --write`.
   A class or spell change moves the rotation numbers, `--power --check` (CI) then asks for a new config.
 * Live server: the `files` step and a restart (the scripts are read at start). No database or client change. Not run in game.
@@ -12754,9 +12757,10 @@ The bands overlap, so a character always has a set running and the next one star
   next piece of a slot a little higher, never a big jump. Stats are fixed by the level along curves anchored to the
   stock gear of the same level (`CURVES` in the tool; the stock gear stops growing after level 1000, the curves go on
   slowly to 2000): body armour 7 / 13 / 16 / 19 / 25 / 31 at 8 / 100 / 200 / 400 / 1000 / 2000 (medium x0.9, cloth
-  x0.8), one-handed melee attack 16 / 46 / 49 / 53 / 61 / 69 (two-handed +3 and 3 s attacks, as `two_handed.py`), of
-  it 35% the set's element; launchers the archery bands' attack (31 at level 8, 68 at 100, 85 at 2000) and hit
-  chance, the set's missile; wands 16 / 62 / 85 / 98 / 118 / 138 mean damage of the set's element, mana 2-33; shields
+  x0.8), one-handed melee attack 16 / 46 / 57 / 75 / 147 / 199 at 8 / 100 / 200 / 400 / 1000 / 2000 (O472: was 16 / 46 / 49 / 53 /
+  61 / 69; two-handed +3 and 3 s attacks, as `two_handed.py`), of it 35% the set's element; launchers the attack of the bow
+  curve (31 at level 8, 68 at 100, 245 at 2000; was 85) and the hit chance, the set's missile; wands 16 / 62 / 99 / 138 / 285 /
+  398 mean damage of the set's element (was 16 / 62 / 85 / 98 / 118 / 138), mana 2-33 ("Weapon growth (O472)"); shields
   defense 14-55, spellbooks 8-33 with magic level +1 to +5; skills and magic level in steps by level; the set's
   resisted element on body armour and amulet (2-10%, a weakness of half on body armour), half on helmet, legs,
   shield and spellbook; rings physical 1-4%; boots speed 0-40. Bloodmoon weapons leech life (chance and amount 2-6).
@@ -15037,7 +15041,8 @@ Owner question: does every class have enough weapons? The audit answers it from 
   (two-handed +3, crossbow +3).
 - **Inputs.** `data/items/base_weapons.csv` is a snapshot of the stock weapons of an installed server, made by
   `python3 -I tools/survey_base_weapons.py INSTALLED_DATA` (like `base_item_values.csv`, so CI needs no game data; run it
-  again when `install_all.py` changes a weapon). The rest is in the repo: `chaos_items.xml`, `chaos_unique_specs.lua`,
+  again when `install_all.py` changes a weapon; O472: the file keeps the numbers BEFORE the stock weapon growth of "Weapon growth
+  (O472)", the audit applies `stockGrowth` of `weapon_coverage_config.lua` to its rows). The rest is in the repo: `chaos_items.xml`, `chaos_unique_specs.lua`,
   `chaos_unique_items.lua` (drops), `chaos_gear_sets_items.lua` and `chaos_gear_sets.lua` (sources), `chaos_fist_weapons.lua`,
   `chaos_weapons800.lua` (the 34 weapons above level 800, their own monster rows are the source it counts), the base recipes and the Chaos monster loot.
 - **Check (CI).** `cd server && luajit tools/weapon_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
@@ -15064,27 +15069,27 @@ Owner question: does every class have enough weapons? The audit answers it from 
 
 | Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
-| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
-| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 11/101 | 8/101 | 12/122 | 8/107 | 11/108 |
-| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 13/101 | 10/106 | 13/101 | 13/107 | 15/107 |
-| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 13/101 | 10/106 | 13/101 | 13/107 | 15/107 |
-| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 7/101 | 7/106 | 8/101 | 9/107 | 10/107 |
-| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
-| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 10/145 | 7/100 | 9/153 | 9/100 | 11/100 |
-| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 11/145 | 7/100 | 9/153 | 9/100 | 11/100 |
-| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
-| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
-| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 28/113 | 14/101 | 25/122 | 20/114 | 27/113 |
-| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
-| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
-| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 17/145 | 13/100 | 17/153 | 17/100 | 20/100 |
-| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
-| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
-| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 29/113 | 17/106 | 27/122 | 22/114 | 30/113 |
-| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
-| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
-| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 27/113 | 14/101 | 24/122 | 21/114 | 29/113 |
+| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
+| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
+| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/114 | 11/102 | 8/100 | 12/125 | 8/110 | 11/111 |
+| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/102 | 13/102 | 10/107 | 13/100 | 13/107 | 15/109 |
+| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/102 | 13/102 | 10/107 | 13/100 | 13/107 | 15/109 |
+| Beastmaster | 4/114 | 3/110 | 5/108 | 9/111 | 15/101 | 7/100 | 7/107 | 8/100 | 9/107 | 10/107 |
+| Mystic | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
+| Elementalist | 5/135 | 6/215 | 4/182 | 10/565 | 16/132 | 10/146 | 7/100 | 9/152 | 9/100 | 11/100 |
+| Illusionist | 8/135 | 11/215 | 4/182 | 11/565 | 26/132 | 11/146 | 7/100 | 9/152 | 9/100 | 11/100 |
+| Thief * | 60/325 | 68/140 | 73/149 | 43/137 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
+| Ninja * | 60/325 | 68/140 | 73/149 | 43/137 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
+| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
+| Necromancer | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
+| Lich | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
+| Bone Lord | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
+| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/114 | 29/113 | 17/106 | 27/125 | 22/114 | 30/113 |
+| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/114 | 29/113 | 17/106 | 27/125 | 22/114 | 30/113 |
+| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/114 | 29/113 | 17/106 | 27/125 | 22/114 | 30/113 |
+| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
+| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
+| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
 
 <!-- weapon-coverage:end -->
 
@@ -23448,6 +23453,13 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
 The Monk line's fist weapons (docs/CLASSES.md "Monk"). Owner 2026-10-23: "creio que o monk nao tem armas pra ele. se nao
 tiver, faca por favor".
 
+* **O472 (2026-11-10): the numbers below are the attack before the weapon growth.** The CSV keeps them; `install_fist_weapons.py`
+  installs `grown(CSV attack, level)` (weapon_growth.py: a(level) = 1.31 at 300, 1.49 at 500, 2.41 at 1000, 2.88 from 2000), and
+  the Monk's bare fist (`ChaosMonk.fistAttack`, `ChaosArchetypesCore.fistAttack`: 40 + 0.025 per level, at most 60) is times the
+  same a(level), so a claw still beats bare fists by the margin it had ("the attack above 60 at level 800" now reads 62 -> 117 against 115).
+  Examples installed: ossuary gauntlet 50 -> 65 (level 300), cinderforged talons 55 -> 82 (500), emberhide claws 62 -> 117 (800),
+  voidglass claws 63 -> 152 (1000), last-dawn claws 67 -> 193 (2200). "Weapon growth (O472)".
+
 * **The gap found.** The Monk did have six fist weapons (levels 8 to 650), but: nothing for levels 1 to 7 and 9 to 59 (the
   kit was empty hands); one unique (level 650) and none to level up with; after level 650 nothing, so a Monk from level 650
   to 2400+ wore the same talons or went bare (bare fists reach their cap of 60 at level 800 and nothing beat them); the
@@ -29199,40 +29211,40 @@ nine wands, nine rods and three two-handed melee weapons (a greatsword, a greata
 
 | Server id | Item | Type | Level | Element | Stats | Own monster drops (per 100,000) |
 |---|---|---|---|---|---|---|
-| 48412 | gravesong bow | bow | 820 | death | attack 77, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48413 | emberthorn longbow | bow | 885 | fire | attack 78, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48414 | hollowreed recurve | bow | 950 | earth | attack 79, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48415 | stormlace bow | bow | 1120 | energy | attack 80, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
-| 48416 | veilpiercer bow | bow | 1235 | holy | attack 80, hit 97%, range 6, skill +4 | Winterstride 150 |
-| 48417 | duskpetal longbow | bow | 1420 | earth | attack 82, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48418 | ashen halo bow | bow | 1580 | holy | attack 82, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48419 | throneseeker bow | bow | 1850 | energy | attack 84, hit 98%, range 6, skill +5 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
-| 48420 | last-ember recurve | bow | 2150 | fire | attack 85, hit 98%, range 6, skill +5 | Azhkarrath the Chained Wyrm 1200 |
-| 48421 | bonehinge arbalest | crossbow | 840 | death | attack 80, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48422 | cindergut crossbow | crossbow | 930 | fire | attack 81, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48423 | frostlatch arbalest | crossbow | 1150 | ice | attack 83, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Winterstride 150 |
-| 48424 | thornwarden crossbow | crossbow | 1480 | earth | attack 85, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48425 | cinderbloom wand | wand | 830 | fire | damage 95-129 fire, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48426 | mirewhisper spire | wand | 890 | earth | damage 97-131 earth, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48427 | stormglass scepter | wand | 960 | energy | damage 99-134 energy, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48428 | hoarwick wand | wand | 1080 | ice | damage 102-138 ice, mana 27, magic level +3 | Celestial Wyrm 150, Ossivane the Gravecage 1200 |
-| 48429 | sunscar focus | wand | 1200 | holy | damage 104-140 holy, mana 28, magic level +3 | Winterstride 150 |
-| 48430 | thunderwake scepter | wand | 1400 | energy | damage 107-145 energy, mana 29, magic level +3 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48431 | emberveil spire | wand | 1560 | fire | damage 110-149 fire, mana 30, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48432 | rotcrown wand | wand | 1780 | death | damage 114-154 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
-| 48433 | wyrmtongue focus | wand | 2100 | energy | damage 117-159 energy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
-| 48434 | hushwood rod | rod | 825 | death | damage 95-129 death, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48435 | mirrorbark staff | rod | 885 | ice | damage 97-131 ice, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48436 | dreamthorn branch | rod | 955 | earth | damage 99-134 earth, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48437 | veilhollow crook | rod | 1100 | death | damage 102-138 death, mana 28, magic level +3 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
-| 48438 | glimmerbough rod | rod | 1210 | holy | damage 104-141 holy, mana 28, magic level +3 | Winterstride 150 |
-| 48439 | gloamroot staff | rod | 1390 | earth | damage 107-145 earth, mana 29, magic level +3 | Bloodantler Fiend 150 |
-| 48440 | wraithwillow rod | rod | 1590 | ice | damage 110-149 ice, mana 31, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
-| 48441 | nightbloom crook | rod | 1820 | death | damage 114-155 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
-| 48442 | eventide branch | rod | 2080 | holy | damage 117-159 holy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
-| 48443 | gravewrought greatsword | sword2 | 850 | death | attack 40 + death 22, defense 37, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
-| 48444 | ashmaw greataxe | axe2 | 910 | fire | attack 41 + fire 22, defense 37, skill +3 | Dawn Strayer 150, Ice Lich 150 |
-| 48445 | dirgebell maul | club2 | 975 | holy | attack 42 + holy 22, defense 38, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48412 | gravesong bow | bow | 820 | death | attack 149, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48413 | emberthorn longbow | bow | 885 | fire | attack 163, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48414 | hollowreed recurve | bow | 950 | earth | attack 179, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48415 | stormlace bow | bow | 1120 | energy | attack 196, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
+| 48416 | veilpiercer bow | bow | 1235 | holy | attack 201, hit 97%, range 6, skill +4 | Winterstride 150 |
+| 48417 | duskpetal longbow | bow | 1420 | earth | attack 209, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48418 | ashen halo bow | bow | 1580 | holy | attack 217, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48419 | throneseeker bow | bow | 1850 | energy | attack 235, hit 98%, range 6, skill +5 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48420 | last-ember recurve | bow | 2150 | fire | attack 245, hit 98%, range 6, skill +5 | Azhkarrath the Chained Wyrm 1200 |
+| 48421 | bonehinge arbalest | crossbow | 840 | death | attack 156, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48422 | cindergut crossbow | crossbow | 930 | fire | attack 177, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48423 | frostlatch arbalest | crossbow | 1150 | ice | attack 200, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Winterstride 150 |
+| 48424 | thornwarden crossbow | crossbow | 1480 | earth | attack 214, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48425 | cinderbloom wand | wand | 830 | fire | damage 187-253 fire, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48426 | mirewhisper spire | wand | 890 | earth | damage 205-278 earth, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48427 | stormglass scepter | wand | 960 | energy | damage 229-310 energy, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48428 | hoarwick wand | wand | 1080 | ice | damage 249-336 ice, mana 27, magic level +3 | Celestial Wyrm 150, Ossivane the Gravecage 1200 |
+| 48429 | sunscar focus | wand | 1200 | holy | damage 258-349 holy, mana 28, magic level +3 | Winterstride 150 |
+| 48430 | thunderwake scepter | wand | 1400 | energy | damage 274-370 energy, mana 29, magic level +3 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48431 | emberveil spire | wand | 1560 | fire | damage 288-390 fire, mana 30, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48432 | rotcrown wand | wand | 1780 | death | damage 313-424 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48433 | wyrmtongue focus | wand | 2100 | energy | damage 338-458 energy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
+| 48434 | hushwood rod | rod | 825 | death | damage 185-251 death, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48435 | mirrorbark staff | rod | 885 | ice | damage 204-276 ice, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48436 | dreamthorn branch | rod | 955 | earth | damage 227-307 earth, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48437 | veilhollow crook | rod | 1100 | death | damage 250-338 death, mana 28, magic level +3 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
+| 48438 | glimmerbough rod | rod | 1210 | holy | damage 259-350 holy, mana 28, magic level +3 | Winterstride 150 |
+| 48439 | gloamroot staff | rod | 1390 | earth | damage 273-369 earth, mana 29, magic level +3 | Bloodantler Fiend 150 |
+| 48440 | wraithwillow rod | rod | 1590 | ice | damage 292-395 ice, mana 31, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48441 | nightbloom crook | rod | 1820 | death | damage 318-430 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48442 | eventide branch | rod | 2080 | holy | damage 338-458 holy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
+| 48443 | gravewrought greatsword | sword2 | 850 | death | attack 79 + death 42, defense 37, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48444 | ashmaw greataxe | axe2 | 910 | fire | attack 86 + fire 47, defense 37, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48445 | dirgebell maul | club2 | 975 | holy | attack 94 + holy 51, defense 38, skill +3 | Dawn Strayer 150, Ice Lich 150 |
 
 * **Drops, in two ways, and not in the sets' level gear pool.**
   1. The bases are in the class loot families of `data/lib/chaos_class_loot.lua` (`L.bases`: bow, crossbow, wand, rod, melee2h):
@@ -29282,11 +29294,11 @@ curves, class lists, loot rules, set bonuses at 2, 4 and 6 pieces, audits and te
 
 | Set | Level (audit band) | Damage element | Resists / weak to | Look | Staff | Key stats at that level |
 |---|---|---|---|---|---|---|
-| Venomcoil (`venomcoil`, ids 48446-48458) | 640 (400-700) | earth | earth / fire | dark green scales, gold trim | wand | helm 10, cuirass 19, boots 4 + speed 24, shield 42, blade 36 + earth 20, greataxe 38 + earth 21, bow 75 / hit 96, scepter 90-122 mana 23 |
-| Hoarglass (`hoarglass`, 48459-48471) | 860 (700-1000) | ice | ice / fire | pale ice-blue steel | wand | helm 12, cuirass 21, boots 5 + speed 28, shield 45, blade 38 + ice 21, greataxe 40 + ice 22, bow 78 / hit 97, scepter 96-130 mana 26 |
-| Kilnforged (`kilnforged`, 48472-48484) | 1400 (1300-1700) | fire | fire / ice | blackened iron, ember seams | wand | helm 14, cuirass 25, boots 6 + speed 34, shield 50, blade 42 + fire 22, greataxe 44 + fire 23, bow 81 / hit 97, scepter 107-145 mana 29 |
-| Halogild (`halogild`, 48485-48497) | 1700 (1700-2400+) | holy | death / earth | polished gold, blue and red gems | rod | helm 15, cuirass 26, boots 6 + speed 37, shield 53, blade 44 + holy 23, greataxe 45 + holy 25, bow 83 / hit 97, staff 112-152 mana 31 |
-| Deepdirge (`deepdirge`, 48498-48510) | 2050 (1700-2400+) | death | death / holy | dark steel, teal abyssal gems | rod | helm 16, cuirass 28, boots 7 + speed 40, shield 55, blade 45 + death 24, greataxe 47 + death 25, bow 85 / hit 98, staff 117-159 mana 33 |
+| Venomcoil (`venomcoil`, ids 48446-48458) | 640 (400-700) | earth | earth / fire | dark green scales, gold trim | wand | helm 10, cuirass 19, boots 4 + speed 24, shield 42, blade 59 + earth 31, greataxe 60 + earth 33, bow 121 / hit 96, scepter 144-195 mana 23 |
+| Hoarglass (`hoarglass`, 48459-48471) | 860 (700-1000) | ice | ice / fire | pale ice-blue steel | wand | helm 12, cuirass 21, boots 5 + speed 28, shield 45, blade 78 + ice 42, greataxe 80 + ice 43, bow 157 / hit 97, scepter 195-264 mana 26 |
+| Kilnforged (`kilnforged`, 48472-48484) | 1400 (1300-1700) | fire | fire / ice | blackened iron, ember seams | wand | helm 14, cuirass 25, boots 6 + speed 34, shield 50, blade 107 + fire 57, greataxe 109 + fire 58, bow 208 / hit 97, scepter 274-370 mana 29 |
+| Halogild (`halogild`, 48485-48497) | 1700 (1700-2400+) | holy | death / earth | polished gold, blue and red gems | rod | helm 15, cuirass 26, boots 6 + speed 37, shield 53, blade 117 + holy 63, greataxe 119 + holy 64, bow 225 / hit 97, staff 304-411 mana 31 |
+| Deepdirge (`deepdirge`, 48498-48510) | 2050 (1700-2400+) | death | death / holy | dark steel, teal abyssal gems | rod | helm 16, cuirass 28, boots 7 + speed 40, shield 55, blade 129 + death 70, greataxe 131 + death 71, bow 245 / hit 98, staff 338-458 mana 33 |
 
   The pieces of a set share its level (a set is worn whole), so the audits see 100% of the tier at every slot. The element, the resisted
   and the weak element and the missiles of a set are in `install_relic_sets.py` `SETS` (a pseudo entry of `install_gear_sets.py`
@@ -30482,6 +30494,136 @@ heals), gear Spell Damage rolling only on wands and rods, the growth of spell da
 `tests/templar_test.lua`, `tools/patch_stock_spell_inputs_test.py`. **Not verified:** a live server (the event order and ORIGIN_NONE
 are read from the engine source, not observed), the effect of the missing condition icon, the pt-BR text by a speaker, the
 base scripts of Kindling Spark and Bewitching Hex beyond the read-only copy.
+
+## Weapon growth (O472) (`weapon_growth.py`, `spell_scaling_config.lua` `weaponGrowth` and `caster`, `spell_scaling_core.lua`, `patch_stock_weapon_growth.py`, `gen_weapon_growth.py`, `chaos_crafting.lua` `growWeapon`, `tests/weapon_growth_test.lua`, `tests/weapon_growth_touch_test.lua`)
+
+Owner 2026-11-10 (translated): "You can do everything", on the damage design (typical damage about doubles at level 1000, equipment
+carries a third of the growth). This is package O472 of that round: the weapon values grow with the level. Computed and mocked,
+never run on a live server or in a client.
+
+**The rule.** `W(level)` is the factor on the weapon term of a hit: 1.00 up to level 100, 1.14 at 200, 1.26 at 300, 1.42 at 500,
+1.55 at 700, 1.85 at 850, 2.20 at 1000, 2.35 at 1500, 2.60 at 2000, straight in the logarithm of the level between the rows, flat
+above 2000. It never falls and never rises more than x1.082 over 50 levels (the limit was 1.12). Skill x attack is about 85% of a
+weapon hit, so an attack grows by `a = 1 + (W - 1) / 0.85`: 1.16 at 200, 1.31 at 300, 1.49 at 500, 1.65 at 700, 2.41 at 1000, 2.59
+at 1500, 2.88 at 2000. One table, two copies held equal by tests: `tools/weapon_growth.py` and `spell_scaling_config.lua`
+`weaponGrowth`.
+
+**Before and after** (`tools/install_gear_sets.py` curves, computed with `python3 -I server/tools/weapon_growth.py` functions;
+the old column is the real file before this change, the design's table differs by one point where it rounded):
+
+| level | W | a | one-hand attack | bow | wand mean | bare fist | Shuriken default attack |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 1.00 | 1.00 | 46 -> 46 | 68 -> 68 | 62 -> 62 | 42.5 -> 42.5 | 50 -> 50 |
+| 300 | 1.26 | 1.31 | 51 -> 67 | 72 -> 94 | 92 -> 119 | 47.5 -> 62.0 | 50 -> 65 |
+| 500 | 1.42 | 1.49 | 54 -> 81 | 74 -> 111 | 101 -> 151 | 52.5 -> 78.4 | 50 -> 75 |
+| 700 | 1.55 | 1.65 | 57 -> 94 | 76 -> 125 | 108 -> 178 | 57.5 -> 94.7 | 50 -> 82 |
+| 1000 | 2.20 | 2.41 | 61 -> 147 | 79 -> 191 | 118 -> 285 | 60.0 -> 144.7 | 50 -> 121 |
+| 2000 | 2.60 | 2.88 | 69 -> 199 | 85 -> 245 | 138 -> 398 | 60.0 -> 172.9 | 50 -> 144 |
+
+The design's numbers for a bow at 200 (82) and a wand at 300 (121) are 83 and 119 here: the real old curve at 300 is 91.5 (the
+design took 92) and the product rounds to the nearest whole. Every curve point is the old curve times `a` to within half a point
+(`tools/weapon_growth_test.py`, `tests/weapon_growth_test.lua`); between the anchors a straight line stays within 1.2% of the exact
+product. Two-handed weapons keep +3 attack and crossbows +3 on the bow curve; the hit chance curve is not changed.
+
+**Where the numbers live.**
+
+| What | Where |
+|---|---|
+| Curves of the equipment sets, the weapons above level 800 and the relic sets | `install_gear_sets.py` `WEAPON_ANCHORS`, `WEAPON_CURVES` (attack, bow, wand; 12 anchors, 300 / 500 / 850 added); `OLD_WEAPON_CURVES` keeps the old ones; the two other tools call its `stats_of`. Generated: `chaos_gear_sets_items.lua`, `chaos_weapons800.lua`, `chaos_relic_sets_items.lua` |
+| The audits | `weapon_coverage_config.lua` `anchors`, `curves` (same numbers), `stockGrowth` |
+| Fist weapons | `install_fist_weapons.py`: the CSV keeps the attack before, the installed attack is `grown(CSV, level)`; `chaos_fist_weapons.lua` |
+| Uniques | `data/items/chaos_items.xml`: the 29 weapon uniques of a level above 100 times `a(level)` (the level is `equipLevel` or the "Requires level" of the text), `chaos_unique_specs.lua` regenerated |
+| Auto attack power | `weapon_power_config.lua` and `weapon_balance_config.lua` regenerated by `weapon_sim.py` (see below) |
+| The caster factor | `spell_scaling_config.lua` `caster`, `spell_scaling_core.lua` `casterFactor` |
+
+**Stock weapons of the base server.** The install tools write nothing of the 520 stock weapons (`base_weapons.csv`). Left alone they
+fall below 60% of the tier from level 800 and a class finds almost no usable weapon among them: `gear_coverage.lua --fairness` showed
+Warrior 2.4 / 1.4 / 0.2 usable weapons per 1000 kills at hunting level 800 / 1000 / 1200 against 28 (the one-handed melee loadout; the
+anchors of `chaos_class_loot.lua` cannot make up for it, `--derive` runs into the 3000 cap). So the new install step **weapongrowth**
+(`tools/patch_stock_weapon_growth.py`, after `throwables`) gives them the same growth: a sword, axe, club, bow or crossbow of a
+`weapons.xml` level above 100 without charges gets attack and element damage times `a(level)` in `items.xml`, a wand or rod of a
+level above 100 gets min and max times `a(level)` in `weapons.xml`. The numbers before are kept in one comment at the end of each file;
+every run works from them, so the step is idempotent, a server installed before O472 moves on the first run and a change of the table
+moves it again. `survey_base_weapons.py` reads the comment back, so `base_weapons.csv` stays the stock snapshot and the audits
+(`weapon_coverage.lua` `stockGrowth`, `gear_coverage.lua`) apply the same rule to it; `tools/patch_stock_weapon_growth_test.py` holds
+the Lua rule equal to the step on every row. `gen_base_wands.py` grows the table of the tooltip the same way. Not touched: charge
+weapons, the retired stackable throwing weapons, level 100 and under, the weapons of the Chaos tools (id 36654 and up), element
+damage of a weapon with two element keys is rounded per key (the audit rounds the sum, one point at most).
+Result: `weapon_coverage.lua --check` and `gear_coverage.lua --check` pass without a new anchor; from level 200 the best weapon of
+every class and band is a set weapon (100% of the tier) except the casters' stock wands at 100-105% in 200-700.
+
+**How W reaches each damage path** (typical character of `rotation_sim.py`, probe engine, levels 500 / 1000, before -> after):
+
+| Path | Change | 500 | 1000 |
+|---|---|---|---|
+| Auto attack, melee and distance (engine formula `level / 5 + (skill / 4 + 1) x (attack / 3) x 1.03`) | the attack of the item type grows | max hit 721 -> 1028 (x1.43) / 810 -> 1160 (x1.43) | 1003 -> 2138 (x2.13) / 1152 -> 2495 (x2.17) |
+| Weapon spells through `AttackKit` (Rift Cleaver, Sunspear) and `weaponFormula` | skill x attack of the held weapon | 1286 -> 1858 (x1.44), 1414 -> 2048 (x1.45) | 1733 -> 3856 (x2.23), 1960 -> 4403 (x2.25) |
+| Thief line (`weaponStrike`, Gutting Slash) | the blade in the hand | 725 -> 1020 (x1.41) | 1004 -> 2098 (x2.09) |
+| Shuriken (`shurikenPower`) | the default attack 50 times `a(level)`; the throwing stars are out of the game | x1.49 | x2.41 on the weapon term |
+| Templar and Ranger holy spells (hybrids) | through the attack, not twice (no caster factor) | 1373 -> 1977 (x1.44) | 1846 -> 4093 (x2.22) |
+| Monk (`ChaosMonk.fistAttack`, strikes, unarmed hits, Open Hand Creed) | the level value (40 + 0.025 per level, at most 60) times `a(level)`; a fist weapon is the CSV times `a` | attack 52.5 -> 78.4, max hit 659 -> 935 | 60 -> 144.7, 942 -> 1989 |
+| Snares and mines | skill x weapon attack at placement | level x 0.2 + power x 0.045 + 10: 472 -> 651 (x1.38) | 695 -> 1380 (x1.99) |
+| Caster spells (below) | the caster factor | x1.42 at the band's wand | x2.20 |
+| Necromancer minions | the caster factor on the hit | x1.42 | x2.20 |
+| Beastmaster wolves and the companion bite | **not reached**: they read level and distance skill, no weapon (O468) | x1.00 | x1.00 |
+| Healing | never | x1.00 | x1.00 |
+
+**Casters.** A caster's spell does not read the wand, so the growth is one factor on the spell:
+`1 + (W(level) - 1) x min(1.2, wand / mean)`. `wand` is the mean damage of the wand or rod in either hand (`weapons.xml` damage from
+`chaos_base_wands.lua`, `chaos_gear_sets_items.lua`, `chaos_relic_sets_items.lua`, `chaos_weapons800.lua`; a wand missing from them
+counts as the level's mean), `mean` the wand curve at the character level (`caster.wandMean`, the same numbers as the install
+curve). A wand of the band gives exactly W, one 10% better 10% more of the growth, a far better one at most 20% more, a weaker one
+less, none gives 1 (`ChaosSpellScaling.casterFactor`, `casterForPlayer`; `ChaosSpell.casterShare`, `casterScale`). Applied once, in
+the helpers, where O468 applies the weapon share:
+
+| Path | Where | Takes it |
+|---|---|---|
+| Damage spells with `ChaosSpell.mlValues` (Falling Pyre, Forked Storm, Doomtide, Frozen Crypt, Glacial Doom, Nightburst, Umbral Stride, Tear in the Weave, Primordial Squall, Briar Prison) | `_common.lua` | yes |
+| LEVELMAGIC callback spells (Rime Bloom, Blightswarm, Witchfire Bolt, Shattered Psyche) | the four scripts, `ChaosSpell.casterScale` | yes |
+| Kit magic school (Phantom Needles, Dreamrot, ...) | `AttackKit.rawValues` | yes |
+| Kit necro school, Bone Spear, Grave Nova, Corpse Explosion, Life Siphon, Soul Rot, Withering Curse ticks | `ChaosNecro.spellFactor` (necro_lib.lua) | yes |
+| Bone Offering | `bone_offering.lua` | yes |
+| Scripted ticks of Blightswarm, Witchfire Bolt, Falling Pyre, Shattered Psyche | the base tick x the factor in each script | yes |
+| Necromancer minion hits and minion spells | `ChaosNecro.minionFactor` (`caster.minions`, true) | yes, a switch in the config turns it off |
+| Heals (Purifying Wellspring and Verdant Sanctuary moved to `ChaosSpell.mlHealValues`, Mirror Mend, Lucid Reverie, Vow of Mending, Shadow Mend, Lay on Hands ...) | | no |
+| Weapon classes, hybrids (Templar line, Ranger holy spells) | | no |
+| Stock caster spells of the base scripts (Pyre Torrent, Tempest Fan, Arcane Ripple, Kindling Spark, Bewitching Hex), the Necromancer archetype `relicDamage`, the Beastmaster wolves | base data or not weapon bound | no (listed, left) |
+
+The minion hit reads level and magic level like the owner's spells and has no weapon term. The class spell factor leaves it out on
+purpose (`F.guard`); without the caster factor the Necromancer line would grow by about half of what the others do, so it takes it.
+`tests/weapon_growth_test.lua` casts every damage spell of the six caster classes and every heal at levels 500 and 1000 on the probe
+engine and checks W with a wand of the band, 1 + 0.2 (W - 1) with a far better one, equal heals, equal weapon class spells and
+the scripted ticks.
+
+**Items owned.** No item is rerolled or deleted. The type's attack follows the install and the restart. A rolled weapon holds
+`ITEM_ATTRIBUTE_ATTACK` = the type's attack + the base bonus (with the quality share and a +N upgrade); a weapon with Weapon Damage holds the
+attack before the modifier in `chaos_wdbase`; a unique holds its spec's attack. `ChaosCrafting.growWeapon` (data/lib/chaos_crafting.lua,
+called first by `ChaosCrafting.upgradeItem`: every read, move and login refresh of the item) moves such an item by the change of its
+base, once: new attack = stored + (new base - old base) with the pairs of `data/lib/chaos_weapon_growth.lua`
+(`tools/gen_weapon_growth.py`; 192 set, relic, level 800 and fist types and 29 uniques). Weapon Damage: the base moves, the attack is worked out
+again with the percent that stays. A unique moves only when it holds the old spec's number. Quality, tier, rolled values and
+corruption stay (`tests/weapon_growth_touch_test.lua`). The type must already carry the new attack (else the next touch does it), the
+mark is its own `chaos_wgrow`, not the modifier version, because bumping that version would run the O461 / O464 range upgrade over every
+item again. To chain it into a version mark, call `C.growWeapon` from the step of the new mark.
+
+**Auto attack power and style factors, regenerated.** `weapon_sim.py` now multiplies the reference rotation of the class by W, since the
+real spells grow and the model's typical character (`rotation_sim.py` ANCHORS) has the old attack. `weapon_power_config.lua`: distance
+1.00 / 1.08 / 1.27 / 1.63 / 1.98 at levels 200 / 300 / 500 / 1000 / 2000 (was 1.00 / 1.08 / 1.25 / 1.49 / 1.66), wand 1.74 / 1.75 / 1.83 /
+1.95 / 2.12 (was 1.76 / 1.81 / 1.92 / 2.14 / 2.35), melee and fist 1. `weapon_balance_config.lua`: the two-handed factor 1.516 at 100
+to 1.582 at 2000 (was 1.543). The flat +3 of a two-handed weapon matters less at high attack, the factor keeps the style on its target.
+
+**Models.** Run, all unchanged and green: `weapon_family_model.py`, `class_dps_model.py`, `companion_model.py`, `minion_model.py`,
+`survival_model.py`, `pvp_model.py`, `defence_curve.py`, `pack_model.py`, `boss_model.py`, `tower_model.py`, `guardian_model.py`,
+`skill_model.lua`, `store_model.lua`, `weapon_sim.py --check` and `--power --check`. They read the measured table
+(`class_dps_measured.csv`) and the typical character of `rotation_sim.py`, which still have the attack and the wand before the growth, so
+none of them sees W. They must be re-fitted with it in the final model round: the typical character's attack and wand, and a growth
+factor in the damage model. Nothing was re-baselined for this package.
+
+**Not verified.** A live server (the item touch, the install step on a real `items.xml`, the event order); a client (tooltips read the
+tables and the item attribute); the pt-BR text by a speaker. Open: the unique wands keep the damage of their stock base, so the
+Duskweaver Wand (a level 140 unique on a high level stock base, 434 mean before the growth) is an outlier that now grows with its base;
+the stock caster spells and the Beastmaster wolves do not take W; `rotation_model.csv`, the rotation simulator and the Auto setup rotation
+data do not know the growth.
 
 ## Player defence (O464) (`player_defence_config.lua`, `player_defence_core.lua`, `player_defence.lua`, `defence_config.lua`, `tools/patch_base_armor_percent.py`, `tools/patch_base_absorb_player.py`)
 
