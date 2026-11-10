@@ -15846,17 +15846,19 @@ measure on the beta). Crystal tokens: 15 / 5 per run = 3 Tower Defense runs of `
 | Crystal | 5 per run (3.0 runs for 15) | 45.0 min |
 
 **Value of the prizes.** Counted: crafting orbs and sockets in kills of a level 100+ monster that the loot layer needs for the same drops (the
-O148 rule), divided by the hunter's kills per hour (`paceKillsPerHour.scaled` of `spawn_tuning.json`: 836 at level 650, 869 at 1000, 813 at
+O148 rule), divided by the hunter's kills per hour (`paceKillsPerHour.scaled` of `spawn_tuning.json`: 1,164 at level 650 since O470, it was 836; 869 at 1000, 813 at
 1600, 789 at 2000); gold in hours of hunting gold (0.2 h per unit, a minute count that does not depend on the level); an exercise chest as its
 vendor price against the hunting gold per hour; a unique chest as 200 minutes (about one unique per 3.4 hours of Rare and Legendary kills at
 level 1500, O148). Not counted: cards, badges, catalysts, cosmetics and units (they are not a time), so the figures are a floor.
 
 | Roulette | Before (level 1000) | Now: 650 / 1000 / 1500 / 2000 | Value / cost at 1000 |
 |---|---|---|---|
-| Boss (O148, unchanged) | 60.1 min of 63.7 | 62.3 / 60.1 / 63.7 / 65.7 min | 0.94 |
-| Exercise | 2.6 min of 84.0 (x0.03) | 81.8 / 79.4 / 83.1 / 85.1 min | 0.95 |
-| Premium | 0 counted of 98.6 (14 cosmetics) | 99.8 / 96.8 / 101.9 / 104.6 min | 0.98 |
-| Crystal | 0 counted of 45.0 (21 Moist pieces, 2 units) | 46.2 / 44.8 / 47.2 / 48.5 min | 0.99 |
+| Boss (O148, unchanged) | 60.1 min of 63.7 | 46.3 / 60.1 / 63.7 / 65.7 min | 0.94 |
+| Exercise | 2.6 min of 84.0 (x0.03) | 63.6 / 79.4 / 83.1 / 85.1 min | 0.95 |
+| Premium | 0 counted of 98.6 (14 cosmetics) | 77.3 / 96.8 / 101.9 / 104.6 min | 0.98 |
+| Crystal | 0 counted of 45.0 (21 Moist pieces, 2 units) | 35.4 / 44.8 / 47.2 / 48.5 min | 0.99 |
+
+O470 (2026-11-10): only the 650 column moved (the plan there was 836, it is 1,164 now; the band at 650 is 0.70 - 1.35).
 
 At level 1000 one spin now pays on average: boss 1.16 orbs + 717,000 gold; exercise 1.32 orbs + 3.3M gold (and 2-5 sockets in 6% of the
 spins); premium 1.44 orbs + 2.8M gold; crystal 0.96 orbs + 1.1M gold. The Boss Roulette needed no change: at 8 minutes per boss kill its
@@ -20523,6 +20525,10 @@ Basics page "Pack combat"):
 --check` fails above 3 times). `spawn_tuning.json` `model.paceKillsPerHour.scaled` is now 836 / 846 / 869 / 819 / 813 / 789.
 Experience, gold and goal pace per hour are the O108 ones (`progression_model.lua --check`, `loot_model.lua --check`).
 Generated area points and bosses are unchanged. Deploy: `files` and `spawns` install steps and a server restart; the client codex page (`codex_data.lua`) and the website wiki data were regenerated.
+
+**Late sets without the step (O470, 2026-11-10).** The `scaled` health, experience, loot, goal and notable points of 657 to 900, the
+plan `paceKillsPerHour.scaled` and the base set's seam changed: see "Monster health curve (O470)" at the end. The O138 figures
+above are what the levels from 1000 up still are.
 
 These come on top of the engine's x(1 + 0.0074 L) health and x0.03 L experience of a monster with a level of its own.
 Loot: `pace_config.lua` (and "Loot by monster level").
@@ -30736,3 +30742,94 @@ reduction, dodge, block and spell suppression; the Skills window's Armor and Dam
 `Player::blockHit` (one point of rounding per piece), the client windows in the real client, the pt-BR texts by a speaker. The
 balance models were not touched: the survival, PvP, guardian and tower models read the old armour and absorb and say nothing
 about this layer yet.
+
+## Monster health curve (O470) (`pace_config.lua`, `tools/spawn_tuning.json`, `tests/monster_health_curve_test.lua`)
+
+Owner 2026-11-10 (translated): the jump "is not intended. Make a more balanced curve." Computed from the repo's own models. Nothing
+ran on a live server.
+
+**What was found.** The health of a typical hunt monster (`tools/pack_model.py`: the median of the base pool x `base.health` up to
+hunting level 657, where the base pool ends, then `SCALED_HEALTH` x `scaled.health`) was 5,372 at 650 and 12,262 at 658: x2.28 in one
+level, x2.3 over any 20 levels from 638 to 657. The planned kills per hour fell 31% there (1,210 to 837), a pack of the median class
+took 2.6 s at 650 and 5.8 s at 670, and the minutes per level had a bump of +15% at 650-690 (12.0 at 650, 13.8 at 670, 14.6 at 680,
+13.4 at 700, 11.3 at 800).
+
+**What changed.**
+
+- `scaled.health`: the late curve starts at the base set's 5,372 at 657 and its log-slope falls from 3.6 to 1.8 at 1000. Points
+  `{657, 0.0606} {670, 0.0650} {700, 0.0681} {800, 0.0770} {900, 0.0795}`; 1000 and up are as before (`{1000, 0.080}` ...). The
+  curve is `y = 5,372 exp(s0 x + (s1 - s0) x^2 / (2 X))` with x = ln(L / 657), X = ln(1000 / 657), s1 = 1.8 and s0 = 3.58 from
+  y(1000) = 16,620; the multiplier at a point is y / `SCALED_HEALTH`. Between the points the product is within 0.1% of the formula.
+- The base set is not touched. The study's design asked for +4% to +8% up to 600 and +20% at 650. A smaller change meets the rule
+  (no rise above x1.31 over 20 levels from level 110, above x1.12 from 600), so nothing below 657 moves.
+- `spawn_tuning.json` `paceKillsPerHour.scaled`: `[600, 836] [657, 1210] [670, 1195] [700, 1160] [800, 1055] [900, 960]`, then
+  `[1000, 869]` as before (it began at 650 with 836). The plan is the pack model's kills per hour of the median class at the new
+  health (2,563 at 657; 2,537 / 2,480 / 2,311 / 2,180 at 670 / 700 / 800 / 900; 1,992 at 1000, unchanged) x a ratio that falls
+  from the base plan's 0.472 at 657 to the unchanged 0.436 at 1000 (0.471 / 0.468 / 0.457 / 0.440, rounded). The base list is as
+  before. `roulette_value_config.lua` `kph` is a copy (a test keeps them equal).
+- Per kill, `scaled.loot`, `scaled.notable` and `scaled.goal` are the old points x the old plan / the new plan (loot and notable
+  x0.69 at 657 to x0.89 at 900, goal x1.45 to x1.12): loot, Rare+ gear and the goal pace per hour hold. The notable share is 0.72
+  at 700 and 1 at 1000 (it was 1 from 700). `coins` and `junkKeep` are shares on top of `loot` and are not touched.
+- `scaled.xp` was solved on the model: `tools/progression_model.lua` (the median of the pool hunts' experience per hour in the
+  window 0.8-1.1 L) with coordinate descent on the points 657 / 700 / 800 / 900 against a target of 9.87 at 600 (as before), a
+  line to 11.0 at 650, then 11.3 / 11.6 / 11.8 / 12.0 at 670 / 700 / 800 / 900 and 12.48 at 1000 (as before), 6x the weight on
+  those marks, a smoothness term on the log slope of the points and no point below 0.0323 (the 1000 value): `{600, 0.0495}
+  {657, 0.0486} {700, 0.0437} {800, 0.0323} {1000, 0.0323}`. The points up to 600 are the old line. The pool's medians are lumpy
+  by 5% from level to level (today's 590 and 600 differ by 5%), so the fit is held to the 25-level means: within 4%.
+- The level-scaled monsters of the pool below 657 (fifteen, levels 530-650) keep their old points up to 600 (an added point at 600
+  on the old line for health, xp, loot, goal and the plan) and meet the new curve at 657. Real ones, `tools/pace_scan.lua`: 590
+  8.3k as before, 610 8.9k to 8.0k, 630 9.6k to 6.7k, 650 10.2k to 5.1k, 670 10.2k to 4.9k, 700 11.1k to 5.8k, 750 12.3k to 7.5k,
+  850 14.0k to 10.7k, 900 15.2k to 12.7k. That is a dip of the real hunts at 610-670 which the model's typical monster does not
+  show. The other way was to lower these fifteen to the typical curve from 430 on (-34% at 530): not done, for the owner to say.
+
+**Before and after** (model numbers; the base set to 657, the level-scaled set above; the pack is the median class's, P = 8):
+
+| Level | Health before | after | Planned kills per hour before | after | Minutes a level before | after | Pack seconds before | after |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 478 | 478 | 1,580 | 1,580 | 1.05 | 1.05 | 2.17 | 2.17 |
+| 300 | 1,775 | 1,775 | 1,283 | 1,283 | 3.48 | 3.48 | 2.13 | 2.13 |
+| 500 | 4,359 | 4,359 | 1,210 | 1,210 | 6.73 | 6.73 | 2.60 | 2.60 |
+| 600 | 4,837 | 4,837 | 1,210 | 1,210 | 9.87 | 9.74 | 2.51 | 2.51 |
+| 650 | 5,372 | 5,372 | 1,210 | 1,210 | 11.99 | 11.31 | 2.63 | 2.63 |
+| 670 | 12,050 | 5,759 | 837 | 1,195 | 13.77 | 11.57 | 5.77 | 2.76 |
+| 700 | 12,760 | 6,684 | 839 | 1,160 | 13.45 | 11.87 | 5.91 | 3.10 |
+| 800 | 14,300 | 10,010 | 846 | 1,055 | 11.29 | 11.24 | 6.00 | 4.20 |
+| 900 | 16,044 | 13,427 | 857 | 960 | 11.28 | 11.53 | 6.18 | 5.17 |
+| 1000 | 16,620 | 16,620 | 869 | 869 | 12.48 | 12.65 | 5.80 | 5.80 |
+| 1300 | 22,032 | 22,032 | 819 | 819 | 11.54 | 11.54 | 6.01 | 6.01 |
+| 2000 | 34,394 | 34,394 | 789 | 789 | 11.01 | 11.01 | 6.21 | 6.21 |
+
+Minutes a level are `progression_model.lua` (levels 8-1000: 120.2 h before, 116.7 h now). At 1000 the model gives 12.65 against
+12.48 (+1.4%: the window of 1000 holds hunts of 800-900). Up to 600 the model moves at most 3% in the 25-level mean (540-600: 8.76
+against 8.96); single levels move more where today's curve has a lump (590: 9.75 against 10.38; 580: 9.14 against 9.55). The
+largest rise over 20 levels is x1.31 from level 110 (at 196, as before) and x1.12 from 600 (at 613); it was x2.31 at 638. Below
+level 110 the relative rise is above x1.35 before and after (x1.6 at 100: small numbers and the pool's lumps), not touched. A
+pack of the median class dies in 2.5 s at 600, 2.6 s at 650, 2.8 / 3.1 / 4.2 / 5.2 / 5.8 s at 670 / 700 / 800 / 900 / 1000: no step.
+
+**Limits that pinned the old step (changed, dated O470 in the files).**
+
+| Limit | Old | New | Model |
+|---|---|---|---|
+| `pace_test.lua` scaled xp per health (engine factors), 650 and 700 | at most 1.6 | at most 2.6 (800 and up 1.6) | 2.34 at 650, 2.18 at 700, 1.52 at 800 (1.20 at 650 before) |
+| `roulette_value_config.lua` band at level 650 (`bandAt`) | 0.80 - 1.35 | 0.70 - 1.35 | boss 0.73, exercise 0.76, premium 0.78, crystal 0.79 (1.01 - 1.13 before); 1000 and up as before |
+| `roulette_pools_test.lua` spin at 2000 against 650 | at most x1.35 | at most x1.45 | x1.30 exercise, x1.35 premium, x1.37 crystal, x1.42 boss |
+| `loot_by_level_test.lua` scaled `notable` | 1 from 700 | per hour as before to 1000 (within 5%), 1 from 1000 | 0.72 at 700, 0.80 at 800, 0.89 at 900 |
+
+The roulette numbers move because the orb half of a spin is priced in hunting minutes at the plan's kills per hour, and the plan at
+650 is 1,164 now (836 under the step): the spin at 650 is worth 46 - 77 minutes against its 64 - 99 minute token.
+
+**What is held** (all green): `tools/loot_model.lua --check` (it sees the base stock monsters up to 650 only: unchanged to the
+digit), `unique_pace_model.lua`, `store_model.lua`, `skill_model.lua`, `pack_model.py --check` (late pack against base: at most
+3x; 0.79x at 670, was 1.64x), `boss_model.py`, `tower_model.py`, `guardian_model.py`, `survival_model.py`, `minion_model.py`,
+`companion_model.py`, `class_dps_model.py`, `pvp_model.py`, `defence_curve.py`. `tests/monster_health_curve_test.lua` holds the rule
+(luajit and lua5.3): the typical monster from the pool and `SCALED_HEALTH`, no rise above x1.35 over 20 levels from 110 and x1.15
+from 600, no fall under the highest before it of more than 6% (4% from 600; the pool median drops 3.5% from 606 to 607, as
+before), up to 600 within 10% of a table of today's values, 1000 and up unchanged, the two sets within 10% at the seam
+(x1.005), the plans meeting at the seam and the scaled plan only falling to 1000.
+
+**Not verified.** No server was started and nothing was played: these are model numbers (the pool median, `SCALED_HEALTH` and the
+pack model are inputs, not measurements; the base monster files are not in git, the pool's health column stands for them). The loot
+model has no level-scaled loot tables above 650, so loot, Rare+ gear and goals above 650 hold per hour by construction (the ratio of
+the plans), not by a measured band. The real level-scaled monsters of 610-670 (above) and the real hunts' medians were not
+measured. The experience per hour of single level-scaled hunts at 640-700 rises 28-42% (the step held them down: 836 kills an hour
+against the base's 1,210); the median that the model holds does not.
