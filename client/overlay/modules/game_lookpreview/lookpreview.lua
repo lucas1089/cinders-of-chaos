@@ -294,22 +294,29 @@ function Preview:fxExtent()
   return P.fxExtent(fx.play, fx.sizeOf, fx.scene, boxes)
 end
 
--- the prints of a footprint option, under the creature (game_cosmeticfx's own pictures)
-function Preview:drawSteps(art)
+-- the prints of a footprint option, under the creature (game_cosmeticfx's own pictures). `prints` are the stage places
+-- of LookPreviewCore.stepPrints; the widgets are tagged so a ground effect in the same layer is left alone
+local STEP_ID = 'footstep'
+local function clearSteps(st)
+  for _, c in ipairs(st.fxUnder:getChildren()) do
+    if c:getId() == STEP_ID then c:destroy() end
+  end
+end
+
+function Preview:drawSteps(art, prints)
   local st = self.widget.stage
-  st.fxUnder:destroyChildren()
-  local L = self.layout
-  if not L or not L.T then return end
-  for _, f in ipairs(P.footsteps()) do
+  clearSteps(st)
+  if not prints then return end
+  for _, f in ipairs(prints) do
     local w = g_ui.createWidget('UIWidget', st.fxUnder)
+    w:setId(STEP_ID)
     w:setPhantom(true)
     w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     w:addAnchor(AnchorTop, 'parent', AnchorTop)
     w:setImageSource('/modules/game_cosmeticfx/images/prints/' .. art)
-    local size = math.floor(L.T * 0.6)
-    w:setSize({ width = size, height = size })
-    w:setMarginLeft(math.floor(L.tileX + (f.x + 0.2) * L.T))
-    w:setMarginTop(math.floor(L.tileY + (0.2 + f.y) * L.T))
+    w:setSize({ width = f.size, height = f.size })
+    w:setMarginLeft(f.x)
+    w:setMarginTop(f.y)
     w:setRotation(f.rotation)
     w:setOpacity(f.opacity)
   end
@@ -444,31 +451,29 @@ function Preview:relayout()
   local L
   local cw = stage.creature
   local floor = stage.floor
-  if self.fx or self.steps then
-    -- effects and prints: every creature on its tile, at the scale where the scene fits (as the map draws them),
-    -- the scene centred in the stage
-    local x0, y0, x1, y1
-    if self.fx then
-      x0, y0, x1, y1 = self:fxExtent()
-    else
-      local b = self.box
-      x0, y0, x1, y1 = b.left / 32, b.top / 32, b.right / 32, b.bottom / 32
-    end
+  local prints
+  if self.fx then
+    -- effects: every creature on its tile, at the scale where the scene fits (as the map draws them), the scene
+    -- centred in the stage. A bundle that also has prints keeps room for them on the left
+    local x0, y0, x1, y1 = self:fxExtent()
     if self.steps then x0 = math.min(x0, -3) end
     L = P.fxLayout(W, H, x0, y0, x1, y1)
-    local scene = self.fx and self.fx.scene
-    if scene and scene.kill then
+    local scene = self.fx.scene
+    if scene.kill then
       cw:setVisible(false)
     else
       cw:setVisible(true)
-      place(cw, P.creatureRect(L, scene and scene.caster))
+      place(cw, P.creatureRect(L, scene.caster))
+      if self.steps then prints = P.stepPrints(L, self.box, W, H) end
     end
     local tw = targetWidget(self)
-    if tw and scene then place(tw, P.creatureRect(L, scene.target)) end
+    if tw then place(tw, P.creatureRect(L, scene.target)) end
     floor:setVisible(false)
   else
-    -- the look alone: always 2x, the box of everything drawn centred in the stage
-    L = P.layout(self.box, W, H)
+    -- the look alone, and a footprint too (O496: the prints go behind the character, it does not move): always 2x,
+    -- the box of everything drawn centred in the stage
+    L = self.steps and P.stepsLayout(self.box, W, H) or P.layout(self.box, W, H)
+    prints = L.prints
     cw:setVisible(true)
     place(cw, L.x, L.y, L.size)
     -- a soft shadow on the ground under the feet (the character select's art, drawn at the same scale)
@@ -483,7 +488,7 @@ function Preview:relayout()
   end
   self.layout = L
   self.widget.controls.zoomLabel:setText(L.scale .. 'x')
-  if self.steps then self:drawSteps(self.steps) end
+  if self.steps then self:drawSteps(self.steps, prints) end
 end
 
 function Preview:refresh()

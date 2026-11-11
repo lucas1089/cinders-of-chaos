@@ -4945,6 +4945,20 @@ checks the placement against `CharSelectCore` and the notes against pt_br.lua).
   and kill effects play their effects; a footprint walks the character east over four fading prints (the ground art
   the map uses). The small sample creature and the Collection's 72 px creature are gone. The glow picture of old
   engines is no longer shown in the window; such a client gets a note.
+- **Footprints on the stage (O496, owner 2026-11-11: "footsteps put the preview character on the right").** A footprint
+  does not move the character. Before, `Preview:relayout` gave a footprint the effect layout (`P.fxLayout` over the extent
+  `min(box.left / 32, -3) .. box.right / 32`), which centres the extent: three tiles were kept free on the left for the
+  prints, so the creature tile landed right of the centre (a plain look 231 px of a 318 px stage, its art at 205..279 against
+  a centre of 159; the 128 px creature rect ends at 295) and the floor shadow was off. Now the stage uses
+  `LookPreviewCore.stepsLayout(box, w, h)`: exactly `P.layout` (2x, the drawn box centred, the shadow stays) plus the
+  creature tile and the prints from `P.stepPrints`: print i is i half tiles left of the feet on the feet line (0.6 tile
+  wide, alternating feet, fading, turned east). When they would leave the stage on the left they are brought closer (down
+  to 0.3 tile apart), then dropped last first; a print that would leave at the bottom (a mount's feet are low in a short
+  stage) is lifted until it fits. A bundle with effects keeps `P.fxLayout` (the scene moves the creature on its tile) and
+  places its prints with the same function; a kill scene has no creature, so no prints. Tests: `lookpreview_core_test.lua`
+  (the creature rect equals `P.layout`'s for a plain, winged, mounted and winged-mounted look on seven stage sizes, every print
+  inside the stage, left of the feet, on the feet line, closer then fewer on narrow stages). The Collection, the Store and
+  Pets share the panel and get the same layout.
 - Store (960 x 530): every look offer (outfit, addons, mount, wings, aura, shader; a pet drawn alone) on hover and
   once picked. None on the small mobile layout (500 x 380), where the column folds to nothing.
 - Pets (870 x 470): the selected or hovered pet, alone.

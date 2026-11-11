@@ -454,4 +454,67 @@ eq(L({ kind = 'bundle', parts = { { kind = 'swatch' } } }), nil, 'a bundle with 
 eq(L({ kind = 'bundle', parts = { { kind = 'bundle', parts = { { kind = 'mount', look = 5 } } } } }), nil, 'nested bundles are not followed')
 eq(P.showable({ kind = 'bundle' }), true, 'bundles are shown')
 
+-- ---------------------------------------------------------------- footprints (O496)
+-- The character stays exactly where the look alone puts it; the prints are behind it, on the floor line, inside the stage.
+-- Before: with prints the stage used P.fxLayout over the extent min(box.left / 32, -3) .. box.right / 32, which centres the
+-- EXTENT: the creature tile landed right of the centre (a plain look 231 px of 318, art 205..279 against a stage centre of 159).
+local function datInfo(id) return DAT[id] end
+local winged = P.lookBox({ type = 128, wings = 937, addons = 3 }, anchors, datInfo, 6)
+local mounted = P.lookBox({ type = 128, mount = 1338, addons = 3 }, anchors, datInfo, 6)
+local plain = P.lookBox({ type = 128, addons = 3 }, anchors, datInfo, 6)
+local wmount = P.lookBox({ type = 128, mount = 1338, wings = 937, addons = 3 }, anchors, datInfo, 6)
+local oldx0 = math.min(plain.left / 32, -3)
+local OLD = P.fxLayout(318, 130, oldx0, plain.top / 32, plain.right / 32, plain.bottom / 32)
+eq(OLD.tileX + (plain.left + plain.right) / 2 * OLD.scale > 318 / 2 + 60, true, 'the old layout put the figure 60+ px right of the centre')
+for _, st in ipairs({ { 318, 130 }, { 318, 211 }, { 204, 150 }, { 188, 130 }, { 400, 300 }, { 150, 130 }, { 110, 130 } }) do
+  for name, box in pairs({ plain = plain, winged = winged, mounted = mounted, wmount = wmount }) do
+    local W, H = st[1], st[2]
+    local tag = name .. ' ' .. W .. 'x' .. H
+    local SL, LL = P.stepsLayout(box, W, H), P.layout(box, W, H)
+    for _, k in ipairs({ 'scale', 'T', 'x', 'y', 'size', 'feetX', 'feetY' }) do eq(SL[k], LL[k], 'same ' .. k .. ' as the look alone: ' .. tag) end
+    local rx, ry, rs = P.creatureRect(SL, { x = 0, y = 0 })
+    eq(rx .. ',' .. ry .. ',' .. rs, LL.x .. ',' .. LL.y .. ',' .. LL.size, 'the creature rect is the look alone\'s: ' .. tag)
+    eq(SL.scale, P.SCALE, 'always 2x: ' .. tag)
+    eq(#SL.prints <= P.STEPS, true, 'at most four prints: ' .. tag)
+    local lastCx = SL.feetX + 1
+    for i, pr in ipairs(SL.prints) do
+      eq(pr.x >= 0 and pr.y >= 0 and pr.x + pr.size <= W and pr.y + pr.size <= H, true, 'print ' .. i .. ' inside the stage: ' .. tag)
+      eq(pr.cx < SL.feetX, true, 'print ' .. i .. ' left of the feet: ' .. tag)
+      eq(pr.cx < lastCx, true, 'prints go further left: ' .. tag) lastCx = pr.cx
+      eq(math.abs(pr.cy - SL.feetY) <= 0.3 * SL.T, true, 'print ' .. i .. ' on the feet line: ' .. tag .. ' ' .. pr.cy .. ' ' .. SL.feetY)
+      if H >= 160 then eq(math.abs(pr.cy - SL.feetY) <= 0.1 * SL.T + 1, true, 'a tall stage: right on the line: ' .. tag) end
+    end
+    if W >= 188 then eq(#SL.prints, 4, 'room for all four prints: ' .. tag) end
+    -- the figure's own centre is the stage's centre (the old layout was 70 px off)
+    eq(math.abs(SL.x + ((box.left + box.right) / 2 + 32) * SL.scale - W / 2) <= 1, true, 'the figure stays centred: ' .. tag)
+  end
+end
+-- a stage the prints cannot all fit: closer first, then fewer; never a print outside, the creature rect the same
+local narrow = P.stepsLayout(plain, 110, 130)
+eq(#narrow.prints > 0 and #narrow.prints < 4, true, 'a narrow stage: fewer prints')
+local tight = P.stepsLayout(plain, 150, 130)
+eq(#tight.prints, 4, 'a bit narrower: the same four, closer')
+eq(tight.feetX - tight.prints[4].cx < 4 * 0.5 * tight.T, true, 'closer than a half tile apart')
+eq(tight.prints[2].cx - tight.prints[3].cx >= 0.3 * tight.T - 0.001, true, 'never closer than 0.3 tiles')
+eq(#P.stepsLayout(plain, 60, 130).prints <= 1, true, 'a very narrow stage: one print at most')
+for _, pr in ipairs(P.stepsLayout(plain, 24, 130).prints) do
+  eq(pr.x >= 0 and pr.x + pr.size <= 24, true, 'a 24 px stage: the print is inside, shrunk')
+end
+eq(#P.stepsLayout(plain, 8, 130).prints, 0, 'no room for a print: none')
+eq(#P.stepsLayout(plain, 318, 8).prints, 0, 'a stage no taller than a print: none')
+eq(#P.stepsLayout(plain, 318, 130, 2).prints, 2, 'n sets the count')
+-- a short stage: a mount\'s feet are low, the print is lifted inside (never cut at the bottom)
+local ms = P.stepsLayout(mounted, 318, 130)
+eq(ms.prints[1].y + ms.prints[1].size <= 130 - P.PRINT_MARGIN, true, 'lifted to fit at the bottom')
+-- opacity and turning as footsteps() gives them
+local sp = P.stepsLayout(plain, 318, 211)
+eq(sp.prints[1].opacity > sp.prints[4].opacity, true, 'older prints fade') eq(sp.prints[1].rotation, 90, 'walking east')
+eq(sp.prints[1].cy ~= sp.prints[2].cy, true, 'alternating feet')
+-- a bundle with effects: prints on the effects layout, inside the stage too
+local FX = P.fxLayout(318, 130, -3, -0.5, 1.5, 1)
+for _, pr in ipairs(P.stepPrints(FX, plain, 318, 130)) do
+  eq(pr.x >= 0 and pr.y >= 0 and pr.x + pr.size <= 318 and pr.y + pr.size <= 130, true, 'effects layout: print inside')
+  eq(pr.cx < FX.tileX + plain.fx * FX.scale, true, 'effects layout: left of the feet')
+end
+
 print('lookpreview_core_test: ' .. n .. ' checks OK')

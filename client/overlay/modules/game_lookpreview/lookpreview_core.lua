@@ -851,6 +851,63 @@ function P.footsteps(n)
   return out
 end
 
+-- Where the prints go on the stage (O496). The character never moves for a footprint: the creature stays where the look
+-- alone puts it (P.layout, same scale, same place, the floor shadow stays) and the prints go behind it, to its left, on
+-- the floor line under its feet: print i is i steps left of the feet. A print is P.PRINT_SIZE of a tile wide; a step is
+-- P.PRINT_STEP of a tile. When the prints would leave the stage at the left they are brought closer (down to
+-- P.PRINT_MIN_STEP of a tile), then dropped, last first: the character is never moved or cut for them. A print that
+-- would leave the stage at the bottom (a mount's feet sit low in a short stage) is lifted until it fits, a stage too
+-- small for any print gets none. L = a layout with tileX, tileY (the creature tile's top left), scale and T: P.stepsLayout,
+-- or P.fxLayout (a bundle that also has effects). box = P.lookBox of the figure. Returns {{x, y, size, cx, cy, rotation,
+-- opacity}} (x, y: the top left, cx, cy: the centre, in stage px), the newest first.
+P.PRINT_SIZE = 0.6
+P.PRINT_STEP = 0.5
+P.PRINT_MIN_STEP = 0.3
+P.PRINT_MARGIN = 2
+
+function P.stepPrints(L, box, w, h, n)
+  box = box or P.FALLBACK_BOX
+  local s, T = L.scale, L.T
+  local cx0, cy0 = (box.left + box.right) / 2, box.bottom
+  local feetX = L.tileX + num(box.fx or cx0) * s
+  local feetY = L.tileY + num(box.fy or cy0) * s
+  local m = P.PRINT_MARGIN
+  local size = math.min(math.floor(T * P.PRINT_SIZE + 0.5), math.floor(h - 2 * m), math.floor(w - 2 * m))
+  if size < 6 then return {} end
+  local half = size / 2
+  local want = n or P.STEPS
+  local reach = feetX - half - m -- from the feet to the left-most centre the stage allows
+  local step, count = T * P.PRINT_STEP, want
+  if reach < want * step then
+    local closer = reach / want
+    if closer >= T * P.PRINT_MIN_STEP then
+      step = closer
+    else
+      count = math.max(0, math.floor(reach / (T * P.PRINT_MIN_STEP)))
+      step = count > 0 and math.min(step, reach / count) or 0
+    end
+  end
+  local out = {}
+  local feet = P.footsteps(count)
+  for i = 1, count do
+    local f = feet[i]
+    local cx = feetX - i * step
+    local cy = math.max(half + m, math.min(feetY + f.y * T, h - half - m))
+    out[i] = { x = math.floor(cx - half + 0.5), y = math.floor(cy - half + 0.5), size = size, cx = cx, cy = cy,
+      rotation = f.rotation, opacity = f.opacity }
+  end
+  return out
+end
+
+-- the stage layout of a footprint option: exactly P.layout (the look alone: 2x, the box centred, the floor shadow), plus
+-- the creature tile (tileX, tileY, as P.fxLayout names them) and the prints behind the feet
+function P.stepsLayout(box, w, h, n)
+  local L = P.layout(box, w, h)
+  L.tileX, L.tileY = L.x + L.T, L.y + L.T
+  L.prints = P.stepPrints(L, box, w, h, n)
+  return L
+end
+
 -- the option of a Cosmetics row for the stage: {kind = 'effects', play} for a row with effects
 function P.fromPlayRow(r)
   if type(r) ~= 'table' or type(r.play) ~= 'table' or #r.play == 0 then return nil end
