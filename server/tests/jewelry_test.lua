@@ -220,14 +220,26 @@ eq(J.uniqueTarget(2169, false, nil), nil, "a plain time ring stays")
 eq(J.uniqueTarget(10218, false, "Heartbleed Pendant"), nil, "another unique's name: no")
 eq(J.uniqueTarget(41641, true), nil, "already moved")
 eq(J.uniqueTarget(2207, true), nil, "another unique base")
+-- a unique that moved to another stock base (O491): the Misericorde of the Pale Vow off the wand 27193 onto the dagger 7408
+eq(#J.uniqueMoves, 1, "one moved unique")
+local target, row = J.uniqueTarget(27193, true)
+eq(target, 7408, "an old Misericorde copy with the marker")
+ok(row and row.weapon == true and row.unique == "Misericorde of the Pale Vow", "its row says weapon")
+eq(J.uniqueTarget(27193, false, "Misericorde of the Pale Vow"), 7408, "by its name")
+eq(J.uniqueTarget(27193, false, nil), nil, "a plain copy of the wand stays a wand")
+eq(J.uniqueTarget(27193, false, "Heartbleed Pendant"), nil, "another unique's name on the wand: no")
+eq(J.uniqueTarget(7408, true), nil, "already on the dagger base")
+eq(select(2, J.uniqueTarget(10218, true)).unique, "Heart of Cinders", "the row of a unique base too")
 -- the specs and the drop list name the new ids
 ITEM_ATTRIBUTE_ATTACK, ITEM_ATTRIBUTE_DEFENSE, ITEM_ATTRIBUTE_EXTRADEFENSE = 11, 12, 13
 ITEM_ATTRIBUTE_ARMOR, ITEM_ATTRIBUTE_HITCHANCE, ITEM_ATTRIBUTE_SHOOTRANGE = 14, 15, 16
 dofile("data/lib/chaos_unique_specs.lua")
-for _, b in ipairs(J.uniqueBases) do
-	ok(ChaosUniqueSpecs[b.id] and ChaosUniqueSpecs[b.id].name == b.unique, "spec of " .. b.unique .. " at " .. b.id)
-	for _, f in ipairs(b.from) do
-		eq(ChaosUniqueSpecs[f], nil, "no spec left on " .. f)
+for _, list in ipairs({J.uniqueBases, J.uniqueMoves}) do
+	for _, b in ipairs(list) do
+		ok(ChaosUniqueSpecs[b.id] and ChaosUniqueSpecs[b.id].name == b.unique, "spec of " .. b.unique .. " at " .. b.id)
+		for _, f in ipairs(b.from) do
+			eq(ChaosUniqueSpecs[f], nil, "no spec left on " .. f)
+		end
 	end
 end
 
@@ -295,6 +307,39 @@ local worn = uitem(10218, {[1] = 2}, {chaos_unique = 1})
 slots[CONST_SLOT_NECKLACE] = worn
 eq(ChaosJewelryLoot.migratePlayer(player), 0, "a full backpack: the worn copy stays")
 eq(worn.id, 10218, "still the old id, for the next login")
+
+-- the moved weapon (O491): an old Misericorde copy on the wand base turns into the dagger base, a plain wand stays
+local mis = uitem(27193, {[11] = 192}, {chaos_unique = 1, rarity_swordSkill = 5})
+mis.name = "Misericorde of the Pale Vow"
+ok(ChaosJewelryLoot.migrateUnique(mis), "an old Misericorde turns")
+eq(mis.id, 7408, "into the dagger base 7408")
+eq(mis.a[11], 192, "its attack stays (an item attribute)")
+eq(mis.c.rarity_swordSkill, 5, "its skill stays (a custom attribute)")
+eq(mis.name, "Misericorde of the Pale Vow", "its name stays")
+ok(not ChaosJewelryLoot.migrateUnique(mis), "only once")
+local wand = uitem(27193, {})
+ok(not ChaosJewelryLoot.migrateUnique(wand), "a plain copy of the wand stays")
+eq(wand.id, 27193, "still the wand")
+local held = uitem(27193, {[11] = 192}, {chaos_unique = 1})
+EventCallback.onItemMoved(nil, held, 1, {}, {x = 65535, y = 6, z = 0})
+eq(held.id, 27193, "moved into a hand: left for the next login")
+EventCallback.onItemMoved(nil, held, 1, {}, {x = 65535, y = 64, z = 0})
+eq(held.id, 7408, "moved into a container: turns")
+-- login: a worn old copy goes to the backpack first (the wand's DeEquip runs), then turns; the message says weapon
+bag.full = nil
+bag.list = {}
+slots[CONST_SLOT_NECKLACE] = nil
+local inHand = uitem(27193, {[11] = 192}, {chaos_unique = 1})
+slots[6] = inHand
+local mvHand = inHand.moveTo
+function inHand:moveTo(target) local r = mvHand(self, bag) if r then slots[6] = nil end return r end
+said = {}
+eq(ChaosJewelryLoot.migratePlayer(player), 1, "login: the worn Misericorde turns")
+eq(inHand.id, 7408, "it is on the dagger base")
+eq(slots[6], nil, "taken off")
+eq(bag.list[1], inHand, "in the backpack")
+eq(said[1], "Your unique weapon was renewed and put in your backpack. Put it on again.", "the message says weapon")
+eq(ChaosJewelryLoot.migratePlayer(player), 0, "a second login: nothing")
 
 if fails > 0 then
 	print(string.format("jewelry_test: %d of %d checks failed", fails, checks))

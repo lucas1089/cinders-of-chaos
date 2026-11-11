@@ -310,7 +310,7 @@ ChaosUniquePassivesConfig = {
 	[25886] = {lv = 1800, name = "Tide Brings Something", family = "mark", lines = "R", max = 4, bonus = 45, unmarked = 15}, -- Gravetide Arbalest
 	[27196] = {lv = 1800, name = "Everyone Bows", family = "manashield", lines = "MNKP", share = 45, reserve = 5, dealtLess = 12}, -- Veil of the Quiet Throne
 	[22516] = {lv = 1900, name = "Cut Loose", family = "critrule", lines = "WTKRMN", crit = 72, plain = 14, heal = 0}, -- Band of the Severed Star
-	[27193] = {lv = 1900, name = "Carry Two", family = "focus", lines = "T", perStack = 10, max = 6, first = 15}, -- Misericorde of the Pale Vow
+	[7408] = {lv = 1900, name = "Carry Two", family = "focus", lines = "T", perStack = 10, max = 6, first = 15}, -- Misericorde of the Pale Vow
 	[28379] = {lv = 1900, name = "Sun That Kept Its Shape", family = "convert", lines = "R", elem = "holy", share = 70, bonus = 35, other = 15}, -- Hollow Sun Quiver
 	[25882] = {lv = 1950, name = "Embers Answer", family = "convert", lines = "WP", elem = "fire", share = 70, bonus = 35, other = 15}, -- Emberhowl Greataxe
 	[2656] = {lv = 2000, name = "Choir Sang On", family = "minionPact", lines = "N", hit = 45, health = 60, own = 30}, -- Vestments of the Hollow Choir

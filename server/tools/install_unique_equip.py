@@ -15,6 +15,11 @@ Stillheart Robe's soulmantle needs level 400, the Hollowglass Diadem's eldritch 
    stock-only ones are hidden (showInDescription="0"). A base id with no DeEquip entry of its own gets one in the
    block. The recorded stock rule stays in the block as a comment, so a re-run rebuilds the same block. A stock entry
    with a script of its own, two Equip entries or a range entry over the id stop the tool, nothing written.
+   A base id that is no unique's any more (the unique moved to another base, O491: the Misericorde of the Pale Vow left
+   the wand 27193) gets its recorded stock Equip entry back, right before the block: slot, level, function and the
+   vocation list, the base class of a line shown in the look and the others hidden, as add_vocations.py writes them.
+   A DeEquip entry the block added for it goes with the block. Without this the base would lose its level and class
+   rule and the stats its item type gives on equip.
 2. data/movements/scripts/chaos_unique_equip.lua: written from the recorded stock rules. Its onEquip calls
    ChaosUniqueEquip.onEquip (data/lib/chaos_unique_equip.lua): a copy carrying chaos_unique with an `equip` rule in
    its spec (chaos_unique_specs.lua, tools/gen_unique_specs.py) is held to that rule, every other copy to the stock
@@ -93,6 +98,21 @@ def parse_comment(body):
             'vocations': None if d.get('vocations', '*') == '*' else d['vocations'].split('|')}
 
 
+def stock_entry(iid, st):
+    """the stock Equip entry of a base id that left the unique list, from its recorded rule"""
+    head = '\t<movevent event="Equip" itemid="%d" slot="%s"%s function="onEquipItem"' % (
+        iid, st['slot'] or 'hand', ' level="%d"' % st['level'] if st['level'] > 0 else '')
+    if not st['vocations']:
+        return head + ' />\n'
+    body = ''.join('\t\t<vocation name="%s"%s />\n' % (v, '' if v in LINES or not known_class(v) else
+                                                         ' showInDescription="0"') for v in st['vocations'])
+    return head + '>\n' + body + '\t</movevent>\n'
+
+
+def known_class(name):
+    return any(name in names for names in LINES.values())
+
+
 def block_entry(u, st, deequip):
     slot = (st and st['slot']) or u['slot']
     if not slot:
@@ -132,6 +152,16 @@ def patch_moves(text, rules):
             raise SystemExit('movements.xml: no </movements>')
         outside = text[:at] + mark + text[at:]
     stock, notes, parts = {}, [], []
+    # a base id the block held that is no unique's any more: its stock Equip entry goes back in front of the block
+    back = ''
+    wanted = {u['id'] for u in rules}
+    for iid in sorted(recorded):
+        st = recorded[iid]
+        if iid in wanted or st is None or equip_entries(outside, iid):
+            continue
+        back += stock_entry(iid, st)
+        notes.append('movements.xml: %d is no unique base any more: stock Equip entry put back (level %d, %s)' % (
+            iid, st['level'], ', '.join(st['vocations']) if st['vocations'] else 'everyone'))
     for u in rules:
         iid = u['id']
         for a, b in re.findall(r'fromid="(\d+)"\s+toid="(\d+)"', outside):
@@ -152,7 +182,7 @@ def patch_moves(text, rules):
         stock[iid] = st
         deequip = re.search(r'<movevent\s+event="DeEquip"\s[^>]*?\bitemid="%d"' % iid, outside) is None
         parts.append(stock_comment(iid, st) + block_entry(u, st, deequip))
-    new = outside.replace(mark, BEGIN + ''.join(parts) + END)
+    new = outside.replace(mark, back + BEGIN + ''.join(parts) + END)
     if new == text:
         return text, stock, notes + ['movements.xml: unique equip block up to date']
     return new, stock, notes + ['movements.xml: unique equip block %s' % ('rewritten' if s >= 0 else 'added')]

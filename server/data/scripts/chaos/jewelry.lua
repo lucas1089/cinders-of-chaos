@@ -13,6 +13,8 @@
 --      (ChaosJewelry.uniqueBases): name, stats, rarity and sockets stay (they are item attributes). A copy in a
 --      container turns when moved and at login; a worn copy is taken off into the backpack at login first (so the
 --      engine removes the old type's stats), then turns; the player puts it on again.
+--   4. a unique that moved to another stock base (ChaosJewelry.uniqueMoves; O491: the Misericorde of the Pale Vow, off
+--      the wand 27193 onto the dagger 7408) turns the same way, in a container and worn.
 ChaosJewelry = ChaosJewelry or dofile("data/lib/chaos_jewelry.lua")
 
 ChaosJewelryLoot = ChaosJewelryLoot or {}
@@ -94,17 +96,20 @@ function ChaosJewelryLoot.normalize(item)
 	return ok and n or 0
 end
 
--- the new id of an old unique copy on a consumable base, or nil
+-- the new id of an old unique copy on a base it left, or nil; the second value is its row (uniqueBases / uniqueMoves)
 function ChaosJewelryLoot.uniqueTarget(item)
 	if not item then
 		return nil
 	end
-	local ok, target = pcall(function()
+	local ok, target, row = pcall(function()
 		local marker = item:getCustomAttribute("chaos_unique")
 		local name = ITEM_ATTRIBUTE_NAME and item:getAttribute(ITEM_ATTRIBUTE_NAME) or nil
 		return ChaosJewelry.uniqueTarget(item:getId(), marker ~= nil and marker ~= 0 and marker ~= false, name)
 	end)
-	return ok and target or nil
+	if not ok or not target then
+		return nil
+	end
+	return target, row
 end
 
 -- turns an old unique copy (not worn) into its own base; true when it did
@@ -142,13 +147,18 @@ function ChaosJewelryLoot.migratePlayer(player)
 	local bag = backpack and backpack:isContainer() and backpack or nil
 	for slot = CONST_SLOT_FIRST or 1, CONST_SLOT_LAST or 10 do
 		local item = player:getSlotItem(slot)
-		if item and slot ~= CONST_SLOT_BACKPACK and ChaosJewelryLoot.uniqueTarget(item) and bag then
+		local target, row
+		if item and slot ~= CONST_SLOT_BACKPACK then
+			target, row = ChaosJewelryLoot.uniqueTarget(item)
+		end
+		if target and bag then
 			-- the move runs the old type's DeEquip (the time ring turns back into 2169 on the way)
 			local ok, moved = pcall(function() return item:moveTo(bag) end)
 			if ok and moved and ChaosJewelryLoot.migrateUnique(item) then
 				n = n + 1
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-					Chaos.t(player, "Your unique ring or amulet was renewed and put in your backpack. Put it on again."))
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, row and row.weapon
+					and "Your unique weapon was renewed and put in your backpack. Put it on again."
+					or "Your unique ring or amulet was renewed and put in your backpack. Put it on again."))
 			end
 		end
 	end

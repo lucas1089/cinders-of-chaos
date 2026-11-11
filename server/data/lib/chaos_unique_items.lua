@@ -240,7 +240,7 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
 	{ name = "Nightbloom Stiletto", id = 2411, minTier = "rare", chance = 6, level = 1250, slot = "sword", minMonsterLevel = 1000,
 	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
-	{ name = "Misericorde of the Pale Vow", id = 27193, minTier = "rare", chance = 6, level = 1900, slot = "sword", minMonsterLevel = 1000,
+	{ name = "Misericorde of the Pale Vow", id = 7408, minTier = "rare", chance = 6, level = 1900, slot = "sword", minMonsterLevel = 1000,
 	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
 	-- weapon coverage uniques (2026-10-23): a leveling bow for the Beastmaster and endgame weapons the audit found missing
 	-- (tools/weapon_coverage.lua); the same rules as the other leveling and endgame uniques

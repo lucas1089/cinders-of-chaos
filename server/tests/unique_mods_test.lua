@@ -155,7 +155,7 @@ end
 
 -- Thief daggers (2026-10-23): a dagger for every band, each its own dagger-sprite base, a Thief-only rule from level 600
 local DAGGERS = {{"Cutpurse's Sliver", 2403, 10}, {"Moonlit Shiv", 2402, 28}, {"Gravewhisper Stiletto", 2404, 600},
-	{"Nightbloom Stiletto", 2411, 1250}, {"Misericorde of the Pale Vow", 27193, 1900}}
+	{"Nightbloom Stiletto", 2411, 1250}, {"Misericorde of the Pale Vow", 7408, 1900}}
 for _, d in ipairs(DAGGERS) do
 	local spec, e = common(d[1])
 	if spec then

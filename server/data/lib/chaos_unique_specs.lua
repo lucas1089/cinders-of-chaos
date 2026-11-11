@@ -738,7 +738,7 @@ ChaosUniqueSpecs = {
 		mods = { { "attackspeed", 15 }, { "poisonchance", 24 }, { "physpen", 18 }, { "critecho", 20 } },
 		equip = { level = 1250, lines = { "Thief" },
 			vocations = { "Thief", "Ninja", "Samurai" } } },
-	[27193] = { name = "Misericorde of the Pale Vow", article = "a", description = "The last mercy of a drowned order, given to anyone who can carry it. Carry two. Carry Two: Each hit in a row on one target adds 10% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 15% less. For: Thief. (Requires level 1900.)",
+	[7408] = { name = "Misericorde of the Pale Vow", article = "a", description = "The last mercy of a drowned order, given to anyone who can carry it. Carry two. Carry Two: Each hit in a row on one target adds 10% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 15% less. For: Thief. (Requires level 1900.)",
 		attributes = { [ITEM_ATTRIBUTE_ATTACK] = 192, [ITEM_ATTRIBUTE_DEFENSE] = 38 },
 		custom = { rarity_criticalHitAmount = 30, rarity_criticalHitChance = 7, rarity_swordSkill = 5 },
 		skipped = {  },

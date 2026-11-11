@@ -1891,8 +1891,10 @@
 		<attribute key="description" value="A flower that opens only after dark, and only once. Its venom is the petals. (Requires level 1250.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 27193: stock "drownkin ceremonial dagger" -->
-	<item id="27193" article="a" name="Misericorde of the Pale Vow">
+	<!-- 7408: stock "wyvern fang" -->
+	<!-- a one-handed sword. Until O491 the base was 27193, a wand of the caster lines that only looks like a dagger: a Thief could wear
+	     the copy and never hit with it. Old copies turn on a move or at login (data/lib/chaos_jewelry.lua uniqueMoves) -->
+	<item id="7408" article="a" name="Misericorde of the Pale Vow">
 		<attribute key="weight" value="1200" />
 		<attribute key="weaponType" value="sword" />
 		<attribute key="attack" value="192" />

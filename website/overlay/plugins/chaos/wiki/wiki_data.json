@@ -28794,7 +28794,7 @@
 					"sprite": {"item": 28109}
 				},
 				{
-					"id": "unique:27193",
+					"id": "unique:7408",
 					"name": "Misericorde of the Pale Vow",
 					"sub": "Sword, level 1900. Attack 192, Defense 38, Melee +5, Attack Speed +14%, Health on Hit +45, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
 					"color": "#ff9c3a",
@@ -28873,7 +28873,7 @@
 						}
 					],
 					"icon": "wiki/i/it-sunsworn-sword.png",
-					"sprite": {"item": 27193}
+					"sprite": {"item": 7408}
 				},
 				{
 					"id": "unique:26765",
