@@ -139,6 +139,23 @@ function C.weaponShare(def, A, H, cap)
 	return min(cap or 1, C.armourReduction(def, A, H))
 end
 
+-- O505: is a spell hit a weapon-size hit? The hit is a direct hit of a spell cast by a player of a weapon class: it comes inside the cast
+-- context of the supports wrapper (ChaosSupportsSpell.cast(): the player id and spell id of the cast whose code, or whose addEvent callback,
+-- runs now; nil outside a cast and restored after an error) of the player who is the attacker, and the player's vocation is not one of
+-- cfg.casterVocations (the casters' magic level is their skill, their spells are sized by the class curve). Every other spell hit (a
+-- summon's, a minion's, a wolf's, a caster's, a tick) keeps the class curve. castPid: the player id of the running cast (nil outside one)
+function C.weaponSpellHit(cfg, vocationId, castPid, attackerId)
+	if castPid == nil or attackerId == nil or castPid ~= attackerId then
+		return false
+	end
+	for _, v in ipairs(cfg.casterVocations or {}) do
+		if v == vocationId then
+			return false
+		end
+	end
+	return vocationId ~= nil and vocationId > 0
+end
+
 -- the multiplier on a physical part that arrived (the engine took the monster's physical percent p0 already): armour
 -- share `arm` and modifier share `mod` (0 .. 1) on top, the total of the three at most def.physicalReductionCap
 function C.physicalFactor(def, p0, arm, mod)
@@ -200,8 +217,10 @@ end
 C.untouched = untouched
 
 -- One hit on a monster. ctx: {def, cfg, k (engine constants: physical, healing, undefined, none, manadrain, lifedrain,
--- melee, ranged, spell, condition), A (the armour value of a spell), Aw (the armour value of a weapon hit, O501), weaponCap
--- (the most a weapon hit loses to armour, 0 .. 1, O501), set (C.modSet of the monster or nil), bonus (rank resistance
+-- melee, ranged, spell, condition), A (the armour value of a spell), Aw (the armour value of a weapon hit, O501), weaponSpell (a spell
+-- hit that a weapon class deals itself meets Aw and weaponCap too, O505), weaponCap
+-- (the most a weapon hit loses to armour, 0 .. 1, O501), hitUnits (factor from the size the hit arrives at to the size it will have, O505;
+-- a Monk's bare-fist hit on a stock engine; nil = 1), set (C.modSet of the monster or nil), bonus (rank resistance
 -- bonus), resistOf(ctype) -> the monster's element percent, pen (the player's elemental penetration, percent points off the
 -- capped resistance), physPen (its physical penetration: points off the armour share, down to 0), rand(n) -> 1..n}.
 -- hit: {primary, ptype, secondary, stype, origin}. Returns primary, secondary, info {blocked = true | nil}.
@@ -212,6 +231,9 @@ function C.defend(ctx, hit)
 	local origin = hit.origin
 	local weapon = origin == k.melee or origin == k.ranged
 	local armoured = weapon or origin == k.spell
+	-- O505: a spell hit that a weapon class (not a caster) deals itself is a weapon-size hit: it meets the weapon armour value and the
+	-- weapon cap like an auto attack (ctx.weaponSpell, C.weaponSpellHit). Bulwark stays a rule of weapon hits only
+	local weaponLike = weapon or (ctx.weaponSpell == true and origin == k.spell)
 	if set and set.block and weapon and not untouched(k, hit.ptype) then
 		local chance = min(def.blockCap, cfg.mods.block.chance)
 		if ctx.rand(100) <= chance then
@@ -225,10 +247,13 @@ function C.defend(ctx, hit)
 		local m
 		if ctype == k.physical then
 			local arm = 0
-			if weapon then
+			if weaponLike then
 				-- O501: a weapon hit meets the weapon armour value and the weapon cap of the rank (ctx.Aw, ctx.weaponCap; a
 				-- context without them keeps the one value and no cap)
-				arm = max(0, C.weaponShare(def, ctx.Aw or ctx.A, abs(value), ctx.weaponCap) - (ctx.physPen or 0) / 100)
+				-- O505: ctx.hitUnits is the factor from the size the hit arrives at to the size it will have (a Monk's bare-fist hit
+				-- is attack 7 on a stock engine and scaled by a later event: the armour is measured on the scaled size, and the share it
+				-- takes is a share of the arriving hit, so it takes the same share of the scaled one); 1 for every other hit
+				arm = max(0, C.weaponShare(def, ctx.Aw or ctx.A, abs(value) * (ctx.hitUnits or 1), ctx.weaponCap) - (ctx.physPen or 0) / 100)
 			elseif armoured then
 				arm = max(0, C.armourReduction(def, ctx.A, abs(value)) - (ctx.physPen or 0) / 100)
 			end

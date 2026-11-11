@@ -215,6 +215,14 @@ local function castOf(pid)
 	return precast[pid]
 end
 
+-- O505: does a hit of this player belong to a spell it is casting right now? Any of the three sources of castOf: the supports' cast context
+-- (a wrapped spell and its delayed callbacks), a snare's or a mine's burst named with CL.asSpell, the engine's precast of a spell that has
+-- not reached onSpellCast yet (cleared on the next tick if it never does). The monster defence layer asks it to tell a weapon class's own
+-- spell hit (a weapon-size hit) from a summon's or a tick
+function CL.inSpell(pid)
+	return castOf(pid) ~= nil
+end
+
 -- ---------------------------------------------------------------- owners, weapons, bosses
 -- the character a hit counts for: the attacker itself, or the master of a summon (then also the summon)
 local function ownerOf(attacker)

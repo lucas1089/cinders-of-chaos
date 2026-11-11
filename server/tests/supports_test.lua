@@ -517,6 +517,36 @@ eq(W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function(c) return c == 
 local okErr = pcall(W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function() error("boom") end), caster, {})
 eq(okErr, false, "error passes through")
 eq(caster.storage[cfg.storageContext], nil, "context cleared after an error")
+-- O505: the monster defence layer reads W.cast() to know a spell hit is the player's own (a weapon class's spell is a weapon-size hit,
+-- monster_defence.lua): the player id of the cast whose code, or whose addEvent callback, runs now. It must be nil outside a cast, never
+-- another player's, restored after an error and after a nested cast, and the same in a delayed event of the cast
+do
+	local inside, delayed, nested
+	local cid = caster:getId()
+	eq(select(1, W.cast()), nil, "O505: no cast outside a spell")
+	W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function()
+		inside = {W.cast()}
+		addEvent(function() delayed = {W.cast()} end, 50)
+		return true
+	end)(caster, {})
+	eq(inside[1], cid, "O505: cast() is the casting player's id inside the cast"); eq(inside[2], 201, "O505: and the spell id")
+	eq(select(1, W.cast()), nil, "O505: nil right after the cast")
+	flushEvents()
+	eq(delayed and delayed[1], cid, "O505: the delayed event of the cast still names the player")
+	eq(select(1, W.cast()), nil, "O505: nil after the delayed event")
+	pcall(W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function() error("boom") end), caster, {})
+	eq(select(1, W.cast()), nil, "O505: nil after a cast that failed")
+	-- a hit that another player's script deals while this cast runs is not this player's: the pid is the caster's, the layer compares it
+	local second = newCreature({player = true, level = 300, voc = 4, pos = {x = 101, y = 100, z = 7}, health = 3000, maxHealth = 3000, maxMana = 2000, mana = 0})
+	W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function()
+		W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function() nested = {W.cast()} end)(second, {})
+		inside = {W.cast()}
+		return true
+	end)(caster, {})
+	eq(nested and nested[1], second:getId(), "O505: a nested cast names its own player")
+	eq(inside[1], cid, "O505: and the outer cast is the outer player's again after it")
+	flushEvents()
+end
 -- O468: W.context() is the context of the cast that runs now; W.run raises one that was kept (snares: _snares.lua)
 do
 	local kept
