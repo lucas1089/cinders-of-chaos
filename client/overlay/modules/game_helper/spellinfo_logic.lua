@@ -17,7 +17,7 @@ I.SEP = ' | ' -- between the parts of a row (ASCII: the client fonts draw cp1252
 
 local function translate(tr)
   if type(tr) == 'function' then return tr end
-  local g = rawget(_G, 'tr')
+  local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)
   if type(g) == 'function' then return g end
   return function(text, ...)
     if select('#', ...) > 0 then return string.format(text, ...) end

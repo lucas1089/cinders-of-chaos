@@ -8,7 +8,7 @@
 -- (the server adds the worn gear's server ids) and adds the class, level and the helper's spell rotation. Pasting one
 -- shows what it holds and sends only its inner tree code to the same server preview, so the server's class and respec
 -- rules decide what can be applied. The website draws it at page?plugin=chaos&p=build&c=CODE.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 ChaosTreeHandlers = ChaosTreeHandlers or {}
 local buildWindow = nil
 local preview = nil

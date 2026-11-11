@@ -167,7 +167,7 @@ end
 
 -- the name in the player's language (client_chaos_locale: Comum, Incomum, Mágica, Rara, Lendária, Divina)
 local function localName(name)
-	local t = rawget(_G, "tr")
+	local t = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)
 	return t and t(name) or name
 end
 

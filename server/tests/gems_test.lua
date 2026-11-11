@@ -724,4 +724,53 @@ do
 	eq(size(g) < 6000, true, "guide fits one message (" .. size(g) .. ")")
 end
 
+-- ---------------------------------------------------------------- the item description (O479)
+-- one sentence per place, the same text tools/install_gems.py writes (its test pins the same words), and the whole text in
+-- pt-BR for every gem type and quality: no English word is left
+do
+	eq(G.describe(6, 1), "A gem for a socket. Weapon: Holy Damage +2%. Armour: Elemental Resistances +1%. Jewellery: Holy "
+		.. "Resistance +2%. Use it on gear with a free socket. Three of the same make one of the next quality: use the stack, "
+		.. "then left-click it.", "Chipped Diamond")
+	eq(G.describe(4, 5), "A gem for a socket. Weapon: Critical Chance +3%, Critical Hit +25%. Armour: Death Resistance +8%. "
+		.. "Jewellery: Death Damage +12%. Use it on gear with a free socket.", "Perfect Amethyst: no combine sentence")
+	eq(G.describe(1, 4):find("Armour: Max Health +130. ", 1, true) ~= nil, true, "a flat effect: no percent sign")
+	dofile("data/scripts/chaos/i18n_core.lua")
+	dofile("data/scripts/chaos/itemdesc_i18n_core.lua")
+	local D, I = ChaosItemDescI18n, ChaosI18n
+	local function tr(text)
+		return I.translate("pt-BR", text)
+	end
+	-- words that are English (the effect names, the place names, the sentences); a pt-BR text has none of them
+	local english = {}
+	for _, w in ipairs({"gem", "for", "socket", "Weapon", "Armour", "Jewellery", "gear", "free", "Three", "same", "make",
+		"next", "quality", "stack", "left", "click", "Damage", "Resistance", "Resistances", "Elemental", "Critical",
+		"Hit", "Life", "Leech", "Amount", "Attack", "Speed", "Movement", "Max", "Health", "Fire", "Ice", "Earth", "Death",
+		"Energy", "Holy", "Physical", "then", "one", "the", "it", "on", "with", "of", "to", "A", "and"}) do
+		english[w] = true
+	end
+	local seen = {}
+	for ti = 1, G.TYPES do
+		for tier = 1, G.TIERS do
+			local en = G.describe(ti, tier)
+			local pt = D.translate(en, tr)
+			eq(pt ~= en, true, "gem " .. ti .. "/" .. tier .. " is translated")
+			eq(seen[pt], nil, "no two gems share a text") seen[pt] = true
+			for word in pt:gmatch("[%a\128-\255]+") do
+				eq(english[word], nil, "gem " .. ti .. "/" .. tier .. ": the English word '" .. word .. "' is left in: " .. pt)
+			end
+			eq(pt:match("%d+%%?") ~= nil, true, "the numbers stay")
+			eq(select(2, pt:gsub("%.", ".")) >= 4, true, "a sentence per place and the hint")
+		end
+	end
+	eq(G.gemSummaryTx(32001, tr), "Arma: Dano de Fogo +2%; Armadura: Vida M\195\161xima +20; Joia: Resist\195\170ncia a Fogo +2%",
+		"the use message summary in pt-BR")
+	eq(G.gemSummaryTx(32001, function(t) return t end), "Weapon: Fire Damage +2%; Armour: Max Health +20; Jewellery: Fire Resistance +2%",
+		"and without a language: the English words")
+	eq(D.translate(G.describe(6, 1), tr), "Uma gema para encaixe. Arma: Dano Sagrado +2%. Armadura: Resistências Elementais +1%. "
+		.. "Joia: Resistência Sagrada +2%. Use em um equipamento com um encaixe livre. Três iguais formam uma da qualidade "
+		.. "seguinte: use a pilha e depois clique nela com o botão esquerdo.", "Chipped Diamond in pt-BR")
+	eq(D.translate(G.describe(4, 5), tr), "Uma gema para encaixe. Arma: Chance de Crítico +3%, Dano Crítico +25%. Armadura: "
+		.. "Resistência a Morte +8%. Joia: Dano de Morte +12%. Use em um equipamento com um encaixe livre.", "Perfect Amethyst in pt-BR")
+end
+
 print("gems_test: " .. checks .. " checks OK")

@@ -16,7 +16,7 @@ A.PARENT_DEPTH = 4 -- how far up from the hovered widget an altTip is looked for
 
 local function translate(tr)
   if type(tr) == 'function' then return tr end
-  local g = rawget(_G, 'tr')
+  local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)
   if type(g) == 'function' then return g end
   return function(s, ...)
     if select('#', ...) > 0 then return string.format(s, ...) end

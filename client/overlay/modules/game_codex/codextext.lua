@@ -17,7 +17,7 @@ CodexText = {}
 local C = CodexText
 
 local function globalTr(s, ...)
-  local g = rawget(_G, 'tr')
+  local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)
   if g then return g(s, ...) end
   if select('#', ...) > 0 then return string.format(s, ...) end
   return s

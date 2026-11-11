@@ -246,6 +246,33 @@ local function effectTile(panel, y, effect)
   return y + h + 5
 end
 
+-- the gem block of a gem item (tooltiplogic.lua L.gemBlock, O479): one framed box, a header, then a row per place: the place
+-- label left in its own colour, the effect texts in one column (the left edge of the widest label + a gap); a pair effect
+-- continues on a row without a label. The labels and the effect texts are plain (the tooltip fonts have no bold).
+local function gemBox(panel, y, g)
+  local w = CARD_W - 2 * PAD_X
+  local labelW = 0
+  for _, row in ipairs(g.rows) do
+    if row.label ~= '' then labelW = math.max(labelW, textWidth('ItemTooltipLine', row.label)) end
+  end
+  local x = 8
+  local col = x + labelW + 8
+  local h = 6 + 12 + #g.rows * 14 + 6
+  local box = g_ui.createWidget('ItemTooltipTile', panel)
+  box:addAnchor(AnchorTop, 'parent', AnchorTop)
+  box:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  box:setMarginTop(y)
+  box:setMarginLeft(PAD_X)
+  box:resize(w, h)
+  putLabel(box, 'ItemTooltipCap', 5, x, g.head, g.headColor)
+  for i, row in ipairs(g.rows) do
+    local ry = 6 + 12 + (i - 1) * 14
+    if row.label ~= '' then putLabel(box, 'ItemTooltipLine', ry, x, row.label, row.labelColor) end
+    putLabel(box, 'ItemTooltipLine', ry, col, row.text, row.color, row.parts)
+  end
+  return y + h + 5
+end
+
 local function modRow(panel, y, row)
   local textX = PAD_X + 32
   local rangeW = row.range and (textWidth('ItemTooltipCap', row.range) + 4) or 0
@@ -283,9 +310,13 @@ end
 local function groupRows(panel, y, groups)
   for gi, g in ipairs(groups) do
     if gi > 1 then y = y + 3 end
-    if g.caption then y = caption(panel, y, g.caption, g.capColor) end
-    for _, row in ipairs(g.rows) do
-      y = row.kind == 'mod' and modRow(panel, y, row) or centredRow(panel, y, row)
+    if g.kind == 'gembox' then
+      y = gemBox(panel, y, g)
+    else
+      if g.caption then y = caption(panel, y, g.caption, g.capColor) end
+      for _, row in ipairs(g.rows) do
+        y = row.kind == 'mod' and modRow(panel, y, row) or centredRow(panel, y, row)
+      end
     end
   end
   return y
@@ -320,7 +351,7 @@ end
 local function buildPanel(tip, extra, heading)
   local panel = g_ui.createWidget('ItemTooltipPanel', rootWidget)
   local player = g_game.getLocalPlayer()
-  local card = L.card(tip, { level = player and player:getLevel() or 0 })
+  local card = L.card(tip, { level = player and player:getLevel() or 0, alt = altPressed() })
   local rarity = card.titleColor
   try(function() panel:getChildById('glow'):setImageColor(rarity) end)
   try(function() panel:getChildById('ring'):setImageColor(rarity) end)
@@ -497,18 +528,20 @@ local function render()
   elseif comparable then
     extra[#extra + 1] = { text = tr('Hold Ctrl to compare'), color = C.dim, sep = true }
   end
-  -- Alt (O372, itemhelp.lua): a plain line on what each term of the item does; without Alt a hint line
+  -- Alt (O372, itemhelp.lua): a plain line on what each term of the item does; without Alt a hint line. Alt also opens
+  -- the "Drops from" row of the card (owner 2026-11-11; buildPanel passes Alt to L.card), and the hint says so
   local wantHelp = altPressed()
   local help = ItemTooltipHelp.lines(tip, tr)
-  if #help > 0 then
-    if wantHelp then
-      for i, line in ipairs(help) do
-        for j, part in ipairs(L.wrap(line, HELP_WRAP)) do
-          extra[#extra + 1] = { text = part, color = C.help, sep = i == 1 and j == 1 }
-        end
+  if wantHelp then
+    for i, line in ipairs(help) do
+      for j, part in ipairs(L.wrap(line, HELP_WRAP)) do
+        extra[#extra + 1] = { text = part, color = C.help, sep = i == 1 and j == 1 }
       end
-    else
-      extra[#extra + 1] = { text = altHint(), color = C.dim, sep = not (comparable and not wantCompare) }
+    end
+  else
+    local hint = L.altHintText(tip, #help > 0) or (#help > 0 and altHint() or nil)
+    if hint then
+      extra[#extra + 1] = { text = hint, color = C.dim, sep = not (comparable and not wantCompare) }
     end
   end
   compareShown = wantCompare

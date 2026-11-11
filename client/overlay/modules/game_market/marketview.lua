@@ -3,7 +3,7 @@
 -- inputs ("5k", "2.5m"), the Browse filter from the window's fields, the Sell form check, row texts, the modifier
 -- filter (up to 6 rows of modifier / lowest value / lowest tier, all or at least N, sockets, quality, free prefix /
 -- suffix, power, bound) with its choices taken from the Codex data (game_codex CodexData), paging.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 MarketView = {}
 local V = MarketView

@@ -17,7 +17,7 @@
 --                     message {kind = ok | error, text}   the answer to a craft (patch_base_crafting_ui.py)
 --                     tip {category, craftId, tip}   the tooltip (false when the server has none)
 -- The server decides; the checks here only explain why the Craft button is off.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CraftingTableView = CraftingTableView or {}
 local V = CraftingTableView

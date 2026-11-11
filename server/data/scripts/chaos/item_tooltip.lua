@@ -123,6 +123,22 @@ local function equippedIds(player)
 	return ids
 end
 
+-- O479: the fixed words of a source row ("Any monster", "global drop") in the player's language; a copy, because the brief is
+-- cached for everyone. A monster's name and what the table does not know stay as they are.
+local function srcIn(player, b)
+	if not (Chaos.lang and Chaos.tx and Chaos.lang(player) ~= "en" and type(b.s) == "table") then
+		return b
+	end
+	local ok, copy = pcall(function()
+		local list = {}
+		for i, e in ipairs(b.s) do
+			list[i] = {k = e.k, n = Chaos.tx(player, e.n), v = e.v and Chaos.tx(player, e.v) or nil}
+		end
+		return {s = list, e = b.e, u = b.u, t = b.t}
+	end)
+	return ok and copy or b
+end
+
 local function answer(player, data)
 	local list = type(data.items) == "table" and data.items or {}
 	local n = math.min(#list, T.config.maxItems)
@@ -283,7 +299,7 @@ local function answer(player, data)
 				if ChaosItemFinder and ChaosItemFinder.brief and type(row.tip) == "table" then
 					local okb, b = pcall(ChaosItemFinder.brief, item:getId())
 					if okb and b then
-						row.tip.src = b
+						row.tip.src = srcIn(player, b)
 					end
 				end
 			else

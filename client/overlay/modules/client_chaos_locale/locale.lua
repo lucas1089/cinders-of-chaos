@@ -32,6 +32,10 @@ local function chaosTr(text, ...)
   return L.translate(M.table, hook and hook.base or nil, text, ...)
 end
 
+-- the same function for a module that cannot read the global one: with the hook below the global `tr` lives in _G's
+-- metatable, so rawget(_G, 'tr') is nil (game_itemtooltip tooltiplogic.lua asks ChaosLocale.tr then; O479)
+M.tr = chaosTr
+
 local function installHook()
   if rawget(_G, '__chaosTrHook') then
     return true

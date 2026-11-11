@@ -2,7 +2,7 @@
 -- Tested by bestiaryview_test.lua (luajit / lua5.3). List rows come from the server (bestiary.lua "list"):
 --   [1] id, [2] name, [3] category key, [4] difficulty key, [5] hunting level, [6] kills, [7] stage 0-4,
 --   [8] lookType (0 below stage 1)
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 BestiaryView = {}
 local V = BestiaryView
 

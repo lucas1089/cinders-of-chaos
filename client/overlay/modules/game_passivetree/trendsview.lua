@@ -3,7 +3,7 @@
 --   buildTrends {class, className, at, total, classes = [{key, name}], rows = [{rank, share (per mille), count, level,
 --                keystones, code (CB<n>-), full (CC1-)}]}
 -- No character name or id is ever in it.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 TrendsView = {}
 local V = TrendsView
 

@@ -5,7 +5,7 @@
 -- additive damage pool of that type (tree, Spell Damage, Paragon, gems, the card set), shown instead of the tree's own numbers.
 -- `raw` is what the nodes give, `eff` what counts after the soft cap
 -- (full value up to `cap`, smaller gains without limit past it). The crit rows show the engine's own total, gear included.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 TotalsView = {}
 local V = TotalsView
 

@@ -3274,6 +3274,13 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Life Leech Chance"] = "Chance de Roubo de Vida",
   ["Life Leech Amount"] = "Quantidade de Roubo de Vida",
   ["Attack Speed"] = "Velocidade de Ataque",
+  -- game_itemtooltip: the gem block of a gem item (O479)
+  ["Socketed in"] = "Encaixada em",
+  ["Weapon:"] = "Arma:",
+  ["Armour:"] = "Armadura:",
+  ["Jewellery:"] = "Joia:",
+  ["Use it on gear with a free socket."] = "Use em um equipamento com um encaixe livre.",
+  ["Three of the same make one of the next quality: use the stack, then left-click it."] = "Três iguais formam uma da qualidade seguinte: use a pilha e depois clique nela com o botão esquerdo.",
   -- game_helpersupport run-time keys (the status of a row and of the tab, given to tr() where they are shown)
   ["Casting"] = "Usando",
   ["Waiting for the server"] = "Esperando o servidor",
@@ -6494,6 +6501,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Open the classic window"] = "Abrir a janela clássica",
   -- client_chaos_theme/althelp.lua (O372)
   ["Hold Alt for what each line does."] = "Segure Alt para ver o que cada linha faz.",
+  ["Hold Alt for where it comes from and what each line does."] = "Segure Alt para ver de onde vem e o que cada linha faz.",
+  ["Hold Alt for where it comes from."] = "Segure Alt para ver de onde vem.",
   -- game_buffbar/buffmath.lua (O372)
   ["  (debuff)"] = "  (debuff)",
   ["Stacks: %d"] = "Acúmulos: %d",

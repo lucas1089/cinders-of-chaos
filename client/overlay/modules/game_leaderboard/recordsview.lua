@@ -1,6 +1,6 @@
 -- Pure helpers of the Records view of the Leaderboards window (no client API), tested by recordsview_test.lua.
 -- Server: server/data/scripts/chaos/records.lua (actions rmeta / rcat / rboard / rfirsts / rmine on opcode 229).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 RecordsView = {}
 
 -- the meta comes in parts: rcat {cat, boards} (each at most 6 boards), then rmeta {categories, parts, ...}.

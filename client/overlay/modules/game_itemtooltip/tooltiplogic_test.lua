@@ -351,8 +351,39 @@ eq(L.sourceLines({ s = { { k = 'monster', n = 'Dragon', v = '0.1%' } }, e = { p 
 eq(L.sourceLines({ s = {}, t = 1200 })[1].text, 'Conquest vendor: 1,200 tokens', 'vendor only')
 eq(L.oneIn(1 / 267), 270, 'rounded')
 eq(L.oneIn(0), nil, 'no chance')
-local withSrc = L.lines({ name = 'x', weight = 10, src = { s = { { k = 'monster', n = 'Rat', v = '5%' } } } })
-eq(withSrc[#withSrc - 1].text, 'Drops from: Rat (5%)', 'the sources sit above the weight')
+local srcTip = { name = 'x', weight = 10, src = { s = { { k = 'monster', n = 'Rat', v = '5%' } }, e = { p = 0.05, w = 'kill', m = 'Rat' },
+  u = { n = { 'Myst Emblem' } } } }
+local withSrc = L.lines(srcTip, { alt = true })
+eq(withSrc[#withSrc - 3].text, 'Drops from: Rat (5%)', 'with Alt the sources sit above the effort, used in and the weight')
+eq(withSrc[#withSrc - 2].text, '~1 in 20 kills of Rat', 'with Alt the chance line shows')
+-- owner 2026-11-11: the "Drops from" row and the chance line show only while Alt is held; "Used in" and the weight stay
+do
+  local plain = L.lines(srcTip)
+  local texts = {}
+  for _, l in ipairs(plain) do texts[#texts + 1] = l.text end
+  local joined = table.concat(texts, '\n')
+  eq(joined:find('Drops from', 1, true), nil, 'no Alt: no Drops from row')
+  eq(joined:find('~1 in 20 kills', 1, true), nil, 'no Alt: no chance line')
+  eq(joined:find('Used in: Myst Emblem', 1, true) ~= nil, true, 'no Alt: Used in stays')
+  eq(plain[#plain].text, 'Weight 10 oz', 'no Alt: the weight stays')
+  eq(#L.sourceLines(srcTip.src, true), 1, 'hideRow: used in alone')
+  eq(L.sourceLines(srcTip.src, true)[1].text, 'Used in: Myst Emblem', 'hideRow: the row left is Used in')
+  eq(#L.sourceLines({ s = {}, t = 1200 }, true), 0, 'hideRow: a token price hides too')
+  eq(#L.sourceLines(srcTip.src), 3, 'default: the row too')
+  eq(#L.sourceLines({ s = { { k = 'shop', n = 'Agnes', v = '4 gold' } } }, true), 0, 'the Sources row hides the same way')
+  eq(L.hasSourceRow(srcTip.src), true, 'a row to open')
+  eq(L.hasSourceRow({ s = {}, t = 1200 }), true, 'a vendor price alone is hidden too')
+  eq(L.hasSourceRow({ s = {}, e = { p = 0.001, w = 'kill' } }), true, 'a chance alone is hidden too')
+  eq(L.hasSourceRow({ s = {}, u = { n = { 'Myst Emblem' } } }), false, 'Used in alone: nothing hidden')
+  eq(L.hasSourceRow(nil), false, 'no sources')
+  local foot = L.card(srcTip, {}).foot
+  eq(foot[1].text, 'Used in: Myst Emblem - Weight 10 oz', 'card without Alt: Used in and the weight')
+  eq(#foot, 1, 'card without Alt: nothing else in the foot')
+  eq(L.card(srcTip, { alt = true }).foot[1].text, 'Drops from: Rat (5%)', 'card with Alt: the row is back')
+  eq(L.altHintText(srcTip, true), 'Hold Alt for where it comes from and what each line does.', 'the hint names the hidden row')
+  eq(L.altHintText(srcTip, false), 'Hold Alt for where it comes from.', 'an item without help lines still gets a hint')
+  eq(L.altHintText({ name = 'x' }, true), nil, 'nothing hidden: the shared hint stays')
+end
 
 -- what a material is for (server K.brief u; owner 2026-10-22: "Coloque pra que servem")
 local stone = L.sourceLines({ s = { { k = 'monster', n = 'Fractalis the Shardmaw', v = '60%' } },
@@ -513,8 +544,13 @@ eq(card.chips[1].text, 'Level 300', 'level chip')
 eq(card.chips[1].low, true, 'level chip low')
 eq(card.chips[3].text, 'Necromancer', 'class chip')
 eq(L.card(wand, { level = 300 }).chips[1].low, false, 'level reached')
-eq(#card.foot, 1, 'source and weight on one line')
-eq(card.foot[1].text, 'Drops from: Axebringer Fiend - Weight 24.9 oz', 'foot line')
+eq(#card.foot, 1, 'the weight alone without Alt')
+eq(card.foot[1].text, 'Weight 24.9 oz', 'foot line without Alt')
+do
+  local altCard = L.card(wand, { level = 100, alt = true })
+  eq(#altCard.foot, 1, 'Alt: source and weight on one line')
+  eq(altCard.foot[1].text, 'Drops from: Axebringer Fiend - Weight 24.9 oz', 'foot line with Alt')
+end
 
 -- armour: Armour and Defense tiles, the rest in the extra line; no DPS hero
 local armor = { name = 'plate armor', kind = 'armor', slot = 'Armour', rarity = 3, rarityName = 'Magic', level = 20,
@@ -676,6 +712,133 @@ eq(groups[1].rows[1].parts[3], ' (over the character cap of 45)', 'the group row
 eq(groups[1].rows[2].parts[3], ' (character cap 20)', 'a row with a bound modifier and a cap')
 eq(groups[1].rows[2].parts[5], ' [bound]', 'then the bound mark')
 eq(groups[1].rows[2].parts[4], L.COLORS.dim, 'the cap in the dim colour')
+
+-- ---------------------------------------------------------------- the gem block (O479, owner 2026-11-11: colour option 3)
+do
+  local C = L.COLORS
+  local pt = dofile(dir .. '../client_chaos_locale/pt_br.lua')
+  local function withLang(table_, fn)
+    local saved = rawget(_G, 'tr')
+    rawset(_G, 'tr', function(s, ...)
+      s = (table_ and table_[s]) or s
+      if select('#', ...) > 0 then return string.format(s, ...) end
+      return s
+    end)
+    fn()
+    rawset(_G, 'tr', saved)
+  end
+  local chipped = { name = 'chipped diamond', id = 3028, count = 3, weight = 0.1,
+    desc = 'A gem for a socket. Weapon: Holy Damage +2%. Armour: Elemental Resistances +1%. Jewellery: Holy Resistance +2%. '
+      .. 'Use it on gear with a free socket. Three of the same make one of the next quality: use the stack, then left-click it.',
+    gem = { combine = true, rows = {
+      { place = 'weapon', label = 'Holy Damage', value = '+2%', text = 'Holy Damage +2%' },
+      { place = 'armour', label = 'Elemental Resistances', value = '+1%', text = 'Elemental Resistances +1%' },
+      { place = 'jewel', label = 'Holy Resistance', value = '+2%', text = 'Holy Resistance +2%' } } },
+    src = { s = { { k = 'drop', n = 'Any monster', v = 'global drop' } }, e = { p = 1 / 3350, w = 'kill' } } }
+  local perfect = { name = 'perfect amethyst', gem = { combine = false, rows = {
+    { place = 'weapon', label = 'Critical Chance', value = '+3%', label2 = 'Critical Hit', value2 = '+25%',
+      text = 'Critical Chance +3%, Critical Hit +25%' },
+    { place = 'armour', label = 'Death Resistance', value = '+8%' }, { place = 'jewel', label = 'Death Damage', value = '+12%' } } } }
+
+  -- the named colours
+  eq(C.gemWeapon, '#ff9a5c', 'weapon label colour') eq(C.gemArmour, '#6fb0ff', 'armour label colour')
+  eq(C.gemJewel, '#c890ff', 'jewellery label colour') eq(C.gemValue, C.quality, 'the number is the quality green')
+  eq(C.gemEffect, C.text, 'the effect name is the text colour') eq(C.gemHint, C.dim, 'hints are dim') eq(C.gemHead, C.dim, 'header is dim')
+
+  withLang(nil, function()
+    local b = L.gemBlock(chipped)
+    eq(b.head, 'SOCKETED IN', 'English header')
+    eq(#b.rows, 3, 'one row per place')
+    eq(b.rows[1].label, 'Weapon:', 'weapon label') eq(b.rows[2].label, 'Armour:', 'armour label') eq(b.rows[3].label, 'Jewellery:', 'jewellery label')
+    eq(b.rows[1].labelColor, C.gemWeapon, 'weapon colour') eq(b.rows[2].labelColor, C.gemArmour, 'armour colour')
+    eq(b.rows[3].labelColor, C.gemJewel, 'jewellery colour')
+    eq(b.rows[1].text, 'Holy Damage +2%', 'effect text') eq(b.rows[2].text, 'Elemental Resistances +1%', 'effect text 2')
+    -- the parts of a row: the name (text colour), the number (value colour)
+    eq(b.rows[1].parts[1], 'Holy Damage ', 'name part') eq(b.rows[1].parts[2], C.gemEffect, 'name colour')
+    eq(b.rows[1].parts[3], '+2%', 'number part') eq(b.rows[1].parts[4], C.gemValue, 'number colour')
+    eq(#b.hints, 2, 'two hints')
+    eq(b.hints[1], 'Use it on gear with a free socket.', 'first hint')
+    eq(b.hints[2], 'Three of the same make one of the next quality: use the stack, then left-click it.', 'combine hint')
+    local p = L.gemBlock(perfect)
+    eq(#p.hints, 1, 'a Perfect gem has no combine hint')
+    eq(#p.rows, 4, 'a pair effect takes a second row')
+    eq(p.rows[2].label, '', 'the second row has no label') eq(p.rows[2].cont, true, 'and is marked as the continuation')
+    eq(p.rows[1].text, 'Critical Chance +3%', 'first of the pair') eq(p.rows[2].text, 'Critical Hit +25%', 'second of the pair')
+    eq(p.rows[2].parts[3], '+25%', 'both numbers have their own part') eq(p.rows[2].parts[4], C.gemValue, 'and the value colour')
+    eq(L.gemBlock({ name = 'x' }), nil, 'an item without tip.gem: no block (an older server)')
+    eq(L.gemBlock({ gem = { rows = {} } }), nil, 'no rows: no block')
+    eq(L.gemBlock({ gem = { rows = { { place = 'head', label = 'a', value = '+1' } } } }), nil, 'an unknown place is dropped')
+
+    -- the card: the box, then the two hints outside it; the long description is gone; sources and weight stay
+    local card = L.card(chipped, { level = 10, alt = true })
+    eq(card.extras[1].kind, 'gembox', 'the gem box first') eq(card.extras[1].head, 'SOCKETED IN', 'its header')
+    eq(card.extras[1].headColor, C.gemHead, 'dim header') eq(#card.extras[1].rows, 3, 'three rows in the box')
+    eq(card.extras[2].rows[1].text, 'Use it on gear with a free socket.', 'the hint after the box') eq(card.extras[2].rows[1].color, C.gemHint, 'dim hint')
+    local all = {}
+    for _, g in ipairs(card.extras) do for _, r in ipairs(g.rows) do all[#all + 1] = r.text end end
+    local joined = table.concat(all, '\n')
+    eq(joined:find('A gem for a socket', 1, true), nil, 'no old sentence in the card (no double information)')
+    eq(joined:find('Three of the same make', 1, true) ~= nil, true, 'the combine hint is in the card once')
+    eq(card.foot[1].text, 'Drops from: Any monster (global drop)', 'the drop row without the chance')
+    eq(card.foot[2].text, '~1 in 3,350 kills', 'the chance once, in the effort row')
+    eq(card.foot[#card.foot].text, 'Weight 0.1 oz', 'the weight stays')
+    -- an older server (no tip.gem): the description as before
+    local old = {}
+    for k, v in pairs(chipped) do old[k] = v end
+    old.gem = nil
+    local oldCard = L.card(old, { level = 10 })
+    local oldAll = {}
+    for _, g in ipairs(oldCard.extras) do for _, r in ipairs(g.rows) do oldAll[#oldAll + 1] = r.text end end
+    eq(table.concat(oldAll, ' '):find('A gem for a socket.', 1, true) ~= nil, true, 'no tip.gem: the description is shown')
+    -- the same in the line list
+    local lines = L.lines(chipped)
+    local txt = {}
+    for _, l in ipairs(lines) do txt[#txt + 1] = l.text end
+    local lj = table.concat(txt, '\n')
+    eq(lj:find('SOCKETED IN', 1, true) ~= nil and lj:find('Weapon: Holy Damage +2%', 1, true) ~= nil, true, 'L.lines: the rows')
+    eq(lj:find('A gem for a socket', 1, true), nil, 'L.lines: no old sentence')
+  end)
+
+  withLang(pt, function()
+    local b = L.gemBlock(chipped)
+    eq(b.head, 'ENCAIXADA EM', 'pt-BR header')
+    eq(b.rows[1].label, 'Arma:', 'Arma') eq(b.rows[2].label, 'Armadura:', 'Armadura') eq(b.rows[3].label, 'Joia:', 'Joia')
+    eq(b.rows[1].text, 'Dano Sagrado +2%', 'effect in pt-BR') eq(b.rows[2].text, 'Resist\195\170ncias Elementais +1%', 'effect 2 in pt-BR')
+    eq(b.rows[3].text, 'Resist\195\170ncia Sagrada +2%', 'effect 3 in pt-BR')
+    eq(b.hints[1], 'Use em um equipamento com um encaixe livre.', 'pt-BR hint')
+    eq(b.hints[2], 'Tr\195\170s iguais formam uma da qualidade seguinte: use a pilha e depois clique nela com o bot\195\163o esquerdo.', 'pt-BR combine hint')
+    local p = L.gemBlock(perfect)
+    eq(p.rows[2].text, 'Dano Cr\195\173tico +25%', 'pair second effect in pt-BR')
+    -- every effect name the server can send has a pt-BR text (the gem config's labels)
+    local cfg = dofile(dir .. '../../../../server/data/lib/chaos_gems_config.lua')
+    for key, def in pairs(cfg.effects) do
+      eq(pt[def.label] ~= nil, true, 'pt-BR text of ' .. def.label)
+      if def.label2 then eq(pt[def.label2] ~= nil, true, 'pt-BR text of ' .. def.label2) end
+    end
+    -- a socketed gem: the name goes through tr, the number stays; an older server's text as it is
+    eq(L.socketText({ name = 'Chipped Diamond', text = 'Holy Damage +2%', l = 'Holy Damage', v = '+2%' }), 'Dano Sagrado +2%', 'socket text in pt-BR')
+    eq(L.socketText({ text = 'Critical Chance +1%, Critical Hit +5%', l = 'Critical Chance', v = '+1%', l2 = 'Critical Hit', v2 = '+5%' }),
+      'Chance de Cr\195\173tico +1%, Dano Cr\195\173tico +5%', 'socket pair in pt-BR')
+    eq(L.socketText({ name = 'x', text = 'Fire Damage +9%' }), 'Fire Damage +9%', 'an older server: the text as sent')
+    local sock = L.extraGroups({ sockets = { count = 1, max = 1, list = { { name = 'Flawless Ruby', text = 'Fire Damage +9%', color = '#ff5a4a',
+      l = 'Fire Damage', v = '+9%' } } } })
+    eq(sock[1].rows[1].text, 'Flawless Ruby: Dano de Fogo +9%', 'the socket row in the card')
+    eq(sock[1].rows[1].color, '#ff5a4a', 'the gem colour stays')
+    -- the sources and weight rows are the client's own words
+    eq(L.card(chipped, { alt = true }).foot[1].text, 'Cai de: Any monster (global drop)', 'drops from in pt-BR (the server sends its own words translated)')
+  end)
+
+  -- the module reads tr from ChaosLocale when the global one is hidden in _G's metatable (rawget(_G, 'tr') is nil then)
+  do
+    local saved = rawget(_G, 'tr')
+    rawset(_G, 'tr', nil)
+    ChaosLocale = { tr = function(s, ...) return 'X:' .. s end }
+    eq(L.gemBlock(perfect).head, L.caps('X:Socketed in'), 'tr from ChaosLocale.tr')
+    ChaosLocale = nil
+    eq(L.gemBlock(perfect).head, 'SOCKETED IN', 'no tr at all: English')
+    rawset(_G, 'tr', saved)
+  end
+end
 
 if fails > 0 then
   print(fails .. ' failure(s)')
