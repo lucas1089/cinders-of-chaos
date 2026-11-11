@@ -4190,7 +4190,7 @@ the owner said "You can do the recommended." and, on the sheets, asked "Do I pub
   New job step: `clean_wing_shadows.py check-clean DAT SPR` (every cleaned wing has no core and at most 1,000 consensus palette pixels in its ellipse; the skipped 2457 still has exactly the table's
   blob; no other wing has a blob). It fails on pair 63 (92 wings still have a core) and passes on pair 64.
 - **Archive parts** (the recipe of pair 63 and 62: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of Tibia.dat and Tibia.spr streamed into `xz -9 -T3`,
-  `split -b 95M -d -a 2`; no tar on disk; pushed to windows-assets as **(commit id: the coordinator fills it)**, only the two part files and their lines of `SHA256SUMS.parts` change):
+  `split -b 95M -d -a 2`; no tar on disk; pushed to windows-assets as **5612a7c**, only the two part files and their lines of `SHA256SUMS.parts` change):
   - part00 99,614,720 bytes, sha256 `a56fcf4ea377c90a5f313c9c41765b6f369c4852dbc9f987e831d5307cfc43ee`
   - part01 30,002,536 bytes, sha256 `7401a8b7b3712bf92fb0f6cae51079529fec90c41e1b017f194028682ec1859d`
   - joined `things-1098.tar.xz` (129,617,256 bytes) sha256 `664f4004ec6fccf3f68571d8554f325b9b381f7ade5e00a05c6a100f73b8c704`; `things-1098.tar` sha256 `bd8486382540d7803ce1c83c3ca6c969c89996399186c6431498474b1fee1ccc`.
