@@ -33,6 +33,9 @@ local TYPES = {
 	[3975] = {name = "dragon shield", weaponType = WEAPON_SHIELD, defense = 31, slot = 48}, -- Emberwarden
 	[2206] = {name = "strange ring", slot = 256},
 	[36656] = {name = "pair of ember knuckles", weaponType = WEAPON_SHIELD, attack = 46, defense = 12, slot = 48}, -- a fist weapon
+	[2183] = {name = "test wand", weaponType = 6, slot = 48, level = 26, voc = "mystics and necromancers"}, -- O490
+	[2184] = {name = "test bow", weaponType = 5, slot = 48 + 2048, level = 80, voc = "rangers"}, -- O490
+	[2185] = {name = "test blade", weaponType = 1, slot = 48, level = 220, voc = "warriors"}, -- O490
 	[2160] = {name = "crystal coin", stackable = true, description = ""},
 	[27749] = {name = "lasting exercise wand", charges = 14400},
 	[27849] = {name = "Moon Amplifier Catalyst [1]", slot = 48, description = "An amplifier of the old badge rite.",
@@ -396,14 +399,68 @@ local stockBefore = ChaosUniqueEquip.stock
 ChaosUniqueEquip.stock = {[2496] = {level = 100, vocations = {"Ranger", "Deadeye", "Beastmaster", "Thief"}}, [2466] = {}}
 tip = T.build(newItem(2496))
 eq(tip.req.level, 100, "a stock copy: the stock level")
-eq(tip.req.voc, "Ranger, Thief", "a stock copy: the stock classes")
+eq(tip.req.voc, "Ranger, Thief only", "a stock copy: the stock classes (O490: a base class alone reads as its whole line, so the Thief without a Ninja or Samurai is \"Thief only\")")
 tip = T.build(helm)
 eq(tip.req.level, ChaosUniqueById[2496].level, "a unique copy: its own level")
-eq(tip.req.voc ~= "Ranger, Thief", true, "a unique copy: not the stock classes")
+eq(tip.req.voc ~= "Ranger, Thief only", true, "a unique copy: not the stock classes")
 tip = T.build(newItem(2466))
 eq(tip.req.level, nil, "a stock rule of {}: no level")
 eq(tip.req.voc, "all classes", "a stock rule of {}: everyone")
 ChaosUniqueEquip.stock = stockBefore
+
+-- O490: the rule each item is held to (data/lib/chaos_equip_rules.lua, tools/install_equip_rules.py), not the engine's item type
+local Rd = T.readClasses
+local function set(...)
+	local t = {}
+	for _, n in ipairs({...}) do t[n] = true end
+	return t
+end
+local function same(a, b)
+	for k in pairs(a) do if not b[k] then return false end end
+	for k in pairs(b) do if not a[k] then return false end end
+	return true
+end
+eq(same(Rd("Mystic"), set("Mystic", "Elementalist", "Illusionist")), true, "a base class alone is its whole line")
+eq(same(Rd("Mystic, Illusionist, Necromancer"), set("Mystic", "Illusionist", "Necromancer", "Lich", "Bone Lord")), true,
+	"a line named class by class, a line named by its base")
+eq(same(Rd("Mystic only"), set("Mystic")), true, "Name only is that class alone")
+eq(same(Rd("Deadeye, Ninja"), set("Deadeye", "Ninja")), true, "ascended classes without their base")
+eq(Rd("all classes").Sentinel == true and Rd("").Lich == true, true, "all classes and no text: everyone")
+eq(T.stockClassText({"Mystic", "Thief", "Ninja", "Samurai"}), "Mystic only, Thief", "a base class without its ascended classes")
+local everyone = {}
+for _, fam in ipairs(T.CLASS_LINES) do
+	everyone[#everyone + 1] = fam.base
+	everyone[#everyone + 1] = fam.ascended[1]
+	everyone[#everyone + 1] = fam.ascended[2]
+end
+eq(T.stockClassText(everyone), "", "all 21 classes: the row says all classes")
+eq(T.ruleVocString("rangers", {"Ranger", "Deadeye"}, {weaponType = 5, slot = 48 + 2048, ammoType = 0}), "rangers", "a text that already reads as the list stays the engine's")
+eq(T.ruleVocString("mystics and necromancers", {"Mystic", "Illusionist", "Necromancer", "Lich", "Bone Lord"}, {}),
+	"Mystic, Illusionist, Necromancer", "the engine's text misses the Illusionist's line: the list is named")
+eq(T.equipRuleOf(2183), nil, "no rules file: the engine's item type stands")
+tip = T.build(newItem(2183))
+eq(tip.req.level, 26, "no rules: the engine's level") eq(tip.req.voc, "Mystic, Necromancer", "no rules: the engine's classes")
+T.setEquipRules({sets = {{"Mystic", "Illusionist", "Necromancer", "Lich", "Bone Lord"}, {"Ranger", "Deadeye", "Beastmaster"}, {"Warrior", "Juggernaut"}},
+	rules = {[2183] = {30, 1, 5}, [2184] = {80, 2}, [2185] = {270, 3}}})
+tip = T.build(newItem(2183))
+eq(tip.req.level, 30, "a rule: its level") eq(tip.req.magic, 5, "a rule: its magic level")
+eq(tip.req.voc, "Mystic, Illusionist, Necromancer", "a wand for the Mystic and the Illusionist names both")
+tip = T.build(newItem(2184))
+eq(tip.req.voc, "Ranger", "a bow takes the Beastmaster: the whole Ranger line")
+tip = T.build(newItem(2185))
+eq(tip.req.level, 270, "a rule: the level of the stricter entry") eq(tip.req.voc, "Warrior, Juggernaut", "a rule: partly named line")
+-- a plain copy with a rule: the rule wins over the O489 stock table
+ChaosUniqueEquip.stock = {[2183] = {level = 1, vocations = {"Thief"}}}
+tip = T.build(newItem(2183))
+eq(tip.req.level, 30, "the rules table wins over the stock table") eq(tip.req.voc, "Mystic, Illusionist, Necromancer", "ditto")
+ChaosUniqueEquip.stock = stockBefore
+T.setEquipRules(nil)
+-- the class row is cut between two names
+local long = {}
+for i = 1, 14 do long[i] = "Longclassname" .. i end
+local row = T.classLine(table.concat(long, ", "), {slot = 1}, "Helmet")
+eq(row:sub(-14), "Longclassname7", "cut between two names")
+eq(#row <= 120, true, "within 120")
 
 -- ---------------------------------------------------------------- plain items
 local armor = newItem(2466)

@@ -472,6 +472,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   itemwire     tools/patch_item_wire.py          the items.otb nodes of data/items/item_wire.csv write the bytes the client pair
                reads (FLAG_ANIMATION only on a dat thing with more than one phase, group splash / fluid where the dat says so;
                README "Item wire bytes"; after every step that writes item nodes)
+  equiprules   tools/install_equip_rules.py      data/lib/chaos_equip_rules.lua: the level, magic level and class list each item is
+               held to, read from the installed movements.xml and weapons.xml; the item tooltip names those classes (O490, README
+               "Equip rules in the tooltip (O490)"; nothing about who can wear what changes; after every step that writes
+               movements.xml or weapons.xml)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -1777,6 +1781,14 @@ def step_itemwire(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'itemwire')  # last of the item steps: the table fixes the nodes the others wrote (and the base's own)
+
+
+def step_equiprules(server, data, ctx):
+    args = [tool('install_equip_rules.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'install_equip_rules.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'equiprules')  # after every step that writes movements.xml or weapons.xml (it reads both)
 
 
 def step_autoloot(server, data, ctx):

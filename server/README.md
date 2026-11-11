@@ -3747,6 +3747,84 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
   class wear it from the level (before, an empty list let nobody). A weapon base without a stock entry gets a `hand`
   entry. The leveling and endgame uniques below use both.
 
+## Equip rules in the tooltip (`data/lib/chaos_equip_rules.lua`, `tools/install_equip_rules.py`, `tools/audit_equip_tooltips.py`, O490)
+Owner, 2026-11-11 (translated), after the Ring of Blue Plasma of O489: "Exactly. Look for other items that have the same
+bug and fix them please." The bug: the requirement chips of the item tooltip (level, magic level, class row; `req` of
+`item_tooltip_core.lua` `T.build`) say a character can wear or wield an item, and the server refuses it. The reverse (the
+tooltip says no, the server allows) counts as a lesser finding. Nothing here changes who can wear what.
+- **What the server enforces** (`tools/equip_rules.py` reads it from the installed XML).
+  - *Refusal*: the Equip entries of `movements.xml` (level, magic level, every `<vocation>`, shown or hidden;
+    `showInDescription="0"` only hides a name from the look text). An unmet rule refuses the item ("You cannot dress this
+    object there."). An entry with `script="chaos_unique_equip.lua"` holds a plain copy to its recorded stock rule.
+  - *Weapon check*: the entries of `weapons.xml` (level, magic level, vocations). An unmet rule does **not** refuse the
+    item, it can be equipped: the weapon check of the base engine (`Weapon::playerWeaponCheck`, not in this repository, so
+    not run here) gives no hit for a class that is not listed and for a level or magic level below the entry, or half the
+    hit with `unproperly="1"` (level and magic level only). The audit counts it as a penalty, a kind of its own.
+  - *Effective rule* (what the tooltip shows): the higher level, the higher magic level and the classes of both rules.
+- **The reading of the class chips** (what the audit holds the tooltip to). A base class named alone stands for its whole
+  line (the class and its two ascended classes). A line that is only partly allowed is named class by class (a wand for the
+  Mystic and the Illusionist but not the Elementalist reads "Mystic, Illusionist"; "Mystic only" is the base class alone).
+  "all classes" means every class; "no class" a rule that lists only the vocation None (one stock wand). A chip set is right
+  when the set of classes it stands for equals the set the server lets through. `T.readClasses` (Lua) and
+  `equip_rules.read_chips` (Python, the audit) are the two copies of this reading.
+- **Why the tooltip was wrong.** The engine's item type holds only the SHOWN vocations (`add_vocations.py` hides the
+  ascended class next to its base class, so a wand for Mystic + Illusionist reads "mystics and necromancers") and the
+  level and class list of one of the two entries an item can have (which of the Equip and the weapon entry wins is not in
+  this repository). `T.vocationText` adds the ascended classes only for the Ranger and Warrior families.
+- **The fix.** Install step `equiprules` (`install_equip_rules.py`, next to last, after every step that writes
+  `movements.xml` or `weapons.xml`) writes `data/lib/chaos_equip_rules.lua` from the installed files: for each id with a
+  class list, or whose two entries disagree on the level, `{level, class list index, magic level}` of the effective rule
+  (about 1,600 ids, 34 KB). `T.equipRuleOf` reads it; `T.ruleVocString` keeps the engine's own text when it already reads
+  as exactly those classes (so a text that was right does not change) and otherwise names the list with `T.stockClassText`
+  (the one function that turns a list of names into chips: a whole line is its base class, all 21 classes are "", a base
+  class without its ascended classes is "Name only"). No file, or an id not in it: the tooltip reads the engine's item type
+  as before (and the O489 stock table for a base of a unique). A unique copy with a rule of its own (`equip` of the spec)
+  shows that rule. The class row is cut between two names, never in the middle of one (`T.classLine`); the longest row of
+  the installed rules is 103 characters of 120, so nothing is cut today. An install step was chosen over a Lua derivation
+  because the engine exposes only the shown names, and over a second copy of `add_vocations.py`'s rules because the file is
+  read from the XML the server loads: a re-run after `add_vocations.py` or any later step that edits the XML rebuilds it.
+- **The audit** (`tools/audit_equip_tooltips.py`, read only, not in CI: it needs an installed server's files; the test is
+  `tools/audit_equip_tooltips_test.py`, one synthetic case per kind). Run it on an installed server:
+  `python3 -I server/tools/audit_equip_tooltips.py SERVER/data` (`--check` exits 1 on a "says yes, refused" kind, `--list KIND`
+  names every item, `--top N`, `--movements-last` reads the two entries in the other order). It runs the real tooltip code
+  (`tools/audit_equip_tooltips.lua`, luajit or lua5.3, on a mocked engine whose item types hold what the engine would hold)
+  for a plain copy of every item with a rule and for a unique copy of every unique, and prints the rules read, the table by
+  kind, the 20 most common shapes and the longest class row. The admin app has no button for it: it is a developer check.
+- **What was wrong** (the installed files of 2026-11-11 after the O489 install, 2,106 plain and 155 unique tooltips; items
+  per kind, an item can be in several):
+
+| Kind | Before | After |
+|---|---|---|
+| refused: class (tooltip says yes, the Equip entry refuses a class) | 129 | 0 |
+| refused: level (tooltip level under the Equip entry's) | 6 | 0 |
+| unique copy refused: class | 2 | 0 |
+| weapon check: class (tooltip lists a class the weapon entry does not) | 131 | 0 |
+| weapon check: level | 5 | 0 |
+| tooltip stricter: class (tooltip drops a class the server allows) | 76 | 0 |
+| unique copy: tooltip stricter: class | 3 | 0 |
+| unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 | 35, kept |
+| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding |
+
+  Shapes (one example each): a wand, rod, robe or hood for the Mystic + Illusionist line or the Mystic + Elementalist line
+  read "Mystic, Necromancer" (the Elementalist or the Illusionist was refused after a yes; 126 Equip entries and 127
+  weapon entries); a bow for the Ranger line read "Ranger, Deadeye" (no launcher has an ammunition type since
+  `patch_base_archery.py`, so the Beastmaster was left out although it may use a bow; 75 bows); items whose Equip and weapon
+  entry disagree read the weapon entry's level or no class list (a cobra club at 220, the Equip entry asks 270; a leaf star
+  "all classes", the Equip entry asks the Ranger and Thief lines); a stock wand that lists only the vocation None read
+  "nones" and is now "no class".
+- **Not told by the tooltip** (and why): the weapon check's penalty (the level or class is shown, not that a wrong class
+  hits for nothing); the unique level of 35 older uniques (the tooltip shows the level the unique is meant for, the server
+  asks none: the unique's own description says the same); slot rules (two-handed against shield, the quiver beside a bow,
+  one might ring at a time, the badge slot, a Ninja's off-hand sword, a Monk's fist weapons: engine patches 0002, 0023, 0058,
+  0087; the tooltip names the slot and the quiver note only); the scripts of 308 Equip entries (boats, badges, decks, special
+  skills: base scripts, not read here); the base's `Player:onMoveItem` rules. The engine's own look line ("It can only be
+  wielded properly by ...") is unchanged and still shows the engine's item type: the shown vocations only, and the level of
+  the entry read last. The Unity tooltip reads the same `req` field from the server and needs no change.
+- Tests: `tests/item_tooltip_test.lua` (the reading, the rule table, the texts, the cut; the O489 test now expects
+  "Ranger, Thief only" for a stock Thief without a Ninja or Samurai, because a base class alone reads as its whole line),
+  `tools/audit_equip_tooltips_test.py` (the reading, the rules, every kind, the install step: dry run, idempotent, stale
+  file, the two read orders).
+
 ## Leveling and endgame uniques (`chaos_items.xml` `mods`, `chaos_unique_items.lua`, 2026-10-23)
 Before this the uniques stopped at level 1000 with flat stats, and the first one dropped at level 40.
 - **Built-in modifiers.** `<attribute key="mods" value="key:value,..." />` names modifiers of `chaos_item_mods.lua` and
