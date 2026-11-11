@@ -365,6 +365,34 @@ function M.unarmedFactor(vocId, level, fistSkill, fistWeaponAttack, attackFactor
 	return want / engine
 end
 
+-- O505 (engine patch 0091): an engine that has Player:setFistAttack rolls the bare-fist hit with the attack and the multiplier a script
+-- gives it, so the hit that meets the monster's flat armour is already a Monk's. The capability is the method itself (never a version
+-- guess); an engine without it is the state of before, and every function below is only used when it is there.
+function M.engineFist()
+	local P = rawget(_G, "Player")
+	return type(P) == "table" and type(P.setFistAttack) == "function"
+end
+
+-- what a Monk's bare fists are rolled with on such an engine: the attack value of M.fistAttack (the level value times the weapon growth, or
+-- the fist weapon's attack when that is higher) and the vocation's meleeDamage as the multiplier of the maximum. The same numbers
+-- M.unarmedFactor rescales the stock hit (attack 7) to, so the expected hit is the same
+function M.enginePush(vocId, level, fistWeaponAttack)
+	return M.fistAttack(level, fistWeaponAttack), cfg().unarmed.meleeDamage[vocId] or 1
+end
+
+-- the factor on a hit that the engine rolled with the pushed (attack a1, multiplier m1) when the numbers wanted now are (a2, m2): 1 when
+-- they are the same, which is nearly always. A level up, a changed fist weapon or a pushed value a swing late shows here and is
+-- corrected on the hit itself, so a stale push never changes what a Monk deals
+function M.pushCorrection(level, fistSkill, attackFactor, a1, m1, a2, m2)
+	local have = M.maxWeaponDamage(level, fistSkill, a1, attackFactor) * (m1 or 1)
+	local want = M.maxWeaponDamage(level, fistSkill, a2, attackFactor) * (m2 or 1)
+	if have <= 0 or want <= 0 then
+		return 1
+	end
+	local f = want / have
+	return math.abs(f - 1) < 0.002 and 1 or f
+end
+
 -- the fight mode's attack factor (Player::getAttackFactor): 1 offensive, 2 balanced, 3 defensive
 function M.attackFactor(fightMode)
 	if fightMode == 2 then

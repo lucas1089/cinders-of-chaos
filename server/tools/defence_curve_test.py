@@ -63,8 +63,12 @@ check(near(sum(D.ROLL) / 20.0, 1.0, 0.005), 'the roll has mean 1')
 check(D.ROLL[0] < 0.25 and D.ROLL[-1] < 2.0 and D.ROLL[-1] > 1.7, 'the roll runs from near 0 to under twice the mean')
 
 # the monster's own armour and defence (the engine takes them off before any Lua event)
-check(D.flat_at(8) == 5 and D.flat_at(20) == 15 and D.flat_at(500) == 75 and D.flat_at(5000) == 90, 'flat armour of the level: anchors and flat outside')
-check(D.flat_at(60) < D.flat_at(100) + 1 and D.flat_at(100) < D.flat_at(300), 'flat armour never falls with the level')
+check(D.xml_flat_at(8) == 5 and D.xml_flat_at(20) == 15 and D.xml_flat_at(500) == 75 and D.xml_flat_at(5000) == 90, 'stock flat armour of the level: anchors and flat outside')
+check(D.xml_flat_at(60) < D.xml_flat_at(100) + 1 and D.xml_flat_at(100) < D.xml_flat_at(300), 'stock flat armour never falls with the level')
+# O505: after the rule a typical monster keeps the smaller of the stock number and the cap of its level, so under the stock number
+check(all(D.flat_at(lv) <= D.xml_flat_at(lv) for lv in (1, 8, 20, 60, 100, 300, 500, 1000, 2000, 5000)), 'the rule never raises the flat armour')
+check(D.flat_at(20) == 2 and D.flat_at(100) == 8 and D.flat_at(500) == 23, 'flat armour after the rule: 2 / 8 / 23 at level 20 / 100 / 500')
+check(D.flat_at(1) == 1, 'flat armour of level 1 is the cap 1')
 hits = D.after_flat(100.0, 0, 0)
 check(near(sum(w for _, w in hits), 1.0, 1e-9) and all(near(v, 100.0, 1e-9) for v, _ in hits), 'no armour and no defence: the hit arrives whole')
 check(D.after_flat(10.0, 5, 20) == [], 'a hit under the defence never arrives')
@@ -76,7 +80,13 @@ check(near(sum(v * w for v, w in arr) / sum(w for _, w in arr), 60 - 7.5 - 6.5, 
 check(len(D.ARMOURED) == 15, 'fifteen classes have an armoured auto attack (the six casters hit with a wand: no armour)')
 check(all(c not in D.ARMOURED for c in ('Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord')), 'no caster is armoured')
 for lv in (8, 100, 1000):
-    check(D.arriving_mean('Monk', lv) < D.arriving_mean('Warrior', lv) < D.arriving_mean('Ranger', lv), 'level %d: fist < one-handed < bow arriving hit' % lv)
+    # the stock engine's bare fist (attack 7, what the engine rolls without patch 0091) is the smallest hit, as before O505
+    check(D.roll_mean('Monk', lv, True) < D.roll_mean('Warrior', lv) < D.roll_mean('Ranger', lv), 'level %d: stock fist < one-handed < bow roll' % lv)
+    # O505: the arriving fist hit is the Monk's own size (its fist attack x meleeDamage, the units the layer measures in on both engines):
+    # above a Warrior's, and under a bow's from level 100 (at level 8 the Monk's 40-attack fist beats a level 8 bow too: 81.6 against 53.5)
+    check(D.arriving_mean('Warrior', lv) < D.arriving_mean('Monk', lv), 'level %d: one-handed < Monk arriving hit (O505)' % lv)
+    if lv >= 100:
+        check(D.arriving_mean('Monk', lv) < D.arriving_mean('Ranger', lv), 'level %d: Monk < bow arriving hit (O505)' % lv)
 
 # the share of a hit: A / (A + 0.07 H), a cap, a big hit loses less
 check(near(D.share_of(10.0, 100.0), 10.0 / 17.0, 1e-9), 'share_of is A / (A + 0.07 H)')
@@ -102,18 +112,62 @@ tripled = [(lv, h * 3) for lv, h in D.config_curve(name='weaponHitCurve')]
 check(any(p.startswith('G1') for p in D.problems(weapon=tripled)), 'G1 fails when the weapon curve is three times too big')
 small = [(lv, max(1, h // 4)) for lv, h in D.config_curve(name='weaponHitCurve')]
 check(any(p.startswith('G1') or p.startswith('G2') for p in D.problems(weapon=small)), 'G1 or G2 fails when the weapon curve is four times too small')
-check(D.problems(wtargets={'normal': 25.0, 'elite': 40.0, 'boss': 50.0}) != [], 'G1 notices the weapon targets set to the plain goals (the cap and the roll pull the share under)')
+check(D.problems(wtargets={'normal': 40.0, 'elite': 60.0, 'boss': 70.0}) != [], 'G1 notices weapon targets that are far too high (O505: with the small flat armour the plain goals 25 / 40 / 50 are inside G1 too)')
 
 # the table of the class curve (the state of before O501) against the same arriving hits: the melee classes lose over half at 100
 rows = D.autos(100)
 by = {r[0]: r for r in rows}
 check(len(rows) == 15, 'the table has the 15 armoured classes')
 check(by['Warrior'][3][0] > 55.0, 'before: a Warrior at level 100 lost over 55%% of the auto attack on a normal monster (%.1f)' % by['Warrior'][3][0])
-check(by['Monk'][3][0] > 85.0, 'before: a Monk at level 100 lost over 85%% (%.1f)' % by['Monk'][3][0])
+# the `before` column is the class curve with no cap (O462) applied to the hits of the model's CURRENT state: the Monk's own size hits (O505), so a
+# Monk loses 42.9% there, under a Warrior's 55.7%. What a Monk lost with the stock engine's attack 7 and the stock flat armour (the 90.9% of the
+# O501 report, 91.0 here) is pinned from the stock hit
+check(near(by['Monk'][3][0], 42.9, 1.5) and by['Monk'][3][0] < by['Warrior'][3][0], 'before column: a Monk at level 100 loses 42.9%% on its own size hit, under the Warrior (%.1f)' % by['Monk'][3][0])
+_m7 = D.roll_mean('Monk', 100, True)
+_f = D.xml_flat_at(100)
+_hits = [(h, w / len(D.ROLL)) for r in D.ROLL for h, w in D.after_flat(_m7 * r, _f, _f)]
+_old = D.expected_share(_hits, D.armour_value(D.config_curve(), D.config_targets()['normal'], 100))
+check(near(_old, 90.9, 1.0), 'before O501 and O505: a Monk (attack 7, stock flat armour 30) at level 100 lost 90.9%% on a normal monster (%.1f)' % _old)
 check(all(r[2][0] <= 40.0 + 1e-9 and r[2][1] <= 55.0 + 1e-9 and r[2][2] <= 65.0 + 1e-9 for r in rows), 'after: no class passes its ceiling at level 100')
 check(near(by['Warrior'][2][0], 25.0, 3.0) and near(by['Warrior'][2][1], 40.0, 3.0) and near(by['Warrior'][2][2], 50.0, 3.0), 'after: the Warrior (the median) loses 25 / 40 / 50 within 3 points')
 check(by['Ranger'][2][0] < by['Warrior'][2][0], 'after: the bow, a bigger hit, loses less than the sword')
-check(by['Monk'][2][0] == 40.0, 'after: a Monk is held at the normal cap')
+# O501 held the Monk at the cap (40.0): its arriving hit was attack 7. O505: its hit is its own size, so it loses less than the median class
+check(near(by['Monk'][2][0], 16.9, 1.0) and by['Monk'][2][0] < by['Warrior'][2][0] < 40.0, 'after: a Monk at level 100 loses 16.9%% (O505), under the Warrior and far under the cap (%.1f)' % by['Monk'][2][0])
+check(D.fist_reach('Monk', 100, True, flat=D.xml_flat_at(100))[2] < 8.0, 'a stock engine with the stock flat armour: under 8%% of a level 100 Monk reaches the monster (the 6%% of O501)')
+
+# ---- O505, G5: the flat armour and defence of the monster files --------------------------------------------------------------
+# the engine's mean bite (Creature::blockHit): armor 1..3 takes 1, above that uniform(a / 2, a - 1 - a % 2); defense uniform(d / 2, d)
+check(D.F.armour_bite(0) == 0 and D.F.armour_bite(1) == 1 and D.F.armour_bite(3) == 1, 'armour bite: 0, then 1 for armor 1 to 3')
+check(D.F.armour_bite(4) == (2 + 3) / 2.0 and D.F.armour_bite(10) == (5 + 9) / 2.0, 'armour bite: armor 4 is uniform 2..3, armor 10 uniform 5..9')
+check(D.F.defence_bite(0) == 0 and D.F.defence_bite(10) == 7.5 and D.F.defence_bite(1) == 0.5, 'defence bite: uniform(d / 2, d)')
+check(D.problems() == [] and D.flat_problems() == [], 'G5 holds for the config: ' + '; '.join(D.flat_problems()[:3]))
+rows = D.config_curve(name='flatRollCurve')
+check(rows == D.flat_roll_curve(), 'flatRollCurve is the derivation of the median engine roll')
+check(len(rows) == 13 and [r[0] for r in rows] == [r[0] for r in D.curve()], 'flatRollCurve has the levels of the other curves')
+check(D.config_flat_share() == {'normal': 10.0, 'boss': 20.0} == D.FLAT_SHARE, 'flatShare is 10 / 20 percent in the config and in the tool')
+# the cap: more with the level, a boss twice the bite, never a bite over the share + the tolerance
+last = 0
+for lv in D.LEVELS_CHECK:
+    c, cb = D.flat_cap(lv), D.flat_cap(lv, True)
+    check(c >= last and cb >= c, 'level %d: the cap does not fall with the level and a boss keeps at least as much' % lv)
+    last = c
+check(D.flat_cap(20) == 2 and D.flat_cap(100) == 8 and D.flat_cap(500) == 23 and D.flat_cap(1000) == 46, 'the cap is 2 / 8 / 23 / 46 at level 20 / 100 / 500 / 1000')
+check(D.flat_cap(100, True) == 16 and D.flat_cap(500, True) == 45, 'a boss keeps about twice: 16 at level 100, 45 at 500')
+# G5 fails when the share, the roll rows or the blocked limit drift
+check(any(p.startswith('G5') for p in D.flat_problems(rows=[(lv, h * 4) for lv, h in rows], share={'normal': 10.0, 'boss': 20.0}, levels=(100, 500))),
+      'G5 fails when the roll rows are four times too big (the cap follows the rows, the real roll does not)')
+check(not any('blocked' in p for p in D.flat_problems(rows=[(lv, max(1, h // 8)) for lv, h in rows], levels=(100, 500, 1000))),
+      'smaller rows only lower the cap: no more blocked attacks')
+check(any('blocked outright' in p for p in D.flat_problems(blocked_max=-1.0, levels=(8,))), 'G5 fails when a class loses attacks to the flat armour above the limit')
+check(D.flat_problems(share={'normal': 10.0}) == ['G5 flatShare needs a normal and a boss share'], 'G5 needs both shares')
+# before the rule: the stock flat armour blocked a good part of the attacks at the low levels (the typical character; measured on real monsters:
+# 77 of 154 attacks at level 8 and 95 of 191 at level 20, 60 and 100, skill 10 / 20 / 45 / 70)
+before = max(D.blocked_share(c, 20, D.xml_flat_at(20)) for c in D.NONFIST)
+after = max(D.blocked_share(c, 20, float(D.flat_cap(20))) for c in D.NONFIST)
+check(before > 20.0, 'before: over 20%% of a level 20 class\'s attacks blocked outright by the stock flat armour (%.1f)' % before)
+check(after <= D.BLOCKED_MAX, 'after: at most %.0f%% of a level 20 class\'s attacks blocked (%.1f)' % (D.BLOCKED_MAX, after))
+# a launcher meets no defence: the same armour blocks a bow less than a sword of the same roll
+check(len(D.arriving('Ranger', 100, 30.0)) >= len(D.arriving('Warrior', 100, 30.0)), 'a bow meets the armour only: it arrives at least as often as a melee hit')
 
 if fails:
     print('%d failed' % fails)

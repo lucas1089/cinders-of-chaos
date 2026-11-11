@@ -355,6 +355,14 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
           "$d/chaosdisplay_test"
 
+      - name: "Fist attack from a script, pure parts (C++; header from server src-patch 0091, O505)"
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosfist\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0091-fist-attack-from-script.patch > "$d/chaosfist.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosfist_test.cpp -o "$d/chaosfist_test"
+          "$d/chaosfist_test"
+
       - name: "Loot bag instead of monster bodies, pure parts (C++; header from server src-patch 0089, O435)"
         run: |
           d=$(mktemp -d)
@@ -362,6 +370,14 @@ jobs:
             server/src-patches/0089-monster-loot-bag.patch > "$d/chaoslootbag.h"
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoslootbag_test.cpp -o "$d/chaoslootbag_test"
           "$d/chaoslootbag_test"
+
+      - name: "Rune Bag in the purse, pure parts (C++; header from server src-patch 0092, O509)"
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosrunebag\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0092-rune-bag-in-purse.patch > "$d/chaosrunebag.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosrunebag_test.cpp -o "$d/chaosrunebag_test"
+          "$d/chaosrunebag_test"
 
       - name: RmlUi layer input logic (C++; routing between OTUI and RmlUi, touch scroll, repaint signature; O334)
         run: |
@@ -890,6 +906,7 @@ jobs:
           python3 -I server/tools/patch_monster_resists_test.py  # resistance caps of the monsters, 40 normal / 75 boss, flat 30 on seven types thinned (O462; check_content.py holds our files to it)
           python3 -I server/tools/defence_curve.py --check  # the median class hit curve (a spell) and the median weapon hit curve (an auto attack, in the units that arrive) of the monster armour, G1 / G2 for the 21 classes (O462, O501)
           python3 -I server/tools/defence_curve_test.py  # the engine formula against the measured auto attack hits, the flat armour, the roll, G1 / G2 that fail on a drift (O501)
+          python3 -I server/tools/patch_monster_flat_defence_test.py  # the flat armour and defence of the monster files capped by a level rule: the engine's mean bite, the cap by level, XML and Lua, boss, level source, --check, --dry-run, idempotence, a lower cap later (O505; install step monsterflat; check_content.py holds our files to it)
 
       - name: Rotations of at most 5 spells, never 2 s without one (rotation_sim.py; the helper's auto rotation data)
         run: |
@@ -1204,6 +1221,12 @@ jobs:
 
       - name: Monster level bonus once per hit (src-patch 0090, O477)
         run: python3 -I server/tools/monster_bonus_once_patch_test.py
+
+      - name: Fist attack from a script (src-patch 0091, O505)
+        run: python3 -I server/tools/fist_attack_patch_test.py
+
+      - name: Rune Bag in the purse (src-patch 0092, O509)
+        run: python3 -I server/tools/rune_bag_purse_patch_test.py
 
       - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
         run: python3 -I server/tools/patch_base_raids_test.py

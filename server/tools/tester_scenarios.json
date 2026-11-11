@@ -10150,6 +10150,7 @@
   "pouches": {
    "actions": [
     "set",
+    "runebag",
     "open",
     "sync"
    ],
@@ -12148,6 +12149,7 @@
    "files": [
     "ascension.lua",
     "chaos_constants.lua",
+    "fist_sync.lua",
     "monk_combat.lua"
    ],
    "kind": "passive",

@@ -23,7 +23,7 @@
 			<attribute key="shootEffect" value="smallstone" />
 		</attack>
 	</attacks>
-	<defenses armor="60" defense="60">
+	<defenses armor="28" defense="28">
 		<defense name="healing" interval="2000" chance="15" min="510" max="900">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

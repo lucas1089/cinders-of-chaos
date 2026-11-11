@@ -38,7 +38,7 @@
 			<attribute key="areaEffect" value="mortarea" />
 		</attack>
 	</attacks>
-	<defenses armor="35" defense="35">
+	<defenses armor="29" defense="29">
 		<defense name="healing" interval="1000" chance="25" min="600" max="1200">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

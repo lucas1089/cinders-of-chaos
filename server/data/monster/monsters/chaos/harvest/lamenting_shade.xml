@@ -31,7 +31,7 @@
 			<attribute key="areaEffect" value="iceattack"/>
 		</attack>
 	</attacks>
-	<defenses armor="55" defense="55">
+	<defenses armor="25" defense="25">
 		<defense name="healing" interval="3000" chance="10" min="350" max="600">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

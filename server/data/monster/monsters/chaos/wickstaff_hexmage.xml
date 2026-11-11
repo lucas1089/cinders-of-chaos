@@ -41,7 +41,7 @@
 			<attribute key="areaEffect" value="redsmoke"/>
 		</attack>
 	</attacks>
-	<defenses armor="45" defense="45">
+	<defenses armor="27" defense="27">
 		<defense name="healing" interval="2000" chance="10" min="730" max="1220">
 			<attribute key="areaEffect" value="redshimmer"/>
 		</defense>

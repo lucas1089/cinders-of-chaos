@@ -34,7 +34,7 @@
 			<attribute key="areaEffect" value="holydamage"/>
 		</attack>
 	</attacks>
-	<defenses armor="65" defense="65"/>
+	<defenses armor="60" defense="60"/>
 	<immunities>
 		<immunity lifedrain="1"/>
 		<immunity paralyze="0"/>

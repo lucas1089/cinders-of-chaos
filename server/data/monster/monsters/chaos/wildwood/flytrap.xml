@@ -22,7 +22,7 @@
 			<attribute key="areaEffect" value="carniphila" />
 		</attack>
 	</attacks>
-	<defenses armor="26" defense="26">
+	<defenses armor="4" defense="4">
 		<defense name="healing" interval="2000" chance="10" min="160" max="320">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>

@@ -28,7 +28,7 @@
 			<attribute key="areaEffect" value="poison"/>
 		</attack>
 	</attacks>
-	<defenses armor="40" defense="50"/>
+	<defenses armor="30" defense="30"/>
 	<elements>
     <element firePercent="0" />
     <element earthPercent="30" />

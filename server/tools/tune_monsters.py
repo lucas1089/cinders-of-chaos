@@ -40,6 +40,7 @@ sys.dont_write_bytecode = True
 from fix_monster_xml import DAMAGE_SPELLS, _set_attr, _num
 import monster_fire_resist as fire
 import patch_monster_resists as resists
+import patch_monster_flat_defence as flat
 
 LATE_ELEMENTS = [('physicalPercent', -15), ('holyPercent', -15), ('firePercent', 20), ('energyPercent', 20),
                  ('icePercent', 20), ('earthPercent', 20), ('deathPercent', 10)]
@@ -341,7 +342,13 @@ def apply(t, row):
     if 'hit' in row:
         t = _scale(t, 'attacks', _is_damage, row['hit'])
     if 'armor' in row:
-        t = _tag(t, r'<defenses\s[^>]*>', {'armor': row['armor'], 'defense': row['armor']})
+        # O505: the row is a ceiling now, never a floor: the flat rule (patch_monster_flat_defence.py, applied after the rows) lowers
+        # armor and defense to the cap of the monster's level, and a row that set them again would undo it at every run
+        m = re.search(r'<defenses\s[^>]*>', t)
+        a = re.search(r'\barmor="(\d+)"', m.group(0)) if m else None
+        d = re.search(r'\bdefense="(\d+)"', m.group(0)) if m else None
+        t = _tag(t, r'<defenses\s[^>]*>', {'armor': min(row['armor'], int(a.group(1))) if a else row['armor'],
+                                           'defense': min(row['armor'], int(d.group(1))) if d else row['armor']})
     if 'heal_spell' in row:
         t = re.sub(r'<defense\s[^>]*>', lambda m: _heal_attrs(m.group(0), row['heal_spell']), t)
     if 'heal' in row:
@@ -434,6 +441,21 @@ def main(argv):
             elif not table:
                 open(p, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
                 print('resistances:', rel + ':', '; '.join(notes))
+    # O505: the flat armour and defence of every monster file of ours are capped by the level rule (patch_monster_flat_defence.py holds it,
+    # the install step `monsterflat` applies it to the base server's monsters). Last: it reads each file's level, experience and health,
+    # and the TUNING rows above may have set them (and the `armor` of the world bosses)
+    pool, flat_cfg = flat.Pool(flat.POOL), flat.read_config()
+    for p, _ in fire_resist_files():
+        t = open(p, encoding='utf-8', errors='surrogateescape', newline='').read()
+        new, counts, notes = (flat.xml if p.endswith('.xml') else flat.lua)(t, pool, flat_cfg)
+        if new != t:
+            bad += 1
+            rel = os.path.relpath(p, os.path.dirname(HERE)).replace(os.sep, '/')
+            if check:
+                print('not up to date (flat armour and defence cap):', rel)
+            elif not table:
+                open(p, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
+                print('flat defence:', rel + ':', '; '.join(notes))
     if check:
         print('monster tuning:', 'up to date' if not bad else '%d file(s) to tune' % bad)
         return 1 if bad else 0

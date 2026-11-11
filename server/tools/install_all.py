@@ -252,6 +252,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   monsterresists tools/patch_monster_resists.py  the resistance data of the monsters: a normal monster's element percents at most 40,
                a boss's at most 75, an immunity to a damage type becomes that number, the flat 30 on seven types is thinned to
                three (chosen by a hash of the name), weaknesses stay (README "Monster defence (O462)"; after basemonsters)
+  monsterflat  tools/patch_monster_flat_defence.py  the flat armour and defence of the monster files, which the engine takes off a weapon
+               hit before any Lua: the XML armor and defense (Lua monster.defenses) of a monster of level L are lowered to the cap of L, the
+               largest value whose mean bite of both together is at most 10% of the median auto attack roll of the level (a boss 20%; a
+               value under the cap is never raised); config monster_defence_config.lua flatShare / flatRollCurve, bounty_pool.lua for the
+               level (README "Flat armour, weapon spells and the Monk's fist (O505)"; after monsterresists, and so after files)
   baselooks    tools/patch_base_looks.py         pair 30 sheet looks and pair 33 kit looks on matching base monsters (rows of family
                "base" of client/tools/sprites/monster_looks/picks.csv; README "Pack 30 monsters in the hunts")
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
@@ -1241,6 +1246,16 @@ def step_monsterresists(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('basemonsters') + 1, 'monsterresists')  # resistance caps 40 / 75 in every monster file (O462)
+
+
+def step_monsterflat(server, data, ctx):
+    args = [tool('patch_monster_flat_defence.py'), data, '--quiet'] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_monster_flat_defence.py'))
+
+
+# the flat armour and defence of every monster file capped by a level rule (O505): right after the resistance caps, the other rule of the
+# monster files, and after `files` (it reads the installed bounty_pool.lua and monster_defence_config.lua) and `monsternames`
+STEPS.insert(STEPS.index('monsterresists') + 1, 'monsterflat')
 
 
 def step_gnometeleports(server, data, ctx):
