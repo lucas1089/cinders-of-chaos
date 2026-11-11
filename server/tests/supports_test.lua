@@ -864,6 +864,38 @@ me.removeItem = function() return false end
 eq(select(2, S.combine(me, rid, rs, rs)), S.reasons.needThree, "failed removal refused")
 me.removeItem = rmItem
 eq(rs.count + me.items[rid], 3, "failed removal: the taken rune given back"); me.items[rid] = 0
+-- the Rune Bag in the purse (O509, engine src-patch 0092). Before the patch the purse is all "box": the stack is taken by
+-- hand (the tests above). With the patch the engine's getItemCount / removeItem also walk the items directly inside a Rune Bag
+-- that lies directly in the purse (pouches.lua sets ChaosCombine.runeBagId / runeBagEngine), so that stack is "carried": it is
+-- counted once (by the engine), taken by removeItem, and the clicked stack is not taken by hand as well.
+local RUNE_BAG = 32096
+local rbag = rbox(RUNE_BAG, rpurse)
+eq(ChaosCombine.placeOf(me, rstack(rbag, 3, me)), "box", "old engine: a stack in the Rune Bag in the purse is box")
+ChaosCombine.runeBagId, ChaosCombine.runeBagEngine = RUNE_BAG, true
+local inBag = rstack(rbag, 3, me)
+eq(ChaosCombine.placeOf(me, inBag), "carried", "new engine: a stack directly in the Rune Bag in the purse is carried")
+eq(ChaosCombine.placeOf(me, rstack(rpurse, 3, me)), "box", "new engine: a stack lying loose in the purse is still box")
+eq(ChaosCombine.placeOf(me, rstack(rbox(1987, rpurse), 3, me)), "box", "new engine: a stack in a plain bag in the purse is still box")
+eq(ChaosCombine.placeOf(me, rstack(rbox(RUNE_BAG, rbox(1987, rpurse)), 3, me)), "box", "new engine: a Rune Bag inside a bag in the purse is not the engine's walk")
+eq(ChaosCombine.placeOf(me, rstack(rbox(1987, rbag), 3, me)), "box", "new engine: a bag inside the Rune Bag: only its direct items are walked")
+eq(ChaosCombine.placeOf(me, rstack(rbox(RUNE_BAG, rbox(1988, me)), 3, me)), "carried", "a Rune Bag in the backpack: carried as ever")
+eq(ChaosCombine.placeOf(me, rstack(rbox(RUNE_BAG, rinbox), 3, nil)), "box", "a Rune Bag in the depot inbox: box")
+eq(ChaosCombine.placeOf({getId = function() return 99 end}, rstack(rbag, 3, me)), nil, "someone else's Rune Bag: nobody's")
+me.items[rid], me.items[rnext] = 3, 0 -- the engine counts the 3 in the purse bag
+ok(S.combine(me, rid, inBag, inBag), "new engine: three in the Rune Bag in the purse combine")
+eq(me.items[rid], 0, "taken once, by removeItem") eq(me.items[rnext], 1, "one of the next level")
+eq(inBag.count, 3, "the clicked stack is not taken by hand a second time (the engine took it)")
+-- one in the purse bag, two in the backpack: all counted once
+me.items[rid], me.items[rnext] = 3, 0
+local oneInBag = rstack(rbag, 1, me)
+ok(S.combine(me, rid, oneInBag, oneInBag), "new engine: one in the bag and two carried")
+eq(me.items[rid], 0, "three taken") eq(oneInBag.count, 1, "by the engine, not by hand")
+-- not enough: two in the bag, the engine counts two
+me.items[rid] = 2
+local twoInBag = rstack(rbag, 2, me)
+eq(select(2, S.combine(me, rid, twoInBag, twoInBag)), S.reasons.needThree, "new engine: two are not enough") eq(me.items[rid], 2, "nothing taken")
+ChaosCombine.runeBagId, ChaosCombine.runeBagEngine = nil, nil
+me.items[rid], me.items[rnext] = 0, 0
 -- the window answer lists the class kit and the runes
 me.sent = {}
 local sentState = false
