@@ -1302,6 +1302,11 @@ jobs:
       - name: "Equip rules in the tooltip: the chip reading, the rules of movements.xml and weapons.xml, every mismatch kind, the install step (O490)"
         run: python3 -I server/tools/audit_equip_tooltips_test.py
 
+      - name: "Stock weapon types: a weapon is the kind its name says, the tool on synthetic items.xml, the table against the survey, the audit (O500)"
+        run: |
+          python3 -I server/tools/patch_stock_weapon_types_test.py
+          python3 -I server/tools/audit_weapon_types_test.py
+
       - name: A reconnect to a lingering character is not thrown out nor left in the game (server src-patches 0034, 0035)
         run: python3 -I server/tools/reattach_ping_patch_test.py
 

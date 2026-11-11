@@ -30,6 +30,8 @@ server/
   tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
   tools/patch_base_eventrooms.py      the base tower defence as a boss room (see "Instance limits")
   tools/patch_remove_soulpit.py       the base soul pit and its items removed (see "Soul pit removed")
+  tools/patch_stock_weapon_types.py   a stock weapon is the kind its name says, table data/items/stock_weapon_types.csv (see "Stock weapon types (O500)")
+  tools/audit_weapon_types.py         the audit behind it: weapon kind against name, and the attack intervals (read only)
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -513,6 +515,10 @@ server/
    `install_all.py` step `monsternames`, right after `lib`, before `lategame` and `spawns`) gives the base monsters of
    `data/monster/base_monster_names.csv` (keyed by the sha256 of the old name) their Chaos names everywhere the base data
    names them. See "Base monster names".
+5k3. Stock weapon types (O500): `python3 -I server/tools/patch_stock_weapon_types.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `weapontypes`, right after `monsternames`, before `vocations` and every other step that reads a weapon
+   type) sets `weaponType` in `items.xml` for the ids of `data/items/stock_weapon_types.csv`: the Twin Hooks become a two-handed
+   sword, ten other weapons the kind their name says. See "Stock weapon types (O500)".
 5l. Town names: `python3 -I server/tools/patch_base_towns.py <server>/data [--dry-run]` (idempotent; `install_all.py`
    step `towns`, after `itemnames`) renames the map's towns by id from `tools/base_towns.csv` in the `.otbm` itself
    (`<map>.otbm.bak` keeps the original). See "Town names".
@@ -7629,15 +7635,15 @@ the basic melee attack. The rule of the owner: class damage does not move, so `c
 
 | Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Warrior | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Juggernaut | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Berserker | 2/4/2* | 8/12/9 | 8/14/12 | 6/6/6 | 8/8/6 | 4/5/2 | 3/3/2 | 8/2/2* | 4/3/1 | 2/7/2* |
-| Thief | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
-| Ninja | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
-| Samurai | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
-| Templar | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Inquisitor | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Sentinel | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Warrior | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Juggernaut | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Berserker | 3/3/2 | 8/12/9 | 8/14/12 | 7/5/6 | 8/8/6 | 4/5/2 | 3/3/2 | 6/3/3 | 4/3/1 | 2/7/2* |
+| Thief | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
+| Ninja | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
+| Samurai | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
+| Templar | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Inquisitor | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Sentinel | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
 
 <!-- weapon-families:end -->
 
@@ -17880,6 +17886,68 @@ dust and sliver; the base
 NPCs never bought them, the Loot Buyer and the Auto Seller did by the formula), the survey rows, the recipe row and the 27
 loot entries of `tools/loot_bands_data.lua`. Client: base patch 0192 (client/BASE.md). Test:
 `python3 -I server/tools/patch_remove_soulpit_test.py`.
+
+**Stock weapon types (O500)** (`tools/patch_stock_weapon_types.py`, table `data/items/stock_weapon_types.csv`, audit
+`tools/audit_weapon_types.py`, install step `weapontypes`; owner, 2026-11-11, on the tooltip of "Serrated Twin Hooks of Devouring",
+"Legendary Two-handed axe": "The item counts as an axe, but it is not."). The weapon kind (`items.xml` weaponType: sword, axe, club)
+is what the skill, the family trait (sword tempo, axe cleave, club daze), the weapon coverage tables, the transmog kinds and the
+tooltip's type line read. A few stock weapons have a kind that their name contradicts. The tool fixes exactly the ids of the table, once:
+- the item has the old type: it gets the new one. It has the new type: "already done". It has a third type (someone changed it):
+  reported with a WARNING and left. A row whose new type equals its old type is a decision to keep and writes nothing.
+- the step runs before `vocations` (which reads the weapon types), the survey, the equip rules and the weapon growth, so the files they
+  read are right. An item keeps its id, so a copy a player owns has the new kind at once.
+- `data/items/base_weapons.csv` (the survey) carries the new kinds. Proof: `survey_base_weapons.py` run on a copy of an installed
+  server patched by the tool gives exactly the committed file.
+
+The rule of the table (audit: `python3 -I server/tools/audit_weapon_types.py DATA_DIR [--check] [--quiet]`, read only, three lists):
+the head noun of the name says the kind (axe, hatchet, cleaver, chopper, halberd; sword, blade, sabre, rapier, dagger, knife, machete;
+club, mace, hammer, staff, flail, maul, sceptre, crusher; compounds count). CLEAR = the name says one kind, the type another;
+`--check` fails on a stock one that is not in the table. ODD = no kind word: a bladed or hooked thing held like a sword is a sword; a
+hafted chopping head is an axe; anything blunt or a staff is a club; polearms follow the stock majority (the stock data types the
+halberds, five lances, the naginata and the drakinata as axes, so lances, glaives and tridents are axes). 37 names have no clue at all
+("the avenger", "dragon slayer", "soulcutter") and keep their type; they are no decisions. On the installed snapshot of 2026-11-11
+(524 items of the three melee kinds): 2 CLEAR (both moved), 20 ODD with a hint word (9 moved, 11 kept), 37 ODD without a clue;
+11 moves in all.
+
+| id | name | was | now | reason |
+|---|---|---|---|---|
+| 11309 | twin hooks | axe | sword | a pair of hooked blades, one in each hand: a two-handed sword |
+| 2405, 2418 | sickle, golden sickle | axe | sword | a curved hooked blade held in one hand like a sword |
+| 2550, 10301, 15492 | scythe, scythe of the reaper, hive scythe | axe | sword | a long curved blade; no chopping head |
+| 11308 | wyrmfang glaive | club | axe | polearm; the stock majority is axe |
+| 13838 | heavy trident | sword | axe | polearm; the stock majority is axe |
+| 25416 | impaler of the igniter | sword | axe | same word as the impaler (7435), a polearm and an axe |
+| 29886 | Dawnforged Great Axe | sword | axe | the name says axe |
+| 29888 | Dawnforged Skull Crusher | sword | club | the name says a blunt crusher |
+
+Kept on purpose (rows with new = old): the lances (2414, 2425, 3964, 23545, 25383), naginata 2426, drakinata 11305 and impaler 7435
+(polearms, axes), wyvern fang 7408 and the poet's fencing quill 10304 (swords), the sludgebrass whip 23543 (a club: no whip kind).
+If the owner disagrees with a row, delete it or set new = old; the tool and the tests follow the table.
+
+Coverage: the families table moved two Berserker cells out of `familyKnownGaps` (`weapon_coverage_config.lua`): level 1-20 (the two
+scythes make 3 two-handed swords next to 3 axes) and 1000-1300 (the Great Axe and the Skull Crusher make 6 swords, 3 axes, 3 clubs).
+The one known gap left is the Berserker at 1700-2400+. No band fell under 3 weapons of a kind. `weapon_coverage.lua --write` and
+`gear_coverage.lua --write` rewrote the tables above; `weapon_family_model.py --check` is green.
+
+Two speed numbers on one tooltip. "Speed 1.89 s" (the tile) is `yourinterval`: the seconds between the viewer's own auto attacks with
+the weapon (the vocation's interval x the item's interval / 2000, then dexterity and the attack speed bonus; the DPS line uses it).
+"Attack Interval 3 s" (the line below) is `attackspeed`: the item's own interval in `items.xml`. They are two things, not a
+contradiction. 3000 ms is on purpose: `tools/two_handed.py` gives every two-handed weapon 1.5 x the 2000 ms default, and
+`weapon_styles.lua` gives it x1.6 damage per hit (step `weapons`, "Weapon styles"). 345 items carry an `attackspeed` other than
+2000 ms: 323 at 3000 (all two-handed), 8 at 2700 (two-handed, from 1800), 11 at 1800 and 3 at 1700 (one-handed, quicker than the
+default: the Astro, Embersage, Moist, Deathlord and Dawnforged one-handers). 331 are over 2500 ms and all are two-handed. A Warrior
+(vocation interval 1300 ms) swings a 3000 ms weapon every 1950 ms (0.51 hits per second) and a 2000 ms one every 1300 ms (0.77), so
+the slow weapon hits 1.5 times less often and 1.6 times harder. Nothing was changed in the rows; the label of the second one ("Attack
+Interval", the item's own) could read "Base Interval" to tell the two apart: a client and pt-BR text change the owner may ask for.
+
+Items players own: a copy keeps its id and its rolled modifiers. The melee skill modifier is one "Melee" modifier for sword, axe and club
+(`chaos_crafting.lua` `C.skills`: `rarity_axeSkill`, `rarity_swordSkill`, `rarity_clubSkill` all read as "Melee" and raise all three
+engine skills), so an old Twin Hooks with an axe skill modifier keeps working. The family trait line is built at the tooltip (and the
+trait at each hit) from the type, nothing is stored on the item. Nothing to migrate. One side effect: the Transmog kinds follow the type, so
+the account's unlocked look of an item that moved is listed under its new kind, and a look already applied to an item stays applied.
+Test: `python3 -I server/tools/patch_stock_weapon_types_test.py && python3 -I server/tools/audit_weapon_types_test.py`; the tooltip
+follows by itself (`tests/item_tooltip_test.lua`: the mocked Twin Hooks as a sword, the same item typed as an axe, and the two interval
+rows).
 
 **Base modal dungeon entry** (`tools/patch_base_dungeon.py`, install step `dungeonentry`; `ChaosDungeonsOpen` in
 `dungeons.lua`). The base server has a second way into the 4 dungeons of `DUNGEON_SYSTEM` (lib/core/dungeon.lua): a
