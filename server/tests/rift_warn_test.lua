@@ -179,9 +179,9 @@ do
 	RF._warnEntry(run, {solo})
 	eq(#solo.msgs, 1, "one warning line")
 	eq(solo.msgs[1].kind, MESSAGE_EVENT_ADVANCE, "in the type of the run's other lines")
-	eq(solo.msgs[1].text, string.format("Warning: this rift is above your level (recommended %d alone). Its guardian can kill in one hit. Bring a party or use a lower tier key.", rec), "the warning text")
+	eq(solo.msgs[1].text, string.format("Warning: this rift is above your level (recommended %d alone). Its guardian hits very hard: two hits can kill. Bring a party or use a lower tier key.", rec), "the warning text")
 	RF._warnEntry(run, {soloPt})
-	eq(soloPt.msgs[1].text, string.format("Aviso: este rift está acima do seu nível (recomendado: %d sozinho). O guardião pode matar com um único golpe. Leve um grupo ou use uma chave de tier menor.", rec), "the warning in pt-BR")
+	eq(soloPt.msgs[1].text, string.format("Aviso: este rift está acima do seu nível (recomendado: %d sozinho). O guardião bate muito forte: dois golpes podem matar. Leve um grupo ou use uma chave de tier menor.", rec), "the warning in pt-BR")
 	RF._warnEntry(run, {strong})
 	eq(#strong.msgs, 0, "above the level: nothing")
 	-- a party of two with one below: the size rule counts the players who entered
@@ -217,7 +217,7 @@ do
 	eq(#p.msgs, 0, "no killer known: no tip")
 	RF._warnTip(run, p, g, nil)
 	eq(#p.msgs, 1, "killed by the guardian below the level: one tip")
-	eq(p.msgs[1].text, string.format("Tip: a guardian can kill in one hit below the recommended level (%d alone). Bring a party or use a lower tier key next time.", rec), "the tip text")
+	eq(p.msgs[1].text, string.format("Tip: a guardian hits very hard below the recommended level (%d alone): two hits can kill. Bring a party or use a lower tier key next time.", rec), "the tip text")
 	RF._warnTip(run, p, g, nil)
 	eq(#p.msgs, 1, "once a run and player")
 	-- the most damage killer counts too; another player gets its own tip
@@ -225,7 +225,7 @@ do
 	run.players[q.id] = {id = q.id, level = rec - 20}
 	RF._warnTip(run, q, pack, g)
 	eq(#q.msgs, 1, "the guardian did the most damage: a tip")
-	eq(q.msgs[1].text, string.format("Dica: um guardião pode matar com um único golpe abaixo do nível recomendado (%d sozinho). Da próxima vez, leve um grupo ou use uma chave de tier menor.", rec), "the tip in pt-BR")
+	eq(q.msgs[1].text, string.format("Dica: um guardião bate muito forte abaixo do nível recomendado (%d sozinho): dois golpes podem matar. Da próxima vez, leve um grupo ou use uma chave de tier menor.", rec), "the tip in pt-BR")
 	-- at or above the level: nothing (the level of the entry counts, not the one after the death's loss)
 	local r = newPlayer("Strong", rec - 50, "en")
 	run.players[r.id] = {id = r.id, level = rec}

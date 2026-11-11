@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The guardian and rift pack model (O427; computed, not measured in game; server/README.md "Rifts", Guardian damage).
 
-usage: python3 -I server/tools/guardian_model.py [--legacy] [--tiers 1,5,10,15] [--check] [--hits] [--warn] [--passes N]
+usage: python3 -I server/tools/guardian_model.py [--legacy] [--tiers 1,5,10,15] [--check] [--hits] [--warn] [--passes N] [--nocap]
 
 Owner report 2026-11-06: "the rift bosses hit too little, you can solo them with the Necromancer", then "make the Omen
 bosses hit harder", "the rift monsters are weak too, put more monsters". The model answers, per rift tier and for the Omen
@@ -30,6 +30,15 @@ The model, per tier t and the geared median class at the tier's level:
   trio      the Necromancer's warrior, archer and mage (minion_model.py health at the level): the guardian's hits, `focus`
             of them on the minions by the aggro weights, x minion.factor: the front minion lives health / that; the owner's
             share of the damage while the minions stand = (1 - focus) + focus x splash. Before: factor 0.25, splash 0.
+  cap       O478 (rift_config.lua guardian.hitCap): one hit of the guardian is cut to `share` of the victim's pool, so the
+            guardian's sustained damage is its damage x retention = E[min(roll, cap)] / E[roll], rolls spread evenly between
+            the middle-based range of the typical guardian's biggest attack (data/spells/guardian_hits.csv), the cap per class
+            from its own pool (health, plus mana for a mana shield class) and its layers, the median class. The biggest attack
+            is the most capped one, so the retention is a lower bound (the guardian's smaller attacks are cut less). The columns
+            "die s" and "press" are WITH the cap; "die s0" and "press0" without it (--nocap prints the model of before). The
+            marked attacks are not cut in the model (their hits are 0.32-0.35 of max health x the tier's growth; the rank x1.70
+            of the live chain, which the model does not apply to them, brings the biggest ones to the cap at the higher tiers).
+            The warn rule (warn_levels) reads the UNCAPPED hit: below its level the hits reach the cap, so two hits kill.
 """
 import csv, itertools, json, math, os, re, statistics, subprocess, sys
 
@@ -158,18 +167,64 @@ def tier_inputs(tier, bal, d, nbal, mons, pool, nums):
     return base, hits, t['marksKit'] * bal['marksTaken']
 
 
-def run_tier(tier, legacy, bal, d, nbal, mons, pool, nums, ntables):
+def tier_retention(tier, level, hits, marks, party, nums, bal, d, hrows):
+    """O478: the retention of the typical guardian of a tier (the median draw by the odds of being the strongest of three)
+    against the median class at `level`, solo (party 1) or a party of 5 (party 5: its hits x1.4)"""
+    on, _ = cap_settings(nums)
+    if not on or hrows is None:
+        return 1.0
+    th = tier_hits(tier, nums, bal, d, hrows, party)
+    return retention(class_rows(level, bal['split'], hits, marks), th['typical'], nums)
+
+
+def run_tier(tier, legacy, bal, d, nbal, mons, pool, nums, ntables, hrows=None):
     t = nums['tiers'][tier - 1]
     pl = t['minLevel']
     base, hits, marks = tier_inputs(tier, bal, d, nbal, mons, pool, nums)
-    med = median_class(pl, bal['split'], hits, marks)
+    step = nums['party']['damagePerExtraPlayer']
+    ret = 1.0 if legacy else tier_retention(tier, pl, hits, marks, 1, nums, bal, d, hrows)
+    ret5 = 1.0 if legacy else tier_retention(tier, pl, hits, marks, 5, nums, bal, d, hrows)
+    med0 = median_class(pl, bal['split'], hits, marks)
+    med = median_class(pl, bal['split'], hits * ret, marks) if ret != 1.0 else med0
     pack_dps = base * bal['pack'] * t['packDamage'] * t['tierDamage'] * bal['packTierMean']
     pack = median_class(pl, bal['split'], pack_dps, 0)
-    party = median_class(pl, bal['split'], hits * (1 + nums['party']['damagePerExtraPlayer'] * 4), marks)
+    party = median_class(pl, bal['split'], hits * ret5 * (1 + step * 4), marks)
     tr = trio(pl, hits, nbal['focus'], t['minion']['factor'], t['minion']['splash'], nbal, bal['reraise'])
-    return {'tier': tier, 'level': pl, 'base': base, 'hits': hits, 'marks': marks, 'med': med, 'pack': pack, 'party': party,
-            'trio': tr, 'count': t['count'], 'live': t['live'], 'packDamage': t['packDamage'], 'mult': t['guardian'],
-            'tierDamage': t['tierDamage']}
+    return {'tier': tier, 'level': pl, 'base': base, 'hits': hits, 'marks': marks, 'med': med, 'med0': med0, 'ret': ret,
+            'pack': pack, 'party': party, 'trio': tr, 'count': t['count'], 'live': t['live'], 'packDamage': t['packDamage'],
+            'mult': t['guardian'], 'tierDamage': t['tierDamage']}
+
+
+def omen_hit_items(mult):
+    """O478: one tier_hits-shaped item per Omen guardian XML: its biggest melee and biggest other attack (largest roll, and
+    the middle of the range) x the Omen guardian curve (the model's own convention: no rank, no engine bonus)"""
+    out = []
+    folder = os.path.join(S.MONSTERS, 'omens')
+    for f in sorted(os.listdir(folder)):
+        if not f.endswith('.xml'):
+            continue
+        txt = S.read(os.path.join(folder, f))
+        best = {'melee': (0, 0), 'elem': (0, 0)}
+        block = re.search(r'<attacks>(.*?)</attacks>', txt, re.S)
+        for tag in re.findall(r'<attack\s[^>]*>', block.group(1) if block else ''):
+            nm = (S.attr(tag, 'name') or '').lower()
+            lo, hi = abs(int(S.attr(tag, 'min', '0'))), abs(int(S.attr(tag, 'max', '0')))
+            if hi <= 0:
+                continue
+            kind = 'melee' if nm in ('melee', 'physical', 'bleed') else 'elem'
+            if hi > best[kind][1]:
+                best[kind] = (lo, hi)
+        row = {'melee_max': float(best['melee'][1]), 'melee_mean': sum(best['melee']) / 2.0,
+               'elem_max': float(best['elem'][1]), 'elem_mean': sum(best['elem']) / 2.0}
+        out.append({'row': row, 'melee': best['melee'][1] * mult, 'elem': best['elem'][1] * mult})
+    return out
+
+
+def omen_retention(rows, items, party, nums):
+    """the mean over the Omen guardians of retention() against the median class rows, a party's hits x1.4"""
+    k = 1.4 if party > 1 else 1.0
+    vals = [retention(rows, dict(it, melee=it['melee'] * k, elem=it['elem'] * k), nums) for it in items]
+    return statistics.mean(vals) if vals else 1.0
 
 
 def run_omen(legacy, bal, nbal, nums):
@@ -179,11 +234,17 @@ def run_omen(legacy, bal, nbal, nums):
     base = omen_dps(d, nbal, omen_monsters())
     hits = base * o['guardian']
     marks = o['marksKit'] * bal['marksTaken']
-    med = median_class(pl, bal['split'], hits, marks)
-    party = median_class(pl, bal['split'], hits * 1.4, marks)
+    med0 = median_class(pl, bal['split'], hits, marks)
+    ret, ret5 = 1.0, 1.0
+    if not legacy and cap_settings(nums)[0]:
+        items = omen_hit_items(o['guardian'])
+        rows = med0['rows']
+        ret, ret5 = omen_retention(rows, items, 1, nums), omen_retention(rows, items, 5, nums)
+    med = median_class(pl, bal['split'], hits * ret, marks) if ret != 1.0 else med0
+    party = median_class(pl, bal['split'], hits * 1.4 * ret5, marks)
     tr = trio(pl, hits, nbal['focus'], o['minion']['factor'], o['minion']['splash'], nbal, bal['reraise'])
-    return {'tier': 'omen', 'level': pl, 'base': base, 'hits': hits, 'marks': marks, 'med': med, 'party': party, 'trio': tr,
-            'mult': o['guardian']}
+    return {'tier': 'omen', 'level': pl, 'base': base, 'hits': hits, 'marks': marks, 'med': med, 'med0': med0, 'ret': ret,
+            'party': party, 'trio': tr, 'mult': o['guardian']}
 
 
 def compute(legacy=False, tiers=None):
@@ -193,7 +254,8 @@ def compute(legacy=False, tiers=None):
     nbal = M.dump([50])['balance']
     mons, pool = S.scaled_monsters(), pool_rows()
     tiers = tiers or bal['tiers']
-    rows = [run_tier(t, legacy, bal, d, nbal, mons, pool, nums, None) for t in tiers]
+    hrows = None if legacy else hit_rows()
+    rows = [run_tier(t, legacy, bal, d, nbal, mons, pool, nums, None, hrows) for t in tiers]
     return {'bal': bal, 'rows': rows, 'omen': run_omen(legacy, bal, nbal, nums), 'nums': nums}
 
 
@@ -347,6 +409,50 @@ def item_share(rows, it, nums, tier, worst):
     return best
 
 
+def cap_settings(nums):
+    """(on, share) of rift_config.lua guardian.hitCap as the numbers dump has it; (False, 0) when the model runs --nocap"""
+    c = nums.get('cap') or {}
+    if nums.get('_nocap'):
+        return False, 0.0
+    return bool(c.get('enabled')), float(c.get('share') or 0.0)
+
+
+def uniform_retention(lo, hi, cap):
+    """E[min(X, cap)] / E[X] for X spread evenly on [lo, hi]: the share of a roll's average a ceiling leaves"""
+    if hi <= 0:
+        return 1.0
+    if cap >= hi:
+        return 1.0
+    mean = (lo + hi) / 2.0
+    if cap <= lo or hi == lo:
+        return min(1.0, cap / mean) if mean > 0 else 1.0
+    kept = ((cap * cap - lo * lo) / 2.0 + cap * (hi - cap)) / (hi - lo)
+    return kept / mean
+
+
+def retention(rows, it, nums):
+    """O478: the share of a guardian's average damage left by the cap, for the guardian `it` (a tier_hits item) against the
+    classes `rows` of a level: its bigger kind (the one the layers leave bigger), rolls evenly between 2 x mean - max and max
+    (0 below), the cap of each class = share x its pool, the median over the classes. 1.0 when the cap is off"""
+    on, share = cap_settings(nums)
+    if not on or share <= 0:
+        return 1.0
+    kinds = [k for k in ('melee', 'elem') if it[k] > 0]
+    if not kinds:
+        return 1.0
+    kind = max(kinds, key=lambda k: layered(rows, it[k], k))
+    row = it['row']
+    hi_raw, mean = row[kind + '_max'], row[kind + '_mean']
+    f = it[kind] / hi_raw
+    lo_raw = max(0.0, 2 * mean - hi_raw)
+    vals = []
+    for r in rows:
+        k = (1 - r['armourRed']) * (1 - r['absorbPhys']) if kind == 'melee' else 1 - r['absorbElem']
+        scale = f * k * r['toughness']
+        vals.append(uniform_retention(lo_raw * scale, hi_raw * scale, share * r['pool']))
+    return statistics.median(vals)
+
+
 def tier_hits(tier, nums, bal, d, hrows, party=1):
     """per tier: the candidates with their raw rolls and odds, the biggest, the typical (median by odds) and the quantile one"""
     cands = candidates(hrows, nums, tier)
@@ -381,7 +487,8 @@ def warn_levels():
     its healing, the model's `press`) is at most the pressure at the middle of the tier's monster window; the top of the
     window when no level up to it does; never below the level of the tier under it. partySize: the smallest party at which a player at the tier's entry level takes,
     per head, no more pressure than a solo player in the middle of the window (the guardian's hits shared by n, x (1 + the
-    party's damage step x (n - 1)) each), at most the party limit"""
+    party's damage step x (n - 1)) each), at most the party limit. O478: the hit it reads is the UNCAPPED one (the guardian hit
+    cap is not in tier_inputs): below the level the hits reach the cap, so two hits kill"""
     nums = numbers(False)
     bal = nums['bal']
     h = bal['hit']
@@ -497,6 +604,51 @@ def print_hits(rows):
         't%d %s' % (r['tier'], '/'.join('%.0f' % x for x in r[('typical', 1)]['pool'])) for r in rows))
 
 
+def capped_table(tiers=None):
+    """O478: per tier, at the tier's entry level and solo, the biggest and the 90th percentile guardian's biggest hit over the
+    median class's pool before the cap and after it (cut to the cap share), the typical guardian's retention, and the model's
+    seconds to die and pressure without and with the cap"""
+    nums = numbers(False)
+    on, share = cap_settings(nums)
+    bal = nums['bal']
+    h = bal['hit']
+    d0 = S.dump([1007])
+    nbal = M.dump([50])['balance']
+    mons, pool = S.scaled_monsters(), pool_rows()
+    hrows = hit_rows()
+    d = preload(sorted(set(range(100, 1131, h['step']))))
+    out = []
+    for tier in tiers or range(1, nums['hit']['maxTier'] + 1):
+        t = nums['tiers'][tier - 1]
+        lv = t['minLevel']
+        base, hits, marks = tier_inputs(tier, bal, d0, nbal, mons, pool, nums)
+        th = tier_hits(tier, nums, bal, d, hrows)
+        rows = class_rows(lv, bal['split'], hits, marks)
+        row = {'tier': tier, 'level': lv, 'share': share}
+        for tag in ('biggest', 'quantile'):
+            before = item_share(rows, th[tag], nums, tier, False)
+            row[tag] = (th[tag]['row']['name'], before, min(before, share) if on else before)
+        row['ret'] = retention(rows, th['typical'], nums)
+        r = run_tier(tier, False, bal, d0, nbal, mons, pool, nums, None, hrows)
+        row['die0'], row['press0'] = r['med0']['burst'], r['med0']['pressure']
+        row['die'], row['press'] = r['med']['burst'], r['med']['pressure']
+        out.append(row)
+    return out
+
+
+def print_capped(rows):
+    print('\nWith the hit cap (O478): the biggest hit of the biggest and of the 90th percentile guardian over the median class')
+    print("pool at the tier's entry level, solo, before -> after the cap (cut to %.0f%% of the pool); the typical guardian's" % (
+        100 * rows[0]['share']))
+    print('retention (share of its average damage left); seconds to die and pressure without -> with the cap:')
+    print('%-4s %6s  %-22s %-22s %6s  %-13s %-13s' % ('tier', 'level', 'biggest', 'q90', 'ret', 'die s', 'press'))
+    for r in rows:
+        b, q = r['biggest'], r['quantile']
+        print('%-4d %6d  %-22s %-22s %6.2f  %5.1f -> %-5.1f %5.2f -> %-5.2f' % (
+            r['tier'], r['level'], '%.2f -> %.2f' % (b[1], b[2]), '%.2f -> %.2f' % (q[1], q[2]), r['ret'], r['die0'], r['die'],
+            r['press0'], r['press']))
+
+
 def check_warn(nums):
     """errors: the stored `warn` block of rift_config.lua against the rule"""
     errors = []
@@ -515,6 +667,28 @@ def check_warn(nums):
 
 
 
+def check_cap(nums):
+    """errors: the stored hit cap of rift_config.lua against the model's inputs (the warn rule's share is the cap's)"""
+    c = nums.get('cap')
+    if not c:
+        return ['rift_config.lua has no guardian.hitCap block']
+    errors = []
+    if not isinstance(c.get('enabled'), bool):
+        errors.append('guardian.hitCap.enabled is %r, not a boolean' % (c.get('enabled'),))
+    elif not c['enabled']:
+        errors.append('guardian.hitCap.enabled is false: the model, the warnings and the README assume the cap')
+    share = c.get('share')
+    if not isinstance(share, (int, float)) or isinstance(share, bool) or not 0 < share <= 1:
+        errors.append('guardian.hitCap.share is %r, not a share of the pool in (0, 1]' % (share,))
+    elif abs(share - nums['bal']['hit']['oneHit']) > 1e-9:
+        errors.append('guardian.hitCap.share %s is not guardian_balance_config.lua hit.oneHit %s (the warn rule reads the same '
+                      'share as the cap)' % (share, nums['bal']['hit']['oneHit']))
+    extra = sorted(set(c) - {'enabled', 'share'})
+    if extra:
+        errors.append('guardian.hitCap has keys the model does not read: %s' % extra)
+    return errors
+
+
 def check(res):
     lim = res['bal']['limits']
     errors = []
@@ -523,9 +697,16 @@ def check(res):
         if not lim['burst']['min'] <= m['burst'] <= lim['burst']['max']:
             errors.append('%s: the median class dies in %.1f s with no healing under the guardian, outside %s-%s' % (
                 tag, m['burst'], lim['burst']['min'], lim['burst']['max']))
-        if not lim['pressure']['min'] <= m['pressure'] <= lim['pressure']['max']:
+        pmin = lim['pressure']['min']
+        exc = next((e for e in lim.get('pressureCapped') or [] if e['tier'] == r['tier']), None)
+        if exc:
+            if m['pressure'] >= pmin:
+                errors.append('%s: the capped-pressure exception (limits.pressureCapped min %s) is stale, the guardian deals %.2f '
+                              'x the healing, at or over %s' % (tag, exc['min'], m['pressure'], pmin))
+            pmin = exc['min']
+        if not pmin <= m['pressure'] <= lim['pressure']['max']:
             errors.append('%s: the guardian deals %.2f x the median healing, outside %s-%s' % (
-                tag, m['pressure'], lim['pressure']['min'], lim['pressure']['max']))
+                tag, m['pressure'], pmin, lim['pressure']['max']))
         if r['party']['pressure'] > lim['partyPressure']:
             errors.append('%s: a party of 5 takes %.2f x the healing of one player from the guardian, over %s' % (
                 tag, r['party']['pressure'], lim['partyPressure']))
@@ -563,15 +744,20 @@ def check(res):
 
 
 def report(res):
-    print('%-7s %6s %7s %7s %6s %6s %7s %6s %7s %6s %6s %6s %6s' % (
-        'tier', 'level', 'g.dps', 'pool', 'heal', 'die s', 'press', 'party s', 'pack s', 'pk sus', 'front', 'owner', 'upt'))
+    print('%-7s %6s %7s %7s %6s %6s %7s %6s %7s %6s %6s %6s %6s %5s %6s %7s' % (
+        'tier', 'level', 'g.dps', 'pool', 'heal', 'die s', 'press', 'party s', 'pack s', 'pk sus', 'front', 'owner', 'upt',
+        'ret', 'die s0', 'press0'))
     for r in res['rows'] + [res['omen']]:
         m = r['med']
+        m0 = r.get('med0', m)
         p = r.get('pack')
         t = r['trio']
-        print('%-7s %6d %7.0f %7.0f %6.0f %6.1f %7.2f %6.1f %7s %6s %6.1f %6.2f %6.2f' % (
+        print('%-7s %6d %7.0f %7.0f %6.0f %6.1f %7.2f %6.1f %7s %6s %6.1f %6.2f %6.2f %5.2f %6.1f %7.2f' % (
             r['tier'], r['level'], r['hits'], m['pool'], m['heal'], m['burst'], m['pressure'], r['party']['burst'],
-            '%.1f' % p['burst'] if p else '-', '%.2f' % p['sustain'] if p else '-', t['front'], t['owner'], t['uptime']))
+            '%.1f' % p['burst'] if p else '-', '%.2f' % p['sustain'] if p else '-', t['front'], t['owner'], t['uptime'],
+            r.get('ret', 1.0), m0['burst'], m0['pressure']))
+    print('die s / press with the guardian hit cap (O478), die s0 / press0 without it; ret = the share of the guardian\'s '
+          'average damage the cap leaves')
     print('\nmonsters planned / alive at once (solo, typical layout) and pack damage:')
     for r in res['rows']:
         print('  tier %2s: %4d / %3d, pack x%.2f, guardian x%.2f (+ legendary x%s), tier damage x%.2f' % (
@@ -583,10 +769,13 @@ def main(argv):
     if '--tiers' in argv:
         tiers = [int(x) for x in argv[argv.index('--tiers') + 1].split(',')]
     legacy = '--legacy' in argv
+    if '--nocap' in argv:  # the model of before O478: no cap
+        numbers(False)['_nocap'] = True
     if '--passes' in argv:  # the engine's level bonus counted this many times (1 = as the models and the fixed engine, 2 = the live engine of before)
         numbers(False)['bal']['hit']['enginePasses'] = int(argv[argv.index('--passes') + 1])
     if '--hits' in argv:
         print_hits(hit_table(tiers))
+        print_capped(capped_table(tiers))
         return 0
     if '--warn' in argv:
         w = warn_levels()
@@ -606,6 +795,7 @@ def main(argv):
         errors = check(res)
         if not legacy and tiers is None:
             errors += check_warn(numbers(False))
+            errors += check_cap(numbers(False))
         for e in errors:
             print('FAIL ' + e)
         print('guardian check: %s' % ('%d failure(s)' % len(errors) if errors else 'ok'))

@@ -75,6 +75,17 @@ return {
 	guardian = {
 		damage = {base = 3.6, perTier = -0.23, min = 1.0, omen = 4.5},
 		minion = {factor = 0.5, splash = 0.5},
+		-- O478 (2026-11-10), owner: option 1, "it can be option 1" (asked how to stop the one-hit deaths of O476: a ceiling of
+		-- 60% of the victim's life per hit of the guardian). One hit of the run's guardian (the guardian, its Twin and Omen
+		-- guardians: every monster of run.bossIds; marked attacks and damage over time ticks included) on a PLAYER takes at most
+		-- `share` x the victim's pool, as a whole. Pool = the MAXIMUM health plus, while a mana shield is up, the maximum mana
+		-- (the pool of guardian_model.py; the energy shield is not counted, so the sum of mana, shield and health lost is at
+		-- most share x pool). Maximum values: the ceiling does not shrink as the player loses health. The cap is the LAST
+		-- health and mana event of the player (rift.lua RF.capLast), so what it bounds is the final number; a hit a mana
+		-- shield took in the mana event is capped there, and its rest in the health event keeps the sum: cap - what the
+		-- mana paid. Needs engine patch 0090 to be exact: without it the engine adds the monster level bonus (1 + 0.0015 x
+		-- level) once more after the events. server/README.md "Rifts", Guardian hit cap (O478). enabled = false: no cap.
+		hitCap = {enabled = true, share = 0.60},
 		kit = {base = 1, perTiers = 5, omenCount = 2, sharePerTier = 0.03, shareCap = 0.6, omenShareMult = 1.25,
 			themeWeight = 3, everyMult = 0.85},
 		abilities = {
@@ -175,6 +186,8 @@ return {
 	-- monster window; the top of the window when no level up to it works; never below the tier under it), `partySize` the
 	-- smallest party that takes the guardian's pressure per head at the entry level down to a solo player's at the middle of
 	-- the window. `python3 -I server/tools/guardian_model.py --check` fails when these drift from it; `--warn` prints them.
+	-- O478: the rule reads the guardian's UNCAPPED biggest hit (guardian.hitCap does not enter it): below the level the
+	-- guardian's hits reach the cap of 60% of the pool, so two hits kill; at or above it they do not. The levels stay.
 	warn = {
 		enabled = true,
 		partySize = 2,

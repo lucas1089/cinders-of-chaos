@@ -1199,6 +1199,35 @@ function R.monsterTaken(fx, hit, T)
 	return p, s, math.abs(ep) + math.abs(es)
 end
 
+-- O478: the pool a hit of a rift guardian is measured against: the maximum health, plus the maximum mana while a mana
+-- shield is up. Maximum values, so the ceiling does not fall as the player loses health. The energy shield is not in it.
+function R.hitPool(maxHealth, maxMana, shieldUp)
+	return math.max(0, maxHealth or 0) + (shieldUp and math.max(0, maxMana or 0) or 0)
+end
+
+-- O478 (rift_config.lua guardian.hitCap): cut one hit of a guardian to share x pool, as a whole. p, s = the hit's two parts
+-- (damage is negative in the events, a magnitude here is |p| + |s|; the sign is kept), spent = what an earlier part of the
+-- same hit already took (the mana shield), so the parts together stay under the ceiling. Returns p, s, limit, capped:
+-- limit = the most this call may let through (the ceiling less `spent`, at least 0); capped = true when the hit was cut.
+-- A hit at or under the limit is returned as it is; both parts are scaled by the same factor and rounded down, so the
+-- sum is at most the limit.
+function R.capHit(cfg, p, s, pool, spent)
+	local c = cfg and cfg.guardian and cfg.guardian.hitCap
+	p, s = p or 0, s or 0
+	if not (c and c.enabled) or (pool or 0) <= 0 then
+		return p, s, nil, false
+	end
+	local limit = math.max(0, floor(c.share * pool) - (spent or 0))
+	local ap, as = math.abs(p), math.abs(s)
+	local total = ap + as
+	if total <= limit then
+		return p, s, limit, false
+	end
+	local k = limit / total
+	local np, ns = floor(ap * k), floor(as * k)
+	return p < 0 and -np or np, s < 0 and -ns or ns, limit, true
+end
+
 -- a share of a player's max health as a hit (ground, storm, nova): at least 1
 function R.percentHit(maxHealth, share)
 	return math.max(1, floor((maxHealth or 0) * share + 0.5))

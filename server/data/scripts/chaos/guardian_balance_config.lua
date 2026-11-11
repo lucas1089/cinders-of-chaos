@@ -62,6 +62,16 @@ return {
 		-- the guardian's damage against the median class's healing: above it the healer loses without dodging, far
 		-- below it the guardian is only a wall of health (the owner's report)
 		pressure = {min = 0.55, max = 1.15},
+		-- O478 (2026-11-10), a NAMED EXCEPTION, owner 2026-11-10: the easier tier 1 is accepted (asked to choose between
+		-- more hits a second at tiers 1-2 and an easier tier 1, the owner chose the second). With the hit cap (rift_config.lua guardian.hitCap) the
+		-- guardian of tier 1 deals 0.41 x the median healing, under `pressure.min`. No guardian.damage brings it back: the
+		-- model's typical tier 1 guardian rolls over the cap even at its lowest, so its sustained damage is the cap times its
+		-- hit rate and a bigger multiplier only cuts more (base 3.6 and base 50 both give 0.41; tier 2 sits at 0.55). The cap
+		-- is the owner's decision, so it stays. The row lowers the floor of that tier to what the model gives, no further;
+		-- --check fails when the tier reaches `pressure.min` again (a stale row). Not done, by that decision: more hits a
+		-- second at tiers 1-2 (an engine knob, a scripted extra hit).
+		-- server/README.md "Rifts", Guardian hit cap (O478).
+		pressureCapped = {{tier = 1, min = 0.40}},
 		-- a lured pack of the tier: seconds to die with no healing and healing against its damage (hunts: 1.2 and more)
 		-- (the burst of a pack is not limited: a median class heals about its whole pool a second at tier 1)
 		packSustain = {min = 0.75, max = 1.8},
