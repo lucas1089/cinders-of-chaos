@@ -5,7 +5,7 @@
 -- Server rows (server/data/scripts/chaos/groundloot.lua):
 --   item   {s, id, c, nm, r, u, o, pw, g, t, il, e}       corpse {s, id, k = 1, n, i = [{c, nm, r, u, o, pw, g, t}], e}
 
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 GroundLabelsLogic = {}
 local GL = GroundLabelsLogic
 local LF

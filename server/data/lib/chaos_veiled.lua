@@ -622,7 +622,7 @@ local function register()
 	Cr.reasons.alreadyUnveiled = "The veiled modifier of this item is revealed already."
 	Cr.reasons.noOffer = "Use the Orb of Unveiling on the item to see the three choices first."
 	Cr.reasons.badChoice = "Choose one of the three veiled modifiers."
-	Cr.addOrb({key = CFG.orbKey, id = it.id, name = it.name,
+	Cr.addOrb({key = CFG.orbKey, kind = "add", safety = "safe", id = it.id, name = it.name,
 		text = "Reveals the veiled modifier of an item: choose one of three modifiers of the veiled pool (tier by the item level). The choice is final.",
 		check = function(item, opts)
 			if V.excluded(item) then

@@ -318,7 +318,7 @@ local function showItem(item)
     window.itemRarity:setText(tr('Normal item'))
     window.itemRarity:setColor('#d6c9ae')
   end
-  local mods = list(item.mods)
+  local mods = rows(item.mods)
   local pre, suf = item.prefixes, item.suffixes
   if rarity > 0 and type(pre) == 'table' and type(suf) == 'table' then
     local binds = type(item.binds) == 'table' and item.binds or nil
@@ -751,11 +751,18 @@ local function onState(data)
   if type(data.item) ~= 'table' then data.item = nil end -- the item on the bench, or none
   -- the orbs: what the server told once (info) with the counts of this state
   local orbs = {}
-  for _, o in ipairs(list(info and info.orbs)) do
+  for _, o in ipairs(rows(info and info.orbs)) do
     local row = {}
     for k, v in pairs(o) do row[k] = v end
     row.count = type(data.counts) == 'table' and tonumber(data.counts[o.key]) or 0
-    orbs[#orbs + 1] = row
+    -- a text field that is no text (a malformed server message) reads as empty
+    for _, f in ipairs({ 'name', 'text', 'keyText', 'wsText' }) do
+      if type(row[f]) ~= 'string' then row[f] = nil end
+    end
+    if type(row.key) == 'string' then
+      row.name = row.name or row.key
+      orbs[#orbs + 1] = row
+    end
   end
   data.orbs = orbs
   local orbsChanged = not state or #list(state.orbs) ~= #list(data.orbs)
@@ -772,8 +779,9 @@ local function onState(data)
   updateSalvage()
   buildGear()
   buildHistory()
-  if data.open then
+  if data.open and not (CraftingForge and CraftingForge.wanted()) then
     if not window:isVisible() then setResult('') end
+    CraftingForge.classicOnce = false -- the classic window was asked for once: it is shown now
     show()
   end
 end
@@ -791,6 +799,10 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     return
   end
   local data = type(msg.data) == 'table' and msg.data or {}
+  if CraftingForge and type(msg.action) == 'string' then
+    local okF, errF = pcall(CraftingForge.onMessage, msg.action, data) -- the forge window (forge.lua) reads the same messages
+    if not okF then g_logger.warning('[crafting] forge: ' .. tostring(errF)) end
+  end
   if msg.action == 'info' then
     info = data
     refreshGuide() -- craftguide.lua
@@ -832,6 +844,12 @@ end
 
 function toggle()
   if not window then return end
+  -- the forge window is the default (forge.lua); the classic one when the player chose it
+  if CraftingForge and CraftingForge.wanted() then
+    if window:isVisible() then hide() end
+    CraftingForge.toggle()
+    return
+  end
   if window:isVisible() then
     hide()
     return
@@ -842,6 +860,10 @@ end
 -- the menu's Salvage entry: the bench in its Salvage tab
 function openSalvage()
   if not window then return end
+  if CraftingForge then
+    CraftingForge.classicOnce = true -- Salvage lives in the classic window: shown once, whatever the choice
+    CraftingForge.hide()
+  end
   send('salvageScope', { mode = 'salvage' })
   send('open')
 end
@@ -937,12 +959,14 @@ function init()
     if self:getWidth() ~= self.fitWidth then fitResult() end
   end })
   showMode()
+  if CraftingForge and CraftingForge.init then CraftingForge.init() end -- the forge window (forge.lua)
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   if g_game.isOnline() then onGameStart() end
 end
 
 function terminate()
+  if CraftingForge and CraftingForge.terminate then CraftingForge.terminate() end
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if window then

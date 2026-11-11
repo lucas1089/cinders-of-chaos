@@ -36,6 +36,7 @@
 --   req = {level, magic, voc}, weight (oz), desc (flavour text), locked
 --   charges = {n, max} | {unlimited = true}           items with charges (T.chargeInfo)
 --   note                                           a line of its own (quivers: they work only with a bow or crossbow)
+--   gem = {rows = [{place, label, value, label2, value2, text}], combine}   a gem item (T.gemInfo): its effect per place
 --   store, collects                                a store pouch (pouches.lua): its two lines, no desc and no lock line
 --   stats = [{k, l, v, fmt, low}]                  every number the compare view adds up (low = lower is better)
 --   cmp = [slot, ...]                              inventory slots worn the same way (the client compares with them)
@@ -745,6 +746,29 @@ function T.capOf(m)
 	return nil
 end
 
+-- O479: the effects of a gem item as data, one row per place: {rows = {{place = "weapon" | "armour" | "jewel", label,
+-- value, label2, value2, text}}, combine = true | false}. label / value are the effect name and its number ("Holy Damage",
+-- "+2%"; a pair effect adds label2 / value2), text the same as one English line. The client writes the name in its own
+-- language and the number in its own colour; a client without this field shows tip.desc. nil for an item that is no gem.
+function T.gemInfo(G, id)
+	if not (G and G.isGem and G.isGem(id)) then
+		return nil
+	end
+	local rows = {}
+	for _, place in ipairs({"weapon", "armour", "jewel"}) do
+		local e = G.effectOf(id, place)
+		if e then
+			local p = G.effectParts(e.key, e.value, e.value2)
+			rows[#rows + 1] = {place = place, label = p.label, value = p.value, label2 = p.label2, value2 = p.value2,
+				text = G.effectText(e.key, e.value, e.value2)}
+		end
+	end
+	if #rows == 0 then
+		return nil
+	end
+	return {rows = rows, combine = G.gemOf(id).tier < G.TIERS}
+end
+
 function T.build(item, opts)
 	opts = opts or {}
 	local C, M, G = ChaosCrafting, ChaosItemMods, ChaosGems
@@ -932,6 +956,10 @@ function T.build(item, opts)
 					local e = G.effectOf(gid, group)
 					list[i] = {name = G.gemName(gid), text = e and G.effectText(e.key, e.value, e.value2) or "",
 						color = g and g.type.color or nil}
+					if e and G.effectParts then -- O479: the name and the number apart, so the client can translate the name
+						local pp = G.effectParts(e.key, e.value, e.value2)
+						list[i].l, list[i].v, list[i].l2, list[i].v2 = pp.label, pp.value, pp.label2, pp.value2
+					end
 					if e and e.def then
 						stat("gem_" .. e.key, e.def.label, e.value, e.def.fmt ~= "flat" and "pct" or nil)
 						if e.value2 and e.def.label2 then
@@ -946,6 +974,7 @@ function T.build(item, opts)
 		end
 	end
 	tip.stats = stats
+	tip.gem = T.gemInfo(G, id) -- a gem item: its three effects as rows (O479)
 
 	local req = {}
 	local reqLevel = int(call(it, "getMinReqLevel"))

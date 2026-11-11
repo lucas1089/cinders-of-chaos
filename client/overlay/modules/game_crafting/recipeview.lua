@@ -2,7 +2,7 @@
 -- and Lua 5.3). A recipe of state.salvage.recipes is either a rune shard recipe (paid with rune shards, sv.shards; Shift
 -- recycles the orb back) or a shard recipe (Ember / Crown Shards -> their orb: `input` is the item it eats, `have` how
 -- many the player has, `inputName` its plural; no recycling). The server checks everything again (salvage.lua combine).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CraftingRecipeView = CraftingRecipeView or {}
 local V = CraftingRecipeView

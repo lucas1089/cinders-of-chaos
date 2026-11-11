@@ -2,7 +2,7 @@
 -- The server's "confirm" message carries modes = [{key, name, short, ssf, hc, warning}] (season_modes.lua); an older server
 -- sends none and the dialog offers Standard only. A Hardcore choice needs the "I understand" box ticked.
 -- The state's mine = {mode, modeName, ssf, hc, fallen = {level, cause}, heartbeat} feeds modeLine and the heartbeat.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 SeasonJoin = {}
 

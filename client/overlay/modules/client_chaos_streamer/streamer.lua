@@ -33,7 +33,7 @@ local forcedHidden = {}      -- text edits this module hid: [widget] = their own
 local cinemaOn = false
 
 local function tr(s, ...)
-  local f = rawget(_G, 'tr')
+  local f = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)
   if f then return f(s, ...) end
   if select('#', ...) > 0 then return string.format(s, ...) end
   return s

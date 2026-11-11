@@ -3,7 +3,7 @@
 -- switchGold, running, tiers = [{name, minLevel, cleared, problem, time, lives, bossHealth}],
 -- pairs = [{pair, tier (difficulty name), locked, held (0/1/2), clear = {can, why}, nodes = [{id, name, lore, lines = [{text, good}], can, why,
 -- switch, needsSpellEvents}]}]}.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 TrialsMath = {}
 
 local GOOD, BAD, DIM, HELD = '#7fd06a', '#e0654a', '#8c8070', '#f6cf72'

@@ -11,7 +11,7 @@
 --             shards = {[kind] = n}, relics = {[kind] = n}, hasKey}
 --   refine = {{slot, n, c, r, rn, to, p, ok, why}}, refineMax
 -- The rules here mirror the server's for the buttons only; the server decides.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ConquestView = ConquestView or {}
 local V = ConquestView

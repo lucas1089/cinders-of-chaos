@@ -11951,8 +11951,60 @@ modifiers / maximum and every orb with your count and, when it fits, a preview o
 modifiers", "Magic 60%, Rare 30%, Legendary 10%", "same modifiers, new values"; `C.preview`); a button is enabled only
 when the server says the orb fits. The server checks again on every click: the item is found by its path from the
 backpack plus its id and a signature of its modifiers (moved or changed -> "put it on the bench again"), the orb is
-owned, the rules above, 250 ms between orbs. The last 8 crafts come from `chaos_crafting_log` (rows older than 60 days
+owned (in the backpack or, since O481, in the stash), the rules above, 250 ms between orbs. The last 8 crafts come from `chaos_crafting_log` (rows older than 60 days
 go at startup); use-with crafts are logged too.
+
+**Forge window and materials from the stash (O481, owner request 2026-11-11, layout option 1).** The bench has a second
+window, the forge (client `game_crafting` `forge.lua`, `forgeview.lua`): "1 Place the item, 2 Pick an action, 3 Check
+the change, 4 Forge". It is the default; the Classic button switches to the window above and back, per character.
+New data on the same extended opcode 232, all additive (an old client or the Unity bench never reads them and works as
+before):
+- **Orb data.** Every orb carries `kind` (what it is aimed at: `mod` one chosen modifier, `add` a new modifier, `whole`
+  the whole item, `sockets`) and `safety` (`safe`: fixed outcome, nothing lost; `random`: a roll, nothing destroyed beyond
+  what the text says; `risky`: can remove modifiers, corrupt or ruin). `tests/forge_test.lua` fails for an orb without
+  either. Kinds: mod = Ember (raise a tier), Reforging (roll again), Excision (remove), Binding (bind); add = Grafting,
+  Unveiling; sockets = Orb of Sockets; the rest is whole. Tags: safe = Ember, Binding, Whetstone, Unveiling; risky =
+  Unmaking, Erasure, Upheaval, Fate, Excision, Void (Ruin turns risky if `ChaosOrbsConfig.ruin.ruin` is above 0); random
+  = the others.
+- **Client asks** `open {forge = 1}` (the server remembers it until logout or the next plain `open`) and
+  `explain {orb, path, id, sig, mod}`. The server answers `explain {orb, mod, sig, ok, kind, tag, reason, reasonText, text,
+  lead, warn, cost = {orb, n, bag, stash, from}}`: the words of one action (`ChaosCrafting.explain`, never computed in
+  the client: "Guaranteed: tier 3 to tier 4. The value rolls 50 to 60.", "One of 6 tiers (T1-T6)..."; an orb with no
+  own words gives its preview with `lead` = `fixed` / `random`, and `warn` for a risky one). A stale signature gets "put
+  it on the bench again". The window sends `apply` only for an action explained for this item (`sig` matches).
+- **`change` (O481 polish).** An `explain` answer for an outcome that is sure also carries `change`, built in `C.explain`
+  from the same numbers as the sentence (never parsed from text): `{kind = "tier", text, from = {tier, lo, hi}, to = {tier,
+  lo, hi}}` (Ember: the sentence gives the NEW tier's range, `to.lo` to `to.hi`), `{kind = "bind", text, tier}`,
+  `{kind = "remove", text, tier}`, `{kind = "quality", from, to}` (Whetstone). A roll, a gamble or an unknown outcome sends
+  none and the window shows the text alone. `tests/forge_test.lua` keeps sentence and `change` equal.
+- **Forge window only** (after `open {forge = 1}`): `forgeinfo {orbs = {key -> {kind, safety}}}` after `info`;
+  `state.bag` and `state.stash` ({orb key -> count}); `state.item.free` ({prefix, suffix}, from the item mods side
+  limits) and `state.item.veil` (1 veiled, 2 revealed); each `state.item.mods[i].v` is the value of the modifier (the window's roll bar sits where `v` is between `lo` and `hi`). `result.from` is `bag` or `stash` for every client.
+- **Size.** None of this goes into `info` (near the 8192-byte limit). The state trims history, then items, then the
+  bag / stash tables until it is at most 7600 bytes; `forge_test.lua` measures an item with eight modifiers and every
+  orb at 999 in the stash.
+- **Materials.** `state.counts` is backpack plus stash for every client (so the classic window and the Unity bench can
+  also spend stash orbs). A craft takes the orb from the backpack first, then from the stash: `crafting.lua craft()` calls
+  `ChaosStash.spend` (stash.lua) with the item change as a callback, which is `ChaosStashCore.spend` (stash_core.lua), the
+  journal of the stash: the amount leaves its plain stack as a taking row with the next serial, the item change runs in
+  memory, the serial and the item are saved in one `player:save()`, the row is dropped. The order of checks is as before:
+  item in the backpack, orb owned (bag or stash), dialog orbs, then the rules of `C.apply`; a refusal in `C.apply` puts
+  the amount back (nothing taken); a stash row that vanished since the preview refuses with "You have no ..." and
+  changes nothing. Only plain stacks count (a stored whole item never does). Use-with of an orb from the backpack
+  is unchanged and never touches the stash. The item stays a backpack item.
+- **Place rule.** The stash only gives items back in a protection zone or a hideout (`stash_config.lua`, the owner's
+  decision 2026-10-15). The bench has no place rule. Decision: the bench may spend stash orbs anywhere
+  (`craftSource.townOnly = false`), because an orb spent in a craft never reaches the backpack: nothing can be carried out
+  of town with it, so the rule against pulling stock into a hunt is not opened (the same orbs can already be carried in
+  a bag and used anywhere). Set `craftSource.townOnly = true` to apply the withdraw rule, or `enabled = false` to turn the
+  stash source off.
+- **Crash safety.** Before the save the saved serial is below the row's: the next settle (login or the next stash
+  action) restores the amount and the item change, never saved, is gone. After the save the serial covers the row: it is
+  dropped and the change stands. If the save fails the craft stands in memory with the row still taking; the next save of
+  the character writes both. A crash before it restores the orb and loses the change. A settle that runs first may drop
+  the row early; then a crash loses one orb and never duplicates it.
+Tests: `tests/forge_test.lua` (tags, words, bag first, stash second, refusals, vanished row, two crafts, old client, size),
+`tests/stash_test.lua` "spending stash orbs", client `forgeview_test.lua`.
 
 **Drops and rewards.** Chaos loot layer (`loot_config.lua` currency, per 10000 kills, normal / magic / rare / legendary /
 boss): Awakening 30/200/700/2500/3500 (1-2), Gilding and Unmaking 10/80/300/1200/2000, Erasure
@@ -14099,13 +14151,16 @@ Nothing is stored; the totals live in memory (`ChaosGemsCache`).
   used on itself): a stack in the purse or the depot was refused with "You need three gems" whatever its count,
   since the engine's count never sees those boxes. Tests: `tests/gems_test.lua` "combining against the engine's
   item walk".
-- plain use: the gem's three effects and how to use it.
+- plain use: the gem's three effects and how to use it (`G.gemSummary`; for a pt-BR player `G.gemSummaryTx`, the same words
+  through `Chaos.tx`, so the frame and the effects are in one language).
 
 Every action is logged in `chaos_crafting_log` (the bench's "Recent crafts").
 
 **Taking gems out** (crafting bench, Economy > Crafting Bench: the sockets are listed under the modifiers, extended opcode 232 action
 `gem`): **Remove** returns the gem for 2000 / 6000 / 20000 / 60000 / 200000 gold by tier (bank first, then the
 backpack); **Shatter** is free and destroys it. The 3-to-1 combining, the removal cost and shattering are the gem sinks.
+
+**Gem description (O479)**: the items.xml text of a gem is one piece of text, one sentence per place: "A gem for a socket. Weapon: Holy Damage +2%. Armour: Elemental Resistances +1%. Jewellery: Holy Resistance +2%. Use it on gear with a free socket. Three of the same make one of the next quality: use the stack, then left-click it." (no combine sentence on a Perfect gem). `install_gems.py` writes it (`gems()`, rewrites an installed block: run it again to update a server, a second run changes nothing), `G.describe(type, tier)` in `chaos_gems.lua` says the same words (`G.USE_HINT`, `G.COMBINE_SHORT`; `install_gems_test.py` pins both). The plain-use message keeps `G.COMBINE_HOW`. pt-BR: the whole text has entries in `i18n_strings.lua` (one per place and effect, the hint and the combine sentence); `tests/gems_test.lua` translates every gem type and quality and fails on an English word left. The support rune use message (`supports.lua`) now writes its effect and spell kinds in the player's language too (it had a pt-BR frame with English inside; `S.fitsText(t, tx)`).
 
 **Description**: one section at the end, "Sockets (1/2): Flawless Ruby (Fire Damage +9%), empty." After the engine's
 text it follows a full stop. `C.rewriteDescription` strips it and writes it again last, so it is never doubled. Items
@@ -31564,3 +31619,41 @@ part is lowered, `cards_config.lua` `sets.by.Fire.pct` 4 -> 3.5 (smallest of the
 (a power law over ten levels, within 11% of 55 s), the Omen heal (380 a second, the top of the documented 330-380), the raid adds and the world bosses (left), the tower reach (the hunt pack seconds follow a
 model that predates the real levels' medians), the per-class effect of the pool (not modelled), the unique tooltip glue in an engine, the pt-BR text by a speaker. Not done: skill growth above level 1000 (design E8, owner's
 optional item).
+
+## Gem tooltip (O479)
+
+A player on the community chat (translated, relayed by the owner 2026-11-10) asked for rows instead of a wall of text. The
+tooltip of a gem item had the three effects in one sentence, the combine sentence in pt-BR and the rest in English, and the
+drop chance twice. Owner 2026-11-11: colour option 3 (the place in colour, the number in green).
+
+- **`tip.gem`** (`item_tooltip_core.lua` `T.gemInfo`, built from `chaos_gems.lua` `G.effectOf` / `G.effectParts`, never from the
+  description): `{rows = [{place = "weapon" | "armour" | "jewel", label, value, label2, value2, text}], combine}`. `label` is the
+  effect name ("Holy Damage"), `value` the number as written ("+2%", "+130"), a pair effect adds `label2` / `value2`, `text` is
+  the English line. `combine` is false for a Perfect gem. About 350 bytes a gem; `Chaos.send` chunks anything over 8192 bytes.
+  A socketed gem's entry in `tip.sockets.list` carries the same name and number apart (`l`, `v`, `l2`, `v2`) next to `text`.
+- **Old client**: it ignores both fields and shows `tip.desc`, the new short description, which is correct text.
+- **Main client** (`game_itemtooltip`, client/MANIFEST.md): the rows replace `desc`. Unity shows `desc` as before (frozen).
+- **Drop chance once** (`itemfinder_core.lua` `K.brief`, `itemfinder_sources.lua`): a global drop row carries `vs`, its text without
+  the chance. When the effort line ("~1 in 3,300 kills") words the same kill of the same source, the brief shows `vs` in the
+  "Drops from" row. The effort row stays: it serves every item (a monster, a boss, a legendary kill, a token price, "~1 in N
+  kills of Dragon"); a shop-only item has no effort line and no chance. Another tier ("magic monster kills") and a common drop
+  (no effort line, over 1 in 5) keep the chance in the row. The Item Finder window keeps the full text. A monster row keeps
+  its percent: the effort line names the monster and gives 1 in N, a different form of one number.
+- **pt-BR source rows**: for a pt-BR player `item_tooltip.lua` `srcIn` translates the fixed words of a source row ("Any monster",
+  "global drop", the level and tier forms) on a copy (the brief is cached for everyone); a monster's name stays.
+- **Language**: the server keeps one language per character (storage 7101830, `i18n_core.lua`), set by the client's hello on
+  opcode 157 (`locale.lua` `sendHello`, at game start and at a change); the client's language is one setting per install
+  (`chaos-language`). The tooltip text of the client's own rows came out English in pt-BR because `tooltiplogic.lua` asked
+  `rawget(_G, 'tr')`, which is nil while the locale module serves `tr` from the metatable of `_G`. It asks `ChaosLocale.tr` then.
+  The same read was in 91 other client files; each falls back the same way (`tools/ci/check_locales.py` holds them to it).
+- **"Drops from" only with Alt** (owner 2026-11-11, translated: "Also hide the 'drops from' text. Let it show only when Alt
+  is pressed"): on every item the main client's card hides the "Drops from: ..." / "Sources: ..." row until Alt is held
+  (`tooltiplogic.lua` `L.sourceLines(src, hideRow)`, `L.card` ctx `alt`). Asked about the chance line, the owner (2026-11-11,
+  translated): "You can hide the chance too": the gold line (the chance "~1 in N kills", a token price) hides with it. "Used
+  in" and the weight stay. Without Alt the hint line names it: "Hold Alt for where it comes from and what each line does." (or "Hold Alt
+  for where it comes from." on an item without help lines). The server sends the same data; Unity is unchanged.
+- Tests: `tests/item_tooltip_test.lua` (`tip.gem` of every gem), `tests/gems_test.lua` (description, pt-BR for every gem),
+  `tests/itemdesc_i18n_test.lua` (rune texts, source words), `tests/itemfinder_test.lua` (global drop, monster drop, item with
+  no drop), `tools/install_gems_test.py` (old text to new, second run), client `tooltiplogic_test.lua`.
+- **Not verified**: a real client (the row layout of `gemBox` in `item_tooltip.lua` is not run by a test; the rows and colours are),
+  a speaker's reading of the pt-BR lines.

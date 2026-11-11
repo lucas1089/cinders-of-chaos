@@ -1,7 +1,7 @@
 -- game_antibot pure logic (no client API): the presence check payload, countdown text and colour, the report form
 -- check and the messages. antibot.lua draws; antibot_logic_test.lua runs this under luajit and lua5.3.
 -- Server: data/scripts/chaos/antibot.lua, reports.lua (extended opcode 211).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 AntibotLogic = AntibotLogic or {}
 local L = AntibotLogic

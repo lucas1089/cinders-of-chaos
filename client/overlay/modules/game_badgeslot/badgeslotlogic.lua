@@ -2,7 +2,7 @@
 -- second ring slot goes (server src-patch 0058: the ammunition slot, 10, takes nothing) and the badge slot (13) is
 -- drawn where it was (client base patch 0113; server/README.md "Badge slot"). Its placeholder image is drawn by
 -- client/tools/gen_skin.py (data/images/game/slots/badge(-blessed).png, a shield with a star).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 BadgeSlotLogic = {}
 local L = BadgeSlotLogic
 

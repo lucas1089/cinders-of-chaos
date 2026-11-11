@@ -9,7 +9,7 @@
 --   hud {raid, id, boss, idx, total, done, killed, state = clear|idle|fight, hp, phase, phases, phaseName, enrage,
 --        enraged, adds, totems, players, fallen, alerts = [text], stacks = {sunder, hexed}, hexed, trash}
 --   alert {text, kind}, loot {boss, eligible, lines}, end {text}, msg {text, ok}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 RaidView = {}
 

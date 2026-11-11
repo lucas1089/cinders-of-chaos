@@ -18,7 +18,7 @@ types (name, plural, clientId, clientIdHigh, the three effects and their values)
    file is kept as items.otb.bak the first time. After writing, the file is parsed again and every gem node is
    checked.
    The dark tile set (install_dark_tiles.py) uses 30484..30557; these ids stay clear of it.
-2. data/items/items.xml: the gems (name, plural, a description with their three effects, weight) inside a block
+2. data/items/items.xml: the gems (name, plural, a description with their three effects one sentence per place, weight) inside a block
    between two marker comments before </items>, rewritten when the config changed; and the Orb of Sockets (the unused
    stackable use-with rune stone socketOrb.id) inside the same block. An id that already has an entry outside the block
    stops the script.
@@ -49,6 +49,9 @@ XML_BEGIN = '\t<!-- Chaos gems and the Orb of Sockets (server/tools/install_gems
 XML_END = '\t<!-- end of the Chaos gems -->\n'
 GEM_WEIGHT = 10
 ORB_WEIGHT = 50
+# O479: the description is one piece of text, one sentence per place (G.describe in chaos_gems.lua says the same)
+USE_HINT = 'Use it on gear with a free socket.'
+COMBINE_SHORT = 'Three of the same make one of the next quality: use the stack, then left-click it.'
 ORB_ITEM_TEXT = 'Rolls a new number of sockets on a piece of gear. Gems stay; uniques keep one.'
 
 
@@ -137,8 +140,8 @@ def gems(cfg):
             if cfg.get('ownLook'):
                 cid = own_client_id(cfg, sid)
             q = cfg['tiers'][tier - 1].lower()
-            parts = []
-            for group, label in (('weapon', 'in a weapon'), ('armour', 'in armour'), ('jewel', 'in jewellery')):
+            parts = ['A gem for a socket.']
+            for group, label in (('weapon', 'Weapon'), ('armour', 'Armour'), ('jewel', 'Jewellery')):
                 g = t[group]
                 e = cfg['effects'][g['effect']]
                 v = g['values'][tier - 1]
@@ -148,11 +151,11 @@ def gems(cfg):
                     txt = '%s +%d%%, %s +%d%%' % (e['label'], v, e['label2'], g['values2'][tier - 1])
                 else:
                     txt = '%s +%d%%' % (e['label'], v)
-                parts.append('%s: %s' % (label, txt))
-            desc = 'A gem for a socket: %s. Use it with gear that has a free socket.' % '; '.join(parts)
-            if tier < n:  # the same words as G.COMBINE_HOW (chaos_gems.lua)
-                desc += (' To combine three into one of the next quality: use the stack, then left-click the same '
-                         'stack.')
+                parts.append('%s: %s.' % (label, txt))
+            parts.append(USE_HINT)
+            if tier < n:  # the same words as G.COMBINE_SHORT (chaos_gems.lua)
+                parts.append(COMBINE_SHORT)
+            desc = ' '.join(parts)
             out.append((sid, cid, '%s %s' % (q, t['name']), '%s %s' % (q, t['plural']), desc))
     return out
 

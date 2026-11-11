@@ -113,6 +113,32 @@ def subentry_font_in_patches():
     return font
 
 
+FORGE_TABS = ('Shape', 'Add', 'Whole item', 'Sockets', 'Salvage', 'Guide')  # forgeview.lua V.tabLabel
+FORGE_TAB_PAD = 26   # forge.lua: the text width + 26 px per tab
+FORGE_TAB_GAP = 2    # forge.otui: margin-left 2 between tabs
+FORGE_ROW = 868      # the window's inner width
+FORGE_TAB_FONT = 'verdana-11px-rounded'  # a stand-in: the tabs use the stock verdana-11px-antialised, whose sheet is not in the overlay
+
+
+def forge_tabs(tr):
+    """the forge window's tab row (O481) fits the 868 px inside the window, English and pt-BR, with a count like (10/10)"""
+    problems = []
+    measure = load_font(FORGE_TAB_FONT)
+    for lang in ('en', 'pt-BR'):
+        total = 0
+        for key in FORGE_TABS:
+            text = key if lang == 'en' else tr.get(key)
+            if text is None:
+                problems.append('no pt-BR text for the forge tab "%s"' % key)
+                continue
+            if key not in ('Salvage', 'Guide'):
+                text += ' (10/10)'
+            total += measure(text) + FORGE_TAB_PAD + FORGE_TAB_GAP
+        if total > FORGE_ROW:
+            problems.append('the forge window tabs are %d px in %s, the row has %d: shorten a label' % (total, lang, FORGE_ROW))
+    return problems
+
+
 def check():
     problems = []
     patched = subentry_font_in_patches()
@@ -153,6 +179,7 @@ def check():
         widest = max(widest, (w, text))
         if w > room:
             problems.append('options menu entry "%s" is %d px in %s, the button has %d' % (text, w, SUBENTRY_FONT, room))
+    problems += forge_tabs(tr)
     return problems, widest, room
 
 

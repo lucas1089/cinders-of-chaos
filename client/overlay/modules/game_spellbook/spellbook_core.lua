@@ -268,7 +268,7 @@ end
 -- env (optional, for tests): {tr, getSetting(key) -> bool|nil, setSetting(key, bool)}
 local function defaultEnv()
   return {
-    tr = rawget(_G, 'tr') or function(s) return s end,
+    tr = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) or function(s) return s end,
     getSetting = function(key)
       local s = rawget(_G, 'g_settings')
       if not s then return nil end

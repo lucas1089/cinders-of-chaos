@@ -329,7 +329,8 @@ end
 -- ---------------------------------------------------------------- use-with on every gem
 local function hint(player, id, prefix)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
-		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it. %s", prefix and Chaos.t(player, prefix) or "", G.gemName(id), G.gemSummary(id),
+		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it. %s", prefix and Chaos.t(player, prefix) or "", G.gemName(id),
+		Chaos.lang(player) ~= "en" and G.gemSummaryTx(id, function(t) return Chaos.tx(player, t) end) or G.gemSummary(id),
 		Chaos.t(player, G.gemOf(id).tier < G.TIERS and G.COMBINE_HOW or "Perfect is the best quality; it does not combine.")))
 end
 

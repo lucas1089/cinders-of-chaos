@@ -2235,6 +2235,96 @@ return {
 		["To combine three into one of the next quality: use the stack, then left-click the same stack."] =
 			"Para juntar três em uma da qualidade seguinte: use a pilha e depois clique com o botão esquerdo na mesma pilha.",
 		["Perfect is the best quality; it does not combine."] = "Perfect é a melhor qualidade; não se junta.",
+		-- the gem description (O479, tools/install_gems.py, chaos_gems.lua G.describe): one sentence per place
+		["A gem for a socket."] = "Uma gema para encaixe.",
+		["Weapon: Fire Damage +%d%%."] = "Arma: Dano de Fogo +%d%%.",
+		["Armour: Max Health +%d."] = "Armadura: Vida Máxima +%d.",
+		["Jewellery: Fire Resistance +%d%%."] = "Joia: Resistência a Fogo +%d%%.",
+		["Weapon: Ice Damage +%d%%."] = "Arma: Dano de Gelo +%d%%.",
+		["Armour: Max Mana +%d."] = "Armadura: Mana Máxima +%d.",
+		["Jewellery: Ice Resistance +%d%%."] = "Joia: Resistência a Gelo +%d%%.",
+		["Weapon: Earth Damage +%d%%."] = "Arma: Dano de Terra +%d%%.",
+		["Armour: Movement Speed +%d%%."] = "Armadura: Velocidade de Movimento +%d%%.",
+		["Jewellery: Earth Resistance +%d%%."] = "Joia: Resistência a Terra +%d%%.",
+		["Weapon: Critical Chance +%d%%, Critical Hit +%d%%."] = "Arma: Chance de Crítico +%d%%, Dano Crítico +%d%%.",
+		["Armour: Death Resistance +%d%%."] = "Armadura: Resistência a Morte +%d%%.",
+		["Jewellery: Death Damage +%d%%."] = "Joia: Dano de Morte +%d%%.",
+		["Weapon: Attack Speed +%d%%."] = "Arma: Velocidade de Ataque +%d%%.",
+		["Armour: Energy Resistance +%d%%."] = "Armadura: Resistência a Energia +%d%%.",
+		["Jewellery: Energy Damage +%d%%."] = "Joia: Dano de Energia +%d%%.",
+		["Weapon: Holy Damage +%d%%."] = "Arma: Dano Sagrado +%d%%.",
+		["Armour: Elemental Resistances +%d%%."] = "Armadura: Resistências Elementais +%d%%.",
+		["Jewellery: Holy Resistance +%d%%."] = "Joia: Resistência Sagrada +%d%%.",
+		["Weapon: Life Leech Chance +%d%%, Life Leech Amount +%d%%."] = "Arma: Chance de Roubo de Vida +%d%%, Quantidade de Roubo de Vida +%d%%.",
+		["Armour: Physical Resistance +%d%%."] = "Armadura: Resistência Física +%d%%.",
+		["Jewellery: Physical Damage +%d%%."] = "Joia: Dano Físico +%d%%.",
+		["Use it on gear with a free socket."] = "Use em um equipamento com um encaixe livre.",
+		["Three of the same make one of the next quality: use the stack, then left-click it."] =
+			"Três iguais formam uma da qualidade seguinte: use a pilha e depois clique nela com o botão esquerdo.",
+		-- the support rune texts in the use message (O479: the frame was pt-BR and the effect and the spell kinds English)
+		["%s%% of the spell's damage is added as extra fire damage"] =
+			"%s%% do dano da magia é adicionado como dano extra de fogo",
+		["%s%% of the spell's damage is added as extra ice damage"] =
+			"%s%% do dano da magia é adicionado como dano extra de gelo",
+		["%s%% of the spell's damage is added as extra holy damage"] =
+			"%s%% do dano da magia é adicionado como dano extra sagrado",
+		["%s%% of the spell's damage is added as extra death damage"] =
+			"%s%% do dano da magia é adicionado como dano extra de morte",
+		["%s%% of the spell's damage is added as extra energy damage"] =
+			"%s%% do dano da magia é adicionado como dano extra de energia",
+		["Cooldown -%s%%"] =
+			"Recarga -%s%%",
+		["Mana cost -%s%%, given back right after the cast"] =
+			"Custo de mana -%s%%, devolvido logo depois da conjuração",
+		["+%s%% chance per hit to strike critically for +%s%% damage"] =
+			"+%s%% de chance por golpe de acertar crítico com +%s%% de dano",
+		["%s%% chance per cast that the spell's hits strike again 0.5 s later for %s%% damage"] =
+			"%s%% de chance por conjuração de os golpes da magia atingirem de novo 0,5 s depois com %s%% de dano",
+		["The hit forks to %s more enemies within 3 sqm for %s%% of it"] =
+			"O golpe se divide em mais %s inimigos a até 3 sqm com %s%% dele",
+		["Enemies within %s sqm of the hit ones that the spell missed take %s%% of the average hit (max 6)"] =
+			"Inimigos a até %s sqm dos atingidos que a magia errou sofrem %s%% do golpe médio (máx. 6)",
+		["Enemies next to the target take %s%% of the hit (max 4)"] =
+			"Inimigos ao lado do alvo sofrem %s%% do golpe (máx. 4)",
+		["A kill by the spell bursts the corpse: enemies within 2 sqm take %s%% of the killing hit (once per cast)"] =
+			"Um abate pela magia estoura o cadáver: inimigos a até 2 sqm sofrem %s%% do golpe final (uma vez por conjuração)",
+		["A critical hit of the spell blasts the enemies next to the target for %s%% of it (once per cast)"] =
+			"Um golpe crítico da magia explode os inimigos ao lado do alvo com %s%% dele (uma vez por conjuração)",
+		["For 8 s after the cast, a monster's hit on you has a 25%% chance to strike it back for %s%% of the hit"] =
+			"Por 8 s depois da conjuração, um golpe de monstro em você tem 25%% de chance de ser devolvido com %s%% do golpe",
+		["Heals you for %s%% of the spell's damage (at most 8%% of your max health per cast)"] =
+			"Cura você em %s%% do dano da magia (no máximo 8%% da sua vida máxima por conjuração)",
+		["Restores %s mana per 1000 damage of the spell (at most 5%% of your max mana per cast)"] =
+			"Devolve %s de mana a cada 1000 de dano da magia (no máximo 5%% da sua mana máxima por conjuração)",
+		["Ignores %s points of a monster's resistance to the spell's element (never below 0)"] =
+			"Ignora %s pontos da resistência do monstro ao elemento da magia (nunca abaixo de 0)",
+		["Monsters hit take +%s%% damage from everyone for 4 s (the strongest hex counts)"] =
+			"Monstros atingidos sofrem +%s%% de dano de todos por 4 s (vale a maldição mais forte)",
+		["The spell heals %s%% more"] =
+			"A magia cura %s%% a mais",
+		["Cooldown -6%%"] = "Recarga -6%%",
+		["Cooldown -9%%"] = "Recarga -9%%",
+		["Cooldown -12%%"] = "Recarga -12%%",
+		["Cooldown -15%%"] = "Recarga -15%%",
+		["Cooldown -18%%"] = "Recarga -18%%",
+		["single target"] = "alvo único",
+		["area"] = "área",
+		["healing"] = "cura",
+		["buff / utility"] = "buff / utilidade",
+		-- the sources of an item tooltip (itemfinder_sources.lua S.globalText; O479)
+		["Any monster"] = "Qualquer monstro",
+		["global drop"] = "drop global",
+		["global drop, level %d+"] = "drop global, nível %d+",
+		["global drop, about 1 in %s kills"] = "drop global, cerca de 1 em %s abates",
+		["global drop, about 1 in %s kills, level %d+"] = "drop global, cerca de 1 em %s abates, nível %d+",
+		["global drop, about 1 in %s magic monster kills"] = "drop global, cerca de 1 em %s abates de monstros mágicos",
+		["global drop, about 1 in %s magic monster kills, level %d+"] = "drop global, cerca de 1 em %s abates de monstros mágicos, nível %d+",
+		["global drop, about 1 in %s rare monster kills"] = "drop global, cerca de 1 em %s abates de monstros raros",
+		["global drop, about 1 in %s rare monster kills, level %d+"] = "drop global, cerca de 1 em %s abates de monstros raros, nível %d+",
+		["global drop, about 1 in %s legendary monster kills"] = "drop global, cerca de 1 em %s abates de monstros lendários",
+		["global drop, about 1 in %s legendary monster kills, level %d+"] = "drop global, cerca de 1 em %s abates de monstros lendários, nível %d+",
+		["global drop, about 1 in %s boss monster kills"] = "drop global, cerca de 1 em %s abates de monstros chefes",
+		["global drop, about 1 in %s boss monster kills, level %d+"] = "drop global, cerca de 1 em %s abates de monstros chefes, nível %d+",
 		["That cannot hold gems. "] = "Isso não pode ter gemas. ",
 		["You need three gems of the same kind and quality to combine them."] =
 			"Você precisa de três gemas do mesmo tipo e qualidade para juntá-las.",
@@ -4968,6 +5058,28 @@ return {
 		["Thank you. Your report about %s was sent to the staff (#%d)."] =
 			"Obrigado. Sua denúncia sobre %s foi enviada à equipe (#%d).",
 		-- Crafting bench and Salvage (crafting.lua, salvage_core.lua, salvage.lua)
+		-- the forge window (O481): what one action does, chaos_crafting.lua C.explain
+		["Guaranteed: tier %d to tier %d. The value rolls %d to %d."] =
+			"Garantido: tier %d para tier %d. O valor sai entre %d e %d.",
+		["Guaranteed: this modifier is bound. The orbs that change modifiers leave it alone."] =
+			"Garantido: este modificador fica preso. As orbes que mudam modificadores não o tocam.",
+		["Guaranteed: this modifier is removed. The others stay."] =
+			"Garantido: este modificador é removido. Os outros ficam.",
+		-- the reason texts of the orbs (ChaosCrafting.reasons) that had no entry; "info" sends them translated
+		["The veiled modifier of this item is revealed already."] =
+			"O modificador velado deste item já foi revelado.",
+		["Choose one of the three veiled modifiers."] =
+			"Escolha um dos três modificadores velados.",
+		["This item has no attack, defence or armour for the quality to act on."] =
+			"Este item não tem ataque, defesa nem armadura para a qualidade agir.",
+		["Use the Orb of Unveiling on the item to see the three choices first."] =
+			"Use o Orb of Unveiling no item para ver primeiro as três escolhas.",
+		["This item has no veiled modifier."] =
+			"Este item não tem modificador velado.",
+		["Unknown orb."] =
+			"Orbe desconhecido.",
+		["One of %d tiers (%s). The tier and the value roll again."] =
+			"Um entre %d tiers (%s). O tier e o valor são sorteados de novo.",
 		["Put the item in your backpack first (equipped items cannot be crafted)."] =
 			"Coloque o item na sua mochila primeiro (itens equipados não podem ser criados).",
 		["You have no %s."] =

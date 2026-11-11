@@ -4,7 +4,7 @@
 --   autobuildPreview {build, name, owned, held, wanted, add = {nodes, added, skipped, other, masteries, keystones, capText},
 --                     reset = {nodes, added, skipped, other, removed, cost, free, masteries, keystones, capText}}
 --   capText (O447): the keystone cap's refusal in the player's language when that side would hold too many keystones
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 AutoBuildView = {}
 local V = AutoBuildView
 

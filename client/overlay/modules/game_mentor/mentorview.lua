@@ -1,6 +1,6 @@
 -- Mentor window texts and rows (pure, no UI calls): shared by mentor.lua and mentorview_test.lua.
 -- `s` is the server's status (server data/scripts/chaos/mentor_core.lua ChaosMentorCore.view), `rows` its mentor list.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 MentorView = MentorView or {}
 local V = MentorView

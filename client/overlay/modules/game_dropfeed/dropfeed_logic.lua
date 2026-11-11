@@ -3,7 +3,7 @@
 -- legendary, divine or unique drop of a player in the Default tab and in the channel "Drops". This option says which
 -- kinds this client gets; the client sends it at login and when it changes, the server filters:
 --   client -> server  feedopt {mode = "off" | "unique" | "legendary"}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 DropFeedLogic = {}
 local L = DropFeedLogic

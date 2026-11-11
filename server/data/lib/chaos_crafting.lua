@@ -66,36 +66,36 @@ C.config = {
 	-- orbs in the order the bench shows them. id = server item id. The three new ids (24688, 24691, 24697) are unused
 	-- stackable rune stones without an items.xml entry; server/tools/install_crafting.py gives them their names.
 	orbs = {
-		{key = "transmutation", id = 29851, name = "Orb of Awakening",
+		{key = "transmutation", kind = "whole", safety = "random", id = 29851, name = "Orb of Awakening",
 			text = "Turns a normal item into a Common or Uncommon one with random modifiers (tiers by its item level).",
 			keyText = "Gives a Rift Key without modifiers one modifier.",
 			wsText = "Turns a Normal waystone into a Magic one with one modifier."},
-		{key = "alchemy", id = 24691, name = "Orb of Gilding",
+		{key = "alchemy", kind = "whole", safety = "random", id = 24691, name = "Orb of Gilding",
 			text = "Turns a normal item into a Magic, Rare or Legendary one with random modifiers (tiers by its item level).",
 			keyText = "Gives a Rift Key without modifiers two or three modifiers.",
 			wsText = "Turns a Normal waystone into a Rare one with four to six modifiers."},
-		{key = "exalted", id = 29855, name = "Orb of Grafting",
+		{key = "exalted", kind = "add", safety = "random", id = 29855, name = "Orb of Grafting",
 			text = "Adds one random modifier on an open prefix or suffix of an item with a rarity.",
 			keyText = "Adds one modifier to a Rift Key (three at most).",
 			wsText = "Adds one modifier to a waystone (Magic: one prefix and one suffix; Rare: three of each)."},
-		{key = "annulment", id = 24697, name = "Orb of Unmaking",
+		{key = "annulment", kind = "whole", safety = "risky", id = 24697, name = "Orb of Unmaking",
 			text = "Removes one random modifier that is not bound.",
 			keyText = "Removes one random modifier of a Rift Key.",
 			wsText = "Removes one random modifier of a waystone."},
-		{key = "scouring", id = 24688, name = "Orb of Erasure",
+		{key = "scouring", kind = "whole", safety = "risky", id = 24688, name = "Orb of Erasure",
 			text = "Removes the rarity, every modifier and every bind: a normal item again (item level and quality stay).",
 			keyText = "Removes every modifier of a Rift Key.",
 			wsText = "Turns a waystone back into a Normal one."},
-		{key = "chaos", id = 29856, name = "Orb of Upheaval",
+		{key = "chaos", kind = "whole", safety = "risky", id = 29856, name = "Orb of Upheaval",
 			text = "Rerolls every modifier that is not bound (rarity, item level and quality stay).",
 			keyText = "Rerolls the modifiers of a Rift Key (one to three new ones).",
 			wsText = "Rerolls the modifiers of a waystone, keeping it Magic or Rare."},
-		{key = "divine", id = 29857, name = "Orb of Fate",
+		{key = "divine", kind = "whole", safety = "risky", id = 29857, name = "Orb of Fate",
 			text = "Raises the rarity one step with new modifiers (Legendary: a small chance of Divine); item level and quality stay. Not on an item with a bound modifier.",
 			keyText = "Rerolls the values of a Rift Key's modifiers inside their ranges.",
 			wsText = "Turns a Magic waystone into a Rare one with one more modifier; on a Rare one rerolls the values."},
 		-- gems and sockets (chaos_gems_config.lua socketOrb; install_gems.py names the rune stone)
-		{key = "sockets", id = ChaosGems.config.socketOrb.id, name = ChaosGems.config.socketOrb.name,
+		{key = "sockets", kind = "sockets", safety = "random", id = ChaosGems.config.socketOrb.id, name = ChaosGems.config.socketOrb.name,
 			text = ChaosGems.config.socketOrb.text,
 			keyText = "Rift Keys have no sockets.",
 			wsText = "Waystones have no sockets."}
@@ -2121,6 +2121,94 @@ function C.preview(orbKey, item)
 			C.rarityName(ChaosRarity.idOfRank(rank + 1)), M.modCount(ChaosRarity.idOfRank(rank + 1)), level)
 	end
 	return ""
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- the forge window (O481, client game_crafting): what ONE action would do, in words, from the server's own data
+-- ---------------------------------------------------------------------------------------------------------------
+C.KINDS = {mod = true, add = true, whole = true, sockets = true} -- what an orb is aimed at (orb.kind)
+C.SAFETY = {safe = true, random = true, risky = true} -- how safe it is (orb.safety): fixed and lossless / a roll / can lose
+
+-- "Guaranteed: ..." for a fixed outcome, "Random: ..." else; the first letter of the preview in capitals
+local function sentence(text)
+	text = tostring(text or "")
+	return (text:gsub("^%l", string.upper))
+end
+
+-- the modifier of an item by attribute key (gear, Rift Key and waystone lists alike: only gear has tiers)
+local function modWords(orbKey, item, modKey)
+	local m = C.modByKey(item, modKey)
+	if not m then
+		return nil
+	end
+	local top = M.config.maxTier
+	if orbKey == "ember" and m.affix then
+		local to = math.min(top, m.tier + 1)
+		local r = M.tierRange(m.affix.tiers, to)
+		-- `change`: the same numbers as the sentence, for the window's before -> after row (never parsed from the text)
+		return string.format("Guaranteed: tier %d to tier %d. The value rolls %d to %d.", m.tier, to, r[1], r[2]),
+			{kind = "tier", text = C.modText(m), from = {tier = m.tier, lo = m.lo, hi = m.hi}, to = {tier = to, lo = r[1], hi = r[2]}}
+	elseif orbKey == "binding" then
+		return "Guaranteed: this modifier is bound. The orbs that change modifiers leave it alone.",
+			{kind = "bind", text = C.modText(m), tier = m.tier}
+	elseif orbKey == "excision" then
+		return "Guaranteed: this modifier is removed. The others stay.", {kind = "remove", text = C.modText(m), tier = m.tier}
+	elseif orbKey == "reforging" then
+		local rows = M.tierRows(C.orbLevel(item))
+		return string.format("One of %d tiers (%s). The tier and the value roll again.", #rows, C.tierSpan(C.orbLevel(item)))
+	end
+	return nil
+end
+
+-- C.explain(orbKey, item, modKey): {orb, kind, tag, ok, reason (a code of C.reasons or a text), text (what happens), mod,
+-- change (only for an outcome that is sure: {kind = tier | bind | remove | quality, ...}, the numbers of the text)}
+-- The forge window shows `text` and `tag` for the chosen action and sends no craft for an action this has not answered.
+function C.explain(orbKey, item, modKey)
+	local orb = C.orbByKey[orbKey]
+	if not orb then
+		return {orb = orbKey, ok = false, reason = "unknownOrb"}
+	end
+	local out = {orb = orbKey, kind = orb.kind or "whole", tag = orb.safety or "random", mod = modKey}
+	if orb.kind == "mod" and (not modKey or modKey == "") then
+		out.ok, out.reason = false, "needMod"
+		return out
+	end
+	local ok, reason = C.check(orbKey, item, orb.kind == "mod" and {mod = modKey} or nil)
+	if not ok then
+		out.ok, out.reason = false, reason
+		return out
+	end
+	out.ok = true
+	local words
+	if orb.kind == "mod" and item and C.isGear(item) then
+		words, out.change = modWords(orbKey, item, modKey)
+	elseif orb.kind == "mod" and orbKey == "excision" then
+		words = "Guaranteed: this modifier is removed. The others stay."
+	end
+	if not words then
+		-- the orb's own preview (English, numbers in it): the window writes the lead ("Guaranteed:" / "Random:") and the
+		-- warning in the player's language itself, from `lead` and `warn`
+		words = sentence(C.preview(orbKey, item)) .. "."
+		out.lead = out.tag == "safe" and "fixed" or "random"
+		out.warn = out.tag == "risky" or nil
+	end
+	if orbKey == "whetstone" and item and C.isGear(item) then
+		local q = M.qualityOf(item)
+		out.change = {kind = "quality", from = q, to = math.min(q + M.config.quality.perStone, M.qualityCap(C.rarityOf(item)))}
+	end
+	out.text = words
+	return out
+end
+
+-- free prefix and suffix slots from the item mods rules (gear only): {prefix, suffix}
+function C.freeSlots(item)
+	local rarity = C.rarityOf(item)
+	if rarity <= 0 then
+		return {prefix = 0, suffix = 0}
+	end
+	local p, s = C.sideCounts(C.readMods(item))
+	return {prefix = math.max(0, M.sideLimitOf(item, "prefix", rarity) - p),
+		suffix = math.max(0, M.sideLimitOf(item, "suffix", rarity) - s)}
 end
 
 -- ---------------------------------------------------------------------------------------------------------------

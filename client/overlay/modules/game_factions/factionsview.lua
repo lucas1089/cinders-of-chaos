@@ -6,7 +6,7 @@
 --    contracts = [{key, f, per = "d" | "w", kind, label, p, n, rep, done, give}],
 --    offers = [{key, f, kind, n, rank, rn, price, tokens, st = "ok" | "locked" | "owned" | "soldout", why, wl, wb, item,
 --               lv, rar, mods, desc, craft}]}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 FactionsView = {}
 local V = FactionsView
 

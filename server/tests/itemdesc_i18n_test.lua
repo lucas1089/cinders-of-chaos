@@ -115,5 +115,30 @@ eq(D.apply(description, "Mystery text.", tr), description, "nothing known: uncha
 -- a replacement with a percent sign in it does not break the swap
 eq(D.apply("Look: Quality: +5%.", "Quality: +5%.", tr), "Look: Qualidade: +5%.", "percent signs in the text")
 
+-- O479: the fixed words of a tooltip source row (item_tooltip.lua translates them for a pt-BR player)
+eq(tr("Any monster"), "Qualquer monstro", "source: any monster")
+eq(tr("global drop"), "drop global", "source: global drop, no chance (the effort line has it)")
+eq(tr("global drop, level 60+"), "drop global, n\195\173vel 60+", "source: with a level")
+eq(tr("global drop, about 1 in 330 kills"), "drop global, cerca de 1 em 330 abates", "source: with a chance")
+eq(tr("global drop, about 1 in 10,000 magic monster kills"), "drop global, cerca de 1 em 10,000 abates de monstros m\195\161gicos", "source: another tier")
+
+-- O479: the support rune use message had a pt-BR frame with the effect and the spell kinds in English: every effect text of
+-- every rune type and level, and every spell kind name, has a pt-BR text now
+do
+	dofile("data/lib/chaos_supports.lua")
+	local S = ChaosSupports
+	for ti = 1, S.TYPES do
+		for lv = 1, S.LEVELS do
+			local en = S.effectText(S.runeId(ti, lv))
+			check(tr(en) ~= en, "rune " .. ti .. "/" .. lv .. " effect in pt-BR: " .. en)
+		end
+		local en, ptk = S.fitsText(S.config.supports[ti]), S.fitsText(S.config.supports[ti], tr)
+		check(ptk ~= en, "rune " .. ti .. " spell kinds in pt-BR: " .. en)
+		check(not ptk:find("single target", 1, true) and not ptk:find("healing", 1, true) and not ptk:find("utility", 1, true),
+			"rune " .. ti .. " spell kinds: no English left: " .. ptk)
+	end
+	eq(S.fitsText(S.config.supports[1], tr), "alvo \195\186nico, \195\161rea", "single target, area")
+end
+
 print(string.format("itemdesc_i18n_test: %d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

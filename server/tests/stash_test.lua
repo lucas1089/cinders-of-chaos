@@ -2164,6 +2164,128 @@ o316()
 	eq(#f.items, 9, "the rest")
 end)()
 
+-- ====================================================================== spending stash orbs (O481)
+-- the crafting bench takes an orb from the stash together with the change of the item: one journal row, one save
+do
+	local ORB = 29856
+	local g = 7701
+	local p = newPlayer(g)
+	local before = openRows()
+	DB.plain[plainKey(g, ORB)] = {player = g, item = ORB, count = 5, tab = 101}
+	eq(S.plainCount(p, ORB), 5, "the bench counts the plain stack of the stash")
+	eq(S.plainCount(p, 12345), 0, "an item the stash does not hold: 0")
+	eq(Chaos.stashConfig.craftSource.enabled, true, "the stash is a source of the bench")
+	eq(Chaos.stashConfig.craftSource.townOnly, false, "no place rule by default (the orbs never reach the backpack)")
+	pz[key3(p.pos)] = nil
+	Chaos.stashConfig.craftSource.townOnly = true
+	eq(S.plainCount(p, ORB), 0, "townOnly: outside a protection zone the stash does not count")
+	pz[key3(p.pos)] = true
+	eq(S.plainCount(p, ORB), 5, "townOnly: in a protection zone it does")
+	pz[key3(p.pos)] = nil
+	Chaos.stashConfig.craftSource.townOnly = false
+	Chaos.stashConfig.craftSource.enabled = false
+	eq(S.plainCount(p, ORB), 0, "switched off: 0")
+	Chaos.stashConfig.craftSource.enabled = true
+	-- a stored whole item (a row with attributes) never counts
+	DB.rows[998] = {id = 998, player = g, item = ORB, count = 3, codec = "blob", data = "x", tab = 101, state = 0, seq = 0}
+	eq(S.plainCount(p, ORB), 5, "a row with attributes is not a plain stack")
+	DB.rows[998] = nil
+
+	-- the state of the bench reads every orb in ONE query, none when the stash is off
+	do local cn = {real = store.plainCounts, calls = 0}
+	store.plainCounts = function(g2, ids)
+		cn.calls = cn.calls + 1
+		local out = {}
+		for _, id in ipairs(ids) do
+			local r = DB.plain[plainKey(g2, id)]
+			if r and r.count > 0 then out[id] = r.count end
+		end
+		return out
+	end
+	cn.held = S.plainCounts(p, {ORB, 11, 12, 13})
+	eq(cn.calls, 1, "one stash read for all the ids") eq(cn.held[ORB], 5, "the plain count") eq(cn.held[11], nil, "an id not held is absent")
+	Chaos.stashConfig.craftSource.enabled = false
+	cn.held = S.plainCounts(p, {ORB, 11})
+	eq(cn.calls, 1, "switched off: no query at all") eq(next(cn.held), nil, "and nothing counted")
+	Chaos.stashConfig.craftSource.enabled = true
+	Chaos.stashConfig.craftSource.townOnly = true
+	pz[key3(p.pos)] = nil
+	S.plainCounts(p, {ORB})
+	eq(cn.calls, 1, "townOnly outside a protection zone: no query")
+	pz[key3(p.pos)] = true
+	eq(S.plainCounts(p, {ORB})[ORB], 5, "townOnly in a protection zone: counted")
+	eq(cn.calls, 2, "one more read")
+	pz[key3(p.pos)] = nil
+	Chaos.stashConfig.craftSource.townOnly = false
+	store.plainCounts = cn.real end
+
+	-- success: the amount leaves the stash, the serial is saved, no row is left
+	local ran = 0
+	local ok, why = S.spend(p, ORB, 2, function() ran = ran + 1 return true end)
+	eq(ok, true, "spend ok") eq(why, nil, "no note")
+	eq(ran, 1, "the change ran once")
+	eq(store.plainCount(g, ORB), 3, "two left the stash")
+	eq(openRows() - before, 0, "no journal row left")
+	eq(p.storage[cfg.storage.seq], 1, "the serial advanced with the save")
+	eq(p.saves, 1, "one save")
+
+	-- the change refuses: nothing is taken, the serial does not move
+	ok, why = S.spend(p, ORB, 1, function() return false, "no room" end)
+	eq(ok, false, "refused") eq(why, "change", "the change said no")
+	eq(store.plainCount(g, ORB), 3, "the amount is back")
+	eq(openRows() - before, 0, "no row left")
+	eq(p.storage[cfg.storage.seq], 1, "the serial is the old one")
+	eq(p.saves, 1, "no save")
+
+	-- more than the stash holds: the change never runs
+	ran = 0
+	ok, why = S.spend(p, ORB, 9, function() ran = ran + 1 return true end)
+	eq(ok, false, "too many") eq(why, "gone", "gone") eq(ran, 0, "the change did not run")
+	eq(store.plainCount(g, ORB), 3, "nothing taken")
+
+	-- the stack vanished between the preview and the apply
+	DB.plain[plainKey(g, ORB)] = nil
+	ok, why = S.spend(p, ORB, 1, function() ran = ran + 1 return true end)
+	eq(ok, false, "vanished row refused") eq(why, "gone", "cleanly") eq(ran, 0, "the change did not run")
+	DB.plain[plainKey(g, ORB)] = {player = g, item = ORB, count = 1, tab = 101}
+
+	-- two in a row never take more than they cost: one orb, two crafts
+	local made = 0
+	ok = S.spend(p, ORB, 1, function() made = made + 1 return true end)
+	local ok2, why2 = S.spend(p, ORB, 1, function() made = made + 1 return true end)
+	eq(ok, true, "the first craft") eq(ok2, false, "the second is refused") eq(why2, "gone", "no orb left")
+	eq(made, 1, "one change for one orb")
+
+	-- the community goal keeps the orb: the change stands, the amount stays
+	DB.plain[plainKey(g, ORB)] = {player = g, item = ORB, count = 4, tab = 101}
+	local savesBefore = p.saves
+	ok, why = S.spend(p, ORB, 1, function() return true, nil, true end)
+	eq(ok, true, "kept ok") eq(why, "kept", "kept note")
+	eq(store.plainCount(g, ORB), 4, "the orb stayed in the stash")
+	eq(p.saves, savesBefore, "no forced save")
+
+	-- the save fails: the change stands in memory, the row stays taking
+	p.saveOk = false
+	local seqBefore = p.storage[cfg.storage.seq]
+	ok, why = S.spend(p, ORB, 1, function() return true end)
+	eq(ok, true, "a failed save does not undo the change") eq(why, "unsaved", "and says so")
+	eq(store.plainCount(g, ORB), 3, "the orb is out of the stash")
+	eq(openRows() - before, 1, "the taking row waits")
+	-- a crash now: the character comes back with the OLD saved serial -> the row is restored (the change was lost too)
+	p.storage[cfg.storage.seq] = seqBefore
+	check(ChaosStashCore.settle(S.env(p)), "login recovery")
+	eq(store.plainCount(g, ORB), 4, "crash before any save: the orb is back, the change was never saved")
+	eq(openRows() - before, 0, "the row is settled")
+	-- the same failure, then a later save: the serial is saved with the change, the row is dropped
+	ok = S.spend(p, ORB, 1, function() return true end)
+	eq(ok, true, "again unsaved")
+	p.saveOk = true
+	check(ChaosStashCore.settle(S.env(p)), "settle with the serial of memory")
+	eq(store.plainCount(g, ORB), 3, "the orb stays spent")
+	eq(openRows() - before, 0, "row dropped")
+	p.saveOk = true
+end
+
 -- ====================================================================== the SQL
 -- the real store, against a recording database: integers formatted as integers, texts escaped
 dofile("data/scripts/chaos/stash.lua")
@@ -2183,6 +2305,17 @@ for _, q in ipairs(queries) do
 	check(not q:find("OR 1=1", 1, true), "no injected id in: " .. q:sub(1, 60))
 end
 check(#queries >= 5, "the store wrote its queries (" .. #queries .. ")")
+
+-- the bench's one query for all the orbs (O481): one SELECT with an IN list of integers
+Chaos.select = function(q) queries[#queries + 1] = q; return {{item_id = 29856, count = 7}} end
+queries = {}
+got = real.plainCounts(1, {29856.9, 24688, "5 OR 1=1"})
+eq(#queries, 1, "plainCounts: exactly one query for all the ids")
+check(queries[1]:find("IN (29856, 24688, 0)", 1, true) ~= nil, "plainCounts: integers only in the IN list (" .. tostring(queries[1]) .. ")")
+eq(got[29856], 7, "plainCounts: {item id -> count}")
+queries = {}
+eq(next(real.plainCounts(1, {})), nil, "plainCounts: no ids, no query") eq(#queries, 0, "no query for no ids")
+
 
 -- S.openWindow: a Toggle that keeps the window open (a depot locker uses it only with depot.openStash)
 eq(cfg.depot.openStash, true, "a depot locker opens the stash window (O316)")

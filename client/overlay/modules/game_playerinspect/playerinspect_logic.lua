@@ -16,7 +16,7 @@
 --   records {name, rows = [{key, name, value}]}   the personal records (best drop, Tower floor, rift tier, boss kills),
 --          text already in the language of the viewer; after the result
 --   denied {code, text}      privacy {allow}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PlayerInspectLogic = {}
 local L = PlayerInspectLogic
