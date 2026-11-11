@@ -312,6 +312,15 @@ local function skipRefusal(run, player, now)
 	end
 end
 
+-- seconds left of the whole run (nil without a run limit)
+local function runLeft(run, now)
+	if (cfg.runTimeLimit or 0) <= 0 then
+		return nil
+	end
+	return math.max(0, run.startTime + cfg.runTimeLimit - (now or os.time()))
+end
+ChaosTowerRun.runLeft = runLeft
+
 function ChaosTowerRun.pushState(player, run)
 	local op = ChaosOpcodes and ChaosOpcodes.infinitytower
 	if not (op and json and json.encode and player.sendExtendedOpcode) then
@@ -335,6 +344,9 @@ function ChaosTowerRun.pushState(player, run)
 			state.floorLeft = math.max(0, run.floorStart + (run.floorLimit or cfg.floorTimeLimit) - now)
 		end
 		state.isLeader = run.leader == nil or run.leader == player:getId()
+		-- O484: the whole run's clock, a second countdown on the panel (nil without a run limit: the field is absent);
+		-- sent with every state, also in the pause between floors, so the client's count never drifts
+		state.runLeft = runLeft(run, now)
 	end
 	pcall(player.sendExtendedOpcode, player, op, json.encode(state))
 end
@@ -731,15 +743,6 @@ function ChaosTowerRun.skip(player)
 end
 
 -- ------------------------------------------------------------------ the run's clock (instance limits)
--- seconds left of the whole run (nil without a run limit)
-local function runLeft(run, now)
-	if (cfg.runTimeLimit or 0) <= 0 then
-		return nil
-	end
-	return math.max(0, run.startTime + cfg.runTimeLimit - (now or os.time()))
-end
-ChaosTowerRun.runLeft = runLeft
-
 local function clockTick(slot, startTime)
 	local run = runs[slot]
 	if not run or run.ended or run.startTime ~= startTime then
@@ -754,12 +757,21 @@ local function clockTick(slot, startTime)
 	local IL = ChaosInstanceLimits
 	if IL then
 		local players = IL.playersOf(run.players)
+		-- O484: the two clocks each say which one they are (instance_limits.lua limits.sentence); a floor that runs out
+		-- ends the whole run, a run that runs out ends it the same way
+		local K = IL.core
 		if left then
-			IL.warn(run, left, players, "Infinity Tower", cfg.limits)
+			local limits = K.limits(cfg.limits, {sentence = function(p, lang, mark, leftText, name)
+				return K.wholeRunText(name, mark, cfg.runTimeLimit, lang), nil, Chaos.t(p, "Whole run: %s", leftText)
+			end})
+			IL.warn(run, left, players, "Infinity Tower", limits)
 		end
 		if run.floorWarn and run.remaining > 0 and run.floorStart then
-			IL.warn(run.floorWarn, run.floorStart + (run.floorLimit or cfg.floorTimeLimit) - now, players, "Floor " .. run.floor,
-				{warnAt = cfg.limits.floorWarnAt})
+			local floorNo = run.floor
+			IL.warn(run.floorWarn, run.floorStart + (run.floorLimit or cfg.floorTimeLimit) - now, players, "Floor " .. floorNo,
+				{warnAt = cfg.limits.floorWarnAt, sentence = function(p, lang, mark, leftText)
+					return K.floorLeftText(floorNo, mark, lang), Chaos.t(p, "Floor %d", floorNo), leftText
+				end})
 		end
 	end
 	addEvent(clockTick, 1000, slot, startTime)
@@ -860,6 +872,9 @@ function ChaosTowerRun.start(player)
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Welcome to the Infinity Tower. Floor 1 starts in %d seconds. The exit portal at the south wall or the Leave button of the floor panel takes you out.", cfg.startDelay))
 		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Goal: kill every monster of a floor to open the next one; every %dth floor is a boss floor. Stay in the open middle to kite; the pillars and braziers along the walls are cover.", cfg.bossEvery))
+		if (cfg.runTimeLimit or 0) > 0 then -- O484: the run's clock, told once at the start
+			m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "This run lasts at most %d minutes.", math.floor(cfg.runTimeLimit / 60 + 0.5)))
+		end
 		local reward = ChaosTowerRun.nextRewardText(m, 0)
 		if reward then
 			m:sendTextMessage(MESSAGE_EVENT_ADVANCE, reward)

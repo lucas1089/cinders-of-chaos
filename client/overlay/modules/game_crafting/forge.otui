@@ -356,16 +356,6 @@ ChaosMainWindow
     anchors.left: check4.right
     margin: 2 0 0 2
 
-  ChaosButton
-    id: classicButton
-    anchors.top: parent.top
-    anchors.right: parent.right
-    width: 86
-    height: 20
-    !text: tr('Classic')
-    !tooltip: tr('Switch to the classic crafting bench. The choice is remembered for this character.')
-    @onClick: modules.game_crafting.forgeClassic()
-
   // ------------------------------------------------------------ the materials (backpack plus stash)
   ChaosPanelDark
     id: matsPanel

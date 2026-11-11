@@ -1479,6 +1479,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Monsters left: %d of %d"] = "Monstros restantes: %d de %d",
   ["Next floor in %ds"] = "Próximo andar em %ds",
   ["Floor time left: %s"] = "Tempo do andar: %s",
+  ["Run time left: %s"] = "Tempo da corrida: %s",
   ["Start the next floor at once instead of waiting."] = "Começa o próximo andar já, sem esperar.",
   ["Available when the floor is cleared."] = "Disponível quando o andar estiver limpo.",
   ["A boss floor is next: it starts by itself."] = "O próximo andar é de chefe: ele começa sozinho.",
@@ -6699,6 +6700,8 @@ ChaosLocaleStrings['pt-BR'] = {
   -- base patch 0187 (Options > Interface)
   ["Remember open backpacks"] = "Lembrar mochilas abertas",
   ["The backpacks and bags open when you log out open again at your next login, in the same panel, order, height and scroll.\nA bag that is no longer there is skipped."] = "As mochilas e bolsas abertas quando você sai abrem de novo no próximo login, no mesmo painel, ordem, altura e rolagem.\nUma bolsa que não está mais lá fica de fora.",
+  -- base patch 0191 (game_interface addToPanels, O485): the line for a window with no room in the side panels
+  ["No room in the side panels. Close or shrink a window."] = "Sem espaço nos painéis laterais. Feche ou diminua uma janela.",
   -- game_groupqueue (O407): groupqueue.lua, groupqueue.otui, gqview.lua
   ["%d of %d party members ready"] = "%d de %d membros do grupo prontos",
   ["%s is ready to start"] = "%s está pronto para começar",
@@ -6877,8 +6880,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["No modifier of this item can take this action."] = "Nenhum modificador deste item aceita esta ação.",
   ["%s can cost you modifiers. Forge anyway?"] = "%s pode custar modificadores. Forjar mesmo assim?",
   ["(the orb came from the stash)"] = "(o orbe veio do stash)",
-  ["Switch to the classic crafting bench. The choice is remembered for this character."] = "Voltar para a bancada clássica. A escolha fica salva para este personagem.",
-  ["Switch to the forge window. The choice is remembered for this character."] = "Mudar para a janela de forja. A escolha fica salva para este personagem.",
+  ["Back to the forge window."] = "Voltar para a janela de forja.",
   ["Take the item off the bench and pick another."] = "Tirar o item da bancada e escolher outro.",
   ["Change item"] = "Trocar item",
   ["Drag an item from your backpack here, or click one in the list below."] = "Arraste um item da sua mochila para cá, ou clique em um da lista.",

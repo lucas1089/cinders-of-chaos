@@ -226,14 +226,15 @@ do
   local function said(p, text) for _, m in ipairs(p.msgs) do if m:find(text, 1, true) then return true end end return false end
   local start = clock
   advance(100000) -- 100 s: 300 s of the run left
-  assert(said(f, "Infinity Tower: 5 minutes left"), "limits: run warning at 5 minutes")
+  assert(said(f, "Infinity Tower: the whole run ends in 5 minutes (7 minute limit). Everyone inside leaves then."), "limits: run warning at 5 minutes names the run clock")
   advance(146000) -- 246 s: floor 1 began at 5 s, 59 s of it left
-  assert(said(f, "Floor 1: 1 minute left"), "limits: floor warning at 1 minute")
+  assert(said(f, "Floor 1: 1 minute left to clear it."), "limits: floor warning at 1 minute names the floor clock")
+  assert(not said(f, "Floor 1: 1 minute left. Everyone"), "limits: the floor warning is not the shared sentence")
   local floorMonsters = {}
   for _, m in ipairs(created) do if not m.removed and not m.dead then floorMonsters[#floorMonsters + 1] = m end end
   for _, m in ipairs(floorMonsters) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
   advance(94000) -- 340 s
-  assert(said(f, "Infinity Tower: 1 minute left"), "limits: run warning at 1 minute")
+  assert(said(f, "Infinity Tower: the whole run ends in 1 minute (7 minute limit). Everyone inside leaves then."), "limits: run warning at 1 minute")
   local before = #recorded
   advance(61000) -- 401 s: the run's limit
   assertEq(ChaosTowerRun.activeRuns(), 0, "limits: the run limit ends the run")
@@ -451,8 +452,15 @@ do
   ChaosTowerRun.start(w)
   assertEq(sent[#sent].inRun, true, "state: in a run")
   assertEq(sent[#sent].canSkip, true, "state: the start delay can be skipped")
+  -- O484: the run's own clock rides on every state, also in the start delay / pause where the floor clock is absent
+  assertEq(sent[#sent].runLeft, ChaosTowerRunConfig.runTimeLimit, "state: the run's time left at the start")
+  assertEq(sent[#sent].floorLeft, nil, "state: no floor clock in the start delay")
+  local startLine = false
+  for _, m in ipairs(w.msgs) do if m == "This run lasts at most 60 minutes." then startLine = true end end
+  assertEq(startLine, true, "entry: one line tells the run limit")
   now = now + 5
   ChaosTowerRun.skip(w)
+  assertEq(sent[#sent].runLeft, ChaosTowerRunConfig.runTimeLimit - 5, "state: the run's time left counts down with the floor state")
   assertEq(sent[#sent].canSkip, false, "state: a live floor cannot")
   assertEq(sent[#sent].floor, 1, "panel: floor")
   assertEq(sent[#sent].total, 4, "panel: monsters of the floor")
@@ -467,9 +475,22 @@ do
   assertEq(sent[#sent].waiting, true, "panel: waiting after the clear")
   assertEq(sent[#sent].cleared, 1, "panel: cleared floors")
   assertEq(sent[#sent].nextIn, 6, "panel: countdown to the next floor")
+  assertEq(sent[#sent].runLeft, ChaosTowerRunConfig.runTimeLimit - 5, "state: the run clock is sent in the pause between floors")
   assertEq(sent[#sent].remaining, 0, "panel: nothing left")
   ChaosTowerRun.leave(w)
   assertEq(sent[#sent].inRun, false, "state: left")
+  assertEq(sent[#sent].runLeft, nil, "state: no run clock outside a run")
+  -- without a run limit: no field, no start line
+  local saveLimit = ChaosTowerRunConfig.runTimeLimit
+  ChaosTowerRunConfig.runTimeLimit = 0
+  local w2 = mkPlayer(27, "Wen", 300); players[27] = w2
+  w2.sendExtendedOpcode = function(self, op, st) sent[#sent + 1] = st end
+  ChaosTowerRun.start(w2)
+  assertEq(sent[#sent].inRun, true, "no limit: in a run")
+  assertEq(sent[#sent].runLeft, nil, "no limit: no run clock in the state")
+  for _, m in ipairs(w2.msgs) do assert(not m:find("This run lasts", 1, true), "no limit: no start line") end
+  ChaosTowerRun.leave(w2)
+  ChaosTowerRunConfig.runTimeLimit = saveLimit
   json = nil
 end
 -- ---- O276: the arena look. Every theme and layout variant: the group's start tiles and the whole spawn ring are open and

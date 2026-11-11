@@ -756,6 +756,22 @@ def test_admin_commands():
         for bad in (('client-pair', 'set'), ('client-pair', 'set', 'x'), ('client-pair', 'set', '5;x'), ('client-pair', 'set', '1000'),
                     ('client-pair', 'set', '5', '6'), ('client-pair', 'bogus')):
             check(run(*bad).returncode != 0, 'client-pair refuses %r' % (bad,))
+        # a running kit update: the pair is not written (the update would refuse its swap ten minutes later, O486)
+        import fcntl
+        pair_kstate = os.path.join(tmp, 'pair-kstate')
+        os.makedirs(pair_kstate)
+        with open(os.path.join(pair_kstate, '.lock'), 'w') as lockf:
+            fcntl.flock(lockf, fcntl.LOCK_EX)
+            r = run('client-pair', 'set', '57', extra={'CHAOS_KIT_STATE': pair_kstate})
+            check(r.returncode != 0 and 'update-running' in r.stderr
+                  and 'chaosClientPair=56' in run('client-pair', 'show').stdout,
+                  'client-pair set waits for a running kit update: ' + r.stdout + r.stderr)
+            check(run('client-pair', 'show', extra={'CHAOS_KIT_STATE': pair_kstate}).returncode == 0,
+                  'client-pair show works while an update runs')
+            fcntl.flock(lockf, fcntl.LOCK_UN)
+        r = run('client-pair', 'set', '57', extra={'CHAOS_KIT_STATE': pair_kstate})
+        check(r.returncode == 0 and 'chaosClientPair=57' in run('client-pair', 'show').stdout,
+              'client-pair set once the update ended: ' + r.stdout + r.stderr)
 
         # beta-mode: the `enabled` line of beta_mode_config.lua (sed --follow-symlinks, backup, checked), restart on request
         sdir = os.path.join(server, 'data', 'scripts', 'chaos')

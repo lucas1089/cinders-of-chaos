@@ -174,7 +174,8 @@ Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]
 - **Par do cliente** (`client-pair show | set N`, aba Comandos > cartão Par do cliente > Ver / Gravar): grava no `config.lua` (`chaosClientPair`) o par de sprites do cliente já publicado. O
   Atualizar servidor só instala os itens de um par novo (par 55: globos e brasa; par 56: armas de punho novas e as armas acima
   do nível 800) depois de gravar o número do par, depois de publicar a atualização do cliente. Número menor que o gravado é
-  recusado. server/README.md "Client pair guard".
+  recusado. Com uma atualização em andamento o Gravar responde `update-running`: grave o par antes de começar o Atualizar
+  servidor ou depois que ele terminar (O486). server/README.md "Client pair guard".
 - **Modo beta (testes)** (`beta-mode status | on | off [restart]`, aba Comandos > cartão Modo beta (testes) > Ver / Ligar /
   Desligar / Ligar e reiniciar / Desligar e reiniciar): tira os limites semanais e diários do jogo para os testers
   (trava semanal do raide e do chefe da guilda, tarefas de caça, ofertas semanais do Candlemarks e das facções, teto de

@@ -47,8 +47,8 @@ P.features = {
 		drops = {"Gold on every floor. Every {mile} floors: crystal coins. Every {orbEvery} floors: Orbs of Upheaval and Fate. Monsters can drop orbs too.",
 			"Ouro em todo andar. A cada {mile} andares: crystal coins. A cada {orbEvery} andares: Orbs of Upheaval e Fate. Os monstros também podem soltar orbes."},
 		death = {"{gentle}", "{gentle}"},
-		often = {"No daily limit. {floorSec} seconds for a floor, {bossSec} for a boss floor, {runMin} minutes for a whole run. The big prize of a floor is paid once per tower season.",
-			"Sem limite por dia. {floorSec} segundos por andar, {bossSec} num andar de chefe, {runMin} minutos na corrida toda. O prêmio grande de cada andar sai uma vez por temporada da torre."}},
+		often = {"No daily limit. {floorSec} seconds for a floor, {bossSec} for a boss floor, {runMin} minutes for a whole run. The floor panel shows both clocks. The big prize of a floor is paid once per tower season.",
+			"Sem limite por dia. {floorSec} segundos por andar, {bossSec} num andar de chefe, {runMin} minutos na corrida toda. O painel do andar mostra os dois relógios. O prêmio grande de cada andar sai uma vez por temporada da torre."}},
 
 	{key = "rift", title = {"Rifts", "Fendas"}, window = "game_riftatlas", unlocks = {"rifts"},
 		goals = {"rift1", "rift4", "rift6", "rift8", "rift10"},

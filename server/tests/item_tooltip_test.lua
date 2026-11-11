@@ -389,6 +389,22 @@ eq(tip.sockets.count, 1, "a unique's fixed socket") eq(tip.sockets.list[1].name,
 eq(tip.mods[1].lo, nil, "uniques have no roll ranges")
 eq(tip.cmp[1], 1)
 
+-- O489: a stock copy of a base id that is also a unique with its own equip rule names the STOCK rule (the engine reads
+-- the looser entry of movements.xml: here level 0, everyone); a unique copy keeps its own
+ChaosUniqueEquip = ChaosUniqueEquip or {}
+local stockBefore = ChaosUniqueEquip.stock
+ChaosUniqueEquip.stock = {[2496] = {level = 100, vocations = {"Ranger", "Deadeye", "Beastmaster", "Thief"}}, [2466] = {}}
+tip = T.build(newItem(2496))
+eq(tip.req.level, 100, "a stock copy: the stock level")
+eq(tip.req.voc, "Ranger, Thief", "a stock copy: the stock classes")
+tip = T.build(helm)
+eq(tip.req.level, ChaosUniqueById[2496].level, "a unique copy: its own level")
+eq(tip.req.voc ~= "Ranger, Thief", true, "a unique copy: not the stock classes")
+tip = T.build(newItem(2466))
+eq(tip.req.level, nil, "a stock rule of {}: no level")
+eq(tip.req.voc, "all classes", "a stock rule of {}: everyone")
+ChaosUniqueEquip.stock = stockBefore
+
 -- ---------------------------------------------------------------- plain items
 local armor = newItem(2466)
 tip = T.build(armor)

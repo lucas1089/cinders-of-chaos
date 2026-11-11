@@ -1502,7 +1502,7 @@ Everything adjustable is in `chaos_constants.lua`: rewards, limits, boss names, 
 When the tier is applied: the engine runs `onSpawn` before the placement and gives a monster its id only at the placement, so nothing keyed by the id can be written in `onSpawn`. The natural roll is decided there and the monster gets a think event for that tier (`ChaosTierRollMagic` / `Rare` / `Legendary` / `Boss`); at its first think, after the placement, the tier is applied and the event removes itself. A map respawn or `Game.createMonster` thinks within about a second; a startup spawn once a player comes near. A tier set in between (`ChaosApplyTier`: rift, invasion, tower) wins over the roll. Ambush copies get their tier right after `Game.createMonster` returns. Loading the script drops any entry an older version left under id 0 in `ChaosTierState` (the table survives a reload, so a server that ran the old roll would otherwise keep it). `tests/monster_tiers_test.lua` runs the file against a mocked engine whose `getId()` is 0 until the placement. Checked in game: a forced legendary roll lands under the monster's id with modifiers, monster bar tier and announcement; a normal kill after it still brings an ambush.
 
 ### Modifiers and shaders (monster_tiers.lua)
-Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
+Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player; O483: the amount of one hit is also cut to 10% of the attacker's pool and 25% per second, `monster_tiers.lua` `reflectCap`, see "Nemesis"), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
 
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
@@ -3735,6 +3735,10 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
   the check pass: a copy with `chaos_unique` whose spec has `equip` is held to that rule, every other copy to the stock
   rule. Refused: the engine's "You cannot dress this object there." Staff with the weapon check flag pass, as in the
   engine. A copy worn before the rule stays worn until taken off.
+- **Tooltip (O489).** A plain copy's tooltip names the stock rule: the generated script sets `ChaosUniqueEquip.stock`
+  and `item_tooltip_core.lua` reads it (`T.stockClassText`: a whole line is named by its base class). Before, it showed
+  the looser entry the engine reads (a rolled Ring of Blue Plasma said "level 30, all classes" and was refused under
+  level 100 or outside the Ranger, Thief and Monk lines). A unique copy shows its own rule, as before.
 - **Look text.** The engine's "can only be wielded properly by" line shows the entry's level (the lower one: 60 for the
   Charm, 230 for the Diadem, where the unique asks more); the unique's description says its own level and lines.
 - Tests: `tests/unique_equip_test.lua` (every round-two unique can be worn by the classes its archetype names and not
@@ -4453,6 +4457,15 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 - **Next floor now and the tower panel (O274).** Floors have no waves (all monsters of a floor appear together), so there is no "call next wave"; the button skips the wait. Opcode 214 got three actions, no new opcode: client `{"action":"skip"}` starts the next floor at once, `{"action":"state"}` asks for the state; the server pushes `{"action":"state", inRun, canSkip, isLeader, floor, nextBoss, boss, cleared, waiting, remaining, total, nextIn | floorLeft}` on entry, floor start, every kill, floor cleared and leaving (the client counts the countdowns on its own clock). `ChaosTowerRun.skip` (`infinitytower_run.lua`, config `ChaosTowerRunConfig.skip`) refuses unless: the player is in an active run and inside the arena; the run is waiting (start delay or pause, so the floor is cleared: never two floors alive, no kill skipped, nothing stacks); the player is the run leader (any member once the leader died or left, so a member cannot rush a group); the next floor is not a boss floor (`intoBoss = false`: the pause before a boss is kept); and `minInterval` (2 s) since the last press, on top of the 300 ms per-action limit of `infinitytower.lua`. A timer sequence number makes the skipped pause timer do nothing. Records and rewards: floor gold, rewards, the heal and `ChaosRecords.towerFloor` all run when a floor is cleared, before the pause, so a skip only drops the 6 s of regeneration; the run clock is real time, so a fast climb is faster by at most 6 s a floor, the same for everyone, and `tower_model.py` (which models the fight, not the pause) is unchanged and passes. Tests: `tests/infinitytower_run_test.lua` ("Next floor now"). Client: see `client/MANIFEST.md` game_infinitytower.
 - **Walls (2026-11-02).** The tower walls are built wall pieces now: dark stone bricks, the `darkstone` brush of the generated areas (`arenalook_core.lua` `A.WALL_SETS`, ids 25200-25205, the same as `areagen_config.lua` `walls.darkstone`). Each wall tile gets its piece from its neighbours (`A.wallPieceId`, the rules of `ChaosAreaGenCore.wallPiece`): rows on the north and south walls, columns on the west and east, a pole in the north-west corner, the corner piece in the south-east. Before, the ember, stone and crypt themes put the single "stone wall" 5648 on every wall tile. That id is a cave rock piece (grey rock in red earth, one corner of a cave edge): tile by tile it drew rock lumps with earth seams. The pieces are 2x2 sprites, so the tower look keeps lights and decoration off the floor row and column under the south and east walls (`wallSize = 2`). The dark theme keeps its obsidian wall. Checked in the installed items.otb and the client pair. Tests: `tests/arenalook_test.lua` (set = areagen brush, piece per frame tile), `tests/infinitytower_run_test.lua` (the built walls). Every other runtime room got the same fix: see "Arena looks", "Built walls".
 - Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
+
+### Infinity Tower: two clocks, shown and named (O484)
+The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `bossFloorTimeMult`: 600 s). The whole run has `runTimeLimit` (3600 s; 0 = no run limit). Either one ending ends the whole run: everyone goes back where they entered and the cleared floors are recorded (`endRun`). A death only takes that player out; the run ends when the last one is out. Owner 2026-11-11: the panel showed "Floor time left 3:16" while the chat said the tower ends in 1 minute: that was the run clock, which the panel never showed. The limit itself is unchanged (60 minutes; whether to raise or drop it is an open owner decision).
+- **State.** Every `{"action":"state"}` push (opcode 214) carries `runLeft`, the seconds left of the whole run when it was sent, whenever a run limit exists (also in the start delay and the pause between floors, where `floorLeft` is absent). It is absent with `runTimeLimit = 0` and outside a run. The client counts down from the moment it got the state, as for `floorLeft`.
+- **Panel.** A line under the floor's: en "Run time left: %s", pt-BR "Tempo da corrida: %s". It turns red (`#ff4030`, the red of the rift clock) at 300 s or less. Format m:ss, h:mm:ss from an hour. Hidden without `runLeft`. The panel is 124 px high (was 108).
+- **Warnings.** `ChaosInstanceLimits.warn` takes an optional `limits.sentence(player, lang, mark, leftText, name)` returning the text, the toast title and the toast text; no hook, the shared sentence, byte for byte. The tower uses it: run (marks 300, 60, 10): "Infinity Tower: the whole run ends in 1 minute (60 minute limit). Everyone inside leaves then." (limit from `runTimeLimit`; `K.wholeRunText`); floor (marks 60, 10): "Floor 57: 1 minute left to clear it." (`K.floorLeftText`). Toasts: "Whole run: 1 minute left" and the floor's number as title.
+- **Start.** One line at entry, with a run limit only: "This run lasts at most 60 minutes."
+- **Pace.** 60 minutes is 3600 s: 30 floors at the two minutes a floor that the config comment assumes, 60 floors at one a minute. A level 800 character reaches about floor 34 and a level 1000 character about 44 (`tools/tower_model.py`), so the run limit can end a deep run.
+- Tests: `tests/infinitytower_run_test.lua` (state field, start line, the warnings in English, no limit), `tests/tower_clock_text_test.lua` (the sentences in both languages, the hook, the shared sentence unchanged), client `towerskip_test.lua`. The Unity tower panel is not changed and shows the floor time only.
 
 ## Infinity Tower: leaving a run
 Owner bug 2026-11-02: "no way out of the tower, not by portal nor by command". Causes:
@@ -11963,7 +11976,7 @@ go at startup); use-with crafts are logged too.
 
 **Forge window and materials from the stash (O481, owner request 2026-11-11, layout option 1).** The bench has a second
 window, the forge (client `game_crafting` `forge.lua`, `forgeview.lua`): "1 Place the item, 2 Pick an action, 3 Check
-the change, 4 Forge". It is the default; the Classic button switches to the window above and back, per character.
+the change, 4 Forge". It is the bench (O487: no Classic button; the window above shows only for Salvage, with a Forge button back).
 New data on the same extended opcode 232, all additive (an old client or the Unity bench never reads them and works as
 before):
 - **Orb data.** Every orb carries `kind` (what it is aimed at: `mod` one chosen modifier, `add` a new modifier, `whole`
@@ -27220,6 +27233,91 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
   and a notice to the victim. Killed by the world (no player credit): no reward, it comes back. The row is deleted
   before anything is paid, so a second death event pays nothing. Hardcore: a Hardcore character can have one; a
   Hardcore slayer gets the trophy only.
+- **Hit cap and reflect cap (O483).** Owner 2026-11-11 (translated): "I want you to check whether the Nemesis has Reflect. If it
+  has, take a look, because there are players still dying in one hit of the Nemesis. Take a look at the attack and the
+  defence and at the modifiers of the Nemesis, please." It has Reflect: the trait Thorned is the modifier Reflective. Measured
+  first (below), then three changes. Nothing else moved: health, traits, chances, rewards and the trait texts are as they were
+  ("Reflects 15% of the damage it takes." is still true).
+  1. *Hit cap* (`nemesis_config.lua` `hitCap = {enabled = true, share = 0.60}`). One hit of a Nemesis on a character it may hurt
+     (its victim and the victim's party; a stranger takes nothing from it anyway) takes at most `share` x that character's
+     pool, as a whole. Pool = the MAXIMUM health plus, while a mana shield is up, the maximum mana (the energy shield is not in
+     it): the pool and the cut of the rift guardian cap (O478), now in one place, `hitcap_core.lua` (`H.pool`, `H.cut`; the
+     rift's `R.hitPool` / `R.capHit` call it, same numbers). The health and the mana part of one hit stay together under the
+     ceiling (the mana event caps the whole hit, the health event of the same hit gets the ceiling less what the mana paid);
+     a hit is only cut, never raised. Vengeful (x1.5 below half health) is inside the cap. No second chain of events: the two
+     cap events of `rift.lua` (`ChaosRiftHitCapHealth`, `ChaosRiftHitCapMana`) now ask a small list of sources, `ChaosHitCap`
+     (`hitcap_core.lua`): `setSource(key, fn)`, `fn(attacker, victim)` gives a share or nil, the smallest share wins. The
+     rift guardian is the source `rift`, the Nemesis registers `nemesis` (nemesis.lua: a live Nemesis, a victim it may hurt).
+     `nemesis.lua` calls `ChaosRift.capLast` on the victim when the Nemesis appears and on a tick for each party member (once
+     per login, the creature id tells), so the cap events are the LAST health and mana events of the characters it may hurt.
+  2. *Reflect cap* (`monster_tiers.lua` `reflectShare = 0.15`, `reflectCap = {enabled = true, perHit = 0.10, perSecond = 0.25,
+     windowMs = 1000}`; the pure rule `H.reflectAmount`). For the modifier Reflective, so also Thorned and the Reflective
+     magic, rare and legendary monsters: what ONE hit sends back is at most `perHit` x the attacker's pool (same pool), and what
+     one character gets back within one second, from all reflects together, is at most `perSecond` x the pool. The 15% stays;
+     the cap only cuts. The amount is cut before the character's own defence (measured: what reached the character was lower than the cap, never higher).
+  3. *Order on the Nemesis.* `ChaosNemesisTaken` (cancels the damage of anybody who is not the victim or in its party) was
+     registered after `ChaosModTaken` (the reflect), and events run in registration order: a stranger whose hit was cancelled
+     still took the reflect of a hit that never landed. `setupMonster` now registers the guard first (and takes both off
+     first, so an earlier registration cannot keep the old order).
+  *Events after the tier hit, and why the number is bounded.* A hit on a character runs the login events in name order and then
+  the character's events in registration order: the three damage multipliers (`Chaos0MonsterDamageLogin`, `Chaos0RiftHitLogin`,
+  `Chaos0TierLogin` = `ChaosTierHit`: the tier, the modifiers, Vengeful x1.5), then `ChaosPlayerDefence` and the older reductions
+  (damage taken from monsters, blessings, gems, charms, cards, item sets), the events that can still raise a hit
+  (`ChaosArchetypesHit`, `ChaosKeystones`, `ChaosClassKeystones`, `ChaosBossMechTaken`), then the two cap events, then Last Breath
+  (`ChaosPowersLastBreath`, moved behind the cap, so a lethal-hit catch sees the capped hit). `RF.capLast` registers the four
+  late registrars first, then the cap, then Last Breath, as in O478. After the cap run only Last Breath and what registers on
+  the character later (the mentor's, hardcore protection), which can only lower a hit, and the engine (the mana shield pays
+  first, then the energy shield, then the health: the parts of one hit are held to the ceiling together). So the health,
+  mana and energy shield a Nemesis hit takes in all are at most `share` x pool. It also needs engine patch 0090 (the monster
+  level bonus once per hit) to be exact. What the cap does not cover: a condition with no attacker (a burning or poison tick of
+  a modifier), and a character that is not in the cap list because it appeared in the party after the last tick (2 s).
+  *The rift guardian cap is unchanged:* same share, same pool, same events, same order, same numbers
+  (`tests/rift_hitcap_test.lua` passes as it was, plus a second source). The rift's own Reflection modifier (`rift.lua`
+  `ChaosRiftMonsterHealth`) is NOT capped here: it sends back up to 22% of the damage that lands (`rift_config.lua` range 5-22,
+  Spiteglass the same share of the elemental part), with no per-hit and no per-second limit; it is a map modifier the player
+  picks on the key and was left as it is.
+  Tests: `tests/hitcap_test.lua` (pool, cut, sources, reflect amount, one second window), `tests/monster_tiers_test.lua`
+  (Reflective cap through the real handler), `tests/nemesis_test.lua` (event order, a stranger takes no reflect, the source and
+  the registrar), `tests/rift_hitcap_test.lua` (a second source through the same events, mana shield included).
+  *Measured on a local test server (2026-11-11, before and after the change).* The repository's Lua installed over a test copy of
+  the server (engine patch 0090 in), three test characters cloned from tester rows with their health and mana but no gear
+  (so these are hits on a bare character: a worn set lowers them), a probe as the LAST Lua event of the character that records
+  the final amount of each hit and cancels it (nobody died). A monster of the type fought the character for 40 s: the first 14 to
+  16 real hits, so the biggest is the biggest seen, not the biggest roll. `max / pool` is the hit over the pool (health, plus
+  mana with a mana shield up). Before the change:
+
+  | Type (level) | Character (health + mana) | Natural paced monster | Nemesis | Nemesis Vengeful (below half health) |
+  |---|---|---|---|---|
+  | Phantom Shade (263) | level 198 (3035 + 1040) | max 6005, median 3277: 1.98 / 1.08 | max 6058, median 5055: 2.00 / 1.67 | max 8916, median 7502: 2.94 / 2.47 |
+  | the same, mana shield up | pool 4075 | max 6037: 1.48 | max 6095: 1.50 | max 9013: 2.21 |
+  | Snake Master (588) | level 500 (7073 + 3042) | max 6644, median 5222: 0.94 / 0.74 | max 3638, median 2009: 0.51 / 0.28 | max 5514, median 3199: 0.78 / 0.45 |
+  | the same, mana shield up | pool 10115 | max 3750: 0.37 | max 2947: 0.29 | max 6168: 0.61 |
+  | Elite Ice Dragon (960) | level 845 (12740 + 4275) | max 17877, median 12326: 1.40 / 0.97 | max 10126, median 6768: 0.80 / 0.53 | max 14971, median 11361: 1.18 / 0.89 |
+  | the same, mana shield up | pool 17015 | max 10926: 0.64 | max 10019: 0.59 | max 16949: 1.00 |
+
+  *Amplifier: none found.* The Nemesis is paced (`ChaosPace.isPaced` true), `monster_damage.lua` gives it the level of its type
+  (263, 588, 960; `rec.level` is not used for damage) and the same damage multiplier as the type's natural monster (1.105, 1.272,
+  1.30), its tier multiplier is x1.0, so a plain Nemesis hits like its type; Vengeful adds the x1.5 (8916 against 6005). Its
+  health is x1.72 the paced health of its type (1262474 against 732960 for the Phantom Shade). Two things kill: the type's own
+  biggest hits are already over the pool of a character well under the monster's level (1.98 x the pool, in a natural pack too),
+  and Thorned (next table). Nothing about the Nemesis multiplies a hit that does not multiply its type's hit.
+
+  Thorned, one scripted hit of the character on a Nemesis of the type (the reflect that reached the character, against its pool;
+  the four hits one after the other in the same second; before / after the change):
+
+  | Hit | Phantom Shade, pool 3035 | Snake Master, pool 7045 | Elite Ice Dragon, pool 12740 |
+  |---|---|---|---|
+  | 5000 | 374 (0.12) / 168 (0.06) | 167 (0.02) / 167 (0.02) | 342 (0.03) / 342 (0.03) |
+  | 30000 | 3583 (1.18) / 168 (0.06) | 2405 (0.34) / 523 (0.07) | 3749 (0.29) / 1274 (0.10) |
+  | 100000 | 12778 (4.21) / 59 (0.02) | 9110 (1.29) / 523 (0.07) | 14123 (1.11) / 1274 (0.10) |
+  | 300000 | 39084 (12.88) / 0 | 10503 (1.49) / 9 (0.00) | 28462 (2.23) / 295 (0.02) |
+
+  The amount is the one after the character's own defence. The biggest single hit a class can produce was not driven (no class
+  spells were cast; the scripted hits stand for it). After the change, the Phantom Shade Nemesis on the level 198 character: max
+  1821 = 0.600 of the pool, with and without a mana shield (2445 of 4075), Vengeful the same; the Elite Ice Dragon Nemesis: max
+  7644 (0.600), mana shield 10051 (0.591), Vengeful 7644 / 10209 (0.600). *A stranger* hitting the Nemesis: before, the hit was
+  cancelled (the Nemesis lost no health) and the same reflect was still dealt to the stranger (3583 for a 30000 hit, 1.18 x the
+  pool); after, nothing comes back.
 - **Optional hooks, all guarded:** `Chaos.t` / `Chaos.lang` (texts: the English texts of `nemesis_config.lua` are the
   keys; until `i18n_strings.lua` has them a pt-BR player reads the config's `texts.pt`), `ChaosAchievements.progress`
   (stats `nemesis_marked`, `nemesis_avenged`, `nemesis_hunted`; the achievements themselves are not written yet),
@@ -29533,6 +29631,13 @@ README warned.
   2. **Shell fallback** on the VPS: `chaos-ctl.sh client-pair set 56` (`client-pair show` prints `chaosClientPair=56` or
      `chaosClientPair=missing`); a number lower than the record is refused. Without the kit: `python3 -I
      server/tools/client_pair.py set SERVER_DIR 56 [--force] [--dry-run]`.
+  3. **Not while an update runs (O486, owner 2026-11-11).** The update installs on a copy of the server folder for about
+     ten minutes and refuses its swap when the live `config.lua` changed meanwhile in more than the XP rates. The owner
+     set pair 63 during that time and lost the run. Now `client-pair set` answers `update-running` while an update or
+     rollback holds the lock, and the update's refusal names the changed keys and what to do: `FAIL: config.lua changed
+     since the copy in more than the XP rates (chaosClientPair). Run the update again: it starts from the config.lua of
+     now`. Nothing is changed by a refused swap: the server runs the version of before, engine included. Tests:
+     `chaos_kit_update_test.py`, `chaos_ctl_test.py`.
   3. Then the admin app **Update** (or `install_all.py`) installs the held rows; no restart is needed for the record itself.
 * **Windows package.** Its client ships the pair on `windows-assets`, so `tools/windows/prepare_server.sh` records
   `client_pair.py` `PAIR_ASSETS` (`python3 -I server/tools/client_pair.py assets`) in the package's own `config.lua` and every

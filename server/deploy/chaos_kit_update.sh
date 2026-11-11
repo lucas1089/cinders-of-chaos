@@ -589,6 +589,26 @@ stage_abort() {
   fi
   finish failed "$why: the live server folder was not changed and the server runs the previous version" 1
 }
+# config_changed BEFORE NOW: " (key, key)" for the config.lua keys whose line differs (a setting written while the
+# install ran, as chaos-ctl.sh client-pair set); empty when no `key = value` line differs
+config_changed() {
+  python3 -I - "$1" "$2" <<'PY' 2>/dev/null || true
+import re, sys
+def keys(path):
+    out = {}
+    with open(path, encoding='utf-8', errors='replace') as f:
+        for line in f:
+            m = re.match(r'\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$', line)
+            if m:
+                out[m.group(1)] = m.group(2)
+    return out
+a, b = keys(sys.argv[1]), keys(sys.argv[2])
+changed = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+if changed:
+    more = len(changed) - 6
+    sys.stdout.write(' (%s%s)' % (', '.join(changed[:6]), ', %d more' % more if more > 0 else ''))
+PY
+}
 # swap_in: the server is stopped. What the game changed in the live folder since the copy (chaos_stage_sync.py) goes
 # into the copy, then the copy takes the folder's place and the folder stays as $OLD. 0 ok; 1: nothing swapped, the live
 # folder is as it was
@@ -603,7 +623,7 @@ swap_in() {
       && cp "$work/config0.lua" "$work/config1.lua" \
       && python3 -I "$REPO/server/deploy/chaos_config_rates.py" restore "$work/config1.lua" "$live_rates" >/dev/null \
       && cmp -s "$work/config1.lua" "$SERVER_REAL/config.lua" \
-      || { log "FAIL: config.lua changed since the copy in more than the XP rates"; return 1; }
+      || { log "FAIL: config.lua changed since the copy in more than the XP rates$(config_changed "$work/config0.lua" "$SERVER_REAL/config.lua"). Run the update again: it starts from the config.lua of now"; return 1; }
     python3 -I "$REPO/server/deploy/chaos_config_rates.py" restore "$STAGE/config.lua" "$live_rates" || return 1
   fi
   mv "$SERVER_REAL" "$OLD" || return 1

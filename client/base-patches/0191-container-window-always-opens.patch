@@ -1,0 +1,173 @@
+# Chaos: a container window the server opened is never thrown away for lack of side panel room (O485, owner 2026-11-11;
+# client/BASE.md "0191"; modules/game_interface/gameinterface.lua, modules/game_containers/containers.lua; after 0001-0190).
+# Lua only, no engine code. The red line "There is no available space." that a player read as bag space was the client's own:
+# addToPanels closed the new window and blamed "space" when no side panel had room for one more mini window.
+#  * addToPanels(widget, room): with room == 'always' a window no panel has room for is placed by the pure
+#    ChaosPanelRoom.plan (overlay game_chaoslayout, panelroom_logic.lua, tested by panelroom_test.lua): other open
+#    container windows shrink towards their minimum height (the biggest first), then other resizable mini windows, in the panel
+#    with the most room, only as far as the room needed; if even that is not enough the window goes in anyway (the panel with
+#    the most room, everything shrinkable at its minimum, as a priority window is forced). Nothing is closed.
+#  * containers.lua: both addToPanels calls of onContainerOpen pass 'always'. A refusal of the container is no longer possible.
+#  * fitPanelWithoutClosing(panel): the same shrink for a panel whose windows overflow it (called by game_chaoslayout after a
+#    login restore); no-op when they fit.
+#  * the text of the failure line (every other window that does not fit): "No room in the side panels. Close or shrink a
+#    window." (pt-BR in client_chaos_locale); it said "space", which sounded like the bag.
+# Without game_chaoslayout (no ChaosPanelRoom) a container window is forced on the first panel. Not run in a client.
+--- a/modules/game_interface/gameinterface.lua
++++ b/modules/game_interface/gameinterface.lua
+@@ -922,7 +922,109 @@
+   return false
+ end
+ 
+-function addToPanels(uiWidget)
++-- Chaos (base patch 0191, O485): a window that must open is never thrown away for lack of side panel room. The rule
++-- (which panel, which other windows shrink and to what) is the pure ChaosPanelRoom.plan of game_chaoslayout
++-- (panelroom_logic.lua, tested by panelroom_test.lua); this is the glue: the panels as data in, the shrinks applied out.
++-- Nothing is closed. Without game_chaoslayout the window goes on the first panel, as a priority window does.
++local function sidePanelModel(panel, except)
++  local windows, widgets = {}, {}
++  for _, child in ipairs(panel:getChildren()) do
++    if child ~= except and child:isVisible() then
++      local id = child:getId() or ''
++      local minimum = child.getMinimumHeight ~= nil and child:getMinimumHeight() or 0
++      -- the same floors configureWidgetOnPanel keeps for the battle list and the minimap
++      if id:find('BattleWindow') then
++        minimum = math.max(minimum, 104)
++      elseif id:find('minimapWindow') then
++        minimum = math.max(minimum, 200)
++      end
++      windows[#windows + 1] = {
++        id = id,
++        height = child:getHeight(),
++        min = minimum,
++        kind = (child.container ~= nil or id:find('^container') ~= nil) and 'container' or 'mini',
++        resizable = child.isResizeable ~= nil and child:isResizeable() == true,
++        minimized = child.isOn ~= nil and child:isOn() == true,
++        protected = id:find('inventoryWindow') ~= nil or id:find('mainButtons') ~= nil,
++      }
++      widgets[#windows] = child
++    end
++  end
++  return {
++    id = panel:getId(),
++    height = panel:getHeight() - panel:getPaddingTop() - panel:getPaddingBottom(),
++    windows = windows,
++  }, widgets
++end
++
++local function applyShrinks(plan, widgets)
++  for _, shrink in ipairs(plan.shrinks or {}) do
++    local widget = widgets and widgets[shrink.window]
++    if widget and not widget:isDestroyed() then
++      widget:setHeight(shrink.to)
++    end
++  end
++end
++
++-- Windows that overflow a panel (a restored layout in a smaller client) shrink towards their minimum height, the
++-- biggest container first, instead of the panel's fitAll doing it to one window. Nothing happens when they fit.
++function fitPanelWithoutClosing(panel)
++  local Room = rawget(_G, 'ChaosPanelRoom')
++  if not Room or not panel or isMinimapExpansionReservation(panel) then
++    return false
++  end
++  local model, widgets = sidePanelModel(panel)
++  local plan = Room.plan({ model }, { height = 0, min = 0 })
++  if not plan or #plan.shrinks == 0 then
++    return false
++  end
++  applyShrinks(plan, widgets)
++  return true
++end
++
++local function placeWithoutClosing(uiWidget, panels)
++  local Room = rawget(_G, 'ChaosPanelRoom')
++  local plan, widgets
++  if Room then
++    local ok, result, list = pcall(function()
++      local models, lists = {}, {}
++      for i, panel in ipairs(panels) do
++        models[i], lists[i] = sidePanelModel(panel, uiWidget)
++      end
++      return Room.plan(models, { height = uiWidget:getHeight(), min = uiWidget:getMinimumHeight() }), lists
++    end)
++    if ok and result then
++      plan, widgets = result, list[result.panel]
++    end
++  end
++  if not plan and #panels > 0 then
++    plan = { action = 'force', panel = 1, shrinks = {} }
++  end
++  if not plan then
++    uiWidget:close()
++    return false
++  end
++
++  local panel = panels[plan.panel]
++  applyShrinks(plan, widgets)
++  if plan.action == 'force' and plan.height then
++    uiWidget:setHeight(plan.height)
++  end
++  uiWidget:setParent(panel)
++  local oldOnClose = uiWidget.onClose
++  uiWidget.onClose = function()
++    if oldOnClose then oldOnClose() end
++    local parent = uiWidget:getParent()
++    if parent then parent:removeChild(uiWidget) end
++  end
++  if panel.fitAll then
++    panel:fitAll(uiWidget)
++  end
++  return true
++end
++
++-- room: 'always' (Chaos 0191, the container windows) places the window even when no panel has room
++function addToPanels(uiWidget, room)
+   local right = getRightPanel()
+   local left = getLeftPanel()
+   uiWidget.onRemoveFromContainer = function(widget)
+@@ -978,10 +1080,14 @@
+     end
+   end
+ 
++  if room == 'always' then
++    return placeWithoutClosing(uiWidget, panels)
++  end
++
+   uiWidget:close()
+   local analyserTypes = {'bossCooldowns', 'damageInputAnalyser', 'lootTracker','huntingSessionAnalyser', 'impactAnalyser', 'lootAnalyser', 'partyHuntAnalyser', 'wasteAnalyser', 'xpAnalyser', 'miscAnalyzer'}
+   if not table.find(analyserTypes, uiWidget:getType()) then
+-    modules.game_textmessage.displayFailureMessage(tr('There is no available space.'))
++    modules.game_textmessage.displayFailureMessage(tr('No room in the side panels. Close or shrink a window.'))
+   end
+   return false
+ end
+@@ -1161,7 +1267,7 @@
+     end
+   else
+     uiWidget:close()
+-    modules.game_textmessage.displayFailureMessage(tr('There is no available space.'))
++    modules.game_textmessage.displayFailureMessage(tr('No room in the side panels. Close or shrink a window.'))
+   end
+   
+   return false
+--- a/modules/game_containers/containers.lua
++++ b/modules/game_containers/containers.lua
+@@ -151,7 +151,7 @@
+     previousContainer.itemsPanel = nil
+   else
+     containerWindow = g_ui.createWidget('ContainerWindow', m_interface.getContainerPanel())
+-    if not m_interface.addToPanels(containerWindow) then
++    if not m_interface.addToPanels(containerWindow, 'always') then
+       return false
+     end
+ 
+@@ -325,7 +325,7 @@
+     
+     if not previousContainer then
+       containerWindow:setHeight(30)
+-      if not m_interface.addToPanels(containerWindow) then
++      if not m_interface.addToPanels(containerWindow, 'always') then
+         return false
+       end
+ 
