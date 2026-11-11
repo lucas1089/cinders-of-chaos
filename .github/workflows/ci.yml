@@ -154,16 +154,19 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_archmage_art.py build --check
           # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
-          # gem looks (the owner's gem set): atlas, things spec and the Codex strips match the generator (same pins)
+          # gem looks (35 new cells, pair 63, O480): atlas, things spec and the Codex strips match the generator and the committed
+          # source sheet (same pins); the pure parts of the generator (cells, twinkle spots, the nine phases) on synthetic cells
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_gem_art.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_gem_art_test.py
           # status words (the owner's text effect set): the spec matches the strips and the PICKS table
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_fx.py build --check
           # the store item looks of pair 34 (our pouch and ration art snapped to theme palettes): atlas and things file
           # match the generator, and each look passes style_check against its theme
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_store_items_art.py build --check
-          # the orb looks of pair 38 (orbs drawn in code, no rune sprite): atlas and things file match the generator,
-          # and each look passes style_check against its theme
+          # the 18 crafting orb looks of pair 63 (O482): atlas and things file match the generator and the committed
+          # source sheet; the pure parts and the ids against chaos_orbs_config.lua
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art_test.py
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
@@ -208,7 +211,7 @@ jobs:
           # verifies the recipe and the sums against themselves
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build-front --check
           python3 -I client/tools/sprites/gen_reward_chest_art_test.py
-          # in-place item redraw (redraw_items.py on a synthetic pair, pair 53)
+          # in-place item redraw (redraw_items.py on a synthetic pair: stills of pair 53, animated strips of pair 63)
           /tmp/fxenv/bin/python -I client/tools/sprites/redraw_items_test.py
           # animation fixes by rule on the art we have (pair 61, O458): trim, dedupe, lift, stray pixels, idle pulse on a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/anim_fixes_test.py

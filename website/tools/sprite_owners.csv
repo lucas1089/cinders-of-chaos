@@ -20,4 +20,7 @@ item,33000,33650,own,"art sets with the owner's permission (art_import/things.cs
 item,33651,33653,own,"store pouches drawn in code (gen_pouch_art.py)"
 item,33654,33659,own,"fist weapons drawn in code (gen_fistfx_art.py, fist_items.csv)"
 item,33660,33903,own,"themed sets (PixelLab paintings for the project) and grounds (things_custom24, theme_things.csv)"
-item,38641,38641,own,"orb looks drawn in code (pair 38, gen_orb_items_art.py, orb_items.csv)"
+item,38641,38641,own,"Orb of Sockets (pair 38; pair 63 redraws it in place with the new orb art, gen_orb_items_art.py)"
+item,27195,27195,own,"Orb of Awakening, redrawn in place with new orb art (pair 63, gen_orb_items_art.py, O482)"
+item,27199,27201,own,"Orbs of Grafting, Upheaval and Fate, redrawn in place with new orb art (pair 63, gen_orb_items_art.py, O482)"
+item,44550,44559,own,"ten new orb looks (pair 63, gen_orb_items_art.py, orb_items.csv, O482)"

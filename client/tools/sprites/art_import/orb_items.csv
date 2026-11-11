@@ -1,2 +1,11 @@
 key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
-orb_sockets,item,look,orb of sockets,orb_items,0,0,1,1,1,1,copy:22036,replace,24692,
+orb_ember,item,look,ember orb,orb_items,0,0,1,1,1,1,copy:25045,replace,32258,
+orb_binding,item,look,orb of binding,orb_items,0,32,1,1,1,1,copy:25047,replace,32252,
+orb_whetstone,item,look,whetstone,orb_items,0,64,1,1,1,1,copy:22083,replace,32256,
+orb_unveiling,item,look,orb of unveiling,orb_items,0,96,1,1,1,1,copy:25046,replace,32257,
+orb_reforging,item,look,orb of reforging,orb_items,0,224,1,1,1,1,copy:25048,replace,32254,
+orb_tempering,item,look,orb of tempering,orb_items,0,256,1,1,1,1,copy:24483,replace,32251,
+orb_crown,item,look,crown orb,orb_items,0,288,1,1,1,1,copy:25044,replace,32259,
+orb_ruin,item,look,orb of ruin,orb_items,0,352,1,1,1,1,copy:24477,replace,32255,
+orb_excision,item,look,orb of excision,orb_items,0,512,1,1,1,1,copy:25049,replace,32253,
+orb_void,item,look,void orb,orb_items,0,544,1,1,1,1,copy:678,replace,32260,

@@ -12429,8 +12429,19 @@ list of these names; the old ones are gone from the player-facing text.
 The sprites are the stock multi-use inlay stones, essence crystals and moonlight crystals (clients 24483, 25047, 25049, 25048,
 24477, 22083; the Ember and Crown Orb use the crowned gems 25045 and 25044, the Void Orb the small enchanted amethyst 678,
 a stock gem sprite like those `install_gems.py` copies): they have the multi-use flag in `Tibia.dat` already, so **no client dat change and no `set_multiuse.py` run**
-is needed; the live dat pair is untouched. The server nodes are copies of the stock nodes with the `useable` flag (the same
+is needed. The server nodes are copies of the stock nodes with the `useable` flag (the same
 way as the gems and the salvage shard, `install_gems.py`' helpers). Ids 32251..32260 are reserved for this set.
+
+**Own looks (O482, client pair 63, 2026-11-11).** All 18 crafting orbs have new pixel art in one line
+(`client/tools/sprites/gen_orb_items_art.py`, client/MANIFEST.md "Orb looks"). Stock things wear the sprites above too (essences and
+inlay stones drop, the Void Orb's stack has eight count patterns), so the ten orbs of this set get their own one-phase client items
+(`look` in `chaos_orbs_config.lua`, client 44550..44559; `clientId` stays the stock sprite the node is copied from and what a client on
+an older pair draws). `install_orbs.py` writes `look` into the node only when `config.lua` `chaosClientPair` is 63 or more
+(`client_pair.py` `PAIR_ORBS`; below that, or with no record, the node keeps the stock id: a pair 62 client still sees the old orb,
+never a blank; each run writes the node for the recorded pair, so raising the record and running the installer again switches it) and
+clears the node's animation flag (the new looks have one phase). The other eight orbs (Sockets, Awakening, Grafting, Gilding, Unmaking,
+Erasure, Upheaval, Fate) own their client id alone and are redrawn in place in pair 63: no server change. Names, texts, ids and
+balance are untouched. Test: `tools/install_orbs_test.py`.
 
 **Ember and Crown rework (2026-10-20).** The base server's Ember Orb (29852) and Crown Orb (29853) were currency of the
 waystone upgrade window, which has no client window, and their sprites have no multi-use flag: they could not be spent and
@@ -14044,8 +14055,9 @@ stackable use-with rune stone 24692 (named by the installer, like the crafting o
 **Orb of Sockets look** (`socketOrb.look` / `useLook`, pair 38, 2026-10-22). Owner: "Coloque arte de orb de verdade. Não
 use as runas para isso. Deixe os sprites de runa só para as runas." The rune stone node 24692 drew client 22036, whose
 only sprite (1317) is the great fireball rune's (client 3191): in the bags, the Orbs Pouch and its tooltip the orb was
-a red rune stone. `install_gems.py` now sets that node's client id to 38641, our own orb (blue glass, a gold band, three
-sockets lit violet, cyan and green; `client/tools/sprites/gen_orb_items_art.py`, client/MANIFEST.md "Orb looks").
+a red rune stone. `install_gems.py` now sets that node's client id to 38641, our own orb (pair 38: blue glass, a gold band, three
+sockets lit violet, cyan and green, drawn in code; pair 63 redraws 38641 in place with the new orb art of O482, the same id;
+`client/tools/sprites/gen_orb_items_art.py`, client/MANIFEST.md "Orb looks").
 Only the client id attribute changes (stackable, useable, the rest stay); the new thing copies 22036's dat flags. The
 rune keeps its sprite. Every other orb of the loot list and the bench was checked against the 134 rune things of pair
 37: no shared sprite and no near picture, so none else changed. A client older than pair 38 draws nothing for the orb:
@@ -14053,8 +14065,10 @@ ship pair 38 first. Rollback: `useLook = false` and the installer again (22036 b
 `tools/install_gems_test.py`.
 
 **Own looks** (`ownLook`, on since 2026-10-14): animated looks of our own for every gem and tier, client 33905-33939 =
-`lookFirst` + (type - 1) x 5 + tier - 1 (client/tools/sprites/gen_gem_art.py, from the owner's gem set; client/MANIFEST.md
-"Gem looks"). In things_custom25, on windows-assets at ebe1b2b2. Install step with the switch on:
+`lookFirst` + (type - 1) x 5 + tier - 1 (client/tools/sprites/gen_gem_art.py; client/MANIFEST.md "Gem looks"). In
+things_custom25, on windows-assets at ebe1b2b2. **New art, pair 63 (O480, 2026-11-11):** the 35 looks are redrawn in place,
+same ids, same animation slots: a client on pair 63 or newer draws the new gems, an older one the old. The server does not
+change: ids, `ownLook` and `lookFirst` stay (on windows-assets 3220b4e; `chaosClientPair` 63 switches it on). Install step with the switch on:
 `ownLook = true` in `chaos_gems_config.lua`, `python3 -I server/tools/install_gems.py <server>/data` (rewrites the 35
 nodes with the new client ids, the rest of each node stays the stock gem's), restart. `ChaosGems.clientIdOf` follows
 the switch. Rollback: false and the installer again (byte-identical to before). Test: `tools/install_gems_test.py`.

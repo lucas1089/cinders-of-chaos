@@ -40,7 +40,10 @@ local function tbl(v) return type(v) == 'table' and v or {} end
 local function str(v) return type(v) == 'string' and v or '' end
 
 -- Stackables whose sprite at count 1 is a dot: they are drawn with the count pattern of a full stack (UIItem setItemCount).
--- Client id 678 (the Void Orb, a 4 x 2 pattern) draws as a 2 pixel dot at count 1.
+-- Client id 678 (the Void Orb of a client on pair 62 or older, or of a server that has not raised chaosClientPair to 63: a
+-- stock gem, a 4 x 2 pattern) draws as a 2 pixel dot at count 1. From pair 63 the orb has its own one-pattern look
+-- (client id 44559, server/tools/install_orbs.py `look`), which the server sends instead, so this entry is then never hit:
+-- the id is the gate, nothing to switch by pair.
 V.ICON_COUNT = { [678] = 100 }
 function V.iconCount(clientId)
   return V.ICON_COUNT[num(clientId)] or 1
