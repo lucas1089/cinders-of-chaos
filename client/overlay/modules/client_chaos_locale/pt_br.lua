@@ -1547,8 +1547,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["  empty socket"] = "  encaixe vazio",
   ["Active tier: %d of %d"] = "Nível ativo: %d de %d",
   ["Requires level %d"] = "Requer nível %d",
-  ["(character cap %d)"] = "(limite do personagem %d)",
-  ["(over the character cap of %d)"] = "(acima do limite de %d do personagem)",
+  ["Character cap %d"] = "Limite do personagem %d",
+  ["Over the cap of %d"] = "Acima do limite de %d",
   ["Requires magic level %d"] = "Requer magic level %d",
   -- game_leaderboard/leaderboard.lua
   ["Weekly reset in %s"] = "Reset semanal em %s",
