@@ -97,5 +97,14 @@ eq(H.firstOpen(nil, 'A', 'arena'), false, 'no settings table')
 eq(H.firstOpen(seen, 'A', nil), false, 'no key')
 eq(H.firstOpen({ A = 'bad' }, 'A', 'arena'), true, 'a broken entry is replaced')
 
+-- the button sits in the title bar corner whatever the padding (O493): the skinned window pads 38 / 16
+local mt, mr = H.buttonMargins(38, 16)
+eq(mt, -31, 'margin top takes the top padding back out')
+eq(mr, 6, 'margin right takes the right padding back out')
+mt, mr = H.buttonMargins(0, 0)
+eq(mt == 7 and mr == 22, true, 'no padding: 7 and 22')
+mt, mr = H.buttonMargins(nil, 'x')
+eq(mt == 7 and mr == 22, true, 'unknown padding counts as none')
+
 print(string.format('howcore: %d checks, %d failed', count, fails))
 if fails > 0 then os.exit(1) end

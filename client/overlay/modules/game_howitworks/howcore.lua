@@ -56,6 +56,16 @@ function C.rows(card, lang, convert)
   return out
 end
 
+-- Where the "?" button sits (O493): the title bar corner, TITLE_TOP px under the window's top edge and TITLE_RIGHT px in
+-- from its right edge. An anchor to `parent` uses the parent's padding rect (client_chaos_theme does the same for the
+-- ornaments), so the padding is taken back out: with the skinned window's 38 / 16 padding the button used to sit 7 px
+-- inside the content, over whatever the window keeps in its top right corner (the Guide button of the Crafting Bench).
+C.TITLE_TOP = 7
+C.TITLE_RIGHT = 22
+function C.buttonMargins(padTop, padRight)
+  return C.TITLE_TOP - (tonumber(padTop) or 0), C.TITLE_RIGHT - (tonumber(padRight) or 0)
+end
+
 -- First open (owner request 2026-11-03): a feature window opens its card by itself the first time a character opens
 -- it. seen = {charKey = {cardKey = true}} (the client settings node); true, and marked, only the first time.
 function C.charKey(name)
