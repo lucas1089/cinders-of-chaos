@@ -107,6 +107,14 @@ local function wingLift()
   return (ok and on) and 6 or 0
 end
 
+-- the x shift base patch 0193 gives the wings of an outfit (centred on the body); 0 without it
+local function wingShift(outfit)
+  local m = modules.client_chaos_wingfit
+  if not (m and m.WingFit) or not outfit or (tonumber(outfit.wings) or 0) <= 0 then return 0 end
+  local ok, s = pcall(m.WingFit.shift, outfit, wingLift())
+  return ok and tonumber(s) or 0
+end
+
 local TOP_ROOM = 56        -- px kept free at the top of the stage (the top menu's System button)
 local BELOW_TEXT = 92      -- px under the platform for the name, class and info lines and the hint
 local heroFigure           -- CharSelectCore.figure of the shown outfit
@@ -156,7 +164,7 @@ local function showHero(m, animate)
   pedestal:setVisible(true)
   preview:setVisible(m.outfit ~= nil)
   local drawn = Core.previewOutfit(CharSelectAnchors, m.outfit)  -- a tall aura left out (CharSelectCore.smallAura)
-  heroFigure = Core.figure(CharSelectAnchors, drawn, thingInfo, wingLift())
+  heroFigure = Core.figure(CharSelectAnchors, drawn, thingInfo, wingLift(), wingShift(drawn))
   if drawn then
     preview:setOutfit(drawn)
     preview:setDirection(direction)

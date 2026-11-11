@@ -684,7 +684,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Stand next to the Great Brazier in the temple."] = "Fique ao lado do Great Brazier no templo.",
   ["Give %s gold for %s points."] = "Dar %s de ouro por %s pontos.",
   -- game_cosmetics/cosmetics.lua
-  ["%s %s [%s]: Hail, ash-walkers!"] = "%s %s [%s]: Salve, ash-walkers!",
+  ["%s %s [%s]: Hail, ash-walkers!"] = "%s %s [%s]: Salve, andarilhos das cinzas!",
   ["%s Ashen Blade"] = "%s Ashen Blade",
   ["Preview shows the effects around your character (only you see it)."] = "A prévia mostra os efeitos em volta do seu personagem (só você vê).",
   ["Everyone near you sees the chosen effects."] = "Todos perto de você veem os efeitos escolhidos.",
@@ -1547,8 +1547,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["  empty socket"] = "  encaixe vazio",
   ["Active tier: %d of %d"] = "Nível ativo: %d de %d",
   ["Requires level %d"] = "Requer nível %d",
-  ["(character cap %d)"] = "(limite do personagem %d)",
-  ["(over the character cap of %d)"] = "(acima do limite de %d do personagem)",
+  ["Character cap %d"] = "Limite do personagem %d",
+  ["Over the cap of %d"] = "Acima do limite de %d",
   ["Requires magic level %d"] = "Requer magic level %d",
   -- game_leaderboard/leaderboard.lua
   ["Weekly reset in %s"] = "Reset semanal em %s",
@@ -1646,6 +1646,10 @@ ChaosLocaleStrings['pt-BR'] = {
   ["This shader is not in your client yet."] = "Este shader ainda não está no seu cliente.",
   ["Your client cannot draw outlines yet."] = "Seu cliente ainda não consegue desenhar contornos.",
   ["Your look cannot ride: the mount is shown with the plain figure."] = "Sua aparência não pode montar: a montaria é mostrada com o boneco simples.",
+  -- the samples of a loot label, a chat colour and a name plate on the stage and on the cards (O497); item names stay as the game has them
+  ["Ashen Blade"] = "Ashen Blade",
+  ["Hail!"] = "Salve!",
+  ["Hail, ash-walkers!"] = "Salve, andarilhos das cinzas!",
   -- game_lootbeams/lootbeams.lua, lootbeams.otui (and the button in game_lootfilter/lootfilter.otui)
   ["Loot Beams"] = "Feixes de saque",
   ["Light pillars over corpses with loot these rules make glow: on or off, height, intensity"] = "Colunas de luz sobre os corpos com saque que estas regras fazem brilhar: ligar ou desligar, altura, intensidade",
@@ -2549,7 +2553,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Legendary and every rarity above it"] = "Legendary e toda raridade acima dele",
   ["Pouch settings"] = "Configurações da bolsa",
   -- game_pouches/pouches.otui
-  ["While you carry your Loot Bag it takes these items from the monsters you kill. Orbs, gems and keys always go to the Orbs and Rift Key Pouch first. A full pouch passes the item on (below), then to your backpack."] = "Enquanto você carrega sua Loot Bag, ela pega estes itens dos monstros que você mata. Orbes, gemas e chaves vão sempre primeiro para a Orbs and Rift Key Pouch. Uma bolsa cheia passa o item adiante (abaixo) e depois para a sua mochila.",
+  ["While you carry your Loot Bag it takes these items from the monsters you kill. Orbs, gems, keys and runes always go to their own pouch first (Orbs, Gem, Rift Key, Rune). A full pouch passes the item on (below), then to your backpack."] = "Enquanto você carrega sua Loot Bag, ela pega estes itens dos monstros que você mata. Orbes, gemas, chaves e runas vão sempre primeiro para a bolsa própria (Orbs, Gem, Rift Key, Rune). Uma bolsa cheia passa o item adiante (abaixo) e depois para a sua mochila.",
   ["Items on my autoloot list"] = "Itens da minha lista de autoloot",
   ["Gold, platinum and crystal coins"] = "Moedas de ouro, platina e cristal",
   ["Unique items"] = "Itens únicos",

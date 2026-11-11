@@ -227,7 +227,8 @@ do
 			local A = MD.armourOf(m)
 			for _, size in ipairs({{"small", 0.2}, {"median", 1}, {"5x median", 5}}) do
 				local H = math.floor(median * size[2] + 0.5)
-				local out = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+				-- O501: a SPELL is measured against the median class hit (a weapon hit has its own table below)
+				local out = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL)
 				local red = C.armourReduction(DEF, A, H)
 				local want = math.floor(H * (1 - red) + 0.5)
 				eq(out, want, "table: " .. class .. " level " .. level .. " " .. size[1] .. " hit " .. H)
@@ -254,8 +255,11 @@ do
 	local ranged = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED)
 	local spell = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL)
 	eq(melee, ranged, "weapon hit: melee and ranged alike")
-	eq(spell, melee, "a physical spell is armoured like a weapon hit")
-	ok(melee < H, "weapon hit: armoured")
+	-- O501: a weapon hit has its own armour value and cap, a spell keeps the class curve
+	local mA, mAw = MD.armourOf(m), MD.weaponArmourOf(m)
+	eq(spell, math.floor(H * (1 - C.armourReduction(DEF, mA, H)) + 0.5), "a physical spell is armoured by the class curve")
+	eq(melee, math.floor(H * (1 - C.weaponShare(DEF, mAw, H, C.weaponShareCap(CFG, "normal"))) + 0.5), "a weapon hit is armoured by the weapon curve")
+	ok(melee < H and spell < H, "weapon hit and spell: armoured")
 	eq(hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_CONDITION), H, "a physical tick (bleeding): no armour")
 	eq(hit(m, player, H, COMBAT_FIREDAMAGE, ORIGIN_SPELL), H, "an elemental spell: no armour, no resistance on the base 0")
 	eq(hit(m, player, H, COMBAT_FIREDAMAGE, ORIGIN_CONDITION), H, "a fire tick: untouched")
@@ -356,9 +360,14 @@ do
 	local orc = spawnMonster("Plain Orc", {level = 500})
 	local medianHit = math.floor(C.hitAtLevel(CFG, 500) + 0.5)
 	bonusOf[pener:getId()] = {physpen = 10}
-	near(hit(orc, pener, medianHit, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), medianHit * 0.85, 1.5, "10 physical penetration: 15% armour share")
+	near(hit(orc, pener, medianHit, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL), medianHit * 0.85, 1.5, "10 physical penetration: 15% armour share (a spell)")
+	-- O501: the same on a weapon hit of the median weapon size: the weapon armour share minus 10 points
+	local medianW = math.floor(C.weaponHitAtLevel(CFG, 500) + 0.5)
+	local shareW = C.weaponShare(DEF, MD.weaponArmourOf(orc), medianW, C.weaponShareCap(CFG, "normal"))
+	near(hit(orc, pener, medianW, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), medianW * (1 - (shareW - 0.10)), 1.5, "10 physical penetration: 10 points off the weapon armour share")
 	bonusOf[pener:getId()] = {physpen = 80}
-	eq(hit(orc, pener, medianHit, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), medianHit, "penetration beyond the armour share: down to 0, not below")
+	eq(hit(orc, pener, medianHit, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL), medianHit, "penetration beyond the armour share: down to 0, not below")
+	eq(hit(orc, pener, medianW, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), medianW, "penetration beyond the weapon armour share: down to 0, not below")
 	-- the file's physical percent is not touched by physical penetration (the engine took 30 already: arrived 700 of 1000)
 	elementLists["Stone Orc"] = {[COMBAT_PHYSICALDAMAGE] = 30}
 	local stone = spawnMonster("Stone Orc", {level = 500})
@@ -404,10 +413,10 @@ do
 	local m = spawnMonster("Stone Ogre", {level = 100, boss = true})
 	local A = MD.armourOf(m)
 	-- the engine took 60% already: a small hit arrives as 40; armour and the 60 together are capped at 90 in all
-	local small = hit(m, player, 40, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE) -- 100 raw
+	local small = hit(m, player, 40, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL) -- 100 raw
 	eq(small, 10, "physical cap: raw 100 against 60% and a boss's armour is at most 90% off, 10 left")
 	-- a big hit: armour hardly counts: 60% + a little
-	local big = hit(m, player, 40000, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE) -- 100000 raw
+	local big = hit(m, player, 40000, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL) -- 100000 raw
 	local red = C.armourReduction(DEF, A, 40000)
 	eq(big, math.floor(40000 * (1 - red) + 0.5), "physical: a big hit loses only a little more to armour")
 	-- Plated: 50% less, inside the same cap
@@ -415,7 +424,7 @@ do
 	ChaosTierState[plated:getId()] = {tier = "rare", depth = 0, mods = {"plated"}, step = 0}
 	local Ap = MD.armourOf(plated)
 	local h = 1000
-	local out = hit(plated, player, h, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+	local out = hit(plated, player, h, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL)
 	local want = h * (1 - C.armourReduction(DEF, Ap, h)) * 0.5
 	-- 60% off + armour + 50% would be ~ 1 - 0.4 x 0.8 x 0.5 = 84% off; the cap is 90: no cap here
 	near(out, math.floor(want + 0.5), 1, "Plated: 50% less physical on top of armour")
@@ -430,6 +439,162 @@ do
 	local bone = spawnMonster("Bone Ogre", {level = 100})
 	ChaosTierState[bone:getId()] = {tier = "rare", depth = 0, mods = {"plated"}, step = 0}
 	eq(hit(bone, player, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_CONDITION), 500, "Plated: a physical tick is halved, no armour")
+end
+
+
+-- ---------------------------------------------------------------- O501: a weapon hit has its own curve and its own cap
+-- Owner 2026-11-11: "the auto attack is hitting practically nothing on the monsters". The armour was sized for the median CLASS
+-- hit (what a spell is); an auto attack arrives at the layer as the engine rolled it, a fifth to a half of that, and lost 50 to 90%.
+do
+	local W = CFG.weaponHitCurve
+	ok(W ~= nil and #W >= 13, "O501: the config has the weapon curve")
+	for _, row in ipairs(W) do
+		near(C.weaponHitAtLevel(CFG, row.level), row.hit, 1e-6, "weapon curve: the anchor " .. row.level)
+	end
+	ok(C.weaponHitAtLevel(CFG, 3000) > W[#W].hit, "weapon curve: beyond the last row it keeps growing")
+	ok(C.weaponHitAtLevel(CFG, 0) > 0, "weapon curve: level 0 reads as level 1")
+	for _, lv in ipairs({100, 500, 1000, 2000}) do
+		ok(C.weaponHitAtLevel(CFG, lv) < C.hitAtLevel(CFG, lv), "weapon curve: the median weapon hit is under the median class hit at level " .. lv)
+	end
+	-- the median weapon hit loses weaponTarget percent: the weapon armour value is derived from its own curve
+	for _, lv in ipairs({1, 10, 100, 333, 500, 1000, 2200}) do
+		for class, want in pairs(CFG.weaponTarget) do
+			local A = C.armourValue(DEF, CFG, lv, class, nil, true)
+			near(C.armourReduction(DEF, A, C.weaponHitAtLevel(CFG, lv)), want / 100, 1e-9, "median weapon hit at level " .. lv .. ": " .. class)
+		end
+	end
+	-- the caps are the ceilings of the auto attack (tools/defence_curve.py G2): 40 / 55 / 65 percent
+	eq(C.weaponShareCap(CFG, "normal"), 0.40, "cap: normal")
+	eq(C.weaponShareCap(CFG, "elite"), 0.55, "cap: elite")
+	eq(C.weaponShareCap(CFG, "boss"), 0.65, "cap: boss")
+	eq(C.weaponShare(DEF, 1000, 1, 0.4), 0.4, "weaponShare: a tiny hit against a big armour loses the cap")
+	ok(C.weaponShare(DEF, 1, 1000, 0.4) < 0.4, "weaponShare: a big hit loses under the cap")
+
+	local classes = {
+		normal = function(level) return spawnMonster("Rotling", {level = level}) end,
+		elite = function(level)
+			local m = spawnMonster("Rotling", {level = level})
+			ChaosTierState[m:getId()] = {tier = "rare", depth = 0, mods = {}, step = 0}
+			return m
+		end,
+		boss = function(level) return spawnMonster("Rotling", {level = level, boss = true}) end
+	}
+	local WTABLE = {}
+	for _, level in ipairs({20, 100, 500, 1000}) do
+		local median = C.weaponHitAtLevel(CFG, level)
+		for _, class in ipairs({"normal", "elite", "boss"}) do
+			local m = classes[class](level)
+			local Aw, A = MD.weaponArmourOf(m), MD.armourOf(m)
+			ok(Aw < A, "the weapon armour value is under the spell's: " .. class .. " " .. level)
+			eq(MD.weaponArmourOf(m), Aw, "the weapon armour value is cached")
+			local cap = C.weaponShareCap(CFG, class)
+			for _, size in ipairs({{"tiny", 0.05}, {"small", 0.2}, {"median", 1}, {"5x median", 5}}) do
+				local H = math.max(1, math.floor(median * size[2] + 0.5))
+				local out = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+				local share = C.weaponShare(DEF, Aw, H, cap)
+				eq(out, math.max(1, math.floor(H * (1 - share) + 0.5)), "weapon table: " .. class .. " level " .. level .. " " .. size[1] .. " hit " .. H)
+				ok(H - out <= H * cap + 1, "weapon cap: " .. class .. " level " .. level .. " " .. size[1] .. " hit " .. H .. " loses at most the cap")
+				WTABLE[#WTABLE + 1] = {level = level, class = class, size = size[1], hit = H, out = out, red = (1 - out / H) * 100, A = Aw}
+				if size[1] == "median" then
+					near(1 - out / H, CFG.weaponTarget[class] / 100, 0.02 + 0.5 / H, "weapon table: the median weapon hit of level " .. level .. " loses its " .. class .. " share")
+				end
+				-- a ranged weapon hit is the same
+				eq(hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), out, "weapon table: ranged is melee")
+				-- a spell of the same size meets the class armour: its number is the one of before O501
+				local sp = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL)
+				eq(sp, math.max(1, math.floor(H * math.max(1 - C.armourReduction(DEF, A, H), 1 - DEF.physicalReductionCap / 100) + 0.5)), "O501: a spell is unchanged: " .. class .. " level " .. level .. " " .. size[1])
+			end
+			-- a big hit still loses less than a small one of the same kind (the idea of O462)
+			local small, big = math.floor(median * 0.3 + 0.5), math.floor(median * 30 + 0.5)
+			local so = hit(m, player, small, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+			local bo = hit(m, player, big, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+			ok(bo / big > so / small, "a big weapon hit keeps more of itself than a small one: " .. class .. " " .. level)
+		end
+	end
+	if PRINT_TABLE then
+		print("weapon hits: level  class   hit size   hit     after    removed   A")
+		for _, r in ipairs(WTABLE) do
+			print(string.format("%5d  %-6s  %-9s %6d  %6d  %6.1f%%  %8.2f", r.level, r.class, r.size, r.hit, r.out, r.red, r.A))
+		end
+	end
+
+	-- REGRESSION (O501): a level 20 character's 15 damage auto attack on a level 20 normal monster keeps at least 60%
+	do
+		local m = classes.normal(20)
+		local out = hit(m, player, 15, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+		ok(out >= 9, "O501 regression: a level 20 character's 15 damage auto attack on a level 20 normal monster keeps at least 60% (kept " .. out .. ")")
+		-- and a level 8 hit of 12 and a bow hit of 60 at level 60
+		ok(hit(classes.normal(8), player, 12, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE) >= 7, "O501 regression: a level 8 hit of 12 keeps at least 60%")
+		ok(hit(classes.normal(60), player, 60, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED) >= 36, "O501 regression: a level 60 bow hit of 60 keeps at least 60%")
+		-- before the change the same level 20 hit lost 62.5%
+		local A20 = C.armourValue(DEF, CFG, 20, "normal")
+		ok(C.armourReduction(DEF, A20, 15) > 0.4, "O501: with the class curve a hit of 15 at level 20 lost over 40% (the report)")
+	end
+
+	-- a Plated monster: 50% less on top of the weapon armour; a monster with its own physical percent: the three in one cap
+	do
+		elementLists["Plate Ogre"] = {[COMBAT_PHYSICALDAMAGE] = 0}
+		local plated = spawnMonster("Plate Ogre", {level = 100})
+		ChaosTierState[plated:getId()] = {tier = "rare", depth = 0, mods = {"plated"}, step = 0}
+		local Aw = MD.weaponArmourOf(plated)
+		local H = 300
+		local out = hit(plated, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+		near(out, math.floor(H * (1 - C.weaponShare(DEF, Aw, H, 0.55)) * 0.5 + 0.5), 1, "weapon hit on a Plated monster: armour and 50% less")
+		elementLists["Stone Colossus"] = {[COMBAT_PHYSICALDAMAGE] = 60}
+		local m = spawnMonster("Stone Colossus", {level = 100, boss = true})
+		ChaosTierState[m:getId()] = {tier = "boss", depth = 0, mods = {"plated"}, step = 0}
+		-- the engine took 60%: raw 1000 arrives as 400; the weapon armour of a boss and Plated add to the 60 without passing 90
+		local both = hit(m, player, 400, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+		near(both, math.floor(400 * (1 - C.weaponShare(DEF, MD.weaponArmourOf(m), 400, 0.65)) * 0.5 + 0.5), 1, "weapon hit: the file's percent, armour and Plated")
+		-- a file percent of 85, armour and Plated: far over 90, the cap leaves 10% of the raw hit (raw 1000 arrives as 150)
+		elementLists["Iron Colossus"] = {[COMBAT_PHYSICALDAMAGE] = 85}
+		local iron = spawnMonster("Iron Colossus", {level = 100, boss = true})
+		ChaosTierState[iron:getId()] = {tier = "boss", depth = 0, mods = {"plated"}, step = 0}
+		local capped = hit(iron, player, 150, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+		ok(capped >= 100 and capped <= 101, "weapon hit: the file's percent, armour and Plated stay inside the 90% cap (raw 1000 -> " .. capped .. ")")
+		-- no Plated: 1 - 0.4 x (1 - share): never under 10% of the raw hit either
+		local ogre = spawnMonster("Stone Colossus", {level = 100, boss = true})
+		local plain = hit(ogre, player, 400, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+		local sh = C.weaponShare(DEF, MD.weaponArmourOf(ogre), 400, 0.65)
+		near(plain, math.floor(400 * (1 - sh) + 0.5), 1, "weapon hit on a monster with its own physical percent")
+		ok(plain >= 100, "weapon hit: the cap leaves at least 10% of the raw hit")
+	end
+
+	-- penetration lowers the weapon share (the same rule as the spell's), a ranged hit too
+	do
+		local savedMods = ChaosItemMods
+		local bonus = {}
+		ChaosItemMods = {playerBonus = function(p, key) return (bonus[p:getId()] or {})[key] or 0 end}
+		local pen = newPlayer()
+		local m = classes.normal(500)
+		local H = math.floor(C.weaponHitAtLevel(CFG, 500) + 0.5)
+		local base = hit(m, pen, H, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED)
+		bonus[pen:getId()] = {physpen = 10}
+		local pe = hit(m, pen, H, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED)
+		near(pe - base, H * 0.10, 1.5, "weapon hit: ten points of penetration give ten points of the hit back")
+		bonus[pen:getId()] = {physpen = 90}
+		eq(hit(m, pen, H, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), H, "weapon hit: penetration beyond the share: nothing taken")
+		ChaosItemMods = savedMods
+	end
+
+	-- a wand hit (ORIGIN_WAND) and a tick are no armoured weapon hit; a summon hits like its player
+	do
+		local m = classes.normal(100)
+		eq(hit(m, player, 80, COMBAT_PHYSICALDAMAGE, ORIGIN_WAND), 80, "a wand hit is never armoured")
+		eq(hit(m, player, 80, COMBAT_FIREDAMAGE, ORIGIN_MELEE), 80, "the element of a weapon hit is not armour")
+		local wolf = newMonster("Wolf", {master = player})
+		eq(hit(m, wolf, 80, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), hit(m, player, 80, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), "a summon's weapon hit meets the weapon curve of the monster's level")
+	end
+
+	-- a config without the weapon curve and cap is the state before O501: the class curve and no cap
+	do
+		local savedCurve, savedCaps, savedTargets = CFG.weaponHitCurve, CFG.weaponShareCap, CFG.weaponTarget
+		CFG.weaponHitCurve, CFG.weaponShareCap, CFG.weaponTarget = nil, nil, nil
+		local m = spawnMonster("Rotling", {level = 100})
+		local H = 100
+		eq(hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), math.floor(H * (1 - C.armourReduction(DEF, MD.armourOf(m), H)) + 0.5), "no weapon curve: a weapon hit meets the class curve")
+		CFG.weaponHitCurve, CFG.weaponShareCap, CFG.weaponTarget = savedCurve, savedCaps, savedTargets
+	end
 end
 
 -- ---------------------------------------------------------------- block (Bulwark)

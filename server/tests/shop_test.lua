@@ -1260,10 +1260,19 @@ do
 			ok(offer.kind == "service" or offer.kind == "unlock", key .. ": a per-character kind")
 		end
 	end
-	eq(n, 17, "17 offers: 4 pouches, the ration, Auto Seller, Rarity Autoloot, 10 Everfull tiers")
-	for _, key in ipairs({"service:pouch:loot", "service:pouch:orbs", "service:pouch:keys", "service:pouch:gems", "service:storeFood",
+	eq(n, 18, "18 offers: 5 pouches, the ration, Auto Seller, Rarity Autoloot, 10 Everfull tiers")
+	for _, key in ipairs({"service:pouch:loot", "service:pouch:orbs", "service:pouch:keys", "service:pouch:gems", "service:pouch:runes", "service:storeFood",
 			"unlock:autoSeller", "unlock:rarityAutoloot", "service:everfullUpgrade:32268", "service:everfullUpgrade:32270"}) do
 		ok(Shop.byKey[key] and Shop.byKey[key].accountDiscount == 50, key .. " has the discount")
+	end
+	-- the Rune Bag (O502): one offer in Convenience at the Gem Pouch's price, drawn with the item
+	do
+		local rb = Shop.byKey["service:pouch:runes"]
+		ok(rb ~= nil, "the Rune Bag offer exists")
+		eq(rb.name, "Rune Bag", "name") eq(rb.cost, 150, "150 coins, the Gem Pouch's price") eq(rb.icon, 32096, "drawn with the item")
+		eq(Shop.byKey["service:pouch:gems"].cost, rb.cost, "as the Gem Pouch")
+		ok(rb.description:find("support runes and magic runes", 1, true), "the description says what it takes")
+		ok(rb.description:find("backpack", 1, true), "and where to keep it")
 	end
 	-- the discount follows an Everfull tier: 70 coins -> 35
 	eq(costOf(C3, "service:everfullUpgrade:32270"), 70, "an Everfull tier nobody owns: 70")

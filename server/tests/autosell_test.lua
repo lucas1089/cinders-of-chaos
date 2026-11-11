@@ -441,8 +441,10 @@ do
 	local boundBox = item(1988, {attrs = {chaos_storebound = 1}, items = {item(2401)}})
 	local orbPouch = item(32082, {items = {item(2401)}})
 	local plainBox = item(1988, {items = {item(2401)}})
-	ChaosPouches.kindOfId = function(id) return id == 32082 and "orbs" or nil end
-	carry = {loot = item(32081, {items = {ration, storeItem, lockedBox, boundBox, orbPouch, plainBox}})}
+	-- the Rune Bag (O502): runes inside it are never sold, they are not walked like the contents of any store pouch
+	local runeBag = item(32096, {items = {item(2401, {count = 5}), item(2401)}})
+	ChaosPouches.kindOfId = function(id) return (id == 32082 and "orbs") or (id == 32096 and "runes") or nil end
+	carry = {loot = item(32081, {items = {ration, storeItem, lockedBox, boundBox, orbPouch, plainBox, runeBag}})}
 	now = now + 31
 	local guarded = A.sellBag(pl)
 	eq(ration.removed, false, "a store-bound item is never sold")
@@ -450,6 +452,7 @@ do
 	eq(lockedBox.items[1].removed or lockedBox.items[2].removed, false, "the contents of a locked container stay")
 	eq(boundBox.items[1].removed, false, "the contents of a store-bound container stay")
 	eq(orbPouch.items[1].removed, false, "the contents of a store pouch are not walked")
+	eq(runeBag.items[1].removed or runeBag.items[2].removed, false, "the runes in a Rune Bag are never sold")
 	eq(plainBox.items[1].removed, true, "a plain container's contents are still sold")
 	eq(guarded.kept.protected, 2, "store-bound items counted as protected")
 	ChaosPouches.kindOfId = nil

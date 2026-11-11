@@ -5,6 +5,8 @@
 -- The engine applies every effect itself: the option only becomes outfit fields (type, addons, mount, wings, aura,
 -- shader) or the outline call of game_cosmeticfx, the same paths the map uses.
 
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+
 LookPreviewCore = LookPreviewCore or {}
 local P = LookPreviewCore
 
@@ -48,12 +50,17 @@ end
 --                                                    mount, wings, aura, shader, an outline, an effect)
 --   { kind = 'effects', play, killfx }               a spell skin / kill effect, played on the stage (fromPlayRow)
 --   { kind = 'footprint', art }                      prints behind the walking figure
---   { kind = 'nameplate', frame }                    a plate frame: a note (the map draws it)
+--   { kind = 'lootlabel', accent }                   a loot label sample on the stage (accent: its background colour, nil = stock)
+--   { kind = 'chatcolor', color }                    a chat line sample on the stage (color: the name's colour, nil = stock)
+--   { kind = 'nameplate', frame }                    a name plate sample on the stage (the 9-slice frame art of game_nameplate)
 --   nil or { kind = 'none' }                         the base unchanged
--- Kinds a UICreature cannot show (footprints are tile widgets, name plates are drawn by the map only, transmog and
--- rarity outlines are item looks): P.UNSHOWN gives the note the panel prints instead of a picture.
+-- Kinds a UICreature cannot show (footprints are tile widgets, transmog and rarity outlines are item looks): P.UNSHOWN
+-- gives the note the panel prints instead of a picture. A name plate is drawn by the map only, so the panel draws a
+-- sample of it from the same frame art (O497, "samples" below); P.UNSHOWN.nameplate stays for a frame the client has no
+-- art for. Loot labels and chat colours have samples too.
 P.KINDS = { outfit = true, addons = true, mount = true, wings = true, aura = true, shader = true, outline = true, effects = true,
-  look = true, subject = true, bundle = true, none = true }
+  look = true, subject = true, bundle = true, none = true, lootlabel = true, chatcolor = true, nameplate = true }
+P.SAMPLE_KINDS = { lootlabel = true, chatcolor = true, nameplate = true }
 P.UNSHOWN = {
   footprint = 'Footprints are left on the ground as you walk.',
   nameplate = 'Name plates show over characters in the game world.',
@@ -66,7 +73,8 @@ function P.showable(opt)
 end
 
 function P.note(opt)
-  return type(opt) == 'table' and P.UNSHOWN[opt.kind] or nil
+  if type(opt) ~= 'table' or P.sampleOf(opt) then return nil end
+  return P.UNSHOWN[opt.kind]
 end
 
 -- does the 'simple' toggle mean anything for this option (a pet has no wearer; a kill effect is shown on a troll)
@@ -111,7 +119,7 @@ function P.composeRaw(mode, own, opt)
     local note
     for _, part in ipairs(type(opt.parts) == 'table' and opt.parts or {}) do
       local pk = type(part) == 'table' and part.kind
-      if pk and pk ~= 'bundle' and pk ~= 'subject' and pk ~= 'effects' and pk ~= 'footprint' then
+      if pk and pk ~= 'bundle' and pk ~= 'subject' and pk ~= 'effects' and pk ~= 'footprint' and not P.SAMPLE_KINDS[pk] then
         local po, pl, pn = P.composeRaw('own', o, part)
         o, outline, note = po, pl or outline, note or pn
       end
@@ -161,6 +169,11 @@ function P.fromStoreLook(l, depth)
     return type(l.play) == 'table' and #l.play > 0 and { kind = 'effects', play = l.play, killfx = l.killfx == true or nil } or nil
   elseif k == 'nameplate' then
     return name(l.frame) and { kind = 'nameplate', frame = l.frame } or nil
+  elseif k == 'swatch' then
+    -- a chat colour, or (accent = true) a loot label background; a bundle's swatch is left out as before
+    if (depth or 0) > 0 or not P.validColor(l.color) then return nil end
+    if l.accent == true then return { kind = 'lootlabel', accent = l.color } end
+    return { kind = 'chatcolor', color = l.color }
   elseif k == 'bundle' then
     local parts = {}
     for _, p in ipairs(type(l.parts) == 'table' and l.parts or {}) do
@@ -226,6 +239,13 @@ function P.fromCosmeticRow(r)
   end
   if r.kind == 'footprint' then
     return num(r.id) ~= 0 and { kind = 'footprint', art = type(r.art) == 'string' and r.art or nil } or nil
+  end
+  -- a loot label and a chat colour: the sample of the row's colour; the Default row (id 0) is the stock one
+  if r.kind == 'lootbeam' or r.kind == 'chatcolor' then
+    local c = r.kind == 'lootbeam' and r.accent or r.color
+    if r.collection and not P.validColor(c) then return nil end
+    if r.kind == 'lootbeam' then return { kind = 'lootlabel', accent = c } end
+    return { kind = 'chatcolor', color = c }
   end
   if not r.collection then return nil end
   if r.kind == 'outfit' or r.kind == 'addons' then
@@ -413,7 +433,7 @@ local function partBox(anchor, info, z, addons, ox, oy, allLayers)
     fy = b.fy + oy }
 end
 
-function P.lookBox(outfit, anchorOf, infoOf, lift)
+function P.lookBox(outfit, anchorOf, infoOf, lift, wingShift)
   if type(outfit) ~= 'table' then return copy(P.FALLBACK_BOX) end
   local function A(id) return anchorOf and num(id) > 0 and anchorOf(num(id)) or nil end
   local function I(id) return infoOf and num(id) > 0 and infoOf(num(id)) or nil end
@@ -445,7 +465,7 @@ function P.lookBox(outfit, anchorOf, infoOf, lift)
   add(rb)
   feet = feet or rb
   if num(outfit.wings) > 0 then
-    add(partBox(A(outfit.wings), I(outfit.wings), mounted and 1 or 0, 0, 0, mounted and -6 or 0))
+    add(partBox(A(outfit.wings), I(outfit.wings), mounted and 1 or 0, 0, num(wingShift), mounted and -6 or 0)) -- wingShift: base patch 0193
   end
   if num(outfit.aura) > 0 then
     local ai = I(outfit.aura)
@@ -849,6 +869,232 @@ function P.footsteps(n)
     out[#out + 1] = { x = -0.5 * i, y = (i % 2 == 0) and 0.1 or -0.1, rotation = 90, opacity = math.max(0.15, 1 - 0.22 * (i - 1)) }
   end
   return out
+end
+
+-- Where the prints go on the stage (O496). The character never moves for a footprint: the creature stays where the look
+-- alone puts it (P.layout, same scale, same place, the floor shadow stays) and the prints go behind it, to its left, on
+-- the floor line under its feet: print i is i steps left of the feet. A print is P.PRINT_SIZE of a tile wide; a step is
+-- P.PRINT_STEP of a tile. When the prints would leave the stage at the left they are brought closer (down to
+-- P.PRINT_MIN_STEP of a tile), then dropped, last first: the character is never moved or cut for them. A print that
+-- would leave the stage at the bottom (a mount's feet sit low in a short stage) is lifted until it fits, a stage too
+-- small for any print gets none. L = a layout with tileX, tileY (the creature tile's top left), scale and T: P.stepsLayout,
+-- or P.fxLayout (a bundle that also has effects). box = P.lookBox of the figure. Returns {{x, y, size, cx, cy, rotation,
+-- opacity}} (x, y: the top left, cx, cy: the centre, in stage px), the newest first.
+P.PRINT_SIZE = 0.6
+P.PRINT_STEP = 0.5
+P.PRINT_MIN_STEP = 0.3
+P.PRINT_MARGIN = 2
+
+function P.stepPrints(L, box, w, h, n)
+  box = box or P.FALLBACK_BOX
+  local s, T = L.scale, L.T
+  local cx0, cy0 = (box.left + box.right) / 2, box.bottom
+  local feetX = L.tileX + num(box.fx or cx0) * s
+  local feetY = L.tileY + num(box.fy or cy0) * s
+  local m = P.PRINT_MARGIN
+  local size = math.min(math.floor(T * P.PRINT_SIZE + 0.5), math.floor(h - 2 * m), math.floor(w - 2 * m))
+  if size < 6 then return {} end
+  local half = size / 2
+  local want = n or P.STEPS
+  local reach = feetX - half - m -- from the feet to the left-most centre the stage allows
+  local step, count = T * P.PRINT_STEP, want
+  if reach < want * step then
+    local closer = reach / want
+    if closer >= T * P.PRINT_MIN_STEP then
+      step = closer
+    else
+      count = math.max(0, math.floor(reach / (T * P.PRINT_MIN_STEP)))
+      step = count > 0 and math.min(step, reach / count) or 0
+    end
+  end
+  local out = {}
+  local feet = P.footsteps(count)
+  for i = 1, count do
+    local f = feet[i]
+    local cx = feetX - i * step
+    local cy = math.max(half + m, math.min(feetY + f.y * T, h - half - m))
+    out[i] = { x = math.floor(cx - half + 0.5), y = math.floor(cy - half + 0.5), size = size, cx = cx, cy = cy,
+      rotation = f.rotation, opacity = f.opacity }
+  end
+  return out
+end
+
+-- the stage layout of a footprint option: exactly P.layout (the look alone: 2x, the box centred, the floor shadow), plus
+-- the creature tile (tileX, tileY, as P.fxLayout names them) and the prints behind the feet
+function P.stepsLayout(box, w, h, n)
+  local L = P.layout(box, w, h)
+  L.tileX, L.tileY = L.x + L.T, L.y + L.T
+  L.prints = P.stepPrints(L, box, w, h, n)
+  return L
+end
+
+-- ---------------------------------------------------------------- samples (O497)
+-- A loot label, a chat colour and a name plate frame are drawn by the map and the console, not on a creature, so the
+-- panel shows a SAMPLE of each, built from the data the real thing uses:
+--   lootlabel  the label over a loot bag: a ground label of game_groundlabels (font verdana-11px-rounded, one pixel border and
+--              the text in the rarity colour, the background the cosmetic's accent, GL.style) beside the feet, over the
+--              loot bag item every monster leaves (GL.CORPSE_BAG_ID). Stock: GL.HIGHLIGHT_BACKGROUND.
+--   chatcolor  a console line "Name: text": only the name takes the colour (game_cosmetics CL.colorLine), the text keeps the
+--              spoken colour (#f0f000). Stock: the name in the spoken colour. Near the head, else along the stage's bottom.
+--   nameplate  the name in gold on the 9-slice frame of game_nameplate (images/plate_<frame>.png, border 6, the plate
+--              the engine draws: the text and 7 / 3 / 7 / 2 px around it), above the head.
+-- The constants are the real modules' own; lookpreview_core_test.lua compares them with those files.
+P.LABEL_BG = '#100c0ef0'
+P.LABEL_RARITY = '#ffd040'
+P.LABEL_FONT = 'verdana-11px-rounded'
+P.LOOT_BAG = 6068
+P.CHAT_TEXT = '#f0f000'
+P.CHAT_BG = '#1c1a18'
+P.PLATE_NAME = '#e8c372'
+P.PLATE_BORDER = 6
+P.PLATE_PATH = '/modules/game_nameplate/images/plate_'
+P.COMPACT_TEXT = 'Aa'
+P.NAME_MAX = { stage = 16, card = 10 }
+P.SAMPLE_GAP = 4
+P.BAG_SIZES = { 1, 0.75, 0.5 } -- of a tile, the largest that fits beside the figure
+
+function P.validColor(s)
+  return type(s) == 'string' and (s:match('^#%x%x%x%x%x%x$') ~= nil or s:match('^#%x%x%x%x%x%x%x%x$') ~= nil)
+end
+
+local function artName(v)
+  return type(v) == 'string' and v:match('^[%w_]+$') and #v <= 40 and v or nil
+end
+
+local function sampleOne(opt)
+  local k = opt.kind
+  if k == 'lootlabel' then
+    local ok = P.validColor(opt.accent)
+    return { kind = 'lootlabel', bg = ok and opt.accent or P.LABEL_BG, stock = not ok }
+  elseif k == 'chatcolor' then
+    local ok = P.validColor(opt.color)
+    return { kind = 'chatcolor', color = ok and opt.color or P.CHAT_TEXT, stock = not ok }
+  elseif k == 'nameplate' then
+    local f = artName(opt.frame)
+    return f and { kind = 'nameplate', frame = f } or nil
+  end
+  return nil
+end
+
+-- the sample an option puts on the stage ({kind, bg | color | frame, stock}), or nil; a bundle's first part that has one
+function P.sampleOf(opt)
+  if type(opt) ~= 'table' then return nil end
+  if opt.kind == 'bundle' then
+    for _, part in ipairs(type(opt.parts) == 'table' and opt.parts or {}) do
+      local sm = type(part) == 'table' and part.kind ~= 'bundle' and sampleOne(part) or nil
+      if sm then return sm end
+    end
+    return nil
+  end
+  return sampleOne(opt)
+end
+
+-- a name cut to fit (the longest a player name can be is 29 letters)
+function P.shortName(name, max)
+  name = type(name) == 'string' and name or ''
+  max = max or P.NAME_MAX.stage
+  if #name > max then return name:sub(1, max - 1) .. '.' end
+  return name
+end
+
+-- What to draw for a sample: size 'stage' (the whole sample), 'card' (a grid card's, shorter text) or 'compact' (the
+-- Equipped now tile's picture: two letters). name = the character's name ('' = "You"). Returns
+--   {kind = 'lootlabel', text, color, border, bg, font}   {kind = 'chatcolor', parts = {text, colour, ...}, bg, font}
+--   {kind = 'plate', frame, path, border, text, color, font}
+function P.sampleSpec(sample, name, size)
+  if type(sample) ~= 'table' then return nil end
+  size = size or 'stage'
+  local compact = size == 'compact'
+  local who = P.shortName(type(name) == 'string' and name ~= '' and name or tr('You'), P.NAME_MAX[size] or P.NAME_MAX.stage)
+  if sample.kind == 'lootlabel' then
+    return { kind = 'lootlabel', text = compact and P.COMPACT_TEXT or tr('Ashen Blade'), color = P.LABEL_RARITY,
+      border = P.LABEL_RARITY, bg = sample.bg, font = P.LABEL_FONT }
+  elseif sample.kind == 'chatcolor' then
+    local parts
+    if compact then
+      parts = { P.COMPACT_TEXT, sample.color }
+    elseif size == 'card' then
+      parts = { who, sample.color, ': ' .. tr('Hail!'), P.CHAT_TEXT }
+    else
+      parts = { who, sample.color, ': ' .. tr('Hail, ash-walkers!'), P.CHAT_TEXT }
+    end
+    return { kind = 'chatcolor', parts = parts, bg = P.CHAT_BG, font = P.LABEL_FONT }
+  elseif sample.kind == 'nameplate' then
+    return { kind = 'plate', frame = sample.frame, path = P.PLATE_PATH .. sample.frame, border = P.PLATE_BORDER,
+      text = compact and P.COMPACT_TEXT or who, color = P.PLATE_NAME, font = P.LABEL_FONT }
+  end
+  return nil
+end
+
+-- the whole text of a chat sample (what the parts say together)
+function P.sampleText(spec)
+  if type(spec) ~= 'table' then return '' end
+  if spec.kind == 'chatcolor' then
+    local t = {}
+    for i = 1, #spec.parts - 1, 2 do t[#t + 1] = spec.parts[i] end
+    return table.concat(t)
+  end
+  return spec.text or ''
+end
+
+-- the figure's drawn art on the stage in px, for a layout with a creature tile (P.layout or P.fxLayout; tileX, tileY, or
+-- x, y: the UICreature rect, whose own tile is the lower right quarter)
+function P.figureRect(L, box)
+  box = box or P.FALLBACK_BOX
+  local s = L.scale
+  local tx = L.tileX or (L.x + 32 * s)
+  local ty = L.tileY or (L.y + 32 * s)
+  return { left = tx + box.left * s, top = ty + box.top * s, right = tx + box.right * s, bottom = ty + box.bottom * s,
+    tileY = ty }
+end
+
+-- v moved so that [v, v + size] lies inside [m, total - m]; the start wins when it cannot (an item wider than the stage)
+local function inside(v, size, total, m)
+  local hi = total - m - size
+  if v > hi then v = hi end
+  if v < m then v = m end
+  return math.floor(v + 0.5)
+end
+P.inside = inside
+
+-- where a loot label and its bag go: the bag on the figure's tile row beside it, on its right, else its left, as large as
+-- fits (P.BAG_SIZES); with no room at either side (a very narrow stage) at the right edge over the figure. The label of
+-- sw x sh px sits on the bag, shifted clear of the figure when it is wider than the bag. Everything inside the stage.
+-- Returns {zone, bag = {x, y, size}, label = {x, y}}
+function P.labelPlace(L, box, w, h, sw, sh)
+  local f = P.figureRect(L, box)
+  local m, gap, T = P.PRINT_MARGIN, P.SAMPLE_GAP, L.T
+  local zone, size, bx = 'edge', nil, nil
+  for _, k in ipairs(P.BAG_SIZES) do
+    local sz = math.floor(T * k + 0.5)
+    if f.right + gap + sz <= w - m then zone, size, bx = 'right', sz, f.right + gap break end
+    if f.left - gap - sz >= m then zone, size, bx = 'left', sz, f.left - gap - sz break end
+  end
+  if not size then
+    size = math.floor(T * P.BAG_SIZES[#P.BAG_SIZES] + 0.5)
+    bx = w - m - size
+  end
+  bx = inside(bx, size, w, m)
+  local by = inside(f.tileY + T - size, size, h, m)
+  local lx = bx + size / 2 - sw / 2
+  if zone == 'right' then lx = math.max(lx, f.right + 2) elseif zone == 'left' then lx = math.min(lx, f.left - 2 - sw) end
+  lx = inside(lx, sw, w, m)
+  local ly = inside(by + math.floor(size * 0.2) - sh, sh, h, m)
+  return { zone = zone, bag = { x = bx, y = by, size = size }, label = { x = lx, y = ly } }
+end
+
+-- where a line (a chat line, a name plate) of sw x sh px goes: centred over the head; when there is no room above (a tall
+-- mount or wings in a short stage) a chat line (bottomOk) goes along the bottom of the stage when that is clear of the
+-- figure; else at the top of the stage over the figure's head. Returns {zone = 'above' | 'bottom' | 'over', x, y}
+function P.linePlace(L, box, w, h, sw, sh, bottomOk)
+  local f = P.figureRect(L, box)
+  local m, gap = P.PRINT_MARGIN, P.SAMPLE_GAP
+  local x = inside((f.left + f.right) / 2 - sw / 2, sw, w, m)
+  -- above the head, as close as the gap allows, never closer to the top edge than m
+  local y = math.max(m, f.top - gap - sh)
+  if y + sh <= f.top then return { zone = 'above', x = x, y = math.floor(y + 0.5) } end
+  if bottomOk and h - m - sh >= f.bottom + gap then return { zone = 'bottom', x = x, y = h - m - sh } end
+  return { zone = 'over', x = x, y = m }
 end
 
 -- the option of a Cosmetics row for the stage: {kind = 'effects', play} for a row with effects

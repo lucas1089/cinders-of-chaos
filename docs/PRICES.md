@@ -46,8 +46,9 @@ show".
 | Convenience | Auto Seller (per character; also lent by the Pact) | 400 | R$ 40 | was 500 |
 | Convenience | Rarity Autoloot (per character) | 300 | R$ 30 | was 400 |
 | Convenience | Orbs Pouch / Rift Key Pouch / Gem Pouch (per character) | 200 / 150 / 150 | R$ 20 / 15 / 15 | was 300 / 250 for the first two; 100 slots each since 2026-10-28, the Gem Pouch (gems only, so they stay apart from orbs) is new, priced like the Rift Key Pouch |
+| Convenience | Rune Bag (per character) | 150 | R$ 15 | new (O502, owner 2026-11-11, "Make a rune bag too, please. To be sold in the store."): 200 slots, support runes and magic runes. 150 is the Gem Pouch's price, the model has no reason for another; **the owner sets the final price** (the others: Loot Bag 250, Orbs Pouch 200, Rift Key Pouch 150, Gem Pouch 150) |
 | Convenience | Everfull Ration (per character) | 100 | R$ 10 | was 150 |
-| Convenience | the same offers for another character of the account that already has one of them (Loot Bag, Auto Seller, Rarity Autoloot, the three pouches, the Ration, the ten Everfull tiers) | half | | new (O317), see "Pacto Completo, Pact Marks and the store review (O317)" |
+| Convenience | the same offers for another character of the account that already has one of them (Loot Bag, Auto Seller, Rarity Autoloot, the four other pouches, the Ration, the ten Everfull tiers) | half | | new (O317), see "Pacto Completo, Pact Marks and the store review (O317)" |
 | Convenience | Everfull potion tiers (per character, once per tier): spirit tier 1 20, great health / mana / spirit 30, ultimate health / mana / spirit 50, supreme health / mana / spirit 70 | 20 / 30 / 50 / 70 | R$ 2 / 3 / 5 / 7 | new (O245), spirit tier 1 and the supreme mana and spirit added in O247. The same swap Veyra the Apothecary does for 40 stock potions of the tier (4,800-20,000 gold at her prices) and the previous flask; a whole line costs 150 coins |
 | Convenience | Stash Slot Expansion 50 (+25 slots), 4 for 180, stash tabs 100-200, character slot 250, build slot 100 | | | O316: the depot tabs (150, 4 for 500) and the Extra Stash Tab (150) left the store, see "Stash room (O316)" |
 | VIP | Chaos Pact, 30 days | 299 | R$ 29,90 | was 300 (O317) |
@@ -145,7 +146,7 @@ computed numbers, not measured in game: nobody has played the store yet (payment
 | Potion and rune packs | 767 to 1,852 gold per coin | All between 700 and 2,000 (2x of 1,000) at any size; a coin buys 0.8 to 1.9x its gold in supplies. NPC bid per coin stays under 500 (buy at least twice sell). |
 | Blessings | 60 / 100 / 150 by level (O317), Eternal 300 / 500 / 750 by level | Eternal is 5 purchases of the tier of the same level band. The gold way (!bless) is 100,000 at level 120, 290,000 at 500 and 500,000 from level 920; late characters could pay that in 10 minutes, so the coins are only a shortcut. |
 | Services | 100 / 150 / 250 / 400 | Sex change, skull remover, name change, vocation change. No gold way exists to compare. |
-| Per-character convenience | 1,550 for all seven | Loot Bag 250, Auto Seller 400, Rarity Autoloot 300, Orbs Pouch 200, Key Pouch 150, Gem Pouch 150, Ration 100. The limit is pinned at 1,550 (it was 1,400 before the Gem Pouch). |
+| Per-character convenience | 1,700 for all eight | Loot Bag 250, Auto Seller 400, Rarity Autoloot 300, Orbs Pouch 200, Key Pouch 150, Gem Pouch 150, Rune Bag 150, Ration 100. The limit is pinned at 1,700 (it was 1,550 before the Rune Bag, 1,400 before the Gem Pouch): it grows by exactly the Rune Bag's price. |
 | Storage and slots | 50 to 300 | Stash Slot Expansion 50, pack of 4 180, orbs / gems 200, the other affinity tabs 150, collectibles 100, remote deposit 400 (O317; the Pact lends it), character slot 250, build slot 100. Reviewed again in O316, see "Stash room (O316)". |
 | Cosmetics | 80 to 750 | Wings 200-350, auras 150-300, shaders 120-300, head accessories 150-200, capes 200-250, outfits 300 / 500 / 750, mounts 350-690. Pinned between 80 and 800. |
 | Bundles | 20-25% sets | Starter packs 23-43% off their parts (limit 55%). |
@@ -307,8 +308,8 @@ coins were.
 - **Lasting Exercise weapons.** One weekly limit shared by all six, two a week, with the mechanism of the Double Experience
   Potion (O140): `weeklyLimit` on the offers, and a new `weeklyGroup` so that the six count together. Two a week is at
   most 900 coins (R$ 90) and 28,800 charges, six dummy hours. The model fails any 10,000 charge weapon without the limit.
-- **Second character.** The Loot Bag, the Orbs, Rift Key and Gem pouches, the Everfull Ration, the Auto Seller, Rarity
-  Autoloot and the ten Everfull tiers (17 offers, `accountDiscount = 50`) cost half, rounded up, when another character of
+- **Second character.** The Loot Bag, the Orbs, Rift Key, Gem and Rune pouches, the Everfull Ration, the Auto Seller, Rarity
+  Autoloot and the ten Everfull tiers (18 offers, `accountDiscount = 50`) cost half, rounded up, when another character of
   the account that still exists bought it. "Bought" is read from the purchase log: the offer itself, or a starter pack that
   holds it. The Auto Seller the Pact lends does not count, and gifts do not. The store shows that character the half price
   with the full price struck through and the tag "Account -50%"; a sale that is cheaper wins. All the convenience costs 1,550

@@ -216,17 +216,24 @@ function L.rarityColor(r)
   return L.RARITY_COLORS[tonumber(r) or 0]
 end
 
--- O471: the character cap of a modifier (server item_tooltip_core.lua T.capOf: critical chance 45, critical damage 150,
--- penetration 20): m.cap, and m.over when the wearer's total is above it. '' for a modifier without one
+-- O471, O503: the character cap of a modifier (server item_tooltip_core.lua T.capOf: critical chance 45, critical damage 150,
+-- penetration 20): m.cap, and m.over when the wearer's total is above it. A short side note, shown only while Alt is held
+-- (the rows below get it from ctx.alt), on its own line under the row. '' for a modifier without a cap
 function L.capText(m)
   local cap = tonumber(m and m.cap)
   if not cap then
     return ''
   end
   if m.over then
-    return ' ' .. string.format(tr('(over the character cap of %d)'), cap)
+    return string.format(tr('Over the cap of %d'), cap)
   end
-  return ' ' .. string.format(tr('(character cap %d)'), cap)
+  return string.format(tr('Character cap %d'), cap)
+end
+
+-- O503: without Alt a modifier that is over its cap (partly wasted) keeps one short sign: its text in the warning red
+function L.overColor(m, color, alt)
+  if not alt and m and m.over and tonumber(m.cap) then return L.COLORS.red end
+  return color
 end
 
 function L.tierColor(t)
@@ -379,31 +386,29 @@ function L.lines(tip, ctx)
     if m.lo and m.hi then
       range = m.lo == m.hi and string.format(' [%d]', m.lo) or string.format(' [%d-%d]', m.lo, m.hi)
     end
-    -- O471: a modifier with a character cap (critical chance and damage, penetration): the cap, and "over" when the wearer's
-    -- total is above it (the server sends cap / over; see ChaosItemMods.config.crit and .penetration)
-    local capText = L.capText(m)
+    -- O471, O503: a modifier with a character cap (critical chance and damage, penetration): the cap note is a line of its own
+    -- under the row and only with Alt (ctx.alt); without Alt a modifier over its cap keeps the warning colour
+    local capText = (ctx and ctx.alt) and L.capText(m) or ''
+    color = L.overColor(m, color, ctx and ctx.alt)
     local parts
+    local bound = m.bd and ' [bound]' or ''
     if m.tr then
       local tag = string.format('T%d ', m.tr)
-      local bound = m.bd and ' [bound]' or ''
       parts = { tag, L.tierColor(m.tr), m.t, color, range, C.dim }
-      if capText ~= '' then
-        parts[#parts + 1] = capText
-        parts[#parts + 1] = m.over and C.red or C.dim
-      end
       if m.bd then
         parts[#parts + 1] = bound
         parts[#parts + 1] = C.bound
       end
-      add(tag .. m.t .. range .. capText .. bound, color, first, parts)
+      add(tag .. m.t .. range .. bound, color, first, parts)
     else
-      parts = (range ~= '' or capText ~= '') and { m.t, color, range, C.dim } or nil
-      if parts and capText ~= '' then
-        parts[#parts + 1] = capText
-        parts[#parts + 1] = m.over and C.red or C.dim
+      parts = (range ~= '' or m.bd) and { m.t, color, range, C.dim } or nil
+      if parts and m.bd then
+        parts[#parts + 1] = bound
+        parts[#parts + 1] = C.bound
       end
-      add(m.t .. range .. capText, color, first, parts)
+      add(m.t .. range .. bound, color, first, parts)
     end
+    if capText ~= '' then add('  ' .. capText, m.over and C.red or C.dim) end
     first = false
   end
 
@@ -876,9 +881,10 @@ local function rangeText(lo, hi)
   return lo == hi and trim(lo) or (trim(lo) .. '-' .. trim(hi))
 end
 
--- the modifier groups: [{caption, capColor, rows}], rows {kind = 'mod', tag, top, tagColor, text, color, range, parts}
--- (top: the best tier of the item level, the green tag; parts: the text with a gold [bound] after it)
-function L.modGroups(tip)
+-- the modifier groups: [{caption, capColor, rows}], rows {kind = 'mod', tag, top, tagColor, text, color, range, parts, note,
+-- noteColor} (top: the best tier of the item level, the green tag; parts: {text, colour, ' [bound]', colour}; note: the
+-- character cap line, only with alt = true, O503; a row over its cap is red without Alt). alt: Alt is held.
+function L.modGroups(tip, alt)
   local C = L.COLORS
   local groups, group, side = {}, nil, nil
   for _, m in ipairs(tip.mods or {}) do
@@ -901,11 +907,12 @@ function L.modGroups(tip)
     end
     local color = (m.sd == 'i' and C.corrupted) or (m.pw and C.power) or (m.g == 'chaos' and C.chaos)
       or (m.g == 'element' and C.element) or C.mod
+    color = L.overColor(m, color, alt)
     local row = { kind = 'mod', text = tostring(m.t or ''), color = color, range = rangeText(m.lo, m.hi) }
-    local capText = L.capText(m)
+    local capText = alt and L.capText(m) or ''
     if capText ~= '' then
-      -- the cap rides after the text in its own colour (red when the wearer is over it)
-      row.parts = { row.text, color, capText, m.over and C.red or C.dim }
+      -- O503: the cap is a side note on a line of its own under the row (layout: L.modRowLayout), never a part of the text line
+      row.note, row.noteColor = capText, m.over and C.red or C.dim
     end
     if m.tr then
       row.tag = 'T' .. trim(m.tr)
@@ -1107,7 +1114,7 @@ function L.card(tip, ctx)
   local tiles, rest = L.statTiles(tip.base)
   local extra = L.extraLines(rest)
   if #tiles > 0 or #extra > 0 then card.stats = { tiles = tiles, extra = extra } end
-  local mods = L.modGroups(tip)
+  local mods = L.modGroups(tip, ctx and ctx.alt)
   if #mods > 0 then card.mods = mods end
   local extras = L.extraGroups(tip)
   if #extras > 0 then card.extras = extras end
@@ -1153,6 +1160,33 @@ function L.wrapPx(text, maxw, measure)
   end
   if line ~= '' then lines[#lines + 1] = line end
   return lines
+end
+
+-- O503: the layout of a modifier row, pure. The text and its suffix (row.parts = {text, colour, ' [bound]', colour}) wrap
+-- to textMax (the card less the tier tag column less the roll range column: measure(text) = pixels in the line font), so a
+-- suffix is part of the width that was measured and never runs under the range. The cap note (row.note) wraps to noteMax
+-- (the whole row to the right of the tag, the range sits on the first text line only) in the note font: measureNote.
+-- Returns {lines = [{text, parts = nil | {text, colour, suffix, colour}}], note = [line] }.
+function L.modRowLayout(row, textMax, noteMax, measure, measureNote)
+  local suffix = row.parts and row.parts[3] or nil
+  local full = tostring(row.text or '') .. (suffix or '')
+  local lines = {}
+  local wrapped = L.wrapPx(full, textMax, measure)
+  local nlines = #wrapped
+  for i, line in ipairs(wrapped) do
+    local entry = { text = line }
+    local bare = suffix and suffix:gsub('^%s+', '') or nil
+    if bare and i == nlines and line:sub(-#bare) == bare then
+      -- the line that ends with the suffix: the suffix in its own colour
+      local head = line:sub(1, #line - #bare)
+      entry.parts = head ~= '' and { head, row.parts[2] or row.color, bare, row.parts[4] } or { bare, row.parts[4] }
+    end
+    lines[#lines + 1] = entry
+  end
+  if #lines == 0 then lines[1] = { text = '' } end
+  local note = {}
+  if row.note and row.note ~= '' then note = L.wrapPx(row.note, noteMax, measureNote) end
+  return { lines = lines, note = note }
 end
 
 -- chips laid out in rows: widths[i] = the pixel width of chip i; returns [[index, ...], ...] (rows of at most maxw)

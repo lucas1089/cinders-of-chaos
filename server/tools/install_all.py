@@ -23,6 +23,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   monsternames tools/patch_base_monster_names.py Chaos names of the base monsters (data/monster/base_monster_names.csv,
                keyed by the sha256 of the old name): registrations, monster files, spawns, raids, scripts, a few outfit and
                mount names (README "Base monster names"; before lategame and spawns, which name monsters by the new names)
+  weapontypes  tools/patch_stock_weapon_types.py  a stock weapon is the kind its name says (O500, owner 2026-11-11: "The item counts as an
+               axe, but it is not."): weaponType in items.xml for the ids of data/items/stock_weapon_types.csv (the Twin Hooks become a
+               sword, the Dawnforged Great Axe an axe, the Skull Crusher a club, the scythes and sickles swords, the glaive and trident
+               axes; the polearms and a few odd names are kept on purpose); README "Stock weapon types (O500)"; before every step that
+               reads a weapon type: vocations, weapons, the equip rules, the weapon growth and the survey
   vocations    tools/add_vocations.py            the classes (README "Install" 5b, docs/CLASSES.md)
                tools/patch_base_classes.py       the base server's vocation checks (NPCs, quests, familiars, ...) know
                                                  the classes (README "Install" 5b, docs/CLASSES.md "Base scripts")
@@ -134,7 +139,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Omens and the Cinderheart")
   factions     tools/install_factions.py         the faction tokens in items.otb / items.xml and the four faction NPCs in data/npc
                (README "Factions")
-  pouches      tools/install_pouches.py          the store pouches in items.otb / items.xml and their move hook in Player:onMoveItem
+  pouches      tools/install_pouches.py          the five store pouches (Loot Bag, Orbs, Rift Key, Gem, Rune Bag) in items.otb / items.xml and their move hook in Player:onMoveItem
                (README "Store pouches")
   storefood    tools/install_store_food.py       the Everfull Ration (the store's infinite food) in items.otb / items.xml
                (README "Store pouches and the Everfull Ration")
@@ -726,6 +731,14 @@ def step_lib(server, data, ctx):
 
 def step_monsternames(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_monster_names.py'), data], 'patch_base_monster_names.py'))
+
+
+def step_weapontypes(server, data, ctx):
+    args = [tool('patch_stock_weapon_types.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'patch_stock_weapon_types.py'))
+
+
+STEPS.insert(STEPS.index('monsternames') + 1, 'weapontypes')  # O500: before vocations (which reads the weapon types) and every later reader
 
 
 def step_vocations(server, data, ctx):

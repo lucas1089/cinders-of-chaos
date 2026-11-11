@@ -30,6 +30,8 @@ server/
   tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
   tools/patch_base_eventrooms.py      the base tower defence as a boss room (see "Instance limits")
   tools/patch_remove_soulpit.py       the base soul pit and its items removed (see "Soul pit removed")
+  tools/patch_stock_weapon_types.py   a stock weapon is the kind its name says, table data/items/stock_weapon_types.csv (see "Stock weapon types (O500)")
+  tools/audit_weapon_types.py         the audit behind it: weapon kind against name, and the attack intervals (read only)
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -513,6 +515,10 @@ server/
    `install_all.py` step `monsternames`, right after `lib`, before `lategame` and `spawns`) gives the base monsters of
    `data/monster/base_monster_names.csv` (keyed by the sha256 of the old name) their Chaos names everywhere the base data
    names them. See "Base monster names".
+5k3. Stock weapon types (O500): `python3 -I server/tools/patch_stock_weapon_types.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `weapontypes`, right after `monsternames`, before `vocations` and every other step that reads a weapon
+   type) sets `weaponType` in `items.xml` for the ids of `data/items/stock_weapon_types.csv`: the Twin Hooks become a two-handed
+   sword, ten other weapons the kind their name says. See "Stock weapon types (O500)".
 5l. Town names: `python3 -I server/tools/patch_base_towns.py <server>/data [--dry-run]` (idempotent; `install_all.py`
    step `towns`, after `itemnames`) renames the map's towns by id from `tools/base_towns.csv` in the `.otbm` itself
    (`<map>.otbm.bak` keeps the original). See "Town names".
@@ -5364,8 +5370,8 @@ Prices and reasons: docs/PRICES.md "Pacto Completo, Pact Marks and the store rev
 - **`levelPrices`** on an offer: `{{upTo = 200, cost = 60}, {upTo = 500, cost = 100}, {cost = 150}}`, `cost` = the first tier
   (`ChaosShopCore.levelCost(offer, level)`; `ChaosShopCore.validate` checks the shape). All Blessings uses it: 60 up to level
   200, 100 up to 500, 150 above. A sale applies to the level price.
-- **`accountDiscount = 50`** on a per-character service or unlock (the Loot Bag, the three pouches, the Everfull Ration, the
-  Auto Seller, Rarity Autoloot, the ten Everfull tiers: 17 offers): the price is `ChaosShopCore.discountCost` (half, rounded up)
+- **`accountDiscount = 50`** on a per-character service or unlock (the Loot Bag, the four other pouches, the Everfull Ration, the
+  Auto Seller, Rarity Autoloot, the ten Everfull tiers: 18 offers): the price is `ChaosShopCore.discountCost` (half, rounded up)
   when another character of the account that still exists bought the offer for itself. `ownedByOthers` runs one query per
   view on `chaos_shop_purchases` joined to `players`: the offer's own key, or a bundle holding it as a part (a starter pack);
   gifts and the Pact's lent Auto Seller (storage 2) do not count. The entry carries the tag "Account -50%", the list price
@@ -5457,7 +5463,7 @@ Five store categories sell services, unlocks and boosts besides the cosmetics. `
 both dispatched by `ChaosShopServices` (`shop_services.lua`):
 - `{kind = "service", service = "<handler>", icon = <item id>}`: done for the character at once (`S.services` table).
 - `{kind = "unlock", unlock = "autoSeller" | "rarityAutoloot"}`: a permanent per-character flag (storage).
-- `{kind = "service", service = "pouch", pouch = "loot" | "orbs" | "keys"}`: a store pouch item ("Store pouches" below).
+- `{kind = "service", service = "pouch", pouch = "loot" | "orbs" | "keys" | "gems" | "runes"}`: a store pouch item ("Store pouches" below).
 
 `shop.lua` asks `ChaosShopServices.check(player, offer)` **before** it takes coins: an unlock already owned, full stamina, a
 world buff at its cap, an unused token, no skull to remove, an empty passive tree... is refused with a message and costs
@@ -5480,7 +5486,7 @@ client module needed no change.
 | | Frag & Skull Remover | 150 | skull time (the engine's unjustified-kill counter) to 0, red/black skull removed; not in combat |
 | | Passive Tree Reset | 100 | empties every preset for free (the in-window reset costs level x 250 gold; 60 before O140, see "Store balance (O140)") |
 | Convenience | (the Temple Teleport Scroll is no longer sold) | | see below |
-| | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
+| | Loot Bag / Orbs Pouch / Rift Key Pouch / Gem Pouch / Rune Bag | 250 / 200 / 150 / 150 / 150 | store pouch items, one of each per character ("Store pouches" below) |
 | | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
 | | Rarity Autoloot / Everfull Ration | 300 / 100 | per character, see "Store pouches and the Everfull Ration" |
 | Training | 18 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / club weapon since 2026-10-23; Warrior, Thief, Templar), fist (Monk line only since 2026-10-28), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
@@ -6220,7 +6226,7 @@ game: two players (visits and likes), the depot window, the store purchase scree
 
 ## Store pouches (`pouches.lua`, `pouches_core.lua`, `pouches_config.lua`, `tools/install_pouches.py`, client `game_pouches`)
 
-Four containers sold in the store (Convenience), each collecting its own kind of loot from the corpses the character owns,
+Five containers sold in the store (Convenience), each collecting its own kind of loot from the corpses the character owns,
 **while the character carries it** (in the backpack or a bag inside it, any depth; not in the depot or inbox). No base
 autoloot list is needed.
 
@@ -6230,6 +6236,7 @@ autoloot list is needed.
 | Orbs Pouch | 32082 (client 38609: a violet pouch with a glowing orb) | 100 (was 40) | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035), the gems only while no Gem Pouch is carried |
 | Rift Key Pouch | 32083 (client 38610: an iron strongbox, gold key, key ring) | 100 (was 30) | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
 | Gem Pouch | 32095 (the stock jewelled backpack's own look, no new sprite) | 100 | 150 | gems (32001-32035) only |
+| Rune Bag | 32096 (the stock blue backpack's own look, no new sprite) | 200 | 150 | support runes (32101-32200) and magic runes (the 36 of `runeIds`); not rune shards; takes runes by hand |
 
 - **Items.** New items.otb nodes, copies of stock bags (group and flags of the expedition bag, the brocade bag and the fur bag)
   with their own looks: three item things of our own art, drawn by `client/tools/sprites/gen_pouch_art.py`, snapped to theme
@@ -6256,6 +6263,59 @@ autoloot list is needed.
   wants it. A gem is wanted by the Gem Pouch and the Orbs Pouch, so with a Gem Pouch carried it never reaches the Orbs Pouch,
   even when the Gem Pouch is full (the overflow then is the Loot Bag, as for every specialist); without a Gem Pouch the Orbs
   Pouch takes gems as before. The Gem Pouch takes nothing but gems.
+- **The Rune Bag** (O502, owner 2026-11-11: "Make a rune bag too, please. To be sold in the store."). A fifth kind (`runes`,
+  id 32096, regrant bit 16), built the way the Gem Pouch was: `pouches_config.lua` `kinds.runes`, `priority` and `order`, the
+  store offer, `install_pouches.py` (`NAMES`), `gen_item_prices.py` (a bound item). Store-bound, `bindLock`, one per character,
+  delivered to the purse, 150 coins (the Gem Pouch's price; the owner sets the final one, `docs/PRICES.md`).
+  - **What a rune is.** Every rune a player calls a rune: the **100 support runes** (32101-32200, `ChaosSupports.isRune`, the
+    gems-like loot items of `SUPPORTS.md`) and the **36 magic runes** of the stock `spells.xml` (`runeIds` in the config: the same
+    ids as `data/lib/chaos_rune_supply.lua` `runes`, 2261 ... 23723; `tests/pouches_test.lua` holds the two lists equal). Not the
+    **rune shard** (32051: salvage currency, stays with the Orbs Pouch) and not the **unscribed rune** (2260: a crafting material
+    that vendors sell, the base of every recipe). 136 kinds, all stackable, so 200 slots hold every kind and a second stack of the
+    common ones (the other specialists hold 100).
+  - **Collect.** `ChaosPouchesCore.plan`: a rune goes to the Rune Bag first while the character carries it, before the Loot Bag
+    (whatever its supplies rule says); `priority = {"gems", "orbs", "keys", "runes"}`. No item is wanted by the Rune Bag and by
+    another specialist (a rune is no orb, gem or key), so its place in the list changes no routing; it is last to keep the older
+    order. Full (or too heavy): the Loot Bag takes the rune with its overflow rule, else the backpack, else the corpse, as for
+    every specialist, with the "Rune Bag is full" note (at most once a minute) and the pouch line of the kill's loot line. Without
+    the bag the Loot Bag rules decide as before (runes are `supplies`, the "Supplies" rule).
+  - **By hand.** A player may move runes into the Rune Bag and out of it (the Loot Bag takes nothing in). `PO.checkOneWay` (the end
+    of `PO.onMoveItem`) asks `ChaosPouchesCore.runeBagRefusal`: anything that is not a rune moved into it, at any depth of the move
+    (a potion, a gem, a rune shard, a bag, even a bag full of runes) is refused with the warning line "The Rune Bag holds only
+    runes." (pt-BR in `i18n_strings.lua`); a pouch keeps its own "A pouch cannot go into another pouch.". Taking out, moving
+    within the bag and stack merges of a rune are free. It leaves the purse like the Orbs Pouch (only the Loot Bag stays).
+  - **The rest.** Regrant bit 16 (storage 7100109): a Rune Bag lost with a dropped backpack comes back empty at login, and the
+    store does not sell a second while one is owed. The Auto Seller walks only the Loot Bag and never enters a store pouch
+    (`AK.opensContents`), so what is in the Rune Bag is never sold; `ChaosPouches.neverSell(id, item)` also says true for any
+    item whose parent is a Rune Bag. A rune outside the bag is as it was: on the sell list it is sold from a corpse (index 2,
+    before the pouches), in the Loot Bag it is sold by "Sell all" when an NPC pays for it (support runes and magic runes have
+    prices). "Find my item" (`stash.lua` `S.find`, `itemsearch_core.lua`) walks any container to `maxDepth`, so a rune inside the
+    bag, in the backpack or the purse, is found and the way to it opened. The loadouts' parked runes (storage 7112000-7127999) are
+    untouched.
+  - **Using a rune from the bag** (read in the engine, `chain/src`). The server finds an item by TYPE for a hotkey, the action bar
+    and the helper's rune use (`g_game.useInventoryItem(With)` sends an inventory position `{0xFFFF, 0, 0}`):
+    `Game::internalGetThing` (game.cpp, the `pos.y == 0 && pos.z == 0` branch) calls `findItemOfClientId` (src-patch 0043) and
+    `Game::findItemOfType` (game.cpp, `depthSearch = true`) on the player: `Player::getFirstIndex` / `getLastIndex` (player.cpp:
+    `CONST_SLOT_FIRST` .. `CONST_SLOT_LAST`, slots 1-10) and every container below them, breadth first, **no depth limit**, closed
+    or open. So a magic rune in a Rune Bag **in the backpack (or in a bag in it) is found**. The purse is the store inbox, slot
+    `CONST_SLOT_STORE_INBOX`, outside slots 1-10: a rune in a Rune Bag **in the purse is not found** by the hotkey, the action bar or
+    the helper (the same holds for any item in the purse). So the bag may stay in the purse (it collects there, `PO.carried`), but
+    the description and the store text say to keep it in the backpack to use its magic runes by hotkey. The helper counts a rune
+    by `player:getInventoryCount` (open containers only) and falls back to its probe gate for a rune in a closed bag
+    (`helper.lua` `runeReady`), the same as a rune in a closed sub-bag of the backpack today. The server side counts of a support
+    rune (`player:getItemCount` / `removeItem`, `player.cpp` `getItemTypeCount`, slots 1-10 and below) see a rune in the bag in the
+    backpack; socketing, Remove, Shatter and the combine of three runes work from it; a stack in the Rune Bag in the purse
+    combines through `ChaosCombine.placeOf` ("box": the purse), as any stack there.
+  - **Item.** A copy of the stock blue backpack (2002, client id 2869, container), `clientId = 0`: the stock look, no new sprite.
+    The other four are a brown leather sack (Loot Bag), a violet pouch (Orbs), an iron strongbox (Rift Keys) and the
+    jewelled backpack (Gems). Alternatives: the moon backpack (10521, client 9604) or the demon backpack (10518, client 9601); a
+    new look needs a sprite pair and the owner's approval. Installed by `install_pouches.py` (step `pouches`): the fifth node and
+    the rewritten items.xml block (`containerSize` 200); a second run changes nothing. Store offer "Rune Bag" in Convenience
+    (`shop_config.lua`, icon = the item, `accountDiscount = 50`), price 150: `perCharacterConvenienceMax` 1,550 -> 1,700.
+  - Tests: `tests/pouches_test.lua` (the rune lists, routing against the other four, a kill, a full bag, the manual moves, the
+    store, regrant bit 16, never sold), `tests/autosell_test.lua`, `tests/itemsearch_test.lua`, `tools/install_pouches_test.py`
+    (four installed pouches get the fifth), client `game_pouches/pouchesview_test.lua`. Unity keeps `Ids`, `Titles` and `Owned` as
+    dictionaries and reads only the Loot Bag: a fifth kind is stored and not shown. Not run on a server or in a client.
 - **The Loot Bag** (owner 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe automaticamente";
   called Loot Pouch before). Bottomless: 500 slots (`capacity`, owner 2026-10-29; was 255, see "500 slots" below) and **weightless** (`weightless = true`): engine src-patch 0038 keeps the weight of
   what lies in it (and in bags inside it) away from the character, and an item put into it skips the capacity check.
@@ -6309,7 +6369,7 @@ autoloot list is needed.
   item on the auto-sell list is sold first; orbs and keys never are (`ChaosPouches.neverSell`, asked by `autosell.lua`, also
   refuses them on the list). After the snapshot, so the loot channel row shows the items the pouches took as looted. Before the
   base autoloot, so autoloot-list items land in the Loot Bag instead of the backpack.
-- **Routing and priority** (`ChaosPouchesCore.plan`, `priority = {"orbs", "keys"}` in `pouches_config.lua`). The Orbs Pouch and
+- **Routing and priority** (`ChaosPouchesCore.plan`, `priority = {"gems", "orbs", "keys", "runes"}` in `pouches_config.lua`). The Orbs Pouch and
   the Rift Key Pouch always get their kinds of items first: orbs, the whetstone, rune shards and gems go to the Orbs Pouch, Rift
   Keys, Omen Keys and omen fragments to the Rift Key Pouch, before the Loot Bag, even when a Loot Bag rule would match too (its
   gems rule, the autoloot list). When that pouch is full (or the character cannot carry more), the Loot Bag takes the item only
@@ -7629,15 +7689,15 @@ the basic melee attack. The rule of the owner: class damage does not move, so `c
 
 | Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Warrior | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Juggernaut | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Berserker | 2/4/2* | 8/12/9 | 8/14/12 | 6/6/6 | 8/8/6 | 4/5/2 | 3/3/2 | 8/2/2* | 4/3/1 | 2/7/2* |
-| Thief | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
-| Ninja | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
-| Samurai | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 8/11/8 |
-| Templar | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Inquisitor | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Sentinel | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Warrior | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Juggernaut | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Berserker | 3/3/2 | 8/12/9 | 8/14/12 | 7/5/6 | 8/8/6 | 4/5/2 | 3/3/2 | 6/3/3 | 4/3/1 | 2/7/2* |
+| Thief | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
+| Ninja | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
+| Samurai | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
+| Templar | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Inquisitor | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Sentinel | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
 
 <!-- weapon-families:end -->
 
@@ -17880,6 +17940,68 @@ dust and sliver; the base
 NPCs never bought them, the Loot Buyer and the Auto Seller did by the formula), the survey rows, the recipe row and the 27
 loot entries of `tools/loot_bands_data.lua`. Client: base patch 0192 (client/BASE.md). Test:
 `python3 -I server/tools/patch_remove_soulpit_test.py`.
+
+**Stock weapon types (O500)** (`tools/patch_stock_weapon_types.py`, table `data/items/stock_weapon_types.csv`, audit
+`tools/audit_weapon_types.py`, install step `weapontypes`; owner, 2026-11-11, on the tooltip of "Serrated Twin Hooks of Devouring",
+"Legendary Two-handed axe": "The item counts as an axe, but it is not."). The weapon kind (`items.xml` weaponType: sword, axe, club)
+is what the skill, the family trait (sword tempo, axe cleave, club daze), the weapon coverage tables, the transmog kinds and the
+tooltip's type line read. A few stock weapons have a kind that their name contradicts. The tool fixes exactly the ids of the table, once:
+- the item has the old type: it gets the new one. It has the new type: "already done". It has a third type (someone changed it):
+  reported with a WARNING and left. A row whose new type equals its old type is a decision to keep and writes nothing.
+- the step runs before `vocations` (which reads the weapon types), the survey, the equip rules and the weapon growth, so the files they
+  read are right. An item keeps its id, so a copy a player owns has the new kind at once.
+- `data/items/base_weapons.csv` (the survey) carries the new kinds. Proof: `survey_base_weapons.py` run on a copy of an installed
+  server patched by the tool gives exactly the committed file.
+
+The rule of the table (audit: `python3 -I server/tools/audit_weapon_types.py DATA_DIR [--check] [--quiet]`, read only, three lists):
+the head noun of the name says the kind (axe, hatchet, cleaver, chopper, halberd; sword, blade, sabre, rapier, dagger, knife, machete;
+club, mace, hammer, staff, flail, maul, sceptre, crusher; compounds count). CLEAR = the name says one kind, the type another;
+`--check` fails on a stock one that is not in the table. ODD = no kind word: a bladed or hooked thing held like a sword is a sword; a
+hafted chopping head is an axe; anything blunt or a staff is a club; polearms follow the stock majority (the stock data types the
+halberds, five lances, the naginata and the drakinata as axes, so lances, glaives and tridents are axes). 37 names have no clue at all
+("the avenger", "dragon slayer", "soulcutter") and keep their type; they are no decisions. On the installed snapshot of 2026-11-11
+(524 items of the three melee kinds): 2 CLEAR (both moved), 20 ODD with a hint word (9 moved, 11 kept), 37 ODD without a clue;
+11 moves in all.
+
+| id | name | was | now | reason |
+|---|---|---|---|---|
+| 11309 | twin hooks | axe | sword | a pair of hooked blades, one in each hand: a two-handed sword |
+| 2405, 2418 | sickle, golden sickle | axe | sword | a curved hooked blade held in one hand like a sword |
+| 2550, 10301, 15492 | scythe, scythe of the reaper, hive scythe | axe | sword | a long curved blade; no chopping head |
+| 11308 | wyrmfang glaive | club | axe | polearm; the stock majority is axe |
+| 13838 | heavy trident | sword | axe | polearm; the stock majority is axe |
+| 25416 | impaler of the igniter | sword | axe | same word as the impaler (7435), a polearm and an axe |
+| 29886 | Dawnforged Great Axe | sword | axe | the name says axe |
+| 29888 | Dawnforged Skull Crusher | sword | club | the name says a blunt crusher |
+
+Kept on purpose (rows with new = old): the lances (2414, 2425, 3964, 23545, 25383), naginata 2426, drakinata 11305 and impaler 7435
+(polearms, axes), wyvern fang 7408 and the poet's fencing quill 10304 (swords), the sludgebrass whip 23543 (a club: no whip kind).
+If the owner disagrees with a row, delete it or set new = old; the tool and the tests follow the table.
+
+Coverage: the families table moved two Berserker cells out of `familyKnownGaps` (`weapon_coverage_config.lua`): level 1-20 (the two
+scythes make 3 two-handed swords next to 3 axes) and 1000-1300 (the Great Axe and the Skull Crusher make 6 swords, 3 axes, 3 clubs).
+The one known gap left is the Berserker at 1700-2400+. No band fell under 3 weapons of a kind. `weapon_coverage.lua --write` and
+`gear_coverage.lua --write` rewrote the tables above; `weapon_family_model.py --check` is green.
+
+Two speed numbers on one tooltip. "Speed 1.89 s" (the tile) is `yourinterval`: the seconds between the viewer's own auto attacks with
+the weapon (the vocation's interval x the item's interval / 2000, then dexterity and the attack speed bonus; the DPS line uses it).
+"Attack Interval 3 s" (the line below) is `attackspeed`: the item's own interval in `items.xml`. They are two things, not a
+contradiction. 3000 ms is on purpose: `tools/two_handed.py` gives every two-handed weapon 1.5 x the 2000 ms default, and
+`weapon_styles.lua` gives it x1.6 damage per hit (step `weapons`, "Weapon styles"). 345 items carry an `attackspeed` other than
+2000 ms: 323 at 3000 (all two-handed), 8 at 2700 (two-handed, from 1800), 11 at 1800 and 3 at 1700 (one-handed, quicker than the
+default: the Astro, Embersage, Moist, Deathlord and Dawnforged one-handers). 331 are over 2500 ms and all are two-handed. A Warrior
+(vocation interval 1300 ms) swings a 3000 ms weapon every 1950 ms (0.51 hits per second) and a 2000 ms one every 1300 ms (0.77), so
+the slow weapon hits 1.5 times less often and 1.6 times harder. Nothing was changed in the rows; the label of the second one ("Attack
+Interval", the item's own) could read "Base Interval" to tell the two apart: a client and pt-BR text change the owner may ask for.
+
+Items players own: a copy keeps its id and its rolled modifiers. The melee skill modifier is one "Melee" modifier for sword, axe and club
+(`chaos_crafting.lua` `C.skills`: `rarity_axeSkill`, `rarity_swordSkill`, `rarity_clubSkill` all read as "Melee" and raise all three
+engine skills), so an old Twin Hooks with an axe skill modifier keeps working. The family trait line is built at the tooltip (and the
+trait at each hit) from the type, nothing is stored on the item. Nothing to migrate. One side effect: the Transmog kinds follow the type, so
+the account's unlocked look of an item that moved is listed under its new kind, and a look already applied to an item stays applied.
+Test: `python3 -I server/tools/patch_stock_weapon_types_test.py && python3 -I server/tools/audit_weapon_types_test.py`; the tooltip
+follows by itself (`tests/item_tooltip_test.lua`: the mocked Twin Hooks as a sword, the same item typed as an axe, and the two interval
+rows).
 
 **Base modal dungeon entry** (`tools/patch_base_dungeon.py`, install step `dungeonentry`; `ChaosDungeonsOpen` in
 `dungeons.lua`). The base server has a second way into the 4 dungeons of `DUNGEON_SYSTEM` (lib/core/dungeon.lua): a
@@ -30756,7 +30878,7 @@ First stage of the combat redesign (owner, 2026-11-10: "monster attacks and defe
 ignore, the order of defence"; "for now forget our tests and the caps we put, also the DPS tests and the class objectives:
 I want to see how everything ends up, then we rethink"). This stage is the MONSTER side: how a monster takes a hit from a
 player, the monster ranks and the monsters' resistance data. The player side (the player's armour, absorb, dodge, block,
-penetration) is the next stage. Nothing here ran on a live server.
+penetration) is the next stage. The armour on weapon hits first ran on a local server on 2026-11-11 (O501, "Weapon hits" below: measured); everything else of this section is computed and mocked, never run on a live server.
 
 **Shared numbers.** `defence_config.lua` is the one file: `armourHitFactor` 0.07, `physicalReductionCap` 90, `resistCap` 75,
 `blockCap` 75. No other file holds a copy; the player stage reads the same file.
@@ -30785,8 +30907,10 @@ event registered later, outside a login, is last. A monster's events run in regi
    Ironhide, boss mechanics, waystone modifiers.
 
 **Armour by hit size.** `reduction = A / (A + armourHitFactor x H)`, H the physical part as it arrives. A big hit loses less of
-itself. A is not the XML armor: it is sized so that the MEDIAN CLASS HIT of the monster's level loses 25% (a normal monster, a
-magic one too), 40% (rare, legendary, nemesis) or 50% (a boss): `A = f / (1 - f) x 0.07 x median hit`, f 0.25, 0.40, 0.50.
+itself. A is not the XML armor: it is sized so that the MEDIAN HIT of the monster's level loses 25% (a normal monster, a
+magic one too), 40% (rare, legendary, nemesis) or 50% (a boss): `A = f / (1 - f) x 0.07 x median hit`, f 0.25, 0.40, 0.50. Two
+medians since O501: a spell is measured against the median CLASS hit (`hitCurve`, f = `armourTarget`), a weapon hit (melee and
+ranged origin) against the median WEAPON hit (`weaponHitCurve`, f = `weaponTarget`) and loses at most `weaponShareCap` of itself.
 A boss is every kind the code treats as one: the type flag `isboss` (area, quest and world bosses), the world boss, a rift
 guardian, an Omen guardian, a tower boss, a waystone tier boss. The level is the nameplate (hunting) level, else the level of
 `monster_damage.lua`.
@@ -30822,8 +30946,155 @@ big = 5 x median; the table is the test, armour alone, no file resistance):
 | 1,000 | elite | 76.9% (to 331) | 40.0% (to 4,301) | 11.8% (to 31,628) |
 | 1,000 | boss | 83.3% (to 239) | 50.0% (to 3,585) | 16.7% (to 29,871) |
 
-A weapon class swings small hits (the median weapon hit is 0.42 of the class hit at level 100) and loses more to armour than a
-spell class, whose casts are big.
+That table is the armour of a SPELL (and of a physical spell hit of a summon): the median class hit. A weapon hit has its own
+curve since O501 (below): a weapon class swings small hits and lost 50 to 90% of an auto attack to the armour sized for the class hit.
+
+**Weapon hits (O501, 2026-11-11).** Owner (translated): "It seems the auto attack is hitting practically nothing on the monsters."
+The cause is this layer, with a second cause that was there before it. What was measured, what was changed, what was not.
+
+*Measured.* A local server with every engine patch up to 0090 and the Lua of this repository up to O490 (install steps `files`,
+`gearsets`, `fistweapons`, `weapons800`, `weapongrowth`, `monsterresists`, `equiprules`, `meleeskill`). A bare test character of each of
+six kinds at levels 8, 20, 60, 100, 300, 500 and 1000: a Warrior with one hand and a shield, a Warrior with two hands, a Thief, a
+Ranger, a Monk and a Mystic, each in the best equipment-set weapon its level allows (claws for the Monk), weapon skill 10, 20, 45, 70,
+100, 120, 135, no cards, no passive tree, no gems, no stats. Each fought a dummy of its level with armour 0 and defence 0, so that
+what arrives is what the engine rolled (a real hunt monster for the flat armour, below). Every hit was logged inside the hit chain:
+what arrives at `ChaosMonsterDefence`, its A, what leaves it, what the monster's health loses. 100 to 200 auto attacks a character,
+once with the layer on and once with it off (`monster_defence_config.lua enabled`, the game before O462), then a rare and a boss at
+levels 100 and 500, two spells of the class and a real monster of each level. The rig is test data of the machine and is not committed.
+
+The auto attack on a normal monster of the level, the layer on. `Removed` is the share of the physical part of each hit the layer took
+(A is the O462 value, sized for a spell); `Reaches` is the damage per second of the auto attack, physical and element part, with the
+layer on over the same with it off; the seconds are for a typical hunt monster of the level (`pack_model.py`: 61 hp at 8, 78 at 20,
+257 at 60, 478 at 100, 1,775 at 300, 4,359 at 500, 16,620 at 1000). The Monk's own unarmed scaling is a later event and is not in its
+numbers.
+
+| Class | Level | Hit rolled, mean (max) | A | Removed | Reaches the monster | Seconds to kill, layer on / off |
+|---|---:|---:|---:|---:|---:|---:|
+| Warrior, one hand + shield | 20 | 18.7 (38) | 2.01 | 57.0% | 54.8% | 4.0 / 2.2 |
+| Warrior, one hand + shield | 100 | 78.2 (159) | 10.83 | 63.2% | 59.1% | 6.7 / 4.0 |
+| Warrior, one hand + shield | 500 | 319.1 (642) | 85.35 | 76.4% | 51.2% | 25.0 / 12.8 |
+| Warrior, one hand + shield | 1000 | 705.6 (1336) | 233.17 | 80.6% | 46.8% | 38.4 / 18.0 |
+| Warrior, two hands | 20 | 20.2 (38) | 2.01 | 55.5% | 50.1% | 5.8 / 2.9 |
+| Warrior, two hands | 100 | 81.4 (164) | 10.83 | 62.2% | 58.5% | 9.3 / 5.4 |
+| Warrior, two hands | 500 | 337.2 (670) | 85.35 | 76.1% | 52.8% | 35.8 / 18.9 |
+| Warrior, two hands | 1000 | 684.1 (1375) | 233.17 | 80.2% | 52.8% | 55.7 / 29.4 |
+| Thief, blade | 20 | 32.6 (207) | 2.01 | 37.8% | 54.9% | 4.8 / 2.6 |
+| Thief, blade | 100 | 119.2 (460) | 10.83 | 51.5% | 67.3% | 5.2 / 3.5 |
+| Thief, blade | 500 | 435.5 (785) | 85.35 | 71.2% | 55.1% | 10.9 / 6.0 |
+| Thief, blade | 1000 | 802.3 (1579) | 233.17 | 78.2% | 48.0% | 40.5 / 19.5 |
+| Ranger, bow | 20 | 64.4 (134) | 2.01 | 29.2% | 57.4% | 3.8 / 2.2 |
+| Ranger, bow | 100 | 139.7 (220) | 10.83 | 51.0% | 49.3% | 29.8 / 14.7 |
+| Ranger, bow | 500 | 629.7 (1219) | 85.35 | 64.0% | 29.9% | 56.0 / 16.8 |
+| Ranger, bow | 1000 | 1349.3 (2366) | 233.17 | 69.1% | 29.0% | 127.4 / 37.0 |
+| Monk, fists | 20 | 14.0 (30) | 2.01 | 63.4% | 27.3% | 28.2 / 7.7 |
+| Monk, fists | 100 | 31.5 (63) | 10.83 | 80.7% | 17.8% | 142.2 / 25.3 |
+| Monk, fists | 500 | 85.9 (172) | 85.35 | 89.9% | 9.2% | 711.1 / 65.2 |
+| Monk, fists | 1000 | 145.0 (275) | 233.17 | 90.1% | 9.6% | 1366.8 / 131.3 |
+| Mystic, wand | 20 | 15.9 (18) | 2.01 | no armour | 98.7% | 6.4 / 6.3 |
+| Mystic, wand | 100 | 61.8 (70) | 10.83 | no armour | 99.7% | 11.5 / 11.5 |
+| Mystic, wand | 500 | 144.9 (165) | 85.35 | no armour | 101.0% | 18.2 / 18.3 |
+| Mystic, wand | 1000 | 285.9 (328) | 233.17 | no armour | 100.3% | 52.6 / 52.8 |
+
+The Mystic's wand hit is `ORIGIN_WAND`: the layer never armours it (98 to 102% reaches). A rare monster took 65 to 90% of the physical
+part of an auto attack at levels 100 and 500, a boss 72 to 90% (`measure.csv`); the rare's +15 on the element resistance takes 15% of
+the wand's element hit.
+
+*What arrives.* O462 sized the armour for the median CLASS hit, `dps x auto share x interval` of a typical character: 237 for a
+Warrior at level 100 against 78 measured, 1,140 at 500 against 319, 3,182 at 1,000 against 706 (Ranger 400 / 140, 1,272 / 630,
+3,297 / 1,349; Monk 175 / 32, 1,158 / 86, 3,886 / 145). The layer is the first Lua event of the monster. It sees the roll of the engine;
+what the player multiplies by comes later: `ChaosPassiveDealt` (class damage, the damage pool, gems, cards, charms), `weapon_styles.lua`
+(two hands, bows), the weapon power, the class combat events, and for the Monk `monk_combat.lua`, which scales the engine's fist hit
+(attack 7) to the level's fist attack, about x6 at level 100, in an event registered on the monster at the first hit. Events after
+the layer changed a bare character's hit by -53% to +115% (the sword's tempo -17%, the Mystic's wand power x1.35 to 2.15, a bow -25 to
+-53% that was not isolated). So the layer saw a Warrior's hit 3.0 to 4.5 times smaller than the model's, a Ranger's 2 to 3 times, a
+Monk's 5 to 27 times, and took 37 to 81% of a Warrior's where it meant to take 25%. What arrives is the engine's formula
+(`Weapons::getMaxWeaponDamage`: `level / 5 + (skill / 4 + 1) x (attack / 3) x 1.03`, a bell from 0 to that maximum) at the inputs
+of the character, with two findings that `tools/defence_curve.py` holds as constants and `tools/defence_curve_test.py` against the
+measurement: the physical part of a set weapon is 65% of its attack (the rest is an element part, never armoured: wyrmscale blade
+22 + 12), and a weapon skill under 36 hits as 36 (skill 10 and 20 at levels 8 and 20 hit 1.5 to 2.9 times the formula). Measured
+mean over the formula at these inputs: 0.93 to 1.13 for the Warrior, Ranger and Monk at every level, 0.75 to 1.04 for the two-hand
+weapon (0.75 at 8, 0.90 at 20).
+
+*The second cause: the monster's own armour and defence (engine, before any Lua).* The XML numbers of the hunt monsters (median of the
+pool within 10% of the level: 5 / 5 at level 8, 10 / 10 at 13, 15 / 15 at 20, 30 / 30 at 60 and 100, 65 at 300, 70 at 500; the
+level-scaled monsters of the repository 75 to 90 from 500 to 2000) take `uniform(defence / 2, defence)` off a hit once a second and
+`uniform(armour / 2, armour - 1)` off every hit, and a hit that falls to 0 never reaches a Lua event. This README said "under 1% of a
+late hit". It is not, for an auto attack that arrives without its multipliers. A Warrior with one hand against a real monster of its
+level (Troll, Mummy, Wyrm, Retching Horror): half of its attacks were blocked outright (77 of 154 at level 8, 95 of 191 at 20, 60 and
+100) and the rest arrived at 9.3 against a roll of 18.7 at level 20 and 38 against 78 at 100. The damage per second with the layer
+OFF, real monster over dummy: Warrior 89 / 55 / 50 / 63% at levels 8 / 20 / 60 / 100 (two hands 95 / 50 / 47 / 65, Ranger
+105 / 95 / 71 / 70, Monk 66 / 14 / n.a. / 6, the Thief is noisy: its crits); with the layer on besides, the real monster over the OFF
+dummy: Warrior 72 / 37 / 29 / 46%, Ranger 108 / 72 / 39 / 29%, Monk 24 / 3 / n.a. / 1%. Ranking by the measured size at a level 20
+Warrior: the flat armour and defence took 45% of the auto damage, the O462 layer 32% of the rest. At 300 and above the layer is the bigger
+one (70 to 80% on the dummy against the model's 35% for the flat armour). Not seen as a cause: the weapon growth (it arrives in the
+attack of the item, the formula holds), the damage pool and the other multipliers (later events: they raise or lower a hit after
+the layer, they take nothing before it), engine patch 0090 (it is about hits a monster deals), the player armour layer O464, the
+resistance data (the dummy has none, the files of the real ones: Mummy 0, Retching Horror 10), the weapon intervals (1.0 to 1.3 s a
+vocation, 1.5 times that for two hands). The flat armour is the stock formula and was there before O462: it is not changed here.
+
+*The fix.*
+
+1. A weapon hit (melee and ranged origin) is measured against its own curve, `weaponHitCurve` of `monster_defence_config.lua`: the
+   median over the 15 classes with an armoured weapon hit (the six casters hit with a wand, `ORIGIN_WAND`, never armoured) of the mean
+   ARRIVING hit, in the units the layer sees: the engine's roll (the formula, the tier weapon of the level from `install_gear_sets.py`
+   times `weapon_growth.py`, the physical share, the typical skill of `weapon_skill_config.lua` never under 36, the bell `ROLL`) minus
+   the flat armour and defence of a typical hunt monster (`FLAT`). `tools/defence_curve.py` derives it at the same 13 levels as
+   `hitCurve` and `--check` holds it. Below level 100 the rows come from the same formula and are checked against the arriving hits
+   measured at 8, 20 and 60 (`MEASURED` in `tools/defence_curve_test.py`: 0.94 to 1.13 of the formula); the class curve below 100 is as
+   before. Rows: 16 at level 1, 13 at 10, 16 at 30, 37 at 60, 82 at 100, 121 at 200, 165 at 300, 239 at 500, 359 at 750, 587 at 1000,
+   710 at 1500, 867 at 2000, 915 at 2500. A spell keeps `hitCurve`: no spell number moves (`tests/monster_defence_test.lua` holds the
+   spell values of before; a summon's bite, a Necromancer's minions and the Beastmaster's wolves are `ORIGIN_SPELL` since O468, so they
+   keep the class curve, and their loss to armour is as before).
+2. `weaponTarget` 27.5 / 44.5 / 55 (normal / elite / boss): the percent of the median weapon hit the weapon armour takes. A little above
+   `armourTarget` (25 / 40 / 50) on purpose: the hits of one weapon roll between 0 and twice their mean, the cap holds the small ones and
+   the big ones lose less, so with these numbers the armour removes the `armourTarget` of the DAMAGE of the median class's auto attack,
+   expected over the roll (G1).
+3. `weaponShareCap` 40 / 55 / 65: the most of a weapon hit the armour may remove, so a low roll or a small hit (a Monk, level 8 to 30) is
+   not erased (G2). The rule of O462 stays: a big hit loses less than a small one. The physical cap (the file's percent, armour and
+   Plated inside 90) is as before, and penetration comes off the capped share.
+4. `C.defend` takes `ctx.Aw` and `ctx.weaponCap`; `monster_defence.lua` caches both armour values of a monster (`MD.weaponArmourOf`).
+   The order of the events is not touched (`tests/defence_order_test.lua` is true as before). The layer still sees the hit before the
+   player's multipliers, so the curve is in arriving units (G4) and the share it takes is a share of the arriving hit: it takes the
+   same share of the final hit. Moving the layer behind the player's events was not done: some are registered on the monster at the
+   first hit (the Monk's, the archetypes', the cards') and could not be put in front of or behind it, and the engine's flat armour
+   comes before any Lua anyway.
+
+G1 to G4 with the model (`python3 -I server/tools/defence_curve.py --check`, 85 levels from 8 to 2,500, the 15 armoured classes):
+G1 the median class loses 25 / 40 / 50% of its auto attack damage within 1.7 / 2.1 / 2.2 points at the worst level (it lost 41 to 88%
+on a normal monster); G2 the most any class loses is 40 / 55 / 65%, the Monk at the cap (it lost up to 97.5 / 98.7 / 99.1% at level
+1000); G3 no spell number moves and a big hit loses less than a small one; G4 the curve is in the units that arrive (the engine
+formula against the measurement). `--autos --level 100` prints the table of the 15 classes, before and after; three rows:
+
+| Class at level 100 | Mean arriving hit | Before: normal / elite / boss | After: normal / elite / boss |
+|---|---:|---|---|
+| Warrior (the median) | 82 | 60.9 / 75.2 / 81.8% | 24.5 / 39.8 / 49.8% |
+| Ranger | 228 | 37.8 / 54.1 / 63.6% | 11.4 / 21.0 / 28.6% |
+| Monk | 10 | 90.9 / 95.2 / 96.7% | 40.0 / 55.0 / 65.0% |
+
+*After the fix, measured* (the same characters, the dummy of the level, the layer on, 120 s; the numbers before are the table above):
+
+| Class | Level | Hit rolled, mean (before / after) | Removed, before -> after | Reaches the monster, before -> after | Seconds to kill after, layer on / off |
+|---|---:|---:|---:|---:|---:|
+| Warrior, one hand + shield | 20 | 18.7 / 28.7 | 57.0% -> 16.2% | 54.8% -> 85.8% | 2.0 / 1.7 |
+| Warrior, one hand + shield | 100 | 78.2 / 82.5 | 63.2% -> 25.3% | 59.1% -> 90.1% | 4.6 / 4.1 |
+| Warrior, one hand + shield | 500 | 319.1 / 329.3 | 76.4% -> 20.3% | 51.2% -> 87.2% | 14.8 / 12.9 |
+| Ranger, bow | 20 | 64.4 / 87.1 | 29.2% -> 5.7% | 57.4% -> 80.7% | 2.1 / 1.7 |
+| Ranger, bow | 100 | 139.7 / 140.1 | 51.0% -> 17.7% | 49.3% -> 79.4% | 18.6 / 14.8 |
+| Ranger, bow | 500 | 629.7 / 654.7 | 64.0% -> 11.9% | 29.9% -> 82.2% | 20.5 / 16.9 |
+| Monk, fists | 20 | 14.0 / 19.4 | 63.4% -> 21.1% | 27.3% -> 77.7% | 8.6 / 6.7 |
+| Monk, fists | 100 | 31.5 / 33.4 | 80.7% -> 39.6% | 17.8% -> 60.2% | 39.2 / 23.6 |
+| Monk, fists | 500 | 85.9 / 92 | 89.9% -> 39.5% | 9.2% -> 60.1% | 104.4 / 62.7 |
+
+*Not done, for the owner to decide.* (1) The flat armour and defence of the monster files, the second cause: a patch tool
+(`patch_monster_flat_defence.py`, an install step like `monsterresists`) that caps the XML `armor` and `defense` by a level rule would give
+a level 20 Warrior back about 45% of its auto damage. The Monk needs more: its fist hit is attack 7 in the engine and is scaled by a
+later event, so the flat armour takes nearly all of it before the scaling (6% of its damage reaches a level 100 monster with the layer
+off); an engine patch that reads the Monk's fist attack from the level, or its claws in the main hand, would fix that. (2) The weapon
+spells (Reaping Gyre, Earthbreaker) are `ORIGIN_SPELL` hits of weapon size (76 at level 100): they keep the class curve and lose 50 to
+60%; the rule "a spell is unchanged" was kept. (3) Not measured: a Necromancer's minions and a Beastmaster's wolves (read from the
+code: `ORIGIN_SPELL`, unchanged), 15 of the 21 classes (six kinds were run, the model covers the rest), levels above 1000, the real
+monsters at 300 and above, the Thief's crit hits in the model (the Thief line is a plain melee class in it; its measured arriving mean
+was 1.1 to 1.5 times the formula).
 
 **The physical cap.** The total of the file's physical percent, armour and Plated never passes 90 percent:
 `1 - (1 - p0) x (1 - armour) x (1 - Plated)`, and when it would, the layer takes the hit back up to 10 percent of the raw hit.

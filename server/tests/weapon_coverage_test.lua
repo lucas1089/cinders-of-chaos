@@ -270,12 +270,19 @@ do
 	local fake = {{class = "X", cells = {{sword = 5, axe = 1, club = 0, families = 1}}}}
 	local f1 = C.familyFailures(cfg, fake)
 	eq(#f1 >= 1 and f1[1].text:find("only 1 family", 1, true) ~= nil, true, "an unlisted one-family cell fails")
-	local good = {{class = "Berserker", cells = {{sword = 5, axe = 4, club = 0, families = 2}}}}
+	-- O500 (2026-11-11): the Berserker's cells 1-20 and 1000-1300 left the known gaps when stock weapons moved to the kind their name says
+	-- (patch_stock_weapon_types.py); the one left is the last band (1700-2400+), so the fake cells are the bands of the config
+	local goodCells = {}
+	for i = 1, #cfg.bands do
+		goodCells[i] = {sword = 5, axe = 4, club = 0, families = 2}
+	end
+	local good = {{class = "Berserker", cells = goodCells}}
 	local f2 = C.familyFailures(cfg, good)
 	eq(f2[1] and f2[1].text:find("no gap any more", 1, true) ~= nil, true, "a known gap that is not one any more fails")
-	eq(C.familyCellText(cfg, rows[3], 1), "2/4/2*", "a known gap is starred")
-	eq(C.familyCellText(cfg, rows[1], 1), "27/12/16", "a plain cell is three numbers")
-	eq(C.familyMarkdown(cfg, rows):find("| Berserker | 2/4/2* |", 1, true) ~= nil, true, "the markdown table")
+	eq(C.familyCellText(cfg, rows[3], #cfg.bands), "2/7/2*", "a known gap is starred")
+	eq(C.familyCellText(cfg, rows[3], 1), "3/3/2", "a Berserker cell that is no gap any more is plain")
+	eq(C.familyCellText(cfg, rows[1], 1), "30/9/16", "a plain cell is three numbers")
+	eq(C.familyMarkdown(cfg, rows):find("| Berserker | 3/3/2 |", 1, true) ~= nil, true, "the markdown table")
 	eq(C.familyText(cfg, rows):find("Sentinel", 1, true) ~= nil, true, "the plain table")
 end
 

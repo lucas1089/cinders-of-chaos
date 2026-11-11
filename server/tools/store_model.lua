@@ -419,7 +419,7 @@ function M.problems(env)
 				(o.kind == "unlock" and (o.unlock == "autoSeller" or o.unlock == "rarityAutoloot")))) or o.service == "everfullUpgrade"
 			if isConv and not o.accountDiscount then bad("%s: a per-character convenience without the account discount", o.name or o.key) end
 		end
-		if n ~= 17 then bad("%d offers carry the account discount (want 17: 4 pouches, the ration, 2 unlocks, 10 Everfull tiers)", n) end
+		if n ~= 18 then bad("%d offers carry the account discount (want 18: 5 pouches, the ration, 2 unlocks, 10 Everfull tiers)", n) end
 	end
 
 	-- Pact Marks (O317): cosmetics of the shelf only, a Mark worth about a coin

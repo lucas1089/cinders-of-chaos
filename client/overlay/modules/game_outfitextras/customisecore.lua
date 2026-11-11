@@ -398,10 +398,70 @@ function C.outlineOption(rows, values, layers)
   return nil
 end
 
+-- ---------------------------------------------------------------- samples (O497)
+-- Loot label, chat colour and plate frame are drawn by the map and the console, so a card of those shows a sample of the
+-- real thing (game_lookpreview LookPreviewCore.sampleOf / sampleSpec draw it, on the card, on the stage and on the
+-- Equipped now tile). The sample comes from the row the server sent: the accent of a loot label (the background of the
+-- player's highlighted ground labels), the colour of a chat name, the frame of a name plate. The Default card is the
+-- stock one. nil for every other category.
+C.SAMPLE_KEYS = { lootbeam = true, chatcolor = true, frame = true }
+function C.sampleOption(key, card)
+  if type(card) ~= 'table' then return nil end
+  local row = type(card.row) == 'table' and card.row or {}
+  if key == 'lootbeam' then
+    return { kind = 'lootlabel', accent = row.accent }
+  elseif key == 'chatcolor' then
+    return { kind = 'chatcolor', color = row.color }
+  elseif key == 'frame' then
+    -- "Title frame" (no frame chosen) is drawn on the stock plate
+    return { kind = 'nameplate', frame = type(card.value) == 'string' and card.value ~= '' and card.value or 'default' }
+  end
+  return nil
+end
+
+-- A locked card is dimmed by game_unlocks (UnlocksCore.LOCKED_OPACITY, 0.45 on the whole card). At 0.45 the pale chat
+-- colours fall under 3:1 against the console (the worst, chat_pactbound, 1.97), so a locked card with a sample is dimmed
+-- less: 0.7 keeps every colour of the server's rows at 3:1 or better (customisecore_test.lua measures them).
+C.LOCKED_SAMPLE_OPACITY = 0.7
+function C.cardOpacity(key, card, lockedOpacity)
+  if type(card) == 'table' and card.locked and C.SAMPLE_KEYS[key] then
+    return math.max(tonumber(lockedOpacity) or 0, C.LOCKED_SAMPLE_OPACITY)
+  end
+  return nil
+end
+
+-- the sample of the value in use of a category (nil: not a sample category, or its row has not come yet)
+function C.sampleInUse(key, rows, values)
+  if not C.SAMPLE_KEYS[key] or type(values) ~= 'table' or values[key] == nil then return nil end
+  for _, r in ipairs(type(rows) == 'table' and rows or {}) do
+    if r.key == key then
+      local o = rowOption(r, values[key])
+      if not o then return nil end
+      return C.sampleOption(key, { value = o.value, row = o.row, none = values[key] == C.defaultValue(key) or nil })
+    end
+  end
+  return nil
+end
+
+-- the option the stage keeps while no card is under the mouse: the outline in use and, in a sample category, the sample of
+-- the value in use there (so a picked loot label stays on the stage while its list is open)
+function C.restOption(category, rows, values, layers)
+  local outline = C.outlineOption(rows, values, layers)
+  local sample = C.sampleInUse(category, rows, values)
+  if sample and outline then return { kind = 'bundle', parts = { outline, sample } } end
+  return sample or outline
+end
+
 -- the option of a card under the mouse: the outfit with that card on it (its layer shown, the outline kept), or the
--- effect the card plays; nil when the card shows nothing (chat colours, loot labels, frames)
+-- effect the card plays, or the sample of a loot label, chat colour or plate frame (the outline kept); nil when the
+-- card shows nothing
 function C.hoverOption(temp, layers, key, card, outline)
   if type(card) ~= 'table' then return nil end
+  local sample = C.sampleOption(key, card)
+  if sample then
+    if outline then return { kind = 'bundle', parts = { outline, sample } } end
+    return sample
+  end
   if C.LOOK_KEYS[key] then
     local shownLayers = copy(layers)
     shownLayers[key] = true
@@ -425,7 +485,7 @@ end
 -- ---------------------------------------------------------------- Equipped now
 -- ctx = { temp, lists, src, rows (OutfitExtrasCore.rows), chosen, layers }
 -- returns one row per slot: {key, label, name, empty, icon, loading}; name is the choice's text or "-"
---   icon = {kind = 'outfit', outfit} | {kind = 'play', row} | {kind = 'print', art} | nil
+--   icon = {kind = 'outfit', outfit} | {kind = 'play', row} | {kind = 'print', art} | {kind = 'sample', option} | nil
 function C.stripRows(ctx)
   ctx = ctx or {}
   local temp = type(ctx.temp) == 'table' and ctx.temp or {}
@@ -468,6 +528,8 @@ function C.stripRows(ctx)
         row.icon = { kind = 'play', row = card.row }
       elseif card.row and key == 'footprint' and type(card.row.art) == 'string' then
         row.icon = { kind = 'print', art = card.row.art }
+      elseif C.SAMPLE_KEYS[key] then
+        row.icon = { kind = 'sample', option = C.sampleOption(key, card) }
       end
     end
     out[#out + 1] = row
