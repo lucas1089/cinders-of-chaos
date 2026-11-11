@@ -55,7 +55,11 @@ eq(root.visible, false, 'card window starts hidden')
 
 -- attach
 local win = widget('ArenaWindow')
+function win:getPaddingTop() return 38 end
+function win:getPaddingRight() return 16 end
 local b = attach(win, 'arena')
+eq(b.mt, -31, 'button margin top: the title bar, padding taken out')
+eq(b.mr, 6, 'button margin right: padding taken out')
 eq(b.text, '?', 'button text')
 eq(b.parent, win, 'button in the window')
 eq(#b.anchors, 2, 'top and right anchors')

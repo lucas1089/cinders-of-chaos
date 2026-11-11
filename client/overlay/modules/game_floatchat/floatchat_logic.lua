@@ -115,6 +115,76 @@ function L.moveBy(start, mouseX, mouseY, area)
                        width = start.width, height = start.height }, area)
 end
 
+-- ------------------------------------------------------------------ the drag state machine (O498)
+-- One drag of the window: { active, kind = 'move' | 'resize', start, moved }. The glue (floatchat.lua) feeds it the
+-- mouse; the rules live here so they are tested without an engine.
+--   * Only a press on the header or the grip begins a drag, and only with the left button. A press on a button of the
+--     header (Channels, Private, X, gear) never does: the engine hands a button's release to the button alone (the
+--     base UIButton:onMouseRelease returns isPressed(), which stops the release from reaching the header), so a drag
+--     begun there was never ended and the window followed the pointer for good (owner 2026-11-11).
+--   * A drag ends on ANY release, when a move arrives with the left button no longer down, when the client window
+--     lost focus, on hide and on logout (dragCancel).
+L.DRAG_TARGETS = { header = 'move', grip = 'resize' }
+
+-- classes whose press keeps to themselves: a press on one never moves the window
+L.BUTTON_CLASSES = { UIButton = true, UICheckBox = true, UIComboBox = true, UITextEdit = true, UIScrollBar = true }
+
+function L.isButtonClass(name)
+  return L.BUTTON_CLASSES[name] == true
+end
+
+-- 'header' or 'grip' (a place that drags), or 'button' for a press on a button: what the press landed on
+function L.dragTarget(place, className)
+  if L.isButtonClass(className) then return 'button' end
+  return place
+end
+
+function L.dragNew()
+  return { active = false, kind = nil, start = nil, moved = false }
+end
+
+-- a press: the new state. A press that cannot begin a drag also ends one left over from before (a press means the
+-- earlier button went up without anyone hearing of it)
+function L.dragPress(s, target, isLeft, rect, mouseX, mouseY)
+  local kind = isLeft and L.DRAG_TARGETS[target] or nil
+  if not kind then return L.dragNew() end
+  return { active = true, kind = kind, moved = false,
+           start = { x = rect.x, y = rect.y, width = rect.width, height = rect.height,
+                     mouseX = num(mouseX) or 0, mouseY = num(mouseY) or 0 } }
+end
+
+-- a mouse move. env: { leftDown (the left button is down now), focused (the client window has focus), hidden }.
+-- Returns state, rect (the new rect to apply, or nil), ended (true when this move ended an active drag)
+function L.dragMove(s, mouseX, mouseY, area, env)
+  if not s or not s.active then return s or L.dragNew(), nil, false end
+  env = env or {}
+  if env.leftDown == false or env.focused == false or env.hidden == true then
+    return L.dragNew(), nil, true
+  end
+  local r
+  if s.kind == 'move' then r = L.moveBy(s.start, mouseX, mouseY, area) else r = L.resizeBy(s.start, mouseX, mouseY, area) end
+  return { active = true, kind = s.kind, start = s.start, moved = true }, r, false
+end
+
+-- a release anywhere, or a cancel (hide, logout, focus lost): returns state, wasActive, moved
+function L.dragEnd(s)
+  if not s or not s.active then return L.dragNew(), false, false end
+  return L.dragNew(), true, s.moved == true
+end
+
+-- a poll tick: should an active drag be dropped (button up behind our back, client window out of focus)
+function L.dragStale(s, env)
+  if not s or not s.active then return false end
+  env = env or {}
+  return env.leftDown == false or env.focused == false or env.hidden == true
+end
+
+-- a click in the chat window (the left button went up over it) while the chat input is on gives the keys back to
+-- the input: wasDown (a poll ago), isDown (now), inside (the pointer is over the window), typing (input enabled)
+function L.refocusAfterClick(wasDown, isDown, inside, typing)
+  return wasDown == true and isDown == false and inside == true and typing == true
+end
+
 -- ------------------------------------------------------------------ hide / show
 -- state: { hidden, typing, peek (shown only because Enter was pressed), unread, activity }
 -- options: { showOnType (default true), hideOnSend (default true) }

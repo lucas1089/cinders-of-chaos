@@ -27,7 +27,9 @@ local character
 local active = false
 local pollEvent, fadeEvent
 local lastTyping = false
-local drag
+local drag = L.dragNew()
+local endDrag            -- ends the drag (defined with the drag glue below)
+local refocusInput       -- keys back to the chat input (defined with the drag glue below)
 local listeners = {}
 local appliedAlpha = -1
 
@@ -166,7 +168,10 @@ local function dispatch(event)
   local was = state.hidden
   state = L.step(state, event, { showOnType = settings.hideOnSend ~= false, hideOnSend = settings.hideOnSend ~= false }, now())
   if event == 'toggle' or event == 'show' or event == 'hide' then settings.hidden = state.hidden end
-  if was ~= state.hidden then place() end
+  if was ~= state.hidden then
+    if state.hidden then endDrag() end
+    place()
+  end
   if event == 'toggle' or event == 'show' or event == 'hide' then save() end
   notifyListeners()
 end
@@ -230,27 +235,61 @@ local function showMenu(kind, anchor)
         if t.name == e.name then selectTab(t.tab) end
       end
       dispatch('touch')
+      -- the menu's own hand-off of the focus runs about 50 ms after it closes: the input takes the keys after that
+      scheduleEvent(refocusInput, 90)
     end)
   end
   menu:display({ x = anchor:getX(), y = anchor:getY() + anchor:getHeight() })
 end
 
 -- ---------------------------------------------------------------- dragging
+-- State machine: FloatChatLogic.drag* (O498). `drag` is its state; it ends on any release, on a move with the left
+-- button up, when the client window loses focus, on hide and on logout.
 local function mouse(pos) return pos.x, pos.y end
 
-local function beginDrag(kind, pos)
-  local r = win:getRect()
-  local mx, my = mouse(pos)
-  drag = { kind = kind, start = { x = r.x, y = r.y, width = r.width, height = r.height, mouseX = mx, mouseY = my } }
+local function dragEnv()
+  local down = true
+  if g_mouse and g_mouse.isPressed then
+    local ok, v = pcall(g_mouse.isPressed, MouseLeftButton)
+    if ok then down = v == true end
+  end
+  local focused = true
+  if g_window and g_window.hasFocus then
+    local ok, v = pcall(g_window.hasFocus)
+    if ok then focused = v ~= false end
+  end
+  return { leftDown = down, focused = focused, hidden = state.hidden }
+end
+
+local function inDrag() return drag ~= nil and drag.active == true end
+
+-- ends the drag (release anywhere, cancel): saves the place when the window moved
+endDrag = function()
+  local was, moved
+  drag, was, moved = L.dragEnd(drag)
+  if was and moved then save() end
+  return was
+end
+
+local function beginDrag(target, pos, button)
+  if not alive(win) then return false end
+  drag = L.dragPress(drag, target, button == MouseLeftButton, win:getRect(), mouse(pos))
+  return inDrag()
 end
 
 local function onDragMove(pos)
-  if not drag or state.hidden then return false end
-  local rect = root():getRect()
-  local a = area(true)
+  if not inDrag() then return false end
+  if not alive(win) then endDrag() return false end
   local mx, my = mouse(pos)
-  local r
-  if drag.kind == 'move' then r = L.moveBy(drag.start, mx, my, a) else r = L.resizeBy(drag.start, mx, my, a) end
+  local before, r, ended = drag, nil, false
+  drag, r, ended = L.dragMove(drag, mx, my, area(true), dragEnv())
+  if ended then
+    -- the move ended the drag: the button is up (a release nobody heard), the client lost focus, or it was hidden
+    if before.moved then save() end
+    return false
+  end
+  if not r then return false end
+  local rect = root():getRect()
   settings.x, settings.y, settings.width, settings.height = r.x, r.y, r.width, r.height
   win:setSize({ width = r.width, height = r.height })
   win:setMarginLeft(r.x - rect.x)
@@ -258,33 +297,58 @@ local function onDragMove(pos)
   return true
 end
 
-local function endDrag()
-  if drag then
-    drag = nil
-    save()
+-- what a press at pos landed on inside `source`: the place, or 'button' for a child that keeps its own clicks
+local function pressTarget(source, place, pos)
+  local ok, hit = pcall(function() return source:recursiveGetChildByPos(pos, false) end)
+  if ok and hit and hit ~= source then
+    local okc, class = pcall(function() return hit:getClassName() end)
+    if okc then return L.dragTarget(place, class) end
   end
-  return true
+  return place
+end
+
+-- the keys go back to the chat input after a click in the window, when the chat is on (the classic console did)
+refocusInput = function()
+  local te = textEdit()
+  if te and te:isEnabled() == true and not state.hidden then
+    pcall(te.recursiveFocus, te, KeyboardFocusReason)
+  end
 end
 
 local function wireWindow()
   header = win:getChildById('header')
   content = win:getChildById('content')
   local grip = win:getChildById('grip')
-  header.onMousePress = function(_, pos, button)
-    if button ~= MouseLeftButton then return false end
-    beginDrag('move', pos)
-    return true
+  header.onMousePress = function(self, pos, button)
+    return beginDrag(pressTarget(self, 'header', pos), pos, button)
   end
   header.onMouseMove = function(_, pos) return onDragMove(pos) end
-  header.onMouseRelease = function() return endDrag() end
-  header.onDoubleClick = function() M.resetPlace() return true end
-  grip.onMousePress = function(_, pos, button)
-    if button ~= MouseLeftButton then return false end
-    beginDrag('resize', pos)
+  header.onMouseRelease = function()
+    local was = endDrag()
+    refocusInput()
+    return was
+  end
+  header.onDoubleClick = function(self, pos)
+    if pressTarget(self, 'header', pos) ~= 'header' then return false end
+    drag = L.dragNew()
+    M.resetPlace()
     return true
   end
+  grip.onMousePress = function(self, pos, button)
+    return beginDrag(pressTarget(self, 'grip', pos), pos, button)
+  end
   grip.onMouseMove = function(_, pos) return onDragMove(pos) end
-  grip.onMouseRelease = function() return endDrag() end
+  grip.onMouseRelease = function()
+    local was = endDrag()
+    refocusInput()
+    return was
+  end
+  -- a click anywhere else in the window: the release comes here when no child took it
+  win.onMouseRelease = function()
+    endDrag()
+    refocusInput()
+    return false
+  end
   header:getChildById('close').onClick = function() M.hide() end
   header:getChildById('options').onClick = function()
     local o = rawget(_G, 'ChaosLayoutOptions')
@@ -345,6 +409,11 @@ local function takeConsole()
   if cp then pcall(cp.setBackgroundColor, cp, '#00000000') end
   consolePanel:setVisible(true)
   header:raise() -- last child: wins the hit test over the clipped tab row and draws over it
+  -- The keys reach the chat input only along the chain of focused children from the game root panel down. The base
+  -- console focuses its input with recursiveFocus, which skips a widget that is not focusable: with the window
+  -- unfocusable the chain stopped at the root panel and nothing typed arrived (O498). Made focusable only now, after the
+  -- console is in it: the root panel's focus is moved to the window only when it has no focused child at all.
+  pcall(win.setFocusable, win, true)
   return true
 end
 
@@ -359,10 +428,23 @@ local function giveBackConsole()
 end
 
 -- ---------------------------------------------------------------- polling: typing and fading
+local wasDown = false
 local function poll()
   pollEvent = nil
   if not active then return end
+  -- a drag whose release nobody heard (the button went up over another widget or outside the client window, the client
+  -- window lost focus): dropped here at the latest, and no move of the pointer is needed
+  local env = dragEnv()
+  if L.dragStale(drag, env) then endDrag() end
+  -- a click in the window: the keys go back to the chat input
+  local inside = false
+  if alive(win) and not state.hidden and g_window and g_window.getMousePosition then
+    local ok, v = pcall(function() return win:containsPoint(g_window.getMousePosition()) end)
+    inside = ok and v == true
+  end
   local te = textEdit()
+  if L.refocusAfterClick(wasDown, env.leftDown, inside, te ~= nil and te:isEnabled() == true) then refocusInput() end
+  wasDown = env.leftDown
   local typing = te ~= nil and te:isEnabled() == true
   if typing ~= lastTyping then
     lastTyping = typing
@@ -435,7 +517,8 @@ local function disable()
   pcall(disconnect, g_game, { onTalk = onTalk, onTextMessage = onTextMessage })
   giveBackConsole()
   if alive(win) then win:destroy() end
-  win, content, header, drag = nil, nil, nil, nil
+  endDrag()
+  win, content, header = nil, nil, nil
   state = L.new(false, 0)
   notifyListeners()
 end
@@ -450,7 +533,7 @@ local function onMode(mode)
 end
 
 local function onGeometry()
-  if active and not drag then place() end
+  if active and not inDrag() then place() end
 end
 
 -- Direct game hooks, besides the layout mode's notice (see game_hotbar): a game end always ends the window, and a few

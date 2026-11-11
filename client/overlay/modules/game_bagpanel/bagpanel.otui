@@ -1,5 +1,5 @@
 // Inventory panel (game_bagpanel, O420): tab row, equipment with the fight controls, gold and coins, the backpack as
-// one grid, one page button per bag, Sort. Styles from client_chaos_theme. Drawn from bagpanel.lua; sizes in bagpanel_core.lua.
+// one grid, one page button per bag and for the purse (O492) and the bags in it, Sort, Purse. Styles from client_chaos_theme. Drawn from bagpanel.lua; sizes in bagpanel_core.lua.
 
 BagPanelTab < ChaosTabButton
   size: 34 20
@@ -171,5 +171,5 @@ MiniWindow
         margin-left: 6
         width: 72
         !text: tr('Purse')
-        !tooltip: tr('Opens your purse. What you buy in the store is delivered there.')
+        !tooltip: tr('Shows your purse in this panel. What you buy in the store is delivered there.')
         @onClick: modules.game_bagpanel.openPurse()
