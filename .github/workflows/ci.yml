@@ -86,6 +86,8 @@ jobs:
           python3 -I client/tools/sprites/gen_outfit_anchors_test.py
           # names over tall looks: body top, gap and lift (synthetic figures)
           python3 -I client/tools/sprites/gen_info_lift_test.py
+          # the feet of every look per direction, for the footprints (synthetic figures)
+          python3 -I client/tools/sprites/gen_foot_marks_test.py
           # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
           # check runs on the versions the strips were made with (gen_class_fx.py docstring)
           python3 -m venv /tmp/fxenv
@@ -93,6 +95,8 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
           /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
           /tmp/fxenv/bin/python -I client/tools/gen_toast_art.py --check  # toast icons of game_chaosnotify, Pact hourglass included (O317)
+          /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art.py --check  # prints, glows and foot marks of game_cosmeticfx (O499)
+          /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art_test.py
           /tmp/fxenv/bin/python -I client/tools/gen_tooltip_art.py --check  # ring, glow and diamond of the card item tooltip (O422)
           /tmp/fxenv/bin/python -I client/tools/gen_hotbar_art.py --check  # nine-slice frames, slots, caps and chat skin of game_hotbar / game_floatchat (O414)
           /tmp/fxenv/bin/python -I launcher/tools/gen_launcher_art.py --check  # banner and icon of the game launcher window (O339)
@@ -1648,6 +1652,11 @@ jobs:
       - name: Name lifts of tall looks match the pair (gen_info_lift.py --check)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_info_lift.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Foot marks table matches the pair (gen_foot_marks.py --check)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_foot_marks.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Dungeon banners render from the live pair (gen_dungeon_banners.py --check with the pair)
