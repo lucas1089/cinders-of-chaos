@@ -40,6 +40,15 @@ return {
 		speed = 20 -- speed added
 	},
 
+	-- O483 (owner 2026-11-11, translated: "check whether the Nemesis has Reflect ... there are players still dying in one hit of the
+	-- Nemesis"): one hit of a Nemesis on a character it may hurt (its victim and the victim's party) takes at most `share` x that
+	-- character's pool, as a whole. Pool = the MAXIMUM health plus, while a mana shield is up, the maximum mana (the rule of the
+	-- rift guardian cap, O478: hitcap_core.lua). The cap is the LAST health and mana event of the character (rift.lua RF.capLast,
+	-- called when the Nemesis appears), so what it bounds is the final number. Vengeful (x1.5 below half health) is inside it.
+	-- A hit is only cut, never raised; nothing else about the Nemesis changes. enabled = false: no cap.
+	-- server/README.md "Nemesis", Hit cap and reflect cap (O483).
+	hitCap = {enabled = true, share = 0.60},
+
 	-- ------------------------------------------------------------------ look (no new sprite)
 	-- outfit shader 23 = chaos_blood_pulse "Heartblood" (cosmetics_config.lua outfitShaders, data/XML/shaders.xml), a
 	-- black skull over the head and a death effect when it appears. The monster bar labels the tier "Nemesis".

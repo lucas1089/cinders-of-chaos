@@ -1495,7 +1495,7 @@ Everything adjustable is in `chaos_constants.lua`: rewards, limits, boss names, 
 When the tier is applied: the engine runs `onSpawn` before the placement and gives a monster its id only at the placement, so nothing keyed by the id can be written in `onSpawn`. The natural roll is decided there and the monster gets a think event for that tier (`ChaosTierRollMagic` / `Rare` / `Legendary` / `Boss`); at its first think, after the placement, the tier is applied and the event removes itself. A map respawn or `Game.createMonster` thinks within about a second; a startup spawn once a player comes near. A tier set in between (`ChaosApplyTier`: rift, invasion, tower) wins over the roll. Ambush copies get their tier right after `Game.createMonster` returns. Loading the script drops any entry an older version left under id 0 in `ChaosTierState` (the table survives a reload, so a server that ran the old roll would otherwise keep it). `tests/monster_tiers_test.lua` runs the file against a mocked engine whose `getId()` is 0 until the placement. Checked in game: a forced legendary roll lands under the monster's id with modifiers, monster bar tier and announcement; a normal kill after it still brings an ambush.
 
 ### Modifiers and shaders (monster_tiers.lua)
-Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
+Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player; O483: the amount of one hit is also cut to 10% of the attacker's pool and 25% per second, `monster_tiers.lua` `reflectCap`, see "Nemesis"), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
 
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
@@ -27185,6 +27185,91 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
   and a notice to the victim. Killed by the world (no player credit): no reward, it comes back. The row is deleted
   before anything is paid, so a second death event pays nothing. Hardcore: a Hardcore character can have one; a
   Hardcore slayer gets the trophy only.
+- **Hit cap and reflect cap (O483).** Owner 2026-11-11 (translated): "I want you to check whether the Nemesis has Reflect. If it
+  has, take a look, because there are players still dying in one hit of the Nemesis. Take a look at the attack and the
+  defence and at the modifiers of the Nemesis, please." It has Reflect: the trait Thorned is the modifier Reflective. Measured
+  first (below), then three changes. Nothing else moved: health, traits, chances, rewards and the trait texts are as they were
+  ("Reflects 15% of the damage it takes." is still true).
+  1. *Hit cap* (`nemesis_config.lua` `hitCap = {enabled = true, share = 0.60}`). One hit of a Nemesis on a character it may hurt
+     (its victim and the victim's party; a stranger takes nothing from it anyway) takes at most `share` x that character's
+     pool, as a whole. Pool = the MAXIMUM health plus, while a mana shield is up, the maximum mana (the energy shield is not in
+     it): the pool and the cut of the rift guardian cap (O478), now in one place, `hitcap_core.lua` (`H.pool`, `H.cut`; the
+     rift's `R.hitPool` / `R.capHit` call it, same numbers). The health and the mana part of one hit stay together under the
+     ceiling (the mana event caps the whole hit, the health event of the same hit gets the ceiling less what the mana paid);
+     a hit is only cut, never raised. Vengeful (x1.5 below half health) is inside the cap. No second chain of events: the two
+     cap events of `rift.lua` (`ChaosRiftHitCapHealth`, `ChaosRiftHitCapMana`) now ask a small list of sources, `ChaosHitCap`
+     (`hitcap_core.lua`): `setSource(key, fn)`, `fn(attacker, victim)` gives a share or nil, the smallest share wins. The
+     rift guardian is the source `rift`, the Nemesis registers `nemesis` (nemesis.lua: a live Nemesis, a victim it may hurt).
+     `nemesis.lua` calls `ChaosRift.capLast` on the victim when the Nemesis appears and on a tick for each party member (once
+     per login, the creature id tells), so the cap events are the LAST health and mana events of the characters it may hurt.
+  2. *Reflect cap* (`monster_tiers.lua` `reflectShare = 0.15`, `reflectCap = {enabled = true, perHit = 0.10, perSecond = 0.25,
+     windowMs = 1000}`; the pure rule `H.reflectAmount`). For the modifier Reflective, so also Thorned and the Reflective
+     magic, rare and legendary monsters: what ONE hit sends back is at most `perHit` x the attacker's pool (same pool), and what
+     one character gets back within one second, from all reflects together, is at most `perSecond` x the pool. The 15% stays;
+     the cap only cuts. The amount is cut before the character's own defence (measured: what reached the character was lower than the cap, never higher).
+  3. *Order on the Nemesis.* `ChaosNemesisTaken` (cancels the damage of anybody who is not the victim or in its party) was
+     registered after `ChaosModTaken` (the reflect), and events run in registration order: a stranger whose hit was cancelled
+     still took the reflect of a hit that never landed. `setupMonster` now registers the guard first (and takes both off
+     first, so an earlier registration cannot keep the old order).
+  *Events after the tier hit, and why the number is bounded.* A hit on a character runs the login events in name order and then
+  the character's events in registration order: the three damage multipliers (`Chaos0MonsterDamageLogin`, `Chaos0RiftHitLogin`,
+  `Chaos0TierLogin` = `ChaosTierHit`: the tier, the modifiers, Vengeful x1.5), then `ChaosPlayerDefence` and the older reductions
+  (damage taken from monsters, blessings, gems, charms, cards, item sets), the events that can still raise a hit
+  (`ChaosArchetypesHit`, `ChaosKeystones`, `ChaosClassKeystones`, `ChaosBossMechTaken`), then the two cap events, then Last Breath
+  (`ChaosPowersLastBreath`, moved behind the cap, so a lethal-hit catch sees the capped hit). `RF.capLast` registers the four
+  late registrars first, then the cap, then Last Breath, as in O478. After the cap run only Last Breath and what registers on
+  the character later (the mentor's, hardcore protection), which can only lower a hit, and the engine (the mana shield pays
+  first, then the energy shield, then the health: the parts of one hit are held to the ceiling together). So the health,
+  mana and energy shield a Nemesis hit takes in all are at most `share` x pool. It also needs engine patch 0090 (the monster
+  level bonus once per hit) to be exact. What the cap does not cover: a condition with no attacker (a burning or poison tick of
+  a modifier), and a character that is not in the cap list because it appeared in the party after the last tick (2 s).
+  *The rift guardian cap is unchanged:* same share, same pool, same events, same order, same numbers
+  (`tests/rift_hitcap_test.lua` passes as it was, plus a second source). The rift's own Reflection modifier (`rift.lua`
+  `ChaosRiftMonsterHealth`) is NOT capped here: it sends back up to 22% of the damage that lands (`rift_config.lua` range 5-22,
+  Spiteglass the same share of the elemental part), with no per-hit and no per-second limit; it is a map modifier the player
+  picks on the key and was left as it is.
+  Tests: `tests/hitcap_test.lua` (pool, cut, sources, reflect amount, one second window), `tests/monster_tiers_test.lua`
+  (Reflective cap through the real handler), `tests/nemesis_test.lua` (event order, a stranger takes no reflect, the source and
+  the registrar), `tests/rift_hitcap_test.lua` (a second source through the same events, mana shield included).
+  *Measured on a local test server (2026-11-11, before and after the change).* The repository's Lua installed over a test copy of
+  the server (engine patch 0090 in), three test characters cloned from tester rows with their health and mana but no gear
+  (so these are hits on a bare character: a worn set lowers them), a probe as the LAST Lua event of the character that records
+  the final amount of each hit and cancels it (nobody died). A monster of the type fought the character for 40 s: the first 14 to
+  16 real hits, so the biggest is the biggest seen, not the biggest roll. `max / pool` is the hit over the pool (health, plus
+  mana with a mana shield up). Before the change:
+
+  | Type (level) | Character (health + mana) | Natural paced monster | Nemesis | Nemesis Vengeful (below half health) |
+  |---|---|---|---|---|
+  | Phantom Shade (263) | level 198 (3035 + 1040) | max 6005, median 3277: 1.98 / 1.08 | max 6058, median 5055: 2.00 / 1.67 | max 8916, median 7502: 2.94 / 2.47 |
+  | the same, mana shield up | pool 4075 | max 6037: 1.48 | max 6095: 1.50 | max 9013: 2.21 |
+  | Snake Master (588) | level 500 (7073 + 3042) | max 6644, median 5222: 0.94 / 0.74 | max 3638, median 2009: 0.51 / 0.28 | max 5514, median 3199: 0.78 / 0.45 |
+  | the same, mana shield up | pool 10115 | max 3750: 0.37 | max 2947: 0.29 | max 6168: 0.61 |
+  | Elite Ice Dragon (960) | level 845 (12740 + 4275) | max 17877, median 12326: 1.40 / 0.97 | max 10126, median 6768: 0.80 / 0.53 | max 14971, median 11361: 1.18 / 0.89 |
+  | the same, mana shield up | pool 17015 | max 10926: 0.64 | max 10019: 0.59 | max 16949: 1.00 |
+
+  *Amplifier: none found.* The Nemesis is paced (`ChaosPace.isPaced` true), `monster_damage.lua` gives it the level of its type
+  (263, 588, 960; `rec.level` is not used for damage) and the same damage multiplier as the type's natural monster (1.105, 1.272,
+  1.30), its tier multiplier is x1.0, so a plain Nemesis hits like its type; Vengeful adds the x1.5 (8916 against 6005). Its
+  health is x1.72 the paced health of its type (1262474 against 732960 for the Phantom Shade). Two things kill: the type's own
+  biggest hits are already over the pool of a character well under the monster's level (1.98 x the pool, in a natural pack too),
+  and Thorned (next table). Nothing about the Nemesis multiplies a hit that does not multiply its type's hit.
+
+  Thorned, one scripted hit of the character on a Nemesis of the type (the reflect that reached the character, against its pool;
+  the four hits one after the other in the same second; before / after the change):
+
+  | Hit | Phantom Shade, pool 3035 | Snake Master, pool 7045 | Elite Ice Dragon, pool 12740 |
+  |---|---|---|---|
+  | 5000 | 374 (0.12) / 168 (0.06) | 167 (0.02) / 167 (0.02) | 342 (0.03) / 342 (0.03) |
+  | 30000 | 3583 (1.18) / 168 (0.06) | 2405 (0.34) / 523 (0.07) | 3749 (0.29) / 1274 (0.10) |
+  | 100000 | 12778 (4.21) / 59 (0.02) | 9110 (1.29) / 523 (0.07) | 14123 (1.11) / 1274 (0.10) |
+  | 300000 | 39084 (12.88) / 0 | 10503 (1.49) / 9 (0.00) | 28462 (2.23) / 295 (0.02) |
+
+  The amount is the one after the character's own defence. The biggest single hit a class can produce was not driven (no class
+  spells were cast; the scripted hits stand for it). After the change, the Phantom Shade Nemesis on the level 198 character: max
+  1821 = 0.600 of the pool, with and without a mana shield (2445 of 4075), Vengeful the same; the Elite Ice Dragon Nemesis: max
+  7644 (0.600), mana shield 10051 (0.591), Vengeful 7644 / 10209 (0.600). *A stranger* hitting the Nemesis: before, the hit was
+  cancelled (the Nemesis lost no health) and the same reflect was still dealt to the stranger (3583 for a 30000 hit, 1.18 x the
+  pool); after, nothing comes back.
 - **Optional hooks, all guarded:** `Chaos.t` / `Chaos.lang` (texts: the English texts of `nemesis_config.lua` are the
   keys; until `i18n_strings.lua` has them a pt-BR player reads the config's `texts.pt`), `ChaosAchievements.progress`
   (stats `nemesis_marked`, `nemesis_avenged`, `nemesis_hunted`; the achievements themselves are not written yet),

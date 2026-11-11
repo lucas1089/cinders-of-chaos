@@ -555,6 +555,89 @@ do
 	doTargetCombatHealth = realDo
 end
 
+-- ---------------------------------------------------------------- Reflective cap (O483)
+-- the reflected amount of ONE hit is at most perHit (10%) x the attacker's pool, and what one character gets back in one second at
+-- most perSecond (25%) x the pool; the pool is the maximum health, plus the maximum mana while a mana shield is up. The 15% stays.
+do
+	local sent = {}
+	local realDo, realMtime = doTargetCombatHealth, os.mtime
+	doTargetCombatHealth = function(attacker, target, ctype, min, max, effect)
+		sent[#sent + 1] = {attacker = attacker, target = target, min = min, max = max}
+	end
+	local now = 1000000
+	os.mtime = function() return now end
+	local refl = Game.createMonster("Dragon", position(140, 100, 7), true, false)
+	state[refl:getId()] = {tier = "legendary", depth = 0, mods = {"reflective"}, step = 0}
+	refl.maxHealth, refl.health = 5000000, 5000000
+	local function victim(id, maxHp, maxMana, shield)
+		return {isPlayer = function() return true end, isMonster = function() return false end, getId = function() return id end,
+			getMaxHealth = function() return maxHp end, getMaxMana = function() return maxMana end,
+			hasCondition = function(_, c) return c == CONDITION_MANASHIELD and shield end}
+	end
+	local taken = creatureEvents.ChaosModTaken
+	local cfgR = ChaosTierConfig
+	eq(cfgR.reflectShare, 0.15, "reflect cap: the share stays 15%")
+	check(cfgR.reflectCap.enabled == true and cfgR.reflectCap.perHit == 0.10 and cfgR.reflectCap.perSecond == 0.25, "reflect cap: the numbers")
+
+	-- one big hit: 15% of 100000 is 15000, the cap says 10% of a 3035 pool
+	local p1 = victim(501, 3035, 1040, false)
+	local a = taken.onHealthChange(refl, p1, -100000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(#sent, 1, "reflect cap: one reflected hit")
+	eq(sent[1] and sent[1].min, -303, "reflect cap: 10% of the 3035 pool, not 15% of the hit")
+	eq(sent[1] and sent[1].target, p1, "reflect cap: the hitter takes it")
+	eq(sent[1] and sent[1].attacker, 0, "reflect cap: still no attacker")
+	eq(a, -100000, "reflect cap: the hit on the monster itself is not changed")
+	-- a small hit is as before
+	now = now + 5000
+	sent = {}
+	taken.onHealthChange(refl, p1, -400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(sent[1] and sent[1].min, -60, "reflect cap: a 400 hit still comes back as 60")
+	-- a mana shield up: the pool is health + mana
+	now = now + 5000
+	sent = {}
+	local p2 = victim(502, 3035, 1040, true)
+	taken.onHealthChange(refl, p2, -100000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(sent[1] and sent[1].min, -407, "reflect cap: mana shield up, 10% of 4075")
+	-- a burst of big hits: at most 25% of the pool in the second, however many
+	now = now + 5000
+	sent = {}
+	local p3 = victim(503, 10000, 0, false)
+	local total = 0
+	for i = 1, 20 do
+		now = now + 40
+		taken.onHealthChange(refl, p3, -100000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	end
+	for _, x in ipairs(sent) do
+		total = total - x.min
+	end
+	eq(total, 2500, "reflect cap: 20 big hits in under a second send back 25% of the pool in all")
+	eq(#sent, 3, "reflect cap: 1000, 1000, then the 500 that is left")
+	-- the second is over: the room is back
+	now = now + 1000
+	sent = {}
+	taken.onHealthChange(refl, p3, -100000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(sent[1] and sent[1].min, -1000, "reflect cap: a second later a full per hit amount again")
+	-- the window is per character: another player has his own room
+	sent = {}
+	local p4 = victim(504, 10000, 0, false)
+	taken.onHealthChange(refl, p4, -100000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(sent[1] and sent[1].min, -1000, "reflect cap: the room of one character is not the room of another")
+	-- the switch
+	now = now + 5000
+	sent = {}
+	cfgR.reflectCap.enabled = false
+	taken.onHealthChange(refl, p1, -100000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(sent[1] and sent[1].min, -15000, "reflect cap: switched off, the plain 15%")
+	cfgR.reflectCap.enabled = true
+	-- a hit that rounds to nothing leaves no entry behind
+	now = now + 5000
+	sent = {}
+	taken.onHealthChange(refl, victim(505, 3035, 0, false), -3, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 0)
+	eq(#sent, 0, "reflect cap: nothing to send back")
+	check(ChaosReflectLog[505] == nil, "reflect cap: no log entry for a character who got nothing")
+	doTargetCombatHealth, os.mtime = realDo, realMtime
+end
+
 -- ---------------------------------------------------------------- the rank table (O462)
 -- health x2.48 / x4.90 / x7.98 (before: 2.0 / 3.5 / 6.0), damage x1.30 / x1.50 / x1.70 (before: 1.25 / 1.5 / 2.0)
 do

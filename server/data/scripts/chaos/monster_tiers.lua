@@ -34,6 +34,10 @@ if not ChaosMonsterDefenceCore or not ChaosMonsterDefenceCore.attackHit then
 end
 local D = ChaosMonsterDefenceCore
 local DK = D.engineConstants()
+if not ChaosHitCapCore then
+	dofile("data/scripts/chaos/hitcap_core.lua") -- the pool and the Reflective cap (O483)
+end
+local HC = ChaosHitCapCore
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -68,7 +72,15 @@ local cfg = {
 	tickMs = 2500, -- ambient effect / regeneration step
 	announceLegendary = true,
 	-- the spawn chance multipliers (event day x Chaos Storm ...) multiply, at most this much together
-	maxSpawnMult = 3.0
+	maxSpawnMult = 3.0,
+	-- Reflective (a modifier of magic, rare and legendary monsters and the Nemesis trait Thorned): the share of the damage that
+	-- lands which comes back as physical damage with no attacker. O483 (owner 2026-11-11: players still died in one hit of a
+	-- Nemesis that reflects): the reflected amount of ONE hit is at most `perHit` x the attacker's pool, and what one character
+	-- gets back within one second is at most `perSecond` x the pool. Pool = the attacker's MAXIMUM health plus, while a mana
+	-- shield is up, the maximum mana (hitcap_core.lua H.pool, the rule of the guardian and Nemesis hit caps). The share stays
+	-- 15%; the cap only cuts. enabled = false: no cap. server/README.md "Nemesis", Hit cap and reflect cap (O483).
+	reflectShare = 0.15,
+	reflectCap = {enabled = true, perHit = 0.10, perSecond = 0.25, windowMs = 1000}
 }
 ChaosTierConfig = cfg
 
@@ -109,6 +121,39 @@ local function heal(monster, amount)
 	end
 end
 
+-- Reflective's amount for one hit (O483): the share of what landed, cut by the cap. The reflects of the last second on the same
+-- character are kept per creature id (ChaosReflectLog; global only so a test can read it).
+ChaosReflectLog = ChaosReflectLog or {}
+local function reflectNowMs()
+	return os.mtime and os.mtime() or os.time() * 1000
+end
+local function reflectBack(m, attacker, dmg)
+	local cap = cfg.reflectCap
+	local pool, spent, list = 0, 0, nil
+	if cap and cap.enabled then
+		local okp, res = pcall(function()
+			return HC.pool(attacker:getMaxHealth(), attacker:getMaxMana(), attacker:hasCondition(CONDITION_MANASHIELD))
+		end)
+		pool = okp and res or 0
+		local id = attacker:getId()
+		list = ChaosReflectLog[id]
+		if not list then
+			list = {}
+			ChaosReflectLog[id] = list
+		end
+		spent = HC.spentIn(list, reflectNowMs(), cap.windowMs or 1000)
+	end
+	local back = HC.reflectAmount(cfg.reflectShare, cap, dmg, m:getHealth(), pool, spent)
+	if list then
+		if back > 0 then
+			HC.spend(list, reflectNowMs(), back)
+		elseif #list == 0 then
+			ChaosReflectLog[attacker:getId()] = nil
+		end
+	end
+	return back
+end
+
 local function dot(player, ctype, total, rounds)
 	local c = Condition(ctype)
 	c:setParameter(CONDITION_PARAM_DELAYED, 1)
@@ -144,11 +189,12 @@ ChaosMods = {
 				if ChaosCombatFx then
 					ChaosCombatFx.reflect(m) -- shield flash on the reflecting monster (combat_fx.lua, throttled)
 				end
-				-- 15% of the damage that lands (overkill is not reflected, as the rift's Reflection), dealt back as it was dealt: with
+				-- 15% of the damage that lands (overkill is not reflected, as the rift's Reflection), cut to reflectCap (at most
+				-- perHit x the attacker's pool for one hit, perSecond x the pool in a second: O483), dealt back as it was dealt: with
 				-- no attacker, so the monster's own damage multipliers (tier, rift, party, guardian curve) do not scale it a second
 				-- time (O433 phase 25: a 30k hit on a Reflective legendary guardian came back as 16.9k, 56% of the hit, and killed a
 				-- 10k player)
-				local back = math.floor(math.min(dmg, math.max(0, m:getHealth())) * 0.15)
+				local back = reflectBack(m, attacker, dmg)
 				if back > 0 then
 					doTargetCombatHealth(0, attacker, COMBAT_PHYSICALDAMAGE, -back, -back, CONST_ME_NONE)
 				end
