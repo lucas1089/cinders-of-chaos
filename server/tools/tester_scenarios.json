@@ -8925,13 +8925,16 @@
     "apply",
     "select",
     "open",
-    "clear"
+    "clear",
+    "explain"
    ],
    "client": [
     "game_crafting"
    ],
    "dataKeys": [
+    "bag",
     "clientId",
+    "forge",
     "history",
     "id",
     "item",
@@ -8942,7 +8945,8 @@
     "path",
     "pos",
     "sig",
-    "socket"
+    "socket",
+    "stash"
    ],
    "files": [
     "crafting.lua"
@@ -8950,7 +8954,9 @@
    "opcode": 232,
    "out": false,
    "skip": [],
-   "systems": []
+   "systems": [
+    "stash"
+   ]
   },
   "daily": {
    "actions": [
@@ -12920,10 +12926,12 @@
   },
   "stash": {
    "files": [
+    "crafting.lua",
     "stash.lua"
    ],
    "kind": "opcode",
    "opcodes": [
+    "crafting",
     "stash"
    ],
    "talkactions": []

@@ -11951,8 +11951,60 @@ modifiers / maximum and every orb with your count and, when it fits, a preview o
 modifiers", "Magic 60%, Rare 30%, Legendary 10%", "same modifiers, new values"; `C.preview`); a button is enabled only
 when the server says the orb fits. The server checks again on every click: the item is found by its path from the
 backpack plus its id and a signature of its modifiers (moved or changed -> "put it on the bench again"), the orb is
-owned, the rules above, 250 ms between orbs. The last 8 crafts come from `chaos_crafting_log` (rows older than 60 days
+owned (in the backpack or, since O481, in the stash), the rules above, 250 ms between orbs. The last 8 crafts come from `chaos_crafting_log` (rows older than 60 days
 go at startup); use-with crafts are logged too.
+
+**Forge window and materials from the stash (O481, owner request 2026-11-11, layout option 1).** The bench has a second
+window, the forge (client `game_crafting` `forge.lua`, `forgeview.lua`): "1 Place the item, 2 Pick an action, 3 Check
+the change, 4 Forge". It is the default; the Classic button switches to the window above and back, per character.
+New data on the same extended opcode 232, all additive (an old client or the Unity bench never reads them and works as
+before):
+- **Orb data.** Every orb carries `kind` (what it is aimed at: `mod` one chosen modifier, `add` a new modifier, `whole`
+  the whole item, `sockets`) and `safety` (`safe`: fixed outcome, nothing lost; `random`: a roll, nothing destroyed beyond
+  what the text says; `risky`: can remove modifiers, corrupt or ruin). `tests/forge_test.lua` fails for an orb without
+  either. Kinds: mod = Ember (raise a tier), Reforging (roll again), Excision (remove), Binding (bind); add = Grafting,
+  Unveiling; sockets = Orb of Sockets; the rest is whole. Tags: safe = Ember, Binding, Whetstone, Unveiling; risky =
+  Unmaking, Erasure, Upheaval, Fate, Excision, Void (Ruin turns risky if `ChaosOrbsConfig.ruin.ruin` is above 0); random
+  = the others.
+- **Client asks** `open {forge = 1}` (the server remembers it until logout or the next plain `open`) and
+  `explain {orb, path, id, sig, mod}`. The server answers `explain {orb, mod, sig, ok, kind, tag, reason, reasonText, text,
+  lead, warn, cost = {orb, n, bag, stash, from}}`: the words of one action (`ChaosCrafting.explain`, never computed in
+  the client: "Guaranteed: tier 3 to tier 4. The value rolls 50 to 60.", "One of 6 tiers (T1-T6)..."; an orb with no
+  own words gives its preview with `lead` = `fixed` / `random`, and `warn` for a risky one). A stale signature gets "put
+  it on the bench again". The window sends `apply` only for an action explained for this item (`sig` matches).
+- **`change` (O481 polish).** An `explain` answer for an outcome that is sure also carries `change`, built in `C.explain`
+  from the same numbers as the sentence (never parsed from text): `{kind = "tier", text, from = {tier, lo, hi}, to = {tier,
+  lo, hi}}` (Ember: the sentence gives the NEW tier's range, `to.lo` to `to.hi`), `{kind = "bind", text, tier}`,
+  `{kind = "remove", text, tier}`, `{kind = "quality", from, to}` (Whetstone). A roll, a gamble or an unknown outcome sends
+  none and the window shows the text alone. `tests/forge_test.lua` keeps sentence and `change` equal.
+- **Forge window only** (after `open {forge = 1}`): `forgeinfo {orbs = {key -> {kind, safety}}}` after `info`;
+  `state.bag` and `state.stash` ({orb key -> count}); `state.item.free` ({prefix, suffix}, from the item mods side
+  limits) and `state.item.veil` (1 veiled, 2 revealed); each `state.item.mods[i].v` is the value of the modifier (the window's roll bar sits where `v` is between `lo` and `hi`). `result.from` is `bag` or `stash` for every client.
+- **Size.** None of this goes into `info` (near the 8192-byte limit). The state trims history, then items, then the
+  bag / stash tables until it is at most 7600 bytes; `forge_test.lua` measures an item with eight modifiers and every
+  orb at 999 in the stash.
+- **Materials.** `state.counts` is backpack plus stash for every client (so the classic window and the Unity bench can
+  also spend stash orbs). A craft takes the orb from the backpack first, then from the stash: `crafting.lua craft()` calls
+  `ChaosStash.spend` (stash.lua) with the item change as a callback, which is `ChaosStashCore.spend` (stash_core.lua), the
+  journal of the stash: the amount leaves its plain stack as a taking row with the next serial, the item change runs in
+  memory, the serial and the item are saved in one `player:save()`, the row is dropped. The order of checks is as before:
+  item in the backpack, orb owned (bag or stash), dialog orbs, then the rules of `C.apply`; a refusal in `C.apply` puts
+  the amount back (nothing taken); a stash row that vanished since the preview refuses with "You have no ..." and
+  changes nothing. Only plain stacks count (a stored whole item never does). Use-with of an orb from the backpack
+  is unchanged and never touches the stash. The item stays a backpack item.
+- **Place rule.** The stash only gives items back in a protection zone or a hideout (`stash_config.lua`, the owner's
+  decision 2026-10-15). The bench has no place rule. Decision: the bench may spend stash orbs anywhere
+  (`craftSource.townOnly = false`), because an orb spent in a craft never reaches the backpack: nothing can be carried out
+  of town with it, so the rule against pulling stock into a hunt is not opened (the same orbs can already be carried in
+  a bag and used anywhere). Set `craftSource.townOnly = true` to apply the withdraw rule, or `enabled = false` to turn the
+  stash source off.
+- **Crash safety.** Before the save the saved serial is below the row's: the next settle (login or the next stash
+  action) restores the amount and the item change, never saved, is gone. After the save the serial covers the row: it is
+  dropped and the change stands. If the save fails the craft stands in memory with the row still taking; the next save of
+  the character writes both. A crash before it restores the orb and loses the change. A settle that runs first may drop
+  the row early; then a crash loses one orb and never duplicates it.
+Tests: `tests/forge_test.lua` (tags, words, bag first, stash second, refusals, vanished row, two crafts, old client, size),
+`tests/stash_test.lua` "spending stash orbs", client `forgeview_test.lua`.
 
 **Drops and rewards.** Chaos loot layer (`loot_config.lua` currency, per 10000 kills, normal / magic / rare / legendary /
 boss): Awakening 30/200/700/2500/3500 (1-2), Gilding and Unmaking 10/80/300/1200/2000, Erasure

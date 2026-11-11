@@ -115,7 +115,7 @@ local function register()
 
 	-- Orb of Tempering
 	local it = itemOf("tempering")
-	C.addOrb({key = "tempering", id = it.id, name = it.name,
+	C.addOrb({key = "tempering", kind = "whole", safety = "random", id = it.id, name = it.name,
 		text = "Rolls the values of every modifier that is not bound again, inside their current tiers.",
 		keyText = "Rolls the values of a Rift Key's modifiers again inside their ranges.",
 		check = function(item)
@@ -151,7 +151,7 @@ local function register()
 
 	-- Orb of Binding
 	it = itemOf("binding")
-	C.addOrb({key = "binding", id = it.id, name = it.name,
+	C.addOrb({key = "binding", kind = "mod", safety = "safe", id = it.id, name = it.name,
 		text = "Binds one modifier: the orbs that change modifiers leave it alone. Pick it on the bench (used directly: a random one).",
 		pick = function(item)
 			return keysOf(freeMods(item))
@@ -184,7 +184,7 @@ local function register()
 
 	-- Orb of Excision
 	it = itemOf("excision")
-	C.addOrb({key = "excision", id = it.id, name = it.name,
+	C.addOrb({key = "excision", kind = "mod", safety = "risky", id = it.id, name = it.name,
 		text = "Removes the modifier you pick on the bench (used directly: a random one that is not bound).",
 		keyText = "Removes one modifier of a Rift Key.",
 		pick = function(item)
@@ -240,7 +240,7 @@ local function register()
 
 	-- Orb of Reforging
 	it = itemOf("reforging")
-	C.addOrb({key = "reforging", id = it.id, name = it.name,
+	C.addOrb({key = "reforging", kind = "mod", safety = "random", id = it.id, name = it.name,
 		text = "Rolls the tier (by item level) and value of the modifier you pick again (used directly: a random unbound one).",
 		pick = function(item)
 			return keysOf(freeMods(item))
@@ -270,7 +270,7 @@ local function register()
 
 	-- Orb of Ruin
 	it = itemOf("ruin")
-	C.addOrb({key = "ruin", id = it.id, name = it.name,
+	C.addOrb({key = "ruin", kind = "whole", safety = R.ruin > 0 and "risky" or "random", id = it.id, name = it.name,
 		text = R.ruin > 0 and string.format("A gamble: %d%% it improves (a tier more on every unbound modifier, or an extra one), %d%% nothing, %d%% ruined for good.",
 			R.improve, R.nothing, R.ruin) or string.format("A gamble: %d%% it improves (a tier more on every unbound modifier, or an extra one), %d%% nothing happens. It never ruins the item.",
 			R.improve, R.nothing),
@@ -296,7 +296,7 @@ local function register()
 
 	-- Whetstone
 	it = itemOf("whetstone")
-	C.addOrb({key = "whetstone", id = it.id, name = it.name,
+	C.addOrb({key = "whetstone", kind = "whole", safety = "safe", id = it.id, name = it.name,
 		text = string.format("+%d%% quality: the attack, defence and armour the rarity added to the item rise by the quality, up to %d%% (%d%% from Divine rarity).",
 			M.config.quality.perStone, M.config.quality.cap, M.config.quality.capHigh),
 		check = function(item)
@@ -324,7 +324,7 @@ local function register()
 
 	-- Ember Orb: one modifier up exactly one tier
 	it = itemOf("ember")
-	C.addOrb({key = "ember", id = it.id, name = it.name,
+	C.addOrb({key = "ember", kind = "mod", safety = "safe", id = it.id, name = it.name,
 		text = "Raises the modifier you pick on the bench by one tier, with a new value in that tier (used directly: a random unbound one that can still rise).",
 		pick = function(item)
 			return keysOf(O.raisable(item))
@@ -358,7 +358,7 @@ local function register()
 
 	-- Crown Orb: one rarity up, in place
 	it = itemOf("crown")
-	C.addOrb({key = "crown", id = it.id, name = it.name,
+	C.addOrb({key = "crown", kind = "whole", safety = "random", id = it.id, name = it.name,
 		text = string.format("Lifts the item one rarity, up to %s. Every modifier stays, the base bonus becomes the new rarity's and the item gets %d more.",
 			C.rarityName(ChaosRarity.idOfRank(O.config.crown.maxRank)), O.config.crown.add),
 		check = function(item)
@@ -382,7 +382,7 @@ local function register()
 
 	-- Void Orb: corruption
 	it = itemOf("void")
-	C.addOrb({key = "void", id = it.id, name = it.name,
+	C.addOrb({key = "void", kind = "whole", safety = "risky", id = it.id, name = it.name,
 		text = "Corrupts a " .. C.rarityName(ChaosRarity.idOfRank(O.config.void.minRank)) ..
 			" or better item for good: no orb can change it afterwards. Then " .. O.voidOdds() .. ".",
 		check = function(item)

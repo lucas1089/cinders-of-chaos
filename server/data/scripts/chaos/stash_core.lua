@@ -762,4 +762,42 @@ function K.withdraw(env, rec)
 	return true
 end
 
+-- Spend a plain stack of the stash on a change of the character (O481: an orb of the crafting bench). It is a withdrawal
+-- whose item is never given: the amount leaves its entry as a taking row with the next serial, `change()` runs in
+-- memory (returns true, or false and a reason), the serial and the change are saved in ONE transaction (env.save), and
+-- the row is dropped. Crash cases: before the save the saved serial is below the row's, so the next settle restores the
+-- amount to the stash and the change (never saved) is gone; after the save the serial is at or above it, so the row is
+-- dropped and the change stands. Never spent twice and never spent for nothing.
+-- change() may return true, nil, true: the change stands but costs nothing (the amount goes back, no save is forced).
+-- Returns true | true, "kept" | true, "unsaved" (the change stands in memory, the save failed: see below) | false, "busy" (a row could
+-- not be settled, or the take failed) | false, "change", change()'s reason (change() refused: the amount is back).
+-- On "unsaved" the serial stays set and the row stays taking: the next save of the character writes both, and a crash
+-- before that restores the amount while the change is lost with the memory, so nothing doubles. A settle that runs first
+-- (it trusts the serial in memory) may drop the row early: then a crash loses one orb and never duplicates.
+function K.spend(env, rec, change)
+	if not settle(env) then
+		return false, "busy"
+	end
+	local seq = math.max(0, int(env.getSeq())) + 1
+	if not env.take(rec, seq) then
+		return false, "busy"
+	end
+	rec.seq = seq
+	local ok, why, keep = change()
+	if not ok then
+		env.untake(rec) -- a failure leaves it taking: restored by the next settle or login (the serial is not moved)
+		return false, "change", why
+	end
+	if keep then
+		env.untake(rec) -- change() says the amount is not used after all (a community goal keeps the orb)
+		return true, "kept"
+	end
+	env.setSeq(seq)
+	if not env.save() then
+		return true, "unsaved"
+	end
+	env.finish(rec) -- a failure leaves it taking: dropped by the next settle or login
+	return true
+end
+
 return K

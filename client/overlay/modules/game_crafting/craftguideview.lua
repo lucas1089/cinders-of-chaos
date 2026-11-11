@@ -51,7 +51,7 @@ function V.basics(tr)
     { tr('Bonuses'), tr('Each line of an item is a bonus (a modifier). Bonuses are prefixes or suffixes, and each rarity has a limit of each.') },
     { tr('Tiers'), tr('A bonus has a tier from T1 (weak) to T8 (best). The item level decides the best tier it can roll.') },
     { tr('Bound'), tr('A bound bonus is safe: orbs leave it alone. Only an Orb of Erasure frees it.') },
-    { tr('Preview'), tr('Put the item on the bench: the green line under each orb shows what it would do. Orbs also work with Use on the item.') },
+    { tr('Preview'), tr('Put the item on the bench: the green line under each orb shows what it would do. Orbs also work with Use on the item. The bench counts the orbs of your stash too and spends the backpack first.') },
   }
 end
 

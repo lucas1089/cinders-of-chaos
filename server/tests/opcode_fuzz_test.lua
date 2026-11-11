@@ -1665,6 +1665,9 @@ local regressions = {
 	{"ChaosCommandsExtended", ChaosOpcodes.info, {action = "run", page = HUGE, ids = {}}, "commands run, page 60 KB"},
 	{"ChaosCraftingExtended", ChaosOpcodes.crafting, {action = "apply", data = {orb = HUGE, path = 1, id = 1}},
 		"crafting apply, orb 60 KB"},
+	-- O481: the forge window's question echoes the orb and mod keys too
+	{"ChaosCraftingExtended", ChaosOpcodes.crafting, {action = "explain", data = {orb = HUGE, mod = HUGE, path = 1, id = 1}},
+		"crafting explain, orb and mod 60 KB"},
 }
 for _, r in ipairs(regressions) do
 	regression(r[1], r[2], r[3], r[4])
@@ -1678,6 +1681,7 @@ local rapid = {
 		Pos = {x = 65535, y = CONST_SLOT_BACKPACK, z = 0}}}},
 	{"ChaosCraftingExtended", ChaosOpcodes.crafting, {action = "apply", data = {path = 1, id = 1}}},
 	{"ChaosCraftingExtended", ChaosOpcodes.crafting, {action = "gem", data = {path = 1, id = 1}}},
+	{"ChaosCraftingExtended", ChaosOpcodes.crafting, {action = "explain", data = {orb = "ember", path = 1, id = 1}}},
 	{"ChaosShopExtended", ChaosOpcodes.shop, {action = "init", data = {}}},
 	{"ChaosShopExtended", ChaosOpcodes.shop, {action = "get_page", data = {category = 1, page = 1}}},
 	{"ChaosShopExtended", ChaosOpcodes.shop, {action = "preview", data = {category = 1, page = 1, offer = 1}}},

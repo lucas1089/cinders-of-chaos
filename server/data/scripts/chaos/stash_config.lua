@@ -122,6 +122,10 @@ return {
 	-- once per account (pact_config.lua extra stashRemote, store "Storage & Slots") or lent while the Chaos Pact is
 	-- active (it stops when the Pact ends; nothing stored is lost). Withdraw stays protection-zone only for everybody.
 	withdrawInHideout = true, -- the hideout counts as town for both
+	-- O481 (owner request 2026-11-11): the crafting bench spends orbs from the stash as well as from the backpack
+	-- (the backpack first). The orbs never reach the backpack, so this is no withdrawal: no place rule by default.
+	-- townOnly = true applies the withdraw rule (a protection zone or a hideout) to it.
+	craftSource = {enabled = true, townOnly = false},
 	remoteDeposit = {extra = "stashRemote", pact = true},
 
 	-- ------------------------------------------------------------------ the depot transition (depot.lua, stash.lua)
