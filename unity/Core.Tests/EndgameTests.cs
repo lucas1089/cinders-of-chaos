@@ -111,6 +111,14 @@ namespace Chaos.Core.Tests
             r.Sent.Clear();
             t.Enter();
             check(r.Last().EndsWith("{\"action\":\"enter\"}") && !t.Visible, "tower: Enter sends and closes");
+            // the launch date is open (O463): no seasonEnd comes
+            r.In(214, "{\"action\":\"update\",\"seasonNum\":1,\"nextTry\":0,\"playerPoints\":0}");
+            check(t.HasData && t.SeasonNum == 1 && t.SeasonEndText() == "Season Ends In: Coming soon", "tower: no season end shows coming soon, not Finished: " + t.SeasonEndText());
+            Loc.Set("pt-BR");
+            check(t.SeasonEndText() == "A temporada termina em: em breve", "tower: coming soon in pt-BR: " + t.SeasonEndText());
+            Loc.Set("en");
+            r.In(214, "{\"action\":\"update\",\"seasonNum\":1,\"seasonEnd\":999990}");
+            check(t.SeasonEndText() == "Season Ends In: Finished", "tower: a season end in the past is finished");
         }
 
         // ------------------------------------------------------------------------------------ Dungeons
@@ -509,6 +517,12 @@ namespace Chaos.Core.Tests
             check(ended == 1 && s.BoardVisible && s.Hud == null && sm.Title == "DEFEAT" && sm.Score == "Wave 400  -  500 Ash" && sm.Reason == "time ran out" && sm.Rating == "Season rating 1800 -> 1790 (-10)  Ember" && sm.Honor == "Honor +120  1 Orb", "bg: the summary");
             check(BgView.Summary(Json.Parse("{\"result\":\"win\",\"rated\":false,\"score\":[1,0]}"), 1).Rating == "Not rated", "bg: an unrated match");
             check(Eg.SpanLong(45) == "45s" && Eg.SpanLong(7300) == "2h 1m" && Eg.SpanLong(200000) == "2d 7h" && Eg.SpanLong(800000) == "1w 2d", "bg: span texts");
+            // the Season tab headline; no endsIn while the launch date is open (O463)
+            check(BgView.SeasonTitle(Json.Parse("{\"id\":2,\"endsIn\":7300}"), 100) == "PvP Season 2: ends in 2h 0m" && BgView.SeasonTitle(Json.Parse("{\"endsIn\":30}"), 100) == "PvP Season 1: ends in 0s", "bg: the season headline counts down");
+            check(BgView.SeasonTitle(Json.Parse("{\"id\":1,\"brackets\":{}}"), 100) == "PvP Season 1: coming soon" && BgView.SeasonTitle(Json.Parse("{}"), 0) == "PvP Season 1: coming soon", "bg: no season end shows coming soon, not a zero countdown");
+            Loc.Set("pt-BR");
+            check(BgView.SeasonTitle(Json.Parse("{\"id\":1}"), 0) == "Temporada PvP 1: em breve", "bg: coming soon in pt-BR");
+            Loc.Set("en");
             r.Sent.Clear();
             s.ToggleBoard();
             check(!s.BoardVisible && r.Sent.Count == 0, "bg: the board toggles off");

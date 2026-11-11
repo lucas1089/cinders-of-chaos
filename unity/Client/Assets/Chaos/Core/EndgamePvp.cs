@@ -278,6 +278,14 @@ namespace Chaos.Core
     {
         public static readonly string[] BracketOrder = { "1v1", "2v2", "3v3", "bg" };
 
+        /// <summary>The headline of the Season tab. No `endsIn` while the launch date is open (O463): "coming soon", not a zero countdown.</summary>
+        public static string SeasonTitle(object season, double elapsed)
+        {
+            int id = Json.Get(season, "id") is double sid ? (int)sid : 1;
+            if (!(Json.Get(season, "endsIn") is double endsIn)) return Loc.T("PvP Season {0}: coming soon", id);
+            return Loc.T("PvP Season {0}: ends in {1}", id, Eg.SpanLong(endsIn - elapsed));
+        }
+
         public static string RoleName(string r) => r == "tank" ? "Tank" : r == "healer" ? "Healer" : r == "dps" ? "DPS" : r == "support" ? "Support" : "";
         public static string RoleColor(string r) => r == "tank" ? "#7fb8e8" : r == "healer" ? "#6fd8a8" : r == "dps" ? "#e8846a" : r == "support" ? "#c08ae8" : "#d6c9ae";
 
