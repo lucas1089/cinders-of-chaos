@@ -582,7 +582,7 @@ S.services = {
 		end
 	},
 
-	-- the store pouches (pouches.lua): {service = "pouch", pouch = "loot" | "orbs" | "keys" | "gems"}; one of each per character
+	-- the store pouches (pouches.lua): {service = "pouch", pouch = "loot" | "orbs" | "keys" | "gems" | "runes"}; one of each per character
 	pouch = {
 		check = function(player, offer)
 			if not ChaosPouches then

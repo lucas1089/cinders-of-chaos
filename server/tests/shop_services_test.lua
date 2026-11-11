@@ -199,6 +199,12 @@ do
 	eq(S.check(pl, {kind = "service", service = "pouch", pouch = "orbs"}), nil, "pouch offer checked by pouches.lua")
 	eq(asked, "orbs", "the offer's pouch kind is passed on")
 	eq(S.deliver(pl, {kind = "service", service = "pouch", pouch = "orbs"}), true, "pouch delivered by pouches.lua")
+	-- the Rune Bag (O502): the same service, the kind passed on; a refusal of pouches.lua (owned) stops the purchase
+	ChaosPouches = {storeCheck = function(_, kind) asked = kind; return "You already have a Rune Bag." end,
+		storeGive = function(_, kind) return kind == "runes" end}
+	eq(S.check(pl, {kind = "service", service = "pouch", pouch = "runes"}), "You already have a Rune Bag.", "Rune Bag refused when owned")
+	eq(asked, "runes", "the Rune Bag kind is passed on")
+	eq(S.deliver(pl, {kind = "service", service = "pouch", pouch = "runes"}), true, "Rune Bag delivered by pouches.lua")
 	ChaosPouches = nil
 end
 assert(S.check(pl, {kind = "unlock", unlock = "nope"}), "unknown unlock refused")

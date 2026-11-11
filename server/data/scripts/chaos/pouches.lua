@@ -1,9 +1,10 @@
--- Store pouches (README "Store pouches"): four containers sold in the store, each collecting its own kind of loot from
+-- Store pouches (README "Store pouches"): five containers sold in the store, each collecting its own kind of loot from
 -- the corpses the character owns while the character carries it (in the backpack or a bag inside it).
 --   Loot Bag      the loot its rules pick (default: the items on the autoloot list, gold, uniques); settings window
 --                   (client game_pouches, extended opcode ChaosOpcodes.pouches)
 --   Orbs Pouch      orbs, whetstones, rune shards and gems (no gems while a Gem Pouch is carried)
 --   Gem Pouch       gems only
+--   Rune Bag        support runes and magic runes (not rune shards); runes may be moved in by hand, nothing else
 --   Rift Key Pouch  Rift Keys (with their tier and modifiers), Omen Keys and omen fragments
 -- Rules: pouches_core.lua (tested by server/tests/pouches_test.lua). Tunables and item ids: pouches_config.lua; the
 -- items are installed by server/tools/install_pouches.py.
@@ -47,7 +48,7 @@ local OPCODE = ChaosOpcodes.pouches
 local NOERR = RETURNVALUE_NOERROR or 0
 local NOTPOSSIBLE = RETURNVALUE_NOTPOSSIBLE or 1
 local CONTAINER_POS = CONTAINER_POSITION or 0xFFFF
-local KIND_BIT = {loot = 1, orbs = 2, keys = 4, gems = 8}
+local KIND_BIT = {loot = 1, orbs = 2, keys = 4, gems = 8, runes = 16}
 
 local function cfg()
 	return ChaosPouchesConfig
@@ -111,6 +112,20 @@ function PO.holdsPouch(item)
 		end
 	end
 	return false
+end
+
+-- a rune the Rune Bag takes (a support rune or a stock magic rune; not a rune shard, not the unscribed rune)
+function PO.isRune(id)
+	return P.isRuneId(cfg(), id, ChaosSupports and ChaosSupports.isRune or nil)
+end
+
+-- the Rune Bag this cylinder is (any copy of the item), else nil
+function PO.isRuneBag(c)
+	if not c then
+		return false
+	end
+	local ok, id = pcall(function() return c:getId() end)
+	return ok and PO.kindOfId(id) == "runes"
 end
 
 function PO.ownerOf(item)
@@ -311,10 +326,14 @@ local function sets()
 	return P.sets(cfg(), extraOrbs)
 end
 
--- items the auto seller must never sell: everything the Orbs Pouch or the Rift Key Pouch collects
+-- items the auto seller must never sell: everything the Orbs Pouch or the Rift Key Pouch collects, and every item that
+-- lies in a Rune Bag (a rune on the sell list is still sold from a corpse, as before the bag; one in the bag never)
 function PO.neverSell(id, item)
 	local s, c = sets(), cfg()
 	if s.orbs[id] or s.omens[id] then
+		return true
+	end
+	if item and PO.isRuneBag(item.getParent and item:getParent() or nil) then
 		return true
 	end
 	if c.orbGems and ChaosGems and ChaosGems.isGem and ChaosGems.isGem(id) then
@@ -343,7 +362,7 @@ local function infoOf(item, list)
 	local id = item:getId()
 	local info = {id = id, actionId = item:getActionId(), count = item:getCount(), container = it:isContainer(),
 		pouch = PO.kindOfId(id) ~= nil, onList = list[id] == true,
-		gem = ChaosGems and ChaosGems.isGem and ChaosGems.isGem(id) or false}
+		gem = ChaosGems and ChaosGems.isGem and ChaosGems.isGem(id) or false, rune = PO.isRune(id)}
 	if ChaosLootFilter and ChaosLootFilter.itemInfo then
 		local ok, li = pcall(ChaosLootFilter.itemInfo, item)
 		if ok and li then
@@ -692,19 +711,24 @@ end
 
 -- the Loot Bag is one-way: a player's move of any item into it, at any depth, is refused (stack merges onto an item
 -- inside it too: the destination container is the bag). A move inside the same bag is allowed. Autoloot, the sort and
--- the store delivery add by script and never reach this hook. Returns a RETURNVALUE.
+-- the store delivery add by script and never reach this hook. The Rune Bag takes runes by hand (P.runeBagRefusal): any
+-- other item moved into it is refused, a rune is not. Returns a RETURNVALUE.
 function PO.checkOneWay(player, item, toPosition, toCylinder)
 	local okD, dest = pcall(destinationOf, player, toPosition, toCylinder)
 	if not okD or not dest then
 		return NOERR
 	end
+	local why
 	local bag = PO.lootBagOf(dest)
-	if not bag then
-		return NOERR
+	if bag then
+		local okP, parent = pcall(function() return item:getParent() end)
+		local from = okP and PO.lootBagOf(parent) or nil
+		why = P.lootBagInRefusal({intoLootBag = true, sameBag = from ~= nil and from == bag})
+	elseif PO.isRuneBag(dest) then
+		local okI, id = pcall(function() return item:getId() end)
+		local isContainer = item.isContainer and item:isContainer() or false
+		why = P.runeBagRefusal({intoRuneBag = true, rune = okI and not isContainer and PO.isRune(id)})
 	end
-	local okP, parent = pcall(function() return item:getParent() end)
-	local from = okP and PO.lootBagOf(parent) or nil
-	local why = P.lootBagInRefusal({intoLootBag = true, sameBag = from ~= nil and from == bag})
 	if why then
 		player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, Chaos.t and Chaos.t(player, why) or why)
 		return NOTPOSSIBLE

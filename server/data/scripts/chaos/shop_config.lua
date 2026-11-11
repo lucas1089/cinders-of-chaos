@@ -12,7 +12,7 @@
 --   {kind = "service", service = "<handler>", icon = <item id>, ...}  done right away by shop_services.lua
 --       stamina | templeScroll (uses = n) | worldBuff (buff = "xp" | "loot" | "skill") | nameToken |
 --       vocationToken | blessings | skullRemover | sexChange | passiveReset
---       pouch (pouch = "loot" | "orbs" | "keys" | "gems": a store pouch item, one per character; pouches.lua)
+--       pouch (pouch = "loot" | "orbs" | "keys" | "gems" | "runes": a store pouch item, one per character; pouches.lua)
 --   {kind = "unlock", unlock = "autoSeller" | "rarityAutoloot", icon = <item id>}   permanent, per character
 --   {kind = "unlock", unlock = "unlockNecromancer" | "unlockMonk" | "unlockTemplar", ...}  a class, per account (class_unlocks.lua)
 --   {kind = "unlock", unlock = "<pets_config.lua store key>", look = <looktype>, ...}  a pet, per character (pets.lua)
@@ -476,6 +476,10 @@ local cfg = {
 					description = "100 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."},
 				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "gems", icon = 32095, cost = 150, name = "Gem Pouch",
 					description = "100 slots, store-bound. Collects only gems while carried, so they stay apart from your orbs."},
+				-- the Rune Bag (O502, owner 2026-11-11, "Make a rune bag too, please. To be sold in the store."): support runes and
+				-- magic runes; the price is the Gem Pouch's, the owner sets the final one (docs/PRICES.md)
+				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "runes", icon = 32096, cost = 150, name = "Rune Bag",
+					description = "200 slots, store-bound. Collects support runes and magic runes while carried, and takes runes by hand. Keep it in your backpack to use its magic runes by hotkey."},
 				-- the infinite food (store_food.lua, store_food_config.lua): one per character, store-bound, never used up.
 				-- price decided 2026-10-14 (docs/PRICES.md)
 				{kind = "service", service = "storeFood", accountDiscount = 50, icon = 32084, cost = 100, name = "Everfull Ration",

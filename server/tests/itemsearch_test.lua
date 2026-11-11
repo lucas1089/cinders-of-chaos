@@ -98,6 +98,18 @@ r = K.search(cfg, K.query("backpack", cfg), places, api)
 eq(r.total, 1, "an equipped container is found itself") eq(r.items[1].loc, "equip", "as equipment")
 r = K.search(cfg, K.query("dragon", cfg), places, api)
 eq(r.total, 0, "nothing") eq(#r.items, 0, "no rows")
+-- a rune inside the Rune Bag (O502, a store pouch like any container): found in the backpack and in the purse, the way to it named
+local runeBagA = item("rune bag", 32096, {container = true, kids = {item("frostfall rune", 2274, {count = 12})}})
+local runeBagB = item("rune bag", 32096, {container = true, kids = {item("epic fork rune", 32149, {count = 2})}})
+local runePlaces = {
+	{kind = "equip", slot = 3, item = item("backpack", 1988, {container = true, kids = {runeBagA}})},
+	{kind = "purse", item = item("your store inbox", 26052, {container = true, kids = {runeBagB}}), name = "Purse"}
+}
+r = K.search(cfg, K.query("frostfall", cfg), runePlaces, api)
+eq(r.total, 1, "a magic rune in a Rune Bag in the backpack") eq(r.items[1].loc, "bag", "carried") eq(r.items[1].where, "backpack > rune bag", "where it is")
+eq(r.items[1].ids[2], 32096, "the Rune Bag is on the way (the client opens it)") eq(r.items[1].count, 12, "the stack")
+r = K.search(cfg, K.query("fork rune", cfg), runePlaces, api)
+eq(r.total, 1, "a support rune in a Rune Bag in the purse") eq(r.items[1].loc, "purse", "in the purse")
 
 -- cap, scan limit, depth
 local many = {}

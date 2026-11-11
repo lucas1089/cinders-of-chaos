@@ -2553,7 +2553,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Legendary and every rarity above it"] = "Legendary e toda raridade acima dele",
   ["Pouch settings"] = "Configurações da bolsa",
   -- game_pouches/pouches.otui
-  ["While you carry your Loot Bag it takes these items from the monsters you kill. Orbs, gems and keys always go to the Orbs and Rift Key Pouch first. A full pouch passes the item on (below), then to your backpack."] = "Enquanto você carrega sua Loot Bag, ela pega estes itens dos monstros que você mata. Orbes, gemas e chaves vão sempre primeiro para a Orbs and Rift Key Pouch. Uma bolsa cheia passa o item adiante (abaixo) e depois para a sua mochila.",
+  ["While you carry your Loot Bag it takes these items from the monsters you kill. Orbs, gems, keys and runes always go to their own pouch first (Orbs, Gem, Rift Key, Rune). A full pouch passes the item on (below), then to your backpack."] = "Enquanto você carrega sua Loot Bag, ela pega estes itens dos monstros que você mata. Orbes, gemas, chaves e runas vão sempre primeiro para a bolsa própria (Orbs, Gem, Rift Key, Rune). Uma bolsa cheia passa o item adiante (abaixo) e depois para a sua mochila.",
   ["Items on my autoloot list"] = "Itens da minha lista de autoloot",
   ["Gold, platinum and crystal coins"] = "Moedas de ouro, platina e cristal",
   ["Unique items"] = "Itens únicos",

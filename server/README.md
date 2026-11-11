@@ -5370,8 +5370,8 @@ Prices and reasons: docs/PRICES.md "Pacto Completo, Pact Marks and the store rev
 - **`levelPrices`** on an offer: `{{upTo = 200, cost = 60}, {upTo = 500, cost = 100}, {cost = 150}}`, `cost` = the first tier
   (`ChaosShopCore.levelCost(offer, level)`; `ChaosShopCore.validate` checks the shape). All Blessings uses it: 60 up to level
   200, 100 up to 500, 150 above. A sale applies to the level price.
-- **`accountDiscount = 50`** on a per-character service or unlock (the Loot Bag, the three pouches, the Everfull Ration, the
-  Auto Seller, Rarity Autoloot, the ten Everfull tiers: 17 offers): the price is `ChaosShopCore.discountCost` (half, rounded up)
+- **`accountDiscount = 50`** on a per-character service or unlock (the Loot Bag, the four other pouches, the Everfull Ration, the
+  Auto Seller, Rarity Autoloot, the ten Everfull tiers: 18 offers): the price is `ChaosShopCore.discountCost` (half, rounded up)
   when another character of the account that still exists bought the offer for itself. `ownedByOthers` runs one query per
   view on `chaos_shop_purchases` joined to `players`: the offer's own key, or a bundle holding it as a part (a starter pack);
   gifts and the Pact's lent Auto Seller (storage 2) do not count. The entry carries the tag "Account -50%", the list price
@@ -5463,7 +5463,7 @@ Five store categories sell services, unlocks and boosts besides the cosmetics. `
 both dispatched by `ChaosShopServices` (`shop_services.lua`):
 - `{kind = "service", service = "<handler>", icon = <item id>}`: done for the character at once (`S.services` table).
 - `{kind = "unlock", unlock = "autoSeller" | "rarityAutoloot"}`: a permanent per-character flag (storage).
-- `{kind = "service", service = "pouch", pouch = "loot" | "orbs" | "keys"}`: a store pouch item ("Store pouches" below).
+- `{kind = "service", service = "pouch", pouch = "loot" | "orbs" | "keys" | "gems" | "runes"}`: a store pouch item ("Store pouches" below).
 
 `shop.lua` asks `ChaosShopServices.check(player, offer)` **before** it takes coins: an unlock already owned, full stamina, a
 world buff at its cap, an unused token, no skull to remove, an empty passive tree... is refused with a message and costs
@@ -5486,7 +5486,7 @@ client module needed no change.
 | | Frag & Skull Remover | 150 | skull time (the engine's unjustified-kill counter) to 0, red/black skull removed; not in combat |
 | | Passive Tree Reset | 100 | empties every preset for free (the in-window reset costs level x 250 gold; 60 before O140, see "Store balance (O140)") |
 | Convenience | (the Temple Teleport Scroll is no longer sold) | | see below |
-| | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
+| | Loot Bag / Orbs Pouch / Rift Key Pouch / Gem Pouch / Rune Bag | 250 / 200 / 150 / 150 / 150 | store pouch items, one of each per character ("Store pouches" below) |
 | | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
 | | Rarity Autoloot / Everfull Ration | 300 / 100 | per character, see "Store pouches and the Everfull Ration" |
 | Training | 18 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / club weapon since 2026-10-23; Warrior, Thief, Templar), fist (Monk line only since 2026-10-28), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
@@ -6226,7 +6226,7 @@ game: two players (visits and likes), the depot window, the store purchase scree
 
 ## Store pouches (`pouches.lua`, `pouches_core.lua`, `pouches_config.lua`, `tools/install_pouches.py`, client `game_pouches`)
 
-Four containers sold in the store (Convenience), each collecting its own kind of loot from the corpses the character owns,
+Five containers sold in the store (Convenience), each collecting its own kind of loot from the corpses the character owns,
 **while the character carries it** (in the backpack or a bag inside it, any depth; not in the depot or inbox). No base
 autoloot list is needed.
 
@@ -6236,6 +6236,7 @@ autoloot list is needed.
 | Orbs Pouch | 32082 (client 38609: a violet pouch with a glowing orb) | 100 (was 40) | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035), the gems only while no Gem Pouch is carried |
 | Rift Key Pouch | 32083 (client 38610: an iron strongbox, gold key, key ring) | 100 (was 30) | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
 | Gem Pouch | 32095 (the stock jewelled backpack's own look, no new sprite) | 100 | 150 | gems (32001-32035) only |
+| Rune Bag | 32096 (the stock blue backpack's own look, no new sprite) | 200 | 150 | support runes (32101-32200) and magic runes (the 36 of `runeIds`); not rune shards; takes runes by hand |
 
 - **Items.** New items.otb nodes, copies of stock bags (group and flags of the expedition bag, the brocade bag and the fur bag)
   with their own looks: three item things of our own art, drawn by `client/tools/sprites/gen_pouch_art.py`, snapped to theme
@@ -6262,6 +6263,59 @@ autoloot list is needed.
   wants it. A gem is wanted by the Gem Pouch and the Orbs Pouch, so with a Gem Pouch carried it never reaches the Orbs Pouch,
   even when the Gem Pouch is full (the overflow then is the Loot Bag, as for every specialist); without a Gem Pouch the Orbs
   Pouch takes gems as before. The Gem Pouch takes nothing but gems.
+- **The Rune Bag** (O502, owner 2026-11-11: "Make a rune bag too, please. To be sold in the store."). A fifth kind (`runes`,
+  id 32096, regrant bit 16), built the way the Gem Pouch was: `pouches_config.lua` `kinds.runes`, `priority` and `order`, the
+  store offer, `install_pouches.py` (`NAMES`), `gen_item_prices.py` (a bound item). Store-bound, `bindLock`, one per character,
+  delivered to the purse, 150 coins (the Gem Pouch's price; the owner sets the final one, `docs/PRICES.md`).
+  - **What a rune is.** Every rune a player calls a rune: the **100 support runes** (32101-32200, `ChaosSupports.isRune`, the
+    gems-like loot items of `SUPPORTS.md`) and the **36 magic runes** of the stock `spells.xml` (`runeIds` in the config: the same
+    ids as `data/lib/chaos_rune_supply.lua` `runes`, 2261 ... 23723; `tests/pouches_test.lua` holds the two lists equal). Not the
+    **rune shard** (32051: salvage currency, stays with the Orbs Pouch) and not the **unscribed rune** (2260: a crafting material
+    that vendors sell, the base of every recipe). 136 kinds, all stackable, so 200 slots hold every kind and a second stack of the
+    common ones (the other specialists hold 100).
+  - **Collect.** `ChaosPouchesCore.plan`: a rune goes to the Rune Bag first while the character carries it, before the Loot Bag
+    (whatever its supplies rule says); `priority = {"gems", "orbs", "keys", "runes"}`. No item is wanted by the Rune Bag and by
+    another specialist (a rune is no orb, gem or key), so its place in the list changes no routing; it is last to keep the older
+    order. Full (or too heavy): the Loot Bag takes the rune with its overflow rule, else the backpack, else the corpse, as for
+    every specialist, with the "Rune Bag is full" note (at most once a minute) and the pouch line of the kill's loot line. Without
+    the bag the Loot Bag rules decide as before (runes are `supplies`, the "Supplies" rule).
+  - **By hand.** A player may move runes into the Rune Bag and out of it (the Loot Bag takes nothing in). `PO.checkOneWay` (the end
+    of `PO.onMoveItem`) asks `ChaosPouchesCore.runeBagRefusal`: anything that is not a rune moved into it, at any depth of the move
+    (a potion, a gem, a rune shard, a bag, even a bag full of runes) is refused with the warning line "The Rune Bag holds only
+    runes." (pt-BR in `i18n_strings.lua`); a pouch keeps its own "A pouch cannot go into another pouch.". Taking out, moving
+    within the bag and stack merges of a rune are free. It leaves the purse like the Orbs Pouch (only the Loot Bag stays).
+  - **The rest.** Regrant bit 16 (storage 7100109): a Rune Bag lost with a dropped backpack comes back empty at login, and the
+    store does not sell a second while one is owed. The Auto Seller walks only the Loot Bag and never enters a store pouch
+    (`AK.opensContents`), so what is in the Rune Bag is never sold; `ChaosPouches.neverSell(id, item)` also says true for any
+    item whose parent is a Rune Bag. A rune outside the bag is as it was: on the sell list it is sold from a corpse (index 2,
+    before the pouches), in the Loot Bag it is sold by "Sell all" when an NPC pays for it (support runes and magic runes have
+    prices). "Find my item" (`stash.lua` `S.find`, `itemsearch_core.lua`) walks any container to `maxDepth`, so a rune inside the
+    bag, in the backpack or the purse, is found and the way to it opened. The loadouts' parked runes (storage 7112000-7127999) are
+    untouched.
+  - **Using a rune from the bag** (read in the engine, `chain/src`). The server finds an item by TYPE for a hotkey, the action bar
+    and the helper's rune use (`g_game.useInventoryItem(With)` sends an inventory position `{0xFFFF, 0, 0}`):
+    `Game::internalGetThing` (game.cpp, the `pos.y == 0 && pos.z == 0` branch) calls `findItemOfClientId` (src-patch 0043) and
+    `Game::findItemOfType` (game.cpp, `depthSearch = true`) on the player: `Player::getFirstIndex` / `getLastIndex` (player.cpp:
+    `CONST_SLOT_FIRST` .. `CONST_SLOT_LAST`, slots 1-10) and every container below them, breadth first, **no depth limit**, closed
+    or open. So a magic rune in a Rune Bag **in the backpack (or in a bag in it) is found**. The purse is the store inbox, slot
+    `CONST_SLOT_STORE_INBOX`, outside slots 1-10: a rune in a Rune Bag **in the purse is not found** by the hotkey, the action bar or
+    the helper (the same holds for any item in the purse). So the bag may stay in the purse (it collects there, `PO.carried`), but
+    the description and the store text say to keep it in the backpack to use its magic runes by hotkey. The helper counts a rune
+    by `player:getInventoryCount` (open containers only) and falls back to its probe gate for a rune in a closed bag
+    (`helper.lua` `runeReady`), the same as a rune in a closed sub-bag of the backpack today. The server side counts of a support
+    rune (`player:getItemCount` / `removeItem`, `player.cpp` `getItemTypeCount`, slots 1-10 and below) see a rune in the bag in the
+    backpack; socketing, Remove, Shatter and the combine of three runes work from it; a stack in the Rune Bag in the purse
+    combines through `ChaosCombine.placeOf` ("box": the purse), as any stack there.
+  - **Item.** A copy of the stock blue backpack (2002, client id 2869, container), `clientId = 0`: the stock look, no new sprite.
+    The other four are a brown leather sack (Loot Bag), a violet pouch (Orbs), an iron strongbox (Rift Keys) and the
+    jewelled backpack (Gems). Alternatives: the moon backpack (10521, client 9604) or the demon backpack (10518, client 9601); a
+    new look needs a sprite pair and the owner's approval. Installed by `install_pouches.py` (step `pouches`): the fifth node and
+    the rewritten items.xml block (`containerSize` 200); a second run changes nothing. Store offer "Rune Bag" in Convenience
+    (`shop_config.lua`, icon = the item, `accountDiscount = 50`), price 150: `perCharacterConvenienceMax` 1,550 -> 1,700.
+  - Tests: `tests/pouches_test.lua` (the rune lists, routing against the other four, a kill, a full bag, the manual moves, the
+    store, regrant bit 16, never sold), `tests/autosell_test.lua`, `tests/itemsearch_test.lua`, `tools/install_pouches_test.py`
+    (four installed pouches get the fifth), client `game_pouches/pouchesview_test.lua`. Unity keeps `Ids`, `Titles` and `Owned` as
+    dictionaries and reads only the Loot Bag: a fifth kind is stored and not shown. Not run on a server or in a client.
 - **The Loot Bag** (owner 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe automaticamente";
   called Loot Pouch before). Bottomless: 500 slots (`capacity`, owner 2026-10-29; was 255, see "500 slots" below) and **weightless** (`weightless = true`): engine src-patch 0038 keeps the weight of
   what lies in it (and in bags inside it) away from the character, and an item put into it skips the capacity check.
@@ -6315,7 +6369,7 @@ autoloot list is needed.
   item on the auto-sell list is sold first; orbs and keys never are (`ChaosPouches.neverSell`, asked by `autosell.lua`, also
   refuses them on the list). After the snapshot, so the loot channel row shows the items the pouches took as looted. Before the
   base autoloot, so autoloot-list items land in the Loot Bag instead of the backpack.
-- **Routing and priority** (`ChaosPouchesCore.plan`, `priority = {"orbs", "keys"}` in `pouches_config.lua`). The Orbs Pouch and
+- **Routing and priority** (`ChaosPouchesCore.plan`, `priority = {"gems", "orbs", "keys", "runes"}` in `pouches_config.lua`). The Orbs Pouch and
   the Rift Key Pouch always get their kinds of items first: orbs, the whetstone, rune shards and gems go to the Orbs Pouch, Rift
   Keys, Omen Keys and omen fragments to the Rift Key Pouch, before the Loot Bag, even when a Loot Bag rule would match too (its
   gems rule, the autoloot list). When that pouch is full (or the character cannot carry more), the Loot Bag takes the item only
