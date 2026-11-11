@@ -273,6 +273,10 @@ server/
   src-patches/0090-monster-level-bonus-once.patch   engine: the monster level damage bonus once per hit, not again on the re-entry after
                                       the target's health / mana events (see "Monster level bonus once (O477, engine patch
                                       0090)"; tools/monster_bonus_once_patch_test.py)
+  src-patches/0091-fist-attack-from-script.patch   engine: Player:setFistAttack(attack, multiplier) / getFistAttack, Weapon::useFist rolls the
+                                      bare-fist hit with that attack and multiplier when a script set one (the Monk line, Open Hand Creed; the
+                                      stock hit is attack 7); the capability is the method itself (see "Flat armour, weapon spells and the Monk's
+                                      fist (O505)"; header src/chaosfist.h, tools/chaosfist_test.cpp, tools/fist_attack_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -31085,7 +31089,7 @@ formula against the measurement). `--autos --level 100` prints the table of the 
 | Monk, fists | 100 | 31.5 / 33.4 | 80.7% -> 39.6% | 17.8% -> 60.2% | 39.2 / 23.6 |
 | Monk, fists | 500 | 85.9 / 92 | 89.9% -> 39.5% | 9.2% -> 60.1% | 104.4 / 62.7 |
 
-*Not done, for the owner to decide.* (1) The flat armour and defence of the monster files, the second cause: a patch tool
+*Not done, for the owner to decide (all three are done in O505, below).* (1) The flat armour and defence of the monster files, the second cause: a patch tool
 (`patch_monster_flat_defence.py`, an install step like `monsterresists`) that caps the XML `armor` and `defense` by a level rule would give
 a level 20 Warrior back about 45% of its auto damage. The Monk needs more: its fist hit is attack 7 in the engine and is scaled by a
 later event, so the flat armour takes nearly all of it before the scaling (6% of its damage reaches a level 100 monster with the layer
@@ -31095,6 +31099,271 @@ spells (Reaping Gyre, Earthbreaker) are `ORIGIN_SPELL` hits of weapon size (76 a
 code: `ORIGIN_SPELL`, unchanged), 15 of the 21 classes (six kinds were run, the model covers the rest), levels above 1000, the real
 monsters at 300 and above, the Thief's crit hits in the model (the Thief line is a plain melee class in it; its measured arriving mean
 was 1.1 to 1.5 times the formula).
+
+**Flat armour, weapon spells and the Monk's fist (O505, 2026-11-11).** Owner (translated, after reading the O501 report): "You can fix these 3
+things of the auto attack." The three things the O501 report left open: (1) the flat armour and defence of the base monsters' files, (2) the
+Monk's fist, (3) the weapon-line spells. Measured on a local server (the O501 rig, engine patches up to 0090, a second binary built here with
+0091), 120 s a cell. Part 1 and 3 are one commit each, part 2 another. What waits for the owner: the engine rebuild (part 3, see "Owner steps").
+
+*Part 1: the flat armour and defence of the monster files.*
+
+*Cause (engine).* `Creature::blockHit` (`creature.cpp` 844-902) takes `uniform(defense / 2, defense)` off a hit when the monster has a banked
+defence (855-868: `blockCount` grows by 1 a second up to 2, every hit that checks armour or defence uses one, so a melee hit every second or
+slower meets it every time) and `uniform(armor / 2, armor - 1 - armor % 2)` off every hit that checks armour (870-888; armor 1 to 3 takes
+1). `Game::combatBlockHit` (`game.cpp` 4316-4372) gives the checks to the PRIMARY part only: the element part of a weapon is never blocked.
+`WeaponMelee` and the bare fist set both checks (`weapons.cpp` 344-345 and 516-517), `WeaponDistance` the armour check only (644): a bow never
+meets the defence. A part that falls to 0 is `BLOCK_DEFENSE` / `BLOCK_ARMOR` and the hit never reaches a Lua event. The numbers are the XML
+`armor` and `defense` of the monster (`monsters.cpp` 1088-1093; Lua monsters `monster.defenses`). Spells do not check them unless the spell sets
+`COMBAT_PARAM_BLOCKARMOR` (Reaping Gyre does).
+
+*The installed monsters* (1,725 files read, 735 hunt monsters of the bounty pool, 333 level-scaled files with a level range, the level a monster
+has for the layer: the `<level>` middle of src-patch 0082, else `bounty_pool.lua`, else the estimate from experience and health; normal
+monsters only, the median over the files of the band; "roll" is the mean engine roll of a Warrior of the typical skill, before any armour,
+`defence_curve.py`; "bite" is what the engine takes off in mean, `armor` 3/4 and `defense` 3/4 of their value, over the roll of the monster's own
+level):
+
+| Level band | Monsters | armor median / p90 | defense median / p90 | Median roll (Warrior) | Flat bite, melee, before | Flat bite, bow, before | Cap | Flat bite, melee, after |
+|---|---:|---|---|---:|---:|---:|---:|---:|
+| 1-10 | 63 | 5 / 20 | 5 / 20 | 18 (at 8) | 32% | 5% | 1 | 8% |
+| 11-25 | 134 | 15 / 26 | 15 / 26 | 26 (at 18) | 81% | 17% | 2 | 9% |
+| 26-50 | 96 | 25 / 40 | 24 / 38 | 42 (at 39) | 79% | 22% | 3 | 8% |
+| 51-100 | 146 | 35 / 107 | 35 / 100 | 90 (at 78) | 67% | 19% | 7 | 10% |
+| 101-200 | 152 | 70 / 105 | 67.5 / 100 | 142 (at 142) | 70% | 17% | 10 | 10% |
+| 201-400 | 174 | 100 / 117 | 90 / 110 | 248 (at 310) | 54% | 13% | 17 | 10% |
+| 401-700 | 153 | 100 / 165 | 90 / 165 | 330 (at 500) | 45% | 11% | 23 | 10% |
+| 701-1200 | 77 | 60 / 85 | 60 / 85 | 620 (at 930) | 15% | 4% | 41 | 10% |
+| 1201-2500 | 36 | 80 / 110 | 87 / 110 | 792 (at 1375) | 16% | 4% | 53 | 10% |
+
+Bosses: 186 files, armor median 30 and at most 188, defense median 35 and at most 165. A level 20 Warrior met 15 and 15: 81% of its mean roll
+(melee) and, measured on real monsters, 44% of its swings blocked outright (Mummy). A bow takes the armour only: 5 to 22% of its roll at the
+levels under 700.
+
+*The rule* (the coordinator's recommendation, built as given: my numbers did not speak against it). `monster_defence_config.lua` `flatShare`
+`{normal = 10, boss = 20}` and `flatRollCurve`: for a monster of level L the XML `armor` and `defense` are capped at one integer c, the largest
+where `armour_bite(c) + defence_bite(c)` (the mean the engine takes off, above) is at most the share of the median engine roll at L (the median
+over the 12 armoured classes that are not the fist line, before any armour; derived by `tools/defence_curve.py --lua`, never typed). A value above
+the cap is lowered to it. A value at or below it is never touched, so a second run changes nothing and a later lower share still applies. Caps:
+1 at level 8, 2 at 20, 3 at 30, 5 at 60, 8 at 100, 12 at 200, 17 at 300, 23 at 500, 46 at 1,000, 71 at 2,500 (`defence_curve.py --flat` prints
+the table, boss caps twice the bite: 3 / 4 / 5 / 9 / 16 / 24 / 33 / 45 / 92 / 141). Bosses keep twice the share on purpose: the layer sizes a boss's
+armour at twice the normal share too (`armourTarget` 50 against 25), and a boss is the XML `isboss` flag, a Lua `rewardBoss`, or a name of
+the `bosses` list of the pool. Magic, rare and legendary monsters are the same file as a normal one and keep the normal cap (the layer already
+gives the ranks more armour).
+
+*The tool.* `tools/patch_monster_flat_defence.py DATA_DIR [--check] [--dry-run] [--quiet]`, install step `monsterflat` right after
+`monsterresists` (so after `files`, which installs the pool and the config it reads, and after `monsternames`). Pets (`monsters/chaos/pets`) and
+test dummies (`monsters/zo`) are left alone. It prints "files changed; armor lowered; defense lowered; left alone". Our own 231 monster files
+go through the same functions in `tune_monsters.py` (a `tune_monsters.py` `armor` row is a ceiling now, never a floor) and `tools/ci/check_content.py`
+fails on a file over its cap. On the installed server: 1,493 files changed, 1,476 armor and 1,490 defense values lowered, 91 left alone.
+
+*The weapon curve moved* with the smaller flat armour (a typical monster keeps 8 instead of 30 at level 100): `weaponHitCurve` is re-derived
+(`defence_curve.py --lua`): 18 at level 10 (13), 32 at 30 (16), 64 at 60 (37), 106 at 100 (82), 160 at 200 (121), 219 at 300 (165), 297 at 500
+(239), 622 at 1,000 (587). The model also stopped giving a launcher the defence (`WeaponDistance` never meets it). `weaponTarget` stays 27.5 /
+44.5 / 55: G1 holds within 1.4 / 2.3 / 2.5 points at the worst of 85 levels (plain 25 / 40 / 50 would be within 2.2 / 3.4 / 3.9).
+
+*G5* (`defence_curve.py --check`, `flat_problems`): at 85 levels from 8 to 2,500 the cap's bite is within `flatShare` plus 3 points of the median
+roll (the cap is a whole number: 6.8 to 10.2% for a normal monster, 12 to 20.7% for a boss), no armoured class that is not the fist line has more
+than 5% of its attacks blocked outright by a monster with the cap (the model says 0.0% at every level; before the rule it said 31% at level 20 and
+33% at 28 for the typical character, the measured real monsters 44% at 20), and the config's rows and share are the derivation. G6 for the fist line
+is in part 3.
+
+*Measured, real monsters before and after* (Warrior with one hand and a shield, Ranger with a bow, Thief with a blade, Monk with fists; a bare
+character of the level with the best set weapon, the rig of O501; a real monster of the level that every character fights for 120 s with the monster
+layer on; "blocked outright" is 1 minus the weapon hits that reached the layer over the swings the same character landed on the dummy; "arriving"
+is the physical part that reaches the layer per swing, with the roll on the armourless dummy of the level in brackets; "reaches" is the damage per
+second over the same character's damage per second on the dummy with the layer off, so it holds the flat armour, the layer and the file's own
+resistance of the monster; seconds to kill are for a typical hunt monster of the level at that damage. A cell is 55 to 120 swings: the Ranger's
+cells move by 10 points between runs. Before: the state of the repository before this part. After: this part, the old binary):
+
+| Class | Level | Monster (armor and defense before -> after) | Blocked outright | Arriving per swing (roll) | Reaches | Seconds to kill |
+|---|---:|---|---:|---:|---:|---:|
+| Warrior, one hand + shield | 8 | Troll (6 -> 1) | 5% -> 0% | 13.4 -> 31.5 (25.1) | 60% -> 93% | 4.1 -> 2.2 |
+| Warrior, one hand + shield | 20 | Mummy (15 -> 2) | 44% -> 0% | 6.1 -> 31.5 (25.2) | 13% -> 34% | 22.7 -> 7.1 |
+| Warrior, one hand + shield | 60 | Wyrm (34 -> 5) | 46% -> 0% | 15.2 -> 72.7 (63.3) | 21% -> 49% | 16.8 -> 7.1 |
+| Warrior, one hand + shield | 100 | Retching Horror (30 -> 8) | 14% -> 0% | 39.5 -> 83.4 (78.4) | 58% -> 64% | 8.6 -> 7.5 |
+| Warrior, one hand + shield | 300 | Juggernaut (60 -> 15) | 10% -> 0% | 65.9 -> 110.9 (177.6) | 56% -> 60% | 19.2 -> 17.7 |
+| Warrior, one hand + shield | 500 | Spiked Enforcer (100 -> 22) | 24% -> 0% | 88.2 -> 232.1 (235.2) | 57% -> 68% | 39.3 -> 32.0 |
+| Ranger, bow | 8 | Troll (6 -> 1) | 5% -> 0% | 72.8 -> 90.6 (96.5) | 89% -> 94% | 1.8 -> 1.5 |
+| Ranger, bow | 20 | Mummy (15 -> 2) | 0% -> 2% | 78.6 -> 94.5 (94.9) | 91% -> 93% | 2.3 -> 2.0 |
+| Ranger, bow | 60 | Wyrm (34 -> 5) | 7% -> 7% | 78.3 -> 102.9 (103.8) | 73% -> 81% | 7.8 -> 6.2 |
+| Ranger, bow | 100 | Retching Horror (30 -> 8) | 3% -> 0% | 99.0 -> 116.8 (140.6) | 65% -> 64% | 25.8 -> 23.7 |
+| Ranger, bow | 300 | Juggernaut (60 -> 15) | 5% -> 2% | 189.7 -> 224.1 (411.2) | 37% -> 41% | 39.5 -> 34.8 |
+| Ranger, bow | 500 | Spiked Enforcer (100 -> 22) | 3% -> 6% | 423.8 -> 373.5 (498.1) | 77% -> 66% | 32.2 -> 38.2 |
+| Thief, blade | 8 | Troll (6 -> 1) | 5% -> 0% | 18.7 -> 31.5 (31.7) | 87% -> 94% | 3.9 -> 3.1 |
+| Thief, blade | 20 | Mummy (15 -> 2) | 32% -> 0% | 9.5 -> 34.6 (32.1) | 16% -> 45% | 25.3 -> 7.0 |
+| Thief, blade | 60 | Wyrm (34 -> 5) | 19% -> 0% | 29.6 -> 76.0 (79.4) | 29% -> 49% | 16.9 -> 8.6 |
+| Thief, blade | 100 | Retching Horror (30 -> 8) | 12% -> 1% | 49.1 -> 77.0 (99.0) | 62% -> 72% | 6.8 -> 5.5 |
+| Thief, blade | 300 | Juggernaut (60 -> 15) | 11% -> 0% | 75.5 -> 122.6 (219.9) | 55% -> 58% | 10.1 -> 9.9 |
+| Thief, blade | 500 | Spiked Enforcer (100 -> 22) | 15% -> 1% | 114.2 -> 216.5 (279.6) | 60% -> 73% | 14.9 -> 11.6 |
+
+Level 1,000 was not measured on a real monster: the one tried (Ice Dragon) is not a monster a melee character keeps hitting. At 20 the Mummy also
+has its own physical resistance in its file, which the "reaches" column holds.
+
+*What else reads monster armour and defence.* `git grep` over `data/scripts/chaos`, `data/lib` and `tools`: nothing in the Lua reads a monster's
+XML armour or defence. Every model that says "armour" (`survival_model.py`, `armor_sim.py`, the necromancer, guardian and companion balance
+files) is about a PLAYER's armour against a monster's hit and is not touched. The models take a hit on a target with no armour (`class_dps_model.py`
+and the ones built on it), so they do not move: every `--check` of the list is green (below). PvP is not touched: a player is not a monster and
+`Player::getArmor` and the player layer of O464 are another path (`patch 0016`). A player's summon (a Necromancer's minion, a Beastmaster's
+wolf) hits with the monster `melee` attack, which also sets both checks, so its melee hits meet the same flat armour and gain the same way.
+Kills per hour of a weapon class on a monster of its level (the table above, seconds to kill): melee about 3 times at level 20 (Warrior 22.7 s to 7.1 s,
+Thief 25.3 to 7.0), 1.15 to 1.25 times at 100, 300 and 500; the Ranger's bow about 1.1 times (its cells move by 10 points). No limit of a balance model is crossed.
+
+*Part 2: the weapon-line spells.*
+
+*Measured first, and the question widened.* The six kinds of the rig (Warrior with one hand and a shield and with two hands, Thief, Ranger, Monk,
+Mystic) at levels 20, 100 and 500, each casting its three highest attack spells for 150 s on the armourless dummy of its level, the layer on:
+per spell the hit that ARRIVES at the layer (the physical part, before the player's later multipliers), the class curve hit of the level
+(`hitCurve`: 86 / 464 / 3,658), the weapon curve hit (`weaponHitCurve` of that run: 26 / 106 / 297), and the share the layer removes (a normal
+monster, `A` sized for the class hit; the hit's spell id comes from the supports' cast context). A spell with no armour is an elemental one.
+
+| Class | Level | Spell | Hits | Arrives (mean) | Class curve hit | Weapon curve hit | Removed before | Removed after |
+|---|---:|---|---:|---:|---:|---:|---:|---:|
+| Warrior (sword + shield) | 20 | Reaping Gyre | 48 | 16 | 86 | 26 | 64% | 36% |
+| Warrior (sword + shield) | 20 | Earthbreaker | 15 | 65 | 86 | 26 | 30% | 13% |
+| Warrior (sword + shield) | 100 | Reaping Gyre | 48 | 47 | 464 | 106 | 76% | 40% |
+| Warrior (sword + shield) | 100 | Earthbreaker | 15 | 174 | 464 | 106 | 47% | 19% |
+| Warrior (sword + shield) | 500 | Colossus Fall | 22 | 449 | 3658 | 297 | 73% | 20% |
+| Warrior (sword + shield) | 500 | Bastion Cry | 10 | 983 | 3658 | 297 | 55% | 11% |
+| Monk | 20 | Ashen Fist | 21 | 106 | 86 | 26 | 21% | 5% |
+| Monk | 20 | Palm Shockwave | 20 | 105 | 86 | 26 | 21% | 5% |
+| Monk | 20 | Sundering Palm | 10 | 414 | 86 | 26 | 6% | 2% |
+| Monk | 100 | Hollow Knuckle | 20 | 267 | 464 | 106 | 37% | 13% |
+| Monk | 100 | Quaking Stomp | 10 | 300 | 464 | 106 | 34% | 12% |
+| Monk | 100 | Whirling Heel | 10 | 466 | 464 | 106 | 25% | 8% |
+| Monk | 500 | Tidal Palm | 11 | 1074 | 3658 | 297 | 53% | 9% |
+| Monk | 500 | Skysplitter Fist | 10 | 1714 | 3658 | 297 | 41% | 6% |
+| Mystic | 20 | Rime Bloom | 31 | 115 | 86 | 26 | no armour | no armour |
+| Mystic | 20 | Witchfire Bolt | 15 | 117 | 86 | 26 | no armour | no armour |
+| Mystic | 100 | Briar Prison | 30 | 127 | 464 | 106 | no armour | no armour |
+| Mystic | 100 | Blightswarm | 13 | 223 | 464 | 106 | no armour | no armour |
+| Mystic | 100 | Umbral Stride | 10 | 623 | 464 | 106 | no armour | no armour |
+| Mystic | 500 | Crimson Covenant | 60 | 347 | 3658 | 297 | no armour | no armour |
+| Mystic | 500 | Falling Pyre | 11 | 1546 | 3658 | 297 | no armour | no armour |
+| Ranger | 20 | snare or mine burst | 30 | 213 | 86 | 26 | 12% | 4% |
+| Ranger | 20 | Dawnpiercer | 16 | 137 | 86 | 26 | no armour | no armour |
+| Ranger | 100 | snare or mine burst | 21 | 315 | 464 | 106 | 33% | 11% |
+| Ranger | 500 | Hail of Dawn | 120 | 370 | 3658 | 297 | no armour | no armour |
+| Ranger | 500 | Gale Volley | 11 | 1720 | 3658 | 297 | 41% | 7% |
+| Thief | 20 | snare or mine burst | 20 | 181 | 86 | 26 | 14% | 4% |
+| Thief | 100 | snare or mine burst | 21 | 306 | 464 | 106 | 34% | 11% |
+| Thief | 500 | Smoke Bomb | 11 | 730 | 3658 | 297 | no armour | no armour |
+| Warrior (two hands) | 500 | Bastion Cry | 10 | 651 | 3658 | 297 | 65% | 9% |
+
+*Which case it was.* Only the weapon-size spells are off. A physical spell of a weapon class arrives at 10 to 50% of the class curve hit:
+Reaping Gyre (three small hits) 47 against 464 at level 100, Colossus Fall 449 against 3,658 at 500, a Monk's Hollow Knuckle 267, Tidal Palm
+1,074. The class curve is the hit of a typical character AFTER every multiplier it owns (class damage, damage pool, gems, cards, charms, the
+weapon style and power), which are later events than the layer; the spell arrives before them, as the auto attack did (O501). Armour sized for
+the class hit took 25 to 76% of it. The casting classes' spells are elemental in all three levels (Rime Bloom, Witchfire Bolt, Briar Prison,
+Crimson Covenant, Falling Pyre, Dawnpiercer, Hail of Dawn): armour never touches an elemental part, their loss is the monster's resistance, which
+does not depend on the size of the hit. So the units fault is not general: no change to `hitCurve`, no change to a model, and the "no spell number
+moves" tests of O501 stay as they are for every hit that is not a weapon class's own spell hit.
+
+*The fix, the preferred one: the layer knows the hit is a weapon-line spell.* `ChaosMonsterDefenceCore.weaponSpellHit`: a spell hit (`ORIGIN_SPELL`)
+that a PLAYER of a weapon class deals itself, inside its own cast, meets the weapon armour value (`Aw`) and the weapon cap of its rank, the same
+share as an auto attack of that size (a big hit loses less: `Aw / (Aw + 0.07 H)`, at most 40 / 55 / 65%). The weapon classes are every vocation
+that is not in `casterVocations` (Mystic 1, Elementalist 5, Illusionist 10, Necromancer 20, Lich 21, Bone Lord 22; `defence_curve.py --check`
+holds the list to `rotation_sim.py`). The cast is read, not stored: `ChaosSupportsSpell.cast()` (`data/spells/chaos/_supports.lua`) returns the
+player id of the cast whose code, or whose `addEvent` callback, runs now, so the synchronous hits and the delayed ones of every Chaos spell are
+inside it, and `ChaosCombatLog.inSpell(pid)` (combatlog.lua; a snare's or a mine's burst named by `CL.asSpell`, the engine's precast of a
+spell) covers what runs outside the wrapper. No mark can leak and none survives an error: there is no flag to clear. The wrapper's `runWith` runs
+the cast in a `pcall` frame and restores the outer context after it, an error included, and a delayed callback gets the context it was started
+in (`tests/supports_test.lua` proves: nil outside a cast, the casting player inside, the same in the delayed event, nil after an error, a nested
+cast of another player names that player and the outer one is back after it). The layer compares the id with the attacker's: another player's
+cast, a summon's hit (the attacker is a monster), a caster's cast, a tick (`ORIGIN_CONDITION`) and a reader that errors all keep the class curve
+(the new block of `tests/monster_defence_test.lua`). Bulwark still blocks weapon hits only, never a spell.
+
+*What it moves, after.* The same casts on the same dummies (the table's last column; a Monk at 20 is from the first run, the dummy of the second
+rolled Plated): Reaping Gyre 64 to 36% at level 20, 76 to 40% at 100 (the weapon cap: its hits are small); Earthbreaker 47 to 19%; Colossus
+Fall 73 to 20%; Bastion Cry 55 to 11%; the Monk's palms 21 to 53% down to 2 to 13%; the Ranger's and Thief's mines 33 to 11% at level 100.
+A spell hit that is not a weapon class's own (a minion, a wolf, a caster's spell) is unchanged. Multi-hit spells with small hits (Reaping Gyre)
+still lose the cap, 40%, as an auto attack of that size does.
+
+*Minions and wolves (2c).* Read from the code, not measured on the rig: a Necromancer's minion and a Beastmaster's wolf hit with `ORIGIN_SPELL`
+since O468 and the attacker is a monster (a summon of the player), so `ctx.weaponSpell` is false and they meet the class curve exactly as before.
+That is on purpose: the Beastmaster's `autoByLevel` bite factor (`chaos_constants.lua`) is sized so that a plain build keeps its old bite against
+the class-curve armour share of a normal monster (within 2% at every level 50 to 1,300), and `minion_model.py` and `companion_model.py`
+assume the same. They gain from the smaller flat armour of part 1 (their melee attack checks it).
+
+
+*Part 3: the Monk's fist.*
+
+*Cause (engine, with file and line).* `Weapon::useFist` (`weapons.cpp` 330-358, the only bare-fist roll; called from `Player::doAttacking`, `player.cpp`
+3822, when no weapon is in the hands; a fist weapon is a shield-type item that `Player::getWeapon` skips, patch 0087) rolls `attackValue = 7` (338)
+through `Weapons::getMaxWeaponDamage` (340) and `-normal_random(0, maxDamage)` (350), with `blockedByArmor` and `blockedByShield` (344-345): the
+monster's flat armour and defence take their part in `Creature::blockHit` before any Lua event. The Monk's scaling is `monk_combat.lua`
+`onOffence` (`ChaosMonkCombat`, registered on the monster by the Monk's `onTargetCombat` callback when a client sets the target), a later event
+that multiplies the hit by `M.unarmedFactor` (about 5 at level 100, 12 at level 8): after the flat armour and after the monster layer. A level 100
+Monk rolled 31 on the mean (63 at most), the stock monster took 30 + 30, and the layer then measured the armour on the 31. Measured before: 82%
+of its swings blocked outright at level 100 (63% at 20, 86% at 300, 93% at 500), 1 to 2 of every 30 points arriving, 1.4% of its damage reaching
+the monster with the layer on (6% with the layer off, as the O501 report said).
+
+*Method note.* The rig sets a target from Lua, which does not run the `onTargetCombat` chain that a client's attack does (`Game::playerSetAttackedCreature`),
+so the Monk's event was never registered on the dummies of the O501 runs and the Monk numbers of that report had no scaling in them. This run
+fires the chain when it arms a monster and puts its probe last, so the Monk's final damage is the game's. A "reaches" share is a ratio of final
+damage with the layer on over the same character with it off, so it does not depend on the scaling.
+
+*What is built.*
+1. Lua, both binaries: the layer measures the armour of a Monk's bare-fist hit on the size it will have after the scaling
+   (`ChaosMonk.fistUnits`, `ctx.hitUnits` in `C.defend`; 1 when the engine rolls the Monk's fist). Without it the Monk sat at the weapon cap of G2
+   because of units. It takes the same share of the arriving hit, so it takes the same share of the scaled one.
+2. Engine patch 0091 (`0091-fist-attack-from-script.patch`: `Player:setFistAttack(attack, multiplier)` / `getFistAttack`, `Weapon::useFist` rolls
+   `round(maxWeaponDamage(level, fist skill, attack, attack factor) x multiplier)` when an attack is set; header `src/chaosfist.h`, bad numbers
+   (zero, negative, NaN, infinity, over 2,000 or 10) mean "none set"; never saved). `fist_sync.lua` keeps the pair right for the Monk line (the
+   fist weapons' attack counts when higher) and for Open Hand Creed (`archetypes.lua`, `A.openHandPush`) at every attack a player starts, and
+   `monk_combat.lua` / `archetypes.lua` apply only the difference between what was pushed and what is wanted now (`M.pushCorrection`, nearly always
+   1: a level up or a fist weapon swapped since the last attack is corrected on the hit itself), keeping the old factor on an engine without the
+   patch and for the first swing before any push. The capability is the method (`type(Player.setFistAttack) == "function"`), never a version.
+3. The weapon curve and G6: `roll_mean` of the fist line is the Monk's fist attack times its `meleeDamage` (the units that arrive on both binaries);
+   G6 holds at 85 levels that a fist class loses at most as much as the median class (+1 point), at most 20 points less, and 5 points under the cap.
+   `weaponHitCurve` did not move (the median class is a Warrior-sized hit). `defence_curve.py --fist` prints the Monk on both engines.
+
+*Measured, the Monk, four states* (the real monsters of the table above, a bare Monk of the level with the best fist weapon; each cell: blocked
+outright / arriving per swing at the layer (the engine's roll) / layer removed / reaches / seconds to kill a typical hunt monster at the Monk's
+armourless damage of the level, 149 / 159 / 112 / 117 / 208 / 431 per second at 8 / 20 / 60 / 100 / 300 / 500; level 60 has no cell before, the
+run lost it):
+
+| Level | Monster | Before | After part 1 (old engine) | + layer on the scaled size (old engine) | Engine with patch 0091 |
+|---:|---|---|---|---|---|
+| 8 | Troll | 20% / 7 / 31% / 45% / 0.9 | 0% / 18 / 26% / 79% / 0.5 | 0% / 18 / 5% / 97% / 0.4 | 0% / 146 / 4% / 94% / 0.4 |
+| 20 | Mummy | 63% / 3 / 33% / 10% / 5.1 | 3% / 17 / 32% / 62% / 0.8 | 2% / 19 / 5% / 89% / 0.5 | 0% / 168 / 5% / 99% / 0.5 |
+| 60 | Wyrm | n/a | 3% / 18 / 40% / 49% / 4.6 | 4% / 21 / 16% / 74% / 3.1 | 1% / 158 / 13% / 87% / 2.6 |
+| 100 | Retching Horror | 82% / 1 / 54% / 1% / 282.1 | 4% / 21 / 40% / 37% / 11.2 | 4% / 21 / 22% / 53% / 7.7 | 1% / 177 / 18% / 76% / 5.4 |
+| 300 | Juggernaut | 86% / 2 / 40% / 1% / 582.7 | 7% / 24 / 40% / 22% / 38.1 | 7% / 22 / 30% / 25% / 33.8 | 1% / 205 / 26% / 43% / 19.9 |
+| 500 | Spiked Enforcer | 93% / 1 / 39% / 0% / 2043.2 | 13% / 47 / 40% / 31% / 32.8 | 8% / 52 / 35% / 36% / 28.0 | 0% / 462 / 18% / 67% / 15.2 |
+
+The old engine with the new Lua is what a server gets until the rebuild: the layer rule and the flat armour cap, the hit still rolled as attack 7,
+so the flat armour still takes its part of the small hit (the model, `defence_curve.py --fist`: stock engine 79 / 73 / 59 / 54 / 50 / 50% at
+8 / 20 / 60 / 100 / 300 / 500 against 91 / 87 / 80 / 78 / 78 / 79% with the patch; the stock flat armour gave 47 / 2 / 0.2 / 6 / 2 / 6%, the 6% of
+the O501 report at level 100). With the engine patch the Monk reaches 76% at level 100 and 67% at 500 against the Warrior's 64% and 68% (within 10
+points at 100 and 500, 12 above at 100; the Monk's hit is bigger than the median weapon hit at the low levels, so it loses less of it: G6).
+Level 20 and 300 are noisy cells (the Mummy has its own file resistance and its rolls vary).
+
+*The Monk's armourless damage did not move.* The stock path against the pushed path in one running server, ABBA, 120 s a level, layer off:
+147 / 158 / 109 / 119 / 212 / 429 per second stock and 151 / 160 / 115 / 115 / 204 / 433 pushed, +2.5 / +1.2 / +4.9 / -3.2 / -3.7 / +0.9%, +0.2%
+over the six levels (the two stock runs of one level differ by up to 13%: the noise of 120 bell rolls is about 4%; a cell is not a proof, the sum
+is). By construction the expected hit is the same (`tests/fist_sync_test.lua` holds the push against `unarmedFactor` to 0.1% at 7 levels, 3
+vocations, 3 skills, 3 stances), and `class_dps_model.py --check` and every model check are green: no model reads the fist's roll.
+A Warrior, Thief and Ranger hit on the new engine arrives as on the old (a weapon never reaches `useFist`; the dummy rolls 25 / 78 / 235 against
+29.5 / 82.6 / 226 for a Warrior at 20 / 100 / 500, the skill of the characters had grown between the runs).
+
+*Build.* The engine was built here from the installed source tree (patches 0001 to 0088 and 0090: the base tree is not in git, and the tree of the
+local server has no 0089) with 0091 on top: `cmake -DCMAKE_BUILD_TYPE=Release -DUSE_LUAJIT=ON`, 4,385,440 bytes, run from a folder of its own against
+the same data. `patch -p1 --fuzz=0 --dry-run` applies on that tree (`SRC_TREE=DIR python3 -I tools/fist_attack_patch_test.py`); 0091 touches
+luascript.cpp/h, player.h and weapons.cpp, not the files of 0089 (monster.h/cpp), so the order of the chain does not matter for it.
+Open Hand Creed on a non-Monk was not run on the rig (the numbers are tested: `fist_sync_test.lua`). The first swing of a session on the new engine
+rolls attack 7 and is corrected by the old factor; the push is made at that swing for the next.
+
+*Not measured.* Minions and wolves (part 2), 15 of the 21 classes, levels over 500 on real monsters, a live server, a client attack (the rig
+fires the same callback chain), Open Hand Creed, the old binary's Monk with the scaling event on (the ratio does not need it).
+
+
+*Owner steps.* Admin app first: tab Painel > card "Atualizar servidor" > "Verificar", then "Aplicar e reiniciar": it installs the Lua and runs the step
+`monsterflat` (parts 1 and 2 and the layer rule of part 3 work on the old engine at once). The engine of part 3 needs a rebuild: Painel > card
+"Recompilar engine" > button "Recompilar" (confirm "Recompilar o engine agora?"), and when it is done "Atualizar servidor" > "Verificar" >
+"Aplicar e reiniciar" again installs the new `tfs`. Shell fallback: `python3 -I server/tools/install_all.py SERVER_DIR --only files,monsterflat`.
+Decisions left to the owner: (1) the flat share, 10% (boss 20%): `flatShare` and `flatRollCurve`, a lower share lowers the caps again at the
+next install; (2) minions and wolves keep the class curve (part 2c), say if they should meet the weapon rule; (3) the Monk with the engine patch
+reaches more than a Warrior at the low levels (its hit is bigger than the median weapon hit: G6 allows up to 20 points); (4) the patch note lines
+in `2026-11-13` say the full Monk fix needs the engine update: drop that sentence if the engine goes live first.
 
 **The physical cap.** The total of the file's physical percent, armour and Plated never passes 90 percent:
 `1 - (1 - p0) x (1 - armour) x (1 - Plated)`, and when it would, the layer takes the hit back up to 10 percent of the raw hit.
@@ -31218,9 +31487,11 @@ chain, Last Breath's place, the hit multipliers named above, and the replacement
 bonus (x(1 + 0.0015 L) on a monster's hit in `combatChangeHealth`, suspected to apply twice because of the re-entry after the
 events) is not touched and nothing here relies on it.
 
-**Install.** `python3 -I server/tools/install_all.py SERVER_DIR --only monsterresists` (the admin app has no button: a
-once-per-install data step). **Tests:** `tests/monster_defence_test.lua`, `tests/defence_order_test.lua`,
-`tests/monster_tiers_test.lua` (rank table), `tools/patch_monster_resists_test.py`, `tools/defence_curve.py --check`, the client
+**Install.** `python3 -I server/tools/install_all.py SERVER_DIR --only monsterresists,monsterflat` (the admin app has no button: a
+once-per-install data step; `monsterflat` is O505, "Flat armour, weapon spells and the Monk's fist"; it needs the `files` step first, which
+installs the bounty pool and the config it reads). **Tests:** `tests/monster_defence_test.lua`, `tests/defence_order_test.lua`,
+`tests/monster_tiers_test.lua` (rank table), `tools/patch_monster_resists_test.py`, `tools/patch_monster_flat_defence_test.py`,
+`tests/fist_sync_test.lua`, `tools/defence_curve.py --check`, the client
 `game_monsterbar/monsterbarstyle_test.lua`. **Not verified:** a live server (the event order is read from the engine source, not
 observed), the client chips in the real client, the pt-BR texts by a speaker.
 
