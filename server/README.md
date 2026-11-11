@@ -3773,10 +3773,10 @@ item of the kind and `--check` passes; the one kind left is the 35 "unique copy:
   with no class list, no stock Equip entry, no stock script. Its numbers, modifiers, passive, drop sources and rule
   (Thief line, level 1900) are unchanged. Its look changes to the fang's. 27193 is a plain caster wand again: after a
   re-run of step `uniqueequip` its stock Equip entry is back (level 180, Mystic and Necromancer lines).
-- **Owner decision, open.** Who can use what did not change: the Thief line from 1900, as designed. The choice made here
-  is the base, so the look. Other bases that fit: 2379 (the shop dagger; rejected, the starter kit and the off-hand
-  grant count that id), or a base of its own that keeps the old look (a new server id copying the 27193 node as a sword,
-  as the jewelry uniques of 41640-41642; more install steps). Say so and the base moves again the same way.
+- **Owner decision** (2026-11-11, translated: "It can stay"): the base is 7408, with the fang's look. Who can use what
+  did not change: the Thief line from 1900, as designed. The bases not taken: 2379 (the shop dagger; the starter kit and
+  the off-hand grant count that id), and a base of its own that keeps the old look (a new server id copying the 27193
+  node as a sword, as the jewelry uniques of 41640-41642; more install steps).
 - **Old copies.** `ChaosJewelry.uniqueMoves` lists `{id = 7408, from = {27193}}`. A copy of 27193 with the
   `chaos_unique` marker (or the unique's name) turns into 7408 like the jewelry uniques: in a container when moved, at
   login in the backpack, and a worn one is moved to the backpack first and the player is told to put it on again
