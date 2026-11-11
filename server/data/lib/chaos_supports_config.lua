@@ -53,6 +53,7 @@ return {
 		[57] = "single", [80] = "single", [82] = "single", [88] = "single", [90] = "single", [106] = "single",
 		[113] = "single", [121] = "single", [127] = "single", [131] = "single", [138] = "single", [140] = "single",
 		-- the attack kit: circles, bursts around the caster, waves and lines
+		[39] = "area", [42] = "area", -- Rending Pounce (the wolves bite every monster around the target), Grave Nova (O468: sockets)
 		[9] = "area", [22] = "area", [38] = "area", [56] = "area", [62] = "area", [84] = "area", [87] = "area",
 		[89] = "area", [107] = "area", [112] = "area", [118] = "area", [119] = "area", [120] = "area", [122] = "area",
 		[126] = "area", [128] = "area", [129] = "area", [139] = "area", [141] = "area",
@@ -134,6 +135,13 @@ return {
 			text = "The spell heals %1%% more"},
 	},
 
+	-- O471 (2026-11-10): the damage runes count at most this level's value in a hit. A Mythic rune (level 5) stays what it is, shows
+	-- its own level and name, and counts as a Legendary one (level 4): brand 50 (not 60), Echo 30 (35), Hex 6 (8), Keen Edge 6 (8).
+	-- The values of level 5 stay in `values` above (the Mythic row of the Codex shows the value that counts). Sunder is no entry
+	-- here: its points count into the penetration total of 20 (ChaosItemMods.penLeft). Owned Mythic runes keep working.
+	levelCeiling = {emberbrand = 4, rimebrand = 4, dawnbrand = 4, gravebrand = 4, stormbrand = 4, keenedge = 4, echo = 4, hex = 4},
+	ceilingNote = "Counts as Legendary: the damage runes count at most their level 4 value.",
+
 	-- caps on the summed value of one support key on one spell (with option 2, extra sources may add up)
 	caps = {quickening = 30, thrift = 30, keenedge = 13, echo = 40, bloodthirst = 8, siphon = 40, sunder = 25,
 		hex = 10, mercy = 25},
@@ -182,7 +190,9 @@ return {
 	-- utility spells: no sockets (owner 2026-11-06). Runes already in them go back to the player at login, and an
 	-- opened third socket gives its Orbs of Sockets back (supports.lua S.releaseUtility). Light, food, find person,
 	-- haste, levitate, rope, invisibility, illusion, Town Portal, Flickerdash, Vigil of Haste, Warhorse Rush
-	none = {6, 9, 10, 11, 20, 38, 39, 42, 44, 45, 75, 76, 81, 93, 134, 161, 232, 254},
+	-- O468: 9 Rift Cleaver, 38 Mirror Shards, 39 Rending Pounce, 42 Grave Nova, 45 Gutting Slash and 134 Gale Volley are damage
+	-- spells (they sat here from before the attack kit and the wolf spells took those ids) and have sockets now
+	none = {6, 10, 11, 20, 44, 75, 76, 81, 93, 161, 232, 254},
 
 	-- ------------------------------------------------------------------ drops (the Chaos loot layer, loot.lua)
 	-- chance per kill in 1/10000 by monster tier x the loot layer's rate x item find (gems: 25/150/500/1500/3000)

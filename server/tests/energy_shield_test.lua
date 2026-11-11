@@ -178,7 +178,7 @@ for _, key in ipairs({"energyshield", "energyshieldpct", "esrecharge"}) do
 	for _, kind in ipairs({"weapon", "boots", "legs", "other"}) do
 		eq(M.allowed(def, kind), false, key .. " not on " .. kind)
 	end
-	assert(def.tiers[8][2] <= def.cap, key .. ": one item never beats the cap")
+	eq(def.cap, nil, key .. ": no module cap (O464)")
 	local prev = 0
 	for _, r in ipairs(def.tiers) do
 		ok(r[1] <= r[2] and r[1] >= prev, key .. ": ranges grow")

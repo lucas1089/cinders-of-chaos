@@ -63,8 +63,8 @@ P.features = {
 		end,
 		who = {"Level {min}+ for tier 1. Higher tiers need more level: tier {top} needs {minTop}. Alone or in a party: a bigger party faces harder monsters and gets +{partyPct}% reward for each extra player (up to +{partyCap}%).",
 			"Nível {min}+ para o nível 1. Níveis mais altos pedem mais nível: o nível {top} pede {minTop}. Sozinho ou em grupo: um grupo maior enfrenta monstros mais fortes e ganha +{partyPct}% de recompensa por jogador extra (até +{partyCap}%)."},
-		levels = {"Tier 1: monsters of level {a1}-{b1}. Tier 5: {a5}-{b5}. Tier {top} and above: {aTop}-{bTop}.",
-			"Nível 1: monstros de nível {a1}-{b1}. Nível 5: {a5}-{b5}. Nível {top} em diante: {aTop}-{bTop}."},
+		levels = {"Tier 1: monsters of level {a1}-{b1}. Tier 5: {a5}-{b5}. Tier {top} and above: {aTop}-{bTop}. A key shows a recommended level to go alone. Below it a guardian hits very hard, two hits can kill: bring a party or use a lower tier key.",
+			"Nível 1: monstros de nível {a1}-{b1}. Nível 5: {a5}-{b5}. Nível {top} em diante: {aTop}-{bTop}. A chave mostra um nível recomendado para ir sozinho. Abaixo dele um guardião bate muito forte, dois golpes podem matar: leve um grupo ou use uma chave de tier menor."},
 		drops = {"A chest after the boss: gold, orbs and gear. Harder key modifiers give a bigger prize. Seal a tier to get a key for the next one.",
 			"Um baú depois do chefe: ouro, orbes e equipamento. Modificadores mais difíceis dão prêmio maior. Sele um nível para ganhar a chave do próximo."},
 		death = {"Each death costs one shared life: {lives} alone, +{extra} for each extra player. {gentle} With no lives left the rift ends and the key is lost.",
@@ -357,6 +357,56 @@ P.features = {
 		often = {"New spells open as you level up; Available soon lists the next ones. A few line spells need a quest first: the spell names the teacher and the level.",
 			"Magias novas abrem conforme você sobe de nível; Em breve mostra as próximas. Algumas magias de linha pedem uma quest antes: a magia mostra o mestre e o nível."}},
 
+	-- O468: what a spell's damage is made of; the magic level share of a weapon class is read from spell_scaling_config.lua
+	{key = "spelldamage", title = {"Spell damage", "Dano das magias"},
+		values = function(C, H)
+			local pct = 100 / C.spellscaling.mlShare.per
+			return {pct = {en = string.format("%.2f", pct), pt = (string.format("%.2f", pct):gsub("%.", ","))}}
+		end,
+		-- O472: the weapon growth reaches a caster's spells through its wand or rod (spell_scaling_config.lua caster)
+		what = {"A spell's damage starts from your level, your magic level and, for a weapon class, your weapon skill and attack. A caster's magic level is its skill. Every magic level adds about {pct}% to the spells of a weapon class. A caster's spells also grow with the level through the wand or rod in its hands. Class, passive tree, gear modifiers, gems, support runes, cards, charms, uniques and sets raise it more.",
+			"O dano de uma magia parte do seu nível, do nível mágico e, numa classe de arma, da skill e do ataque da arma. O nível mágico do conjurador é a skill dele. Cada nível mágico soma cerca de {pct}% às magias de uma classe de arma. As magias de um conjurador também crescem com o nível pela varinha ou bastão nas mãos. Classe, árvore passiva, modificadores, gemas, runas de suporte, cartas, charms, únicos e conjuntos aumentam mais."},
+		who = {"Every class. Mystic, Elementalist, Illusionist and Necromancer lines scale with level and magic level. Warrior, Ranger, Thief and Monk lines scale with level, weapon skill and weapon attack, and a little with magic level. Templar spells use all three.",
+			"Toda classe. As linhas Mystic, Elementalist, Illusionist e Necromancer crescem com o nível e o nível mágico. As linhas Warrior, Ranger, Thief e Monk crescem com o nível, a skill e o ataque da arma, e um pouco com o nível mágico. As magias da linha Templar usam os três."}},
+
+	-- O474: damage over time; every number is read from dot_config.lua
+	{key = "dot", title = {"Damage over time", "Dano ao longo do tempo"},
+		values = function(C, H)
+			local D = C.dot
+			local function pct(x) return math.floor(x * 100 + 0.5) end
+			return {share = pct(D.side.share), ticks = D.side.ticks, tickMs = D.side.tickMs, kitMs = D.kit.tickMs,
+				stacks = D.ailment.maxStacks, aRounds = D.ailment.rounds, aMs = D.ailment.interval, radius = D.jump.radius}
+		end,
+		what = {"Burning, poison, bleeding and curses keep hurting after the hit. Each tick ignores armour; only resistance counts. A tick gives no life or mana on hit and rolls no ailment. The Damage over Time modifier on gear raises every tick, the ticks of your spells too.",
+			"Queimadura, veneno, sangramento e maldições continuam ferindo depois do golpe. Cada pulso ignora a armadura; só a resistência conta. Um pulso não dá vida nem mana por golpe e não sorteia ailment. O modificador Damage over Time do equipamento aumenta todo pulso, inclusive os das suas magias."},
+		who = {"Witchfire Bolt, Falling Pyre, Shattered Psyche and Blightswarm leave a burn, curse or poison worth {share}% of their own hit in {ticks} ticks, {tickMs} ms apart. Gorehook, Dreamrot, Venom Spiral, Blightbrand, Martyr's Pyre, Crimson Covenant, Withering Curse and Soul Rot tick every {kitMs} ms or faster, the first tick at once.",
+			"Witchfire Bolt, Falling Pyre, Shattered Psyche e Blightswarm deixam uma queimadura, maldição ou veneno que vale {share}% do próprio golpe em {ticks} pulsos, com {tickMs} ms entre eles. Gorehook, Dreamrot, Venom Spiral, Blightbrand, Martyr's Pyre, Crimson Covenant, Withering Curse e Soul Rot pulsam a cada {kitMs} ms ou menos, o primeiro na hora."},
+		drops = {"Chance to Bleed, Ignite and Poison on gear stack: up to {stacks} of one kind on one monster, each {aRounds} ticks of {aMs} ms. A fourth replaces the weakest.",
+			"Chance to Bleed, Ignite e Poison do equipamento se acumulam: até {stacks} do mesmo tipo em um monstro, cada um com {aRounds} pulsos de {aMs} ms. O quarto troca o mais fraco."},
+		often = {"When the target of a spell's damage over time dies, what is left moves to the nearest living monster within {radius} squares. Never to a player, and it adds no new ticks. Against players every damage over time works as it did before.",
+			"Quando o alvo do dano ao longo do tempo de uma magia morre, o que sobrou passa ao monstro vivo mais próximo a até {radius} quadrados. Nunca a um jogador, e não cria pulsos novos. Contra jogadores todo dano ao longo do tempo funciona como antes."}},
+	-- O473: the one additive damage pool (damage_pool_config.lua, pvp_balance_config.lua). No window of its own: the help search finds it
+	{key = "increaseddamage", title = {"Increased damage", "Dano aumentado"},
+		values = function(C, H)
+			local P, S = C.damagePool, C.damagePool.sources
+			local at = {}
+			for _, row in ipairs(C.pvp.damageScale) do
+				at[row[1]] = row[2]
+			end
+			local function two(v)
+				return {en = string.format("%.2f", v), pt = (string.format("%.2f", v):gsub("%.", ","))}
+			end
+			return {cap = P.softCap.cap, uniq = S.uniques.each, uniqAll = S.uniques.cap, gem = S.gems.cap, gemPhys = S.gems.capPhysical,
+				mast = S.masteries.each, mastAll = S.masteries.cap, card = S.cardSets.cap, extras = P.groups.extras.cap,
+				p100 = two(at[100]), p1000 = two(at[1000])}
+		end,
+		what = {"All increased damage adds into one pool, and the pool is applied to a hit once. It comes from the passive tree, a wand's Spell Damage, Paragon, unique powers, gems, damage masteries, a card set, charms and the sword's tempo edge. Up to {cap} the pool counts in full, above it each point counts less.",
+			"Todo dano aumentado se soma em um único conjunto, aplicado ao golpe uma vez. Vem da árvore passiva, do Spell Damage de uma varinha, do Paragon, de poderes únicos, gemas, maestrias de dano, um conjunto de cartas, charms e do tempo da espada. Até {cap} o conjunto conta por inteiro, acima disso cada ponto conta menos."},
+		who = {"Every class. Most one source adds: a unique power {uniq} ({uniqAll} for all), gems {gem} per element ({gemPhys} physical), a mastery {mast} ({mastAll} for all), a card set {card}, charms and the sword together {extras}.",
+			"Toda classe. O máximo de cada fonte: um poder único {uniq} ({uniqAll} no total), gemas {gem} por elemento ({gemPhys} no físico), uma maestria {mast} ({mastAll} no total), um conjunto de cartas {card}, charms e a espada juntos {extras}."},
+		often = {"Every hit, once. Strength, the weapon, critical hits, support runes and class damage multiply on their own. Against a player the hit is scaled by your level, x{p100} at level 100 to x{p1000} at level 1000.",
+			"Todo golpe, uma vez. Força, a arma, golpes críticos, runas de apoio e dano de classe multiplicam por conta própria. Contra um jogador o golpe é escalado pelo seu nível, x{p100} no nível 100 a x{p1000} no nível 1000."}},
+
 	{key = "bestiary", title = {"Bestiary", "Bestiário"}, window = "game_bestiary", goals = {"task1", "known25", "completed10"},
 		values = function(C, H)
 			local B = C.bestiary
@@ -402,6 +452,27 @@ P.features = {
 			"Materiais para vender ao Material Broker ou no Market; eles não fazem equipamento. Cada nível de profissão também soma um pouco de experiência dos monstros, até +{cap}% com todas altas."},
 		often = {"A node is ready for you again {respawn} minutes after you use it, and nobody can take it from you. The broker pays full price for {full} of each material a day, then {late}% up to {top}.",
 			"Um ponto de coleta fica pronto de novo para você {respawn} minutos depois de usar, e ninguém pode tirá-lo de você. O broker paga o preço cheio por {full} de cada material por dia, depois {late}% até {top}."}},
+
+	-- O464: how a hit on the character is worked out (player_defence_config.lua, defence_config.lua). No window of its own: it is
+	-- found by the help search; the character sheet shows the numbers
+	{key = "defence", title = {"Defence and resistances", "Defesa e resistências"},
+		values = function(C, H)
+			local P, D = C.playerDefence, C.defence
+			return {cap = D.resistCap, phys = D.physicalReductionCap, m1 = P.penalty.marks[1].level, p1 = P.penalty.marks[1].points,
+				m2 = P.penalty.marks[2].level, p2 = P.penalty.marks[2].points, w1 = P.penalty.marks[1].warnFrom,
+				w2 = P.penalty.marks[2].warnFrom, dodge = P.dodgeCap, block = D.blockCap, less = P.suppressLess,
+				share = P.tree.share * 100, tcap = P.tree.cap}
+		end,
+		what = {"A hit is worked out in this order: dodge and block can stop an attack, spell suppression takes {less}% off a spell, then armour and your physical reduction take a share off a physical hit (at most {phys}% together) and your resistance takes a share off the other kinds.",
+			"Um golpe é calculado nesta ordem: esquiva e bloqueio podem parar um ataque, a supressão de magia tira {less}% de um feitiço, depois a armadura e a sua redução física tiram uma parte de um golpe físico (no máximo {phys}% juntas) e a sua resistência tira uma parte dos outros tipos."},
+		who = {"Every character. Four resistances: Fire, Cold (ice, water, drowning), Lightning (energy, holy, arcane) and Chaos (earth, death, life drain, mana drain). Physical has armour instead.",
+			"Todo personagem. Quatro resistências: Fire, Cold (gelo, água, afogamento), Lightning (energia, sagrado, arcano) e Chaos (terra, morte, drenagem de vida e de mana). O físico tem armadura no lugar."},
+		levels = {"From level {m1} every resistance loses {p1} points and from level {m2} it loses {p2}. You are told from level {w1} and from level {w2}, and when you cross the mark. A negative resistance makes you take more damage.",
+			"A partir do nível {m1} toda resistência perde {p1} pontos e a partir do nível {m2} perde {p2}. Você é avisado a partir do nível {w1} e do nível {w2}, e quando passa da marca. Uma resistência negativa faz você sofrer mais dano."},
+		drops = {"Resistances, armour, dodge, block and spell suppression come from gear, the passive tree, sets, gems and charms. A resistance counts at most {cap}%. The passive tree counts {share}% of its points toward a resistance, at most {tcap}. Dodge and block count at most {dodge}% and {block}%.",
+			"Resistências, armadura, esquiva, bloqueio e supressão de magia vêm de equipamento, da árvore passiva, de conjuntos, gemas e amuletos. Uma resistência conta no máximo {cap}%. A árvore passiva conta {share}% dos seus pontos para uma resistência, no máximo {tcap}. Esquiva e bloqueio contam no máximo {dodge}% e {block}%."},
+		often = {"The character sheet (Info & Services, Character Info) shows each resistance with its sources, the penalty and the result, and your armour, dodge, block and spell suppression.",
+			"A ficha do personagem (Info & Services, Character Info) mostra cada resistência com as fontes, a penalidade e o resultado, e a sua armadura, esquiva, bloqueio e supressão de magia."}},
 
 	{key = "charms", title = {"Charms", "Amuletos"}, window = "game_charms",
 		values = function(C, H)
@@ -637,6 +708,47 @@ P.features = {
 			"Enquanto estiver ativo: +{xp}% de experiência dos monstros, a stamina volta x{stam} mais rápido, mais espaço e depósito, e {marks} Pact Marks por dia para visuais."},
 		often = {"Claim the Marks in this window once a day while the Pact runs; a missed day is not paid later.",
 			"Pegue as Marks nesta janela uma vez por dia enquanto o Pact estiver ativo; um dia perdido não é pago depois."}},
+
+	{key = "potions", title = {"Potion upgrades", "Melhoria de poções"},
+		values = function(C, H)
+			local P = C.potions
+			local function tier(line, n)
+				for _, e in ipairs(P.everfull) do
+					if e.line == line and e.tier == n then
+						return e
+					end
+				end
+				error("potions_config.lua: no " .. line .. " tier " .. n)
+			end
+			-- the card says one level and one material count for every line: stop when the config stops saying so
+			for n = 2, 4 do
+				assert(tier("health", n).level == tier("mana", n).level and tier("health", n).level == tier("spirit", n).level,
+					"the potion card names one level per tier: the lines differ at tier " .. n)
+			end
+			assert(tier("spirit", 1).level == 0, "the card says the first spirit flask needs no level")
+			assert(tier("spirit", 1).materialName == "health potions", "the card says the first spirit flask takes health potions")
+			assert(tier("mana", 4).materialCount == tier("spirit", 4).materialCount, "the supreme mana and spirit flasks take the same count")
+			assert(tier("health", 2).materialCount == nil and tier("spirit", 1).materialCount == nil,
+				"the card says the other tiers take upgrade.materials potions")
+			local lo, hi
+			for _, e in ipairs(P.everfull) do
+				lo = (not lo or e.price < lo) and e.price or lo
+				hi = (not hi or e.price > hi) and e.price or hi
+			end
+			local pct, coins = P.amount.everfullPct, P.upgrade.coins
+			return {npc = C.apothecary.npc, l2 = tier("health", 2).level, l3 = tier("health", 3).level,
+				l4 = tier("health", 4).level, p1 = pct[1], p2 = pct[2], p3 = pct[3], p4 = pct[4],
+				mat = P.upgrade.materials, matTop = tier("mana", 4).materialCount,
+				c1 = coins[1], c2 = coins[2], c3 = coins[3], c4 = coins[4], rmin = H.big(lo), rmax = H.big(hi)}
+		end,
+		what = {"Your Everfull health and mana potions never run out. Upgrade one and the new flask replaces the old one. A better tier gives a bigger share of your maximum on every drink: {p1}% on the first flask, then {p2}%, {p3}% and {p4}% on the great, ultimate and supreme ones, plus the potion's own roll.",
+			"Suas poções Everfull de vida e de mana nunca acabam. Melhore uma e o frasco novo substitui o antigo. Um tier melhor dá uma parte maior do seu máximo a cada gole: {p1}% no primeiro frasco, depois {p2}%, {p3}% e {p4}% nos frascos great, ultimate e supreme, além do valor próprio da poção."},
+		who = {"Every character. Health and mana: great at level {l2}, ultimate at level {l3}, supreme at level {l4}. The spirit line gives health and mana in one drink: it starts from your health flask at any level, then climbs the same tiers. Go one tier at a time. There is no way back.",
+			"Todo personagem. Vida e mana: great no nível {l2}, ultimate no nível {l3}, supreme no nível {l4}. A linha spirit dá vida e mana num gole só: começa no seu frasco de vida, em qualquer nível, e sobe pelos mesmos tiers. Um tier por vez. Não há volta."},
+		death = {"A death never takes your flasks: they are bound to you. If one is lost anyway, say \"lost\" to {npc}. She gives back your highest tier for gold: {rmin} for the first flask, up to {rmax} for the supreme.",
+			"Uma morte nunca leva os seus frascos: eles são ligados a você. Se um se perder mesmo assim, diga \"lost\" a {npc}. Ela devolve o seu tier mais alto por ouro: {rmin} pelo primeiro frasco, até {rmax} pelo supreme."},
+		often = {"Each tier once per character. Ask {npc} in the hub for an \"upgrade\": she takes your flask and {mat} ordinary potions of the new tier (great health potions for a great health flask). The first spirit flask takes {mat} health potions, and the supreme mana and spirit flasks take {matTop} ultimate ones. The store sells the same swap for Chaos Coins, with no potions needed: {c1} for the first spirit flask, then {c2}, {c3} and {c4} by tier.",
+			"Cada tier uma vez por personagem. Peça um \"upgrade\" a {npc} no hub: ela leva o seu frasco e {mat} poções comuns do novo tier (great health potions para um frasco great health). O primeiro frasco spirit leva {mat} health potions, e os frascos supreme de mana e spirit levam {matTop} ultimate. A loja vende a mesma troca por Chaos Coins, sem precisar das poções: {c1} pelo primeiro frasco spirit, depois {c2}, {c3} e {c4} por tier."}},
 
 	{key = "shop", title = {"Store", "Loja"}, window = "game_shop",
 		what = {"The Chaos store. Prices are in Chaos Coins, kept for the whole account.",

@@ -44,11 +44,7 @@ Strength and weakness of every class: "Class identity (2026-10-28)" below.
 
 Balance target since O430: every class within +-25% of the level median DPS on 1 and 5 targets at levels 100, 500 and 1000
 (`server/tools/class_dps_model.py --check`); no class leads by rule. O444 made the boss, pack and tower models read that one source.
-What its numbers say (computed from the measured table of 2026-11-06, not re-measured): the Deadeye is the best single target class
-only at level 1000 (+21% of the median, the next is the Monk at +15%); it ranks 4th at level 100 (+16%, the Ninja and Samurai +20%)
-and 7th at 500 (+12%, the Thief +15%), and on 5 targets it ranks 17th, 16th and last (-19%, -14%, -23%). The Elementalist is not the
-best area damage class at any measured level (5 targets: +0%, +9%, +12%, ranks 11th, 8th, 3rd; the Iron Sage +23% at 100, the Mystic,
-Illusionist and Inquisitor +18% at 500, the Berserker +13% at 1000). The Juggernaut the tankiest and a party with an Illusionist
+What its numbers say (computed from the measured table of 2026-11-06 moved by the balance round of O470 to O474 and re-fitted in O475, not re-measured): on one target nobody leads by more than +19% (the Ninja and Samurai at 100, the Thief and Necromancer +14% at 500, the Monk and Necromancer +16% at 1000). The Deadeye is +16% at 100 (4th), +1% at 500 and 0% at 1000; on 5 targets it is last at 500 and 1000 (-20%, the Ranger -20% at 1000) after the O475 extra target factors (Deadeye 4.3 at 1000, Ranger 2.0, Mystic 0.42 at 500: the weapon growth had put them at -38%, -30% and +33%). The Elementalist is not the best area damage class at any measured level (5 targets: +0%, +17%, +17%, ranks 11th, 6th, 2nd; the Iron Sage +22% at 100, the Illusionist +23% and the Inquisitor +22% at 500, the Mystic +21% at 1000). The Juggernaut the tankiest and a party with an Illusionist
 out-damaging the same party without one are not touched by this.
 
 ## Class kits (first draft)
@@ -108,13 +104,13 @@ pacified the caster for 10 s), became the attack spell Gale Volley in O254 (belo
   Druid-style heals (Purifying Wellspring, Verdant Sanctuary). See "Illusionist healer pass" below.
 
 **Necromancer** (base): Raise Dead (skeletons from empty corpses, or one from nothing for twice the mana), Bone Spear
-(the filler; pierces to the creature behind), Withering Curse (the target takes +15% damage and rots), Grave Nova
+(the filler; pierces to the creature behind), Withering Curse (the target takes +15% damage and rots: 10 ticks 0.25 s apart since O474), Grave Nova
 (level 50, the Necromancer only: death damage on every enemy within 3 sqm of the caster, 2026-10-22). Minions hit as
 their owner, so their damage counts for it. Every minion has two spells, one single target and one area (beta
 2026-10-22; table in server/README.md "Necromancer summons"), and the summoned Risen Warrior taunts like the golem.
 Monsters hit a minion as they hit its owner (the pace damage curve), and minions regenerate, slowly in a fight and fast
 after it (2026-10-24, server/README.md "Necromancer summons"). The Necromancer minion hit factor is 0.92.
-- **Lich**: Soul Rot (a DoT that jumps when the host dies), Life Siphon (heals half the damage), Corpse Explosion; the
+- **Lich**: Soul Rot (6 ticks 0.4 s apart, the first at once, 50% heavier per tick since O474; what is left jumps to a nearby monster when the host dies, as the rest of the damage over time spells do), Life Siphon (heals half the damage), Corpse Explosion; the
   curse is stronger (+25%) and spreads to 2 more. One Lich Shade (ranged death bolts) instead of skeletons, and Soul Hoard:
   +25% spell damage while the shade slot is empty.
 - **Bone Lord**: 5-6 skeletons whose hits splash onto the enemies next to the target, the Bone Golem (slams, taunts),
@@ -124,7 +120,7 @@ after it (2026-10-24, server/README.md "Necromancer summons"). The Necromancer m
 grow with the chi spent; evasion; light armour.
 - **Shadowfist**: Pressure Points (a stacking debuff: the target takes more from Monks), Shadowfist Flurry (2 + 1 hit per chi),
   focus: after a finisher, crit chance 2.5% per chi spent for 4 s (12.5% at 5 chi).
-- **Iron Sage** (the second healer): Kindled Breath heals the most hurt party member (fist x 33 at 5 chi, +60%
+- **Iron Sage** (the second healer): Kindled Breath heals the most hurt party member (level x 2 + fist x 24.5 at 5 chi, +60%
   over 6 s), Mantra of Stone (party aura: -8% damage taken, and every 2 s a heal of level + fist x 26 on the party), Chi Ward
   (an absorb shield on a party member or itself), Iron Palm (a stun); more health and armour.
 
@@ -828,9 +824,11 @@ Open for the Necromancer:
   vocation's meleeDamage multiplier, and there is no "fist" weapon type in the item types. So the Monk's unarmed damage is scripted on the
   weapon hook, without an engine patch: `monk_combat.lua` scales a Monk's fist hit (melee origin, nothing in the hands) by (formula with
   the Monk's fist attack x meleeDamage) / (formula with attack 7). The fist attack grows with level: 40 + level x 0.025, at most 60
-  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): twenty-two hand items of weaponType
+  (level 300: 47.5), times the weapon growth a(level) of O472 (x1.31 at 300, x2.41 at 1000, x2.88 from 2000: 62.0 at 300, 144.7 at 1000;
+  server/README.md "Weapon growth (O472)"). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): twenty-two hand items of weaponType
   "shield" with an attack, worn in the shield hand by the Monk line only, from level 1 to 2200; their attack replaces the level
-  value when higher. Plain tiers: splinter claws 41 / level 1 (the starter kit), charred hand wraps 42 / 8, rustiron claws 43 / 35,
+  value when higher. Plain tiers (the attack before O472; the installed attack is it times a(level), 46 -> 50 at 150, 65 at 300, 82 at 500, 152 at 1000):
+  splinter claws 41 / level 1 (the starter kit), charred hand wraps 42 / 8, rustiron claws 43 / 35,
   ashbound cestus 44 / 60, ashen steel claws 45 / 100, ember knuckles 46 / 150, ossuary gauntlet 50 / 300, cinderforged talons 55 /
   500, gravetooth cestus 61 / 750, emberhide claws 62 / 800, hollowfang katars 63 / 950, voidglass claws 63 / 1000, wardenplate
   gauntlet 64 / 1150, stormforged claws 64 / 1250, wyrmbone claws 65 / 1500, gravewrought claws
@@ -870,6 +868,11 @@ Open for the Monk:
 Holy melee with a party defence aura; the tank-support alternative to the Juggernaut. Ascension with the Ascendant Oracle
 at level 100+ (the same rules as the other classes).
 
+(O464, every class: the defence is the player defence layer's, `server/README.md` "Player defence (O464)": four resistances,
+armour by hit size, dodge and block for attack hits, spell suppression for spells. The `armor` multiplier of a vocation
+(0.9 to 1.15, `vocations.xml`) is not readable from Lua and is not in the armour the layer uses; the class evasion of the
+Thief, Ninja, Samurai and Monk lines is one of the dodge sources.)
+
 | id | Name | client byte | hp / mana / cap per level | weapon hits | defense / armor |
 |---|---|---|---|---|---|
 | 23 | Templar | 9 | 14 / 8 / 25 | 1.0 | 1.05 |
@@ -891,7 +894,7 @@ everything the Warrior wears; potions of the Elite Knight and the Royal Paladin.
   3 sqm, heals 10% of the damage dealt, at most 5% max health per cast), Zealotry (20 s: each melee hit adds a stack, +4%
   damage per stack up to +40%, gone 3 s after the last hit; **no spell casts it since O254**, Crusader's Sweep took its id).
 - Sentinel: Rebuke (taunt within 4 sqm, 25% slow), Aegis of Faith (with a shield: -40% damage taken for 5 s), Lay on Hands
-  (a party member or itself within 5 sqm: 35% of its maximum health + magic level x 10; 60 s cooldown), Shield Wave (a
+  (a party member or itself within 5 sqm: 35% of its maximum health + level x 0.3 + magic level x 5; 60 s cooldown), Shield Wave (a
   Radiant Smite on the target and 2x it on everything in the 3 x 3 tiles in front, 2026-10-15).
 - Templar only: Sanctified Ground (3 holy pulses around the cast tile: the target a third of a Radiant Smite each, the
   rest of the pack 2.5x it, 2026-10-15).

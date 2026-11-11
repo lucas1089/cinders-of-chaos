@@ -63,6 +63,50 @@ function C.csv(path)
 	return rows
 end
 
+-- O472: the stock weapons grow with the level like ours (tools/patch_stock_weapon_growth.py, an install step that sets their attack
+-- and element damage to grown(before) with the weapon growth a(level) of data/scripts/chaos/spell_scaling_config.lua). The CSV holds
+-- the numbers BEFORE the growth (the survey reads them back from the step's marker block), so the audit applies the same rule to a row:
+-- a sword, axe, club, bow or crossbow of required level above `stockGrowth.fromLevel` without charges, attack and element damage
+-- times a(level), rounded half up. `python3 -I tools/patch_stock_weapon_growth_test.py` holds this rule equal to the step's.
+function C.stockGrowth(row, cfg)
+	local g = cfg and cfg.stockGrowth
+	if not g or not g.kinds[row.kind] or tonumber(row.charges) ~= 0 or tonumber(row.level) <= g.fromLevel then
+		return tonumber(row.attack), tonumber(row.element)
+	end
+	if not ChaosSpellScaling then
+		dofile("data/scripts/chaos/spell_scaling_config.lua")
+		dofile("data/scripts/chaos/spell_scaling_core.lua")
+	end
+	local a = ChaosSpellScaling.weaponA(tonumber(row.level))
+	local function grown(v)
+		v = tonumber(v)
+		return v > 0 and math.floor(v * a + 0.5) or v
+	end
+	return grown(row.attack), grown(row.element)
+end
+
+-- the stock weapons of base_weapons.csv with the growth applied to attack and element, and to the damage of a wand or rod of a level
+-- above `stockGrowth.fromLevel` (wmin, wmax) (strings, like the other cells)
+function C.stockWeapons(cfg)
+	cfg = cfg or dofile("tools/weapon_coverage_config.lua")
+	local rows = C.csv("data/items/base_weapons.csv")
+	local g = cfg.stockGrowth
+	for _, r in ipairs(rows) do
+		local attack, element = C.stockGrowth(r, cfg)
+		r.attack, r.element = tostring(attack), tostring(element)
+		if g and g.wands and r.kind == "wand" and tonumber(r.level) > g.fromLevel then
+			if not ChaosSpellScaling then
+				dofile("data/scripts/chaos/spell_scaling_config.lua")
+				dofile("data/scripts/chaos/spell_scaling_core.lua")
+			end
+			local a = ChaosSpellScaling.weaponA(tonumber(r.level))
+			r.wmin = tostring(math.floor(tonumber(r.wmin) * a + 0.5))
+			r.wmax = tostring(math.floor(tonumber(r.wmax) * a + 0.5))
+		end
+	end
+	return rows
+end
+
 local function stubEngine()
 	local attrs = {ATTACK = "Attack", DEFENSE = "Defense", EXTRADEFENSE = "Extra Defense", ARMOR = "Armor",
 		HITCHANCE = "Hit Chance", SHOOTRANGE = "Range", ATTACK_SPEED = "Attack Speed", NAME = "Name",
@@ -202,7 +246,7 @@ function C.load(cfg)
 	end
 	local chaosLoot = C.chaosMonsterLoot()
 	local base = {}
-	for _, r in ipairs(C.csv("data/items/base_weapons.csv")) do
+	for _, r in ipairs(C.stockWeapons(cfg)) do
 		local id = tonumber(r.id)
 		local classes
 		if r.classes ~= "*" then
@@ -815,6 +859,11 @@ function C.main(args)
 	local mode = args[1]
 	if mode == "--md" then
 		io.write(C.markdown(cfg, A))
+	elseif mode == "--stock" then
+		-- id, attack, element, wand min, wand max of every stock weapon of base_weapons.csv after the growth (tools/patch_stock_weapon_growth_test.py)
+		for _, r in ipairs(C.stockWeapons(cfg)) do
+			io.write(string.format("%s %s %s %s %s\n", r.id, r.attack, r.element, r.wmin, r.wmax))
+		end
 	elseif mode == "--access" then
 		local list = C.accessProblems(cfg, D)
 		io.write(table.concat(list, "\n") .. (#list > 0 and "\n" or ""))

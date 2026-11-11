@@ -695,7 +695,7 @@ namespace Chaos.Core.Tests
         static void CodexTests(Action<bool, string> check)
         {
             var d = CodexData.Load(Resource("Codex.json"));
-            check(d.Ready && d.Tabs.Count == 11 && d.EntryCount > 400 && d.Rarities.Count == 6 && d.TierLevels.Length == 8 && d.TierWindow == 5, "codex: the data loads (" + d.Tabs.Count + " tabs, " + d.EntryCount + " entries)");
+            check(d.Ready && d.Tabs.Count == 11 && d.EntryCount > 400 && d.Rarities.Count == 6 && d.TierLevels.Length == 8 && d.TierWindow == 8, "codex: the data loads (" + d.Tabs.Count + " tabs, " + d.EntryCount + " entries)");
             check(d.Tabs.Select(t => t.Id).SequenceEqual(new[] { "modifiers", "powers", "orbs", "gems", "uniques", "sets", "rift", "supports", "materials", "basics", "lore" }), "codex: the tabs in order");
             check(CodexView.Tokens("  Life  on KILL ").SequenceEqual(new[] { "life", "on", "kill" }) && CodexView.Tokens(null).Count == 0, "codex: tokens");
             check(CodexView.HasWord("life on kill", "kill") && !CodexView.HasWord("skill", "kill") && CodexView.HasWord("adds +5% life", "+5") && CodexView.HasWord("level 1-3 only", "1-3") && CodexView.HasWord("a kill", "ki"), "codex: a search word starts a word of the text");
@@ -714,22 +714,24 @@ namespace Chaos.Core.Tests
             check(CodexView.LevelOf(new Dictionary<string, string> { { ilvl.Key, "100" } }, mods.Filters) == 100 && CodexView.LevelOf(null, mods.Filters) == null, "codex: the chosen item level");
             check(CodexView.MaxTier(1, d) == 1 && CodexView.MaxTier(14, d) == 1 && CodexView.MaxTier(15, d) == 2 && CodexView.MaxTier(140, d) == 8 && CodexView.MaxTier(1000, d) == 8, "codex: the top tier of an item level");
             var rowsAt140 = CodexView.TierRows(140, d);
-            check(rowsAt140.Count == 5 && rowsAt140[0].Key == 8 && rowsAt140[4].Key == 4 && CodexView.TierRows(1, d).Count == 1, "codex: the tiers that roll, best first, in a window of five");
+            // O461: every tier the item level allows rolls (no window of five); O471: tier t weighs 1.35^(t-1), T8 816 of 2864
+            check(rowsAt140.Count == 8 && rowsAt140[0].Key == 8 && rowsAt140[7].Key == 1 && CodexView.TierRows(60, d).Count == 4 && CodexView.TierRows(1, d).Count == 1, "codex: the tiers that roll, best first, every tier the item level allows");
             var ch = CodexView.TierChances(140, d);
             double sum = 0;
             foreach (var v in ch.Values) sum += v;
-            check(Math.Abs(sum - 100) < 0.6 && ch[8] == Math.Floor(12.0 * 1000 / (12 + 22 + 35 + 50 + 65) + 0.5) / 10, "codex: the chances add up to 100 (" + sum + ")");
+            check(Math.Abs(sum - 100) < 0.6 && ch[8] == 28.5 && ch[1] == 3.5 && ch[4] == 8.6, "codex: the chances add up to 100, tilted toward the top tier (" + sum + ")");
             var entry = mods.Entries.First(e => e.Tv != null);
-            check(CodexView.Subline(entry, null, d) == entry.Sub && CodexView.Subline(entry, 140, d).StartsWith("Item level 140: T4-T8: "), "codex: the list line at an item level");
+            check(CodexView.Subline(entry, null, d) == entry.Sub && CodexView.Subline(entry, 140, d).StartsWith("Item level 140: T1-T8: "), "codex: the list line at an item level");
             var tiers = entry.Sections.Select(s => CodexView.Section(s, d)).First(s => s != null && s.Tiers);
             var marked = CodexView.Highlight(tiers, 140, d);
-            check(marked.Count == 5 && marked.Contains(8) && !marked.Contains(3) && CodexView.Highlight(tiers, null, d).Count == 0, "codex: the tier rows that roll are marked");
+            var marked60 = CodexView.Highlight(tiers, 60, d);
+            check(marked.Count == 8 && marked.Contains(8) && marked.Contains(1) && marked60.Count == 4 && marked60.Contains(4) && !marked60.Contains(5) && CodexView.Highlight(tiers, null, d).Count == 0, "codex: the tier rows that roll are marked");
             var withRef = mods.Entries.First(e => e.Sections.Any(s => s.Ref.Length > 0));
             var refSection = withRef.Sections.First(s => s.Ref.Length > 0);
             check(CodexView.Section(refSection, d) != null && CodexView.Section(refSection, d).Rows != null && CodexView.Section(new CodexSection { Ref = "nope" }, d) == null, "codex: a shared section is looked up");
             int ti;
             check(CodexView.Find(d, "orb:divine", out ti) != null && d.Tabs[ti].Id == "orbs" && CodexView.Find(d, "nope", out ti) == null && ti == -1, "codex: find an entry by id");
-            check(CodexView.IdForMod("rarity_arcaneabsorb", "", d) == "mod:rarity_arcaneabsorb" && CodexView.IdForMod("nope", "", d) == null && CodexView.IdForMod("", "", d) == null, "codex: the page of a modifier the bench names");
+            check(CodexView.IdForMod("rarity_swordSkill", "", d) == "mod:rarity_swordskill" && CodexView.IdForMod("nope", "", d) == null && CodexView.IdForMod("", "", d) == null, "codex: the page of a modifier the bench names");
             var cols = CodexView.Columns(new double[] { 14, 22, 40, 24 }, 408, 8);
             check(cols.Length == 4 && cols.Sum() == 408 - 24 && cols.All(c => c >= 1), "codex: column widths add up to the total minus the gaps");
             check(CodexView.Columns(new double[0], 100, 8).Length == 0 && CodexView.Columns(new double[] { 0, 0 }, 100, 0).Sum() == 100, "codex: columns of nothing and of zero weights");

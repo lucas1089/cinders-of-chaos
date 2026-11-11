@@ -1,4 +1,4 @@
--- Blightswarm: toxic cloud around the caster, poisons everything it hits.
+-- Blightswarm: toxic cloud around the caster, poisons everything it hits for 1.8 s; the poison moves to a nearby enemy if its target dies.
 dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosMysticFx then
 	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
@@ -15,12 +15,21 @@ combat:setArea(createCombatArea(AREA_CIRCLE3X3))
 function onGetFormulaValues(player, level, magicLevel)
 	local min = ((level / 5) + (magicLevel * 2.4) + 18)
 	local max = ((level / 5) + (magicLevel * 4.1) + 36)
+	-- O472: the weapon growth of a caster (ChaosSpell.casterShare: W(level) x the wand of the hands)
+	min, max = ChaosSpell.casterScale(player, min, max)
 	return -min, -max
 end
 
+-- O468: the poison is scripted ticks (ChaosSpell.scriptedDot) of what the condition dealt (magic level x 0.25 + 3): they take
+-- crit, supports, cards, keystones and the rest like the cloud's own hit. O474: the same total (8 old ticks) in 6 ticks 300 ms
+-- apart, the first 300 ms after the cast (ChaosDotConfig.swarm); the rest moves on when the target dies. Against a player the old
+-- 8 ticks 2 s apart (ChaosDotConfig.pvp).
 function onVenomSwarmTarget(creature, target)
-	local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.25) + 3)
-	creature:addDamageCondition(target, CONDITION_POISON, DAMAGELIST_LOGARITHMIC_DAMAGE, dmg)
+	local D = ChaosDot
+	local dmg = math.max(2, math.floor(creature:getMagicLevel() * 0.25) + 3) * ChaosSpell.casterShare(creature) -- O472
+	local swarm = D.cfg().swarm
+	ChaosSpell.scriptedDot(creature:getId(), target:getId(), "blightswarm", COMBAT_EARTHDAMAGE, swarm.ticks, swarm.tickMs,
+		D.swarmTick(dmg, swarm), CONST_ME_HITBYPOISON, {pvp = D.pvpSideOpts("blightswarm", dmg)})
 	return true
 end
 

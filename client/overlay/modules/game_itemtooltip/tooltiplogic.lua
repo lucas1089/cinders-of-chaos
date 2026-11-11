@@ -203,6 +203,19 @@ function L.rarityColor(r)
   return L.RARITY_COLORS[tonumber(r) or 0]
 end
 
+-- O471: the character cap of a modifier (server item_tooltip_core.lua T.capOf: critical chance 45, critical damage 150,
+-- penetration 20): m.cap, and m.over when the wearer's total is above it. '' for a modifier without one
+function L.capText(m)
+  local cap = tonumber(m and m.cap)
+  if not cap then
+    return ''
+  end
+  if m.over then
+    return ' ' .. string.format(tr('(over the character cap of %d)'), cap)
+  end
+  return ' ' .. string.format(tr('(character cap %d)'), cap)
+end
+
 function L.tierColor(t)
   return L.TIER_COLORS[tonumber(t) or 0] or L.COLORS.dim
 end
@@ -213,13 +226,29 @@ function L.titleColor(tip)
   return L.rarityColor(tip.rarity) or L.COLORS.normal
 end
 
+-- the class row of the server ('Mystic, Necromancer' or 'all classes') in the client's language: the words 'all classes'
+-- are translated, the class names stay as they are (O467)
+function L.classText(voc)
+  if voc == 'all classes' then return tr('all classes') end
+  return voc
+end
+
+-- the Codex page id of a tip ('unique:8209' or 'set:key', the server's tip.codex), nil when the tip has none or an id of
+-- another shape (O467)
+function L.codexId(tip)
+  local id = type(tip) == 'table' and tip.codex or nil
+  if type(id) ~= 'string' then return nil end
+  if id:match('^unique:%d+$') or id:match('^set:[%w_%-]+$') then return id end
+  return nil
+end
+
 -- the kind line of a tooltip: 'Legendary Wand' / 'Unique Quiver' / 'Set Ring' (nil when nothing is known) and the slot
 -- line when the slot reads 'Where: What' (the server's quiver: 'Off-hand: Quiver'; the kind line names what, the slot
 -- line says where it is worn)
 function L.kindText(tip)
   local sub = {}
   if tip.unique and tip.unique.set then
-    sub[#sub + 1] = 'Set'
+    sub[#sub + 1] = tr('Set')
   elseif tip.unique then
     sub[#sub + 1] = tr('Unique')
   elseif tip.rarityName then
@@ -290,19 +319,30 @@ function L.lines(tip, ctx)
     if m.lo and m.hi then
       range = m.lo == m.hi and string.format(' [%d]', m.lo) or string.format(' [%d-%d]', m.lo, m.hi)
     end
+    -- O471: a modifier with a character cap (critical chance and damage, penetration): the cap, and "over" when the wearer's
+    -- total is above it (the server sends cap / over; see ChaosItemMods.config.crit and .penetration)
+    local capText = L.capText(m)
     local parts
     if m.tr then
       local tag = string.format('T%d ', m.tr)
       local bound = m.bd and ' [bound]' or ''
       parts = { tag, L.tierColor(m.tr), m.t, color, range, C.dim }
+      if capText ~= '' then
+        parts[#parts + 1] = capText
+        parts[#parts + 1] = m.over and C.red or C.dim
+      end
       if m.bd then
         parts[#parts + 1] = bound
         parts[#parts + 1] = C.bound
       end
-      add(tag .. m.t .. range .. bound, color, first, parts)
+      add(tag .. m.t .. range .. capText .. bound, color, first, parts)
     else
-      parts = range ~= '' and { m.t, color, range, C.dim } or nil
-      add(m.t .. range, color, first, parts)
+      parts = (range ~= '' or capText ~= '') and { m.t, color, range, C.dim } or nil
+      if parts and capText ~= '' then
+        parts[#parts + 1] = capText
+        parts[#parts + 1] = m.over and C.red or C.dim
+      end
+      add(m.t .. range .. capText, color, first, parts)
     end
     first = false
   end
@@ -350,7 +390,7 @@ function L.lines(tip, ctx)
       sep = false
     end
     if req.voc then
-      for i, line in ipairs(L.wrap('For ' .. req.voc, L.WRAP)) do
+      for i, line in ipairs(L.wrap(tr('For %s', L.classText(req.voc)), L.WRAP)) do
         add(line, C.dim, sep and i == 1)
       end
     end
@@ -376,6 +416,12 @@ function L.lines(tip, ctx)
     add(passive.name, C.passive, true)
     for _, line in ipairs(L.wrap(passive.text, L.WRAP)) do
       add(line, C.passiveText)
+    end
+    -- does the power work for the viewer (server item_tooltip.lua, O467): normal text, or the warning colour when it sleeps
+    if type(passive.fit) == 'string' and passive.fit ~= '' then
+      for _, line in ipairs(L.wrap(passive.fit, L.WRAP)) do
+        add(line, passive.warn and C.red or C.text)
+      end
     end
   end
   if tip.locked then add('Locked', C.gold, true) end
@@ -540,7 +586,8 @@ end
 function L.dropSetTips(cache)
   local n = 0
   for key, e in pairs(cache.entries) do
-    if type(e.tip) == 'table' and ((type(e.tip.unique) == 'table' and e.tip.unique.set) or type(e.tip.set) == 'table') then
+    if type(e.tip) == 'table' and ((type(e.tip.unique) == 'table' and e.tip.unique.set) or type(e.tip.set) == 'table'
+        or (type(e.tip.passive) == 'table' and e.tip.passive.fit)) then -- a unique's power line names the worn uniques (O467)
       cache.entries[key] = nil
       n = n + 1
     end
@@ -768,12 +815,19 @@ function L.modGroups(tip)
     local color = (m.sd == 'i' and C.corrupted) or (m.pw and C.power) or (m.g == 'chaos' and C.chaos)
       or (m.g == 'element' and C.element) or C.mod
     local row = { kind = 'mod', text = tostring(m.t or ''), color = color, range = rangeText(m.lo, m.hi) }
+    local capText = L.capText(m)
+    if capText ~= '' then
+      -- the cap rides after the text in its own colour (red when the wearer is over it)
+      row.parts = { row.text, color, capText, m.over and C.red or C.dim }
+    end
     if m.tr then
       row.tag = 'T' .. trim(m.tr)
       row.top = tonumber(tip.maxTier) ~= nil and tonumber(m.tr) == tonumber(tip.maxTier)
     end
     if m.bd then
-      row.parts = { row.text, color, ' [bound]', C.bound }
+      row.parts = row.parts or { row.text, color }
+      row.parts[#row.parts + 1] = ' [bound]'
+      row.parts[#row.parts + 1] = C.bound
     end
     group.rows[#group.rows + 1] = row
   end
@@ -842,7 +896,13 @@ function L.extraGroups(tip)
   if type(desc) == 'string' and desc ~= '' and not L.supportInfo(desc) then
     add(nil, nil, textRows(L.wrap(desc, L.WRAP), C.dim))
   end
-  if passive then add(passive.name, C.passive, textRows(L.wrap(passive.text, L.WRAP), C.passiveText)) end
+  if passive then
+    local rows = textRows(L.wrap(passive.text, L.WRAP), C.passiveText)
+    if type(passive.fit) == 'string' and passive.fit ~= '' then -- works for the viewer or sleeps (O467)
+      for _, row in ipairs(textRows(L.wrap(passive.fit, L.WRAP), passive.warn and C.red or C.text)) do rows[#rows + 1] = row end
+    end
+    add(passive.name, C.passive, rows)
+  end
   local misc = {}
   if tip.locked then misc[#misc + 1] = { kind = 'text', text = 'Locked', color = C.gold } end
   if type(tip.look) == 'table' and tip.look.name then
@@ -872,7 +932,7 @@ function L.reqChips(req, ctx)
   if type(req.voc) == 'string' then
     for name in req.voc:gmatch('[^,]+') do
       name = name:gsub('^%s+', ''):gsub('%s+$', '')
-      if name ~= '' then chips[#chips + 1] = { text = name, color = C.text } end
+      if name ~= '' then chips[#chips + 1] = { text = L.classText(name), color = C.text } end
     end
   end
   return chips

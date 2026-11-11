@@ -32,6 +32,8 @@ end
 local realDofile = dofile
 dofile("data/scripts/chaos/attack_kit_core.lua")
 dofile("data/scripts/chaos/attack_kit_config.lua")
+dofile("data/scripts/chaos/dot_config.lua")
+dofile("data/scripts/chaos/dot_core.lua")
 local K, cfg = ChaosAttackKitCore, ChaosAttackKit.cfg
 
 local function readAll(path)
@@ -282,9 +284,9 @@ do
 end
 
 -- ------------------------------------------------------------------------------------------ the cast (mocked)
-local world, calls, cancels, chiLog, nextId
+local world, calls, cancels, chiLog, nextId, chains
 local function reset()
-	world, calls, cancels, chiLog, nextId = {}, {}, {}, {}, 100
+	world, calls, cancels, chiLog, nextId, chains = {}, {}, {}, {}, 100, {}
 end
 reset()
 
@@ -316,7 +318,11 @@ local function player(props)
 	return p
 end
 
+local shareMock = 1 -- the magic level share of a weapon spell (ChaosSpell.weaponShare, O468) the mock hands out
+local casterMock = 1 -- the caster's weapon growth (ChaosSpell.casterShare, O472) the mock hands out
 ChaosSpell = {
+	weaponShare = function() return shareMock end,
+	casterShare = function() return casterMock end,
 	cancel = function(pl, msg) cancels[#cancels + 1] = msg; return false end,
 	targetOf = function(v) return v and v.target end,
 	canAttack = function(c, t) return t ~= c and t.health > 0 and not t.safe end,
@@ -345,6 +351,16 @@ ChaosSpell = {
 			if not caster or fn(caster, step) == false then return end
 		end
 	end,
+	-- O474: the one engine of a scripted dot (the real one is tested in spell_paths_test.lua): the options it was given are
+	-- kept, the ticks run at once, a dead host ends the chain (no neighbour in these scenes)
+	dotChain = function(o)
+		chains[#chains + 1] = o
+		for step = 1, o.ticks do
+			local caster, host = Creature(o.casterId), Creature(o.targetId)
+			if not caster or not host or host.health <= 0 then return end
+			o.deal(caster, host, step)
+		end
+	end,
 	weaponStrike = function(caster, target, lo, hi, effect, origin)
 		calls[#calls + 1] = {kind = "weapon", target = target, lo = lo, hi = hi, origin = origin}
 		return true
@@ -370,8 +386,9 @@ ChaosNecro = {
 	damage = function(pl, t, ctype, lo, hi) calls[#calls + 1] = {kind = "necro", target = t, lo = lo, hi = hi}; return 50 end
 }
 NecroSpell = {
-	dot = function(casterId, targetId, key, ticks, tickMs, lo, hi)
-		calls[#calls + 1] = {kind = "necrodot", target = Creature(targetId), ticks = ticks, lo = lo, hi = hi}
+	dot = function(casterId, targetId, key, ticks, tickMs, lo, hi, ctype, effect, radius, firstMs)
+		calls[#calls + 1] = {kind = "necrodot", target = Creature(targetId), ticks = ticks, lo = lo, hi = hi, tickMs = tickMs,
+			radius = radius, firstMs = firstMs}
 		return true
 	end
 }
@@ -512,13 +529,31 @@ do
 	eq(#hits(), 0, "not as a raw spell hit")
 end
 
--- a damage over time (Gorehook, 5 ticks) hits once per tick; a dead host stops it
+-- a damage over time (Gorehook, 5 ticks) hits once per tick; a dead host with no neighbour stops it (O474: with one the rest
+-- moves on, tests/spell_paths_test.lua). The first tick is at once, the gap 400 ms, the jump radius 3 (dot_config.lua kit)
 do
 	reset()
 	local p = player()
 	local t = creature(101, 100)
 	ok(A.cast("gorehook", p, {target = t}), "Gorehook casts")
 	eq(#hits(), 5, "five ticks")
+	eq(#chains, 1, "one chain on the shared engine")
+	eq(chains[1].firstMs, 0, "the first tick at once")
+	eq(chains[1].tickMs, ChaosDotConfig.kit.tickMs, "a tick every 400 ms")
+	eq(chains[1].jumpRadius, ChaosDotConfig.jump.radius, "the rest moves on within 3 squares")
+	eq(chains[1].registry, A.dots, "the kit's own registry: a recast replaces")
+	-- against a player: the old gap, the old size, no jump (dot_config.lua pvp)
+	reset()
+	p = player()
+	local foe = creature(101, 100, {player = true, monster = false})
+	ok(A.cast("gorehook", p, {target = foe}), "Gorehook casts on a player")
+	eq(chains[1].tickMs, 1000, "against a player the old 1 s gap")
+	eq(chains[1].jumpRadius, 0, "and no jump")
+	reset()
+	p = player()
+	t = creature(101, 100)
+	ok(A.cast("martyrspyre", p, {target = t}), "Martyr's Pyre casts")
+	eq(#hits("holy"), 5, "its five ticks are Templar holy strikes")
 	reset()
 	p = player()
 	t = creature(101, 100)
@@ -536,6 +571,24 @@ do
 	local d = hits("necrodot")
 	eq(#d, 1, "one dot")
 	eq(d[1].ticks, 6, "six ticks")
+	eq(d[1].tickMs, ChaosDotConfig.kit.tickMs, "a tick every 400 ms")
+	eq(d[1].firstMs, 0, "the first at once")
+	eq(d[1].radius, ChaosDotConfig.jump.radius, "the rest moves on within 3 squares")
+	-- against a player: the old gap, first tick, size (x 1 / 1.25) and no jump
+	reset()
+	p = player()
+	local foe = creature(104, 100, {player = true, monster = false})
+	ok(A.cast("blightbrand", p, {target = foe}), "Blightbrand casts on a player")
+	local pd = hits("necrodot")
+	eq(pd[1].tickMs, 1000, "against a player the old gap")
+	eq(pd[1].firstMs, 1000, "and the old first tick (a gap after the cast, the Necromancer line's)")
+	eq(pd[1].radius, 0, "no jump")
+	reset()
+	p = player()
+	t = creature(104, 100)
+	A.cast("blightbrand", p, {target = t})
+	local nd = hits("necrodot")[1]
+	near(pd[1].lo, nd.lo / 1.25, 0.001, "and the size before the scale of 1.25")
 end
 
 -- the Templar line's strikes go through its holy strike
@@ -728,6 +781,66 @@ do
 	near(at(750), 0.65, 0.0001, "a curve: linear between points")
 	near(at(1500), 0.9, 0.0001, "a curve: the last point's value above it")
 	F["Keepfall"].Warrior = saved
+end
+
+-- O468: a weapon spell of the kit is multiplied by the magic level share (ChaosSpell.weaponShare) once: the melee, distance,
+-- monk schools and the "spell" school with a weapon power here; the blade and shuriken schools in ChaosSpell.weaponStrike, which
+-- the kit hands the unscaled values; the magic, necro and templar schools read the magic level themselves
+do
+	local function total(key, share)
+		reset()
+		shareMock = share
+		local p = player()
+		p.chi = 5
+		local t = creature(101, 100)
+		A.cast(key, p, {target = t})
+		local sum = 0
+		for _, c in ipairs(calls) do
+			if c.lo then sum = sum + math.abs(c.lo) + math.abs(c.hi or 0) end
+		end
+		shareMock = 1
+		return sum
+	end
+	for _, key in ipairs({"riftcleaver", "sunspear", "hollowknuckle", "smokebomb", "gorehook"}) do
+		local a, b = total(key, 1), total(key, 1.25)
+		ok(a > 0, key .. " deals damage")
+		near(b / a, 1.25, 0.002, key .. " takes the weapon share once")
+	end
+	for _, key in ipairs({"marrowbolt", "hallowedcut", "crescentcut", "razorrain"}) do
+		local a, b = total(key, 1), total(key, 1.25)
+		ok(a > 0, key .. " deals damage")
+		near(b / a, 1, 0.0001, key .. " is not scaled by the kit (a caster or hybrid school, or the weapon strike does it)")
+	end
+end
+
+-- O472: a caster spell of the kit (the magic school) takes the caster's weapon growth (ChaosSpell.casterShare) once and not the weapon
+-- share; no other school takes it (the necro school inside ChaosNecro.values, the weapon schools have the attack, the templar school
+-- reads the weapon)
+do
+	local function total(key, share, caster)
+		reset()
+		shareMock, casterMock = share, caster
+		local p = player()
+		p.chi = 5
+		local t = creature(101, 100)
+		A.cast(key, p, {target = t})
+		local sum = 0
+		for _, c in ipairs(calls) do
+			if c.lo then sum = sum + math.abs(c.lo) + math.abs(c.hi or 0) end
+		end
+		shareMock, casterMock = 1, 1
+		return sum
+	end
+	for _, key in ipairs({"phantomneedles"}) do
+		local a, b = total(key, 1, 1), total(key, 1, 1.4)
+		ok(a > 0, key .. " deals damage")
+		near(b / a, 1.4, 0.002, key .. " takes the caster growth once")
+		near(total(key, 1.25, 1) / a, 1, 0.0001, key .. " takes no weapon share")
+	end
+	for _, key in ipairs({"riftcleaver", "sunspear", "hallowedcut", "marrowbolt", "razorrain", "hollowknuckle"}) do
+		local a, b = total(key, 1, 1), total(key, 1, 1.4)
+		near(b / a, 1, 0.0001, key .. " takes no caster growth")
+	end
 end
 
 -- every kit spell casts cleanly against a crowd, on a mocked engine

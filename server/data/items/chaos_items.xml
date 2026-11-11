@@ -5,7 +5,7 @@
 	<item id="8209" article="a" name="Soulreaper">
 		<attribute key="weight" value="3600" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="52" />
+		<attribute key="attack" value="54" />
 		<attribute key="defense" value="28" />
 		<attribute key="extraDef" value="2" />
 		<attribute key="skillSword" value="4" />
@@ -66,7 +66,7 @@
 	<item id="8925" article="a" name="Cinderbrand Axe">
 		<attribute key="weight" value="11000" />
 		<attribute key="weaponType" value="axe" />
-		<attribute key="attack" value="58" />
+		<attribute key="attack" value="62" />
 		<attribute key="defense" value="30" />
 		<attribute key="extraDef" value="3" />
 		<attribute key="elementFire" value="24" />
@@ -119,7 +119,7 @@
 	<item id="25418" article="a" name="Mawmaker">
 		<attribute key="weight" value="7700" />
 		<attribute key="weaponType" value="club" />
-		<attribute key="attack" value="62" />
+		<attribute key="attack" value="63" />
 		<attribute key="defense" value="30" />
 		<attribute key="skillClub" value="4" />
 		<attribute key="lifeLeechChance" value="7" />
@@ -171,7 +171,7 @@
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
 		<attribute key="range" value="6" />
-		<attribute key="attack" value="75" />
+		<attribute key="attack" value="77" />
 		<attribute key="skillDist" value="6" />
 		<attribute key="absorbPercentDeath" value="6" />
 		<attribute key="description" value="Strung with something that was once alive; it hums at the dead. (Requires level 110.)" />
@@ -578,7 +578,7 @@
 	<item id="36659" article="the" name="Grasp of the Pyre Saint">
 		<attribute key="weight" value="2400" />
 		<attribute key="weaponType" value="shield" />
-		<attribute key="attack" value="64" />
+		<attribute key="attack" value="103" />
 		<attribute key="defense" value="24" />
 		<attribute key="skillFist" value="5" />
 		<attribute key="criticalHitChance" value="4" />
@@ -616,7 +616,7 @@
 	<item id="40011" article="the" name="Gravewind Talons">
 		<attribute key="weight" value="3000" />
 		<attribute key="weaponType" value="shield" />
-		<attribute key="attack" value="68" />
+		<attribute key="attack" value="174" />
 		<attribute key="defense" value="38" />
 		<attribute key="skillFist" value="4" />
 		<attribute key="criticalHitChance" value="6" />
@@ -629,7 +629,7 @@
 	<item id="40012" article="the" name="Dawnless Gauntlets">
 		<attribute key="weight" value="3400" />
 		<attribute key="weaponType" value="shield" />
-		<attribute key="attack" value="70" />
+		<attribute key="attack" value="202" />
 		<attribute key="defense" value="42" />
 		<attribute key="skillFist" value="6" />
 		<attribute key="criticalHitChance" value="8" />
@@ -646,7 +646,7 @@
 		<attribute key="weight" value="6400" />
 		<attribute key="weaponType" value="sword" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="attack" value="78" />
+		<attribute key="attack" value="188" />
 		<attribute key="defense" value="38" />
 		<attribute key="skillSword" value="8" />
 		<attribute key="criticalHitChance" value="8" />
@@ -710,7 +710,7 @@
 	<item id="7384" article="the" name="Emberfall Blade">
 		<attribute key="weight" value="3500" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="50" />
+		<attribute key="attack" value="55" />
 		<attribute key="defense" value="26" />
 		<attribute key="extraDef" value="2" />
 		<attribute key="skillSword" value="4" />
@@ -761,7 +761,7 @@
 		<attribute key="weight" value="8200" />
 		<attribute key="weaponType" value="sword" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="attack" value="56" />
+		<attribute key="attack" value="73" />
 		<attribute key="defense" value="28" />
 		<attribute key="skillSword" value="5" />
 		<attribute key="criticalHitChance" value="6" />
@@ -774,7 +774,7 @@
 	<item id="7422" article="the" name="Gravewarden's Verdict">
 		<attribute key="weight" value="3200" />
 		<attribute key="weaponType" value="club" />
-		<attribute key="attack" value="54" />
+		<attribute key="attack" value="102" />
 		<attribute key="defense" value="26" />
 		<attribute key="extraDef" value="3" />
 		<attribute key="skillClub" value="5" />
@@ -847,7 +847,7 @@
 		<attribute key="weight" value="6500" />
 		<attribute key="weaponType" value="axe" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="attack" value="58" />
+		<attribute key="attack" value="76" />
 		<attribute key="defense" value="30" />
 		<attribute key="skillAxe" value="3" />
 		<attribute key="criticalHitChance" value="5" />
@@ -952,7 +952,7 @@
 		<attribute key="weight" value="4700" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="attack" value="78" />
+		<attribute key="attack" value="123" />
 		<attribute key="range" value="6" />
 		<attribute key="skillDist" value="3" />
 		<attribute key="criticalHitChance" value="4" />
@@ -998,7 +998,7 @@
 		<attribute key="weight" value="4700" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="attack" value="73" />
+		<attribute key="attack" value="80" />
 		<attribute key="range" value="6" />
 		<attribute key="skillDist" value="3" />
 		<attribute key="set" value="thornwake" />
@@ -1210,7 +1210,7 @@
 	<item id="7404" article="a" name="Duskstalker Fang">
 		<attribute key="weight" value="1700" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="42" />
+		<attribute key="attack" value="55" />
 		<attribute key="defense" value="12" />
 		<attribute key="skillSword" value="2" />
 		<attribute key="criticalHitChance" value="3" />
@@ -1223,7 +1223,7 @@
 	<item id="7418" article="a" name="Duskstalker Sting">
 		<attribute key="weight" value="4600" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="44" />
+		<attribute key="attack" value="57" />
 		<attribute key="defense" value="20" />
 		<attribute key="skillSword" value="2" />
 		<attribute key="lifeLeechChance" value="3" />
@@ -1670,7 +1670,7 @@
 	<item id="8931" article="an" name="Ashfall Verdict">
 		<attribute key="weight" value="3500" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="72" />
+		<attribute key="attack" value="182" />
 		<attribute key="defense" value="36" />
 		<attribute key="extraDef" value="3" />
 		<attribute key="skillSword" value="6" />
@@ -1686,7 +1686,7 @@
 	<item id="25881" article="a" name="Wyrmgrave Cleaver">
 		<attribute key="weight" value="4500" />
 		<attribute key="weaponType" value="axe" />
-		<attribute key="attack" value="74" />
+		<attribute key="attack" value="192" />
 		<attribute key="defense" value="33" />
 		<attribute key="skillAxe" value="6" />
 		<attribute key="lifeLeechChance" value="10" />
@@ -1701,7 +1701,7 @@
 	<item id="14334" article="a" name="Maul of the Sunken Choir">
 		<attribute key="weight" value="5000" />
 		<attribute key="weaponType" value="club" />
-		<attribute key="attack" value="76" />
+		<attribute key="attack" value="211" />
 		<attribute key="defense" value="34" />
 		<attribute key="skillClub" value="7" />
 		<attribute key="mods" value="shockchance:24,execute:8,monsterreduction:6,arclightning:22" />
@@ -1714,7 +1714,7 @@
 	<item id="22417" article="a" name="Stormherald's Recurve">
 		<attribute key="weight" value="3200" />
 		<attribute key="weaponType" value="distance" />
-		<attribute key="attack" value="88" />
+		<attribute key="attack" value="234" />
 		<attribute key="hitChance" value="97" />
 		<attribute key="range" value="7" />
 		<attribute key="skillDist" value="7" />
@@ -1865,7 +1865,7 @@
 	<item id="2404" article="a" name="Gravewhisper Stiletto">
 		<attribute key="weight" value="1100" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="56" />
+		<attribute key="attack" value="88" />
 		<attribute key="defense" value="31" />
 		<attribute key="skillSword" value="3" />
 		<attribute key="criticalHitChance" value="5" />
@@ -1880,7 +1880,7 @@
 	<item id="2411" article="a" name="Nightbloom Stiletto">
 		<attribute key="weight" value="1000" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="64" />
+		<attribute key="attack" value="161" />
 		<attribute key="defense" value="35" />
 		<attribute key="skillSword" value="4" />
 		<attribute key="criticalHitChance" value="6" />
@@ -1895,7 +1895,7 @@
 	<item id="27193" article="a" name="Misericorde of the Pale Vow">
 		<attribute key="weight" value="1200" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="68" />
+		<attribute key="attack" value="192" />
 		<attribute key="defense" value="38" />
 		<attribute key="skillSword" value="5" />
 		<attribute key="criticalHitChance" value="7" />
@@ -1925,7 +1925,7 @@
 	<item id="25880" article="a" name="Hollow Throne Claymore">
 		<attribute key="weight" value="6500" />
 		<attribute key="weaponType" value="sword" />
-		<attribute key="attack" value="73" />
+		<attribute key="attack" value="191" />
 		<attribute key="defense" value="38" />
 		<attribute key="skillSword" value="6" />
 		<attribute key="criticalHitChance" value="6" />
@@ -1940,7 +1940,7 @@
 	<item id="25882" article="an" name="Emberhowl Greataxe">
 		<attribute key="weight" value="7000" />
 		<attribute key="weaponType" value="axe" />
-		<attribute key="attack" value="77" />
+		<attribute key="attack" value="220" />
 		<attribute key="defense" value="36" />
 		<attribute key="skillAxe" value="7" />
 		<attribute key="lifeLeechChance" value="10" />
@@ -1955,7 +1955,7 @@
 	<item id="25884" article="a" name="Bellringer of the Last Vigil">
 		<attribute key="weight" value="7500" />
 		<attribute key="weaponType" value="club" />
-		<attribute key="attack" value="78" />
+		<attribute key="attack" value="225" />
 		<attribute key="defense" value="36" />
 		<attribute key="skillClub" value="7" />
 		<attribute key="mods" value="shockchance:22,execute:8,monsterreduction:6,arclightning:20" />
@@ -1968,7 +1968,7 @@
 	<item id="25886" article="a" name="Gravetide Arbalest">
 		<attribute key="weight" value="3200" />
 		<attribute key="weaponType" value="distance" />
-		<attribute key="attack" value="92" />
+		<attribute key="attack" value="255" />
 		<attribute key="hitChance" value="95" />
 		<attribute key="range" value="6" />
 		<attribute key="skillDist" value="7" />
@@ -1984,7 +1984,7 @@
 	<item id="25885" article="a" name="Wake-Heron Longbow">
 		<attribute key="weight" value="3200" />
 		<attribute key="weaponType" value="distance" />
-		<attribute key="attack" value="91" />
+		<attribute key="attack" value="262" />
 		<attribute key="hitChance" value="98" />
 		<attribute key="range" value="7" />
 		<attribute key="skillDist" value="7" />
@@ -2000,7 +2000,7 @@
 	<item id="26765" article="a" name="Moonlit Gallows Bow">
 		<attribute key="weight" value="3200" />
 		<attribute key="weaponType" value="distance" />
-		<attribute key="attack" value="83" />
+		<attribute key="attack" value="178" />
 		<attribute key="hitChance" value="99" />
 		<attribute key="range" value="7" />
 		<attribute key="skillDist" value="6" />

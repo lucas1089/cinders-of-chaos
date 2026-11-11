@@ -186,6 +186,13 @@ end
 -- about the character's resistance to an element: the worn items' protection and the absorb storages (patch 0049's
 -- sum, ChaosItemMods.effectiveAbsorb), then the gems' resistance (gems.lua). nil for an element without a tip.
 function R.resistOf(player, el)
+	local PD = rawget(_G, "ChaosPlayerDefence")
+	if PD and PD.active and PD.active() and PD.resistOfElement then
+		local ok, v = pcall(PD.resistOfElement, player, el)
+		if ok and tonumber(v) then
+			return v -- O464: the four resistances (level penalty included) and the physical total
+		end
+	end
 	local keys, ctype = ABSORB_KEYS[el], _G[COMBAT_OF[el] or ""]
 	if not keys or not ctype then
 		return nil

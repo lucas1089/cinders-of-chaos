@@ -157,6 +157,15 @@ local function answer(player, data)
 	if not okSkill then
 		wielder.level = nil
 	end
+	-- O471: is the viewer over a character cap of critical chance or damage (crit_cap.lua reads the engine's totals)
+	local over
+	if ChaosCritCap and ChaosCritCap.engineTotals and ChaosItemMods and ChaosItemMods.critTotals then
+		local okC, c, a = pcall(ChaosCritCap.engineTotals, player)
+		if okC and c then
+			local t = ChaosItemMods.critTotals(c, a)
+			over = {chance = t.chanceCapped or nil, amount = t.amountCapped or nil}
+		end
+	end
 	local out = {}
 	for i = 1, n do
 		local req = type(list[i]) == "table" and list[i] or {}
@@ -176,7 +185,8 @@ local function answer(player, data)
 				local ok, a = pcall(item.getClientAttributes, item)
 				attrs = ok and a or nil
 			end
-			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs, wielder = wielder, setState = setState})
+			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs, wielder = wielder, setState = setState,
+				over = over})
 			if ok then
 				-- a card: what it gives and how to use it, in the player's language (cards_core.lua K.description; the item
 				-- type's own text is the English one tools/patch_badges.py installs)
@@ -189,6 +199,19 @@ local function answer(player, data)
 					local okN, noteText = pcall(Chaos.tx, player, tip.note)
 					if okN and type(noteText) == "string" then
 						tip.note = noteText
+					end
+				end
+				-- O475: the passive line of an OWNED copy is the one of the day it was made: put the current English line in its place
+				-- (by the passive's id and name, whatever the stored numbers say), so the pt-BR line below and the block after it find it
+				if type(tip) == "table" and type(tip.desc) == "string" and ChaosUniquePassivesCore and ChaosUniquePassivesConfig then
+					local e0 = ChaosUniquePassivesCore.entry(ChaosUniquePassivesConfig, item:getId())
+					if e0 then
+						local okR, fresh = pcall(function()
+							return (T.refreshPassive(tip.desc, ChaosUniquePassivesCore.text(ChaosUniquePassivesConfig, e0, "en"), e0.name))
+						end)
+						if okR and type(fresh) == "string" then
+							tip.desc = fresh
+						end
 					end
 				end
 				-- a unique's passive line in the player's language (unique_passives_text.lua; the description holds the English one)
@@ -228,7 +251,31 @@ local function answer(player, data)
 					if e then
 						local okP, texts = pcall(function() return {UC.text(UF, e, "pt-BR"), UC.text(UF, e, "en")} end)
 						tip.passive = okP and T.splitPassive(tip.desc, texts, e.name) or nil
+						-- does the power work for the viewer, and while it is worn: does it count (O467; the same
+						-- activeSet the passives use). Worn = the item sits in an inventory slot a passive counts.
+						if tip.passive and voc and ChaosClasses and ChaosClasses.lineKey then
+							local okF, text, warn = pcall(function()
+								local p = T.decodePos(req.pos)
+								local UP = ChaosUniquePassives
+								local worn = p and p.kind == "slot" and UP and UP.isPassiveSlot and UP.isPassiveSlot(p.slot) or false
+								local ids = worn and UP.wornIds(player) or {}
+								local info = UC.explain(UF, ids, ChaosClasses.lineKey(voc:getId()), item:getId(), worn)
+								return UC.fitText(info, function(k, ...)
+									return Chaos.t and Chaos.t(player, k, ...) or (select("#", ...) > 0 and k:format(...) or k)
+								end, function(id)
+									local spec = ChaosUniqueSpecs and ChaosUniqueSpecs[id]
+									return spec and spec.name
+								end)
+							end)
+							if okF and text then
+								tip.passive.fit, tip.passive.warn = text, warn or nil
+							end
+						end
 					end
+				end
+				-- the Codex page of a unique or set piece: right-click > Open in Codex (T.codexId, O467)
+				if type(tip) == "table" and type(tip.unique) == "table" then
+					tip.codex = T.codexId(item:getId(), ChaosUniqueById, tip.unique.set)
 				end
 				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
 				row.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)

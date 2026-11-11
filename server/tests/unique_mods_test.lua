@@ -39,7 +39,7 @@ for id, spec in pairs(SPECS) do
 			check(not seen[m[1]], spec.name .. ": " .. tostring(m[1]) .. " once")
 			seen[m[1]] = true
 			check(type(m[2]) == "number" and m[2] > 0, spec.name .. ": " .. tostring(m[1]) .. " above 0")
-			if def then
+			if def and def.cap then -- O461: most rows have no cap of their own any more
 				check(m[2] <= def.cap, spec.name .. ": " .. m[1] .. " " .. m[2] .. " within the cap " .. def.cap)
 			end
 		end
@@ -175,13 +175,17 @@ for _, d in ipairs(DAGGERS) do
 		end
 	end
 end
--- the attack follows the one-handed melee curve of install_gear_sets.py (leveling daggers above it, like the leveling uniques)
+-- the attack follows the one-handed melee curve of install_gear_sets.py (leveling daggers above it, like the leveling uniques).
+-- O472: the curve grew with the level (the old curve times a(level) of spell_scaling_config.lua), and so did the uniques' attack
 do
-	local curve = {[600] = 55.7, [1250] = 63.0, [1900] = 68.2}
+	dofile("data/scripts/chaos/spell_scaling_config.lua")
+	dofile("data/scripts/chaos/spell_scaling_core.lua")
+	local old = {[600] = 55.7, [1250] = 63.0, [1900] = 68.2} -- the old curve at these levels (before O472)
 	for _, d in ipairs(DAGGERS) do
 		local atk = SPECS[d[2]].attributes[ITEM_ATTRIBUTE_ATTACK]
-		if curve[d[3]] then
-			check(math.abs(atk - curve[d[3]]) <= 2, d[1] .. ": attack " .. atk .. " on the curve " .. curve[d[3]])
+		if old[d[3]] then
+			local want = old[d[3]] * ChaosSpellScaling.weaponA(d[3])
+			check(math.abs(atk - want) <= math.max(2, want * 0.03), d[1] .. ": attack " .. atk .. " on the grown curve " .. string.format("%.1f", want))
 		end
 	end
 end

@@ -94,6 +94,12 @@ function CL.dotSource(element)
 	return CL.source("d", d[1], d[2])
 end
 
+-- O474: the damage over time ticks of a spell (a scripted pulse the dot predicate names, dot_core.lua) are a row of their own next
+-- to the spell's hits: "Witchfire Bolt (over time)"
+function CL.tickSource(cast)
+	return CL.source(cast.t, cast.n .. " (over time)", cast.i)
+end
+
 function CL.otherSource(tab)
 	if tab == HEAL or tab == RECV then
 		return CL.source("o", "Other healing", "other")
@@ -138,6 +144,9 @@ function CL.classify(tab, h)
 		return CL.source("m", h.summon, "summon")
 	end
 	if h.cast then
+		if h.tick and tab == DMG then
+			return CL.tickSource(h.cast)
+		end
 		return h.cast
 	end
 	local O = CL.ORIGIN

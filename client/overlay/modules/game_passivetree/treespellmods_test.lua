@@ -44,12 +44,20 @@ has(T.text(1), 'Gorehook forks to 1 more enemy within 3 sqm for 26% of the hit',
 has(T.text(2), '11% chance that its hits strike again for 50%', 'echo text')
 has(T.text(3), 'enemies it missed within 1 sqm take 26% of its hit', 'breadth text')
 has(T.text(4), 'enemies next to the target take 15% of the hit', 'shatter text')
-has(T.text(5), 'adds 15% of its damage as holy damage', 'dawnbrand text')
+has(T.text(5), '+3 increased damage while it is cast', 'dawnbrand text (O473: a pool entry)')
 has(T.text(6), 'take +2% damage from everyone for 4 s', 'hex text')
-has(T.text(8), 'as energy damage', 'stormbrand text')
-has(T.text(13), 'as death damage', 'gravebrand text')
+has(T.text(8), '+3 increased damage while it is cast', 'stormbrand text')
+has(T.text(13), '+3 increased damage while it is cast', 'gravebrand text')
 has(T.text(17), 'its cooldown is 4% shorter', 'quickening text')
-for id, row in pairs(T.rows) do has(T.text(id), 'A reduced', 'row ' .. id .. ' says that the effect is reduced'); has(T.text(id), row.spell, 'row ' .. id .. ' names the spell') end
+local DAMAGE = {dawnbrand = true, gravebrand = true, stormbrand = true}
+for id, row in pairs(T.rows) do
+  if DAMAGE[row.support] then
+    has(T.text(id), 'increased damage', 'row ' .. id .. ' says that the effect is increased damage (O473)')
+  else
+    has(T.text(id), 'A reduced', 'row ' .. id .. ' says that the effect is reduced')
+  end
+  has(T.text(id), row.spell, 'row ' .. id .. ' names the spell')
+end
 
 -- the server's config: the same spells, supports and numbers
 local base = dir .. '../../../../server/data/'
@@ -57,6 +65,7 @@ local f = io.open(base .. 'lib/chaos_spell_masteries_config.lua', 'r')
 if f then
   f:close()
   local cfg = dofile(base .. 'lib/chaos_spell_masteries_config.lua')
+  local poolEach = dofile(base .. 'scripts/chaos/damage_pool_config.lua').sources.masteries.each
   local supports = dofile(base .. 'lib/chaos_supports_config.lua')
   local byKey = {}
   for _, s in ipairs(supports.supports) do byKey[s.key] = s end
@@ -75,15 +84,19 @@ if f then
   for _, c in ipairs(cfg.choices) do
     local row = T.rows[c.id]
     eq(row.support, c.support, c.name .. ': the support')
-    local e = free(c.support)
-    if c.support == 'fork' or c.support == 'breadth' then
+    local e = cfg.damage and cfg.damage[c.support] and {value = poolEach} or free(c.support)
+    if cfg.damage and cfg.damage[c.support] then
+      eq(row.a, poolEach, c.name .. ': the pool entry (+3 raw, O473)')
+    elseif c.support == 'fork' or c.support == 'breadth' then
       eq(row.a, e.value, c.name .. ': the number of enemies or the radius'); eq(row.b, e.value2, c.name .. ': the share')
     elseif c.support == 'echo' then
       eq(row.a, e.value, c.name .. ': the chance'); eq(row.b, e.value2, c.name .. ': the second strike')
     else
       eq(row.a, e.value, c.name .. ': the number')
     end
-    has(T.text(c.id), names[c.support], c.name .. ': the text names the support')
+    if not (cfg.damage and cfg.damage[c.support]) then
+      has(T.text(c.id), names[c.support], c.name .. ': the text names the support')
+    end
     -- the spell's name from the Chaos spell files
   end
   -- the spell names against the spell data of the server (spells_chaos.xml), by id

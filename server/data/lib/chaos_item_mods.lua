@@ -21,9 +21,13 @@
 --                                              rolled items mirror it into "combatPowerLevel", which the client shows
 --   "cb_<attribute key, lower case>" = 1      the modifier is bound (Orb of Binding): Tempering, Unmaking, Excision, Reforging
 --                                              and Upheaval skip it; at most config.bind.max of them (chaos_crafting.lua)
---   "cv_<attribute key, lower case>" = number the value rolled inside the tier before the item quality (only on an
---                                              item with quality; the stored value is the one the item acts with)
---   "chaos_quality" = 0..30                    item quality in percent: every modifier value is multiplied by it
+--   "cv_<attribute key, lower case>" = number version 1 only (before O461): the value rolled inside the tier before the item
+--                                              quality, on an item with quality; the upgrade reads it once and removes it
+--   "chaos_quality" = 0..30                    item quality in percent: it multiplies the base bonus (attack, defence, armour) of
+--                                              the item since O461 (version 1: every modifier value)
+--   "chaos_modv" = 2                           the version of the modifier numbers (config.modVersion); an item with modifiers and
+--                                              no mark is upgraded when it is read (ChaosCrafting.upgradeItem)
+--   "chaos_wdbase" = number                    the attack the weapon had before its Weapon Damage modifier (M.syncWeaponDamage)
 --   "chaos_ruined" = 1                         the item is ruined (Orb of Ruin): no orb changes it any more
 --   "chaos_ext" = 1 | 2                        the one extra prefix (1) or suffix (2) slot an Orb of Ruin gave
 --   "chaos_corrupted" = 1                      the item is corrupted (Void Orb): no orb changes it any more
@@ -49,6 +53,8 @@ M.CORRUPTED = "chaos_corrupted"
 M.IMPLICIT = "chaos_cimp"
 M.RAW_PREFIX = "cv_"
 M.BIND_PREFIX = "cb_"
+M.VERSION = "chaos_modv" -- = 2 on an item whose modifiers follow the numbers and rules of O461 (config.modVersion)
+M.WEAPON_BASE = "chaos_wdbase" -- the attack the weapon had before its Weapon Damage modifier (M.syncWeaponDamage)
 M.QUIVER_SPEED = "chaos_qspd" -- on a launcher: the Attack Speed with Bows of the quiver worn with it (archery.lua)
 M.NAME_MARK = "chaos_aname" -- = 1 on an item whose name ChaosCrafting.applyName wrote (a name of another script is left alone)
 
@@ -71,14 +77,37 @@ M.config = {
 	maxTier = 8,
 	-- the most the passive tree and the worn pieces give together as a player-level attack speed (M.setPlayerAttackSpeed)
 	playerSpeedCap = 45, -- tree (15) + worn pieces (30): 12 on 2026-10-28, raised for the 3 attacks per second cap (O426)
-	-- the item level a tier needs (T1 .. T8)
-	tierLevels = {1, 15, 30, 50, 70, 95, 120, 140},
-	-- roll weight of each tier: higher tiers are rarer
-	tierWeights = {100, 90, 80, 65, 50, 35, 22, 12},
-	-- only the best `tierWindow` tiers the item level allows can roll (a level 150 item rolls T4 .. T8)
-	tierWindow = 5,
+	-- the item level a tier needs (T1 .. T8). O461 (owner 2026-11-10): {1, 15, 30, 50, 70, 90, 110, 130}, was {.., 95, 120, 140}:
+	-- the top tier drops from a boss of monster level 1000 (item level 133) and not only from the three rarest sources
+	tierLevels = {1, 15, 30, 50, 70, 90, 110, 130},
+	-- roll weight of each tier among the tiers the item level allows. O461: equal. O471 (2026-11-10): 1.35^(t-1), a tilt toward
+	-- the high tiers (a piece of item level 150 rolls T8 in 816 of 3024 parts, T1 in 100); the ranges of the tiers are unchanged
+	tierWeights = {100, 135, 182, 246, 332, 448, 605, 816},
 	-- today's five tiers on the new scale (old tier t = new tier oldTiers[t])
 	oldTiers = {2, 3, 4, 5, 6},
+	-- the version of the modifier numbers an item carries ("chaos_modv" on the item, M.VERSION): 1 = the ranges before O461
+	-- (2026-11-10), quality multiplying every value, the critical and leech pairs; 2 = O461 (the offence, sustain, speed and
+	-- utility rows, the roll rules); 3 = O464 (the defence rows: four resistances, armour, dodge, block, spell suppression,
+	-- penetration, energy shield, the powers Last Breath and Glacial Ward). An item with modifiers and a lower mark is
+	-- upgraded when it is read (ChaosCrafting.upgradeItem)
+	modVersion = 3,
+	-- the first version whose items carry the quality on the base bonus (O461): older ones carry it in every value
+	qualityFrom = 2,
+	-- life and mana leech (the Lua modifiers lifeleech, lifeleechw, manaleech, manaleechw): the most they give back to a player
+	-- together, in percent of the maximum per second
+	leech = {maxPct = 20, windowMs = 1000},
+
+	-- O471 (owner 2026-11-10, "the source of damage must be more balanced"): ceilings on what one character brings from every
+	-- source together, gear, gems, passive tree, Paragon, buffs and runes included.
+	--   crit: the critical chance in points and the extra damage of a critical hit in percent. The engine rolls and adds them from
+	--   its own totals (engine patch 0004, combat.cpp), so data/scripts/chaos/crit_cap.lua cuts the hit where the engine has
+	--   made it: a critical hit above the chance cap loses its crit with the share the cap leaves out, one above the damage cap
+	--   keeps only the capped extra (M.critKeep, M.critFactor). The scripted crits (Keen Edge, quiver Critical Strike with Bows)
+	--   only get the room the cap leaves (M.critRoom). Before: no cap, a dedicated build reached 71% and an amount of 300.
+	--   penetration: the points of physical and of elemental penetration, the `cap` of physpen and elepen below; the Sunder
+	--   support counts into the elemental total (M.penLeft: it gets what the items leave of the cap).
+	crit = {chanceCap = 45, amountCap = 150},
+	penetration = {cap = 20},
 
 	-- per rarity (ChaosRarity order: Common, Uncommon, Magic, Rare, Legendary, Divine): how many modifiers a new item
 	-- gets, and how many prefixes and how many suffixes it may carry at most (the orbs fill up to 2 x sides). Before the
@@ -93,8 +122,11 @@ M.config = {
 	-- along `curve` ({monster level, item level}, straight lines in between), plus the bonuses, at most `max`
 	itemLevel = {
 		max = 150,
-		curve = {{1, 1}, {10, 5}, {25, 12}, {50, 22}, {100, 36}, {200, 54}, {350, 74}, {500, 90}, {700, 106},
-			{900, 118}, {1100, 128}, {1500, 136}, {3000, 142}, {6000, 145}},
+		-- O471 (2026-11-10): the gear keeps growing past monster level 1000 (the last tier opens for a legendary boss drop at
+		-- monster level about 900, for a rare drop at about 1250); before: {50, 22} {100, 36} {200, 54} {350, 74} {500, 90}
+		-- {700, 106} {900, 118} {1100, 128} {1500, 136} {3000, 142} {6000, 145}
+		curve = {{1, 1}, {10, 5}, {25, 12}, {50, 21}, {100, 33}, {200, 50}, {350, 68}, {500, 82}, {700, 98},
+			{900, 112}, {1100, 122}, {1500, 134}, {2000, 144}, {2200, 148}, {6000, 150}},
 		tierBonus = {normal = 0, magic = 2, rare = 4, legendary = 7, boss = 10},
 		riftPerTier = 1, -- + rift tier x this (a kill inside a rift, the rift's chest), at most riftMax
 		riftMax = 15,
@@ -107,22 +139,37 @@ M.config = {
 	-- the engine's modifier types (absorbs, skills, critical / leech pairs, weapon elements; chaos_crafting.lua) get
 	-- tiers too. The values replace item.cpp's ranges per rarity; old items keep theirs.
 	engine = {
-		absorb = {side = "suffix", weight = 3,
+		-- the nine per-type absorb rows left the roll pool in O464 (the four resistances replaced them: the Chaos modifiers
+		-- fireres, coldres, lightningres, chaosres, allres); the group stays to read the items that carry one
+		absorb = {side = "suffix", weight = 3, retired = true,
 			tiers = {{2, 2}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}}},
+		-- the physical absorb row (armour and shields only): the physical reduction that adds to the armour share (O464)
+		physabsorb = {side = "suffix", weight = 3,
+			tiers = {{2, 2}, {3, 3}, {4, 4}, {5, 5}, {5, 6}, {6, 6}, {7, 7}, {7, 8}}},
 		skill = {side = "prefix", weight = 3, -- fist, club, sword, axe, distance, shielding, magic level
 			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}}},
 		profession = {side = "suffix", weight = 1, -- fishing, crafting, woodcutting, mining, herbalism, smithing
 			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}}},
-		critical = {side = "prefix", weight = 8, -- the amount; the chance is about two thirds of it (C.specialChance)
-			tiers = {{2, 2}, {2, 3}, {2, 5}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 10}}},
-		leech = {side = "suffix", weight = 6, -- life and mana leech, each
+		-- the two critical modifiers (O461) are independent: the chance writes the engine chance attribute alone (points),
+		-- the damage the engine amount attribute alone (percent). The tree keeps granting the pair. O471: they roll on the
+		-- weapon, the necklace and the ring only (ChaosCrafting.singles kinds); a badge or a quiver that has one keeps it, and
+		-- it counts, under the caps of config.crit.
+		critchance = {side = "prefix", weight = 6,
+			tiers = {{2, 2}, {3, 3}, {4, 4}, {5, 5}, {5, 6}, {6, 6}, {7, 7}, {7, 8}}},
+		critdamage = {side = "prefix", weight = 6,
+			tiers = {{8, 12}, {13, 16}, {17, 20}, {21, 24}, {25, 28}, {29, 31}, {32, 34}, {35, 38}}},
+		-- the life and mana leech PAIRS (chance and amount) left the roll pool in O461 (the Lua modifiers lifeleech ... took
+		-- over); the group stays to read the pairs of items not upgraded yet (uniques, ruined or corrupted pieces too)
+		leech = {side = "suffix", weight = 6, retired = true,
 			tiers = {{2, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 9}, {7, 10}}},
 		element = {side = "prefix", weight = 2, -- weapons without an element of their own, one element at most
 			tiers = {{2, 4}, {4, 9}, {7, 13}, {10, 18}, {15, 24}, {20, 30}, {26, 39}, {33, 52}}}
 	},
 
-	-- item quality (orbs v2, the Whetstone): every modifier value is multiplied by (100 + quality) / 100 and rounded; one
-	-- Whetstone adds `perStone` percent, up to `cap` (`capHigh` from rarity `highFrom`, Divine and better)
+	-- item quality (orbs v2, the Whetstone): since O461 quality multiplies the item's base bonus (the attack, defence and armour
+	-- ChaosCrafting.applyBaseBonus adds on top of the item type's own) by (100 + quality) / 100, rounded; it no longer touches
+	-- a modifier value (before it multiplied every one). One Whetstone adds `perStone` percent, up to `cap` (`capHigh` from
+	-- rarity `highFrom`, Divine and better)
 	quality = {perStone = 1, cap = 20, capHigh = 30, highFrom = 10},
 
 	-- bound modifiers (Orb of Binding): how many an item of a rarity may have, index = ChaosRarity rank (Common .. Divine)
@@ -133,91 +180,132 @@ M.config = {
 
 	mods = {
 		-- prefixes: damage and defence
-		{key = "bossdamage", label = "Damage to Elites and Bosses", fmt = "pct", side = "prefix", weight = 6, cap = 30,
+		{key = "bossdamage", label = "Damage to Elites and Bosses", fmt = "pct", side = "prefix", weight = 6,
 			kinds = {weapon = true, jewel = true},
 			tiers = {{2, 5}, {4, 7}, {6, 10}, {9, 13}, {11, 16}, {14, 18}, {16, 20}, {18, 22}}},
-		{key = "dodge", label = "Dodge", fmt = "pct", side = "prefix", weight = 5, cap = 10,
+		-- O464 (the player defence layer): dodge counts for attack hits at most 75 percent, block at most `blockCap` of
+		-- defence_config.lua, spell suppression at most 100 (player_defence_config.lua); no module cap here any more
+		{key = "dodge", label = "Dodge", fmt = "pct", side = "prefix", weight = 5,
 			kinds = {armor = true, legs = true, boots = true, shield = true, other = true},
-			tiers = {{1, 2}, {2, 2}, {2, 3}, {2, 4}, {3, 5}, {3, 5}, {4, 6}, {5, 7}}},
-		{key = "reflect", label = "Reflect Damage", fmt = "pct", side = "prefix", weight = 5, cap = 15,
+			tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 8}, {8, 9}, {10, 11}}},
+		{key = "reflect", label = "Reflect Damage", fmt = "pct", side = "prefix", weight = 5,
 			kinds = {armor = true, shield = true},
-			tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}, {9, 11}}},
-		{key = "thorns", label = "Thorns", fmt = "flat", side = "prefix", weight = 6, cap = 250,
+			tiers = {{2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 7}, {8, 8}, {9, 10}, {11, 11}}},
+		{key = "thorns", label = "Thorns", fmt = "flat", side = "prefix", weight = 6,
 			kinds = {armor = true, shield = true, legs = true},
-			tiers = {{2, 6}, {5, 12}, {12, 24}, {24, 45}, {40, 75}, {60, 110}, {90, 150}, {120, 190}}},
+			tiers = {{2, 6}, {7, 12}, {13, 24}, {25, 45}, {46, 75}, {76, 110}, {111, 150}, {151, 190}}},
 		{key = "monsterreduction", label = "Damage Taken from Monsters", fmt = "less", side = "prefix", weight = 6,
-			cap = 12, kinds = {armor = true, helmet = true, legs = true, shield = true},
-			tiers = {{1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}}},
-		{key = "block", label = "Block Chance", fmt = "pct", side = "prefix", weight = 8, cap = 15,
+			kinds = {armor = true, helmet = true, legs = true, shield = true},
+			tiers = {{1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}}},
+		{key = "block", label = "Block Chance", fmt = "pct", side = "prefix", weight = 8,
 			kinds = {shield = true},
-			tiers = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {8, 11}, {9, 12}, {11, 14}}},
-		{key = "bleedchance", label = "Chance to Bleed", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			tiers = {{8, 9}, {10, 11}, {12, 13}, {14, 15}, {15, 16}, {16, 17}, {17, 18}, {18, 20}}},
+		-- flat armour (O464): the number the player defence layer's armour share is worked out from, plus the armour of the
+		-- worn pieces: reduction = armour / (armour + 0.07 x the hit), see "Player defence (O464)"
+		{key = "armour", label = "Armour", fmt = "flat", side = "prefix", weight = 6,
+			kinds = {armor = true, helmet = true, legs = true, boots = true, shield = true},
+			tiers = {{3, 5}, {6, 9}, {10, 14}, {15, 20}, {21, 27}, {28, 35}, {36, 44}, {45, 52}}},
+		-- spell suppression (O464): the chance that a spell hit deals 50 percent less (a monster's elemental and scripted
+		-- spells, a player's spells in PvP), at most 100
+		{key = "spellsuppress", label = "Spell Suppression", fmt = "pct", side = "suffix", weight = 5,
+			kinds = {armor = true, helmet = true, boots = true, other = true},
+			tiers = {{8, 9}, {10, 11}, {12, 13}, {14, 15}, {16, 17}, {18, 19}, {20, 21}, {22, 22}}},
+		-- the four resistances (O464): a sum of every source, minus the penalty of the level (-30 from 250, -60 from 500),
+		-- at most 75, see "Player defence (O464)". Fire = fire; Cold = ice, water, drown; Lightning = energy, holy, arcane;
+		-- Chaos = earth, death, life drain, mana drain. The nine per-type absorb rows are gone from the roll pool.
+		{key = "fireres", label = "Fire Resistance", fmt = "pct", side = "suffix", weight = 3,
+			kinds = {helmet = true, armor = true, legs = true, boots = true, jewel = true, other = true, shield = true},
+			tiers = {{6, 11}, {12, 17}, {18, 23}, {24, 29}, {30, 35}, {36, 41}, {42, 45}, {46, 48}}},
+		{key = "coldres", label = "Cold Resistance", fmt = "pct", side = "suffix", weight = 3,
+			kinds = {helmet = true, armor = true, legs = true, boots = true, jewel = true, other = true, shield = true},
+			tiers = {{6, 11}, {12, 17}, {18, 23}, {24, 29}, {30, 35}, {36, 41}, {42, 45}, {46, 48}}},
+		{key = "lightningres", label = "Lightning Resistance", fmt = "pct", side = "suffix", weight = 3,
+			kinds = {helmet = true, armor = true, legs = true, boots = true, jewel = true, other = true, shield = true},
+			tiers = {{6, 11}, {12, 17}, {18, 23}, {24, 29}, {30, 35}, {36, 41}, {42, 45}, {46, 48}}},
+		-- half the weight of one of the three (1.5: ChaosCrafting.weighted takes half points)
+		{key = "chaosres", label = "Chaos Resistance", fmt = "pct", side = "suffix", weight = 1.5,
+			kinds = {helmet = true, armor = true, legs = true, boots = true, jewel = true, other = true, shield = true},
+			tiers = {{5, 8}, {9, 12}, {13, 16}, {17, 20}, {21, 24}, {25, 28}, {29, 31}, {32, 35}}},
+		{key = "allres", label = "All Elemental Resistances", fmt = "pct", side = "suffix", weight = 3,
+			kinds = {jewel = true, other = true, shield = true},
+			tiers = {{3, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 15}, {16, 16}}},
+		{key = "bleedchance", label = "Chance to Bleed", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, other = true},
-			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
-		{key = "ignitechance", label = "Chance to Ignite", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}}},
+		{key = "ignitechance", label = "Chance to Ignite", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, other = true},
-			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
-		{key = "poisonchance", label = "Chance to Poison", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}}},
+		{key = "poisonchance", label = "Chance to Poison", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, other = true},
-			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
-		{key = "chillchance", label = "Chance to Chill", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}}},
+		{key = "chillchance", label = "Chance to Chill", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, other = true},
-			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
-		{key = "shockchance", label = "Chance to Shock", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}}},
+		{key = "shockchance", label = "Chance to Shock", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, other = true},
-			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
-		{key = "physpen", label = "Physical Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 25,
+			tiers = {{18, 21}, {22, 25}, {26, 29}, {30, 33}, {34, 38}, {39, 43}, {44, 49}, {50, 55}}},
+		-- penetration (O464): physical = points off the armour share of the monster, elemental = points off its resistance
+		-- after the cap (down to -100); both in the monster defence layer. O471: all worn pieces, sets, uniques and the veiled
+		-- modifier together give at most `cap` points of each kind (config.penetration.cap, kept equal by a test)
+		{key = "physpen", label = "Physical Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 20, -- O471: 20 points in total
 			kinds = {weapon = true, jewel = true},
-			tiers = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}}},
-		{key = "elepen", label = "Elemental Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 25,
+			tiers = {{3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 8}, {9, 9}, {10, 11}, {11, 12}}},
+		{key = "elepen", label = "Elemental Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 20, -- O471: 20 points in total
 			kinds = {weapon = true, jewel = true},
-			tiers = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}}},
+			tiers = {{3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 8}, {9, 9}, {10, 11}, {11, 12}}},
+		-- a hit that leaves a normal monster at or below this share of its health kills it; the highest worn value counts
+		-- (stack = "max"): two pieces do not add
 		{key = "execute", label = "Execute", text = "Executes Monsters below %d%% Health", side = "prefix", weight = 3,
-			cap = 10, kinds = {weapon = true},
-			tiers = {{1, 2}, {2, 3}, {3, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 9}}},
-		{key = "dot", label = "Damage over Time", fmt = "pct", side = "prefix", weight = 4, cap = 60,
+			stack = "max", kinds = {weapon = true},
+			tiers = {{10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}, {10, 10}}},
+		{key = "dot", label = "Damage over Time", fmt = "pct", side = "prefix", weight = 4,
 			kinds = {weapon = true, jewel = true, other = true},
-			tiers = {{4, 7}, {7, 11}, {10, 15}, {14, 20}, {18, 26}, {23, 32}, {29, 39}, {36, 48}}},
+			tiers = {{7, 11}, {12, 13}, {14, 15}, {16, 17}, {18, 19}, {20, 21}, {22, 23}, {24, 26}}},
 
 		-- suffixes: utility, resistances and speed
-		{key = "attackspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 20, cap = 15,
+		{key = "attackspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 20,
 			kinds = {weapon = true},
-			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {7, 9}, {9, 11}, {11, 13}, {13, 15}}},
-		-- worn pieces (rings, amulets, belts and the like): a player-level bonus, the weapon's own modifier above stays
+			tiers = {{5, 7}, {8, 10}, {11, 13}, {14, 16}, {17, 19}, {20, 22}, {23, 25}, {26, 27}}},
+		-- worn pieces (the badge and the like): a player-level bonus, the weapon's own modifier above stays
 		-- local to the weapon. Summed with the passive tree's attackSpeed under config.playerSpeedCap (M.setPlayerAttackSpeed)
-		{key = "gearspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 16, cap = 10,
-			kinds = {jewel = true, other = true},
-			tiers = {{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}}},
-		{key = "movespeed", label = "Movement Speed", fmt = "pct", side = "suffix", weight = 10, cap = 12,
+		{key = "gearspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 16,
+			kinds = {other = true},
+			tiers = {{5, 6}, {7, 8}, {9, 10}, {11, 11}, {12, 12}, {13, 13}, {14, 15}, {15, 16}}},
+		-- fixed values: one number per tier
+		{key = "movespeed", label = "Movement Speed", fmt = "pct", side = "suffix", weight = 10,
 			kinds = {boots = true},
-			tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 7}, {6, 8}, {8, 10}, {9, 11}, {10, 12}}},
-		{key = "lifeonkill", label = "Life on Kill", fmt = "flat", side = "suffix", weight = 6, cap = 300,
+			tiers = {{10, 10}, {13, 13}, {16, 16}, {20, 20}, {24, 24}, {28, 28}, {32, 32}, {35, 35}}},
+		{key = "lifeonkill", label = "Life on Kill", fmt = "flat", side = "suffix", weight = 6,
 			kinds = {weapon = true, jewel = true, helmet = true},
-			tiers = {{4, 9}, {9, 18}, {18, 36}, {36, 70}, {60, 100}, {85, 150}, {120, 200}, {160, 260}}},
-		{key = "manaonkill", label = "Mana on Kill", fmt = "flat", side = "suffix", weight = 6, cap = 200,
+			tiers = {{4, 9}, {12, 20}, {25, 40}, {50, 80}, {90, 140}, {150, 220}, {230, 320}, {330, 430}}},
+		{key = "manaonkill", label = "Mana on Kill", fmt = "flat", side = "suffix", weight = 6,
 			kinds = {weapon = true, jewel = true, helmet = true},
-			tiers = {{2, 5}, {5, 10}, {10, 20}, {20, 40}, {35, 65}, {50, 95}, {80, 130}, {110, 170}}},
-		{key = "lifeonhit", label = "Health on Hit", fmt = "flat", side = "suffix", weight = 5, cap = 120,
-			kinds = {weapon = true, jewel = true, other = true},
-			tiers = {{2, 4}, {4, 7}, {5, 11}, {9, 16}, {13, 23}, {18, 32}, {25, 45}, {36, 63}}},
-		{key = "manaonhit", label = "Mana on Hit", fmt = "flat", side = "suffix", weight = 5, cap = 80,
-			kinds = {weapon = true, jewel = true, other = true},
-			tiers = {{2, 2}, {2, 4}, {4, 7}, {5, 11}, {9, 14}, {13, 21}, {18, 29}, {25, 40}}},
+			tiers = {{2, 5}, {6, 10}, {12, 20}, {25, 40}, {45, 65}, {70, 100}, {105, 145}, {150, 195}}},
+		{key = "lifeonhit", label = "Health on Hit", fmt = "flat", side = "suffix", weight = 5,
+			kinds = {weapon = true},
+			tiers = {{2, 4}, {6, 10}, {12, 20}, {24, 36}, {40, 55}, {60, 78}, {82, 100}, {104, 119}}},
+		{key = "manaonhit", label = "Mana on Hit", fmt = "flat", side = "suffix", weight = 5,
+			kinds = {weapon = true},
+			tiers = {{1, 2}, {3, 5}, {6, 10}, {12, 18}, {20, 28}, {30, 39}, {41, 50}, {52, 60}}},
+		-- per second: T8 is 3.5% to 4.1% of the median health of level 1000 (O461), each lower tier the same share of the median
+		-- health of the level where a normal drop first reaches the tier's item level
 		{key = "regen", label = "Health Regeneration", text = "Health Regeneration +%d per Second", side = "suffix",
-			weight = 6, cap = 120, kinds = {armor = true, legs = true, helmet = true, jewel = true, shield = true},
-			tiers = {{2, 4}, {4, 7}, {7, 12}, {11, 18}, {16, 26}, {23, 36}, {32, 48}, {44, 70}}},
-		{key = "experience", label = "Experience", fmt = "pct", side = "suffix", weight = 4, cap = 15,
-			kinds = {helmet = true, jewel = true},
-			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 11}}},
-		{key = "goldfind", label = "Gold Find", fmt = "pct", side = "suffix", weight = 5, cap = 40,
+			weight = 6, kinds = {armor = true, legs = true, shield = true},
+			tiers = {{9, 11}, {19, 23}, {39, 45}, {89, 105}, {153, 180}, {267, 313}, {433, 508}, {595, 697}}},
+		{key = "experience", label = "Experience", fmt = "pct", side = "suffix", weight = 4,
+			kinds = {jewel = true},
+			tiers = {{1, 1}, {1, 1}, {1, 2}, {1, 2}, {2, 2}, {2, 3}, {2, 3}, {3, 3}}},
+		-- no longer rolled (O461): the key stays valid for uniques, item sets, veiled modifiers, charms, factions and raid
+		-- rewards, which add it to the totals under the cap below
+		{key = "goldfind", label = "Gold Find", fmt = "pct", side = "suffix", weight = 5, cap = 40, noRoll = true,
 			kinds = {helmet = true, jewel = true, legs = true, other = true},
 			tiers = {{2, 5}, {4, 7}, {5, 10}, {7, 14}, {11, 18}, {14, 23}, {19, 28}, {24, 34}}},
-		{key = "itemfind", label = "Item Find", fmt = "pct", side = "suffix", weight = 4, cap = 25,
+		{key = "itemfind", label = "Item Find", fmt = "pct", side = "suffix", weight = 4, cap = 25, noRoll = true,
 			kinds = {helmet = true, jewel = true},
 			tiers = {{2, 2}, {2, 3}, {3, 5}, {4, 7}, {5, 10}, {7, 13}, {10, 16}, {13, 19}}},
-		{key = "rarityfind", label = "Rarity Find", fmt = "pct", side = "suffix", weight = 4, cap = 40,
-			kinds = {helmet = true, jewel = true},
-			tiers = {{2, 5}, {4, 7}, {5, 10}, {9, 14}, {11, 18}, {14, 23}, {19, 28}, {24, 34}}},
+		{key = "rarityfind", label = "Rarity Find", fmt = "pct", side = "suffix", weight = 4,
+			kinds = {helmet = true, jewel = true, boots = true},
+			tiers = {{6, 10}, {11, 12}, {13, 14}, {15, 16}, {17, 18}, {19, 19}, {20, 20}, {21, 26}}},
 		{key = "healing", label = "Healing Done", fmt = "pct", side = "suffix", weight = 5, cap = 20,
 			kinds = {weapon = true, shield = true, jewel = true},
 			tiers = {{2, 2}, {2, 3}, {3, 5}, {5, 8}, {7, 10}, {9, 13}, {11, 15}, {13, 18}}},
@@ -226,12 +314,62 @@ M.config = {
 		{key = "goblinchance", label = "Treasure Goblin Chance", fmt = "pct", side = "suffix", weight = 3, cap = 100,
 			kinds = {helmet = true, jewel = true},
 			tiers = {{9, 15}, {15, 23}, {21, 30}, {27, 41}, {33, 50}, {42, 60}, {53, 75}, {68, 90}}},
-		{key = "cdr", label = "Cooldown Reduction", fmt = "pct", side = "suffix", weight = 4, cap = 20,
+		{key = "cdr", label = "Cooldown Reduction", fmt = "pct", side = "suffix", weight = 4,
 			kinds = {helmet = true, jewel = true, other = true},
-			tiers = {{2, 3}, {3, 4}, {4, 6}, {6, 8}, {8, 10}, {9, 12}, {11, 14}, {13, 16}}},
-		{key = "manacost", label = "Mana Cost Reduction", fmt = "pct", side = "suffix", weight = 4, cap = 25,
+			tiers = {{6, 8}, {8, 10}, {10, 12}, {12, 14}, {14, 15}, {15, 16}, {16, 18}, {18, 20}}},
+		{key = "manacost", label = "Mana Cost Reduction", fmt = "pct", side = "suffix", weight = 4, cap = 25, noRoll = true,
 			kinds = {helmet = true, armor = true, jewel = true},
-			tiers = {{2, 3}, {3, 5}, {5, 7}, {7, 10}, {9, 12}, {11, 15}, {14, 18}, {17, 21}}}
+			tiers = {{2, 3}, {3, 5}, {5, 7}, {7, 10}, {9, 12}, {11, 15}, {14, 18}, {17, 21}}},
+
+		-- life and mana leech (O461): a direct heal of a share of the damage dealt, no chance roll; the value is in tenths of
+		-- a percent ("4" shows as 0.4%). The weapon's own modifier ("w") counts the hits of weapon attacks only. The recovery
+		-- of all of them together is held at config.leech.maxPct of the maximum per second (item_mods.lua); damage over time
+		-- does not leech. A minTier of 4 means the modifier does not roll on an item whose level allows T1 .. T3 only.
+		{key = "lifeleech", label = "Life Leech", fmt = "permille", side = "suffix", weight = 6,
+			kinds = {jewel = true, other = true, helmet = true},
+			tiers = {{2, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {8, 8}, {9, 9}, {10, 12}}},
+		{key = "lifeleechw", label = "Life Leech with Weapon", fmt = "permille", side = "suffix", weight = 6,
+			kinds = {weapon = true},
+			tiers = {{20, 24}, {25, 26}, {27, 28}, {29, 30}, {31, 32}, {33, 33}, {34, 34}, {35, 45}}},
+		{key = "manaleech", label = "Mana Leech", fmt = "permille", side = "suffix", weight = 6,
+			kinds = {jewel = true, other = true, helmet = true},
+			tiers = {{2, 4}, {5, 5}, {5, 5}, {5, 5}, {6, 6}, {6, 6}, {6, 6}, {6, 8}}},
+		{key = "manaleechw", label = "Mana Leech with Weapon", fmt = "permille", side = "suffix", weight = 6, minTier = 4,
+			kinds = {weapon = true},
+			tiers = {{26, 32}, {26, 32}, {26, 32}, {26, 32}, {26, 32}, {26, 32}, {26, 32}, {26, 32}}},
+
+		-- new in O461: the tree's hooks (passivetree_effects.lua, item_mods.lua)
+		-- flat maximum health and mana: a condition on the player (item_mods.lua), like the tree's vitality and spirit
+		{key = "maxlife", label = "Maximum Life", fmt = "flat", side = "prefix", weight = 8,
+			kinds = {armor = true, shield = true, helmet = true, legs = true, boots = true, jewel = true},
+			tiers = {{3, 6}, {7, 12}, {14, 24}, {36, 60}, {88, 130}, {198, 260}, {469, 560}, {693, 748}}},
+		{key = "maxmana", label = "Maximum Mana", fmt = "flat", side = "prefix", weight = 5,
+			kinds = {jewel = true, helmet = true, armor = true},
+			tiers = {{6, 6}, {18, 19}, {41, 43}, {97, 103}, {185, 197}, {301, 319}, {523, 555}, {704, 747}}},
+		-- percent more of the character's own base mana regeneration (a mana tick, item_mods.lua)
+		{key = "manaregen", label = "Mana Regeneration", fmt = "pct", side = "suffix", weight = 4,
+			kinds = {jewel = true, helmet = true},
+			tiers = {{10, 19}, {20, 26}, {27, 33}, {34, 40}, {41, 47}, {48, 53}, {54, 59}, {60, 69}}},
+		-- the three attributes the passive tree raises (ChaosPassiveCharStat): the points add to the tree's
+		{key = "strength", label = "Strength", fmt = "flat", side = "suffix", weight = 3,
+			kinds = {armor = true, helmet = true, legs = true, boots = true, jewel = true, shield = true},
+			tiers = {{2, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 16}, {17, 18}}},
+		{key = "dexterity", label = "Dexterity", fmt = "flat", side = "suffix", weight = 3,
+			kinds = {armor = true, helmet = true, legs = true, boots = true, jewel = true, shield = true},
+			tiers = {{2, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 16}, {17, 18}}},
+		{key = "intelligence", label = "Intelligence", fmt = "flat", side = "suffix", weight = 3,
+			kinds = {armor = true, helmet = true, legs = true, boots = true, jewel = true, shield = true},
+			tiers = {{2, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {13, 14}, {15, 16}, {17, 18}}},
+		-- percent more spell damage, added to the increment the tree feeds (so its soft cap holds the sum); only a weapon
+		-- that casts (needs = "cast": a wand or rod) rolls it
+		{key = "spelldamage", label = "Spell Damage", fmt = "pct", side = "prefix", weight = 6, needs = "cast",
+			kinds = {weapon = true},
+			tiers = {{4, 7}, {8, 11}, {12, 15}, {16, 19}, {20, 24}, {25, 29}, {30, 33}, {34, 38}}},
+		-- percent of this weapon's own attack value (local: the weapon's attack attribute); only a weapon that hits with an
+		-- attack value (needs = "attack") rolls it
+		{key = "weapondamage", label = "Weapon Damage", fmt = "pct", side = "prefix", weight = 6, needs = "attack",
+			kinds = {weapon = true},
+			tiers = {{13, 16}, {19, 22}, {25, 28}, {32, 35}, {39, 42}, {45, 48}, {51, 54}, {57, 60}}}
 	},
 
 	-- item names (owner 2026-10-28): a rolled item is named after its best prefix and best suffix, "Vicious Longsword of
@@ -273,6 +411,7 @@ M.config = {
 			rarity_jewelsmithskill = {"of the Gemcutter"},
 			-- critical hits (prefix), life and mana leech (suffix); keyed by the chance attribute
 			rarity_criticalhitchance = {"Vicious", "Murderous"},
+			rarity_criticalhitamount = {"Crushing", "Pulverizing"}, -- Critical Strike Damage (O461: the pair is two modifiers)
 			rarity_lifeleechchance = {"of the Leech", "of the Vampire"},
 			rarity_manaleechchance = {"of the Siphon", "of the Wraith"},
 			-- weapon elements (prefix)
@@ -291,6 +430,7 @@ M.config = {
 			thorns = {"Thorned", "Briarbound"},
 			monsterreduction = {"Steadfast", "Unyielding"},
 			block = {"Guarded", "Impregnable"},
+			armour = {"Armored", "Dreadplated"},
 			bleedchance = {"Serrated", "Flaying"},
 			ignitechance = {"Smoldering", "Cindering"},
 			poisonchance = {"Venomous", "Noxious"},
@@ -338,8 +478,27 @@ M.config = {
 			emberstep = {"of the Emberstep", "of the Phoenix"},
 			hunterrush = {"of the Hunt", "of the Wild Hunt"},
 			smolderaura = {"of Smoulder", "of the Pyre"},
+			fireres = {"of Warmth", "of the Furnace"},
+			coldres = {"of the Thaw", "of the Hearthfire"},
+			lightningres = {"of Insulation", "of the Lightning Rod"},
+			chaosres = {"of Shadows", "of the Nightveil"},
+			allres = {"of Prisms", "of the Prismatic Ward"},
+			spellsuppress = {"of Dampening", "of the Nullifier"},
 			bowspeed = {"of the Quickdraw", "of the Rapid Volley"},
-			esrecharge = {"of Renewal", "of the Wellwarden"}
+			esrecharge = {"of Renewal", "of the Wellwarden"},
+			-- O461: the Lua leech modifiers (suffix), attributes (suffix), maximum life and mana, spell and weapon damage (prefix)
+			lifeleech = {"of Draining", "of Siphoning"},
+			lifeleechw = {"of Thirst", "of the Bloodfeast"},
+			manaleech = {"of Seeping", "of Osmosis"},
+			manaleechw = {"of Devouring", "of the Mindfeast"},
+			manaregen = {"of Clarity", "of Lucidity"},
+			strength = {"of the Bear", "of the Titan"},
+			dexterity = {"of the Fox", "of the Windrunner"},
+			intelligence = {"of the Owl", "of the Sage"},
+			maxlife = {"Hearty", "Titanic"},
+			maxmana = {"Brimming", "Overflowing"},
+			spelldamage = {"Spellwoven", "Runebound"},
+			weapondamage = {"Honed", "Masterwork"}
 		}
 	},
 
@@ -494,10 +653,88 @@ M.legacyEngine = {
 	element = {{1, 3}, {3, 6}, {5, 9}, {7, 12}, {10, 16}, {13, 20}, {17, 26}, {22, 35}}
 }
 
+-- The ranges of version 1 (until 2026-11-10, O461): the ranges a modifier of an item without the version mark was rolled in.
+-- Only the rows O461 changed are listed (a row not listed has the same ranges in both versions). The upgrade of an old item
+-- (ChaosCrafting.upgradeItem) keeps each value's place inside its tier's range: it reads the old range here, the new one in
+-- config. The engine groups by name: `critical` is the critical pair (the amount; the chance follows from it), `leech` the
+-- leech pairs.
+M.v1 = {
+	mods = {
+		attackspeed = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {7, 9}, {9, 11}, {11, 13}, {13, 15}},
+		gearspeed = {{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}},
+		bowspeed = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}},
+		movespeed = {{2, 3}, {3, 4}, {4, 5}, {5, 7}, {6, 8}, {8, 10}, {9, 11}, {10, 12}},
+		bowcrit = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 8}, {8, 10}},
+		bleedchance = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
+		ignitechance = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
+		poisonchance = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
+		chillchance = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
+		shockchance = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}},
+		dot = {{4, 7}, {7, 11}, {10, 15}, {14, 20}, {18, 26}, {23, 32}, {29, 39}, {36, 48}},
+		lifeonkill = {{4, 9}, {9, 18}, {18, 36}, {36, 70}, {60, 100}, {85, 150}, {120, 200}, {160, 260}},
+		manaonkill = {{2, 5}, {5, 10}, {10, 20}, {20, 40}, {35, 65}, {50, 95}, {80, 130}, {110, 170}},
+		lifeonhit = {{2, 4}, {4, 7}, {5, 11}, {9, 16}, {13, 23}, {18, 32}, {25, 45}, {36, 63}},
+		manaonhit = {{2, 2}, {2, 4}, {4, 7}, {5, 11}, {9, 14}, {13, 21}, {18, 29}, {25, 40}},
+		regen = {{2, 4}, {4, 7}, {7, 12}, {11, 18}, {16, 26}, {23, 36}, {32, 48}, {44, 70}},
+		experience = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 11}},
+		rarityfind = {{2, 5}, {4, 7}, {5, 10}, {9, 14}, {11, 18}, {14, 23}, {19, 28}, {24, 34}},
+		cdr = {{2, 3}, {3, 4}, {4, 6}, {6, 8}, {8, 10}, {9, 12}, {11, 14}, {13, 16}},
+		arrowfire = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+		arrowice = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+		arrowenergy = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+		arrowearth = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+		execute = {{1, 2}, {2, 3}, {3, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 9}}
+	},
+	engine = {
+		critical = {{2, 2}, {2, 3}, {2, 5}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 10}},
+		leech = {{2, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 9}, {7, 10}}
+	}
+}
+
+-- The ranges of version 2 (O461, until the defence stage O464): the rows O464 changed. Only those are listed. The upgrade of an
+-- item below version 3 reads the old range here and the new one in config, so a value keeps its place inside its tier.
+-- energyshield, energyshieldpct, esrecharge, frostward and lastbreath are rows of chaos_energy_shield.lua and chaos_powers.lua
+-- (their own files hold the new numbers). `absorb` is the engine group of the per-type absorb rows: all ten of them had these
+-- ranges (the physical one has its own group since O464, `physabsorb`).
+M.v2 = {
+	mods = {
+		dodge = {{1, 2}, {2, 2}, {2, 3}, {2, 4}, {3, 5}, {3, 5}, {4, 6}, {5, 7}},
+		reflect = {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}, {9, 11}},
+		thorns = {{2, 6}, {5, 12}, {12, 24}, {24, 45}, {40, 75}, {60, 110}, {90, 150}, {120, 190}},
+		monsterreduction = {{1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}},
+		block = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {8, 11}, {9, 12}, {11, 14}},
+		physpen = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}},
+		elepen = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}},
+		energyshield = {{12, 25}, {25, 50}, {50, 85}, {85, 135}, {135, 195}, {195, 270}, {270, 360}, {360, 480}},
+		energyshieldpct = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+		esrecharge = {{5, 8}, {8, 12}, {12, 16}, {16, 20}, {20, 25}, {25, 30}, {30, 36}, {36, 45}},
+		frostward = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+		lastbreath = {{10, 15}, {15, 20}, {20, 25}, {25, 30}, {30, 35}, {35, 40}, {40, 45}, {45, 50}}
+	},
+	engine = {
+		absorb = {{2, 2}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}}
+	}
+}
+
+-- the per-type absorb rows (engine attribute, lower case) that became a resistance in O464, and the modifier each one turned
+-- into. The physical row stays a row of its own (new numbers). Two rows of one group on one item become one.
+M.absorbToResist = {
+	rarity_fireabsorb = "fireres", rarity_iceabsorb = "coldres", rarity_waterabsorb = "coldres", rarity_drownabsorb = "coldres",
+	rarity_energyabsorb = "lightningres", rarity_holyabsorb = "lightningres", rarity_arcaneabsorb = "lightningres",
+	rarity_earthabsorb = "chaosres", rarity_deathabsorb = "chaosres"
+}
+
+-- the range a modifier of this file had in version 1 at tier t (the current one when the row did not change)
+function M.v1Range(key, tier)
+	local def = M.byKey[key]
+	local tiers = (M.v1.mods[key]) or (def and def.tiers)
+	return tiers and M.tierRange(tiers, tier) or nil
+end
+
 -- ---------------------------------------------------------------------------------------------------------------
 -- kinds
 -- ---------------------------------------------------------------------------------------------------------------
-local SLOTP = {head = 1, necklace = 2, armor = 8, legs = 64, feet = 128, ring = 256}
+local SLOTP ={head = 1, necklace = 2, armor = 8, legs = 64, feet = 128, ring = 256}
 
 -- kind of an ItemType (or nil when it is no equipment)
 function M.kindOfType(it)
@@ -547,12 +784,33 @@ end
 -- whatever the wearer holds)
 -- def.ranged: only a distance weapon (bow, crossbow, throwing weapon) rolls it, when the item type is known (it): its
 -- power works on a ranged hit only (Echo Shot; owner 2026-11-01, "fist weapon com prefixo de ranged")
+-- def.needs (O461): "cast" = only a weapon whose attack is a spell (a wand or rod: weapon type wand), "attack" = only a weapon
+-- that hits with an attack value (an attack above 0 on its type, and not a wand or rod). Checked when the item type is known.
+-- def.noRoll: the modifier left the roll pool (it stays a valid key for uniques, sets, veiled modifiers, charms ...).
+function M.casts(it)
+	return typeNumber(it, "getWeaponType") == (WEAPON_WAND or 6)
+end
+
+function M.hitsWithAttack(it)
+	return typeNumber(it, "getWeaponType") ~= (WEAPON_WAND or 6) and typeNumber(it, "getAttack") > 0
+end
+
 function M.allowed(def, kind, it)
+	if def.noRoll then
+		return false
+	end
 	if kind == "quiver" then
 		return def.kinds ~= nil and def.kinds.quiver == true
 	end
 	if def.ranged and kind == "weapon" and it ~= nil and typeNumber(it, "getWeaponType") ~= (WEAPON_DISTANCE or 5) then
 		return false
+	end
+	if def.needs and it ~= nil and kind == "weapon" then
+		if def.needs == "cast" and not M.casts(it) then
+			return false
+		elseif def.needs == "attack" and not M.hitsWithAttack(it) then
+			return false
+		end
 	end
 	return kind ~= nil and (def.kinds == nil or def.kinds[kind] == true)
 end
@@ -572,11 +830,13 @@ function M.maxTierFor(level)
 	return best
 end
 
--- the tiers that can roll at this item level, best first: {{tier, weight}, ...}
-function M.tierRows(level)
+-- the tiers that can roll at this item level, best first: {{tier, weight}, ...}. Every tier the item level allows
+-- (O461: the window of the best five is gone). minTier (a modifier's own gate, def.minTier) leaves out the tiers below it:
+-- none when the item level does not reach it
+function M.tierRows(level, minTier)
 	local top = M.maxTierFor(level)
 	local rows = {}
-	for t = top, math.max(1, top - M.config.tierWindow + 1), -1 do
+	for t = top, math.max(1, tonumber(minTier) or 1), -1 do
 		rows[#rows + 1] = {t, M.config.tierWeights[t] or 1}
 	end
 	return rows
@@ -601,14 +861,14 @@ local function weighted(rows, rand)
 end
 M.weighted = weighted
 
--- a tier for a modifier of an item of this level
-function M.rollTier(level, rand)
-	return weighted(M.tierRows(level), rand or M.random) or 1
+-- a tier for a modifier of an item of this level (minTier: the modifier's own gate, see tierRows)
+function M.rollTier(level, rand, minTier)
+	return weighted(M.tierRows(level, minTier), rand or M.random) or math.max(1, tonumber(minTier) or 1)
 end
 
 -- chance (percent, one decimal) of each tier at this item level: {[tier] = pct}
-function M.tierChances(level)
-	local rows, total, out = M.tierRows(level), 0, {}
+function M.tierChances(level, minTier)
+	local rows, total, out = M.tierRows(level, minTier), 0, {}
 	for _, r in ipairs(rows) do
 		total = total + r[2]
 	end
@@ -881,14 +1141,24 @@ local function cutValue(item, def, v, tier)
 	end
 	local hi = M.tierRange(def.tiers, tier)[2]
 	local q = M.qualityOf(item)
-	if q > 0 then
-		hi = M.scaleQuality(hi, q)
+	if q > 0 and M.versionOf(item) < M.config.qualityFrom then
+		hi = M.scaleQuality(hi, q) -- version 1: the stored value carries the quality
 	end
 	return math.min(v, hi)
 end
 
--- the Chaos modifiers of an item in catalogue order: {key, value, def, label, tier, side}
+-- the version mark of an item's modifier numbers (0 = none: rolled before O461 or without a modifier yet)
+function M.versionOf(item)
+	local v = custom(item, M.VERSION)
+	return v and floor(v) or 0
+end
+
+-- the Chaos modifiers of an item in catalogue order: {key, value, def, label, tier, side}. An item of an older version is
+-- upgraded first (M.upgradeFn, set by chaos_crafting.lua: ChaosCrafting.upgradeItem), so every reader sees today's numbers.
 function M.read(item)
+	if M.upgradeFn then
+		M.upgradeFn(item)
+	end
 	local out = {}
 	for _, def in ipairs(M.config.mods) do
 		local v = M.value(item, def.key)
@@ -914,6 +1184,8 @@ function M.text(key, value)
 	value = floor(tonumber(value) or 0)
 	if def.text then
 		return string.format(def.text, value)
+	elseif def.fmt == "permille" then
+		return string.format("%s +%.1f%%", def.label, value / 10) -- tenths of a percent: 4 shows as 0.4%
 	elseif def.fmt == "flat" then
 		return string.format("%s +%d", def.label, value)
 	elseif def.fmt == "less" then
@@ -1025,6 +1297,53 @@ function M.syncAttackSpeed(item)
 	end
 end
 
+-- Weapon Damage (O461, key weapondamage) is local to the weapon: its attack attribute (ITEM_ATTRIBUTE_ATTACK, what the engine
+-- hits with) is the attack it had without the modifier plus the modifier's percent, the way the Attack Speed modifier sets the
+-- weapon's own interval. The attack before the modifier is kept in "chaos_wdbase" so the number can be worked out again.
+local function weaponAttack(item)
+	local ok, v = pcall(function() return item:getAttribute(ITEM_ATTRIBUTE_ATTACK) end)
+	v = ok and tonumber(v) or 0
+	if v <= 0 then
+		local it = typeOf(item)
+		v = it and typeNumber(it, "getAttack") or 0
+	end
+	return v
+end
+
+-- give the weapon its attack without the modifier again (the modifier stays on the item)
+function M.unscaleWeapon(item)
+	if not ITEM_ATTRIBUTE_ATTACK then
+		return
+	end
+	local base = custom(item, M.WEAPON_BASE)
+	if base then
+		item:setAttribute(ITEM_ATTRIBUTE_ATTACK, floor(base))
+		pcall(function() item:removeCustomAttribute(M.WEAPON_BASE) end)
+	end
+end
+
+-- set the weapon's attack from its modifier: attack x (100 + percent) / 100, at least one more than without it. rebase: the
+-- attack now on the item is the new base (a fresh base bonus was just written over it)
+function M.syncWeaponDamage(item, rebase)
+	if not ITEM_ATTRIBUTE_ATTACK then
+		return
+	end
+	if rebase then
+		pcall(function() item:removeCustomAttribute(M.WEAPON_BASE) end)
+	end
+	local pct = M.value(item, "weapondamage")
+	if pct <= 0 then
+		M.unscaleWeapon(item)
+		return
+	end
+	local base = custom(item, M.WEAPON_BASE)
+	if not base then
+		base = weaponAttack(item)
+		item:setCustomAttribute(M.WEAPON_BASE, base)
+	end
+	item:setAttribute(ITEM_ATTRIBUTE_ATTACK, math.max(floor(base) + 1, floor(base * (100 + pct) / 100 + 1e-9)))
+end
+
 -- The player-level attack speed (engine patch 0078, Player:setAttackSpeedBonus): the passive tree's "attackSpeed" stat
 -- and the "gearspeed" modifier of rings, amulets and other worn pieces (the weapon's own "attackspeed" stays on the
 -- weapon, M.syncAttackSpeed). Each source reports its percent here; the sum is held at M.config.playerSpeedCap and handed
@@ -1105,10 +1424,15 @@ function M.set(item, key, value, tier)
 	end
 	if key == "attackspeed" then
 		M.syncAttackSpeed(item)
+	elseif key == "weapondamage" then
+		M.syncWeaponDamage(item)
 	end
 end
 
 function M.remove(item, key)
+	if key == "weapondamage" then
+		M.unscaleWeapon(item) -- before the value goes: the attack is its own again
+	end
 	item:removeCustomAttribute(M.attr(key))
 	M.removeTier(item, M.attr(key))
 	if key == "attackspeed" then
@@ -1144,7 +1468,9 @@ local function pick(rows, rand)
 	if total <= 0 then
 		return nil
 	end
-	local roll, acc = rand(1, total), 0
+	-- whole points for the random source (Lua 5.3 refuses a fraction); a half weight (Chaos Resistance, 1.5) counts in halves
+	local unit = total == floor(total) and 1 or 2
+	local roll, acc = rand(1, floor(total * unit + 0.5)) / unit, 0
 	for _, r in ipairs(rows) do
 		acc = acc + r.weight
 		if roll <= acc then
@@ -1253,18 +1579,102 @@ function M.totals(items, extra)
 	end
 	for key, value in pairs(extra or {}) do
 		if t[key] then
-			t[key] = t[key] + (tonumber(value) or 0)
+			if M.byKey[key] and M.byKey[key].stack == "max" then
+				t[key] = math.max(t[key], tonumber(value) or 0)
+			else
+				t[key] = t[key] + (tonumber(value) or 0)
+			end
 		end
 	end
 	for _, item in ipairs(items or {}) do
 		for _, m in ipairs(M.read(item)) do
-			t[m.key] = t[m.key] + m.value
+			if m.def.stack == "max" then
+				t[m.key] = math.max(t[m.key], m.value) -- the highest worn value counts (Execute)
+			else
+				t[m.key] = t[m.key] + m.value
+			end
 		end
 	end
 	for _, def in ipairs(M.config.mods) do
-		t[def.key] = clamp(t[def.key], 0, def.cap)
+		-- O461: most rows have no cap of their own any more; the rows that keep one (stage 2, the sources outside the roll pool)
+		t[def.key] = def.cap and clamp(t[def.key], 0, def.cap) or math.max(0, t[def.key])
 	end
 	return t
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- O471: the character caps on critical hits and penetration (config.crit, config.penetration)
+-- ---------------------------------------------------------------------------------------------------------------
+-- the totals the engine reads for a hit (chance in points, amount in percent) against the caps:
+-- {chance, amount (what counts), rawChance, rawAmount (what the sources give), chanceCap, amountCap, chanceCapped, amountCapped}
+-- Tools (tools/crit_reach.lua), the character sheet (passivetree_totals_core.lua) and the hit (data/scripts/chaos/crit_cap.lua)
+-- all read it.
+function M.critTotals(chance, amount)
+	local c = M.config.crit
+	chance, amount = math.max(0, tonumber(chance) or 0), math.max(0, tonumber(amount) or 0)
+	return {chance = math.min(chance, c.chanceCap), amount = math.min(amount, c.amountCap), rawChance = chance, rawAmount = amount,
+		chanceCap = c.chanceCap, amountCap = c.amountCap, chanceCapped = chance > c.chanceCap, amountCapped = amount > c.amountCap}
+end
+
+-- the share of the critical hits the engine rolls that stay critical hits: 1 up to the chance cap, cap / chance above it (the
+-- engine rolled at `chance`, the character is allowed `cap`, so the share the cap leaves out is struck off at random)
+function M.critKeep(chance)
+	chance = tonumber(chance) or 0
+	local cap = M.config.crit.chanceCap
+	if chance <= cap or chance <= 0 then
+		return 1
+	end
+	return cap / chance
+end
+
+-- the factor of a critical hit's damage when the engine added `amount` percent and the character is allowed the cap:
+-- (100 + cap) / (100 + amount) above the cap, 1 below. thinned = true: the hit stops being critical, the whole extra goes
+function M.critFactor(amount, thinned)
+	amount = math.max(0, tonumber(amount) or 0)
+	if thinned then
+		return 100 / (100 + amount)
+	end
+	local cap = M.config.crit.amountCap
+	if amount <= cap then
+		return 1
+	end
+	return (100 + cap) / (100 + amount)
+end
+
+-- the chance in points a scripted critical hit (Keen Edge, the quiver) may still have when the engine's chance is `engineChance`
+-- and the scripts before it rolled `before` points: the three are independent rolls, so the room is what keeps
+-- 1 - (1 - engine)(1 - before)(1 - own) at the cap, at least 0
+function M.critRoom(engineChance, before)
+	local cap = M.config.crit.chanceCap
+	local c = math.min(100, math.max(0, tonumber(engineChance) or 0))
+	local b = math.min(100, math.max(0, tonumber(before) or 0))
+	local have = 100 * (1 - (1 - c / 100) * (1 - b / 100))
+	if have >= cap - 1e-9 then
+		return 0
+	end
+	return (cap - have) / (1 - have / 100)
+end
+
+-- the damages of a critical hit the engine made at totals (chance, amount), cut to the caps: primary, secondary, state
+-- ("kept" under both caps, "cut" the extra cut to the amount cap, "thinned" the crit taken off). rand() = 0 .. 1 (math.random)
+function M.critHit(primary, secondary, chance, amount, rand)
+	local t = M.critTotals(chance, amount)
+	if not t.chanceCapped and not t.amountCapped then
+		return primary, secondary, "kept"
+	end
+	local thinned = t.chanceCapped and (rand or math.random)() >= M.critKeep(chance)
+	local f = M.critFactor(amount, thinned)
+	local function cut(v)
+		v = tonumber(v) or 0
+		local a = floor(math.abs(v) * f + 0.5)
+		return v < 0 and -a or a
+	end
+	return cut(primary), cut(secondary), thinned and "thinned" or (f < 1 and "cut" or "kept")
+end
+
+-- the points of elemental penetration the Sunder support may add to the items' `elepen` (the cap counts both together)
+function M.penLeft(elepen)
+	return math.max(0, M.config.penetration.cap - (tonumber(elepen) or 0))
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -1291,19 +1701,6 @@ function M.experience(exp, pct)
 	return floor((tonumber(exp) or 0) * (100 + (tonumber(pct) or 0)) / 100 + 1e-9)
 end
 
--- penetration: a hit that the monster's resistance r (percent) reduced, as if r were pen points lower (never below 0;
--- an immune monster stays immune). Same maths as the Sunder support (chaos_supports.lua S.penetrate).
-function M.penetrate(value, r, pen)
-	r, pen = tonumber(r) or 0, tonumber(pen) or 0
-	if r <= 0 or r >= 100 or pen <= 0 then
-		return value
-	end
-	local rNew = math.max(0, r - pen)
-	local raw = math.abs(value) * 100 / (100 - r)
-	local a = floor(raw * (100 - rNew) / 100 + 1e-6)
-	return value < 0 and -a or a
-end
-
 -- damage per tick of an ailment caused by a hit of `hit` (whole points, at least 1)
 function M.ailmentTick(hit)
 	local a = M.config.ailment
@@ -1324,6 +1721,40 @@ end
 -- health a regeneration total gives per tick of `ms`
 function M.regenAmount(perSecond, ms)
 	return floor((tonumber(perSecond) or 0) * (tonumber(ms) or M.config.regenEvery) / 1000 + 1e-9)
+end
+
+-- Mana Regeneration: `pct` percent more of the vocation's own regeneration (gainAmount points every gainTicks ms) over a tick
+-- of `ms`. frac = the part of a point the last tick could not give; returns the whole points now and the new part.
+function M.manaRegenAmount(gainAmount, gainTicks, pct, ms, frac)
+	gainAmount, gainTicks, pct = tonumber(gainAmount) or 0, tonumber(gainTicks) or 0, tonumber(pct) or 0
+	if gainAmount <= 0 or gainTicks <= 0 or pct <= 0 then
+		return 0, tonumber(frac) or 0
+	end
+	local exact = gainAmount * (tonumber(ms) or M.config.regenEvery) / gainTicks * pct / 100 + (tonumber(frac) or 0)
+	local whole = floor(exact + 1e-9)
+	return whole, math.max(0, exact - whole)
+end
+
+-- Life and Mana Leech: what a hit of `damage` gives back at `tenths` tenths of a percent (0.4% = 4). state.frac keeps the part
+-- of a point that did not fit, so a small leech on small hits is not lost to rounding. Returns whole points.
+function M.leechGain(state, damage, tenths)
+	local exact = math.abs(tonumber(damage) or 0) * (tonumber(tenths) or 0) / 1000 + (state.frac or 0)
+	local whole = floor(exact + 1e-9)
+	state.frac = math.max(0, exact - whole)
+	return whole
+end
+
+-- hold the recovery of one player under config.leech.maxPct of the maximum per config.leech.windowMs: state = {t0, got} (the
+-- window start and what it gave so far), now = ms. Returns how much of `want` may be given now.
+function M.leechLimit(state, now, maxValue, want)
+	local L = M.config.leech
+	if not state.t0 or now < state.t0 or now - state.t0 >= L.windowMs then -- (a clock that went back starts a new window)
+		state.t0, state.got = now, 0
+	end
+	local room = math.max(0, floor((tonumber(maxValue) or 0) * L.maxPct / 100 + 1e-9) - (state.got or 0))
+	local give = math.max(0, math.min(floor(tonumber(want) or 0), room))
+	state.got = (state.got or 0) + give
+	return give
 end
 
 -- the legendary powers are modifiers of this file too (chaos_powers.lua adds them to M.config.mods)

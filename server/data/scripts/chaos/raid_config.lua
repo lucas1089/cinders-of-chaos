@@ -86,7 +86,9 @@ return {
 	-- the balance model (raid_core.lua killTime): refDps of a well-geared level 1000 character (uber_config.lua model),
 	-- uptime = share of the fight spent hitting the boss (mechanics move you); a fifth of a raid heals or tanks at
 	-- supportShare of the damage
-	model = {refDps = 3000, uptime = 0.75, supportEvery = 5, supportShare = 0.6},
+	-- O475 (2026-11-10): refDps 3000 -> 6900, the Omen guardian factor x2.30 (tools/boss_length_model.py); the raid bosses keep their health
+	-- and so fight 2.3 times shorter in the model: the enrage times stay above them (README "Final re-fit of the balance round (O475)")
+	model = {refDps = 6900, uptime = 0.75, supportEvery = 5, supportShare = 0.6},
 
 	-- ------------------------------------------------------------------ fallen players
 	-- a lethal hit inside the raid is caught: the player lands in the entry hall, healed, and cannot come back into a
@@ -228,7 +230,7 @@ return {
 		slots = 5,
 		pool = {
 			{key = "v_helm", kind = "gear", name = "Sepulchre Warden Helm", price = 120, weekly = 1,
-				id = 2491, itemKind = "helmet", rarity = 4, level = 130, mods = {{"monsterreduction", 7}, {"regen", 7}, {"lifeonkill", 7}}},
+				id = 2491, itemKind = "helmet", rarity = 4, level = 130, mods = {{"monsterreduction", 7}, {"maxlife", 7}, {"lifeonkill", 7}}}, -- O461: Maximum Life instead of Health Regeneration (not on helmets any more)
 			{key = "v_plate", kind = "gear", name = "Sepulchre Ashplate", price = 160, weekly = 1,
 				id = 2487, itemKind = "armor", rarity = 4, level = 130, mods = {{"monsterreduction", 7}, {"thorns", 7}, {"regen", 7}}},
 			{key = "v_legs", kind = "gear", name = "Sepulchre Greaves", price = 140, weekly = 1,

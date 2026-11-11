@@ -2,7 +2,7 @@
 """The PvP model (O444): how fast every class kills the median class and dies to it, and who wins a duel of two classes at the same
 level (COMPUTED, not measured: no PvP DPS test was ever run on a server; server/README.md "PvP model (O444)").
 
-usage: python3 -I server/tools/pvp_model.py [--levels 100,500,1000] [--matrix LEVEL [--heal]] [--detail] [--check]
+usage: python3 -I server/tools/pvp_model.py [--levels 100,500,1000] [--matrix LEVEL [--heal]] [--detail] [--check | --scale | --round-before]
 
 Output, per class and level (100, 500, 1000):
   burst     the damage the class deals in the first 3 seconds of a fight (its best Auto setup rotation from a cold start, rotation_sim.py
@@ -89,6 +89,9 @@ def config(text=None):
     head = body[0]
     for k, v in re.findall(r'(?m)^\t(\w+) = ([-0-9.]+)', head):
         out[k] = float(v)
+    # O473: the PvP damage scale, {level, factor} rows (pvp_scale_core.lua applies it in the game, once, for every path)
+    ds = re.search(r'damageScale = \{(\{.*?\})\},?\s*\n', head)
+    out['damageScale'] = [(int(a), float(b)) for a, b in re.findall(r'\{(\d+), ([0-9.]+)\}', ds.group(1))] if ds else []
     out['exceptions'] = {}
     if len(body) > 1:
         for cls, row in re.findall(r'\["([^"]+)"\] = \{([^}]*)\}', body[1]):
@@ -162,9 +165,10 @@ def layers(levels):
     return _CACHE[key]
 
 
-def inputs(levels):
-    """everything the model reads, once: {'dps': {(class, level): damage per second, 1 target}, 'burst': ..., 'layers': ...}"""
-    return {'dps': {(c, lv): CD.dps(c, lv)[0] for c in NAMES for lv in levels}, 'burst': burst_factors(levels),
+def inputs(levels, rnd=True):
+    """everything the model reads, once: {'dps': {(class, level): damage per second, 1 target}, 'burst': ..., 'layers': ...}.
+    rnd (O475): the class damage after the balance round (class_dps_model.dps); rnd=False is the damage before it"""
+    return {'dps': {(c, lv): CD.dps(c, lv, rnd=rnd)[0] for c in NAMES for lv in levels}, 'burst': burst_factors(levels),
             'layers': layers(levels)}
 
 
@@ -214,7 +218,7 @@ def median_layers(lays):
                                                                   'toughness', 'guard', 'heal')}
 
 
-def solve(data, cfg, rule, levels=None):
+def solve(data, cfg, rule, levels=None, scaled=True):
     """{level: {'rows': {class: row}, 'matrix': {(a, b): verdict for a, damage race}, 'matrixHeal': {...with healing}, 'median': {...}}}.
     The damage race has no healing: it is the question "who is ahead after the burst", the one the limits are about. With healing
     the potions (one Everfull potion a second, survival_balance_config.lua) out-heal what a class deals to a player, so every
@@ -225,7 +229,10 @@ def solve(data, cfg, rule, levels=None):
     out = {}
     for lv in levels:
         lays = {c: data['layers'][(c, lv)] for c in NAMES}
-        dps = {c: data['dps'][(c, lv)] for c in NAMES}
+        # O475: a player's damage to another player is x the PvP scale of the attacker's level (pvp_scale_core.lua); a duel is two
+        # players of one level. scaled=False leaves it out (the state before the round, --round-before)
+        scale = damage_scale(lv, cfg) if scaled else 1.0
+        dps = {c: data['dps'][(c, lv)] * scale for c in NAMES}
         med = median_layers(lays.values())
         med_dps = statistics.median(dps.values())
         med_pool = med['pool']
@@ -298,6 +305,49 @@ def problems(res, cfg):
                 v, lim = value(t['rows'][c], m), limit(cfg, c, m, lv)
                 if not passes(m, v, lim):
                     bad.append('%s level %d, %s: %s against the limit %s' % (c, lv, m, fmt(v), fmt(lim)))
+    return bad + scale_problems(cfg)
+
+
+def damage_scale(level, cfg):
+    """the PvP damage scale of an attacker's level (pvp_scale_core.lua: geometric between two rows, flat outside). Applied to the
+    damage of this model since O475 (solve(scaled=True)): the class damage is the typical damage after the round, the scale
+    brings the seconds to kill back to the model before the round (fit_scale() below, server/README.md "Final re-fit (O475)")."""
+    rows = cfg.get('damageScale') or []
+    if not rows:
+        return 1.0
+    if level <= rows[0][0]:
+        return rows[0][1]
+    if level >= rows[-1][0]:
+        return rows[-1][1]
+    for (l0, f0), (l1, f1) in zip(rows, rows[1:]):
+        if level <= l1:
+            return math.exp(math.log(f0) + (math.log(f1) - math.log(f0)) * (level - l0) / float(l1 - l0))
+    return rows[-1][1]
+
+
+def fit_scale(level):
+    """the scale that holds the seconds to kill of the median class where they were before the round: the median class damage
+    before / after at the level (one target; the layers of the defender are the same before and after, so the seconds to kill
+    move with the damage alone)"""
+    return CD.median_dps(level, rnd=False)[0] / CD.median_dps(level)[0]
+
+
+def scale_problems(cfg):
+    """the shape of the scale table: ascending levels, factors in (0, 2]"""
+    rows = cfg.get('damageScale') or []
+    bad = []
+    if not rows:
+        bad.append('damageScale: no table in pvp_balance_config.lua')
+    for (l0, _), (l1, _) in zip(rows, rows[1:]):
+        if l1 <= l0:
+            bad.append('damageScale: levels do not ascend at %d' % l1)
+    for lv, f in rows:
+        if not 0 < f <= 2.0:
+            bad.append('damageScale: the factor at level %d is %s, not in (0, 2]' % (lv, f))
+        # O475: the table is the fit that holds the duels where they were before the round (fit_scale), within 1.5%
+        if abs(f / fit_scale(lv) - 1) > 0.015:
+            bad.append('damageScale: the factor at level %d is %s, the fit is %.3f (python3 -I server/tools/pvp_model.py --scale)' % (
+                lv, f, fit_scale(lv)))
     return bad
 
 
@@ -371,6 +421,16 @@ def main(argv):
     cfg = config()
     levels = [int(x) for x in argv[argv.index('--levels') + 1].split(',')] if '--levels' in argv else cfg['levels']
     rule = rules()
+    if '--scale' in argv:
+        print('level  median dps before  after  scale (fit)  seconds to kill the median class: before / after with the scale')
+        for lv in (100, 200, 300, 500, 700, 850, 1000, 1500, 2000):
+            b, a = CD.median_dps(lv, rnd=False)[0], CD.median_dps(lv)[0]
+            f = fit_scale(lv)
+            print('%5d  %17.0f %6.0f  %.3f  (table %.3f)' % (lv, b, a, f, damage_scale(lv, cfg)))
+        return 0
+    if '--round-before' in argv:
+        report(solve(inputs(levels, rnd=False), cfg, rule, levels, scaled=False), '--detail' in argv)
+        return 0
     data = inputs(levels)
     res = solve(data, cfg, rule, levels)
     if '--matrix' in argv:

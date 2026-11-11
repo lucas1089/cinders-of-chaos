@@ -144,6 +144,7 @@ local function rareItem(id, r, mods)
 	local it = put(newItem(id))
 	it:setCustomAttribute("rarity", r)
 	it:setCustomAttribute("combatPowerLevel", 42)
+	it:setCustomAttribute("chaos_modv", 3) -- numbers of O461: nothing to upgrade when read (tests/modifier_upgrade_test.lua does the upgrade)
 	for k, v in pairs(mods or {}) do
 		it:setCustomAttribute(k, v)
 	end
@@ -155,19 +156,22 @@ end
 local sword = rareItem(2400, 4, {rarity_physicalAbsorb = 2, rarity_swordSkill = 1, rarity_criticalHitChance = 2,
 	rarity_criticalHitAmount = 2, rarity_elementfire = 7})
 local mods = C.readMods(sword)
-eq(#mods, 4, "critical chance + amount is ONE modifier")
+eq(#mods, 5, "critical chance and critical damage are TWO modifiers since O461")
 eq(mods[1].group, "absorb")
-eq(mods[3].group, "special")
+eq(mods[3].group, "single")
+eq(mods[4].group, "single")
 eq(mods[1].side, "suffix", "absorbs are suffixes (resistances)")
 eq(mods[2].side, "prefix", "combat skills are prefixes (damage)")
-eq(mods[3].side, "prefix", "critical is a prefix")
-eq(mods[4].side, "prefix", "element damage is a prefix")
+eq(mods[3].side, "prefix", "critical chance is a prefix")
+eq(mods[4].side, "prefix", "critical damage is a prefix")
+eq(mods[5].side, "prefix", "element damage is a prefix")
 eq(mods[1].tier, 2, "Physical +2%: T2 (1-2) from the value")
-eq(mods[3].tier, 2, "the pair's tier from its amount (2: T2)")
-eq(mods[4].tier, 3, "Fire +7% dmg: T3 (5-9)")
-eq(mods[4].lo, 5); eq(mods[4].hi, 9)
+eq(mods[3].tier, 1, "Critical Strike Chance +2: T1 (2-2 points)")
+eq(mods[4].tier, 1, "Critical Strike Damage +2: T1 holds it as the lowest tier (8-12)")
+eq(mods[5].tier, 3, "Fire +7% dmg: T3 (5-9)")
+eq(mods[5].lo, 5); eq(mods[5].hi, 9)
 eq(sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION),
-	"Item Level: 42. Prefixes: Melee +1 (T1); Critical Chance +2%, Critical Hit +2% (T2); Fire +7% dmg (T3). " ..
+	"Item Level: 42. Prefixes: Melee +1 (T1); Critical Strike Chance +2% (T1); Critical Strike Damage +2% (T1); Fire +7% dmg (T3). " ..
 	"Suffixes: Physical +2% (T2)", "item level, prefixes and suffixes with their tiers")
 eq(C.rarityOf(sword), 4)
 eq(C.rarityName(4), "Rare")
@@ -177,8 +181,12 @@ eq(C.rarityOf(rareItem(2466, 9, {})), 5, "an old Eternal: stored id 5")
 eq(C.rarityOf(rareItem(2466, 12, {})), 10, "an old Celestial: stored id 10")
 eq(C.levelOf(sword), 42, "an old item's level: combatPowerLevel")
 -- keys are case-insensitive like the engine's (the stock equip script reads rarity_FireAbsorb)
-local fireArmor = rareItem(2466, 2, {rarity_FireAbsorb = 1})
+local fireArmor = rareItem(2466, 2, {rarity_FireAbsorb = 1, chaos_unique = 1}) -- a unique is never upgraded: the row stays
 eq(C.readMods(fireArmor)[1].label, "Fire", "rarity_FireAbsorb is the fire absorb")
+-- an item that is not fixed is upgraded when it is read (O464): the fire absorb became the Fire Resistance modifier
+local fireArmor2 = rareItem(2466, 2, {rarity_FireAbsorb = 1})
+fireArmor2:setCustomAttribute("chaos_modv", 2)
+eq(C.readMods(fireArmor2)[1].label, "Fire Resistance", "rarity_FireAbsorb read on an item that is upgraded: Fire Resistance")
 -- old values above every range: the top tier
 local big = rareItem(2400, 15, {rarity_elementholy = 40})
 eq(C.readMods(big)[1].tier, 8, "an old +40% element: T8")
@@ -190,7 +198,7 @@ eq(C.unshield(shielded), true); eq(shielded:getCustomAttribute("rarity"), 3); eq
 
 -- ---------------------------------------------------------------- the affix list
 local aff = C.affixes()
-eq(#aff, 10 + 15 + 3 + #M.config.mods + 8, "every type once")
+eq(#aff, 10 + 15 + 2 + 2 + #M.config.mods + 8, "every type once: 10 absorbs, 15 skills, 2 leech pairs (retired), 2 critical modifiers, the Lua modifiers, 8 elements")
 local seen = {}
 for _, a in ipairs(aff) do
 	assert(not seen[a.key:lower()], "unique key " .. a.key)
@@ -278,11 +286,11 @@ eq(ok, true, "exalted on armor")
 eq(res.added.key, "rarity_physicalAbsorb")
 eq(res.added.tier, 3, "T3: the best tier item level 42 allows (lowest dice)")
 eq(armor:getCustomAttribute("ct_rarity_physicalabsorb"), 3, "tier stored")
-eq(armor:getCustomAttribute("rarity_physicalAbsorb"), 3, "the lowest value of T3 (3-5 since the ranges were raised)")
-eq(res.text, "Golden Armor of Sanctity gained Physical +3% (T3) (suffix).")
-eq(armor:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Suffixes: Physical +3% (T3); Holy +2% (T2)")
--- the tier roll: highest dice = the last row (T1)
-dice = {1, 270, 1}
+eq(armor:getCustomAttribute("rarity_physicalAbsorb"), 4, "the value of T3 (4-4 since O464: the physical reduction ladder 2-2 .. 7-8)")
+eq(res.text, "Golden Armor of Sanctity gained Physical +4% (T3) (suffix).")
+eq(armor:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Suffixes: Physical +4% (T3); Holy +2% (T2)")
+-- the tier roll: highest dice = the last row (T1). O471: the weights are 1.35^(t-1), T3 182 + T2 135 + T1 100 = 417
+dice = {1, 417, 1}
 ok, res = C.apply("exalted", armor)
 eq(res.added.tier, 1, "highest tier dice: T1")
 eq(res.added.key, "rarity_fistSkill", "two suffixes on a Rare item: the first prefix")
@@ -417,7 +425,7 @@ for _, case in ipairs({{2400, 1, 10}, {2400, 9, 75}, {2466, 15, 150}, {2400, 15,
 		local top = M.maxTierFor(case[3])
 		local elements = 0
 		for _, m in ipairs(fm) do
-			assert(m.tier <= top and m.tier > top - M.config.tierWindow, "tier allowed at item level " .. case[3])
+			assert(m.tier <= top and m.tier >= (m.affix.minTier or 1), "tier allowed at item level " .. case[3] .. " (O461: every tier up to the level's best, none below the modifier's own gate)")
 			local r = m.affix.tiers[m.tier]
 			local v = m.group == "special" and m.value2 or m.value
 			assert(v >= r[1] and v <= r[2], m.key .. " value in its tier")
@@ -483,7 +491,7 @@ for _, m in ipairs(C.readMods(rr)) do
 end
 C.rerollTiers(rr, function(a, b) return b end)
 for _, m in ipairs(C.readMods(rr)) do
-	eq(m.tier, 4, "highest tier dice at 150: T4")
+	eq(m.tier, m.affix.minTier or 1, "highest tier dice at 150: T1 (O461: no window), or the modifier's own gate")
 end
 
 -- ---------------------------------------------------------------- orbs v2: an orb with rules of its own
@@ -512,14 +520,14 @@ C.orbByKey.testorb, C.orbById[30001] = nil, nil
 local d = C.describe(sword)
 eq(d.rarityName, "Rare")
 eq(d.maxMods, 4)
-eq(#d.mods, 4)
+eq(#d.mods, 5, "O461: the critical pair is two modifiers")
 eq(d.mods[1].side, "prefix", "prefixes first")
 eq(d.mods[#d.mods].side, "suffix")
 eq(d.mods[1].tier, 1)
-eq(d.prefixes[1], 3); eq(d.prefixes[2], 2, "an old item may carry more than today's limit")
+eq(d.prefixes[1], 4); eq(d.prefixes[2], 2, "an old item may carry more than today's limit")
 eq(d.suffixes[1], 1)
 eq(d.level, 42); eq(d.maxTier, 3)
-eq(d.orbs.exalted, C.reasons.full, "four of four")
+eq(d.orbs.exalted, C.reasons.full, "five of four")
 eq(d.orbs.transmutation, C.reasons.needNormal)
 local sig = C.signature(sword)
 dice = {1}
@@ -532,7 +540,7 @@ eq(pv.preview.chaos, "stays Rare, item level 42: 4 new modifiers, T1-T3")
 eq(pv.preview.transmutation, "", "no preview for an orb that does not fit")
 local pn = put(newItem(2400))
 pn:setCustomAttribute("chaos_ilvl", 150)
-eq(C.describe(pn).preview.alchemy, "Magic 60%, Rare 30%, Legendary 10%; item level 150: T4-T8")
+eq(C.describe(pn).preview.alchemy, "Magic 60%, Rare 30%, Legendary 10%; item level 150: T1-T8")
 
 -- attack speed is the weapon's own interval (ITEM_ATTRIBUTE_ATTACK_SPEED); removing it gives the base back
 ITEM_ATTRIBUTE_ATTACK_SPEED = 99

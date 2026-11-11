@@ -666,22 +666,12 @@ local function monsterListed(monsters, name)
 	return false
 end
 
--- linear between points {{x, y}, ...} (sorted by x), flat beyond the ends
-local function curveAt(points, x)
-	if type(points) ~= "table" or #points == 0 then
-		return 0
-	end
-	if x <= points[1][1] then
-		return points[1][2]
-	end
-	for i = 2, #points do
-		local a, b = points[i - 1], points[i]
-		if x <= b[1] then
-			return a[2] + (b[2] - a[2]) * (x - a[1]) / (b[1] - a[1])
-		end
-	end
-	return points[#points][2]
+-- linear between points {{x, y}, ...} (sorted by x), flat beyond the ends; the window rule and the curve live in
+-- unique_window_core.lua (the Codex, the wiki and the Item Finder read the same ones, O467)
+if not ChaosUniqueWindow then
+	dofile("data/scripts/chaos/unique_window_core.lua")
 end
+local curveAt = ChaosUniqueWindow.curveAt
 
 -- O342: the multiplier of a leveling unique (no minMonsterLevel, not boss-only, an item `level` up to
 -- unique.openLevel.maxItemLevel) on a monster that does not list it: any monster whose level lies in the window around the
@@ -689,15 +679,12 @@ end
 -- aboveFlat. nil = outside the window (or the rule is off): the name list holds.
 function L.openLevelMult(e, monsterLevel)
 	local o = cfg().unique.openLevel
-	local lv = tonumber(e.level)
 	monsterLevel = tonumber(monsterLevel)
-	if not (o and o.enabled and lv and lv > 0 and monsterLevel and monsterLevel > 0) then
+	local lo, hi = ChaosUniqueWindow.range(o, e)
+	if not (lo and monsterLevel and monsterLevel > 0) then
 		return nil
 	end
-	if e.bossOnly or e.minMonsterLevel or lv > (tonumber(o.maxItemLevel) or 0) then
-		return nil
-	end
-	if monsterLevel < lv * (1 - (tonumber(o.below) or 0)) or monsterLevel > lv * (tonumber(o.above) or 1) + (tonumber(o.aboveFlat) or 0) then
+	if monsterLevel < lo or monsterLevel > hi then
 		return nil
 	end
 	local m = curveAt(o.mult, monsterLevel)
@@ -1540,6 +1527,9 @@ local function processKill(monster, corpse)
 			announce(owner, corpsePos,
 				ChaosI18n.msg(u.broadcastText, owner:getName(), e.name),
 				ChaosI18n.msg(u.message, Chaos.monsterNameDescription(monster), e.name))
+			if ChaosUniqueIntro then -- O467: what a unique is, once per character
+				pcall(ChaosUniqueIntro.found, owner)
+			end
 		end
 	end
 

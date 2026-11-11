@@ -1556,6 +1556,10 @@ return {
 		-- Everfull potions (potions.lua, data/lib/chaos_potions.lua)
 		["You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."] =
 			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas nunca acabam.",
+		-- the upgrade hint (potions_core.lua hintMessage, data/lib/chaos_potions.lua hint; O465)
+		["Potion upgrade"] = "Melhoria de poção",
+		["Your Everfull potion can be upgraded: %s. Ask %s in the hub, or buy the swap in the store. How it works explains it: open Help Search (Alt+F) and type \"potion\"."] =
+			"Sua poção Everfull pode ser melhorada: %s. Fale com %s no hub, ou compre a troca na loja. Como funciona explica: abra Buscar Ajuda (Alt+F) e digite \"poção\".",
 		-- Everfull potion tiers (potions.lua, data/lib/chaos_potions.lua, Veyra the Apothecary; O245)
 		["Only characters of level %d or above may drink this fluid."] =
 			"Só personagens de nível %d ou mais podem beber este líquido.",
@@ -2161,6 +2165,12 @@ return {
 			"Você precisa estar numa zona de proteção para abrir um rift.",
 		["You need level %d to open an omen arena."] = "Você precisa do nível %d para abrir uma arena de omen.",
 		["You need level %d to open a tier %d rift."] = "Você precisa do nível %d para abrir um rift tier %d.",
+		["Warning: this rift is above your level (recommended %d alone). Its guardian hits very hard: two hits can kill. Bring a party or use a lower tier key."] =
+			"Aviso: este rift está acima do seu nível (recomendado: %d sozinho). O guardião bate muito forte: dois golpes podem matar. Leve um grupo ou use uma chave de tier menor.",
+		["Warning: this rift is above your level (recommended %d alone). Its guardian hits very hard: two hits can kill. Its modifiers make monsters hit harder. Bring a party or use a lower tier key."] =
+			"Aviso: este rift está acima do seu nível (recomendado: %d sozinho). O guardião bate muito forte: dois golpes podem matar. Os modificadores fazem os monstros baterem mais forte. Leve um grupo ou use uma chave de tier menor.",
+		["Tip: a guardian hits very hard below the recommended level (%d alone): two hits can kill. Bring a party or use a lower tier key next time."] =
+			"Dica: um guardião bate muito forte abaixo do nível recomendado (%d sozinho): dois golpes podem matar. Da próxima vez, leve um grupo ou use uma chave de tier menor.",
 		["The rifts are still forming. Try again in a few seconds."] =
 			"Os rifts ainda estão se formando. Tente de novo em alguns segundos.",
 		["Every rift is open right now. Try again in a moment."] =
@@ -2745,6 +2755,8 @@ return {
 		["Attack speed: +%s%%"] = "Velocidade de ataque: +%s%%",
 		["Critical chance: %s%%"] = "Chance de crítico: %s%%",
 		["Critical damage: +%s%%"] = "Dano crítico: +%s%%",
+		["Critical chance: %s%% (cap; your sources give %s%%)"] = "Chance de crítico: %s%% (limite; suas fontes dão %s%%)",
+		["Critical damage: +%s%% (cap; your sources give +%s%%)"] = "Dano crítico: +%s%% (limite; suas fontes dão +%s%%)",
 		["Life leech: %s%% chance, %s%% of the hit"] = "Roubo de vida: %s%% de chance, %s%% do golpe",
 		["Mana leech: %s%% chance, %s%% of the hit"] = "Roubo de mana: %s%% de chance, %s%% do golpe",
 		["%s damage: +%s%%"] = "Dano %s: +%s%%",
@@ -2771,6 +2783,17 @@ return {
 		["Drowning"] = "Afogamento",
 		["Life drain"] = "Drenagem de vida",
 		["Mana drain"] = "Drenagem de mana",
+		-- the four resistances and the defence rows of the character sheet (O464, player_defence.lua)
+		["Cold"] = "Frio",
+		["Lightning"] = "Raio",
+		["Chaos"] = "Caos",
+		["Armor share against a typical hit: %s%%"] = "Armadura contra um golpe típico: %s%%",
+		["Physical reduction: %s%%"] = "Redução física: %s%%",
+		["Dodge: %s%%"] = "Esquiva: %s%%",
+		["Block: %s%%"] = "Bloqueio: %s%%",
+		["Spell suppression: %s%%"] = "Supressão de magia: %s%%",
+		["%s: %s%% (sources %s%%, level penalty -%s%%)"] = "%s: %s%% (fontes %s%%, penalidade de nível -%s%%)",
+		["Maximum resistance: %s%%"] = "Resistência máxima: %s%%",
 		["Fist Fighting"] = "Fist Fighting",
 		["Club Fighting"] = "Club Fighting",
 		["Sword Fighting"] = "Sword Fighting",
@@ -2859,6 +2882,24 @@ return {
 			"Quantidade de roubo de mana",
 		["All elements"] =
 			"Todos os elementos",
+		["Passive tree and Spell Damage"] =
+			"Árvore passiva e Spell Damage",
+		["Unique passives"] =
+			"Poderes únicos",
+		["Gems"] =
+			"Gemas",
+		["Spell masteries"] =
+			"Maestrias de magia",
+		["Card set"] =
+			"Conjunto de cartas",
+		["Charms"] =
+			"Charms",
+		["Weapon family"] =
+			"Família da arma",
+		["Paragon"] =
+			"Paragon",
+		["Charms and weapon family"] =
+			"Charms e família da arma",
 		["Physical damage"] =
 			"Dano físico",
 		["Fire damage"] =
@@ -3018,6 +3059,29 @@ return {
 			"Recebe essa porcentagem a menos de dano de mana drain, no máximo 75%.",
 		["Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each."] =
 			"Soma essa porcentagem à resistência de todos os elementos (fogo, gelo, energia, terra, morte, sagrado, água, arcano), no máximo 75 por cento cada.",
+		-- O464: the tree counts half of a resistance point, at most 30 (passivetree_stats_config.lua TREE_NOTE)
+		["Takes this percent less fire damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de fogo, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less ice damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de gelo, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less energy damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de energia, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less earth damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de terra, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less death damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de morte, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less holy damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano sagrado, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less arcane damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano arcano, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less water damage, at most 75 percent (gear adds on top). In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de água, no máximo 75 por cento (o equipamento soma por cima). Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less life drain damage, at most 75%. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de life drain, no máximo 75%. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Takes this percent less mana drain damage, at most 75%. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Recebe essa porcentagem a menos de dano de mana drain, no máximo 75%. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
+		["Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each. In the resistance of its group a point counts as half a point, and the tree gives at most 30."] =
+			"Soma essa porcentagem à resistência de todos os elementos (fogo, gelo, energia, terra, morte, sagrado, água, arcano), no máximo 75 por cento cada. Na resistência do seu grupo, um ponto vale meio ponto, e a árvore dá no máximo 30.",
 		["Raises your crafting skill; no combat effect."] =
 			"Aumenta seu skill de criação; sem efeito em combate.",
 		["Raises your armorsmith skill; no combat effect."] =
@@ -3724,8 +3788,8 @@ return {
 			"Conjunto de cartas %s desativado.",
 		["It counts for the %s card set. With %s cards of one element, one for each spell you cast, you get a bonus."] =
 			"Conta para o conjunto de cartas %s. Com %s cartas de um elemento, uma para cada magia que você lança, você ganha um bônus.",
-		["Your %s damage is %s%% higher."] =
-			"Seu dano de %s é %s%% maior.",
+		["Your %s damage: +%s%% increased damage (a card set adds at most 4 to the one damage pool)."] =
+			"Seu dano de %s: +%s%% de dano aumentado (um conjunto de cartas soma no máximo 4 ao conjunto de dano).",
 		["Your %s hits slow the target by %s%% for %s seconds."] =
 			"Seus golpes de %s reduzem a velocidade do alvo em %s%% por %s segundos.",
 		["Your %s hits poison the target for %s%% of the hit over %s seconds."] =
@@ -5663,14 +5727,14 @@ return {
 		["Reach level 600"] = "Chegue ao nível 600",
 		["Reach level 800"] = "Chegue ao nível 800",
 		["Achievement \"Edge of Ruin\" (seal a tier 10 rift)"] = "Conquista \"Edge of Ruin\" (sele um rift de tier 10)",
-		["Damage to Dragons"] = "Dano a Dragões",
-		["Damage to Demons"] = "Dano a Demônios",
-		["Damage to Undead"] = "Dano a Mortos-vivos",
-		["Damage to Humans"] = "Dano a Humanos",
-		["Damage to Humanoids"] = "Dano a Humanoides",
-		["Damage to Beasts"] = "Dano a Feras",
-		["Damage to Elementals"] = "Dano a Elementais",
-		["Damage to Insects and Arachnids"] = "Dano a Insetos e Aracnídeos",
+		["Increased damage to Dragons"] = "Dano aumentado a Dragões",
+		["Increased damage to Demons"] = "Dano aumentado a Demônios",
+		["Increased damage to Undead"] = "Dano aumentado a Mortos-vivos",
+		["Increased damage to Humans"] = "Dano aumentado a Humanos",
+		["Increased damage to Humanoids"] = "Dano aumentado a Humanoides",
+		["Increased damage to Beasts"] = "Dano aumentado a Feras",
+		["Increased damage to Elementals"] = "Dano aumentado a Elementais",
+		["Increased damage to Insects and Arachnids"] = "Dano aumentado a Insetos e Aracnídeos",
 		["Fire Resistance"] = "Resistência a fogo",
 		["Ice Resistance"] = "Resistência a gelo",
 		["Energy Resistance"] = "Resistência a energia",
@@ -5840,6 +5904,16 @@ return {
 		-- O260: the first unique, the drop feed, the personal records
 		["Something heavy and old lies in the corpse: %s. It is yours."] = "Algo pesado e antigo jaz no corpo: %s. É seu.",
 		["%s (Lv %d) found %s!"] = "%s (Nv %d) encontrou %s!",
+		-- O467: a unique explains itself (unique_passives_core.lua C.fitText: the line under the passive of a unique's
+		-- tooltip; unique_intro_config.lua: the one-time line at the first unique)
+		["Works for your class."] = "Funciona para a sua classe.",
+		["Works for every class."] = "Funciona para todas as classes.",
+		["Asleep: your class is not in its list."] = "Inativo: a sua classe não está na lista.",
+		["Active."] = "Ativo.",
+		["Asleep: %s is stronger."] = "Inativo: %s é mais forte.",
+		["Asleep: only %d unique powers work at once."] = "Inativo: só %d poderes únicos funcionam ao mesmo tempo.",
+		["A unique is a named item with fixed stats and one power of its own. Right-click it and choose Open in Codex to see what it does."] =
+			"Um único é um item com nome, atributos fixos e um poder próprio. Clique com o botão direito e escolha Abrir no Codex para ver o que ele faz.",
 		["Nobody can speak in the Drops channel."] = "Ninguém pode falar no canal Drops.",
 		["New record: %s: %s (was %s)"] = "Novo recorde: %s: %s (era %s)",
 		["Best Drop Rarity"] = "Melhor raridade de drop",
@@ -7188,14 +7262,14 @@ return {
 			"Invoca 2 lobos (3 a partir do nível 200) por 40 s.",
 		["Thorns erupt around the target for 3 pulses, rooting enemies in a 3x3 for 5s."] =
 			"Espinhos brotam ao redor do alvo por 3 pulsos, prendendo os inimigos num 3x3 por 5 s.",
-		["Toxic cloud around the caster, poisons everything it hits."] =
-			"Nuvem tóxica ao redor do conjurador, envenena tudo que atinge.",
-		["A rotting dream settles on the target and eats at it for 6 s."] =
-			"Um sonho podre se assenta no alvo e o corrói por 6 s.",
+		["Toxic cloud around the caster, poisons everything it hits for 1.8 s; the poison moves to a nearby enemy if its target dies."] =
+			"Nuvem tóxica ao redor do conjurador, envenena tudo que atinge por 1,8 s; o veneno passa a um inimigo próximo se o seu alvo morrer.",
+		["A rotting dream settles on the target and eats at it for 2.4 s; it ignores armour and moves to a nearby enemy if the target dies."] =
+			"Um sonho podre se assenta no alvo e o corrói por 2,4 s; ignora a armadura e passa a um inimigo próximo se o alvo morrer.",
 		["A shared waking dream. The Illusionist and every party member within 7 sqm are healed 5 times, every 2 seconds (a heal over time that follows them: a member farther than 10 sqm or on another floor misses the pulse)."] =
 			"Um sonho desperto compartilhado. O Illusionist e todo membro do grupo a até 7 sqm são curados 5 vezes, a cada 2 segundos (uma cura ao longo do tempo que os acompanha: quem estiver a mais de 10 sqm ou em outro andar perde o pulso).",
-		["Death damage bolt, then a cursing damage-over-time and a short slow."] =
-			"Raio de dano de morte, depois um dano de maldição ao longo do tempo e uma lentidão curta.",
+		["Death damage bolt, then a cursing damage-over-time (30%% of the bolt's damage over 1.8 s) and a short slow."] =
+			"Raio de dano de morte, depois um dano de maldição ao longo do tempo (30%% do dano do raio em 1,8 s) e uma lentidão curta.",
 		["Up to 3 decoys wearing the caster's outfit, they vanish after 10s."] =
 			"Até 3 chamarizes com o visual do conjurador; somem depois de 10 s.",
 		["The Illusionist heals the most hurt party member within 7 sqm (or the one named: saen spek \"Name\"), and a mirror image of the heal mends the next most hurt (the Illusionist included) for 25%% of it. Without a hurt party member it heals the Illusionist."] =
@@ -7236,8 +7310,8 @@ return {
 			"Um grito que lança uma onda de choque 3 sqm à frente.",
 		["+30%% melee skill, -30%% shield skill for 12s."] =
 			"+30%% de habilidade corpo a corpo, -30%% de habilidade de escudo por 12 s.",
-		["A hooked blow at the target next to you that opens it; it bleeds for 5 s."] =
-			"Um golpe com gancho no alvo ao seu lado que o abre; ele sangra por 5 s.",
+		["A hooked blow at the target next to you that opens it; it bleeds for 2 s, ignores armour and moves to a nearby enemy if the target dies."] =
+			"Um golpe com gancho no alvo ao seu lado que o abre; ele sangra por 2 s, ignora a armadura e passa a um inimigo próximo se o alvo morrer.",
 		["Shockwave (5x5) that deals physical damage and staggers enemies (heavy slow for 3s)."] =
 			"Onda de choque (5x5) que causa dano físico e faz os inimigos cambalearem (lentidão forte por 3 s).",
 		["+40%% shielding for 12 s. No pacify and no lock on other spells: the weapon keeps swinging."] =
@@ -7282,8 +7356,10 @@ return {
 			"Uma palma aberta que envia uma onda sobre os 3 x 2 sqm à sua frente e gera 1 de chi.",
 		["A spinning kick that spends all chi and hits everything next to you."] =
 			"Um chute giratório que gasta todo o chi e atinge tudo ao seu lado.",
-		["A brand of blight that burns in the target for 6 s."] =
-			"Uma marca de praga que queima dentro do alvo por 6 s.",
+		["A brand of blight that burns in the target for 2.4 s; it ignores armour and moves to a nearby enemy if the target dies."] =
+			"Uma marca de praga que queima dentro do alvo por 2,4 s; ignora a armadura e passa a um inimigo próximo se o alvo morrer.",
+		["Rot the target's soul (range 6): heavy death damage every 0.4 s for 2.4 s, the first tick at once. If the target dies before the rot ends, the rest moves to a nearby enemy within 3 sqm. A recast on the same target restarts it."] =
+			"Apodreça a alma do alvo (alcance 6): dano de morte pesado a cada 0,4 s por 2,4 s, o primeiro pulso na hora. Se o alvo morrer antes do fim, o resto passa a um inimigo próximo a até 3 sqm. Um novo uso no mesmo alvo reinicia o efeito.",
 		["The bones of your target burst outward; it and every monster next to it are cut by the shards."] =
 			"Os ossos do alvo estouram para fora; ele e todo monstro ao lado dele são cortados pelos estilhaços.",
 		["Hurl a spear of bone at the target (range 5). Physical damage; the creature right behind the target (seen from you) takes half of it. The Necromancer line's filler."] =
@@ -7308,8 +7384,8 @@ return {
 			"Um raio que dilacera tudo numa linha de 6 sqm em direção ao alvo.",
 		["Bone shards that burst in a circle at the target."] =
 			"Estilhaços de osso que estouram num círculo no alvo.",
-		["Curse the target (range 6) for 12 s: it takes 15%% more damage from everyone and rots (death damage every second, 10 ticks). The Lich's curse amplifies by 25%%, rots harder and also curses up to 2 more enemies within 2 sqm of the target."] =
-			"Amaldiçoe o alvo (alcance 6) por 12 s: ele sofre 15%% mais dano de todos e apodrece (dano de morte a cada segundo, 10 pulsos). A maldição do Lich amplifica em 25%%, apodrece mais forte e também amaldiçoa até 2 inimigos a mais a até 2 sqm do alvo.",
+		["Curse the target (range 6) for 12 s: it takes 15%% more damage from everyone and rots (death damage every 0.25 s, 10 ticks, the first at once; the rot moves to a nearby enemy if the target dies). The Lich's curse amplifies by 25%%, rots harder and also curses up to 2 more enemies within 2 sqm of the target."] =
+			"Amaldiçoe o alvo (alcance 6) por 12 s: ele sofre 15%% mais dano de todos e apodrece (dano de morte a cada 0,25 s, 10 pulsos, o primeiro na hora; a podridão passa a um inimigo próximo se o alvo morrer). A maldição do Lich amplifica em 25%%, apodrece mais forte e também amaldiçoa até 2 inimigos a mais a até 2 sqm do alvo.",
 		["A cold wind of the dead over the 3 x 3 sqm in front of you."] =
 			"Um vento frio dos mortos sobre os 3 x 3 sqm à sua frente.",
 		["Step through the shadows behind your target and stab it."] =
@@ -7322,8 +7398,8 @@ return {
 			"Uma bomba que estoura numa nuvem ao redor do conjurador.",
 		["A volley that lands in a circle of 2 sqm around the target."] =
 			"Uma saraivada que cai num círculo de 2 sqm ao redor do alvo.",
-		["Consecrates the caster's tile for 6s. Each second holy damage hits enemies within 2 sqm and allies (party, own summons, caster) standing in it are healed a little."] =
-			"Consagra o quadrado do conjurador por 6 s. A cada segundo dano sagrado atinge os inimigos a até 2 sqm, e os aliados (grupo, invocados próprios, conjurador) que estiverem nele são curados um pouco.",
+		["Consecrates the ground around the caster for 6s, and the zone follows the caster. Each second holy damage hits enemies within 2 sqm of the caster, and allies (party, own summons, caster) within 2 sqm of the caster are healed a little."] =
+			"Consagra o chão ao redor do conjurador por 6 s, e a zona acompanha o conjurador. A cada segundo dano sagrado atinge os inimigos a até 2 sqm do conjurador, e os aliados (grupo, invocados próprios, conjurador) a até 2 sqm do conjurador são curados um pouco.",
 		["Cleanses harmful conditions and grants 8s of strong regeneration."] =
 			"Purifica condições nocivas e dá 8 s de regeneração forte.",
 		["A volley of arrows in a line 6 sqm long."] =
@@ -7396,18 +7472,18 @@ return {
 			"Três ondas (fogo, energia, fogo) saindo do conjurador numa área de 6x6.",
 		["Hits the target, then jumps to up to 3 more monsters within 3 sqm (full damage on every jump)."] =
 			"Atinge o alvo e salta para até 3 monstros a mais a até 3 sqm (dano total em cada salto).",
-		["A blood curse that burns the target for 6 s."] =
-			"Uma maldição de sangue que queima o alvo por 6 s.",
+		["A blood curse that burns the target for 2.4 s; it ignores armour and moves to a nearby enemy if the target dies."] =
+			"Uma maldição de sangue que queima o alvo por 2,4 s; ignora a armadura e passa a um inimigo próximo se o alvo morrer.",
 		["Ice burst around the caster, chills everything it hits."] =
 			"Explosão de gelo ao redor do conjurador, congela tudo que atinge.",
 		["Doomtide in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 13 s cooldown."] =
 			"Doomtide em gelo. Três ondas (gelo, energia, gelo) saindo do conjurador numa área de 6x6; a onda de energia no meio. Recarga de 13 s.",
 		["Freezing zone on the target's position, 6 pulses over 5s, enemies inside are heavily slowed."] =
 			"Zona gélida na posição do alvo, 6 pulsos em 5 s; os inimigos dentro ficam muito lentos.",
-		["Single target fire bolt that leaves the target burning."] =
-			"Raio de fogo em alvo único que deixa o alvo em chamas.",
-		["Marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze."] =
-			"Marca a posição do alvo; o meteoro cai 1,2 s depois (fogo, 5x5) e põe os inimigos em chamas.",
+		["Single target fire bolt that leaves the target burning for 1.8 s (30%% of the bolt's damage); the burn moves to a nearby enemy if the target dies."] =
+			"Raio de fogo em um alvo que o deixa queimando por 1,8 s (30%% do dano do raio); a queimadura passa a um inimigo próximo se o alvo morrer.",
+		["Marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze for 1.8 s (30%% of the meteor's damage)."] =
+			"Marca a posição do alvo, o meteoro cai 1,2 s depois (fogo, 5x5) e incendeia os inimigos por 1,8 s (30%% do dano do meteoro).",
 		["A bell tolls over the target; every enemy within 2 sqm of it takes holy damage."] =
 			"Um sino dobra sobre o alvo; todo inimigo a até 2 sqm dele sofre dano sagrado.",
 		["A swung censer; every enemy next to you takes holy damage."] =
@@ -7418,8 +7494,8 @@ return {
 			"Um corte abençoado no alvo ao seu lado, dano sagrado pela sua arma.",
 		["A lance of light through a line 5 sqm long towards the target."] =
 			"Uma lança de luz por uma linha de 5 sqm em direção ao alvo.",
-		["Holy fire that burns on the target for 5 s."] =
-			"Fogo sagrado que queima no alvo por 5 s.",
+		["Holy fire that burns on the target for 2 s; it ignores armour and moves to a nearby enemy if the target dies."] =
+			"Fogo sagrado que queima no alvo por 2 s; ignora a armadura e passa a um inimigo próximo se o alvo morrer.",
 		["A lash of penance over the 3 x 2 sqm in front of you."] =
 			"Um açoite de penitência sobre os 3 x 2 sqm à sua frente.",
 		["A hammer-blow of light on one target within 3 sqm. The Templar line's holy filler (cooldown 2 s)."] =
@@ -7452,8 +7528,8 @@ return {
 			"Aço que você não vê. Por 15 s sua habilidade corpo a corpo e à distância fica 20%% maior e você esquiva 10 pontos a mais de golpes de arma.",
 		["Throw a shuriken at one target; physical damage from your sword or distance skill."] =
 			"Arremesse um shuriken em um alvo; dano físico pela sua habilidade de espada ou de distância.",
-		["A coiled blade of venom; the target is poisoned for 5 s."] =
-			"Uma lâmina enrolada em veneno; o alvo fica envenenado por 5 s.",
+		["A coiled blade of venom; the target is poisoned for 2 s, and the poison ignores armour and moves to a nearby enemy if the target dies."] =
+			"Uma lâmina enrolada de veneno; o alvo fica envenenado por 2 s, e o veneno ignora a armadura e passa a um inimigo próximo se o alvo morrer.",
 		-- Spellbook: generated descriptions of the stock spells and the scaling text (spellbook.lua)
 		["Spells for Level %d"] = "Magias do Nível %d",
 		["Increases your speed."] = "Aumenta a sua velocidade.",
@@ -7622,6 +7698,19 @@ return {
 			"Death Blast: %d%% de chance ao matar de explodir",
 		["Dodge +%d%%"] =
 			"Esquiva +%d%%",
+		-- O464: the defence modifiers
+		["Armour +%d"] =
+			"Armadura +%d",
+		["Spell Suppression +%d%%"] =
+			"Supressão de magia +%d%%",
+		["Cold Resistance +%d%%"] =
+			"Resistência a frio +%d%%",
+		["Lightning Resistance +%d%%"] =
+			"Resistência a raio +%d%%",
+		["Chaos Resistance +%d%%"] =
+			"Resistência ao caos +%d%%",
+		["All Elemental Resistances +%d%%"] =
+			"Todas as resistências elementais +%d%%",
 		["Damage over Time +%d%%"] =
 			"Dano ao longo do tempo +%d%%",
 		["Echo Shot: %d%% chance on a ranged hit to shoot again"] =
@@ -7985,6 +8074,8 @@ return {
 			"Chão gelado sob os jogadores: %d%% da vida máxima por segundo e lentidão",
 		["Marked storm strikes near the players: %d%% of max health"] =
 			"Tempestades marcadas caem perto dos jogadores: %d%% da vida máxima",
+		["Players' maximum resistances are lowered by %d"] =
+			"As resistências máximas dos jogadores são reduzidas em %d",
 		["Modifiers:"] =
 			"Modificadores:",
 		["Rewards:"] =
@@ -8001,6 +8092,8 @@ return {
 			"+%d%% de experiência",
 		["Opens a rift of tier %d (level %d+)"] =
 			"Abre um rift de tier %d (nível %d+)",
+		["Recommended: level %d alone, or a party"] =
+			"Recomendado: nível %d sozinho, ou em grupo",
 		["Use it in a protection zone; your party within %d sqm comes along"] =
 			"Use numa zona de proteção; o seu grupo num raio de %d sqm vai junto",
 		["It hums with the name %s"] =
@@ -8684,22 +8777,22 @@ return {
 			"Você já tem %d das peças: elas ficam fora do preço",
 		["+%d days of Chaos Pact"] =
 			"+%d dias de Chaos Pact",
-		["Damage to Dragons +%d%%"] =
-			"Dano a Dragões +%d%%",
-		["Damage to Demons +%d%%"] =
-			"Dano a Demônios +%d%%",
-		["Damage to Undead +%d%%"] =
-			"Dano a Mortos-vivos +%d%%",
-		["Damage to Humans +%d%%"] =
-			"Dano a Humanos +%d%%",
-		["Damage to Humanoids +%d%%"] =
-			"Dano a Humanoides +%d%%",
-		["Damage to Beasts +%d%%"] =
-			"Dano a Feras +%d%%",
-		["Damage to Elementals +%d%%"] =
-			"Dano a Elementais +%d%%",
-		["Damage to Insects and Arachnids +%d%%"] =
-			"Dano a Insetos e Aracnídeos +%d%%",
+		["Increased damage to Dragons +%d%%"] =
+			"Dano aumentado a Dragões +%d%%",
+		["Increased damage to Demons +%d%%"] =
+			"Dano aumentado a Demônios +%d%%",
+		["Increased damage to Undead +%d%%"] =
+			"Dano aumentado a Mortos-vivos +%d%%",
+		["Increased damage to Humans +%d%%"] =
+			"Dano aumentado a Humanos +%d%%",
+		["Increased damage to Humanoids +%d%%"] =
+			"Dano aumentado a Humanoides +%d%%",
+		["Increased damage to Beasts +%d%%"] =
+			"Dano aumentado a Feras +%d%%",
+		["Increased damage to Elementals +%d%%"] =
+			"Dano aumentado a Elementais +%d%%",
+		["Increased damage to Insects and Arachnids +%d%%"] =
+			"Dano aumentado a Insetos e Aracnídeos +%d%%",
 		["Fire Resistance +%d%%"] =
 			"Resistência a fogo +%d%%",
 		["Ice Resistance +%d%%"] =
@@ -9002,11 +9095,16 @@ return {
 		["solo"] = "sozinho",
 		["party"] = "em grupo",
 		-- Weapon families (weapon_families_core.lua F.note, the weapon tooltip line, O454); the percent signs are %% as in a fixed text
-		["Sword: tempo. Each hit on the same target speeds up your swing, up to 20%% faster, and adds up to 2%% damage. Best on one target. A new target starts over."] =
-			"Espada: tempo. Cada golpe no mesmo alvo acelera o seu ataque, até 20%% mais rápido, e soma até 2%% de dano. Melhor contra um alvo. Um novo alvo recomeça.",
+		["Sword: tempo. Each hit on the same target speeds up your swing, up to 20%% faster, and adds up to +2%% increased damage. Best on one target. A new target starts over."] =
+			"Espada: tempo. Cada golpe no mesmo alvo acelera o seu ataque, até 20%% mais rápido, e soma até +2%% de dano aumentado. Melhor contra um alvo. Um novo alvo recomeça.",
 		["Axe: cleave. 14%% of each hit is split among the monsters next to the target. Costs 2.5%% damage on one target. Best in packs."] =
 			"Machado: golpe em arco. 14%% de cada golpe se divide entre os monstros ao lado do alvo. Custa 2,5%% de dano contra um alvo. Melhor contra grupos.",
 		["Club: impact. A hit has a 25%% chance to daze a monster: it cannot attack for 0.7 s, then rests for 3 s. A boss is only slowed. Costs 2.5%% damage on one target."] =
 			"Clava: impacto. Um golpe tem 25%% de chance de atordoar um monstro: ele não ataca por 0,7 s e depois descansa por 3 s. Um chefe só fica lento. Custa 2,5%% de dano contra um alvo.",
+		-- Player defence (player_defence.lua, the resistance penalty by level, O464)
+		["Warning: at level %d all your resistances drop by %d points. Raise them before you get there."] =
+			"Atenção: no nível %d todas as suas resistências caem %d pontos. Aumente-as antes de chegar lá.",
+		["Your resistances now carry a penalty of %d points (level %d). Raise them with gear and the passive tree."] =
+			"Suas resistências agora têm uma penalidade de %d pontos (nível %d). Aumente-as com equipamentos e a árvore passiva.",
 	},
 }

@@ -236,6 +236,7 @@ sword:setCustomAttribute("rarity", 4) -- Epic: tier 2
 sword:setCustomAttribute("combatPowerLevel", 37)
 sword:setCustomAttribute("rarity_physicalAbsorb", 2)
 sword:setCustomAttribute("rarity_swordSkill", 1)
+sword:setCustomAttribute("chaos_modv", 3) -- numbers of O461: read as they are, not upgraded (the upgrade has its own tests)
 sword:setCustomAttribute("rarity_criticalHitChance", 2)
 sword:setCustomAttribute("rarity_criticalHitAmount", 1)
 sword:setCustomAttribute("rarity_elementfire", 7)
@@ -256,11 +257,11 @@ do
 	eq(ct.desc, "An amplifier of the old badge rite.", "its description")
 end
 eq(tip.tier, nil, "no rarity tier any more")
-eq(tip.sides.p, 3) eq(tip.sides.s, 2) eq(tip.sides.max, 2, "Rare: two of each (an old item may carry more)")
+eq(tip.sides.p, 4, "skill, critical chance, critical damage, element") eq(tip.sides.s, 2) eq(tip.sides.max, 2, "Rare: two of each (an old item may carry more)")
 eq(tip.cmp[1], 6) eq(tip.cmp[2], 5)
 eq(tip.base[1].k, "attack") eq(tip.base[1].v, 50, "attack from the item, not the type")
 eq(tip.base[2].k, "defense") eq(tip.base[2].v, 35)
-eq(#tip.mods, 5, "absorb, skill, critical pair, Chaos modifier, element")
+eq(#tip.mods, 6, "absorb, skill, critical chance, critical damage (two modifiers since O461), Chaos modifier, element")
 local byKey = {}
 for _, m in ipairs(tip.mods) do
 	byKey[m.k] = m
@@ -270,8 +271,22 @@ eq(byKey.rarity_physicalAbsorb.tr, 2, "tier from the value (an old item)") eq(by
 eq(byKey.rarity_elementfire.lo, 5, "the range of its tier") eq(byKey.rarity_elementfire.hi, 9)
 eq(byKey.rarity_elementfire.tr, 3) eq(byKey.rarity_elementfire.sd, "p")
 eq(tip.mods[1].sd, "p", "prefixes first") eq(tip.mods[#tip.mods].sd, "s", "suffixes last")
-eq(byKey.rarity_criticalHitChance.t, "Critical Chance +2%, Critical Hit +1%")
-eq(byKey.rarity_criticalHitChance.v2, 1)
+eq(byKey.rarity_criticalHitChance.t, "Critical Strike Chance +2%") eq(byKey.rarity_criticalHitChance.g, "single")
+eq(byKey.rarity_criticalHitAmount.t, "Critical Strike Damage +1%") eq(byKey.rarity_criticalHitAmount.sd, "p")
+-- O471: the critical modifiers carry the character caps (45 / 150), "over" only when the viewer's total is above them
+eq(byKey.rarity_criticalHitChance.cap, 45, "the chance cap on the line") eq(byKey.rarity_criticalHitAmount.cap, 150, "the damage cap")
+eq(byKey.rarity_criticalHitChance.over, nil, "not over: no flag") eq(byKey.chaos_mod_lifeonkill.cap, nil, "other modifiers have no cap")
+do
+	local t2 = T.build(sword, {over = {chance = true}})
+	local by2 = {}
+	for _, m in ipairs(t2.mods) do by2[m.k] = m end
+	eq(by2.rarity_criticalHitChance.over, true, "the viewer is over the chance cap") eq(by2.rarity_criticalHitAmount.over, nil, "but not the damage cap")
+	local pen = newItem(3400)
+	pen:setCustomAttribute("rarity", 4) pen:setCustomAttribute("chaos_modv", 3) pen:setCustomAttribute("combatPowerLevel", 100)
+	M.set(pen, "physpen", 9, 6)
+	local t3 = T.build(pen, {})
+	eq(t3.mods[1].cap, 20, "penetration: 20 points in total")
+end
 local lok = byKey.chaos_mod_lifeonkill
 local r = M.legacy.lifeonkill[3] -- no stored tier: the range it was rolled in (before the ranges were raised)
 eq(lok.t, "Life on Kill +15") eq(lok.g, "chaos") eq(lok.lo, r[1]) eq(lok.hi, r[2]) eq(lok.tr, 3) eq(lok.sd, "s")
@@ -282,7 +297,7 @@ local stats = {}
 for _, s in ipairs(tip.stats) do
 	stats[s.k] = s
 end
-eq(stats.attack.v, 50) eq(stats.rarity_criticalHitAmount.v, 1, "pair split into two numbers")
+eq(stats.attack.v, 50) eq(stats.rarity_criticalHitAmount.v, 1, "its own number") eq(stats.rarity_criticalHitChance.v, 2)
 eq(stats.rarity_elementfire.l, "Fire Damage") eq(stats.gem_dmg_fire.v, 9, "gem effect in the compare numbers")
 eq(stats.chaos_mod_lifeonkill.fmt, nil, "flat Chaos modifier") eq(stats.rarity_swordSkill.v, 1)
 eq(tip.req.level, 80) eq(tip.req.voc, "knights") eq(tip.weight, 45)
@@ -587,6 +602,36 @@ do
 	eq(T.splitPassive("Plain text.", {en}, "Hungry Blade"), nil, "no passive text in it")
 	eq(T.splitPassive(nil, {en}, "Hungry Blade"), nil, "no description")
 	eq(T.splitPassive(en, {en}, ""), nil, "no name")
+end
+
+-- O475: an owned copy keeps the passive line of the day it was made; the tooltip renders the current one by the passive's name
+do
+	local cur = "Hungry Blade: Each kill restores 9% of your maximum health. For: Warrior, Thief."
+	local oldDesc = "Every soul it cuts feeds the blade. Hungry Blade: Each kill restores 7.1% of your maximum health. For: Warrior, Thief. (Requires level 120.)"
+	local fresh, found = T.refreshPassive(oldDesc, cur, "Hungry Blade")
+	eq(fresh, "Every soul it cuts feeds the blade. " .. cur .. " (Requires level 120.)", "an old stored line becomes the current one")
+	eq(found, true, "and it says so")
+	local p = T.splitPassive(fresh, {cur}, "Hungry Blade")
+	eq(p.text, "Each kill restores 9% of your maximum health. For: Warrior, Thief.", "the block of the explanation reads the current rule")
+	eq(p.flavor, "Every soul it cuts feeds the blade. (Requires level 120.)", "the flavour is kept")
+	local same, f2 = T.refreshPassive("Flavour. " .. cur .. " (Requires level 120.)", cur, "Hungry Blade")
+	eq(f2, false, "the current line in it: nothing to do")
+	eq(same, "Flavour. " .. cur .. " (Requires level 120.)", "and the text is unchanged")
+	eq(T.refreshPassive("Flavour only.", cur, "Hungry Blade"), "Flavour only.", "no line of this name: unchanged")
+	local twice = "Hungry Blade: a. Hungry Blade: b."
+	eq(T.refreshPassive(twice, cur, "Hungry Blade"), twice, "a name twice: left alone")
+	eq(T.refreshPassive("Hungry Blade: Each kill restores 7.1% of your maximum health.", cur, "Hungry Blade"), cur, "no requirement part: the line runs to the end")
+	eq(T.refreshPassive("Uma alma. Hungry Blade: Cada morte restaura 7.1%. (Requer n\195\173vel 120.)", cur, "Hungry Blade"), "Uma alma. " .. cur .. " (Requer n\195\173vel 120.)", "the pt-BR requirement marker ends the line too")
+	eq(T.refreshPassive(nil, cur, "Hungry Blade"), nil, "no description")
+end
+
+-- the Codex page of a unique or set piece (O467): the unique page when the Codex has one, else the set page
+do
+	eq(T.codexId(8209, {[8209] = {}}, nil), "unique:8209", "a unique with a page")
+	eq(T.codexId(8209, {[8209] = {}}, {key = "ember"}), "unique:8209", "a set piece with a unique page: the unique page")
+	eq(T.codexId(7384, {[8209] = {}}, {key = "ember"}), "set:ember", "a set piece without one: its set page")
+	eq(T.codexId(7384, {[8209] = {}}, nil), nil, "no page at all")
+	eq(T.codexId(7384, nil, {key = ""}), nil, "an empty set key is no page")
 end
 
 print(string.format("item_tooltip_test: %d checks OK", checks))

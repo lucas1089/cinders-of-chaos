@@ -198,7 +198,7 @@ for _, def in ipairs(P.defs) do
 	for t = 2, 8 do
 		ok(def.tiers[t][2] >= def.tiers[t - 1][2], def.key .. ": higher tiers are not weaker")
 	end
-	ok(def.cap >= def.tiers[8][2], def.key .. ": the cap holds one top roll")
+	ok(def.cap == nil or def.cap >= def.tiers[8][2], def.key .. ": the cap holds one top roll (O464: Last Breath and Glacial Ward have none)")
 	ok(def.weight > 0 and def.kinds ~= nil, def.key)
 	ok(M.byKey[def.key] == def, def.key .. " is a modifier of ChaosItemMods")
 end
@@ -451,11 +451,12 @@ events.ChaosPowersKill.onKill(hunter, monster())
 eq(#hunter.conditions, 1, "cooldown 8 s")
 
 -- ---------------------------------------------------------------- Last Breath
+-- O464: its own event, the last one of the player (login event ChaosZLastBreathLogin), no longer a part of ChaosPowersTaken
 reset()
 local tank = newPlayer()
 equipPower(tank, "lastbreath", 30, CONST_SLOT_ARMOR, 2466)
 tank.health = 400
-local d, _, s2 = events.ChaosPowersTaken.onHealthChange(tank, monster(), 900, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+local d, _, s2 = events.ChaosPowersLastBreath.onHealthChange(tank, monster(), 900, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
 eq(d, 399, "the lethal hit leaves 1 health"); eq(s2, 0)
 eq(tank.storage[CFG.lastbreath.storage] ~= nil, true, "the time is kept in a player storage")
 tank.health = 1
@@ -463,18 +464,30 @@ runTimers()
 eq(tank.health, 300, "healed to 30% of the maximum")
 -- again within 5 minutes: nothing
 clock = clock + 1000
-d = events.ChaosPowersTaken.onHealthChange(tank, monster(), 900, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+d = events.ChaosPowersLastBreath.onHealthChange(tank, monster(), 900, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
 eq(d, 900, "once per five minutes (also after a relog: the storage)")
 -- a hit that is not lethal is left alone
 tank.storage[CFG.lastbreath.storage] = nil
 tank.health = 800
-d = events.ChaosPowersTaken.onHealthChange(tank, monster(), 100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+d = events.ChaosPowersLastBreath.onHealthChange(tank, monster(), 100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
 eq(d, 100)
 -- after the cooldown it works again
 tank.storage[CFG.lastbreath.storage] = os.time() - 301
 tank.health = 50
-d = events.ChaosPowersTaken.onHealthChange(tank, monster(), 100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+d = events.ChaosPowersLastBreath.onHealthChange(tank, monster(), 100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
 eq(d, 49)
+
+-- the old event does not touch a lethal hit any more, and the login event registers the new one
+tank.storage[CFG.lastbreath.storage] = nil
+tank.health = 400
+eq((events.ChaosPowersTaken.onHealthChange(tank, monster(), 900, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)), 900,
+	"ChaosPowersTaken leaves a lethal hit alone")
+ok(events.ChaosZLastBreathLogin ~= nil, "the login event of Last Breath exists")
+do
+	local registered = {}
+	events.ChaosZLastBreathLogin.onLogin({registerEvent = function(_, name) registered[#registered + 1] = name end})
+	eq(registered[1], "ChaosPowersLastBreath", "it registers the Last Breath event")
+end
 
 -- ---------------------------------------------------------------- Ember Step
 reset()
@@ -564,7 +577,7 @@ end
 local function auraOf(it) for _, m in ipairs(M.read(it)) do if m.key == "smolderaura" then return m.value, m.tier end end end
 local v, tr = auraOf(auraItem(250, 7))
 eq(v, 28, "an old T7 roll of 250 reads 28 (the T7 top)"); eq(tr, 7)
-eq(auraOf(auraItem(250, 7, 20)), M.scaleQuality(28, 20), "with quality: the top x the quality")
+eq(auraOf(auraItem(250, 7, 20)), 28, "with quality 20: the top of the tier (O461: quality no longer multiplies a modifier; the upgrade takes it off)")
 v, tr = auraOf(auraItem(400))
 eq(v, 35, "an old roll without a stored tier: its old range gives the tier (T8)"); eq(tr, 8)
 eq(auraOf(auraItem(30, 8)), 30, "a new roll stays as it is")

@@ -91,12 +91,13 @@ for i, e in ipairs(order) do
 	position[e.event] = i
 end
 
--- the three multipliers come first, in this order
-local FIRST = {"ChaosMonsterDamageHealth", "ChaosRiftPlayerHit", "ChaosTierHit"}
+-- the three multipliers come first, in this order, then the player defence layer (O464: avoidance, armour by hit size, the
+-- physical reduction and the four resistances), the first thing that REDUCES a hit
+local FIRST = {"ChaosMonsterDamageHealth", "ChaosRiftPlayerHit", "ChaosTierHit", "ChaosPlayerDefence"}
 for i, name in ipairs(FIRST) do
 	ok(position[name] == i, name .. " is the player's healthchange event number " .. i .. " (it is " .. tostring(position[name]) .. ")")
 end
--- ... and everything else that changes a hit comes after them
+-- ... and everything else that changes a hit comes after them and after the layer
 for _, e in ipairs(order) do
 	local isFirst = false
 	for _, name in ipairs(FIRST) do
@@ -112,11 +113,25 @@ for _, name in ipairs({"ChaosItemModsTaken", "ChaosBlessingsTaken", "ChaosCharms
 	ok(position[name] ~= nil and position[name] > position.ChaosTierHit, name .. " is behind the rank multiplier")
 end
 -- the names carry the order: "Chaos0..." logins sort before every other Chaos login
-for _, name in ipairs({"Chaos0MonsterDamageLogin", "Chaos0RiftHitLogin", "Chaos0TierLogin"}) do
+for _, name in ipairs({"Chaos0MonsterDamageLogin", "Chaos0RiftHitLogin", "Chaos0TierLogin", "Chaos0ZPlayerDefenceLogin",
+		"ChaosZLastBreathLogin"}) do
 	ok(logins[name] ~= nil, "the login event " .. name .. " exists")
 end
-ok("Chaos0MonsterDamageLogin" < "Chaos0RiftHitLogin" and "Chaos0RiftHitLogin" < "Chaos0TierLogin" and "Chaos0TierLogin" < "Chaos1ManaShieldLogin"
+ok("Chaos0MonsterDamageLogin" < "Chaos0RiftHitLogin" and "Chaos0RiftHitLogin" < "Chaos0TierLogin"
+	and "Chaos0TierLogin" < "Chaos0ZPlayerDefenceLogin" and "Chaos0ZPlayerDefenceLogin" < "Chaos1ManaShieldLogin"
 	and "Chaos1ManaShieldLogin" < "ChaosAntibotLogin", "byte order of the login names")
+-- Last Breath runs after EVERY other healthchange event of the player: its login name sorts after every other Chaos login
+-- name that registers one, and it is the last event in the list
+ok(order[#order].event == "ChaosPowersLastBreath", "Last Breath is the last healthchange event of the player (it is "
+	.. tostring(order[#order].event) .. ")")
+for _, e in ipairs(order) do
+	if e.event ~= "ChaosPowersLastBreath" then
+		ok(position[e.event] < position.ChaosPowersLastBreath, e.event .. " runs before Last Breath")
+		ok(e.login < "ChaosZLastBreathLogin", e.login .. " sorts before the Last Breath login")
+	end
+end
+-- the absorb of the engine's base script is the last event the engine registers by name ("rarity_onHealthChangeAbsorb", a
+-- base login script, not in this repository): tools/patch_base_absorb_player.py makes it leave a player's hit alone
 print(string.format("defence order tests: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

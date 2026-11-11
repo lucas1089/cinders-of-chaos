@@ -75,6 +75,17 @@ return {
 	guardian = {
 		damage = {base = 3.6, perTier = -0.23, min = 1.0, omen = 4.5},
 		minion = {factor = 0.5, splash = 0.5},
+		-- O478 (2026-11-10), owner: option 1, "it can be option 1" (asked how to stop the one-hit deaths of O476: a ceiling of
+		-- 60% of the victim's life per hit of the guardian). One hit of the run's guardian (the guardian, its Twin and Omen
+		-- guardians: every monster of run.bossIds; marked attacks and damage over time ticks included) on a PLAYER takes at most
+		-- `share` x the victim's pool, as a whole. Pool = the MAXIMUM health plus, while a mana shield is up, the maximum mana
+		-- (the pool of guardian_model.py; the energy shield is not counted, so the sum of mana, shield and health lost is at
+		-- most share x pool). Maximum values: the ceiling does not shrink as the player loses health. The cap is the LAST
+		-- health and mana event of the player (rift.lua RF.capLast), so what it bounds is the final number; a hit a mana
+		-- shield took in the mana event is capped there, and its rest in the health event keeps the sum: cap - what the
+		-- mana paid. Needs engine patch 0090 to be exact: without it the engine adds the monster level bonus (1 + 0.0015 x
+		-- level) once more after the events. server/README.md "Rifts", Guardian hit cap (O478). enabled = false: no cap.
+		hitCap = {enabled = true, share = 0.60},
 		kit = {base = 1, perTiers = 5, omenCount = 2, sharePerTier = 0.03, shareCap = 0.6, omenShareMult = 1.25,
 			themeWeight = 3, everyMult = 0.85},
 		abilities = {
@@ -139,7 +150,10 @@ return {
 		live = {base = 75, perExtraPlayer = 10, per100 = 1.25, max = 265},
 		reinforce = {perTick = 2, minDistance = 16, window = 90, visit = 10},
 		populate = {perStep = 20, stepMs = 100},
-		model = {dps5 = 5240, dps5Exp = 1.35, dps1 = 2600, dps1Exp = 1.1, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
+		-- O475 (2026-11-10): dps1 2600 -> 3892 and 1.1 -> 1.20, dps5 5240 -> 13096 (exponent 1.35 as before): the typical damage of the
+		-- balance round on one boss and on a pack at the tiers' minimum levels, x gear = what a guardian (55 s) and a pack (225 s) take
+		-- (tools/boss_length_model.py --derive; the design's fit for the guardian was 13,200 and 1.51 on its own typical damage)
+		model = {dps5 = 13096, dps5Exp = 1.35, dps1 = 3892, dps1Exp = 1.2, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
 			packSeconds = 225, guardianSeconds = 55, tierHp = {magic = 2.0, rare = 3.5, legendary = 6.0},
 			walk = {sweep = 1.8}},
 		-- O427: one number, or {base, perTier, min} (base + perTier x (tier - 1), at least min). Before: 0.6 flat. The pack of a
@@ -162,8 +176,28 @@ return {
 	--   lootPerExtraPlayer    percent on the Chaos loot rate of the rift's kills and on the Sealed Coffer, at most lootCap
 	party = {healthPerExtraPlayer = 1.0, damagePerExtraPlayer = 0.10, rewardPerExtraPlayer = 12.5, rewardCap = 50,
 		lootPerExtraPlayer = 5, lootCap = 20},
+	-- O476 (2026-11-10, owner: "a player takes a very large hit in the rift, maybe warn that it is not for the level or needs a
+	-- party"): the level warning (server/README.md "Rifts", Level warning). `levels` = the recommended SOLO level of each tier
+	-- (tier 11 and up: the 11th entry on). A key shows it in its look text; a player who enters below it, in a party of fewer
+	-- than `partySize`, is warned once when the run starts; a player below it who dies to the guardian gets one tip. The
+	-- numbers are DERIVED, not chosen: the rule is guardian_model.py warn_levels (the lowest level, in steps of 5 from the
+	-- tier's entry level, at which the guardian that 9 draws in 10 do not exceed rolls at most 60% of the median class's pool
+	-- in one hit after its armour and absorbs, and the model's pressure is at most its value in the middle of the tier's
+	-- monster window; the top of the window when no level up to it works; never below the tier under it), `partySize` the
+	-- smallest party that takes the guardian's pressure per head at the entry level down to a solo player's at the middle of
+	-- the window. `python3 -I server/tools/guardian_model.py --check` fails when these drift from it; `--warn` prints them.
+	-- O478: the rule reads the guardian's UNCAPPED biggest hit (guardian.hitCap does not enter it): below the level the
+	-- guardian's hits reach the cap of 60% of the pool, so two hits kill; at or above it they do not. The levels stay.
+	warn = {
+		enabled = true,
+		partySize = 2,
+		-- the key modifiers that raise a monster's or the guardian's hit (Part A: x1.4 to x2.5 on one hit); a warning to a key
+		-- with one adds a sentence about it (the model's worst case reads the same list)
+		hot = {"brutality", "dread", "keen", "emberbrand", "frostbrand", "stormbrand", "searing", "flaying"},
+		levels = {180, 240, 290, 420, 520, 640, 740, 760, 860, 990, 990, 990, 990, 1000, 1025}
+	},
 	-- monster tiers inside a rift (percent per monster, before the Elites modifier; x (1 + perTier x tier))
-	elite = {magic = 10, rare = 3, legendary = 0.6, perTier = 0.05},
+	elite ={magic = 10, rare = 3, legendary = 0.6, perTier = 0.05},
 
 	-- rift tier -> monster level window of the bounty pool (bounty_pool.lua "level") and the level needed to enter.
 	-- Tiers above #tiers reuse the last window and add `beyond` per tier (health, damage, rewards).
@@ -295,7 +329,12 @@ return {
 			tiers = {2, 3, 4, 5, 6}, weight = 50, minTier = 2, reward = {quantity = 4.5, rarity = 3}},
 		{key = "veilstorm", side = "suffix", name = "Veilstorm", text = "Marked storm strikes near the players: %d%% of max health",
 			range = {10, 30}, step = 5, tiers = {10, 15, 20, 25, 30}, weight = 50, minTier = 3,
-			reward = {quantity = 0.8, rarity = 0.4}}
+			reward = {quantity = 0.8, rarity = 0.4}},
+		-- O464 (appended: the crash refund marker stores a modifier by its index): the players' maximum resistances are lowered
+		-- by this many points (the cap of 75 of the four resistances, player_defence.lua hooks.capDelta); tiers I-V: 5 .. 25
+		{key = "frayed", side = "suffix", name = "Frayed Wards", text = "Players' maximum resistances are lowered by %d",
+			range = {5, 25}, step = 5, tiers = {5, 10, 15, 20, 25}, weight = 50, minTier = 2,
+			reward = {quantity = 0.4, rarity = 0.4}, note = "Hardest on characters that sit at the cap of every resistance."}
 	},
 	-- which modifier tiers a key rolls: {up to key tier, lowest, highest}. A value is drawn evenly from the bottom of the
 	-- lowest to the top of the highest tier (a modifier with fewer tiers stops at its last). Keys of tier 1-5 (and orbs

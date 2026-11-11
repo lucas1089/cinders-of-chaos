@@ -182,6 +182,64 @@ local all = {}
 for _, l in ipairs(lines) do all[#all + 1] = l.text end
 eq(table.concat(all, ' '):find('Hungry Blade: Each', 1, true), nil, 'the passive is not repeated in the flavour')
 eq(table.concat(all, ' '):find('Every soul it cuts', 1, true) ~= nil, true, 'flavour kept')
+-- does the power work for the viewer (O467): the line under the rule, normal text or the warning colour
+reaper.passive.fit = 'Works for your class. Active.'
+lines = L.lines(reaper)
+found = {}
+for _, l in ipairs(lines) do found[l.text] = l end
+eq(found['Works for your class. Active.'] ~= nil and found['Works for your class. Active.'].color, L.COLORS.text, 'fit line in normal text')
+local fitAt, ruleAt
+for i, l in ipairs(lines) do
+  if l.text == 'Works for your class. Active.' then fitAt = i end
+  if l.text:find('Each kill restores', 1, true) then ruleAt = i end
+end
+eq(fitAt ~= nil and ruleAt ~= nil and fitAt > ruleAt, true, 'the fit line comes under the rule')
+reaper.passive.fit, reaper.passive.warn = 'Asleep: your class is not in its list.', true
+lines = L.lines(reaper)
+found = {}
+for _, l in ipairs(lines) do found[l.text] = l end
+eq(found['Asleep: your class is not in its list.'] ~= nil and found['Asleep: your class is not in its list.'].color, L.COLORS.red,
+  'an asleep power in the warning colour')
+local fitCard = L.card({ name = 'x', unique = { name = 'x' }, passive = { name = 'P', text = 'Rule.', flavor = 'F.', fit = 'Asleep: Y is stronger.', warn = true } }, {})
+local rows
+for _, g in ipairs(fitCard.extras) do if g.caption == 'P' then rows = g.rows end end
+eq(rows ~= nil and rows[#rows].text, 'Asleep: Y is stronger.', 'card: the fit line ends the passive group')
+eq(rows ~= nil and rows[#rows].color, L.COLORS.red, 'card: in the warning colour')
+-- the cache: a tip with a power line is forgotten when the equipment changes (it names the worn uniques)
+do
+  local cache = L.newCache()
+  L.cachePut(cache, 'u', { name = 'U', passive = { name = 'P', text = 'R', fit = 'Active.' } }, false, 0)
+  L.cachePut(cache, 'v', { name = 'V', passive = { name = 'P', text = 'R' } }, false, 0)
+  eq(L.dropSetTips(cache), 1, 'only the tip with a power line is dropped')
+  eq(L.cacheGet(cache, 'v', 0) ~= nil, true, 'a tip without one stays')
+end
+-- the Codex page of a tip (the server's tip.codex): a unique page or a set page, nothing else
+eq(L.codexId({ codex = 'unique:8209' }), 'unique:8209', 'a unique page id')
+eq(L.codexId({ codex = 'set:cinderstorm' }), 'set:cinderstorm', 'a set page id')
+eq(L.codexId({ codex = 'orb:ruin' }), nil, 'another page: refused')
+eq(L.codexId({ codex = 12 }), nil, 'not a string')
+eq(L.codexId({}), nil, 'no id')
+eq(L.codexId(nil), nil, 'no tip')
+-- the class row goes through the translation: the prefix and the words 'all classes' (the class names stay)
+do
+  local saved = rawget(_G, 'tr')
+  rawset(_G, 'tr', function(s, ...)
+    local pt = { ['For %s'] = 'Para %s', ['all classes'] = 'todas as classes', ['Set'] = 'Conjunto', ['Unique'] = 'Única' }
+    s = pt[s] or s
+    if select('#', ...) > 0 then return string.format(s, ...) end
+    return s
+  end)
+  eq(L.classText('all classes'), 'todas as classes', 'all classes translated')
+  eq(L.classText('Mystic, Necromancer'), 'Mystic, Necromancer', 'class names untouched')
+  local classLines = L.lines({ name = 'Ring', slot = 'Ring', req = { voc = 'all classes' } })
+  local cl
+  for _, l in ipairs(classLines) do if l.text:find('^Para') then cl = l.text end end
+  eq(cl, 'Para todas as classes', 'the class row in pt-BR')
+  eq(L.kindText({ unique = { set = {} }, slot = 'Ring' }):find('Conjunto', 1, true) ~= nil, true, 'the Set kind in pt-BR')
+  local chips = L.reqChips({ voc = 'all classes' }, {})
+  eq(chips[1].text, 'todas as classes', 'the chip of all classes in pt-BR')
+  rawset(_G, 'tr', saved)
+end
 -- an older server (no passive block): the description as before
 reaper.passive = nil
 all = {}
@@ -586,6 +644,38 @@ eq(potion.comparable, false, 'potion: no compare')
 local gem = L.card({ name = 'flawless ruby', rarity = 3, rarityName = 'Rare', desc = 'A gem for a socket.' }, {})
 eq(gem.kind, 'RARE', 'gem: the rarity as kind')
 eq(gem.extras[1].rows[1].text, 'A gem for a socket.', 'gem: description')
+
+-- ---------------------------------------------------------------- O471: the character cap on a modifier line
+eq(L.capText({}), '', 'no cap, no text')
+eq(L.capText({ cap = 45 }), ' (character cap 45)', 'the cap of the critical chance')
+eq(L.capText({ cap = 150, over = true }), ' (over the character cap of 150)', 'over it')
+local capTip = {
+  key = '9:9', id = 2160, name = 'old badge', kind = 'other', rarity = 4, rarityName = 'Rare', level = 100, maxTier = 4,
+  sides = { p = 2, s = 0, max = 2 },
+  mods = {
+    { k = 'rarity_criticalHitChance', l = 'Critical Strike Chance', t = 'Critical Strike Chance +7%', v = 7, g = 'single',
+      lo = 7, hi = 8, tr = 8, sd = 'p', cap = 45, over = true },
+    { k = 'chaos_mod_physpen', l = 'Physical Penetration', t = 'Physical Penetration +9%', v = 9, g = 'chaos', lo = 9, hi = 9,
+      tr = 6, sd = 'p', cap = 20, bd = true }
+  }
+}
+local capLines = L.lines(capTip, { level = 60 })
+local capAll = {}
+for i, l in ipairs(capLines) do capAll[i] = l.text end
+capAll = table.concat(capAll, '|')
+eq(capAll:find('T8 Critical Strike Chance +7% [7-8] (over the character cap of 45)', 1, true) ~= nil, true, 'the line says it is over the cap')
+eq(capAll:find('T6 Physical Penetration +9% [9] (character cap 20) [bound]', 1, true) ~= nil, true, 'the cap before [bound]')
+local critLine
+for _, l in ipairs(capLines) do
+  if l.text:find('Critical Strike Chance', 1, true) then critLine = l end
+end
+eq(critLine.parts[7], ' (over the character cap of 45)', 'the cap text is a part of its own')
+eq(critLine.parts[8], L.COLORS.red, 'red when over')
+local groups = L.modGroups(capTip)
+eq(groups[1].rows[1].parts[3], ' (over the character cap of 45)', 'the group row carries the cap too')
+eq(groups[1].rows[2].parts[3], ' (character cap 20)', 'a row with a bound modifier and a cap')
+eq(groups[1].rows[2].parts[5], ' [bound]', 'then the bound mark')
+eq(groups[1].rows[2].parts[4], L.COLORS.dim, 'the cap in the dim colour')
 
 if fails > 0 then
   print(fails .. ' failure(s)')

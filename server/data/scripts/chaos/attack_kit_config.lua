@@ -11,6 +11,9 @@
 -- with: melee, distance, magic, monk, blade, shuriken); ctype; the hit (l + P x pMin + ML x mMin + bMin ..
 -- l + P x pMax + ML x mMax + bMax) x scale, l = level / 5, P = skill x attack, ML = magic level; shape (single,
 -- dot, circle at the target, around the caster, wave, line); chi (a builder), finisher (spends all chi).
+-- O474 (2026-11-10): the six shape "dot" spells tick every 400 ms with the first tick at once (was 1 s), their ticks unchanged;
+-- Blightbrand scale 1 -> 1.25 and Martyr's Pyre 1 -> 1.1 (the totals); when the host dies the rest moves on to the nearest
+-- living monster within 3 squares. The timings are dot_config.lua `kit` (tests/dot_core_test.lua checks the copies here).
 
 ChaosAttackKit = ChaosAttackKit or {}
 ChaosAttackKit.cfg = {
@@ -19,7 +22,7 @@ ChaosAttackKit.cfg = {
 			id = 2, name = "Gorehook", words = "kah sang hrak", level = 130, mana = 45,
 			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
 			pMin = 0.0199, pMax = 0.0318, mMin = 0, mMax = 0, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 1,
-			ticks = 5, tickMs = 1000, melee = true, fx = "blood_slash", vfx = "claw_rake", hitFx = "CONST_ME_DRAWBLOOD"
+			ticks = 5, tickMs = 400, melee = true, fx = "blood_slash", vfx = "claw_rake", hitFx = "CONST_ME_DRAWBLOOD"
 		},
 		riftcleaver = {
 			id = 9, name = "Rift Cleaver", words = "kah rhim brak", level = 220, mana = 55,
@@ -60,7 +63,7 @@ ChaosAttackKit.cfg = {
 		dreamrot = {
 			id = 43, name = "Dreamrot", words = "kah mynd putr", level = 230, mana = 470, vocations = {"Illusionist"},
 			school = "magic", power = "magic", ctype = "death", pMin = 0, pMax = 0, mMin = 3.218, mMax = 5.149,
-			bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 5, ticks = 6, tickMs = 1000, pshot = "proj_water_bolt_abyss", fx = "shadow_smoke",
+			bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 5, ticks = 6, tickMs = 400, pshot = "proj_water_bolt_abyss", fx = "shadow_smoke",
 			hitFx = "CONST_ME_SMALLCLOUDS"
 		},
 		guttingslash = {
@@ -79,7 +82,7 @@ ChaosAttackKit.cfg = {
 			id = 57, name = "Venom Spiral", words = "kah shur putr", level = 150, mana = 85,
 			vocations = {"Thief", "Ninja"}, school = "spell", power = "blade", ctype = "earth", pMin = 0.0128,
 			pMax = 0.0205, mMin = 0, mMax = 0, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 5, ticks = 5,
-			tickMs = 1000, shot = "venom_glob", fx = "poison_ring", hitFx = "CONST_ME_POISONAREA"
+			tickMs = 400, shot = "venom_glob", fx = "poison_ring", hitFx = "CONST_ME_POISONAREA"
 		},
 		crescentcut = {
 			id = 62, name = "Crescent Cut", words = "drai kaen sol", level = 170, mana = 85,
@@ -150,8 +153,8 @@ ChaosAttackKit.cfg = {
 		blightbrand = {
 			id = 113, name = "Blightbrand", words = "kah putr brak", level = 135, mana = 310,
 			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
-			pMin = 0, pMax = 0, mMin = 1.949, mMax = 3.118, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 7,
-			ticks = 6, tickMs = 1000, pshot = "proj_venom_glob_necrotic", fx = "poison_flame", hitFx = "CONST_ME_SMALLCLOUDS"
+			pMin = 0, pMax = 0, mMin = 1.949, mMax = 3.118, bMin = 8, bMax = 16, scale = 1.25, shape = "dot", range = 7,
+			ticks = 6, tickMs = 400, pshot = "proj_venom_glob_necrotic", fx = "poison_flame", hitFx = "CONST_ME_SMALLCLOUDS"
 		},
 		soulrendbeam = {
 			id = 118, name = "Soulrend Beam", words = "kah nyx lanc", level = 170, mana = 270,
@@ -192,8 +195,8 @@ ChaosAttackKit.cfg = {
 		martyrspyre = {
 			id = 127, name = "Martyr's Pyre", words = "kah sol pyr", level = 140, mana = 70,
 			vocations = {"Templar", "Sentinel"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.0258,
-			pMax = 0.0413, mMin = 0.5, mMax = 0.8, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 3, ticks = 5,
-			tickMs = 1000, fx = "fire_ring", hitFx = "CONST_ME_HOLYDAMAGE"
+			pMax = 0.0413, mMin = 0.5, mMax = 0.8, bMin = 8, bMax = 16, scale = 1.1, shape = "dot", range = 3, ticks = 5,
+			tickMs = 400, fx = "fire_ring", hitFx = "CONST_ME_HOLYDAMAGE"
 		},
 		bellofreckoning = {
 			id = 128, name = "Bell of Reckoning", words = "drai sol krak", level = 160, mana = 80,
@@ -256,7 +259,7 @@ ChaosAttackKit.cfg = {
 			id = 203, name = "Crimson Covenant", words = "tor nyx cruor", level = 200, mana = 450,
 			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "death",
 			pMin = 0, pMax = 0, mMin = 1.626, mMax = 2.602, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 6,
-			ticks = 6, tickMs = 1000, pshot = "proj_shadow_bolt_blood", fx = "blood_nova", hitFx = "CONST_ME_DRAWBLOOD"
+			ticks = 6, tickMs = 400, pshot = "proj_shadow_bolt_blood", fx = "blood_nova", hitFx = "CONST_ME_DRAWBLOOD"
 		},
 		smokebomb = {
 			id = 241, name = "Smoke Bomb", words = "drai nebh", level = 200, mana = 150,

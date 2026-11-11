@@ -86,8 +86,9 @@ M.cfg = {
 	-- Rebuke (spell): taunts every monster within radius and slows it
 	rebuke = {radius = 4, durationMs = 6000, slow = 0.25},
 	-- Lay on Hands (spell): heals one party member (or the Sentinel) within range for pct of its maximum health
-	-- plus magic level x perMagicLevel
-	layOnHands = {pct = 0.35, perMagicLevel = 10, range = 5},
+	-- plus level x perLevel plus magic level x perMagicLevel. O468: it had no level term; level x 0.3 + ML x 5 is what ML x 10
+	-- was for a typical Sentinel at level 500 (ML 29.7: 297 against 298), so the heal there is unchanged
+	layOnHands = {pct = 0.35, perLevel = 0.3, perMagicLevel = 5, range = 5},
 
 	-- ------------------------------------------------------------------ Templar
 	-- Vow of Mending (spell, self heal): pct of the maximum health + level / 5 + magic level x perMagicLevel
@@ -399,9 +400,9 @@ function M.novaHeal(dealt, maxHealth)
 	return math.min(heal, math.floor((maxHealth or 0) * n.healCapPct + 0.5))
 end
 
-function M.layOnHandsAmount(maxHealth, magicLevel)
+function M.layOnHandsAmount(maxHealth, magicLevel, level)
 	local l = cfg().layOnHands
-	return math.floor((maxHealth or 0) * l.pct + (magicLevel or 0) * l.perMagicLevel + 0.5)
+	return math.floor((maxHealth or 0) * l.pct + (level or 0) * l.perLevel + (magicLevel or 0) * l.perMagicLevel + 0.5)
 end
 
 function M.vowAmount(maxHealth, level, magicLevel)

@@ -512,7 +512,7 @@ Chaos.paragon = {
 	levelsPerPointSlow = 6,
 	categories = {
 		{key = "offense", name = "Offense", stats = {
-			{key = "damage", name = "Damage", perPoint = 0.5, maxPoints = 40, desc = "Damage dealt (every damage type, not healing)"},
+			{key = "damage", name = "Damage", perPoint = 0.5, maxPoints = 40, desc = "Increased damage (every damage type, not healing): one source of the damage pool"},
 			{key = "critDamage", name = "Critical Damage", perPoint = 0.3, maxPoints = 50, desc = "Extra damage of critical hits"}}},
 		{key = "defense", name = "Defense", stats = {
 			{key = "health", name = "Max Health", perPoint = 0.5, maxPoints = 40, desc = "Maximum health"},
@@ -537,7 +537,7 @@ Chaos.paragon = {
 		maxRanks = 60000,
 		stats = {
 			{key = "mDamage", category = "offense", name = "Damage Mastery", bonus = "damage", scale = 6, h = 50,
-				desc = "Damage dealt (every damage type, not healing)"},
+				desc = "Increased damage (every damage type, not healing): one source of the damage pool"},
 			{key = "mCritDamage", category = "offense", name = "Critical Damage Mastery", bonus = "critDamage", scale = 8, h = 50,
 				desc = "Extra damage of critical hits"},
 			{key = "mHealth", category = "defense", name = "Health Mastery", bonus = "health", scale = 8, h = 50,
@@ -1299,11 +1299,17 @@ Chaos.classes = {
 		biteMs = 2000, biteLevel = 0.12, biteSkill = 0.6, spread = 0.2,
 		autoLevel = 0.75, autoSkill = 1.35,
 		-- O430 (2026-11-06, owner: balance the classes far from the median DPS): the companion's own bite x this factor by
-		-- the owner's level ({level, factor}; 1 below the first point, linear, the last value above). The bite is dealt
-		-- without an event, so class_tree.lua classDamage never reached it; the measured Beastmaster ran +101..+180% of the
-		-- median and classDamage.beastmaster was cut by the same ratio, so the bite follows it (server/README.md
-		-- "Class DPS balance (O430)")
-		autoByLevel = {{60, 1}, {100, 0.88}, {500, 0.56}, {1000, 0.5}},
+		-- the owner's level ({level, factor}; the first value below the first point, linear, the last value above). It was
+		-- {{60, 1}, {100, 0.88}, {500, 0.56}, {1000, 0.5}}: the bite was dealt without an event, so class_tree.lua classDamage
+		-- never reached it, and the factor followed that class cut by hand. O468: the bite is dealt as ORIGIN_SPELL (beastmaster.lua)
+		-- and takes every event, classDamage and the monster defence layer included. These points keep the PLAIN build (no tree,
+		-- no gear) where it was against a monster with the median armour: factor x classDamage(level) x the share of the bite
+		-- the armour of a normal monster of that level leaves (monster_defence_config.lua hitCurve, armourTarget.normal 25,
+		-- defence_config.lua armourHitFactor) = the old factor x the old bite. The raw bite is bigger than before and the
+		-- events take it back; a tree, gems or gear multiply what is left, as they do for a spell. Within 2% of the old plain
+		-- bite at every level 50..1300 (server/README.md "Spell scaling (O468)").
+		autoByLevel = {{60, 1.658}, {100, 1.676}, {200, 1.739}, {300, 1.75}, {350, 1.976}, {400, 2.291}, {500, 2.38},
+			{750, 2.584}, {800, 2.622}, {1000, 2.558}, {1200, 2.694}},
 		minionStorage = 7100041,
 		spells = {
 			feral = {mauls = 1.5},

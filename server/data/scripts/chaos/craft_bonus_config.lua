@@ -31,8 +31,9 @@ return {
 		-- all rarities together never above this (percent)
 		maxTotal = 35,
 		-- item level: recipe level + mastery x perMastery, never below what the item type's own required level gives a
-		-- plain item (ChaosCrafting.orbLevel), at most `max` (below the T6 gate of 95 in chaos_item_mods.lua tierLevels)
-		itemLevel = {perMastery = 0.5, max = 90},
+		-- plain item (ChaosCrafting.orbLevel), at most `max` (below the T6 gate of 90 in chaos_item_mods.lua tierLevels; 89 since O461, it
+		-- was 90 under the gate of 95)
+		itemLevel = {perMastery = 0.5, max = 89},
 		-- tools stay the stock way: an item our modifiers would call "other" (chaos_item_mods.lua kindOf) that fits no slot
 		-- but these (left and right hand: the profession scissors, pickaxes, axes, root hammer and sickle, the mount
 		-- scroll). Gloves and belts (their own slot bit) and anything in the ammo slot are equipment.

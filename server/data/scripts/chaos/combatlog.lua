@@ -23,7 +23,7 @@
 --           the engine's Player:onSpellPreCast and onSpellCast (engine patch 0008; every instant spell and rune);
 --           a spell's own delayed hits named with CL.asSpell (the snares' scheduler) come first
 --   origin  ORIGIN_CONDITION: damage over time by element (Bleeding, Burning, Poison, ...: the condition owner is the
---           attacker); ORIGIN_MELEE: the weapon in hand (sword, axe, club, fist); ORIGIN_RANGED: distance;
+--           attacker; a scripted tick of a dot spell is the spell's own row "<spell> (over time)", O474); ORIGIN_MELEE: the weapon in hand (sword, axe, club, fist); ORIGIN_RANGED: distance;
 --           ORIGIN_WAND (5): wand; anything else: "Other"
 -- Hits dealt with ORIGIN_NONE run no health events in the engine; the doTargetCombat wrapper measures the target's
 -- health before and after such a call instead (rarity elements, pets, companion hits).
@@ -388,9 +388,11 @@ end
 
 -- the hit's source for a character (scratch table: no allocation per hit)
 local h = {}
-local function classifyFor(owner, summon, tab, origin, el)
+local function classifyFor(owner, summon, tab, origin, el, creature)
 	local pid = owner:getId()
 	h.origin, h.el = origin, el
+	-- O474: a scripted tick of a dot spell (ChaosDot.flagged, dot_core.lua; the engine's own condition ticks are the origin)
+	h.tick = creature ~= nil and origin ~= O.CONDITION and ChaosDot ~= nil and ChaosDot.flagged(owner, creature) or false
 	h.summon = summon and summon:getName() or nil
 	h.cast = castOf(pid)
 	h.proc = nil
@@ -420,7 +422,7 @@ local function dealt(creature, attacker, amount, ptype, origin, critical, now, m
 	if owner and owner ~= creature then
 		local a = actorOf(owner)
 		a.sessionOn = huntRunning(owner)
-		local src = classifyFor(owner, summon, DMG, origin, el)
+		local src = classifyFor(owner, summon, DMG, origin, el, creature)
 		local isMonster = creature:isMonster()
 		CL.add(a, now, DMG, src, amount, critical, 0, el, creature:getName(), isMonster and bossName(creature) or nil)
 		-- the balance telemetry's damage per class (telemetry.lua T.onDamage, O398): monsters only

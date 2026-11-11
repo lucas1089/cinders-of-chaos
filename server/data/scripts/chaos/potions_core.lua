@@ -234,6 +234,104 @@ function K.restoreFor(cfg, slot, held, earned, granted)
 	return best
 end
 
+-- ---------------------------------------------------------------- the upgrade hint (O465, README "Potions", "Upgrade hint")
+--   ChaosPotionsCore.hintStorage(cfg, id)       the player storage key that says "the hint of this tier was shown"
+--   ChaosPotionsCore.hintDue(cfg, s)            s = {level, earned = {[id] = true}, hinted = {[id] = true}} -> the entries to
+--                                               name in ONE message (one per line, in config order); {} when nothing is due
+--   ChaosPotionsCore.hintName(e)                "Everfull Great Health Potion" (item names stay English in pt-BR)
+--   ChaosPotionsCore.hintMessage(cfg, entries, npc, tr)   -> title, text; tr(key, ...) is the player's language (Chaos.t)
+-- The storage key of the hint of an entry with a `from`: its place among them, like its upgrade flag.
+function K.hintStorage(cfg, id)
+	local base = ((cfg.hint or {}).storageBase)
+	if not base then
+		return nil
+	end
+	for i, e in ipairs(K.upgradeTargets(cfg)) do
+		if e.id == id then
+			return base + i - 1
+		end
+	end
+	return nil
+end
+
+-- Does the character still hold the flask `id`? Worked out from the earned flags only: the flask of a tier is held when
+-- its own flag is set (a tier 1 flask of the kit has none) and no tier made from it was earned since (the swap removed it).
+local function holds(cfg, earned, id)
+	local e = K.everfull(cfg, id)
+	if not e then
+		return false
+	end
+	if K.isUpgrade(e) and not earned[id] then
+		return false
+	end
+	for _, x in ipairs(K.upgradeTargets(cfg)) do
+		if earned[x.id] and isFrom(x, id) then
+			return false
+		end
+	end
+	return true
+end
+
+-- The tiers a character should hear about now: its level reached the tier's level (and the tier's level is at least
+-- hint.minTierLevel), it does not own the tier, it was not told about it, and its flask is the one the tier is made
+-- from, so the swap can be done today. A line the character does not use (no flask of the line's previous tier) has no
+-- tier due. One entry per line: the highest tier that qualifies. Nothing is due while hint.enabled is off.
+function K.hintDue(cfg, s)
+	local hint = cfg.hint or {}
+	if not hint.enabled then
+		return {}
+	end
+	local level = tonumber(s.level) or 0
+	local earned, hinted = s.earned or {}, s.hinted or {}
+	local minLevel = hint.minTierLevel or 1
+	local byLine, order = {}, {}
+	for _, e in ipairs(K.upgradeTargets(cfg)) do
+		local line = e.line or e.key
+		if (e.level or 0) >= minLevel and (e.level or 0) <= level and not earned[e.id] and not hinted[e.id] then
+			local usable = false
+			for _, f in ipairs(e.from or {}) do
+				if holds(cfg, earned, f) then
+					usable = true
+				end
+			end
+			if usable then
+				if not byLine[line] then
+					order[#order + 1] = line
+				end
+				if not byLine[line] or (e.tier or 1) > (byLine[line].tier or 1) then
+					byLine[line] = e
+				end
+			end
+		end
+	end
+	local out = {}
+	for _, line in ipairs(order) do
+		out[#out + 1] = byLine[line]
+	end
+	table.sort(out, function(a, b)
+		return K.hintStorage(cfg, a.id) < K.hintStorage(cfg, b.id)
+	end)
+	return out
+end
+
+-- "everfull great health potion" -> "Everfull Great Health Potion" (the item's name as the game writes it)
+function K.hintName(e)
+	return (tostring(e.name):gsub("(%a)(%w*)", function(a, b)
+		return a:upper() .. b
+	end))
+end
+
+-- The toast and chat line: title and text in the player's language (`tr` is Chaos.t with the player bound). Every entry
+-- in one message. The English texts are the keys of i18n_strings.lua.
+function K.hintMessage(cfg, entries, npc, tr)
+	local names = {}
+	for _, e in ipairs(entries) do
+		names[#names + 1] = K.hintName(e)
+	end
+	return tr("Potion upgrade"), tr("Your Everfull potion can be upgraded: %s. Ask %s in the hub, or buy the swap in the store. How it works explains it: open Help Search (Alt+F) and type \"potion\".",
+		table.concat(names, ", "), tostring(npc))
+end
+
 -- ---------------------------------------------------------------- what the helper is told (README "Potions", O246)
 -- The client sees every tier under the stock potion's look, so the helper cannot tell which Everfull a character carries.
 -- The server tells it: per slot (health, mana) the carried Everfull's look, tier, level, line and whether a drink would

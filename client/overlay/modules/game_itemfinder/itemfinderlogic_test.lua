@@ -134,6 +134,17 @@ do
   eq(L.menuThing(grass, rope), rope, 'a rope lying on grass')
   eq(L.menuThing(nil, nil), nil, 'nothing')
   eq(L.menuThing(thing(0, { isItem = true, isPickupable = true }), nil), nil, 'no client id')
+
+  -- "Open in Codex" (O467): the page id the tooltip module knows for the item under the menu
+  local pages = { [rope] = 'unique:8209' }
+  local tooltip = { codexIdOf = function(item) return pages[item] end }
+  eq(L.codexPage(tooltip, rope, rope), 'unique:8209', 'a unique: its Codex page')
+  eq(L.codexPage(tooltip, chest, chest), nil, 'an item without a page: no entry')
+  eq(L.codexPage(tooltip, grass, grass), nil, 'bare ground: no entry')
+  eq(L.codexPage(nil, rope, rope), nil, 'no tooltip module: no entry')
+  eq(L.codexPage({}, rope, rope), nil, 'an older tooltip module: no entry')
+  eq(L.codexPage({ codexIdOf = function() error('boom') end }, rope, rope), nil, 'a failing tooltip module: no entry')
+  eq(L.codexPage({ codexIdOf = function() return '' end }, rope, rope), nil, 'an empty id: no entry')
 end
 
 print('itemfinderlogic_test: ' .. n .. ' checks ok')

@@ -11,7 +11,7 @@
 --   Ember Orb          raises the modifier you choose by exactly one tier (a new value inside the new tier)
 --   Crown Orb          lifts the item one rarity (up to Legendary): every modifier stays, the base bonus is the new rarity's
 --                      and the item gets one more modifier
---   Whetstone          +1% quality up to 20% (30% from Divine rarity): every modifier value is multiplied
+--   Whetstone          +1% quality up to 20% (30% from Divine rarity): the base bonus (attack, defence, armour) is multiplied
 --   Void Orb           corrupts a Rare or better item for good (no orb changes it after), then one weighted outcome:
 --                      nothing else, a tier up, a corrupted implicit, quality 30%, a socket, a reroll, a rarity up or a
 --                      tier loss (ChaosOrbsConfig.void; O.corrupt)
@@ -297,15 +297,15 @@ local function register()
 	-- Whetstone
 	it = itemOf("whetstone")
 	C.addOrb({key = "whetstone", id = it.id, name = it.name,
-		text = string.format("+%d%% quality: every modifier value is multiplied by the quality, up to %d%% (%d%% from Divine rarity).",
+		text = string.format("+%d%% quality: the attack, defence and armour the rarity added to the item rise by the quality, up to %d%% (%d%% from Divine rarity).",
 			M.config.quality.perStone, M.config.quality.cap, M.config.quality.capHigh),
 		check = function(item)
 			local ok, why = needRarity(item)
 			if not ok then
 				return false, why
 			end
-			if #C.readMods(item) == 0 then
-				return false, "needMods"
+			if not C.hasBaseStat(item) then
+				return false, "needMods" -- nothing for the quality to act on (O461: it raises the base bonus, not the modifiers)
 			end
 			if M.qualityOf(item) >= M.qualityCap(C.rarityOf(item)) then
 				return false, "qualityFull"

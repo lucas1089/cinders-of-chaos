@@ -107,19 +107,40 @@ return {
 	-- goal counts kills: the contract takes the same hours and pays the same experience; spawn_tuning.json
 	-- paceKillsPerHour scaled has the new kills per hour, 790-870, under the base hunts' 1200). Experience, gold and goal
 	-- pace per hour are unchanged (tools/progression_model.lua and tools/loot_model.lua --check).
+	-- O470 (2026-11-10, owner: "it is not intended, make a more balanced curve"): the health of a typical hunt monster jumped x2.2
+	-- where the base pool ends (hunting level 657): 5,372 at 650, 12,050 at 670, 12,760 at 700 (tools/pack_model.py: the median of
+	-- the base pool x base.health, then SCALED_HEALTH x the curve below). The late curve now starts at the base set's 5,372 at
+	-- 657 and its log-slope falls from 3.6 to 1.8 at 1000: 5,759 at 670, 6,684 at 700, 10,010 at 800, 13,427 at 900; 16,620 at
+	-- 1000 and all above are as before. No 20 levels rise more than x1.12 from 600 (tests/monster_health_curve_test.lua), a pack of
+	-- the median class dies in 2.6 s at 650, 2.8 / 3.1 / 4.2 / 5.2 / 5.8 s at 670 / 700 / 800 / 900 / 1000 (5.8 s at 670 before).
+	-- The base set and everything up to 600 are untouched (the design asked for +4% to +8% there: not needed, no rise above x1.31
+	-- over 20 levels from 110 on). The level-scaled monsters of the pool below 657 (fifteen, levels 530-650) keep their old points
+	-- up to 600 and meet the new curve at 657.
+	-- Kills per hour (spawn_tuning.json): the plan of this set is the pack model's kills per hour x the ratio the base plan has
+	-- to it (0.472 at 657) falling to the unchanged 0.436 at 1000: 1210 / 1195 / 1160 / 1055 / 960 at 657 / 670 / 700 / 800 / 900
+	-- (836-858 before; it fell 31% where the base pool ends). Per kill, loot, notable and goal are the old points x the old plan /
+	-- the new plan (loot x0.69 at 657 to x0.89 at 900, goal x1.45 to x1.12), so loot, rare gear and the contract pace per hour
+	-- hold; notable is under 1 until 1000 for that reason (it was 1 from 700). Experience was solved on the model's minutes per
+	-- level (tools/progression_model.lua, the xp points of 657 / 700 / 800: 0.0486 / 0.0437 / 0.0323 held to the points of 1000
+	-- and up): 11.3 / 11.6 / 11.9 / 11.2 / 11.5 at 650 / 670 / 700 / 800 / 900 (12.0 / 13.8 / 13.4 / 11.3 / 11.3 before, the bump
+	-- of +15% at 650-690 is gone), 12.7 at 1000 (12.5; the pool's medians are lumpy by 5% from level to level).
 	-- Check with: luajit tools/pace_scan.lua
 	scaled = {
-		health = {{100, 0.10}, {650, 0.140}, {800, 0.110}, {1000, 0.080}, {1300, 0.068}, {1600, 0.062}, {2000, 0.058}},
-		xp = {{100, 0.044}, {650, 0.0499}, {800, 0.0414}, {1000, 0.0323}, {1300, 0.0270}, {1600, 0.0245}, {2000, 0.0233}},
-		loot = {{100, 0.137}, {650, 0.482}, {800, 0.336}, {1000, 0.230}, {1300, 0.185}, {1600, 0.163}, {2000, 0.147}},
-		goal = {{650, 16.9}, {800, 20.9}, {1000, 25.8}, {1300, 30.9}, {1600, 34.3}, {2000, 36.6}},
+		health = {{100, 0.10}, {600, 0.1364}, {657, 0.0606}, {670, 0.0650}, {700, 0.0681}, {800, 0.0770}, {900, 0.0795}, {1000, 0.080},
+			{1300, 0.068}, {1600, 0.062}, {2000, 0.058}},
+		xp = {{100, 0.044}, {600, 0.0495}, {657, 0.0486}, {700, 0.0437}, {800, 0.0323}, {1000, 0.0323}, {1300, 0.0270}, {1600, 0.0245},
+			{2000, 0.0233}},
+		loot = {{100, 0.137}, {600, 0.4506}, {657, 0.3285}, {670, 0.3241}, {700, 0.3135}, {800, 0.2694}, {900, 0.2528}, {1000, 0.230},
+			{1300, 0.185}, {1600, 0.163}, {2000, 0.147}},
+		goal = {{600, 16.9}, {657, 24.72}, {670, 24.88}, {700, 25.20}, {800, 26.06}, {900, 26.14}, {1000, 25.8}, {1300, 30.9},
+			{1600, 34.3}, {2000, 36.6}},
 		-- loot by monster level: the base points from 450 on (the old `gold` reached 0.30 at 450 in both sets); below,
 		-- the old ramp from 100 x the 0.963 the base curve carries there (the empty-corpse floor)
 		coins = {{100, 0.963}, {275, 0.626}, {400, 0.730}, {450, 0.740}, {500, 0.880}, {550, 0.900}, {600, 0.900},
 			{650, 0.176}, {700, 0.179}, {800, 0.133}, {900, 0.252}, {1000, 0.271}, {1250, 0.290}},
 		junkKeep = {{300, 3.67}, {400, 0.700}, {450, 0.500}, {500, 0.720}, {550, 0.800}, {600, 0.880}, {650, 3.67},
 			{700, 0.312}, {800, 0.114}, {900, 0.613}, {1000, 3.45}},
-		notable = {{650, 0}, {700, 1}}
+		notable = {{650, 0}, {657, 0.0968}, {670, 0.2803}, {700, 0.7235}, {800, 0.8019}, {900, 0.8932}, {1000, 1}}
 	},
 
 	-- generated area / dungeon points (areagen: the point's level): the points the run-time model of the queue dungeons

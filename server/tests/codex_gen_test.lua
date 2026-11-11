@@ -154,13 +154,30 @@ for _, tab in ipairs({tabs.modifiers, tabs.powers}) do
 end
 local speed = ids["mod:chaos_mod_attackspeed"]
 eq(speed.side, "suffix", "attack speed side"); count()
-eq(speed.tv[8], "+13-15%", "attack speed T8"); count()
+eq(speed.tv[8], "+26-27%", "attack speed T8"); count()
 eq(speed.f.kind[1], "weapon", "attack speed on weapons"); count()
 eq(#speed.f.kind, 1, "attack speed only on weapons"); count()
+-- O461: the critical pair is two modifiers, each with its own page and numbers
 local crit = ids["mod:rarity_criticalhitchance"]
-eq(crit.name, "Critical Hit", "critical pair name"); count()
-eq(crit.tv[8], "5-7% chance, +8-10%", "critical T8 (chance two thirds)"); count()
-eq(ids["mod:rarity_physicalabsorb"].f.kind[8], "other", "absorbs on any gear"); count()
+eq(crit.name, "Critical Strike Chance", "critical chance name"); count()
+eq(crit.tv[8], "+7-8%", "critical chance T8, in points"); count()
+local critDmg = ids["mod:rarity_criticalhitamount"]
+eq(critDmg.name, "Critical Strike Damage", "critical damage name"); count()
+eq(critDmg.tv[8], "+35-38%", "critical damage T8"); count()
+eq(critDmg.f.kind[1] ~= nil, true, "kinds of the critical damage"); count()
+eq(ids["mod:chaos_mod_lifeleech"].tv[8], "+1-1.2%", "the Lua life leech in percent: T8 10-12 tenths"); count()
+eq(ids["mod:chaos_mod_goldfind"], nil, "Gold Find left the roll pool: no page"); count()
+eq(ids["mod:chaos_mod_manacost"], nil, "Mana Cost Reduction left the roll pool: no page"); count()
+eq(ids["mod:rarity_miningskill"], nil, "the six crafting professions left the roll pool: no page"); count()
+eq(loaded.tierWindow, M.config.maxTier, "every tier rolls: the window as wide as the table"); count()
+eq(#ids["mod:rarity_physicalabsorb"].f.kind, 2, "O464: the physical reduction rolls on armour and shields only"); count()
+eq(ids["mod:rarity_physicalabsorb"].f.kind[1] .. "," .. ids["mod:rarity_physicalabsorb"].f.kind[2], "shield,armor", "O464: shield and armour"); count()
+eq(ids["mod:rarity_fireabsorb"], nil, "O464: the per-type absorbs left the roll pool: no page"); count()
+eq(#ids["mod:chaos_mod_fireres"].f.kind, 7, "O464: a resistance rolls on seven kinds"); count()
+eq(ids["mod:chaos_mod_fireres"].tv[8], "+46-48%", "O464: fire resistance T8"); count()
+eq(ids["mod:chaos_mod_allres"].tv[1], "+3-4%", "O464: all resistances T1"); count()
+eq(ids["mod:chaos_mod_armour"].tv[8], "+45-52", "O464: armour T8, flat"); count()
+ok(ids["basics:defence"] ~= nil, "O464: the page How you defend"); count()
 
 -- links and shared sections resolve
 for id, e in pairs(ids) do
@@ -221,8 +238,119 @@ ok(sources.rows[1][2]:find("Legendary 40%%") ~= nil, "loot_config chance: " .. s
 
 -- a unique: stats from the specs, drop chances by tier
 local soul = ids["unique:8209"]
-ok(soul.sub:find("Attack 52") ~= nil, "unique stats " .. soul.sub); count()
+ok(soul.sub:find("Attack 54") ~= nil, "unique stats (O472: attack 52 x a(120) = 54) " .. soul.sub); count()
 eq(soul.f.level, 120, "unique level"); count()
 eq(soul.f.kind[1], "weapon", "unique kind"); count()
+
+-- ---------------------------------------------------------------- uniques explain themselves (O467)
+do
+	-- the steps of the Level filter come from the levels (10s to 100, 50s to 400, 100s to 1000, 200s above; the last is the top)
+	local steps = Gen.levelSteps({10, 20, 30, 40, 55, 70, 90, 120, 180, 260, 410, 900, 1400, 2400}, 4)
+	eq(table.concat(steps, ","), "40,90,500,2400", "level steps: quartiles (40, 90, 410) rounded up, the top as it is"); count()
+	eq(table.concat(Gen.levelSteps({5, 5, 5}, 4), ","), "5", "level steps: one level, one step"); count()
+	eq(#Gen.levelSteps({}, 4), 0, "level steps: no levels"); count()
+
+	-- the Level filter of the Uniques tab reaches the highest unique level and every unique is under its top step
+	local top, lowest = 0, math.huge
+	for _, e in ipairs(tabs.uniques.entries) do
+		top, lowest = math.max(top, e.f.level), math.min(lowest, e.f.level)
+	end
+	local levelFilter, classFilter
+	for _, f in ipairs(tabs.uniques.filters) do
+		if f.key == "level" then levelFilter = f end
+		if f.key == "class" then classFilter = f end
+	end
+	ok(levelFilter ~= nil and classFilter ~= nil, "the Uniques tab has a Level and a Class filter"); count()
+	eq(tonumber(levelFilter.options[#levelFilter.options][1]), top, "the last Level step is the highest unique level"); count()
+	ok(top >= 2000, "the uniques really reach level 2000 and more: " .. top); count()
+	local prev = 0
+	for i = 2, #levelFilter.options do
+		local v = tonumber(levelFilter.options[i][1])
+		ok(v > prev, "Level steps rise: " .. v); count()
+		prev = v
+	end
+	ok(#levelFilter.options >= 6, "several Level steps"); count()
+	ok(tonumber(levelFilter.options[2][1]) >= lowest, "the first step is above the lowest level"); count()
+
+	-- the Class filter: every unique has the class lines of its passive; the options are the seven lines
+	eq(#classFilter.options, 8, "any class and the seven lines"); count()
+	local P, PC = D.passives, ChaosUniquePassivesCore
+	for _, e in ipairs(tabs.uniques.entries) do
+		local id = tonumber(e.id:match("^unique:(%d+)$"))
+		local want = {}
+		for _, key in ipairs(P.lineOrder) do
+			if PC.worksFor(P, PC.entry(P, id), key) then want[#want + 1] = key end
+		end
+		eq(table.concat(e.f.class, ","), table.concat(want, ","), "class lines of " .. e.id); count()
+		ok(#want > 0, "a unique's power works for some class: " .. e.id); count()
+	end
+	eq(table.concat(ids["unique:8209"].f.class, ","), "warrior,thief,necromancer", "Soulreaper: Warrior, Thief, Necromancer"); count()
+	-- the Item row says it: "Every class" when the power lists all seven lines
+	local everyClass = 0
+	for _, e in ipairs(tabs.uniques.entries) do
+		for _, s in ipairs(e.sections) do
+			if s.h == "Item" then
+				local row
+				for _, r in ipairs(s.rows) do
+					if r[1] == "Power works for" then row = r end
+				end
+				ok(row ~= nil, "Power works for row of " .. e.id); count()
+				if #e.f.class == 7 then
+					eq(row[2], "Every class", "all seven lines: Every class"); count()
+					everyClass = everyClass + 1
+				end
+			end
+		end
+	end
+	ok(everyClass >= 5, "some uniques work for every class: " .. everyClass); count()
+
+	-- the Level window row: exactly the leveling uniques with a monster list, with the levels of unique_window_core.lua
+	local W, withRow, without = ChaosUniqueWindow, 0, 0
+	for _, u in ipairs(D.uniques) do
+		local sec
+		for _, s in ipairs(ids["unique:" .. u.id].sections) do
+			if s.h == "Sources" then sec = s end
+		end
+		local row
+		for _, r in ipairs(sec.rows) do
+			if r[1] == "Level window" then row = r end
+		end
+		local lo, hi = W.levels(D.loot.unique.openLevel, u)
+		if lo and type(u.monsters) == "table" and #u.monsters > 0 then
+			ok(row ~= nil, "Level window row of " .. u.name); count()
+			ok(row[2]:find(string.format("monster of level %d to %d ", Chaos.huntingLevel(lo), Chaos.huntingLevel(hi)), 1, true) ~= nil,
+				"its levels: " .. row[2]); count()
+			withRow = withRow + 1
+		else
+			ok(row == nil, "no Level window row for " .. u.name); count()
+			without = without + 1
+		end
+	end
+	ok(withRow > 50 and without > 20, "both kinds exist: " .. withRow .. " with a window row, " .. without .. " without"); count()
+
+	-- the Basics page: its numbers are the configs' (never typed in the generator)
+	local page = ids["basics:uniques"]
+	ok(page ~= nil, "the Basics page Uniques"); count()
+	local words = {}
+	for _, s in ipairs(page.sections) do
+		for _, p in ipairs(s.p or {}) do words[#words + 1] = p end
+	end
+	local all = table.concat(words, "\n")
+	local lu = D.loot.unique
+	ok(all:find("At most " .. P.maxActive .. " unique powers work at once", 1, true) ~= nil, "the limit of active powers"); count()
+	ok(all:find("level " .. lu.openLevel.maxItemLevel .. " or lower", 1, true) ~= nil, "the leveling unique's item level limit"); count()
+	ok(all:find("from " .. math.floor((1 - lu.openLevel.below) * 100 + 0.5) .. "% of its level up to " .. Gen.num(lu.openLevel.above) ..
+		" times its level plus " .. lu.openLevel.aboveFlat, 1, true) ~= nil, "the level window of the config"); count()
+	ok(all:find(D.uniquePace.target.min .. " to " .. D.uniquePace.target.max .. " kills", 1, true) ~= nil, "the pace of the config"); count()
+	ok(all:find("at " .. math.floor(lu.open.mult * 100 + 0.5) .. "% of its chance", 1, true) ~= nil, "the endgame rule"); count()
+	ok(all:find("kill number " .. D.retention.firstUnique.kills, 1, true) ~= nil, "the first unique's kill"); count()
+	ok(all:find("level " .. D.retention.firstUnique.maxLevel .. " or lower finds", 1, true) ~= nil, "the first unique's level"); count()
+	ok(all:find("Ctrl", 1, true) and all:find("Alt", 1, true) and all:find("Open in Codex", 1, true), "Ctrl, Alt and the Codex entry"); count()
+
+	-- every unique with a drop entry has a page the tooltip's right-click entry can open (T.codexId)
+	for id in pairs(ChaosUniqueById) do
+		ok(ids["unique:" .. id] ~= nil, "a Codex page for the unique " .. id); count()
+	end
+end
 
 print(string.format("codex_gen_test: %d checks OK (%d entries)", checks, entries))

@@ -71,7 +71,7 @@ ChaosRound4Config = {
 		-- Mounts add a flat speed in the stock mounts.xml, which this repository does not hold: the cap of the gain and the
 		-- engine's maxPlayerSpeed hold whatever a mount adds (the test checks that too).
 		speed = {
-			items = 12, -- every movespeed modifier of the worn items, gems and sets together (chaos_item_mods.lua cap)
+			items = 35, -- the movespeed modifier of the boots (T8 top, chaos_item_mods.lua; the module has no cap since O461, it was 12)
 			paragon = 10, -- Paragon Movement Speed, 20 points x 0.5% (chaos_constants.lua)
 			vigil = 15, -- Vigil of Haste (vigils_config.lua)
 			banner = 10, -- Banner Call, 12 s (rallying_cry.lua)

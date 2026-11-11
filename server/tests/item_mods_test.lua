@@ -38,6 +38,7 @@ local TYPES = {
 	[2514] = {name = "mastermind shield", weaponType = WEAPON_SHIELD, defense = 37, slot = 48},
 	[2456] = {name = "bow", weaponType = 5, attack = 0, slot = 48},
 	[36656] = {name = "pair of ember knuckles", weaponType = WEAPON_SHIELD, attack = 46, defense = 12, slot = 48},
+	[2210] = {name = "gloves of the north", armor = 1, slot = 1024}, -- a worn piece that is none of the kinds (kind "other")
 	[2160] = {name = "crystal coin", stackable = true}
 }
 
@@ -178,11 +179,11 @@ local M = ChaosItemMods
 local C = ChaosCrafting
 
 -- ---------------------------------------------------------------- catalogue
-eq(#M.config.mods, 54, "fifty-four modifiers (fifteen old, fifteen new, one worn attack speed, twelve legendary powers, three energy shield, eight quiver)")
+eq(#M.config.mods, 73, "seventy-three modifiers (fifteen old, fifteen new, one worn attack speed, twelve legendary powers, three energy shield, eight quiver, four Lua leech, eight of O461, seven of O464: armour, spell suppression, four resistances, all resistances)")
 local sides = {prefix = 0, suffix = 0}
 for _, def in ipairs(M.config.mods) do
 	eq(#def.tiers, 8, def.key .. ": eight tiers")
-	assert(def.cap > 0 and def.weight > 0, def.key)
+	assert((def.cap == nil or def.cap > 0) and def.weight > 0, def.key) -- O461: most rows have no cap of their own
 	assert(def.side == "prefix" or def.side == "suffix", def.key .. ": a side")
 	sides[def.side] = sides[def.side] + 1
 	local prevLo, prevHi = 0, 0
@@ -191,11 +192,11 @@ for _, def in ipairs(M.config.mods) do
 		assert(r[1] >= prevLo and r[2] >= prevHi, def.key .. " ranges grow with the tier")
 		prevLo, prevHi = r[1], r[2]
 	end
-	assert(def.tiers[8][2] <= def.cap, def.key .. ": one item never beats the cap")
+	assert(def.cap == nil or def.tiers[8][2] <= def.cap, def.key .. ": one item never beats the cap")
 	assert(next(def.kinds), def.key .. ": allowed somewhere")
 end
-eq(sides.prefix, 31, "fifteen prefixes, seven prefix powers, two energy shield, seven quiver prefixes")
-eq(sides.suffix, 23, "sixteen suffixes (one worn attack speed), five suffix powers, energy shield recharge, quiver attack speed")
+eq(sides.prefix, 36, "fifteen prefixes, seven prefix powers, two energy shield, seven quiver prefixes, four of O461 (maximum life and mana, spell and weapon damage), one of O464 (armour)")
+eq(sides.suffix, 37, "sixteen suffixes (one worn attack speed), five suffix powers, energy shield recharge, quiver attack speed, four leech, four of O461 (mana regeneration, three attributes), six of O464 (spell suppression, the four resistances, all resistances)")
 -- the five tiers of before are T2 .. T6, so old items keep their meaning
 local OLD = {attackspeed = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}}, lifeonkill = {{5, 10}, {10, 20}, {20, 40}, {35, 60},
 	{50, 90}}, goblinchance = {{10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}}, dodge = {{1, 1}, {1, 2}, {1, 2}, {2, 3},
@@ -209,16 +210,18 @@ for key, old in pairs(OLD) do
 end
 -- item 78: every Chaos modifier and every engine type got bigger numbers (about x1.5 to x3 for the small ones, less at
 -- the top where a cap or the engine sits close) and no tier got smaller
+-- (O461: these pins are on the ranges of version 1, M.v1 where a row changed, today's row where it did not)
 local grown, total = 0, 0
 for _, def in ipairs(M.config.mods) do
 	local legacy = M.legacy[def.key]
 	if legacy then -- the legendary powers, the energy shield and the quiver modifiers have their own tables
+		local v1 = M.v1.mods[def.key] or M.v2.mods[def.key] or def.tiers -- the ranges of the version the item had before O464
 		for t = 1, 8 do
-			assert(def.tiers[t][1] >= legacy[t][1] and def.tiers[t][2] >= legacy[t][2], def.key .. " T" .. t .. " never shrank")
+			assert(v1[t][1] >= legacy[t][1] and v1[t][2] >= legacy[t][2], def.key .. " T" .. t .. " never shrank")
 		end
 		local oldSum, newSum = 0, 0
 		for t = 1, 8 do
-			oldSum, newSum = oldSum + legacy[t][1] + legacy[t][2], newSum + def.tiers[t][1] + def.tiers[t][2]
+			oldSum, newSum = oldSum + legacy[t][1] + legacy[t][2], newSum + v1[t][1] + v1[t][2]
 		end
 		total = total + 1
 		if newSum >= oldSum * 1.3 then
@@ -229,20 +232,136 @@ for _, def in ipairs(M.config.mods) do
 end
 eq(total, 30, "thirty modifiers with an old table")
 assert(grown >= 26, "most grew by 30% or more: " .. grown)
-for name, e in pairs(M.config.engine) do
+local v1Engine = {absorb = M.config.engine.absorb.tiers, skill = M.config.engine.skill.tiers, profession = M.config.engine.profession.tiers,
+	element = M.config.engine.element.tiers, critical = M.v1.engine.critical, leech = M.v1.engine.leech}
+for name, tiers in pairs(v1Engine) do
 	for t = 1, 8 do
-		assert(e.tiers[t][2] >= M.legacyEngine[name][t][2], name .. " T" .. t .. " never shrank")
+		assert(tiers[t][2] >= M.legacyEngine[name][t][2], name .. " T" .. t .. " never shrank")
 	end
-	assert(e.tiers[8][2] >= M.legacyEngine[name][8][2] * 1.4, name .. " T8 grew by at least 40%")
+	assert(tiers[8][2] >= M.legacyEngine[name][8][2] * 1.4, name .. " T8 grew by at least 40%")
 end
--- the stats an engine cap sits on stay under it: attack speed 15 (and the weapon's -20% / -25% rules), movement 12, dodge 10
-eq(M.byKey.attackspeed.tiers[8][2], 15, "attack speed T8 tops at its cap") eq(M.byKey.movespeed.tiers[8][2], 12)
-assert(M.byKey.dodge.tiers[8][2] <= 7, "dodge: one item takes at most 7 of the 10")
-assert(M.config.engine.leech.tiers[8][2] <= 10 and M.config.engine.critical.tiers[8][2] <= 10, "critical / leech tops at 10")
-eq(M.byKey.movespeed.cap, 12)
-eq(M.byKey.dodge.cap, 10)
-eq(M.byKey.experience.cap, 15)
+-- O461: no module cap on the rows of stage 1; the numbers are the ladders of the owner list. The caps that stay: the stage 2 rows, the
+-- rows left out of the roll pool (valid keys for uniques, sets, veiled modifiers, charms, factions and raid rewards) and the
+-- unchanged ones
+eq(M.byKey.attackspeed.tiers[8][2], 27, "attack speed T8 27") eq(M.byKey.movespeed.tiers[8][2], 35)
+for t, v in ipairs({10, 13, 16, 20, 24, 28, 32, 35}) do
+	eq(M.byKey.movespeed.tiers[t][1], v, "movement speed: one fixed number per tier") eq(M.byKey.movespeed.tiers[t][2], v)
+end
+eq(M.byKey.dodge.tiers[8][2], 11, "dodge T8 10-11 (O464: the layer holds the sum at 75, no module cap)")
+assert(M.config.engine.leech.tiers[8][2] <= 10 and M.v1.engine.critical[8][2] <= 10, "the old critical / leech pairs topped at 10")
+eq(M.config.engine.critchance.tiers[8][2], 8, "Critical Strike Chance T8 7-8 points") eq(M.config.engine.critdamage.tiers[8][2], 38)
+eq(M.byKey.movespeed.cap, nil, "no cap of the module")
+eq(M.byKey.dodge.cap, nil, "O464: no module cap, the player defence layer caps dodge at 75")
+eq(M.byKey.experience.cap, nil)
+eq(M.byKey.goldfind.cap, 40, "out of the roll pool, the key keeps its cap") eq(M.byKey.itemfind.cap, 25) eq(M.byKey.manacost.cap, 25)
+for _, key in ipairs({"attackspeed", "gearspeed", "movespeed", "bleedchance", "ignitechance", "poisonchance", "chillchance",
+		"shockchance", "execute", "dot", "bossdamage", "lifeonkill", "manaonkill", "lifeonhit", "manaonhit", "regen", "experience",
+		"rarityfind", "cdr", "bowcrit", "bowspeed", "arrowfire", "arrowice", "arrowenergy", "arrowearth", "lifeleech", "lifeleechw",
+		"manaleech", "manaleechw", "maxlife", "maxmana", "manaregen", "strength", "dexterity", "intelligence", "spelldamage",
+		"weapondamage"}) do
+	eq(M.byKey[key].cap, nil, key .. ": no cap of the module (O461)")
+end
+for _, key in ipairs({"healing", "goblinchance", "multishot", "bowdistance"}) do
+	assert(M.byKey[key].cap, key .. ": unchanged, keeps its cap")
+end
+-- O464: the defence rows lost their module caps (the caps are the player defence layer's and the engine's)
+for _, key in ipairs({"dodge", "block", "reflect", "thorns", "monsterreduction", "energyshield",
+		"energyshieldpct", "esrecharge", "lastbreath", "frostward", "armour", "spellsuppress", "fireres", "coldres", "lightningres",
+		"chaosres", "allres"}) do
+	eq(M.byKey[key].cap, nil, key .. ": no cap of the module (O464)")
+end
+-- O471: the two penetration rows get a module cap again: 20 points of each kind from every source together
+for _, key in ipairs({"physpen", "elepen"}) do
+	eq(M.byKey[key].cap, 20, key .. ": 20 points in total (O471)")
+	eq(M.byKey[key].cap, M.config.penetration.cap, key .. ": the row follows config.penetration")
+end
+-- the roll rules: tier ranges never overlap and narrow toward the top (a row whose ladder was given as it is may touch)
+local STAGE1 = {"attackspeed", "gearspeed", "bowspeed", "movespeed", "bowcrit", "bleedchance", "ignitechance", "poisonchance",
+	"chillchance", "shockchance", "dot", "lifeonkill", "manaonkill", "lifeonhit", "manaonhit", "regen", "experience", "rarityfind",
+	"cdr", "arrowfire", "arrowice", "arrowenergy", "arrowearth", "lifeleech", "lifeleechw", "maxlife", "maxmana", "manaregen",
+	"strength", "dexterity", "intelligence", "spelldamage", "weapondamage"}
+for _, key in ipairs(STAGE1) do
+	local tiers = M.byKey[key].tiers
+	for t = 2, 8 do
+		assert(tiers[t][1] >= tiers[t - 1][1] and tiers[t][2] >= tiers[t - 1][2], key .. ": a higher tier never rolls lower")
+		assert(tiers[t][1] >= tiers[t - 1][2] or key == "cdr" or key == "experience" or key == "gearspeed" or key == "bowspeed",
+			key .. " T" .. t .. ": starts at or above the end of the tier before")
+	end
+end
+for _, key in ipairs({"attackspeed", "bleedchance", "dot", "lifeonkill", "manaonkill", "lifeonhit", "manaonhit", "regen", "maxlife",
+		"maxmana", "manaregen", "strength", "spelldamage", "weapondamage", "arrowfire", "lifeleechw", "armour", "spellsuppress",
+		"fireres", "coldres", "lightningres", "chaosres", "allres", "thorns", "energyshield", "energyshieldpct",
+		"esrecharge", "lastbreath", "reflect", "frostward", "monsterreduction"}) do
+	local tiers = M.byKey[key].tiers
+	for t = 2, 8 do
+		assert(tiers[t][1] > tiers[t - 1][2], key .. " T" .. t .. ": above the whole tier before (no overlap)")
+	end
+end
+-- the ladders of the owner's list
+local function ladder(key)
+	local out = {}
+	for _, r in ipairs(M.byKey[key].tiers) do
+		out[#out + 1] = r[1] .. "-" .. r[2]
+	end
+	return table.concat(out, " ")
+end
+eq(ladder("attackspeed"), "5-7 8-10 11-13 14-16 17-19 20-22 23-25 26-27")
+eq(ladder("gearspeed"), "5-6 7-8 9-10 11-11 12-12 13-13 14-15 15-16")
+eq(ladder("bowspeed"), ladder("gearspeed"), "bows: the ladder of the worn pieces")
+eq(ladder("bleedchance"), "18-21 22-25 26-29 30-33 34-38 39-43 44-49 50-55")
+eq(ladder("lifeonkill"), "4-9 12-20 25-40 50-80 90-140 150-220 230-320 330-430")
+eq(ladder("manaonkill"), "2-5 6-10 12-20 25-40 45-65 70-100 105-145 150-195")
+eq(ladder("lifeonhit"), "2-4 6-10 12-20 24-36 40-55 60-78 82-100 104-119")
+eq(ladder("manaonhit"), "1-2 3-5 6-10 12-18 20-28 30-39 41-50 52-60", "half of the health on hit, rounded up")
+eq(ladder("experience"), "1-1 1-1 1-2 1-2 2-2 2-3 2-3 3-3")
+eq(ladder("cdr"), "6-8 8-10 10-12 12-14 14-15 15-16 16-18 18-20")
+eq(ladder("maxlife"), "3-6 7-12 14-24 36-60 88-130 198-260 469-560 693-748")
+eq(ladder("execute"), "10-10 10-10 10-10 10-10 10-10 10-10 10-10 10-10", "Execute: 10 at every tier")
+-- O464: the ladders of the defence stage
+for _, key in ipairs({"fireres", "coldres", "lightningres"}) do
+	eq(ladder(key), "6-11 12-17 18-23 24-29 30-35 36-41 42-45 46-48", key .. ": one element, 6-11 to 46-48")
+end
+eq(ladder("chaosres"), "5-8 9-12 13-16 17-20 21-24 25-28 29-31 32-35", "chaos resistance")
+eq(ladder("allres"), "3-4 5-6 7-8 9-10 11-12 13-14 15-15 16-16", "all elements: Fire, Cold and Lightning together")
+eq(ladder("armour"), "3-5 6-9 10-14 15-20 21-27 28-35 36-44 45-52", "armour, flat")
+eq(ladder("dodge"), "2-3 3-4 4-5 5-6 6-7 7-8 8-9 10-11", "dodge")
+eq(ladder("spellsuppress"), "8-9 10-11 12-13 14-15 16-17 18-19 20-21 22-22", "spell suppression")
+eq(ladder("block"), "8-9 10-11 12-13 14-15 15-16 16-17 17-18 18-20", "block")
+eq(ladder("monsterreduction"), "1-1 2-2 3-3 4-4 5-5 6-6 7-7 8-8", "damage taken from monsters, made non-overlapping")
+eq(ladder("physpen"), "3-3 4-4 5-5 6-6 7-8 9-9 10-11 11-12", "penetration, the ladder as given")
+eq(ladder("elepen"), ladder("physpen"), "elemental penetration the same")
+eq(ladder("esrecharge"), "24-25 26-27 28-29 30-31 32-33 34-35 36-36 37-38", "energy shield recharge")
+eq(ladder("energyshield"), "12-25 26-50 51-85 86-135 136-195 196-270 271-360 361-480", "energy shield: today's ends, non-overlapping")
+eq(ladder("energyshieldpct"), "2-4 5-7 8-10 11-13 14-17 18-21 22-25 26-28", "energy shield percent")
+eq(M.config.engine.physabsorb.tiers[1][1] .. "-" .. M.config.engine.physabsorb.tiers[8][2], "2-8", "physical absorb 2 .. 8")
+for t, r in ipairs({{2, 2}, {3, 3}, {4, 4}, {5, 5}, {5, 6}, {6, 6}, {7, 7}, {7, 8}}) do
+	eq(M.config.engine.physabsorb.tiers[t][1], r[1], "physical absorb T" .. t) eq(M.config.engine.physabsorb.tiers[t][2], r[2])
+end
+eq(M.byKey.chaosres.weight, M.byKey.fireres.weight / 2, "chaos resistance: half the weight of one element")
+eq(M.byKey.armour.kinds.jewel, nil, "armour: not on jewels") eq(M.byKey.armour.kinds.shield, true) eq(M.byKey.armour.side, "prefix")
+eq(M.byKey.allres.kinds.jewel, true, "all resistances: jewel, other, shield") eq(M.byKey.allres.kinds.armor, nil)
+eq(M.byKey.spellsuppress.kinds.helmet, true, "spell suppression: armor, helmet, boots, other") eq(M.byKey.spellsuppress.kinds.shield, nil)
+eq(M.byKey.fireres.kinds.weapon, nil, "resistances: not on weapons") eq(M.byKey.fireres.kinds.shield, true)
+eq(M.byKey.lifeleech.tiers[1][1] .. "-" .. M.byKey.lifeleech.tiers[1][2], "2-4"); eq(M.byKey.lifeleech.tiers[8][2], 12)
+eq(M.byKey.lifeleechw.tiers[1][1], 20); eq(M.byKey.lifeleechw.tiers[8][2], 45)
+eq(M.byKey.manaleech.tiers[8][2], 8)
+eq(M.byKey.manaleechw.minTier, 4, "the weapon's mana leech does not roll below T4")
+for t = 1, 8 do
+	eq(M.byKey.manaleechw.tiers[t][1], 26) eq(M.byKey.manaleechw.tiers[t][2], 32)
+end
+-- Health Regeneration: T8 is 3.5% to 4.1% of the median health at level 1000 (17,004), T1 .. T7 the same share of the median
+-- health of the level where a normal drop first reaches the tier
+eq(M.byKey.regen.tiers[8][1], 595); eq(M.byKey.regen.tiers[8][2], 697)
+eq(M.byKey.regen.tiers[1][1], 9); eq(M.byKey.regen.tiers[4][1], 89)
+eq(M.byKey.maxmana.tiers[8][1], 704, "Maximum Mana T8: 4.9% to 5.2% of the median mana of level 1000 (14,369)") eq(M.byKey.maxmana.tiers[8][2], 747)
+eq(M.byKey.bossdamage.cap, nil, "numbers kept, cap removed")
 eq(M.byKey.attackspeed.side, "suffix", "speed is a suffix")
+eq(M.byKey.gearspeed.kinds.jewel, nil, "worn Attack Speed: the badge and the like only (O461)") eq(M.byKey.gearspeed.kinds.other, true)
+eq(M.byKey.lifeonhit.kinds.jewel, nil, "health on hit: weapons only (O461)") eq(M.byKey.manaonhit.kinds.weapon, true)
+eq(M.byKey.experience.kinds.helmet, nil, "experience: jewels only (O461)") eq(M.byKey.experience.kinds.jewel, true)
+eq(M.byKey.rarityfind.kinds.boots, true, "rarity find: helmet, jewel, boots") eq(M.byKey.regen.kinds.helmet, nil)
+eq(M.byKey.regen.kinds.shield, true) eq(M.byKey.regen.kinds.armor, true) eq(M.byKey.regen.kinds.legs, true)
+eq(M.byKey.execute.stack, "max", "Execute does not stack")
 eq(M.byKey.bossdamage.side, "prefix", "damage is a prefix")
 -- the engine's types have eight tiers too
 for name, e in pairs(M.config.engine) do
@@ -271,8 +390,9 @@ eq(addableKeys(newItem(2400)).attackspeed, true, "attack speed on weapons")
 eq(addableKeys(newItem(2514)).attackspeed, nil, "not on shields")
 -- owner 2026-10-28, "few attack speed on items": a worn piece (ring, amulet, belt..) rolls Attack Speed too, as a player-level
 -- bonus (engine patch 0078), the weapon's own modifier stays local to the weapon
-eq(addableKeys(newItem(2123)).gearspeed, true, "worn attack speed on rings")
-eq(addableKeys(newItem(2171)).gearspeed, true, "worn attack speed on amulets")
+eq(addableKeys(newItem(2210)).gearspeed, true, "worn attack speed on the badge and the like (kind other)")
+eq(addableKeys(newItem(2123)).gearspeed, nil, "no longer on rings (O461)")
+eq(addableKeys(newItem(2171)).gearspeed, nil, "no longer on amulets (O461)")
 eq(addableKeys(newItem(2400)).gearspeed, nil, "not on weapons (they have attackspeed)")
 eq(addableKeys(newItem(2466)).gearspeed, nil, "not on armor")
 -- Echo Shot works on a ranged hit only: a bow rolls it, a sword or a Monk's fist weapon does not (owner 2026-11-01)
@@ -289,9 +409,11 @@ eq(powerKeys(2400).echoshot, nil, "no Echo Shot on a sword")
 eq(powerKeys(36656).echoshot, nil, "no Echo Shot on a fist weapon")
 eq(powerKeys(36656).critecho, true, "a fist weapon keeps the other weapon powers")
 eq(addableKeys(newItem(2123)).attackspeed, nil, "the weapon's own modifier is not on rings")
-eq(M.byKey.gearspeed.cap, 10, "worn attack speed cap") eq(M.byKey.gearspeed.label, "Attack Speed")
+eq(M.byKey.gearspeed.cap, nil, "worn attack speed: no cap of the module (the player cap 45 of ChaosItemMods config stays)")
+eq(M.byKey.gearspeed.label, "Attack Speed")
 eq(M.byKey.attackspeed.weight, 20, "weapon attack speed weight (was 8)")
-eq(M.totals({}, {gearspeed = 30}).gearspeed, 10, "the pieces together are held at the cap")
+eq(M.totals({}, {gearspeed = 30}).gearspeed, 30, "the pieces add up (the module has no cap; ChaosItemMods.playerSpeedTotal holds the player cap)")
+eq(M.config.playerSpeedCap, 45, "the cap of the player's own attack speed is untouched")
 -- the weapon's modifier does not count as a player bonus, and gear speed does not touch the weapon's interval
 eq(M.totals({}, {attackspeed = 9}).gearspeed, 0)
 eq(addableKeys(newItem(2514)).block, true, "block on shields")
@@ -300,22 +422,32 @@ eq(addableKeys(newItem(2400)).execute, true, "execute on weapons")
 eq(addableKeys(newItem(2471)).cdr, true, "cooldown reduction on helmets")
 
 -- ---------------------------------------------------------------- tiers
+eq(table.concat(M.config.tierLevels, ","), "1,15,30,50,70,90,110,130", "O461: the item level of each tier")
+eq(M.config.tierWindow, nil, "O461: the window of the best five tiers is gone")
 eq(M.maxTierFor(1), 1); eq(M.maxTierFor(14), 1); eq(M.maxTierFor(15), 2); eq(M.maxTierFor(69), 4)
-eq(M.maxTierFor(70), 5); eq(M.maxTierFor(139), 7); eq(M.maxTierFor(140), 8); eq(M.maxTierFor(150), 8)
+eq(M.maxTierFor(70), 5); eq(M.maxTierFor(89), 5); eq(M.maxTierFor(90), 6); eq(M.maxTierFor(109), 6); eq(M.maxTierFor(110), 7)
+eq(M.maxTierFor(129), 7); eq(M.maxTierFor(130), 8); eq(M.maxTierFor(150), 8)
 eq(M.maxTierFor(0), 1, "no level: T1")
 local rows = M.tierRows(150)
-eq(#rows, 5, "five tiers can roll"); eq(rows[1][1], 8, "best first"); eq(rows[5][1], 4, "T4 the lowest at 150")
+eq(#rows, 8, "every tier the item level allows can roll"); eq(rows[1][1], 8, "best first"); eq(rows[8][1], 1, "T1 still rolls at 150")
 eq(#M.tierRows(40), 3, "T1-T3 at item level 40")
--- higher tiers are rarer
-for t = 2, 8 do
-	assert(M.config.tierWeights[t] < M.config.tierWeights[t - 1], "weights fall with the tier")
+eq(#M.tierRows(150, 4), 5, "a modifier gated at T4 rolls T4 .. T8 on an item of level 150")
+eq(#M.tierRows(40, 4), 0, "and nothing on an item that allows T3 at most")
+-- O471 (2026-11-10): the weight of tier t is 1.35^(t-1), rounded (O461 had them equal)
+local wantW = {100, 135, 182, 246, 332, 448, 605, 816}
+for t = 1, 8 do
+	eq(M.config.tierWeights[t], wantW[t], "tier weight T" .. t)
+	eq(math.abs(M.config.tierWeights[t] - 100 * 1.35 ^ (t - 1)) <= 1.5, true, "the weight follows 1.35^(t-1) (T8: 816, the exact power 817.2)")
 end
 local ch = M.tierChances(150)
-eq(ch[8], 6.5, "T8 at item level 150: 12 / 184"); eq(ch[4], 35.3); eq(ch[1], nil, "T1 cannot roll at 150")
+eq(ch[8], 28.5, "T8 at item level 150: 816 of 2864"); eq(ch[4], 8.6); eq(ch[1], 3.5, "T1 can still roll at 150")
 eq(M.tierChances(10)[1], 100, "item level 10: only T1")
+eq(M.tierChances(133)[8], 28.5, "T8 opens at item level 130")
+eq(M.tierChances(40)[3], 43.6, "item level 40 (T1-T3): 182 of 417")
 -- the roll: forced dice pick the tiers
 eq(M.rollTier(150, function(a, b) return a end), 8, "lowest dice: the first row (best tier)")
-eq(M.rollTier(150, function(a, b) return b end), 4, "highest dice: the last row")
+eq(M.rollTier(150, function(a, b) return b end), 1, "highest dice: the last row")
+eq(M.rollTier(150, function(a, b) return b end, 4), 4, "highest dice with a gate at T4")
 eq(M.rollTier(1, function(a, b) return b end), 1)
 -- average tier grows with the item level (exact weighted mean)
 local function mean(level)
@@ -328,11 +460,11 @@ end
 assert(mean(20) < mean(60) and mean(60) < mean(100) and mean(100) < mean(150), "higher item levels roll higher tiers")
 -- ranges and old values
 local as = M.byKey.attackspeed
-eq(M.range(as, 1)[1], 2); eq(M.range(as, 8)[2], 15); eq(M.range(as, 99)[2], 15, "clamped")
-eq(M.tierOfValue(as.tiers, 10), 6, "+10% attack speed: the lowest tier that holds it, T6 (9-11)")
-eq(M.tierOfValue(as.tiers, 3), 1, "+3%: T1 (2-3)")
+eq(M.range(as, 1)[1], 5); eq(M.range(as, 8)[2], 27); eq(M.range(as, 99)[2], 27, "clamped")
+eq(M.tierOfValue(as.tiers, 10), 2, "+10% attack speed: the lowest tier that holds it, T2 (8-10)")
+eq(M.tierOfValue(as.tiers, 6), 1, "+6%: T1 (5-7)")
 eq(M.tierOfValue(M.legacy.attackspeed, 3), 2, "the old table: +3% was T2 (2-3)")
-eq(M.tierOfValue(as.tiers, 20), 8, "above every range: the top tier")
+eq(M.tierOfValue(as.tiers, 40), 8, "above every range: the top tier")
 eq(M.tierOfValue(as.tiers, 0), 1)
 eq(M.tierOfValue(as.tiers, 2, 2, 6), 2, "searched in T2..T6 only")
 for _, def in ipairs(M.config.mods) do
@@ -378,11 +510,21 @@ eq(M.maxBinds(1), 1); eq(M.maxBinds(4), 1); eq(M.maxBinds(5), 2); eq(M.maxBinds(
 eq(M.qualityCap(5), 20); eq(M.qualityCap(10), 30); eq(M.qualityCap(9), 20, "an old Eternal: below Divine") eq(M.qualityCap(11), 30, "an old Phantasmal: Divine's")
 
 -- ---------------------------------------------------------------- item level of a drop
-eq(M.levelFromMonster(1), 1); eq(M.levelFromMonster(50), 22); eq(M.levelFromMonster(75), 29, "between 50 and 100")
-eq(M.levelFromMonster(1100), 128); eq(M.levelFromMonster(99999), 145)
+-- O471 (2026-11-10): the curve of the design, one number per mark of the owner's table
+eq(M.levelFromMonster(1), 1); eq(M.levelFromMonster(50), 21); eq(M.levelFromMonster(75), 27, "between 50 and 100")
+eq(M.levelFromMonster(100), 33); eq(M.levelFromMonster(200), 50); eq(M.levelFromMonster(350), 68); eq(M.levelFromMonster(500), 82)
+eq(M.levelFromMonster(700), 98); eq(M.levelFromMonster(900), 112); eq(M.levelFromMonster(1000), 117, "between 900 and 1100")
+eq(M.levelFromMonster(1100), 122); eq(M.levelFromMonster(1500), 134); eq(M.levelFromMonster(2000), 144)
+eq(M.levelFromMonster(2200), 148, "the gear keeps growing past monster level 1000"); eq(M.levelFromMonster(99999), 150)
+local prevLv = 0
+for lv = 1, 3000 do
+	local il = M.levelFromMonster(lv)
+	assert(il >= prevLv, "the item level never falls with the monster level (" .. lv .. ")")
+	prevLv = il
+end
 eq(M.sourceLevel({monsterLevel = 42}), 18, "a Dragon: 12 + 10 x 17 / 25")
 eq(M.sourceLevel({monsterLevel = 42, tier = "legendary"}), 25, "+7 legendary")
-eq(M.sourceLevel({monsterLevel = 1000, tier = "legendary", riftTier = 10}), 140, "a legendary in a tier 10 rift: T8")
+eq(M.sourceLevel({monsterLevel = 1000, tier = "legendary", riftTier = 10}), 134, "a legendary in a tier 10 rift: T8")
 eq(M.sourceLevel({monsterLevel = 1100, tier = "boss", riftTier = 15, omen = true}), 150, "capped")
 eq(M.sourceLevel({monsterLevel = 5, riftTier = 99}), M.levelFromMonster(5) + 15, "rift bonus capped")
 eq(M.sourceLevel({worldBoss = true}), 145)
@@ -399,6 +541,7 @@ local amulet = newItem(2171)
 amulet:setCustomAttribute("rarity", 6)
 amulet:setCustomAttribute("combatPowerLevel", 55)
 amulet:setCustomAttribute("rarity_holyAbsorb", 3)
+amulet:setCustomAttribute("chaos_modv", 3) -- today's numbers: not upgraded when read (the upgrade has its own test)
 M.set(amulet, "experience", 4)
 M.set(amulet, "lifeonkill", 18)
 eq(C.rewriteDescription(amulet), "Item Level: 55. Suffixes: Holy +3% (T3); Life on Kill +18 (T3); Experience +4% (T4)",
@@ -423,8 +566,9 @@ M.set(a1, "experience", 9)
 M.set(a2, "experience", 9)
 M.set(a2, "goldfind", 5)
 local t = M.totals({a1, a2})
-eq(t.experience, 15, "capped at 15")
+eq(t.experience, 18, "O461: no cap of the module on experience (9 + 9)")
 eq(t.goldfind, 5)
+eq(M.totals({}, {goldfind = 99}).goldfind, 40, "gold find is out of the roll pool but keeps its cap for uniques, sets and charms")
 eq(t.dodge, 0, "every key present")
 eq(M.speedBonus(437, 7), 30)
 eq(M.scale(100, 10), 110); eq(M.scale(-100, 10), -110); eq(M.scale(100, -3), 97)
@@ -671,16 +815,42 @@ eq(target(player, orc), RETURNVALUE_NOERROR)
 eq(orc.registered.ChaosItemModsDealt, true, "any offensive modifier registers the hit event")
 math.random = function(a, b) return b end -- no ailment
 player.health, player.mana = 100, 0
--- physical: 20% resistance, 10 points ignored: 80 landed = 100 raw -> 90
-eq(dealt.onHealthChange(orc, player, 80, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 90, "physical penetration")
+-- O464: penetration is the monster defence layer's (tests/monster_defence_test.lua), not this event's: the hit stays as it is
+eq(dealt.onHealthChange(orc, player, 80, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 80, "no penetration here any more")
+eq(M.playerBonus(player, "physpen"), 10, "the totals still carry physical penetration for the monster layer")
+eq(M.playerBonus(player, "elepen"), 20, "... and elemental penetration: 25 points worn, 20 count (O471, the cap of the totals)")
 eq(player.health, 107, "health on hit"); eq(player.mana, 3, "mana on hit")
--- ice: 50% resistance, 25 ignored: 50 landed = 100 raw -> 75
 local _, _, sIce = dealt.onHealthChange(orc, player, 0, COMBAT_PHYSICALDAMAGE, 50, COMBAT_ICEDAMAGE, ORIGIN_SPELL)
-eq(sIce, 75, "elemental penetration on the secondary part")
+eq(sIce, 50, "the secondary part is not changed here either")
 -- damage over time: hits of conditions you own, no on-hit
 player.health = 100
 eq(dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), 60, "+20% damage over time")
 eq(player.health, 100, "a condition tick is no hit")
+-- O474: a scripted tick of a dot spell is the same (ChaosDot raises the flag around it): +20%, no health on hit, no ailment roll
+do
+	local store = {}
+	function player:getStorageValue(k) local v = store[k]; if v == nil then return -1 end return v end
+	function player:setStorageValue(k, v) store[k] = v end
+	player.health = 100
+	local realRandom2 = math.random
+	math.random = function(a, b) return a end -- every roll would hit
+	local before = #conditions
+	local stacksBefore = 0
+	for _ in pairs(M.stackBook) do stacksBefore = stacksBefore + 1 end
+	local got
+	ChaosDot.run(player, orc, function()
+		got = dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	end)
+	math.random = realRandom2
+	eq(got, 60, "O474: a scripted tick takes +20% damage over time too")
+	eq(player.health, 100, "and gives no health on hit")
+	local stacksAfter = 0
+	for _ in pairs(M.stackBook) do stacksAfter = stacksAfter + 1 end
+	eq(stacksAfter, stacksBefore, "and rolls no ailment")
+	eq(#conditions, before, "(no chill either)")
+	-- the same hit outside a tick is a plain hit
+	eq(dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 50, "a plain spell hit takes no damage over time bonus")
+end
 -- execute: a non-boss monster left at or below 5% dies
 orc.health = 5400
 eq(dealt.onHealthChange(orc, player, 500, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 5400, "4900 of 100000 left: executed")
@@ -698,12 +868,108 @@ orc.health = 100000
 dealt.onHealthChange(orc, player, 400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 local kinds = {}
 for _, c in ipairs(conditions) do kinds[c.c.kind] = c.c end
-eq(kinds[CONDITION_BLEEDING].value, -M.ailmentTick(450), "bleeding: a share of the hit (400 -> 450 after penetration) per tick")
-eq(kinds[CONDITION_BLEEDING].params[CONDITION_PARAM_OWNER], player:getId(), "owned by the player")
-eq(kinds[CONDITION_BLEEDING].rounds, 4)
+-- O474: a gear ailment is a stack of scripted ORIGIN_CONDITION ticks owned by the player, no engine condition
+eq(kinds[CONDITION_BLEEDING], nil, "O474: bleeding is no engine condition any more (it stacks)")
 eq(kinds[CONDITION_PARALYZE].formula[1], -0.3, "chill slows by 30%")
 eq(kinds[CONDITION_FIRE], nil, "no ignite chance, no ignite")
-eq(M.ailmentTick(400), 40, "40% of 400 over 4 ticks")
+eq(M.ailmentTick(400), 40, "40% of 400 over 4 ticks (the item sets' condition keeps its own rounds)")
+do
+	local D, DC = ChaosDot, ChaosDotConfig
+	local byId = {[player:getId()] = player, [orc:getId()] = orc}
+	local realPlayerFn, realCreatureFn, realDTC = Player, rawget(_G, "Creature"), doTargetCombat
+	Player = function(id) return byId[id] end
+	rawset(_G, "Creature", function(id) return byId[id] end)
+	local dealtTicks = {}
+	function doTargetCombat(cid, tgt, ctype, lo, hi, effect, origin)
+		dealtTicks[#dealtTicks + 1] = {from = cid, to = tgt, ctype = ctype, v = -lo, origin = origin}
+		return true
+	end
+	local function beats(maxBeats)
+		local ran = 0
+		while ran < maxBeats do
+			local t
+			for i, timer in ipairs(timers) do
+				if timer.ms == DC.ailment.interval then t = table.remove(timers, i) break end
+			end
+			if not t then break end
+			ran = ran + 1
+			t.fn((table.unpack or unpack)(t.args))
+		end
+		return ran
+	end
+	local slots = 0
+	for _ in pairs(M.stackBook) do slots = slots + 1 end
+	eq(slots, 1, "one bleed stack was put on the orc by the forced roll above")
+	local shockedUntil = M.shocked[orc:getId()]
+	M.shocked[orc:getId()] = 0 -- the forced roll above shocked it (+15% for everyone): not what is measured here
+	M.set(weapon, "chillchance", 0); M.set(weapon, "shockchance", 0)
+	M.refresh(player)
+	timers = {}
+	M.stackBook = M.stackBook
+	for k in pairs(M.stackBook) do M.stackBook[k] = nil end
+	-- one proc: a stack of 40% of the hit over 8 ticks, 0.5 s apart, ORIGIN_CONDITION, physical, owned by the player
+	math.random = function(a, b) return a end
+	orc.health = 100000
+	dealtTicks = {}
+	dealt.onHealthChange(orc, player, 400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	local first
+	for _, timer in ipairs(timers) do if timer.ms == DC.ailment.interval then first = timer end end
+	eq(first ~= nil, true, "the first tick is one interval (0.5 s) after the proc")
+	eq(beats(20), 8, "eight ticks")
+	eq(#dealtTicks, 8, "each dealt as damage")
+	local total = 0
+	for _, t in ipairs(dealtTicks) do
+		total = total + t.v
+		eq(t.origin, ORIGIN_CONDITION, "as a condition tick (everything that reads one keeps working)")
+		eq(t.ctype, COMBAT_PHYSICALDAMAGE, "of the bleed's element")
+		eq(t.from, player, "owned by the player")
+	end
+	eq(total, 8 * D.ailmentTick(400, M.config.ailment.share, DC.ailment.rounds), "40% of the hit in all, as before")
+	eq(total, 160, "160 of a hit of 400")
+	eq(next(M.stackBook), nil, "and the stack is gone")
+	-- three procs make three stacks that tick together; a fourth replaces the weakest
+	dealtTicks = {}
+	timers = {}
+	for _, hit in ipairs({400, 800, 1200}) do
+		dealt.onHealthChange(orc, player, hit, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	end
+	eq(beats(1), 1, "one beat")
+	eq(dealtTicks[1].v, 20 + 40 + 60, "the three stacks tick together on one beat")
+	dealt.onHealthChange(orc, player, 2000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	dealtTicks = {}
+	beats(1)
+	eq(dealtTicks[1].v, 40 + 60 + 100, "a fourth stack (100) replaced the weakest (20)")
+	-- a hit weaker than all three is dropped
+	dealt.onHealthChange(orc, player, 40, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+	dealtTicks = {}
+	beats(1)
+	eq(dealtTicks[1].v, 40 + 60 + 100, "a weaker fourth is dropped")
+	-- another type is its own stack list
+	M.set(weapon, "ignitechance", 10)
+	M.refresh(player)
+	dealtTicks = {}
+	dealt.onHealthChange(orc, player, 800, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	beats(2) -- the bleed stacks' beat, then the new ignite stack's
+	local types = {}
+	for _, t in ipairs(dealtTicks) do types[t.ctype] = (types[t.ctype] or 0) + t.v end
+	eq(types[COMBAT_FIREDAMAGE], 40, "the ignite is its own stack (40 of 800 over 8)")
+	eq(types[COMBAT_PHYSICALDAMAGE] ~= nil and types[COMBAT_PHYSICALDAMAGE] > 0, true, "next to the running bleed stacks")
+	-- a dead target ends it
+	orc.health = 0
+	dealtTicks = {}
+	beats(3)
+	eq(#dealtTicks, 0, "a dead target takes no more ticks")
+	eq(next(M.stackBook), nil, "no stack outlives its target")
+	orc.health = 100000
+	for k in pairs(M.stackBook) do M.stackBook[k] = nil end
+	timers = {}
+	Player, doTargetCombat = realPlayerFn, realDTC
+	rawset(_G, "Creature", realCreatureFn)
+	M.set(weapon, "ignitechance", 0)
+	M.set(weapon, "chillchance", 10); M.set(weapon, "shockchance", 10)
+	M.refresh(player)
+	M.shocked[orc:getId()] = shockedUntil
+end
 -- shocked: +15% damage from everyone
 math.random = function(a, b) return b end
 local other2 = newCreature("player")
@@ -751,8 +1017,7 @@ equip(hood, CONST_SLOT_HEAD)
 local eqT = M.totals(M.equippedItems(player))
 eq(eqT.cdr, 8, "the spell side reads the equipped items"); eq(eqT.manacost, 6)
 unequip(CONST_SLOT_HEAD)
-eq(M.penetrate(80, 20, 10), 90); eq(M.penetrate(80, 0, 10), 80, "no resistance, nothing to ignore")
-eq(M.penetrate(80, 100, 10), 80, "immune stays immune"); eq(M.penetrate(80, 5, 10), 84, "never below 0 resistance")
+eq(M.penetrate, nil, "the re-derivation of a rounded hit left the file with the penetration move (O464)")
 
 -- logout forgets everything
 events.ChaosItemModsLogout.onLogout(player)

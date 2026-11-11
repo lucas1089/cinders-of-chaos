@@ -259,6 +259,27 @@ do
 	eq(hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_CONDITION), H, "a physical tick (bleeding): no armour")
 	eq(hit(m, player, H, COMBAT_FIREDAMAGE, ORIGIN_SPELL), H, "an elemental spell: no armour, no resistance on the base 0")
 	eq(hit(m, player, H, COMBAT_FIREDAMAGE, ORIGIN_CONDITION), H, "a fire tick: untouched")
+	-- O474: a scripted tick of a dot spell (Gorehook, the kit and necro dots, the side dots) is a damage over time tick like an
+	-- engine condition's: it skips the armour. A plain hit of the same spell stays armoured; the resistance still applies.
+	do
+		dofile("data/scripts/chaos/dot_config.lua")
+		dofile("data/scripts/chaos/dot_core.lua")
+		local store = {}
+		function player:getStorageValue(k) local v = store[k]; if v == nil then return -1 end return v end
+		function player:setStorageValue(k, v) store[k] = v end
+		local tickHit, tickFire
+		ChaosDot.run(player, m, function()
+			tickHit = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL)
+			tickFire = hit(m, player, H, COMBAT_FIREDAMAGE, ORIGIN_SPELL)
+		end)
+		eq(tickHit, H, "O474: a scripted physical tick skips the armour (it lost 74 to 84% of a Gorehook tick)")
+		eq(tickFire, H, "O474: a scripted fire tick is untouched on a monster with no resistance")
+		eq(hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL), spell, "O474: the same spell's direct hit is armoured as before")
+		local other = spawnMonster("Rotling", {level = 500})
+		local onOther
+		ChaosDot.run(player, m, function() onOther = hit(other, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL) end)
+		ok(onOther < H, "O474: the flag names one target: a hit on another monster is armoured")
+	end
 	-- the weapon's element part is the secondary: element rules only
 	local p, s = hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE, 400, COMBAT_FIREDAMAGE)
 	eq(p, melee, "weapon hit with an element part: the physical part is armoured")
@@ -293,6 +314,12 @@ do
 	eq(hit(normal, player, 700, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 700, "normal: base 30 is under the cap, unchanged")
 	-- base 90 (data the install tool has not capped): the cap 75 gives damage back: arrived 100 -> 100 x 0.25 / 0.10 = 250
 	eq(hit(normal, player, 100, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 250, "normal: base 90 is capped at 75")
+	-- O474: a scripted tick skips the armour, not the resistance: the same cap applies to it
+	do
+		local tick
+		ChaosDot.run(player, normal, function() tick = hit(normal, player, 100, COMBAT_ICEDAMAGE, ORIGIN_SPELL) end)
+		eq(tick, 250, "O474: a scripted ice tick still meets the resistance (capped at 75)")
+	end
 	-- a weakness stays
 	eq(hit(normal, player, 1200, COMBAT_ENERGYDAMAGE, ORIGIN_SPELL), 1200, "normal: a weakness is untouched")
 	near(MD.effectiveResist(normal, COMBAT_FIREDAMAGE, 0), 30, 1e-9, "effective resist: normal fire")
@@ -301,8 +328,47 @@ do
 	near(MD.effectiveResist(normal, COMBAT_FIREDAMAGE, 10), 20, 1e-9, "effective resist: penetration comes off the capped value")
 	near(MD.effectiveResist(normal, COMBAT_ICEDAMAGE, 10), 65, 1e-9, "effective resist: penetration after the cap")
 	near(MD.effectiveResist(normal, COMBAT_ENERGYDAMAGE, 25), -45, 1e-9, "effective resist: penetration beyond a weakness")
-	-- the layer itself passes penetration 0
-	eq(hit(normal, player, 100, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 250, "the layer passes penetration 0")
+	-- no penetration without item modifiers
+	eq(hit(normal, player, 100, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 250, "no penetration, nothing taken off")
+	-- penetration (O464): the attacking player's item modifiers, off the capped resistance, down to -100; physical penetration
+	-- is points off the ARMOUR share down to 0, never off the file's physical percent
+	local savedMods = ChaosItemMods
+	local bonusOf = {}
+	ChaosItemMods = {playerBonus = function(p, key) return (bonusOf[p:getId()] or {})[key] or 0 end}
+	local pener = newPlayer()
+	bonusOf[pener:getId()] = {elepen = 20, physpen = 10}
+	-- fire 30: raw 1000 arrives as 700; 20 points off -> resistance 10 -> 900
+	eq(hit(normal, pener, 700, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 900, "elemental penetration off a resistance of 30")
+	-- ice 90 capped at 75: raw 1000 arrives as 100; 20 off the CAPPED value -> 55 -> 450
+	eq(hit(normal, pener, 100, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 450, "elemental penetration is taken after the cap")
+	-- a weakness of -20: 25 more points -> -40 (raw 1000 arrives as 1200) -> 1400 / 1200
+	bonusOf[pener:getId()].elepen = 20
+	eq(hit(normal, pener, 1200, COMBAT_ENERGYDAMAGE, ORIGIN_SPELL), 1400, "penetration beyond a weakness raises the damage")
+	-- the floor is -100: raw 1000 arrives as 700 at 30; 400 points off -> -100 -> 2000
+	bonusOf[pener:getId()].elepen = 400
+	eq(hit(normal, pener, 700, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 2000, "the resistance never goes below -100")
+	near(MD.effectiveResist(normal, COMBAT_FIREDAMAGE, 400), -100, 1e-9, "effective resist: floor -100")
+	-- a condition tick meets elemental penetration too
+	bonusOf[pener:getId()].elepen = 20
+	eq(hit(normal, pener, 700, COMBAT_FIREDAMAGE, ORIGIN_CONDITION), 900, "elemental penetration on a tick")
+	-- physical: the level 500 normal monster's armour takes 25% of the median hit 3645; 10 points of physical penetration -> 15%
+	elementLists["Plain Orc"] = {}
+	local orc = spawnMonster("Plain Orc", {level = 500})
+	local medianHit = math.floor(C.hitAtLevel(CFG, 500) + 0.5)
+	bonusOf[pener:getId()] = {physpen = 10}
+	near(hit(orc, pener, medianHit, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), medianHit * 0.85, 1.5, "10 physical penetration: 15% armour share")
+	bonusOf[pener:getId()] = {physpen = 80}
+	eq(hit(orc, pener, medianHit, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), medianHit, "penetration beyond the armour share: down to 0, not below")
+	-- the file's physical percent is not touched by physical penetration (the engine took 30 already: arrived 700 of 1000)
+	elementLists["Stone Orc"] = {[COMBAT_PHYSICALDAMAGE] = 30}
+	local stone = spawnMonster("Stone Orc", {level = 500})
+	bonusOf[pener:getId()] = {physpen = 80}
+	eq(hit(stone, pener, 700, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), 700, "physical penetration does not lower the file's physical percent")
+	-- a summon's hit counts the master's penetration
+	local summon = newMonster("Wolf", {master = pener})
+	bonusOf[pener:getId()] = {elepen = 20}
+	eq(hit(normal, summon, 700, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 900, "a summon uses its master's penetration")
+	ChaosItemMods = savedMods
 	-- an elite rank: +15 on the element resistance, before the cap
 	local elite = spawnMonster("Ember Troll", {level = 500})
 	ChaosTierState[elite:getId()] = {tier = "legendary", depth = 0, mods = {}, step = 0}
@@ -509,6 +575,13 @@ do
 	local _, _, sz, stz = onPlayer(ember, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE, hero)
 	eq(stz, COMBAT_FIREDAMAGE, "extra element with absorb: fire")
 	near(sz, 292, 2, "extra element with absorb: 650 x 0.45")
+	-- O464: with the player defence layer on the added part keeps its size here (the layer reduces it by the resistance of its
+	-- group once, as the next healthchange event): nothing is taken twice
+	ChaosPlayerDefence = {active = function() return true end}
+	near(MD.playerAbsorb(hero, COMBAT_FIREDAMAGE), 0, 1e-9, "playerAbsorb: 0 while the layer is on")
+	local _, _, sl = onPlayer(ember, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE, hero)
+	near(sl, 650, 2, "extra element with the layer on: 650, not reduced here")
+	ChaosPlayerDefence = nil
 	abilityOf[103] = {absorbPercent = {0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0}}
 	local immune = newPlayer({[1] = {getId = function() return 103 end}})
 	local _, _, si, sti = onPlayer(ember, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE, immune)

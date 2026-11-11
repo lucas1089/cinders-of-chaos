@@ -63,7 +63,7 @@ check(W.interp((10, 20), (1.0, 3.0), 15) == 2.0 and W.interp((10, 20), (1.0, 3.0
       and W.interp((10, 20), (1.0, 3.0), 50) == 3.0, 'interpolation: linear, flat outside')
 
 # sword, axe and club: one tier attack (the equipment sets have no per-type curve)
-check(set(W.G.CURVES) >= {'attack', 'bow', 'hit'}, 'the sets\' curves')
+check(set(W.G.CURVES) | set(W.G.WEAPON_CURVES) >= {'attack', 'bow', 'hit', 'wand'}, 'the sets\' curves (O472: the weapon curves are WEAPON_CURVES)')
 check(W.TYPE_FACTOR == {'sword': 1.0, 'axe': 1.0, 'club': 1.0}, 'no type factor as shipped')
 
 # the config file
@@ -143,6 +143,18 @@ for name, _, lv, stat, before, after, lo, hi, blo, bhi in W.skills_rows(cfg):
     else:
         check(blo == bhi == before, 'wand before: flat whatever the magic level')
 check('wand / rod' in W.skills_report(), 'the skills report lists the wands')
+
+# O475: the state before the weapon growth on request: the old curves, no a(level) on the fist, no W on the reference rotation
+after_wand = W.G.curve('wand', 1000)
+with W.before_growth():
+    before_wand = W.G.curve('wand', 1000)
+    before_fist = W.typed_mean_hit('fist', 1000, 140)
+    before_power = W.power_factors()
+check(before_wand == 118 and after_wand == 285, 'wand mean at 1000: 118 before the growth, 285 after (%s, %s)' % (before_wand, after_wand))
+check(W.G.curve('wand', 1000) == 285 and W.GROWTH['on'], 'the growth is back on after the block')
+check(W.typed_mean_hit('fist', 1000, 140) > before_fist * 2, 'the fist grows with a(level) now')
+check(before_power['wand'][W.POWER_LEVELS.index(1000)] == 2.14 and before_power['distance'][W.POWER_LEVELS.index(1000)] == 1.49,
+      'the power factors before O472 at 1000: wand 2.14, distance 1.49')
 
 if fails:
     for f in fails:

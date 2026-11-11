@@ -54,6 +54,17 @@ eq(at("Experience to next level: 123,456 (42.5% done)") ~= nil, true, "experienc
 eq(at("Sword Fighting: 90 (12%)") ~= nil, true, "skill with percent")
 eq(at("Stamina: 40h 05min") ~= nil, true, "stamina")
 
+-- O471: a total over the character cap (critical chance 45, critical damage 150) shows the cap and what the sources give
+do
+	local capped = K.clean({critChance = 45, critAmount = 150, critChanceRaw = 71, critAmountRaw = 300})
+	eq(capped.critChanceRaw, 71, "the raw numbers are kept") eq(capped.critAmountRaw, 300)
+	local ct = K.text(capped, nil, tx)
+	eq(ct:find("Critical chance: 45% (cap; your sources give 71%)", 1, true) ~= nil, true, "the chance row says cap")
+	eq(ct:find("Critical damage: +150% (cap; your sources give +300%)", 1, true) ~= nil, true, "the damage row says cap")
+	local plain = K.text(K.clean({critChance = 30, critAmount = 100}), nil, tx)
+	eq(plain:find("(cap;", 1, true), nil, "under the cap: no note")
+end
+
 -- without the character rows (what a viewer would get): no section; nothing at all for an empty sheet
 eq(K.text(sheet, nil, tx):find("[ Character ]", 1, true), nil, "no character section for others")
 eq(K.text(nil, nil, tx), "", "empty sheet: no text")
@@ -94,13 +105,52 @@ function P:getSkillPercent() return 25 end
 Game = {getExperienceForLevel = function(l) return l * 100 end}
 ChaosCombatStats = {compute = function() return {attack = 10, damage = 50, defense = 5, armor = 6, mitigation = 0.1} end}
 ChaosDeathRecap = {resistOf = function(_, el) return el == "fire" and 25 or 0 end}
+-- O473: a damage row of the totals carries the one additive damage pool: the sheet shows its soft cap result, not the tree's number
+ChaosPassiveTotals = {build = function()
+	return {crit = {chance = {total = 5}, amount = {total = 50}}, damage = {{k = "incrementFire", eff = 40, pool = {raw = 90, eff = 90}},
+		{k = "incrementIce", eff = 20}}}
+end}
 dofile("data/scripts/chaos/charsheet.lua")
 local r = K.read(P)
+eq(r.damage[1].k, "fire", "the fire row")
+eq(r.damage[1].pct, 90, "the pool's number, not the tree's 40 (O473)")
+eq(r.damage[2].pct, 20, "a row without a pool keeps the tree's number")
 eq(r.maxHit, 777, "highest hit from the storage")
 eq(r.maxHealth, 4000, "max health")
 eq(r.attack, 10, "attack from the combat stats")
 eq(r.resist[2].pct, 25, "fire resistance")
 eq(K.clean(r).resist[1].k, "fire", "only fire is above 0")
+-- O464: with the player defence layer on, the four resistances (sum, penalty, result), the armour, dodge, block and suppression
+ChaosPlayerDefence = {active = function() return true end, sheet = function()
+	return {armor = 335, armourShare = 85.3, reduction = 12, hit = 807, physical = 90, dodge = 12, block = 20, suppress = 30,
+		penalty = 30, cap = 60, resist = {{k = "fire", sum = 90, penalty = 30, pct = 60}, {k = "cold", sum = 20, penalty = 30, pct = -10},
+		{k = "lightning", sum = 30, penalty = 30, pct = 0}, {k = "chaos", sum = 5, penalty = 30, pct = -25}}}
+end}
+local rp = K.read(P)
+eq(rp.armor, 335, "the layer's armour (the Armour modifier included)")
+eq(rp.mitigation, 0.9, "the physical total against a typical hit")
+local sp = K.clean(rp)
+eq(#sp.resist, 3, "fire, cold and chaos; a zero result is not a row")
+eq(sp.resist[1].sum, 90, "the sum of the sources is kept"); eq(sp.resist[1].penalty, 30, "and the penalty")
+eq(sp.defence.dodge, 12, "dodge"); eq(sp.defence.block, 20, "block"); eq(sp.defence.suppress, 30, "suppression")
+eq(sp.defence.armourShare, 85.3, "armour share"); eq(sp.defence.cap, 60, "the cap (a rift modifier lowered it)")
+local spText = K.text(sp, nil, tx)
+local function has(s) return spText:find(s, 1, true) ~= nil end
+eq(has("Fire: 60% (sources 90%, level penalty -30%)"), true, "a resistance line: result, sources, penalty")
+eq(has("Cold: -10% (sources 20%, level penalty -30%)"), true, "a negative result")
+eq(has("Chaos: -25% (sources 5%, level penalty -30%)"), true, "chaos")
+eq(has("Lightning:"), false, "a zero result has no row")
+eq(has("Armor share against a typical hit: 85.3%"), true, "the armour share")
+eq(has("Physical reduction: 12%"), true, "the physical reduction")
+eq(has("Dodge: 12%") and has("Block: 20%") and has("Spell suppression: 30%"), true, "dodge, block, suppression")
+eq(has("Maximum resistance: 60%"), true, "a lowered cap is shown")
+local ptAll, missingNow = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"], {}
+for key in pairs(seen) do
+	if not ptAll[key] then missingNow[#missingNow + 1] = key end
+end
+eq(table.concat(missingNow, "; "), "", "the new sheet texts all have a pt-BR entry")
+ChaosPlayerDefence = nil
+eq(K.read(P).resist[2].pct, 25, "without the layer the old reader is used")
 local c = K.readOwn(P)
 eq(c.vocation, "Sentinel", "vocation")
 eq(c.capacity, 2500, "capacity in whole units")

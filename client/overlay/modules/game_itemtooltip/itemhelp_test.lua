@@ -32,7 +32,7 @@ assert(has(lines, 'Quality: makes the base stats stronger.'), 'quality')
 assert(has(lines, 'Armour: lowers the physical damage you take.'), 'base armour')
 assert(has(lines, 'T5: the tier, T1 weak to T8 best.'), 'best tier named')
 assert(has(lines, 'Bound: orbs do not change this modifier.'), 'bound')
-assert(has(lines, 'Dodge: a chance that a hit misses you.'), 'chaos key without prefix')
+assert(has(lines, 'Dodge: a chance to avoid an attack completely.'), 'chaos key without prefix')
 assert(has(lines, 'Life Leech: heals you by a part of the damage you deal.'), 'leech by key, any case')
 assert(count(lines, 'Absorb:') == 1, 'two absorbs, one line')
 assert(has(lines, 'Sockets: put gems in them for extra bonuses.'), 'sockets')
@@ -40,16 +40,64 @@ assert(has(lines, '[low-high]: the range this modifier can roll in.'), 'range')
 -- reading order: rarity before tier before the modifiers
 local function at(text) for i, l in ipairs(lines) do if l == text then return i end end end
 assert(at('Rare: the rarity. Rarer items roll more modifiers.') < at('T5: the tier, T1 weak to T8 best.'), 'order 1')
-assert(at('T5: the tier, T1 weak to T8 best.') < at('Dodge: a chance that a hit misses you.'), 'order 2')
+assert(at('T5: the tier, T1 weak to T8 best.') < at('Dodge: a chance to avoid an attack completely.'), 'order 2')
 
 -- a unique, a set piece, a plain item, rubbish
 assert(H.lines({ unique = { name = 'X' } }, tr)[1]:find('^Unique:'), 'unique')
 assert(H.lines({ unique = { name = 'X', set = {} } }, tr)[1]:find('^Set:'), 'set unique')
+-- a unique with a Codex page says what the power is and points to the Codex (O467)
+do
+  local line = H.lines({ unique = { name = 'X' }, codex = 'unique:8209' }, tr)[1]
+  assert(line:find('^Unique:') and line:find('one power', 1, true) and line:find('Open in Codex', 1, true), 'unique with a page')
+  assert(#line < 200, 'one or two short sentences')
+end
 assert(#H.lines({ name = 'stone' }, tr) == 0, 'nothing to explain')
 assert(#H.lines(nil, tr) == 0, 'nil tip')
 assert(H.modLine({ k = 'unknown_key' }, H.modTexts(tr), H.groupTexts(tr)) == nil, 'unknown key, no group')
 assert(H.modLine({ k = 'rarity_swordSkill', g = 'skill' }, H.modTexts(tr), H.groupTexts(tr)):find('^Skill bonus'), 'group fallback')
 assert(H.lines({ mods = { { k = 'chaos_mod_deathblast', pw = true, t = 'Death Blast: ...' } } }, tr)[1]:find('^Power:'), 'power')
+
+-- O461: the critical pair is two modifiers, the leech and the other new ones have lines of their own
+do
+  local tip2 = {
+    rarityName = 'Rare', level = 120,
+    mods = {
+      { k = 'rarity_criticalHitChance', g = 'single', t = 'Critical Strike Chance +5%', tr = 4, sd = 'p' },
+      { k = 'rarity_criticalHitAmount', g = 'single', t = 'Critical Strike Damage +25%', tr = 4, sd = 'p' },
+      { k = 'chaos_mod_lifeleechw', g = 'chaos', t = 'Life Leech with Weapon +3.0%', tr = 5, sd = 's' },
+      { k = 'chaos_mod_maxlife', g = 'chaos', t = 'Maximum Life +200', tr = 6, sd = 'p' },
+      { k = 'chaos_mod_spelldamage', g = 'chaos', t = 'Spell Damage +20%', tr = 5, sd = 'p' },
+    },
+  }
+  local l2 = H.lines(tip2, tr)
+  assert(has(l2, 'Critical Strike Chance: your hits can be critical hits that deal more damage.'), 'critical chance')
+  assert(has(l2, 'Critical Strike Damage: your critical hits deal more damage.'), 'critical damage: its own line')
+  assert(has(l2, 'Life Leech with Weapon: a share of the damage of your weapon attacks comes back as health.'), 'weapon leech')
+  assert(has(l2, 'Maximum Life: adds to your maximum health.'), 'maximum life')
+  assert(has(l2, 'Spell Damage: your spells and wand hits deal more damage.'), 'spell damage')
+  for _, k in ipairs({ 'lifeleech', 'manaleech', 'manaleechw', 'maxmana', 'manaregen', 'strength', 'dexterity', 'intelligence',
+      'weapondamage' }) do
+    assert(H.modLine({ k = 'chaos_mod_' .. k }, H.modTexts(tr), H.groupTexts(tr)), 'a help line for ' .. k)
+  end
+end
+
+-- O464: the defence rows have help lines of their own (a resistance names the damage types of its group)
+do
+  local mods, groups = H.modTexts(tr), H.groupTexts(tr)
+  local function line(k) return H.modLine({ k = 'chaos_mod_' .. k }, mods, groups) end
+  assert(line('armour'):find('^Armour:'), 'armour')
+  assert(line('spellsuppress'):find('^Spell Suppression:'), 'spell suppression')
+  assert(line('fireres'):find('fire damage'), 'fire resistance')
+  assert(line('coldres'):find('ice, water and drowning'), 'cold resistance names its types')
+  assert(line('lightningres'):find('energy, holy and arcane'), 'lightning resistance names its types')
+  assert(line('chaosres'):find('earth, death, life drain and mana drain'), 'chaos resistance names its types')
+  assert(line('allres'):find('fire, cold and lightning'), 'all resistances')
+  assert(line('block'):find('block an attack'), 'block')
+  assert(line('physpen'):find('armour'), 'physical penetration ignores armour now')
+  assert(line('elepen'):find('resistance'), 'elemental penetration ignores resistance')
+  assert(H.modLine({ k = 'rarity_physicalAbsorb', g = 'absorb' }, mods, groups):find('^Physical Reduction:'), 'the physical row is its own line')
+  assert(H.modLine({ k = 'rarity_fireAbsorb', g = 'absorb' }, mods, groups):find('resistance of its group'), 'an old absorb counts toward its group')
+end
 
 -- every modifier the server can roll has a line: the Chaos ones by key, the engine ones by key or group
 local root = dir .. '/../../../..'

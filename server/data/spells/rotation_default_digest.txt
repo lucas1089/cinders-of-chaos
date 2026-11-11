@@ -1,1 +1,1 @@
-d4af8197bb2c1076c1067f1de376b68bd71594acdd4134f77075add24352e8fa  default block of client/overlay/modules/game_helperrotation/autorotation_data.lua (rotation_sim.py --write-digest)
+d983ee8844b487a58501c49b2a6b2d255113037529f29d3ce1b5380068a2be17  default block of client/overlay/modules/game_helperrotation/autorotation_data.lua (rotation_sim.py --write-digest)

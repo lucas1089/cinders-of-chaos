@@ -80,7 +80,10 @@ local function read(path)
 	return t
 end
 local items = read("data/lib/chaos_item_mods.lua")
-eq(tonumber(items:match('key = "movespeed"[^\n]-cap = (%d+)')), rule.speed.items, "the items' movespeed cap")
+-- O461: the movement speed modifier has no cap of its own; the boots' top tier is the most the worn items give (one slot)
+check(items:match('key = "movespeed"[^\n]-cap = (%d+)') == nil, "the movespeed modifier has no cap")
+dofile("data/lib/chaos_item_mods.lua")
+eq(ChaosItemMods.byKey.movespeed.tiers[8][2], rule.speed.items, "the items' movespeed: the top tier of the boots")
 local consts = read("data/scripts/chaos/chaos_constants.lua")
 local per, max = consts:match('key = "speed", name = "Movement Speed", perPoint = ([%d.]+), maxPoints = (%d+)')
 near(tonumber(per) * tonumber(max), rule.speed.paragon, "Paragon movement speed")

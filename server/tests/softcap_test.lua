@@ -164,14 +164,37 @@ h(player); eq(#player.sent, 2, "answered again"); eq(player.sent[2].data.crit.ch
 -- ------------------------------------------------------------------------------------------------ the crit reach model
 local R = dofile("tools/crit_reach.lua")
 local o = R.compute()
-eq(o.t8.chanceLo, 5, "T8 chance low"); eq(o.t8.chanceHi, 7, "T8 chance high"); eq(o.t8.amountHi, 10, "T8 amount high")
-eq(o.slots, 8, "eight slots"); eq(o.gear.max, 56, "8 x 7"); eq(o.gear.min, 40, "8 x 5"); eq(o.gear.avg, 48, "8 x 6")
-eq(o.t8.chanceHiQuality, 9, "7 at +30% quality"); eq(o.gear.maxQuality, 72, "8 x 9")
-eq(o.t7.chanceHi, 6, "T7 high"); eq(o.gearT7.max, 48, "T7 everywhere")
+-- O461: Critical Strike Chance and Damage are two modifiers (points and percent); O471: on the weapon, necklace and ring only
+eq(o.t8.chanceLo, 7, "T8 chance low"); eq(o.t8.chanceHi, 8, "T8 chance high"); eq(o.t8.amountLo, 35, "T8 damage low"); eq(o.t8.amountHi, 38, "T8 damage high")
+eq(o.slots, 3, "three slots (O471: the badge and the quiver are out)"); eq(o.gear.max, 24, "3 x 8"); eq(o.gear.min, 21, "3 x 7")
+eq(o.gear.avg, 22.5, "3 x 7.5"); eq(o.gear.amountMax, 114, "3 x 38")
+eq(o.t7.chanceHi, 7, "T7 high"); eq(o.gearT7.max, 21, "T7 everywhere")
 ok(o.treeBest >= o.treeMedian and o.treeMedian >= o.treeWorst and o.treeWorst > 0, "tree crit sums ordered")
 ok(o.casual < o.dedicated and o.dedicated < o.ceiling, "casual < dedicated < ceiling")
 ok(o.suggestedThreshold % 5 == 0 and o.suggestedThreshold > o.casual and o.suggestedThreshold < o.dedicated, "threshold between the builds")
 ok(o.suggestedThreshold <= 50, "a gated passive asks for at most 50%")
 ok(R.report(o):find("suggested threshold", 1, true), "report")
+-- O471: the caps. The model, the sheet and the hit read the same numbers (ChaosItemMods.config.crit)
+eq(o.cap.chance, 45, "chance cap 45"); eq(o.cap.amount, 150, "extra damage cap 150")
+eq(o.cap.chance, ChaosItemMods.config.crit.chanceCap, "the model reads the item module's cap")
+eq(o.capped.ceiling, 45, "the best a character can do is the cap"); eq(o.capped.dedicated, 45, "a dedicated build reaches it")
+ok(o.capped.casual < 45, "a casual build stays under it"); eq(o.capped.amountCeiling, 150, "the damage ceiling is the cap")
+ok(o.dedicated < o.before.dedicated and o.amountCeiling < o.before.amountCeiling, "less than the five slots before")
+eq(o.before.dedicated >= 70 and o.before.amountCeiling, 300, "before O471: 71% and an amount of 300")
+-- the totals the sheet shows: raw and counted
+local capsCfg = ChaosItemMods.config.crit
+local c2 = PassiveTotalsCore.crit(bon, 60, 200, capsCfg)
+eq(c2.chance.total, 45, "over the cap: the cap counts"); eq(c2.chance.raw, 60, "the sources give 60"); eq(c2.chance.capped, true, "marked")
+eq(c2.chance.cap, 45, "the cap is shown"); eq(c2.chance.other, 48, "the shares are the raw ones")
+eq(c2.amount.total, 150, "damage cap"); eq(c2.amount.raw, 200); eq(c2.amount.capped, true); eq(c2.amount.cap, 150)
+c2 = PassiveTotalsCore.crit(bon, 30, 100, capsCfg)
+eq(c2.chance.total, 30, "under the cap: as it is"); eq(c2.chance.capped, nil, "not marked"); eq(c2.amount.total, 100); eq(c2.amount.capped, nil)
+-- the engine glue sends the cap with the totals (a mocked player over the caps)
+player.getSpecialSkill = function(self, i) return self.skills[i] end
+player.skills[SPECIALSKILL_CRITICALHITCHANCE], player.skills[SPECIALSKILL_CRITICALHITAMOUNT] = 71, 300
+ChaosItemMods = ChaosItemMods or dofile("data/lib/chaos_item_mods.lua")
+ChaosPassiveTotals.last = {}
+local dd = ChaosPassiveTotals.build(player)
+eq(dd.crit.chance.total, 45, "the window shows the cap, not 71"); eq(dd.crit.chance.capped, true); eq(dd.crit.amount.total, 150)
 
 print("softcap: " .. checks .. " checks OK")

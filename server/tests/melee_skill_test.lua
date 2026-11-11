@@ -305,6 +305,7 @@ do
 	assert(from and to and to > from, "weaponStrike is in _common.lua")
 	ChaosSpell.canAttack = function() return true end
 	ChaosSpell.thiefLevelScale = function() return 1 end
+	ChaosSpell.weaponShare = function() return 1 end -- O468: the magic level share of a weapon spell (tests/spell_scaling_test.lua)
 	assert(load(source:sub(from, to - 1)))()
 	ORIGIN_MELEE = 3
 	COMBAT_PHYSICALDAMAGE = 1

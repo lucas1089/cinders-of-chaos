@@ -40,7 +40,7 @@ local RARITY_COLOR = {
   '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff'
 }
 local RARITY_ID_FALLBACK = { 1, 2, 3, 4, 5, 10 } -- the ids of the six names when an older server sends no rarityIds
-local GROUP_COLOR = { absorb = '#7fa8ff', skill = '#9fdc7f', special = '#f6cf72', element = '#ff8a5a',
+local GROUP_COLOR = { absorb = '#7fa8ff', skill = '#9fdc7f', special = '#f6cf72', single = '#f6cf72', element = '#ff8a5a',
   chaos = '#ff70c0', rift = '#c0a0ff' }
 local POWER_COLOR = '#ff9a3c' -- legendary powers
 local SELECT_BG = '#f6cf7236'

@@ -15,7 +15,7 @@ combat:setArea(createCombatArea(AREA_CIRCLE2X2))
 function onGetFormulaValues(player, skill, attack, factor)
 	local min = ((player:getLevel() / 5) + (skill * attack * 0.095) + 40)
 	local max = ((player:getLevel() / 5) + (skill * attack * 0.165) + 80)
-	return -min, -max
+	return ChaosSpell.weaponFormula(player, min, max) -- O468: with the magic level share of a weapon spell
 end
 
 function onRampageTarget(creature, target)

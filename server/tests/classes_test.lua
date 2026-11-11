@@ -132,8 +132,12 @@ local aavg = (1000 * cfg.companion.autoLevel + 140 * cfg.companion.autoSkill) * 
 eq(alo, math.floor(aavg * (1 - cfg.companion.spread)), "auto bite min"); eq(ahi, math.floor(aavg * (1 + cfg.companion.spread)), "auto bite max")
 assert(ahi > hi * 0.5, "the companion's own bite is of the order of a spell's bite")
 -- O430: the bite follows the owner's level curve (companion.autoByLevel)
-eq(C.companionAutoFactor(30), 1, "the bite factor is 1 below its first point"); eq(C.companionAutoFactor(1000), 0.5, "and 0.5 at level 1000")
-eq(C.companionAutoFactor(5000), 0.5, "the last value above"); eq(math.abs(C.companionAutoFactor(300) - 0.72) < 1e-9, true, "linear between points")
+-- O468: the points keep the plain bite where it was now that the bite takes every event (beastmaster.lua); read, not typed
+local pts = cfg.companion.autoByLevel
+eq(C.companionAutoFactor(30), pts[1][2], "the bite factor is the first point's below it"); eq(C.companionAutoFactor(1000), 2.558, "and 2.558 at level 1000")
+eq(C.companionAutoFactor(5000), pts[#pts][2], "the last value above")
+eq(math.abs(C.companionAutoFactor(150) - (pts[2][2] + pts[3][2]) / 2) < 1e-9, true, "linear between points")
+eq(C.companionAutoFactor(1000) > 1 and C.companionAutoFactor(60) > 1, true, "above 1: the events take part of the raw bite (O468)")
 local blo, bhi = C.autoBiteValues(1000, 140, 1.35)
 assert(bhi > ahi and blo > alo, "Pack Alpha raises the auto bite")
 eq(C.companionLevel(412), 412, "the companion shows its owner's level"); eq(C.companionLevel(0), 1, "at least 1")

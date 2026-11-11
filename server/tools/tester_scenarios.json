@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 67,
+  "opcode": 68,
   "out": 38,
-  "passive": 102,
+  "passive": 108,
   "place": 15,
   "staff": 17
  },
@@ -8827,7 +8827,10 @@
    "client": [
     "game_skillstats"
    ],
-   "dataKeys": [],
+   "dataKeys": [
+    "armor",
+    "physical"
+   ],
    "files": [
     "combat_stats.lua"
    ],
@@ -10588,7 +10591,8 @@
    "out": false,
    "skip": [],
    "systems": [
-    "combine"
+    "combine",
+    "damage_pool"
    ]
   },
   "survey": {
@@ -11385,6 +11389,19 @@
     "/daily"
    ]
   },
+  "damage_pool": {
+   "files": [
+    "gems.lua",
+    "supports.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "supports"
+   ],
+   "talkactions": [
+    "/supports"
+   ]
+  },
   "daybook": {
    "files": [
     "chaos_constants.lua"
@@ -11471,6 +11488,15 @@
     "displayScale"
    ],
    "talkactions": []
+  },
+  "dot": {
+   "files": [
+    "item_mods.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "embercache": {
    "files": [
@@ -12384,6 +12410,15 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "player_defence": {
+   "files": [
+    "player_defence.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "pocketboss": {
    "files": [
     "admin/actions_chaos_bosses.lua",
@@ -12454,6 +12489,13 @@
    "talkactions": [
     "/professions"
    ]
+  },
+  "pvp_scale": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "pvpzone": {
    "files": [
@@ -12831,7 +12873,17 @@
   },
   "spell_factor": {
    "files": [
+    "beastmaster.lua",
     "templar_combat.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "spell_scaling": {
+   "files": [
+    "classes.lua"
    ],
    "kind": "passive",
    "opcodes": [],
@@ -13075,10 +13127,28 @@
    ],
    "why": "staff command only (/ascended); testers are never staff"
   },
+  "unique_intro": {
+   "files": [
+    "unique_intro.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "unique_passives": {
    "files": [
     "unique_passives.lua",
     "unique_passives_text.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "unique_window": {
+   "files": [
+    "loot.lua"
    ],
    "kind": "passive",
    "opcodes": [],

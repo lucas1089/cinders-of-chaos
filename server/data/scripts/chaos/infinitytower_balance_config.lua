@@ -85,12 +85,17 @@ return {
 	-- seconds a floor of factor 1.0 takes the median class at the level it is meant for (tower_model.py --derive: the
 	-- health below follows from it). A base hunt pack of that level takes 3 s at level 100, 5 s at 640 and 10-11 s from 670 (the
 	-- late sets, pace_config.lua); the tower follows that smoothly and stays within huntMin..huntMax of it
-	clear = {{1, 2.5}, {12, 3.5}, {24, 5}, {28, 8.5}, {40, 9.5}, {60, 10.5}, {120, 11}},
+	-- O475 (2026-11-10): re-fitted to the hunt pack seconds after the round (pack_model.py: 2.7 s at level 100, 2.1 s at 350, 2.8 s at 700,
+	-- 3.8 at 900, 4.2 at 1500; the tower stays within huntMin..huntMax of it). Before: {{1, 2.5}, {12, 3.5}, {24, 5}, {28, 8.5}, {40, 9.5}, {60, 10.5}, {120, 11}}
+	-- against hunt packs of 3 to 11 s. health, bossHealth, lootShare and killGold below are --derive of this and of the damage of
+	-- class_dps_model.py after the round (health at floor 1 629 -> 793 ... floor 120 15,400 -> 53,700; boss floor 10 35,100 -> 56,500,
+	-- floor 120 317,000 -> 1,200,000)
+	clear = {{1, 2.6}, {12, 2.4}, {24, 2.5}, {28, 2.9}, {40, 3.8}, {60, 4.1}, {90, 4.2}, {120, 4.2}},
 
 	-- maximum health of a normal monster by floor (tower_model.py --derive)
-	health = {{1, 629}, {4, 805}, {8, 1320}, {12, 1910}, {16, 2640}, {20, 3450}, {24, 4600}, {28, 6600}, {32, 7650}, {36, 8100}, {40, 8580}, {50, 9690}, {60, 10900}, {70, 12200}, {80, 13400}, {90, 14400}, {100, 14500}, {110, 14800}, {120, 15400}},
+	health = {{1, 765}, {4, 973}, {8, 1570}, {12, 2240}, {16, 3020}, {20, 3760}, {24, 4380}, {28, 5410}, {32, 6730}, {36, 8150}, {40, 9610}, {50, 11900}, {60, 13500}, {70, 15300}, {80, 17200}, {90, 18800}, {100, 18900}, {110, 19700}, {120, 20500}},
 	-- maximum health of the boss by boss floor (tower_model.py --derive)
-	bossHealth = {[10] = 35100, [20] = 70700, [30] = 104000, [40] = 126000, [50] = 153000, [60] = 184000, [70] = 208000, [80] = 240000, [90] = 274000, [100] = 313000, [110] = 315000, [120] = 317000},
+	bossHealth = {[10] = 56500, [20] = 120000, [30] = 202000, [40] = 308000, [50] = 431000, [60] = 534000, [70] = 640000, [80] = 765000, [90] = 907000, [100] = 1070000, [110] = 1080000, [120] = 1200000},
 	-- damage of a floor's monsters to players (tower_model.py --derive): a monster shown at level L hits like a hunt monster of
 	-- level L (O328). The pool species keeps its own attacks (they decide the looks and the kind of hit), so the factor is the
 	-- pace_config.lua damage curve at L times `hit` at L over `hit` at the band's hunting level (the median of the species'
@@ -174,8 +179,8 @@ return {
 	-- curves come from `tower_model.py --derive`.
 	lootScaledFrom = 650,
 	goldShare = 0.5,
-	lootShare = {{1, 1}, {4, 1}, {8, 1}, {12, 1}, {16, 1}, {20, 1}, {24, 1}, {28, 1}, {32, 1}, {36, 1}, {40, 1}, {50, 0.94}, {60, 0.94}, {70, 0.96}, {80, 0.96}, {90, 0.94}, {100, 0.86}, {110, 0.86}, {120, 0.88}},
-	killGold = {{1, 55}, {4, 55}, {8, 87}, {12, 110}, {16, 220}, {20, 270}, {24, 280}, {28, 370}, {32, 410}, {36, 410}, {40, 420}, {50, 380}, {60, 380}, {70, 390}, {80, 390}, {90, 390}, {100, 350}, {110, 350}, {120, 350}},
+	lootShare = {{1, 1}, {4, 1}, {8, 1}, {12, 1}, {16, 1}, {20, 1}, {24, 1}, {28, 1}, {32, 1}, {36, 1}, {40, 1}, {50, 0.91}, {60, 0.91}, {70, 0.91}, {80, 0.9}, {90, 0.86}, {100, 0.81}, {110, 0.81}, {120, 0.81}},
+	killGold = {{1, 56}, {4, 56}, {8, 86}, {12, 110}, {16, 210}, {20, 230}, {24, 230}, {28, 290}, {32, 300}, {36, 300}, {40, 300}, {50, 270}, {60, 280}, {70, 280}, {80, 270}, {90, 260}, {100, 240}, {110, 240}, {120, 240}},
 	-- the model (tower_model.py): the damage of the classes of tools/pack_model.py with this share of the time in the target
 	packUptime = 1.0,
 	bossUptime = 0.75,
@@ -219,7 +224,7 @@ return {
 		damageTol = 0.12, -- the damage curve against pace(L) x hit(L) / hit(band level) on every floor (relative; O328)
 		lootRatio = 1.20, -- the items an hour of the tower against a hunt of the floor's level, at most (O328). O444: was 1.05; today's worst floor gives 1.15 (the stronger class kills a tower floor faster than a hunt pack, whose walking time does not shrink)
 		goldRatio = 1.45, -- the gold an hour of the tower against goldShare x a hunt of the floor's level, at most. O444: was 1.05; today's worst floor gives 1.37
-		curveTol = 2.4, -- O444: `health` and `bossHealth` against what --derive prints, as a factor either way; target 1.10 (the rounding of the points). Today 2.27 at worst: the owner decision above
+		curveTol = 1.10, -- `health` and `bossHealth` against what --derive prints, as a factor either way (the rounding of the points). O475 (2026-11-10): back to the target 1.10, was 2.4 (O444, 2.27 at worst); the curves are re-derived for the typical damage of the balance round, --derive prints 1.00 x today
 		endless = 1000, -- floors whose growth is checked strictly (health trend, boss health, damage, level; O172)
 		capMin = 1000 -- the floor where a cap (int32 health, damage factor) may start at the earliest
 	}

@@ -116,11 +116,15 @@ eq(A.reflect({landed = 1000, ownMaxHealth = 5000, boss = true, bossState = bs, o
 	"next second")
 
 -- Open Hand Creed
-near(A.fistAttack(300), 47.5, "fist attack at 300")
-near(A.fistAttack(2000), 60, "capped at 60")
+if not ChaosMonk then dofile("data/scripts/chaos/monk_chi_core.lua") end
+-- O472: the fist attack is the level value times the weapon growth a(level) (ChaosMonk.weaponGrowth), as the Monk's
+local g300, g2000 = ChaosMonk.weaponGrowth(300), ChaosMonk.weaponGrowth(2000)
+near(A.fistAttack(300), 47.5 * g300, "fist attack at 300")
+near(A.fistAttack(2000), 60 * g2000, "capped at 60, times the growth")
+near(A.fistAttack(100), 42.5, "no growth up to level 100")
 eq(A.openHandFactor(300, 50, 110, 1, false, false), nil, "neither keystone nor unique")
 local ohK = A.openHandFactor(300, 50, 110, 1, true, false)
-local want = A.maxWeaponDamage(300, 110, 47.5, 1) * C.arOpenHand.damage / A.maxWeaponDamage(300, 50, 7, 1)
+local want = A.maxWeaponDamage(300, 110, 47.5 * g300, 1) * C.arOpenHand.damage / A.maxWeaponDamage(300, 50, 7, 1)
 near(ohK, want, "keystone factor: best skill, fist attack, +40% (O452: was +10%)")
 near(A.openHandFactor(300, 50, 110, 1, false, true), want / C.arOpenHand.damage * 1.1 * 0.8, "unique alone: 80% of the old 1.10, not of the keystone's damage (O452)")
 near(A.openHandFactor(300, 50, 110, 1, true, true), want * 1.1, "both: +10% more")
@@ -131,12 +135,12 @@ local mask = A.mask({arOpenHand = true, arReliquary = true})
 check(A.maskHas(mask, "arOpenHand") and A.maskHas(mask, "arReliquary") and not A.maskHas(mask, "arPyreOath"), "mask")
 check(not A.maskHas(-1, "arOpenHand"), "no storage")
 check(mask < 2 ^ 31, "fits a storage")
-near(A.openHandAttack(300, true, false), 47.5 * C.arOpenHand.damage, "strikes: fist attack +36%")
-near(A.openHandAttack(300, false, true), 47.5 * 1.1 * 0.8, "strikes: the ring alone (unchanged by O452)")
+near(A.openHandAttack(300, true, false), 47.5 * g300 * C.arOpenHand.damage, "strikes: fist attack +36%")
+near(A.openHandAttack(300, false, true), 47.5 * g300 * 1.1 * 0.8, "strikes: the ring alone (unchanged by O452)")
 eq(A.openHandAttack(300, false, false), nil, "strikes: nothing")
 local sp = {getStorageValue = function() return A.mask({arOpenHand = true}) end, getLevel = function() return 1000 end,
 	getSlotItem = function() return nil end}
-near(A.spellOpenHandAttack(sp), 60 * C.arOpenHand.damage, "the spells read the storage (level 1000: 60 x 1.36)")
+near(A.spellOpenHandAttack(sp), 60 * ChaosMonk.weaponGrowth(1000) * C.arOpenHand.damage, "the spells read the storage (level 1000: 60 x a(1000) x 1.36)")
 sp.getVocation = function() return {getId = function() return 11 end} end
 eq(A.spellOpenHandAttack(sp), nil, "the Thief line keeps the base attack for its strike spells (O452)")
 
@@ -800,6 +804,52 @@ local spreads = 0
 for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_POISON then spreads = spreads + 1 end end
 check(spreads <= 3 + 9 + 27 + 81 and spreads <= C.chain.perChain * 3, "bounded spreads (" .. spreads .. ")")
 check(wave <= 6, "the chain ends (" .. wave .. " waves)")
+
+-- O474: Contagion Rite and the Sigil of Cinders see a scripted tick of a dot spell as a damage over time tick (the four side dots were
+-- spell hits since O468, which these systems do not read)
+do
+	dofile("data/scripts/chaos/dot_config.lua")
+	dofile("data/scripts/chaos/dot_core.lua")
+	creatures, dealt, conditionsAdded = {}, {}, {}
+	local th = mk("player", {hp = 4000, pos = P(700, 700)})
+	setTree(th, {arContagion = 1})
+	local crowd = {}
+	for i = 0, 5 do crowd[#crowd + 1] = mk("monster", {hp = 30, pos = P(701 + (i % 3), 701 + math.floor(i / 3))}) end
+	for _, m in ipairs(crowd) do m.c.events.ChaosArchetypesDeath = true end
+	ChaosDot.run(th, crowd[1], function() hitBy(th, crowd[1], 20, COMBAT_EARTHDAMAGE, ORIGIN_SPELL) end)
+	crowd[1].c.hp = 0
+	registered.ChaosArchetypesDeath.onDeath(crowd[1])
+	runEvents(NOW + 60)
+	local poisonedBy = 0
+	for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_POISON then poisonedBy = poisonedBy + 1 end end
+	eq(poisonedBy, 3, "O474: the death of a monster that a scripted poison tick marked poisons 3")
+	-- a plain spell hit marks nothing
+	creatures, dealt, conditionsAdded = {}, {}, {}
+	local th2 = mk("player", {hp = 4000, pos = P(720, 720)})
+	setTree(th2, {arContagion = 1})
+	local crowd2 = {}
+	for i = 0, 5 do crowd2[#crowd2 + 1] = mk("monster", {hp = 30, pos = P(721 + (i % 3), 721 + math.floor(i / 3))}) end
+	for _, m in ipairs(crowd2) do m.c.events.ChaosArchetypesDeath = true end
+	hitBy(th2, crowd2[1], 20, COMBAT_EARTHDAMAGE, ORIGIN_SPELL)
+	crowd2[1].c.hp = 0
+	registered.ChaosArchetypesDeath.onDeath(crowd2[1])
+	runEvents(NOW + 60)
+	eq(#conditionsAdded, 0, "a plain earth spell hit marks nothing for Contagion")
+	-- the Sigil: a scripted fire tick never ignites (an engine burn does not either); it marks the burn for the spread
+	creatures, dealt, conditionsAdded = {}, {}, {}
+	local inq2 = mk("player", {hp = 4000, pos = P(740, 740)})
+	setTree(inq2, {arCinderSigil = 1})
+	local b1 = mk("monster", {hp = 90000, pos = P(741, 740)})
+	ChaosDot.run(inq2, b1, function() hitBy(inq2, b1, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL) end)
+	runEvents()
+	local ignites = 0
+	for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_FIRE then ignites = ignites + 1 end end
+	eq(ignites, 0, "O474: a scripted fire tick does not ignite again (four to eight extra ignites a cast before)")
+	check(not (M.state[inq2:getId()] and M.state[inq2:getId()].sigil), "and does not brand")
+	hitBy(inq2, b1, 1000, COMBAT_FIREDAMAGE, ORIGIN_SPELL)
+	runEvents()
+	check(M.state[inq2:getId()] and M.state[inq2:getId()].sigil, "the direct hit of the spell does")
+end
 
 -- the shatter: an ice-hit monster that dies bursts on its neighbours
 creatures, dealt = {}, {}

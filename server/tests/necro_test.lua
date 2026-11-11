@@ -266,10 +266,14 @@ local sac = N.pickSacrifice({
 }, P(5, 5))
 eq(sac.id, 3, "the skeleton nearest to the target, never the golem")
 eq(N.pickSacrifice({{kind = "golem", pos = P(5, 6), id = 1}}, P(5, 5)), nil, "no skeleton, no offering")
-local jump = N.rotJump({{id = 4, pos = P(3, 0), alive = true}, {id = 5, pos = P(1, 1), alive = true},
+-- O474: the jump of a dot whose host died is the shared rule of ChaosDot (it was N.rotJump of Soul Rot alone); the same cases
+dofile("data/scripts/chaos/dot_config.lua")
+dofile("data/scripts/chaos/dot_core.lua")
+eq(N.rotJump, nil, "Soul Rot has no jump rule of its own any more")
+local jump = ChaosDot.pickJump({{id = 4, pos = P(3, 0), alive = true}, {id = 5, pos = P(1, 1), alive = true},
 	{id = 6, pos = P(0, 1), alive = false}}, P(0, 0), 3)
 eq(jump.id, 5, "the rot jumps to the nearest living enemy")
-eq(N.rotJump({{id = 4, pos = P(4, 0), alive = true}}, P(0, 0), 3), nil, "out of reach")
+eq(ChaosDot.pickJump({{id = 4, pos = P(4, 0), alive = true}}, P(0, 0), 3), nil, "out of reach")
 
 -- ------------------------------------------------------------------ spells
 -- the level scale stood in for the passive tree: dropped with the class trees (1 everywhere), still honoured when set

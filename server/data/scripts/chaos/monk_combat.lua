@@ -45,6 +45,19 @@ if not ChaosClassTree then
 	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
 end
 local CT = ChaosClassTree
+
+-- O464: the evasion of the Monk line is one of the dodge sources of the player defence layer (see thief_combat.lua)
+if not ChaosQuestBuffs then
+	dofile("data/scripts/chaos/quest_buffs_core.lua")
+end
+ChaosPlayerDefenceSources = ChaosPlayerDefenceSources or {dodge = {}, onDodge = {}}
+ChaosPlayerDefenceSources.dodge.monk = function(player)
+	local voc = player:getVocation():getId()
+	if not M.isMonkLine(voc) or (CT.has(player, "ksScarredDiscipline") and CT.fx.ksScarredDiscipline) then
+		return 0 -- Scarred Discipline takes the evasion away
+	end
+	return 100 * M.dodgeChance(voc, ChaosQuestBuffs.evadeBonus(player))
+end
 if not ChaosKeystoneLabels then
 	dofile("data/scripts/chaos/keystone_labels.lua") -- the combat log's keystone rows (optional)
 end
@@ -223,7 +236,8 @@ local function onDefence(player, attacker, primaryDamage, secondaryDamage, prima
 	local scar = M.isMonkLine(voc) and CT.has(player, "ksScarredDiscipline") and CT.fx.ksScarredDiscipline or nil
 
 	-- evasion (Monk line; melee and ranged hits of creatures)
-	if attacker and M.isMonkLine(voc) and origin ~= ORIGIN_CONDITION then
+	-- (O464: with the player defence layer on, it rolled the dodge before this event and this roll is skipped)
+	if attacker and M.isMonkLine(voc) and origin ~= ORIGIN_CONDITION and not (ChaosPlayerDefence and ChaosPlayerDefence.active()) then
 		local isWeapon = origin == ORIGIN_MELEE or origin == ORIGIN_RANGED
 		if M.dodges(voc, isWeapon, math.random(), scar ~= nil, QB.evadeBonus(player)) then
 			if ChaosCombatFx then

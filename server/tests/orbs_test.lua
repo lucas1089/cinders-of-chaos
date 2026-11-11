@@ -344,9 +344,12 @@ end
 eq(C.preview("ruin", forged(2400, 3, 100)), "40% improves, 60% nothing", "the bench shows the odds")
 
 -- ---------------------------------------------------------------- Whetstone (quality)
+-- O461: quality multiplies the item's base bonus (the attack, defence and armour the rarity added), not the modifiers
 local q = forged(2400, 3, 100)
 local rawBefore = {}
 for _, m in ipairs(C.readMods(q)) do rawBefore[m.key] = m.value end
+local atk0 = q:getAttribute(ITEM_ATTRIBUTE_ATTACK)
+eq(atk0, 48 + C.baseBonusOf(3, 100), "a Magic sword: the type's attack + the base bonus")
 eq(M.qualityOf(q), 0)
 eq(C.check("whetstone", q), true)
 for _ = 1, 20 do
@@ -356,27 +359,32 @@ end
 eq(M.qualityOf(q), 20, "20 stones: 20%")
 eq(select(2, C.check("whetstone", q)), "qualityFull", "the cap of an Epic item is 20")
 for _, m in ipairs(C.readMods(q)) do
-	local want = M.scaleQuality(rawBefore[m.key], 20)
-	eq(m.value, want, "value x 1.2 for " .. m.key .. " (" .. rawBefore[m.key] .. ")")
-	ok(m.value >= rawBefore[m.key])
-	eq(C.rawValue(q, m), m.group == "special" and C.rawValue(q, m) or rawBefore[m.key], "the rolled value is kept")
-	ok(q:getCustomAttribute(M.rawAttr(m.key)) ~= nil, "cv_ kept")
+	eq(m.value, rawBefore[m.key], "the value of " .. m.key .. " does not change with the quality")
+	eq(q:getCustomAttribute(M.rawAttr(m.key)), nil, "no raw value is kept any more")
 end
+eq(q:getAttribute(ITEM_ATTRIBUTE_ATTACK), 48 + C.qualityBonus(C.baseBonusOf(3, 100), 20), "the base bonus carries the quality")
 ok(q:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Quality: %+20%%"), q:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION))
 eq(C.describe(q).quality, 20); eq(C.describe(q).qualityCap, 20)
--- Tempering with quality: the rolled value is multiplied
+eq(C.qualityBonus(13, 30), 17, "13 x 1.3 = 16.9: 17") eq(C.qualityBonus(4, 20), 5, "4.8: 5") eq(C.qualityBonus(1, 20), 1, "never below the bonus")
+eq(C.qualityBonus(0, 30), 0, "no bonus, nothing to multiply")
+-- Tempering with quality: the rolled value stays as rolled
 dice = {}
 C.rerollValues(q, function(a, b) return b end)
 for _, m in ipairs(C.readMods(q)) do
 	if m.group ~= "special" then
-		eq(m.value, M.scaleQuality(m.hi, 20), "tempered with quality " .. m.key)
+		eq(m.value, m.hi, "tempered with quality " .. m.key .. ": the top of the tier, no multiplier")
 	end
 end
 -- Divine rarity: 30
 local divine = forged(2400, 10, 100)
 eq(M.qualityCap(10), 30); eq(M.qualityCap(9), 20)
+local divineAtk = divine:getAttribute(ITEM_ATTRIBUTE_ATTACK)
 C.addQuality(divine, 30)
 eq(M.qualityOf(divine), 30)
+eq(divine:getAttribute(ITEM_ATTRIBUTE_ATTACK), divineAtk + 4, "Divine at level 100: bonus 13, x1.3 = 17: 4 more attack")
+-- the quality of a new copy is applied by the forge: an Upheaval keeps it
+C.setQuality(divine, 0)
+eq(divine:getAttribute(ITEM_ATTRIBUTE_ATTACK), divineAtk, "quality back to 0: the attack is the base bonus again")
 -- quality survives the orbs that make a new copy
 local qc = forged(2400, 3, 100)
 C.addQuality(qc, 5)
@@ -386,17 +394,27 @@ eq(M.qualityOf(res.item), 5, "Upheaval keeps the quality")
 isOk, res = C.apply("scouring", res.item)
 eq(M.qualityOf(res.item), 5, "Erasure keeps it too")
 eq(C.rarityOf(res.item), 0)
--- an old item (no stored tiers, no cv): the quality stores the tiers first
+-- an old item (no stored tiers, no version): reading upgrades it first; the quality never touches its modifiers
 local old = put(newItem(2400))
 old:setCustomAttribute("rarity", 4); old:setCustomAttribute("combatPowerLevel", 50)
 old:setCustomAttribute("rarity_swordSkill", 3)
 C.rewriteDescription(old)
 C.addQuality(old, 10)
-eq(old:getCustomAttribute("rarity_swordSkill"), 3, "3 x 1.1 = 3.3: still 3")
+eq(old:getCustomAttribute("rarity_swordSkill"), 3, "an old modifier without a tier keeps its number (the legacy tables)")
 C.addQuality(old, 10)
-ok(old:getCustomAttribute("ct_rarity_swordskill") ~= nil, "the tier was stored")
+eq(old:getCustomAttribute("rarity_swordSkill"), 3, "and quality 20 does not scale it")
+eq(old:getCustomAttribute("chaos_modv"), 3, "reading marked the item")
 eq(M.scaleQuality(5, 20), 6); eq(M.scaleQuality(10, 7), 11); eq(M.scaleQuality(1, 20), 1); eq(M.scaleQuality(0, 20), 0)
 eq(select(2, C.check("whetstone", put(newItem(2400)))), "needRarity")
+-- an item with no attack, defence or armour of its own type has nothing for the quality to act on
+do
+	local amulet = forged(2171, 3, 100)
+	TYPES[2171].armor = 0
+	eq(select(2, C.check("whetstone", amulet)), "needMods", "no base stat for the quality to act on")
+	eq(C.reasons.needMods, "This item has no attack, defence or armour for the quality to act on.")
+	TYPES[2171].armor = 2
+end
+ok(C.orbByKey.whetstone.text:find("attack, defence and armour", 1, true) ~= nil, "the Whetstone text names what quality acts on")
 
 -- ---------------------------------------------------------------- the older orbs with bound modifiers
 local b1 = forged(2400, 3, 100)

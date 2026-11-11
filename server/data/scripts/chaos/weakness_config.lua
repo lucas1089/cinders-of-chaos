@@ -69,7 +69,12 @@ return {
 		"lowest far line 4 Warrior,Templar,Monk,Thief",
 		-- the Monk line (chi build, Shadowfist's stacks) and the Necromancer line (the Bone Lord's army) are the two slowest to start
 		"highest ramp line 2 Monk,Necromancer",
-		"highest ramp class 2 Bone Lord,Shadowfist",
+		-- O474 (2026-11-10): the pin was the two highest in ramp, Bone Lord and Shadowfist. The Bone Lord's 14.8 s at level 300 came from
+		-- Withering Curse dealing its damage over 12 s, not from its army. The curse now ticks every 0.25 s (dot_config.lua), so
+		-- the Bone Lord reaches 80% at 4.0 s at level 300 (level with the Necromancer, the Monk and the Iron Sage) and at 15.0 s
+		-- from level 800, where the army carries it. The Shadowfist keeps its rank; the Bone Lord is pinned on the seconds.
+		"highest ramp class 2 Shadowfist",
+		"atleast ramp class 4 Bone Lord",
 		-- class identity pass 2 (owner, 2026-10-28), the four weaknesses that did not hold and now do:
 		-- 1. mana: the Mystic line has the shortest mana runway of the seven lines and the Warrior and Templar lines are not among
 		--    the three shortest (they were the two shortest, 34 s and 35 s at level 300; owner 2026-10-28: cut their costs further)

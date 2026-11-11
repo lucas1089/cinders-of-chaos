@@ -33,6 +33,26 @@ return {
 	reraise = 4,
 	fight = 55,
 
+	-- O476 (2026-11-10): the guardian's single hit and the level warning (tools/guardian_model.py --hits / --warn, the stored
+	-- levels in rift_config.lua `warn`, server/README.md "Rifts", Level warning). The hit chain reads the config as it is
+	-- (guardian.damage, tiers, party) and the legendary rank of monster_tiers.lua; the base hits are the committed snapshot
+	-- data/spells/guardian_hits.csv (tools/survey_guardian_hits.py on an installed server).
+	hit = {
+		-- the engine's monster level bonus (config.lua monsterBonusDamage 0.0015 a level): x (1 + this x its level) on a monster's
+		-- hit. The live engine of 2026-11-10 runs it TWICE (Game::combatChangeHealth runs again after the health events, measured:
+		-- a fixed 40 hit of a level 950 monster cost 235); another change fixes the engine, so the rule counts it once, like the
+		-- other models. With `enginePasses = 2` (or --passes 2) the levels are the ones of the engine before the fix.
+		engineBonus = 0.0015, enginePasses = 1,
+		-- the rule reads the guardian that this share of the draws does not exceed (by hit size, weighted by the odds that the
+		-- type is the strongest of the run's three: the two stock types of tier 3 with 8M health and hits of 8-11k are 1.7%)
+		quantile = 0.9,
+		-- the rule: the biggest roll of that guardian, after the median class's armour and absorbs, at most this share of its
+		-- pool (health, plus mana for a mana shield class); the shareCap of the marked attacks (rift_config.lua guardian.kit)
+		oneHit = 0.6,
+		-- the levels the rule looks at (the stored levels are multiples of it)
+		step = 5
+	},
+
 	-- limits of --check (a guardian at the tier's level, the median class)
 	limits = {
 		-- seconds to die with no healing, a rift guardian by tier, the Omen guardian (tighter)
@@ -42,6 +62,16 @@ return {
 		-- the guardian's damage against the median class's healing: above it the healer loses without dodging, far
 		-- below it the guardian is only a wall of health (the owner's report)
 		pressure = {min = 0.55, max = 1.15},
+		-- O478 (2026-11-10), a NAMED EXCEPTION, owner 2026-11-10: the easier tier 1 is accepted (asked to choose between
+		-- more hits a second at tiers 1-2 and an easier tier 1, the owner chose the second). With the hit cap (rift_config.lua guardian.hitCap) the
+		-- guardian of tier 1 deals 0.41 x the median healing, under `pressure.min`. No guardian.damage brings it back: the
+		-- model's typical tier 1 guardian rolls over the cap even at its lowest, so its sustained damage is the cap times its
+		-- hit rate and a bigger multiplier only cuts more (base 3.6 and base 50 both give 0.41; tier 2 sits at 0.55). The cap
+		-- is the owner's decision, so it stays. The row lowers the floor of that tier to what the model gives, no further;
+		-- --check fails when the tier reaches `pressure.min` again (a stale row). Not done, by that decision: more hits a
+		-- second at tiers 1-2 (an engine knob, a scripted extra hit).
+		-- server/README.md "Rifts", Guardian hit cap (O478).
+		pressureCapped = {{tier = 1, min = 0.40}},
 		-- a lured pack of the tier: seconds to die with no healing and healing against its damage (hunts: 1.2 and more)
 		-- (the burst of a pack is not limited: a median class heals about its whole pool a second at tier 1)
 		packSustain = {min = 0.75, max = 1.8},

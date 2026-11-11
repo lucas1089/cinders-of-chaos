@@ -116,6 +116,17 @@ end
 out.omen = {guardian = G.damageMult(cfg, nil, true), minLevel = cfg.omen.minLevel, marksBase = b0, marksKit = b1,
 	minion = out.tiers[1].minion}
 out.party = cfg.party
+-- O476: what the single hit and the level warning read (tools/guardian_model.py hit_table / warn_levels)
+local mods = {}
+for _, m in ipairs(cfg.mods) do
+	mods[#mods + 1] = {key = m.key, group = m.group, excludes = m.excludes, minTier = m.minTier, tiers = m.tiers,
+		range = m.range, side = m.side}
+end
+out.hit = {maxTier = cfg.maxTier, types = cfg.packs.types, widenStep = cfg.widenStep, minPoolHealth = cfg.minPoolHealth,
+	maxPlayers = cfg.maxPlayers, maxMods = cfg.key.maxMods, modWindow = cfg.modTiers.window, mods = mods,
+	critMult = cfg.keen.critMult, brands = cfg.brands}
+out.warn = cfg.warn
+out.cap = cfg.guardian.hitCap -- O478: the cap of one guardian hit (rift_config.lua), the model's retention step reads it
 bal.legacy = nil
 out.bal = bal
 print(json(out))

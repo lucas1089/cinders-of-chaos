@@ -605,13 +605,30 @@ local function runAbilities(player, live, pet, rule, pvp, ms)
 	if pet and abilityOn(live, "aura", rule, pvp) and ms >= live.nextAura then
 		local a = cfg.abilities.aura
 		local lo, hi = K.auraDamage(player:getLevel(), level, cfg)
+		-- O472: a Beastmaster's pet takes the same weapon growth as his wolves and bite (ChaosClasses.wolfGrowth)
+		if ChaosClasses and ChaosClasses.wolfGrowth and player.getVocation and player:getVocation()
+				and ChaosClasses.classKey(player:getVocation():getId()) == "beastmaster" then
+			local g = ChaosClasses.wolfGrowth(player)
+			lo, hi = math.floor(lo * g), math.floor(hi * g)
+		end
 		local el = ELEMENT[live.speciesEntry.element] or ELEMENT.physical
 		local hits = 0
 		for _, t in ipairs(threatsOf(player, pet:getPosition(), 1, true)) do
 			if hits >= a.targets then
 				break
 			end
-			local ok, err = pcall(doTargetCombat, player, t.creature, el[1], -lo, -hi, el[2], ORIGIN_NONE)
+			-- O468: the aura is the pet's own damage (not a share of a hit that carried the bonuses), dealt as the owner with
+			-- ORIGIN_SPELL like a Beastmaster's bite (beastmaster.lua): the engine runs no onHealthChange event for ORIGIN_NONE, so
+			-- the passive tree, gems, charms, item modifiers and the monster defence layer never saw it. Inside the class spell
+			-- factor's guard: a pet is no spell of the class's damage model
+			local SF = ChaosSpellFactor
+			if SF then
+				SF.depth = (SF.depth or 0) + 1
+			end
+			local ok, err = pcall(doTargetCombat, player, t.creature, el[1], -lo, -hi, el[2], ORIGIN_SPELL)
+			if SF then
+				SF.depth = SF.depth - 1
+			end
 			if not ok then
 				log("aura: " .. tostring(err))
 			end

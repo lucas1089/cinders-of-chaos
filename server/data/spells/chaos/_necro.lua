@@ -52,9 +52,8 @@ function S.summon(player, kind)
 	return true
 end
 
--- running damage-over-time effects: key -> token (a recast replaces the running one)
+-- running damage-over-time effects: slot -> token (a recast replaces the running one)
 S.dots = {}
-local tokens = 0
 
 -- the caster's class, or cancel with a message
 function S.class(player)
@@ -84,54 +83,29 @@ function S.target(player, variant)
 	return target
 end
 
--- Damage over time: `ticks` hits of min..max every tickMs on the creature `targetId`, dealt as the caster. `key`
--- names the effect (one per caster and target: a recast restarts it). When the host dies before the last tick and
--- jumpRadius is set, the rest jumps to the nearest enemy within jumpRadius of where it died (Soul Rot).
-function S.dot(casterId, targetId, key, ticks, tickMs, min, max, ctype, effect, jumpRadius)
-	tokens = tokens + 1
-	local token = tokens
-	local slot = key .. ":" .. casterId
-	S.dots[slot .. ":" .. targetId] = token
-	local lastPos
-	local function step(hostId, left)
-		local caster = Creature(casterId)
-		if not caster or caster:getHealth() <= 0 then
-			return
-		end
-		local host = Creature(hostId)
-		if S.dots[slot .. ":" .. hostId] ~= token then
-			return -- replaced by a recast
-		end
-		if not host or host:getHealth() <= 0 then
-			S.dots[slot .. ":" .. hostId] = nil
-			if not jumpRadius or not lastPos then
-				return
-			end
-			local cands = {}
-			for _, e in ipairs(L.enemiesAround(caster, lastPos, jumpRadius, false)) do
-				cands[#cands + 1] = {id = e:getId(), pos = e:getPosition(), alive = e:getHealth() > 0}
-			end
-			local nxt = N.rotJump(cands, lastPos, jumpRadius)
-			if not nxt then
-				return
-			end
-			ChaosSpell.shoot(lastPos, nxt.pos, "skull_orb", CONST_ANI_DEATH)
-			S.dots[slot .. ":" .. nxt.id] = token
-			return step(nxt.id, left)
-		end
-		lastPos = host:getPosition()
-		local hitFx = effect -- a stock id, or {vfx = <pack effect name>, fx = <stock id without it>}
-		if type(effect) == "table" then
-			hitFx = ChaosSpell.vfx(lastPos, effect.vfx) and CONST_ME_NONE or effect.fx
-		end
-		L.damage(caster, host, ctype, min, max, hitFx, ORIGIN_SPELL)
-		if left > 1 then
-			addEvent(step, tickMs, hostId, left - 1)
-		else
-			S.dots[slot .. ":" .. hostId] = nil
-		end
+-- Damage over time: `ticks` hits of min..max every tickMs on the creature `targetId`, dealt as the caster, the first at once
+-- (firstMs, default 0; O474, was one tickMs after the cast). `key` names the effect (one per caster and target: a recast restarts
+-- it). It runs on ChaosSpell.dotChain: when the host dies before the last tick the rest jumps to the nearest living monster
+-- within jumpRadius of where it died (default ChaosDotConfig.jump.radius; Soul Rot did this alone before O474; 0 = never).
+function S.dot(casterId, targetId, key, ticks, tickMs, min, max, ctype, effect, jumpRadius, firstMs)
+	local D = ChaosDot
+	if jumpRadius == nil then
+		jumpRadius = D and D.cfg().jump and D.cfg().jump.radius or 0
 	end
-	addEvent(step, tickMs, targetId, ticks)
+	ChaosSpell.dotChain({
+		casterId = casterId, targetId = targetId, key = key, registry = S.dots, ticks = ticks, tickMs = tickMs,
+		firstMs = firstMs or 0, jumpRadius = jumpRadius, ctype = ctype,
+		onJump = function(from, to)
+			ChaosSpell.shoot(from, to:getPosition(), "skull_orb", CONST_ANI_DEATH)
+		end,
+		deal = function(caster, host)
+			local hitFx = effect -- a stock id, or {vfx = <pack effect name>, fx = <stock id without it>}
+			if type(effect) == "table" then
+				hitFx = ChaosSpell.vfx(host:getPosition(), effect.vfx) and CONST_ME_NONE or effect.fx
+			end
+			L.damage(caster, host, ctype, min, max, hitFx, ORIGIN_SPELL)
+		end,
+	})
 end
 
 -- Withering Curse on one creature: the amplify timer (monsters) and the rot
@@ -143,8 +117,14 @@ function S.curse(player, classKey, target)
 		target:registerEvent("ChaosNecroCurse")
 	end
 	local min, max = N.curseTick(S.cfg, classKey, player:getLevel(), player:getMagicLevel(), L.spellFactor(player))
-	S.dot(player:getId(), target:getId(), "curse", w.ticks, w.tickMs, min, max, COMBAT_DEATHDAMAGE,
-		CONST_ME_SMALLCLOUDS)
+	local tickMs, firstMs, radius = w.tickMs, 0, nil
+	local D = ChaosDot
+	if D and target:isPlayer() then -- against a player the old gap and first tick (ChaosDotConfig.pvp.necro), never a jump
+		local old = D.pvpNecro("curse")
+		tickMs, firstMs, radius = old.tickMs or tickMs, old.firstMs or 0, 0
+	end
+	S.dot(player:getId(), target:getId(), "curse", w.ticks, tickMs, min, max, COMBAT_DEATHDAMAGE,
+		CONST_ME_SMALLCLOUDS, radius, firstMs)
 	ChaosSpell.fx(target:getPosition(), "necro_skull", CONST_ME_MORTAREA)
 end
 

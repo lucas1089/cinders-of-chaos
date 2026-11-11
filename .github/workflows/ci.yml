@@ -836,6 +836,7 @@ jobs:
           python3 -I server/tools/monster_spells_test.py  # retired spells a monster names stay, monster-only
           python3 -I server/tools/patch_wide_spell_ids_test.py  # config key chaosWideSpellIds and engine src-patch 0079 (16-bit spell ids, gated)
           python3 -I server/tools/patch_spell_ids_test.py  # stock spell ids below 256; a retired spell's new id is free for a Chaos spell
+          python3 -I server/tools/patch_stock_spell_inputs_test.py  # Kindling Spark and Bewitching Hex read level and magic level (O468): the old number at the learned level
           python3 -I server/tools/patch_spell_timings_test.py  # stock cooldowns (the ladder) and the two script cooldowns
           python3 -I server/tools/patch_badges_test.py  # the badge slot; retired slots: hooks, descriptions, death loss
           python3 -I server/tools/patch_prizes_test.py  # base prizes into the backpack: roulettes, task rewards, crafting, ship NPC
@@ -858,6 +859,11 @@ jobs:
           python3 -I server/tools/weapon_sim.py --check
           python3 -I server/tools/weapon_sim.py --power --check  # weapon_power_config.lua (auto attack power)
           python3 -I server/tools/gen_base_wands.py --check  # data/lib/chaos_base_wands.lua: stock wand damage for the tooltip (O353)
+          # O472: the weapon values grow with the level: W and the curves, the install tools over an old install, the growth table of the
+          # upgrade on touch, the stock weapons' install step (and the Lua audit's rule), the generated table
+          python3 -I server/tools/weapon_growth_test.py
+          python3 -I server/tools/patch_stock_weapon_growth_test.py
+          python3 -I server/tools/gen_weapon_growth.py --check  # data/lib/chaos_weapon_growth.lua
           python3 -I server/tools/add_vocations_melee_test.py
           python3 -I server/tools/monster_fire_resist_test.py
           python3 -I server/tools/monster_physical_resist_test.py  # no hunt monster immune to physical (Thief line bug 2026-11-02)
@@ -948,6 +954,9 @@ jobs:
       - name: Infinity Tower floors clear in bounded time, level 800 reaches floor 30-46, class damage from class_dps_model.py, the stale curves held at curveTol (tower_model.py --check and its test; infinitytower_balance_config.lua; O444)
         run: python3 -I server/tools/tower_model.py --check && python3 -I server/tools/tower_model_test.py
 
+      - name: Bosses at their planned length for the typical damage after the round (boss_length_model.py --check and its test; dungeons_difficulty.lua, rift_config.lua, the Omen, Ascended, Cinderheart and raid boss health; O475)
+        run: python3 -I server/tools/boss_length_model.py --check && python3 -I server/tools/boss_length_model_test.py
+
       - name: Rift maps are no bigger than their monsters need, full sweep in bounded time (rift_layout_model.lua --check; its test runs with the server tests; rift_layout_balance_config.lua, O309)
         run: cd server && luajit tools/rift_layout_model.lua --check && lua5.3 tools/rift_layout_model.lua --check
 
@@ -973,8 +982,11 @@ jobs:
       - name: Every class lives in a pack of its late hunt, at least 0.45 x the median class, and the median class out-heals it (survival_model.py --check and its test; survival_balance_config.lua, O367)
         run: python3 -I server/tools/survival_model.py --check && python3 -I server/tools/survival_model_test.py
 
-      - name: Rift guardians and packs hit the median class within limits, a Necromancer's trio is no wall (guardian_model.py --check; guardian_balance_config.lua, O427)
+      - name: Rift guardians and packs hit the median class within limits, a Necromancer's trio is no wall, the stored level warning is the rule, the guardian hit cap is the model's (guardian_model.py --check; guardian_balance_config.lua, O427, O476, O478)
         run: python3 -I server/tools/guardian_model.py --check
+
+      - name: Rift level warning, guardian hit chain, guardian hit cap in the model and the snapshot of the guardian hits (guardian_model_test.py, survey_guardian_hits_test.py; O476, O478)
+        run: python3 -I server/tools/guardian_model_test.py && python3 -I server/tools/survey_guardian_hits_test.py
 
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
@@ -1157,11 +1169,20 @@ jobs:
       - name: Base rain off in config.lua (patch_base_rain.py, install_all step baserain)
         run: python3 -I server/tools/patch_base_rain_test.py
 
+      - name: Engine armour off for players (patch_base_armor_percent.py, install_all step armourlayer, O464)
+        run: python3 -I server/tools/patch_base_armor_percent_test.py
+
+      - name: Base absorb event leaves a player to the player defence layer (patch_base_absorb_player.py, install_all step absorbplayer, O464)
+        run: python3 -I server/tools/patch_base_absorb_player_test.py
+
       - name: Base waypoints open for everyone (patch_base_waypoints.py, install_all step waypoints, O386)
         run: python3 -I server/tools/patch_base_waypoints_test.py
 
       - name: Monster level without skull or spread (src-patch 0082)
         run: python3 -I server/tools/monster_level_patch_test.py
+
+      - name: Monster level bonus once per hit (src-patch 0090, O477)
+        run: python3 -I server/tools/monster_bonus_once_patch_test.py
 
       - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
         run: python3 -I server/tools/patch_base_raids_test.py
@@ -1456,6 +1477,10 @@ jobs:
       - name: Unique passives balance model (O278)
         run: |
           cd server && luajit tools/unique_passives_model.lua --check && lua5.3 tools/unique_passives_model.lua --check
+
+      - name: Damage pool table (O473)
+        run: |
+          cd server && luajit tools/damage_pool_table.lua --check && lua5.3 tools/damage_pool_table.lua --check
 
       - name: Codex data is up to date with the server data files
         run: |

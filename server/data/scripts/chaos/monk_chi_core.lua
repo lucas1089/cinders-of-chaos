@@ -125,7 +125,9 @@ M.cfg = {
 	-- the Iron Sage, the second healer (docs/CLASSES.md): its Kindled Breath heals the most hurt party member within
 	-- `range` sqm (itself without a party) for (level x perLevel + fist x perFist) x the finisher scale, + hotShare over
 	-- hotTicks s. Below the Illusionist, above every non-healer: server/data/spells/README.md "Healing".
-	sageBreath = {perLevel = 0, perFist = 33, range = 5},
+	-- O468: it had no level term; level x 2 + fist x 24.5 is what fist x 33 was for a typical Sage at level 500 (fist 120:
+	-- 3940 against 3960), so the heal there is unchanged
+	sageBreath = {perLevel = 2, perFist = 24.5, range = 5},
 	-- Mantra of Stone: party members within radius take `reduction` less damage while it lasts; every pulse also heals
 	-- them (and the Iron Sage) for level x heal.perLevel + fist x heal.perFist
 	mantra = {reduction = 0.08, durationMs = 12000, pulseMs = 2000, radius = 6, heal = {perLevel = 1.0, perFist = 26}}
@@ -286,10 +288,22 @@ function M.sendChi(player, chi, hide)
 end
 
 -- ------------------------------------------------------------------------------------------------ unarmed
--- the attack value of a Monk's fists at `level` (fistWeaponAttack: the best fist weapon in hand, or 0)
+-- O472: the weapon growth a(level) = 1 + (W - 1) / 0.85 (spell_scaling_core.lua S.weaponA): the bare fist's attack grows with the level the way
+-- the attack of every weapon does (the fist weapons' attack grows at the install, tools/install_fist_weapons.py). 1 up to level 100.
+function M.weaponGrowth(level)
+	if not rawget(_G, "ChaosSpellScaling") then
+		pcall(dofile, "data/scripts/chaos/spell_scaling_config.lua")
+		pcall(dofile, "data/scripts/chaos/spell_scaling_core.lua")
+	end
+	local S = rawget(_G, "ChaosSpellScaling")
+	return S and S.weaponA and S.weaponA(level) or 1
+end
+
+-- the attack value of a Monk's fists at `level` (fistWeaponAttack: the best fist weapon in hand, or 0): the level value (attackBase +
+-- attackPerLevel x level, at most attackMax) times the weapon growth, or the fist weapon's attack when that is higher
 function M.fistAttack(level, fistWeaponAttack)
 	local u = cfg().unarmed
-	local byLevel = math.min(u.attackMax, u.attackBase + (level or 0) * u.attackPerLevel)
+	local byLevel = math.min(u.attackMax, u.attackBase + (level or 0) * u.attackPerLevel) * M.weaponGrowth(level)
 	return math.max(byLevel, fistWeaponAttack or 0)
 end
 

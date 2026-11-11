@@ -357,20 +357,8 @@ function N.pickSacrifice(minions, targetPos)
 	return best
 end
 
--- the next host of a Soul Rot whose target died: the nearest of `candidates` ({id, pos, alive}) within radius of
--- `pos`, nil when none
-function N.rotJump(candidates, pos, radius)
-	local best, bestDist
-	for _, c in ipairs(candidates or {}) do
-		if c.alive then
-			local d = N.distance(c.pos, pos)
-			if d <= radius and (not best or d < bestDist or (d == bestDist and (c.id or 0) < (best.id or 0))) then
-				best, bestDist = c, d
-			end
-		end
-	end
-	return best
-end
+-- the next host of a dot whose host died: ChaosDot.pickJump (dot_core.lua, O474: the one rule of every damage over time; this
+-- file had N.rotJump for Soul Rot alone)
 
 -- ------------------------------------------------------------------ spells
 function N.levelScale(cfg, level)

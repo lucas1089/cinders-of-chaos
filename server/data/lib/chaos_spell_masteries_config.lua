@@ -27,11 +27,15 @@ return {
 		shatter = {"value"}, -- the share of the hit the neighbours take
 		quickening = {"value"}, -- the cooldown cut in percent
 		hex = {"value"}, -- the damage taken in percent
-		echo = {"value"}, -- the chance per cast in percent (the damage of the second strike stays 50%)
-		dawnbrand = {"value"}, -- the extra holy damage in percent
-		gravebrand = {"value"}, -- the extra death damage in percent
-		stormbrand = {"value"} -- the extra energy damage in percent
+		echo = {"value"} -- the chance per cast in percent (the damage of the second strike stays 50%)
 	},
+
+	-- O473 (2026-11-10): a choice whose support is a plain damage effect (a brand) is not a free support: while its spell is cast it adds
+	-- raw percent to the one additive damage pool (damage_pool_config.lua sources.masteries: +3 each, at most 12), so it is "increased
+	-- damage" and shares the soft cap with the tree. Before: the free brand, 75% of a Common rune's extra element damage (dawnbrand,
+	-- gravebrand, stormbrand `value` reduced) as a separate multiplier. The other supports (fork, breadth, shatter, quickening, hex,
+	-- echo) stay free supports: they add targets, strikes or cooldown, not increased damage.
+	damage = {dawnbrand = true, gravebrand = true, stormbrand = true},
 
 	-- the choices: id = the tree stat spellMod; line = the class line (the mastery node's `line`); node, effect = the mastery
 	-- node and the position of the effect in it (append only, an existing effect keeps its position); name = the effect's name;

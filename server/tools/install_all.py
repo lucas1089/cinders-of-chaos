@@ -207,6 +207,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                                                  Sanctum Burst, Radiant Shard; spells README "Area damage is uniform")
                tools/patch_mystic_stock_fx.py    Mystic line effects in the base Bewitching Hex and Arcane Ripple
                                                  scripts (spells/README_FX.md "Mystic line effects")
+               tools/patch_stock_spell_inputs.py the flat base spells Kindling Spark and Bewitching Hex read the level
+                                                 and the magic level (the old number for a typical caster at the level
+                                                 the spell is learned; spells README "Spell scaling (O468)")
                tools/patch_free_spells.py        every spell and rune free: no premium flag in spells.xml or the
                                                  revscripts, no premium test in the NPC spell teachers (README
                                                  "Free spells")
@@ -222,6 +225,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   throwables   tools/patch_base_throwables.py    the stackable throwing weapons (spear, throwing star, royal spear, ...;
                data/lib/chaos_throwables.lua) leave monster loot, NPC shops and script rewards (README "Throwing weapons";
                after archery, whose functions it uses)
+  weapongrowth tools/patch_stock_weapon_growth.py  the stock weapons grow with the level (O472, README "Weapon growth (O472)"): attack
+               and element damage of a sword, axe, club, bow or crossbow, min and max of a wand or rod, of a level above 100,
+               times the weapon growth a(level) (items.xml, weapons.xml; the numbers before are kept in a comment, so a second
+               run changes nothing and survey_base_weapons.py still reads the stock snapshot; after archery, whose launcher
+               attack it grows)
   uniqueequip  tools/install_unique_equip.py     the uniques with an equip rule of their own (chaos_items.xml equipLevel /
                equipLines: the second round's archetype uniques) get it: their base items' Equip entries in
                movements.xml check the looser rule and a movement script holds each copy to its own (unique or
@@ -251,6 +259,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the real map and writes nothing)
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
                type (README "Absorb ceiling"; matches engine patch 0049)
+  absorbplayer tools/patch_base_absorb_player.py the base absorb event returns a player's hit unchanged while the player defence layer
+               is on: the layer applies the same storages first (README "Player defence (O464)"; after absorbceiling)
+  armourlayer  tools/patch_base_armor_percent.py config.lua armorPercentMax = 0: the engine's armour share of a player is off, the player
+               defence layer works the armour out by hit size (README "Player defence (O464)")
   openpotions  tools/patch_open_potions.py       every class drinks every health, mana and spirit potion: the vocation lists
                of the base potions.lua and the class words of the Look texts go, the level gates stay (README "Open
                potions"; after the vocations step)
@@ -1147,6 +1159,9 @@ def step_spells(server, data, ctx):
         ok, more = run_tool([tool('patch_mystic_stock_fx.py'), data], 'patch_mystic_stock_fx.py')
         lines += more
     if ok:
+        ok, more = run_tool([tool('patch_stock_spell_inputs.py'), data], 'patch_stock_spell_inputs.py')
+        lines += more
+    if ok:
         ok, more = run_tool([tool('patch_free_spells.py'), data], 'patch_free_spells.py')
         lines += more
     warn = unregistered_spell_fragments(data) + unknown_monster_spells(data)
@@ -1155,6 +1170,14 @@ def step_spells(server, data, ctx):
 
 def step_archery(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_archery.py'), data], 'patch_base_archery.py'))
+
+
+def step_weapongrowth(server, data, ctx):
+    args = [tool('patch_stock_weapon_growth.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_stock_weapon_growth.py'))
+
+
+STEPS.insert(STEPS.index('throwables') + 1, 'weapongrowth')  # O472: after archery (the launchers' attack holds the ammunition) and throwables
 
 
 def step_throwables(server, data, ctx):
@@ -1237,6 +1260,22 @@ def step_absorbceiling(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('annihilatorsolo') + 1, 'absorbceiling')  # the absorb ceiling (75 percent) in the base event
+
+
+def step_absorbplayer(server, data, ctx):
+    args = [tool('patch_base_absorb_player.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_absorb_player.py'))
+
+
+STEPS.insert(STEPS.index('absorbceiling') + 1, 'absorbplayer')  # the player defence layer takes the absorb (O464): after the ceiling patch
+
+
+def step_armourlayer(server, data, ctx):
+    args = [tool('patch_base_armor_percent.py'), server] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_armor_percent.py'))
+
+
+STEPS.insert(STEPS.index('absorbplayer') + 1, 'armourlayer')  # config.lua armorPercentMax = 0 (O464)
 
 
 def step_badges(server, data, ctx):

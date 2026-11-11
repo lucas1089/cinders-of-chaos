@@ -157,5 +157,34 @@ do
 	end
 end
 
+-- ---------------------------------------------------------------- the window in words (O467: Codex, wiki and Item Finder read it)
+do
+	local W = ChaosUniqueWindow
+	ok(W ~= nil and W.range and W.levels, "unique_window_core.lua is loaded by loot.lua")
+	local lo, hi = W.range(o, {id = 1, level = 100})
+	ok(lo == 90 and hi == 210, "the window of a level 100 entry in monster levels")
+	local a, b = W.levels(o, {id = 1, level = 70})
+	ok(a == 63 and b == 150, "whole levels: 63.0000001 rounds to 63, not 64")
+	a, b = W.levels(o, {id = 1, level = 15})
+	ok(a == 14 and b == 40, "level 15: 13.5 rounds up to 14, 40 down")
+	ok(W.range(o, {id = 1, level = 100, bossOnly = true}) == nil, "no window for a boss-only entry")
+	ok(W.range(o, {id = 1, level = 100, minMonsterLevel = 100}) == nil, "no window for an endgame entry")
+	ok(W.range(o, {id = 1, level = o.maxItemLevel + 1}) == nil, "no window above maxItemLevel")
+	ok(W.range(o, {id = 1}) == nil, "no window without a level")
+	-- loot.lua and the window agree on every edge for every leveling entry of the real list
+	local o2 = u.openLevel
+	o2.mult = {{1, 1}}
+	local n = 0
+	for _, e in ipairs(ChaosUniqueItems) do
+		local lo2, hi2 = W.levels(o2, e)
+		if lo2 then
+			n = n + 1
+			ok(L.openLevelMult(e, lo2) and L.openLevelMult(e, hi2), e.name .. ": the edges of the words are inside")
+			ok(not L.openLevelMult(e, lo2 - 1) and not L.openLevelMult(e, hi2 + 1), e.name .. ": one level outside is out")
+		end
+	end
+	ok(n > 50, "many leveling entries are checked: " .. n)
+end
+
 print(string.format("unique_open_level_test: %d of %d failed", fails, checks))
 os.exit(fails == 0 and 0 or 1)

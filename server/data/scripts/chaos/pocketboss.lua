@@ -664,6 +664,9 @@ local function worldRewardOf(run, player)
 				ChaosMakeUnique(item)
 			end
 			inboxUsed = giveEx(player, item) or inboxUsed
+			if ChaosUniqueIntro then -- O467
+				pcall(ChaosUniqueIntro.found, player)
+			end
 			local e = ChaosUniqueById and ChaosUniqueById[r.unique]
 			parts[#parts + 1] = e and e.name or itemName(r.unique)
 		end

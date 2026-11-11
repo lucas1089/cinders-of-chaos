@@ -1253,6 +1253,28 @@ do
 	end
 end
 
+-- ------------------------------------------------------------------ Frayed Wards (O464): the players' maximum resistances are lowered
+do
+	local d, idx = R.modDef(cfg, "frayed")
+	ok(d ~= nil, "Frayed Wards exists")
+	eq(d.name, "Frayed Wards", "its name")
+	eq(d.side, "suffix", "the players get worse: a suffix")
+	eq(idx, #cfg.mods, "appended at the end (the refund marker stores a modifier by its index)")
+	eq(d.range[1], 5, "tier I: -5"); eq(d.range[2], 25, "tier V: -25")
+	for t, v in ipairs({5, 10, 15, 20, 25}) do
+		eq(d.tiers[t], v, "tier band " .. t)
+		eq(R.modTier(d, v), t, "a value of " .. v .. " reads as tier " .. t)
+	end
+	eq(string.format(d.text, 15), "Players' maximum resistances are lowered by 15", "the text")
+	ok(d.reward and d.reward.quantity and d.reward.rarity, "a reward bonus like the other suffixes")
+	for t, v in ipairs({5, 10, 15, 20, 25}) do
+		eq(R.effects(cfg, {{key = "frayed", value = v}}, 3).maxResistLower, v, "the effect: -" .. v)
+	end
+	eq(R.effects(cfg, {}, 3).maxResistLower, 0, "no modifier, no change")
+	local dec = R.decodeMods(cfg, "frayed:15")
+	eq(dec[1].key .. dec[1].value, "frayed15", "a key carries and decodes it")
+end
+
 -- ------------------------------------------------------------------ third set of modifiers
 do
 	local new = {"emberbrand", "frostbrand", "stormbrand", "keen", "ironhide", "festering", "spiteglass", "brood", "wrath",

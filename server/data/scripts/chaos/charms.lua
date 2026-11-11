@@ -815,9 +815,25 @@ local function anyFamily(st)
 	return false
 end
 
+-- O473: Damage to a monster family (a charm) of a player's own hit is one entry of the additive damage pool (damage_pool_core.lua,
+-- the entry shares its cap with the weapon family's); the hits of a player's SUMMONS keep the event below (a summon has no tree).
+function CH.poolRaw(player, creature)
+	if not creature or not creature.isMonster or not creature:isMonster() then
+		return 0
+	end
+	local st = CH.players[player:getGuid()]
+	return st and Core.familyPct(st.own, familyOf(creature)) or 0
+end
+if not ChaosDamagePool then
+	dofile("data/scripts/chaos/damage_pool_core.lua")
+end
+ChaosDamagePool.register("charms", function(hit)
+	return CH.poolRaw(hit.attacker, hit.creature)
+end)
+
 local dealt = CreatureEvent("ChaosCharmsDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
-	if primaryType == COMBAT_HEALING or not creature:isMonster() then
+	if primaryType == COMBAT_HEALING or not creature:isMonster() or (attacker and attacker:isPlayer()) then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local p = playerOf(attacker)
@@ -858,6 +874,12 @@ targetCb.onTargetCombat = function(creature, target)
 end
 targetCb:register()
 
+-- the resistance of the placed charms to a damage type (percent), for the player defence layer (O464)
+function CH.resistOf(player, ctype)
+	local st = CH.players[player:getGuid()]
+	return st and st.own and Core.resistPct(cfg, st.own, ctype) or 0
+end
+
 local taken = CreatureEvent("ChaosCharmsTaken")
 function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if primaryType == COMBAT_HEALING or not creature:isPlayer() then
@@ -867,11 +889,13 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if not st or not st.own then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	local r1 = Core.resistPct(cfg, st.own, primaryType)
+	-- O464: a player's resistances are a source of the player defence layer (ChaosPlayerDefence), not reduced here
+	local layer = ChaosPlayerDefence and ChaosPlayerDefence.active()
+	local r1 = layer and 0 or Core.resistPct(cfg, st.own, primaryType)
 	if r1 > 0 then
 		primaryDamage = Core.reduce(primaryDamage, r1)
 	end
-	local r2 = Core.resistPct(cfg, st.own, secondaryType)
+	local r2 = layer and 0 or Core.resistPct(cfg, st.own, secondaryType)
 	if r2 > 0 then
 		secondaryDamage = Core.reduce(secondaryDamage, r2)
 	end

@@ -369,8 +369,27 @@ function M.wolfFactor(player)
 end
 
 -- the bite of this owner's companions in a spell's maul: level, distance skill and the wolf factor
+-- O468: a wolf's bite and maul are a weapon spell's: the owner's magic level share (spell_scaling_config.lua mlShare), once
+local function weaponShare(player)
+	if not ChaosSpellScaling then
+		pcall(dofile, "data/scripts/chaos/spell_scaling_config.lua")
+		pcall(dofile, "data/scripts/chaos/spell_scaling_core.lua")
+	end
+	return ChaosSpellScaling and ChaosSpellScaling.forPlayer(player) or 1
+end
+M.weaponShare = weaponShare
+
+-- O472: the weapon growth of the owner's bow or weapon (spell_scaling_core.lua wolfForPlayer; caster.wolves in the config): a wolf's
+-- bite and maul and the companion's bite take it in the raw value, so the event factors and the companion model see it
+local function wolfGrowth(player)
+	weaponShare(player)
+	local S = ChaosSpellScaling
+	return S and S.wolfForPlayer and S.wolfForPlayer(player) or 1
+end
+M.wolfGrowth = wolfGrowth
+
 function M.biteValuesFor(player)
-	return M.biteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE), M.wolfFactor(player))
+	return M.biteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE), M.wolfFactor(player) * weaponShare(player) * wolfGrowth(player))
 end
 
 -- the maul of one companion for a wolf spell (Chaos.classes.companion.spells[key]): the spell's bite x its mauls
@@ -408,7 +427,7 @@ function M.autoBiteValues(level, distanceSkill, factor)
 end
 
 function M.autoBiteValuesFor(player)
-	return M.autoBiteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE), M.wolfFactor(player))
+	return M.autoBiteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE), M.wolfFactor(player) * weaponShare(player) * wolfGrowth(player))
 end
 
 -- the level shown after a companion's name: its owner's (a spawned wolf got the wild War Wolf's level, 12, or the level

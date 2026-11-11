@@ -174,6 +174,49 @@ def stats(cls, level):
             'SANCT': pack_scale('sanctified'), 'WAVE': pack_scale('shieldWave')}
 
 
+class grown_stats(object):
+    """`with grown_stats():` the typical character AFTER the weapon growth of O472 (weapon_growth.py): the weapon attack and the fist
+    times a(level), the wolf bite and every Chaos spell of a caster class times W(level) (the caster factor, spell_scaling_core.lua;
+    a stock spell of the base scripts does not take it). Everything else of this tool is the typical character BEFORE the growth on
+    purpose (O475, 2026-11-10): the growth is one factor on the weapon term, and with it the best sets of 30 class and level points
+    change and nine cooldowns of the ladder move (Reaping Gyre 6 -> 4 s, Scything Arc 4 -> 6 s ...), which would rewrite the
+    helper's preset data and the cooldowns for no gain a player asked for. class_dps_model.py reads the difference through this switch.
+    The analysis cache is cleared on entry and exit."""
+    def __enter__(self):
+        global stats, prepare
+        import weapon_growth as WG
+        self.saved = (stats, prepare)
+        base_stats, base_prepare = stats, prepare
+
+        def grown(cls, level):
+            e = dict(base_stats(cls, level))
+            a, w = WG.weapon_a(level), WG.weapon_w(level)
+            e['ATK'] *= a
+            e['FIST'] *= a
+            e['P'] = e['SK'] * (e['FIST'] if CLASS_KIND[cls] == 'fist' else e['ATK'])
+            e['BITE'] *= w
+            return e
+
+        def grown_prepare(spells, model, cls, level, ultimates=False, allow=()):
+            out = base_prepare(spells, model, cls, level, ultimates, allow)
+            if CLASS_KIND[cls] == 'caster':
+                w = WG.weapon_w(level)
+                for p in out:
+                    if p.chaos:
+                        p.dmg *= w
+                        p.dmg5 *= w
+            return out
+        stats, prepare = grown, grown_prepare
+        _ANALYSED.clear()
+        return self
+
+    def __exit__(self, *exc):
+        global stats, prepare
+        stats, prepare = self.saved
+        _ANALYSED.clear()
+        return False
+
+
 @functools.lru_cache(maxsize=None)
 def spell_factors():
     """{vocation id: factor} of ChaosSpellFactorConfig.byVocation (spell_factor_config.lua): the factor from the last
@@ -1084,6 +1127,20 @@ LADDER_STEP = 2000   # ms between two rungs of the first LADDER_FLAT rungs
 # a DPS de todas as classes"): 2, 4, 6 s as before (O94), then one second a rung instead of two: 7, 8 ... 13 s. The strongest
 # rungs lose 25 to 35% (was 12, 14, 16, 18, 20 s: 9, 10, 11, 12, 13 s); a rung stays above the one below it.
 LADDER_COOLDOWNS = (2000, 4000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000)
+# O474 (2026-11-10): the damage over time rule (side dots 0.30 x the hit, Soul Rot x1.5, Blightbrand x1.25, Martyr's Pyre x1.1) raised the
+# damage per cast of six spells and would have moved seven cooldowns by the ladder (Witchfire Bolt 7 -> 9 s, Falling Pyre 10 -> 11, Soul Rot
+# 11 -> 13, Blightbrand 12 -> 13, Briar Prison 8 -> 7, Tempest Fan 9 -> 8, Crypt Collapse 13 -> 12). A longer wait would take back the gain the
+# change is for, and a dot lands in full only on a target that lives (server/README.md "Damage over time (O474)"). So the ladder ranks these
+# six spells by their `dmg` of before (words -> expression); every cooldown stays. Owner's call in the final re-fit: remove an entry to let
+# the ladder move that spell.
+LADDER_HOLD = {
+    'kah pyr vesh': 'avg(l+ML*3+15,l+ML*5+30)*1.2+4*(ML*0.15+3)',                  # Witchfire Bolt
+    'drai gal vas infr': 'avg(l+ML*6.6+145,l+ML*10.8+265)*1.2+4*(ML*0.2+5)',        # Falling Pyre
+    'kah mynd frak': 'avg(l+ML*5.7+55,l+ML*9.7+100)*1.4+5*(ML*0.3+4)',              # Shattered Psyche
+    'kah nyx putr': '6*avg(l+ML*1.2+20,l+ML*1.6+40)*1.15',                           # Soul Rot
+    'kah putr brak': '6*avg(l+ML*1.949+8,l+ML*3.118+16)',                            # Blightbrand
+    'kah sol pyr': '5*avg(l+P*0.0258+ML*0.5+8,l+P*0.0413+ML*0.8+16)',                # Martyr's Pyre
+}
 
 
 QUEST_COOLDOWN = 13000   # a line spell quest attack (level 500) is not ranked: it sits above the ladder at the last rung's 13 s
@@ -1106,7 +1163,8 @@ def ladder(spells, model, level=LADDER_LEVEL):
     rungs, per_class = {}, {}
     for cls, _, _ in CLASSES:
         env = stats(cls, level)
-        rows = [(evaluate(model[s['words']]['dmg'], env), s['level'], s['name']) for s in attack if cls in s['vocations']]
+        rows = [(evaluate(LADDER_HOLD.get(s['words'], model[s['words']]['dmg']), env), s['level'], s['name'])
+                for s in attack if cls in s['vocations']]
         if not rows:
             continue
         first = min(rows, key=lambda r: (r[1], r[0]))

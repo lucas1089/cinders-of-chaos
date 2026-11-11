@@ -13,6 +13,24 @@
 --    one (silver) and the paths test uses the lists to judge the routes to the class keystones.
 -- Lua 5.1 / LuaJIT and Lua 5.3.
 
+-- O464: what the tree's resistance is worth in the player defence layer (player_defence_config.lua `tree`): a note added to the
+-- text of every resistance stat of the tree. Physical resist is not touched.
+local TREE_NOTE = ""
+do
+	local ok, pd = pcall(dofile, "data/scripts/chaos/player_defence_config.lua")
+	local t = ok and type(pd) == "table" and pd.tree or nil
+	if t then
+		local share = t.share or 1
+		local word = share == 0.5 and "half a point" or string.format("%d%% of a point", math.floor(share * 100 + 0.5))
+		TREE_NOTE = " In the resistance of its group a point counts as " .. word
+		if t.cap then
+			TREE_NOTE = TREE_NOTE .. ", and the tree gives at most " .. string.format("%d", t.cap) .. "."
+		else
+			TREE_NOTE = TREE_NOTE .. "."
+		end
+	end
+end
+
 ChaosPassiveStatsConfig = {
 	groups = {
 		elements = {"incrementFire", "incrementIce", "incrementEnergy", "incrementEarth", "incrementDeath", "incrementHoly",
@@ -84,17 +102,17 @@ ChaosPassiveStatsConfig = {
 		incrementLifeDrain = {"Life drain damage", "+percent life drain damage."},
 		incrementManaDrain = {"Mana drain damage", "+percent mana drain damage."},
 		absorbPhysical = {"Physical resist", "Takes this percent less physical damage, at most 75 percent (gear adds on top)."},
-		absorbFire = {"Fire resist", "Takes this percent less fire damage, at most 75 percent (gear adds on top)."},
-		absorbIce = {"Ice resist", "Takes this percent less ice damage, at most 75 percent (gear adds on top)."},
-		absorbEnergy = {"Energy resist", "Takes this percent less energy damage, at most 75 percent (gear adds on top)."},
-		absorbEarth = {"Earth resist", "Takes this percent less earth damage, at most 75 percent (gear adds on top)."},
-		absorbDeath = {"Death resist", "Takes this percent less death damage, at most 75 percent (gear adds on top)."},
-		absorbHoly = {"Holy resist", "Takes this percent less holy damage, at most 75 percent (gear adds on top)."},
-		absorbArcane = {"Arcane resist", "Takes this percent less arcane damage, at most 75 percent (gear adds on top)."},
-		absorbWater = {"Water resist", "Takes this percent less water damage, at most 75 percent (gear adds on top)."},
-		absorbLife = {"Life drain resist", "Takes this percent less life drain damage, at most 75%."},
-		absorbMana = {"Mana drain resist", "Takes this percent less mana drain damage, at most 75%."},
-		absorbAllElements = {"All resists", "Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each."},
+		absorbFire = {"Fire resist", "Takes this percent less fire damage, at most 75 percent (gear adds on top)." .. TREE_NOTE},
+		absorbIce = {"Ice resist", "Takes this percent less ice damage, at most 75 percent (gear adds on top)." .. TREE_NOTE},
+		absorbEnergy = {"Energy resist", "Takes this percent less energy damage, at most 75 percent (gear adds on top)." .. TREE_NOTE},
+		absorbEarth = {"Earth resist", "Takes this percent less earth damage, at most 75 percent (gear adds on top)." .. TREE_NOTE},
+		absorbDeath = {"Death resist", "Takes this percent less death damage, at most 75 percent (gear adds on top)." .. TREE_NOTE},
+		absorbHoly = {"Holy resist", "Takes this percent less holy damage, at most 75 percent (gear adds on top)." .. TREE_NOTE},
+		absorbArcane = {"Arcane resist", "Takes this percent less arcane damage, at most 75 percent (gear adds on top)." .. TREE_NOTE},
+		absorbWater = {"Water resist", "Takes this percent less water damage, at most 75 percent (gear adds on top)." .. TREE_NOTE},
+		absorbLife = {"Life drain resist", "Takes this percent less life drain damage, at most 75%." .. TREE_NOTE},
+		absorbMana = {"Mana drain resist", "Takes this percent less mana drain damage, at most 75%." .. TREE_NOTE},
+		absorbAllElements = {"All resists", "Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each." .. TREE_NOTE},
 		craftingSkill = {"Crafting skill", "Raises your crafting skill; no combat effect."},
 		armorsmithSkill = {"Armorsmith skill", "Raises your armorsmith skill; no combat effect."},
 		weaponsmithSkill = {"Weaponsmith skill", "Raises your weaponsmith skill; no combat effect."},

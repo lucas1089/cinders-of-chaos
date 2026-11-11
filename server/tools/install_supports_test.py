@@ -41,6 +41,17 @@ check(all('(Character > Spell Supports)' in r[4] and '!' not in r[4] for r in ro
 check([r[0] for r in rows] == list(range(32101, 32201)) and [r[5] for r in rows] == list(range(38658, 38758)),
       'server ids 32101-32200 and client ids 38658-38757')
 
+# O471: a Mythic damage rune (brand, Keen Edge, Echo, Hex) counts as Legendary: the description names the counted value and says so
+by_name = {r[2]: r[4] for r in rows}
+check('50% of the spell' in by_name['mythic emberbrand rune'] and '60%' not in by_name['mythic emberbrand rune'], 'mythic brand: 50, not 60')
+check('Counts as Legendary' in by_name['mythic emberbrand rune'] and 'Counts as Legendary' in by_name['mythic hex rune'], 'mythic damage runes carry the note')
+check('+6% chance per hit' in by_name['mythic keen edge rune'] and '30% chance per cast' in by_name['mythic echo rune'], 'keen edge 6, echo 30')
+check('Counts as Legendary' not in by_name['legendary emberbrand rune'] and 'Counts as Legendary' not in by_name['mythic quickening rune']
+      and 'Counts as Legendary' not in by_name['mythic sunder rune'], 'no note on a Legendary rune or on a support without a ceiling')
+check('cooldown -18%' in by_name['mythic quickening rune'], 'the other supports keep their level 5 value')
+check(set(cfg['levelCeiling']) == {'emberbrand', 'rimebrand', 'dawnbrand', 'gravebrand', 'stormbrand', 'keenedge', 'echo', 'hex'},
+      'the ceilings: the brands, Keen Edge, Echo and Hex')
+
 # the client things file agrees: same server id, same client id order
 things = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'client', 'tools', 'sprites', 'art_import', 'support_runes.csv')
 trows = list(csv.DictReader(open(things, newline='')))

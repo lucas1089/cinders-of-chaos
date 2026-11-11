@@ -10,7 +10,7 @@ combat:setParameter(COMBAT_PARAM_USECHARGES, true)
 function onGetFormulaValues(player, skill, attack, factor)
 	local min = ((player:getLevel() / 5) + (skill * attack * 0.047) + 17)
 	local max = ((player:getLevel() / 5) + (skill * attack * 0.093) + 33)
-	return -min, -max
+	return ChaosSpell.weaponFormula(player, min, max) -- O468: with the magic level share of a weapon spell
 end
 
 combat:setCallback(CALLBACK_PARAM_SKILLVALUE, "onGetFormulaValues")
