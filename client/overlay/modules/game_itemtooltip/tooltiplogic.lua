@@ -508,8 +508,8 @@ function L.lines(tip, ctx)
   -- charges (server item_tooltip_core.lua T.chargeInfo): exercise and training weapons, charged rings and runes
   local chargeText = L.chargesText(tip.charges)
   if chargeText then add(chargeText, C.text, true) end
-  -- where it comes from (server itemfinder.lua F.brief): the first sources (only with ctx.alt), the expected effort, a
-  -- token price
+  -- where it comes from (server itemfinder.lua F.brief): the first sources, the expected effort, a token price (all
+  -- three only with ctx.alt), what it is used in
   local srcLines = L.sourceLines(tip.src, not (ctx and ctx.alt))
   for i, line in ipairs(srcLines) do
     add(line.text, line.color, i == 1)
@@ -549,18 +549,20 @@ function L.chargesText(ch)
   return tr('Charges: %s', L.int(n))
 end
 
--- a tooltip has a "Drops from: ..." / "Sources: ..." row to show (the row Alt opens, owner 2026-11-11)
+-- a tooltip has rows that Alt opens (owner 2026-11-11): a "Drops from: ..." / "Sources: ..." row, or the gold line
+-- (the chance "~1 in N kills", a token price)
 function L.hasSourceRow(src)
-  if type(src) ~= 'table' or type(src.s) ~= 'table' then return false end
-  for _, s in ipairs(src.s) do
+  if type(src) ~= 'table' then return false end
+  for _, s in ipairs(type(src.s) == 'table' and src.s or {}) do
     if type(s) == 'table' and s.n then return true end
   end
-  return false
+  if type(src.e) == 'table' and L.oneIn(src.e.p) then return true end
+  return tonumber(src.t) ~= nil
 end
 
 -- the sources block of a tooltip: src = {s = [{k, n, v}], e = {p, w, m}, t = token price, u = used in}; rows
--- {text, color}. hideRow: without the "Drops from: ..." / "Sources: ..." row (the card shows it only while Alt is held,
--- owner 2026-11-11); the effort line, the token price and "Used in" stay.
+-- {text, color}. hideRow: without the "Drops from: ..." / "Sources: ..." row and without the gold line (the chance, the
+-- token price): the card shows them only while Alt is held (owner 2026-11-11). "Used in" stays.
 function L.sourceLines(src, hideRow)
   local out = {}
   if type(src) ~= 'table' then return out end
@@ -601,7 +603,7 @@ function L.sourceLines(src, hideRow)
   elseif price then
     effort = tr('Conquest vendor: %s tokens', L.int(price))
   end
-  if effort then
+  if effort and not hideRow then
     for _, line in ipairs(L.wrap(effort, L.WRAP)) do
       out[#out + 1] = { text = line, color = C.gold }
     end
@@ -1034,8 +1036,8 @@ function L.reqChips(req, ctx)
 end
 
 -- the foot: the sources lines (dim, the effort in gold) and the weight; the weight joins the last dim line when it
--- fits ("Drops from: Axebringer Fiend - 24.9 oz"); rows {text, color}. alt: Alt is held, the "Drops from" row shows
--- (without it the row is hidden and the view's hint line says that Alt opens it)
+-- fits ("Drops from: Axebringer Fiend - 24.9 oz"); rows {text, color}. alt: Alt is held, the "Drops from" row and the
+-- chance line show (without it they are hidden and the view's hint line says that Alt opens them)
 function L.footLines(tip, hints, alt)
   local C = L.COLORS
   local rows = {}
@@ -1077,7 +1079,7 @@ function L.comparable(tip)
     and type(tip.stats) == 'table' and #tip.stats > 0
 end
 
--- the whole card of a tip. ctx = {level = the player's level, alt = Alt is held (the "Drops from" row shows)}
+-- the whole card of a tip. ctx = {level = the player's level, alt = Alt is held (the "Drops from" row and the chance line show)}
 -- {title, titleColor, kind (caps), kindColor, level (the dim line), slotLine, flags = [{text, color}],
 --  stats = {tiles, extra = [parts]} | nil, mods = [group] | nil, extras = [group] | nil, chips = [chip], foot = [row]}
 function L.card(tip, ctx)
@@ -1128,7 +1130,7 @@ function L.card(tip, ctx)
 end
 
 -- the hint line of a card without Alt: nil when Alt has nothing to add. hasHelp: the item has Alt help lines
--- (itemhelp.lua); the "Drops from" row counts too, it shows only with Alt
+-- (itemhelp.lua); the "Drops from" row and the chance line count too, they show only with Alt
 function L.altHintText(tip, hasHelp)
   local hidden = L.hasSourceRow(type(tip) == 'table' and tip.src or nil)
   if hidden and hasHelp then return tr('Hold Alt for where it comes from and what each line does.') end

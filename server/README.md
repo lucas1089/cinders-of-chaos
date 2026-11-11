@@ -31594,8 +31594,9 @@ drop chance twice. Owner 2026-11-11: colour option 3 (the place in colour, the n
   The same read was in 91 other client files; each falls back the same way (`tools/ci/check_locales.py` holds them to it).
 - **"Drops from" only with Alt** (owner 2026-11-11, translated: "Also hide the 'drops from' text. Let it show only when Alt
   is pressed"): on every item the main client's card hides the "Drops from: ..." / "Sources: ..." row until Alt is held
-  (`tooltiplogic.lua` `L.sourceLines(src, hideRow)`, `L.card` ctx `alt`). The effort line, the token price, "Used in" and the
-  weight stay. Without Alt the hint line names it: "Hold Alt for where it comes from and what each line does." (or "Hold Alt
+  (`tooltiplogic.lua` `L.sourceLines(src, hideRow)`, `L.card` ctx `alt`). Asked about the chance line, the owner (2026-11-11,
+  translated): "You can hide the chance too": the gold line (the chance "~1 in N kills", a token price) hides with it. "Used
+  in" and the weight stay. Without Alt the hint line names it: "Hold Alt for where it comes from and what each line does." (or "Hold Alt
   for where it comes from." on an item without help lines). The server sends the same data; Unity is unchanged.
 - Tests: `tests/item_tooltip_test.lua` (`tip.gem` of every gem), `tests/gems_test.lua` (description, pt-BR for every gem),
   `tests/itemdesc_i18n_test.lua` (rune texts, source words), `tests/itemfinder_test.lua` (global drop, monster drop, item with

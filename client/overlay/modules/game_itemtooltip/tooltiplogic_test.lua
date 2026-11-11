@@ -355,24 +355,30 @@ local srcTip = { name = 'x', weight = 10, src = { s = { { k = 'monster', n = 'Ra
   u = { n = { 'Myst Emblem' } } } }
 local withSrc = L.lines(srcTip, { alt = true })
 eq(withSrc[#withSrc - 3].text, 'Drops from: Rat (5%)', 'with Alt the sources sit above the effort, used in and the weight')
--- owner 2026-11-11: the "Drops from" row shows only while Alt is held; the effort line, "Used in" and the weight stay
+eq(withSrc[#withSrc - 2].text, '~1 in 20 kills of Rat', 'with Alt the chance line shows')
+-- owner 2026-11-11: the "Drops from" row and the chance line show only while Alt is held; "Used in" and the weight stay
 do
   local plain = L.lines(srcTip)
   local texts = {}
   for _, l in ipairs(plain) do texts[#texts + 1] = l.text end
   local joined = table.concat(texts, '\n')
   eq(joined:find('Drops from', 1, true), nil, 'no Alt: no Drops from row')
-  eq(joined:find('~1 in 20 kills of Rat', 1, true) ~= nil, true, 'no Alt: the effort line stays')
+  eq(joined:find('~1 in 20 kills', 1, true), nil, 'no Alt: no chance line')
   eq(joined:find('Used in: Myst Emblem', 1, true) ~= nil, true, 'no Alt: Used in stays')
   eq(plain[#plain].text, 'Weight 10 oz', 'no Alt: the weight stays')
-  eq(#L.sourceLines(srcTip.src, true), 2, 'hideRow: effort and used in')
+  eq(#L.sourceLines(srcTip.src, true), 1, 'hideRow: used in alone')
+  eq(L.sourceLines(srcTip.src, true)[1].text, 'Used in: Myst Emblem', 'hideRow: the row left is Used in')
+  eq(#L.sourceLines({ s = {}, t = 1200 }, true), 0, 'hideRow: a token price hides too')
   eq(#L.sourceLines(srcTip.src), 3, 'default: the row too')
   eq(#L.sourceLines({ s = { { k = 'shop', n = 'Agnes', v = '4 gold' } } }, true), 0, 'the Sources row hides the same way')
   eq(L.hasSourceRow(srcTip.src), true, 'a row to open')
-  eq(L.hasSourceRow({ s = {}, t = 1200 }), false, 'a vendor price alone: nothing hidden')
+  eq(L.hasSourceRow({ s = {}, t = 1200 }), true, 'a vendor price alone is hidden too')
+  eq(L.hasSourceRow({ s = {}, e = { p = 0.001, w = 'kill' } }), true, 'a chance alone is hidden too')
+  eq(L.hasSourceRow({ s = {}, u = { n = { 'Myst Emblem' } } }), false, 'Used in alone: nothing hidden')
   eq(L.hasSourceRow(nil), false, 'no sources')
   local foot = L.card(srcTip, {}).foot
-  eq(foot[1].text, '~1 in 20 kills of Rat', 'card without Alt: the foot starts at the effort line')
+  eq(foot[1].text, 'Used in: Myst Emblem - Weight 10 oz', 'card without Alt: Used in and the weight')
+  eq(#foot, 1, 'card without Alt: nothing else in the foot')
   eq(L.card(srcTip, { alt = true }).foot[1].text, 'Drops from: Rat (5%)', 'card with Alt: the row is back')
   eq(L.altHintText(srcTip, true), 'Hold Alt for where it comes from and what each line does.', 'the hint names the hidden row')
   eq(L.altHintText(srcTip, false), 'Hold Alt for where it comes from.', 'an item without help lines still gets a hint')
