@@ -413,6 +413,7 @@ namespace Chaos.Core
             ["Maximum Health +%s%%, Damage Taken from Monsters -%s%%"] = "Vida máxima +%s%%, dano recebido de monstros -%s%%",
             ["May remove it (one random unbound modifier)."] = "Pode removê-lo (um modificador não vinculado aleatório).",
             ["May rise a tier, fall a tier or roll again; the item is corrupted for good either way."] = "Pode subir um tier, cair um tier ou rolar de novo; de qualquer jeito o item fica corrompido para sempre.",
+            ["Meant for level"] = "Feito para o nível",
             ["Melee +%s"] = "Corpo a corpo +%s",
             ["Modifier"] = "Modificador",
             ["Modifier tiers"] = "Tiers dos modificadores",
