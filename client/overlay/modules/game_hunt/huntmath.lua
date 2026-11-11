@@ -49,6 +49,7 @@ function HuntMath.short(n)
   return sign .. string.format('%d', math.floor(n))
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 1234567 -> "1,234,567"
 function HuntMath.exact(n)
   n = math.floor(tonumber(n) or 0)
@@ -56,7 +57,7 @@ function HuntMath.exact(n)
   local s = tostring(math.abs(n))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
   if out:sub(1, 1) == ',' then out = out:sub(2) end
-  return sign .. out
+  return lnum((sign .. out))
 end
 
 -- session seconds shown now: the server's value, plus the time since it arrived while the session runs

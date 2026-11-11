@@ -316,12 +316,13 @@ function L.soundFile(id)
   return s and (L.SOUND_DIR .. s.key .. '.ogg') or nil
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 1234567 -> "1,234,567"
 function L.number(n)
   local s = tostring(math.floor(tonumber(n) or 0))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
   if out:sub(1, 1) == ',' then out = out:sub(2) end
-  return out
+  return lnum(out)
 end
 
 -- the counter line of a rule in the window

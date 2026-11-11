@@ -1465,7 +1465,10 @@ function Gen.uniqueEntries(D)
 			rules[#rules + 1] = "Part of the set " .. setOf[u.id] .. ": its bonuses are on the Sets tab."
 		end
 		local kind = SLOT_KIND[u.slot] or "other"
-		local itemRows = {{"Slot", SLOT_NAME[u.slot] or u.slot}, {"Required level", Gen.num(u.level)}}
+		-- O510: a unique whose level the server does not ask (no equip rule of its own, spec.levelNotAsked) says what the
+		-- level is, not that it is required
+		local itemRows = {{"Slot", SLOT_NAME[u.slot] or u.slot},
+			{spec and spec.levelNotAsked and "Meant for level" or "Required level", Gen.num(u.level)}}
 		if spec and spec.equip and spec.equip.lines and #spec.equip.lines > 0 then
 			-- a unique with an equip rule of its own (chaos_unique_equip.lua): the class lines that may wear it
 			local lines = spec.equip.lines

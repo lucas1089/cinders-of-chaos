@@ -29,6 +29,9 @@ Kinds (an item counts once per kind; `unique copy:` is the tooltip of a copy tha
   weapon check: level / magic level / class  the tooltip says yes, the weapon check gives no hit or half  (a penalty)
   tooltip stricter: level / magic level / class  the tooltip says no, the server allows it (lesser)
   tooltip error                            the tooltip code failed on the item (the run fails)
+  unique copy: tooltip stricter: level     fails --check as well since O510 (it is 0): the chip names the unique's own level
+                                           where the server asks none or less. Every unique is read, also one whose base item
+                                           has no rule at all (the run lists them with the tooltips of the ids that have a rule)
 `effective` is the reference for "stricter": the higher level, magic level and both class sets of the two rules.
 Exit 0, 1 on a failed --check or a tooltip error, 2 on a usage error. The order the engine reads weapons.xml and movements.xml
 in is not in this repository: the item types hold the weapon entry's numbers when both exist (--movements-last: the Equip entry's).
@@ -55,6 +58,14 @@ SLOT_BITS = {'head': 1, 'necklace': 2, 'backpack': 4, 'body': 8, 'armor': 8, 'ri
 HAND = 48
 TWO_HANDED = 48 + 2048
 FAIL_KINDS = ('refused: level', 'refused: magic level', 'refused: class', 'tooltip error')
+# O510 (2026-11-11): the kinds of a unique copy that fail --check as well, now that they are 0: its tooltip asks a level the
+# server does not (35 older uniques did, 58 once every unique is read). The lesser kinds of a plain copy stay a list.
+FAIL_LABELS = ('unique copy: tooltip stricter: level',)
+
+
+def fails(label):
+    """does a kind (as kind_label writes it) fail --check"""
+    return label.replace('unique copy: ', '') in FAIL_KINDS or label in FAIL_LABELS
 
 
 def load_items(data_dir):
@@ -139,7 +150,7 @@ def run_tooltips(rules, items, data_dir, lua, weapons_last):
         elif f[0] in ('P', 'U') and len(f) >= 5:
             row = {'level': int(f[2]), 'magic': int(f[3]), 'voc': f[4]}
             if f[0] == 'U':
-                row.update(equipLevel=f[5], equipVocs=f[6], entryLevel=int(f[7]))
+                row.update(equipLevel=f[5], equipVocs=f[6], entryLevel=int(f[7]), uniqueName=f[8] if len(f) > 8 else '')
             shown[(f[0], int(f[1]))] = row
     return shown, errors
 
@@ -171,6 +182,10 @@ def kinds_of(rules, iid, row, unique):
             out.append('weapon check: magic level')
         if weapon['set'] is not None and classes - weapon['set']:
             out.append('weapon check: class')
+    if not eff and unique:
+        # O510: a unique copy of an id that has no rule at all (23 older uniques): the server asks nothing, so any level the
+        # tooltip names is a level it does not ask (the audit read only the ids with a rule before)
+        eff = {'level': 0, 'magic': 0, 'set': None}
     if eff:
         if row['level'] > eff['level']:
             out.append('tooltip stricter: level')
@@ -228,7 +243,7 @@ def report(res, top=20, examples=1, show=None):
     items, found, shown = res['items'], res['found'], res['shown']
 
     def name(iid):
-        return items.get(iid, {}).get('name', '?')
+        return items.get(iid, {}).get('name') or shown.get(('U', iid), {}).get('uniqueName') or '?'
 
     by_kind = collections.defaultdict(list)
     for (copy, iid), ks in sorted(found.items()):
@@ -238,10 +253,10 @@ def report(res, top=20, examples=1, show=None):
         len(shown), sum(1 for c, _ in shown if c == 'P'), sum(1 for c, _ in shown if c == 'U'), len({i for _, i in found}))]
     lines += rule_table(res)
     lines += ['', 'Mismatches by kind', '  %-40s %6s  %s' % ('kind', 'items', 'example')]
-    for kind in sorted(by_kind, key=lambda k: (not k.replace('unique copy: ', '') in FAIL_KINDS, k)):
+    for kind in sorted(by_kind, key=lambda k: (not fails(k), k)):
         ids = by_kind[kind]
         ex = ', '.join('%s (%d)' % (name(i), i) for i in ids[:examples])
-        lines.append('  %-40s %6d  %s%s' % (kind, len(ids), ex, '  [check]' if kind.replace('unique copy: ', '') in FAIL_KINDS else ''))
+        lines.append('  %-40s %6d  %s%s' % (kind, len(ids), ex, '  [check]' if fails(kind) else ''))
     if not by_kind:
         lines.append('  none')
     shapes = collections.OrderedDict()
@@ -289,7 +304,7 @@ def main(argv):
     res = audit(args[0], opts.get('--lua'), '--movements-last' not in flags)
     for line in report(res, int(opts.get('--top', 20)), int(opts.get('--examples', 1)), opts.get('--list')):
         print(line)
-    failing = {k for ks in res['found'].values() for k in ks if k in FAIL_KINDS}
+    failing = {kind_label(copy, k) for (copy, _), ks in res['found'].items() for k in ks if fails(kind_label(copy, k))}
     if res['errors']:
         return 1
     if '--check' in flags and failing:

@@ -42,11 +42,12 @@ function V.claim(s)
   return tr('Claimed today'), false
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 12345678 -> "12,345,678"
 function V.thousands(v)
   local str = tostring(n(v))
   local out = str:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''))
+  return lnum((out:gsub('^,', '')))
 end
 
 -- the Pact Marks section: the balance line and the month's experience line

@@ -47,11 +47,12 @@ function L.short(n)
   return tostring(math.floor(n))
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 function L.exact(n)
   n = math.floor(num(n) or 0)
   if formatExactNumber then return formatExactNumber(n) end
   local s = tostring(math.abs(n)):reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', '')
-  return (n < 0 and '-' or '') .. s
+  return lnum(((n < 0 and '-' or '') .. s))
 end
 
 function L.percent(part, total)

@@ -46,10 +46,11 @@ function V.percent(row)
   return math.max(0, math.min(100, math.floor(num(row.v) * 100 / t)))
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 local function group(n)
   local s = tostring(math.floor(n))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''))
+  return lnum((out:gsub('^,', '')))
 end
 V.group = group
 

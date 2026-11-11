@@ -10,10 +10,11 @@ local GOOD, BAD, DIM, HELD = '#7fd06a', '#e0654a', '#8c8070', '#f6cf72'
 TrialsMath.GOOD, TrialsMath.BAD, TrialsMath.DIM, TrialsMath.HELD = GOOD, BAD, DIM, HELD
 TrialsMath.MAX_LINES = 5
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 function TrialsMath.gold(n)
   local s = tostring(math.floor(tonumber(n) or 0))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''))
+  return lnum((out:gsub('^,', '')))
 end
 
 -- shorten a text to `max` characters (the cards have fixed boxes)

@@ -36,7 +36,40 @@ ProtocolGame = {
 g_logger = { warning = function(m) print('WARN ' .. m) end }
 NOW = 1000
 g_clock = { seconds = function() return NOW end }
-g_ui = { getRootWidget = function() return { recursiveGetChildById = function() return nil end } end }
+-- O506: a fake game_interface with one side panel (windows from the top, as the base's forceSpaceInPanel closes them from the
+-- bottom), and the trade window with the calls the module makes on it
+local root = { name = 'root', getWidth = function() return 1920 end, getHeight = function() return 1080 end, getX = function() return 0 end,
+  getY = function() return 0 end, isDestroyed = function() return false end }
+local panelWindows, closedWindows
+local function resetPanel()
+  panelWindows = { 'inventoryWindow', 'containerBackpack', 'containerLootBag', 'containerGoldChest' }
+  closedWindows = {}
+end
+resetPanel()
+local npcWindow = widget()
+function npcWindow:getId() return 'tradeWindow' end
+function npcWindow:getParent() return self.parent end
+function npcWindow:setParent(p) self.parent = p end
+function npcWindow:setDraggable() end
+function npcWindow:setSize(sz) self.size = sz end
+function npcWindow:setPosition(pos) self.position = pos end
+function npcWindow:raise() self.raised = true end
+function npcWindow:focus() self.focused = true end
+local gi = { getRootPanel = function() return root end }
+-- what the base does for a window that wants a place: closes the windows at the bottom of the panel (priority true) or
+-- closes backpacks (the other call), then puts the window in the panel
+local function takeRoom(w)
+  while #panelWindows > 1 do
+    closedWindows[#closedWindows + 1] = table.remove(panelWindows)
+  end
+  w.parent = 'sidePanel'
+  return true
+end
+gi.addToPanelsWithPriority = function(w, force) gi.lastCall = 'priority'; return takeRoom(w) end
+gi.addToPanels = function(w, room) gi.lastCall = 'plain'; return takeRoom(w) end
+local otherWindow = widget()
+function otherWindow:getId() return 'someOtherWindow' end
+g_ui = { getRootWidget = function() return { recursiveGetChildById = function(_, id) return id == 'tradeWindow' and npcWindow or nil end } end }
 function tr(text, ...) if select('#', ...) > 0 then return string.format(text, ...) end return text end
 -- the packets: the test hands json.decode an already decoded table by name
 PACKETS = {}
@@ -49,7 +82,12 @@ local trade = {
   goldBalance = 30400000,
 }
 function trade.getPlayerMoney() return trade.goldBalance end
-function trade.show() end
+function trade.show()
+  -- the base's show(): a place in a side panel first, then the window is shown
+  local placed = modules.game_interface.addToPanelsWithPriority(npcWindow, true)
+  if placed then npcWindow.visible = true end
+  return placed
+end
 function trade.hide() end
 local ITEMS = {
   { name = 'blightwoven armor', price = 30, weight = 110 },
@@ -67,7 +105,7 @@ end
 function trade.refreshPlayerGoods()
   trade.moneyLabel.text = tostring(trade.getPlayerMoney())
 end
-modules = { game_npctrade = trade }
+modules = { game_npctrade = trade, game_interface = gi }
 
 dofile(dir .. 'tradewindowlogic.lua')
 dofile(dir .. 'tradewindow.lua')
@@ -139,6 +177,40 @@ opcodes[113](nil, 113, 'az')
 NOW = 4000 + TradeWindowLogic.CURRENCY_TTL + 5
 trade.show()
 eq(trade.getPlayerMoney(), 30400000, 'stale pending: gold')
+
+-- O506: opening the shop closes no backpack and takes no room in a side panel; the window floats on the root panel
+resetPanel()
+npcWindow.parent, npcWindow.visible, npcWindow.size, npcWindow.raised, npcWindow.focused = nil, false, nil, nil, nil
+local origPriority, origPlain = gi.addToPanelsWithPriority, gi.addToPanels
+eq(trade.show(), true, 'the shop opens')
+eq(#closedWindows, 0, 'opening the shop closed no window') eq(#panelWindows, 4, 'the side panel keeps all its windows')
+eq(npcWindow.parent, root, 'the trade window is on the root panel, not in a side panel')
+eq(npcWindow.visible, true, 'and shown') eq(npcWindow.size.width, 420, 'at its size') eq(npcWindow.size.height, 520, 'at its size')
+eq(npcWindow.raised, true, 'raised') eq(npcWindow.focused, true, 'and focused')
+eq(gi.addToPanelsWithPriority, origPriority, 'game_interface.addToPanelsWithPriority is back as it was')
+eq(gi.addToPanels, origPlain, 'game_interface.addToPanels is back as it was')
+-- the second time (the window is already on the root panel) the same
+npcWindow.visible = false
+eq(trade.show(), true, 'the shop opens again') eq(#closedWindows, 0, 'and closes nothing again') eq(npcWindow.parent, root, 'on the root panel')
+-- the plain call (a base without addToPanelsWithPriority) is guarded the same way
+function trade.show() local placed = modules.game_interface.addToPanels(npcWindow); if placed then npcWindow.visible = true end; return placed end
+trade.hide()
+terminate()
+init()
+npcWindow.visible = false
+eq(trade.show(), true, 'the plain call: the shop opens') eq(#closedWindows, 0, 'the plain call closed no window') eq(npcWindow.parent, root, 'the plain call: root panel')
+-- another window still gets what the base gives: a place in the panel, with the windows it closes to make room
+eq(gi.addToPanelsWithPriority(otherWindow, true), true, 'another window is placed as before') eq(#closedWindows, 3, 'and the base closes what it closes for it')
+eq(otherWindow.parent, 'sidePanel', 'in the side panel')
+-- a show() that fails puts the functions back and passes the error on
+resetPanel()
+function trade.show() modules.game_interface.addToPanels(npcWindow); error('boom') end
+terminate()
+init()
+local okShow, errShow = pcall(trade.show)
+eq(okShow, false, 'a failing show fails') eq(tostring(errShow):find('boom', 1, true) ~= nil, true, 'with its own error')
+eq(gi.addToPanels, origPlain, 'and the function is back after the failure') eq(#closedWindows, 0, 'nothing was closed')
+function trade.show() end
 
 -- terminate puts everything back
 terminate()

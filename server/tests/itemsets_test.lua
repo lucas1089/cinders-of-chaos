@@ -253,7 +253,8 @@ for _, set in ipairs(S.sets) do
 		eq(spec.name, p.name, "the piece's name is the XML name")
 		eq(spec.set, set.key, p.name .. ": the XML set key")
 		-- the description names the level; the older Embers uniques name theirs, below their base item's equip level
-		local named = tonumber(spec.description:match("Requires level (%d+)"))
+		-- O510: a piece whose level the server does not ask (spec.levelNotAsked) says "Meant for level N" instead
+		local named = tonumber(spec.description:match("Requires level (%d+)") or spec.description:match("Meant for level (%d+)"))
 		ok(named and named <= p.level and (set.key == "embers" or named == p.level), p.name .. ": the description's level")
 	end
 	local src = set.sources

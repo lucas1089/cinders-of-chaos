@@ -119,6 +119,47 @@ eq(shortNumbersInMessage(4, 'sell me 1500 gold'), 'sell me 1500 gold', 'PrivateF
 eq(shortNumbersInMessage(1, 'I have 1500 hp'), 'I have 1500 hp', 'Say')
 eq(shortNumbersInMessage(16, 'Your last visit was on 08 Oct 2026 02:44:36.'), 'Your last visit was on 08 Oct 2026 02:44:36.', 'Login')
 
+-- O506: comma_value (the base client's one, corelib util.lua) and formatExactNumber in the number form of the language
+local function baseCommaValue(amount) -- the base client's function, copied: English must stay as it was, byte for byte
+  local formatted = tostring(amount or 0)
+  while true do
+    local k
+    formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+    if k == 0 then break end
+  end
+  return formatted
+end
+local samples = { 0, 7, 999, 1000, 1234, 12345, 123456, 1234567, 1234567890, -5, -1234, -1234567, 15300, 1234.5, '1234', '12345678',
+  'abc', '12 gold', '1234 gold', '', '-', '99999999999' }
+for _, v in ipairs(samples) do
+  eq(comma_value(v), baseCommaValue(v), 'English comma_value ' .. tostring(v) .. ' as the base client has it')
+end
+eq(comma_value(nil), '0', 'comma_value(nil)')
+eq(comma_value(), baseCommaValue(), 'comma_value()')
+dofile(here .. '../client_chaos_locale/locale_core.lua')
+local lang = 'en'
+ChaosLocale = { localize = function(text) return ChaosLocaleCore.localize(text, lang) end }
+for _, v in ipairs(samples) do
+  eq(comma_value(v), baseCommaValue(v), 'comma_value with ChaosLocale in English ' .. tostring(v))
+end
+lang = 'pt-BR'
+eq(comma_value(3300), '3.300', 'pt-BR 3300') eq(comma_value(999), '999', 'pt-BR 999') eq(comma_value(1000), '1.000', 'pt-BR 1000')
+eq(comma_value(1234567), '1.234.567', 'pt-BR 1234567') eq(comma_value(-1234567), '-1.234.567', 'pt-BR negative')
+eq(comma_value(1234.5), '1.234,5', 'pt-BR with decimals') eq(comma_value('1234'), '1.234', 'pt-BR text of digits')
+eq(comma_value('1234 gold'), '1,234 gold', 'a text with a unit is left as the English form') eq(comma_value('abc'), 'abc', 'not a number')
+eq(comma_value(nil), '0', 'pt-BR nil')
+eq(formatExactNumber(15300), '15.300', 'pt-BR formatExactNumber') eq(formatExactNumber(-1234567), '-1.234.567', 'pt-BR formatExactNumber negative')
+eq(formatExactNumber(999), '999', 'pt-BR formatExactNumber 999') eq(formatExactNumber(1.5), '1,5', 'pt-BR formatExactNumber decimal')
+eq(formatExactNumber('x'), 'x', 'pt-BR formatExactNumber text')
+-- the short numbers are not language dependent here (the numbers above the map are drawn by the engine, base patch 0018)
+eq(formatShortNumber(15300), '15.3k', 'pt-BR short numbers unchanged')
+-- the text rule reads the grouped pt-BR number back as one number
+eq(shortNumbersIn('You have 1.234.567 gold'), 'You have 1.23M gold', 'shortNumbersIn reads 1.234.567')
+lang = 'en'
+eq(formatExactNumber(15300), '15,300', 'English again')
+ChaosLocale = nil
+eq(comma_value(3300), '3,300', 'no ChaosLocale: English')
+
 print(string.format('numbers test: %d checks, %d failed', checks, failures))
 if failures > 0 then
   os.exit(1)
