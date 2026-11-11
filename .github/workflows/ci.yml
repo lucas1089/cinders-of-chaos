@@ -1151,7 +1151,7 @@ jobs:
       - name: Ground pickups install (globes and ember items, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pickups_test.py
 
-      - name: Store pouches install (four pouches, capacities, the Gem Pouch look, synthetic items.otb / items.xml)
+      - name: Store pouches install (five pouches, capacities, the Gem Pouch and Rune Bag looks, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pouches_test.py
 
       - name: Client pair guard and the pair 55, 56, 58 and 60 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56, relic sets 58, temple tileset 60)

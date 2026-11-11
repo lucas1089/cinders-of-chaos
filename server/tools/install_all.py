@@ -134,7 +134,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Omens and the Cinderheart")
   factions     tools/install_factions.py         the faction tokens in items.otb / items.xml and the four faction NPCs in data/npc
                (README "Factions")
-  pouches      tools/install_pouches.py          the store pouches in items.otb / items.xml and their move hook in Player:onMoveItem
+  pouches      tools/install_pouches.py          the five store pouches (Loot Bag, Orbs, Rift Key, Gem, Rune Bag) in items.otb / items.xml and their move hook in Player:onMoveItem
                (README "Store pouches")
   storefood    tools/install_store_food.py       the Everfull Ration (the store's infinite food) in items.otb / items.xml
                (README "Store pouches and the Everfull Ration")

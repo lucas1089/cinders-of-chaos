@@ -1,23 +1,26 @@
 -- Store pouches: pure rules (no engine calls), shared by pouches.lua and server/tests/pouches_test.lua.
---   ChaosPouchesCore.kindOfId(cfg, id)              "loot" | "orbs" | "keys" | "gems" for a pouch item id, else nil
+--   ChaosPouchesCore.kindOfId(cfg, id)              "loot" | "orbs" | "keys" | "gems" | "runes" for a pouch item id, else nil
 --   ChaosPouchesCore.defaults(cfg)                  the Loot Bag rules of a character that never set them
 --   ChaosPouchesCore.packRules(r) / unpackRules(cfg, v)   rules <-> one int32 storage value (unset = defaults)
 --   ChaosPouchesCore.sanitizeRules(cfg, t)          rules from client input (booleans, minRarity 1..15)
---   ChaosPouchesCore.sets(cfg, extraOrbIds)         {orbs = set, omens = set, coins = set} of item ids
+--   ChaosPouchesCore.sets(cfg, extraOrbIds)         {orbs = set, omens = set, coins = set, runes = set} of item ids
+--   ChaosPouchesCore.isRuneId(cfg, id, isSupport)   true for a magic rune of cfg.runeIds or a support rune (isSupport(id))
 --   ChaosPouchesCore.wants(kind, info, rules, sets, cfg)   true when that pouch collects the corpse item
---   ChaosPouchesCore.specialistOf(info, sets, cfg)  the first specialist pouch (cfg.priority: gems, orbs, keys) whose kind it is
+--   ChaosPouchesCore.specialistOf(info, sets, cfg)  the first specialist pouch (cfg.priority: gems, orbs, keys, runes) whose kind it is
 --   ChaosPouchesCore.plan(info, rules, sets, cfg, carried)   the carried pouches to try, in order, and the overflow kind
 --   ChaosPouchesCore.route(info, rules, sets, cfg)  plan() with every pouch carried: the kinds, in order
 --   ChaosPouchesCore.rank(rarity, unique)           the sort rank of an item of the Loot Bag (uniques above every rarity)
 --   ChaosPouchesCore.sortPlan(ranks, limit)         which items of a bag to move to the front, in order, to sort it by rarity
 --   ChaosPouchesCore.moveRefusal(m)                 nil (allowed) or the reason a pouch move is refused
 --   ChaosPouchesCore.lootBagInRefusal(m)            nil (allowed) or the reason an item may not go INTO a Loot Bag (one-way bag)
+--   ChaosPouchesCore.runeBagRefusal(m)              nil (allowed) or the reason an item may not go INTO a Rune Bag (runes only)
 --   ChaosPouchesCore.summary(cfg, looted, backpack, left, full, overflow, t)   the per-kill loot line, or nil
 --   ChaosPouchesCore.lootList(looted, opts, t)   "10 gold coins, {[Rare] wyrmscale helmet} and 2 more"
 --   ChaosPouchesCore.bindLock(cfg) / needsRebind(cfg, value)   the chaos_locked value of a pouch; must it change to it?
 --   (t(pattern, ...): the player's language, e.g. Chaos.t bound to the owner; default English, P.english)
 -- info = {id, actionId, count, category = "equipment"|"currency"|"supplies"|"other", rarity = 0..15, unique = bool,
---         gem = bool, container = bool, pouch = bool (a pouch itself), onList = bool (on the base autoloot list)}
+--         gem = bool, rune = bool (a support rune or a magic rune), container = bool, pouch = bool (a pouch itself),
+--         onList = bool (on the base autoloot list)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 if not ChaosRarity then
@@ -112,7 +115,19 @@ local function toSet(list, set)
 end
 
 function P.sets(cfg, extraOrbIds)
-	return {orbs = toSet(extraOrbIds, toSet(cfg.orbIds)), omens = toSet(cfg.omenIds), coins = toSet(cfg.coinIds)}
+	return {orbs = toSet(extraOrbIds, toSet(cfg.orbIds)), omens = toSet(cfg.omenIds), coins = toSet(cfg.coinIds),
+		runes = toSet(cfg.runeIds)}
+end
+
+-- a rune the Rune Bag takes: one of the stock magic runes (cfg.runeIds) or a support rune (isSupport(id), e.g.
+-- ChaosSupports.isRune). The rune shard (salvage currency, Orbs Pouch) and the unscribed rune are not in either list.
+function P.isRuneId(cfg, id, isSupport)
+	for _, r in ipairs(cfg.runeIds or {}) do
+		if r == id then
+			return true
+		end
+	end
+	return isSupport ~= nil and isSupport(id) == true
 end
 
 function P.isRiftKey(info, cfg)
@@ -127,6 +142,8 @@ function P.wants(kind, info, rules, sets, cfg)
 		return P.isRiftKey(info, cfg) or sets.omens[info.id] == true
 	elseif kind == "gems" then
 		return info.gem == true
+	elseif kind == "runes" then
+		return info.rune == true or (sets.runes ~= nil and sets.runes[info.id] == true)
 	elseif kind == "orbs" then
 		return sets.orbs[info.id] == true or (cfg.orbGems and info.gem == true) or false
 	elseif kind == "loot" then
@@ -171,7 +188,7 @@ end
 
 -- carried = {[kind] = truthy} for the pouches the character carries. Returns the kinds to try, in order, and the
 -- specialist kind when the Loot Bag is in the list only as its overflow (else nil).
---   1. An item of a specialist kind (gems / orbs, rune shards, gems / Rift Keys, omen items) goes to the first CARRIED
+--   1. An item of a specialist kind (gems / orbs, rune shards, gems / Rift Keys, omen items / runes) goes to the first CARRIED
 --      pouch of cfg.priority that wants it, always, whatever the Loot Bag rules say (its "gems" rule, the autoloot
 --      list). A gem is wanted by both the Gem Pouch and the Orbs Pouch, and the Gem Pouch comes first: with one
 --      carried, the Orbs Pouch never gets a gem (they do not mix); without one the Orbs Pouch takes gems as before.
@@ -306,6 +323,17 @@ P.LOOT_BAG_ONE_WAY = "The Loot Bag only gives items back: autoloot fills it."
 function P.lootBagInRefusal(m)
 	if m and m.intoLootBag and not m.sameBag then
 		return P.LOOT_BAG_ONE_WAY
+	end
+	return nil
+end
+
+-- The Rune Bag takes runes only, by hand too (O502; the Loot Bag takes nothing by hand): a player may move a support rune or
+-- a magic rune into it and out of it freely, and anything else is refused (a container, even one full of runes, a rune shard,
+-- a potion). m = {intoRuneBag = bool (the destination is a Rune Bag), rune = bool (the moved item is a rune)}.
+P.RUNE_BAG_ONLY = "The Rune Bag holds only runes."
+function P.runeBagRefusal(m)
+	if m and m.intoRuneBag and not m.rune then
+		return P.RUNE_BAG_ONLY
 	end
 	return nil
 end
