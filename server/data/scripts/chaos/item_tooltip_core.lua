@@ -503,6 +503,44 @@ function T.vocationText(text, info)
 	return table.concat(names, ", ")
 end
 
+-- O489: the class text of a STOCK equip rule (install_unique_equip.py records it when a base id is also a unique with an
+-- equip rule of its own; movements.xml then carries the looser of the two rules, so the engine's level and vocation
+-- string are not what a stock copy is held to). vocations = the stock list of vocation names (nil or empty: everyone,
+-- returns ""). A line whose three classes are all listed is named by its base class; any other name is kept, so the
+-- text names exactly the classes ChaosUniqueEquip.onEquip lets through.
+T.CLASS_LINES = {
+	{base = "Warrior", ascended = {"Juggernaut", "Berserker"}},
+	{base = "Ranger", ascended = {"Deadeye", "Beastmaster"}},
+	{base = "Mystic", ascended = {"Elementalist", "Illusionist"}},
+	{base = "Thief", ascended = {"Ninja", "Samurai"}},
+	{base = "Necromancer", ascended = {"Lich", "Bone Lord"}},
+	{base = "Monk", ascended = {"Shadowfist", "Iron Sage"}},
+	{base = "Templar", ascended = {"Inquisitor", "Sentinel"}}
+}
+function T.stockClassText(vocations)
+	if type(vocations) ~= "table" or #vocations == 0 then
+		return ""
+	end
+	local has, covered = {}, {}
+	for _, v in ipairs(vocations) do
+		has[tostring(v)] = true
+	end
+	for _, fam in ipairs(T.CLASS_LINES) do
+		if has[fam.base] and has[fam.ascended[1]] and has[fam.ascended[2]] then
+			covered[fam.ascended[1]], covered[fam.ascended[2]] = true, true
+		end
+	end
+	local names, seen = {}, {}
+	for _, v in ipairs(vocations) do
+		v = tostring(v)
+		if not covered[v] and not seen[v] then
+			seen[v] = true
+			names[#names + 1] = v
+		end
+	end
+	return table.concat(names, ", ")
+end
+
 -- The class line of an item worn on the body or held in the hands (the "For ..." row of the tooltip). The owner saw
 -- armour with no line: the engine's vocation string is empty when the item's equip event lists no class (a stock
 -- Warrior Helmet is worn by everybody), and an empty string printed nothing. Now every worn item says who may use it:
@@ -978,6 +1016,15 @@ function T.build(item, opts)
 
 	local req = {}
 	local reqLevel = int(call(it, "getMinReqLevel"))
+	local vocString = call(it, "getVocationString")
+	-- O489 (owner 2026-11-11: a rolled ring said "level 30, all classes" and could not be worn): a stock copy of a base id
+	-- that is also a unique with its own equip rule is held to the STOCK rule (chaos_unique_equip.lua), not to the looser
+	-- entry of movements.xml the engine reads. The generated movement script publishes the stock rules.
+	local stockRule = not unique and ChaosUniqueEquip and type(ChaosUniqueEquip.stock) == "table" and ChaosUniqueEquip.stock[id]
+	if type(stockRule) == "table" then
+		reqLevel = int(stockRule.level)
+		vocString = T.stockClassText(stockRule.vocations)
+	end
 	if uniqueEntry and unique and int(uniqueEntry.level) > reqLevel then
 		reqLevel = int(uniqueEntry.level)
 	end
@@ -988,7 +1035,7 @@ function T.build(item, opts)
 	if magic > 0 then
 		req.magic = magic
 	end
-	req.voc = T.classLine(call(it, "getVocationString"), {
+	req.voc = T.classLine(vocString, {
 		weaponType = int(call(it, "getWeaponType")), slot = int(call(it, "getSlotPosition")),
 		ammoType = int(call(it, "getAmmoType"))
 	}, tip.slot, unique and uniqueEntry and ChaosUniqueSpecs and ChaosUniqueSpecs[id] and ChaosUniqueSpecs[id].equip or nil)

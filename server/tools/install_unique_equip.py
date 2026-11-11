@@ -178,7 +178,10 @@ def script_text(rules, stock):
          'local STOCK = {']
     for u in rules:
         L.append('\t[%d] = %s, -- %s' % (u['id'], lua_value(stock[u['id']]), u['name']))
-    L += ['}', '',
+    L += ['}',
+          '-- the item tooltip names the rule a stock copy is held to (item_tooltip_core.lua, O489)',
+          'ChaosUniqueEquip.stock = STOCK',
+          '',
           'function onEquip(player, item, slot, isCheck)',
           '\treturn ChaosUniqueEquip.onEquip(player, item, slot, isCheck, STOCK)',
           'end', '']

@@ -3728,6 +3728,10 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
   the check pass: a copy with `chaos_unique` whose spec has `equip` is held to that rule, every other copy to the stock
   rule. Refused: the engine's "You cannot dress this object there." Staff with the weapon check flag pass, as in the
   engine. A copy worn before the rule stays worn until taken off.
+- **Tooltip (O489).** A plain copy's tooltip names the stock rule: the generated script sets `ChaosUniqueEquip.stock`
+  and `item_tooltip_core.lua` reads it (`T.stockClassText`: a whole line is named by its base class). Before, it showed
+  the looser entry the engine reads (a rolled Ring of Blue Plasma said "level 30, all classes" and was refused under
+  level 100 or outside the Ranger, Thief and Monk lines). A unique copy shows its own rule, as before.
 - **Look text.** The engine's "can only be wielded properly by" line shows the entry's level (the lower one: 60 for the
   Charm, 230 for the Diadem, where the unique asks more); the unique's description says its own level and lines.
 - Tests: `tests/unique_equip_test.lua` (every round-two unique can be worn by the classes its archetype names and not
@@ -11965,7 +11969,7 @@ go at startup); use-with crafts are logged too.
 
 **Forge window and materials from the stash (O481, owner request 2026-11-11, layout option 1).** The bench has a second
 window, the forge (client `game_crafting` `forge.lua`, `forgeview.lua`): "1 Place the item, 2 Pick an action, 3 Check
-the change, 4 Forge". It is the default; the Classic button switches to the window above and back, per character.
+the change, 4 Forge". It is the bench (O487: no Classic button; the window above shows only for Salvage, with a Forge button back).
 New data on the same extended opcode 232, all additive (an old client or the Unity bench never reads them and works as
 before):
 - **Orb data.** Every orb carries `kind` (what it is aimed at: `mod` one chosen modifier, `add` a new modifier, `whole`

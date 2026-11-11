@@ -425,7 +425,7 @@ ChaosMainWindow
     width: 70
     height: 22
     !text: tr('Forge')
-    !tooltip: tr('Switch to the forge window. The choice is remembered for this character.')
+    !tooltip: tr('Back to the forge window.')
     @onClick: modules.game_crafting.forgeSwitchTo()
 
   ChaosButton

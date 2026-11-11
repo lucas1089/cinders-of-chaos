@@ -344,14 +344,8 @@ local allowed = { ['#d6c9ae'] = 1, ['#8c8070'] = 1, ['#6b6258'] = 1, ['#e8b84a']
 for name, c in pairs(V.C) do eq(allowed[c] == 1, true, 'palette colour ' .. name .. ' ' .. c) end
 eq(V.C.good, ItemTooltipLogic.COLORS.better, 'the good green is the tooltip\'s')
 
--- ---------------------------------------------------------------- the classic choice
-eq(V.savedMode(nil, 'Ann'), 'forge', 'the forge is the default')
-local node = V.rememberMode(nil, 'Ann', 'classic')
-eq(V.savedMode(node, 'Ann'), 'classic', 'remembered per character') eq(V.savedMode(node, 'Bob'), 'forge', 'another character keeps the default')
-node = V.rememberMode(node, 'Bob', 'classic')
-node = V.rememberMode(node, 'Ann', 'forge')
-eq(V.savedMode(node, 'Ann'), 'forge', 'back to the forge') eq(V.savedMode(node, 'Bob'), 'classic', 'the other kept')
-eq(V.savedMode({ chars = 'junk' }, 'Ann'), 'forge', 'a damaged setting is the default')
+-- ---------------------------------------------------------------- no classic choice (O487): the forge is the bench
+eq(V.savedMode, nil, 'no saved window choice') eq(V.rememberMode, nil, 'nothing to remember')
 
 -- ---------------------------------------------------------------- hostile shapes: nothing raises
 local junk = { 1, 'x', {}, { mods = 5 }, { mods = { 1, 'a', { tier = 'x' } } }, { orbs = 3, pick = 'p' } }
