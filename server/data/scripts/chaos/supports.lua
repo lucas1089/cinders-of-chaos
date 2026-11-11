@@ -1123,7 +1123,7 @@ local function onUseRune(player, item, fromPosition, target, toPosition, isHotke
 			player:sendCancelMessage(Chaos.tx(player, text))
 		end
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).%s", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type),
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).%s", S.runeName(id), Chaos.tx(player, S.effectText(id)), S.fitsText(S.runeOf(id).type, function(k) return Chaos.tx(player, k) end),
 			S.runeOf(id).level < S.LEVELS and Chaos.t(player, " To combine three into one of the next level: use the stack, then left-click the same stack.")
 				or (S.ceilingNote(id) ~= "" and " " .. Chaos.tx(player, S.ceilingNote(id)) or "")))
 	end

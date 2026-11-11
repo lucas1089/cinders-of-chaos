@@ -84,7 +84,8 @@ function S.oneIn(p)
 end
 
 -- "global drop, about 1 in 330 kills[, level 60+]" (a weaker tier: "1 in N magic monster kills"): the value of a global
--- drop table row (live test winpkg-35: an Orb of Awakening from a Rat, the tooltip named only two monsters that list it)
+-- drop table row. Without a chance (p nil) it is the short form "global drop[, level 60+]" that a row carries as `vs`: the
+-- tooltip (itemfinder_core.lua K.brief) shows that one when its effort line already says the chance (O479) (live test winpkg-35: an Orb of Awakening from a Rat, the tooltip named only two monsters that list it)
 function S.globalText(p, tier, level)
 	local n = S.oneIn(p)
 	local text = "global drop"
@@ -156,7 +157,7 @@ function S.lootLayer(lootCfg, gems, uniques, emit, monsterName)
 			d = d .. "; " .. table.concat(guaranteed, " and ") .. " monsters always draw one entry by weight (this one " ..
 				e.weight .. " of " .. total .. ")"
 		end
-		emit("drop", e.id, {n = "Any monster", d = d, v = S.globalText(p, from), c = K.countText(c[1], c[2]),
+		emit("drop", e.id, {n = "Any monster", d = d, v = S.globalText(p, from), vs = S.globalText(nil, from), c = K.countText(c[1], c[2]),
 			o = -(tonumber(ch.legendary) or 0), p = p, pk = from == "normal" and "kill" or from})
 	end
 	-- gems: the gem drop chance x the quality's share at the monster's level, shared by the gem types
@@ -186,7 +187,8 @@ function S.lootLayer(lootCfg, gems, uniques, emit, monsterName)
 				(gems.drop.tierUp and "; legendary and boss monsters may drop one quality better" or "")
 			for t = 1, #gems.types do
 				emit("drop", gems.firstId + (t - 1) * #gems.tiers + (q - 1), {n = "Any monster", d = text,
-					v = S.globalText(p, from, level), o = q, p = p, pk = from == "normal" and "kill" or from})
+					v = S.globalText(p, from, level), vs = S.globalText(nil, from, level), o = q, p = p,
+					pk = from == "normal" and "kill" or from})
 			end
 		end
 	end
@@ -511,7 +513,8 @@ S.REWARDS[#S.REWARDS + 1] = {key = "rift", fn = function(D, emit)
 				"(and at least %d%% of yours), x%d legendary, x%d boss", mk.minMonsterLevel or 0,
 				math.floor((mk.levelShare or 0) * 100 + 0.5), (mk.tierMult or {}).legendary or 1, (mk.tierMult or {}).boss or 1),
 				-- globalText takes a pool level
-				v = S.globalText(p, "normal", (mk.minMonsterLevel or 0) / Chaos.huntingMult()), o = 0, p = p, pk = "kill"})
+				v = S.globalText(p, "normal", (mk.minMonsterLevel or 0) / Chaos.huntingMult()),
+				vs = S.globalText(nil, "normal", (mk.minMonsterLevel or 0) / Chaos.huntingMult()), o = 0, p = p, pk = "kill"})
 		end
 		if r.bountyKey then
 			reward(emit, r.key.itemId, nil, "Bounty contract", string.format("a tier 1 key: hunt %d%%, elite %d%%, boss %d%%",

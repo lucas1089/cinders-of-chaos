@@ -111,5 +111,34 @@ try:
 except SystemExit as e:
     check('neither' in str(e), 'socketOrb: an unknown client id stops it')
 
+# O479: the description is one sentence per place (not one long sentence), the same words as chaos_gems.lua, and an
+# installed items.xml with the old text is rewritten once, then left alone
+import re  # noqa: E402
+desc = {r[0]: r[4] for r in T.gems(shipped)}
+check(desc[32001 + 5 * 5 + 0] == 'A gem for a socket. Weapon: Holy Damage +2%. Armour: Elemental Resistances +1%. '
+      'Jewellery: Holy Resistance +2%. Use it on gear with a free socket. Three of the same make one of the next '
+      'quality: use the stack, then left-click it.', 'Chipped Diamond: one sentence per place, then the hint and the combine sentence')
+check(desc[32001 + 3 * 5 + 4] == 'A gem for a socket. Weapon: Critical Chance +3%, Critical Hit +25%. Armour: Death Resistance +8%. '
+      'Jewellery: Death Damage +12%. Use it on gear with a free socket.', 'Perfect Amethyst: a pair effect, no combine sentence')
+check(desc[32001 + 0 * 5 + 3].startswith('A gem for a socket. Weapon: Fire Damage +9%. Armour: Max Health +130. '),
+      'Flawless Ruby: a flat effect has no percent sign')
+check(all('; ' not in d and ' in a weapon' not in d and d.count('Weapon:') == 1 and d.count('Armour:') == 1 and
+          d.count('Jewellery:') == 1 for d in desc.values()), 'no old long sentence in any gem')
+check(all(d.endswith('quality: use the stack, then left-click it.') == (sid % 5 != 0) for sid, d in desc.items()),
+      'the combine sentence on every gem but Perfect')
+lib = open(os.path.join(HERE, '..', 'data', 'lib', 'chaos_gems.lua'), encoding='utf-8').read()
+check(re.search(r'G\.COMBINE_SHORT = "([^"]+)"', lib).group(1) == T.COMBINE_SHORT, 'COMBINE_SHORT: the Lua and the Python words agree')
+check(re.search(r'G\.USE_HINT = "([^"]+)"', lib).group(1) == T.USE_HINT, 'USE_HINT: the Lua and the Python words agree')
+old_rows = [(sid, cid, nm, pl, 'A gem for a socket: in a weapon: Holy Damage +2%; in armour: Elemental Resistances +1%; '
+             'in jewellery: Holy Resistance +2%. Use it with gear that has a free socket.') for sid, cid, nm, pl, _d in T.gems(shipped)]
+orbc = shipped['socketOrb']
+xml0 = '<?xml version="1.0"?>\n<items>\n\t<item id="100" name="x" />\n' + T.xml_block(old_rows, orbc) + '</items>\n'
+xml1, note1 = T.patch_xml(xml0, T.gems(shipped), orbc)
+check('rewritten' in note1 and xml1 != xml0, 'items.xml: an old description block is rewritten')
+check('A gem for a socket: in a weapon' not in xml1 and 'Weapon: Holy Damage +2%. Armour:' in xml1, 'items.xml: old text out, new text in')
+xml2, note2 = T.patch_xml(xml1, T.gems(shipped), orbc)
+check(xml2 == xml1 and 'up to date' in note2, 'items.xml: a second run changes nothing')
+check(xml1.startswith('<?xml version="1.0"?>\n<items>\n\t<item id="100" name="x" />\n'), 'items.xml: the rest stays')
+
 print('install_gems_test: %s' % ('OK' if not failed else '%d FAILED' % failed))
 sys.exit(1 if failed else 0)

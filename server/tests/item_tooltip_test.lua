@@ -634,4 +634,48 @@ do
 	eq(T.codexId(7384, nil, {key = ""}), nil, "an empty set key is no page")
 end
 
+-- O479: a gem item sends its effects as data, one row per place, built from the gem tables (never from the description)
+do
+	local chipped = newItem(G.gemId(6, 1)) -- Chipped Diamond
+	local gt = T.build(chipped)
+	eq(gt.gem ~= nil, true, "a gem item has the gem field")
+	eq(#gt.gem.rows, 3, "a gem: one row per place")
+	eq(gt.gem.rows[1].place, "weapon") eq(gt.gem.rows[1].label, "Holy Damage") eq(gt.gem.rows[1].value, "+2%")
+	eq(gt.gem.rows[1].text, "Holy Damage +2%", "the English line of the row")
+	eq(gt.gem.rows[2].place, "armour") eq(gt.gem.rows[2].label, "Elemental Resistances") eq(gt.gem.rows[2].value, "+1%")
+	eq(gt.gem.rows[3].place, "jewel") eq(gt.gem.rows[3].label, "Holy Resistance") eq(gt.gem.rows[3].value, "+2%")
+	eq(gt.gem.combine, true, "below Perfect: it combines")
+	eq(gt.gem.rows[1].label2, nil, "a single effect has no second part")
+	local perfect = T.build(newItem(G.gemId(4, 5))) -- Perfect Amethyst
+	eq(perfect.gem.combine, false, "a Perfect gem does not combine")
+	eq(perfect.gem.rows[1].label, "Critical Chance") eq(perfect.gem.rows[1].value, "+3%")
+	eq(perfect.gem.rows[1].label2, "Critical Hit") eq(perfect.gem.rows[1].value2, "+25%", "a pair effect: both numbers")
+	eq(perfect.gem.rows[1].text, "Critical Chance +3%, Critical Hit +25%")
+	local ruby = T.build(newItem(G.gemId(1, 4))) -- Flawless Ruby
+	eq(ruby.gem.rows[2].label, "Max Health") eq(ruby.gem.rows[2].value, "+130", "a flat effect has no percent sign")
+	-- every gem of every type and quality has its three rows, each part a plain string
+	for ti = 1, G.TYPES do
+		for tier = 1, G.TIERS do
+			local g = T.build(newItem(G.gemId(ti, tier))).gem
+			eq(#g.rows, 3, "gem " .. ti .. "/" .. tier .. ": three rows")
+			for _, row in ipairs(g.rows) do
+				eq(type(row.label), "string") eq(type(row.value), "string")
+				eq(row.value:match("^%+%d+%%?$") ~= nil, true, "the number part: " .. row.value)
+			end
+			eq(g.combine, tier < G.TIERS)
+		end
+	end
+	-- the size: the whole tip of a gem stays small (an extended opcode holds 8192 bytes and a tooltip answer has up to 3 tips)
+	-- anything that is no gem has no gem field; a socketed gem's row has the name and the number apart
+	eq(T.build(newItem(2160)).gem, nil, "a coin is no gem")
+	eq(T.build(sword).gem, nil, "gear is no gem")
+	local socketed = newItem(2400)
+	socketed:setCustomAttribute("rarity", 4)
+	G.setCount(socketed, 1)
+	G.insert(socketed, G.gemId(1, 4))
+	local sl = T.build(socketed).sockets.list[1]
+	eq(sl.l, "Fire Damage", "a socketed gem: the effect name apart") eq(sl.v, "+9%")
+	eq(sl.text, "Fire Damage +9%", "and the text as before (an old client)")
+end
+
 print(string.format("item_tooltip_test: %d checks OK", checks))

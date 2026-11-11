@@ -3274,6 +3274,13 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Life Leech Chance"] = "Chance de Roubo de Vida",
   ["Life Leech Amount"] = "Quantidade de Roubo de Vida",
   ["Attack Speed"] = "Velocidade de Ataque",
+  -- game_itemtooltip: the gem block of a gem item (O479)
+  ["Socketed in"] = "Encaixada em",
+  ["Weapon:"] = "Arma:",
+  ["Armour:"] = "Armadura:",
+  ["Jewellery:"] = "Joia:",
+  ["Use it on gear with a free socket."] = "Use em um equipamento com um encaixe livre.",
+  ["Three of the same make one of the next quality: use the stack, then left-click it."] = "Três iguais formam uma da qualidade seguinte: use a pilha e depois clique nela com o botão esquerdo.",
   -- game_helpersupport run-time keys (the status of a row and of the tab, given to tr() where they are shown)
   ["Casting"] = "Usando",
   ["Waiting for the server"] = "Esperando o servidor",

@@ -246,6 +246,33 @@ local function effectTile(panel, y, effect)
   return y + h + 5
 end
 
+-- the gem block of a gem item (tooltiplogic.lua L.gemBlock, O479): one framed box, a header, then a row per place: the place
+-- label left in its own colour, the effect texts in one column (the left edge of the widest label + a gap); a pair effect
+-- continues on a row without a label. The labels and the effect texts are plain (the tooltip fonts have no bold).
+local function gemBox(panel, y, g)
+  local w = CARD_W - 2 * PAD_X
+  local labelW = 0
+  for _, row in ipairs(g.rows) do
+    if row.label ~= '' then labelW = math.max(labelW, textWidth('ItemTooltipLine', row.label)) end
+  end
+  local x = 8
+  local col = x + labelW + 8
+  local h = 6 + 12 + #g.rows * 14 + 6
+  local box = g_ui.createWidget('ItemTooltipTile', panel)
+  box:addAnchor(AnchorTop, 'parent', AnchorTop)
+  box:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  box:setMarginTop(y)
+  box:setMarginLeft(PAD_X)
+  box:resize(w, h)
+  putLabel(box, 'ItemTooltipCap', 5, x, g.head, g.headColor)
+  for i, row in ipairs(g.rows) do
+    local ry = 6 + 12 + (i - 1) * 14
+    if row.label ~= '' then putLabel(box, 'ItemTooltipLine', ry, x, row.label, row.labelColor) end
+    putLabel(box, 'ItemTooltipLine', ry, col, row.text, row.color, row.parts)
+  end
+  return y + h + 5
+end
+
 local function modRow(panel, y, row)
   local textX = PAD_X + 32
   local rangeW = row.range and (textWidth('ItemTooltipCap', row.range) + 4) or 0
@@ -283,9 +310,13 @@ end
 local function groupRows(panel, y, groups)
   for gi, g in ipairs(groups) do
     if gi > 1 then y = y + 3 end
-    if g.caption then y = caption(panel, y, g.caption, g.capColor) end
-    for _, row in ipairs(g.rows) do
-      y = row.kind == 'mod' and modRow(panel, y, row) or centredRow(panel, y, row)
+    if g.kind == 'gembox' then
+      y = gemBox(panel, y, g)
+    else
+      if g.caption then y = caption(panel, y, g.caption, g.capColor) end
+      for _, row in ipairs(g.rows) do
+        y = row.kind == 'mod' and modRow(panel, y, row) or centredRow(panel, y, row)
+      end
     end
   end
   return y
