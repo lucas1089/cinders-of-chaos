@@ -7,7 +7,8 @@
 -- element percent; then this layer, the first Lua event of the monster; then the older multipliers):
 --   1  block (Bulwark), weapon hits only
 --   2  physical part: armour by hit size and the Plated modifier, inside one cap together with the monster's own
---      physical percent
+--      physical percent. A weapon hit (melee, ranged) is measured against the median WEAPON hit of the level and its removed
+--      share is capped per rank (O501); a spell against the median class hit (O462)
 --   3  element part: one cap on the resistance (rank bonus and Resistant included), penetration after the cap
 -- The engine has applied the element percent already; each step multiplies by (the wanted share) / (the share the engine
 -- left), so the result is the same as if the engine had used the new number.
@@ -65,10 +66,9 @@ function C.modSet(list, draw)
 	return set
 end
 
--- the median class hit at a level: a straight line in log(level), log(hit) between two rows of cfg.hitCurve, the slope
--- of the last two rows beyond the ends
-function C.hitAtLevel(cfg, level)
-	local pts = cfg.hitCurve
+-- a straight line in log(level), log(hit) between two rows {level, hit} of a curve, the slope of the last two rows beyond the
+-- ends
+local function curveAt(pts, level)
 	level = max(1, tonumber(level) or 1)
 	local a, b = pts[1], pts[2]
 	for i = 2, #pts do
@@ -79,6 +79,18 @@ function C.hitAtLevel(cfg, level)
 	end
 	local e = (log(b.hit) - log(a.hit)) / (log(b.level) - log(a.level))
 	return a.hit * (level / a.level) ^ e
+end
+
+-- the median class hit at a level (cfg.hitCurve): what a spell is measured against
+function C.hitAtLevel(cfg, level)
+	return curveAt(cfg.hitCurve, level)
+end
+
+-- the median weapon hit at a level (cfg.weaponHitCurve, O501): the size of the hit the layer sees from a melee or ranged
+-- weapon, in the units that ARRIVE at the layer (before the player's own multipliers, which are later events). Without the
+-- curve in the config the class curve answers (the state before O501).
+function C.weaponHitAtLevel(cfg, level)
+	return curveAt(cfg.weaponHitCurve or cfg.hitCurve, level)
 end
 
 -- "boss", "elite" or "normal": the class of a monster for its armour. tier: ChaosTierOf, bossLike: boolean
@@ -92,14 +104,18 @@ function C.rankClass(cfg, tier, bossLike)
 	return "normal"
 end
 
--- the armour value A of a monster of this level and class: the median class hit of the level loses armourTarget percent
-function C.armourValue(def, cfg, level, class, typeName)
+-- the armour value A of a monster of this level and class: the median class hit of the level loses armourTarget percent. With
+-- weapon true (O501) it is the value for weapon hits: the median WEAPON hit of the level loses weaponTarget percent (the cap
+-- of C.weaponShare keeps a small or low rolled hit from losing more). A per-monster override holds for both.
+function C.armourValue(def, cfg, level, class, typeName, weapon)
 	local o = typeName and cfg.armourOverride and cfg.armourOverride[typeName:lower()]
 	if o then
 		return o
 	end
-	local f = (cfg.armourTarget[class] or cfg.armourTarget.normal) / 100
-	return f / (1 - f) * def.armourHitFactor * C.hitAtLevel(cfg, level)
+	local targets = weapon and cfg.weaponTarget or cfg.armourTarget
+	local f = (targets[class] or targets.normal) / 100
+	local hit = weapon and C.weaponHitAtLevel(cfg, level) or C.hitAtLevel(cfg, level)
+	return f / (1 - f) * def.armourHitFactor * hit
 end
 
 -- the share of a hit of size H that armour A removes (0 .. 1)
@@ -108,6 +124,19 @@ function C.armourReduction(def, A, H)
 		return 0
 	end
 	return A / (A + def.armourHitFactor * H)
+end
+
+-- the largest share of a WEAPON hit that armour may remove (0 .. 1) for a rank class (cfg.weaponShareCap percent): a low roll of a
+-- small hit is not erased (O501). nil cap (a config without it) = no cap, the state before O501.
+function C.weaponShareCap(cfg, class)
+	local caps = cfg.weaponShareCap
+	local c = caps and (caps[class] or caps.normal)
+	return c and c / 100 or 1
+end
+
+-- the share of a weapon hit of size H that armour A removes: A / (A + factor x H), at most `cap`
+function C.weaponShare(def, A, H, cap)
+	return min(cap or 1, C.armourReduction(def, A, H))
 end
 
 -- the multiplier on a physical part that arrived (the engine took the monster's physical percent p0 already): armour
@@ -171,7 +200,8 @@ end
 C.untouched = untouched
 
 -- One hit on a monster. ctx: {def, cfg, k (engine constants: physical, healing, undefined, none, manadrain, lifedrain,
--- melee, ranged, spell, condition), A (the armour value), set (C.modSet of the monster or nil), bonus (rank resistance
+-- melee, ranged, spell, condition), A (the armour value of a spell), Aw (the armour value of a weapon hit, O501), weaponCap
+-- (the most a weapon hit loses to armour, 0 .. 1, O501), set (C.modSet of the monster or nil), bonus (rank resistance
 -- bonus), resistOf(ctype) -> the monster's element percent, pen (the player's elemental penetration, percent points off the
 -- capped resistance), physPen (its physical penetration: points off the armour share, down to 0), rand(n) -> 1..n}.
 -- hit: {primary, ptype, secondary, stype, origin}. Returns primary, secondary, info {blocked = true | nil}.
@@ -194,7 +224,14 @@ function C.defend(ctx, hit)
 		end
 		local m
 		if ctype == k.physical then
-			local arm = armoured and max(0, C.armourReduction(def, ctx.A, abs(value)) - (ctx.physPen or 0) / 100) or 0
+			local arm = 0
+			if weapon then
+				-- O501: a weapon hit meets the weapon armour value and the weapon cap of the rank (ctx.Aw, ctx.weaponCap; a
+				-- context without them keeps the one value and no cap)
+				arm = max(0, C.weaponShare(def, ctx.Aw or ctx.A, abs(value), ctx.weaponCap) - (ctx.physPen or 0) / 100)
+			elseif armoured then
+				arm = max(0, C.armourReduction(def, ctx.A, abs(value)) - (ctx.physPen or 0) / 100)
+			end
 			local mod = set and set.physReduction and cfg.mods.physReduction / 100 or 0
 			m = C.physicalFactor(def, ctx.resistOf(ctype), arm, mod)
 		else

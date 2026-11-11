@@ -14,15 +14,18 @@
 --   onTargetCombat callback below), behind the events it already has: they have none of the Chaos ones.
 -- * Who: the attacker is a player, or a monster whose master is a player (necromancer minions, companions, convinced
 --   monsters). Monsters hurting monsters are left alone.
--- * Armour A is not the XML armor: it is computed from the monster's level and class so that the median class hit of
---   that level loses 25% (normal and magic), 40% (rare, legendary, nemesis) or 50% (bosses: monster type flag isboss,
---   world bosses, rift and Omen guardians, tower bosses, waystone tier bosses). Weapon hits and spells, never a
---   condition tick (a field is one). The XML armor and defence stay the engine's flat subtraction (under 1% of a late hit).
+-- * Armour A is not the XML armor: it is computed from the monster's level and class so that the median hit of that level
+--   loses 25% (normal and magic), 40% (rare, legendary, nemesis) or 50% (bosses: monster type flag isboss, world bosses,
+--   rift and Omen guardians, tower bosses, waystone tier bosses). Two medians (O501): a SPELL (and a physical spell hit of a
+--   summon) is measured against the median class hit (A, cfg.hitCurve), a WEAPON hit (melee, ranged origin) against the median
+--   weapon hit (Aw, cfg.weaponHitCurve, in the units that arrive here, before the player's own multipliers) and loses at most
+--   cfg.weaponShareCap of itself. Never a condition tick (a field is one). The XML armor and defence stay the engine's flat
+--   subtraction, which runs before this layer (the weapon curve counts it).
 -- * Penetration (O464): the attacking player's item modifiers physpen and elepen. Elemental penetration is taken off the
 --   monster's effective resistance AFTER its cap, down to -100; physical penetration is taken off the armour share, down to
 --   0. item_mods.lua no longer has a penetration of its own.
 --
--- Exports: ChaosMonsterDefence.effectiveResist(monster, combatType, penetration), .armourOf(monster), .classOf(monster),
+-- Exports: ChaosMonsterDefence.effectiveResist(monster, combatType, penetration), .armourOf(monster), .weaponArmourOf(monster), .classOf(monster),
 -- .levelOf(monster), .isBossLike(monster), .playerAbsorb(player, combatType) (the ONE reader of a player's absorb for
 -- the element a modifier adds; the player stage replaces it).
 
@@ -73,7 +76,7 @@ local function playerOf(attacker)
 end
 MD.playerOf = playerOf
 
--- monster id -> {level, boss, armour = {class = A}} (a monster's level and boss status do not change)
+-- monster id -> {level, boss, armour = {class = A}, armourW = {class = Aw}} (a monster's level and boss status do not change)
 local cache = ChaosMonsterDamageCore.newCache(Chaos.monsterDefence.cacheSize or 32768)
 MD.cache = cache
 
@@ -141,7 +144,7 @@ local function entryOf(monster)
 	local id = monster:getId()
 	local e = cache.get(id)
 	if not e then
-		e = {level = levelOf(monster), boss = bossLike(monster, id) and true or false, armour = {}, list = listOf(monster)}
+		e = {level = levelOf(monster), boss = bossLike(monster, id) and true or false, armour = {}, armourW = {}, list = listOf(monster)}
 		cache.put(id, e)
 	end
 	return e
@@ -182,6 +185,21 @@ end
 function MD.armourOf(monster)
 	local e = entryOf(monster)
 	return armourIn(e, monster, classIn(e, monster))
+end
+
+-- the armour value for weapon hits (O501): the median weapon hit of the level loses armourTarget percent
+local function weaponArmourIn(e, monster, class)
+	local a = e.armourW[class]
+	if not a then
+		a = C.armourValue(def(), cfg(), e.level, class, typeNameOf(monster), true)
+		e.armourW[class] = a
+	end
+	return a
+end
+
+function MD.weaponArmourOf(monster)
+	local e = entryOf(monster)
+	return weaponArmourIn(e, monster, classIn(e, monster))
 end
 
 -- the monster's element percent for a combat type (what the engine applied already)
@@ -273,6 +291,8 @@ function ev.onHealthChange(creature, attacker, primaryDamage, primaryType, secon
 	local ctx = ctxBox
 	ctx.def, ctx.cfg, ctx.set = def(), cfg(), set
 	ctx.A = armourIn(e, creature, class)
+	ctx.Aw = weaponArmourIn(e, creature, class)
+	ctx.weaponCap = C.weaponShareCap(cfg(), class)
 	ctx.bonus = class == "elite" and cfg().rankResistBonus or 0
 	-- penetration (O464): the attacking player's (or its summon's master's) item modifiers. Elemental: points off the capped
 	-- resistance, physical: points off the armour share

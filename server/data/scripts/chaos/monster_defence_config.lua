@@ -29,10 +29,41 @@ return {
 		{level = 2500, hit = 24884}
 	},
 
-	-- percent of the median class hit of the monster's level that the monster's armour removes. A boss is every kind of
-	-- monster the code treats as one (monster_defence.lua isBossLike); the elite ranks are listed below, every other
-	-- monster (normal and magic) is "normal".
+	-- The median WEAPON hit by monster level (O501): the size of the hit that armour is measured against for a melee or ranged
+	-- weapon hit (a spell keeps hitCurve). In the units that ARRIVE at the layer: the engine's roll of the physical part of the
+	-- auto attack of the tier weapon of the level, at the typical skill, after the monster's own flat armour and defence took
+	-- their part, the median over the 15 classes with an armoured weapon hit (the casters' wand hit is ORIGIN_WAND: no armour).
+	-- The class curve above is the hit of a typical character after its own multipliers, which are later events of the monster
+	-- than this layer (class damage, damage pool, weapon style and power, the Monk's unarmed scaling); against it an auto attack lost
+	-- 50 to 90% (owner 2026-11-11). DERIVED, do not edit by hand: python3 -I server/tools/defence_curve.py --lua prints the rows,
+	-- --check compares them (CI). Same levels as hitCurve.
+	weaponHitCurve = {
+		{level = 1, hit = 16},
+		{level = 10, hit = 13},
+		{level = 30, hit = 16},
+		{level = 60, hit = 37},
+		{level = 100, hit = 82},
+		{level = 200, hit = 121},
+		{level = 300, hit = 165},
+		{level = 500, hit = 239},
+		{level = 750, hit = 359},
+		{level = 1000, hit = 587},
+		{level = 1500, hit = 710},
+		{level = 2000, hit = 867},
+		{level = 2500, hit = 915}
+	},
+
+	-- percent of the median class hit (a spell) or of the median weapon hit (a weapon hit) of the monster's level that the monster's
+	-- armour removes. A boss is every kind of monster the code treats as one (monster_defence.lua isBossLike); the elite ranks are
+	-- listed below, every other monster (normal and magic) is "normal".
 	armourTarget = {normal = 25, elite = 40, boss = 50},
+	-- the same for a weapon hit (O501, percent of the median weapon hit): a little above armourTarget, because the hits of one weapon roll
+	-- between 0 and twice their mean, the cap holds the small ones and the big ones lose less, so the armour removes its armourTarget of
+	-- the DAMAGE of the median class's auto attack (tools/defence_curve.py G1: within 3 points at every level from 8 to 2500)
+	weaponTarget = {normal = 27.5, elite = 44.5, boss = 55},
+	-- the most of a WEAPON hit that armour may remove, by rank (O501, percent): a small hit or a low roll of the weapon is not erased.
+	-- The ceilings of the auto attack of any class: tools/defence_curve.py CEILING (G2). Not for a spell.
+	weaponShareCap = {normal = 40, elite = 55, boss = 65},
 	eliteRanks = {rare = true, legendary = true, nemesis = true},
 
 	-- armour value A of one monster type, by lower case type name, instead of the one computed from level and rank
