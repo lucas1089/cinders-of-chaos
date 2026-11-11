@@ -277,6 +277,9 @@ server/
                                       bare-fist hit with that attack and multiplier when a script set one (the Monk line, Open Hand Creed; the
                                       stock hit is attack 7); the capability is the method itself (see "Flat armour, weapon spells and the Monk's
                                       fist (O505)"; header src/chaosfist.h, tools/chaosfist_test.cpp, tools/fist_attack_patch_test.py)
+  src-patches/0092-rune-bag-in-purse.patch   engine: a player's search, count and removal by item type also look into the Rune Bag that lies in the
+                                      purse (after slots 1-10); Game.setRuneBagContainer(itemId) from pouches.lua (see "Using a rune from the
+                                      bag", O509; header src/chaosrunebag.h, tools/chaosrunebag_test.cpp, tools/rune_bag_purse_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -6406,20 +6409,78 @@ autoloot list is needed.
     prices). "Find my item" (`stash.lua` `S.find`, `itemsearch_core.lua`) walks any container to `maxDepth`, so a rune inside the
     bag, in the backpack or the purse, is found and the way to it opened. The loadouts' parked runes (storage 7112000-7127999) are
     untouched.
-  - **Using a rune from the bag** (read in the engine, `chain/src`). The server finds an item by TYPE for a hotkey, the action bar
-    and the helper's rune use (`g_game.useInventoryItem(With)` sends an inventory position `{0xFFFF, 0, 0}`):
-    `Game::internalGetThing` (game.cpp, the `pos.y == 0 && pos.z == 0` branch) calls `findItemOfClientId` (src-patch 0043) and
-    `Game::findItemOfType` (game.cpp, `depthSearch = true`) on the player: `Player::getFirstIndex` / `getLastIndex` (player.cpp:
-    `CONST_SLOT_FIRST` .. `CONST_SLOT_LAST`, slots 1-10) and every container below them, breadth first, **no depth limit**, closed
-    or open. So a magic rune in a Rune Bag **in the backpack (or in a bag in it) is found**. The purse is the store inbox, slot
-    `CONST_SLOT_STORE_INBOX`, outside slots 1-10: a rune in a Rune Bag **in the purse is not found** by the hotkey, the action bar or
-    the helper (the same holds for any item in the purse). So the bag may stay in the purse (it collects there, `PO.carried`), but
-    the description and the store text say to keep it in the backpack to use its magic runes by hotkey. The helper counts a rune
-    by `player:getInventoryCount` (open containers only) and falls back to its probe gate for a rune in a closed bag
-    (`helper.lua` `runeReady`), the same as a rune in a closed sub-bag of the backpack today. The server side counts of a support
-    rune (`player:getItemCount` / `removeItem`, `player.cpp` `getItemTypeCount`, slots 1-10 and below) see a rune in the bag in the
-    backpack; socketing, Remove, Shatter and the combine of three runes work from it; a stack in the Rune Bag in the purse
-    combines through `ChaosCombine.placeOf` ("box": the purse), as any stack there.
+  - **Using a rune from the bag** (O509, owner 2026-11-11: "The rune bag stays in the purse."; engine src-patch 0092; read in the
+    engine, `chain/src`). The rule: **a magic rune in the Rune Bag in the purse is used by a hotkey (use on target, on yourself, with
+    crosshair), the action bar and the helper exactly as if it were in the backpack.** Before O509 it was not: the server finds an
+    item by TYPE for these (`g_game.useInventoryItem(With)` sends an inventory position `{0xFFFF, 0, 0}`, `Game::internalGetThing`,
+    the `pos.y == 0 && pos.z == 0` branch, then `findItemOfClientId` of src-patch 0043 and `Game::findItemOfType`), and every walk
+    started at inventory slots 1-10 (`Player::getFirstIndex` / `getLastIndex`) and went down into their containers, breadth first,
+    closed or open. The purse is the store inbox, `CONST_SLOT_STORE_INBOX` (11), outside slots 1-10.
+  - **Way: engine patch (B) with a client count (C), no Lua-only way (A).** Checked and ruled out: the Lua API has no call that
+    fires a use (no `Player:useItem`; a rune use is `Actions` / `RuneSpell` inside the engine), so a client request through an
+    extended opcode could only re-implement the rune rules (cooldowns, exhaust, protection zone, target rules, charges, level and
+    magic level) in Lua. That is the way the coordinator forbade. Moving the rune into the backpack for the use would risk a dupe
+    or a lost rune. Opening the purse's bag in the client to use the rune by container position needs the bag open all the time.
+  - **Patch `src-patches/0092-rune-bag-in-purse.patch`** (0091 is reserved by another change: a renumber is a file rename and the
+    number in this section, the CLAUDE.md line and `ci.yml`). New header `src/chaosrunebag.h`: one rule, pure templates, the items
+    DIRECTLY inside a container of the Rune Bag type that lies DIRECTLY in the store inbox; nothing else of the purse is visited
+    (not a loose item, not a Loot Bag or another pouch, not a bag inside the Rune Bag, not a Rune Bag inside a bag in the purse).
+    The type comes from Lua: `Game.setRuneBagContainer(itemId)` (`pouches.lua` `PO.registerRuneBag`, at load and at every login,
+    the id of `kinds.runes` in `pouches_config.lua`; no id in C++; 0 or never called = the old behaviour). It walks in
+    `Game::findItemOfType` (a player, `depthSearch`, **after** slots 1-10 and the bags in them), `Player::getItemTypeCount`,
+    `countRemovableItemsOfType` (so `removeItemOfType`, the NPC sell checks and `player:getItemCount` / `removeItem`),
+    `getAllUnlockedItemTypeCount` (the NPC sale list) and `getAllItemTypeCount`. One walk counts and removes, so a count and a
+    removal agree; a locked item is skipped as everywhere. **Order: the backpack first, the purse last.** Why: a rune the player
+    keeps in the backpack is the one they put there on purpose (a loadout, a hand move), the purse bag is the collect target and
+    the stock, and the old behaviour stays the same for everyone who carries runes there. Within the purse, bag order.
+  - **The capability.** `Game.setRuneBagContainer` existing is the capability the Lua tests (`ChaosPouches.runeBagEngine()`,
+    set by a successful register). It is false on an engine built before 0092.
+  - **Every path for the 136 rune ids, on the old and on the new binary.**
+    - *Hotkey, action bar, helper use* (`internalGetThing` -> `findItemOfType`): old: a rune only in the purse bag gives "Sorry, not
+      possible." (the thing is nil, nothing is used, nothing is lost); new: found, used, removed from the bag by the rune's own
+      script. The hotkey's "Using one of N" line counts through `getItemTypeCount`: old counts 0 for a purse-only rune (never reached),
+      new counts the bag too.
+    - *Support runes, `ChaosSupports`* (`runesOf` lists by `player:getItemCount`, `S.socket` checks `getItemCount` and takes with
+      `removeItem`, Remove / Shatter take orbs, not runes; `S.unsocket` gives a rune back into the backpack): old: a support rune in
+      the purse bag is not listed and cannot be socketed; new: listed and socketed, taken from the bag.
+    - *The combine of three runes* (`ChaosCombine.take`, `placeOf`): old: a stack in the purse bag is "box" and taken by hand
+      (`item:remove`), unchanged; new: a stack directly in the Rune Bag in the purse is "carried" (counted once by the engine, taken by
+      `removeItem`, the clicked stack not taken by hand as well: counting it as both would count it twice). `ChaosCombine.runeBagId` /
+      `runeBagEngine` are set by `pouches.lua` only when the engine has the patch. A stack loose in the purse, in a plain bag in the
+      purse, a Rune Bag inside a bag in the purse, or in the depot stays "box".
+    - *Vendors that take runes* (the NPC sale list, `countRemovableItemsOfType`, `player:removeItem` in the NPC scripts): old: runes
+      in the purse bag are not offered; new: they are offered, counted and taken like runes in a Rune Bag in the backpack (a player
+      who presses "Sell all" for a rune sells it from wherever it is; the Auto Seller never walks the Rune Bag, `PO.neverSell`).
+    - *Rune supply* (`data/lib/chaos_rune_supply.lua`): vendors sell runes into the backpack and the crafting recipes take the
+      unscribed rune (2260) and a herb and an ore, never a rune of the bag: no change, nothing to do.
+    - *`player:getItemById(id, true)`* (`luaPlayerGetItemById`, `findItemOfType`): old: not found in the purse bag; new: found, after the
+      backpack. No Chaos script calls it for a rune id (searched with `git grep getItemById` over `data/`).
+    - *Find my item* (`stash.lua` `S.find`, `itemsearch_core.lua`): walks any container to `maxDepth`: found in the purse before and after.
+    - *Salvage, orbs, gems, potions*: not runes, not in the bag, not touched (the walk only reaches the Rune Bag's direct items).
+  - **The client count (point 2).** `LocalPlayer:getInventoryCount` (C++, `localplayer.cpp`) counts the equipped items and the OPEN
+    containers only, so a rune in any closed bag, and in the purse's bag, counted 0 on the action bar and in the helper. The action
+    bar greys a slot only with the packed inventory feature (`hasPackedInventorySnapshot`), which a 10.98 server does not have, so a
+    rune slot is never greyed out here. `game_pouches` (`runebagcount.lua`, `pouches.lua`) polls the pouches opcode 226 with action
+    `runebag` every `poll` seconds (2 with a Rune Bag in the purse and the engine patch, else 15; the server rate limit is 400 ms) and
+    the server answers `{engine, counts = {[client id] = n}, bag, poll}`: the 36 magic runes of the Rune Bag directly in the purse
+    (`P.runeBagCounts`, a few hundred bytes, far under 8192). The client wraps `LocalPlayer.getInventoryCount` once at game start (given
+    back at game end) and adds `counts[id]` less what an open copy of that bag already shows (never counted twice); the action bar is
+    refreshed (`game_actionbar.updateInventoryItems`) when the counts change. `engine = false` adds nothing, so on the old engine the
+    client never counts a rune the hotkey could not use: the helper keeps its probe gate (`ChaosPotionGate`: one probe every 3 s,
+    30 s wait after "Sorry, not possible.") and no use fails every tick. No new opcode (the action is new, the opcode 226 is
+    not: "Opcode collision check" unchanged). The wrap of a C++ bound method by a Lua function is the one part not seen in a
+    running client (`LocalPlayer.getInventoryCount = ...`; the base has the same pattern for `g_game.use` in `game_npctalk`); if it does
+    not take, the count shows what it showed before and nothing breaks.
+  - **What a player gets on the old engine (before the owner rebuilds).** The Lua of this change runs on it: `Game.setRuneBagContainer`
+    does not exist, `PO.registerRuneBag` returns false, `runebag` answers `engine = false`, ChaosCombine keeps the purse all "box".
+    A rune only in the purse bag: hotkey and action bar answer "Sorry, not possible.", the helper probes every 30 s and gets the same
+    answer, the action bar shows no count, the supports window does not list it, a combine takes the clicked stack by hand. No error,
+    no duplicate, no lost rune: every old path is as it was in O502. The texts (store offer, item description, patch notes) already say
+    the new rule, so **rebuild the engine with the Lua update** (admin app: Painel > Recompilar engine; docs/ADMIN_APP.md). A rune in a
+    Rune Bag in the backpack works on both engines.
+  - **Not whole-purse (decision for the owner, not built).** Every other item in the purse (a potion, a plain stack, the Loot Bag's
+    contents) stays out of a hotkey's reach: the engine never visits anything but the Rune Bag's direct items. Searching the whole purse
+    for every hotkey item would also change the Everfull potion lookup and the vendor lists; say so if wanted.
   - **Item.** A copy of the stock blue backpack (2002, client id 2869, container), `clientId = 0`: the stock look, no new sprite.
     The other four are a brown leather sack (Loot Bag), a violet pouch (Orbs), an iron strongbox (Rift Keys) and the
     jewelled backpack (Gems). Alternatives: the moon backpack (10521, client 9604) or the demon backpack (10518, client 9601); a
@@ -6427,7 +6488,7 @@ autoloot list is needed.
     the rewritten items.xml block (`containerSize` 200); a second run changes nothing. Store offer "Rune Bag" in Convenience
     (`shop_config.lua`, icon = the item, `accountDiscount = 50`), price 150: `perCharacterConvenienceMax` 1,550 -> 1,700.
   - Tests: `tests/pouches_test.lua` (the rune lists, routing against the other four, a kill, a full bag, the manual moves, the
-    store, regrant bit 16, never sold), `tests/autosell_test.lua`, `tests/itemsearch_test.lua`, `tools/install_pouches_test.py`
+    store, regrant bit 16, never sold), `tests/autosell_test.lua`, `tests/itemsearch_test.lua`, `tests/supports_test.lua` (the combine from the purse bag, O509), `tools/install_pouches_test.py`
     (four installed pouches get the fifth), client `game_pouches/pouchesview_test.lua`. Unity keeps `Ids`, `Titles` and `Owned` as
     dictionaries and reads only the Loot Bag: a fifth kind is stored and not shown. Not run on a server or in a client.
 - **The Loot Bag** (owner 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe automaticamente";

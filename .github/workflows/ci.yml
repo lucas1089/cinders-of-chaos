@@ -371,6 +371,14 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoslootbag_test.cpp -o "$d/chaoslootbag_test"
           "$d/chaoslootbag_test"
 
+      - name: "Rune Bag in the purse, pure parts (C++; header from server src-patch 0092, O509)"
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosrunebag\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0092-rune-bag-in-purse.patch > "$d/chaosrunebag.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosrunebag_test.cpp -o "$d/chaosrunebag_test"
+          "$d/chaosrunebag_test"
+
       - name: RmlUi layer input logic (C++; routing between OTUI and RmlUi, touch scroll, repaint signature; O334)
         run: |
           d=$(mktemp -d)
@@ -1216,6 +1224,9 @@ jobs:
 
       - name: Fist attack from a script (src-patch 0091, O505)
         run: python3 -I server/tools/fist_attack_patch_test.py
+
+      - name: Rune Bag in the purse (src-patch 0092, O509)
+        run: python3 -I server/tools/rune_bag_purse_patch_test.py
 
       - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
         run: python3 -I server/tools/patch_base_raids_test.py

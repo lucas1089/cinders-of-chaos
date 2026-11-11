@@ -479,7 +479,7 @@ local cfg = {
 				-- the Rune Bag (O502, owner 2026-11-11, "Make a rune bag too, please. To be sold in the store."): support runes and
 				-- magic runes; the price is the Gem Pouch's, the owner sets the final one (docs/PRICES.md)
 				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "runes", icon = 32096, cost = 150, name = "Rune Bag",
-					description = "200 slots, store-bound. Collects support runes and magic runes while carried, and takes runes by hand. Keep it in your backpack to use its magic runes by hotkey."},
+					description = "200 slots, store-bound. Collects support runes and magic runes while carried, and takes runes by hand. Its magic runes work by hotkey from your purse or backpack."},
 				-- the infinite food (store_food.lua, store_food_config.lua): one per character, store-bound, never used up.
 				-- price decided 2026-10-14 (docs/PRICES.md)
 				{kind = "service", service = "storeFood", accountDiscount = 50, icon = 32084, cost = 100, name = "Everfull Ration",

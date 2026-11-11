@@ -14,7 +14,8 @@
 --   ChaosCombine.whereText(where)   " It is in your inbox (no room)." / " It is at your feet (no room)." / ""
 --
 -- Why: TFS Player::getItemTypeCount / removeItemOfType (src-patch 0009) walk inventory slots 1-10 and their
--- containers. The purse is slot 11 and the depot hangs off the locker, so a stack there was never counted.
+-- containers. The purse is slot 11 and the depot hangs off the locker, so a stack there was never counted. The one
+-- exception is the Rune Bag in the purse once the engine has src-patch 0092 (see K.runeBagEngine below).
 -- Lua 5.1 / LuaJIT and 5.3.
 
 ChaosCombine = ChaosCombine or {}
@@ -44,24 +45,34 @@ local function idOf(thing)
 	return ok and id or nil
 end
 
+-- O509 (engine src-patch 0092): with the patch, the engine's walk by item type (getItemCount / removeItem) also reaches the
+-- items directly inside a Rune Bag that lies directly in the purse. pouches.lua sets runeBagId (the bag's item id) and
+-- runeBagEngine = true when the engine has Game.setRuneBagContainer; then such a stack is "carried", not "box" (counting
+-- it as both would count it twice). Without the patch both stay unset and the purse is all "box", as before.
 function K.placeOf(player, item)
-	local inBox = false
+	local inBox, viaBag = false, false
 	local p = item
-	for _ = 1, 32 do
+	local first = nil
+	for n = 1, 32 do
 		local ok, parent = pcall(function() return p:getParent() end)
 		if not ok or not parent then
 			break
+		end
+		if n == 1 then
+			first = idOf(parent)
 		end
 		local kind = K.BOX[idOf(parent)]
 		if kind == "inbox" or kind == "locker" then
 			return "box"
 		elseif kind == "purse" then
 			inBox = true
+			-- the stack lies directly in a Rune Bag, which lies directly in the purse: the one place the engine walks
+			viaBag = n == 2 and K.runeBagEngine == true and K.runeBagId ~= nil and first == K.runeBagId
 		end
 		p = parent
 	end
 	if K.owns(player, item) then
-		return inBox and "box" or "carried"
+		return (inBox and not viaBag) and "box" or "carried"
 	end
 	return nil
 end

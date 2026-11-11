@@ -14,6 +14,7 @@
 --   ChaosPouchesCore.moveRefusal(m)                 nil (allowed) or the reason a pouch move is refused
 --   ChaosPouchesCore.lootBagInRefusal(m)            nil (allowed) or the reason an item may not go INTO a Loot Bag (one-way bag)
 --   ChaosPouchesCore.runeBagRefusal(m)              nil (allowed) or the reason an item may not go INTO a Rune Bag (runes only)
+--   ChaosPouchesCore.runeBagCounts(cfg, stacks, clientIdOf)   {[client id as text] = count} of the magic runes in the Rune Bag in the purse
 --   ChaosPouchesCore.summary(cfg, looted, backpack, left, full, overflow, t)   the per-kill loot line, or nil
 --   ChaosPouchesCore.lootList(looted, opts, t)   "10 gold coins, {[Rare] wyrmscale helmet} and 2 more"
 --   ChaosPouchesCore.bindLock(cfg) / needsRebind(cfg, value)   the chaos_locked value of a pouch; must it change to it?
@@ -128,6 +129,30 @@ function P.isRuneId(cfg, id, isSupport)
 		end
 	end
 	return isSupport ~= nil and isSupport(id) == true
+end
+
+-- The magic runes of the Rune Bag that lies in the purse, for the client's count (O509, engine src-patch 0092; the
+-- client's own count sees open containers only, so the server says what the purse holds). stacks = {{id = , count = }}
+-- the items directly inside that bag; only the 36 magic runes of cfg.runeIds count (the ones a hotkey uses: a support rune
+-- is socketed, never fired); clientIdOf(id) = the client item id (what the hotkey and the action bar hold). Keys are
+-- text (JSON object keys); a stack of several kinds adds up; a zero or unknown client id is left out.
+function P.runeBagCounts(cfg, stacks, clientIdOf)
+	local magic = {}
+	for _, r in ipairs(cfg.runeIds or {}) do
+		magic[r] = true
+	end
+	local out = {}
+	for _, s in ipairs(stacks or {}) do
+		local n = tonumber(s.count) or 0
+		if magic[s.id] and n > 0 then
+			local cid = tonumber(clientIdOf and clientIdOf(s.id)) or 0
+			if cid > 0 then
+				local key = tostring(math.floor(cid))
+				out[key] = (out[key] or 0) + n
+			end
+		end
+	end
+	return out
 end
 
 function P.isRiftKey(info, cfg)
