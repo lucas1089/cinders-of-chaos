@@ -191,7 +191,8 @@ local function ask()
 end
 
 -- ---------------------------------------------------------------- pictures
--- spec = {kind = 'outfit', outfit} | {kind = 'play', row} | {kind = 'print', art} | nil, on a card's creature / icon
+-- spec = {kind = 'outfit', outfit} | {kind = 'play', row} | {kind = 'print', art} | {kind = 'sample', option} | nil, on a
+-- card's creature / icon / sample holder (the sample: a loot label, chat colour or plate frame, O497)
 local function paint(w, spec, boxW, boxH, iconSize)
   local box = w:getChildById('pic') or w
   local cr, ic = box:getChildById('creature'), box:getChildById('icon')
@@ -200,7 +201,19 @@ local function paint(w, spec, boxW, boxH, iconSize)
   ic:setVisible(false)
   pcall(ic.destroyChildren, ic)
   pcall(ic.setImageSource, ic, '')
+  local sm = box:getChildById('sample')
+  if sm then
+    sm:setVisible(false)
+    sm:destroyChildren()
+  end
   if type(spec) ~= 'table' then return end
+  if spec.kind == 'sample' then
+    local lp = lookModule()
+    if sm and lp and type(lp.sampleWidget) == 'function' then
+      lp.sampleWidget(sm, spec.option, boxW, boxH, boxW > 60 and 'card' or 'compact')
+    end
+    return
+  end
   if spec.kind == 'outfit' then
     local ok = pcall(cr.setOutfit, cr, spec.outfit)
     if not ok then return end
@@ -224,6 +237,8 @@ local function specOf(key, card)
   if card.row and key == 'footprint' and not card.none and type(card.row.art) == 'string' then
     return { kind = 'print', art = card.row.art }
   end
+  local sample = C.sampleOption(key, card)
+  if sample then return { kind = 'sample', option = sample } end
   return nil
 end
 
@@ -236,7 +251,8 @@ local function updatePreview()
   if not preview then return end
   local ok, err = pcall(function()
     preview:setOwnOutfit(C.shown(temp, layers))
-    preview:setOption(outlineNow())
+    -- the outline in use and, in a loot label / chat colour / plate frame category, the sample of the value in use
+    preview:setOption(C.restOption(category, rows, values(), layers))
   end)
   if not ok then warn('preview', err) end
 end
@@ -361,6 +377,9 @@ local function makeCard(grid, key, card)
   local u = unlocks()
   if card.locked and u and type(u.styleEntry) == 'function' then
     u.styleEntry(w, { card.text, locked = true, how = card.how })
+    -- a locked sample is dimmed less, so the colour stays readable (CustomiseCore.cardOpacity)
+    local op = C.cardOpacity(key, card, u.UnlocksCore and u.UnlocksCore.LOCKED_OPACITY)
+    if op then w:setOpacity(op) end
   else
     w:setTooltip(card.text)
   end
@@ -418,6 +437,7 @@ local function setCategory(key)
   syncOnlyMine()
   rebuildGrid()
   updateStrip()
+  updatePreview() -- the sample of the value in use goes with the category
 end
 
 -- a click on a card: pick it (its layer turns on, "none" turns it off), or look at it when it is locked

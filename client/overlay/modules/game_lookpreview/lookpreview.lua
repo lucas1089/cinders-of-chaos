@@ -8,9 +8,12 @@
 --   pv:destroy()
 -- Effects (option {kind = 'effects', play} of LookPreviewCore.fromPlayRow: spell skins, kill effects) play in a loop
 -- on the stage around the creature, from the client's own sprites (see "the effect stage" below); a footprint option
--- with its art draws a few prints behind the walking creature.
+-- with its art draws a few prints behind the walking creature, which stays where the look alone puts it (O496). A loot
+-- label, a chat colour and a name plate frame option draw a sample of it on the stage (O497, "samples" below).
 --   modules.game_lookpreview.effectIcon(widget, spec, size)   a list icon: the effect's best frame, cropped and fitted
 --   modules.game_lookpreview.fitCard(creatureWidget, outfit, w, h)   a list card's look facing south, filling the card
+--   modules.game_lookpreview.sampleWidget(holder, opt, w, h, size)   a loot label / chat colour / plate frame sample centred
+--                       in a card's holder widget ('card': a grid card, 'compact': the Equipped now picture); false without one
 -- The look is drawn by the engine on a UICreature, the same way the map draws it: outfit, addons, colours, mount,
 -- wings and aura are outfit fields, the outfit shader is the outfit's shader name (game_chaosshaders registers them),
 -- the outline is game_cosmeticfx.applyOutline on the preview's creature (base patch 0038). Always 2x, the box of
@@ -237,6 +240,68 @@ function effectIcon(widget, spec, size, imageDir)
   return true
 end
 
+-- ---------------------------------------------------------------- samples (engine side)
+-- LookPreviewCore "samples" has the data and the places. The widgets are the ones the game draws the real thing with:
+-- a UILabel with the ground label's font, border and colours, a UILabel with setColoredText (the console line as
+-- game_cosmetics colours it), a UILabel on the 9-slice plate art (as base patch 0022 draws the name plate), a UIItem of
+-- the loot bag (as client_chaos_login loginscene.lua draws items). The styles are LookPreviewGroundLabel, LookPreviewChatLine and
+-- LookPreviewPlate (lookpreview.otui).
+local function playerName()
+  local me = g_game.isOnline() and g_game.getLocalPlayer() or nil
+  local ok, name = pcall(function() return me and me:getName() end)
+  return ok and type(name) == 'string' and name or ''
+end
+
+local function anchorTopLeft(w)
+  w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  w:addAnchor(AnchorTop, 'parent', AnchorTop)
+end
+
+-- the widget of a LookPreviewCore.sampleSpec inside `parent`, sized by its text (text-auto-resize); nil when the art of a
+-- plate frame is not in this client
+local function buildSampleWidget(parent, spec)
+  if spec.kind == 'lootlabel' then
+    local l = g_ui.createWidget('LookPreviewGroundLabel', parent)
+    l:setText(spec.text)
+    l:setColor(spec.color)
+    l:setBorderColor(spec.border)
+    l:setBackgroundColor(spec.bg)
+    return l
+  elseif spec.kind == 'chatcolor' then
+    local l = g_ui.createWidget('LookPreviewChatLine', parent)
+    l:setColoredText(spec.parts)
+    l:setBackgroundColor(spec.bg)
+    return l
+  elseif spec.kind == 'plate' then
+    if not g_resources.fileExists(spec.path .. '.png') then return nil end
+    local l = g_ui.createWidget('LookPreviewPlate', parent)
+    l:setImageSource(spec.path)
+    l:setImageBorder(spec.border)
+    l:setText(spec.text)
+    l:setColor(spec.color)
+    return l
+  end
+  return nil
+end
+
+-- a sample centred in a card's holder widget (w x h px); size 'card' or 'compact' (LookPreviewCore.sampleSpec)
+function sampleWidget(holder, opt, w, h, size)
+  if not alive(holder) then return false end
+  holder:destroyChildren()
+  local sm = P.sampleOf(opt)
+  local spec = sm and P.sampleSpec(sm, playerName(), size or 'card')
+  local widget = spec and buildSampleWidget(holder, spec)
+  if not widget then
+    holder:setVisible(false)
+    return false
+  end
+  widget:setPhantom(true)
+  widget:setMarginLeft(math.max(0, math.floor((w - widget:getWidth()) / 2)))
+  widget:setMarginTop(math.max(0, math.floor((h - widget:getHeight()) / 2)))
+  holder:setVisible(true)
+  return true
+end
+
 -- the troll of a scene (LookPreviewCore "the scene"): the stage's second creature
 local function targetWidget(self)
   return alive(self.widget) and self.widget.stage.target or nil
@@ -320,6 +385,45 @@ function Preview:drawSteps(art, prints)
     w:setRotation(f.rotation)
     w:setOpacity(f.opacity)
   end
+end
+
+-- the stage's sample (a loot label over a loot bag beside the feet, a chat line near the head, a name plate over it):
+-- the character stays where the layout put it, the sample goes where LookPreviewCore.labelPlace / linePlace say
+function Preview:drawSample(L, W, H)
+  local st = self.widget.stage
+  local holder = st.sample
+  holder:destroyChildren()
+  local sm = self.sample
+  if not sm or (self.fx and self.fx.scene.kill) then return end
+  local spec = P.sampleSpec(sm, playerName(), 'stage')
+  if not spec then return end
+  if spec.kind == 'lootlabel' then
+    local bag = g_ui.createWidget('UIItem', holder) -- first: the label is drawn over it
+    bag:setPhantom(true)
+    bag:setVirtual(true)
+    bag:setItemId(P.LOOT_BAG)
+    anchorTopLeft(bag)
+    local label = buildSampleWidget(holder, spec)
+    local at = P.labelPlace(L, self.box, W, H, label:getWidth(), label:getHeight())
+    bag:setSize({ width = at.bag.size, height = at.bag.size })
+    bag:setMarginLeft(at.bag.x)
+    bag:setMarginTop(at.bag.y)
+    label:setPhantom(true)
+    label:setMarginLeft(at.label.x)
+    label:setMarginTop(at.label.y)
+    return
+  end
+  local widget = buildSampleWidget(holder, spec)
+  if not widget then
+    -- no plate art in this client: the note says so
+    st.note:setText(tr(P.UNSHOWN.nameplate))
+    st.note:setVisible(true)
+    return
+  end
+  widget:setPhantom(true)
+  local at = P.linePlace(L, self.box, W, H, widget:getWidth(), widget:getHeight(), spec.kind == 'chatcolor')
+  widget:setMarginLeft(at.x)
+  widget:setMarginTop(at.y)
 end
 
 local function holderFor(self, idx, item)
@@ -489,6 +593,7 @@ function Preview:relayout()
   self.layout = L
   self.widget.controls.zoomLabel:setText(L.scale .. 'x')
   if self.steps then self:drawSteps(self.steps, prints) end
+  self:drawSample(L, W, H)
 end
 
 function Preview:refresh()
@@ -531,6 +636,7 @@ function Preview:refresh()
     end
     cw:setDirection(self.dir)
   end
+  self.sample = P.sampleOf(opt)
   local steps = P.footprintArt(opt)
   if steps ~= self.steps then
     self.steps = steps

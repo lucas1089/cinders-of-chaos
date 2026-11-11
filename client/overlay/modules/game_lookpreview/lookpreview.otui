@@ -13,6 +13,35 @@ LookPreviewCheck < ChaosCheckBox
   height: 16
   margin-top: 4
 
+// The samples of a loot label, a chat colour and a name plate frame (LookPreviewCore "samples"): the style values the game
+// draws the real thing with. Ground label: game_groundlabels GroundLabel / GL.style; plate: base patch 0022 (the text and
+// 7 / 3 / 7 / 2 px around it on the 9-slice art, border 6); chat line: the console's font.
+LookPreviewGroundLabel < UILabel
+  anchors.left: parent.left
+  anchors.top: parent.top
+  font: verdana-11px-rounded
+  text-auto-resize: true
+  padding: 2 4 2 4
+  border-width: 1
+  phantom: true
+
+LookPreviewChatLine < UILabel
+  anchors.left: parent.left
+  anchors.top: parent.top
+  font: verdana-11px-rounded
+  text-auto-resize: true
+  padding: 2 4 2 4
+  phantom: true
+
+LookPreviewPlate < UILabel
+  anchors.left: parent.left
+  anchors.top: parent.top
+  font: verdana-11px-rounded
+  text-auto-resize: true
+  padding: 3 7 2 7
+  image-border: 6
+  phantom: true
+
 LookPreviewPanel < ChaosPanelDark
   padding: 6
   phantom: false
@@ -60,6 +89,12 @@ LookPreviewPanel < ChaosPanelDark
     // the other effects and the missiles, over the creature
     UIWidget
       id: fxOver
+      anchors.fill: parent
+      phantom: true
+
+    // a loot label, a chat line or a name plate sample (LookPreviewCore "samples"), over the creature
+    UIWidget
+      id: sample
       anchors.fill: parent
       phantom: true
 

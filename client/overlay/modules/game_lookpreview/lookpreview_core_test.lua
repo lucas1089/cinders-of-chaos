@@ -428,8 +428,13 @@ opt = L({ kind = 'footprint', art = 'ash' })
 eq(P.footprintArt(opt), 'ash', 'footprint art')
 opt = L({ kind = 'nameplate', frame = 'frost' })
 o, line, note = P.compose('own', own, opt)
-eq(note, P.UNSHOWN.nameplate, 'a plate frame: the note') eq(o.type, 2161, 'the character as worn')
-eq(L({ kind = 'swatch', color = '#ffffff' }), nil, 'a colour sample is nothing to wear')
+-- O497: a plate frame is drawn on the stage as a sample of the game_nameplate art, so there is no note (the note stays for
+-- a frame with a bad name); a colour sample (the store's swatch) is a chat colour or a loot label sample, nothing to wear
+eq(note, nil, 'a plate frame: a stage sample, no note') eq(o.type, 2161, 'the character as worn')
+eq(P.sampleOf(opt).kind, 'nameplate', 'the plate sample') eq(P.sampleOf(opt).frame, 'frost', 'its frame')
+eq(P.note({ kind = 'nameplate', frame = '../x' }), P.UNSHOWN.nameplate, 'a frame with a bad name keeps the note')
+eq(L({ kind = 'swatch', color = '#ffffff' }).kind, 'chatcolor', 'a chat colour swatch is a chat sample')
+eq(L({ kind = 'swatch', color = 'white' }), nil, 'a bad colour is nothing')
 eq(L({ kind = 'outline', art = '../x' }), nil, 'a bad art name is dropped')
 eq(L({ kind = 'mount', look = 0 }), nil, 'a mount without a look')
 eq(L({ kind = 'weird' }), nil, 'an unknown kind')
@@ -516,5 +521,143 @@ for _, pr in ipairs(P.stepPrints(FX, plain, 318, 130)) do
   eq(pr.x >= 0 and pr.y >= 0 and pr.x + pr.size <= 318 and pr.y + pr.size <= 130, true, 'effects layout: print inside')
   eq(pr.cx < FX.tileX + plain.fx * FX.scale, true, 'effects layout: left of the feet')
 end
+
+-- ---------------------------------------------------------------- samples (O497)
+-- the constants are the real modules' own
+local function slurp(path) local fh = assert(io.open(path, 'rb')) local t = fh:read('*a') fh:close() return t end
+local gl = slurp('client/overlay/modules/game_groundlabels/groundlabelslogic.lua')
+eq(gl:find("GL.HIGHLIGHT_BACKGROUND = '" .. P.LABEL_BG .. "'", 1, true) ~= nil, true, 'the stock label background is the ground label\'s')
+eq(gl:find("GL.CORPSE_BAG_ID = " .. P.LOOT_BAG, 1, true) ~= nil, true, 'the loot bag is the one monsters leave')
+eq(gl:find("normal = { font = '" .. P.LABEL_FONT .. "'", 1, true) ~= nil, true, 'the label font')
+local cl = slurp('client/overlay/modules/game_cosmetics/cosmeticslogic.lua')
+eq(cl:find("{ name = 'Legendary', color = '" .. P.LABEL_RARITY .. "' }", 1, true) ~= nil, true, 'the sample rarity colour is the Cosmetics window\'s')
+local cos = slurp('client/overlay/modules/game_cosmetics/cosmetics.lua')
+eq(cos:find("{ text, '" .. P.CHAT_TEXT .. "' }", 1, true) ~= nil, true, 'the spoken colour is the Cosmetics window\'s sample')
+eq(cos:find("box:setBackgroundColor('" .. P.CHAT_BG .. "')", 1, true) ~= nil, true, 'the console background')
+local np = slurp('client/overlay/modules/game_nameplate/nameplatemath.lua')
+eq(np:find("NAME_COLOR = '" .. P.PLATE_NAME .. "'", 1, true) ~= nil, true, 'the plate name colour')
+eq(np:find("'/modules/game_nameplate/images/'", 1, true) ~= nil and P.PLATE_PATH == '/modules/game_nameplate/images/plate_', true, 'the plate art path')
+eq(slurp('client/overlay/modules/game_nameplate/nameplate.lua'):find('local BORDER = ' .. P.PLATE_BORDER, 1, true) ~= nil, true, 'the plate border')
+eq(slurp('client/overlay/modules/game_nameplate/nameplate.lua'):find("local FONT = '" .. P.LABEL_FONT .. "'", 1, true) ~= nil, true, 'the plate font')
+-- the real files exist for every frame the nameplate module knows
+for frame in np:match('FRAMES = (%b{})'):gmatch('(%a+) = true') do
+  local fh = io.open('client/overlay/modules/game_nameplate/images/plate_' .. frame .. '.png', 'rb')
+  eq(fh ~= nil, true, 'plate art of ' .. frame) if fh then fh:close() end
+end
+
+eq(P.validColor('#ff9a4a'), true, 'rgb') eq(P.validColor('#461809f0'), true, 'rgba') eq(P.validColor('ff9a4a'), false, 'no hash')
+eq(P.validColor('#12345'), false, 'short') eq(P.validColor(nil), false, 'nil') eq(P.validColor('#12345g'), false, 'not hex')
+
+-- which sample an option has
+local ll = P.sampleOf({ kind = 'lootlabel', accent = '#461809f0' })
+eq(ll.kind, 'lootlabel', 'loot label') eq(ll.bg, '#461809f0', 'its accent') eq(ll.stock, false, 'not stock')
+ll = P.sampleOf({ kind = 'lootlabel' })
+eq(ll.bg, P.LABEL_BG, 'no accent: the stock background') eq(ll.stock, true, 'stock')
+eq(P.sampleOf({ kind = 'lootlabel', accent = 'red' }).bg, P.LABEL_BG, 'a bad accent: stock')
+local cc = P.sampleOf({ kind = 'chatcolor', color = '#7fc8ff' })
+eq(cc.color, '#7fc8ff', 'chat colour') eq(cc.stock, false, 'not stock')
+eq(P.sampleOf({ kind = 'chatcolor' }).color, P.CHAT_TEXT, 'no colour: the spoken colour') eq(P.sampleOf({ kind = 'chatcolor', color = 'x' }).stock, true, 'bad: stock')
+eq(P.sampleOf({ kind = 'nameplate', frame = 'laurel' }).frame, 'laurel', 'plate') eq(P.sampleOf({ kind = 'nameplate' }), nil, 'a plate without a frame')
+eq(P.sampleOf({ kind = 'nameplate', frame = 'a b' }), nil, 'a bad frame name')
+for _, k in ipairs({ 'outfit', 'mount', 'footprint', 'effects', 'outline', 'none' }) do eq(P.sampleOf({ kind = k }), nil, 'no sample: ' .. k) end
+eq(P.sampleOf(nil), nil, 'nothing') eq(P.sampleOf('x'), nil, 'not a table')
+eq(P.sampleOf({ kind = 'bundle', parts = { { kind = 'outline', art = 'x' }, { kind = 'chatcolor', color = '#ff0000' } } }).kind, 'chatcolor', 'a bundle\'s sample')
+eq(P.sampleOf({ kind = 'bundle', parts = { { kind = 'bundle', parts = { { kind = 'chatcolor' } } } } }), nil, 'nested bundles are not followed')
+eq(P.showable({ kind = 'lootlabel' }) and P.showable({ kind = 'chatcolor' }) and P.showable({ kind = 'nameplate' }), true, 'samples are shown')
+eq(P.note({ kind = 'chatcolor' }), nil, 'no note for a sample') eq(P.hasWearer({ kind = 'lootlabel' }), true, 'the character stays')
+o, line, note = P.compose('own', own, { kind = 'bundle', parts = { { kind = 'wings', look = 22 }, { kind = 'nameplate', frame = 'frost' } } })
+eq(o.wings, 22, 'a sample part leaves the figure to its other parts') eq(note, nil, 'and gives no note')
+
+-- store offers and Cosmetics rows
+opt = P.fromShopOffer({ type = 'item', item = 1, look = { kind = 'swatch', color = '#ff9a4a' } })
+eq(opt.kind, 'chatcolor', 'the store\'s chat colour swatch') eq(opt.color, '#ff9a4a', 'its colour')
+opt = P.fromShopOffer({ type = 'item', item = 1, look = { kind = 'swatch', color = '#461809f0', accent = true } })
+eq(opt.kind, 'lootlabel', 'the store\'s loot label swatch') eq(opt.accent, '#461809f0', 'its accent')
+opt = P.fromShopOffer({ type = 'item', item = 1, look = { kind = 'nameplate', frame = 'ember' } })
+eq(P.sampleOf(opt).frame, 'ember', 'the store\'s plate frame')
+eq(P.fromShopOffer({ type = 'item', item = 1, look = { kind = 'swatch', color = 'nope' } }), nil, 'a bad swatch colour')
+opt = P.fromCosmeticRow({ kind = 'lootbeam', id = 202, accent = '#0e2d15f0' })
+eq(opt.kind, 'lootlabel', 'a loot label row') eq(opt.accent, '#0e2d15f0', 'its accent')
+eq(P.sampleOf(P.fromCosmeticRow({ kind = 'lootbeam', id = 0 })).stock, true, 'the Default loot label row is the stock label')
+eq(P.fromCosmeticRow({ kind = 'chatcolor', id = 301, color = '#ff9a4a' }).color, '#ff9a4a', 'a chat colour row')
+eq(P.sampleOf(P.fromCosmeticRow({ kind = 'chatcolor', id = 0 })).stock, true, 'the Default chat colour row')
+eq(P.fromCosmeticRow({ collection = true, kind = 'chatcolor', key = 'x' }), nil, 'a collection row without a colour shows nothing')
+eq(P.fromCosmeticRow({ collection = true, kind = 'chatcolor', key = 'x', color = '#aabbcc' }).color, '#aabbcc', 'with its colour it does')
+
+-- what is drawn
+local sp1 = P.sampleSpec(P.sampleOf({ kind = 'lootlabel', accent = '#461809f0' }), 'Aria', 'stage')
+eq(sp1.kind, 'lootlabel', 'label spec') eq(sp1.text, 'Ashen Blade', 'the item name') eq(sp1.bg, '#461809f0', 'accent background')
+eq(sp1.color, P.LABEL_RARITY, 'rarity text') eq(sp1.border, sp1.color, 'rarity border: text and border keep the rarity colour')
+eq(P.sampleSpec(P.sampleOf({ kind = 'lootlabel' }), '', 'card').bg, P.LABEL_BG, 'the stock card')
+eq(P.sampleSpec(P.sampleOf({ kind = 'lootlabel' }), '', 'compact').text, 'Aa', 'the compact label')
+local sp2 = P.sampleSpec(P.sampleOf({ kind = 'chatcolor', color = '#7fc8ff' }), 'Aria', 'stage')
+eq(sp2.parts[1], 'Aria', 'the name') eq(sp2.parts[2], '#7fc8ff', 'in its colour') eq(sp2.parts[4], P.CHAT_TEXT, 'the text keeps the spoken colour')
+eq(P.sampleText(sp2), 'Aria: Hail, ash-walkers!', 'the line') eq(#sp2.parts % 2, 0, 'text and colour pairs')
+eq(P.sampleText(P.sampleSpec(P.sampleOf({ kind = 'chatcolor' }), 'Aria', 'card')), 'Aria: Hail!', 'the card\'s line')
+eq(P.sampleSpec(P.sampleOf({ kind = 'chatcolor' }), 'Aria', 'card').parts[2], P.CHAT_TEXT, 'the stock name takes the spoken colour')
+eq(P.sampleSpec(P.sampleOf({ kind = 'chatcolor', color = '#7fc8ff' }), '', 'stage').parts[1], 'You', 'no name: You')
+eq(P.shortName('Sir Reginald the Unbreakable', 16), 'Sir Reginald th.', 'a long name is cut') eq(#P.shortName('Sir Reginald the Unbreakable', 16), 16, 'to the limit')
+eq(P.shortName('Aria', 16), 'Aria', 'a short name stays') eq(P.shortName(nil), '', 'no name')
+eq(#P.sampleSpec(P.sampleOf({ kind = 'chatcolor' }), 'Sir Reginald the Unbreakable', 'card').parts[1], 10, 'a card cuts names at 10')
+eq(P.sampleText(P.sampleSpec(P.sampleOf({ kind = 'chatcolor', color = '#7fc8ff' }), 'Aria', 'compact')), 'Aa', 'the compact chat colour')
+local sp3 = P.sampleSpec(P.sampleOf({ kind = 'nameplate', frame = 'frost' }), 'Aria', 'stage')
+eq(sp3.kind, 'plate', 'plate spec') eq(sp3.path, '/modules/game_nameplate/images/plate_frost', 'the frame art') eq(sp3.border, 6, '9-slice border')
+eq(sp3.text, 'Aria', 'the name') eq(sp3.color, P.PLATE_NAME, 'in gold')
+eq(P.sampleSpec(nil), nil, 'no sample, no spec')
+
+-- where the stage puts them: inside the stage, the character never moved (a stage layout is P.layout's)
+local function inside(r, W, H) return r.x >= 0 and r.y >= 0 and r.x + r.w <= W and r.y + r.h <= H end
+for _, st in ipairs({ { 318, 130 }, { 318, 211 }, { 204, 150 }, { 188, 130 }, { 400, 300 }, { 140, 130 } }) do
+  for name, box in pairs({ plain = plain, winged = winged, mounted = mounted, wmount = wmount }) do
+    local W, H = st[1], st[2]
+    local tag = name .. ' ' .. W .. 'x' .. H
+    local SL = P.layout(box, W, H)
+    local before = SL.x .. ',' .. SL.y .. ',' .. SL.size .. ',' .. SL.scale
+    local fr = P.figureRect(SL, box)
+    eq(fr.right - fr.left, (box.right - box.left) * 2, 'the figure rect is the box at 2x: ' .. tag)
+    -- a loot label 80 x 18 px over its bag
+    local lp = P.labelPlace(SL, box, W, H, 80, 18)
+    eq(inside({ x = lp.bag.x, y = lp.bag.y, w = lp.bag.size, h = lp.bag.size }, W, H), true, 'the bag is inside: ' .. tag)
+    eq(inside({ x = lp.label.x, y = lp.label.y, w = 80, h = 18 }, W, H), true, 'the label is inside: ' .. tag)
+    if lp.zone == 'right' then
+      eq(lp.bag.x >= fr.right, true, 'the bag is right of the figure: ' .. tag)
+      -- the label keeps clear of the figure when the stage has the room; else it stays inside the stage over its edge
+      if fr.right + 2 + 80 <= W - P.PRINT_MARGIN then eq(lp.label.x >= fr.right, true, 'the label clear of it: ' .. tag) end
+    elseif lp.zone == 'left' then
+      eq(lp.bag.x + lp.bag.size <= fr.left, true, 'the bag is left of the figure: ' .. tag)
+      if fr.left - 2 - 80 >= P.PRINT_MARGIN then eq(lp.label.x + 80 <= fr.left, true, 'the label clear of it: ' .. tag) end
+    end
+    eq(lp.bag.size >= 32, true, 'the bag keeps at least half a tile: ' .. tag)
+    if W >= 318 then eq(lp.zone, 'right', 'room on the right in a wide stage: ' .. tag) eq(lp.bag.size, 64, 'a whole tile: ' .. tag) end
+    eq(math.abs(lp.bag.y + lp.bag.size - (fr.tileY + SL.T)) <= 20, true, 'the bag stands on the figure\'s tile row (or is lifted into the stage): ' .. tag)
+    -- a chat line 200 x 16 px, a plate 70 x 20 px
+    local cp = P.linePlace(SL, box, W, H, math.min(200, W - 8), 16, true)
+    eq(inside({ x = cp.x, y = cp.y, w = math.min(200, W - 8), h = 16 }, W, H), true, 'the chat line is inside: ' .. tag)
+    local pp = P.linePlace(SL, box, W, H, 70, 20, false)
+    eq(inside({ x = pp.x, y = pp.y, w = 70, h = 20 }, W, H), true, 'the plate is inside: ' .. tag)
+    if cp.zone == 'above' then eq(cp.y + 16 <= fr.top, true, 'above the head: ' .. tag) end
+    if cp.zone == 'bottom' then eq(cp.y >= fr.bottom, true, 'along the bottom, clear of the figure: ' .. tag) end
+    if pp.zone == 'above' then eq(pp.y + 20 <= fr.top, true, 'the plate above the head: ' .. tag) end
+    eq(pp.zone ~= 'bottom', true, 'a plate never goes below the figure: ' .. tag)
+    eq(SL.x .. ',' .. SL.y .. ',' .. SL.size .. ',' .. SL.scale, before, 'placing a sample does not touch the layout: ' .. tag)
+  end
+end
+-- a plain look in the Customise stage: the chat line above the head, the plate too, the label right of the feet
+local cst = P.layout(plain, 318, 130)
+eq(P.linePlace(cst, plain, 318, 130, 200, 16, true).zone, 'above', 'plain: the chat line above the head')
+eq(P.labelPlace(cst, plain, 318, 130, 80, 18).zone, 'right', 'plain: the label right of the figure')
+-- a tall figure in a short stage: no room above, a chat line goes over the head at the top (the bottom is taken by the mount)
+local mst = P.layout(mounted, 318, 130)
+eq(P.linePlace(mst, mounted, 318, 130, 200, 16, true).zone, 'over', 'a mounted look in a short stage: over the head')
+eq(P.linePlace(mst, mounted, 318, 211 + 0, 200, 16, true).zone ~= nil, true, 'a zone is always found')
+-- a taller stage: below the figure along the bottom
+local tst = P.layout(plain, 318, 260)
+eq(P.linePlace(tst, plain, 318, 260, 200, 16, true).zone, 'above', 'room above')
+local sml = P.layout(winged, 318, 100)
+eq(P.linePlace(sml, winged, 318, 100, 200, 16, true).zone == 'over' or P.linePlace(sml, winged, 318, 100, 200, 16, true).zone == 'bottom', true, 'a short stage')
+-- an effects layout (a bundle with effects): the same functions work from the creature tile
+local FXL = P.fxLayout(318, 130, -3, -0.5, 1.5, 1)
+local fp = P.labelPlace(FXL, plain, 318, 130, 80, 18)
+eq(inside({ x = fp.label.x, y = fp.label.y, w = 80, h = 18 }, 318, 130), true, 'effects layout: label inside')
 
 print('lookpreview_core_test: ' .. n .. ' checks OK')

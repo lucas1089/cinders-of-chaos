@@ -159,7 +159,10 @@ eq(C.hoverOption(temp, layers, 'outline', oc2[1], nil), nil, 'default outline: n
 local fh = C.hoverOption(temp, layers, 'footprint', C.cards('footprint', { src = src })[2], nil); eq(fh.kind, 'footprint', 'prints'); eq(fh.art, 'ember', 'print art')
 local sk = C.hoverOption(temp, layers, 'spellskin', C.cards('spellskin', { src = src })[2], nil); eq(sk.kind, 'effects', 'spell skin plays'); eq(sk.killfx, nil, 'on the figure')
 local kf = C.hoverOption(temp, layers, 'killfx', C.cards('killfx', { src = src })[2], nil); eq(kf.killfx, true, 'kill effect on a troll')
-eq(C.hoverOption(temp, layers, 'chatcolor', C.cards('chatcolor', { src = src })[2], nil), nil, 'a chat colour shows nothing')
+-- O497: a chat colour card shows a sample of the colour (it showed nothing before: no picture, nothing on the stage)
+local ccard = C.cards('chatcolor', { src = src })[2]
+local chh = C.hoverOption(temp, layers, 'chatcolor', ccard, nil)
+eq(chh.kind, 'chatcolor', 'a chat colour hovers as a sample'); eq(chh.color, nil, 'this row has no colour: the stock one')
 local ph = C.hoverOption(temp, layers, 'pet', pc[2], nil); eq(ph.kind, 'subject', 'a pet is drawn alone'); eq(ph.look, 400, 'its look')
 eq(C.hoverOption(temp, layers, 'mount', nil, nil), nil, 'no card')
 
@@ -186,6 +189,103 @@ by = {}
 for _, s in ipairs(strip) do by[s.key] = s end
 eq(by.outfit.name, '128', 'the look id when the list has not come'); eq(by.pet.loading, true, 'no pet data: loading'); eq(by.mount.name, '368', 'mount id until the list comes')
 eq(#C.stripRows(nil), 13, 'no context still has the slots')
+
+-- ---------------------------------------------------------------- samples (O497)
+dofile(dir .. '../game_lookpreview/lookpreview_core.lua')
+local P = LookPreviewCore
+local sdata = dofile(dir .. '../../../../server/data/scripts/chaos/cosmetics_config.lua')
+-- which sample a card of each kind gets, from the row the server sent
+local row = { id = 201, kind = 'lootbeam', name = 'Ember Labels', owned = true, accent = '#461809f0' }
+local sc1 = C.sampleOption('lootbeam', { value = 201, row = row })
+eq(sc1.kind, 'lootlabel', 'loot label card'); eq(sc1.accent, '#461809f0', 'its accent from the row')
+eq(P.sampleOf(sc1).bg, '#461809f0', 'drawn on that background')
+eq(P.sampleOf(C.sampleOption('lootbeam', { value = 0, none = true, text = 'Default' })).stock, true, 'the Default loot label is the stock one')
+local sc2 = C.sampleOption('chatcolor', { value = 301, row = { kind = 'chatcolor', color = '#ff9a4a' } })
+eq(sc2.kind, 'chatcolor', 'chat colour card'); eq(sc2.color, '#ff9a4a', 'its colour from the row')
+eq(P.sampleOf(C.sampleOption('chatcolor', { value = 0, none = true })).color, P.CHAT_TEXT, 'the Default chat colour is the stock one')
+local sc3 = C.sampleOption('frame', { value = 'frost', text = 'Frost' })
+eq(sc3.kind, 'nameplate', 'plate frame card'); eq(sc3.frame, 'frost', 'its frame'); eq(C.sampleOption('frame', { value = '', none = true }).frame, 'default', 'Title frame: the stock plate')
+for _, k in ipairs({ 'outfit', 'mount', 'wings', 'aura', 'shader', 'outline', 'spellskin', 'killfx', 'footprint', 'pet' }) do
+  eq(C.sampleOption(k, { value = 1, row = row }), nil, 'no sample for ' .. k)
+end
+eq(C.sampleOption('lootbeam', nil), nil, 'no card')
+-- the real cards of the test character
+local lootRow = { key = 'lootbeam', options = { { text = 'Default', value = 0 }, { text = 'Ember Labels', value = 201, row = row } }, current = 0 }
+local chatRows = E.rows(src)
+local frameRow
+for _, r in ipairs(chatRows) do if r.key == 'frame' then frameRow = r end end
+local ch = C.cards('frame', { src = src })
+eq(ch[1].none, true, 'the Title frame card is the first'); eq(C.sampleOption('frame', ch[2]).frame, 'frost', 'a frame card from the services list')
+local lh = C.hoverOption(temp, layers, 'lootbeam', { value = 201, row = row, text = 'Ember Labels' }, nil)
+eq(lh.kind, 'lootlabel', 'hover: a loot label sample'); eq(lh.accent, '#461809f0', 'its accent')
+local fhv = C.hoverOption(temp, layers, 'frame', ch[2], nil); eq(fhv.kind, 'nameplate', 'hover: a plate frame sample'); eq(fhv.frame, 'frost', 'frost')
+-- the outline in use stays on the figure while a sample is pointed at
+local olOpt = { kind = 'outline', art = 'gold', pulse = true }
+local hb = C.hoverOption(temp, layers, 'lootbeam', { value = 201, row = row }, olOpt)
+eq(hb.kind, 'bundle', 'with an outline: a bundle'); eq(hb.parts[1].art, 'gold', 'the outline kept'); eq(P.sampleOf(hb).kind, 'lootlabel', 'and the sample')
+local pp, pl = P.compose('own', temp, hb)
+eq(pl.art, 'gold', 'the outline reaches the engine call'); eq(pp.type, 128, 'the character as worn')
+-- what the stage keeps while nothing is under the mouse: the value in use of the category looked at
+local crows = { lootRow, { key = 'chatcolor', options = { { text = 'Default', value = 0 }, { text = 'Cinder', value = 301, row = { color = '#ff9a4a' } } }, current = 0 },
+  { key = 'outline', options = { { text = 'Default', value = 0 }, { text = 'Gold', value = 11, row = { id = 11, kind = 'outline', art = 'gold' } } }, current = 0 } }
+local rest = C.restOption('lootbeam', crows, { lootbeam = 201, outline = 0 }, {})
+eq(rest.kind, 'lootlabel', 'a picked loot label stays on the stage'); eq(rest.accent, '#461809f0', 'with its accent')
+rest = C.restOption('chatcolor', crows, { chatcolor = 301 }, {}); eq(rest.color, '#ff9a4a', 'a picked chat colour stays')
+rest = C.restOption('lootbeam', crows, { lootbeam = 0 }, {}); eq(P.sampleOf(rest).stock, true, 'nothing picked: the stock label')
+rest = C.restOption('outfit', crows, { lootbeam = 201 }, {}); eq(rest, nil, 'another category: no sample')
+rest = C.restOption('lootbeam', crows, { lootbeam = 201, outline = 11 }, {})
+eq(rest.kind, 'bundle', 'the outline in use and the sample'); eq(rest.parts[1].art, 'gold', 'outline first'); eq(rest.parts[2].kind, 'lootlabel', 'sample second')
+rest = C.restOption('outfit', crows, { outline = 11 }, {}); eq(rest.art, 'gold', 'the outline alone as before')
+eq(C.restOption('lootbeam', {}, { lootbeam = 201 }, {}), nil, 'no rows yet: nothing')
+eq(C.restOption('lootbeam', crows, { lootbeam = 999 }, {}), nil, 'a value the row does not have: nothing')
+-- Equipped now: the same sample next to the name
+local sstrip = C.stripRows({ temp = temp, lists = lists, src = { cosmetics = { rows = {
+  { id = 201, kind = 'lootbeam', name = 'Ember Labels', owned = true, selected = true, accent = '#461809f0' },
+  { id = 301, kind = 'chatcolor', name = 'Cinder', owned = true, selected = true, color = '#ff9a4a' } } }, services = { frames = { 'frost' }, activeFrame = 'frost' } },
+  rows = E.rows({ cosmetics = { rows = {
+    { id = 201, kind = 'lootbeam', name = 'Ember Labels', owned = true, selected = true, accent = '#461809f0' },
+    { id = 301, kind = 'chatcolor', name = 'Cinder', owned = true, selected = true, color = '#ff9a4a' } } }, services = { frames = { 'frost' }, activeFrame = 'frost' } }),
+  chosen = {}, layers = layers })
+local sby = {}
+for _, r in ipairs(sstrip) do sby[r.key] = r end
+eq(sby.lootbeam.name, 'Ember Labels', 'loot label name'); eq(sby.lootbeam.icon.kind, 'sample', 'loot label tile: a sample'); eq(sby.lootbeam.icon.option.accent, '#461809f0', 'its accent')
+eq(sby.chatcolor.icon.kind, 'sample', 'chat colour tile: a sample'); eq(sby.chatcolor.icon.option.color, '#ff9a4a', 'its colour')
+eq(sby.frame.icon.kind, 'sample', 'plate frame tile: a sample'); eq(sby.frame.icon.option.frame, 'frost', 'its frame')
+eq(by.lootbeam.icon, nil, 'nothing worn: no sample on the empty tile'); eq(by.chatcolor.empty, true, 'chat colour empty')
+-- the locked cards stay dimmed but readable
+eq(C.cardOpacity('chatcolor', { locked = true }, 0.45), 0.7, 'a locked sample card is dimmed less') eq(C.cardOpacity('lootbeam', { locked = true }, 0.45), 0.7, 'loot label too')
+eq(C.cardOpacity('chatcolor', { locked = true }, 0.9), 0.9, 'never dimmer than the base rule gives')
+eq(C.cardOpacity('chatcolor', {}, 0.45), nil, 'an owned card: untouched'); eq(C.cardOpacity('outfit', { locked = true }, 0.45), nil, 'other categories keep the rule')
+local unl = io.open(dir .. '../game_unlocks/unlocks_core.lua', 'rb'):read('*a')
+eq(unl:find('U.LOCKED_OPACITY = 0.45', 1, true) ~= nil, true, 'the base locked opacity this relies on')
+-- every real row of the server: its colours parse, and a locked card's sample keeps 3:1
+local function rgb(h) return tonumber(h:sub(2, 3), 16), tonumber(h:sub(4, 5), 16), tonumber(h:sub(6, 7), 16), #h == 9 and tonumber(h:sub(8, 9), 16) / 255 or 1 end
+local function lin(c) c = c / 255 if c <= 0.03928 then return c / 12.92 end return ((c + 0.055) / 1.055) ^ 2.4 end
+local function lum(t) return 0.2126 * lin(t[1]) + 0.7152 * lin(t[2]) + 0.0722 * lin(t[3]) end
+local function over(h, under, k) local r, g, b, a = rgb(h) local ur, ug, ub = rgb(under) k = a * k return { r * k + ur * (1 - k), g * k + ug * (1 - k), b * k + ub * (1 - k) } end
+local function ratio(a, b) local l1, l2 = lum(a), lum(b) if l1 < l2 then l1, l2 = l2, l1 end return (l1 + 0.05) / (l2 + 0.05) end
+local PANEL, nLoot, nChat, worst = '#141110', 0, 0, 99
+for _, c in ipairs(sdata.cosmetics) do
+  if c.kind == 'lootbeam' or c.kind == 'chatcolor' then
+    local card = { value = c.id, text = c.name, row = c, locked = true }
+    local o = C.sampleOption(c.kind == 'lootbeam' and 'lootbeam' or 'chatcolor', card)
+    local smp = P.sampleOf(o)
+    local op = C.cardOpacity(c.kind, card, 0.45)
+    local r
+    if c.kind == 'lootbeam' then
+      nLoot = nLoot + 1
+      eq(smp.kind, 'lootlabel', 'row ' .. c.key) eq(smp.stock, false, 'row ' .. c.key .. ' has its own accent') eq(smp.bg, c.accent, 'accent parsed: ' .. c.key)
+      r = ratio(over(P.LABEL_RARITY, PANEL, op), over(smp.bg, PANEL, op))
+    else
+      nChat = nChat + 1
+      eq(smp.kind, 'chatcolor', 'row ' .. c.key) eq(smp.stock, false, 'row ' .. c.key .. ' has its own colour') eq(smp.color, c.color, 'colour parsed: ' .. c.key)
+      r = ratio(over(smp.color, PANEL, op), over(P.CHAT_BG, PANEL, op))
+    end
+    worst = math.min(worst, r)
+    eq(r >= 3.0, true, 'a locked sample stays readable: ' .. c.key .. ' ' .. string.format('%.2f', r))
+  end
+end
+eq(nLoot >= 5 and nChat >= 6, true, 'the server has loot label and chat colour rows: ' .. nLoot .. ' ' .. nChat)
 
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('customise tests OK (' .. checks .. ' checks)')
