@@ -24,8 +24,9 @@ one soul core into a random other. This tool changes the installed base data (id
   7. items/items.xml: the description of each soul core, of the exalted core, of dust and of sliver becomes "No longer
      used." The definitions stay in items.xml and items.otb (the ids stay known to server and client).
 The ids: IDS below is the list read from the installed scripts (the pit's table of 36 soul cores, the exalted core). The
-tool also reads the stock scripts when they are still there and adds any id they name that IDS lacks (reported); the SQL
-file server/sql/chaos_zz_soulpit_removal.sql (the items players own) has the same list, the test holds the two together.
+tool also reads the stock scripts when they are still there and adds any id they name that IDS lacks (reported). The SQL
+file server/sql/chaos_zz_soulpit_removal.sql (the items players own) deletes SQL_IDS: IDS and the two dead materials, dust
+and sliver (owner, 2026-11-11: "You can delete dust and sliver too"); the test holds the two together.
 
 A file is changed only when each pattern is there as the stock text has it; otherwise it is listed ("unrecognised") and
 left alone. Line endings (LF or CRLF) are kept. Never edit the base data by hand: this is the way.
@@ -44,6 +45,8 @@ IDS = tuple(sorted(SOUL_CORES + (EXALTED,)))
 # the materials of the exalted core recipe: no drop, no use any more
 DUST, SLIVER = 28343, 28344
 DEAD_MATERIALS = (DUST, SLIVER)
+# what server/sql/chaos_zz_soulpit_removal.sql deletes from the players: the cores and the two materials
+SQL_IDS = tuple(sorted(IDS + DEAD_MATERIALS))
 
 PIT_DIR = ('scripts', 'customs', 'soulpit_system')
 PIT_SCRIPTS = ('soulpit.lua', 'transform_soulcores.lua', 'teleport.lua')

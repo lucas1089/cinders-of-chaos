@@ -17861,21 +17861,22 @@ All of it is gone. The tool changes the installed base data, each change once:
   Portal Kit and set the quest storage; without the cores it told the player how many were missing. Now the first "help"
   gives the kit and sets the storage. Nothing else changed in the quest (the reward, the storage, the "already helped" reply).
 - the crafting table recipe for the exalted core (40 dust and 15 sliver, 1500 gold) goes, and so does the 3% drop of dust
-  and sliver in `default_onDropLoot.lua` (they were made for that recipe only, nothing else uses them). Players keep the dust
-  and sliver they have and can still sell them (120 gold each, `item_price_rules.csv`).
+  and sliver in `default_onDropLoot.lua` (they were made for that recipe only, nothing else uses them). The dust and sliver
+  players hold are deleted with the cores (owner, 2026-11-11: "You can delete dust and sliver too"); they have no sell price.
 - `items/items.xml`: the 39 descriptions (36 soul cores, the exalted core, dust, sliver) say "No longer used.". The definitions
   stay in `items.xml` and `items.otb`: the ids stay known to server and client, nothing leaves the sprite pair.
 - the wave monsters ("angry ..." to "wrathful ...", 180 monster types under `monster/lua/Soulpit`) are not touched: no script,
   raid, NPC or spawn of the map names them.
 The items players own: `server/sql/chaos_zz_soulpit_removal.sql` (run by the step `sql`, last of the files) deletes the rows
-of the 37 ids in `player_items`, `player_depotitems`, `player_inboxitems`, `player_storeinboxitems` (the items are not
+of the 39 ids (the 37 and dust 28343, sliver 28344; `SQL_IDS` of the tool) in `player_items`, `player_depotitems`, `player_inboxitems`, `player_storeinboxitems` (the items are not
 containers, so a row has no children), the Chaos stash (`chaos_stash`, `chaos_stash_items`, `chaos_stash_block`), the Guild Stash
 and the active and pending Chaos market offers with their modifier rows and the item deliveries still owed. The way the
 server closes an offer (cancelled or expired) hands the item back to its seller, so those offers are deleted, not closed. A buy
 order of these items gets `expires` = 1: the server's own sweep closes it and refunds the escrow. The base market's sell
 offers are deleted, its buy offers get `created` = 0 (the engine's expiry refunds them). Every statement runs only when its
 table exists. No compensation is paid. Items lying in houses (a binary blob in `tile_store`) and on the map stay and are inert.
-The generated data lost the items: the 37 sell prices (12,000 to 20,000 gold for a soul core, 6,600 for the exalted core; the base
+The generated data lost the items: the 39 sell prices (12,000 to 20,000 gold for a soul core, 6,600 for the exalted core, 120 for
+dust and sliver; the base
 NPCs never bought them, the Loot Buyer and the Auto Seller did by the formula), the survey rows, the recipe row and the 27
 loot entries of `tools/loot_bands_data.lua`. Client: base patch 0192 (client/BASE.md). Test:
 `python3 -I server/tools/patch_remove_soulpit_test.py`.

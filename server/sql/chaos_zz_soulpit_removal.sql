@@ -1,7 +1,8 @@
 -- O488 (owner, 2026-11-11: "You can remove this mechanic from the game, together with the items"; server/README.md
--- "Soul pit removed"): the soul cores, the exalted core and nothing else leave the players. The ids are the 36 soul cores
--- of the pit's table (28326 - 28342, 28346 - 28364) and the exalted core (28345): patch_remove_soulpit.py IDS, held to this
--- list by tools/patch_remove_soulpit_test.py. They are not containers (items.otb group 0), so a row has no children.
+-- "Soul pit removed"): the soul cores, the exalted core, dust and sliver leave the players, and nothing else. The ids are
+-- the 36 soul cores of the pit's table (28326 - 28342, 28346 - 28364), the exalted core (28345) and its two materials, dust
+-- (28343) and sliver (28344; owner, 2026-11-11: "You can delete dust and sliver too"): patch_remove_soulpit.py SQL_IDS, held
+-- to this list by tools/patch_remove_soulpit_test.py. They are not containers (items.otb group 0), so a row has no children.
 --   base item tables   player_items, player_depotitems, player_inboxitems, player_storeinboxitems: the rows are deleted.
 --   Chaos stash        chaos_stash (the stacks), chaos_stash_items (single items), chaos_stash_block (the never-stash list),
 --                      chaos_guild_depot (the Guild Stash): deleted.
@@ -19,7 +20,7 @@
 -- items), player_deaths. No compensation is paid. Every statement runs only when its table exists (a table that is not there
 -- on an install is skipped, so nothing here can break the step). Safe to run more than once: after the first run nothing
 -- matches. Named zz so the installer runs it after every other server/sql file (the tables exist by then).
-SET @ids = '28326,28327,28328,28329,28330,28331,28332,28333,28334,28335,28336,28337,28338,28339,28340,28341,28342,28345,28346,28347,28348,28349,28350,28351,28352,28353,28354,28355,28356,28357,28358,28359,28360,28361,28362,28363,28364';
+SET @ids = '28326,28327,28328,28329,28330,28331,28332,28333,28334,28335,28336,28337,28338,28339,28340,28341,28342,28343,28344,28345,28346,28347,28348,28349,28350,28351,28352,28353,28354,28355,28356,28357,28358,28359,28360,28361,28362,28363,28364';
 
 -- player_items
 SET @q = IF((SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('player_items')) = 1,

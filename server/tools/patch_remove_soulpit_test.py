@@ -14,7 +14,7 @@ patched Iletrya gives the Waystone Portal Kit and sets the quest storage on "hel
 register nothing.
 Part 3, the repository: the SQL file (server/sql/chaos_zz_soulpit_removal.sql) names the same ids as IDS, every statement
 runs only when its table exists, it deletes no table; the price tables, the survey, the recipe table and the loot bands
-have none of the ids (dust and sliver stay sellable); the install step comes after eventrooms; instance_limits_config has
+have none of the ids, nor dust and sliver; the install step comes after eventrooms; instance_limits_config has
 no soul pit time; the pit's boss room wiring is gone from patch_base_eventrooms.py."""
 import os
 import re
@@ -502,7 +502,8 @@ def part3():
     check(28343 not in P.IDS and 28344 not in P.IDS and P.DEAD_MATERIALS == (28343, 28344), 'dust and sliver are not in IDS')
     sql = read(repo('sql', 'chaos_zz_soulpit_removal.sql'))
     m = re.search(r"SET @ids = '([0-9,]+)';", sql)
-    check(m and [int(x) for x in m.group(1).split(',')] == list(P.IDS), 'the SQL file names the ids of IDS, in order')
+    check(P.SQL_IDS == tuple(sorted(P.IDS + P.DEAD_MATERIALS)) and len(P.SQL_IDS) == 39, 'SQL_IDS: the cores, dust and sliver')
+    check(m and [int(x) for x in m.group(1).split(',')] == list(P.SQL_IDS), 'the SQL file names the ids of SQL_IDS, in order')
     stmts = re.findall(r"^SET @q = IF\((.*?)\n  CONCAT\((.*?)\),\n  'DO 0'\);\nPREPARE s FROM @q; EXECUTE s; DEALLOCATE PREPARE s;$", sql, re.S | re.M)
     check(len(stmts) == 14, 'the SQL file has 14 guarded statements: %d' % len(stmts))
     tables = set()
@@ -531,7 +532,7 @@ def part3():
     for rel in (('data', 'scripts', 'chaos', 'sell_prices.lua'), ('data', 'lib', 'chaos_item_prices_data.lua')):
         have = numbers(repo(*rel))
         check(not (have & ids), 'no sell price of a removed item in %s' % rel[-1])
-        check({28343, 28344} <= have, 'dust and sliver stay sellable in %s' % rel[-1])
+        check(not (have & {28343, 28344}), 'no sell price of dust or sliver in %s' % rel[-1])
     values = {int(l.split(',')[0]) for l in read(repo('data', 'items', 'base_item_values.csv')).split('\n')[1:] if l[:1].isdigit()}
     check(not (values & (ids | {28343, 28344})), 'the survey has no row of the removed items')
     recipes = {int(l.split(',')[0]) for l in read(repo('data', 'items', 'base_recipes.csv')).split('\n')[1:] if l[:1].isdigit()}
@@ -539,7 +540,7 @@ def part3():
     bands = read(repo('tools', 'loot_bands_data.lua'))
     check(not re.search(r'\{(?:%s), \d+, \d+, "[a-z]+", \d+\}' % '|'.join(str(i) for i in sorted(ids)), bands), 'the loot bands have no core')
     rules = read(repo('data', 'items', 'item_price_rules.csv'))
-    check(re.search(r'^28343,material,120,', rules, re.M) and re.search(r'^28344,material,120,', rules, re.M), 'dust and sliver keep their price by rule')
+    check(not re.search(r'^2834[34],', rules, re.M), 'no price rule of dust or sliver')
 
     import install_all as I
     check('soulpit' in I.STEPS and I.STEPS.index('soulpit') > I.STEPS.index('eventrooms') and I.STEPS.index('soulpit') < I.STEPS.index('sql'),

@@ -28,8 +28,6 @@ id,category,price,note
 25521,quest,,quest scroll
 26165,quest,,quest item (base quest boss drop)
 27188,quest,,quest ticket
-28343,material,120,price kept: no drop and no recipe any more (O488), copies that players hold still sell
-28344,material,120,price kept: no drop and no recipe any more (O488), copies that players hold still sell
 29619,currency,,base upgrade rune (upgrade system currency)
 29620,currency,,base upgrade rune (upgrade system currency)
 29621,currency,,base upgrade rune (upgrade system currency)
