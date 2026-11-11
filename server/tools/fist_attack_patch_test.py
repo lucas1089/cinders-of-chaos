@@ -70,8 +70,17 @@ eq(removed, [], 'the patch removes no line of the engine (it only adds)')
 weapons = body[body.index('diff --git a/src/weapons.cpp'):body.index('diff --git a/src/chaosfist.h')]
 check('attackValue = 7' not in ''.join(added), 'the stock attackValue line is not changed (it is context)')
 check(weapons.count('ChaosFist::maxDamage') == 1, 'weapons.cpp calls ChaosFist::maxDamage once')
-check(re.search(r'if \(player->getChaosFistAttack\(\) > 0\.0f\) \{\s*//[^\n]*\n(//[^\n]*\n|\s*//[^\n]*\n)*\s*maxDamage = ChaosFist::maxDamage\(player->getLevel\(\), attackSkill, player->getChaosFistAttack\(\), player->getChaosFistMultiplier\(\), attackFactor\);', weapons.replace('\n+', '\n')) is not None,
-      'maxDamage is replaced only inside if (the chaos fist attack > 0)')
+# a walk over the lines, no expression that can backtrack: the if, comment lines, the one assignment, the closing brace
+wlines = [l.strip() for l in weapons.replace('\n+', '\n').split('\n')]
+opens = [i for i, l in enumerate(wlines) if l == 'if (player->getChaosFistAttack() > 0.0f) {']
+inside = []
+if len(opens) == 1:
+    j = opens[0] + 1
+    while j < len(wlines) and wlines[j].startswith('//'):
+        j += 1
+    inside = wlines[j:j + 2]
+eq(inside, ['maxDamage = ChaosFist::maxDamage(player->getLevel(), attackSkill, player->getChaosFistAttack(), player->getChaosFistMultiplier(), attackFactor);', '}'],
+   'maxDamage is replaced only inside if (the chaos fist attack > 0)')
 check(re.search(r'^ \tint32_t maxDamage = Weapons::getMaxWeaponDamage\(player->getLevel\(\), attackSkill, attackValue, attackFactor\);', weapons, re.M) is not None,
       'the stock maxDamage line is context, unchanged, and runs first')
 check(not any('normal_random' in l for l in added), 'the bell between 0 and the maximum is the stock one (the roll line is not touched)')
