@@ -752,6 +752,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- O467: the class row of an item tooltip (the class names stay in English) and the Set kind
   ["For %s"] = "Para %s",
   ["all classes"] = "todas as classes",
+  ["no class"] = "nenhuma classe",
   ["Set"] = "Conjunto",
   ["Rift Key"] = "Rift Key",
   ["Rarity %d"] = "Raridade %d",

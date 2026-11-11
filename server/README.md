@@ -3777,7 +3777,9 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
   (about 1,600 ids, 34 KB). `T.equipRuleOf` reads it; `T.ruleVocString` keeps the engine's own text when it already reads
   as exactly those classes (so a text that was right does not change) and otherwise names the list with `T.stockClassText`
   (the one function that turns a list of names into chips: a whole line is its base class, all 21 classes are "", a base
-  class without its ascended classes is "Name only"). No file, or an id not in it: the tooltip reads the engine's item type
+  class without its ascended classes is "Name only"; a whole Ranger or Warrior line is still named class by class, "Ranger,
+  Deadeye, Beastmaster", as the engine's text is since O307, so a bow does not read "Ranger" next to a crossbow's "Ranger,
+  Deadeye"). No file, or an id not in it: the tooltip reads the engine's item type
   as before (and the O489 stock table for a base of a unique). A unique copy with a rule of its own (`equip` of the spec)
   shows that rule. The class row is cut between two names, never in the middle of one (`T.classLine`); the longest row of
   the installed rules is 103 characters of 120, so nothing is cut today. An install step was chosen over a Lua derivation
@@ -3808,7 +3810,7 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
   Shapes (one example each): a wand, rod, robe or hood for the Mystic + Illusionist line or the Mystic + Elementalist line
   read "Mystic, Necromancer" (the Elementalist or the Illusionist was refused after a yes; 126 Equip entries and 127
   weapon entries); a bow for the Ranger line read "Ranger, Deadeye" (no launcher has an ammunition type since
-  `patch_base_archery.py`, so the Beastmaster was left out although it may use a bow; 75 bows); items whose Equip and weapon
+  `patch_base_archery.py`, so the Beastmaster was left out although it may use a bow; 75 bows, now "Ranger, Deadeye, Beastmaster"); items whose Equip and weapon
   entry disagree read the weapon entry's level or no class list (a cobra club at 220, the Equip entry asks 270; a leaf star
   "all classes", the Equip entry asks the Ranger and Thief lines); a stock wand that lists only the vocation None read
   "nones" and is now "no class".
@@ -3821,7 +3823,7 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
   wielded properly by ...") is unchanged and still shows the engine's item type: the shown vocations only, and the level of
   the entry read last. The Unity tooltip reads the same `req` field from the server and needs no change.
 - Tests: `tests/item_tooltip_test.lua` (the reading, the rule table, the texts, the cut; the O489 test now expects
-  "Ranger, Thief only" for a stock Thief without a Ninja or Samurai, because a base class alone reads as its whole line),
+  "Ranger, Deadeye, Beastmaster, Thief only" for a stock Thief without a Ninja or Samurai, because a base class alone reads as its whole line),
   `tools/audit_equip_tooltips_test.py` (the reading, the rules, every kind, the install step: dry run, idempotent, stale
   file, the two read orders).
 

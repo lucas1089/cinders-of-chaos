@@ -556,7 +556,19 @@ function T.stockClassText(vocations)
 	if #names == 1 and names[1] == "None" then
 		return "no class" -- only the vocation None (id 0) is listed: no class of the game meets the rule
 	end
-	return table.concat(names, ", ")
+	-- the Ranger and Warrior lines are named class by class even when whole, as the engine's text is (T.VOC_FAMILY, O307):
+	-- a crossbow says "Ranger, Deadeye", so a bow that takes the Beastmaster says so and does not read just "Ranger"
+	local out = {}
+	for _, n in ipairs(names) do
+		out[#out + 1] = n
+		for _, fam in ipairs(T.VOC_FAMILY) do
+			if n == fam.base and has[fam.ascended[1]] and has[fam.ascended[2]] then
+				out[#out + 1] = fam.ascended[1]
+				out[#out + 1] = fam.ascended[2]
+			end
+		end
+	end
+	return table.concat(out, ", ")
 end
 
 -- O490: the classes a class text stands for, the reading the audit (tools/audit_equip_tooltips.py) holds the tooltip to:

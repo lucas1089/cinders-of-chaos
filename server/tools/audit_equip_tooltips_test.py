@@ -179,7 +179,7 @@ try:
     check(not refusals, 'after the step no tooltip says yes to a refused item (%r)' % refusals)
     check(res2['shown'][('P', 100)]['voc'] == 'Mystic, Illusionist, Necromancer', 'the wand names the Mystic, the Illusionist and the Necromancer line')
     check(res2['shown'][('P', 101)]['level'] == 100 and res2['shown'][('P', 102)]['magic'] == 20, 'the Equip entry\'s level and magic level show')
-    check(res2['shown'][('P', 105)]['voc'] == 'Ranger', 'the bow names the whole Ranger line')
+    check(res2['shown'][('P', 105)]['voc'] == 'Ranger, Deadeye, Beastmaster', 'the bow names the whole Ranger line, class by class')
     check(quiet(A.main, [folder, "--check"]) == 0, '--check passes after the step')
     other = A.audit(folder, weapons_last=False)
     check(not other['found'].get(('P', 103)) and not other['found'].get(('P', 104)), 'the rule does not depend on the order the engine read the files in')
