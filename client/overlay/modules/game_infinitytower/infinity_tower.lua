@@ -108,6 +108,12 @@ local function refreshPanel()
     timerText = d.timer.key == 'Floor time left: %s' and tr(d.timer.key, TowerSkip.clock(d.timer.secs)) or tr(d.timer.key, d.timer.secs)
   end
   setLabel('timerLabel', timerText)
+  -- O484: the whole run's clock under the floor's, red at 5 minutes or less
+  setLabel('runTimerLabel', d.runTimer and tr(d.runTimer.key, TowerSkip.clock(d.runTimer.secs)) or nil)
+  local runLabel = skipPanel:getChildById('runTimerLabel')
+  if runLabel and d.runTimer then
+    runLabel:setColor(d.runTimer.low and TowerSkip.RUN_LOW_COLOR or TowerSkip.RUN_COLOR)
+  end
 end
 
 -- ---- the panel's spot: dragged by its background, saved per character (pure part towerpanelpos.lua)
