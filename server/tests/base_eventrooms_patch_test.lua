@@ -1,11 +1,9 @@
 -- Run from the server/ folder: luajit tests/base_eventrooms_patch_test.lua (CI runs it with LuaJIT and Lua 5.3)
--- tools/patch_base_eventrooms.py on copies of the stock soul pit and tower defence (written here in their stock shape,
--- shortened, with made-up monsters), then the scripts on a mocked engine:
+-- tools/patch_base_eventrooms.py on a copy of the stock tower defence (written here in its stock shape, shortened, with
+-- made-up monsters), then the scripts on a mocked engine:
 --   tool         dry run, patched, a second run changes nothing, CRLF kept, a script of another shape left alone
---   soul pit     without the Chaos scripts the patched pit runs exactly as the stock one; with them: the pit is locked
---                while a run is on (when it frees up), the time limit with warnings, time up sends everyone to the
---                lobby spot (off the next group's start tiles) and removes the waves, the pit's own state is reset (the next group gets a fresh run); a
---                completed pit closes the room 65 s later
+--   soul pit     O488 removed it from the game: a pit script next to the tower defence is NOT touched any more (byte for
+--                byte), and bossRooms.ownSeconds has no soul pit time (the removal itself: tools/patch_remove_soulpit_test.py)
 --   tower        the lever starts a session for the players in the arena; the entrance tile sends a newcomer back
 --   defence      while it runs; a second pull of the group's own lever: "still going"; time up: everyone out to the
 --                exit drop, spawning stopped, the summon counters reset, the monsters removed; a win or a loss ends it
@@ -53,209 +51,19 @@ local function sh(cmd)
 end
 
 -- ------------------------------------------------------------------ the stock code (shortened, made-up monsters)
+-- the pit as it is on a server that has not run the step `soulpit` yet (the part that matters here: this tool leaves it)
 local SOULPIT = [[
 print(">> Soulpit System Loaded")
-local event = {
-    waves = {
-        [30001] = {
-        monsters = {
-            {"angry mudling", "angry mudling"},
-            {"wrathful mudling"}
-        },
-            storage = 976547,
-            waves = 2,
-            name = "Mudling"
-        },
-    },
-
-
-    spawnArea = {Position(3001, 3004, 8), Position(3024, 3009, 8)},
-    creatures = {},
-    currentWave = 0,
-    participants = {},
-    currentItem = nil
-}
-
-local function verifyEventCreatures()
-    if #event.creatures > 0 then
-        local creature = nil
-        for pid = #event.creatures, 1, -1 do
-            creature = Creature(event.creatures[pid][1])
-            if not creature then
-                table.remove(event.creatures, pid)
-            end
-        end
-    end
-end
-
-local function spawnEventCreatures(wave, indexTracker)
-    local monsters = event.waves[event.currentItem].monsters[wave]
-    if not monsters then
-        return
-    end
-    for _, monster in ipairs(monsters) do
-        local attempts = 0
-        while attempts < 20 do
-            local randomPosition = Position(math.random(event.spawnArea[1].x, event.spawnArea[2].x),
-                                             math.random(event.spawnArea[1].y, event.spawnArea[2].y),
-                                             math.random(event.spawnArea[1].z, event.spawnArea[2].z))
-            local creature = Game.createMonster(monster, randomPosition, false, true)
-            if creature then
-                table.insert(event.creatures, {creature:getId()})
-                break
-            end
-            attempts = attempts + 1
-        end
-    end
-end
-
-local function monitorEvent()
-    verifyEventCreatures()
-    if #event.creatures > 0 then
-        addEvent(monitorEvent, 1000)
-        return
-    end
-    if event.currentItem then
-        if event.waves[event.currentItem] and event.currentWave == event.waves[event.currentItem].waves then
-            local eventName = event.waves[event.currentItem].name or "Soulpit"
-            for _, playerId in pairs(event.participants) do
-                local player = Player(playerId)
-                if player then
-                    player:setStorageValue(event.waves[event.currentItem].storage, 1)
-                    player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You have completed the \"" .. eventName .. "\" Soulpit.")
-                end
-            end
-            event.creatures = {}
-            event.currentWave = 0
-            event.participants = {}
-            event.currentItem = nil
-        end
-    end
-end
-
-local function eventManager()
-    if #event.creatures > 0 then
-        addEvent(eventManager, 1000)
-        return
-    end
-    if event.currentItem and event.waves[event.currentItem] then
-        if event.currentWave < event.waves[event.currentItem].waves then
-            event.currentWave = event.currentWave + 1
-            spawnEventCreatures(event.currentWave, 1)
-            addEvent(monitorEvent, 1000)
-            addEvent(eventManager, 1000)
-        else
-            event.creatures = {}
-            event.currentWave = 0
-            event.participants = {}
-            event.currentItem = nil
-        end
-    end
-end
-
-local function startNextWave()
-    verifyEventCreatures()
-    if #event.creatures == 0 and event.currentItem then
-        if event.currentWave < event.waves[event.currentItem].waves then
-            event.currentWave = event.currentWave + 1
-            spawnEventCreatures(event.currentWave, 1)
-            addEvent(monitorEvent, 1000)
-            addEvent(eventManager, 1000)
-        else
-            event.creatures = {}
-            event.currentWave = 0
-            event.participants = {}
-            event.currentItem = nil
-        end
-    else
-        addEvent(startNextWave, 1000)
-    end
-end
-
-local function checkAndStartWave(player, item)
-    local itemId = item:getId()
-    if event.waves[itemId] then
-        event.currentItem = itemId
-        item:remove(1)
-        table.insert(event.participants, player:getId())
-        addEvent(function()
-            player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The Soulpit has been started.")
-            startNextWave()
-        end, 5000)
-        return true
-    end
-    event.currentItem = nil
-    return false
-end
-
 local config = {
     actionId = 47392,
-    participantsPos = {
-        Position(3030, 3010, 8),
-        Position(3030, 3011, 8)
-    },
-    spawnArea = {
-    fromPos = Position(3000, 3000, 8),
-    toPos = Position(3022, 3015, 8)
-    },
-    entranceArea = Position(3012, 3014, 8),
 }
-
-local function getSpectators()
-    if not config.centerPosition then
-        config.diffX = math.ceil((config.spawnArea.toPos.x - config.spawnArea.fromPos.x) / 2)
-        config.diffY = math.ceil((config.spawnArea.toPos.y - config.spawnArea.fromPos.y) / 2)
-        config.centerPosition = config.spawnArea.fromPos + Position(config.diffX, config.diffY, 0)
-    end
-    return Game.getSpectators(config.centerPosition, false, false, config.diffX, config.diffX, config.diffY, config.diffY)
-end
-
-
 local soulPit = Action()
 
 function soulPit.onUse(player, item, fromPos, target, toPos, isHotkey)
-    local participants = {}
-    for index, pos in pairs(config.participantsPos) do
-        local tile = Tile(pos)
-        if not tile then error("[Warning - Tile not found]") end
-        local participant = tile:getTopVisibleCreature(player)
-        if participant and participant:isPlayer() then
-            if index == 1 and participant ~= player then
-                player:sendCancelMessage("Only the first participant can pull the lever.")
-                return true
-            end
-            participants[#participants +1] = participant
-        end
-    end
-
-    local spectators = getSpectators()
-    for _, spectator in pairs(spectators) do
-        if spectator:isPlayer() then
-            player:sendTextMessage(MESSAGE_INFO_DESCR, "At this time the Soulpit is occupied, please try again later.")
-            return true
-        end
-    end
-
-    for _, spectator in pairs(spectators) do spectator:remove() end
-    if event.waves[item:getId()] and target:getActionId() == config.actionId then
-        target:transform(28241)
-        if checkAndStartWave(player, item) then
-            addEvent(function()
-                for index, participant in pairs(participants) do
-                    participant:teleportTo(config.entranceArea, false)
-                end
-                target:transform(28240)
-            end, 5000)
-        end
-    else
-        player:sendTextMessage(MESSAGE_INFO_DESCR, "You need a Soul Core to start the event.")
-    end
     return true
 end
 
-for itemId, _ in pairs(event.waves) do
-    soulPit:id(itemId)
-end
+soulPit:id(30001)
 soulPit:register()
 ]]
 
@@ -381,40 +189,43 @@ os.execute("mkdir -p '" .. data .. "/scripts/customs/soulpit_system' '" .. data 
 local SOULPIT_CRLF = SOULPIT:gsub("\n", "\r\n")
 writeFile(pitPath, SOULPIT_CRLF)
 writeFile(towerPath, TOWER)
-writeFile(entrancePath, ENTRANCE)
+local ENTRANCE_CRLF = ENTRANCE:gsub("\n", "\r\n")
+writeFile(entrancePath, ENTRANCE_CRLF)
 
 local tool = "python3 -I tools/patch_base_eventrooms.py '" .. data .. "'"
 local out = sh(tool .. " --dry-run")
-ok(out:find("soulpit.lua: patched aid47392 (dry run, not written)", 1, true) ~= nil, "dry run reports: " .. out)
-eq(readFile(pitPath), SOULPIT_CRLF, "dry run writes nothing")
+ok(out:find("tower_defense/tower_defense.lua: patched aid37931 (dry run, not written)", 1, true) ~= nil, "dry run reports: " .. out)
+eq(readFile(towerPath), TOWER, "dry run writes nothing")
 out = sh(tool)
-ok(out:find("soulpit_system/soulpit.lua: patched aid47392\n", 1, true) ~= nil, "soul pit patched: " .. out)
 ok(out:find("tower_defense/tower_defense.lua: patched aid37931\n", 1, true) ~= nil, "tower defence patched")
 ok(out:find("tower_defense/entrance_teleport.lua: patched aid37931\n", 1, true) ~= nil, "its entrance patched")
-local pit, tower, entrance = readFile(pitPath), readFile(towerPath), readFile(entrancePath)
-local _, lf = pit:gsub("[^\r]\n", "")
+-- O488: the soul pit is not this tool's business any more: no line about it, the script untouched byte for byte
+ok(not out:lower():find("soulpit", 1, true), "no word about the soul pit: " .. out)
+eq(readFile(pitPath), SOULPIT_CRLF, "a stock soul pit script is left alone")
+local tower, entrance = readFile(towerPath), readFile(entrancePath)
+local _, lf = entrance:gsub("[^\r]\n", "")
 eq(lf, 0, "CRLF kept")
-local _, pitMarks = pit:gsub("patch_base_eventrooms%.py", "")
-eq(pitMarks, 14 + 2 + 1 + 1, "soul pit: the room config, the lock, the start, the end")
 local _, towerMarks = tower:gsub("patch_base_eventrooms%.py", "")
 eq(towerMarks, 15 + 1 + 2 + 1 + 1, "tower defence: the room config, the win, two losses, the lock, the start")
--- the stock text is all still there, in order
-local stripped = pit:gsub("[^\r\n]*%-%- Chaos %(patch_base_eventrooms%.py%)\r\n", ""):gsub("\r\n\r\n(local function getSpectators)", "\r\n%1")
-ok(stripped == SOULPIT_CRLF or stripped:gsub("\r\n", "\n") == SOULPIT, "soul pit: only lines added")
 out = sh(tool)
-ok(out:find("soulpit.lua: already patched", 1, true) and out:find("tower_defense.lua: already patched", 1, true)
+ok(out:find("tower_defense.lua: already patched", 1, true)
 	and out:find("entrance_teleport.lua: already patched", 1, true), "second run: already patched")
-ok(readFile(pitPath) == pit and readFile(towerPath) == tower and readFile(entrancePath) == entrance, "idempotent")
+ok(readFile(towerPath) == tower and readFile(entrancePath) == entrance and readFile(pitPath) == SOULPIT_CRLF, "idempotent")
 -- another shape: left alone
 local other = root .. "/other/data"
-os.execute("mkdir -p '" .. other .. "/scripts/customs/soulpit_system'")
-local OTHER = SOULPIT:gsub("if checkAndStartWave%(player, item%) then", "if startPit(player, item) then")
-writeFile(other .. "/scripts/customs/soulpit_system/soulpit.lua", OTHER)
+os.execute("mkdir -p '" .. other .. "/scripts/customs/tower_defense'")
+local OTHER = TOWER:gsub("local function rewardPlayers%(%)", "local function payPlayers()")
+writeFile(other .. "/scripts/customs/tower_defense/tower_defense.lua", OTHER)
 out = sh("python3 -I tools/patch_base_eventrooms.py '" .. other .. "'")
-ok(out:find("soulpit.lua: unrecognised", 1, true) ~= nil, "another shape: listed: " .. out)
-eq(readFile(other .. "/scripts/customs/soulpit_system/soulpit.lua"), OTHER, "and left alone")
-out = sh("python3 -I tools/patch_base_eventrooms.py '" .. root .. "/other'; echo status=$?")
-ok(out:find("nothing to do", 1, true) and out:find("status=0", 1, true), "no scripts: nothing to do, status 0")
+ok(out:find("tower_defense.lua: unrecognised", 1, true) ~= nil, "another shape: listed: " .. out)
+eq(readFile(other .. "/scripts/customs/tower_defense/tower_defense.lua"), OTHER, "and left alone")
+-- a server with only the pit script: nothing to do
+local pitOnly = root .. "/pitonly/data"
+os.execute("mkdir -p '" .. pitOnly .. "/scripts/customs/soulpit_system'")
+writeFile(pitOnly .. "/scripts/customs/soulpit_system/soulpit.lua", SOULPIT)
+out = sh("python3 -I tools/patch_base_eventrooms.py '" .. pitOnly .. "'; echo status=$?")
+ok(out:find("nothing to do", 1, true) and out:find("status=0", 1, true), "no tower defence: nothing to do, status 0")
+eq(readFile(pitOnly .. "/scripts/customs/soulpit_system/soulpit.lua"), SOULPIT, "the pit stays as it was")
 
 -- ------------------------------------------------------------------ mocked engine
 local now = 1000000
@@ -550,15 +361,6 @@ local function tileAt(pos)
 end
 Tile = function(pos) return {getTopVisibleCreature = function() return tileAt(pos) end} end
 playSound = function() end
-local function soulCore()
-	local item = {}
-	function item:getId() return 30001 end
-	function item:remove() self.used = true end
-	return item
-end
-local pitLever = {}
-function pitLever:getActionId() return 47392 end
-function pitLever:transform() end
 local function killAll()
 	for id, m in pairs(monsters) do
 		if m.name ~= "Base Core" then m:remove() end
@@ -571,29 +373,7 @@ local function said(p, text)
 	return false
 end
 
--- one soul pit run: two players at the pit, the core used, the waves killed as they come
-local function pitRun(text)
-	reset()
-	assert((loadstring or load)(text, "=soulpit.lua"))()
-	local a = newPlayer(1, "Aela", P(3030, 3010, 8))
-	local b = newPlayer(2, "Bram", P(3030, 3011, 8))
-	actions[30001].onUse(a, soulCore(), a.pos, pitLever)
-	advance(6)
-	for _ = 1, 4 do
-		advance(2)
-		killAll()
-	end
-	advance(3)
-	return table.concat(log, "\n"), a, b
-end
-
--- 1. without the Chaos scripts the patched pit is the stock pit
-local stockLog = pitRun(SOULPIT)
-local patchedLog = pitRun(pit)
-ok(stockLog:find("Aela to 3012,3014", 1, true) and stockLog:find("completed the \"Mudling\"", 1, true), "stock: a full run")
-eq(patchedLog, stockLog, "patched without the Chaos scripts: the same run")
-
--- 2. with the Chaos scripts
+-- with the Chaos scripts
 local bars = {}
 ChaosTileBars = {set = function(id, def) bars[id] = def end, removePrefix = function(prefix)
 	for id in pairs(bars) do
@@ -604,64 +384,8 @@ ChaosNotify = {send = function() return true end}
 dofile("data/scripts/chaos/chaos_constants.lua")
 dofile("data/scripts/chaos/instance_limits.lua")
 local BR = ChaosBossRooms
-eq(BR.limitOf({chaosRoom = "soulpit"}), 900, "soul pit: 15 minutes")
+eq(BR.limitOf({chaosRoom = "soulpit"}), 600, "soul pit: no time of its own any more (the default of a room without one)")
 eq(BR.limitOf({chaosRoom = "towerdefense"}), 1200, "tower defence: 20 minutes")
-
-do -- soul pit
-	reset()
-	assert((loadstring or load)(pit, "=soulpit.lua"))()
-	BR.collect()
-	local room = BR.rooms.aid47392
-	ok(room ~= nil, "the pit is a room")
-	ok(room.bossArea.fromPos.x == 3000 and room.bossArea.toPos.x == 3024 and room.bossArea.fromPos.y == 3000
-		and room.bossArea.toPos.y == 3015, "its box covers the room and every spawn spot")
-	local a = newPlayer(1, "Aela", P(3030, 3010, 8))
-	local b = newPlayer(2, "Bram", P(3030, 3011, 8))
-	actions[30001].onUse(a, soulCore(), a.pos, pitLever)
-	local s = BR.sessions.aid47392
-	ok(s and s.limit == 900 and s.guids[a.guid] and s.guids[b.guid], "a session of 15 minutes for the group")
-	ok(said(a, "Soulpit: you have 15 min"), "told the time: " .. table.concat(a.msgs, " | "))
-	advance(6)
-	eq(a.pos.x, 3012, "the group is in the pit")
-	-- another group with a core: locked
-	local c = newPlayer(3, "Cato", P(3030, 3010, 8))
-	a.pos = P(3012, 3014, 8)
-	local core = soulCore()
-	actions[30001].onUse(c, core, c.pos, pitLever)
-	ok((c.cancels[1] or ""):find("frees up in", 1, true) ~= nil, "locked, with the time: " .. tostring(c.cancels[1]))
-	ok(not core.used, "the core is not spent")
-	-- a core used on something else is not the pit's business
-	local other = {getActionId = function() return 1 end, transform = function() end}
-	actions[30001].onUse(c, soulCore(), c.pos, other)
-	eq(#c.cancels, 1, "a core used elsewhere: no lock message")
-	-- the group lingers on a wave: warnings, then time up
-	advance(900 - 300 - 6 + 1)
-	ok(said(a, "Soulpit: 5 minutes left"), "5 minute warning")
-	local wave = 0
-	for _ in pairs(monsters) do wave = wave + 1 end
-	ok(wave > 0, "a wave is up")
-	advance(300)
-	ok(a.pos.x == 31589 and a.pos.y == 32281, "time up: at the pit's lobby spot")
-	eq(b.pos.y, 32281, "everyone")
-	eq(next(monsters), nil, "the wave removed")
-	eq(BR.sessions.aid47392, nil, "the pit is free")
-	-- the pit's own state was reset: the next group gets a full fresh run (wave 1, then 2, then done)
-	log = {}
-	c.pos = P(3030, 3010, 8)
-	actions[30001].onUse(c, soulCore(), c.pos, pitLever)
-	advance(6)
-	ok(table.concat(log, "\n"):find("monster angry mudling", 1, true) ~= nil, "the next run starts at wave 1")
-	for _ = 1, 4 do
-		advance(2)
-		killAll()
-	end
-	advance(2)
-	ok(said(c, "completed the \"Mudling\""), "and completes")
-	eq(BR.sessions.aid47392.state, "won", "a completed pit is like a boss kill")
-	advance(66)
-	eq(c.pos.y, 32281, "65 s later the room closes: at the lobby spot")
-	eq(BR.sessions.aid47392, nil, "free")
-end
 
 do -- tower defence
 	reset()

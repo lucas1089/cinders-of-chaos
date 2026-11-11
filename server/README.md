@@ -28,7 +28,8 @@ server/
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
   tools/patch_base_bossrooms.py       the base lever and step-in boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
   tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
-  tools/patch_base_eventrooms.py      the base soul pit and tower defence as boss rooms (see "Instance limits")
+  tools/patch_base_eventrooms.py      the base tower defence as a boss room (see "Instance limits")
+  tools/patch_remove_soulpit.py       the base soul pit and its items removed (see "Soul pit removed")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -549,10 +550,16 @@ server/
 7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
    inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
-7c2. Soul pit and tower defence: `python3 -I server/tools/patch_base_eventrooms.py <server>/data [--dry-run]`
-   (idempotent; `install_all.py` step `eventrooms`, after `bossrooms`): both run as boss rooms (lock, time limit,
-   warnings, exit, clean-up of the waves and of the script's own state). See "Instance limits", "Soul pit and tower
-   defence".
+7c2. Tower defence: `python3 -I server/tools/patch_base_eventrooms.py <server>/data [--dry-run]`
+   (idempotent; `install_all.py` step `eventrooms`, after `bossrooms`): it runs as a boss room (lock, time limit,
+   warnings, exit, clean-up of the waves and of the script's own state). See "Instance limits", "Tower defence". Until
+   O488 the soul pit was wired here too.
+7c3. Soul pit removed (O488): `python3 -I server/tools/patch_remove_soulpit.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `soulpit`, after `eventrooms` and the two waystone steps, before `sql`): the three
+   `soulpit_system` scripts become stubs, the +3% experience leaves `Player:onGainExperience`, the soul cores and the
+   exalted core leave every loot list, Iletrya's step asks for no cores, the exalted core recipe and the dust and sliver
+   drop go, the 39 descriptions say "No longer used.". The items players own go in the step `sql`
+   (`server/sql/chaos_zz_soulpit_removal.sql`). See "Soul pit removed". Run the server stopped, as for any `sql` file.
 7d. Base dungeon entry: `python3 -I server/tools/patch_base_dungeon.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `dungeonentry`, after `bossrooms`): the step-in tile of the base modal dungeon entry opens the
    Chaos dungeon window instead, so every dungeon run goes through the queue. See "Instance limits", "Base modal
@@ -17680,7 +17687,6 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 | Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
 | Tutorial island | none | 30 min online (offline time does not count), warnings at 5 and 1 min | leaves as with Skip tutorial: kit, welcome, temple | shared island, no copies | none needed | time kept; a login past the limit leaves at once | unchanged |
 | Base lever boss rooms (51) and step-in miniboss rooms (7) | the script's own kick 10-60 min, no warning; the lever (tile) free whenever nobody stood inside; the old kick timer also hit the next group; monsters stayed | lever locked while a group's session runs, limit = the room's own time at most 30 min, warnings, countdown bars over the entrance and the lever | everyone to the room's exit, monsters removed | empty room frees up after 2 min (at once after a kill) | 1 group per room | login inside a closed room: its exit; inside its own running room: stays | closed at shutdown (exit) |
-| Soul pit | no limit, no lock against a second group with a core during the 5 s countdown, a group that left kept the run's state and loops going | soul core on the pit locked while a run is on, 15 min with warnings | everyone to the pit's lobby spot, waves removed, the pit's state reset | empty: 2 min; completed: 65 s | 1 | login inside a closed pit: lobby spot | closed at shutdown |
 | Tower defence | no limit; anyone could walk in mid-run; a lever pull after the spawning restarted the run under the walking monsters | the lever starts a 20 min session for the players inside; entrance tile and lever locked meanwhile; warnings | everyone to the exit drop, spawning stopped, summon counters reset, monsters and core removed | empty: 2 min; won or lost: 65 s (at once when empty) | 1 | login inside a closed arena: exit drop | closed at shutdown |
 | Invasions, Scorched Marches, hideouts | open world / personal | unchanged | | | | | |
 
@@ -17701,15 +17707,14 @@ and the room showed "Room in use" until the 2 min idle close. `started` with an 
 (boss removed), and brings in a participant the lever's teleport left outside (`ChaosBossRooms.bringIn`: a free tile
 within 3 sqm of entrancePos, inside the room). **Leave Boss Room** (client Info & Services > Services > Other, command
 `leaveroom` of `commands_ui.lua`; `ChaosBossRooms.leave`, pure rule `ChaosInstanceLimitsCore.leaveReason`): a player in
-any running room (the lever rooms, the waystone boss rooms, the step-in miniboss rooms, the soul pit, the tower
+any running room (the lever rooms, the waystone boss rooms, the step-in miniboss rooms, the tower
 defence) goes to the room's exitPosition (the tower defence: its drop) and leaves the group. Refused outside a running
 room, in a fight (`isPzLocked()` or `CONDITION_INFIGHT`, as the dungeon queue and the arena: no free escape from a lost
 fight) and within `bossRooms.leaveCooldown` (30 s) of the last leave. The last one out closes the room with
 `BR.close(key, "idle")` (boss and monsters removed, the lever free). The button is enabled only inside a running room
 (Services state `inBossRoom`). Without the Chaos scripts the rooms work as before. Left alone (of another shape):
 about a dozen old XML quest levers and pits. Map check (the base map, the action and unique ids of every map item): the 7
-step-in miniboss rooms are on the map (below); the soul pit (its
-start lever aid 57392 at 31588,32269,8, the entrance aid 5896); the tower defence (aid 27931 twice, aid 25486); of 11
+step-in miniboss rooms are on the map (below); the tower defence (aid 27931 twice, aid 25486); of 11
 XML lever and pit scripts that teleport a group into a fight with a timer or a room check, 9 have their ids on the map
 (annihilator, elemental spheres, the new frontier arena, the warzones and their lever, children of the revolution,
 Pythius, the two Killing in the Name of boss rooms); the Payback Time lever (uid 3198) and the demon oak (item 8293, set at
@@ -17729,17 +17734,10 @@ the session sends the group out 65 s later (the default 60 s of `teleportRemoveS
 the 10 minute kick or took the exit tile). The 51 lever rooms come out of the tool byte for byte as before (checked on
 the base data).
 
-**Soul pit and tower defence** (`tools/patch_base_eventrooms.py`, install step `eventrooms` after `bossrooms`). Neither is
-built from the boss room template and neither had a time limit, so the tool gives each a room config of its own and the
-same `ChaosBossRooms` session (lock, warnings, bars, idle rule, login rule, staff list and close, shutdown):
-- Soul pit (`soulpit_system/soulpit.lua`, a soul core used on the pit, aid 57392). The box is the script's room joined
-  with its spawn area (the spawn area reached 2 tiles past the room, so monsters there were outside the room's own
-  check). The lock comes first when a core is used on the pit (a core used on anything else is not touched; a refused
-  core is not spent); the session starts as soon as the core is taken (the 5 s countdown was open to a second group).
-  Time: `bossRooms.ownSeconds.soulpit` = 15 minutes (5 short waves). At the end everyone goes to the spot the pit's
-  entrance teleport leads to (31589,32281,8; not the start tiles, which the next group needs), the waves are removed and
-  the script's `event` state is reset (a group that left mid-run used to leave it and its 1 s loops going, and the next
-  group then shared them). A completed pit closes the room 65 s later, like a boss kill.
+**Tower defence** (`tools/patch_base_eventrooms.py`, install step `eventrooms` after `bossrooms`). It is not built from the
+boss room template and had no time limit, so the tool gives it a room config of its own and the same `ChaosBossRooms`
+session (lock, warnings, bars, idle rule, login rule, staff list and close, shutdown). The soul pit had the same wiring until
+O488 removed it from the game (below).
 - Tower defence (`tower_defense/tower_defense.lua`, lever aid 27931 in the arena; `entrance_teleport.lua`, aid 25485).
   The arena box is the script's own (`fromPos` / `toPos`). The lever starts a session for the players inside (they came
   in before the start); while it runs the entrance tile sends a newcomer back where they came from (with the time) and
@@ -17749,8 +17747,45 @@ same `ChaosBossRooms` session (lock, warnings, bars, idle rule, login rule, staf
   the login does, and everyone goes to the drop of the arena's own exit tile (31206,32295,8). A win or a loss (the
   script's own rules) ends the session; after a loss the script has sent everyone out and the arena is free at once.
   The bar "Room in use" stands at that drop, next to the entrance.
-Without the Chaos scripts both work as before (the test runs the stock and the patched pit and compares them). A script
-of another shape is listed and left alone.
+Without the Chaos scripts it works as before. A script of another shape is listed and left alone.
+
+**Soul pit removed** (O488, `tools/patch_remove_soulpit.py`, install step `soulpit`; owner, 2026-11-11, on the tooltip of a
+distorted phantom soul core: "What is this for? Do we have any mechanic that uses it?", then, told what it is: "You can remove
+this mechanic from the game, together with the items."). The stock pit: a soul core used on the pit starts 5 waves of that
+monster, a win gave +3% experience from that monster for ever, an exalted core turned one soul core into a random other.
+All of it is gone. The tool changes the installed base data, each change once:
+- the three `soulpit_system` scripts (pit, exalted core use, entrance tile) become one-line stubs that register nothing;
+  the files stay, so a base update that writes them back is stubbed again by the next install. The pit's room (lever
+  aid 57392 at 31588,32269,8, the waves in 31526-31550 x 32253-32268, floor 8) and its entrance tile (aid 5896) stay on the
+  map as dead map: the entrance does nothing. The pit's boss room wiring went with the old script text, so a server that
+  had it ends in the same state as a fresh one (`eventrooms` no longer patches the pit; `soulpit` runs after it).
+- `events/scripts/player.lua`: the table `monsterExpBoosts` and its use in `Player:onGainExperience` (x1.03 when the monster's
+  storage was set) are cut out. A player who earned the bonus loses it. The storages 876547 to 876582 stay in the database,
+  inert (outside our storage blocks).
+- the 36 soul cores (28326 to 28342, 28346 to 28364) and the exalted core (28345) leave every monster loot list (37 lines in
+  the monster files of two stock hunts; no NPC shop, trade, store offer, task reward, chest or roulette gave them).
+- Iletrya (waystone device): the step asked for 10 exalted cores (`player:removeItem(28345, 10)`), then gave the Waystone
+  Portal Kit and set the quest storage; without the cores it told the player how many were missing. Now the first "help"
+  gives the kit and sets the storage. Nothing else changed in the quest (the reward, the storage, the "already helped" reply).
+- the crafting table recipe for the exalted core (40 dust and 15 sliver, 1500 gold) goes, and so does the 3% drop of dust
+  and sliver in `default_onDropLoot.lua` (they were made for that recipe only, nothing else uses them). Players keep the dust
+  and sliver they have and can still sell them (120 gold each, `item_price_rules.csv`).
+- `items/items.xml`: the 39 descriptions (36 soul cores, the exalted core, dust, sliver) say "No longer used.". The definitions
+  stay in `items.xml` and `items.otb`: the ids stay known to server and client, nothing leaves the sprite pair.
+- the wave monsters ("angry ..." to "wrathful ...", 180 monster types under `monster/lua/Soulpit`) are not touched: no script,
+  raid, NPC or spawn of the map names them.
+The items players own: `server/sql/chaos_zz_soulpit_removal.sql` (run by the step `sql`, last of the files) deletes the rows
+of the 37 ids in `player_items`, `player_depotitems`, `player_inboxitems`, `player_storeinboxitems` (the items are not
+containers, so a row has no children), the Chaos stash (`chaos_stash`, `chaos_stash_items`, `chaos_stash_block`), the Guild Stash
+and the active and pending Chaos market offers with their modifier rows and the item deliveries still owed. The way the
+server closes an offer (cancelled or expired) hands the item back to its seller, so those offers are deleted, not closed. A buy
+order of these items gets `expires` = 1: the server's own sweep closes it and refunds the escrow. The base market's sell
+offers are deleted, its buy offers get `created` = 0 (the engine's expiry refunds them). Every statement runs only when its
+table exists. No compensation is paid. Items lying in houses (a binary blob in `tile_store`) and on the map stay and are inert.
+The generated data lost the items: the 37 sell prices (12,000 to 20,000 gold for a soul core, 6,600 for the exalted core; the base
+NPCs never bought them, the Loot Buyer and the Auto Seller did by the formula), the survey rows, the recipe row and the 27
+loot entries of `tools/loot_bands_data.lua`. Client: base patch 0192 (client/BASE.md). Test:
+`python3 -I server/tools/patch_remove_soulpit_test.py`.
 
 **Base modal dungeon entry** (`tools/patch_base_dungeon.py`, install step `dungeonentry`; `ChaosDungeonsOpen` in
 `dungeons.lua`). The base server has a second way into the 4 dungeons of `DUNGEON_SYSTEM` (lib/core/dungeon.lua): a
@@ -20266,7 +20301,7 @@ The model of the earlier analysis: rotation DPS from `data/spells/README.md` (5-
 flat experience. Added: the new monsters from the level a player can hunt them (tier 1 from 650, tier 2 from 725, tier 3 from
 800) at their exp/health, with fewer targets per pull (3 instead of 5: they are 5-8 times bulkier than the area's old
 monsters and hit as hard as the strongest existing ones) and their elements (knights and paladins x1.15, sorcerers x0.80).
-"Boosted" = premium stamina x1.5, double experience potion, Soul Pit; "+hooks" also the Chaos callbacks (Blood Moon,
+"Boosted" = premium stamina x1.5, double experience potion (the Soul Pit's +3% per monster is gone, O488); "+hooks" also the Chaos callbacks (Blood Moon,
 passive tree, store World Experience +25%, waystone upgrade) as in the earlier analysis.
 
 Hours per level band, base (no boosts):
