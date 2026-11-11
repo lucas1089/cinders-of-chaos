@@ -418,6 +418,17 @@ ChaosMainWindow
     @onClick: modules.game_crafting.setMode('salvage')
 
   ChaosButton
+    id: forgeButton
+    anchors.top: orbLabel.top
+    anchors.right: guideButton.left
+    margin-right: 4
+    width: 70
+    height: 22
+    !text: tr('Forge')
+    !tooltip: tr('Switch to the forge window. The choice is remembered for this character.')
+    @onClick: modules.game_crafting.forgeSwitchTo()
+
+  ChaosButton
     id: guideButton
     anchors.top: orbLabel.top
     anchors.right: orbLabel.right
