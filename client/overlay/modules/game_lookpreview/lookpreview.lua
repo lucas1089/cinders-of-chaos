@@ -88,13 +88,21 @@ local function wingLift()
   return (ok and on) and 6 or 0
 end
 
+-- the x shift base patch 0193 gives the wings of an outfit (centred on the body), facing south; 0 without it
+local function wingShift(outfit)
+  local m = modules.client_chaos_wingfit
+  if not (m and m.WingFit) or num(outfit.wings) <= 0 then return 0 end
+  local ok, s = pcall(m.WingFit.shift, outfit, wingLift())
+  return ok and tonumber(s) or 0
+end
+
 local function figureOf(outfit)
   local Core, anchors = charselect()
   local mounted = num(outfit.mount) > 0
   local fig
   if Core and type(Core.figure) == 'function' then
     local body = mounted and { type = outfit.mount, wings = outfit.wings, aura = outfit.aura } or outfit
-    local ok, f = pcall(Core.figure, anchors or {}, body, thingInfo, wingLift())
+    local ok, f = pcall(Core.figure, anchors or {}, body, thingInfo, wingLift(), wingShift(outfit))
     if ok then fig = f end
   end
   return P.fitFigure(fig, mounted)
@@ -102,7 +110,7 @@ end
 
 -- the box of everything the engine draws of an outfit (LookPreviewCore.lookBox), for the panel's centring
 local function boxOf(outfit)
-  local ok, b = pcall(P.lookBox, outfit, anchorOf, thingInfo, wingLift())
+  local ok, b = pcall(P.lookBox, outfit, anchorOf, thingInfo, wingLift(), wingShift(outfit))
   return ok and b or P.copy(P.FALLBACK_BOX)
 end
 

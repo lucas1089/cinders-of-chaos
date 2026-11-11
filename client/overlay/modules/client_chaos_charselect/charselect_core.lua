@@ -235,7 +235,7 @@ C.NUDGE_X = 0
 -- and left of its wings, and bobs it up to 4 more while it animates (Outfit::draw). That lift is its hover (the
 -- left shift is taken back, so the body stays centred); without the feature it hovers HOVER. A floating look (a robe
 -- or a wraith tail, no feet: the table's flag) hovers HOVER.
-function C.figure(anchors, outfit, things, wingLift)
+function C.figure(anchors, outfit, things, wingLift, wingShift)
   if type(outfit) ~= 'table' then return nil end
   local function info(id) return things and things(id) or nil end
   local body = C.anchorOf(anchors, outfit.type, info(outfit.type))
@@ -250,6 +250,7 @@ function C.figure(anchors, outfit, things, wingLift)
       local a = C.anchorOf(anchors, id, info(id))
       local ox, oy = 0, 0
       if kind == 'aura' and (a.w > 1 or a.h > 1) then ox, oy = (a.w - 1) * 16, (a.h - 1) * 16 end
+      if kind == 'wings' then ox = tonumber(wingShift) or 0 end -- base patch 0193: the wings centred on the body
       f.top = math.min(f.top, a.top + oy)
       f.left = math.min(f.left, a.left + ox)
       f.right = math.max(f.right, a.right + ox)

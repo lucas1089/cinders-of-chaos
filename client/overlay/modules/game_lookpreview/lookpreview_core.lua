@@ -433,7 +433,7 @@ local function partBox(anchor, info, z, addons, ox, oy, allLayers)
     fy = b.fy + oy }
 end
 
-function P.lookBox(outfit, anchorOf, infoOf, lift)
+function P.lookBox(outfit, anchorOf, infoOf, lift, wingShift)
   if type(outfit) ~= 'table' then return copy(P.FALLBACK_BOX) end
   local function A(id) return anchorOf and num(id) > 0 and anchorOf(num(id)) or nil end
   local function I(id) return infoOf and num(id) > 0 and infoOf(num(id)) or nil end
@@ -465,7 +465,7 @@ function P.lookBox(outfit, anchorOf, infoOf, lift)
   add(rb)
   feet = feet or rb
   if num(outfit.wings) > 0 then
-    add(partBox(A(outfit.wings), I(outfit.wings), mounted and 1 or 0, 0, 0, mounted and -6 or 0))
+    add(partBox(A(outfit.wings), I(outfit.wings), mounted and 1 or 0, 0, num(wingShift), mounted and -6 or 0)) -- wingShift: base patch 0193
   end
   if num(outfit.aura) > 0 then
     local ai = I(outfit.aura)

@@ -197,6 +197,10 @@ eq(cut.top, anchors(128).top, 'addon 1 worn: the anchors\' top')
 local wb = P.lookBox({ type = 128, wings = 937 }, anchors, info, 6)
 local w937 = anchors(937)
 eq(wb.left, math.min(w937.left, -8 - 6), 'wings reach left') eq(wb.fx, anchors(128).fx - 6, 'feet lifted with the body')
+-- base patch 0193: the wings shifted onto the body's torso move their box, the body's and the feet do not
+local ws = P.lookBox({ type = 128, wings = 937 }, anchors, info, 6, 5)
+eq(ws.left, math.min(w937.left + 5, -8 - 6), 'wings shifted: their box moves') eq(ws.fx, wb.fx, 'wings shifted: feet stay')
+eq(P.lookBox({ type = 128, wings = 937 }, anchors, info, 6, 0).left, wb.left, 'no shift: as before')
 -- a mount: its own box and the rider seated on it
 local mb = P.lookBox({ type = 128, mount = 1338 }, anchors, info, 0)
 local m1338 = anchors(1338)
