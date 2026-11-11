@@ -518,6 +518,27 @@ def raw_tr_reads():
     return out
 
 
+# A client file that groups thousands with a comma ('%1,' in a gsub) writes the English form (1,234,567): pt-BR writes 1.234.567
+# (O506). The grouping must go through ChaosLocale.localize (the helper `lnum` of the file, or comma_value / formatExactNumber of
+# client_chaos_numbers, which do), so a file that groups and never reads ChaosLocale is a new place that stays English.
+GROUPS_WITH_COMMA = re.compile(rb"""['"]%1,(%2)?['"]""")
+
+
+def english_groupers():
+    out = []
+    for p in overlay_files():
+        if not p.endswith('.lua') or p.endswith('_test.lua') or os.sep + 'client_chaos_locale' + os.sep in p:
+            continue
+        src = open(p, 'rb').read()
+        if b'ChaosLocale' in src:
+            continue
+        for ln, line in enumerate(src.split(b'\n'), 1):
+            if GROUPS_WITH_COMMA.search(line.split(b'--', 1)[0]):
+                out.append((os.path.relpath(p, ROOT), ln))
+                break
+    return out
+
+
 def lua_quote(b):
     out = []
     for c in b:
@@ -561,6 +582,9 @@ def main(argv):
     for rel, ln in raw_tr_reads():
         print(f"{rel}:{ln}: rawget(_G, 'tr') without the ChaosLocale.tr fallback: write "
               "(rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)"); problems += 1
+    for rel, ln in english_groupers():
+        print(f"{rel}:{ln}: groups thousands with a comma and never reads ChaosLocale: route the text through "
+              "ChaosLocale.localize (local function lnum, see game_crafting/recipeview.lua), pt-BR writes 1.234.567"); problems += 1
     for rel, ln, t in hard:
         print(f'{rel}:{ln}: hard-coded UI text {t.decode("latin-1")!r}: use tr() (--fix)'); problems += 1
     if '--missing' in argv:

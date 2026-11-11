@@ -13,6 +13,7 @@ V.COLORS = { ask = '#e05a4a', bid = '#6cc46c', text = '#d6c9ae', dim = '#8c8070'
 
 local floor = math.floor
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 function V.money(n)
   n = tonumber(n)
   if not n then return '0' end
@@ -21,7 +22,7 @@ function V.money(n)
   if s:sub(1, 1) == '-' then sign, s = '-', s:sub(2) end
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
   if out:sub(1, 1) == ',' then out = out:sub(2) end
-  return sign .. out
+  return lnum((sign .. out))
 end
 
 -- '5000', '5,000', '5k', '2.5m', '1b' -> a whole number (nil when it is not one)

@@ -23,6 +23,14 @@ eq(V.paragraphs({ en = 'single' }, 'en')[1], 'single', 'a single text')
 eq(#V.paragraphs({ en = { 1, {}, 'ok' } }, 'en'), 1, 'only strings')
 eq(V.fmt(1234567), '1,234,567', 'thousands')
 eq(V.fmt('x'), '0', 'not a number')
+-- O506: pt-BR groups with a point, a negative number keeps its sign (the locale module's localize; English is as it was)
+dofile(dir .. '../client_chaos_locale/locale_core.lua')
+local lang = 'pt-BR'
+ChaosLocale = { localize = function(text) return ChaosLocaleCore.localize(text, lang) end }
+eq(V.fmt(1234567), '1.234.567', 'pt-BR thousands') eq(V.fmt(-1234567), '-1.234.567', 'pt-BR negative') eq(V.fmt(999), '999', 'pt-BR 999')
+lang = 'en'
+eq(V.fmt(-1234567), '-1,234,567', 'English with the locale module')
+ChaosLocale = nil
 eq(V.dateText(0), '', 'no date')
 eq(V.goalPercent({ p = 750, t = 1500 }), 50, 'half')
 eq(V.goalPercent({ p = 3000, t = 1500 }), 100, 'capped')

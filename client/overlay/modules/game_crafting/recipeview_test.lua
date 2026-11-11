@@ -20,6 +20,16 @@ eq(V.thousands(1500), '1,500', 'thousands')
 eq(V.thousands(17500), '17,500', 'five digits')
 eq(V.thousands(999), '999', 'no separator')
 eq(V.thousands(1000000), '1,000,000', 'millions')
+-- O506: pt-BR groups with a point (the locale module's localize; English is as it was)
+dofile(dir .. '../client_chaos_locale/locale_core.lua')
+local lang = 'pt-BR'
+ChaosLocale = { localize = function(text) return ChaosLocaleCore.localize(text, lang) end }
+eq(V.thousands(1500), '1.500', 'pt-BR thousands')
+eq(V.thousands(999), '999', 'pt-BR no separator')
+eq(V.thousands(1000000), '1.000.000', 'pt-BR millions')
+lang = 'en'
+eq(V.thousands(1000000), '1,000,000', 'English with the locale module')
+ChaosLocale = nil
 
 -- which currency
 eq(V.isShardRecipe(rune), false, 'a rune shard recipe')

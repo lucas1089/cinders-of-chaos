@@ -4,7 +4,8 @@
 -- as it is, a negative number keeps its sign. Integer arithmetic only, so 1150 is 1.15k and not 1.14k.
 -- Globals (this module is not sandboxed and loads before every other one, autoload-priority 10):
 --   formatShortNumber(n)  -> '15.3k'
---   formatExactNumber(n)  -> '15,300' (for tooltips that show the exact value)
+--   formatExactNumber(n)  -> '15,300' (for tooltips that show the exact value; '15.300' in pt-BR, O506)
+--   comma_value(n)        -> the base client's one, in the number form of the language in use (O506)
 --   shortNumbersIn(text)  -> the text with every standalone integer >= 1000 shortened (see below)
 --   shortNumbersInMessage(mode, text) -> shortNumbersIn for server messages of the modes that carry damage,
 --                           healing, experience, loot, look and status; any other mode (chat, private,
@@ -66,6 +67,16 @@ function formatShortNumber(n)
   return sign .. text .. UNITS[unit]
 end
 
+-- a number text written in the English form (15,300 / 1.5) for the language in use (O506: 15.300 and 1,5 in pt-BR): the identity in
+-- English and when client_chaos_locale is not there (the unit test)
+local function localNumber(text)
+  local chaos = rawget(_G, 'ChaosLocale')
+  if chaos and chaos.localize then
+    return chaos.localize(text)
+  end
+  return text
+end
+
 function formatExactNumber(n)
   local value = tonumber(n)
   if not value then
@@ -76,7 +87,19 @@ function formatExactNumber(n)
   repeat
     text, k = text:gsub('^(-?%d+)(%d%d%d)', '%1,%2')
   until k == 0
-  return text
+  return localNumber(text)
+end
+
+-- The base client's comma_value (corelib util.lua, used by its windows and by many Chaos ones): the same function, in the number
+-- form of the language in use. English is as it was; a text that is not wholly one number (a text with a unit) is as it was too.
+-- It only formats: no Chaos code reads the text back into a number (O506 checked the parsers of the guild and guild war inputs).
+function comma_value(amount)
+  local formatted = tostring(amount or 0)
+  local k
+  repeat
+    formatted, k = formatted:gsub('^(-?%d+)(%d%d%d)', '%1,%2')
+  until k == 0
+  return localNumber(formatted)
 end
 
 -- shortNumbersIn: conservative. A number is shortened only when it stands alone. Left as it is:

@@ -117,11 +117,12 @@ function L.clip(i, px)
 end
 
 -- ---------------------------------------------------------------- sizes
--- Floor widgets (base patch 0078 draws them with the ground effects) and creature bottom widgets are drawn inside the map's own
--- picture, so their sizes and margins are in sprite pixels: the map scales them with everything else, and nothing here needs to
--- follow the zoom or the window size. (game_combatdecals sizes its floor widgets from the map panel's tile size in screen pixels;
--- which of the two is right for floor widgets is open until a client shows it, client/MANIFEST.md "Chest and Templar auras".
--- If it is screen pixels, floorBox is the one place to change.)
+-- Floor widgets (base patch 0078 draws them with the ground effects, inside the map picture: MapView::drawFloor, after
+-- setFrameBuffer) and creature bottom widgets (Creature::draw, also inside drawFloor) are drawn in MAP pixels: the map scales
+-- them with everything else, so their sizes and margins are in sprite pixels and nothing here follows the zoom or the window
+-- size. Settled by the engine code in O506 (client/MANIFEST.md "Chest and Templar auras"); game_combatdecals had the other
+-- reading (screen pixels) and was wrong. Only Tile:setWidget (the foreground pass) draws in screen pixels; this module never
+-- uses it.
 
 -- size and margins of a floor widget `tiles` wide (the picture's px / 32) that sits on a tile, centred on it; shift moves it by that
 -- many tiles each way (-0.5: the corner of the tile, the middle of a 2 x 2 item whose position is its bottom right tile).

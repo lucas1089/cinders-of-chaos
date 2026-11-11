@@ -19,11 +19,12 @@ function V.clock(s)
   return string.format('%d:%02d', math.floor(s / 60), s % 60)
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 1234567 -> "1,234,567"
 function V.number(n)
   local s = tostring(math.floor(num(n)))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''):gsub('^%-,', '-'))
+  return lnum((out:gsub('^,', ''):gsub('^%-,', '-')))
 end
 
 -- a duration for waits and season ends: "45s", "3m", "2h 5m", "3d 4h", "2w 1d"
