@@ -31591,6 +31591,12 @@ drop chance twice. Owner 2026-11-11: colour option 3 (the place in colour, the n
   opcode 157 (`locale.lua` `sendHello`, at game start and at a change); the client's language is one setting per install
   (`chaos-language`). The tooltip text of the client's own rows came out English in pt-BR because `tooltiplogic.lua` asked
   `rawget(_G, 'tr')`, which is nil while the locale module serves `tr` from the metatable of `_G`. It asks `ChaosLocale.tr` then.
+  The same read was in 91 other client files; each falls back the same way (`tools/ci/check_locales.py` holds them to it).
+- **"Drops from" only with Alt** (owner 2026-11-11, translated: "Also hide the 'drops from' text. Let it show only when Alt
+  is pressed"): on every item the main client's card hides the "Drops from: ..." / "Sources: ..." row until Alt is held
+  (`tooltiplogic.lua` `L.sourceLines(src, hideRow)`, `L.card` ctx `alt`). The effort line, the token price, "Used in" and the
+  weight stay. Without Alt the hint line names it: "Hold Alt for where it comes from and what each line does." (or "Hold Alt
+  for where it comes from." on an item without help lines). The server sends the same data; Unity is unchanged.
 - Tests: `tests/item_tooltip_test.lua` (`tip.gem` of every gem), `tests/gems_test.lua` (description, pt-BR for every gem),
   `tests/itemdesc_i18n_test.lua` (rune texts, source words), `tests/itemfinder_test.lua` (global drop, monster drop, item with
   no drop), `tools/install_gems_test.py` (old text to new, second run), client `tooltiplogic_test.lua`.

@@ -6501,6 +6501,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Open the classic window"] = "Abrir a janela clássica",
   -- client_chaos_theme/althelp.lua (O372)
   ["Hold Alt for what each line does."] = "Segure Alt para ver o que cada linha faz.",
+  ["Hold Alt for where it comes from and what each line does."] = "Segure Alt para ver de onde vem e o que cada linha faz.",
+  ["Hold Alt for where it comes from."] = "Segure Alt para ver de onde vem.",
   -- game_buffbar/buffmath.lua (O372)
   ["  (debuff)"] = "  (debuff)",
   ["Stacks: %d"] = "Acúmulos: %d",

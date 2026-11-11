@@ -351,8 +351,33 @@ eq(L.sourceLines({ s = { { k = 'monster', n = 'Dragon', v = '0.1%' } }, e = { p 
 eq(L.sourceLines({ s = {}, t = 1200 })[1].text, 'Conquest vendor: 1,200 tokens', 'vendor only')
 eq(L.oneIn(1 / 267), 270, 'rounded')
 eq(L.oneIn(0), nil, 'no chance')
-local withSrc = L.lines({ name = 'x', weight = 10, src = { s = { { k = 'monster', n = 'Rat', v = '5%' } } } })
-eq(withSrc[#withSrc - 1].text, 'Drops from: Rat (5%)', 'the sources sit above the weight')
+local srcTip = { name = 'x', weight = 10, src = { s = { { k = 'monster', n = 'Rat', v = '5%' } }, e = { p = 0.05, w = 'kill', m = 'Rat' },
+  u = { n = { 'Myst Emblem' } } } }
+local withSrc = L.lines(srcTip, { alt = true })
+eq(withSrc[#withSrc - 3].text, 'Drops from: Rat (5%)', 'with Alt the sources sit above the effort, used in and the weight')
+-- owner 2026-11-11: the "Drops from" row shows only while Alt is held; the effort line, "Used in" and the weight stay
+do
+  local plain = L.lines(srcTip)
+  local texts = {}
+  for _, l in ipairs(plain) do texts[#texts + 1] = l.text end
+  local joined = table.concat(texts, '\n')
+  eq(joined:find('Drops from', 1, true), nil, 'no Alt: no Drops from row')
+  eq(joined:find('~1 in 20 kills of Rat', 1, true) ~= nil, true, 'no Alt: the effort line stays')
+  eq(joined:find('Used in: Myst Emblem', 1, true) ~= nil, true, 'no Alt: Used in stays')
+  eq(plain[#plain].text, 'Weight 10 oz', 'no Alt: the weight stays')
+  eq(#L.sourceLines(srcTip.src, true), 2, 'hideRow: effort and used in')
+  eq(#L.sourceLines(srcTip.src), 3, 'default: the row too')
+  eq(#L.sourceLines({ s = { { k = 'shop', n = 'Agnes', v = '4 gold' } } }, true), 0, 'the Sources row hides the same way')
+  eq(L.hasSourceRow(srcTip.src), true, 'a row to open')
+  eq(L.hasSourceRow({ s = {}, t = 1200 }), false, 'a vendor price alone: nothing hidden')
+  eq(L.hasSourceRow(nil), false, 'no sources')
+  local foot = L.card(srcTip, {}).foot
+  eq(foot[1].text, '~1 in 20 kills of Rat', 'card without Alt: the foot starts at the effort line')
+  eq(L.card(srcTip, { alt = true }).foot[1].text, 'Drops from: Rat (5%)', 'card with Alt: the row is back')
+  eq(L.altHintText(srcTip, true), 'Hold Alt for where it comes from and what each line does.', 'the hint names the hidden row')
+  eq(L.altHintText(srcTip, false), 'Hold Alt for where it comes from.', 'an item without help lines still gets a hint')
+  eq(L.altHintText({ name = 'x' }, true), nil, 'nothing hidden: the shared hint stays')
+end
 
 -- what a material is for (server K.brief u; owner 2026-10-22: "Coloque pra que servem")
 local stone = L.sourceLines({ s = { { k = 'monster', n = 'Fractalis the Shardmaw', v = '60%' } },
@@ -513,8 +538,13 @@ eq(card.chips[1].text, 'Level 300', 'level chip')
 eq(card.chips[1].low, true, 'level chip low')
 eq(card.chips[3].text, 'Necromancer', 'class chip')
 eq(L.card(wand, { level = 300 }).chips[1].low, false, 'level reached')
-eq(#card.foot, 1, 'source and weight on one line')
-eq(card.foot[1].text, 'Drops from: Axebringer Fiend - Weight 24.9 oz', 'foot line')
+eq(#card.foot, 1, 'the weight alone without Alt')
+eq(card.foot[1].text, 'Weight 24.9 oz', 'foot line without Alt')
+do
+  local altCard = L.card(wand, { level = 100, alt = true })
+  eq(#altCard.foot, 1, 'Alt: source and weight on one line')
+  eq(altCard.foot[1].text, 'Drops from: Axebringer Fiend - Weight 24.9 oz', 'foot line with Alt')
+end
 
 -- armour: Armour and Defense tiles, the rest in the extra line; no DPS hero
 local armor = { name = 'plate armor', kind = 'armor', slot = 'Armour', rarity = 3, rarityName = 'Magic', level = 20,
@@ -734,7 +764,7 @@ do
     eq(L.gemBlock({ gem = { rows = { { place = 'head', label = 'a', value = '+1' } } } }), nil, 'an unknown place is dropped')
 
     -- the card: the box, then the two hints outside it; the long description is gone; sources and weight stay
-    local card = L.card(chipped, { level = 10 })
+    local card = L.card(chipped, { level = 10, alt = true })
     eq(card.extras[1].kind, 'gembox', 'the gem box first') eq(card.extras[1].head, 'SOCKETED IN', 'its header')
     eq(card.extras[1].headColor, C.gemHead, 'dim header') eq(#card.extras[1].rows, 3, 'three rows in the box')
     eq(card.extras[2].rows[1].text, 'Use it on gear with a free socket.', 'the hint after the box') eq(card.extras[2].rows[1].color, C.gemHint, 'dim hint')
@@ -789,7 +819,7 @@ do
     eq(sock[1].rows[1].text, 'Flawless Ruby: Dano de Fogo +9%', 'the socket row in the card')
     eq(sock[1].rows[1].color, '#ff5a4a', 'the gem colour stays')
     -- the sources and weight rows are the client's own words
-    eq(L.card(chipped, {}).foot[1].text, 'Cai de: Any monster (global drop)', 'drops from in pt-BR (the server sends its own words translated)')
+    eq(L.card(chipped, { alt = true }).foot[1].text, 'Cai de: Any monster (global drop)', 'drops from in pt-BR (the server sends its own words translated)')
   end)
 
   -- the module reads tr from ChaosLocale when the global one is hidden in _G's metatable (rawget(_G, 'tr') is nil then)

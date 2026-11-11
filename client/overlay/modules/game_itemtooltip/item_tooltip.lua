@@ -351,7 +351,7 @@ end
 local function buildPanel(tip, extra, heading)
   local panel = g_ui.createWidget('ItemTooltipPanel', rootWidget)
   local player = g_game.getLocalPlayer()
-  local card = L.card(tip, { level = player and player:getLevel() or 0 })
+  local card = L.card(tip, { level = player and player:getLevel() or 0, alt = altPressed() })
   local rarity = card.titleColor
   try(function() panel:getChildById('glow'):setImageColor(rarity) end)
   try(function() panel:getChildById('ring'):setImageColor(rarity) end)
@@ -528,18 +528,20 @@ local function render()
   elseif comparable then
     extra[#extra + 1] = { text = tr('Hold Ctrl to compare'), color = C.dim, sep = true }
   end
-  -- Alt (O372, itemhelp.lua): a plain line on what each term of the item does; without Alt a hint line
+  -- Alt (O372, itemhelp.lua): a plain line on what each term of the item does; without Alt a hint line. Alt also opens
+  -- the "Drops from" row of the card (owner 2026-11-11; buildPanel passes Alt to L.card), and the hint says so
   local wantHelp = altPressed()
   local help = ItemTooltipHelp.lines(tip, tr)
-  if #help > 0 then
-    if wantHelp then
-      for i, line in ipairs(help) do
-        for j, part in ipairs(L.wrap(line, HELP_WRAP)) do
-          extra[#extra + 1] = { text = part, color = C.help, sep = i == 1 and j == 1 }
-        end
+  if wantHelp then
+    for i, line in ipairs(help) do
+      for j, part in ipairs(L.wrap(line, HELP_WRAP)) do
+        extra[#extra + 1] = { text = part, color = C.help, sep = i == 1 and j == 1 }
       end
-    else
-      extra[#extra + 1] = { text = altHint(), color = C.dim, sep = not (comparable and not wantCompare) }
+    end
+  else
+    local hint = L.altHintText(tip, #help > 0) or (#help > 0 and altHint() or nil)
+    if hint then
+      extra[#extra + 1] = { text = hint, color = C.dim, sep = not (comparable and not wantCompare) }
     end
   end
   compareShown = wantCompare
