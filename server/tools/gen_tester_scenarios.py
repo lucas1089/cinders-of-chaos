@@ -73,6 +73,7 @@ OUT_OF_SCOPE = {
     'testers': 'the tester rules themselves (tests/testers_test.lua)',
     'i18n': 'translations; every bot text passes through it',
     'item_codec': 'the item encoding library; used by every item system',
+    'item_fusion': 'the rule of the base item fusion (opcode 67, not a Chaos opcode); no client window sends it (O509)',
     'areagen': 'a map building tool, not run in game',
 }
 
