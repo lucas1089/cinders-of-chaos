@@ -4154,6 +4154,40 @@ gem and orb sprites stay in the file, unused.
   items.otb (the installed server's file, patched in memory by `install_orbs.py` with the record at 63) next to the looks of pair 62, and equal to the atlas;
   shared client ids listed per orb (scratchpad only). Not seen in a client.
 
+### Pair 64 (candidate, not built into a release, waits for the owner): pair 63 without the shadow baked into the wings (`clean_wing_shadows.py`; O508)
+Owner 2026-11-11 (translated): "All the wings are out of plumb." O495 centred the wings; it also found a soft round shadow inside the sprites of the pack wings,
+24 px right of and 30 px below the wings' centre, so a second dark blob sat to the lower right of every winged character. The coordinator offered a clean-up with a
+before / after for the owner to decide; the owner said "You can do the recommended". This is that clean-up, built and shown, **not pushed, not live**.
+- **Measured on pair 63** (`clean_wing_shadows.py measure`): 121 wings, 129 frame groups. 92 wings (all of looks 2385 to 2476) have the blob, 29 do not (937 to 941,
+  1177 to 1186, 1486, 2140 to 2142, 2187, 2225 to 2233: the O495 note said "about 100", the plain mask had taken their soft edges for shadow). Of the 92: 28 blob
+  separate from the wing, 60 touching or under the wing, 4 dark translucent wings where the plain mask would eat 300+ wing px per frame (2390, 2402, 2447, 2457).
+  Of the 29: 8 have dark soft edges that the plain mask eats (100 to 650 px per frame: 937, 940, 1486, 2141, 2227 to 2230), 2 a little (1178, 2142), 19 nothing to remove. The plain mask hit
+  7.94 million pixels over all frames; the rule removes 7.12 million and keeps 0.98 million that the mask would have taken (wing edges). The mask also misses the pale
+  ring of 2406 and the near opaque cores (alpha 204 to 242) of 2427, 2445, 2451, 2457.
+- **The rule** (full text in the docstring): per wing and frame group, the shadow is what the 4 directions agree on (3 of 4 frames hold the same exact RGBA at a pixel in a
+  phase; the wing is what changes with the direction), found as a core (persistent, rings nested in it), a palette of 2 to 20 exact RGBA levels and a fitted ellipse; a
+  pixel is removed when alpha is under 255, its RGBA is a palette level, it is inside the ellipse, and the same level is a consensus level at that place in some phase.
+  The table is `pair_fixes/wing_shadows.csv` (numbers only: centre, radii, palette, counts; `fit --check` compares it with the pair), the hand rows are
+  `pair_fixes/wing_shadow_overrides.csv` (one: 2457, a smoke wing whose own smoke uses the shadow's levels, so it gets the ellipse of the core alone; it keeps a hollow in the smoke at the
+  wing root, a few hundred translucent dark pixels). No wing is left whole by a shared sprite: no sprite of a shadow tile is used by a thing that is not a wing, none gives two
+  different tiles, none shares its record with another id.
+- **Counts** (build with the table above): 92 wings cleaned, 29 left as they were (no shadow), 17,439 sprite records rewritten in place (2,009 of them empty afterwards,
+  their record dropped: offset 0), 7,117,578 pixels removed over all wing frames. Wing pixels changed: 0 by construction (no alpha 255 pixel, no pixel that is not a palette level
+  inside the ellipse and confirmed by another direction can change) and checked on every build (every changed pixel of every wing frame is a shadow pixel of the rule, none with alpha 255, all
+  other 931,861 records byte identical). What stays: shadow pixels that two or more other directions cover with wing in every phase, and blends of wing edge over blob: 0.37 million
+  palette-level pixels remain inside the ellipses (5% of what went; most under the wings of 2390, 2447, 2411, 2402, 2471, 2420, 2413: mostly wing glow of the same level).
+- **Build:** `python3 -I client/tools/sprites/clean_wing_shadows.py build P63/Tibia.dat P63/Tibia.spr --out-dir P64` (the table and the overrides are the defaults; about 30 s, 1.1 GB free
+  disk). The dat is copied byte for byte (**no id moves, no flag changes, dat md5 is pair 63's `9b7c39bbb44d28108cc6765bd24384a2`**); the spr keeps its 949,300 ids and the order of
+  its records, 1,116,999,335 bytes (19.1 MB smaller). Built twice from the committed table: both spr 2364c85a217bc3f4c609e63a210069bd (the second through a pipe). Candidate only
+  in the scratchpad of the session, never in the repository. `check_pair.py`: 0 errors, 10,630 warnings = pair 63's 3,964 plus 6,666 `sprite-empty-slot` (an id whose tile is only shadow
+  now draws nothing, offset 0 as the dat's own empty slots). `check_pair.py --old P63` would flag the 17,439 rewritten records (append-only guard): this is the one pair that changes old sprites on purpose.
+- **Generated tables that must be made again with pair 64** (not now: the live-pair job checks them against pair 63): `gen_wing_centres.py` (6 rows move: 2406, 2427, 2435, 2445, 2451, 2457, by 3 to 6 px:
+  pair 63's centre of these still had pale ring and core in it), `gen_foot_marks.py` (91 wing rows), `gen_outfit_anchors.py` (92 wing rows). Every look and body row stays the same. The dat md5 line stays.
+- **Unity** reads the same pair and is frozen: it would show the wings without the blob, nothing to change. **Server:** no new id, so `chaosClientPair` needs no value for pair 64 (the pair is the same
+  ids); `server/tools/client_pair.py` `PAIR_ASSETS` would go to 64 if the coordinator wants the Windows package job to insist on the cleaned archive (same dat md5).
+- **After the owner's yes:** the coordinator pushes the pair to windows-assets (archive parts as for pair 63), regenerates the three tables with it, the new client package ships it (the pair update is the admin app,
+  Comandos > "Par do cliente"; no `chaosClientPair` change needed), and the live-pair job gets `clean_wing_shadows.py fit --check` and `check_pair.py`. Not seen in a running client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

@@ -1,0 +1,2 @@
+wing,group,action,args,reason
+2457,0,region,cx=98;cy=75;rx=31;ry=22,"smoke wing: the wing own dark smoke is the same in every direction and uses the shadow levels, so the grown ellipse would cut the smoke; the ellipse of the persistent core alone is the blob"
