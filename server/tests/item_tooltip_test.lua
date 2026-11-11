@@ -26,6 +26,8 @@ local TYPES = {
 	[2431] = {name = "stonecutter axe", weaponType = 3, attack = 50, slot = 48 + 2048, attackSpeed = 2200},
 	[2181] = {name = "test rod", weaponType = 6, slot = 48, level = 26},
 	[2450] = {name = "test club", weaponType = 2, attack = 44, slot = 48},
+	[11309] = {name = "twin hooks", weaponType = 1, attack = 32, defense = 22, slot = 48 + 2048, attackSpeed = 3000}, -- O500: was an axe
+	[11310] = {name = "twin hooks", weaponType = 3, attack = 32, defense = 22, slot = 48 + 2048, attackSpeed = 3000}, -- the same item before O500
 	[2466] = {name = "golden armor", armor = 14, slot = 8 + 48, description = "It shines.",
 		abilities = {skills = {0, 0, 0, 0, 0, 0}, stats = {0, 0, 0, 0}, absorbPercent = {[4] = 5}, speed = 0}},
 	[2514] = {name = "mastermind shield", weaponType = WEAPON_SHIELD, defense = 37, slot = 48},
@@ -569,6 +571,23 @@ local FM = ChaosWeaponFamilies
 eq(T.build(newItem(2400)).note, FM.note("sword"), "a sword carries its tempo line")
 eq(T.build(newItem(2431)).note, FM.note("axe"), "an axe its cleave line")
 eq(T.build(newItem(2450)).note, FM.note("club"), "a club its impact line")
+-- O500 (owner 2026-11-11: "The item counts as an axe, but it is not."): the Twin Hooks are a two-handed sword now (patch_stock_weapon_types.py
+-- sets the type, the tooltip reads it): the type line and the family line follow by themselves
+eq(T.build(newItem(11309)).slot, "Two-handed sword", "the Twin Hooks: a two-handed sword")
+eq(T.build(newItem(11309)).note, FM.note("sword"), "the Twin Hooks carry the sword's tempo line")
+eq(T.build(newItem(11310)).slot, "Two-handed axe", "the same item typed as an axe (before O500) said axe")
+eq(T.build(newItem(11310)).note, FM.note("axe"), "and carried the axe's cleave line")
+-- "Speed 1.89 s" against "Attack Interval 3 s" (O500): two numbers of two things. The item's own interval (items.xml attackspeed, 3000 ms
+-- on purpose for a two-handed weapon, tools/two_handed.py) is the row "attackspeed"; the interval the viewer swings it at (the vocation's
+-- interval x 3000 / 2000, then dexterity and the speed bonus) is the row "yourinterval", which the client shows as the Speed tile
+do
+	local rowsOf = {}
+	for _, r in ipairs(T.build(newItem(11309), {wielder = {voc = 1300, dex = 0, level = 100, melee = 70}}).base) do
+		rowsOf[r.k] = r
+	end
+	eq(rowsOf.attackspeed.v, 3, "the item's own interval: 3 s") eq(rowsOf.yourinterval.v, 1.95, "the viewer's swing: 3000 x 1300 / 2000 ms")
+	eq(rowsOf.attackspeed.l, "Attack Interval") eq(rowsOf.yourinterval.l, "Your Attack Interval")
+end
 eq(T.build(newItem(2400), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, vocId = 4}}).note, FM.note("sword"), "a Warrior sees it")
 eq(T.build(newItem(2400), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, vocId = 17}}).note, nil, "a Monk does not (the Monk line is untouched)")
 eq(T.build(newItem(2400), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, vocId = 3}}).note, nil, "nor a Ranger")

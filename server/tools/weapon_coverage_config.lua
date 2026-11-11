@@ -45,9 +45,10 @@ return {
 	familyLines = {"Warrior", "Thief", "Templar"},
 	familyMinOptions = 3,
 	familyMinFamilies = 2,
+	-- O500 (2026-11-11): two cells left this list when stock weapons moved to the kind their name says (tools/patch_stock_weapon_types.py,
+	-- data/items/stock_weapon_types.csv): Berserker 1-20 (the scythe and the scythe of the reaper became two-handed swords: 3 swords, 3 axes) and
+	-- 1000-1300 (the Dawnforged Great Axe became an axe and the Skull Crusher a club: 6 swords, 3 axes, 3 clubs)
 	familyKnownGaps = {
-		{"Berserker", "1-20", "two-handed only: 2 swords, 4 axes, 2 clubs at level 1-20, only the axe has 3"},
-		{"Berserker", "1000-1300", "two-handed only: 8 swords, 2 axes, 2 clubs, only the sword has 3"},
 		{"Berserker", "1700-2400+", "two-handed only: 2 swords, 7 axes, 2 clubs, only the axe has 3"},
 	},
 

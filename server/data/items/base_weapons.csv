@@ -40,7 +40,7 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 2402,sword,1,0,9,0,7,0,0,0,0,0,0,*
 2403,sword,1,0,5,0,5,0,0,0,0,0,0,*
 2404,sword,1,0,8,0,6,0,0,0,0,0,0,*
-2405,axe,1,0,5,0,4,0,0,0,0,0,0,*
+2405,sword,1,0,5,0,4,0,0,0,0,0,0,*
 2406,sword,1,0,11,0,11,0,0,0,0,0,0,*
 2407,sword,1,30,36,0,30,0,0,0,0,0,0,*
 2408,sword,2,120,53,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
@@ -53,7 +53,7 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 2415,axe,2,95,52,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
 2416,club,1,0,5,0,6,0,0,0,0,0,0,*
 2417,club,1,0,24,0,14,0,0,0,0,0,0,*
-2418,axe,1,0,13,0,6,0,0,0,0,0,0,*
+2418,sword,1,0,13,0,6,0,0,0,0,0,0,*
 2419,sword,1,0,19,0,13,0,0,0,0,0,0,*
 2420,sword,1,0,12,0,9,0,0,0,0,0,0,*
 2421,club,1,85,49,0,35,0,0,0,0,0,0,*
@@ -92,7 +92,7 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 2454,axe,2,65,48,0,10,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
 2455,crossbow,2,0,32,0,0,87,5,0,0,0,0,*
 2456,bow,2,0,29,0,0,93,6,0,0,0,0,*
-2550,axe,2,0,8,0,3,0,0,0,0,0,0,*
+2550,sword,2,0,8,0,3,0,0,0,0,0,0,*
 3961,club,1,40,40,0,30,0,0,0,0,0,0,*
 3962,axe,1,30,35,0,12,0,0,0,0,0,0,*
 3963,sword,1,0,23,0,15,0,0,0,0,0,0,*
@@ -258,7 +258,7 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 10292,sword,1,0,16,0,8,0,0,0,0,0,0,*
 10293,club,1,0,18,0,8,0,0,0,0,0,0,*
 10295,bow,2,0,29,0,0,93,4,0,0,0,0,*
-10301,axe,2,0,16,0,6,0,0,0,0,0,0,*
+10301,sword,2,0,16,0,6,0,0,0,0,0,0,*
 10302,club,1,0,16,0,8,0,0,0,0,0,0,*
 10303,sword,2,0,17,0,7,0,0,0,0,0,0,*
 10304,sword,1,0,10,0,8,0,0,0,0,0,0,*
@@ -266,8 +266,8 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 11305,axe,2,60,47,0,20,0,0,0,0,0,0,*
 11306,sword,2,50,45,0,27,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
 11307,sword,1,55,43,0,18,0,0,0,0,0,0,*
-11308,club,2,55,46,0,25,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
-11309,axe,2,20,32,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+11308,axe,2,55,46,0,25,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+11309,sword,2,20,32,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
 11323,axe,2,25,37,0,15,0,0,0,0,0,0,*
 11395,sword,1,0,18,0,10,0,0,0,0,0,0,*
 11426,sword,1,0,12,0,10,0,0,0,0,0,0,*
@@ -276,7 +276,7 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 12649,sword,1,82,48,0,29,0,0,0,0,0,0,*
 13760,wand,1,37,0,0,0,0,3,55,75,13,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
 13829,sword,1,0,7,0,7,0,0,0,0,0,0,*
-13838,sword,2,25,35,0,17,0,0,0,0,0,0,*
+13838,axe,2,25,35,0,17,0,0,0,0,0,0,*
 13871,sword,1,40,42,0,20,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
 13872,wand,1,40,0,0,0,0,4,55,75,13,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
 13873,bow,2,40,39,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
@@ -287,7 +287,7 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 15414,club,1,90,49,0,24,0,0,0,0,0,0,*
 15451,axe,1,40,42,0,21,0,0,0,0,0,0,*
 15454,axe,2,50,46,0,11,0,0,0,0,0,0,*
-15492,axe,1,70,46,0,24,0,0,0,0,0,0,*
+15492,sword,1,70,46,0,24,0,0,0,0,0,0,*
 15643,bow,2,85,40,0,0,99,6,0,0,0,0,Ranger|Deadeye|Beastmaster
 15644,crossbow,2,50,37,0,0,91,6,0,0,0,0,Ranger|Deadeye
 15647,club,1,48,44,0,28,0,0,0,0,0,0,*
@@ -355,7 +355,7 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 24839,wand,1,37,0,0,0,0,3,56,74,13,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
 25383,axe,2,70,48,0,28,0,0,0,0,0,0,*
 25415,axe,1,150,26,26,31,0,0,0,0,0,0,*
-25416,sword,1,150,26,26,31,0,0,0,0,0,0,*
+25416,axe,1,150,26,26,31,0,0,0,0,0,0,*
 25418,club,1,150,51,0,32,0,0,0,0,0,0,*
 25420,club,1,100,20,0,30,0,0,0,0,0,0,*
 25421,wand,1,65,0,0,0,0,3,65,95,17,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
@@ -515,6 +515,6 @@ id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,clas
 29883,sword,1,1000,65,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
 29884,sword,2,1000,71,0,42,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
 29885,axe,1,1000,65,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
-29886,sword,2,1000,71,0,42,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29886,axe,2,1000,71,0,42,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
 29887,club,1,1000,65,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
-29888,sword,2,1000,71,0,42,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29888,club,2,1000,71,0,42,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
