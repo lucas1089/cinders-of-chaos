@@ -200,6 +200,14 @@ end
 -- `k`; the client translates by the key with a literal tr() (check_locales.py sees each one) and keeps the server's label for
 -- a key it does not know. English is the server's text as it comes. "Attack Interval" keeps its English name.
 -- The elements and skills in a label ("Fire Damage", "Cold Protection", "Woodcutting") are translated by name too.
+-- a weapon's range. English: "Range". pt-BR has its own word ("Alcance"): the plain key "Range" is the party finder's level
+-- range ("Faixa"), so the weapon's word has a key of its own and English falls back to the plain word.
+local function rangeLabel()
+  local t = tr('Range (weapon)')
+  if t == 'Range (weapon)' then return 'Range' end
+  return t
+end
+
 local function trName(name)
   local names = {
     Physical = function() return tr('Physical') end, Energy = function() return tr('Energy') end,
@@ -225,7 +233,7 @@ local SKILLS = {
 local KEYED = {
   attack = function() return tr('Attack') end, defense = function() return tr('Defense') end,
   extradefense = function() return tr('Extra Defense') end, armor = function() return tr('Armour') end,
-  hitchance = function() return tr('Hit Chance') end, range = function() return tr('Range') end,
+  hitchance = function() return tr('Hit Chance') end, range = rangeLabel,
   attackspeed = function() return tr('Attack Interval') end, dps = function() return tr('Estimated DPS') end,
   maxhealth = function() return tr('Max Health') end, maxmana = function() return tr('Max Mana') end,
   maglevel = function() return tr('Magic Level') end, speed = function() return tr('Speed') end,
@@ -875,7 +883,7 @@ local function tileCaption(key)
   if key == 'dps' then return tr('DPS') end
   if key == 'attack' then return tr('Attack') end
   if key == 'speed' then return tr('Speed') end
-  if key == 'range' then return tr('Range') end
+  if key == 'range' then return rangeLabel() end
   if key == 'armor' then return tr('Armour') end
   if key == 'defense' then return tr('Defense') end
   if key == 'extradefense' then return tr('Extra Defense') end

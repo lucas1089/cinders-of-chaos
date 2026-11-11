@@ -980,9 +980,9 @@ do
   lang = 'pt-BR'
   ChaosLocale = { tr = function(text, ...) return ChaosLocaleCore.translate(ptTable, nil, text, ...) end,
     localize = function(text) return ChaosLocaleCore.localize(text, lang) end }
-  local WANT = { 'Ataque', 'Defesa', 'Defesa extra', 'Armadura', 'Chance de acerto', 'Faixa', 'Intervalo de ataque', 'Seu intervalo de ataque',
+  local WANT = { 'Ataque', 'Defesa', 'Defesa extra', 'Armadura', 'Chance de acerto', 'Alcance', 'Intervalo de ataque', 'Seu intervalo de ataque',
     'DPS estimado', 'Dano de Fogo', 'Punho', 'Corpo a corpo', 'Escudo', 'Corte de madeira', 'Joalheria', 'Vida Máxima', 'Mana Máxima', 'Magic Level',
-    'Proteção Físico', 'Proteção Drenar vida', 'Proteção Gelo', 'Velocidade', 'Brand New Label' }
+    'Proteção contra Físico', 'Proteção contra Drenar vida', 'Proteção contra Gelo', 'Velocidade', 'Brand New Label' }
   local got = rowLabels()
   for i, b in ipairs(BASE) do
     local want = ChaosLocaleCore.toCp1252(WANT[i])
