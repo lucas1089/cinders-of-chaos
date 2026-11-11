@@ -3,7 +3,7 @@
 -- ghost preview. The check mirrors the server's (server/data/scripts/chaos/hideout_core.lua K.placeProblem): one
 -- object per tile, a rug under it, wall decorations on the north / west wall, the fixture tiles free, the limits and a
 -- path from the arrival tile to every fixture. The server decides; this only colours the preview.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 HideoutLogic = {}
 local HL = HideoutLogic

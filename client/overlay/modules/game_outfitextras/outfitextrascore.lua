@@ -13,7 +13,7 @@
 --   wings      {stock = [{look, name}] (the outfit packet's owned wings), wardrobe = [{l, n, o}] (the catalogue), current}
 --   services   the Services state {frames = [name], activeFrame}
 --   pets       the pets state {pets = [{species, name, speciesName, level}], active, out}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 OutfitExtrasCore = {}
 local E = OutfitExtrasCore

@@ -7,7 +7,7 @@
 --   diff  {add = [entry], upd = [{k, l, s}], del = [key]}
 --   entry {k key, n name, d description, i icon, t 0 buff / 1 debuff, l ms left (none: no timer), s stacks}
 -- An entry in the table: {key, name, desc, icon, debuff, endAt (client clock seconds, nil: no timer), stacks, seq}.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 BuffMath = {}
 

@@ -7,7 +7,7 @@
 --   TreeText.join(lines)         the paragraph: the lines joined with one space
 --   TreeText.wrap(text, width)   the words of the text in lines of at most `width` bytes (a longer word keeps its own line)
 --   TreeText.lines(lines)        the lines to show
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 TreeText = {}
 local T = TreeText

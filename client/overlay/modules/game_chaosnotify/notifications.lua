@@ -1,6 +1,6 @@
 -- Sistema de Notificações Moderno para TFS 1.3 / OTClient - VERSÃO CORRIGIDA
 -- CORREÇÕES: Party invite notifications integradas ao sistema de catacomb + POPUPS CORRIGIDOS
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 local opcode = 79
 local gameRootPanel = modules.game_interface.getRootPanel()

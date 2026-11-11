@@ -6,7 +6,7 @@
 -- entry {i id, n name, lv level, vc vocation id, h health, H max health, m mana, M max mana, p health percent,
 --   dz floors (down is +), d squares (in range only), far 1 (out of range: only p, dz), f flags, o outfit {t,h,b,l,f,a},
 --   b [{i icon, t 0 buff / 1 debuff, l ms left}]}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PartyMath = {}
 

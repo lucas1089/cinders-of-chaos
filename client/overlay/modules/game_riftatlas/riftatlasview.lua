@@ -6,7 +6,7 @@
 --   state {earned, spent, points, max, alloc = [ids], done = [cell keys], refund = {gold, orbs}, reset = {gold, orbs},
 --          orb, totals = [lines], msg}
 -- The allocate / refund rules mirror atlas_core.lua (the server checks again; this only greys the buttons).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 RiftAtlasView = {}
 local V = RiftAtlasView
 

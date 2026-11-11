@@ -1,6 +1,6 @@
 -- Referral window texts (pure, no UI calls): shared by referral.lua and referralview_test.lua.
 -- `s` is the server's status (server data/scripts/chaos/referral_core.lua ChaosReferralCore.view).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ReferralView = ReferralView or {}
 local V = ReferralView

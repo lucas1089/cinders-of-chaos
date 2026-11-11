@@ -3,7 +3,7 @@
 -- placed = {{id, x, y, w, h, name, rarity, color, ilvl, mods = {{k, v, t}}, signature, icon, active}}, bag (the charms in
 -- the backpack: {ref, sid, iid, w, h, ...}), groups = {{text, open, cells}}, totals = {{k, v, cap, t}}, level, shards.
 -- The grid rules here mirror the server's (charms_core.lua placeRefusal) for the drag preview; the server decides.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CharmsView = CharmsView or {}
 local V = CharmsView

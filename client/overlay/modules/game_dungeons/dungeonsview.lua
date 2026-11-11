@@ -4,7 +4,7 @@
 -- generated dungeons 6-9), the percents the server sends as `health = {monsters = {six}, boss = {six}}` in its
 -- "dungeon" payload. A payload without `health` (a base dungeon, or an older server) gets the table's texts, the same
 -- strings as dungeons.otui.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 DungeonsView = {}
 local V = DungeonsView
 

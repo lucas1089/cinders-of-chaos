@@ -36,7 +36,7 @@ python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
 ! git grep -nE '^(<<<<<<< |>>>>>>> )' -- .   # no merge conflict markers left in a tracked file
-python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
+python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix); a rawget read of tr falls back to ChaosLocale.tr (O479)
 python3 -I tools/ci/check_desktop_commands.py   # desktop admin app (O312) table names the same chaos-ctl commands as android/
 python3 -I desktop/tools/sign_release_test.py   # desktop admin app signed self-update: the Python signer and desktop/src/sign.rs share one vector; key must be the compiled-in one
 python3 -I server/deploy/discord_bot/bot_core_test.py && python3 -I server/deploy/discord_bot/claude_client_test.py   # Discord bot for bug reports and patch notes (O324): classification parsing, duplicates, status changes, patch notes, daily summary, Claude calls with fakes; chaos_ctl_test.py covers chaos-ctl.sh discord-bot

@@ -158,10 +158,12 @@ function S.levelsText(key)
 	return fill(t.text, join(a), t.values2 and join(b) or nil)
 end
 
-function S.fitsText(t)
+-- tx (optional): the translation of one kind name ("single target" -> "alvo único"), for a text in the player's language
+function S.fitsText(t, tx)
 	local parts = {}
 	for _, k in ipairs(t.fits) do
-		parts[#parts + 1] = cfg.kindNames[k] or k
+		local name = cfg.kindNames[k] or k
+		parts[#parts + 1] = tx and tx(name) or name
 	end
 	return table.concat(parts, ", ")
 end

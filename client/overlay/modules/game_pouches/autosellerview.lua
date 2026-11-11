@@ -4,7 +4,7 @@
 -- cooldownMax, last = {gold, count, at}, notice, open}. The client never decides a sale: it only shows the state and
 -- sends the player's choices (sell, asrar, aslist, aspause, asevery) for the server to check.
 -- interval / intervals: the minutes of "sell every X minutes" (0 = off) and the choices of the dropdown.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 AutoSellerView = {}
 local V = AutoSellerView

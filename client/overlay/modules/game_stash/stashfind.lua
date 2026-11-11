@@ -3,7 +3,7 @@
 --   found {q, page, pages, total, shown, capped, items = [{loc = 'equip' | 'bag' | 'purse' | 'inbox' | 'stash', name,
 --          count, cid, rarity?, unique?, slot?, path?, at?, ids?, where?, tab?, tabName?, old?, row?, item?}]}
 --   found {q, error = 'short' | 'long'}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 StashFind = {}
 local F = StashFind

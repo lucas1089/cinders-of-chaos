@@ -1,7 +1,7 @@
 -- DPS meter, pure parts (no UI calls): settings, number and time formats, the rows of a tab (share, bar length, per
 -- second, average, crit rate), the segment list, the party rows, row icons and colours, and the exported summaries.
 -- Tested by dpsmath_test.lua (luajit and lua5.3). Data comes from the server (combatlog_core.lua CL.state).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 DpsMath = {}
 

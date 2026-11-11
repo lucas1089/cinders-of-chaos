@@ -521,6 +521,44 @@ do
 		eq(b.s[2].n, "Embermaw Archon", "brief: then the monster")
 		eq(K.lookup(g, 29851).secs[1].k, "drop", "the item page: the global drop section first")
 	end
+	-- O479: the chance is shown once. A global drop that the effort line already words ("~1 in 3,300 kills") drops "about 1
+	-- in N kills" from its row; the item page keeps the full text; a monster row keeps its percent; another tier and a
+	-- common drop (no effort line) keep their words; an item with no drop has no sources at all
+	do
+		local function layer(id, chance)
+			local g = K.new(cfg, realInfo)
+			S.lootLayer({currency = {entries = {{id = id, weight = 20, count = {1, 1}, chance = chance}}}}, nil, {},
+				function(kind, rid, row) return K.add(g, rid, kind, row) end)
+			return g
+		end
+		local gl = layer(29851, {normal = 3})
+		K.finish(gl)
+		local b = K.brief(gl, 29851)
+		check(b.e ~= nil and b.e.w == "kill" and math.abs(b.e.p - 0.0003) < 1e-12, "once: the effort line holds the chance")
+		eq(b.s[1].n .. " (" .. b.s[1].v .. ")", "Any monster (global drop)", "once: the global row has no chance of its own")
+		check(not tostring(b.s[1].v):find("about 1 in", 1, true), "once: no 1 in N in the row")
+		eq(K.lookup(gl, 29851).secs[1].rows[1].v, "global drop, about 1 in 3,350 kills", "once: the item page keeps the full text")
+		local mg = layer(29851, {magic = 40})
+		K.finish(mg)
+		b = K.brief(mg, 29851)
+		eq(b.e and b.e.w, "magic", "tier: the effort line is for the magic tier")
+		eq(b.s[1].v, "global drop, about 1 in 250 magic monster kills", "tier: a weaker tier keeps its own words")
+		local common = layer(29851, {normal = 4000})
+		K.finish(common)
+		b = K.brief(common, 29851)
+		eq(b.e, nil, "common: no effort line over 1 in 5")
+		eq(b.s[1].v, "global drop, about 1 in 3 kills", "common: the row keeps its chance when there is no effort line")
+		check(tostring(b.s[1].v):find("about 1 in", 1, true) ~= nil, "common: 1 in N stays in the row")
+		local mon = K.new(cfg, realInfo)
+		K.add(mon, 29851, "monster", {n = "Dragon", v = "0.1%", o = -100, p = 0.001})
+		K.finish(mon)
+		b = K.brief(mon, 29851)
+		eq(b.s[1].v, "0.1%", "monster: the row keeps its percent")
+		check(b.e and b.e.m == "Dragon", "monster: the effort line names the monster")
+		local none = K.new(cfg, realInfo)
+		K.finish(none)
+		eq(K.brief(none, 29851), nil, "no drop: no sources")
+	end
 	-- live test winpkg-35: "Drops from: Abyssal Crab (100%), Abyssal Crab (100%)": a monster listing the item twice
 	do
 		local dup = K.new(cfg, realInfo)

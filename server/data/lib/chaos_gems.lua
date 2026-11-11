@@ -179,6 +179,22 @@ function G.effectText(key, value, value2)
 	return string.format("%s +%d%%", def.label, value)
 end
 
+-- the parts of an effect text, for a client that writes the name in its own language and draws the number in a colour
+-- of its own (tooltip tip.gem rows and socket rows): {label, value, label2, value2}; value is "+9%" or "+130" (flat)
+function G.effectParts(key, value, value2)
+	local def = cfg.effects[key]
+	if not def then
+		return {label = tostring(key), value = ""}
+	end
+	local function num(v)
+		return string.format(def.fmt == "flat" and "+%d" or "+%d%%", v)
+	end
+	if def.fmt == "pair" then
+		return {label = def.label, value = num(value), label2 = def.label2, value2 = num(value2 or 0)}
+	end
+	return {label = def.label, value = num(value)}
+end
+
 -- "Flawless Ruby (Fire Damage +9%)"
 function G.gemText(id, group)
 	local e = G.effectOf(id, group)
@@ -196,6 +212,39 @@ function G.gemSummary(id)
 		if e then
 			parts[#parts + 1] = string.format("%s: %s", group == "jewel" and "jewellery" or group,
 				G.effectText(e.key, e.value, e.value2))
+		end
+	end
+	return table.concat(parts, "; ")
+end
+
+-- the items.xml description of a gem (O479): "A gem for a socket. Weapon: X. Armour: Y. Jewellery: Z. Use it on gear with a
+-- free socket." and, below Perfect, the combine sentence. tools/install_gems.py writes the same text (its test and
+-- tests/gems_test.lua pin both); the pt-BR sentences are in i18n_strings.lua
+function G.describe(typeIndex, tier)
+	local id = G.gemId(typeIndex, tier)
+	local parts = {"A gem for a socket."}
+	for _, place in ipairs({{"weapon", "Weapon"}, {"armour", "Armour"}, {"jewel", "Jewellery"}}) do
+		local e = G.effectOf(id, place[1])
+		if e then
+			parts[#parts + 1] = string.format("%s: %s.", place[2], G.effectText(e.key, e.value, e.value2))
+		end
+	end
+	parts[#parts + 1] = G.USE_HINT
+	if tier < G.TIERS then
+		parts[#parts + 1] = G.COMBINE_SHORT
+	end
+	return table.concat(parts, " ")
+end
+
+-- the same three effects in another language (O479: the use message had a pt-BR frame and an English summary): tx turns a
+-- sentence of G.describe ("Weapon: Fire Damage +2%.") into the text of that language; the dot at the end is dropped
+function G.gemSummaryTx(id, tx)
+	local parts = {}
+	for _, place in ipairs({{"weapon", "Weapon"}, {"armour", "Armour"}, {"jewel", "Jewellery"}}) do
+		local e = G.effectOf(id, place[1])
+		if e then
+			local text = tx(string.format("%s: %s.", place[2], G.effectText(e.key, e.value, e.value2)))
+			parts[#parts + 1] = (text:gsub("%.$", ""))
 		end
 	end
 	return table.concat(parts, "; ")
@@ -587,6 +636,9 @@ function G.guide()
 end
 
 G.COMBINE_HOW = "To combine three into one of the next quality: use the stack, then left-click the same stack."
+-- the short words of the item description and the tooltip rows (O479; tools/install_gems.py writes the same two texts)
+G.COMBINE_SHORT = "Three of the same make one of the next quality: use the stack, then left-click it."
+G.USE_HINT = "Use it on gear with a free socket."
 
 G.reasons = {
 	notGear = "This item cannot have sockets.",

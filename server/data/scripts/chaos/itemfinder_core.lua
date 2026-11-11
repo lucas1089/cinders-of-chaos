@@ -480,6 +480,7 @@ function K.brief(idx, id, cid)
 		return nil
 	end
 	local src, best, sure = {}, nil, false
+	local srcRow = {} -- the row behind each source entry (O479: its short value, its chance)
 	local named = {} -- one source per name: a monster whose loot lists the item twice (two entries, or child loot) gave
 	-- "Drops from: Abyssal Crab (100%), Abyssal Crab (100%)" (live test winpkg-35); the first row is the best one
 	for _, kind in ipairs(K.BRIEF) do
@@ -488,6 +489,7 @@ function K.brief(idx, id, cid)
 			if #src < 2 and not named[name] then
 				named[name] = true
 				src[#src + 1] = {k = kind, n = name, v = row.v}
+				srcRow[#src] = row
 			end
 			sure = sure or K.SURE[kind] == true
 			local p = tonumber(row.p)
@@ -510,7 +512,19 @@ function K.brief(idx, id, cid)
 	if #src == 0 and #used == 0 then
 		return nil
 	end
-	return {s = src, e = (not sure and best and best.p < K.EFFORT_BELOW) and best or nil,
+	local effort = (not sure and best and best.p < K.EFFORT_BELOW) and best or nil
+	-- O479: the chance is shown once. The effort line ("~1 in 3,300 kills") says it for the best source; a global drop row
+	-- that carries the same chance then drops "about 1 in N kills" from its text. Only when the effort line words the same
+	-- kind of kill (a kill, a legendary kill or a boss kill): another tier keeps its words ("1 in N magic monster kills").
+	if effort and (effort.w == "kill" or effort.w == "legendary" or effort.w == "boss") then
+		for i, entry in ipairs(src) do
+			local row = srcRow[i]
+			if row.vs and tonumber(row.p) == effort.p and (row.pk or "kill") == effort.w then
+				entry.v = row.vs
+			end
+		end
+	end
+	return {s = src, e = effort,
 		u = #used > 0 and {n = used, m = usedTotal > #used and (usedTotal - #used) or nil} or nil}
 end
 

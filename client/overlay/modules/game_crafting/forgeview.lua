@@ -12,7 +12,7 @@
 -- never sends "apply" for an action the server has not explained for this very item (V.request).
 -- The view does not assume tabs or one screen: groups of modifiers, the actions with their kind, enabled state and
 -- reason, the safety tag, the cost with both counts, the current step.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CraftingForgeView = CraftingForgeView or {}
 local V = CraftingForgeView

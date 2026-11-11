@@ -8,7 +8,7 @@
 -- and the class's heals. Here a character's class, level and the spells it can cast pick its rotation; a spell it
 -- cannot cast is replaced by the next one of an earlier preset, and the gap of the result is simulated again.
 
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ChaosAutoRotation = ChaosAutoRotation or {}
 local A = ChaosAutoRotation

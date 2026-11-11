@@ -2,7 +2,7 @@
 -- Tested by achievementsview_test.lua (luajit / lua5.3). Rows come from the server (achievements_core.lua K.view):
 --   i id, n name, d description, c category, p points, h hidden (1), u unlock time (0 = locked), v value, t target,
 --   ti title, r reward text
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 AchievementsView = {}
 local V = AchievementsView
 

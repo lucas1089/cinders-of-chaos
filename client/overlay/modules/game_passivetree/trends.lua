@@ -3,7 +3,7 @@
 -- Import pastes the build's code into the Build Code panel and runs its Import: the server's preview, class and respec
 -- rules decide what can be applied, as for any pasted code. Texts: trendsview.lua. No character name is ever shown.
 --   buildTrends {class?} -> buildTrends {class, className, at, total, classes, rows}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 ChaosTreeHandlers = ChaosTreeHandlers or {}
 local trendsWindow = nil
 local last = nil -- the last buildTrends message

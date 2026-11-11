@@ -7,12 +7,21 @@
 --    quality = {q, cap} (item quality in percent), ruined (an Orb of Ruin ruined it), corrupted (a Void Orb corrupted it),
 --    mods = [{k, l, t, v, g, lo, hi, tr, sd, bd, pw}] (a corrupted implicit first, then prefixes; tr = tier 1..8,
 --    sd = 'i' (the Void Orb's implicit) / 'p' / 's', bd = bound, pw = a legendary power),
---    sockets = {count, max, list = [{name, text, color}]},
+--    sockets = {count, max, list = [{name, text, color, l, v, l2, v2}]} (l / v: the effect name and its number apart, O479),
+--    gem = {rows = [{place, label, value, label2, value2, text}], combine} (a gem item, O479; a client without it shows desc),
 --    veil = {s = 'veiled'} | {s = 'open', n, t, tr, tn, lo, hi, h} (the veiled slot: name, text, veiled tier, range, hook),
 --    req = {level, magic, voc}, weight, desc, note, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low, sc}], cmp = [slot, ...],
 --    ds (display scale: the factor of the item's level requirement; flat health / mana / damage / heal numbers are
 --    already x ds, and the stats rows marked sc carry them: server display_scale_core.lua DS.itemTip)}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+-- i18n (client_chaos_locale). The locale module serves the global tr from _G's metatable, where rawget(_G, 'tr') is nil: ask
+-- ChaosLocale.tr then, or every row of this module stayed English in pt-BR (O479; the unit tests set a global tr or none).
+-- Every module that reads tr with rawget does the same (tools/ci/check_locales.py holds them to it).
+local function tr(s, ...)
+  local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)
+  if g then return g(s, ...) end
+  if select('#', ...) > 0 then return string.format(s, ...) end
+  return s
+end
 
 ItemTooltipLogic = {}
 local L = ItemTooltipLogic
@@ -32,7 +41,11 @@ L.COLORS = {
   -- a unique's passive (server T.splitPassive): its name and its rule stand out from the flavour text
   passive = '#ffb340', passiveText = '#f2e6cc',
   -- the Alt help lines (itemhelp.lua, O372)
-  help = '#b8b0a0'
+  help = '#b8b0a0',
+  -- the gem block of a gem item (O479, owner 2026-11-11, colour option 3): the header, the place labels (each its own colour),
+  -- the effect name, the number, the two hint rows. Only these entries move when the colours change.
+  gemHead = '#8c8070', gemWeapon = '#ff9a5c', gemArmour = '#6fb0ff', gemJewel = '#c890ff',
+  gemEffect = '#d6c9ae', gemValue = '#7fe0a0', gemHint = '#8c8070'
 }
 -- modifier tiers T1 (lowest) .. T8 (highest)
 L.TIER_COLORS = { '#8c8070', '#a89c88', '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ff8a40' }
@@ -262,6 +275,52 @@ function L.kindText(tip)
   return #sub > 0 and table.concat(sub, ' ') or nil, slotLine
 end
 
+-- the effect of a socketed gem in the client's language: the server sends the name and the number apart (l, v; a pair adds
+-- l2, v2), an older server only the English text
+function L.socketText(g)
+  if type(g.l) == 'string' and g.l ~= '' and type(g.v) == 'string' then
+    local text = tr(g.l) .. ' ' .. g.v
+    if type(g.l2) == 'string' and g.l2 ~= '' and type(g.v2) == 'string' then text = text .. ', ' .. tr(g.l2) .. ' ' .. g.v2 end
+    return text
+  end
+  return g.text or ''
+end
+
+-- the gem block of a gem item (O479; the server's tip.gem, item_tooltip_core.lua T.gemInfo), instead of the long description:
+--   {head = 'SOCKETED IN', rows = [{label, labelColor, text, parts}], hints = [text]}
+-- One row per place: the place label in its own colour, the effect name in the text colour, the number in the value colour
+-- (parts = {text, color, ...}). A pair effect takes a second row without a label, so the effect texts stay in one column and
+-- fit the card. The two hints (a free socket, the combine rule) come after the rows, a Perfect gem has no combine hint.
+-- nil for an item without tip.gem (an older server): the description is shown as before.
+L.GEM_PLACES = { weapon = { 'Weapon:', 'gemWeapon' }, armour = { 'Armour:', 'gemArmour' }, jewel = { 'Jewellery:', 'gemJewel' } }
+function L.gemBlock(tip)
+  local g = type(tip) == 'table' and tip.gem or nil
+  if type(g) ~= 'table' or type(g.rows) ~= 'table' then return nil end
+  local C = L.COLORS
+  local rows = {}
+  for _, r in ipairs(g.rows) do
+    local place = type(r) == 'table' and L.GEM_PLACES[r.place] or nil
+    if place and type(r.label) == 'string' and type(r.value) == 'string' then
+      local label = tr(place[1])
+      local function effect(name, value)
+        local n = tr(name) .. ' '
+        return { text = n .. value, parts = { n, C.gemEffect, value, C.gemValue } }
+      end
+      local first = effect(r.label, r.value)
+      rows[#rows + 1] = { label = label, labelColor = C[place[2]], text = first.text, parts = first.parts, color = C.gemEffect }
+      if type(r.label2) == 'string' and type(r.value2) == 'string' then
+        local second = effect(r.label2, r.value2)
+        rows[#rows + 1] = { label = '', labelColor = C[place[2]], text = second.text, parts = second.parts, color = C.gemEffect,
+          cont = true }
+      end
+    end
+  end
+  if #rows == 0 then return nil end
+  local hints = { tr('Use it on gear with a free socket.') }
+  if g.combine then hints[#hints + 1] = tr('Three of the same make one of the next quality: use the stack, then left-click it.') end
+  return { head = L.caps(tr('Socketed in')), rows = rows, hints = hints }
+end
+
 -- the lines of a tooltip: {text, color, sep (a gap before), parts = {text, color, text, color, ...}}
 -- ctx = {level = the player's level}
 function L.lines(tip, ctx)
@@ -362,8 +421,9 @@ function L.lines(tip, ctx)
     for i = 1, s.count do
       local g = s.list and s.list[i] or {}
       if g.name then
-        add('  ' .. g.name .. (g.text ~= '' and (': ' .. g.text) or ''), g.color or C.gem, false,
-          { '  ' .. g.name, g.color or C.gem, (g.text ~= '' and (': ' .. g.text) or ''), C.gem })
+        local effect = L.socketText(g)
+        add('  ' .. g.name .. (effect ~= '' and (': ' .. effect) or ''), g.color or C.gem, false,
+          { '  ' .. g.name, g.color or C.gem, (effect ~= '' and (': ' .. effect) or ''), C.gem })
       else
         add(tr('  empty socket'), C.empty)
       end
@@ -407,7 +467,20 @@ function L.lines(tip, ctx)
   local passive = type(tip.passive) == 'table' and type(tip.passive.name) == 'string' and type(tip.passive.text) == 'string'
     and tip.passive or nil
   local desc = passive and passive.flavor or tip.desc
-  if type(desc) == 'string' and desc ~= '' then
+  local gemBlock = L.gemBlock(tip)
+  if gemBlock then
+    -- a gem item: its effects one row per place, not the description (no double information)
+    add(gemBlock.head, C.gemHead, true)
+    for _, row in ipairs(gemBlock.rows) do
+      local label = row.label ~= '' and (row.label .. ' ') or ''
+      local parts = { label, row.labelColor }
+      for _, p in ipairs(row.parts) do parts[#parts + 1] = p end
+      add(label .. row.text, row.color, false, parts)
+    end
+    for _, hint in ipairs(gemBlock.hints) do
+      for _, line in ipairs(L.wrap(hint, L.WRAP)) do add(line, C.gemHint) end
+    end
+  elseif type(desc) == 'string' and desc ~= '' then
     for i, line in ipairs(L.wrap(desc, L.WRAP)) do
       add(line, C.dim, i == 1)
     end
@@ -435,8 +508,9 @@ function L.lines(tip, ctx)
   -- charges (server item_tooltip_core.lua T.chargeInfo): exercise and training weapons, charged rings and runes
   local chargeText = L.chargesText(tip.charges)
   if chargeText then add(chargeText, C.text, true) end
-  -- where it comes from (server itemfinder.lua F.brief): the first sources, the expected effort, a token price
-  local srcLines = L.sourceLines(tip.src)
+  -- where it comes from (server itemfinder.lua F.brief): the first sources, the expected effort, a token price (all
+  -- three only with ctx.alt), what it is used in
+  local srcLines = L.sourceLines(tip.src, not (ctx and ctx.alt))
   for i, line in ipairs(srcLines) do
     add(line.text, line.color, i == 1)
   end
@@ -475,9 +549,21 @@ function L.chargesText(ch)
   return tr('Charges: %s', L.int(n))
 end
 
+-- a tooltip has rows that Alt opens (owner 2026-11-11): a "Drops from: ..." / "Sources: ..." row, or the gold line
+-- (the chance "~1 in N kills", a token price)
+function L.hasSourceRow(src)
+  if type(src) ~= 'table' then return false end
+  for _, s in ipairs(type(src.s) == 'table' and src.s or {}) do
+    if type(s) == 'table' and s.n then return true end
+  end
+  if type(src.e) == 'table' and L.oneIn(src.e.p) then return true end
+  return tonumber(src.t) ~= nil
+end
+
 -- the sources block of a tooltip: src = {s = [{k, n, v}], e = {p, w, m}, t = token price, u = used in}; rows
--- {text, color}
-function L.sourceLines(src)
+-- {text, color}. hideRow: without the "Drops from: ..." / "Sources: ..." row and without the gold line (the chance, the
+-- token price): the card shows them only while Alt is held (owner 2026-11-11). "Used in" stays.
+function L.sourceLines(src, hideRow)
   local out = {}
   if type(src) ~= 'table' then return out end
   local C = L.COLORS
@@ -489,7 +575,7 @@ function L.sourceLines(src)
       parts[#parts + 1] = tostring(s.n) .. (s.v and (' (' .. tostring(s.v) .. ')') or '')
     end
   end
-  if #parts > 0 then
+  if #parts > 0 and not hideRow then
     local drop = src.s[1].k == 'monster' or src.s[1].k == 'drop'
     local text = drop and tr('Drops from: %s', table.concat(parts, ', ')) or tr('Sources: %s', table.concat(parts, ', '))
     for _, line in ipairs(L.wrap(text, L.WRAP)) do
@@ -517,7 +603,7 @@ function L.sourceLines(src)
   elseif price then
     effort = tr('Conquest vendor: %s tokens', L.int(price))
   end
-  if effort then
+  if effort and not hideRow then
     for _, line in ipairs(L.wrap(effort, L.WRAP)) do
       out[#out + 1] = { text = line, color = C.gold }
     end
@@ -864,6 +950,16 @@ function L.extraGroups(tip)
   local function add(caption, capColor, rows)
     if #rows > 0 or caption then groups[#groups + 1] = { caption = caption, capColor = capColor, rows = rows } end
   end
+  -- a gem item: the framed box (header and one row per place), then the two hints outside it (O479)
+  local gemBlock = L.gemBlock(tip)
+  if gemBlock then
+    groups[#groups + 1] = { kind = 'gembox', head = gemBlock.head, headColor = C.gemHead, rows = gemBlock.rows }
+    local hintRows = {}
+    for _, hint in ipairs(gemBlock.hints) do
+      for _, row in ipairs(textRows(L.wrap(hint, L.WRAP), C.gemHint)) do hintRows[#hintRows + 1] = row end
+    end
+    add(nil, nil, hintRows)
+  end
   local s = tip.sockets
   if s and (tonumber(s.count) or 0) > 0 then
     local filled, rows = 0, {}
@@ -871,7 +967,8 @@ function L.extraGroups(tip)
       local g = s.list and s.list[i] or {}
       if g.name then
         filled = filled + 1
-        local extra = (g.text and g.text ~= '') and (': ' .. g.text) or ''
+        local effect = L.socketText(g)
+        local extra = effect ~= '' and (': ' .. effect) or ''
         rows[#rows + 1] = { kind = 'text', text = g.name .. extra, color = g.color or C.gem,
           parts = { g.name, g.color or C.gem, extra, C.gem } }
       else
@@ -893,7 +990,7 @@ function L.extraGroups(tip)
   local passive = type(tip.passive) == 'table' and type(tip.passive.name) == 'string' and type(tip.passive.text) == 'string'
     and tip.passive or nil
   local desc = passive and passive.flavor or tip.desc
-  if type(desc) == 'string' and desc ~= '' and not L.supportInfo(desc) then
+  if type(desc) == 'string' and desc ~= '' and not L.supportInfo(desc) and not gemBlock then
     add(nil, nil, textRows(L.wrap(desc, L.WRAP), C.dim))
   end
   if passive then
@@ -939,12 +1036,13 @@ function L.reqChips(req, ctx)
 end
 
 -- the foot: the sources lines (dim, the effort in gold) and the weight; the weight joins the last dim line when it
--- fits ("Drops from: Axebringer Fiend - 24.9 oz"); rows {text, color}
-function L.footLines(tip, hints)
+-- fits ("Drops from: Axebringer Fiend - 24.9 oz"); rows {text, color}. alt: Alt is held, the "Drops from" row and the
+-- chance line show (without it they are hidden and the view's hint line says that Alt opens them)
+function L.footLines(tip, hints, alt)
   local C = L.COLORS
   local rows = {}
   for _, h in ipairs(hints or {}) do rows[#rows + 1] = { text = h, color = C.dim } end
-  for _, line in ipairs(L.sourceLines(tip.src)) do rows[#rows + 1] = { text = line.text, color = line.color } end
+  for _, line in ipairs(L.sourceLines(tip.src, not alt)) do rows[#rows + 1] = { text = line.text, color = line.color } end
   if tip.weight then
     local w = tr('Weight %s oz', trim(tip.weight))
     local last = rows[#rows]
@@ -981,7 +1079,7 @@ function L.comparable(tip)
     and type(tip.stats) == 'table' and #tip.stats > 0
 end
 
--- the whole card of a tip. ctx = {level = the player's level}
+-- the whole card of a tip. ctx = {level = the player's level, alt = Alt is held (the "Drops from" row and the chance line show)}
 -- {title, titleColor, kind (caps), kindColor, level (the dim line), slotLine, flags = [{text, color}],
 --  stats = {tiles, extra = [parts]} | nil, mods = [group] | nil, extras = [group] | nil, chips = [chip], foot = [row]}
 function L.card(tip, ctx)
@@ -1026,9 +1124,18 @@ function L.card(tip, ctx)
     if rune.combine then hints[#hints + 1] = tr('Three combine into one of the next level.') end
     if rune.command then hints[#hints + 1] = tr('Open the spell supports with !supports.') end
   end
-  card.foot = L.footLines(tip, hints)
+  card.foot = L.footLines(tip, hints, ctx and ctx.alt)
   card.comparable = L.comparable(tip)
   return card
+end
+
+-- the hint line of a card without Alt: nil when Alt has nothing to add. hasHelp: the item has Alt help lines
+-- (itemhelp.lua); the "Drops from" row and the chance line count too, they show only with Alt
+function L.altHintText(tip, hasHelp)
+  local hidden = L.hasSourceRow(type(tip) == 'table' and tip.src or nil)
+  if hidden and hasHelp then return tr('Hold Alt for where it comes from and what each line does.') end
+  if hidden then return tr('Hold Alt for where it comes from.') end
+  return nil
 end
 
 -- pixel-measured wrap: words of text into lines no wider than maxw; measure(text) -> pixels (the view passes a label)

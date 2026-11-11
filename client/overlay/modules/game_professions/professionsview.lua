@@ -10,7 +10,7 @@
 --                                                                   hunt of the teleport hall, O395)
 --   broker, full, capDay, late, nextDay, nextWeek, respawn          at a broker; the daily rule; seconds to the next day / week
 -- The sale rule here mirrors the server's (professions_core.lua K.quote) for the estimates; the server decides.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ProfessionsView = ProfessionsView or {}
 local V = ProfessionsView

@@ -1,7 +1,7 @@
 -- Store pouches window: the logic without client API (tested by pouchesview_test.lua).
 -- The rules mirror the server's pouches_core.lua: list, gold, uniques, gear (+ minRarity), supplies, gems, other,
 -- overflow (take what a full Orbs / Rift Key Pouch passes on; on when the server does not say).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PouchesView = {}
 local V = PouchesView

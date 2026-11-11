@@ -14149,13 +14149,16 @@ Nothing is stored; the totals live in memory (`ChaosGemsCache`).
   used on itself): a stack in the purse or the depot was refused with "You need three gems" whatever its count,
   since the engine's count never sees those boxes. Tests: `tests/gems_test.lua` "combining against the engine's
   item walk".
-- plain use: the gem's three effects and how to use it.
+- plain use: the gem's three effects and how to use it (`G.gemSummary`; for a pt-BR player `G.gemSummaryTx`, the same words
+  through `Chaos.tx`, so the frame and the effects are in one language).
 
 Every action is logged in `chaos_crafting_log` (the bench's "Recent crafts").
 
 **Taking gems out** (crafting bench, Economy > Crafting Bench: the sockets are listed under the modifiers, extended opcode 232 action
 `gem`): **Remove** returns the gem for 2000 / 6000 / 20000 / 60000 / 200000 gold by tier (bank first, then the
 backpack); **Shatter** is free and destroys it. The 3-to-1 combining, the removal cost and shattering are the gem sinks.
+
+**Gem description (O479)**: the items.xml text of a gem is one piece of text, one sentence per place: "A gem for a socket. Weapon: Holy Damage +2%. Armour: Elemental Resistances +1%. Jewellery: Holy Resistance +2%. Use it on gear with a free socket. Three of the same make one of the next quality: use the stack, then left-click it." (no combine sentence on a Perfect gem). `install_gems.py` writes it (`gems()`, rewrites an installed block: run it again to update a server, a second run changes nothing), `G.describe(type, tier)` in `chaos_gems.lua` says the same words (`G.USE_HINT`, `G.COMBINE_SHORT`; `install_gems_test.py` pins both). The plain-use message keeps `G.COMBINE_HOW`. pt-BR: the whole text has entries in `i18n_strings.lua` (one per place and effect, the hint and the combine sentence); `tests/gems_test.lua` translates every gem type and quality and fails on an English word left. The support rune use message (`supports.lua`) now writes its effect and spell kinds in the player's language too (it had a pt-BR frame with English inside; `S.fitsText(t, tx)`).
 
 **Description**: one section at the end, "Sockets (1/2): Flawless Ruby (Fire Damage +9%), empty." After the engine's
 text it follows a full stop. `C.rewriteDescription` strips it and writes it again last, so it is never doubled. Items
@@ -31614,3 +31617,41 @@ part is lowered, `cards_config.lua` `sets.by.Fire.pct` 4 -> 3.5 (smallest of the
 (a power law over ten levels, within 11% of 55 s), the Omen heal (380 a second, the top of the documented 330-380), the raid adds and the world bosses (left), the tower reach (the hunt pack seconds follow a
 model that predates the real levels' medians), the per-class effect of the pool (not modelled), the unique tooltip glue in an engine, the pt-BR text by a speaker. Not done: skill growth above level 1000 (design E8, owner's
 optional item).
+
+## Gem tooltip (O479)
+
+A player on the community chat (translated, relayed by the owner 2026-11-10) asked for rows instead of a wall of text. The
+tooltip of a gem item had the three effects in one sentence, the combine sentence in pt-BR and the rest in English, and the
+drop chance twice. Owner 2026-11-11: colour option 3 (the place in colour, the number in green).
+
+- **`tip.gem`** (`item_tooltip_core.lua` `T.gemInfo`, built from `chaos_gems.lua` `G.effectOf` / `G.effectParts`, never from the
+  description): `{rows = [{place = "weapon" | "armour" | "jewel", label, value, label2, value2, text}], combine}`. `label` is the
+  effect name ("Holy Damage"), `value` the number as written ("+2%", "+130"), a pair effect adds `label2` / `value2`, `text` is
+  the English line. `combine` is false for a Perfect gem. About 350 bytes a gem; `Chaos.send` chunks anything over 8192 bytes.
+  A socketed gem's entry in `tip.sockets.list` carries the same name and number apart (`l`, `v`, `l2`, `v2`) next to `text`.
+- **Old client**: it ignores both fields and shows `tip.desc`, the new short description, which is correct text.
+- **Main client** (`game_itemtooltip`, client/MANIFEST.md): the rows replace `desc`. Unity shows `desc` as before (frozen).
+- **Drop chance once** (`itemfinder_core.lua` `K.brief`, `itemfinder_sources.lua`): a global drop row carries `vs`, its text without
+  the chance. When the effort line ("~1 in 3,300 kills") words the same kill of the same source, the brief shows `vs` in the
+  "Drops from" row. The effort row stays: it serves every item (a monster, a boss, a legendary kill, a token price, "~1 in N
+  kills of Dragon"); a shop-only item has no effort line and no chance. Another tier ("magic monster kills") and a common drop
+  (no effort line, over 1 in 5) keep the chance in the row. The Item Finder window keeps the full text. A monster row keeps
+  its percent: the effort line names the monster and gives 1 in N, a different form of one number.
+- **pt-BR source rows**: for a pt-BR player `item_tooltip.lua` `srcIn` translates the fixed words of a source row ("Any monster",
+  "global drop", the level and tier forms) on a copy (the brief is cached for everyone); a monster's name stays.
+- **Language**: the server keeps one language per character (storage 7101830, `i18n_core.lua`), set by the client's hello on
+  opcode 157 (`locale.lua` `sendHello`, at game start and at a change); the client's language is one setting per install
+  (`chaos-language`). The tooltip text of the client's own rows came out English in pt-BR because `tooltiplogic.lua` asked
+  `rawget(_G, 'tr')`, which is nil while the locale module serves `tr` from the metatable of `_G`. It asks `ChaosLocale.tr` then.
+  The same read was in 91 other client files; each falls back the same way (`tools/ci/check_locales.py` holds them to it).
+- **"Drops from" only with Alt** (owner 2026-11-11, translated: "Also hide the 'drops from' text. Let it show only when Alt
+  is pressed"): on every item the main client's card hides the "Drops from: ..." / "Sources: ..." row until Alt is held
+  (`tooltiplogic.lua` `L.sourceLines(src, hideRow)`, `L.card` ctx `alt`). Asked about the chance line, the owner (2026-11-11,
+  translated): "You can hide the chance too": the gold line (the chance "~1 in N kills", a token price) hides with it. "Used
+  in" and the weight stay. Without Alt the hint line names it: "Hold Alt for where it comes from and what each line does." (or "Hold Alt
+  for where it comes from." on an item without help lines). The server sends the same data; Unity is unchanged.
+- Tests: `tests/item_tooltip_test.lua` (`tip.gem` of every gem), `tests/gems_test.lua` (description, pt-BR for every gem),
+  `tests/itemdesc_i18n_test.lua` (rune texts, source words), `tests/itemfinder_test.lua` (global drop, monster drop, item with
+  no drop), `tools/install_gems_test.py` (old text to new, second run), client `tooltiplogic_test.lua`.
+- **Not verified**: a real client (the row layout of `gemBox` in `item_tooltip.lua` is not run by a test; the rows and colours are),
+  a speaker's reading of the pt-BR lines.

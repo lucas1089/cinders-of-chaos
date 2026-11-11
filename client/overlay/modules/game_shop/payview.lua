@@ -3,7 +3,7 @@
 -- Text in this file is ASCII: the Portuguese accents are cp1252 byte escapes (the client draws cp1252; patch 0028
 -- converts only server text). The server sends the same notice and refund sentences (shop_payments_core.lua); the
 -- test checks they match.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 PayView = {}
 local V = PayView

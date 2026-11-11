@@ -3,7 +3,7 @@
 -- Sell form suggests and its warning, the mark of a Browse row priced well under / over the typical price, and the
 -- 30-day chart as rectangles (the Orb Exchange chart, game_orbexchange/orbexchangeview.lua OrbExchangeView.chart, with
 -- days in place of hours).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 MarketView = MarketView or {}
 local V = MarketView
