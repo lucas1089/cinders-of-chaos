@@ -11,7 +11,7 @@ namespace Chaos.Core
         {
             // ---- Infinity Tower
             { "Infinity Tower", "Infinity Tower" }, { "Current Season: {0}", "Temporada atual: {0}" }, { "Season Ends In: {0}", "A temporada termina em: {0}" },
-            { "Season Ends In: Finished", "A temporada termina em: Encerrada" }, { "Season Ends In: --", "A temporada termina em: --" },
+            { "Season Ends In: Finished", "A temporada termina em: Encerrada" }, { "Season Ends In: --", "A temporada termina em: --" }, { "Season Ends In: Coming soon", "A temporada termina em: em breve" },
             { "Your Tower Points: {0}", "Seus pontos da Torre: {0}" }, { "Next Try Available: {0}", "Próxima tentativa em: {0}" },
             { "Next Try Available: Ready Now!", "Próxima tentativa: pronta agora!" }, { "Next Try Available: --", "Próxima tentativa: --" },
             { "Next reward: --", "Próxima recompensa: --" }, { "Next reward: floor {0}", "Próxima recompensa: andar {0}" },
@@ -149,7 +149,7 @@ namespace Chaos.Core
             { "Your bracket: {0}", "Sua faixa: {0}" }, { " (stats scaled to level {0})", " (atributos ajustados ao nível {0})" }, { "none", "nenhuma" }, { "Queue as", "Entrar na fila como" },
             { "Solo, or the party leader queues the party (up to {0}). Parties stay together; tanks and healers are spread over both teams.", "Sozinho, ou o líder do grupo põe o grupo na fila (até {0}). Grupos ficam juntos; tanques e curandeiros se dividem entre os times." },
             { "Season ratings", "Notas da temporada" }, { "PvP seasons are not running on this server.", "As temporadas PvP não estão ativas neste servidor." },
-            { "PvP Season {0}: ends in {1}", "Temporada PvP {0}: termina em {1}" },
+            { "PvP Season {0}: ends in {1}", "Temporada PvP {0}: termina em {1}" }, { "PvP Season {0}: coming soon", "Temporada PvP {0}: em breve" },
             { "A season lasts {0} weeks. Each bracket has its own rating; the first {1} rated matches place you. At the end the best placed bracket decides your tier and rewards, then every rating is pulled halfway back to 1500. Ratings of {2} and more lose {3} a week after {4} days without a rated match of that bracket (never below {2}).", "Uma temporada dura {0} semanas. Cada faixa tem sua nota; as primeiras {1} partidas valendo nota classificam você. No fim a faixa mais bem colocada decide seu nível e recompensas, e cada nota volta até a metade do caminho para 1500. Notas de {2} ou mais perdem {3} por semana após {4} dias sem partida valendo nota daquela faixa (nunca abaixo de {2})." },
             { "Season rewards by tier", "Recompensas da temporada por nível" }, { "title \"{0} (S{1})\"", "título \"{0} (T{1})\"" }, { "{0} plate frame", "moldura de placa {0}" },
             { "Honor comes from battleground matches (win, loss, downs, wells taken, the weekly first win) and the season rewards. The vendor sells cosmetics and consumables only.", "A honra vem das partidas (vitória, derrota, derrubadas, poços tomados, a primeira vitória da semana) e das recompensas da temporada. O vendedor só vende cosméticos e consumíveis." },

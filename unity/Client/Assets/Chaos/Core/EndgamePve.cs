@@ -127,7 +127,8 @@ namespace Chaos.Core
             return string.Join("\n", lines);
         }
 
-        public string SeasonEndText() => SeasonEnd - UnixNow() > 0 ? Loc.T("Season Ends In: {0}", Eg.TimeRemaining(SeasonEnd - UnixNow())) : Loc.T("Season Ends In: Finished");
+        /// <summary>No `seasonEnd` while the launch date is open (O463): "coming soon", as the main client, not "Finished".</summary>
+        public string SeasonEndText() => SeasonEnd <= 0 ? Loc.T("Season Ends In: Coming soon") : SeasonEnd - UnixNow() > 0 ? Loc.T("Season Ends In: {0}", Eg.TimeRemaining(SeasonEnd - UnixNow())) : Loc.T("Season Ends In: Finished");
         public string NextTryText() => NextTry - UnixNow() > 0 ? Loc.T("Next Try Available: {0}", Eg.TimeRemaining(NextTry - UnixNow())) : Loc.T("Next Try Available: Ready Now!");
 
         // ---- the run panel

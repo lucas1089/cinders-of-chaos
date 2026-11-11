@@ -200,6 +200,14 @@ namespace Chaos.Core.Tests
             check(s.Title() == "Ash Pass - Season 3 [S3]" && s.TimerText(5000) == "Season ends in 1d 00h 59m", "pass: title and timer: " + s.TimerText(5000));
             int pct = PassState.Progress(s.State, out string ptext);
             check(pct == 40 && ptext == "40 / 100 XP to tier 3", "pass: progress");
+            // the launch date is open (O463): status "soon", no start and no finish
+            var soonPass = new PassState(new Rig().Ext) { State = Json.Parse("{\"season\":{\"id\":1,\"pass\":\"Ash Pass\",\"name\":\"Season 1\",\"tag\":\"[S1]\",\"status\":\"soon\"}}") };
+            check(soonPass.TimerText(0) == "Starts: Coming soon" && soonPass.TimerText(9000000) == "Starts: Coming soon" && soonPass.Title() == "Ash Pass - Season 1 [S1]", "pass: an open launch shows coming soon: " + soonPass.TimerText(0));
+            Loc.Set("pt-BR");
+            check(soonPass.TimerText(0) == "Começa: em breve", "pass: coming soon in pt-BR: " + soonPass.TimerText(0));
+            Loc.Set("en");
+            soonPass.State = Json.Parse("{\"season\":{\"id\":1,\"status\":\"upcoming\",\"startsIn\":3600}}");
+            check(soonPass.TimerText(0) == "Starts in 1h 00m 00s", "pass: an upcoming season still counts down: " + soonPass.TimerText(0));
             check(PassState.CellState(s.State, 1, 0) == "claimed" && PassState.CellState(s.State, 2, 0) == "claimable" && PassState.CellState(s.State, 2, 1) == "premium" && PassState.CellState(s.State, 3, 0) == "locked", "pass: cell states");
             check(PassState.ClaimableCount(s.State) == 1, "pass: claimable count");
             rig.Recv(227, "{\"action\":\"tiers\",\"data\":{\"season\":3,\"total\":3,\"rows\":[{\"tier\":1,\"free\":{\"text\":\"Gold\"}},{\"tier\":2,\"free\":{\"text\":\"Orb\"}}]}}");
@@ -243,6 +251,18 @@ namespace Chaos.Core.Tests
             check(s.Visible && s.NameLine() == "Ember [E]" && s.ModifierLine() == "Season modifier Fury: More damage" && s.CanJoin, "season: overview");
             check(s.TimerText(1000) == "Ends in 1h 59m 59s" && s.TitlesLine() == "Season titles of your account: Emberborn", "season: timer and titles: " + s.TimerText(1000));
             check(s.MineText().StartsWith("This character can join Ember"), "season: mine text");
+            // the launch date is open (O463): status "soon", no start and no finish
+            var soon = new SeasonState(new Rig().Ext);
+            soon.Handle("state", Json.Parse("{\"season\":{\"name\":\"Season of Ash\",\"tag\":\"[S1]\",\"status\":\"soon\",\"modifier\":{\"name\":\"Fury\",\"description\":\"More damage\"}},\"mine\":{\"reason\":\"x\"}}"));
+            check(soon.TimerText(0) == "Starts: Coming soon" && soon.TimerText(9000000) == "Starts: Coming soon", "season: an open launch shows coming soon, not Ended: " + soon.TimerText(0));
+            check(soon.MineText() == "The season has not started yet. Make a fresh character to join it when it starts." && !soon.CanJoin && soon.ModifierLine().StartsWith("Season modifier Fury"), "season: soon reads as not started: " + soon.MineText());
+            Loc.Set("pt-BR");
+            check(soon.TimerText(0) == "Começa: em breve", "season: coming soon in pt-BR: " + soon.TimerText(0));
+            Loc.Set("en");
+            soon.Handle("state", Json.Parse("{\"season\":{\"name\":\"Season of Ash\",\"status\":\"upcoming\",\"startsIn\":120},\"mine\":{}}"));
+            check(soon.TimerText(soon.StateAt) == "Starts in 0h 02m 00s" && soon.MineText().StartsWith("The season has not started yet."), "season: upcoming still counts down: " + soon.TimerText(soon.StateAt));
+            soon.Handle("state", Json.Parse("{\"season\":{\"name\":\"Season of Ash\",\"status\":\"ended\"},\"mine\":{}}"));
+            check(soon.TimerText(0) == "Ended" && soon.MineText().StartsWith("The season has ended."), "season: ended stays ended");
             string tp = SeasonState.TrackProgress(s.Track[0], out int pct, out bool un);
             check(tp == "20 / 50" && pct == 40 && !un && SeasonState.TrackProgress(s.Track[1], out pct, out un) == "Unlocked" && un && pct == 100, "season: track progress");
             s.AskJoin();
