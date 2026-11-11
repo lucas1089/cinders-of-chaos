@@ -113,7 +113,7 @@ python3 -I server/tools/patch_stock_spell_inputs_test.py   # Kindling Spark and 
 python3 -I server/tools/monster_level_patch_test.py   # src-patch 0082: monster level = middle of the <level> range, no level skull (O326)
 python3 -I server/tools/monster_bonus_once_patch_test.py   # src-patch 0090: the monster level damage bonus once per hit, not again on the re-entry after the target's health / mana events; table of a 40 hit once and twice by level (O477)
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
-python3 -I server/tools/patch_base_fusion_plain_test.py   # item fusion (67) takes only plain copies, never a unique, set or rolled copy (O509; install_all step fusionplain; the rule: data/scripts/chaos/item_fusion_core.lua, tests/item_fusion_test.lua in the server loop)
+python3 -I server/tools/patch_base_fusion_plain_test.py   # item fusion (67) takes only plain copies, never a unique, set or rolled copy (O511; install_all step fusionplain; the rule: data/scripts/chaos/item_fusion_core.lua, tests/item_fusion_test.lua in the server loop)
 python3 -I client/tools/rml_window_audit.py && python3 -I client/tools/rml_window_audit_test.py   # which windows the RmlUi mirror draws and which stay classic, from the .otui files (O406; --otui)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I mapeditor/tools/run_profile_test.py && python3 -I mapeditor/tools/upstream_test.py   # our map editor (O382): profile table, upstream pin; build and profile: mapeditor-build.yml, patches: mapeditor/tools/check_patches.sh UPSTREAM_CLONE

@@ -11873,7 +11873,7 @@
    "kind": "out",
    "opcodes": [],
    "talkactions": [],
-   "why": "the rule of the base item fusion (opcode 67, not a Chaos opcode); no client window sends it (O509)"
+   "why": "the rule of the base item fusion (opcode 67, not a Chaos opcode); no client window sends it (O511)"
   },
   "item_tooltip": {
    "files": [

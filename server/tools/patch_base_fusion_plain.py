@@ -3,7 +3,7 @@
 
 usage: python3 -I patch_base_fusion_plain.py DATA_DIR [--dry-run]
 
-DATA_DIR is the base server's data folder. File: scripts/customs/item_fusion/item_fusion.lua. O509: on "fuse" the base
+DATA_DIR is the base server's data folder. File: scripts/customs/item_fusion/item_fusion.lua. O511: on "fuse" the base
 script ran player:removeItem(id, 3). The engine takes by item id, the first three copies it meets (head, necklace, the
 backpack and everything in it, then the other slots), so a fusion of three plain copies could take a unique, a set
 piece or a rolled copy of the same base. Now:

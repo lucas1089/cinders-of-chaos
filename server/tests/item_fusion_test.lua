@@ -1,5 +1,5 @@
 -- Run from the server/ folder: luajit tests/item_fusion_test.lua (and lua5.3; CI runs both)
--- Item fusion takes only plain copies (O509, data/scripts/chaos/item_fusion_core.lua) against a mocked player, with the
+-- Item fusion takes only plain copies (O511, data/scripts/chaos/item_fusion_core.lua) against a mocked player, with the
 -- real crafting rules (data/lib/chaos_crafting.lua): what a plain copy is, the engine's order, that a unique or set
 -- copy is never taken, and that nothing is removed when the plain copies are not enough.
 

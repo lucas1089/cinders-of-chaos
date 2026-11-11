@@ -477,7 +477,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   fusionplain  tools/patch_base_fusion_plain.py  item fusion (opcode 67) takes only plain copies: the base script asks
                data/scripts/chaos/item_fusion_core.lua for the three copies instead of player:removeItem, so a unique, a set
                piece or a rolled copy of the same base is never taken; no core, no fusion (README "Item fusion allowlist
-               (O310)", Plain copies only (O509); right after fusionlist)
+               (O310)", Plain copies only (O511); right after fusionlist)
   itemwire     tools/patch_item_wire.py          the items.otb nodes of data/items/item_wire.csv write the bytes the client pair
                reads (FLAG_ANIMATION only on a dat thing with more than one phase, group splash / fluid where the dat says so;
                README "Item wire bytes"; after every step that writes item nodes)

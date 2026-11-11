@@ -1,4 +1,4 @@
--- Item fusion: which copies a fusion may take (O509). Pure logic, tested by server/tests/item_fusion_test.lua against
+-- Item fusion: which copies a fusion may take (O511). Pure logic, tested by server/tests/item_fusion_test.lua against
 -- a mocked player. Lua 5.1 / LuaJIT and Lua 5.3.
 --
 -- The base item fusion (opcode 67, data/scripts/customs/item_fusion/item_fusion.lua of the base server) ran
