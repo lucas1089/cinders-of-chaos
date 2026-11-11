@@ -2960,8 +2960,9 @@ end
 playerMana:register()
 
 -- ======================================================================== guardian hit cap (O478)
--- One hit of the run's guardian on a player takes at most `guardian.hitCap.share` x the player's pool (rift_core.lua
--- R.hitPool / R.capHit, numbers in rift_config.lua). It is the LAST health and mana event of the player, so it bounds the final
+-- One hit of the run's guardian on a player takes at most `guardian.hitCap.share` x the player's pool (the rule: hitcap_core.lua
+-- H.pool / H.cut, also rift_core.lua R.hitPool / R.capHit; numbers in rift_config.lua). The same two events cap the Nemesis
+-- (O483: nemesis_config.lua hitCap, a second source of ChaosHitCap, see below). It is the LAST health and mana event of the player, so it bounds the final
 -- number: the events that can raise a guardian's hit after scaleHit (the rank and modifiers of Chaos0TierLogin, Rampage and
 -- Momentum, Shadow Twin, the Unbroken Line, the fight's enrage and debuff stacks of boss_mechanics.lua) all run before it.
 -- An event that registers on the player later (the mentor's, hardcore protection) can only lower a hit. Events run in
@@ -2996,21 +2997,38 @@ function RF.capLast(player)
 	end
 end
 
-local function capHit(creature, attacker, pd, pt, sd, st, viaMana)
-	local cfg = C()
-	local c = cfg.guardian and cfg.guardian.hitCap
-	if not (c and c.enabled) or pt == COMBAT_HEALING or pt == COMBAT_MANADRAIN or not attacker or reflecting
-			or not creature:isPlayer() then
-		return pd, pt, sd, st
+-- The sources of the cap (hitcap_core.lua ChaosHitCap): "who is capped, with which share". The rift guardian is the first
+-- (every monster of run.bossIds, share guardian.hitCap.share); the Nemesis registers the second (nemesis.lua, O483). The events
+-- below, RF.capLast and the mana mark are the same for every source.
+local function guardianShare(attacker)
+	local c = C().guardian and C().guardian.hitCap
+	if not (c and c.enabled) then
+		return nil
 	end
 	local aid = attacker:getId()
 	local run = RF.monsterRun[aid]
-	if not (run and run.bossIds and run.bossIds[aid]) then
+	if run and run.bossIds and run.bossIds[aid] then
+		return c.share
+	end
+	return nil
+end
+if not ChaosHitCap then
+	dofile("data/scripts/chaos/hitcap_core.lua")
+end
+ChaosHitCap.setSource("rift", guardianShare)
+
+local function capHit(creature, attacker, pd, pt, sd, st, viaMana)
+	if pt == COMBAT_HEALING or pt == COMBAT_MANADRAIN or not attacker or reflecting or not creature:isPlayer() then
 		return pd, pt, sd, st
 	end
+	local share = ChaosHitCap.shareOf(attacker, creature)
+	if not share then
+		return pd, pt, sd, st
+	end
+	local aid = attacker:getId()
 	local cid = creature:getId()
 	local shield = creature:hasCondition(CONDITION_MANASHIELD)
-	local pool = R.hitPool(creature:getMaxHealth(), creature:getMaxMana(), shield)
+	local pool = ChaosHitCapCore.pool(creature:getMaxHealth(), creature:getMaxMana(), shield)
 	local spent = 0
 	if not viaMana then
 		local mark = capMark[cid]
@@ -3020,7 +3038,7 @@ local function capHit(creature, attacker, pd, pt, sd, st, viaMana)
 		end
 	end
 	local healSecondary = st == COMBAT_HEALING
-	local p, s = R.capHit(cfg, pd, healSecondary and 0 or sd, pool, spent)
+	local p, s = ChaosHitCapCore.cut(share, pd, healSecondary and 0 or sd, pool, spent)
 	if viaMana then
 		local total = math.abs(p) + math.abs(s)
 		local mana = creature:getMana()

@@ -7,7 +7,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 68,
+  "opcode": 69,
   "out": 38,
   "passive": 108,
   "place": 15,
@@ -9868,6 +9868,7 @@
    "out": false,
    "skip": [],
    "systems": [
+    "hitcap",
     "manashield",
     "monster_defence"
    ]
@@ -11736,6 +11737,16 @@
    "talkactions": [
     "/hideout"
    ]
+  },
+  "hitcap": {
+   "files": [
+    "monster_tiers.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "monsterbar"
+   ],
+   "talkactions": []
   },
   "hunt": {
    "files": [

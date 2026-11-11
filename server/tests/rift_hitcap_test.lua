@@ -324,6 +324,44 @@ do
 	flush()
 end
 
+-- ------------------------------------------------------------------ a second source (O483: the Nemesis)
+-- The same two events cap any attacker a source names: here a monster of no run that a stand in source gives 50%. The rift
+-- guardian is unchanged beside it.
+do
+	local nm = newMonster("Nemesis", pos(0, 0, 7))
+	local share = 0.50
+	ok(ChaosHitCap and ChaosHitCap.sources.rift, "the rift guardian is a registered source")
+	ChaosHitCap.setSource("zz_test_nemesis", function(att, victim) if att == nm and victim and victim:isPlayer() then return share end end)
+	local p = newPlayer(3000, 2000)
+	eq(healthHit(p, nm, 5000), 1500, "a second source: cut to its share of the pool (health only)")
+	eq(healthHit(p, nm, 100), 100, "a hit under the cap is untouched (no run scaling for it)")
+	eq(healthHit(p, g, 1000), 1800, "the rift guardian beside it: still 60%")
+	-- the mana shield: the mana event caps the whole hit against health + mana, the health event holds the sum
+	local q = newPlayer(3000, 2000, 3000, 500, true)
+	local pd, pt, sd, st = scaleM(q, nm, 9000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 1)
+	pd, pt, sd, st = capM(q, nm, pd, pt, sd, st, 1)
+	eq(math.abs(pd) + math.abs(sd), 2500, "second source, mana shield up: 50% of 5000 as a whole")
+	q.mana = 0
+	local hd = capH(q, nm, -9000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 1)
+	eq(math.abs(hd), 2000, "the health event: the ceiling less the 500 the mana paid")
+	flush()
+	ok(next(RF._capMark) == nil, "no mark left")
+	-- healing, no attacker and a victim that is no player stay untouched for a second source as well
+	eq(capH(p, nm, 5000, COMBAT_HEALING, 0, COMBAT_NONE, 1), 5000, "healing untouched")
+	eq(capH(p, nil, -9000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 1), -9000, "no attacker untouched")
+	-- the source says no (a stranger it may not hurt, or switched off): the hit is not touched
+	share = nil
+	eq(capH(p, nm, -9000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 1), -9000, "no share: untouched")
+	-- a source that fails never breaks the hit
+	ChaosHitCap.setSource("zz_test_nemesis", function() error("boom") end)
+	eq(capH(p, nm, -9000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 1), -9000, "a failing source: untouched")
+	eq(healthHit(p, g, 1000), 1800, "and the guardian is still capped")
+	ChaosHitCap.sources.zz_test_nemesis = nil
+	for i = #ChaosHitCap.order, 1, -1 do
+		if ChaosHitCap.order[i] == "zz_test_nemesis" then table.remove(ChaosHitCap.order, i) end
+	end
+end
+
 -- ------------------------------------------------------------------ the switch
 do
 	local c = cfg.guardian.hitCap
