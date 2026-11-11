@@ -338,7 +338,7 @@ bl = V.barLines(ctx({ orb = 'ember', mod = 'a2' }, ex), { ok = false, text = 'Yo
 eq(bl.result.mark, 'fail', 'a refusal')
 bl = V.barLines(ctx({}), nil)
 eq(bl.verb, 'Choose an action', 'no action chosen') eq(bl.target, '', 'no target')
-eq(V.iconCount(678), 100, 'the Void Orb draws with the count pattern of a full stack') eq(V.iconCount(25045), 1, 'other orbs at count 1') eq(V.iconCount(nil), 1, 'no id')
+eq(V.iconCount(678), 100, 'the Void Orb draws with the count pattern of a full stack') eq(V.iconCount(25045), 1, 'other orbs at count 1') eq(V.iconCount(44559), 1, 'the Void Orb own look of pair 63 is one pattern: count 1') eq(V.iconCount(nil), 1, 'no id')
 -- palette: only theme colours and the item tooltip's
 local allowed = { ['#d6c9ae'] = 1, ['#8c8070'] = 1, ['#6b6258'] = 1, ['#e8b84a'] = 1, ['#f6cf72'] = 1, ['#e03a1e'] = 1, ['#0d0b0e'] = 1, ['#5ccf5c'] = 1 }
 for name, c in pairs(V.C) do eq(allowed[c] == 1, true, 'palette colour ' .. name .. ' ' .. c) end

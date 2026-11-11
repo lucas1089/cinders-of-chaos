@@ -163,9 +163,10 @@ jobs:
           # the store item looks of pair 34 (our pouch and ration art snapped to theme palettes): atlas and things file
           # match the generator, and each look passes style_check against its theme
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_store_items_art.py build --check
-          # the orb looks of pair 38 (orbs drawn in code, no rune sprite): atlas and things file match the generator,
-          # and each look passes style_check against its theme
+          # the 18 crafting orb looks of pair 63 (O482): atlas and things file match the generator and the committed
+          # source sheet; the pure parts and the ids against chaos_orbs_config.lua
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art_test.py
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check

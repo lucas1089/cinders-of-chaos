@@ -85,10 +85,12 @@ except SystemExit as e:
 orb = shipped['socketOrb']
 check(orb['id'] == 24692 and orb['look'] == 38641 and orb['useLook'] and orb['stockLook'] == 22036,
       'socketOrb: look 38641 (orb_items.csv), stock rune stone 22036')
+# O482 (pair 63): client 38641 is redrawn in place with the new orb art, so art_import/orb_items.csv (the things file of the ten
+# orbs that get an appended client item) no longer holds the Orb of Sockets; the id and the node rule above are what stays
 with open(os.path.join(HERE, '..', '..', 'client', 'tools', 'sprites', 'art_import', 'orb_items.csv')) as f:
     orbart = {int(r['server_id']): r for r in csv.DictReader(f)}
-check(orbart.get(24692, {}).get('flags') == 'copy:22036' and int(orbart[24692]['phases']) == 1,
-      'orb_items.csv: the Orb of Sockets look copies the rune stone flags, one phase (no animation flag needed)')
+check(24692 not in orbart and len(orbart) == 10 and all(int(r['phases']) == 1 for r in orbart.values()),
+      'orb_items.csv: ten appended one-phase orb looks; the Orb of Sockets (38641) is redrawn in place, not appended')
 orbx = attr(0x14, struct.pack('<H', 9))
 sbase = otb([item_node(24691, 22035), item_node(24692, 22036, FLAG_STACKABLE | FLAG_USEABLE, 0, orbx), item_node(3191, 3191)])
 on, note = T.patch_orb_otb(sbase, orb)

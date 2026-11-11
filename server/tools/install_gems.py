@@ -25,7 +25,7 @@ types (name, plural, clientId, clientIdHigh, the three effects and their values)
 
 3. The Orb of Sockets' own node (a base rune stone node, client 22036, which draws the great fireball rune's sprite):
    with socketOrb.useLook its client id becomes our orb look socketOrb.look (38641, client pair 38: client/tools/sprites/
-   gen_orb_items_art.py, art_import/orb_items.csv; owner 2026-10-22: no rune sprite for an orb); with useLook = false
+   gen_orb_items_art.py; pair 63 redraws it in place; owner 2026-10-22: no rune sprite for an orb); with useLook = false
    socketOrb.stockLook comes back. Only the client id attribute changes. A client id other than those two, or a look
    another node uses, stops the script. A client older than pair 38 draws nothing for the orb: ship pair 38 first.
 

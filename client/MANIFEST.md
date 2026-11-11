@@ -2793,47 +2793,60 @@ byte-identical. Built twice: identical md5s.
 - A client on pair 36 or older: the server's pair 37 outfits draw nothing. Ship pair 37 with the server.
 - Server side: server/README.md "Owner outfits (pair 37)". Preview: scratchpad only. Not run in a client.
 
-## Orb looks (pair 38: item 38641, `tools/sprites/gen_orb_items_art.py`, `art_import/orb_items.*`; built 2026-10-22, on windows-assets ee8e82e)
-Owner request 2026-10-22 with a screenshot of the Orbs Pouch: "Coloque arte de orb de verdade. Não use as runas para
-isso. Deixe os sprites de runa só para as runas." The Orb of Sockets showed a red oval stone, in the pouch and its
-tooltip.
-- **Cause.** The Orb of Sockets (server 24692) is an unused stackable rune stone of the base data, client 22036, whose
-  only sprite (1317) is the great fireball rune's (client 3191): the same picture. Checked for every orb of the loot
-  list, the crafting bench and orbs v2 (24688, 24691, 24697, 29851-29859, 32251-32260, 24692) against the 134 rune
-  things of pair 37 (base items.xml names with "rune"): sprite ids and the phash of the 32 px render. Only 24692
-  shares a sprite with a rune (distance 0); every other orb is 180 or more of 256 bits from its nearest rune.
-- **New look.** `gen_orb_items_art.py build` draws the orb per pixel in code (no source image, no pack pixels): blue
-  glass lit from the top left with a cyan glow inside and a specular glint, a gold band leaning toward the viewer
-  holding three sockets lit violet, cyan and green, a one-pixel near-black outline; snapped to `azurevigil`. Passes
-  `style_check.py check`; `build` refuses a failing tile, `build --check` (CI, fx venv) compares atlas and things file.
-- Things file `art_import/orb_items.csv`: client 38641 `orb of sockets`, flags `copy:22036` (stackable, multi-use,
-  light as before), one phase, mode replace with server id 24692. The server points the node at it
-  (`install_gems.py`, `chaos_gems_config.lua` `socketOrb.look` / `useLook`; server/README.md "Gems and sockets").
-  22036 and the rune 3191 are unchanged.
+## Orb looks (the 18 crafting bench orbs, `tools/sprites/gen_orb_items_art.py`, `art_import/orbs_src.png`, `orb_items.png`, `orb_items.csv`; new looks in pair 63, built 2026-11-11, not on windows-assets yet; O482; first look pair 38, 2026-10-22, on windows-assets ee8e82e)
+**History.** Pair 38 gave the Orb of Sockets (server 24692, client 38641) a look of its own: before, it drew the great fireball rune's
+sprite (owner 2026-10-22: "Coloque arte de orb de verdade. Não use as runas para isso. Deixe os sprites de runa só para as runas."), a
+sphere drawn per pixel in code. The other orbs wore base things (inlay stones, essence crystals, moonlight crystals, crowned gems, a small
+enchanted amethyst, rune stones) and the owner's art sets (things.csv: client 33000 to 33002).
+**New art.** Owner 2026-11-11 (translated), on the Ember Orb and the Orb of Binding: "Redo these 2 first orbs"; on the Void Orb: "This last
+orb too. It looks like a small stone."; "Generate all the other orbs too. Let us keep them all in the same line."; after the options: "A, b,
+c" (Ember, Binding, Void); on the full sheet with a suggestion per orb: "You can go ahead with your recommendations." So all 18 looks are
+chosen. 32 px pixel art made on 2026-11-11 with PixelLab (docs/CREDITS.md "Tools", the entry that also names the gems; our own prompts,
+candidates picked on the owner's sheets). Nothing is repainted: no recolour, no resize, no outline pass.
+- `art_import/orbs_src.png`: the 18 picks, 192 x 96 RGBA (6 x 3 cells in bench order: Ember, Binding, Whetstone, Unveiling, Awakening,
+  Gilding, Grafting, Reforging, Tempering, Crown, Sockets, Ruin, Unmaking, Erasure, Upheaval, Fate, Excision, Void), alpha 0 / 255 only. The
+  only input of the generator (`pack DIR` makes it from `<slug>.png` files). The per-pixel drawing code of pair 38 is deleted.
+- `gen_orb_items_art.py build` writes `art_import/orb_items.png` (the 18 cells stacked, 32 x 576) and `art_import/orb_items.csv` (the things
+  file of the ten new client items); `build --check` (CI, Pillow 12.3.0 / numpy 2.5.3) rebuilds and compares; `gen_orb_items_art_test.py`
+  (CI) runs the pure parts and checks the ids against `chaos_orbs_config.lua`; `strips` prints the `redraw_items.py` arguments of the eight
+  in-place looks; `style` runs `style_check.py` of every cell against every theme (a report, never a gate); `build --preview DIR --dat
+  --spr` draws old beside new.
+- `style_check.py` (2026-11-11): size, background, scale, alpha, colours and noise pass for all 18; the palette fails against every single
+  theme but Gilding passes gildcrown (a theme is one colourway, the orbs are eighteen); the outline fails for the Orb of Binding (0% of the
+  rim near-black). Nothing was repainted to please it.
+- **One look, one item** (client ids against the installed items.otb; the code and the table agree for all 18). Ten orbs are copies of stock
+  nodes whose client sprite other stock items wear too, so each gets a NEW client item appended to the pair (flags copied from the stock thing,
+  one phase, one pattern) and the stock things keep their pictures: Ember Orb 25045 -> **44550** (also worn by 27701 Legendary Abyssal
+  Essence), Orb of Binding 25047 -> **44551** (27703 Rare Essence), Whetstone 22083 -> **44552** (24739 moonlight crystals), Orb of Unveiling
+  25046 -> **44553** (27702 Legendary Ancestral Essence), Orb of Reforging 25048 -> **44554** (27704 Epic Essence), Orb of Tempering 24483 ->
+  **44555** (27139 Rare Three Stars Inlay Stone), Crown Orb 25044 -> **44556** (27700 Legendary Chaos Essence), Orb of Ruin 24477 -> **44557**
+  (27133 Star Inlay Stone), Orb of Excision 25049 -> **44558** (27705 Mythic Essence), Void Orb 678 -> **44559** (7762 small enchanted amethyst:
+  a stack of eight count patterns and eight phases). Those twins drop, sell and are worn as items, so the stock sprites cannot be redrawn.
+  Eight client ids belong to their orb alone (no other items.otb node uses them) and are redrawn in place: Orb of Awakening 27195, Orb of
+  Grafting 27199, Orb of Upheaval 27200, Orb of Fate 27201 (stock client things, but the stock server items of those numbers map to other client
+  ids), Orb of Gilding 33000, Orb of Unmaking 33001, Orb of Erasure 33002 (art sets, built for the orbs), Orb of Sockets 38641 (pair 38). The
+  new ids follow 44549, the last item of pair 62, in bench order.
+- Server: `chaos_orbs_config.lua` `look` (the ten new ids) and `server/tools/install_orbs.py`: the node gets the own look only when
+  `chaosClientPair` is 63 or more (`client_pair.py` `PAIR_ORBS`), else it keeps the stock id, so a client on pair 62 or older still draws the old
+  orb, never a blank; the animation flag of the stock node (the Void Orb's gem) is cleared with the own look. Names, texts, ids, balance and
+  players' items do not change. server/README.md "Crafting orbs v2".
+- Forge window: `forgeview.lua` `V.ICON_COUNT` (client 678 drawn at count 100) stays: the server sends 678 only while the node keeps the stock id
+  (pair below 63), the new look 44559 is one pattern and never hits it. The id is the gate.
+- Website sprite images: `website/tools/sprite_owners.csv` marks 27195, 27199, 27200, 27201 and 44550-44559 as own art (the redrawn stock ids
+  are ours now; without it the images would stay placeholders).
+- Old source art: the `icons` atlas cells and `things.csv` rows of orb_alchemy, orb_annulment and orb_scouring stay (they number the client
+  ids 33000 to 33002 and pair 33's history); pair 63 draws other pixels there.
 
 ```
-python3 -I client/tools/sprites/gen_orb_items_art.py build [--preview DIR --dat pair37/Tibia.dat --spr pair37/Tibia.spr]
-python3 -I client/tools/sprites/import_art_things.py --ours-dat pair37/Tibia.dat --ours-spr pair37/Tibia.spr --out-dir pair38 \
-    --things client/tools/sprites/art_import/orb_items.csv --first-item 38641 --expect-items 38640
-python3 -I client/tools/sprites/check_pair.py pair38/Tibia.dat pair38/Tibia.spr --old pair37/Tibia.dat pair37/Tibia.spr [--new-only]
+python3 -I client/tools/sprites/gen_orb_items_art.py build
+python3 -I client/tools/sprites/import_art_things.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --out-dir Q \
+    --things client/tools/sprites/art_import/orb_items.csv --first-item 44550 --expect-items 44549
+python3 -I client/tools/sprites/redraw_items.py --dat Q/Tibia.dat --spr Q/Tibia.spr --out-dir R \
+    $(python3 -I client/tools/sprites/gen_orb_items_art.py strips)
+python3 -I client/tools/sprites/check_pair.py R/Tibia.dat R/Tibia.spr --old Q/Tibia.dat Q/Tibia.spr --allow-changed 'item:27195,27199,27200,27201,33000-33002,38641'
 ```
-Input pair 37 (windows-assets 1020d51c, dat 774c80f15b38b1072e5e677f1611a08b, spr ba8022fe709d71fe543ee20d6d8858e4).
-Output **pair 38**: dat fb41c87298d95d9b200352b100af26b4 (11,217,716 bytes), spr ee6c5173682531a2b93d17ff35eea7a4
-(1,520,792,224 bytes, 1,338,775 sprites: 1 appended), 38,641 items, 2,681 outfits, 4101 effects, 250 missiles. The
-importer verified the sprite slot pixel-identical to the atlas and every old thing byte-identical. Built once (the
-disk had no room for a second 1.5 GB copy).
-- `check_pair.py --old`: `--new-only` 0 errors, 0 warnings; full check 0 errors, 216 warnings (pair 37's).
-  `check_content.py --pair` passes on pair 38.
-- `outfit_anchors.lua` and `info_lifts.lua` regenerated on pair 38 after it went to windows-assets (ee8e82e): no new
-  creature, only their dat md5 changed.
-- Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5, `split -b 95M -d -a 2`): 145,258,588
-  bytes, sha256 e16ca9668b6173fcff499ccefd4b72ffa1015bf8895bd27e9675ae66753ccb35; parts `things-1098.tar.xz.part00`
-  (057e7ae366554fcf527a1451798c01818d6e41d4b7cc3402b567b9fa1cf51622) and `.part01`
-  (648fee2eb4c657d218e5697231b43d94ab504fbc05b1c3d7d60c5ccbf44be986); unpacks to the md5s above. Pushed to
-  windows-assets at ee8e82eb (on 1020d51c).
-- A client on pair 37 or older draws nothing for the Orb of Sockets once the server has the new look: ship pair 38
-  before the server step, or set `useLook = false` and run `install_gems.py` again.
-- Previews (old look and new, the orbs of the pouch in a row): scratchpad only. Not run in a client.
+(P is pair 63 with the gems, section "Pair 63".) Pair 38 (the first look): dat fb41c872..., spr ee6c5173..., on windows-assets ee8e82eb, one sprite
+appended for 38641.
 
 ## Moon outfits on the ground (next pair after 38: outfits 2668-2675 in place, `tools/sprites/gen_pack37_looks.py` STAND_SHIFT, `art_import/pack37_moon_fix.csv`; pair 39, built 2026-10-22, on windows-assets 1102087c)
 Reported 2026-10-22 by the agent that built pair 37: "The moon set floats about 10 px when standing still."
@@ -4087,36 +4100,47 @@ items allowed: 0 errors, 3,964 warnings (the lines of pair 61).
 - Checked offline: pair 61 and pair 62 frames of the four items read back from the built pair, on the client's item cell (scratchpad only).
   Not seen in a client.
 
-### Pair 63: pair 62 with the 35 socket gems redrawn (`gen_gem_art.py`, `art_import/gems_src.png`, `gems.png`; built 2026-11-11, not on windows-assets yet (waits for the owner's go); O480)
+### Pair 63: pair 62 with the 35 socket gems and the 18 crafting orbs redrawn (`gen_gem_art.py`, `gen_orb_items_art.py`; built 2026-11-11, not on windows-assets yet (waits for the owner's go); O480, O482)
 Owner 2026-11-11 (translated): "They are very ugly. Make new ones please." Then, on a sheet of seven styles: "It can be A, but on the perfect use C." Section
 "Gem looks" has the art, the method and the picks. The 35 final looks were sent to the owner as a sheet on 2026-11-11; the owner has not answered on that
 sheet yet. Pair 63 is pair 62 with the items 33905 to 33939 redrawn in place by `redraw_items.py --strip` (the commands are in "Gem looks"): each item
 keeps its frame group (1 x 1, one layer, nine phases, the animator head and the 18-entry duration table of 110 ms) and its flag bytes, and points at new
-sprites. Nothing else changes: ids, flag bytes, items.otb and items.xml stay; the server does not change.
+sprites. Gems and orbs ship in the same pair (it is not published, so it stays 63).
+The orbs (O482, owner 2026-11-11: "Generate all the other orbs too. Let us keep them all in the same line."; section "Orb looks"): ten orbs get a NEW
+client item each, appended by `import_art_things.py` (client ids 44550 to 44559 after the last item of pair 62, 44549; flags copied from the stock thing,
+one phase), eight orbs are redrawn in place (client 27195, 27199, 27200, 27201, 33000, 33001, 33002, 38641) by `redraw_items.py --strip`.
+Nothing else changes: ids of server items, flag bytes, items.otb and items.xml stay; the server only reads `look` in `chaos_orbs_config.lua`.
 Input pair 62 (dat fd203501bac0e622da3b4e473c3f7dd7, spr ed1a1c5193c9dd1e74da61adc89f3fdb; joined from the pair 62 archive parts, both md5s checked first).
-Output **pair 63**: dat daa39fc8e6217e705422924413532215 (8,828,000 bytes), spr b979865f136b8f4eceb063bdbdbfd819 (1,136,104,474 bytes; 949,282
-sprites: 98 appended, ids 949185 to 949282; 35 items x 9 phases = 315 phase slots on 98 sprites, identical phases share one sprite and no new sprite equalled a
-record already in the file), the same counts of things as pair 62 (44,549 items, 3,370 outfits, 4,701 effects, 253 missiles). `redraw_items.py` verified:
-output parses, every other entry byte-identical, flags kept, every item's group equal to the old one but for its sprite ids, every phase pixel-identical to
-its cell of `gems.png`, identical cells share a sprite id, 3,000 old sprites unchanged. `check_pair.py --old` with exactly items 33905 to 33939 allowed:
-0 errors, 3,964 warnings (the lines of pair 62); without `--old` the same. The old gem sprites stay in the file, unused.
+Steps: pair 62 -> gems redrawn (98 sprites, `check_pair.py --old` with items 33905 to 33939 allowed: 0 errors, 3,964 warnings, the lines of pair 62) ->
+ten orb items appended (importer: 10 sprites appended, the append-only guard passed) -> eight orbs redrawn (8 sprites).
+Output **pair 63**: dat 9b7c39bbb44d28108cc6765bd24384a2 (8,828,152 bytes), spr 4533d13e0715de695f158d12e4001923 (1,136,139,184 bytes; 949,300
+sprites: 116 appended, ids 949185 to 949300: 98 for the gems, 10 for the new orb items, 8 for the redrawn orbs; no new sprite equalled a record already in
+the file), 44,559 items, 3,370 outfits, 4,701 effects, 253 missiles. `redraw_items.py` verified (gems and orbs): output parses, every other entry
+byte-identical, flags kept, every item's group equal to the old one but for its sprite ids, every phase pixel-identical to its atlas cell, identical cells
+share a sprite id, 3,000 old sprites unchanged; the importer verified the ten new items pixel-identical to `orb_items.png`. `check_pair.py` on pair 63:
+0 errors, 3,964 warnings (the lines of pair 62); `--old` against the pair before the eight orb redraws, with exactly those eight items allowed: 0 errors. The old
+gem and orb sprites stay in the file, unused.
 - **Archive parts** (the recipe of pair 62: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of Tibia.dat and Tibia.spr
   streamed into `xz -9 -T3`, `split -b 95M -d -a 2`; built offline, not pushed to windows-assets):
-  - part00 99,614,720 bytes, sha256 `c0ef6f238453edd693545f38d6d7ccebaae0d785f7c9bed61f4be7ed519f8167`
-  - part01 30,490,344 bytes, sha256 `8e367aa278741a29b9f27ecf4fbfd8efd621de0685020fba013985dcc3bab19b4`
-  - joined `things-1098.tar.xz` (130,105,064 bytes) sha256 `9b51b5466873f364ff9c27a81c3bdd27bb5e53d78d983db9b60bc2cc73c5772d`;
-    `things-1098.tar` sha256 `7658eb0c0f37395a0cd95351e3a71a867b36e6a8054b7f08c0b52345ce476f09`. Decompressing the joined parts gives the dat and spr md5s
+  - part00 99,614,720 bytes, sha256 `baf91f6db4a544a8d5824e1174d7fda00b0a3643276c3dea6a6c1dadb5544be1`
+  - part01 30,480,132 bytes, sha256 `d41990faa5c9a1397791731a3d7917101593b3a09fb1cbad3e1440403f694eda`
+  - joined `things-1098.tar.xz` (130,094,852 bytes) sha256 `2f236f4560f21b27c6cd281d73d325e15a8bbcd688993eaba0bb8074021c734a`;
+    `things-1098.tar` sha256 `617659c01a733bd57abc469c6aa910abe720cf16c3abf9cc5cfc229eaafd646e`. Decompressing the joined parts gives the dat and spr md5s
     above (checked). Nothing is on windows-assets: the line for its commit id is still to come, after the owner's go to publish.
 - **In the repository:** `gen_outfit_anchors.py` and `gen_info_lift.py` ran against pair 63 (`client_chaos_charselect/outfit_anchors.lua`,
   `client_chaos_infolift/info_lifts.lua`, `unity/.../Core/InfoLiftData.cs` through `gen_info_data.lua`: only the dat md5 lines change);
   `server/tools/client_pair.py` `PAIR_ASSETS` is 63 with the new dat md5 (the Windows package job stops until the archive on windows-assets is pair 63: push it
-  first). The steps of the CI job "Live sprite pair" ran on pair 63 offline: `check_pair.py`, the item wire table, the recolour sheets, the two tables, the
-  dungeon banners, the website sprite images. The new generator, its test, the `--strip` option of `redraw_items.py` and its test run in CI (job "checks").
+  first) and `PAIR_ORBS` is 63. The steps of the CI job "Live sprite pair" ran on pair 63 offline: `check_pair.py`, the item wire table, the recolour sheets,
+  the two tables, the dungeon banners, the website sprite images. The new generators, their tests, the `--strip` option of `redraw_items.py` and its test run
+  in CI (job "checks").
 - **Switch on** (after the client package ships pair 63): set `chaosClientPair` to 63 (admin app: Comandos > "Par do cliente" > Gravar 63; shell:
-  `chaos-ctl.sh client-pair set 63`). No install step waits for pair 63. A client on pair 62 or older draws the old gem looks for 33905 to 33939. The Codex
-  gem pages and the website wiki icons already show the new looks (they come from the atlas, not from the pair).
-- Checked offline: the nine phases of the 35 gems read back from the built pair 63 next to pair 62's, and pair 63's equal to the atlas (scratchpad only).
-  Not seen in a client.
+  `chaos-ctl.sh client-pair set 63`), then the next server update (`update-apply` or `install_all.py`) runs the install step `orbs` again (`install_orbs.py`: it points the ten orb nodes at 44550 to 44559 only from 63 on;
+  below it the nodes keep the stock ids, so a client on pair 62 or older never sees a blank). A client on pair 62 or older draws the old gem looks for 33905 to
+  33939, the old looks of the eight redrawn orbs and the stock look of the ten others. The Codex gem pages and the website wiki icons already show the new gems
+  (they come from the atlas, not from the pair).
+- Checked offline: the nine phases of the 35 gems read back from the built pair 63 next to pair 62's; the 18 orbs read back from pair 63 by server id through
+  items.otb (the installed server's file, patched in memory by `install_orbs.py` with the record at 63) next to the looks of pair 62, and equal to the atlas;
+  shared client ids listed per orb (scratchpad only). Not seen in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

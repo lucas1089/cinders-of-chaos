@@ -84,5 +84,67 @@ try:
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
+# own looks (O482): the node of an orb with `look` carries it once the recorded pair is client_pair.PAIR_ORBS or more
+import struct  # noqa: E402
+import client_pair as CP  # noqa: E402
+from install_gems import scan, escape, attr, START, END, A_SERVERID, A_CLIENTID, FLAG_STACKABLE, FLAG_ANIMATION  # noqa: E402
+
+
+def item_node(sid, cid, flags=FLAG_STACKABLE, extra=b''):
+    body = struct.pack('<I', flags) + attr(A_SERVERID, struct.pack('<H', sid)) + attr(A_CLIENTID, struct.pack('<H', cid)) + extra
+    return bytes([START]) + escape(bytes([0])) + escape(body) + bytes([END])
+
+
+def otb(nodes):
+    root = bytes([START, 0]) + escape(struct.pack('<I', 0))
+    return b'\x00\x00\x00\x00' + root + b''.join(nodes) + bytes([END])
+
+
+cfg = IO.read_config()
+items = cfg['items']
+withlook = [i for i in items if i['look']]
+check(CP.PAIR_ORBS == 63 and CP.PAIR_ORBS <= CP.PAIR_ASSETS, 'the orb looks need pair 63')
+check(len(items) == 10 and len(withlook) == 10, 'config: all ten orbs of this installer have a look')
+check(sorted(i['look'] for i in withlook) == list(range(44550, 44560)), 'config: looks 44550..44559')
+check(len({i['look'] for i in withlook} | {i['clientId'] for i in withlook}) == 20, 'config: look and stock ids are all different')
+anim = struct.pack('<I', 0)
+stock_nodes = [item_node(27000 + k, i['clientId'], FLAG_STACKABLE | (FLAG_ANIMATION if i['key'] == 'void' else 0), attr(0x14, b'\x07\x00'))
+               for k, i in enumerate(withlook)]
+base = otb(stock_nodes)
+old_new, _n, w_old = IO.patch_otb(base, items, False)
+IO.verify_otb(old_new, items, w_old)
+ko = {k[2]: k for k in scan(old_new)[0]}
+check(all(ko[i['id']][3] == i['clientId'] for i in items), 'below pair 63: every orb node keeps the stock client id (an old client draws the old look)')
+new_new, notes, w_new = IO.patch_otb(old_new, items, True)
+IO.verify_otb(new_new, items, w_new)
+kn = {k[2]: k for k in scan(new_new)[0]}
+check(all(kn[i['id']][3] == i['look'] for i in items), 'pair 63: every orb node carries its own look')
+check(sum('rewritten' in n for n in notes) == 10, 'pair 63: the ten existing nodes are rewritten: %r' % notes)
+check(all(not (kn[i['id']][5] & FLAG_ANIMATION) for i in items), 'pair 63: no orb node says animated (one phase looks)')
+check(ko[32260][5] & FLAG_ANIMATION and not kn[32260][5] & FLAG_ANIMATION, 'the Void Orb: the stock gem is animated, its own look is not')
+check(all((0x14, b'\x07\x00') in kn[i['id']][6] for i in items), 'pair 63: the other attributes of the stock node are kept')
+check(all(ko[27000 + k][3] == i['clientId'] and kn[27000 + k][3] == i['clientId'] for k, i in enumerate(withlook)), 'the stock nodes are never touched')
+again, notes2, _w = IO.patch_otb(new_new, items, True)
+check(again == new_new and 'present' in notes2[0], 'a second run changes nothing')
+back, _n3, _w3 = IO.patch_otb(new_new, items, False)
+check(back == old_new, 'the record below 63 again: the stock client ids come back byte for byte')
+try:
+    IO.patch_otb(otb(stock_nodes + [item_node(32258, 9999)]), items, True)
+    check(False, 'a server id on another client id stops the script')
+except SystemExit as e:
+    check('already belongs' in str(e), 'a server id on another client id stops the script')
+
+# the run itself reads the record from config.lua: skipped without it, on with it
+dd = tempfile.mkdtemp(prefix='orbs_pair_')
+try:
+    for rec, want in ((None, False), ('chaosClientPair = 62\n', False), ('chaosClientPair = 63\n', True)):
+        srv = os.path.join(dd, 'srv%s' % (rec or 'none').strip().split()[-1])
+        write(os.path.join(srv, 'config.lua'), rec or 'serverName = "x"\n')
+        os.makedirs(os.path.join(srv, 'data'), exist_ok=True)
+        ok, msg = CP.allows(os.path.join(srv, 'data'), CP.PAIR_ORBS, 'orb own looks')
+        check(ok is want and (want or 'client pair 63' in msg), 'record %r -> own looks %s' % (rec, want))
+finally:
+    shutil.rmtree(dd, ignore_errors=True)
+
 print('install_orbs_test: %s' % ('ok' if not failed else '%d failure(s)' % failed))
 sys.exit(1 if failed else 0)

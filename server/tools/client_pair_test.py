@@ -185,7 +185,7 @@ check(C.allows(os.path.join(server('chaosClientPair = 60\n'), 'data'), C.PAIR_TE
 
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
-check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE), 'PAIR_ASSETS covers every guarded pair')
+check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS), 'PAIR_ASSETS covers every guarded pair')
 mods = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules')
 for rel in ('client_chaos_charselect/outfit_anchors.lua', 'client_chaos_infolift/info_lifts.lua'):
     with open(os.path.join(mods, rel), encoding='utf-8') as f:

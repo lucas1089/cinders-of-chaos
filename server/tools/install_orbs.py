@@ -13,6 +13,13 @@ Everything is read from server/data/lib/chaos_orbs_config.lua (`items`, `renames
    needed for these). Nodes are appended at the end of the root; a node already there with the same bytes is left alone,
    one with other bytes is replaced, a server id that belongs to another client id stops the script (nothing is
    written). items.otb.bak keeps the original the first time; the written file is parsed again and every node checked.
+   Own looks (O482, client pair 63, client/MANIFEST.md "Orb looks"): an item row with `look` has its own one-phase client
+   item (art_import/orb_items.csv), because other stock things wear the stock sprite (an essence, an inlay stone, the
+   Void Orb's stack of eight count patterns). Once config.lua `chaosClientPair` is client_pair.PAIR_ORBS or more the node
+   gets that client id (the stock node's flags and attributes kept, but FLAG_ANIMATION cleared: the new look has one phase,
+   and a node that says "animated" over a one-phase thing makes every item packet one byte too long). Below it (or with
+   no record) the node keeps the stock client id, so a client on an older pair still draws the old orb, never a blank.
+   Each run writes the node for the pair the record says; a node on either id is accepted.
 2. data/items/items.xml: the new items inside a block between two marker comments before </items> (rewritten when the
    config changed), and the new names of the currency items of `renames` (the base server's character-upgrade currencies
    29851..29859 and the three rune-stone orbs install_crafting.py names): the `name` and `plural` attributes of their
@@ -31,8 +38,9 @@ import os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from install_gems import (scan, escape, attr, xml_escape, START, END, A_SERVERID, FLAG_USEABLE, FLAG_STACKABLE,  # noqa: E402
-                          FLAG_PICKUPABLE, FLAG_MOVEABLE)
+import client_pair  # noqa: E402
+from install_gems import (scan, escape, attr, xml_escape, START, END, A_SERVERID, A_CLIENTID, FLAG_USEABLE,  # noqa: E402
+                          FLAG_STACKABLE, FLAG_PICKUPABLE, FLAG_MOVEABLE, FLAG_ANIMATION)
 
 CONFIG = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_orbs_config.lua')
 XML_BEGIN = '\t<!-- Chaos crafting orbs v2 (server/tools/install_orbs.py, do not edit by hand) -->\n'
@@ -48,8 +56,10 @@ def read_config(path=CONFIG):
         assert m, 'chaos_orbs_config.lua: no %s table' % name
         return m.group(1)
 
-    def field(row, key, num=False):
+    def field(row, key, num=False, optional=False):
         m = re.search(r'\b%s\s*=\s*%s' % (key, r'(\d+)' if num else r'"([^"]*)"'), row)
+        if optional and not m:
+            return None
         assert m, 'chaos_orbs_config.lua: %s missing in %s' % (key, row[:60])
         return int(m.group(1)) if num else m.group(1)
 
@@ -58,6 +68,7 @@ def read_config(path=CONFIG):
         if '{' not in row:
             continue
         items.append({'id': field(row, 'id', True), 'key': field(row, 'key'), 'clientId': field(row, 'clientId', True),
+                      'look': field(row, 'look', True, True),
                       'name': field(row, 'name'), 'plural': field(row, 'plural'), 'article': field(row, 'article'),
                       'weight': field(row, 'weight', True), 'description': field(row, 'description')})
     renames = []
@@ -73,14 +84,19 @@ def read_config(path=CONFIG):
 
 
 # ------------------------------------------------------------------------------------------------ items.otb
-def orb_node(stock, sid):
-    """a copy of the stock node (group, flags + useable, every attribute) with the new server id"""
+def orb_node(stock, sid, look=None):
+    """a copy of the stock node (group, flags + useable, every attribute) with the new server id; with `look` the client id
+    is our own one-phase look and the animation flag is cleared"""
     _s, _e, _sid, _cid, group, flags, attrs = stock
     flags |= FLAG_USEABLE | FLAG_PICKUPABLE | FLAG_MOVEABLE | FLAG_STACKABLE
+    if look:
+        flags &= ~FLAG_ANIMATION
     body = struct.pack('<I', flags)
     for k, v in attrs:
         if k == A_SERVERID:
             v = struct.pack('<H', sid)
+        elif k == A_CLIENTID and look:
+            v = struct.pack('<H', look)
         body += attr(k, v)
     return bytes([START]) + escape(bytes([group])) + escape(body) + bytes([END])
 
@@ -97,7 +113,12 @@ def stock_for(kids, cid, ours):
     return best
 
 
-def patch_otb(data, items):
+def target_client_id(it, use_look):
+    """the client id the node of an orb carries: its own look when the pair has it, else the stock sprite"""
+    return it['look'] if use_look and it.get('look') else it['clientId']
+
+
+def patch_otb(data, items, use_look=False):
     kids, _ = scan(data)
     ours = {i['id'] for i in items}
     notes, out = [], bytearray(data)
@@ -106,7 +127,8 @@ def patch_otb(data, items):
         stock = stock_for(kids, it['clientId'], ours)
         if stock is None:
             raise SystemExit('items.otb: no stock node with client id %d (%s); nothing written' % (it['clientId'], it['name']))
-        wanted[it['id']] = (orb_node(stock, it['id']), stock[3])
+        look = it['look'] if use_look and it.get('look') else None
+        wanted[it['id']] = (orb_node(stock, it['id'], look), look or stock[3])
     # replace in place, from the back (the offsets of the earlier ones stay valid), then append the missing ones
     by_sid = {k[2]: k for k in kids}
     append = b''
@@ -116,7 +138,7 @@ def patch_otb(data, items):
         if k is None:
             append += node
             notes.append('items.otb: %s node added (server id %d, client id %d)' % (it['name'], it['id'], cid))
-        elif k[3] != cid:
+        elif k[3] not in (cid, it['clientId'], it.get('look')):
             raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
                              % (it['id'], k[3], cid))
         elif data[k[0]:k[1]] != node:
@@ -333,7 +355,9 @@ def main():
         print('items.otb / items.xml not found in', os.path.join(data_dir, 'items'))
         return 1
     raw = open(otb, 'rb').read()
-    new, notes, wanted = patch_otb(raw, cfg['items'])
+    use_look, why = client_pair.allows(data_dir, client_pair.PAIR_ORBS, 'orb own looks')
+    print(('items.otb: ' if use_look else '') + why)
+    new, notes, wanted = patch_otb(raw, cfg['items'], use_look)
     n = verify_otb(new, cfg['items'], wanted)
     for note in notes:
         print(note)

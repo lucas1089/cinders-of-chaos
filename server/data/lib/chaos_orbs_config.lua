@@ -7,21 +7,28 @@
 -- amethyst of the Void Orb: a stock gem sprite, which all have the flag), so the client needs no new sprite and Tibia.dat
 -- no change. Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, supports
 -- 32101..32200; 32251..32260 are these.
+--
+-- Own looks (O482, client pair 63, client/MANIFEST.md "Orb looks"): `clientId` is the stock sprite the node is copied from
+-- (and what a client on an older pair draws); `look` is the orb's own client item of pair 63 (art_import/orb_items.csv,
+-- client/tools/sprites/gen_orb_items_art.py), one phase, so a stock item that wears the same sprite keeps its picture.
+-- install_orbs.py writes `look` into the node only once config.lua chaosClientPair is 63 or more (server/tools/client_pair.py
+-- PAIR_ORBS), else the stock id. The other eight crafting orbs (Sockets, Awakening, Grafting, Gilding, Unmaking, Erasure,
+-- Upheaval, Fate) own their client id alone and are redrawn in place in the same pair: nothing to switch.
 
 return {
 	-- the new orbs and the Whetstone: id, key (ChaosCrafting orb key), client sprite, name, plural, article, weight,
 	-- description (items.xml)
 	items = {
-		{id = 32251, key = "tempering", clientId = 24483, name = "Orb of Tempering", plural = "Orbs of Tempering", article = "an", weight = 50, description = "Rerolls the values of every unbound modifier inside their tiers. Rift Key: new values."},
-		{id = 32252, key = "binding", clientId = 25047, name = "Orb of Binding", plural = "Orbs of Binding", article = "an", weight = 50, description = "Binds one modifier (chosen on the bench) against orbs. Only an Orb of Erasure frees it."},
-		{id = 32253, key = "excision", clientId = 25049, name = "Orb of Excision", plural = "Orbs of Excision", article = "an", weight = 50, description = "Removes the modifier you choose on the bench (a random unbound one if used directly)."},
-		{id = 32254, key = "reforging", clientId = 25048, name = "Orb of Reforging", plural = "Orbs of Reforging", article = "an", weight = 50, description = "Rerolls the tier and value of one modifier you choose on the crafting bench."},
-		{id = 32255, key = "ruin", clientId = 24477, name = "Orb of Ruin", plural = "Orbs of Ruin", article = "an", weight = 50, description = "A gamble on an item with a rarity: its modifiers improve or nothing happens."},
-		{id = 32256, key = "whetstone", clientId = 22083, name = "Whetstone", plural = "Whetstones", article = "a", weight = 10, description = "+1% quality on an item with a rarity, up to 20% (30% from Divine rarity)."},
-		{id = 32257, key = "unveiling", clientId = 25046, name = "Orb of Unveiling", plural = "Orbs of Unveiling", article = "an", weight = 50, description = "Reveals a veiled modifier: pick one of three. The choice is final."},
-		{id = 32258, key = "ember", clientId = 25045, name = "Ember Orb", plural = "Ember Orbs", article = "an", weight = 50, description = "Raises one modifier you choose on the bench by exactly one tier, with a new value in the new tier."},
-		{id = 32259, key = "crown", clientId = 25044, name = "Crown Orb", plural = "Crown Orbs", article = "a", weight = 50, description = "Lifts an item one rarity (Common to Legendary), keeping every modifier and adding one."},
-		{id = 32260, key = "void", clientId = 678, name = "Void Orb", plural = "Void Orbs", article = "a", weight = 50, description = "Corrupts a Rare or better item for good: a gamble that often improves it, sometimes harms it. No orb changes a corrupted item."}
+		{id = 32251, key = "tempering", clientId = 24483, look = 44555, name = "Orb of Tempering", plural = "Orbs of Tempering", article = "an", weight = 50, description = "Rerolls the values of every unbound modifier inside their tiers. Rift Key: new values."},
+		{id = 32252, key = "binding", clientId = 25047, look = 44551, name = "Orb of Binding", plural = "Orbs of Binding", article = "an", weight = 50, description = "Binds one modifier (chosen on the bench) against orbs. Only an Orb of Erasure frees it."},
+		{id = 32253, key = "excision", clientId = 25049, look = 44558, name = "Orb of Excision", plural = "Orbs of Excision", article = "an", weight = 50, description = "Removes the modifier you choose on the bench (a random unbound one if used directly)."},
+		{id = 32254, key = "reforging", clientId = 25048, look = 44554, name = "Orb of Reforging", plural = "Orbs of Reforging", article = "an", weight = 50, description = "Rerolls the tier and value of one modifier you choose on the crafting bench."},
+		{id = 32255, key = "ruin", clientId = 24477, look = 44557, name = "Orb of Ruin", plural = "Orbs of Ruin", article = "an", weight = 50, description = "A gamble on an item with a rarity: its modifiers improve or nothing happens."},
+		{id = 32256, key = "whetstone", clientId = 22083, look = 44552, name = "Whetstone", plural = "Whetstones", article = "a", weight = 10, description = "+1% quality on an item with a rarity, up to 20% (30% from Divine rarity)."},
+		{id = 32257, key = "unveiling", clientId = 25046, look = 44553, name = "Orb of Unveiling", plural = "Orbs of Unveiling", article = "an", weight = 50, description = "Reveals a veiled modifier: pick one of three. The choice is final."},
+		{id = 32258, key = "ember", clientId = 25045, look = 44550, name = "Ember Orb", plural = "Ember Orbs", article = "an", weight = 50, description = "Raises one modifier you choose on the bench by exactly one tier, with a new value in the new tier."},
+		{id = 32259, key = "crown", clientId = 25044, look = 44556, name = "Crown Orb", plural = "Crown Orbs", article = "a", weight = 50, description = "Lifts an item one rarity (Common to Legendary), keeping every modifier and adding one."},
+		{id = 32260, key = "void", clientId = 678, look = 44559, name = "Void Orb", plural = "Void Orbs", article = "a", weight = 50, description = "Corrupts a Rare or better item for good: a gamble that often improves it, sometimes harms it. No orb changes a corrupted item."}
 	},
 
 	-- the names of the base server's currency items, changed by install_orbs.py (items.xml names and every name the base
