@@ -441,6 +441,23 @@ function store.plainCount(guid, itemId)
 	return r and r.count or 0, r and r.tab or 0
 end
 
+-- the plain counts of several item ids in ONE query: {item id -> count} (ids are integers from a config)
+function store.plainCounts(guid, ids)
+	local list = {}
+	for _, id in ipairs(ids) do
+		list[#list + 1] = tostring(int(id))
+	end
+	local out = {}
+	if #list == 0 then
+		return out
+	end
+	for _, r in ipairs(Chaos.select("SELECT `item_id`, `count` FROM `" .. T .. "` WHERE `player_id` = " .. int(guid) ..
+			" AND `item_id` IN (" .. table.concat(list, ", ") .. ") AND `count` > 0", {{"item_id", "n"}, {"count", "n"}})) do
+		out[r.item_id] = r.count
+	end
+	return out
+end
+
 function store.pending(guid)
 	return Chaos.select("SELECT `id`, `state`, `seq`, `item_id`, `count`, `codec`, `tab` FROM `" .. TI .. "` WHERE `player_id` = " ..
 		int(guid) .. " AND `state` IN (8, 9)",
@@ -1358,6 +1375,19 @@ function S.plainCount(player, itemId)
 	end
 	local have = store.plainCount(player:getGuid(), itemId)
 	return math.max(0, have)
+end
+
+-- the same for a list of item ids, in one query (the bench's state: every orb): {item id -> count}, empty when the stash
+-- cannot be used here (the same rule as S.plainCount)
+function S.plainCounts(player, ids)
+	local c = cfg.craftSource
+	if not c or c.enabled ~= true then
+		return {}
+	end
+	if c.townOnly == true and not S.canWithdraw(player) then
+		return {}
+	end
+	return store.plainCounts(player:getGuid(), ids)
 end
 
 -- Spend `count` of a plain stack of the stash together with change() (stash_core.lua K.spend: one journal row, one

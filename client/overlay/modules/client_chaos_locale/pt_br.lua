@@ -6889,6 +6889,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Break rolled gear down into rune shards and combine the shards into orbs (the classic window, Salvage tab)."] = "Desmonte equipamentos em fragmentos de runa e combine os fragmentos em orbes (janela clássica, aba Salvage).",
   ["This item has no modifiers."] = "Este item não tem modificadores.",
   ["This item has a veiled modifier: an Orb of Unveiling reveals it."] = "Este item tem um modificador velado: um Orb of Unveiling o revela.",
+  ["This action is not possible on this item."] = "Esta ação não é possível neste item.",
   ["Pick an action on the right. The server tells you here what it will do before you forge."] = "Escolha uma ação à direita. Aqui o servidor diz o que ela fará antes de você forjar.",
 
 }

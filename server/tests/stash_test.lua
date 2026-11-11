@@ -2191,6 +2191,34 @@ do
 	eq(S.plainCount(p, ORB), 5, "a row with attributes is not a plain stack")
 	DB.rows[998] = nil
 
+	-- the state of the bench reads every orb in ONE query, none when the stash is off
+	do local cn = {real = store.plainCounts, calls = 0}
+	store.plainCounts = function(g2, ids)
+		cn.calls = cn.calls + 1
+		local out = {}
+		for _, id in ipairs(ids) do
+			local r = DB.plain[plainKey(g2, id)]
+			if r and r.count > 0 then out[id] = r.count end
+		end
+		return out
+	end
+	cn.held = S.plainCounts(p, {ORB, 11, 12, 13})
+	eq(cn.calls, 1, "one stash read for all the ids") eq(cn.held[ORB], 5, "the plain count") eq(cn.held[11], nil, "an id not held is absent")
+	Chaos.stashConfig.craftSource.enabled = false
+	cn.held = S.plainCounts(p, {ORB, 11})
+	eq(cn.calls, 1, "switched off: no query at all") eq(next(cn.held), nil, "and nothing counted")
+	Chaos.stashConfig.craftSource.enabled = true
+	Chaos.stashConfig.craftSource.townOnly = true
+	pz[key3(p.pos)] = nil
+	S.plainCounts(p, {ORB})
+	eq(cn.calls, 1, "townOnly outside a protection zone: no query")
+	pz[key3(p.pos)] = true
+	eq(S.plainCounts(p, {ORB})[ORB], 5, "townOnly in a protection zone: counted")
+	eq(cn.calls, 2, "one more read")
+	pz[key3(p.pos)] = nil
+	Chaos.stashConfig.craftSource.townOnly = false
+	store.plainCounts = cn.real end
+
 	-- success: the amount leaves the stash, the serial is saved, no row is left
 	local ran = 0
 	local ok, why = S.spend(p, ORB, 2, function() ran = ran + 1 return true end)
@@ -2277,6 +2305,17 @@ for _, q in ipairs(queries) do
 	check(not q:find("OR 1=1", 1, true), "no injected id in: " .. q:sub(1, 60))
 end
 check(#queries >= 5, "the store wrote its queries (" .. #queries .. ")")
+
+-- the bench's one query for all the orbs (O481): one SELECT with an IN list of integers
+Chaos.select = function(q) queries[#queries + 1] = q; return {{item_id = 29856, count = 7}} end
+queries = {}
+got = real.plainCounts(1, {29856.9, 24688, "5 OR 1=1"})
+eq(#queries, 1, "plainCounts: exactly one query for all the ids")
+check(queries[1]:find("IN (29856, 24688, 0)", 1, true) ~= nil, "plainCounts: integers only in the IN list (" .. tostring(queries[1]) .. ")")
+eq(got[29856], 7, "plainCounts: {item id -> count}")
+queries = {}
+eq(next(real.plainCounts(1, {})), nil, "plainCounts: no ids, no query") eq(#queries, 0, "no query for no ids")
+
 
 -- S.openWindow: a Toggle that keeps the window open (a depot locker uses it only with depot.openStash)
 eq(cfg.depot.openStash, true, "a depot locker opens the stash window (O316)")

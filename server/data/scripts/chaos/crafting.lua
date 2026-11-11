@@ -196,12 +196,23 @@ local function stashCount(player, orb)
 	return ok and tonumber(n) or 0
 end
 
--- orb key -> what the player can spend (backpack plus stash: the counts an old client reads), and the two parts
+-- orb key -> what the player can spend (backpack plus stash: the counts an old client reads), and the two parts. One
+-- stash query for all the orbs (stash.lua S.plainCounts), none when the stash cannot be used.
 local function orbCounts(player)
 	local out, bag, stash = {}, {}, {}
+	local S = ChaosStash
+	local ids = {}
+	for _, orb in ipairs(cfg.orbs) do
+		ids[#ids + 1] = orb.id
+	end
+	local held = {}
+	if S and S.plainCounts and S.spend then
+		local ok, res = pcall(S.plainCounts, player, ids)
+		held = ok and type(res) == "table" and res or {}
+	end
 	for _, orb in ipairs(cfg.orbs) do
 		bag[orb.key] = player:getItemCount(orb.id)
-		stash[orb.key] = stashCount(player, orb)
+		stash[orb.key] = tonumber(held[orb.id]) or 0
 		out[orb.key] = bag[orb.key] + stash[orb.key]
 	end
 	return out, bag, stash
@@ -213,7 +224,12 @@ local function sendInfo(player)
 		orbs[#orbs + 1] = {key = orb.key, id = orb.id, clientId = clientIdOf(orb.id), name = orb.name, text = orb.text,
 			keyText = orb.keyText, wsText = orb.wsText}
 	end
-	Chaos.send(player, OPCODE, "info", {orbs = orbs, reasons = C.reasons})
+	-- the reason texts in the player's language: the windows show them as they come, never a code
+	local reasons = {}
+	for code, text in pairs(C.reasons) do
+		reasons[code] = Chaos.tx(player, text)
+	end
+	Chaos.send(player, OPCODE, "info", {orbs = orbs, reasons = reasons})
 	if forgeClients[player:getId()] then
 		-- the forge window (O481): what each orb is aimed at and how safe it is, in a message of its own (an old client
 		-- never gets it; the info above is near the message limit)

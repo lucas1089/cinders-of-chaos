@@ -267,7 +267,16 @@ local function newEnv()
 	end
 	return env
 end
+local stashReads = 0 -- stash reads of the state: one per state, whatever the number of orbs
 ChaosStash = {
+	plainCounts = function(_, ids)
+		stashReads = stashReads + 1
+		local out = {}
+		for _, id in ipairs(ids) do
+			if (world.stash[id] or 0) > 0 then out[id] = world.stash[id] end
+		end
+		return out
+	end,
 	plainCount = function(_, id) return world.stash[id] or 0 end,
 	spend = function(_, id, count, change)
 		if (world.stash[id] or 0) < count then return false, "gone" end
@@ -350,6 +359,13 @@ ok(st.item ~= nil, "the item is on the bench")
 eq(st.item.free, nil, "no free slots for an old client")
 req("explain", {orb = "ember", path = slotOf(gear), id = gear:getId(), mod = "rarity_swordSkill"})
 -- (explain is answered to anybody who asks: a harmless read; the old client never asks)
+
+-- the stash is read once for all the orbs of a state
+stashReads = 0
+req("open")
+eq(stashReads, 1, "one stash read for the whole state, not one per orb")
+req("select", {path = slotOf(gear), id = gear:getId()})
+eq(stashReads, 2, "one more state, one more read")
 
 -- the forge window
 req("open", {forge = 1})
@@ -472,5 +488,27 @@ ok(info ~= nil and info.size < 2000, "forgeinfo is small (" .. tostring(info and
 events.ChaosCraftingLogout.onLogout(player)
 req("open")
 eq(last("state").bag, nil, "after a new login the window must ask again")
+
+-- the reasons sent in "info" are texts, never codes, and have a pt-BR entry (the windows show them as they come)
+local strings = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"]
+local nreasons = 0
+for code, text in pairs(C.reasons) do
+	nreasons = nreasons + 1
+	ok(text ~= code and text:find("%s") ~= nil, "reason " .. code .. " is a sentence, not the code")
+	ok(strings[text] ~= nil and strings[text] ~= "", "reason " .. code .. " has a pt-BR entry: " .. text)
+end
+ok(nreasons > 30, "every reason checked (" .. nreasons .. ")")
+req("open")
+-- "info" must stay one message (8192 bytes) with the reasons in pt-BR, which are longer than the English
+local growth = 0
+for _, text in pairs(C.reasons) do growth = growth + #(strings[text] or text) - #text end
+local infoSize
+for _, m in ipairs(sent) do
+	if m.action == "info" then infoSize = m.size end
+end
+ok(infoSize ~= nil and infoSize + growth < 8000, "info with pt-BR reasons stays under the limit (" .. tostring(infoSize) .. " + " .. growth .. ")")
+local infoMsg = last("info")
+ok(infoMsg ~= nil and infoMsg.reasons.voidRarity == C.reasons.voidRarity and infoMsg.reasons.keyOrb == C.reasons.keyOrb,
+	"info carries the sentence of voidRarity and keyOrb")
 
 print(string.format("forge_test: %d checks, 0 failures", checks))

@@ -38,7 +38,8 @@ local info = { orbs = {
   needMod = 'Choose a modifier of the item first.', badMod = 'That modifier cannot be chosen for this orb.',
   allBound = 'Every modifier of this item is bound.', corrupted = 'This item is corrupted: no orb can change it any more.',
   keyNoMods = 'This Rift Key has no modifiers.', needRarity = 'This orb works only on an item with a rarity.',
-  noMods = 'This item has no modifier to remove.', keySockets = 'Rift Keys have no sockets.' } }
+  noMods = 'This item has no modifier to remove.', keySockets = 'Rift Keys have no sockets.',
+  voidRarity = 'A Void Orb works only on Rare or better gear.', keyOrb = 'This orb does not work on Rift Keys.' } }
 local forge = { orbs = {
   ember = { kind = 'mod', safety = 'safe' }, reforging = { kind = 'mod', safety = 'random' },
   excision = { kind = 'mod', safety = 'risky' }, binding = { kind = 'mod', safety = 'safe' },
@@ -133,6 +134,11 @@ old.bag, old.stash = nil, nil
 old.counts = { ember = 2 }
 local oa = V.find(V.actions({ info = info, forge = forge, state = old, mod = 'a1' }), 'ember')
 eq(oa.total, 2, 'counts only') eq(oa.bag, 2, 'all counted as backpack') eq(oa.stash, 0, 'no stash')
+-- a reason is always a sentence: a code the table lacks shows a generic text, never the code
+local strange = stateOf(helmet(), BAG, STASH)
+strange.item.orbs.ember = 'someNewCode'
+local sa = V.find(V.actions({ info = info, forge = forge, state = strange, mod = 'a1' }), 'ember')
+eq(sa.why, 'This action is not possible on this item.', 'an unknown code is not shown')
 -- no forgeinfo yet: whole item, random
 local fa = V.find(V.actions({ info = info, forge = nil, state = state }), 'ember')
 eq(fa.kind, 'whole', 'no forgeinfo: whole item') eq(fa.tag, 'random', 'and random: never claims safe')
@@ -167,6 +173,12 @@ local plainItem = { path = '2', id = 2400, sig = 'P', name = 'Magic Sword', rari
   orbs = { ember = 'needRarity', reforging = 'needRarity', excision = 'needRarity', binding = 'needRarity', exalted = 'needRarity',
     unveiling = 'notVeiled', tempering = 'needRarity', chaos = 'needRarity', void = 'voidRarity', sockets = '' }, sockets = { count = 0, max = 3 } }
 local plainState = stateOf(plainItem, BAG, STASH)
+for _, kind in ipairs({ 'plainItem', 'keyItem' }) do
+  local st = kind == 'plainItem' and plainState or keyState
+  for _, a2 in ipairs(V.actions({ info = info, forge = forge, state = st, mod = '4' })) do
+    eq(a2.why == '' or a2.why:find(' ', 1, true) ~= nil, true, 'no code as a reason: ' .. kind .. ' ' .. a2.key)
+  end
+end
 eq(#V.groupList(plainItem), 0, 'no groups, no empty headers')
 eq(V.freeText(plainItem), '', 'no slots line without a limit')
 eq(V.find(V.actions({ info = info, forge = forge, state = plainState }), 'ember').why, 'This orb works only on an item with a rarity.', 'why on a normal item')

@@ -4975,6 +4975,19 @@ return {
 			"Garantido: este modificador fica preso. As orbes que mudam modificadores não o tocam.",
 		["Guaranteed: this modifier is removed. The others stay."] =
 			"Garantido: este modificador é removido. Os outros ficam.",
+		-- the reason texts of the orbs (ChaosCrafting.reasons) that had no entry; "info" sends them translated
+		["The veiled modifier of this item is revealed already."] =
+			"O modificador velado deste item já foi revelado.",
+		["Choose one of the three veiled modifiers."] =
+			"Escolha um dos três modificadores velados.",
+		["This item has no attack, defence or armour for the quality to act on."] =
+			"Este item não tem ataque, defesa nem armadura para a qualidade agir.",
+		["Use the Orb of Unveiling on the item to see the three choices first."] =
+			"Use o Orb of Unveiling no item para ver primeiro as três escolhas.",
+		["This item has no veiled modifier."] =
+			"Este item não tem modificador velado.",
+		["Unknown orb."] =
+			"Orbe desconhecido.",
 		["One of %d tiers (%s). The tier and the value roll again."] =
 			"Um entre %d tiers (%s). O tier e o valor são sorteados de novo.",
 		["Put the item in your backpack first (equipped items cannot be crafted)."] =

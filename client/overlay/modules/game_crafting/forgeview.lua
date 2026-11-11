@@ -114,9 +114,12 @@ local function contains(list, value)
 end
 V.contains = contains
 
+-- the sentence of a reason code (the server sends them translated in "info"); a code the table lacks never shows
 local function reasonText(info, code)
   local reasons = info and type(info.reasons) == 'table' and info.reasons or {}
-  return reasons[code] or code
+  local text = reasons[code]
+  if type(text) == 'string' and text ~= '' and text ~= code then return text end
+  return tr('This action is not possible on this item.')
 end
 
 -- the orbs of the server's list as actions: {key, name, verb, clientId, kind, tag, bag, stash, total, can, why, text}
