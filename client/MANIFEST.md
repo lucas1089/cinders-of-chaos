@@ -1992,7 +1992,7 @@ dragon ham, client 3583; mode replace keeps server id 32084). `ownLook = true` i
 2026-10-14; run `install_store_food.py` again. A client on an older pair draws nothing for 33904.
 **Replaced by "Store item looks (pair 34)"** (client 38611, the same art in the cinderwrought palette).
 
-## Gem looks (items 33905-33939, `tools/sprites/gen_gem_art.py`, `tools/sprites/art_import/gems_src.png`, `gems.csv`; first looks in things_custom25 on windows-assets ebe1b2b2, switch on since 2026-10-14; new looks in pair 63, built 2026-11-11, not on windows-assets yet; O480)
+## Gem looks (items 33905-33939, `tools/sprites/gen_gem_art.py`, `tools/sprites/art_import/gems_src.png`, `gems.csv`; first looks in things_custom25 on windows-assets ebe1b2b2, switch on since 2026-10-14; new looks in pair 63, built 2026-11-11, on windows-assets 3220b4e; O480)
 **History.** Pairs 25 to 62 drew the owner's Drive gem set (`gems.zip`, 2026-10-14, five families in ten tiers, 32 px, nine phases at 110 ms; the owner:
 "Pode usar eles abertamente onde forem cabiveis", use them openly where they fit), recoloured per pixel; docs/CREDITS.md "Gem set" keeps its entry.
 Owner 2026-11-11 (translated), on the sheet of those looks: "They are very ugly. Make new ones please." Pair 63 replaced them.
@@ -2000,7 +2000,7 @@ Owner 2026-11-11 (translated), on the sheet of those looks: "They are very ugly.
 Image call per gem type and quality, candidates picked by hand, trimmed and centred in 32 x 32, alpha 0 / 255; the Flawed sapphire got more
 saturation and the Chipped onyx a lighter value). The owner saw a sheet of seven styles and wrote (translated): "It can be A, but on the perfect use C."
 A is a cut jewel, C a jewel set in gold. So Chipped is a small chip, each quality is bigger, Flawless is the full cut jewel and Perfect is the jewel set in
-gold. The 35 final looks were sent to the owner as a sheet on 2026-11-11; the owner has not answered on that sheet yet.
+gold. The 35 final looks were sent to the owner as a sheet on 2026-11-11; the owner approved the publication of the pair on 2026-11-11.
 - `art_import/gems_src.png`: the picks, 160 x 224 RGBA, alpha 0 / 255 only. 7 rows = the gem types in the order of `chaos_gems_config.lua` (ruby,
   sapphire, emerald, amethyst, topaz, diamond, onyx), 5 columns = Chipped, Flawed, Polished, Flawless, Perfect, one static cell each. It is the only input
   of the generator (committed, 25 KB); the PixelLab candidates are not in the repository.
@@ -2793,7 +2793,7 @@ byte-identical. Built twice: identical md5s.
 - A client on pair 36 or older: the server's pair 37 outfits draw nothing. Ship pair 37 with the server.
 - Server side: server/README.md "Owner outfits (pair 37)". Preview: scratchpad only. Not run in a client.
 
-## Orb looks (the 18 crafting bench orbs, `tools/sprites/gen_orb_items_art.py`, `art_import/orbs_src.png`, `orb_items.png`, `orb_items.csv`; new looks in pair 63, built 2026-11-11, not on windows-assets yet; O482; first look pair 38, 2026-10-22, on windows-assets ee8e82e)
+## Orb looks (the 18 crafting bench orbs, `tools/sprites/gen_orb_items_art.py`, `art_import/orbs_src.png`, `orb_items.png`, `orb_items.csv`; new looks in pair 63, built 2026-11-11, on windows-assets 3220b4e; O482; first look pair 38, 2026-10-22, on windows-assets ee8e82e)
 **History.** Pair 38 gave the Orb of Sockets (server 24692, client 38641) a look of its own: before, it drew the great fireball rune's
 sprite (owner 2026-10-22: "Coloque arte de orb de verdade. Não use as runas para isso. Deixe os sprites de runa só para as runas."), a
 sphere drawn per pixel in code. The other orbs wore base things (inlay stones, essence crystals, moonlight crystals, crowned gems, a small
@@ -4100,12 +4100,12 @@ items allowed: 0 errors, 3,964 warnings (the lines of pair 61).
 - Checked offline: pair 61 and pair 62 frames of the four items read back from the built pair, on the client's item cell (scratchpad only).
   Not seen in a client.
 
-### Pair 63: pair 62 with the 35 socket gems and the 18 crafting orbs redrawn (`gen_gem_art.py`, `gen_orb_items_art.py`; built 2026-11-11, not on windows-assets yet (waits for the owner's go); O480, O482)
+### Pair 63: pair 62 with the 35 socket gems and the 18 crafting orbs redrawn (`gen_gem_art.py`, `gen_orb_items_art.py`; built 2026-11-11, on windows-assets 3220b4e; O480, O482)
 Owner 2026-11-11 (translated): "They are very ugly. Make new ones please." Then, on a sheet of seven styles: "It can be A, but on the perfect use C." Section
-"Gem looks" has the art, the method and the picks. The 35 final looks were sent to the owner as a sheet on 2026-11-11; the owner has not answered on that
-sheet yet. Pair 63 is pair 62 with the items 33905 to 33939 redrawn in place by `redraw_items.py --strip` (the commands are in "Gem looks"): each item
+"Gem looks" has the art, the method and the picks. The 35 final looks were sent to the owner as a sheet on 2026-11-11; the owner approved the publication of the pair on
+2026-11-11 ("You can publish"). Pair 63 is pair 62 with the items 33905 to 33939 redrawn in place by `redraw_items.py --strip` (the commands are in "Gem looks"): each item
 keeps its frame group (1 x 1, one layer, nine phases, the animator head and the 18-entry duration table of 110 ms) and its flag bytes, and points at new
-sprites. Gems and orbs ship in the same pair (it is not published, so it stays 63).
+sprites. Gems and orbs ship in the same pair.
 The orbs (O482, owner 2026-11-11: "Generate all the other orbs too. Let us keep them all in the same line."; section "Orb looks"): ten orbs get a NEW
 client item each, appended by `import_art_things.py` (client ids 44550 to 44559 after the last item of pair 62, 44549; flags copied from the stock thing,
 one phase), eight orbs are redrawn in place (client 27195, 27199, 27200, 27201, 33000, 33001, 33002, 38641) by `redraw_items.py --strip`.
@@ -4121,7 +4121,8 @@ share a sprite id, 3,000 old sprites unchanged; the importer verified the ten ne
 0 errors, 3,964 warnings (the lines of pair 62); `--old` against the pair before the eight orb redraws, with exactly those eight items allowed: 0 errors. The old
 gem and orb sprites stay in the file, unused.
 - **Archive parts** (the recipe of pair 62: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of Tibia.dat and Tibia.spr
-  streamed into `xz -9 -T3`, `split -b 95M -d -a 2`; built offline, not pushed to windows-assets):
+  streamed into `xz -9 -T3`, `split -b 95M -d -a 2`; owner's go 2026-11-11; pushed to windows-assets as **3220b4e**, only the two part files and
+  their lines of `SHA256SUMS.parts` change):
   - part00 99,614,720 bytes, sha256 `baf91f6db4a544a8d5824e1174d7fda00b0a3643276c3dea6a6c1dadb5544be1`
   - part01 30,480,132 bytes, sha256 `d41990faa5c9a1397791731a3d7917101593b3a09fb1cbad3e1440403f694eda`
   - joined `things-1098.tar.xz` (130,094,852 bytes) sha256 `2f236f4560f21b27c6cd281d73d325e15a8bbcd688993eaba0bb8074021c734a`;

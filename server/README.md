@@ -14068,7 +14068,7 @@ ship pair 38 first. Rollback: `useLook = false` and the installer again (22036 b
 `lookFirst` + (type - 1) x 5 + tier - 1 (client/tools/sprites/gen_gem_art.py; client/MANIFEST.md "Gem looks"). In
 things_custom25, on windows-assets at ebe1b2b2. **New art, pair 63 (O480, 2026-11-11):** the 35 looks are redrawn in place,
 same ids, same animation slots: a client on pair 63 or newer draws the new gems, an older one the old. The server does not
-change: ids, `ownLook` and `lookFirst` stay (built offline, waits for the owner's go; `chaosClientPair` 63 switches it on). Install step with the switch on:
+change: ids, `ownLook` and `lookFirst` stay (on windows-assets 3220b4e; `chaosClientPair` 63 switches it on). Install step with the switch on:
 `ownLook = true` in `chaos_gems_config.lua`, `python3 -I server/tools/install_gems.py <server>/data` (rewrites the 35
 nodes with the new client ids, the rest of each node stays the stock gem's), restart. `ChaosGems.clientIdOf` follows
 the switch. Rollback: false and the installer again (byte-identical to before). Test: `tools/install_gems_test.py`.
