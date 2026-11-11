@@ -16,7 +16,7 @@
 use crate::config::Config;
 use crate::i18n::{Error, Status};
 use crate::manifest::{self, blob_url, Layout, Manifest, NativeFile};
-use crate::net::Fetch;
+use crate::net::{Fetch, FetchError};
 use crate::selfupdate;
 use cinders_selfupdate::hash::{is_sha256_hex, sha256_file};
 use serde_json::{json, Value};
@@ -87,6 +87,17 @@ impl Default for Options {
             launcher_only: false,
             allow_dev: false,
         }
+    }
+}
+
+/// What a failed fetch of the manifest means (O494). A server answer of 400 or more is `Error::Http`, not a network
+/// failure; for the Unity client (`unity`: the tree layout) a 404 or 410 means the channel was never published. Only
+/// a transport failure (no answer at all) is `Error::Network`.
+pub fn manifest_fetch_error(e: FetchError, unity: bool) -> Error {
+    match e.http {
+        Some(404 | 410) if unity => Error::UnityNotPublished,
+        Some(status) => Error::Http(status),
+        None => Error::Network(e.detail),
     }
 }
 
@@ -349,7 +360,10 @@ impl<'a> Updater<'a> {
             .unwrap_or(0);
         let sep = if self.cfg.manifest_url.contains('?') { '&' } else { '?' };
         let url = format!("{}{sep}t={stamp}", self.cfg.manifest_url);
-        let body = self.fetch.get(&url).map_err(Error::Network)?;
+        let body = self
+            .fetch
+            .get(&url)
+            .map_err(|e| manifest_fetch_error(e, self.cfg.layout == Layout::Tree))?;
         let m = manifest::parse_envelope_for(&body, &self.cfg.public_key, self.cfg.layout)?;
         let have = self.cfg.baseline.max(self.applied_version());
         if m.version < have {
@@ -494,10 +508,10 @@ impl<'a> Updater<'a> {
                 let _ = std::fs::remove_file(&part);
             }
             if have != f.size {
-                if let Err(detail) = self.fetch.download(&url, &part, progress) {
+                if let Err(e) = self.fetch.download(&url, &part, progress) {
                     last = Error::Download {
                         file: f.path.clone(),
-                        detail,
+                        detail: e.detail,
                     };
                     continue;
                 }
@@ -606,4 +620,41 @@ fn parse_journal(v: &Value, layout: Layout) -> Vec<JournalEntry> {
         });
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn http(n: u16) -> FetchError {
+        FetchError::http(n, format!("curl 22: returned error: {n}"))
+    }
+
+    #[test]
+    fn a_missing_unity_manifest_is_not_published() {
+        assert_eq!(manifest_fetch_error(http(404), true), Error::UnityNotPublished);
+        assert_eq!(manifest_fetch_error(http(410), true), Error::UnityNotPublished);
+    }
+
+    #[test]
+    fn other_unity_answers_are_server_errors() {
+        for n in [403u16, 500, 503] {
+            assert_eq!(manifest_fetch_error(http(n), true), Error::Http(n));
+        }
+    }
+
+    #[test]
+    fn the_main_client_never_gets_the_unity_text() {
+        assert_eq!(manifest_fetch_error(http(404), false), Error::Http(404));
+        assert_eq!(manifest_fetch_error(http(410), false), Error::Http(410));
+        assert_eq!(manifest_fetch_error(http(500), false), Error::Http(500));
+    }
+
+    #[test]
+    fn a_transport_failure_stays_a_network_error_for_both() {
+        for unity in [false, true] {
+            let e = FetchError::from("curl 7: refused");
+            assert_eq!(manifest_fetch_error(e, unity), Error::Network("curl 7: refused".into()));
+        }
+    }
 }
