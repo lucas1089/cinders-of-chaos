@@ -6490,7 +6490,50 @@ autoloot list is needed.
   - Tests: `tests/pouches_test.lua` (the rune lists, routing against the other four, a kill, a full bag, the manual moves, the
     store, regrant bit 16, never sold), `tests/autosell_test.lua`, `tests/itemsearch_test.lua`, `tests/supports_test.lua` (the combine from the purse bag, O509), `tools/install_pouches_test.py`
     (four installed pouches get the fifth), client `game_pouches/pouchesview_test.lua`. Unity keeps `Ids`, `Titles` and `Owned` as
-    dictionaries and reads only the Loot Bag: a fifth kind is stored and not shown. Not run on a server or in a client.
+    dictionaries and reads only the Loot Bag: a fifth kind is stored and not shown. Run on a local server, not in a client: see the
+    next bullet.
+  - **Run on a local test server (2026-11-11).** An engine built here from the base source with src-patches 0001-0088, 0090, 0091 and
+    0092 (0089 is not in that tree). `patch -p1 --fuzz=0` applied both new patches, one hunk of 0092 at an offset of one line. The
+    build (Release, LuaJIT) gave no warning, and `-Wall -Wextra` gave none in `chaosrunebag.h`, `chaosfist.h` or a patched line.
+    Lua and data: install steps `files` and `pouches`. Three level 300 testers on a scripted client (`tools/loadtest.py` login, own
+    packets: the hotkey is 0x84 use with creature or 0x83 use with at `{0xFFFF, 0, 0}` and the rune's client id). Measured, each one
+    number before and after:
+    - *Capability.* `Game.setRuneBagContainer ~= nil` true, `ChaosPouches.runeBagEngine()` true at load and after login,
+      `Player.setFistAttack ~= nil` true.
+    - *Hotkey from the purse bag, none in the backpack.* Mending Rune, 10 in the bag: five uses took it 10, 9, 8, 7, 6, 5, health
+      rose every time, the line said "Using one of 10 mending runes...". Two uses 100 ms apart: "You are exhausted.", one rune gone.
+      Shackle Rune at 500 mana: "You do not have enough mana.", 5 stayed 5. Hexdart on a monster: a hit, 8 to 7. Use with on a
+      tile (0x83): hit, 6 to 5 to 4.
+    - *Backpack first.* One in the backpack and 9 in the bag: the first use took the backpack rune (bag 9), the second the bag (8).
+    - *Count and removal.* Backpack 7 and bag 120 in two stacks: `getItemCount` 127. `removeItem` 5, 10, 110 took it to 122, 112,
+      2, backpack first and then across both bag stacks. 13 returned false and took nothing. 2 took the rest. A locked stack in
+      the bag is not counted and not taken.
+    - *Narrow rule.* A rune loose in the purse, in a plain bag in the purse, in a Rune Bag inside a plain bag, in the Loot Bag:
+      count 0, the hotkey answered "Sorry, not possible.", nothing changed. A potion moved into the Rune Bag by a real move packet:
+      "The Rune Bag holds only runes." A rune moved in: accepted.
+    - *Supports.* The window state listed the bag's support rune (5). Socket took one (5 to 4). Combine by the window: 7 in the bag,
+      3 taken, one of the next level made. Use with on the stack in the open bag, on itself: 3 taken, one made, not 6. Two in
+      the bag and one in the backpack: all 3 taken, one made. Two only: refused, nothing taken. The use with in hotkey form
+      cannot combine: the engine gives the script no target there, with or without the patch.
+    - *Vendor.* No NPC of this server buys runes. The same engine walk with a wand a vendor buys (Oskath, large shop, so the
+      `getAllUnlockedItemTypeCount` list): backpack 1 and bag 3 were offered as 4. A sale of 1 took the backpack one and paid 55
+      gold, the next took the bag one and paid 55 once. A sale of 5 with 2 left: "You do not have this object.", nothing taken.
+      An NPC answers to `TALKTYPE_PRIVATE_PN` (12) after the greeting, as the client's NPC channel sends it.
+    - *Opcode 226 `runebag`.* With 20 and 10: `{engine true, counts {"3148": 20, "3152": 10}, bag true, poll 2}`; after a use 9.
+      Runes in the backpack are not counted. No bag: `bag false, poll 15`. An empty `counts` is encoded as `[]`.
+    - *Relog.* 3 in the backpack and 10 in the bag: identical after a relog. After 5 uses the rows of `player_storeinboxitems` said
+      8 and the backpack row was gone: 13 to 8. The purse is saved in `player_storeinboxitems`, not `player_items`. A tile with
+      the no-logout flag (the hunts) keeps a character in the game after the logout packet.
+    - *Stress.* 200 hotkey uses (100 Mending, 100 Hexdart, one every 1.05 s): 9 Mending uses met the exhaust and took nothing, the
+      other 191 took one each, Hexdart 100 of 100, counts exact at every 20. 200 `getItemCount` and `removeItem(1)` and `addItem`
+      cycles in Lua, then a removal of the whole count and an add back: 0 mismatches, total 60 before and after. No crash, no Lua
+      error, no `[Error` line in the server log.
+    - *Fist (O505).* A Monk with bare fists: `getFistAttack()` 0 and 1 before the first swing, 62.03 and 1.2 after, the monster died.
+    - *Old engine (the untouched binary, same Lua and data).* No error at load or login, `runeBagEngine()` false, `runebag` answered
+      `engine false, counts [], bag false, poll 15`. A purse-only Mending Rune: "Sorry, not possible." twice, 10 stayed 10,
+      `getItemCount` 0, the supports window listed nothing. A rune in the backpack, and a Rune Bag in the backpack: used.
+    - *Not run.* A real game client: the action bar count, the wrap of `LocalPlayer.getInventoryCount` and the helper. A live
+      server. The loot of kills going into the purse bag. The field removed by the Dispel Rune (the rune was used).
 - **The Loot Bag** (owner 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe automaticamente";
   called Loot Pouch before). Bottomless: 500 slots (`capacity`, owner 2026-10-29; was 255, see "500 slots" below) and **weightless** (`weightless = true`): engine src-patch 0038 keeps the weight of
   what lies in it (and in bags inside it) away from the character, and an item put into it skips the capacity check.
