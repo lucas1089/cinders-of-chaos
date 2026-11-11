@@ -86,11 +86,12 @@ function V.gemBasics(guide, tr)
   }
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 12345 -> "12,345"
 function V.number(n)
   local s = tostring(math.floor(tonumber(n) or 0))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''))
+  return lnum((out:gsub('^,', '')))
 end
 
 -- "2 / 4 / 6 / 9 / 12%" (pct), "20 / 45 / ..." (flat), a pair as two parts joined by ", "

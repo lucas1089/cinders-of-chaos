@@ -81,11 +81,12 @@ local cfg = {
 	bossFloorTimeMult = 2,
 	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a whole run lasts at most runTimeLimit
 	-- seconds (0 = no limit); then it ends like a lost floor: everyone back where they entered, the floors cleared so far
-	-- are recorded (gold was paid per floor). 60 minutes: about 30 floors at two minutes a floor, three bosses deep; the
-	-- weekly ranking is by floors, so a long run cannot hold a slot for hours. Warnings at warnAt seconds left of the run
+	-- are recorded (gold was paid per floor). 120 minutes (owner 2026-11-11, O507; 60 before: a level 1000 character reaches
+	-- about floor 44 and a run was thrown out at floor 57 while still winning): 60 floors at two minutes a floor, 120 at
+	-- one a minute; the weekly ranking is by floors, so a run still cannot hold a slot for a day. Warnings at warnAt seconds left of the run
 	-- and at floorWarnAt seconds left of a floor; at most maxRuns runs (maxSlots arenas); a group that finds every arena
 	-- busy waits in line and is told when one frees up. A run ends at once when its last player is out.
-	runTimeLimit = 3600,
+	runTimeLimit = 7200,
 	limits = {warnAt = {300, 60, 10}, floorWarnAt = {60, 10}, maxRuns = 16, waitlist = true},
 	startDelay = 5, -- seconds before floor 1
 	nextFloorDelay = 6, -- seconds between floors

@@ -4,7 +4,8 @@
 --   scorch / frost / green stain   under a fire / ice / poison or earth hit (g_map.onImpactText, base patch 0100): the
 --              damage number has no element, its colour does (CombatDecalsLogic.kindOfColor)
 -- Each lies on the floor of its tile (Tile:setFloorWidget, base patch 0078: under creatures, items and walls, the way
--- game_cosmeticfx puts footprints down) and fades out over 20-30 s. A tile whose floor widget another module holds (a
+-- game_cosmeticfx puts footprints down), sized in MAP pixels (CD.box: the engine draws a floor widget inside the scaled map
+-- picture, so a tile is one sprite size at any zoom and no resize follows the zoom; O506) and fades out over 20-30 s. A tile whose floor widget another module holds (a
 -- footprint, a ground label, a hideout mark) gets none. At most CD.MAX are alive, only on the screen, only on the
 -- player's floor. The fade timer runs only while a decal exists and does nothing while the window is minimized (its
 -- clock goes on, so decals that ran out meanwhile are dropped at the restore). Everything goes at logout, on a floor
@@ -19,7 +20,6 @@ local enabled = true
 local timer                 -- the cycleEvent, only while decals exist
 local hooked = false
 local lastPos               -- the local player's last position (floor change / jump detection)
-local tw, th = 64, 64       -- tile size the widgets were made for
 local reported = {}
 
 local function safe(name, fn)
@@ -52,13 +52,6 @@ end
 
 local function hidden()
   return g_window ~= nil and g_window.isVisible ~= nil and not g_window.isVisible()
-end
-
-local function measureTile()
-  local panel = mapPanel()
-  if not panel then return end
-  local vd, r = panel:getVisibleDimension(), panel:getRect()
-  tw, th = CD.tileSize(r.width, r.height, vd.width, vd.height, panel:isKeepAspectRatioEnabled())
 end
 
 -- ---------------------------------------------------------------- widgets
@@ -107,22 +100,12 @@ tick = safe('tick', function()
   local alive, gone = CD.step(state, t)
   for _, d in ipairs(gone) do dropWidget(d) end
   local keep = {}
-  local oldW, oldH = tw, th
-  measureTile()
-  local resize = oldW ~= tw or oldH ~= th
-  local size, ml, mt
-  if resize then size, ml, mt = CD.box(tw, th, spriteSize()) end
   for _, d in ipairs(alive) do
     local w = d.widget
     if w and not w:isDestroyed() then
       if math.abs((d.shown or 2) - d.alpha) >= 0.02 then
         w:setOpacity(d.alpha)
         d.shown = d.alpha
-      end
-      if resize then
-        w:resize(size, size)
-        w:setMarginLeft(ml)
-        w:setMarginTop(mt)
       end
       keep[#keep + 1] = d
     end
@@ -160,8 +143,7 @@ local function put(kind, pos, spread)
   while #state.decals >= CD.MAX do
     dropWidget(table.remove(state.decals, 1))
   end
-  measureTile()
-  local size, ml, mt = CD.box(tw, th, spriteSize())
+  local size, ml, mt = CD.box(spriteSize())
   local w = g_ui.createWidget('UIWidget')
   w:setImageSource(CD.path(kind, math.random(CD.VARIANTS)))
   w:setImageSmooth(true)

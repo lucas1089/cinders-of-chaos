@@ -310,7 +310,7 @@ Claude does not change these. Each names the two places that disagree.
 - Rift density (2026-10-12): orbs per hour stay as they come out of the new density (tier 15: 4-5 runs an hour, up
   to +34% orbs for very fast runs). The chest orb rates are not cut.
 - Instance limits (2026-10-12, server/README.md "Instance limits"): kept as built. The raid's 150 minute session, the
-  Infinity Tower's 60 minute run, the 30 minute cap of the base lever boss rooms, and the 1 hour dungeon cooldown for
+  Infinity Tower's 60 minute run (raised to 120 minutes on 2026-11-11, O507), the 30 minute cap of the base lever boss rooms, and the 1 hour dungeon cooldown for
   a relog inside a dungeon.
 - Class looks pair 19 (2026-10-12): approved and pushed to `windows-assets` (b36204f2); the six new class looks go live
   with the switch in `class_looks_core.lua`.

@@ -3814,7 +3814,7 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
 | weapon check: level | 5 | 0 |
 | tooltip stricter: class (tooltip drops a class the server allows) | 76 | 0 |
 | unique copy: tooltip stricter: class | 3 | 0 |
-| unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 | 35, kept |
+| unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 (58 once the audit read every unique) | 0 (2026-11-11, O510) |
 | unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding |
 
   Shapes (one example each): a wand, rod, robe or hood for the Mystic + Illusionist line or the Mystic + Elementalist line
@@ -3825,17 +3825,127 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
   "all classes", the Equip entry asks the Ranger and Thief lines); a stock wand that lists only the vocation None read
   "nones" and is now "no class".
 - **Not told by the tooltip** (and why): the weapon check's penalty (the level or class is shown, not that a wrong class
-  hits for nothing); the unique level of 35 older uniques (the tooltip shows the level the unique is meant for, the server
-  asks none: the unique's own description says the same); slot rules (two-handed against shield, the quiver beside a bow,
+  hits for nothing); a unique's own level (no longer shown as a requirement, see "A level the server does not ask"
+  below, O510); slot rules (two-handed against shield, the quiver beside a bow,
   one might ring at a time, the badge slot, a Ninja's off-hand sword, a Monk's fist weapons: engine patches 0002, 0023, 0058,
   0087; the tooltip names the slot and the quiver note only); the scripts of 308 Equip entries (boats, badges, decks, special
   skills: base scripts, not read here); the base's `Player:onMoveItem` rules. The engine's own look line ("It can only be
   wielded properly by ...") is unchanged and still shows the engine's item type: the shown vocations only, and the level of
   the entry read last. The Unity tooltip reads the same `req` field from the server and needs no change.
+- **A level the server does not ask (O510, 2026-11-11).** The coordinator told the owner that the level chip of 35 older
+  uniques lied: it showed the unique's own level and the server asked none. The recommendation was to take the chip off so
+  the tooltip shows only what the server asks, and nobody loses an item. The owner: "Yes." No equip rule of the server
+  changed. Nobody loses the use of an item.
+  - *The rule.* `req.level` of a unique copy is the level the server asks: the item's rule (the generated rules table, else
+    the engine's item type), or the level of the spec's own `equip` rule when it has one (the higher of the two). The
+    unique's own level (`ChaosUniqueItems[].level`) is no requirement. It keeps its real uses: when the unique drops (O342),
+    its power, the Codex, the wiki, sorting. The tooltip has no row for it and gets none. The client draws `tip.level` as
+    "Item Level N" (the level that rolls tiers), a different thing that `ChaosMakeUnique` does not set, so it is not used for
+    this. The one place that names the level is the description: "(Meant for level N.)".
+  - *Why these differ.* 74 of the 178 uniques have `equipLevel` / `equipLines` in `chaos_items.xml` (the second round of
+    2026-10-13, the leveling and endgame uniques): their own rule, held by `chaos_unique_equip.lua`, and its level is the
+    unique's level. The other 104 are older. Their level was text and a drop level only (`data/items/README.md`, "Level
+    requirements are text only"): the server asks what the stock base item asks. For 46 of them that is the same level or
+    more, so the text is right and stays. For 58 it is less, or nothing, and the tooltip raised the chip to the unique's
+    level. The audit found 35 of the 58, because it built tooltips only for ids that have an Equip or weapon entry. 23 more
+    base items have no rule at all, so it never read their copy. It reads every unique now (`uniqueRow` in
+    `audit_equip_tooltips.lua`), and the same audit with the old tooltip code counts 58.
+  - *The 58* (`data/items/unique_level_not_asked.csv`, read from the rules of the local test server's installed files of
+    2026-11-11 with the audit's own reader; "showed" is the chip before, "shows now" the rule's level, the weapon check
+    included as for a plain copy; "audit" says if the first audit had them):
+
+  | id | unique | slot | showed | the server asks | shows now | audit |
+  |---|---|---|---|---|---|---|
+  | 2123 | Cinderheart Signet | ring | 1000 | nothing | no level | new |
+  | 2129 | Hollowpack Fang Chain (hollowpack) | necklace | 250 | nothing | no level | new |
+  | 2171 | Eye of the Unbroken Storm | necklace | 1000 | nothing | no level | new |
+  | 2408 | Sanguine Crescent | sword | 1000 | weapon check 120, no refusal | 120 | 35 |
+  | 2412 | Nightfang Katana | sword | 60 | nothing | no level | new |
+  | 2440 | Executioner's Reckoning | axe | 80 | weapon check 25, no refusal | 25 | 35 |
+  | 2466 | Aetherbound Plate | body | 120 | nothing | no level | 35 |
+  | 2493 | Hollow Crown of Morvane | head | 1000 | nothing | no level | new |
+  | 2496 | Hornsworn Helm (embers) | head | 70 | nothing | no level | new |
+  | 2500 | Thornwake Jerkin (thornwake) | body | 150 | Equip 60 | 60 | 35 |
+  | 3961 | Lichfang Staff | club | 70 | weapon check 40, no refusal | 40 | 35 |
+  | 3972 | Bonelord's Gaze | head | 60 | nothing | no level | new |
+  | 3975 | Emberwarden (embers) | shield | 90 | nothing | no level | new |
+  | 7379 | Bonegrinder | club | 90 | weapon check 25, no refusal | 25 | 35 |
+  | 7404 | Duskstalker Fang (duskstalker) | weapon | 300 | weapon check 40, no refusal | 40 | 35 |
+  | 7418 | Duskstalker Sting (duskstalker) | weapon | 300 | weapon check 70, no refusal | 70 | 35 |
+  | 7462 | Crown of Cinders | head | 100 | nothing | no level | new |
+  | 7894 | Cinderstorm Kilt (cinderstorm) | legs | 400 | Equip 40 | 40 | 35 |
+  | 7899 | Cinderstorm Mantle (cinderstorm) | body | 400 | Equip 50 | 50 | 35 |
+  | 8209 | Soulreaper | sword | 120 | nothing | no level | new |
+  | 8849 | Gallowsbolt Crossbow | distance | 60 | weapon check 45, no refusal | 45 | 35 |
+  | 8881 | Pyreheart Mantle | body | 150 | Equip 100 | 100 | 35 |
+  | 8892 | Cindermail Coat (embers) | body | 80 | nothing | no level | 35 |
+  | 10296 | Pall of Skulls | body | 60 | nothing | no level | new |
+  | 10301 | Harvester of Sorrows | axe | 100 | nothing | no level | new |
+  | 10318 | Obsidian Aegis | shield | 110 | nothing | no level | new |
+  | 10510 | Widow's Last Vow | ring | 90 | nothing | no level | new |
+  | 11301 | Duskstalker Jerkin (duskstalker) | body | 300 | Equip 50 | 50 | 35 |
+  | 11304 | Duskstalker Breeches (duskstalker) | legs | 300 | nothing | no level | 35 |
+  | 11374 | Carrion Scarab Amulet | necklace | 50 | nothing | no level | 35 |
+  | 11395 | Bloodmoon Edge | sword | 90 | nothing | no level | new |
+  | 11426 | Gorecleaver | sword | 70 | nothing | no level | new |
+  | 13760 | Riftcaller | wand | 80 | weapon check 37, no refusal | 37 | 35 |
+  | 15407 | Gallows Coat (gallows) | body | 600 | Equip 150 | 150 | 35 |
+  | 19390 | Hellspear of the Damned | distance | 50 | nothing | no level | new |
+  | 21693 | Hornbinder Ring | ring | 60 | nothing | no level | new |
+  | 22474 | Tome of Whispers | shield | 100 | nothing | no level | new |
+  | 22690 | Widowmaker | sword | 40 | nothing | no level | new |
+  | 23590 | Gorehammer | club | 100 | Equip 70 | 70 | 35 |
+  | 24637 | Cinderstorm Sandals (cinderstorm) | feet | 400 | Equip 80 | 80 | 35 |
+  | 24718 | Hollowpack Mask (hollowpack) | head | 250 | nothing | no level | 35 |
+  | 24741 | Hollowpack Hide (hollowpack) | body | 250 | Equip 50 | 50 | 35 |
+  | 24790 | Fangs of the Ninth Circle | necklace | 120 | nothing | no level | new |
+  | 24851 | Tear of the Void | necklace | 100 | Equip 60 | 60 | 35 |
+  | 25175 | Bloodsworn Hauberk (bloodsworn) | body | 300 | Equip 200 | 200 | 35 |
+  | 25410 | Bloodsworn Visage (bloodsworn) | head | 300 | nothing | no level | new |
+  | 26133 | Voidwalker Boots | feet | 100 | nothing | no level | new |
+  | 26808 | Hollowpack Bond (hollowpack) | ring | 250 | nothing | no level | 35 |
+  | 27249 | Duskstalker Tabi (duskstalker) | feet | 300 | Equip 220 | 220 | 35 |
+  | 27658 | Bloodsworn Greataxe (bloodsworn) | weapon | 300 | Equip 250, weapon check 250 | 250 | 35 |
+  | 27666 | Cinderstorm Wand (cinderstorm) | weapon | 400 | Equip 250, weapon check 250 | 250 | 35 |
+  | 28114 | Gallows Leggings (gallows) | legs | 600 | Equip 300 | 300 | 35 |
+  | 28691 | Thornwake Loop (thornwake) | ring | 150 | Equip 100 | 100 | 35 |
+  | 29470 | Gallows Hood (gallows) | head | 600 | Equip 220 | 220 | 35 |
+  | 29471 | Cinderstorm Crown (cinderstorm) | head | 400 | Equip 300 | 300 | 35 |
+  | 41640 | Ring of the Last Ember | ring | 70 | nothing | no level | 35 |
+  | 41641 | Heart of Cinders | necklace | 80 | nothing | no level | 35 |
+  | 41642 | Heartbleed Pendant | necklace | 90 | nothing | no level | 35 |
+
+  - *Texts.* `tools/gen_unique_specs.py` reads the csv. For these ids it writes "(Meant for level N.)" in the place of
+    "(Requires level N.)" in the spec (`chaos_unique_specs.lua`), in `chaos_unique_desc_pt.lua` and in the pt-BR Codex block of
+    `pt_br.lua`: en "(Meant for level 70.)", pt-BR "(Feito para o nível 70.)". The spec gets `levelNotAsked = true`. The
+    source `chaos_items.xml` and `unique_flavor_pt.tsv` keep "(Requires level N.)" / "(Requer nível %s.)": the price, growth
+    and level tools read the source. The generator stops when an id of the csv has no such sentence or has a rule of its own.
+    The Codex row "Required level" of these ids reads "Meant for level" (pt-BR "Feito para o nível", `gen_codex_data.lua`);
+    the wiki and the Unity Codex follow from it. The Codex headline "Club, level 70." and the filter stay: they state the level
+    as the unique's. The Sets tab rule "a piece counts when ... you have its level" stays: it is the set bonus rule
+    (`chaos_item_sets.lua`), not a rule to wear the piece. `T.refreshPassive` cuts the passive line at either sentence, and
+    `K.specLevel` (Conquest vendor) reads either.
+  - *A copy dropped before.* The item carries the old description as an attribute ("(Requires level 70.)"). The rich tooltip
+    reads the description from the spec at look time (`item_tooltip_core.lua`), so an old copy shows the new text and no level
+    chip with no code of its own. The engine's look line reads the stored text: in pt-BR the old text is a key of
+    `ChaosUniqueDescPt` too (58 more rows) and reads the new pt-BR text. In English the look line of an old copy still says
+    "(Requires level 70.)" until the item is made again. Rewriting stored descriptions is not done here (a decision for the owner).
+  - *The audit.* `unique copy: tooltip stricter: level` is 0 on the installed files and now also fails `--check`
+    (`FAIL_LABELS`), the one lesser kind that does. The kinds of the other rows stay a list. `audit_equip_tooltips_test.py`
+    pins it with a tooltip that shows the old level.
+  - *Display scale.* `DS.itemTip` scales the flat rows of a tooltip by the factor of `req.level`. The curve is off (x1 at
+    every level, `display_scale_config.lua`), so nothing changes. If it is turned on again, the 58 get factor 1 where they
+    had the factor of their level.
 - Tests: `tests/item_tooltip_test.lua` (the reading, the rule table, the texts, the cut; the O489 test now expects
   "Ranger, Deadeye, Beastmaster, Thief only" for a stock Thief without a Ninja or Samurai, because a base class alone reads as its whole line),
   `tools/audit_equip_tooltips_test.py` (the reading, the rules, every kind, the install step: dry run, idempotent, stale
   file, the two read orders).
+  O510: `tests/item_tooltip_test.lua` (a unique copy shows no level the server does not ask, its own rule's level, every
+  unique of the catalogue), `tests/unique_level_note_test.lua` (the csv, the spec flag, en and pt-BR texts, old copies, the
+  Codex rows), the audit test (the old level is found and fails `--check`, a unique with no rule is read).
+  The O490 tests that pinned the shown level were updated to the new rule: `item_tooltip_test.lua` "the unique's level" and
+  "a unique copy: its own level" (Hornsworn Helm, level 70, no rule of its own: no chip now) and
+  `audit_equip_tooltips_test.py` "a unique copy shows its own level" (it expected the kind, it now expects none).
 
 ## Leveling and endgame uniques (`chaos_items.xml` `mods`, `chaos_unique_items.lua`, 2026-10-23)
 Before this the uniques stopped at level 1000 with flat stats, and the first one dropped at level 40.
@@ -4549,12 +4659,12 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 - Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
 
 ### Infinity Tower: two clocks, shown and named (O484)
-The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `bossFloorTimeMult`: 600 s). The whole run has `runTimeLimit` (3600 s; 0 = no run limit). Either one ending ends the whole run: everyone goes back where they entered and the cleared floors are recorded (`endRun`). A death only takes that player out; the run ends when the last one is out. Owner 2026-11-11: the panel showed "Floor time left 3:16" while the chat said the tower ends in 1 minute: that was the run clock, which the panel never showed. The limit itself is unchanged (60 minutes; whether to raise or drop it is an open owner decision).
+The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `bossFloorTimeMult`: 600 s). The whole run has `runTimeLimit` (7200 s; 0 = no run limit). Either one ending ends the whole run: everyone goes back where they entered and the cleared floors are recorded (`endRun`). A death only takes that player out; the run ends when the last one is out. Owner 2026-11-11: the panel showed "Floor time left 3:16" while the chat said the tower ends in 1 minute: that was the run clock, which the panel never showed. The limit itself was 60 minutes then; O507 (owner 2026-11-11, "do the recommended") raised it to 120 minutes.
 - **State.** Every `{"action":"state"}` push (opcode 214) carries `runLeft`, the seconds left of the whole run when it was sent, whenever a run limit exists (also in the start delay and the pause between floors, where `floorLeft` is absent). It is absent with `runTimeLimit = 0` and outside a run. The client counts down from the moment it got the state, as for `floorLeft`.
 - **Panel.** A line under the floor's: en "Run time left: %s", pt-BR "Tempo da corrida: %s". It turns red (`#ff4030`, the red of the rift clock) at 300 s or less. Format m:ss, h:mm:ss from an hour. Hidden without `runLeft`. The panel is 124 px high (was 108).
 - **Warnings.** `ChaosInstanceLimits.warn` takes an optional `limits.sentence(player, lang, mark, leftText, name)` returning the text, the toast title and the toast text; no hook, the shared sentence, byte for byte. The tower uses it: run (marks 300, 60, 10): "Infinity Tower: the whole run ends in 1 minute (60 minute limit). Everyone inside leaves then." (limit from `runTimeLimit`; `K.wholeRunText`); floor (marks 60, 10): "Floor 57: 1 minute left to clear it." (`K.floorLeftText`). Toasts: "Whole run: 1 minute left" and the floor's number as title.
-- **Start.** One line at entry, with a run limit only: "This run lasts at most 60 minutes."
-- **Pace.** 60 minutes is 3600 s: 30 floors at the two minutes a floor that the config comment assumes, 60 floors at one a minute. A level 800 character reaches about floor 34 and a level 1000 character about 44 (`tools/tower_model.py`), so the run limit can end a deep run.
+- **Start.** One line at entry, with a run limit only: "This run lasts at most 120 minutes."
+- **Pace.** 120 minutes is 7200 s (O507; 60 minutes before): 60 floors at the two minutes a floor that the config comment assumes, 120 floors at one a minute. A level 800 character reaches about floor 34 and a level 1000 character about 44 (`tools/tower_model.py`); a run was thrown out at floor 57 by the 60 minute limit while still winning. The model does not read the run limit.
 - Tests: `tests/infinitytower_run_test.lua` (state field, start line, the warnings in English, no limit), `tests/tower_clock_text_test.lua` (the sentences in both languages, the hook, the shared sentence unchanged), client `towerskip_test.lua`. The Unity tower panel is not changed and shows the floor time only.
 
 ## Infinity Tower: leaving a run
@@ -17838,7 +17948,7 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 | Battleground | 30 s + 15 min | + warnings, the found teams hear the wait | the higher score wins | AFK kick 2 min (unchanged) | 4 fields, queue | a deserter | stopped, not rated |
 | Vocation Trial | 8 / 9 / 10 min | + warnings at 2 / 1 min and 10 s, wait and line | lost (nothing lost, 60 s cooldown), back where it began | solo: a logout ends it | 8 | ends (no cooldown); crash: out at login | out at login |
 | Ascension trial | 3 min, a line every 30 s | + wait and line | lost (10 min cooldown), back to the Oracle | solo | 8 | ends (the cooldown) | out at login |
-| Infinity Tower | 5 min a floor, no run limit | run limit 60 min with warnings, floor warnings at 1 min and 10 s, wait and line | ends like a lost floor: back at the entry, floors cleared recorded | ends when the last player is out | 16 | ends (floors recorded); login inside: temple | login inside: temple |
+| Infinity Tower | 5 min a floor, no run limit | run limit 120 min (60 until O507, 2026-11-11) with warnings, floor warnings at 1 min and 10 s, wait and line | ends like a lost floor: back at the entry, floors cleared recorded | ends when the last player is out | 16 | ends (floors recorded); login inside: temple | login inside: temple |
 | Dungeon | queue: base DungeonTime 60 / 30 min; a relog stayed in the box (and held the next group's run back). Next to it the base modal entry (tile 26702): its own run in the same boxes, 60 / 30 min, no warning, a scan of every tile of the box on each use (37,074 / 61,325 tiles), an exit timer holding the player object, at its end every monster of the box removed (also a queue run's) | queue only: the entry tile opens the dungeon window (`patch_base_dungeon.py`); capped at 45 min, warnings, the queue shows the wait of the run inside, a relog inside goes to the temple (a failed attempt: the cooldown) | back where they entered, cooldown, monsters removed | ends when the last member is out | 1 per dungeon, queue | released; login: temple + cooldown | temple, no cooldown |
 | World boss | 45 min after the boss | + warnings | the boss withdraws, temple after 90 s, arena cleaned | event (not per group) | 1 arena, 40 players | stays in the event | login inside an idle arena: temple |
 | Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
@@ -32377,7 +32487,7 @@ the seconds move by the ratio fit / table: 0.996 to 1.003. `pvp_scale_core.lua` 
 are inside the general limit now (Deadeye burst at 500 0.93 -> 0.83 and at 1000 1.01 -> 0.76, Iron Sage losses at 1000 19 -> 18): `pvp_model.py --check` is green. Battleground normalisation untouched.
 
 **Owned unique items.** `ChaosItemTooltip.refreshPassive(desc, enText, name)` (`item_tooltip_core.lua`, called in `item_tooltip.lua` before the pt-BR substitution and the O467
-block) puts the current English passive line in the place of the stored one: the exact current text if it is there, else from `<Name>: ` to before ` (Requires level` / ` (Requer nível` (or the
+block) puts the current English passive line in the place of the stored one: the exact current text if it is there, else from `<Name>: ` to before ` (Requires level` / ` (Requer nível` (or ` (Meant for level` / ` (Feito para o nível` since O510; or the
 end); a name that appears twice is left alone. The pt-BR line, the block and the O467 explanation then find the current text. Tested with an old stored line
 (`item_tooltip_test.lua`); the glue in `item_tooltip.lua` (a pcall around it) was not run in an engine.
 

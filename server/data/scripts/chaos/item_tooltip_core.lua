@@ -754,7 +754,8 @@ function T.refreshPassive(desc, en, name)
 		return desc, false
 	end
 	local to = #desc
-	for _, req in ipairs({" (Requires level ", " (Requer n\195\173vel "}) do
+	-- O510: " (Meant for level N" / " (Feito para o nivel N" is the same sentence of a unique whose level the server does not ask
+	for _, req in ipairs({" (Requires level ", " (Requer n\195\173vel ", " (Meant for level ", " (Feito para o n\195\173vel "}) do
 		local r = desc:find(req, from, true)
 		if r and r - 1 < to then
 			to = r - 1
@@ -1177,8 +1178,11 @@ function T.build(item, opts)
 		reqLevel = int(stockRule.level)
 		vocString = T.stockClassText(stockRule.vocations)
 	end
-	if uniqueEntry and unique and int(uniqueEntry.level) > reqLevel then
-		reqLevel = int(uniqueEntry.level)
+	-- O510 (owner 2026-11-11: "the tag lies"): the level of a unique copy is what the server asks. That is the level of its
+	-- own equip rule (spec.equip, held by chaos_unique_equip.lua), else the item's rule above. The unique's own level
+	-- (ChaosUniqueItems[].level: when it drops, its power) is no requirement and is not shown here; the description says it.
+	if ownEquip and int(ownEquip.level) > reqLevel then
+		reqLevel = int(ownEquip.level)
 	end
 	if reqLevel > 0 then
 		req.level = reqLevel

@@ -213,6 +213,9 @@ attributes of the stock item (boots of haste style timers, equip transforms) wer
   movement/weapon Lua scripts. The level is written into each description ("Requires level N.") and in `ChaosUniqueItems[].level`.
   Nothing stops a low-level player from equipping them until you add a MoveEvent/`onEquip` check. Exception: the
   uniques with `equipLevel` / `equipLines` (above), held to their own rule by the `uniqueequip` install step.
+  O510 (2026-11-11): the 58 uniques of `unique_level_not_asked.csv` have no rule of their own and the server asks no level
+  for them (or a lower one). The generated text says "(Meant for level N.)" for them and the item tooltip shows no level
+  chip; this file keeps "(Requires level N.)" as the source of the level (the price, growth and set tools read it).
 * **Client display:** the 10.98 client shows item names and descriptions from the server (look/inspect text), but the item
   *sprite* and the client-side name in some windows (e.g. trade lists, market, container titles built from `.dat` names) can stay those of the
   stock item. Sprites are always those of the original item.

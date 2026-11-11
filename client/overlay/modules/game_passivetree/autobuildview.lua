@@ -10,10 +10,11 @@ local V = AutoBuildView
 
 V.TEXT, V.DIM, V.GOOD, V.WARN = '#d8cfc0', '#8c8070', '#80c070', '#c0b080'
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 function V.gold(n)
   local s = tostring(math.floor(tonumber(n) or 0))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''))
+  return lnum((out:gsub('^,', '')))
 end
 
 local function num(v) return math.floor(tonumber(v) or 0) end
