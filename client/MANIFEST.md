@@ -2567,7 +2567,7 @@ Owner report: "all the wings are out of plumb. I think the flying effect is not 
 - **Measure** (`gen_wing_centres.py`; rules in its docstring). Body: idle group, phase 0, base layer, the union of the base and every addon pattern, the torso = rows 30% to 70% of the opaque box, alpha-weighted x. Wings: every phase and layer, alpha-weighted, the baked shadow left out (alpha under 200 and mean luminance under 150), two masses (the widest gap of 2 or more empty columns of the union of all phases) that each hold 25% or more of the art: the midpoint of their means; otherwise the mean of all the art (a fan, one mass, or a thin streak beside a main wing: wings 2441 first had a 3 x 2 px crumb 55 px left of the wing as its "left wing", 0.0% of the art, which put its centre 28 px left; the 25% rule fixed it). Limits: a pale shadow ring or a dark glow can be classed the wrong way (16 wings carry partial alpha that is wing art; their centre moves a pixel or two; the rainbow ring of wings 2445 is not taken for shadow); a body's centre depends on the addons worn (all counted; no addons moves it a median 1 px, up to 4 px at p90).
 - **Result** (the integer rule, all 42 class looks x 121 wings x 4 directions, floats re-measured): wings centre minus torso at most 0.99 px (p95 0.77, mean 0.33). Sheets: scratchpad `sheet_B_final.png`, `sheet_directions_final.png`. 16 wings need a median shift over 12 px in some direction (940, 1178, 1179, 1185, 2141, 2187, 2226-2230, 2233, 2402, 2422, 2426, 2451; mostly the east and west drawings, for example 2226-2230 west +21 px); `sheet_outliers.png`.
 - **Overlay copies of the draw rule** (box maths only; the pictures are drawn by the engine): `game_lookpreview/lookpreview_core.lua` `lookBox(..., wingShift)` and `client_chaos_charselect/charselect_core.lua` `figure(..., wingShift)` move the wings' box by the shift, `lookpreview.lua` and `charselect.lua` ask `WingFit.shift`. Not changed: the website images (`gen_sprite_images.py` and the promo tools draw no wings), `compose_outfit.py` (a build-time composer with its own wings role), Unity (frozen).
-- **Not done.** The baked shadow stays in the sprites (a real clean-up edits 24,449 of the 42,974 sprites of the 121 wings, 3,444 of them shadow only, and needs a new spr part); heads (median 6.8 to 8.6 px left of the class torso, sd 5) and capes (5 to 13 px right, sd 5) are fitted to look 128 too and are not shifted (numbers only). Ship: a new client package (the patch needs a build), then `gen_wing_centres.py --check` with every new pair (CI "Live sprite pair").
+- **Not done.** (The baked shadow was cleaned later by pair 64, O508, section "Pair 64": the numbers below are the plan before it.) The baked shadow stays in the sprites (a real clean-up edits 24,449 of the 42,974 sprites of the 121 wings, 3,444 of them shadow only, and needs a new spr part); heads (median 6.8 to 8.6 px left of the class torso, sd 5) and capes (5 to 13 px right, sd 5) are fitted to look 128 too and are not shifted (numbers only). Ship: a new client package (the patch needs a build), then `gen_wing_centres.py --check` with every new pair (CI "Live sprite pair").
 
 ## Store item looks (pair 34: items 38608-38611, `tools/sprites/gen_store_items_art.py`, `art_import/store_items.*`; on windows-assets 584dab51 since 2026-10-21)
 The Gem Pouch (server id 32095, 2026-10-28) adds no sprite: `pouches_config.lua` `clientId = 0` keeps the stock jewelled
@@ -4154,39 +4154,56 @@ gem and orb sprites stay in the file, unused.
   items.otb (the installed server's file, patched in memory by `install_orbs.py` with the record at 63) next to the looks of pair 62, and equal to the atlas;
   shared client ids listed per orb (scratchpad only). Not seen in a client.
 
-### Pair 64 (candidate, not built into a release, waits for the owner): pair 63 without the shadow baked into the wings (`clean_wing_shadows.py`; O508)
-Owner 2026-11-11 (translated): "All the wings are out of plumb." O495 centred the wings; it also found a soft round shadow inside the sprites of the pack wings,
-24 px right of and 30 px below the wings' centre, so a second dark blob sat to the lower right of every winged character. The coordinator offered a clean-up with a
-before / after for the owner to decide; the owner said "You can do the recommended". This is that clean-up, built and shown, **not pushed, not live**.
+### Pair 64: pair 63 with the ground shadow removed from 91 pack wings (`clean_wing_shadows.py`; built 2026-11-11; O508)
+Owner 2026-11-11 (translated): "All the wings are out of plumb." O495 centred the wings and found a soft round shadow inside the sprites of the pack wings, 24 px
+right of and 30 px below the wings' centre: a second dark blob to the lower right of every winged character. The coordinator offered a clean-up with a before / after;
+the owner said "You can do the recommended." and, on the sheets, asked "Do I publish pair 64 on the private branch?": "You can publish." On Shadow Smoke Wings (2457), asked
+"clean it with the hollow, or leave it as it is today?": "You can leave it as it is." So 2457 is NOT cleaned: its sprite records are byte identical to pair 63's (630 ids checked).
 - **Measured on pair 63** (`clean_wing_shadows.py measure`): 121 wings, 129 frame groups. 92 wings (all of looks 2385 to 2476) have the blob, 29 do not (937 to 941,
   1177 to 1186, 1486, 2140 to 2142, 2187, 2225 to 2233: the O495 note said "about 100", the plain mask had taken their soft edges for shadow). Of the 92: 28 blob
   separate from the wing, 60 touching or under the wing, 4 dark translucent wings where the plain mask would eat 300+ wing px per frame (2390, 2402, 2447, 2457).
-  Of the 29: 8 have dark soft edges that the plain mask eats (100 to 650 px per frame: 937, 940, 1486, 2141, 2227 to 2230), 2 a little (1178, 2142), 19 nothing to remove. The plain mask hit
-  7.94 million pixels over all frames; the rule removes 7.12 million and keeps 0.98 million that the mask would have taken (wing edges). The mask also misses the pale
-  ring of 2406 and the near opaque cores (alpha 204 to 242) of 2427, 2445, 2451, 2457.
+  Of the 29: 8 have dark soft edges that the plain mask eats (100 to 650 px per frame: 937, 940, 1486, 2141, 2227 to 2230), 2 a little (1178, 2142), 19 nothing to remove.
+  The plain mask hit 7.94 million pixels over all frames; the rule keeps 0.98 million of them (wing edges). The mask also misses the pale ring of 2406 and the near opaque
+  cores (alpha 204 to 242) of 2427, 2445, 2451, 2457.
 - **The rule** (full text in the docstring): per wing and frame group, the shadow is what the 4 directions agree on (3 of 4 frames hold the same exact RGBA at a pixel in a
   phase; the wing is what changes with the direction), found as a core (persistent, rings nested in it), a palette of 2 to 20 exact RGBA levels and a fitted ellipse; a
   pixel is removed when alpha is under 255, its RGBA is a palette level, it is inside the ellipse, and the same level is a consensus level at that place in some phase.
-  The table is `pair_fixes/wing_shadows.csv` (numbers only: centre, radii, palette, counts; `fit --check` compares it with the pair), the hand rows are
-  `pair_fixes/wing_shadow_overrides.csv` (one: 2457, a smoke wing whose own smoke uses the shadow's levels, so it gets the ellipse of the core alone; it keeps a hollow in the smoke at the
-  wing root, a few hundred translucent dark pixels). No wing is left whole by a shared sprite: no sprite of a shadow tile is used by a thing that is not a wing, none gives two
-  different tiles, none shares its record with another id.
-- **Counts** (build with the table above): 92 wings cleaned, 29 left as they were (no shadow), 17,439 sprite records rewritten in place (2,009 of them empty afterwards,
-  their record dropped: offset 0), 7,117,578 pixels removed over all wing frames. Wing pixels changed: 0 by construction (no alpha 255 pixel, no pixel that is not a palette level
-  inside the ellipse and confirmed by another direction can change) and checked on every build (every changed pixel of every wing frame is a shadow pixel of the rule, none with alpha 255, all
-  other 931,861 records byte identical). What stays: shadow pixels that two or more other directions cover with wing in every phase, and blends of wing edge over blob: 0.37 million
-  palette-level pixels remain inside the ellipses (5% of what went; most under the wings of 2390, 2447, 2411, 2402, 2471, 2420, 2413: mostly wing glow of the same level).
-- **Build:** `python3 -I client/tools/sprites/clean_wing_shadows.py build P63/Tibia.dat P63/Tibia.spr --out-dir P64` (the table and the overrides are the defaults; about 30 s, 1.1 GB free
-  disk). The dat is copied byte for byte (**no id moves, no flag changes, dat md5 is pair 63's `9b7c39bbb44d28108cc6765bd24384a2`**); the spr keeps its 949,300 ids and the order of
-  its records, 1,116,999,335 bytes (19.1 MB smaller). Built twice from the committed table: both spr 2364c85a217bc3f4c609e63a210069bd (the second through a pipe). Candidate only
-  in the scratchpad of the session, never in the repository. `check_pair.py`: 0 errors, 10,630 warnings = pair 63's 3,964 plus 6,666 `sprite-empty-slot` (an id whose tile is only shadow
-  now draws nothing, offset 0 as the dat's own empty slots). `check_pair.py --old P63` would flag the 17,439 rewritten records (append-only guard): this is the one pair that changes old sprites on purpose.
-- **Generated tables that must be made again with pair 64** (not now: the live-pair job checks them against pair 63): `gen_wing_centres.py` (6 rows move: 2406, 2427, 2435, 2445, 2451, 2457, by 3 to 6 px:
-  pair 63's centre of these still had pale ring and core in it), `gen_foot_marks.py` (91 wing rows), `gen_outfit_anchors.py` (92 wing rows). Every look and body row stays the same. The dat md5 line stays.
-- **Unity** reads the same pair and is frozen: it would show the wings without the blob, nothing to change. **Server:** no new id, so `chaosClientPair` needs no value for pair 64 (the pair is the same
-  ids); `server/tools/client_pair.py` `PAIR_ASSETS` would go to 64 if the coordinator wants the Windows package job to insist on the cleaned archive (same dat md5).
-- **After the owner's yes:** the coordinator pushes the pair to windows-assets (archive parts as for pair 63), regenerates the three tables with it, the new client package ships it (the pair update is the admin app,
-  Comandos > "Par do cliente"; no `chaosClientPair` change needed), and the live-pair job gets `clean_wing_shadows.py fit --check` and `check_pair.py`. Not seen in a running client.
+  The table is `pair_fixes/wing_shadows.csv` (92 rows, numbers only, fitted on pair 63; `fit --check` holds only on pair 63), the hand rows are
+  `pair_fixes/wing_shadow_overrides.csv` (one: 2457 `skip`, the owner's choice; its smoke uses the shadow's levels and a clean-up left a hollow in the smoke at the wing root).
+  No sprite of a shadow tile is used by a thing that is not a wing, none gives two different tiles, none shares its record with another id.
+- **Steps and output.** Input pair 63 (dat 9b7c39bbb44d28108cc6765bd24384a2, spr 4533d13e0715de695f158d12e4001923, both checked first):
+  `python3 -I client/tools/sprites/clean_wing_shadows.py build P63/Tibia.dat P63/Tibia.spr --out-dir P64` (about 30 s, needs 1.1 GB free disk; the table and overrides are the defaults).
+  The dat is copied byte for byte (**no id moves, no flag changes**). The spr keeps its 949,300 ids and the order of its records; changed records are rewritten where they are.
+  Output **pair 64**: dat **9b7c39bbb44d28108cc6765bd24384a2** (8,828,152 bytes, the same as pair 63's), spr **c7f14261dbf375feb74a3942de9dd79c** (1,117,404,219 bytes, 18.7 MB smaller).
+  Built twice from the committed table, the second time streamed to md5 (not to disk): same spr md5. Counts: 91 wings cleaned (91 groups), 29 wings left as they were (no shadow) and
+  2457 left by choice; 17,153 sprite records rewritten in place, 2,009 of them empty afterwards (their record dropped, offset 0: the client draws nothing); 7,000,381 pixels removed over all
+  wing frames. Wing pixels changed: 0, by construction (no alpha 255 pixel, no pixel that is not a palette level inside the ellipse and confirmed by another direction can change) and
+  checked on every build (every changed pixel of every wing frame is a shadow pixel of the rule, none with alpha 255; the other 932,147 records are byte identical).
+  What stays: shadow pixels that two or more other directions cover with wing in every phase, and wing edges blended over the blob; about 0.36 million palette-level pixels (5% of what went)
+  remain inside the ellipses, most of them wing glow of the same level under the wings of 2390, 2447, 2411, 2402, 2471, 2420, 2413, 2440; 2453 keeps a faint grey wedge left of its root;
+  2390, 2447 and 2420 show small cut halo fragments at the wing root.
+- **Checks** (offline, on SP of the session, not in a client). `check_pair.py` on pair 64: 0 errors, 10,630 warnings = pair 63's 3,964 plus 6,666 `sprite-empty-slot` (an id whose tile is only
+  shadow now draws nothing; info `spr-empty-slots`: 2,009 ids without a record). `check_pair.py --old P63` would flag the 17,153 rewritten records (append-only guard): this is the one pair
+  that changes old sprites on purpose. Every step of the CI job "Live sprite pair" ran against pair 64: check_pair (above), `check_item_wire.py --table-check` (423 rows, 0 stale), `gen_theme_art.py recolour --check`
+  (6 sheets match), `gen_outfit_anchors.py --check`, `gen_info_lift.py --check`, `gen_wing_centres.py --check`, `gen_foot_marks.py --check` (all up to date after the regeneration below),
+  `gen_dungeon_banners.py --check` (5 banners, 0 problems), `gen_sprite_images.py` (565 items drawn), plus `luajit unity/tools/gen_info_data.lua --check` and `gen_fx_send_offsets.py --check`.
+  New job step: `clean_wing_shadows.py check-clean DAT SPR` (every cleaned wing has no core and at most 1,000 consensus palette pixels in its ellipse; the skipped 2457 still has exactly the table's
+  blob; no other wing has a blob). It fails on pair 63 (92 wings still have a core) and passes on pair 64.
+- **Archive parts** (the recipe of pair 63 and 62: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of Tibia.dat and Tibia.spr streamed into `xz -9 -T3`,
+  `split -b 95M -d -a 2`; no tar on disk; pushed to windows-assets as **(commit id: the coordinator fills it)**, only the two part files and their lines of `SHA256SUMS.parts` change):
+  - part00 99,614,720 bytes, sha256 `a56fcf4ea377c90a5f313c9c41765b6f369c4852dbc9f987e831d5307cfc43ee`
+  - part01 30,002,536 bytes, sha256 `7401a8b7b3712bf92fb0f6cae51079529fec90c41e1b017f194028682ec1859d`
+  - joined `things-1098.tar.xz` (129,617,256 bytes) sha256 `664f4004ec6fccf3f68571d8554f325b9b381f7ade5e00a05c6a100f73b8c704`; `things-1098.tar` sha256 `bd8486382540d7803ce1c83c3ca6c969c89996399186c6431498474b1fee1ccc`.
+    Decompressing the joined parts gives the dat and spr md5s above (checked, streamed).
+- **In the repository:** `clean_wing_shadows.py`, its test and the two tables; regenerated against pair 64 (`gen_wing_centres.py`, `gen_foot_marks.py`, `gen_outfit_anchors.py`, `gen_info_lift.py`,
+  `gen_info_data.lua`): `client_chaos_wingfit/wing_centres.lua` (5 wing rows: 2406, 2427, 2435, 2445, 2451; the pair centre of these still had the pale ring or core in it, the old centre sat 3 to 6 px
+  too far right, so the wings now move 3 to 6 px to the right to land on the torso; the O508 after-sheets already showed it), `game_cosmeticfx/foot_marks.lua` (90 wing rows), `client_chaos_charselect/outfit_anchors.lua`
+  (91 wing rows), `client_chaos_infolift/info_lifts.lua` (31 wing rows, one more row than before) and `unity/.../Core/InfoLiftData.cs` (the same rows): the extents of a wing no longer include the shadow. Every other row is
+  unchanged: no body or look row moved, and 2457's rows did not move. `server/tools/client_pair.py` `PAIR_ASSETS` is 64 (the dat md5 is the same; `PAIR_ORBS` stays 63, no server id changed). The patch note of 2026-11-13 says the wings no longer
+  carry a second shadow.
+- **Switch on:** nothing on the server: no `chaosClientPair` change, no new id (the sprites are redrawn in place; pair 61 and 62 needed a number only because of new ids). The step is the new client package (the pair ships in it, the admin
+  app's Comandos > "Par do cliente" needs no new value). A client on pair 63 still draws the shadow on the wings. Unity reads the same pair and is frozen: it would show the wings without the blob.
+- Checked offline only. Not seen in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

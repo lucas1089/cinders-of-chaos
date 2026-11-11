@@ -4,6 +4,7 @@
 python3 -I clean_wing_shadows.py fit     DAT SPR [--out pair_fixes/wing_shadows.csv] [--check]
 python3 -I clean_wing_shadows.py measure DAT SPR [--out measure.csv]
 python3 -I clean_wing_shadows.py build   DAT SPR --out-dir OUT [--table T] [--overrides O] [--dry-run]
+python3 -I clean_wing_shadows.py check-clean DAT SPR [--table T] [--overrides O]
 
 Why. Most pack wings carry a soft round shadow INSIDE their sprites: a core of one or two dark levels and one or two
 rings, about 24 px right of and 30 px below the wings' centre. The character already has its own shadow (base patch
@@ -60,6 +61,10 @@ build: the candidate pair. The dat is copied byte for byte (no sprite id and no 
   Verification (always): the output parses, the dat is identical, every unchanged record is byte identical (all of
   them), every rewritten sprite decodes to the cleaned tile, every changed pixel of every wing frame is a shadow pixel
   of the rule, no changed pixel has alpha 255, no frame of a wing left whole changed.
+check-clean (the CI check on the live pair once it is the cleaned one 64; `fit --check` only holds on pair 63, the pair the table was
+  fitted on): every cleaned wing group has no core any more (no pixel that 3 of 4 directions agree on in half of the phases) and at most
+  CLEAN_LEFT_MAX consensus pixels of its palette inside its ellipse over all frames (what stays, limit (b) and glow of the same level);
+  every group the override file skips has exactly the blob the table holds (it is untouched); no other wing group has a blob.
 Sprite art is only read; nothing is drawn, nothing is fetched, no pixel is invented.
 """
 import argparse
@@ -88,6 +93,7 @@ GROW = 1.0              # the ellipse is the bounding box grown by this
 ZONE_GROW = 12.0        # moving rings and arms of the shadow reach this far past what was found so far,
 ZONE_STEPS = 4          # in this many steps,
 ZONE_MAX = 30.0         # and never more than this past the core's ellipse
+CLEAN_LEFT_MAX = 1000   # check-clean: consensus palette pixels that may stay inside the ellipse of a cleaned group
 DIRS = 4
 
 
@@ -578,6 +584,38 @@ def verify(a, dat, spr, changed, specs, left, spr_path, log):
         'pixel (%d) is a shadow pixel of the rule, none with alpha 255' % (len(changed), n_px))
 
 
+def check_clean(dat, spr, rows, overrides, log=print):
+    """the cleaned pair holds no more blob for the cleaned groups, the skipped ones are untouched. Returns the problems"""
+    table = {(r['wing'], r['group']): r for r in rows}
+    bad = []
+    for i, gi, g in wing_groups(dat):
+        if not usable(g):
+            continue
+        frames = frames_of(g, spr)
+        an = Analysis(frames, g[7])
+        row = table.get((i, gi))
+        if row is None:
+            if fit_group(an) is not None:
+                bad.append('wing %d group %d has a blob but no table row' % (i, gi))
+            continue
+        if (i, gi) in overrides and overrides[(i, gi)]['action'] == 'skip':
+            fit = fit_group(an)
+            same = fit is not None and all(row[k] == num(fit[k]) for k in ('cx', 'cy', 'rx', 'ry')) and \
+                row['palette'] == '/'.join(level_str(v) for v in fit['palette'])
+            if not same:
+                bad.append('wing %d group %d is skipped but its blob is not the table\'s' % (i, gi))
+            continue
+        sp = spec_of_row(row)
+        ell = ellipse_mask(an.shape, sp['cx'], sp['cy'], sp['rx'], sp['ry'])
+        pal = np.array(sp['palette'], np.uint32)
+        left = sum(int((hit & ell & np.isin(val, pal)).sum()) for hit, val in an.cons)
+        if an.ok:
+            bad.append('wing %d group %d still has a core' % (i, gi))
+        if left > CLEAN_LEFT_MAX:
+            bad.append('wing %d group %d: %d consensus palette pixels in the ellipse (limit %d)' % (i, gi, left, CLEAN_LEFT_MAX))
+    return bad
+
+
 # ------------------------------------------------------------------------------------------------ measure
 def measure(dat, spr, rows=None, overrides=None):
     """per wing group: frames, sprites, the plain mask's hits, the fitted blob, how much of the wing the plain mask
@@ -636,6 +674,11 @@ def main(argv=None):
     b.add_argument('--table', default=TABLE)
     b.add_argument('--overrides', default=OVERRIDES)
     b.add_argument('--dry-run', action='store_true')
+    c = sub.add_parser('check-clean')
+    c.add_argument('dat')
+    c.add_argument('spr')
+    c.add_argument('--table', default=TABLE)
+    c.add_argument('--overrides', default=OVERRIDES)
     a = ap.parse_args(argv)
     if a.cmd == 'fit':
         rows, none = fit_table(Dat(a.dat), Spr(a.spr))
@@ -661,6 +704,15 @@ def main(argv=None):
                 w.writeheader()
                 w.writerows(rows)
         print('measured %d wing groups' % len(rows))
+        return 0
+    if a.cmd == 'check-clean':
+        rows, ov = read_table(a.table), read_overrides(a.overrides)
+        bad = check_clean(Dat(a.dat), Spr(a.spr), rows, ov)
+        for b in bad:
+            print(b)
+        if bad:
+            return 1
+        print('wing shadows are cleaned (%d wing groups, %d skipped, none with a blob left)' % (len(rows), sum(1 for o in ov.values() if o['action'] == 'skip')))
         return 0
     build(a)
     return 0

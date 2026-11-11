@@ -160,6 +160,10 @@ def main():
             check((px_of(dat_p, spr_p, 3, d, p) == px_of(ndat, nspr, 3, d, p)).all(), 'dark translucent wing %d.%d unchanged' % (d, p))
     check('verified' in log, 'build verified itself')
 
+    # ---- check-clean: the cleaned pair passes, the original fails, a skipped wing must be untouched
+    check(cw.check_clean(Dat(ndat), Spr(nspr), rows, {}) == [], 'check-clean passes on the cleaned pair: %s' % cw.check_clean(Dat(ndat), Spr(nspr), rows, {}))
+    check(len(cw.check_clean(dat, spr, rows, {})) >= 3, 'check-clean fails on the pair with the shadows')
+
     # ---- idempotence: the same table on the cleaned pair changes nothing; fit finds no blob any more
     out2 = tempfile.mkdtemp(prefix='cws_')
     (changed2, left2, _s, _sp, _w), _log, _a = run_build(ndat, nspr, rows, out2)
@@ -190,6 +194,10 @@ def main():
     check((2, 0) not in specs4 and (1, 0) in specs4, 'skip override: wing 2 not cleaned')
     check((px_of(dat_p, spr_p, 2, 1, 1) == px_of(os.path.join(a4.out_dir, 'Tibia.dat'), os.path.join(a4.out_dir, 'Tibia.spr'), 2, 1, 1)).all(),
           'skipped wing unchanged')
+    skip2 = cw.read_overrides(ov)
+    check(cw.check_clean(Dat(os.path.join(a4.out_dir, 'Tibia.dat')), Spr(os.path.join(a4.out_dir, 'Tibia.spr')),
+                         [r for r in rows if r['wing'] != 3], {k: v for k, v in skip2.items()}) == [], 'a skipped wing is untouched in the build')
+    check(any('wing 1 ' in b for b in cw.check_clean(Dat(ndat), Spr(nspr), rows, {(1, 0): {'action': 'skip'}})), 'a skipped wing that was cleaned is reported')
     open(ov, 'w').write('wing,group,action,args,reason\n1,0,skip,,\n')
     try:
         cw.read_overrides(ov)
