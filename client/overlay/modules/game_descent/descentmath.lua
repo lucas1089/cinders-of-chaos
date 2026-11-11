@@ -31,13 +31,14 @@ function M.left(sent, receivedAt, now)
   return math.max(0, (tonumber(sent) or 0) - math.max(0, (now or 0) - (receivedAt or 0)))
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 1234567 -> "1,234,567"
 function M.number(n)
   n = math.floor(tonumber(n) or 0)
   local s = tostring(math.abs(n))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
   if out:sub(1, 1) == ',' then out = out:sub(2) end
-  return (n < 0 and '-' or '') .. out
+  return lnum(((n < 0 and '-' or '') .. out))
 end
 
 function M.roomName(kind)

@@ -13,10 +13,11 @@ function V.clock(s)
   return string.format('%d:%02d', floor(s / 60), s % 60)
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 function V.number(n)
   local s = tostring(floor(tonumber(n) or 0))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''):gsub('^%-,', '-'))
+  return lnum((out:gsub('^,', ''):gsub('^%-,', '-')))
 end
 
 function V.span(s)

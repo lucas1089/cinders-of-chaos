@@ -151,10 +151,25 @@ do
   eq(w, h, 'square with keep aspect')
   w, h = CD.tileSize(nil, 600, 15, 11, true)
   eq(w, 64, 'no rect: default')
-  local size, ml, mt = CD.box(64, 64, 32)
-  eq(size, 64, 'box size'); eq(ml, 0, 'margin left'); eq(mt, 0, 'margin top')
-  size, ml = CD.box(128, 96, 64)
-  eq(size, 96, 'box uses the smaller side'); eq(ml, 0, 'margin for 2x sprites')
+  -- O506: CD.box(tileW, tileH, spr) sized the decal in SCREEN pixels (64 px tiles: 64, 0, 0; 128 x 96 tiles: 96, 0, 0),
+  -- but a floor widget is drawn in map pixels (base patch 0078, drawFloor, inside the scaled map picture). Pinned now:
+  -- the size covers one tile and the margins centre it, in sprite pixels, at any zoom.
+  local size, ml, mt = CD.box(32)
+  eq(size, 32, 'box size: one tile'); eq(ml, -16, 'margin left centres it on its tile'); eq(mt, -16, 'margin top')
+  size, ml, mt = CD.box(64)
+  eq(size, 64, 'box size with 64 px sprites'); eq(ml, -32, 'margin for 64 px sprites'); eq(mt, -32, 'margin top for 64 px sprites')
+  eq(select(1, CD.box(nil)), 32, 'no sprite size: 32')
+  -- two zooms of the same 1920 x 1080 map panel with 15 x 11 tiles (98.18 px a tile) and 31 x 23 tiles (46.96 px a tile):
+  -- the engine scales map pixels by tile / sprite, so the decal on the screen is size * tile / 32 wide: one tile each time
+  for _, zoom in ipairs({ { 15, 11 }, { 31, 23 } }) do
+    local tw = CD.tileSize(1920, 1080, zoom[1], zoom[2], true)
+    local s, m = CD.box(32)
+    near(s * tw / 32, tw, 'a decal covers exactly one tile on screen at ' .. zoom[1] .. 'x' .. zoom[2])
+    -- its centre is the tile's top left + margin + one sprite (the engine's rule), in map pixels: 16 is the tile centre
+    near(m + 32, 16, 'the decal centre sits on the tile centre at ' .. zoom[1] .. 'x' .. zoom[2])
+  end
+  -- the old rule at 15 x 11: 98 map pixels = 3.07 tiles on screen
+  near(math.floor(CD.tileSize(1920, 1080, 15, 11, true) + 0.5) / 32, 3.0625, 'the old rule drew it 3.06 tiles wide at 15 x 11')
   eq(CD.path('blood', 2), '/modules/game_combatdecals/images/blood2', 'path blood 2')
   eq(CD.path('fire', 1), '/modules/game_combatdecals/images/scorch1', 'path scorch')
   eq(CD.path('ice', 9), '/modules/game_combatdecals/images/frost1', 'bad variant falls back')

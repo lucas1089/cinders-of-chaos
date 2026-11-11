@@ -21,12 +21,13 @@ V.ORDER = { 'delving', 'wortcunning', 'flaying', 'angling' }
 
 local function num(v) return tonumber(v) or 0 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 1234567 -> "1,234,567"
 function V.fmtNum(n)
   n = math.floor(num(n))
   local s = tostring(math.abs(n))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', '')
-  return (n < 0 and '-' or '') .. out
+  return lnum(((n < 0 and '-' or '') .. out))
 end
 
 -- 2.5 -> "2.5", 10 -> "10", 0.0253 -> "0.0253" (small numbers keep 4 decimals)

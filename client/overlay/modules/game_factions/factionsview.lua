@@ -33,12 +33,13 @@ local function rows(v)
   return out
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 1234567 -> "1,234,567"; -2500 -> "-2,500"
 function V.fmt(n)
   n = math.floor(num(n))
   local neg = n < 0
   local s = tostring(math.abs(n)):reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', '')
-  return (neg and '-' or '') .. s
+  return lnum(((neg and '-' or '') .. s))
 end
 
 -- 93784 -> "1d 2h", 4980 -> "1h 23m", 125 -> "2m", 9 -> "1m"

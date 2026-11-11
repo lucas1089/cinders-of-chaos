@@ -18,13 +18,14 @@ function V.percent(unlocked, total)
   return math.max(0, math.min(100, unlocked * 100 / total))
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 1234567 -> '1,234,567'
 function V.gold(n)
   local s = tostring(math.floor(tonumber(n) or 0))
   local sign, digits = s:match('^(%-?)(%d+)$')
   if not digits then return s end
   digits = digits:reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', '')
-  return sign .. digits
+  return lnum((sign .. digits))
 end
 
 -- the line under an equipment slot

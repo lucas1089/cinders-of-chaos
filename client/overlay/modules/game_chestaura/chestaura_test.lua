@@ -135,6 +135,27 @@ eq(ml, -48, 'the Templar is one tile west of the host'); eq(mt, -16, 'same row')
 size, ml, mt = L.frameBox(64, 4, 0, 0)
 eq(size, 9 * 64, 'at 64 px sprites'); eq(ml, -32, 'and the margin')
 
+-- O506: the boxes are in map pixels, so the picture covers the tiles it is meant to at any zoom. The engine draws floor widgets
+-- (base patch 0078, drawFloor) and creature widgets (Creature::draw) inside the map picture and scales that by tile / sprite,
+-- so a widget of `size` map pixels is size * tile / 32 on the screen. Two zooms of a 1920 x 1080 map panel, 15 x 11 tiles
+-- (98.18 px a tile) and 31 x 23 tiles (46.96 px a tile); the screen size in tiles must not move.
+local function tiles_on_screen(sizeMap, tilePx) return sizeMap * tilePx / 32 / tilePx end
+for _, tilePx in ipairs({ 1080 / 11, 1080 / 23 }) do
+  local at = string.format(' at %.2f px tiles', tilePx)
+  local sz, bx = L.chestBox(L.chestOf(38758), 32)
+  eq(tiles_on_screen(sz, tilePx), 2, 'reward chest aura: two tiles' .. at); eq(bx + 32, 16, 'reward chest centre on its tile' .. at)
+  sz = L.chestBox(L.chestOf(38657), 32)
+  eq(tiles_on_screen(sz, tilePx), 4, 'coffer aura: four tiles' .. at)
+  sz = L.chestBox(L.chestOf(6068), 32)
+  eq(tiles_on_screen(sz, tilePx), 2, 'loot bag glint: two tiles' .. at)
+  sz = L.frameBox(32, 4, 0, 0)
+  eq(tiles_on_screen(sz, tilePx), 9, 'range frame, radius 4: nine tiles' .. at)
+  sz = L.footBox(32)
+  eq(tiles_on_screen(sz, tilePx), 2, 'foot picture: two tiles' .. at)
+  sz = L.cursedBox(32, 1)
+  eq(tiles_on_screen(sz, tilePx), 2, 'cursed smoke under a one tile creature: two tiles' .. at)
+end
+
 -- ---------------------------------------------------------------- the range square
 local origin = { x = 1000, y = 2000, z = 7 }
 for _, r in ipairs({ 3, 4, 5, 6 }) do

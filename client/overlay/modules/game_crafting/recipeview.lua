@@ -9,11 +9,12 @@ local V = CraftingRecipeView
 
 local floor = math.floor
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 -- 1500 -> '1,500'
 function V.thousands(n)
   local s = string.format('%d', floor(tonumber(n) or 0))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''))
+  return lnum((out:gsub('^,', '')))
 end
 
 function V.isShardRecipe(r)
