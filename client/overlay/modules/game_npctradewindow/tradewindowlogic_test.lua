@@ -25,6 +25,14 @@ eq(g.w, 300, 'bad input: minimum'); eq(g.x, 0, 'bad input x')
 eq(L.needsFloat(true, false), true, 'shown in a side panel: float')
 eq(L.needsFloat(true, true), false, 'already floating')
 eq(L.needsFloat(false, false), false, 'hidden: nothing to do')
+eq(L.needsFloat(true, true, true), true, 'put on the root panel by the module: size, place and focus still to do')
+eq(L.needsFloat(false, true, true), false, 'forced but hidden: nothing to do')
+eq(L.needsFloat(true, false, false), true, 'not forced, in a side panel: float')
+-- O506: the trade window never takes room in a side panel
+eq(L.keepsOutOfPanels('tradeWindow'), true, 'the trade window')
+eq(L.keepsOutOfPanels('containerBackpack'), false, 'a backpack is placed as before') eq(L.keepsOutOfPanels('skillWindow'), false, 'a skills window')
+eq(L.keepsOutOfPanels(nil), false, 'no id') eq(L.keepsOutOfPanels('tradeWindow2'), false, 'only the exact id')
+eq(L.PANEL_CALLS[1], 'addToPanelsWithPriority', 'the call the base show() makes') eq(L.PANEL_CALLS[2], 'addToPanels', 'and the one it falls back to')
 
 -- ---------------------------------------------------------------- a currency other than gold
 local JSON = {

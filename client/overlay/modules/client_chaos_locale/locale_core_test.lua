@@ -63,6 +63,50 @@ local h = L.hello('pt_BR')
 eq(h.action, 'hello', 'hello') eq(h.lang, 'pt-BR', 'its language')
 eq(L.hello('xx').lang, 'en', 'unknown: en')
 
+-- numbers (O506): pt-BR groups thousands with a point and writes decimals with a comma, English as before
+local NUM = {
+  { 0, '0', '0' }, { 999, '999', '999' }, { 1000, '1,000', '1.000' }, { 1234567, '1,234,567', '1.234.567' },
+  { -5, '-5', '-5' }, { -1234, '-1,234', '-1.234' }, { -1234567, '-1,234,567', '-1.234.567' }, { -999, '-999', '-999' },
+  { 1.5, '1.5', '1,5' }, { 12.25, '12.25', '12,25' }, { 0.5, '0.5', '0,5' }, { 1234.5, '1,234.5', '1.234,5' },
+  { -1234.75, '-1,234.75', '-1.234,75' }, { 100000, '100,000', '100.000' }, { 123456789012, '123,456,789,012', '123.456.789.012' },
+  { '1234', '1,234', '1.234' }, { '-1234.5', '-1,234.5', '-1.234,5' }, { '12.25', '12.25', '12,25' },
+}
+for _, c in ipairs(NUM) do
+  eq(L.formatNumber(c[1], 'en'), c[2], 'formatNumber en ' .. tostring(c[1]))
+  eq(L.formatNumber(c[1], 'pt-BR'), c[3], 'formatNumber pt-BR ' .. tostring(c[1]))
+  eq(L.formatNumber(c[1], 'pt_br'), c[3], 'formatNumber pt_br ' .. tostring(c[1]))
+  eq(L.formatNumber(c[1], nil), c[2], 'no language is English ' .. tostring(c[1]))
+  eq(L.formatNumber(c[1], 'xx'), c[2], 'an unknown language is English ' .. tostring(c[1]))
+end
+for _, v in ipairs({ 'abc', '', '12 gold', '1e5', '1,234', '1.2.3', '2026-10-08', '12:30', '-', '0x10', ' 5' }) do
+  eq(L.formatNumber(v, 'pt-BR'), v, 'a text that is not a number comes back unchanged: ' .. v)
+  eq(L.formatNumber(v, 'en'), v, 'and in English: ' .. v)
+end
+eq(L.formatNumber(nil, 'pt-BR'), nil, 'nil') eq(L.formatNumber(true, 'pt-BR'), true, 'a boolean')
+local tbl = {}
+eq(L.formatNumber(tbl, 'pt-BR'), tbl, 'a table')
+ok(L.formatNumber(0 / 0, 'pt-BR') ~= L.formatNumber(0 / 0, 'pt-BR'), 'NaN is NaN') eq(L.formatNumber(math.huge, 'pt-BR'), math.huge, 'infinity')
+eq(L.formatNumber(1e20, 'pt-BR'), 1e20, 'a number too big for a plain text')
+eq(L.formatInteger(1234.9, 'pt-BR'), '1.234', 'formatInteger rounds down') eq(L.formatInteger(1234.9, 'en'), '1,234', 'formatInteger en')
+eq(L.formatInteger(-0.5, 'en'), '-1', 'formatInteger of a negative fraction rounds down') eq(L.formatInteger('1500', 'pt-BR'), '1.500', 'formatInteger text')
+eq(L.formatInteger('abc', 'pt-BR'), 'abc', 'formatInteger of a text') eq(L.formatInteger(nil, 'pt-BR'), nil, 'formatInteger nil')
+-- localize: the English form of the client's own texts, separators swapped, nothing grouped or rounded
+local LOC = {
+  { '3,300', '3.300' }, { '1,234,567', '1.234.567' }, { '-1,234', '-1.234' }, { '1.5', '1,5' }, { '12.25', '12,25' },
+  { '1,234.5', '1.234,5' }, { '3300', '3300' }, { '0', '0' }, { '999', '999' }, { '0.33', '0,33' },
+  { '1,23', '1,23' }, { '1,2345', '1,2345' }, { '1.2.3', '1.2.3' }, { '12,345,67', '12,345,67' }, { ',123', ',123' }, { '1,234,', '1,234,' },
+  { '2026-10-08', '2026-10-08' }, { '02:44:36', '02:44:36' }, { '1-2', '1-2' }, { '~3,300', '~3,300' }, { '3,300 gold', '3,300 gold' },
+  { '1.5%', '1.5%' }, { 'abc', 'abc' }, { '', '' }, { '12 000', '12 000' }, { '1e5', '1e5' },
+}
+for _, c in ipairs(LOC) do
+  eq(L.localize(c[1], 'pt-BR'), c[2], 'localize pt-BR ' .. c[1])
+  eq(L.localize(c[1], 'en'), c[1], 'localize en keeps ' .. c[1])
+  eq(L.localize(c[1], nil), c[1], 'localize without a language keeps ' .. c[1])
+end
+eq(L.localize(nil, 'pt-BR'), nil, 'localize nil') eq(L.localize(15, 'pt-BR'), 15, 'localize of a number is the number')
+eq(L.separators('pt-BR').group, '.', 'pt-BR groups with a point') eq(L.separators('pt-BR').decimal, ',', 'pt-BR decimal comma')
+eq(L.separators('en').group, ',', 'en groups with a comma') eq(L.separators(nil).decimal, '.', 'default decimal point')
+
 -- the pt-BR table
 local FMT = '%%[-+#0]*%d*%.?%d*([diouxXeEfgGqsaAc])'
 local function formats(s)

@@ -199,7 +199,8 @@ function CD.pickTile(pos, free, spread, rnd)
 end
 
 -- ---------------------------------------------------------------- pictures
--- the screen size of a tile of the map panel (rect and visible dimension of the panel)
+-- the screen size of a tile of the map panel (rect and visible dimension of the panel). Not for a floor widget: the engine
+-- draws that one in map pixels (see CD.box). Kept for a reader that needs the screen size of a tile.
 function CD.tileSize(rectW, rectH, visW, visH, keepAspect)
   if not rectW or not visW or visW <= 0 or visH <= 0 then return 64, 64 end
   local w, h = rectW / visW, rectH / visH
@@ -210,12 +211,16 @@ function CD.tileSize(rectW, rectH, visW, visH, keepAspect)
   return w, h
 end
 
--- size and the margins that centre a decal on its tile (the engine centres a tile widget on the tile's top-left plus
--- one sprite size, in screen pixels: the rule of the footprints of game_cosmeticfx)
-function CD.box(tileW, tileH, spriteSize)
-  local size = math.floor(math.min(tileW, tileH) * CD.TILE + 0.5)
+-- size and the margins that centre a decal on its tile, in MAP pixels (O506). A floor widget (base patch 0078) is drawn
+-- inside the map's own picture, which the engine scales with the zoom and the window: one tile is `spriteSize` map pixels
+-- whatever its size on the screen, so nothing here follows the zoom. The engine puts a tile widget's centre at the tile's
+-- top left + margin + one sprite size (drawWidgetOverTile, base patch 0041), so the margin that centres it is minus half a
+-- sprite. O231 to O505 sized it in screen pixels (the tile size of the panel): at 98 px tiles a decal was 3 tiles wide.
+function CD.box(spriteSize)
   local spr = spriteSize or 32
-  return size, math.floor(tileW / 2 - spr + 0.5), math.floor(tileH / 2 - spr + 0.5)
+  local size = math.max(2, math.floor(spr * CD.TILE + 0.5))
+  local m = math.floor(spr * -0.5 + 0.5)
+  return size, m, m
 end
 
 CD.KINDS = { blood = true, fire = true, ice = true, poison = true }
