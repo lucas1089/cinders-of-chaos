@@ -6,6 +6,6 @@ Module
   reloadable: false
   autoload: true
   autoload-priority: 800
-  scripts: [ hudmove_core, hudmove ]
+  scripts: [ hudmove_core, dragguard, hudmove ]
   @onLoad: ChaosHudMove.init()
   @onUnload: ChaosHudMove.terminate()

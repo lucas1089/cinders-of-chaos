@@ -61,6 +61,8 @@ ChaosFloatTab < UIButton
 ChaosFloatChat < UIWidget
   id: chaosFloatChat
   size: 380 150
+  // not focusable until floatchat.lua has put the console in it, then focusable (O498: keys reach the input along the
+  // focus chain). The header and the grip never take the focus: a click on them keeps it in the chat input.
   focusable: false
   image-source: /modules/game_floatchat/images/chat_border
   image-border: 10
@@ -69,6 +71,7 @@ ChaosFloatChat < UIWidget
 
   UIWidget
     id: header
+    focusable: false
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
@@ -125,6 +128,7 @@ ChaosFloatChat < UIWidget
 
   UIWidget
     id: grip
+    focusable: false
     size: 14 14
     anchors.right: parent.right
     anchors.bottom: parent.bottom
