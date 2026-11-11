@@ -1,7 +1,7 @@
 -- Pure helpers of the Party Finder window (no client API), tested by partyfinderview_test.lua.
 -- Rows come from the server (server/data/scripts/chaos/party_finder_core.lua K.row / K.list); times are seconds counted
 -- from the moment the list arrived, so the window counts down by itself between two pushes.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 PartyFinderView = {}
 local V = PartyFinderView
 

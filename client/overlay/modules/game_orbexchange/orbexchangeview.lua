@@ -3,7 +3,7 @@
 -- rows of the book, the price chart as rectangles, my orders and fills as text.
 -- The window always shows a pair as base / quote: the base is an orb, the quote gold or another orb; prices are quote
 -- per base. "Buy" gives the quote and wants the base, "Sell" gives the base and wants the quote.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 OrbExchangeView = OrbExchangeView or {}
 local V = OrbExchangeView

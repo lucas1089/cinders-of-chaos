@@ -7,7 +7,7 @@
 -- Pure, no client API (tested by treespellmods_test.lua, which pins every row to the server's numbers).
 --   TreeSpellMods.rows[id]   {spell, support, a, b}: the spell's name, the support key, the numbers of its text
 --   TreeSpellMods.text(id)   the line in the player's language, or nil for an id that is no choice
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 TreeSpellMods = {}
 local T = TreeSpellMods

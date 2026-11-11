@@ -5,7 +5,7 @@
 --
 --   ChaosQR.encode(text) -> {size = n, modules = {[y][x] = true for dark}} or nil, reason   (x, y from 1)
 --   ChaosQR.runs(qr)     -> {{y, x, len}} the dark runs of each row (one widget per run when drawing)
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ChaosQR = {}
 local Q = ChaosQR

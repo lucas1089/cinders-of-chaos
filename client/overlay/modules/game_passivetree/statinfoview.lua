@@ -1,7 +1,7 @@
 -- Stat help maths of the passive tree window (no client API, tested by statinfoview_test.lua). The server sends the stats of
 -- the player's class already in the player's language (server/data/scripts/chaos/passivetree_stats.lua):
 --   statInfo {cls, part, parts, header = {primary, secondary} (part 1), stats = [{k, n, d, t = "primary" | "secondary" | nil}]}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 StatInfoView = {}
 local V = StatInfoView
 

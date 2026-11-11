@@ -3,7 +3,7 @@
 -- rate, element split sorted with colours), the killing blow, the header lines, the timeline of the last hits and the
 -- history list. Tested by deathrecaplogic_test.lua (luajit and lua5.3). Data comes from the server
 -- (server/data/scripts/chaos/deathrecap_core.lua R.build).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 DeathRecapLogic = {}
 local L = DeathRecapLogic

@@ -2,7 +2,7 @@
 -- Lua 5.3). The classes and their icons, the card text, the outfit drawn (the login server's list plus the website's
 -- looks) and where it stands (its feet on the pedestal), the world name shown, keyboard navigation, the name pre-check of the create window and the account API's
 -- requests and answers (website/README.md "Client API").
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CharSelectCore = CharSelectCore or {}
 local C = CharSelectCore

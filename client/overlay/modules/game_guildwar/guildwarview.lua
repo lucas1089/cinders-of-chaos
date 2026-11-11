@@ -1,5 +1,5 @@
 -- Pure text helpers of the Guild Wars window (game_guildwar; tested by guildwarview_test.lua, no client calls).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 GuildWarView = {}
 local V = GuildWarView
 

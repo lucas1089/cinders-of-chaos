@@ -2,7 +2,7 @@
 -- Rows of the window (server server/data/scripts/chaos/cosmetics.lua, cosmetics_core.lua C.rows), the chat name colour
 -- (only the speaker's name, only player messages, only colours the server sent), the label accent, and the Collection
 -- tab (server exclusives.lua: the exclusives of every visual kind and how each is earned).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 CosmeticsLogic = {}
 local CL = CosmeticsLogic

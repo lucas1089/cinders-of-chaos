@@ -501,6 +501,23 @@ def scan():
     return keys, bad, hard
 
 
+# A module that reads the global tr with rawget (the logic files, so their unit tests run without a client) gets nil in the
+# client: client_chaos_locale serves tr from _G's metatable. Such a read must fall back to ChaosLocale.tr, or the file's
+# texts stay English in pt-BR (O479: the item tooltip rows "Drops from", "Used in", "Weight").
+RAW_TR = re.compile(rb"""rawget\(_G, ?(['"])tr\1\)(?! or \(rawget\(_G, 'ChaosLocale'\) or \{\}\)\.tr)""")
+
+
+def raw_tr_reads():
+    out = []
+    for p in overlay_files():
+        if not p.endswith('.lua') or os.sep + 'client_chaos_locale' + os.sep in p:
+            continue
+        for ln, line in enumerate(open(p, 'rb').read().split(b'\n'), 1):
+            if RAW_TR.search(line.split(b'--', 1)[0]):
+                out.append((os.path.relpath(p, ROOT), ln))
+    return out
+
+
 def lua_quote(b):
     out = []
     for c in b:
@@ -541,6 +558,9 @@ def main(argv):
     for k, v in table.items():
         if formats(k.decode('latin-1')) != formats(v):
             print(f'pt_br.lua: the % formats differ for {lua_quote(k)}'); problems += 1
+    for rel, ln in raw_tr_reads():
+        print(f"{rel}:{ln}: rawget(_G, 'tr') without the ChaosLocale.tr fallback: write "
+              "(rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)"); problems += 1
     for rel, ln, t in hard:
         print(f'{rel}:{ln}: hard-coded UI text {t.decode("latin-1")!r}: use tr() (--fix)'); problems += 1
     if '--missing' in argv:

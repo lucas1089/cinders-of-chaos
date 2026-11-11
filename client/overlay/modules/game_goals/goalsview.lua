@@ -11,7 +11,7 @@
 --   welcome {title, step, count, rows = [{key, title, progress, target, state, hint, where}]}   (welcomepath.lua, O370)
 --   done {text}
 -- The window code (goals.lua) keeps one GoalsView state and draws from it.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 GoalsView = {}
 local V = GoalsView

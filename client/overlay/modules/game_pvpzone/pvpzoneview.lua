@@ -1,5 +1,5 @@
 -- The Scorched Marches: pure helpers of the window, the entry confirmation and the HUD (no widgets; pvpzoneview_test.lua).
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 PvpZoneView = {}
 local V = PvpZoneView
 

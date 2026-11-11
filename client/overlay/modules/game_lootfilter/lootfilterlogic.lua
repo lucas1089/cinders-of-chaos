@@ -3,7 +3,7 @@
 -- authority for autoloot and click-to-loot; the client uses these rules only to draw.
 -- info = {r = rarity 0 or an id (1 2 3 4 5 10; an old item 1..15), u = unique (0/1 or bool), o = orb (0/1 or bool), g = category, nm = name, c = count,
 --         t = the best modifier tier on it (1..8, nil = none), il = item level}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 LootFilterLogic = {}
 local L = LootFilterLogic

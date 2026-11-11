@@ -4,7 +4,7 @@
 --   open {path, id, clientId, name, rarity, rarityName, level, sig, orbs, offers = [{i, key, name, text, tier, tn, lo,
 --        hi, value, hook}]}
 --   result {ok, text, veil = {s, n, t, tr, tn, lo, hi, h}}
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 UnveilView = {}
 local V = UnveilView

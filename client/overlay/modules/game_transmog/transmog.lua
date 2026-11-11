@@ -5,7 +5,7 @@
 -- The look itself reaches every item drawing through the item's custom attribute 8 (client base patch 0030); this
 -- window only picks it. Previews use item:setAppearanceId on the window's own items. Menu: Character > Transmog, or
 -- right-click an equipped item > Transmog.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 local OPCODE = 212
 local V = TransmogView

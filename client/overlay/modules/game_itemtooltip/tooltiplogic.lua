@@ -14,13 +14,10 @@
 --    ds (display scale: the factor of the item's level requirement; flat health / mana / damage / heal numbers are
 --    already x ds, and the stats rows marked sc carry them: server display_scale_core.lua DS.itemTip)}
 -- i18n (client_chaos_locale). The locale module serves the global tr from _G's metatable, where rawget(_G, 'tr') is nil: ask
--- ChaosLocale.tr then, or every row of this module stayed English in pt-BR (O479; the unit tests set a global tr or none)
+-- ChaosLocale.tr then, or every row of this module stayed English in pt-BR (O479; the unit tests set a global tr or none).
+-- Every module that reads tr with rawget does the same (tools/ci/check_locales.py holds them to it).
 local function tr(s, ...)
-  local g = rawget(_G, 'tr')
-  if not g then
-    local loc = rawget(_G, 'ChaosLocale')
-    g = type(loc) == 'table' and loc.tr or nil
-  end
+  local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr)
   if g then return g(s, ...) end
   if select('#', ...) > 0 then return string.format(s, ...) end
   return s

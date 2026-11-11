@@ -6,7 +6,7 @@
 --                   rewards = [{kind, text, piece, clientId, count, look}]}
 --   journeyDone {text, chapter?}
 -- The window code (journey.lua) keeps one JourneyView state and draws from it.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 JourneyView = {}
 local V = JourneyView

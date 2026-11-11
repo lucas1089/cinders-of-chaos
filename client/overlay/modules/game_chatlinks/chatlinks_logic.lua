@@ -2,7 +2,7 @@
 -- A link in a message is   [Item Name]{<r><id>}   (r = rarity as a hex digit or u for a unique, id = 9 characters a-z 0-9), made by the
 -- server (extended opcode 249, server/data/scripts/chaos/itemlink.lua + itemlink_core.lua: same format). Other clients
 -- show the text as it is; this one shows "[Item Name]" in the rarity colour and the tooltip of the snapshot on hover.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 ChatLinksLogic = {}
 local L = ChatLinksLogic

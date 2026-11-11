@@ -4787,7 +4787,9 @@ character list (button next to the account status), all `ChaosLocale.showMenu`. 
 modules; in game new windows and the server messages switch at once and the rest at the next login. The language goes
 to the server with the display scale hello (opcode 157, `{action = 'hello', lang}`) at every game start and at a change
 (server/README.md "Server texts in pt-BR (Chaos.t)"). Pure helpers that tests load without the client carry a one-line
-local `tr` that uses the global one when it exists and English otherwise. Run-time keys (`tr(row.name)` of a data
+local `tr` that uses the global one when it exists and English otherwise. They read it as
+`rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr`: under the hook the raw key is nil, and without the second
+half every text of such a file stayed English in pt-BR (O479; `check_locales.py` fails on a bare `rawget` read). Run-time keys (`tr(row.name)` of a data
 table) are listed at the end of `pt_br.lua`. The top menu entries, rarity names and board names stay English on
 purpose (the guides use them). The bilingual donation notice (`payview.lua`) stays as it is.
 Check: `python3 -I tools/ci/check_locales.py` fails on a `tr()` key without pt-BR, a translation whose % conversions

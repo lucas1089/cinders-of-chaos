@@ -10,7 +10,7 @@
 --   odds = {{r, n, p}}                      rarity place (1 Common .. 6 Divine), name, percent
 --   npc, last = {r, rn, id, c, n, l, s, i}  the Gambler's name; the last piece bought (the reveal)
 -- The purchase rules here mirror the server's (gamble_core.lua K.checkBuy) for the buttons only; the server decides.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 GambleView = GambleView or {}
 local V = GambleView

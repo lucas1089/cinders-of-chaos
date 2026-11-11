@@ -1,5 +1,5 @@
 -- Pure helpers of the hunt tracker window (no client API), tested by huntmath_test.lua.
-local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 HuntMath = {}
 
 -- the seven rarities' names and colours by rarity id (same list as game_lootfilter and lootfilter_core.lua): 1 Common,
