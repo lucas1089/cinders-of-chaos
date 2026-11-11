@@ -23,6 +23,14 @@ local function tr(s, ...)
   return s
 end
 
+-- numbers in the language in use (O506): a number text in the English form (3,300 / 1.5) comes back as 3.300 / 1,5 in pt-BR
+-- (ChaosLocale.localize, client_chaos_locale), and as it is in English and without the module (the unit tests)
+local function lnum(text)
+  local chaos = rawget(_G, 'ChaosLocale')
+  if chaos and chaos.localize then return chaos.localize(text) end
+  return text
+end
+
 ItemTooltipLogic = {}
 local L = ItemTooltipLogic
 
@@ -154,7 +162,7 @@ local function trim(n)
   if n == math.floor(n) then
     return string.format('%d', n)
   end
-  return (string.format('%.2f', n):gsub('0+$', ''):gsub('%.$', ''))
+  return lnum((string.format('%.2f', n):gsub('0+$', ''):gsub('%.$', '')))
 end
 
 -- a base row's value: a range row ("Attack" of a wand or rod, server item_tooltip_core.lua wandRows, O353) shows its lo-hi
@@ -186,6 +194,61 @@ function L.formatValue(v, fmt, signed, rate)
     s = '+' .. s
   end
   return s
+end
+
+-- The label of a base row (O506). The server writes it in English (item_tooltip_core.lua T.baseStats) next to a stable key
+-- `k`; the client translates by the key with a literal tr() (check_locales.py sees each one) and keeps the server's label for
+-- a key it does not know. English is the server's text as it comes. "Attack Interval" keeps its English name.
+-- The elements and skills in a label ("Fire Damage", "Cold Protection", "Woodcutting") are translated by name too.
+local function trName(name)
+  local names = {
+    Physical = function() return tr('Physical') end, Energy = function() return tr('Energy') end,
+    Earth = function() return tr('Earth') end, Fire = function() return tr('Fire') end,
+    ['Life Drain'] = function() return tr('Life Drain') end, ['Mana Drain'] = function() return tr('Mana Drain') end,
+    Drown = function() return tr('Drown') end, Ice = function() return tr('Ice') end, Holy = function() return tr('Holy') end,
+    Death = function() return tr('Death') end, Water = function() return tr('Water') end, Arcane = function() return tr('Arcane') end,
+    Element = function() return tr('Element') end,
+  }
+  local f = names[name]
+  return f and f() or name
+end
+
+local SKILLS = {
+  Fist = function() return tr('Fist') end, Melee = function() return tr('Melee') end, Ranged = function() return tr('Ranged') end,
+  Shielding = function() return tr('Shielding') end, Fishing = function() return tr('Fishing') end,
+  Crafting = function() return tr('Crafting') end, Woodcutting = function() return tr('Woodcutting') end,
+  Mining = function() return tr('Mining') end, Herbalism = function() return tr('Herbalism') end,
+  Armorsmithing = function() return tr('Armorsmithing') end, Weaponsmithing = function() return tr('Weaponsmithing') end,
+  Jewelsmithing = function() return tr('Jewelsmithing') end,
+}
+
+local KEYED = {
+  attack = function() return tr('Attack') end, defense = function() return tr('Defense') end,
+  extradefense = function() return tr('Extra Defense') end, armor = function() return tr('Armour') end,
+  hitchance = function() return tr('Hit Chance') end, range = function() return tr('Range') end,
+  attackspeed = function() return tr('Attack Interval') end, dps = function() return tr('Estimated DPS') end,
+  maxhealth = function() return tr('Max Health') end, maxmana = function() return tr('Max Mana') end,
+  maglevel = function() return tr('Magic Level') end, speed = function() return tr('Speed') end,
+}
+
+function L.label(k, l)
+  local text = tostring(l or k or '?')
+  k = tostring(k or '')
+  if KEYED[k] then return KEYED[k]() end
+  if k == 'yourinterval' then
+    if text:find('%(capped%)') then return tr('Your Attack Interval (capped)') end
+    return tr('Your Attack Interval')
+  end
+  if k == 'element' then
+    local name = text:match('^(.-) Damage$')
+    if name then return tr('%s Damage', trName(name)) end
+  elseif k:find('^protect%d+$') then
+    local name = text:match('^(.-) Protection$')
+    if name then return tr('%s Protection', trName(name)) end
+  elseif k:find('^skill%d+$') and SKILLS[text] then
+    return SKILLS[text]()
+  end
+  return text
 end
 
 -- split a text into lines of at most n characters at spaces
@@ -359,7 +422,7 @@ function L.lines(tip, ctx)
   local first = true
   for _, b in ipairs(tip.base or {}) do
     -- imp: a quiver base's implicit modifier (server chaos_archery_config.lua), signed and in the modifier colour
-    add(string.format('%s: %s', b.l, L.baseValue(b, b.imp or (b.fmt == 'pct' and b.k:find('^protect') ~= nil))),
+    add(string.format('%s: %s', L.label(b.k, b.l), L.baseValue(b, b.imp or (b.fmt == 'pct' and b.k:find('^protect') ~= nil))),
       b.imp and C.chaos or C.text, first)
     first = false
   end
@@ -370,7 +433,7 @@ function L.lines(tip, ctx)
     if m.sd and m.sd ~= side then
       side = m.sd
       local sides = tip.sides
-      local head = side == 'p' and 'Prefixes' or 'Suffixes'
+      local head = side == 'p' and tr('Prefixes') or tr('Suffixes')
       if side == 'i' then
         head = tr('Corrupted implicit')
       elseif sides and sides.max then
@@ -537,10 +600,10 @@ function L.oneIn(p)
   return math.max(1, math.floor(n / step + 0.5) * step)
 end
 
--- 12345 -> '12,345'
+-- 12345 -> '12,345' ('12.345' in pt-BR)
 function L.int(n)
   local s = tostring(math.floor(tonumber(n) or 0))
-  return (s:reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', ''))
+  return lnum((s:reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', '')))
 end
 
 -- the charges line: {n, max} -> 'Charges: 1,200 of 14,400' / 'Charges: 14,400'; {unlimited} -> 'Charges: unlimited'
@@ -756,7 +819,7 @@ function L.diffText(row)
   local d = row.d
   local v = math.abs(d)
   local sign = d > 0 and '+' or '-'
-  return string.format('%s%s %s', sign, L.formatValue(v, row.fmt, false), row.l)
+  return string.format('%s%s %s', sign, L.formatValue(v, row.fmt, false), L.label(row.k, row.l))
 end
 
 -- ---------------------------------------------------------------- veiled modifiers
@@ -844,7 +907,7 @@ function L.statTiles(base)
   for _, b in ipairs(list) do
     if type(b) == 'table' and not used[b] then
       local signed = b.imp or not L.UNSIGNED[b.k]
-      rest[#rest + 1] = { label = tostring(b.l or b.k or '?'), value = L.baseValue(b, signed), imp = b.imp or false }
+      rest[#rest + 1] = { label = L.label(b.k, b.l), value = L.baseValue(b, signed), imp = b.imp or false }
     end
   end
   return tiles, rest

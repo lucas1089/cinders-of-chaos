@@ -124,6 +124,151 @@ function L.translate(table_, baseTr, text, ...)
   return format(text, ...) or text
 end
 
+-- ---------------------------------------------------------------- numbers (O506)
+-- Brazilian Portuguese groups thousands with a point and writes decimals with a comma: 3.300 and 1,5%. English: 3,300 and 1.5.
+-- The texts of the client are written in the English form (1,234,567 / 12.5); L.localize turns such a text into the form of the
+-- language, and is the identity for English, so English stays as it was.
+L.SEPARATORS = { en = { group = ',', decimal = '.' }, ['pt-BR'] = { group = '.', decimal = ',' } }
+
+function L.separators(lang)
+  return L.SEPARATORS[L.normalize(lang) or 'en'] or L.SEPARATORS.en
+end
+
+-- digits '1234567' -> '1,234,567' with the separator `sep` (a string of digits only; anything else is returned as it is)
+local function groupDigits(digits, sep)
+  local n = #digits
+  if n <= 3 or digits:find('%D') then return digits end
+  local first, parts = n % 3, {}
+  if first > 0 then parts[1] = digits:sub(1, first) end
+  for i = first + 1, n, 3 do parts[#parts + 1] = digits:sub(i, i + 2) end
+  return table.concat(parts, sep)
+end
+
+-- sign, digits and decimals of an English-form number text ('-1234.5' / '1,234.5'), or nil
+local function splitEnglish(text)
+  local sign, int, frac = text:match('^(-?)(%d+)(%.%d+)$')
+  if not sign then sign, int = text:match('^(-?)(%d+)$') end
+  if sign then return sign, int, frac or '' end
+  sign, int, frac = text:match('^(-?)(%d%d?%d?[,%d%d%d]*)(%.%d+)$')
+  if not sign then sign, int = text:match('^(-?)(%d%d?%d?[,%d%d%d]*)$') end
+  if sign and int:find('^%d%d?%d?$') then return sign, int, frac or '' end
+  if sign and int:find('^%d%d?%d?(,%d%d%d)+$') then return sign, (int:gsub(',', '')), frac or '' end
+  return nil
+end
+
+-- a number (or a text of digits: '1234', '-1234.5') written for `lang`: 1234567 -> '1.234.567' in pt-BR; 1.5 -> '1,5'. Anything
+-- else (a text that is not a number, nil, a table, NaN, infinity) comes back as it is.
+function L.formatNumber(value, lang)
+  local text
+  if type(value) == 'number' then
+    if value ~= value or value == math.huge or value == -math.huge then return value end
+    if value == math.floor(value) and math.abs(value) < 2 ^ 53 then
+      text = string.format('%d', value)
+    else
+      text = string.format('%.14g', value)
+      if text:find('[eEn]') then return value end
+    end
+  elseif type(value) == 'string' then
+    text = value
+  else
+    return value
+  end
+  local sign, int, frac = text:match('^(-?)(%d+)(%.%d+)$')
+  if not sign then sign, int = text:match('^(-?)(%d+)$') end
+  if not sign then return value end
+  local sep = L.separators(lang)
+  return sign .. groupDigits(int, sep.group) .. (frac and (sep.decimal .. frac:sub(2)) or '')
+end
+
+-- an integer: the number rounded down, then formatNumber (a non-number comes back as it is)
+function L.formatInteger(value, lang)
+  local n = type(value) == 'number' and value or (type(value) == 'string' and value:find('^-?%d+%.?%d*$') and tonumber(value)) or nil
+  if n == nil or n ~= n or n == math.huge or n == -math.huge then return value end
+  return L.formatNumber(math.floor(n), lang)
+end
+
+-- a number text written in the English form (1,234,567 / -1,234.5 / 12.25) for `lang`; English and any other text (words, ranges,
+-- times, ids: whatever is not wholly one such number) come back as they are
+function L.localize(text, lang)
+  if type(text) ~= 'string' then return text end
+  local sep = L.separators(lang)
+  if sep == L.SEPARATORS.en then return text end
+  local sign, int, frac = splitEnglish(text)
+  if not sign then return text end
+  return sign .. groupDigits(int, sep.group) .. (frac ~= '' and (sep.decimal .. frac:sub(2)) or '')
+end
+
+-- ---------------------------------------------------------------- numbers (O506)
+-- Brazilian Portuguese groups thousands with a point and writes decimals with a comma: 3.300 and 1,5%. English: 3,300 and 1.5.
+-- The texts of the client are written in the English form (1,234,567 / 12.5); L.localize turns such a text into the form of the
+-- language, and is the identity for English, so English stays as it was.
+L.SEPARATORS = { en = { group = ',', decimal = '.' }, ['pt-BR'] = { group = '.', decimal = ',' } }
+
+function L.separators(lang)
+  return L.SEPARATORS[L.normalize(lang) or 'en'] or L.SEPARATORS.en
+end
+
+-- digits '1234567' -> '1,234,567' with the separator `sep` (a string of digits only; anything else is returned as it is)
+local function groupDigits(digits, sep)
+  local n = #digits
+  if n <= 3 or digits:find('%D') then return digits end
+  local first, parts = n % 3, {}
+  if first > 0 then parts[1] = digits:sub(1, first) end
+  for i = first + 1, n, 3 do parts[#parts + 1] = digits:sub(i, i + 2) end
+  return table.concat(parts, sep)
+end
+
+-- true when `text` is wholly one number in the English form: digits, or digits grouped by commas in threes, then an optional
+-- decimal part ('1234', '1,234,567', '-1,234.5', '12.25'); not '1,23', '1.2.3', '12 000', '1e5', '2026-10-08'
+local function isEnglishNumber(text)
+  local int = text:match('^-?([%d,]+)%.%d+$') or text:match('^-?([%d,]+)$')
+  if not int then return false end
+  if int:find('^%d+$') then return true end
+  local plain = int:gsub(',', '')
+  return plain ~= '' and int:find('^%d') ~= nil and groupDigits(plain, ',') == int
+end
+
+-- a number (or a text of digits: '1234', '-1234.5') written for `lang`: 1234567 -> '1.234.567' in pt-BR; 1.5 -> '1,5'. Anything
+-- else (a text that is not a number, nil, a table, NaN, infinity) comes back as it is.
+function L.formatNumber(value, lang)
+  local text
+  if type(value) == 'number' then
+    if value ~= value or value == math.huge or value == -math.huge then return value end
+    if value == math.floor(value) and math.abs(value) < 2 ^ 53 then
+      text = string.format('%d', value)
+    else
+      text = string.format('%.14g', value)
+      if text:find('[eEn]') then return value end
+    end
+  elseif type(value) == 'string' then
+    text = value
+  else
+    return value
+  end
+  local sign, int, frac = text:match('^(-?)(%d+)(%.%d+)$')
+  if not sign then sign, int = text:match('^(-?)(%d+)$') end
+  if not sign then return value end
+  local sep = L.separators(lang)
+  return sign .. groupDigits(int, sep.group) .. (frac and (sep.decimal .. frac:sub(2)) or '')
+end
+
+-- an integer: the number rounded down, then formatNumber (a non-number comes back as it is)
+function L.formatInteger(value, lang)
+  local n = type(value) == 'number' and value or (type(value) == 'string' and value:find('^-?%d+%.?%d*$') and tonumber(value)) or nil
+  if n == nil or n ~= n or n == math.huge or n == -math.huge then return value end
+  return L.formatNumber(math.floor(n), lang)
+end
+
+-- a number text written in the English form (1,234,567 / -1,234.5 / 12.25 / 3300) for `lang`: the separators change places
+-- ('1.234.567', '-1.234,5', '12,25', '3300'), nothing is grouped or rounded. English, and any text that is not wholly one such
+-- number (words, ranges, times, ids, '1,23'), come back as they are.
+function L.localize(text, lang)
+  if type(text) ~= 'string' then return text end
+  local sep = L.separators(lang)
+  if sep == L.SEPARATORS.en or not isEnglishNumber(text) then return text end
+  return (text:gsub('[,%.]', function(c) return c == ',' and sep.group or sep.decimal end))
+end
+
 -- the hello for the server (opcode 157, server i18n.lua): the language of its texts
 function L.hello(lang)
   return { action = 'hello', lang = L.normalize(lang) or 'en' }

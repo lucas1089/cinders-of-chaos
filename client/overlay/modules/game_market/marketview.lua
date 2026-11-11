@@ -24,12 +24,13 @@ V.RARITY_IDS = { 1, 2, 3, 4, 5, 10 }
 
 local floor = math.floor
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 function V.money(n)
   n = floor(tonumber(n) or 0)
   local s = tostring(math.abs(n))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
   if out:sub(1, 1) == ',' then out = out:sub(2) end
-  return (n < 0 and '-' or '') .. out
+  return lnum(((n < 0 and '-' or '') .. out))
 end
 
 -- 1234567 -> "1.2m", 25000 -> "25k" (short form for narrow columns)

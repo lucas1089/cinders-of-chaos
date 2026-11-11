@@ -900,6 +900,124 @@ do
   end
 end
 
+-- ---------------------------------------------------------------- numbers in the language (O506)
+-- pt-BR writes 3.300 and 1,5%; English is as it was, byte for byte, with the locale module or without it
+do
+  dofile(dir .. '../client_chaos_locale/locale_core.lua')
+  local lang = 'en'
+  local function rows()
+    local tip = { kind = 'weapon', slot = 'wand', rarity = 4, rarityName = 'Rare', name = 'a wand', level = 37, weight = 12.5,
+      base = { { k = 'attack', l = 'Attack', v = 2250, lo = 1200, hi = 3300, fmt = 'range' },
+        { k = 'dps', l = 'Estimated DPS', v = 3300, fmt = 'est' },
+        { k = 'critchance', l = 'Crit Chance', v = 1.5, fmt = 'pct' },
+        { k = 'attackspeed', l = 'Attack Interval', v = 0.33, fmt = 'sec' },
+        { k = 'defense', l = 'Defense', v = 3300 } },
+      charges = { n = 1200, max = 14400 } }
+    local out = {}
+    for _, l in ipairs(L.lines(tip, { level = 60 })) do out[#out + 1] = l.text end
+    out[#out + 1] = L.chargesText(tip.charges)
+    out[#out + 1] = L.formatValue(1.5, 'pct') .. '|' .. L.formatValue(0.33, 'sec', false, true) .. '|' .. L.formatValue(3300, 'est') .. '|' .. L.int(1234567)
+    return table.concat(out, '\n')
+  end
+  local without = rows() -- no ChaosLocale at all (what every test above ran with)
+  ChaosLocale = { localize = function(text) return ChaosLocaleCore.localize(text, lang) end }
+  eq(rows(), without, 'English with the locale module is byte for byte the English without it')
+  eq(without:find('Attack: 1,200-3,300', 1, true) ~= nil, true, 'English range row groups with commas')
+  eq(without:find('Estimated DPS: ~3,300', 1, true) ~= nil, true, 'English estimate row')
+  eq(without:find('Crit Chance: 1.5%', 1, true) ~= nil, true, 'English decimal point')
+  eq(without:find('Defense: 3300', 1, true) ~= nil, true, 'a plain base value is not grouped (as before)')
+  eq(without:find('Charges: 1,200 of 14,400', 1, true) ~= nil, true, 'English charges')
+  lang = 'pt-BR'
+  local pt = rows()
+  eq(pt:find('Attack: 1.200-3.300', 1, true) ~= nil, true, 'pt-BR range row groups with points: ' .. pt)
+  eq(pt:find('Estimated DPS: ~3.300', 1, true) ~= nil, true, 'pt-BR estimate row')
+  eq(pt:find('Crit Chance: 1,5%', 1, true) ~= nil, true, 'pt-BR decimal comma')
+  eq(pt:find('Attack Interval: 0,33s (3/s)', 1, true) ~= nil, true, 'pt-BR interval and rate')
+  eq(pt:find('Defense: 3300', 1, true) ~= nil, true, 'a plain base value is still not grouped')
+  eq(pt:find('Charges: 1.200 of 14.400', 1, true) ~= nil, true, 'pt-BR charges')
+  eq(pt:find('12,5', 1, true) ~= nil, true, 'pt-BR weight')
+  eq(pt:find('1,200', 1, true) == nil, true, 'no English group left in pt-BR')
+  eq(L.int(1234567), '1.234.567', 'pt-BR L.int') eq(L.int(999), '999', 'pt-BR L.int 999') eq(L.int(1000), '1.000', 'pt-BR L.int 1000')
+  eq(L.formatValue(1.5, 'pct'), '1,5%', 'pt-BR percent') eq(L.formatValue(12.25, 'x', true), '+12,25', 'pt-BR signed decimal')
+  eq(L.formatValue(3, 'x'), '3', 'an integer value has no separator')
+  ChaosLocale = nil
+end
+
+-- ---------------------------------------------------------------- labels in the language (O506)
+-- the server writes the label of a base row in English; the client translates it by the row's key
+do
+  dofile(dir .. '../client_chaos_locale/locale_core.lua')
+  dofile(dir .. '../client_chaos_locale/pt_br.lua')
+  local ptTable = ChaosLocaleCore.prepare(ChaosLocaleStrings['pt-BR'])
+  local lang = 'en'
+  ChaosLocale = { tr = function(text, ...) return ChaosLocaleCore.translate(lang ~= 'en' and ptTable or nil, nil, text, ...) end,
+    localize = function(text) return ChaosLocaleCore.localize(text, lang) end }
+  local BASE = {
+    { k = 'attack', l = 'Attack', v = 50 }, { k = 'defense', l = 'Defense', v = 35 }, { k = 'extradefense', l = 'Extra Defense', v = 2 },
+    { k = 'armor', l = 'Armour', v = 12 }, { k = 'hitchance', l = 'Hit Chance', v = 3, fmt = 'pct' }, { k = 'range', l = 'Range', v = 5 },
+    { k = 'attackspeed', l = 'Attack Interval', v = 2.0, fmt = 'sec', low = true },
+    { k = 'yourinterval', l = 'Your Attack Interval', v = 1.5, fmt = 'sec', low = true },
+    { k = 'dps', l = 'Estimated DPS', v = 900, fmt = 'est' },
+    { k = 'element', l = 'Fire Damage', v = 9 }, { k = 'skill1', l = 'Fist', v = 1 }, { k = 'skill2', l = 'Melee', v = 2 },
+    { k = 'skill6', l = 'Shielding', v = 1 }, { k = 'skill9', l = 'Woodcutting', v = 1 }, { k = 'skill14', l = 'Jewelsmithing', v = 1 },
+    { k = 'maxhealth', l = 'Max Health', v = 100 }, { k = 'maxmana', l = 'Max Mana', v = 50 }, { k = 'maglevel', l = 'Magic Level', v = 1 },
+    { k = 'protect1', l = 'Physical Protection', v = 2, fmt = 'pct' }, { k = 'protect6', l = 'Life Drain Protection', v = 2, fmt = 'pct' },
+    { k = 'protect10', l = 'Ice Protection', v = 2, fmt = 'pct' }, { k = 'speed', l = 'Speed', v = 10 },
+    { k = 'newthing', l = 'Brand New Label', v = 1 },
+  }
+  local function rowLabels()
+    local out = {}
+    for _, b in ipairs(BASE) do out[#out + 1] = L.label(b.k, b.l) end
+    return out
+  end
+  -- English: the server's label, byte for byte, with the locale module or without it
+  ChaosLocale = nil
+  local noModule = rowLabels()
+  for i, b in ipairs(BASE) do eq(noModule[i], b.l, 'English label as the server sent it: ' .. b.k) end
+  ChaosLocale = { tr = function(text, ...) return ChaosLocaleCore.translate(nil, nil, text, ...) end, localize = function(t) return t end }
+  for i, b in ipairs(BASE) do eq(rowLabels()[i], b.l, 'English with the module: ' .. b.k) end
+  eq(L.label('yourinterval', 'Your Attack Interval (capped)'), 'Your Attack Interval (capped)', 'English capped')
+  lang = 'pt-BR'
+  ChaosLocale = { tr = function(text, ...) return ChaosLocaleCore.translate(ptTable, nil, text, ...) end,
+    localize = function(text) return ChaosLocaleCore.localize(text, lang) end }
+  local WANT = { 'Ataque', 'Defesa', 'Defesa extra', 'Armadura', 'Chance de acerto', 'Faixa', 'Intervalo de ataque', 'Seu intervalo de ataque',
+    'DPS estimado', 'Dano de Fogo', 'Punho', 'Corpo a corpo', 'Escudo', 'Corte de madeira', 'Joalheria', 'Vida Máxima', 'Mana Máxima', 'Magic Level',
+    'Proteção Físico', 'Proteção Drenar vida', 'Proteção Gelo', 'Velocidade', 'Brand New Label' }
+  local got = rowLabels()
+  for i, b in ipairs(BASE) do
+    local want = ChaosLocaleCore.toCp1252(WANT[i])
+    if b.k == 'skill9' then want = got[i] end -- Woodcutting has its own entry already
+    eq(got[i], want, 'pt-BR label of ' .. b.k)
+  end
+  eq(L.label('yourinterval', 'Your Attack Interval (capped)'), 'Seu intervalo de ataque (no limite)', 'pt-BR capped')
+  eq(L.label('attackspeed', 'Attack Interval'), 'Intervalo de ataque', 'pt-BR Attack Interval')
+  eq(L.label('element', 'Mystery Damage'), 'Dano de Mystery', 'an element it does not know keeps its name inside the pattern')
+  eq(L.label('zzz', 'Whatever'), 'Whatever', 'an unknown key keeps the server label') eq(L.label(nil, nil), '?', 'nothing')
+  -- the rows, the Speed tile, the compare row and the headers
+  local tip = { kind = 'weapon', slot = 'sword', rarity = 4, rarityName = 'Rare', name = 'a sword', level = 37, sides = { p = 1, s = 2, max = 3 },
+    base = { BASE[1], BASE[7] },
+    mods = { { k = 'a', t = 'Sword +1', sd = 'p', tr = 1 }, { k = 'b', t = 'Physical +2%', sd = 's', tr = 2 } } }
+  local text = {}
+  for _, l in ipairs(L.lines(tip, { level = 60 })) do text[#text + 1] = l.text end
+  local all = table.concat(text, '|')
+  eq(all:find('Intervalo de ataque: 2s', 1, true) ~= nil, true, 'pt-BR base row: ' .. all)
+  eq(all:find('Prefixos 1/3', 1, true) ~= nil, true, 'pt-BR prefixes header with its count')
+  eq(all:find('Sufixos 2/3', 1, true) ~= nil, true, 'pt-BR suffixes header')
+  eq(all:find('Prefixes', 1, true) == nil and all:find('Attack Interval', 1, true) == nil, true, 'no English left in the rows')
+  local _, rest = L.statTiles({ BASE[10], BASE[16] })
+  eq(rest[1].label, 'Dano de Fogo', 'element in the rest rows') eq(rest[2].label, ChaosLocaleCore.toCp1252('Vida Máxima'), 'pt-BR label of a rest row')
+  local tiles = L.statTiles({ BASE[7] })
+  eq(tiles[1].caption, 'Velocidade', 'the Speed tile')
+  eq(L.diffText({ k = 'attackspeed', l = 'Attack Interval', d = -0.5, fmt = 'sec' }), '-0,5s Intervalo de ataque', 'pt-BR compare row')
+  lang = 'en'
+  ChaosLocale = nil
+  text = {}
+  for _, l in ipairs(L.lines(tip, { level = 60 })) do text[#text + 1] = l.text end
+  all = table.concat(text, '|')
+  eq(all:find('Attack Interval: 2s', 1, true) ~= nil and all:find('Prefixes 1/3', 1, true) ~= nil, true, 'English rows as before')
+  eq(L.diffText({ k = 'attackspeed', l = 'Attack Interval', d = -0.5, fmt = 'sec' }), '-0.5s Attack Interval', 'English compare row')
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

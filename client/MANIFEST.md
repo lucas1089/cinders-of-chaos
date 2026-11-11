@@ -154,7 +154,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_event | none seen in the module | none | Client-only UI; wiring to a server event system is open |
 | game_creatureinformation | none | engine APIs this client lacks | Not included |
 | client_terminal | none | none | Stand-in for the base Lua console: runs nothing, no Ctrl+T, no top bar entry (client/BASE.md "Lua console removed"); `terminal_test.lua` in CI; not run in a client |
-| client_chaos_numbers | none | none | Short-number formatter for every module (`formatShortNumber`, `shortNumbersIn`); self test `numbers_test.lua` runs in CI; not run in a client |
+| client_chaos_numbers | none | none | Short-number formatter for every module (`formatShortNumber`, `shortNumbersIn`; `formatExactNumber` and `comma_value` in the number form of the language, O506); self test `numbers_test.lua` runs in CI; not run in a client |
 | client_chaos_settings | none | none | Lists read back from `g_settings` nodes (global `ChaosSettings`), see "Lists in g_settings nodes"; self test `settingslist_test.lua` runs in CI; not run in a client |
 | client_chaos_locale | sends `hello {lang}` on 157 (server `i18n.lua`) | none | Client language, English or Portuguese (Brazil); see "Localization". Self test `locale_core_test.lua` in CI; not run in a client |
 | client_chaos_login | none | none (the scene's walkers schedule each tick from now, so a slow client is not starved; base patch 0180 does the same for every cycle event) | Login screen layout (see "Login screen" below); art from `tools/gen_login_art.py` (from the login artwork in `tools/art_src/`); tested in the Linux client at 1280x720, 1366x768, 1920x1080 and 1024x768. The living scene behind it (see "Login scene"): `loginscene_core.lua` (tested by `loginscene_core_test.lua` in CI), `loginscene.lua`; tested in the Linux client at 1280x720 and 1920x1080 |
@@ -4884,6 +4884,21 @@ letters; a Lua literal given straight to `setText`, `setTooltip`, `setTitle`, `s
 PopupMenu `addOption` without `tr()`); `--missing` prints the lines to fill in, `--stats` the coverage, `--fix FILE...`
 wraps the hard-coded texts of these files. It also fails on `string.format('English ...')` that is not an argument of `tr()`
 (a sentence built by format must be one `tr('... %d ...', n)` key); a line marked `-- i18n-ok` is exempt (not UI text).
+**Numbers (O506).** Brazilian Portuguese groups thousands with a point and writes decimals with a comma (3.300, 1,5%); the
+client's own texts are written in the English form (3,300, 1.5). `ChaosLocaleCore.formatNumber` / `formatInteger` / `localize`
+(`locale_core.lua`, tested by `locale_core_test.lua` in both interpreters) and `ChaosLocale.number` / `int` / `localize` (the
+language in use) do it: `localize` swaps the separators of a text that is wholly one English-form number and is the identity in
+English and for anything else (words, ranges, times, ids), so English is byte for byte as it was. Users: the item tooltip rows
+(`tooltiplogic.lua` `L.int`, decimals of `trim`: range and estimate rows, charges, gold line, 1,5% and 0,33s), the 29 module
+groupers (a local `lnum` around the text they already build, one place each: `check_locales.py` fails on a file that groups with
+`'%1,'` and never reads `ChaosLocale`), and the globals `formatExactNumber` and `comma_value` of `client_chaos_numbers` (the base
+`comma_value` is replaced by the same function in the language's form, so the base windows follow: skills, health bars, prey).
+Tooltip labels (O506): the server writes the label of a base row in English next to a stable key; `ItemTooltipLogic.label(k, l)` translates it by the key with a literal `tr()` (Attack Interval, Your Attack Interval and its capped form, Estimated DPS, Magic Level, the elements, protections and skills inside a label) and keeps the server's `l` for a key it does not know; used by the base rows, the stat card's other rows and the compare rows, and the Prefixes / Suffixes headers of the plain-text copy use `tr`. English is the server's text as before; "Attack Interval" keeps its name.
+Not changed: the short numbers (15.3k: the numbers above the map are drawn by the engine, base patch 0018), number parsing
+(inputs the player types: market, orb exchange, guild bank and guild war amounts take `1,500` and `1.5k` as before; no formatted number
+is put back into an input, they are filled with plain `tostring` / `priceInput`), `game_dungeons` (its own `comma_value` always
+writes a point, also in English), the server's own texts (grouped by the server, `K.thousands` and kin in `server/data/scripts/chaos`),
+the Unity client (invariant culture, English form everywhere).
 Coverage: 3,327 literal keys in 4,115 `tr()` calls, all translated; 152
 `tr()` with a run-time key. Not run in a client yet (no client build or server in the session).
 
