@@ -684,7 +684,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Stand next to the Great Brazier in the temple."] = "Fique ao lado do Great Brazier no templo.",
   ["Give %s gold for %s points."] = "Dar %s de ouro por %s pontos.",
   -- game_cosmetics/cosmetics.lua
-  ["%s %s [%s]: Hail, ash-walkers!"] = "%s %s [%s]: Salve, ash-walkers!",
+  ["%s %s [%s]: Hail, ash-walkers!"] = "%s %s [%s]: Salve, andarilhos das cinzas!",
   ["%s Ashen Blade"] = "%s Ashen Blade",
   ["Preview shows the effects around your character (only you see it)."] = "A prévia mostra os efeitos em volta do seu personagem (só você vê).",
   ["Everyone near you sees the chosen effects."] = "Todos perto de você veem os efeitos escolhidos.",
@@ -1649,7 +1649,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- the samples of a loot label, a chat colour and a name plate on the stage and on the cards (O497); item names stay as the game has them
   ["Ashen Blade"] = "Ashen Blade",
   ["Hail!"] = "Salve!",
-  ["Hail, ash-walkers!"] = "Salve, ash-walkers!",
+  ["Hail, ash-walkers!"] = "Salve, andarilhos das cinzas!",
   -- game_lootbeams/lootbeams.lua, lootbeams.otui (and the button in game_lootfilter/lootfilter.otui)
   ["Loot Beams"] = "Feixes de saque",
   ["Light pillars over corpses with loot these rules make glow: on or off, height, intensity"] = "Colunas de luz sobre os corpos com saque que estas regras fazem brilhar: ligar ou desligar, altura, intensidade",
