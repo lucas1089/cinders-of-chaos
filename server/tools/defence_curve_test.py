@@ -80,7 +80,13 @@ check(near(sum(v * w for v, w in arr) / sum(w for _, w in arr), 60 - 7.5 - 6.5, 
 check(len(D.ARMOURED) == 15, 'fifteen classes have an armoured auto attack (the six casters hit with a wand: no armour)')
 check(all(c not in D.ARMOURED for c in ('Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord')), 'no caster is armoured')
 for lv in (8, 100, 1000):
-    check(D.arriving_mean('Monk', lv) < D.arriving_mean('Warrior', lv) < D.arriving_mean('Ranger', lv), 'level %d: fist < one-handed < bow arriving hit' % lv)
+    # the stock engine's bare fist (attack 7, what the engine rolls without patch 0091) is the smallest hit, as before O505
+    check(D.roll_mean('Monk', lv, True) < D.roll_mean('Warrior', lv) < D.roll_mean('Ranger', lv), 'level %d: stock fist < one-handed < bow roll' % lv)
+    # O505: the arriving fist hit is the Monk's own size (its fist attack x meleeDamage, the units the layer measures in on both engines):
+    # above a Warrior's, and under a bow's from level 100 (at level 8 the Monk's 40-attack fist beats a level 8 bow too: 81.6 against 53.5)
+    check(D.arriving_mean('Warrior', lv) < D.arriving_mean('Monk', lv), 'level %d: one-handed < Monk arriving hit (O505)' % lv)
+    if lv >= 100:
+        check(D.arriving_mean('Monk', lv) < D.arriving_mean('Ranger', lv), 'level %d: Monk < bow arriving hit (O505)' % lv)
 
 # the share of a hit: A / (A + 0.07 H), a cap, a big hit loses less
 check(near(D.share_of(10.0, 100.0), 10.0 / 17.0, 1e-9), 'share_of is A / (A + 0.07 H)')
@@ -113,11 +119,21 @@ rows = D.autos(100)
 by = {r[0]: r for r in rows}
 check(len(rows) == 15, 'the table has the 15 armoured classes')
 check(by['Warrior'][3][0] > 55.0, 'before: a Warrior at level 100 lost over 55%% of the auto attack on a normal monster (%.1f)' % by['Warrior'][3][0])
-check(by['Monk'][3][0] > 75.0, 'before: a Monk at level 100 lost over 75%% (%.1f; 90.9 before the flat armour rule of O505)' % by['Monk'][3][0])
+# the `before` column is the class curve with no cap (O462) applied to the hits of the model's CURRENT state: the Monk's own size hits (O505), so a
+# Monk loses 42.9% there, under a Warrior's 55.7%. What a Monk lost with the stock engine's attack 7 and the stock flat armour (the 90.9% of the
+# O501 report, 91.0 here) is pinned from the stock hit
+check(near(by['Monk'][3][0], 42.9, 1.5) and by['Monk'][3][0] < by['Warrior'][3][0], 'before column: a Monk at level 100 loses 42.9%% on its own size hit, under the Warrior (%.1f)' % by['Monk'][3][0])
+_m7 = D.roll_mean('Monk', 100, True)
+_f = D.xml_flat_at(100)
+_hits = [(h, w / len(D.ROLL)) for r in D.ROLL for h, w in D.after_flat(_m7 * r, _f, _f)]
+_old = D.expected_share(_hits, D.armour_value(D.config_curve(), D.config_targets()['normal'], 100))
+check(near(_old, 90.9, 1.0), 'before O501 and O505: a Monk (attack 7, stock flat armour 30) at level 100 lost 90.9%% on a normal monster (%.1f)' % _old)
 check(all(r[2][0] <= 40.0 + 1e-9 and r[2][1] <= 55.0 + 1e-9 and r[2][2] <= 65.0 + 1e-9 for r in rows), 'after: no class passes its ceiling at level 100')
 check(near(by['Warrior'][2][0], 25.0, 3.0) and near(by['Warrior'][2][1], 40.0, 3.0) and near(by['Warrior'][2][2], 50.0, 3.0), 'after: the Warrior (the median) loses 25 / 40 / 50 within 3 points')
 check(by['Ranger'][2][0] < by['Warrior'][2][0], 'after: the bow, a bigger hit, loses less than the sword')
-check(by['Monk'][2][0] == 40.0, 'after: a Monk is held at the normal cap')
+# O501 held the Monk at the cap (40.0): its arriving hit was attack 7. O505: its hit is its own size, so it loses less than the median class
+check(near(by['Monk'][2][0], 16.9, 1.0) and by['Monk'][2][0] < by['Warrior'][2][0] < 40.0, 'after: a Monk at level 100 loses 16.9%% (O505), under the Warrior and far under the cap (%.1f)' % by['Monk'][2][0])
+check(D.fist_reach('Monk', 100, True, flat=D.xml_flat_at(100))[2] < 8.0, 'a stock engine with the stock flat armour: under 8%% of a level 100 Monk reaches the monster (the 6%% of O501)')
 
 # ---- O505, G5: the flat armour and defence of the monster files --------------------------------------------------------------
 # the engine's mean bite (Creature::blockHit): armor 1..3 takes 1, above that uniform(a / 2, a - 1 - a % 2); defense uniform(d / 2, d)

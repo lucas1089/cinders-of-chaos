@@ -31246,6 +31246,12 @@ formula against the measurement). `--autos --level 100` prints the table of the 
 | Ranger | 228 | 37.8 / 54.1 / 63.6% | 11.4 / 21.0 / 28.6% |
 | Monk | 10 | 90.9 / 95.2 / 96.7% | 40.0 / 55.0 / 65.0% |
 
+(The table is the state of O501. Since O505 `--autos` prints other numbers, because the model changed, not only the config: a Warrior's flat armour is the
+capped one (Warrior 106 arriving, before 55.7 / 71.1 / 78.5%, after 25.0 / 40.6 / 50.7%), and the Monk's arriving hit is its own size (184 at level 100,
+attack 40 x growth x 1.2, before 42.9 / 59.4 / 68.4%, after 16.9 / 29.5 / 38.6%), no longer attack 7 at the cap. The `before` column is still the class
+curve with no cap, applied to the hits of the model's current state. What the Monk lost with attack 7 and the stock flat armour, 91.0% at level 100,
+and the 5.6% of its damage that reached a monster, are pinned in `defence_curve_test.py` from `roll_mean(..., stock_fist=True)`.)
+
 *After the fix, measured* (the same characters, the dummy of the level, the layer on, 120 s; the numbers before are the table above):
 
 | Class | Level | Hit rolled, mean (before / after) | Removed, before -> after | Reaches the monster, before -> after | Seconds to kill after, layer on / off |
