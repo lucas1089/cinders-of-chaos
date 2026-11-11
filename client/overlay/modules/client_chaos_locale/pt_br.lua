@@ -1479,6 +1479,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Monsters left: %d of %d"] = "Monstros restantes: %d de %d",
   ["Next floor in %ds"] = "Próximo andar em %ds",
   ["Floor time left: %s"] = "Tempo do andar: %s",
+  ["Run time left: %s"] = "Tempo da corrida: %s",
   ["Start the next floor at once instead of waiting."] = "Começa o próximo andar já, sem esperar.",
   ["Available when the floor is cleared."] = "Disponível quando o andar estiver limpo.",
   ["A boss floor is next: it starts by itself."] = "O próximo andar é de chefe: ele começa sozinho.",

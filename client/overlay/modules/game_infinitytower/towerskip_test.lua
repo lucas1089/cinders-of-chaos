@@ -58,6 +58,34 @@ p = M.panel({ inRun = true, floor = 3, waiting = true, nextIn = 6, remaining = 0
 eq(p.monsters, nil, 'panel: no monsters while waiting'); eq(p.timer.secs, 2, 'panel: countdown rounds up')
 eq(M.panel({ inRun = true, floor = 3, waiting = true, nextIn = 6 }, 99000).timer.secs, 0, 'panel: never negative')
 eq(M.clock(125), '2:05', 'clock'); eq(M.clock(-4), '0:00', 'clock floor')
+eq(M.clock(3599), '59:59', 'clock: just under an hour'); eq(M.clock(3600), '1:00:00', 'clock: an hour'); eq(M.clock(3725), '1:02:05', 'clock: over an hour')
+
+-- O484: the run's own clock, a second line under the floor's
+p = M.panel({ inRun = true, floor = 7, cleared = 6, remaining = 3, total = 8, floorLeft = 200, runLeft = 3600 }, 0)
+eq(p.runTimer.key, 'Run time left: %s', 'run line: key'); eq(p.runTimer.secs, 3600, 'run line: seconds')
+eq(p.runTimer.low, false, 'run line: normal colour at the start'); eq(p.timer.secs, 200, 'run line: the floor line stays')
+p = M.panel({ inRun = true, floor = 7, remaining = 3, total = 8, floorLeft = 200, runLeft = 3600 }, 2500)
+eq(p.runTimer.secs, 3598, 'run line: counts down on the client clock between two states')
+p = M.panel({ inRun = true, floor = 7, remaining = 3, total = 8, floorLeft = 200, runLeft = 301 }, 0)
+eq(p.runTimer.low, false, 'run line: 301 s is not low')
+p = M.panel({ inRun = true, floor = 7, remaining = 3, total = 8, floorLeft = 200, runLeft = 301 }, 1000)
+eq(p.runTimer.secs, 300, 'run line: 300 s'); eq(p.runTimer.low, true, 'run line: warning colour at 300 s')
+p = M.panel({ inRun = true, floor = 7, remaining = 3, total = 8, floorLeft = 200, runLeft = 301 }, 1001)
+eq(p.runTimer.secs, 300, 'run line: still 300 s one ms later (rounds up)')
+p = M.panel({ inRun = true, floor = 7, remaining = 3, total = 8, floorLeft = 200, runLeft = 10 }, 99000)
+eq(p.runTimer.secs, 0, 'run line: never negative'); eq(p.runTimer.low, true, 'run line: low at zero')
+eq(M.RUN_LOW_SECS, 300, 'run line: threshold'); eq(M.RUN_LOW_COLOR, '#ff4030', 'run line: warning colour')
+eq(M.RUN_COLOR, '#f0e4c8', 'run line: normal colour')
+-- also in the pause between floors and before floor 1, where the floor line is absent
+p = M.panel({ inRun = true, floor = 3, waiting = true, nextIn = 6, remaining = 0, total = 4, runLeft = 1234 }, 2000)
+eq(p.runTimer.secs, 1232, 'run line: shown in the pause'); eq(p.timer.key, 'Next floor in %ds', 'run line: the pause keeps its own line')
+p = M.panel({ inRun = true, floor = 0, waiting = true, nextIn = 5, runLeft = 3600 }, 0)
+eq(p.runTimer.secs, 3600, 'run line: shown before floor 1')
+-- no run limit: no line
+p = M.panel({ inRun = true, floor = 7, remaining = 3, total = 8, floorLeft = 200 }, 0)
+eq(p.runTimer, nil, 'run line: absent without a limit')
+p = M.panel({ inRun = true, floor = 3, waiting = true, nextIn = 6 }, 0)
+eq(p.runTimer, nil, 'run line: absent in the pause without a limit')
 
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks failed'); os.exit(1) end
 print('towerskip: ' .. checks .. ' checks passed')

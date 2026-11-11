@@ -737,6 +737,13 @@ return {
 		["1 minute left"] = "falta 1 minuto",
 		["1 second left"] = "falta 1 segundo",
 		["%s seconds left"] = "faltam %s segundos",
+		-- the Infinity Tower has two clocks (O484): each warning says which one it is
+		["%s: the whole run ends in %s (%d minute limit). Everyone inside leaves then."] =
+			"%s: a corrida inteira termina em %s (limite de %d minutos). Todos lá dentro saem.",
+		["Floor %d: %s to clear it."] = "Andar %d: %s para limpar.",
+		["Floor %d"] = "Andar %d",
+		["Whole run: %s"] = "Corrida inteira: %s",
+		["This run lasts at most %d minutes."] = "Esta corrida dura no máximo %d minutos.",
 		["All %s are busy."] = "Sem vaga livre em %s.",
 		[" One frees up in under a minute."] = " Uma vaga fica livre em menos de um minuto.",
 		[" Try again in %s."] = " Tente de novo em %s.",
