@@ -2143,13 +2143,16 @@ local function modWords(orbKey, item, modKey)
 	end
 	local top = M.config.maxTier
 	if orbKey == "ember" and m.affix then
-		local r = M.tierRange(m.affix.tiers, math.min(top, m.tier + 1))
-		return string.format("Guaranteed: tier %d to tier %d. The value rolls %d to %d.", m.tier, math.min(top, m.tier + 1),
-			r[1], r[2])
+		local to = math.min(top, m.tier + 1)
+		local r = M.tierRange(m.affix.tiers, to)
+		-- `change`: the same numbers as the sentence, for the window's before -> after row (never parsed from the text)
+		return string.format("Guaranteed: tier %d to tier %d. The value rolls %d to %d.", m.tier, to, r[1], r[2]),
+			{kind = "tier", text = C.modText(m), from = {tier = m.tier, lo = m.lo, hi = m.hi}, to = {tier = to, lo = r[1], hi = r[2]}}
 	elseif orbKey == "binding" then
-		return "Guaranteed: this modifier is bound. The orbs that change modifiers leave it alone."
+		return "Guaranteed: this modifier is bound. The orbs that change modifiers leave it alone.",
+			{kind = "bind", text = C.modText(m), tier = m.tier}
 	elseif orbKey == "excision" then
-		return "Guaranteed: this modifier is removed. The others stay."
+		return "Guaranteed: this modifier is removed. The others stay.", {kind = "remove", text = C.modText(m), tier = m.tier}
 	elseif orbKey == "reforging" then
 		local rows = M.tierRows(C.orbLevel(item))
 		return string.format("One of %d tiers (%s). The tier and the value roll again.", #rows, C.tierSpan(C.orbLevel(item)))
@@ -2157,7 +2160,8 @@ local function modWords(orbKey, item, modKey)
 	return nil
 end
 
--- C.explain(orbKey, item, modKey): {orb, kind, tag, ok, reason (a code of C.reasons or a text), text (what happens), mod}
+-- C.explain(orbKey, item, modKey): {orb, kind, tag, ok, reason (a code of C.reasons or a text), text (what happens), mod,
+-- change (only for an outcome that is sure: {kind = tier | bind | remove | quality, ...}, the numbers of the text)}
 -- The forge window shows `text` and `tag` for the chosen action and sends no craft for an action this has not answered.
 function C.explain(orbKey, item, modKey)
 	local orb = C.orbByKey[orbKey]
@@ -2177,7 +2181,7 @@ function C.explain(orbKey, item, modKey)
 	out.ok = true
 	local words
 	if orb.kind == "mod" and item and C.isGear(item) then
-		words = modWords(orbKey, item, modKey)
+		words, out.change = modWords(orbKey, item, modKey)
 	elseif orb.kind == "mod" and orbKey == "excision" then
 		words = "Guaranteed: this modifier is removed. The others stay."
 	end
@@ -2187,6 +2191,10 @@ function C.explain(orbKey, item, modKey)
 		words = sentence(C.preview(orbKey, item)) .. "."
 		out.lead = out.tag == "safe" and "fixed" or "random"
 		out.warn = out.tag == "risky" or nil
+	end
+	if orbKey == "whetstone" and item and C.isGear(item) then
+		local q = M.qualityOf(item)
+		out.change = {kind = "quality", from = q, to = math.min(q + M.config.quality.perStone, M.qualityCap(C.rarityOf(item)))}
 	end
 	out.text = words
 	return out

@@ -1,148 +1,207 @@
 // The forge window (O481, owner request 2026-11-11): the crafting bench as "place the item, pick an action, check the
-// change, forge". Styles from client_chaos_theme (styles.otui). forge.lua fills it; forgeview.lua decides what it shows.
-// Size: 900 x 536 logical pixels, inside the 960 x 540 of the phone interface (no $mobile rule is needed: the window
-// never grows past it, every list scrolls, every long text wraps). Vertical budget of the 482 inside the frame:
-// steps 18 + 4, materials 2 rows of 20 + 8 = 48 + 4 (9 to a row: 18 orbs; forge_test.lua keeps the orb list at 18 or less), item 54 + 4, tabs 24 + 4, the two columns take the rest (the lists
-// scroll), result line 16 + 4, bottom bar 50.
+// change, forge". Owner 2026-11-11: "a look closer to the other windows of the game": every surface is a theme style
+// (client_chaos_theme/styles.otui), no art of its own, no colour outside the theme palette and the item tooltip's colours.
+// forge.lua fills it; forgeview.lua decides what it shows. Size 900 x 536: the ChaosWindow frame leaves 868 x 482 inside
+// (padding 38 / 16 / 16 / 16), inside the 960 x 540 of the phone interface (no $mobile rule needed). Vertical plan of the
+// 482: steps 0-18, materials 22-66, item 70-132, tabs 138-162, the two columns 164-404, bottom bar 410-482.
+//   Blocks and their styles: steps = ChaosLabel + ChaosCheckBox art; materials = ChaosPanelDark + ChaosItemSlot;
+//   item = ChaosPanel + ChaosItemSlot + ChaosProgressBar + ChaosButton; tabs = ChaosTabButton; modifier list = ChaosPanel +
+//   ChaosTitlePlate + ChaosPanelDark rows (ChaosPanelHighlight when chosen) + ChaosProgressBar + ChaosScrollBar; action
+//   cards = ChaosPanelDark (ChaosPanelHighlight when chosen); what happens = ChaosPanel + ChaosTitlePlate + ChaosSeparator;
+//   bottom bar = ChaosPanel + ChaosPrimaryButton + ChaosLabel / ChaosLabelDim / ChaosBloodLabel.
 
 // a label that breaks its text into lines and takes the height they need
-ForgeWrapLabel < UILabel
+ForgeWrapLabel < ChaosLabel
   height: 14
   text-align: topLeft
   text-wrap: true
   text-vertical-auto-resize: true
-  font: verdana-11px-antialised
-  color: #d6c9ae
   phantom: true
 
-// one step of the line at the top: lit (done), gold (now) or dim (later); forge.lua sets the colour
-ForgeStep < UILabel
-  height: 18
+// a one-line label that takes the width of its text
+ForgeLabel < ChaosLabel
+  height: 14
+  text-align: left
   text-auto-resize: true
-  font: verdana-11px-rounded
-  color: #6b6258
   phantom: true
 
-// one material of the strip: the orb's sprite, its short name and what the player can spend (backpack plus stash)
-ForgeMaterial < UIWidget
-  size: 96 20
+// the tier of a modifier: a flat rectangle in the tooltip's tier colour, dark text
+ForgeTierPill < UILabel
+  size: 26 14
+  text-align: center
+  font: verdana-9px-rounded
+  color: #0d0b0e
+  phantom: true
+
+// one material of the strip: the orb's sprite and its count (name and counts in the tooltip)
+ForgeChip < ChaosItemSlot
+  size: 34 34
+  virtual: true
   phantom: false
 
-  UIItem
-    id: icon
-    size: 20 20
+  UILabel
+    id: cnt
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin: 0 3 1 0
+    text-auto-resize: true
+    font: verdana-9px-rounded
+    color: #d6c9ae
+    phantom: true
+
+// a header of the modifier list: Prefixes 3/3
+ForgeGroupPlate < ChaosTitlePlate
+  margin-bottom: 3
+
+  UILabel
+    id: text
+    anchors.fill: parent
+    text-align: center
+    font: verdana-11px-rounded
+    color: #e8b84a
+    phantom: true
+
+// one modifier of the item: tier pill, text, BOUND, range, roll bar. Chosen = ChaosPanelHighlight under the texts.
+ForgeModRow < UIWidget
+  height: 26
+  margin-bottom: 1
+  phantom: false
+  focusable: false
+
+  ChaosPanelDark
+    id: bg
+    anchors.fill: parent
+    padding: 0
+    phantom: true
+
+  ChaosPanelHighlight
+    id: sel
+    anchors.fill: parent
+    padding: 0
+    visible: false
+    phantom: true
+
+  ForgeTierPill
+    id: tier
     anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    virtual: true
+    margin-left: 7
+
+  ChaosProgressBar
+    id: roll
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    size: 52 10
+    phantom: true
+
+  UILabel
+    id: range
+    anchors.right: roll.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #8c8070
     phantom: true
 
   UILabel
     id: text
-    anchors.left: icon.right
-    anchors.right: parent.right
+    anchors.left: tier.right
+    anchors.right: range.left
     anchors.verticalCenter: parent.verticalCenter
-    margin-left: 3
+    margin-left: 8
+    margin-right: 6
     height: 14
     text-align: left
     font: verdana-11px-antialised
     color: #d6c9ae
     phantom: true
 
-// one modifier of the item: its tier (in the colour of the item tooltip), its text, its range, a mark when bound
-ForgeModRow < UIWidget
-  height: 22
-  margin-bottom: 1
-  phantom: false
-  focusable: false
-
-  UILabel
-    id: tier
-    anchors.left: parent.left
-    anchors.verticalCenter: parent.verticalCenter
-    margin-left: 6
-    width: 24
-    height: 14
-    text-align: left
-    font: verdana-11px-rounded
-    phantom: true
-
-  UILabel
-    id: text
-    anchors.left: tier.right
-    anchors.right: mark.left
-    anchors.verticalCenter: parent.verticalCenter
-    margin-left: 4
-    margin-right: 4
-    height: 14
-    text-align: left
-    font: verdana-11px-antialised
-    color: #e4d8c0
-    phantom: true
-
   UILabel
     id: mark
-    anchors.right: parent.right
+    anchors.right: range.left
     anchors.verticalCenter: parent.verticalCenter
-    margin-right: 6
+    margin-right: 10
     text-auto-resize: true
     font: verdana-11px-rounded
     color: #e8b84a
     phantom: true
 
-// PREFIXES / SUFFIXES
-ForgeGroupLabel < UILabel
-  height: 16
-  margin-top: 4
-  text-align: left
-  margin-left: 6
-  font: verdana-11px-rounded
-  color: #8c8070
-  phantom: true
-
-// a note in a list (empty lists, the veiled slot)
-ForgeNoteLabel < ForgeWrapLabel
+// a note in a list
+ForgeNote < ForgeWrapLabel
   margin: 4 6 2 6
   color: #8c8070
 
-// one action: the orb's sprite, what it does, how many the player can spend; a click chooses it (a gold frame), a
-// disabled one is dim and its tooltip says why
-ForgeActionButton < UIWidget
-  size: 206 32
-  margin: 0 4 4 0
-  border-width: 1
-  border-color: #4a3d2c
-  background-color: #241d16
+// one action: a stripe in the safety colour, the orb, the verb, the orb's name (or the short reason), the count.
+// Chosen = ChaosPanelHighlight; cannot be done = dim.
+ForgeCard < UIWidget
+  size: 214 32
   phantom: false
+
+  ChaosPanelDark
+    id: bg
+    anchors.fill: parent
+    padding: 0
+    phantom: true
+
+  ChaosPanelHighlight
+    id: sel
+    anchors.fill: parent
+    padding: 0
+    visible: false
+    phantom: true
+
+  UIWidget
+    id: stripe
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin: 3 0 3 3
+    width: 3
+    phantom: true
 
   UIItem
     id: icon
-    size: 26 26
+    size: 32 32
     anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    margin-left: 4
-    virtual: true
-    phantom: true
-
-  UILabel
-    id: verb
-    anchors.left: icon.right
-    anchors.right: count.left
-    anchors.verticalCenter: parent.verticalCenter
     margin-left: 6
-    height: 14
-    text-align: left
-    font: verdana-11px-rounded
-    color: #e4d8c0
+    virtual: true
     phantom: true
 
   UILabel
     id: count
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
-    margin-right: 6
+    margin-right: 10
     text-auto-resize: true
     font: verdana-11px-antialised
-    color: #a89a84
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: verb
+    anchors.left: icon.right
+    anchors.right: count.left
+    anchors.top: parent.top
+    margin: 3 6 0 6
+    height: 14
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.left: icon.right
+    anchors.right: count.left
+    anchors.top: verb.bottom
+    margin: 0 6 0 6
+    height: 12
+    text-align: left
+    font: verdana-9px-rounded
+    color: #8c8070
     phantom: true
 
 // one piece of gear or one Rift Key of the backpack, to put on the bench
@@ -151,8 +210,9 @@ ForgeGearSlot < ChaosItemSlot
   virtual: true
 
 // one socket of the item: the gem (or "empty"), its effect, take it out for gold or shatter it
-ForgeSocketRow < UIWidget
-  height: 34
+ForgeSocketRow < ChaosPanelDark
+  height: 36
+  padding: 3
   margin-bottom: 2
   phantom: false
 
@@ -165,51 +225,43 @@ ForgeSocketRow < UIWidget
     virtual: true
     phantom: true
 
-  UILabel
-    id: name
-    anchors.left: icon.right
-    anchors.right: removeButton.left
-    anchors.top: parent.top
-    height: 15
-    margin-left: 6
+  ChaosButton
+    id: shatterButton
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
     margin-right: 4
-    margin-top: 2
-    text-align: left
-    font: verdana-11px-rounded
-    color: #d6c9ae
-    phantom: true
-
-  UILabel
-    id: text
-    anchors.left: icon.right
-    anchors.right: removeButton.left
-    anchors.top: name.bottom
-    height: 14
-    margin-left: 6
-    margin-right: 4
-    text-align: left
-    font: verdana-11px-antialised
-    color: #8c8070
-    phantom: true
+    width: 56
+    height: 20
+    !text: tr('Shatter')
 
   ChaosButton
     id: removeButton
     anchors.right: shatterButton.left
     anchors.verticalCenter: parent.verticalCenter
     margin-right: 3
-    width: 46
+    width: 50
     height: 20
-    font: verdana-11px-antialised
 
-  ChaosButton
-    id: shatterButton
-    anchors.right: parent.right
-    anchors.verticalCenter: parent.verticalCenter
-    margin-right: 4
-    width: 52
-    height: 20
-    font: verdana-11px-antialised
-    !text: tr('Shatter')
+  ChaosLabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: removeButton.left
+    anchors.top: parent.top
+    height: 15
+    margin: 2 4 0 6
+    text-align: left
+    font: verdana-11px-rounded
+    phantom: true
+
+  ChaosLabelDim
+    id: text
+    anchors.left: icon.right
+    anchors.right: removeButton.left
+    anchors.top: name.bottom
+    height: 14
+    margin: 0 4 0 6
+    text-align: left
+    phantom: true
 
 ChaosMainWindow
   id: forgeWindow
@@ -218,55 +270,98 @@ ChaosMainWindow
   @onEscape: modules.game_crafting.forgeHide()
   @onEnter: modules.game_crafting.forgeNow()
 
-  // ------------------------------------------------------------ the steps
-  ForgeStep
-    id: step1
+  // ------------------------------------------------------------ the steps (one thin row)
+  UIWidget
+    id: check1
+    size: 16 16
     anchors.top: parent.top
     anchors.left: parent.left
-    margin-left: 4
+    margin-top: 1
+    image-source: /images/chaos/checkbox
+    image-clip: 0 16 16 16
+    phantom: true
 
-  ForgeStep
+  ForgeLabel
+    id: step1
+    anchors.top: parent.top
+    anchors.left: check1.right
+    margin: 2 0 0 2
+
+  ChaosLabelDim
     id: arrow1
-    anchors.top: step1.top
+    anchors.top: parent.top
     anchors.left: step1.right
-    margin-left: 8
+    margin: 2 0 0 8
+    text-auto-resize: true
 
-  ForgeStep
-    id: step2
-    anchors.top: step1.top
+  UIWidget
+    id: check2
+    size: 16 16
+    anchors.top: parent.top
     anchors.left: arrow1.right
-    margin-left: 8
+    margin: 1 0 0 8
+    image-source: /images/chaos/checkbox
+    image-clip: 0 16 16 16
+    phantom: true
 
-  ForgeStep
+  ForgeLabel
+    id: step2
+    anchors.top: parent.top
+    anchors.left: check2.right
+    margin: 2 0 0 2
+
+  ChaosLabelDim
     id: arrow2
-    anchors.top: step1.top
+    anchors.top: parent.top
     anchors.left: step2.right
-    margin-left: 8
+    margin: 2 0 0 8
+    text-auto-resize: true
 
-  ForgeStep
-    id: step3
-    anchors.top: step1.top
+  UIWidget
+    id: check3
+    size: 16 16
+    anchors.top: parent.top
     anchors.left: arrow2.right
-    margin-left: 8
+    margin: 1 0 0 8
+    image-source: /images/chaos/checkbox
+    image-clip: 0 16 16 16
+    phantom: true
 
-  ForgeStep
+  ForgeLabel
+    id: step3
+    anchors.top: parent.top
+    anchors.left: check3.right
+    margin: 2 0 0 2
+
+  ChaosLabelDim
     id: arrow3
-    anchors.top: step1.top
+    anchors.top: parent.top
     anchors.left: step3.right
-    margin-left: 8
+    margin: 2 0 0 8
+    text-auto-resize: true
 
-  ForgeStep
-    id: step4
-    anchors.top: step1.top
+  UIWidget
+    id: check4
+    size: 16 16
+    anchors.top: parent.top
     anchors.left: arrow3.right
-    margin-left: 8
+    margin: 1 0 0 8
+    image-source: /images/chaos/checkbox
+    image-clip: 0 16 16 16
+    phantom: true
+
+  ForgeLabel
+    id: step4
+    anchors.top: parent.top
+    anchors.left: check4.right
+    margin: 2 0 0 2
 
   ChaosButton
     id: classicButton
     anchors.top: parent.top
     anchors.right: parent.right
-    width: 84
-    height: 18
+    width: 86
+    height: 20
     !text: tr('Classic')
     !tooltip: tr('Switch to the classic crafting bench. The choice is remembered for this character.')
     @onClick: modules.game_crafting.forgeClassic()
@@ -274,72 +369,62 @@ ChaosMainWindow
   // ------------------------------------------------------------ the materials (backpack plus stash)
   ChaosPanelDark
     id: matsPanel
-    anchors.top: step1.bottom
+    anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 4
-    height: 48
-    padding: 3
-
-    UIWidget
-      id: matsList
-      anchors.fill: parent
-      margin: 0 4 0 4
-      phantom: false
-      layout:
-        type: grid
-        cell-size: 96 20
-        cell-spacing: 0
-        flow: true
+    margin-top: 22
+    height: 44
+    padding: 2
 
   // ------------------------------------------------------------ the item
-  ChaosPanelDark
+  ChaosPanel
     id: itemPanel
     anchors.top: matsPanel.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 4
-    height: 54
+    height: 62
+    padding: 4
 
   ChaosItemSlot
     id: itemSlot
     size: 44 44
     anchors.top: itemPanel.top
     anchors.left: itemPanel.left
-    margin: 5
+    margin: 8 0 0 8
     virtual: true
     !tooltip: tr('Drag an item from your backpack here, or click one in the list below.')
 
   ChaosButton
-    id: lockButton
+    id: changeButton
     anchors.top: itemPanel.top
     anchors.right: itemPanel.right
-    margin: 5 6 0 0
-    width: 84
-    height: 20
-    !text: tr('Lock')
-    visible: false
-    @onClick: modules.game_crafting.forgeLock()
-
-  ChaosButton
-    id: changeButton
-    anchors.top: lockButton.bottom
-    anchors.right: itemPanel.right
-    margin: 4 6 0 0
-    width: 84
-    height: 20
+    margin: 19 12 0 0
+    width: 102
+    height: 24
     !text: tr('Change item')
     !tooltip: tr('Take the item off the bench and pick another.')
     visible: false
     @onClick: modules.game_crafting.forgeChange()
+
+  ChaosButton
+    id: lockButton
+    anchors.top: itemPanel.top
+    anchors.right: changeButton.left
+    margin: 19 8 0 0
+    width: 90
+    height: 24
+    !text: tr('Lock')
+    visible: false
+    @onClick: modules.game_crafting.forgeLock()
 
   UILabel
     id: itemName
     anchors.top: itemPanel.top
     anchors.left: itemSlot.right
     anchors.right: lockButton.left
-    margin: 6 8 0 8
-    height: 16
+    margin: 5 8 0 10
+    height: 18
     text-align: left
     font: verdana-11px-rounded
     color: #e8b84a
@@ -350,65 +435,115 @@ ChaosMainWindow
     id: itemLine
     anchors.top: itemName.bottom
     anchors.left: itemName.left
-    anchors.right: lockButton.left
-    margin: 2 8 0 0
+    margin-top: 1
     height: 14
     text-align: left
+    text-auto-resize: true
     font: verdana-11px-antialised
     color: #d6c9ae
     phantom: true
 
-  UILabel
-    id: itemFree
-    anchors.top: itemLine.bottom
-    anchors.left: itemName.left
-    anchors.right: lockButton.left
-    margin: 1 8 0 0
-    height: 14
-    text-align: left
-    font: verdana-11px-antialised
+  ChaosProgressBar
+    id: qualityBar
+    anchors.verticalCenter: itemLine.verticalCenter
+    anchors.left: itemLine.right
+    margin-left: 8
+    size: 70 10
+    background-color: #5ccf5c
+    visible: false
+
+  ForgeLabel
+    id: socketLabel
+    anchors.top: itemLine.top
+    anchors.left: qualityBar.right
+    margin-left: 16
     color: #8c8070
+    visible: false
+
+  UIWidget
+    id: socketPips
+    anchors.top: itemLine.top
+    anchors.left: socketLabel.right
+    margin: 2 0 0 6
+    height: 10
+    width: 40
     phantom: true
 
-  // ------------------------------------------------------------ the tabs
+  ForgeLabel
+    id: prefixLabel
+    anchors.top: itemLine.bottom
+    anchors.left: itemName.left
+    margin-top: 2
+    color: #8c8070
+    visible: false
+
+  UIWidget
+    id: prefixPips
+    anchors.top: prefixLabel.top
+    anchors.left: prefixLabel.right
+    margin: 2 0 0 6
+    height: 10
+    width: 40
+    phantom: true
+
+  ForgeLabel
+    id: suffixLabel
+    anchors.top: prefixLabel.top
+    anchors.left: prefixPips.right
+    margin-left: 14
+    color: #8c8070
+    visible: false
+
+  UIWidget
+    id: suffixPips
+    anchors.top: prefixLabel.top
+    anchors.left: suffixLabel.right
+    margin: 2 0 0 6
+    height: 10
+    width: 40
+    phantom: true
+
+  ForgeLabel
+    id: freeLabel
+    anchors.top: prefixLabel.top
+    anchors.left: suffixPips.right
+    margin-left: 14
+    color: #8c8070
+
+  // ------------------------------------------------------------ the tabs (the counts are in the text)
   ChaosTabButton
     id: tabMod
     anchors.top: itemPanel.bottom
     anchors.left: parent.left
-    margin-top: 4
-    width: 176
+    margin-top: 6
     @onClick: modules.game_crafting.forgeTab('mod')
 
   ChaosTabButton
     id: tabAdd
     anchors.top: tabMod.top
     anchors.left: tabMod.right
-    margin-left: 4
-    width: 150
+    margin-left: 2
     @onClick: modules.game_crafting.forgeTab('add')
 
   ChaosTabButton
     id: tabWhole
     anchors.top: tabMod.top
     anchors.left: tabAdd.right
-    margin-left: 4
-    width: 132
+    margin-left: 2
     @onClick: modules.game_crafting.forgeTab('whole')
 
   ChaosTabButton
     id: tabSockets
     anchors.top: tabMod.top
     anchors.left: tabWhole.right
-    margin-left: 4
-    width: 176
+    margin-left: 2
     @onClick: modules.game_crafting.forgeTab('sockets')
 
   ChaosTabButton
     id: tabSalvage
     anchors.top: tabMod.top
     anchors.left: tabSockets.right
-    margin-left: 4
-    width: 84
+    margin-left: 2
     !tooltip: tr('Break rolled gear down into rune shards and combine the shards into orbs (the classic window, Salvage tab).')
     @onClick: modules.game_crafting.forgeTab('salvage')
 
@@ -416,75 +551,77 @@ ChaosMainWindow
     id: tabGuide
     anchors.top: tabMod.top
     anchors.left: tabSalvage.right
-    margin-left: 4
-    width: 70
+    margin-left: 2
     !tooltip: tr('What every orb does, a safe order to use them, and how gems work.')
     @onClick: modules.game_crafting.forgeTab('guide')
 
-  // ------------------------------------------------------------ the bottom: result line and the bar of step 4
-  ChaosPanelDark
+  // ------------------------------------------------------------ the bottom bar (steps 3 and 4)
+  ChaosPanel
     id: barPanel
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 50
+    height: 72
+    padding: 6
 
-  ChaosButton
+  ChaosPrimaryButton
     id: forgeButton
     anchors.top: barPanel.top
     anchors.right: barPanel.right
-    margin: 6 8 0 0
-    size: 150 38
-    font: verdana-11px-rounded
-    !text: tr('FORGE')
+    margin: 8 10 0 0
+    size: 200 40
     @onClick: modules.game_crafting.forgeNow()
 
+  ChaosLabelDim
+    id: goSub
+    anchors.top: forgeButton.bottom
+    anchors.left: forgeButton.left
+    anchors.right: forgeButton.right
+    margin-top: 1
+    height: 14
+    text-align: center
+
   UILabel
-    id: barSummary
+    id: barLine1
     anchors.top: barPanel.top
     anchors.left: barPanel.left
     anchors.right: forgeButton.left
-    margin: 6 10 0 10
+    margin: 8 10 0 12
     height: 14
     text-align: left
     font: verdana-11px-rounded
-    color: #f2e6cc
-    phantom: true
-
-  UILabel
-    id: barDetail
-    anchors.top: barSummary.bottom
-    anchors.left: barSummary.left
-    anchors.right: barSummary.right
-    margin-top: 1
-    height: 14
-    text-align: left
-    font: verdana-11px-antialised
     color: #d6c9ae
-    phantom: false
-
-  UILabel
-    id: barCost
-    anchors.top: barDetail.bottom
-    anchors.left: barSummary.left
-    anchors.right: barSummary.right
-    margin-top: 1
-    height: 14
-    text-align: left
-    font: verdana-11px-antialised
-    color: #8c8070
     phantom: true
 
-  UILabel
-    id: resultLabel
-    anchors.bottom: barPanel.top
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin: 0 4 3 4
-    height: 16
+  ChaosLabelDim
+    id: barLine2
+    anchors.top: barLine1.bottom
+    anchors.left: barLine1.left
+    anchors.right: barLine1.right
+    margin-top: 4
+    height: 14
     text-align: left
-    font: verdana-11px-antialised
-    color: #9fdc7f
+
+  UIWidget
+    id: resultMark
+    size: 16 16
+    anchors.top: barLine2.bottom
+    anchors.left: barLine1.left
+    margin-top: 3
+    image-source: /images/chaos/checkbox
+    image-clip: 0 16 16 16
+    visible: false
+    phantom: true
+
+  ChaosLabel
+    id: resultLabel
+    anchors.top: barLine2.bottom
+    anchors.left: resultMark.right
+    anchors.right: barLine1.right
+    margin: 3 0 0 4
+    height: 14
+    text-align: left
+    color: #5ccf5c
     phantom: false
 
   // ------------------------------------------------------------ the body: the gear to pick (no item yet) or the two columns
@@ -493,9 +630,9 @@ ChaosMainWindow
     anchors.top: tabMod.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: resultLabel.top
-    margin-top: 4
-    margin-bottom: 3
+    anchors.bottom: barPanel.top
+    margin-top: 2
+    margin-bottom: 6
     phantom: true
 
     // step 1: the gear and Rift Keys of the backpack
@@ -510,7 +647,7 @@ ChaosMainWindow
         anchors.left: parent.left
         anchors.right: gearScroll.left
         anchors.bottom: parent.bottom
-        margin: 6 2 6 8
+        margin-right: 2
         vertical-scrollbar: gearScroll
         auto-focus: none
         layout:
@@ -524,7 +661,6 @@ ChaosMainWindow
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        margin: 4 4 4 0
         step: 41
         pixels-scroll: true
 
@@ -538,20 +674,20 @@ ChaosMainWindow
         !text: tr('No gear or Rift Key in your backpack.')
 
     // step 2 and 3: the item's modifiers (or its sockets) on the left
-    ChaosPanelDark
+    ChaosPanel
       id: leftPanel
       anchors.top: parent.top
       anchors.left: parent.left
       anchors.bottom: parent.bottom
-      width: 430
+      width: 424
 
       UIScrollArea
         id: modList
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: modScroll.left
-        anchors.bottom: parent.bottom
-        margin: 4 2 4 6
+        anchors.bottom: hintLabel.top
+        margin-right: 2
         vertical-scrollbar: modScroll
         auto-focus: none
         layout:
@@ -561,89 +697,156 @@ ChaosMainWindow
         id: modScroll
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        margin: 4 4 4 0
-        step: 23
+        anchors.bottom: hintLabel.top
+        step: 27
         pixels-scroll: true
 
-    // the actions of the tab, big buttons two to a line, and the box that says what will happen
-    UILabel
-      id: actionsLabel
+      ChaosLabelDim
+        id: hintLabel
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: 14
+        margin-left: 2
+        text-align: left
+
+    // the actions of the tab as cards, and the box that says what will happen
+    UIScrollArea
+      id: actionList
       anchors.top: parent.top
       anchors.left: leftPanel.right
       anchors.right: parent.right
-      margin: 0 0 0 10
-      height: 16
-      text-align: left
-      font: verdana-11px-rounded
-      color: #8c8070
-      phantom: true
-
-    UIScrollArea
-      id: actionList
-      anchors.top: actionsLabel.bottom
-      anchors.left: actionsLabel.left
-      anchors.right: actionScroll.left
-      margin-top: 2
-      height: 108
+      margin-left: 8
+      height: 104
       vertical-scrollbar: actionScroll
       auto-focus: none
-      layout:
-        type: grid
-        cell-size: 210 36
-        cell-spacing: 0
-        flow: true
 
     ChaosScrollBar
       id: actionScroll
       anchors.top: actionList.top
       anchors.right: parent.right
-      height: 108
+      height: 104
       step: 36
       pixels-scroll: true
+      visible: false
 
-    ChaosPanelDark
+    ChaosPanel
       id: whatBox
       anchors.top: actionList.bottom
-      anchors.left: actionsLabel.left
+      anchors.left: actionList.left
       anchors.right: parent.right
       anchors.bottom: parent.bottom
-      margin-top: 6
+      margin-top: 2
 
-      UILabel
-        id: whatTitle
+      ForgeGroupPlate
+        id: whatPlate
         anchors.top: parent.top
         anchors.left: parent.left
-        margin: 6 0 0 8
-        height: 16
-        text-auto-resize: true
-        font: verdana-11px-rounded
-        color: #f2e6cc
-        phantom: true
+        anchors.right: parent.right
 
       UILabel
         id: whatTag
-        anchors.top: parent.top
-        anchors.right: parent.right
-        margin: 6 8 0 0
-        height: 16
+        anchors.top: whatPlate.top
+        anchors.right: whatPlate.right
+        margin: 4 16 0 0
         text-auto-resize: true
-        font: verdana-11px-rounded
+        font: verdana-9px-rounded
         color: #8c8070
         phantom: true
 
-      ForgeWrapLabel
-        id: whatText
-        anchors.top: whatTitle.bottom
+      ForgeTierPill
+        id: cmpLeftPill
+        anchors.top: whatPlate.bottom
         anchors.left: parent.left
+        margin: 8 0 0 4
+
+      ForgeLabel
+        id: cmpLeft
+        anchors.verticalCenter: cmpLeftPill.verticalCenter
+        anchors.left: cmpLeftPill.right
+        margin-left: 6
+
+      ForgeLabel
+        id: cmpArrow
+        anchors.verticalCenter: cmpLeftPill.verticalCenter
+        anchors.left: cmpLeft.right
+        margin-left: 8
+        color: #e8b84a
+
+      ForgeTierPill
+        id: cmpRightPill
+        anchors.verticalCenter: cmpLeftPill.verticalCenter
+        anchors.left: cmpArrow.right
+        margin-left: 8
+
+      ForgeLabel
+        id: cmpRight
+        anchors.verticalCenter: cmpLeftPill.verticalCenter
+        anchors.left: cmpRightPill.right
+        margin-left: 6
+
+      ForgeLabel
+        id: cmpBound
+        anchors.verticalCenter: cmpLeftPill.verticalCenter
+        anchors.left: cmpRight.right
+        margin-left: 6
+        color: #e8b84a
+
+      ForgeLabel
+        id: cmpTail
+        anchors.verticalCenter: cmpLeftPill.verticalCenter
         anchors.right: parent.right
-        margin: 6 8 0 8
-        color: #f2e6cc
+        margin-right: 4
+        color: #5ccf5c
 
       ForgeWrapLabel
-        id: whatCost
+        id: whatText
+        anchors.top: cmpLeftPill.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin: 8 4 0 4
+        color: #d6c9ae
+
+      ChaosSeparator
+        id: costSep
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: costRow.top
+        margin-bottom: 4
+
+      UIWidget
+        id: costRow
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        margin: 0 8 6 8
-        color: #8c8070
+        height: 24
+        phantom: true
+
+        UIItem
+          id: costIcon
+          size: 24 24
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 4
+          virtual: true
+          phantom: true
+
+        UILabel
+          id: costName
+          anchors.left: costIcon.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 6
+          text-auto-resize: true
+          font: verdana-11px-rounded
+          color: #d6c9ae
+          phantom: true
+
+        UILabel
+          id: costHave
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-right: 4
+          text-auto-resize: true
+          font: verdana-11px-antialised
+          color: #8c8070
+          phantom: true

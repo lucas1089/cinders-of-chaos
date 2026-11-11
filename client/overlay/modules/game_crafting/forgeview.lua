@@ -27,12 +27,24 @@ V.TIER_COLORS = { '#8c8070', '#a89c88', '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf
 V.RARITY_COLORS = { '#c4cebc', '#5fd35f', '#4a8cff', '#b070ff', '#f6cf72', '#f6cf72', '#f6cf72', '#f6cf72', '#f6cf72',
   '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff' }
 V.KEY_COLOR = '#c0a0ff'
-V.TAG_COLORS = { safe = '#7fe0a0', random = '#e8b84a', risky = '#e05a40' }
-V.DIM = '#6b6258'
+-- Colours: only the theme palette (client_chaos_theme/styles.otui: text #d6c9ae, dim #8c8070, disabled #6b6258, ember gold
+-- #e8b84a / #f6cf72, blood #e03a1e, near-black #0d0b0e) and what the item tooltip already uses for the same meaning (its
+-- rarity colours, L.TIER_COLORS, and its green for a good value, L.COLORS.better #5ccf5c).
+V.C = { text = '#d6c9ae', dim = '#8c8070', off = '#6b6258', gold = '#e8b84a', bright = '#f6cf72', blood = '#e03a1e',
+  black = '#0d0b0e', good = '#5ccf5c' }
+V.TAG_COLORS = { safe = V.C.good, random = V.C.gold, risky = V.C.blood }
+V.DIM = V.C.off
 
 local function num(v) return tonumber(v) or 0 end
 local function tbl(v) return type(v) == 'table' and v or {} end
 local function str(v) return type(v) == 'string' and v or '' end
+
+-- Stackables whose sprite at count 1 is a dot: they are drawn with the count pattern of a full stack (UIItem setItemCount).
+-- Client id 678 (the Void Orb, a 4 x 2 pattern) draws as a 2 pixel dot at count 1.
+V.ICON_COUNT = { [678] = 100 }
+function V.iconCount(clientId)
+  return V.ICON_COUNT[num(clientId)] or 1
+end
 
 function V.tierColor(t)
   local tip = rawget(_G, 'ItemTooltipLogic')
@@ -70,12 +82,12 @@ function V.verb(key, name)
 end
 
 function V.tabLabel(id)
-  if id == 'mod' then return tr('SHAPE A MODIFIER')
-  elseif id == 'add' then return tr('ADD A MODIFIER')
-  elseif id == 'whole' then return tr('WHOLE ITEM')
-  elseif id == 'sockets' then return tr('SOCKETS AND GEMS')
-  elseif id == 'salvage' then return tr('SALVAGE')
-  elseif id == 'guide' then return tr('GUIDE')
+  if id == 'mod' then return tr('Shape')
+  elseif id == 'add' then return tr('Add')
+  elseif id == 'whole' then return tr('Whole item')
+  elseif id == 'sockets' then return tr('Sockets')
+  elseif id == 'salvage' then return tr('Salvage')
+  elseif id == 'guide' then return tr('Guide')
   end
   return id
 end
@@ -98,11 +110,11 @@ function V.tagLabel(tag)
 end
 
 function V.groupLabel(side)
-  if side == 'prefix' then return tr('PREFIXES')
-  elseif side == 'suffix' then return tr('SUFFIXES')
-  elseif side == 'implicit' then return tr('CORRUPTED IMPLICIT')
+  if side == 'prefix' then return tr('Prefixes')
+  elseif side == 'suffix' then return tr('Suffixes')
+  elseif side == 'implicit' then return tr('Corrupted implicit')
   end
-  return tr('KEY MODIFIERS')
+  return tr('Key modifiers')
 end
 
 -- ---------------------------------------------------------------- the actions
@@ -212,7 +224,7 @@ function V.tabs(actions, item)
 end
 
 function V.tabText(t)
-  if t.counted then return string.format('%s  %d/%d', t.label, t.can or 0, t.exist or 0) end
+  if t.counted then return string.format('%s (%d/%d)', t.label, t.can or 0, t.exist or 0) end
   return t.label
 end
 
@@ -230,8 +242,15 @@ function V.modGroups(item)
       local row = { key = m.key, tier = tier, tierText = tier and ('T' .. tier) or '', color = tier and V.tierColor(tier) or V.KEY_COLOR,
         text = str(m.short) ~= '' and m.short or str(m.text), bound = m.bound == true, power = m.power == true,
         implicit = m.implicit == true, group = m.group, side = side }
-      if tier and m.lo and m.hi then
-        row.range = m.lo == m.hi and string.format('[%d]', num(m.lo)) or string.format('[%d-%d]', num(m.lo), num(m.hi))
+      if tier and tonumber(m.lo) and tonumber(m.hi) then
+        local lo, hi = num(m.lo), num(m.hi)
+        row.lo, row.hi = lo, hi
+        row.rangeText = lo == hi and string.format('%d', lo) or tr('%d to %d', lo, hi)
+        -- where the value sits in its range: only from the number the server sent (never guessed from the text)
+        if tonumber(m.v) then
+          row.value = num(m.v)
+          row.frac = hi > lo and math.max(0, math.min(1, (row.value - lo) / (hi - lo))) or 1
+        end
       end
       row.mark = row.bound and tr('BOUND') or ''
       local g = groups[side]
@@ -411,6 +430,207 @@ function V.resultLine(res)
   return text
 end
 
+-- ---------------------------------------------------------------- the polished layout (O481 part E): what each block shows
+-- The stepper row: four steps, each {n, text, state = 'done' | 'now' | 'next', color, lineLit (the line after it is lit)}
+function V.stepper(ctx)
+  local cur, done = V.step(ctx)
+  local out = {}
+  for i = 1, 4 do
+    local state = done[i] and 'done' or (i == cur and 'now' or 'next')
+    out[i] = { n = i, text = V.stepLabel(i), state = state, lineLit = done[i] == true,
+      color = state == 'done' and V.C.bright or (state == 'now' and V.C.gold or V.C.off) }
+  end
+  return out
+end
+
+-- the chips of the materials strip: the pitch is floor(width / n), at least 36 px; below that a second row.
+-- Returns pitch, per row, rows.
+function V.chipLayout(n, width)
+  n, width = math.max(0, num(n)), num(width) > 0 and num(width) or 864
+  if n == 0 then return 48, 18, 1 end
+  local pitch = math.max(36, math.min(48, math.floor(width / n)))
+  local per = math.max(1, math.floor(width / pitch))
+  return pitch, per, math.ceil(n / per)
+end
+
+-- the chips: the materials with `use` = the orb of the chosen action (a highlighted chip)
+function V.chips(ctx)
+  local out = V.materials(ctx)
+  local sel = ctx.sel or {}
+  for _, m in ipairs(out) do
+    m.use = sel.orb ~= nil and m.key == sel.orb
+    m.countText = tostring(m.count)
+  end
+  return out
+end
+
+-- the free-slot words: "no free slot" / "1 free" / "%d free"
+function V.freeWords(p, s)
+  local free = num(p) + num(s)
+  if free <= 0 then return tr('no free slot') end
+  if free == 1 then return tr('1 free') end
+  return tr('%d free', free)
+end
+
+-- the item panel: {name, color, borderColor, rarityText, rarityColor, level, quality = {q, cap, frac}, sockets = {filled, count, max},
+-- prefix = {used, max}, suffix = {used, max}, free, lock, line (a Rift Key or a unique: its own line), pips (modifiers of a key)}
+function V.itemPanel(item)
+  local h = V.header(item)
+  local out = { name = h.name, color = h.color, borderColor = item and h.color or V.C.off, lock = h.lock, line = nil }
+  if type(item) ~= 'table' then
+    out.line = h.line
+    return out
+  end
+  if item.kind == 'riftkey' or item.unique then
+    out.line = h.line
+    if item.kind == 'riftkey' and num(item.maxMods) > 0 then
+      out.keyMods = { used = #tbl(item.mods), max = num(item.maxMods) }
+    end
+    return out
+  end
+  out.rarityText, out.rarityColor = tr(str(item.rarityName) ~= '' and item.rarityName or 'Normal'), V.rarityColor(item.rarity)
+  out.level = num(item.level) > 0 and num(item.level) or nil
+  if num(item.rarity) > 0 then
+    local cap = num(item.qualityCap)
+    out.quality = { q = num(item.quality), cap = cap, frac = cap > 0 and math.min(1, num(item.quality) / cap) or 0 }
+  end
+  local sk = tbl(item.sockets)
+  if num(sk.max) > 0 then
+    local filled = 0
+    for _, row in ipairs(tbl(sk.list)) do
+      if type(row) == 'table' and num(row.id) > 0 then filled = filled + 1 end
+    end
+    out.sockets = { filled = filled, count = num(sk.count), max = num(sk.max) }
+  end
+  local p, s = tbl(item.prefixes), tbl(item.suffixes)
+  if p[2] and s[2] then
+    out.prefix = { used = num(p[1]), max = num(p[2]) }
+    out.suffix = { used = num(s[1]), max = num(s[2]) }
+    local fp, fs = V.freeSlots(item)
+    out.free = V.freeWords(fp, fs)
+  end
+  if item.ruined then out.flag = tr('RUINED') elseif item.corrupted then out.flag = tr('CORRUPTED') end
+  return out
+end
+
+-- cut a text to `n` characters at a word, with "..." (a short reason on a card; the tooltip has the whole sentence)
+function V.cut(text, n)
+  text = str(text)
+  if #text <= n then return text end
+  local head = text:sub(1, n - 3)
+  local word = head:match('^(.*%S)%s')
+  head = word or head
+  return (head:gsub('[%s,;:%.]+$', '')) .. '...'
+end
+
+-- an action card: {key, verb, sub, subIsReason, stripe (safety colour), dim, count, chosen, tip}
+function V.card(a, sel)
+  sel = sel or {}
+  local card = { key = a.key, verb = a.verb, stripe = V.tagColor(a.tag), dim = not a.can, count = tostring(a.total),
+    chosen = sel.orb == a.key, subIsReason = not a.can }
+  card.sub = a.can and a.name or V.cut(a.why, 24)
+  card.tip = a.name .. '\n' .. a.text .. (a.can and '' or ('\n' .. a.why))
+  return card
+end
+
+function V.cards(actions, kind, sel)
+  local out = {}
+  for _, a in ipairs(V.ofKind(actions, kind)) do out[#out + 1] = V.card(a, sel) end
+  return out
+end
+
+-- do the cards of this many actions fit in `height` px (two to a line, 32 px high, 4 px between)? false: show a scrollbar
+function V.cardsFit(n, height)
+  local lines = math.ceil(math.max(0, num(n)) / 2)
+  return lines * 32 + math.max(0, lines - 1) * 4 <= num(height)
+end
+
+-- the first sentence of a text (the guarantee in one short line)
+function V.firstSentence(text)
+  text = str(text)
+  local cut = text:find('%.%s')
+  return cut and text:sub(1, cut) or text
+end
+
+-- the server's sentence with its lead word: {lead (the word in colour), leadColor, text, warn}
+function V.sentence(ex)
+  if type(ex) ~= 'table' then return { lead = '', leadColor = V.C.text, text = '' } end
+  if ex.ok == false then
+    return { lead = '', leadColor = V.C.blood, text = str(ex.reasonText) ~= '' and ex.reasonText or str(ex.reason) }
+  end
+  local text, lead, color = str(ex.text), '', V.C.text
+  if ex.lead == 'fixed' then lead, color = tr('Guaranteed:'), V.C.good
+  elseif ex.lead == 'random' then lead, color = tr('Random:'), V.C.gold
+  else
+    -- the server's own sentence starts with its lead word
+    local w = text:match('^(Guaranteed:)')
+    if w then lead, color, text = tr('Guaranteed:'), V.C.good, text:sub(#w + 2) end
+  end
+  return { lead = lead, leadColor = color, text = text, warn = ex.warn and tr('This can cost you modifiers.') or nil }
+end
+
+-- the before -> after row, only when the server sent the outcome (explain.change); nil: the box shows the text alone
+-- {kind, left = {pill, pillColor, text}, right = {pill, pillColor, text, color, bound}, tail, tailColor}
+function V.compare(ex)
+  local c = type(ex) == 'table' and ex.ok ~= false and type(ex.change) == 'table' and ex.change or nil
+  if not c then return nil end
+  if c.kind == 'tier' and type(c.from) == 'table' and type(c.to) == 'table' then
+    local function side(t)
+      return { pill = 'T' .. num(t.tier), pillColor = V.tierColor(t.tier), text = num(t.lo) == num(t.hi) and string.format('%d', num(t.lo))
+        or tr('%d to %d', num(t.lo), num(t.hi)) }
+    end
+    local d = num(c.to.tier) - num(c.from.tier)
+    local right = side(c.to)
+    right.color = V.C.text
+    return { kind = 'tier', left = side(c.from), right = right, tail = d == 1 and tr('up 1 tier') or tr('up %d tiers', d),
+      tailColor = V.C.good }
+  elseif c.kind == 'bind' then
+    return { kind = 'bind', left = { text = str(c.text) }, right = { text = str(c.text), bound = tr('BOUND'), color = V.C.gold }, tail = '' }
+  elseif c.kind == 'remove' then
+    return { kind = 'remove', left = { text = str(c.text) }, right = { text = tr('removed'), color = V.C.blood }, tail = '' }
+  elseif c.kind == 'quality' then
+    return { kind = 'quality', left = { text = tr('Quality %d%%', num(c.from)) }, right = { text = string.format('%d%%', num(c.to)), color = V.C.good },
+      tail = '' }
+  end
+  return nil
+end
+
+-- the cost row of the what-happens box: {name = "Cost: 1 Ember Orb", have = "you have 7 · 3 backpack · 4 stash"}
+function V.costRow(a)
+  if not a then return { name = '', have = '' } end
+  return { name = tr('Cost: 1 %s', a.name), have = tr('you have %d · %d backpack · %d stash', a.total, a.bag, a.stash) }
+end
+
+-- the FORGE button: {title, sub, risky, enabled}
+function V.go(ctx)
+  local bar = V.bar(ctx)
+  local a = ctx.sel and ctx.sel.orb and V.find(V.actions({ info = ctx.info, forge = ctx.forge, state = ctx.state, mod = ctx.sel.mod }), ctx.sel.orb)
+  local out = { title = tr('FORGE'), enabled = bar.can, risky = bar.can and bar.tag == 'risky' }
+  if not bar.can then out.sub = bar.why
+  elseif out.risky then out.sub = tr('risky: asks to confirm')
+  else out.sub = tr('spends 1 %s', a and a.name or '') end
+  return out
+end
+
+-- the bottom bar's three lines: {verb, target, guarantee, result = {mark = 'ok' | 'fail' | nil, text}}
+function V.barLines(ctx, res)
+  local bar = V.bar(ctx)
+  local sel = ctx.sel or {}
+  local a = sel.orb and V.find(V.actions({ info = ctx.info, forge = ctx.forge, state = ctx.state, mod = sel.mod }), sel.orb)
+  local out = { verb = a and a.verb or tr('Choose an action'), target = '', guarantee = '', result = { text = '' } }
+  local m = sel.mod and V.modByKey(ctx.state and ctx.state.item, sel.mod)
+  if a and m then out.verb, out.target = tr('%s on', a.verb), str(m.short) ~= '' and m.short or str(m.text) end
+  if V.answered(ctx) then
+    local s = V.sentence(ctx.explain)
+    out.guarantee = V.firstSentence((s.lead ~= '' and (s.lead .. ' ') or '') .. s.text)
+  end
+  if res and str(res.text) ~= '' then
+    out.result = { mark = res.ok == false and 'fail' or 'ok', text = V.resultLine(res):gsub('^%s+', '') }
+    out.result.text = tr('Last: %s', out.result.text)
+  end
+  return out
+end
+
 -- ---------------------------------------------------------------- the classic choice, per character (g_settings node)
 function V.savedMode(node, name)
   local chars = type(node) == 'table' and type(node.chars) == 'table' and node.chars or {}
@@ -455,7 +675,7 @@ function V.lines(ctx)
     put(g.label .. ':')
     for _, r in ipairs(g.rows) do
       local sel = ctx.sel and ctx.sel.mod == r.key and '>' or ' '
-      put(string.format(' %s %s %s %s%s', sel, r.tierText ~= '' and r.tierText or '--', r.text, r.range or '', r.bound and ' [' .. r.mark .. ']' or ''))
+      put(string.format(' %s %s %s %s%s', sel, r.tierText ~= '' and r.tierText or '--', r.text, r.rangeText or '', r.bound and ' [' .. r.mark .. ']' or ''))
     end
   end
   if item and item.veil == 1 then put(' (veiled modifier, not revealed)') end

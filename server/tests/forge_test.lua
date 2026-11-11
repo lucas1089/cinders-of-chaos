@@ -149,7 +149,7 @@ for _, orb in ipairs(C.config.orbs) do
 	eq(orb.kind, KINDS[orb.key], "the kind of " .. orb.key)
 end
 ok(seen >= 18, "every orb of the game was checked (" .. seen .. ")")
-ok(seen <= 18, "the forge window shows two rows of nine materials (client forge.otui matsPanel): make the strip taller before adding an orb")
+ok(seen <= 48, "the forge window fits the orbs in one row (pitch floor(864 / n), at least 36) or two (client forgeview.lua V.chipLayout, forge.lua): check the panel before adding the 49th orb")
 for key in pairs(TAGS) do
 	ok(C.orbByKey[key], "the table names no orb the game lacks: " .. key)
 end
@@ -165,20 +165,30 @@ local e = C.explain("ember", sword, "rarity_swordSkill")
 eq(e.ok, true, "ember can raise the melee modifier") eq(e.tag, "safe", "safe tag") eq(e.kind, "mod", "kind")
 has(e.text, "Guaranteed: tier " .. melee.tier .. " to tier " .. (melee.tier + 1), "the fixed outcome in words")
 has(e.text, "The value rolls", "and the value range")
+-- the before -> after numbers (the same ones as the sentence; never parsed from it)
+eq(e.change.kind, "tier", "ember: a tier change") eq(e.change.from.tier, melee.tier, "from tier") eq(e.change.to.tier, melee.tier + 1, "to tier")
+eq(e.change.from.lo, melee.lo, "the old range") eq(e.change.from.hi, melee.hi, "the old range, high")
+has(e.text, "The value rolls " .. e.change.to.lo .. " to " .. e.change.to.hi, "the sentence gives the NEW tier's range, the same numbers as change")
+ok(e.change.to.lo > e.change.from.hi or e.change.to.lo >= e.change.from.lo, "the new range is above the old one")
+has(e.change.text, "Melee", "the modifier text")
 e = C.explain("ember", sword, nil)
 eq(e.ok, false, "no modifier chosen") eq(e.reason, "needMod", "says to choose one")
 e = C.explain("ember", sword, "rarity_noSuchThing")
 eq(e.ok, false, "a modifier the item lacks") eq(e.reason, "badMod", "badMod")
 e = C.explain("binding", sword, "rarity_swordSkill")
-eq(e.ok, true, "binding") has(e.text, "this modifier is bound", "binding words")
+eq(e.ok, true, "binding")
+eq(e.change.kind, "bind", "binding change") has(e.change.text, "Melee", "binding names the modifier") has(e.text, "this modifier is bound", "binding words")
 e = C.explain("excision", sword, "rarity_swordSkill")
+eq(e.change.kind, "remove", "excision change") has(e.change.text, "Melee", "excision names the modifier")
 eq(e.tag, "risky", "excision is risky") has(e.text, "removed", "excision words")
 e = C.explain("reforging", sword, "rarity_swordSkill")
+eq(e.change, nil, "a roll has no sure outcome: no change")
 eq(e.tag, "random", "reforging is a roll") has(e.text, "One of", "random outcome words")
 e = C.explain("void", sword)
+eq(e.change, nil, "void: no change")
 eq(e.tag, "risky", "void") eq(e.lead, "random", "a random lead") eq(e.warn, true, "risky: the window warns it can cost modifiers")
 e = C.explain("whetstone", sword)
-if e.ok then eq(e.lead, "fixed", "a fixed outcome") else ok(e.reason ~= nil, "a refusal has a reason") end
+if e.ok then eq(e.change.kind, "quality", "whetstone change") eq(e.change.to, e.change.from + 1, "one percent more") eq(e.lead, "fixed", "a fixed outcome") else ok(e.reason ~= nil, "a refusal has a reason") end
 e = C.explain("nope", sword)
 eq(e.ok, false, "unknown orb") eq(e.reason, "unknownOrb", "code")
 local plain = put(newItem(2400))
@@ -357,6 +367,7 @@ select()
 st = last("state")
 ok(st.item ~= nil, "the item is on the bench")
 eq(st.item.free, nil, "no free slots for an old client")
+for _, m in ipairs(st.item.mods) do eq(m.v, nil, "no value field for an old client") end
 req("explain", {orb = "ember", path = slotOf(gear), id = gear:getId(), mod = "rarity_swordSkill"})
 -- (explain is answered to anybody who asks: a harmless read; the old client never asks)
 
@@ -377,6 +388,9 @@ ok(fi.orbs.void.safety == "risky", "void is risky in forgeinfo")
 select()
 st = last("state")
 ok(st.item.free ~= nil and st.item.free.prefix ~= nil and st.item.free.suffix ~= nil, "free slots from the item mods rules")
+for _, m in ipairs(st.item.mods) do
+	ok(type(m.v) == "number", "the forge state carries the value of " .. tostring(m.key) .. " (the roll bar)")
+end
 
 -- explain: the server's words, the cost with both counts, the signature
 req("explain", {orb = "ember", path = slotOf(gear), id = gear:getId(), sig = C.signature(gear), mod = "rarity_swordSkill"})

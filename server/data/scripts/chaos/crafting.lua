@@ -290,6 +290,15 @@ local function sendState(player, open)
 			view.clientId = clientIdOf(item:getId())
 			if forge and view.kind ~= "riftkey" then
 				view.free = C.freeSlots(item) -- from the item mods rules
+				-- the value of each modifier (the window's roll bar: where it sits between lo and hi); the bench state
+				-- carried lo and hi only
+				local values = {}
+				for _, m in ipairs(C.readMods(item)) do
+					values[m.key] = m.value
+				end
+				for _, m in ipairs(view.mods or {}) do
+					m.v = values[m.key]
+				end
 				if ChaosVeiled and ChaosVeiled.stateOf then
 					local okV, st = pcall(ChaosVeiled.stateOf, item)
 					view.veil = okV and (st == 1 or st == 2) and st or nil -- 1 veiled, 2 revealed
@@ -545,7 +554,7 @@ local function explain(player, data)
 	local stash = orb and stashCount(player, orb) or 0
 	Chaos.send(player, OPCODE, "explain", {orb = orbKey, mod = modKey, sig = C.signature(item), ok = e.ok, kind = e.kind,
 		tag = e.tag, reason = reason, reasonText = reason and Chaos.tx(player, C.reasons[reason] or reason) or nil,
-		text = e.text and Chaos.tx(player, e.text) or nil, lead = e.lead, warn = e.warn,
+		text = e.text and Chaos.tx(player, e.text) or nil, lead = e.lead, warn = e.warn, change = e.change,
 		cost = orb and {orb = orbKey, n = 1, bag = bag, stash = stash, from = bag > 0 and "bag" or (stash > 0 and "stash" or nil)} or nil})
 end
 

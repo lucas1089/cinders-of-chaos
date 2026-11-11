@@ -51,12 +51,12 @@ local function helmet()
   return { path = '0', id = 2475, sig = 'S1', name = 'Iron Visage', rarity = 4, rarityName = 'Rare', level = 82, quality = 12,
     sockets = { count = 1, max = 2 }, maxMods = 6, prefixes = { 3, 3 }, suffixes = { 3, 3 }, free = { prefix = 0, suffix = 0 },
     mods = {
-      { key = 'a1', group = 'chaos', text = '+37 Armour', tier = 6, side = 'prefix', lo = 30, hi = 40 },
-      { key = 'a2', group = 'chaos', text = '+58 maximum Life', tier = 3, side = 'prefix', lo = 50, hi = 60 },
-      { key = 'a3', group = 'chaos', text = '+12% Physical damage', tier = 2, side = 'prefix', lo = 10, hi = 14, bound = true },
+      { key = 'a1', group = 'chaos', text = '+37 Armour', tier = 6, side = 'prefix', lo = 30, hi = 40, v = 37 },
+      { key = 'a2', group = 'chaos', text = '+58 maximum Life', tier = 3, side = 'prefix', lo = 50, hi = 60, v = 58 },
+      { key = 'a3', group = 'chaos', text = '+12% Physical damage', tier = 2, side = 'prefix', lo = 10, hi = 14, bound = true, v = 12 },
       { key = 'b1', group = 'absorb', text = 'Fire +32%', tier = 5, side = 'suffix', lo = 30, hi = 34 },
-      { key = 'b2', group = 'absorb', text = 'Earth +24%', tier = 3, side = 'suffix', lo = 22, hi = 26 },
-      { key = 'b3', group = 'skill', text = 'Shielding +2', tier = 1, side = 'suffix', lo = 2, hi = 2 } },
+      { key = 'b2', group = 'absorb', text = 'Earth +24%', tier = 3, side = 'suffix', lo = 22, hi = 26, v = 24 },
+      { key = 'b3', group = 'skill', text = 'Shielding +2', tier = 1, side = 'suffix', lo = 2, hi = 2, v = 2 } },
     orbs = { ember = '', reforging = '', excision = '', binding = '', exalted = 'full', unveiling = 'notVeiled', tempering = '',
       chaos = '', void = '', sockets = '' },
     pick = { ember = { 'a1', 'a2', 'b1', 'b2', 'b3' }, reforging = { 'a1', 'a2', 'b1', 'b2', 'b3' },
@@ -85,7 +85,8 @@ eq(groups[1].side, 'prefix', 'prefixes first') eq(groups[2].side, 'suffix', 'the
 eq(#groups[1].rows, 3, 'three prefixes') eq(#groups[2].rows, 3, 'three suffixes')
 eq(groups[1].rows[1].tierText, 'T6', 'tier text') eq(groups[1].rows[1].color, V.tierColor(6), 'tier colour')
 eq(groups[1].rows[3].bound, true, 'bound') eq(groups[1].rows[3].mark, 'BOUND', 'bound mark')
-eq(groups[1].rows[2].range, '[50-60]', 'range') eq(groups[2].rows[3].range, '[2]', 'a one-value range')
+eq(groups[1].rows[2].rangeText, '50 to 60', 'range') eq(groups[2].rows[3].rangeText, '2', 'a one-value range')
+eq(groups[1].rows[2].frac, 0.8, 'the roll sits at 80% of its range (58 in 50 to 60)') eq(groups[2].rows[3].frac, 1, 'a one-value range is full')
 eq(V.keepSelection(state.item, 'a2'), 'a2', 'a modifier still there stays chosen')
 eq(V.keepSelection(state.item, 'zz'), nil, 'a modifier that went is no longer chosen')
 eq(V.keepSelection(state.item, nil), nil, 'no choice stays none')
@@ -153,8 +154,8 @@ eq(tabs[1].id, 'mod', 'shape first') eq(tabs[1].exist, 4, 'four actions on one m
 eq(tabs[2].id, 'add', 'add') eq(tabs[2].exist, 2, 'two actions that add') eq(tabs[2].can, 0, 'none now: no slot, no veil')
 eq(tabs[3].id, 'whole', 'whole item') eq(tabs[3].exist, 3, 'three') eq(tabs[3].can, 2, 'void: none owned')
 eq(tabs[4].id, 'sockets', 'sockets') eq(tabs[4].exist, 1, 'one') eq(tabs[4].can, 1, 'one')
-eq(V.tabText(tabs[1]), 'SHAPE A MODIFIER  4/4', 'tab text with the count')
-eq(V.tabText(tabs[5]), 'SALVAGE', 'salvage: no count') eq(tabs[6].id, 'guide', 'guide last')
+eq(V.tabText(tabs[1]), 'Shape (4/4)', 'tab text with the count')
+eq(V.tabText(tabs[5]), 'Salvage', 'salvage: no count') eq(tabs[6].id, 'guide', 'guide last')
 -- a Rift Key has no sockets tab
 local key = { path = '1', id = 10155, sig = 'K', kind = 'riftkey', name = 'Rift Key', rarityName = 'Rift Key', tier = 3, level = 120,
   maxMods = 3, mods = { { group = 'rift', key = '4', text = 'Brutality +15' }, { group = 'rift', key = '9', text = 'Swarm +2' } },
@@ -197,7 +198,8 @@ cur, done = V.step(ctx({}))
 eq(cur, 2, 'an item: step 2') eq(done[1], true, 'step 1 done') eq(done[2], false, 'step 2 not')
 cur, done = V.step(ctx({ orb = 'ember', mod = 'a2' }))
 eq(cur, 3, 'an action chosen, not explained: step 3') eq(done[2], true, 'step 2 done')
-local ex = { orb = 'ember', mod = 'a2', sig = 'S1', ok = true, kind = 'mod', tag = 'safe', text = 'Guaranteed: tier 3 to tier 4. The value rolls 50 to 60.',
+local ex = { orb = 'ember', mod = 'a2', sig = 'S1', ok = true, kind = 'mod', tag = 'safe', text = 'Guaranteed: tier 3 to tier 4. The value rolls 61 to 72.',
+  change = { kind = 'tier', text = '+58 maximum Life', from = { tier = 3, lo = 50, hi = 60 }, to = { tier = 4, lo = 61, hi = 72 } },
   cost = { orb = 'ember', n = 1, bag = 3, stash = 4, from = 'bag' } }
 cur, done = V.step(ctx({ orb = 'ember', mod = 'a2' }, ex))
 eq(cur, 4, 'explained: step 4') eq(done[3], true, 'step 3 done') eq(done[4], false, 'forge not done')
@@ -246,6 +248,101 @@ eq(V.costLine(V.find(V.actions(ctx({ mod = 'a2' })), 'ember')), 'Cost: 1 Ember O
 eq(V.resultLine({ ok = true, text = 'Done.', from = 'stash' }), 'Done. (the orb came from the stash)', 'result from the stash')
 eq(V.resultLine({ ok = true, text = 'Done.', from = 'bag' }), 'Done.', 'result from the bag')
 eq(V.explainText(refused), 'Every modifier of this item is bound.', 'a refusal in the server words')
+
+
+-- ---------------------------------------------------------------- the polished layout
+-- the stepper: done / now / next, the colour of each from the theme palette
+local st = V.stepper(ctx({ orb = 'ember', mod = 'a2' }, ex))
+eq(#st, 4, 'four steps') eq(st[1].state, 'done', 'step 1 done') eq(st[3].state, 'done', 'step 3 done') eq(st[4].state, 'now', 'step 4 now')
+eq(st[1].color, V.C.bright, 'done: ember gold bright') eq(st[4].color, V.C.gold, 'now: ember gold') eq(st[1].lineLit, true, 'a line after a done step is lit')
+st = V.stepper(ctx({}, nil, none))
+eq(st[1].state, 'now', 'no item: step 1 now') eq(st[2].color, V.C.off, 'later: disabled grey')
+-- the chips: pitch floor(864 / n), at least 36, then a second row
+local pitch, per, nrows = V.chipLayout(18, 864)
+eq(pitch, 48, '18 orbs: a 48 px pitch') eq(per, 18, 'one row of 18') eq(nrows, 1, 'one row')
+pitch, per, nrows = V.chipLayout(20, 864)
+eq(pitch, 43, '20 orbs: floor(864 / 20)') eq(nrows, 1, 'still one row')
+pitch, per, nrows = V.chipLayout(24, 864)
+eq(pitch, 36, '24 orbs: the 36 px floor') eq(nrows, 1, 'one row of 24')
+pitch, per, nrows = V.chipLayout(30, 864)
+eq(pitch, 36, '30 orbs: still 36') eq(per, 24, '24 to a row') eq(nrows, 2, 'a second row')
+eq(select(3, V.chipLayout(2, 864)), 1, 'few orbs: one row') eq(V.chipLayout(2, 864), 48, 'few orbs: never wider than 48')
+local chips = V.chips(ctx({ orb = 'ember', mod = 'a2' }, ex))
+eq(chips[1].use, true, 'the orb of the chosen action is marked') eq(chips[2].use, false, 'the others are not') eq(chips[1].countText, '7', 'count')
+-- the item panel
+local ip = V.itemPanel(state.item)
+eq(ip.rarityText, 'Rare', 'rarity text') eq(ip.rarityColor, V.rarityColor(4), 'rarity colour') eq(ip.level, 82, 'level')
+eq(ip.quality.q, 12, 'quality') eq(ip.quality.cap, 0, 'no cap sent: no fraction') eq(ip.quality.frac, 0, 'a bar of zero')
+local capped = helmet() capped.qualityCap = 20
+eq(V.itemPanel(capped).quality.frac, 0.6, 'quality 12 of 20')
+eq(ip.sockets.filled, 0, 'sockets: none filled in the sample') eq(ip.sockets.max, 2, 'sockets max')
+local gemmed = helmet() gemmed.sockets = { count = 2, max = 3, list = { { id = 5 }, { id = 0 }, 5 } }
+eq(V.itemPanel(gemmed).sockets.filled, 1, 'one gem in the list')
+eq(ip.prefix.used, 3, 'prefix pips used') eq(ip.prefix.max, 3, 'prefix pips total') eq(ip.suffix.used, 3, 'suffix pips used')
+eq(ip.free, 'no free slot', 'no free slot')
+local one = helmet() one.free = { prefix = 1, suffix = 0 }
+eq(V.itemPanel(one).free, '1 free', 'one free') one.free = { prefix = 1, suffix = 2 }
+eq(V.itemPanel(one).free, '3 free', 'several free')
+local kp = V.itemPanel(key)
+has(kp.line, 'Rift Key', 'a key has its own line') eq(kp.keyMods.used, 2, 'key pips used') eq(kp.keyMods.max, 3, 'key pips total')
+eq(V.itemPanel(nil).name, 'Empty bench', 'empty panel')
+-- the cards and the short reason
+eq(V.cut('short', 24), 'short', 'a short text stays')
+eq(V.cut('This orb works only on an item with a rarity.', 24), 'This orb works only...', 'cut at a word with ...')
+eq(#V.cut('Averyveryverylongwordwithoutanyspaces here', 20) <= 20, true, 'never longer than asked')
+local cards = V.cards(V.actions(ctx({ orb = 'ember', mod = 'a2' })), 'mod', { orb = 'ember', mod = 'a2' })
+eq(#cards, 4, 'four cards') eq(cards[1].chosen, true, 'the chosen card') eq(cards[1].stripe, V.C.good, 'safe: the good green')
+eq(cards[1].sub, 'Ember Orb', 'a card shows the orb name') eq(cards[1].dim, false, 'a usable card is bright')
+eq(cards[3].stripe, V.C.blood, 'risky: blood') eq(cards[2].stripe, V.C.gold, 'random: ember gold')
+local wholeCards = V.cards(V.actions(ctx({ mod = 'a2' })), 'whole', {})
+local voidCard
+for _, c in ipairs(wholeCards) do if c.key == 'void' then voidCard = c end end
+eq(voidCard.dim, true, 'a card that cannot be done is dim') eq(voidCard.subIsReason, true, 'it shows the reason') eq(voidCard.sub, 'You have no Void Orb.', 'the short reason')
+has(voidCard.tip, 'You have no Void Orb.', 'the tooltip has the whole sentence')
+eq(V.cardsFit(4, 104), true, 'two lines fit') eq(V.cardsFit(6, 104), true, 'three lines fit exactly') eq(V.cardsFit(7, 104), false, 'four lines need a scrollbar')
+-- the sentence, the compare row, the cost row
+eq(V.firstSentence('Guaranteed: tier 3 to tier 4. The value rolls 61 to 72.'), 'Guaranteed: tier 3 to tier 4.', 'the first sentence')
+local se = V.sentence(ex)
+eq(se.lead, 'Guaranteed:', 'the lead word') eq(se.leadColor, V.C.good, 'green') eq(se.text, 'tier 3 to tier 4. The value rolls 61 to 72.', 'the rest')
+local sr = V.sentence(ex3)
+eq(sr.lead, 'Random:', 'random lead') eq(sr.leadColor, V.C.gold, 'amber') eq(sr.warn, 'This can cost you modifiers.', 'the warning')
+local cmp = V.compare(ex)
+eq(cmp.kind, 'tier', 'a tier change') eq(cmp.left.pill, 'T3', 'before: T3') eq(cmp.left.text, '50 to 60', 'before: its range')
+eq(cmp.right.pill, 'T4', 'after: T4') eq(cmp.right.text, '61 to 72', "after: the NEW tier's range (not the old one)") eq(cmp.tail, 'up 1 tier', 'up one tier')
+has(ex.text, 'rolls ' .. ex.change.to.lo .. ' to ' .. ex.change.to.hi, 'the sentence and the change agree')
+eq(V.compare({ ok = true, change = { kind = 'tier', from = { tier = 3, lo = 1, hi = 1 }, to = { tier = 5, lo = 2, hi = 2 } } }).tail, 'up 2 tiers', 'two tiers')
+local bc = V.compare({ ok = true, change = { kind = 'bind', text = '+58 maximum Life' } })
+eq(bc.right.bound, 'BOUND', 'bind: the BOUND mark') eq(bc.left.text, '+58 maximum Life', 'bind: the modifier')
+local rc = V.compare({ ok = true, change = { kind = 'remove', text = '+58 maximum Life' } })
+eq(rc.right.text, 'removed', 'remove: removed') eq(rc.right.color, V.C.blood, 'in blood')
+local qc = V.compare({ ok = true, change = { kind = 'quality', from = 12, to = 13 } })
+eq(qc.left.text, 'Quality 12%', 'quality before') eq(qc.right.text, '13%', 'quality after')
+eq(V.compare({ ok = true, text = 'x' }), nil, 'no change table: no compare row (the text alone)')
+eq(V.compare({ ok = false, change = { kind = 'bind' } }), nil, 'a refusal: no compare row')
+eq(V.compare({ ok = true, change = { kind = 'mystery' } }), nil, 'an unknown change: none')
+local cr = V.costRow(V.find(V.actions(ctx({ mod = 'a2' })), 'ember'))
+eq(cr.name, 'Cost: 1 Ember Orb', 'cost name') eq(cr.have, 'you have 7 · 3 backpack · 4 stash', 'cost have')
+-- the FORGE button and the bottom lines
+local go = V.go(ctx({ orb = 'ember', mod = 'a2' }, ex))
+eq(go.enabled, true, 'enabled') eq(go.risky, false, 'safe') eq(go.sub, 'spends 1 Ember Orb', 'sub line')
+go = V.go(ctx({ orb = 'excision', mod = 'a2' }, ex2))
+eq(go.risky, true, 'a risky action') eq(go.sub, 'risky: asks to confirm', 'risky sub line') eq(go.enabled, true, 'still enabled')
+go = V.go(ctx({}))
+eq(go.enabled, false, 'nothing chosen: off') eq(go.sub, 'Pick an action first.', 'the reason as sub line')
+local bl = V.barLines(ctx({ orb = 'ember', mod = 'a2' }, ex), nil)
+eq(bl.verb, 'Raise tier on', 'line 1 verb') eq(bl.target, '+58 maximum Life', 'line 1 target') eq(bl.guarantee, 'Guaranteed: tier 3 to tier 4.', 'line 2: one short sentence')
+eq(bl.result.text, '', 'no result before the first craft') eq(bl.result.mark, nil, 'no mark')
+bl = V.barLines(ctx({ orb = 'ember', mod = 'a2' }, ex), { ok = true, text = 'Iron Visage: Armour rose.', from = 'stash' })
+eq(bl.result.mark, 'ok', 'a good result') has(bl.result.text, 'Last: Iron Visage: Armour rose.', 'the text') has(bl.result.text, 'stash', 'from the stash')
+bl = V.barLines(ctx({ orb = 'ember', mod = 'a2' }, ex), { ok = false, text = 'You have no Ember Orb.' })
+eq(bl.result.mark, 'fail', 'a refusal')
+bl = V.barLines(ctx({}), nil)
+eq(bl.verb, 'Choose an action', 'no action chosen') eq(bl.target, '', 'no target')
+eq(V.iconCount(678), 100, 'the Void Orb draws with the count pattern of a full stack') eq(V.iconCount(25045), 1, 'other orbs at count 1') eq(V.iconCount(nil), 1, 'no id')
+-- palette: only theme colours and the item tooltip's
+local allowed = { ['#d6c9ae'] = 1, ['#8c8070'] = 1, ['#6b6258'] = 1, ['#e8b84a'] = 1, ['#f6cf72'] = 1, ['#e03a1e'] = 1, ['#0d0b0e'] = 1, ['#5ccf5c'] = 1 }
+for name, c in pairs(V.C) do eq(allowed[c] == 1, true, 'palette colour ' .. name .. ' ' .. c) end
+eq(V.C.good, ItemTooltipLogic.COLORS.better, 'the good green is the tooltip\'s')
 
 -- ---------------------------------------------------------------- the classic choice
 eq(V.savedMode(nil, 'Ann'), 'forge', 'the forge is the default')

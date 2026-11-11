@@ -11972,9 +11972,14 @@ before):
   the client: "Guaranteed: tier 3 to tier 4. The value rolls 50 to 60.", "One of 6 tiers (T1-T6)..."; an orb with no
   own words gives its preview with `lead` = `fixed` / `random`, and `warn` for a risky one). A stale signature gets "put
   it on the bench again". The window sends `apply` only for an action explained for this item (`sig` matches).
+- **`change` (O481 polish).** An `explain` answer for an outcome that is sure also carries `change`, built in `C.explain`
+  from the same numbers as the sentence (never parsed from text): `{kind = "tier", text, from = {tier, lo, hi}, to = {tier,
+  lo, hi}}` (Ember: the sentence gives the NEW tier's range, `to.lo` to `to.hi`), `{kind = "bind", text, tier}`,
+  `{kind = "remove", text, tier}`, `{kind = "quality", from, to}` (Whetstone). A roll, a gamble or an unknown outcome sends
+  none and the window shows the text alone. `tests/forge_test.lua` keeps sentence and `change` equal.
 - **Forge window only** (after `open {forge = 1}`): `forgeinfo {orbs = {key -> {kind, safety}}}` after `info`;
   `state.bag` and `state.stash` ({orb key -> count}); `state.item.free` ({prefix, suffix}, from the item mods side
-  limits) and `state.item.veil` (1 veiled, 2 revealed). `result.from` is `bag` or `stash` for every client.
+  limits) and `state.item.veil` (1 veiled, 2 revealed); each `state.item.mods[i].v` is the value of the modifier (the window's roll bar sits where `v` is between `lo` and `hi`). `result.from` is `bag` or `stash` for every client.
 - **Size.** None of this goes into `info` (near the 8192-byte limit). The state trims history, then items, then the
   bag / stash tables until it is at most 7600 bytes; `forge_test.lua` measures an item with eight modifiers and every
   orb at 999 in the stash.

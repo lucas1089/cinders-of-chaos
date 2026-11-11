@@ -4,29 +4,27 @@
 -- Messages and fields: see the head of forgeview.lua. The window asks for the additive fields with open {forge = 1}.
 -- A "Classic" button switches to the classic window (crafting.lua) and back; the choice is remembered per character
 -- (g_settings node chaosForge). The Salvage tab opens the classic window in its Salvage tab, the Guide tab the Guide.
--- Nothing is computed here: counts, words, tags and costs come from the server through forgeview.lua; the window sends
--- "apply" only for an action the server has explained for this very item (forgeview.lua V.request).
+-- Nothing is computed here: counts, words, tags, costs and outcomes come from the server through forgeview.lua; the
+-- window sends "apply" only for an action the server has explained for this very item (forgeview.lua V.request).
+-- This file only places widgets; every surface is a theme style (forge.otui).
 
 local OPCODE = 232
-local SELECT_BG = '#2a2114'
-local SELECT_BORDER = '#e8b84a'
-local BASE_BORDER = '#4a3d2c'
-local STEP_DONE, STEP_NOW, STEP_LATER = '#7fe0a0', '#e8b84a', '#6b6258'
 
 CraftingForge = CraftingForge or {}
 local F = CraftingForge
 local V = CraftingForgeView
+local C = V.C
 
 local fw                 -- the window
 local info               -- the orbs and the reason texts (server "info")
 local forgeInfo          -- {orbs = {key -> {kind, safety}}} (server "forgeinfo")
 local state              -- last state
 local lastExplain        -- last "explain" answer
+local lastResult         -- last "result" answer (nil before the first craft)
 local requested          -- the question asked last (orb|mod|sig): the same one is not asked twice
 local sel = { orb = nil, mod = nil, tab = 'mod' }
 local mode = 'forge'     -- 'forge' | 'classic' (remembered per character)
 local pending = false    -- an apply was sent, the next state has not come yet
-local resultText, resultOk = '', true
 local confirmBox
 F.classicOnce = false    -- the classic window is wanted once (the menu's Salvage entry, the Salvage tab)
 
@@ -67,6 +65,14 @@ local function setTip(widget, text)
   end
 end
 
+-- a widget at x, y of its parent (the list styles have no anchors of their own)
+local function place(widget, x, y)
+  widget:addAnchor(AnchorTop, 'parent', AnchorTop)
+  widget:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  widget:setMarginLeft(x)
+  widget:setMarginTop(y)
+end
+
 local function ctx()
   return { info = info, forge = forgeInfo, state = state or {}, sel = sel, explain = lastExplain, mod = sel.mod }
 end
@@ -91,6 +97,10 @@ local function saveMode(m)
   pcall(g_settings.save)
 end
 
+local function spaced(text)
+  return (tostring(text):gsub('.', '%0 '):gsub(' $', ''))
+end
+
 -- ---------------------------------------------------------------- answers
 local function ask()
   local item = state and state.item
@@ -111,56 +121,142 @@ end
 local render
 
 local function renderSteps()
-  local cur, done = V.step(ctx())
-  for i = 1, 4 do
-    local label = w('step' .. i)
-    label:setText(string.format('%d %s', i, V.stepLabel(i)))
-    label:setColor(done[i] and STEP_DONE or (i == cur and STEP_NOW or STEP_LATER))
+  for _, st in ipairs(V.stepper(ctx())) do
+    local label = w('step' .. st.n)
+    label:setText(string.format('%d %s', st.n, st.text))
+    label:setColor(st.color)
+    w('check' .. st.n):setVisible(st.state == 'done')
+    if st.n < 4 then w('arrow' .. st.n):setText('>') end
+    if st.state == 'now' then label:setFont('verdana-11px-rounded') else label:setFont('verdana-11px-antialised') end
   end
-  for i = 1, 3 do w('arrow' .. i):setText('>') end
 end
 
-local function renderMaterials()
-  local list = w('matsList')
-  list:destroyChildren()
-  for _, m in ipairs(V.materials(ctx())) do
-    local cell = g_ui.createWidget('ForgeMaterial', list)
-    cell.icon:setItemId(m.clientId)
-    cell.text:setText(string.format('%s %s', m.name, tostring(m.count)))
-    cell.text:setColor(m.dim and STEP_LATER or '#d6c9ae')
-    cell:setOpacity(m.dim and 0.5 or 1.0)
-    setTip(cell, m.tip)
+local function renderChips()
+  local panel = w('matsPanel')
+  panel:destroyChildren()
+  local chips = V.chips(ctx())
+  local pitch, per, nrows = V.chipLayout(#chips, 864)
+  panel:setHeight(44 + (nrows - 1) * 36)
+  for i, m in ipairs(chips) do
+    local chip = g_ui.createWidget('ForgeChip', panel)
+    place(chip, ((i - 1) % per) * pitch, math.floor((i - 1) / per) * 36)
+    chip:setItemId(m.clientId)
+    chip:setItemCount(V.iconCount(m.clientId))
+    chip.cnt:setText(m.countText)
+    chip:setOpacity(m.dim and 0.4 or 1.0)
+    chip:setBorderWidth(m.use and 1 or 0)
+    setTip(chip, m.tip)
+  end
+end
+
+local function pips(container, filled, total)
+  container:destroyChildren()
+  container:setWidth(math.max(1, total * 11))
+  for i = 1, total do
+    local pip = g_ui.createWidget('UIWidget', container)
+    pip:setSize({ width = 8, height = 8 })
+    place(pip, (i - 1) * 11, 1)
+    pip:setBorderWidth(1)
+    local on = i <= filled
+    pip:setBackgroundColor(on and C.gold or C.black)
+    pip:setBorderColor(on and C.bright or C.off)
+    pip:setPhantom(true)
   end
 end
 
 local function renderItem()
   local item = state and state.item
-  local h = V.header(item)
-  w('itemName'):setText(h.name)
-  w('itemName'):setColor(h.color)
-  w('itemLine'):setText(h.line)
-  w('itemFree'):setText(h.free)
+  local p = V.itemPanel(item)
+  w('itemName'):setText(p.name)
+  w('itemName'):setColor(p.color)
   local slot = w('itemSlot')
   slot:setItemId(item and tonumber(item.clientId) or 0)
+  slot:setBorderWidth(item and 1 or 0)
+  slot:setBorderColor(p.borderColor or C.off)
   w('lockButton'):setVisible(item ~= nil and item.kind ~= 'riftkey')
   w('lockButton'):setText(item and item.locked and tr('Unlock') or tr('Lock'))
   w('changeButton'):setVisible(item ~= nil)
+  local line, bar, sockL, sockP = w('itemLine'), w('qualityBar'), w('socketLabel'), w('socketPips')
+  local preL, preP, sufL, sufP, free = w('prefixLabel'), w('prefixPips'), w('suffixLabel'), w('suffixPips'), w('freeLabel')
+  bar:setVisible(false)
+  sockL:setVisible(false)
+  sockP:destroyChildren()
+  sockP:setWidth(1)
+  preL:setVisible(false)
+  sufL:setVisible(false)
+  preP:destroyChildren() preP:setWidth(1)
+  sufP:destroyChildren() sufP:setWidth(1)
+  free:setText('')
+  if not item then
+    line:setText(p.line or '')
+    return
+  end
+  if p.line then
+    line:setText(p.line)
+    if p.keyMods then
+      preL:setText(tr('Modifiers'))
+      preL:setVisible(true)
+      pips(preP, p.keyMods.used, p.keyMods.max)
+    end
+    return
+  end
+  local parts = { p.rarityText, p.rarityColor }
+  if p.level then
+    parts[#parts + 1] = ' · ' .. tr('Item level') .. ' '
+    parts[#parts + 1] = C.dim
+    parts[#parts + 1] = tostring(p.level)
+    parts[#parts + 1] = C.text
+  end
+  if p.quality then
+    parts[#parts + 1] = ' · ' .. tr('Quality') .. ' '
+    parts[#parts + 1] = C.dim
+    parts[#parts + 1] = string.format('%d%%', p.quality.q)
+    parts[#parts + 1] = C.good
+  end
+  line:setColoredText(parts)
+  if p.quality then
+    bar:setVisible(true)
+    bar:setPercent(math.floor(p.quality.frac * 100 + 0.5))
+    setTip(bar, tr('Quality %d%% of %d%%', p.quality.q, p.quality.cap))
+  end
+  if p.sockets then
+    sockL:setText(tr('Sockets'))
+    sockL:setVisible(true)
+    pips(sockP, p.sockets.filled, p.sockets.max)
+  end
+  if p.prefix then
+    preL:setText(tr('Prefixes'))
+    sufL:setText(tr('Suffixes'))
+    preL:setVisible(true)
+    sufL:setVisible(true)
+    pips(preP, p.prefix.used, p.prefix.max)
+    pips(sufP, p.suffix.used, p.suffix.max)
+    free:setText(p.free or '')
+  end
+  if p.flag then free:setText(p.flag) free:setColor(C.blood) else free:setColor(C.dim) end
 end
 
 local TAB_ID = { mod = 'tabMod', add = 'tabAdd', whole = 'tabWhole', sockets = 'tabSockets', salvage = 'tabSalvage', guide = 'tabGuide' }
+local TAB_ORDER = { 'mod', 'add', 'whole', 'sockets', 'salvage', 'guide' }
 
 local function renderTabs(actions)
   local item = state and state.item
   local shown = {}
   for _, t in ipairs(V.tabs(actions, item)) do
-    shown[t.id] = true
-    local b = w(TAB_ID[t.id])
-    b:setText(V.tabText(t))
-    b:setVisible(true)
-    b:setChecked(t.id == sel.tab)
+    shown[t.id] = t
   end
-  for id, widget in pairs(TAB_ID) do
-    if not shown[id] then w(widget):setVisible(false) end
+  for _, id in ipairs(TAB_ORDER) do
+    local b = w(TAB_ID[id])
+    local t = shown[id]
+    b:setVisible(t ~= nil)
+    if t then
+      b:setText(V.tabText(t))
+      local ok, size = pcall(function() return b:getTextSize() end)
+      b:setWidth((ok and size and size.width or 110) + 26)
+      b:setChecked(id == sel.tab)
+    else
+      b:setWidth(1)
+    end
   end
   if not shown[sel.tab] then sel.tab = 'mod' end
 end
@@ -168,30 +264,40 @@ end
 local function renderMods(item)
   local list = w('modList')
   list:destroyChildren()
+  local panel = V.itemPanel(item)
   local groups = V.groupList(item)
   if #groups == 0 then
-    local note = g_ui.createWidget('ForgeNoteLabel', list)
+    local note = g_ui.createWidget('ForgeNote', list)
     note:setText(tr('This item has no modifiers.'))
   end
   for _, g in ipairs(groups) do
-    local head = g_ui.createWidget('ForgeGroupLabel', list)
-    head:setText(g.label)
-    head:setColor(g.side == 'implicit' and '#d04040' or '#8c8070')
+    local plate = g_ui.createWidget('ForgeGroupPlate', list)
+    local count = ''
+    if g.side == 'prefix' and panel.prefix then count = string.format(' %d/%d', panel.prefix.used, panel.prefix.max)
+    elseif g.side == 'suffix' and panel.suffix then count = string.format(' %d/%d', panel.suffix.used, panel.suffix.max) end
+    plate.text:setText(g.label .. count)
+    plate.text:setColor(g.side == 'implicit' and C.blood or C.gold)
     for _, r in ipairs(g.rows) do
       local row = g_ui.createWidget('ForgeModRow', list)
+      local chosen = r.key ~= nil and r.key == sel.mod
       row.tier:setText(r.tierText)
-      row.tier:setColor(r.color)
-      row.text:setText(r.range and (r.text .. '  ' .. r.range) or r.text)
-      row.text:setColor(r.implicit and '#d04040' or (r.power and '#ff9a3c' or '#e4d8c0'))
+      row.tier:setBackgroundColor(r.tier and r.color or '#00000000')
+      row.text:setText(r.text)
+      row.text:setColor(chosen and C.bright or (r.implicit and C.blood or (r.power and C.gold or C.text)))
+      row.text:setFont(chosen and 'verdana-11px-rounded' or 'verdana-11px-antialised')
+      row.range:setText(r.rangeText or '')
+      if r.frac then
+        row.roll:setPercent(math.floor(r.frac * 100 + 0.5))
+        row.roll:setBackgroundColor(r.color)
+      else
+        row.roll:setVisible(false)
+      end
       row.mark:setText(r.mark)
       if r.bound then
         setTip(row, tr('Bound: the orbs that change modifiers leave it alone. Only an Orb of Erasure frees it.'))
       end
+      row.sel:setVisible(chosen)
       local key = r.key
-      local chosen = key ~= nil and key == sel.mod
-      row:setBackgroundColor(chosen and SELECT_BG or '#00000000')
-      row:setBorderWidth(1)
-      row:setBorderColor(chosen and SELECT_BORDER or '#00000000')
       row.onMouseRelease = function(self, mousePos, button)
         if button ~= MouseLeftButton or not self:containsPoint(mousePos) or not key then return false end
         sel.mod = (sel.mod ~= key) and key or nil
@@ -203,13 +309,12 @@ local function renderMods(item)
     end
   end
   if item and item.veil == 1 then
-    local note = g_ui.createWidget('ForgeNoteLabel', list)
+    local note = g_ui.createWidget('ForgeNote', list)
     note:setText(tr('This item has a veiled modifier: an Orb of Unveiling reveals it.'))
-    note:setColor('#c070ff')
   elseif item and item.rewards then
-    local note = g_ui.createWidget('ForgeNoteLabel', list)
+    local note = g_ui.createWidget('ForgeNote', list)
     note:setText(tr('Rewards: %s', item.rewards))
-    note:setColor('#9fdc7f')
+    note:setColor(C.good)
   end
 end
 
@@ -218,24 +323,23 @@ local function renderSockets(item)
   list:destroyChildren()
   local s = type(item.sockets) == 'table' and item.sockets or {}
   local count = tonumber(s.count) or 0
-  local head = g_ui.createWidget('ForgeGroupLabel', list)
-  head:setColor('#e8b84a')
+  local head = g_ui.createWidget('ForgeGroupPlate', list)
   if count == 0 then
-    head:setText(tr('No sockets (an Orb of Sockets gives up to %d)', tonumber(s.max) or 0))
+    head.text:setText(tr('No sockets (an Orb of Sockets gives up to %d)', tonumber(s.max) or 0))
     return
   end
   local filled = 0
   for _, row in ipairs(rows(s.list)) do
     if (tonumber(row.id) or 0) > 0 then filled = filled + 1 end
   end
-  head:setText(tr('Sockets: %d / %d', filled, count))
+  head.text:setText(tr('Sockets: %d / %d', filled, count))
   for _, row in ipairs(rows(s.list)) do
     local widget = g_ui.createWidget('ForgeSocketRow', list)
     local id, index = tonumber(row.id) or 0, row.index
     if id > 0 then
       widget.icon:setItemId(tonumber(row.clientId) or 0)
       widget.name:setText(row.name or '?')
-      widget.name:setColor(row.color or '#d6c9ae')
+      widget.name:setColor(row.color or C.text)
       widget.text:setText(row.text or '')
       widget.removeButton:setText(tostring(tonumber(row.cost) or 0))
       setTip(widget.removeButton, tr('Take the gem out for %d gold (bank first, then the backpack). It comes back to you.', tonumber(row.cost) or 0))
@@ -251,44 +355,46 @@ local function renderSockets(item)
     else
       widget.icon:setVisible(false)
       widget.name:setText(tr('Empty socket'))
-      widget.name:setColor('#8c8070')
+      widget.name:setColor(C.dim)
       widget.text:setText(tr('Use a gem with the item to fill it'))
-      widget.text:setColor(STEP_LATER)
+      widget.text:setColor(C.off)
       widget.removeButton:setVisible(false)
       widget.shatterButton:setVisible(false)
     end
   end
 end
 
-local function actionsTitle()
-  if sel.tab == 'mod' then return tr('SHAPE THIS MODIFIER')
-  elseif sel.tab == 'add' then return tr('ADD A MODIFIER')
-  elseif sel.tab == 'whole' then return tr('CHANGE THE WHOLE ITEM')
-  elseif sel.tab == 'sockets' then return tr('SOCKETS')
-  end
-  return ''
-end
-
-local function renderActions(actions)
+local function renderCards(actions)
   local list = w('actionList')
   list:destroyChildren()
-  w('actionsLabel'):setText(actionsTitle())
-  for _, a in ipairs(V.ofKind(actions, sel.tab)) do
-    local b = g_ui.createWidget('ForgeActionButton', list)
-    b.icon:setItemId(a.clientId)
-    b.verb:setText(a.verb)
-    b.count:setText('x' .. tostring(a.total))
-    local chosen = sel.orb == a.key
-    b:setBorderColor(chosen and SELECT_BORDER or BASE_BORDER)
-    b:setBackgroundColor(chosen and '#3a2e1e' or '#241d16')
-    b:setEnabled(a.can)
-    b:setOpacity(a.can and 1.0 or 0.45)
-    local tip = a.name .. '\n' .. a.text
-    if not a.can then tip = tip .. '\n' .. a.why end
-    setTip(b, tip)
-    local key = a.key
-    b.onMouseRelease = function(self, mousePos, button)
-      if button ~= MouseLeftButton or not self:containsPoint(mousePos) or not self:isEnabled() then return false end
+  local cards = V.cards(actions, sel.tab, sel)
+  local fit = V.cardsFit(#cards, 104)
+  w('actionScroll'):setVisible(not fit)
+  list:setMarginRight(fit and 0 or 15)
+  local cw = fit and 214 or 207
+  for i, c in ipairs(cards) do
+    local card = g_ui.createWidget('ForgeCard', list)
+    card:setWidth(cw)
+    place(card, ((i - 1) % 2) * (cw + 4), math.floor((i - 1) / 2) * 36)
+    local a = V.find(actions, c.key)
+    card.icon:setItemId(a and a.clientId or 0)
+    card.icon:setItemCount(V.iconCount(a and a.clientId))
+    card.stripe:setBackgroundColor(c.stripe)
+    card.verb:setText(c.verb)
+    card.verb:setColor(c.chosen and C.bright or C.text)
+    card.verb:setFont(c.chosen and 'verdana-11px-rounded' or 'verdana-11px-antialised')
+    card.sub:setText(c.sub)
+    card.sub:setColor(c.subIsReason and C.blood or C.dim)
+    card.count:setText(c.count)
+    card.count:setColor(c.dim and C.off or C.text)
+    card.sel:setVisible(c.chosen)
+    card:setOpacity(c.dim and 0.55 or 1.0)
+    setTip(card, c.tip)
+    local key = c.key
+    card.onMouseRelease = function(self, mousePos, button)
+      if button ~= MouseLeftButton or not self:containsPoint(mousePos) then return false end
+      local now = V.find(V.actions(ctx()), key)
+      if not now or not now.can then return true end -- a card that cannot be done only explains why (its tooltip)
       sel.orb = (sel.orb ~= key) and key or nil
       requested, lastExplain = nil, nil
       ask()
@@ -299,55 +405,110 @@ local function renderActions(actions)
 end
 
 local function renderWhat(actions)
-  local title, tag, text, cost = w('whatTitle'), w('whatTag'), w('whatText'), w('whatCost')
+  local plate, tag, text = w('whatPlate'), w('whatTag'), w('whatText')
   local item = state and state.item
   local a = sel.orb and V.find(actions, sel.orb) or nil
+  plate.text:setText(tr('What happens'))
+  local cmp = nil
+  local function hideCompare()
+    for _, id in ipairs({ 'cmpLeftPill', 'cmpLeft', 'cmpArrow', 'cmpRightPill', 'cmpRight', 'cmpBound', 'cmpTail' }) do w(id):setVisible(false) end
+    w('cmpLeftPill'):setHeight(0)
+  end
+  hideCompare()
+  local costRow = w('costRow')
+  costRow:setVisible(a ~= nil)
+  w('costSep'):setVisible(a ~= nil)
+  tag:setText('')
   if not item then
-    title:setText(tr('Put an item on the bench first.'))
-    tag:setText('')
-    text:setText('')
-    cost:setText('')
+    text:setText(tr('Put an item on the bench first.'))
+    text:setColor(C.dim)
     return
   end
   if not a then
-    title:setText(tr('What happens'))
-    tag:setText('')
     text:setText(tr('Pick an action on the right. The server tells you here what it will do before you forge.'))
-    text:setColor('#8c8070')
-    cost:setText('')
+    text:setColor(C.dim)
     return
   end
-  title:setText(a.verb)
   tag:setText(V.tagLabel(a.tag))
   tag:setColor(V.tagColor(a.tag))
-  cost:setText(V.costLine(a))
+  local cost = V.costRow(a)
+  w('costIcon'):setItemId(a.clientId)
+  w('costIcon'):setItemCount(V.iconCount(a.clientId))
+  w('costName'):setText(cost.name)
+  w('costHave'):setText(cost.have)
   if not a.can then
     text:setText(a.why)
-    text:setColor('#e8582a')
+    text:setColor(C.blood)
   elseif V.answered(ctx()) then
-    text:setText(V.explainText(lastExplain))
-    text:setColor(lastExplain.ok == false and '#e8582a' or '#f2e6cc')
+    local s = V.sentence(lastExplain)
+    if s.lead ~= '' then
+      text:setColoredText({ s.lead, s.leadColor, ' ' .. s.text .. (s.warn and (' ' .. s.warn) or ''), C.text })
+    else
+      text:setText(s.text)
+      text:setColor(lastExplain.ok == false and C.blood or C.text)
+    end
+    cmp = V.compare(lastExplain)
   else
     text:setText(tr('Asking the server...'))
-    text:setColor('#8c8070')
+    text:setColor(C.dim)
+  end
+  if cmp then
+    w('cmpLeftPill'):setHeight(14)
+    local function pill(id, side)
+      local p = w(id)
+      p:setVisible(side.pill ~= nil)
+      p:setWidth(side.pill and 26 or 0)
+      if side.pill then
+        p:setText(side.pill)
+        p:setBackgroundColor(side.pillColor)
+      end
+    end
+    pill('cmpLeftPill', cmp.left)
+    pill('cmpRightPill', cmp.right)
+    w('cmpLeft'):setVisible(true)
+    w('cmpLeft'):setText(cmp.left.text)
+    w('cmpLeft'):setColor(C.dim)
+    w('cmpArrow'):setVisible(true)
+    w('cmpArrow'):setText('»')
+    w('cmpRight'):setVisible(true)
+    w('cmpRight'):setText(cmp.right.text)
+    w('cmpRight'):setColor(cmp.right.color or C.text)
+    w('cmpBound'):setVisible(cmp.right.bound ~= nil)
+    w('cmpBound'):setText(cmp.right.bound or '')
+    w('cmpTail'):setVisible(cmp.tail ~= '')
+    w('cmpTail'):setText(cmp.tail)
+    w('cmpTail'):setColor(cmp.tailColor or C.good)
   end
 end
 
 local function renderBar()
-  local bar = V.bar(ctx())
-  w('barSummary'):setText(bar.summary)
-  w('barDetail'):setText(bar.detail)
-  w('barCost'):setText(bar.cost)
+  local lines = V.barLines(ctx(), lastResult)
+  local go = V.go(ctx())
+  local l1 = w('barLine1')
+  if lines.target ~= '' then
+    l1:setColoredText({ lines.verb .. ' ', C.text, lines.target, C.gold })
+  else
+    l1:setText(lines.verb)
+    l1:setColor(C.text)
+  end
+  w('barLine2'):setText(lines.guarantee)
+  local mark, label = w('resultMark'), w('resultLabel')
+  if lines.result.text ~= '' then
+    mark:setVisible(lines.result.mark == 'ok')
+    label:setText((lines.result.mark == 'fail' and '× ' or '') .. lines.result.text)
+    label:setColor(lines.result.mark == 'fail' and C.blood or C.good)
+    setTip(label, lines.result.text)
+  else
+    mark:setVisible(false)
+    label:setText('')
+  end
   local b = w('forgeButton')
-  b:setEnabled(bar.can and not pending)
-  setTip(b, bar.can and '' or bar.why)
-end
-
-local function renderResult()
-  local label = w('resultLabel')
-  label:setText(resultText)
-  label:setColor(resultOk and '#9fdc7f' or '#e03a1e')
-  setTip(label, resultText)
+  b:setText(spaced(go.title))
+  b:setEnabled(go.enabled and not pending)
+  local sub = w('goSub')
+  sub:setText(go.sub)
+  sub:setColor(go.risky and C.blood or C.dim)
+  setTip(b, go.enabled and '' or go.sub)
 end
 
 local function renderGear()
@@ -364,7 +525,7 @@ local function renderGear()
     elseif rarity > 0 then tip = tip .. '\n' .. (it.rarityName or tr('Rarity %d', rarity)) end
     if rarity > 0 or it.unique or it.key then
       slot:setBorderWidth(1)
-      slot:setBorderColor(it.unique and '#e8582a' or it.key and V.KEY_COLOR or V.rarityColor(rarity))
+      slot:setBorderColor(it.unique and C.blood or it.key and V.KEY_COLOR or V.rarityColor(rarity))
     end
     if it.locked then
       tip = tip .. '\n' .. tr('Locked')
@@ -374,7 +535,7 @@ local function renderGear()
     local path, id = it.path, it.id
     slot.onMouseRelease = function(self, mousePos, button)
       if button == MouseLeftButton and self:containsPoint(mousePos) then
-        resultText = ''
+        lastResult = nil
         send('select', { path = path, id = id })
         return true
       end
@@ -391,25 +552,24 @@ function render()
   local item = state and state.item
   local actions = V.actions(ctx())
   renderSteps()
-  renderMaterials()
+  renderChips()
   renderItem()
   renderTabs(actions)
   local hasItem = item ~= nil
   w('gearPanel'):setVisible(not hasItem)
   w('leftPanel'):setVisible(hasItem)
-  w('actionsLabel'):setVisible(hasItem)
   w('actionList'):setVisible(hasItem)
-  w('actionScroll'):setVisible(hasItem)
   w('whatBox'):setVisible(hasItem)
+  if not hasItem then w('actionScroll'):setVisible(false) end
   if hasItem then
     if sel.tab == 'sockets' then renderSockets(item) else renderMods(item) end
-    renderActions(actions)
+    w('hintLabel'):setText(sel.tab == 'mod' and tr('Click a modifier to pick the target.') or '')
+    renderCards(actions)
   else
     renderGear()
   end
   renderWhat(actions)
   renderBar()
-  renderResult()
 end
 
 -- ---------------------------------------------------------------- protocol
@@ -448,7 +608,7 @@ function F.onMessage(action, data)
     lastExplain = data
     render()
   elseif action == 'result' then
-    resultText, resultOk = V.resultLine(data), data.ok ~= false
+    lastResult = data
     pending = false
     render()
   end
@@ -493,8 +653,8 @@ function F.forge()
   local req, why = V.request(ctx())
   if not req then
     if why and why ~= '' then
-      resultText, resultOk = why, false
-      renderResult()
+      lastResult = { ok = false, text = why }
+      renderBar()
     end
     return
   end
@@ -502,7 +662,6 @@ function F.forge()
   local function go()
     if confirmBox then confirmBox:destroy() confirmBox = nil end
     pending = true
-    resultText = ''
     renderBar()
     send('apply', req)
   end
@@ -568,11 +727,11 @@ local function onSlotDrop(self, widget, mousePos)
   if not item or not item.isItem or not item:isItem() then return false end
   local pos = item:getPosition()
   if not pos or pos.x ~= 65535 then
-    resultText, resultOk = tr('Only items from your backpack can go on the bench.'), false
-    renderResult()
+    lastResult = { ok = false, text = tr('Only items from your backpack can go on the bench.') }
+    renderBar()
     return true
   end
-  resultText = ''
+  lastResult = nil
   send('select', { pos = { x = pos.x, y = pos.y, z = pos.z }, clientId = item:getId() })
   return true
 end
@@ -583,10 +742,9 @@ end
 
 function F.onGameEnd()
   F.hide()
-  state, lastExplain, requested = nil, nil, nil
+  state, lastExplain, requested, lastResult = nil, nil, nil, nil
   sel.orb, sel.mod, sel.tab = nil, nil, 'mod'
   pending, F.classicOnce = false, false
-  resultText = ''
   if confirmBox then confirmBox:destroy() confirmBox = nil end
 end
 
@@ -594,7 +752,13 @@ function F.init()
   fw = g_ui.displayUI('forge')
   fw:hide()
   pcall(function() modules.game_howitworks.attach(fw, 'crafting') end)
-  local slot = fw:recursiveGetChildById('itemSlot')
+  -- the Chaos fonts (client_chaos_theme ChaosTheme.fonts): the item's name as in the item tooltip, the button's word
+  local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
+  if theme and theme.applyFont then
+    pcall(theme.applyFont, w('itemName'), 'subtitle')
+    pcall(theme.applyFont, w('forgeButton'), 'title')
+  end
+  local slot = w('itemSlot')
   slot.onDrop = onSlotDrop
   slot.onMouseRelease = function(self, mousePos, button)
     if button == MouseRightButton and state and state.item then
@@ -614,7 +778,7 @@ function F.terminate()
     fw:destroy()
     fw = nil
   end
-  state, info, forgeInfo, lastExplain = nil, nil, nil, nil
+  state, info, forgeInfo, lastExplain, lastResult = nil, nil, nil, nil, nil
 end
 
 -- what forge.otui and crafting.otui call (modules.game_crafting.X)
