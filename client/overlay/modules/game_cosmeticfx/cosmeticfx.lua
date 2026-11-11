@@ -1,9 +1,15 @@
 -- Footprints and outlines (server cosmetics.lua kinds footprint / outline). Every client draws them itself from the
 -- "looks" the server sends (who wears which art; game_cosmetics forwards them with setLooks), so the server does no
 -- work per step and a viewer can hide other players' footprints / outlines (settings, Character > Cosmetics).
---   footprints  a print on the tile a player just left (Tile:setFloorWidget, base patch 0078: lies under creatures, items and walls; Tile:setWidget without it), turned to the step's
---               direction, fading out in CF.PRINT_LIFE_MS; never on a tile that carries another module's widget; no
---               new prints while the local player stands in a protection zone (temples and depots are crowded)
+--   footprints  (O499) one mark under each foot, two per step, put down as the feet land (CF.MODES[CF.MODE].at, a share
+--               of the step time) on the tile the foot is over, at the foot's place (foot_marks.lua: where each look's
+--               feet stand, per direction; a mount's when mounted), turned to the step's direction (45 degrees on a
+--               diagonal), the newest strongest, fading out. A floor widget (Tile:setFloorWidget, base patch 0078: lies
+--               under creatures, items and walls; Tile:setWidget without it) holds one widget per tile, so it is a plain
+--               container (the host) and the marks are its children: walkers that cross share it. Floor widgets are drawn
+--               in map pixels (scaled by the zoom), the fallback in screen pixels: CF.hostBox / markSize / markMargins
+--               take the unit. Never on a tile that carries another module's widget; no new marks while the local player
+--               stands in a protection zone (temples and depots are crowded)
 --   outlines    a line around the player's silhouette (Creature:setOutline, base patch 0038: the engine draws it
 --               under the outfit's parts, so it follows body, addons, mount and the walking frame and stacks with
 --               outfit shaders, wings and auras); colours per art in CF.OUTLINES, pulsing ones breathe (engine side).
@@ -76,25 +82,42 @@ function setSetting(key, value)
 end
 
 -- ---------------------------------------------------------------- footprints
-local function dropPrint(p)
-  if p.tile and p.widget and not p.widget:isDestroyed() then
-    local fw = p.tile.getFloorWidget and p.tile:getFloorWidget()
-    if fw == p.widget then
-      p.tile:removeFloorWidget()
-      return
-    end
-    local w = p.tile:getWidget()
-    if w == p.widget then
-      p.tile:removeWidget()
-      return
-    end
+local hosts = {}          -- 'x,y,z' -> {widget, tile, n}: the container on a tile and how many marks it holds
+local parity = {}         -- creature id -> which foot comes next (0 left, 1 right)
+local lastStep = {}       -- creature id -> {ox, oy, nx, ny, z, t}: the same step is not marked twice
+
+local function posKey(pos)
+  return pos.x .. ',' .. pos.y .. ',' .. pos.z
+end
+
+local function dropHost(h, key)
+  if hosts[key] == h then hosts[key] = nil end
+  if not h.widget or h.widget:isDestroyed() then return end
+  if h.tile and h.tile.getFloorWidget and h.tile:getFloorWidget() == h.widget then
+    h.tile:removeFloorWidget()
+  elseif h.tile and h.tile:getWidget() == h.widget then
+    h.tile:removeWidget()
+  else
+    h.widget:destroy()
   end
+end
+
+local function dropPrint(p)
+  local h = p.host
   if p.widget and not p.widget:isDestroyed() then p.widget:destroy() end
+  if h then
+    h.n = h.n - 1
+    if h.n <= 0 then dropHost(h, p.key) end
+  end
 end
 
 local function clearPrints()
   for _, p in ipairs(prints) do dropPrint(p) end
+  for key, h in pairs(hosts) do dropHost(h, key) end
   prints = {}
+  hosts = {}
+  parity = {}
+  lastStep = {}
 end
 
 local function inPz()
@@ -108,36 +131,71 @@ local function tileSize()
   return CF.tileSize(r.width, r.height, vd.width, vd.height, mapPanel:isKeepAspectRatioEnabled())
 end
 
-local function putPrint(pos, rotation, art, owner)
+-- the host of a tile: the container that carries its marks (nil when another module holds the tile's widget)
+local function hostOf(tile, pos, onFloor, U, spr)
+  local key = posKey(pos)
+  local h = hosts[key]
+  if h and h.widget and not h.widget:isDestroyed() then
+    local held = onFloor and tile:getFloorWidget() or tile:getWidget()
+    if held == h.widget then return h, key end
+  end
+  if h then
+    hosts[key] = nil
+    -- the engine cleaned the tile: its marks are gone with the container
+  end
+  if onFloor then
+    if tile:getFloorWidget() then return nil end
+  elseif tile:getWidget() then
+    return nil
+  end
+  local size, ml, mt = CF.hostBox(U, spr)
+  local w = g_ui.createWidget('UIWidget')
+  w:resize(size, size)
+  w:setMarginLeft(ml)
+  w:setMarginTop(mt)
+  w:setPhantom(true)
+  if onFloor then tile:setFloorWidget(w) else tile:setWidget(w) end
+  h = { widget = w, tile = tile, n = 0 }
+  hosts[key] = h
+  return h, key
+end
+
+-- one mark: mk = a CF.stepMarks entry, old = the step's old tile position
+local function putMark(old, mk, rotation, art, owner, mode)
+  local pos = { x = old.x + mk.tx, y = old.y + mk.ty, z = old.z }
   local tile = g_map.getTile(pos)
   if not tile then return end
-  -- base patch 0078: a print lies on the floor (under creatures, items and walls); an engine without it falls back to
-  -- the tile widget (drawn over everything), which ground labels and hideout marks may already hold
   local onFloor = type(tile.setFloorWidget) == 'function'
-  if onFloor then
-    if tile:getFloorWidget() then return end
-  elseif tile:getWidget() then
-    return
+  local spr = spriteSize()
+  local U = spr
+  if not onFloor then
+    local tw, th = tileSize()
+    U = math.min(tw, th)
   end
-  for _, i in ipairs(CF.evictions(prints, owner)) do dropPrint(prints[i]) end
+  for _, i in ipairs(CF.evictions(prints, owner, 1, mode.maxPer)) do dropPrint(prints[i]) end
   local keep = {}
   for _, p in ipairs(prints) do
     if p.widget and not p.widget:isDestroyed() then keep[#keep + 1] = p end
   end
   prints = keep
-  local tw, th = tileSize()
-  local size, ml, mt = CF.printBox(tw, th, spriteSize())
-  local w = g_ui.createWidget('UIWidget')
-  w:setImageSource(CF.printPath(art))
+  local h, key = hostOf(tile, pos, onFloor, U, spr)
+  if not h then return end
+  local size = CF.markSize(U, mode.kind)
+  local ml, mt = CF.markMargins(U, mk.px, mk.py, size)
+  local w = g_ui.createWidget('UIWidget', h.widget)
+  w:setImageSource(mode.kind == 'pair' and CF.printPath(art) or CF.markPath(art, mk.side))
   w:setImageSmooth(true)
+  if mode.tint then w:setImageColor(mode.tint) end
   w:resize(size, size)
+  w:addAnchor(AnchorTop, 'parent', AnchorTop)
+  w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
   w:setMarginLeft(ml)
   w:setMarginTop(mt)
   w:setRotation(rotation)
-  w:setOpacity(CF.PRINT_START)
+  w:setOpacity(mode.alpha)
   w:setPhantom(true)
-  if onFloor then tile:setFloorWidget(w) else tile:setWidget(w) end
-  prints[#prints + 1] = { widget = w, tile = tile, owner = owner, born = now() }
+  h.n = h.n + 1
+  prints[#prints + 1] = { widget = w, host = h, key = key, owner = owner, born = now(), alpha = mode.alpha }
 end
 
 local function onStep(creature, newPos, oldPos)
@@ -149,11 +207,26 @@ local function onStep(creature, newPos, oldPos)
   if not look or not look.f or not CF.allowed('footprint', settings, isLocal) then return end
   local rotation = CF.stepRotation(oldPos, newPos)
   if not rotation or inPz() then return end
-  local pos = { x = oldPos.x, y = oldPos.y, z = oldPos.z }
-  local art, owner = look.f, creature:getId()
-  -- put down once the walker has left the tile (it would be drawn over the walker's feet before)
-  local delay = math.max(0, math.min(600, (creature:getStepDuration() or 300) - 50))
-  scheduleEvent(safe('print', function() putPrint(pos, rotation, art, owner) end), delay)
+  local owner = creature:getId()
+  local stepMs = CF.stepTime(creature:getStepDuration())
+  if CF.sameStep(lastStep[owner], oldPos, newPos, now(), stepMs) then return end
+  lastStep[owner] = { ox = oldPos.x, oy = oldPos.y, nx = newPos.x, ny = newPos.y, z = newPos.z, t = now() }
+  local mode = CF.MODES[CF.MODE]
+  local dx, dy = newPos.x - oldPos.x, newPos.y - oldPos.y
+  local ok, outfit = pcall(function() return creature:getOutfit() end)
+  local fx, fy = CF.feetOf(CosmeticFootMarks, ok and CF.footThing(outfit) or nil, CF.facing(dx, dy))
+  local list, nextParity = CF.stepMarks(dx, dy, fx, fy, parity[owner] or 0, mode)
+  parity[owner] = nextParity
+  local old = { x = oldPos.x, y = oldPos.y, z = oldPos.z }
+  local goal = { x = newPos.x, y = newPos.y, z = newPos.z }
+  local art = look.f
+  for _, mk in ipairs(list) do
+    -- put down as the foot lands, not later: a walker that stopped, was moved or left the screen leaves nothing behind
+    scheduleEvent(safe('mark', function()
+      if creature:isRemoved() or not CF.stillWalking(creature:getPosition(), goal) then return end
+      putMark(old, mk, rotation, art, owner, mode)
+    end), math.floor(mk.at * stepMs))
+  end
 end
 
 -- ---------------------------------------------------------------- outlines
@@ -247,10 +320,15 @@ handlers.tick = function()
   if not preview and #prints == 0 and next(glows) == nil then return end
   local t = now()
   local keep = {}
-  for _, p in ipairs(prints) do
-    local a = p.widget and not p.widget:isDestroyed() and CF.printOpacity(t - p.born)
+  local mode = CF.MODES[CF.MODE]
+  local ranks = CF.ranks(prints)
+  for i, p in ipairs(prints) do
+    local a = p.widget and not p.widget:isDestroyed() and CF.markOpacity(t - p.born, ranks[i], mode)
     if a then
-      p.widget:setOpacity(a)
+      if math.abs(a - (p.shown or -1)) >= 0.02 then
+        p.widget:setOpacity(a)
+        p.shown = a
+      end
       keep[#keep + 1] = p
     else
       dropPrint(p)
