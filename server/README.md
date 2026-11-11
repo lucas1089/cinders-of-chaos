@@ -29498,6 +29498,13 @@ README warned.
   2. **Shell fallback** on the VPS: `chaos-ctl.sh client-pair set 56` (`client-pair show` prints `chaosClientPair=56` or
      `chaosClientPair=missing`); a number lower than the record is refused. Without the kit: `python3 -I
      server/tools/client_pair.py set SERVER_DIR 56 [--force] [--dry-run]`.
+  3. **Not while an update runs (O486, owner 2026-11-11).** The update installs on a copy of the server folder for about
+     ten minutes and refuses its swap when the live `config.lua` changed meanwhile in more than the XP rates. The owner
+     set pair 63 during that time and lost the run. Now `client-pair set` answers `update-running` while an update or
+     rollback holds the lock, and the update's refusal names the changed keys and what to do: `FAIL: config.lua changed
+     since the copy in more than the XP rates (chaosClientPair). Run the update again: it starts from the config.lua of
+     now`. Nothing is changed by a refused swap: the server runs the version of before, engine included. Tests:
+     `chaos_kit_update_test.py`, `chaos_ctl_test.py`.
   3. Then the admin app **Update** (or `install_all.py`) installs the held rows; no restart is needed for the record itself.
 * **Windows package.** Its client ships the pair on `windows-assets`, so `tools/windows/prepare_server.sh` records
   `client_pair.py` `PAIR_ASSETS` (`python3 -I server/tools/client_pair.py assets`) in the package's own `config.lua` and every

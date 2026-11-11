@@ -2293,6 +2293,11 @@ PY
     case ${1:-show}:$# in
       show:0|show:1) exec python3 -I "$tool" show "$SERVER" ;;
       set:2) { num "$2" && [ "${#2}" -le 3 ]; } || die "client-pair set N (the pair number, 1..999)"
+             # a running update installs on a copy made with the pair of before and refuses the swap when config.lua
+             # changed meanwhile (O486: ten minutes of install lost)
+             if [ -f "$KSTATE/.lock" ] && ! flock -n "$KSTATE/.lock" true; then
+               die "update-running: an update or rollback is running (chaos-ctl.sh update-log); set the pair when it ends"
+             fi
              exec python3 -I "$tool" set "$SERVER" "$2" ;;
       *) die "client-pair [show | set N]" ;;
     esac
