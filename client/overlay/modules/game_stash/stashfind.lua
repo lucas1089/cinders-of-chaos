@@ -53,7 +53,7 @@ function F.whereText(r, tabLabel)
 end
 
 -- what a click on a result does: 'stash' (open the window at its tab), 'container' (open the bags on the way),
--- 'equip' (show the slot), 'purse' (show the purse button), 'inbox' (show the stash's Inbox button)
+-- 'equip' (show the slot), 'purse' (open the purse page of the inventory panel), 'inbox' (show the stash's Inbox button)
 function F.action(r)
   if type(r) ~= 'table' then return nil end
   if r.loc == 'bag' then return 'container' end
@@ -67,7 +67,7 @@ function F.hint(r)
   if a == 'stash' then return tr('Click: open the stash at this tab and show the item.') end
   if a == 'container' then return tr('Click: open the bags it is in and show the item.') end
   if a == 'equip' then return tr('Click: show the slot.') end
-  if a == 'purse' then return tr('Click: show the purse button. Take the item out of the purse into your backpack.') end
+  if a == 'purse' then return tr('Click: open the purse page. Take the item out of the purse into your backpack.') end
   if a == 'inbox' then return tr('Click: open the stash. Its Inbox button moves the inbox into your stash (in a protection zone).') end
   return ''
 end

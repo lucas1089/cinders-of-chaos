@@ -5146,7 +5146,7 @@ rules `store_delivery_core.lua`, tests `tests/store_delivery_test.lua`). **The p
 26052 "your store inbox", inventory slot 11 of the 10.98 protocol): the client's "Open purse" button under the
 equipment (base `game_inventory`, `GamePurseSlot` in client base patch 0006) opens it. Every character has one, it sits
 in the equipment, it is never dropped at death, and the engine only lets the server put items in (a player cannot move
-a normal item into it), so it is a one-way delivery box: the player takes things out into the backpack. The store
+a normal item into it), so it is a one-way delivery box: the player takes things out into the backpack. The client's inventory panel shows the purse as a page of its grid (client/MANIFEST.md `game_bagpanel`, O492); Sort is off there because the engine's store inbox refuses a move of an item that is not a store item (`StoreInbox::queryAdd`). The store
 pouches are not the purse: they are optional store items a character may not own. (In the older texts of this file
 "store inbox" means the depot inbox, `player:getInbox()`.)
 - **What goes there.** Every store offer that becomes an item: `kind = "item"` offers (supplies, potions, runes in
