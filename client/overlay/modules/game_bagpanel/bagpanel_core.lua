@@ -16,9 +16,11 @@ C.STEP_MS = 220            -- between two sort moves (the answer of the server c
 C.WHOLE = 255              -- the "whole container" index: the server adds the item to the front of the container
 
 -- the equipment grid, rows of 3 (inventory slot ids, 0 = no slot): the client's slot numbers
--- 13 is the badge slot (base patch 0113): the Chaos server takes nothing in the ammunition slot (10), so it is not shown
+-- 13 is the badge slot (base patch 0113): the Chaos server takes nothing in the ammunition slot (10), so it is not shown.
+-- The places are the stock inventory window's (BASE.md, owner 2026-11-11, O491): the backpack top right, the badge where
+-- the ammunition slot was (row 3, column 3). The panel had swapped them.
 C.EQUIP_SLOTS = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 13 }
-C.EQUIP_ROWS = { { 2, 1, 13 }, { 6, 4, 5 }, { 9, 7, 3 }, { 0, 8, 0 } }
+C.EQUIP_ROWS = { { 2, 1, 3 }, { 6, 4, 5 }, { 9, 7, 13 }, { 0, 8, 0 } }
 -- English names (tr() keys at run time)
 C.SLOT_NAMES = { [1] = 'Head', [2] = 'Necklace', [3] = 'Backpack', [4] = 'Armor', [5] = 'Right hand',
   [6] = 'Left hand', [7] = 'Legs', [8] = 'Feet', [9] = 'Ring', [13] = 'Badge' }

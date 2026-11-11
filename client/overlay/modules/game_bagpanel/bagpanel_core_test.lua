@@ -25,6 +25,11 @@ for _, s in ipairs(C.EQUIP_SLOTS) do
   eq(type(C.SLOT_NAMES[s]), 'string', 'slot ' .. s .. ' has a name')
 end
 
+-- the places of the stock inventory window (O491): backpack top right, badge where the ammunition slot was
+eq(C.EQUIP_ROWS[1][3], 3, 'backpack: row 1, column 3')
+eq(C.EQUIP_ROWS[3][3], 13, 'badge: row 3, column 3 (where the ammunition slot was)')
+eq(C.EQUIP_ROWS[3][1] .. ',' .. C.EQUIP_ROWS[3][2], '9,7', 'ring and legs stay')
+
 -- tabs: a tab with no target is left out, the first target present wins
 local has = { game_goals = true, game_shop = true, game_buffbar = true }
 local tabs = C.tabs(function(m, f) return has[m] == true and f == 'toggle' end)
