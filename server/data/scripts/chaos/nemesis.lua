@@ -10,6 +10,10 @@
 --   It vanishes after cfg.appear.lifetimeSeconds, when its victim logs out, changes floor or runs off.
 -- * No griefing: it only appears for its victim; its damage (health and mana) to anybody but the victim and the
 --   victim's party is cancelled, and so is damage dealt to it by anybody else (nobody steals a revenge).
+-- * Hit cap (O483): one hit of it on a character it may hurt takes at most nemesis_config.lua hitCap.share x that character's pool.
+--   The cap events are rift.lua's (O478, ChaosRift.capLast, called here for the victim and each party member); this file is the
+--   source "nemesis" of ChaosHitCap (hitcap_core.lua). Thorned's reflect is capped in monster_tiers.lua (reflectCap), and the guard
+--   on the nemesis (ChaosNemesisTaken) is registered BEFORE the modifiers' damage-taken event, so a stranger takes no reflect.
 -- * Growth: it kills its victim again: one more kill (epithet "Twice-Slayer of ..."), more level, a second trait.
 -- * Rewards: nemesis_core.lua K.reward (trophy once per nemesis, title, loot bonus with a cooldown; the party's
 --   Nemesis Hunter bounty with the anti-farm rules). Hardcore characters: the trophy only.
@@ -32,6 +36,9 @@ if not Chaos then
 end
 ChaosNemesisConfig = dofile("data/scripts/chaos/nemesis_config.lua")
 dofile("data/scripts/chaos/nemesis_core.lua")
+if not ChaosHitCap then
+	dofile("data/scripts/chaos/hitcap_core.lua") -- the cap sources (O483); rift.lua owns the cap events
+end
 
 ChaosNemesis = ChaosNemesis or {}
 local NE = ChaosNemesis
@@ -271,6 +278,63 @@ local function partyGuids(player)
 	return out
 end
 
+-- the victim and the members of its party that are in the world now (Player objects, victim first)
+local function partyMembers(player)
+	local out, seen = {}, {}
+	local function add(p)
+		if p and not seen[p:getId()] then
+			seen[p:getId()] = true
+			out[#out + 1] = p
+		end
+	end
+	add(player)
+	local party = player and try(function() return player:getParty() end)
+	if party then
+		for _, m in ipairs(try(function() return party:getMembers() end) or {}) do
+			add(m)
+		end
+		add(try(function() return party:getLeader() end))
+	end
+	return out
+end
+
+-- O483: the cap events of the rift guardian (rift.lua RF.capLast, O478) are the LAST health and mana events of every character
+-- the Nemesis may hurt. Done when it appears and again on a tick for a party member who joined or logged in since (a new login
+-- has a new creature id). The source below tells the cap events which attacker is capped and with which share.
+local function capLast(player)
+	local RF = ChaosRift
+	if RF and RF.capLast then
+		pcall(RF.capLast, player)
+	end
+end
+
+local function ensureCap(st, victim)
+	if not cfg().hitCap or not cfg().hitCap.enabled then
+		return
+	end
+	st.capped = st.capped or {}
+	for _, m in ipairs(partyMembers(victim)) do
+		if st.capped[m:getGuid()] ~= m:getId() then
+			st.capped[m:getGuid()] = m:getId()
+			capLast(m)
+		end
+	end
+end
+NE.ensureCap = ensureCap
+
+ChaosHitCap.setSource("nemesis", function(attacker, victim)
+	local st = attacker and NE.alive[attacker:getId()]
+	local c = cfg().hitCap
+	if not st or not (c and c.enabled) then
+		return nil
+	end
+	-- a character it may not hurt takes nothing from it (the guard cancels the hit): no share
+	if victim and victim.isPlayer and victim:isPlayer() and not K.canHurt(st.victim, victim:getGuid(), partyGuids(Player(st.pid))) then
+		return nil
+	end
+	return c.share
+end)
+
 local function isBossMonster(monster)
 	local mt = try(function() return monster:getType() end)
 	if mt and try(function() return mt:isBoss() end) then
@@ -369,6 +433,7 @@ local function tick(cid)
 			end
 		end
 	end
+	ensureCap(st, victim) -- a party member who joined since (O483)
 	-- it hunts its victim, not bystanders
 	local target = try(function() return monster:getTarget() end)
 	if not target or (target:isPlayer() and not K.canHurt(st.victim, target:getGuid(), partyGuids(victim))) then
@@ -402,6 +467,15 @@ local function setupMonster(monster, rec, player)
 	pcall(function() monster:setOutfit(outfit) end)
 	pcall(function() monster:setSkull(const(c.look.skull, 0)) end)
 	installTier()
+	-- Events run in registration order: the guard that cancels a stranger's hit (ChaosNemesisTaken) must come BEFORE the
+	-- modifiers' damage-taken event (ChaosModTaken: Thorned reflects what it is given), or a stranger whose hit is cancelled
+	-- still takes the reflect of a hit that never landed (O483). Both are taken off first, so the order holds even if a tier roll
+	-- registered the modifier event earlier.
+	pcall(function()
+		monster:unregisterEvent("ChaosModTaken")
+		monster:unregisterEvent("ChaosNemesisTaken")
+	end)
+	monster:registerEvent("ChaosNemesisTaken")
 	if ChaosTierState then
 		ChaosTierState[cid] = {tier = "nemesis", depth = (ChaosTierConfig and ChaosTierConfig.maxChain) or 99,
 			mods = K.modKeys(c, rec), step = 0}
@@ -409,9 +483,9 @@ local function setupMonster(monster, rec, player)
 		monster:registerEvent("ChaosModTaken")
 	end
 	monster:registerEvent("ChaosNemesisMonsterDeath")
-	monster:registerEvent("ChaosNemesisTaken")
 	NE.alive[cid] = {victim = rec.victim, pid = player:getId(), bornAt = nowMs(), step = 0}
 	NE.byVictim[rec.victim] = cid
+	ensureCap(NE.alive[cid], player)
 	pcall(function() monster:selectTarget(player) end)
 	monster:getPosition():sendMagicEffect(const(c.look.appearEffect, 1))
 	addEvent(tick, c.appear.tickMs, cid)

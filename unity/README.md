@@ -1231,6 +1231,7 @@ Route, step by step:
 5. Players: the launcher shows "Client: Main client | Unity client (beta)". A DEV package (`"dev": true` in its manifest) is refused with a message; testers pass `--allow-dev-unity`. Unity is installed in `unity/` inside the game folder with its own
    `.cinders_launcher` state, through the same update code (resume, hash check, journaled swap with rollback). The choice is saved in
    `.cinders_launcher/settings.json`. `Jogar` starts `unity/ChaosUnity.exe`. Details: `launcher/README.md` "Client choice".
+   Before step 4 is done (the channel answers 404 or 410) the launcher says "The Unity client has not been published yet. Use the main client." and offers a button back to the main client (O494).
 
 Files: `client/tools/make_unity_manifest.py` (pack, build, verify; tests `make_unity_manifest_test.py`), `server/deploy/publish_client_update.sh --unity`
 (tests `publish_client_update_test.py`), `server/deploy/chaos-ctl.sh publish-unity` (tests `chaos_ctl_test.py`), `launcher/src/choice.rs`, `manifest.rs`

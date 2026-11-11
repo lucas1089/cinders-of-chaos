@@ -1,6 +1,6 @@
 -- Pure rules of game_bagpanel (O420; client/MANIFEST.md): no client API here, bagpanel_core_test.lua tests them.
--- The panel shows the equipment and one page of the main backpack at a time: page 1 is the backpack, every bag in it
--- is another page. A container is told apart by the key game_chaoslayout learns for it ("3_2854" = the container in
+-- The panel shows the equipment and one page at a time: page 1 is the backpack, every bag in it is another page, then
+-- the purse (O492) and, once it is open, every bag in it (Loot Bag, the pouches) as pages of their own. A container is told apart by the key game_chaoslayout learns for it ("3_2854" = the container in
 -- inventory slot 3, "3_2854/1_1987" = the bag at index 1 of that one). Positions are the protocol's: an inventory slot
 -- is (65535, slot, 0), a slot of an open container is (65535, 64 + container id, index).
 BagPanelCore = {}
@@ -16,9 +16,11 @@ C.STEP_MS = 220            -- between two sort moves (the answer of the server c
 C.WHOLE = 255              -- the "whole container" index: the server adds the item to the front of the container
 
 -- the equipment grid, rows of 3 (inventory slot ids, 0 = no slot): the client's slot numbers
--- 13 is the badge slot (base patch 0113): the Chaos server takes nothing in the ammunition slot (10), so it is not shown
+-- 13 is the badge slot (base patch 0113): the Chaos server takes nothing in the ammunition slot (10), so it is not shown.
+-- The places are the stock inventory window's (BASE.md, owner 2026-11-11, O491): the backpack top right, the badge where
+-- the ammunition slot was (row 3, column 3). The panel had swapped them.
 C.EQUIP_SLOTS = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 13 }
-C.EQUIP_ROWS = { { 2, 1, 13 }, { 6, 4, 5 }, { 9, 7, 3 }, { 0, 8, 0 } }
+C.EQUIP_ROWS = { { 2, 1, 3 }, { 6, 4, 5 }, { 9, 7, 13 }, { 0, 8, 0 } }
 -- English names (tr() keys at run time)
 C.SLOT_NAMES = { [1] = 'Head', [2] = 'Necklace', [3] = 'Backpack', [4] = 'Armor', [5] = 'Right hand',
   [6] = 'Left hand', [7] = 'Legs', [8] = 'Feet', [9] = 'Ring', [13] = 'Badge' }
@@ -85,13 +87,17 @@ function C.place(pos)
 end
 
 -- ---------------------------------------------------------------- which container is which
--- key -> 'main' (the backpack slot's container), 'bag', index (a container item of the main backpack, index 0 = first)
--- or nil (any other container: a corpse, the depot, a bag in a bag, a quiver: it keeps its classic window)
+-- key -> 'main' (the backpack slot's container), 'bag', index (a container item of the main backpack, index 0 = first),
+-- 'purse' (the container in inventory slot 11, the store inbox), 'pbag', index (a container item of the purse) or nil
+-- (any other container: a corpse, the depot, a bag in a bag, a quiver: it keeps its classic window)
 function C.classify(key)
   if type(key) ~= 'string' then return nil end
   if key:match('^' .. C.BACK_SLOT .. '_%d+$') then return 'main' end
   local idx = key:match('^' .. C.BACK_SLOT .. '_%d+/(%d+)_%d+$')
   if idx then return 'bag', tonumber(idx) end
+  if key:match('^' .. C.PURSE_SLOT .. '_%d+$') then return 'purse' end
+  idx = key:match('^' .. C.PURSE_SLOT .. '_%d+/(%d+)_%d+$')
+  if idx then return 'pbag', tonumber(idx) end
   return nil
 end
 
@@ -100,8 +106,28 @@ function C.inPanel(key)
   return C.classify(key) ~= nil
 end
 
+-- the container a kind belongs to: the backpack's family ('main', 'bag') or the purse's ('purse', 'pbag')
+function C.family(kind)
+  if kind == 'purse' or kind == 'pbag' then return 'purse' end
+  if kind == 'main' or kind == 'bag' then return 'main' end
+  return nil
+end
+
+-- page keys: 'main', 'purse', 'bag<slot>' (a bag of the backpack), 'pbag<slot>' (a bag of the purse)
+function C.bagKey(fam, slot)
+  return (fam == 'purse' and 'pbag' or 'bag') .. tostring(int(slot) or 0)
+end
+
+-- a page key -> 'main' | 'purse' | 'bag' | 'pbag', slot (nil for a key that is none of them)
+function C.parseKey(key)
+  if key == 'main' or key == 'purse' then return key end
+  local kind, n = tostring(key):match('^(p?bag)(%d+)$')
+  if kind then return kind, tonumber(n) end
+  return nil
+end
+
 -- ---------------------------------------------------------------- pages
--- items: the main backpack's slots in order, { { id, container } or false for a gap }. The bag slots:
+-- items: the slots of a container in order, { { id, container } or false for a gap }. The bag slots:
 -- { { slot = index, id = item id } }
 function C.bagSlots(items)
   local out = {}
@@ -112,19 +138,33 @@ function C.bagSlots(items)
   return out
 end
 
--- the pages: the main backpack first, then one per bag
-function C.pages(bags)
+-- the pages: the main backpack first, then one per bag of it, then (purse = nil: the character has no purse) the purse
+-- and one per bag in it. purse.bags is empty until the purse has been opened: the client does not know its contents
+-- before.
+function C.pages(bags, purse)
   local out = { { key = 'main', id = nil } }
   for _, b in ipairs(bags or {}) do
-    out[#out + 1] = { key = 'bag' .. b.slot, slot = b.slot, id = b.id }
+    out[#out + 1] = { key = C.bagKey('main', b.slot), slot = b.slot, id = b.id, fam = 'main' }
+  end
+  if purse then
+    out[#out + 1] = { key = 'purse', id = nil, fam = 'purse' }
+    for _, b in ipairs(purse.bags or {}) do
+      out[#out + 1] = { key = C.bagKey('purse', b.slot), slot = b.slot, id = b.id, fam = 'purse' }
+    end
   end
   return out
 end
 
--- the page key still valid after the bags changed, else 'main'
+-- the page key still valid after the pages changed: a gone bag of the purse falls back to the purse, anything else to
+-- the main backpack
 function C.validKey(pages, key)
   for _, p in ipairs(pages) do
     if p.key == key then return key end
+  end
+  if C.parseKey(key) == 'pbag' then
+    for _, p in ipairs(pages) do
+      if p.key == 'purse' then return 'purse' end
+    end
   end
   return 'main'
 end
@@ -157,6 +197,96 @@ function C.shiftRemove(slot, at)
   if at == slot then return nil end
   if at < slot then return slot - 1 end
   return slot
+end
+
+-- the page shown follows the list of the container of family `fam` when an item came in (add) or left at `at`: a bag
+-- page moves with its bag, and falls back to the family's first page when its bag is the one removed ('main' for the
+-- backpack, 'purse' for the purse)
+function C.shiftSelected(selected, fam, at, add)
+  local kind, n = C.parseKey(selected)
+  if not n or C.family(kind) ~= fam then return selected end
+  local s
+  if add then s = C.shiftAdd(n, at) else s = C.shiftRemove(n, at) end
+  if s then return C.bagKey(fam, s) end
+  return fam == 'purse' and 'purse' or 'main'
+end
+
+-- ---------------------------------------------------------------- selection
+-- the page shown after a container opened. A bag or the purse the player opened (a double click, a page button, the
+-- Purse button, Find my item) is the page shown; the login restore opens containers too, and those leave the page alone
+-- (the panel starts on the backpack). The main backpack opening changes nothing.
+function C.selectOnOpen(selected, kind, slot, restoring)
+  if restoring then return selected end
+  if kind == 'bag' or kind == 'pbag' then return C.bagKey(C.family(kind), slot) end
+  if kind == 'purse' then return 'purse' end
+  return selected
+end
+
+-- the page shown after a container closed (kind and slot as C.classify gave them when it opened): the page of a bag goes
+-- back to its family's first page, the purse back to the backpack
+function C.selectOnClose(selected, kind, slot)
+  if kind == 'bag' and selected == C.bagKey('main', slot) then return 'main' end
+  if kind == 'pbag' and selected == C.bagKey('purse', slot) then return 'purse' end
+  if kind == 'purse' and (selected == 'purse' or C.parseKey(selected) == 'pbag') then return 'main' end
+  return selected
+end
+
+-- ---------------------------------------------------------------- container ids
+-- The server holds at most 16 open containers for a player, and the id of an open is chosen by the client. The panel
+-- keeps at most one bag open per family, so it holds at most 4 containers: the main backpack, one bag of it, the purse
+-- and one bag of the purse. memo: container id -> { fam, slot, id } of the bags opened for the panel.
+C.MAX_OPEN = 4
+
+-- the container whose id a bag page of family `fam` reuses (g_game.open(item, previous)): the bag of that family open
+-- now, nil when there is none (the client then takes a free id)
+function C.previousFor(memo, fam)
+  local best
+  for cid, m in pairs(memo or {}) do
+    if m.fam == fam and (best == nil or cid < best) then best = cid end
+  end
+  return best
+end
+
+-- the bags of family `fam` still open when the bag in container `cid` opened with an id of its own (a double click uses
+-- a free id): they are closed, so one bag stays open per family
+function C.superseded(memo, cid, fam)
+  local out = {}
+  for other, m in pairs(memo or {}) do
+    if m.fam == fam and other ~= cid then out[#out + 1] = other end
+  end
+  table.sort(out)
+  return out
+end
+
+-- ---------------------------------------------------------------- drops on a page button
+-- Where an item dropped on a page button goes (a position for g_game.move), nil when there is none. ids: the container
+-- ids of the open { main = , purse = }. A bag page: the position of the bag's item in its container, which the server
+-- takes as "into that bag" (as a drop on a bag in a window), so the bag need not be open. The backpack page: the front
+-- of the backpack. The purse page: the inventory slot of the purse, the engine's store inbox, which refuses what it does
+-- not take with its own message (server/README.md "Delivery to the purse").
+function C.dropTarget(key, ids)
+  local kind, slot = C.parseKey(key)
+  ids = ids or {}
+  if kind == 'main' then return ids.main and C.wholePos(ids.main) or nil end
+  if kind == 'purse' then return C.slotPos(C.PURSE_SLOT) end
+  if kind == 'bag' then return ids.main and C.containerPos(ids.main, slot) or nil end
+  if kind == 'pbag' then return ids.purse and C.containerPos(ids.purse, slot) or nil end
+  return nil
+end
+
+-- true when an item at `from` already is at `to` (the drop changes nothing)
+function C.samePlace(from, to)
+  if type(from) ~= 'table' or type(to) ~= 'table' then return false end
+  return int(from.x) == int(to.x) and int(from.y) == int(to.y) and int(from.z) == int(to.z)
+end
+
+-- Sort moves an item to the front of its page. The purse is the engine's store inbox: it takes an item only when the item
+-- is a store item (storeinbox.cpp, queryAdd), and nothing the Chaos server delivers is flagged one, so a move inside it
+-- is refused. The bags in the purse are not store items (container.cpp refuses moves into a store item bag in the inbox
+-- only), so Sort works there. Returns the reason code the page cannot be sorted, nil when it can.
+function C.sortBlock(key)
+  if C.parseKey(key) == 'purse' then return 'purse' end
+  return nil
 end
 
 -- ---------------------------------------------------------------- grid

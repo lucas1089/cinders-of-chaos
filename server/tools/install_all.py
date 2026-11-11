@@ -420,10 +420,17 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                most 30 minutes) with warnings and a countdown, everyone out to the room's exit and its monsters removed
                at the end, an empty room frees up after 2 minutes, a login inside a closed room goes to its exit (README
                "Instance limits")
-  eventrooms   tools/patch_base_eventrooms.py    the base soul pit and tower defence as boss rooms: locked while a group's run is on
-               (the tower defence's entrance tile sends a refused player back), a time limit of their own (soul pit 15,
-               tower defence 20 minutes) with warnings, everyone out and the monsters removed at the end, the script's
-               own state reset, its own end (completed, won, lost) closes the room (README "Instance limits")
+  eventrooms   tools/patch_base_eventrooms.py    the base tower defence as a boss room: locked while a group's run is on
+               (its entrance tile sends a refused player back), a time limit of its own (20 minutes) with warnings,
+               everyone out and the monsters removed at the end, the script's own state reset, its own end (won, lost)
+               closes the room (README "Instance limits"). The soul pit is not wired here any more (O488, step soulpit)
+  soulpit      tools/patch_remove_soulpit.py     the base soul pit and its items are removed from the game (O488, README "Soul
+               pit removed"): the three soulpit_system scripts become stubs that register nothing, the pit's +3% experience
+               per monster leaves Player:onGainExperience, the soul cores and the exalted core leave every monster's loot,
+               Iletrya's waystone device step no longer asks for exalted cores, the exalted core recipe and the dust / sliver
+               drop go, the descriptions of the items say "No longer used.". Runs after eventrooms (and the two waystone steps
+               behind it), so a server that had the pit wired by the older eventrooms ends in the same state as a
+               fresh one. The items players own are deleted by server/sql/chaos_zz_soulpit_removal.sql (the step `sql`)
   dungeonentry tools/patch_base_dungeon.py       the base dungeon entry tile (step-in, item 26702) opens the Chaos dungeon
                window instead of the base modal window, so every dungeon entry goes through the queue (one run per
                box, the time cap and warnings); the modal run with its box scan and fixed timer never starts (README
@@ -465,6 +472,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   itemwire     tools/patch_item_wire.py          the items.otb nodes of data/items/item_wire.csv write the bytes the client pair
                reads (FLAG_ANIMATION only on a dat thing with more than one phase, group splash / fluid where the dat says so;
                README "Item wire bytes"; after every step that writes item nodes)
+  equiprules   tools/install_equip_rules.py      data/lib/chaos_equip_rules.lua: the level, magic level and class list each item is
+               held to, read from the installed movements.xml and weapons.xml; the item tooltip names those classes (O490, README
+               "Equip rules in the tooltip (O490)"; nothing about who can wear what changes; after every step that writes
+               movements.xml or weapons.xml)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -1717,6 +1728,14 @@ def step_waystonebosses(server, data, ctx):
 STEPS.insert(STEPS.index('waystonehideout') + 1, 'waystonebosses')  # after bossrooms (same files, own lines), before sql
 
 
+def step_soulpit(server, data, ctx):
+    return tool_result(run_tool([tool('patch_remove_soulpit.py'), data], 'patch_remove_soulpit.py'))
+
+
+# O488: after eventrooms (a server whose pit was wired by the older eventrooms ends as a fresh one does), before sql
+STEPS.insert(STEPS.index('waystonebosses') + 1, 'soulpit')
+
+
 def step_bankpayments(server, data, ctx):
     return tool_result(run_tool([tool('patch_bank_payments.py'), data], 'patch_bank_payments.py'))
 
@@ -1762,6 +1781,14 @@ def step_itemwire(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'itemwire')  # last of the item steps: the table fixes the nodes the others wrote (and the base's own)
+
+
+def step_equiprules(server, data, ctx):
+    args = [tool('install_equip_rules.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'install_equip_rules.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'equiprules')  # after every step that writes movements.xml or weapons.xml (it reads both)
 
 
 def step_autoloot(server, data, ctx):

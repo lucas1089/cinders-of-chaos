@@ -6,7 +6,11 @@
 --    window, gold counted from the open containers and the Chaos Coins of game_shop.
 --  * The grid mirrors one container: page 1 is the main backpack (the container of inventory slot 3), every bag in it
 --    is another page. A bag page opens the bag with g_game.open on its item and reuses the container id of the bag
---    shown before, so at most one bag is open for the panel. Cells carry the container slot position, so a drop
+--    shown before, so at most one bag is open for the panel.
+--  * The purse (O492, the engine's store inbox, inventory slot 11) is a page too, after the backpack's bags, and once it
+--    is open every bag in it (Loot Bag, the pouches) is a page of its own. The panel holds at most four containers open:
+--    the backpack, one bag of it, the purse, one bag of the purse (C.MAX_OPEN). Their stock windows are hidden.
+--  * A drop on a page button moves the item into that container (C.dropTarget). Cells carry the container slot position, so a drop
 --    (UIItem:onDrop -> g_game.move) puts an item in the page like in a container window.
 --  * The stock windows of the main backpack and its bags are hidden while the panel is on (the containers stay open:
 --    they feed the grid). Any other container (a corpse, the depot, a bag in a bag, a quiver) keeps its window.
@@ -21,7 +25,8 @@ local C = BagPanelCore
 
 local window
 local selected = 'main'
-local bagMemo = {}      -- container id -> { slot = index in the main backpack, id = the bag's item id }
+local bagMemo = {}      -- container id -> { fam = 'main' | 'purse', slot = index in that container, id = the bag's item id }
+local purseCid = nil    -- the container id the purse is open in
 local cells, cellsFor = {}, nil
 local equip = {}        -- inventory slot -> widget
 local tabButtons = {}
@@ -89,23 +94,35 @@ local function mainContainer()
   return nil
 end
 
+local function purseContainer()
+  for _, c in ipairs(containers()) do
+    if C.classify(keyOf(c)) == 'purse' then return c end
+  end
+  return nil
+end
+
+local function purseItem()
+  local player = g_game.isOnline() and g_game.getLocalPlayer() or nil
+  return player and player:getInventoryItem(C.PURSE_SLOT) or nil
+end
+
 local function bagItemId(c)
   local ok, item = pcall(function() return c:getContainerItem() end)
   if ok and item then return item:getId() end
   return nil
 end
 
--- the open bag of the main backpack that belongs to page `slot`
-local function bagContainer(slot)
+-- the open bag of family `fam` ('main': the backpack, 'purse') that belongs to page `slot`
+local function bagContainer(fam, slot)
   for _, c in ipairs(containers()) do
     local m = bagMemo[c:getId()]
-    if m and m.slot == slot then return c end
+    if m and m.fam == fam and m.slot == slot then return c end
   end
   return nil
 end
 
--- the main backpack's slots as the core wants them
-local function mainItems(main)
+-- the slots of a container as the core wants them
+local function containerItems(main)
   local out = {}
   for i = 0, main:getCapacity() - 1 do
     local item = main:getItem(i)
@@ -238,23 +255,49 @@ local function drawGrid(c)
   if empty then empty:setVisible(not any) end
 end
 
+-- the border of the page buttons of the purse family: a brown frame, so they read as another place than the backpack's
+local PURSE_BORDER = '#7a5a3a'
+
+-- the tooltip of a page button: the backpack, the purse, a bag of the purse by its own name (the Loot Bag, a pouch),
+-- else "Bag N" by its place in its container
+local function pageTip(p, num, item)
+  if p.key == 'main' then return tr('Backpack') end
+  if p.key == 'purse' then return tr('Purse') end
+  if p.fam == 'purse' and item and item.getName then
+    local ok, name = pcall(item.getName, item)
+    if ok and type(name) == 'string' and name ~= '' then return name end
+  end
+  return tr('Bag %d', num)
+end
+
 local function drawPages(pages, main)
   local row = child('pages')
   if not row then return end
   row:destroyChildren()
   local n = 0
+  local nums = { main = 0, purse = 0 }
+  local pitem = purseItem()
   for _, p in ipairs(pages) do
     n = n + 1
     local w = g_ui.createWidget('BagPanelPage', row)
     w.pageKey = p.key
-    local id = p.id or (main and bagItemId(main))
+    local id = p.id
+    if p.key == 'purse' then id = pitem and pitem:getId() or nil end
+    if not id and p.key == 'main' then id = main and bagItemId(main) end
     if id then w:setItemId(id) end
-    w:setTooltip(p.key == 'main' and tr('Backpack') or tr('Bag %d', n - 1))
-    w:setBorderColor(p.key == selected and '#f6cf72' or '#00000000')
+    if p.slot then nums[p.fam] = nums[p.fam] + 1 end
+    w:setTooltip(pageTip(p, p.slot and nums[p.fam] or 0, w:getItem()))
+    local border = p.fam == 'purse' and PURSE_BORDER or '#00000000'
+    w:setBorderColor(p.key == selected and '#f6cf72' or border)
     w.onMouseRelease = function(widget, pos, button)
       if button ~= MouseLeftButton then return false end
       M.selectPage(widget.pageKey)
       return true
+    end
+    -- a drop on a page button moves the item into that container (the cells take drops the same way: the base UIItem
+    -- refuses a virtual one, so the button answers the drop itself)
+    w.onDrop = function(widget, dropped, mousePos)
+      return M.dropOnPage(widget.pageKey, dropped)
     end
   end
   local cols = C.columns(row:getWidth(), 26, 2)
@@ -263,10 +306,11 @@ local function drawPages(pages, main)
 end
 
 local function pageContainer(main, pages)
-  if selected == 'main' then return main end
-  for _, p in ipairs(pages) do
-    if p.key == selected then return bagContainer(p.slot) end
-  end
+  local kind, slot = C.parseKey(selected)
+  if kind == 'main' then return main end
+  if kind == 'purse' then return purseContainer() end
+  if kind == 'bag' then return bagContainer('main', slot) end
+  if kind == 'pbag' then return bagContainer('purse', slot) end
   return nil
 end
 
@@ -274,34 +318,36 @@ function M.draw()
   queued = false
   if not alive(window) then return end
   local main = mainContainer()
-  local pages = { { key = 'main' } }
-  if main then
-    local bags = C.bagSlots(mainItems(main))
-    pages = C.pages(bags)
-    -- the bags opened for the panel: still a bag of the same item where they were, else the nearest of its kind
-    for cid, m in pairs(bagMemo) do
-      local c = g_game.getContainer(cid)
-      if not c then
-        bagMemo[cid] = nil
-      else
-        local here = false
-        for _, b in ipairs(bags) do
-          if b.slot == m.slot and b.id == m.id then here = true end
-        end
-        if not here then
-          local s = C.rematch(m.slot, m.id, bags)
-          if s then m.slot = s else bagMemo[cid] = nil end
-        end
+  local purseC = purseContainer()
+  local bags = main and C.bagSlots(containerItems(main)) or {}
+  local pbags = purseC and C.bagSlots(containerItems(purseC)) or {}
+  -- the purse page shows whenever the character has a purse; its bags only while the purse is open (the client does not
+  -- know what is in it before)
+  local pages = C.pages(bags, purseItem() and { bags = pbags } or nil)
+  -- the bags opened for the panel: still a bag of the same item where they were, else the nearest of its kind
+  local bagsOf = { main = bags, purse = pbags }
+  for cid, m in pairs(bagMemo) do
+    local c = g_game.getContainer(cid)
+    if not c then
+      bagMemo[cid] = nil
+    else
+      local list = bagsOf[m.fam] or {}
+      local here = false
+      for _, b in ipairs(list) do
+        if b.slot == m.slot and b.id == m.id then here = true end
+      end
+      if not here then
+        local s = C.rematch(m.slot, m.id, list)
+        if s then m.slot = s else bagMemo[cid] = nil end
       end
     end
-    selected = C.validKey(pages, selected)
-  else
-    selected = 'main'
   end
+  selected = C.validKey(pages, selected)
   local c = pageContainer(main, pages)
   drawGrid(c)
   drawPages(pages, main)
   drawMoney()
+  M.drawSortButton()
   -- the window grows to show the whole layout: the side panel's fitting shrank it when a stock window opened beside it
   -- and the pages and Sort went under the edge (seen in a client)
   addEvent(safe('fit', function()
@@ -324,14 +370,18 @@ function M.draw()
   end))
 end
 
--- the Purse button (O420 follow-up, 2026-11-09): the stock window's purse button went with the stock window and the
--- store's purchases are delivered to the purse, so the panel has its own. Same call as the stock button: use the item
--- of the purse slot (a container, its window opens like any other).
+-- the Purse button (O420 follow-up, 2026-11-09; a page of the panel since O492): the stock window's purse button went
+-- with the stock window and the store's purchases are delivered to the purse, so the panel has its own. It shows the
+-- purse as the page of the grid. The purse opens as any container does (use the item of the purse slot); its stock
+-- window is hidden like the backpack's (onOpen). A use on a container that is open closes it on the server, so an open
+-- purse is only selected.
 function M.openPurse()
-  local player = g_game.isOnline() and g_game.getLocalPlayer() or nil
-  local purse = player and player:getInventoryItem(C.PURSE_SLOT) or nil
+  local purse = purseItem()
   if not purse then return message(tr('You have no purse.')) end
-  g_game.use(purse)
+  if sorting then sorting = nil end
+  selected = 'purse'
+  if not purseContainer() then g_game.use(purse) end
+  M.refresh()
 end
 
 function M.purseButton()
@@ -378,12 +428,24 @@ local function onOpen(c, previous)
   local kind, slot = C.classify(keyOf(c))
   if not kind then return end
   hideStock(c)
-  if kind == 'bag' then
-    bagMemo[c:getId()] = { slot = slot, id = bagItemId(c) }
-    -- a bag the player opened (a double click on it in the grid) is the page shown; the ones the login restore opens
-    -- are not
-    if not restoring() then selected = 'bag' .. slot end
+  local cid = c:getId()
+  if kind == 'purse' then purseCid = cid end
+  if kind == 'bag' or kind == 'pbag' then
+    local fam = C.family(kind)
+    -- a bag opened with an id of its own (a double click on it in the grid) takes the place of the one open before:
+    -- one bag stays open per family, so the server's limit of open containers is not eaten (the login restore keeps
+    -- what it opens)
+    if not restoring() then
+      for _, old in ipairs(C.superseded(bagMemo, cid, fam)) do
+        local oc = g_game.getContainer(old)
+        bagMemo[old] = nil
+        if oc then pcall(g_game.close, oc) end
+      end
+    end
+    bagMemo[cid] = { fam = fam, slot = slot, id = bagItemId(c) }
   end
+  -- what the player opened is the page shown; the ones the login restore opens are not
+  selected = C.selectOnOpen(selected, kind, slot, restoring())
   M.refresh()
 end
 
@@ -392,39 +454,48 @@ local function onClose(c)
   -- a bag opened into the id of the bag shown before: the old one's close comes after the new one's open
   local now = g_game.getContainer(c:getId())
   if now and now ~= c then return M.refresh() end
-  hiddenWindows[c:getId()] = nil
-  if bagMemo[c:getId()] then
-    local m = bagMemo[c:getId()]
-    bagMemo[c:getId()] = nil
-    if selected == 'bag' .. m.slot then selected = 'main' end
+  local cid = c:getId()
+  hiddenWindows[cid] = nil
+  local m = bagMemo[cid]
+  if m then
+    bagMemo[cid] = nil
+    selected = C.selectOnClose(selected, m.fam == 'purse' and 'pbag' or 'bag', m.slot)
+  end
+  if cid == purseCid then
+    purseCid = nil
+    selected = C.selectOnClose(selected, 'purse')
   end
   M.refresh()
 end
 
-local function isMain(c)
-  return C.classify(keyOf(c)) == 'main'
+local function isKind(c, want)
+  return C.classify(keyOf(c)) == want
 end
 
--- an item came into / left the main backpack: the bags opened for the panel moved with the list
-local function shiftAll(slot, add)
+-- an item came into / left the backpack or the purse: the bags opened for the panel moved with the list
+local function shiftAll(fam, slot, add)
   for cid, m in pairs(bagMemo) do
-    local s = add and C.shiftAdd(m.slot, slot) or C.shiftRemove(m.slot, slot)
-    if s then m.slot = s else bagMemo[cid] = nil end
+    if m.fam == fam then
+      local s = add and C.shiftAdd(m.slot, slot) or C.shiftRemove(m.slot, slot)
+      if s then m.slot = s else bagMemo[cid] = nil end
+    end
   end
-  local sel = tonumber(selected:sub(4))
-  if selected:find('^bag') and sel then
-    local s = add and C.shiftAdd(sel, slot) or C.shiftRemove(sel, slot)
-    selected = s and ('bag' .. s) or 'main'
-  end
+  selected = C.shiftSelected(selected, fam, slot, add)
 end
 
 local function onAdd(c, slot)
-  if c and isMain(c) then shiftAll(slot, true) end
+  if c then
+    if isKind(c, 'main') then shiftAll('main', slot, true)
+    elseif isKind(c, 'purse') then shiftAll('purse', slot, true) end
+  end
   M.refresh()
 end
 
 local function onRemove(c, slot)
-  if c and isMain(c) then shiftAll(slot, false) end
+  if c then
+    if isKind(c, 'main') then shiftAll('main', slot, false)
+    elseif isKind(c, 'purse') then shiftAll('purse', slot, false) end
+  end
   M.refresh()
 end
 
@@ -435,7 +506,8 @@ end
 -- ---------------------------------------------------------------- pages and sort
 function M.selectPage(key)
   if sorting then sorting = nil end
-  if key == 'main' then
+  local kind, slot = C.parseKey(key)
+  if kind == 'main' then
     selected = 'main'
     if not mainContainer() then
       local player = g_game.getLocalPlayer()
@@ -444,20 +516,42 @@ function M.selectPage(key)
     end
     return M.refresh()
   end
-  local slot = tonumber(tostring(key):sub(4))
-  local main = mainContainer()
-  if not slot or not main then return end
+  if kind == 'purse' then return M.openPurse() end
+  -- a bag page: the bag is a container item of the backpack ('bag') or of the purse ('pbag'), which must be open
+  local fam = C.family(kind)
+  local parent = fam == 'purse' and purseContainer() or mainContainer()
+  if not slot or not parent then return end
   selected = key
-  if not bagContainer(slot) then
-    local item = main:getItem(slot)
+  if not bagContainer(fam, slot) then
+    local item = parent:getItem(slot)
     if item then
-      -- the bag shown before gives its container id to this one: at most one bag open for the panel
+      -- the bag shown before gives its container id to this one: at most one bag open per family
       local previous = nil
-      for cid in pairs(bagMemo) do previous = g_game.getContainer(cid) or previous end
+      local pcid = C.previousFor(bagMemo, fam)
+      if pcid then previous = g_game.getContainer(pcid) end
       g_game.open(item, previous)
     end
   end
   M.refresh()
+end
+
+-- an item dropped on a page button goes into that container (C.dropTarget). A stack asks how many, as a drop on a cell does
+function M.dropOnPage(key, dropped)
+  local item = dropped and dropped.currentDragThing
+  if not item or not item.isItem or not item:isItem() then return false end
+  local main, purseC = mainContainer(), purseContainer()
+  local to = C.dropTarget(key, { main = main and main:getId() or nil, purse = purseC and purseC:getId() or nil })
+  if not to then return false end
+  local from = item:getPosition()
+  if C.samePlace(from, to) then return false end
+  local count = item:getCount()
+  local gi = modules.game_interface
+  if count > 1 and gi and type(gi.moveStackableItem) == 'function' then
+    gi.moveStackableItem(item, to)
+  else
+    g_game.move(item, to, count)
+  end
+  return true
 end
 
 local function pageEntries(c)
@@ -493,12 +587,25 @@ local function sortStep(cid, session)
   M.refresh()
 end
 
+-- the Sort button is off on the purse page: the store inbox takes no move of a plain item (C.sortBlock)
+function M.drawSortButton()
+  local b = child('sortButton')
+  if not b then return end
+  local why = C.sortBlock(selected)
+  b:setEnabled(why == nil)
+  if why then
+    b:setTooltip(tr('The purse cannot be sorted: the game does not let items move inside it.'))
+  else
+    b:setTooltip(tr('Puts the items of this page in order: by item, then the bigger stack first.'))
+  end
+end
+
 function M.sort()
   if sorting or not g_game.isOnline() then return end
-  local main = mainContainer()
-  local pages = { { key = 'main' } }
-  if main then pages = C.pages(C.bagSlots(mainItems(main))) end
-  local c = pageContainer(main, pages)
+  if C.sortBlock(selected) then
+    return message(tr('The purse cannot be sorted: the game does not let items move inside it.'))
+  end
+  local c = pageContainer(mainContainer())
   if not c then return end
   sorting = C.newSort(#pageEntries(c))
   sortStep(c:getId(), sorting)
@@ -644,7 +751,7 @@ local function ensureMain()
 end
 
 local function onGameStart()
-  bagMemo, hiddenWindows, selected, sorting = {}, {}, 'main', nil
+  bagMemo, hiddenWindows, selected, sorting, purseCid = {}, {}, 'main', nil, nil
   createWindow()
   if not alive(window) then return end
   buildEquip()
@@ -674,7 +781,7 @@ end
 local function onGameEnd()
   sorting = nil
   if cycle then removeEvent(cycle) cycle = nil end
-  bagMemo, hiddenWindows = {}, {}
+  bagMemo, hiddenWindows, purseCid = {}, {}, nil
   clearGrid()
   if alive(window) then window:hide() end
 end

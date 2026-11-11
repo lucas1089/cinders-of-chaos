@@ -209,6 +209,7 @@ else
 	check(entryOf(15453) ~= "" and not entryOf(15453):find("level=", 1, true), "the Standard: no engine rule")
 	local script = readFile(data .. "/movements/scripts/chaos_unique_equip.lua")
 	check(script and script:find("[27390] = {level = 400", 1, true), "the script holds the stock rules")
+	check(script and script:find("ChaosUniqueEquip.stock = STOCK", 1, true), "the script publishes them for the tooltip (O489)")
 	-- a second run changes nothing
 	local before, beforeScript = text, script
 	out = run()

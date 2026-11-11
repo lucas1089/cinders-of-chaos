@@ -444,6 +444,20 @@ function isShown() return settings.shown end
 function getSelectedId() return selectedId end
 
 -- ---------------------------------------------------------------- dragging
+-- O498: a press on a button of the header is the button's, never a drag (the base button keeps its release from the
+-- header, so a drag begun there never ended); a drag whose button went up unheard ends at the next move
+local function keptByChild(w, pos)
+  local g = ChaosDragGuard
+  return g ~= nil and g.onChild(w, pos) == true
+end
+
+local function dragStale()
+  local g = ChaosDragGuard
+  return g ~= nil and g.stale() == true
+end
+
+local onHeaderRelease
+
 local function onHeaderPress(w, pos, button)
   if button == MouseRightButton then
     local menu = g_ui.createWidget('PopupMenu')
@@ -454,6 +468,7 @@ local function onHeaderPress(w, pos, button)
     return true
   end
   if button ~= MouseLeftButton or settings.locked then return false end
+  if keptByChild(w, pos) then return false end
   dragOffset = { x = pos.x - panel:getX(), y = pos.y - panel:getY() }
   w:grabMouse()
   return true
@@ -461,6 +476,7 @@ end
 
 local function onHeaderMove(w, pos, moved)
   if not dragOffset then return false end
+  if dragStale() then onHeaderRelease(w) return false end
   local parent = panel:getParent()
   local x, y = PartyMath.clampPosition(pos.x - dragOffset.x - parent:getX(), pos.y - dragOffset.y - parent:getY(),
     panel:getWidth(), panel:getHeight(), parent:getWidth(), parent:getHeight())
@@ -469,7 +485,7 @@ local function onHeaderMove(w, pos, moved)
   return true
 end
 
-local function onHeaderRelease(w, pos, button)
+function onHeaderRelease(w, pos, button)
   if not dragOffset then return false end
   dragOffset = nil
   w:ungrabMouse()

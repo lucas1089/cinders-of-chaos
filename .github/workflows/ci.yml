@@ -1296,6 +1296,12 @@ jobs:
       - name: "Loot bag instead of monster bodies, items.xml step and patch guard (server src-patch 0089, O435)"
         run: python3 -I server/tools/patch_monster_corpses_test.py
 
+      - name: "Soul pit and its items removed: the tool on synthetic base files, the SQL file, the price tables and the install step (O488)"
+        run: python3 -I server/tools/patch_remove_soulpit_test.py
+
+      - name: "Equip rules in the tooltip: the chip reading, the rules of movements.xml and weapons.xml, every mismatch kind, the install step (O490)"
+        run: python3 -I server/tools/audit_equip_tooltips_test.py
+
       - name: A reconnect to a lingering character is not thrown out nor left in the game (server src-patches 0034, 0035)
         run: python3 -I server/tools/reattach_ping_patch_test.py
 

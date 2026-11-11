@@ -2,8 +2,9 @@
 -- change, forge". It shares extended opcode 232 with the classic bench (crafting.lua forwards every message here);
 -- forgeview.lua decides what it shows, the server (crafting.lua, chaos_crafting.lua C.explain) says what will happen.
 -- Messages and fields: see the head of forgeview.lua. The window asks for the additive fields with open {forge = 1}.
--- A "Classic" button switches to the classic window (crafting.lua) and back; the choice is remembered per character
--- (g_settings node chaosForge). The Salvage tab opens the classic window in its Salvage tab, the Guide tab the Guide.
+-- The forge is the bench: there is no switch to the classic window (owner 2026-11-11, O487: players who switched found
+-- no way back). The Salvage tab opens the classic window (crafting.lua) in its Salvage tab, once; its Forge button comes
+-- back here. The Guide tab opens the Guide.
 -- Nothing is computed here: counts, words, tags, costs and outcomes come from the server through forgeview.lua; the
 -- window sends "apply" only for an action the server has explained for this very item (forgeview.lua V.request).
 -- This file only places widgets; every surface is a theme style (forge.otui).
@@ -23,7 +24,6 @@ local lastExplain        -- last "explain" answer
 local lastResult         -- last "result" answer (nil before the first craft)
 local requested          -- the question asked last (orb|mod|sig): the same one is not asked twice
 local sel = { orb = nil, mod = nil, tab = 'mod' }
-local mode = 'forge'     -- 'forge' | 'classic' (remembered per character)
 local pending = false    -- an apply was sent, the next state has not come yet
 local confirmBox
 F.classicOnce = false    -- the classic window is wanted once (the menu's Salvage entry, the Salvage tab)
@@ -75,26 +75,6 @@ end
 
 local function ctx()
   return { info = info, forge = forgeInfo, state = state or {}, sel = sel, explain = lastExplain, mod = sel.mod }
-end
-
-local function characterName()
-  local ok, name = pcall(function() return g_game.getCharacterName() end)
-  return ok and name or nil
-end
-
-local function settingsNode()
-  local ok, node = pcall(g_settings.getNode, V.SETTINGS)
-  return (ok and type(node) == 'table') and node or {}
-end
-
-local function loadMode()
-  mode = V.savedMode(settingsNode(), characterName())
-end
-
-local function saveMode(m)
-  mode = m
-  pcall(g_settings.setNode, V.SETTINGS, V.rememberMode(settingsNode(), characterName(), m))
-  pcall(g_settings.save)
 end
 
 local function spaced(text)
@@ -616,7 +596,7 @@ end
 
 -- ---------------------------------------------------------------- the window
 function F.wanted()
-  return fw ~= nil and mode == 'forge' and not F.classicOnce
+  return fw ~= nil and not F.classicOnce
 end
 
 function F.show()
@@ -677,16 +657,8 @@ function F.forge()
   end
 end
 
-function F.classic()
-  saveMode('classic')
-  F.classicOnce = false
-  F.hide()
-  send('open') -- no forge flag: the classic window answers
-end
-
--- the Forge button of the classic window
+-- the Forge button of the classic window (shown for Salvage)
 function F.switchTo()
-  saveMode('forge')
   F.classicOnce = false
   if hide then hide() end -- the classic window (crafting.lua)
   F.open()
@@ -736,10 +708,6 @@ local function onSlotDrop(self, widget, mousePos)
   return true
 end
 
-function F.onGameStart()
-  loadMode()
-end
-
 function F.onGameEnd()
   F.hide()
   state, lastExplain, requested, lastResult = nil, nil, nil, nil
@@ -767,12 +735,11 @@ function F.init()
     end
     return false
   end
-  connect(g_game, { onGameStart = F.onGameStart, onGameEnd = F.onGameEnd })
-  if g_game.isOnline() then F.onGameStart() end
+  connect(g_game, { onGameEnd = F.onGameEnd })
 end
 
 function F.terminate()
-  disconnect(g_game, { onGameStart = F.onGameStart, onGameEnd = F.onGameEnd })
+  disconnect(g_game, { onGameEnd = F.onGameEnd })
   if confirmBox then confirmBox:destroy() confirmBox = nil end
   if fw then
     fw:destroy()
@@ -784,7 +751,6 @@ end
 -- what forge.otui and crafting.otui call (modules.game_crafting.X)
 function forgeHide() F.hide() end
 function forgeNow() F.forge() end
-function forgeClassic() F.classic() end
 function forgeSwitchTo() F.switchTo() end
 function forgeLock() F.lock() end
 function forgeChange() F.change() end

@@ -1,0 +1,11 @@
+# Chaos (0192, O488, owner 2026-11-11: "You can remove this mechanic from the game, together with the items"): the Soul Pit is removed from the game. The Cyclopedia lists every achievement of its catalog, locked ones too (Character > Achievements); the one that told of the Soul Pit (a spirit shattering under the player's might) can never be earned here, so its entry leaves the catalog.
+--- a/mods/game_cyclopedia/utils.lua
++++ b/mods/game_cyclopedia/utils.lua
+@@ -552,7 +552,6 @@
+ 	[551] = { name = "Holzkopf", grade = 1, points = 1, secret = true, description = "Things you do... for science." },
+ 	[552] = { name = "I Wanna Fly Away", grade = 1, points = 3, description = ".. on a pegasus, to a land of honey and milk. With this beautiful flying steed you certainly can." },
+ 	[553] = { name = "The Rootwalker", grade = 1, points = 2, description = "Traversing the innards of Podzilla was a conquest in and by itself, thanks to Two Lips you are now one with the plant biosphere as you stride its many intertwined trails." },
+-	[554] = { name = "Soul Crusher", grade = 1, points = 2, description = "The Soulpit resonates as the spirit of your final foe shatters under your might." },
+ 	[555] = { name = "Inner Peace", grade = 1, points = 3, description = "The transcendence to a higher state of mind and existence in order to achieve inner peace has been amplified by various means throughout Merudri history." },
+ 	[556] = { name = "Fiend Rider", grade = 1, points = 3, description = "Riding such an ancient beast is certainly a good and harmless idea." },
+ 	[557] = { name = "Fiend Slayer", grade = 1, points = 2, description = "No living fiends were hurt to achieve this outfit." },

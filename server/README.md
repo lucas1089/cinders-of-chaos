@@ -28,7 +28,8 @@ server/
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
   tools/patch_base_bossrooms.py       the base lever and step-in boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
   tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
-  tools/patch_base_eventrooms.py      the base soul pit and tower defence as boss rooms (see "Instance limits")
+  tools/patch_base_eventrooms.py      the base tower defence as a boss room (see "Instance limits")
+  tools/patch_remove_soulpit.py       the base soul pit and its items removed (see "Soul pit removed")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -549,10 +550,16 @@ server/
 7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
    inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
-7c2. Soul pit and tower defence: `python3 -I server/tools/patch_base_eventrooms.py <server>/data [--dry-run]`
-   (idempotent; `install_all.py` step `eventrooms`, after `bossrooms`): both run as boss rooms (lock, time limit,
-   warnings, exit, clean-up of the waves and of the script's own state). See "Instance limits", "Soul pit and tower
-   defence".
+7c2. Tower defence: `python3 -I server/tools/patch_base_eventrooms.py <server>/data [--dry-run]`
+   (idempotent; `install_all.py` step `eventrooms`, after `bossrooms`): it runs as a boss room (lock, time limit,
+   warnings, exit, clean-up of the waves and of the script's own state). See "Instance limits", "Tower defence". Until
+   O488 the soul pit was wired here too.
+7c3. Soul pit removed (O488): `python3 -I server/tools/patch_remove_soulpit.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `soulpit`, after `eventrooms` and the two waystone steps, before `sql`): the three
+   `soulpit_system` scripts become stubs, the +3% experience leaves `Player:onGainExperience`, the soul cores and the
+   exalted core leave every loot list, Iletrya's step asks for no cores, the exalted core recipe and the dust and sliver
+   drop go, the 39 descriptions say "No longer used.". The items players own go in the step `sql`
+   (`server/sql/chaos_zz_soulpit_removal.sql`). See "Soul pit removed". Run the server stopped, as for any `sql` file.
 7d. Base dungeon entry: `python3 -I server/tools/patch_base_dungeon.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `dungeonentry`, after `bossrooms`): the step-in tile of the base modal dungeon entry opens the
    Chaos dungeon window instead, so every dungeon run goes through the queue. See "Instance limits", "Base modal
@@ -1495,7 +1502,7 @@ Everything adjustable is in `chaos_constants.lua`: rewards, limits, boss names, 
 When the tier is applied: the engine runs `onSpawn` before the placement and gives a monster its id only at the placement, so nothing keyed by the id can be written in `onSpawn`. The natural roll is decided there and the monster gets a think event for that tier (`ChaosTierRollMagic` / `Rare` / `Legendary` / `Boss`); at its first think, after the placement, the tier is applied and the event removes itself. A map respawn or `Game.createMonster` thinks within about a second; a startup spawn once a player comes near. A tier set in between (`ChaosApplyTier`: rift, invasion, tower) wins over the roll. Ambush copies get their tier right after `Game.createMonster` returns. Loading the script drops any entry an older version left under id 0 in `ChaosTierState` (the table survives a reload, so a server that ran the old roll would otherwise keep it). `tests/monster_tiers_test.lua` runs the file against a mocked engine whose `getId()` is 0 until the placement. Checked in game: a forced legendary roll lands under the monster's id with modifiers, monster bar tier and announcement; a normal kill after it still brings an ambush.
 
 ### Modifiers and shaders (monster_tiers.lua)
-Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
+Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player; O483: the amount of one hit is also cut to 10% of the attacker's pool and 25% per second, `monster_tiers.lua` `reflectCap`, see "Nemesis"), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
 
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
@@ -3728,6 +3735,10 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
   the check pass: a copy with `chaos_unique` whose spec has `equip` is held to that rule, every other copy to the stock
   rule. Refused: the engine's "You cannot dress this object there." Staff with the weapon check flag pass, as in the
   engine. A copy worn before the rule stays worn until taken off.
+- **Tooltip (O489).** A plain copy's tooltip names the stock rule: the generated script sets `ChaosUniqueEquip.stock`
+  and `item_tooltip_core.lua` reads it (`T.stockClassText`: a whole line is named by its base class). Before, it showed
+  the looser entry the engine reads (a rolled Ring of Blue Plasma said "level 30, all classes" and was refused under
+  level 100 or outside the Ranger, Thief and Monk lines). A unique copy shows its own rule, as before.
 - **Look text.** The engine's "can only be wielded properly by" line shows the entry's level (the lower one: 60 for the
   Charm, 230 for the Diadem, where the unique asks more); the unique's description says its own level and lines.
 - Tests: `tests/unique_equip_test.lua` (every round-two unique can be worn by the classes its archetype names and not
@@ -3735,6 +3746,86 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
 - **No lines, every class** (2026-10-23): `equipLevel` without `equipLines` writes an empty class list; that lets every
   class wear it from the level (before, an empty list let nobody). A weapon base without a stock entry gets a `hand`
   entry. The leveling and endgame uniques below use both.
+
+## Equip rules in the tooltip (`data/lib/chaos_equip_rules.lua`, `tools/install_equip_rules.py`, `tools/audit_equip_tooltips.py`, O490)
+Owner, 2026-11-11 (translated), after the Ring of Blue Plasma of O489: "Exactly. Look for other items that have the same
+bug and fix them please." The bug: the requirement chips of the item tooltip (level, magic level, class row; `req` of
+`item_tooltip_core.lua` `T.build`) say a character can wear or wield an item, and the server refuses it. The reverse (the
+tooltip says no, the server allows) counts as a lesser finding. Nothing here changes who can wear what.
+- **What the server enforces** (`tools/equip_rules.py` reads it from the installed XML).
+  - *Refusal*: the Equip entries of `movements.xml` (level, magic level, every `<vocation>`, shown or hidden;
+    `showInDescription="0"` only hides a name from the look text). An unmet rule refuses the item ("You cannot dress this
+    object there."). An entry with `script="chaos_unique_equip.lua"` holds a plain copy to its recorded stock rule.
+  - *Weapon check*: the entries of `weapons.xml` (level, magic level, vocations). An unmet rule does **not** refuse the
+    item, it can be equipped: the weapon check of the base engine (`Weapon::playerWeaponCheck`, not in this repository, so
+    not run here) gives no hit for a class that is not listed and for a level or magic level below the entry, or half the
+    hit with `unproperly="1"` (level and magic level only). The audit counts it as a penalty, a kind of its own.
+  - *Effective rule* (what the tooltip shows): the higher level, the higher magic level and the classes of both rules.
+- **The reading of the class chips** (what the audit holds the tooltip to). A base class named alone stands for its whole
+  line (the class and its two ascended classes). A line that is only partly allowed is named class by class (a wand for the
+  Mystic and the Illusionist but not the Elementalist reads "Mystic, Illusionist"; "Mystic only" is the base class alone).
+  "all classes" means every class; "no class" a rule that lists only the vocation None (one stock wand). A chip set is right
+  when the set of classes it stands for equals the set the server lets through. `T.readClasses` (Lua) and
+  `equip_rules.read_chips` (Python, the audit) are the two copies of this reading.
+- **Why the tooltip was wrong.** The engine's item type holds only the SHOWN vocations (`add_vocations.py` hides the
+  ascended class next to its base class, so a wand for Mystic + Illusionist reads "mystics and necromancers") and the
+  level and class list of one of the two entries an item can have (which of the Equip and the weapon entry wins is not in
+  this repository). `T.vocationText` adds the ascended classes only for the Ranger and Warrior families.
+- **The fix.** Install step `equiprules` (`install_equip_rules.py`, next to last, after every step that writes
+  `movements.xml` or `weapons.xml`) writes `data/lib/chaos_equip_rules.lua` from the installed files: for each id with a
+  class list, or whose two entries disagree on the level, `{level, class list index, magic level}` of the effective rule
+  (about 1,600 ids, 34 KB). `T.equipRuleOf` reads it; `T.ruleVocString` keeps the engine's own text when it already reads
+  as exactly those classes (so a text that was right does not change) and otherwise names the list with `T.stockClassText`
+  (the one function that turns a list of names into chips: a whole line is its base class, all 21 classes are "", a base
+  class without its ascended classes is "Name only"; a whole Ranger or Warrior line is still named class by class, "Ranger,
+  Deadeye, Beastmaster", as the engine's text is since O307, so a bow does not read "Ranger" next to a crossbow's "Ranger,
+  Deadeye"). No file, or an id not in it: the tooltip reads the engine's item type
+  as before (and the O489 stock table for a base of a unique). A unique copy with a rule of its own (`equip` of the spec)
+  shows that rule. The class row is cut between two names, never in the middle of one (`T.classLine`); the longest row of
+  the installed rules is 103 characters of 120, so nothing is cut today. An install step was chosen over a Lua derivation
+  because the engine exposes only the shown names, and over a second copy of `add_vocations.py`'s rules because the file is
+  read from the XML the server loads: a re-run after `add_vocations.py` or any later step that edits the XML rebuilds it.
+- **The audit** (`tools/audit_equip_tooltips.py`, read only, not in CI: it needs an installed server's files; the test is
+  `tools/audit_equip_tooltips_test.py`, one synthetic case per kind). Run it on an installed server:
+  `python3 -I server/tools/audit_equip_tooltips.py SERVER/data` (`--check` exits 1 on a "says yes, refused" kind, `--list KIND`
+  names every item, `--top N`, `--movements-last` reads the two entries in the other order). It runs the real tooltip code
+  (`tools/audit_equip_tooltips.lua`, luajit or lua5.3, on a mocked engine whose item types hold what the engine would hold)
+  for a plain copy of every item with a rule and for a unique copy of every unique, and prints the rules read, the table by
+  kind, the 20 most common shapes and the longest class row. The admin app has no button for it: it is a developer check.
+- **What was wrong** (the installed files of 2026-11-11 after the O489 install, 2,106 plain and 155 unique tooltips; items
+  per kind, an item can be in several):
+
+| Kind | Before | After |
+|---|---|---|
+| refused: class (tooltip says yes, the Equip entry refuses a class) | 129 | 0 |
+| refused: level (tooltip level under the Equip entry's) | 6 | 0 |
+| unique copy refused: class | 2 | 0 |
+| weapon check: class (tooltip lists a class the weapon entry does not) | 131 | 0 |
+| weapon check: level | 5 | 0 |
+| tooltip stricter: class (tooltip drops a class the server allows) | 76 | 0 |
+| unique copy: tooltip stricter: class | 3 | 0 |
+| unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 | 35, kept |
+| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding |
+
+  Shapes (one example each): a wand, rod, robe or hood for the Mystic + Illusionist line or the Mystic + Elementalist line
+  read "Mystic, Necromancer" (the Elementalist or the Illusionist was refused after a yes; 126 Equip entries and 127
+  weapon entries); a bow for the Ranger line read "Ranger, Deadeye" (no launcher has an ammunition type since
+  `patch_base_archery.py`, so the Beastmaster was left out although it may use a bow; 75 bows, now "Ranger, Deadeye, Beastmaster"); items whose Equip and weapon
+  entry disagree read the weapon entry's level or no class list (a cobra club at 220, the Equip entry asks 270; a leaf star
+  "all classes", the Equip entry asks the Ranger and Thief lines); a stock wand that lists only the vocation None read
+  "nones" and is now "no class".
+- **Not told by the tooltip** (and why): the weapon check's penalty (the level or class is shown, not that a wrong class
+  hits for nothing); the unique level of 35 older uniques (the tooltip shows the level the unique is meant for, the server
+  asks none: the unique's own description says the same); slot rules (two-handed against shield, the quiver beside a bow,
+  one might ring at a time, the badge slot, a Ninja's off-hand sword, a Monk's fist weapons: engine patches 0002, 0023, 0058,
+  0087; the tooltip names the slot and the quiver note only); the scripts of 308 Equip entries (boats, badges, decks, special
+  skills: base scripts, not read here); the base's `Player:onMoveItem` rules. The engine's own look line ("It can only be
+  wielded properly by ...") is unchanged and still shows the engine's item type: the shown vocations only, and the level of
+  the entry read last. The Unity tooltip reads the same `req` field from the server and needs no change.
+- Tests: `tests/item_tooltip_test.lua` (the reading, the rule table, the texts, the cut; the O489 test now expects
+  "Ranger, Deadeye, Beastmaster, Thief only" for a stock Thief without a Ninja or Samurai, because a base class alone reads as its whole line),
+  `tools/audit_equip_tooltips_test.py` (the reading, the rules, every kind, the install step: dry run, idempotent, stale
+  file, the two read orders).
 
 ## Leveling and endgame uniques (`chaos_items.xml` `mods`, `chaos_unique_items.lua`, 2026-10-23)
 Before this the uniques stopped at level 1000 with flat stats, and the first one dropped at level 40.
@@ -4447,6 +4538,15 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 - **Walls (2026-11-02).** The tower walls are built wall pieces now: dark stone bricks, the `darkstone` brush of the generated areas (`arenalook_core.lua` `A.WALL_SETS`, ids 25200-25205, the same as `areagen_config.lua` `walls.darkstone`). Each wall tile gets its piece from its neighbours (`A.wallPieceId`, the rules of `ChaosAreaGenCore.wallPiece`): rows on the north and south walls, columns on the west and east, a pole in the north-west corner, the corner piece in the south-east. Before, the ember, stone and crypt themes put the single "stone wall" 5648 on every wall tile. That id is a cave rock piece (grey rock in red earth, one corner of a cave edge): tile by tile it drew rock lumps with earth seams. The pieces are 2x2 sprites, so the tower look keeps lights and decoration off the floor row and column under the south and east walls (`wallSize = 2`). The dark theme keeps its obsidian wall. Checked in the installed items.otb and the client pair. Tests: `tests/arenalook_test.lua` (set = areagen brush, piece per frame tile), `tests/infinitytower_run_test.lua` (the built walls). Every other runtime room got the same fix: see "Arena looks", "Built walls".
 - Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
 
+### Infinity Tower: two clocks, shown and named (O484)
+The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `bossFloorTimeMult`: 600 s). The whole run has `runTimeLimit` (3600 s; 0 = no run limit). Either one ending ends the whole run: everyone goes back where they entered and the cleared floors are recorded (`endRun`). A death only takes that player out; the run ends when the last one is out. Owner 2026-11-11: the panel showed "Floor time left 3:16" while the chat said the tower ends in 1 minute: that was the run clock, which the panel never showed. The limit itself is unchanged (60 minutes; whether to raise or drop it is an open owner decision).
+- **State.** Every `{"action":"state"}` push (opcode 214) carries `runLeft`, the seconds left of the whole run when it was sent, whenever a run limit exists (also in the start delay and the pause between floors, where `floorLeft` is absent). It is absent with `runTimeLimit = 0` and outside a run. The client counts down from the moment it got the state, as for `floorLeft`.
+- **Panel.** A line under the floor's: en "Run time left: %s", pt-BR "Tempo da corrida: %s". It turns red (`#ff4030`, the red of the rift clock) at 300 s or less. Format m:ss, h:mm:ss from an hour. Hidden without `runLeft`. The panel is 124 px high (was 108).
+- **Warnings.** `ChaosInstanceLimits.warn` takes an optional `limits.sentence(player, lang, mark, leftText, name)` returning the text, the toast title and the toast text; no hook, the shared sentence, byte for byte. The tower uses it: run (marks 300, 60, 10): "Infinity Tower: the whole run ends in 1 minute (60 minute limit). Everyone inside leaves then." (limit from `runTimeLimit`; `K.wholeRunText`); floor (marks 60, 10): "Floor 57: 1 minute left to clear it." (`K.floorLeftText`). Toasts: "Whole run: 1 minute left" and the floor's number as title.
+- **Start.** One line at entry, with a run limit only: "This run lasts at most 60 minutes."
+- **Pace.** 60 minutes is 3600 s: 30 floors at the two minutes a floor that the config comment assumes, 60 floors at one a minute. A level 800 character reaches about floor 34 and a level 1000 character about 44 (`tools/tower_model.py`), so the run limit can end a deep run.
+- Tests: `tests/infinitytower_run_test.lua` (state field, start line, the warnings in English, no limit), `tests/tower_clock_text_test.lua` (the sentences in both languages, the hook, the shared sentence unchanged), client `towerskip_test.lua`. The Unity tower panel is not changed and shows the floor time only.
+
 ## Infinity Tower: leaving a run
 Owner bug 2026-11-02: "no way out of the tower, not by portal nor by command". Causes:
 - No portal. `buildArena` built ground, walls and the look only; nothing in the arena led out.
@@ -5046,7 +5146,7 @@ rules `store_delivery_core.lua`, tests `tests/store_delivery_test.lua`). **The p
 26052 "your store inbox", inventory slot 11 of the 10.98 protocol): the client's "Open purse" button under the
 equipment (base `game_inventory`, `GamePurseSlot` in client base patch 0006) opens it. Every character has one, it sits
 in the equipment, it is never dropped at death, and the engine only lets the server put items in (a player cannot move
-a normal item into it), so it is a one-way delivery box: the player takes things out into the backpack. The store
+a normal item into it), so it is a one-way delivery box: the player takes things out into the backpack. The client's inventory panel shows the purse as a page of its grid (client/MANIFEST.md `game_bagpanel`, O492); Sort is off there because the engine's store inbox refuses a move of an item that is not a store item (`StoreInbox::queryAdd`). The store
 pouches are not the purse: they are optional store items a character may not own. (In the older texts of this file
 "store inbox" means the depot inbox, `player:getInbox()`.)
 - **What goes there.** Every store offer that becomes an item: `kind = "item"` offers (supplies, potions, runes in
@@ -11956,7 +12056,7 @@ go at startup); use-with crafts are logged too.
 
 **Forge window and materials from the stash (O481, owner request 2026-11-11, layout option 1).** The bench has a second
 window, the forge (client `game_crafting` `forge.lua`, `forgeview.lua`): "1 Place the item, 2 Pick an action, 3 Check
-the change, 4 Forge". It is the default; the Classic button switches to the window above and back, per character.
+the change, 4 Forge". It is the bench (O487: no Classic button; the window above shows only for Salvage, with a Forge button back).
 New data on the same extended opcode 232, all additive (an old client or the Unity bench never reads them and works as
 before):
 - **Orb data.** Every orb carries `kind` (what it is aimed at: `mod` one chosen modifier, `add` a new modifier, `whole`
@@ -17680,7 +17780,6 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 | Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
 | Tutorial island | none | 30 min online (offline time does not count), warnings at 5 and 1 min | leaves as with Skip tutorial: kit, welcome, temple | shared island, no copies | none needed | time kept; a login past the limit leaves at once | unchanged |
 | Base lever boss rooms (51) and step-in miniboss rooms (7) | the script's own kick 10-60 min, no warning; the lever (tile) free whenever nobody stood inside; the old kick timer also hit the next group; monsters stayed | lever locked while a group's session runs, limit = the room's own time at most 30 min, warnings, countdown bars over the entrance and the lever | everyone to the room's exit, monsters removed | empty room frees up after 2 min (at once after a kill) | 1 group per room | login inside a closed room: its exit; inside its own running room: stays | closed at shutdown (exit) |
-| Soul pit | no limit, no lock against a second group with a core during the 5 s countdown, a group that left kept the run's state and loops going | soul core on the pit locked while a run is on, 15 min with warnings | everyone to the pit's lobby spot, waves removed, the pit's state reset | empty: 2 min; completed: 65 s | 1 | login inside a closed pit: lobby spot | closed at shutdown |
 | Tower defence | no limit; anyone could walk in mid-run; a lever pull after the spawning restarted the run under the walking monsters | the lever starts a 20 min session for the players inside; entrance tile and lever locked meanwhile; warnings | everyone to the exit drop, spawning stopped, summon counters reset, monsters and core removed | empty: 2 min; won or lost: 65 s (at once when empty) | 1 | login inside a closed arena: exit drop | closed at shutdown |
 | Invasions, Scorched Marches, hideouts | open world / personal | unchanged | | | | | |
 
@@ -17701,15 +17800,14 @@ and the room showed "Room in use" until the 2 min idle close. `started` with an 
 (boss removed), and brings in a participant the lever's teleport left outside (`ChaosBossRooms.bringIn`: a free tile
 within 3 sqm of entrancePos, inside the room). **Leave Boss Room** (client Info & Services > Services > Other, command
 `leaveroom` of `commands_ui.lua`; `ChaosBossRooms.leave`, pure rule `ChaosInstanceLimitsCore.leaveReason`): a player in
-any running room (the lever rooms, the waystone boss rooms, the step-in miniboss rooms, the soul pit, the tower
+any running room (the lever rooms, the waystone boss rooms, the step-in miniboss rooms, the tower
 defence) goes to the room's exitPosition (the tower defence: its drop) and leaves the group. Refused outside a running
 room, in a fight (`isPzLocked()` or `CONDITION_INFIGHT`, as the dungeon queue and the arena: no free escape from a lost
 fight) and within `bossRooms.leaveCooldown` (30 s) of the last leave. The last one out closes the room with
 `BR.close(key, "idle")` (boss and monsters removed, the lever free). The button is enabled only inside a running room
 (Services state `inBossRoom`). Without the Chaos scripts the rooms work as before. Left alone (of another shape):
 about a dozen old XML quest levers and pits. Map check (the base map, the action and unique ids of every map item): the 7
-step-in miniboss rooms are on the map (below); the soul pit (its
-start lever aid 57392 at 31588,32269,8, the entrance aid 5896); the tower defence (aid 27931 twice, aid 25486); of 11
+step-in miniboss rooms are on the map (below); the tower defence (aid 27931 twice, aid 25486); of 11
 XML lever and pit scripts that teleport a group into a fight with a timer or a room check, 9 have their ids on the map
 (annihilator, elemental spheres, the new frontier arena, the warzones and their lever, children of the revolution,
 Pythius, the two Killing in the Name of boss rooms); the Payback Time lever (uid 3198) and the demon oak (item 8293, set at
@@ -17729,17 +17827,10 @@ the session sends the group out 65 s later (the default 60 s of `teleportRemoveS
 the 10 minute kick or took the exit tile). The 51 lever rooms come out of the tool byte for byte as before (checked on
 the base data).
 
-**Soul pit and tower defence** (`tools/patch_base_eventrooms.py`, install step `eventrooms` after `bossrooms`). Neither is
-built from the boss room template and neither had a time limit, so the tool gives each a room config of its own and the
-same `ChaosBossRooms` session (lock, warnings, bars, idle rule, login rule, staff list and close, shutdown):
-- Soul pit (`soulpit_system/soulpit.lua`, a soul core used on the pit, aid 57392). The box is the script's room joined
-  with its spawn area (the spawn area reached 2 tiles past the room, so monsters there were outside the room's own
-  check). The lock comes first when a core is used on the pit (a core used on anything else is not touched; a refused
-  core is not spent); the session starts as soon as the core is taken (the 5 s countdown was open to a second group).
-  Time: `bossRooms.ownSeconds.soulpit` = 15 minutes (5 short waves). At the end everyone goes to the spot the pit's
-  entrance teleport leads to (31589,32281,8; not the start tiles, which the next group needs), the waves are removed and
-  the script's `event` state is reset (a group that left mid-run used to leave it and its 1 s loops going, and the next
-  group then shared them). A completed pit closes the room 65 s later, like a boss kill.
+**Tower defence** (`tools/patch_base_eventrooms.py`, install step `eventrooms` after `bossrooms`). It is not built from the
+boss room template and had no time limit, so the tool gives it a room config of its own and the same `ChaosBossRooms`
+session (lock, warnings, bars, idle rule, login rule, staff list and close, shutdown). The soul pit had the same wiring until
+O488 removed it from the game (below).
 - Tower defence (`tower_defense/tower_defense.lua`, lever aid 27931 in the arena; `entrance_teleport.lua`, aid 25485).
   The arena box is the script's own (`fromPos` / `toPos`). The lever starts a session for the players inside (they came
   in before the start); while it runs the entrance tile sends a newcomer back where they came from (with the time) and
@@ -17749,8 +17840,46 @@ same `ChaosBossRooms` session (lock, warnings, bars, idle rule, login rule, staf
   the login does, and everyone goes to the drop of the arena's own exit tile (31206,32295,8). A win or a loss (the
   script's own rules) ends the session; after a loss the script has sent everyone out and the arena is free at once.
   The bar "Room in use" stands at that drop, next to the entrance.
-Without the Chaos scripts both work as before (the test runs the stock and the patched pit and compares them). A script
-of another shape is listed and left alone.
+Without the Chaos scripts it works as before. A script of another shape is listed and left alone.
+
+**Soul pit removed** (O488, `tools/patch_remove_soulpit.py`, install step `soulpit`; owner, 2026-11-11, on the tooltip of a
+distorted phantom soul core: "What is this for? Do we have any mechanic that uses it?", then, told what it is: "You can remove
+this mechanic from the game, together with the items."). The stock pit: a soul core used on the pit starts 5 waves of that
+monster, a win gave +3% experience from that monster for ever, an exalted core turned one soul core into a random other.
+All of it is gone. The tool changes the installed base data, each change once:
+- the three `soulpit_system` scripts (pit, exalted core use, entrance tile) become one-line stubs that register nothing;
+  the files stay, so a base update that writes them back is stubbed again by the next install. The pit's room (lever
+  aid 57392 at 31588,32269,8, the waves in 31526-31550 x 32253-32268, floor 8) and its entrance tile (aid 5896) stay on the
+  map as dead map: the entrance does nothing. The pit's boss room wiring went with the old script text, so a server that
+  had it ends in the same state as a fresh one (`eventrooms` no longer patches the pit; `soulpit` runs after it).
+- `events/scripts/player.lua`: the table `monsterExpBoosts` and its use in `Player:onGainExperience` (x1.03 when the monster's
+  storage was set) are cut out. A player who earned the bonus loses it. The storages 876547 to 876582 stay in the database,
+  inert (outside our storage blocks).
+- the 36 soul cores (28326 to 28342, 28346 to 28364) and the exalted core (28345) leave every monster loot list (37 lines in
+  the monster files of two stock hunts; no NPC shop, trade, store offer, task reward, chest or roulette gave them).
+- Iletrya (waystone device): the step asked for 10 exalted cores (`player:removeItem(28345, 10)`), then gave the Waystone
+  Portal Kit and set the quest storage; without the cores it told the player how many were missing. Now the first "help"
+  gives the kit and sets the storage. Nothing else changed in the quest (the reward, the storage, the "already helped" reply).
+- the crafting table recipe for the exalted core (40 dust and 15 sliver, 1500 gold) goes, and so does the 3% drop of dust
+  and sliver in `default_onDropLoot.lua` (they were made for that recipe only, nothing else uses them). The dust and sliver
+  players hold are deleted with the cores (owner, 2026-11-11: "You can delete dust and sliver too"); they have no sell price.
+- `items/items.xml`: the 39 descriptions (36 soul cores, the exalted core, dust, sliver) say "No longer used.". The definitions
+  stay in `items.xml` and `items.otb`: the ids stay known to server and client, nothing leaves the sprite pair.
+- the wave monsters ("angry ..." to "wrathful ...", 180 monster types under `monster/lua/Soulpit`) are not touched: no script,
+  raid, NPC or spawn of the map names them.
+The items players own: `server/sql/chaos_zz_soulpit_removal.sql` (run by the step `sql`, last of the files) deletes the rows
+of the 39 ids (the 37 and dust 28343, sliver 28344; `SQL_IDS` of the tool) in `player_items`, `player_depotitems`, `player_inboxitems`, `player_storeinboxitems` (the items are not
+containers, so a row has no children), the Chaos stash (`chaos_stash`, `chaos_stash_items`, `chaos_stash_block`), the Guild Stash
+and the active and pending Chaos market offers with their modifier rows and the item deliveries still owed. The way the
+server closes an offer (cancelled or expired) hands the item back to its seller, so those offers are deleted, not closed. A buy
+order of these items gets `expires` = 1: the server's own sweep closes it and refunds the escrow. The base market's sell
+offers are deleted, its buy offers get `created` = 0 (the engine's expiry refunds them). Every statement runs only when its
+table exists. No compensation is paid. Items lying in houses (a binary blob in `tile_store`) and on the map stay and are inert.
+The generated data lost the items: the 39 sell prices (12,000 to 20,000 gold for a soul core, 6,600 for the exalted core, 120 for
+dust and sliver; the base
+NPCs never bought them, the Loot Buyer and the Auto Seller did by the formula), the survey rows, the recipe row and the 27
+loot entries of `tools/loot_bands_data.lua`. Client: base patch 0192 (client/BASE.md). Test:
+`python3 -I server/tools/patch_remove_soulpit_test.py`.
 
 **Base modal dungeon entry** (`tools/patch_base_dungeon.py`, install step `dungeonentry`; `ChaosDungeonsOpen` in
 `dungeons.lua`). The base server has a second way into the 4 dungeons of `DUNGEON_SYSTEM` (lib/core/dungeon.lua): a
@@ -20266,7 +20395,7 @@ The model of the earlier analysis: rotation DPS from `data/spells/README.md` (5-
 flat experience. Added: the new monsters from the level a player can hunt them (tier 1 from 650, tier 2 from 725, tier 3 from
 800) at their exp/health, with fewer targets per pull (3 instead of 5: they are 5-8 times bulkier than the area's old
 monsters and hit as hard as the strongest existing ones) and their elements (knights and paladins x1.15, sorcerers x0.80).
-"Boosted" = premium stamina x1.5, double experience potion, Soul Pit; "+hooks" also the Chaos callbacks (Blood Moon,
+"Boosted" = premium stamina x1.5, double experience potion (the Soul Pit's +3% per monster is gone, O488); "+hooks" also the Chaos callbacks (Blood Moon,
 passive tree, store World Experience +25%, waystone upgrade) as in the earlier analysis.
 
 Hours per level band, base (no boosts):
@@ -27185,6 +27314,91 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
   and a notice to the victim. Killed by the world (no player credit): no reward, it comes back. The row is deleted
   before anything is paid, so a second death event pays nothing. Hardcore: a Hardcore character can have one; a
   Hardcore slayer gets the trophy only.
+- **Hit cap and reflect cap (O483).** Owner 2026-11-11 (translated): "I want you to check whether the Nemesis has Reflect. If it
+  has, take a look, because there are players still dying in one hit of the Nemesis. Take a look at the attack and the
+  defence and at the modifiers of the Nemesis, please." It has Reflect: the trait Thorned is the modifier Reflective. Measured
+  first (below), then three changes. Nothing else moved: health, traits, chances, rewards and the trait texts are as they were
+  ("Reflects 15% of the damage it takes." is still true).
+  1. *Hit cap* (`nemesis_config.lua` `hitCap = {enabled = true, share = 0.60}`). One hit of a Nemesis on a character it may hurt
+     (its victim and the victim's party; a stranger takes nothing from it anyway) takes at most `share` x that character's
+     pool, as a whole. Pool = the MAXIMUM health plus, while a mana shield is up, the maximum mana (the energy shield is not in
+     it): the pool and the cut of the rift guardian cap (O478), now in one place, `hitcap_core.lua` (`H.pool`, `H.cut`; the
+     rift's `R.hitPool` / `R.capHit` call it, same numbers). The health and the mana part of one hit stay together under the
+     ceiling (the mana event caps the whole hit, the health event of the same hit gets the ceiling less what the mana paid);
+     a hit is only cut, never raised. Vengeful (x1.5 below half health) is inside the cap. No second chain of events: the two
+     cap events of `rift.lua` (`ChaosRiftHitCapHealth`, `ChaosRiftHitCapMana`) now ask a small list of sources, `ChaosHitCap`
+     (`hitcap_core.lua`): `setSource(key, fn)`, `fn(attacker, victim)` gives a share or nil, the smallest share wins. The
+     rift guardian is the source `rift`, the Nemesis registers `nemesis` (nemesis.lua: a live Nemesis, a victim it may hurt).
+     `nemesis.lua` calls `ChaosRift.capLast` on the victim when the Nemesis appears and on a tick for each party member (once
+     per login, the creature id tells), so the cap events are the LAST health and mana events of the characters it may hurt.
+  2. *Reflect cap* (`monster_tiers.lua` `reflectShare = 0.15`, `reflectCap = {enabled = true, perHit = 0.10, perSecond = 0.25,
+     windowMs = 1000}`; the pure rule `H.reflectAmount`). For the modifier Reflective, so also Thorned and the Reflective
+     magic, rare and legendary monsters: what ONE hit sends back is at most `perHit` x the attacker's pool (same pool), and what
+     one character gets back within one second, from all reflects together, is at most `perSecond` x the pool. The 15% stays;
+     the cap only cuts. The amount is cut before the character's own defence (measured: what reached the character was lower than the cap, never higher).
+  3. *Order on the Nemesis.* `ChaosNemesisTaken` (cancels the damage of anybody who is not the victim or in its party) was
+     registered after `ChaosModTaken` (the reflect), and events run in registration order: a stranger whose hit was cancelled
+     still took the reflect of a hit that never landed. `setupMonster` now registers the guard first (and takes both off
+     first, so an earlier registration cannot keep the old order).
+  *Events after the tier hit, and why the number is bounded.* A hit on a character runs the login events in name order and then
+  the character's events in registration order: the three damage multipliers (`Chaos0MonsterDamageLogin`, `Chaos0RiftHitLogin`,
+  `Chaos0TierLogin` = `ChaosTierHit`: the tier, the modifiers, Vengeful x1.5), then `ChaosPlayerDefence` and the older reductions
+  (damage taken from monsters, blessings, gems, charms, cards, item sets), the events that can still raise a hit
+  (`ChaosArchetypesHit`, `ChaosKeystones`, `ChaosClassKeystones`, `ChaosBossMechTaken`), then the two cap events, then Last Breath
+  (`ChaosPowersLastBreath`, moved behind the cap, so a lethal-hit catch sees the capped hit). `RF.capLast` registers the four
+  late registrars first, then the cap, then Last Breath, as in O478. After the cap run only Last Breath and what registers on
+  the character later (the mentor's, hardcore protection), which can only lower a hit, and the engine (the mana shield pays
+  first, then the energy shield, then the health: the parts of one hit are held to the ceiling together). So the health,
+  mana and energy shield a Nemesis hit takes in all are at most `share` x pool. It also needs engine patch 0090 (the monster
+  level bonus once per hit) to be exact. What the cap does not cover: a condition with no attacker (a burning or poison tick of
+  a modifier), and a character that is not in the cap list because it appeared in the party after the last tick (2 s).
+  *The rift guardian cap is unchanged:* same share, same pool, same events, same order, same numbers
+  (`tests/rift_hitcap_test.lua` passes as it was, plus a second source). The rift's own Reflection modifier (`rift.lua`
+  `ChaosRiftMonsterHealth`) is NOT capped here: it sends back up to 22% of the damage that lands (`rift_config.lua` range 5-22,
+  Spiteglass the same share of the elemental part), with no per-hit and no per-second limit; it is a map modifier the player
+  picks on the key and was left as it is.
+  Tests: `tests/hitcap_test.lua` (pool, cut, sources, reflect amount, one second window), `tests/monster_tiers_test.lua`
+  (Reflective cap through the real handler), `tests/nemesis_test.lua` (event order, a stranger takes no reflect, the source and
+  the registrar), `tests/rift_hitcap_test.lua` (a second source through the same events, mana shield included).
+  *Measured on a local test server (2026-11-11, before and after the change).* The repository's Lua installed over a test copy of
+  the server (engine patch 0090 in), three test characters cloned from tester rows with their health and mana but no gear
+  (so these are hits on a bare character: a worn set lowers them), a probe as the LAST Lua event of the character that records
+  the final amount of each hit and cancels it (nobody died). A monster of the type fought the character for 40 s: the first 14 to
+  16 real hits, so the biggest is the biggest seen, not the biggest roll. `max / pool` is the hit over the pool (health, plus
+  mana with a mana shield up). Before the change:
+
+  | Type (level) | Character (health + mana) | Natural paced monster | Nemesis | Nemesis Vengeful (below half health) |
+  |---|---|---|---|---|
+  | Phantom Shade (263) | level 198 (3035 + 1040) | max 6005, median 3277: 1.98 / 1.08 | max 6058, median 5055: 2.00 / 1.67 | max 8916, median 7502: 2.94 / 2.47 |
+  | the same, mana shield up | pool 4075 | max 6037: 1.48 | max 6095: 1.50 | max 9013: 2.21 |
+  | Snake Master (588) | level 500 (7073 + 3042) | max 6644, median 5222: 0.94 / 0.74 | max 3638, median 2009: 0.51 / 0.28 | max 5514, median 3199: 0.78 / 0.45 |
+  | the same, mana shield up | pool 10115 | max 3750: 0.37 | max 2947: 0.29 | max 6168: 0.61 |
+  | Elite Ice Dragon (960) | level 845 (12740 + 4275) | max 17877, median 12326: 1.40 / 0.97 | max 10126, median 6768: 0.80 / 0.53 | max 14971, median 11361: 1.18 / 0.89 |
+  | the same, mana shield up | pool 17015 | max 10926: 0.64 | max 10019: 0.59 | max 16949: 1.00 |
+
+  *Amplifier: none found.* The Nemesis is paced (`ChaosPace.isPaced` true), `monster_damage.lua` gives it the level of its type
+  (263, 588, 960; `rec.level` is not used for damage) and the same damage multiplier as the type's natural monster (1.105, 1.272,
+  1.30), its tier multiplier is x1.0, so a plain Nemesis hits like its type; Vengeful adds the x1.5 (8916 against 6005). Its
+  health is x1.72 the paced health of its type (1262474 against 732960 for the Phantom Shade). Two things kill: the type's own
+  biggest hits are already over the pool of a character well under the monster's level (1.98 x the pool, in a natural pack too),
+  and Thorned (next table). Nothing about the Nemesis multiplies a hit that does not multiply its type's hit.
+
+  Thorned, one scripted hit of the character on a Nemesis of the type (the reflect that reached the character, against its pool;
+  the four hits one after the other in the same second; before / after the change):
+
+  | Hit | Phantom Shade, pool 3035 | Snake Master, pool 7045 | Elite Ice Dragon, pool 12740 |
+  |---|---|---|---|
+  | 5000 | 374 (0.12) / 168 (0.06) | 167 (0.02) / 167 (0.02) | 342 (0.03) / 342 (0.03) |
+  | 30000 | 3583 (1.18) / 168 (0.06) | 2405 (0.34) / 523 (0.07) | 3749 (0.29) / 1274 (0.10) |
+  | 100000 | 12778 (4.21) / 59 (0.02) | 9110 (1.29) / 523 (0.07) | 14123 (1.11) / 1274 (0.10) |
+  | 300000 | 39084 (12.88) / 0 | 10503 (1.49) / 9 (0.00) | 28462 (2.23) / 295 (0.02) |
+
+  The amount is the one after the character's own defence. The biggest single hit a class can produce was not driven (no class
+  spells were cast; the scripted hits stand for it). After the change, the Phantom Shade Nemesis on the level 198 character: max
+  1821 = 0.600 of the pool, with and without a mana shield (2445 of 4075), Vengeful the same; the Elite Ice Dragon Nemesis: max
+  7644 (0.600), mana shield 10051 (0.591), Vengeful 7644 / 10209 (0.600). *A stranger* hitting the Nemesis: before, the hit was
+  cancelled (the Nemesis lost no health) and the same reflect was still dealt to the stranger (3583 for a 30000 hit, 1.18 x the
+  pool); after, nothing comes back.
 - **Optional hooks, all guarded:** `Chaos.t` / `Chaos.lang` (texts: the English texts of `nemesis_config.lua` are the
   keys; until `i18n_strings.lua` has them a pt-BR player reads the config's `texts.pt`), `ChaosAchievements.progress`
   (stats `nemesis_marked`, `nemesis_avenged`, `nemesis_hunted`; the achievements themselves are not written yet),
@@ -29498,6 +29712,13 @@ README warned.
   2. **Shell fallback** on the VPS: `chaos-ctl.sh client-pair set 56` (`client-pair show` prints `chaosClientPair=56` or
      `chaosClientPair=missing`); a number lower than the record is refused. Without the kit: `python3 -I
      server/tools/client_pair.py set SERVER_DIR 56 [--force] [--dry-run]`.
+  3. **Not while an update runs (O486, owner 2026-11-11).** The update installs on a copy of the server folder for about
+     ten minutes and refuses its swap when the live `config.lua` changed meanwhile in more than the XP rates. The owner
+     set pair 63 during that time and lost the run. Now `client-pair set` answers `update-running` while an update or
+     rollback holds the lock, and the update's refusal names the changed keys and what to do: `FAIL: config.lua changed
+     since the copy in more than the XP rates (chaosClientPair). Run the update again: it starts from the config.lua of
+     now`. Nothing is changed by a refused swap: the server runs the version of before, engine included. Tests:
+     `chaos_kit_update_test.py`, `chaos_ctl_test.py`.
   3. Then the admin app **Update** (or `install_all.py`) installs the held rows; no restart is needed for the record itself.
 * **Windows package.** Its client ships the pair on `windows-assets`, so `tools/windows/prepare_server.sh` records
   `client_pair.py` `PAIR_ASSETS` (`python3 -I server/tools/client_pair.py assets`) in the package's own `config.lua` and every

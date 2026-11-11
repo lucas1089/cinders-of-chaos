@@ -36,8 +36,9 @@ return {
 		-- (0 = always the script's). 30 minutes: one boss fight; twice the longest Chaos boss limit (18 minutes)
 		maxSeconds = 1800,
 		-- the time of a place without a kick time of its own (tools/patch_base_eventrooms.py; config.chaosRoom): the
-		-- soul pit (5 short waves) and the tower defence (about 7 minutes of waves and walking after the lever)
-		ownSeconds = {soulpit = 900, towerdefense = 1200},
+		-- tower defence (about 7 minutes of waves and walking after the lever). The soul pit had 900 here until O488
+		-- removed it from the game.
+		ownSeconds = {towerdefense = 1200},
 		-- at the end everyone inside goes to the room's exitPosition (the script's own kick place), the boss and the
 		-- other monsters are removed. A boss kill keeps the script's own exit (its teleport and its kick 60 s later).
 		-- An empty room (all dead, out or logged out) unlocks after idleSeconds.

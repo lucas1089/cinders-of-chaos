@@ -548,8 +548,22 @@ function Creature:changeSpeed(d) self.speedDelta = (self.speedDelta or 0) + d en
 function Creature:getOutfit() local o = {} for k, v in pairs(self.outfit) do o[k] = v end return o end
 function Creature:setOutfit(o) self.outfit = o end
 function Creature:setSkull(s) self.skull = s end
-function Creature:registerEvent(n) self.events[n] = true end
-function Creature:unregisterEvent(n) self.events[n] = nil end
+-- events run in registration order (the engine's order): the mock keeps it (O483)
+function Creature:registerEvent(n)
+	if self.events[n] then return false end
+	self.events[n] = true
+	self.order = self.order or {}
+	self.order[#self.order + 1] = n
+	return true
+end
+function Creature:unregisterEvent(n)
+	if not self.events[n] then return false end
+	self.events[n] = nil
+	for i, e in ipairs(self.order or {}) do
+		if e == n then table.remove(self.order, i) break end
+	end
+	return true
+end
 function Creature:remove() creatures[self.id] = nil self.removed = true end
 function Creature:teleportTo(p) self.pos = {x = p.x, y = p.y, z = p.z} end
 function Creature:getTarget() return self.target end
@@ -600,6 +614,9 @@ ChaosTiers = {rare = {label = "Rare", damage = 1.5, xp = 4}}
 ChaosTierState = {}
 ChaosTierConfig = {maxChain = 2, bosses = {}}
 local regenTicks = 0
+-- rift.lua's cap registrar (O478), called by nemesis.lua for the victim and the party members (O483)
+local capCalls = {}
+ChaosRift = {capLast = function(p) capCalls[#capCalls + 1] = p end}
 ChaosMods = {berserker = {}, swift = {}, reflective = {}, regenerating = {onTick = function() regenTicks = regenTicks + 1 end}}
 function ChaosTierOf(c) local s = ChaosTierState[c:getId()] return s and s.tier or (c.boss and "boss" or "normal") end
 ChaosLoot = {monsterLevel = function(m) return m.monsterLevel or 0 end}
@@ -746,6 +763,65 @@ eq(nem.maxHealth, math.floor(400 * cfgLive.stats.healthMult * rec.level / rec.ba
 eq(ChaosTierState[nem.id].tier, "nemesis", "monster_tiers.lua state: tier nemesis")
 eq(ChaosTierState[nem.id].depth, ChaosTierConfig.maxChain, "never an ambush copy")
 ok(nem.events.ChaosTierDeath and nem.events.ChaosModTaken and nem.events.ChaosNemesisMonsterDeath, "events on it")
+-- O483: the guard that cancels a stranger's hit runs BEFORE the modifiers' damage-taken event (the reflect)
+do
+	local at = {}
+	for i, name in ipairs(nem.order) do at[name] = i end
+	ok(at.ChaosNemesisTaken and at.ChaosModTaken and at.ChaosNemesisTaken < at.ChaosModTaken,
+		"the guard (ChaosNemesisTaken) is registered before the modifiers' event (ChaosModTaken)")
+	-- the same with a tier roll that registered the modifier event first: setupMonster puts the order right
+	local capBefore = #capCalls
+	local again = Game.createMonster("Ghoul", {x = 100, y = 100, z = 7})
+	table.remove(created)
+	again:registerEvent("ChaosModTaken")
+	again:registerEvent("ChaosNemesisTaken") -- the wrong way round on purpose
+	ok(again.order[1] == "ChaosModTaken", "(setup: the wrong order)")
+	NE.setupMonster(again, rec, varek)
+	local at2 = {}
+	for i, name in ipairs(again.order) do at2[name] = i end
+	ok(at2.ChaosNemesisTaken < at2.ChaosModTaken, "an earlier registration of the modifier event is put behind the guard")
+	local c2 = 0
+	for _, name in ipairs(again.order) do if name == "ChaosModTaken" or name == "ChaosNemesisTaken" then c2 = c2 + 1 end end
+	eq(c2, 2, "and nothing is registered twice")
+	NE.alive[again.id], NE.byVictim[rec.victim] = nil, nem.id
+	table.remove(queue) -- the tick it scheduled
+	for i = #capCalls, capBefore + 1, -1 do capCalls[i] = nil end
+end
+-- a stranger's hit on it: the events in registration order, each one sees what the one before returned. A stand in for the
+-- modifiers' event reflects 15% of what it is handed, as ChaosTierConfig.reflectShare does
+do
+	local reflected = {}
+	local standIn = {onHealthChange = function(creature, attacker, pd, pt, sd, st)
+		local back = math.floor((math.abs(pd) + math.abs(sd)) * 0.15)
+		if back > 0 then reflected[#reflected + 1] = {to = attacker, amount = back} end
+		return pd, pt, sd, st
+	end}
+	local function run(creature, attacker, pd)
+		local ptype, sd, st = 1, 0, 2
+		for _, name in ipairs(creature.order) do
+			local ev = name == "ChaosModTaken" and standIn or registry[name]
+			if ev and ev.onHealthChange then
+				pd, ptype, sd, st = ev.onHealthChange(creature, attacker, pd, ptype, sd, st, 0)
+			end
+		end
+		return pd
+	end
+	local stranger0 = player("Stranger0", 70, {pos = {x = 102, y = 100, z = 7}})
+	local landed = run(nem, stranger0, -500)
+	eq(landed, 0, "a stranger's hit does not land")
+	eq(#reflected, 0, "and nothing comes back on the stranger for a hit that never landed")
+	landed = run(nem, varek, -500)
+	eq(landed, -500, "the victim's hit lands")
+	eq(#reflected, 1, "and the reflect comes back on the victim")
+	eq(reflected[1] and reflected[1].amount, 75, "15% of it")
+end
+-- O483: the hit cap. The cap events (rift.lua, O478) are registered last on the victim when it appears; its source says 60%
+eq(#capCalls, 1, "the cap registrar ran once, on the victim, when it appeared")
+eq(capCalls[1], varek, "on the victim")
+eq(ChaosHitCap.shareOf(nem, varek), cfgLive.hitCap.share, "the victim's hits are capped with the config share")
+eq(ChaosHitCap.shareOf(nem, varek), 0.60, "60%")
+eq(ChaosHitCap.shareOf(monster("Ghoul"), varek), nil, "another monster's hits are not capped by it")
+eq(ChaosHitCap.shareOf(nem, nil), cfgLive.hitCap.share, "no victim given: the share")
 eq(nem.target, varek, "it targets its victim")
 eq(lastMsg(varek), shown .. " has found you!")
 eq(NE.byVictim[5], nem.id)
@@ -770,6 +846,27 @@ a = R.ChaosNemesisGuardMana.onManaChange(stranger, nem, -100, 1, 0, 2, 0)
 eq(a, 0, "stranger: no mana damage either")
 a = R.ChaosNemesisGuardMana.onManaChange(friend, nem, -100, 1, 0, 2, 0)
 eq(a, -100, "party member: mana damage")
+-- O483: a party member it may hurt gets the cap events too (the tick asks again), once per login; a stranger gets no share
+do
+	local before = #capCalls
+	NE.ensureCap(NE.alive[nem.id], varek)
+	eq(#capCalls, before + 1, "the party member gets the cap events (the victim already has them)")
+	eq(capCalls[#capCalls], friend, "it is the party member")
+	NE.ensureCap(NE.alive[nem.id], varek)
+	eq(#capCalls, before + 1, "and only once")
+	eq(ChaosHitCap.shareOf(nem, friend), 0.60, "the party member's hits are capped")
+	eq(ChaosHitCap.shareOf(nem, stranger), nil, "a stranger takes nothing from it: no share")
+	local oldId = friend.id
+	friend.id = oldId + 5000 -- the party member logs in again: a new creature id
+	NE.ensureCap(NE.alive[nem.id], varek)
+	eq(#capCalls, before + 2, "a new login gets the cap events again")
+	friend.id = oldId
+	local c = cfgLive.hitCap
+	c.enabled = false
+	eq(ChaosHitCap.shareOf(nem, varek), nil, "switched off: no share")
+	NE.ensureCap(NE.alive[nem.id], varek)
+	c.enabled = true
+end
 a = R.ChaosNemesisGuard.onHealthChange(stranger, ghoul, -100, 1, 0, 2, 0)
 eq(a, -100, "other monsters are not touched")
 -- nobody steals the revenge: a stranger deals it no damage, the party does

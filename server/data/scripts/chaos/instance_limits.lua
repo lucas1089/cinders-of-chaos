@@ -71,9 +71,18 @@ function IL.warn(run, left, players, label, limits)
 		local lang = Chaos.lang(p)
 		local name = Chaos.t(p, label or "Instance")
 		local leftText = K.leftText(mark, lang)
-		p:sendTextMessage(msgWarn(), Chaos.t(p, "%s: %s. Everyone inside is sent out when the time runs out.", name, leftText))
+		-- a system with two clocks (O484, the Infinity Tower) gives limits.sentence(player, lang, mark, leftText, name) ->
+		-- the sentence, the toast title, the toast text; every other system keeps the shared sentence below
+		local text, title, body
+		if type(l.sentence) == "function" then
+			text, title, body = l.sentence(p, lang, mark, leftText, name)
+		end
+		if not text then
+			text = Chaos.t(p, "%s: %s. Everyone inside is sent out when the time runs out.", name, leftText)
+		end
+		p:sendTextMessage(msgWarn(), text)
 		if mark >= 60 and ChaosNotify and ChaosNotify.send then
-			ChaosNotify.send(p, name, leftText)
+			ChaosNotify.send(p, title or name, body or leftText)
 		end
 	end
 	return mark
@@ -266,7 +275,7 @@ end
 --   ChaosBossRooms.leverUse(player, key, config) -> false   at the start of the lever's onUse (the tile's onStepIn): the
 --                                                            room is in use, or a monster stepped on the tile
 --   ChaosBossRooms.started(key, config, participants)        after the group went in and the boss was made
--- tools/patch_base_eventrooms.py wires the soul pit and the tower defence the same way, with a room config of its own
+-- tools/patch_base_eventrooms.py wires the tower defence the same way, with a room config of its own
 -- (config.chaosRoom: the time from bossRooms.ownSeconds; config.chaosOnClose(players, why): resets the place's state at
 -- the end) and ChaosBossRooms.finished(key) when the place ends by its own rule (completed, won or lost).
 -- The script keeps its own checks (participants, level, cooldown, a player in the room), its boss and its exit after a
@@ -376,7 +385,7 @@ local function clearBars(key)
 end
 
 -- a player on one of the room's participant tiles (the stock lever takes its group from them: config.participantsPos)?
--- true for a room without such tiles (the soul pit, the tower defence)
+-- true for a room without such tiles (the tower defence)
 function BR.groupReady(player, config)
 	local list = config and config.participantsPos
 	-- only the stock lever template; the event rooms (config.chaosRoom) use participantsPos for other spots
@@ -526,7 +535,7 @@ function BR.started(key, config, participants)
 	return s
 end
 
--- the place's own end (a completed soul pit, the tower defence won or lost): as after a boss kill, the room closes
+-- the place's own end (the tower defence won or lost): as after a boss kill, the room closes
 -- 65 s later, at once when it is empty
 function BR.finished(key)
 	local s = BR.sessions[key]

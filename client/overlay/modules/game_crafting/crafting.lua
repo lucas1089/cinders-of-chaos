@@ -844,7 +844,7 @@ end
 
 function toggle()
   if not window then return end
-  -- the forge window is the default (forge.lua); the classic one when the player chose it
+  -- the forge window (forge.lua) is the bench; this window shows only for Salvage (classicOnce)
   if CraftingForge and CraftingForge.wanted() then
     if window:isVisible() then hide() end
     CraftingForge.toggle()

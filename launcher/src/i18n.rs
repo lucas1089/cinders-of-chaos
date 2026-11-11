@@ -83,6 +83,14 @@ pub fn play_anyway(l: Lang) -> &'static str {
     }
 }
 
+/// The one button of the "Unity client not published" box: back to the main client.
+pub fn use_main_client(l: Lang) -> &'static str {
+    match l {
+        Lang::Pt => "Usar o cliente principal",
+        Lang::En => "Use the main client",
+    }
+}
+
 pub fn title(l: Lang) -> &'static str {
     match l {
         Lang::Pt => "Cinders of Chaos Launcher",
@@ -164,8 +172,12 @@ pub fn feed_text(t: FeedText, l: Lang) -> &'static str {
 /// first, then swapped with a rollback.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
-    /// Manifest or file could not be fetched: the server is unreachable or answered an error.
+    /// The manifest could not be fetched: no answer from the server (resolve, connect, timeout, TLS).
     Network(String),
+    /// The server answered the manifest request with an HTTP error (400 or more).
+    Http(u16),
+    /// The Unity manifest answered 404 or 410: the Unity channel was never published (O494).
+    UnityNotPublished,
     /// Signature missing, malformed, wrong key or wrong bytes.
     BadSignature,
     /// Signed, but the content breaks a rule (path, hash, size, product).
@@ -195,6 +207,10 @@ impl Error {
         match (self, l) {
             (Error::Network(d), Lang::Pt) => format!("Não foi possível falar com o servidor de atualização. Confira a internet e tente de novo. ({d})"),
             (Error::Network(d), Lang::En) => format!("Could not reach the update server. Check your internet and try again. ({d})"),
+            (Error::Http(s), Lang::Pt) => format!("O servidor de atualização respondeu com erro (HTTP {s}). Tente de novo em alguns minutos."),
+            (Error::Http(s), Lang::En) => format!("The update server answered with an error (HTTP {s}). Try again in a few minutes."),
+            (Error::UnityNotPublished, Lang::Pt) => "O cliente Unity ainda não foi publicado. Use o cliente principal.".into(),
+            (Error::UnityNotPublished, Lang::En) => "The Unity client has not been published yet. Use the main client.".into(),
             (Error::BadSignature, Lang::Pt) => "A assinatura da atualização não confere. Nada foi instalado.".into(),
             (Error::BadSignature, Lang::En) => "The update signature does not match. Nothing was installed.".into(),
             (Error::DevPackage, Lang::Pt) => "O cliente Unity publicado é uma versão de desenvolvimento, sem a chave do cliente, e não é oferecido aos jogadores. Nada foi instalado. Use o cliente principal.".into(),
@@ -260,6 +276,8 @@ mod tests {
     fn every_error_has_both_languages() {
         let all = [
             Error::Network("x".into()),
+            Error::Http(404),
+            Error::UnityNotPublished,
             Error::BadSignature,
             Error::BadManifest("x".into()),
             Error::OlderManifest { got: 1, have: 2 },
@@ -279,6 +297,36 @@ mod tests {
             let (pt, en) = (e.text(Lang::Pt), e.text(Lang::En));
             assert!(!pt.is_empty() && !en.is_empty() && pt != en, "{e:?}");
         }
+    }
+
+    #[test]
+    fn the_missing_channel_and_http_texts_in_full() {
+        assert_eq!(
+            Error::UnityNotPublished.text(Lang::En),
+            "The Unity client has not been published yet. Use the main client."
+        );
+        assert_eq!(
+            Error::UnityNotPublished.text(Lang::Pt),
+            "O cliente Unity ainda não foi publicado. Use o cliente principal."
+        );
+        assert_eq!(
+            Error::Http(404).text(Lang::En),
+            "The update server answered with an error (HTTP 404). Try again in a few minutes."
+        );
+        assert_eq!(
+            Error::Http(503).text(Lang::Pt),
+            "O servidor de atualização respondeu com erro (HTTP 503). Tente de novo em alguns minutos."
+        );
+        // neither blames the player's internet, and neither shows a curl tail
+        for e in [Error::UnityNotPublished, Error::Http(404)] {
+            for l in [Lang::Pt, Lang::En] {
+                let t = e.text(l);
+                assert!(!t.contains("curl") && !t.to_lowercase().contains("internet"), "{t}");
+            }
+        }
+        // a transport failure still says so
+        assert!(Error::Network("curl 7: x".into()).text(Lang::En).contains("internet"));
+        assert_ne!(use_main_client(Lang::Pt), use_main_client(Lang::En));
     }
 
     #[test]

@@ -79,6 +79,31 @@ function K.leftText(sec, lang)
 	return T(lang, "%s seconds left", sec)
 end
 
+-- "in 5 minutes" part of a sentence: 300 -> "5 minutes", 60 -> "1 minute", 10 -> "10 seconds" (lang as K.leftText)
+function K.inText(sec, lang)
+	sec = max(0, floor(tonumber(sec) or 0))
+	if sec >= 120 and sec % 60 == 0 then
+		return T(lang, "%d minutes", floor(sec / 60))
+	elseif sec == 60 then
+		return T(lang, "1 minute")
+	elseif sec == 1 then
+		return T(lang, "1 second")
+	end
+	return T(lang, "%d seconds", sec)
+end
+
+-- O484: the warning of a system with TWO clocks (the Infinity Tower: a time per floor and a time for the whole run) says
+-- which clock it is. name: the system's name (already in the player's language); limit: seconds of the whole run.
+function K.wholeRunText(name, mark, limit, lang)
+	return T(lang, "%s: the whole run ends in %s (%d minute limit). Everyone inside leaves then.", name, K.inText(mark, lang),
+		floor((tonumber(limit) or 0) / 60 + 0.5))
+end
+
+-- the floor's own warning: "Floor 57: 1 minute left to clear it."
+function K.floorLeftText(floorNo, mark, lang)
+	return T(lang, "Floor %d: %s to clear it.", floorNo, K.leftText(mark, lang))
+end
+
 local function ordinal(n)
 	local tens = n % 100
 	if tens >= 11 and tens <= 13 then

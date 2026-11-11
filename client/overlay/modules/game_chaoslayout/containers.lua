@@ -6,7 +6,8 @@
 -- At login (option "Remember open backpacks", on by default) the saved containers open again one by one, each after
 -- its parent (g_game.open on the inventory item, then on the item inside the parent; a short gap between two opens),
 -- then go to their panel, order, height and scroll. A container that is gone is skipped. On a phone game_mobilebag
--- keeps sizing the windows (its cells fill the panel): the height is not set there.
+-- keeps sizing the windows (its cells fill the panel): the height is not set there. A container the side panels have no
+-- room for still opens (base patch 0191, O485): the others shrink, none closes; see ChaosPanelRoom (panelroom_logic.lua).
 --   ChaosLayout.Containers.snapshot()            the open containers as the layout saves them
 --   ChaosLayout.Containers.restore(list, done)   reopen a saved list
 --   ChaosLayout.Containers.openPath(steps, at)   open the containers of steps (Find my item) and flash slot `at`
@@ -239,7 +240,11 @@ local function place(saved)
       if x.e.height and not isMobile() then pcall(x.w.setHeight, x.w, x.e.height) end
     end
   end
+  -- a saved set that no longer fits (a smaller window than at logout) shrinks towards the minimum heights, the biggest
+  -- container first, and nothing closes (base patch 0191, O485); a set that fits is left as it was saved
+  local ui = modules.game_interface
   for _, target in pairs(byId) do
+    if ui and ui.fitPanelWithoutClosing then pcall(ui.fitPanelWithoutClosing, target) end
     if target.fitAll then pcall(target.fitAll, target) end
   end
   -- the scroll once the heights are final

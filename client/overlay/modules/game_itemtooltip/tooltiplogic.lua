@@ -243,6 +243,7 @@ end
 -- are translated, the class names stay as they are (O467)
 function L.classText(voc)
   if voc == 'all classes' then return tr('all classes') end
+  if voc == 'no class' then return tr('no class') end
   return voc
 end
 
