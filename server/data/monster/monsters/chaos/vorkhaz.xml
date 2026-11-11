@@ -47,7 +47,7 @@
     <element holyPercent="0" />
     <element icePercent="0" />
   </elements>
-	<defenses armor="85" defense="85">
+	<defenses armor="48" defense="48">
 		<defense name="healing" interval="1000" chance="15" min="1610" max="2440">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

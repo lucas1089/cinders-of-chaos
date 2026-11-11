@@ -260,6 +260,16 @@ for f, _ in tune.fire_resist_files():
         fail(f'{f}: resistance above the cap (normal {tune.resists.CAP_NORMAL}, boss {tune.resists.CAP_BOSS}), an immunity or a flat 30 '
              f'on seven types; run server/tools/tune_monsters.py')
 
+# flat armour and defence (O505, server/tools/patch_monster_flat_defence.py): the XML armor and defense of a monster (Lua monster.defenses)
+# are at most the cap of its level, a bite of at most 10% (a boss 20%) of the median auto attack roll. tune_monsters.py applies it.
+_flat_pool, _flat_cfg = tune.flat.Pool(tune.flat.POOL), tune.flat.read_config()
+for f, _ in tune.fire_resist_files():
+    _text = open(f, encoding='utf-8', errors='ignore').read()
+    _fix = tune.flat.xml if f.endswith('.xml') else tune.flat.lua
+    if _fix(_text, _flat_pool, _flat_cfg)[0] != _text:
+        fail(f'{f}: armor or defense above the cap of its level (server/tools/patch_monster_flat_defence.py, README "Flat armour, weapon '
+             f'spells and the Monk\'s fist (O505)"); run server/tools/tune_monsters.py')
+
 # experience > 0 but no loot on purpose: adds and bosses whose system pays the rewards (uber.lua, guildboss.lua,
 # raid.lua). Experience 0 (summons, pets, goblins, wardens) needs no entry. Every other monster needs a loot item.
 LOOTLESS_OK = {'bloodmoon thrall', 'cinderspawn', 'hollow wraith', 'storm shard',      # uber.lua adds

@@ -37,7 +37,7 @@
 			<attribute key="areaEffect" value="smallclouds"/>
 		</attack>
 	</attacks>
-	<defenses armor="80" defense="80">
+	<defenses armor="57" defense="57">
 		<defense name="healing" interval="1000" chance="20" min="180" max="3080">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

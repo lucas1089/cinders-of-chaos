@@ -27,7 +27,7 @@
 			<attribute key="areaEffect" value="energyarea" />
 		</attack>
 	</attacks>
-	<defenses armor="60" defense="60" />
+	<defenses armor="6" defense="6" />
 	<elements>
 		<element physicalPercent="0" />
 		<element firePercent="0" />

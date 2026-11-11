@@ -62,6 +62,7 @@ sys.dont_write_bytecode = True
 import class_dps_model as M  # noqa: E402
 import rotation_sim as R  # noqa: E402
 import weapon_sim as WS  # noqa: E402
+import patch_monster_flat_defence as F  # noqa: E402
 
 CONFIG = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'monster_defence_config.lua')
 DEFENCE = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'defence_config.lua')
@@ -86,10 +87,17 @@ SKILL_FLOOR = 36.0
 # between 0 and twice the mean. The Thief's blade adds crits and is left out.
 ROLL = (0.165, 0.348, 0.482, 0.571, 0.646, 0.733, 0.803, 0.859, 0.925, 0.988, 1.023, 1.07, 1.126, 1.2, 1.265, 1.338, 1.427, 1.522,
         1.659, 1.85)
-# the armour (= the defence, the files hold the same number) of a hunt monster by level: the median of the bounty pool's monsters
-# within 10% of the level on the installed server (5 at 8, 10 at 13, 15 at 20, 30 at 60 and 100, 65 at 300, 70 at 500) and of the
-# repository's level-scaled monsters (75 at 500, 85 at 1000, 90 at 2000), measured 2026-11-11 with SP/o501 realmon.py, chaosmon.py
-FLAT = ((1, 2.0), (8, 5.0), (13, 10.0), (20, 15.0), (60, 30.0), (100, 30.0), (300, 65.0), (500, 75.0), (1000, 85.0), (2000, 90.0))
+# the armour (= the defence, the files hold the same number) of a stock hunt monster by level BEFORE the rule of O505 (install step
+# monsterflat): the median of the bounty pool's monsters within 10% of the level on the installed server (5 at 8, 10 at 13, 15 at 20,
+# 30 at 60 and 100, 65 at 300, 70 at 500) and of the repository's level-scaled monsters (75 at 500, 85 at 1000, 90 at 2000), measured
+# 2026-11-11 with SP/o501 realmon.py, chaosmon.py. After the rule a monster keeps the smaller of this and the cap of its level (flat_at).
+XML_FLAT = ((1, 2.0), (8, 5.0), (13, 10.0), (20, 15.0), (60, 30.0), (100, 30.0), (300, 65.0), (500, 75.0), (1000, 85.0), (2000, 90.0))
+# O505 G5: the share of the median roll that the flat armour and defence together may take (config flatShare, percent), the points above
+# it that the whole-number cap may reach (the cap is an integer: armor 1 takes 1), and the most attacks of any class that may be blocked
+# outright (the hit rolls to 0 or less after the flat armour). Measured before the rule: half of a level 20 Warrior's attacks
+FLAT_SHARE = {'normal': 10.0, 'boss': 20.0}
+FLAT_TOL = 3.0
+BLOCKED_MAX = 5.0
 # G1: points the expected share of the median class may be off its armourTarget; G2: the most any class loses, by rank
 G1_TOL = 5.0
 CEILING = {'normal': 40.0, 'elite': 55.0, 'boss': 65.0}
@@ -146,9 +154,41 @@ def curve(levels=LEVELS):
 ARMOURED = [c for c in M.KEY if R.CLASS_KIND[c] != 'caster']      # the 15 classes whose auto attack is a melee or ranged hit
 
 
+def xml_flat_at(level):
+    """the armour and the defence of a stock hunt monster of the level before the rule of O505 (straight between the rows, flat outside)"""
+    return WS.interp([p[0] for p in XML_FLAT], [p[1] for p in XML_FLAT], level)
+
+
+NONFIST = [c for c in ARMOURED if R.CLASS_KIND[c] != 'fist']      # the 12 classes the flat armour rule is sized on (the fist line's hit is its own)
+
+
+@functools.lru_cache(maxsize=None)
+def roll_median(level):
+    """the median over the 12 armoured classes that are not the fist line of the mean engine roll of the physical part of an auto attack
+    at the level, before any armour (the typical character: the tier weapon, the typical skill)"""
+    return statistics.median(roll_mean(c, level) for c in NONFIST)
+
+
+def flat_roll_curve(levels=LEVELS):
+    """the rows of config flatRollCurve: the median engine roll by level (what the flat armour cap is a share of)"""
+    return [(lv, max(1, int(round(roll_median(lv))))) for lv in levels]
+
+
+@functools.lru_cache(maxsize=None)
+def flat_cfg():
+    """the rule's config as the install tool reads it, from the derived rows (equal to monster_defence_config.lua when --check passes)"""
+    return {'share': dict(FLAT_SHARE), 'roll': flat_roll_curve()}
+
+
+def flat_cap(level, boss=False, cfg=None):
+    """the cap of armor and defense for a monster of the level (patch_monster_flat_defence.py cap_for), from the derived rows"""
+    return F.cap_for(level, boss, cfg or flat_cfg())
+
+
 def flat_at(level):
-    """the armour and the defence of a typical hunt monster of the level (straight between the rows, flat outside)"""
-    return WS.interp([p[0] for p in FLAT], [p[1] for p in FLAT], level)
+    """the armour and the defence of a typical hunt monster of the level AFTER the rule of O505: the stock number or the cap of the
+    level, the smaller"""
+    return min(xml_flat_at(level), float(flat_cap(int(round(level)))))
 
 
 def skill_of(level):
@@ -163,11 +203,38 @@ def engine_mean(kind, level, skill, attack):
     return (low + top) / 2.0
 
 
+MONK_UNARMED = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'monk_chi_core.lua')
+
+
 @functools.lru_cache(maxsize=None)
-def roll_mean(cls, level):
+def monk_melee_damage():
+    """{class: the vocation's meleeDamage multiplier of a Monk's bare fists} from monk_chi_core.lua unarmed.meleeDamage ([17] = 1.2, ...)"""
+    text = open(MONK_UNARMED, encoding='utf-8').read()
+    row = re.search(r'meleeDamage\s*=\s*\{([^}]*)\}', text).group(1)
+    by_voc = {int(k): float(v) for k, v in re.findall(r'\[(\d+)\]\s*=\s*([0-9.]+)', row)}
+    return {c: by_voc.get(R.VOC[c], 1.0) for c in M.KEY if R.CLASS_KIND[c] == 'fist'}
+
+
+def monk_fist_attack(level):
+    """the attack value of a Monk's bare fists at the level (monk_chi_core.lua M.fistAttack): attackBase + attackPerLevel x level, at most
+    attackMax, times the weapon growth a(level) (O472); the fist weapons' attack counts when it is higher (the typical Monk fights bare)"""
+    text = open(MONK_UNARMED, encoding='utf-8').read()
+    base = float(re.search(r'attackBase\s*=\s*([0-9.]+)', text).group(1))
+    per = float(re.search(r'attackPerLevel\s*=\s*([0-9.]+)', text).group(1))
+    top = float(re.search(r'attackMax\s*=\s*([0-9.]+)', text).group(1))
+    return min(top, base + per * level) * WS.attack_growth(level)
+
+
+@functools.lru_cache(maxsize=None)
+def roll_mean(cls, level, stock_fist=False):
     """the mean of the engine's roll of the physical part of an auto attack of the class at the level, before the monster's flat
-    armour: the tier weapon of the level (weapon_sim.py), the typical skill"""
+    armour: the tier weapon of the level (weapon_sim.py), the typical skill. The fist line (O505, engine patch 0091): the Monk's fist
+    attack (monk_fist_attack) times the vocation's meleeDamage, the hit the scripts push to the engine; stock_fist=True is the stock
+    engine's bare fist (attack 7, FIST_ATTACK), which the Monk's own event scales up later (the units the monster layer measures its
+    armour in are the scaled ones either way, ChaosMonk.fistUnits)"""
     kind = R.CLASS_KIND[cls]
+    if kind == 'fist' and not stock_fist:
+        return engine_mean(kind, level, skill_of(level), monk_fist_attack(level)) * monk_melee_damage()[cls]
     if kind == 'fist':
         atk = FIST_ATTACK
     elif kind == 'distance':
@@ -201,15 +268,23 @@ def after_flat(hit, armour, defence):
 
 
 @functools.lru_cache(maxsize=None)
-def arriving(cls, level):
-    """[(size, weight)] the arriving physical hits of the class's auto attack at the level (the whole roll, flat armour taken off)"""
+def arriving(cls, level, flat=None):
+    """[(size, weight)] the arriving physical hits of the class's auto attack at the level (the whole roll, flat armour taken off). flat:
+    the armour and defence of the monster (None: the typical hunt monster after the rule of O505, flat_at)"""
     m = roll_mean(cls, level)
-    f = flat_at(level)
+    f = flat_at(level) if flat is None else flat
+    # a launcher is blocked by armour only (WeaponDistance: blockedByArmor; WeaponMelee and the fist also blockedByShield: the defence)
+    d = 0.0 if R.CLASS_KIND[cls] == 'distance' else f
     hits = []
     for r in ROLL:
-        for h, w in after_flat(m * r, f, f):
+        for h, w in after_flat(m * r, f, d):
             hits.append((h, w / len(ROLL)))
     return hits
+
+
+def blocked_share(cls, level, flat=None):
+    """the percent of the class's auto attacks that never arrive (the roll is 0 or less after the monster's flat armour and defence)"""
+    return 100.0 * (1.0 - sum(w for _, w in arriving(cls, level, flat)))
 
 
 @functools.lru_cache(maxsize=None)
@@ -223,15 +298,7 @@ def weapon_curve(levels=LEVELS):
     return [(lv, max(1, int(round(statistics.median(arriving_mean(c, lv) for c in ARMOURED))))) for lv in levels]
 
 
-def hit_at(rows, level):
-    """the config's rule: a straight line in log level and log hit between two rows, the slope of the last two rows beyond"""
-    a, b = rows[0], rows[1]
-    for i in range(1, len(rows)):
-        a, b = rows[i - 1], rows[i]
-        if level <= b[0]:
-            break
-    e = (math.log(b[1]) - math.log(a[1])) / (math.log(b[0]) - math.log(a[0]))
-    return a[1] * (max(1, level) / float(a[0])) ** e
+hit_at = F.hit_at   # the config's rule: a straight line in log level and log hit between two rows, the slope of the last two rows beyond
 
 
 def armour_value(rows, target, level, factor=None):
@@ -300,6 +367,107 @@ def problems(weapon=None, caps=None, targets=None, levels=LEVELS_CHECK, wtargets
     return out
 
 
+def config_flat_share(path=CONFIG):
+    return F.read_config(path)['share']
+
+
+def config_caster_vocations(path=CONFIG):
+    """the vocation ids of the casting classes (config casterVocations, O505: their spells meet the class curve, every other class's own spell
+    hits meet the weapon armour)"""
+    text = open(path, encoding='utf-8').read()
+    m = re.search(r'casterVocations\s*=\s*\{([^}]*)\}', text)
+    return sorted(int(v) for v in re.findall(r'\d+', m.group(1))) if m else []
+
+
+def flat_problems(rows=None, share=None, levels=LEVELS_CHECK, blocked_max=BLOCKED_MAX, classes=None):
+    """the G5 findings (O505): [text]. rows: config flatRollCurve, share: config flatShare. At every level of the check, for a normal and a
+    boss monster: (a) the flat armour and defence of the cap (mean bite of both together, patch_monster_flat_defence.py) take at most the
+    share (+ FLAT_TOL points, the cap is a whole number) of the median engine roll of the level; (b) no class of `classes` (default: the 12
+    armoured classes that are not the fist line) has more than blocked_max percent of its auto attacks blocked outright by a monster with
+    the cap of a normal monster; (c) the flat armour of a typical hunt monster is not above its stock number."""
+    rows = rows or config_curve(name='flatRollCurve')
+    share = share or config_flat_share()
+    cfg = {'share': share, 'roll': rows}
+    classes = classes or NONFIST
+    out = []
+    if share.get('normal') is None or share.get('boss') is None:
+        return ['G5 flatShare needs a normal and a boss share']
+    for lv in levels:
+        roll = roll_median(lv)
+        for kind in ('normal', 'boss'):
+            c = F.cap_for(lv, kind == 'boss', cfg)
+            bite = F.armour_bite(c) + F.defence_bite(c)
+            pct = 100.0 * bite / roll
+            if pct > share[kind] + FLAT_TOL:
+                out.append('G5 level %d %s: the flat armour and defence of cap %d take %.1f%% of the median roll %.1f, share %.0f%% + %.0f' % (
+                    lv, kind, c, pct, roll, share[kind], FLAT_TOL))
+        c = F.cap_for(lv, False, cfg)
+        for cls in classes:
+            b = blocked_share(cls, lv, float(c))
+            if b > blocked_max + 1e-9:
+                out.append('G5 level %d: %s has %.1f%% of its auto attacks blocked outright by flat armour %d, limit %.0f%%' % (lv, cls, b, c, blocked_max))
+    return out
+
+
+def fist_reach(cls, level, stock_fist, rank='normal', flat=None):
+    """(blocked %, removed % by the layer, reaches %) of a fist class's auto attack against a monster of the level with the flat armour `flat`
+    (None: the typical hunt monster after O505): `reaches` is the damage that gets through both over the damage an armourless monster takes.
+    stock_fist=True: a stock engine (attack 7 rolled, the flat armour takes its part of that small hit, the Monk's event scales what is
+    left by F = the Monk's mean hit over the stock mean; the layer measures its armour on the scaled size); False: the engine of patch
+    0091 rolls the Monk's hit and the flat armour takes its part of that"""
+    f = flat_at(level) if flat is None else flat
+    wtargets = config_targets(name='weaponTarget')
+    A = armour_value(config_curve(name='weaponHitCurve'), wtargets[rank], level)
+    cap = config_caps()[rank]
+    full = roll_mean(cls, level)
+    if stock_fist:
+        m7 = roll_mean(cls, level, True)
+        scale = full / m7
+        hits = []
+        for r in ROLL:
+            for h, w in after_flat(m7 * r, f, f):
+                hits.append((h * scale, w / len(ROLL)))
+    else:
+        hits = []
+        for r in ROLL:
+            for h, w in after_flat(full * r, f, f):
+                hits.append((h, w / len(ROLL)))
+    arriving_w = sum(w for _, w in hits)
+    through = sum(v * w * (1 - share_of(A, v, cap)) for v, w in hits)
+    inbound = sum(v * w for v, w in hits)
+    return 100.0 * (1 - arriving_w), (100.0 * (1 - through / inbound) if inbound else 0.0), 100.0 * through / full
+
+
+FIST_CLASSES = [c for c in ARMOURED if R.CLASS_KIND[c] == 'fist']
+FIST_GAP = 20.0        # G6: the points a fist class may lose LESS than the median class (its fist hit is bigger than the median weapon hit at the low levels)
+FIST_CAP_ROOM = 5.0    # G6: points under the weapon cap a fist class's expected loss stays
+
+
+def fist_problems(levels=LEVELS_CHECK, weapon=None, caps=None, wtargets=None):
+    """the G6 findings (O505): [text]. The fist line (Monk, Shadowfist, Iron Sage) is measured in the units that arrive like every class (its hit
+    is the Monk's fist attack since engine patch 0091 and the scaled size on a stock engine, ChaosMonk.fistUnits): at every level of the check, on a
+    normal monster, its expected loss to armour is not above the median class's (a Monk is never worse off than a Warrior), at most FIST_GAP
+    points under it, and FIST_CAP_ROOM points under the weapon cap (it no longer sits at the cap of G2 because of units: before O505 it did
+    at every level)"""
+    weapon = weapon or config_curve(name='weaponHitCurve')
+    caps = caps or config_caps()
+    wtargets = wtargets or config_targets(name='weaponTarget')
+    out = []
+    for lv in levels:
+        A = armour_value(weapon, wtargets['normal'], lv)
+        mid = median_class(lv)
+        med = expected_share(arriving(mid, lv), A, caps['normal'])
+        for c in FIST_CLASSES:
+            s = expected_share(arriving(c, lv), A, caps['normal'])
+            if s > med + 1.0:
+                out.append('G6 level %d: %s loses %.1f%%, the median class (%s) %.1f%%' % (lv, c, s, mid, med))
+            if s < med - FIST_GAP:
+                out.append('G6 level %d: %s loses %.1f%%, more than %.0f points under the median class (%s) %.1f%%' % (lv, c, s, FIST_GAP, mid, med))
+            if s > caps['normal'] - FIST_CAP_ROOM:
+                out.append('G6 level %d: %s loses %.1f%%, at the weapon cap %.0f%%' % (lv, c, s, caps['normal']))
+    return out
+
+
 def autos(level):
     """rows [class, mean arriving hit, [after share normal, elite, boss], [before]]: before = the class curve, no cap (O462), after = the weapon
     curve with the caps (O501)"""
@@ -327,6 +495,20 @@ def main(argv):
         print(',\n'.join('\t\t{level = %d, hit = %d}' % row for row in got))
         print('weaponHitCurve:')
         print(',\n'.join('\t\t{level = %d, hit = %d}' % row for row in wgot))
+        print('flatRollCurve:')
+        print(',\n'.join('\t\t{level = %d, hit = %d}' % row for row in flat_roll_curve()))
+        return 0
+    if '--flat' in argv:
+        print('%6s %10s | %-25s | %-25s | %s' % ('level', 'median roll', 'cap normal: bite, share', 'cap boss: bite, share', 'blocked outright, worst class: stock flat -> after the cap'))
+        for lv in LEVELS_CHECK if '--all' in argv else LEVELS:
+            roll = roll_median(lv)
+            cn, cb = flat_cap(lv), flat_cap(lv, True)
+            bn, bb = F.armour_bite(cn) + F.defence_bite(cn), F.armour_bite(cb) + F.defence_bite(cb)
+            xml = xml_flat_at(lv)
+            w0 = max(blocked_share(c, lv, float(xml)) for c in NONFIST)
+            w1 = max(blocked_share(c, lv, float(cn)) for c in NONFIST)
+            print('%6d %10.1f | %3d: %5.1f  %5.1f%% | %3d: %5.1f  %5.1f%% | %5.1f%% -> %4.1f%% (stock flat %.0f)' % (
+                lv, roll, cn, bn, 100 * bn / roll, cb, bb, 100 * bb / roll, w0, w1, xml))
         return 0
     if '--check' in argv:
         bad = 0
@@ -342,13 +524,39 @@ def main(argv):
             print('  config    ', whave)
             print('  derivation', wgot)
             bad = 1
-        for p in problems():
+        fgot = flat_roll_curve()
+        fhave = config_curve(name='flatRollCurve')
+        if fhave != fgot:
+            print('FAIL monster_defence_config.lua flatRollCurve is not the derivation of the median engine roll:')
+            print('  config    ', fhave)
+            print('  derivation', fgot)
+            bad = 1
+        casters = sorted(R.VOC[c] for c in R.CLASS_KIND if R.CLASS_KIND[c] == 'caster')
+        if config_caster_vocations() != casters:
+            print('FAIL monster_defence_config.lua casterVocations %s are not the casting classes of rotation_sim.py %s' % (config_caster_vocations(), casters))
+            bad = 1
+        if config_flat_share() != FLAT_SHARE:
+            print('FAIL monster_defence_config.lua flatShare %s is not the share of this tool %s' % (config_flat_share(), FLAT_SHARE))
+            bad = 1
+        for p in problems() + flat_problems() + fist_problems():
             print('FAIL ' + p)
             bad = 1
         if bad:
             return 1
-        print('defence curve check: ok (%d anchors, median class hit %d at 100, %d at 500, %d at 1000; median weapon hit %d / %d / %d; G1 within %.0f points and G2 at %d levels)' % (
-            len(got), dict(got)[100], dict(got)[500], dict(got)[1000], dict(wgot)[100], dict(wgot)[500], dict(wgot)[1000], G1_TOL, len(LEVELS_CHECK)))
+        print('defence curve check: ok (%d anchors, median class hit %d at 100, %d at 500, %d at 1000; median weapon hit %d / %d / %d; flat armour cap %d / %d / %d at 20 / 100 / 500; G1 within %.0f points, G2, G5 and G6 at %d levels)' % (
+            len(got), dict(got)[100], dict(got)[500], dict(got)[1000], dict(wgot)[100], dict(wgot)[500], dict(wgot)[1000],
+            flat_cap(20), flat_cap(100), flat_cap(500), G1_TOL, len(LEVELS_CHECK)))
+        return 0
+    if '--fist' in argv:
+        print('%-6s %-10s | %-34s | %-34s | Warrior (the median) reaches' % ('level', 'class', 'stock engine: blocked / removed / reaches', 'engine with patch 0091'))
+        for lv in (8, 20, 60, 100, 300, 500, 1000):
+            mid = median_class(lv)
+            w = fist_reach(mid, lv, False)[2]
+            for c in FIST_CLASSES[:1]:
+                s, n = fist_reach(c, lv, True), fist_reach(c, lv, False)
+                s0 = fist_reach(c, lv, True, flat=xml_flat_at(lv))
+                print('%-6d %-10s | %5.1f%% / %5.1f%% / %5.1f%% (stock flat: %4.1f%% / %5.1f%% / %5.1f%%) | %5.1f%% / %5.1f%% / %5.1f%% | %5.1f%%' % (
+                    (lv, c) + s + s0 + n + (w,)))
         return 0
     if '--autos' in argv:
         levels = [int(argv[argv.index('--level') + 1])] if '--level' in argv else (100, 500, 1000)

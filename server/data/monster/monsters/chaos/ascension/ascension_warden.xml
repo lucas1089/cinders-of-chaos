@@ -30,7 +30,7 @@
 			<attribute key="areaEffect" value="mortarea" />
 		</attack>
 	</attacks>
-	<defenses armor="25" defense="25" />
+	<defenses armor="1" defense="1" />
 	<elements>
 		<element drownPercent="40"/>
 	</elements>

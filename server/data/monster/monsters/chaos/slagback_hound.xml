@@ -33,7 +33,7 @@
 			<attribute key="areaEffect" value="blackspark"/>
 		</attack>
 	</attacks>
-	<defenses armor="80" defense="80">
+	<defenses armor="25" defense="25">
 		<defense name="speed" interval="4000" chance="20" speedchange="300" duration="5000">
 			<attribute key="areaEffect" value="redshimmer"/>
 		</defense>

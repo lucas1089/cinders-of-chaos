@@ -19,7 +19,7 @@
 	<attacks>
 		<attack name="melee" interval="2000" min="0" max="-51" />
 	</attacks>
-	<defenses armor="10" defense="10">
+	<defenses armor="1" defense="1">
 	</defenses>
 	<elements>
 		<element earthPercent="-5" />

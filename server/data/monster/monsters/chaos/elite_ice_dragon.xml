@@ -29,7 +29,7 @@
 			<attribute key="areaEffect" value="icetornado"/>
 		</attack>
 	</attacks>
-	<defenses armor="75" defense="75"/>
+	<defenses armor="43" defense="43"/>
 	<elements>
 		<element firePercent="-10" />
 		<element physicalPercent="-5" />

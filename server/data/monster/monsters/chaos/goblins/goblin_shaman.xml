@@ -22,7 +22,7 @@
 			<attribute key="shootEffect" value="smallearth" />
 		</attack>
 	</attacks>
-	<defenses armor="10" defense="10">
+	<defenses armor="2" defense="2">
 		<defense name="healing" interval="2000" chance="20" min="56" max="112">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>

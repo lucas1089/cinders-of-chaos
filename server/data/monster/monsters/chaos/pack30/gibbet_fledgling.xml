@@ -24,7 +24,7 @@
 		</attack>
 		<attack name="bleedcondition" interval="2000" chance="20" radius="2" target="0" range="3" min="-130" max="-190"/>
 	</attacks>
-	<defenses armor="60" defense="60">
+	<defenses armor="21" defense="21">
 	</defenses>
 	<elements>
 		<element holyPercent="-10" />

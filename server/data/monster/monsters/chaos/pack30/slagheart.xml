@@ -34,7 +34,7 @@
 			<attribute key="areaEffect" value="greenbubble"/>
 		</attack>
 	</attacks>
-	<defenses armor="85" defense="85">
+	<defenses armor="47" defense="47">
 		<defense name="healing" interval="1000" chance="15" min="1590" max="2410">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

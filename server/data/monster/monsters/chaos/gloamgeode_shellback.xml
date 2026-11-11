@@ -33,7 +33,7 @@
 			<attribute key="areaEffect" value="purpleenergy"/>
 		</attack>
 	</attacks>
-	<defenses armor="130" defense="130">
+	<defenses armor="49" defense="49">
 		<defense name="healing" interval="2000" chance="12" min="1520" max="2530">
 			<attribute key="areaEffect" value="purpleenergy"/>
 		</defense>

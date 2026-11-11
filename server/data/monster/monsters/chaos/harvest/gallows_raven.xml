@@ -28,7 +28,7 @@
 			<attribute key="areaEffect" value="bats"/>
 		</attack>
 	</attacks>
-	<defenses armor="45" defense="50">
+	<defenses armor="21" defense="21">
 	</defenses>
 	<elements>
 		<element earthPercent="-10"/>
