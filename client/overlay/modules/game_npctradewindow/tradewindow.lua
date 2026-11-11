@@ -2,8 +2,10 @@
 -- "NPCs que vendem devem mostrar o inventario numa janela, nao num widget").
 -- The base module game_npctrade builds the trade as a mini window (NpcWindow, 175 px wide) and docks it in a side
 -- panel; only next to the base dialog window (which game_npctalk replaces by the speech bubble) it floats. This module
--- wraps game_npctrade.show: after the base put the window in a panel it lifts it to the game view's root panel (the
--- place the base dialog uses too), makes it 420 x 520 (smaller on a small view), and centres it. The base logic (items,
+-- wraps game_npctrade.show: the window goes straight to the game view's root panel (the place the base dialog uses too)
+-- and never into a side panel, so opening a shop closes no backpack (O506: the base asked a side panel for room first,
+-- and closed the windows at its bottom, backpacks included, to get it); it is made 420 x 520 (smaller on a small view)
+-- and centred. The base logic (items,
 -- tabs, price, quantity, the buttons) is untouched; closing the window ends the conversation as before.
 -- Without game_npctrade nothing happens. Geometry: tradewindowlogic.lua.
 --
@@ -36,11 +38,11 @@ local function tradeWidget()
   return g_ui.getRootWidget():recursiveGetChildById('tradeWindow')
 end
 
-local function float()
+local function float(forced)
   local w = tradeWidget()
   local root = rootPanel()
   if not alive(w) or not alive(root) then return end
-  if not L.needsFloat(w:isVisible(), w:getParent() == root) then return end
+  if not L.needsFloat(w:isVisible(), w:getParent() == root, forced) then return end
   local g = L.geometry(root:getWidth(), root:getHeight(), 0)
   w:setParent(root, true)
   w:setDraggable(true)
@@ -105,9 +107,52 @@ local function restoreGold()
   originalGetMoney = nil
 end
 
+-- O506: while the base's show() runs, its request for a place in a side panel (game_interface.addToPanelsWithPriority /
+-- addToPanels, L.PANEL_CALLS) is answered for the trade window by putting it on the root panel: nothing in the side panels is
+-- closed or shrunk, the backpacks stay. Any other window goes through the original function. Nothing stays installed
+-- after show() returns.
+local placedOnRoot = false
+
+local function widgetId(w)
+  local ok, id = pcall(function() return w:getId() end)
+  return ok and id or nil
+end
+
+local function placeOnRoot(w)
+  local root = rootPanel()
+  if not alive(w) or not alive(root) then return false end
+  w:setParent(root, true)
+  placedOnRoot = true
+  return true
+end
+
+local function guardedPlacement(original)
+  return function(w, ...)
+    if L.keepsOutOfPanels(widgetId(w)) and placeOnRoot(w) then return true end
+    return original(w, ...)
+  end
+end
+
 local function wrappedShow(...)
-  local result = originalShow(...)
-  local ok, err = pcall(float)
+  local gi = modules.game_interface
+  local original, installed = {}, {}
+  placedOnRoot = false
+  if gi then
+    for _, name in ipairs(L.PANEL_CALLS) do
+      if type(gi[name]) == 'function' then
+        original[name] = gi[name]
+        installed[name] = guardedPlacement(gi[name])
+        gi[name] = installed[name]
+      end
+    end
+  end
+  local packed = { pcall(originalShow, ...) }
+  for name, fn in pairs(original) do
+    if gi[name] == installed[name] then gi[name] = fn end
+  end
+  if not packed[1] then error(packed[2], 0) end
+  local result = packed[2]
+  local ok, err = pcall(float, placedOnRoot)
   if not ok then warn(err) end
   local spec = L.take(state, now())
   if spec then
