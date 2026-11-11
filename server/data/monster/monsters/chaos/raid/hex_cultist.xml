@@ -27,7 +27,7 @@
 			<attribute key="areaEffect" value="mortarea" />
 		</attack>
 	</attacks>
-	<defenses armor="40" defense="40" />
+	<defenses armor="19" defense="19" />
 	<elements>
 		<element physicalPercent="0" />
 		<element firePercent="-10" />

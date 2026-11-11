@@ -26,7 +26,7 @@
 			<attribute key="areaEffect" value="groundshaker" />
 		</attack>
 	</attacks>
-	<defenses armor="80" defense="80" />
+	<defenses armor="19" defense="19" />
 	<elements>
 		<element physicalPercent="15" />
 		<element firePercent="0" />

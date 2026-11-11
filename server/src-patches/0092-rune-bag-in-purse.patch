@@ -1,0 +1,253 @@
+# The Rune Bag in the purse (O509; owner 2026-11-11, translated: "The rune bag stays in the purse."; server/README.md
+# "Using a rune from the bag"). The purse is the player's store inbox (CONST_SLOT_STORE_INBOX), outside inventory slots
+# 1-10, and every walk by item type starts at slots 1-10: a magic rune in the Rune Bag that lies in the purse was never found
+# by a hotkey, the action bar or the helper (Game::internalGetThing -> Game::findItemOfType), never counted by
+# player:getItemCount / Player::getItemTypeCount and never taken by player:removeItem / Player::removeItemOfType.
+# The one rule (new header src/chaosrunebag.h): the items DIRECTLY inside a container of the Rune Bag type that lies DIRECTLY
+# in the store inbox. Nothing else of the purse is visited (not a plain item, not a Loot Bag, not a pouch of another kind).
+#   * Game::findItemOfType (a player, depthSearch): after slots 1-10 and the bags in them, the Rune Bag in the purse. The
+#     hotkey branch of internalGetThing, the action bar, the helper and player:getItemById(id, true) all end here. A rune in
+#     the backpack is therefore always preferred; the purse is the last place.
+#   * Player::getItemTypeCount, countRemovableItemsOfType (so removeItemOfType, the NPC sell checks and player:getItemCount),
+#     getAllUnlockedItemTypeCount (the NPC sale list), getAllItemTypeCount: the same bag, after the inventory. One walk counts
+#     and removes, so a count and a removal agree; a locked item is skipped as everywhere (countRemovableItemsOfType).
+#   * Game.setRuneBagContainer(itemId): the Rune Bag's container type from Lua (data/scripts/chaos/pouches.lua, at load and
+#     at every login, as Game.setWeightlessContainer). 0 or never called: nothing is visited, the old behaviour. The function
+#     existing is the capability Lua tests for (ChaosPouches.runeBagEngine). No config key, no save format change, no
+#     protocol change.
+# New header src/chaosrunebag.h (pure templates, tests in server/tools/chaosrunebag_test.cpp, CI). Guard:
+# server/tools/rune_bag_purse_patch_test.py. Apply in the server source root after 0001-0091: patch -p1 <
+# 0092-rune-bag-in-purse.patch, then rebuild (0091 is the fist attack of O505; the two touch different hunks).
+diff --git a/src/game.cpp b/src/game.cpp
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -4,6 +4,7 @@
+ #include "otpch.h"
+ 
+ #include "chaoscastserver.h"
++#include "chaosrunebag.h"
+ 
+ #include "pugicast.h"
+ 
+@@ -1730,6 +1731,22 @@
+ 			}
+ 		}
+ 	}
++
++	// Chaos (src-patch 0092): a player's search by type ends in the Rune Bag that lies in the purse (after slots 1-10 and
++	// the bags in them, so a rune in the backpack is always found first). Nothing else of the purse is visited
++	if (depthSearch) {
++		if (Player* player = dynamic_cast<Player*>(cylinder)) {
++			Item* found = nullptr;
++			ChaosRuneBag::forEachItem(player->getStoreInbox(), [&](Item* item) {
++				if (item->getID() == itemId && (subType == -1 || subType == item->getSubType())) {
++					found = item;
++					return true;
++				}
++				return false;
++			});
++			return found;
++		}
++	}
+ 	return nullptr;
+ }
+ 
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -13,6 +13,7 @@
+ #include "outputmessage.h"
+ #include "chaosdisplay.h"
+ #include "chaosfxoffsets.h"
++#include "chaosrunebag.h"
+ #include "chaoscastserver.h"
+ #include "game.h"
+ #include "protocolstatus.h"
+@@ -2202,6 +2203,7 @@
+ 	registerMethod("Game", "getItemAttributeByName", LuaScriptInterface::luaGameGetItemAttributeByName);
+ 	registerMethod("Game", "getReturnMessage", LuaScriptInterface::luaGameGetReturnMessage);
+ 	registerMethod("Game", "setWeightlessContainer", LuaScriptInterface::luaGameSetWeightlessContainer);
++	registerMethod("Game", "setRuneBagContainer", LuaScriptInterface::luaGameSetRuneBagContainer); // Chaos (src-patch 0092)
+ 	registerMethod("Game", "setItemCooldownChannel", LuaScriptInterface::luaGameSetItemCooldownChannel);
+ 
+ 	registerMethod("Game", "createItem", LuaScriptInterface::luaGameCreateItem);
+@@ -4738,6 +4740,24 @@
+ 	lua_pushboolean(L, true);
+ 	return 1;
+ }
++
++int LuaScriptInterface::luaGameSetRuneBagContainer(lua_State* L)
++{
++	// Game.setRuneBagContainer(itemId)   Chaos (src-patch 0092, O509): the container type of the store's Rune Bag
++	// (data/scripts/chaos/pouches.lua). A player's search, count and removal by item type then also look into the Rune Bag
++	// that lies in the purse. 0 switches it off. The function's presence is the capability the Lua tests for.
++	uint16_t itemId = getNumber<uint16_t>(L, 1);
++	if (itemId != 0) {
++		const ItemType& it = Item::items[itemId];
++		if (it.id == 0 || !it.isContainer()) {
++			lua_pushboolean(L, false);
++			return 1;
++		}
++	}
++	ChaosRuneBag::setBagType(itemId);
++	lua_pushboolean(L, true);
++	return 1;
++}
+ 
+ int LuaScriptInterface::luaGameSetItemCooldownChannel(lua_State* L)
+ {
+diff --git a/src/luascript.h b/src/luascript.h
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -576,6 +576,7 @@
+ 		static int luaGameGetItemAttributeByName(lua_State* L);
+ 		static int luaGameGetReturnMessage(lua_State* L);
+ 		static int luaGameSetWeightlessContainer(lua_State* L);
++		static int luaGameSetRuneBagContainer(lua_State* L);
+ 		static int luaGameSetItemCooldownChannel(lua_State* L);
+ 
+ 		static int luaGameCreateItem(lua_State* L);
+diff --git a/src/player.cpp b/src/player.cpp
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -17,6 +17,7 @@
+ #include "scheduler.h"
+ #include "weapons.h"
+ #include "chaosdisplay.h"
++#include "chaosrunebag.h"
+ 
+ #include <fmt/format.h>
+ 
+@@ -3434,6 +3435,14 @@
+ 			}
+ 		}
+ 	}
++
++	// Chaos (src-patch 0092): the Rune Bag in the purse counts as carried (the purse is outside slots 1-10)
++	ChaosRuneBag::forEachItem(storeInbox, [&](Item* bagItem) {
++		if (bagItem->getID() == itemId) {
++			count += Item::countByType(bagItem, subType);
++		}
++		return false;
++	});
+ 	return count;
+ }
+ 
+@@ -3483,6 +3492,25 @@
+ 			}
+ 		}
+ 	}
++
++	// Chaos (src-patch 0092): then the Rune Bag in the purse, the same rules (a locked rune is never taken); the same walk
++	// counts and removes, so a count and a removal always agree
++	ChaosRuneBag::forEachItem(storeInbox, [&](Item* bagItem) {
++		if (bagItem->getID() == itemId && (includeLocked || !bagItem->holdsChaosLocked())) {
++			uint32_t itemCount = Item::countByType(bagItem, subType);
++			if (itemCount != 0) {
++				if (itemList) {
++					itemList->push_back(bagItem);
++				}
++
++				count += itemCount;
++				if (count >= limit) {
++					return true;
++				}
++			}
++		}
++		return false;
++	});
+ 	return count;
+ }
+ 
+@@ -3521,6 +3549,14 @@
+ 			}
+ 		}
+ 	}
++
++	// Chaos (src-patch 0092): the Rune Bag in the purse (the NPC sale list agrees with countRemovableItemsOfType)
++	ChaosRuneBag::forEachItem(storeInbox, [&](Item* bagItem) {
++		if (!bagItem->holdsChaosLocked()) {
++			countMap[bagItem->getID()] += Item::countByType(bagItem, -1);
++		}
++		return false;
++	});
+ 	return countMap;
+ }
+ 
+@@ -3540,6 +3576,12 @@
+ 			}
+ 		}
+ 	}
++
++	// Chaos (src-patch 0092): the Rune Bag in the purse
++	ChaosRuneBag::forEachItem(storeInbox, [&](Item* bagItem) {
++		countMap[bagItem->getID()] += Item::countByType(bagItem, -1);
++		return false;
++	});
+ 	return countMap;
+ }
+ 
+diff --git a/src/chaosrunebag.h b/src/chaosrunebag.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaosrunebag.h
+@@ -0,0 +1,59 @@
++// Chaos (src-patch 0092, O509; server/README.md "Using a rune from the bag"): the Rune Bag in the purse.
++// The purse is the player's store inbox, outside inventory slots 1-10, so every walk by item type (the hotkey lookup,
++// the count and removal by type) never saw a rune in the Rune Bag that lies in it. This header is the one rule: the
++// items directly inside a container of the Rune Bag type that lies directly in the store inbox. Nothing else in the
++// purse is visited: not a plain item, not another bag, not a Loot Bag, not a pouch of another kind.
++// The Rune Bag's item id comes from Lua (Game.setRuneBagContainer, data/scripts/chaos/pouches.lua), 0 = off.
++// Pure and header-only (templates over any inbox / container / item with the engine's member names), so
++// server/tools/chaosrunebag_test.cpp runs it on fakes.
++#ifndef CHAOS_RUNEBAG_H
++#define CHAOS_RUNEBAG_H
++
++#include <cstdint>
++
++namespace ChaosRuneBag {
++
++inline uint16_t& bagType()
++{
++	static uint16_t id = 0;
++	return id;
++}
++
++inline void setBagType(uint16_t itemId)
++{
++	bagType() = itemId;
++}
++
++// Calls fn(item) for every item directly inside a Rune Bag lying directly in `inbox` (the store inbox), in the order of
++// the inbox, then of the bag. fn returns true to stop. Returns true when fn stopped the walk. A null inbox or no bag
++// type set visits nothing.
++template <class Inbox, class Fn>
++bool forEachItem(const Inbox* inbox, Fn&& fn)
++{
++	const uint16_t type = bagType();
++	if (inbox == nullptr || type == 0) {
++		return false;
++	}
++
++	for (auto* entry : inbox->getItemList()) {
++		if (entry == nullptr || entry->getID() != type) {
++			continue;
++		}
++
++		auto* bag = entry->getContainer();
++		if (bag == nullptr) {
++			continue;
++		}
++
++		for (auto* item : bag->getItemList()) {
++			if (item != nullptr && fn(item)) {
++				return true;
++			}
++		}
++	}
++	return false;
++}
++
++} // namespace ChaosRuneBag
++
++#endif

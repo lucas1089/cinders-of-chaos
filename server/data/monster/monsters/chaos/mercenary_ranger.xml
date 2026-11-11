@@ -29,7 +29,7 @@
 			<attribute key="shootEffect" value="shiverarrow"/>
 		</attack>
 	</attacks>
-	<defenses armor="75" defense="80"/>
+	<defenses armor="29" defense="29"/>
 	<voices interval="5000" chance="15">
 		<voice sentence="Here it goes!"/>
 		<voice sentence="Stand for my arrow."/>

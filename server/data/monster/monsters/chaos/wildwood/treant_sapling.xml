@@ -22,7 +22,7 @@
 			<attribute key="areaEffect" value="smallplants" />
 		</attack>
 	</attacks>
-	<defenses armor="18" defense="18">
+	<defenses armor="2" defense="2">
 		<defense name="healing" interval="2000" chance="8" min="60" max="120">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>

@@ -315,6 +315,25 @@ function A.openHandFactor(level, fistSkill, bestSkill, attackFactor, keystone, u
 	return A.maxWeaponDamage(level, math.max(fistSkill or 0, bestSkill or 0), A.fistAttack(level), attackFactor) * m / engine
 end
 
+-- O505 (engine patch 0091, Player:setFistAttack): what an engine that has it is told to roll an Open Hand fist with: the attack value of
+-- A.fistAttack and the multiplier that makes the engine's maximum (its own fist skill, the attack set here) the maximum A.openHandFactor
+-- wants (the better of the fist and the best melee skill, the keystone's and the unique's damage). nil when neither applies
+function A.openHandPush(level, fistSkill, bestSkill, attackFactor, keystone, unique)
+	local f = A.openHandFactor(level, fistSkill, bestSkill, attackFactor, keystone, unique)
+	if not f then
+		return nil
+	end
+	local o = cfg().arOpenHand
+	local attack = A.fistAttack(level)
+	local rolled = A.maxWeaponDamage(level, fistSkill, attack, attackFactor)
+	local engine = A.maxWeaponDamage(level, fistSkill, o.engineAttack, attackFactor)
+	if rolled <= 0 or engine <= 0 then
+		return nil
+	end
+	-- openHandFactor = want / engine(attack 7); the engine will roll `rolled` x mult, so mult = want / rolled = factor x engine / rolled
+	return attack, f * engine / rolled
+end
+
 -- the attack an empty hand gives the spells that read the weapon's attack (ChaosSpell.meleeAttack: the Thief line's
 -- strikes, the Templar line's), nil when neither the keystone nor the unique applies
 function A.openHandAttack(level, keystone, unique)

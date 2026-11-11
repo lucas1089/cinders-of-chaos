@@ -23,7 +23,7 @@
 			<attribute key="areaEffect" value="explosionarea" />
 		</attack>
 	</attacks>
-	<defenses armor="9" defense="9">
+	<defenses armor="1" defense="1">
 	</defenses>
 	<elements>
 		<element earthPercent="-5" />

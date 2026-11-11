@@ -76,13 +76,15 @@ ChaosPouchesConfig = {
 		-- below; not the rune shard (Orbs Pouch), not the unscribed rune (a crafting material). 200 slots: 136 kinds and a
 		-- second stack of the common ones. A copy of the stock blue backpack (2002, look 2869), no new sprite (clientId 0).
 		-- A player may move runes in and out by hand (pouches_core.lua P.runeBagRefusal refuses anything else). A magic rune
-		-- is used by hotkey and by the helper from a bag in the backpack, not from one in the purse (README "Store pouches").
+		-- is used by hotkey, action bar and helper from a bag in the backpack or in the purse (O509, owner 2026-11-11: "The
+		-- rune bag stays in the purse."; engine src-patch 0092, README "Using a rune from the bag"). The bag's id goes to the
+		-- engine from pouches.lua (Game.setRuneBagContainer), no id in C++.
 		runes = {id = 32096, sourceId = 2002, clientId = 0,
 			capacity = 200, weight = 100, title = "Rune Bag", article = "a",
 			name = "rune bag", plural = "rune bags",
 			collects = "support runes and magic runes",
 			description = "Store item: cannot be traded, sold or dropped. Collects support runes and magic runes from " ..
-				"your kills while you carry it. Hotkeys use a magic rune from it only while the bag is in your backpack."}
+				"your kills while you carry it. Its magic runes work by hotkey, action bar and helper from the purse or the backpack."}
 	},
 	-- the specialist pouches, in priority order: an item of their kind (gems / orbs, rune shards, gems / Rift Keys, omen
 	-- items / runes) always goes to the first CARRIED one that wants it (a gem to the Gem Pouch before the Orbs Pouch), first, before the Loot Pouch, whatever the Loot Pouch rules say. Full: the Loot Pouch takes it

@@ -22,7 +22,7 @@
 	<attacks>
 		<attack name="melee" interval="2000" min="0" max="-40" />
 	</attacks>
-	<defenses armor="8" defense="8" />
+	<defenses armor="1" defense="1" />
 	<loot>
         <item id="2148" countmax="70" chance="37500"/><!-- gold coin -->
 		<item id="2148" countmax="50" chance="37500"/><!-- gold coin -->

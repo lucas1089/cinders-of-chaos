@@ -33,7 +33,7 @@
 			<outfit type="333"/>
 		</attack>
 	</attacks>
-	<defenses armor="65" defense="65">
+	<defenses armor="29" defense="29">
 		<defense name="healing" interval="3000" chance="20" min="1000" max="5000">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

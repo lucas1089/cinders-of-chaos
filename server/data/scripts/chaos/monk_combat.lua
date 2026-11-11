@@ -110,6 +110,30 @@ local function fistWeaponAttack(player)
 	return best, hands
 end
 
+-- O505: fist_sync.lua (engine patch 0091) asks it for the Monk's wanted fist attack
+M.fistWeaponAttack = fistWeaponAttack
+
+-- O505: the factor from the size of a Monk's bare-fist hit as it arrives at the monster's defence layer (monster_defence.lua, the first Lua
+-- event of the monster) to its size after the scaling below (before the other multipliers). On an engine that rolls the fist with the
+-- Monk's attack (fist_sync.lua pushed it, patch 0091) the hit arrives at its size: 1. On the stock engine (attack 7) it is the factor this
+-- file scales it by. nil: not a Monk's fist hit (a weapon in the hands, another class). The layer measures its armour on the scaled size
+function M.fistUnits(player)
+	local voc = player:getVocation():getId()
+	if not M.isMonkLine(voc) then
+		return nil
+	end
+	local fist = fistWeaponAttack(player)
+	if not fist then
+		return nil
+	end
+	local FS = rawget(_G, "ChaosFistSync")
+	if FS and FS.capable() and FS.pushed[player:getId()] then
+		return 1
+	end
+	local skill = player:getEffectiveSkillLevel(SKILL_FIST)
+	return M.unarmedFactor(voc, player:getLevel(), skill, fist, M.attackFactor(player.getFightMode and player:getFightMode() or 1))
+end
+
 -- the off-hand strike of two fist weapons (M.dualFistStrike); ORIGIN_NONE, so it is no weapon hit again (no chi, no
 -- second strike)
 local function offhandFist(playerId, targetId, amount)
@@ -160,8 +184,22 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 		local fist, hands = fistWeaponAttack(player)
 		if fist then
 			local skill = player:getEffectiveSkillLevel(SKILL_FIST)
-			mult = mult * M.unarmedFactor(voc, player:getLevel(), skill, fist,
-				M.attackFactor(player.getFightMode and player:getFightMode() or 1))
+			local af = M.attackFactor(player.getFightMode and player:getFightMode() or 1)
+			-- O505: an engine with patch 0091 rolled this hit with the attack fist_sync.lua pushed (the Monk's own), so only the
+			-- difference between that and what is wanted now is applied (nearly always 1); the stock engine rolled attack 7 and the whole
+			-- factor applies, as before. The pair for the next swing is pushed after the hit
+			local FS = rawget(_G, "ChaosFistSync")
+			local used = FS and FS.capable() and FS.pushed[player:getId()] or nil
+			if used then
+				local a, m = M.enginePush(voc, player:getLevel(), fist)
+				mult = mult * M.pushCorrection(player:getLevel(), skill, af, used[1], used[2], a, m)
+				FS.sync(player)
+			else
+				mult = mult * M.unarmedFactor(voc, player:getLevel(), skill, fist, af)
+				if FS and FS.capable() then
+					FS.sync(player) -- the first swing before any push rolled attack 7: right from the next one
+				end
+			end
 			-- the same weapon power as every other weapon (weapon_power_core.lua, kind "fist"): the fist skill against the
 			-- typical skill of the level, ^ 0.5, clamped; 1 at the typical skill, so the measured balance stands
 			mult = mult * WP.hitFactor("fist", player:getLevel(), skill)

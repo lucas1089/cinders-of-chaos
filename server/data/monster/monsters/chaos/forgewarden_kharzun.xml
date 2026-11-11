@@ -37,7 +37,7 @@
 			<attribute key="areaEffect" value="fireattack"/>
 		</attack>
 	</attacks>
-	<defenses armor="120" defense="120"/>
+	<defenses armor="107" defense="107"/>
 	<elements>
 		<element physicalPercent="40"/>
 		<element firePercent="70"/>

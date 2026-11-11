@@ -26,7 +26,7 @@
 		<flag canwalkonfire="1" />
 		<flag canwalkonpoison="1" />
 	</flags>
-	<defenses armor="40" defense="40" />
+	<defenses armor="1" defense="1" />
 	<elements>
 		<element drownPercent="40"/>
 		<element deathPercent="40" />

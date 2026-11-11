@@ -39,7 +39,7 @@
 			<attribute key="areaEffect" value="poison"/>
 		</attack>
 	</attacks>
-	<defenses armor="75" defense="75">
+	<defenses armor="15" defense="15">
 		<defense name="healing" interval="5000" chance="30" min="1000" max="3000">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

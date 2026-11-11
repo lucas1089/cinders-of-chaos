@@ -23,7 +23,7 @@
 			<attribute key="areaEffect" value="stones" />
 		</attack>
 	</attacks>
-	<defenses armor="40" defense="40">
+	<defenses armor="5" defense="5">
 	</defenses>
 	<elements>
 		<element earthPercent="40" />

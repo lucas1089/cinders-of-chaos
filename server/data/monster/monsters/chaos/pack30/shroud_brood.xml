@@ -35,7 +35,7 @@
 			<attribute key="areaEffect" value="blackspark"/>
 		</attack>
 	</attacks>
-	<defenses armor="50" defense="50">
+	<defenses armor="32" defense="32">
 		<defense name="healing" interval="2000" chance="25" min="1490" max="1630">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

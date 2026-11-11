@@ -1140,6 +1140,74 @@ do
 	eq(PO.storeCheck(owedRune, "runes"), nil, "the Gem Pouch's bit 8 does not owe a Rune Bag")
 end
 
+-- ------------------------------------------------------------------ the Rune Bag in the purse (O509, engine src-patch 0092)
+-- The old rule ("a rune in the Rune Bag in the purse is not found by a hotkey") is gone: the bag stays in the purse. What
+-- the Lua does: tells the engine the bag's id (Game.setRuneBagContainer, the capability), tells the client what the purse's
+-- bag holds (action runebag), and answers the old engine with engine = false and nothing to count.
+do
+	local cap = false
+	local rb = newPlayer(70)
+	local bag = item(32096, {custom = {chaos_pouch = "runes", chaos_pouch_owner = 70}})
+	bag.parent = rb.purse rb.purse.items[1] = bag
+	local function stack(parent, id, count) local s = item(id, {count = count}); s.parent = parent; parent.items[#parent.items + 1] = s; return s end
+	stack(bag, 2261, 12) stack(bag, 2265, 3) stack(bag, 32105, 4) -- two magic runes and a support rune
+	-- the engine before the patch: no Game.setRuneBagContainer
+	eq(Game.setRuneBagContainer, nil, "the mock engine has no setRuneBagContainer: an old engine")
+	eq(PO.registerRuneBag(), false, "old engine: nothing registered") eq(PO.runeBagEngine(), false, "old engine: the capability is false")
+	local st = PO.runeBagState(rb)
+	eq(st.engine, false, "old engine: engine = false") eq(next(st.counts), nil, "old engine: nothing to count (no use that would fail)")
+	eq(st.poll, 15, "old engine: the slow poll")
+	eq(ChaosCombine, nil, "old engine: ChaosCombine untouched (the purse stays all box)")
+	-- the engine with the patch: the bag's id from the config, once registered
+	local registered = {}
+	Game.setRuneBagContainer = function(id) registered[#registered + 1] = id return true end
+	ChaosCombine = {}
+	eq(PO.registerRuneBag(), true, "new engine: registered") eq(registered[1], cfg.kinds.runes.id, "the id comes from the config (32096)")
+	eq(PO.runeBagEngine(), true, "new engine: the capability is true")
+	eq(ChaosCombine.runeBagId, 32096, "ChaosCombine knows the bag") eq(ChaosCombine.runeBagEngine, true, "and the engine")
+	st = PO.runeBagState(rb)
+	eq(st.engine, true, "new engine: engine = true") eq(st.bag, true, "a Rune Bag lies in the purse") eq(st.poll, 2, "polled every 2 s")
+	eq(st.counts["2262"], 12, "12 Dispel runes (client id 2262 in the mock)") eq(st.counts["2266"], 3, "3 Mending runes")
+	eq(st.counts["32106"], nil, "a support rune is not counted for the hotkey")
+	local n = 0 for _ in pairs(st.counts) do n = n + 1 end
+	eq(n, 2, "only the magic runes")
+	-- the narrow rule: a Rune Bag in the backpack, a plain bag or a Loot Bag in the purse add nothing
+	local rb2 = newPlayer(71)
+	local bp2 = item(1988) bp2.parent = rb2 rb2.slots[CONST_SLOT_BACKPACK] = bp2
+	local bagInBp = item(32096) bagInBp.parent = bp2 bp2.items[1] = bagInBp stack(bagInBp, 2261, 9)
+	local plain = item(1987) plain.parent = rb2.purse rb2.purse.items[1] = plain stack(plain, 2261, 5)
+	local loot = item(32081) loot.parent = rb2.purse rb2.purse.items[2] = loot stack(loot, 2261, 6)
+	local loose = item(2261, {count = 7}) loose.parent = rb2.purse rb2.purse.items[3] = loose
+	st = PO.runeBagState(rb2)
+	eq(st.bag, false, "no Rune Bag in the purse") eq(next(st.counts), nil, "a bag in the backpack, a plain bag, a Loot Bag and a loose rune in the purse add nothing")
+	eq(st.poll, 15, "no bag: the slow poll")
+	-- a bag inside a bag of the purse is not walked (the engine walks the purse's direct bags only)
+	local inner = item(32096) inner.parent = plain plain.items[#plain.items + 1] = inner stack(inner, 2261, 8)
+	eq(next(PO.runeBagState(rb2).counts), nil, "a Rune Bag inside a bag in the purse adds nothing")
+	-- a purse that is gone
+	rb2.noPurse = true
+	eq(PO.runeBagState(rb2).bag, false, "no purse: no bag, no error")
+	-- two Rune Bags in the purse (the store sells one, a copy by admin): both are walked, as the engine does
+	local twin = item(32096) twin.parent = rb.purse rb.purse.items[2] = twin stack(twin, 2261, 5)
+	eq(PO.runeBagState(rb).counts["2262"], 17, "two Rune Bags in the purse add up")
+	table.remove(rb.purse.items, 2)
+	-- the opcode answers; a flood is rate limited (the poll is every 2 s)
+	local ext = registry.ChaosPouchesExtended
+	sent = {}
+	ext.onExtendedOpcode(rb, ChaosOpcodes.pouches, {action = "runebag"})
+	eq(#sent, 1, "runebag answered") eq(sent[1].action, "runebag", "action runebag") eq(sent[1].opcode, 226, "on the pouches opcode")
+	eq(sent[1].data.engine, true, "the answer says the engine has the patch") eq(sent[1].data.counts["2262"], 12, "and the count")
+	-- a login registers it again (idempotent)
+	local before = #registered
+	registry.ChaosPouchesLogin.onLogin(rb)
+	ok(#registered > before, "login registers the Rune Bag again")
+	-- the texts say the new rule
+	ok(not cfg.kinds.runes.description:find("only while the bag is in your backpack"), "the item description no longer says backpack only")
+	ok(cfg.kinds.runes.description:find("purse or the backpack"), "the item description names the purse")
+	-- cleanup: the next tests run on the old engine again
+	Game.setRuneBagContainer = nil ChaosCombine = nil PO.runeBagOk = false
+end
+
 -- the store while a pouch is owed
 local owed = newPlayer(22)
 owed.storage[ST.regrant] = 2

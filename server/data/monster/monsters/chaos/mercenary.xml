@@ -35,7 +35,7 @@
 			<attribute key="shootEffect" value="spear"/>
 		</attack>
 	</attacks>
-	<defenses armor="95" defense="95">
+	<defenses armor="29" defense="29">
 		<defense name="healing" interval="2000" chance="15" min="270" max="1340">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
