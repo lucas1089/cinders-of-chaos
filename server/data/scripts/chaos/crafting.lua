@@ -50,6 +50,7 @@ local function nowMs()
 	return os.mtime and os.mtime() or os.time() * 1000
 end
 local selected = {} -- player id -> {path, id}
+local forgeClients = {} -- player id -> true: the client of the forge window (open {forge = 1}) wants the additive fields
 
 -- ---------------------------------------------------------------- backpack paths
 local function backpackOf(player)
@@ -185,12 +186,25 @@ end
 -- never changes once ("info": the orbs with their texts, the reason texts) when it opens, and every state carries only
 -- counts, reason codes and the item. sendState also trims the lists until the JSON fits (STATE_LIMIT).
 local STATE_LIMIT = 7600
-local function orbCounts(player)
-	local out = {}
-	for _, orb in ipairs(cfg.orbs) do
-		out[orb.key] = player:getItemCount(orb.id)
+-- how many of an orb the stash holds for the bench (0 when the stash cannot be used here: stash.lua S.plainCount)
+local function stashCount(player, orb)
+	local S = ChaosStash
+	if not (S and S.plainCount and S.spend) then
+		return 0
 	end
-	return out
+	local ok, n = pcall(S.plainCount, player, orb.id)
+	return ok and tonumber(n) or 0
+end
+
+-- orb key -> what the player can spend (backpack plus stash: the counts an old client reads), and the two parts
+local function orbCounts(player)
+	local out, bag, stash = {}, {}, {}
+	for _, orb in ipairs(cfg.orbs) do
+		bag[orb.key] = player:getItemCount(orb.id)
+		stash[orb.key] = stashCount(player, orb)
+		out[orb.key] = bag[orb.key] + stash[orb.key]
+	end
+	return out, bag, stash
 end
 
 local function sendInfo(player)
@@ -200,6 +214,15 @@ local function sendInfo(player)
 			keyText = orb.keyText, wsText = orb.wsText}
 	end
 	Chaos.send(player, OPCODE, "info", {orbs = orbs, reasons = C.reasons})
+	if forgeClients[player:getId()] then
+		-- the forge window (O481): what each orb is aimed at and how safe it is, in a message of its own (an old client
+		-- never gets it; the info above is near the message limit)
+		local forge = {}
+		for _, orb in ipairs(cfg.orbs) do
+			forge[orb.key] = {kind = orb.kind or "whole", safety = orb.safety or "random"}
+		end
+		Chaos.send(player, OPCODE, "forgeinfo", {orbs = forge})
+	end
 	if ChaosGems and ChaosGems.guide then
 		Chaos.send(player, OPCODE, "gemguide", ChaosGems.guide()) -- the gem table of the bench's Guide window
 	end
@@ -235,8 +258,13 @@ local function sendState(player, open)
 	if open then
 		sendInfo(player)
 	end
-	local data = {open = open and true or false, counts = orbCounts(player), items = itemList(player),
+	local counts, bag, stash = orbCounts(player)
+	local data = {open = open and true or false, counts = counts, items = itemList(player),
 		history = history(player)}
+	local forge = forgeClients[pid]
+	if forge then
+		data.bag, data.stash = bag, stash -- counts = bag + stash; the forge window shows the two parts
+	end
 	local sel = selected[pid]
 	if sel then
 		local item = itemAt(player, sel.path)
@@ -244,6 +272,13 @@ local function sendState(player, open)
 			local view = C.describe(item, {codes = true})
 			view.path = sel.path
 			view.clientId = clientIdOf(item:getId())
+			if forge and view.kind ~= "riftkey" then
+				view.free = C.freeSlots(item) -- from the item mods rules
+				if ChaosVeiled and ChaosVeiled.stateOf then
+					local okV, st = pcall(ChaosVeiled.stateOf, item)
+					view.veil = okV and (st == 1 or st == 2) and st or nil -- 1 veiled, 2 revealed
+				end
+			end
 			data.item = view
 		else
 			selected[pid] = nil
@@ -258,6 +293,8 @@ local function sendState(player, open)
 			data.history = {}
 		elseif #data.items > 8 then
 			table.remove(data.items)
+		elseif data.bag then
+			data.bag, data.stash = nil, nil -- the forge window falls back to counts
 		else
 			break
 		end
@@ -265,9 +302,10 @@ local function sendState(player, open)
 	Chaos.send(player, OPCODE, "state", data)
 end
 
-local function sendResult(player, ok, orbKey, text)
+local function sendResult(player, ok, orbKey, text, from)
 	-- the refusals and results of the bench, the gems and salvage are English texts of cores: translated here
-	Chaos.send(player, OPCODE, "result", {ok = ok, orb = orbKey, text = Chaos.tx(player, text)})
+	-- from (additive): "bag" or "stash", where the orb of this craft came from
+	Chaos.send(player, OPCODE, "result", {ok = ok, orb = orbKey, text = Chaos.tx(player, text), from = from})
 end
 
 -- ---------------------------------------------------------------- shared apply (bench and use-with)
@@ -300,8 +338,13 @@ local function craft(player, orbKey, item, orbItem, opts)
 	if not inBackpack(player, item) then
 		return false, "Put the item in your backpack first (equipped items cannot be crafted)."
 	end
+	-- the orb: the one used (use-with), else one of the backpack, else one of the stash (O481; the backpack first)
+	local fromStash = false
 	if not orbItem and player:getItemCount(orb.id) < 1 then
-		return false, string.format("You have no %s.", orb.name)
+		if stashCount(player, orb) < 1 then
+			return false, string.format("You have no %s.", orb.name)
+		end
+		fromStash = true
 	end
 	-- an orb with a choice window (the Orb of Unveiling, veiled.lua): the window opens, the choice comes back as opts.choice
 	if orb.dialog and not (opts and opts.choice) then
@@ -312,17 +355,42 @@ local function craft(player, orbKey, item, orbItem, opts)
 		return orb.dialog(player, item)
 	end
 	local name = C.itemName(item)
-	local ok, res = C.apply(orbKey, item, opts)
-	if not ok then
-		return false, res
-	end
-	-- community goal (community.lua): an orb used feeds the goal, and the week's Forgefire may keep it
-	local kept = ChaosCommunity and ChaosCommunity.onOrbUsed and ChaosCommunity.onOrbUsed(player, orbKey) or false
-	if not kept then
-		if orbItem then
-			orbItem:remove(1)
-		else
-			player:removeItem(orb.id, 1)
+	local res
+	if fromStash then
+		-- one atomic step with the item change (stash_core.lua K.spend): the orb leaves the stash only when the change
+		-- worked, and the saved serial says after a crash which side is true
+		local okS, why, detail = ChaosStash.spend(player, orb.id, 1, function()
+			local okA, r = C.apply(orbKey, item, opts)
+			if not okA then
+				return false, r
+			end
+			res = r
+			-- community goal (community.lua): an orb used feeds the goal, and the week's Forgefire may keep it
+			local kept = ChaosCommunity and ChaosCommunity.onOrbUsed and ChaosCommunity.onOrbUsed(player, orbKey) or false
+			return true, nil, kept
+		end)
+		if not okS then
+			if why == "change" then
+				return false, detail
+			elseif why == "gone" then
+				return false, string.format("You have no %s.", orb.name)
+			end
+			return false, "The stash is busy. Try again in a moment."
+		end
+	else
+		local ok, r = C.apply(orbKey, item, opts)
+		if not ok then
+			return false, r
+		end
+		res = r
+		-- community goal (community.lua): an orb used feeds the goal, and the week's Forgefire may keep it
+		local kept = ChaosCommunity and ChaosCommunity.onOrbUsed and ChaosCommunity.onOrbUsed(player, orbKey) or false
+		if not kept then
+			if orbItem then
+				orbItem:remove(1)
+			else
+				player:removeItem(orb.id, 1)
+			end
 		end
 	end
 	logCraft(player, orb, name, res.text)
@@ -336,7 +404,7 @@ local function craft(player, orbKey, item, orbItem, opts)
 		pos:sendMagicEffect(red and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
 	end
 	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: %s", orb.name, res.text))
-	return true, res.text, res.item
+	return true, res.text, res.item, fromStash and "stash" or "bag"
 end
 
 -- ---------------------------------------------------------------- bench actions
@@ -430,13 +498,39 @@ local function apply(player, data)
 	if type(data.mod) == "string" and #data.mod <= 64 and data.mod:match("^[%w_%.]+$") then
 		opts = {mod = data.mod}
 	end
-	local ok, text, newItem = craft(player, orbKey, item, nil, opts)
+	local ok, text, newItem, from = craft(player, orbKey, item, nil, opts)
 	if ok and newItem then
 		local path = pathOf(player, newItem)
 		selected[pid] = path and {path = path, id = newItem:getId()} or nil
 	end
-	sendResult(player, ok, orbKey, text)
+	sendResult(player, ok, orbKey, text, from)
 	sendState(player, false)
+end
+
+-- the forge window asks what one action would do (explain {orb, path, id, sig, mod}); the answer carries the item's
+-- signature, and the window sends "apply" only for an action this answered (the server checks the signature again)
+local function explain(player, data)
+	local orbKey = type(data.orb) == "string" and data.orb:sub(1, 64) or ""
+	local modKey = type(data.mod) == "string" and #data.mod <= 64 and data.mod:match("^[%w_%.]+$") and data.mod or nil
+	local item = itemAt(player, data.path)
+	local id = Chaos.toInt(data.id, 1, 65535)
+	if not item or item:getId() ~= id or (data.sig and C.signature(item) ~= data.sig) then
+		selected[player:getId()] = nil
+		sendResult(player, false, orbKey, "The item moved or changed. Put it on the bench again.")
+		if not ChaosRateLimit or ChaosRateLimit.allow(player, "crafting.state", 150) then
+			sendState(player, false) -- the state reads the history from the database
+		end
+		return
+	end
+	local e = C.explain(orbKey, item, modKey)
+	local reason = e.reason
+	local orb = C.orbByKey[orbKey]
+	local bag = orb and player:getItemCount(orb.id) or 0
+	local stash = orb and stashCount(player, orb) or 0
+	Chaos.send(player, OPCODE, "explain", {orb = orbKey, mod = modKey, sig = C.signature(item), ok = e.ok, kind = e.kind,
+		tag = e.tag, reason = reason, reasonText = reason and Chaos.tx(player, C.reasons[reason] or reason) or nil,
+		text = e.text and Chaos.tx(player, e.text) or nil, lead = e.lead, warn = e.warn,
+		cost = orb and {orb = orbKey, n = 1, bag = bag, stash = stash, from = bag > 0 and "bag" or (stash > 0 and "stash" or nil)} or nil})
 end
 
 -- the bench's Salvage mode (salvage.lua) works on the same backpack paths, selection and answers
@@ -477,11 +571,16 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		ChaosSalvage.onAction(player, msg.action, data) -- salvage.lua, with its own rate limits
 		return
 	end
-	if msg.action ~= "apply" and msg.action ~= "gem" and ChaosRateLimit and not ChaosRateLimit.allow(player, "crafting.state", 150) then
+	if msg.action ~= "apply" and msg.action ~= "gem" and msg.action ~= "explain" and ChaosRateLimit and not ChaosRateLimit.allow(player, "crafting.state", 150) then
 		return
 	end
 	if msg.action == "open" then
+		forgeClients[player:getId()] = data.forge and true or nil
 		sendState(player, true)
+	elseif msg.action == "explain" then
+		if not ChaosRateLimit or ChaosRateLimit.allow(player, "crafting.explain", 100) then
+			explain(player, data)
+		end
 	elseif msg.action == "select" then
 		selectItem(player, data)
 	elseif msg.action == "apply" then
@@ -509,6 +608,7 @@ local logout = CreatureEvent("ChaosCraftingLogout")
 function logout.onLogout(player)
 	selected[player:getId()] = nil
 	lastAction[player:getId()] = nil
+	forgeClients[player:getId()] = nil
 	return true
 end
 logout:type("logout")

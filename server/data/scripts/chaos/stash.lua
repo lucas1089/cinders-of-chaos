@@ -1345,6 +1345,33 @@ function S.redeem(player, data)
 	return ok
 end
 
+-- ---------------------------------------------------------------- orbs of the crafting bench (O481)
+-- How many of a plain stack the stash holds (0 when the bench may not use the stash here). Only plain stacks count: a
+-- stored whole item (a row with attributes) is never spent.
+function S.plainCount(player, itemId)
+	local c = cfg.craftSource
+	if not c or c.enabled ~= true or not itemId then
+		return 0
+	end
+	if c.townOnly == true and not S.canWithdraw(player) then
+		return 0
+	end
+	local have = store.plainCount(player:getGuid(), itemId)
+	return math.max(0, have)
+end
+
+-- Spend `count` of a plain stack of the stash together with change() (stash_core.lua K.spend: one journal row, one
+-- save). Returns true, or false, "gone" | "busy" | "change", reason.
+function S.spend(player, itemId, count, change)
+	count = int(count)
+	if count < 1 or S.plainCount(player, itemId) < count then
+		return false, "gone"
+	end
+	local _, tab = store.plainCount(player:getGuid(), itemId)
+	local rec = {itemId = itemId, count = count, tab = tab, plain = true, codec = "plain", data = "", source = "craft"}
+	return Core.spend(S.env(player), rec, change)
+end
+
 -- ---------------------------------------------------------------- the never-stash list
 local function changeBlock(player, data)
 	local guid = player:getGuid()

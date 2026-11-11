@@ -4968,6 +4968,15 @@ return {
 		["Thank you. Your report about %s was sent to the staff (#%d)."] =
 			"Obrigado. Sua denúncia sobre %s foi enviada à equipe (#%d).",
 		-- Crafting bench and Salvage (crafting.lua, salvage_core.lua, salvage.lua)
+		-- the forge window (O481): what one action does, chaos_crafting.lua C.explain
+		["Guaranteed: tier %d to tier %d. The value rolls %d to %d."] =
+			"Garantido: tier %d para tier %d. O valor sai entre %d e %d.",
+		["Guaranteed: this modifier is bound. The orbs that change modifiers leave it alone."] =
+			"Garantido: este modificador fica preso. As orbes que mudam modificadores não o tocam.",
+		["Guaranteed: this modifier is removed. The others stay."] =
+			"Garantido: este modificador é removido. Os outros ficam.",
+		["One of %d tiers (%s). The tier and the value roll again."] =
+			"Um entre %d tiers (%s). O tier e o valor são sorteados de novo.",
 		["Put the item in your backpack first (equipped items cannot be crafted)."] =
 			"Coloque o item na sua mochila primeiro (itens equipados não podem ser criados).",
 		["You have no %s."] =
