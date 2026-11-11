@@ -253,7 +253,7 @@ do
   assertEq(okc, true, "limits: staff close")
   assertEq(ChaosTowerRun.activeRuns(), 0, "limits: closed")
   assert(said(g, "A gamemaster closed the tower run."), "limits: told")
-  cfg.runTimeLimit, cfg.limits.maxRuns = 3600, 16
+  cfg.runTimeLimit, cfg.limits.maxRuns = 7200, 16
   local _ = start
 end
 
@@ -456,7 +456,7 @@ do
   assertEq(sent[#sent].runLeft, ChaosTowerRunConfig.runTimeLimit, "state: the run's time left at the start")
   assertEq(sent[#sent].floorLeft, nil, "state: no floor clock in the start delay")
   local startLine = false
-  for _, m in ipairs(w.msgs) do if m == "This run lasts at most 60 minutes." then startLine = true end end
+  for _, m in ipairs(w.msgs) do if m == "This run lasts at most 120 minutes." then startLine = true end end
   assertEq(startLine, true, "entry: one line tells the run limit")
   now = now + 5
   ChaosTowerRun.skip(w)
