@@ -887,7 +887,8 @@ jobs:
           python3 -I server/tools/monster_fire_resist_test.py
           python3 -I server/tools/monster_physical_resist_test.py  # no hunt monster immune to physical (Thief line bug 2026-11-02)
           python3 -I server/tools/patch_monster_resists_test.py  # resistance caps of the monsters, 40 normal / 75 boss, flat 30 on seven types thinned (O462; check_content.py holds our files to it)
-          python3 -I server/tools/defence_curve.py --check  # the median class hit curve of the monster armour, from class_dps_model.py (O462)
+          python3 -I server/tools/defence_curve.py --check  # the median class hit curve (a spell) and the median weapon hit curve (an auto attack, in the units that arrive) of the monster armour, G1 / G2 for the 21 classes (O462, O501)
+          python3 -I server/tools/defence_curve_test.py  # the engine formula against the measured auto attack hits, the flat armour, the roll, G1 / G2 that fail on a drift (O501)
 
       - name: Rotations of at most 5 spells, never 2 s without one (rotation_sim.py; the helper's auto rotation data)
         run: |
