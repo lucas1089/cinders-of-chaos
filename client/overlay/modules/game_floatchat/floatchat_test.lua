@@ -142,5 +142,65 @@ eq(L.settingsFor({ A = { opacity = 5, width = 5, height = 5 } }, 'A').opacity, 4
 eq(L.settingsFor({ A = { width = 5 } }, 'A').width, L.MIN_W, 'saved width clamped')
 eq(L.settingsFor({ A = { x = 5 } }, 'A').y, nil, 'a place needs x and y')
 
+-- drag state machine (O498): ends on any release, on a move with the button up, on focus loss, hide and logout;
+-- a press on a button or a tab never begins a window drag
+local rect = { x = 100, y = 200, width = 380, height = 150 }
+local big = { x = 0, y = 0, width = 1000, height = 600 }
+local d = L.dragNew()
+eq(d.active, false, 'no drag at first')
+d = L.dragPress(d, 'header', true, rect, 150, 210)
+eq(d.active, true, 'a header press begins a move'); eq(d.kind, 'move', 'header drags move')
+local d2, r2, ended = L.dragMove(d, 170, 230, big, { leftDown = true, focused = true })
+eq(d2.active, true, 'still dragging while the button is down'); eq(r2.x, 120, 'moved 20 right'); eq(r2.y, 220, 'moved 20 down')
+eq(ended, false, 'a plain move does not end it')
+local d3, was, moved = L.dragEnd(d2)
+eq(d3.active, false, 'release ends the drag'); eq(was, true, 'release reports an active drag'); eq(moved, true, 'and that it moved')
+local _, was2, moved2 = L.dragEnd(L.dragNew())
+eq(was2, false, 'release without a drag: nothing'); eq(moved2, false, 'release without a drag: not moved')
+local _, was3, moved3 = L.dragEnd(d)
+eq(was3, true, 'release of a click is a drag end'); eq(moved3, false, 'a click without a move is not saved')
+
+-- the grip resizes
+local g = L.dragPress(L.dragNew(), 'grip', true, rect, 400, 340)
+eq(g.kind, 'resize', 'grip drags resize')
+local _, gr = L.dragMove(g, 440, 360, big, { leftDown = true })
+eq(gr.width, 420, 'grew 40 wide'); eq(gr.height, 170, 'grew 20 tall')
+
+-- a press that cannot begin a drag
+eq(L.dragPress(L.dragNew(), 'button', true, rect, 1, 1).active, false, 'a press on a header button never drags')
+eq(L.dragPress(L.dragNew(), 'tab', true, rect, 1, 1).active, false, 'a press on a tab never drags')
+eq(L.dragPress(L.dragNew(), 'header', false, rect, 1, 1).active, false, 'only the left button drags')
+eq(L.dragPress(d, 'button', true, rect, 1, 1).active, false, 'a press on a button also drops a stale drag')
+eq(L.dragPress(d, 'header', false, rect, 1, 1).active, false, 'a right press drops a stale drag')
+eq(L.dragTarget('header', 'UIButton'), 'button', 'a UIButton under the header is a button')
+eq(L.dragTarget('header', 'UIWidget'), 'header', 'a plain widget is the header')
+eq(L.dragTarget('header', nil), 'header', 'an unknown class is the header')
+eq(L.dragTarget('grip', 'UIWidget'), 'grip', 'the grip stays the grip')
+
+-- the stuck case of the owner report: press on the header, the release never reaches us; the next move has the button up
+local stuck, sr, send = L.dragMove(d, 400, 400, big, { leftDown = false, focused = true })
+eq(stuck.active, false, 'a move with the button up ends the drag'); eq(sr, nil, 'and moves nothing'); eq(send, true, 'and says it ended')
+local fl = L.dragMove(d, 400, 400, big, { leftDown = true, focused = false })
+eq(fl.active, false, 'focus loss ends the drag')
+local hd = L.dragMove(d, 400, 400, big, { leftDown = true, focused = true, hidden = true })
+eq(hd.active, false, 'hiding ends the drag')
+local idle, ir, iend = L.dragMove(L.dragNew(), 5, 5, big, { leftDown = false })
+eq(idle.active, false, 'a move without a drag stays idle'); eq(ir, nil, 'a move without a drag moves nothing'); eq(iend, false, 'and ends nothing')
+eq(L.dragStale(d, { leftDown = false }), true, 'poll: button up is stale')
+eq(L.dragStale(d, { leftDown = true, focused = false }), true, 'poll: window out of focus is stale')
+eq(L.dragStale(d, { leftDown = true, focused = true }), false, 'poll: a live drag is not stale')
+eq(L.dragStale(L.dragNew(), { leftDown = false }), false, 'poll: no drag is never stale')
+eq(L.dragStale(nil, nil), false, 'poll: nil state')
+local nd = L.dragMove(nil, 1, 1, big, {})
+eq(nd.active, false, 'nil state in a move')
+eq(L.dragEnd(nil).active, false, 'nil state in an end')
+
+-- a click in the window with the chat input on gives the keys back to it
+eq(L.refocusAfterClick(true, false, true, true), true, 'release over the window, input on: refocus')
+eq(L.refocusAfterClick(true, false, true, false), false, 'input off: nothing to focus')
+eq(L.refocusAfterClick(true, false, false, true), false, 'release elsewhere: not ours')
+eq(L.refocusAfterClick(false, false, true, true), false, 'no click: nothing')
+eq(L.refocusAfterClick(true, true, true, true), false, 'button still down')
+
 if fails == 0 then print('floatchat_test: ok') end
 os.exit(fails == 0 and 0 or 1)

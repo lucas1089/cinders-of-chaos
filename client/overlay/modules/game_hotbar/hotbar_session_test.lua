@@ -113,6 +113,9 @@ function Widget:getText() return self._text or '' end
 function Widget:isEnabled() return true end
 function Widget:containsPoint() return false end
 function Widget:getLayout() return nil end
+-- hit test of the mock: the child a test put under the pointer (nil: the widget itself)
+function Widget:recursiveGetChildByPos() return self._hitChild end
+function Widget:getClassName() return self._class or 'UIWidget' end
 function Widget:setImageSource(s) self._image = s end
 function Widget:setImageClip() end
 function Widget:setClipping(v) self._clip = v end
@@ -295,6 +298,42 @@ ChaosHotbar.init()
 
 login()
 expectWorking('first login')
+
+-- O498: a press on a header button never begins a window drag; a drag whose release nobody heard ends at the next move
+-- with the left button up; hiding and logout end a drag
+do
+  local win = consolePanel:getParent():getParent()
+  local header = win:getChildById('header')
+  local buttonDown = true
+  g_mouse = { isPressed = function() return buttonDown end }
+  local function marginLeft() return win._p.ml end
+  local before = marginLeft()
+  header._hitChild = header:getChildById('channels')
+  header._hitChild._class = 'UIButton'
+  check(header.onMousePress(header, { x = 40, y = 10 }, MouseLeftButton) == false, 'O498: a press on the Channels button is not a drag')
+  header.onMouseMove(header, { x = 300, y = 200 })
+  check(marginLeft() == before, 'O498: moving after a button press does not move the window')
+  header._hitChild = nil
+  check(header.onMousePress(header, { x = 200, y = 10 }, MouseLeftButton) == true, 'O498: a press on the header begins a drag')
+  buttonDown = false -- the release went to another widget
+  check(header.onMouseMove(header, { x = 300, y = 200 }) == false, 'O498: a move with the button up is not a drag')
+  check(marginLeft() == before, 'O498: a stuck drag does not move the window')
+  buttonDown = true
+  header.onMousePress(header, { x = 200, y = 10 }, MouseLeftButton)
+  header.onMouseMove(header, { x = 230, y = 40 })
+  check(marginLeft() ~= before, 'O498: a live drag moves the window')
+  check(header.onMouseRelease(header, { x = 230, y = 40 }, MouseLeftButton) == true, 'O498: a release ends the drag')
+  local placed = marginLeft()
+  header.onMouseMove(header, { x = 600, y = 300 })
+  check(marginLeft() == placed, 'O498: after the release the window stays')
+  -- a drag, then the chat is hidden: the drag ends
+  header.onMousePress(header, { x = 200, y = 10 }, MouseLeftButton)
+  ChaosFloatChat.hide()
+  ChaosFloatChat.show()
+  header.onMouseMove(header, { x = 700, y = 350 })
+  check(marginLeft() == placed, 'O498: hide ends a drag (' .. tostring(marginLeft()) .. ' vs ' .. tostring(placed) .. ')')
+  g_mouse = nil
+end
 
 -- a death: the death window's Ok logs out and in at once
 logout()

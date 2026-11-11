@@ -176,8 +176,23 @@ local function fitPanelWidth()
   return true
 end
 
+-- O498: a press on a button of the header is the button's, never a drag (the base button keeps its release from the
+-- header, so a drag begun there never ended); a drag whose button went up unheard ends at the next move
+local function keptByChild(w, pos)
+  local g = ChaosDragGuard
+  return g ~= nil and g.onChild(w, pos) == true
+end
+
+local function dragStale()
+  local g = ChaosDragGuard
+  return g ~= nil and g.stale() == true
+end
+
+local onPanelRelease
+
 local function onPanelPress(w, pos, button)
   if button ~= MouseLeftButton then return false end
+  if keptByChild(w, pos) then return false end
   local parent = w:getParent()
   if not parent then return false end
   local x, y = w:getX() - parent:getX(), w:getY() - parent:getY()
@@ -189,6 +204,7 @@ end
 
 local function onPanelMove(w, pos)
   if not panelDrag then return false end
+  if dragStale() then onPanelRelease(w) return false end
   local parent = w:getParent()
   local x, y = P.dragTo(pos.x, pos.y, panelDrag.offX, panelDrag.offY, parent:getX(), parent:getY(),
     w:getWidth(), w:getHeight(), parent:getWidth(), parent:getHeight())
@@ -197,7 +213,7 @@ local function onPanelMove(w, pos)
   return true
 end
 
-local function onPanelRelease(w)
+function onPanelRelease(w)
   if not panelDrag then return false end
   local drag = panelDrag
   panelDrag = nil
