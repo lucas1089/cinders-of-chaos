@@ -1,0 +1,175 @@
+# Chaos: the wings sit on the back of the body they are drawn with (O495; client/BASE.md "0193"; src/client/chaoswingfit.h
+# (new, pure), outfit.cpp, luafunctions_client.cpp; after 0001-0192).
+# Owner report 2026-11-11: "all the wings are out of plumb". Audit (client/MANIFEST.md "Wings centred on the body"): the lift
+# (GameWingOffset, body 6 px up and left of the wings), the bob and the walk move body and wings together, so they are not
+# the cause. The wings' art was placed against one body, the stock look 128, and a class look stands up to 16 px further
+# left or right in its tile; the wings also differ by 6 px between packs. Facing south the wings' pair centre sat a median
+# 3.4 px right of a class look's torso (Warrior 12.4, Monk -4.1).
+# Now Outfit::draw adds an x shift to the wings' destination (both draw orders): bodyCentre - wingsCentre - 6, so the wings'
+# pair centre lands on the torso of the body drawn, per direction. The two tables (body torso x per look and direction,
+# wings pair centre x per wings look and direction, sprite pixels at 1x from the creature's place, the look's own
+# displacement taken out) are made from the pair by client/tools/sprites/gen_wing_centres.py and handed in by the module
+# client_chaos_wingfit through the new Lua functions setOutfitBodyCentre, setOutfitWingsCentre and clearOutfitWingCentres.
+# A look or wings without a row gets no shift (the draw as before); wings and body that both carry Bones keep the Bones
+# placement; the bob, the walk, the mount rules and the lift are untouched.
+diff -ru a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -26,6 +26,7 @@
+ #include "negativeoffset.h"
+ #include "spritemanager.h"
+ #include "chaosfacing.h"
++#include "chaoswingfit.h"
+ 
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/drawcache.h>
+@@ -282,6 +283,13 @@
+         }
+     };
+ 
++    // Cinders of Chaos (base patch 0193): the x shift that puts the wings' pair centre on this body's torso, per
++    // direction, from the tables client_chaos_wingfit hands in (0 when the look or the wings has no row)
++    auto wingFitShift = [&](int dir) {
++        return chaos::wingfit::shiftX(m_category == ThingCategoryCreature ? m_id : 0, m_wings, dir,
++                                      g_game.getFeature(Otc::GameWingOffset) ? chaos::wingfit::kLiftPx : 0);
++    };
++
+     auto drawWings = [&] {
+         int wingAnimationPhase = walkAnimationPhase;
+         auto wingsType = g_things.rawGetThingType(m_wings, ThingCategoryCreature);
+@@ -409,6 +417,9 @@
+                     boneOffset -= Point(6, 6);
+ 
+                 wingDest = dest + boneOffset * g_sprites.getOffsetFactor();
++            } else {
++                // Cinders of Chaos (base patch 0193): the wings' pair centre onto the body's torso (chaoswingfit.h)
++                wingDest += Point(wingFitShift(direction), 0) * g_sprites.getOffsetFactor();
+             }
+         }
+         if (g_game.getFeature(Otc::GameWingOffset) && riding) {
+@@ -492,6 +503,8 @@
+                     boneOffset -= Point(6, 6);
+ 
+                 wingDest = dest + boneOffset * g_sprites.getOffsetFactor();
++            } else {
++                wingDest += Point(wingFitShift(direction), 0) * g_sprites.getOffsetFactor();
+             }
+         }
+         if (g_game.getFeature(Otc::GameWingOffset) && riding)
+diff -ru a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -52,6 +52,7 @@
+ #include "uiprogressrect.h"
+ #include "uisprite.h"
+ #include "outfit.h"
++#include "chaoswingfit.h"
+ #include "healthbars.h"
+ #include "uigrid.h"
+ 
+@@ -486,6 +487,10 @@
+     g_lua.bindSingletonFunction("g_healthBars", "getManaBarHeight", &HealthBars::getManaBarHeight, &g_healthBars);
+ 
+     g_lua.bindGlobalFunction("getOutfitColor", Outfit::getColor);
++    // Chaos (base patch 0193): the tables of the wings' centring (client_chaos_wingfit)
++    g_lua.bindGlobalFunction("setOutfitBodyCentre", chaos::wingfit::setBodyCentre);
++    g_lua.bindGlobalFunction("setOutfitWingsCentre", chaos::wingfit::setWingsCentre);
++    g_lua.bindGlobalFunction("clearOutfitWingCentres", chaos::wingfit::clearCentres);
+     g_lua.bindGlobalFunction("getAngleFromPos", Position::getAngleFromPositions);
+     g_lua.bindGlobalFunction("getDirectionFromPos", Position::getDirectionFromPositions);
+ 
+diff -ru a/src/client/chaoswingfit.h b/src/client/chaoswingfit.h
+--- /dev/null
++++ b/src/client/chaoswingfit.h
+@@ -0,0 +1,91 @@
++// Cinders of Chaos (base patch 0193): wings centred on the body they are drawn with. Pure and header-only so
++// client/tools/chaoswingfit_test.cpp can run it without the engine.
++// A look's wings are drawn at the creature's place and its body 6 px up and left of it (GameWingOffset). The wings'
++// art was placed against one body, so on a class look that stands further left or right in its tile the wings sit off
++// its back. client_chaos_wingfit hands the engine two small tables made from the pair (gen_wing_centres.py): per look
++// and direction the x of the body's torso, per wings look and direction the x of the wings' pair centre, both in
++// sprite pixels at 1x from the creature's place, the look's own displacement taken out. The shift is
++//   bodyCentre - wingsCentre - lift
++// (lift = the 6 px the body is drawn up and left of the wings): it moves the wings' pair centre onto the torso.
++// A look or wings missing from a table gets no shift (the draw as before).
++#ifndef CHAOSWINGFIT_H
++#define CHAOSWINGFIT_H
++
++#include <array>
++#include <climits>
++#include <unordered_map>
++
++namespace chaos {
++namespace wingfit {
++
++constexpr int kLiftPx = 6;      // GameWingOffset: the body is drawn this many px up and left of the wings
++constexpr int kMaxShiftPx = 64; // a larger shift is a bad table row: ignored
++constexpr int kMaxCentrePx = 256;
++constexpr int kUnset = INT_MIN;
++
++typedef std::array<int, 4> Row;  // north, east, south, west
++
++struct Tables {
++    std::unordered_map<int, Row> bodies;
++    std::unordered_map<int, Row> wings;
++};
++
++inline Tables& tables()
++{
++    static Tables t;
++    return t;
++}
++
++inline Row emptyRow()
++{
++    Row r;
++    r.fill(kUnset);
++    return r;
++}
++
++inline bool setCentre(std::unordered_map<int, Row>& map, int look, int direction, int px)
++{
++    if (look <= 0 || direction < 0 || direction > 3 || px < -kMaxCentrePx || px > kMaxCentrePx)
++        return false;
++    auto it = map.find(look);
++    if (it == map.end())
++        it = map.emplace(look, emptyRow()).first;
++    it->second[direction] = px;
++    return true;
++}
++
++inline bool setBodyCentre(int look, int direction, int px) { return setCentre(tables().bodies, look, direction, px); }
++inline bool setWingsCentre(int wings, int direction, int px) { return setCentre(tables().wings, wings, direction, px); }
++
++inline void clearCentres()
++{
++    tables().bodies.clear();
++    tables().wings.clear();
++}
++
++inline bool find(const std::unordered_map<int, Row>& map, int id, int direction, int& px)
++{
++    if (direction < 0 || direction > 3)
++        return false;
++    auto it = map.find(id);
++    if (it == map.end() || it->second[direction] == kUnset)
++        return false;
++    px = it->second[direction];
++    return true;
++}
++
++// the x shift, in sprite pixels at 1x, to add to the wings' destination; 0 without both rows. `lift` is the
++// GameWingOffset lift (kLiftPx when the feature is on, else 0).
++inline int shiftX(int bodyLook, int wingsLook, int direction, int lift)
++{
++    int body = 0, wings = 0;
++    if (!find(tables().bodies, bodyLook, direction, body) || !find(tables().wings, wingsLook, direction, wings))
++        return 0;
++    const int shift = body - wings - lift;
++    return (shift < -kMaxShiftPx || shift > kMaxShiftPx) ? 0 : shift;
++}
++
++}  // namespace wingfit
++}  // namespace chaos
++
++#endif

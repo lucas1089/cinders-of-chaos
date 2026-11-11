@@ -175,6 +175,12 @@ check(fig.left <= body.left and fig.right >= body.right, 'wider with wings and a
 -- shift is taken back (the body stays centred), the lift is its hover
 local lifted = C.figure(A, { type = 2161, wings = 1179 }, nil, 6)
 check(lifted.fx == body.fx - 6 and lifted.fy == body.fy and lifted.hover == 6, 'wings: the lift is the hover')
+-- base patch 0193: the wings shifted onto the torso move their box (left, right), the feet stay
+local wingA = C.anchorOf(A, 1179)
+local shifted = C.figure(A, { type = 2161, wings = 1179 }, nil, 6, 7)
+check(shifted.left == math.min(body.left - 6, wingA.left + 7) and shifted.right == math.max(body.right - 6, wingA.right + 7),
+  'wings shifted: the box follows')
+check(shifted.fx == lifted.fx and shifted.fy == lifted.fy, 'wings shifted: feet stay')
 local plainFig = C.figure(A, { type = 2161 }, nil, 6)
 check(plainFig.fy == body.fy and plainFig.fx == body.fx and plainFig.hover == 0, 'no wings, no lift, no hover')
 x, y = C.placeRect(lifted, 128, 500, 400)

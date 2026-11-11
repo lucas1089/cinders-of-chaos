@@ -1,0 +1,10 @@
+Module
+  name: client_chaos_wingfit
+  description: Wings centred on the body they are drawn with: hands the tables of wing_centres.lua (from the pair) to the engine (base patch 0193)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ wing_centres, wingfit_core, wingfit ]
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

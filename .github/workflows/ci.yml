@@ -86,6 +86,8 @@ jobs:
           python3 -I client/tools/sprites/gen_outfit_anchors_test.py
           # names over tall looks: body top, gap and lift (synthetic figures)
           python3 -I client/tools/sprites/gen_info_lift_test.py
+          # wings centred on the body: torso and pair centre, the baked shadow left out (synthetic figures)
+          python3 -I client/tools/sprites/gen_wing_centres_test.py
           # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
           # check runs on the versions the strips were made with (gen_class_fx.py docstring)
           python3 -m venv /tmp/fxenv
@@ -613,6 +615,16 @@ jobs:
           "$d/chaosshadow_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosshadow_test.cpp -o "$d/chaosshadow_asan"
           "$d/chaosshadow_asan"
+
+      - name: Wings centred on the body (C++; header from base patch 0193, O495)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaoswingfit\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0193-wings-centred-on-the-body.patch > "$d/chaoswingfit.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaoswingfit_test.cpp -o "$d/chaoswingfit_test"
+          "$d/chaoswingfit_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoswingfit_test.cpp -o "$d/chaoswingfit_asan"
+          "$d/chaoswingfit_asan"
 
       - name: Eased bars bookkeeping (C++; header from base patch 0146)
         run: |
@@ -1648,6 +1660,11 @@ jobs:
       - name: Name lifts of tall looks match the pair (gen_info_lift.py --check)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_info_lift.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Wing centres match the pair (gen_wing_centres.py --check, base patch 0193)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_wing_centres.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Dungeon banners render from the live pair (gen_dungeon_banners.py --check with the pair)

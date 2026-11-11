@@ -160,6 +160,7 @@ python3 -I client/tools/sprites/gen_owner_art.py build --check  # owner art of p
 python3 -I server/tools/install_owner_decor.py --lua --check     # -> data/lib/chaos_owner_decor.lua
 python3 -I client/tools/sprites/style_check.py build-palettes --check  # -> style_palettes.json; check new sprites: docs/SPRITE_STYLE.md
 python3 -I client/tools/sprites/gen_fx_send_offsets.py --check       # -> data/lib/chaos_fx_send_offsets.lua (pair 36 in-place fx centring)
+python3 -I client/tools/sprites/gen_wing_centres_test.py && python3 -I client/tools/sprites/gen_wing_centres.py --check DAT SPR   # -> client_chaos_wingfit/wing_centres.lua (O495: torso x per look, wings pair centre x per wings, baked shadow left out; --check needs the live pair, ci.yml "Live sprite pair"; base patch 0193 reads it; header test: client/tools/chaoswingfit_test.cpp)
 python3 -I launcher/tools/gen_launcher_art.py --check            # launcher banner and icon from docs/brand (O339; CI uses the fx venv)
 python3 -I desktop/tools/gen_admin_art.py --check               # desktop admin app header strip and icon from docs/brand (O344; CI uses the fx venv)
 python3 -I client/tools/sprites/gen_portal_art.py build --check && python3 -I client/tools/sprites/gen_portal_art_test.py  # pickup looks of pair 55: Ember portal, health and mana globe (CI uses the fx venv)
