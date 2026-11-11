@@ -39,8 +39,8 @@ PAIR_TEMPLE = 60    # the 39 pieces of the temple tileset (install_temple_art.py
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 62
-PAIR_ASSETS_DAT_MD5 = 'fd203501bac0e622da3b4e473c3f7dd7'
+PAIR_ASSETS = 63
+PAIR_ASSETS_DAT_MD5 = 'daa39fc8e6217e705422924413532215'
 
 
 def parse(text):

@@ -1,28 +1,40 @@
 #!/usr/bin/env python3
-"""Gem looks: the seven socket gems (server/data/lib/chaos_gems_config.lua) in five tiers each, animated, from the
-owner's gem set (Google Drive "ots/gems.zip", 2026-10-14: five gem families in ten tiers, each a 32 x 288 strip of
-nine 32 px frames; the owner: "Pode usar eles abertamente onde forem cabiveis", use them openly where they fit; the
-zip holds no licence or readme).
+"""Gem looks: the seven socket gems (server/data/lib/chaos_gems_config.lua) in five qualities each, animated.
 
-    python3 -I gen_gem_art.py build --src DIR       # DIR = the unzipped gems/ folder (<family>_tNN/<family>_tNN.png)
-    python3 -I gen_gem_art.py build --check         # CI: rebuild from the committed atlas, compare every output
-    python3 -I gen_gem_art.py build --src DIR --check   # rebuild from the set, compare byte for byte
+The first looks (pairs 25 to 62) were built from the owner's Drive gem set (2026-10-14) and recoloured; pair 63 (O480)
+replaced them with new art, so that set is no longer read here (docs/CREDITS.md keeps its entry).
+
+New art (owner 2026-11-11, translated: "They are very ugly. Make new ones please."; then, on a sheet of seven styles: "It
+can be A, but on the perfect use C.", A a cut jewel, C a jewel set in gold): 35 pixel art cells of 32 px made with the
+tool named in docs/CREDITS.md "Tools" (PixelLab: one prompt a gem type and quality, candidates picked by hand, a few
+colour nudges, trimmed and centred, alpha 0 / 255). The picks are committed as one sheet:
+
+  art_import/gems_src.png    160 x 224 RGBA, alpha 0 / 255 only: 7 rows = the gem types in the order of the config
+                             (ruby, sapphire, emerald, amethyst, topaz, diamond, onyx), 5 columns = the qualities
+                             Chipped, Flawed, Polished, Flawless, Perfect, one static 32 x 32 cell each. Chipped is a
+                             small chip, each quality is bigger, Flawless is the full cut jewel, Perfect the jewel set
+                             in gold.
+
+    python3 -I gen_gem_art.py build                 # write the outputs from art_import/gems_src.png
+    python3 -I gen_gem_art.py build --check         # CI: rebuild, compare every output byte for byte
     python3 -I gen_gem_art.py preview --out DIR [--before-dat D --before-spr S]   # sheets and GIFs for review
 
+Animation (nine phases at 110 ms, the same for every gem): Chipped, Flawed and Polished stand still (nine equal frames).
+Flawless gets one white four-point twinkle on its brightest pixel (phases 1 to 5, arm length 0, 1, 2, 1, 0); Perfect gets
+that one and a second, smaller one on its next brightest pixel at least 9 px away (phases 5 to 8, arm length 0, 1, 1, 0).
+The twinkle only paints white pixels over the cell. Nothing is random.
+
 Outputs (all committed):
-  art_import/gems.png        the atlas import_art_things.py reads: one row per gem (type order of the config, tiers
-                             Chipped..Perfect), nine 32 px phases left to right (288 x 1120)
+  art_import/gems.png        the atlas import_art_things.py and redraw_items.py read: one row per gem (type order of the
+                             config, qualities Chipped..Perfect), nine 32 px phases left to right (288 x 1120)
   art_import/gems.csv        the things file: client ids 33905-33939 (after the Everfull Ration 33904), flags copied
                              from the stock gem the item used so far (stackable, multi-use, light stay), mode replace
-                             with the gem's server id 32001..32035 (install_gems.py with ownLook = true)
-  client/overlay/data/images/game/gems/<key>.png   the five tiers side by side, phase 0, 2x (game_codex gem pages)
+                             with the gem's server id 32001..32035 (install_gems.py with ownLook = true). Pair 63
+                             draws the 35 items in place from the atlas instead (redraw_items.py --strip)
+  client/overlay/data/images/game/gems/<key>.png   the five qualities side by side, phase 0, 2x (game_codex gem pages)
 The website's wiki icons (gm-<key>-<tier>) are cut from the atlas by website/tools/gen_wiki_art.py.
 
-Which family is which gem: the source tiers t02, t04, t06, t08, t10 are our five tiers. Four gems take a family's own
-colours (emerald = jadecomb, sapphire = tidegem, amethyst = voidorb, topaz = sunshard warmed a little towards gold);
-the other three are recoloured (hue / saturation / value per pixel, alpha and shading kept): ruby = bloomjade turned
-red, diamond = tidegem drained to a pale ice white, onyx = voidorb drained to a warm black-grey. Every frame keeps
-alpha 0 / 255 (checked). Deterministic: numpy and Pillow only, no randomness (CI pins Pillow 12.3.0 / numpy 2.5.3).
+Deterministic: numpy and Pillow only, no randomness (CI pins Pillow 12.3.0 / numpy 2.5.3).
 """
 import argparse
 import csv
@@ -37,6 +49,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, '..', '..', '..'))
 ART = os.path.join(HERE, 'art_import')
+SOURCE = os.path.join(ART, 'gems_src.png')
 ATLAS = os.path.join(ART, 'gems.png')
 THINGS = os.path.join(ART, 'gems.csv')
 CODEX = os.path.join(REPO, 'client', 'overlay', 'data', 'images', 'game', 'gems')
@@ -44,19 +57,25 @@ CONFIG = os.path.join(REPO, 'server', 'data', 'lib', 'chaos_gems_config.lua')
 
 FIRST_CLIENT = 33905        # after the Everfull Ration (33904, art_import/store_food.csv)
 PHASES = 9
-MS = 110                    # the set's own frame time
-SRC_TIERS = (2, 4, 6, 8, 10)
-# gem key -> (source family, recolour)
-GEMS = {
-    'ruby': ('bloomjade', 'ruby'),
-    'sapphire': ('tidegem', None),
-    'emerald': ('jadecomb', None),
-    'amethyst': ('voidorb', None),
-    'topaz': ('sunshard', 'topaz'),
-    'diamond': ('tidegem', 'diamond'),
-    'onyx': ('voidorb', 'onyx'),
-}
+MS = 110                    # frame time of every phase
+TIERS = 5                   # Chipped, Flawed, Polished, Flawless, Perfect
+KEYS = ('ruby', 'sapphire', 'emerald', 'amethyst', 'topaz', 'diamond', 'onyx')   # the row order of the source sheet
 CODEX_SCALE, CODEX_GAP = 2, 12
+GROW = (0, 1, 2, 1, 0)      # Flawless twinkle: arm length in phases 1 to 5
+GROW2 = (0, 1, 1, 0)        # Perfect second twinkle: arm length in phases 5 to 8
+SPOT_APART = 9              # the second twinkle sits at least this many px (Manhattan) from the first
+SPOT_EDGE = 2               # twinkles stay this far from the cell border
+# the twinkle spots of the cells that twinkle, (y, x) in the cell: the first of Flawless, the first and the second of Perfect.
+# Each is one of the tied brightest pixels (spots() checks it); these are the ones of the sheet the owner was sent (2026-11-11).
+PICKS = {
+    ('ruby', 4): ((8, 13),), ('ruby', 5): ((7, 8), (11, 13)),
+    ('sapphire', 4): ((10, 20),), ('sapphire', 5): ((14, 11), (8, 7)),
+    ('emerald', 4): ((7, 12),), ('emerald', 5): ((4, 19), (11, 8)),
+    ('amethyst', 4): ((14, 11),), ('amethyst', 5): ((7, 7), (12, 12)),
+    ('topaz', 4): ((16, 11),), ('topaz', 5): ((15, 13), (19, 20)),
+    ('diamond', 4): ((7, 16),), ('diamond', 5): ((12, 13), (18, 18)),
+    ('onyx', 4): ((9, 13),), ('onyx', 5): ((11, 13), (7, 7)),
+}
 
 
 def config_types(path=CONFIG):
@@ -72,86 +91,94 @@ def config_types(path=CONFIG):
     return out, first, high_from, tiers
 
 
-# ------------------------------------------------------------------------------------------------ colour
-def rgb_to_hsv(rgb):
-    r, g, b = [rgb[..., i] for i in range(3)]
-    mx = np.max(rgb, axis=-1); mn = np.min(rgb, axis=-1); d = mx - mn
-    h = np.zeros_like(mx)
-    nz = d > 0
-    rm = nz & (mx == r); gm = nz & (mx == g) & ~rm; bm = nz & ~rm & ~gm
-    h[rm] = ((g - b)[rm] / d[rm]) % 6
-    h[gm] = (b - r)[gm] / d[gm] + 2
-    h[bm] = (r - g)[bm] / d[bm] + 4
-    h = h / 6.0
-    s = np.where(mx > 0, d / np.where(mx > 0, mx, 1), 0)
-    return h, s, mx
-
-
-def hsv_to_rgb(h, s, v):
-    h6 = (h % 1.0) * 6
-    i = np.floor(h6).astype(int) % 6
-    f = h6 - np.floor(h6)
-    p = v * (1 - s); q = v * (1 - s * f); t = v * (1 - s * (1 - f))
-    sel = [(v, t, p), (q, v, p), (p, v, t), (p, q, v), (t, p, v), (v, p, q)]
-    out = np.zeros(h.shape + (3,))
-    for k, (a, b, c) in enumerate(sel):
-        m = i == k
-        out[m, 0], out[m, 1], out[m, 2] = a[m], b[m], c[m]
-    return out
-
-
-def recolour(img, kind):
-    """img: H x W x 4 uint8 (alpha 0 / 255) -> the same shape, colours moved; None leaves it as it is"""
-    if kind is None:
-        return img.copy()
-    rgb = img[..., :3].astype(np.float64) / 255.0
-    h, s, v = rgb_to_hsv(rgb)
-    if kind == 'ruby':        # green -> crimson: hues pulled together round 356 deg, more saturated, a touch deeper
-        h = 356 / 360.0 + (((h - 125 / 360.0 + 0.5) % 1.0) - 0.5) * 0.30
-        s = np.clip(s * 1.25 + 0.12, 0, 1)
-        v = v * 0.90
-    elif kind == 'topaz':     # amber -> gold
-        h = h + 13 / 360.0
-        s = np.clip(s * 0.95, 0, 1)
-        v = np.clip(v * 1.04, 0, 1)
-    elif kind == 'diamond':   # deep blue -> pale ice white, the outline stays dark
-        s = s * 0.22
-        v = np.where(v > 0.25, np.clip(0.30 + v * 0.75, 0, 1), v)
-    elif kind == 'onyx':      # violet -> warm black-grey with pale highlights
-        h = np.full_like(h, 0.0)
-        s = s * 0.12
-        v = np.where(v > 0.92, v * 0.80, v * 0.42)
-    else:
-        raise ValueError(kind)
-    out = img.copy()
-    out[..., :3] = np.clip(np.round(hsv_to_rgb(h, s, v) * 255), 0, 255).astype(np.uint8)
-    out[img[..., 3] == 0] = 0
-    return out
-
-
 # ------------------------------------------------------------------------------------------------ build
-def source_frames(src, family, tier):
-    path = os.path.join(src, '%s_t%02d' % (family, tier), '%s_t%02d.png' % (family, tier))
-    a = np.asarray(Image.open(path).convert('RGBA'))
-    assert a.shape == (32 * PHASES, 32, 4), (path, a.shape)
-    return [a[i * 32:(i + 1) * 32] for i in range(PHASES)]
+def check_source(sheet):
+    """the committed source sheet: 160 x 224 RGBA, alpha 0 / 255, no colour under alpha 0, every cell drawn"""
+    assert sheet.shape == (32 * len(KEYS), 32 * TIERS, 4), 'gems_src.png is %d x %d, not %d x %d' % (
+        sheet.shape[1], sheet.shape[0], 32 * TIERS, 32 * len(KEYS))
+    assert set(np.unique(sheet[..., 3]).tolist()) <= {0, 255}, 'alpha must be 0 / 255'
+    assert not sheet[sheet[..., 3] == 0].any(), 'colour under alpha 0 must be 0'
+    for r in range(len(KEYS)):
+        for k in range(TIERS):
+            assert cell(sheet, r, k)[..., 3].any(), 'empty cell %s %d' % (KEYS[r], k)
 
 
-def build_atlas(src):
+def cell(sheet, row, tier):
+    """the static 32 x 32 cell of gem row ROW, quality TIER (0 = Chipped)"""
+    return sheet[row * 32:(row + 1) * 32, tier * 32:(tier + 1) * 32]
+
+
+def spot_candidates(c, taken):
+    """the pixels a twinkle may sit on after the pixels TAKEN: of the opaque pixels (sum of r, g, b) SPOT_EDGE from the
+    border and at least SPOT_APART (Manhattan) from every taken one, those with the highest sum; reading order"""
+    lum = c[..., :3].astype(int).sum(axis=2) * (c[..., 3] > 0)
+    lum[:SPOT_EDGE] = lum[-SPOT_EDGE:] = 0
+    lum[:, :SPOT_EDGE] = lum[:, -SPOT_EDGE:] = 0
+    yy, xx = np.ogrid[:32, :32]
+    for y, x in taken:
+        lum[abs(yy - y) + abs(xx - x) < SPOT_APART] = 0
+    top = lum.max()
+    if top == 0:
+        return []
+    ys, xs = np.nonzero(lum == top)
+    return [(int(y), int(x)) for y, x in zip(ys, xs)]
+
+
+def spots(c, n, picks=()):
+    """the n twinkle spots of one cell: each the brightest pixel left (spot_candidates). Flat highlights tie many pixels
+    and a sort order must not decide between them, so PICKS names the chosen pixel of each (it must be a candidate,
+    else this raises: change the source sheet and the table together); without a pick the first candidate in reading
+    order is taken"""
+    got = []
+    for i in range(n):
+        cand = spot_candidates(c, got)
+        if not cand:
+            break
+        if i < len(picks):
+            assert tuple(picks[i]) in cand, 'twinkle spot %s is not a brightest pixel of its cell (candidates %s)' % (
+                tuple(picks[i]), cand)
+            got.append(tuple(picks[i]))
+        else:
+            got.append(cand[0])
+    return got
+
+
+def star(c, y, x, size):
+    """a white four-point twinkle on pixel (y, x), in place: size 0 one pixel, 1 a plus, 2 a plus with longer arms"""
+    pts = [(0, 0)] if size == 0 else [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)]
+    if size >= 2:
+        pts += [(2, 0), (-2, 0), (0, 2), (0, -2)]
+    for dy, dx in pts:
+        yy, xx = y + dy, x + dx
+        if 0 <= yy < 32 and 0 <= xx < 32:
+            c[yy, xx] = (255, 255, 255, 255)
+
+
+def phases(c, tier, picks=()):
+    """the PHASES frames of one cell; tier 1 = Chipped .. 5 = Perfect. Tiers 1 to 3 stand still, 4 twinkles once, 5 twice"""
+    sp = spots(c, 2 if tier == 5 else 1, picks) if tier >= 4 else []
+    out = []
+    for p in range(PHASES):
+        f = c.copy()
+        if sp and 0 <= p - 1 < len(GROW):
+            star(f, sp[0][0], sp[0][1], GROW[p - 1])
+        if len(sp) > 1 and 0 <= p - 5 < len(GROW2):
+            star(f, sp[1][0], sp[1][1], GROW2[p - 5])
+        out.append(f)
+    return out
+
+
+def build_atlas(sheet):
     types, _first, _hf, tiers = config_types()
-    assert [t[0] for t in types] == list(GEMS), 'gem types of the config: %s' % [t[0] for t in types]
-    assert len(tiers) == len(SRC_TIERS)
-    atlas = np.zeros((32 * len(types) * len(SRC_TIERS), 32 * PHASES, 4), np.uint8)
-    row = 0
-    for key, *_ in types:
-        family, kind = GEMS[key]
-        for tier in SRC_TIERS:
-            for f, fr in enumerate(source_frames(src, family, tier)):
-                fr = fr.copy()
-                fr[fr[..., 3] < 128] = 0
-                fr[..., 3] = np.where(fr[..., 3] > 0, 255, 0)
-                atlas[row * 32:(row + 1) * 32, f * 32:(f + 1) * 32] = recolour(fr, kind)
-            row += 1
+    assert [t[0] for t in types] == list(KEYS), 'gem types of the config: %s' % [t[0] for t in types]
+    assert len(tiers) == TIERS
+    check_source(sheet)
+    atlas = np.zeros((32 * len(types) * TIERS, 32 * PHASES, 4), np.uint8)
+    for r in range(len(types)):
+        for k in range(TIERS):
+            for p, f in enumerate(phases(cell(sheet, r, k), k + 1, PICKS.get((KEYS[r], k + 1), ()))):
+                row = r * TIERS + k
+                atlas[row * 32:(row + 1) * 32, p * 32:(p + 1) * 32] = f
     return atlas
 
 
@@ -185,7 +212,7 @@ def things_text():
 
 def codex_strips(atlas):
     types, *_ = config_types()
-    n = len(SRC_TIERS)
+    n = TIERS
     out = {}
     cell = 32 * CODEX_SCALE
     for ti, (key, *_r) in enumerate(types):
@@ -221,14 +248,9 @@ def outputs(atlas):
 
 
 def cmd_build(a):
-    if a.src:
-        atlas = build_atlas(a.src)
-    elif a.check:
-        if not os.path.exists(ATLAS):
-            sys.exit('no %s: run build --src DIR first' % os.path.relpath(ATLAS, REPO))
-        atlas = np.asarray(Image.open(ATLAS).convert('RGBA'))
-    else:
-        sys.exit('build needs --src (the gem set); without it only --check runs')
+    if not os.path.exists(SOURCE):
+        sys.exit('no %s' % os.path.relpath(SOURCE, REPO))
+    atlas = build_atlas(np.asarray(Image.open(SOURCE).convert('RGBA')))
     check_rules(atlas)
     outs = outputs(atlas)
     bad = []
@@ -250,8 +272,7 @@ def cmd_build(a):
     if a.check:
         if bad:
             print('\n'.join(bad))
-            sys.exit('gem art: %d file(s) out of date (python3 -I client/tools/sprites/gen_gem_art.py build --src DIR)'
-                     % len(bad))
+            sys.exit('gem art: %d file(s) out of date (python3 -I client/tools/sprites/gen_gem_art.py build)' % len(bad))
         print('gem art up to date (%d gems, %d frames each, %d files)' % (atlas.shape[0] // 32, PHASES, len(outs)))
     else:
         print('wrote %d files (%d gems, client ids %d-%d)' % (len(outs), atlas.shape[0] // 32, FIRST_CLIENT,
@@ -320,7 +341,6 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = ap.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('build')
-    b.add_argument('--src')
     b.add_argument('--check', action='store_true')
     p = sub.add_parser('preview')
     p.add_argument('--out', required=True)

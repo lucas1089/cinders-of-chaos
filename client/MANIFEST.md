@@ -1992,30 +1992,49 @@ dragon ham, client 3583; mode replace keeps server id 32084). `ownLook = true` i
 2026-10-14; run `install_store_food.py` again. A client on an older pair draws nothing for 33904.
 **Replaced by "Store item looks (pair 34)"** (client 38611, the same art in the cinderwrought palette).
 
-## Gem looks (things_custom25, items 33905-33939, `tools/sprites/gen_gem_art.py`, `tools/sprites/art_import/gems.csv`; on windows-assets ebe1b2b2, switch on since 2026-10-14)
-**Source and licence.** The owner's gem set (Google Drive folder "ots", `gems.zip`, 609 KB, 2026-10-14; the owner:
-"Pode usar eles abertamente onde forem cabiveis", use them openly where they fit). Five gem families (bloomjade,
-jadecomb, sunshard, tidegem, voidorb) in ten tiers each; per tier a 32 x 288 PNG (nine 32 px frames, alpha 0 / 255,
-8-15 colours), a 192 px preview GIF (110 ms frames) and a 2304 x 256 preview sheet. No licence or readme file, no
-metadata, no name of any other game or server. Only the 32 px strips are read.
-- Our seven gems x five tiers from the source tiers 2, 4, 6, 8, 10: emerald = jadecomb, sapphire = tidegem,
-  amethyst = voidorb, topaz = sunshard (warmed to gold); recoloured per pixel (hue / saturation / value, alpha and
-  shading kept): ruby = bloomjade turned crimson, diamond = tidegem drained to ice white, onyx = voidorb drained to a
-  warm black-grey. Nine phases at 110 ms (synchronised), so the gems sparkle in the inventory.
-- `python3 -I gen_gem_art.py build --src DIR` writes `art_import/gems.png` (288 x 1120), `art_import/gems.csv`
-  (client 33905-33939 after the Everfull Ration 33904; flags `copy:` the stock gem each item used, so stackable and
-  multi-use stay; mode replace with server ids 32001-32035) and the Codex strips `overlay/data/images/game/gems/<key>.png`
-  (five tiers, phase 0, 2x). `build --check` (CI, Pillow 12.3.0 / numpy 2.5.3) rebuilds from the committed atlas.
-  `preview --out DIR --before-dat D --before-spr S`: sheet, GIF and a before / after against the stock sprites.
-- Used by: the Codex gem pages (`game_codex`: `CodexArt`, the entry's `art` from `gen_codex_data.lua`), the website
-  wiki's gem icons (`gm-<key>-<tier>`, `website/tools/gen_wiki_art.py`), and the items: `chaos_gems_config.lua`
-  `ownLook = true` (on since 2026-10-14, pair 25) and `install_gems.py` again (server/README.md "Gems and sockets").
-- Append after the Everfull Ration (client 33904) and before the status words:
+## Gem looks (items 33905-33939, `tools/sprites/gen_gem_art.py`, `tools/sprites/art_import/gems_src.png`, `gems.csv`; first looks in things_custom25 on windows-assets ebe1b2b2, switch on since 2026-10-14; new looks in pair 63, built 2026-11-11, not on windows-assets yet; O480)
+**History.** Pairs 25 to 62 drew the owner's Drive gem set (`gems.zip`, 2026-10-14, five families in ten tiers, 32 px, nine phases at 110 ms; the owner:
+"Pode usar eles abertamente onde forem cabiveis", use them openly where they fit), recoloured per pixel; docs/CREDITS.md "Gem set" keeps its entry.
+Owner 2026-11-11 (translated), on the sheet of those looks: "They are very ugly. Make new ones please." Pair 63 replaced them.
+**Source and licence.** New 32 px pixel art made on 2026-11-11 with PixelLab (paid subscription, docs/CREDITS.md "Tools"; our own prompts, one Create
+Image call per gem type and quality, candidates picked by hand, trimmed and centred in 32 x 32, alpha 0 / 255; the Flawed sapphire got more
+saturation and the Chipped onyx a lighter value). The owner saw a sheet of seven styles and wrote (translated): "It can be A, but on the perfect use C."
+A is a cut jewel, C a jewel set in gold. So Chipped is a small chip, each quality is bigger, Flawless is the full cut jewel and Perfect is the jewel set in
+gold. The 35 final looks were sent to the owner as a sheet on 2026-11-11; the owner has not answered on that sheet yet.
+- `art_import/gems_src.png`: the picks, 160 x 224 RGBA, alpha 0 / 255 only. 7 rows = the gem types in the order of `chaos_gems_config.lua` (ruby,
+  sapphire, emerald, amethyst, topaz, diamond, onyx), 5 columns = Chipped, Flawed, Polished, Flawless, Perfect, one static cell each. It is the only input
+  of the generator (committed, 25 KB); the PixelLab candidates are not in the repository.
+- Animation, nine phases at 110 ms for every gem (synchronised, the frame time of the old looks): Chipped, Flawed and Polished stand still (nine equal
+  frames). Flawless has one white four-point twinkle on its brightest pixel (phases 1 to 5, arms 0, 1, 2, 1, 0); Perfect has that one and a second, smaller one
+  (phases 5 to 8, arms 0, 1, 1, 0) on its next brightest pixel at least 9 px away. Flat highlights tie many pixels, so `PICKS` in the generator names the chosen
+  pixel of each twinkling cell (`spots()` refuses a pick that is not a brightest pixel; no sort order decides).
+- `python3 -I gen_gem_art.py build` writes `art_import/gems.png` (288 x 1120: 35 rows, 9 phases), `art_import/gems.csv` (client 33905-33939 after the Everfull
+  Ration 33904; flags `copy:` the stock gem each item used, so stackable and multi-use stay; mode replace with server ids 32001-32035; 9 phases, 110 ms:
+  unchanged by pair 63) and the Codex strips `overlay/data/images/game/gems/<key>.png` (five qualities, phase 0, 2x). `build --check` (CI, Pillow 12.3.0 /
+  numpy 2.5.3) rebuilds from the committed source and compares every output; `gen_gem_art_test.py` (CI) runs the pure parts on synthetic cells.
+  `preview --out DIR [--before-dat D --before-spr S]`: sheet, GIF and a before / after against the stock sprites.
+  `style_check.py check art_import/gems_src.png --theme T` (the seven themes of the gear sheets, 2026-11-11): size, background, scale, alpha, colours and noise
+  pass for all 35 cells; the palette fails against any one theme (a theme is one colourway, the gems are seven); the outline fails for the Chipped,
+  Polished and Flawless emerald (8%, 1% and 4% of the rim near-black, at least 30%); the light warns at two cells under bloodmoon only. Nothing was repainted
+  to please it.
+- Used by: the Codex gem pages (`game_codex`: `CodexArt`, the entry's `art` from `gen_codex_data.lua`), the website wiki's gem icons (`gm-<key>-5`, the
+  Perfect look, `website/tools/gen_wiki_art.py`), and the items: `chaos_gems_config.lua` `ownLook = true` (on since 2026-10-14, pair 25) and
+  `install_gems.py` (server/README.md "Gems and sockets"). Ids, `ownLook` and `lookFirst` did not change.
+- Pair 63 draws the 35 items in place: `redraw_items.py --strip ID=gems.png@ROW` keeps each item's frame group (1 x 1, one layer, nine phases, the animator
+  and its duration table, the flag bytes) and only points it at new sprites (identical phases share one sprite, a record already in the spr is reused).
+  The original import path (`import_art_things.py`, mode replace, below) appends new items after 33904 and would put these 35 at new client ids, so it
+  stays the way to build things_custom25 from nothing, not the way to redraw the pair:
+  ```
+  args=$(for i in $(seq 0 34); do printf ' --strip %d=client/tools/sprites/art_import/gems.png@%d' $((33905+i)) $i; done)
+  python3 -I client/tools/sprites/redraw_items.py --dat P62/Tibia.dat --spr P62/Tibia.spr --out-dir P63 $args
+  python3 -I client/tools/sprites/check_pair.py P63/Tibia.dat P63/Tibia.spr --old P62/Tibia.dat P62/Tibia.spr --allow-changed item:33905-33939
+  ```
+- First build of the looks into things_custom25 (history; appends after the Everfull Ration, client 33904, and before the status words):
   ```
   python3 -I client/tools/sprites/import_art_things.py --ours-dat S1/Tibia.dat --ours-spr S1/Tibia.spr --out-dir S2 \
       --things client/tools/sprites/art_import/gems.csv --first-item 33905 --expect-items 33904
   ```
-- Built into things_custom25 with the Everfull Ration and the status words, below.
+- Built into things_custom25 with the Everfull Ration and the status words, below. Pair 63 section: "Pair 63".
 
 ## Status words (things_custom25, effects 656-673, `tools/sprites/gen_status_fx.py`, `art_import/status_fx.csv`; on windows-assets ebe1b2b2, switch on since 2026-10-14)
 **Source and licence.** The owner's text effect set (Google Drive folder "ots", `text_effects.zip`, 2.6 MB,
@@ -4066,6 +4085,37 @@ items allowed: 0 errors, 3,964 warnings (the lines of pair 61).
   "Par do cliente" > Gravar 62; shell: `chaos-ctl.sh client-pair set 62`). No install step waits for pair 62. A client on pair 61 or older draws
   the old store item looks for 38608 to 38611.
 - Checked offline: pair 61 and pair 62 frames of the four items read back from the built pair, on the client's item cell (scratchpad only).
+  Not seen in a client.
+
+### Pair 63: pair 62 with the 35 socket gems redrawn (`gen_gem_art.py`, `art_import/gems_src.png`, `gems.png`; built 2026-11-11, not on windows-assets yet (waits for the owner's go); O480)
+Owner 2026-11-11 (translated): "They are very ugly. Make new ones please." Then, on a sheet of seven styles: "It can be A, but on the perfect use C." Section
+"Gem looks" has the art, the method and the picks. The 35 final looks were sent to the owner as a sheet on 2026-11-11; the owner has not answered on that
+sheet yet. Pair 63 is pair 62 with the items 33905 to 33939 redrawn in place by `redraw_items.py --strip` (the commands are in "Gem looks"): each item
+keeps its frame group (1 x 1, one layer, nine phases, the animator head and the 18-entry duration table of 110 ms) and its flag bytes, and points at new
+sprites. Nothing else changes: ids, flag bytes, items.otb and items.xml stay; the server does not change.
+Input pair 62 (dat fd203501bac0e622da3b4e473c3f7dd7, spr ed1a1c5193c9dd1e74da61adc89f3fdb; joined from the pair 62 archive parts, both md5s checked first).
+Output **pair 63**: dat daa39fc8e6217e705422924413532215 (8,828,000 bytes), spr b979865f136b8f4eceb063bdbdbfd819 (1,136,104,474 bytes; 949,282
+sprites: 98 appended, ids 949185 to 949282; 35 items x 9 phases = 315 phase slots on 98 sprites, identical phases share one sprite and no new sprite equalled a
+record already in the file), the same counts of things as pair 62 (44,549 items, 3,370 outfits, 4,701 effects, 253 missiles). `redraw_items.py` verified:
+output parses, every other entry byte-identical, flags kept, every item's group equal to the old one but for its sprite ids, every phase pixel-identical to
+its cell of `gems.png`, identical cells share a sprite id, 3,000 old sprites unchanged. `check_pair.py --old` with exactly items 33905 to 33939 allowed:
+0 errors, 3,964 warnings (the lines of pair 62); without `--old` the same. The old gem sprites stay in the file, unused.
+- **Archive parts** (the recipe of pair 62: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of Tibia.dat and Tibia.spr
+  streamed into `xz -9 -T3`, `split -b 95M -d -a 2`; built offline, not pushed to windows-assets):
+  - part00 99,614,720 bytes, sha256 `c0ef6f238453edd693545f38d6d7ccebaae0d785f7c9bed61f4be7ed519f8167`
+  - part01 30,490,344 bytes, sha256 `8e367aa278741a29b9f27ecf4fbfd8efd621de0685020fba013985dcc3bab19b4`
+  - joined `things-1098.tar.xz` (130,105,064 bytes) sha256 `9b51b5466873f364ff9c27a81c3bdd27bb5e53d78d983db9b60bc2cc73c5772d`;
+    `things-1098.tar` sha256 `7658eb0c0f37395a0cd95351e3a71a867b36e6a8054b7f08c0b52345ce476f09`. Decompressing the joined parts gives the dat and spr md5s
+    above (checked). Nothing is on windows-assets: the line for its commit id is still to come, after the owner's go to publish.
+- **In the repository:** `gen_outfit_anchors.py` and `gen_info_lift.py` ran against pair 63 (`client_chaos_charselect/outfit_anchors.lua`,
+  `client_chaos_infolift/info_lifts.lua`, `unity/.../Core/InfoLiftData.cs` through `gen_info_data.lua`: only the dat md5 lines change);
+  `server/tools/client_pair.py` `PAIR_ASSETS` is 63 with the new dat md5 (the Windows package job stops until the archive on windows-assets is pair 63: push it
+  first). The steps of the CI job "Live sprite pair" ran on pair 63 offline: `check_pair.py`, the item wire table, the recolour sheets, the two tables, the
+  dungeon banners, the website sprite images. The new generator, its test, the `--strip` option of `redraw_items.py` and its test run in CI (job "checks").
+- **Switch on** (after the client package ships pair 63): set `chaosClientPair` to 63 (admin app: Comandos > "Par do cliente" > Gravar 63; shell:
+  `chaos-ctl.sh client-pair set 63`). No install step waits for pair 63. A client on pair 62 or older draws the old gem looks for 33905 to 33939. The Codex
+  gem pages and the website wiki icons already show the new looks (they come from the atlas, not from the pair).
+- Checked offline: the nine phases of the 35 gems read back from the built pair 63 next to pair 62's, and pair 63's equal to the atlas (scratchpad only).
   Not seen in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)

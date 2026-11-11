@@ -30,7 +30,7 @@ the client's login background), a haze in the tone, embers, a medallion with the
 No text in the images (the page is in two languages), no screenshots: our client's screens show base sprites and
 outfits that are not our own art.
 
-Only our own art: the inputs above are procedural, our own paintings or the owner's gem set (gems.png), committed in
+Only our own art: the inputs above are procedural, our own paintings or our own new gem art (gems.png, O480), committed in
 the repository. Nothing is read from outside it. Deterministic: the same inputs and library versions give the same bytes; CI runs --check with the
 pinned Pillow and numpy of the other art checks (.github/workflows/ci.yml).
 Needs Pillow (with WebP) and numpy.

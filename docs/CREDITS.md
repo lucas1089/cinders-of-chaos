@@ -195,7 +195,7 @@ Free effect, icon, font and sprite packs. Their files name no author, except the
 - **Gem set**
   - Author: free asset pack
   - Licence: free to use
-  - Used for: gem looks in five tiers
+  - Used for: the old gem looks in five tiers, used until 2026-11-11; new gem art replaced them and nothing draws this set any more (a client not yet updated still shows it)
 - **Text effects set**
   - Author: free asset pack
   - Licence: free to use
@@ -428,7 +428,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 
 - **PixelLab**
   - Licence: paid subscription
-  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the 65 pieces of the five relic sets (a helmet, chest armour, legs, boots, shield, spellbook, sword, axe, hammer, bow, wand or rod, ring and amulet each), nine ring and amulet looks of the jewelry loot bases, the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons), the 72 repainted class spell icons (the Necromancer line, the other lines' kits, the snares, Town Portal and the four vigils) and the redrawn icons of the Loot Bag, Orbs Pouch and Everfull Ration, the four front-facing test characters of the Unity front-art scene and their normal maps
+  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the 65 pieces of the five relic sets (a helmet, chest armour, legs, boots, shield, spellbook, sword, axe, hammer, bow, wand or rod, ring and amulet each), nine ring and amulet looks of the jewelry loot bases, the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons), the 72 repainted class spell icons (the Necromancer line, the other lines' kits, the snares, Town Portal and the four vigils) and the redrawn icons of the Loot Bag, Orbs Pouch and Everfull Ration, the 35 socket gem looks (seven gems in five qualities), the four front-facing test characters of the Unity front-art scene and their normal maps
 - **AutoSprite**
   - Licence: paid account
   - Used for: drawing and animating the boss Vharzul the Verdant Eye and the Ashbound Thrall and Slagback Hound of the Embergut Rift
