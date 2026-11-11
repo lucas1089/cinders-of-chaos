@@ -387,6 +387,93 @@ fn a_unity_only_player_still_gets_a_new_launcher() {
     assert_eq!(o.version, 2);
 }
 
+fn choose(
+    w: &World,
+    client: Client,
+) -> Result<(cinders_launcher::install::Outcome, cinders_launcher::config::Config), Error> {
+    choice::update(
+        &w.cfg,
+        client,
+        w.exe.clone(),
+        &cinders_launcher::net::Curl,
+        World::fast(),
+        &mut |_| {},
+    )
+}
+
+#[test]
+fn an_unpublished_unity_channel_says_so_and_the_main_client_works() {
+    // O494: the main manifest is there, the Unity one answers 404
+    let w = World::new("u-unpublished");
+    let main = Release {
+        version: 5,
+        package: 14,
+        files: vec![("Chaos.exe".into(), b"exe v1".to_vec())],
+        launcher: None,
+    };
+    main.publish(&w.srv, &w.kp);
+    assert!(!choice::unity_installed(&w.cfg));
+
+    let err = choose(&w, Client::Unity).unwrap_err();
+    assert_eq!(err, Error::UnityNotPublished);
+    assert!(!err.text(cinders_launcher::i18n::Lang::En).contains("curl"));
+    // nothing of Unity on the disk, no state
+    assert!(w.unity_read("ChaosUnity.exe").is_none());
+    assert!(!w.dir.join("unity").join("ChaosUnity.exe").exists());
+    // the box: only the way back to the main client
+    let b = choice::buttons(&err, Client::Unity, choice::unity_installed(&w.cfg));
+    assert_eq!((b.retry, b.play_anyway, b.use_main), (false, false, true));
+    // the way back: the choice is saved as a click on the tab saves it, and the main client updates
+    config::save_client(&w.dir, Client::Main).unwrap();
+    assert_eq!(config::load_client(&w.dir), Client::Main);
+    let (o, _) = choose(&w, Client::Main).unwrap();
+    assert_eq!(o.game, "Chaos.exe");
+    assert_eq!(w.read("Chaos.exe").unwrap(), b"exe v1");
+
+    // the main client's own 404 is a server answer, not the Unity text and not a network failure
+    w.srv.state.lock().unwrap().routes.remove("/updates/live/manifest.json");
+    assert_eq!(choose(&w, Client::Main).unwrap_err(), Error::Http(404));
+
+    // once the channel is published the same choice installs
+    urel(1, &player_v1()).publish(&w.srv, &w.kp);
+    let (o, _) = choose(&w, Client::Unity).unwrap();
+    assert_eq!(o.game, "ChaosUnity.exe");
+    assert!(choice::unity_installed(&w.cfg));
+}
+
+#[test]
+fn an_unpublished_channel_with_an_installed_unity_tree_keeps_play_anyway() {
+    let w = World::new("u-unpublished-installed");
+    let r1 = urel(1, &player_v1());
+    r1.publish(&w.srv, &w.kp);
+    choose(&w, Client::Unity).unwrap();
+    assert!(choice::unity_installed(&w.cfg));
+
+    // the channel is taken down later
+    w.srv
+        .state
+        .lock()
+        .unwrap()
+        .routes
+        .remove("/updates/unity/manifest.json");
+    let err = choose(&w, Client::Unity).unwrap_err();
+    assert_eq!(err, Error::UnityNotPublished);
+    assert_player(&w, &r1);
+    // the failed fetch left no half-done swap (an empty stage folder is made before the fetch and is harmless)
+    let st = w.dir.join("unity").join(STATE_DIR);
+    assert!(!st.join("journal.json").exists() && !st.join("backup").exists());
+    let b = choice::buttons(&err, Client::Unity, choice::unity_installed(&w.cfg));
+    assert_eq!((b.retry, b.play_anyway, b.use_main), (false, true, true));
+}
+
+#[test]
+fn a_server_down_is_still_a_network_error_for_unity() {
+    let w = World::new("u-offline");
+    urel(1, &player_v1()).publish(&w.srv, &w.kp);
+    w.srv.state.lock().unwrap().offline = true;
+    assert!(matches!(choose(&w, Client::Unity), Err(Error::Network(_))));
+}
+
 #[test]
 fn unity_is_not_offered_without_an_address() {
     let mut w = World::new("u-none");

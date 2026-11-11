@@ -254,6 +254,7 @@ pub fn load(fetch: &dyn Fetch, cfg: &Config, lang: Lang) -> Panel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::net::FetchError;
     use std::cell::RefCell;
 
     const FEED: &str = r#"{"format":1,"generated":5,
@@ -263,12 +264,12 @@ mod tests {
             "changelog":[{"id":"2026-10-22","date":"2026-10-22","title":"Asas","lines":["Um.","Dois."],"url":null}]}}"#;
 
     struct Fake {
-        answer: RefCell<Result<Vec<u8>, String>>,
+        answer: RefCell<Result<Vec<u8>, FetchError>>,
         asked: RefCell<Vec<(String, u32, u64)>>,
     }
 
     impl Fake {
-        fn new(a: Result<Vec<u8>, String>) -> Fake {
+        fn new(a: Result<Vec<u8>, FetchError>) -> Fake {
             Fake {
                 answer: RefCell::new(a),
                 asked: RefCell::new(vec![]),
@@ -277,14 +278,14 @@ mod tests {
     }
 
     impl Fetch for Fake {
-        fn get(&self, _url: &str) -> Result<Vec<u8>, String> {
+        fn get(&self, _url: &str) -> Result<Vec<u8>, FetchError> {
             panic!("the feed must use get_small")
         }
-        fn get_small(&self, url: &str, secs: u32, max: u64) -> Result<Vec<u8>, String> {
+        fn get_small(&self, url: &str, secs: u32, max: u64) -> Result<Vec<u8>, FetchError> {
             self.asked.borrow_mut().push((url.to_string(), secs, max));
             self.answer.borrow().clone()
         }
-        fn download(&self, _: &str, _: &Path, _: &mut dyn FnMut(u64)) -> Result<(), String> {
+        fn download(&self, _: &str, _: &Path, _: &mut dyn FnMut(u64)) -> Result<(), FetchError> {
             unreachable!()
         }
     }

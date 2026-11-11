@@ -116,7 +116,13 @@ fn run_cli(cfg: &Config, exe: PathBuf, lang: Lang, no_start: bool, client: Clien
         }
     };
     let code = if r.is_ok() { 0 } else { 1 };
-    if !no_start && !matches!(r, Err(Error::Rollback(_))) {
+    // after an error the game starts only where the window would offer "Play anyway" (never the main client in place
+    // of an unpublished Unity one)
+    let may_start = match &r {
+        Ok(_) => true,
+        Err(e) => choice::buttons(e, client, choice::unity_installed(cfg)).play_anyway,
+    };
+    if !no_start && may_start {
         println!("{}", i18n::status(Status::Launching, lang));
         if let Err(e) = launch::start(&active, &game) {
             eprintln!("{}", e.text(lang));
@@ -481,14 +487,18 @@ mod gui {
                                         }
                                         Phase::Failed(e) => {
                                             ui.label(egui::RichText::new(e.text(lang)).color(theme::ERROR));
+                                            // the button rule is choice::buttons (tested): a half-restored install is
+                                            // repaired by the next run, never started; an unpublished Unity channel
+                                            // offers the main client
+                                            let b = choice::buttons(e, self.client, choice::unity_installed(&self.cfg));
                                             ui.horizontal_wrapped(|ui| {
-                                                if ui.button(i18n::retry(lang)).clicked() {
+                                                if b.use_main && ui.button(i18n::use_main_client(lang)).clicked() {
+                                                    pick = Some(Client::Main);
+                                                }
+                                                if b.retry && ui.button(i18n::retry(lang)).clicked() {
                                                     retry = true;
                                                 }
-                                                // a half-restored install is repaired by the next run, never started
-                                                if !matches!(e, Error::Rollback(_) | Error::Config(_))
-                                                    && ui.button(i18n::play_anyway(lang)).clicked()
-                                                {
+                                                if b.play_anyway && ui.button(i18n::play_anyway(lang)).clicked() {
                                                     play = Some(self.active().game);
                                                 }
                                             });

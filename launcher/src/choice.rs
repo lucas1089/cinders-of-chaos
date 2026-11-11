@@ -48,3 +48,108 @@ pub fn update(
     }
     Ok((outcome, active))
 }
+
+/// True when a Unity client is on the disk: its player program is in `unity/`.
+pub fn unity_installed(cfg: &Config) -> bool {
+    cfg.dir.join(crate::config::UNITY_DIR).join(&cfg.unity_game).is_file()
+}
+
+/// The buttons of the error box (O494).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Buttons {
+    /// "Try again".
+    pub retry: bool,
+    /// "Play anyway".
+    pub play_anyway: bool,
+    /// "Use the main client": switches the choice back to the main client (saved, as a click on the tab does).
+    pub use_main: bool,
+}
+
+/// Which buttons an error box shows. A Unity channel that was never published offers only the way back to the main
+/// client (a retry would give the same answer) and "Play anyway" only when a Unity install exists. Every other error
+/// keeps "Try again" and "Play anyway", except that a half-restored install (`Rollback`) is repaired by the next run
+/// and never started, and a settings error has nothing to start.
+pub fn buttons(e: &Error, client: Client, unity_installed: bool) -> Buttons {
+    match e {
+        Error::UnityNotPublished => Buttons {
+            retry: false,
+            play_anyway: unity_installed,
+            use_main: client == Client::Unity,
+        },
+        Error::Rollback(_) | Error::Config(_) => Buttons {
+            retry: true,
+            play_anyway: false,
+            use_main: false,
+        },
+        _ => Buttons {
+            retry: true,
+            play_anyway: true,
+            use_main: false,
+        },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const B: fn(bool, bool, bool) -> Buttons = |retry, play_anyway, use_main| Buttons {
+        retry,
+        play_anyway,
+        use_main,
+    };
+
+    #[test]
+    fn not_published_offers_the_main_client_only() {
+        let e = Error::UnityNotPublished;
+        assert_eq!(buttons(&e, Client::Unity, false), B(false, false, true));
+        // a Unity install exists: Play anyway stays
+        assert_eq!(buttons(&e, Client::Unity, true), B(false, true, true));
+    }
+
+    #[test]
+    fn other_errors_keep_the_old_buttons() {
+        for client in [Client::Main, Client::Unity] {
+            for inst in [false, true] {
+                for e in [
+                    Error::Network("x".into()),
+                    Error::Http(404),
+                    Error::BadSignature,
+                    Error::DevPackage,
+                    Error::Io("x".into()),
+                ] {
+                    assert_eq!(buttons(&e, client, inst), B(true, true, false), "{e:?}");
+                }
+                for e in [Error::Rollback("x".into()), Error::Config("x".into())] {
+                    assert_eq!(buttons(&e, client, inst), B(true, false, false), "{e:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn unity_install_is_the_player_program_in_unity_dir() {
+        let dir = std::env::temp_dir().join(format!("cinders-choice-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join(crate::config::UNITY_DIR)).unwrap();
+        let cfg = Config {
+            manifest_url: "https://x.test/updates/live/manifest.json".into(),
+            public_key: [0; 32],
+            baseline: 0,
+            game: "Chaos.exe".into(),
+            args: vec![],
+            feed: None,
+            dir: dir.clone(),
+            unity_manifest: Some("https://x.test/updates/unity/manifest.json".into()),
+            unity_game: "ChaosUnity.exe".into(),
+            layout: crate::manifest::Layout::Flat,
+        };
+        assert!(!unity_installed(&cfg));
+        // the main client's program one folder up does not count
+        std::fs::write(dir.join("ChaosUnity.exe"), b"x").unwrap();
+        assert!(!unity_installed(&cfg));
+        std::fs::write(dir.join(crate::config::UNITY_DIR).join("ChaosUnity.exe"), b"x").unwrap();
+        assert!(unity_installed(&cfg));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
