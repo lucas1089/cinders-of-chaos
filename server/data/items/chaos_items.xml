@@ -76,14 +76,16 @@
 		<attribute key="showattributes" value="1" />
 	</item>
 	<!-- 10301: stock "scythe of the reaper", client id 9384 -->
+	<!-- a sword since O500 typed the scythes as swords (stock_weapon_types.csv): the unique says what its base is (O505,
+	     tests/unique_weapon_base_test.lua). The skill is the one melee skill either way -->
 	<item id="10301" article="a" name="Harvester of Sorrows">
 		<attribute key="weight" value="3000" />
-		<attribute key="weaponType" value="axe" />
+		<attribute key="weaponType" value="sword" />
 		<attribute key="slotType" value="two-handed" />
 		<attribute key="attack" value="50" />
 		<attribute key="defense" value="14" />
 		<attribute key="elementDeath" value="22" />
-		<attribute key="skillAxe" value="4" />
+		<attribute key="skillSword" value="4" />
 		<attribute key="manaLeechChance" value="7" />
 		<attribute key="manaLeechAmount" value="6" />
 		<attribute key="description" value="It has reaped countless souls and still wants a few more. (Requires level 100.)" />
@@ -1892,7 +1894,7 @@
 		<attribute key="showattributes" value="1" />
 	</item>
 	<!-- 7408: stock "wyvern fang" -->
-	<!-- a one-handed sword. Until O491 the base was 27193, a wand of the caster lines that only looks like a dagger: a Thief could wear
+	<!-- a one-handed sword. Until O505 the base was 27193, a wand of the caster lines that only looks like a dagger: a Thief could wear
 	     the copy and never hit with it. Old copies turn on a move or at login (data/lib/chaos_jewelry.lua uniqueMoves) -->
 	<item id="7408" article="a" name="Misericorde of the Pale Vow">
 		<attribute key="weight" value="1200" />

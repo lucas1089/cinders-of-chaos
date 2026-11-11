@@ -56,6 +56,8 @@ local TYPES = {
 	[1987] = {container = true, capacity = 8}, -- bag
 	[3058] = {container = true, capacity = 30}, -- a corpse
 	[32081] = {container = true, capacity = 60}, [32082] = {container = true, capacity = 3}, [32083] = {container = true, capacity = 100}, [32095] = {container = true, capacity = 100},
+	[32096] = {container = true, capacity = 200}, -- the Rune Bag
+	[2274] = {stackable = true}, [2265] = {stackable = true}, [32051] = {stackable = true}, [32105] = {stackable = true}, [32131] = {stackable = true},
 	[29856] = {stackable = true}, [32256] = {stackable = true}, [2148] = {stackable = true}, [32071] = {stackable = true},
 }
 function ItemType(id)
@@ -201,6 +203,7 @@ dofile("data/scripts/chaos/chaos_constants.lua")
 Chaos.send = function(player, opcode, action, data) sent[#sent + 1] = {player = player, opcode = opcode, action = action, data = data} end
 Chaos.decode = function(b) return b end
 ChaosGems = {isGem = function(id) return id >= 32001 and id <= 32035 end}
+ChaosSupports = {isRune = function(id) return id >= 32101 and id <= 32200 end} -- data/lib/chaos_supports.lua S.isRune
 ChaosLootFilter = {itemInfo = function(it) return {category = it.cat or "other", rarity = it.rarity or 0, unique = it.unique or false} end,
 	RARITY = {{name = "Common"}, {name = "Uncommon"}}}
 local finalized = 0
@@ -229,7 +232,7 @@ for _, key in pairs(cfg.storage) do
 end
 local seenIds = {}
 for kind, k in pairs(cfg.kinds) do
-	ok((k.id >= 32081 and k.id <= 32083 or k.id == 32095) and not seenIds[k.id], "pouch ids 32081..32083 and 32095, distinct: " .. kind)
+	ok((k.id >= 32081 and k.id <= 32083 or k.id == 32095 or k.id == 32096) and not seenIds[k.id], "pouch ids 32081..32083, 32095, 32096, distinct: " .. kind)
 	seenIds[k.id] = true
 	ok(k.capacity >= 100 and k.capacity <= 1000 and (k.capacity <= 250 or kind == "loot"), "capacity at least 100; only the Loot Bag is paged: " .. kind)
 	ok(k.description:find("^Store item: cannot be traded"), "description says store item: " .. kind)
@@ -950,6 +953,192 @@ eq(oldLoot.custom.chaos_locked, 2, "the Loot Bag in the backpack rebound") eq(up
 eq(oldKeys.custom.chaos_locked, 2, "the Rift Key Pouch in the inbox rebound")
 eq(plain.custom.chaos_locked, 1, "a player's own lock on another item is left alone")
 eq(PO.rebind(grey), 0, "a second pass changes nothing")
+
+-- ------------------------------------------------------------------ the Rune Bag (O502, owner 2026-11-11: "Make a rune bag too, please. To be sold in the store.")
+do
+	local K = cfg.kinds.runes
+	eq(K.id, 32096, "Rune Bag id") eq(K.title, "Rune Bag", "title") eq(K.name, "rune bag", "name") eq(K.plural, "rune bags", "plural")
+	eq(K.capacity, 200, "200 slots: 136 rune kinds and a second stack of the common ones") eq(K.weight, 100, "weight as the others")
+	eq(K.clientId, 0, "no new sprite: the stock blue backpack's look") eq(K.sourceId, 2002, "a copy of the blue backpack")
+	eq(K.weightless, nil, "it keeps its weight") ok(K.description:find("^Store item: cannot be traded, sold or dropped"), "description")
+	eq(P.kindOfId(cfg, 32096), "runes", "the id is a pouch") eq(PO.kindOfId(32096), "runes", "kindOfId")
+	eq(cfg.priority[#cfg.priority], "runes", "priority: the Rune Bag after gems, orbs, keys") eq(cfg.order[#cfg.order - 1], "runes", "chat line order: before the Loot Bag")
+	-- what a rune is: the 36 stock magic runes of the rune supply, every support rune; not the shard, not the unscribed rune
+	local supply = dofile("data/lib/chaos_rune_supply.lua")
+	local want, have = {}, {}
+	for _, r in ipairs(supply.runes) do want[r.id] = true end
+	for _, id in ipairs(cfg.runeIds) do have[id] = true end
+	eq(#cfg.runeIds, 36, "36 magic runes") eq(#supply.runes, 36, "the rune supply has 36")
+	for id in pairs(want) do ok(have[id], "rune supply id " .. id .. " is in runeIds") end
+	for id in pairs(have) do ok(want[id], "runeIds id " .. id .. " is a rune of the rune supply") end
+	local isSup = ChaosSupports.isRune
+	eq(P.isRuneId(cfg, 2274, isSup), true, "a magic rune (Frostfall Rune)") eq(P.isRuneId(cfg, 2268, isSup), true, "a magic rune (Reaper's Rune)")
+	eq(P.isRuneId(cfg, 32101, isSup), true, "the first support rune") eq(P.isRuneId(cfg, 32200, isSup), true, "the last support rune")
+	eq(P.isRuneId(cfg, 32051, isSup), false, "a rune shard is not a rune here (Orbs Pouch)")
+	eq(P.isRuneId(cfg, supply.blankRune.id, isSup), false, "the unscribed rune is a crafting material, not a rune here")
+	eq(P.isRuneId(cfg, 2400, isSup), false, "a sword") eq(P.isRuneId(cfg, 32201, isSup), false, "past the support runes")
+	eq(P.isRuneId(cfg, 32105, nil), false, "without the supports library only the magic runes are known")
+	eq(PO.isRune(2274), true, "PO.isRune: magic") eq(PO.isRune(32131), true, "PO.isRune: support") eq(PO.isRune(32051), false, "PO.isRune: shard")
+	-- routing (pure): runes go to the Rune Bag first, the other four are untouched
+	local all5 = {loot = true, orbs = true, keys = true, gems = true, runes = true}
+	local function plan5(info, rules, carried) local k, s = P.plan(info, rules or d, sets, cfg, carried or all5) return table.concat(k, ",") .. (s and (" <" .. s) or "") end
+	local magic = {id = 2274, category = "supplies", rune = true}
+	local support = {id = 32105, category = "supplies", rune = true}
+	eq(plan5(magic), "runes,loot <runes", "a magic rune: the Rune Bag, then the Loot Bag as overflow")
+	eq(plan5(support), "runes,loot <runes", "a support rune: the Rune Bag, then the Loot Bag as overflow")
+	eq(plan5({id = 2274, category = "supplies"}), "runes,loot <runes", "a magic rune is known by its id even without the rune flag")
+	eq(plan5(support, noSpill), "runes", "overflow off: the Rune Bag only")
+	eq(plan5(support, d, {runes = true}), "runes", "a Rune Bag alone takes runes")
+	eq(plan5(support, d, {loot = true, orbs = true, keys = true, gems = true}), "loot", "no Rune Bag carried: the Loot Bag's supplies rule decides (as before)")
+	eq(plan5(support, P.sanitizeRules(cfg, {supplies = false, overflow = true}), {loot = true}), "", "no Rune Bag, supplies rule off: nothing (as before)")
+	eq(plan5({id = 32051}), "orbs,loot <orbs", "a rune shard stays with the Orbs Pouch")
+	eq(plan5({id = 32051}, d, {runes = true}), "", "a Rune Bag takes no rune shard")
+	eq(plan5({id = 32010, gem = true}), "gems,loot <gems", "gems: the Gem Pouch as before")
+	eq(plan5({id = 29856}), "orbs,loot <orbs", "orbs: the Orbs Pouch as before") eq(plan5({id = 32071}), "keys,loot <keys", "omen items: the Rift Key Pouch as before")
+	eq(plan5({id = 2400, category = "equipment", rarity = 2}, d, {runes = true}), "", "a Rune Bag takes only runes")
+	eq(plan5({id = 2148, category = "currency"}, d, {runes = true}), "", "no gold in a Rune Bag")
+	eq(plan5({id = 32096, rune = true, pouch = true, container = true}), "", "a pouch is never collected, whatever it says")
+	eq(route(support), "runes", "route, every pouch carried, overflow off: the Rune Bag")
+	-- the manual move rule (pure)
+	eq(P.runeBagRefusal({intoRuneBag = true, rune = false}), P.RUNE_BAG_ONLY, "pure: a non-rune into a Rune Bag refused")
+	eq(P.runeBagRefusal({intoRuneBag = true, rune = true}), nil, "pure: a rune into a Rune Bag allowed")
+	eq(P.runeBagRefusal({intoRuneBag = false, rune = false}), nil, "pure: any other destination is not this rule")
+	eq(P.runeBagRefusal(nil), nil, "pure: no move info") ok(P.RUNE_BAG_ONLY:find("only runes"), "message text")
+
+	-- the store: one per character, delivered to the purse, bound
+	local rp = newPlayer(60)
+	local C = CONTAINER_POSITION
+	local mv = function(it, toPos, toCyl) return PO.onMoveItem(rp, it, 1, {x = C}, toPos, nil, toCyl) end
+	local rpBp = item(1988); rpBp.parent = rp; rp.slots[CONST_SLOT_BACKPACK] = rpBp
+	rp.storage[ST.lootRules] = -1
+	eq(PO.storeCheck(rp, "runes"), nil, "the Rune Bag can be bought")
+	eq(PO.storeGive(rp, "runes"), true, "delivered")
+	local rune = rp.purse.items[1]
+	eq(rune.id, 32096, "in the purse") eq(rune.custom.chaos_pouch, "runes", "kind attribute") eq(rune.custom.chaos_pouch_owner, 60, "owner")
+	eq(rune.custom.chaos_storebound, 1, "store-bound") eq(rune.custom.chaos_locked, 2, "bound lock (drawn in its colours)")
+	ok(rp.msgs[#rp.msgs]:find("Rune Bag") and rp.msgs[#rp.msgs]:find("support runes and magic runes"), "told what it collects: " .. rp.msgs[#rp.msgs])
+	ok(PO.storeCheck(rp, "runes"):find("already have a Rune Bag"), "one per character: refused when owned")
+	eq(PO.carried(rp).runes, rune, "a Rune Bag in the purse collects")
+	eq(PO.isPouch(rune), true, "isPouch") eq(PO.isRuneBag(rune), true, "isRuneBag") eq(PO.isRuneBag(item(1987)), false, "a bag is no Rune Bag")
+	local store2, collects2 = PO.tooltipLines(rune)
+	eq(store2, "Store item: cannot be traded", "tooltip store line") ok(collects2:find("support runes and magic runes"), "tooltip collects line")
+	eq(PO.installed("runes"), true, "installed")
+	-- it leaves the purse like the Orbs Pouch (only the Loot Bag stays), into the backpack
+	eq(mv(rune, {x = CONTAINER_POSITION, y = 0x40}, rpBp), RETURNVALUE_NOERROR, "the Rune Bag may go from the purse into the backpack")
+	eq(mv(rune, {x = 100, y = 100, z = 7}), RETURNVALUE_NOTPOSSIBLE, "but not onto the ground")
+	rune.parent = nil rune:moveTo(rpBp, 0) table.remove(rp.purse.items, 1)
+	eq(PO.carried(rp).runes, rune, "carried in the backpack")
+
+	-- a kill: support rune, magic rune, rune shard, potion, gold
+	local lootBag = PO.create(rp, "loot") lootBag:moveTo(rpBp, 0)
+	local orbsP = PO.create(rp, "orbs") orbsP:moveTo(rpBp, 0)
+	local sup1, mag1, shard, potion, gold = item(32105, {count = 2, cat = "supplies"}), item(2274, {count = 3, cat = "supplies"}),
+		item(32051, {count = 4}), item(7618, {cat = "supplies"}), item(2148, {count = 30, cat = "currency"})
+	rp.msgs = {}
+	drop(nil, corpse(rp.id, {sup1, mag1, shard, potion, gold}))
+	eq(rune.items[1].id, 32105, "support rune -> Rune Bag") eq(rune.items[2].id, 2274, "magic rune -> Rune Bag") eq(#rune.items, 2, "only the two runes")
+	eq(orbsP.items[1].id, 32051, "rune shard -> Orbs Pouch, not the Rune Bag")
+	eq(potion.parent, lootBag, "a potion is no rune: the Loot Bag as before") eq(gold.parent, lootBag, "gold: the Loot Bag")
+	ok(rp.msgs[#rp.msgs]:find("^Looted:") and rp.msgs[#rp.msgs]:find("2 item32105") and rp.msgs[#rp.msgs]:find("3 item2274"), "one loot line names the runes: " .. rp.msgs[#rp.msgs])
+	ok(not rp.msgs[#rp.msgs]:find("Rune Bag"), "the pouch name stays out of the line")
+	-- the same rune again merges into its stack
+	local sup2 = item(32105, {count = 1, cat = "supplies"})
+	drop(nil, corpse(rp.id, {sup2}))
+	eq(rune.items[1].count, 3, "the stack grows") eq(#rune.items, 2, "no new slot")
+
+	-- a full Rune Bag: the Loot Bag takes it (overflow rule), else the backpack, else it stays; with the "is full" note
+	rune.cap = #rune.items
+	local spill1 = item(32131, {cat = "supplies"})
+	rp.msgs = {}
+	drop(nil, corpse(rp.id, {spill1}))
+	eq(spill1.parent, lootBag, "full Rune Bag: the Loot Bag takes the rune (overflow on)")
+	ok(rp.msgs[#rp.msgs]:find("Rune Bag is full; 1 to your Loot Bag"), "told: " .. rp.msgs[#rp.msgs])
+	rp.storage[ST.lootRules] = P.packRules({list = true, gold = true, uniques = true, gear = true, supplies = true, gems = true, other = true, minRarity = 1, overflow = false})
+	local spill2 = item(32131, {cat = "supplies"})
+	drop(nil, corpse(rp.id, {spill2}))
+	ok(spill2.parent == rpBp, "overflow off: the backpack")
+	rpBp.cap = #rpBp.items
+	local spill3, c3 = item(2265, {cat = "supplies"}), nil
+	c3 = corpse(rp.id, {spill3})
+	drop(nil, c3)
+	eq(spill3.parent, c3, "backpack full too: it stays in the corpse")
+	rpBp.cap = 20
+	rp.storage[ST.lootRules] = -1
+	rune.cap = K.capacity
+
+	-- moves by hand: a rune goes in and out freely, anything else is refused with a warning line
+	local handRune, handMagic = item(32131, {count = 1}), item(2265, {count = 5})
+	handRune.parent = rpBp handMagic.parent = rpBp
+	local nmsg = #rp.msgs
+	eq(mv(handRune, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOERROR, "a support rune moved into the Rune Bag window is allowed")
+	eq(mv(handMagic, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOERROR, "a magic rune moved into the Rune Bag window is allowed")
+	eq(#rp.msgs, nmsg, "no warning for a rune")
+	local ground = item(2274) ground.parent = {}
+	eq(mv(ground, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOERROR, "a rune lifted from the ground into it is allowed")
+	local loosePotion = item(7618) loosePotion.parent = rpBp
+	eq(mv(loosePotion, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOTPOSSIBLE, "a potion moved in is refused")
+	eq(rp.msgs[#rp.msgs], "The Rune Bag holds only runes.", "the reason is told as a warning line")
+	local looseShard = item(32051, {count = 3}) looseShard.parent = rpBp
+	eq(mv(looseShard, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOTPOSSIBLE, "a rune shard moved in is refused")
+	local looseGem = item(32010) looseGem.parent = rpBp
+	eq(mv(looseGem, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOTPOSSIBLE, "a gem moved in is refused")
+	local runesBag = item(1987) runesBag.parent = rpBp
+	local inside = item(2274) inside.parent = runesBag runesBag.items[1] = inside
+	eq(mv(runesBag, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOTPOSSIBLE, "a bag full of runes is a container: refused")
+	local unbound = item(1988) unbound.parent = rpBp
+	eq(mv(unbound, {x = 100, y = 100, z = 7}), RETURNVALUE_NOERROR, "the rule touches no other move")
+	local lootInto = item(7618) lootInto.parent = {}
+	eq(mv(lootInto, {x = C, y = 0x40, z = 255}, rpBp), RETURNVALUE_NOERROR, "a potion into the plain backpack is untouched")
+	-- a pouch keeps its own reason
+	local other = item(32083, {custom = {chaos_pouch_owner = 60, chaos_storebound = 1}}) other.parent = rpBp
+	eq(mv(other, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOTPOSSIBLE, "a pouch into the Rune Bag refused")
+	ok(rp.msgs[#rp.msgs]:find("another pouch"), "with the pouch reason")
+	-- out: free, to the backpack, the ground, an inventory slot, another slot of the bag
+	local held = rune.items[1]
+	eq(mv(held, {x = C, y = 0x40, z = 255}, rpBp), RETURNVALUE_NOERROR, "out into the backpack allowed")
+	eq(mv(held, {x = 100, y = 100, z = 7}), RETURNVALUE_NOERROR, "out to the ground allowed")
+	eq(mv(held, {x = C, y = 1}, rp), RETURNVALUE_NOERROR, "out into an inventory slot allowed")
+	eq(mv(held, {x = C, y = 0x46, z = 255}, rune), RETURNVALUE_NOERROR, "a rune of the bag moved within it allowed")
+	-- the Loot Bag next to it is still one-way
+	eq(mv(handRune, {x = C, y = 0x47, z = 255}, lootBag), RETURNVALUE_NOTPOSSIBLE, "the Loot Bag still takes nothing by hand")
+	ok(rp.msgs[#rp.msgs]:find("only gives items back"), "with its own reason")
+
+	-- the Auto Seller never sells what lies in the bag; a rune in a corpse or the backpack is as it was
+	eq(PO.neverSell(rune.items[1]:getId(), rune.items[1]), true, "a rune in the Rune Bag is never auto-sold")
+	eq(PO.neverSell(2400, rune.items[1]), true, "nor any item that lies in it")
+	eq(PO.neverSell(32105, item(32105)), false, "a rune outside the bag: the old rule (it may be sold)")
+	eq(PO.neverSell(32105), false, "a rune by id alone: the old rule")
+	local inPack = item(2274) inPack.parent = rpBp
+	eq(PO.neverSell(2274, inPack), false, "a rune in the backpack may be sold as before")
+
+	-- death and login: the bit 16 brings the bag back, empty
+	local dead = newPlayer(61)
+	local deadCorpse = item(3058) deadCorpse.cap = 30
+	local deadBp = item(1988) deadBp.parent = dead dead.slots[CONST_SLOT_BACKPACK] = deadBp
+	local deadBag = PO.create(dead, "runes") deadBag:moveTo(deadBp, 0)
+	local kept = item(2274) kept.parent = nil kept:moveTo(deadBag, 1)
+	tiles["100:100:7"] = {getItems = function() return {deadCorpse} end}
+	deadBp.parent = nil deadBp:moveTo(deadCorpse, 1)
+	dead.slots[CONST_SLOT_BACKPACK] = nil
+	registry.ChaosPouchDeath.onDeath(dead, deadCorpse)
+	players[61] = nil
+	events[#events].fn()
+	eq(deadBag.removed, true, "the Rune Bag left the corpse") ok(queries[#queries]:find("| 16", 1, true) and queries[#queries]:find("7100109"), "bit 16 written: " .. queries[#queries])
+	eq(kept.parent ~= nil, true, "its runes stay in the corpse")
+	players[61] = dead
+	dead.storage[ST.regrant] = 16
+	local newBp = item(1988) newBp.parent = dead dead.slots[CONST_SLOT_BACKPACK] = newBp
+	registry.ChaosPouchesLogin.onLogin(dead)
+	eq(#newBp.items, 1, "the Rune Bag is back") eq(newBp.items[1].id, 32096, "the right item") eq(#newBp.items[1].items, 0, "empty")
+	eq(dead.storage[ST.regrant], 0, "bit cleared")
+	eq(dead.msgs[#dead.msgs], "Back after your death, empty: your Rune Bag (backpack).", "one short line")
+	ok(PO.storeCheck(newPlayer(62), "runes") == nil, "another character can buy one")
+	local owedRune = newPlayer(63) owedRune.storage[ST.regrant] = 16
+	ok(PO.storeCheck(owedRune, "runes"):find("next login"), "a Rune Bag owed back is not sold again")
+	eq(PO.storeCheck(owedRune, "gems"), nil, "bit 16 is no other kind's bit")
+	owedRune.storage[ST.regrant] = 8
+	eq(PO.storeCheck(owedRune, "runes"), nil, "the Gem Pouch's bit 8 does not owe a Rune Bag")
+end
 
 -- the store while a pouch is owed
 local owed = newPlayer(22)

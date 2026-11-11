@@ -1,28 +1,25 @@
 #!/usr/bin/env python3
-"""The base server's soul pit and tower defence get the boss room lock, a time limit with warnings, an exit and a
-clean-up (server/README.md "Instance limits", "Soul pit and tower defence").
+"""The base server's tower defence gets the boss room lock, a time limit with warnings, an exit and a clean-up
+(server/README.md "Instance limits", "Tower defence"). The soul pit was wired here too until O488; it is
+removed from the game now (patch_remove_soulpit.py, install step `soulpit`, after this step), so this tool no longer
+touches it: a server that has the old wiring ends in the same state as a fresh one when the step `soulpit` has run.
 
 usage: python3 -I patch_base_eventrooms.py DATA_DIR [--dry-run]
 
-Both are places a group goes into, written outside the boss room template, without a time limit or a lock:
-  soul pit        data/scripts/customs/soulpit_system/soulpit.lua: a soul core used on the pit (action id in its
-                  `config`) teleports the group in after 5 s and runs 5 waves. The state of a run is one table of the
-                  script (`event`): a group that leaves early leaves the run (and its 1 s loops) going, nothing ends it.
+The tower defence is a place a group goes into, written outside the boss room template, without a time limit or a lock:
   tower defence   data/scripts/customs/tower_defense/tower_defense.lua: a lever in the arena starts the waves;
                   tower_defense/entrance_teleport.lua lets anyone in at any time; a lever pull after the spawning ended
                   restarts the run (a new Base Core, the counters reset) while the old monsters still walk.
-The scripts get marked lines (the bodies are untouched) that hand both places to ChaosBossRooms (instance_limits.lua),
-as tools/patch_base_bossrooms.py does for the lever boss rooms:
-  - a room config at load (ChaosBossRoomsPending["aid<id>"]): the box, where the group goes in and out (the soul pit:
-    the lobby spot its entrance teleport (soulpit_system/teleport.lua) leads to, so nobody is left on the start tiles of
-    the next group; the tower defence: the spot its own exit tile leads to), the place's own
-    time (config.chaosRoom -> bossRooms.ownSeconds), and chaosOnClose, which resets the script's own state at the end
-    (the soul pit's `event`; the tower defence stops spawning and clears the players' summon counters as its exit does);
-  - the lock first in the entry (the soul core on the pit; the tower defence's lever and entrance tile, which sends a
-    refused player back where they came from): refused while a run is on, with the time it frees up;
-  - ChaosBossRooms.started when the run starts, ChaosBossRooms.finished when it ends by the script's own rule (the pit
-    completed; the tower defence won or lost).
-Without the Chaos scripts loaded (ChaosBossRooms nil) both work exactly as before.
+The scripts get marked lines (the bodies are untouched) that hand the place to ChaosBossRooms (instance_limits.lua), as
+tools/patch_base_bossrooms.py does for the lever boss rooms:
+  - a room config at load (ChaosBossRoomsPending["aid<id>"]): the box, where the group goes in and out (the spot its own
+    exit tile leads to), the place's own time (config.chaosRoom -> bossRooms.ownSeconds), and chaosOnClose, which stops
+    spawning and clears the players' summon counters as its exit does;
+  - the lock first in the entry (the lever and the entrance tile, which sends a refused player back where they came
+    from): refused while a run is on, with the time it frees up;
+  - ChaosBossRooms.started when the run starts, ChaosBossRooms.finished when it ends by the script's own rule (won or
+    lost).
+Without the Chaos scripts loaded (ChaosBossRooms nil) it works exactly as before.
 
 A file is patched only when each of its anchors is there exactly as often as in the stock script; otherwise it is
 listed and left alone. Every change is made once (a second run changes nothing). Line endings (LF or CRLF) are kept.
@@ -33,11 +30,9 @@ import sys
 
 MARK = 'Chaos (patch_base_eventrooms.py)'
 
-SOULPIT = ('scripts', 'customs', 'soulpit_system', 'soulpit.lua')
 TOWER = ('scripts', 'customs', 'tower_defense', 'tower_defense.lua')
 ENTRANCE = ('scripts', 'customs', 'tower_defense', 'entrance_teleport.lua')
 
-SOULPIT_AID_RE = re.compile(r'^local config = \{[ \t]*\r?\n[ \t]*actionId[ \t]*=[ \t]*(\d+)[ \t]*,', re.M)
 TOWER_AID_RE = re.compile(r'^\[(\d+)\] = \{names = ', re.M)
 
 
@@ -47,36 +42,6 @@ def anchor(pattern):
 
 # (anchor, expected count, 'before' | 'after', lines with {key}; {i} = the indentation of the anchor line, {b} = the
 # indentation of the line after it)
-SOULPIT_STEPS = [
-    (anchor(r'^local function getSpectators\(\)[ \t]*\r?$'), 1, 'before', [
-        'local chaosRoom = {bossName = "Soulpit", chaosRoom = "soulpit", participantsPos = config.participantsPos,',
-        '    bossArea = {fromPos = Position(math.min(config.spawnArea.fromPos.x, event.spawnArea[1].x),',
-        '        math.min(config.spawnArea.fromPos.y, event.spawnArea[1].y), config.spawnArea.fromPos.z),',
-        '    toPos = Position(math.max(config.spawnArea.toPos.x, event.spawnArea[2].x),',
-        '        math.max(config.spawnArea.toPos.y, event.spawnArea[2].y), config.spawnArea.toPos.z),',
-        '    entrancePos = config.entranceArea, exitPosition = Position(31589, 32281, 8)},',
-        '    chaosOnClose = function()',
-        '        event.creatures = {}',
-        '        event.currentWave = 0',
-        '        event.participants = {}',
-        '        event.currentItem = nil',
-        '    end}',
-        'ChaosBossRoomsPending = ChaosBossRoomsPending or {}',
-        'ChaosBossRoomsPending["{key}"] = chaosRoom',
-        '',
-    ]),
-    (anchor(r'^function soulPit\.onUse\(player, item, fromPos, target, toPos, isHotkey\)[ \t]*\r?$'), 1, 'after', [
-        '{b}if ChaosBossRooms and target and target.getActionId and target:getActionId() == config.actionId',
-        '{b}    and not ChaosBossRooms.leverUse(player, "{key}", chaosRoom) then return true end',
-    ]),
-    (anchor(r'^([ \t]*)if checkAndStartWave\(player, item\) then[ \t]*\r?$'), 1, 'after', [
-        '{b}if ChaosBossRooms then ChaosBossRooms.started("{key}", chaosRoom, participants) end',
-    ]),
-    (anchor(r'^([ \t]*)local eventName = event\.waves\[event\.currentItem\]\.name or "Soulpit"[ \t]*\r?$'), 1, 'after', [
-        '{i}if ChaosBossRooms then ChaosBossRooms.finished("{key}") end',
-    ]),
-]
-
 TOWER_STEPS = [
     (anchor(r'^local toPos = \{x = \d+, y = \d+, z = \d+\}[ \t]*\r?$'), 1, 'after', [
         '',
@@ -163,10 +128,6 @@ def main(argv):
         return 2
     data = args[0]
     jobs = []
-    soulpit = os.path.join(data, *SOULPIT)
-    if os.path.isfile(soulpit):
-        m = SOULPIT_AID_RE.search(read(soulpit))
-        jobs.append((soulpit, SOULPIT_STEPS, 'aid' + m.group(1) if m else None))
     tower = os.path.join(data, *TOWER)
     tower_key = None
     if os.path.isfile(tower):
@@ -177,7 +138,7 @@ def main(argv):
     if os.path.isfile(entrance) and tower_key:
         jobs.append((entrance, ENTRANCE_STEPS, tower_key))
     if not jobs:
-        print('no soul pit and no tower defence script found (nothing to do)')
+        print('no tower defence script found (nothing to do)')
         return 0
     for path, steps, key in jobs:
         rel = os.path.relpath(path, data).replace(os.sep, '/')

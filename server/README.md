@@ -28,7 +28,10 @@ server/
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
   tools/patch_base_bossrooms.py       the base lever and step-in boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
   tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
-  tools/patch_base_eventrooms.py      the base soul pit and tower defence as boss rooms (see "Instance limits")
+  tools/patch_base_eventrooms.py      the base tower defence as a boss room (see "Instance limits")
+  tools/patch_remove_soulpit.py       the base soul pit and its items removed (see "Soul pit removed")
+  tools/patch_stock_weapon_types.py   a stock weapon is the kind its name says, table data/items/stock_weapon_types.csv (see "Stock weapon types (O500)")
+  tools/audit_weapon_types.py         the audit behind it: weapon kind against name, and the attack intervals (read only)
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -512,6 +515,10 @@ server/
    `install_all.py` step `monsternames`, right after `lib`, before `lategame` and `spawns`) gives the base monsters of
    `data/monster/base_monster_names.csv` (keyed by the sha256 of the old name) their Chaos names everywhere the base data
    names them. See "Base monster names".
+5k3. Stock weapon types (O500): `python3 -I server/tools/patch_stock_weapon_types.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `weapontypes`, right after `monsternames`, before `vocations` and every other step that reads a weapon
+   type) sets `weaponType` in `items.xml` for the ids of `data/items/stock_weapon_types.csv`: the Twin Hooks become a two-handed
+   sword, ten other weapons the kind their name says. See "Stock weapon types (O500)".
 5l. Town names: `python3 -I server/tools/patch_base_towns.py <server>/data [--dry-run]` (idempotent; `install_all.py`
    step `towns`, after `itemnames`) renames the map's towns by id from `tools/base_towns.csv` in the `.otbm` itself
    (`<map>.otbm.bak` keeps the original). See "Town names".
@@ -549,10 +556,16 @@ server/
 7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
    inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
-7c2. Soul pit and tower defence: `python3 -I server/tools/patch_base_eventrooms.py <server>/data [--dry-run]`
-   (idempotent; `install_all.py` step `eventrooms`, after `bossrooms`): both run as boss rooms (lock, time limit,
-   warnings, exit, clean-up of the waves and of the script's own state). See "Instance limits", "Soul pit and tower
-   defence".
+7c2. Tower defence: `python3 -I server/tools/patch_base_eventrooms.py <server>/data [--dry-run]`
+   (idempotent; `install_all.py` step `eventrooms`, after `bossrooms`): it runs as a boss room (lock, time limit,
+   warnings, exit, clean-up of the waves and of the script's own state). See "Instance limits", "Tower defence". Until
+   O488 the soul pit was wired here too.
+7c3. Soul pit removed (O488): `python3 -I server/tools/patch_remove_soulpit.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `soulpit`, after `eventrooms` and the two waystone steps, before `sql`): the three
+   `soulpit_system` scripts become stubs, the +3% experience leaves `Player:onGainExperience`, the soul cores and the
+   exalted core leave every loot list, Iletrya's step asks for no cores, the exalted core recipe and the dust and sliver
+   drop go, the 39 descriptions say "No longer used.". The items players own go in the step `sql`
+   (`server/sql/chaos_zz_soulpit_removal.sql`). See "Soul pit removed". Run the server stopped, as for any `sql` file.
 7d. Base dungeon entry: `python3 -I server/tools/patch_base_dungeon.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `dungeonentry`, after `bossrooms`): the step-in tile of the base modal dungeon entry opens the
    Chaos dungeon window instead, so every dungeon run goes through the queue. See "Instance limits", "Base modal
@@ -1495,7 +1508,7 @@ Everything adjustable is in `chaos_constants.lua`: rewards, limits, boss names, 
 When the tier is applied: the engine runs `onSpawn` before the placement and gives a monster its id only at the placement, so nothing keyed by the id can be written in `onSpawn`. The natural roll is decided there and the monster gets a think event for that tier (`ChaosTierRollMagic` / `Rare` / `Legendary` / `Boss`); at its first think, after the placement, the tier is applied and the event removes itself. A map respawn or `Game.createMonster` thinks within about a second; a startup spawn once a player comes near. A tier set in between (`ChaosApplyTier`: rift, invasion, tower) wins over the roll. Ambush copies get their tier right after `Game.createMonster` returns. Loading the script drops any entry an older version left under id 0 in `ChaosTierState` (the table survives a reload, so a server that ran the old roll would otherwise keep it). `tests/monster_tiers_test.lua` runs the file against a mocked engine whose `getId()` is 0 until the placement. Checked in game: a forced legendary roll lands under the monster's id with modifiers, monster bar tier and announcement; a normal kill after it still brings an ambush.
 
 ### Modifiers and shaders (monster_tiers.lua)
-Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
+Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player; O483: the amount of one hit is also cut to 10% of the attacker's pool and 25% per second, `monster_tiers.lua` `reflectCap`, see "Nemesis"), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
 
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
@@ -3728,6 +3741,10 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
   the check pass: a copy with `chaos_unique` whose spec has `equip` is held to that rule, every other copy to the stock
   rule. Refused: the engine's "You cannot dress this object there." Staff with the weapon check flag pass, as in the
   engine. A copy worn before the rule stays worn until taken off.
+- **Tooltip (O489).** A plain copy's tooltip names the stock rule: the generated script sets `ChaosUniqueEquip.stock`
+  and `item_tooltip_core.lua` reads it (`T.stockClassText`: a whole line is named by its base class). Before, it showed
+  the looser entry the engine reads (a rolled Ring of Blue Plasma said "level 30, all classes" and was refused under
+  level 100 or outside the Ranger, Thief and Monk lines). A unique copy shows its own rule, as before.
 - **Look text.** The engine's "can only be wielded properly by" line shows the entry's level (the lower one: 60 for the
   Charm, 230 for the Diadem, where the unique asks more); the unique's description says its own level and lines.
 - Tests: `tests/unique_equip_test.lua` (every round-two unique can be worn by the classes its archetype names and not
@@ -3735,13 +3752,14 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
 - **No lines, every class** (2026-10-23): `equipLevel` without `equipLines` writes an empty class list; that lets every
   class wear it from the level (before, an empty list let nobody). A weapon base without a stock entry gets a `hand`
   entry. The leveling and endgame uniques below use both.
-- **A base that left** (O491): a base id the block held that is no unique's any more gets its recorded stock Equip entry
+- **A base that left** (O505): a base id the block held that is no unique's any more gets its recorded stock Equip entry
   back in front of the block (slot, level, `onEquipItem`, the class list with the base class of each line shown). A
   DeEquip the block added goes with the block. See the next section.
 
-## Unique weapons and their base (O491) (`tests/unique_weapon_base_test.lua`, `chaos_jewelry.lua` `uniqueMoves`)
+## Unique weapons and their base (O505) (`tests/unique_weapon_base_test.lua`, `chaos_jewelry.lua` `uniqueMoves`)
 Found by the equip tooltip audit (O490), kind "unique copy: weapon check: class". Read from code and data, then run on an
-installed folder; not seen on a live server.
+installed folder; not seen on a live server. After it, `audit_equip_tooltips.py` on that folder (2,159 tooltips) lists no
+item of the kind and `--check` passes; the one kind left is the 35 "unique copy: tooltip stricter: level", kept by O490.
 - **The rule of the engine.** A weapon hits through the weapons.xml entry of its item id. `Weapon::playerWeaponCheck`
   returns 0 for a class that is not on the entry's class list, and `Weapon::useWeapon` then does nothing: no hit, no
   message. No src-patch touches that check, and no Chaos script replaces the auto attack of a weapon. The equip check
@@ -3772,11 +3790,96 @@ installed folder; not seen on a live server.
   `tests/unique_weapon_base_test.lua` holds all of them from now on and names the unique, the kind and the refused
   classes when one fails. It reads the snapshot, whose class list is the weapon entry narrowed by the stock Equip
   rule: the strict side.
+- **Harvester of Sorrows** (found by the test when O500 came in). O500 typed the scythes as swords
+  (`stock_weapon_types.csv`: 10301, scythe of the reaper, axe to sword), and this unique on 10301 still said axe. The
+  copy was a sword in the engine already, since the kind is the item type's. The unique says sword now: `weaponType`,
+  `skillSword` and the drop entry's slot. Nothing changes in play: the +4 is the one melee skill for all three kinds,
+  and an owned copy needs no change. The Codex and the wiki read "Sword".
 - **Not changed, to know.** 7408 and 7404 (the Duskstalker Fang's base) are on the item fusion list
   (`item_fusion_config.lua`). The base fusion script takes three items by id, so it does not tell a unique copy from a
   plain one. This was true before for every unique on a listed base.
 - Tests: `tests/unique_weapon_base_test.lua`, `tests/unique_equip_test.lua` (the stock entry back, the new base's entry,
   the script), `tests/jewelry_test.lua` (old copies turn, a plain wand stays, the login message).
+
+## Equip rules in the tooltip (`data/lib/chaos_equip_rules.lua`, `tools/install_equip_rules.py`, `tools/audit_equip_tooltips.py`, O490)
+Owner, 2026-11-11 (translated), after the Ring of Blue Plasma of O489: "Exactly. Look for other items that have the same
+bug and fix them please." The bug: the requirement chips of the item tooltip (level, magic level, class row; `req` of
+`item_tooltip_core.lua` `T.build`) say a character can wear or wield an item, and the server refuses it. The reverse (the
+tooltip says no, the server allows) counts as a lesser finding. Nothing here changes who can wear what.
+- **What the server enforces** (`tools/equip_rules.py` reads it from the installed XML).
+  - *Refusal*: the Equip entries of `movements.xml` (level, magic level, every `<vocation>`, shown or hidden;
+    `showInDescription="0"` only hides a name from the look text). An unmet rule refuses the item ("You cannot dress this
+    object there."). An entry with `script="chaos_unique_equip.lua"` holds a plain copy to its recorded stock rule.
+  - *Weapon check*: the entries of `weapons.xml` (level, magic level, vocations). An unmet rule does **not** refuse the
+    item, it can be equipped: the weapon check of the base engine (`Weapon::playerWeaponCheck`, not in this repository, so
+    not run here) gives no hit for a class that is not listed and for a level or magic level below the entry, or half the
+    hit with `unproperly="1"` (level and magic level only). The audit counts it as a penalty, a kind of its own.
+  - *Effective rule* (what the tooltip shows): the higher level, the higher magic level and the classes of both rules.
+- **The reading of the class chips** (what the audit holds the tooltip to). A base class named alone stands for its whole
+  line (the class and its two ascended classes). A line that is only partly allowed is named class by class (a wand for the
+  Mystic and the Illusionist but not the Elementalist reads "Mystic, Illusionist"; "Mystic only" is the base class alone).
+  "all classes" means every class; "no class" a rule that lists only the vocation None (one stock wand). A chip set is right
+  when the set of classes it stands for equals the set the server lets through. `T.readClasses` (Lua) and
+  `equip_rules.read_chips` (Python, the audit) are the two copies of this reading.
+- **Why the tooltip was wrong.** The engine's item type holds only the SHOWN vocations (`add_vocations.py` hides the
+  ascended class next to its base class, so a wand for Mystic + Illusionist reads "mystics and necromancers") and the
+  level and class list of one of the two entries an item can have (which of the Equip and the weapon entry wins is not in
+  this repository). `T.vocationText` adds the ascended classes only for the Ranger and Warrior families.
+- **The fix.** Install step `equiprules` (`install_equip_rules.py`, next to last, after every step that writes
+  `movements.xml` or `weapons.xml`) writes `data/lib/chaos_equip_rules.lua` from the installed files: for each id with a
+  class list, or whose two entries disagree on the level, `{level, class list index, magic level}` of the effective rule
+  (about 1,600 ids, 34 KB). `T.equipRuleOf` reads it; `T.ruleVocString` keeps the engine's own text when it already reads
+  as exactly those classes (so a text that was right does not change) and otherwise names the list with `T.stockClassText`
+  (the one function that turns a list of names into chips: a whole line is its base class, all 21 classes are "", a base
+  class without its ascended classes is "Name only"; a whole Ranger or Warrior line is still named class by class, "Ranger,
+  Deadeye, Beastmaster", as the engine's text is since O307, so a bow does not read "Ranger" next to a crossbow's "Ranger,
+  Deadeye"). No file, or an id not in it: the tooltip reads the engine's item type
+  as before (and the O489 stock table for a base of a unique). A unique copy with a rule of its own (`equip` of the spec)
+  shows that rule. The class row is cut between two names, never in the middle of one (`T.classLine`); the longest row of
+  the installed rules is 103 characters of 120, so nothing is cut today. An install step was chosen over a Lua derivation
+  because the engine exposes only the shown names, and over a second copy of `add_vocations.py`'s rules because the file is
+  read from the XML the server loads: a re-run after `add_vocations.py` or any later step that edits the XML rebuilds it.
+- **The audit** (`tools/audit_equip_tooltips.py`, read only, not in CI: it needs an installed server's files; the test is
+  `tools/audit_equip_tooltips_test.py`, one synthetic case per kind). Run it on an installed server:
+  `python3 -I server/tools/audit_equip_tooltips.py SERVER/data` (`--check` exits 1 on a "says yes, refused" kind, `--list KIND`
+  names every item, `--top N`, `--movements-last` reads the two entries in the other order). It runs the real tooltip code
+  (`tools/audit_equip_tooltips.lua`, luajit or lua5.3, on a mocked engine whose item types hold what the engine would hold)
+  for a plain copy of every item with a rule and for a unique copy of every unique, and prints the rules read, the table by
+  kind, the 20 most common shapes and the longest class row. The admin app has no button for it: it is a developer check.
+- **What was wrong** (the installed files of 2026-11-11 after the O489 install, 2,106 plain and 155 unique tooltips; items
+  per kind, an item can be in several):
+
+| Kind | Before | After |
+|---|---|---|
+| refused: class (tooltip says yes, the Equip entry refuses a class) | 129 | 0 |
+| refused: level (tooltip level under the Equip entry's) | 6 | 0 |
+| unique copy refused: class | 2 | 0 |
+| weapon check: class (tooltip lists a class the weapon entry does not) | 131 | 0 |
+| weapon check: level | 5 | 0 |
+| tooltip stricter: class (tooltip drops a class the server allows) | 76 | 0 |
+| unique copy: tooltip stricter: class | 3 | 0 |
+| unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 | 35, kept |
+| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding; 0 since O505 (the unique left that base: "Unique weapons and their base (O505)") |
+
+  Shapes (one example each): a wand, rod, robe or hood for the Mystic + Illusionist line or the Mystic + Elementalist line
+  read "Mystic, Necromancer" (the Elementalist or the Illusionist was refused after a yes; 126 Equip entries and 127
+  weapon entries); a bow for the Ranger line read "Ranger, Deadeye" (no launcher has an ammunition type since
+  `patch_base_archery.py`, so the Beastmaster was left out although it may use a bow; 75 bows, now "Ranger, Deadeye, Beastmaster"); items whose Equip and weapon
+  entry disagree read the weapon entry's level or no class list (a cobra club at 220, the Equip entry asks 270; a leaf star
+  "all classes", the Equip entry asks the Ranger and Thief lines); a stock wand that lists only the vocation None read
+  "nones" and is now "no class".
+- **Not told by the tooltip** (and why): the weapon check's penalty (the level or class is shown, not that a wrong class
+  hits for nothing); the unique level of 35 older uniques (the tooltip shows the level the unique is meant for, the server
+  asks none: the unique's own description says the same); slot rules (two-handed against shield, the quiver beside a bow,
+  one might ring at a time, the badge slot, a Ninja's off-hand sword, a Monk's fist weapons: engine patches 0002, 0023, 0058,
+  0087; the tooltip names the slot and the quiver note only); the scripts of 308 Equip entries (boats, badges, decks, special
+  skills: base scripts, not read here); the base's `Player:onMoveItem` rules. The engine's own look line ("It can only be
+  wielded properly by ...") is unchanged and still shows the engine's item type: the shown vocations only, and the level of
+  the entry read last. The Unity tooltip reads the same `req` field from the server and needs no change.
+- Tests: `tests/item_tooltip_test.lua` (the reading, the rule table, the texts, the cut; the O489 test now expects
+  "Ranger, Deadeye, Beastmaster, Thief only" for a stock Thief without a Ninja or Samurai, because a base class alone reads as its whole line),
+  `tools/audit_equip_tooltips_test.py` (the reading, the rules, every kind, the install step: dry run, idempotent, stale
+  file, the two read orders).
 
 ## Leveling and endgame uniques (`chaos_items.xml` `mods`, `chaos_unique_items.lua`, 2026-10-23)
 Before this the uniques stopped at level 1000 with flat stats, and the first one dropped at level 40.
@@ -4128,7 +4231,7 @@ by the vocation's); a server restart after `install_all.py` loads the new vocati
   legendary power, from waystone kills). Bands: 1-9 the shop dagger (2379), 10-27 and 28-599 the two leveling daggers and the stock
   daggers (wyvern fang 7408 from level 25, assassin dagger 7404 from 40), 300 the Duskstalker Fang, 600+ the Thief-only ones up
   to 2400+. The drownkin ceremonial dagger (27193) is no dagger: it is a caster wand, and the Misericorde left it for the wyvern
-  fang (7408) in O491 ("Unique weapons and their base (O491)"). Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
+  fang (7408) in O505 ("Unique weapons and their base (O505)"). Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
   `weapon_sim.py --power --check` passes) scale it as every melee weapon. Only the level 600+ ones are Thief-line only. Drop pool,
   codex, wiki and tooltip come from the same files as every unique (`gen_unique_specs.py`, `gen_codex_data.lua`,
   `gen_wiki_data.lua`); uniques have no NPC price (`gen_item_prices.py --check`).
@@ -4489,6 +4592,15 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 - **Next floor now and the tower panel (O274).** Floors have no waves (all monsters of a floor appear together), so there is no "call next wave"; the button skips the wait. Opcode 214 got three actions, no new opcode: client `{"action":"skip"}` starts the next floor at once, `{"action":"state"}` asks for the state; the server pushes `{"action":"state", inRun, canSkip, isLeader, floor, nextBoss, boss, cleared, waiting, remaining, total, nextIn | floorLeft}` on entry, floor start, every kill, floor cleared and leaving (the client counts the countdowns on its own clock). `ChaosTowerRun.skip` (`infinitytower_run.lua`, config `ChaosTowerRunConfig.skip`) refuses unless: the player is in an active run and inside the arena; the run is waiting (start delay or pause, so the floor is cleared: never two floors alive, no kill skipped, nothing stacks); the player is the run leader (any member once the leader died or left, so a member cannot rush a group); the next floor is not a boss floor (`intoBoss = false`: the pause before a boss is kept); and `minInterval` (2 s) since the last press, on top of the 300 ms per-action limit of `infinitytower.lua`. A timer sequence number makes the skipped pause timer do nothing. Records and rewards: floor gold, rewards, the heal and `ChaosRecords.towerFloor` all run when a floor is cleared, before the pause, so a skip only drops the 6 s of regeneration; the run clock is real time, so a fast climb is faster by at most 6 s a floor, the same for everyone, and `tower_model.py` (which models the fight, not the pause) is unchanged and passes. Tests: `tests/infinitytower_run_test.lua` ("Next floor now"). Client: see `client/MANIFEST.md` game_infinitytower.
 - **Walls (2026-11-02).** The tower walls are built wall pieces now: dark stone bricks, the `darkstone` brush of the generated areas (`arenalook_core.lua` `A.WALL_SETS`, ids 25200-25205, the same as `areagen_config.lua` `walls.darkstone`). Each wall tile gets its piece from its neighbours (`A.wallPieceId`, the rules of `ChaosAreaGenCore.wallPiece`): rows on the north and south walls, columns on the west and east, a pole in the north-west corner, the corner piece in the south-east. Before, the ember, stone and crypt themes put the single "stone wall" 5648 on every wall tile. That id is a cave rock piece (grey rock in red earth, one corner of a cave edge): tile by tile it drew rock lumps with earth seams. The pieces are 2x2 sprites, so the tower look keeps lights and decoration off the floor row and column under the south and east walls (`wallSize = 2`). The dark theme keeps its obsidian wall. Checked in the installed items.otb and the client pair. Tests: `tests/arenalook_test.lua` (set = areagen brush, piece per frame tile), `tests/infinitytower_run_test.lua` (the built walls). Every other runtime room got the same fix: see "Arena looks", "Built walls".
 - Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
+
+### Infinity Tower: two clocks, shown and named (O484)
+The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `bossFloorTimeMult`: 600 s). The whole run has `runTimeLimit` (3600 s; 0 = no run limit). Either one ending ends the whole run: everyone goes back where they entered and the cleared floors are recorded (`endRun`). A death only takes that player out; the run ends when the last one is out. Owner 2026-11-11: the panel showed "Floor time left 3:16" while the chat said the tower ends in 1 minute: that was the run clock, which the panel never showed. The limit itself is unchanged (60 minutes; whether to raise or drop it is an open owner decision).
+- **State.** Every `{"action":"state"}` push (opcode 214) carries `runLeft`, the seconds left of the whole run when it was sent, whenever a run limit exists (also in the start delay and the pause between floors, where `floorLeft` is absent). It is absent with `runTimeLimit = 0` and outside a run. The client counts down from the moment it got the state, as for `floorLeft`.
+- **Panel.** A line under the floor's: en "Run time left: %s", pt-BR "Tempo da corrida: %s". It turns red (`#ff4030`, the red of the rift clock) at 300 s or less. Format m:ss, h:mm:ss from an hour. Hidden without `runLeft`. The panel is 124 px high (was 108).
+- **Warnings.** `ChaosInstanceLimits.warn` takes an optional `limits.sentence(player, lang, mark, leftText, name)` returning the text, the toast title and the toast text; no hook, the shared sentence, byte for byte. The tower uses it: run (marks 300, 60, 10): "Infinity Tower: the whole run ends in 1 minute (60 minute limit). Everyone inside leaves then." (limit from `runTimeLimit`; `K.wholeRunText`); floor (marks 60, 10): "Floor 57: 1 minute left to clear it." (`K.floorLeftText`). Toasts: "Whole run: 1 minute left" and the floor's number as title.
+- **Start.** One line at entry, with a run limit only: "This run lasts at most 60 minutes."
+- **Pace.** 60 minutes is 3600 s: 30 floors at the two minutes a floor that the config comment assumes, 60 floors at one a minute. A level 800 character reaches about floor 34 and a level 1000 character about 44 (`tools/tower_model.py`), so the run limit can end a deep run.
+- Tests: `tests/infinitytower_run_test.lua` (state field, start line, the warnings in English, no limit), `tests/tower_clock_text_test.lua` (the sentences in both languages, the hook, the shared sentence unchanged), client `towerskip_test.lua`. The Unity tower panel is not changed and shows the floor time only.
 
 ## Infinity Tower: leaving a run
 Owner bug 2026-11-02: "no way out of the tower, not by portal nor by command". Causes:
@@ -5089,7 +5201,7 @@ rules `store_delivery_core.lua`, tests `tests/store_delivery_test.lua`). **The p
 26052 "your store inbox", inventory slot 11 of the 10.98 protocol): the client's "Open purse" button under the
 equipment (base `game_inventory`, `GamePurseSlot` in client base patch 0006) opens it. Every character has one, it sits
 in the equipment, it is never dropped at death, and the engine only lets the server put items in (a player cannot move
-a normal item into it), so it is a one-way delivery box: the player takes things out into the backpack. The store
+a normal item into it), so it is a one-way delivery box: the player takes things out into the backpack. The client's inventory panel shows the purse as a page of its grid (client/MANIFEST.md `game_bagpanel`, O492); Sort is off there because the engine's store inbox refuses a move of an item that is not a store item (`StoreInbox::queryAdd`). The store
 pouches are not the purse: they are optional store items a character may not own. (In the older texts of this file
 "store inbox" means the depot inbox, `player:getInbox()`.)
 - **What goes there.** Every store offer that becomes an item: `kind = "item"` offers (supplies, potions, runes in
@@ -5307,8 +5419,8 @@ Prices and reasons: docs/PRICES.md "Pacto Completo, Pact Marks and the store rev
 - **`levelPrices`** on an offer: `{{upTo = 200, cost = 60}, {upTo = 500, cost = 100}, {cost = 150}}`, `cost` = the first tier
   (`ChaosShopCore.levelCost(offer, level)`; `ChaosShopCore.validate` checks the shape). All Blessings uses it: 60 up to level
   200, 100 up to 500, 150 above. A sale applies to the level price.
-- **`accountDiscount = 50`** on a per-character service or unlock (the Loot Bag, the three pouches, the Everfull Ration, the
-  Auto Seller, Rarity Autoloot, the ten Everfull tiers: 17 offers): the price is `ChaosShopCore.discountCost` (half, rounded up)
+- **`accountDiscount = 50`** on a per-character service or unlock (the Loot Bag, the four other pouches, the Everfull Ration, the
+  Auto Seller, Rarity Autoloot, the ten Everfull tiers: 18 offers): the price is `ChaosShopCore.discountCost` (half, rounded up)
   when another character of the account that still exists bought the offer for itself. `ownedByOthers` runs one query per
   view on `chaos_shop_purchases` joined to `players`: the offer's own key, or a bundle holding it as a part (a starter pack);
   gifts and the Pact's lent Auto Seller (storage 2) do not count. The entry carries the tag "Account -50%", the list price
@@ -5400,7 +5512,7 @@ Five store categories sell services, unlocks and boosts besides the cosmetics. `
 both dispatched by `ChaosShopServices` (`shop_services.lua`):
 - `{kind = "service", service = "<handler>", icon = <item id>}`: done for the character at once (`S.services` table).
 - `{kind = "unlock", unlock = "autoSeller" | "rarityAutoloot"}`: a permanent per-character flag (storage).
-- `{kind = "service", service = "pouch", pouch = "loot" | "orbs" | "keys"}`: a store pouch item ("Store pouches" below).
+- `{kind = "service", service = "pouch", pouch = "loot" | "orbs" | "keys" | "gems" | "runes"}`: a store pouch item ("Store pouches" below).
 
 `shop.lua` asks `ChaosShopServices.check(player, offer)` **before** it takes coins: an unlock already owned, full stamina, a
 world buff at its cap, an unused token, no skull to remove, an empty passive tree... is refused with a message and costs
@@ -5423,7 +5535,7 @@ client module needed no change.
 | | Frag & Skull Remover | 150 | skull time (the engine's unjustified-kill counter) to 0, red/black skull removed; not in combat |
 | | Passive Tree Reset | 100 | empties every preset for free (the in-window reset costs level x 250 gold; 60 before O140, see "Store balance (O140)") |
 | Convenience | (the Temple Teleport Scroll is no longer sold) | | see below |
-| | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
+| | Loot Bag / Orbs Pouch / Rift Key Pouch / Gem Pouch / Rune Bag | 250 / 200 / 150 / 150 / 150 | store pouch items, one of each per character ("Store pouches" below) |
 | | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
 | | Rarity Autoloot / Everfull Ration | 300 / 100 | per character, see "Store pouches and the Everfull Ration" |
 | Training | 18 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / club weapon since 2026-10-23; Warrior, Thief, Templar), fist (Monk line only since 2026-10-28), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
@@ -6163,7 +6275,7 @@ game: two players (visits and likes), the depot window, the store purchase scree
 
 ## Store pouches (`pouches.lua`, `pouches_core.lua`, `pouches_config.lua`, `tools/install_pouches.py`, client `game_pouches`)
 
-Four containers sold in the store (Convenience), each collecting its own kind of loot from the corpses the character owns,
+Five containers sold in the store (Convenience), each collecting its own kind of loot from the corpses the character owns,
 **while the character carries it** (in the backpack or a bag inside it, any depth; not in the depot or inbox). No base
 autoloot list is needed.
 
@@ -6173,6 +6285,7 @@ autoloot list is needed.
 | Orbs Pouch | 32082 (client 38609: a violet pouch with a glowing orb) | 100 (was 40) | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035), the gems only while no Gem Pouch is carried |
 | Rift Key Pouch | 32083 (client 38610: an iron strongbox, gold key, key ring) | 100 (was 30) | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
 | Gem Pouch | 32095 (the stock jewelled backpack's own look, no new sprite) | 100 | 150 | gems (32001-32035) only |
+| Rune Bag | 32096 (the stock blue backpack's own look, no new sprite) | 200 | 150 | support runes (32101-32200) and magic runes (the 36 of `runeIds`); not rune shards; takes runes by hand |
 
 - **Items.** New items.otb nodes, copies of stock bags (group and flags of the expedition bag, the brocade bag and the fur bag)
   with their own looks: three item things of our own art, drawn by `client/tools/sprites/gen_pouch_art.py`, snapped to theme
@@ -6199,6 +6312,59 @@ autoloot list is needed.
   wants it. A gem is wanted by the Gem Pouch and the Orbs Pouch, so with a Gem Pouch carried it never reaches the Orbs Pouch,
   even when the Gem Pouch is full (the overflow then is the Loot Bag, as for every specialist); without a Gem Pouch the Orbs
   Pouch takes gems as before. The Gem Pouch takes nothing but gems.
+- **The Rune Bag** (O502, owner 2026-11-11: "Make a rune bag too, please. To be sold in the store."). A fifth kind (`runes`,
+  id 32096, regrant bit 16), built the way the Gem Pouch was: `pouches_config.lua` `kinds.runes`, `priority` and `order`, the
+  store offer, `install_pouches.py` (`NAMES`), `gen_item_prices.py` (a bound item). Store-bound, `bindLock`, one per character,
+  delivered to the purse, 150 coins (the Gem Pouch's price; the owner sets the final one, `docs/PRICES.md`).
+  - **What a rune is.** Every rune a player calls a rune: the **100 support runes** (32101-32200, `ChaosSupports.isRune`, the
+    gems-like loot items of `SUPPORTS.md`) and the **36 magic runes** of the stock `spells.xml` (`runeIds` in the config: the same
+    ids as `data/lib/chaos_rune_supply.lua` `runes`, 2261 ... 23723; `tests/pouches_test.lua` holds the two lists equal). Not the
+    **rune shard** (32051: salvage currency, stays with the Orbs Pouch) and not the **unscribed rune** (2260: a crafting material
+    that vendors sell, the base of every recipe). 136 kinds, all stackable, so 200 slots hold every kind and a second stack of the
+    common ones (the other specialists hold 100).
+  - **Collect.** `ChaosPouchesCore.plan`: a rune goes to the Rune Bag first while the character carries it, before the Loot Bag
+    (whatever its supplies rule says); `priority = {"gems", "orbs", "keys", "runes"}`. No item is wanted by the Rune Bag and by
+    another specialist (a rune is no orb, gem or key), so its place in the list changes no routing; it is last to keep the older
+    order. Full (or too heavy): the Loot Bag takes the rune with its overflow rule, else the backpack, else the corpse, as for
+    every specialist, with the "Rune Bag is full" note (at most once a minute) and the pouch line of the kill's loot line. Without
+    the bag the Loot Bag rules decide as before (runes are `supplies`, the "Supplies" rule).
+  - **By hand.** A player may move runes into the Rune Bag and out of it (the Loot Bag takes nothing in). `PO.checkOneWay` (the end
+    of `PO.onMoveItem`) asks `ChaosPouchesCore.runeBagRefusal`: anything that is not a rune moved into it, at any depth of the move
+    (a potion, a gem, a rune shard, a bag, even a bag full of runes) is refused with the warning line "The Rune Bag holds only
+    runes." (pt-BR in `i18n_strings.lua`); a pouch keeps its own "A pouch cannot go into another pouch.". Taking out, moving
+    within the bag and stack merges of a rune are free. It leaves the purse like the Orbs Pouch (only the Loot Bag stays).
+  - **The rest.** Regrant bit 16 (storage 7100109): a Rune Bag lost with a dropped backpack comes back empty at login, and the
+    store does not sell a second while one is owed. The Auto Seller walks only the Loot Bag and never enters a store pouch
+    (`AK.opensContents`), so what is in the Rune Bag is never sold; `ChaosPouches.neverSell(id, item)` also says true for any
+    item whose parent is a Rune Bag. A rune outside the bag is as it was: on the sell list it is sold from a corpse (index 2,
+    before the pouches), in the Loot Bag it is sold by "Sell all" when an NPC pays for it (support runes and magic runes have
+    prices). "Find my item" (`stash.lua` `S.find`, `itemsearch_core.lua`) walks any container to `maxDepth`, so a rune inside the
+    bag, in the backpack or the purse, is found and the way to it opened. The loadouts' parked runes (storage 7112000-7127999) are
+    untouched.
+  - **Using a rune from the bag** (read in the engine, `chain/src`). The server finds an item by TYPE for a hotkey, the action bar
+    and the helper's rune use (`g_game.useInventoryItem(With)` sends an inventory position `{0xFFFF, 0, 0}`):
+    `Game::internalGetThing` (game.cpp, the `pos.y == 0 && pos.z == 0` branch) calls `findItemOfClientId` (src-patch 0043) and
+    `Game::findItemOfType` (game.cpp, `depthSearch = true`) on the player: `Player::getFirstIndex` / `getLastIndex` (player.cpp:
+    `CONST_SLOT_FIRST` .. `CONST_SLOT_LAST`, slots 1-10) and every container below them, breadth first, **no depth limit**, closed
+    or open. So a magic rune in a Rune Bag **in the backpack (or in a bag in it) is found**. The purse is the store inbox, slot
+    `CONST_SLOT_STORE_INBOX`, outside slots 1-10: a rune in a Rune Bag **in the purse is not found** by the hotkey, the action bar or
+    the helper (the same holds for any item in the purse). So the bag may stay in the purse (it collects there, `PO.carried`), but
+    the description and the store text say to keep it in the backpack to use its magic runes by hotkey. The helper counts a rune
+    by `player:getInventoryCount` (open containers only) and falls back to its probe gate for a rune in a closed bag
+    (`helper.lua` `runeReady`), the same as a rune in a closed sub-bag of the backpack today. The server side counts of a support
+    rune (`player:getItemCount` / `removeItem`, `player.cpp` `getItemTypeCount`, slots 1-10 and below) see a rune in the bag in the
+    backpack; socketing, Remove, Shatter and the combine of three runes work from it; a stack in the Rune Bag in the purse
+    combines through `ChaosCombine.placeOf` ("box": the purse), as any stack there.
+  - **Item.** A copy of the stock blue backpack (2002, client id 2869, container), `clientId = 0`: the stock look, no new sprite.
+    The other four are a brown leather sack (Loot Bag), a violet pouch (Orbs), an iron strongbox (Rift Keys) and the
+    jewelled backpack (Gems). Alternatives: the moon backpack (10521, client 9604) or the demon backpack (10518, client 9601); a
+    new look needs a sprite pair and the owner's approval. Installed by `install_pouches.py` (step `pouches`): the fifth node and
+    the rewritten items.xml block (`containerSize` 200); a second run changes nothing. Store offer "Rune Bag" in Convenience
+    (`shop_config.lua`, icon = the item, `accountDiscount = 50`), price 150: `perCharacterConvenienceMax` 1,550 -> 1,700.
+  - Tests: `tests/pouches_test.lua` (the rune lists, routing against the other four, a kill, a full bag, the manual moves, the
+    store, regrant bit 16, never sold), `tests/autosell_test.lua`, `tests/itemsearch_test.lua`, `tools/install_pouches_test.py`
+    (four installed pouches get the fifth), client `game_pouches/pouchesview_test.lua`. Unity keeps `Ids`, `Titles` and `Owned` as
+    dictionaries and reads only the Loot Bag: a fifth kind is stored and not shown. Not run on a server or in a client.
 - **The Loot Bag** (owner 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe automaticamente";
   called Loot Pouch before). Bottomless: 500 slots (`capacity`, owner 2026-10-29; was 255, see "500 slots" below) and **weightless** (`weightless = true`): engine src-patch 0038 keeps the weight of
   what lies in it (and in bags inside it) away from the character, and an item put into it skips the capacity check.
@@ -6252,7 +6418,7 @@ autoloot list is needed.
   item on the auto-sell list is sold first; orbs and keys never are (`ChaosPouches.neverSell`, asked by `autosell.lua`, also
   refuses them on the list). After the snapshot, so the loot channel row shows the items the pouches took as looted. Before the
   base autoloot, so autoloot-list items land in the Loot Bag instead of the backpack.
-- **Routing and priority** (`ChaosPouchesCore.plan`, `priority = {"orbs", "keys"}` in `pouches_config.lua`). The Orbs Pouch and
+- **Routing and priority** (`ChaosPouchesCore.plan`, `priority = {"gems", "orbs", "keys", "runes"}` in `pouches_config.lua`). The Orbs Pouch and
   the Rift Key Pouch always get their kinds of items first: orbs, the whetstone, rune shards and gems go to the Orbs Pouch, Rift
   Keys, Omen Keys and omen fragments to the Rift Key Pouch, before the Loot Bag, even when a Loot Bag rule would match too (its
   gems rule, the autoloot list). When that pouch is full (or the character cannot carry more), the Loot Bag takes the item only
@@ -7572,15 +7738,15 @@ the basic melee attack. The rule of the owner: class damage does not move, so `c
 
 | Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Warrior | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Juggernaut | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Berserker | 2/4/2* | 8/12/9 | 8/14/12 | 6/6/6 | 8/8/6 | 4/5/2 | 3/3/2 | 8/2/2* | 4/3/1 | 2/7/2* |
-| Thief | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 9/11/8 |
-| Ninja | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 9/11/8 |
-| Samurai | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 14/6/5 | 8/8/4 | 9/11/8 |
-| Templar | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Inquisitor | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
-| Sentinel | 27/12/16 | 20/22/24 | 21/25/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 13/6/5 | 9/8/4 | 8/12/9 |
+| Warrior | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Juggernaut | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Berserker | 3/3/2 | 8/12/9 | 8/14/12 | 7/5/6 | 8/8/6 | 4/5/2 | 3/3/2 | 6/3/3 | 4/3/1 | 2/7/2* |
+| Thief | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 9/11/8 |
+| Ninja | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 9/11/8 |
+| Samurai | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 9/11/8 |
+| Templar | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Inquisitor | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
+| Sentinel | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
 
 <!-- weapon-families:end -->
 
@@ -11999,7 +12165,7 @@ go at startup); use-with crafts are logged too.
 
 **Forge window and materials from the stash (O481, owner request 2026-11-11, layout option 1).** The bench has a second
 window, the forge (client `game_crafting` `forge.lua`, `forgeview.lua`): "1 Place the item, 2 Pick an action, 3 Check
-the change, 4 Forge". It is the default; the Classic button switches to the window above and back, per character.
+the change, 4 Forge". It is the bench (O487: no Classic button; the window above shows only for Salvage, with a Forge button back).
 New data on the same extended opcode 232, all additive (an old client or the Unity bench never reads them and works as
 before):
 - **Orb data.** Every orb carries `kind` (what it is aimed at: `mod` one chosen modifier, `add` a new modifier, `whole`
@@ -17723,7 +17889,6 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 | Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
 | Tutorial island | none | 30 min online (offline time does not count), warnings at 5 and 1 min | leaves as with Skip tutorial: kit, welcome, temple | shared island, no copies | none needed | time kept; a login past the limit leaves at once | unchanged |
 | Base lever boss rooms (51) and step-in miniboss rooms (7) | the script's own kick 10-60 min, no warning; the lever (tile) free whenever nobody stood inside; the old kick timer also hit the next group; monsters stayed | lever locked while a group's session runs, limit = the room's own time at most 30 min, warnings, countdown bars over the entrance and the lever | everyone to the room's exit, monsters removed | empty room frees up after 2 min (at once after a kill) | 1 group per room | login inside a closed room: its exit; inside its own running room: stays | closed at shutdown (exit) |
-| Soul pit | no limit, no lock against a second group with a core during the 5 s countdown, a group that left kept the run's state and loops going | soul core on the pit locked while a run is on, 15 min with warnings | everyone to the pit's lobby spot, waves removed, the pit's state reset | empty: 2 min; completed: 65 s | 1 | login inside a closed pit: lobby spot | closed at shutdown |
 | Tower defence | no limit; anyone could walk in mid-run; a lever pull after the spawning restarted the run under the walking monsters | the lever starts a 20 min session for the players inside; entrance tile and lever locked meanwhile; warnings | everyone to the exit drop, spawning stopped, summon counters reset, monsters and core removed | empty: 2 min; won or lost: 65 s (at once when empty) | 1 | login inside a closed arena: exit drop | closed at shutdown |
 | Invasions, Scorched Marches, hideouts | open world / personal | unchanged | | | | | |
 
@@ -17744,15 +17909,14 @@ and the room showed "Room in use" until the 2 min idle close. `started` with an 
 (boss removed), and brings in a participant the lever's teleport left outside (`ChaosBossRooms.bringIn`: a free tile
 within 3 sqm of entrancePos, inside the room). **Leave Boss Room** (client Info & Services > Services > Other, command
 `leaveroom` of `commands_ui.lua`; `ChaosBossRooms.leave`, pure rule `ChaosInstanceLimitsCore.leaveReason`): a player in
-any running room (the lever rooms, the waystone boss rooms, the step-in miniboss rooms, the soul pit, the tower
+any running room (the lever rooms, the waystone boss rooms, the step-in miniboss rooms, the tower
 defence) goes to the room's exitPosition (the tower defence: its drop) and leaves the group. Refused outside a running
 room, in a fight (`isPzLocked()` or `CONDITION_INFIGHT`, as the dungeon queue and the arena: no free escape from a lost
 fight) and within `bossRooms.leaveCooldown` (30 s) of the last leave. The last one out closes the room with
 `BR.close(key, "idle")` (boss and monsters removed, the lever free). The button is enabled only inside a running room
 (Services state `inBossRoom`). Without the Chaos scripts the rooms work as before. Left alone (of another shape):
 about a dozen old XML quest levers and pits. Map check (the base map, the action and unique ids of every map item): the 7
-step-in miniboss rooms are on the map (below); the soul pit (its
-start lever aid 57392 at 31588,32269,8, the entrance aid 5896); the tower defence (aid 27931 twice, aid 25486); of 11
+step-in miniboss rooms are on the map (below); the tower defence (aid 27931 twice, aid 25486); of 11
 XML lever and pit scripts that teleport a group into a fight with a timer or a room check, 9 have their ids on the map
 (annihilator, elemental spheres, the new frontier arena, the warzones and their lever, children of the revolution,
 Pythius, the two Killing in the Name of boss rooms); the Payback Time lever (uid 3198) and the demon oak (item 8293, set at
@@ -17772,17 +17936,10 @@ the session sends the group out 65 s later (the default 60 s of `teleportRemoveS
 the 10 minute kick or took the exit tile). The 51 lever rooms come out of the tool byte for byte as before (checked on
 the base data).
 
-**Soul pit and tower defence** (`tools/patch_base_eventrooms.py`, install step `eventrooms` after `bossrooms`). Neither is
-built from the boss room template and neither had a time limit, so the tool gives each a room config of its own and the
-same `ChaosBossRooms` session (lock, warnings, bars, idle rule, login rule, staff list and close, shutdown):
-- Soul pit (`soulpit_system/soulpit.lua`, a soul core used on the pit, aid 57392). The box is the script's room joined
-  with its spawn area (the spawn area reached 2 tiles past the room, so monsters there were outside the room's own
-  check). The lock comes first when a core is used on the pit (a core used on anything else is not touched; a refused
-  core is not spent); the session starts as soon as the core is taken (the 5 s countdown was open to a second group).
-  Time: `bossRooms.ownSeconds.soulpit` = 15 minutes (5 short waves). At the end everyone goes to the spot the pit's
-  entrance teleport leads to (31589,32281,8; not the start tiles, which the next group needs), the waves are removed and
-  the script's `event` state is reset (a group that left mid-run used to leave it and its 1 s loops going, and the next
-  group then shared them). A completed pit closes the room 65 s later, like a boss kill.
+**Tower defence** (`tools/patch_base_eventrooms.py`, install step `eventrooms` after `bossrooms`). It is not built from the
+boss room template and had no time limit, so the tool gives it a room config of its own and the same `ChaosBossRooms`
+session (lock, warnings, bars, idle rule, login rule, staff list and close, shutdown). The soul pit had the same wiring until
+O488 removed it from the game (below).
 - Tower defence (`tower_defense/tower_defense.lua`, lever aid 27931 in the arena; `entrance_teleport.lua`, aid 25485).
   The arena box is the script's own (`fromPos` / `toPos`). The lever starts a session for the players inside (they came
   in before the start); while it runs the entrance tile sends a newcomer back where they came from (with the time) and
@@ -17792,8 +17949,108 @@ same `ChaosBossRooms` session (lock, warnings, bars, idle rule, login rule, staf
   the login does, and everyone goes to the drop of the arena's own exit tile (31206,32295,8). A win or a loss (the
   script's own rules) ends the session; after a loss the script has sent everyone out and the arena is free at once.
   The bar "Room in use" stands at that drop, next to the entrance.
-Without the Chaos scripts both work as before (the test runs the stock and the patched pit and compares them). A script
-of another shape is listed and left alone.
+Without the Chaos scripts it works as before. A script of another shape is listed and left alone.
+
+**Soul pit removed** (O488, `tools/patch_remove_soulpit.py`, install step `soulpit`; owner, 2026-11-11, on the tooltip of a
+distorted phantom soul core: "What is this for? Do we have any mechanic that uses it?", then, told what it is: "You can remove
+this mechanic from the game, together with the items."). The stock pit: a soul core used on the pit starts 5 waves of that
+monster, a win gave +3% experience from that monster for ever, an exalted core turned one soul core into a random other.
+All of it is gone. The tool changes the installed base data, each change once:
+- the three `soulpit_system` scripts (pit, exalted core use, entrance tile) become one-line stubs that register nothing;
+  the files stay, so a base update that writes them back is stubbed again by the next install. The pit's room (lever
+  aid 57392 at 31588,32269,8, the waves in 31526-31550 x 32253-32268, floor 8) and its entrance tile (aid 5896) stay on the
+  map as dead map: the entrance does nothing. The pit's boss room wiring went with the old script text, so a server that
+  had it ends in the same state as a fresh one (`eventrooms` no longer patches the pit; `soulpit` runs after it).
+- `events/scripts/player.lua`: the table `monsterExpBoosts` and its use in `Player:onGainExperience` (x1.03 when the monster's
+  storage was set) are cut out. A player who earned the bonus loses it. The storages 876547 to 876582 stay in the database,
+  inert (outside our storage blocks).
+- the 36 soul cores (28326 to 28342, 28346 to 28364) and the exalted core (28345) leave every monster loot list (37 lines in
+  the monster files of two stock hunts; no NPC shop, trade, store offer, task reward, chest or roulette gave them).
+- Iletrya (waystone device): the step asked for 10 exalted cores (`player:removeItem(28345, 10)`), then gave the Waystone
+  Portal Kit and set the quest storage; without the cores it told the player how many were missing. Now the first "help"
+  gives the kit and sets the storage. Nothing else changed in the quest (the reward, the storage, the "already helped" reply).
+- the crafting table recipe for the exalted core (40 dust and 15 sliver, 1500 gold) goes, and so does the 3% drop of dust
+  and sliver in `default_onDropLoot.lua` (they were made for that recipe only, nothing else uses them). The dust and sliver
+  players hold are deleted with the cores (owner, 2026-11-11: "You can delete dust and sliver too"); they have no sell price.
+- `items/items.xml`: the 39 descriptions (36 soul cores, the exalted core, dust, sliver) say "No longer used.". The definitions
+  stay in `items.xml` and `items.otb`: the ids stay known to server and client, nothing leaves the sprite pair.
+- the wave monsters ("angry ..." to "wrathful ...", 180 monster types under `monster/lua/Soulpit`) are not touched: no script,
+  raid, NPC or spawn of the map names them.
+The items players own: `server/sql/chaos_zz_soulpit_removal.sql` (run by the step `sql`, last of the files) deletes the rows
+of the 39 ids (the 37 and dust 28343, sliver 28344; `SQL_IDS` of the tool) in `player_items`, `player_depotitems`, `player_inboxitems`, `player_storeinboxitems` (the items are not
+containers, so a row has no children), the Chaos stash (`chaos_stash`, `chaos_stash_items`, `chaos_stash_block`), the Guild Stash
+and the active and pending Chaos market offers with their modifier rows and the item deliveries still owed. The way the
+server closes an offer (cancelled or expired) hands the item back to its seller, so those offers are deleted, not closed. A buy
+order of these items gets `expires` = 1: the server's own sweep closes it and refunds the escrow. The base market's sell
+offers are deleted, its buy offers get `created` = 0 (the engine's expiry refunds them). Every statement runs only when its
+table exists. No compensation is paid. Items lying in houses (a binary blob in `tile_store`) and on the map stay and are inert.
+The generated data lost the items: the 39 sell prices (12,000 to 20,000 gold for a soul core, 6,600 for the exalted core, 120 for
+dust and sliver; the base
+NPCs never bought them, the Loot Buyer and the Auto Seller did by the formula), the survey rows, the recipe row and the 27
+loot entries of `tools/loot_bands_data.lua`. Client: base patch 0192 (client/BASE.md). Test:
+`python3 -I server/tools/patch_remove_soulpit_test.py`.
+
+**Stock weapon types (O500)** (`tools/patch_stock_weapon_types.py`, table `data/items/stock_weapon_types.csv`, audit
+`tools/audit_weapon_types.py`, install step `weapontypes`; owner, 2026-11-11, on the tooltip of "Serrated Twin Hooks of Devouring",
+"Legendary Two-handed axe": "The item counts as an axe, but it is not."). The weapon kind (`items.xml` weaponType: sword, axe, club)
+is what the skill, the family trait (sword tempo, axe cleave, club daze), the weapon coverage tables, the transmog kinds and the
+tooltip's type line read. A few stock weapons have a kind that their name contradicts. The tool fixes exactly the ids of the table, once:
+- the item has the old type: it gets the new one. It has the new type: "already done". It has a third type (someone changed it):
+  reported with a WARNING and left. A row whose new type equals its old type is a decision to keep and writes nothing.
+- the step runs before `vocations` (which reads the weapon types), the survey, the equip rules and the weapon growth, so the files they
+  read are right. An item keeps its id, so a copy a player owns has the new kind at once.
+- `data/items/base_weapons.csv` (the survey) carries the new kinds. Proof: `survey_base_weapons.py` run on a copy of an installed
+  server patched by the tool gives exactly the committed file.
+
+The rule of the table (audit: `python3 -I server/tools/audit_weapon_types.py DATA_DIR [--check] [--quiet]`, read only, three lists):
+the head noun of the name says the kind (axe, hatchet, cleaver, chopper, halberd; sword, blade, sabre, rapier, dagger, knife, machete;
+club, mace, hammer, staff, flail, maul, sceptre, crusher; compounds count). CLEAR = the name says one kind, the type another;
+`--check` fails on a stock one that is not in the table. ODD = no kind word: a bladed or hooked thing held like a sword is a sword; a
+hafted chopping head is an axe; anything blunt or a staff is a club; polearms follow the stock majority (the stock data types the
+halberds, five lances, the naginata and the drakinata as axes, so lances, glaives and tridents are axes). 37 names have no clue at all
+("the avenger", "dragon slayer", "soulcutter") and keep their type; they are no decisions. On the installed snapshot of 2026-11-11
+(524 items of the three melee kinds): 2 CLEAR (both moved), 20 ODD with a hint word (9 moved, 11 kept), 37 ODD without a clue;
+11 moves in all.
+
+| id | name | was | now | reason |
+|---|---|---|---|---|
+| 11309 | twin hooks | axe | sword | a pair of hooked blades, one in each hand: a two-handed sword |
+| 2405, 2418 | sickle, golden sickle | axe | sword | a curved hooked blade held in one hand like a sword |
+| 2550, 10301, 15492 | scythe, scythe of the reaper, hive scythe | axe | sword | a long curved blade; no chopping head |
+| 11308 | wyrmfang glaive | club | axe | polearm; the stock majority is axe |
+| 13838 | heavy trident | sword | axe | polearm; the stock majority is axe |
+| 25416 | impaler of the igniter | sword | axe | same word as the impaler (7435), a polearm and an axe |
+| 29886 | Dawnforged Great Axe | sword | axe | the name says axe |
+| 29888 | Dawnforged Skull Crusher | sword | club | the name says a blunt crusher |
+
+Kept on purpose (rows with new = old): the lances (2414, 2425, 3964, 23545, 25383), naginata 2426, drakinata 11305 and impaler 7435
+(polearms, axes), wyvern fang 7408 and the poet's fencing quill 10304 (swords), the sludgebrass whip 23543 (a club: no whip kind).
+If the owner disagrees with a row, delete it or set new = old; the tool and the tests follow the table.
+
+Coverage: the families table moved two Berserker cells out of `familyKnownGaps` (`weapon_coverage_config.lua`): level 1-20 (the two
+scythes make 3 two-handed swords next to 3 axes) and 1000-1300 (the Great Axe and the Skull Crusher make 6 swords, 3 axes, 3 clubs).
+The one known gap left is the Berserker at 1700-2400+. No band fell under 3 weapons of a kind. `weapon_coverage.lua --write` and
+`gear_coverage.lua --write` rewrote the tables above; `weapon_family_model.py --check` is green.
+
+Two speed numbers on one tooltip. "Speed 1.89 s" (the tile) is `yourinterval`: the seconds between the viewer's own auto attacks with
+the weapon (the vocation's interval x the item's interval / 2000, then dexterity and the attack speed bonus; the DPS line uses it).
+"Attack Interval 3 s" (the line below) is `attackspeed`: the item's own interval in `items.xml`. They are two things, not a
+contradiction. 3000 ms is on purpose: `tools/two_handed.py` gives every two-handed weapon 1.5 x the 2000 ms default, and
+`weapon_styles.lua` gives it x1.6 damage per hit (step `weapons`, "Weapon styles"). 345 items carry an `attackspeed` other than
+2000 ms: 323 at 3000 (all two-handed), 8 at 2700 (two-handed, from 1800), 11 at 1800 and 3 at 1700 (one-handed, quicker than the
+default: the Astro, Embersage, Moist, Deathlord and Dawnforged one-handers). 331 are over 2500 ms and all are two-handed. A Warrior
+(vocation interval 1300 ms) swings a 3000 ms weapon every 1950 ms (0.51 hits per second) and a 2000 ms one every 1300 ms (0.77), so
+the slow weapon hits 1.5 times less often and 1.6 times harder. Nothing was changed in the rows; the label of the second one ("Attack
+Interval", the item's own) could read "Base Interval" to tell the two apart: a client and pt-BR text change the owner may ask for.
+
+Items players own: a copy keeps its id and its rolled modifiers. The melee skill modifier is one "Melee" modifier for sword, axe and club
+(`chaos_crafting.lua` `C.skills`: `rarity_axeSkill`, `rarity_swordSkill`, `rarity_clubSkill` all read as "Melee" and raise all three
+engine skills), so an old Twin Hooks with an axe skill modifier keeps working. The family trait line is built at the tooltip (and the
+trait at each hit) from the type, nothing is stored on the item. Nothing to migrate. One side effect: the Transmog kinds follow the type, so
+the account's unlocked look of an item that moved is listed under its new kind, and a look already applied to an item stays applied.
+Test: `python3 -I server/tools/patch_stock_weapon_types_test.py && python3 -I server/tools/audit_weapon_types_test.py`; the tooltip
+follows by itself (`tests/item_tooltip_test.lua`: the mocked Twin Hooks as a sword, the same item typed as an axe, and the two interval
+rows).
 
 **Base modal dungeon entry** (`tools/patch_base_dungeon.py`, install step `dungeonentry`; `ChaosDungeonsOpen` in
 `dungeons.lua`). The base server has a second way into the 4 dungeons of `DUNGEON_SYSTEM` (lib/core/dungeon.lua): a
@@ -20309,7 +20566,7 @@ The model of the earlier analysis: rotation DPS from `data/spells/README.md` (5-
 flat experience. Added: the new monsters from the level a player can hunt them (tier 1 from 650, tier 2 from 725, tier 3 from
 800) at their exp/health, with fewer targets per pull (3 instead of 5: they are 5-8 times bulkier than the area's old
 monsters and hit as hard as the strongest existing ones) and their elements (knights and paladins x1.15, sorcerers x0.80).
-"Boosted" = premium stamina x1.5, double experience potion, Soul Pit; "+hooks" also the Chaos callbacks (Blood Moon,
+"Boosted" = premium stamina x1.5, double experience potion (the Soul Pit's +3% per monster is gone, O488); "+hooks" also the Chaos callbacks (Blood Moon,
 passive tree, store World Experience +25%, waystone upgrade) as in the earlier analysis.
 
 Hours per level band, base (no boosts):
@@ -27228,6 +27485,91 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
   and a notice to the victim. Killed by the world (no player credit): no reward, it comes back. The row is deleted
   before anything is paid, so a second death event pays nothing. Hardcore: a Hardcore character can have one; a
   Hardcore slayer gets the trophy only.
+- **Hit cap and reflect cap (O483).** Owner 2026-11-11 (translated): "I want you to check whether the Nemesis has Reflect. If it
+  has, take a look, because there are players still dying in one hit of the Nemesis. Take a look at the attack and the
+  defence and at the modifiers of the Nemesis, please." It has Reflect: the trait Thorned is the modifier Reflective. Measured
+  first (below), then three changes. Nothing else moved: health, traits, chances, rewards and the trait texts are as they were
+  ("Reflects 15% of the damage it takes." is still true).
+  1. *Hit cap* (`nemesis_config.lua` `hitCap = {enabled = true, share = 0.60}`). One hit of a Nemesis on a character it may hurt
+     (its victim and the victim's party; a stranger takes nothing from it anyway) takes at most `share` x that character's
+     pool, as a whole. Pool = the MAXIMUM health plus, while a mana shield is up, the maximum mana (the energy shield is not in
+     it): the pool and the cut of the rift guardian cap (O478), now in one place, `hitcap_core.lua` (`H.pool`, `H.cut`; the
+     rift's `R.hitPool` / `R.capHit` call it, same numbers). The health and the mana part of one hit stay together under the
+     ceiling (the mana event caps the whole hit, the health event of the same hit gets the ceiling less what the mana paid);
+     a hit is only cut, never raised. Vengeful (x1.5 below half health) is inside the cap. No second chain of events: the two
+     cap events of `rift.lua` (`ChaosRiftHitCapHealth`, `ChaosRiftHitCapMana`) now ask a small list of sources, `ChaosHitCap`
+     (`hitcap_core.lua`): `setSource(key, fn)`, `fn(attacker, victim)` gives a share or nil, the smallest share wins. The
+     rift guardian is the source `rift`, the Nemesis registers `nemesis` (nemesis.lua: a live Nemesis, a victim it may hurt).
+     `nemesis.lua` calls `ChaosRift.capLast` on the victim when the Nemesis appears and on a tick for each party member (once
+     per login, the creature id tells), so the cap events are the LAST health and mana events of the characters it may hurt.
+  2. *Reflect cap* (`monster_tiers.lua` `reflectShare = 0.15`, `reflectCap = {enabled = true, perHit = 0.10, perSecond = 0.25,
+     windowMs = 1000}`; the pure rule `H.reflectAmount`). For the modifier Reflective, so also Thorned and the Reflective
+     magic, rare and legendary monsters: what ONE hit sends back is at most `perHit` x the attacker's pool (same pool), and what
+     one character gets back within one second, from all reflects together, is at most `perSecond` x the pool. The 15% stays;
+     the cap only cuts. The amount is cut before the character's own defence (measured: what reached the character was lower than the cap, never higher).
+  3. *Order on the Nemesis.* `ChaosNemesisTaken` (cancels the damage of anybody who is not the victim or in its party) was
+     registered after `ChaosModTaken` (the reflect), and events run in registration order: a stranger whose hit was cancelled
+     still took the reflect of a hit that never landed. `setupMonster` now registers the guard first (and takes both off
+     first, so an earlier registration cannot keep the old order).
+  *Events after the tier hit, and why the number is bounded.* A hit on a character runs the login events in name order and then
+  the character's events in registration order: the three damage multipliers (`Chaos0MonsterDamageLogin`, `Chaos0RiftHitLogin`,
+  `Chaos0TierLogin` = `ChaosTierHit`: the tier, the modifiers, Vengeful x1.5), then `ChaosPlayerDefence` and the older reductions
+  (damage taken from monsters, blessings, gems, charms, cards, item sets), the events that can still raise a hit
+  (`ChaosArchetypesHit`, `ChaosKeystones`, `ChaosClassKeystones`, `ChaosBossMechTaken`), then the two cap events, then Last Breath
+  (`ChaosPowersLastBreath`, moved behind the cap, so a lethal-hit catch sees the capped hit). `RF.capLast` registers the four
+  late registrars first, then the cap, then Last Breath, as in O478. After the cap run only Last Breath and what registers on
+  the character later (the mentor's, hardcore protection), which can only lower a hit, and the engine (the mana shield pays
+  first, then the energy shield, then the health: the parts of one hit are held to the ceiling together). So the health,
+  mana and energy shield a Nemesis hit takes in all are at most `share` x pool. It also needs engine patch 0090 (the monster
+  level bonus once per hit) to be exact. What the cap does not cover: a condition with no attacker (a burning or poison tick of
+  a modifier), and a character that is not in the cap list because it appeared in the party after the last tick (2 s).
+  *The rift guardian cap is unchanged:* same share, same pool, same events, same order, same numbers
+  (`tests/rift_hitcap_test.lua` passes as it was, plus a second source). The rift's own Reflection modifier (`rift.lua`
+  `ChaosRiftMonsterHealth`) is NOT capped here: it sends back up to 22% of the damage that lands (`rift_config.lua` range 5-22,
+  Spiteglass the same share of the elemental part), with no per-hit and no per-second limit; it is a map modifier the player
+  picks on the key and was left as it is.
+  Tests: `tests/hitcap_test.lua` (pool, cut, sources, reflect amount, one second window), `tests/monster_tiers_test.lua`
+  (Reflective cap through the real handler), `tests/nemesis_test.lua` (event order, a stranger takes no reflect, the source and
+  the registrar), `tests/rift_hitcap_test.lua` (a second source through the same events, mana shield included).
+  *Measured on a local test server (2026-11-11, before and after the change).* The repository's Lua installed over a test copy of
+  the server (engine patch 0090 in), three test characters cloned from tester rows with their health and mana but no gear
+  (so these are hits on a bare character: a worn set lowers them), a probe as the LAST Lua event of the character that records
+  the final amount of each hit and cancels it (nobody died). A monster of the type fought the character for 40 s: the first 14 to
+  16 real hits, so the biggest is the biggest seen, not the biggest roll. `max / pool` is the hit over the pool (health, plus
+  mana with a mana shield up). Before the change:
+
+  | Type (level) | Character (health + mana) | Natural paced monster | Nemesis | Nemesis Vengeful (below half health) |
+  |---|---|---|---|---|
+  | Phantom Shade (263) | level 198 (3035 + 1040) | max 6005, median 3277: 1.98 / 1.08 | max 6058, median 5055: 2.00 / 1.67 | max 8916, median 7502: 2.94 / 2.47 |
+  | the same, mana shield up | pool 4075 | max 6037: 1.48 | max 6095: 1.50 | max 9013: 2.21 |
+  | Snake Master (588) | level 500 (7073 + 3042) | max 6644, median 5222: 0.94 / 0.74 | max 3638, median 2009: 0.51 / 0.28 | max 5514, median 3199: 0.78 / 0.45 |
+  | the same, mana shield up | pool 10115 | max 3750: 0.37 | max 2947: 0.29 | max 6168: 0.61 |
+  | Elite Ice Dragon (960) | level 845 (12740 + 4275) | max 17877, median 12326: 1.40 / 0.97 | max 10126, median 6768: 0.80 / 0.53 | max 14971, median 11361: 1.18 / 0.89 |
+  | the same, mana shield up | pool 17015 | max 10926: 0.64 | max 10019: 0.59 | max 16949: 1.00 |
+
+  *Amplifier: none found.* The Nemesis is paced (`ChaosPace.isPaced` true), `monster_damage.lua` gives it the level of its type
+  (263, 588, 960; `rec.level` is not used for damage) and the same damage multiplier as the type's natural monster (1.105, 1.272,
+  1.30), its tier multiplier is x1.0, so a plain Nemesis hits like its type; Vengeful adds the x1.5 (8916 against 6005). Its
+  health is x1.72 the paced health of its type (1262474 against 732960 for the Phantom Shade). Two things kill: the type's own
+  biggest hits are already over the pool of a character well under the monster's level (1.98 x the pool, in a natural pack too),
+  and Thorned (next table). Nothing about the Nemesis multiplies a hit that does not multiply its type's hit.
+
+  Thorned, one scripted hit of the character on a Nemesis of the type (the reflect that reached the character, against its pool;
+  the four hits one after the other in the same second; before / after the change):
+
+  | Hit | Phantom Shade, pool 3035 | Snake Master, pool 7045 | Elite Ice Dragon, pool 12740 |
+  |---|---|---|---|
+  | 5000 | 374 (0.12) / 168 (0.06) | 167 (0.02) / 167 (0.02) | 342 (0.03) / 342 (0.03) |
+  | 30000 | 3583 (1.18) / 168 (0.06) | 2405 (0.34) / 523 (0.07) | 3749 (0.29) / 1274 (0.10) |
+  | 100000 | 12778 (4.21) / 59 (0.02) | 9110 (1.29) / 523 (0.07) | 14123 (1.11) / 1274 (0.10) |
+  | 300000 | 39084 (12.88) / 0 | 10503 (1.49) / 9 (0.00) | 28462 (2.23) / 295 (0.02) |
+
+  The amount is the one after the character's own defence. The biggest single hit a class can produce was not driven (no class
+  spells were cast; the scripted hits stand for it). After the change, the Phantom Shade Nemesis on the level 198 character: max
+  1821 = 0.600 of the pool, with and without a mana shield (2445 of 4075), Vengeful the same; the Elite Ice Dragon Nemesis: max
+  7644 (0.600), mana shield 10051 (0.591), Vengeful 7644 / 10209 (0.600). *A stranger* hitting the Nemesis: before, the hit was
+  cancelled (the Nemesis lost no health) and the same reflect was still dealt to the stranger (3583 for a 30000 hit, 1.18 x the
+  pool); after, nothing comes back.
 - **Optional hooks, all guarded:** `Chaos.t` / `Chaos.lang` (texts: the English texts of `nemesis_config.lua` are the
   keys; until `i18n_strings.lua` has them a pt-BR player reads the config's `texts.pt`), `ChaosAchievements.progress`
   (stats `nemesis_marked`, `nemesis_avenged`, `nemesis_hunted`; the achievements themselves are not written yet),
@@ -29541,6 +29883,13 @@ README warned.
   2. **Shell fallback** on the VPS: `chaos-ctl.sh client-pair set 56` (`client-pair show` prints `chaosClientPair=56` or
      `chaosClientPair=missing`); a number lower than the record is refused. Without the kit: `python3 -I
      server/tools/client_pair.py set SERVER_DIR 56 [--force] [--dry-run]`.
+  3. **Not while an update runs (O486, owner 2026-11-11).** The update installs on a copy of the server folder for about
+     ten minutes and refuses its swap when the live `config.lua` changed meanwhile in more than the XP rates. The owner
+     set pair 63 during that time and lost the run. Now `client-pair set` answers `update-running` while an update or
+     rollback holds the lock, and the update's refusal names the changed keys and what to do: `FAIL: config.lua changed
+     since the copy in more than the XP rates (chaosClientPair). Run the update again: it starts from the config.lua of
+     now`. Nothing is changed by a refused swap: the server runs the version of before, engine included. Tests:
+     `chaos_kit_update_test.py`, `chaos_ctl_test.py`.
   3. Then the admin app **Update** (or `install_all.py`) installs the held rows; no restart is needed for the record itself.
 * **Windows package.** Its client ships the pair on `windows-assets`, so `tools/windows/prepare_server.sh` records
   `client_pair.py` `PAIR_ASSETS` (`python3 -I server/tools/client_pair.py assets`) in the package's own `config.lua` and every
@@ -30578,7 +30927,7 @@ First stage of the combat redesign (owner, 2026-11-10: "monster attacks and defe
 ignore, the order of defence"; "for now forget our tests and the caps we put, also the DPS tests and the class objectives:
 I want to see how everything ends up, then we rethink"). This stage is the MONSTER side: how a monster takes a hit from a
 player, the monster ranks and the monsters' resistance data. The player side (the player's armour, absorb, dodge, block,
-penetration) is the next stage. Nothing here ran on a live server.
+penetration) is the next stage. The armour on weapon hits first ran on a local server on 2026-11-11 (O501, "Weapon hits" below: measured); everything else of this section is computed and mocked, never run on a live server.
 
 **Shared numbers.** `defence_config.lua` is the one file: `armourHitFactor` 0.07, `physicalReductionCap` 90, `resistCap` 75,
 `blockCap` 75. No other file holds a copy; the player stage reads the same file.
@@ -30607,8 +30956,10 @@ event registered later, outside a login, is last. A monster's events run in regi
    Ironhide, boss mechanics, waystone modifiers.
 
 **Armour by hit size.** `reduction = A / (A + armourHitFactor x H)`, H the physical part as it arrives. A big hit loses less of
-itself. A is not the XML armor: it is sized so that the MEDIAN CLASS HIT of the monster's level loses 25% (a normal monster, a
-magic one too), 40% (rare, legendary, nemesis) or 50% (a boss): `A = f / (1 - f) x 0.07 x median hit`, f 0.25, 0.40, 0.50.
+itself. A is not the XML armor: it is sized so that the MEDIAN HIT of the monster's level loses 25% (a normal monster, a
+magic one too), 40% (rare, legendary, nemesis) or 50% (a boss): `A = f / (1 - f) x 0.07 x median hit`, f 0.25, 0.40, 0.50. Two
+medians since O501: a spell is measured against the median CLASS hit (`hitCurve`, f = `armourTarget`), a weapon hit (melee and
+ranged origin) against the median WEAPON hit (`weaponHitCurve`, f = `weaponTarget`) and loses at most `weaponShareCap` of itself.
 A boss is every kind the code treats as one: the type flag `isboss` (area, quest and world bosses), the world boss, a rift
 guardian, an Omen guardian, a tower boss, a waystone tier boss. The level is the nameplate (hunting) level, else the level of
 `monster_damage.lua`.
@@ -30644,8 +30995,155 @@ big = 5 x median; the table is the test, armour alone, no file resistance):
 | 1,000 | elite | 76.9% (to 331) | 40.0% (to 4,301) | 11.8% (to 31,628) |
 | 1,000 | boss | 83.3% (to 239) | 50.0% (to 3,585) | 16.7% (to 29,871) |
 
-A weapon class swings small hits (the median weapon hit is 0.42 of the class hit at level 100) and loses more to armour than a
-spell class, whose casts are big.
+That table is the armour of a SPELL (and of a physical spell hit of a summon): the median class hit. A weapon hit has its own
+curve since O501 (below): a weapon class swings small hits and lost 50 to 90% of an auto attack to the armour sized for the class hit.
+
+**Weapon hits (O501, 2026-11-11).** Owner (translated): "It seems the auto attack is hitting practically nothing on the monsters."
+The cause is this layer, with a second cause that was there before it. What was measured, what was changed, what was not.
+
+*Measured.* A local server with every engine patch up to 0090 and the Lua of this repository up to O490 (install steps `files`,
+`gearsets`, `fistweapons`, `weapons800`, `weapongrowth`, `monsterresists`, `equiprules`, `meleeskill`). A bare test character of each of
+six kinds at levels 8, 20, 60, 100, 300, 500 and 1000: a Warrior with one hand and a shield, a Warrior with two hands, a Thief, a
+Ranger, a Monk and a Mystic, each in the best equipment-set weapon its level allows (claws for the Monk), weapon skill 10, 20, 45, 70,
+100, 120, 135, no cards, no passive tree, no gems, no stats. Each fought a dummy of its level with armour 0 and defence 0, so that
+what arrives is what the engine rolled (a real hunt monster for the flat armour, below). Every hit was logged inside the hit chain:
+what arrives at `ChaosMonsterDefence`, its A, what leaves it, what the monster's health loses. 100 to 200 auto attacks a character,
+once with the layer on and once with it off (`monster_defence_config.lua enabled`, the game before O462), then a rare and a boss at
+levels 100 and 500, two spells of the class and a real monster of each level. The rig is test data of the machine and is not committed.
+
+The auto attack on a normal monster of the level, the layer on. `Removed` is the share of the physical part of each hit the layer took
+(A is the O462 value, sized for a spell); `Reaches` is the damage per second of the auto attack, physical and element part, with the
+layer on over the same with it off; the seconds are for a typical hunt monster of the level (`pack_model.py`: 61 hp at 8, 78 at 20,
+257 at 60, 478 at 100, 1,775 at 300, 4,359 at 500, 16,620 at 1000). The Monk's own unarmed scaling is a later event and is not in its
+numbers.
+
+| Class | Level | Hit rolled, mean (max) | A | Removed | Reaches the monster | Seconds to kill, layer on / off |
+|---|---:|---:|---:|---:|---:|---:|
+| Warrior, one hand + shield | 20 | 18.7 (38) | 2.01 | 57.0% | 54.8% | 4.0 / 2.2 |
+| Warrior, one hand + shield | 100 | 78.2 (159) | 10.83 | 63.2% | 59.1% | 6.7 / 4.0 |
+| Warrior, one hand + shield | 500 | 319.1 (642) | 85.35 | 76.4% | 51.2% | 25.0 / 12.8 |
+| Warrior, one hand + shield | 1000 | 705.6 (1336) | 233.17 | 80.6% | 46.8% | 38.4 / 18.0 |
+| Warrior, two hands | 20 | 20.2 (38) | 2.01 | 55.5% | 50.1% | 5.8 / 2.9 |
+| Warrior, two hands | 100 | 81.4 (164) | 10.83 | 62.2% | 58.5% | 9.3 / 5.4 |
+| Warrior, two hands | 500 | 337.2 (670) | 85.35 | 76.1% | 52.8% | 35.8 / 18.9 |
+| Warrior, two hands | 1000 | 684.1 (1375) | 233.17 | 80.2% | 52.8% | 55.7 / 29.4 |
+| Thief, blade | 20 | 32.6 (207) | 2.01 | 37.8% | 54.9% | 4.8 / 2.6 |
+| Thief, blade | 100 | 119.2 (460) | 10.83 | 51.5% | 67.3% | 5.2 / 3.5 |
+| Thief, blade | 500 | 435.5 (785) | 85.35 | 71.2% | 55.1% | 10.9 / 6.0 |
+| Thief, blade | 1000 | 802.3 (1579) | 233.17 | 78.2% | 48.0% | 40.5 / 19.5 |
+| Ranger, bow | 20 | 64.4 (134) | 2.01 | 29.2% | 57.4% | 3.8 / 2.2 |
+| Ranger, bow | 100 | 139.7 (220) | 10.83 | 51.0% | 49.3% | 29.8 / 14.7 |
+| Ranger, bow | 500 | 629.7 (1219) | 85.35 | 64.0% | 29.9% | 56.0 / 16.8 |
+| Ranger, bow | 1000 | 1349.3 (2366) | 233.17 | 69.1% | 29.0% | 127.4 / 37.0 |
+| Monk, fists | 20 | 14.0 (30) | 2.01 | 63.4% | 27.3% | 28.2 / 7.7 |
+| Monk, fists | 100 | 31.5 (63) | 10.83 | 80.7% | 17.8% | 142.2 / 25.3 |
+| Monk, fists | 500 | 85.9 (172) | 85.35 | 89.9% | 9.2% | 711.1 / 65.2 |
+| Monk, fists | 1000 | 145.0 (275) | 233.17 | 90.1% | 9.6% | 1366.8 / 131.3 |
+| Mystic, wand | 20 | 15.9 (18) | 2.01 | no armour | 98.7% | 6.4 / 6.3 |
+| Mystic, wand | 100 | 61.8 (70) | 10.83 | no armour | 99.7% | 11.5 / 11.5 |
+| Mystic, wand | 500 | 144.9 (165) | 85.35 | no armour | 101.0% | 18.2 / 18.3 |
+| Mystic, wand | 1000 | 285.9 (328) | 233.17 | no armour | 100.3% | 52.6 / 52.8 |
+
+The Mystic's wand hit is `ORIGIN_WAND`: the layer never armours it (98 to 102% reaches). A rare monster took 65 to 90% of the physical
+part of an auto attack at levels 100 and 500, a boss 72 to 90% (`measure.csv`); the rare's +15 on the element resistance takes 15% of
+the wand's element hit.
+
+*What arrives.* O462 sized the armour for the median CLASS hit, `dps x auto share x interval` of a typical character: 237 for a
+Warrior at level 100 against 78 measured, 1,140 at 500 against 319, 3,182 at 1,000 against 706 (Ranger 400 / 140, 1,272 / 630,
+3,297 / 1,349; Monk 175 / 32, 1,158 / 86, 3,886 / 145). The layer is the first Lua event of the monster. It sees the roll of the engine;
+what the player multiplies by comes later: `ChaosPassiveDealt` (class damage, the damage pool, gems, cards, charms), `weapon_styles.lua`
+(two hands, bows), the weapon power, the class combat events, and for the Monk `monk_combat.lua`, which scales the engine's fist hit
+(attack 7) to the level's fist attack, about x6 at level 100, in an event registered on the monster at the first hit. Events after
+the layer changed a bare character's hit by -53% to +115% (the sword's tempo -17%, the Mystic's wand power x1.35 to 2.15, a bow -25 to
+-53% that was not isolated). So the layer saw a Warrior's hit 3.0 to 4.5 times smaller than the model's, a Ranger's 2 to 3 times, a
+Monk's 5 to 27 times, and took 37 to 81% of a Warrior's where it meant to take 25%. What arrives is the engine's formula
+(`Weapons::getMaxWeaponDamage`: `level / 5 + (skill / 4 + 1) x (attack / 3) x 1.03`, a bell from 0 to that maximum) at the inputs
+of the character, with two findings that `tools/defence_curve.py` holds as constants and `tools/defence_curve_test.py` against the
+measurement: the physical part of a set weapon is 65% of its attack (the rest is an element part, never armoured: wyrmscale blade
+22 + 12), and a weapon skill under 36 hits as 36 (skill 10 and 20 at levels 8 and 20 hit 1.5 to 2.9 times the formula). Measured
+mean over the formula at these inputs: 0.93 to 1.13 for the Warrior, Ranger and Monk at every level, 0.75 to 1.04 for the two-hand
+weapon (0.75 at 8, 0.90 at 20).
+
+*The second cause: the monster's own armour and defence (engine, before any Lua).* The XML numbers of the hunt monsters (median of the
+pool within 10% of the level: 5 / 5 at level 8, 10 / 10 at 13, 15 / 15 at 20, 30 / 30 at 60 and 100, 65 at 300, 70 at 500; the
+level-scaled monsters of the repository 75 to 90 from 500 to 2000) take `uniform(defence / 2, defence)` off a hit once a second and
+`uniform(armour / 2, armour - 1)` off every hit, and a hit that falls to 0 never reaches a Lua event. This README said "under 1% of a
+late hit". It is not, for an auto attack that arrives without its multipliers. A Warrior with one hand against a real monster of its
+level (Troll, Mummy, Wyrm, Retching Horror): half of its attacks were blocked outright (77 of 154 at level 8, 95 of 191 at 20, 60 and
+100) and the rest arrived at 9.3 against a roll of 18.7 at level 20 and 38 against 78 at 100. The damage per second with the layer
+OFF, real monster over dummy: Warrior 89 / 55 / 50 / 63% at levels 8 / 20 / 60 / 100 (two hands 95 / 50 / 47 / 65, Ranger
+105 / 95 / 71 / 70, Monk 66 / 14 / n.a. / 6, the Thief is noisy: its crits); with the layer on besides, the real monster over the OFF
+dummy: Warrior 72 / 37 / 29 / 46%, Ranger 108 / 72 / 39 / 29%, Monk 24 / 3 / n.a. / 1%. Ranking by the measured size at a level 20
+Warrior: the flat armour and defence took 45% of the auto damage, the O462 layer 32% of the rest. At 300 and above the layer is the bigger
+one (70 to 80% on the dummy against the model's 35% for the flat armour). Not seen as a cause: the weapon growth (it arrives in the
+attack of the item, the formula holds), the damage pool and the other multipliers (later events: they raise or lower a hit after
+the layer, they take nothing before it), engine patch 0090 (it is about hits a monster deals), the player armour layer O464, the
+resistance data (the dummy has none, the files of the real ones: Mummy 0, Retching Horror 10), the weapon intervals (1.0 to 1.3 s a
+vocation, 1.5 times that for two hands). The flat armour is the stock formula and was there before O462: it is not changed here.
+
+*The fix.*
+
+1. A weapon hit (melee and ranged origin) is measured against its own curve, `weaponHitCurve` of `monster_defence_config.lua`: the
+   median over the 15 classes with an armoured weapon hit (the six casters hit with a wand, `ORIGIN_WAND`, never armoured) of the mean
+   ARRIVING hit, in the units the layer sees: the engine's roll (the formula, the tier weapon of the level from `install_gear_sets.py`
+   times `weapon_growth.py`, the physical share, the typical skill of `weapon_skill_config.lua` never under 36, the bell `ROLL`) minus
+   the flat armour and defence of a typical hunt monster (`FLAT`). `tools/defence_curve.py` derives it at the same 13 levels as
+   `hitCurve` and `--check` holds it. Below level 100 the rows come from the same formula and are checked against the arriving hits
+   measured at 8, 20 and 60 (`MEASURED` in `tools/defence_curve_test.py`: 0.94 to 1.13 of the formula); the class curve below 100 is as
+   before. Rows: 16 at level 1, 13 at 10, 16 at 30, 37 at 60, 82 at 100, 121 at 200, 165 at 300, 239 at 500, 359 at 750, 587 at 1000,
+   710 at 1500, 867 at 2000, 915 at 2500. A spell keeps `hitCurve`: no spell number moves (`tests/monster_defence_test.lua` holds the
+   spell values of before; a summon's bite, a Necromancer's minions and the Beastmaster's wolves are `ORIGIN_SPELL` since O468, so they
+   keep the class curve, and their loss to armour is as before).
+2. `weaponTarget` 27.5 / 44.5 / 55 (normal / elite / boss): the percent of the median weapon hit the weapon armour takes. A little above
+   `armourTarget` (25 / 40 / 50) on purpose: the hits of one weapon roll between 0 and twice their mean, the cap holds the small ones and
+   the big ones lose less, so with these numbers the armour removes the `armourTarget` of the DAMAGE of the median class's auto attack,
+   expected over the roll (G1).
+3. `weaponShareCap` 40 / 55 / 65: the most of a weapon hit the armour may remove, so a low roll or a small hit (a Monk, level 8 to 30) is
+   not erased (G2). The rule of O462 stays: a big hit loses less than a small one. The physical cap (the file's percent, armour and
+   Plated inside 90) is as before, and penetration comes off the capped share.
+4. `C.defend` takes `ctx.Aw` and `ctx.weaponCap`; `monster_defence.lua` caches both armour values of a monster (`MD.weaponArmourOf`).
+   The order of the events is not touched (`tests/defence_order_test.lua` is true as before). The layer still sees the hit before the
+   player's multipliers, so the curve is in arriving units (G4) and the share it takes is a share of the arriving hit: it takes the
+   same share of the final hit. Moving the layer behind the player's events was not done: some are registered on the monster at the
+   first hit (the Monk's, the archetypes', the cards') and could not be put in front of or behind it, and the engine's flat armour
+   comes before any Lua anyway.
+
+G1 to G4 with the model (`python3 -I server/tools/defence_curve.py --check`, 85 levels from 8 to 2,500, the 15 armoured classes):
+G1 the median class loses 25 / 40 / 50% of its auto attack damage within 1.7 / 2.1 / 2.2 points at the worst level (it lost 41 to 88%
+on a normal monster); G2 the most any class loses is 40 / 55 / 65%, the Monk at the cap (it lost up to 97.5 / 98.7 / 99.1% at level
+1000); G3 no spell number moves and a big hit loses less than a small one; G4 the curve is in the units that arrive (the engine
+formula against the measurement). `--autos --level 100` prints the table of the 15 classes, before and after; three rows:
+
+| Class at level 100 | Mean arriving hit | Before: normal / elite / boss | After: normal / elite / boss |
+|---|---:|---|---|
+| Warrior (the median) | 82 | 60.9 / 75.2 / 81.8% | 24.5 / 39.8 / 49.8% |
+| Ranger | 228 | 37.8 / 54.1 / 63.6% | 11.4 / 21.0 / 28.6% |
+| Monk | 10 | 90.9 / 95.2 / 96.7% | 40.0 / 55.0 / 65.0% |
+
+*After the fix, measured* (the same characters, the dummy of the level, the layer on, 120 s; the numbers before are the table above):
+
+| Class | Level | Hit rolled, mean (before / after) | Removed, before -> after | Reaches the monster, before -> after | Seconds to kill after, layer on / off |
+|---|---:|---:|---:|---:|---:|
+| Warrior, one hand + shield | 20 | 18.7 / 28.7 | 57.0% -> 16.2% | 54.8% -> 85.8% | 2.0 / 1.7 |
+| Warrior, one hand + shield | 100 | 78.2 / 82.5 | 63.2% -> 25.3% | 59.1% -> 90.1% | 4.6 / 4.1 |
+| Warrior, one hand + shield | 500 | 319.1 / 329.3 | 76.4% -> 20.3% | 51.2% -> 87.2% | 14.8 / 12.9 |
+| Ranger, bow | 20 | 64.4 / 87.1 | 29.2% -> 5.7% | 57.4% -> 80.7% | 2.1 / 1.7 |
+| Ranger, bow | 100 | 139.7 / 140.1 | 51.0% -> 17.7% | 49.3% -> 79.4% | 18.6 / 14.8 |
+| Ranger, bow | 500 | 629.7 / 654.7 | 64.0% -> 11.9% | 29.9% -> 82.2% | 20.5 / 16.9 |
+| Monk, fists | 20 | 14.0 / 19.4 | 63.4% -> 21.1% | 27.3% -> 77.7% | 8.6 / 6.7 |
+| Monk, fists | 100 | 31.5 / 33.4 | 80.7% -> 39.6% | 17.8% -> 60.2% | 39.2 / 23.6 |
+| Monk, fists | 500 | 85.9 / 92 | 89.9% -> 39.5% | 9.2% -> 60.1% | 104.4 / 62.7 |
+
+*Not done, for the owner to decide.* (1) The flat armour and defence of the monster files, the second cause: a patch tool
+(`patch_monster_flat_defence.py`, an install step like `monsterresists`) that caps the XML `armor` and `defense` by a level rule would give
+a level 20 Warrior back about 45% of its auto damage. The Monk needs more: its fist hit is attack 7 in the engine and is scaled by a
+later event, so the flat armour takes nearly all of it before the scaling (6% of its damage reaches a level 100 monster with the layer
+off); an engine patch that reads the Monk's fist attack from the level, or its claws in the main hand, would fix that. (2) The weapon
+spells (Reaping Gyre, Earthbreaker) are `ORIGIN_SPELL` hits of weapon size (76 at level 100): they keep the class curve and lose 50 to
+60%; the rule "a spell is unchanged" was kept. (3) Not measured: a Necromancer's minions and a Beastmaster's wolves (read from the
+code: `ORIGIN_SPELL`, unchanged), 15 of the 21 classes (six kinds were run, the model covers the rest), levels above 1000, the real
+monsters at 300 and above, the Thief's crit hits in the model (the Thief line is a plain melee class in it; its measured arriving mean
+was 1.1 to 1.5 times the formula).
 
 **The physical cap.** The total of the file's physical percent, armour and Plated never passes 90 percent:
 `1 - (1 - p0) x (1 - armour) x (1 - Plated)`, and when it would, the layer takes the hit back up to 10 percent of the raw hit.

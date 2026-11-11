@@ -29,6 +29,11 @@ if not ChaosGuardianCore then
 	local dir = src:sub(1, 1) == "@" and src:sub(2):match("^(.*[/\\])") or "data/scripts/chaos/"
 	dofile(dir .. "guardian_core.lua")
 end
+if not ChaosHitCapCore then
+	local src = debug and debug.getinfo and debug.getinfo(1, "S").source or ""
+	local dir = src:sub(1, 1) == "@" and src:sub(2):match("^(.*[/\\])") or "data/scripts/chaos/"
+	dofile(dir .. "hitcap_core.lua") -- the pool and the cut rule are shared with the Nemesis cap (O483)
+end
 
 local floor = math.floor
 
@@ -1202,7 +1207,7 @@ end
 -- O478: the pool a hit of a rift guardian is measured against: the maximum health, plus the maximum mana while a mana
 -- shield is up. Maximum values, so the ceiling does not fall as the player loses health. The energy shield is not in it.
 function R.hitPool(maxHealth, maxMana, shieldUp)
-	return math.max(0, maxHealth or 0) + (shieldUp and math.max(0, maxMana or 0) or 0)
+	return ChaosHitCapCore.pool(maxHealth, maxMana, shieldUp)
 end
 
 -- O478 (rift_config.lua guardian.hitCap): cut one hit of a guardian to share x pool, as a whole. p, s = the hit's two parts
@@ -1210,22 +1215,13 @@ end
 -- same hit already took (the mana shield), so the parts together stay under the ceiling. Returns p, s, limit, capped:
 -- limit = the most this call may let through (the ceiling less `spent`, at least 0); capped = true when the hit was cut.
 -- A hit at or under the limit is returned as it is; both parts are scaled by the same factor and rounded down, so the
--- sum is at most the limit.
+-- sum is at most the limit. The rule itself is hitcap_core.lua H.cut (shared with the Nemesis, O483).
 function R.capHit(cfg, p, s, pool, spent)
 	local c = cfg and cfg.guardian and cfg.guardian.hitCap
-	p, s = p or 0, s or 0
-	if not (c and c.enabled) or (pool or 0) <= 0 then
-		return p, s, nil, false
+	if not (c and c.enabled) then
+		return p or 0, s or 0, nil, false
 	end
-	local limit = math.max(0, floor(c.share * pool) - (spent or 0))
-	local ap, as = math.abs(p), math.abs(s)
-	local total = ap + as
-	if total <= limit then
-		return p, s, limit, false
-	end
-	local k = limit / total
-	local np, ns = floor(ap * k), floor(as * k)
-	return p < 0 and -np or np, s < 0 and -ns or ns, limit, true
+	return ChaosHitCapCore.cut(c.share, p, s, pool, spent)
 end
 
 -- a share of a player's max health as a hit (ground, storm, nova): at least 1

@@ -339,7 +339,11 @@ fn unreachable_server_changes_nothing() {
     w.assert_is(&r);
     w.srv.state.lock().unwrap().offline = false;
     w.srv.state.lock().unwrap().routes.remove("/updates/live/manifest.json");
-    assert!(matches!(run(&w, World::fast()), Err(Error::Network(_))), "404");
+    assert_eq!(
+        run(&w, World::fast()),
+        Err(Error::Http(404)),
+        "a 404 is a server answer, not a network failure"
+    );
 }
 
 #[test]

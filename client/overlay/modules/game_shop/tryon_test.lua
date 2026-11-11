@@ -16,7 +16,8 @@ for _, k in ipairs({ 'outfit', 'addons', 'mount', 'wings', 'aura', 'shader', 'ou
   eq(T.plan({}, { kind = k }, false).show, false, k .. ' without the panel (mobile) has none')
 end
 -- not worn
-for _, k in ipairs({ 'nameplate', 'subject', 'swatch' }) do
+-- (O497: the preview panel now draws a stage sample for a loot label and a chat colour offer; they are still not worn)
+for _, k in ipairs({ 'nameplate', 'subject', 'swatch', 'lootlabel', 'chatcolor' }) do
   eq(T.plan({}, { kind = k }, true).show, false, k .. ' keeps its icon')
 end
 eq(T.plan({ type = 'item' }, nil, true).show, false, 'an item') eq(T.plan(nil, nil, true).show, false, 'nothing')

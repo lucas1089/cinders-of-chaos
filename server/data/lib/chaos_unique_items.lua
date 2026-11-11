@@ -92,7 +92,7 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Hellfire Fighter", "Fire Devil", "Massive Fire Elemental", "Hellhound", "Dragon Lord", "Blazebringer", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Hand of Cursed Fate"} },
 	{ name = "Soulreaper", id = 8209, minTier = "legendary", chance = 9, level = 120, slot = "sword",
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker"} },
-	{ name = "Harvester of Sorrows", id = 10301, minTier = "legendary", chance = 8, level = 100, slot = "axe",
+	{ name = "Harvester of Sorrows", id = 10301, minTier = "legendary", chance = 8, level = 100, slot = "sword",
 	  bossOnly = false, monsters = {"Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker", "Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage"} },
 	{ name = "Obsidian Aegis", id = 10318, minTier = "legendary", chance = 8, level = 110, slot = "shield",
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Dragon Lord", "Hand of Cursed Fate"} },

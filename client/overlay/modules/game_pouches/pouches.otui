@@ -19,7 +19,7 @@ PouchesWindow < ChaosMainWindow
     height: 58
     text-wrap: true
     text-align: topLeft
-    !text: tr('While you carry your Loot Bag it takes these items from the monsters you kill. Orbs, gems and keys always go to the Orbs and Rift Key Pouch first. A full pouch passes the item on (below), then to your backpack.')
+    !text: tr('While you carry your Loot Bag it takes these items from the monsters you kill. Orbs, gems, keys and runes always go to their own pouch first (Orbs, Gem, Rift Key, Rune). A full pouch passes the item on (below), then to your backpack.')
 
   PouchCheck
     id: list

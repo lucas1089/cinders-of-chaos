@@ -13,7 +13,7 @@
 --      (ChaosJewelry.uniqueBases): name, stats, rarity and sockets stay (they are item attributes). A copy in a
 --      container turns when moved and at login; a worn copy is taken off into the backpack at login first (so the
 --      engine removes the old type's stats), then turns; the player puts it on again.
---   4. a unique that moved to another stock base (ChaosJewelry.uniqueMoves; O491: the Misericorde of the Pale Vow, off
+--   4. a unique that moved to another stock base (ChaosJewelry.uniqueMoves; O505: the Misericorde of the Pale Vow, off
 --      the wand 27193 onto the dagger 7408) turns the same way, in a container and worn.
 ChaosJewelry = ChaosJewelry or dofile("data/lib/chaos_jewelry.lua")
 

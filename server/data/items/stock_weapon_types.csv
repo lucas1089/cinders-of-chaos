@@ -1,0 +1,23 @@
+id,name,old,new,reason
+2405,sickle,axe,sword,a curved hooked blade held in one hand like a sword
+2414,dragon lance,axe,axe,kept: polearm; the stock data gives most polearms (halberds, lances, naginata) the axe
+2418,golden sickle,axe,sword,a curved hooked blade held in one hand like a sword
+2425,obsidian lance,axe,axe,kept: polearm; the stock data gives most polearms (halberds, lances, naginata) the axe
+2426,naginata,axe,axe,kept: polearm; the stock data gives most polearms the axe
+2550,scythe,axe,sword,a long curved blade held like a sword blade; no chopping head
+3964,ripper lance,axe,axe,kept: polearm; the stock data gives most polearms (halberds, lances, naginata) the axe
+7408,wyvern fang,sword,sword,kept: a fang-shaped blade held like a sword
+7435,impaler,axe,axe,kept: polearm; the stock data gives most polearms the axe
+10301,scythe of the reaper,axe,sword,a long curved blade held like a sword blade; no chopping head
+10304,poet's fencing quill,sword,sword,kept: a fencing blade held like a sword
+11305,drakinata,axe,axe,kept: polearm; the stock data gives most polearms the axe
+11308,wyrmfang glaive,club,axe,polearm with a blade head; the stock data gives most polearms the axe
+11309,twin hooks,axe,sword,"a pair of hooked blades, one in each hand: a two-handed sword (owner 2026-11-11: it counts as an axe but is not one)"
+13838,heavy trident,sword,axe,polearm with a pronged head; the stock data gives most polearms the axe
+15492,hive scythe,axe,sword,a long curved blade held like a sword blade; no chopping head
+23543,sludgebrass whip,club,club,kept: not bladed or hafted; there is no whip kind and a blunt strike is the closest
+23545,mino lance,axe,axe,kept: polearm; the stock data gives most polearms (halberds, lances, naginata) the axe
+25383,rift lance,axe,axe,kept: polearm; the stock data gives most polearms (halberds, lances, naginata) the axe
+25416,impaler of the igniter,sword,axe,same word as the impaler (7435): a polearm; the stock data gives most polearms the axe
+29886,Dawnforged Great Axe,sword,axe,the name says axe (a great axe is a two-handed axe)
+29888,Dawnforged Skull Crusher,sword,club,the name says a blunt crusher (a skull crusher is a two-handed club)

@@ -737,6 +737,13 @@ return {
 		["1 minute left"] = "falta 1 minuto",
 		["1 second left"] = "falta 1 segundo",
 		["%s seconds left"] = "faltam %s segundos",
+		-- the Infinity Tower has two clocks (O484): each warning says which one it is
+		["%s: the whole run ends in %s (%d minute limit). Everyone inside leaves then."] =
+			"%s: a corrida inteira termina em %s (limite de %d minutos). Todos lá dentro saem.",
+		["Floor %d: %s to clear it."] = "Andar %d: %s para limpar.",
+		["Floor %d"] = "Andar %d",
+		["Whole run: %s"] = "Corrida inteira: %s",
+		["This run lasts at most %d minutes."] = "Esta corrida dura no máximo %d minutos.",
 		["All %s are busy."] = "Sem vaga livre em %s.",
 		[" One frees up in under a minute."] = " Uma vaga fica livre em menos de um minuto.",
 		[" Try again in %s."] = " Tente de novo em %s.",
@@ -1534,6 +1541,8 @@ return {
 			"A Loot Bag fica na sua purse: ela não pode ser movida para fora, jogada fora, negociada ou enviada.",
 		["The Loot Bag only gives items back: autoloot fills it."] =
 			"A Loot Bag só devolve itens: o autoloot é que a enche.",
+		["The Rune Bag holds only runes."] =
+			"A Rune Bag guarda só runas.",
 		["%s: your %s is in your %s. It collects %s while you carry it."] =
 			"%s: seu %s está na sua %s. Ele coleta %s enquanto você o carrega.",
 		["%s: your %s is in your %s. It collects %s from now on, there or in your backpack."] =
@@ -1547,6 +1556,7 @@ return {
 			"todo o loot das suas mortes, como as regras dela escolhem (Loot Filter > Loot Bag)",
 		["orbs, whetstones, rune shards and gems"] = "orbes, whetstones, fragmentos de runa e gemas",
 		["Rift Keys, Omen Keys and omen fragments"] = "Rift Keys, Omen Keys e fragmentos de omen",
+		["support runes and magic runes"] = "runas de suporte e runas mágicas",
 		["gems"] = "gemas",
 		["Loot Bag"] = "Loot Bag",
 		["Back after your death, empty: your %s (%s)."] = "De volta depois da sua morte, vazios: %s (%s).",
@@ -8480,6 +8490,10 @@ return {
 			"Coleta só gemas enquanto estiver com você, para ficarem separadas dos seus orbs",
 		["Collects orbs, whetstones, rune shards and gems while carried (no gems with a Gem Pouch)"] =
 			"Coleta orbs, whetstones, rune shards e gemas enquanto estiver com você (sem gemas se tiver uma Gem Pouch)",
+		["Collects support runes and magic runes while carried, and takes runes by hand"] =
+			"Coleta runas de suporte e runas mágicas enquanto estiver com você, e aceita runas colocadas à mão",
+		["Keep it in your backpack to use its magic runes by hotkey"] =
+			"Deixe-a na mochila para usar as runas mágicas por atalho",
 		["Cosmetic only: it changes how your hideout looks and nothing else"] =
 			"Só cosmético: muda a aparência do seu hideout e mais nada",
 		["Crackling sparks jump from every step"] =

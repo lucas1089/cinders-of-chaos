@@ -143,8 +143,14 @@ function attach(target, key, moduleName)
   local b = makeButton(target, card)
   b:addAnchor(AnchorTop, 'parent', AnchorTop)
   b:addAnchor(AnchorRight, 'parent', AnchorRight)
-  b:setMarginTop(7)
-  b:setMarginRight(22)
+  -- the title bar corner of the window, not of its content: the anchor uses the padding rect (HowCore.buttonMargins)
+  local function pad(fn)
+    local ok, v = pcall(function() return target[fn](target) end)
+    return ok and v or 0
+  end
+  local top, right = H.buttonMargins(pad('getPaddingTop'), pad('getPaddingRight'))
+  b:setMarginTop(top)
+  b:setMarginRight(right)
   target.howButton = b
   watch(target, card.key)
   return b

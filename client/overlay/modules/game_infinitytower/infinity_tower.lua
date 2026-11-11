@@ -108,6 +108,12 @@ local function refreshPanel()
     timerText = d.timer.key == 'Floor time left: %s' and tr(d.timer.key, TowerSkip.clock(d.timer.secs)) or tr(d.timer.key, d.timer.secs)
   end
   setLabel('timerLabel', timerText)
+  -- O484: the whole run's clock under the floor's, red at 5 minutes or less
+  setLabel('runTimerLabel', d.runTimer and tr(d.runTimer.key, TowerSkip.clock(d.runTimer.secs)) or nil)
+  local runLabel = skipPanel:getChildById('runTimerLabel')
+  if runLabel and d.runTimer then
+    runLabel:setColor(d.runTimer.low and TowerSkip.RUN_LOW_COLOR or TowerSkip.RUN_COLOR)
+  end
 end
 
 -- ---- the panel's spot: dragged by its background, saved per character (pure part towerpanelpos.lua)
@@ -170,8 +176,23 @@ local function fitPanelWidth()
   return true
 end
 
+-- O498: a press on a button of the header is the button's, never a drag (the base button keeps its release from the
+-- header, so a drag begun there never ended); a drag whose button went up unheard ends at the next move
+local function keptByChild(w, pos)
+  local g = ChaosDragGuard
+  return g ~= nil and g.onChild(w, pos) == true
+end
+
+local function dragStale()
+  local g = ChaosDragGuard
+  return g ~= nil and g.stale() == true
+end
+
+local onPanelRelease
+
 local function onPanelPress(w, pos, button)
   if button ~= MouseLeftButton then return false end
+  if keptByChild(w, pos) then return false end
   local parent = w:getParent()
   if not parent then return false end
   local x, y = w:getX() - parent:getX(), w:getY() - parent:getY()
@@ -183,6 +204,7 @@ end
 
 local function onPanelMove(w, pos)
   if not panelDrag then return false end
+  if dragStale() then onPanelRelease(w) return false end
   local parent = w:getParent()
   local x, y = P.dragTo(pos.x, pos.y, panelDrag.offX, panelDrag.offY, parent:getX(), parent:getY(),
     w:getWidth(), w:getHeight(), parent:getWidth(), parent:getHeight())
@@ -191,7 +213,7 @@ local function onPanelMove(w, pos)
   return true
 end
 
-local function onPanelRelease(w)
+function onPanelRelease(w)
   if not panelDrag then return false end
   local drag = panelDrag
   panelDrag = nil

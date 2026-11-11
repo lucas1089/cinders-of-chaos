@@ -95,10 +95,10 @@ J.uniqueBases = {
 
 -- uniques that moved to another STOCK base (no new item type, nothing for patch_base_jewelry.py to do): old copies turn the
 -- same way. `weapon`: the message of a worn copy says weapon.
--- O491: the Misericorde of the Pale Vow, a Thief dagger, sat on 27193. That base only looks like a dagger: it is a wand of
+-- O505: the Misericorde of the Pale Vow, a Thief dagger, sat on 27193. That base only looks like a dagger: it is a wand of
 -- the Mystic and Necromancer lines (ice, range 6), so its weapon entry gave a Thief no hit and the unique's attack did
 -- nothing. Its base is 7408 now, a one-handed sword every class hits with (server/README.md "Unique weapons and their
--- base (O491)"). A plain copy of 27193 carries no marker and no unique name: it stays the wand it is.
+-- base (O505)"). A plain copy of 27193 carries no marker and no unique name: it stays the wand it is.
 J.uniqueMoves = {
 	{id = 7408, from = {27193}, unique = "Misericorde of the Pale Vow", weapon = true}
 }

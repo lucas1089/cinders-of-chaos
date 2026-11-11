@@ -56,6 +56,25 @@ update runs is not possible; changing it starts the update of the other client a
 - **What Unity needs on the player's side.** Nothing by hand (O433 phase 17, unity/README.md "Sprite pair"): the unity channel carries the sprite pair as the main
   client's encrypted blobs (`things_enc/*.chub`, installed like any file), and the player also finds the main client's `chaos.pack` one folder up. The window shows a
   note under the choice.
+- **Channel not published (O494).** The choice is offered whenever the Unity address is known, even before the owner has run "Publicar client Unity". The manifest then
+  answers 404 (or 410). The launcher tells that apart from a network failure: `net::FetchError` carries the HTTP status (`curl -w %{http_code}`, with curl's own
+  "returned error: NNN" text as a fallback; `--fail` makes curl exit 22 for every status of 400 or more, so the exit code alone is not the status), and
+  `install::manifest_fetch_error` maps it. For Unity, 404 or 410 is `Error::UnityNotPublished`: "The Unity client has not been published yet. Use the main client."
+  (pt-BR "O cliente Unity ainda não foi publicado. Use o cliente principal."), no curl tail. The box has one button, "Use the main client", which saves the choice
+  and updates the main client; "Play anyway" stays only when `unity/<unity_game>` exists. `--cli --client unity` prints the same text, exits 1 and starts nothing
+  (no fallback to the main client). Rule: `choice::buttons`.
+
+Error table (the manifest fetch):
+
+| Answer | Error | Text (en) | Buttons |
+|---|---|---|---|
+| no answer (curl 6, 7, 28, 35, 60) | `Network` | Could not reach the update server. Check your internet and try again. | Try again, Play anyway |
+| HTTP 400 or more, main client | `Http(status)` | The update server answered with an error (HTTP 404). Try again in a few minutes. | Try again, Play anyway |
+| HTTP 404 / 410, Unity client | `UnityNotPublished` | The Unity client has not been published yet. Use the main client. | Use the main client (+ Play anyway if installed) |
+| HTTP other than 404 / 410, Unity client | `Http(status)` | as for the main client | Try again, Play anyway |
+
+The news feed and the launcher's own update are not louder: the feed falls back to the saved copy or to "could not be loaded" on any failure, a 404 included, and shows no
+error; the launcher's own file is fetched inside the update, and in a Unity run its manifest read is silent.
 - **Dev packages.** A Unity package built without the client key says `"dev": true` in its `native` section (`Native::dev`, absent means false). The launcher installs
   nothing of it and shows "The published Unity client is a development build ... not offered to players" (`Error::DevPackage`); testers run `--allow-dev-unity`
   (or `CINDERS_ALLOW_DEV_UNITY=1`). Only the Unity layout is checked; the main client's manifest never carries the flag.

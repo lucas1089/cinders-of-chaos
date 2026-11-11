@@ -277,8 +277,11 @@ local function modRow(panel, y, row)
   local textX = PAD_X + 32
   local rangeW = row.range and (textWidth('ItemTooltipCap', row.range) + 4) or 0
   local maxw = CARD_W - PAD_X - textX - rangeW - 4
-  local lines = L.wrapPx(row.text, maxw, function(t) return textWidth('ItemTooltipLine', t) end)
-  if #lines == 0 then lines = { '' } end
+  -- O503: the pure layout (tooltiplogic.lua L.modRowLayout): the text with its [bound] wrapped inside the width left of the
+  -- range column, the cap note (Alt only) on lines of its own under the row, in the small font, from the text's left edge
+  local layout = L.modRowLayout(row, maxw, CARD_W - PAD_X - textX,
+    function(t) return textWidth('ItemTooltipLine', t) end, function(t) return textWidth('ItemTooltipCap', t) end)
+  local lines = layout.lines
   if row.tag then
     local tag = g_ui.createWidget('ItemTooltipTag', panel)
     tag:addAnchor(AnchorTop, 'parent', AnchorTop)
@@ -295,11 +298,13 @@ local function modRow(panel, y, row)
     end
   end
   local h = 0
-  for i, line in ipairs(lines) do
-    local parts
-    if row.parts and i == #lines then parts = { line, row.parts[2], row.parts[3], row.parts[4] } end
-    local size = putLabel(panel, 'ItemTooltipLine', y + h + 1, textX, line, row.color, parts)
+  for _, line in ipairs(lines) do
+    local size = putLabel(panel, 'ItemTooltipLine', y + h + 1, textX, line.text, row.color, line.parts)
     h = h + math.max(size.height, 13)
+  end
+  for _, line in ipairs(layout.note) do
+    local size = putLabel(panel, 'ItemTooltipCap', y + h, textX, line, row.noteColor or C.dim)
+    h = h + math.max(size.height, 11)
   end
   if row.range then
     putLabel(panel, 'ItemTooltipCap', y + 3, function(w) return CARD_W - PAD_X - w end, row.range, '#7a7060')

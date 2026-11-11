@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Install the store pouches (the Loot Bag, the Orbs Pouch, the Rift Key Pouch and the Gem Pouch) into a base server:
-four items.otb nodes, four items.xml entries and the move hook in data/events/scripts/player.lua.
+"""Install the store pouches (the Loot Bag, the Orbs Pouch, the Rift Key Pouch, the Gem Pouch and the Rune Bag) into a base
+server: five items.otb nodes, five items.xml entries and the move hook in data/events/scripts/player.lua.
 
 usage: python3 -I install_pouches.py DATA_DIR [--dry-run] [--stock-looks]
 
@@ -8,17 +8,17 @@ Everything is read from server/data/scripts/chaos/pouches_config.lua (`kinds`: i
 weight, article, name, plural, description), the same file the Lua side uses.
 
 1. data/items/items.otb: per pouch a copy of the stock container node `sourceId` (loot 32081: the expedition bag,
-   orbs 32082: the brocade bag, keys 32083: the fur bag, gems 32095: the jewelled backpack; group, flags, every
-   attribute; containers, not stackable)
+   orbs 32082: the brocade bag, keys 32083: the fur bag, gems 32095: the jewelled backpack, runes 32096: the blue
+   backpack; group, flags, every attribute; containers, not stackable)
    with the server id `id` and the client id `clientId`: our own pouch looks (loot 38608, orbs 38609, keys 38610 of
-   pair 34; the Gem Pouch has `clientId = 0`: it keeps its stock bag's own look, no new sprite), appended to the client pair by client/tools/sprites/import_art_things.py with art_import/store_items.csv
+   pair 34; the Gem Pouch and the Rune Bag have `clientId = 0`: each keeps its stock bag's own look, no new sprite), appended to the client pair by client/tools/sprites/import_art_things.py with art_import/store_items.csv
    (client MANIFEST.md "Store item looks"). --stock-looks keeps the stock bags' client ids instead (for clients whose
    pair does not have the pouch looks yet). The nodes are appended at the end of the root; a node already there with
    the same bytes is left alone, one with other bytes (a changed config, or the stock look or the `oldClientId` look
    33651-33653 of an earlier install: only its client id changes, so existing pouches show the new look at once) is
    replaced, and a server id that belongs to any other client id stops the script (nothing is written).
    items.otb.bak keeps the original the first time; the written file is parsed again and the nodes checked.
-   Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, pouches 32081..32083 and 32095, supports 32101..32200,
+   Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, pouches 32081..32083, 32095 and 32096, supports 32101..32200,
    orbs v2 32251..32256, Everfull tiers 32261..32267, dark tiles 30484..30557, art 33000.., pack items 36000.., donor items 40000...
 2. data/items/items.xml: the entries (name, plural, description, weight, containerSize = capacity) between two marker
    comments before </items>, rewritten when the config changed (a new capacity reaches an installed server this way). An id that already has an entry outside the block
@@ -42,7 +42,7 @@ XML_BEGIN = '\t<!-- Chaos store pouches (server/tools/install_pouches.py, do not
 XML_END = '\t<!-- end of the Chaos store pouches -->\n'
 MAX_PAGED = 1000  # the paged container window (src-patch 0081); one byte (255) without it
 PAGES_PATCH = os.path.join(os.path.dirname(HERE), 'src-patches', '0081-container-pages.patch')
-NAMES = ('loot', 'orbs', 'keys', 'gems')
+NAMES = ('loot', 'orbs', 'keys', 'gems', 'runes')
 GROUP_CONTAINER = 2
 
 HOOK_MARKER = '-- Chaos: store pouches stay with their owner (install_pouches.py)'
@@ -82,7 +82,7 @@ def read_config(path=CONFIG):
         assert cfg['capacity'] <= 250 or os.path.exists(PAGES_PATCH), 'pouches_config.lua: kinds.%s capacity over 250 needs server/src-patches/0081-container-pages.patch' % name
         out[name] = cfg
     ids = [out[n]['id'] for n in NAMES]
-    assert len(set(ids)) == len(ids), 'pouches_config.lua: the pouches need three ids'
+    assert len(set(ids)) == len(ids), 'pouches_config.lua: every pouch needs its own id'
     return out
 
 
@@ -196,7 +196,7 @@ def patch_xml(text, items):
     end = text.rfind('</items>')
     if end < 0:
         raise SystemExit('items.xml: no </items>')
-    return text[:end] + block + text[end:], 'items.xml: pouch block added (Loot Bag, Orbs, Rift Key and Gem Pouch)'
+    return text[:end] + block + text[end:], 'items.xml: pouch block added (Loot Bag, Orbs, Rift Key, Gem Pouch and Rune Bag)'
 
 
 def patch_player(text):

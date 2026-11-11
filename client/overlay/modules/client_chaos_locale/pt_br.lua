@@ -684,7 +684,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Stand next to the Great Brazier in the temple."] = "Fique ao lado do Great Brazier no templo.",
   ["Give %s gold for %s points."] = "Dar %s de ouro por %s pontos.",
   -- game_cosmetics/cosmetics.lua
-  ["%s %s [%s]: Hail, ash-walkers!"] = "%s %s [%s]: Salve, ash-walkers!",
+  ["%s %s [%s]: Hail, ash-walkers!"] = "%s %s [%s]: Salve, andarilhos das cinzas!",
   ["%s Ashen Blade"] = "%s Ashen Blade",
   ["Preview shows the effects around your character (only you see it)."] = "A prévia mostra os efeitos em volta do seu personagem (só você vê).",
   ["Everyone near you sees the chosen effects."] = "Todos perto de você veem os efeitos escolhidos.",
@@ -752,6 +752,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- O467: the class row of an item tooltip (the class names stay in English) and the Set kind
   ["For %s"] = "Para %s",
   ["all classes"] = "todas as classes",
+  ["no class"] = "nenhuma classe",
   ["Set"] = "Conjunto",
   ["Rift Key"] = "Rift Key",
   ["Rarity %d"] = "Raridade %d",
@@ -1479,6 +1480,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Monsters left: %d of %d"] = "Monstros restantes: %d de %d",
   ["Next floor in %ds"] = "Próximo andar em %ds",
   ["Floor time left: %s"] = "Tempo do andar: %s",
+  ["Run time left: %s"] = "Tempo da corrida: %s",
   ["Start the next floor at once instead of waiting."] = "Começa o próximo andar já, sem esperar.",
   ["Available when the floor is cleared."] = "Disponível quando o andar estiver limpo.",
   ["A boss floor is next: it starts by itself."] = "O próximo andar é de chefe: ele começa sozinho.",
@@ -1545,8 +1547,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["  empty socket"] = "  encaixe vazio",
   ["Active tier: %d of %d"] = "Nível ativo: %d de %d",
   ["Requires level %d"] = "Requer nível %d",
-  ["(character cap %d)"] = "(limite do personagem %d)",
-  ["(over the character cap of %d)"] = "(acima do limite de %d do personagem)",
+  ["Character cap %d"] = "Limite do personagem %d",
+  ["Over the cap of %d"] = "Acima do limite de %d",
   ["Requires magic level %d"] = "Requer magic level %d",
   -- game_leaderboard/leaderboard.lua
   ["Weekly reset in %s"] = "Reset semanal em %s",
@@ -1644,6 +1646,10 @@ ChaosLocaleStrings['pt-BR'] = {
   ["This shader is not in your client yet."] = "Este shader ainda não está no seu cliente.",
   ["Your client cannot draw outlines yet."] = "Seu cliente ainda não consegue desenhar contornos.",
   ["Your look cannot ride: the mount is shown with the plain figure."] = "Sua aparência não pode montar: a montaria é mostrada com o boneco simples.",
+  -- the samples of a loot label, a chat colour and a name plate on the stage and on the cards (O497); item names stay as the game has them
+  ["Ashen Blade"] = "Ashen Blade",
+  ["Hail!"] = "Salve!",
+  ["Hail, ash-walkers!"] = "Salve, andarilhos das cinzas!",
   -- game_lootbeams/lootbeams.lua, lootbeams.otui (and the button in game_lootfilter/lootfilter.otui)
   ["Loot Beams"] = "Feixes de saque",
   ["Light pillars over corpses with loot these rules make glow: on or off, height, intensity"] = "Colunas de luz sobre os corpos com saque que estas regras fazem brilhar: ligar ou desligar, altura, intensidade",
@@ -2547,7 +2553,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Legendary and every rarity above it"] = "Legendary e toda raridade acima dele",
   ["Pouch settings"] = "Configurações da bolsa",
   -- game_pouches/pouches.otui
-  ["While you carry your Loot Bag it takes these items from the monsters you kill. Orbs, gems and keys always go to the Orbs and Rift Key Pouch first. A full pouch passes the item on (below), then to your backpack."] = "Enquanto você carrega sua Loot Bag, ela pega estes itens dos monstros que você mata. Orbes, gemas e chaves vão sempre primeiro para a Orbs and Rift Key Pouch. Uma bolsa cheia passa o item adiante (abaixo) e depois para a sua mochila.",
+  ["While you carry your Loot Bag it takes these items from the monsters you kill. Orbs, gems, keys and runes always go to their own pouch first (Orbs, Gem, Rift Key, Rune). A full pouch passes the item on (below), then to your backpack."] = "Enquanto você carrega sua Loot Bag, ela pega estes itens dos monstros que você mata. Orbes, gemas, chaves e runas vão sempre primeiro para a bolsa própria (Orbs, Gem, Rift Key, Rune). Uma bolsa cheia passa o item adiante (abaixo) e depois para a sua mochila.",
   ["Items on my autoloot list"] = "Itens da minha lista de autoloot",
   ["Gold, platinum and crystal coins"] = "Moedas de ouro, platina e cristal",
   ["Unique items"] = "Itens únicos",
@@ -6671,7 +6677,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Click: open the bags it is in and show the item."] = "Clique: abre as bolsas em que ele está e mostra o item.",
   ["Click: open the stash at this tab and show the item."] = "Clique: abre o stash nesta aba e mostra o item.",
   ["Click: open the stash. Its Inbox button moves the inbox into your stash (in a protection zone)."] = "Clique: abre o stash. O botão Inbox leva a Inbox para o seu stash (numa zona de proteção).",
-  ["Click: show the purse button. Take the item out of the purse into your backpack."] = "Clique: mostra o botão da bolsa da loja. Tire o item da bolsa para a mochila.",
+  ["Click: open the purse page. Take the item out of the purse into your backpack."] = "Clique: abre a página da bolsa da loja. Tire o item da bolsa para a mochila.",
   ["Click: show the slot."] = "Clique: mostra o espaço.",
   ["Equipped: %s"] = "Equipado: %s",
   ["Find my item"] = "Achar meu item",
@@ -6679,10 +6685,11 @@ ChaosLocaleStrings['pt-BR'] = {
   ["In your inbox"] = "Na sua Inbox",
   ["In your purse"] = "Na bolsa da loja",
   ["It is in your inbox: the Inbox button of the stash moves it into your stash (in a protection zone)."] = "Está na sua Inbox: o botão Inbox do stash leva o item para o seu stash (numa zona de proteção).",
-  ["It is in your purse: the Purse button of the inventory panel opens it."] = "Está na bolsa da loja: o botão Bolsa do painel do inventário abre ela.",
+  ["It is in your purse. The purse page of the inventory panel shows it."] = "Está na bolsa da loja. A página da bolsa, no painel do inventário, mostra o item.",
   ["You have no purse."] = "Você não tem bolsa.",
   ["Purse"] = "Bolsa",
-  ["Opens your purse. What you buy in the store is delivered there."] = "Abre a sua bolsa. O que você compra na loja chega lá.",
+  ["Shows your purse in this panel. What you buy in the store is delivered there."] = "Mostra a sua bolsa da loja neste painel. O que você compra na loja chega lá.",
+  ["The purse cannot be sorted: the game does not let items move inside it."] = "A bolsa da loja não pode ser ordenada: o jogo não deixa mover itens dentro dela.",
   ["No answer. Type again or press Enter."] = "Sem resposta. Digite de novo ou aperte Enter.",
   ["No item found."] = "Nenhum item encontrado.",
   ["Open your bags to reach it: %s."] = "Abra as bolsas até ele: %s.",
@@ -6699,6 +6706,8 @@ ChaosLocaleStrings['pt-BR'] = {
   -- base patch 0187 (Options > Interface)
   ["Remember open backpacks"] = "Lembrar mochilas abertas",
   ["The backpacks and bags open when you log out open again at your next login, in the same panel, order, height and scroll.\nA bag that is no longer there is skipped."] = "As mochilas e bolsas abertas quando você sai abrem de novo no próximo login, no mesmo painel, ordem, altura e rolagem.\nUma bolsa que não está mais lá fica de fora.",
+  -- base patch 0191 (game_interface addToPanels, O485): the line for a window with no room in the side panels
+  ["No room in the side panels. Close or shrink a window."] = "Sem espaço nos painéis laterais. Feche ou diminua uma janela.",
   -- game_groupqueue (O407): groupqueue.lua, groupqueue.otui, gqview.lua
   ["%d of %d party members ready"] = "%d de %d membros do grupo prontos",
   ["%s is ready to start"] = "%s está pronto para começar",
@@ -6877,8 +6886,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["No modifier of this item can take this action."] = "Nenhum modificador deste item aceita esta ação.",
   ["%s can cost you modifiers. Forge anyway?"] = "%s pode custar modificadores. Forjar mesmo assim?",
   ["(the orb came from the stash)"] = "(o orbe veio do stash)",
-  ["Switch to the classic crafting bench. The choice is remembered for this character."] = "Voltar para a bancada clássica. A escolha fica salva para este personagem.",
-  ["Switch to the forge window. The choice is remembered for this character."] = "Mudar para a janela de forja. A escolha fica salva para este personagem.",
+  ["Back to the forge window."] = "Voltar para a janela de forja.",
   ["Take the item off the bench and pick another."] = "Tirar o item da bancada e escolher outro.",
   ["Change item"] = "Trocar item",
   ["Drag an item from your backpack here, or click one in the list below."] = "Arraste um item da sua mochila para cá, ou clique em um da lista.",

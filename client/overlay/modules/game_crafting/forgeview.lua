@@ -19,7 +19,6 @@ local V = CraftingForgeView
 
 -- ---------------------------------------------------------------- fixed tables
 V.KINDS = { 'mod', 'add', 'whole', 'sockets' } -- the tabs of the actions, in order
-V.SETTINGS = 'chaosForge'
 
 -- the tier colours of the item tooltip (game_itemtooltip/tooltiplogic.lua L.TIER_COLORS; forgeview_test.lua keeps them equal)
 V.TIER_COLORS = { '#8c8070', '#a89c88', '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ff8a40' }
@@ -631,21 +630,6 @@ function V.barLines(ctx, res)
     out.result = { mark = res.ok == false and 'fail' or 'ok', text = V.resultLine(res):gsub('^%s+', '') }
     out.result.text = tr('Last: %s', out.result.text)
   end
-  return out
-end
-
--- ---------------------------------------------------------------- the classic choice, per character (g_settings node)
-function V.savedMode(node, name)
-  local chars = type(node) == 'table' and type(node.chars) == 'table' and node.chars or {}
-  return chars[tostring(name or '')] == 'classic' and 'classic' or 'forge'
-end
-
-function V.rememberMode(node, name, mode)
-  local out = { chars = {} }
-  if type(node) == 'table' and type(node.chars) == 'table' then
-    for k, v in pairs(node.chars) do out.chars[k] = v end
-  end
-  if name and name ~= '' then out.chars[tostring(name)] = mode == 'classic' and 'classic' or 'forge' end
   return out
 end
 

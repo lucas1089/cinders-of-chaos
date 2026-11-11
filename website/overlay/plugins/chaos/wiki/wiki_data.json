@@ -396,8 +396,8 @@
 		"spell.count": 172,
 		"store.categories": 41,
 		"store.cosmetic": 637,
-		"store.offers": 778,
-		"store.service": 39,
+		"store.offers": 779,
+		"store.service": 40,
 		"store.unlockCost": 0,
 		"support.count": 20,
 		"support.sockets": 3,
@@ -26220,7 +26220,7 @@
 				{
 					"id": "unique:10301",
 					"name": "Harvester of Sorrows",
-					"sub": "Axe, level 100. Attack 50, Defense 14, Melee +4, Mana Leech: chance +7%, amount +6%",
+					"sub": "Sword, level 100. Attack 50, Defense 14, Mana Leech: chance +7%, amount +6%, Melee +4",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -26231,14 +26231,14 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 50", "Defense 14", "Melee +4", "Mana Leech: chance +7%, amount +6%"]
+							"p": ["Attack 50", "Defense 14", "Mana Leech: chance +7%, amount +6%", "Melee +4"]
 						},
 						{
 							"h": "Item",
 							"cols": ["", ""],
 							"w": [35, 65],
 							"rows": [
-								["Slot", "Axe"],
+								["Slot", "Sword"],
 								["Required level", "100"],
 								["Power works for", "Warrior, Templar"],
 								["Drops from", "Legendary monsters and stronger"]
@@ -26291,7 +26291,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-oathsteel-axe.png",
+					"icon": "wiki/i/it-oathsteel-sword.png",
 					"sprite": {"item": 10301}
 				},
 				{
@@ -49032,7 +49032,7 @@
 								["Runes", "29", "3-108", "Consumable item"],
 								["Training", "18", "25-450", "Consumable item"],
 								["Everfull Potions", "10", "20-70", "Service"],
-								["Convenience", "8", "50-400", "Convenience"],
+								["Convenience", "9", "50-400", "Convenience"],
 								["Outfits", "60", "300-750", "Cosmetic"],
 								["Costumes", "6", "300", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
@@ -49110,7 +49110,7 @@
 							"rows": [
 								["Cosmetic", "637"],
 								["Pet (small abilities)", "7"],
-								["Convenience", "8"],
+								["Convenience", "9"],
 								["Service", "16"],
 								["Account storage", "15"],
 								["Chaos Pact", "1"],
@@ -50182,11 +50182,11 @@
 				{
 					"id": "store:17",
 					"name": "Convenience",
-					"sub": "8 offers, 50-400 coins. Convenience.",
+					"sub": "9 offers, 50-400 coins. Convenience.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["8 offers, 50-400 Chaos Coins. Convenience."]},
+						{"h": "Category", "p": ["9 offers, 50-400 Chaos Coins. Convenience."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -50215,6 +50215,12 @@
 									"150",
 									"Convenience",
 									"100 slots, store-bound. Collects only gems while carried, so they stay apart from your orbs."
+								],
+								[
+									"Rune Bag",
+									"150",
+									"Convenience",
+									"200 slots, store-bound. Collects support runes and magic runes while carried, and takes runes by hand. Keep it in your backpack to use its magic runes by hotkey."
 								],
 								[
 									"Everfull Ration",
@@ -50246,6 +50252,7 @@
 								{"item": 32082},
 								{"item": 32083},
 								{"item": 32095},
+								{"item": 32096},
 								{"item": 32084},
 								{"item": 2160},
 								{"item": 2472},

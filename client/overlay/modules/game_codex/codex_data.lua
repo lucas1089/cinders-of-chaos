@@ -9430,7 +9430,7 @@ CodexData = {
 					id = "unique:10301",
 					name = "Harvester of Sorrows",
 					color = "#ff9c3a",
-					sub = "Axe, level 100. Attack 50, Defense 14, Melee +4, Mana Leech: chance +7%, amount +6%",
+					sub = "Sword, level 100. Attack 50, Defense 14, Mana Leech: chance +7%, amount +6%, Melee +4",
 					f = {class = {"warrior", "templar"}, kind = {"weapon"}, level = 100, source = "monster"},
 					sections = {
 						{
@@ -9439,14 +9439,14 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 50", "Defense 14", "Melee +4", "Mana Leech: chance +7%, amount +6%"}
+							p = {"Attack 50", "Defense 14", "Mana Leech: chance +7%, amount +6%", "Melee +4"}
 						},
 						{
 							h = "Item",
 							cols = {"", ""},
 							w = {35, 65},
 							rows = {
-								{"Slot", "Axe"},
+								{"Slot", "Sword"},
 								{"Required level", "100"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Legendary monsters and stronger"}

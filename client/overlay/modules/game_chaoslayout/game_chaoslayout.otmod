@@ -1,11 +1,11 @@
 Module
   name: game_chaoslayout
-  description: The window layout per character: side panel miniwindows (panel, order, height, collapsed, open, locked) and the position of the big Chaos windows, and the open containers (O412: by the place of their item, panel, order, height, scroll), restored at login and saved on change
+  description: The window layout per character: side panel miniwindows (panel, order, height, collapsed, open, locked) and the position of the big Chaos windows, and the open containers (O412: by the place of their item, panel, order, height, scroll), restored at login and saved on change, and the room rule that lets a container window always open (O485)
   author: Cinders of Chaos
   sandboxed: false
   autoload: true
   autoload-priority: 1000
   dependencies: [ game_interface ]
-  scripts: [ layout_logic, containers_logic, layout, containers ]
+  scripts: [ layout_logic, containers_logic, panelroom_logic, layout, containers ]
   @onLoad: ChaosLayout.init()
   @onUnload: ChaosLayout.terminate()

@@ -27,7 +27,7 @@ ChaosUniqueSpecs = {
 		skipped = { "elementFire" } },
 	[10301] = { name = "Harvester of Sorrows", article = "a", description = "It has reaped countless souls and still wants a few more. Reaper's Reach: Your melee hits send 50% of their damage at 2 more monsters within 2 tiles of the target. Costs 0.6% health, never below 35%. For: Warrior, Templar. (Requires level 100.)",
 		attributes = { [ITEM_ATTRIBUTE_ATTACK] = 50, [ITEM_ATTRIBUTE_DEFENSE] = 14 },
-		custom = { rarity_axeSkill = 4, rarity_manaLeechAmount = 6, rarity_manaLeechChance = 7 },
+		custom = { rarity_manaLeechAmount = 6, rarity_manaLeechChance = 7, rarity_swordSkill = 4 },
 		skipped = { "elementDeath" } },
 	[2440] = { name = "Executioner's Reckoning", article = "an", description = "The last thing many a condemned man heard was its song. Last Words: Against targets at 30% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Monk. (Requires level 80.)",
 		attributes = { [ITEM_ATTRIBUTE_ATTACK] = 50, [ITEM_ATTRIBUTE_DEFENSE] = 18 },

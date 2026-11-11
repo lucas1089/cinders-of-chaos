@@ -118,6 +118,10 @@ if live and os.path.realpath(live) != os.path.realpath(server):
     if os.environ.get('STUB_LIVE_CONFLICT'):
         with open(os.path.join(live, 'data', 'shared.txt'), 'w') as f:
             f.write('the game\n')
+    if os.environ.get('STUB_PAIR_CHANGE'):
+        # a setting written into the live config.lua while the install runs on the copy (chaos-ctl.sh client-pair set)
+        with open(os.path.join(live, 'config.lua'), 'a') as f:
+            f.write('chaosClientPair = %s\n' % os.environ['STUB_PAIR_CHANGE'])
     if os.environ.get('STUB_RATE_CHANGE'):
         import subprocess
         subprocess.run([sys.executable, '-I', os.environ['STUB_RATES'], 'set', os.path.join(live, 'config.lua'),
@@ -748,6 +752,21 @@ def test_staging():
         check(os.path.exists(os.path.join(w.stub, 'active', 'chaos-server')), 'staging: the server runs after a conflict')
         check(not os.path.exists(live + '.new') and not os.path.exists(live + '.old'), 'staging: no folders left after a conflict')
         check(w.git('-C', w.repo, 'rev-parse', 'HEAD') == before, 'staging: the checkout is back after a conflict')
+
+        # a setting other than the XP rate written into config.lua meanwhile: refused, and the line names the key and
+        # says what to do (O486: the owner set the client pair during the install and read only "changed since the copy")
+        before = w.git('-C', w.repo, 'rev-parse', 'HEAD')
+        cfg_before = read(os.path.join(live, 'config.lua'))
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site',
+                   extra={'STUB_LIVE': live, 'STUB_PAIR_CHANGE': '63'})
+        check(rc == 1 and 'RESULT failed' in w.out and '(chaosClientPair)' in w.out and 'Run the update again' in w.out,
+              'staging: a config.lua key changed meanwhile is refused by name', w.out)
+        check(read(os.path.join(live, 'config.lua')) == cfg_before + 'chaosClientPair = 63\n',
+              'staging: the live config.lua keeps the key that was set')
+        check(os.path.exists(os.path.join(w.stub, 'active', 'chaos-server')), 'staging: the server runs after the refusal')
+        check(not os.path.exists(live + '.new') and not os.path.exists(live + '.old'), 'staging: no folders left after the refusal')
+        check(w.git('-C', w.repo, 'rev-parse', 'HEAD') == before, 'staging: the checkout is back after the refusal')
+        # (the next apply below starts from the config.lua of now, key included, and goes through)
 
         # CHAOS_STAGING=0: the install with the server stopped, as before; the rollback from the archive
         rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', extra={'CHAOS_STAGING': '0'})

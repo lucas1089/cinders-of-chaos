@@ -503,6 +503,175 @@ function T.vocationText(text, info)
 	return table.concat(names, ", ")
 end
 
+-- O489: the class text of a STOCK equip rule (install_unique_equip.py records it when a base id is also a unique with an
+-- equip rule of its own; movements.xml then carries the looser of the two rules, so the engine's level and vocation
+-- string are not what a stock copy is held to). vocations = the stock list of vocation names (nil or empty: everyone,
+-- returns ""). A line whose three classes are all listed is named by its base class; any other name is kept, so the
+-- text names exactly the classes ChaosUniqueEquip.onEquip lets through.
+T.CLASS_LINES = {
+	{base = "Warrior", ascended = {"Juggernaut", "Berserker"}},
+	{base = "Ranger", ascended = {"Deadeye", "Beastmaster"}},
+	{base = "Mystic", ascended = {"Elementalist", "Illusionist"}},
+	{base = "Thief", ascended = {"Ninja", "Samurai"}},
+	{base = "Necromancer", ascended = {"Lich", "Bone Lord"}},
+	{base = "Monk", ascended = {"Shadowfist", "Iron Sage"}},
+	{base = "Templar", ascended = {"Inquisitor", "Sentinel"}}
+}
+function T.stockClassText(vocations)
+	if type(vocations) ~= "table" or #vocations == 0 then
+		return ""
+	end
+	local has, covered, count = {}, {}, 0
+	for _, v in ipairs(vocations) do
+		has[tostring(v)] = true
+	end
+	for _, fam in ipairs(T.CLASS_LINES) do
+		if has[fam.base] and has[fam.ascended[1]] and has[fam.ascended[2]] then
+			covered[fam.ascended[1]], covered[fam.ascended[2]] = true, true
+			count = count + 1
+		end
+	end
+	if count == #T.CLASS_LINES then
+		return "" -- every class: the row says "all classes"
+	end
+	local names, seen = {}, {}
+	for _, v in ipairs(vocations) do
+		v = tostring(v)
+		if not covered[v] and not seen[v] then
+			seen[v] = true
+			names[#names + 1] = v
+		end
+	end
+	-- O490: a base class named alone reads as its whole line, so a base class allowed without any of its ascended classes
+	-- is "Name only"
+	for _, fam in ipairs(T.CLASS_LINES) do
+		if seen[fam.base] and not has[fam.ascended[1]] and not has[fam.ascended[2]] then
+			for i, n in ipairs(names) do
+				if n == fam.base then
+					names[i] = fam.base .. " only"
+				end
+			end
+		end
+	end
+	if #names == 1 and names[1] == "None" then
+		return "no class" -- only the vocation None (id 0) is listed: no class of the game meets the rule
+	end
+	-- the Ranger and Warrior lines are named class by class even when whole, as the engine's text is (T.VOC_FAMILY, O307):
+	-- a crossbow says "Ranger, Deadeye", so a bow that takes the Beastmaster says so and does not read just "Ranger"
+	local out = {}
+	for _, n in ipairs(names) do
+		out[#out + 1] = n
+		for _, fam in ipairs(T.VOC_FAMILY) do
+			if n == fam.base and has[fam.ascended[1]] and has[fam.ascended[2]] then
+				out[#out + 1] = fam.ascended[1]
+				out[#out + 1] = fam.ascended[2]
+			end
+		end
+	end
+	return table.concat(out, ", ")
+end
+
+-- O490: the classes a class text stands for, the reading the audit (tools/audit_equip_tooltips.py) holds the tooltip to:
+-- a base class named alone is its whole line (the class and its two ascended classes), "Name only" is that class alone, a
+-- line named class by class is those classes, "all classes" (or no text) is every class. Returns {name = true}.
+function T.readClasses(text)
+	local out = {}
+	text = tostring(text or ""):match("^%s*(.-)%s*$")
+	if text == "" or text:lower() == "all classes" then
+		for _, fam in ipairs(T.CLASS_LINES) do
+			out[fam.base], out[fam.ascended[1]], out[fam.ascended[2]] = true, true, true
+		end
+		return out
+	end
+	if text:lower() == "no class" then
+		out.None = true
+		return out
+	end
+	local named = {}
+	for part in text:gmatch("[^,]+") do
+		part = part:match("^%s*(.-)%s*$")
+		local alone = part:match("^(.-) only$")
+		if alone then
+			out[alone] = true
+		elseif part ~= "" then
+			named[part] = true
+		end
+	end
+	local known = {}
+	for _, fam in ipairs(T.CLASS_LINES) do
+		local names = {fam.base, fam.ascended[1], fam.ascended[2]}
+		for _, n in ipairs(names) do
+			known[n] = true
+		end
+		if named[fam.base] and not named[fam.ascended[1]] and not named[fam.ascended[2]] then
+			for _, n in ipairs(names) do
+				out[n] = true
+			end
+		else
+			for _, n in ipairs(names) do
+				if named[n] then
+					out[n] = true
+				end
+			end
+		end
+	end
+	for n in pairs(named) do
+		if not known[n] then
+			out[n] = true
+		end
+	end
+	return out
+end
+
+-- O490: the rule each item is held to, from data/lib/chaos_equip_rules.lua (tools/install_equip_rules.py writes it from the
+-- installed movements.xml and weapons.xml: {level, class list index (0 = every class), magic level}). The engine's item
+-- type holds only the SHOWN vocations (an ascended class of a line is hidden, so a wand for the Mystic and the Illusionist
+-- reads "mystics and necromancers" and the Elementalist was refused after the tooltip said yes) and the numbers of one of
+-- the two entries an item can have (an Equip entry and a weapon entry). Nil without the file: the engine's values stand.
+T.equipRulesPath = "data/lib/chaos_equip_rules.lua"
+local equipRules -- nil: not read yet, false: none
+function T.setEquipRules(tbl)
+	equipRules = type(tbl) == "table" and type(tbl.rules) == "table" and tbl or false
+end
+function T.equipRuleOf(id)
+	if equipRules == nil then
+		local ok, tbl = pcall(dofile, T.equipRulesPath)
+		T.setEquipRules(ok and tbl or nil)
+	end
+	local r = equipRules and equipRules.rules[id]
+	if type(r) ~= "table" then
+		return nil
+	end
+	local set = int(r[2]) > 0 and equipRules.sets and equipRules.sets[int(r[2])] or nil
+	return {level = int(r[1]), magic = int(r[3]), vocations = set}
+end
+
+-- the vocation string for a rule's class list: the engine's own text when it already reads as exactly those classes (the
+-- texts that were right do not change), else the names of the list (T.stockClassText)
+function T.ruleVocString(vocString, vocations, info)
+	local old = (type(vocString) == "string" and vocString ~= "") and T.vocationText(vocString, info) or ""
+	local want = {}
+	local list = (type(vocations) == "table" and #vocations > 0) and vocations or nil
+	if list then
+		for _, v in ipairs(list) do
+			want[tostring(v)] = true
+		end
+	else
+		want = T.readClasses("")
+	end
+	local have, same = T.readClasses(old), true
+	for n in pairs(want) do
+		same = same and have[n] == true
+	end
+	for n in pairs(have) do
+		same = same and want[n] == true
+	end
+	if same then
+		return vocString
+	end
+	return T.stockClassText(list)
+end
+
 -- The class line of an item worn on the body or held in the hands (the "For ..." row of the tooltip). The owner saw
 -- armour with no line: the engine's vocation string is empty when the item's equip event lists no class (a stock
 -- Warrior Helmet is worn by everybody), and an empty string printed nothing. Now every worn item says who may use it:
@@ -512,12 +681,21 @@ end
 --      classes": the equip event lets every class wear it. A container (backpack) and a badge show nothing.
 -- slotName = tip.slot (T.slotsOf); returns nil for any other item.
 T.ALL_CLASSES = "all classes"
+T.CLASS_ROW_MAX = 120
+-- O490: the row is cut between two names, never in the middle of one (the longest row of the installed rules is 103)
+local function clipRow(s)
+	if #s <= T.CLASS_ROW_MAX then
+		return s
+	end
+	local cut = s:sub(1, T.CLASS_ROW_MAX + 1):match("^(.*),[^,]*$")
+	return cut or s:sub(1, T.CLASS_ROW_MAX)
+end
 function T.classLine(vocString, info, slotName, equip)
 	if type(equip) == "table" and type(equip.lines) == "table" and #equip.lines > 0 then
-		return clip(table.concat(equip.lines, ", "), 120)
+		return clipRow(table.concat(equip.lines, ", "))
 	end
 	if type(vocString) == "string" and vocString ~= "" then
-		return clip(T.vocationText(vocString, info), 120)
+		return clipRow(T.vocationText(vocString, info))
 	end
 	if slotName and slotName ~= "Container" and slotName ~= "Badge" then
 		return T.ALL_CLASSES
@@ -978,20 +1156,37 @@ function T.build(item, opts)
 
 	local req = {}
 	local reqLevel = int(call(it, "getMinReqLevel"))
+	local vocString = call(it, "getVocationString")
+	-- O489 (owner 2026-11-11: a rolled ring said "level 30, all classes" and could not be worn): a stock copy of a base id
+	-- that is also a unique with its own equip rule is held to the STOCK rule (chaos_unique_equip.lua), not to the looser
+	-- entry of movements.xml the engine reads. The generated movement script publishes the stock rules.
+	local stockRule = not unique and ChaosUniqueEquip and type(ChaosUniqueEquip.stock) == "table" and ChaosUniqueEquip.stock[id]
+	local weaponInfo = {
+		weaponType = int(call(it, "getWeaponType")), slot = int(call(it, "getSlotPosition")),
+		ammoType = int(call(it, "getAmmoType"))
+	}
+	-- O490 (the same bug on other items): the generated rules table is what the server holds the item to (Equip entry and
+	-- weapon entry, every class of the list); a unique copy with a rule of its own shows that rule below
+	local ownEquip = unique and uniqueEntry and ChaosUniqueSpecs and ChaosUniqueSpecs[id] and ChaosUniqueSpecs[id].equip or nil
+	local rule = not ownEquip and T.equipRuleOf(id) or nil
+	local magic = int(call(it, "getMinReqMagicLevel"))
+	if rule then
+		reqLevel, magic = rule.level, rule.magic
+		vocString = T.ruleVocString(vocString, rule.vocations, weaponInfo)
+	elseif type(stockRule) == "table" then
+		reqLevel = int(stockRule.level)
+		vocString = T.stockClassText(stockRule.vocations)
+	end
 	if uniqueEntry and unique and int(uniqueEntry.level) > reqLevel then
 		reqLevel = int(uniqueEntry.level)
 	end
 	if reqLevel > 0 then
 		req.level = reqLevel
 	end
-	local magic = int(call(it, "getMinReqMagicLevel"))
 	if magic > 0 then
 		req.magic = magic
 	end
-	req.voc = T.classLine(call(it, "getVocationString"), {
-		weaponType = int(call(it, "getWeaponType")), slot = int(call(it, "getSlotPosition")),
-		ammoType = int(call(it, "getAmmoType"))
-	}, tip.slot, unique and uniqueEntry and ChaosUniqueSpecs and ChaosUniqueSpecs[id] and ChaosUniqueSpecs[id].equip or nil)
+	req.voc = T.classLine(vocString, weaponInfo, tip.slot, unique and uniqueEntry and ChaosUniqueSpecs and ChaosUniqueSpecs[id] and ChaosUniqueSpecs[id].equip or nil)
 	if next(req) then
 		tip.req = req
 	end

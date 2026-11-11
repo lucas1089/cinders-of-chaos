@@ -43,8 +43,13 @@ function M.shouldAutoSkip(state, autoOn, lastSentAt, now)
   return true
 end
 
+M.RUN_KEY = 'Run time left: %s'
+M.RUN_LOW_SECS = 300 -- the run line turns to RUN_LOW_COLOR at 5 minutes or less
+M.RUN_COLOR = '#f0e4c8' -- as the floor's time line
+M.RUN_LOW_COLOR = '#ff4030' -- the red of the failure text (game_rift clock)
+
 -- The tower panel (O274): { floor = {key, n}, cleared = {key, n}, monsters = {key, left, total} | nil,
--- timer = {key, secs} | nil, boss = bool }. `elapsedMs` is the time since the state arrived: the countdowns run on the
+-- timer = {key, secs} | nil, runTimer = {key, secs, low} | nil (O484), boss = bool }. `elapsedMs` is the time since the state arrived: the countdowns run on the
 -- client's clock from the seconds the server sent.
 function M.panel(state, elapsedMs)
   if type(state) ~= 'table' or not state.inRun then return nil end
@@ -66,6 +71,12 @@ function M.panel(state, elapsedMs)
       out.timer = { key = 'Floor time left: %s', secs = math.max(0, math.ceil(state.floorLeft - el)) }
     end
   end
+  -- O484: the whole run's clock, a second line under the floor's. Present for the whole run when the server sends a run
+  -- limit (runLeft), also in the pause between floors; absent without one. `low` at RUN_LOW_SECS or less.
+  if state.runLeft ~= nil then
+    local runSecs = math.max(0, math.ceil((tonumber(state.runLeft) or 0) - el))
+    out.runTimer = { key = M.RUN_KEY, secs = runSecs, low = runSecs <= M.RUN_LOW_SECS }
+  end
   return out
 end
 
@@ -79,8 +90,11 @@ function M.canLeave(state, nowMs, lastMs)
   return lastMs == nil or ((tonumber(nowMs) or 0) - lastMs) >= M.MIN_PRESS_MS
 end
 
--- 125 -> "2:05"
+-- 125 -> "2:05"; an hour or more (the run's clock starts at 60:00): 3600 -> "1:00:00"
 function M.clock(secs)
   secs = math.max(0, math.floor(tonumber(secs) or 0))
+  if secs >= 3600 then
+    return string.format('%d:%02d:%02d', math.floor(secs / 3600), math.floor(secs % 3600 / 60), secs % 60)
+  end
   return string.format('%d:%02d', math.floor(secs / 60), secs % 60)
 end

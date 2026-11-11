@@ -3,11 +3,18 @@
 cosmetics_config.lua kinds footprint / outline, `prints` and `glows` name the art keys):
   images/prints/<art>.png  64x64: the prints one step leaves, pointing north (the module rotates them to the step's
                            direction and fades them out)
+  images/marks/<art>_l.png, <art>_r.png
+                           48x48: ONE foot mark of the style (left foot, right foot), pointing north, its centre on the
+                           foot's centre (O499: the module puts one mark under each foot, per half step, and turns it to
+                           the walk direction). Drawn by the same shape code and colours as the print (draw_mark), at
+                           the print's scale: a mark canvas is 33 of the 44 px a print's shapes fill. Not a cut of the
+                           pair picture: the scatter styles (petals, motes, wisps) would be cut in odd halves.
   images/glows/<art>.png   128x128: a soft glow drawn behind the character (a creature bottom widget, centred on the
                            creature), the colour or a vertical gradient; pulsing outlines breathe in Lua
 All drawn here from shapes and noise with a fixed seed (no reference art, nothing copied). preview_cosmeticfx.png (not
 shipped, --preview PATH) shows them on a dark ground.
-python3 -I client/tools/gen_cosmeticfx_art.py [--preview PATH]   (writes into client/overlay/modules/game_cosmeticfx/images/)"""
+python3 -I client/tools/gen_cosmeticfx_art.py [--preview PATH] [--check]   (writes into client/overlay/modules/game_cosmeticfx/images/;
+--check: the committed pictures have the pixels the generator draws, no file is written, exit 1 when not (CI, fx venv))"""
 import math
 import os
 import random
@@ -17,6 +24,8 @@ from PIL import Image, ImageDraw, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', 'overlay', 'modules', 'game_cosmeticfx', 'images')
 P = 64   # print canvas
+MARK = 48  # foot mark canvas (O499); it shows MARK_SRC of the 64 px workspace the shapes are drawn in
+MARK_SRC = 33
 G = 128  # glow canvas
 
 # art key -> (style, main colour, edge / second colour)
@@ -162,6 +171,92 @@ def draw_print(style, main, edge, seed):
     return out
 
 
+# ---------------------------------------------------------------- foot marks (O499)
+def draw_mark(style, main, edge, seed, side):
+    """one foot mark of a print style, toes up, centred on (MARK/2, MARK/2); side 0 = left foot, 1 = right foot
+    (mirrored shapes, another seed for the random ones). Same shape code and colours as draw_print, one foot's worth."""
+    rnd = random.Random(seed)
+    im = Image.new('RGBA', (P, P), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    cx, cy = P / 2, P / 2
+    if style == 'sole':
+        sole(d, cx, cy, main, edge, side == 0)
+    elif style == 'drops':
+        for (x, y, r) in ((0, 2, 4.5), (5, -5, 2.8), (-4, -9, 2.0), (-6, 6, 1.6)):
+            x, y = cx + x, cy + y
+            d.ellipse((x - r, y - r, x + r, y + r), fill=rgba(edge, 240))
+            d.ellipse((x - r * 0.65, y - r * 0.75, x + r * 0.55, y + r * 0.45), fill=rgba(main, 250))
+            d.point((x - r * 0.3, y - r * 0.4), fill=rgba((255, 255, 255), 160))
+    elif style == 'smudge':
+        for _ in range(30):
+            a, rr = rnd.uniform(0, 2 * math.pi), rnd.uniform(0, 7.5)
+            px, py = cx + math.cos(a) * rr * 0.7, cy + math.sin(a) * rr * 1.2
+            s = rnd.uniform(1.2, 2.6)
+            d.ellipse((px - s, py - s, px + s, py + s), fill=rgba(edge if rnd.random() < 0.5 else main, 200))
+    elif style == 'petals':
+        for (x, y) in ((-3, 4), (4, -3), (-2, -9)):
+            a = rnd.uniform(0, math.pi)
+            pts = []
+            for t in [k * math.pi / 10 for k in range(20)]:
+                r = 5.5 * abs(math.sin(t)) ** 0.8
+                pts.append((cx + x + math.cos(t + a) * r, cy + y + math.sin(t + a) * r * 0.55))
+            d.polygon(pts, fill=rgba(main, 235))
+            d.line([pts[0], pts[10]], fill=rgba(edge, 220))
+    elif style == 'wisps':
+        pts = [(cx + math.cos(t) * 7 * (1 - t / 9), cy + 7 - t * 1.6 + math.sin(t * 1.4) * 3) for t in [k * 0.3 for k in range(28)]]
+        d.line(pts, fill=rgba(edge, 220), width=4)
+        d.line(pts, fill=rgba(main, 240), width=2)
+    elif style == 'sparks':
+        for k in range(4):
+            a = k * math.pi / 4 + rnd.uniform(-0.2, 0.2)
+            r = rnd.uniform(5, 8)
+            d.line([(cx - math.cos(a) * r, cy - math.sin(a) * r), (cx + math.cos(a) * r, cy + math.sin(a) * r)],
+                   fill=rgba(edge, 230), width=1)
+        d.ellipse((cx - 2, cy - 2, cx + 2, cy + 2), fill=rgba(main, 255))
+    elif style == 'paws':
+        x, y = cx, cy + 2
+        d.ellipse((x - 4.5, y - 1, x + 4.5, y + 6), fill=rgba(edge, 240))
+        d.ellipse((x - 3.2, y, x + 3.2, y + 5), fill=rgba(main, 245))
+        for (dx, dy) in ((-5, -4), (-2, -7), (2, -7), (5, -4)):
+            d.ellipse((x + dx - 1.8, y + dy - 2.2, x + dx + 1.8, y + dy + 2.2), fill=rgba(main, 240))
+            d.point((x + dx, y + dy - 4), fill=rgba(edge, 230))  # a claw
+    elif style == 'runes':
+        d.ellipse((cx - 7, cy - 7, cx + 7, cy + 7), outline=rgba(edge, 200), width=1)
+        d.line([(cx, cy - 5), (cx, cy + 5)], fill=rgba(main, 245), width=2)
+        d.line([(cx, cy - 2), (cx + 4, cy - 5)], fill=rgba(main, 245), width=2)
+        d.line([(cx, cy + 1), (cx - 4, cy + 4)], fill=rgba(main, 245), width=2)
+    elif style == 'crystals':
+        r = 7
+        for k in range(3):
+            a = k * math.pi / 3
+            d.line([(cx - math.cos(a) * r, cy - math.sin(a) * r), (cx + math.cos(a) * r, cy + math.sin(a) * r)],
+                   fill=rgba(edge, 235), width=2)
+        for k in range(6):
+            a = k * math.pi / 3
+            d.line([(cx, cy), (cx + math.cos(a) * r * 0.6, cy + math.sin(a) * r * 0.6)], fill=rgba(main, 250))
+    elif style == 'motes':
+        for _ in range(12):
+            x, y = rnd.uniform(cx - 8, cx + 8), rnd.uniform(cy - 11, cy + 11)
+            s = rnd.uniform(1.0, 2.6)
+            d.ellipse((x - s, y - s, x + s, y + s), fill=rgba(main if rnd.random() < 0.6 else edge, 220))
+    glow = soft(im, 2.2)
+    out = Image.new('RGBA', (P, P), (0, 0, 0, 0))
+    halo = Image.new('RGBA', (P, P), rgba(edge if style != 'sparks' else main, 0))
+    halo.putalpha(glow.getchannel('A').point(lambda v: int(v * 0.55)))
+    out.alpha_composite(halo)
+    out.alpha_composite(im)
+    if style == 'sole' and main == PRINTS['gilded'][1]:
+        sd = ImageDraw.Draw(out)
+        x, y = cx + (4 if side else -4), cy - 3
+        sd.line([(x - 3, y), (x + 3, y)], fill=(255, 255, 230, 240))
+        sd.line([(x, y - 3), (x, y + 3)], fill=(255, 255, 230, 240))
+    lo = int(P / 2 - MARK_SRC / 2)
+    out = out.crop((lo, lo, lo + MARK_SRC, lo + MARK_SRC)).resize((MARK, MARK), Image.LANCZOS)
+    if side == 1 and style != 'sole':   # the sole's own turn already differs; the other shapes mirror
+        out = out.transpose(Image.FLIP_LEFT_RIGHT)
+    return out
+
+
 # ---------------------------------------------------------------- glows
 def draw_glow(bottom, top, peak, ring):
     im = Image.new('RGBA', (G, G), (0, 0, 0, 0))
@@ -188,27 +283,69 @@ def draw_glow(bottom, top, peak, ring):
     return soft(im, 1.5)
 
 
-def main():
-    os.makedirs(os.path.join(OUT, 'prints'), exist_ok=True)
-    os.makedirs(os.path.join(OUT, 'glows'), exist_ok=True)
-    prints, glows = {}, {}
+def images():
+    """every picture the generator makes: {('prints'|'glows'|'marks', file name): RGBA image}"""
+    made = {}
     for i, (key, (style, main_c, edge)) in enumerate(PRINTS.items()):
         # the shapes sit in the middle of the canvas: scaled up so a print fills most of its tile
-        prints[key] = draw_print(style, main_c, edge, 1000 + i).crop((10, 10, 54, 54)).resize((P, P), Image.LANCZOS)
-        prints[key].save(os.path.join(OUT, 'prints', key + '.png'))
+        made[('prints', key + '.png')] = draw_print(style, main_c, edge, 1000 + i).crop((10, 10, 54, 54)).resize((P, P), Image.LANCZOS)
+        made[('marks', key + '_l.png')] = draw_mark(style, main_c, edge, 2000 + i, 0)
+        made[('marks', key + '_r.png')] = draw_mark(style, main_c, edge, 3000 + i, 1)
     for key, spec in GLOWS.items():
-        glows[key] = draw_glow(*spec)
-        glows[key].save(os.path.join(OUT, 'glows', key + '.png'))
+        made[('glows', key + '.png')] = draw_glow(*spec)
+    return made
+
+
+def check(made):
+    """the committed pictures have the pixels the generator draws, and no other file sits beside them"""
+    bad = []
+    for (sub, name), img in made.items():
+        path = os.path.join(OUT, sub, name)
+        if not os.path.isfile(path):
+            bad.append('%s/%s: missing' % (sub, name))
+            continue
+        have = Image.open(path).convert('RGBA')
+        if have.size != img.size or have.tobytes() != img.tobytes():
+            bad.append('%s/%s: differs from the generator' % (sub, name))
+    for sub in ('prints', 'glows', 'marks'):
+        folder = os.path.join(OUT, sub)
+        for f in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
+            if f.endswith('.png') and (sub, f) not in made:
+                bad.append('%s/%s: not made by the generator' % (sub, f))
+    return bad
+
+
+def main():
+    made = images()
+    if '--check' in sys.argv:
+        bad = check(made)
+        for b in bad:
+            print('gen_cosmeticfx_art --check:', b)
+        if bad:
+            return 1
+        print('gen_cosmeticfx_art --check: %d images up to date' % len(made))
+        return 0
+    for sub in ('prints', 'glows', 'marks'):
+        os.makedirs(os.path.join(OUT, sub), exist_ok=True)
+    for (sub, name), img in made.items():
+        img.save(os.path.join(OUT, sub, name))
+    prints = {k[1][:-4]: v for k, v in made.items() if k[0] == 'prints'}
+    glows = {k[1][:-4]: v for k, v in made.items() if k[0] == 'glows'}
     if '--preview' in sys.argv:
         cols = max(len(prints), len(glows))
-        prev = Image.new('RGBA', (cols * 136, 2 * 140), (38, 34, 30, 255))
+        prev = Image.new('RGBA', (cols * 136, 3 * 140), (38, 34, 30, 255))
         for i, im in enumerate(prints.values()):
             prev.alpha_composite(im.resize((128, 128), Image.NEAREST), (i * 136 + 4, 6))
         for i, im in enumerate(glows.values()):
             prev.alpha_composite(im, (i * 136 + 4, 146))
+        for i, key in enumerate(prints):
+            for j, side in enumerate(('l', 'r')):
+                prev.alpha_composite(made[('marks', '%s_%s.png' % (key, side))].resize((60, 60), Image.NEAREST),
+                                     (i * 136 + 4 + j * 64, 286))
         prev.save(sys.argv[sys.argv.index('--preview') + 1])
     print('wrote', OUT)
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

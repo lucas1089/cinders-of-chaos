@@ -683,8 +683,8 @@ eq(gem.extras[1].rows[1].text, 'A gem for a socket.', 'gem: description')
 
 -- ---------------------------------------------------------------- O471: the character cap on a modifier line
 eq(L.capText({}), '', 'no cap, no text')
-eq(L.capText({ cap = 45 }), ' (character cap 45)', 'the cap of the critical chance')
-eq(L.capText({ cap = 150, over = true }), ' (over the character cap of 150)', 'over it')
+eq(L.capText({ cap = 45 }), 'Character cap 45', 'the cap of the critical chance')
+eq(L.capText({ cap = 150, over = true }), 'Over the cap of 150', 'over it')
 local capTip = {
   key = '9:9', id = 2160, name = 'old badge', kind = 'other', rarity = 4, rarityName = 'Rare', level = 100, maxTier = 4,
   sides = { p = 2, s = 0, max = 2 },
@@ -695,23 +695,83 @@ local capTip = {
       tr = 6, sd = 'p', cap = 20, bd = true }
   }
 }
-local capLines = L.lines(capTip, { level = 60 })
-local capAll = {}
-for i, l in ipairs(capLines) do capAll[i] = l.text end
-capAll = table.concat(capAll, '|')
-eq(capAll:find('T8 Critical Strike Chance +7% [7-8] (over the character cap of 45)', 1, true) ~= nil, true, 'the line says it is over the cap')
-eq(capAll:find('T6 Physical Penetration +9% [9] (character cap 20) [bound]', 1, true) ~= nil, true, 'the cap before [bound]')
-local critLine
-for _, l in ipairs(capLines) do
-  if l.text:find('Critical Strike Chance', 1, true) then critLine = l end
+-- O503 (owner 2026-11-11): the cap note shows only while Alt is held; without Alt a row over its cap is red, a row under it
+-- is plain. The note is a line of its own under the row, never a part of the text line (it ran under the range column).
+local function joined(lines)
+  local t = {}
+  for i, l in ipairs(lines) do t[i] = l.text end
+  return table.concat(t, '|')
 end
-eq(critLine.parts[7], ' (over the character cap of 45)', 'the cap text is a part of its own')
-eq(critLine.parts[8], L.COLORS.red, 'red when over')
-local groups = L.modGroups(capTip)
-eq(groups[1].rows[1].parts[3], ' (over the character cap of 45)', 'the group row carries the cap too')
-eq(groups[1].rows[2].parts[3], ' (character cap 20)', 'a row with a bound modifier and a cap')
-eq(groups[1].rows[2].parts[5], ' [bound]', 'then the bound mark')
-eq(groups[1].rows[2].parts[4], L.COLORS.dim, 'the cap in the dim colour')
+local noAlt = joined(L.lines(capTip, { level = 60 }))
+eq(noAlt:find('cap', 1, true), nil, 'no Alt: no cap text on any line')
+eq(noAlt:find('T8 Critical Strike Chance +7% [7-8]', 1, true) ~= nil, true, 'no Alt: the row itself stays')
+eq(noAlt:find('T6 Physical Penetration +9% [9] [bound]', 1, true) ~= nil, true, 'no Alt: bound mark after the range')
+local altLines = L.lines(capTip, { level = 60, alt = true })
+local altAll = joined(altLines)
+eq(altAll:find('T8 Critical Strike Chance +7% [7-8]|  Over the cap of 45', 1, true) ~= nil, true, 'Alt: the note under the row')
+eq(altAll:find('T6 Physical Penetration +9% [9] [bound]|  Character cap 20', 1, true) ~= nil, true, 'Alt: the note after [bound]')
+local critLine, critNote, penNote
+for i, l in ipairs(altLines) do
+  if l.text:find('Critical Strike Chance', 1, true) then critLine, critNote = l, altLines[i + 1] end
+  if l.text:find('Physical Penetration', 1, true) then penNote = altLines[i + 1] end
+end
+eq(critNote.color, L.COLORS.red, 'Alt: the note is red when over')
+eq(penNote.color, L.COLORS.dim, 'Alt: the note is dim under the cap')
+eq(critLine.color, L.COLORS.mod, 'Alt: the row keeps its own colour')
+local overLine
+for _, l in ipairs(L.lines(capTip, { level = 60 })) do
+  if l.text:find('Critical Strike Chance', 1, true) then overLine = l end
+end
+eq(overLine.color, L.COLORS.red, 'no Alt: over the cap is the warning red')
+eq(overLine.parts[4], L.COLORS.red, 'no Alt: also the name part')
+local groups = L.modGroups(capTip, false)
+eq(groups[1].rows[1].note, nil, 'no Alt: the group row has no note')
+eq(groups[1].rows[1].color, L.COLORS.red, 'no Alt: the row over its cap is red')
+eq(groups[1].rows[2].note, nil, 'no Alt: no note under the cap either')
+eq(groups[1].rows[2].color, L.COLORS.chaos, 'no Alt: a row under its cap keeps its colour')
+eq(groups[1].rows[2].parts[3], ' [bound]', 'the bound mark is the only part')
+groups = L.modGroups(capTip, true)
+eq(groups[1].rows[1].note, 'Over the cap of 45', 'Alt: the note of a row over its cap')
+eq(groups[1].rows[1].noteColor, L.COLORS.red, 'Alt: red when over')
+eq(groups[1].rows[1].color, L.COLORS.mod, 'Alt: the row keeps its colour')
+eq(groups[1].rows[2].note, 'Character cap 20', 'Alt: the note of a row under it')
+eq(groups[1].rows[2].noteColor, L.COLORS.dim, 'Alt: dim')
+eq(groups[1].rows[2].parts[3], ' [bound]', 'Alt: the bound mark is not touched')
+eq(L.card(capTip, { level = 60 }).mods[1].rows[1].note, nil, 'card without Alt: no note')
+eq(L.card(capTip, { level = 60, alt = true }).mods[1].rows[1].note, 'Over the cap of 45', 'card with Alt: the note')
+
+-- the row layout (pure; widths in, lines out). 6 px per character in the line font, 5 in the note font.
+local function m6(t) return #t * 6 end
+local function m5(t) return #t * 5 end
+local row = { text = 'Critical Strike Chance +2%', color = '#9ab8ff', parts = { 'Critical Strike Chance +2%', '#9ab8ff', ' [bound]', '#e8b84a' },
+  note = 'Character cap 45', noteColor = '#8c8070' }
+local lay = L.modRowLayout(row, 200, 250, m6, m5)
+eq(#lay.lines, 2, 'layout: the [bound] mark counts in the width, the text wraps')
+eq(lay.lines[1].text, 'Critical Strike Chance +2%', 'layout: first line')
+eq(lay.lines[2].text, '[bound]', 'layout: second line holds the mark')
+eq(lay.lines[2].parts[1], '[bound]', 'layout: the mark alone')
+eq(lay.lines[2].parts[2], '#e8b84a', 'layout: mark colour')
+eq(#lay.lines[2].parts, 2, 'layout: no empty part')
+eq(lay.lines[1].parts, nil, 'layout: only the last line has the mark')
+for _, l in ipairs(lay.lines) do eq(m6(l.text) <= 200, true, 'layout: every line fits the width left of the range') end
+eq(#lay.note, 1, 'layout: a short note is one line')
+eq(lay.note[1], 'Character cap 45', 'layout: the note text')
+lay = L.modRowLayout(row, 400, 250, m6, m5)
+eq(#lay.lines, 1, 'layout: wide: one line')
+eq(lay.lines[1].parts[3], '[bound]', 'layout: wide: mark part')
+local long = { text = 'Fire +4% dmg', color = 'c', note = 'Limite do personagem 150 e mais algumas palavras de aviso' }
+lay = L.modRowLayout(long, 200, 120, m6, m5)
+eq(#lay.lines, 1, 'layout: no suffix, no parts')
+eq(lay.lines[1].parts, nil, 'layout: no parts')
+eq(#lay.note > 1, true, 'layout: a long note wraps')
+for _, l in ipairs(lay.note) do eq(m5(l) <= 120, true, 'layout: every note line fits') end
+lay = L.modRowLayout({ text = '', color = 'c' }, 100, 100, m6, m5)
+eq(#lay.lines, 1, 'layout: an empty row has one line')
+eq(#lay.note, 0, 'layout: no note')
+local widest = L.modRowLayout({ text = 'Physical Penetration +9%', color = 'c', parts = { 'Physical Penetration +9%', 'c', ' [bound]', 'b' } },
+  120, 200, m6, m5)
+eq(widest.lines[#widest.lines].parts[3], '[bound]', 'layout: narrow: the mark stays a part')
+for _, l in ipairs(widest.lines) do eq(m6(l.text) <= 120, true, 'layout: narrow: fits') end
 
 -- ---------------------------------------------------------------- the gem block (O479, owner 2026-11-11: colour option 3)
 do

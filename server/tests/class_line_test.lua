@@ -88,4 +88,15 @@ end
 f:close()
 eq(stock > 400, true, "the stock equipment was walked")
 
+-- O489: the class text of a stock equip rule (a base id that is also a unique with its own rule)
+eq(T.stockClassText(nil), "", "no list: everyone")
+eq(T.stockClassText({}), "", "an empty list: everyone")
+eq(T.stockClassText({"Ranger", "Deadeye", "Beastmaster", "Thief", "Ninja", "Samurai", "Monk", "Shadowfist", "Iron Sage"}),
+	"Ranger, Deadeye, Beastmaster, Thief, Monk", "whole lines are named by their base class; the Ranger and Warrior lines class by class, as the engine's text is")
+eq(T.stockClassText({"Mystic", "Illusionist", "Necromancer", "Lich", "Bone Lord"}), "Mystic, Illusionist, Necromancer",
+	"a line with a class missing names the classes it has")
+eq(T.stockClassText({"Deadeye", "Ninja"}), "Deadeye, Ninja", "ascended classes without their base stay")
+eq(T.classLine(T.stockClassText({"Ranger", "Deadeye", "Beastmaster"}), {slot = 1}, "Ring"), "Ranger, Deadeye, Beastmaster", "through the class line")
+eq(T.classLine(T.stockClassText(nil), {slot = 1}, "Ring"), "all classes", "everyone: all classes")
+
 print(string.format("class_line_test: %d checks, %d set pieces, %d uniques, %d stock items ok", n, pieces, uniques, stock))

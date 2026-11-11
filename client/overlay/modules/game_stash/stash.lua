@@ -852,7 +852,7 @@ end
 -- ---------------------------------------------------------------- Find my item (O412)
 -- One search over the equipment, every carried container (closed ones too: the server walks them), the purse, the
 -- inbox and the stash tabs (server stash.lua S.find). A click goes to the item: the stash window at its tab, the bags
--- it is in (game_chaoslayout opens them), the slot, the purse button or the stash's Inbox button.
+-- it is in (game_chaoslayout opens them), the slot, the purse page of the inventory panel or the stash's Inbox button.
 Stash.FindState = { q = nil, page = 1, msg = nil }
 
 local function flashWidget(w, ms)
@@ -973,9 +973,11 @@ Stash.FindGo = function(r)
 		local panel = inv and inv.getInventoryPanel and inv.getInventoryPanel()
 		flashWidget(panel and panel:getChildById('slot' .. (tonumber(r.slot) or 0)))
 	elseif a == 'purse' then
+		-- the purse is a page of the inventory panel (O492): open it there, then flash the Purse button
 		local bag = modules.game_bagpanel
+		if bag and bag.openPurse then pcall(bag.openPurse) end
 		flashWidget(bag and bag.getPurseButton and bag.getPurseButton())
-		failure(tr('It is in your purse: the Purse button of the inventory panel opens it.'))
+		failure(tr('It is in your purse. The purse page of the inventory panel shows it.'))
 	elseif a == 'inbox' then
 		showStash(function()
 			if Stash.UI and Stash.UI.InboxButton then flashWidget(Stash.UI.InboxButton) end

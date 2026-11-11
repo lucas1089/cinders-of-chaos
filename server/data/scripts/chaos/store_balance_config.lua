@@ -88,6 +88,8 @@ return {
 		pactSharePct = 35, maxPactDays = 30,   -- the Pact days are a gift on top of the cosmetics, at most this share of the price
 		minPieces = 2                     -- cosmetic pieces in the first pack (the grand pack has more)
 	},
-	perCharacterConvenienceMax = 1550,  -- Loot Bag + Auto Seller + Rarity Autoloot + pouches (Orbs, Rift Key, Gem) + Ration for one character
+	-- Loot Bag + Auto Seller + Rarity Autoloot + pouches (Orbs, Rift Key, Gem, Rune) + Ration for one character. 1,550 -> 1,700
+	-- with the Rune Bag (O502, 150 coins, the Gem Pouch's price): the limit grows by exactly that price, docs/PRICES.md
+	perCharacterConvenienceMax = 1700,
 	cosmetics = {min = 80, max = 800}  -- every cosmetic offer; a static plate frame costs no more than the cheapest wings
 }

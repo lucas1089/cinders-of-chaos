@@ -37,6 +37,16 @@ CustomiseCard < UIWidget
     phantom: true
     visible: false
 
+  // a loot label, chat colour or plate frame sample (game_lookpreview.sampleWidget)
+  UIWidget
+    id: sample
+    anchors.left: parent.left
+    anchors.top: parent.top
+    size: 116 64
+    clipping: true
+    phantom: true
+    visible: false
+
   UILabel
     id: name
     anchors.left: parent.left
@@ -111,6 +121,16 @@ CustomiseStripCard < UIWidget
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.verticalCenter: parent.verticalCenter
       size: 36 36
+      phantom: true
+      visible: false
+
+    // a loot label, chat colour or plate frame sample (game_lookpreview.sampleWidget, the compact one)
+    UIWidget
+      id: sample
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 44 40
+      clipping: true
       phantom: true
       visible: false
 

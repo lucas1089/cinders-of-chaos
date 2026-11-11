@@ -86,6 +86,10 @@ jobs:
           python3 -I client/tools/sprites/gen_outfit_anchors_test.py
           # names over tall looks: body top, gap and lift (synthetic figures)
           python3 -I client/tools/sprites/gen_info_lift_test.py
+          # wings centred on the body: torso and pair centre, the baked shadow left out (synthetic figures)
+          python3 -I client/tools/sprites/gen_wing_centres_test.py
+          # the feet of every look per direction, for the footprints (synthetic figures)
+          python3 -I client/tools/sprites/gen_foot_marks_test.py
           # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
           # check runs on the versions the strips were made with (gen_class_fx.py docstring)
           python3 -m venv /tmp/fxenv
@@ -93,6 +97,8 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
           /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
           /tmp/fxenv/bin/python -I client/tools/gen_toast_art.py --check  # toast icons of game_chaosnotify, Pact hourglass included (O317)
+          /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art.py --check  # prints, glows and foot marks of game_cosmeticfx (O499)
+          /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art_test.py
           /tmp/fxenv/bin/python -I client/tools/gen_tooltip_art.py --check  # ring, glow and diamond of the card item tooltip (O422)
           /tmp/fxenv/bin/python -I client/tools/gen_hotbar_art.py --check  # nine-slice frames, slots, caps and chat skin of game_hotbar / game_floatchat (O414)
           /tmp/fxenv/bin/python -I launcher/tools/gen_launcher_art.py --check  # banner and icon of the game launcher window (O339)
@@ -614,6 +620,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosshadow_test.cpp -o "$d/chaosshadow_asan"
           "$d/chaosshadow_asan"
 
+      - name: Wings centred on the body (C++; header from base patch 0193, O495)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaoswingfit\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0193-wings-centred-on-the-body.patch > "$d/chaoswingfit.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaoswingfit_test.cpp -o "$d/chaoswingfit_test"
+          "$d/chaoswingfit_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoswingfit_test.cpp -o "$d/chaoswingfit_asan"
+          "$d/chaoswingfit_asan"
+
       - name: Eased bars bookkeeping (C++; header from base patch 0146)
         run: |
           d=$(mktemp -d)
@@ -871,7 +887,8 @@ jobs:
           python3 -I server/tools/monster_fire_resist_test.py
           python3 -I server/tools/monster_physical_resist_test.py  # no hunt monster immune to physical (Thief line bug 2026-11-02)
           python3 -I server/tools/patch_monster_resists_test.py  # resistance caps of the monsters, 40 normal / 75 boss, flat 30 on seven types thinned (O462; check_content.py holds our files to it)
-          python3 -I server/tools/defence_curve.py --check  # the median class hit curve of the monster armour, from class_dps_model.py (O462)
+          python3 -I server/tools/defence_curve.py --check  # the median class hit curve (a spell) and the median weapon hit curve (an auto attack, in the units that arrive) of the monster armour, G1 / G2 for the 21 classes (O462, O501)
+          python3 -I server/tools/defence_curve_test.py  # the engine formula against the measured auto attack hits, the flat armour, the roll, G1 / G2 that fail on a drift (O501)
 
       - name: Rotations of at most 5 spells, never 2 s without one (rotation_sim.py; the helper's auto rotation data)
         run: |
@@ -1151,7 +1168,7 @@ jobs:
       - name: Ground pickups install (globes and ember items, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pickups_test.py
 
-      - name: Store pouches install (four pouches, capacities, the Gem Pouch look, synthetic items.otb / items.xml)
+      - name: Store pouches install (five pouches, capacities, the Gem Pouch and Rune Bag looks, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pouches_test.py
 
       - name: Client pair guard and the pair 55, 56, 58 and 60 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56, relic sets 58, temple tileset 60)
@@ -1295,6 +1312,17 @@ jobs:
 
       - name: "Loot bag instead of monster bodies, items.xml step and patch guard (server src-patch 0089, O435)"
         run: python3 -I server/tools/patch_monster_corpses_test.py
+
+      - name: "Soul pit and its items removed: the tool on synthetic base files, the SQL file, the price tables and the install step (O488)"
+        run: python3 -I server/tools/patch_remove_soulpit_test.py
+
+      - name: "Equip rules in the tooltip: the chip reading, the rules of movements.xml and weapons.xml, every mismatch kind, the install step (O490)"
+        run: python3 -I server/tools/audit_equip_tooltips_test.py
+
+      - name: "Stock weapon types: a weapon is the kind its name says, the tool on synthetic items.xml, the table against the survey, the audit (O500)"
+        run: |
+          python3 -I server/tools/patch_stock_weapon_types_test.py
+          python3 -I server/tools/audit_weapon_types_test.py
 
       - name: A reconnect to a lingering character is not thrown out nor left in the game (server src-patches 0034, 0035)
         run: python3 -I server/tools/reattach_ping_patch_test.py
@@ -1642,6 +1670,16 @@ jobs:
       - name: Name lifts of tall looks match the pair (gen_info_lift.py --check)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_info_lift.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Wing centres match the pair (gen_wing_centres.py --check, base patch 0193)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_wing_centres.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Foot marks table matches the pair (gen_foot_marks.py --check)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_foot_marks.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Dungeon banners render from the live pair (gen_dungeon_banners.py --check with the pair)
