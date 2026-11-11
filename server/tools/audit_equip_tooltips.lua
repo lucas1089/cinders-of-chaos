@@ -7,8 +7,9 @@
 --              (level, magic level and vocation string are what the engine's item type holds; the audit works them out)
 -- Output, tab separated, one line per tooltip:
 --   P id level magic voc           a plain copy; voc is "-" when the tooltip has no class row
---   U id level magic voc equipLevel equipVocations entryLevel
---                                  a copy of a unique (ChaosUniqueById[id]); the spec's own rule: "-" without one
+--   U id level magic voc equipLevel equipVocations entryLevel name
+--                                  a copy of a unique (ChaosUniqueById[id]); the spec's own rule: "-" without one. Every
+--                                  unique has one, also when its base item has no rule at all (O510)
 --   E id message                   the tooltip code failed on this item
 local dataDir, tsv = arg[1], arg[2]
 if not dataDir or not tsv then
@@ -118,7 +119,31 @@ local function row(tip)
 	return tostring(req.level or 0), tostring(req.magic or 0), req.voc or "-"
 end
 
+local function uniqueRow(id, entry)
+	local item = newItem(id)
+	item:setCustomAttribute("chaos_unique", 1)
+	local okU, tipU = pcall(T.build, item)
+	if okU then
+		local spec = ChaosUniqueSpecs and ChaosUniqueSpecs[id]
+		local equip = spec and spec.equip
+		local own, lvl = "-", "-"
+		if equip then
+			lvl = tostring(equip.level or 0)
+			own = table.concat(equip.vocations or {}, "|")
+			if own == "" then
+				own = "*"
+			end
+		end
+		print(table.concat({"U", id, row(tipU)}, "\t") .. "\t" .. lvl .. "\t" .. own .. "\t" .. tostring(entry.level or 0)
+			.. "\t" .. tostring(entry.name or ""):gsub("[\t\r\n]", " "))
+	else
+		print(table.concat({"E", id, (tostring(tipU):gsub("[\t\r\n]", " "))}, "\t"))
+	end
+end
+
+local seen = {}
 for _, id in ipairs(order) do
+	seen[id] = true
 	local ok, tip = pcall(T.build, newItem(id))
 	if ok then
 		print(table.concat({"P", id, row(tip)}, "\t"))
@@ -127,23 +152,19 @@ for _, id in ipairs(order) do
 	end
 	local entry = ChaosUniqueById and ChaosUniqueById[id]
 	if entry then
-		local item = newItem(id)
-		item:setCustomAttribute("chaos_unique", 1)
-		local okU, tipU = pcall(T.build, item)
-		if okU then
-			local spec = ChaosUniqueSpecs and ChaosUniqueSpecs[id]
-			local equip = spec and spec.equip
-			local own, lvl = "-", "-"
-			if equip then
-				lvl = tostring(equip.level or 0)
-				own = table.concat(equip.vocations or {}, "|")
-				if own == "" then
-					own = "*"
-				end
-			end
-			print(table.concat({"U", id, row(tipU)}, "\t") .. "\t" .. lvl .. "\t" .. own .. "\t" .. tostring(entry.level or 0))
-		else
-			print(table.concat({"E", id, (tostring(tipU):gsub("[\t\r\n]", " "))}, "\t"))
-		end
+		uniqueRow(id, entry)
 	end
+end
+
+-- O510: a unique whose base item has no rule at all (no Equip entry, no weapon entry) is not in the table above, but its
+-- copy still has a tooltip: the engine's item type holds nothing for it (level 0, no classes)
+local extra = {}
+for id in pairs(ChaosUniqueById or {}) do
+	if not seen[id] then
+		extra[#extra + 1] = id
+	end
+end
+table.sort(extra)
+for _, id in ipairs(extra) do
+	uniqueRow(id, ChaosUniqueById[id])
 end

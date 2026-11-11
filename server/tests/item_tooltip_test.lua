@@ -388,7 +388,7 @@ tip = T.build(helm, {equippedIds = {[3975] = true, [8892] = true}})
 eq(tip.unique ~= nil, true, "unique")
 eq(tip.name, ChaosUniqueSpecs[2496].name)
 eq(tip.unique.set.name, "Embers of Aranoth") eq(tip.unique.set.have, 2) eq(tip.unique.set.total, 6)
-eq(tip.req.level, ChaosUniqueById[2496].level, "the unique's level")
+eq(tip.req.level, nil, "O510: Hornsworn Helm has no equip rule of its own and the server asks no level: no level chip (its level 70 is in the description)")
 eq(tip.desc, ChaosUniqueSpecs[2496].description, "flavour text")
 eq(tip.sockets.count, 1, "a unique's fixed socket") eq(tip.sockets.list[1].name, nil)
 eq(tip.mods[1].lo, nil, "uniques have no roll ranges")
@@ -403,7 +403,7 @@ tip = T.build(newItem(2496))
 eq(tip.req.level, 100, "a stock copy: the stock level")
 eq(tip.req.voc, "Ranger, Deadeye, Beastmaster, Thief only", "a stock copy: the stock classes (O490: a base class alone reads as its whole line, so the Thief without a Ninja or Samurai is \"Thief only\")")
 tip = T.build(helm)
-eq(tip.req.level, ChaosUniqueById[2496].level, "a unique copy: its own level")
+eq(tip.req.level, nil, "a unique copy without a rule of its own: the server asks no level (O510, was the unique's level 70)")
 eq(tip.req.voc ~= "Ranger, Deadeye, Beastmaster, Thief only", true, "a unique copy: not the stock classes")
 tip = T.build(newItem(2466))
 eq(tip.req.level, nil, "a stock rule of {}: no level")
@@ -457,6 +457,55 @@ tip = T.build(newItem(2183))
 eq(tip.req.level, 30, "the rules table wins over the stock table") eq(tip.req.voc, "Mystic, Illusionist, Necromancer", "ditto")
 ChaosUniqueEquip.stock = stockBefore
 T.setEquipRules(nil)
+-- O510 (owner 2026-11-11: "the tag lies"): the level chip of a unique copy is what the server asks, never the unique's own
+-- level (ChaosUniqueById[id].level: when it drops, its power) when no rule asks it
+T.setEquipRules({sets = {}, rules = {[3961] = {40, 0}}}) -- Lichfang Staff (a unique of level 70, no rule of its own): the weapon entry asks 40
+local lich = newItem(3961)
+eq(ChaosMakeUnique(lich), true, "Lichfang Staff has a spec")
+eq(ChaosUniqueById[3961].level, 70, "the unique's own level is 70")
+eq(ChaosUniqueSpecs[3961].equip, nil, "and it has no equip rule of its own")
+tip = T.build(lich)
+eq(tip.req.level, 40, "a unique copy without a rule of its own: the level of the item's rule, not 70")
+eq(T.build(newItem(3961)).req.level, 40, "a plain copy of the same id: the same rule (unchanged)")
+T.setEquipRules({sets = {}, rules = {}})
+tip = T.build(lich)
+eq(tip.req, nil, "the server asks nothing: no requirement chips at all")
+T.setEquipRules(nil)
+tip = T.build(lich)
+eq(tip.req, nil, "no rules file and no engine level: no level chip either")
+TYPES[3961] = {name = "lich staff", weaponType = 2, slot = 48, level = 25}
+tip = T.build(lich)
+eq(tip.req.level, 25, "no rules file: the engine's item type level, not 70")
+TYPES[3961] = nil
+-- a unique with an equip rule of its own still shows that level (the server refuses below it)
+local shiv = newItem(2402)
+eq(ChaosMakeUnique(shiv), true, "Moonlit Shiv has a spec")
+eq(ChaosUniqueSpecs[2402].equip.level, 28, "its own rule asks level 28")
+tip = T.build(shiv)
+eq(tip.req.level, 28, "a unique with its own equip rule: that level")
+T.setEquipRules({sets = {}, rules = {[2402] = {5, 0}}})
+tip = T.build(shiv)
+eq(tip.req.level, 28, "a lower rule in the table does not lower the unique's own rule")
+T.setEquipRules(nil)
+TYPES[2402] = {name = "stiletto", weaponType = 1, slot = 48, level = 10}
+tip = T.build(shiv)
+eq(tip.req.level, 28, "the looser engine entry does not lower it either")
+TYPES[2402] = nil
+-- every unique of the catalogue: the chip is the level of its own rule or nothing, never the unique's level
+local checked, ruled = 0, 0
+for id, entry in pairs(ChaosUniqueById) do
+	local copy = newItem(id)
+	if ChaosMakeUnique(copy) then
+		local spec = ChaosUniqueSpecs[id]
+		local want = spec.equip and spec.equip.level > 0 and spec.equip.level or nil
+		local got = T.build(copy).req
+		eq(got and got.level or nil, want, entry.name .. ": the level chip is its own rule's level or none")
+		checked = checked + 1
+		ruled = ruled + (want and 1 or 0)
+	end
+end
+eq(checked > 150 and ruled > 60 and checked - ruled > 30, true, "the catalogue was read (" .. checked .. " uniques, " .. ruled .. " with a rule)")
+
 -- the class row is cut between two names
 local long = {}
 for i = 1, 14 do long[i] = "Longclassname" .. i end

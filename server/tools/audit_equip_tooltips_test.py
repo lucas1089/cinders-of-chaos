@@ -153,8 +153,35 @@ try:
     check('refused: magic level' in kinds('P', 102), 'the Equip entry\'s magic level is not shown (%r)' % kinds('P', 102))
     check('tooltip stricter: class' in kinds('P', 105), 'a bow of the Ranger line shows no Beastmaster (%r)' % kinds('P', 105))
     check(kinds('P', 106) == [] and kinds('P', 107) == [], 'a plain Equip entry is shown right')
-    check(('U', 3961) in found and found[('U', 3961)] == ['tooltip stricter: level'],
-          'a unique copy shows its own level, the server does not ask it (%r)' % found.get(('U', 3961)))
+    # O510: a unique copy shows what the server asks, never the unique's own level (Lichfang Staff: level 70, the Equip entry asks none)
+    check(('U', 3961) not in found and res['shown'][('U', 3961)]['level'] == 0,
+          'a unique copy shows no level the server does not ask (%r, %r)' % (found.get(('U', 3961)), res['shown'].get(('U', 3961))))
+    # a unique whose base item has no rule at all is read too (the folder has none for 2123, the Cinderheart Signet, level 1000)
+    check(('U', 2123) in res['shown'] and res['shown'][('U', 2123)]['level'] == 0 and ('U', 2123) not in found,
+          'a unique with no rule at all is read, shows no level (%r)' % res['shown'].get(('U', 2123)))
+    check(res['shown'][('U', 2123)]['uniqueName'] == 'Cinderheart Signet', 'and has its name in the report')
+    # the old tooltip showed the unique's level: such a row is found in both places and fails --check (a unique copy kind)
+    real = A.run_tooltips
+
+    def old_tooltip(*args):
+        shown, errors = real(*args)
+        shown[('U', 3961)] = dict(shown[('U', 3961)], level=70)  # the level of the unique, 70
+        shown[('U', 2123)] = dict(shown[('U', 2123)], level=1000)  # and a base item with no rule at all
+        return shown, errors
+    A.run_tooltips = old_tooltip
+    try:
+        old = A.audit(folder)
+        text_old = '\n'.join(A.report(old))
+        check(old['found'].get(('U', 3961)) == ['tooltip stricter: level'] and old['found'].get(('U', 2123)) == ['tooltip stricter: level'],
+              'the old level is found, with a rule and without one (%r %r)' % (old['found'].get(('U', 3961)), old['found'].get(('U', 2123))))
+        check('unique copy: tooltip stricter: level' in text_old and '[check]' in text_old.split('unique copy: tooltip stricter: level')[1].split('\n')[0],
+              'the report marks that kind [check]')
+        check(A.fails('unique copy: tooltip stricter: level') and not A.fails('tooltip stricter: level') and not A.fails('unique copy: weapon check: class'),
+              'only the unique copy kind fails, the lesser kinds stay a list')
+        check(quiet(A.main, [folder, '--check']) == 1, '--check fails when a unique copy shows a level the server does not ask')
+        check(quiet(A.main, [folder]) == 0, 'and a plain run still exits 0')
+    finally:
+        A.run_tooltips = real
     check(res['longest'][0] > 0, 'the longest class row is measured')
     text = '\n'.join(A.report(res))
     check('Mismatches by kind' in text and 'refused: class' in text and 'Longest class row' in text, 'the report')
