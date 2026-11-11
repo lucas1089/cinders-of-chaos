@@ -6421,8 +6421,8 @@ autoloot list is needed.
     extended opcode could only re-implement the rune rules (cooldowns, exhaust, protection zone, target rules, charges, level and
     magic level) in Lua. That is the way the coordinator forbade. Moving the rune into the backpack for the use would risk a dupe
     or a lost rune. Opening the purse's bag in the client to use the rune by container position needs the bag open all the time.
-  - **Patch `src-patches/0092-rune-bag-in-purse.patch`** (0091 is reserved by another change: a renumber is a file rename and the
-    number in this section, the CLAUDE.md line and `ci.yml`). New header `src/chaosrunebag.h`: one rule, pure templates, the items
+  - **Patch `src-patches/0092-rune-bag-in-purse.patch`** (applied after 0091, the fist attack of O505; the two touch different
+    hunks). New header `src/chaosrunebag.h`: one rule, pure templates, the items
     DIRECTLY inside a container of the Rune Bag type that lies DIRECTLY in the store inbox; nothing else of the purse is visited
     (not a loose item, not a Loot Bag or another pouch, not a bag inside the Rune Bag, not a Rune Bag inside a bag in the purse).
     The type comes from Lua: `Game.setRuneBagContainer(itemId)` (`pouches.lua` `PO.registerRuneBag`, at load and at every login,

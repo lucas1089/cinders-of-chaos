@@ -16,8 +16,8 @@
 #     existing is the capability Lua tests for (ChaosPouches.runeBagEngine). No config key, no save format change, no
 #     protocol change.
 # New header src/chaosrunebag.h (pure templates, tests in server/tools/chaosrunebag_test.cpp, CI). Guard:
-# server/tools/rune_bag_purse_patch_test.py. Apply in the server source root after 0001-0090: patch -p1 <
-# 0092-rune-bag-in-purse.patch, then rebuild (0091 is reserved by another change; the number is only the file's name).
+# server/tools/rune_bag_purse_patch_test.py. Apply in the server source root after 0001-0091: patch -p1 <
+# 0092-rune-bag-in-purse.patch, then rebuild (0091 is the fist attack of O505; the two touch different hunks).
 diff --git a/src/game.cpp b/src/game.cpp
 --- a/src/game.cpp
 +++ b/src/game.cpp

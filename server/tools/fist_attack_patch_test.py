@@ -50,9 +50,13 @@ touched = re.findall(r'^diff --git a/(\S+) b/\S+', body, re.M)
 eq(touched, ['src/luascript.cpp', 'src/luascript.h', 'src/player.h', 'src/weapons.cpp', 'src/chaosfist.h'], 'the files the patch touches')
 check('new file mode' in body and body.count('new file mode') == 1, 'chaosfist.h is the only new file')
 
-# no later patch undoes it, and it is the last number
+# no later patch undoes it (0092, the Rune Bag in the purse, comes after it): a later patch removes no line of the fist attack
 later = [f for f in files if f > NAME]
-eq(later, [], 'no patch after 0091 in the repository (a later one must keep what 0091 adds)')
+for f in later:
+    gone = [l for l in open(os.path.join(PATCHES, f), encoding='utf-8').read().splitlines()
+            if l.startswith('-') and not l.startswith('---')]
+    check(not any('FistAttack' in l or 'chaosFist' in l or 'ChaosFist' in l or 'patch 0091' in l for l in gone),
+          'no later patch removes what 0091 adds: ' + f)
 for f in files:
     if f != NAME and f.startswith('00'):
         other = open(os.path.join(PATCHES, f), encoding='utf-8').read()
