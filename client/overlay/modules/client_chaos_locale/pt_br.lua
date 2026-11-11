@@ -6699,6 +6699,8 @@ ChaosLocaleStrings['pt-BR'] = {
   -- base patch 0187 (Options > Interface)
   ["Remember open backpacks"] = "Lembrar mochilas abertas",
   ["The backpacks and bags open when you log out open again at your next login, in the same panel, order, height and scroll.\nA bag that is no longer there is skipped."] = "As mochilas e bolsas abertas quando você sai abrem de novo no próximo login, no mesmo painel, ordem, altura e rolagem.\nUma bolsa que não está mais lá fica de fora.",
+  -- base patch 0191 (game_interface addToPanels, O485): the line for a window with no room in the side panels
+  ["No room in the side panels. Close or shrink a window."] = "Sem espaço nos painéis laterais. Feche ou diminua uma janela.",
   -- game_groupqueue (O407): groupqueue.lua, groupqueue.otui, gqview.lua
   ["%d of %d party members ready"] = "%d de %d membros do grupo prontos",
   ["%s is ready to start"] = "%s está pronto para começar",
