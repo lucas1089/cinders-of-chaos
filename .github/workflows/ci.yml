@@ -277,7 +277,8 @@ jobs:
           # HD-2D offline preview (O432): classification, light colour, camera framing, shadows, depth of field on synthetic sprites
           python3 -I unity/tools/hd2d_preview_test.py
           # Unity passive tree layout (opcode 65 sends only the allocation): PassiveTree.json from the main client's tree data
-          luajit unity/tools/gen_tree_data.lua --check && lua5.3 unity/tools/gen_tree_data.lua --check
+          luajit unity/tools/gen_tree_data.lua --check
+          lua5.3 unity/tools/gen_tree_data.lua --check
           # 3D characters of the Unity prototype: the KayKit fetch script's pure parts on a fake archive (hashes, names, size limits)
           python3 -I unity/tools/fetch_3d_assets_test.py
           # front-art scene: emission masks (<dir>_e.png) match the glow rule on the committed sprites
@@ -488,7 +489,8 @@ jobs:
           "$d/chaosfacing_asan"
           awk '/^\+\+\+ b\/src\/client\/chaosfacing\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
             client/base-patches/0160-eight-direction-looks.patch > "$d/client_chaosfacing.h"
-          mkdir "$d/client" && mv "$d/client_chaosfacing.h" "$d/client/chaosfacing.h"
+          mkdir "$d/client"
+          mv "$d/client_chaosfacing.h" "$d/client/chaosfacing.h"
           g++ -std=c++17 -O1 -Wall -Wextra -I "$d/client" client/tools/chaosfacing_test.cpp -o "$d/client_facing_test"
           "$d/client_facing_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d/client" client/tools/chaosfacing_test.cpp -o "$d/client_facing_asan"
@@ -1502,7 +1504,8 @@ jobs:
 
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
-          cd server && python3 -I tools/gen_unique_specs.py
+          cd server
+          python3 -I tools/gen_unique_specs.py
           git diff --exit-code data/lib/chaos_unique_specs.lua ../client/overlay/modules/client_chaos_locale/pt_br.lua
 
       - name: Unique passives balance model (O278)
@@ -1622,6 +1625,9 @@ jobs:
             exit 1
           fi
 
+      - name: A failing command of a run block fails its step (no && list in the middle of a block, O508)
+        run: python3 -I tools/ci/check_workflow_steps.py && python3 -I tools/ci/check_workflow_steps_test.py
+
   live-pair:
     name: Live sprite pair (check_pair.py on windows-assets)
     # the pair is on this repository's windows-assets branch, which the default read token reaches; pull requests from
@@ -1684,7 +1690,8 @@ jobs:
 
       - name: Dungeon banners render from the live pair (gen_dungeon_banners.py --check with the pair)
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq luajit
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq luajit
           /tmp/fxenv/bin/python -I chaos/client/tools/gen_dungeon_banners.py --check \
               --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr"
 

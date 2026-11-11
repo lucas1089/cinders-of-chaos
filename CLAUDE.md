@@ -36,6 +36,7 @@ python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
 ! git grep -nE '^(<<<<<<< |>>>>>>> )' -- .   # no merge conflict markers left in a tracked file
+python3 -I tools/ci/check_workflow_steps.py && python3 -I tools/ci/check_workflow_steps_test.py   # a failing command of a workflow run block fails its step: no `&&` list in the middle of a multi-line block (bash -e does not stop left of `&&`); one command per line, a guard as `if` (O508)
 python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix); a rawget read of tr falls back to ChaosLocale.tr (O479)
 python3 -I tools/ci/check_desktop_commands.py   # desktop admin app (O312) table names the same chaos-ctl commands as android/
 python3 -I desktop/tools/sign_release_test.py   # desktop admin app signed self-update: the Python signer and desktop/src/sign.rs share one vector; key must be the compiled-in one

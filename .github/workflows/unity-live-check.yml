@@ -71,7 +71,7 @@ jobs:
           mkdir -p "$UL_WORK" "$UL_OUT"
           rc=0
           bash chaos/tools/ci/unity_live_check.sh || rc=$?
-          [ -f "$UL_OUT/summary.md" ] && cat "$UL_OUT/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$UL_OUT/summary.md" ]; then cat "$UL_OUT/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
           exit "$rc"
 
       - name: Upload the reports

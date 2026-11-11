@@ -397,7 +397,8 @@ jobs:
             echo "Moved by the workflow Map editor build. Do not delete it: the editor checks it on every start."
           } > roll.md
           if gh release view "$roll" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            rm -rf cur && mkdir cur
+            rm -rf cur
+            mkdir cur
             if gh release download "$roll" -R "$GITHUB_REPOSITORY" -D cur -p update-manifest.json 2> /dev/null; then
               old=$(jq -r '.version // ""' cur/update-manifest.json 2> /dev/null || true)
               if [ -n "$old" ] && [ "$(printf '%s\n%s\n' "$old" "$new" | sort -V | tail -n 1)" != "$new" ]; then
@@ -455,7 +456,8 @@ jobs:
       - name: The installed server's items and map (as the Windows package makes them)
         run: |
           set -euo pipefail
-          sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy luajit
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-numpy luajit
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p base work out/world
           tar -xJf assets/server/base-server.tar.xz -C base
@@ -463,7 +465,8 @@ jobs:
           bash chaos/tools/windows/prepare_server.sh work/server assets/world
           cp work/server/data/items/items.otb work/server/data/items/items.xml out/
           name=$(sed -n 's/^mapName *= *"\([^"]*\)".*/\1/p' work/server/config.lua | head -1)
-          test -n "$name" && test -f "work/server/data/world/$name.otbm"
+          test -n "$name"
+          test -f "work/server/data/world/$name.otbm"
           cp work/server/data/world/"$name".otbm out/world/map.otbm
           # the spawn and house files the map names (optional for the editor)
           for f in work/server/data/world/"$name"-*.xml; do if [ -f "$f" ]; then cp "$f" out/world/; fi; done
@@ -512,7 +515,8 @@ jobs:
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p client
           cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C client
-          test -f client/Tibia.dat && test -f client/Tibia.spr
+          test -f client/Tibia.dat
+          test -f client/Tibia.spr
           cp art/mapeditor-profile-data/items.otb art/mapeditor-profile-data/items.xml client/
           # the sprite info file: transparency and the extended format read from the spr (as the package does)
           python -I chaos/tools/windows/editor_versions.py client --otfi client/Tibia.otfi
@@ -550,7 +554,8 @@ jobs:
           exe() { find "$1" -maxdepth 1 -name '*.exe' ! -iname '*updater*' | head -1; }
           base=$(exe art/mapeditor-baseline-windows-x64)
           ours=$(exe art/mapeditor-windows-x64)
-          test -n "$base" && test -n "$ours"
+          test -n "$base"
+          test -n "$ours"
           status=0
           python -I chaos/mapeditor/tools/run_profile.py \
             --build "upstream+harness=$base" --build "ours=$ours" \
