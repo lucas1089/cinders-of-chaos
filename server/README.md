@@ -30756,7 +30756,7 @@ First stage of the combat redesign (owner, 2026-11-10: "monster attacks and defe
 ignore, the order of defence"; "for now forget our tests and the caps we put, also the DPS tests and the class objectives:
 I want to see how everything ends up, then we rethink"). This stage is the MONSTER side: how a monster takes a hit from a
 player, the monster ranks and the monsters' resistance data. The player side (the player's armour, absorb, dodge, block,
-penetration) is the next stage. Nothing here ran on a live server.
+penetration) is the next stage. The armour on weapon hits first ran on a local server on 2026-11-11 (O501, "Weapon hits" below: measured); everything else of this section is computed and mocked, never run on a live server.
 
 **Shared numbers.** `defence_config.lua` is the one file: `armourHitFactor` 0.07, `physicalReductionCap` 90, `resistCap` 75,
 `blockCap` 75. No other file holds a copy; the player stage reads the same file.
@@ -30785,8 +30785,10 @@ event registered later, outside a login, is last. A monster's events run in regi
    Ironhide, boss mechanics, waystone modifiers.
 
 **Armour by hit size.** `reduction = A / (A + armourHitFactor x H)`, H the physical part as it arrives. A big hit loses less of
-itself. A is not the XML armor: it is sized so that the MEDIAN CLASS HIT of the monster's level loses 25% (a normal monster, a
-magic one too), 40% (rare, legendary, nemesis) or 50% (a boss): `A = f / (1 - f) x 0.07 x median hit`, f 0.25, 0.40, 0.50.
+itself. A is not the XML armor: it is sized so that the MEDIAN HIT of the monster's level loses 25% (a normal monster, a
+magic one too), 40% (rare, legendary, nemesis) or 50% (a boss): `A = f / (1 - f) x 0.07 x median hit`, f 0.25, 0.40, 0.50. Two
+medians since O501: a spell is measured against the median CLASS hit (`hitCurve`, f = `armourTarget`), a weapon hit (melee and
+ranged origin) against the median WEAPON hit (`weaponHitCurve`, f = `weaponTarget`) and loses at most `weaponShareCap` of itself.
 A boss is every kind the code treats as one: the type flag `isboss` (area, quest and world bosses), the world boss, a rift
 guardian, an Omen guardian, a tower boss, a waystone tier boss. The level is the nameplate (hunting) level, else the level of
 `monster_damage.lua`.
@@ -30822,8 +30824,155 @@ big = 5 x median; the table is the test, armour alone, no file resistance):
 | 1,000 | elite | 76.9% (to 331) | 40.0% (to 4,301) | 11.8% (to 31,628) |
 | 1,000 | boss | 83.3% (to 239) | 50.0% (to 3,585) | 16.7% (to 29,871) |
 
-A weapon class swings small hits (the median weapon hit is 0.42 of the class hit at level 100) and loses more to armour than a
-spell class, whose casts are big.
+That table is the armour of a SPELL (and of a physical spell hit of a summon): the median class hit. A weapon hit has its own
+curve since O501 (below): a weapon class swings small hits and lost 50 to 90% of an auto attack to the armour sized for the class hit.
+
+**Weapon hits (O501, 2026-11-11).** Owner (translated): "It seems the auto attack is hitting practically nothing on the monsters."
+The cause is this layer, with a second cause that was there before it. What was measured, what was changed, what was not.
+
+*Measured.* A local server with every engine patch up to 0090 and the Lua of this repository up to O490 (install steps `files`,
+`gearsets`, `fistweapons`, `weapons800`, `weapongrowth`, `monsterresists`, `equiprules`, `meleeskill`). A bare test character of each of
+six kinds at levels 8, 20, 60, 100, 300, 500 and 1000: a Warrior with one hand and a shield, a Warrior with two hands, a Thief, a
+Ranger, a Monk and a Mystic, each in the best equipment-set weapon its level allows (claws for the Monk), weapon skill 10, 20, 45, 70,
+100, 120, 135, no cards, no passive tree, no gems, no stats. Each fought a dummy of its level with armour 0 and defence 0, so that
+what arrives is what the engine rolled (a real hunt monster for the flat armour, below). Every hit was logged inside the hit chain:
+what arrives at `ChaosMonsterDefence`, its A, what leaves it, what the monster's health loses. 100 to 200 auto attacks a character,
+once with the layer on and once with it off (`monster_defence_config.lua enabled`, the game before O462), then a rare and a boss at
+levels 100 and 500, two spells of the class and a real monster of each level. The rig is test data of the machine and is not committed.
+
+The auto attack on a normal monster of the level, the layer on. `Removed` is the share of the physical part of each hit the layer took
+(A is the O462 value, sized for a spell); `Reaches` is the damage per second of the auto attack, physical and element part, with the
+layer on over the same with it off; the seconds are for a typical hunt monster of the level (`pack_model.py`: 61 hp at 8, 78 at 20,
+257 at 60, 478 at 100, 1,775 at 300, 4,359 at 500, 16,620 at 1000). The Monk's own unarmed scaling is a later event and is not in its
+numbers.
+
+| Class | Level | Hit rolled, mean (max) | A | Removed | Reaches the monster | Seconds to kill, layer on / off |
+|---|---:|---:|---:|---:|---:|---:|
+| Warrior, one hand + shield | 20 | 18.7 (38) | 2.01 | 57.0% | 54.8% | 4.0 / 2.2 |
+| Warrior, one hand + shield | 100 | 78.2 (159) | 10.83 | 63.2% | 59.1% | 6.7 / 4.0 |
+| Warrior, one hand + shield | 500 | 319.1 (642) | 85.35 | 76.4% | 51.2% | 25.0 / 12.8 |
+| Warrior, one hand + shield | 1000 | 705.6 (1336) | 233.17 | 80.6% | 46.8% | 38.4 / 18.0 |
+| Warrior, two hands | 20 | 20.2 (38) | 2.01 | 55.5% | 50.1% | 5.8 / 2.9 |
+| Warrior, two hands | 100 | 81.4 (164) | 10.83 | 62.2% | 58.5% | 9.3 / 5.4 |
+| Warrior, two hands | 500 | 337.2 (670) | 85.35 | 76.1% | 52.8% | 35.8 / 18.9 |
+| Warrior, two hands | 1000 | 684.1 (1375) | 233.17 | 80.2% | 52.8% | 55.7 / 29.4 |
+| Thief, blade | 20 | 32.6 (207) | 2.01 | 37.8% | 54.9% | 4.8 / 2.6 |
+| Thief, blade | 100 | 119.2 (460) | 10.83 | 51.5% | 67.3% | 5.2 / 3.5 |
+| Thief, blade | 500 | 435.5 (785) | 85.35 | 71.2% | 55.1% | 10.9 / 6.0 |
+| Thief, blade | 1000 | 802.3 (1579) | 233.17 | 78.2% | 48.0% | 40.5 / 19.5 |
+| Ranger, bow | 20 | 64.4 (134) | 2.01 | 29.2% | 57.4% | 3.8 / 2.2 |
+| Ranger, bow | 100 | 139.7 (220) | 10.83 | 51.0% | 49.3% | 29.8 / 14.7 |
+| Ranger, bow | 500 | 629.7 (1219) | 85.35 | 64.0% | 29.9% | 56.0 / 16.8 |
+| Ranger, bow | 1000 | 1349.3 (2366) | 233.17 | 69.1% | 29.0% | 127.4 / 37.0 |
+| Monk, fists | 20 | 14.0 (30) | 2.01 | 63.4% | 27.3% | 28.2 / 7.7 |
+| Monk, fists | 100 | 31.5 (63) | 10.83 | 80.7% | 17.8% | 142.2 / 25.3 |
+| Monk, fists | 500 | 85.9 (172) | 85.35 | 89.9% | 9.2% | 711.1 / 65.2 |
+| Monk, fists | 1000 | 145.0 (275) | 233.17 | 90.1% | 9.6% | 1366.8 / 131.3 |
+| Mystic, wand | 20 | 15.9 (18) | 2.01 | no armour | 98.7% | 6.4 / 6.3 |
+| Mystic, wand | 100 | 61.8 (70) | 10.83 | no armour | 99.7% | 11.5 / 11.5 |
+| Mystic, wand | 500 | 144.9 (165) | 85.35 | no armour | 101.0% | 18.2 / 18.3 |
+| Mystic, wand | 1000 | 285.9 (328) | 233.17 | no armour | 100.3% | 52.6 / 52.8 |
+
+The Mystic's wand hit is `ORIGIN_WAND`: the layer never armours it (98 to 102% reaches). A rare monster took 65 to 90% of the physical
+part of an auto attack at levels 100 and 500, a boss 72 to 90% (`measure.csv`); the rare's +15 on the element resistance takes 15% of
+the wand's element hit.
+
+*What arrives.* O462 sized the armour for the median CLASS hit, `dps x auto share x interval` of a typical character: 237 for a
+Warrior at level 100 against 78 measured, 1,140 at 500 against 319, 3,182 at 1,000 against 706 (Ranger 400 / 140, 1,272 / 630,
+3,297 / 1,349; Monk 175 / 32, 1,158 / 86, 3,886 / 145). The layer is the first Lua event of the monster. It sees the roll of the engine;
+what the player multiplies by comes later: `ChaosPassiveDealt` (class damage, the damage pool, gems, cards, charms), `weapon_styles.lua`
+(two hands, bows), the weapon power, the class combat events, and for the Monk `monk_combat.lua`, which scales the engine's fist hit
+(attack 7) to the level's fist attack, about x6 at level 100, in an event registered on the monster at the first hit. Events after
+the layer changed a bare character's hit by -53% to +115% (the sword's tempo -17%, the Mystic's wand power x1.35 to 2.15, a bow -25 to
+-53% that was not isolated). So the layer saw a Warrior's hit 3.0 to 4.5 times smaller than the model's, a Ranger's 2 to 3 times, a
+Monk's 5 to 27 times, and took 37 to 81% of a Warrior's where it meant to take 25%. What arrives is the engine's formula
+(`Weapons::getMaxWeaponDamage`: `level / 5 + (skill / 4 + 1) x (attack / 3) x 1.03`, a bell from 0 to that maximum) at the inputs
+of the character, with two findings that `tools/defence_curve.py` holds as constants and `tools/defence_curve_test.py` against the
+measurement: the physical part of a set weapon is 65% of its attack (the rest is an element part, never armoured: wyrmscale blade
+22 + 12), and a weapon skill under 36 hits as 36 (skill 10 and 20 at levels 8 and 20 hit 1.5 to 2.9 times the formula). Measured
+mean over the formula at these inputs: 0.93 to 1.13 for the Warrior, Ranger and Monk at every level, 0.75 to 1.04 for the two-hand
+weapon (0.75 at 8, 0.90 at 20).
+
+*The second cause: the monster's own armour and defence (engine, before any Lua).* The XML numbers of the hunt monsters (median of the
+pool within 10% of the level: 5 / 5 at level 8, 10 / 10 at 13, 15 / 15 at 20, 30 / 30 at 60 and 100, 65 at 300, 70 at 500; the
+level-scaled monsters of the repository 75 to 90 from 500 to 2000) take `uniform(defence / 2, defence)` off a hit once a second and
+`uniform(armour / 2, armour - 1)` off every hit, and a hit that falls to 0 never reaches a Lua event. This README said "under 1% of a
+late hit". It is not, for an auto attack that arrives without its multipliers. A Warrior with one hand against a real monster of its
+level (Troll, Mummy, Wyrm, Retching Horror): half of its attacks were blocked outright (77 of 154 at level 8, 95 of 191 at 20, 60 and
+100) and the rest arrived at 9.3 against a roll of 18.7 at level 20 and 38 against 78 at 100. The damage per second with the layer
+OFF, real monster over dummy: Warrior 89 / 55 / 50 / 63% at levels 8 / 20 / 60 / 100 (two hands 95 / 50 / 47 / 65, Ranger
+105 / 95 / 71 / 70, Monk 66 / 14 / n.a. / 6, the Thief is noisy: its crits); with the layer on besides, the real monster over the OFF
+dummy: Warrior 72 / 37 / 29 / 46%, Ranger 108 / 72 / 39 / 29%, Monk 24 / 3 / n.a. / 1%. Ranking by the measured size at a level 20
+Warrior: the flat armour and defence took 45% of the auto damage, the O462 layer 32% of the rest. At 300 and above the layer is the bigger
+one (70 to 80% on the dummy against the model's 35% for the flat armour). Not seen as a cause: the weapon growth (it arrives in the
+attack of the item, the formula holds), the damage pool and the other multipliers (later events: they raise or lower a hit after
+the layer, they take nothing before it), engine patch 0090 (it is about hits a monster deals), the player armour layer O464, the
+resistance data (the dummy has none, the files of the real ones: Mummy 0, Retching Horror 10), the weapon intervals (1.0 to 1.3 s a
+vocation, 1.5 times that for two hands). The flat armour is the stock formula and was there before O462: it is not changed here.
+
+*The fix.*
+
+1. A weapon hit (melee and ranged origin) is measured against its own curve, `weaponHitCurve` of `monster_defence_config.lua`: the
+   median over the 15 classes with an armoured weapon hit (the six casters hit with a wand, `ORIGIN_WAND`, never armoured) of the mean
+   ARRIVING hit, in the units the layer sees: the engine's roll (the formula, the tier weapon of the level from `install_gear_sets.py`
+   times `weapon_growth.py`, the physical share, the typical skill of `weapon_skill_config.lua` never under 36, the bell `ROLL`) minus
+   the flat armour and defence of a typical hunt monster (`FLAT`). `tools/defence_curve.py` derives it at the same 13 levels as
+   `hitCurve` and `--check` holds it. Below level 100 the rows come from the same formula and are checked against the arriving hits
+   measured at 8, 20 and 60 (`MEASURED` in `tools/defence_curve_test.py`: 0.94 to 1.13 of the formula); the class curve below 100 is as
+   before. Rows: 16 at level 1, 13 at 10, 16 at 30, 37 at 60, 82 at 100, 121 at 200, 165 at 300, 239 at 500, 359 at 750, 587 at 1000,
+   710 at 1500, 867 at 2000, 915 at 2500. A spell keeps `hitCurve`: no spell number moves (`tests/monster_defence_test.lua` holds the
+   spell values of before; a summon's bite, a Necromancer's minions and the Beastmaster's wolves are `ORIGIN_SPELL` since O468, so they
+   keep the class curve, and their loss to armour is as before).
+2. `weaponTarget` 27.5 / 44.5 / 55 (normal / elite / boss): the percent of the median weapon hit the weapon armour takes. A little above
+   `armourTarget` (25 / 40 / 50) on purpose: the hits of one weapon roll between 0 and twice their mean, the cap holds the small ones and
+   the big ones lose less, so with these numbers the armour removes the `armourTarget` of the DAMAGE of the median class's auto attack,
+   expected over the roll (G1).
+3. `weaponShareCap` 40 / 55 / 65: the most of a weapon hit the armour may remove, so a low roll or a small hit (a Monk, level 8 to 30) is
+   not erased (G2). The rule of O462 stays: a big hit loses less than a small one. The physical cap (the file's percent, armour and
+   Plated inside 90) is as before, and penetration comes off the capped share.
+4. `C.defend` takes `ctx.Aw` and `ctx.weaponCap`; `monster_defence.lua` caches both armour values of a monster (`MD.weaponArmourOf`).
+   The order of the events is not touched (`tests/defence_order_test.lua` is true as before). The layer still sees the hit before the
+   player's multipliers, so the curve is in arriving units (G4) and the share it takes is a share of the arriving hit: it takes the
+   same share of the final hit. Moving the layer behind the player's events was not done: some are registered on the monster at the
+   first hit (the Monk's, the archetypes', the cards') and could not be put in front of or behind it, and the engine's flat armour
+   comes before any Lua anyway.
+
+G1 to G4 with the model (`python3 -I server/tools/defence_curve.py --check`, 85 levels from 8 to 2,500, the 15 armoured classes):
+G1 the median class loses 25 / 40 / 50% of its auto attack damage within 1.7 / 2.1 / 2.2 points at the worst level (it lost 41 to 88%
+on a normal monster); G2 the most any class loses is 40 / 55 / 65%, the Monk at the cap (it lost up to 97.5 / 98.7 / 99.1% at level
+1000); G3 no spell number moves and a big hit loses less than a small one; G4 the curve is in the units that arrive (the engine
+formula against the measurement). `--autos --level 100` prints the table of the 15 classes, before and after; three rows:
+
+| Class at level 100 | Mean arriving hit | Before: normal / elite / boss | After: normal / elite / boss |
+|---|---:|---|---|
+| Warrior (the median) | 82 | 60.9 / 75.2 / 81.8% | 24.5 / 39.8 / 49.8% |
+| Ranger | 228 | 37.8 / 54.1 / 63.6% | 11.4 / 21.0 / 28.6% |
+| Monk | 10 | 90.9 / 95.2 / 96.7% | 40.0 / 55.0 / 65.0% |
+
+*After the fix, measured* (the same characters, the dummy of the level, the layer on, 120 s; the numbers before are the table above):
+
+| Class | Level | Hit rolled, mean (before / after) | Removed, before -> after | Reaches the monster, before -> after | Seconds to kill after, layer on / off |
+|---|---:|---:|---:|---:|---:|
+| Warrior, one hand + shield | 20 | 18.7 / 28.7 | 57.0% -> 16.2% | 54.8% -> 85.8% | 2.0 / 1.7 |
+| Warrior, one hand + shield | 100 | 78.2 / 82.5 | 63.2% -> 25.3% | 59.1% -> 90.1% | 4.6 / 4.1 |
+| Warrior, one hand + shield | 500 | 319.1 / 329.3 | 76.4% -> 20.3% | 51.2% -> 87.2% | 14.8 / 12.9 |
+| Ranger, bow | 20 | 64.4 / 87.1 | 29.2% -> 5.7% | 57.4% -> 80.7% | 2.1 / 1.7 |
+| Ranger, bow | 100 | 139.7 / 140.1 | 51.0% -> 17.7% | 49.3% -> 79.4% | 18.6 / 14.8 |
+| Ranger, bow | 500 | 629.7 / 654.7 | 64.0% -> 11.9% | 29.9% -> 82.2% | 20.5 / 16.9 |
+| Monk, fists | 20 | 14.0 / 19.4 | 63.4% -> 21.1% | 27.3% -> 77.7% | 8.6 / 6.7 |
+| Monk, fists | 100 | 31.5 / 33.4 | 80.7% -> 39.6% | 17.8% -> 60.2% | 39.2 / 23.6 |
+| Monk, fists | 500 | 85.9 / 92 | 89.9% -> 39.5% | 9.2% -> 60.1% | 104.4 / 62.7 |
+
+*Not done, for the owner to decide.* (1) The flat armour and defence of the monster files, the second cause: a patch tool
+(`patch_monster_flat_defence.py`, an install step like `monsterresists`) that caps the XML `armor` and `defense` by a level rule would give
+a level 20 Warrior back about 45% of its auto damage. The Monk needs more: its fist hit is attack 7 in the engine and is scaled by a
+later event, so the flat armour takes nearly all of it before the scaling (6% of its damage reaches a level 100 monster with the layer
+off); an engine patch that reads the Monk's fist attack from the level, or its claws in the main hand, would fix that. (2) The weapon
+spells (Reaping Gyre, Earthbreaker) are `ORIGIN_SPELL` hits of weapon size (76 at level 100): they keep the class curve and lose 50 to
+60%; the rule "a spell is unchanged" was kept. (3) Not measured: a Necromancer's minions and a Beastmaster's wolves (read from the
+code: `ORIGIN_SPELL`, unchanged), 15 of the 21 classes (six kinds were run, the model covers the rest), levels above 1000, the real
+monsters at 300 and above, the Thief's crit hits in the model (the Thief line is a plain melee class in it; its measured arriving mean
+was 1.1 to 1.5 times the formula).
 
 **The physical cap.** The total of the file's physical percent, armour and Plated never passes 90 percent:
 `1 - (1 - p0) x (1 - armour) x (1 - Plated)`, and when it would, the layer takes the hit back up to 10 percent of the raw hit.
