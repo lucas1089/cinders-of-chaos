@@ -40,8 +40,8 @@ PAIR_ORBS = 63      # the ten orbs that get their own client item (install_orbs.
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 67
-PAIR_ASSETS_DAT_MD5 = 'a8053548f049003bfa0dbf74deb49e2e'
+PAIR_ASSETS = 68
+PAIR_ASSETS_DAT_MD5 = '6b5638b4057f86f484bc506b00079f19'
 
 
 def parse(text):

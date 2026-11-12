@@ -58,6 +58,9 @@ def read_spec(path):
             r[k] = int(r[k])
         assert 0 <= r['dx'] < r['w'] and 0 <= r['dy'] < r['h'], r['name']
         r['replace'] = int(r['replace']) if r.get('replace') else None
+        d = r.get('durs')                                    # per phase 'min:max' or one number, ';' apart (donor_fx.csv)
+        r['durs'] = [tuple(int(v) for v in (x.split(':') * 2)[:2]) for x in d.split(';')] if d else None
+        assert r['durs'] is None or len(r['durs']) == r['phases'], (r['name'], 'durs count')
     keys = [(r['kind'], r['name']) for r in rows]
     assert len(set(keys)) == len(keys), 'duplicate name in spec'
     return rows
@@ -87,9 +90,11 @@ def build(r):
                     frames[(f, x, y, 0)] = np.ascontiguousarray(a[y * H:(y + 1) * H, x0:x0 + W])
         px = py = 3
     for k, c in frames.items():
-        assert c[:, :, 3].any() or k[0] == n - 1, (r['name'], 'empty frame', k)
+        assert c[:, :, 3].any() or k[0] == n - 1 or r['durs'], (r['name'], 'empty frame', k)    # a spec with durs keeps the donor's blank frames
+    assert any(c[:, :, 3].any() for c in frames.values()), (r['name'], 'no art')
+    durs = r['durs'] or [(r['ms'], r['ms'])] * n
     return dict(kind=r['kind'], w=r['w'], h=r['h'], layers=1, px=px, py=py, phases=n, ms=r['ms'], frames=frames,
-                dx=r['dx'], dy=r['dy'], disp=None)
+                dx=r['dx'], dy=r['dy'], disp=None, durs=durs, total=sum((a + b) // 2 for a, b in durs))
 
 
 def lua_text(rows, gens, ids):
@@ -106,7 +111,7 @@ def lua_text(rows, gens, ids):
     for r, g in zip(rows, gens):
         if r['kind'] == 'effect' and not r.get('replace'):
             L.append(f"ChaosVfx.{r['name']} = {{id = {ids[(r['kind'], r['name'])]}, dx = {g['dx']}, dy = {g['dy']}, "
-                     f"ms = {g['ms'] * g['phases']}}}  -- {r['note']}")
+                     f"ms = {g.get('total', g['ms'] * g['phases'])}}}  -- {r['note']}")
     for r, g in zip(rows, gens):
         if r['kind'] == 'missile' and (not r.get('replace') or r.get('lua')):
             L.append(f"ChaosVfxMissile.{r.get('lua') or r['name']} = {{id = {ids[(r['kind'], r['name'])]}, dx = {g['dx']}, dy = {g['dy']}}}"

@@ -31424,6 +31424,27 @@ effect that already is in the pair. No art, no pair, no engine patch, no opcode;
   p50 names, which come from the registry); Raise Dead, Raise Bone Warrior, Archer and Mage and Banner of Bones need corpses or
   minions, so the probe does not run them (the pass is the same call path).
 
+## Donor effects (O525)
+
+Owner 2026-11-12: "Todos" on a sheet of the 40 best effects of the owner's donor client (docs/CREDITS.md "Owner-supplied spell effects"). Client pair 68 appends them as effect ids 4703 to 4742
+(client/MANIFEST.md "Pair 68"); this section is the server side. Art, balance, damage, area, timing and targets do not change; the spells below send another picture.
+
+* **Ids:** `data/lib/chaos_donor_fx_ids.lua`, `ChaosVfx.donor_<element>_<role>_<donor id> = {id, dx, dy, ms}` (send offset fitted to the art: the alpha centre, the foot of the bolt for the two lightning bolts 528 and 632; `ms` the sum of the donor's frame durations),
+  written by `python3 -I client/tools/sprites/gen_donor_fx.py ids` from `data/spells/donor_fx_catalog.csv` (written by the import, so the ids follow the input pair); `ids --check` is in CI.
+  The same step writes the 40 element tags of `data/spells/spell_fx_elements.csv` and keeps the `spell_fx_allow.csv` rows of this set (none). `ChaosPack36Fx.live()` loads the file with the pair 50 ids.
+  An id changes only when the pair is rebuilt on another input: regenerate the table and the tags, never edit them.
+* **Spells (10),** through the effects pass (`data/lib/chaos_fx_pass.lua`, the O525 block; the pass is asked first, so the entry decides): Mirror Shards (shards `ice_shatter` 489, a chip `ice_crystal` 475),
+  Purging Nova (`dome_blast_holy`: the gold ring 449, 5 x 5 for the radius 3 hit), Venom Spiral (`poison_ring`: the green cloud 505 on the target), Witchfire Bolt (`fireball_hit`: the fire hit 465),
+  Forked Storm (`lightning_hit`: the lightning bolt 528 on the first target, `lightning_strike`: the sky strike 632 on each jump), Ironhold (`shield_bubble`: the white shield 495), Soulward (`shield_bubble`: the purple
+  shield 494), Aegis of Faith (`dawn_aegis`: the gold shield 493), Mirror Mend (`regenerating`: the heal cross 216). Iaijutsu gathers in the gold ring 449 (`iaijutsu.lua`: the donor ring, else the pair 50 ring,
+  else the stock effect). Each keeps its role: a hit stays a hit, an area an area, a buff a buff, a heal a heal. Elements follow `tools/ci/check_spell_fx.py` (no allow row needed).
+* **Left alone on purpose:** Chi Ward, Lightward, Lay on Hands and Vow of Mending have a class signature effect (`chaos_class_fx.lua`) that the pass would wipe. Prismatic Rupture (the owner's table: the 9 x 9
+  arcane nova 695): the ring draws a radius of 4 tiles for a radius 2 hit. Doomtide (the fire ring 276), Rime Bloom (ice 626 or 654) and Rampart Quake (449): what they send now (a filled dome or disc) is richer than
+  the donor ring and the donor picture is thinner or wider than the damage area. The plain hit effects E12 and E44 and the Eclipse of Ruin ring belong to O523.
+* **Order:** the new ids exist only in a client on pair 68. Push pair 68 to windows-assets, ship the client package, `chaos-ctl.sh client-pair set 68` (admin app Comandos > "Par do cliente" > Gravar 68), then update the
+  server. A client on pair 67 or older logs invalid effect ids and shows nothing at those casts (the spell itself works). Switch: `ChaosFxPass.ON` (also turns the older entries off).
+* **Tests:** `tests/fx_pass_test.lua` (40 donor names live, the entries, Iaijutsu), `check_spell_fx.py` (+ `_test`), `client/tools/sprites/gen_donor_fx_test.py`. Probes of the casts, before and after: `SP/o525/import_final.mp4`.
+
 ## Monster defence (O462) (`defence_config.lua`, `monster_defence_config.lua`, `monster_defence_core.lua`, `monster_defence.lua`, `tools/defence_curve.py`, `tools/patch_monster_resists.py`)
 
 First stage of the combat redesign (owner, 2026-11-10: "monster attacks and defences, what they ignore, what they do not
