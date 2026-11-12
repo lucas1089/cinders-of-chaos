@@ -13,6 +13,10 @@ por aqueles" (server/README.md "Pack 30 monsters in the hunts").
 
 Only the look changes; the monster's name, stats, loot and spawns stay. A name that matches no file is reported (exit
 1 with --strict). A second run changes nothing. --dry-run writes nothing.
+
+Lua monsters of the base (DATA_DIR/monster/lua, Game.createMonsterType("Name"), `monster.outfit = { lookType = N, ... }`)
+are patched the same way (O533: the idle looks of Mega Dragon, Alpha Demon, the Phantoms and the others are Lua monsters):
+lookType changes, lookHead, lookBody, lookLegs, lookFeet and lookAddons are removed, or set to the sheet tint.
 """
 import csv
 import os
@@ -54,6 +58,24 @@ def new_look_tag(tag, look, colours):
     return tag
 
 
+LUA_NAME = re.compile(r'Game\.createMonsterType\(\s*"([^"]+)"\s*\)')
+LUA_OUTFIT = re.compile(r'(monster\.outfit\s*=\s*\{)(.*?)(\})', re.S)
+LUA_COLOURS = ('lookHead', 'lookBody', 'lookLegs', 'lookFeet', 'lookAddons')
+
+
+def new_lua_outfit(body, look, colours):
+    """The inside of a `monster.outfit = { ... }` block with the new lookType; the colour fields go, a sheet look gets its tint."""
+    body = re.sub(r'\blookType\s*=\s*\d+', 'lookType = %d' % look, body, count=1)
+    for c in LUA_COLOURS:
+        body = re.sub(r'[ \t]*\b%s\s*=\s*\d+\s*,?[ \t]*' % c, '', body)
+    if colours:
+        extra = ''.join(', %s = %s' % ('look' + c.capitalize(), colours[c]) for c in SHEET_COLOURS)
+        body = re.sub(r'(\blookType\s*=\s*\d+)', lambda m: m.group(1) + extra, body, count=1)
+    # a removed field leaves an empty line behind
+    body = re.sub(r'\n[ \t]*(?=\n)', '', body)
+    return body
+
+
 def patch(data_dir, want, dry_run=False, log=print):
     mdir = os.path.join(data_dir, 'monster')
     found, changed = set(), 0
@@ -63,6 +85,24 @@ def patch(data_dir, want, dry_run=False, log=print):
             dirs[:] = []
             continue
         for f in sorted(files):
+            if f.endswith('.lua'):
+                p = os.path.join(root, f)
+                with open(p, encoding='utf-8', errors='surrogateescape', newline='') as fh:
+                    t = fh.read()
+                m, o = LUA_NAME.search(t), LUA_OUTFIT.search(t)
+                if not m or not o or m.group(1) not in want:
+                    continue
+                found.add(m.group(1))
+                look, colours = want[m.group(1)]
+                body = new_lua_outfit(o.group(2), look, colours)
+                if body == o.group(2):
+                    continue
+                changed += 1
+                log('%s %s: lookType -> %d' % ('would update' if dry_run else 'updated', os.path.relpath(p, mdir), look))
+                if not dry_run:
+                    with open(p, 'w', encoding='utf-8', errors='surrogateescape', newline='') as fh:
+                        fh.write(t[:o.start(2)] + body + t[o.end(2):])
+                continue
             if not f.endswith('.xml'):
                 continue
             p = os.path.join(root, f)

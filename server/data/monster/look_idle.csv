@@ -1,0 +1,709 @@
+look,idle,phases,frames,how
+2,no,1,1,none
+3,no,1,1,none
+4,no,1,1,none
+6,no,1,1,none
+7,no,1,1,none
+9,no,1,1,none
+11,no,1,1,none
+12,no,1,1,none
+14,no,1,1,none
+15,no,1,1,none
+16,no,1,1,none
+17,yes,3,3,animateAlways
+19,yes,8,8,idle group
+20,no,1,1,none
+21,no,1,1,none
+22,no,1,1,none
+23,no,1,1,none
+24,no,1,1,none
+25,no,1,1,none
+26,yes,9,8,animateAlways
+28,no,1,1,none
+29,no,1,1,none
+31,no,1,1,none
+33,no,1,1,none
+34,no,1,1,none
+35,no,1,1,none
+40,no,1,1,none
+41,no,1,1,none
+42,no,1,1,none
+43,no,1,1,none
+44,yes,9,8,animateAlways
+45,no,1,1,none
+46,no,1,1,none
+47,no,1,1,none
+49,yes,2,2,animateAlways
+51,no,1,1,none
+52,no,1,1,none
+53,no,1,1,none
+54,no,1,1,none
+55,no,1,1,none
+56,no,1,1,none
+57,no,1,1,none
+58,no,1,1,none
+60,no,1,1,none
+61,no,1,1,none
+62,no,1,1,none
+63,no,1,1,none
+64,no,1,1,none
+65,no,1,1,none
+66,no,1,1,none
+68,no,1,1,none
+69,no,1,1,none
+70,no,1,1,none
+71,no,1,1,none
+72,no,1,1,none
+73,no,1,1,none
+74,no,1,1,none
+76,no,1,1,none
+77,no,1,1,none
+79,no,1,1,none
+80,no,1,1,none
+81,no,1,1,none
+82,no,1,1,none
+83,no,1,1,none
+93,no,1,1,none
+94,no,1,1,none
+96,no,1,1,none
+97,no,1,1,none
+98,no,1,1,none
+99,no,1,1,none
+100,no,1,1,none
+101,no,1,1,none
+102,yes,3,3,animateAlways
+103,no,1,1,none
+104,no,1,1,none
+105,no,1,1,none
+106,no,1,1,none
+111,no,1,1,none
+112,no,1,1,none
+113,no,1,1,none
+114,no,1,1,none
+115,no,1,1,none
+116,no,1,1,none
+117,no,1,1,none
+118,no,1,1,none
+119,no,1,1,none
+121,no,1,1,none
+122,yes,8,8,idle group
+123,no,1,1,none
+124,no,1,1,none
+125,no,1,1,none
+128,no,1,1,none
+129,no,1,1,none
+130,no,1,1,none
+131,no,1,1,none
+133,no,1,1,none
+134,no,1,1,none
+137,no,1,1,none
+138,no,1,1,none
+139,no,1,1,none
+146,no,1,1,none
+148,no,1,1,none
+149,no,1,1,none
+150,no,1,1,none
+151,no,1,1,none
+152,no,1,1,none
+153,no,1,1,none
+159,no,1,1,none
+160,no,1,1,none
+192,yes,9,9,animateAlways
+193,no,1,1,none
+194,no,1,1,none
+195,no,1,1,none
+196,no,1,1,none
+197,no,1,1,none
+198,no,1,1,none
+199,no,1,1,none
+200,no,1,1,none
+201,no,1,1,none
+204,no,1,1,none
+211,no,1,1,none
+214,no,1,1,none
+215,no,1,1,none
+216,no,1,1,none
+218,no,1,1,none
+219,no,1,1,none
+221,yes,2,2,animateAlways
+222,no,1,1,none
+225,no,1,1,none
+226,no,1,1,none
+229,no,1,1,none
+230,no,1,1,none
+231,no,1,1,none
+233,no,1,1,none
+234,no,1,1,none
+236,no,1,1,none
+237,no,1,1,none
+238,yes,3,3,animateAlways
+239,yes,2,2,animateAlways
+242,yes,2,2,animateAlways
+243,yes,2,2,animateAlways
+244,no,1,1,none
+245,no,1,1,none
+246,no,1,1,none
+247,no,1,1,none
+248,no,1,1,none
+250,no,1,1,none
+253,no,1,1,none
+254,no,1,1,none
+255,no,1,1,none
+256,no,1,1,none
+257,no,1,1,none
+259,no,1,1,none
+260,no,1,1,none
+261,no,1,1,none
+263,no,1,1,none
+264,no,1,1,none
+265,no,1,1,none
+268,no,1,1,none
+277,no,1,1,none
+280,no,1,1,none
+281,no,1,1,none
+282,no,1,1,none
+283,no,1,1,none
+285,no,1,1,none
+286,yes,3,3,animateAlways
+290,yes,4,4,animateAlways
+293,yes,4,4,animateAlways
+295,yes,3,3,animateAlways
+296,no,1,1,none
+297,no,1,1,none
+298,no,1,1,none
+299,no,1,1,none
+300,no,1,1,none
+301,no,1,1,none
+304,no,1,1,none
+305,no,1,1,none
+306,no,1,1,none
+307,yes,2,2,animateAlways
+308,no,1,1,none
+312,no,1,1,none
+313,no,1,1,none
+314,yes,6,6,animateAlways
+315,yes,6,6,animateAlways
+316,yes,6,6,animateAlways
+317,no,1,1,none
+318,no,1,1,none
+320,no,1,1,none
+321,no,1,1,none
+322,no,1,1,none
+323,no,1,1,none
+333,yes,4,2,animateAlways
+334,no,1,1,none
+337,no,1,1,none
+338,no,1,1,none
+339,no,1,1,none
+340,no,1,1,none
+343,no,1,1,none
+344,no,1,1,none
+345,no,1,1,none
+346,no,1,1,none
+347,no,1,1,none
+348,no,1,1,none
+349,yes,8,8,idle group
+350,no,1,1,none
+351,no,1,1,none
+355,no,1,1,none
+356,no,1,1,none
+357,no,1,1,none
+358,no,1,1,none
+362,no,1,1,none
+374,no,1,1,none
+380,no,1,1,none
+381,no,1,1,none
+395,no,1,1,none
+396,no,1,1,none
+397,no,1,1,none
+403,no,1,1,none
+407,no,1,1,none
+408,no,1,1,none
+413,no,1,1,none
+417,no,1,1,none
+420,no,1,1,none
+441,no,1,1,none
+442,no,1,1,none
+448,no,1,1,none
+449,yes,9,9,animateAlways
+453,no,1,1,none
+456,no,1,1,none
+457,no,1,1,none
+458,no,1,1,none
+460,no,1,1,none
+461,no,1,1,none
+462,no,1,1,none
+470,no,1,1,none
+486,no,1,1,none
+487,no,1,1,none
+488,no,1,1,none
+489,no,1,1,none
+490,no,1,1,none
+491,no,1,1,none
+494,no,1,1,none
+496,no,1,1,none
+497,no,1,1,none
+498,no,1,1,none
+499,no,1,1,none
+505,no,1,1,none
+508,no,1,1,none
+509,no,1,1,none
+510,no,1,1,none
+511,no,1,1,none
+523,no,1,1,none
+527,no,1,1,none
+528,yes,8,7,animateAlways
+529,no,1,1,none
+530,no,1,1,none
+532,no,1,1,none
+533,no,1,1,none
+534,no,1,1,none
+535,no,1,1,none
+537,no,1,1,none
+538,no,1,1,none
+539,no,1,1,none
+541,no,1,1,none
+551,no,1,1,none
+552,no,1,1,none
+553,no,1,1,none
+554,no,1,1,none
+555,no,1,1,none
+558,no,1,1,none
+560,no,1,1,none
+563,no,1,1,none
+566,no,1,1,none
+567,no,1,1,none
+568,no,1,1,none
+569,no,1,1,none
+570,no,1,1,none
+573,no,1,1,none
+579,no,1,1,none
+584,no,1,1,none
+585,no,1,1,none
+591,no,1,1,none
+593,no,1,1,none
+594,no,1,1,none
+600,no,1,1,none
+601,no,1,1,none
+602,no,1,1,none
+603,no,1,1,none
+604,no,1,1,none
+605,no,1,1,none
+607,no,1,1,none
+609,no,1,1,none
+611,no,1,1,none
+612,no,1,1,none
+613,no,1,1,none
+614,yes,6,6,animateAlways
+615,yes,3,3,animateAlways
+617,yes,3,3,animateAlways
+675,no,1,1,none
+686,no,1,1,none
+717,no,1,1,none
+720,no,1,1,none
+721,no,1,1,none
+729,no,1,1,none
+842,no,1,1,none
+854,no,1,1,none
+855,no,1,1,none
+856,no,1,1,none
+858,no,1,1,none
+860,no,1,1,none
+877,no,1,1,none
+878,no,1,1,none
+879,no,1,1,none
+882,no,1,1,none
+886,no,1,1,none
+943,no,1,1,none
+944,no,1,1,none
+945,no,1,1,none
+946,no,1,1,none
+947,no,1,1,none
+948,no,1,1,none
+949,no,1,1,none
+950,no,1,1,none
+951,no,1,1,none
+953,no,1,1,none
+954,no,1,1,none
+955,no,1,1,none
+956,no,1,1,none
+957,no,1,1,none
+958,no,1,1,none
+959,no,1,1,none
+960,no,1,1,none
+961,no,1,1,none
+967,no,1,1,none
+968,no,1,1,none
+970,no,1,1,none
+976,no,1,1,none
+979,no,1,1,none
+980,no,1,1,none
+981,no,1,1,none
+982,no,1,1,none
+986,yes,8,8,idle group
+987,yes,8,8,idle group
+989,yes,8,8,idle group
+991,yes,8,8,idle group
+992,yes,8,8,idle group
+993,yes,8,8,idle group
+994,no,1,1,none
+1001,no,1,1,none
+1007,no,1,1,none
+1019,no,1,1,none
+1020,no,1,1,none
+1021,no,1,1,none
+1022,no,1,1,none
+1023,no,1,1,none
+1025,no,1,1,none
+1026,no,1,1,none
+1027,no,1,1,none
+1028,no,1,1,none
+1029,no,1,1,none
+1031,yes,8,8,idle group
+1041,no,1,1,none
+1042,no,1,1,none
+1043,yes,8,8,idle group
+1045,no,1,1,none
+1046,no,1,1,none
+1047,no,1,1,none
+1048,no,1,1,none
+1049,no,1,1,none
+1054,yes,8,8,idle group
+1056,no,1,1,none
+1057,no,1,1,none
+1059,no,1,1,none
+1060,no,1,1,none
+1068,yes,8,8,idle group
+1069,yes,8,8,idle group
+1070,yes,8,8,idle group
+1071,yes,8,8,idle group
+1072,no,1,1,none
+1073,no,1,1,none
+1074,yes,8,8,idle group
+1075,no,1,1,none
+1076,no,1,1,none
+1077,no,1,1,none
+1078,no,1,1,none
+1079,no,1,1,none
+1080,yes,8,8,idle group
+1081,yes,8,8,idle group
+1082,yes,8,8,idle group
+1083,yes,8,8,idle group
+1084,no,1,1,none
+1085,no,1,1,none
+1086,yes,8,8,idle group
+1087,yes,8,8,idle group
+1093,no,1,1,none
+1094,no,1,1,none
+1095,no,1,1,none
+1110,yes,8,8,animateAlways
+1111,yes,8,8,animateAlways
+1112,yes,8,8,animateAlways
+1113,yes,8,8,animateAlways
+1117,yes,5,5,idle group
+1118,yes,5,5,idle group
+1119,yes,5,5,idle group
+1120,no,1,1,none
+1121,no,1,1,none
+1122,no,1,1,none
+1123,no,1,1,none
+1124,no,1,1,none
+1125,no,1,1,none
+1126,no,1,1,none
+1127,no,1,1,none
+1128,no,1,1,none
+1129,no,1,1,none
+1130,no,1,1,none
+1131,no,1,1,none
+1135,no,1,1,none
+1137,no,1,1,none
+1138,no,1,1,none
+1139,no,1,1,none
+1140,no,1,1,none
+1141,no,1,1,none
+1142,no,1,1,none
+1143,no,1,1,none
+1144,no,1,1,none
+1149,no,1,1,none
+1150,no,1,1,none
+1151,no,1,1,none
+1152,no,1,1,none
+1153,no,1,1,none
+1154,yes,4,4,animateAlways
+1155,no,1,1,none
+1156,no,1,1,none
+1157,no,1,1,none
+1158,no,1,1,none
+1159,no,1,1,none
+1160,no,1,1,none
+1161,no,1,1,none
+1162,no,1,1,none
+1163,no,1,1,none
+1164,no,1,1,none
+1165,no,1,1,none
+1166,no,1,1,none
+1170,no,1,1,none
+1171,no,1,1,none
+1172,no,1,1,none
+1173,no,1,1,none
+1174,no,1,1,none
+1256,no,1,1,none
+1257,no,1,1,none
+1258,no,1,1,none
+1259,no,1,1,none
+1260,no,1,1,none
+1261,no,1,1,none
+1264,no,1,1,none
+1265,no,1,1,none
+1266,no,1,1,none
+1267,no,1,1,none
+1268,no,1,1,none
+1269,no,1,1,none
+1284,no,1,1,none
+1286,no,1,1,none
+1287,no,1,1,none
+1288,yes,8,8,idle group
+1289,no,1,1,none
+1291,no,1,1,none
+1304,yes,2,2,animateAlways
+1309,yes,8,8,idle group
+1310,no,1,1,none
+1311,no,1,1,none
+1312,no,1,1,none
+1313,no,1,1,none
+1314,yes,8,8,idle group
+1315,no,1,1,none
+1316,no,1,1,none
+1317,yes,3,3,animateAlways
+1328,no,1,1,none
+1329,no,1,1,none
+1330,no,1,1,none
+1331,no,1,1,none
+1347,no,1,1,none
+1348,no,1,1,none
+1349,no,1,1,none
+1350,no,1,1,none
+1351,no,1,1,none
+1352,no,1,1,none
+1353,no,1,1,none
+1354,no,1,1,none
+1364,no,1,1,none
+1365,no,1,1,none
+1366,no,1,1,none
+1367,no,1,1,none
+1368,no,1,1,none
+1370,no,1,1,none
+1371,no,1,1,none
+1377,no,1,1,none
+1378,no,1,1,none
+1379,no,1,1,none
+1380,yes,12,12,idle group
+1381,no,1,1,none
+1382,no,1,1,none
+1383,no,1,1,none
+1384,no,1,1,none
+1385,no,1,1,none
+1386,no,1,1,none
+1387,no,1,1,none
+1394,no,1,1,none
+1395,no,1,1,none
+1396,yes,13,13,idle group
+1397,yes,8,8,idle group
+1398,yes,8,8,idle group
+1399,yes,8,8,idle group
+1400,no,1,1,none
+1401,no,1,1,none
+1402,no,1,1,none
+1403,no,1,1,none
+1404,no,1,1,none
+1405,no,1,1,none
+1406,yes,8,8,idle group
+1407,no,1,1,none
+1408,yes,8,8,idle group
+1409,no,1,1,none
+1410,no,1,1,none
+1411,no,1,1,none
+1412,yes,4,4,animateAlways
+1413,yes,4,4,animateAlways
+1414,yes,4,4,animateAlways
+1415,yes,4,4,animateAlways
+1420,no,1,1,none
+1421,no,1,1,none
+1422,no,1,1,none
+1423,no,1,1,none
+1439,yes,8,8,idle group
+1449,no,1,1,none
+1466,no,1,1,none
+1467,no,1,1,none
+1468,no,1,1,none
+1469,no,1,1,none
+1470,no,1,1,none
+1474,no,1,1,none
+1475,no,1,1,none
+1476,no,1,1,none
+1479,yes,8,8,idle group
+1481,yes,8,8,idle group
+1483,no,1,1,none
+1484,no,1,1,none
+1485,no,1,1,none
+1488,no,1,1,none
+1490,yes,8,8,idle group
+1491,yes,8,8,idle group
+1492,no,1,1,none
+1493,no,1,1,none
+1495,no,1,1,none
+1498,yes,4,4,idle group
+1499,yes,4,4,idle group
+1500,no,1,1,none
+1501,yes,8,8,idle group
+1502,no,1,1,none
+1503,no,1,1,none
+1530,no,13,1,none
+1531,no,9,1,none
+1532,no,7,1,none
+1533,no,7,1,none
+1541,no,10,1,none
+1548,no,9,1,none
+2122,yes,8,8,idle group
+2125,no,1,1,none
+2217,no,1,1,none
+2218,no,1,1,none
+2219,no,1,1,none
+2220,no,1,1,none
+2221,no,1,1,none
+2222,no,1,1,none
+2223,no,1,1,none
+2224,no,1,1,none
+2234,yes,4,4,idle group
+2242,yes,2,2,idle group
+2254,yes,2,2,idle group
+2287,yes,2,2,idle group
+2288,yes,2,2,idle group
+2289,yes,2,2,idle group
+2301,yes,2,2,idle group
+2308,yes,2,2,idle group
+2309,yes,2,2,idle group
+2658,yes,4,4,idle group
+2659,yes,4,4,idle group
+2660,yes,4,4,idle group
+2661,yes,4,4,idle group
+2662,yes,4,4,idle group
+2663,yes,4,4,idle group
+2664,yes,4,4,idle group
+2665,yes,4,4,idle group
+2666,yes,4,4,idle group
+2667,yes,4,4,idle group
+2682,yes,4,4,animateAlways
+2687,yes,6,6,animateAlways
+2688,yes,8,5,animateAlways
+2689,yes,8,5,animateAlways
+2801,yes,4,4,idle group
+2867,yes,6,4,animateAlways
+2890,yes,5,5,animateAlways
+2895,yes,4,4,animateAlways
+2899,yes,6,4,animateAlways
+2902,yes,6,4,animateAlways
+2903,yes,8,5,animateAlways
+2904,yes,4,4,animateAlways
+2907,yes,4,4,animateAlways
+2964,yes,12,6,idle group
+2965,yes,12,12,idle group
+2966,yes,12,10,idle group
+2967,yes,12,8,idle group
+2968,yes,12,9,idle group
+2969,yes,12,9,idle group
+2971,yes,8,8,idle group
+2972,yes,10,9,idle group
+2973,yes,12,8,idle group
+2974,yes,12,12,idle group
+2975,yes,12,11,idle group
+2976,yes,12,12,idle group
+2977,yes,12,8,idle group
+2978,yes,12,11,idle group
+2979,yes,12,8,idle group
+2980,yes,12,12,idle group
+2981,yes,8,8,idle group
+2982,yes,12,10,idle group
+2986,yes,12,9,idle group
+2993,yes,8,8,idle group
+2997,yes,10,8,idle group
+2998,yes,8,8,idle group
+3006,yes,8,8,idle group
+3009,yes,12,12,animateAlways
+3012,yes,8,8,idle group
+3014,yes,8,3,idle group
+3018,yes,8,8,animateAlways
+3019,yes,12,11,idle group
+3037,yes,8,8,idle group
+3043,yes,8,8,idle group
+3071,yes,8,8,idle group
+3086,yes,8,7,idle group
+3090,yes,8,8,idle group
+3091,yes,8,8,idle group
+3092,yes,8,8,idle group
+3103,yes,8,8,idle group
+3104,yes,8,8,idle group
+3137,yes,8,8,idle group
+3153,yes,8,8,idle group
+3161,yes,8,5,idle group
+3171,yes,8,8,idle group
+3172,yes,8,8,idle group
+3177,yes,8,8,idle group
+3180,yes,8,8,idle group
+3182,yes,8,8,animateAlways
+3183,yes,8,8,idle group
+3184,yes,8,8,idle group
+3195,yes,8,7,idle group
+3198,yes,8,8,animateAlways
+3199,yes,8,8,idle group
+3209,yes,8,8,idle group
+3215,yes,8,8,idle group
+3216,yes,8,8,idle group
+3217,yes,8,8,idle group
+3218,yes,8,8,idle group
+3224,yes,8,8,idle group
+3225,yes,8,8,idle group
+3227,yes,4,4,idle group
+3232,yes,8,8,idle group
+3234,yes,8,8,idle group
+3237,yes,24,24,idle group
+3258,yes,4,4,animateAlways
+3260,yes,8,8,idle group
+3261,yes,8,8,idle group
+3262,yes,8,8,idle group
+3263,yes,8,8,idle group
+3264,yes,8,8,idle group
+3266,yes,8,8,idle group
+3267,yes,8,8,idle group
+3269,yes,8,8,idle group
+3277,yes,8,8,idle group
+3278,yes,8,8,idle group
+3294,yes,8,8,idle group
+3303,yes,8,6,idle group
+3304,yes,3,3,animateAlways
+3306,yes,8,8,idle group
+3311,yes,16,16,idle group
+3313,yes,8,8,idle group
+3316,yes,8,8,idle group
+3318,yes,12,12,idle group
+3319,yes,12,7,idle group
+3321,yes,12,8,idle group
+3322,yes,12,12,animateAlways
+3326,yes,6,6,animateAlways
+3331,yes,4,3,idle group
+3332,yes,4,3,idle group
+3333,yes,4,4,idle group
+3334,yes,4,3,idle group
+3337,yes,56,39,animateAlways
+3349,yes,8,8,idle group
+3351,yes,12,7,idle group
+3352,yes,12,12,idle group
+3354,yes,8,8,idle group
+3355,yes,8,8,idle group
+3357,yes,8,8,idle group
+3358,yes,8,8,idle group
+3359,yes,8,8,idle group
+3360,yes,8,8,idle group
+3361,no,1,1,none
+3362,no,1,1,none
+3363,no,1,1,none

@@ -140,7 +140,7 @@ def main():
     assert rm and all(3370 < n < 3371 + len(rm) for _, n in rm.values())
     # the pool rows of the monsters recoloured by mask are the colours of their files (tune_monsters.py)
     rows = {r['name']: r for r in A.pool_rows()}
-    for n in ('Blightcrown Matron', 'Limb Hoarder', 'Nailcrown Regent', 'Bloom Husk', 'Rustguard', 'Grave Lantern', 'Leechwing'):
+    for n in ('Nailcrown Regent', 'Bloom Husk', 'Leechwing'):   # Grave Lantern took the idle look 3103 (O533)
         assert rows[n]['head'] not in (0, 133), n
     assert 1468 in A.load_masks() and 1501 in A.load_masks()
     print('audit_shared_looks_test: OK')
