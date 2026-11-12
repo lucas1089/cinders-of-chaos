@@ -11,7 +11,15 @@
 --   ChaosSpawnTile.ok(pos[, opts])           -> true | false, reason
 --   ChaosSpawnTile.find(center[, opts])      -> {x, y, z} | nil   the centre if it fits, else a bounded number of random
 --                                               tiles around it (opts.radius, opts.tries); nil: skip the spawn
--- opts: protection = true (a protection zone is fine), house = true, water = true (a water monster), occupied = true (a
+--   ChaosSpawnTile.reachMap(from[, opts])    -> {["x:y"] = steps}, count   the tiles a walker reaches from `from` on its floor
+--                                               (O517): breadth first, 8 directions, over the same tile rules, at most
+--                                               opts.maxPath steps (default 12), inside a box of opts.box tiles
+--                                               (default maxPath) around `from`: at most (2 * box + 1)^2 tiles looked at
+-- opts: reachFrom = pos (a tile that fits must also be walk-connected to pos, within maxPath steps; `from` itself is
+-- the seed and need not fit: a chest tile is blocked by the chest; opts.reach caches the map across calls with the same
+-- opts table, so a search over a whole square runs the walk once), maxPath, box, walk = function(pos) -> true (injected
+-- tile query for the walk, default: S.ok with occupied, and protection / house / water as in opts),
+-- protection = true (a protection zone is fine), house = true, water = true (a water monster), occupied = true (a
 -- creature on the tile is fine), rand = function(a, b) -> integer (default math.random), radius (default 2),
 -- tries (default 12), minRadius (default 0: the least distance, in tiles, from the centre).
 --
@@ -50,6 +58,47 @@ function S.isWater(tile)
 	return false
 end
 
+local function key(pos)
+	return pos.x .. ":" .. pos.y
+end
+S.key = key
+
+local DIRS = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}, {1, -1}, {1, 1}, {-1, 1}, {-1, -1}}
+
+function S.reachMap(from, opts)
+	opts = opts or {}
+	local maxPath = opts.maxPath or 12
+	local box = opts.box or maxPath
+	local walk = opts.walk
+	if not walk then
+		local wopts = {occupied = true, protection = opts.protection, house = opts.house, water = opts.water}
+		walk = function(p) return S.ok(p, wopts) end
+	end
+	local seen = {[key(from)] = 0}
+	local count = 1
+	local queue, head = {{x = from.x, y = from.y, z = from.z}}, 1
+	while queue[head] do
+		local cur = queue[head]
+		head = head + 1
+		local d = seen[key(cur)]
+		if d < maxPath then
+			for _, dir in ipairs(DIRS) do
+				local nx, ny = cur.x + dir[1], cur.y + dir[2]
+				local k = nx .. ":" .. ny
+				if not seen[k] and math.abs(nx - from.x) <= box and math.abs(ny - from.y) <= box then
+					local np = {x = nx, y = ny, z = from.z}
+					if walk(np) then
+						seen[k] = d + 1
+						count = count + 1
+						queue[#queue + 1] = np
+					end
+				end
+			end
+		end
+	end
+	return seen, count
+end
+
 function S.ok(pos, opts)
 	opts = opts or {}
 	local tile = pos and Tile(pos)
@@ -73,6 +122,15 @@ function S.ok(pos, opts)
 	end
 	if not opts.occupied and tile.getCreatureCount and tile:getCreatureCount() > 0 then
 		return false, "occupied"
+	end
+	if opts.reachFrom then
+		if pos.z ~= opts.reachFrom.z then
+			return false, "unreachable"
+		end
+		opts.reach = opts.reach or S.reachMap(opts.reachFrom, opts)
+		if opts.reach[key(pos)] == nil then
+			return false, "unreachable"
+		end
 	end
 	return true
 end

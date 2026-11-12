@@ -85,6 +85,12 @@ return {
 		claimSec = 120, -- the open chest waits this long for its party, then crumbles
 		remindSec = 30, -- whoever has not taken a share is reminded this long before it crumbles
 		spreadMin = 2, spreadMax = 5, -- tiles from the chest a horde appears at
+		-- a horde tile must be walk-connected to the chest tile (O517: a Juggernaut stood on a rock nobody could climb):
+		-- at most `maxPath` steps, looking inside a box of `reachBox` tiles around the chest
+		maxPath = 12, reachBox = 8,
+		-- safety net: a monster no participant has a path to for `stuckSec` (checked every `stuckCheckSec`) is moved to
+		-- a reachable spot near the chest, or removed when there is none
+		stuckSec = 20, stuckCheckSec = 4,
 		-- extra monsters per extra player in the party: +this share of the horde (rounded), up to maxPartyScale
 		partyHorde = 0.35, maxPartyScale = 2.0,
 		-- the hordes. count: monsters (the leader included); tiers: percent of the others by monster tier (the rest
