@@ -249,6 +249,15 @@ namespace Chaos.Core
             { "white", 4101 }, { "blue", 4098 }, { "orange", 4095 }, { "divine", 4097 }, { "unique", 4092 }, { "orb", 4090 },
         };
 
+        /// <summary>Pair 65 (O522) draws the loot beams at full size: a 3 x 5 tile group whose bottom-right tile is the item's tile + (1, 1) (the item's tile is
+        /// column 1, row 3 of the group). The main client adds such a beam at the tile + (1, 1), as lootbeamslogic.lua LB.FULL_SIZE; a pair below 65 has the
+        /// beams 1 x 2, on the tile itself.</summary>
+        public const int BeamFullW = 3, BeamFullH = 5, BeamFullDx = 1, BeamFullDy = 1;
+
+        /// <summary>The tile a beam effect of that frame group is drawn on for a beam on `tile` (the art's bottom-right cell goes there).</summary>
+        public static Pos BeamTile(Pos tile, FrameGroup g) =>
+            g != null && g.Width == BeamFullW && g.Height == BeamFullH ? tile.Offset(BeamFullDx, BeamFullDy) : tile;
+
         /// <summary>The beam effect id of a beam group, 0 for an unknown group.</summary>
         public static int BeamId(string group) => group != null && beams.TryGetValue(group, out int id) ? id : 0;
         public static IEnumerable<string> BeamGroups => beams.Keys;

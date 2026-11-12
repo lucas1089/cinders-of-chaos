@@ -17939,7 +17939,9 @@ stayed in the corpse; after buying (Strict) it was picked up and a Common list s
   orb option)). The client picks the best one its loot filter makes glow and colours the pillar by tier.
 - Since pair 36 (2026-10-22, owner: "Use as spells, level up e loot beams") the client draws the beam as the animated
   loot beam effect of the purchased beam pack, one per colour group (effects 4090-4101, `beam_*` of
-  `data/lib/chaos_pack36_fx_ids.lua`; client/MANIFEST.md "game_lootbeams"). The server messages did not change.
+  `data/lib/chaos_pack36_fx_ids.lua`; client/MANIFEST.md "game_lootbeams"). The server messages did not change. Pair 65
+  (O522) draws the beams at full size (3 x 5 tiles, send offset 1, 1: the ids file lists them so); the client adds them, nothing on the
+  server sends a beam effect.
 - Sent when the kill is recorded (`finish`) and again whenever that list changes (`refresh`: an item taken by hand,
   by click-to-loot, by autoloot or by a party member); `i = []` when the corpse is looted empty, decays, leaves the
   history (`historySize`) or its owner logs out (`stopTracking` / `beamOff`). Recipients: the owner and the party
