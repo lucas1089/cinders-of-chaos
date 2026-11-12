@@ -120,13 +120,13 @@ for name, e in pairs(ChaosVfx) do
 end
 eq(donorCount, 40, "40 donor effects")
 eq(C.swapFor(38, "fx", "ice_shatter"), "donor_ice_hit_489", "Mirror Shards sends the donor ice burst")
--- Forked Storm (O532): the donor bolts 4707 / 4708 are diagonal art that ran past the target, so the first hit and each jump
--- send the burst that is centred on the target tile (7x7, offset 3,3 = the middle cell), forked bolts from the centre
-eq(C.swapFor(202, "fx", "lightning_strike"), "big_lightning_burst_7", "Forked Storm sends the centred burst for the strike")
-eq(C.swapFor(202, "fx", "lightning_hit"), "big_lightning_burst_7", "Forked Storm sends the centred burst for each jump")
+-- Forked Storm (O532, owner choice): the first hit and each jump send the donor strike 4707; its art (5x5, send offset 0,0) ends
+-- inside the target tile (measured on pair 68: no pixel right of or below the target cell, the foot at about 148,148 px of the 160 px canvas)
+eq(C.swapFor(202, "fx", "lightning_strike"), "donor_energy_strike_632", "Forked Storm sends the donor strike for the first hit")
+eq(C.swapFor(202, "fx", "lightning_hit"), "donor_energy_strike_632", "Forked Storm sends the donor strike for each jump")
 do
-	local e = ChaosVfx.big_lightning_burst_7
-	ok(e ~= nil and e.id == 652 and e.dx == 3 and e.dy == 3, "the burst is drawn with its middle cell on the target tile (7x7, offset 3,3)")
+	local e = ChaosVfx.donor_energy_strike_632
+	ok(e ~= nil and e.id == 4707 and e.dx == 0 and e.dy == 0, "the strike's bottom-right tile is the target tile (offset 0,0)")
 end
 local iaiDonor = readFile("data/spells/chaos/samurai/iaijutsu.lua") or ""
 ok(iaiDonor:find("donor_holy_ring_449", 1, true) ~= nil, "Iaijutsu gathers in the donor gold ring first")

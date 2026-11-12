@@ -81,7 +81,7 @@ C.spells = {
 	-- signature effect (chaos_class_fx.lua: Chi Ward, Lightward, Lay on Hands, Vow of Mending) are left alone: the pass is asked first
 	[38] = {fx = {ice_shatter = "donor_ice_hit_489", ice_crystal = "donor_ice_hit_475"}}, -- Mirror Shards (shards around you, a chip on each enemy)
 	[201] = {fx = {fireball_hit = "donor_fire_hit_465"}},                             -- Witchfire Bolt
-	[202] = {fx = {lightning_hit = "big_lightning_burst_7", lightning_strike = "big_lightning_burst_7"}}, -- Forked Storm (O532: the donor bolts 4707 / 4708 are diagonal art and ran past the target; a burst centred on the target tile, forked bolts from its centre)
+	[202] = {fx = {lightning_hit = "donor_energy_strike_632", lightning_strike = "donor_energy_strike_632"}}, -- Forked Storm: the donor strike 4707 for the first hit and each jump (O532, owner choice; offset 0,0 puts its foot, at the end of the art, in the target tile)
 	[199] = {fx = {dome_blast_holy = "donor_holy_ring_449"}},                         -- Purging Nova (radius 3)
 	[57] = {fx = {poison_ring = "donor_earth_field_505"}},                              -- Venom Spiral (a green cloud on the target while it rots)
 	[132] = {fx = {shield_bubble = "donor_physical_aura_495"}},                       -- Ironhold
@@ -133,10 +133,6 @@ function C.live()
 		-- the class effects (warrior_quake, monk_heel ...) are named too
 		if C.loaded and not ChaosVfx.warrior_quake and dofile then
 			pcall(dofile, "data/lib/chaos_class_fx_ids.lua")
-		end
-		-- the big effects (Forked Storm sends big_lightning_burst_7, O532)
-		if C.loaded and not ChaosVfx.big_lightning_burst_7 and dofile then
-			pcall(dofile, "data/lib/chaos_big_fx_ids.lua")
 		end
 	end
 	return C.loaded
