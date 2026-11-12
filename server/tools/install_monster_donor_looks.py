@@ -31,6 +31,7 @@ import install_monster_recolour as R  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(HERE))
 MAP = os.path.join(REPO, 'server', 'data', 'monster', 'monster_donor_looks.csv')
+PURCHASED_MAP = os.path.join(REPO, 'server', 'data', 'monster', 'monster_wst_looks.csv')
 POOL = R.POOL
 MONSTERS = os.path.join('monster')
 LUA_NAME = re.compile(r'Game\.createMonsterType\(\s*"([^"]+)"\s*\)')
@@ -40,6 +41,15 @@ LUA_OUTFIT = re.compile(r'(monster\.outfit\s*=\s*\{.*?\blookType\s*=\s*)(\d+)', 
 def read_map(path=MAP):
     """[(monster, old look, new look)]"""
     return R.read_map(path)
+
+
+def purchased_looks(path=PURCHASED_MAP):
+    """{monster: purchased look} of the pair 71 map (O540): a monster of both maps (Bonepicker, Wan Sentry) wears that look once step
+    `monsterwstlooks` has run, which is past this step, not a look this step does not know"""
+    if not os.path.exists(path):
+        return {}
+    with open(path, newline='', encoding='utf-8') as f:
+        return {r['monster']: int(r['new_look']) for r in csv.DictReader(f)}
 
 
 def retype_lua(text, old, new):
@@ -94,6 +104,7 @@ def main(argv=None):
     if not ok:
         return 0
     rows = read_map(path)
+    beyond = purchased_looks()
     files = definitions(os.path.join(data_dir, MONSTERS), {r[0] for r in rows})
     bad, moved, done, writes = [], 0, 0, []
     for name, old, new in rows:
@@ -104,7 +115,9 @@ def main(argv=None):
             with open(p, encoding='utf-8', errors='surrogateescape', newline='') as f:
                 text = f.read()
             out, state = (R.retype_xml if kind == 'xml' else retype_lua)(text, old, new)
-            if state == 'other':
+            if state == 'other' and int((R.LOOK_TAG if kind == 'xml' else LUA_OUTFIT).search(text).group(2)) == beyond.get(name):
+                done += 1   # the purchased look (pair 71) is already on the monster: nothing to move
+            elif state == 'other':
                 m = (R.LOOK_TAG if kind == 'xml' else LUA_OUTFIT).search(text)
                 bad.append('%s: %s has look %s, the map knows %d and %d' % (name, os.path.relpath(p, data_dir), m.group(2), old, new))
             elif state == 'moved':

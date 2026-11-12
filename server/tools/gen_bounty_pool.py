@@ -80,6 +80,7 @@ def _donor_looks(path=DONOR_MAP):
 
 
 DONOR = _donor_looks()
+PURCHASED = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_wst_looks.csv'))   # O540, client pair 71: the same shape
 
 
 def committed_look(name, look):
@@ -90,7 +91,10 @@ def committed_look(name, look):
     if c and look == c[1]:
         return c[0]
     d = DONOR.get(name)   # O538: from client pair 70 the install step `monsterdonorlooks` writes the donor look the same way
-    return d[0] if d and look == d[1] else look
+    if d and look == d[1]:
+        return d[0]
+    w = PURCHASED.get(name)     # O540: from client pair 71 the step `monsterwstlooks` writes the purchased look (over a donor look) the same way
+    return w[0] if w and look == w[1] else look
 
 
 def attr(tag, name):

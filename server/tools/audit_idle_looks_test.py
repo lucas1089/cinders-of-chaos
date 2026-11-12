@@ -116,6 +116,17 @@ def main():
         names = {r['name']: r['look'] for r in I.donor_rows(I.S.pool_rows(pool2), 70, donor)[0]}
         check(names == {'Blocky': 3406, 'Other': 201}, names)
         check(I.donor_rows(I.S.pool_rows(pool2), 69, donor)[1] == set(), 'no move below pair 70')
+        # the purchased looks of pair 71 (O540): from pair 71 they win over a donor look, below it they do not exist
+        purchased = {'Blocky': (200, 3410), 'Other': (201, 3410)}
+        idle4 = {**idle2, 3410: (True, 2, 2, 'idle group')}
+        check({r['name']: r['look'] for r in I.donor_rows(I.S.pool_rows(pool2), 70, donor, purchased)[0]} == {'Blocky': 3406, 'Other': 201}, 'pair 70: the purchased map is not read yet')
+        check({r['name']: r['look'] for r in I.donor_rows(I.S.pool_rows(pool2), 71, donor, purchased)[0]} == {'Blocky': 3410, 'Other': 3410}, 'pair 71: a purchased look wins over the donor look')
+        check(I.donor_rows(I.S.pool_rows(pool2), 71, donor, purchased)[1] == {'Blocky', 'Other'}, 'both are moved monsters at pair 71')
+        check(I.check_pool(pool2, al2, idle4, walk=set(), pair=71, donor=donor, purchased=purchased) == [], 'pair 71: the old allow rows are not asked for')
+        check(len(I.check_pool(pool2, al2, idle2, walk=set(), pair=71, donor=donor, purchased=purchased)) == 2, 'pair 71: a purchased look missing from look_idle.csv fails')
+        check(I.check_pool(pool2, al2, {**idle4, 3410: (False, 1, 1, 'none')}, walk=set(), pair=71, donor=donor, purchased=purchased), 'pair 71: a purchased look that stands still fails')
+        check(I.crowded_problems({3410: ['A', 'B', 'C']}, os.path.join(t2, 'none.csv')) and not I.check_crowded(pool2, os.path.join(t2, 'none.csv'), pair=71, donor=donor, purchased=purchased),
+              'pair 71: two monsters on a look are no crowd, three are')
         by = {}
         for r in I.donor_rows(I.S.pool_rows(pool2), 70, {'Blocky': (200, 201)})[0]:
             by.setdefault(r['look'], []).append(r['name'])
@@ -211,6 +222,10 @@ def main():
     probs = I.check_pool() + I.check_crowded() + I.check_pool(pair=70) + I.check_crowded(pair=70)
     check(not probs, probs[:3])
     check(set(I.S.load_donor()) and all(new in I.load_idle() for _old, new in I.S.load_donor().values()), 'look_idle.csv has every donor look')
+    check(set(I.S.load_purchased()) and all(new in I.load_idle() and I.load_idle()[new][0] for _old, new in I.S.load_purchased().values()),
+          'look_idle.csv has every purchased look and each moves while it stands')
+    probs = I.check_pool(pair=71) + I.check_crowded(pair=71)
+    check(not probs, probs[:3])
     for look, names, why in I.load_crowded():
         check(why.strip() and len(names) > I.MAX_ON_LOOK, 'crowded row %d needs a reason and more than %d names' % (look, I.MAX_ON_LOOK))
     idle = I.load_idle()

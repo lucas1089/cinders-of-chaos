@@ -195,9 +195,15 @@ ok, msg = C.allows(os.path.join(server('chaosClientPair = 69\n'), 'data'), C.PAI
 check(not ok and msg.startswith('WARNING: monsterdonorlooks skipped') and 'client-pair set 70' in msg, 'monsterdonorlooks, pair 69: skipped with how to set it')
 check(C.allows(os.path.join(server('chaosClientPair = 70\n'), 'data'), C.PAIR_DONOR, 'monsterdonorlooks')[0], 'monsterdonorlooks, pair 70: runs')
 
+# the purchased creature outfits (pair 71): the guard number; the end-to-end guard is in install_monster_wst_looks_test.py
+check(C.PAIR_PURCHASED == 71 and C.PAIR_PURCHASED > C.PAIR_DONOR, 'the purchased monster looks need pair 71')
+ok, msg = C.allows(os.path.join(server('chaosClientPair = 70\n'), 'data'), C.PAIR_PURCHASED, 'monsterwstlooks')
+check(not ok and msg.startswith('WARNING: monsterwstlooks skipped') and 'client-pair set 71' in msg, 'monsterwstlooks, pair 70: skipped with how to set it')
+check(C.allows(os.path.join(server('chaosClientPair = 71\n'), 'data'), C.PAIR_PURCHASED, 'monsterwstlooks')[0], 'monsterwstlooks, pair 71: runs')
+
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
-check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR), 'PAIR_ASSETS covers every guarded pair')
+check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR, C.PAIR_PURCHASED), 'PAIR_ASSETS covers every guarded pair')
 mods = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules')
 for rel in ('client_chaos_charselect/outfit_anchors.lua', 'client_chaos_infolift/info_lifts.lua'):
     with open(os.path.join(mods, rel), encoding='utf-8') as f:

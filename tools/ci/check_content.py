@@ -382,7 +382,8 @@ import xml.etree.ElementTree as ET
 def _opt(flag):
     return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv[:-1] else None
 
-# the client pair the monsters are drawn with: pair 70 (client/MANIFEST.md "Pair 70": the 28 polished creature outfits 3406-3433 of the donor client, O538; the
+# the client pair the monsters are drawn with: pair 71 (client/MANIFEST.md "Pair 71": the 77 creature outfits 3434-3510 made from the purchased packs, O540; the
+# monster files keep their old looks, install step `monsterwstlooks` moves 79 monsters), pair 70 (client/MANIFEST.md "Pair 70": the 28 polished creature outfits 3406-3433 of the donor client, O538; the
 # monster files keep their old looks, install step `monsterdonorlooks` moves 28 monsters), pair 69 (client/MANIFEST.md "Pair 69": the 35 hue shifted monster outfits 3371-3405 after the
 # 3370 of pair 68; the monster files keep their old looks, install step `monsterrecolour` moves them), pair 57 had 3370 outfits (pair 57 adds 3364-3370, pair 54 adds the
 # AutoSprite looks 3361-3363; pairs 38-53 added outfits up to 3360 and pair 51 blanked unused things, the extra blank
@@ -392,7 +393,7 @@ def _opt(flag):
 # 75 sheet looks 2237-2311 and the 73 strip looks 2312-2384, art_import/pack30_looks.csv and pack30_strips.csv, no
 # blank padding; pair 29 added the Archmage 2235 / 2236); the blank ones have no sprite at all (stock gaps, 1562-1999 and 2082-2099 reserved, 2143-2160
 # and 2194-2199 padding). --pair recounts both.
-PAIR_NAME, PAIR_OUTFITS = 'pair 70', 3433
+PAIR_NAME, PAIR_OUTFITS = 'pair 71', 3510
 PAIR_BLANK = ('135 161-191 411 415 424 439-440 468-469 474-485 501 518-520 524-525 536 543 549 581-582 597 616 623 '
               '625 638-643 645-646 652-663 678 700-711 713 715 718-719 722-723 737 741-744 748 751-758 764-841 861 '
               '864-867 871-872 880 891-898 1146-1147 1193 1281 1285 1290 1292-1293 1295 1297 1369 1440 1442-1443 '
@@ -764,7 +765,7 @@ for msg in rift_looks.problems(open(RIFT_CFG, encoding='utf-8').read(), BLANK_OU
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'server', 'tools'))
 import audit_shared_looks
 import client_pair
-for _pair in (client_pair.PAIR_RECOLOUR - 1, client_pair.PAIR_RECOLOUR, client_pair.PAIR_DONOR):
+for _pair in (client_pair.PAIR_RECOLOUR - 1, client_pair.PAIR_RECOLOUR, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED):
     for msg in audit_shared_looks.check_pool(pair=_pair):
         fail(f'server/data/monster/shared_looks_allow.csv: [look.shared] at client pair {_pair}: {msg}')
 # the recolour map: one row per monster, the copies are consecutive outfits right after pair 68's 3370 and inside the pair, never blank,
@@ -803,11 +804,34 @@ for _n, (_o, _nl) in sorted(_dmap.items()):
         fail(f'server/data/monster/monster_donor_looks.csv: {_n}: look {_nl} is a blank outfit')
     if _n in _rmap:
         fail(f'server/data/monster/monster_donor_looks.csv: {_n} is in monster_recolour_looks.csv as well')
+# the purchased map (O540, server/data/monster/monster_wst_looks.csv, client pair 71): one row per monster, the new looks are outfits 3434..3510 inside the
+# pair and never blank, at most 2 monsters on one new look, each monster wears the old look in the committed pool (and in its file when it is ours),
+# no monster of the recolour map is in it; a monster of the donor map (Bonepicker, Wan Sentry) leaves its donor look for the purchased one
+_wmap = audit_shared_looks.load_purchased()
+_wcount = {}
+for _n, (_o, _nl) in sorted(_wmap.items()):
+    _wcount[_nl] = _wcount.get(_nl, 0) + 1
+    if not 3434 <= _nl <= PAIR_OUTFITS:
+        fail(f'server/data/monster/monster_wst_looks.csv: {_n}: look {_nl} is not an outfit 3434..{PAIR_OUTFITS} of {PAIR_NAME}')
+    if _prow.get(_n) != _o:
+        fail(f'server/data/monster/monster_wst_looks.csv: {_n}: the map says look {_o}, the committed bounty pool says {_prow.get(_n)}')
+    if _n in _own and _own[_n] != _o:
+        fail(f'server/data/monster/monster_wst_looks.csv: {_n}: the map says look {_o}, the monster file says {_own[_n]}')
+    if _nl in BLANK_OUTFITS:
+        fail(f'server/data/monster/monster_wst_looks.csv: {_n}: look {_nl} is a blank outfit')
+    if _n in _rmap:
+        fail(f'server/data/monster/monster_wst_looks.csv: {_n} is in monster_recolour_looks.csv as well')
+    if _n in _dmap and _dmap[_n][0] != _o:
+        fail(f'server/data/monster/monster_wst_looks.csv: {_n}: the donor map has the old look {_dmap[_n][0]}, this one {_o}')
+for _nl, _c in sorted(_wcount.items()):
+    if _c > 2:
+        fail(f'server/data/monster/monster_wst_looks.csv: look {_nl} is on {_c} monsters (at most 2, owner rule of O533)')
 # a hunt monster moves while it stands (O533): the bounty pool hunt list, each look read in server/data/monster/look_idle.csv (written
 # from the live dat by tools/audit_idle_looks.py --write-idle): an idle frame group with 2 or more phases, or animateAlways. A look
 # without one needs a row of server/data/monster/no_idle_allow.csv with its reason; the list may only shrink.
 import audit_idle_looks
-for msg in audit_idle_looks.check_pool() + audit_idle_looks.check_pool(pair=client_pair.PAIR_DONOR):
+for msg in (audit_idle_looks.check_pool() + audit_idle_looks.check_pool(pair=client_pair.PAIR_DONOR)
+            + audit_idle_looks.check_pool(pair=client_pair.PAIR_PURCHASED)):
     fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.idle] {msg}')
 # the walk in place list of game_bossanimate (O534): generated from look_idle.csv and player_looks.csv, up to date, and no look a
 # player can wear (a mount or an outfit must not walk in place)
@@ -818,7 +842,7 @@ if not _player:
     fail('server/data/monster/player_looks.csv: [look.walk] empty (run tools/audit_idle_looks.py --write-player-looks DATA_DIR)')
 for _l in sorted(audit_idle_looks.load_walklist() & set(_player)):
     fail(f'client/overlay/modules/game_bossanimate/idle_walk_looks.lua: [look.walk] look {_l} is a player look ({_player[_l]})')
-for _p in (None, client_pair.PAIR_DONOR):   # at most 2 hunt monsters on one look (owner 2026-11-12), as drawn below and at pair 70
+for _p in (None, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED):   # at most 2 hunt monsters on one look (owner 2026-11-12), as drawn below and at pairs 70 and 71
     for msg in audit_idle_looks.check_crowded(pair=_p):
         fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.crowded] {msg}')
 for key in sorted(set(ALLOW) - allow_used):

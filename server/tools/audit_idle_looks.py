@@ -149,6 +149,7 @@ def write_idle(dat, pool=POOL, path=IDLE, allow_path=ALLOW):
     looks = {int(x) for x in re.findall(r'\blook = (\d+)', text)}
     looks |= {l for l, _ in load_allow(allow_path).values()}
     looks |= {new for _old, new in S.load_donor().values()}   # the donor looks of pair 70 (O538) are worn above it
+    looks |= {new for _old, new in S.load_purchased().values()}     # and the purchased looks of pair 71 (O540)
     walk = {}
     facts = dat_facts(dat, looks, walk)
     with open(path, 'w', newline='', encoding='utf-8') as f:
@@ -261,35 +262,38 @@ def load_allow(path=ALLOW):
     return out
 
 
-def donor_rows(rows, pair, donor=None):
+def donor_rows(rows, pair, donor=None, purchased=None):
     """(rows, names): the pool rows as a server on client `pair` wears them. From pair 70 a monster of the donor map (O538,
-    monster_donor_looks.csv) wears its new look; names is the set of those monsters (their rows of the allow lists are for the old look)."""
+    monster_donor_looks.csv) wears its new look, from pair 71 a monster of the purchased map (O540, monster_wst_looks.csv) its new look
+    (over its donor look: Bonepicker, Wan Sentry); names is the set of those monsters (their rows of the allow lists are for the old look)."""
     import client_pair
     donor = S.load_donor() if donor is None else donor
+    purchased = S.load_purchased() if purchased is None else purchased
     if pair is None or pair < client_pair.PAIR_DONOR:
         return rows, set()
     names = set()
     out = []
     for r in rows:
-        d = donor.get(r['name'])
-        if d and r['look'] in d:
-            r = dict(r, look=d[1])
+        chain = [m[r['name']] for m, need in ((donor, client_pair.PAIR_DONOR), (purchased, client_pair.PAIR_PURCHASED)) if r['name'] in m and pair >= need]
+        if chain and r['look'] in {x for d in chain for x in d} | {d[0] for d in chain}:
+            r = dict(r, look=chain[-1][1])
             names.add(r['name'])
         out.append(r)
     return out, names
 
 
-def check_pool(pool=POOL, allow_path=ALLOW, idle=None, walk=None, pair=None, donor=None):
+def check_pool(pool=POOL, allow_path=ALLOW, idle=None, walk=None, pair=None, donor=None, purchased=None):
     """CI rule: every monster of the bounty pool hunt list wears a look with an idle animation (or one on the generated walk in
     place list, O534), or is a row of the allow list with the look it wears. Returns the problem lines.
 
     `pair` None reads the committed pool as it is (the looks below pair 70); a pair of 70 or more reads it as that pair draws it: a
-    monster of the donor map wears its new look, must move on it, and its allow row (for the old look) is not asked for."""
+    monster of the donor map (from 70) or of the purchased map (from 71) wears its new look, must move on it, and its allow row (for the
+    old look) is not asked for."""
     idle = load_idle() if idle is None else idle
     walk = load_walklist() if walk is None else walk
     allow = load_allow(allow_path)
     out, seen = [], set()
-    prow, moved = donor_rows(S.pool_rows(pool), pair, donor)
+    prow, moved = donor_rows(S.pool_rows(pool), pair, donor, purchased)
     for r in prow:
         name, look = r['name'], r['look']
         if not look:
@@ -300,7 +304,7 @@ def check_pool(pool=POOL, allow_path=ALLOW, idle=None, walk=None, pair=None, don
                 out.append('look %d of %s is not in server/data/monster/look_idle.csv (run tools/audit_idle_looks.py --write-idle Tibia.dat)'
                            % (look, name))
             elif not (idle[look][0] or look in walk):
-                out.append('%s wears the donor look %d at pair %d, which has no idle animation (%s): it must move while it stands'
+                out.append('%s wears the new look %d at pair %d, which has no idle animation (%s): it must move while it stands'
                            % (name, look, pair, idle[look][3]))
             continue
         if look not in idle:
@@ -339,10 +343,10 @@ def crowded_problems(groups, allow_path=CROWDED):
     return out
 
 
-def check_crowded(pool=POOL, allow_path=CROWDED, pair=None, donor=None):
+def check_crowded(pool=POOL, allow_path=CROWDED, pair=None, donor=None, purchased=None):
     """CI rule on the bounty pool hunt list (read at `pair` as check_pool does)."""
     by = {}
-    for r in donor_rows(S.pool_rows(pool), pair, donor)[0]:
+    for r in donor_rows(S.pool_rows(pool), pair, donor, purchased)[0]:
         if r['look']:
             by.setdefault(r['look'], []).append(r['name'])
     return crowded_problems(by, allow_path)

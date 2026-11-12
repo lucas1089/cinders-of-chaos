@@ -67,3 +67,7 @@ look,names,status,reason
 1533,Elite Ice Dragon | Ice Dragon,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 1551,Deaththrower | Flamethrower | Magicthrower | Pillar | Plaguethrower | Shredderthrower,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 22444,Bad Dream | Despair,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
+3436,Freakish Lost Soul | Mean Lost Soul,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
+3475,Marsh Stalker | Meadow Strider,kept,stock pair: base server monsters that share a look by the base design (families of one creature); moved together to one purchased look at pair 71 (O540)
+3476,Salamander | Troll-Trained Salamander,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
+3506,Infected Weeper | Weeper,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
