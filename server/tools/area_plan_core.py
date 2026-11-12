@@ -54,6 +54,20 @@ def catalogue(pair24=None, dark=False):
     return _cache[key]
 
 
+def materials(pair24=None, dark=False):
+    """the wall brushes, ground families and doors of our Lua tables with their ids (areaplan_build.lua materials), for
+    the planner's buildings: {walls: {name: {horizontal, vertical, corner, pole: [ids]}}, families: {name: {z, walk,
+    indoor, grounds: [ids]}}, doors: {name: {h: {closed, open}, v: {closed, open}}}}"""
+    if pair24 is None:
+        pair24 = pair24_switch()
+    key = ('materials', pair24, dark)
+    if key not in _cache:
+        args = [lua_bin(), 'tools/areaplan_build.lua', 'materials'] + (['pair24'] if pair24 else []) + (['dark'] if dark else [])
+        out = subprocess.run(args, cwd=SERVER, check=True, capture_output=True, text=True).stdout
+        _cache[key] = json.loads(out)
+    return _cache[key]
+
+
 def pair24_switch():
     """ChaosThemeArt.PAIR24 in data/lib/chaos_theme_art.lua (the pair 24 grounds are used only while it is on)"""
     path = os.path.join(SERVER, 'data', 'lib', 'chaos_theme_art.lua')
@@ -572,6 +586,8 @@ def validate(plan, cat=None, pair24=None):
               ('did you mean %s?' % ', '.join('"%s"' % nlist[c] for c in close)) if close else 'see `area_planner.py catalogue --npcs`')
         if z and not z.get('pz'):
             W(p + '.zone', 'NPC %s stands outside a protection zone' % n['name'], 'set "pz": true on %s' % z['id'])
+    if plan.get('buildings'):
+        issues.extend(validate_buildings(plan, zid, biome, nlist, ref, pair24))
     rewards = reward_items()
     slots = {}
     for i, c in enumerate(plan.get('chests', [])):
@@ -596,6 +612,101 @@ def validate(plan, cat=None, pair24=None):
     for k in set(keys):
         if keys.count(k) > 1:
             W('plan.chests', 'quest key %s is used by %d chests' % (k, keys.count(k)))
+    return issues
+
+
+def validate_buildings(plan, zid, biome, nlist, ref, pair24=None):
+    """[Issue] for the plan's `buildings` (area_plan_buildings.py): ids, zones, sizes against the prefab's ranges, the
+    footprint against its zone, material and family names, the NPC, the extra slots"""
+    import area_plan_buildings as BLD
+    import area_plan_decor as D
+    issues = []
+    E = lambda p, m, h=None: issues.append(Issue('ERROR', p, m, h))
+    W = lambda p, m, h=None: issues.append(Issue('WARN', p, m, h))
+    mats = materials(pair24)
+    fams = BLD.families()
+    kit_groups = D.kits()['groups']
+    W_, H_ = plan['size']
+    seen, kinds_done = {}, set()
+    for i, b in enumerate(plan['buildings']):
+        p = 'plan.buildings[%d]' % i
+        if b['id'] in seen:
+            E(p + '.id', 'building id "%s" is used twice' % b['id'], 'give every building its own id')
+        seen[b['id']] = b
+        pf = BLD.prefab(b['kind'])
+        if b['kind'] not in kinds_done:
+            kinds_done.add(b['kind'])
+            for m in BLD.prefab_problems(pf, mats, fams, kit_groups):
+                E(p + '.kind', 'the %s prefab is broken: %s' % (b['kind'], m))
+        z = ref(p + '.zone', b['zone'])
+        if z and z.get('role') == 'boss':
+            E(p + '.zone', 'a building cannot stand in the boss room %s' % z['id'])
+        (wlo, whi), (hlo, hhi) = BLD.size_range(pf)
+        w, h = (b['size'] if 'size' in b else (None, None))
+        if w is not None:
+            if not wlo <= w <= whi or not hlo <= h <= hhi:
+                E(p + '.size', 'a %s is %d-%d wide and %d-%d high (canonical, door south); %d x %d is outside'
+                  % (b['kind'], wlo, whi, hlo, hhi, w, h), 'use a size inside those ranges or leave "size" out')
+            else:
+                try:
+                    BLD.layout(pf, w, h, 's', b.get('slots', ()))
+                except BLD.BuildingError as e:
+                    E(p, 'a %d x %d %s: %s' % (w, h, b['kind'], e))
+        side = b.get('door') or pf['door_side']
+        if w is not None and z:
+            dims = [(w, h)] if side in ('n', 's') else [(h, w)] if side in ('e', 'w') else [(w, h), (h, w)]
+            zw, zh = zone_dims(z, biome)
+            if not any(fw <= zw and fh <= zh for fw, fh in dims):
+                E(p + '.size', 'a %d x %d footprint does not fit zone %s (%d x %d)' % (dims[0][0], dims[0][1], z['id'], zw, zh),
+                  'make the zone bigger or the building smaller')
+            if 'at' in b:
+                fw, fh = min(dims, key=lambda d_: d_[0] * d_[1])
+                x, y = b['at']
+                if x < MARGIN_LO - 1 or y < MARGIN_LO - 1 or x + fw > W_ - MARGIN_HI or y + fh > H_ - MARGIN_HI:
+                    E(p + '.at', 'building %s at %d,%d (%d x %d) leaves the usable area %d..%d x %d..%d'
+                      % (b['id'], x, y, fw, fh, MARGIN_LO - 1, W_ - MARGIN_HI - 1, MARGIN_LO - 1, H_ - MARGIN_HI - 1),
+                      'move it inside or leave "at" out so the planner places it')
+        wall = b.get('wall') or pf['wall']
+        floor = b.get('floor') or pf['floor']
+        if wall not in mats['walls']:
+            E(p + '.wall', 'no wall brush "%s"' % wall, 'use one of ' + ', '.join(sorted(mats['walls'])))
+        if floor not in mats['families'] or not mats['families'][floor]['walk']:
+            E(p + '.floor', 'no walkable ground family "%s"' % floor,
+              'use one of ' + ', '.join(sorted(k for k, v in mats['families'].items() if v['walk'])))
+        if b.get('roof', pf['roof']) and plan['floors'] > 1 and z and z['floor'] > 1:
+            E(p + '.roof', 'the roof of a building on floor %d would lie on floor %d of the plan' % (z['floor'], z['floor'] - 1),
+              'put the building on floor 1 or set "roof": false')
+        npc = b.get('npc')
+        if npc:
+            if 'npc' not in pf:
+                E(p + '.npc', 'the %s prefab has no NPC slot' % b['kind'], 'drop "npc" or use a temple, depot or shop')
+            if npc.get('new'):
+                if npc['name'].lower() in nlist:
+                    E(p + '.npc.name', 'NPC %s exists already; "new" is for an NPC the compile writes a stub for' % npc['name'],
+                      'drop "new" to place the existing NPC')
+                elif not re.match(r"^[A-Z][A-Za-z' -]{2,30}$", npc['name']):
+                    E(p + '.npc.name', 'a new NPC name needs a capital letter first and 3-31 letters, spaces or apostrophes')
+            elif npc['name'].lower() not in nlist:
+                close = difflib.get_close_matches(npc['name'].lower(), list(nlist), 3)
+                E(p + '.npc.name', 'no NPC "%s" in our NPC list' % npc['name'],
+                  ('did you mean %s?' % ', '.join('"%s"' % nlist[c] for c in close)) if close else 'see `area_planner.py catalogue --npcs`')
+            if not b.get('pz', pf.get('pz')):
+                W(p + '.npc', 'NPC %s stands outside a protection zone' % npc['name'], 'set "pz": true on the building')
+        for j, sl in enumerate(b.get('slots', [])):
+            q = '%s.slots[%d]' % (p, j)
+            f = fams.get(sl['family'])
+            if not f:
+                E(q + '.family', 'no building family "%s"' % sl['family'], 'use one of ' + ', '.join(sorted(fams)))
+                continue
+            if bool(f.get('hang')) != (sl['role'] == 'hang'):
+                E(q, 'family %s is %s; its role must be %s' % (sl['family'], 'a hung piece' if f.get('hang') else 'a floor piece',
+                                                               'hang' if f.get('hang') else 'floor'))
+            if sl['role'] == 'hang' and 'wall' not in sl:
+                E(q, 'a hang slot needs "wall": back, front, left or right')
+            for a in ('dx', 'dy'):
+                v = sl[a]
+                if not (v == 'c' or (isinstance(v, int) and not isinstance(v, bool))):
+                    E(q + '.' + a, 'must be an integer or "c"')
     return issues
 
 

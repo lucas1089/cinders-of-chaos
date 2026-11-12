@@ -1,0 +1,24 @@
+{
+  "kind": "depot",
+  "note": "Canonical frame as in temple.json. A row of lockers against the north wall and a counter across the room with a gap at the west end. The depot lockers of the base server (depot id attribute) are not placed: see server/README.md 'Buildings in the planner (O515)', not done.",
+  "width": [8, 10],
+  "height": [7, 9],
+  "stats": "docs/MAP_GUIDE.md Towns: 6-25 depot lockers per town in one depot building near the temple; the size is chosen by us so a counter row and a locker row fit",
+  "door_side": "route",
+  "door_width": 1,
+  "wall": "st_stone",
+  "floor": "flagstone",
+  "roof": true,
+  "pz": true,
+  "npc": {"dx": "c", "dy": 1, "role": "clerk"},
+  "features": [
+    {"type": "shelf_row", "dx": 0, "dy": 0, "length": "full", "family": "locker"},
+    {"type": "counter", "dx": 0, "dy": 2, "length": "full", "gap": "start", "family": "counter", "reach": true}
+  ],
+  "slots": [
+    {"dx": 1, "dy": 0, "family": "torch", "role": "hang", "wall": "back"},
+    {"dx": -2, "dy": 0, "family": "torch", "role": "hang", "wall": "back"},
+    {"dx": 0, "dy": 3, "family": "banner", "role": "hang", "wall": "left"},
+    {"dx": -1, "dy": -1, "family": "crates", "role": "floor"}
+  ]
+}

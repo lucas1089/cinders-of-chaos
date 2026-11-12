@@ -22258,6 +22258,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   walls, light props, corner pieces, wall props, clusters of 2-5, path edging, floor detail denser near walls. Never on
   a spawn, teleport, link, chest, NPC or boss tile; nothing blocking on the routes or the planned paths; the QA checks
   that no walkable tile is cut off. `decoration` sparse/normal/dense = x0.55/x1/x1.5, `light` scales the lights.
+- **Buildings (O515):** a plan may list `buildings` (temple, depot, shop, house) with the door on a chosen side: see "Buildings in the planner (O515)" below.
 - **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
   south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
 - **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
@@ -22300,6 +22301,94 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   `dofile`: it returns its tables and reads no `arg`), inside the editor's Lua 5.1; `paint_plan.lua` paints a plan
   compiled by the build (rows of server ids, notes with what the editor cannot write). Code in `tools/editor_scripts/`,
   tests `tests/editor_scripts_test.lua` (also Lua 5.1 in CI) and `tools/gen_editor_scripts_test.py`.
+
+## Buildings in the planner (`tools/area_plan_buildings.py`, `tools/areaplan/prefabs/`, O515)
+
+A plan may list `buildings`: a temple, a depot, a shop or a house, each with its door on a side the plan chooses. The
+planner stamps floor, walls, door, roof, features and decor, joins the tile outside the door to the entry and checks it.
+Nothing runs on the live server and the world map is never written. The new type is opt in. A plan without `buildings`
+compiles to the same bytes as before: `area_plan_buildings_test.py` holds the checksums of five plans, and all 88 plans of
+the repo were compared before and after by hand.
+
+- **Plan.** Top level `buildings`, each `{id, kind, zone}` plus optional `at` (top-left tile of the footprint, local like a
+  zone's `at`; without it the building is "auto inside the zone"), `door` (`n`, `e`, `s`, `w` or `route`), `size`
+  `[width, height]`, `wall`, `floor`, `roof`, `pz`, `npc` `{name, new, lines}` and `slots` (more decor slots). A building
+  never holds an item id: the schema refuses unknown keys. The zone gives the floor. A building cannot stand in the boss room.
+- **Prefabs.** One file per kind in `tools/areaplan/prefabs/<kind>.json`: `width` and `height` ranges, `door_side`
+  (default `route`), `door_width`, `wall` and `floor` families, `roof`, `pz`, an `npc` slot, `features` and `slots`.
+  The frame is the canonical one with the door in the south wall. `width` runs across the door wall, `height` from the back
+  wall to the door wall. `dx` counts interior columns from the west, `dy` interior rows from the north wall. A negative
+  number counts from the far end, `"c"` is the door column. A door on the east or west side swaps width and height on
+  the map. Features: `altar`, `pillar_pair`, `bench_row`, `counter` (`gap`: `start` or `end`), `shelf_row`. `reach: true`
+  asks that the tile in front of the piece is reachable. Slots have a `role`: `floor` (a piece on an interior tile, `facing`
+  for pieces with a front) or `hang` (a piece on the wall beside an interior tile, `wall`: back, front, left, right). A hung
+  piece draws only on a north or a west wall, as the dresser does. On the other two walls it is left out and the
+  manifest lists it under `dropped`.
+- **Sizes.** House: width 6-9, height 6-9, from docs/MAP_GUIDE.md Towns (footprint 6 x 7, p25 5 x 6, p75 7 x 9). Depot 8-10 x
+  7-9: the guide only says 6-25 lockers in one depot building near the temple. Temple 10-12 x 9-12 and shop 8-10 x 7-9 have
+  no statistic in the guide, so we chose them. Each prefab says so in `stats`.
+- **Families, no ids in a prefab.** Wall brushes and floor grounds are the families of `areagen_config.lua` and
+  `areaplan_build.lua`. A new mode `luajit tools/areaplan_build.lua materials` prints them and `area_plan_core.materials()`
+  reads it. Walls: `st_stone` (the town's grey stone, with the same rule `A.wallPiece` as the generator: pole in the
+  north-west corner, corner piece in the south-east one), `ruin`, `darkstone`, `k_brick`. Floors: `st_white_marble`, `tiles`,
+  `flagstone`, `marble`, `gilded`, `slate` and the other walkable families. The door pair is `cfg.doors.wood` in
+  `areaplan_build.lua`: the stock "closed door" without the locked text and its "open door". Pieces come from
+  `decor_kits.json` groups (altar, pillar, brazier, crates, plants, torch, banner, tapestry) or from
+  `tools/areaplan/building_families.json` (stock counter, bench, bookcase as shelf, locker, square table, wooden chair).
+  The stock ids were read in the installed `items.xml`.
+- **Placing.** The buildings of one zone take turns on an ellipse round the middle of the zone, clockwise from the north.
+  For each one the planner takes the footprint whose centre is nearest its point and that fits. It lies inside the zone, on
+  ground a floor can lie on (a tree or a stone on it is removed), with a free ring of one tile round it that is no rock or rim,
+  two tiles from every other building, off the plan's paths, off the arrival and the holes. The tile outside the door is
+  walkable and the entry reaches it. The building cuts no walkable tile off the entry. `door: route` tries all four sides and
+  keeps the one whose outside tile is nearest a route point: the arrival, the middle of the zone, the plan's path tiles.
+  With `at` the footprint is fixed and only the side is chosen. A failure is a QA error that names the building and the reason.
+- **Stamping.** The footprint tiles get the floor ground and nothing else of the old tile stays. The wall ring gets the
+  pieces, the door tile the closed door, interior features and slots their items (a blocking piece leaves the walkable
+  set). The roof goes on `z - 1` over every footprint tile, with the ground the dungeon roofs use (920). It is an error
+  where another floor of the plan already holds that tile. Walls, the door's outside tile, the tiles in front of counters and altars and
+  the NPC tile are protected, so the dressing pass puts nothing blocking beside them and keeps the lanes from the arrival
+  to them free. A prefab with `pz` makes the inside and the door a protection zone. An NPC of a building stands on the
+  prefab's npc slot and uses the existing stub mechanism: `new: true` writes the XML and script stub.
+- **QA** (`area_plan_compile.py`, `BLD.qa_all`, on the final tiles). The door tile is walkable and holds the door and nothing
+  else. A blocking item there is the shared rule `map_tile_rules.blocking_on_special` of O511. The entry reaches the door, the
+  tile outside it, the tile just inside it, every counter or altar front and every free interior tile (a pocket is a
+  warning). Every wall tile carries the piece type the shared `wall_piece` rule wants. The roof covers the whole footprint.
+  No two buildings share a tile. A building overlaps no route, building or special tile (a placement error). The view
+  frame, border and unknown id checks run as before. A building's tiles are exempt from the border rule, because its wall
+  is the edge, and its ids are on the allowed list. The whole-map audit `audit_map_plans.py` found nothing on the example.
+- **Example.** `tools/areaplan/examples/village_square.json` (Ashford Square, forest, 120 x 96) has a plaza of 40 x 34 with a
+  temple, a depot, two shops (one with ruin walls and a flagstone floor) and three houses round it (one door fixed
+  to the west, one house sized 7 x 8), two wild paths to an orchard and a meadow, and a grove behind the orchard. The test
+  compiles it with zero QA errors and zero warnings. CI validates and compiles it with the other examples. The picture
+  is not rendered: the render needs the base server's `items.otb`, which is not in git and not in CI.
+- **Ask for a village in chat.** The owner says it in words: "a village square in a forest, a temple, a depot, two shops,
+  three houses, doors facing the plaza". Claude copies `village_square.json`, changes the id, name, seed, zones and
+  buildings, validates it with `area_planner.py validate`, and files it with `area_inbox.py new --plan PLAN.json --prompt
+  "THE WORDS"`. The AI adapter's `--from-prompt` also works, because `buildings` is in the schema it is given. From there the
+  flow of "Map inbox" is unchanged: `chaos-ctl.sh areas-publish` (admin app: Comandos > Mapas pedidos > Publicar áreas), the
+  Windows `fetch-areas.bat`, the map editor, approve, promote. For a good result use one big `room` or `lobes` zone for the plaza (40 x 34
+  fits seven buildings), `ragged` on the zones around it so the outline rule of "Asymmetric areas" holds, and `pz: true`
+  on the plaza.
+- **Check on the live data.** `area_planner.py check-kits ITEMS.otb ITEMS.xml Tibia.dat` now also checks the stock ids of the
+  buildings (`BLD.check_buildings`): known, a sprite, blocking as listed, doors of the door group, walls and grounds of their
+  kind, nothing pickupable. It prints the size of each door sprite for a look. It was not run in this session, because the
+  base `items.otb` is not available.
+- **Not done.** `houses.xml` rows, house ids, names, rents and the house door (the locked door pair 1209 / 1212 needs a house).
+  The compiler writes no houses today, so `house` is a building shape only. Beds (a bed is two linked items with a bed
+  type). Depot lockers: the base depot locker 2589-2592 needs a depot id attribute, which the OTBM writer does not
+  know, so the depot uses the stock locker 1732-1735 as a stand-in. Towns and the temple position in the OTBM (the writer
+  writes an empty towns node). Shop offers (the NPC stub says words only). Windows. Second floors and stairs in a building. Door
+  action ids and keys. **Not verified:** which of the two stock door pairs is drawn across a wall and which along it (the
+  table says `v` = 1210 / 1211 for a wall that runs north-south), and the facing order of the stock bench, bookcase, locker
+  and chair ids (`building_families.json`). Both wait for `check-kits` and a look on the pair. Hung pieces on south and east walls
+  are left out.
+- **Tests.** `tools/area_plan_buildings_test.py` (CI step "Area planner"): the four prefabs and the family tables, 184 layouts
+  (every kind, every size of its range, all four door sides: door on the asked side, footprint turned, a clear way from
+  the door to every feature and to every free tile), the layout turning with the door, every kind compiled on every door
+  side, the village example, the QA cases (a pillar inside the door, a crate in front of the altar, a piece hung on the
+  door tile, overlap, a building outside its zone, a roof tile missing, a wrong wall piece, an unreachable door, a blocking item on
+  the door tile), the validator, and the checksums of five old plans. `area_planner_test.py` runs the example with the others.
 
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 

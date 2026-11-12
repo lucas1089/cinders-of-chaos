@@ -478,7 +478,7 @@ plans (server/README.md "Area planner").
 ### The plan
 Schema `chaos-area-plan/1`: `server/tools/areaplan/schema.json`. Examples: `server/tools/areaplan/examples/`
 (`swamp_hunt.json`, `crypt_boss.json` with 2 floors and a boss, `lava_cave.json`, `temple_throne.json`: a dense
-temple with a nave, chapels and a boss throne room).
+temple with a nave, chapels and a boss throne room, `village_square.json`: a village square with buildings).
 
 | key | what |
 |---|---|
@@ -488,6 +488,7 @@ temple with a nave, chapels and a boss throne room).
 | `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor, tunnel or wild (ragged sides) |
 | `connections` | `stairs`, `ladder` (hole and ladder, both ways), `hole` (one way down), `teleport` (any two zones, `two_way`) |
 | `entry`, `exit` | the arrival zone (floor 1); the exit portal's zone and optional world target |
+| `buildings` | a temple, depot, shop or house (`kind`) in a `zone`: `at` or auto, `door` (n, e, s, w, route), `size`, `wall`, `floor`, `roof`, `pz`, `npc`, `slots` ("Buildings" below) |
 | `spawns`, `boss`, `npcs`, `chests` | monster names from our list with count, pack and respawn, in a `zone` or along a `path` ([from, to], outside the zones), `spread` for even coverage; the boss in the boss room; NPCs of our list; quest chests with a quest key and a `reward` (item names, gold, experience); `new` NPCs with `lines`; `chest_action` |
 
 Biomes map to our areagen themes (`python3 -I server/tools/area_planner.py catalogue`): cave (emberdeep), lava and
@@ -580,8 +581,20 @@ open tile, lights per 100 tiles and the spam share.
 - More snow and ice variants with soft drifts, and a frozen water ground with its border, for the ice biome.
 - A flat roof and roof edge set matching the dark stone walls.
 
+### Buildings (O515)
+A plan may list `buildings`. Each one is a prefab (`server/tools/areaplan/prefabs/<kind>.json`: temple, depot, shop, house) with
+its door on the side the plan names, or on the side that faces the nearest route. The compile stamps the floor, a wall
+ring with the pieces the generator's `A.wallPiece` picks ("Towns", Construction), one door in the wall line, a roof on the floor
+above over every tile, counters, altars, benches, shelves and decor, then checks that the entry reaches the door and
+every counter or altar front, that nothing blocks the door, that the roof covers the footprint and that no building
+overlaps a route or another building. House footprints follow the table in "Towns" (6 x 7, p25 5 x 6, p75 7 x 9).
+`server/tools/areaplan/examples/village_square.json` is a village square with a temple, a depot, two shops and three
+houses. Details, limits and what is not done (houses.xml rows, rents, beds, depot lockers, towns): server/README.md
+"Buildings in the planner (O515)".
+
 ### What it does not do
-- No towns, houses or house roofs (only a flat roof over a dungeon above ground).
+- No towns on the map and no house rows: a `house` building is a shape with a door, a roof and furniture, not a house of
+  the game (no `houses.xml` entry, rent or beds). A flat roof also covers a dungeon above ground.
 - The chest script gives items, gold and experience; quest logic beyond that is hand-written.
 
 ### Content plans
