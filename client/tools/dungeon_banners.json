@@ -1698,7 +1698,7 @@
    "area": "sanctum",
    "creatures": [
     {
-     "look": 3294,
+     "look": 3424,
      "monster": "Wraithbone Stalker",
      "name": "Wraithbone Stalker",
      "x": 24644,
@@ -2008,7 +2008,7 @@
     [29, 5],
     [23, 6]
    ],
-   "pixels": "849630f5bf314ba468021ab0f6d603c3",
+   "pixels": "c62ff5878d11a07b7ce837001e568b19",
    "sids": [
     [
      [30488, 30536],
@@ -2299,7 +2299,7 @@
      "y": 24888
     },
     {
-     "look": 3294,
+     "look": 3424,
      "monster": "Wraithbone Stalker",
      "name": "Wraithbone Stalker",
      "x": 24857,
@@ -2576,7 +2576,7 @@
     [23, 6],
     [25, 6]
    ],
-   "pixels": "96e6c81cae6cd4eb42ba28da7a1b2306",
+   "pixels": "867963e119cd165a8b1a33c80b9dfc8f",
    "sids": [
     [
      [30484],

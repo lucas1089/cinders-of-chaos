@@ -44,6 +44,7 @@ import client_pair  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(HERE))
 RECOLOUR = os.path.join(REPO, 'server', 'data', 'monster', 'monster_recolour_looks.csv')
+DONOR = os.path.join(REPO, 'server', 'data', 'monster', 'monster_donor_looks.csv')
 ALLOW = os.path.join(REPO, 'server', 'data', 'monster', 'shared_looks_allow.csv')
 POOL = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'bounty_pool.lua')
 COLOUR_DIST = 0.28
@@ -262,13 +263,24 @@ def load_recolour(path=RECOLOUR):
     return out
 
 
-def look_at_pair(name, look, pair, recolour):
-    """the lookType of a monster at a client pair: its copy from pair 69 on, the old look below (a file or a pool row written
-    for the other state is read for this one too, so a server mid update gives the same answer)"""
-    if name in recolour:
-        old, new = recolour[name]
-        if look in (old, new):
-            return new if pair >= client_pair.PAIR_RECOLOUR else old
+def load_donor(path=DONOR):
+    """{monster name: (look, new_look)} of monster_donor_looks.csv (O538): the same shape as the recolour map, from pair 70 on"""
+    out = {}
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            out[r['monster']] = (int(r['look']), int(r['new_look']))
+    return out
+
+
+def look_at_pair(name, look, pair, recolour, donor=None):
+    """the lookType of a monster at a client pair: its copy from pair 69 on, its donor look (O538) from pair 70 on, the old look below
+    (a file or a pool row written for the other state is read for this one too, so a server mid update gives the same answer)"""
+    donor = load_donor() if donor is None else donor
+    for rows, need in ((recolour, client_pair.PAIR_RECOLOUR), (donor, client_pair.PAIR_DONOR)):
+        if name in rows:
+            old, new = rows[name]
+            if look in (old, new):
+                return new if pair >= need else old
     return look
 
 

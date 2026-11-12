@@ -715,3 +715,36 @@ look,idle,phases,frames,how,walk,walk_frames
 3361,no,1,1,none,8,7
 3362,no,1,1,none,8,7
 3363,no,1,1,none,8,7
+3406,no,1,1,none,3,2
+3407,no,1,1,none,3,2
+3408,no,1,1,none,3,2
+3409,yes,4,4,idle group,0,0
+3410,no,1,1,none,8,8
+3411,yes,4,4,idle group,0,0
+3412,yes,4,4,idle group,0,0
+3413,yes,4,4,idle group,0,0
+3414,yes,4,4,idle group,0,0
+3415,yes,4,4,idle group,0,0
+3416,yes,8,8,idle group,0,0
+3417,yes,8,8,idle group,0,0
+3418,yes,9,5,idle group,0,0
+3419,no,1,1,none,4,4
+3420,no,1,1,none,4,3
+3421,yes,8,8,idle group,0,0
+3422,no,1,1,none,8,8
+3423,yes,6,6,idle group,0,0
+3424,no,1,1,none,8,8
+3425,no,1,1,none,8,8
+3426,no,1,1,none,4,3
+3427,no,1,1,none,8,8
+3428,no,1,1,none,8,8
+3429,no,1,1,none,8,6
+3430,yes,8,8,idle group,0,0
+3431,no,1,1,none,3,3
+3432,no,1,1,none,3,2
+3433,yes,16,16,idle group,0,0
+3434,no,1,1,none,8,8
+3435,no,1,1,none,8,8
+3436,no,1,1,none,8,8
+3437,yes,3,3,animateAlways,3,3
+3438,no,1,1,none,8,8

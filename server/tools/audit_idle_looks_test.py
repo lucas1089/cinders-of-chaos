@@ -96,6 +96,31 @@ def main():
         open(al1, 'w').write('name,look,reason\nWalker,200,r\n')
         check('moves while it stands: remove its row' in I.check_pool(pool1, al1, idle1, walk={200})[0], 'a stale allow row')
 
+    # the donor looks of pair 70 (O538): from pair 70 a monster of the map wears its new look, must move on it, its allow row is not asked for
+    with tempfile.TemporaryDirectory() as t2:
+        pool2 = os.path.join(t2, 'pool.lua')
+        open(pool2, 'w').write('return {\n\thunt = {\n\t\t{name = "Blocky", level = 5, exp = 1, health = 9, spawns = 9, look = 200},\n'
+                               '\t\t{name = "Other", level = 6, exp = 1, health = 9, spawns = 9, look = 201},\n\t},\n}\n')
+        al2 = os.path.join(t2, 'allow.csv')
+        open(al2, 'w').write('name,look,reason\nBlocky,200,still\nOther,201,still\n')
+        idle2 = {200: (False, 1, 1, 'none'), 201: (False, 1, 1, 'none'), 3406: (True, 4, 4, 'idle group')}
+        donor = {'Blocky': (200, 3406)}
+        check(I.check_pool(pool2, al2, idle2, walk=set()) == [], 'below pair 70 the committed pool and its allow rows are fine')
+        check(I.check_pool(pool2, al2, idle2, walk=set(), pair=69, donor=donor) == [], 'pair 69 reads the old look too')
+        check(I.check_pool(pool2, al2, idle2, walk=set(), pair=70, donor=donor) == [], 'pair 70: Blocky wears 3406, which moves; its old allow row is not asked for')
+        check(len(I.check_pool(pool2, al2, {200: idle2[200], 201: idle2[201]}, walk=set(), pair=70, donor=donor)) == 1, 'pair 70: a new look missing from look_idle.csv fails')
+        idle3 = {**idle2, 3406: (False, 1, 1, 'none')}
+        probs = I.check_pool(pool2, al2, idle3, walk=set(), pair=70, donor=donor)
+        check(len(probs) == 1 and 'must move while it stands' in probs[0], probs)
+        check(I.check_pool(pool2, al2, idle3, walk={3406}, pair=70, donor=donor) == [], 'a donor look on the walk list moves')
+        names = {r['name']: r['look'] for r in I.donor_rows(I.S.pool_rows(pool2), 70, donor)[0]}
+        check(names == {'Blocky': 3406, 'Other': 201}, names)
+        check(I.donor_rows(I.S.pool_rows(pool2), 69, donor)[1] == set(), 'no move below pair 70')
+        by = {}
+        for r in I.donor_rows(I.S.pool_rows(pool2), 70, {'Blocky': (200, 201)})[0]:
+            by.setdefault(r['look'], []).append(r['name'])
+        check(by == {201: ['Blocky', 'Other']}, by)
+
     # gen_bounty_pool.py --relook: only the look fields change
     import gen_bounty_pool as G
     text = ('return {\n\thunt = {\n'
@@ -183,8 +208,9 @@ def main():
         check(rows[1][:2] == ['Still', '200'] and rows[1][4] == 'kept' and rows[1][5] == 'twins by design', rows)
 
     # the repo itself: committed pool, facts, allow list, picks
-    probs = I.check_pool() + I.check_crowded()
+    probs = I.check_pool() + I.check_crowded() + I.check_pool(pair=70) + I.check_crowded(pair=70)
     check(not probs, probs[:3])
+    check(set(I.S.load_donor()) and all(new in I.load_idle() for _old, new in I.S.load_donor().values()), 'look_idle.csv has every donor look')
     for look, names, why in I.load_crowded():
         check(why.strip() and len(names) > I.MAX_ON_LOOK, 'crowded row %d needs a reason and more than %d names' % (look, I.MAX_ON_LOOK))
     idle = I.load_idle()

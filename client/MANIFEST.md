@@ -4394,6 +4394,31 @@ other 32 outfits have no mask layer (after the idle looks of O533 moved 17 monst
   step and the 35 monsters change look. A client on pair 68 or older draws nothing for the new ids, so the pair record must not be raised before the client has shipped.
 - Checked offline only. Not seen in a client.
 
+### Pair 70: pair 69 with 33 polished creature outfits of the owner's donor client (`gen_donor_outfits.py`, `art_import/donor_outfits.csv`; built 2026-11-12; O538)
+Owner 2026-11-12 (translated), after the O537 survey: import the polished creature looks of the donor client and move the blocky hunt monsters of the same kind onto them. Pair 70 appends **33 outfits 3406 to 3438**
+after the 3,405 outfits of pair 69, one per row of `art_import/donor_outfits.csv` (donor id, new id, kind, size, walk frames, colours; the row at line n is outfit 3406 + n, ordered by kind then donor id).
+- **The pick rule** (`gen_donor_outfits.py select --donor DIR --pair DAT SPR`, measured on the donor files): 500 or more colours (every opaque RGB over all frames facing south, all frame groups), one colour layer, 4 directions, 3 or more walk
+  frames, at most 2x2, a creature (the kind of each candidate is looked at by eye in the O537 catalog: `KINDS`), not identical to an outfit of pair 69 (a digest of every group, direction, phase and sprite), not identical to a pick of lower id.
+  The survey counted 36; the rule passes 35. **Dropped:** donor 1601 is the same picture as 1340 in every group and direction; donor 2410 is a Santa Claus costume, no hunt monster is one. So **33**, not 36.
+  Kinds: 4 spirits, 10 beasts, 2 bird / bat, 4 demon, 1 gazer, 1 golem, 1 hydra, 2 reptile, 1 slime, 2 spider / insect, 2 troll / ogre, 3 undead. All 2x2, walk frames 3 to 16, colours 504 to 19,302.
+- **The copy.** Each outfit keeps its flag bytes (re-encoded by name), frame groups (idle and walk), sizes, 4 direction patterns, phases and animator durations. Sprites are the donor's pictures byte for byte (the records already have
+  our layout; none was re-encoded). A picture that is already a record of pair 69 takes that sprite id (359 slots), a new one is appended once: **3,962 records appended** (961,828 to 965,790). Hard and soft alpha stay as drawn.
+  The importer is `import_outfits.py`'s parser and entry builder with a record index over the input spr.
+- **Run.** Input pair 69 (dat 2bc03dde6fa919a9055d20991721ffd4; the md5 is checked first), donor files Tibia.dat and Tibia.spr in a folder (never committed):
+  `python3 -I client/tools/sprites/gen_donor_outfits.py build P69/Tibia.dat P69/Tibia.spr P70 --donor DONOR_DIR` (12 s; P70 must not exist; written to `P70.tmp`, verified, then renamed). Verified in the run: the output re-parses, every old outfit,
+  item, effect and missile is byte identical, 3,000 sampled old sprites are unchanged, every sprite slot (4,992) and every composed frame (1,248) of the new outfits equals the donor's, flags and animators equal, then `check_pair.py`'s append-only guard.
+  Output **pair 70**: dat **8ec9423528e3b4c01d17228914c96028** (8,955,390 bytes), spr **113e4a8f0c6d866aa840e2fcedc6f78f** (1,128,742,665 bytes, 965,790 sprites), 44,559 items, 3,438 outfits, 4,742 effects, 253 missiles.
+  Files: `/dev/shm/o538/p70` (scratch, not on windows-assets yet).
+- **Checks** (offline). `check_pair.py P70 --old P69`: 0 errors, 11,843 warnings (pair 69's number), 0 in the new outfits. `gen_donor_outfits.py live` (every outfit at its id, digest equal to `donor_outfits.sums`), `sums --check --donor DIR` (the sums are what the donor
+  files give), `check` (table, sums and the monster map; CI), `gen_donor_outfits_test.py` (CI, synthetic pairs). The generated tables of the CI job "Live sprite pair" were regenerated against pair 70 (the dat md5 line and the new ids): `outfit_anchors.lua`,
+  `info_lifts.lua`, `wing_centres.lua`, `foot_marks.lua`, `InfoLiftData.cs`; the others passed against it (see server/README.md "Donor monster looks (O538)"). Two dungeon banners draw Wraithbone Stalker with its new look.
+- **Licence.** Owner-supplied, origin unknown: docs/CREDITS.md "Owner-supplied creature looks" (no source named). The art stays out of the repository; only the table, the digests and this text are committed.
+- **Monsters.** 33 hunt monsters take these looks: rows of family `donor` in `monster_looks/picks.csv`, `server/data/monster/monster_donor_looks.csv`, install step `monsterdonorlooks`, held by `chaosClientPair` 70 (server/README.md "Donor monster looks (O538)").
+  Looks: Mould Phantom 3406; Drownkin Spellsinger 3407; Banshee 3408; Floating Savant 3409; Crystalcrusher 3410; Werehyaena 3411; Werelioness 3412; Werelion 3413; Foxmouse 3414; Hellhound 3415; Oozing Corpus 3416; Gravedigger 3417; Ghoulish Hyaena 3418; White Lion 3419; Bonepicker 3420; Bat 3421; Cleftfiend 3422; Infernal Phantom 3423; Wraithbone Stalker 3424; Dragonling 3425; Gazer 3426; Ironblight 3427; Serpent Spawn 3428; Killer Caiman 3429; Duskhorn Drake 3430; Frost Larva 3431; Sacred Spider 3432; Scorpion 3433; Stompgut 3434; Orc Warlord 3435; Biting Book 3436; Wan Sentry 3437; Skeleton 3438.
+- **Switch on:** push pair 70 to windows-assets, ship the client package, `chaos-ctl.sh client-pair set 70` (admin app Comandos > "Par do cliente" > Gravar 70), then update the server: the update runs the step and the 33 monsters change look. A client on pair 69 or older
+  draws nothing for the new ids, so the pair record must not be raised before the client has shipped. `server/tools/client_pair.py` `PAIR_ASSETS` 70 and the new dat md5 stop the Windows package job until the archive is pushed.
+- Checked offline only. Not seen in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
