@@ -694,7 +694,7 @@ collision check") and be added here.
 | 115 | `unlocks` | `unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua` | `client_chaos_topbar` | server -> client `state {entries = [{key, level, menu}], unlocked = [key], seen = [key], next? = {key, level}, all? = true}` (login, `hello`, every level change) and `new {key, level, menu, title, why = [line1, line2]}` (one entry just unlocked, one per 75 s); client -> server `hello` and `seen {key}` (see "The top menu reveals systems by level (O259)") |
 | 116 | `everfull` | `potions_helper.lua`, `data/lib/chaos_potions.lua`, `potions_core.lua` | `game_helperrotation` | server -> client `held {v = 1, health? = {look, tier, level, line, ready}, mana? = {...}}` (the Everfull each slot carries, by its client look; at login, after an upgrade and when it changes, checked every 3 s), client -> server `sync` (see "Potions", "The helper and the tiers (O246)") |
 | 117 | `weeklyChest` | `weeklychest.lua`, `weeklychest_core.lua` | `game_weeklychest` | client -> server `open` / `close` / `get`, server -> client `state {shown?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}` (see "The Weekly Chest (O261)") |
-| 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
+| 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)"); also `pyre {p = [{i = creature id, r = radius}]}` (the Pyre Oath rings a viewer sees, only on change, O518) and `burn {b = [monster id]}` (the monsters one Pyre Oath tick struck, once a second, O518) |
 | 119 | `combatStats` | `combat_stats.lua`, `combat_stats_core.lua` | `game_skillstats` | client -> server `get`; server -> client `stats {damage?, attack?, defense, armor, mitigation}` (mitigation a share 0 .. 1), at login, after an equip, a level or skill advance or a passive tree change, only when a number changed (see "Combat stat rows of the Skills window") |
 | 121 | `npcTravel` | `npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua` | `game_npctravel` | client -> server `travel {k}` (a key of `npc_travel_config.lua` `npcs`); the answer is a game message (status line, or the reason as a cancel message), see "Travel to an NPC (O330)" |
 | 122 | `survey` | `survey.lua`, `survey_core.lua`, `survey_config.lua` | `game_chaossurvey` | server -> client `open {s, max}` (the stage, level 20 or 50, and the text limit) and `done {s}`; client -> server `answer {s, fun, rec, text, src}` / `skip {s}`, once per account and stage, see "New player funnel and survey (O374)" |
@@ -3534,7 +3534,7 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
 
 | Node | Keystone (flag) | Classes | Effect | Price |
 |---|---|---|---|---|
-| 108 | Pyre Oath (`arPyreOath`) | Warrior, Templar lines | every second, out of a protection zone and in a fight or with an enemy near: enemies within 2 sqm take 4% of your maximum health as fire (a spell of yours: tree bonuses and the class factor apply); you take 2.5% of it as fire (`doTargetCombatHealth` without an attacker, so absorbs apply; never lethal) and heal 2% | other damage x0.75 |
+| 108 | Pyre Oath (`arPyreOath`) | Warrior, Templar lines | every second, out of a protection zone and in a fight or with an enemy near: enemies within 2 sqm take 4% of your maximum health as fire (a spell of yours: tree bonuses and the class factor apply); you take 2.5% of it as fire (`doTargetCombatHealth` without an attacker, so absorbs apply; never lethal) and heal 2% | other damage x0.75; drawn by the client (O518): an ember ring under every holder, a burn on the struck enemies, no map effect from the server (see "Pyre Oath on the client (O518)") |
 | 81 | Sanguine Covenant (`arSanguine`) | all | 5% of the damage that landed on every hit as health (`Chaos.heal`, a tick later; the target's health is read again then, so an immune target, a zero hit or overkill leeches only what was really lost), at most 6% of the maximum health per second; the fraction of a point is carried to the next hit (before, a hit under 20 damage gave 0 and the keystone looked dead at low level; owner item C2, the leech in the bottom-left of the tree) | healing received (`COMBAT_HEALING` on the player, any source) x0.7 |
 | 77 | Thornbound Oath (`arThornbound`) | all | a melee, ranged or spell hit from a creature: 20% of what landed (health + energy shield) + the items' Reflect Damage again, physical, at most 50% of the own maximum health a hit; players (only where `ChaosSpell.canAttack`): a third, at most 5% of their maximum health; bosses (`MonsterType:isBoss`): half, at most 2 x level per second per boss; never damage over time, never a reflect inside a reflect | damage dealt x0.9 |
 | 109 | Open Hand Creed (`arOpenHand`) | all but the Monk line | no weapon in the hands (a shield or quiver is fine): the engine's fist hit (attack 7) is scaled to the Monk's fist attack (40 + level x 0.025, at most 60) with the best of fist, sword, axe and club skill, x1.36 (O452, was x1.1; the Knuckles alone keep x0.88; the Thief line's strike spells keep the base attack 20). `ChaosSpell.meleeAttack` (the Thief and Templar strike spells) returns that attack for an empty hand (it reads the flag storage 7100024 and the worn ring); the Warrior's skill spells keep the engine's fist values | none |
@@ -3677,6 +3677,26 @@ at level 300 (`rotation_sim.py --mana`, which only checks up to level 300 and wi
   heals every second and costs no mana. Support runes are keyed by spell id and wrap a spell's `onCastSpell`; a keystone
   has neither, so it cannot take runes without a new socket kind (storage, window, client). Not done. The mana the
   report mentions is the Juggernaut's other spells (and mana-on-hit gear), which the regeneration above now pays.
+- **Pyre Oath on the client (O518).** Owner 2026-11-12 (translated): "the Juggernaut's Righteous Fire style skill: make an aura around the
+  character and change the fire damage to something better." Visual only: the damage, the self burn, the regeneration, the 1 s tick, the
+  2 sqm reach and the resistances are unchanged. Before: every second `fire_ring` (`CONST_ME_FIREAREA`) on the holder and
+  `CONST_ME_HITBYFIRE` on every enemy hit. Now the server sends no map effect for it; the client draws (module `game_chestaura`,
+  client/MANIFEST.md "Pyre Oath ring and burn (O518)"): a rune circle of fire under the holder, at the radius the server sends
+  (`arPyreOath.radius`), with ash, cinders and pop sparks, and an ember burn with char flecks, a spark burst and ash on each struck monster.
+  Owner chose both looks from preview GIFs (ring "C", burn "1"). Messages on the existing extended opcode **118**
+  (`ChaosOpcodes.templarAura`, no new opcode, "Opcode collision check"): `pyre` `{p = [{i = creature id, r = radius}]}` to every player
+  within `arPyreOath.look.viewX` x `viewY` (10 x 8) of a holder, the whole list, only when it changed (`A.pyreRingList`,
+  `A.pyreRingDecide`, `A.pyreRingPrune` in `archetypes_core.lua`; an empty list clears; a holder is a living player with the keystone, in or
+  out of a fight, so the ring is always up while the keystone is); `burn` `{b = [monster id]}` once per tick, to the same players, the
+  monsters the aura struck (`A.pyreBurnIds`, at most `look.maxBurn`). Glue: `archetypes.lua` `syncPyreRings` (end of every think) and
+  `sendBurn` (in `pyreTick`). The ring follows the character with the client's own walk (a creature widget), so nothing is sent while it walks.
+  Cost: one pass over the online players a second while a holder exists (nothing when there is none and nobody has a list), one small
+  message per viewer on a change, one per viewer per tick while the aura strikes. **Old client** (without the O518 `game_chestaura`):
+  it ignores the two actions and sees no ring and no burn (the fire effects are gone; the damage numbers and the combat log are as before).
+  There is no capability check in the protocol to keep a server fallback on, so there is none. The option "Auras on chests and
+  Templars" switches the ring and the burn off for the viewer (own and other players'). Test: `tests/archetypes_test.lua` (core rules,
+  the glue on a mocked engine: ring only on change, empty list on a dead holder, the burn names the struck monsters only, no map effect,
+  numbers as before); client: `chestaura_test.lua`. Not verified in a running client.
 
 ## Fixed spell costs (owner 2026-10-21: "Mas o custo de mana das skills ainda tá escalando com o level do char")
 
@@ -30246,6 +30266,24 @@ your own was not kept. Rules in `retention_loot_core.lua` (tests `tests/retentio
   `feed.maxPerMinute` (12) server-wide; the rest is dropped silently. Staff and testers post nothing. The local broadcast
   of `loot.lua` (`broadcastText`) stays. The Discord relay gets the same line (`discord.lua` `X.drop`, event `drop`, channel
   key `drops`, 6 a minute; `website/overlay/plugins/chaos/discord_lib.php`). The first unique of the gift never posts.
+- **Item data on the Discord post (O519).** Owner 2026-11-12: the post shows the item's data. `ChaosDiscord.dropDetails(item,
+  monster, pos)` (`discord.lua`) builds the same tooltip the game shows (`ChaosItemTooltip.build`, as chat links and ground
+  labels do, with the display scale of the level and the unique's passive block split as `item_tooltip.lua` does) and
+  `ChaosDiscordCore.dropDetails` reads it: no rule is copied, so the lines are the in-game ones. Fields, in order: **Base**
+  (item type and what it is worn as, inline; a unique shows its slot), **Requires** (level, magic level, inline), **Class**
+  (inline), **Stats** (attack, defence, armour, protections, skills of the item type; never the viewer's rows),
+  **Dropped by** (monster in the hunt or instance, the telemetry rule `ChaosTelemetryCore.huntAreaOf`), **Passive** (a
+  unique's power), **Modifiers** (tiers, bound, implicit, quality, sockets, veiled slot). Limits of Discord: 25 fields, name
+  256, value 1024, all text 6000 (`dropBudget` 5800: the longest value is cut, lists end with `+N more`, a line is never cut
+  in two). The thumbnail is the item's image of the website's sprite set (`dropIconPath`, `/chaos-sprites/items/<server id>.png`):
+  the game queues the path as an entry `{thumbnail = path}` in the `fields` column (no schema change; a worker without the
+  feature skips an entry with no name), the worker adds the site address, takes it only for an https site, our host, that
+  exact path, an item drawn from our art and a file that exists, else no thumbnail. `retention_loot.lua` passes the
+  monster and the corpse position and wraps the build in `pcall`: a fault leaves the plain post. Switches per part:
+  `discord_config.lua` `dropDetails` (all on). English only, like the feed. Tests: `tests/discord_test.lua`,
+  `website/tests/chaos_discord_worker_test.php`. Needs the website redeployed (worker, `CHAOS_SITE_URL` as an https address
+  for the thumbnail) and the game server updated; until the worker is redeployed the post shows the fields (at most 7) and no
+  thumbnail. Not verified on the live Discord.
 - **Drops channel.** `tools/patch_drops_channel.py` (install step `events`, idempotent) adds
   `<channel id="21" name="Drops" public="1" script="drops.lua" />` to `data/chatchannels/chatchannels.xml` (a taken id or name
   is an error, nothing is written) and writes `data/chatchannels/scripts/drops.lua`, a read-only channel whose join and leave

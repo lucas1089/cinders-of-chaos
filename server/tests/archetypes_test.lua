@@ -74,6 +74,34 @@ eq(A.pyreBurn(6000, 50, 60), 109, "the shield counts")
 eq(A.pyreRegen(6000), 120, "regen 2%")
 check(A.pyreActive(false, true, false) and A.pyreActive(false, false, true), "active in a fight or near an enemy")
 check(not A.pyreActive(true, true, true) and not A.pyreActive(false, false, false), "not in pz, not idle")
+-- Pyre Oath's look on the client (O518): who sees which ring, only on change, the burn ids
+do
+	local look = C.arPyreOath.look
+	eq(C.arPyreOath.radius, 2, "the ring's radius is the keystone's reach (sent, not hard-coded in the client)")
+	local holders = {{id = 9, pos = {x = 100, y = 100, z = 7}, radius = 2}, {id = 5, pos = {x = 105, y = 103, z = 7}, radius = 2},
+		{id = 7, pos = {x = 100 + look.viewX + 1, y = 100, z = 7}, radius = 2}, {id = 8, pos = {x = 100, y = 100, z = 6}, radius = 2}}
+	local list = A.pyreRingList({id = 1, pos = {x = 100, y = 100, z = 7}}, holders, look)
+	eq(#list, 2, "in range and on the floor only"); eq(list[1].i, 5, "sorted by id"); eq(list[2].i, 9, "the second"); eq(list[1].r, 2, "radius")
+	local sent = {}
+	eq(A.pyreRingDecide(sent, 1, {}), nil, "nothing to tell a viewer that saw nothing")
+	local out = A.pyreRingDecide(sent, 1, list)
+	check(out == list, "the first list is sent")
+	eq(A.pyreRingDecide(sent, 1, list), nil, "the same list again: nothing")
+	out = A.pyreRingDecide(sent, 1, {list[1]})
+	eq(#out, 1, "a holder left view: the shorter list")
+	out = A.pyreRingDecide(sent, 1, {})
+	check(out ~= nil and #out == 0, "the last holder gone: one empty list clears")
+	eq(A.pyreRingDecide(sent, 1, {}), nil, "then silence")
+	A.pyreRingDecide(sent, 2, list)
+	A.pyreRingPrune(sent, {})
+	eq(next(sent), nil, "a viewer that logged out is forgotten")
+	local many = {}
+	for i = 1, look.maxRings + 5 do many[i] = {id = i, pos = {x = 100, y = 100, z = 7}, radius = 2} end
+	eq(#A.pyreRingList({id = 1, pos = {x = 100, y = 100, z = 7}}, many, look), look.maxRings, "capped")
+	local ids = A.pyreBurnIds({{id = 30}, {id = 10}, {id = 30}, {id = 20}}, 40)
+	eq(table.concat(ids, ","), "10,20,30", "burn ids sorted, once each")
+	eq(#A.pyreBurnIds({{id = 1}, {id = 2}, {id = 3}}, 2), 2, "burn ids capped")
+end
 
 -- Sanguine Covenant
 local ls = {}
@@ -643,7 +671,15 @@ Game = {getSpectators = function(center, a, b, rx)
 end, createMonster = function(name, pos) return mk("monster", {name = name, pos = P(pos.x, pos.y, pos.z), hp = 10}) end}
 ChaosSpell = {canAttack = function(a, t) return t:isPlayer() and t.c.pvpOk == true end,
 	isEnemy = function(a, t) return t:isMonster() and t:getMaster() == nil end}
-Chaos = {heal = function(c, amount) local before = c.c.hp; c.c.hp = math.min(c.c.maxHp, c.c.hp + amount); return c.c.hp - before end}
+local sentLook = {} -- what the clients were told on the Templar aura opcode (O518: Pyre Oath's ring and burn)
+Chaos = {heal = function(c, amount) local before = c.c.hp; c.c.hp = math.min(c.c.maxHp, c.c.hp + amount); return c.c.hp - before end,
+	send = function(p, op, action, data) sentLook[#sentLook + 1] = {to = p:getId(), op = op, action = action, data = data}; return true end}
+Game.getPlayers = function()
+	local out = {}
+	for _, c in pairs(creatures) do if c:isPlayer() then out[#out + 1] = c end end
+	table.sort(out, function(a, b) return a:getId() < b:getId() end)
+	return out
+end
 function doTargetCombat(attacker, target, ctype, a, b, effect, origin)
 	dealt[#dealt + 1] = {attacker = attacker and attacker:getId(), target = target:getId(), type = ctype, amount = -a,
 		origin = origin, depth = ChaosKeystones.depth, source = ChaosArchetypes.source}
@@ -996,6 +1032,86 @@ jug.c.pz = true
 dealt = {}
 registered.ChaosArchetypesThink.onThink(1000)
 eq(#dealt, 0, "nothing in a protection zone")
+
+-- Pyre Oath's look (O518): a ring message on change only, a burn message each tick, no map effect, the numbers as before
+do
+	local ringMsgs = {}
+	local function ringsTo(id)
+		local out = {}
+		for _, m in ipairs(ringMsgs) do if m.to == id and m.action == "pyre" then out[#out + 1] = m end end
+		return out
+	end
+	creatures, dealt, sentLook = {}, {}, {}
+	local effects = {}
+	local oldPosition = Position
+	Position = function(x, y, z)
+		local p = oldPosition(x, y, z)
+		getmetatable(p).__index.sendMagicEffect = function(_, e) effects[#effects + 1] = e end
+		return p
+	end
+	M.pyreSent = {}
+	local holder = mk("player", {hp = 6000, maxHp = 6000, pos = P(900, 900)})
+	holder.c.inFight = true
+	local mate = mk("player", {hp = 3000, maxHp = 3000, pos = P(903, 901)})
+	local far = mk("player", {hp = 3000, maxHp = 3000, pos = P(900 + 40, 900)})
+	setTree(holder, {arPyreOath = 1})
+	local m1 = mk("monster", {hp = 90000, pos = P(901, 900)})
+	local m2 = mk("monster", {hp = 90000, pos = P(900, 902)})
+	local m3 = mk("monster", {hp = 90000, pos = P(906, 900)}) -- out of the 2 sqm reach
+	registered.ChaosArchetypesThink.onThink(1000)
+	for _, m in ipairs(sentLook) do ringMsgs[#ringMsgs + 1] = m end
+	local mine, theirs = ringsTo(holder:getId()), ringsTo(mate:getId())
+	eq(#mine, 1, "the holder is told its own ring"); eq(#theirs, 1, "a player in view of it is told too (party members, PvP)")
+	eq(#ringsTo(far:getId()), 0, "a player far away is told nothing")
+	eq(mine[1].op, 118, "on the templar aura opcode"); eq(mine[1].data.p[1].i, holder:getId(), "the holder's creature id")
+	eq(mine[1].data.p[1].r, C.arPyreOath.radius, "the config radius is sent")
+	local burns = {}
+	for _, m in ipairs(sentLook) do if m.action == "burn" then burns[m.to] = m.data.b end end
+	eq(table.concat(burns[holder:getId()] or {}, ","), m1:getId() .. "," .. m2:getId(), "the burn names the two struck monsters, not the far one")
+	check(burns[mate:getId()] ~= nil and burns[far:getId()] == nil, "the burn goes to players who see the holder")
+	eq(#effects, 0, "no fire_ring and no hit-by-fire effect from the server any more")
+	local hits = 0
+	for _, d in ipairs(dealt) do
+		if d.target == m1:getId() or d.target == m2:getId() then hits = hits + 1; eq(d.amount, 240, "the burn's damage is the aura's, unchanged") end
+		check(d.target ~= m3:getId(), "reach unchanged")
+	end
+	eq(hits, 2, "two enemies hit")
+	-- a second tick: the same ring list is not sent again, the burn is
+	ringMsgs, sentLook = {}, {}
+	registered.ChaosArchetypesThink.onThink(1000)
+	local again = 0
+	for _, m in ipairs(sentLook) do if m.action == "pyre" then again = again + 1 end end
+	eq(again, 0, "the ring is sent only on change")
+	local burns2 = 0
+	for _, m in ipairs(sentLook) do if m.action == "burn" then burns2 = burns2 + 1 end end
+	eq(burns2, 2, "the burn goes again every tick (holder and mate)")
+	-- the far player walks into view: it is told; the holder dies: everyone is told it is gone
+	sentLook = {}
+	far.c.pos = P(905, 900)
+	registered.ChaosArchetypesThink.onThink(1000)
+	local told = {}
+	for _, m in ipairs(sentLook) do if m.action == "pyre" then told[m.to] = m.data.p end end
+	eq(#(told[far:getId()] or {}), 1, "a player that walked into view gets the ring")
+	eq(told[holder:getId()], nil, "the others are not told again")
+	sentLook = {}
+	holder.c.hp, holder.c.maxHp = 0, 0 -- (no max health: the tick's regeneration cannot raise it again)
+	registered.ChaosArchetypesThink.onThink(1000)
+	told = {}
+	for _, m in ipairs(sentLook) do if m.action == "pyre" then told[m.to] = m.data.p end end
+	check(told[holder:getId()] and #told[holder:getId()] == 0 and told[mate:getId()] and #told[mate:getId()] == 0
+		and told[far:getId()] and #told[far:getId()] == 0, "a dead holder: an empty list to everyone who saw it")
+	holder.c.hp, holder.c.maxHp = 6000, 6000
+	-- the keystone removed: the ring goes
+	sentLook = {}
+	setTree(holder, {})
+	registered.ChaosArchetypesThink.onThink(1000)
+	registered.ChaosArchetypesThink.onThink(1000)
+	local after = 0
+	for _, m in ipairs(sentLook) do if m.action == "pyre" or m.action == "burn" then after = after + 1 end end
+	eq(after, 0, "without the keystone (and after the empty lists) nothing is sent")
+	Position = oldPosition
+	sentLook = {}
+end
 
 -- Reliquary Vow: the warden heals the party and burns enemies
 creatures, dealt = {}, {}

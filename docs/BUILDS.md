@@ -21,7 +21,7 @@ older than format 4 leave the first twelve out, codes older than format 5 the la
 
 | Keystone | Node | Who may take it | What it does | Price | Unique that pushes it |
 |---|---|---|---|---|---|
-| Pyre Oath | 108 | Warrior and Templar lines | in a fight, enemies within 2 sqm take 4% of your maximum health as fire damage each second; you burn for 2.5% of it a second and regenerate 2% | your other damage -25% | Pyreheart Mantle: aura +20% |
+| Pyre Oath | 108 | Warrior and Templar lines | in a fight, enemies within 2 sqm take 4% of your maximum health as fire damage each second; you burn for 2.5% of it a second and regenerate 2%; the aura is drawn as a ring of embers on the ground at its 2 sqm reach and the struck enemies burn with rising embers (O518) | your other damage -25% | Pyreheart Mantle: aura +20% |
 | Sanguine Covenant | 81 | every class | every hit leeches 5% as health, at most 6% of your maximum health a second | healing you receive -30% | Vein of the Unsated: +1% leech, +3% cap |
 | Thornbound Oath | 77 | every class | hits taken reflect 20% of what landed, plus your item Reflect Damage once more; a third against players, half against bosses with a cap | your damage -10% | Spitethorn Bulwark: +10% reflect |
 | Open Hand Creed | 109 | every line but the Monk's | with no weapon in hand, fists hit with the Monk's fist attack (it grows with the level like a weapon's attack: x1.31 at level 300, x2.41 at 1000, O472) and your best melee skill, +36% (was +10%); strike spells that read the weapon use it too, but the Thief line's keep their weapon attack | none; you hold no weapon | Knuckles of the Unbound: works at 80% of the old +10% without the keystone, +10% more with it |

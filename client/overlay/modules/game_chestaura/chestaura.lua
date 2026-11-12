@@ -24,6 +24,16 @@
 --                  engine has it, else one tile). The server sends extended opcode 118, JSON {action = 'cursed', data = {c = [creature id]}}:
 --                  the whole list the viewer sees, only when it changed, empty when the event ends. Gone with the creature, a floor change,
 --                  the option off and the end of the game. The same option covers it.
+--
+--   Pyre Oath      (O518) the ember ring under every player holding the keystone Pyre Oath (the server names them, the viewer's own
+--                  character included) and the burn on the monsters its aura struck. The ring ('pyre_ring', 12 frames at 83 ms, a loop
+--                  of 1 s) is a creature bottom widget like the foot aura, scaled so that the drawn circle is the radius the server sends
+--                  (the keystone's reach, 2 sqm); it follows the walk. The burn ('burn', 8 frames at 125 ms = one tick) lies on the
+--                  struck monster (a top widget when the engine has Creature:addTopWidget, else a bottom widget), starts again at every
+--                  tick message and ends 1.25 s after the last one. The server sends extended opcode 118, JSON
+--                  {action = 'pyre', data = {p = [{i = creature id, r = radius}]}} (the whole list a viewer sees, only when it changed,
+--                  empty clears) and {action = 'burn', data = {b = [monster id]}} (once a second while the aura strikes). The same option
+--                  covers both. A server without these messages draws nothing.
 -- How chests are found: the engine calls Tile.onAddThing / onRemoveThing (g_game.enableTileThingLuaCallback, shared with
 -- game_tileoverlays and game_chaossound); the handler is one table lookup for an item and returns for everything else. A chest
 -- is remembered by its position (a few entries), its widget exists only while it is inside the visible tiles of the player's
@@ -43,6 +53,10 @@ local frames = {}             -- templar id -> {widget, tile, host, line, radius
 local server = {}             -- the last list of the server: creature id -> {id, line, radius, party}
 local cursed = {}             -- creature ids the server named as Cursed Chest monsters (O341): id -> true
 local smoke = {}              -- creature id -> {widget, creature, shown}: the chest's smoke under a cursed monster
+local pyre = {}               -- the last 'pyre' list of the server (O518): creature id -> {id, radius}
+local rings = {}              -- creature id -> {widget, creature, radius, shown}: the ember ring under a Pyre Oath holder
+local burning = {}            -- monster id -> ms of the tick that began its burn
+local burns = {}              -- monster id -> {widget, creature, side, shown}: the burn on a struck monster
 local animEvent, maintainEvent
 local lastFloor
 local myId
@@ -113,6 +127,7 @@ local function dropFloorWidget(w, tile)
 end
 
 -- ---------------------------------------------------------------- the animation timer
+local dropBurn -- below (Pyre Oath, O518); the animation drops a burn that is over
 local function stopAnim()
   if animEvent then
     removeEvent(animEvent)
@@ -155,6 +170,30 @@ local function animate()
       end
     else
       feet[id] = nil -- the engine cleared the creature's widgets (it left the screen)
+    end
+  end
+  local pf = L.frameIndex(t, L.PYRE_RING_FRAME_MS, L.PYRE_RING_FRAMES)
+  for id, f in pairs(rings) do
+    if alive(f.widget) then
+      any = true
+      if f.shown ~= pf then
+        f.widget:setImageClip(L.clip(pf, L.PYRE_RING_PX))
+        f.shown = pf
+      end
+    else
+      rings[id] = nil
+    end
+  end
+  for id, f in pairs(burns) do
+    local bf = burning[id] and L.burnFrame(t - burning[id]) or nil
+    if bf == nil or not alive(f.widget) then
+      dropBurn(id)
+    else
+      any = true
+      if f.shown ~= bf then
+        f.widget:setImageClip(L.clip(bf, L.BURN_PX))
+        f.shown = bf
+      end
     end
   end
   if not any then stopAnim() end
@@ -302,6 +341,88 @@ local function refreshCursed(id)
   local creature = cursed[id] and g_map.getCreatureById(id) or nil
   local visible = creature ~= nil and not creature:isRemoved()
   if L.showCursed(enabled, id, cursed, visible) then ensureSmoke(creature, id) else dropSmoke(id) end
+end
+
+-- ---------------------------------------------------------------- Pyre Oath (O518)
+-- take a widget of ours off a creature: when it is the creature's only widget of that side they are all cleared (removeBottomWidget of
+-- this engine is unsafe), else it is only made invisible and stays until the creature leaves the screen
+local function releaseWidget(creature, w, side)
+  if not alive(w) then return end
+  local mine = {}
+  if creature and not creature:isRemoved() then
+    local ok, list = pcall(function() return creature['get' .. side .. 'Widgets'](creature) end)
+    if ok and type(list) == 'table' then mine = list end
+  end
+  local cleared = false
+  if #mine == 1 and mine[1] == w then
+    cleared = pcall(function() creature['clear' .. side .. 'Widgets'](creature) end)
+  end
+  if not cleared then
+    w:setOpacity(0)
+    w:setImageSource('')
+  end
+end
+
+local function dropRing(id)
+  local f = rings[id]
+  rings[id] = nil
+  if f then releaseWidget(f.creature, f.widget, 'Bottom') end
+end
+
+local function ensureRing(creature, entry)
+  local id = entry.id
+  local f = rings[id]
+  if f and f.creature == creature and f.radius == entry.radius and alive(f.widget) then return end
+  if f then dropRing(id) end
+  local size, dy = L.pyreBox(spriteSize(), entry.radius)
+  local w = g_ui.createWidget('UIWidget')
+  w:setImageSource(L.pyreRingPath())
+  w:setImageClip(L.clip(L.frameIndex(now(), L.PYRE_RING_FRAME_MS, L.PYRE_RING_FRAMES), L.PYRE_RING_PX))
+  w:setImageSmooth(true)
+  w:resize(size, size)
+  pcall(function() w:setMarginTop(dy) end)
+  w:setPhantom(true)
+  creature:addBottomWidget(w)
+  rings[id] = { widget = w, creature = creature, radius = entry.radius, shown = nil }
+  startAnim()
+end
+
+local function refreshPyre(id)
+  local entry = pyre[id]
+  local creature = entry and g_map.getCreatureById(id) or nil
+  local visible = creature ~= nil and not creature:isRemoved()
+  if L.showPyre(enabled, entry, visible) then ensureRing(creature, entry) else dropRing(id) end
+end
+
+dropBurn = function(id)
+  local f = burns[id]
+  burns[id] = nil
+  if f then releaseWidget(f.creature, f.widget, f.side) end
+end
+
+local function ensureBurn(creature, id)
+  local f = burns[id]
+  if f and f.creature == creature and alive(f.widget) then return end
+  if f then dropBurn(id) end
+  local spr = spriteSize()
+  local size, ml, mt = L.burnBox(spr, creatureTiles(creature, spr))
+  local side = creature.addTopWidget and 'Top' or 'Bottom' -- over the outfit when the engine can
+  local w = g_ui.createWidget('UIWidget')
+  w:setImageSource(L.burnPath())
+  w:setImageClip(L.clip(L.burnFrame(now() - (burning[id] or now())) or 0, L.BURN_PX))
+  w:setImageSmooth(true)
+  w:resize(size, size)
+  pcall(function() w:setMarginLeft(ml) end)
+  pcall(function() w:setMarginTop(mt) end)
+  w:setPhantom(true)
+  creature['add' .. side .. 'Widget'](creature, w)
+  burns[id] = { widget = w, creature = creature, side = side, shown = nil }
+  startAnim()
+end
+
+local function refreshBurn(id)
+  local creature = burning[id] and g_map.getCreatureById(id) or nil
+  if enabled and creature ~= nil and not creature:isRemoved() then ensureBurn(creature, id) else dropBurn(id) end
 end
 
 -- the foot aura and the frame of one Templar-line player the server named
@@ -472,6 +593,14 @@ local function maintain()
   for id in pairs(smoke) do
     if not cursed[id] then dropSmoke(id) end
   end
+  for id in pairs(pyre) do refreshPyre(id) end
+  for id in pairs(rings) do
+    if not pyre[id] then dropRing(id) end
+  end
+  for _, id in ipairs(L.burnExpire(burning, now())) do dropBurn(id) end
+  for id in pairs(burns) do
+    if not burning[id] then dropBurn(id) end
+  end
 end
 
 -- ---------------------------------------------------------------- all at once
@@ -481,6 +610,8 @@ local function dropAll()
   for id in pairs(feet) do dropFoot(id) end
   for id in pairs(frames) do dropFrame(id) end
   for id in pairs(smoke) do dropSmoke(id) end
+  for id in pairs(rings) do dropRing(id) end
+  for id in pairs(burns) do dropBurn(id) end
 end
 
 local function forgetAll()
@@ -488,6 +619,8 @@ local function forgetAll()
   chests = {}
   server = {}
   cursed = {}
+  pyre = {}
+  burning = {}
   lastFloor = nil
   myId = nil
 end
@@ -497,6 +630,8 @@ local function onAppear(creature)
   local id = creature:getId()
   if enabled and server[id] then refreshTempar(id) end
   if enabled and cursed[id] then refreshCursed(id) end
+  if enabled and pyre[id] then refreshPyre(id) end
+  if enabled and burning[id] then refreshBurn(id) end
 end
 
 local function onDisappear(creature)
@@ -506,6 +641,8 @@ local function onDisappear(creature)
     dropFrame(id)
   end
   if smoke[id] then dropSmoke(id) end
+  if rings[id] then dropRing(id) end
+  if burns[id] then dropBurn(id) end
 end
 
 local function onPositionChange(creature, newPos, oldPos)
@@ -519,6 +656,7 @@ local function onPositionChange(creature, newPos, oldPos)
       maintainChests()
       for tid in pairs(server) do refreshTempar(tid) end
       for cid in pairs(cursed) do refreshCursed(cid) end
+      for pid in pairs(pyre) do refreshPyre(pid) end
     else
       maintainChests()
       for tid, e in pairs(server) do
@@ -542,9 +680,31 @@ local function onCursed(list)
   for id in pairs(list) do refreshCursed(id) end
 end
 
+local function onPyre(list)
+  local old = pyre
+  pyre = list
+  if not enabled then return end
+  for id in pairs(old) do
+    if not list[id] then dropRing(id) end
+  end
+  for id in pairs(list) do refreshPyre(id) end
+end
+
+local function onBurn(set)
+  if not enabled then return end
+  L.burnBegin(burning, set, now())
+  for id in pairs(set) do
+    if burning[id] then refreshBurn(id) end
+  end
+end
+
 local function onSync(_, _, msg)
   local cl = L.parseCursed(msg)
   if cl then return onCursed(cl) end
+  local pl = L.parsePyre(msg)
+  if pl then return onPyre(pl) end
+  local bl = L.parseBurn(msg)
+  if bl then return onBurn(bl) end
   local list = L.parseSync(msg)
   if not list then return end
   local diff = L.syncDiff(server, list)
@@ -592,6 +752,7 @@ local function start()
   maintainChests()
   for id in pairs(server) do refreshTempar(id) end
   for id in pairs(cursed) do refreshCursed(id) end
+  for id in pairs(pyre) do refreshPyre(id) end
   if not maintainEvent then maintainEvent = cycleEvent(safe('maintain', maintain), 1000) end
 end
 
@@ -624,14 +785,16 @@ local function onGameEnd()
 end
 
 function getStats()
-  local nc, nf, ns, nm = 0, 0, 0, 0
+  local nc, nf, ns, nm, nr, nb = 0, 0, 0, 0, 0, 0
   for _, c in pairs(chests) do
     if not c.def.pickup then nc = nc + 1 end
   end
   for _ in pairs(feet) do nf = nf + 1 end
   for _ in pairs(server) do ns = ns + 1 end
   for _ in pairs(smoke) do nm = nm + 1 end
-  return { enabled = enabled, chests = nc, pickups = pickupWidgets(), feet = nf, frames = frameCount(), templars = ns, smoke = nm, floorApi = floorApi(), callback = callbackOn() }
+  for _ in pairs(rings) do nr = nr + 1 end
+  for _ in pairs(burns) do nb = nb + 1 end
+  return { enabled = enabled, rings = nr, burns = nb, chests = nc, pickups = pickupWidgets(), feet = nf, frames = frameCount(), templars = ns, smoke = nm, floorApi = floorApi(), callback = callbackOn() }
 end
 
 function init()

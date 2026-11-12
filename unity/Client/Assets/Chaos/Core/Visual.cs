@@ -333,6 +333,14 @@ namespace Chaos.Core
         public readonly Dictionary<uint, AuraRow> Rows = new Dictionary<uint, AuraRow>();
         public readonly HashSet<uint> Cursed = new HashSet<uint>();
 
+        // Pyre Oath (O518, game_chestaura): the ember ring under a holder ("pyre": id -> radius in sqm, the whole list) and the burn on the monsters
+        // the aura struck ("burn": id -> ms of the tick that began it). Strips from client/tools/gen_pyre_art.py.
+        public const int PyreFrames = 12, PyreFrameMs = 83, PyreRingPx = 160, PyreReachSqm = 2, PyreMaxRadius = 8, PyreMaxRows = 32;
+        public const int BurnFrames = 8, BurnFrameMs = 125, BurnHoldMs = 1250, BurnPx = 64, BurnMax = 40;
+        public Func<double> Clock = () => 0;
+        public readonly Dictionary<uint, int> Pyre = new Dictionary<uint, int>();
+        public readonly Dictionary<uint, double> Burning = new Dictionary<uint, double>();
+
         public ChestAuraState(ExtOpcodes e) { e.On(Opcode, m => Handle(m.Action, m.Data)); }
 
         public void Handle(string action, object data)
@@ -356,7 +364,41 @@ namespace Chaos.Core
                 foreach (object o in Json.List(data, "c"))
                     if (o is double d && d > 0 && Cursed.Count < CursedMax) Cursed.Add((uint)d);
             }
+            else if (action == "pyre")
+            {
+                Pyre.Clear();
+                foreach (object row in Json.List(data, "p"))
+                {
+                    if (Pyre.Count >= PyreMaxRows) break;
+                    double id = Json.Number(row, "i"), r = Json.Number(row, "r");
+                    if (id > 0 && r >= 1) Pyre[(uint)id] = (int)Math.Min(Math.Floor(r), PyreMaxRadius);
+                }
+            }
+            else if (action == "burn")
+            {
+                double now = Clock();
+                foreach (object o in Json.List(data, "b"))
+                    if (o is double d && d > 0 && (Burning.ContainsKey((uint)d) || Burning.Count < BurnMax)) Burning[(uint)d] = now;
+            }
         }
+
+        /// <summary>The frame (0-based) of a burn that began sinceMs ago: one per BurnFrameMs, the last held until BurnHoldMs, then -1 (over).</summary>
+        public static int BurnFrame(double sinceMs)
+        {
+            if (sinceMs < 0) sinceMs = 0;
+            return sinceMs >= BurnHoldMs ? -1 : Math.Min(BurnFrames - 1, (int)(sinceMs / BurnFrameMs));
+        }
+
+        /// <summary>Forget the burns that are over at now.</summary>
+        public void PruneBurns(double now)
+        {
+            List<uint> gone = null;
+            foreach (var kv in Burning) if (BurnFrame(now - kv.Value) < 0) (gone ?? (gone = new List<uint>())).Add(kv.Key);
+            if (gone != null) foreach (uint id in gone) Burning.Remove(id);
+        }
+
+        public static string PyreRingPath => "game_chestaura/images/pyre/ring.png";
+        public static string BurnPath => "game_chestaura/images/pyre/burn.png";
 
         /// <summary>The loop frame (0-based) at a time: the same for every aura of a kind, so two chests are in step.</summary>
         public static int FrameIndex(double nowMs, int frameMs, int frames) => frameMs <= 0 || frames <= 0 ? 0 : (int)(Math.Floor(nowMs / frameMs) % frames);
@@ -367,7 +409,7 @@ namespace Chaos.Core
         public static string ChestPath(string art) => "game_chestaura/images/chest/" + art + ".png";
         public static string FootPath(int line) => line >= 1 && line <= Lines.Length ? "game_chestaura/images/foot/" + Lines[line - 1] + "_sigil.png" : null;
         public static string FramePath(int line) => line >= 1 && line <= Lines.Length ? "game_chestaura/images/frame/" + Lines[line - 1] + ".png" : null;
-        public void Clear() { Rows.Clear(); Cursed.Clear(); }
+        public void Clear() { Rows.Clear(); Cursed.Clear(); Pyre.Clear(); Burning.Clear(); }
     }
 
     // ============================================================================================================ cosmetic footprints and outlines

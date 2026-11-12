@@ -212,6 +212,78 @@ function A.pyreActive(inPz, inFight, enemyNear)
 	return not inPz and (inFight == true or enemyNear == true)
 end
 
+-- Pyre Oath on the client (O518). The client draws the ember ring under every holder and the burn on the monsters the aura
+-- struck (client game_chestaura, extended opcode ChaosOpcodes.templarAura = 118, the actions "pyre" and "burn"); the server
+-- sends no map effect for it. Pure rules, run by the glue in archetypes.lua:
+--   pyre: data {p = [{i = creature id, r = radius}]}, the whole list a viewer sees, only when it changed (empty clears)
+--   burn: data {b = [monster id]}, the monsters struck by one tick, to the players who can see the holder
+-- holders = list of {id, pos, radius}; viewer = {id, pos}; view = cfg().arPyreOath.look.
+function A.pyreRingList(viewer, holders, view)
+	local out = {}
+	local vp = viewer.pos
+	for _, h in ipairs(holders) do
+		local p = h.pos
+		if p and vp and p.z == vp.z and math.abs(p.x - vp.x) <= view.viewX and math.abs(p.y - vp.y) <= view.viewY then
+			out[#out + 1] = {i = h.id, r = h.radius}
+		end
+	end
+	table.sort(out, function(a, b) return a.i < b.i end)
+	while #out > view.maxRings do
+		out[#out] = nil
+	end
+	return out
+end
+
+function A.pyreRingKey(list)
+	local parts = {}
+	for i, e in ipairs(list) do
+		parts[i] = e.i .. ":" .. e.r
+	end
+	return table.concat(parts, ",")
+end
+
+-- what to send to a viewer: nil when nothing changed since sent[viewerId], else the list (empty = clear). Updates sent.
+function A.pyreRingDecide(sent, viewerId, list)
+	local key = A.pyreRingKey(list)
+	local had = sent[viewerId]
+	if key == "" then
+		if had == nil then
+			return nil
+		end
+		sent[viewerId] = nil
+		return {}
+	end
+	if had == key then
+		return nil
+	end
+	sent[viewerId] = key
+	return list
+end
+
+function A.pyreRingPrune(sent, online)
+	for id in pairs(sent) do
+		if not online[id] then
+			sent[id] = nil
+		end
+	end
+end
+
+-- the monster ids of a tick as the burn message carries them: sorted, no repeats, at most `max`
+function A.pyreBurnIds(struck, max)
+	local seen, out = {}, {}
+	for _, e in ipairs(struck) do
+		if e.id and not seen[e.id] then
+			seen[e.id] = true
+			out[#out + 1] = e.id
+		end
+	end
+	table.sort(out)
+	while #out > max do
+		out[#out] = nil
+	end
+	return out
+end
+
 -- ------------------------------------------------------------------------------------------------ Sanguine Covenant
 -- state = {start, sum, frac}: the leech of the last second and the fraction of a health point carried to the next hit.
 -- Returns the health to give for a hit that did `amount` damage at `now`.

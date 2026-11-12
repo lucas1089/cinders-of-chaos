@@ -167,7 +167,7 @@ local function defaultType()
 end
 
 -- the players that get the line, and the channel's members among them
-local function post(owner, item, kind, itemName, token)
+local function post(owner, item, kind, itemName, token, monster, pos)
 	local c = cfg()
 	local f = c.feed
 	local name, level = owner:getName(), owner:getLevel()
@@ -183,11 +183,17 @@ local function post(owner, item, kind, itemName, token)
 		end
 	end
 	if f.discord and ChaosDiscord and ChaosDiscord.drop then
-		pcall(ChaosDiscord.drop, name, level, itemName, kind)
+		-- O519: the item's data (tooltip lines, base, class, monster, hunt, icon); a fault leaves the plain post
+		local details
+		if ChaosDiscord.dropDetails then
+			local okD, d = pcall(ChaosDiscord.dropDetails, item, monster, pos)
+			details = okD and type(d) == "table" and d or nil
+		end
+		pcall(ChaosDiscord.drop, name, level, itemName, kind, details)
 	end
 end
 
-local function feed(state, owner, list)
+local function feed(state, owner, list, monster, pos)
 	local c = cfg()
 	local f = c.feed
 	if not f.enabled or state.tester or not list[1] then
@@ -220,7 +226,7 @@ local function feed(state, owner, list)
 		end
 	end
 	local plain = name or C.cleanName(pcallv(function() return best.item:getName() end) or "Item")
-	post(owner, best.item, bestKind, plain, token or ("[" .. plain .. "]"))
+	post(owner, best.item, bestKind, plain, token or ("[" .. plain .. "]"), monster, pos)
 end
 
 -- ---------------------------------------------------------------- 4. personal records
@@ -259,7 +265,7 @@ function RL.finish(state, monster, owner, corpse, corpsePos, L, bonus)
 		end
 	end
 	-- 3, 4. the feed and the records, before the gift joins the corpse (it never posts)
-	local ok, err = pcall(feed, state, owner, list)
+	local ok, err = pcall(feed, state, owner, list, monster, corpsePos)
 	if not ok then
 		print("[Chaos retention] drop feed: " .. tostring(err))
 	end

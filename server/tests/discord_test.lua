@@ -35,6 +35,118 @@ do
 	eq(D.drop(cfg, "Bob", 90, "Sword", "legendary").title, "Legendary find", "legendary title")
 end
 
+-- ------------------------------------------------------------------ O519: the item's data on the drop post
+do
+	local function field(ev, name)
+		for _, f in ipairs(ev.fields) do
+			if f.name == name then return f end
+		end
+	end
+	local function real(ev)
+		local n = 0
+		for _, f in ipairs(ev.fields) do
+			if f.name then n = n + 1 end
+		end
+		return n
+	end
+	-- a tooltip as item_tooltip_core.lua T.build makes it (the parts the post reads)
+	local tip = {name = "Unraveling Titan Axe of Carnage", slot = "Two-handed axe", rarity = 5,
+		base = {{k = "attack", l = "Attack", v = 52}, {k = "defense", l = "Defense", v = 14},
+			{k = "attackspeed", l = "Attack Interval", v = 2, fmt = "sec", low = true},
+			{k = "protect1", l = "Physical Protection", v = 5, fmt = "pct"},
+			{k = "yourinterval", l = "Your Attack Interval", v = 1.7, fmt = "sec"}, {k = "dps", l = "Estimated DPS", v = 99, fmt = "est"}},
+		mods = {{t = "Fire +9% dmg", tr = 3, sd = "p"}, {t = "Life on Kill +12", tr = 4, sd = "s", bd = true},
+			{t = "Block Chance +4%", tr = 8, sd = "i"}},
+		quality = {q = 6, cap = 20}, sockets = {count = 2, list = {{name = "Flawless Ruby", text = "Fire Damage +9%"}, {}}},
+		req = {level = 189, magic = 12, voc = "Juggernaut, Berserker"}}
+	local d = D.dropDetails(tip, {baseName = "titan axe", monster = "Demon", place = "Ashen Wastes", iconUrl = "/chaos-sprites/items/4417.png"})
+	eq(d.base, "Titan Axe (two-handed axe)", "base: the item type, what it is worn as")
+	eq(#d.stats, 4, "stats: the type's numbers, not the viewer's rows")
+	eq(d.stats[3], "Attack Interval 2s", "an interval in seconds")
+	eq(d.stats[4], "Physical Protection 5%", "a protection in percent")
+	eq(d.mods[1], "Fire +9% dmg (T3)", "a modifier with its tier")
+	eq(d.mods[2], "Life on Kill +12 (T4, bound)", "a bound modifier")
+	eq(d.mods[3], "Implicit: Block Chance +4% (T8)", "a corrupted implicit")
+	eq(d.mods[4], "Quality +6%", "quality")
+	eq(d.mods[5], "Socket 1: Flawless Ruby (Fire Damage +9%)", "a gem")
+	eq(d.mods[6], "Socket 2: empty", "an empty socket")
+	local ev = D.drop(cfg, "Massador", 189, "Unraveling Titan Axe of Carnage", "legendary", d)
+	eq(ev.title, "Legendary find", "the title stays")
+	eq(ev.text, "Massador (Lv 189) found Unraveling Titan Axe of Carnage!", "the text stays")
+	eq(field(ev, "Base").value, "Titan Axe (two-handed axe)", "Base field")
+	check(field(ev, "Base").inline and field(ev, "Requires").inline and field(ev, "Class").inline, "Base, Requires, Class are inline")
+	eq(field(ev, "Requires").value, "Level 189, magic level 12", "level and magic level")
+	eq(field(ev, "Class").value, "Juggernaut, Berserker", "classes")
+	check(not field(ev, "Stats").inline and field(ev, "Stats").value:find("Attack 52\nDefense 14\nAttack Interval 2s", 1, true), "Stats lines")
+	eq(field(ev, "Dropped by").value, "Demon in Ashen Wastes", "monster in place")
+	check(field(ev, "Modifiers").value:find("Fire +9% dmg (T3)\nLife on Kill", 1, true), "Modifiers lines")
+	check(field(ev, "Passive") == nil, "no passive on a rolled item")
+	eq(ev.fields[#ev.fields].thumbnail, "/chaos-sprites/items/4417.png", "the thumbnail entry is last")
+	eq(real(ev), 6, "six named fields")
+	-- only the monster, only the place
+	eq(field(D.drop(cfg, "A", 1, "X", "unique", {monster = "Rat"}), "Dropped by").value, "Rat", "monster alone")
+	eq(field(D.drop(cfg, "A", 1, "X", "unique", {place = "Mine"}), "Dropped by").value, "Mine", "place alone")
+	-- a unique: its passive line, no tier on its modifiers, the base is not its own name
+	local utip = {name = "Hollow Throne Claymore", slot = "Two-handed sword", rarity = 7, unique = {name = "Hollow Throne Claymore"},
+		base = {{k = "attack", l = "Attack", v = 80}}, mods = {{t = "Sword +3"}},
+		passive = {name = "Hollow Crown", text = "Every 8th hit echoes for 40% of its damage. For: warriors.", flavor = "Cold."},
+		req = {level = 700, voc = "All classes"}}
+	local ud = D.dropDetails(utip, {baseName = "Hollow Throne Claymore"})
+	eq(ud.base, "Two-handed sword", "a unique: the slot, not its own name again")
+	eq(ud.passive, "Hollow Crown: Every 8th hit echoes for 40% of its damage. For: warriors.", "the passive line")
+	eq(ud.mods[1], "Sword +3", "no tier on a unique's modifier")
+	local uev = D.drop(cfg, "Ann", 812, "Hollow Throne Claymore", "unique", ud)
+	eq(field(uev, "Passive").value, ud.passive, "Passive field")
+	check(uev.fields[1].name == "Base" and uev.fields[#uev.fields].name ~= nil, "no thumbnail without a url")
+	-- no details: the post of before
+	local plain = D.drop(cfg, "Ann", 812, "Hollow Throne Claymore", "unique")
+	eq(#plain.fields, 0, "no details: no fields")
+	eq(#D.drop(cfg, "Ann", 812, "X", "unique", {}).fields, 0, "empty details: no fields")
+	-- switches
+	local off = {}
+	for k, v in pairs(cfg) do off[k] = v end
+	off.dropDetails = {base = false, stats = false, level = false, classes = false, mods = false, passive = false, source = false, icon = false}
+	eq(#D.drop(off, "Massador", 189, "Axe", "legendary", d).fields, 0, "every part off: no field")
+	off.dropDetails = {mods = false, icon = false}
+	local part = D.drop(off, "Massador", 189, "Axe", "legendary", d)
+	check(field(part, "Modifiers") == nil and field(part, "Base") ~= nil and part.fields[#part.fields].name ~= nil, "one part off, the others stay")
+	-- clipping: many modifier lines go whole, then "+N more"
+	local lines = {}
+	for i = 1, 80 do lines[i] = string.format("Modifier number %d of the axe +%d%% (T1)", i, i) end
+	local big = D.drop(cfg, "A", 1, "X", "unique", {mods = lines, stats = lines, passive = string.rep("p", 3000), monster = string.rep("m", 3000)})
+	for _, f in ipairs(big.fields) do
+		check(#f.name <= 256 and #f.value <= 1024, "field limits: " .. tostring(f.name))
+	end
+	check(field(big, "Modifiers").value:find("%+%d+ more") ~= nil, "clipped modifiers say how many are left")
+	check(not field(big, "Modifiers").value:find("%.%.%.$"), "no line cut in two")
+	local total = #big.title + #big.text
+	for _, f in ipairs(big.fields) do total = total + #f.name + #f.value end
+	check(total <= 5800, "the whole post within the budget: " .. total)
+	-- a single line longer than the field is cut, never inside a UTF-8 character
+	local cut = D.clipLines({string.rep("\195\169", 700)}, 1024)
+	check(#cut <= 1024 and cut:sub(-3) == "..." and #cut:sub(1, -4) % 2 == 0, "a long line cut on a character")
+	eq(D.clipLines({"a", "b", "c"}, 1024), "a\nb\nc", "short lines kept")
+	-- the 25 field cap and the limits of any field list
+	local many = {}
+	for i = 1, 40 do many[i] = {name = "N" .. i, value = "v", inline = true} end
+	many[#many + 1] = {thumbnail = "/x.png"}
+	local capped = D.fitFields({title = "t", text = "x", fields = many})
+	eq(real(capped), 25, "25 named fields at most")
+	eq(capped.fields[#capped.fields].thumbnail, "/x.png", "the thumbnail entry is kept and not counted")
+	local long = D.fitFields({title = "t", text = "x", fields = {{name = string.rep("n", 400), value = string.rep("v", 2000)}}})
+	check(#long.fields[1].name == 256 and #long.fields[1].value == 1024, "name 256, value 1024")
+	-- a tight budget cuts the longest value, then drops what is left too short
+	local tight = D.fitFields({title = string.rep("t", 250), text = string.rep("x", 2000), fields = {
+		{name = "A", value = string.rep("a", 1000)}, {name = "B", value = string.rep("b", 1000)}, {name = "C", value = string.rep("c", 1000)}}}, 4000)
+	local tl = #tight.title + #tight.text
+	for _, f in ipairs(tight.fields) do tl = tl + #f.name + #f.value end
+	check(tl <= 4000, "a tight budget holds: " .. tl)
+	-- the queue row keeps the fields as the worker reads them
+	local captured
+	D.insertSql(cfg.table, ev, 1000, esc, function(t) captured = t return "[]" end)
+	eq(captured, ev.fields, "the INSERT carries the fields column")
+end
+
 -- ------------------------------------------------------------------ switches, channels, rate limit
 for kind, on in pairs(cfg.events) do
 	check(on == true, kind .. " is on by default")
@@ -270,6 +382,63 @@ globals.ChaosDiscordShutdown.onShutdown()
 check(queries[#queries] and queries[#queries]:find("'status_down'", 1, true), "another time: down")
 os.date, io.open = realDate, realOpen
 Chaos.worldBoss.bosses, Chaos.worldBoss.minLevel = savedBosses, savedMin
+
+-- ------------------------------------------------------------------ O519: X.dropDetails on a mocked engine
+do
+	dofile("data/scripts/chaos/item_tooltip_core.lua") -- the real splitPassive / refreshPassive
+	local realBuild = ChaosItemTooltip.build
+	local builds = 0
+	ChaosItemTooltip.build = function(item, opts)
+		builds = builds + 1
+		if item.fail then error("tooltip fault") end
+		return {name = item.name, slot = "Two-handed sword", rarity = 7, unique = {name = item.name},
+			desc = "Cold iron. Hollow Crown: Every 8th hit echoes for 40% of its damage. For: warriors. (Meant for level 700)",
+			base = {{k = "attack", l = "Attack", v = 80}}, mods = {{t = "Sword +3"}}, req = {level = 700, voc = "All classes"}}
+	end
+	ItemType = function(id) return {getName = function() return "hollow throne claymore" end} end
+	ChaosUniquePassivesCore = {entry = function(c, id) return {name = "Hollow Crown"} end,
+		text = function(c, e, lang) return "Hollow Crown: Every 8th hit echoes for 40% of its damage. For: warriors." end}
+	ChaosUniquePassivesConfig = {}
+	ChaosTelemetryConfig = {poiRange = 60, poiFloors = 3}
+	ChaosTelemetryCore = {huntAreaOf = function(pos, label, marks, c)
+		return label or (marks[1] and pos.x == 100 and marks[1].n) or nil
+	end}
+	ChaosTelemetry = {marks = function() return {{k = "hunt", n = "Ashen Wastes", x = 100, y = 100, z = 7}} end}
+	local item = {name = "Hollow Throne Claymore", getId = function() return 4417 end}
+	local monster = {getName = function() return "Demon" end}
+	local d = X.dropDetails(item, monster, {x = 100, y = 100, z = 7})
+	eq(d.base, "Two-handed sword", "dropDetails: base")
+	eq(d.passive, "Hollow Crown: Every 8th hit echoes for 40% of its damage. For: warriors.", "dropDetails: the unique's passive line")
+	eq(d.monster, "Demon", "dropDetails: the monster")
+	eq(d.place, "Ashen Wastes", "dropDetails: the hunt at the corpse")
+	eq(d.iconUrl, "/chaos-sprites/items/4417.png", "dropDetails: the icon path of the server id")
+	eq(d.reqLevel, 700, "dropDetails: the level the tooltip says")
+	local nothing = X.dropDetails(item, nil, nil)
+	check(nothing.monster == nil and nothing.place == nil, "dropDetails: no monster, no place: none")
+	-- a fault in the tooltip leaves the rest (the post still has the monster and the icon)
+	local fails = X.dropDetails({name = "X", fail = true, getId = function() return 5 end}, monster, nil)
+	eq(#fails.mods, 0, "a tooltip fault: no modifier lines")
+	eq(fails.monster, "Demon", "a tooltip fault: the monster stays")
+	eq(fails.iconUrl, "/chaos-sprites/items/5.png", "a tooltip fault: the icon stays")
+	-- no tooltip builder at all (an engine without it)
+	ChaosItemTooltip.build = nil
+	check(type(X.dropDetails(item, monster, nil)) == "table", "no tooltip builder: still a table")
+	ChaosItemTooltip.build = realBuild
+	-- the full path: the queue row of a drop with details
+	async = {}
+	cfg.perMinute.drop = 100
+	local rows = {}
+	json = {encode = function(t)
+		local out = {}
+		for _, f in ipairs(t) do out[#out + 1] = (f.name or "thumb") .. "=" .. tostring(f.value or f.thumbnail) end
+		return table.concat(out, "|")
+	end}
+	check(X.drop("Ann", 700, "Hollow Throne Claymore", "unique", d), "a drop with details is queued")
+	check(async[#async]:find("Passive=Hollow Crown: Every 8th hit", 1, true) and async[#async]:find("Dropped by=Demon in Ashen Wastes", 1, true)
+		and async[#async]:find("thumb=/chaos-sprites/items/4417.png", 1, true), "the row carries the fields")
+	check(X.drop("Bob", 90, "Sword", "legendary"), "an old caller without details is queued")
+	check(not async[#async]:find("Base=", 1, true), "and has no detail fields")
+end
 
 print(string.format("discord_test: %d checks, %d failures", count, failures))
 if failures > 0 then

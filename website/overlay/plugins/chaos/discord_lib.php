@@ -24,6 +24,7 @@
 if (!class_exists('ChaosDiscordWorker')) {
 
 require_once __DIR__ . '/pay/Db.php';
+require_once __DIR__ . '/sprite_lib.php';
 
 final class ChaosDiscordWorker {
 	public const KINDS = array('record', 'first', 'worldboss_spawn', 'worldboss_kill', 'ascended_kill', 'cinderheart_kill',
@@ -92,29 +93,83 @@ final class ChaosDiscordWorker {
 		return $this->hooks[$channel] ?? ($this->hooks['default'] ?? null);
 	}
 
+	/** Discord's limits of one embed: 25 fields, a name 256, a value 1024, all text together 6000 characters. */
+	public const MAX_FIELDS = 25;
+	public const MAX_TOTAL = 6000;
+
+	/**
+	 * The thumbnail of a drop post (O519): the game queues the item's image as the path /chaos-sprites/items/<server id>.png
+	 * (or the same on this site's own https address). Taken only when the site address is https, a URL names this site's host,
+	 * the path is exactly that form, the item is drawn from our art (never the placeholder) and the file exists. Anything
+	 * else gives null: the post has no thumbnail, never a broken image.
+	 */
+	public function thumbnailUrl(string $raw): ?string {
+		$site = parse_url($this->siteUrl);
+		if (!is_array($site) || ($site['scheme'] ?? '') !== 'https' || empty($site['host']) || isset($site['user']) || isset($site['pass'])) {
+			return null;
+		}
+		$u = parse_url(trim($raw));
+		if (!is_array($u) || isset($u['query']) || isset($u['fragment']) || isset($u['user']) || isset($u['pass'])) {
+			return null;
+		}
+		if (isset($u['host']) || isset($u['scheme'])) {
+			if (($u['scheme'] ?? '') !== 'https' || strcasecmp((string)($u['host'] ?? ''), (string)$site['host']) !== 0
+				|| (int)($u['port'] ?? 443) !== (int)($site['port'] ?? 443)) {
+				return null;
+			}
+		}
+		$path = (string)($u['path'] ?? '');
+		$prefix = rtrim((string)($site['path'] ?? ''), '/');
+		if ($prefix !== '' && strpos($path, $prefix . '/') === 0) {
+			$path = substr($path, strlen($prefix));
+		}
+		if (!preg_match('~^' . preg_quote(CHAOS_SPRITE_URL, '~') . '/items/([1-9]\d{0,5})\.png$~', $path, $m)) {
+			return null;
+		}
+		$sid = (int)$m[1];
+		if (!chaos_item_published($sid) || !is_file(chaos_sprite_root() . '/items/' . $sid . '.png')) {
+			return null;
+		}
+		return $this->siteUrl . CHAOS_SPRITE_URL . '/items/' . $sid . '.png';
+	}
+
 	/** The webhook body of a queue row. */
 	public function payload(array $row): array {
 		$fields = json_decode((string)($row['fields'] ?? '[]'), true);
 		$embedFields = array();
+		$thumb = null;
+		$title = mb_substr((string)$row['title'], 0, 256);
+		$body = mb_substr((string)$row['body'], 0, 4000);
+		$used = mb_strlen($title) + mb_strlen($body) + mb_strlen($this->name);
 		foreach (is_array($fields) ? $fields : array() as $fl) {
-			if (!is_array($fl) || !isset($fl['name'], $fl['value'])) {
+			if (is_array($fl) && isset($fl['thumbnail']) && !isset($fl['name'])) { // O519: the item image of a drop post
+				$thumb = $thumb ?? (is_string($fl['thumbnail']) ? $this->thumbnailUrl($fl['thumbnail']) : null);
 				continue;
 			}
-			$embedFields[] = array('name' => mb_substr((string)$fl['name'], 0, 256), 'value' => mb_substr((string)$fl['value'], 0, 1024),
-				'inline' => !empty($fl['inline']));
-			if (count($embedFields) >= 10) {
-				break;
+			if (!is_array($fl) || !isset($fl['name'], $fl['value']) || count($embedFields) >= self::MAX_FIELDS) {
+				continue;
 			}
+			$name = mb_substr((string)$fl['name'], 0, 256);
+			$room = self::MAX_TOTAL - $used - mb_strlen($name);
+			if ($room < 1) {
+				break; // the embed is full: the rest is left out, the post still goes
+			}
+			$value = mb_substr((string)$fl['value'], 0, min(1024, $room));
+			$used += mb_strlen($name) + mb_strlen($value);
+			$embedFields[] = array('name' => $name, 'value' => $value, 'inline' => !empty($fl['inline']));
 		}
 		$embed = array(
-			'title' => mb_substr((string)$row['title'], 0, 256),
-			'description' => mb_substr((string)$row['body'], 0, 4000),
+			'title' => $title,
+			'description' => $body,
 			'color' => self::COLORS[(string)$row['kind']] ?? 0xD9A53A,
 			'footer' => array('text' => $this->name),
 			'timestamp' => gmdate('Y-m-d\TH:i:s\Z', (int)$row['created_at']),
 		);
 		if ($embedFields) {
 			$embed['fields'] = $embedFields;
+		}
+		if ($thumb !== null) {
+			$embed['thumbnail'] = array('url' => $thumb);
 		}
 		if (!empty($row['url'])) {
 			$embed['url'] = (string)$row['url'];

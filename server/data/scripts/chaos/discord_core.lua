@@ -5,6 +5,8 @@
 --
 --   ChaosDiscordCore.enabled(cfg, kind)                 the switch of an event type
 --   ChaosDiscordCore.allow(state, cfg, kind, now)       the per-minute rate limit (state.window, state.dropped)
+--   ChaosDiscordCore.drop(cfg, name, level, item, kind, details)   the drop feed post (O260); details: dropDetails (O519)
+--   ChaosDiscordCore.dropDetails(tip, extra)           what a drop post says about an item, from its tooltip (O519)
 --   ChaosDiscordCore.record / first / worldBossSpawn / bossKill / level / season / status   the events
 --   ChaosDiscordCore.patchnotes(cfg, title, text)      the patch note post (patchnotes.lua, English and pt-BR rows)
 --   ChaosDiscordCore.weeklyChallenge(cfg, label, theme, sections)   the Weekly Challenge's week (O390,
@@ -116,11 +118,243 @@ function D.bossKill(cfg, kind, bossName, secs, names)
 			("slain " .. tostring(bossName)) or "extinguished the Cinderheart", D.clock(secs)), fields)
 end
 
--- O260, the drop feed: a legendary, divine or unique drop. kind: "legendary" | "divine" | "unique"; item = the item's name
-function D.drop(cfg, name, level, item, kind)
+-- O519: the item's data on a drop post. Discord's embed limits: 25 fields, a field name 256, a value 1024, the whole
+-- embed 6000 characters (title, description, field names and values, footer). The worker adds the footer, so the
+-- game keeps to cfg.dropBudget.
+D.LIMITS = {fields = 25, name = 256, value = 1024, total = 6000}
+
+-- the lines that fit in `max` bytes (never a line cut, except a single line longer than max), then "+N more" when some
+-- were left out; a cut line never ends inside a UTF-8 character
+local function clipLines(lines, max)
+	local out, used = {}, 0
+	for i, line in ipairs(lines) do
+		line = tostring(line)
+		local need = #line + (#out > 0 and 1 or 0)
+		-- a line that is not the last must leave room for the "+N more" line after it
+		local reserve = i < #lines and (#string.format("+%d more", #lines - i) + 1) or 0
+		if used + need + reserve > max then
+			if #out == 0 then
+				local cut = line:sub(1, max - 3)
+				while #cut > 0 and cut:byte(#cut) >= 0x80 and cut:byte(#cut) < 0xC0 do
+					cut = cut:sub(1, #cut - 1) -- continuation bytes of a character cut in two
+				end
+				if #cut > 0 and cut:byte(#cut) >= 0xC0 then
+					cut = cut:sub(1, #cut - 1) -- its lead byte
+				end
+				out[1] = cut .. "..."
+			else
+				out[#out + 1] = string.format("+%d more", #lines - i + 1)
+			end
+			break
+		end
+		out[#out + 1] = line
+		used = used + need
+	end
+	return table.concat(out, "\n")
+end
+D.clipLines = clipLines
+
+local function textLen(ev)
+	local n = #ev.title + #ev.text
+	for _, f in ipairs(ev.fields) do
+		if f.name then
+			n = n + #f.name + #f.value
+		end
+	end
+	return n
+end
+
+-- the fields of a drop post inside Discord's limits: at most 25 real fields (the thumbnail entry has no name and does
+-- not count), names and values clipped, the whole post within `budget` characters (the longest value is cut, a field
+-- that would be left with a few characters goes)
+function D.fitFields(ev, budget)
+	budget = budget or D.LIMITS.total
+	local fields, thumb = {}, nil
+	for _, f in ipairs(ev.fields or {}) do
+		if f.name == nil and f.thumbnail then
+			thumb = f
+		elseif f.name ~= nil and f.value ~= nil and #fields < D.LIMITS.fields then
+			fields[#fields + 1] = {name = clip(f.name, D.LIMITS.name), value = clip(f.value, D.LIMITS.value),
+				inline = f.inline and true or false}
+		end
+	end
+	ev.fields = fields
+	while #fields > 0 and textLen(ev) > budget do
+		local worst = 1
+		for i, f in ipairs(fields) do
+			if #f.value > #fields[worst].value then
+				worst = i
+			end
+		end
+		local keep = #fields[worst].value - (textLen(ev) - budget)
+		if keep < 8 then
+			table.remove(fields, worst)
+		else
+			fields[worst].value = clip(fields[worst].value, keep)
+		end
+	end
+	if thumb then
+		fields[#fields + 1] = thumb
+	end
+	return ev
+end
+
+local function titleCase(s)
+	local small = {of = true, the = true, a = true, an = true, ["and"] = true, ["in"] = true, on = true, to = true}
+	local first = true
+	return (tostring(s or ""):gsub("(%S+)", function(w)
+		local low = w:lower()
+		if not first and small[low] then
+			return low
+		end
+		first = false
+		return (low:gsub("^%l", string.upper))
+	end))
+end
+D.titleCase = titleCase
+
+local function number(v)
+	v = tonumber(v) or 0
+	if v == floor(v) then
+		return string.format("%.0f", v)
+	end
+	return string.format("%g", v)
+end
+
+-- one row of the tooltip's base block (item_tooltip_core.lua T.baseStats: {k, l, v, fmt}) as a line; nil for the rows that
+-- need a viewer (his interval, the estimated damage)
+local function statLine(b)
+	if type(b) ~= "table" or not b.l or b.v == nil or b.k == "yourinterval" or b.k == "dps" or b.fmt == "est" then
+		return nil
+	end
+	if b.fmt == "pct" then
+		return string.format("%s %s%%", b.l, number(b.v))
+	elseif b.fmt == "sec" then
+		return string.format("%s %ss", b.l, number(b.v))
+	elseif b.fmt == "range" and b.lo and b.hi then
+		return string.format("%s %s-%s", b.l, number(b.lo), number(b.hi))
+	end
+	return string.format("%s %s", b.l, number(b.v))
+end
+
+-- the modifier lines of a tooltip (tip.mods, quality, sockets, veil) in the words of the in-game tooltip: "Fire +5% dmg
+-- (T2)", a corrupted implicit as "Implicit: ...", a bound one ", bound"
+local function modLines(tip)
+	local lines = {}
+	for _, m in ipairs(tip.mods or {}) do
+		if m.t and m.t ~= "" then
+			local line = tostring(m.t)
+			if m.tr then
+				line = line .. string.format(" (T%d%s)", m.tr, m.bd and ", bound" or "")
+			end
+			if m.sd == "i" then
+				line = "Implicit: " .. line
+			end
+			lines[#lines + 1] = line
+		end
+	end
+	if type(tip.quality) == "table" and (tonumber(tip.quality.q) or 0) > 0 then
+		lines[#lines + 1] = string.format("Quality +%s%%", number(tip.quality.q))
+	end
+	if type(tip.sockets) == "table" then
+		for i, g in ipairs(tip.sockets.list or {}) do
+			if g.name then
+				lines[#lines + 1] = string.format("Socket %d: %s%s", i, g.name,
+					(g.text and g.text ~= "") and (" (" .. g.text .. ")") or "")
+			else
+				lines[#lines + 1] = string.format("Socket %d: empty", i)
+			end
+		end
+	end
+	if type(tip.veil) == "table" then
+		if tip.veil.s == "open" and tip.veil.n then
+			lines[#lines + 1] = string.format("Veiled: %s%s", tip.veil.n, tip.veil.t and (", " .. tip.veil.t) or "")
+		else
+			lines[#lines + 1] = "Veiled modifier unrevealed"
+		end
+	end
+	return lines
+end
+
+-- O519: what a drop post says about the item, read from the tooltip the game builds for the item (item_tooltip_core.lua
+-- T.build; discord.lua X.dropDetails builds it, this only reads it, so the lines are the in-game ones and no rule is
+-- copied). tip = that tooltip; extra = {baseName (the item type's own name), monster, place, iconUrl}. Returns {base,
+-- stats = {lines}, reqLevel, reqMagic, classes, mods = {lines}, passive = "Name: rule", monster, place, iconUrl}.
+function D.dropDetails(tip, extra)
+	tip, extra = type(tip) == "table" and tip or {}, type(extra) == "table" and extra or {}
+	local d = {monster = extra.monster, place = extra.place, iconUrl = extra.iconUrl}
+	local slot = (type(tip.slot) == "string" and tip.slot ~= "" and tip.slot ~= "Container") and tip.slot or nil
+	local base = extra.baseName
+	if type(base) == "string" and base ~= "" and titleCase(base):lower() ~= tostring(tip.name or ""):lower() then
+		d.base = titleCase(base) .. (slot and (" (" .. slot:lower() .. ")") or "")
+	else
+		d.base = slot
+	end
+	d.stats = {}
+	for _, b in ipairs(tip.base or {}) do
+		local line = statLine(b)
+		if line then
+			d.stats[#d.stats + 1] = line
+		end
+	end
+	if type(tip.req) == "table" then
+		d.reqLevel, d.reqMagic, d.classes = tonumber(tip.req.level), tonumber(tip.req.magic), tip.req.voc
+	end
+	d.mods = modLines(tip)
+	if type(tip.passive) == "table" and tip.passive.name and tip.passive.text then
+		d.passive = string.format("%s: %s", tip.passive.name, tip.passive.text)
+	end
+	return d
+end
+
+-- O260, the drop feed: a legendary, divine or unique drop. kind: "legendary" | "divine" | "unique"; item = the item's
+-- name. O519 (owner 2026-11-12, "show the item's data"): details (optional, D.dropDetails) adds the fields Base,
+-- Requires, Class (short, inline), Stats, Dropped by, Passive, Modifiers; cfg.dropDetails switches each part. The
+-- thumbnail (details.iconUrl, the item's image on the website) is an entry {thumbnail = url} in the fields: the worker
+-- checks and draws it (a worker without the feature skips an entry with no name). No details: the post of O260.
+function D.drop(cfg, name, level, item, kind, details)
 	local title = {legendary = "Legendary find", divine = "Divine find", unique = "Unique find"}
-	return event(cfg, "drop", title[kind] or "Rare find", string.format("%s (Lv %d) found %s!", tostring(name),
+	local ev = event(cfg, "drop", title[kind] or "Rare find", string.format("%s (Lv %d) found %s!", tostring(name),
 		floor(tonumber(level) or 0), tostring(item)))
+	if type(details) ~= "table" then
+		return ev
+	end
+	local on = cfg.dropDetails or {}
+	local f = {}
+	local function add(switch, n, v, inline)
+		if on[switch] ~= false and type(v) == "string" and v ~= "" then
+			f[#f + 1] = {name = n, value = v, inline = inline}
+		end
+	end
+	add("base", "Base", details.base, true)
+	if tonumber(details.reqLevel) then
+		local v = "Level " .. number(details.reqLevel)
+		if tonumber(details.reqMagic) then
+			v = v .. ", magic level " .. number(details.reqMagic)
+		end
+		add("level", "Requires", v, true)
+	end
+	add("classes", "Class", details.classes and tostring(details.classes), true)
+	if type(details.stats) == "table" and #details.stats > 0 then
+		add("stats", "Stats", clipLines(details.stats, D.LIMITS.value), false)
+	end
+	local mon, place = details.monster, details.place
+	local source
+	if mon and mon ~= "" and place and place ~= "" then
+		source = string.format("%s in %s", mon, place)
+	else
+		source = (mon and mon ~= "") and mon or place
+	end
+	add("source", "Dropped by", source and tostring(source), false)
+	add("passive", "Passive", details.passive and tostring(details.passive), false)
+	if type(details.mods) == "table" and #details.mods > 0 then
+		add("mods", "Modifiers", clipLines(details.mods, D.LIMITS.value), false)
+	end
+	if on.icon ~= false and type(details.iconUrl) == "string" and details.iconUrl ~= "" then
+		f[#f + 1] = {thumbnail = clip(details.iconUrl, 300)}
+	end
+	ev.fields = f
+	return D.fitFields(ev, cfg.dropBudget or (D.LIMITS.total - 200))
 end
 
 function D.level(cfg, name, level, className)

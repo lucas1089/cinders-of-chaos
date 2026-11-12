@@ -325,3 +325,128 @@ end
 function L.showCursed(enabled, id, set, creatureVisible)
   return enabled == true and set ~= nil and set[id] == true and creatureVisible == true
 end
+
+-- ---------------------------------------------------------------- Pyre Oath (O518)
+-- The ember ring under every player holding the keystone Pyre Oath and the burn on the monsters its aura struck. Pictures:
+-- client/tools/gen_pyre_art.py (images/pyre/ring.png, burn.png; the test reads the files). The server (archetypes.lua) names them on the
+-- same opcode: {action = 'pyre', data = {p = [{i = creature id, r = radius in sqm}]}}, the whole list a viewer sees, only when it
+-- changed (empty clears); {action = 'burn', data = {b = [monster id]}} once a second, the monsters the aura struck.
+L.PYRE_RING_FRAMES = 12   -- one loop = 1 s
+L.PYRE_RING_FRAME_MS = 83
+L.PYRE_RING_PX = 160      -- 5 x 5 tiles: the circle is 64 px (2 sqm) from the centre, which is the creature's feet
+L.PYRE_REACH_SQM = 2      -- the radius the picture draws
+L.PYRE_MAX_ROWS = 32
+L.PYRE_MAX_RADIUS = 8
+L.BURN_FRAMES = 8         -- one tick (1 s) of the burn
+L.BURN_FRAME_MS = 125
+L.BURN_HOLD_MS = 1250     -- a late next tick: the last frame is held until this long after the tick, then the burn is taken off
+L.BURN_PX = 64            -- for a one tile monster
+L.BURN_DY = -4            -- px (of a 32 px tile) from the creature's tile centre: the picture's centre sits on the body
+L.BURN_MAX = 40
+
+function L.pyreRingPath() return '/modules/game_chestaura/images/pyre/ring.png' end
+function L.burnPath() return '/modules/game_chestaura/images/pyre/burn.png' end
+
+-- msg = the JSON of opcode 118. Returns {[creature id] = {id, radius}} for the rows of a 'pyre' message (a creature id, radius 1..8),
+-- nil for any other message.
+function L.parsePyre(msg)
+  if type(msg) ~= 'table' or msg.action ~= 'pyre' then return nil end
+  local data = type(msg.data) == 'table' and msg.data or {}
+  local rows = type(data.p) == 'table' and data.p or {}
+  local out, n = {}, 0
+  for _, row in ipairs(rows) do
+    if type(row) == 'table' and n < L.PYRE_MAX_ROWS then
+      local id, r = tonumber(row.i), tonumber(row.r)
+      if id and id > 0 and r and r >= 1 then
+        out[id] = { id = id, radius = math.min(math.floor(r), L.PYRE_MAX_RADIUS) }
+        n = n + 1
+      end
+    end
+  end
+  return out
+end
+
+-- the monster ids of a 'burn' message as a set {[id] = true}, nil for any other message
+function L.parseBurn(msg)
+  if type(msg) ~= 'table' or msg.action ~= 'burn' then return nil end
+  local data = type(msg.data) == 'table' and msg.data or {}
+  local rows = type(data.b) == 'table' and data.b or {}
+  local out, n = {}, 0
+  for _, v in ipairs(rows) do
+    local id = tonumber(v)
+    if id and id > 0 and n < L.BURN_MAX and not out[id] then
+      out[id] = true
+      n = n + 1
+    end
+  end
+  return out
+end
+
+-- the ring under a holder whose reach is `radius` sqm: the picture is scaled by radius / 2 so that the drawn circle is the real reach;
+-- size in map pixels, and the margin that moves its centre from the creature's tile centre down to its feet
+function L.pyreBox(spriteSize, radius)
+  local spr = spriteSize or L.SPRITE
+  radius = math.max(1, math.min(tonumber(radius) or L.PYRE_REACH_SQM, L.PYRE_MAX_RADIUS))
+  local size = math.floor(spr * (L.PYRE_RING_PX / L.SPRITE) * (radius / L.PYRE_REACH_SQM) + 0.5)
+  local dy = math.floor(L.FOOT_DY * spr / L.SPRITE + 0.5)
+  return size, dy
+end
+
+-- the ring shows under a creature the server named when auras are on and the viewer sees it
+function L.showPyre(enabled, entry, creatureVisible)
+  return enabled == true and entry ~= nil and creatureVisible == true
+end
+
+-- size and margins (left, top) of the burn on a creature `tiles` wide: the 64 px picture scaled by tiles, its centre on the body; a wider
+-- outfit, which the engine draws up and to the left of its tile, pulls the picture the same way (as cursedBox)
+function L.burnBox(spriteSize, tiles)
+  local spr = spriteSize or L.SPRITE
+  tiles = math.max(1, math.min(L.CURSED_MAX_TILES, tiles or 1))
+  local size = math.floor(spr * (L.BURN_PX / L.SPRITE) * tiles + 0.5)
+  local shift = math.floor(-(tiles - 1) * spr / 2 + 0.5)
+  local dy = math.floor(L.BURN_DY * spr / L.SPRITE + 0.5) + shift
+  return size, shift, dy
+end
+
+-- the frame (0-based) of a burn that began `sinceMs` ago: one frame per BURN_FRAME_MS, the last one held until BURN_HOLD_MS, then nil
+-- (take it off). A burn that begins again (the next tick) starts from frame 0.
+function L.burnFrame(sinceMs)
+  sinceMs = tonumber(sinceMs) or 0
+  if sinceMs < 0 then sinceMs = 0 end
+  if sinceMs >= L.BURN_HOLD_MS then return nil end
+  return math.min(L.BURN_FRAMES - 1, math.floor(sinceMs / L.BURN_FRAME_MS))
+end
+
+-- the burn list after a 'burn' message: every named monster begins its second at `now` (an already burning one begins again). Returns
+-- the ids that were not burning before. `burning` = {[id] = startMs}; at most BURN_MAX at once (a bigger crowd: the new ones are skipped).
+function L.burnBegin(burning, set, now)
+  local added = {}
+  local n = 0
+  for _ in pairs(burning) do n = n + 1 end
+  local ids = {}
+  for id in pairs(set or {}) do ids[#ids + 1] = id end
+  table.sort(ids)
+  for _, id in ipairs(ids) do
+    if burning[id] == nil then
+      if n < L.BURN_MAX then
+        burning[id] = now
+        n = n + 1
+        added[#added + 1] = id
+      end
+    else
+      burning[id] = now
+    end
+  end
+  return added
+end
+
+-- the ids whose burn is over at `now` (removed from `burning`), sorted
+function L.burnExpire(burning, now)
+  local gone = {}
+  for id, start in pairs(burning) do
+    if L.burnFrame(now - start) == nil then gone[#gone + 1] = id end
+  end
+  table.sort(gone)
+  for _, id in ipairs(gone) do burning[id] = nil end
+  return gone
+end
