@@ -7,6 +7,10 @@ local M = ChaosMysticFx
 
 local JUMPS = 3
 local JUMP_RANGE = 3
+-- the impact flash (O532, owner: "um impacto mais forte"): the plain energy blast 798 (3x3, centred on the tile) on the target
+-- when the donor bolt 4707 (67 ms a phase) is at its bright, thick phase, 200 ms after the bolt starts, first hit and each jump
+local IMPACT_FX = "blast_lightning"
+local IMPACT_MS = 200
 local FALLOFF = 1.0 -- no falloff per jump (owner, 2026-10-20): every jump hits as hard as the first
 
 -- the hit lands when the orb arrives: lightning_hit (pair 27 storm_chain) on the first target, a bolt from the sky
@@ -27,6 +31,9 @@ local function strike(casterId, fromPos, targetId, factor, min, max, jump)
 		else
 			local p = {x = toPos.x, y = toPos.y, z = toPos.z}
 			addEvent(function() ChaosSpell.vfx(p, "lightning_hit") end, math.max(1, fly))
+		end
+		if M.known(IMPACT_FX) then
+			M.later(math.max(1, fly) + IMPACT_MS, toPos, IMPACT_FX)
 		end
 		hitFx = CONST_ME_NONE
 	else

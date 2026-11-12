@@ -102,6 +102,7 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art.py --check  # prints, glows and foot marks of game_cosmeticfx (O499)
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/clean_wing_shadows_test.py  # the baked ground shadow of the wings (O508, pair 64)
+          /tmp/fxenv/bin/python -I client/tools/sprites/clean_pack_dither_test.py  # the Bayer mesh of the pack effects, the hard cut of the import, the blue nova (O523, pair 66)
           /tmp/fxenv/bin/python -I client/tools/gen_tooltip_art.py --check  # ring, glow and diamond of the card item tooltip (O422)
           /tmp/fxenv/bin/python -I client/tools/gen_hotbar_art.py --check  # nine-slice frames, slots, caps and chat skin of game_hotbar / game_floatchat (O414)
           /tmp/fxenv/bin/python -I launcher/tools/gen_launcher_art.py --check  # banner and icon of the game launcher window (O339)
@@ -110,6 +111,13 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
           # the loot beams of pair 36 at full size (O522, pair 65): ring centre, the 3 x 5 group, no scaling, the spec (synthetic strips)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_beam_test.py
+          # the 6 projectiles with a particle trail (O526, pair 67): spec, ids file and digests agree; the test uses synthetic art (the strips are never in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_missile_fx.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_missile_fx_test.py
+          # the 40 effects of the owner's donor client (O525, pair 68): picks, spec, sums, catalog, id table, element tags (the art is never in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_donor_fx.py --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_donor_fx.py ids --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_donor_fx_test.py
           # pair 41: pair 36's projectile missiles redrawn from the native 32 px renders and three appended: spec, sources
           # and sums agree, ids 251-253 (the pack art is never in git); the test uses synthetic images
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack41_missiles.py build --check
@@ -676,6 +684,15 @@ jobs:
           "$d/chaosmissile_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissile_test.cpp -o "$d/chaosmissile_asan"
           "$d/chaosmissile_asan"
+      - name: Missile animation phase (C++; header from base patch 0194)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosmissileanim\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0194-missile-animation.patch > "$d/chaosmissileanim.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosmissileanim_test.cpp -o "$d/chaosmissileanim_test"
+          "$d/chaosmissileanim_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissileanim_test.cpp -o "$d/chaosmissileanim_asan"
+          "$d/chaosmissileanim_asan"
 
       - name: Glowing spell effects bookkeeping (C++; header from base patch 0152)
         run: |
@@ -1749,6 +1766,15 @@ jobs:
       - name: Foot marks table matches the pair (gen_foot_marks.py --check)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_foot_marks.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Projectile strips match the pair (gen_missile_fx.py build --check, pair 67 redraws 6 missiles in place)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_missile_fx.py build --check \
+              --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr"
+      - name: Donor effects sit at their ids (gen_donor_fx.py live, pair 68)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_donor_fx.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Wing shadows stay cleaned (clean_wing_shadows.py check-clean, pair 64; Shadow Smoke 2457 untouched)

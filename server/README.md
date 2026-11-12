@@ -20246,6 +20246,35 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   sends the stock id; on without the ids: nothing big; on: the big effect at the centre; the call sites).
   Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; `ChaosBigFx.live()` true, big_rift_void_7 = 654, a 7x7 telegraph sent. Not seen in a client.
 
+## Crisp pack effects (O523, pair 66: `ChaosSpell.plainHit`, `nova_radiant_blue`, `client/tools/sprites/clean_pack_dither.py`)
+Owner 2026-11-12 (translated): "I want our effects to look high quality." Much of the generated look of the effects came from
+OUR import, not the packs: the pack frames were cut to a 0 / 255 alpha with a 4x4 Bayer dither, so a soft glow became a mesh
+of every second pixel around the art (client/MANIFEST.md "Pair 66"). Three parts, effects only (no damage, area, timing or
+target changes):
+- **Plain hits.** The stock energy hit (effect 12) and ice attack (44) that a single-target spell sends on its target are the
+  pack's lightning blast (`blast_lightning`, 798, 3x3) and ice explosion (`mfx_ice`, 836, 3x3) now. `ChaosSpell.plainHit(pos,
+  effect)` in `data/spells/chaos/_common.lua` does it: it sends the pack effect and returns CONST_ME_NONE for the combat call,
+  or returns the stock effect unchanged when the pack effect cannot be sent. Asked by `ChaosSpell.damageTarget` and by the
+  attack kit's single-target hit with no `hitFx` of its own (`A.hit` in `data/spells/chaos/_attackkit.lua`; today Phantom
+  Needles). Not asked by area hits (one 3x3 blast per target would bury the screen), by dots, by the Templar, Necromancer,
+  blade and shuriken schools, by the archery arrows, by item procs, nor by the stock wands (the engine sends their hit).
+  `ChaosSpell.PLAIN_HIT` lists the two stock effects; any other effect passes through.
+- **Eclipse of Ruin** (id 154, Mystic / Elementalist / Illusionist, ice) sends ONE effect, `nova_radiant_blue` (effect 4702, 5x5,
+  send offset 2, 2): the Purging Nova (713, gold) with its hue turned +175 degrees (`gen_pair66_fx.py`). It sent `frost_nova`
+  (the 7x7 `big_nova_frost_7`, 644) and `storm_ring` (`big_shock_lightning_7`, 640). `vfx2` is gone from its kit row and
+  `ChaosBigFx.spells[154]` too. Effect 713 is unchanged: Purging Nova and Hammer of Ember Dawn still send it. The name is
+  in `data/lib/chaos_vfx_art.lua` (written by `import_fx_art.py --merge` from `art_import/pair66_fx.csv`) and tagged `ice`
+  in `data/spells/spell_fx_elements.csv`; `spell_fx_allow.csv` lost its Eclipse of Ruin row (the shock ring is not sent any
+  more); `836,mfx_ice,ice` is tagged too. **Switch on: the client package with pair 66.** A client on pair 65 or older has no
+  effect 4702 and draws nothing for the nova (the hit and the damage are the same); the other two changes need no new pair.
+- **The mesh in the pair.** Sprites of the effects and missiles are cleaned in place (`clean_pack_dither.py`, pair 66), so every
+  effect that came from a pack loses its halo mesh at its own id, with no server change. The import rule is a hard cut at
+  alpha 0.5 now (`gen_pack27_fx.clean_alpha`), for the next import from the packs.
+- Tests: `tests/plain_hit_test.lua` (the swap table, the pass-through, the wiring, the tags), `tests/attack_kit_test.lua` (Eclipse
+  of Ruin plays one effect; Phantom Needles asks `plainHit`, Prismatic Rupture does not), `tests/big_fx_test.lua`; CI `checks`
+  runs `tools/ci/check_spell_fx.py` (the new names are ice / energy; the probe runs the real scripts).
+  Not seen in a client.
+
 ## Status words (`data/lib/chaos_status_fx.lua`, `data/lib/chaos_status_fx_ids.lua`, switch `ChaosStatusFx.STATUS_FX`, on)
 Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, from the owner's text effect set
 (client/MANIFEST.md "Status words", effects 656-673 of things_custom25). Effects only: nothing else changes.
@@ -20494,6 +20523,22 @@ touched. The table of what flies where, checked by `tests/pack41_fx_test.lua`:
 | `proj_water_bolt_abyss` | nothing since O520 (Dreamrot sent it: a teal bolt on a magenta cloud; the kit now sends the pair 51 `p51_magenta_orb_tendrils`) |
 
 Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
+
+## Projectiles with a trail (O526, pair 67) (`data/lib/chaos_pair67_missile_ids.lua`, loaded by `ChaosPack36Fx.live()`)
+Pair 67 (client/MANIFEST.md "Pair 67") redraws six missiles in place as 3 x 3 groups of 8 phases of 50 ms with a particle trail (owner 2026-11-12, style "B"; art by
+`client/tools/sprites/gen_missile_fx.py`, engine by client base patch `0194`). The head sits at the centre of the group, so each is sent at the send offset (1, 1).
+- **Ids and names.** 161 `witchfire_lance` and 144 `proj_venom_glob_necrotic` were sent at (1, 1) already (no server change). 221 `p51_pink_lightning` and 222 `p51_magenta_orb_tendrils` were
+  1 x 1 at (0, 0): the generated file sets their offsets to (1, 1) (it loads after `chaos_pair51_missile_ids.lua` and overrides those two names). 5 and 37 get the names `p67_energy_shot` and `p67_ice_shot`
+  at (1, 1). Test: `client/tools/sprites/gen_missile_fx_test.py` (the file against the generator, ids against the client's baked-trail list and the stock ids in `effects_catalog.csv`).
+- **Ids 5 and 37 are the pair 67 art for every stock energy and ice shot (owner 2026-11-12: "the new style B art for all stock energy and ice shots").** `CONST_ANI_ENERGY` (5) and `CONST_ANI_SMALLICE` (37) are
+  stock ids. The pair 29 engine override (src-patch 0045; `chaos_pack29_vfx.lua` `C.missiles`, switch `ChaosPack29Fx.PAIR29`, on) used to send them as the pack bolts `bolt_lightning` and `bolt_crystal`; since O526
+  `C.missiles` maps them to `p67_energy_shot` and `p67_ice_shot` (id 5 and 37 at (1, 1)), so `C.engineRows` sets `Game.setMissileEffect(5, 5, 1, 1)` and `(37, 37, 1, 1)`. One place covers every send, Lua
+  (`sendDistanceEffect`, the attack kit fallbacks, `ChaosSpell.shoot` with those constants, supports, Mirror Mend) and engine (monsters, wands, runes), and shifts it once. `bolt_lightning` still serves `fx:lightning_orb`;
+  `bolt_crystal` is listed unused (`C.unused`). **No double shift:** the override is by stock id, so `VfxShoot` of a name whose id is overridden would shift twice. `applyEngine` records the overridden stock ids in
+  `ChaosVfxEngineShift` and `VfxShoot` (`chaos_vfx.lua`) sends such an id plain, so the engine adds the offset once; with the switch off (or an engine without the patch) the table is empty and `VfxShoot` shifts
+  itself. `tests/pack29_vfx_test.lua` plays both cases on a recording engine (plain send, `VfxShoot`, off). A client below pair 67 draws the old smaller art of 5 and 37 one tile down and right; ship the pair first.
+- **Nothing sends 221 and 222.** The `p51_` names have no caller. Dreamrot flies as `proj_water_bolt_abyss` (missile 75) and Soulrend Beam as `proj_flame_lance_spirit` (missile 115), both pair 41 / 42 art,
+  not restyled here; the preview labels "Dreamrot" and "Soulrend Beam" of step 1 named the 222 orb and the 221 line after those spells by guess.
 
 ## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
 Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:
@@ -31427,6 +31472,27 @@ effect that already is in the pair. No art, no pair, no engine patch, no opcode;
 * **Not verified:** a live client (draw order, real ground, the look of each effect in the real size, the offsets of the
   p50 names, which come from the registry); Raise Dead, Raise Bone Warrior, Archer and Mage and Banner of Bones need corpses or
   minions, so the probe does not run them (the pass is the same call path).
+
+## Donor effects (O525)
+
+Owner 2026-11-12: "Todos" on a sheet of the 40 best effects of the owner's donor client (docs/CREDITS.md "Owner-supplied spell effects"). Client pair 68 appends them as effect ids 4703 to 4742
+(client/MANIFEST.md "Pair 68"); this section is the server side. Art, balance, damage, area, timing and targets do not change; the spells below send another picture.
+
+* **Ids:** `data/lib/chaos_donor_fx_ids.lua`, `ChaosVfx.donor_<element>_<role>_<donor id> = {id, dx, dy, ms}` (send offset fitted to the art: the alpha centre, the foot of the bolt for the two lightning bolts 528 and 632; `ms` the sum of the donor's frame durations),
+  written by `python3 -I client/tools/sprites/gen_donor_fx.py ids` from `data/spells/donor_fx_catalog.csv` (written by the import, so the ids follow the input pair); `ids --check` is in CI.
+  The same step writes the 40 element tags of `data/spells/spell_fx_elements.csv` and keeps the `spell_fx_allow.csv` rows of this set (none). `ChaosPack36Fx.live()` loads the file with the pair 50 ids.
+  An id changes only when the pair is rebuilt on another input: regenerate the table and the tags, never edit them.
+* **Spells (10),** through the effects pass (`data/lib/chaos_fx_pass.lua`, the O525 block; the pass is asked first, so the entry decides): Mirror Shards (shards `ice_shatter` 489, a chip `ice_crystal` 475),
+  Purging Nova (`dome_blast_holy`: the gold ring 449, 5 x 5 for the radius 3 hit), Venom Spiral (`poison_ring`: the green cloud 505 on the target), Witchfire Bolt (`fireball_hit`: the fire hit 465),
+  Forked Storm (`lightning_hit`: the lightning bolt 528 on the first target, `lightning_strike`: the sky strike 632 on each jump), Ironhold (`shield_bubble`: the white shield 495), Soulward (`shield_bubble`: the purple
+  shield 494), Aegis of Faith (`dawn_aegis`: the gold shield 493), Mirror Mend (`regenerating`: the heal cross 216). Iaijutsu gathers in the gold ring 449 (`iaijutsu.lua`: the donor ring, else the pair 50 ring,
+  else the stock effect). Each keeps its role: a hit stays a hit, an area an area, a buff a buff, a heal a heal. Elements follow `tools/ci/check_spell_fx.py` (no allow row needed).
+* **Left alone on purpose:** Chi Ward, Lightward, Lay on Hands and Vow of Mending have a class signature effect (`chaos_class_fx.lua`) that the pass would wipe. Prismatic Rupture (the owner's table: the 9 x 9
+  arcane nova 695): the ring draws a radius of 4 tiles for a radius 2 hit. Doomtide (the fire ring 276), Rime Bloom (ice 626 or 654) and Rampart Quake (449): what they send now (a filled dome or disc) is richer than
+  the donor ring and the donor picture is thinner or wider than the damage area. The plain hit effects E12 and E44 and the Eclipse of Ruin ring belong to O523.
+* **Order:** the new ids exist only in a client on pair 68. Push pair 68 to windows-assets, ship the client package, `chaos-ctl.sh client-pair set 68` (admin app Comandos > "Par do cliente" > Gravar 68), then update the
+  server. A client on pair 67 or older logs invalid effect ids and shows nothing at those casts (the spell itself works). Switch: `ChaosFxPass.ON` (also turns the older entries off).
+* **Tests:** `tests/fx_pass_test.lua` (40 donor names live, the entries, Iaijutsu), `check_spell_fx.py` (+ `_test`), `client/tools/sprites/gen_donor_fx_test.py`. Probes of the casts, before and after: `SP/o525/import_final.mp4`.
 
 ## Monster defence (O462) (`defence_config.lua`, `monster_defence_config.lua`, `monster_defence_core.lua`, `monster_defence.lua`, `tools/defence_curve.py`, `tools/patch_monster_resists.py`)
 

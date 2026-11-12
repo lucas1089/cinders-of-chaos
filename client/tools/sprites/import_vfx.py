@@ -334,7 +334,7 @@ def entry_bytes(g, sids):
     if g['phases'] > 1:
         loop = 1 if g['kind'] == 'effect' else 0             # effects play once, missiles / auras loop
         b += bytes([0]) + struct.pack('<ib', loop, 0)
-        b += struct.pack('<' + 'II' * g['phases'], *([g['ms']] * 2 * g['phases']))
+        b += struct.pack('<' + 'II' * g['phases'], *[v for d in (g.get('durs') or [(g['ms'], g['ms'])] * g['phases']) for v in d])
     b += struct.pack(f'<{len(sids)}I', *sids)
     return bytes(b)
 

@@ -14,7 +14,7 @@ oblique/32px/<category>/<id>.png). All 68 of its effects are already in the pair
 missiles 126-133, auras; data/spells/README_FX.md "Animated pack effects"). Its status loops run 1.3-2 s, too long for
 something sent on every proc or damage tick, and its shield bubble is a 2 s loop. This script cuts them into short
 one-shots: frames a..b of the combined layer (the set's own `all` sheet), alpha made clean (0 / 255; the set's soft
-glows, alpha 1..254, become an ordered 4x4 dither of the same colour), the last three frames dissolve in the same
+glows, alpha 1..254, are cut hard at 0.5 since O523; they were an ordered 4x4 dither of the same colour), the last three frames dissolve in the same
 dither (3/4, 1/2, 1/4 of the pixels kept), placed like import_vfx.py places the set (the
 set's feet point on our feet point (14, 20) of the target tile), cut to whole tiles, and an empty last frame added.
 
@@ -71,12 +71,14 @@ def dissolve(fr, keep):
     return out
 
 
+CUT = 0.5               # O523: a pixel is kept (alpha 255) when its alpha is at least this, else gone
+
+
 def clean_alpha(fr):
-    """RGBA -> RGBA with alpha 0 / 255: opaque stays, soft pixels kept where alpha beats a 4x4 Bayer threshold"""
+    """RGBA -> RGBA with alpha 0 / 255: a hard cut at CUT (same rule as gen_pack27_fx.clean_alpha, O523; before pair 66 the soft
+    pixels became a 4x4 Bayer dither). BAYER stays for `dissolve`."""
     a = fr[:, :, 3].astype(np.float64) / 255.0
-    h, w = a.shape
-    thr = np.tile(BAYER, (h // 4 + 1, w // 4 + 1))[:h, :w]
-    keep = (a >= 1.0) | ((a > 0) & (a > thr))
+    keep = a >= CUT - 1e-9
     out = fr.copy()
     out[:, :, 3] = np.where(keep, 255, 0).astype(np.uint8)
     out[~keep] = 0

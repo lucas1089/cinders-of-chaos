@@ -114,7 +114,10 @@ function C.live()
 		-- pair 50 effects (p50_*) and pair 51 missiles (p51_*), so Vfx / VfxShoot know their names
 		if C.loaded and dofile then
 			pcall(dofile, "data/lib/chaos_pair50_fx_ids.lua")
+			pcall(dofile, "data/lib/chaos_donor_fx_ids.lua") -- pair 68: the owner's donor client effects (O525)
 			pcall(dofile, "data/lib/chaos_pair51_missile_ids.lua")
+			-- pair 67 (O526): six projectiles redrawn 3 x 3 with a particle trail; sets the offsets of two pair 51 names and names 5 and 37
+			pcall(dofile, "data/lib/chaos_pair67_missile_ids.lua")
 		end
 	end
 	return C.loaded
