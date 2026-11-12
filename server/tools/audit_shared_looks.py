@@ -2,7 +2,7 @@
 """Audit: do two different monsters look the same in game? (O529)
 
 usage: python3 -I audit_shared_looks.py MONSTER_DIR [--spawn SPAWN_XML] [--dat TIBIA.DAT] [--csv OUT.csv]
-                                         [--allow CSV] [--check]
+                                         [--allow CSV] [--pair N] [--check]
        python3 -I audit_shared_looks.py --write-masks TIBIA.DAT      # server/data/monster/look_masks.csv
 
 MONSTER_DIR is the data/monster folder of an installed server (base files and ours). Every monster the server loads is
@@ -17,8 +17,13 @@ COLOUR_DIST apart (0..1 per channel, Euclidean), the same distance the eye uses 
 brightness". Addons differ when the outfit has addon frames (patterns > 4 in z) and the numbers differ; without --dat they
 always count when different. A look without a mask layer ignores all colours: two such monsters with the same lookType
 are always shared. Bosses and variants the design wants alike are on the allow list (server/data/monster/
-shared_looks_allow.csv: look, names, status kept or `recolour pair`, reason; the pair
-rows wait for the hue shifted outfits of client/tools/sprites/art_import/monster_recolour.csv); --check fails when a shared look is neither allowed nor absent.
+shared_looks_allow.csv: look, names, status kept, reason); --check fails when a shared look is neither allowed nor absent.
+
+Hue shifted copies (O531): 52 monsters wear a copy of their outfit from client pair 69 (server/data/monster/
+monster_recolour_looks.csv: monster, look, new_look; table client/tools/sprites/art_import/monster_recolour.csv). The audit
+reads each monster with the look it has at the pair of the server: --pair N, else the pair recorded in the config.lua beside
+the data folder (client_pair.py), else the newest pair. At pair 69 or more a monster in the map has its new look. Below it a
+group in which all but one monster have a row of that map is no failure: it is counted as waiting for pair 69 ("WAITS").
 
 CI (tools/ci/check_content.py) has no dat: it reads the bounty pool (colours included) and look_masks.csv, the pool looks that have a
 mask (written by --write-masks from the live dat). Monsters of a masked look whose pool colours tell them apart pass.
@@ -34,7 +39,11 @@ import sys
 from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import client_pair  # noqa: E402
+
 REPO = os.path.dirname(os.path.dirname(HERE))
+RECOLOUR = os.path.join(REPO, 'server', 'data', 'monster', 'monster_recolour_looks.csv')
 ALLOW = os.path.join(REPO, 'server', 'data', 'monster', 'shared_looks_allow.csv')
 POOL = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'bounty_pool.lua')
 COLOUR_DIST = 0.28
@@ -242,8 +251,32 @@ OURS = os.path.join(REPO, 'server', 'data', 'monster', 'monsters', 'chaos')
 MIN_MET = 3   # a monster is "met" when it has this many spawn points on the map (bosses and uniques have 1 or 2)
 
 
+def load_recolour(path=RECOLOUR):
+    """{monster name: (look, new_look)} of monster_recolour_looks.csv (O531)"""
+    out = {}
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            out[r['monster']] = (int(r['look']), int(r['new_look']))
+    return out
+
+
+def look_at_pair(name, look, pair, recolour):
+    """the lookType of a monster at a client pair: its copy from pair 69 on, the old look below (a file or a pool row written
+    for the other state is read for this one too, so a server mid update gives the same answer)"""
+    if name in recolour:
+        old, new = recolour[name]
+        if look in (old, new):
+            return new if pair >= client_pair.PAIR_RECOLOUR else old
+    return look
+
+
+def waits(names, look, recolour):
+    """a group that waits for pair 69: all but one monster of it have a row of the recolour map for this look"""
+    return len(names) > 1 and sum(1 for n in names if n in recolour and recolour[n][0] == look) >= len(names) - 1
+
+
 def load_allow(path=ALLOW):
-    """[(look, frozenset of names, status, reason)] of shared_looks_allow.csv (status kept or recolour pair)."""
+    """[(look, frozenset of names, status, reason)] of shared_looks_allow.csv (status kept)."""
     out = []
     if os.path.exists(path):
         for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
@@ -281,14 +314,20 @@ def write_masks(dat, pool=POOL, path=MASKS):
     return len(rows)
 
 
-def check_pool(pool=POOL, allow_path=ALLOW, masks=None):
+def check_pool(pool=POOL, allow_path=ALLOW, masks=None, pair=None, recolour=None):
     """CI rule (no installed server needed): two different monsters of the bounty pool hunt list (>= 6 spawns on the map) with
     one lookType must be on the allow list, or the look has a colour mask (look_masks.csv) and the pool colours of the monsters
-    tell every two apart (same_look, the colour rule of the audit). Returns the problem lines."""
+    tell every two apart (same_look, the colour rule of the audit). Returns the problem lines.
+
+    `pair` is the client pair the monsters are read at (default: the newest, client_pair.PAIR_ASSETS): from pair 69 a monster of the
+    recolour map wears its copy; below it the groups the map will separate are not a problem (they wait for the pair)."""
     allow = load_allow(allow_path)
     masks = load_masks() if masks is None else masks
+    pair = client_pair.PAIR_ASSETS if pair is None else pair
+    recolour = load_recolour() if recolour is None else recolour
     by, rec = defaultdict(list), {}
     for r in pool_rows(pool):
+        r['look'] = look_at_pair(r['name'], r['look'], pair, recolour)
         rec[r['name']] = r
         if r['name'] not in by[r['look']]:
             by[r['look']].append(r['name'])
@@ -300,7 +339,7 @@ def check_pool(pool=POOL, allow_path=ALLOW, masks=None):
         if l in masks:   # monsters of one masked look whose colours tell them apart are no duplicates
             clusters = [[m['name'] for m in c] for c in groups([rec[n] for n in ns], lambda _l, mk=masks[l]: (mk, False))]
         for c in clusters:
-            if len(c) > 1 and not allowed(l, c, allow):
+            if len(c) > 1 and not allowed(l, c, allow) and not (pair < client_pair.PAIR_RECOLOUR and waits(c, l, recolour)):
                 out.append('look %d is shared by %s and is not on server/data/monster/shared_looks_allow.csv' % (l, ', '.join(c)))
     return out
 
@@ -316,6 +355,7 @@ def main():
             return v
         return None
     spawn, dat, outcsv, allow_path = opt('--spawn'), opt('--dat'), opt('--csv'), opt('--allow')
+    pair_arg = opt('--pair')
     check = '--check' in args
     if check:
         args.remove('--check')
@@ -325,11 +365,16 @@ def main():
         return
     mdir = args[0]
     mons = load_monsters(mdir)
+    pair = int(pair_arg) if pair_arg else client_pair.recorded(os.path.dirname(os.path.abspath(mdir)))
+    pair = client_pair.PAIR_ASSETS if pair is None else pair
+    recolour = load_recolour()
+    for m in mons:
+        m['look'] = look_at_pair(m['name'], m['look'], pair, recolour)
     sp = spawn_counts(spawn)
     mask = mask_info(dat) if dat else None
     allow = load_allow(allow_path or ALLOW)
     gs = groups(mons, mask)
-    bad = 0
+    bad = waiting = 0
     rows = []
     for g in gs:
         names = [m['name'] for m in g]
@@ -340,6 +385,9 @@ def main():
         elif allowed(look, met, allow):
             status = 'kept'
             why = next(r for l, s, st, r in allow if l == str(look) and set(met) <= s)
+        elif pair < client_pair.PAIR_RECOLOUR and waits(met, look, recolour):
+            status, why = 'WAITS', 'all but one have a hue shifted copy from client pair %d (recorded pair %d)' % (client_pair.PAIR_RECOLOUR, pair)
+            waiting += 1
         else:
             status, why = 'SHARED', ''
             bad += 1
@@ -349,7 +397,8 @@ def main():
             w = csv.writer(f)
             w.writerow(['look', 'monsters', 'spawns each', 'kept or changed', 'why'])
             w.writerows(rows)
-    print('%d monsters, %d shared look groups, %d not allowed' % (len(mons), len(gs), bad))
+    print('%d monsters, %d shared look groups, %d not allowed%s (client pair %d)'
+          % (len(mons), len(gs), bad, ', %d waiting for pair %d' % (waiting, client_pair.PAIR_RECOLOUR) if waiting else '', pair))
     for r in rows:
         if r[3] == 'SHARED':
             print('  look %s: %s (spawns %s)' % (r[0], r[1], r[2]))

@@ -4311,6 +4311,32 @@ The owner supplied a client's sprite file (origin unknown, docs/CREDITS.md "Owne
   (admin app Comandos > "Par do cliente" > Gravar 68), then update the server. A client on pair 67 or older logs "invalid effect id" for them and draws nothing at those casts.
 - Checked offline only. Not seen in a client.
 
+### Pair 69: pair 68 with 52 hue shifted monster outfits (`gen_monster_recolour.py`, `art_import/monster_recolour*.csv`; built 2026-11-12; O531)
+Owner 2026-11-12 (translated): no two hunt monsters may share a look, and the way is a recolour (O529). An outfit with a colour mask takes its colours in the monster file (7 monsters, no pair). The
+other 35 outfits have no mask layer, so the second, third and fourth monster of each needs a copy of the outfit with another hue. Pair 69 appends **52 new outfits 3371 to 3422** after the
+3,370 outfits of pair 68, one per row of `art_import/monster_recolour.csv` (the row at line n is outfit 3371 + n).
+- **The copy.** The flag bytes, frame groups (idle and walk), sizes, directions, phases, animator durations and sprite layout of the source outfit, with every sprite through `recolour()`
+  (`mode hue`: the hue of each pixel moves by `hue_shift` degrees, saturation and value stay, a grey pixel stays; `mode tint`: a nearly grey outfit takes the hue `hue_shift` at saturation 0.45). Alpha stays.
+  Two rows of one look are two copies of it, each with its own records; records that come out the same share an id. 52 outfits, 9,397 sprite slots, 1,609 frames; 6,490 sprite records appended.
+- **Ids.** `gen_monster_recolour.py ids` writes `art_import/monster_recolour_ids.csv` (monster, look, new_look, hue_shift, mode) and `server/data/monster/monster_recolour_looks.csv` (monster, look, new_look,
+  read by the install step `monsterrecolour`, the audit and `tools/ci/check_content.py`); both are checked by `gen_monster_recolour.py check` (and `ids --check`). The ids do not wait for the pair.
+- **Run.** Input pair 68 (dat 6b5638b4057f86f484bc506b00079f19, spr d3de6971d90415242375be76ca842aa3; the md5 is checked first):
+  `python3 -I client/tools/sprites/gen_monster_recolour.py build P68/Tibia.dat P68/Tibia.spr P69` (13 s; P69 must not exist; written to `P69.tmp`, verified, then renamed). Verified in the run: the output re-parses,
+  every old item, outfit, effect and missile is byte identical, 3,000 sampled old sprites are unchanged, every sprite slot of every copy is `recolour()` of the source slot, then `check_pair.py`'s append-only guard.
+  Output **pair 69**: dat **66d98f722120044132872d6d57998310** (8,942,192 bytes), spr **434387223419f02887428eaaedd1a023** (1,124,884,206 bytes, 963,579 sprites), 44,559 items, 3,422 outfits, 4,742 effects, 253 missiles.
+- **Checks** (offline, not in a client). `check_pair.py P69 --old P68 --new-only`: 0 errors, 0 warnings in the new things; the whole pair: 0 errors, 11,843 warnings (pair 68's). `gen_monster_recolour.py live`
+  (every copy at its id: flags, groups and animator of its source, every sprite the recoloured source sprite): 52 outfits, 0 problems. The CI steps of "Live sprite pair" that read the pair were regenerated or
+  passed: `gen_outfit_anchors.py`, `gen_info_lift.py`, `gen_wing_centres.py`, `gen_foot_marks.py` (the dat md5 line and the 52 new ids), `fit_pair50_offsets.py`, `gen_donor_fx.py live`, `clean_wing_shadows.py check-clean`,
+  `check_item_wire.py --table-check`, `gen_theme_art.py recolour --check`, `gen_dungeon_banners.py --check`. Not regenerated here: `unity/Client/Assets/Chaos/Core/InfoLiftData.cs` (its generator is Unity only,
+  `unity/tools/gen_info_data.lua`; the owner put Unity aside on 2026-11-12), so that `--check` of the Unity job fails until the next Unity step regenerates it.
+- **Server.** The monster files keep the old looks; the install step `monsterrecolour` (`install_monster_recolour.py`) moves the 52 monsters to their copies and the installed bounty pool with them, only
+  when `config.lua` `chaosClientPair` is 69 or more (server/README.md "Monster recolours (O531)").
+- **Looked at** (never committed): `SP/o531/recolour_ingame.mp4` (each of the 52 monsters walking south and east, pair 68 look on the left, its pair 69 copy on the right, labelled with the look ids and the shift).
+- **Archive parts:** not built here; the push to windows-assets is the owner's step. `server/tools/client_pair.py` `PAIR_ASSETS` 69 and the new dat md5 stop the Windows package job until then.
+- **Switch on:** push pair 69 to windows-assets, ship the client package, `chaos-ctl.sh client-pair set 69` (admin app Comandos > "Par do cliente" > Gravar 69), then update the server: the update runs the
+  step and the 52 monsters change look. A client on pair 68 or older draws nothing for the new ids, so the pair record must not be raised before the client has shipped.
+- Checked offline only. Not seen in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
@@ -6156,6 +6182,3 @@ patches show, behind `pcall` and `nil` guards. Check it in a build before it shi
 - Poll: `watch(key, fn)` / `unwatch(key)`. One 100 ms cycle while anything watches. `fn(down)` runs on each Alt change.
 - Hover: a widget with `widget.altTip = function(down) return text end` (or a parent up to 4 levels) gets its long text while hovered with Alt, the short one after. `g_tooltip.displayText` redraws it at once.
 - Users: passive tree (`treetips.lua`), item tooltips (`itemhelp.lua`, own Ctrl poll reads `ChaosAltHelp.pressed()`), spellbook rows and helper spell pickers (`game_chaosspells/spellhelp.lua`, `ChaosSpellHelp`), buff bar icons.
-
-## Pair 69 plan: monster recolours (O529)
-Hue shifted copies of 35 mask-less monster outfits (52 monsters), appended after the outfits of pair 68: `tools/sprites/art_import/monster_recolour.csv`, transform and check in `tools/sprites/gen_monster_recolour.py` (`build` waits for pair 68, nothing is built). The 7 monsters on outfits with a colour mask need no pair: their colours are in the monster files. server/README.md "No two hunt monsters share a look (O529)".

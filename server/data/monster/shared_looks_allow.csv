@@ -1,5 +1,4 @@
 look,names,status,reason
-2,Orc Warlord | Orcaruz,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 6,Orc Shaman | Scar Tribe Shaman,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 7,Orc Warrior | Scar Tribe Warrior,kept,faction re-skin of the same orc warrior (13 spawns beside 518); Scar Tribe is the same orc in another camp
 11,Massive Water Elemental | Roaring Water Elemental,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
@@ -46,8 +45,6 @@ look,names,status,reason
 234,Dark Torturer | Grave Guard,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 237,Diabolic Imp | Little Morgashal,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 242,Blistering Fire Elemental | Massive Fire Elemental,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
-248,Azure Dragon | Frost Dragon,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-257,Frost Giant | Tundra Troll,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 259,Rimekin Toolshaper | Rimekin Tribewarden,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 285,Jagged Earth Elemental | Massive Earth Elemental,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 286,Slick Water Elemental | Water Elemental,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
@@ -61,7 +58,6 @@ look,names,status,reason
 304,Damaged Worker Golem | Worker Golem,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 306,Undead Elite Gladiator | Undead Gladiator,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 389,Hell Hole | Lavahole,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
-403,Insectoid Worker | Loricate Orger,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 441,Drownkin Elite | Drownkin Warrior,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 442,Drownkin Guard | Drownkin Tyrant,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 448,Lady bug | Ladybug,kept,Lady bug is the late tier of the same Ladybug creature by name
@@ -76,52 +72,21 @@ look,names,status,reason
 529,Salamander | Troll-Trained Salamander,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 530,Marsh Stalker | Meadow Strider,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 535,Swampling | Woodling,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
-554,Mutated Visco | Reedgrave | Vicious Manbat,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-563,Acid Hydra | Blight Bloom | Crypt Crab,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 570,Noble Lion | Roaring Lion,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
-579,Shock Head | Shroud Brood | Webbound Crawler,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 583,Guilt | Sight of Surrender,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 593,Feverdream | Terrordream,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 675,Elite Tidecrest Serpent | Tidecrest Serpent,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
-686,Black Stag | Blight Hound,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 877,Arcspark | Instable Arcspark,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 878,Breach Brood | Instable Breach Brood,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 879,Reality Reaver | Spark of Destruction,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 1001,Talon Knight | Talon Paladin,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 1031,Cursed Prospector | Evil Prospector,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 1046,Hazardous Phantom | Infernal Phantom,kept,"Soul War phantom variants, one creature in the stock design"
-1054,Geode Seer | Ice Lich,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 1060,Usurper Archer | Usurper Knight,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
-1085,Snake Master | Sopping Corpus,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1291,Quicksilver Wraith | Spirit of Purity,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 1364,Spellreaper Pyrarch | Warpdread,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 1365,Hellhunter Pyrarch | Thranvale,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 1366,Brinebrute Pyrarch | Malvaroth,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
-1449,Gnawbone Swarm | Ironmask Warbreaker | Wraithbone Stalker,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 1468,Elite Twisted Shaper | Twisted Shaper,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design; Bloom Husk and Rustguard took their own colours (O529)
-1475,Black Vixen | Masque Dancer | Wax Penitent,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1479,Dreamgorger | Phantom Shade,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1485,Corpselight Lurker | Dirge Herald | Maw Grub | Thal,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1490,Chained Runt | Stormy Seadevil,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1491,Captain Bloodbeard | Ironmask Taskmaster,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1492,Gashrunner | Ironhook Corsair | Ironmask Brander,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1493,Caged Convict | Ironmask Bannerman | Scourgejaw,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1495,Cursed Ape | Gallows Oak | Ironbound Troll,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1499,Bellhelm Zealot | Jungle Warrior | Slagborer Reaver,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1500,Celestial Wyrm | Slagheart,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1530,Gildguard Revenant | Golden Dragon,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1531,Rimecairn | Scaleborn,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1532,Pyre Stork | Pyrewing Tyrant,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 1533,Elite Ice Dragon | Ice Dragon,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
-1541,Dark Sorcerer | Rootbound Pilgrim,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-1548,Elite Spider | Thornveil Wraith,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 1551,Deaththrower | Flamethrower | Magicthrower | Pillar | Plaguethrower | Shredderthrower,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
-2122,Dawn Strayer | Deepforge Fiend,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-2217,Gloamfang Ravager | Gorebristle,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-2218,Cinderhorn Juggernaut | Oathbroken Colossus | Siege Behemoth,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-2219,Ashveil Hierarch | Bonepicker | Cinderskull Reaver,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-2220,Pit Delver | Pitgnawer | Reliquary Urn | Silicron | Veiled Crawler | Wan Sentry,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-2221,Carrion Drake | Vyrm,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-2223,Bloodantler Fiend | Hollowhorn,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
-2224,Gnarlback | Mirecoil Wyrm,recolour pair,"recolour pair: all but the first take a hue shifted copy of the outfit, table client/tools/sprites/art_import/monster_recolour.csv"
 22444,Bad Dream | Despair,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)

@@ -182,8 +182,10 @@ jobs:
           # source sheet; the pure parts and the ids against chaos_orbs_config.lua
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art.py build --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art_test.py
-          # monster recolour table of O529 (outfits with no colour mask, hue shifted copies wait for pair 68)
+          # monster recolour table of O529 (outfits with no colour mask) and the pair 69 copies of O531: the transform, the table
+          # against the monster files and the two id files, build / live on a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_monster_recolour_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_monster_recolour.py check
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
@@ -1445,6 +1447,9 @@ jobs:
       - name: Hunt monsters keep a look of their own (audit_shared_looks.py, O529)
         run: python3 -I server/tools/audit_shared_looks_test.py
 
+      - name: Monster recolours move the monsters at pair 69 (install_monster_recolour.py, monsterrecolour step, O531)
+        run: python3 -I server/tools/install_monster_recolour_test.py
+
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py
 
@@ -1758,6 +1763,11 @@ jobs:
       - name: Donor effects sit at their ids (gen_donor_fx.py live, pair 68)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_donor_fx.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Monster recolour outfits sit at their ids (gen_monster_recolour.py live, pair 69, O531)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_monster_recolour.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Wing shadows stay cleaned (clean_wing_shadows.py check-clean, pair 64; Shadow Smoke 2457 untouched)

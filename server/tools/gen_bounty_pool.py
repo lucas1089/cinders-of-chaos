@@ -47,6 +47,30 @@ def read(path):
         return f.read()
 
 
+RECOLOUR = os.path.join(HERE, '..', 'data', 'monster', 'monster_recolour_looks.csv')
+
+
+def _recolour_copies():
+    """{monster name: (old look, copy look)} of data/monster/monster_recolour_looks.csv (O531)"""
+    import csv
+    out = {}
+    if os.path.exists(RECOLOUR):
+        for r in csv.DictReader(open(RECOLOUR, newline='', encoding='utf-8')):
+            out[r['monster']] = (int(r['look']), int(r['new_look']))
+    return out
+
+
+COPIES = _recolour_copies()
+
+
+def committed_look(name, look):
+    """The look the committed pool carries. From client pair 69 the install step `monsterrecolour` writes the hue shifted copy of
+    a monster's outfit into its installed file, and into the installed copy of this pool; a run of this tool on such a server
+    must still give the committed file (old look), so the copy is turned back here (README "Monster recolours (O531)")."""
+    c = COPIES.get(name)
+    return c[0] if c and look == c[1] else look
+
+
 def attr(tag, name):
     m = re.search(r'\b%s\s*=\s*"([^"]*)"' % name, tag)
     return m.group(1) if m else None
@@ -200,7 +224,7 @@ def build(data_dir, spawn_path):
         if m:
             lvl = estimate_level(m)
             entry = {'name': m['name'], 'level': lvl, 'exp': m['exp'], 'health': m['health'], 'spawns': s['count'],
-                     'look': m['look'], 'outfit': [m.get('look_' + k, 0) for k in ('head', 'body', 'legs', 'feet', 'addons')],
+                     'look': committed_look(m['name'], m['look']), 'outfit': [m.get('look_' + k, 0) for k in ('head', 'body', 'legs', 'feet', 'addons')],
                      'spawntime': s['spawntime']}
             if not reason and m['boss']:
                 if s['spawntime'] <= BOSS_MAX_SPAWNTIME:
