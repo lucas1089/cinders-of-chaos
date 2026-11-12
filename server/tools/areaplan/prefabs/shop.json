@@ -1,0 +1,25 @@
+{
+  "kind": "shop",
+  "note": "Canonical frame as in temple.json. Shelves on the north wall, a counter across the room with a gap at the east end, the keeper behind it.",
+  "width": [8, 10],
+  "height": [7, 9],
+  "stats": "no statistic in docs/MAP_GUIDE.md for a shop; chosen by us between a median house (6 x 7) and a temple",
+  "door_side": "route",
+  "door_width": 1,
+  "wall": "st_stone",
+  "floor": "tiles",
+  "roof": true,
+  "pz": true,
+  "npc": {"dx": "c", "dy": 1, "role": "shopkeeper"},
+  "features": [
+    {"type": "shelf_row", "dx": 0, "dy": 0, "length": "full", "family": "shelf"},
+    {"type": "counter", "dx": 0, "dy": 2, "length": "full", "gap": "end", "family": "counter", "reach": true}
+  ],
+  "slots": [
+    {"dx": 1, "dy": 0, "family": "torch", "role": "hang", "wall": "back"},
+    {"dx": -2, "dy": 0, "family": "torch", "role": "hang", "wall": "back"},
+    {"dx": 0, "dy": 3, "family": "tapestry", "role": "hang", "wall": "left"},
+    {"dx": 0, "dy": -1, "family": "plants", "role": "floor"},
+    {"dx": -1, "dy": -1, "family": "crates", "role": "floor"}
+  ]
+}

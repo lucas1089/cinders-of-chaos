@@ -29,9 +29,9 @@ def ok(cond, what):
 
 EX = os.path.join(HERE, 'areaplan', 'examples')
 examples = {f[:-5]: json.load(open(os.path.join(EX, f))) for f in sorted(os.listdir(EX)) if f.endswith('.json')}
-ok(sorted(examples) == ['crypt_boss', 'lava_cave', 'swamp_hunt', 'temple_throne'], 'four example plans: %s' % sorted(examples))
+ok(sorted(examples) == ['crypt_boss', 'lava_cave', 'swamp_hunt', 'temple_throne', 'village_square'], 'five example plans: %s' % sorted(examples))
 NUMERIC = {'size', 'floors', 'level', 'seed', 'count', 'respawn', 'pack', 'width', 'at', 'x', 'y', 'z', 'gold',
-           'experience', 'chest_action', 'floor'}
+           'experience', 'chest_action', 'floor', 'dx', 'dy'}
 
 
 def numbers_outside(v, key=None):
@@ -241,7 +241,7 @@ for name, plan in examples.items():
     s = res['stats']
     ok(s['unknown_ids'] == 0 and s['unbordered'] == 0, name + ': no unknown id, every border closed')
     frame_ok(name, res)
-    ok(1.5 <= s['per100'] <= 5.0, name + ': %.2f monsters per 100 walkable tiles' % s['per100'])
+    ok(1.5 <= s['per100'] <= 5.0 or not plan.get('spawns'), name + ': %.2f monsters per 100 walkable tiles' % s['per100'])   # a village has none
     ok(set(s['zone_steps']) == {z['id'] for z in plan['zones']}, name + ': every zone reached on the tiles')
     ok(all((sp['x'], sp['y'], sp['z']) not in res['pz'] for sp in res['spawns']), name + ': no spawn in a PZ tile')
     want = sum(x['count'] for x in plan.get('spawns', []))

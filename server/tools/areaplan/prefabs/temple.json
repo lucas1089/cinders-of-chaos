@@ -1,0 +1,28 @@
+{
+  "kind": "temple",
+  "note": "Canonical frame: the door is in the south wall, the altar at the north end. dx counts interior columns from the west (negative: from the east end, 'c': the door column), dy interior rows from the north wall (negative: from the south end). The planner turns the whole layout with the door side.",
+  "width": [10, 12],
+  "height": [9, 12],
+  "stats": "no statistic in docs/MAP_GUIDE.md for a temple; chosen by us: bigger than the median house (6 x 7) so a nave, an altar and two bench rows fit",
+  "door_side": "route",
+  "door_width": 2,
+  "wall": "st_stone",
+  "floor": "st_white_marble",
+  "roof": true,
+  "pz": true,
+  "npc": {"dx": "c", "dy": 2, "role": "priest"},
+  "features": [
+    {"type": "altar", "dx": "c", "dy": 0, "family": "altar", "reach": true},
+    {"type": "pillar_pair", "dx": 1, "dy": 1, "family": "pillar", "min_iw": 8},
+    {"type": "bench_row", "dy": 3, "family": "bench"},
+    {"type": "bench_row", "dy": 5, "family": "bench", "min_ih": 8}
+  ],
+  "slots": [
+    {"dx": 1, "dy": 0, "family": "torch", "role": "hang", "wall": "back"},
+    {"dx": -2, "dy": 0, "family": "torch", "role": "hang", "wall": "back"},
+    {"dx": 0, "dy": 3, "family": "banner", "role": "hang", "wall": "left"},
+    {"dx": -1, "dy": 3, "family": "banner", "role": "hang", "wall": "right"},
+    {"dx": 0, "dy": -1, "family": "brazier", "role": "floor"},
+    {"dx": -1, "dy": -1, "family": "brazier", "role": "floor"}
+  ]
+}

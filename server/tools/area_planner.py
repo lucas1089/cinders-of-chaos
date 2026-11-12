@@ -36,7 +36,8 @@ place     paste a compiled area into a COPY of the world map (never the world fi
 install   copy OUT/data/... (the quest chest script, new NPCs) into a server's data folder; idempotent, refuses a
           clash of action id, storage or file.
 check-kits every id of the decoration kits, stair brush and roof against items.otb, items.xml and the pair (known,
-          has a sprite, blocks or not as the kit says, gives light, floor change); exit 1 on a problem.
+          has a sprite, blocks or not as the kit says, gives light, floor change), then the stock ids of the buildings
+          (counter, bench, shelf, locker, table, chair, door pair, wall and floor ids); exit 1 on a problem.
 plan      ask an LLM for a plan (only with an endpoint set in the environment; see area_plan_ai.py), with up to 3 fix
           rounds on the validator's errors. Without one it says how to set one up and exits.
 The knowledge base: $AREAPLAN_KB or ~/.local/share/cinders-of-chaos/area_planner/kb.sqlite3 (outside git).
@@ -210,7 +211,9 @@ def main(argv):
         return 0
     if cmd == 'check-kits':
         import area_plan_decor as D
-        return 0 if D.check_kits(args[0], args[1], args[2]) else 1
+        import area_plan_buildings as BLD
+        good = D.check_kits(args[0], args[1], args[2])
+        return 0 if BLD.check_buildings(args[0], args[1], args[2]) and good else 1
     if cmd == 'plan':
         import area_plan_ai as AI
         prompt = _opt(args, '--from-prompt')
