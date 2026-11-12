@@ -14,7 +14,8 @@ import com.google.android.material.textfield.TextInputLayout;
 /**
  * Painel > Recompilar engine (O436): chaos-ctl.sh engine-build start (GitHub Actions compiles the server engine with
  * every patch of server/src-patches/), engine-build status read every 20 seconds while the run is queued or in progress,
- * engine-build log (the jobs and the failed step) and engine-build-token-set (the GitHub token, on stdin). When the build
+ * engine-build log (the jobs and the failed step) and github-token-set (the one GitHub token of the VPS, on stdin;
+ * the repository is private, O530: the server update uses it too). When the build
  * is done and newer, the card points to Atualizar servidor, which installs the engine. docs/ADMIN_APP.md.
  */
 final class EngineBuildCard {
@@ -98,9 +99,11 @@ final class EngineBuildCard {
             });
         }
         tokenBox.addView(tokenField);
-        tokenBox.addView(ui.hint("No GitHub: Settings > Developer settings > Fine-grained tokens. Só este repositório, "
-                + "permissão Actions: Read and write. O token vai pelo SSH, fica só na VPS (/etc/chaos/engine-build.token, "
-                + "modo 600) e o app não o mostra de volta. Passo a passo: docs/ADMIN_APP.md."));
+        tokenBox.addView(ui.hint("O repositório é privado: a VPS precisa deste token para atualizar o servidor, baixar as "
+                + "releases e recompilar o engine. No GitHub: Settings > Developer settings > Fine-grained tokens. Só este "
+                + "repositório; permissões Contents: Read-only, Metadata: Read-only e Actions: Read and write. O token vai "
+                + "pelo SSH, fica só na VPS (/etc/chaos/github.token, modo 600) e o app não o mostra de volta. Passo a "
+                + "passo: docs/ADMIN_APP.md."));
         MaterialButton save = ui.secondary("Salvar token", R.drawable.ic_save);
         save.setOnClickListener(v -> saveToken());
         tokenBox.addView(save, ui.gap(8));
@@ -238,7 +241,7 @@ final class EngineBuildCard {
         Runnable go = () -> {
             result.running("Token do GitHub");
             // the token is the command's stdin: never on its command line
-            a.ctlAction("engine-build-token-set", 60, value + "\n", f -> {
+            a.ctlAction("github-token-set", 60, value + "\n", f -> {
                 String why = f.ok ? "" : EngineBuildInfo.refusal(f.raw);
                 result.show("Token do GitHub", why.isEmpty() ? f : Friendly.fail("Token não salvo", why, f.raw));
                 a.snack("Token do GitHub: " + (f.ok ? (value.isEmpty() ? "apagado" : "salvo") : "não salvo"), f.ok);
@@ -250,7 +253,8 @@ final class EngineBuildCard {
             });
         };
         if (value.isEmpty()) {
-            a.confirm("Apagar o token do GitHub?", "A VPS deixa de poder começar recompilações até um novo token.", "Apagar",
+            a.confirm("Apagar o token do GitHub?", "A VPS deixa de alcançar o repositório privado: sem atualizar o servidor nem "
+                    + "recompilar o engine até um novo token.", "Apagar",
                     true, go);
         } else {
             go.run();

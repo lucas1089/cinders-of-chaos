@@ -1,6 +1,6 @@
 //! The card Recompilar engine of Atualizações (O436). Pure parsing and pt-BR wording of `chaos-ctl.sh engine-build status`
-//! (the run of windows-package.yml on GitHub), of the refusals of `engine-build start` and `engine-build-token-set`, like
-//! android/.../EngineBuildInfo.java. No I/O here. The token never shows here: it goes to `engine-build-token-set` on stdin.
+//! (the run of windows-package.yml on GitHub), of the refusals of `engine-build start` and `github-token-set`, like
+//! android/.../EngineBuildInfo.java. No I/O here. The token never shows here: it goes to `github-token-set` on stdin.
 use std::collections::BTreeMap;
 
 /// How long GitHub takes, for the confirmation and the hint.
@@ -215,10 +215,11 @@ pub fn confirm_new_client_text(n: &str) -> String {
 
 /// A refusal of chaos-ctl.sh (its "word: text" error line) in Portuguese; empty when the text is not one of ours.
 pub fn refusal(out: &str) -> &'static str {
-    const WORDS: [(&str, &str); 13] = [
-        ("token-missing", "Falta o token do GitHub. Use Definir token do GitHub com um token só deste repositório, com Actions leitura e escrita."),
+    const WORDS: [(&str, &str); 14] = [
+        ("token-missing", "Falta o token do GitHub. Use Atualizações > Repositório privado > Definir token do GitHub com um token só deste repositório (Contents leitura, Metadata leitura, Actions leitura e escrita)."),
+        ("private-repo", "Repositório privado: defina o token do GitHub (Atualizações > Repositório privado > Definir token do GitHub)."),
         ("token-refused", "O GitHub recusou o token (401). Ele pode ter vencido ou sido apagado: defina um novo."),
-        ("no-access", "O token não alcança o repositório ou não tem Actions leitura e escrita. Crie outro com essas permissões."),
+        ("no-access", "O token não alcança o repositório ou lhe falta permissão (Contents leitura; para recompilar, Actions leitura e escrita). Crie outro com essas permissões."),
         ("build-running", "Já há uma recompilação em andamento. Espere ela terminar."),
         ("client-changed", "O programa do client mudou desde o client publicado: o mesmo número de client apontaria para dois executáveis diferentes. Use Recompilar com client novo."),
         ("update-running", "Uma atualização do servidor está rodando. Espere ela terminar para recompilar com client novo."),
@@ -238,7 +239,7 @@ pub fn refusal(out: &str) -> &'static str {
     ""
 }
 
-/// The same shape check of the GitHub token as `engine-build-token-set`; empty is fine (it removes the token).
+/// The same shape check of the GitHub token as `github-token-set`; empty is fine (it removes the token).
 pub fn token_ok(t: &str) -> bool {
     let tail = |rest: &str, lo: usize, hi: usize, us: bool| {
         (lo..=hi).contains(&rest.len()) && rest.bytes().all(|b| b.is_ascii_alphanumeric() || (us && b == b'_'))
@@ -355,6 +356,7 @@ mod tests {
         assert!(confirm_text().contains("20 a 60 minutos") && confirm_text().contains("Atualizar servidor"));
         for w in [
             "token-missing",
+            "private-repo",
             "token-refused",
             "no-access",
             "build-running",

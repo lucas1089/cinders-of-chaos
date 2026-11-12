@@ -52,6 +52,10 @@ if [ -z "${CHAOS_UPDATE_COPY:-}" ]; then
 	CHAOS_UPDATE_COPY=$copy CHAOS_UPDATE_SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")" exec bash "$copy" "$@"
 fi
 SELF=${CHAOS_UPDATE_SELF:-$0}
+# the one door to GitHub (O530): the repository is private, git needs the token of the VPS (a credential helper that
+# reads its file; never in the remote URL)
+# shellcheck source=/dev/null
+. "$(dirname "$SELF")/chaos_github.sh" || { echo "chaos_update: no chaos_github.sh next to $SELF" >&2; exit 1; }
 RESTORE_CHECKOUT=""
 DROPIN=""
 STOPPED_TIMERS=""
@@ -151,7 +155,7 @@ for tool in git python3 systemctl flock tar; do
 	command -v "$tool" >/dev/null || die "$tool not found"
 done
 
-g() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+g() { chaos_gh_git -C "$REPO" -c safe.directory="$REPO" "$@"; }
 g rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "$REPO is not a git checkout"
 
 if [ -r "$ENV_FILE" ]; then
@@ -410,7 +414,10 @@ fi
 # ------------------------------------------------------------------------------------------------ update
 if g remote get-url "$REMOTE" >/dev/null 2>&1; then
 	log "fetching tags from $REMOTE"
-	g fetch --quiet --tags "$REMOTE" || die "git fetch from $REMOTE failed (a tag that moved upstream is refused on purpose)"
+	if ! g fetch --quiet --tags "$REMOTE"; then
+		why=$(chaos_gh_git_why "$(chaos_gh_slug "$(g remote get-url "$REMOTE")")") || why=""
+		die "git fetch from $REMOTE failed${why:+ ($why)} (a tag that moved upstream is refused on purpose)"
+	fi
 else
 	log "note: no remote $REMOTE in $REPO: using the refs already there"
 fi

@@ -51,3 +51,6 @@ CHAOS_UPDATE_KEY=/etc/chaos/update-key.hex
 #CHAOS_SPECTATE_STATE=/var/lib/chaos/spectate
 #CHAOS_PAIR_BRANCH=windows-assets
 #CHAOS_SPECTATE_LOG=/var/log/chaos/spectate-pair.log
+# the GitHub token of the private repository (O530): one file, root only, mode 600, set with "chaos-ctl.sh github-token-set"
+# (the admin app: Definir token do GitHub). It is the default; the line is only needed to name another file.
+#CHAOS_GITHUB_TOKEN_FILE=/etc/chaos/github.token

@@ -105,7 +105,7 @@
 #   update-rollback             the kit: chaos_kit_update.sh rollback in the background (update-log)
 #   engine-build [status | start [--client-build N | --new-client] | log [N]]
 #                               rebuilds the server engine in GitHub Actions (O436): start dispatches windows-package.yml
-#                               on CHAOS_UPDATE_BRANCH through the GitHub API (token of engine-build-token-set) with
+#                               on CHAOS_UPDATE_BRANCH through the GitHub API (token of github-token-set) with
 #                               client_build = the live client update's min_package (a lower number is refused; the
 #                               same number only while client/base-patches, client/overlay/src and launcher are unchanged
 #                               since the live client's commit, else client-changed; --new-client uses live+1 and puts it into
@@ -117,9 +117,22 @@
 #                               client_build, url); release_newer=yes means update-apply installs a newer engine.
 #                               client_next (live build + 1) and client_changed yes|no|unknown (not while a build runs) log: the
 #                               jobs and failed steps of the run, then the start history. The game keeps running.
-#   engine-build-token-set      the GitHub token (a fine-grained token for this repository only, Actions read and write) on
-#                               stdin, one line, empty removes it: checked against GitHub, kept in CHAOS_ENGINE_TOKEN_FILE
-#                               (/etc/chaos/engine-build.token, mode 600), never printed, never on a command line
+#   github-token-set            the one GitHub token of the VPS (O530: the repository is private; a fine-grained token of
+#                               this repository only: Contents read, Metadata read, Actions read and write) on stdin, one
+#                               line, empty removes it: checked against GitHub (Contents refused = not saved), kept in
+#                               CHAOS_GITHUB_TOKEN_FILE (/etc/chaos/github.token, mode 600; CHAOS_ENGINE_TOKEN_FILE and an
+#                               old /etc/chaos/engine-build.token are still honoured), never printed, never on a command
+#                               line. git fetch, the releases API and the asset downloads of the update scripts use it
+#                               (server/deploy/chaos_github.sh)
+#   github-token-status         key=value lines: token yes|no, file, repo, private yes|no|unknown (asked without the
+#                               token), contents ok|refused|no-access|unknown|none, actions (same), ready yes|no, error
+#                               (private-repo: no token saved ...; token-refused; no-access)
+#   engine-build-token-set      the same command under its name of before O530 (it checks Actions instead of Contents)
+#   admin-desktop-releases      the JSON list of the admin-desktop-v* releases of the repository (tag_name, draft, assets
+#                               with name and size) for the desktop admin app's self-update (O530: the app has no token)
+#   admin-desktop-asset-url TAG NAME
+#                               the short-lived signed https address of one cinders-admin file of that release (the app
+#                               downloads it with curl and checks the signature itself)
 #   xp-rate [show | set N | reset] [restart]
 #                               the XP multiplier of config.lua (experienceStages = the release's stages x N, N 1..100);
 #                               set / reset keep a backup and apply at the next restart, or at once with "restart".
@@ -349,7 +362,8 @@
 # update installs with the server stopped), CHAOS_CACHE_DIR $CHAOS_KIT_STATE/cache (install_all.py's plan compile cache), CHAOS_DL_DIR
 # $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For areas-publish:
 # CHAOS_AREAS_STATE /var/lib/chaos/areas (the token file), CHAOS_DL_DIR, CHAOS_SITE_ENV (CHAOS_SITE_URL). For engine-build:
-# CHAOS_ENGINE_TOKEN_FILE /etc/chaos/engine-build.token (root only), CHAOS_RELEASE_REPO, CHAOS_UPDATE_BRANCH, CHAOS_SITE_DIR (the live
+# CHAOS_GITHUB_TOKEN_FILE /etc/chaos/github.token (root only; the token of every GitHub access, O530; CHAOS_ENGINE_TOKEN_FILE
+# is its name of before, used when that one is not set), CHAOS_RELEASE_REPO, CHAOS_UPDATE_BRANCH, CHAOS_SITE_DIR (the live
 # manifest), CHAOS_KIT_STATE. For testers:
 # CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
 # /var/log/chaos/testers.log. For balance-report: CHAOS_BALANCE_DIR /var/lib/chaos/balance. For vps: CHAOS_VPS_LOG
@@ -386,7 +400,7 @@ CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STA
 CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE \
 CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG CHAOS_BOT_USER CHAOS_BOT_ENV CHAOS_BOT_DIR CHAOS_BOT_DATA CHAOS_BOT_LOG \
 CHAOS_BOT_PYTHON CHAOS_BALANCE_DIR CHAOS_PAY_ENV CHAOS_PAY_USER CHAOS_PAY_GROUP CHAOS_PAYWORKER_LOG \
-CHAOS_ENGINE_TOKEN_FILE "
+CHAOS_ENGINE_TOKEN_FILE CHAOS_GITHUB_TOKEN_FILE "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -423,6 +437,21 @@ read_conf "$CONF"
 setting() { local v=${!1:-}; [ -n "$v" ] || v=${CFG[$1]:-}; printf '%s' "${v:-$2}"; }
 
 UNIT=$(setting CHAOS_UNIT chaos-server)
+# The repository is private (O530): every GitHub access of this script and of the scripts it starts goes through
+# chaos_github.sh and the one token file of the VPS (github-token-set). The settings reach the library as variables.
+CHAOS_GITHUB_TOKEN_FILE=$(setting CHAOS_GITHUB_TOKEN_FILE "")
+CHAOS_ENGINE_TOKEN_FILE=$(setting CHAOS_ENGINE_TOKEN_FILE "")
+export CHAOS_GITHUB_TOKEN_FILE CHAOS_ENGINE_TOKEN_FILE
+GHLIB="$(dirname "$SELF")/chaos_github.sh"
+# shellcheck source=/dev/null
+[ -r "$GHLIB" ] && . "$GHLIB"
+# a chaos-ctl.sh copied alone has no library: plain git as before, and the commands that ask GitHub refuse
+if ! declare -F chaos_gh_api >/dev/null; then
+  chaos_gh_git() { git "$@"; }
+  chaos_gh_git_why() { :; }
+fi
+need_gh() { declare -F chaos_gh_api >/dev/null || die "no chaos_github.sh next to $SELF (the whole server/deploy folder of the repository is needed)"; }
+GH_REPO=$(setting CHAOS_RELEASE_REPO lucas1089/cinders-of-chaos)
 # the Linux kit: CHAOS_KIT_DIR is also the root (server/, chaos.env, logs/, run/) unless those are set themselves
 KIT=$(setting CHAOS_KIT_DIR "")
 ROOT=$(setting CHAOS_ROOT "${KIT:-/opt/chaos}")
@@ -1105,7 +1134,7 @@ SPTOOL="$REPO/server/tools/spectate_render.py"
 # one JSON answer line for the app, then exit
 sp_fail() { printf '{"ok":false,"error":"%s","message":"%s"}\n' "$1" "$2"; exit "${3:-1}"; }
 sp_log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*"; }
-spg() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+spg() { chaos_gh_git -C "$REPO" -c safe.directory="$REPO" "$@"; }
 # the state folder (lock, renewal time, the dat index), root only
 sp_state() { { mkdir -p "$SPSTATE" && chmod 0700 "$SPSTATE"; } || die "cannot create $SPSTATE"; }
 # the cast port: CHAOS_CAST_PORT, else the last castPort line of the server's config.lua (digits only)
@@ -1128,8 +1157,10 @@ pair_fetch() {
   exec 8> "$SPSTATE/fetch.lock"
   flock -n 8 || die "a pair fetch is running (chaos-ctl.sh spectate-pair log)"
   sp_log "fetching $SPBRANCH (shallow, without the contents of its other files)"
-  spg fetch --quiet --depth=1 --filter=blob:none origin "+refs/heads/$SPBRANCH:refs/remotes/origin/$SPBRANCH" \
-    || die "git fetch of $SPBRANCH failed (does the checkout's origin reach it?)"
+  if ! spg fetch --quiet --depth=1 --filter=blob:none origin "+refs/heads/$SPBRANCH:refs/remotes/origin/$SPBRANCH"; then
+    spwhy=$(chaos_gh_git_why "$GH_REPO") || spwhy=""
+    die "git fetch of $SPBRANCH failed${spwhy:+ ($spwhy)} (does the checkout's origin reach it?)"
+  fi
   work=$(mktemp -d "$WORKDIR/chaos-pair.XXXXXX") || die "no work folder in $WORKDIR"
   spg cat-file blob "origin/$SPBRANCH:SHA256SUMS.parts" > "$work/SHA256SUMS.parts" \
     || { rm -rf "$work"; die "$SPBRANCH has no SHA256SUMS.parts"; }
@@ -1850,13 +1881,63 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
       echo "$k=$( [ -f "$st" ] && sed -n "s/^$k=//p" "$st" | tail -n 1)"
     done
     ;;
-  engine-build|engine-build-token-set)
-    # Rebuild the server engine in GitHub Actions (windows-package.yml, manual) from the admin app, O436. The token (a
-    # fine-grained GitHub token for this repository only, Actions read and write) lives in a root-only file, comes in on
-    # stdin, is never printed, and reaches curl as a config line on its stdin: it never shows in ps.
+  admin-desktop-releases|admin-desktop-asset-url)
+    # The desktop admin app updates itself from the releases of this private repository without a token of its own
+    # (O530): it asks the VPS. admin-desktop-releases prints the JSON list of the admin-desktop-v* releases (tag, draft,
+    # asset names and sizes); admin-desktop-asset-url TAG NAME prints the short-lived signed address of one asset
+    # (the app downloads it with curl; the signature check in the app stays the gate). The token never leaves the VPS.
+    need_gh
+    command -v curl >/dev/null 2>&1 || die "curl-not-found: install curl"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found: install python3"
+    [[ $GH_REPO =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "CHAOS_RELEASE_REPO must be OWNER/REPO"
+    if [ "$cmd" = admin-desktop-releases ]; then
+      [ $# -eq 0 ] || die "admin-desktop-releases (no arguments)"
+      adbody=$(mktemp) || die "mktemp failed"
+      trap 'rm -f "$adbody"' EXIT
+      adcode=$(chaos_gh_api GET "/repos/$GH_REPO/releases?per_page=30" "$adbody")
+      if [ "$adcode" != 200 ]; then
+        adwhy=$(chaos_gh_explain "$adcode" "$GH_REPO")
+        die "${adwhy:-github-unreachable: HTTP $adcode from api.github.com}"
+      fi
+      python3 -I - "$adbody" <<'PY' || die "bad-answer: GitHub's answer was not understood"
+import json, re, sys
+data = json.load(open(sys.argv[1], encoding='utf-8'))
+out = []
+for r in data if isinstance(data, list) else []:
+    tag = str(r.get('tag_name', ''))
+    if not re.fullmatch(r'admin-desktop-v[0-9][0-9A-Za-z.+-]{0,30}', tag):
+        continue
+    assets = []
+    for a in r.get('assets') or []:
+        name = str(a.get('name', ''))
+        if re.fullmatch(r'cinders-admin[A-Za-z0-9._-]{0,40}', name):
+            assets.append({'name': name, 'size': int(a.get('size') or 0)})
+    out.append({'tag_name': tag, 'draft': bool(r.get('draft')), 'assets': assets})
+print(json.dumps(out, separators=(',', ':')))
+PY
+    else
+      [ $# -eq 2 ] || die "admin-desktop-asset-url TAG NAME"
+      adtag=$1 adname=$2
+      [[ $adtag =~ ^admin-desktop-v[0-9][0-9A-Za-z.+-]{0,30}$ ]] || die "admin-desktop-asset-url: TAG is an admin-desktop-v release tag"
+      [[ $adname =~ ^cinders-admin[A-Za-z0-9._-]{0,40}$ ]] || die "admin-desktop-asset-url: NAME is a cinders-admin file of the release"
+      chaos_gh_asset_id "$GH_REPO" "$adtag" "$adname" || die "${CHAOS_GH_WHY:-no-asset: $adname}"
+      read -r adcode adurl _ <<< "$(chaos_gh_asset_url "$GH_REPO" "$CHAOS_GH_ID")"
+      if [ "$adcode" != 302 ] || [[ ${adurl:-} != https://* ]] || [[ $adurl == *[[:space:]\"\']* ]]; then
+        adwhy=$(chaos_gh_explain "${adcode:-000}" "$GH_REPO")
+        die "${adwhy:-download-failed: GitHub gave no address for $adname (HTTP ${adcode:-000})}"
+      fi
+      printf '%s\n' "$adurl"
+    fi
+    ;;
+  engine-build|engine-build-token-set|github-token-set|github-token-status)
+    # Rebuild the server engine in GitHub Actions (windows-package.yml, manual) from the admin app, O436, and the one
+    # GitHub token of the VPS (O530). The token (a fine-grained GitHub token for this repository only: Contents read,
+    # Metadata read, Actions read and write) lives in a root-only file, comes in on stdin, is never printed, and reaches
+    # curl as a config line on its stdin: it never shows in ps. engine-build-token-set is the name of before O530.
+    need_gh
     EB_STATE="$KSTATE/engine-build"
-    EB_TOKEN=$(setting CHAOS_ENGINE_TOKEN_FILE /etc/chaos/engine-build.token)
-    EB_REPO=$(setting CHAOS_RELEASE_REPO lucas1089/cinders-of-chaos)
+    EB_TOKEN=$(chaos_gh_token_file)
+    EB_REPO=$GH_REPO
     EB_BRANCH=$(setting CHAOS_UPDATE_BRANCH main)
     EB_SITE=$(setting CHAOS_SITE_DIR /var/www/chaos)
     EB_WF=windows-package.yml
@@ -1865,29 +1946,12 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     { [[ $EB_BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $EB_BRANCH != *..* ]]; } || die "bad CHAOS_UPDATE_BRANCH"
     command -v curl >/dev/null 2>&1 || die "curl-not-found: install curl"
     command -v python3 >/dev/null 2>&1 || die "python3-not-found: install python3"
-    EB_TOKEN_RE='^(github_pat_[A-Za-z0-9_]{20,250}|gh[pousr]_[A-Za-z0-9]{30,250})$'
+    EB_TOKEN_RE=$CHAOS_GH_TOKEN_RE
     # the token from its file, or nothing when the file is missing or holds no token
-    eb_token() {
-      local t=""
-      [ -r "$EB_TOKEN" ] && t=$(head -c 400 "$EB_TOKEN" 2>/dev/null | tr -d '[:space:]')
-      [[ $t =~ $EB_TOKEN_RE ]] && printf '%s' "$t"
-      return 0
-    }
+    eb_token() { chaos_gh_token; }
     # eb_api METHOD PATH [JSON]: prints the HTTP code, the answer is in the file $EB_BODY. The config line with the token
     # goes to curl on stdin (printf is a builtin: no process shows it); the JSON body holds no secret.
-    eb_api() {
-      local m=$1 p=$2 data=${3:-} tok cfg code
-      local -a ca=(-K - -sS --proto '=https' -o "$EB_BODY" -w '%{http_code}' --max-time 30)
-      tok=$(eb_token)
-      cfg=$(printf 'url = "https://api.github.com%s"\nheader = "Accept: application/vnd.github+json"\nheader = "X-GitHub-Api-Version: 2022-11-28"\nheader = "User-Agent: chaos-ctl"' "$p")
-      [ -z "$tok" ] || cfg=$cfg$'\n'$(printf 'header = "Authorization: Bearer %s"' "$tok")
-      unset tok
-      if [ "$m" = POST ]; then ca+=(-H 'Content-Type: application/json' -d "$data"); fi
-      : > "$EB_BODY"
-      code=$(printf '%s\n' "$cfg" | curl "${ca[@]}" 2>/dev/null) || code=${code:-000}
-      unset cfg
-      printf '%s' "${code:-000}"
-    }
+    eb_api() { chaos_gh_api "$1" "$2" "$EB_BODY" "${3:-}"; }
     # eb_py runs|jobs|release FILE [all]: reads GitHub's JSON, prints tab separated fields made only of safe characters
     eb_py() {
       python3 -I - "$@" <<'PY'
@@ -1961,10 +2025,14 @@ PY
       local code line
       EB_ERR="" EB_RUN="" EB_NUM="" EB_STARTED="" EB_FINISHED="" EB_CONCL="" EB_SHA="" EB_ELAPSED=0 EB_URL=""
       code=$(eb_api GET "/repos/$EB_REPO/actions/workflows/$EB_WF/runs?event=workflow_dispatch&branch=$EB_BRANCH&per_page=10")
+      # a private repository and no token saved: the same answer as every other GitHub access (O530)
+      if [ -z "$(eb_token)" ]; then
+        case $code in 401|403|404) EB_STATE_NOW=unknown; EB_ERR=$(chaos_gh_explain "$code" "$EB_REPO"); return 1 ;; esac
+      fi
       case $code in
         200) ;;
-        401) EB_STATE_NOW=unknown; EB_ERR="token-refused: GitHub refused the token (401): save a new one with engine-build-token-set"; return 1 ;;
-        403|404) EB_STATE_NOW=unknown; EB_ERR="no-access: GitHub says $code: the token needs Actions read and write on $EB_REPO (engine-build-token-set)"; return 1 ;;
+        401) EB_STATE_NOW=unknown; EB_ERR="token-refused: GitHub refused the token (401): save a new one with github-token-set"; return 1 ;;
+        403|404) EB_STATE_NOW=unknown; EB_ERR="no-access: GitHub says $code: the token needs Actions read and write on $EB_REPO (github-token-set)"; return 1 ;;
         *) EB_STATE_NOW=unknown; EB_ERR="github-unreachable: HTTP $code from api.github.com"; return 1 ;;
       esac
       line=$(eb_py runs "$EB_BODY") || { EB_STATE_NOW=unknown; EB_ERR="bad-answer: GitHub's answer was not understood"; return 1; }
@@ -1982,14 +2050,19 @@ print(n if 1 <= n <= 65535 else '')
 PY
     }
     eb_kit_state() { [ -f "$KSTATE/state" ] && sed -n "s/^$1=//p" "$KSTATE/state" | tail -n 1; }
-    eb_git() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+    eb_git() { chaos_gh_git -C "$REPO" -c safe.directory="$REPO" "$@"; }
     # Is the client program changed since the live client's commit? Needs $live (the live min_package, may be empty).
     # Sets EB_CC no|yes|unknown, EB_CC_WHY (an error word and text when unknown), EB_HEAD (the branch head), EB_BASE.
     eb_client_check() {
       EB_CC=unknown EB_CC_WHY="" EB_HEAD="" EB_BASE=""
       command -v git >/dev/null 2>&1 || { EB_CC_WHY="git-not-found: install git"; return 0; }
       { [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; } || { EB_CC_WHY="no repository checkout at $REPO (update-apply first)"; return 0; }
-      eb_git fetch -q origin "$EB_BRANCH" 2>/dev/null || { EB_CC_WHY="fetch-failed: cannot fetch $EB_BRANCH from origin in $REPO"; return 0; }
+      if ! eb_git fetch -q origin "$EB_BRANCH" 2>/dev/null; then
+        local fw
+        fw=$(chaos_gh_git_why "$EB_REPO") || fw=""
+        EB_CC_WHY="fetch-failed: cannot fetch $EB_BRANCH from origin in $REPO${fw:+ ($fw)}"
+        return 0
+      fi
       EB_HEAD=$(eb_git rev-parse FETCH_HEAD 2>/dev/null) || { EB_CC_WHY="fetch-failed: no FETCH_HEAD"; return 0; }
       # a number published after an earlier engine-build with a new number: its commit is now the baseline
       if [ -f "$EB_STATE/pending_client" ]; then
@@ -2041,8 +2114,8 @@ else:
 PY
     }
     case $cmd in
-      engine-build-token-set)
-        [ $# -eq 0 ] || die "engine-build-token-set (no arguments; the GitHub token on stdin, one line, empty removes it)"
+      engine-build-token-set|github-token-set)
+        [ $# -eq 0 ] || die "$cmd (no arguments; the GitHub token on stdin, one line, empty removes it)"
         etok=""
         IFS= read -r -t 30 -n 400 etok; erc=$?
         [ "$erc" -le 128 ] || die "no token on stdin (timed out)"
@@ -2052,8 +2125,8 @@ PY
         etok=${etok#"${etok%%[![:space:]]*}"}
         etok=${etok%"${etok##*[![:space:]]}"}
         if [ -z "$etok" ]; then
-          rm -f -- "$EB_TOKEN"
-          echo "engine-build-token-set: token removed"
+          while IFS= read -r ef; do rm -f -- "$ef"; done < <(chaos_gh_token_files)
+          echo "$cmd: token removed (the VPS cannot reach the private repository until a new token is saved)"
           exit 0
         fi
         if ! [[ $etok =~ $EB_TOKEN_RE ]]; then
@@ -2062,15 +2135,38 @@ PY
         fi
         EB_BODY=$(mktemp) || die "mktemp failed"
         trap 'rm -f "$EB_BODY"' EXIT
+        # eb_probe PATH: the HTTP code of one GET with the new token (its config line goes to curl on stdin)
+        eb_probe() {
+          local pc
+          pc=$(printf 'url = "https://api.github.com%s"\nheader = "Accept: application/vnd.github+json"\nheader = "User-Agent: chaos-ctl"\nheader = "Authorization: Bearer %s"\n' \
+            "$1" "$etok" | curl -K - -sS --proto '=https' -o "$EB_BODY" -w '%{http_code}' --max-time 30 2>/dev/null) || pc=${pc:-000}
+          printf '%s' "${pc:-000}"
+        }
         # the token is checked against GitHub before it is kept: a refused one is never saved
-        ecode=$(printf 'url = "https://api.github.com/repos/%s/actions/workflows/%s"\nheader = "Accept: application/vnd.github+json"\nheader = "User-Agent: chaos-ctl"\nheader = "Authorization: Bearer %s"\n' \
-          "$EB_REPO" "$EB_WF" "$etok" | curl -K - -sS --proto '=https' -o "$EB_BODY" -w '%{http_code}' --max-time 30 2>/dev/null) || ecode=${ecode:-000}
-        case $ecode in
-          200) emsg="GitHub accepted it (read access to $EB_REPO; write access is only proven by the first Recompilar)" ;;
-          401) unset etok; die "token-refused: GitHub refused the token (401); nothing changed" ;;
-          403|404) unset etok; die "no-access: GitHub says $ecode: the token does not reach $EB_REPO (repository access, Actions read and write); nothing changed" ;;
-          *) emsg="GitHub could not be asked (HTTP ${ecode:-000}); the token was kept without a check" ;;
-        esac
+        if [ "$cmd" = github-token-set ]; then
+          # Contents and Metadata read (the branch of the update), then Actions (engine-build only)
+          ecode=$(eb_probe "/repos/$EB_REPO/branches/$EB_BRANCH")
+          case $ecode in
+            200) emsg="Contents: ok" ;;
+            401) unset etok; die "token-refused: GitHub refused the token (401); nothing changed" ;;
+            403|404) unset etok; die "no-access: GitHub says $ecode: the token does not reach $EB_REPO (repository access: only this repository; Contents read, Metadata read); nothing changed" ;;
+            *) emsg="Contents: not checked (HTTP ${ecode:-000})" ;;
+          esac
+          acode=$(eb_probe "/repos/$EB_REPO/actions/workflows/$EB_WF")
+          case $acode in
+            200) emsg="$emsg. Actions: ok (write access is only proven by the first Recompilar)" ;;
+            403|404) emsg="$emsg. Actions: no access (updates work; Recompilar engine needs Actions read and write)" ;;
+            *) emsg="$emsg. Actions: not checked (HTTP ${acode:-000})" ;;
+          esac
+        else
+          ecode=$(eb_probe "/repos/$EB_REPO/actions/workflows/$EB_WF")
+          case $ecode in
+            200) emsg="GitHub accepted it (read access to $EB_REPO; write access is only proven by the first Recompilar)" ;;
+            401) unset etok; die "token-refused: GitHub refused the token (401); nothing changed" ;;
+            403|404) unset etok; die "no-access: GitHub says $ecode: the token does not reach $EB_REPO (repository access, Actions read and write); nothing changed" ;;
+            *) emsg="GitHub could not be asked (HTTP ${ecode:-000}); the token was kept without a check" ;;
+          esac
+        fi
         install -d -m 0755 "$(dirname -- "$EB_TOKEN")" || die "cannot create $(dirname -- "$EB_TOKEN")"
         ereal=$(readlink -m -- "$EB_TOKEN")
         etmp=$(mktemp "$ereal.XXXXXX") || die "cannot write next to $EB_TOKEN"
@@ -2078,7 +2174,49 @@ PY
         printf '%s\n' "$etok" > "$etmp" || { rm -f "$etmp"; die "cannot write $EB_TOKEN"; }
         unset etok
         mv -f -- "$etmp" "$ereal" || { rm -f "$etmp"; die "cannot replace $EB_TOKEN"; }
-        echo "engine-build-token-set: saved in $EB_TOKEN (mode 600). $emsg"
+        echo "$cmd: saved in $EB_TOKEN (mode 600). $emsg"
+        ;;
+      github-token-status)
+        # one question to GitHub without the token (is the repository public?) and two with it; key=value lines
+        [ $# -eq 0 ] || die "github-token-status (no arguments)"
+        EB_BODY=$(mktemp) || die "mktemp failed"
+        trap 'rm -f "$EB_BODY"' EXIT
+        have=no
+        [ -z "$(eb_token)" ] || have=yes
+        echo "token=$have"
+        echo "file=$EB_TOKEN"
+        echo "repo=$EB_REPO"
+        pcode=$(CHAOS_GH_NOAUTH=1 eb_api GET "/repos/$EB_REPO")
+        case $pcode in
+          200) priv=no ;;
+          401|403|404) priv=yes ;;
+          *) priv=unknown ;;
+        esac
+        echo "private=$priv"
+        contents=none actions=none why=""
+        if [ "$have" = yes ]; then
+          ccode=$(eb_api GET "/repos/$EB_REPO/branches/$EB_BRANCH")
+          case $ccode in
+            200) contents=ok ;;
+            401) contents=refused ;;
+            403|404) contents=no-access ;;
+            *) contents=unknown ;;
+          esac
+          acode=$(eb_api GET "/repos/$EB_REPO/actions/workflows/$EB_WF")
+          case $acode in
+            200) actions=ok ;;
+            401) actions=refused ;;
+            403|404) actions=no-access ;;
+            *) actions=unknown ;;
+          esac
+          [ "$contents" = ok ] || why=$(chaos_gh_explain "$ccode" "$EB_REPO")
+        elif [ "$priv" = yes ]; then
+          why=$(chaos_gh_explain "$pcode" "$EB_REPO")
+        fi
+        echo "contents=$contents"
+        echo "actions=$actions"
+        if [ "$contents" = ok ] || { [ "$have" = no ] && [ "$priv" = no ]; }; then echo "ready=yes"; else echo "ready=no"; fi
+        [ -z "$why" ] || echo "error=$why"
         ;;
       engine-build)
         sub=${1:-status}
@@ -2172,7 +2310,7 @@ PY
                 *) die "engine-build start [--client-build N | --new-client]" ;;
               esac
             done
-            [ -n "$(eb_token)" ] || die "token-missing: no GitHub token saved ($EB_TOKEN); save one first: engine-build-token-set (app: Painel > Recompilar engine > Definir token do GitHub)"
+            [ -n "$(eb_token)" ] || die "token-missing: no GitHub token saved ($EB_TOKEN); save one first: github-token-set (admin app: Definir token do GitHub)"
             command -v git >/dev/null 2>&1 || die "git-not-found: install git"
             { [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; } || die "no repository checkout at $REPO (update-apply first)"
             exec 8>"$EB_STATE/.lock"
@@ -2215,7 +2353,7 @@ PY
             dcode=$(eb_api POST "/repos/$EB_REPO/actions/workflows/$EB_WF/dispatches" "$body")
             case $dcode in
               204) ;;
-              401) die "token-refused: GitHub refused the token (401); save a new one with engine-build-token-set" ;;
+              401) die "token-refused: GitHub refused the token (401); save a new one with github-token-set" ;;
               403|404) die "no-access: GitHub says $dcode: the token needs Actions read and write on $EB_REPO (and the workflow must exist on $EB_BRANCH)" ;;
               422) die "workflow-refused: GitHub says 422: the workflow $EB_WF has no workflow_dispatch on $EB_BRANCH, or an input was refused" ;;
               *) die "dispatch-failed: HTTP ${dcode:-000} from api.github.com" ;;

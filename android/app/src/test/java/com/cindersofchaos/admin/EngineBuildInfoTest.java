@@ -103,7 +103,9 @@ public final class EngineBuildInfoTest {
                 "start text tells the guard list");
         expect(!EngineBuildInfo.refusal("chaos-ctl: update-running: x").isEmpty()
                 && EngineBuildInfo.refusal("chaos-ctl: client-changed: x").contains("client novo"), "refusals offer the new client");
-        String[] words = {"token-missing", "token-refused", "no-access", "build-running", "client-changed", "client-build-backwards",
+        expect(EngineBuildInfo.refusal("chaos-ctl: private-repo: GitHub says 404 and no GitHub token is saved").startsWith("Repositório privado: defina o token do GitHub"),
+                "private repository: the owner is told to set the token");
+        String[] words = {"token-missing", "private-repo", "token-refused", "no-access", "build-running", "client-changed", "client-build-backwards",
             "client-build-unknown", "client-check-failed", "fetch-failed", "workflow-refused", "dispatch-failed", "github-unreachable"};
         for (String w : words) {
             expect(!EngineBuildInfo.refusal("chaos-ctl: " + w + ": whatever").isEmpty(), "refusal of " + w);
