@@ -20475,6 +20475,22 @@ touched. The table of what flies where, checked by `tests/pack41_fx_test.lua`:
 
 Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
 
+## Projectiles with a trail (O526, pair 67) (`data/lib/chaos_pair67_missile_ids.lua`, loaded by `ChaosPack36Fx.live()`)
+Pair 67 (client/MANIFEST.md "Pair 67") redraws six missiles in place as 3 x 3 groups of 8 phases of 50 ms with a particle trail (owner 2026-11-12, style "B"; art by
+`client/tools/sprites/gen_missile_fx.py`, engine by client base patch `0194`). The head sits at the centre of the group, so each is sent at the send offset (1, 1).
+- **Ids and names.** 161 `witchfire_lance` and 144 `proj_venom_glob_necrotic` were sent at (1, 1) already (no server change). 221 `p51_pink_lightning` and 222 `p51_magenta_orb_tendrils` were
+  1 x 1 at (0, 0): the generated file sets their offsets to (1, 1) (it loads after `chaos_pair51_missile_ids.lua` and overrides those two names). 5 and 37 get the names `p67_energy_shot` and `p67_ice_shot`
+  at (1, 1). Test: `client/tools/sprites/gen_missile_fx_test.py` (the file against the generator, ids against the client's baked-trail list and the stock ids in `effects_catalog.csv`).
+- **Ids 5 and 37 are the pair 67 art for every stock energy and ice shot (owner 2026-11-12: "the new style B art for all stock energy and ice shots").** `CONST_ANI_ENERGY` (5) and `CONST_ANI_SMALLICE` (37) are
+  stock ids. The pair 29 engine override (src-patch 0045; `chaos_pack29_vfx.lua` `C.missiles`, switch `ChaosPack29Fx.PAIR29`, on) used to send them as the pack bolts `bolt_lightning` and `bolt_crystal`; since O526
+  `C.missiles` maps them to `p67_energy_shot` and `p67_ice_shot` (id 5 and 37 at (1, 1)), so `C.engineRows` sets `Game.setMissileEffect(5, 5, 1, 1)` and `(37, 37, 1, 1)`. One place covers every send, Lua
+  (`sendDistanceEffect`, the attack kit fallbacks, `ChaosSpell.shoot` with those constants, supports, Mirror Mend) and engine (monsters, wands, runes), and shifts it once. `bolt_lightning` still serves `fx:lightning_orb`;
+  `bolt_crystal` is listed unused (`C.unused`). **No double shift:** the override is by stock id, so `VfxShoot` of a name whose id is overridden would shift twice. `applyEngine` records the overridden stock ids in
+  `ChaosVfxEngineShift` and `VfxShoot` (`chaos_vfx.lua`) sends such an id plain, so the engine adds the offset once; with the switch off (or an engine without the patch) the table is empty and `VfxShoot` shifts
+  itself. `tests/pack29_vfx_test.lua` plays both cases on a recording engine (plain send, `VfxShoot`, off). A client below pair 67 draws the old smaller art of 5 and 37 one tile down and right; ship the pair first.
+- **Nothing sends 221 and 222.** The `p51_` names have no caller. Dreamrot flies as `proj_water_bolt_abyss` (missile 75) and Soulrend Beam as `proj_flame_lance_spirit` (missile 115), both pair 41 / 42 art,
+  not restyled here; the preview labels "Dreamrot" and "Soulrend Beam" of step 1 named the 222 orb and the 221 line after those spells by guess.
+
 ## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
 Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:
 "Eu não coloquei uns outfits bem diferente no drive? Tipo de pizza e coisas assim?". The Drive held no pizza outfit;

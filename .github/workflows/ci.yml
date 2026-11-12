@@ -111,6 +111,9 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
           # the loot beams of pair 36 at full size (O522, pair 65): ring centre, the 3 x 5 group, no scaling, the spec (synthetic strips)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_beam_test.py
+          # the 6 projectiles with a particle trail (O526, pair 67): spec, ids file and digests agree; the test uses synthetic art (the strips are never in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_missile_fx.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_missile_fx_test.py
           # pair 41: pair 36's projectile missiles redrawn from the native 32 px renders and three appended: spec, sources
           # and sums agree, ids 251-253 (the pack art is never in git); the test uses synthetic images
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack41_missiles.py build --check
@@ -677,6 +680,15 @@ jobs:
           "$d/chaosmissile_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissile_test.cpp -o "$d/chaosmissile_asan"
           "$d/chaosmissile_asan"
+      - name: Missile animation phase (C++; header from base patch 0194)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosmissileanim\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0194-missile-animation.patch > "$d/chaosmissileanim.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosmissileanim_test.cpp -o "$d/chaosmissileanim_test"
+          "$d/chaosmissileanim_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissileanim_test.cpp -o "$d/chaosmissileanim_asan"
+          "$d/chaosmissileanim_asan"
 
       - name: Glowing spell effects bookkeeping (C++; header from base patch 0152)
         run: |
@@ -1751,6 +1763,11 @@ jobs:
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_foot_marks.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Projectile strips match the pair (gen_missile_fx.py build --check, pair 67 redraws 6 missiles in place)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_missile_fx.py build --check \
+              --dat "$RUNNER_TEMP/pair/Tibia.dat" --spr "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Wing shadows stay cleaned (clean_wing_shadows.py check-clean, pair 64; Shadow Smoke 2457 untouched)
         run: |

@@ -193,6 +193,11 @@ function VfxShoot(fromPos, toPos, name)
 	if not m or not fromPos or not toPos then
 		return false
 	end
+	if ChaosVfxEngineShift and ChaosVfxEngineShift[m.id] then
+		-- O526: the engine override of this stock id (chaos_pack29_vfx.lua applyEngine) adds the offset itself: send it plain
+		Position(fromPos.x, fromPos.y, fromPos.z):sendDistanceEffect(Position(toPos.x, toPos.y, toPos.z), m.id)
+		return true
+	end
 	Position(fromPos.x + m.dx, fromPos.y + m.dy, fromPos.z):sendDistanceEffect(
 		Position(toPos.x + m.dx, toPos.y + m.dy, toPos.z), m.id)
 	return true

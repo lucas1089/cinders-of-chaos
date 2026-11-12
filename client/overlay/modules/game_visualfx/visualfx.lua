@@ -236,8 +236,16 @@ end
 -- ---------------------------------------------------------------- missile trails and arcs (O230)
 local arcIdsSent = false
 
+local bakedIdsSent = false
+
 local function applyMissileTrails()
   if not (Missile and Missile.setTrails) then return end
+  -- O526 (base patch 0194): missiles with a baked trail get no ghost copies; sent once, whatever the option
+  if not bakedIdsSent and Missile.addBakedTrailId then
+    if Missile.clearBakedTrailIds then pcall(Missile.clearBakedTrailIds) end
+    for _, id in ipairs(L.BAKED_TRAIL_MISSILES) do pcall(Missile.addBakedTrailId, id) end
+    bakedIdsSent = true
+  end
   local on = optionValue('missileTrails')
   if on and not arcIdsSent and Missile.addArcId then
     if Missile.clearArcIds then pcall(Missile.clearArcIds) end

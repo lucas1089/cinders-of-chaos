@@ -1,0 +1,209 @@
+# Chaos: missiles animate in flight, and missiles with a baked trail get no ghost copies (O526; client/BASE.md "0194";
+# src/client/chaosmissileanim.h (new, pure), animator.h/.cpp, missile.h/.cpp, luafunctions_client.cpp; after 0001-0193).
+# Missile::draw passed animation phase 0 to ThingType::draw (the stock call, kept by 0147), so no missile animated: an
+# 8-phase pack missile showed its first frame for the whole flight.
+#  * Phase: chaos::missileanim::phaseAt(elapsed ms since setPath, phases, durationOf) walks the phases by their dat durations
+#    (Animator::getPhaseMeanDuration, new, no random: the pair's missiles have fixed 50 to 83 ms phases) and wraps, so a long
+#    flight loops. A thing without an animator (or a duration of 0) uses kFixedMs = 50 ms per phase. A thing with 1 phase (or
+#    none) is phase 0: it looks as before this patch. This is not behind the missileTrails option (it is a fix, not a look).
+#  * Ghost copies (0147): the 3 faded copies of the same frame behind a spell missile of 2+ tiles are off for a missile whose id
+#    is in the baked-trail list (Missile.clearBakedTrailIds / addBakedTrailId, static, sent by game_visualfx from
+#    VisualFxLogic.BAKED_TRAIL_MISSILES, one call per id like the arc list). Why a list from Lua: the art carries its own
+#    particle trail only for the ids redrawn by client/tools/sprites/gen_missile_fx.py; the dat has no flag for it, the server
+#    never knows it, and a table read from the pair would need the pair at build time. The list is small, tested against the
+#    generator's spec, and an id the dat lacks is never drawn. Other animated missiles keep their ghosts, each ghost showing
+#    the phase the missile had when it stood there (own clock minus k * 0.05 * duration).
+#  * The arc of 0147 and the option missileTrails are unchanged; with the option off the draw is the stock one but for the phase.
+# Cost: per draw one pass over the phases of the thing (at most 8 for ours). No allocation.
+# Checked: applies after 0001-0193 on the base client tree (no fuzz); animator.cpp, missile.cpp and luafunctions_client.cpp pass
+# g++ -std=c++20 -fsyntax-only; the header passes client/tools/chaosmissileanim_test.cpp. Not built, linked or run in a client.
+--- a/src/client/animator.h
++++ b/src/client/animator.h
+@@ -58,6 +58,8 @@
+ 
+     int getStartPhase();
+     int getAnimationPhases() { return m_animationPhases; }
++    // Chaos (base patch 0194): the mean duration of a phase in ms (min + half the spread), 0 for a phase out of range; no random
++    int getPhaseMeanDuration(int phase);
+     bool isAsync() { return m_async; }
+     bool isComplete() { return m_isComplete; }
+ 
+--- a/src/client/animator.cpp
++++ b/src/client/animator.cpp
+@@ -251,6 +251,15 @@
+     m_lastPhaseTicks = ticks;
+ }
+ 
++// Chaos (base patch 0194)
++int Animator::getPhaseMeanDuration(int phase)
++{
++    if(phase < 0 || phase >= (int)m_phaseDurations->size())
++        return 0;
++    const auto& data = m_phaseDurations->at(phase);
++    return data.first + data.second / 2;
++}
++
+ ticks_t Animator::getTotalDuration(uint32_t randomSeed)
+ {
+     ticks_t time = 0;
+--- a/src/client/missile.h
++++ b/src/client/missile.h
+@@ -60,6 +60,9 @@
+     static bool isTrails() { return s_trails; }
+     static void clearArcIds();
+     static void addArcId(int id);
++    // Chaos (base patch 0194): missiles whose art carries its own trail get no ghost copies (see chaosmissileanim.h)
++    static void clearBakedTrailIds();
++    static void addBakedTrailId(int id);
+ 
+ private:
+     static bool s_trails;
+--- a/src/client/missile.cpp
++++ b/src/client/missile.cpp
+@@ -28,6 +28,7 @@
+ #include "client.h"
+ #include "game.h"
+ #include "chaosmissile.h"
++#include "chaosmissileanim.h"
+ #include <framework/core/clock.h>
+ #include <framework/core/eventdispatcher.h>
+ #include <framework/graphics/drawqueue.h>
+@@ -35,6 +36,7 @@
+ // Chaos (base patch 0147): see chaosmissile.h
+ bool Missile::s_trails = false;
+ static chaos::missile::IdSet s_arcIds;
++static chaos::missile::IdSet s_bakedTrailIds; // base patch 0194
+ 
+ void Missile::clearArcIds()
+ {
+@@ -46,6 +48,29 @@
+     s_arcIds.add(id);
+ }
+ 
++void Missile::clearBakedTrailIds()
++{
++    s_bakedTrailIds.clear();
++}
++
++void Missile::addBakedTrailId(int id)
++{
++    s_bakedTrailIds.add(id);
++}
++
++// Chaos (base patch 0194): the animation phase of a missile `elapsedMs` ms after setPath (its own clock): the
++// thing's phases cycle by the dat's frame durations (kFixedMs each when it has none), 1 phase is phase 0 as before.
++static int missilePhase(ThingType* type, long elapsedMs)
++{
++    const int n = type->getAnimationPhases();
++    if(n <= 1)
++        return 0;
++    const AnimatorPtr animator = type->getAnimator();
++    if(animator && animator->getAnimationPhases() == n)
++        return chaos::missileanim::phaseAt(elapsedMs, n, [&animator](int i) { return animator->getPhaseMeanDuration(i); });
++    return chaos::missileanim::phaseFixed(elapsedMs, n);
++}
++
+ void Missile::draw(const Point& dest, bool animate, LightView* lightView)
+ {
+     if(m_id == 0 || !animate)
+@@ -87,8 +112,11 @@
+         source = Otc::ME_SOURCE_OWN;
+     float alpha = g_client.getEffectAlpha(source);
+     Color color(255, 255, 255, (int)(alpha * 255));
++    // Chaos (base patch 0194): the phase cycles with the flight; before this the draw always passed phase 0
++    ThingType* animType = rawGetThingType();
++    const long elapsed = (long)m_animationTimer.ticksElapsed();
+     if (!s_trails || !chaos::missile::wantsEffect(m_tiles)) {
+-        rawGetThingType()->draw(dest + m_delta * fraction, 0, xPattern, yPattern, 0, 0, color, lightView);
++        animType->draw(dest + m_delta * fraction, 0, xPattern, yPattern, 0, missilePhase(animType, elapsed), color, lightView);
+         return;
+     }
+ 
+@@ -98,13 +126,17 @@
+     ThingType* type = rawGetThingType();
+     const float f = chaos::missile::clampFraction(fraction);
+     const float h = chaos::missile::arcHeight(m_tiles, s_arcIds.contains(m_id)) * (g_sprites.spriteSize() / 32.0f);
+-    for (int k = chaos::missile::trailCount(f); k >= 1; --k) {
++    // Chaos (base patch 0194): a missile whose art carries its own trail (the baked list) gets no ghost copies; a ghost shows
++    // the phase the missile had when it stood there (its own clock minus the way back along the path)
++    const int ghosts = s_bakedTrailIds.contains(m_id) ? 0 : chaos::missile::trailCount(f);
++    for (int k = ghosts; k >= 1; --k) {
+         const float tf = chaos::missile::trailFraction(f, k);
+         const size_t start = g_drawQueue->size();
+-        type->draw(dest + m_delta * tf - Point(0, (int)std::lround(chaos::missile::arcLift(tf, h))), 0, xPattern, yPattern, 0, 0, color, nullptr);
++        const long ghostElapsed = elapsed - (long)std::lround(k * chaos::missile::kTrailStep * m_duration);
++        type->draw(dest + m_delta * tf - Point(0, (int)std::lround(chaos::missile::arcLift(tf, h))), 0, xPattern, yPattern, 0, missilePhase(type, ghostElapsed), color, nullptr);
+         g_drawQueue->setOpacity(start, chaos::missile::trailOpacity(k));
+     }
+-    type->draw(dest + m_delta * f - Point(0, (int)std::lround(chaos::missile::arcLift(f, h))), 0, xPattern, yPattern, 0, 0, color, lightView);
++    type->draw(dest + m_delta * f - Point(0, (int)std::lround(chaos::missile::arcLift(f, h))), 0, xPattern, yPattern, 0, missilePhase(type, elapsed), color, lightView);
+ }
+ 
+ void Missile::setPath(const Position& fromPosition, const Position& toPosition)
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -940,6 +940,8 @@
+     g_lua.bindClassStaticFunction<Missile>("isTrails", &Missile::isTrails);
+     g_lua.bindClassStaticFunction<Missile>("clearArcIds", &Missile::clearArcIds);
+     g_lua.bindClassStaticFunction<Missile>("addArcId", &Missile::addArcId);
++    g_lua.bindClassStaticFunction<Missile>("clearBakedTrailIds", &Missile::clearBakedTrailIds); // base patch 0194
++    g_lua.bindClassStaticFunction<Missile>("addBakedTrailId", &Missile::addBakedTrailId);
+ 
+     g_lua.registerClass<StaticText, Thing>();
+     g_lua.bindClassStaticFunction<StaticText>("create", []{ return std::make_shared<StaticText>(); });
+--- a/src/client/chaosmissileanim.h
++++ b/src/client/chaosmissileanim.h
+@@ -0,0 +1,53 @@
++// Cinders of Chaos (base patch 0194): which animation phase a flying missile shows, pure and header-only so
++// client/tools/chaosmissileanim_test.cpp can run it without the engine. A missile starts at time 0 when its path is set and
++// flies for 150 * sqrt(tiles) ms. Its thing type has N phases, each with a duration from the dat's animator (the pair's
++// missiles have 8 phases of 50 to 83 ms); a thing without durations (or a duration of 0) uses kFixedMs. The phase cycles
++// while the missile flies, so a missile with a long flight loops. A thing with 1 phase (or none) is phase 0, as the draw was
++// before this patch (it always passed phase 0).
++#ifndef CHAOSMISSILEANIM_H
++#define CHAOSMISSILEANIM_H
++
++#include <cstddef>
++
++namespace chaos {
++namespace missileanim {
++
++constexpr int kFixedMs = 50;      // ms per phase when the thing has no frame durations
++constexpr int kMaxPhases = 255;   // the dat stores the phase count in one byte
++
++// durationOf(i) -> the ms of phase i (<= 0: not given, kFixedMs). elapsedMs may be negative (a clock step back): phase 0.
++template <class F>
++inline int phaseAt(long elapsedMs, int phases, F durationOf)
++{
++    if (phases <= 1)
++        return 0;
++    if (phases > kMaxPhases)
++        phases = kMaxPhases;
++    long total = 0;
++    for (int i = 0; i < phases; ++i) {
++        const long d = durationOf(i);
++        total += d > 0 ? d : kFixedMs;
++    }
++    if (elapsedMs <= 0 || total <= 0)
++        return 0;
++    long t = elapsedMs % total;
++    for (int i = 0; i < phases; ++i) {
++        const long d0 = durationOf(i);
++        const long d = d0 > 0 ? d0 : kFixedMs;
++        if (t < d)
++            return i;
++        t -= d;
++    }
++    return phases - 1;
++}
++
++// the phase of a thing without any durations
++inline int phaseFixed(long elapsedMs, int phases)
++{
++    return phaseAt(elapsedMs, phases, [](int) { return 0; });
++}
++
++}  // namespace missileanim
++}  // namespace chaos
++
++#endif
