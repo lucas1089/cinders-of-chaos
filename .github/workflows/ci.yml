@@ -97,6 +97,7 @@ jobs:
           /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
           /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
+          /tmp/fxenv/bin/python -I client/tools/gen_pyre_art.py --check   # Pyre Oath ember ring and burn strips of game_chestaura (O518)
           /tmp/fxenv/bin/python -I client/tools/gen_toast_art.py --check  # toast icons of game_chaosnotify, Pact hourglass included (O317)
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art.py --check  # prints, glows and foot marks of game_cosmeticfx (O499)
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art_test.py

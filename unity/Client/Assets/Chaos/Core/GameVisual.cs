@@ -67,7 +67,7 @@ namespace Chaos.Core
             var ext = session.Ext;
             Wings = new LevelWingsState(ext) { Clock = () => s.Now, SelfId = () => W.PlayerId };
             Wings.Played = id => Cue("levelup", 0);
-            Aura = new ChestAuraState(ext);
+            Aura = new ChestAuraState(ext) { Clock = () => s.Now };
             Cosmetic = new CosmeticFxState(ext);
             Names = new NameShaderState(ext);
             W.Fx.Tap = OnFx;

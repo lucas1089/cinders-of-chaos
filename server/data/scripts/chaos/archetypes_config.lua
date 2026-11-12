@@ -89,7 +89,10 @@ ChaosArchetypesConfig = {
 	-- absorbs apply; never lethal) and regenerate regen x your maximum health. Price: every other damage you deal
 	-- x ownDamage. Unique Pyreheart Mantle: the aura x (1 + uniqueAura).
 	arPyreOath = {radius = 2, auraShare = 0.04, selfBurn = 0.025, regen = 0.02, ownDamage = 0.75, thinkMs = 1000,
-		uniqueAura = 0.20},
+		uniqueAura = 0.20,
+		-- what the client is told to draw (O518; visual only, no number above changes): the ember ring under every holder in
+		-- a viewer's range (viewX x viewY tiles, at most maxRings) and the burn on the monsters one tick struck (at most maxBurn)
+		look = {viewX = 10, viewY = 8, maxRings = 32, maxBurn = 40}},
 
 	-- Sanguine Covenant (every class): every hit you deal (weapon, spell, the aura, minions not) leeches share of the
 	-- damage as health, at most capPerSecond x your maximum health in any second. Price: healing you receive (spells,

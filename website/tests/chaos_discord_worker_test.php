@@ -153,6 +153,91 @@ check(count($p['embeds'][0]['fields']) === 1 && $p['embeds'][0]['fields'][0]['in
 check($p['embeds'][0]['timestamp'] === gmdate('Y-m-d\TH:i:s\Z', 1791000000), 'timestamp of the event');
 check(!isset($w->payload(array('kind' => 'x', 'title' => 't', 'body' => 'b', 'fields' => '{}', 'created_at' => 1))['embeds'][0]['fields']), 'no fields: none sent');
 
+// ------------------------------------------------------------------ O519: the drop post's item data and thumbnail
+$sprites = sys_get_temp_dir() . '/chaos_discord_sprites_' . getmypid();
+@mkdir($sprites . '/items', 0777, true);
+file_put_contents($sprites . '/items/4417.png', 'png');
+file_put_contents($sprites . '/items/4419.png', 'png');
+file_put_contents($sprites . '/placeholder-item.png', 'png');
+file_put_contents($sprites . '/index.json', json_encode(array('version' => 2, 'stamp' => 'x', 'outfits' => new stdClass(),
+	'items' => array('4417' => '', '4418' => '', '4419' => ''))));
+register_shutdown_function(static function () use ($sprites): void {
+	array_map('unlink', glob($sprites . '/items/*') ?: array());
+	array_map('unlink', glob($sprites . '/*.*') ?: array());
+	@rmdir($sprites . '/items');
+	@rmdir($sprites);
+});
+chaos_sprite_root($sprites);
+$dropFields = static function (string $thumb): string {
+	return json_encode(array(
+		array('name' => 'Base', 'value' => 'Titan Axe (two-handed axe)', 'inline' => true),
+		array('name' => 'Requires', 'value' => 'Level 189', 'inline' => true),
+		array('name' => 'Modifiers', 'value' => "Fire +9% dmg (T3)\nLife on Kill +12 (T4)", 'inline' => false),
+		array('thumbnail' => $thumb)));
+};
+$drop = static function (string $fields) use ($w): array {
+	return $w->payload(array('kind' => 'drop', 'title' => 'Legendary find', 'body' => 'Massador (Lv 189) found Unraveling Titan Axe of Carnage!',
+		'fields' => $fields, 'created_at' => 1791000000))['embeds'][0];
+};
+$e = $drop($dropFields('/chaos-sprites/items/4417.png'));
+check(($e['thumbnail']['url'] ?? '') === 'https://www.example.org/chaos-sprites/items/4417.png', 'drop: the item image becomes the thumbnail');
+check(count($e['fields']) === 3 && $e['fields'][2]['name'] === 'Modifiers' && $e['fields'][0]['inline'] === true, 'drop: the thumbnail entry is no field');
+check($e['color'] === 0xF6CF72, 'drop: the drop colour');
+check(($drop($dropFields('https://www.example.org/chaos-sprites/items/4417.png'))['thumbnail']['url'] ?? '') === 'https://www.example.org/chaos-sprites/items/4417.png',
+	'drop: the same on our own https address');
+foreach (array(
+	'a foreign host' => 'https://evil.example/chaos-sprites/items/4417.png',
+	'a look-alike host' => 'https://www.example.org.evil.example/chaos-sprites/items/4417.png',
+	'a host with credentials' => 'https://www.example.org@evil.example/chaos-sprites/items/4417.png',
+	'http' => 'http://www.example.org/chaos-sprites/items/4417.png',
+	'another port' => 'https://www.example.org:8443/chaos-sprites/items/4417.png',
+	'a query' => '/chaos-sprites/items/4417.png?x=1',
+	'another folder' => '/uploads/4417.png',
+	'a path out of the folder' => '/chaos-sprites/items/../../config.local.php',
+	'a stack variant' => '/chaos-sprites/items/4417-c5.png',
+	'a script' => 'javascript:alert(1)',
+	'an item of the index without a file' => '/chaos-sprites/items/4418.png',
+	'an item that is only a placeholder' => '/chaos-sprites/items/9999.png',
+	'a protocol-relative url' => '//evil.example/chaos-sprites/items/4417.png',
+	'empty' => '') as $what => $url) {
+	check(!isset($drop($dropFields($url))['thumbnail']), "drop: no thumbnail for $what");
+}
+check(count($drop($dropFields('https://evil.example/x.png'))['fields']) === 3, 'drop: a refused thumbnail still posts the fields');
+check(!isset($drop(json_encode(array(array('name' => 'Base', 'value' => 'Axe'))))['thumbnail']), 'drop: no thumbnail entry, none');
+check(!isset($drop(json_encode(array(array('thumbnail' => array('x')))))['thumbnail']), 'drop: a thumbnail that is no string is ignored');
+$wHttp = new ChaosDiscordWorker($db, array(), array(), 'Cinders of Chaos', 'http://www.example.org');
+check(!isset($wHttp->payload(array('kind' => 'drop', 'title' => 't', 'body' => 'b', 'created_at' => 1,
+	'fields' => $dropFields('/chaos-sprites/items/4417.png')))['embeds'][0]['thumbnail']), 'drop: a site address that is not https gives no thumbnail');
+$wNone = new ChaosDiscordWorker($db, array(), array(), 'Cinders of Chaos', '');
+check(!isset($wNone->payload(array('kind' => 'drop', 'title' => 't', 'body' => 'b', 'created_at' => 1,
+	'fields' => $dropFields('/chaos-sprites/items/4417.png')))['embeds'][0]['thumbnail']), 'drop: no site address, no thumbnail');
+chaos_sprite_root($sprites . '/none');
+check(!isset($drop($dropFields('/chaos-sprites/items/4417.png'))['thumbnail']), 'drop: a site without sprite images gives no thumbnail');
+chaos_sprite_root($sprites);
+// a site address with a folder
+$wSub = new ChaosDiscordWorker($db, array(), array(), 'Cinders of Chaos', 'https://www.example.org/game/');
+check(($wSub->payload(array('kind' => 'drop', 'title' => 't', 'body' => 'b', 'created_at' => 1,
+	'fields' => $dropFields('/chaos-sprites/items/4419.png')))['embeds'][0]['thumbnail']['url'] ?? '') === 'https://www.example.org/game/chaos-sprites/items/4419.png',
+	'drop: the site address may hold a folder');
+// the limits: 25 fields, a name 256, a value 1024, all text 6000
+$many = array();
+for ($k = 1; $k <= 40; $k++) {
+	$many[] = array('name' => 'F' . $k, 'value' => 'v', 'inline' => true);
+}
+check(count($drop(json_encode($many))['fields']) === 25, 'embed: 25 fields at most');
+$long = $drop(json_encode(array(array('name' => str_repeat('n', 400), 'value' => str_repeat('é', 3000)))));
+check(mb_strlen($long['fields'][0]['name']) === 256 && mb_strlen($long['fields'][0]['value']) === 1024, 'embed: name 256, value 1024 characters');
+$big = array();
+for ($k = 1; $k <= 10; $k++) {
+	$big[] = array('name' => 'Field ' . $k, 'value' => str_repeat('x', 1000));
+}
+$e = $drop(json_encode($big));
+$sum = mb_strlen($e['title']) + mb_strlen($e['description']) + mb_strlen($e['footer']['text']);
+foreach ($e['fields'] as $fl) {
+	$sum += mb_strlen($fl['name']) + mb_strlen($fl['value']);
+}
+check($sum <= 6000 && count($e['fields']) >= 5, 'embed: all text within 6000 characters (' . $sum . ')');
+
 // ------------------------------------------------------------------ a run against the mock endpoint
 $a = $q('record', 'records', 'New record', 'Ashmaw in 4:12 by Arwen.');
 $b = $q('first', 'records', 'Realm first', 'First: Ashmaw.');

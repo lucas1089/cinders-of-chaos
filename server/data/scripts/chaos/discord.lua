@@ -16,7 +16,8 @@
 --                                             in server_config, so a restart does not announce again)
 --   startup / shutdown                        server up; the daily restart (a shutdown just after the server save
 --                                             time of globalevents.xml) or down
---   ChaosDiscord.drop(name, level, item, kind)   a drop of the server drop feed (retention_loot.lua, O260)
+--   ChaosDiscord.drop(name, level, item, kind, details)   a drop of the server drop feed (retention_loot.lua, O260);
+--                                             ChaosDiscord.dropDetails(item, monster, pos) the item's data for it (O519)
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -72,8 +73,75 @@ function X.queue(ev, sync)
 end
 
 -- the drop feed (retention_loot.lua) calls this: English text, the game side rate limit of cfg.perMinute.drop
-function X.drop(name, level, item, kind)
-	return X.queue(D.drop(cfg, name, level, item, kind))
+function X.drop(name, level, item, kind, details)
+	return X.queue(D.drop(cfg, name, level, item, kind, details))
+end
+
+-- O519: the item's data for a drop post: the tooltip the game builds for the item (ChaosItemTooltip.build, the one
+-- chat links and the ground labels use, with the display scale of the level requirement and the unique's passive
+-- block as item_tooltip.lua makes them), read by D.dropDetails; plus where it dropped: the monster's name and the hunt
+-- or instance at pos (the telemetry's rule, ChaosTelemetryCore.huntAreaOf). Every part is guarded: a part that fails
+-- is left out. The caller wraps the call in pcall too (retention_loot.lua), so a fault never costs the post.
+function X.dropDetails(item, monster, pos)
+	local tip
+	local T = ChaosItemTooltip
+	if T and T.build and item then
+		local attrs
+		if item.getClientAttributes then
+			local ok, a = pcall(item.getClientAttributes, item)
+			attrs = ok and a or nil
+		end
+		local ok, built = pcall(T.build, item, {equippedIds = {}, attrs = attrs})
+		if ok and type(built) == "table" then
+			tip = built
+			-- the passive's current English line, split from the description as the tooltip does
+			local UC, UF = ChaosUniquePassivesCore, ChaosUniquePassivesConfig
+			if type(tip.desc) == "string" and UC and UF and T.splitPassive then
+				pcall(function()
+					local e = UC.entry(UF, item:getId())
+					if e then
+						local en = UC.text(UF, e, "en")
+						local desc = T.refreshPassive and T.refreshPassive(tip.desc, en, e.name) or tip.desc
+						tip.passive = T.splitPassive(desc, {en}, e.name)
+					end
+				end)
+			end
+			if ChaosDisplayScale and ChaosDisplayScale.itemTip then
+				local okS, scaled = pcall(ChaosDisplayScale.itemTip, tip)
+				if okS and type(scaled) == "table" then
+					tip = scaled
+				end
+			end
+		end
+	end
+	local extra = {}
+	if item then
+		pcall(function()
+			local it = ItemType(item:getId())
+			extra.baseName = it and it:getName() or nil
+			if cfg.dropIconPath and cfg.dropIconPath ~= "" then
+				extra.iconUrl = string.format(cfg.dropIconPath, item:getId())
+			end
+		end)
+	end
+	if monster then
+		local okM, mname = pcall(function()
+			return Chaos.monsterTypeName and Chaos.monsterTypeName(monster) or monster:getName()
+		end)
+		extra.monster = okM and mname or nil
+	end
+	if pos and ChaosTelemetry and ChaosTelemetry.marks and ChaosTelemetryCore and ChaosTelemetryCore.huntAreaOf then
+		pcall(function()
+			local p = {x = pos.x, y = pos.y, z = pos.z}
+			local label
+			if Chaos.instanceAt then
+				local _, l = Chaos.instanceAt(pos)
+				label = l
+			end
+			extra.place = ChaosTelemetryCore.huntAreaOf(p, label, ChaosTelemetry.marks(), ChaosTelemetryConfig)
+		end)
+	end
+	return D.dropDetails(tip, extra)
 end
 
 local function try(name, fn, ...)

@@ -1,6 +1,6 @@
 Module
   name: game_chestaura
-  description: Auras on the floor under reward chests, cursed chests, the Sealed Coffer and (O456) the Ember portal, the globes and loot bags, a slow sigil under the feet of the Templar line and, in a party, a faint frame showing how far a Templar's aura reaches (O315); the server tells the client which Templars have an aura (extended opcode 118); switch in Options > Graphics
+  description: Auras on the floor under reward chests, cursed chests, the Sealed Coffer and (O456) the Ember portal, the globes and loot bags, a slow sigil under the feet of the Templar line and, in a party, a faint frame showing how far a Templar's aura reaches (O315); the server tells the client which Templars have an aura (extended opcode 118); (O518) an ember ring under every player holding the keystone Pyre Oath and a burn on the monsters its aura strikes; switch in Options > Graphics
   author: Cinders of Chaos
   sandboxed: true
   scripts: [ chestaura_logic, chestaura ]
