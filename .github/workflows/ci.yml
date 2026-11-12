@@ -1509,7 +1509,7 @@ jobs:
           shellcheck tools/ci/launch_rehearsal.sh
           python3 -I tools/ci/launch_rehearsal_test.py
 
-      - name: GitHub door of the VPS scripts (O530, private repository; chaos_github.sh with a fake curl and a recording git: token file order, the credential helper through git credential fill, no token on a command line, the refusal words, the asset download)
+      - name: GitHub door of the VPS scripts (O530, private repository; chaos_github.sh with a fake curl and a recording git; token file order, the credential helper through git credential fill, no token on a command line, the refusal words, the asset download)
         run: |
           bash -n server/deploy/chaos_github.sh server/deploy/chaos_update.sh
           shellcheck server/deploy/chaos_github.sh
