@@ -4230,10 +4230,10 @@ missile animated in game. Step 2 is two parts: base patch `0194` (the engine ani
   `PAIR_ASSETS` 67 with the new dat md5 (`PAIR_ORBS` stays 63, no server id changed).
 - **Looked at** (never committed): `SP/o526/final.mp4`: the six in 4 directions (east, north-east, west, south-west) from pair 67 with the engine rule (phases by the dat durations, no ghost copies), then their hits,
   3x, 0.5x slow motion; contact sheets of all 8 directions and 8 phases from `preview`.
-- **Server.** The ids file is loaded by `ChaosPack36Fx.live()` after the pair 51 names. **Ids 5 and 37 are overridden by the engine** (src-patch 0045, `chaos_pack29_vfx.lua` `C.missiles`): with the pair 29 switch on
-  (it is), every stock `CONST_ANI_ENERGY` and `CONST_ANI_SMALLICE` send, from Lua or the engine, goes out as the pack bolts `bolt_lightning` and `bolt_crystal`. So the new art of 5 and 37 shows only where the override
-  does not apply. Nothing sends 221 and 222 today (the `p51_` names have no caller; Dreamrot flies as `proj_water_bolt_abyss`, missile 75, and Soulrend Beam as `proj_flame_lance_spirit`, missile 115). See
-  server/README.md "Projectiles with a trail (O526)" for what to switch.
+- **Server.** The ids file is loaded by `ChaosPack36Fx.live()` after the pair 51 names (and by `ChaosPack29Vfx.applyEngine`). **Ids 5 and 37 are the stock `CONST_ANI_ENERGY` and `CONST_ANI_SMALLICE`; the owner chose this art for
+  every stock energy and ice shot** (2026-11-12): `chaos_pack29_vfx.lua` `C.missiles` maps them to `p67_energy_shot` / `p67_ice_shot`, the engine override (src-patch 0045) sends them at (1, 1) once (`VfxShoot` sends an
+  overridden id plain; `tests/pack29_vfx_test.lua`), and the pack bolt `bolt_crystal` is unused. Nothing sends 221 and 222 today (the `p51_` names have no caller; Dreamrot flies as `proj_water_bolt_abyss`, missile 75,
+  and Soulrend Beam as `proj_flame_lance_spirit`, missile 115). See server/README.md "Projectiles with a trail (O526)".
 - **Archive parts:** not built here. The recipe is pair 64's; the push to windows-assets is the owner's step. Until it is pushed, `PAIR_ASSETS` 67 and the new dat md5 stop the Windows package job.
 - **Switch on:** nothing on the server (no new id, no `chaosClientPair` change: redrawn in place). A client on an older pair draws the old, smaller art for these ids and the engine without `0194` still draws phase 0.
 - Checked offline only. Not seen in a client.

@@ -20441,12 +20441,13 @@ Pair 67 (client/MANIFEST.md "Pair 67") redraws six missiles in place as 3 x 3 gr
 - **Ids and names.** 161 `witchfire_lance` and 144 `proj_venom_glob_necrotic` were sent at (1, 1) already (no server change). 221 `p51_pink_lightning` and 222 `p51_magenta_orb_tendrils` were
   1 x 1 at (0, 0): the generated file sets their offsets to (1, 1) (it loads after `chaos_pair51_missile_ids.lua` and overrides those two names). 5 and 37 get the names `p67_energy_shot` and `p67_ice_shot`
   at (1, 1). Test: `client/tools/sprites/gen_missile_fx_test.py` (the file against the generator, ids against the client's baked-trail list and the stock ids in `effects_catalog.csv`).
-- **Finding: nothing shows ids 5 and 37 today.** `CONST_ANI_ENERGY` (5) and `CONST_ANI_SMALLICE` (37) are stock ids. The pair 29 engine override (src-patch 0045; `chaos_pack29_vfx.lua`
-  `C.missiles`, switch `ChaosPack29Fx.PAIR29`, on) sends every one of them, from Lua (`sendDistanceEffect`, the attack kit fallbacks, `ChaosSpell.shoot` with those constants, supports, Mirror Mend) and
-  from the engine (monsters, wands, runes), as the pack bolts `bolt_lightning` and `bolt_crystal`. The override is by stock id, so a `VfxShoot` of id 5 or 37 is overridden too and would be shifted twice. So the Lua
-  sends were not rerouted: with the override on they would show the pack bolts at the wrong tile. Left for the owner (a look decision, it would replace the purchased bolts for every energy and ice shot):
-  to show the new art, change `C.missiles` `CONST_ANI_ENERGY = "p67_energy_shot"` and `CONST_ANI_SMALLICE = "p67_ice_shot"` (`C.engineRows` then sets `Game.setMissileEffect(5, 5, 1, 1)` and
-  `(37, 37, 1, 1)`: one place covers every Lua and engine send, with the offset). With the pair 29 switch off the plain sends of 5 and 37 draw the new 3 x 3 art one tile down and right.
+- **Ids 5 and 37 are the pair 67 art for every stock energy and ice shot (owner 2026-11-12: "the new style B art for all stock energy and ice shots").** `CONST_ANI_ENERGY` (5) and `CONST_ANI_SMALLICE` (37) are
+  stock ids. The pair 29 engine override (src-patch 0045; `chaos_pack29_vfx.lua` `C.missiles`, switch `ChaosPack29Fx.PAIR29`, on) used to send them as the pack bolts `bolt_lightning` and `bolt_crystal`; since O526
+  `C.missiles` maps them to `p67_energy_shot` and `p67_ice_shot` (id 5 and 37 at (1, 1)), so `C.engineRows` sets `Game.setMissileEffect(5, 5, 1, 1)` and `(37, 37, 1, 1)`. One place covers every send, Lua
+  (`sendDistanceEffect`, the attack kit fallbacks, `ChaosSpell.shoot` with those constants, supports, Mirror Mend) and engine (monsters, wands, runes), and shifts it once. `bolt_lightning` still serves `fx:lightning_orb`;
+  `bolt_crystal` is listed unused (`C.unused`). **No double shift:** the override is by stock id, so `VfxShoot` of a name whose id is overridden would shift twice. `applyEngine` records the overridden stock ids in
+  `ChaosVfxEngineShift` and `VfxShoot` (`chaos_vfx.lua`) sends such an id plain, so the engine adds the offset once; with the switch off (or an engine without the patch) the table is empty and `VfxShoot` shifts
+  itself. `tests/pack29_vfx_test.lua` plays both cases on a recording engine (plain send, `VfxShoot`, off). A client below pair 67 draws the old smaller art of 5 and 37 one tile down and right; ship the pair first.
 - **Nothing sends 221 and 222.** The `p51_` names have no caller. Dreamrot flies as `proj_water_bolt_abyss` (missile 75) and Soulrend Beam as `proj_flame_lance_spirit` (missile 115), both pair 41 / 42 art,
   not restyled here; the preview labels "Dreamrot" and "Soulrend Beam" of step 1 named the 222 orb and the 221 line after those spells by guess.
 

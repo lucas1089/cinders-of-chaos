@@ -53,11 +53,14 @@ C.elementHits = {
 }
 
 -- engine missiles: a stock (CONST_ANI_*) or procedural (ChaosFxMissile, gen_effects.py) missile -> the pack's bolt.
--- Weapon arrows, bolts, spears and stones keep theirs.
+-- Weapon arrows, bolts, spears and stones keep theirs. O526 (owner 2026-11-12): the energy shot (5) and the small ice shot (37)
+-- are the pair 67 art with a particle trail, the stock ids redrawn in place at send offset (1, 1): the engine override maps 5 to
+-- 5 and 37 to 37 with that offset, so every send (Lua or engine) is shifted once. VfxShoot knows (ChaosVfxEngineShift) and
+-- sends such an id plain, so the offset is never added twice.
 C.missiles = {
-	CONST_ANI_FIRE = "bolt_fire", CONST_ANI_ENERGY = "bolt_lightning", CONST_ANI_ENERGYBALL = "bolt_plasma",
+	CONST_ANI_FIRE = "bolt_fire", CONST_ANI_ENERGY = "p67_energy_shot", CONST_ANI_ENERGYBALL = "bolt_plasma",
 	CONST_ANI_DEATH = "bolt_dark", CONST_ANI_SUDDENDEATH = "bolt_soul", CONST_ANI_ICE = "bolt_ice",
-	CONST_ANI_SMALLICE = "bolt_crystal", CONST_ANI_EARTH = "bolt_thorn", CONST_ANI_SMALLEARTH = "bolt_thorn",
+	CONST_ANI_SMALLICE = "p67_ice_shot", CONST_ANI_EARTH = "bolt_thorn", CONST_ANI_SMALLEARTH = "bolt_thorn",
 	CONST_ANI_POISON = "bolt_poison", CONST_ANI_HOLY = "bolt_holy", CONST_ANI_SMALLHOLY = "bolt_holy",
 	CONST_ANI_EXPLOSION = "bolt_meteor",
 	["fx:fire_bolt"] = "bolt_fire", ["fx:fire_streak"] = "bolt_meteor", ["fx:ice_shard"] = "bolt_ice",
@@ -96,7 +99,7 @@ C.words = {
 C.wordHoldMs = 3000
 
 -- imported, sent by nothing yet (no game mechanic, or no fitting element): kept for later
-C.unused = {"cond_silenced", "cond_petrified", "blast_fire5", "bolt_ultimate", "bolt_water", "bolt_wind"}
+C.unused = {"cond_silenced", "cond_petrified", "blast_fire5", "bolt_crystal", "bolt_ultimate", "bolt_water", "bolt_wind"} -- bolt_crystal: the small ice shot is the pair 67 art since O526
 
 C.maxHeld = 300        -- at most this many creature + state pairs held at once (the rest show once)
 C.scanMs = 1000        -- the online players' scan (scripts/chaos/pack29_vfx.lua)
@@ -313,18 +316,24 @@ function C.applyEngine()
 	if Game.clearEffectOverrides then
 		Game.clearEffectOverrides()
 	end
+	ChaosVfxEngineShift = {}
 	if not C.live() then
 		return 0
 	end
 	if not ChaosFxMissile and dofile then
 		pcall(dofile, "data/lib/chaos_fx.lua")
 	end
+	if ChaosVfxMissile and not ChaosVfxMissile.p67_energy_shot and dofile then
+		pcall(dofile, "data/lib/chaos_pair67_missile_ids.lua") -- O526: the new art of the stock energy and ice shots
+	end
 	local hits, shots = C.engineRows(_G, ChaosVfx, ChaosVfxMissile or {}, ChaosFxMissile or {})
+	ChaosVfxEngineShift = {}
 	for _, h in ipairs(hits) do
 		Game.setHitEffect(h[1], h[2], h[3], h[4], h[5])
 	end
 	for _, s in ipairs(shots) do
 		Game.setMissileEffect(s[1], s[2], s[3], s[4])
+		ChaosVfxEngineShift[s[1]] = true -- a send of this stock id is shifted by the engine (VfxShoot must not shift it too)
 	end
 	return #hits + #shots
 end
