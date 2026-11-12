@@ -20,7 +20,7 @@ When a variant's layer sheets are missing, its flattened `full` sheet is used in
 Conversion (like gen_pack_fx.py):
   * layers merged: `back` at 60 % opacity under `front` (import_vfx.py BACK_ALPHA), `ground` under `air`;
     staged effects (start / loop / end) are their stages in order;
-  * frames a..b of that, every `step`-th; alpha made clean (0 / 255; soft pixels become an ordered 4x4 dither);
+  * frames a..b of that, every `step`-th; alpha made clean (0 / 255: a hard cut at CUT, O523; before pair 66 soft pixels became an ordered 4x4 dither);
     effects: empty frames at the end are dropped and one empty last frame is added (they play once);
   * placed like import_vfx.py: a unit-centred effect's pivot (the set's feet point, a quarter tile right/down of the
     tile centre) goes on our feet point (14, 20); a tile-centred one's pivot (the tile centre) on (16, 16);
@@ -202,12 +202,15 @@ def dissolve(fr, keep):
 BAYER = (np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) + 0.5) / 16.0
 
 
+CUT = 0.5               # O523: a pixel is kept (alpha 255) when its alpha is at least this, else gone
+
+
 def clean_alpha(fr):
-    """RGBA -> RGBA with alpha 0 / 255: opaque stays, soft pixels kept where alpha beats a 4x4 Bayer threshold"""
+    """RGBA -> RGBA with alpha 0 / 255: a hard cut at CUT. Up to pair 65 the soft glows (alpha 1..254) became a 4x4 Bayer
+    dither, a mesh around the art (O523, client/MANIFEST.md "Pair 66"); a hard cut keeps the pack's crisp edges, the colours
+    are never changed. BAYER stays for `dissolve`, the deliberate fade of the last frames of a loop."""
     a = fr[:, :, 3].astype(np.float64) / 255.0
-    h, w = a.shape
-    thr = np.tile(BAYER, (h // 4 + 1, w // 4 + 1))[:h, :w]
-    keep = (a >= 1.0) | ((a > 0) & (a > thr))
+    keep = a >= CUT - 1e-9
     out = fr.copy()
     out[:, :, 3] = np.where(keep, 255, 0).astype(np.uint8)
     out[~keep] = 0

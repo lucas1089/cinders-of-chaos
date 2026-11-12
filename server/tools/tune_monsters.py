@@ -236,17 +236,14 @@ for _f, _L, _sp in AISS_BAND:
 
 # O529: two hunt monsters on one lookType with a colour mask get their own colours (outfit colour table: index = row * 19 + hue
 # step, row 4 = full colour, 5 = darker, 2 = pale; 133 = no tint). The first monster of each look keeps its colours.
+# O533: Grave Lantern, Blightcrown Matron, Limb Hoarder and Rustguard took idle looks (no colour mask), their rows are gone.
 def _col(row, step):
     c = row * 19 + step
     return {'head': c, 'body': c, 'legs': c, 'feet': c}
 
 
-for _f, _c in (('pack30/blightcrown_matron.xml', _col(4, 6)),    # blight: sick green
-               ('pack30/limb_hoarder.xml', _col(2, 2)),          # flesh: pale orange
-               ('pack30/nailcrown_regent.xml', _col(5, 1)),      # nails: rust red
+for _f, _c in (('pack30/nailcrown_regent.xml', _col(5, 1)),      # nails: rust red
                ('pack30/bloom_husk.xml', _col(4, 5)),            # bloom: green
-               ('pack30/rustguard.xml', _col(5, 2)),             # rust: dark orange
-               ('pack30/grave_lantern.xml', _col(4, 9)),         # lantern light: teal
                ('pack30/leechwing.xml', _col(4, 18))):           # leech: blood red (look 1501 has no colours before)
     TUNING.setdefault(_f, {})['look'] = _c
 

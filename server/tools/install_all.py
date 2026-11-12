@@ -174,6 +174,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                vendor and bad-luck protection")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
+  monsterrecolour tools/install_monster_recolour.py  35 hunt monsters wear a hue shifted copy of their outfit (client pair 69, outfits
+               3371-3405, data/monster/monster_recolour_looks.csv): their installed files and the installed bounty pool get the new
+               look; waits for config.lua chaosClientPair >= 69, README "Client pair guard" and "Monster recolours (O531)"; after
+               monsters (and the file copy), nothing else is touched
   debuffs      tools/patch_debuff_durations.py   monster debuffs (slow, outfit, drunk, strength) last at most 10 s
   corpses      tools/patch_corpse_decay.py       every corpse (all its decay stages) stays at most 5 min (items.xml durations)
   lootbag      tools/patch_monster_corpses.py    item 6068 becomes the loot bag every monster leaves instead of its body: name, slots,
@@ -1116,6 +1120,15 @@ def step_debuffs(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('monsters') + 1, 'debuffs')  # after the Chaos monsters are registered (base and Chaos files)
+
+
+def step_monsterrecolour(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 69) is in the tool; its warning reaches the report
+    args = [tool('install_monster_recolour.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_monster_recolour.py'))
+
+
+STEPS.insert(STEPS.index('monsters') + 1, 'monsterrecolour')  # right after the file copy and the registration (pair 69: the copies' outfit ids)
 
 
 def step_corpses(server, data, ctx):

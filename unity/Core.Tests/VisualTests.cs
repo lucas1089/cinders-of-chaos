@@ -361,7 +361,7 @@ namespace Chaos.Core.Tests
         // ---------------------------------------------------------------------------------------------------- ground fx, boss looks
         static void GroundAndBoss(Action<bool, string> check)
         {
-            check(GroundFx.Ids.Count == 223 && GroundFx.IsGround(8) && GroundFx.IsGround(450) && !GroundFx.IsGround(9) && !GroundFx.IsGround(851), "groundfx: the ids of the table");
+            check(GroundFx.Ids.Count == 224 && GroundFx.IsGround(8) && GroundFx.IsGround(450) && !GroundFx.IsGround(9) && !GroundFx.IsGround(851), "groundfx: the ids of the table");
             string lua = FindUp("client/overlay/modules/game_groundfx/groundfx_data.lua");
             if (lua != null)
             {

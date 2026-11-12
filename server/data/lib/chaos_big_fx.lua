@@ -36,7 +36,7 @@ C.spells = {
 	[206] = {dome_blast_fire = "big_nova_fire_9", storm_ring = "big_shock_lightning_7",
 		fire_explosion = "big_shock_fire_7"},                            -- Doomtide (Elementalist), its three waves
 	[213] = {earth_spikes = "big_nova_poison_7", frost_nova = "big_nova_frost_7"}, -- Primordial Squall, its waves
-	[154] = {frost_nova = "big_nova_frost_7", storm_ring = "big_shock_lightning_7"}, -- Eclipse of Ruin (ultimate)
+	-- Eclipse of Ruin (154) had frost_nova + storm_ring here; O523: it sends nova_radiant_blue (pair 66) and no big effect
 	[204] = {meteor_strike = "big_meteor_fire_7"},                         -- Falling Pyre: lands on the impact
 	[202] = {lightning_hit = "big_lightning_burst_7"},                     -- Forked Storm, each jump
 	[231] = {void_rift = "big_rift_void_7", arcane_circle = "big_nova_arcane_7"}, -- Tear in the Weave: the rift under

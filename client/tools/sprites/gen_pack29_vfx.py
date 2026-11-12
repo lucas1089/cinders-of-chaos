@@ -25,7 +25,7 @@ art_import/pack29_vfx/ is ignored by git; art_import/pack29_vfx.sums holds the s
 
 Conversion (numpy only, deterministic; no recolour):
   * `aura`  condition auras: frames scaled to half size (a 2 x 2 box mean of the premultiplied colour, then the alpha
-            cut to 0 / 255 with the 4x4 ordered dither of gen_pack27_fx.py), the frame centre put over the head of a
+            cut to 0 / 255 with the hard cut of gen_pack27_fx.clean_alpha (a 4x4 ordered dither before O523)), the frame centre put over the head of a
             creature on the target tile (AURA_POINT). Small and above the body, so they never hide the creature. Their
             send offset is 0, 0: the engine may send them by id (a condition tick, src-patch 0045).
   * `hit`   hit splashes: 1:1, the frame centre on the body (HIT_POINT), kept inside the target tile's column and row
@@ -180,7 +180,7 @@ def frames_of(srcs, fname):
 
 
 def half(fr):
-    """2 x 2 box mean of the premultiplied colour (odd sizes padded), alpha cut with the ordered dither"""
+    """2 x 2 box mean of the premultiplied colour (odd sizes padded), alpha cut hard (gen_pack27_fx.clean_alpha)"""
     h, w = fr.shape[:2]
     p = np.zeros((h + h % 2, w + w % 2, 4), np.float64)
     p[:h, :w] = fr

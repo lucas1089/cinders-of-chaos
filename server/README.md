@@ -20246,6 +20246,35 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   sends the stock id; on without the ids: nothing big; on: the big effect at the centre; the call sites).
   Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; `ChaosBigFx.live()` true, big_rift_void_7 = 654, a 7x7 telegraph sent. Not seen in a client.
 
+## Crisp pack effects (O523, pair 66: `ChaosSpell.plainHit`, `nova_radiant_blue`, `client/tools/sprites/clean_pack_dither.py`)
+Owner 2026-11-12 (translated): "I want our effects to look high quality." Much of the generated look of the effects came from
+OUR import, not the packs: the pack frames were cut to a 0 / 255 alpha with a 4x4 Bayer dither, so a soft glow became a mesh
+of every second pixel around the art (client/MANIFEST.md "Pair 66"). Three parts, effects only (no damage, area, timing or
+target changes):
+- **Plain hits.** The stock energy hit (effect 12) and ice attack (44) that a single-target spell sends on its target are the
+  pack's lightning blast (`blast_lightning`, 798, 3x3) and ice explosion (`mfx_ice`, 836, 3x3) now. `ChaosSpell.plainHit(pos,
+  effect)` in `data/spells/chaos/_common.lua` does it: it sends the pack effect and returns CONST_ME_NONE for the combat call,
+  or returns the stock effect unchanged when the pack effect cannot be sent. Asked by `ChaosSpell.damageTarget` and by the
+  attack kit's single-target hit with no `hitFx` of its own (`A.hit` in `data/spells/chaos/_attackkit.lua`; today Phantom
+  Needles). Not asked by area hits (one 3x3 blast per target would bury the screen), by dots, by the Templar, Necromancer,
+  blade and shuriken schools, by the archery arrows, by item procs, nor by the stock wands (the engine sends their hit).
+  `ChaosSpell.PLAIN_HIT` lists the two stock effects; any other effect passes through.
+- **Eclipse of Ruin** (id 154, Mystic / Elementalist / Illusionist, ice) sends ONE effect, `nova_radiant_blue` (effect 4702, 5x5,
+  send offset 2, 2): the Purging Nova (713, gold) with its hue turned +175 degrees (`gen_pair66_fx.py`). It sent `frost_nova`
+  (the 7x7 `big_nova_frost_7`, 644) and `storm_ring` (`big_shock_lightning_7`, 640). `vfx2` is gone from its kit row and
+  `ChaosBigFx.spells[154]` too. Effect 713 is unchanged: Purging Nova and Hammer of Ember Dawn still send it. The name is
+  in `data/lib/chaos_vfx_art.lua` (written by `import_fx_art.py --merge` from `art_import/pair66_fx.csv`) and tagged `ice`
+  in `data/spells/spell_fx_elements.csv`; `spell_fx_allow.csv` lost its Eclipse of Ruin row (the shock ring is not sent any
+  more); `836,mfx_ice,ice` is tagged too. **Switch on: the client package with pair 66.** A client on pair 65 or older has no
+  effect 4702 and draws nothing for the nova (the hit and the damage are the same); the other two changes need no new pair.
+- **The mesh in the pair.** Sprites of the effects and missiles are cleaned in place (`clean_pack_dither.py`, pair 66), so every
+  effect that came from a pack loses its halo mesh at its own id, with no server change. The import rule is a hard cut at
+  alpha 0.5 now (`gen_pack27_fx.clean_alpha`), for the next import from the packs.
+- Tests: `tests/plain_hit_test.lua` (the swap table, the pass-through, the wiring, the tags), `tests/attack_kit_test.lua` (Eclipse
+  of Ruin plays one effect; Phantom Needles asks `plainHit`, Prismatic Rupture does not), `tests/big_fx_test.lua`; CI `checks`
+  runs `tools/ci/check_spell_fx.py` (the new names are ice / energy; the probe runs the real scripts).
+  Not seen in a client.
+
 ## Status words (`data/lib/chaos_status_fx.lua`, `data/lib/chaos_status_fx_ids.lua`, switch `ChaosStatusFx.STATUS_FX`, on)
 Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, from the owner's text effect set
 (client/MANIFEST.md "Status words", effects 656-673 of things_custom25). Effects only: nothing else changes.
@@ -20494,6 +20523,22 @@ touched. The table of what flies where, checked by `tests/pack41_fx_test.lua`:
 | `proj_water_bolt_abyss` | nothing since O520 (Dreamrot sent it: a teal bolt on a magenta cloud; the kit now sends the pair 51 `p51_magenta_orb_tendrils`) |
 
 Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
+
+## Projectiles with a trail (O526, pair 67) (`data/lib/chaos_pair67_missile_ids.lua`, loaded by `ChaosPack36Fx.live()`)
+Pair 67 (client/MANIFEST.md "Pair 67") redraws six missiles in place as 3 x 3 groups of 8 phases of 50 ms with a particle trail (owner 2026-11-12, style "B"; art by
+`client/tools/sprites/gen_missile_fx.py`, engine by client base patch `0194`). The head sits at the centre of the group, so each is sent at the send offset (1, 1).
+- **Ids and names.** 161 `witchfire_lance` and 144 `proj_venom_glob_necrotic` were sent at (1, 1) already (no server change). 221 `p51_pink_lightning` and 222 `p51_magenta_orb_tendrils` were
+  1 x 1 at (0, 0): the generated file sets their offsets to (1, 1) (it loads after `chaos_pair51_missile_ids.lua` and overrides those two names). 5 and 37 get the names `p67_energy_shot` and `p67_ice_shot`
+  at (1, 1). Test: `client/tools/sprites/gen_missile_fx_test.py` (the file against the generator, ids against the client's baked-trail list and the stock ids in `effects_catalog.csv`).
+- **Ids 5 and 37 are the pair 67 art for every stock energy and ice shot (owner 2026-11-12: "the new style B art for all stock energy and ice shots").** `CONST_ANI_ENERGY` (5) and `CONST_ANI_SMALLICE` (37) are
+  stock ids. The pair 29 engine override (src-patch 0045; `chaos_pack29_vfx.lua` `C.missiles`, switch `ChaosPack29Fx.PAIR29`, on) used to send them as the pack bolts `bolt_lightning` and `bolt_crystal`; since O526
+  `C.missiles` maps them to `p67_energy_shot` and `p67_ice_shot` (id 5 and 37 at (1, 1)), so `C.engineRows` sets `Game.setMissileEffect(5, 5, 1, 1)` and `(37, 37, 1, 1)`. One place covers every send, Lua
+  (`sendDistanceEffect`, the attack kit fallbacks, `ChaosSpell.shoot` with those constants, supports, Mirror Mend) and engine (monsters, wands, runes), and shifts it once. `bolt_lightning` still serves `fx:lightning_orb`;
+  `bolt_crystal` is listed unused (`C.unused`). **No double shift:** the override is by stock id, so `VfxShoot` of a name whose id is overridden would shift twice. `applyEngine` records the overridden stock ids in
+  `ChaosVfxEngineShift` and `VfxShoot` (`chaos_vfx.lua`) sends such an id plain, so the engine adds the offset once; with the switch off (or an engine without the patch) the table is empty and `VfxShoot` shifts
+  itself. `tests/pack29_vfx_test.lua` plays both cases on a recording engine (plain send, `VfxShoot`, off). A client below pair 67 draws the old smaller art of 5 and 37 one tile down and right; ship the pair first.
+- **Nothing sends 221 and 222.** The `p51_` names have no caller. Dreamrot flies as `proj_water_bolt_abyss` (missile 75) and Soulrend Beam as `proj_flame_lance_spirit` (missile 115), both pair 41 / 42 art,
+  not restyled here; the preview labels "Dreamrot" and "Soulrend Beam" of step 1 named the 222 orb and the 221 line after those spells by guess.
 
 ## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
 Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:
@@ -30364,6 +30409,7 @@ README warned.
   | `weapons800` (the 34 weapons above level 800, "Weapons above level 800") | 56 | the whole step is skipped |
   | `relicsets` (the 65 pieces of the five relic sets, "Relic sets (pair 58)") | 58 | the whole step is skipped |
   | `templeart` (the 39 pieces of the temple tileset, "Temple tileset (pair 60)") | 60 | the whole step is skipped |
+  | `monsterrecolour` (35 monsters wear a hue shifted copy of their outfit, "Monster recolours (O531)") | 69 | the whole step is skipped: the monster files and the bounty pool keep the old looks |
 
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
   `ItemType(id)` exists, and the scaled class roll (`loot.lua` `classWeapons`) drops an id the server has no item for.
@@ -31427,6 +31473,27 @@ effect that already is in the pair. No art, no pair, no engine patch, no opcode;
 * **Not verified:** a live client (draw order, real ground, the look of each effect in the real size, the offsets of the
   p50 names, which come from the registry); Raise Dead, Raise Bone Warrior, Archer and Mage and Banner of Bones need corpses or
   minions, so the probe does not run them (the pass is the same call path).
+
+## Donor effects (O525)
+
+Owner 2026-11-12: "Todos" on a sheet of the 40 best effects of the owner's donor client (docs/CREDITS.md "Owner-supplied spell effects"). Client pair 68 appends them as effect ids 4703 to 4742
+(client/MANIFEST.md "Pair 68"); this section is the server side. Art, balance, damage, area, timing and targets do not change; the spells below send another picture.
+
+* **Ids:** `data/lib/chaos_donor_fx_ids.lua`, `ChaosVfx.donor_<element>_<role>_<donor id> = {id, dx, dy, ms}` (send offset fitted to the art: the alpha centre, the foot of the bolt for the two lightning bolts 528 and 632; `ms` the sum of the donor's frame durations),
+  written by `python3 -I client/tools/sprites/gen_donor_fx.py ids` from `data/spells/donor_fx_catalog.csv` (written by the import, so the ids follow the input pair); `ids --check` is in CI.
+  The same step writes the 40 element tags of `data/spells/spell_fx_elements.csv` and keeps the `spell_fx_allow.csv` rows of this set (none). `ChaosPack36Fx.live()` loads the file with the pair 50 ids.
+  An id changes only when the pair is rebuilt on another input: regenerate the table and the tags, never edit them.
+* **Spells (10),** through the effects pass (`data/lib/chaos_fx_pass.lua`, the O525 block; the pass is asked first, so the entry decides): Mirror Shards (shards `ice_shatter` 489, a chip `ice_crystal` 475),
+  Purging Nova (`dome_blast_holy`: the gold ring 449, 5 x 5 for the radius 3 hit), Venom Spiral (`poison_ring`: the green cloud 505 on the target), Witchfire Bolt (`fireball_hit`: the fire hit 465),
+  Forked Storm (`lightning_hit`: the lightning bolt 528 on the first target, `lightning_strike`: the sky strike 632 on each jump), Ironhold (`shield_bubble`: the white shield 495), Soulward (`shield_bubble`: the purple
+  shield 494), Aegis of Faith (`dawn_aegis`: the gold shield 493), Mirror Mend (`regenerating`: the heal cross 216). Iaijutsu gathers in the gold ring 449 (`iaijutsu.lua`: the donor ring, else the pair 50 ring,
+  else the stock effect). Each keeps its role: a hit stays a hit, an area an area, a buff a buff, a heal a heal. Elements follow `tools/ci/check_spell_fx.py` (no allow row needed).
+* **Left alone on purpose:** Chi Ward, Lightward, Lay on Hands and Vow of Mending have a class signature effect (`chaos_class_fx.lua`) that the pass would wipe. Prismatic Rupture (the owner's table: the 9 x 9
+  arcane nova 695): the ring draws a radius of 4 tiles for a radius 2 hit. Doomtide (the fire ring 276), Rime Bloom (ice 626 or 654) and Rampart Quake (449): what they send now (a filled dome or disc) is richer than
+  the donor ring and the donor picture is thinner or wider than the damage area. The plain hit effects E12 and E44 and the Eclipse of Ruin ring belong to O523.
+* **Order:** the new ids exist only in a client on pair 68. Push pair 68 to windows-assets, ship the client package, `chaos-ctl.sh client-pair set 68` (admin app Comandos > "Par do cliente" > Gravar 68), then update the
+  server. A client on pair 67 or older logs invalid effect ids and shows nothing at those casts (the spell itself works). Switch: `ChaosFxPass.ON` (also turns the older entries off).
+* **Tests:** `tests/fx_pass_test.lua` (40 donor names live, the entries, Iaijutsu), `check_spell_fx.py` (+ `_test`), `client/tools/sprites/gen_donor_fx_test.py`. Probes of the casts, before and after: `SP/o525/import_final.mp4`.
 
 ## Monster defence (O462) (`defence_config.lua`, `monster_defence_config.lua`, `monster_defence_core.lua`, `monster_defence.lua`, `tools/defence_curve.py`, `tools/patch_monster_resists.py`)
 
@@ -33116,21 +33183,120 @@ them worse and chose a recolour: every monster of a shared look but the first ge
   Grave Lantern 85 (teal), Spiky Carnivor stays; look 1501 Leechwing 94 (blood red), Nexweaver stays. `data/scripts/chaos/
   bounty_pool.lua` carries the same colours (the generator reads them from the files). The hue distances are far over the 0.28 of
   the audit.
-- **Outfits with no mask (35 looks, 52 monsters).** An outfit with no mask layer cannot take a colour: the second monster needs a
+- **Outfits with no mask (32 looks, 35 monsters).** An outfit with no mask layer cannot take a colour: the second monster needs a
   hue shifted copy of the outfit in the pair. Table `client/tools/sprites/art_import/monster_recolour.csv` (look, hue shift in
   degrees, monster; mode `hue` rotates the hue, `tint` sets the hue of a nearly grey outfit; theme by the monster's name and
   element: fire reds, ice blues, poison greens, undead and shadow purples, iron browns, gold yellows, blood crimsons; the colours
-  of one look are at least 40 degrees apart and from the source hue). `client/tools/sprites/gen_monster_recolour.py` holds the
-  pixel transform (`recolour()`) and `check`; `build` is a stub: **no pair is built here**, it waits for pair 68 (the copies are
-  appended as new outfits, the lookTypes move with an `install` step of the pair). Until then the groups are rows of the allow list
-  with status `recolour pair`, and `gen_monster_recolour.py check` holds that every such row has a table row for all but one monster.
-  Not decided: the colour of a few themes is the table's guess (Siege Behemoth teal, Ashveil Hierarch green); change a `hue_shift`
-  and run the preview before the pair is built.
+  of one look are at least 120 degrees apart and from the source hue, owner 2026-11-12 in O531; a grey source is tinted). `client/tools/sprites/gen_monster_recolour.py` holds the
+  pixel transform (`recolour()`), `check`, `ids`, `build` and `live`; pair 69 holds the 35 copies (O531, next section). The groups
+  were rows of the allow list with status `recolour pair` until then; the rows are gone, the audit reads the monsters at the
+  client pair (a group the map separates waits below pair 69, is distinct from it).
+  Not decided: the colour of a few themes is the table's guess (Siege Behemoth teal, Ashveil Hierarch green); a changed
+  `hue_shift` needs a new pair (the copies are built).
 - **The check.** `tools/ci/check_content.py` fails when two different monsters of the `bounty_pool.lua` hunt list (6 or more spawn
   points) share a lookType that is neither a row of `shared_looks_allow.csv` nor a masked look (`data/monster/look_masks.csv`,
-  written by `audit_shared_looks.py --write-masks Tibia.dat` from the live dat) whose pool colours tell them apart.
+  written by `audit_shared_looks.py --write-masks Tibia.dat` from the live dat) whose pool colours tell them apart, nor a group
+  the recolour map separates (read at pair 68 and at pair 69, "Monster recolours (O531)").
   `tools/audit_shared_looks_test.py` (CI step "Hunt monsters keep a look of their own") tests the tool on a synthetic folder and
   holds the committed pool to the rule.
 - Not done: base monsters were not recoloured (every group had a monster of ours to change); the creature strips 2312-2384 and
   the sheet looks of pair 30 stay out (O524). Not verified: in a running client (the pool colours are the files' colours, the
   preview renders the outfit colour table as the client does: mask layer, multiplied on the base layer).
+
+
+## Monster recolours (O531; `tools/install_monster_recolour.py`, `data/monster/monster_recolour_looks.csv`)
+Owner 2026-11-12: the recolour of O529 for the 32 outfits that have no colour mask. Client pair 69 holds 35 hue shifted copies, outfits
+3371 to 3405 (client/MANIFEST.md "Pair 69"); this is the server side.
+- **The map.** `data/monster/monster_recolour_looks.csv` (monster, look, new_look), written by `gen_monster_recolour.py ids` from the
+  table `client/tools/sprites/art_import/monster_recolour.csv`: the row at line n is outfit 3371 + n. All 35 monsters are Chaos files
+  (`data/monster/monsters/chaos`), no base monster is touched. The repository files keep the OLD look: they are what a server whose
+  client is on pair 68 or older loads. `gen_monster_recolour.py check` and `check_content.py` hold the map to the files (the old look is
+  the file's look, the new ids are 3371.. in a row, inside the pair, never blank).
+- **The step.** `install_all.py` step `monsterrecolour` (after `monsters`, so after the file copy): with `config.lua` `chaosClientPair`
+  69 or more it sets `<look type>` of each of the 35 files in the installed folder to the copy (head, body, legs, feet, corpse stay)
+  and the `look = ` of their rows in the installed `data/scripts/chaos/bounty_pool.lua` (the bounty board and its notices draw that
+  outfit). Below 69, or with the record missing, it prints a `WARNING:` line and writes nothing ("Client pair guard"); the next update
+  copies the repository files again and the step runs again, so the state follows the record. A file that is missing or has a look that
+  is neither the old nor the new one stops the step (exit 1, nothing written); `--dry-run` writes nothing. Idempotent.
+- **The pool.** The committed `bounty_pool.lua` carries the old looks. `gen_bounty_pool.py` writes a copy's look back as the old one,
+  so a run on a server at pair 69 gives the committed file; the installed copy is moved by the step.
+- **The audit.** `audit_shared_looks.py` and `check_pool()` read each monster at a pair (`--pair N`, else the `config.lua` record beside
+  the data folder, else the newest): from 69 a monster of the map wears its copy, so the groups are distinct; below 69 a group in which
+  all but one monster have a row of the map is counted as waiting (`WAITS`), not as shared. CI reads the committed pool at 68 and at 69;
+  the tests hold that without the map the 35 groups fail at 69 (their allow rows are gone). On an installed server: `python3 -I
+  tools/audit_shared_looks.py DATA_DIR/monster --spawn ... --dat Tibia.dat --check`.
+- **Switch on (owner).** Push pair 69 to windows-assets, ship the client package, record the pair (admin app Comandos > "Par do
+  cliente" > Gravar 69, or `chaos-ctl.sh client-pair set 69`), then update the server (admin app, aba Painel > cartão Atualizar servidor > Verificar, Aplicar e reiniciar). Do not record 69 before the
+  client has shipped: a client on pair 68 draws nothing for the new ids (invisible monsters).
+- Tests: `tools/install_monster_recolour_test.py` (guard end to end on a synthetic server and on the real files, idempotent, refusals,
+  the generator), `tools/audit_shared_looks_test.py`, `client/tools/sprites/gen_monster_recolour_test.py` (transform, ids, build and live
+  on a synthetic pair). Checked offline only; not seen in a running client.
+
+## Hunt monsters move while they stand (O533; `tools/audit_idle_looks.py`, `data/monster/no_idle_allow.csv`, `look_idle.csv`, `crowded_looks_allow.csv`)
+Owner, 2026-11-12, after the recolour preview of O529: "these monsters standing still have no idle animation? If so, change them to one
+that has". Later that day: "strange to reuse the same sprite 5 times, the Pit Delver one": a look carries at most 2 met hunt monsters.
+- **The rule.** A creature moves while it stands in our client (protocol 10.98, outfit frame groups, client/BASE.md `0189`) when its
+  outfit has an idle frame group (the first of two) with 2 or more phases whose pictures differ (`frames`, by sprite ids, facing south), or
+  the dat attribute animateAlways with 2 or more phases (wings, the idle pulse of pair 61, `outfit.cpp` plays the phases on a clock), or is
+  on the `L.LOOKS` list of `game_bossanimate` (`ThingType:setAnimateAlways`). One idle phase with 8 walk phases draws one picture while it
+  stands: that is the stock creatures (Orc, Dragon, Skeleton, Wolf).
+- **The audit.** `python3 -I tools/audit_idle_looks.py MONSTER_DIR --spawn SPAWN_XML --dat Tibia.dat [--csv OUT] [--check]` on an installed
+  server (same monsters and "met" rule, 3 or more spawn points, as `audit_shared_looks.py`). On the 885 met outfit monsters: 742 stood still,
+  143 moved. After this step 637 stand still, all of them rows of `data/monster/no_idle_allow.csv` (name, look, reason; three kinds of
+  reason: a human outfit with a colour mask, a large look, no free look of its kind). `--check` also holds the 2 per look limit.
+- **Free looks.** 778 outfits move and no monster wears them: 138 are pair 30 (sheet looks and strips 2237-2384: the owner found them worse,
+  O524, never used here), 273 are wings and auras of pair 33, 90 are player outfits (outfits.xml; a hunt monster would look like a player),
+  32 are mounts (mounts.xml), 18 are rift, faction and wing looks of `picks.csv`, 47 are other stock looks (effects, orbs, ships, carpets).
+  What is left: 180 monster looks of pair 50 (outfits 2682-3360, `data/items/pair50_outfits.csv` names them) and one stock look (1439).
+  Each took a monster by name, element, size and level; the looks of one art in several colours (the winged drakes 3260-3269, the
+  stone head golem) are the recolour way of O529.
+- **The change.** 113 monsters (23 of ours, 90 base) got a look from `client/tools/sprites/monster_looks/picks.csv` (rows `idle_*`, lib
+  `pair50` or `stock`, family `hunt` for ours: `apply_monster_looks.py`, family `base`: `patch_base_looks.py`, install step `baselooks`, which now
+  also patches the Lua monsters of the base: `lookType` set, `lookHead`... removed). 105 of them stood still; 8 split from a look that
+  moved but carried more than 2 monsters. The pick rows of Gargoyle and Ghost replace their restore rows of 2026-10-22. The owner's own looks 2213-2224 (pair 26, `owner_art_test.lua`) stay on their monsters. The bounty pool follows the
+  monster files: `gen_bounty_pool.py --relook DATA_DIR [POOL]` rewrites only the look fields of the pool lines (a rerun of the full generator
+  on the real server gives the same fields). Grave Lantern, Blightcrown Matron, Limb Hoarder and Rustguard left their masked looks, so their
+  colour rows are gone from `tune_monsters.py`; `look_masks.csv` was written again (69 looks).
+- **At most 2 on a look.** 28 looks carried 3 or more met monsters (Pit Delver's look 2220 six). The extras with the fewest spawn points moved
+  to looks of their own where one fits (24 of them). 14 looks keep more: trolls (15), Pig family (60), mummies (65), lizards (115), the human outfits
+  with a colour mask (129, 131, 133, 149), frogs (226), books (989), cobras (1007), the Ironmask crew (1492, 1493), the ape, oak and troll of 1495:
+  rows of `data/monster/crowded_looks_allow.csv` (look, every name on it, reason) because no free look that moves fits them.
+- **Recolour table (pair 69).** A monster that left a shared look needs no hue shifted copy. Rows removed from `art_import/monster_recolour.csv`
+  (17): Orcaruz (look 2), Azure Dragon (248), Reedgrave (554), Blight Bloom (563), Shroud Brood (579), Quicksilver Wraith (1291), Gnawbone Swarm (1449), Wax Penitent (1475), Corpselight Lurker and Dirge Herald (1485), Slagborer Reaver (1499), Siege Behemoth (2218), Bonepicker (2219), Pit Delver, Pitgnawer, Reliquary Urn and Wan Sentry (2220). Where the original left, the monster with the most spawn points keeps the outfit and loses its row (Reedgrave, Gnawbone
+  Swarm). In `shared_looks_allow.csv` 25 rows went (the group is a single monster now) and 12 shrank.
+  `gen_monster_recolour.py check`: 0 problems, 35 rows.
+- **The check.** `tools/ci/check_content.py`: every monster of the `bounty_pool.lua` hunt list (6 or more spawn points) wears a look with
+  `idle yes` in `look_idle.csv` (one row per pool look, `audit_idle_looks.py --write-idle Tibia.dat`), or is a row of `no_idle_allow.csv` with the
+  look it wears; a row of a monster that moves now is stale and fails. No look has more than 2 pool monsters unless `crowded_looks_allow.csv`
+  names them all. The lists may only shrink. `tools/audit_idle_looks_test.py` (CI step "Hunt monsters move while they stand") tests the rules on
+  fake outfits, the files on synthetic ones, the CLI on a synthetic folder and the committed state.
+- Not done: 637 monsters. The looks that move are used up; the other way is the client: a list like `game_bossanimate` that sets animateAlways on
+  their looks would play their walk frames while they stand (no pair, one line per look; not decided). Not verified: in a running client (the
+  preview renders the dat groups with the animator times of the dat).
+
+### Walk in place for the rest (O534; `client/overlay/modules/game_bossanimate/idle_walk_looks.lua`, `data/monster/player_looks.csv`, client/BASE.md `0195`)
+Owner 2026-11-12: the hunt monsters that still stand still play their walk animation in place. This replaces the "Not done" bullet above.
+- **The list.** `audit_idle_looks.py --write-walk-idle` writes `idle_walk_looks.lua` (`IdleWalkLooks`, sorted, 16 ids a line) from
+  `look_idle.csv` and `player_looks.csv`: a look with no idle animation, one idle phase and a walk group that draws 2 or more pictures
+  (`walk_info`, columns `walk` and `walk_frames` of `look_idle.csv`, written by `--write-idle Tibia.dat`), that no player can wear. 498 looks.
+  `look_idle.csv` now also holds the looks of the allow list (met monsters with 3 to 5 spawn points are not in the pool): 734 rows.
+- **Not players.** `player_looks.csv` (look, source; 792 rows) is every look of `XML/outfits.xml`, `mounts.xml`, `wings.xml`, `auras.xml` of an
+  installed server plus the `lookType` / `male` / `female` fields of `chaos_constants.lua`, `exclusives_config.lua`, `chaos_pack37_looks.lua`
+  (outfits behind a switch): `audit_idle_looks.py --write-player-looks DATA_DIR`. A flag on the look of a player outfit would move the
+  player, and one on a mount look moves every rider (`Outfit::draw` reads the mount's own flag), so these looks stay out.
+- **The module.** `game_bossanimate` loads the list before its logic: `L.WALK`, `L.applyWalk` calls `setAnimateAlways(true)` (base 0189)
+  on each look and `setWalkInPlace(true)` where the engine has base patch 0195. `bossanimatelogic_test.lua` (luajit and lua5.3) runs it on a fake engine.
+- **The engine and the speed.** 0189 alone: `Outfit::draw` takes `(millis % 1000) / (1000 / N)` as the phase, N the phases of the walk
+  group, counted from the idle picture: the creature cycles the idle picture and walk phases 1..N-1 (the last one never), one turn a
+  second, and while it walks it keeps that clock instead of the step phase (feet out of step). 0195 adds the flag `setWalkInPlace`: standing, phases
+  1..N, one turn a second (N pictures, 1000 / N ms each; 8 phases are 125 ms a frame, a step cycle is about 350 ms); walking, the step's phase. One turn a second
+  is calm next to a step, so no slower speed was added. The speed is fixed in `outfit.cpp` for all looks: a per look duration would need another patch; the dat
+  durations are used only by the UI path. Applies after 0001-0193 (`patch --dry-run --fuzz=0` on the patched tree); the client was not built.
+- **The allow list.** `no_idle_allow.csv` shrank from 640 to 45 rows: 44 monsters on a look a player can wear (human outfits 128-153, 268, 541 and the mounts 374, 515, 686,
+  886, 1076) and 1 on look 92, whose walk group draws one picture. The check treats a look of the generated list as moving (`check_pool`, `--check`).
+- **The check.** `check_content.py` rule `[look.walk]`: the list is up to date (`audit_idle_looks.py --write-walk-idle --check`, also a CI step) and holds no look of
+  `player_looks.csv`. `audit_idle_looks_test.py` tests `walk_info`, the list, the player reader and the committed state.
+- **Merge with O531 and O533.** The 17 monsters of the recolour table that O533 moved to other looks left `monster_recolour.csv` (35 rows, copies 3371-3405,
+  colours recomputed for the looks that shrank). Pair 69 was built again from pair 68 with that table. The walk list also holds the copy of each look on it
+  (`with_copies`: a monster that wears its copy at pair 69 walks in place like the original; each id once).
+- Not verified: in a running client (the preview draws the dat groups with the rule of 0195).

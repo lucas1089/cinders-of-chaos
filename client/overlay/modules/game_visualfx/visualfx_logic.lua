@@ -63,6 +63,12 @@ L.ARC_MISSILES = {
   53, -- simple arrow (exercise bow, server/data/scripts/chaos/exercise_config.lua)
 }
 
+-- ---------------------------------------------------------------- missiles with a baked trail (O526, base patch 0194)
+-- Missile ids whose art carries its own particle trail (client/tools/sprites/gen_missile_fx.py, pair 67): they get no ghost
+-- copies behind them (base patch 0147 draws 3 faded copies behind a spell missile of 2+ tiles; with a trail in the art they
+-- only smear it). Sent to the engine with Missile.addBakedTrailId. Pinned to the generator's spec by gen_missile_fx_test.py.
+L.BAKED_TRAIL_MISSILES = { 5, 37, 144, 161, 221, 222 }
+
 -- an option value from the settings: a boolean is kept, anything else (nil, junk, an older settings file) is the default
 function L.optionOn(name, value)
   if type(value) == 'boolean' then return value end

@@ -58,7 +58,11 @@ for ctype, name in pairs(V.elementHits) do
 	uses(name, "effect", "element " .. ctype)
 end
 for key, name in pairs(V.missiles) do
-	uses(name, "missile", "missile " .. key)
+	if name:sub(1, 4) == "p67_" then -- O526: the pair 67 art of the stock energy and ice shots (chaos_pair67_missile_ids.lua), not a pack 29 spec name
+		ok(key == "CONST_ANI_ENERGY" or key == "CONST_ANI_SMALLICE", "only the stock energy and ice shots use pair 67 names: " .. key)
+	else
+		uses(name, "missile", "missile " .. key)
+	end
 end
 for key, name in pairs(V.names) do
 	uses(name, "effect", "spell name " .. key)
@@ -253,6 +257,74 @@ for _, f in ipairs({"worldboss.lua", "guildboss.lua", "raid.lua"}) do
 end
 has("data/scripts/chaos/pack29_vfx.lua", "V.applyEngine", "startup sets the engine overrides")
 has("data/scripts/chaos/pack29_vfx.lua", '"levelup"', "the level-up firework")
+
+-- O526: the stock energy (5) and ice (37) shots are the pair 67 art at send offset (1, 1). The engine override maps each stock id to
+-- itself with the offset, and VfxShoot sends such an id plain, so a send is shifted once, never twice.
+do
+	local f = io.open("data/lib/chaos_pair67_missile_ids.lua", "r")
+	ok(f ~= nil, "the pair 67 ids file exists")
+	if f then f:close() end
+	ChaosVfx, ChaosVfxMissile = nil, nil
+	dofile("data/lib/chaos_vfx.lua")
+	dofile("data/lib/chaos_pair67_missile_ids.lua")
+	eq(V.missiles.CONST_ANI_ENERGY, "p67_energy_shot", "energy shot: the pair 67 art")
+	eq(V.missiles.CONST_ANI_SMALLICE, "p67_ice_shot", "ice shot: the pair 67 art")
+	local G2 = {CONST_ANI_ENERGY = 5, CONST_ANI_SMALLICE = 37, CONST_ANI_FIRE = 4}
+	local _, rows = V.engineRows(G2, ChaosVfx, ChaosVfxMissile, {})
+	local byStock = {}
+	for _, r in ipairs(rows) do byStock[r[1]] = r end
+	ok(byStock[5] ~= nil and byStock[5][2] == 5 and byStock[5][3] == 1 and byStock[5][4] == 1, "override 5 -> 5 at (1, 1)")
+	ok(byStock[37] ~= nil and byStock[37][2] == 37 and byStock[37][3] == 1 and byStock[37][4] == 1, "override 37 -> 37 at (1, 1)")
+	-- a recording engine: Game.setMissileEffect applies the shift like src-patch 0045 does, once per send
+	local overrides, sent = {}, {}
+	Game = {
+		setHitEffect = function() return true end,
+		clearEffectOverrides = function() overrides = {} return true end,
+		setMissileEffect = function(stock, missile, dx, dy) overrides[stock] = {missile, dx or 0, dy or 0} return true end,
+	}
+	local function send(from, to, id)       -- Game::addDistanceEffect
+		local o = overrides[id]
+		if o then
+			sent[#sent + 1] = {id = o[1], fx = from.x + o[2], fy = from.y + o[3], tx = to.x + o[2], ty = to.y + o[3]}
+		else
+			sent[#sent + 1] = {id = id, fx = from.x, fy = from.y, tx = to.x, ty = to.y}
+		end
+	end
+	Position = function(x, y, z)
+		return {x = x, y = y, z = z, sendDistanceEffect = function(self, to, id) send(self, to, id) end}
+	end
+	CONST_ANI_ENERGY, CONST_ANI_SMALLICE = 5, 37
+	Q.PAIR29, V.loaded = true, nil
+	ChaosPack29Vfx.loaded = nil
+	local n = V.applyEngine()
+	ok(n > 0 and overrides[5] ~= nil and overrides[37] ~= nil, "applyEngine sets the overrides for 5 and 37")
+	-- a plain send of the stock id (engine, Lua sendDistanceEffect): shifted once by the override
+	sent = {}
+	Position(10, 10, 7):sendDistanceEffect(Position(14, 10, 7), 5)
+	eq(sent[1].id .. ":" .. sent[1].fx .. ":" .. sent[1].tx, "5:11:15", "plain send of 5: one shift")
+	-- VfxShoot of the name: the same single shift (it must not add its own offset on top of the engine's)
+	sent = {}
+	ok(VfxShoot(Position(10, 10, 7), Position(14, 10, 7), "p67_energy_shot"), "VfxShoot sends p67_energy_shot")
+	eq(sent[1].id .. ":" .. sent[1].fx .. ":" .. sent[1].fy .. ":" .. sent[1].tx .. ":" .. sent[1].ty, "5:11:11:15:11", "VfxShoot of the energy shot: one shift, not two")
+	sent = {}
+	VfxShoot(Position(10, 10, 7), Position(14, 10, 7), "p67_ice_shot")
+	eq(sent[1].id .. ":" .. sent[1].fx .. ":" .. sent[1].tx, "37:11:15", "VfxShoot of the ice shot: one shift")
+	-- a pack missile that is not an overridden stock id keeps its own VfxShoot offset
+	sent = {}
+	ok(VfxShoot(Position(10, 10, 7), Position(14, 10, 7), "witchfire_lance") or ChaosVfxMissile.witchfire_lance == nil, "witchfire_lance")
+	-- the override off (switch off or the engine without the patch): VfxShoot adds the offset itself
+	Q.PAIR29, V.loaded = false, nil
+	V.applyEngine()
+	ok(next(overrides) == nil, "off: the overrides are cleared")
+	sent = {}
+	VfxShoot(Position(10, 10, 7), Position(14, 10, 7), "p67_energy_shot")
+	eq(sent[1].id .. ":" .. sent[1].fx .. ":" .. sent[1].tx, "5:11:15", "off: VfxShoot shifts once itself")
+	-- the pack bolt that was the ice shot is unused now; the lightning bolt still serves the procedural lightning orb
+	local unusedSet = {}
+	for _, u in ipairs(V.unused) do unusedSet[u] = true end
+	ok(unusedSet.bolt_crystal, "bolt_crystal is listed unused")
+	ok(V.missiles["fx:lightning_orb"] == "bolt_lightning", "bolt_lightning still serves the lightning orb")
+end
 
 if failures > 0 then
 	print(failures .. " failure(s)")

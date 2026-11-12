@@ -38,8 +38,10 @@ for name, (look, colours) in want.items():
         check(str(look) in sheets, '%s: a pair 30 sheet look' % name)
         check(set(colours) == set(P.SHEET_COLOURS), '%s: four colours' % name)
     else:
-        # owner 2026-10-22: the pack art looks were bad; the base monsters are back on their stock looks
-        check(look < 2000, '%s: a stock look' % name)
+        # owner 2026-10-22: the pack art looks were bad; the base monsters are back on their stock looks (restore rows).
+        # O533: the rows of lib pair50 give a base monster a look of pair 50 (2682-3360) that has an idle animation.
+        lib = next(r['lib'] for r in csv.DictReader(open(P.PICKS, newline='')) if r['family'] == 'base' and r['monsters'] == name)
+        check(look < 2000 if lib == 'stock' else (lib == 'pair50' and 2682 <= look <= 3360), '%s: a stock look or a pair 50 look' % name)
 
 tmp = tempfile.mkdtemp()
 try:
@@ -72,6 +74,31 @@ try:
     check(len(missing) == len(want) - 2, 'the others are reported missing')
     changed, _ = P.patch(tmp, want, log=logs.append)
     check(changed == 0, 'idempotent')
+    # Lua monsters of the base (O533): lookType changes, the colour fields go, lookMount and the rest stay
+    lua = os.path.join(tmp, 'monster', 'lua', 'soul_war')
+    os.makedirs(lua)
+    colours_lua = '\tlookHead = 81,\n\tlookBody = 114,\n\tlookLegs = 85,\n\tlookFeet = 83,\n\tlookAddons = 0,\n'
+    lua_src = ('local mType = Game.createMonsterType("%s")\nlocal monster = {}\n\nmonster.outfit = {\n\tlookType = 1046,\n'
+               + colours_lua + '\tlookMount = 0\n}\n\nmonster.health = 5\n')
+    open(os.path.join(lua, 'a.lua'), 'w').write(lua_src % 'Lua Test Monster')
+    open(os.path.join(lua, 'b.lua'), 'w').write('local mType = Game.createMonsterType("Lua Plain")\nmonster.outfit = {\n\tlookType = 978\n}\n')
+    open(os.path.join(lua, 'c.lua'), 'w').write(lua_src % 'Lua Other')
+    lwant = {'Lua Test Monster': (3184, {}), 'Lua Plain': (3349, {})}
+    changed, missing = P.patch(tmp, lwant, log=logs.append)
+    check(changed == 2 and not missing, 'two Lua monsters updated, got %d %s' % (changed, missing))
+    a = open(os.path.join(lua, 'a.lua')).read()
+    check(a == (lua_src.replace('1046', '3184').replace(colours_lua, '') % 'Lua Test Monster'), 'Lua colours removed, lookMount kept: ' + a)
+    check('lookType = 3349' in open(os.path.join(lua, 'b.lua')).read(), 'Lua monster with one field')
+    check('lookType = 1046' in open(os.path.join(lua, 'c.lua')).read(), 'other Lua monsters untouched')
+    changed, _ = P.patch(tmp, lwant, log=logs.append)
+    check(changed == 0, 'Lua: idempotent')
+    tint = {'head': '1', 'body': '2', 'legs': '3', 'feet': '4'}
+    open(os.path.join(lua, 'd.lua'), 'w').write(lua_src % 'Lua Sheet')
+    P.patch(tmp, {'Lua Sheet': (2300, tint)}, log=logs.append)
+    d = open(os.path.join(lua, 'd.lua')).read()
+    check('lookType = 2300, lookHead = 1, lookBody = 2, lookLegs = 3, lookFeet = 4,\n\tlookMount = 0' in d, 'Lua sheet look with tint: ' + d)
+    changed, _ = P.patch(tmp, {'Lua Sheet': (2300, tint)}, log=logs.append)
+    check(changed == 0, 'Lua sheet: idempotent')
     check(P.main([tmp, '--dry-run', '--strict']) == 1, '--strict fails on a missing name')
 finally:
     shutil.rmtree(tmp)

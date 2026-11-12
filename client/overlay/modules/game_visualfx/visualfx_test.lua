@@ -400,6 +400,24 @@ do
   eq(src:find('L.ARC_MISSILES', 1, true) ~= nil, true, 'the arc list is sent')
 end
 
+do
+  -- O526 (base patch 0194): the baked-trail list is sane and sent
+  local seen, prev = {}, 0
+  for _, id in ipairs(L.BAKED_TRAIL_MISSILES) do
+    eq(type(id) == 'number' and id == math.floor(id) and id > 0 and id < 256, true, 'baked id ' .. tostring(id) .. ' is a one byte missile id')
+    eq(seen[id], nil, 'baked id ' .. tostring(id) .. ' is listed once')
+    eq(id > prev, true, 'the baked ids are ascending')
+    seen[id] = true
+    prev = id
+  end
+  eq(#L.BAKED_TRAIL_MISSILES, 6, 'six projectiles carry a trail')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find('L.BAKED_TRAIL_MISSILES', 1, true) ~= nil, true, 'the baked list is sent')
+  eq(src:find('Missile.addBakedTrailId', 1, true) ~= nil, true, 'through addBakedTrailId')
+end
+
 do -- O235: option values are read once and refreshed by the options' apply
   local reads, store, up = 0, { hitFlash = false, bloom = true }, true
   local C = L.newOptionCache(function(name)

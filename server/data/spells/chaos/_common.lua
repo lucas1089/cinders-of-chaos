@@ -358,6 +358,25 @@ function ChaosSpell.vfxDir(pos, base, direction)
 	return VfxDir ~= nil and pos ~= nil and VfxDir(Position(pos), base, direction)
 end
 
+-- O523: the stock energy hit (12) and ice attack (44) that a single-target spell sends on its target are plain 32 px blobs with a
+-- dithered halo; the pack's lightning blast (pair 29, 3x3) and ice explosion (pair 30, 3x3) are sent in their place. Returns the
+-- stock effect to pass to the combat call: CONST_ME_NONE when the pack effect was sent, else `effect` unchanged. An effect other
+-- than those two stays as it is. Area hits do not use it (one blast per target would bury the screen).
+ChaosSpell.PLAIN_HIT = {}
+if CONST_ME_ENERGYHIT then
+	ChaosSpell.PLAIN_HIT[CONST_ME_ENERGYHIT] = "blast_lightning"
+end
+if CONST_ME_ICEATTACK then
+	ChaosSpell.PLAIN_HIT[CONST_ME_ICEATTACK] = "mfx_ice"
+end
+function ChaosSpell.plainHit(pos, effect)
+	local name = effect and ChaosSpell.PLAIN_HIT[effect]
+	if name and ChaosSpell.vfx(pos, name) then
+		return CONST_ME_NONE
+	end
+	return effect
+end
+
 -- pack effect, or the chaos effect `name` / stock `fallback` when the pack effect is not there
 function ChaosSpell.vfxOr(pos, vname, name, fallback)
 	if not ChaosSpell.vfx(pos, vname) then
@@ -870,7 +889,7 @@ function ChaosSpell.damageTarget(caster, target, ctype, min, max, effect)
 	if not ChaosSpell.canAttack(caster, target) then
 		return false
 	end
-	return doTargetCombat(caster, target, ctype, -math.floor(min), -math.floor(max), effect)
+	return doTargetCombat(caster, target, ctype, -math.floor(min), -math.floor(max), ChaosSpell.plainHit(target:getPosition(), effect))
 end
 
 function ChaosSpell.healTarget(caster, target, min, max, effect)

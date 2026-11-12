@@ -2,6 +2,7 @@
 """Bounty board monster pool (data/scripts/chaos/bounty_pool.lua) from the map that is really loaded.
 
 usage: python3 -I gen_bounty_pool.py DATA_DIR [OUT_FILE] [--spawn PATH] [--config PATH] [--csv PATH]
+       python3 -I gen_bounty_pool.py --relook DATA_DIR [POOL_FILE]
 
 Reads
   - the spawn file of the loaded map: DATA_DIR/world/<mapName>-spawn.xml, mapName from config.lua
@@ -11,6 +12,10 @@ Reads
 and writes OUT_FILE (default: data/scripts/chaos/bounty_pool.lua next to this tools folder, i.e. the repo copy) as a
 plain Lua table: every monster that spawns on the map with its spawn count, experience, health, outfit and an
 estimated hunting level (see estimate_level). bounty.lua picks the daily contracts from it per level band.
+
+--relook rewrites only the look fields (look and the colours) of the lines of an existing pool file from the monster files
+of DATA_DIR and keeps everything else (levels, spawns, order): for a look change (O533, new looks with an idle animation) on a
+machine that has the monster files but not the loaded map; a rerun on the real server gives the same look fields.
 
 Rerun it after any change to the spawn file (for example after tools/late_game.py) or to monster experience/health.
 The output is sorted and carries no date, so a rerun without changes gives the same file. --csv writes every
@@ -45,6 +50,30 @@ DENY = _deny_pattern()
 def read(path):
     with open(path, encoding='utf-8', errors='replace') as f:
         return f.read()
+
+
+RECOLOUR = os.path.join(HERE, '..', 'data', 'monster', 'monster_recolour_looks.csv')
+
+
+def _recolour_copies():
+    """{monster name: (old look, copy look)} of data/monster/monster_recolour_looks.csv (O531)"""
+    import csv
+    out = {}
+    if os.path.exists(RECOLOUR):
+        for r in csv.DictReader(open(RECOLOUR, newline='', encoding='utf-8')):
+            out[r['monster']] = (int(r['look']), int(r['new_look']))
+    return out
+
+
+COPIES = _recolour_copies()
+
+
+def committed_look(name, look):
+    """The look the committed pool carries. From client pair 69 the install step `monsterrecolour` writes the hue shifted copy of
+    a monster's outfit into its installed file, and into the installed copy of this pool; a run of this tool on such a server
+    must still give the committed file (old look), so the copy is turned back here (README "Monster recolours (O531)")."""
+    c = COPIES.get(name)
+    return c[0] if c and look == c[1] else look
 
 
 def attr(tag, name):
@@ -200,7 +229,7 @@ def build(data_dir, spawn_path):
         if m:
             lvl = estimate_level(m)
             entry = {'name': m['name'], 'level': lvl, 'exp': m['exp'], 'health': m['health'], 'spawns': s['count'],
-                     'look': m['look'], 'outfit': [m.get('look_' + k, 0) for k in ('head', 'body', 'legs', 'feet', 'addons')],
+                     'look': committed_look(m['name'], m['look']), 'outfit': [m.get('look_' + k, 0) for k in ('head', 'body', 'legs', 'feet', 'addons')],
                      'spawntime': s['spawntime']}
             if not reason and m['boss']:
                 if s['spawntime'] <= BOSS_MAX_SPAWNTIME:
@@ -252,8 +281,40 @@ def render(hunt, bosses, spawn_name):
     return '\n'.join(out)
 
 
+POOL_LINE = re.compile(r'^(\t\t\{name = ("(?:[^"\\]|\\.)*"), level = \d+, exp = \d+, health = \d+, spawns = \d+, look = )(\d+)'
+                       r'((?:, head = \d+, body = \d+, legs = \d+, feet = \d+, addons = \d+)?)\},$', re.M)
+
+
+def relook(text, mons):
+    """(new pool text, number of lines changed): the look fields of every pool line from mons (load_monsters)."""
+    changed = [0]
+
+    def sub(m):
+        name = m.group(2)[1:-1].replace('\\"', '"').replace('\\\\', '\\')
+        mon = mons.get(name.lower())
+        if not mon:
+            return m.group(0)
+        outfit = [mon.get('look_' + k, 0) for k in ('head', 'body', 'legs', 'feet', 'addons')]
+        extra = ', head = %d, body = %d, legs = %d, feet = %d, addons = %d' % tuple(outfit) if any(outfit) else ''
+        line = '%s%d%s},' % (m.group(1), mon['look'], extra)
+        if line != m.group(0):
+            changed[0] += 1
+        return line
+    return POOL_LINE.sub(sub, text), changed[0]
+
+
 def main():
     argv = sys.argv[1:]
+    if argv and argv[0] == '--relook':
+        if len(argv) not in (2, 3):
+            print(__doc__)
+            return 1
+        pool = argv[2] if len(argv) == 3 else DEFAULT_OUT
+        text, n = relook(read(pool), load_monsters(argv[1]))
+        with open(pool, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(text)
+        print(f'{pool}: {n} look field(s) changed')
+        return 0
     opts = {}
     for k in ('--spawn', '--config', '--csv'):
         if k in argv:
