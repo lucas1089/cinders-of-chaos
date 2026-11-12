@@ -4318,12 +4318,17 @@ other 35 outfits have no mask layer, so the second, third and fourth monster of 
 - **The copy.** The flag bytes, frame groups (idle and walk), sizes, directions, phases, animator durations and sprite layout of the source outfit, with every sprite through `recolour()`
   (`mode hue`: the hue of each pixel moves by `hue_shift` degrees, saturation and value stay, a grey pixel stays; `mode tint`: a nearly grey outfit takes the hue `hue_shift` at saturation 0.45). Alpha stays.
   Two rows of one look are two copies of it, each with its own records; records that come out the same share an id. 52 outfits, 9,397 sprite slots, 1,609 frames; 6,490 sprite records appended.
+- **The colours** (owner 2026-11-12 after the first preview, translated: "in the recoloured ones, make the colour very different from the original"): the dominant hue of a copy is at least 120 degrees
+  from the source's and from the other copies of its look (a look of 4 or more colours, source included, spreads them evenly, 360 / colours: the groups of look 2220 (6) and 1485 (4) can not reach 120; another
+  agent will thin them out), a source below saturation 0.36 takes mode `tint` (hue set, saturation at least 0.6), and where a theme colour and the rule clash the rule wins (the closest theme colour that
+  satisfies it). `gen_monster_recolour.py check` and its test hold it. The dat is the same as the first build (same outfits, same layout), only the sprite colours and so the spr md5 changed. A later removal
+  of rows keeps the build working (the ids follow the remaining rows; the pair is then rebuilt as a new pair).
 - **Ids.** `gen_monster_recolour.py ids` writes `art_import/monster_recolour_ids.csv` (monster, look, new_look, hue_shift, mode) and `server/data/monster/monster_recolour_looks.csv` (monster, look, new_look,
   read by the install step `monsterrecolour`, the audit and `tools/ci/check_content.py`); both are checked by `gen_monster_recolour.py check` (and `ids --check`). The ids do not wait for the pair.
 - **Run.** Input pair 68 (dat 6b5638b4057f86f484bc506b00079f19, spr d3de6971d90415242375be76ca842aa3; the md5 is checked first):
   `python3 -I client/tools/sprites/gen_monster_recolour.py build P68/Tibia.dat P68/Tibia.spr P69` (13 s; P69 must not exist; written to `P69.tmp`, verified, then renamed). Verified in the run: the output re-parses,
   every old item, outfit, effect and missile is byte identical, 3,000 sampled old sprites are unchanged, every sprite slot of every copy is `recolour()` of the source slot, then `check_pair.py`'s append-only guard.
-  Output **pair 69**: dat **66d98f722120044132872d6d57998310** (8,942,192 bytes), spr **434387223419f02887428eaaedd1a023** (1,124,884,206 bytes, 963,579 sprites), 44,559 items, 3,422 outfits, 4,742 effects, 253 missiles.
+  Output **pair 69**: dat **66d98f722120044132872d6d57998310** (8,942,192 bytes), spr **a17b0d9e41a97d385d6f93cc4cf482a3** (1,124,884,206 bytes, 963,579 sprites), 44,559 items, 3,422 outfits, 4,742 effects, 253 missiles.
 - **Checks** (offline, not in a client). `check_pair.py P69 --old P68 --new-only`: 0 errors, 0 warnings in the new things; the whole pair: 0 errors, 11,843 warnings (pair 68's). `gen_monster_recolour.py live`
   (every copy at its id: flags, groups and animator of its source, every sprite the recoloured source sprite): 52 outfits, 0 problems. The CI steps of "Live sprite pair" that read the pair were regenerated or
   passed: `gen_outfit_anchors.py`, `gen_info_lift.py`, `gen_wing_centres.py`, `gen_foot_marks.py` (the dat md5 line and the 52 new ids), `fit_pair50_offsets.py`, `gen_donor_fx.py live`, `clean_wing_shadows.py check-clean`,

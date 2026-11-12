@@ -71,10 +71,10 @@ def snapshot(d):
 rows = M.read_map()
 with open(os.path.join(REPO, 'client', 'tools', 'sprites', 'art_import', 'monster_recolour.csv'), newline='') as f:
     table = list(csv.DictReader(f))
-check(len(rows) == 52 and len(table) == 52, 'the map has 52 rows')
-check([r[2] for r in rows] == list(range(3371, 3423)), 'new looks are 3371..3422 in table order')
+check(len(rows) == len(table) and len(rows) > 0, 'the map has a row for every row of the table (rows may be removed later)')
+check([r[2] for r in rows] == list(range(3371, 3371 + len(rows))), 'new looks are 3371.. in table order')
 check([(r[0], r[1]) for r in rows] == [(t['monster'], int(t['look'])) for t in table], 'monsters and old looks are the table\'s')
-check(len({r[0] for r in rows}) == 52, 'one row per monster')
+check(len({r[0] for r in rows}) == len(rows), 'one row per monster')
 check(C.PAIR_RECOLOUR == 69, 'the step needs pair 69')
 
 # ---- the repository files hold the old looks (the step moves them on an installed server only)
@@ -143,12 +143,12 @@ shutil.copytree(chaos, os.path.join(d6, 'data', 'monster', 'monsters', 'chaos'))
 os.makedirs(os.path.join(d6, 'data', 'scripts', 'chaos'))
 shutil.copy(os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'bounty_pool.lua'), os.path.join(d6, 'data', 'scripts', 'chaos', 'bounty_pool.lua'))
 rc, out = run(os.path.join(d6, 'data'))
-check(rc == 0 and '52 moved to their copy, 0 already there' in out, 'the real map moves the 52 repository files (%s)' % out.strip())
+check(rc == 0 and '%d moved to their copy, 0 already there' % len(rows) in out, 'the real map moves every repository file (%s)' % out.strip())
 m = re.search(r'bounty_pool.lua: (\d+) rows moved', out)
 installed_pool = open(os.path.join(d6, 'data', 'scripts', 'chaos', 'bounty_pool.lua')).read()
 pool_names = {r['name'] for r in A.pool_rows(os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'bounty_pool.lua'))}
 in_pool = [r for r in rows if r[0] in pool_names]
-check(m and int(m.group(1)) == len(in_pool) and len(in_pool) >= 40, 'the pool rows of the map\'s monsters move (%s rows)' % (m.group(1) if m else '?'))
+check(m and int(m.group(1)) == len(in_pool) and len(in_pool) >= 1, 'the pool rows of the map\'s monsters move (%s rows)' % (m.group(1) if m else '?'))
 # installed pool and files read at pair 69: no two hunt monsters share a look
 check(A.check_pool(os.path.join(d6, 'data', 'scripts', 'chaos', 'bounty_pool.lua'), pair=69) == [], 'the installed pool at pair 69: no shared look')
 # the generator turns a copy back to the old look

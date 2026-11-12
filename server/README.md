@@ -33093,7 +33093,7 @@ them worse and chose a recolour: every monster of a shared look but the first ge
   hue shifted copy of the outfit in the pair. Table `client/tools/sprites/art_import/monster_recolour.csv` (look, hue shift in
   degrees, monster; mode `hue` rotates the hue, `tint` sets the hue of a nearly grey outfit; theme by the monster's name and
   element: fire reds, ice blues, poison greens, undead and shadow purples, iron browns, gold yellows, blood crimsons; the colours
-  of one look are at least 40 degrees apart and from the source hue). `client/tools/sprites/gen_monster_recolour.py` holds the
+  of one look are at least 120 degrees apart and from the source hue, owner 2026-11-12 in O531; a grey source is tinted). `client/tools/sprites/gen_monster_recolour.py` holds the
   pixel transform (`recolour()`), `check`, `ids`, `build` and `live`; pair 69 holds the 52 copies (O531, next section). The groups
   were rows of the allow list with status `recolour pair` until then; the rows are gone, the audit reads the monsters at the
   client pair (a group the map separates waits below pair 69, is distinct from it).

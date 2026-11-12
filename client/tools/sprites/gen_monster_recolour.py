@@ -15,9 +15,15 @@ art_import/monster_recolour.csv names one row per such monster:
   hue_shift   degrees added to the hue of every pixel (mode hue), or the target hue itself (mode tint)
   monster     the exact <monster name>
   mode        hue  = rotate the hue of each pixel, keep its saturation and value
-              tint = the outfit is nearly grey (source_sat < 0.22): set the hue to hue_shift, lift the saturation to TINT_SAT
+              tint = a grey or low saturation outfit (source_sat < 0.36): set the hue to hue_shift, lift the saturation to TINT_SAT
   theme       why the colour: fire, ice, poison, shadow, iron, gold, blood, arcane (the monster's name and element)
   source_hue  the outfit's dominant hue in degrees (saturation weighted), source_sat its mean saturation (informative)
+
+Rule (owner 2026-11-12 after the first preview, translated: "make the colour very different from the original"): the dominant hue
+of a copy is at least FAR = 120 degrees from the source's and from every other copy of the look (a look with 4 or more colours, source
+included, spreads them evenly: 360 // colours; the groups of 5 and 6 are the ones the monster changes will thin out). A source below
+LOW_SAT takes mode tint with a saturation of at least TINT_SAT. Where a theme colour and the rule clash the rule wins (the closest
+theme colour that satisfies it). `check` holds it.
 
 Pair 69 (O531) appends one copy per row as a new outfit after the 3,370 outfits of pair 68: the row at line n (0-based) of
 the table becomes outfit 3371 + n. The copy has the source's flag bytes, frame groups, sizes, directions, phases, animator
@@ -43,13 +49,15 @@ IDS = os.path.join(HERE, 'art_import', 'monster_recolour_ids.csv')
 SERVER_IDS = os.path.join(REPO, 'server', 'data', 'monster', 'monster_recolour_looks.csv')
 MONSTERS = os.path.join(REPO, 'server', 'data', 'monster', 'monsters', 'chaos')
 HEADER = ['look', 'hue_shift', 'monster', 'mode', 'theme', 'source_hue', 'source_sat']
-TINT_SAT = 0.45
+TINT_SAT = 0.6       # a tinted (near grey) outfit is lifted to at least this saturation: the colour must read at game size
+LOW_SAT = 0.36       # a source below this mean saturation takes mode tint (a hue turn of a grey stays grey)
 PAIR = 69            # the pair that holds the copies
 MIN_PAIR = 68        # the copies go after the last outfit of this pair
 OUTFITS_68 = 3370    # outfits of pair 68; the first copy is the next id
 FIRST_NEW = OUTFITS_68 + 1
 DAT_68_MD5 = '6b5638b4057f86f484bc506b00079f19'
-MIN_APART = 40       # degrees between two colours of one look
+FAR = 120            # degrees between the colour of a copy and the source, and between two copies of one look (owner 2026-11-12:
+                     # "make the colour very different from the original"); a look of 4 or more colours spreads them evenly: 360 // colours
 
 
 def recolour(rgba, hue_shift, mode='hue'):
@@ -100,7 +108,7 @@ def monster_looks(root=MONSTERS):
 
 
 def problems(table=None, monsters=None):
-    """What is wrong with the table: shift range, mode, one row per monster, the colours of one look MIN_APART degrees apart
+    """What is wrong with the table: shift range, mode, one row per monster, the colours of one look FAR (120) degrees apart
     (the source hue counts as one of them in mode hue), and (committed table, or `monsters` given) the row's look is the one
     the monster's file names today."""
     t = rows() if table is None else table
@@ -116,16 +124,23 @@ def problems(table=None, monsters=None):
         seen.add(r['monster'])
         by.setdefault(r['look'], []).append(r)
     for look, rs in by.items():
-        hs = [(int(r['hue_shift']) + (int(r['source_hue']) if r['mode'] == 'hue' else 0)) % 360 for r in rs]
-        if rs[0]['mode'] == 'hue':
-            hs.append(int(rs[0]['source_hue']))
+        h0 = int(rs[0]['source_hue'])
+        hs = [(int(r['hue_shift']) + (h0 if r['mode'] == 'hue' else 0)) % 360 for r in rs] + [h0]   # the copies, then the source
+        need = min(FAR, 360 // len(hs))
+        low = float(rs[0]['source_sat']) < LOW_SAT
+        for r in rs:
+            if (r['mode'] == 'tint') != low:
+                out.append('%s: source saturation %s needs mode %s' % (r['monster'], r['source_sat'], 'tint' if low else 'hue'))
         for i, a in enumerate(hs):
             for b in hs[i + 1:]:
                 d = abs(a - b) % 360
-                if min(d, 360 - d) < MIN_APART:
+                if min(d, 360 - d) < need:
                     out.append('look %s: two colours are less than %d degrees apart (%s)'
-                               % (look, MIN_APART, ', '.join(r['monster'] for r in rs)))
+                               % (look, need, ', '.join(r['monster'] for r in rs)))
                     break
+            else:
+                continue
+            break
     if table is None or monsters is not None:
         have = monster_looks() if monsters is None else monsters
         for r in t:

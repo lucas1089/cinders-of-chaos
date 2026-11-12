@@ -68,16 +68,27 @@ def main():
     assert max(o[:3]) == 200 and min(o[:3]) == 0, o
     t = G.recolour(px(100, 100, 100), 120, 'tint')[0, 0]   # grey takes the target hue at the tint saturation, value kept
     assert t[1] == 100 and t[0] == t[2] and abs(int(t[0]) - round(100 * (1 - G.TINT_SAT))) <= 1, t
+    assert G.TINT_SAT >= 0.6 and G.FAR == 120
     # the committed table
     assert G.problems() == [], G.problems()
     assert G.problems([row('A', 400)], {})
     assert any('less than' in p for p in G.problems([row('A', 10), row('B', 20)], {'A': 1, 'B': 1}))
-    assert G.problems([row('A', 100), row('B', 200)], {'A': 1, 'B': 1}) == []
+    assert G.problems([row('A', 120), row('B', 240)], {'A': 1, 'B': 1}) == []   # source 0, copies 120 and 240: 3 colours, 120 apart
+    assert any('less than 120' in p for p in G.problems([row('A', 100), row('B', 240)], {'A': 1, 'B': 1}))   # 100 is 100 from the source
+    assert G.problems([row('A', 180)], {'A': 1}) == [] and any('less than' in p for p in G.problems([row('A', 100)], {'A': 1}))
+    assert any('needs mode tint' in p for p in G.problems([dict(row('A', 180), source_sat='0.2')], {'A': 1}))   # a low saturation source tints
+    assert G.problems([dict(row('A', 180, mode='tint'), source_sat='0.2')], {'A': 1}) == []
+    five = [row('R%d' % i, 60 * (i + 1), look='5') for i in range(5)]   # 6 colours: 60 apart is the best there is
+    assert G.problems(five, {r['monster']: 5 for r in five}) == [], G.problems(five, {r['monster']: 5 for r in five})
+    # every committed look: the rule, and a removed row leaves the rest buildable (ids follow the remaining rows)
+    committed = G.rows()
+    sub = committed[3:20] + committed[30:]
+    assert [r[2] for r in G.id_rows(sub)] == list(range(3371, 3371 + len(sub)))
     assert any('two rows' in p for p in G.problems([row('A', 100), row('A', 200)], {'A': 1}))
     assert any('monster file says 2' in p for p in G.problems([row('A', 100)], {'A': 2}))   # the table's look is the file's
     # the ids: the row at line n is outfit 3371 + n, both files are in sync with the table
     ids = G.id_rows()
-    assert [r[2] for r in ids] == list(range(3371, 3371 + len(G.rows()))) and len(ids) == 52, ids[:2]
+    assert [r[2] for r in ids] == list(range(3371, 3371 + len(G.rows()))) and len(ids) == len(G.rows()), ids[:2]
     assert G.FIRST_NEW == G.OUTFITS_68 + 1 == 3371
     assert G.write_ids(check=True) == [], G.write_ids(check=True)
     a, b = G.id_texts([row('A', 10), row('B', 20, look='7')], first=100)
