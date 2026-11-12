@@ -150,7 +150,8 @@ namespace Chaos.Client
         {
             int id = PackFx.BeamId(look.Group);
             if (id == 0) return false;
-            return DrawPackEffect(id, tile, now, true, map, scale, look.Intensity);
+            var g = world?.Dat?.Effect(id)?.Idle;
+            return DrawPackEffect(id, PackFx.BeamTile(tile, g), now, true, map, scale, look.Intensity);   // pair 65: 3 x 5 tiles, one tile south-east
         }
 
         // ------------------------------------------------------------------------------------------------ cooldown pulse

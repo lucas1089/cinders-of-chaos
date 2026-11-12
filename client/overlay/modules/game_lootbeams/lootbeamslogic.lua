@@ -51,6 +51,22 @@ LB.EFFECT_NAMES = { white = 'beam_silver_metal', blue = 'beam_rare', orange = 'b
   divine = 'beam_rainbow_prismatic', unique = 'beam_green_nature', orb = 'beam_ancient' }
 LB.EFFECT_MS = 1750 -- one play: 25 frames of 70 ms (the strip's 24 and an empty one)
 
+-- Pair 65 (O522, owner 2026-11-12: "ours still looks like just a few strokes") draws the beams at full size: a frame
+-- group of 3 x 5 tiles (96 x 160 px, the strips' 64 x 128 art shifted so the centre of the ground ring is where the old
+-- 1 x 2 beam's was) whose bottom-right tile is the item's tile + (1, 1): the item's tile is column 1, row 3 of the group,
+-- so the art may reach 3 px right of the tile and 4 px below it. The engine puts the bottom-right tile of an effect on the
+-- tile it is added to, so a beam of that size is added at the tile + (1, 1). A pair below 65 has the beams halved, 1 x 2,
+-- added at the tile itself. The size of the effect in the pair says which (g_things, ThingType getWidth / getHeight).
+LB.FULL_SIZE = { w = 3, h = 5, dx = 1, dy = 1 }
+
+-- the tile to add a beam effect of w x h tiles to, for a beam on pos (a position table); pos itself for any other size
+function LB.effectPos(pos, w, h)
+  if type(pos) ~= 'table' or not pos.x or not pos.y or not pos.z then return pos end
+  local f = LB.FULL_SIZE
+  if w == f.w and h == f.h then return { x = pos.x + f.dx, y = pos.y + f.dy, z = pos.z } end
+  return pos
+end
+
 -- the effect id of a group's beam, or nil
 function LB.effectFor(group)
   local id = LB.EFFECTS[group]
