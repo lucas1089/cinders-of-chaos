@@ -63,7 +63,7 @@ ChaosAttackKit.cfg = {
 		dreamrot = {
 			id = 43, name = "Dreamrot", words = "kah mynd putr", level = 230, mana = 470, vocations = {"Illusionist"},
 			school = "magic", power = "magic", ctype = "death", pMin = 0, pMax = 0, mMin = 3.218, mMax = 5.149,
-			bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 5, ticks = 6, tickMs = 400, pshot = "proj_water_bolt_abyss", fx = "shadow_smoke",
+			bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 5, ticks = 6, tickMs = 400, pshot = "p51_magenta_orb_tendrils", fx = "shadow_smoke",
 			hitFx = "CONST_ME_SMALLCLOUDS"
 		},
 		guttingslash = {
@@ -160,7 +160,7 @@ ChaosAttackKit.cfg = {
 			id = 118, name = "Soulrend Beam", words = "kah nyx lanc", level = 170, mana = 270,
 			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
 			pMin = 0, pMax = 0, mMin = 9.719, mMax = 15.55, bMin = 20, bMax = 40, scale = 1, shape = "line", range = 6,
-			length = 6, pshot = "proj_flame_lance_spirit", fx = "void_eye", vfx = "void_rift"
+			length = 6, pshot = "p51_pink_lightning", fx = "void_eye", vfx = "void_rift"
 		},
 		cryptcollapse = {
 			id = 119, name = "Crypt Collapse", words = "drai gal oss", level = 210, mana = 415,
