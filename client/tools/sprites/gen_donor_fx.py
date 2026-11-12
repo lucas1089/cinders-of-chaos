@@ -19,7 +19,8 @@ donor's light flag and loop fields are not copied (import_fx_art.py writes the p
 
 Send offset (dx, dy): the whole tiles past the target tile that put the alpha weighted centre of the art over all
 phases nearest the middle of the target tile (the client draws the bottom right tile of an effect on the tile it is sent
-to, so the canvas starts w - 1 - dx tiles up and left of the target). The art is not moved.
+to, so the canvas starts w - 1 - dx tiles up and left of the target). The art is not moved. The two bolts (FOOT: 632 sky strike,
+528 lightning bolt) are fitted by the foot of the bolt, its lowest dense row, which must land on the target tile.
 
 Then import_fx_art.py appends them after the effects of the input pair:
     python3 -I import_fx_art.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --out-dir OUT --spec art_import/donor_fx.csv \
@@ -89,6 +90,26 @@ def centre_of(frames):
     return (cx / total, cy / total)
 
 
+# strike type effects: a bolt lands on the target with its FOOT (the lowest dense row), so the send offset is fitted to that point,
+# not to the alpha centre of the whole picture (O525 fix: Forked Storm looked out of plumb, the bolt's box was centred on the target)
+FOOT = (632, 528)
+FOOT_DENSE = 0.15      # a row is dense when its alpha sum is at least this share of the densest row
+
+
+def foot_of(frames):
+    """(x, y) px of the foot of a bolt: the median over the phases of the lowest dense row and the alpha weighted x on it"""
+    import numpy as np
+    pts = []
+    for fr in frames:
+        a = fr[..., 3].astype(float)
+        if a.sum() == 0:
+            continue
+        rs = a.sum(1)
+        low = np.where(rs >= FOOT_DENSE * rs.max())[0].max()
+        pts.append(((a[low] * np.arange(a.shape[1])).sum() / a[low].sum(), low))
+    return (float(np.median([p[0] for p in pts])), float(np.median([p[1] for p in pts])))
+
+
 def durs_text(anim, phases):
     if not anim:
         return '100'
@@ -108,7 +129,7 @@ def rows_from(src):
         t = dat.effects[eid - 1]
         assert (t.layers, t.px, t.py, t.pz) == (1, 1, 1, 1), (eid, 'layers or patterns')
         frames = [np.array(render_frame(t, spr, p)) for p in range(t.phases)]
-        cx, cy = centre_of(frames)
+        cx, cy = foot_of(frames) if eid in FOOT else centre_of(frames)
         durs = durs_text(t.anim, t.phases)
         mean = [int(x.split(':')[0]) for x in durs.split(';')]
         strip = np.concatenate(frames, axis=1)

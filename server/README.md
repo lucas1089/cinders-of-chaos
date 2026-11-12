@@ -31357,7 +31357,7 @@ effect that already is in the pair. No art, no pair, no engine patch, no opcode;
 Owner 2026-11-12: "Todos" on a sheet of the 40 best effects of the owner's donor client (docs/CREDITS.md "Owner-supplied spell effects"). Client pair 68 appends them as effect ids 4703 to 4742
 (client/MANIFEST.md "Pair 68"); this section is the server side. Art, balance, damage, area, timing and targets do not change; the spells below send another picture.
 
-* **Ids:** `data/lib/chaos_donor_fx_ids.lua`, `ChaosVfx.donor_<element>_<role>_<donor id> = {id, dx, dy, ms}` (send offset fitted to the art, `ms` the sum of the donor's frame durations),
+* **Ids:** `data/lib/chaos_donor_fx_ids.lua`, `ChaosVfx.donor_<element>_<role>_<donor id> = {id, dx, dy, ms}` (send offset fitted to the art: the alpha centre, the foot of the bolt for the two lightning bolts 528 and 632; `ms` the sum of the donor's frame durations),
   written by `python3 -I client/tools/sprites/gen_donor_fx.py ids` from `data/spells/donor_fx_catalog.csv` (written by the import, so the ids follow the input pair); `ids --check` is in CI.
   The same step writes the 40 element tags of `data/spells/spell_fx_elements.csv` and keeps the `spell_fx_allow.csv` rows of this set (none). `ChaosPack36Fx.live()` loads the file with the pair 50 ids.
   An id changes only when the pair is rebuilt on another input: regenerate the table and the tags, never edit them.

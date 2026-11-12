@@ -3,8 +3,8 @@ replace,kind,name,file,w,h,phases,ms,dx,dy,note,alpha,durs,donor,element,role,ra
 ,effect,donor_ice_hit_475,donor_fx/donor_ice_hit_475.png,1,1,10,100,0,0,"ice hit of the owner's donor client, effect 475 (rank 2)",soft,80;80;80;120;200;120;80;80;80;80,475,ice,hit,2
 ,effect,donor_ice_nova_279,donor_fx/donor_ice_nova_279.png,9,9,5,100,4,4,"ice nova of the owner's donor client, effect 279 (rank 3)",soft,100;100;100;100;100,279,ice,nova,3
 ,effect,donor_ice_burst_531,donor_fx/donor_ice_burst_531.png,4,4,9,80,2,2,"ice burst of the owner's donor client, effect 531 (rank 4)",soft,80;80;80;80;80;80;80;80;80,531,ice,burst,4
-,effect,donor_energy_strike_632,donor_fx/donor_energy_strike_632.png,5,5,9,67,2,2,"energy strike of the owner's donor client, effect 632 (rank 5)",soft,60;60;60;60;60;60;80;80;80,632,energy,strike,5
-,effect,donor_energy_bolt_528,donor_fx/donor_energy_bolt_528.png,3,3,22,60,1,1,"energy bolt of the owner's donor client, effect 528 (rank 6)",soft,60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60,528,energy,bolt,6
+,effect,donor_energy_strike_632,donor_fx/donor_energy_strike_632.png,5,5,9,67,0,0,"energy strike of the owner's donor client, effect 632 (rank 5)",soft,60;60;60;60;60;60;80;80;80,632,energy,strike,5
+,effect,donor_energy_bolt_528,donor_fx/donor_energy_bolt_528.png,3,3,22,60,0,0,"energy bolt of the owner's donor client, effect 528 (rank 6)",soft,60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60;60,528,energy,bolt,6
 ,effect,donor_fire_hit_465,donor_fx/donor_fire_hit_465.png,3,3,8,72,1,1,"fire hit of the owner's donor client, effect 465 (rank 7)",soft,80;80;80;80;80;80;60;40,465,fire,hit,7
 ,effect,donor_fire_nova_276,donor_fx/donor_fire_nova_276.png,9,9,5,100,4,4,"fire nova of the owner's donor client, effect 276 (rank 8)",soft,100;100;100;100;100,276,fire,nova,8
 ,effect,donor_arcane_nova_695,donor_fx/donor_arcane_nova_695.png,9,9,7,86,4,4,"arcane nova of the owner's donor client, effect 695 (rank 9)",soft,80;80;80;80;80;100;100,695,arcane,nova,9
