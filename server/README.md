@@ -33178,3 +33178,30 @@ that has". Later that day: "strange to reuse the same sprite 5 times, the Pit De
 - Not done: 637 monsters. The looks that move are used up; the other way is the client: a list like `game_bossanimate` that sets animateAlways on
   their looks would play their walk frames while they stand (no pair, one line per look; not decided). Not verified: in a running client (the
   preview renders the dat groups with the animator times of the dat).
+
+### Walk in place for the rest (O534; `client/overlay/modules/game_bossanimate/idle_walk_looks.lua`, `data/monster/player_looks.csv`, client/BASE.md `0194`)
+Owner 2026-11-12: the hunt monsters that still stand still play their walk animation in place. This replaces the "Not done" bullet above.
+- **The list.** `audit_idle_looks.py --write-walk-idle` writes `idle_walk_looks.lua` (`IdleWalkLooks`, sorted, 16 ids a line) from
+  `look_idle.csv` and `player_looks.csv`: a look with no idle animation, one idle phase and a walk group that draws 2 or more pictures
+  (`walk_info`, columns `walk` and `walk_frames` of `look_idle.csv`, written by `--write-idle Tibia.dat`), that no player can wear. 498 looks.
+  `look_idle.csv` now also holds the looks of the allow list (met monsters with 3 to 5 spawn points are not in the pool): 734 rows.
+- **Not players.** `player_looks.csv` (look, source; 792 rows) is every look of `XML/outfits.xml`, `mounts.xml`, `wings.xml`, `auras.xml` of an
+  installed server plus the `lookType` / `male` / `female` fields of `chaos_constants.lua`, `exclusives_config.lua`, `chaos_pack37_looks.lua`
+  (outfits behind a switch): `audit_idle_looks.py --write-player-looks DATA_DIR`. A flag on the look of a player outfit would move the
+  player, and one on a mount look moves every rider (`Outfit::draw` reads the mount's own flag), so these looks stay out.
+- **The module.** `game_bossanimate` loads the list before its logic: `L.WALK`, `L.applyWalk` calls `setAnimateAlways(true)` (base 0189)
+  on each look and `setWalkInPlace(true)` where the engine has base patch 0194. `bossanimatelogic_test.lua` (luajit and lua5.3) runs it on a fake engine.
+- **The engine and the speed.** 0189 alone: `Outfit::draw` takes `(millis % 1000) / (1000 / N)` as the phase, N the phases of the walk
+  group, counted from the idle picture: the creature cycles the idle picture and walk phases 1..N-1 (the last one never), one turn a
+  second, and while it walks it keeps that clock instead of the step phase (feet out of step). 0194 adds the flag `setWalkInPlace`: standing, phases
+  1..N, one turn a second (N pictures, 1000 / N ms each; 8 phases are 125 ms a frame, a step cycle is about 350 ms); walking, the step's phase. One turn a second
+  is calm next to a step, so no slower speed was added. The speed is fixed in `outfit.cpp` for all looks: a per look duration would need another patch; the dat
+  durations are used only by the UI path. Applies after 0001-0193 (`patch --dry-run --fuzz=0` on the patched tree); the client was not built.
+- **The allow list.** `no_idle_allow.csv` shrank from 640 to 45 rows: 44 monsters on a look a player can wear (human outfits 128-153, 268, 541 and the mounts 374, 515, 686,
+  886, 1076) and 1 on look 92, whose walk group draws one picture. The check treats a look of the generated list as moving (`check_pool`, `--check`).
+- **The check.** `check_content.py` rule `[look.walk]`: the list is up to date (`audit_idle_looks.py --write-walk-idle --check`, also a CI step) and holds no look of
+  `player_looks.csv`. `audit_idle_looks_test.py` tests `walk_info`, the list, the player reader and the committed state.
+- **Merge with O531.** The 12 monsters of the recolour table that O533 moved to other looks (Blight Bloom, Bonepicker, Corpselight Lurker, Dirge Herald, Pit Delver, Pitgnawer,
+  Quicksilver Wraith, Reliquary Urn, Siege Behemoth, Slagborer Reaver, Wan Sentry, Wax Penitent) left `monster_recolour.csv`: 40 rows, copies 3371-3410, Maw Grub 120 degrees.
+  The pair 69 built for 52 copies must be built again with `gen_monster_recolour.py build` before it ships.
+- Not verified: in a running client (the preview draws the dat groups with the rule of 0194).

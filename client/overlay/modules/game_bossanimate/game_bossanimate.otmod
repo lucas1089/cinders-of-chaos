@@ -1,9 +1,9 @@
 Module
   name: game_bossanimate
-  description: Boss looks with walk frames but no idle group animate while they stand (base patch 0189)
+  description: Boss looks and hunt monster looks with walk frames but no idle group animate while they stand (base patches 0189, 0194)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ bossanimatelogic, bossanimate ]
+  scripts: [ idle_walk_looks, bossanimatelogic, bossanimate ]
   dependencies:
     - game_interface
   autoload: true

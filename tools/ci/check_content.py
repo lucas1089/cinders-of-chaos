@@ -791,6 +791,15 @@ for _n, (_o, _nl) in sorted(_rmap.items()):
 import audit_idle_looks
 for msg in audit_idle_looks.check_pool():
     fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.idle] {msg}')
+# the walk in place list of game_bossanimate (O534): generated from look_idle.csv and player_looks.csv, up to date, and no look a
+# player can wear (a mount or an outfit must not walk in place)
+for msg in audit_idle_looks.check_walk():
+    fail(f'client/overlay/modules/game_bossanimate/idle_walk_looks.lua: [look.walk] {msg}')
+_player = audit_idle_looks.load_player()
+if not _player:
+    fail('server/data/monster/player_looks.csv: [look.walk] empty (run tools/audit_idle_looks.py --write-player-looks DATA_DIR)')
+for _l in sorted(audit_idle_looks.load_walklist() & set(_player)):
+    fail(f'client/overlay/modules/game_bossanimate/idle_walk_looks.lua: [look.walk] look {_l} is a player look ({_player[_l]})')
 for msg in audit_idle_looks.check_crowded():   # at most 2 hunt monsters on one look (owner 2026-11-12)
     fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.crowded] {msg}')
 for key in sorted(set(ALLOW) - allow_used):

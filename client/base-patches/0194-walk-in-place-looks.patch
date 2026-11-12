@@ -1,0 +1,51 @@
+# Chaos (0194, O534, owner 2026-11-12: the hunt monsters that still stand still play their walk animation in place; src/client/thingtype.h, outfit.cpp, luafunctions_client.cpp; after 0001-0193): ThingType:setWalkInPlace(bool) / isWalkInPlace() for Lua. Base 0189 made an animateAlways creature draw a clock phase at all times: (millis % 1000) / (1000 / N) over the walk group's N phases counted from the idle picture, so it showed the idle picture and skipped the last walk phase, and a creature that walked kept the clock, out of step with its feet. With the flag set (game_bossanimate sets it, with animateAlways, on the generated idle_walk_looks.lua list), a creature that stands cycles the walk phases 1..N, one turn a second, and a creature that walks draws the step's phase (walkAnimationPhase). The ui path is untouched. Without this patch the module still works as with 0189 alone.
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -807,6 +807,8 @@
+     g_lua.bindClassMemberFunction<ThingType>("isNotPathable", &ThingType::isNotPathable);
+     g_lua.bindClassMemberFunction<ThingType>("setPathable", &ThingType::setPathable);
+     g_lua.bindClassMemberFunction<ThingType>("setAnimateAlways", &ThingType::setAnimateAlways);
++    g_lua.bindClassMemberFunction<ThingType>("setWalkInPlace", &ThingType::setWalkInPlace);
++    g_lua.bindClassMemberFunction<ThingType>("isWalkInPlace", &ThingType::isWalkInPlace);
+     g_lua.bindClassMemberFunction<ThingType>("isPickupable", &ThingType::isPickupable);
+     g_lua.bindClassMemberFunction<ThingType>("isHangable", &ThingType::isHangable);
+     g_lua.bindClassMemberFunction<ThingType>("isHookSouth", &ThingType::isHookSouth);
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -124,6 +124,16 @@
+                                        (!g_game.getFeature(Otc::GameEnhancedAnimations) ? 333 : (1000 / phases));
+                 ticksPerFrame = std::max<int>(1, ticksPerFrame);
+                 animationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
++                // Chaos (0194): a look the overlay set to walk in place (game_bossanimate): standing, it cycles its walk phases
++                // 1..N (never the idle picture) one turn a second; walking, it keeps the step's phase (walkAnimationPhase)
++                if (!ui && type->isWalkInPlace() && animator && animator->getAnimationPhases() > 1) {
++                    if (walkAnimationPhase > 0) {
++                        animationPhase = walkAnimationPhase;
++                    } else {
++                        const int walkPhases = animator->getAnimationPhases();
++                        animationPhase = 1 + static_cast<int>((g_clock.millis() % 1000) * walkPhases / 1000);
++                    }
++                }
+             }
+             if (idleAnimator && ui) {
+                 animationPhase += idleAnimator->getAnimationPhases() - 1;
+--- a/src/client/thingtype.h
++++ b/src/client/thingtype.h
+@@ -358,6 +358,9 @@
+     void setPathable(bool var);
+     // Chaos (0189): a creature look that animates while standing (the overlay sets it on boss looks without an idle group)
+     void setAnimateAlways(bool var);
++    // Chaos (0194): with animateAlways, a creature that stands cycles its walk phases in place and a creature that walks draws the step phase
++    bool isWalkInPlace() { return m_walkInPlace; }
++    void setWalkInPlace(bool var) { m_walkInPlace = var; }
+ 
+ private:
+     const TexturePtr& getTexture(int animationPhase);
+@@ -369,6 +372,7 @@
+     uint16 m_id;
+     bool m_null;
+     stdext::dynamic_storage<uint8> m_attribs;
++    bool m_walkInPlace = false; // Chaos (0194)
+ 
+     Size m_size;
+     Point m_displacement;

@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """Audit: does a hunt monster move when it stands still? (O533)
 
-usage: python3 -I audit_idle_looks.py MONSTER_DIR [--spawn SPAWN_XML] [--dat TIBIA.DAT | --idle CSV] [--csv OUT.csv] [--allow CSV] [--check]
+usage: python3 -I audit_idle_looks.py MONSTER_DIR [--spawn SPAWN_XML] [--dat TIBIA.DAT | --idle CSV] [--csv OUT.csv] [--allow CSV] [--walk LUA] [--check]
        python3 -I audit_idle_looks.py --write-idle TIBIA.DAT      # server/data/monster/look_idle.csv
+       python3 -I audit_idle_looks.py --write-player-looks DATA_DIR   # server/data/monster/player_looks.csv (outfits, mounts, wings, auras)
+       python3 -I audit_idle_looks.py --write-walk-idle [--check]  # client/overlay/modules/game_bossanimate/idle_walk_looks.lua (O534)
 
 Owner 2026-11-12, after the recolour preview of O529: "these monsters standing still have no idle animation? If so, change them
 to one that has". A monster draws an idle animation in our client (protocol 10.98, outfit frame groups) when its outfit
   - has an idle frame group with more than one phase ("idle group": the dat's first group of two, drawn while the creature stands), or
   - has the dat attribute animateAlways and more than one phase ("animateAlways": the wings, the idle pulse of pair 61,
     outfit.cpp plays the phases on a clock), or
-  - is on the client list of game_bossanimate (`ThingType:setAnimateAlways`, base patch 0189).
+  - is on the client list of game_bossanimate (`ThingType:setAnimateAlways`, base patch 0189), or
+  - is on the generated walk-in-place list of game_bossanimate (O534, idle_walk_looks.lua): one idle phase, walk phases, no player use.
 A look with one idle phase draws one picture while the creature stands, however many walk phases it has. The phases must also
 differ: `frames` counts the distinct idle pictures (by sprite ids, facing south) and must be 2 or more.
 
@@ -41,7 +44,13 @@ MAX_ON_LOOK = 2   # owner 2026-11-12 ("strange to reuse the same sprite 5 times"
 POOL = S.POOL
 BOSSANIMATE = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_bossanimate', 'bossanimatelogic.lua')
 MIN_MET = S.MIN_MET
-HEADER = ['look', 'idle', 'phases', 'frames', 'how']
+WALKLIST = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_bossanimate', 'idle_walk_looks.lua')
+PLAYER = os.path.join(REPO, 'server', 'data', 'monster', 'player_looks.csv')
+PLAYER_HEADER = ['look', 'source']
+# Lua files whose `lookType / male / female = N` fields are outfits a player can wear (gated ones are not in outfits.xml while off)
+PLAYER_LUA = ['server/data/scripts/chaos/chaos_constants.lua', 'server/data/scripts/chaos/exclusives_config.lua',
+              'server/data/lib/chaos_pack37_looks.lua']
+HEADER = ['look', 'idle', 'phases', 'frames', 'how', 'walk', 'walk_frames']
 ALLOW_HEADER = ['name', 'look', 'reason']
 
 
@@ -53,19 +62,44 @@ def client_list(path=BOSSANIMATE):
     return {int(x) for x in re.findall(r'\d+', m.group(1))} if m else set()
 
 
-def distinct_frames(group, direction=2):
-    """Number of different pictures among the phases of one frame group (sprite ids of every layer and tile, one direction)."""
+def picture(group, ph, direction=2):
+    """The sprite ids (every layer and tile, one direction) of phase ph of one frame group."""
     w, h, _exact, layers, px, py, pz, phases, sprites = group[:9]
     x = direction if px >= 4 else 0
-    seen = set()
-    for ph in range(phases):
-        pic = []
-        for l in range(layers):
-            for hh in range(h):
-                for ww in range(w):
-                    pic.append(sprites[((((((ph * pz) * py) * px + x) * layers + l) * h + hh) * w + ww)])
-        seen.add(tuple(pic))
-    return len(seen)
+    pic = []
+    for l in range(layers):
+        for hh in range(h):
+            for ww in range(w):
+                pic.append(sprites[((((((ph * pz) * py) * px + x) * layers + l) * h + hh) * w + ww)])
+    return tuple(pic)
+
+
+def distinct_frames(group, direction=2):
+    """Number of different pictures among the phases of one frame group (sprite ids of every layer and tile, one direction)."""
+    return len({picture(group, ph, direction) for ph in range(group[7])})
+
+
+def walk_info(thing):
+    """(phases, pictures) a creature of this outfit cycles while it stands with animateAlways set (O534).
+
+    The client (outfit.cpp, not ui, no idle animator) draws phase (millis % 1000) / (1000 / N) with N the phases of the walk group's
+    animator (a walk group of one phase has none: N is then the total), counted over the groups in file order: phase 0 is the idle
+    picture, 1 and up the walk phases. So N pictures at 1000 / N ms each, a whole turn in one second, and the last walk phase is
+    skipped. Returns (0, 0) where it cannot work: an idle group of 2 or more phases (the idle animator wins) or a single phase."""
+    g = thing.groups
+    if len(g) == 2:
+        if g[0][7] > 1:
+            return 0, 0
+        n = g[1][7] if g[1][7] > 1 else g[0][7] + g[1][7]
+        pics = []
+        for i in range(n):
+            pics.append(picture(g[0], i) if i < g[0][7] else picture(g[1], i - g[0][7]))
+    else:
+        n = g[0][7]
+        pics = [picture(g[0], i) for i in range(n)]
+    if n < 2:
+        return 0, 0
+    return n, len(set(pics))
 
 
 def idle_info(thing, listed=()):
@@ -92,8 +126,8 @@ def load_idle(path=IDLE):
     return out
 
 
-def dat_facts(dat_path, looks):
-    """{look: (idle, phases, frames, how)} for looks, read from the live dat."""
+def dat_facts(dat_path, looks, walk=None):
+    """{look: (idle, phases, frames, how)} for looks, read from the live dat. walk, a dict, gets {look: (walk phases, walk pictures)}."""
     sys.path.insert(0, os.path.join(REPO, 'client', 'tools', 'sprites'))
     from datspr import Dat
     d = Dat(dat_path)
@@ -103,20 +137,110 @@ def dat_facts(dat_path, looks):
         t = d.outfit(l)
         if t is not None:
             out[l] = idle_info(t, listed)
+            if walk is not None:
+                walk[l] = walk_info(t)
     return out
 
 
-def write_idle(dat, pool=POOL, path=IDLE):
-    """Write look_idle.csv: one row per look of the pool (hunt list and bosses). Returns the number of rows."""
+def write_idle(dat, pool=POOL, path=IDLE, allow_path=ALLOW):
+    """Write look_idle.csv: one row per look of the pool (hunt list and bosses) and of the allow list (met monsters with 3 to 5
+    spawn points are not in the pool). Returns the number of rows."""
     text = open(pool, encoding='utf-8').read()
     looks = {int(x) for x in re.findall(r'\blook = (\d+)', text)}
-    facts = dat_facts(dat, looks)
+    looks |= {l for l, _ in load_allow(allow_path).values()}
+    walk = {}
+    facts = dat_facts(dat, looks, walk)
     with open(path, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f, lineterminator='\n')
         w.writerow(HEADER)
         for l, (idle, phases, frames, how) in sorted(facts.items()):
-            w.writerow([l, 'yes' if idle else 'no', phases, frames, how])
+            w.writerow([l, 'yes' if idle else 'no', phases, frames, how, walk[l][0], walk[l][1]])
     return len(facts)
+
+
+def load_walk(path=IDLE):
+    """{look: (walk phases, walk pictures)} of look_idle.csv: what walk-in-place would draw (0, 0: it cannot)."""
+    out = {}
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            out[int(r['look'])] = (int(r.get('walk') or 0), int(r.get('walk_frames') or 0))
+    return out
+
+
+def load_player(path=PLAYER):
+    """{look: source} of player_looks.csv: every look a player can wear (outfit, mount, wings, aura)."""
+    out = {}
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            out[int(r['look'])] = r['source']
+    return out
+
+
+def player_looks(data_dir):
+    """{look: source} read from an installed server's data folder (XML/outfits.xml, mounts.xml, wings.xml, auras.xml) and from the
+    Lua files of the repository that name outfits behind a switch (PLAYER_LUA)."""
+    out = {}
+    for fn, attr in (('outfits', 'looktype'), ('mounts', 'clientid'), ('wings', 'clientid'), ('auras', 'clientid')):
+        p = os.path.join(data_dir, 'XML', fn + '.xml')
+        if os.path.exists(p):
+            for m in re.findall(r'\b%s="(\d+)"' % attr, open(p, encoding='utf-8').read(), flags=re.I):
+                out.setdefault(int(m), fn + '.xml')
+    for rel in PLAYER_LUA:
+        p = os.path.join(REPO, rel)
+        if os.path.exists(p):
+            for m in re.findall(r'\b(?:lookType|male|female)\s*=\s*(\d+)', open(p, encoding='utf-8').read()):
+                out.setdefault(int(m), os.path.basename(rel))
+    return out
+
+
+def write_player(data_dir, path=PLAYER):
+    out = player_looks(data_dir)
+    with open(path, 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f, lineterminator='\n')
+        w.writerow(PLAYER_HEADER)
+        for l, s in sorted(out.items()):
+            w.writerow([l, s])
+    return len(out)
+
+
+def walk_idle_looks(idle, walk, player):
+    """Sorted looks that walk in place while they stand (O534): no idle animation of their own, one idle phase and a walk group that
+    draws 2 or more pictures (walk_info), and no player can wear the look."""
+    return sorted(l for l, (yes, _p, _f, _how) in idle.items()
+                  if not yes and walk.get(l, (0, 0))[1] >= 2 and l not in player)
+
+
+def render_walk(looks):
+    """The text of idle_walk_looks.lua: deterministic, sorted, 16 ids a line."""
+    rows = ['\t' + ', '.join(str(l) for l in looks[i:i + 16]) + ',' for i in range(0, len(looks), 16)]
+    return ('-- Generated by server/tools/audit_idle_looks.py --write-walk-idle from server/data/monster/look_idle.csv and\n'
+            '-- player_looks.csv (O534). Do not edit. Monster looks with one idle phase and a walk group that play their walk\n'
+            '-- phases in place while the creature stands (game_bossanimate, ThingType:setAnimateAlways, base patch 0189).\n'
+            '-- Never a look a player can wear (outfits.xml, mounts, wings, auras).\n'
+            'IdleWalkLooks = {\n' + '\n'.join(rows) + '\n}\n')
+
+
+def load_walklist(path=WALKLIST):
+    """The set of looks of idle_walk_looks.lua."""
+    if not os.path.exists(path):
+        return set()
+    m = re.search(r'IdleWalkLooks\s*=\s*\{([^}]*)\}', open(path, encoding='utf-8').read())
+    return {int(x) for x in re.findall(r'\d+', re.sub(r'--[^\n]*', '', m.group(1)))} if m else set()
+
+
+def write_walk(path=WALKLIST):
+    looks = walk_idle_looks(load_idle(), load_walk(), load_player())
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(render_walk(looks))
+    return len(looks)
+
+
+def check_walk(path=WALKLIST):
+    """CI rule: the generated list is up to date. Returns the problem lines."""
+    want = render_walk(walk_idle_looks(load_idle(), load_walk(), load_player()))
+    have = open(path, encoding='utf-8').read() if os.path.exists(path) else ''
+    return [] if have == want else ['%s is not up to date (run server/tools/audit_idle_looks.py --write-walk-idle)'
+                                    % os.path.relpath(path, REPO)]
 
 
 def load_allow(path=ALLOW):
@@ -128,10 +252,11 @@ def load_allow(path=ALLOW):
     return out
 
 
-def check_pool(pool=POOL, allow_path=ALLOW, idle=None):
-    """CI rule: every monster of the bounty pool hunt list wears a look with an idle animation, or is a row of the allow list
-    with the look it wears. Returns the problem lines."""
+def check_pool(pool=POOL, allow_path=ALLOW, idle=None, walk=None):
+    """CI rule: every monster of the bounty pool hunt list wears a look with an idle animation (or one on the generated walk in
+    place list, O534), or is a row of the allow list with the look it wears. Returns the problem lines."""
     idle = load_idle() if idle is None else idle
+    walk = load_walklist() if walk is None else walk
     allow = load_allow(allow_path)
     out, seen = [], set()
     for r in S.pool_rows(pool):
@@ -142,9 +267,9 @@ def check_pool(pool=POOL, allow_path=ALLOW, idle=None):
         if look not in idle:
             out.append('look %d of %s is not in server/data/monster/look_idle.csv (run tools/audit_idle_looks.py --write-idle Tibia.dat)'
                        % (look, name))
-        elif idle[look][0]:
+        elif idle[look][0] or look in walk:
             if name in allow:
-                out.append('%s wears look %d, which has an idle animation: remove its row of server/data/monster/no_idle_allow.csv'
+                out.append('%s wears look %d, which moves while it stands: remove its row of server/data/monster/no_idle_allow.csv'
                            % (name, look))
         elif name not in allow:
             out.append('%s wears look %d, which has no idle animation (%s) and is not on server/data/monster/no_idle_allow.csv; '
@@ -197,7 +322,19 @@ def main():
     if '--write-idle' in args:
         print('look_idle.csv: %d looks' % write_idle(opt('--write-idle')))
         return 0
+    if '--write-player-looks' in args:
+        print('player_looks.csv: %d looks' % write_player(opt('--write-player-looks')))
+        return 0
+    if '--write-walk-idle' in args:
+        if '--check' in args:
+            probs = check_walk()
+            for p in probs:
+                print(p)
+            return 1 if probs else 0
+        print('idle_walk_looks.lua: %d looks' % write_walk())
+        return 0
     spawn, dat, outcsv, allow_path, idle_path = opt('--spawn'), opt('--dat'), opt('--csv'), opt('--allow'), opt('--idle')
+    walk_path = opt('--walk')
     check = '--check' in args
     if check:
         args.remove('--check')
@@ -209,13 +346,14 @@ def main():
     met = [m for m in mons if sp.get(m['name'], 0) >= MIN_MET and m['look'] and not m['ex']]
     facts = dat_facts(dat, {m['look'] for m in met}) if dat else load_idle(idle_path or IDLE)
     allow = load_allow(allow_path or ALLOW)
+    walked = load_walklist(walk_path or WALKLIST)
     rows, bad = [], 0
     for m in sorted(met, key=lambda m: -sp[m['name']]):
         f = facts.get(m['look'])
         if f is None:
             rows.append([m['name'], m['look'], sp[m['name']], '', 'UNKNOWN', 'the look is not in the dat'])
             bad += 1
-        elif not f[0]:
+        elif not f[0] and m['look'] not in walked:
             ok = m['name'] in allow and allow[m['name']][0] == m['look']
             bad += 0 if ok else 1
             rows.append([m['name'], m['look'], sp[m['name']], f[1], 'kept' if ok else 'NO IDLE',
