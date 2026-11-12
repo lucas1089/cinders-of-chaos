@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Elite Yeti" nameDescription="Elite Yeti" race="blood" experience="160000" speed="700" manacost="0">
 	<health now="1000000" max="1000000"/>
-	<look type="110" corpse="6068"/>
+	<look type="3321" corpse="6068"/>
 	<targetchange interval="2000" chance="20"/>
 	<flags>
 		<flag summonable="0"/>

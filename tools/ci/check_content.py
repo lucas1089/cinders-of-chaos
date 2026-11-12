@@ -36,6 +36,7 @@ longer matches fails too):
  - loot: chance 1-100000, countmax >= 1; speed 0-MAX_SPEED at the top level
  - Lua monsters: name, lookType, corpse and loot ids by the same rules
  - the rows of server/tools/tune_monsters.py are applied (names, experience, levels, loot of the lint follow-up)
+ - hunt monsters (bounty_pool.lua): a look with an idle animation, or a row of data/monster/no_idle_allow.csv [look.idle] (O533)
 Options (not used by CI): --base DATA_DIR also checks every loot and corpse id against that items.xml and that a
 corpse is a container; --pair Tibia.dat recounts the outfits and blank outfits of a pair and compares PAIR_*.
 Usage: python3 tools/ci/check_content.py [--base DATA_DIR] [--pair Tibia.dat]"""
@@ -759,6 +760,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 import audit_shared_looks
 for msg in audit_shared_looks.check_pool():
     fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.shared] {msg}')
+# a hunt monster moves while it stands (O533): the bounty pool hunt list, each look read in server/data/monster/look_idle.csv (written
+# from the live dat by tools/audit_idle_looks.py --write-idle): an idle frame group with 2 or more phases, or animateAlways. A look
+# without one needs a row of server/data/monster/no_idle_allow.csv with its reason; the list may only shrink.
+import audit_idle_looks
+for msg in audit_idle_looks.check_pool():
+    fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.idle] {msg}')
+for msg in audit_idle_looks.check_crowded():   # at most 2 hunt monsters on one look (owner 2026-11-12)
+    fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.crowded] {msg}')
 for key in sorted(set(ALLOW) - allow_used):
     fail(f'tools/ci/check_content.py: ALLOW entry {key} matches nothing any more (remove it)')
 print('content check:', 'OK' if not bad else f'{bad} problem(s)')

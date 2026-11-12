@@ -33085,3 +33085,45 @@ them worse and chose a recolour: every monster of a shared look but the first ge
 - Not done: base monsters were not recoloured (every group had a monster of ours to change); the creature strips 2312-2384 and
   the sheet looks of pair 30 stay out (O524). Not verified: in a running client (the pool colours are the files' colours, the
   preview renders the outfit colour table as the client does: mask layer, multiplied on the base layer).
+
+## Hunt monsters move while they stand (O533; `tools/audit_idle_looks.py`, `data/monster/no_idle_allow.csv`, `look_idle.csv`, `crowded_looks_allow.csv`)
+Owner, 2026-11-12, after the recolour preview of O529: "these monsters standing still have no idle animation? If so, change them to one
+that has". Later that day: "strange to reuse the same sprite 5 times, the Pit Delver one": a look carries at most 2 met hunt monsters.
+- **The rule.** A creature moves while it stands in our client (protocol 10.98, outfit frame groups, client/BASE.md `0189`) when its
+  outfit has an idle frame group (the first of two) with 2 or more phases whose pictures differ (`frames`, by sprite ids, facing south), or
+  the dat attribute animateAlways with 2 or more phases (wings, the idle pulse of pair 61, `outfit.cpp` plays the phases on a clock), or is
+  on the `L.LOOKS` list of `game_bossanimate` (`ThingType:setAnimateAlways`). One idle phase with 8 walk phases draws one picture while it
+  stands: that is the stock creatures (Orc, Dragon, Skeleton, Wolf).
+- **The audit.** `python3 -I tools/audit_idle_looks.py MONSTER_DIR --spawn SPAWN_XML --dat Tibia.dat [--csv OUT] [--check]` on an installed
+  server (same monsters and "met" rule, 3 or more spawn points, as `audit_shared_looks.py`). On the 885 met outfit monsters: 742 stood still,
+  143 moved. After this step 637 stand still, all of them rows of `data/monster/no_idle_allow.csv` (name, look, reason; three kinds of
+  reason: a human outfit with a colour mask, a large look, no free look of its kind). `--check` also holds the 2 per look limit.
+- **Free looks.** 778 outfits move and no monster wears them: 138 are pair 30 (sheet looks and strips 2237-2384: the owner found them worse,
+  O524, never used here), 273 are wings and auras of pair 33, 90 are player outfits (outfits.xml; a hunt monster would look like a player),
+  32 are mounts (mounts.xml), 18 are rift, faction and wing looks of `picks.csv`, 47 are other stock looks (effects, orbs, ships, carpets).
+  What is left: 180 monster looks of pair 50 (outfits 2682-3360, `data/items/pair50_outfits.csv` names them) and one stock look (1439).
+  Each took a monster by name, element, size and level; the looks of one art in several colours (the winged drakes 3260-3269, the
+  stone head golem) are the recolour way of O529.
+- **The change.** 113 monsters (23 of ours, 90 base) got a look from `client/tools/sprites/monster_looks/picks.csv` (rows `idle_*`, lib
+  `pair50` or `stock`, family `hunt` for ours: `apply_monster_looks.py`, family `base`: `patch_base_looks.py`, install step `baselooks`, which now
+  also patches the Lua monsters of the base: `lookType` set, `lookHead`... removed). 105 of them stood still; 8 split from a look that
+  moved but carried more than 2 monsters. The pick rows of Gargoyle and Ghost replace their restore rows of 2026-10-22. The owner's own looks 2213-2224 (pair 26, `owner_art_test.lua`) stay on their monsters. The bounty pool follows the
+  monster files: `gen_bounty_pool.py --relook DATA_DIR [POOL]` rewrites only the look fields of the pool lines (a rerun of the full generator
+  on the real server gives the same fields). Grave Lantern, Blightcrown Matron, Limb Hoarder and Rustguard left their masked looks, so their
+  colour rows are gone from `tune_monsters.py`; `look_masks.csv` was written again (69 looks).
+- **At most 2 on a look.** 28 looks carried 3 or more met monsters (Pit Delver's look 2220 six). The extras with the fewest spawn points moved
+  to looks of their own where one fits (24 of them). 14 looks keep more: trolls (15), Pig family (60), mummies (65), lizards (115), the human outfits
+  with a colour mask (129, 131, 133, 149), frogs (226), books (989), cobras (1007), the Ironmask crew (1492, 1493), the ape, oak and troll of 1495:
+  rows of `data/monster/crowded_looks_allow.csv` (look, every name on it, reason) because no free look that moves fits them.
+- **Recolour table (pair 69).** A monster that left a shared look needs no hue shifted copy. Rows removed from `art_import/monster_recolour.csv`
+  (17): Orcaruz (look 2), Azure Dragon (248), Reedgrave (554), Blight Bloom (563), Shroud Brood (579), Quicksilver Wraith (1291), Gnawbone Swarm (1449), Wax Penitent (1475), Corpselight Lurker and Dirge Herald (1485), Slagborer Reaver (1499), Siege Behemoth (2218), Bonepicker (2219), Pit Delver, Pitgnawer, Reliquary Urn and Wan Sentry (2220). Where the original left, the monster with the most spawn points keeps the outfit and loses its row (Reedgrave, Gnawbone
+  Swarm). In `shared_looks_allow.csv` 25 rows went (the group is a single monster now) and 12 shrank.
+  `gen_monster_recolour.py check`: 0 problems, 35 rows.
+- **The check.** `tools/ci/check_content.py`: every monster of the `bounty_pool.lua` hunt list (6 or more spawn points) wears a look with
+  `idle yes` in `look_idle.csv` (one row per pool look, `audit_idle_looks.py --write-idle Tibia.dat`), or is a row of `no_idle_allow.csv` with the
+  look it wears; a row of a monster that moves now is stale and fails. No look has more than 2 pool monsters unless `crowded_looks_allow.csv`
+  names them all. The lists may only shrink. `tools/audit_idle_looks_test.py` (CI step "Hunt monsters move while they stand") tests the rules on
+  fake outfits, the files on synthetic ones, the CLI on a synthetic folder and the committed state.
+- Not done: 637 monsters. The looks that move are used up; the other way is the client: a list like `game_bossanimate` that sets animateAlways on
+  their looks would play their walk frames while they stand (no pair, one line per look; not decided). Not verified: in a running client (the
+  preview renders the dat groups with the animator times of the dat).

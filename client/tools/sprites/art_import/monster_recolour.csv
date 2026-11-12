@@ -1,25 +1,15 @@
 look,hue_shift,monster,mode,theme,source_hue,source_sat
-2,10,Orcaruz,tint,fire,77,0.17
-248,60,Azure Dragon,hue,ice,194,0.64
 257,180,Tundra Troll,hue,ice,28,0.51
 403,120,Loricate Orger,hue,iron,51,0.45
 554,260,Mutated Visco,hue,poison,209,0.55
-554,160,Reedgrave,hue,poison,209,0.55
-563,100,Blight Bloom,tint,poison,107,0.2
 563,280,Crypt Crab,tint,shadow,107,0.2
-579,70,Shroud Brood,hue,poison,31,0.29
 579,240,Webbound Crawler,hue,other,31,0.29
 686,100,Blight Hound,tint,poison,14,0.2
 1054,180,Geode Seer,tint,arcane,185,0.07
 1085,90,Snake Master,hue,poison,14,0.61
-1291,90,Quicksilver Wraith,hue,shadow,282,0.28
-1449,100,Gnawbone Swarm,hue,shadow,176,0.29
 1449,210,Ironmask Warbreaker,hue,iron,176,0.29
 1475,280,Masque Dancer,tint,shadow,253,0.12
-1475,10,Wax Penitent,tint,shadow,253,0.12
 1479,70,Phantom Shade,hue,shadow,209,0.41
-1485,90,Corpselight Lurker,hue,shadow,186,0.64
-1485,180,Dirge Herald,hue,shadow,186,0.64
 1485,280,Maw Grub,hue,poison,186,0.64
 1490,100,Chained Runt,hue,iron,3,0.47
 1491,170,Ironmask Taskmaster,hue,iron,214,0.43
@@ -30,7 +20,6 @@ look,hue_shift,monster,mode,theme,source_hue,source_sat
 1495,90,Gallows Oak,hue,poison,12,0.25
 1495,160,Ironbound Troll,hue,iron,12,0.25
 1499,70,Bellhelm Zealot,hue,gold,34,0.54
-1499,140,Slagborer Reaver,hue,fire,34,0.54
 1500,90,Slagheart,hue,fire,274,0.7
 1530,70,Gildguard Revenant,hue,gold,32,0.35
 1531,120,Rimecairn,hue,ice,86,0.45
@@ -40,14 +29,8 @@ look,hue_shift,monster,mode,theme,source_hue,source_sat
 2122,80,Deepforge Fiend,hue,fire,27,0.33
 2217,240,Gorebristle,hue,blood,106,0.81
 2218,90,Oathbroken Colossus,hue,iron,10,0.85
-2218,160,Siege Behemoth,hue,iron,10,0.85
 2219,90,Ashveil Hierarch,hue,other,11,0.86
-2219,260,Bonepicker,hue,shadow,11,0.86
-2220,260,Pit Delver,hue,ice,205,0.49
-2220,200,Pitgnawer,hue,ice,205,0.49
-2220,110,Reliquary Urn,hue,shadow,205,0.49
 2220,70,Veiled Crawler,hue,shadow,205,0.49
-2220,160,Wan Sentry,hue,ice,205,0.49
 2221,260,Carrion Drake,hue,poison,207,0.44
 2223,250,Hollowhorn,hue,shadow,30,0.78
 2224,240,Gnarlback,hue,other,34,0.67

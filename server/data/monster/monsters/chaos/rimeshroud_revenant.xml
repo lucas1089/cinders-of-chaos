@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Rimeshroud Revenant" nameDescription="a rimeshroud revenant" race="undead" experience="31150" speed="38" manacost="0">
 	<health now="28800" max="28800"/>
-	<look type="1544" corpse="6068"/>
+	<look type="3234" corpse="6068"/>
 	<level min="1380" max="1420"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>
