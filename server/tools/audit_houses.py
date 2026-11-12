@@ -10,9 +10,9 @@ rules": a house is never added, removed, resized or moved by a tool). SERVER_DIR
 folder): the map and the items as in audit_map_tiles.py, the house file DATA/world/<mapName>-house.xml (how
 patch_base_houses.py finds it). The house tiles of the map are the tiles of OTBM house nodes (tools/map/otbm.py, `house`).
 Codes, per house id (one line each: CODE house=ID "name" tiles=N first=x,y,z: what)
-  MULTI_FLOOR       tiles on more than MAX_FLOORS floors (default 1: every house with an upper floor is listed; the guide
-                    counts 77 % of the live houses on one floor, 10 % on two, big ones on 3-5: raise --max-floors to 2 or 5
-                    to list only the odd ones)
+  MULTI_FLOOR       tiles on more than MAX_FLOORS floors (default 2, owner 2026-11-12: a house on two floors is normal;
+                    the guide counts 77 % of the live houses on one floor, 10 % on two, big ones on 3-5: --max-floors 1
+                    lists every house with an upper floor, 5 only the odd ones)
   NO_DOOR           no door item on a tile of the house edge (a house tile with a side that is not the house)
   DOOR_UNREACHABLE  doors on the edge, but none has a walkable tile outside the house (house id 0) next to it
   ENTRY_BLOCKED     the entry of houses.xml is not a tile, or one nobody can stand on (a door on it does not block);
@@ -50,7 +50,7 @@ KNOWN = os.path.join(HERE, 'house_audit_known.csv')
 HOUSE_MIN_TILES = 13       # MAP_GUIDE "Towns": house size p25 is 25 tiles; half of it
 HOUSE_MAX_TILES = 180      # p75 is 80-90; twice the top of it (big houses and guildhalls)
 ROOF_MIN_SHARE = 0.97      # MAP_GUIDE: 97-100 % of the house tiles have a roof on the floor above
-MAX_FLOORS = 1
+MAX_FLOORS = 2   # owner 2026-11-12: a house on two floors is normal
 ROOF_Z = (1, 7)            # floors with a sky above
 TF_PZ, TF_PVP = 1, 16      # tile flags (tools/map/otbm.py)
 CODES = ('MULTI_FLOOR', 'NO_DOOR', 'DOOR_UNREACHABLE', 'ENTRY_BLOCKED', 'HOUSE_FLAGS', 'SIZE', 'ROOF_SHARE')
