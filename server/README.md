@@ -32963,3 +32963,43 @@ Our map editor borders our 12 pack grounds by itself. Before, the owner placed a
   the palette `Cinders` (terrain), choose "cinders thick lush grass", paint a patch on stock grass or dirt; next to it paint
   "cinders loam" or "cinders fine sand". The border pieces must appear on the lower tiles by themselves (automagic on). If a
   corner looks wrong, say which ground and which corner: the mapping is one table (`PIECE_OF`) in the script.
+
+## No two hunt monsters share a look (O529; `tools/audit_shared_looks.py`, `data/monster/shared_looks_allow.csv`)
+Owner, 2026-11-12: the most met hunt monsters showed two with one sprite (Gnawbone Swarm and Ironmask Warbreaker on 1449,
+Bonepicker and Cinderskull Reaver on 2219). The first try (O524) swapped the looks for sheet looks of pair 30; the owner found
+them worse and chose a recolour: every monster of a shared look but the first gets its own colours.
+- **The audit.** `python3 -I tools/audit_shared_looks.py MONSTER_DIR --spawn SPAWN_XML --dat Tibia.dat [--csv OUT] [--check]` on an
+  installed server reads every monster the server loads (monsters.xml and the Lua monsters) and groups them by lookType (or
+  lookTypeEx). Two monsters share a look when the lookType is the same and the colours do not tell them apart: an outfit draws
+  colour only through its mask layer (read from the dat: the parts of head, body, legs and feet the mask paints), two colours
+  differ when their RGB in the 133 colour table is more than 0.28 apart, a look with no mask ignores all colours. A monster is
+  "met" with 3 or more spawn points. Run on the installed monsters (1,752 on the map of the live server): 305 groups, 125 with two
+  or more met monsters; 90 kept for a reason, 35 `recolour pair`, 0 not allowed. Kept: rank or colour variants of one creature by
+  name (Elite X, X Scout, a family prefix), stock pairs (both are base server monsters that share a look by the base design) and
+  a few named by hand, each with its reason in the CSV. Rows of 0 to 2 spawn points (bosses, uniques, summons, rift and event
+  copies) are not duplicates on the map and have no row.
+- **Outfits with a colour mask (4 looks, 7 monsters).** Colours in the monster file, written by `tools/tune_monsters.py` (row key
+  `look`, one table `_col(row, step)` of the outfit colour table; the first monster of the look keeps its colours): look 1467
+  Blightcrown Matron 82 (sick green), Limb Hoarder 40 (pale orange), Nailcrown Regent 96 (rust red), Facetis stays; look 1468
+  Bloom Husk 81 (green), Rustguard 97 (dark orange), the Twisted Shaper pair stays (one creature by name, a `kept` row); look 1478
+  Grave Lantern 85 (teal), Spiky Carnivor stays; look 1501 Leechwing 94 (blood red), Nexweaver stays. `data/scripts/chaos/
+  bounty_pool.lua` carries the same colours (the generator reads them from the files). The hue distances are far over the 0.28 of
+  the audit.
+- **Outfits with no mask (35 looks, 52 monsters).** An outfit with no mask layer cannot take a colour: the second monster needs a
+  hue shifted copy of the outfit in the pair. Table `client/tools/sprites/art_import/monster_recolour.csv` (look, hue shift in
+  degrees, monster; mode `hue` rotates the hue, `tint` sets the hue of a nearly grey outfit; theme by the monster's name and
+  element: fire reds, ice blues, poison greens, undead and shadow purples, iron browns, gold yellows, blood crimsons; the colours
+  of one look are at least 40 degrees apart and from the source hue). `client/tools/sprites/gen_monster_recolour.py` holds the
+  pixel transform (`recolour()`) and `check`; `build` is a stub: **no pair is built here**, it waits for pair 68 (the copies are
+  appended as new outfits, the lookTypes move with an `install` step of the pair). Until then the groups are rows of the allow list
+  with status `recolour pair`, and `gen_monster_recolour.py check` holds that every such row has a table row for all but one monster.
+  Not decided: the colour of a few themes is the table's guess (Siege Behemoth teal, Ashveil Hierarch green); change a `hue_shift`
+  and run the preview before the pair is built.
+- **The check.** `tools/ci/check_content.py` fails when two different monsters of the `bounty_pool.lua` hunt list (6 or more spawn
+  points) share a lookType that is neither a row of `shared_looks_allow.csv` nor a masked look (`data/monster/look_masks.csv`,
+  written by `audit_shared_looks.py --write-masks Tibia.dat` from the live dat) whose pool colours tell them apart.
+  `tools/audit_shared_looks_test.py` (CI step "Hunt monsters keep a look of their own") tests the tool on a synthetic folder and
+  holds the committed pool to the rule.
+- Not done: base monsters were not recoloured (every group had a monster of ours to change); the creature strips 2312-2384 and
+  the sheet looks of pair 30 stay out (O524). Not verified: in a running client (the pool colours are the files' colours, the
+  preview renders the outfit colour table as the client does: mask layer, multiplied on the base layer).
