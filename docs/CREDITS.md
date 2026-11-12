@@ -43,6 +43,9 @@ files may not be extracted, decrypted or reused elsewhere: some art is licensed 
 - **Owner-supplied spell effects**
   - Source: supplied by the owner (a client's sprite file), origin unknown, source not named
   - Used for: 40 spell effects (frost, fire, lightning and arcane bursts, novas and rings, shield auras, a heal cross, slashes), client pair 68
+- **Owner-supplied creature looks**
+  - Source: supplied by the owner (a client's sprite file), origin unknown, source not named
+  - Used for: 28 monster looks (spirits, beasts, fiends, reptiles, spiders, undead), client pair 70
 - **Region music**
   - Author: the Cinders of Chaos team (own work, synthesised by `client/tools/gen_music.py`; no samples)
   - Used for: the music of the login screen, towns, hunting grounds, dungeons and rifts, boss fights and arenas
@@ -431,7 +434,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 
 - **PixelLab**
   - Licence: paid subscription
-  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the 65 pieces of the five relic sets (a helmet, chest armour, legs, boots, shield, spellbook, sword, axe, hammer, bow, wand or rod, ring and amulet each), nine ring and amulet looks of the jewelry loot bases, the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons), the 72 repainted class spell icons (the Necromancer line, the other lines' kits, the snares, Town Portal and the four vigils) and the redrawn icons of the Loot Bag, Orbs Pouch and Everfull Ration, the 35 socket gem looks (seven gems in five qualities), the 18 crafting bench orb looks, the four front-facing test characters of the Unity front-art scene and their normal maps
+  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the 65 pieces of the five relic sets (a helmet, chest armour, legs, boots, shield, spellbook, sword, axe, hammer, bow, wand or rod, ring and amulet each), nine ring and amulet looks of the jewelry loot bases, the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons), the 72 repainted class spell icons (the Necromancer line, the other lines' kits, the snares, Town Portal and the four vigils) and the redrawn icons of the Loot Bag, Orbs Pouch and Everfull Ration, the 35 socket gem looks (seven gems in five qualities), the 18 crafting bench orb looks, the four front-facing test characters of the Unity front-art scene and their normal maps, the three HD monster pictures of the HD sprite overlay (Ghoul, Skeleton and Troll, 4 directions and a walk cycle each, from text prompts of our own)
 - **AutoSprite**
   - Licence: paid account
   - Used for: drawing and animating the boss Vharzul the Verdant Eye and the Ashbound Thrall and Slagback Hound of the Embergut Rift

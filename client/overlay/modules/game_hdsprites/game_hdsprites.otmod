@@ -1,0 +1,10 @@
+Module
+  name: game_hdsprites
+  description: HD monsters, finer pictures drawn at twice the detail for some creature sprites, in the same size on screen (base patch 0196)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ hdindex, hdsprites_logic, hdsprites ]
+  autoload: true
+  autoload-priority: 20
+  @onLoad: init()
+  @onUnload: terminate()

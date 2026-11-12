@@ -66,6 +66,20 @@ def _recolour_copies():
 
 
 COPIES = _recolour_copies()
+DONOR_MAP = os.path.join(HERE, '..', 'data', 'monster', 'monster_donor_looks.csv')
+
+
+def _donor_looks(path=DONOR_MAP):
+    """{monster name: (old look, new look)} of data/monster/monster_donor_looks.csv (O538, client pair 70)"""
+    import csv
+    out = {}
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            out[r['monster']] = (int(r['look']), int(r['new_look']))
+    return out
+
+
+DONOR = _donor_looks()
 
 
 def committed_look(name, look):
@@ -73,7 +87,10 @@ def committed_look(name, look):
     a monster's outfit into its installed file, and into the installed copy of this pool; a run of this tool on such a server
     must still give the committed file (old look), so the copy is turned back here (README "Monster recolours (O531)")."""
     c = COPIES.get(name)
-    return c[0] if c and look == c[1] else look
+    if c and look == c[1]:
+        return c[0]
+    d = DONOR.get(name)   # O538: from client pair 70 the install step `monsterdonorlooks` writes the donor look the same way
+    return d[0] if d and look == d[1] else look
 
 
 def attr(tag, name):
@@ -294,6 +311,8 @@ def relook(text, mons):
         mon = mons.get(name.lower())
         if not mon:
             return m.group(0)
+        if committed_look(name, mon['look']) != mon['look']:
+            return m.group(0)   # the monster wears a copy (O531) or a donor look (O538) of its committed look: the line stays
         outfit = [mon.get('look_' + k, 0) for k in ('head', 'body', 'legs', 'feet', 'addons')]
         extra = ', head = %d, body = %d, legs = %d, feet = %d, addons = %d' % tuple(outfit) if any(outfit) else ''
         line = '%s%d%s},' % (m.group(1), mon['look'], extra)

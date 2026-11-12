@@ -91,6 +91,9 @@ jobs:
           python3 -I client/tools/sprites/gen_wing_centres_test.py
           # the feet of every look per direction, for the footprints (synthetic figures)
           python3 -I client/tools/sprites/gen_foot_marks_test.py
+          # HD sprite overlay (O539, base patch 0196): the tool on a synthetic pair, and the committed atlas and index against the frames
+          python3 -I client/tools/sprites/gen_hd_overlay_test.py
+          python3 -I client/tools/sprites/gen_hd_overlay.py build --check
           # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
           # check runs on the versions the strips were made with (gen_class_fx.py docstring)
           python3 -m venv /tmp/fxenv
@@ -190,6 +193,10 @@ jobs:
           # against the monster files and the two id files, build / live on a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_monster_recolour_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_monster_recolour.py check
+          # the 28 polished donor outfits of pair 70 (O538): the pick rule, build / live on synthetic pairs, the table, the sums and the
+          # monster map against the outfits and the committed pool
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_donor_outfits_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_donor_outfits.py check
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
@@ -695,6 +702,16 @@ jobs:
           "$d/chaosmissileanim_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissileanim_test.cpp -o "$d/chaosmissileanim_asan"
           "$d/chaosmissileanim_asan"
+
+      - name: HD sprite overlay maths (C++; header from base patch 0196)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaoshdoverlay\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0196-hd-sprite-overlay.patch > "$d/chaoshdoverlay.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaoshdoverlay_test.cpp -o "$d/chaoshdoverlay_test"
+          "$d/chaoshdoverlay_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoshdoverlay_test.cpp -o "$d/chaoshdoverlay_asan"
+          "$d/chaoshdoverlay_asan"
 
       - name: Glowing spell effects bookkeeping (C++; header from base patch 0152)
         run: |
@@ -1463,6 +1480,9 @@ jobs:
       - name: Monster recolours move the monsters at pair 69 (install_monster_recolour.py, monsterrecolour step, O531)
         run: python3 -I server/tools/install_monster_recolour_test.py
 
+      - name: Donor looks move 28 monsters at pair 70 (install_monster_donor_looks.py, monsterdonorlooks step, O538)
+        run: python3 -I server/tools/install_monster_donor_looks_test.py
+
       - name: Hunt monsters move while they stand (audit_idle_looks.py, O533)
         run: python3 -I server/tools/audit_idle_looks_test.py
 
@@ -1792,6 +1812,11 @@ jobs:
       - name: Monster recolour outfits sit at their ids (gen_monster_recolour.py live, pair 69, O531)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_monster_recolour.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Donor outfits sit at their ids (gen_donor_outfits.py live, pair 70, O538)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_donor_outfits.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Wing shadows stay cleaned (clean_wing_shadows.py check-clean, pair 64; Shadow Smoke 2457 untouched)
