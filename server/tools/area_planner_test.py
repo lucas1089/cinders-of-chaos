@@ -773,5 +773,19 @@ ok([l for l, _m in SH.check_floors(box_walk, 'brand_new_square', [7])] == ['ERRO
 ok({l for l, _m in SH.check_floors(box_walk, 'gallowroot_wilds', [7])} == {'WARN'}, 'a legacy square area: warnings only')
 ok(SH.check_floors({(x, y, 7) for x, y in box(0, 0, 10, 10)}, 'brand_new_square', [7]) == [], 'a floor under min_floor_tiles is skipped')
 
+# the two tile rules shared with the whole-map audit (map_tile_rules.py, audit_map_tiles.py; O511): a plan has none of them
+ok(not [m for m in PC.qa_errors(res) if 'no ground below' in m or 'teleport at' in m], 'the generated forest breaks neither tile rule')
+rule_back = {(1, 1, 7): dict(ground=351, items=[(3610, {})]), (2, 1, 7): dict(ground=None, items=[(3610, {})]),
+             (3, 1, 7): dict(ground=3610, items=[]), (4, 1, 7): dict(ground=351, items=[(1387, {'tele': (1, 1, 7)}), (1356, {})]),
+             (5, 1, 7): dict(ground=351, items=[(1387, {'tele': (1, 1, 7)})]), (6, 1, 7): dict(ground=351, items=[(1387, {})]),
+             (7, 1, 7): dict(ground=None, items=[])}
+rule_msgs = PC.tile_rule_errors(rule_back, {(1, 1, 7), (4, 1, 7), (5, 1, 7)}, {351}, {1356}, 1387)
+ok(len(rule_msgs) == 3, 'tile rules: three messages for the four faulty tiles: %s' % rule_msgs)
+ok(any(m.startswith('2 tile(s) hold an item with no ground below it (first (2, 1, 7))') for m in rule_msgs),
+   'tile rules: an empty ground slot and a non-ground in it are items with no ground below')
+ok(any('teleport at (4, 1, 7) has the blocking item 1356' in m for m in rule_msgs), 'tile rules: a blocker on a teleport tile')
+ok(any('teleport at (6, 1, 7) is on a tile nobody can walk on' in m for m in rule_msgs), 'tile rules: a teleport off the walkable set')
+ok(not any('(5, 1, 7)' in m or '(1, 1, 7)' in m or '(7, 1, 7)' in m for m in rule_msgs), 'tile rules: a clean teleport tile and an empty tile are silent')
+
 print('area planner: %d checks, %d failed' % (checks, fails))
 sys.exit(1 if fails else 0)

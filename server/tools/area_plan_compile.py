@@ -20,6 +20,7 @@ import area_plan_core as C
 import area_plan_decor as D
 import area_plan_shape as SH
 import areagen_export as AX
+import map_tile_rules as MR      # the tile rules shared with the whole-map audit (audit_map_tiles.py)
 
 FLAG_PZ = 1
 KNOWN_FLAGS = 1 | 4 | 8 | 16      # pz, no pvp, no logout, pvp zone (the planner writes pz only)
@@ -668,7 +669,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         allowed.add(fr['ground'])
     unknown = {}
     for k, t in back.items():
-        if t['ground'] is None:
+        if t['ground'] is None and not t['items']:
             E('OTBM: tile %s has no ground' % (k,))
         for iid in [t['ground']] + [i for i, _a in t['items']]:
             if iid not in allowed:
@@ -683,6 +684,18 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 E('OTBM: the teleport at %s lands on a tile that is not walkable %s' % (k, dest))
     for iid, n in sorted(unknown.items()):
         E('unknown id %d on %d tile(s): not in our catalogue for this biome' % (iid, n))
+    # the two tile rules of the whole-map audit (tools/audit_map_tiles.py NO_GROUND and BLOCKED_ON_SPECIAL, one function
+    # each in map_tile_rules.py): an item with no ground below it, and a blocking item (or a tile nobody can walk on)
+    # where a teleport lies
+    ground_ids = {g for d in meta['families'].values() for g in d['grounds'] if g is not None}
+    ground_ids |= set(kit['roof']['ground']) | {brush['stairs_down_ground']}
+    if th:
+        ground_ids |= set(th['grounds'])
+    if fr:
+        ground_ids.add(fr['ground'])
+    block_ids = {i for g_ in kit['groups'].values() if g_.get('block') for i in g_['ids']} | wall_ids | {meta['chest']}
+    for msg in tile_rule_errors(back, walk, ground_ids, block_ids, meta['portal']):
+        E(msg)
     # borders closed: every transition to a higher family with a border set carries one of its pieces; every
     # walkable tile has all 8 neighbours built (no open edge into nothing)
     fam_of = {}
@@ -816,6 +829,26 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 walk=walk, footprint=footprint, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
                 stats=stats, plan_issues=issues)
+
+
+def tile_rule_errors(back, walk, ground_ids, block_ids, portal):
+    """QA messages of the two tile rules shared with the whole-map audit (map_tile_rules.py): back = {(x, y, z):
+    {'ground', 'items': [(id, attrs)]}}, walk = the walkable tiles, ground_ids / block_ids = the ids that are grounds /
+    block, portal = the teleport item id"""
+    bare, plugged = [], []
+    for k, t in back.items():
+        ids = [i for i, _a in t['items']]
+        if MR.no_ground_below(t['ground'], ids, ground_ids.__contains__):
+            bare.append(k)
+        for _sid, blocker in MR.blocking_on_special(ids, {portal}, block_ids.__contains__, k in walk):
+            plugged.append((k, blocker))
+    out = []
+    if bare:
+        out.append('%d tile(s) hold an item with no ground below it (first %s)' % (len(bare), sorted(bare)[0]))
+    for k, blocker in sorted(plugged):
+        out.append('the teleport at %s %s' % (k, ('has the blocking item %d on its tile' % blocker) if blocker
+                                              else 'is on a tile nobody can walk on'))
+    return out
 
 
 def qa_errors(result):

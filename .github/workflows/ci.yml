@@ -968,6 +968,13 @@ jobs:
           python3 -I server/tools/patch_hunt_gates_test.py
       - name: "Hunt audit rules on synthetic data (audit_hunts.py, monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O337)"
         run: python3 -I server/tools/audit_hunts_test.py
+      - name: "Map tile audit and house audit on a synthetic map (audit_map_tiles.py, audit_houses.py, the shared tile rules against the Lua originals; every planned area passes the audit, audit_map_plans.py; the installed map is audited by hand; O511, O513)"
+        run: |
+          # system numpy and luajit: the audits read maps with tools/map/otbm.py, the plans compile through the Lua generator
+          sudo apt-get install -y -qq luajit python3-numpy
+          python3 -I server/tools/audit_map_tiles_test.py
+          python3 -I server/tools/audit_houses_test.py
+          python3 -I server/tools/audit_map_plans.py --check --quiet
       - name: Hunt annexes (the five annex plans compile, asymmetric, the rows of hunt_annexes.json; the portal step on a synthetic map; the spawn fills; O337)
         run: |
           sudo apt-get install -y -qq luajit python3-numpy
