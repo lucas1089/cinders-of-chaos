@@ -3802,11 +3802,11 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
 - **No lines, every class** (2026-10-23): `equipLevel` without `equipLines` writes an empty class list; that lets every
   class wear it from the level (before, an empty list let nobody). A weapon base without a stock entry gets a `hand`
   entry. The leveling and endgame uniques below use both.
-- **A base that left** (O518): a base id the block held that is no unique's any more gets its recorded stock Equip entry
+- **A base that left** (O520): a base id the block held that is no unique's any more gets its recorded stock Equip entry
   back in front of the block (slot, level, `onEquipItem`, the class list with the base class of each line shown). A
   DeEquip the block added goes with the block. See the next section.
 
-## Unique weapons and their base (O518) (`tests/unique_weapon_base_test.lua`, `chaos_jewelry.lua` `uniqueMoves`)
+## Unique weapons and their base (O520) (`tests/unique_weapon_base_test.lua`, `chaos_jewelry.lua` `uniqueMoves`)
 Found by the equip tooltip audit (O490), kind "unique copy: weapon check: class". Read from code and data, then run on an
 installed folder; not seen on a live server. After it, `audit_equip_tooltips.py` on that folder (2,182 tooltips, with
 the uniques of O510) lists no item of the kind, and no mismatch of any kind; `--check` passes.
@@ -3909,7 +3909,7 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
 | tooltip stricter: class (tooltip drops a class the server allows) | 76 | 0 |
 | unique copy: tooltip stricter: class | 3 | 0 |
 | unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 (58 once the audit read every unique) | 0 (2026-11-11, O510) |
-| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding; 0 since O518 (the unique left that base: "Unique weapons and their base (O518)") |
+| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding; 0 since O520 (the unique left that base: "Unique weapons and their base (O520)") |
 
   Shapes (one example each): a wand, rod, robe or hood for the Mystic + Illusionist line or the Mystic + Elementalist line
   read "Mystic, Necromancer" (the Elementalist or the Illusionist was refused after a yes; 126 Equip entries and 127
@@ -4391,7 +4391,7 @@ by the vocation's); a server restart after `install_all.py` loads the new vocati
   legendary power, from waystone kills). Bands: 1-9 the shop dagger (2379), 10-27 and 28-599 the two leveling daggers and the stock
   daggers (wyvern fang 7408 from level 25, assassin dagger 7404 from 40), 300 the Duskstalker Fang, 600+ the Thief-only ones up
   to 2400+. The drownkin ceremonial dagger (27193) is no dagger: it is a caster wand, and the Misericorde left it for the wyvern
-  fang (7408) in O518 ("Unique weapons and their base (O518)"). Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
+  fang (7408) in O520 ("Unique weapons and their base (O520)"). Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
   `weapon_sim.py --power --check` passes) scale it as every melee weapon. Only the level 600+ ones are Thief-line only. Drop pool,
   codex, wiki and tooltip come from the same files as every unique (`gen_unique_specs.py`, `gen_codex_data.lua`,
   `gen_wiki_data.lua`); uniques have no NPC price (`gen_item_prices.py --check`).

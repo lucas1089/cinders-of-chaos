@@ -243,7 +243,7 @@ a dagger to find in every band; with the shop dagger (2379), the stock assassin 
 | Nightbloom Stiletto | 2411 | poison dagger | 1250 | rare, chance 6, waystone kills | Thief line | attack speed 15, poison chance 24, physical penetration 18, Critical Echo 20 |
 | Misericorde of the Pale Vow | 7408 | wyvern fang | 1900 | rare, chance 6, waystone kills | Thief line | attack speed 14, life on hit 45, physical penetration 18, Bloodrush 4 |
 
-The Misericorde sat on 27193 (drownkin ceremonial dagger) until O518. That base only looks like a dagger: it is a wand of the
+The Misericorde sat on 27193 (drownkin ceremonial dagger) until O520. That base only looks like a dagger: it is a wand of the
 Mystic and Necromancer lines, so a Thief could wear the unique and never hit with it. A unique weapon's base must be a weapon
 of the unique's kind whose weapon entry lets its classes hit: `tests/unique_weapon_base_test.lua` holds every one to
-`base_weapons.csv` (server/README.md "Unique weapons and their base (O518)").
+`base_weapons.csv` (server/README.md "Unique weapons and their base (O520)").

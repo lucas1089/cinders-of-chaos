@@ -15,7 +15,7 @@ Stillheart Robe's soulmantle needs level 400, the Hollowglass Diadem's eldritch 
    stock-only ones are hidden (showInDescription="0"). A base id with no DeEquip entry of its own gets one in the
    block. The recorded stock rule stays in the block as a comment, so a re-run rebuilds the same block. A stock entry
    with a script of its own, two Equip entries or a range entry over the id stop the tool, nothing written.
-   A base id that is no unique's any more (the unique moved to another base, O518: the Misericorde of the Pale Vow left
+   A base id that is no unique's any more (the unique moved to another base, O520: the Misericorde of the Pale Vow left
    the wand 27193) gets its recorded stock Equip entry back, right before the block: slot, level, function and the
    vocation list, the base class of a line shown in the look and the others hidden, as add_vocations.py writes them.
    A DeEquip entry the block added for it goes with the block. Without this the base would lose its level and class
