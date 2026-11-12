@@ -303,8 +303,8 @@ eq(C.selectOnClose('bag3', 'purse', nil), 'bag3', 'the purse closed on a bag pag
 eq(C.selectOnClose('bag3', 'bag', 3), 'main', 'its bag closed: the backpack')
 eq(C.selectOnClose('purse', 'bag', 3), 'purse', 'a bag closed on the purse page: no change')
 
--- container ids: one bag per family, so the panel holds at most four containers
-eq(C.MAX_OPEN, 4, 'main, one bag, the purse, one purse bag')
+-- container ids: one bag per family, so the panel holds at most five containers (the Loot Bag is the fifth, O516)
+eq(C.MAX_OPEN, 5, 'main, one bag, the purse, one purse bag, the Loot Bag')
 local memo = { [5] = { fam = 'main', slot = 1 }, [7] = { fam = 'purse', slot = 0 }, [9] = { fam = 'purse', slot = 2 } }
 eq(C.previousFor(memo, 'main'), 5, 'a backpack bag reuses the id of the backpack bag open')
 eq(C.previousFor(memo, 'purse'), 7, 'a purse bag reuses the id of a purse bag open')
@@ -315,6 +315,11 @@ eq(table.concat(sup, ','), '7,9', 'a purse bag opened with a new id closes the p
 eq(#C.superseded(memo, 11, 'main'), 1, 'and one backpack bag')
 eq(#C.superseded(memo, 7, 'purse'), 1, 'the id it reused is not closed')
 eq(#C.superseded({}, 7, 'purse'), 0, 'nothing open')
+-- the Loot Bag is neither reused nor closed by the other bags of its family, and closes none of them (O516)
+local lmemo = { [7] = { fam = 'purse', slot = 0, loot = true }, [9] = { fam = 'purse', slot = 2 } }
+eq(C.previousFor(lmemo, 'purse'), 9, 'a purse bag reuses the id of the purse bag, not the Loot Bag')
+eq(C.previousFor({ [7] = { fam = 'purse', slot = 0, loot = true } }, 'purse'), nil, 'only the Loot Bag open: a free id')
+eq(table.concat(C.superseded(lmemo, 11, 'purse'), ','), '9', 'a purse bag opened with a new id leaves the Loot Bag open')
 
 -- drops on a page button
 local ids = { main = 1, purse = 2 }
@@ -342,5 +347,117 @@ eq(C.sortBlock('pbag1'), nil, 'sort in a bag of the purse')
 eq(C.sortBlock('main'), nil, 'sort in the backpack')
 eq(C.sortBlock('bag1'), nil, 'sort in a bag')
 eq(C.sortBlock(nil), nil, 'no page')
+
+-- ---------------------------------------------------------------- the Loot Bag section (O516)
+eq(C.LOOT_SLOTS, 20, '20 slots by default (owner 2026-11-12)')
+-- which bag is the Loot Bag: the id the server named wins, else the two ids of pouches_config.lua
+eq(C.isLootBag(38608, nil), true, 'fallback: the Loot Bag look')
+eq(C.isLootBag(33653, nil), true, 'fallback: the Loot Bag look of an older pair')
+eq(C.isLootBag(38609, nil), false, 'the Orbs Pouch is not the Loot Bag')
+eq(C.isLootBag(38608, { loot = 38608 }), true, 'named')
+eq(C.isLootBag(38608, { loot = 41000 }), false, 'the server named another id: that one only')
+eq(C.isLootBag(41000, { loot = 41000 }), true, 'named, not a fallback id')
+eq(C.isLootBag(38608, { loot = 0 }), true, 'an unset name falls back')
+eq(C.isLootBag(nil, nil), false, 'no id')
+eq(C.isLootBag('x', nil), false, 'no number')
+
+-- the page list marks it; the backpack page and every other page are untouched
+local lp = C.pages({ { slot = 1, id = 2854 } }, { bags = { { slot = 0, id = 38608 }, { slot = 1, id = 38609 } } }, nil)
+eq(#lp, 5, 'main, bag, purse, two purse bags')
+eq(lp[4].key, 'pbag0', 'the Loot Bag keeps its place in the list')
+eq(lp[4].loot, true, 'flagged')
+eq(lp[5].loot, nil, 'the other pouch is a page')
+eq(lp[2].loot, nil, 'a backpack bag is a page')
+eq(lp[1].loot, nil, 'the backpack is a page')
+eq(C.pages({}, { bags = { { slot = 0, id = 38608 } } }, { loot = 99 })[3].loot, nil, 'another named id: no Loot Bag')
+
+-- which section is shown when the Loot Bag opens: the page stays, the section shows (a restore leaves it)
+eq(C.selectOnOpen('main', 'pbag', 0, false, true), 'main', 'the Loot Bag opened on the backpack: the backpack stays')
+eq(C.selectOnOpen('bag2', 'pbag', 0, false, true), 'bag2', 'on a bag page: that page stays')
+eq(C.selectOnOpen('purse', 'pbag', 0, false, true), 'purse', 'on the purse page: the purse stays')
+eq(C.selectOnOpen('main', 'pbag', 1, false, false), 'pbag1', 'another purse bag still takes the page')
+eq(C.selectOnOpen('main', 'pbag', 0, true, true), 'main', 'restore: nothing changes')
+eq(C.lootShownOnOpen(false, false), true, 'the player opened it: the section shows')
+eq(C.lootShownOnOpen(false, true), false, 'the login restore opened it: the section stays hidden')
+eq(C.lootShownOnOpen(true, true), true, 'a shown section stays shown on a restore')
+
+-- pages of 20 over engine pages of 250 (13 client pages per engine page, the last of 10 slots)
+local EP = 250
+local v = C.lootView(0, 500, EP)
+eq(v.count, 20, 'first page: 20 slots')
+eq(v.first, 0, 'from slot 0')
+eq(v.seek, 0, 'engine page 0')
+eq(v.pages, 26, '500 items: 13 pages of each engine page')
+v = C.lootView(11, 500, EP)
+eq(v.first, 220, 'page 12 starts at slot 220')
+eq(v.count, 20, '220..239')
+v = C.lootView(12, 500, EP)
+eq(v.first, 240, 'page 13 starts at 240')
+eq(v.count, 10, 'the last page of an engine page has the 10 slots that are left')
+eq(v.seek, 0, 'still engine page 0')
+v = C.lootView(13, 500, EP)
+eq(v.seek, 250, 'past slot 250: the second engine page')
+eq(v.first, 0, 'its first slot')
+eq(v.count, 20, '250..269')
+v = C.lootView(25, 500, EP)
+eq(v.seek, 250, 'the last page, engine page 2')
+eq(v.first, 240, 'slots 240..249 of it')
+eq(v.count, 10, 'the 10 that are left')
+v = C.lootView(99, 500, EP)
+eq(v.page, 25, 'clamped to the last page')
+v = C.lootView(-3, 500, EP)
+eq(v.page, 0, 'clamped to the first page')
+eq(C.lootView(nil, 500, EP).page, 0, 'no page: the first')
+-- an empty or small bag: one page, 20 slots
+v = C.lootView(0, 0, EP)
+eq(v.pages, 1, 'empty: one page')
+eq(v.count, 20, 'empty: 20 slots')
+eq(C.lootView(5, 0, EP).page, 0, 'empty: no page 6')
+eq(C.lootPageCount(20, EP), 1, '20 items: one page')
+eq(C.lootPageCount(21, EP), 2, '21 items: two pages')
+eq(C.lootPageCount(250, EP), 13, 'a full engine page: 13 pages')
+eq(C.lootPageCount(251, EP), 14, 'one item on the second engine page: 14 pages')
+eq(C.lootPageCount(nil, EP), 1, 'no size')
+-- a bag that is not paged (capacity 250 or fewer, as the client has it): pages of 20 inside it
+v = C.lootView(0, 60, 100)
+eq(v.pages, 3, '60 items in a bag of 100: 3 pages')
+v = C.lootView(4, 60, 100)
+eq(v.page, 2, 'clamped to the page of the last item')
+eq(v.first, 40, 'slots 40..59')
+v = C.lootView(0, 100, 100)
+eq(v.count, 20, 'a bag of 100 slots: 20 at a time')
+v = C.lootView(4, 100, 100)
+eq(v.count, 20, 'the fifth page is the last 20')
+v = C.lootView(0, 5, 10)
+eq(v.count, 10, 'a bag of 10 slots: 10 shown, never more than it has')
+-- the page of an item index
+eq(C.lootPageOf(0, EP), 0, 'slot 0')
+eq(C.lootPageOf(19, EP), 0, 'slot 19')
+eq(C.lootPageOf(20, EP), 1, 'slot 20')
+eq(C.lootPageOf(249, EP), 12, 'slot 249: the short page')
+eq(C.lootPageOf(250, EP), 13, 'slot 250: the first page of engine page 2')
+eq(C.lootPageOf(499, EP), 25, 'slot 499')
+-- every slot of 500 lies on exactly the page lootView says, and the pages tile the container
+local covered = {}
+for page = 0, 25 do
+  local w = C.lootView(page, 500, EP)
+  for j = 0, w.count - 1 do
+    local g = w.seek + w.first + j
+    covered[g] = (covered[g] or 0) + 1
+    eq(C.lootPageOf(g, EP), page, 'slot ' .. g .. ' is on page ' .. page)
+  end
+end
+local n = 0
+for g = 0, 499 do
+  eq(covered[g], 1, 'slot ' .. g .. ' once')
+  n = n + 1
+end
+eq(n, 500, 'all 500 slots')
+-- the page shown while the engine page it needs has not come: the page of the engine page that is open
+eq(C.lootPageFor(13, 0, 500, EP), 0, 'asked for page 14, the first engine page still open: back to its first page')
+eq(C.lootPageFor(13, 250, 500, EP), 13, 'the second engine page came: page 14')
+eq(C.lootPageFor(3, 0, 500, EP), 3, 'inside the open engine page: the asked page')
+eq(C.lootPageFor(3, 250, 500, EP), 13, 'the engine page moved under it: the page of its first slot')
+eq(C.lootPageFor(30, 250, 500, EP), 25, 'beyond the end: the last page')
 
 if fails == 0 then print('bagpanel_core_test: ok') else os.exit(1) end
