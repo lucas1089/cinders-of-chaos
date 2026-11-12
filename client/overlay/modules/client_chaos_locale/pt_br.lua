@@ -6823,6 +6823,11 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Inventory"] = "Inventário",
   ["Nothing here."] = "Nada aqui.",
   ["Page sorted."] = "Página ordenada.",
+  -- game_bagpanel: the Loot Bag section (O516)
+  ["Loot Bag: %d items"] = "Loot Bag: %d itens",
+  ["Next 20 slots of the Loot Bag"] = "Próximos 20 espaços da Loot Bag",
+  ["Previous 20 slots of the Loot Bag"] = "20 espaços anteriores da Loot Bag",
+  ["Hides the Loot Bag. It stays open: its button shows it again."] = "Esconde a Loot Bag. Ela continua aberta: o botão dela a mostra de novo.",
   ["Puts the items of this page in order: by item, then the bigger stack first."] = "Põe os itens desta página em ordem: por item, depois a pilha maior primeiro.",
   ["Sort"] = "Ordenar",
   ["Ammunition"] = "Munição",

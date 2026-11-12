@@ -239,11 +239,17 @@ end
 local function placeFor(center)
 	local r = cfg().spawn.placeRadius
 	local best, bestD
+	-- only a tile a player can walk to from the corpse (spawn_tile_core.lua reachMap, O517): a chest on a cut-off rock
+	-- or an island would start an event nobody can finish
+	local reach
+	if ChaosSpawnTile and ChaosSpawnTile.reachMap then
+		reach = ChaosSpawnTile.reachMap(center, {maxPath = r * 2 + 4, box = r + 2})
+	end
 	for dx = -r, r do
 		for dy = -r, r do
 			local pos = {x = center.x + dx, y = center.y + dy, z = center.z}
 			local d = dx * dx + dy * dy
-			if (not bestD or d < bestD) and usableTile(pos) then
+			if (not bestD or d < bestD) and (not reach or reach[ChaosSpawnTile.key(pos)]) and usableTile(pos) then
 				best, bestD = pos, d
 			end
 		end
@@ -470,7 +476,9 @@ local function randomSpot(ch)
 	local e = cfg().event
 	-- spawn_tile_core.lua: ground, no water (a land horde never left it), not blocked, no protection zone, house or
 	-- floor change; nil (the monster is skipped) when 14 tries find none
-	local opts = {radius = e.spreadMax, minRadius = e.spreadMin, tries = 14, rand = rand, occupied = true}
+	-- reachFrom: also walk-connected to the chest within e.maxPath steps (O517: a horde stood on a rock nobody could climb)
+	local opts = {radius = e.spreadMax, minRadius = e.spreadMin, tries = 14, rand = rand, occupied = true,
+		reachFrom = ch.pos, maxPath = e.maxPath, box = e.reachBox}
 	local pos = ChaosSpawnTile.find(ch.pos, opts)
 	if pos or not ChaosSpawnTile.ok then
 		return pos
@@ -670,6 +678,59 @@ function CC.failEvent(ch, reason)
 	remove(ch)
 end
 
+-- Safety net (O517). The event ends only when its monsters are dead, so one nobody can hit hangs it. Every
+-- stuckCheckSec each live monster asks the engine for a path to the participants near the chest; with none to any of them
+-- for stuckSec it is moved to a reachable spot near the chest (randomSpot), or removed when there is no such spot (the
+-- event goes on without it).
+function CC.checkStuck(ch, ev, now)
+	local e = cfg().event
+	if not e.stuckSec or (ev.nextStuckCheck and now < ev.nextStuckCheck) then
+		return
+	end
+	ev.nextStuckCheck = now + (e.stuckCheckSec or 4) * 1000
+	ev.stuck = ev.stuck or {}
+	local targets = {}
+	for pid in pairs(ev.participants) do
+		local p = Player(pid)
+		if p and p:getHealth() > 0 and near(p, ch.pos, e.leaveRadius) then
+			targets[#targets + 1] = p:getPosition()
+		end
+	end
+	for id in pairs(ev.monsters) do
+		local m = Monster(id)
+		if not m or m:getHealth() <= 0 or #targets == 0 or not m.getPathTo then
+			ev.stuck[id] = nil
+		else
+			local mp, reachable = m:getPosition(), false
+			for _, tp in ipairs(targets) do
+				if tp.z == mp.z then
+					local okc, path = pcall(m.getPathTo, m, P(tp), 0, 1, true, false, 0)
+					if okc and type(path) == "table" then
+						reachable = true
+						break
+					end
+				end
+			end
+			if reachable then
+				ev.stuck[id] = nil
+			elseif not ev.stuck[id] then
+				ev.stuck[id] = now
+			elseif now - ev.stuck[id] >= e.stuckSec * 1000 then
+				ev.stuck[id] = nil
+				local spot = randomSpot(ch)
+				fx(mp, "CONST_ME_POFF")
+				if spot and m.teleportTo and m:teleportTo(P(spot), true) ~= false then
+					fx(spot, "CONST_ME_MORTAREA")
+					ev.moved = (ev.moved or 0) + 1
+				else
+					m:remove()
+					ev.removed = (ev.removed or 0) + 1
+				end
+			end
+		end
+	end
+end
+
 function CC.winEvent(ch)
 	local c = cfg()
 	local ev = ch.ev
@@ -717,6 +778,7 @@ function tickInner(key)
 		end
 	end
 	local actions = K.step(c, ev, {alive = aliveCount(ev), inside = inside}, now)
+	try("stuck", CC.checkStuck, ch, ev, now)
 	for _, a in ipairs(actions) do
 		if a[1] == "spawn" then
 			local made = try("horde", spawnHorde, ev, ch, a[2])

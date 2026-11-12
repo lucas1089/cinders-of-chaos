@@ -9,7 +9,11 @@
 --    shown before, so at most one bag is open for the panel.
 --  * The purse (O492, the engine's store inbox, inventory slot 11) is a page too, after the backpack's bags, and once it
 --    is open every bag in it (Loot Bag, the pouches) is a page of its own. The panel holds at most four containers open:
---    the backpack, one bag of it, the purse, one bag of the purse (C.MAX_OPEN). Their stock windows are hidden.
+--    the backpack, one bag of it, the purse, one bag of the purse (C.MAX_OPEN, 5 with the Loot Bag section). Their stock windows are hidden.
+--  * The Loot Bag (O516) is the one bag that is no page: its button shows or hides a section under the grid of the page shown
+--    (the backpack stays), 20 slots at a time with arrows (C.lootView). The engine pages it by 250 (server src-patch 0081):
+--    the arrows ask for the next engine page with g_game.seekInContainer. Sort does not touch it (the server keeps it in
+--    rarity order).
 --  * A drop on a page button moves the item into that container (C.dropTarget). Cells carry the container slot position, so a drop
 --    (UIItem:onDrop -> g_game.move) puts an item in the page like in a container window.
 --  * The stock windows of the main backpack and its bags are hidden while the panel is on (the containers stay open:
@@ -37,6 +41,10 @@ local handlers = {}
 local reported = {}
 local ensureTries = 0
 local hiddenWindows = {} -- container id -> true for the stock windows this module hid
+local lootShown = false     -- the Loot Bag section is shown (O516)
+local lootWant = 0          -- the client page of the Loot Bag asked for (C.lootView)
+local lootSeek = nil        -- the engine page (first index) asked from the server, until it arrives
+local lootCells, lootCellsFor = {}, nil
 
 local function safe(name, fn)
   return function(...)
@@ -112,11 +120,29 @@ local function bagItemId(c)
   return nil
 end
 
--- the open bag of family `fam` ('main': the backpack, 'purse') that belongs to page `slot`
-local function bagContainer(fam, slot)
+-- the open bag of family `fam` ('main': the backpack, 'purse') that belongs to page `slot`; the Loot Bag (loot) is no page
+local function bagContainer(fam, slot, loot)
   for _, c in ipairs(containers()) do
     local m = bagMemo[c:getId()]
-    if m and m.fam == fam and m.slot == slot then return c end
+    if m and m.fam == fam and m.slot == slot and (m.loot == true) == (loot == true) then return c end
+  end
+  return nil
+end
+
+-- the client ids the server named for the pouches (game_pouches), nil before they came: C.isLootBag then uses its own
+local function lootIds()
+  local p = modules.game_pouches
+  if p and type(p.getState) == 'function' then
+    local ok, st = pcall(p.getState)
+    if ok and type(st) == 'table' then return st.ids end
+  end
+  return nil
+end
+
+local function lootContainer()
+  for _, c in ipairs(containers()) do
+    local m = bagMemo[c:getId()]
+    if m and m.loot then return c end
   end
   return nil
 end
@@ -255,6 +281,95 @@ local function drawGrid(c)
   if empty then empty:setVisible(not any) end
 end
 
+-- the Loot Bag section (O516): a header (name and items, arrows, hide) and a grid of at most C.LOOT_SLOTS slots under the grid
+-- of the page shown. The cells carry the slot position inside the engine page, as the main grid's do.
+local LOOT_HEADER = 18
+
+local function clearLoot()
+  local lg = child('lootGrid')
+  if lg then lg:destroyChildren() end
+  lootCells, lootCellsFor = {}, nil
+end
+
+local function lootCounts(c)
+  local cap = c:getCapacity()
+  local first, size = 0, 0
+  if c.getFirstIndex then
+    local ok, v = pcall(c.getFirstIndex, c)
+    if ok and tonumber(v) then first = tonumber(v) end
+  end
+  local paged = false
+  if c.hasPages then
+    local ok, v = pcall(c.hasPages, c)
+    paged = ok and v == true
+  end
+  if paged and c.getSize then
+    local ok, v = pcall(c.getSize, c)
+    if ok and tonumber(v) then size = tonumber(v) end
+  else
+    for i = 0, cap - 1 do
+      if c:getItem(i) then size = i + 1 end
+    end
+    first = 0
+  end
+  return cap, first, size
+end
+
+local function drawLoot()
+  local section, lg = child('lootSection'), child('lootGrid')
+  if not section or not lg then return end
+  local c = lootShown and lootContainer() or nil
+  if not c then
+    clearLoot()
+    section:setVisible(false)
+    section:setHeight(0)
+    section:setMarginTop(0)
+    return
+  end
+  local cap, first, size = lootCounts(c)
+  -- the engine page the asked client page lives in: ask the server for it once (the answer is a new open of the bag)
+  local want = C.lootView(lootWant, size, cap)
+  if first == want.seek then
+    lootSeek = nil
+  elseif lootSeek ~= want.seek and g_game.seekInContainer then
+    lootSeek = want.seek
+    pcall(g_game.seekInContainer, c:getId(), want.seek)
+  end
+  local view = C.lootView(C.lootPageFor(lootWant, first, size, cap), size, cap)
+  local key = c:getId() .. ':' .. first .. ':' .. view.first .. ':' .. view.count
+  if lootCellsFor ~= key then
+    lg:destroyChildren()
+    lootCells = {}
+    for j = 0, view.count - 1 do
+      local w = g_ui.createWidget('BagPanelCell', lg)
+      w:setId('lslot' .. j)
+      w.position = slotPosition(c, view.first + j)
+      lootCells[j + 1] = w
+    end
+    lootCellsFor = key
+  end
+  for j = 0, view.count - 1 do
+    local w = lootCells[j + 1]
+    if alive(w) then
+      local item = c:getItem(view.first + j)
+      w:setItem(item)
+      decorate(w, item)
+    end
+  end
+  local cols = C.columns(lg:getWidth(), C.CELL, 2)
+  local gh = C.gridHeight(view.count, cols, C.CELL, 2)
+  if lg:getHeight() ~= gh then lg:setHeight(gh) end
+  local title, pageLabel = child('lootTitle'), child('lootPage')
+  if title then title:setText(tr('Loot Bag: %d items', size)) end
+  if pageLabel then pageLabel:setText(tr('Page %d of %d', view.page + 1, view.pages)) end
+  local prev, nxt = child('lootPrev'), child('lootNext')
+  if prev then prev:setEnabled(view.page > 0) end
+  if nxt then nxt:setEnabled(view.page < view.pages - 1) end
+  section:setMarginTop(4)
+  section:setHeight(LOOT_HEADER + 2 + gh)
+  section:setVisible(true)
+end
+
 -- the border of the page buttons of the purse family: a brown frame, so they read as another place than the backpack's
 local PURSE_BORDER = '#7a5a3a'
 
@@ -281,6 +396,7 @@ local function drawPages(pages, main)
     n = n + 1
     local w = g_ui.createWidget('BagPanelPage', row)
     w.pageKey = p.key
+    w.pageLoot = p.loot == true
     local id = p.id
     if p.key == 'purse' then id = pitem and pitem:getId() or nil end
     if not id and p.key == 'main' then id = main and bagItemId(main) end
@@ -288,10 +404,12 @@ local function drawPages(pages, main)
     if p.slot then nums[p.fam] = nums[p.fam] + 1 end
     w:setTooltip(pageTip(p, p.slot and nums[p.fam] or 0, w:getItem()))
     local border = p.fam == 'purse' and PURSE_BORDER or '#00000000'
-    w:setBorderColor(p.key == selected and '#f6cf72' or border)
+    -- the Loot Bag button is lit while its section shows; it is never "the page"
+    local lit = p.loot and (lootShown and lootContainer() ~= nil) or (not p.loot and p.key == selected)
+    w:setBorderColor(lit and '#f6cf72' or border)
     w.onMouseRelease = function(widget, pos, button)
       if button ~= MouseLeftButton then return false end
-      M.selectPage(widget.pageKey)
+      if widget.pageLoot then M.toggleLoot() else M.selectPage(widget.pageKey) end
       return true
     end
     -- a drop on a page button moves the item into that container (the cells take drops the same way: the base UIItem
@@ -323,7 +441,7 @@ function M.draw()
   local pbags = purseC and C.bagSlots(containerItems(purseC)) or {}
   -- the purse page shows whenever the character has a purse; its bags only while the purse is open (the client does not
   -- know what is in it before)
-  local pages = C.pages(bags, purseItem() and { bags = pbags } or nil)
+  local pages = C.pages(bags, purseItem() and { bags = pbags } or nil, lootIds())
   -- the bags opened for the panel: still a bag of the same item where they were, else the nearest of its kind
   local bagsOf = { main = bags, purse = pbags }
   for cid, m in pairs(bagMemo) do
@@ -345,6 +463,7 @@ function M.draw()
   selected = C.validKey(pages, selected)
   local c = pageContainer(main, pages)
   drawGrid(c)
+  drawLoot()
   drawPages(pages, main)
   drawMoney()
   M.drawSortButton()
@@ -430,22 +549,27 @@ local function onOpen(c, previous)
   hideStock(c)
   local cid = c:getId()
   if kind == 'purse' then purseCid = cid end
+  local loot = false
   if kind == 'bag' or kind == 'pbag' then
     local fam = C.family(kind)
+    local id = bagItemId(c)
+    loot = kind == 'pbag' and C.isLootBag(id, lootIds())
     -- a bag opened with an id of its own (a double click on it in the grid) takes the place of the one open before:
     -- one bag stays open per family, so the server's limit of open containers is not eaten (the login restore keeps
-    -- what it opens)
-    if not restoring() then
+    -- what it opens). The Loot Bag (O516) is a section of its own: it neither closes the other bag nor is closed by it
+    if not restoring() and not loot then
       for _, old in ipairs(C.superseded(bagMemo, cid, fam)) do
         local oc = g_game.getContainer(old)
         bagMemo[old] = nil
         if oc then pcall(g_game.close, oc) end
       end
     end
-    bagMemo[cid] = { fam = fam, slot = slot, id = bagItemId(c) }
+    bagMemo[cid] = { fam = fam, slot = slot, id = id, loot = loot or nil }
   end
-  -- what the player opened is the page shown; the ones the login restore opens are not
-  selected = C.selectOnOpen(selected, kind, slot, restoring())
+  -- (the server answers a seek with a new open of the same bag: the page asked for, lootWant, stays)
+  if loot then lootShown = C.lootShownOnOpen(lootShown, restoring()) end
+  -- what the player opened is the page shown; the ones the login restore opens are not; the Loot Bag is no page
+  selected = C.selectOnOpen(selected, kind, slot, restoring(), loot)
   M.refresh()
 end
 
@@ -459,7 +583,12 @@ local function onClose(c)
   local m = bagMemo[cid]
   if m then
     bagMemo[cid] = nil
-    selected = C.selectOnClose(selected, m.fam == 'purse' and 'pbag' or 'bag', m.slot)
+    if m.loot then
+      -- the Loot Bag closed (a use on it, the purse closing): the section goes, the page shown stays
+      lootShown, lootWant, lootSeek = false, 0, nil
+    else
+      selected = C.selectOnClose(selected, m.fam == 'purse' and 'pbag' or 'bag', m.slot)
+    end
   end
   if cid == purseCid then
     purseCid = nil
@@ -521,6 +650,11 @@ function M.selectPage(key)
   local fam = C.family(kind)
   local parent = fam == 'purse' and purseContainer() or mainContainer()
   if not slot or not parent then return end
+  -- the Loot Bag is a section, not a page (O516)
+  if fam == 'purse' then
+    local item = parent:getItem(slot)
+    if item and C.isLootBag(item:getId(), lootIds()) then return M.toggleLoot(slot) end
+  end
   selected = key
   if not bagContainer(fam, slot) then
     local item = parent:getItem(slot)
@@ -532,6 +666,41 @@ function M.selectPage(key)
       g_game.open(item, previous)
     end
   end
+  M.refresh()
+end
+
+-- the Loot Bag button (O516): shows the Loot Bag as the section under the grid, or hides it again (the bag stays open, its
+-- stock window hidden). The bag opens as any container does when it is not open yet. `slot`: its place in the purse
+-- (the page button knows it; nil: look for it).
+function M.toggleLoot(slot)
+  if sorting then sorting = nil end
+  if lootShown and lootContainer() then
+    lootShown = false
+    return M.refresh()
+  end
+  lootShown, lootWant, lootSeek = true, 0, nil
+  if not lootContainer() then
+    local parent = purseContainer()
+    if not parent then return end
+    if not slot then
+      for _, b in ipairs(C.bagSlots(containerItems(parent))) do
+        if C.isLootBag(b.id, lootIds()) then slot = b.slot break end
+      end
+    end
+    local item = slot and parent:getItem(slot)
+    if not item then lootShown = false return end
+    g_game.open(item)
+  end
+  M.refresh()
+end
+
+function M.lootArrow(delta)
+  local c = lootContainer()
+  if not c then return end
+  local cap, first, size = lootCounts(c)
+  local now = C.lootPageFor(lootWant, first, size, cap)
+  lootWant = C.lootView(now + delta, size, cap).page
+  lootSeek = nil
   M.refresh()
 end
 
@@ -752,6 +921,7 @@ end
 
 local function onGameStart()
   bagMemo, hiddenWindows, selected, sorting, purseCid = {}, {}, 'main', nil, nil
+  lootShown, lootWant, lootSeek = false, 0, nil
   createWindow()
   if not alive(window) then return end
   buildEquip()
@@ -782,6 +952,8 @@ local function onGameEnd()
   sorting = nil
   if cycle then removeEvent(cycle) cycle = nil end
   bagMemo, hiddenWindows, purseCid = {}, {}, nil
+  lootShown, lootWant, lootSeek = false, 0, nil
+  clearLoot()
   clearGrid()
   if alive(window) then window:hide() end
 end
@@ -826,3 +998,5 @@ function sort() M.sort() end
 function openPurse() M.openPurse() end
 function getPurseButton() return M.purseButton() end
 function selectPage(key) M.selectPage(key) end
+function toggleLoot() M.toggleLoot() end
+function lootArrow(delta) M.lootArrow(delta) end
