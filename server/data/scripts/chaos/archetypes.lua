@@ -1432,6 +1432,78 @@ local function inPz(creature)
 	return tile ~= nil and TILESTATE_PROTECTIONZONE ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE)
 end
 
+-- Pyre Oath's look is the client's (O518, game_chestaura, extended opcode ChaosOpcodes.templarAura = 118): the ember ring
+-- under every holder ("pyre", the list a viewer sees, only when it changed) and the burn on the monsters a tick struck
+-- ("burn", the ids, once a tick). No map effect any more; a client without the module draws nothing (the damage, its
+-- numbers and the self burn are unchanged).
+local PYRE_OPCODE = (ChaosOpcodes and ChaosOpcodes.templarAura) or 118
+M.pyreSent = M.pyreSent or {} -- viewer id -> key of the ring list it was last told
+
+local function sendLook(player, action, data)
+	if Chaos and Chaos.send then
+		return Chaos.send(player, PYRE_OPCODE, action, data)
+	end
+	return player:sendExtendedOpcode(PYRE_OPCODE, json.encode({action = action, data = data}))
+end
+
+local function pyreHolders()
+	local holders = {}
+	local radius = cfg().arPyreOath.radius
+	for pid, flags in pairs(M.flags) do
+		if flags.arPyreOath then
+			local p = Player(pid)
+			if p and p:getHealth() > 0 then
+				holders[#holders + 1] = {id = pid, pos = p:getPosition(), radius = radius}
+			end
+		end
+	end
+	return holders
+end
+
+-- once a think, after the players' ticks: every viewer is told the rings it sees when that list changed
+local function syncPyreRings()
+	if not Game or not Game.getPlayers then
+		return
+	end
+	local holders = pyreHolders()
+	if #holders == 0 and next(M.pyreSent) == nil then
+		return
+	end
+	local look = cfg().arPyreOath.look
+	local online = {}
+	for _, viewer in ipairs(Game.getPlayers()) do
+		local vid = viewer:getId()
+		online[vid] = true
+		local list = A.pyreRingList({id = vid, pos = viewer:getPosition()}, holders, look)
+		local out = A.pyreRingDecide(M.pyreSent, vid, list)
+		if out then
+			local ok, err = pcall(sendLook, viewer, "pyre", {p = out})
+			if not ok then
+				print("[ChaosArchetypes] pyre ring: " .. tostring(err))
+			end
+		end
+	end
+	A.pyreRingPrune(M.pyreSent, online)
+end
+
+-- the burn of one tick: the struck monsters' ids to the players who can see the holder
+local function sendBurn(player, pos, struck)
+	local look = cfg().arPyreOath.look
+	local ids = A.pyreBurnIds(struck, look.maxBurn)
+	if #ids == 0 or not Game or not Game.getSpectators then
+		return
+	end
+	for _, c in ipairs(Game.getSpectators(Position(pos.x, pos.y, pos.z), false, true, look.viewX, look.viewX, look.viewY,
+			look.viewY) or {}) do
+		if c:isPlayer() then
+			local ok, err = pcall(sendLook, c, "burn", {b = ids})
+			if not ok then
+				print("[ChaosArchetypes] pyre burn: " .. tostring(err))
+			end
+		end
+	end
+end
+
 local function pyreTick(player)
 	local p = cfg().arPyreOath
 	local pos = player:getPosition()
@@ -1451,9 +1523,16 @@ local function pyreTick(player)
 		pcall(doTargetCombatHealth, 0, player, COMBAT_FIREDAMAGE, -burn, -burn, CONST_ME_NONE)
 	end
 	local aura = A.pyreAura(maxHealth, hasUnique(player:getId(), "pyreMantle"))
-	pos:sendMagicEffect(fx("fire_ring", CONST_ME_FIREAREA or CONST_ME_POFF))
+	local struck = {}
 	for _, v in ipairs(enemies) do
-		dealOwn("pyre", player, Creature(v.id), COMBAT_FIREDAMAGE, aura, CONST_ME_HITBYFIRE or CONST_ME_NONE)
+		local target = Creature(v.id)
+		if target and target:getHealth() > 0 then
+			struck[#struck + 1] = v
+		end
+		dealOwn("pyre", player, target, COMBAT_FIREDAMAGE, aura, CONST_ME_NONE)
+	end
+	if #struck > 0 and aura > 0 then
+		sendBurn(player, pos, struck)
 	end
 end
 
@@ -1557,6 +1636,10 @@ function thinkEvent.onThink(interval)
 		else
 			cleanup(pid)
 		end
+	end
+	local okRings, errRings = pcall(syncPyreRings)
+	if not okRings then
+		print("[ChaosArchetypes] pyre rings: " .. tostring(errRings))
 	end
 	-- the worn archetype uniques are checked again every think (an item that left its slot without a move event kept
 	-- its effect until the next login; found while adding the unique passives, O278)

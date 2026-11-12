@@ -275,6 +275,72 @@ eq(L.showCursed(true, 6, cs, true), false, 'not for an unnamed creature')
 eq(L.showCursed(true, 5, cs, false), false, 'not for a creature out of view')
 eq(L.showCursed(true, 5, nil, true), false, 'not without a list')
 
+-- ---------------------------------------------------------------- Pyre Oath ring and burn (O518)
+check_strip(L.pyreRingPath(), L.PYRE_RING_FRAMES, L.PYRE_RING_PX, 'pyre ring')
+check_strip(L.burnPath(), L.BURN_FRAMES, L.BURN_PX, 'pyre burn')
+eq(L.pyreRingPath(), '/modules/game_chestaura/images/pyre/ring.png', 'ring path')
+eq(L.burnPath(), '/modules/game_chestaura/images/pyre/burn.png', 'burn path')
+eq(L.PYRE_RING_FRAMES * L.PYRE_RING_FRAME_MS, 996, 'one ring loop is about a second (the ash and sparks loop once a second)')
+eq(L.BURN_FRAMES * L.BURN_FRAME_MS, 1000, 'one burn is one 1 s tick')
+-- the messages
+local pm = L.parsePyre({ action = 'pyre', data = { p = { { i = 7, r = 2 }, { i = 9, r = 99 }, { i = 0, r = 2 }, { i = 8 }, 'x', { i = 10, r = 0.5 } } } })
+eq(pm[7].radius, 2, 'radius from the message'); eq(pm[9].radius, L.PYRE_MAX_RADIUS, 'radius capped'); eq(pm[0], nil, 'creature id 0 skipped')
+eq(pm[8], nil, 'no radius: skipped'); eq(pm[10], nil, 'radius under 1: skipped')
+local pc = 0
+for _ in pairs(pm) do pc = pc + 1 end
+eq(pc, 2, 'two valid rows')
+eq(next(L.parsePyre({ action = 'pyre', data = { p = {} } })), nil, 'an empty list clears')
+eq(next(L.parsePyre({ action = 'pyre' })), nil, 'no data: empty')
+eq(L.parsePyre({ action = 'sync', data = { t = {} } }), nil, 'a Templar sync is not a pyre list'); eq(L.parsePyre(nil), nil, 'nil')
+eq(L.parsePyre({ action = 'cursed', data = { c = { 1 } } }), nil, 'a cursed list is not a pyre list')
+eq(L.parseSync({ action = 'pyre', data = { p = { { i = 7, r = 2 } } } }), nil, 'the Templar parser ignores a pyre message')
+eq(L.parseCursed({ action = 'burn', data = { b = { 1 } } }), nil, 'the cursed parser ignores a burn message')
+local manyRows = {}
+for i = 1, 100 do manyRows[i] = { i = i, r = 2 } end
+pc = 0
+for _ in pairs(L.parsePyre({ action = 'pyre', data = { p = manyRows } })) do pc = pc + 1 end
+eq(pc, L.PYRE_MAX_ROWS, 'at most ' .. L.PYRE_MAX_ROWS .. ' rings')
+local bm = L.parseBurn({ action = 'burn', data = { b = { 4, 5, 4, 'x', -1, 6 } } })
+eq(bm[4] and bm[5] and bm[6], true, 'burn ids'); eq(bm[-1], nil, 'a negative id skipped')
+eq(L.parseBurn({ action = 'pyre', data = { p = {} } }), nil, 'a pyre message is not a burn'); eq(L.parseBurn(nil), nil, 'nil burn')
+local bigBurn = {}
+for i = 1, 200 do bigBurn[i] = i end
+pc = 0
+for _ in pairs(L.parseBurn({ action = 'burn', data = { b = bigBurn } })) do pc = pc + 1 end
+eq(pc, L.BURN_MAX, 'at most ' .. L.BURN_MAX .. ' burn ids')
+-- the ring is drawn at the radius the server sends: the picture's circle is 64 px of 160, so radius 2 is the picture as it is
+local psz, pdy = L.pyreBox(32, 2)
+eq(psz, 160, 'radius 2: the 160 px picture at 1x'); eq(pdy, L.FOOT_DY, 'centred on the feet')
+eq((L.pyreBox(32, 4)), 320, 'radius 4 (the keystone changed): the picture twice as big, the circle still at the reach')
+eq((L.pyreBox(32, 1)), 80, 'radius 1: half'); eq((L.pyreBox(64, 2)), 320, 'twice the sprite size: twice the pixels')
+eq((L.pyreBox(32, nil)), 160, 'no radius: the default'); eq((L.pyreBox(32, 99)), math.floor(160 * L.PYRE_MAX_RADIUS / 2), 'radius capped')
+eq(L.PYRE_RING_PX / 2 > L.PYRE_REACH_SQM * L.SPRITE, true, 'the picture is wider than the circle')
+eq(L.showPyre(true, pm[7], true), true, 'ring shown for a named visible creature'); eq(L.showPyre(false, pm[7], true), false, 'not with the option off')
+eq(L.showPyre(true, nil, true), false, 'not for an unnamed creature'); eq(L.showPyre(true, pm[7], false), false, 'not for a creature out of view')
+-- the burn box
+local bs, bml, bmt = L.burnBox(32, 1)
+eq(bs, 64, 'burn on a 1x1 monster is 64 px'); eq(bml, 0, 'no left shift'); eq(bmt, L.BURN_DY, 'centre a little above the tile centre')
+bs, bml, bmt = L.burnBox(32, 2)
+eq(bs, 128, '2x2 monster: 128 px'); eq(bml, -16, 'pulled up and left'); eq(bmt, L.BURN_DY - 16, '2x2 top margin')
+eq(L.burnBox(32, 9), L.burnBox(32, L.CURSED_MAX_TILES), 'capped')
+-- the burn's frames: one per 125 ms, the last held, then off
+eq(L.burnFrame(0), 0, 'frame 0 at the tick'); eq(L.burnFrame(124), 0, 'still 0'); eq(L.burnFrame(125), 1, 'frame 1 at 125 ms')
+eq(L.burnFrame(999), 7, 'the last frame at 999 ms'); eq(L.burnFrame(1100), 7, 'held when the next tick is late')
+eq(L.burnFrame(L.BURN_HOLD_MS), nil, 'taken off after the hold'); eq(L.burnFrame(-50), 0, 'a clock step back: frame 0'); eq(L.burnFrame(nil), 0, 'nil: frame 0')
+local burning = {}
+local added = L.burnBegin(burning, { [3] = true, [1] = true }, 1000)
+eq(table.concat(added, ','), '1,3', 'both are new, sorted'); eq(burning[1], 1000, 'begun at the tick'); eq(burning[3], 1000, 'begun at the tick (3)')
+added = L.burnBegin(burning, { [3] = true, [8] = true }, 2000)
+eq(table.concat(added, ','), '8', 'only the new one is added'); eq(burning[3], 2000, 'a burning monster begins again at the next tick'); eq(burning[1], 1000, 'one not named keeps its start')
+eq(table.concat(L.burnExpire(burning, 2300), ','), '1', 'the one not struck again is over'); eq(burning[1], nil, 'and removed')
+eq(table.concat(L.burnExpire(burning, 2400), ','), '', 'the others burn on')
+eq(table.concat(L.burnExpire(burning, 4000), ','), '3,8', 'later both are over'); eq(next(burning), nil, 'empty')
+local crowd = {}
+for i = 1, L.BURN_MAX + 10 do crowd[i] = true end
+local cb = {}
+eq(#L.burnBegin(cb, crowd, 5), L.BURN_MAX, 'a crowd is capped at ' .. L.BURN_MAX)
+eq(L.burnBegin(cb, { [999] = true }, 6)[1], nil, 'no room for one more'); eq(L.burnBegin(cb, { [1] = true }, 7)[1], nil, 'a burning one only restarts'); eq(cb[1], 7, 'restarted')
+
 if fails > 0 then
   print(string.format('chestaura_test: %d of %d checks failed', fails, checks))
   os.exit(1)

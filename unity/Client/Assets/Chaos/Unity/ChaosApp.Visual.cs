@@ -286,6 +286,7 @@ namespace Chaos.Client
             DrawPrints(v, map, scale, now);
             DrawChestAuras(v, map, scale, now);
             DrawFootAuras(v, map, scale, now);
+            DrawPyre(v, map, scale, now);
             DrawGlows(v, map, scale, now);
             DrawBeams(v, map, scale, now);
             DrawFlashes(v, map, scale, now);
@@ -397,6 +398,34 @@ namespace Chaos.Client
                 var feet = new Vector2(at.x, at.y + tile * 12f / ChestAuraState.Sprite);
                 if (tex != null) Strip(tex, f, ChestAuraState.FootFrames, Around(feet, size, size), Color.white);
                 else Pic(texRing, Around(feet, size, size * 0.6f), new Color(1f, 0.9f, 0.5f, 0.6f));
+            }
+        }
+
+        /// <summary>Pyre Oath (O518): the ember ring under every holder the server named, at the radius it sent, and the burn on the struck monsters.</summary>
+        void DrawPyre(VisualEffects v, Rect map, float scale, double now)
+        {
+            if (!v.Aura.Enabled) return;
+            var ring = v.Aura.Pyre.Count > 0 ? OverlayTex(ChestAuraState.PyreRingPath) : null;
+            if (ring != null)
+            {
+                int f = ChestAuraState.FrameIndex(now, ChestAuraState.PyreFrameMs, ChestAuraState.PyreFrames);
+                foreach (var kv in v.Aura.Pyre)
+                {
+                    if (!world.Creatures.TryGetValue(kv.Key, out var c) || !CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
+                    float size = tile * ChestAuraState.PyreRingPx / ChestAuraState.Sprite * kv.Value / ChestAuraState.PyreReachSqm;
+                    var feet = new Vector2(at.x, at.y + tile * 12f / ChestAuraState.Sprite);
+                    Strip(ring, f, ChestAuraState.PyreFrames, Around(feet, size, size), Color.white);
+                }
+            }
+            v.Aura.PruneBurns(v.Aura.Clock());
+            var burn = v.Aura.Burning.Count > 0 ? OverlayTex(ChestAuraState.BurnPath) : null;
+            if (burn == null) return;
+            foreach (var kv in v.Aura.Burning)
+            {
+                int bf = ChestAuraState.BurnFrame(v.Aura.Clock() - kv.Value);
+                if (bf < 0 || !world.Creatures.TryGetValue(kv.Key, out var c) || !CreatureCenter(c, map, scale, out Vector2 at, out float tile)) continue;
+                float size = tile * ChestAuraState.BurnPx / ChestAuraState.Sprite;
+                Strip(burn, bf, ChestAuraState.BurnFrames, Around(new Vector2(at.x, at.y - tile * 4f / ChestAuraState.Sprite), size, size), Color.white);
             }
         }
 
