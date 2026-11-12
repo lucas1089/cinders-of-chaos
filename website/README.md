@@ -1246,6 +1246,12 @@ the environment only.
   `X-RateLimit-Remaining: 0` hold that webhook's rows back. A failed post is tried again after 1, 2, 4, 8 minutes and
   then marked `failed`. Posts never ping (`allowed_mentions` empty). Rows: `new`, `sent`, `failed`, `nohook` (no webhook
   for the channel), `off`; sent rows are deleted after 14 days, failed ones after 28.
+- **Drop posts (O519):** a drop post carries the item's data as fields (base, level, class, stats, passive, modifiers,
+  monster and hunt) and, in its `fields` column, an entry `{"thumbnail": "/chaos-sprites/items/<server id>.png"}`. The
+  worker (`thumbnailUrl`) turns it into `embed.thumbnail` only when `CHAOS_SITE_URL` is an https address, the URL names that
+  host (or is the path), the path is exactly that form, the item is drawn from our art (`index.json`, never the
+  placeholder) and the file exists; otherwise the post has no thumbnail. An embed holds at most 25 fields, name 256, value
+  1024, all text 6000 characters (cut at those limits). Test: `tests/chaos_discord_worker_test.php`.
 - **Invite:** `CHAOS_DISCORD_URL` (site.env) shows the Discord button of the layout and, as an https link, a last step
   "Join the community on Discord" on the downloads page.
 

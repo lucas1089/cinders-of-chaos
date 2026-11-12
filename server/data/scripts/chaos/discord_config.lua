@@ -41,6 +41,24 @@ ChaosDiscordConfig = {
 		bulletChars = 150
 	},
 
+	-- O519: the item's data on a drop post (retention_loot.lua, discord.lua X.dropDetails): each part on / off. The lines are
+	-- the in-game tooltip's (item_tooltip_core.lua T.build), the place is the hunt of the telemetry markers or the instance.
+	dropDetails = {
+		base = true, -- Base: the item type and what it is worn as
+		stats = true, -- Stats: attack, defence, armour, protections, skills of the item type
+		level = true, -- Requires: the level (and magic level) the server asks
+		classes = true, -- Class: the classes that can use it
+		mods = true, -- Modifiers: the rolled modifiers with their tiers, quality, sockets, the veiled slot
+		passive = true, -- Passive: a unique's power
+		source = true, -- Dropped by: the monster and the hunt or region
+		icon = true -- the item's image as the embed thumbnail (the worker draws it only when the site has it)
+	},
+	-- the item image on the website (website README "Sprite images"): the path of items/<server id>.png under the site
+	-- address; the worker adds the site's host and checks that the image is ours and exists
+	dropIconPath = "/chaos-sprites/items/%d.png",
+	-- the whole post stays within this many characters (Discord: 6000, the worker adds the footer)
+	dropBudget = 5800,
+
 	-- the channel of each event: the worker posts to CHAOS_DISCORD_WEBHOOK_<CHANNEL> (upper case), else to
 	-- CHAOS_DISCORD_WEBHOOK_DEFAULT, else the row waits as "nohook"
 	channels = {

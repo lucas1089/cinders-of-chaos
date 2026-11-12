@@ -30197,6 +30197,24 @@ your own was not kept. Rules in `retention_loot_core.lua` (tests `tests/retentio
   `feed.maxPerMinute` (12) server-wide; the rest is dropped silently. Staff and testers post nothing. The local broadcast
   of `loot.lua` (`broadcastText`) stays. The Discord relay gets the same line (`discord.lua` `X.drop`, event `drop`, channel
   key `drops`, 6 a minute; `website/overlay/plugins/chaos/discord_lib.php`). The first unique of the gift never posts.
+- **Item data on the Discord post (O519).** Owner 2026-11-12: the post shows the item's data. `ChaosDiscord.dropDetails(item,
+  monster, pos)` (`discord.lua`) builds the same tooltip the game shows (`ChaosItemTooltip.build`, as chat links and ground
+  labels do, with the display scale of the level and the unique's passive block split as `item_tooltip.lua` does) and
+  `ChaosDiscordCore.dropDetails` reads it: no rule is copied, so the lines are the in-game ones. Fields, in order: **Base**
+  (item type and what it is worn as, inline; a unique shows its slot), **Requires** (level, magic level, inline), **Class**
+  (inline), **Stats** (attack, defence, armour, protections, skills of the item type; never the viewer's rows),
+  **Dropped by** (monster in the hunt or instance, the telemetry rule `ChaosTelemetryCore.huntAreaOf`), **Passive** (a
+  unique's power), **Modifiers** (tiers, bound, implicit, quality, sockets, veiled slot). Limits of Discord: 25 fields, name
+  256, value 1024, all text 6000 (`dropBudget` 5800: the longest value is cut, lists end with `+N more`, a line is never cut
+  in two). The thumbnail is the item's image of the website's sprite set (`dropIconPath`, `/chaos-sprites/items/<server id>.png`):
+  the game queues the path as an entry `{thumbnail = path}` in the `fields` column (no schema change; a worker without the
+  feature skips an entry with no name), the worker adds the site address, takes it only for an https site, our host, that
+  exact path, an item drawn from our art and a file that exists, else no thumbnail. `retention_loot.lua` passes the
+  monster and the corpse position and wraps the build in `pcall`: a fault leaves the plain post. Switches per part:
+  `discord_config.lua` `dropDetails` (all on). English only, like the feed. Tests: `tests/discord_test.lua`,
+  `website/tests/chaos_discord_worker_test.php`. Needs the website redeployed (worker, `CHAOS_SITE_URL` as an https address
+  for the thumbnail) and the game server updated; until the worker is redeployed the post shows the fields (at most 7) and no
+  thumbnail. Not verified on the live Discord.
 - **Drops channel.** `tools/patch_drops_channel.py` (install step `events`, idempotent) adds
   `<channel id="21" name="Drops" public="1" script="drops.lua" />` to `data/chatchannels/chatchannels.xml` (a taken id or name
   is an error, nothing is written) and writes `data/chatchannels/scripts/drops.lua`, a read-only channel whose join and leave
