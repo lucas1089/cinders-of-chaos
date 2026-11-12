@@ -187,12 +187,9 @@ idle_orc_spearman,2982,pair50,F 50,,base,base,Orc Spearman,"Orc spearman (pair 5
 idle_orc_leader,2964,pair50,F 2,,base,base,Orc Leader,"Armoured orc champion (pair 50 look 2964; the old look 59 has no idle animation, O533)",new look with an idle animation
 idle_orc_warlord,2986,pair50,F 59,,base,base,Orc Warlord,"Orc warlord (pair 50 look 2986; the old look 2 has no idle animation, O533)",new look with an idle animation
 idle_orc_marauder,2965,pair50,F 4,,base,base,Orc Marauder,"Hooded grave zombie (pair 50 look 2965; the old look 342 has no idle animation, O533)",new look with an idle animation
-idle_minotaur,2974,pair50,F 25,,base,base,Minotaur,"Minotaur (pair 50 look 2974; the old look 25 has no idle animation, O533)",new look with an idle animation
 idle_minotaur_archer,2973,pair50,F 24,,base,base,Minotaur Archer,"Minotaur archer (pair 50 look 2973; the old look 24 has no idle animation, O533)",new look with an idle animation
 idle_minotaur_amazon,2801,pair50,G 781,,base,base,Minotaur Amazon,"Minotaur 1 (pair 50 look 2801; the old look 608 has no idle animation, O533)",new look with an idle animation
 idle_skeleton,2975,pair50,F 33,,base,base,Skeleton,"Skeleton (pair 50 look 2975; the old look 33 has no idle animation, O533)",new look with an idle animation
-idle_demon_skeleton,2978,pair50,F 37,,base,base,Demon Skeleton,"Bloody skeleton (pair 50 look 2978; the old look 37 has no idle animation, O533)",new look with an idle animation
-idle_zombie,2972,pair50,F 18,,base,base,Zombie,"Zombie (pair 50 look 2972; the old look 311 has no idle animation, O533)",new look with an idle animation
 idle_ghoul,3019,pair50,F 565,,base,base,Ghoul,"Green ghoul (pair 50 look 3019; the old look 18 has no idle animation, O533)",new look with an idle animation
 idle_ghost,2981,pair50,F 48,,base,base,Ghost,"Ghost (pair 50 look 2981; the old look 48 has no idle animation, O533)",new look with an idle animation
 idle_banshee,2687,pair50,G 331,,base,base,Banshee,"Pale ghost 1 (pair 50 look 2687; the old look 78 has no idle animation, O533)",new look with an idle animation
@@ -205,8 +202,6 @@ idle_mould_phantom,3358,pair50,F 3519,,base,base,Mould Phantom,"Hooded flame gho
 idle_distorted_phantom,3360,pair50,F 3521,,base,base,Distorted Phantom,"Hooded flame ghost, blue (pair 50 look 3360; the old look 1046 has no idle animation, O533)",new look with an idle animation
 idle_capricious_phantom,3184,pair50,F 1958,,base,base,Capricious Phantom,"Purple flame wraith (pair 50 look 3184; the old look 1046 has no idle animation, O533)",new look with an idle animation
 idle_quicksilver_wraith,3225,pair50,F 2610,,hunt,hunt,Quicksilver Wraith,"Blue wisp (pair 50 look 3225; the old look 1291 has no idle animation, O533)",new look with an idle animation
-idle_poison_spider,3319,pair50,F 3387,,base,base,Poison Spider,"Small black spider with red maw (pair 50 look 3319; the old look 36 has no idle animation, O533)",new look with an idle animation
-idle_spider,3318,pair50,F 3386,,base,base,Spider,"Black spider with red maw (pair 50 look 3318; the old look 30 has no idle animation, O533)",new look with an idle animation
 idle_tarantula,2997,pair50,F 219,,base,base,Tarantula,"Tarantula (pair 50 look 2997; the old look 219 has no idle animation, O533)",new look with an idle animation
 idle_giant_spider,2979,pair50,F 38,,base,base,Giant Spider,"Giant red spider (pair 50 look 2979; the old look 38 has no idle animation, O533)",new look with an idle animation
 idle_scorpion,3195,pair50,F 2157,,base,base,Scorpion,"Giant scorpion, dark (pair 50 look 3195; the old look 43 has no idle animation, O533)",new look with an idle animation
@@ -245,11 +240,8 @@ idle_lava_golem,3014,pair50,F 491,,base,base,Lava Golem,"Lava golem (pair 50 loo
 idle_war_golem,3277,pair50,F 2933,,base,base,War Golem,"Grey skull golem with blue band (pair 50 look 3277; the old look 326 has no idle animation, O533)",new look with an idle animation
 idle_massive_water_elemental,2902,pair50,G 355,,base,base,Massive Water Elemental,"Element spirit 2 (pair 50 look 2902; the old look 11 has no idle animation, O533)",new look with an idle animation
 idle_turbulent_elemental,2907,pair50,G 930,,base,base,Turbulent Elemental,"Element spirit 3 (pair 50 look 2907; the old look 1058 has no idle animation, O533)",new look with an idle animation
-idle_blazebringer,2899,pair50,G 350,,hunt,hunt,Blazebringer,"Fire spirit 1 (pair 50 look 2899; the old look 376 has no idle animation, O533)",new look with an idle animation
 idle_magma_crawler,3232,pair50,F 2668,,base,base,Magma Crawler,"Magma elemental (pair 50 look 3232; the old look 492 has no idle animation, O533)",new look with an idle animation
-idle_elder_bonelord,2993,pair50,F 108,,base,base,Elder Bonelord,"Floating eye tyrant, brown (pair 50 look 2993; the old look 108 has no idle animation, O533)",new look with an idle animation
 idle_gazer,2971,pair50,F 17,,base,base,Gazer,"Floating eye tyrant, yellow (pair 50 look 2971; the old look 109 has no idle animation, O533)",new look with an idle animation
-idle_sight_of_surrender,3199,pair50,F 2377,,base,base,Sight of Surrender,"Red eye tyrant (pair 50 look 3199; the old look 583 has no idle animation, O533)",new look with an idle animation
 idle_many_faces,3337,pair50,F 3428,,base,base,Many Faces,"Medusa-haired eyeball, black (pair 50 look 3337; the old look 1044 has no idle animation, O533)",new look with an idle animation
 idle_medusa,3009,pair50,F 330,,base,base,Medusa,"Gorgon with snake hair (pair 50 look 3009; the old look 330 has no idle animation, O533)",new look with an idle animation
 idle_serpent_spawn,3331,pair50,F 3401,,base,base,Serpent Spawn,"Horned serpent, green (pair 50 look 3331; the old look 220 has no idle animation, O533)",new look with an idle animation
@@ -292,3 +284,34 @@ idle_pit_delver,3217,pair50,F 2443,,hunt,hunt,Pit Delver,"Scythe spider machine 
 idle_wan_sentry,3216,pair50,F 2442,,hunt,hunt,Wan Sentry,"Dark winged creature (pair 50 look 3216; the old look 2220 has no idle animation, O533)",new look with an idle animation
 idle_reliquary_urn,3209,pair50,F 2402,,hunt,hunt,Reliquary Urn,"Ember cinder creature (pair 50 look 3209; the old look 2220 has no idle animation, O533)",new look with an idle animation
 idle_pitgnawer,3218,pair50,F 2480,,hunt,hunt,Pitgnawer,"Violet flame stalker (pair 50 look 3218; the old look 2220 has no idle animation, O533)",new look with an idle animation
+relook_spider,2828,pair50,,,base,base,Spider,"Crimson spider (pair 50 look 2828, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_poison_spider,3136,pair50,,,base,base,Poison Spider,"Green spider with a grey abdomen (pair 50 look 3136, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_shadowcrystal_widow,2832,pair50,,,base,base,Shadowcrystal Widow,"Blue crystal spider (pair 50 look 2832, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_spitter,2833,pair50,,,base,base,Spitter,"Teal ant-like insect (pair 50 look 2833, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_crawler,2834,pair50,,,base,base,Crawler,"Gold and pink beetle (pair 50 look 2834, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_gutworm,2829,pair50,,,base,base,Gutworm,"Brown grub with a toothed mouth (pair 50 look 2829, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_larva,2871,pair50,,,base,base,Larva,"Spiked brown grub (pair 50 look 2871, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_earworm,2879,pair50,,,base,base,Earworm,"Pale spiked worm with a purple crystal (pair 50 look 2879, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_thornback_tortoise,2887,pair50,,,base,base,Thornback Tortoise,"Green tortoise with thorns on its shell (pair 50 look 2887, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_elder_bonelord,108,stock,,,base,base,Elder Bonelord,"Brown floating eye with eye stalks (stock look 108, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_minotaur,2802,pair50,,,base,base,Minotaur,"Minotaur in a loincloth (pair 50 look 2802, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_minotaur_bruiser,2803,pair50,,,base,base,Minotaur Bruiser,"Minotaur with a chained axe (pair 50 look 2803, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_troll,2984,pair50,,,base,base,Troll,"Brown horned troll (pair 50 look 2984, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_mountain_troll,2988,pair50,,,base,base,Mountain Troll,"Grey stone-skinned troll (pair 50 look 2988, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_swamp_troll,3138,pair50,,,base,base,Swamp Troll,"Green horned troll (pair 50 look 3138, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_troll_champion,608,stock,,,base,base,Troll Champion,"Tusked troll fighter with spear and shield (stock look 608, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_butcher_ogre,3025,pair50,,,base,base,Butcher Ogre,"Horned ogre brute with a spiked club (pair 50 look 3025, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_armorback,2770,pair50,,,base,base,Armorback,"Armoured beast with a plated back (pair 50 look 2770, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_werebear,341,stock,,,base,base,Werebear,"Standing shaggy bear (stock look 341, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_brimhorn_demon,107,stock,,,base,base,Brimhorn Demon,"Red horned demon (stock look 107, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_hollowhorn_demon,2715,pair50,,,base,base,Hollowhorn Demon,"Red demon with a green glowing eye (pair 50 look 2715, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_demon_skeleton,3201,pair50,,,base,base,Demon Skeleton,"Horned skeletal demon with blue glow (pair 50 look 3201, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_ice_lich,3204,pair50,,,hunt,hunt,Ice Lich,"Icy skeleton with a cyan glow (pair 50 look 3204, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_shadow_reaper,3293,pair50,,,base,base,Shadow Reaper,"Hooded skull reaper with a red orb (pair 50 look 3293, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_zombie,311,stock,,,base,base,Zombie,"Crawling zombie in rags (stock look 311, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_blazebringer,2881,pair50,,,hunt,hunt,Blazebringer,"Burning beast wrapped in flames (pair 50 look 2881, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_woodling,3020,pair50,,,base,base,Woodling,"Mossy antlered treant (pair 50 look 3020, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_swampling,2906,pair50,,,base,base,Swampling,"Vine wrapped wooden golem (pair 50 look 2906, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_rotten_golem,2898,pair50,,,base,base,Rotten Golem,"Moss covered stone golem (pair 50 look 2898, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_golden_servant,3021,pair50,,,base,base,Golden Servant,"Golden plated golem with a big eye (pair 50 look 3021, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one
+relook_sight_of_surrender,3076,pair50,,,base,base,Sight of Surrender,"Orb of tentacles around a red eye (pair 50 look 3076, 500 colours or more; the old look was blocky, O536)",new look replacing a blocky one

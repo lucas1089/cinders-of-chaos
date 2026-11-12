@@ -11,7 +11,7 @@
      "y": 14607
     },
     {
-     "look": 2899,
+     "look": 2881,
      "monster": "Blazebringer",
      "name": "Blazebringer",
      "x": 14567,
@@ -308,7 +308,7 @@
     [23, 4],
     [29, 4]
    ],
-   "pixels": "9cf9c021e097735a52967d5a78316b52",
+   "pixels": "0ae2f42671deaf9ff04963dcd884097e",
    "sids": [
     [
      [3152, 1442],
@@ -599,7 +599,7 @@
      "y": 24584
     },
     {
-     "look": 1054,
+     "look": 3204,
      "monster": "Ice Lich",
      "name": "Ice Lich",
      "x": 24599,
@@ -873,7 +873,7 @@
     [0, 4],
     [5, 4]
    ],
-   "pixels": "43a2c955088183237259c4167439888b",
+   "pixels": "f43bdc1e375d3731c0fa80cc52f26e42",
    "sids": [
     [
      [10767, 30508],

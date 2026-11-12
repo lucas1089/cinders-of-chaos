@@ -17,8 +17,6 @@ look,idle,phases,frames,how,walk,walk_frames
 22,no,1,1,none,8,8
 23,no,1,1,none,8,8
 24,no,1,1,none,8,8
-25,no,1,1,none,8,8
-26,yes,9,8,animateAlways,9,8
 28,no,1,1,none,8,6
 29,no,1,1,none,2,2
 31,no,1,1,none,8,8
@@ -56,12 +54,10 @@ look,idle,phases,frames,how,walk,walk_frames
 72,no,1,1,none,2,2
 73,no,1,1,none,2,2
 74,no,1,1,none,8,8
-76,no,1,1,none,8,8
 77,no,1,1,none,2,2
 79,no,1,1,none,2,2
 80,no,1,1,none,2,2
 81,no,1,1,none,8,7
-82,no,1,1,none,8,8
 83,no,1,1,none,2,2
 92,no,1,1,none,2,1
 93,no,1,1,none,2,2
@@ -77,6 +73,8 @@ look,idle,phases,frames,how,walk,walk_frames
 104,no,1,1,none,2,2
 105,no,1,1,none,8,8
 106,no,1,1,none,8,8
+107,no,1,1,none,8,8
+108,no,1,1,none,2,2
 111,no,1,1,none,8,8
 112,no,1,1,none,8,8
 113,no,1,1,none,2,2
@@ -116,7 +114,6 @@ look,idle,phases,frames,how,walk,walk_frames
 195,no,1,1,none,2,2
 196,no,1,1,none,2,2
 197,no,1,1,none,2,2
-198,no,1,1,none,2,2
 199,no,1,1,none,2,2
 200,no,1,1,none,2,2
 201,no,1,1,none,8,8
@@ -162,7 +159,6 @@ look,idle,phases,frames,how,walk,walk_frames
 268,no,1,1,none,8,8
 277,no,1,1,none,2,2
 280,no,1,1,none,2,2
-281,no,1,1,none,8,8
 282,no,1,1,none,8,8
 283,no,1,1,none,2,2
 285,no,1,1,none,2,2
@@ -181,6 +177,7 @@ look,idle,phases,frames,how,walk,walk_frames
 306,no,1,1,none,2,2
 307,yes,2,2,animateAlways,2,2
 308,no,1,1,none,2,2
+311,no,1,1,none,2,2
 312,no,1,1,none,2,2
 313,no,1,1,none,2,2
 314,yes,6,6,animateAlways,6,6
@@ -198,6 +195,7 @@ look,idle,phases,frames,how,walk,walk_frames
 338,no,1,1,none,2,2
 339,no,1,1,none,2,2
 340,no,1,1,none,2,2
+341,no,1,1,none,8,8
 343,no,1,1,none,2,2
 344,no,1,1,none,2,2
 345,no,1,1,none,2,2
@@ -216,28 +214,22 @@ look,idle,phases,frames,how,walk,walk_frames
 380,no,1,1,none,8,8
 381,no,1,1,none,8,8
 395,no,1,1,none,2,2
-396,no,1,1,none,2,2
 397,no,1,1,none,2,2
 403,no,1,1,none,2,2
 407,no,1,1,none,8,8
 408,no,1,1,none,2,2
 413,no,1,1,none,2,2
-417,no,1,1,none,2,2
-420,no,1,1,none,2,2
 441,no,1,1,none,2,2
 442,no,1,1,none,2,2
 448,no,1,1,none,8,8
 449,yes,9,9,animateAlways,9,9
 453,no,1,1,none,2,2
-456,no,1,1,none,2,2
 457,no,1,1,none,2,2
 458,no,1,1,none,2,2
 460,no,1,1,none,8,8
-461,no,1,1,none,2,2
 462,no,1,1,none,2,2
 470,no,1,1,none,2,2
 486,no,1,1,none,2,2
-487,no,1,1,none,2,2
 488,no,1,1,none,2,2
 489,no,1,1,none,2,2
 490,no,1,1,none,2,2
@@ -261,7 +253,6 @@ look,idle,phases,frames,how,walk,walk_frames
 532,no,1,1,none,8,8
 533,no,1,1,none,8,8
 534,no,1,1,none,2,2
-535,no,1,1,none,8,8
 537,no,1,1,none,2,2
 538,no,1,1,none,2,2
 539,no,1,1,none,2,2
@@ -293,6 +284,7 @@ look,idle,phases,frames,how,walk,walk_frames
 604,no,1,1,none,2,2
 605,no,1,1,none,8,8
 607,no,1,1,none,2,2
+608,no,1,1,none,2,2
 609,no,1,1,none,8,8
 611,no,1,1,none,2,2
 612,no,1,1,none,2,2
@@ -303,7 +295,6 @@ look,idle,phases,frames,how,walk,walk_frames
 675,no,1,1,none,8,8
 686,no,1,1,none,8,8
 717,no,1,1,none,8,8
-720,no,1,1,none,8,8
 721,no,1,1,none,8,8
 729,no,1,1,none,8,7
 842,no,1,1,none,8,8
@@ -329,7 +320,6 @@ look,idle,phases,frames,how,walk,walk_frames
 953,no,1,1,none,5,5
 954,no,1,1,none,2,2
 955,no,1,1,none,2,2
-956,no,1,1,none,2,2
 957,no,1,1,none,2,2
 958,no,1,1,none,2,2
 959,no,1,1,none,2,2
@@ -372,7 +362,6 @@ look,idle,phases,frames,how,walk,walk_frames
 1048,no,1,1,none,8,8
 1049,no,1,1,none,8,8
 1054,yes,8,8,idle group,0,0
-1056,no,1,1,none,8,8
 1057,no,1,1,none,8,8
 1059,no,1,1,none,8,8
 1060,no,1,1,none,8,8
@@ -433,7 +422,6 @@ look,idle,phases,frames,how,walk,walk_frames
 1152,no,1,1,none,2,2
 1153,no,1,1,none,2,2
 1154,yes,4,4,animateAlways,4,4
-1155,no,1,1,none,8,8
 1156,no,1,1,none,8,8
 1157,no,1,1,none,8,8
 1158,no,1,1,none,8,8
@@ -519,7 +507,6 @@ look,idle,phases,frames,how,walk,walk_frames
 1402,no,1,1,none,8,8
 1403,no,1,1,none,8,8
 1404,no,1,1,none,8,8
-1405,no,1,1,none,8,8
 1406,yes,8,8,idle group,0,0
 1407,no,1,1,none,8,8
 1408,yes,8,8,idle group,0,0
@@ -600,14 +587,28 @@ look,idle,phases,frames,how,walk,walk_frames
 2687,yes,6,6,animateAlways,6,6
 2688,yes,8,5,animateAlways,8,5
 2689,yes,8,5,animateAlways,8,5
+2715,no,1,1,none,2,2
+2770,no,1,1,none,2,2
 2801,yes,4,4,idle group,0,0
+2802,no,1,1,none,2,2
+2803,no,1,1,none,2,2
+2828,no,1,1,none,2,2
+2829,no,1,1,none,2,2
+2832,no,1,1,none,2,2
+2833,no,1,1,none,2,2
+2834,no,1,1,none,2,2
 2867,yes,6,4,animateAlways,6,4
+2871,no,1,1,none,2,2
+2879,no,1,1,none,2,2
+2881,no,1,1,none,2,2
+2887,no,1,1,none,2,2
 2890,yes,5,5,animateAlways,5,5
 2895,yes,4,4,animateAlways,4,4
-2899,yes,6,4,animateAlways,6,4
+2898,no,1,1,none,2,2
 2902,yes,6,4,animateAlways,6,4
 2903,yes,8,5,animateAlways,8,5
 2904,yes,4,4,animateAlways,4,4
+2906,no,1,1,none,2,2
 2907,yes,4,4,animateAlways,4,4
 2964,yes,12,6,idle group,0,0
 2965,yes,12,12,idle group,0,0
@@ -616,19 +617,17 @@ look,idle,phases,frames,how,walk,walk_frames
 2968,yes,12,9,idle group,0,0
 2969,yes,12,9,idle group,0,0
 2971,yes,8,8,idle group,0,0
-2972,yes,10,9,idle group,0,0
 2973,yes,12,8,idle group,0,0
-2974,yes,12,12,idle group,0,0
 2975,yes,12,11,idle group,0,0
 2976,yes,12,12,idle group,0,0
 2977,yes,12,8,idle group,0,0
-2978,yes,12,11,idle group,0,0
 2979,yes,12,8,idle group,0,0
 2980,yes,12,12,idle group,0,0
 2981,yes,8,8,idle group,0,0
 2982,yes,12,10,idle group,0,0
+2984,no,1,1,none,8,8
 2986,yes,12,9,idle group,0,0
-2993,yes,8,8,idle group,0,0
+2988,no,1,1,none,8,8
 2997,yes,10,8,idle group,0,0
 2998,yes,8,8,idle group,0,0
 3006,yes,8,8,idle group,0,0
@@ -637,16 +636,22 @@ look,idle,phases,frames,how,walk,walk_frames
 3014,yes,8,3,idle group,0,0
 3018,yes,8,8,animateAlways,8,8
 3019,yes,12,11,idle group,0,0
+3020,no,1,1,none,8,8
+3021,no,1,1,none,8,8
+3025,no,1,1,none,8,8
 3037,yes,8,8,idle group,0,0
 3043,yes,8,8,idle group,0,0
 3071,yes,8,8,idle group,0,0
+3076,no,1,1,none,8,8
 3086,yes,8,7,idle group,0,0
 3090,yes,8,8,idle group,0,0
 3091,yes,8,8,idle group,0,0
 3092,yes,8,8,idle group,0,0
 3103,yes,8,8,idle group,0,0
 3104,yes,8,8,idle group,0,0
+3136,no,1,1,none,8,8
 3137,yes,8,8,idle group,0,0
+3138,no,1,1,none,8,8
 3153,yes,8,8,idle group,0,0
 3161,yes,8,5,idle group,0,0
 3171,yes,8,8,idle group,0,0
@@ -658,7 +663,8 @@ look,idle,phases,frames,how,walk,walk_frames
 3184,yes,8,8,idle group,0,0
 3195,yes,8,7,idle group,0,0
 3198,yes,8,8,animateAlways,8,8
-3199,yes,8,8,idle group,0,0
+3201,no,1,1,none,8,8
+3204,no,1,1,none,8,8
 3209,yes,8,8,idle group,0,0
 3215,yes,8,8,idle group,0,0
 3216,yes,8,8,idle group,0,0
@@ -681,6 +687,7 @@ look,idle,phases,frames,how,walk,walk_frames
 3269,yes,8,8,idle group,0,0
 3277,yes,8,8,idle group,0,0
 3278,yes,8,8,idle group,0,0
+3293,no,1,1,none,8,8
 3294,yes,8,8,idle group,0,0
 3303,yes,8,6,idle group,0,0
 3304,yes,3,3,animateAlways,3,3
@@ -688,8 +695,6 @@ look,idle,phases,frames,how,walk,walk_frames
 3311,yes,16,16,idle group,0,0
 3313,yes,8,8,idle group,0,0
 3316,yes,8,8,idle group,0,0
-3318,yes,12,12,idle group,0,0
-3319,yes,12,7,idle group,0,0
 3321,yes,12,8,idle group,0,0
 3322,yes,12,12,animateAlways,12,12
 3326,yes,6,6,animateAlways,6,6

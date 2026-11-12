@@ -425,8 +425,10 @@ def monster_files(data_dir):
     out = {}
     reg = os.path.join(base, 'monsters.xml')
     if os.path.isfile(reg):
-        for m in re.finditer(r'<monster\s+name="([^"]+)"\s+file="([^"]+)"', open(reg, encoding='latin-1').read()):
-            out[m.group(1).lower()] = os.path.join(base, m.group(2))
+        for tag in re.findall(r'<monster\s[^>]*>', open(reg, encoding='latin-1').read()):   # name and file in either order
+            n, f = re.search(r'\bname="([^"]+)"', tag), re.search(r'\bfile="([^"]+)"', tag)
+            if n and f:
+                out[n.group(1).lower()] = os.path.join(base, f.group(1))
     for p in sorted(glob.glob(os.path.join(base, '**', '*.lua'), recursive=True)):
         if '#' in os.path.basename(p):
             continue
