@@ -146,10 +146,11 @@ function V.lastSaleText(last)
   return tr('Last sale: %s gold (%d item%s).', V.gold(last.gold), last.count, last.count == 1 and '' or 's')
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 function V.gold(n)
   local s = tostring(math.floor(tonumber(n) or 0))
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
-  return (out:gsub('^,', ''))
+  return lnum((out:gsub('^,', '')))
 end
 
 -- the corpse list as one text: "rope (5), dagger (100)"

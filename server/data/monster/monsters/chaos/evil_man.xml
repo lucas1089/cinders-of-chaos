@@ -34,7 +34,7 @@
 			<attribute key="areaEffect" value="redspark" />
 		</attack>
 	</attacks>
-	<defenses armor="60" defense="60">
+	<defenses armor="50" defense="50">
 		<defense name="healing" interval="2000" chance="15" min="2000" max="4000">
 			<attribute key="areaEffect" value="redspark" />
 		</defense>

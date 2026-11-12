@@ -102,6 +102,9 @@ def main():
         res = T.run(data, map_path=mp, rows_path=rp, kinds=KINDS, log=log.append)
         check(open(mp, 'rb').read() == after and res['done'] == 0 and res['kept'] == 1, 'a second run changes nothing: %s' % res)
         check(any('left alone' in l or 'another teleport' in l for l in log), 'the tiles left alone are listed: %s' % log)
+        import map_guard_testkit as K
+        K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(tiles)),
+                      lambda d, p: T.run(d, map_path=p, rows_path=rp, kinds=KINDS, log=lambda s: None), root, 'hunt annexes')
     finally:
         shutil.rmtree(root, ignore_errors=True)
     # the real file

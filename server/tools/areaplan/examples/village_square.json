@@ -1,0 +1,40 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "ashford_square",
+  "name": "Ashford Square",
+  "biome": "forest",
+  "size": [120, 96],
+  "floors": 1,
+  "level": [1, 50],
+  "seed": 51507,
+  "decoration": "normal",
+  "light": "bright",
+  "zones": [
+    {"id": "plaza", "floor": 1, "shape": "room", "size": [40, 34], "place": "center", "role": "camp", "pz": true, "ragged": true},
+    {"id": "orchard", "floor": 1, "size": [22, 16], "place": "northeast", "ragged": true},
+    {"id": "meadow", "floor": 1, "size": [24, 17], "place": "southwest", "ragged": true},
+    {"id": "grove", "floor": 1, "size": [16, 14], "place": "east", "ragged": true}
+  ],
+  "paths": [
+    {"from": "plaza", "to": "orchard", "width": 4, "style": "wild"},
+    {"from": "plaza", "to": "meadow", "width": 4, "style": "wild"},
+    {"from": "orchard", "to": "grove", "width": 3, "style": "wild"}
+  ],
+  "buildings": [
+    {"id": "temple", "kind": "temple", "zone": "plaza",
+     "npc": {"name": "Brother Halric", "new": true,
+             "lines": ["Peace be with you, |PLAYERNAME|.", "temple: The sun-priests keep this altar lit.", "square: Ashford grew round this well."]}},
+    {"id": "depot", "kind": "depot", "zone": "plaza",
+     "npc": {"name": "Clerk Mirwen", "new": true, "lines": ["Your goods are safe with us, |PLAYERNAME|."]}},
+    {"id": "general_store", "kind": "shop", "zone": "plaza",
+     "npc": {"name": "Tobin the Trader", "new": true, "lines": ["Welcome, |PLAYERNAME|. Rope, torches, bread."]}},
+    {"id": "smithy", "kind": "shop", "zone": "plaza", "wall": "ruin", "floor": "flagstone",
+     "npc": {"name": "Garreth Ironhand", "new": true, "lines": ["Steel for every arm, |PLAYERNAME|."]}},
+    {"id": "house_north", "kind": "house", "zone": "plaza"},
+    {"id": "house_east", "kind": "house", "zone": "plaza", "door": "w"},
+    {"id": "house_south", "kind": "house", "zone": "plaza", "size": [7, 8]}
+  ],
+  "entry": {"zone": "plaza"},
+  "exit": {"zone": "plaza"},
+  "notes": "Example plan: a village square. A temple, a depot, two shops and three houses stand round the plaza (the buildings of one zone take turns on a ring round its middle); each prefab (areaplan/prefabs) names its walls, floor, roof, features and decor slots by family. Doors face the plaza unless the plan names a side."
+}

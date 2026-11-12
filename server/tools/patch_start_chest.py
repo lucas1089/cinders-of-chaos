@@ -23,6 +23,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # python -I leaves the script's folder off sys.path
 
 import gen_poi as G  # noqa: E402
+import map_write_guard as MG  # noqa: E402
 
 CHEST_AID = 33735
 SCRIPT = os.path.join('scripts', 'customs', 'actions', 'first_chest.lua')
@@ -111,20 +112,24 @@ def run(data_dir, dry=False, map_path=None, out=None, log=print):
         new = cut(data, chests)
         if find_chests(new) or len(new) >= len(data):
             raise ChestError('internal: the patched map still holds the starter chest; nothing written')
-        if out:
-            open(out, 'wb').write(new)
-            log('starter chest: %d removed, map written to %s' % (len(chests), out))
-        elif dry:
+        if dry and not out:
             log('starter chest: would remove %d from the map' % len(chests))
         else:
-            bak = map_path + '.bak'
-            if not os.path.exists(bak):
-                shutil.copyfile(map_path, bak)
-                log('backup %s' % bak)
-            tmp = map_path + '.tmp'
+            target = out or map_path
+            tmp = target + '.tmp'
             open(tmp, 'wb').write(new)
-            os.replace(tmp, map_path)
-            log('starter chest: %d removed from %s' % (len(chests), map_path))
+            # the splice guard (O512): only the tiles of the chests may differ
+            MG.verify(ChestError, map_path, tmp, log=log, change={c[2] for c in chests})
+            if out:
+                os.replace(tmp, out)
+                log('starter chest: %d removed, map written to %s' % (len(chests), out))
+            else:
+                bak = map_path + '.bak'
+                if not os.path.exists(bak):
+                    shutil.copyfile(map_path, bak)
+                    log('backup %s' % bak)
+                os.replace(tmp, map_path)
+                log('starter chest: %d removed from %s' % (len(chests), map_path))
     else:
         log('starter chest: none on the map; nothing to do')
     src = os.path.join(data_dir, SCRIPT)

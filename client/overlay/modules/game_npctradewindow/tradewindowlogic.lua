@@ -20,9 +20,23 @@ function L.geometry(rootW, rootH, top)
 end
 
 -- Should the trade window be lifted out of its side panel? Only a window that is shown and not already floating
--- (parent = the game view's root panel, which the base dialog uses too).
-function L.needsFloat(visible, parentIsRoot)
-  return visible == true and parentIsRoot ~= true
+-- (parent = the game view's root panel, which the base dialog uses too). `forced`: the window was put on the root panel
+-- by this module (see L.keepsOutOfPanels), so only the size, the place and the focus are left to do.
+function L.needsFloat(visible, parentIsRoot, forced)
+  return visible == true and (forced == true or parentIsRoot ~= true)
+end
+
+-- O506: the trade window never takes room in a side panel. The base's show() asks game_interface for a place in a side panel
+-- first (addToPanelsWithPriority(window, true); addToPanels without it): forceSpaceInPanel closes the windows at the bottom
+-- of the first panel, backpacks included, until the base's own 175 px window fits, and recalculateWidgetOnPanel closes
+-- backpacks too; this module lifts the window to the root panel right after, so the backpacks were closed for nothing.
+-- While show() runs, a request of the window with this id goes to the root panel instead. L.PANEL_CALLS are the
+-- game_interface functions that take such a request.
+L.TRADE_ID = 'tradeWindow'
+L.PANEL_CALLS = { 'addToPanelsWithPriority', 'addToPanels' }
+
+function L.keepsOutOfPanels(id)
+  return id == L.TRADE_ID
 end
 
 -- ---------------------------------------------------------------------------------------------------------------

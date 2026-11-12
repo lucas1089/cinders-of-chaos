@@ -34,7 +34,7 @@
 			<attribute key="areaEffect" value="stun"/>
 		</attack>
 	</attacks>
-	<defenses armor="110" defense="110">
+	<defenses armor="60" defense="60">
 		<defense name="healing" interval="1000" chance="20" min="190" max="3170">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>

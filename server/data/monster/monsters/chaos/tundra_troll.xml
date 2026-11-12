@@ -30,7 +30,7 @@
 			<attribute key="shootEffect" value="snowball"/>
 		</attack>
 	</attacks>
-	<defenses armor="36" defense="36"/>
+	<defenses armor="35" defense="35"/>
 	<elements>
 		<element physicalPercent="-15"/>
 		<element holyPercent="-15"/>

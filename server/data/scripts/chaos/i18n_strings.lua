@@ -8492,8 +8492,8 @@ return {
 			"Coleta orbs, whetstones, rune shards e gemas enquanto estiver com você (sem gemas se tiver uma Gem Pouch)",
 		["Collects support runes and magic runes while carried, and takes runes by hand"] =
 			"Coleta runas de suporte e runas mágicas enquanto estiver com você, e aceita runas colocadas à mão",
-		["Keep it in your backpack to use its magic runes by hotkey"] =
-			"Deixe-a na mochila para usar as runas mágicas por atalho",
+		["Its magic runes work by hotkey from your purse or backpack"] =
+			"As runas mágicas dela funcionam por atalho na sua bolsa ou mochila",
 		["Cosmetic only: it changes how your hideout looks and nothing else"] =
 			"Só cosmético: muda a aparência do seu hideout e mais nada",
 		["Crackling sparks jump from every step"] =

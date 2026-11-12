@@ -17,9 +17,11 @@ import json, os, random, struct, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import area_plan_core as C
+import area_plan_buildings as BLD   # parametric buildings (O515)
 import area_plan_decor as D
 import area_plan_shape as SH
 import areagen_export as AX
+import map_tile_rules as MR      # the tile rules shared with the whole-map audit (audit_map_tiles.py)
 
 FLAG_PZ = 1
 KNOWN_FLAGS = 1 | 4 | 8 | 16      # pz, no pvp, no logout, pvp zone (the planner writes pz only)
@@ -353,10 +355,12 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         special.update(t for t in (l['hole'], l['landing'], l['up'], l.get('stair')) if t)
     near_special = lambda t, d=1: any(max(abs(t[0] - s[0]), abs(t[1] - s[1])) <= d and t[2] == s[2] for s in special)
 
+    bprot = set()        # the tiles of the plan's buildings, their doors' outsides and reach tiles (O515): no spawn, chest or NPC pick
+
     def zone_cells(zid, avoid=1):
         x1, y1, x2, y2, z = zrect[zid]
         out = [(x, y, z) for y in range(y1, y2 + 1) for x in range(x1, x2 + 1)
-               if (x, y, z) in walk and not near_special((x, y, z), avoid)]
+               if (x, y, z) in walk and not near_special((x, y, z), avoid) and (x, y, z) not in bprot]
         return out
 
     def path_cells(ends):
@@ -371,6 +375,18 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                                 r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
                             out.add(a)
         return sorted(out)
+
+    def corridor_cells():
+        """the tiles of the plan's paths and landings outside every zone (the decoration keeps them clear; the buildings
+        keep off them)"""
+        out = set()
+        for f, paths in lay['paths'].items():
+            for q in paths:
+                for x, y in C.route_cells(q['points'], q['width'] + {'tunnel': 2, 'wild': 4}.get(q['style'], 0)):
+                    a = absp(x, y, f)
+                    if not any(r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
+                        out.add(a)
+        return out
 
     def zcenter(zid):
         x1, y1, x2, y2, z = zrect[zid]
@@ -396,6 +412,17 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 return n
         return None
 
+    # buildings (O515): temple, depot, shop, house stamped on the generated tiles before anything else picks a tile
+    bres, mats = None, None
+    if plan.get('buildings'):
+        mats = C.materials(pair24, dark)
+        link_edges = [e for l in link_out for e in l['edges']]
+        bres = BLD.place_all(plan, zrect, walk, tiles, special, corridor_cells(), arrival, (ox, oy, oz), mats, kit,
+                             BLD.families(), seed, E, Wn, lambda w_: C.tile_reach(w_, arrival, (), link_edges))
+        bprot |= bres['prot'] | bres['special']
+        special.update(bres['special'])
+        for rec in bres['records']:
+            special.update(rec['door'])
     portal = meta['portal']
     teleports = []      # (from tile, to tile)
     tele_out = []
@@ -461,6 +488,13 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         if t:
             npc_out.append(dict(name=C.npcs().get(n['name'].lower(), n['name']), x=t[0], y=t[1], z=t[2], zone=n['zone'],
                                 new=bool(n.get('new')), lines=n.get('lines', [])))
+    if bres:
+        for rec, b in ((r_, next(x for x in plan['buildings'] if x['id'] == r_['id'])) for r_ in bres['records']):
+            n = b.get('npc')
+            if n and rec['npc']:
+                t = rec['npc']
+                npc_out.append(dict(name=C.npcs().get(n['name'].lower(), n['name']), x=t[0], y=t[1], z=t[2], zone=b['zone'],
+                                    new=bool(n.get('new')), lines=n.get('lines', []), building=b['id']))
     boss_out = None
     if 'boss' in plan:
         b = plan['boss']
@@ -478,6 +512,11 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                     if (x, y, zz) in tiles:
                         tiles[(x, y, zz)]['flags'] |= FLAG_PZ
                         pz.add((x, y, zz))
+    if bres:
+        for t in sorted(bres['pz']):
+            if t in tiles:
+                tiles[t]['flags'] |= FLAG_PZ
+                pz.add(t)
     # spawn points: spread inside their zone, packs on one point
     spawn_out = []
     taken = []
@@ -541,7 +580,9 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 if i in ids_:
                     wall_kind[k] = kind_
     plain |= wall_ids | {meta['hole'], meta['ladder'], meta['portal'], meta['chest'], brush['stairs_up']}
-    protected = set(special) | {(s_['x'], s_['y'], s_['z']) for s_ in spawn_out}
+    if bres:
+        plain |= bres['wall_ids'] | bres['door_ids']
+    protected = set(special) | {(s_['x'], s_['y'], s_['z']) for s_ in spawn_out} | bprot
     if boss_out:
         protected.add((boss_out['x'], boss_out['y'], boss_out['z']))
     for a, b in teleports:
@@ -557,13 +598,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     for t in list(protected):
         for dx, dy in C.D8:
             keep.add((t[0] + dx, t[1] + dy, t[2]))
-    corridor = set()
-    for f, paths in lay['paths'].items():
-        for q in paths:
-            for x, y in C.route_cells(q['points'], q['width'] + {'tunnel': 2, 'wild': 4}.get(q['style'], 0)):
-                a = absp(x, y, f)
-                if not any(r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
-                    corridor.add(a)
+    corridor = corridor_cells()
     zone_list = [dict(id=zid, rect=zrect[zid], shape=C.zone_shape(z, biome, plan['id']), role=z.get('role', 'hunt'))
                  for zid, z in sorted(zones.items())]
     reach_before = set(C.tile_reach(walk, arrival, (), edges))
@@ -666,9 +701,11 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         allowed |= set(th['grounds']) | set(th['items'])
     if fr:
         allowed.add(fr['ground'])
+    if bres:
+        allowed |= bres['wall_ids'] | bres['floor_ids'] | bres['door_ids'] | bres['item_ids'] | bres['roof_ids']
     unknown = {}
     for k, t in back.items():
-        if t['ground'] is None:
+        if t['ground'] is None and not t['items']:
             E('OTBM: tile %s has no ground' % (k,))
         for iid in [t['ground']] + [i for i, _a in t['items']]:
             if iid not in allowed:
@@ -683,6 +720,21 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 E('OTBM: the teleport at %s lands on a tile that is not walkable %s' % (k, dest))
     for iid, n in sorted(unknown.items()):
         E('unknown id %d on %d tile(s): not in our catalogue for this biome' % (iid, n))
+    # the two tile rules of the whole-map audit (tools/audit_map_tiles.py NO_GROUND and BLOCKED_ON_SPECIAL, one function
+    # each in map_tile_rules.py): an item with no ground below it, and a blocking item (or a tile nobody can walk on)
+    # where a teleport lies
+    ground_ids = {g for d in meta['families'].values() for g in d['grounds'] if g is not None}
+    ground_ids |= set(kit['roof']['ground']) | {brush['stairs_down_ground']}
+    if th:
+        ground_ids |= set(th['grounds'])
+    if fr:
+        ground_ids.add(fr['ground'])
+    block_ids = {i for g_ in kit['groups'].values() if g_.get('block') for i in g_['ids']} | wall_ids | {meta['chest']}
+    if bres:
+        ground_ids |= bres['floor_ids']
+        block_ids |= bres['block_ids']
+    for msg in tile_rule_errors(back, walk, ground_ids, block_ids, meta['portal']):
+        E(msg)
     # borders closed: every transition to a higher family with a border set carries one of its pieces; every
     # walkable tile has all 8 neighbours built (no open edge into nothing)
     fam_of = {}
@@ -708,6 +760,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 if k in walk:
                     open_edges += 1
                 continue
+            if bres and (k in bres['foot'] or nk in bres['foot']):
+                continue    # a building's wall closes the edge (its floor and walls stand on grounds of their own)
             if nk in frame_back and ids & wall_ids:
                 continue    # a dungeon wall closes the edge to the frame behind it
             g = fam_of.get(nt['ground'])
@@ -743,6 +797,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     boss_steps = dist.get((boss_out['x'], boss_out['y'], boss_out['z'])) if boss_out else None
     if boss_out and boss_steps is None:
         E('the boss cannot be reached from the entry')
+    if bres:
+        BLD.qa_all(bres['records'], tiles, walk, dist, mats, E, Wn, set(kit['roof']['ground']))
     for zid, z in zones.items():
         if z.get('role') == 'boss':
             x1, y1, x2, y2, zz = zrect[zid]
@@ -781,7 +837,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                            per_screen_max=mx, screens=nscr))
         if mons and not 1.0 <= 100.0 * mons / max(1, len(hunt)) <= 6.0:
             Wn('floor %d: %.2f monsters per 100 walkable tiles (the guide asks 1.5-5)' % (f, 100.0 * mons / max(1, len(hunt))))
-    footprint = walk | dresser.blocked | special      # walkable before the trees and bushes took tiles: the outline
+    footprint = walk | dresser.blocked | special | (bres['foot'] if bres else set())     # walkable before the trees and bushes took tiles: the outline
     qa.extend(SH.check_floors(footprint, plan['id'], [oz + f for f in range(plan['floors'])]))
     stats = dict(tiles=len(tiles), walkable=len(walk), monsters=total_mon, spawn_points=len(spawn_out),
                  per100=round(100.0 * total_mon / max(1, len(walk - pz)), 2), floors=floors,
@@ -810,12 +866,34 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     for n in npc_out:
         if n['new']:
             stubs.update(npc_stub(n))
+    if bres:
+        manifest['buildings'] = [BLD.manifest_of(r_, dist) for r_ in bres['records']]
     manifest['stubs'] = sorted(stubs)
     return dict(otbm=data, frame_otbm=frame_data, frame=frame, spawn_xml=spawn_xml(spawn_out, boss_out, npc_out, walk), manifest=manifest, tiles=tiles,
-                stubs=stubs, dresser=dresser,
+                stubs=stubs, dresser=dresser, buildings=(bres['records'] if bres else []),
                 walk=walk, footprint=footprint, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
                 stats=stats, plan_issues=issues)
+
+
+def tile_rule_errors(back, walk, ground_ids, block_ids, portal):
+    """QA messages of the two tile rules shared with the whole-map audit (map_tile_rules.py): back = {(x, y, z):
+    {'ground', 'items': [(id, attrs)]}}, walk = the walkable tiles, ground_ids / block_ids = the ids that are grounds /
+    block, portal = the teleport item id"""
+    bare, plugged = [], []
+    for k, t in back.items():
+        ids = [i for i, _a in t['items']]
+        if MR.no_ground_below(t['ground'], ids, ground_ids.__contains__):
+            bare.append(k)
+        for _sid, blocker in MR.blocking_on_special(ids, {portal}, block_ids.__contains__, k in walk):
+            plugged.append((k, blocker))
+    out = []
+    if bare:
+        out.append('%d tile(s) hold an item with no ground below it (first %s)' % (len(bare), sorted(bare)[0]))
+    for k, blocker in sorted(plugged):
+        out.append('the teleport at %s %s' % (k, ('has the blocking item %d on its tile' % blocker) if blocker
+                                              else 'is on a tile nobody can walk on'))
+    return out
 
 
 def qa_errors(result):

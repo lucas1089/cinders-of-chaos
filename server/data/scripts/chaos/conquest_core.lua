@@ -10,7 +10,7 @@
 --   K.pityMult(cfg, group, misses)           -> the chance multiplier after `misses` misses in a row (1 .. cap)
 --   K.pityNext(cfg, group, misses, hit)      -> the misses after this roll (0 on a hit)
 --   K.pityChance(base, mult, max)            -> base x mult, at most max
---   K.specLevel(spec)                        -> the level of a unique spec's "(Requires level N.)", or nil
+--   K.specLevel(spec)                        -> the level of a unique spec's "(Requires level N.)" or "(Meant for level N.)", or nil
 --   K.catalog(cfg, src)                      -> every offer {key, id, name, group, level, price, slot, set, season,
 --                                               monsters, always}, sorted by group, level, name
 --   K.price(cfg, group, level, id)           -> tokens
@@ -195,7 +195,7 @@ end
 -- ---------------------------------------------------------------- the catalog
 function K.specLevel(spec)
 	local d = type(spec) == "table" and spec.description or nil
-	local n = type(d) == "string" and d:match("[Rr]equires level (%d+)") or nil
+	local n = type(d) == "string" and (d:match("[Rr]equires level (%d+)") or d:match("Meant for level (%d+)")) or nil -- O510: "Meant for level" is the same level of a unique the server asks no level for
 	return n and tonumber(n) or nil
 end
 

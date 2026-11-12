@@ -154,6 +154,9 @@ def main():
         check(open(mp, 'rb').read() == after and again['changed'] == again['added'] == again['deleted'] == 0,
               'a second run changes nothing: %s %s' % (again, log))
         check(any('nothing to do' in l for l in log), 'the second run says so')
+        import map_guard_testkit as K
+        K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(base_tiles())),
+                      lambda d, p: T.run(d, map_path=p, known=T.NEW, box=BOX, log=lambda s: None), root, 'hunt roofs')
         # interior variants are by position: the same position gives the same piece
         check(T.piece_for('c', (5, 6, 6)) == T.piece_for('c', (5, 6, 6)) and T.piece_for('n', (1, 1, 6)) == T.PIECE['n'],
               'pieces are deterministic')

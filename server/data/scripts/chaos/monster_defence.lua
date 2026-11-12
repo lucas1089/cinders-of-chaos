@@ -298,6 +298,31 @@ function ev.onHealthChange(creature, attacker, primaryDamage, primaryType, secon
 	-- resistance, physical: points off the armour share
 	local p = playerOf(attacker)
 	ctx.pen, ctx.physPen = penetrationOf(p, "elepen"), penetrationOf(p, "physpen")
+	-- O505: a Monk's bare-fist hit arrives as the engine rolled it (attack 7 on an engine without patch 0091) and monk_combat.lua scales it up
+	-- in a later event: the armour is measured on the size it will have (ChaosMonk.fistUnits: 1 on an engine that rolls the Monk's fist)
+	ctx.hitUnits = 1
+	if origin == ORIGIN_MELEE and attacker:isPlayer() and ChaosMonk and ChaosMonk.fistUnits then
+		local units = try(function() return ChaosMonk.fistUnits(attacker) end)
+		if tonumber(units) and units > 0 then
+			ctx.hitUnits = units
+		end
+	end
+	-- O505: a spell hit that a weapon class deals itself (the cast context of the supports wrapper, data/spells/chaos/_supports.lua) is a
+	-- weapon-size hit: the weapon armour value and cap. Reaping Gyre / Earthbreaker lost 50 to 60% as class-curve spells at weapon size. The
+	-- cast is told by the supports' cast context (ChaosSupportsSpell.cast) or, for a snare's burst and a spell between the engine's
+	-- precast and cast, by the combat log (ChaosCombatLog.inSpell)
+	ctx.weaponSpell = false
+	if origin == ORIGIN_SPELL and attacker:isPlayer() then
+		local SS, CL = rawget(_G, "ChaosSupportsSpell"), rawget(_G, "ChaosCombatLog")
+		local castPid = SS and SS.cast and try(function() return (SS.cast()) end) or nil
+		if castPid == nil and CL and CL.inSpell and try(function() return CL.inSpell(attacker:getId()) end) then
+			castPid = attacker:getId() -- a snare's or a mine's burst (named by the combat log), the engine's precast of the spell
+		end
+		if castPid ~= nil then
+			local voc = try(function() return attacker:getVocation():getId() end)
+			ctx.weaponSpell = C.weaponSpellHit(cfg(), voc, castPid, attacker:getId())
+		end
+	end
 	local list = e.list
 	ctx.resistOf = function(ctype) return list and tonumber(list[ctype]) or 0 end
 	ctx.elementName = function(ctype) return ELEMENT_NAME[ctype] end

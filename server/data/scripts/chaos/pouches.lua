@@ -157,6 +157,33 @@ function PO.registerWeightless()
 end
 pcall(PO.registerWeightless)
 
+-- The Rune Bag in the purse (O509, owner 2026-11-11: "The rune bag stays in the purse."; engine src-patch 0092, README
+-- "Using a rune from the bag"). The purse is outside the engine's inventory slots, so a search, count or removal by item
+-- type never saw its contents. With the patch, Game.setRuneBagContainer(id) makes every such walk look into the Rune Bag that
+-- lies directly in the purse, after the backpack. Registered at load and at every login (idempotent). The function existing
+-- is the capability: without it (an engine built before the patch) nothing here changes and PO.runeBagEngine() is false, so
+-- the client does not count what the hotkey could not use, and ChaosCombine keeps a stack there as "box".
+PO.runeBagOk = PO.runeBagOk or false
+function PO.registerRuneBag()
+	if not (Game and Game.setRuneBagContainer) then
+		return false
+	end
+	local k = cfg().kinds.runes
+	if k and PO.installed("runes") and Game.setRuneBagContainer(k.id) then
+		PO.runeBagOk = true
+		if ChaosCombine then
+			ChaosCombine.runeBagId = k.id
+			ChaosCombine.runeBagEngine = true
+		end
+	end
+	return PO.runeBagOk
+end
+
+function PO.runeBagEngine()
+	return PO.runeBagOk == true
+end
+pcall(PO.registerRuneBag)
+
 function PO.create(player, kind)
 	local c = cfg()
 	local item = Game.createItem(c.kinds[kind].id, 1)
@@ -924,6 +951,51 @@ local function sendSettings(player, open)
 end
 PO.sendSettings = sendSettings
 
+-- ---------------------------------------------------------------- the Rune Bag in the purse (client count)
+-- the stacks directly inside the Rune Bag(s) that lie directly in the purse: exactly what the engine walks (src-patch 0092)
+local function purseRuneStacks(player)
+	local out, has = {}, false
+	local purse = purseOf(player)
+	local k = cfg().kinds.runes
+	if not (purse and k) then
+		return out, has
+	end
+	local ok, items = pcall(function() return purse:getItems() end)
+	for _, item in ipairs(ok and items or {}) do
+		local okI, id = pcall(function() return item:getId() end)
+		if okI and id == k.id then
+			has = true
+			local okC, inner = pcall(function() return item:getItems() end)
+			for _, stack in ipairs(okC and inner or {}) do
+				out[#out + 1] = {id = stack:getId(), count = stack:getCount()}
+			end
+		end
+	end
+	return out, has
+end
+
+local function clientIdOf(id)
+	local it = ItemType(id)
+	return it and it:getId() ~= 0 and it:getClientId() or 0
+end
+
+-- what the client adds to its own count of a magic rune: {engine, counts = {[client id] = n}, bag, poll (seconds)}.
+-- Without the engine patch: engine = false and no counts, so the client counts nothing it cannot use.
+function PO.runeBagState(player)
+	local engine = PO.runeBagEngine()
+	local counts, has = {}, false
+	if engine then
+		local stacks
+		stacks, has = purseRuneStacks(player)
+		counts = P.runeBagCounts(cfg(), stacks, clientIdOf)
+	end
+	return {engine = engine, counts = counts, bag = has, poll = (engine and has) and 2 or 15}
+end
+
+function PO.sendRuneBag(player)
+	Chaos.send(player, OPCODE, "runebag", PO.runeBagState(player))
+end
+
 -- actions of the Auto Seller window, handled by autosell.lua (ChaosAutoSell.handleAction)
 PO.AUTOSELL_ACTIONS = {as_open = true, as_sync = true, sell = true, asrar = true, aslist = true, aspause = true, asevery = true}
 
@@ -939,6 +1011,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if msg.action == "open" or msg.action == "sync" then
 		if not ChaosRateLimit or ChaosRateLimit.allow(player, "pouches.open", 300) then
 			sendSettings(player, msg.action == "open")
+		end
+	elseif msg.action == "runebag" then
+		if not ChaosRateLimit or ChaosRateLimit.allow(player, "pouches.runebag", 400) then
+			PO.sendRuneBag(player)
 		end
 	elseif msg.action == "set" then
 		if ChaosRateLimit and not ChaosRateLimit.allow(player, "pouches.set", 200) then
@@ -971,6 +1047,7 @@ local login = CreatureEvent("ChaosPouchesLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosPouchDeath")
 	pcall(PO.registerWeightless)
+	pcall(PO.registerRuneBag)
 	player:registerEvent("ChaosPouchesExtended")
 	local c = cfg()
 	local okR, errR = pcall(PO.rebind, player)

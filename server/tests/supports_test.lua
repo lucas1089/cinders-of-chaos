@@ -517,6 +517,36 @@ eq(W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function(c) return c == 
 local okErr = pcall(W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function() error("boom") end), caster, {})
 eq(okErr, false, "error passes through")
 eq(caster.storage[cfg.storageContext], nil, "context cleared after an error")
+-- O505: the monster defence layer reads W.cast() to know a spell hit is the player's own (a weapon class's spell is a weapon-size hit,
+-- monster_defence.lua): the player id of the cast whose code, or whose addEvent callback, runs now. It must be nil outside a cast, never
+-- another player's, restored after an error and after a nested cast, and the same in a delayed event of the cast
+do
+	local inside, delayed, nested
+	local cid = caster:getId()
+	eq(select(1, W.cast()), nil, "O505: no cast outside a spell")
+	W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function()
+		inside = {W.cast()}
+		addEvent(function() delayed = {W.cast()} end, 50)
+		return true
+	end)(caster, {})
+	eq(inside[1], cid, "O505: cast() is the casting player's id inside the cast"); eq(inside[2], 201, "O505: and the spell id")
+	eq(select(1, W.cast()), nil, "O505: nil right after the cast")
+	flushEvents()
+	eq(delayed and delayed[1], cid, "O505: the delayed event of the cast still names the player")
+	eq(select(1, W.cast()), nil, "O505: nil after the delayed event")
+	pcall(W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function() error("boom") end), caster, {})
+	eq(select(1, W.cast()), nil, "O505: nil after a cast that failed")
+	-- a hit that another player's script deals while this cast runs is not this player's: the pid is the caster's, the layer compares it
+	local second = newCreature({player = true, level = 300, voc = 4, pos = {x = 101, y = 100, z = 7}, health = 3000, maxHealth = 3000, maxMana = 2000, mana = 0})
+	W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function()
+		W.wrap(spellsXml["chaos/sorcerer/hexfire_bolt.lua"], function() nested = {W.cast()} end)(second, {})
+		inside = {W.cast()}
+		return true
+	end)(caster, {})
+	eq(nested and nested[1], second:getId(), "O505: a nested cast names its own player")
+	eq(inside[1], cid, "O505: and the outer cast is the outer player's again after it")
+	flushEvents()
+end
 -- O468: W.context() is the context of the cast that runs now; W.run raises one that was kept (snares: _snares.lua)
 do
 	local kept
@@ -864,6 +894,38 @@ me.removeItem = function() return false end
 eq(select(2, S.combine(me, rid, rs, rs)), S.reasons.needThree, "failed removal refused")
 me.removeItem = rmItem
 eq(rs.count + me.items[rid], 3, "failed removal: the taken rune given back"); me.items[rid] = 0
+-- the Rune Bag in the purse (O509, engine src-patch 0092). Before the patch the purse is all "box": the stack is taken by
+-- hand (the tests above). With the patch the engine's getItemCount / removeItem also walk the items directly inside a Rune Bag
+-- that lies directly in the purse (pouches.lua sets ChaosCombine.runeBagId / runeBagEngine), so that stack is "carried": it is
+-- counted once (by the engine), taken by removeItem, and the clicked stack is not taken by hand as well.
+local RUNE_BAG = 32096
+local rbag = rbox(RUNE_BAG, rpurse)
+eq(ChaosCombine.placeOf(me, rstack(rbag, 3, me)), "box", "old engine: a stack in the Rune Bag in the purse is box")
+ChaosCombine.runeBagId, ChaosCombine.runeBagEngine = RUNE_BAG, true
+local inBag = rstack(rbag, 3, me)
+eq(ChaosCombine.placeOf(me, inBag), "carried", "new engine: a stack directly in the Rune Bag in the purse is carried")
+eq(ChaosCombine.placeOf(me, rstack(rpurse, 3, me)), "box", "new engine: a stack lying loose in the purse is still box")
+eq(ChaosCombine.placeOf(me, rstack(rbox(1987, rpurse), 3, me)), "box", "new engine: a stack in a plain bag in the purse is still box")
+eq(ChaosCombine.placeOf(me, rstack(rbox(RUNE_BAG, rbox(1987, rpurse)), 3, me)), "box", "new engine: a Rune Bag inside a bag in the purse is not the engine's walk")
+eq(ChaosCombine.placeOf(me, rstack(rbox(1987, rbag), 3, me)), "box", "new engine: a bag inside the Rune Bag: only its direct items are walked")
+eq(ChaosCombine.placeOf(me, rstack(rbox(RUNE_BAG, rbox(1988, me)), 3, me)), "carried", "a Rune Bag in the backpack: carried as ever")
+eq(ChaosCombine.placeOf(me, rstack(rbox(RUNE_BAG, rinbox), 3, nil)), "box", "a Rune Bag in the depot inbox: box")
+eq(ChaosCombine.placeOf({getId = function() return 99 end}, rstack(rbag, 3, me)), nil, "someone else's Rune Bag: nobody's")
+me.items[rid], me.items[rnext] = 3, 0 -- the engine counts the 3 in the purse bag
+ok(S.combine(me, rid, inBag, inBag), "new engine: three in the Rune Bag in the purse combine")
+eq(me.items[rid], 0, "taken once, by removeItem") eq(me.items[rnext], 1, "one of the next level")
+eq(inBag.count, 3, "the clicked stack is not taken by hand a second time (the engine took it)")
+-- one in the purse bag, two in the backpack: all counted once
+me.items[rid], me.items[rnext] = 3, 0
+local oneInBag = rstack(rbag, 1, me)
+ok(S.combine(me, rid, oneInBag, oneInBag), "new engine: one in the bag and two carried")
+eq(me.items[rid], 0, "three taken") eq(oneInBag.count, 1, "by the engine, not by hand")
+-- not enough: two in the bag, the engine counts two
+me.items[rid] = 2
+local twoInBag = rstack(rbag, 2, me)
+eq(select(2, S.combine(me, rid, twoInBag, twoInBag)), S.reasons.needThree, "new engine: two are not enough") eq(me.items[rid], 2, "nothing taken")
+ChaosCombine.runeBagId, ChaosCombine.runeBagEngine = nil, nil
+me.items[rid], me.items[rnext] = 0, 0
 -- the window answer lists the class kit and the runes
 me.sent = {}
 local sentState = false

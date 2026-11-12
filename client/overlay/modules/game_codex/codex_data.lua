@@ -5833,7 +5833,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The gold is only paint; the plate is lightning held still. Aether Edge: your hits add 4% more of your energy shield. Held Lightning: 55% of your physical damage is dealt as energy and deals 34% more. Other elements deal 12% less. For: Templar, Monk. (Requires level 120.)"}
+							p = {"The gold is only paint; the plate is lightning held still. Aether Edge: your hits add 4% more of your energy shield. Held Lightning: 55% of your physical damage is dealt as energy and deals 34% more. Other elements deal 12% less. For: Templar, Monk. (Meant for level 120.)"}
 						},
 						{h = "Stats", p = {"Armor 16", "Energy Absorb +8%", "Magic Level +2"}},
 						{
@@ -5842,7 +5842,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "120"},
+								{"Meant for level", "120"},
 								{"Power works for", "Monk, Templar"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -6170,7 +6170,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Forged under a crimson moon; it never dries. Crimson Tide: Critical hits deal 74% more damage. Other hits deal 12% less. A critical hit heals 3% of its damage. For: Warrior, Thief. (Requires level 90.)"}
+							p = {"Forged under a crimson moon; it never dries. Crimson Tide: Critical hits deal 74% more damage. Other hits deal 12% less. A critical hit heals 3% of its damage. For: Warrior, Thief. (Meant for level 90.)"}
 						},
 						{h = "Stats", p = {"Attack 44", "Defense 22", "Melee +3"}},
 						{
@@ -6179,7 +6179,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Sword"},
-								{"Required level", "90"},
+								{"Meant for level", "90"},
 								{"Power works for", "Warrior, Thief"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -6258,7 +6258,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Its edge was quenched in the Blood Colossus's altar and never quite dried. Altar Quench: Below 40% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior. (Requires level 300.)"}
+							p = {"Its edge was quenched in the Blood Colossus's altar and never quite dried. Altar Quench: Below 40% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior. (Meant for level 300.)"}
 						},
 						{h = "Stats", p = {"Attack 76", "Defense 30", "Melee +3"}},
 						{
@@ -6267,7 +6267,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "weapon"},
-								{"Required level", "300"},
+								{"Meant for level", "300"},
 								{"Power works for", "Warrior"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -6301,7 +6301,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Each ring of the mail was sworn on a separate wound. Sworn on a Wound: Each kill adds a stack for 6 s, up to 5: 7.8% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 2% damage taken. For: Warrior, Templar. (Requires level 300.)"}
+							p = {"Each ring of the mail was sworn on a separate wound. Sworn on a Wound: Each kill adds a stack for 6 s, up to 5: 7.8% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 2% damage taken. For: Warrior, Templar. (Meant for level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 18", "Physical Absorb +4%"}},
 						{
@@ -6310,7 +6310,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "300"},
+								{"Meant for level", "300"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -6430,7 +6430,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A face of hammered iron that smiles only when the wearer bleeds. Smiles When You Bleed: Critical hits deal 81% more damage. Other hits deal 10% less. A critical hit heals 4% of its damage. For: Warrior, Thief. (Requires level 300.)"}
+							p = {"A face of hammered iron that smiles only when the wearer bleeds. Smiles When You Bleed: Critical hits deal 81% more damage. Other hits deal 10% less. A critical hit heals 4% of its damage. For: Warrior, Thief. (Meant for level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 11", "Melee +2", "Life Leech: chance +4%, amount +4%"}},
 						{
@@ -6439,7 +6439,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Helmet"},
-								{"Required level", "300"},
+								{"Meant for level", "300"},
 								{"Power works for", "Warrior, Thief"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -6473,7 +6473,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A skull on a pole. The skull is grinning, the pole is not. Grinding Wheel: You deal 7% increased damage per other monster within 3 tiles, up to 5, +10% increased damage (at most 10 for one unique power, 40 for all). Alone you deal 15% less. For: Warrior, Monk. (Requires level 90.)"}
+							p = {"A skull on a pole. The skull is grinning, the pole is not. Grinding Wheel: You deal 7% increased damage per other monster within 3 tiles, up to 5, +10% increased damage (at most 10 for one unique power, 40 for all). Alone you deal 15% less. For: Warrior, Monk. (Meant for level 90.)"}
 						},
 						{h = "Stats", p = {"Attack 58", "Defense 18", "Melee +5"}},
 						{
@@ -6482,7 +6482,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Club"},
-								{"Required level", "90"},
+								{"Meant for level", "90"},
 								{"Power works for", "Warrior, Monk"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -6517,7 +6517,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"It watches you from the inside of your own skull. Evil Eye: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 8% less. For: Mystic, Necromancer, Ranger. (Requires level 60.)"}
+							p = {"It watches you from the inside of your own skull. Evil Eye: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 8% less. For: Mystic, Necromancer, Ranger. (Meant for level 60.)"}
 						},
 						{h = "Stats", p = {"Armor 10", "Death Absorb +6%", "Magic Level +2"}},
 						{
@@ -6526,7 +6526,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Helmet"},
-								{"Required level", "60"},
+								{"Meant for level", "60"},
 								{"Power works for", "Ranger, Mystic, Necromancer"},
 								{"Drops from", "Magic monsters and stronger"}
 							}
@@ -6605,7 +6605,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The beetle was dead long before it was strung. Scarab Swarm: A monster that dies with your poison damage on it passes it to 2 monsters within 2 tiles: 97% of the last tick for 4 ticks. Your direct hits deal 8% less. For: Thief. (Requires level 50.)"}
+							p = {"The beetle was dead long before it was strung. Scarab Swarm: A monster that dies with your poison damage on it passes it to 2 monsters within 2 tiles: 97% of the last tick for 4 ticks. Your direct hits deal 8% less. For: Thief. (Meant for level 50.)"}
 						},
 						{h = "Stats", p = {"Earth Absorb +10%"}},
 						{
@@ -6614,7 +6614,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Amulet"},
-								{"Required level", "50"},
+								{"Meant for level", "50"},
 								{"Power works for", "Thief"},
 								{"Drops from", "Magic monsters and stronger"}
 							}
@@ -6976,7 +6976,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The last coal of a dead sovereign, set in a ring. It is never cold. Last Coal of a Sovereign: On a kill, a fire nova hits up to 7 monsters within 2 tiles for 90 plus 1.2 per level, every 3 s. Costs 0.6% health, never below 35%. For: Warrior, Templar, Mystic. (Requires level 1000.)"}
+							p = {"The last coal of a dead sovereign, set in a ring. It is never cold. Last Coal of a Sovereign: On a kill, a fire nova hits up to 7 monsters within 2 tiles for 90 plus 1.2 per level, every 3 s. Costs 0.6% health, never below 35%. For: Warrior, Templar, Mystic. (Meant for level 1000.)"}
 						},
 						{
 							h = "Stats",
@@ -6988,7 +6988,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Ring"},
-								{"Required level", "1000"},
+								{"Meant for level", "1000"},
 								{"Power works for", "Warrior, Mystic, Templar"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7026,7 +7026,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Singed at the seams, it still smoulders when no one is looking. Cinder Coat: Immune to burning. Direct fire damage you take is 15% higher. For: Warrior, Templar, Monk, Thief, Ranger. (Requires level 80.) Part of the Embers of Aranoth set."}
+							p = {"Singed at the seams, it still smoulders when no one is looking. Cinder Coat: Immune to burning. Direct fire damage you take is 15% higher. For: Warrior, Templar, Monk, Thief, Ranger. (Meant for level 80.) Part of the Embers of Aranoth set."}
 						},
 						{h = "Stats", p = {"Armor 16", "Fire Absorb +12%", "Magic Level +2", "Physical Absorb +4%"}},
 						{
@@ -7035,7 +7035,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "80"},
+								{"Meant for level", "80"},
 								{"Power works for", "Warrior, Ranger, Thief, Monk, Templar"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -7070,7 +7070,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A circlet of black glass that rains sparks in the wind. Rain of Sparks: On a critical hit, a energy nova hits up to 6 monsters within 2 tiles for 80 plus 1.1 per level, every 3 s. Costs 0.5% health, never below 35%. For: Mystic, Necromancer. (Requires level 400.)"}
+							p = {"A circlet of black glass that rains sparks in the wind. Rain of Sparks: On a critical hit, a energy nova hits up to 6 monsters within 2 tiles for 80 plus 1.1 per level, every 3 s. Costs 0.5% health, never below 35%. For: Mystic, Necromancer. (Meant for level 400.)"}
 						},
 						{h = "Stats", p = {"Armor 11", "Fire Absorb +4%", "Magic Level +1"}},
 						{
@@ -7079,7 +7079,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Helmet"},
-								{"Required level", "400"},
+								{"Meant for level", "400"},
 								{"Power works for", "Mystic, Necromancer"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7113,7 +7113,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Embroidered with the same storm in fire and in frost. Same Storm Twice: 35% of the damage monsters deal is paid from your mana instead, never below 5% mana. Your direct hits deal 10% less. For: Mystic, Necromancer. (Requires level 400.)"}
+							p = {"Embroidered with the same storm in fire and in frost. Same Storm Twice: 35% of the damage monsters deal is paid from your mana instead, never below 5% mana. Your direct hits deal 10% less. For: Mystic, Necromancer. (Meant for level 400.)"}
 						},
 						{h = "Stats", p = {"Armor 9", "Magic Level +2"}},
 						{
@@ -7122,7 +7122,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Legs"},
-								{"Required level", "400"},
+								{"Meant for level", "400"},
 								{"Power works for", "Mystic, Necromancer"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7156,7 +7156,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Its hem is always smouldering, and never burnt. Never Burnt: Immune to burning. Direct fire damage you take is 12% higher. For: Mystic, Necromancer, Templar. (Requires level 400.)"}
+							p = {"Its hem is always smouldering, and never burnt. Never Burnt: Immune to burning. Direct fire damage you take is 12% higher. For: Mystic, Necromancer, Templar. (Meant for level 400.)"}
 						},
 						{h = "Stats", p = {"Armor 12", "Fire Absorb +4%", "Magic Level +2"}},
 						{
@@ -7165,7 +7165,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "400"},
+								{"Meant for level", "400"},
 								{"Power works for", "Mystic, Necromancer, Templar"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7199,7 +7199,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Light enough for a court mage, warm enough for a pyre. Court Mage's Pace: Your hits deal 1% increased damage per 8 magic level, up to 40%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Monk, Templar. (Requires level 400.)"}
+							p = {"Light enough for a court mage, warm enough for a pyre. Court Mage's Pace: Your hits deal 1% increased damage per 8 magic level, up to 40%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Monk, Templar. (Meant for level 400.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Fire Absorb +3%"}},
 						{
@@ -7208,7 +7208,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Boots"},
-								{"Required level", "400"},
+								{"Meant for level", "400"},
 								{"Power works for", "Warrior, Monk, Templar"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7285,7 +7285,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Half ember, half hoarfrost; it hisses when it is drawn. Hisses When Drawn: 50% of your physical damage is dealt as fire and deals 28% more. Other elements deal 12% less. For: Warrior. (Requires level 400.)"}
+							p = {"Half ember, half hoarfrost; it hisses when it is drawn. Hisses When Drawn: 50% of your physical damage is dealt as fire and deals 28% more. Other elements deal 12% less. For: Warrior. (Meant for level 400.)"}
 						},
 						{h = "Stats", p = {"Fire Absorb +4%", "Magic Level +2"}},
 						{
@@ -7294,7 +7294,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "weapon"},
-								{"Required level", "400"},
+								{"Meant for level", "400"},
 								{"Power works for", "Warrior"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7417,7 +7417,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The king died, the crown kept burning. Burning Crown: On a kill, a fire nova hits up to 6 monsters within 2 tiles for 60 plus 1.2 per level, every 3 s. Costs 0.5% health, never below 35%. For: Mystic, Templar, Warrior. (Requires level 100.)"}
+							p = {"The king died, the crown kept burning. Burning Crown: On a kill, a fire nova hits up to 6 monsters within 2 tiles for 60 plus 1.2 per level, every 3 s. Costs 0.5% health, never below 35%. For: Mystic, Templar, Warrior. (Meant for level 100.)"}
 						},
 						{h = "Stats", p = {"Armor 14", "Melee +2", "Fire Absorb +8%"}},
 						{
@@ -7426,7 +7426,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Helmet"},
-								{"Required level", "100"},
+								{"Meant for level", "100"},
 								{"Power works for", "Warrior, Mystic, Templar"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
@@ -7826,7 +7826,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Wrapped tight, for running along rooftops. Rooftop Run: Your hits deal 1% increased damage per 8 speed above 200, up to 30%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Thief, Monk, Ranger. (Requires level 300.)"}
+							p = {"Wrapped tight, for running along rooftops. Rooftop Run: Your hits deal 1% increased damage per 8 speed above 200, up to 30%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Thief, Monk, Ranger. (Meant for level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 9", "Earth Absorb +4%"}},
 						{
@@ -7835,7 +7835,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Legs"},
-								{"Required level", "300"},
+								{"Meant for level", "300"},
 								{"Power works for", "Ranger, Thief, Monk"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7912,7 +7912,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The first of a pair. It wants the other one in your off hand. First of a Pair: Each hit in a row on one target adds 8% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 12% less. For: Thief. (Requires level 300.)"}
+							p = {"The first of a pair. It wants the other one in your off hand. First of a Pair: Each hit in a row on one target adds 8% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 12% less. For: Thief. (Meant for level 300.)"}
 						},
 						{h = "Stats", p = {"Attack 55", "Defense 12", "Melee +2"}},
 						{
@@ -7921,7 +7921,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "weapon"},
-								{"Required level", "300"},
+								{"Meant for level", "300"},
 								{"Power works for", "Thief"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7955,7 +7955,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Black on black; blades slide off it like water. Blades Slide Off: A monster hit of 3% of your health or more is answered with 70% of it as physical damage, every 2 s. For: Thief, Monk. (Requires level 300.)"}
+							p = {"Black on black; blades slide off it like water. Blades Slide Off: A monster hit of 3% of your health or more is answered with 70% of it as physical damage, every 2 s. For: Thief, Monk. (Meant for level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 13", "Physical Absorb +3%"}},
 						{
@@ -7964,7 +7964,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "300"},
+								{"Meant for level", "300"},
 								{"Power works for", "Thief, Monk"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -7998,7 +7998,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The second of a pair. It strikes where the Fang was. Where the Fang Was: Your melee hits send 60% of their damage at 1 more monsters within 2 tiles of the target. Costs 0.5% health, never below 35%. For: Thief. (Requires level 300.)"}
+							p = {"The second of a pair. It strikes where the Fang was. Where the Fang Was: Your melee hits send 60% of their damage at 1 more monsters within 2 tiles of the target. Costs 0.5% health, never below 35%. For: Thief. (Meant for level 300.)"}
 						},
 						{
 							h = "Stats",
@@ -8010,7 +8010,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "weapon"},
-								{"Required level", "300"},
+								{"Meant for level", "300"},
 								{"Power works for", "Thief"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -8044,7 +8044,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Split-toed and silent; even the dust does not hear them. Dust Does Not Hear: Critical hits deal 81% more damage. Other hits deal 10% less. For: Thief. (Requires level 300.)"}
+							p = {"Split-toed and silent; even the dust does not hear them. Dust Does Not Hear: Critical hits deal 81% more damage. Other hits deal 10% less. For: Thief. (Meant for level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Physical Absorb +2%"}},
 						{
@@ -8053,7 +8053,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Boots"},
-								{"Required level", "300"},
+								{"Meant for level", "300"},
 								{"Power works for", "Thief"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -8402,7 +8402,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Hold it up and the fire has to ask permission. Fire Asks Permission: 6% of the damage you deal and 5% of your health per kill become a ward, up to 20% of your health. It absorbs damage and fades after 6 s. 40% of what it absorbs is dealt back. Healing on you is 25% lower. For: Warrior, Templar. (Requires level 90.) Part of the Embers of Aranoth set."}
+							p = {"Hold it up and the fire has to ask permission. Fire Asks Permission: 6% of the damage you deal and 5% of your health per kill become a ward, up to 20% of your health. It absorbs damage and fades after 6 s. 40% of what it absorbs is dealt back. Healing on you is 25% lower. For: Warrior, Templar. (Meant for level 90.) Part of the Embers of Aranoth set."}
 						},
 						{h = "Stats", p = {"Defense 34", "Fire Absorb +15%", "Shielding +3"}},
 						{
@@ -8411,7 +8411,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Shield"},
-								{"Required level", "90"},
+								{"Meant for level", "90"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -8446,7 +8446,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The last thing many a condemned man heard was its song. Last Words: Against targets at 30% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Monk. (Requires level 80.)"}
+							p = {"The last thing many a condemned man heard was its song. Last Words: Against targets at 30% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Monk. (Meant for level 80.)"}
 						},
 						{h = "Stats", p = {"Attack 50", "Defense 18", "Melee +3"}},
 						{
@@ -8455,7 +8455,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Axe"},
-								{"Required level", "80"},
+								{"Meant for level", "80"},
 								{"Power works for", "Warrior, Monk"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -8490,7 +8490,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The seer saw every death but her own. The eye still watches for it. Seer's Last Sight: On a critical hit, a energy nova hits up to 7 monsters within 2 tiles for 90 plus 1.2 per level, every 3 s. Costs 0.6% health, never below 35%. For: Mystic, Necromancer, Thief. (Requires level 1000.)"}
+							p = {"The seer saw every death but her own. The eye still watches for it. Seer's Last Sight: On a critical hit, a energy nova hits up to 7 monsters within 2 tiles for 90 plus 1.2 per level, every 3 s. Costs 0.6% health, never below 35%. For: Mystic, Necromancer, Thief. (Meant for level 1000.)"}
 						},
 						{
 							h = "Stats",
@@ -8502,7 +8502,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Amulet"},
-								{"Required level", "1000"},
+								{"Meant for level", "1000"},
 								{"Power works for", "Mystic, Thief, Necromancer"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -8535,7 +8535,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Twin horned heads, cut from something that fell a long way down. Ninth-Circle Bite: A monster that dies with your fire damage on it passes it to 3 monsters within 2 tiles: 94% of the last tick for 4 ticks. Your direct hits deal 6% less. For: Mystic, Templar. (Requires level 120.)"}
+							p = {"Twin horned heads, cut from something that fell a long way down. Ninth-Circle Bite: A monster that dies with your fire damage on it passes it to 3 monsters within 2 tiles: 94% of the last tick for 4 ticks. Your direct hits deal 6% less. For: Mystic, Templar. (Meant for level 120.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Death Absorb +8%", "Holy Absorb -6%", "Magic Level +3"}},
 						{
@@ -8544,7 +8544,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Amulet"},
-								{"Required level", "120"},
+								{"Meant for level", "120"},
 								{"Power works for", "Mystic, Templar"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -8759,7 +8759,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Long, dark and quiet; the pockets hold one bolt each. One Bolt per Pocket: Your ranged hits send 55% of their damage at 2 more monsters within 3 tiles of the target. Costs 0.6% health, never below 35%. For: Ranger. (Requires level 600.)"}
+							p = {"Long, dark and quiet; the pockets hold one bolt each. One Bolt per Pocket: Your ranged hits send 55% of their damage at 2 more monsters within 3 tiles of the target. Costs 0.6% health, never below 35%. For: Ranger. (Meant for level 600.)"}
 						},
 						{h = "Stats", p = {"Armor 16", "Ranged +2", "Physical Absorb +3%"}},
 						{
@@ -8768,7 +8768,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "600"},
+								{"Meant for level", "600"},
 								{"Power works for", "Ranger"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -8802,7 +8802,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The hood the hangman wore so the condemned would not see his face. Face Unseen: Your hits mark the target for 6 s, up to 4 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 12% less. For: Ranger, Thief. (Requires level 600.)"}
+							p = {"The hood the hangman wore so the condemned would not see his face. Face Unseen: Your hits mark the target for 6 s, up to 4 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 12% less. For: Ranger, Thief. (Meant for level 600.)"}
 						},
 						{h = "Stats", p = {"Armor 13", "Ranged +2"}},
 						{
@@ -8811,7 +8811,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Helmet"},
-								{"Required level", "600"},
+								{"Meant for level", "600"},
 								{"Power works for", "Ranger, Thief"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -8845,7 +8845,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Made for standing still a long time on a cold scaffold. Standing Still: Each hit in a row on one target adds 8% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 15% less. For: Ranger, Mystic. (Requires level 600.)"}
+							p = {"Made for standing still a long time on a cold scaffold. Standing Still: Each hit in a row on one target adds 8% increased damage, up to 6 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 15% less. For: Ranger, Mystic. (Meant for level 600.)"}
 						},
 						{h = "Stats", p = {"Armor 10"}},
 						{
@@ -8854,7 +8854,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Legs"},
-								{"Required level", "600"},
+								{"Meant for level", "600"},
 								{"Power works for", "Ranger, Mystic"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -8888,7 +8888,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A hangman's design: it only needs one shot. One Shot: Against targets at 95% health or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 40% or less take 3% less. For: Ranger. (Requires level 60.)"}
+							p = {"A hangman's design: it only needs one shot. One Shot: Against targets at 95% health or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). Targets at 40% or less take 3% less. For: Ranger. (Meant for level 60.)"}
 						},
 						{h = "Stats", p = {"Range 5", "Ranged +3"}},
 						{
@@ -8897,7 +8897,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Distance weapon"},
-								{"Required level", "60"},
+								{"Meant for level", "60"},
 								{"Power works for", "Ranger"},
 								{"Drops from", "Magic monsters and stronger"}
 							}
@@ -8932,7 +8932,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A ripper's sabre, notched by a thousand slaughters. Notched Edge: A monster that dies with your bleeding damage on it passes it to 3 monsters within 2 tiles: 97% of the last tick for 4 ticks. Your direct hits deal 10% less. For: Warrior, Thief. (Requires level 70.)"}
+							p = {"A ripper's sabre, notched by a thousand slaughters. Notched Edge: A monster that dies with your bleeding damage on it passes it to 3 monsters within 2 tiles: 97% of the last tick for 4 ticks. Your direct hits deal 10% less. For: Warrior, Thief. (Meant for level 70.)"}
 						},
 						{h = "Stats", p = {"Attack 36", "Defense 18", "Life Leech: chance +5%, amount +5%"}},
 						{
@@ -8941,7 +8941,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Sword"},
-								{"Required level", "70"},
+								{"Meant for level", "70"},
 								{"Power works for", "Warrior, Thief"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -8976,7 +8976,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A two-handed argument that ends all debate. Argument Ender: Against targets at 35% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Templar, Monk. (Requires level 100.)"}
+							p = {"A two-handed argument that ends all debate. Argument Ender: Against targets at 35% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Templar, Monk. (Meant for level 100.)"}
 						},
 						{h = "Stats", p = {"Attack 66", "Defense 20"}},
 						{
@@ -8985,7 +8985,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Club"},
-								{"Required level", "100"},
+								{"Meant for level", "100"},
 								{"Power works for", "Monk, Templar"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -9435,7 +9435,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"It has reaped countless souls and still wants a few more. Reaper's Reach: Your melee hits send 50% of their damage at 2 more monsters within 2 tiles of the target. Costs 0.6% health, never below 35%. For: Warrior, Templar. (Requires level 100.)"}
+							p = {"It has reaped countless souls and still wants a few more. Reaper's Reach: Your melee hits send 50% of their damage at 2 more monsters within 2 tiles of the target. Costs 0.6% health, never below 35%. For: Warrior, Templar. (Meant for level 100.)"}
 						},
 						{
 							h = "Stats",
@@ -9447,7 +9447,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Sword"},
-								{"Required level", "100"},
+								{"Meant for level", "100"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
@@ -9529,7 +9529,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A coal that never cools, hung where a heart should be. Never-Cooling Coal: Your melee hits deal 2.9% increased damage per 200 maximum health, up to 35%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Templar, Monk. (Requires level 80.)"}
+							p = {"A coal that never cools, hung where a heart should be. Never-Cooling Coal: Your melee hits deal 2.9% increased damage per 200 maximum health, up to 35%: +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Templar, Monk. (Meant for level 80.)"}
 						},
 						{h = "Stats", p = {"Fire Absorb +18%", "Physical Absorb +6%"}},
 						{
@@ -9538,7 +9538,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Amulet"},
-								{"Required level", "80"},
+								{"Meant for level", "80"},
 								{"Power works for", "Warrior, Monk, Templar"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -9578,7 +9578,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Each beat is a drop of someone else's life. Borrowed Beat: Each kill restores 6.4% of your maximum health, at most 19% per second. Healing on you is 40% lower. For: Warrior, Necromancer, Templar. (Requires level 90.)"}
+							p = {"Each beat is a drop of someone else's life. Borrowed Beat: Each kill restores 6.4% of your maximum health, at most 19% per second. Healing on you is 40% lower. For: Warrior, Necromancer, Templar. (Meant for level 90.)"}
 						},
 						{h = "Stats", p = {"Life Leech: chance +5%, amount +6%"}},
 						{
@@ -9587,7 +9587,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Amulet"},
-								{"Required level", "90"},
+								{"Meant for level", "90"},
 								{"Power works for", "Warrior, Necromancer, Templar"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -9622,7 +9622,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Hurled by the damned at those who would leave. Damned Flight: 60% of your physical damage is dealt as fire and deals 20% more. Other elements deal 10% less. For: Ranger, Thief. (Requires level 50.)"}
+							p = {"Hurled by the damned at those who would leave. Damned Flight: 60% of your physical damage is dealt as fire and deals 20% more. Other elements deal 10% less. For: Ranger, Thief. (Meant for level 50.)"}
 						},
 						{h = "Stats", p = {"Attack 28", "Range 4", "Ranged +2"}},
 						{
@@ -9631,7 +9631,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Distance weapon"},
-								{"Required level", "50"},
+								{"Meant for level", "50"},
 								{"Power works for", "Ranger, Thief"},
 								{"Drops from", "Magic monsters and stronger"}
 							}
@@ -9802,7 +9802,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A crown with nothing inside it. Wear it and it is still empty. Nothing Inside: At 75% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 40% mana or less you deal 9% less. For: Mystic, Necromancer. (Requires level 1000.)"}
+							p = {"A crown with nothing inside it. Wear it and it is still empty. Nothing Inside: At 75% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 40% mana or less you deal 9% less. For: Mystic, Necromancer. (Meant for level 1000.)"}
 						},
 						{
 							h = "Stats",
@@ -9814,7 +9814,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Helmet"},
-								{"Required level", "1000"},
+								{"Meant for level", "1000"},
 								{"Power works for", "Mystic, Necromancer"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -10036,7 +10036,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"When it grows warm, something you summoned has fed. Fed Bond: Each kill restores 7.5% of your maximum mana, at most 22% per second. Healing on you is 10% lower. For: Necromancer, Mystic, Ranger. (Requires level 250.)"}
+							p = {"When it grows warm, something you summoned has fed. Fed Bond: Each kill restores 7.5% of your maximum mana, at most 22% per second. Healing on you is 10% lower. For: Necromancer, Mystic, Ranger. (Meant for level 250.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Life Leech: chance +3%, amount +3%"}},
 						{
@@ -10045,7 +10045,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Ring"},
-								{"Required level", "250"},
+								{"Meant for level", "250"},
 								{"Power works for", "Ranger, Mystic, Necromancer"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -10079,7 +10079,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"One tooth for every pact kept. One Tooth per Pact: Your minions deal 30% more damage and have 40% more health. Your own spells deal 20% less. For: Necromancer. (Requires level 250.)"}
+							p = {"One tooth for every pact kept. One Tooth per Pact: Your minions deal 30% more damage and have 40% more health. Your own spells deal 20% less. For: Necromancer. (Meant for level 250.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Magic Level +1", "Physical Absorb +3%"}},
 						{
@@ -10088,7 +10088,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Amulet"},
-								{"Required level", "250"},
+								{"Meant for level", "250"},
 								{"Power works for", "Necromancer"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -10122,7 +10122,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Furs of every beast that ever ran with the covenant. Covenant Furs: You deal 7% increased damage per other monster within 3 tiles, up to 5, +10% increased damage (at most 10 for one unique power, 40 for all). Alone you deal 12% less. For: Ranger, Warrior, Necromancer. (Requires level 250.)"}
+							p = {"Furs of every beast that ever ran with the covenant. Covenant Furs: You deal 7% increased damage per other monster within 3 tiles, up to 5, +10% increased damage (at most 10 for one unique power, 40 for all). Alone you deal 12% less. For: Ranger, Warrior, Necromancer. (Meant for level 250.)"}
 						},
 						{h = "Stats", p = {"Armor 12", "Physical Absorb +3%"}},
 						{
@@ -10131,7 +10131,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "250"},
+								{"Meant for level", "250"},
 								{"Power works for", "Warrior, Ranger, Necromancer"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -10165,7 +10165,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A wolf's skull for a helm. The pack smells you as kin. Pack Smells Kin: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 10% less. For: Ranger, Necromancer. (Requires level 250.)"}
+							p = {"A wolf's skull for a helm. The pack smells you as kin. Pack Smells Kin: Your hits mark the target for 6 s, up to 3 at once. Against marked monsters you deal +10% increased damage (at most 10 for one unique power, 40 for all). Others take 10% less. For: Ranger, Necromancer. (Meant for level 250.)"}
 						},
 						{h = "Stats", p = {"Armor 9", "Death Absorb +3%", "Ranged +1"}},
 						{
@@ -10174,7 +10174,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Helmet"},
-								{"Required level", "250"},
+								{"Meant for level", "250"},
 								{"Power works for", "Ranger, Necromancer"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -10257,7 +10257,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A horn-ring from something that did not want to give it up. Horn-Bind: Each kill adds a stack for 6 s, up to 4: 7% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 2% damage taken. For: Warrior, Templar. (Requires level 60.)"}
+							p = {"A horn-ring from something that did not want to give it up. Horn-Bind: Each kill adds a stack for 6 s, up to 4: 7% increased damage dealt per stack, +10% increased damage (at most 10 for one unique power, 40 for all). Each stack also adds 2% damage taken. For: Warrior, Templar. (Meant for level 60.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Melee +3"}},
 						{
@@ -10266,7 +10266,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Ring"},
-								{"Required level", "60"},
+								{"Meant for level", "60"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Magic monsters and stronger"}
 							}
@@ -10301,7 +10301,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Sworn to a master who answers to no one above. Hornsworn Oath: A single hit from a monster takes at most 18% of your maximum health. Healing on you is 20% lower. For: Warrior, Templar. (Requires level 70.) Part of the Embers of Aranoth set."}
+							p = {"Sworn to a master who answers to no one above. Hornsworn Oath: A single hit from a monster takes at most 18% of your maximum health. Healing on you is 20% lower. For: Warrior, Templar. (Meant for level 70.) Part of the Embers of Aranoth set."}
 						},
 						{h = "Stats", p = {"Armor 14", "Melee +2", "Melee +2", "Fire Absorb +8%", "Melee +2"}},
 						{
@@ -10310,7 +10310,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Helmet"},
-								{"Required level", "70"},
+								{"Meant for level", "70"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -10528,7 +10528,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The scent of death clings to it; so does its former owner. Lich's Grasp: A monster that dies with your death damage on it passes it to 3 monsters within 2 tiles: 94% of the last tick for 4 ticks. Your direct hits deal 10% less. For: Necromancer. (Requires level 70.)"}
+							p = {"The scent of death clings to it; so does its former owner. Lich's Grasp: A monster that dies with your death damage on it passes it to 3 monsters within 2 tiles: 94% of the last tick for 4 ticks. Your direct hits deal 10% less. For: Necromancer. (Meant for level 70.)"}
 						},
 						{
 							h = "Stats",
@@ -10540,7 +10540,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Club"},
-								{"Required level", "70"},
+								{"Meant for level", "70"},
 								{"Power works for", "Necromancer"},
 								{"Drops from", "Magic monsters and stronger"}
 							}
@@ -11343,7 +11343,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Quick as a whisper in the crypt, and as final. Crypt Whisper: Critical hits deal 67% more damage. Other hits deal 10% less. For: Thief. (Requires level 60.)"}
+							p = {"Quick as a whisper in the crypt, and as final. Crypt Whisper: Critical hits deal 67% more damage. Other hits deal 10% less. For: Thief. (Meant for level 60.)"}
 						},
 						{h = "Stats", p = {"Attack 32", "Defense 16", "Extra Defense +2", "Melee +2"}},
 						{
@@ -11352,7 +11352,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Sword"},
-								{"Required level", "60"},
+								{"Meant for level", "60"},
 								{"Power works for", "Thief"},
 								{"Drops from", "Magic monsters and stronger"}
 							}
@@ -11525,7 +11525,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Polished black glass; it reflects what you fear. Reflected Fear: A single hit from a monster takes at most 15% of your maximum health. Healing on you is 25% lower. For: Warrior, Templar. (Requires level 110.)"}
+							p = {"Polished black glass; it reflects what you fear. Reflected Fear: A single hit from a monster takes at most 15% of your maximum health. Healing on you is 25% lower. For: Warrior, Templar. (Meant for level 110.)"}
 						},
 						{h = "Stats", p = {"Defense 38", "Death Absorb +5%", "Physical Absorb +8%", "Shielding +4"}},
 						{
@@ -11534,7 +11534,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Shield"},
-								{"Required level", "110"},
+								{"Meant for level", "110"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
@@ -11614,7 +11614,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Light, black and covered in grinning faces. Skull Pall: Immune to poison. Direct poison damage you take is 12% higher. For: Thief, Ranger, Monk. (Requires level 60.)"}
+							p = {"Light, black and covered in grinning faces. Skull Pall: Immune to poison. Direct poison damage you take is 12% higher. For: Thief, Ranger, Monk. (Meant for level 60.)"}
 						},
 						{h = "Stats", p = {"Armor 14", "Death Absorb +8%", "Physical Absorb +4%"}},
 						{
@@ -11623,7 +11623,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "60"},
+								{"Meant for level", "60"},
 								{"Power works for", "Ranger, Thief, Monk"},
 								{"Drops from", "Magic monsters and stronger"}
 							}
@@ -11889,7 +11889,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Cut from a giant that walked into its own pyre and did not stop. Pyre Oath: your burning aura deals 20% more. Giant's Pyre: A single hit from a monster takes at most 15% of your maximum health. Healing on you is 25% lower. For: Warrior, Templar. (Requires level 150.)"}
+							p = {"Cut from a giant that walked into its own pyre and did not stop. Pyre Oath: your burning aura deals 20% more. Giant's Pyre: A single hit from a monster takes at most 15% of your maximum health. Healing on you is 25% lower. For: Warrior, Templar. (Meant for level 150.)"}
 						},
 						{h = "Stats", p = {"Armor 15", "Fire Absorb +10%", "Physical Absorb +3%"}},
 						{
@@ -11898,7 +11898,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "150"},
+								{"Meant for level", "150"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
@@ -12168,7 +12168,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Tears a seam in the world and lets the death in. Seam of the World: On a critical hit, a death nova hits up to 5 monsters within 2 tiles for 50 plus 1.2 per level, every 3 s. Costs 0.5% health, never below 35%. For: Mystic, Necromancer. (Requires level 80.)"}
+							p = {"Tears a seam in the world and lets the death in. Seam of the World: On a critical hit, a death nova hits up to 5 monsters within 2 tiles for 50 plus 1.2 per level, every 3 s. Costs 0.5% health, never below 35%. For: Mystic, Necromancer. (Meant for level 80.)"}
 						},
 						{h = "Stats", p = {"Range 3", "Magic Level +3", "Mana Leech: chance +5%, amount +5%"}},
 						{
@@ -12177,7 +12177,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Wand / rod"},
-								{"Required level", "80"},
+								{"Meant for level", "80"},
 								{"Power works for", "Mystic, Necromancer"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -12217,7 +12217,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"One spark left. Make it count. One Spark: A hit that leaves you under 25% health makes you take 50% less damage for 5 s, but blocks your healing meanwhile. Once per 75 s. (Requires level 70.)"}
+							p = {"One spark left. Make it count. One Spark: A hit that leaves you under 25% health makes you take 50% less damage for 5 s, but blocks your healing meanwhile. Once per 75 s. (Meant for level 70.)"}
 						},
 						{h = "Stats", p = {"The base item's own stats (no extra stats of its own)."}},
 						{
@@ -12226,7 +12226,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Ring"},
-								{"Required level", "70"},
+								{"Meant for level", "70"},
 								{"Power works for", "Every class"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -12310,7 +12310,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The red moon's last crescent, cut down and given an edge. It drinks before you do. Drinks Before You: 14% of the damage you deal and 5% of your health per kill become a ward, up to 30% of your health. It absorbs damage and fades after 6 s. Healing on you is 45% lower. (Requires level 1000.)"}
+							p = {"The red moon's last crescent, cut down and given an edge. It drinks before you do. Drinks Before You: 14% of the damage you deal and 5% of your health per kill become a ward, up to 30% of your health. It absorbs damage and fades after 6 s. Healing on you is 45% lower. (Meant for level 1000.)"}
 						},
 						{
 							h = "Stats",
@@ -12322,7 +12322,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Sword"},
-								{"Required level", "1000"},
+								{"Meant for level", "1000"},
 								{"Power works for", "Every class"},
 								{"Drops from", "Boss (bosses only)"}
 							}
@@ -12584,7 +12584,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Every soul it cuts only feeds the hunger of its blade. Hungry Blade: Each kill restores 7.1% of your maximum health, at most 21% per second. Healing on you is 45% lower. For: Warrior, Thief, Necromancer. (Requires level 120.)"}
+							p = {"Every soul it cuts only feeds the hunger of its blade. Hungry Blade: Each kill restores 7.1% of your maximum health, at most 21% per second. Healing on you is 45% lower. For: Warrior, Thief, Necromancer. (Meant for level 120.)"}
 						},
 						{
 							h = "Stats",
@@ -12596,7 +12596,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Sword"},
-								{"Required level", "120"},
+								{"Meant for level", "120"},
 								{"Power works for", "Warrior, Thief, Necromancer"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
@@ -12954,7 +12954,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A single drop of the dark, held in black stone. Void Pool: 35% of the damage monsters deal is paid from your mana instead, never below 5% mana. Your direct hits deal 10% less. For: Mystic, Necromancer, Monk. (Requires level 100.)"}
+							p = {"A single drop of the dark, held in black stone. Void Pool: 35% of the damage monsters deal is paid from your mana instead, never below 5% mana. Your direct hits deal 10% less. For: Mystic, Necromancer, Monk. (Meant for level 100.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Death Absorb +10%", "Magic Level +2", "Physical Absorb +5%"}},
 						{
@@ -12963,7 +12963,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Amulet"},
-								{"Required level", "100"},
+								{"Meant for level", "100"},
 								{"Power works for", "Mystic, Monk, Necromancer"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
@@ -12998,7 +12998,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Bark and leather, stitched with living vine. Living Vine: A monster hit of 3% of your health or more is answered with 73% of it as earth damage, every 2.5 s. For: Ranger, Thief, Warrior. (Requires level 150.)"}
+							p = {"Bark and leather, stitched with living vine. Living Vine: A monster hit of 3% of your health or more is answered with 73% of it as earth damage, every 2.5 s. For: Ranger, Thief, Warrior. (Meant for level 150.)"}
 						},
 						{h = "Stats", p = {"Armor 13", "Ranged +1", "Earth Absorb +4%"}},
 						{
@@ -13007,7 +13007,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Body armour"},
-								{"Required level", "150"},
+								{"Meant for level", "150"},
 								{"Power works for", "Warrior, Ranger, Thief"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -13086,7 +13086,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A ring of braided thorn; it pricks, and then it heals. Prick and Heal: Each kill restores 6% of your maximum health, at most 18% per second. Healing on you is 35% lower. For: Ranger, Thief, Warrior. (Requires level 150.)"}
+							p = {"A ring of braided thorn; it pricks, and then it heals. Prick and Heal: Each kill restores 6% of your maximum health, at most 18% per second. Healing on you is 35% lower. For: Ranger, Thief, Warrior. (Meant for level 150.)"}
 						},
 						{h = "Stats", p = {"Armor 2", "Life Leech: chance +3%, amount +3%"}},
 						{
@@ -13095,7 +13095,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Ring"},
-								{"Required level", "150"},
+								{"Meant for level", "150"},
 								{"Power works for", "Warrior, Ranger, Thief"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -13218,7 +13218,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Do not read it aloud. It will answer. Answering Voice: At 75% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 35% mana or less you deal 9% less. For: Mystic, Necromancer. (Requires level 100.)"}
+							p = {"Do not read it aloud. It will answer. Answering Voice: At 75% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 35% mana or less you deal 9% less. For: Mystic, Necromancer. (Meant for level 100.)"}
 						},
 						{h = "Stats", p = {"Defense 14", "Death Absorb +8%", "Magic Level +4"}},
 						{
@@ -13227,7 +13227,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Shield"},
-								{"Required level", "100"},
+								{"Meant for level", "100"},
 								{"Power works for", "Mystic, Necromancer"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -13588,7 +13588,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"They make no sound, and neither does the one who falls behind. Soundless Step: Against one target alone you deal +10% increased damage (at most 10 for one unique power, 40 for all). Among 3 or more monsters you deal 0% less. For: Thief, Ranger, Monk. (Requires level 100.)"}
+							p = {"They make no sound, and neither does the one who falls behind. Soundless Step: Against one target alone you deal +10% increased damage (at most 10 for one unique power, 40 for all). Among 3 or more monsters you deal 0% less. For: Thief, Ranger, Monk. (Meant for level 100.)"}
 						},
 						{h = "Stats", p = {"Armor 4", "Death Absorb +6%"}},
 						{
@@ -13597,7 +13597,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Boots"},
-								{"Required level", "100"},
+								{"Meant for level", "100"},
 								{"Power works for", "Ranger, Thief, Monk"},
 								{"Drops from", "Legendary monsters and stronger"}
 							}
@@ -13723,7 +13723,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A promise made to the grave, kept in blood. Grave Vow: Below 30% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Thief, Monk, Necromancer. (Requires level 90.)"}
+							p = {"A promise made to the grave, kept in blood. Grave Vow: Below 30% health you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Thief, Monk, Necromancer. (Meant for level 90.)"}
 						},
 						{
 							h = "Stats",
@@ -13735,7 +13735,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Ring"},
-								{"Required level", "90"},
+								{"Meant for level", "90"},
 								{"Power works for", "Thief, Monk, Necromancer"},
 								{"Drops from", "Rare monsters and stronger"}
 							}
@@ -13776,7 +13776,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"Slim, patient and well-used; its owners all died young. Widow's Patience: Each hit in a row on one target adds 6% increased damage, up to 5 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 10% less. For: Thief, Monk, Warrior. (Requires level 40.)"}
+							p = {"Slim, patient and well-used; its owners all died young. Widow's Patience: Each hit in a row on one target adds 6% increased damage, up to 5 hits, +10% increased damage (at most 10 for one unique power, 40 for all). The first hit on a new target deals 10% less. For: Thief, Monk, Warrior. (Meant for level 40.)"}
 						},
 						{h = "Stats", p = {"Attack 24", "Defense 12", "Extra Defense +2"}},
 						{
@@ -13785,7 +13785,7 @@ CodexData = {
 							w = {35, 65},
 							rows = {
 								{"Slot", "Sword"},
-								{"Required level", "40"},
+								{"Meant for level", "40"},
 								{"Power works for", "Warrior, Thief, Monk"},
 								{"Drops from", "Magic monsters and stronger"}
 							}

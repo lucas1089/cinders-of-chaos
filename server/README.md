@@ -273,6 +273,13 @@ server/
   src-patches/0090-monster-level-bonus-once.patch   engine: the monster level damage bonus once per hit, not again on the re-entry after
                                       the target's health / mana events (see "Monster level bonus once (O477, engine patch
                                       0090)"; tools/monster_bonus_once_patch_test.py)
+  src-patches/0091-fist-attack-from-script.patch   engine: Player:setFistAttack(attack, multiplier) / getFistAttack, Weapon::useFist rolls the
+                                      bare-fist hit with that attack and multiplier when a script set one (the Monk line, Open Hand Creed; the
+                                      stock hit is attack 7); the capability is the method itself (see "Flat armour, weapon spells and the Monk's
+                                      fist (O505)"; header src/chaosfist.h, tools/chaosfist_test.cpp, tools/fist_attack_patch_test.py)
+  src-patches/0092-rune-bag-in-purse.patch   engine: a player's search, count and removal by item type also look into the Rune Bag that lies in the
+                                      purse (after slots 1-10); Game.setRuneBagContainer(itemId) from pouches.lua (see "Using a rune from the
+                                      bag", O509; header src/chaosrunebag.h, tools/chaosrunebag_test.cpp, tools/rune_bag_purse_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -3752,14 +3759,14 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
 - **No lines, every class** (2026-10-23): `equipLevel` without `equipLines` writes an empty class list; that lets every
   class wear it from the level (before, an empty list let nobody). A weapon base without a stock entry gets a `hand`
   entry. The leveling and endgame uniques below use both.
-- **A base that left** (O505): a base id the block held that is no unique's any more gets its recorded stock Equip entry
+- **A base that left** (O516): a base id the block held that is no unique's any more gets its recorded stock Equip entry
   back in front of the block (slot, level, `onEquipItem`, the class list with the base class of each line shown). A
   DeEquip the block added goes with the block. See the next section.
 
-## Unique weapons and their base (O505) (`tests/unique_weapon_base_test.lua`, `chaos_jewelry.lua` `uniqueMoves`)
+## Unique weapons and their base (O516) (`tests/unique_weapon_base_test.lua`, `chaos_jewelry.lua` `uniqueMoves`)
 Found by the equip tooltip audit (O490), kind "unique copy: weapon check: class". Read from code and data, then run on an
-installed folder; not seen on a live server. After it, `audit_equip_tooltips.py` on that folder (2,159 tooltips) lists no
-item of the kind and `--check` passes; the one kind left is the 35 "unique copy: tooltip stricter: level", kept by O490.
+installed folder; not seen on a live server. After it, `audit_equip_tooltips.py` on that folder (2,182 tooltips, with
+the uniques of O510) lists no item of the kind, and no mismatch of any kind; `--check` passes.
 - **The rule of the engine.** A weapon hits through the weapons.xml entry of its item id. `Weapon::playerWeaponCheck`
   returns 0 for a class that is not on the entry's class list, and `Weapon::useWeapon` then does nothing: no hit, no
   message. No src-patch touches that check, and no Chaos script replaces the auto attack of a weapon. The equip check
@@ -3858,8 +3865,8 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
 | weapon check: level | 5 | 0 |
 | tooltip stricter: class (tooltip drops a class the server allows) | 76 | 0 |
 | unique copy: tooltip stricter: class | 3 | 0 |
-| unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 | 35, kept |
-| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding; 0 since O505 (the unique left that base: "Unique weapons and their base (O505)") |
+| unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 (58 once the audit read every unique) | 0 (2026-11-11, O510) |
+| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding; 0 since O516 (the unique left that base: "Unique weapons and their base (O516)") |
 
   Shapes (one example each): a wand, rod, robe or hood for the Mystic + Illusionist line or the Mystic + Elementalist line
   read "Mystic, Necromancer" (the Elementalist or the Illusionist was refused after a yes; 126 Equip entries and 127
@@ -3869,17 +3876,127 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
   "all classes", the Equip entry asks the Ranger and Thief lines); a stock wand that lists only the vocation None read
   "nones" and is now "no class".
 - **Not told by the tooltip** (and why): the weapon check's penalty (the level or class is shown, not that a wrong class
-  hits for nothing); the unique level of 35 older uniques (the tooltip shows the level the unique is meant for, the server
-  asks none: the unique's own description says the same); slot rules (two-handed against shield, the quiver beside a bow,
+  hits for nothing); a unique's own level (no longer shown as a requirement, see "A level the server does not ask"
+  below, O510); slot rules (two-handed against shield, the quiver beside a bow,
   one might ring at a time, the badge slot, a Ninja's off-hand sword, a Monk's fist weapons: engine patches 0002, 0023, 0058,
   0087; the tooltip names the slot and the quiver note only); the scripts of 308 Equip entries (boats, badges, decks, special
   skills: base scripts, not read here); the base's `Player:onMoveItem` rules. The engine's own look line ("It can only be
   wielded properly by ...") is unchanged and still shows the engine's item type: the shown vocations only, and the level of
   the entry read last. The Unity tooltip reads the same `req` field from the server and needs no change.
+- **A level the server does not ask (O510, 2026-11-11).** The coordinator told the owner that the level chip of 35 older
+  uniques lied: it showed the unique's own level and the server asked none. The recommendation was to take the chip off so
+  the tooltip shows only what the server asks, and nobody loses an item. The owner: "Yes." No equip rule of the server
+  changed. Nobody loses the use of an item.
+  - *The rule.* `req.level` of a unique copy is the level the server asks: the item's rule (the generated rules table, else
+    the engine's item type), or the level of the spec's own `equip` rule when it has one (the higher of the two). The
+    unique's own level (`ChaosUniqueItems[].level`) is no requirement. It keeps its real uses: when the unique drops (O342),
+    its power, the Codex, the wiki, sorting. The tooltip has no row for it and gets none. The client draws `tip.level` as
+    "Item Level N" (the level that rolls tiers), a different thing that `ChaosMakeUnique` does not set, so it is not used for
+    this. The one place that names the level is the description: "(Meant for level N.)".
+  - *Why these differ.* 74 of the 178 uniques have `equipLevel` / `equipLines` in `chaos_items.xml` (the second round of
+    2026-10-13, the leveling and endgame uniques): their own rule, held by `chaos_unique_equip.lua`, and its level is the
+    unique's level. The other 104 are older. Their level was text and a drop level only (`data/items/README.md`, "Level
+    requirements are text only"): the server asks what the stock base item asks. For 46 of them that is the same level or
+    more, so the text is right and stays. For 58 it is less, or nothing, and the tooltip raised the chip to the unique's
+    level. The audit found 35 of the 58, because it built tooltips only for ids that have an Equip or weapon entry. 23 more
+    base items have no rule at all, so it never read their copy. It reads every unique now (`uniqueRow` in
+    `audit_equip_tooltips.lua`), and the same audit with the old tooltip code counts 58.
+  - *The 58* (`data/items/unique_level_not_asked.csv`, read from the rules of the local test server's installed files of
+    2026-11-11 with the audit's own reader; "showed" is the chip before, "shows now" the rule's level, the weapon check
+    included as for a plain copy; "audit" says if the first audit had them):
+
+  | id | unique | slot | showed | the server asks | shows now | audit |
+  |---|---|---|---|---|---|---|
+  | 2123 | Cinderheart Signet | ring | 1000 | nothing | no level | new |
+  | 2129 | Hollowpack Fang Chain (hollowpack) | necklace | 250 | nothing | no level | new |
+  | 2171 | Eye of the Unbroken Storm | necklace | 1000 | nothing | no level | new |
+  | 2408 | Sanguine Crescent | sword | 1000 | weapon check 120, no refusal | 120 | 35 |
+  | 2412 | Nightfang Katana | sword | 60 | nothing | no level | new |
+  | 2440 | Executioner's Reckoning | axe | 80 | weapon check 25, no refusal | 25 | 35 |
+  | 2466 | Aetherbound Plate | body | 120 | nothing | no level | 35 |
+  | 2493 | Hollow Crown of Morvane | head | 1000 | nothing | no level | new |
+  | 2496 | Hornsworn Helm (embers) | head | 70 | nothing | no level | new |
+  | 2500 | Thornwake Jerkin (thornwake) | body | 150 | Equip 60 | 60 | 35 |
+  | 3961 | Lichfang Staff | club | 70 | weapon check 40, no refusal | 40 | 35 |
+  | 3972 | Bonelord's Gaze | head | 60 | nothing | no level | new |
+  | 3975 | Emberwarden (embers) | shield | 90 | nothing | no level | new |
+  | 7379 | Bonegrinder | club | 90 | weapon check 25, no refusal | 25 | 35 |
+  | 7404 | Duskstalker Fang (duskstalker) | weapon | 300 | weapon check 40, no refusal | 40 | 35 |
+  | 7418 | Duskstalker Sting (duskstalker) | weapon | 300 | weapon check 70, no refusal | 70 | 35 |
+  | 7462 | Crown of Cinders | head | 100 | nothing | no level | new |
+  | 7894 | Cinderstorm Kilt (cinderstorm) | legs | 400 | Equip 40 | 40 | 35 |
+  | 7899 | Cinderstorm Mantle (cinderstorm) | body | 400 | Equip 50 | 50 | 35 |
+  | 8209 | Soulreaper | sword | 120 | nothing | no level | new |
+  | 8849 | Gallowsbolt Crossbow | distance | 60 | weapon check 45, no refusal | 45 | 35 |
+  | 8881 | Pyreheart Mantle | body | 150 | Equip 100 | 100 | 35 |
+  | 8892 | Cindermail Coat (embers) | body | 80 | nothing | no level | 35 |
+  | 10296 | Pall of Skulls | body | 60 | nothing | no level | new |
+  | 10301 | Harvester of Sorrows | axe | 100 | nothing | no level | new |
+  | 10318 | Obsidian Aegis | shield | 110 | nothing | no level | new |
+  | 10510 | Widow's Last Vow | ring | 90 | nothing | no level | new |
+  | 11301 | Duskstalker Jerkin (duskstalker) | body | 300 | Equip 50 | 50 | 35 |
+  | 11304 | Duskstalker Breeches (duskstalker) | legs | 300 | nothing | no level | 35 |
+  | 11374 | Carrion Scarab Amulet | necklace | 50 | nothing | no level | 35 |
+  | 11395 | Bloodmoon Edge | sword | 90 | nothing | no level | new |
+  | 11426 | Gorecleaver | sword | 70 | nothing | no level | new |
+  | 13760 | Riftcaller | wand | 80 | weapon check 37, no refusal | 37 | 35 |
+  | 15407 | Gallows Coat (gallows) | body | 600 | Equip 150 | 150 | 35 |
+  | 19390 | Hellspear of the Damned | distance | 50 | nothing | no level | new |
+  | 21693 | Hornbinder Ring | ring | 60 | nothing | no level | new |
+  | 22474 | Tome of Whispers | shield | 100 | nothing | no level | new |
+  | 22690 | Widowmaker | sword | 40 | nothing | no level | new |
+  | 23590 | Gorehammer | club | 100 | Equip 70 | 70 | 35 |
+  | 24637 | Cinderstorm Sandals (cinderstorm) | feet | 400 | Equip 80 | 80 | 35 |
+  | 24718 | Hollowpack Mask (hollowpack) | head | 250 | nothing | no level | 35 |
+  | 24741 | Hollowpack Hide (hollowpack) | body | 250 | Equip 50 | 50 | 35 |
+  | 24790 | Fangs of the Ninth Circle | necklace | 120 | nothing | no level | new |
+  | 24851 | Tear of the Void | necklace | 100 | Equip 60 | 60 | 35 |
+  | 25175 | Bloodsworn Hauberk (bloodsworn) | body | 300 | Equip 200 | 200 | 35 |
+  | 25410 | Bloodsworn Visage (bloodsworn) | head | 300 | nothing | no level | new |
+  | 26133 | Voidwalker Boots | feet | 100 | nothing | no level | new |
+  | 26808 | Hollowpack Bond (hollowpack) | ring | 250 | nothing | no level | 35 |
+  | 27249 | Duskstalker Tabi (duskstalker) | feet | 300 | Equip 220 | 220 | 35 |
+  | 27658 | Bloodsworn Greataxe (bloodsworn) | weapon | 300 | Equip 250, weapon check 250 | 250 | 35 |
+  | 27666 | Cinderstorm Wand (cinderstorm) | weapon | 400 | Equip 250, weapon check 250 | 250 | 35 |
+  | 28114 | Gallows Leggings (gallows) | legs | 600 | Equip 300 | 300 | 35 |
+  | 28691 | Thornwake Loop (thornwake) | ring | 150 | Equip 100 | 100 | 35 |
+  | 29470 | Gallows Hood (gallows) | head | 600 | Equip 220 | 220 | 35 |
+  | 29471 | Cinderstorm Crown (cinderstorm) | head | 400 | Equip 300 | 300 | 35 |
+  | 41640 | Ring of the Last Ember | ring | 70 | nothing | no level | 35 |
+  | 41641 | Heart of Cinders | necklace | 80 | nothing | no level | 35 |
+  | 41642 | Heartbleed Pendant | necklace | 90 | nothing | no level | 35 |
+
+  - *Texts.* `tools/gen_unique_specs.py` reads the csv. For these ids it writes "(Meant for level N.)" in the place of
+    "(Requires level N.)" in the spec (`chaos_unique_specs.lua`), in `chaos_unique_desc_pt.lua` and in the pt-BR Codex block of
+    `pt_br.lua`: en "(Meant for level 70.)", pt-BR "(Feito para o nível 70.)". The spec gets `levelNotAsked = true`. The
+    source `chaos_items.xml` and `unique_flavor_pt.tsv` keep "(Requires level N.)" / "(Requer nível %s.)": the price, growth
+    and level tools read the source. The generator stops when an id of the csv has no such sentence or has a rule of its own.
+    The Codex row "Required level" of these ids reads "Meant for level" (pt-BR "Feito para o nível", `gen_codex_data.lua`);
+    the wiki and the Unity Codex follow from it. The Codex headline "Club, level 70." and the filter stay: they state the level
+    as the unique's. The Sets tab rule "a piece counts when ... you have its level" stays: it is the set bonus rule
+    (`chaos_item_sets.lua`), not a rule to wear the piece. `T.refreshPassive` cuts the passive line at either sentence, and
+    `K.specLevel` (Conquest vendor) reads either.
+  - *A copy dropped before.* The item carries the old description as an attribute ("(Requires level 70.)"). The rich tooltip
+    reads the description from the spec at look time (`item_tooltip_core.lua`), so an old copy shows the new text and no level
+    chip with no code of its own. The engine's look line reads the stored text: in pt-BR the old text is a key of
+    `ChaosUniqueDescPt` too (58 more rows) and reads the new pt-BR text. In English the look line of an old copy still says
+    "(Requires level 70.)" until the item is made again. Rewriting stored descriptions is not done here (a decision for the owner).
+  - *The audit.* `unique copy: tooltip stricter: level` is 0 on the installed files and now also fails `--check`
+    (`FAIL_LABELS`), the one lesser kind that does. The kinds of the other rows stay a list. `audit_equip_tooltips_test.py`
+    pins it with a tooltip that shows the old level.
+  - *Display scale.* `DS.itemTip` scales the flat rows of a tooltip by the factor of `req.level`. The curve is off (x1 at
+    every level, `display_scale_config.lua`), so nothing changes. If it is turned on again, the 58 get factor 1 where they
+    had the factor of their level.
 - Tests: `tests/item_tooltip_test.lua` (the reading, the rule table, the texts, the cut; the O489 test now expects
   "Ranger, Deadeye, Beastmaster, Thief only" for a stock Thief without a Ninja or Samurai, because a base class alone reads as its whole line),
   `tools/audit_equip_tooltips_test.py` (the reading, the rules, every kind, the install step: dry run, idempotent, stale
   file, the two read orders).
+  O510: `tests/item_tooltip_test.lua` (a unique copy shows no level the server does not ask, its own rule's level, every
+  unique of the catalogue), `tests/unique_level_note_test.lua` (the csv, the spec flag, en and pt-BR texts, old copies, the
+  Codex rows), the audit test (the old level is found and fails `--check`, a unique with no rule is read).
+  The O490 tests that pinned the shown level were updated to the new rule: `item_tooltip_test.lua` "the unique's level" and
+  "a unique copy: its own level" (Hornsworn Helm, level 70, no rule of its own: no chip now) and
+  `audit_equip_tooltips_test.py` "a unique copy shows its own level" (it expected the kind, it now expects none).
 
 ## Leveling and endgame uniques (`chaos_items.xml` `mods`, `chaos_unique_items.lua`, 2026-10-23)
 Before this the uniques stopped at level 1000 with flat stats, and the first one dropped at level 40.
@@ -4231,7 +4348,7 @@ by the vocation's); a server restart after `install_all.py` loads the new vocati
   legendary power, from waystone kills). Bands: 1-9 the shop dagger (2379), 10-27 and 28-599 the two leveling daggers and the stock
   daggers (wyvern fang 7408 from level 25, assassin dagger 7404 from 40), 300 the Duskstalker Fang, 600+ the Thief-only ones up
   to 2400+. The drownkin ceremonial dagger (27193) is no dagger: it is a caster wand, and the Misericorde left it for the wyvern
-  fang (7408) in O505 ("Unique weapons and their base (O505)"). Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
+  fang (7408) in O516 ("Unique weapons and their base (O516)"). Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
   `weapon_sim.py --power --check` passes) scale it as every melee weapon. Only the level 600+ ones are Thief-line only. Drop pool,
   codex, wiki and tooltip come from the same files as every unique (`gen_unique_specs.py`, `gen_codex_data.lua`,
   `gen_wiki_data.lua`); uniques have no NPC price (`gen_item_prices.py --check`).
@@ -4594,12 +4711,12 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 - Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
 
 ### Infinity Tower: two clocks, shown and named (O484)
-The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `bossFloorTimeMult`: 600 s). The whole run has `runTimeLimit` (3600 s; 0 = no run limit). Either one ending ends the whole run: everyone goes back where they entered and the cleared floors are recorded (`endRun`). A death only takes that player out; the run ends when the last one is out. Owner 2026-11-11: the panel showed "Floor time left 3:16" while the chat said the tower ends in 1 minute: that was the run clock, which the panel never showed. The limit itself is unchanged (60 minutes; whether to raise or drop it is an open owner decision).
+The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `bossFloorTimeMult`: 600 s). The whole run has `runTimeLimit` (7200 s; 0 = no run limit). Either one ending ends the whole run: everyone goes back where they entered and the cleared floors are recorded (`endRun`). A death only takes that player out; the run ends when the last one is out. Owner 2026-11-11: the panel showed "Floor time left 3:16" while the chat said the tower ends in 1 minute: that was the run clock, which the panel never showed. The limit itself was 60 minutes then; O507 (owner 2026-11-11, "do the recommended") raised it to 120 minutes.
 - **State.** Every `{"action":"state"}` push (opcode 214) carries `runLeft`, the seconds left of the whole run when it was sent, whenever a run limit exists (also in the start delay and the pause between floors, where `floorLeft` is absent). It is absent with `runTimeLimit = 0` and outside a run. The client counts down from the moment it got the state, as for `floorLeft`.
 - **Panel.** A line under the floor's: en "Run time left: %s", pt-BR "Tempo da corrida: %s". It turns red (`#ff4030`, the red of the rift clock) at 300 s or less. Format m:ss, h:mm:ss from an hour. Hidden without `runLeft`. The panel is 124 px high (was 108).
 - **Warnings.** `ChaosInstanceLimits.warn` takes an optional `limits.sentence(player, lang, mark, leftText, name)` returning the text, the toast title and the toast text; no hook, the shared sentence, byte for byte. The tower uses it: run (marks 300, 60, 10): "Infinity Tower: the whole run ends in 1 minute (60 minute limit). Everyone inside leaves then." (limit from `runTimeLimit`; `K.wholeRunText`); floor (marks 60, 10): "Floor 57: 1 minute left to clear it." (`K.floorLeftText`). Toasts: "Whole run: 1 minute left" and the floor's number as title.
-- **Start.** One line at entry, with a run limit only: "This run lasts at most 60 minutes."
-- **Pace.** 60 minutes is 3600 s: 30 floors at the two minutes a floor that the config comment assumes, 60 floors at one a minute. A level 800 character reaches about floor 34 and a level 1000 character about 44 (`tools/tower_model.py`), so the run limit can end a deep run.
+- **Start.** One line at entry, with a run limit only: "This run lasts at most 120 minutes."
+- **Pace.** 120 minutes is 7200 s (O507; 60 minutes before): 60 floors at the two minutes a floor that the config comment assumes, 120 floors at one a minute. A level 800 character reaches about floor 34 and a level 1000 character about 44 (`tools/tower_model.py`); a run was thrown out at floor 57 by the 60 minute limit while still winning. The model does not read the run limit.
 - Tests: `tests/infinitytower_run_test.lua` (state field, start line, the warnings in English, no limit), `tests/tower_clock_text_test.lua` (the sentences in both languages, the hook, the shared sentence unchanged), client `towerskip_test.lua`. The Unity tower panel is not changed and shows the floor time only.
 
 ## Infinity Tower: leaving a run
@@ -5063,6 +5180,34 @@ If the VPS runs a map master (`data/world/<map>.otbm.master.json` exists, "Map m
 - **Trim.** Waystone maps over 296 s of full sweep lose dead-end lobes behind a neck of 10 tiles or less (no boss lever or entrance in them, at most 40 monsters), largest first, all or nothing. Map 9 had four (38 neck tiles get a stone wall, `waystone_trim.json`, step `waystonetrim` after `huntannexes`); map 12 is open land whose dead ends hold 1,108 of the 5,110 tiles that would have to go, so it stays whole (392 s, `big` in the known list). The lobes' stock monsters are in `remove`; the ones another step added (`chaosadd`) and the ones `spawn_tuning.json` copies or moves stay.
 - **Thin.** Gloom Pillars (149 monsters on 1454 tiles) loses 71 stock entries, each time the one whose ground other monsters cover (no tile uncovered), never a `late_game_spawns.csv` row: 78 monsters, 5.4 per 100, the same 1454 tiles.
 - `audit_hunts.py` skips XML comments now (the entries `chaosremoved` and the blocks `chaosemptied` are not on the map); `gen_spawn_density.py` ignores the `X` blocks like its own `F` ones. Tests: `tools/gen_spawn_expand_test.py` (CI), `tools/patch_waystone_trim_test.py` (CI), `tests/base_spawns_patch_test.lua` (a list of fill files, a `remove` list).
+
+## Map tile audit (O511) (`tools/audit_map_tiles.py`, `tools/map_tile_rules.py`, `tools/audit_map_plans.py`, `tools/map_tile_audit_known.csv`)
+
+Owner 2026-11-12, translated: build our own versions of the ideas seen in three map editors, all of them. This is the whole-map tile lint. It reads the map and lists tiles that break a structure rule. It is read only and never writes the map. All rules, sources and numbers are our own, from our own tables.
+
+- **Codes.** One line each: `CODE x,y,z ids=A[,B] fix=CLASS`. `NO_GROUND` (items, none of them a ground; fix `add-ground`), `GROUND_NOT_FIRST` (a ground not in the first slot, or a second ground; `reorder`), `DUP_ITEM` (the same id twice where that is never normal: border pieces, walls, doors, tops, floor changes, teleports; stackables, grounds and decoration are not looked at; `remove-dup`), `UNKNOWN_ID` (not in `items.otb`; `replace-id`), `ORPHAN_BORDER` (`fix-border`), `WALL_MISMATCH` (`fix-wall`), `BLOCKED_DOOR` (no walkable tile on any side of a door; `open-door`), `BLOCKED_ON_SPECIAL` (a blocking item shares the tile of a door or a teleport; `clear-tile`), `BLOCKED_TELEPORT` (the destination is no tile, or one nobody can stand on; `retarget`), `ROOF_NO_SUPPORT` (`support-or-remove-roof`), `TOO_MANY_ITEMS` (`thin`). `BLOCKED_ON_SPECIAL` is the one code beyond the first list. It is the rule the area planner's QA shares, see below.
+- **Our tables, not invented ones.** `ORPHAN_BORDER` reads the 12 piece sets of `areagen_config.lua`: `pieces`, `borders` for the higher family each set belongs to, `families` for its ground ids. The dark tile set names come from `data/lib/chaos_dark_tiles.lua`. A piece lies on the lower ground and names the side where the higher ground lies: `n`, `cnw`, `dnw` and so on, as `derive_borders.py edges` measured. It is an orphan when none of the neighbours it names carries a ground of that higher family. The ground ids of the family are widened by name with `ItemDB.ground_family()`, so another variant of the same ground counts. `WALL_MISMATCH` reads the `walls` brushes `ruin` and `darkstone`. The first wall piece of a tile gives its type. The 4 neighbours that carry a piece of the same brush give the type `A.wallPiece` wants. A difference is a finding. The reader of the Lua table literals is held to LuaJIT: its reading of `families`, `borders`, `pieces` and `walls` is byte for byte a LuaJIT dump. `map_tile_rules.py` holds ports of `A.borderPieces` and `A.wallPiece`. The test runs the Lua originals (luajit, else lua5.3) and compares all 256 border patterns and all 16 wall patterns.
+- **Other rules.** `BLOCKED_DOOR`: a door is an item of otb group 13 or of items.xml type door. The door is judged by its four neighbours. None walkable means neither side of the passing axis can be entered. Walkable: the first item is a ground that does not block, and no other item blocks. A door is no blocker. `BLOCKED_TELEPORT`: the destinations come from `otbm.teleports`. `ROOF_NO_SUPPORT`: a roof is an item whose items.xml name has the word roof, or one of the ids `patch_hunt_roofs.py` lays. It is looked at on floor 7 and above. It has support when the tile under it is walkable ground or holds a built item, which is anything but a ground. `TOO_MANY_ITEMS`: more than 12.
+- **Limits.** Constants at the top of the tool: `MAX_ITEMS` 12 (`--max-items N`), `DUP_CLASSES`, `DUP_GROUPS`, `DUP_OK_IDS` (empty: add an id where a pair is meant), `ROOF_NAME`, `ROOF_MAX_Z`.
+- **Run.** `python3 -I server/tools/audit_map_tiles.py SERVER_DIR [--box x1,y1,x2,y2] [--floor Z] [--csv OUT] [--known FILE] [--check] [--summary] [--limit N]`, or `--map FILE --items items.otb [--xml items.xml]`. On the VPS: `python3 -I /opt/chaos/repo/server/tools/audit_map_tiles.py /opt/chaos/server --summary`. The admin app has no button for it, as for the hunt audit: it runs for minutes, holds gigabytes, and is a review tool the owner does not run often. `chaos-ctl.sh` has no pattern for an audit to follow. `launch-check` is a seconds-long read of the install, not a map reader. So no button and no `map-audit` command were invented. `--known` (default `tools/map_tile_audit_known.csv`, columns `code,x,y,z,reason`, starts empty) lists findings that were looked at and left. `--check` exits 1 for a finding that is not in it. A listed entry that is gone is printed and does not fail. `--box` and `--floor` limit what is reported. The neighbours of an edge tile are still read.
+- **Memory and time.** The map is read with `tools/map/otbm.py` into arrays and every code is found with whole-array maths. Only doors, teleports and printed lines are looked at one by one. Measured on synthetic maps of random ground and decoration: 1,048,576 tiles (13 MB file) peak 305 MB and 1.1 s. 4,194,304 tiles (53.6 MB file) peak 1,075 MB and 4.7 s. All of the peak is `otbm.load_otbm`, the audit adds nothing above it. It is about 20 bytes of memory per byte of file. The live map (18.2 M tiles, about 200 MB) therefore needs about 4 GB and 20 seconds, the same as `audit_hunts.py`. Not measured on the live map.
+- **Planner QA (O511 part 2).** `area_plan_compile.py` calls `map_tile_rules.no_ground_below` and `map_tile_rules.blocking_on_special` in `tile_rule_errors`. These are the functions `audit_map_tiles.py` uses too, one copy. The rules: an item with no ground below it (an empty ground slot, or a non-ground in it), and a blocking item, or a tile nobody can walk on, where a teleport lies. Both are ERRORs. All 80 plans pass, so the legacy list of `shape_rules.json` was not needed. The compile writes the same bytes: the OTBM, spawn files and manifests of all 80 plans have the same md5 before and after.
+- **Run over the planned areas.** `python3 -I server/tools/audit_map_plans.py [--check]` compiles every plan of `tools/areaplan/plans` in memory, writes the area with its view frame as one OTBM in a temporary folder and runs the audit. The base `items.otb` is not in git, so the item database comes from the generator's own tables. The ground slot is a ground, `pieces` are borders, `walls` and the blocking groups of the decoration kits and themes block, the portal is a teleport, the kit roof ground is a roof. So `UNKNOWN_ID` cannot fire there, and the blocking flags are the generator's belief. Result 2026-11-12: 76 plans audited, 0 findings in any code. 4 plans are imports of real map chunks and are not compiled by the planner. On a sample of 9 plans the run looked at 15,968 border pieces, 3,680 wall pieces and 9 portals. So there is no generator bug to fix and no rule to loosen. The other plan folders (`chronicle`, `rooms`, `annexes`, `events`, `inbox`) were not run.
+- **Not verified.** Nothing ran on the live map or its `items.otb`. `WALL_MISMATCH` and `ORPHAN_BORDER` are our generator's rules. `A.wallPiece` was measured on the live map for stone and ruin walls, and the winning piece has a share under 100 %, so stock walls that do not follow it will be listed. Expect many `WALL_MISMATCH` and some `ORPHAN_BORDER` on the live map. Put the ones that are meant in the known list, or tune the rule after the first run. `DUP_ITEM`, `ROOF_NO_SUPPORT` and the roof name rule are first guesses at what is wrong on a map of mixed origin.
+- **Tests.** `tools/audit_map_tiles_test.py`: the shared rules, the two Lua ports against the Lua originals, the table reader, a synthetic map with exactly one fault per code and a clean area that stays silent, `--box`, `--floor`, `--summary`, `--csv`, `--known`, `--check` exit codes, refusals, `SERVER_DIR` by `config.lua`, the map file never written. `tools/area_planner_test.py`: the planner's two rules on synthetic tiles. Both run in CI (`checks` job), with `audit_map_plans.py --check`.
+
+## House audit (O513) (`tools/audit_houses.py`, `tools/house_audit_known.csv`)
+
+Owner 2026-11-12, translated: build our own versions of the map editor ideas, all of them. This reads `houses.xml` and the map and lists the houses that break a rule. The live map has about 1,057 houses of mixed origin, so it is report only. There is no fixer, and `docs/MAP_GUIDE.md` keeps houses out of every tool that edits the map.
+
+- **Codes, per house id.** `MULTI_FLOOR`: tiles on more than `--max-floors` floors, default 1. Every house with an upper floor is listed. The guide counts 77 % of live houses on one floor, 10 % on two, the big ones on 3-5, so `--max-floors 2` or `5` lists the odd ones. `NO_DOOR`: no door item on a house tile that has a side which is not the house. `DOOR_UNREACHABLE`: doors on the edge, none with a walkable tile of house id 0 next to it. `ENTRY_BLOCKED`: the entry of `houses.xml` is no tile or a tile nobody can stand on, also a house on the map with no row in the file. `HOUSE_FLAGS`: the tiles of one house disagree on the protection zone flag, or a house tile carries the PvP zone flag. `SIZE`: outside 13-180 tiles, a house with no tile too. `ROOF_SHARE`: under 97 % of the house tiles on floors 1-7 have a tile on the floor above.
+- **Numbers.** From `docs/MAP_GUIDE.md` "Towns": house size median 40-60, p25 25, p75 80-90, roofs on 97-100 % of the tiles. `HOUSE_MIN_TILES` is half of p25 (13). `HOUSE_MAX_TILES` is twice the top of p75 (180). `ROOF_MIN_SHARE` is the low end of the roof band (0.97). Constants at the top of the tool.
+- **Where the data is.** The house tiles are the OTBM house nodes (`otbm.py` `house`, the tile's house id). The house file is found as `patch_base_houses.py` finds it: `data/world/<mapName>-house.xml`, else the only `*-house.xml`. Doors, walkability and roofs are the rules of `audit_map_tiles.py`, the same `World`.
+- **Reading of the flags, a decision to confirm.** The engine makes every house tile a protection zone when it loads the house, so the file need not set it. The audit therefore does not ask for the flag. It asks that the house is consistent, all of its tiles or none, and that no house tile is a PvP zone. The old house bit 2 of the tile flags is not read.
+- **Reading of the door rule.** `DOOR_UNREACHABLE` is one step: a door needs a walkable tile outside the house next to it. A walk from further away is not searched.
+- **Run.** `python3 -I server/tools/audit_houses.py SERVER_DIR [--houses FILE] [--known FILE] [--check] [--summary] [--csv OUT] [--limit N] [--max-floors N]`, or `--map`, `--items`, `--xml` and `--houses`. On the VPS: `python3 -I /opt/chaos/repo/server/tools/audit_houses.py /opt/chaos/server --summary --max-floors 2`. No admin app button, for the reason given under "Map tile audit (O511)". `--known` (default `tools/house_audit_known.csv`, columns `house,code,reason`, starts empty): `--check` exits 1 for a finding that is not listed, a listed one that is gone is printed only. Memory and time as the tile audit.
+- **Not verified.** Not run on the live map. The size and roof limits and the flag reading are first numbers. The first run will show how many houses of the base map break them.
+- **Tests.** `tools/audit_houses_test.py`: a synthetic map and `houses.xml` with eight houses, one clean and one for each of the seven codes with exactly that fault, `--max-floors`, `--summary`, `--csv`, `--known`, `--check`, refusals, `SERVER_DIR`, nothing written. In CI (`checks` job).
 
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
@@ -6341,20 +6486,78 @@ autoloot list is needed.
     prices). "Find my item" (`stash.lua` `S.find`, `itemsearch_core.lua`) walks any container to `maxDepth`, so a rune inside the
     bag, in the backpack or the purse, is found and the way to it opened. The loadouts' parked runes (storage 7112000-7127999) are
     untouched.
-  - **Using a rune from the bag** (read in the engine, `chain/src`). The server finds an item by TYPE for a hotkey, the action bar
-    and the helper's rune use (`g_game.useInventoryItem(With)` sends an inventory position `{0xFFFF, 0, 0}`):
-    `Game::internalGetThing` (game.cpp, the `pos.y == 0 && pos.z == 0` branch) calls `findItemOfClientId` (src-patch 0043) and
-    `Game::findItemOfType` (game.cpp, `depthSearch = true`) on the player: `Player::getFirstIndex` / `getLastIndex` (player.cpp:
-    `CONST_SLOT_FIRST` .. `CONST_SLOT_LAST`, slots 1-10) and every container below them, breadth first, **no depth limit**, closed
-    or open. So a magic rune in a Rune Bag **in the backpack (or in a bag in it) is found**. The purse is the store inbox, slot
-    `CONST_SLOT_STORE_INBOX`, outside slots 1-10: a rune in a Rune Bag **in the purse is not found** by the hotkey, the action bar or
-    the helper (the same holds for any item in the purse). So the bag may stay in the purse (it collects there, `PO.carried`), but
-    the description and the store text say to keep it in the backpack to use its magic runes by hotkey. The helper counts a rune
-    by `player:getInventoryCount` (open containers only) and falls back to its probe gate for a rune in a closed bag
-    (`helper.lua` `runeReady`), the same as a rune in a closed sub-bag of the backpack today. The server side counts of a support
-    rune (`player:getItemCount` / `removeItem`, `player.cpp` `getItemTypeCount`, slots 1-10 and below) see a rune in the bag in the
-    backpack; socketing, Remove, Shatter and the combine of three runes work from it; a stack in the Rune Bag in the purse
-    combines through `ChaosCombine.placeOf` ("box": the purse), as any stack there.
+  - **Using a rune from the bag** (O509, owner 2026-11-11: "The rune bag stays in the purse."; engine src-patch 0092; read in the
+    engine, `chain/src`). The rule: **a magic rune in the Rune Bag in the purse is used by a hotkey (use on target, on yourself, with
+    crosshair), the action bar and the helper exactly as if it were in the backpack.** Before O509 it was not: the server finds an
+    item by TYPE for these (`g_game.useInventoryItem(With)` sends an inventory position `{0xFFFF, 0, 0}`, `Game::internalGetThing`,
+    the `pos.y == 0 && pos.z == 0` branch, then `findItemOfClientId` of src-patch 0043 and `Game::findItemOfType`), and every walk
+    started at inventory slots 1-10 (`Player::getFirstIndex` / `getLastIndex`) and went down into their containers, breadth first,
+    closed or open. The purse is the store inbox, `CONST_SLOT_STORE_INBOX` (11), outside slots 1-10.
+  - **Way: engine patch (B) with a client count (C), no Lua-only way (A).** Checked and ruled out: the Lua API has no call that
+    fires a use (no `Player:useItem`; a rune use is `Actions` / `RuneSpell` inside the engine), so a client request through an
+    extended opcode could only re-implement the rune rules (cooldowns, exhaust, protection zone, target rules, charges, level and
+    magic level) in Lua. That is the way the coordinator forbade. Moving the rune into the backpack for the use would risk a dupe
+    or a lost rune. Opening the purse's bag in the client to use the rune by container position needs the bag open all the time.
+  - **Patch `src-patches/0092-rune-bag-in-purse.patch`** (applied after 0091, the fist attack of O505; the two touch different
+    hunks). New header `src/chaosrunebag.h`: one rule, pure templates, the items
+    DIRECTLY inside a container of the Rune Bag type that lies DIRECTLY in the store inbox; nothing else of the purse is visited
+    (not a loose item, not a Loot Bag or another pouch, not a bag inside the Rune Bag, not a Rune Bag inside a bag in the purse).
+    The type comes from Lua: `Game.setRuneBagContainer(itemId)` (`pouches.lua` `PO.registerRuneBag`, at load and at every login,
+    the id of `kinds.runes` in `pouches_config.lua`; no id in C++; 0 or never called = the old behaviour). It walks in
+    `Game::findItemOfType` (a player, `depthSearch`, **after** slots 1-10 and the bags in them), `Player::getItemTypeCount`,
+    `countRemovableItemsOfType` (so `removeItemOfType`, the NPC sell checks and `player:getItemCount` / `removeItem`),
+    `getAllUnlockedItemTypeCount` (the NPC sale list) and `getAllItemTypeCount`. One walk counts and removes, so a count and a
+    removal agree; a locked item is skipped as everywhere. **Order: the backpack first, the purse last.** Why: a rune the player
+    keeps in the backpack is the one they put there on purpose (a loadout, a hand move), the purse bag is the collect target and
+    the stock, and the old behaviour stays the same for everyone who carries runes there. Within the purse, bag order.
+  - **The capability.** `Game.setRuneBagContainer` existing is the capability the Lua tests (`ChaosPouches.runeBagEngine()`,
+    set by a successful register). It is false on an engine built before 0092.
+  - **Every path for the 136 rune ids, on the old and on the new binary.**
+    - *Hotkey, action bar, helper use* (`internalGetThing` -> `findItemOfType`): old: a rune only in the purse bag gives "Sorry, not
+      possible." (the thing is nil, nothing is used, nothing is lost); new: found, used, removed from the bag by the rune's own
+      script. The hotkey's "Using one of N" line counts through `getItemTypeCount`: old counts 0 for a purse-only rune (never reached),
+      new counts the bag too.
+    - *Support runes, `ChaosSupports`* (`runesOf` lists by `player:getItemCount`, `S.socket` checks `getItemCount` and takes with
+      `removeItem`, Remove / Shatter take orbs, not runes; `S.unsocket` gives a rune back into the backpack): old: a support rune in
+      the purse bag is not listed and cannot be socketed; new: listed and socketed, taken from the bag.
+    - *The combine of three runes* (`ChaosCombine.take`, `placeOf`): old: a stack in the purse bag is "box" and taken by hand
+      (`item:remove`), unchanged; new: a stack directly in the Rune Bag in the purse is "carried" (counted once by the engine, taken by
+      `removeItem`, the clicked stack not taken by hand as well: counting it as both would count it twice). `ChaosCombine.runeBagId` /
+      `runeBagEngine` are set by `pouches.lua` only when the engine has the patch. A stack loose in the purse, in a plain bag in the
+      purse, a Rune Bag inside a bag in the purse, or in the depot stays "box".
+    - *Vendors that take runes* (the NPC sale list, `countRemovableItemsOfType`, `player:removeItem` in the NPC scripts): old: runes
+      in the purse bag are not offered; new: they are offered, counted and taken like runes in a Rune Bag in the backpack (a player
+      who presses "Sell all" for a rune sells it from wherever it is; the Auto Seller never walks the Rune Bag, `PO.neverSell`).
+    - *Rune supply* (`data/lib/chaos_rune_supply.lua`): vendors sell runes into the backpack and the crafting recipes take the
+      unscribed rune (2260) and a herb and an ore, never a rune of the bag: no change, nothing to do.
+    - *`player:getItemById(id, true)`* (`luaPlayerGetItemById`, `findItemOfType`): old: not found in the purse bag; new: found, after the
+      backpack. No Chaos script calls it for a rune id (searched with `git grep getItemById` over `data/`).
+    - *Find my item* (`stash.lua` `S.find`, `itemsearch_core.lua`): walks any container to `maxDepth`: found in the purse before and after.
+    - *Salvage, orbs, gems, potions*: not runes, not in the bag, not touched (the walk only reaches the Rune Bag's direct items).
+  - **The client count (point 2).** `LocalPlayer:getInventoryCount` (C++, `localplayer.cpp`) counts the equipped items and the OPEN
+    containers only, so a rune in any closed bag, and in the purse's bag, counted 0 on the action bar and in the helper. The action
+    bar greys a slot only with the packed inventory feature (`hasPackedInventorySnapshot`), which a 10.98 server does not have, so a
+    rune slot is never greyed out here. `game_pouches` (`runebagcount.lua`, `pouches.lua`) polls the pouches opcode 226 with action
+    `runebag` every `poll` seconds (2 with a Rune Bag in the purse and the engine patch, else 15; the server rate limit is 400 ms) and
+    the server answers `{engine, counts = {[client id] = n}, bag, poll}`: the 36 magic runes of the Rune Bag directly in the purse
+    (`P.runeBagCounts`, a few hundred bytes, far under 8192). The client wraps `LocalPlayer.getInventoryCount` once at game start (given
+    back at game end) and adds `counts[id]` less what an open copy of that bag already shows (never counted twice); the action bar is
+    refreshed (`game_actionbar.updateInventoryItems`) when the counts change. `engine = false` adds nothing, so on the old engine the
+    client never counts a rune the hotkey could not use: the helper keeps its probe gate (`ChaosPotionGate`: one probe every 3 s,
+    30 s wait after "Sorry, not possible.") and no use fails every tick. No new opcode (the action is new, the opcode 226 is
+    not: "Opcode collision check" unchanged). The wrap of a C++ bound method by a Lua function is the one part not seen in a
+    running client (`LocalPlayer.getInventoryCount = ...`; the base has the same pattern for `g_game.use` in `game_npctalk`); if it does
+    not take, the count shows what it showed before and nothing breaks.
+  - **What a player gets on the old engine (before the owner rebuilds).** The Lua of this change runs on it: `Game.setRuneBagContainer`
+    does not exist, `PO.registerRuneBag` returns false, `runebag` answers `engine = false`, ChaosCombine keeps the purse all "box".
+    A rune only in the purse bag: hotkey and action bar answer "Sorry, not possible.", the helper probes every 30 s and gets the same
+    answer, the action bar shows no count, the supports window does not list it, a combine takes the clicked stack by hand. No error,
+    no duplicate, no lost rune: every old path is as it was in O502. The texts (store offer, item description, patch notes) already say
+    the new rule, so **rebuild the engine with the Lua update** (admin app: Painel > Recompilar engine; docs/ADMIN_APP.md). A rune in a
+    Rune Bag in the backpack works on both engines.
+  - **Not whole-purse (decision for the owner, not built).** Every other item in the purse (a potion, a plain stack, the Loot Bag's
+    contents) stays out of a hotkey's reach: the engine never visits anything but the Rune Bag's direct items. Searching the whole purse
+    for every hotkey item would also change the Everfull potion lookup and the vendor lists; say so if wanted.
   - **Item.** A copy of the stock blue backpack (2002, client id 2869, container), `clientId = 0`: the stock look, no new sprite.
     The other four are a brown leather sack (Loot Bag), a violet pouch (Orbs), an iron strongbox (Rift Keys) and the
     jewelled backpack (Gems). Alternatives: the moon backpack (10521, client 9604) or the demon backpack (10518, client 9601); a
@@ -6362,9 +6565,52 @@ autoloot list is needed.
     the rewritten items.xml block (`containerSize` 200); a second run changes nothing. Store offer "Rune Bag" in Convenience
     (`shop_config.lua`, icon = the item, `accountDiscount = 50`), price 150: `perCharacterConvenienceMax` 1,550 -> 1,700.
   - Tests: `tests/pouches_test.lua` (the rune lists, routing against the other four, a kill, a full bag, the manual moves, the
-    store, regrant bit 16, never sold), `tests/autosell_test.lua`, `tests/itemsearch_test.lua`, `tools/install_pouches_test.py`
+    store, regrant bit 16, never sold), `tests/autosell_test.lua`, `tests/itemsearch_test.lua`, `tests/supports_test.lua` (the combine from the purse bag, O509), `tools/install_pouches_test.py`
     (four installed pouches get the fifth), client `game_pouches/pouchesview_test.lua`. Unity keeps `Ids`, `Titles` and `Owned` as
-    dictionaries and reads only the Loot Bag: a fifth kind is stored and not shown. Not run on a server or in a client.
+    dictionaries and reads only the Loot Bag: a fifth kind is stored and not shown. Run on a local server, not in a client: see the
+    next bullet.
+  - **Run on a local test server (2026-11-11).** An engine built here from the base source with src-patches 0001-0088, 0090, 0091 and
+    0092 (0089 is not in that tree). `patch -p1 --fuzz=0` applied both new patches, one hunk of 0092 at an offset of one line. The
+    build (Release, LuaJIT) gave no warning, and `-Wall -Wextra` gave none in `chaosrunebag.h`, `chaosfist.h` or a patched line.
+    Lua and data: install steps `files` and `pouches`. Three level 300 testers on a scripted client (`tools/loadtest.py` login, own
+    packets: the hotkey is 0x84 use with creature or 0x83 use with at `{0xFFFF, 0, 0}` and the rune's client id). Measured, each one
+    number before and after:
+    - *Capability.* `Game.setRuneBagContainer ~= nil` true, `ChaosPouches.runeBagEngine()` true at load and after login,
+      `Player.setFistAttack ~= nil` true.
+    - *Hotkey from the purse bag, none in the backpack.* Mending Rune, 10 in the bag: five uses took it 10, 9, 8, 7, 6, 5, health
+      rose every time, the line said "Using one of 10 mending runes...". Two uses 100 ms apart: "You are exhausted.", one rune gone.
+      Shackle Rune at 500 mana: "You do not have enough mana.", 5 stayed 5. Hexdart on a monster: a hit, 8 to 7. Use with on a
+      tile (0x83): hit, 6 to 5 to 4.
+    - *Backpack first.* One in the backpack and 9 in the bag: the first use took the backpack rune (bag 9), the second the bag (8).
+    - *Count and removal.* Backpack 7 and bag 120 in two stacks: `getItemCount` 127. `removeItem` 5, 10, 110 took it to 122, 112,
+      2, backpack first and then across both bag stacks. 13 returned false and took nothing. 2 took the rest. A locked stack in
+      the bag is not counted and not taken.
+    - *Narrow rule.* A rune loose in the purse, in a plain bag in the purse, in a Rune Bag inside a plain bag, in the Loot Bag:
+      count 0, the hotkey answered "Sorry, not possible.", nothing changed. A potion moved into the Rune Bag by a real move packet:
+      "The Rune Bag holds only runes." A rune moved in: accepted.
+    - *Supports.* The window state listed the bag's support rune (5). Socket took one (5 to 4). Combine by the window: 7 in the bag,
+      3 taken, one of the next level made. Use with on the stack in the open bag, on itself: 3 taken, one made, not 6. Two in
+      the bag and one in the backpack: all 3 taken, one made. Two only: refused, nothing taken. The use with in hotkey form
+      cannot combine: the engine gives the script no target there, with or without the patch.
+    - *Vendor.* No NPC of this server buys runes. The same engine walk with a wand a vendor buys (Oskath, large shop, so the
+      `getAllUnlockedItemTypeCount` list): backpack 1 and bag 3 were offered as 4. A sale of 1 took the backpack one and paid 55
+      gold, the next took the bag one and paid 55 once. A sale of 5 with 2 left: "You do not have this object.", nothing taken.
+      An NPC answers to `TALKTYPE_PRIVATE_PN` (12) after the greeting, as the client's NPC channel sends it.
+    - *Opcode 226 `runebag`.* With 20 and 10: `{engine true, counts {"3148": 20, "3152": 10}, bag true, poll 2}`; after a use 9.
+      Runes in the backpack are not counted. No bag: `bag false, poll 15`. An empty `counts` is encoded as `[]`.
+    - *Relog.* 3 in the backpack and 10 in the bag: identical after a relog. After 5 uses the rows of `player_storeinboxitems` said
+      8 and the backpack row was gone: 13 to 8. The purse is saved in `player_storeinboxitems`, not `player_items`. A tile with
+      the no-logout flag (the hunts) keeps a character in the game after the logout packet.
+    - *Stress.* 200 hotkey uses (100 Mending, 100 Hexdart, one every 1.05 s): 9 Mending uses met the exhaust and took nothing, the
+      other 191 took one each, Hexdart 100 of 100, counts exact at every 20. 200 `getItemCount` and `removeItem(1)` and `addItem`
+      cycles in Lua, then a removal of the whole count and an add back: 0 mismatches, total 60 before and after. No crash, no Lua
+      error, no `[Error` line in the server log.
+    - *Fist (O505).* A Monk with bare fists: `getFistAttack()` 0 and 1 before the first swing, 62.03 and 1.2 after, the monster died.
+    - *Old engine (the untouched binary, same Lua and data).* No error at load or login, `runeBagEngine()` false, `runebag` answered
+      `engine false, counts [], bag false, poll 15`. A purse-only Mending Rune: "Sorry, not possible." twice, 10 stayed 10,
+      `getItemCount` 0, the supports window listed nothing. A rune in the backpack, and a Rune Bag in the backpack: used.
+    - *Not run.* A real game client: the action bar count, the wrap of `LocalPlayer.getInventoryCount` and the helper. A live
+      server. The loot of kills going into the purse bag. The field removed by the Dispel Rune (the rune was used).
 - **The Loot Bag** (owner 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe automaticamente";
   called Loot Pouch before). Bottomless: 500 slots (`capacity`, owner 2026-10-29; was 255, see "500 slots" below) and **weightless** (`weightless = true`): engine src-patch 0038 keeps the weight of
   what lies in it (and in bags inside it) away from the character, and an item put into it skips the capacity check.
@@ -17883,7 +18129,7 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 | Battleground | 30 s + 15 min | + warnings, the found teams hear the wait | the higher score wins | AFK kick 2 min (unchanged) | 4 fields, queue | a deserter | stopped, not rated |
 | Vocation Trial | 8 / 9 / 10 min | + warnings at 2 / 1 min and 10 s, wait and line | lost (nothing lost, 60 s cooldown), back where it began | solo: a logout ends it | 8 | ends (no cooldown); crash: out at login | out at login |
 | Ascension trial | 3 min, a line every 30 s | + wait and line | lost (10 min cooldown), back to the Oracle | solo | 8 | ends (the cooldown) | out at login |
-| Infinity Tower | 5 min a floor, no run limit | run limit 60 min with warnings, floor warnings at 1 min and 10 s, wait and line | ends like a lost floor: back at the entry, floors cleared recorded | ends when the last player is out | 16 | ends (floors recorded); login inside: temple | login inside: temple |
+| Infinity Tower | 5 min a floor, no run limit | run limit 120 min (60 until O507, 2026-11-11) with warnings, floor warnings at 1 min and 10 s, wait and line | ends like a lost floor: back at the entry, floors cleared recorded | ends when the last player is out | 16 | ends (floors recorded); login inside: temple | login inside: temple |
 | Dungeon | queue: base DungeonTime 60 / 30 min; a relog stayed in the box (and held the next group's run back). Next to it the base modal entry (tile 26702): its own run in the same boxes, 60 / 30 min, no warning, a scan of every tile of the box on each use (37,074 / 61,325 tiles), an exit timer holding the player object, at its end every monster of the box removed (also a queue run's) | queue only: the entry tile opens the dungeon window (`patch_base_dungeon.py`); capped at 45 min, warnings, the queue shows the wait of the run inside, a relog inside goes to the temple (a failed attempt: the cooldown) | back where they entered, cooldown, monsters removed | ends when the last member is out | 1 per dungeon, queue | released; login: temple + cooldown | temple, no cooldown |
 | World boss | 45 min after the boss | + warnings | the boss withdraws, temple after 90 s, arena cleaned | event (not per group) | 1 arena, 40 players | stays in the event | login inside an idle arena: temple |
 | Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
@@ -22061,6 +22307,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   walls, light props, corner pieces, wall props, clusters of 2-5, path edging, floor detail denser near walls. Never on
   a spawn, teleport, link, chest, NPC or boss tile; nothing blocking on the routes or the planned paths; the QA checks
   that no walkable tile is cut off. `decoration` sparse/normal/dense = x0.55/x1/x1.5, `light` scales the lights.
+- **Buildings (O515):** a plan may list `buildings` (temple, depot, shop, house) with the door on a chosen side: see "Buildings in the planner (O515)" below.
 - **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
   south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
 - **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
@@ -22103,6 +22350,94 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   `dofile`: it returns its tables and reads no `arg`), inside the editor's Lua 5.1; `paint_plan.lua` paints a plan
   compiled by the build (rows of server ids, notes with what the editor cannot write). Code in `tools/editor_scripts/`,
   tests `tests/editor_scripts_test.lua` (also Lua 5.1 in CI) and `tools/gen_editor_scripts_test.py`.
+
+## Buildings in the planner (`tools/area_plan_buildings.py`, `tools/areaplan/prefabs/`, O515)
+
+A plan may list `buildings`: a temple, a depot, a shop or a house, each with its door on a side the plan chooses. The
+planner stamps floor, walls, door, roof, features and decor, joins the tile outside the door to the entry and checks it.
+Nothing runs on the live server and the world map is never written. The new type is opt in. A plan without `buildings`
+compiles to the same bytes as before: `area_plan_buildings_test.py` holds the checksums of five plans, and all 88 plans of
+the repo were compared before and after by hand.
+
+- **Plan.** Top level `buildings`, each `{id, kind, zone}` plus optional `at` (top-left tile of the footprint, local like a
+  zone's `at`; without it the building is "auto inside the zone"), `door` (`n`, `e`, `s`, `w` or `route`), `size`
+  `[width, height]`, `wall`, `floor`, `roof`, `pz`, `npc` `{name, new, lines}` and `slots` (more decor slots). A building
+  never holds an item id: the schema refuses unknown keys. The zone gives the floor. A building cannot stand in the boss room.
+- **Prefabs.** One file per kind in `tools/areaplan/prefabs/<kind>.json`: `width` and `height` ranges, `door_side`
+  (default `route`), `door_width`, `wall` and `floor` families, `roof`, `pz`, an `npc` slot, `features` and `slots`.
+  The frame is the canonical one with the door in the south wall. `width` runs across the door wall, `height` from the back
+  wall to the door wall. `dx` counts interior columns from the west, `dy` interior rows from the north wall. A negative
+  number counts from the far end, `"c"` is the door column. A door on the east or west side swaps width and height on
+  the map. Features: `altar`, `pillar_pair`, `bench_row`, `counter` (`gap`: `start` or `end`), `shelf_row`. `reach: true`
+  asks that the tile in front of the piece is reachable. Slots have a `role`: `floor` (a piece on an interior tile, `facing`
+  for pieces with a front) or `hang` (a piece on the wall beside an interior tile, `wall`: back, front, left, right). A hung
+  piece draws only on a north or a west wall, as the dresser does. On the other two walls it is left out and the
+  manifest lists it under `dropped`.
+- **Sizes.** House: width 6-9, height 6-9, from docs/MAP_GUIDE.md Towns (footprint 6 x 7, p25 5 x 6, p75 7 x 9). Depot 8-10 x
+  7-9: the guide only says 6-25 lockers in one depot building near the temple. Temple 10-12 x 9-12 and shop 8-10 x 7-9 have
+  no statistic in the guide, so we chose them. Each prefab says so in `stats`.
+- **Families, no ids in a prefab.** Wall brushes and floor grounds are the families of `areagen_config.lua` and
+  `areaplan_build.lua`. A new mode `luajit tools/areaplan_build.lua materials` prints them and `area_plan_core.materials()`
+  reads it. Walls: `st_stone` (the town's grey stone, with the same rule `A.wallPiece` as the generator: pole in the
+  north-west corner, corner piece in the south-east one), `ruin`, `darkstone`, `k_brick`. Floors: `st_white_marble`, `tiles`,
+  `flagstone`, `marble`, `gilded`, `slate` and the other walkable families. The door pair is `cfg.doors.wood` in
+  `areaplan_build.lua`: the stock "closed door" without the locked text and its "open door". Pieces come from
+  `decor_kits.json` groups (altar, pillar, brazier, crates, plants, torch, banner, tapestry) or from
+  `tools/areaplan/building_families.json` (stock counter, bench, bookcase as shelf, locker, square table, wooden chair).
+  The stock ids were read in the installed `items.xml`.
+- **Placing.** The buildings of one zone take turns on an ellipse round the middle of the zone, clockwise from the north.
+  For each one the planner takes the footprint whose centre is nearest its point and that fits. It lies inside the zone, on
+  ground a floor can lie on (a tree or a stone on it is removed), with a free ring of one tile round it that is no rock or rim,
+  two tiles from every other building, off the plan's paths, off the arrival and the holes. The tile outside the door is
+  walkable and the entry reaches it. The building cuts no walkable tile off the entry. `door: route` tries all four sides and
+  keeps the one whose outside tile is nearest a route point: the arrival, the middle of the zone, the plan's path tiles.
+  With `at` the footprint is fixed and only the side is chosen. A failure is a QA error that names the building and the reason.
+- **Stamping.** The footprint tiles get the floor ground and nothing else of the old tile stays. The wall ring gets the
+  pieces, the door tile the closed door, interior features and slots their items (a blocking piece leaves the walkable
+  set). The roof goes on `z - 1` over every footprint tile, with the ground the dungeon roofs use (920). It is an error
+  where another floor of the plan already holds that tile. Walls, the door's outside tile, the tiles in front of counters and altars and
+  the NPC tile are protected, so the dressing pass puts nothing blocking beside them and keeps the lanes from the arrival
+  to them free. A prefab with `pz` makes the inside and the door a protection zone. An NPC of a building stands on the
+  prefab's npc slot and uses the existing stub mechanism: `new: true` writes the XML and script stub.
+- **QA** (`area_plan_compile.py`, `BLD.qa_all`, on the final tiles). The door tile is walkable and holds the door and nothing
+  else. A blocking item there is the shared rule `map_tile_rules.blocking_on_special` of O511. The entry reaches the door, the
+  tile outside it, the tile just inside it, every counter or altar front and every free interior tile (a pocket is a
+  warning). Every wall tile carries the piece type the shared `wall_piece` rule wants. The roof covers the whole footprint.
+  No two buildings share a tile. A building overlaps no route, building or special tile (a placement error). The view
+  frame, border and unknown id checks run as before. A building's tiles are exempt from the border rule, because its wall
+  is the edge, and its ids are on the allowed list. The whole-map audit `audit_map_plans.py` found nothing on the example.
+- **Example.** `tools/areaplan/examples/village_square.json` (Ashford Square, forest, 120 x 96) has a plaza of 40 x 34 with a
+  temple, a depot, two shops (one with ruin walls and a flagstone floor) and three houses round it (one door fixed
+  to the west, one house sized 7 x 8), two wild paths to an orchard and a meadow, and a grove behind the orchard. The test
+  compiles it with zero QA errors and zero warnings. CI validates and compiles it with the other examples. The picture
+  is not rendered: the render needs the base server's `items.otb`, which is not in git and not in CI.
+- **Ask for a village in chat.** The owner says it in words: "a village square in a forest, a temple, a depot, two shops,
+  three houses, doors facing the plaza". Claude copies `village_square.json`, changes the id, name, seed, zones and
+  buildings, validates it with `area_planner.py validate`, and files it with `area_inbox.py new --plan PLAN.json --prompt
+  "THE WORDS"`. The AI adapter's `--from-prompt` also works, because `buildings` is in the schema it is given. From there the
+  flow of "Map inbox" is unchanged: `chaos-ctl.sh areas-publish` (admin app: Comandos > Mapas pedidos > Publicar áreas), the
+  Windows `fetch-areas.bat`, the map editor, approve, promote. For a good result use one big `room` or `lobes` zone for the plaza (40 x 34
+  fits seven buildings), `ragged` on the zones around it so the outline rule of "Asymmetric areas" holds, and `pz: true`
+  on the plaza.
+- **Check on the live data.** `area_planner.py check-kits ITEMS.otb ITEMS.xml Tibia.dat` now also checks the stock ids of the
+  buildings (`BLD.check_buildings`): known, a sprite, blocking as listed, doors of the door group, walls and grounds of their
+  kind, nothing pickupable. It prints the size of each door sprite for a look. It was not run in this session, because the
+  base `items.otb` is not available.
+- **Not done.** `houses.xml` rows, house ids, names, rents and the house door (the locked door pair 1209 / 1212 needs a house).
+  The compiler writes no houses today, so `house` is a building shape only. Beds (a bed is two linked items with a bed
+  type). Depot lockers: the base depot locker 2589-2592 needs a depot id attribute, which the OTBM writer does not
+  know, so the depot uses the stock locker 1732-1735 as a stand-in. Towns and the temple position in the OTBM (the writer
+  writes an empty towns node). Shop offers (the NPC stub says words only). Windows. Second floors and stairs in a building. Door
+  action ids and keys. **Not verified:** which of the two stock door pairs is drawn across a wall and which along it (the
+  table says `v` = 1210 / 1211 for a wall that runs north-south), and the facing order of the stock bench, bookcase, locker
+  and chair ids (`building_families.json`). Both wait for `check-kits` and a look on the pair. Hung pieces on south and east walls
+  are left out.
+- **Tests.** `tools/area_plan_buildings_test.py` (CI step "Area planner"): the four prefabs and the family tables, 184 layouts
+  (every kind, every size of its range, all four door sides: door on the asked side, footprint turned, a clear way from
+  the door to every feature and to every free tile), the layout turning with the door, every kind compiled on every door
+  side, the village example, the QA cases (a pillar inside the door, a crate in front of the altar, a piece hung on the
+  door tile, overlap, a building outside its zone, a roof tile missing, a wrong wall piece, an unreachable door, a blocking item on
+  the door tile), the validator, and the checksums of five old plans. `area_planner_test.py` runs the example with the others.
 
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 
@@ -22618,6 +22953,75 @@ streaked tiles and round reddish-brown pebble discs, so it reads as broken.
   `<map>.otbm.bak` first, leaves house tiles alone. Test `tools/patch_crypt_floors_test.py`.
 - **Owner step.** On the VPS, server stopped: `python3 -I server/tools/install_all.py SERVER_DIR --only cryptfloors
   --dry-run`, then the same without `--dry-run`. The admin app (`android/`) has no button for install steps.
+
+## Map write guard (`tools/map_write_guard.py`, O512)
+Every install step that rewrites the world map writes `<map>.otbm.tmp`, checks little (a tile count) and renames it over
+the map. A bug in a writer could change tiles outside the area it meant to touch and nobody would see it. Now each writer
+hands the old map, the new file and the tiles it meant to touch to the guard just before the rename. There is no flag, no
+environment variable and no option to turn it off.
+- **What it proves.** The guard reads both files in one streaming pass each (24 MiB chunks, numpy, no tile tree) and
+  checks:
+  1. Both files parse to the end: identifier, one root node, balanced nodes, no bytes after the root, no dangling escape.
+  2. Every tile outside the intended set exists in both files and is byte for byte the same (items, attributes, tile
+     flags, house id: the raw bytes of the tile node).
+  3. Every tile of the intended set is as meant: an added tile is new and written, a rewritten tile exists in both, a
+     removed tile is gone. No tile is on the map twice. With `expect` (`{pos: node bytes}`), an added or rewritten tile is
+     exactly the bytes the writer meant.
+  4. The header (identifier, root and map data attributes) is the same. Every other child of the map data node (towns,
+     waypoints, anything) has the same node count and content, unless the writer frees that type (`allow_nodes`) or only
+     its content (`allow_content`: the count must stay).
+- **Which steps use it.** `IC.write_map` of `install_content_areas.py` runs the guard on every call (`guard_map`: the
+  tiles of `remove` and `new_tiles` are the intended set, the bytes of `new_tiles` the `expect`). That covers
+  `contentareas`, `mapfixes`, `questshowcase`, `deadholes`, `huntgates`, `huntannexes`, `waystonetrim`, `lavaedges`,
+  `cryptfloors`, `huntroofs` and `templetidy`. The writers that patch map bytes in memory call `map_write_guard.verify`
+  themselves: `rewardchests` (the tiles of the replaced chests), `spawnfields` (the listed spots), `startchest` (the tiles
+  of the removed chests), `towns` (no tile may differ; the towns node keeps its town count, names move:
+  `allow_content`) and `worldtexts` (`text_only`: a tile may differ outside the sets only in the text and description
+  attributes of its items, nothing else; at most 200000 tiles). `rewardchests`, `spawnfields` and `startchest` used to
+  write `--out` files directly; they now go through the `.tmp` and the guard too.
+- **On a refusal.** The step raises (`refused: map write guard refused w.otbm.tmp: N difference(s) from the intended
+  change; first 20: 1030,1000,7: tile removed outside the intended change; ...`). The map is not replaced and is as it
+  was. The `.tmp` stays next to it (`data/world/<map>.otbm.tmp`) for inspection; the next run overwrites it.
+  `install_all.py` stops at that step.
+- **What the owner does then.** Nothing to repair: the old map stays. In the admin app (`android/`), Painel > card
+  "Atualizar servidor" > "Aplicar e reiniciar" runs the install through `chaos_kit_update.sh`. With the staging copy
+  (the default) the install runs on a copy of the server folder while the game keeps running; a refusal ends the update
+  as failed ("the install failed on the staging copy"), the live folder is not touched and the players notice nothing.
+  Without the staging copy (`CHAOS_STAGING=0`, or no room) the install runs with the server stopped and the kit rolls
+  back to the previous version. Either way the lines of the refusal, with the coordinates, are the last lines of the
+  install the card shows. Send them to the coordinator: a refusal means a writer touched tiles it should not have. There
+  is no button to override it. Shell fallback, to compare two maps: `python3 -I server/tools/map_write_guard.py OLD.otbm
+  NEW.otbm` (exit 0 when no tile differs).
+- **Cost (measured).** Synthetic map built for the measurement: 108 areas of 253 x 253 tiles, 6,912,972 tiles, 200 MB, three
+  nodes per tile; second file the same with 100 tiles added, 1 rewritten, 1 removed. One scan of one file: 5.6 s. The whole
+  check (two scans, sorting, comparing): 9.9 s, peak 651 MB (`otbm.load_otbm`, which every writer already runs on its
+  output, took 6.6 s and 2.4 GB on the same file). The time is linear in the number of node markers. A map twice as
+  dense or a VPS three times slower stays near 30 s, under the 60 s limit. A step runs the guard once, and only when it
+  changes the map (a second run writes nothing): 16 steps at most, each under the limit on its own. A first version
+  that used `np.isin` took 48 s; the comparison now uses sorted arrays and binary search.
+- **Found while doing it: the room's end tiles lost their attributes.** `room_layout` rebuilt the end tiles it moves
+  (`caps`) from the item ids alone. Every action id, unique id, text, description, count, unknown attribute and the things
+  inside a container were dropped on the moved tile. The test `cap_attribute_checks` in `install_content_areas_test.py`
+  showed it (aid 48001, uid 48002, a sign text, a count, an attribute 99, a container with two items: all gone). Fixed:
+  `keep_moved` reads the old end tile from the map (`read_tile_lossless`) and the new tile keeps every item node byte for
+  byte (`attrs['node']` in `tile_nodes`). A tile it cannot move that way (a house tile, a tile attribute other than
+  flags and ground) is refused with a reason instead of being rewritten. The copies of the module columns (new alcoves)
+  are still made from ids alone, on purpose: a copied action or unique id would be a duplicate. The other writers read
+  tiles with `hall_order.parse_tile`, which keeps the attributes it knows byte for byte and leaves a tile with one it
+  does not know alone (listed in the log), so they never dropped one.
+- **Not covered.** `map_master.py install` and the restore of `<map>.otbm.bak` put a whole file in place (the master is
+  checked against its SHA-256, the backup is the file the first install copied). `area_plan_place.py` writes a copy of the
+  map for the planner, not an install step. The map editor writes its own files. The guard proves a writer kept to its own
+  plan; it does not prove the plan is right (the checks of each step still do that).
+- **Tests.** `map_write_guard_test.py`: identical maps; the intended change only (add, rewrite, remove); one extra tile,
+  an item attribute, a text, a tile removed, a tile added, a tile written twice outside the set, each refused with the
+  coordinate named; a tile that is not what the writer meant; towns and waypoints nodes changed without and with
+  permission; a header change; truncated files, stray bytes, a dangling escape, a compressed file; escaped bytes in
+  coordinates and ids; the same verdicts with chunks of 64 bytes up; the text-only mode; the first 20 of 40 coordinates.
+  Every writer's own test (`patch_*_test.py`, `install_content_areas_test.py`, the new `patch_base_towns_test.py` and
+  `patch_base_texts_test.py`) has a case where a writer that also changes one far tile is refused, the map stays and the
+  `.tmp` stays (`map_guard_testkit.py` holds the builders and the fault). Not verified: a run on the real map (about 200
+  MB); the times above are from the synthetic file.
 
 ## Dead holes (`tools/check_dead_holes.py`, `tools/patch_dead_holes.py`, `tools/dead_holes.csv`, install step `deadholes`, O264)
 Owner report of 2026-10-26 with a screenshot: "esse buraco nao leva a lugar nenhum" (this hole leads nowhere): a dirt hole
@@ -31120,6 +31524,12 @@ formula against the measurement). `--autos --level 100` prints the table of the 
 | Ranger | 228 | 37.8 / 54.1 / 63.6% | 11.4 / 21.0 / 28.6% |
 | Monk | 10 | 90.9 / 95.2 / 96.7% | 40.0 / 55.0 / 65.0% |
 
+(The table is the state of O501. Since O505 `--autos` prints other numbers, because the model changed, not only the config: a Warrior's flat armour is the
+capped one (Warrior 106 arriving, before 55.7 / 71.1 / 78.5%, after 25.0 / 40.6 / 50.7%), and the Monk's arriving hit is its own size (184 at level 100,
+attack 40 x growth x 1.2, before 42.9 / 59.4 / 68.4%, after 16.9 / 29.5 / 38.6%), no longer attack 7 at the cap. The `before` column is still the class
+curve with no cap, applied to the hits of the model's current state. What the Monk lost with attack 7 and the stock flat armour, 91.0% at level 100,
+and the 5.6% of its damage that reached a monster, are pinned in `defence_curve_test.py` from `roll_mean(..., stock_fist=True)`.)
+
 *After the fix, measured* (the same characters, the dummy of the level, the layer on, 120 s; the numbers before are the table above):
 
 | Class | Level | Hit rolled, mean (before / after) | Removed, before -> after | Reaches the monster, before -> after | Seconds to kill after, layer on / off |
@@ -31134,7 +31544,7 @@ formula against the measurement). `--autos --level 100` prints the table of the 
 | Monk, fists | 100 | 31.5 / 33.4 | 80.7% -> 39.6% | 17.8% -> 60.2% | 39.2 / 23.6 |
 | Monk, fists | 500 | 85.9 / 92 | 89.9% -> 39.5% | 9.2% -> 60.1% | 104.4 / 62.7 |
 
-*Not done, for the owner to decide.* (1) The flat armour and defence of the monster files, the second cause: a patch tool
+*Not done, for the owner to decide (all three are done in O505, below).* (1) The flat armour and defence of the monster files, the second cause: a patch tool
 (`patch_monster_flat_defence.py`, an install step like `monsterresists`) that caps the XML `armor` and `defense` by a level rule would give
 a level 20 Warrior back about 45% of its auto damage. The Monk needs more: its fist hit is attack 7 in the engine and is scaled by a
 later event, so the flat armour takes nearly all of it before the scaling (6% of its damage reaches a level 100 monster with the layer
@@ -31144,6 +31554,271 @@ spells (Reaping Gyre, Earthbreaker) are `ORIGIN_SPELL` hits of weapon size (76 a
 code: `ORIGIN_SPELL`, unchanged), 15 of the 21 classes (six kinds were run, the model covers the rest), levels above 1000, the real
 monsters at 300 and above, the Thief's crit hits in the model (the Thief line is a plain melee class in it; its measured arriving mean
 was 1.1 to 1.5 times the formula).
+
+**Flat armour, weapon spells and the Monk's fist (O505, 2026-11-11).** Owner (translated, after reading the O501 report): "You can fix these 3
+things of the auto attack." The three things the O501 report left open: (1) the flat armour and defence of the base monsters' files, (2) the
+Monk's fist, (3) the weapon-line spells. Measured on a local server (the O501 rig, engine patches up to 0090, a second binary built here with
+0091), 120 s a cell. Part 1 and 3 are one commit each, part 2 another. What waits for the owner: the engine rebuild (part 3, see "Owner steps").
+
+*Part 1: the flat armour and defence of the monster files.*
+
+*Cause (engine).* `Creature::blockHit` (`creature.cpp` 844-902) takes `uniform(defense / 2, defense)` off a hit when the monster has a banked
+defence (855-868: `blockCount` grows by 1 a second up to 2, every hit that checks armour or defence uses one, so a melee hit every second or
+slower meets it every time) and `uniform(armor / 2, armor - 1 - armor % 2)` off every hit that checks armour (870-888; armor 1 to 3 takes
+1). `Game::combatBlockHit` (`game.cpp` 4316-4372) gives the checks to the PRIMARY part only: the element part of a weapon is never blocked.
+`WeaponMelee` and the bare fist set both checks (`weapons.cpp` 344-345 and 516-517), `WeaponDistance` the armour check only (644): a bow never
+meets the defence. A part that falls to 0 is `BLOCK_DEFENSE` / `BLOCK_ARMOR` and the hit never reaches a Lua event. The numbers are the XML
+`armor` and `defense` of the monster (`monsters.cpp` 1088-1093; Lua monsters `monster.defenses`). Spells do not check them unless the spell sets
+`COMBAT_PARAM_BLOCKARMOR` (Reaping Gyre does).
+
+*The installed monsters* (1,725 files read, 735 hunt monsters of the bounty pool, 333 level-scaled files with a level range, the level a monster
+has for the layer: the `<level>` middle of src-patch 0082, else `bounty_pool.lua`, else the estimate from experience and health; normal
+monsters only, the median over the files of the band; "roll" is the mean engine roll of a Warrior of the typical skill, before any armour,
+`defence_curve.py`; "bite" is what the engine takes off in mean, `armor` 3/4 and `defense` 3/4 of their value, over the roll of the monster's own
+level):
+
+| Level band | Monsters | armor median / p90 | defense median / p90 | Median roll (Warrior) | Flat bite, melee, before | Flat bite, bow, before | Cap | Flat bite, melee, after |
+|---|---:|---|---|---:|---:|---:|---:|---:|
+| 1-10 | 63 | 5 / 20 | 5 / 20 | 18 (at 8) | 32% | 5% | 1 | 8% |
+| 11-25 | 134 | 15 / 26 | 15 / 26 | 26 (at 18) | 81% | 17% | 2 | 9% |
+| 26-50 | 96 | 25 / 40 | 24 / 38 | 42 (at 39) | 79% | 22% | 3 | 8% |
+| 51-100 | 146 | 35 / 107 | 35 / 100 | 90 (at 78) | 67% | 19% | 7 | 10% |
+| 101-200 | 152 | 70 / 105 | 67.5 / 100 | 142 (at 142) | 70% | 17% | 10 | 10% |
+| 201-400 | 174 | 100 / 117 | 90 / 110 | 248 (at 310) | 54% | 13% | 17 | 10% |
+| 401-700 | 153 | 100 / 165 | 90 / 165 | 330 (at 500) | 45% | 11% | 23 | 10% |
+| 701-1200 | 77 | 60 / 85 | 60 / 85 | 620 (at 930) | 15% | 4% | 41 | 10% |
+| 1201-2500 | 36 | 80 / 110 | 87 / 110 | 792 (at 1375) | 16% | 4% | 53 | 10% |
+
+Bosses: 186 files, armor median 30 and at most 188, defense median 35 and at most 165. A level 20 Warrior met 15 and 15: 81% of its mean roll
+(melee) and, measured on real monsters, 44% of its swings blocked outright (Mummy). A bow takes the armour only: 5 to 22% of its roll at the
+levels under 700.
+
+*The rule* (the coordinator's recommendation, built as given: my numbers did not speak against it). `monster_defence_config.lua` `flatShare`
+`{normal = 10, boss = 20}` and `flatRollCurve`: for a monster of level L the XML `armor` and `defense` are capped at one integer c, the largest
+where `armour_bite(c) + defence_bite(c)` (the mean the engine takes off, above) is at most the share of the median engine roll at L (the median
+over the 12 armoured classes that are not the fist line, before any armour; derived by `tools/defence_curve.py --lua`, never typed). A value above
+the cap is lowered to it. A value at or below it is never touched, so a second run changes nothing and a later lower share still applies. Caps:
+1 at level 8, 2 at 20, 3 at 30, 5 at 60, 8 at 100, 12 at 200, 17 at 300, 23 at 500, 46 at 1,000, 71 at 2,500 (`defence_curve.py --flat` prints
+the table, boss caps twice the bite: 3 / 4 / 5 / 9 / 16 / 24 / 33 / 45 / 92 / 141). Bosses keep twice the share on purpose: the layer sizes a boss's
+armour at twice the normal share too (`armourTarget` 50 against 25), and a boss is the XML `isboss` flag, a Lua `rewardBoss`, or a name of
+the `bosses` list of the pool. Magic, rare and legendary monsters are the same file as a normal one and keep the normal cap (the layer already
+gives the ranks more armour).
+
+*The tool.* `tools/patch_monster_flat_defence.py DATA_DIR [--check] [--dry-run] [--quiet]`, install step `monsterflat` right after
+`monsterresists` (so after `files`, which installs the pool and the config it reads, and after `monsternames`). Pets (`monsters/chaos/pets`) and
+test dummies (`monsters/zo`) are left alone. It prints "files changed; armor lowered; defense lowered; left alone". Our own 231 monster files
+go through the same functions in `tune_monsters.py` (a `tune_monsters.py` `armor` row is a ceiling now, never a floor) and `tools/ci/check_content.py`
+fails on a file over its cap. On the installed server: 1,493 files changed, 1,476 armor and 1,490 defense values lowered, 91 left alone.
+
+*The weapon curve moved* with the smaller flat armour (a typical monster keeps 8 instead of 30 at level 100): `weaponHitCurve` is re-derived
+(`defence_curve.py --lua`): 18 at level 10 (13), 32 at 30 (16), 64 at 60 (37), 106 at 100 (82), 160 at 200 (121), 219 at 300 (165), 297 at 500
+(239), 622 at 1,000 (587). The model also stopped giving a launcher the defence (`WeaponDistance` never meets it). `weaponTarget` stays 27.5 /
+44.5 / 55: G1 holds within 1.4 / 2.3 / 2.5 points at the worst of 85 levels (plain 25 / 40 / 50 would be within 2.2 / 3.4 / 3.9).
+
+*G5* (`defence_curve.py --check`, `flat_problems`): at 85 levels from 8 to 2,500 the cap's bite is within `flatShare` plus 3 points of the median
+roll (the cap is a whole number: 6.8 to 10.2% for a normal monster, 12 to 20.7% for a boss), no armoured class that is not the fist line has more
+than 5% of its attacks blocked outright by a monster with the cap (the model says 0.0% at every level; before the rule it said 31% at level 20 and
+33% at 28 for the typical character, the measured real monsters 44% at 20), and the config's rows and share are the derivation. G6 for the fist line
+is in part 3.
+
+*Measured, real monsters before and after* (Warrior with one hand and a shield, Ranger with a bow, Thief with a blade, Monk with fists; a bare
+character of the level with the best set weapon, the rig of O501; a real monster of the level that every character fights for 120 s with the monster
+layer on; "blocked outright" is 1 minus the weapon hits that reached the layer over the swings the same character landed on the dummy; "arriving"
+is the physical part that reaches the layer per swing, with the roll on the armourless dummy of the level in brackets; "reaches" is the damage per
+second over the same character's damage per second on the dummy with the layer off, so it holds the flat armour, the layer and the file's own
+resistance of the monster; seconds to kill are for a typical hunt monster of the level at that damage. A cell is 55 to 120 swings: the Ranger's
+cells move by 10 points between runs. Before: the state of the repository before this part. After: this part, the old binary):
+
+| Class | Level | Monster (armor and defense before -> after) | Blocked outright | Arriving per swing (roll) | Reaches | Seconds to kill |
+|---|---:|---|---:|---:|---:|---:|
+| Warrior, one hand + shield | 8 | Troll (6 -> 1) | 5% -> 0% | 13.4 -> 31.5 (25.1) | 60% -> 93% | 4.1 -> 2.2 |
+| Warrior, one hand + shield | 20 | Mummy (15 -> 2) | 44% -> 0% | 6.1 -> 31.5 (25.2) | 13% -> 34% | 22.7 -> 7.1 |
+| Warrior, one hand + shield | 60 | Wyrm (34 -> 5) | 46% -> 0% | 15.2 -> 72.7 (63.3) | 21% -> 49% | 16.8 -> 7.1 |
+| Warrior, one hand + shield | 100 | Retching Horror (30 -> 8) | 14% -> 0% | 39.5 -> 83.4 (78.4) | 58% -> 64% | 8.6 -> 7.5 |
+| Warrior, one hand + shield | 300 | Juggernaut (60 -> 15) | 10% -> 0% | 65.9 -> 110.9 (177.6) | 56% -> 60% | 19.2 -> 17.7 |
+| Warrior, one hand + shield | 500 | Spiked Enforcer (100 -> 22) | 24% -> 0% | 88.2 -> 232.1 (235.2) | 57% -> 68% | 39.3 -> 32.0 |
+| Ranger, bow | 8 | Troll (6 -> 1) | 5% -> 0% | 72.8 -> 90.6 (96.5) | 89% -> 94% | 1.8 -> 1.5 |
+| Ranger, bow | 20 | Mummy (15 -> 2) | 0% -> 2% | 78.6 -> 94.5 (94.9) | 91% -> 93% | 2.3 -> 2.0 |
+| Ranger, bow | 60 | Wyrm (34 -> 5) | 7% -> 7% | 78.3 -> 102.9 (103.8) | 73% -> 81% | 7.8 -> 6.2 |
+| Ranger, bow | 100 | Retching Horror (30 -> 8) | 3% -> 0% | 99.0 -> 116.8 (140.6) | 65% -> 64% | 25.8 -> 23.7 |
+| Ranger, bow | 300 | Juggernaut (60 -> 15) | 5% -> 2% | 189.7 -> 224.1 (411.2) | 37% -> 41% | 39.5 -> 34.8 |
+| Ranger, bow | 500 | Spiked Enforcer (100 -> 22) | 3% -> 6% | 423.8 -> 373.5 (498.1) | 77% -> 66% | 32.2 -> 38.2 |
+| Thief, blade | 8 | Troll (6 -> 1) | 5% -> 0% | 18.7 -> 31.5 (31.7) | 87% -> 94% | 3.9 -> 3.1 |
+| Thief, blade | 20 | Mummy (15 -> 2) | 32% -> 0% | 9.5 -> 34.6 (32.1) | 16% -> 45% | 25.3 -> 7.0 |
+| Thief, blade | 60 | Wyrm (34 -> 5) | 19% -> 0% | 29.6 -> 76.0 (79.4) | 29% -> 49% | 16.9 -> 8.6 |
+| Thief, blade | 100 | Retching Horror (30 -> 8) | 12% -> 1% | 49.1 -> 77.0 (99.0) | 62% -> 72% | 6.8 -> 5.5 |
+| Thief, blade | 300 | Juggernaut (60 -> 15) | 11% -> 0% | 75.5 -> 122.6 (219.9) | 55% -> 58% | 10.1 -> 9.9 |
+| Thief, blade | 500 | Spiked Enforcer (100 -> 22) | 15% -> 1% | 114.2 -> 216.5 (279.6) | 60% -> 73% | 14.9 -> 11.6 |
+
+Level 1,000 was not measured on a real monster: the one tried (Ice Dragon) is not a monster a melee character keeps hitting. At 20 the Mummy also
+has its own physical resistance in its file, which the "reaches" column holds.
+
+*What else reads monster armour and defence.* `git grep` over `data/scripts/chaos`, `data/lib` and `tools`: nothing in the Lua reads a monster's
+XML armour or defence. Every model that says "armour" (`survival_model.py`, `armor_sim.py`, the necromancer, guardian and companion balance
+files) is about a PLAYER's armour against a monster's hit and is not touched. The models take a hit on a target with no armour (`class_dps_model.py`
+and the ones built on it), so they do not move: every `--check` of the list is green (below). PvP is not touched: a player is not a monster and
+`Player::getArmor` and the player layer of O464 are another path (`patch 0016`). A player's summon (a Necromancer's minion, a Beastmaster's
+wolf) hits with the monster `melee` attack, which also sets both checks, so its melee hits meet the same flat armour and gain the same way.
+Kills per hour of a weapon class on a monster of its level (the table above, seconds to kill): melee about 3 times at level 20 (Warrior 22.7 s to 7.1 s,
+Thief 25.3 to 7.0), 1.15 to 1.25 times at 100, 300 and 500; the Ranger's bow about 1.1 times (its cells move by 10 points). No limit of a balance model is crossed.
+
+*Part 2: the weapon-line spells.*
+
+*Measured first, and the question widened.* The six kinds of the rig (Warrior with one hand and a shield and with two hands, Thief, Ranger, Monk,
+Mystic) at levels 20, 100 and 500, each casting its three highest attack spells for 150 s on the armourless dummy of its level, the layer on:
+per spell the hit that ARRIVES at the layer (the physical part, before the player's later multipliers), the class curve hit of the level
+(`hitCurve`: 86 / 464 / 3,658), the weapon curve hit (`weaponHitCurve` of that run: 26 / 106 / 297), and the share the layer removes (a normal
+monster, `A` sized for the class hit; the hit's spell id comes from the supports' cast context). A spell with no armour is an elemental one.
+
+| Class | Level | Spell | Hits | Arrives (mean) | Class curve hit | Weapon curve hit | Removed before | Removed after |
+|---|---:|---|---:|---:|---:|---:|---:|---:|
+| Warrior (sword + shield) | 20 | Reaping Gyre | 48 | 16 | 86 | 26 | 64% | 36% |
+| Warrior (sword + shield) | 20 | Earthbreaker | 15 | 65 | 86 | 26 | 30% | 13% |
+| Warrior (sword + shield) | 100 | Reaping Gyre | 48 | 47 | 464 | 106 | 76% | 40% |
+| Warrior (sword + shield) | 100 | Earthbreaker | 15 | 174 | 464 | 106 | 47% | 19% |
+| Warrior (sword + shield) | 500 | Colossus Fall | 22 | 449 | 3658 | 297 | 73% | 20% |
+| Warrior (sword + shield) | 500 | Bastion Cry | 10 | 983 | 3658 | 297 | 55% | 11% |
+| Monk | 20 | Ashen Fist | 21 | 106 | 86 | 26 | 21% | 5% |
+| Monk | 20 | Palm Shockwave | 20 | 105 | 86 | 26 | 21% | 5% |
+| Monk | 20 | Sundering Palm | 10 | 414 | 86 | 26 | 6% | 2% |
+| Monk | 100 | Hollow Knuckle | 20 | 267 | 464 | 106 | 37% | 13% |
+| Monk | 100 | Quaking Stomp | 10 | 300 | 464 | 106 | 34% | 12% |
+| Monk | 100 | Whirling Heel | 10 | 466 | 464 | 106 | 25% | 8% |
+| Monk | 500 | Tidal Palm | 11 | 1074 | 3658 | 297 | 53% | 9% |
+| Monk | 500 | Skysplitter Fist | 10 | 1714 | 3658 | 297 | 41% | 6% |
+| Mystic | 20 | Rime Bloom | 31 | 115 | 86 | 26 | no armour | no armour |
+| Mystic | 20 | Witchfire Bolt | 15 | 117 | 86 | 26 | no armour | no armour |
+| Mystic | 100 | Briar Prison | 30 | 127 | 464 | 106 | no armour | no armour |
+| Mystic | 100 | Blightswarm | 13 | 223 | 464 | 106 | no armour | no armour |
+| Mystic | 100 | Umbral Stride | 10 | 623 | 464 | 106 | no armour | no armour |
+| Mystic | 500 | Crimson Covenant | 60 | 347 | 3658 | 297 | no armour | no armour |
+| Mystic | 500 | Falling Pyre | 11 | 1546 | 3658 | 297 | no armour | no armour |
+| Ranger | 20 | snare or mine burst | 30 | 213 | 86 | 26 | 12% | 4% |
+| Ranger | 20 | Dawnpiercer | 16 | 137 | 86 | 26 | no armour | no armour |
+| Ranger | 100 | snare or mine burst | 21 | 315 | 464 | 106 | 33% | 11% |
+| Ranger | 500 | Hail of Dawn | 120 | 370 | 3658 | 297 | no armour | no armour |
+| Ranger | 500 | Gale Volley | 11 | 1720 | 3658 | 297 | 41% | 7% |
+| Thief | 20 | snare or mine burst | 20 | 181 | 86 | 26 | 14% | 4% |
+| Thief | 100 | snare or mine burst | 21 | 306 | 464 | 106 | 34% | 11% |
+| Thief | 500 | Smoke Bomb | 11 | 730 | 3658 | 297 | no armour | no armour |
+| Warrior (two hands) | 500 | Bastion Cry | 10 | 651 | 3658 | 297 | 65% | 9% |
+
+*Which case it was.* Only the weapon-size spells are off. A physical spell of a weapon class arrives at 10 to 50% of the class curve hit:
+Reaping Gyre (three small hits) 47 against 464 at level 100, Colossus Fall 449 against 3,658 at 500, a Monk's Hollow Knuckle 267, Tidal Palm
+1,074. The class curve is the hit of a typical character AFTER every multiplier it owns (class damage, damage pool, gems, cards, charms, the
+weapon style and power), which are later events than the layer; the spell arrives before them, as the auto attack did (O501). Armour sized for
+the class hit took 25 to 76% of it. The casting classes' spells are elemental in all three levels (Rime Bloom, Witchfire Bolt, Briar Prison,
+Crimson Covenant, Falling Pyre, Dawnpiercer, Hail of Dawn): armour never touches an elemental part, their loss is the monster's resistance, which
+does not depend on the size of the hit. So the units fault is not general: no change to `hitCurve`, no change to a model, and the "no spell number
+moves" tests of O501 stay as they are for every hit that is not a weapon class's own spell hit.
+
+*The fix, the preferred one: the layer knows the hit is a weapon-line spell.* `ChaosMonsterDefenceCore.weaponSpellHit`: a spell hit (`ORIGIN_SPELL`)
+that a PLAYER of a weapon class deals itself, inside its own cast, meets the weapon armour value (`Aw`) and the weapon cap of its rank, the same
+share as an auto attack of that size (a big hit loses less: `Aw / (Aw + 0.07 H)`, at most 40 / 55 / 65%). The weapon classes are every vocation
+that is not in `casterVocations` (Mystic 1, Elementalist 5, Illusionist 10, Necromancer 20, Lich 21, Bone Lord 22; `defence_curve.py --check`
+holds the list to `rotation_sim.py`). The cast is read, not stored: `ChaosSupportsSpell.cast()` (`data/spells/chaos/_supports.lua`) returns the
+player id of the cast whose code, or whose `addEvent` callback, runs now, so the synchronous hits and the delayed ones of every Chaos spell are
+inside it, and `ChaosCombatLog.inSpell(pid)` (combatlog.lua; a snare's or a mine's burst named by `CL.asSpell`, the engine's precast of a
+spell) covers what runs outside the wrapper. No mark can leak and none survives an error: there is no flag to clear. The wrapper's `runWith` runs
+the cast in a `pcall` frame and restores the outer context after it, an error included, and a delayed callback gets the context it was started
+in (`tests/supports_test.lua` proves: nil outside a cast, the casting player inside, the same in the delayed event, nil after an error, a nested
+cast of another player names that player and the outer one is back after it). The layer compares the id with the attacker's: another player's
+cast, a summon's hit (the attacker is a monster), a caster's cast, a tick (`ORIGIN_CONDITION`) and a reader that errors all keep the class curve
+(the new block of `tests/monster_defence_test.lua`). Bulwark still blocks weapon hits only, never a spell.
+
+*What it moves, after.* The same casts on the same dummies (the table's last column; a Monk at 20 is from the first run, the dummy of the second
+rolled Plated): Reaping Gyre 64 to 36% at level 20, 76 to 40% at 100 (the weapon cap: its hits are small); Earthbreaker 47 to 19%; Colossus
+Fall 73 to 20%; Bastion Cry 55 to 11%; the Monk's palms 21 to 53% down to 2 to 13%; the Ranger's and Thief's mines 33 to 11% at level 100.
+A spell hit that is not a weapon class's own (a minion, a wolf, a caster's spell) is unchanged. Multi-hit spells with small hits (Reaping Gyre)
+still lose the cap, 40%, as an auto attack of that size does.
+
+*Minions and wolves (2c).* Read from the code, not measured on the rig: a Necromancer's minion and a Beastmaster's wolf hit with `ORIGIN_SPELL`
+since O468 and the attacker is a monster (a summon of the player), so `ctx.weaponSpell` is false and they meet the class curve exactly as before.
+That is on purpose: the Beastmaster's `autoByLevel` bite factor (`chaos_constants.lua`) is sized so that a plain build keeps its old bite against
+the class-curve armour share of a normal monster (within 2% at every level 50 to 1,300), and `minion_model.py` and `companion_model.py`
+assume the same. They gain from the smaller flat armour of part 1 (their melee attack checks it).
+
+
+*Part 3: the Monk's fist.*
+
+*Cause (engine, with file and line).* `Weapon::useFist` (`weapons.cpp` 330-358, the only bare-fist roll; called from `Player::doAttacking`, `player.cpp`
+3822, when no weapon is in the hands; a fist weapon is a shield-type item that `Player::getWeapon` skips, patch 0087) rolls `attackValue = 7` (338)
+through `Weapons::getMaxWeaponDamage` (340) and `-normal_random(0, maxDamage)` (350), with `blockedByArmor` and `blockedByShield` (344-345): the
+monster's flat armour and defence take their part in `Creature::blockHit` before any Lua event. The Monk's scaling is `monk_combat.lua`
+`onOffence` (`ChaosMonkCombat`, registered on the monster by the Monk's `onTargetCombat` callback when a client sets the target), a later event
+that multiplies the hit by `M.unarmedFactor` (about 5 at level 100, 12 at level 8): after the flat armour and after the monster layer. A level 100
+Monk rolled 31 on the mean (63 at most), the stock monster took 30 + 30, and the layer then measured the armour on the 31. Measured before: 82%
+of its swings blocked outright at level 100 (63% at 20, 86% at 300, 93% at 500), 1 to 2 of every 30 points arriving, 1.4% of its damage reaching
+the monster with the layer on (6% with the layer off, as the O501 report said).
+
+*Method note.* The rig sets a target from Lua, which does not run the `onTargetCombat` chain that a client's attack does (`Game::playerSetAttackedCreature`),
+so the Monk's event was never registered on the dummies of the O501 runs and the Monk numbers of that report had no scaling in them. This run
+fires the chain when it arms a monster and puts its probe last, so the Monk's final damage is the game's. A "reaches" share is a ratio of final
+damage with the layer on over the same character with it off, so it does not depend on the scaling.
+
+*What is built.*
+1. Lua, both binaries: the layer measures the armour of a Monk's bare-fist hit on the size it will have after the scaling
+   (`ChaosMonk.fistUnits`, `ctx.hitUnits` in `C.defend`; 1 when the engine rolls the Monk's fist). Without it the Monk sat at the weapon cap of G2
+   because of units. It takes the same share of the arriving hit, so it takes the same share of the scaled one.
+2. Engine patch 0091 (`0091-fist-attack-from-script.patch`: `Player:setFistAttack(attack, multiplier)` / `getFistAttack`, `Weapon::useFist` rolls
+   `round(maxWeaponDamage(level, fist skill, attack, attack factor) x multiplier)` when an attack is set; header `src/chaosfist.h`, bad numbers
+   (zero, negative, NaN, infinity, over 2,000 or 10) mean "none set"; never saved). `fist_sync.lua` keeps the pair right for the Monk line (the
+   fist weapons' attack counts when higher) and for Open Hand Creed (`archetypes.lua`, `A.openHandPush`) at every attack a player starts, and
+   `monk_combat.lua` / `archetypes.lua` apply only the difference between what was pushed and what is wanted now (`M.pushCorrection`, nearly always
+   1: a level up or a fist weapon swapped since the last attack is corrected on the hit itself), keeping the old factor on an engine without the
+   patch and for the first swing before any push. The capability is the method (`type(Player.setFistAttack) == "function"`), never a version.
+3. The weapon curve and G6: `roll_mean` of the fist line is the Monk's fist attack times its `meleeDamage` (the units that arrive on both binaries);
+   G6 holds at 85 levels that a fist class loses at most as much as the median class (+1 point), at most 20 points less, and 5 points under the cap.
+   `weaponHitCurve` did not move (the median class is a Warrior-sized hit). `defence_curve.py --fist` prints the Monk on both engines.
+
+*Measured, the Monk, four states* (the real monsters of the table above, a bare Monk of the level with the best fist weapon; each cell: blocked
+outright / arriving per swing at the layer (the engine's roll) / layer removed / reaches / seconds to kill a typical hunt monster at the Monk's
+armourless damage of the level, 149 / 159 / 112 / 117 / 208 / 431 per second at 8 / 20 / 60 / 100 / 300 / 500; level 60 has no cell before, the
+run lost it):
+
+| Level | Monster | Before | After part 1 (old engine) | + layer on the scaled size (old engine) | Engine with patch 0091 |
+|---:|---|---|---|---|---|
+| 8 | Troll | 20% / 7 / 31% / 45% / 0.9 | 0% / 18 / 26% / 79% / 0.5 | 0% / 18 / 5% / 97% / 0.4 | 0% / 146 / 4% / 94% / 0.4 |
+| 20 | Mummy | 63% / 3 / 33% / 10% / 5.1 | 3% / 17 / 32% / 62% / 0.8 | 2% / 19 / 5% / 89% / 0.5 | 0% / 168 / 5% / 99% / 0.5 |
+| 60 | Wyrm | n/a | 3% / 18 / 40% / 49% / 4.6 | 4% / 21 / 16% / 74% / 3.1 | 1% / 158 / 13% / 87% / 2.6 |
+| 100 | Retching Horror | 82% / 1 / 54% / 1% / 282.1 | 4% / 21 / 40% / 37% / 11.2 | 4% / 21 / 22% / 53% / 7.7 | 1% / 177 / 18% / 76% / 5.4 |
+| 300 | Juggernaut | 86% / 2 / 40% / 1% / 582.7 | 7% / 24 / 40% / 22% / 38.1 | 7% / 22 / 30% / 25% / 33.8 | 1% / 205 / 26% / 43% / 19.9 |
+| 500 | Spiked Enforcer | 93% / 1 / 39% / 0% / 2043.2 | 13% / 47 / 40% / 31% / 32.8 | 8% / 52 / 35% / 36% / 28.0 | 0% / 462 / 18% / 67% / 15.2 |
+
+The old engine with the new Lua is what a server gets until the rebuild: the layer rule and the flat armour cap, the hit still rolled as attack 7,
+so the flat armour still takes its part of the small hit (the model, `defence_curve.py --fist`: stock engine 79 / 73 / 59 / 54 / 50 / 50% at
+8 / 20 / 60 / 100 / 300 / 500 against 91 / 87 / 80 / 78 / 78 / 79% with the patch; the stock flat armour gave 47 / 2 / 0.2 / 6 / 2 / 6%, the 6% of
+the O501 report at level 100). With the engine patch the Monk reaches 76% at level 100 and 67% at 500 against the Warrior's 64% and 68% (within 10
+points at 100 and 500, 12 above at 100; the Monk's hit is bigger than the median weapon hit at the low levels, so it loses less of it: G6).
+Level 20 and 300 are noisy cells (the Mummy has its own file resistance and its rolls vary).
+
+*The Monk's armourless damage did not move.* The stock path against the pushed path in one running server, ABBA, 120 s a level, layer off:
+147 / 158 / 109 / 119 / 212 / 429 per second stock and 151 / 160 / 115 / 115 / 204 / 433 pushed, +2.5 / +1.2 / +4.9 / -3.2 / -3.7 / +0.9%, +0.2%
+over the six levels (the two stock runs of one level differ by up to 13%: the noise of 120 bell rolls is about 4%; a cell is not a proof, the sum
+is). By construction the expected hit is the same (`tests/fist_sync_test.lua` holds the push against `unarmedFactor` to 0.1% at 7 levels, 3
+vocations, 3 skills, 3 stances), and `class_dps_model.py --check` and every model check are green: no model reads the fist's roll.
+A Warrior, Thief and Ranger hit on the new engine arrives as on the old (a weapon never reaches `useFist`; the dummy rolls 25 / 78 / 235 against
+29.5 / 82.6 / 226 for a Warrior at 20 / 100 / 500, the skill of the characters had grown between the runs).
+
+*Build.* The engine was built here from the installed source tree (patches 0001 to 0088 and 0090: the base tree is not in git, and the tree of the
+local server has no 0089) with 0091 on top: `cmake -DCMAKE_BUILD_TYPE=Release -DUSE_LUAJIT=ON`, 4,385,440 bytes, run from a folder of its own against
+the same data. `patch -p1 --fuzz=0 --dry-run` applies on that tree (`SRC_TREE=DIR python3 -I tools/fist_attack_patch_test.py`); 0091 touches
+luascript.cpp/h, player.h and weapons.cpp, not the files of 0089 (monster.h/cpp), so the order of the chain does not matter for it.
+Open Hand Creed on a non-Monk was not run on the rig (the numbers are tested: `fist_sync_test.lua`). The first swing of a session on the new engine
+rolls attack 7 and is corrected by the old factor; the push is made at that swing for the next.
+
+*Not measured.* Minions and wolves (part 2), 15 of the 21 classes, levels over 500 on real monsters, a live server, a client attack (the rig
+fires the same callback chain), Open Hand Creed, the old binary's Monk with the scaling event on (the ratio does not need it).
+
+
+*Owner steps.* Admin app first: tab Painel > card "Atualizar servidor" > "Verificar", then "Aplicar e reiniciar": it installs the Lua and runs the step
+`monsterflat` (parts 1 and 2 and the layer rule of part 3 work on the old engine at once). The engine of part 3 needs a rebuild: Painel > card
+"Recompilar engine" > button "Recompilar" (confirm "Recompilar o engine agora?"), and when it is done "Atualizar servidor" > "Verificar" >
+"Aplicar e reiniciar" again installs the new `tfs`. Shell fallback: `python3 -I server/tools/install_all.py SERVER_DIR --only files,monsterflat`.
+Decisions left to the owner: (1) the flat share, 10% (boss 20%): `flatShare` and `flatRollCurve`, a lower share lowers the caps again at the
+next install; (2) minions and wolves keep the class curve (part 2c), say if they should meet the weapon rule; (3) the Monk with the engine patch
+reaches more than a Warrior at the low levels (its hit is bigger than the median weapon hit: G6 allows up to 20 points); (4) the patch note lines
+in `2026-11-13` say the full Monk fix needs the engine update: drop that sentence if the engine goes live first.
 
 **The physical cap.** The total of the file's physical percent, armour and Plated never passes 90 percent:
 `1 - (1 - p0) x (1 - armour) x (1 - Plated)`, and when it would, the layer takes the hit back up to 10 percent of the raw hit.
@@ -31267,9 +31942,11 @@ chain, Last Breath's place, the hit multipliers named above, and the replacement
 bonus (x(1 + 0.0015 L) on a monster's hit in `combatChangeHealth`, suspected to apply twice because of the re-entry after the
 events) is not touched and nothing here relies on it.
 
-**Install.** `python3 -I server/tools/install_all.py SERVER_DIR --only monsterresists` (the admin app has no button: a
-once-per-install data step). **Tests:** `tests/monster_defence_test.lua`, `tests/defence_order_test.lua`,
-`tests/monster_tiers_test.lua` (rank table), `tools/patch_monster_resists_test.py`, `tools/defence_curve.py --check`, the client
+**Install.** `python3 -I server/tools/install_all.py SERVER_DIR --only monsterresists,monsterflat` (the admin app has no button: a
+once-per-install data step; `monsterflat` is O505, "Flat armour, weapon spells and the Monk's fist"; it needs the `files` step first, which
+installs the bounty pool and the config it reads). **Tests:** `tests/monster_defence_test.lua`, `tests/defence_order_test.lua`,
+`tests/monster_tiers_test.lua` (rank table), `tools/patch_monster_resists_test.py`, `tools/patch_monster_flat_defence_test.py`,
+`tests/fist_sync_test.lua`, `tools/defence_curve.py --check`, the client
 `game_monsterbar/monsterbarstyle_test.lua`. **Not verified:** a live server (the event order is read from the engine source, not
 observed), the client chips in the real client, the pt-BR texts by a speaker.
 
@@ -32155,7 +32832,7 @@ the seconds move by the ratio fit / table: 0.996 to 1.003. `pvp_scale_core.lua` 
 are inside the general limit now (Deadeye burst at 500 0.93 -> 0.83 and at 1000 1.01 -> 0.76, Iron Sage losses at 1000 19 -> 18): `pvp_model.py --check` is green. Battleground normalisation untouched.
 
 **Owned unique items.** `ChaosItemTooltip.refreshPassive(desc, enText, name)` (`item_tooltip_core.lua`, called in `item_tooltip.lua` before the pt-BR substitution and the O467
-block) puts the current English passive line in the place of the stored one: the exact current text if it is there, else from `<Name>: ` to before ` (Requires level` / ` (Requer nível` (or the
+block) puts the current English passive line in the place of the stored one: the exact current text if it is there, else from `<Name>: ` to before ` (Requires level` / ` (Requer nível` (or ` (Meant for level` / ` (Feito para o nível` since O510; or the
 end); a name that appears twice is left alone. The pt-BR line, the block and the O467 explanation then find the current text. Tested with an old stored line
 (`item_tooltip_test.lua`); the glue in `item_tooltip.lua` (a pcall around it) was not run in an engine.
 
@@ -32210,3 +32887,54 @@ drop chance twice. Owner 2026-11-11: colour option 3 (the place in colour, the n
   no drop), `tools/install_gems_test.py` (old text to new, second run), client `tooltiplogic_test.lua`.
 - **Not verified**: a real client (the row layout of `gemBox` in `item_tooltip.lua` is not run by a test; the rows and colours are),
   a speaker's reading of the pt-BR lines.
+
+## Editor brushes (O514) (`tools/gen_editor_brushes.py`, `mapeditor/tools/merge_brushes.py`, `tools/ci/check_editor_palette.py`)
+
+Our map editor borders our 12 pack grounds by itself. Before, the owner placed a ground and its border pieces by id.
+
+- **What the upstream editor reads** (the pin in `mapeditor/UPSTREAM`; `editor/core/brushstore.cpp`, `editor/core/tilesetstore.cpp`,
+  `editor/core/terrainborderalignment.h`, data in `data/1098/`). One `brushes.json` and one `tilesets.json` per client version,
+  JSON, no XML, no include of a second file. `grounds`: name to `{zorder, lookid, items [[id, chance]], borders [{align
+  outer|inner, border KEY, to NAME|"*"|""}], friends, hate_friends, optional, solo_optional}`. `borders`: KEY to 13 slots,
+  slot 0 unused, then n, e, s, w, cnw, cne, csw, cse, dnw, dne, dse, dsw; a slot is an id or `{"variants": [[id, chance]]}`.
+  `tilesets.json`: category (terrain, doodad, item, raw, collection, door) to palette name to a list of ids.
+- **Its rule.** For a tile, `computeBorderItems` looks at the 8 neighbours. The neighbour with the higher z order that owns an
+  `outer` set for this tile's ground makes the pieces; the neighbour mask goes through a table of 256 entries with up to 4
+  slots. Written as a rule (it reproduces all 256 entries, checked when the test was written): exactly two sides that meet give
+  the inner corner d.. of that pair; any other sides give one edge per side; a diagonal neighbour whose two sides are not the
+  higher ground gives the outer corner c... Equal z orders: the one with a matching outer set wins, then name order.
+- **Ours.** `gen_editor_brushes.py` writes `mapeditor/data/1098/cinders/cinders_brushes.json` and `cinders_tilesets.json` from
+  `data/items/art_items.csv` and the z orders of the planner (`tools/areaplan_build.lua` `PACK`; `EDITOR_Z` in the script for the
+  other six: fine sand 3050, floors 3300-3320, red clay 3480, bright grass 3640). Stock grounds: dirt 1000, sand 3000, grass 3500,
+  earth 10500, so ours draw over stock dirt and sand; stock grass draws over our floors, clay and sand; loam ties with stock grass
+  and loses by name order (grass over loam); dense grass and fresh snow tie (they never meet). Each ground has one `outer` block
+  `to: "*"`, no friends, no inner block.
+- **The 12 pieces.** Editor n, e, s, w = our n, e, s, w. Outer corners cnw, cne, csw, cse = our nw, ne, sw, se. Inner corners dnw,
+  dne, dse, dsw = our in_nw, in_ne, in_se, in_sw. The proof, three parts. (1) The planner's table
+  (`areaplan_build.lua` `packPiece`, `piecesFrom`) is the same and the planned areas were checked on renders; the test reads it.
+  (2) The rule above against `ChaosAreaGenCore.borderPieces` on all 256 patterns, in luajit and lua5.3: 176 give the same
+  pieces. The other 80 are the patterns with three or four sides: the editor puts an edge per side, the generator the inner
+  corner of a pair and an edge for the rest; the sides and the corners they cover are equal (the test asserts both). (3) The
+  art: in the families whose rim is cut out of the tile (lush, dense, dry and meadow grass, loam, jade tile, slate: 7 of 12) the
+  transparent part of n is at the south, of s at the north, e at the west, w at the east; each of nw, ne, sw, se is opaque on
+  its two named sides and shows the lower ground on the other two (the convex rounded corner of a ground that grows one tile
+  into the lower one); each in_ piece is over 96 % opaque and its bite, if any, is at the corner away from its name (a tile
+  with two sides covered). That is the geometry of cnw / dnw. The other 5 families paint the rim into an opaque tile; their
+  shape matches by eye (contact sheet) and by the same file layout, not by a test.
+- **Palettes.** Terrain `Cinders`: the 12 grounds, 8 water, 114 shore pieces. RAW `Cinders objects`: lake objects, dock props,
+  trees, stumps. RAW `Cinders border pieces`: the 144 border pieces, for a fix by hand. Shores are not brushes: a shore set has 19
+  pieces named after land sides in 4-neighbour combinations (in_ew, in_nsw, ...), animated, drawn on the water tile; the editor
+  picks 12 slots from 8 neighbours, so the naming does not map. Use them from the palette.
+- **How it gets into the editor.** The editor has no include, and a change of its program is not needed:
+  `mapeditor/tools/merge_brushes.py DATA_DIR` merges the two files into its `brushes.json` and `tilesets.json`. Our keys are replaced,
+  stock entries stay, a ground that names an id a stock ground owns is refused. `mapeditor-build.yml` runs it on the release folder
+  (patched variant) so the self-updater's zip carries the merge, and puts the files and the tool into the source zip.
+  `windows-package.yml` runs it again on the unpacked editor (idempotent), also for the upstream fallback.
+  The stock files' ids are server ids of the game's items.xml, which the package puts into `data\1098` too; the build's own zip
+  has the stock items.xml, so our ids show as unknown there until packaged.
+- **Tests and checks.** `tools/gen_editor_brushes_test.py`, `mapeditor/tools/merge_brushes_test.py`,
+  `tools/ci/check_editor_palette.py` (+ `_test.py`), `gen_editor_brushes.py --check` (CI diffs the generated files).
+- **Not verified**: the brushes in the running editor (Windows build). How the owner tests it: open the editor, open
+  the palette `Cinders` (terrain), choose "cinders thick lush grass", paint a patch on stock grass or dirt; next to it paint
+  "cinders loam" or "cinders fine sand". The border pieces must appear on the lower tiles by themselves (automagic on). If a
+  corner looks wrong, say which ground and which corner: the mapping is one table (`PIECE_OF`) in the script.

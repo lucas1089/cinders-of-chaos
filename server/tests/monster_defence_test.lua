@@ -114,6 +114,7 @@ local function newPlayer(absorb)
 	function p:getMaster() return nil end
 	function p:getSlotItem(slot) return self.slots[slot] end
 	function p:getName() return "Hero" end
+	function p:getVocation() local v = self.voc or 4; return {getId = function() return v end} end
 	return p
 end
 -- an item with absorbPercent by ItemType (the engine's ability list, index from 1 = physical, 2 = energy, ...)
@@ -306,6 +307,100 @@ do
 	CFG.enabled = false
 	eq(hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), H, "enabled = false: untouched")
 	CFG.enabled = true
+end
+
+-- ---------------------------------------------------------------- O505: a spell of a weapon class is a weapon-size hit
+do
+	local m = spawnMonster("Rotling", {level = 500})
+	local mA, mAw = MD.armourOf(m), MD.weaponArmourOf(m)
+	local cap = C.weaponShareCap(CFG, "normal")
+	local savedSS = rawget(_G, "ChaosSupportsSpell")
+	local castPid -- the player id of the running cast, nil outside one (ChaosSupportsSpell.cast of data/spells/chaos/_supports.lua)
+	ChaosSupportsSpell = {cast = function() if castPid then return castPid, 201 end return nil end}
+	local function spell(H, who, ctype)
+		return hit(m, who or player, H, ctype or COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL)
+	end
+	-- the pure rule
+	eq(C.weaponSpellHit(CFG, 4, 7, 7), true, "weaponSpellHit: a Warrior inside its own cast")
+	eq(C.weaponSpellHit(CFG, 4, nil, 7), false, "weaponSpellHit: outside any cast")
+	eq(C.weaponSpellHit(CFG, 4, 8, 7), false, "weaponSpellHit: another player's cast")
+	eq(C.weaponSpellHit(CFG, 4, 7, nil), false, "weaponSpellHit: no attacker")
+	for _, v in ipairs({1, 5, 10, 20, 21, 22}) do
+		eq(C.weaponSpellHit(CFG, v, 7, 7), false, "weaponSpellHit: caster vocation " .. v .. " keeps the class curve")
+	end
+	for _, v in ipairs({3, 4, 7, 8, 11, 12, 13, 14, 15, 17, 18, 19, 23, 24, 25}) do
+		eq(C.weaponSpellHit(CFG, v, 7, 7), true, "weaponSpellHit: weapon vocation " .. v)
+	end
+	eq(C.weaponSpellHit(CFG, nil, 7, 7), false, "weaponSpellHit: no vocation")
+	eq(C.weaponSpellHit(CFG, 0, 7, 7), false, "weaponSpellHit: vocation 0 (no vocation)")
+	eq(#CFG.casterVocations, 6, "six casting classes in the config")
+	-- the layer: the same physical spell hit, outside a cast and inside the player's own cast
+	local H, small = 1000, 100
+	castPid = nil
+	local outside, outsideSmall = spell(H), spell(small)
+	eq(outside, math.floor(H * (1 - C.armourReduction(DEF, mA, H)) + 0.5), "outside a cast: the class curve")
+	castPid = player:getId()
+	local inside, insideSmall = spell(H), spell(small)
+	eq(inside, math.floor(H * (1 - C.weaponShare(DEF, mAw, H, cap)) + 0.5), "inside the player's own cast: the weapon armour value and cap")
+	eq(insideSmall, math.floor(small * (1 - C.weaponShare(DEF, mAw, small, cap)) + 0.5), "a small hit: the weapon cap")
+	ok(inside > outside and insideSmall > outsideSmall, "the weapon rule takes less of a weapon-size spell hit than the class curve did")
+	ok(insideSmall >= small * (1 - cap) - 1, "a spell hit of a weapon class never loses more than the weapon cap")
+	-- a hit of a weapon spell is the same hit as an auto attack of the same size
+	eq(inside, hit(m, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), "the same share as a weapon hit of that size")
+	-- a caster inside its own cast keeps the class curve
+	local mage = newPlayer(); mage.voc = 1
+	castPid = mage:getId()
+	eq(spell(H, mage), outside, "a caster's physical spell keeps the class curve")
+	-- a summon (a minion, a wolf) of a player inside the player's cast is not the player: the class curve
+	castPid = player:getId()
+	local minion = newMonster("Minion", {master = player})
+	eq(hit(m, minion, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL), outside, "a summon's spell hit keeps the class curve")
+	-- another player's cast does not make this player's hit a weapon spell
+	local other = newPlayer(); other.voc = 4
+	castPid = other:getId()
+	eq(spell(H), outside, "another player's cast: no mark leaks to this hit")
+	-- the cast is over: the next hit is a class-curve hit again
+	castPid = nil
+	eq(spell(H), outside, "after the cast the mark is gone")
+	-- the element part of a spell is the resistance's business only, whatever the cast
+	castPid = player:getId()
+	eq(spell(H, player, COMBAT_FIREDAMAGE), H, "an elemental spell: no armour")
+	-- a tick of a dot spell inside a cast still skips the armour; Bulwark never blocks a spell
+	castPid = nil
+	-- an error in the cast function: the layer reads the supports context only, and a failing reader leaves the class curve
+	ChaosSupportsSpell = {cast = function() error("boom") end}
+	eq(spell(H), outside, "a failing context reader: the class curve, no error")
+	ChaosSupportsSpell = nil
+	eq(spell(H), outside, "no supports wrapper at all: the class curve")
+	ChaosSupportsSpell = savedSS
+	-- a snare's or a mine's burst and the engine's precast of a spell: the combat log knows the cast (ChaosCombatLog.inSpell)
+	local savedCL = rawget(_G, "ChaosCombatLog")
+	ChaosSupportsSpell = {cast = function() return nil end}
+	local logPid
+	ChaosCombatLog = {inSpell = function(pid) return pid == logPid end}
+	logPid = player:getId()
+	eq(spell(H), inside, "a burst named by the combat log is the player's own spell: the weapon rule")
+	logPid = other:getId()
+	eq(spell(H), outside, "the combat log naming another player's cast: no mark leaks")
+	logPid = player:getId()
+	eq(hit(m, minion, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL), outside, "a summon's hit keeps the class curve even while its master casts")
+	eq(spell(H, mage), outside, "a caster keeps the class curve")
+	ChaosCombatLog = {inSpell = function() error("boom") end}
+	eq(spell(H), outside, "a failing combat log: the class curve, no error")
+	ChaosCombatLog = savedCL
+	ChaosSupportsSpell = savedSS
+	-- Bulwark (weapon hits only) does not block a weapon spell
+	local bulwark = spawnMonster("Rotling", {level = 500})
+	ChaosTierState[bulwark:getId()] = {tier = "rare", depth = 0, mods = {"bulwark"}, step = 0}
+	ChaosSupportsSpell = {cast = function() return player:getId(), 201 end}
+	local realRand = math.random
+	math.random = function() return 1 end -- every block roll would block
+	local blockedMelee = hit(bulwark, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
+	local spellVsBulwark = hit(bulwark, player, H, COMBAT_PHYSICALDAMAGE, ORIGIN_SPELL)
+	math.random = realRand
+	eq(blockedMelee, 0, "Bulwark blocks a weapon hit")
+	ok(spellVsBulwark > 0, "Bulwark never blocks a spell, weapon class or not")
+	ChaosSupportsSpell = savedSS
 end
 
 -- ---------------------------------------------------------------- element resistance: one cap, rank bonus, Resistant, penetration

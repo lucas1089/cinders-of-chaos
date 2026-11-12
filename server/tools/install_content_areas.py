@@ -51,7 +51,8 @@ ground under every tile (their copies of floor 6 have none under the outer walls
 Idempotent: a placed plan (every tile there, the same items) and a grown room are recognised and left alone; a plan
 that changed since it was placed (other tiles) is refused with the reason (restore the map from <map>.otbm.bak, which
 is written before the first change when missing, and run the whole install again). The map is written through
-<map>.otbm.tmp and checked (tile count) before it replaces the old one.
+<map>.otbm.tmp and checked (tile count, and write_map's splice guard map_write_guard.py, O512: no tile but the intended
+ones differs) before it replaces the old one. The end tiles the room moves keep every item node byte for byte.
 --dry-run computes and checks everything and writes nothing. --only places only these plans (the room and the places
 file still cover every placed plan). --no-room leaves the room alone (no slots: no teleports, no display spawns).
 --cache-dir DIR (default $CHAOS_CACHE_DIR, else none): the plan compile cache, see "compile cache" below; a miss is
@@ -380,7 +381,7 @@ def room_layout(world, room, portal, portal_at=None, wing=None, grown=None):
     z = wing['z'] if wing else room['z']
     src_z = (wing.get('from') or z) if wing else z
     r0, r1 = room['rows']
-    tiles, copies, module, caps, old, swept, cols = {}, {}, set(), set(), set(), set(), []
+    tiles, copies, module, caps, old, swept, cols, moved = {}, {}, set(), set(), set(), set(), [], {}
     for side in ('east', 'west'):
         s = room.get(side)
         n_mod = (wing.get(side) or {}).get('modules', 0) if wing else (s or {}).get('modules', 0)
@@ -429,6 +430,7 @@ def room_layout(world, room, portal, portal_at=None, wing=None, grown=None):
                 q = (x + shift, y, z)
                 tiles[q] = dict(ground=None, items=items, flags=world.flags(p))
                 caps.add(q)
+                moved[q] = p  # run() puts the old tile there byte for byte (keep_moved)
     if wing and wing.get('sweep'):
         swept = {p for p in tiles if world.has(p) and p not in old}
     # the slots: new columns whose source column has a teleport on the north teleport row
@@ -448,7 +450,7 @@ def room_layout(world, room, portal, portal_at=None, wing=None, grown=None):
             slots.append(dict(teleport=(x, row, z), sign=(x, sign, z), cells=cells, side=side))
     # along the corridor: west to east, the north teleport of a column before the south one (the bands ascend that way)
     slots.sort(key=lambda s: (s['teleport'][0], s['teleport'][1]))
-    return dict(tiles=tiles, module=module, caps=caps, old=old, swept=swept, slots=slots, z=z)
+    return dict(tiles=tiles, module=module, caps=caps, old=old, swept=swept, slots=slots, z=z, moved=moved)
 
 
 def check_swept(map_path, swept, portal, items, log):
@@ -469,6 +471,85 @@ def check_swept(map_path, swept, portal, items, log):
                 raise InstallError('room: a wing would replace an action id, unique id, teleport or sign at %d,%d,%d '
                                    '(item %d); nothing written' % (p + (iid,)))
     log('room: %d tile(s) of open ground replaced by the wings hold only decoration' % len(swept))
+
+
+def _split_node(raw):
+    """(unescaped payload, [raw escaped bytes of each direct child node]) of one node's bytes (0xFE .. 0xFF)"""
+    i, n, pay = 1, len(raw), bytearray()
+    while i < n and raw[i] not in (0xFE, 0xFF):
+        if raw[i] == 0xFD and i + 1 < n:
+            pay.append(raw[i + 1])
+            i += 2
+        else:
+            pay.append(raw[i])
+            i += 1
+    kids, depth, start = [], 0, 0
+    while i < n:
+        c = raw[i]
+        if c == 0xFD:
+            i += 2
+            continue
+        if c == 0xFE:
+            if depth == 0:
+                start = i
+            depth += 1
+        elif c == 0xFF:
+            if depth == 0:
+                break
+            depth -= 1
+            if depth == 0:
+                kids.append(raw[start:i + 1])
+        i += 1
+    return bytes(pay), kids
+
+
+def read_tile_lossless(raw, pos):
+    """a map tile node (escaped bytes) as {'flags', 'ground', 'items': [(id, {'node': raw item node})]}: every item keeps
+    its node bytes (any attribute, the things inside a container), so tile_nodes writes it back unchanged. Refused: a
+    house tile, a tile attribute other than the flags and the ground, a child that is not an item (O512)"""
+    pay, kids = _split_node(raw)
+    if not pay or pay[0] != T_TILE:
+        raise InstallError('%d,%d,%d is not a plain tile (a house tile?); cannot be moved byte for byte' % pos)
+    k, flags, ground = 3, 0, None
+    while k < len(pay):
+        a = pay[k]
+        if a == ATTR_TILE_FLAGS and k + 5 <= len(pay):
+            flags = struct.unpack_from('<I', pay, k + 1)[0]
+            k += 5
+        elif a == ATTR_ITEM and k + 3 <= len(pay):
+            ground = struct.unpack_from('<H', pay, k + 1)[0]
+            k += 3
+        else:
+            raise InstallError('%d,%d,%d has a tile attribute (%d) we do not know; cannot be moved byte for byte' % (pos + (a,)))
+    items = []
+    for kid in kids:
+        kp, _ = _split_node(kid)
+        if len(kp) < 3 or kp[0] != 6:
+            raise InstallError('%d,%d,%d holds a node that is not an item; cannot be moved byte for byte' % pos)
+        items.append((struct.unpack_from('<H', kp, 1)[0], {'node': kid}))
+    return dict(flags=flags, ground=ground, items=items)
+
+
+def keep_moved(map_path, lays, log=print):
+    """The end tiles of a growing room move (room_layout `moved`: new place -> old place). room_layout makes them from
+    the item ids alone, which drops every attribute (an action id, a unique id, a text, a count, an attribute we do not
+    know, the things in a container). Here each takes its old tile from the map byte for byte (O512). Refused when the
+    old tile cannot be read that way."""
+    src = {}
+    for lay in lays:
+        src.update(lay.get('moved') or {})
+    if not src:
+        return 0
+    data = open(map_path, 'rb').read()
+    ranges = tile_ranges(data, sorted(set(src.values())))
+    for q, p in sorted(src.items()):
+        s, e = ranges[p]
+        t = read_tile_lossless(data[s:e + 1], p)
+        for lay in lays:
+            if q in lay['tiles']:
+                lay['tiles'][q] = t
+    log('room: %d end tile(s) moved with their items byte for byte' % len(src))
+    return len(src)
 
 
 def closed_ids(cfg):
@@ -643,6 +724,33 @@ def _esc(b):
     return bytes(out)
 
 
+def tile_node_bytes(k, t):
+    """the escaped bytes of the one tile node tile_nodes writes for tile t at k (no area node round it)"""
+    p = bytes([T_TILE, k[0] & 0xFF, k[1] & 0xFF])
+    if t.get('flags'):
+        p += bytes([ATTR_TILE_FLAGS]) + struct.pack('<I', t['flags'])
+    if t.get('ground'):
+        p += bytes([ATTR_ITEM]) + struct.pack('<H', t['ground'])
+    out = bytearray(b'\xFE' + _esc(p))
+    for iid, attrs in t['items']:
+        if attrs.get('node'):  # an item node kept as it was read (read_tile_lossless): every attribute and content
+            out += attrs['node']
+            continue
+        q = bytes([6]) + struct.pack('<H', iid)
+        if attrs.get('aid'):
+            q += bytes([ATTR_ACTION]) + struct.pack('<H', attrs['aid'])
+        if attrs.get('uid'):
+            q += bytes([5]) + struct.pack('<H', attrs['uid'])
+        if attrs.get('tele'):
+            q += bytes([ATTR_TELE]) + struct.pack('<HHB', *attrs['tele'])
+        if attrs.get('raw'):  # other attributes kept as read (a sign's text, a count)
+            q += attrs['raw']
+        kids = b''.join(b'\xFE' + _esc(bytes([6]) + struct.pack('<H', k)) + b'\xFF' for k in attrs.get('kids', ()))
+        out += b'\xFE' + _esc(q) + kids + b'\xFF'  # kids: item ids of the things inside a container
+    out += b'\xFF'
+    return bytes(out)
+
+
 def tile_nodes(tiles):
     """the escaped bytes of tile area nodes holding these tiles (ground inline when given, items as nodes)"""
     out = bytearray()
@@ -656,25 +764,7 @@ def tile_nodes(tiles):
                 out += b'\xFF'
             cur = akey
             out += b'\xFE' + _esc(bytes([T_AREA]) + struct.pack('<HHB', *akey))
-        p = bytes([T_TILE, k[0] & 0xFF, k[1] & 0xFF])
-        if t.get('flags'):
-            p += bytes([ATTR_TILE_FLAGS]) + struct.pack('<I', t['flags'])
-        if t.get('ground'):
-            p += bytes([ATTR_ITEM]) + struct.pack('<H', t['ground'])
-        out += b'\xFE' + _esc(p)
-        for iid, attrs in t['items']:
-            q = bytes([6]) + struct.pack('<H', iid)
-            if attrs.get('aid'):
-                q += bytes([ATTR_ACTION]) + struct.pack('<H', attrs['aid'])
-            if attrs.get('uid'):
-                q += bytes([5]) + struct.pack('<H', attrs['uid'])
-            if attrs.get('tele'):
-                q += bytes([ATTR_TELE]) + struct.pack('<HHB', *attrs['tele'])
-            if attrs.get('raw'):  # other attributes kept as read (a sign's text, a count)
-                q += attrs['raw']
-            kids = b''.join(b'\xFE' + _esc(bytes([6]) + struct.pack('<H', k)) + b'\xFF' for k in attrs.get('kids', ()))
-            out += b'\xFE' + _esc(q) + kids + b'\xFF'  # kids: item ids of the things inside a container
-        out += b'\xFF'
+        out += tile_node_bytes(k, t)
     if cur is not None:
         out += b'\xFF'
     return bytes(out)
@@ -746,7 +836,7 @@ def tile_ranges(data, positions, houses=None, missing=None):
     return out
 
 
-def write_map(world_path, out_path, remove, new_tiles):
+def write_map(world_path, out_path, remove, new_tiles, log=None):
     """the world with the tiles at `remove` cut out and `new_tiles` added (before the towns node)"""
     import area_plan_place as PL
     data = open(world_path, 'rb').read()
@@ -769,7 +859,18 @@ def write_map(world_path, out_path, remove, new_tiles):
             else:
                 pos = e + 1
         f.write(data[pos:])
+    guard_map(world_path, out_path, remove, new_tiles, log=log)
     return len(cuts)
+
+
+def guard_map(old_path, new_path, remove, new_tiles, log=None, **kw):
+    """The splice guard (map_write_guard.py, O512): the new map is the old one with exactly the tiles of `remove` cut out
+    and `new_tiles` put in, and nothing else different. Raises InstallError when it is not; the caller then does not
+    replace the map, and the new file stays for inspection. kw: allow_nodes, allow_content, text_only (see the guard)."""
+    import map_write_guard as G
+    gone, new = set(map(tuple, remove)), set(map(tuple, new_tiles))
+    G.verify(InstallError, old_path, new_path, log=log, add=new - gone, change=new & gone, remove=gone - new,
+             expect={tuple(p): tile_node_bytes(p, t) for p, t in new_tiles.items()}, **kw)
 
 
 # ------------------------------------------------------------------------------------------------ spawns
@@ -1403,6 +1504,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 if w is not None:
                     wing_lays.append(l)
         todo_lays = [l for l, st in zip(lays, rstates) if st == 'todo']
+        keep_moved(map_path, todo_lays, log)
         rstate = 'todo' if todo_lays else 'done'
         lay = dict(tiles={}, module=set(), caps=set(), old=set(), swept=set(), slots=[])
         for l in lays:
@@ -1517,7 +1619,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 shutil.copyfile(map_path, bak)
                 log('backup %s' % bak)
             tmp_map = map_path + '.tmp'
-            write_map(map_path, tmp_map, remove, new_tiles)
+            write_map(map_path, tmp_map, remove, new_tiles, log=log)
             import otbm
             check = otbm.load_otbm(tmp_map)
             expect = world.count() - len(remove) + len(new_tiles)

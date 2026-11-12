@@ -1,0 +1,177 @@
+# The bare-fist hit of a player is rolled with the fist attack a script gives it (O505, owner 2026-11-11, translated: "You can fix these 3 things
+# of the auto attack"; server/README.md "Flat armour, weapon spells and the Monk's fist (O505)"). The engine's bare-fist hit is attack 7
+# (Weapon::useFist, weapons.cpp): the Monk line and Open Hand Creed rescale it in an event that runs AFTER the monster's own flat armour and
+# defence took their part (Creature::blockHit), so at attack 7 nearly all of a Monk's hit died in the flat armour of a monster before the
+# scaling (6% of its damage reached a level 100 monster with the monster layer off). Now:
+#   * Player::setChaosFist(attack, multiplier) / Lua player:setFistAttack(attack, multiplier) / player:getFistAttack(): the attack value
+#     and a multiplier of the maximum hit; attack 0 (or a value outside 0 .. 2000, NaN, infinity) is "none set" and the stock hit stays
+#     (a multiplier outside 0 .. 10 is 1). Not saved: the script sets it again after a login.
+#   * Weapon::useFist rolls max = round(maxWeaponDamage(level, fist skill, attack, attack factor) x multiplier) when an attack is set,
+#     with the stock formula, the player's own fist skill and fight mode, and the stock bell between 0 and max. Without one nothing changes.
+#   * The only fist path: Weapon::useFist is the only caller of the bare-fist roll (player.cpp doAttacking when no weapon is in the hands;
+#     a Monk's fist weapon is a shield-type item, which Player::getWeapon skips: patch 0087). A weapon in the hands never reaches it.
+#   * The capability the scripts detect: type(Player.setFistAttack) == "function". An engine without this patch ignores the scripts'
+#     feature test and rolls attack 7 as before.
+# New header src/chaosfist.h (pure functions, tests in server/tools/chaosfist_test.cpp, CI).
+# Apply in the server source root after 0001-0090: patch -p1 --fuzz=0 < 0091-fist-attack-from-script.patch, then rebuild.
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2716,6 +2716,8 @@
+ 	registerMethod("Player", "hasChaseMode", LuaScriptInterface::luaPlayerHasChaseMode);
+ 	registerMethod("Player", "hasSecureMode", LuaScriptInterface::luaPlayerHasSecureMode);
+ 	registerMethod("Player", "getFightMode", LuaScriptInterface::luaPlayerGetFightMode);
++	registerMethod("Player", "setFistAttack", LuaScriptInterface::luaPlayerSetFistAttack); // Chaos (src-patch 0091)
++	registerMethod("Player", "getFistAttack", LuaScriptInterface::luaPlayerGetFistAttack); // Chaos (src-patch 0091)
+ 
+ 	registerMethod("Player", "getStoreInbox", LuaScriptInterface::luaPlayerGetStoreInbox);
+ 
+@@ -11428,6 +11430,34 @@
+ 	} else {
+ 		lua_pushnil(L);
+ 	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerSetFistAttack(lua_State* L)
++{
++	// player:setFistAttack(attack, multiplier) (Chaos, src-patch 0091): the bare-fist hit of this player is rolled with this attack value
++	// (the stock fist hit is attack 7) and its maximum multiplied by multiplier (default 1). attack 0 (or none) returns to the stock hit.
++	// Values outside the safe range are cleaned (chaosfist.h). Returns true, nil for a player that is gone.
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		player->setChaosFist(getNumber<float>(L, 2, 0.0f), getNumber<float>(L, 3, 1.0f));
++		pushBoolean(L, true);
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerGetFistAttack(lua_State* L)
++{
++	// player:getFistAttack() (Chaos, src-patch 0091): the attack and the multiplier set with setFistAttack, 0 and 1 when none is set
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		lua_pushnumber(L, player->getChaosFistAttack());
++		lua_pushnumber(L, player->getChaosFistMultiplier());
++		return 2;
++	}
++	lua_pushnil(L);
+ 	return 1;
+ }
+ 
+diff --git a/src/luascript.h b/src/luascript.h
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -1080,6 +1080,8 @@
+ 		static int luaPlayerHasChaseMode(lua_State* L);
+ 		static int luaPlayerHasSecureMode(lua_State* L);
+ 		static int luaPlayerGetFightMode(lua_State* L);
++		static int luaPlayerSetFistAttack(lua_State* L); // Chaos (src-patch 0091)
++		static int luaPlayerGetFistAttack(lua_State* L); // Chaos (src-patch 0091)
+ 
+ 		static int luaPlayerGetStoreInbox(lua_State* L);
+ 		static int luaPlayerSetCharacterStat(lua_State* L);
+diff --git a/src/player.h b/src/player.h
+--- a/src/player.h
++++ b/src/player.h
+@@ -10,6 +10,7 @@
+ #include "outfit.h"
+ #include "enums.h"
+ #include "chaostesters.h"
++#include "chaosfist.h"
+ #include "vocation.h"
+ #include "protocolgame.h"
+ #include "party.h"
+@@ -722,6 +723,19 @@
+ 		float getAttackFactor() const override;
+ 		float getDefenseFactor() const override;
+ 
++		// Chaos (src-patch 0091): the fist attack a script gives this player (the Monk line, Open Hand Creed): Weapon::useFist rolls the
++		// bare-fist hit with it instead of the stock attack 7. 0 = none set (the stock hit). Never saved: the script sets it again
++		void setChaosFist(float attack, float multiplier) {
++			chaosFistAttack = ChaosFist::cleanAttack(attack);
++			chaosFistMultiplier = chaosFistAttack > 0.0f ? ChaosFist::cleanMultiplier(multiplier) : 1.0f;
++		}
++		float getChaosFistAttack() const {
++			return chaosFistAttack;
++		}
++		float getChaosFistMultiplier() const {
++			return chaosFistMultiplier;
++		}
++
+ 		void addInFightTicks(bool pzlock = false);
+ 
+ 		uint64_t getGainedExperience(Creature* attacker) const override;
+@@ -1376,6 +1390,8 @@
+ 		uint64_t bankBalance = 0;
+ 		uint64_t lastQuestlogUpdate = 0;
+ 		int64_t lastFailedFollow = 0;
++		float chaosFistAttack = 0.0f; // Chaos (src-patch 0091)
++		float chaosFistMultiplier = 1.0f; // Chaos (src-patch 0091)
+ 		int64_t kiteChaseResumeTime = 0; // Chaos (kite walk): chase pathing waits until then after a kite walk
+ 		int64_t skullTicks = 0;
+ 		int64_t lastWalkthroughAttempt = 0;
+diff --git a/src/weapons.cpp b/src/weapons.cpp
+--- a/src/weapons.cpp
++++ b/src/weapons.cpp
+@@ -338,6 +338,11 @@
+ 	int32_t attackValue = 7;
+ 
+ 	int32_t maxDamage = Weapons::getMaxWeaponDamage(player->getLevel(), attackSkill, attackValue, attackFactor);
++	if (player->getChaosFistAttack() > 0.0f) {
++		// Chaos (src-patch 0091): the fist attack a script set for this player; the same formula, rolled with that attack and
++		// multiplied by the script's number, so the hit the monster's flat armour meets is already the size of the player's
++		maxDamage = ChaosFist::maxDamage(player->getLevel(), attackSkill, player->getChaosFistAttack(), player->getChaosFistMultiplier(), attackFactor);
++	}
+ 
+ 	CombatParams params;
+ 	params.combatType = COMBAT_PHYSICALDAMAGE;
+diff --git a/src/chaosfist.h b/src/chaosfist.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaosfist.h
+@@ -0,0 +1,42 @@
++// Chaos (src-patch 0091): the bare-fist hit of a player with the attack a script gave it. Pure parts, tested by server/tools/chaosfist_test.cpp.
++#ifndef FS_CHAOSFIST_H
++#define FS_CHAOSFIST_H
++
++#include <cmath>
++#include <cstdint>
++
++namespace ChaosFist {
++
++// the limits a script's numbers are cleaned to: an attack above this is no fist attack (the highest set weapon attack is about 300 and the
++// Monk's fist attack at most 60 times its weapon growth 2.6), a multiplier above this is a typo; a number outside the range, NaN or infinity
++// means "none set" (attack) or 1 (multiplier), so the stock hit stays the fallback of every bad call
++constexpr float MAX_ATTACK = 2000.0f;
++constexpr float MAX_MULTIPLIER = 10.0f;
++
++inline float cleanAttack(float attack)
++{
++	if (!std::isfinite(attack) || attack <= 0.0f || attack > MAX_ATTACK) {
++		return 0.0f;
++	}
++	return attack;
++}
++
++inline float cleanMultiplier(float multiplier)
++{
++	if (!std::isfinite(multiplier) || multiplier <= 0.0f || multiplier > MAX_MULTIPLIER) {
++		return 1.0f;
++	}
++	return multiplier;
++}
++
++// Weapons::getMaxWeaponDamage (the stock formula: level / 5 + ((skill / 4 + 1) x (attack / 3) x 1.03) / attackFactor, rounded) with the
++// script's attack, times the script's multiplier, rounded once. The integer division of the level and the doubles are the engine's.
++inline int32_t maxDamage(uint32_t level, int32_t attackSkill, float attack, float multiplier, float attackFactor)
++{
++	const double base = (level / 5) + (((((attackSkill / 4.) + 1) * (attack / 3.)) * 1.03) / attackFactor);
++	return static_cast<int32_t>(std::round(base * multiplier));
++}
++
++} // namespace ChaosFist
++
++#endif

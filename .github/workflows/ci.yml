@@ -24,7 +24,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Lua 5.3 and LuaJIT
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
+        # python3-numpy: tests that drive a map writer (base_towns_patch_test, base_world_names_patch_test) pass the map write guard (O512)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit python3-numpy
 
       - name: Server unit tests (mocked engine API)
         run: |
@@ -99,6 +100,7 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/gen_toast_art.py --check  # toast icons of game_chaosnotify, Pact hourglass included (O317)
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art.py --check  # prints, glows and foot marks of game_cosmeticfx (O499)
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/clean_wing_shadows_test.py  # the baked ground shadow of the wings (O508, pair 64)
           /tmp/fxenv/bin/python -I client/tools/gen_tooltip_art.py --check  # ring, glow and diamond of the card item tooltip (O422)
           /tmp/fxenv/bin/python -I client/tools/gen_hotbar_art.py --check  # nine-slice frames, slots, caps and chat skin of game_hotbar / game_floatchat (O414)
           /tmp/fxenv/bin/python -I launcher/tools/gen_launcher_art.py --check  # banner and icon of the game launcher window (O339)
@@ -354,6 +356,14 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
           "$d/chaosdisplay_test"
 
+      - name: "Fist attack from a script, pure parts (C++; header from server src-patch 0091, O505)"
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosfist\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0091-fist-attack-from-script.patch > "$d/chaosfist.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosfist_test.cpp -o "$d/chaosfist_test"
+          "$d/chaosfist_test"
+
       - name: "Loot bag instead of monster bodies, pure parts (C++; header from server src-patch 0089, O435)"
         run: |
           d=$(mktemp -d)
@@ -361,6 +371,14 @@ jobs:
             server/src-patches/0089-monster-loot-bag.patch > "$d/chaoslootbag.h"
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoslootbag_test.cpp -o "$d/chaoslootbag_test"
           "$d/chaoslootbag_test"
+
+      - name: "Rune Bag in the purse, pure parts (C++; header from server src-patch 0092, O509)"
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosrunebag\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0092-rune-bag-in-purse.patch > "$d/chaosrunebag.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosrunebag_test.cpp -o "$d/chaosrunebag_test"
+          "$d/chaosrunebag_test"
 
       - name: RmlUi layer input logic (C++; routing between OTUI and RmlUi, touch scroll, repaint signature; O334)
         run: |
@@ -811,6 +829,14 @@ jobs:
         run: |
           python3 -I mapeditor/tools/run_profile_test.py
           python3 -I mapeditor/tools/upstream_test.py
+          python3 -I mapeditor/tools/merge_brushes_test.py
+
+      - name: Map editor brushes of our grounds (O514; generated files up to date, the 12 piece mapping against the editor's rule and ChaosAreaGenCore.borderPieces, no dead id)
+        run: |
+          python3 -I server/tools/gen_editor_brushes.py --check
+          python3 -I server/tools/gen_editor_brushes_test.py
+          python3 -I tools/ci/check_editor_palette.py
+          python3 -I tools/ci/check_editor_palette_test.py
 
       - name: Client release host and site (client/tools/set_server_host.py)
         run: python3 -I client/tools/set_server_host_test.py
@@ -889,6 +915,7 @@ jobs:
           python3 -I server/tools/patch_monster_resists_test.py  # resistance caps of the monsters, 40 normal / 75 boss, flat 30 on seven types thinned (O462; check_content.py holds our files to it)
           python3 -I server/tools/defence_curve.py --check  # the median class hit curve (a spell) and the median weapon hit curve (an auto attack, in the units that arrive) of the monster armour, G1 / G2 for the 21 classes (O462, O501)
           python3 -I server/tools/defence_curve_test.py  # the engine formula against the measured auto attack hits, the flat armour, the roll, G1 / G2 that fail on a drift (O501)
+          python3 -I server/tools/patch_monster_flat_defence_test.py  # the flat armour and defence of the monster files capped by a level rule: the engine's mean bite, the cap by level, XML and Lua, boss, level source, --check, --dry-run, idempotence, a lower cap later (O505; install step monsterflat; check_content.py holds our files to it)
 
       - name: Rotations of at most 5 spells, never 2 s without one (rotation_sim.py; the helper's auto rotation data)
         run: |
@@ -950,6 +977,13 @@ jobs:
           python3 -I server/tools/patch_hunt_gates_test.py
       - name: "Hunt audit rules on synthetic data (audit_hunts.py, monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O337)"
         run: python3 -I server/tools/audit_hunts_test.py
+      - name: "Map tile audit and house audit on a synthetic map (audit_map_tiles.py, audit_houses.py, the shared tile rules against the Lua originals; every planned area passes the audit, audit_map_plans.py; the installed map is audited by hand; O511, O513)"
+        run: |
+          # system numpy and luajit: the audits read maps with tools/map/otbm.py, the plans compile through the Lua generator
+          sudo apt-get install -y -qq luajit python3-numpy
+          python3 -I server/tools/audit_map_tiles_test.py
+          python3 -I server/tools/audit_houses_test.py
+          python3 -I server/tools/audit_map_plans.py --check --quiet
       - name: Hunt annexes (the five annex plans compile, asymmetric, the rows of hunt_annexes.json; the portal step on a synthetic map; the spawn fills; O337)
         run: |
           sudo apt-get install -y -qq luajit python3-numpy
@@ -1108,11 +1142,12 @@ jobs:
       - name: Area generator export (the Lua generator's dump, OTBM writer and reader, spawn file)
         run: python3 -I server/tools/areagen_export_test.py
 
-      - name: Area planner (validator, reachability maths, layout, compiler, decoration, place; the example and content plans)
+      - name: Area planner (validator, reachability maths, layout, compiler, decoration, buildings, place; the example and content plans)
         run: |
           # system numpy: place reads maps with tools/map/otbm.py (python3 -I does not see pip's user site)
           sudo apt-get install -y -qq python3-numpy
           python3 -I server/tools/area_planner_test.py
+          python3 -I server/tools/area_plan_buildings_test.py   # parametric buildings (O515): prefabs, layouts, door sides, the village example, QA
           python3 -I server/tools/area_import_test.py   # imported hunts (O335): chunks, spawns, exit, boxes
           python3 -I server/tools/area_inbox_test.py   # the map inbox (O192): new, build (deterministic), publish, promote
           python3 -I server/tools/area_inbox.py check  # every inbox entry validates and compiles
@@ -1149,6 +1184,9 @@ jobs:
           python3 -I server/tools/patch_map_fixes_test.py  # broken teleports, the sea round the hall, the temple portal gallery
           python3 -I server/tools/patch_start_chest_test.py  # the base starter chest cut off the map, its script disabled
           python3 -I server/tools/patch_temple_tidy_test.py  # O386: the east purple teleport and clutter off Cinderhold's temple
+          python3 -I server/tools/map_write_guard_test.py  # O512: the splice guard of every map writer: intended change passes, a tile, an attribute, a town changed outside is refused
+          python3 -I server/tools/patch_base_towns_test.py  # O512: town names through the guard
+          python3 -I server/tools/patch_base_texts_test.py  # O512: item texts of the map through the guard (text-only mode)
 
       - name: "Map master (pack, verify, unpack and install of the owner's edited map; synthetic OTBM)"
         run: python3 -I server/tools/map_master_test.py
@@ -1203,6 +1241,12 @@ jobs:
 
       - name: Monster level bonus once per hit (src-patch 0090, O477)
         run: python3 -I server/tools/monster_bonus_once_patch_test.py
+
+      - name: Fist attack from a script (src-patch 0091, O505)
+        run: python3 -I server/tools/fist_attack_patch_test.py
+
+      - name: Rune Bag in the purse (src-patch 0092, O509)
+        run: python3 -I server/tools/rune_bag_purse_patch_test.py
 
       - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
         run: python3 -I server/tools/patch_base_raids_test.py
@@ -1680,6 +1724,11 @@ jobs:
       - name: Foot marks table matches the pair (gen_foot_marks.py --check)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_foot_marks.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Wing shadows stay cleaned (clean_wing_shadows.py check-clean, pair 64; Shadow Smoke 2457 untouched)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/clean_wing_shadows.py check-clean \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Dungeon banners render from the live pair (gen_dungeon_banners.py --check with the pair)

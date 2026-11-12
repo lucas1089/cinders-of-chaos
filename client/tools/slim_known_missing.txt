@@ -26,6 +26,7 @@ modules/client_chaos_topbar/chaos_topbar.lua /images/chaos/small/topbutton_
 modules/client_entergame/logpass.otui /images/ui/continue_with_logpass.png
 modules/corelib/corelib.otmod classes
 modules/game_loadouts/loadoutsview.lua /images/chaos/small/topbutton_
+modules/game_lookpreview/lookpreview_core.lua /modules/game_nameplate/images/plate_
 modules/game_nameshaders/nameshaders.otui /images/ui/check
 modules/game_nameshaders/nameshaders.otui /images/ui/lock
 modules/game_passivetree/passivetree.otui /images/passivetree/dropdown_menu

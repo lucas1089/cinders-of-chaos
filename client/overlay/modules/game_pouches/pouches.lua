@@ -1,9 +1,11 @@
 -- Store pouches (server data/scripts/chaos/pouches.lua, extended opcode 226, JSON {action, data}).
---   client -> server  open | sync | set {rules}
+--   client -> server  open | sync | set {rules} | runebag (every `poll` seconds: what the purse's Rune Bag holds)
 --                     Auto Seller window (server autosell.lua): as_open | as_sync | sell | asrar {tier, on} |
 --                     aslist {op = add|remove|clear, item} | aspause {on} | asevery {minutes = 0|5|10|15|30|60}
 --   server -> client  settings {rules, ids = {loot, orbs, keys} (client ids), titles, owned (on open), rarities, open}
 --                     autoseller {unlocked, needs, paused, interval, intervals, nextIn, tiers, list, slots, cooldown, cooldownMax, last, notice, open}
+--                     runebag {engine, counts = {[client id] = n}, bag, poll} (O509: the magic runes in the Rune Bag of the purse;
+--                       runebagcount.lua adds them to LocalPlayer:getInventoryCount, only when engine is true)
 -- The pouches themselves are ordinary containers (use = open). Two windows: the Loot Bag rules (right-click the Loot
 -- Bag > "Pouch settings", or the Loot Filter's "Loot Bag" button) and the Auto Seller (Economy > Auto Seller in the
 -- top menu, or the Loot Bag window's Auto Seller button; owner 2026-10-13: "Tire os comandos do autosell e coloque no
@@ -12,6 +14,7 @@
 local OPCODE = 226
 local V = PouchesView
 local AV = AutoSellerView
+local RB = RuneBagCount
 
 local window
 local asWindow
@@ -220,11 +223,104 @@ local function buildAutoSeller()
   refreshAutoSeller()
 end
 
+-- ---------------------------------------------------------------- the Rune Bag in the purse (O509)
+-- LocalPlayer:getInventoryCount counts the equipped items and the open containers; the server says what the purse's Rune Bag
+-- holds and runebagcount.lua adds it (only with the engine patch, so the hotkey really finds the rune). The count function
+-- is wrapped once at game start and given back at game end. The action bar and the helper call it as before.
+local PURSE_SLOT = 11 -- the inventory slot of the purse (the engine's store inbox), as game_bagpanel
+local runeState = RB.newState()
+local runeOriginal, runePoll
+
+local function lockFlagOf(item)
+  local okF, v = pcall(function() return item:getCustomAttribute(3) end) -- ChaosItemAttr.LOCKED
+  return okF and tonumber(v) or 0
+end
+
+-- the container lies directly in the purse: its item sits in a container whose item is the purse
+local function inPurse(container)
+  local ci = container:getContainerItem()
+  local pos = ci and ci:getPosition()
+  if not pos or pos.x ~= 65535 or pos.y < 0x40 then return false end
+  local parent = g_game.getContainer(pos.y - 0x40)
+  local pi = parent and parent:getContainerItem()
+  local ppos = pi and pi:getPosition()
+  return ppos ~= nil and ppos.x == 65535 and ppos.y == PURSE_SLOT
+end
+
+-- the open containers that are the Rune Bag of the purse (the Rune Bag has the stock backpack's look; the pouch lock flag
+-- and the server's id tell it from a backpack)
+local function openRuneBags()
+  local out = {}
+  if not ids.runes then return out end
+  for _, c in pairs(g_game.getContainers() or {}) do
+    local okC = pcall(function()
+      if c:isClosed() then return end
+      local ci = c:getContainerItem()
+      if ci and ci:getId() == ids.runes and lockFlagOf(ci) ~= 0 and inPurse(c) then
+        local items = {}
+        for _, it in ipairs(c:getItems()) do items[#items + 1] = { id = it:getId(), count = it:getCount() } end
+        out[#out + 1] = { inPurseBag = true, items = items }
+      end
+    end)
+    if not okC then return {} end
+  end
+  return out
+end
+
+local function seenInOpenBags(id)
+  return RB.openSeen(openRuneBags(), id)
+end
+
+local function refreshBars()
+  local ab = modules.game_actionbar
+  if ab and ab.updateInventoryItems then pcall(ab.updateInventoryItems) end
+end
+
+local function installRuneCount()
+  if runeOriginal or not LocalPlayer or not LocalPlayer.getInventoryCount then return end
+  runeOriginal = LocalPlayer.getInventoryCount
+  LocalPlayer.getInventoryCount = RB.wrap(runeOriginal, runeState, seenInOpenBags)
+end
+
+local function removeRuneCount()
+  if runeOriginal then
+    LocalPlayer.getInventoryCount = runeOriginal
+    runeOriginal = nil
+  end
+end
+
+local function stopRunePoll()
+  if runePoll then removeEvent(runePoll) runePoll = nil end
+end
+
+local function scheduleRunePoll()
+  stopRunePoll()
+  runePoll = scheduleEvent(function()
+    runePoll = nil
+    if not g_game.isOnline() then return end
+    send('runebag')
+    scheduleRunePoll()
+  end, RB.pollMs(runeState))
+end
+
+function onRuneBag(data)
+  if RB.apply(runeState, data) then refreshBars() end
+end
+
+-- for other modules and tests: how many of rune `id` (client id) the purse's Rune Bag adds to the client's count
+function getRuneBagExtra(id)
+  return RB.extra(runeState, id, seenInOpenBags)
+end
+
 local function onExtendedOpcode(protocol, opcode, buffer)
   local ok, msg = pcall(json.decode, buffer)
   if not ok or type(msg) ~= 'table' or type(msg.data) ~= 'table' then return end
   if msg.action == 'autoseller' then
     onAutoSeller(msg.data)
+    return
+  end
+  if msg.action == 'runebag' then
+    onRuneBag(msg.data)
     return
   end
   if msg.action ~= 'settings' then return end
@@ -300,9 +396,16 @@ local function onGameStart()
   owned = nil
   hookMenu()
   send('sync')
+  RB.reset(runeState)
+  installRuneCount()
+  send('runebag')
+  scheduleRunePoll()
 end
 
 local function onGameEnd()
+  stopRunePoll()
+  removeRuneCount()
+  RB.reset(runeState)
   hideSettings()
   hideAutoSeller()
   asState = AV.normalize(nil)
@@ -332,6 +435,8 @@ function init()
 end
 
 function terminate()
+  stopRunePoll()
+  removeRuneCount()
   disconnect(g_game, handlers.game)
   pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
   local gi = modules.game_interface

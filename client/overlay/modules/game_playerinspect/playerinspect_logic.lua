@@ -48,11 +48,12 @@ function L.cleanName(name)
   return name
 end
 
+local function lnum(text) local c = rawget(_G, 'ChaosLocale') if c and c.localize then return c.localize(text) end return text end
 function L.numberText(n)
   n = math.floor(tonumber(n) or 0)
   local s = tostring(n)
   local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', '')
-  return out
+  return lnum(out)
 end
 
 -- the header band: the name, "Level N Class", the ascended badge, the active title and the guild line. Every field is

@@ -240,6 +240,10 @@ def main():
                 check(want[(p['x'], town['portalRow'], town['z'])]['items'] == [], '%s: a bare tile' % p['kind'])
         hub = IC.load_config(T.HUNT_CONFIG)['hall']['fill']
         check(set(hub['borders']) == set(B), 'the hub fill names every border piece')
+        import map_guard_testkit as K
+        _d, _m, fpaths = setup(os.path.join(root, 'guard'))
+        K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(base_tiles())),
+                      lambda d, p: run(d, p, fpaths), root, 'map fixes')
     finally:
         shutil.rmtree(root, ignore_errors=True)
     print('patch_map_fixes_test: %s' % ('ok' if not failed else '%d failed' % failed))

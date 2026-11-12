@@ -129,6 +129,10 @@ def main():
         rows = CD.changes(KINDS, CD.MapWorld(m), CD.positions_with_changes(m, KINDS))
         left = sorted(p for p, _i, r in rows if r['dead'])
         check(left == [(22, 12, Z), (26, 12, Z), (28, 12, Z)], 'dead after the run: %s' % left)
+        # O512: a writer that also cuts one far tile is refused by the map write guard; the map stays, the .tmp stays
+        import map_guard_testkit as K
+        K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(base_tiles())),
+                      lambda d, p: T.run(d, map_path=p, list_path=lp, kinds=KINDS, log=lambda s: None), root, 'dead holes')
         # the real list
         rows = T.read_rows()
         keys = [(r['pos'], r['item']) for r in rows]

@@ -1,0 +1,3 @@
+# Findings of tools/audit_map_tiles.py that were looked at and left (server/README.md "Map tile audit (O511)").
+# Columns: code,x,y,z,reason. audit_map_tiles.py --check exits 1 for a finding that is not listed here.
+code,x,y,z,reason

@@ -34,6 +34,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # python -I leaves the script's folder off sys.path
 
 import gen_poi as G  # noqa: E402
+import map_write_guard as MG  # noqa: E402
 
 FIELD_FROM = (1487, 1488)  # the burning fire fields of the base items.xml (initdamage / damage)
 FIELD_TO = 1489            # the small fire: field fire without damage
@@ -144,16 +145,19 @@ def run(data_dir, dry=False, map_path=None, out=None, spots=SPOTS, from_ids=FIEL
     if dry and not out:
         log('spawn fields: would replace %d' % len(hits))
         return summary
+    target = out or map_path
+    tmp = target + '.tmp'
+    open(tmp, 'wb').write(new)
+    # the splice guard (O512): only the tiles of the replaced fields may differ
+    MG.verify(FieldError, map_path, tmp, log=log, change=done)
     if out:
-        open(out, 'wb').write(new)
+        os.replace(tmp, out)
         log('spawn fields: %d replaced in %s' % (len(hits), out))
         return summary
     bak = map_path + '.bak'
     if not os.path.exists(bak):
         shutil.copyfile(map_path, bak)
         log('backup %s' % bak)
-    tmp = map_path + '.tmp'
-    open(tmp, 'wb').write(new)
     os.replace(tmp, map_path)
     log('spawn fields: %d replaced in %s' % (len(hits), map_path))
     return summary

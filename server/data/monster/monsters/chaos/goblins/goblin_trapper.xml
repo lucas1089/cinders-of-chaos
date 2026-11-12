@@ -23,7 +23,7 @@
 			<attribute key="areaEffect" value="redspark" />
 		</attack>
 	</attacks>
-	<defenses armor="12" defense="12">
+	<defenses armor="2" defense="2">
 	</defenses>
 	<elements>
 		<element earthPercent="-5" />

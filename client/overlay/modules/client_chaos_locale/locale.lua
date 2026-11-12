@@ -82,6 +82,15 @@ local function rewrapPlain()
   end
 end
 
+-- ---------------------------------------------------------------- numbers (O506)
+-- Numbers for the language in use (locale_core.lua L.formatNumber / formatInteger / localize): 1.234.567 and 1,5 in
+-- pt-BR, 1,234,567 and 1.5 in English. A module that cannot read the global ChaosLocale reads it with rawget(_G, 'ChaosLocale')
+-- and keeps its own English text when there is none (the unit tests of the modules run without a client).
+function M.number(value) return L.formatNumber(value, M.lang) end
+function M.int(value) return L.formatInteger(value, M.lang) end
+-- a number text written in the English form (what the client's own groupers write) for the language in use
+function M.localize(text) return L.localize(text, M.lang) end
+
 -- ---------------------------------------------------------------- the system's language
 local function systemNames()
   local names = {}

@@ -22,7 +22,7 @@
 			<attribute key="shootEffect" value="spear" />
 		</attack>
 	</attacks>
-	<defenses armor="20" defense="20">
+	<defenses armor="3" defense="3">
 		<defense name="speed" interval="2000" chance="15" speedchange="250" duration="4000">
 			<attribute key="areaEffect" value="redshimmer" />
 		</defense>

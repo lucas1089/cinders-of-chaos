@@ -37,21 +37,57 @@ return {
 	-- than this layer (class damage, damage pool, weapon style and power, the Monk's unarmed scaling); against it an auto attack lost
 	-- 50 to 90% (owner 2026-11-11). DERIVED, do not edit by hand: python3 -I server/tools/defence_curve.py --lua prints the rows,
 	-- --check compares them (CI). Same levels as hitCurve.
+	-- O505 (2026-11-11): regenerated for the flat armour rule (flatRollCurve, flatShare below, install step monsterflat): the typical hunt
+	-- monster keeps a flat armour of a few points instead of 15 at level 20 and 30 at level 100, so more of the roll arrives (82 -> 106 at 100,
+	-- 239 -> 297 at 500). A launcher is no longer taken for one that meets the defence (the engine gives it to melee hits only).
 	weaponHitCurve = {
 		{level = 1, hit = 16},
-		{level = 10, hit = 13},
-		{level = 30, hit = 16},
-		{level = 60, hit = 37},
-		{level = 100, hit = 82},
-		{level = 200, hit = 121},
-		{level = 300, hit = 165},
-		{level = 500, hit = 239},
-		{level = 750, hit = 359},
-		{level = 1000, hit = 587},
-		{level = 1500, hit = 710},
-		{level = 2000, hit = 867},
-		{level = 2500, hit = 915}
+		{level = 10, hit = 18},
+		{level = 30, hit = 32},
+		{level = 60, hit = 64},
+		{level = 100, hit = 106},
+		{level = 200, hit = 160},
+		{level = 300, hit = 219},
+		{level = 500, hit = 297},
+		{level = 750, hit = 413},
+		{level = 1000, hit = 622},
+		{level = 1500, hit = 744},
+		{level = 2000, hit = 900},
+		{level = 2500, hit = 944}
 	},
+
+	-- The monster's own flat armour and defence (O505; the XML `armor` and `defense` of a monster file, which the engine takes off a weapon
+	-- hit before any Lua: Creature::blockHit) are capped at install time by tools/patch_monster_flat_defence.py (install step monsterflat):
+	-- for a monster of level L the two together take at most flatShare percent of flatRollCurve at L (the mean the engine takes off:
+	-- armour 3/4 of its value, defence 3/4 of its value), normal monsters 10, bosses twice that (the layer sizes a boss's armour at twice
+	-- the normal share too). The layer itself does not read these rows at run time: they are the data of the install tool and of the checks
+	-- (tools/defence_curve.py G5).
+	flatShare = {normal = 10, boss = 20},
+	-- the median engine ROLL of the physical part of an auto attack by level, before any armour: the mean of the roll (the engine formula
+	-- level / 5 + (skill / 4 + 1) x (attack / 3) x 1.03, a bell from 0 to that maximum) of the typical character with the tier weapon of
+	-- the level, median over the 12 armoured classes that are not the fist line (the fist line's hit size is its own, see O505 part 3).
+	-- DERIVED, do not edit by hand: python3 -I server/tools/defence_curve.py --lua prints the rows, --check compares them (CI). Same levels.
+	flatRollCurve = {
+		{level = 1, hit = 18},
+		{level = 10, hit = 20},
+		{level = 30, hit = 35},
+		{level = 60, hit = 70},
+		{level = 100, hit = 118},
+		{level = 200, hit = 178},
+		{level = 300, hit = 243},
+		{level = 500, hit = 330},
+		{level = 750, hit = 458},
+		{level = 1000, hit = 690},
+		{level = 1500, hit = 825},
+		{level = 2000, hit = 1000},
+		{level = 2500, hit = 1050}
+	},
+
+	-- the vocation ids of the casting classes (Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord; docs/CLASSES.md): their
+	-- magic level IS their skill and their spells are sized by the class curve above. Every other class is a weapon class: a spell hit it
+	-- deals itself (inside its own cast) is a weapon-size hit and meets the weapon armour of weaponHitCurve like an auto attack (O505,
+	-- monster_defence_core.lua C.weaponSpellHit). tools/defence_curve.py --check holds this list to rotation_sim.py CLASS_KIND.
+	casterVocations = {1, 5, 10, 20, 21, 22},
 
 	-- percent of the median class hit (a spell) or of the median weapon hit (a weapon hit) of the monster's level that the monster's
 	-- armour removes. A boss is every kind of monster the code treats as one (monster_defence.lua isBossLike); the elite ranks are

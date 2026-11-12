@@ -29,7 +29,7 @@
 		</attack>
 		<attack name="hellfire fighter soulfire" interval="2000" chance="15" />
 	</attacks>
-	<defenses armor="35" defense="35" />
+	<defenses armor="30" defense="30" />
 	<elements>
 		<element physicalPercent="-15"/>
 		<element holyPercent="-15"/>

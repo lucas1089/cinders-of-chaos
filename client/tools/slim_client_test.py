@@ -120,6 +120,19 @@ def main():
                     check(False, f'slim_prune.txt removes the overlay file {rel} ({reason})')
         known = S.load_known_missing()
         check(all(' ' in k for k in known), 'known-missing lines are "<file> <reference>"')
+        # the overlay alone: a reference into a folder the overlay itself holds resolves there, or is a known line.
+        # The full check needs the assembled client and runs only in the package workflow; this part needs no base,
+        # so a computed prefix kept in a constant ('/modules/x/images/plate_') fails here, before a package run.
+        mods = set(os.listdir(os.path.join(overlay, 'modules')))
+        for rel, no, ref, kind, got, tried in S.collect(overlay):
+            if got is not None or not ref.startswith('/'):
+                continue
+            parts = ref.strip('/').split('/')
+            name = parts[1] if parts[0] in ('modules', 'mods') and len(parts) > 1 else parts[0]
+            folder = os.path.join(overlay, 'modules', name, *parts[(2 if parts[0] in ('modules', 'mods') else 1):-1])
+            if name in mods and os.path.isdir(folder) and S.missing_key(rel, ref) not in known:
+                check(False, f'{rel}:{no}: {ref!r} points into the overlay and resolves to no file: fix the path, '
+                             'or add the line to slim_known_missing.txt when it is a computed prefix')
     finally:
         shutil.rmtree(tmp)
     print('slim_client_test:', 'FAIL' if FAIL else 'ok')

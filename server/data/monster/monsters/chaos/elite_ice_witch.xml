@@ -34,7 +34,7 @@
 			<attribute key="areaEffect" value="icetornado" />
 		</attack>
 	</attacks>
-	<defenses armor="50" defense="50"/>
+	<defenses armor="43" defense="43"/>
 	<immunities>
       	<immunity lifedrain="1"/>
       	<immunity paralyze="1"/>

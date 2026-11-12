@@ -406,6 +406,22 @@ local function bestMeleeSkill(player)
 	return best
 end
 
+-- O505 (engine patch 0091, fist_sync.lua): what an engine with Player:setFistAttack should roll the empty hand of a non-Monk with Open Hand
+-- Creed or the Knuckles of the Unbound with (attack, multiplier), nil when no rule applies (a Monk line has its own, a weapon in the hands,
+-- neither the keystone nor the unique). fist_sync.lua asks it at every attack the player starts
+ChaosFistSync = ChaosFistSync or {pushed = {}}
+ChaosFistSync.openHandWanted = function(player)
+	local pid = player:getId()
+	local flags = flagsOf(pid)
+	local keystone = flags and flags.arOpenHand or false
+	local unique = hasUnique(pid, "openHand")
+	if isMonkLine(player) or handWeapon(player) or not (keystone or unique) then
+		return nil
+	end
+	return A.openHandPush(player:getLevel(), player:getEffectiveSkillLevel(SKILL_FIST), bestMeleeSkill(player), attackFactor(player),
+		keystone, unique)
+end
+
 -- ------------------------------------------------------------------------------------------------ per player state
 local state = {} -- player id -> {leech, cascadeAt, effigies, sigil, relic, relicAt, castBuffer, bosses}
 local function stateOf(pid)
@@ -875,6 +891,18 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 			and not isMonkLine(player) then
 		local m = A.openHandFactor(player:getLevel(), player:getEffectiveSkillLevel(SKILL_FIST), bestMeleeSkill(player),
 			attackFactor(player), flags.arOpenHand, hasUnique(pid, "openHand"))
+		-- O505: an engine with patch 0091 rolled this hit with the attack fist_sync.lua pushed, so only the difference to what is wanted
+		-- now applies (nearly always nothing); the stock engine rolled attack 7 and the whole factor applies, as before
+		local FS = rawget(_G, "ChaosFistSync")
+		local used = m and FS and FS.capable and FS.capable() and FS.pushed[pid] or nil
+		if used then
+			local a, pm = A.openHandPush(player:getLevel(), player:getEffectiveSkillLevel(SKILL_FIST), bestMeleeSkill(player),
+				attackFactor(player), flags.arOpenHand, hasUnique(pid, "openHand"))
+			if a then
+				m = ChaosMonk.pushCorrection(player:getLevel(), player:getEffectiveSkillLevel(SKILL_FIST), attackFactor(player), used[1], used[2], a, pm)
+			end
+			FS.sync(player)
+		end
 		if m and m ~= 1 then
 			local before = math.abs(pd) + math.abs(sd)
 			pd, sd = A.scale(pd, m), A.scale(sd, m)
