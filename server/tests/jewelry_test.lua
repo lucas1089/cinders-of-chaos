@@ -220,7 +220,7 @@ eq(J.uniqueTarget(2169, false, nil), nil, "a plain time ring stays")
 eq(J.uniqueTarget(10218, false, "Heartbleed Pendant"), nil, "another unique's name: no")
 eq(J.uniqueTarget(41641, true), nil, "already moved")
 eq(J.uniqueTarget(2207, true), nil, "another unique base")
--- a unique that moved to another stock base (O516): the Misericorde of the Pale Vow off the wand 27193 onto the dagger 7408
+-- a unique that moved to another stock base (O518): the Misericorde of the Pale Vow off the wand 27193 onto the dagger 7408
 eq(#J.uniqueMoves, 1, "one moved unique")
 local target, row = J.uniqueTarget(27193, true)
 eq(target, 7408, "an old Misericorde copy with the marker")
@@ -308,7 +308,7 @@ slots[CONST_SLOT_NECKLACE] = worn
 eq(ChaosJewelryLoot.migratePlayer(player), 0, "a full backpack: the worn copy stays")
 eq(worn.id, 10218, "still the old id, for the next login")
 
--- the moved weapon (O516): an old Misericorde copy on the wand base turns into the dagger base, a plain wand stays
+-- the moved weapon (O518): an old Misericorde copy on the wand base turns into the dagger base, a plain wand stays
 local mis = uitem(27193, {[11] = 192}, {chaos_unique = 1, rarity_swordSkill = 5})
 mis.name = "Misericorde of the Pale Vow"
 ok(ChaosJewelryLoot.migrateUnique(mis), "an old Misericorde turns")

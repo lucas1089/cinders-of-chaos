@@ -8,7 +8,7 @@
 --     stock rule, only the check pass decides;
 --   * tools/install_unique_equip.py on a small movements.xml: the stock entries taken in and recorded, the looser rule
 --     in the block, the movement script, a second run changes nothing, add_vocations.py leaves the block alone;
---   * a base id that is no unique's any more gets its stock Equip entry back (O516: the Misericorde of the Pale Vow
+--   * a base id that is no unique's any more gets its stock Equip entry back (O518: the Misericorde of the Pale Vow
 --     left the wand 27193 for the dagger 7408; tests/unique_weapon_base_test.lua holds every unique weapon to its base).
 local count, failures = 0, 0
 local function check(cond, what)
@@ -238,7 +238,7 @@ else
 	p:close()
 	check(res:find("same", 1, true), "add_vocations.patch_movements leaves the block: " .. res)
 
-	-- a base id that is no unique's any more (O516: the Misericorde of the Pale Vow left the wand 27193 for the dagger
+	-- a base id that is no unique's any more (O518: the Misericorde of the Pale Vow left the wand 27193 for the dagger
 	-- 7408): an install made before has 27193 in the block with its stock rule recorded. The stock Equip entry goes back
 	-- in front of the block, the new base gets its entry and a DeEquip, the script forgets the old id.
 	text = readFile(moves)

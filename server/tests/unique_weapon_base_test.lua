@@ -1,5 +1,5 @@
 -- Run from the server/ folder: luajit tests/unique_weapon_base_test.lua (CI runs it with LuaJIT and Lua 5.3)
--- Unique weapons and their base (server/README.md "Unique weapons and their base (O516)").
+-- Unique weapons and their base (server/README.md "Unique weapons and their base (O518)").
 -- A unique is a copy of a stock base item, and the engine's weapon check belongs to the base item id: the item type
 -- says what kind of weapon it is (items.xml weaponType), and the weapons.xml entry of that id says from which level
 -- and for which classes it hits. A class that is not on the entry's list gets no hit at all (Weapon::playerWeaponCheck
@@ -135,14 +135,14 @@ for id, body in xml:gmatch('<item id="(%d+)"[^>]*>(.-)</item>') do
 		if rule then withRule = withRule + 1 end
 		for _, text in ipairs(problems((spec and spec.name or "?") .. " (" .. id .. ")", weaponType, rule, base[id])) do
 			check(false, text .. ". Pick a base of the unique's kind whose weapon entry lets its classes hit "
-				.. "(README \"Unique weapons and their base (O516)\")")
+				.. "(README \"Unique weapons and their base (O518)\")")
 		end
 	end
 end
 check(weapons >= 50, "the unique weapons on stock bases were read: " .. weapons)
 check(withRule >= 20, "the ones with an equip rule of their own: " .. withRule)
 
--- ------------------------------------------------------------------------------------------------ the finding (O516)
+-- ------------------------------------------------------------------------------------------------ the finding (O518)
 local mis = ChaosUniqueByName["Misericorde of the Pale Vow"]
 check(mis ~= nil, "the Misericorde of the Pale Vow drops")
 eq(mis and mis.id, 7408, "its base")
