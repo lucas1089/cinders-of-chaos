@@ -241,6 +241,12 @@ jobs:
           if (-not $release -or -not $sourceZip) { throw "the release package has no windows-x64 folder or source zip" }
           New-Item -ItemType Directory -Force -Path out/editor, out/source | Out-Null
           Copy-Item -Recurse "$($release.FullName)/*" out/editor/
+          # our grounds, border sets and palettes (O514): merged into the editor's own brushes.json and tilesets.json
+          # (it has no include), so the zip the self-updater installs carries them; the profile's baseline stays stock
+          if ('${{ matrix.variant }}' -eq 'patched') {
+            python -I chaos/mapeditor/tools/merge_brushes.py out/editor/data/1098
+            if ($LASTEXITCODE -ne 0) { throw "merging our brushes failed with exit code $LASTEXITCODE" }
+          }
           # the program's version (CMakeLists.txt project VERSION + DME_BUILD_NUMBER, patch 0009)
           $upVersion = Select-String -Path src/CMakeLists.txt -Pattern '^project\([^)]*VERSION ([0-9]+\.[0-9]+\.[0-9]+)' |
             ForEach-Object { $_.Matches[0].Groups[1].Value } | Select-Object -First 1
@@ -260,6 +266,9 @@ jobs:
           $extra = New-Item -ItemType Directory -Force -Path out/source/cinders-patches
           Copy-Item chaos/mapeditor/README.md, chaos/mapeditor/UPSTREAM, chaos/mapeditor/BASELINE_PATCHES $extra.FullName
           Copy-Item -Recurse chaos/mapeditor/patches $extra.FullName
+          # the data we merge into the editor's brushes and tilesets, and the tool that does it (O514)
+          Copy-Item -Recurse chaos/mapeditor/data $extra.FullName
+          Copy-Item chaos/mapeditor/tools/merge_brushes.py $extra.FullName
           Copy-Item applied.txt "$($extra.FullName)/APPLIED.txt"
           Compress-Archive -Path out/source/* -DestinationPath out/mapeditor-source.zip
           Get-ChildItem out/editor | Format-Table Name, Length

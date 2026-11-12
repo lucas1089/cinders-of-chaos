@@ -828,6 +828,14 @@ jobs:
         run: |
           python3 -I mapeditor/tools/run_profile_test.py
           python3 -I mapeditor/tools/upstream_test.py
+          python3 -I mapeditor/tools/merge_brushes_test.py
+
+      - name: Map editor brushes of our grounds (O514; generated files up to date, the 12 piece mapping against the editor's rule and ChaosAreaGenCore.borderPieces, no dead id)
+        run: |
+          python3 -I server/tools/gen_editor_brushes.py --check
+          python3 -I server/tools/gen_editor_brushes_test.py
+          python3 -I tools/ci/check_editor_palette.py
+          python3 -I tools/ci/check_editor_palette_test.py
 
       - name: Client release host and site (client/tools/set_server_host.py)
         run: python3 -I client/tools/set_server_host_test.py

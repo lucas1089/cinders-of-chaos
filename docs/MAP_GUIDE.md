@@ -229,6 +229,19 @@ edge, north-west, north-east, south-west and south-east corner, then the four in
 ground lies: the "north edge" goes on a tile with the ground to its north). A border piece goes on the
 lower neighbour tile, like a stock border, and draws the rim of the higher ground; rules 1-4 above apply.
 
+**Brushes (O514): the editor borders these grounds by itself.** In the map editor, open the palette `Cinders` (terrain tab).
+It holds the 12 grounds, the water and the shores. Each ground is a brush named `cinders <ground name>` (the names of the
+table below, for example `cinders thick lush grass`). Paint with the brush and, with auto-border on, the editor puts the right
+border pieces on the lower tiles, next to stock grounds as well as next to our other grounds. Which ground draws over which is
+its z order (higher draws its border over lower): our grasses and loam over stock grass, stock grass over our floors, clay and
+fine sand, everything of ours over stock dirt and sand. Stock earth and mountain still draw over ours.
+Still by hand: shores (place them from the palette, 19 pieces per set named after the land sides), water (no brush), lake
+objects, dock props and trees (RAW palette `Cinders objects`), a border piece you want to fix (RAW palette
+`Cinders border pieces`), and a border between two of our grounds that you want the other way round (paint the pieces by id).
+Pieces of the 12: the editor's edges are our n, e, s, w, its outer corners our nw, ne, sw, se, its inner corners our in_nw,
+in_ne, in_se, in_sw (server/README.md "Editor brushes (O514)"). The brushes are merged into the editor's own files by the build
+and the package; they are not seen in the running editor yet.
+
 | ground | id | speed | border pieces |
 |---|---|---|---|
 | thick lush grass | 36300 | 150 | 36301-36312 |
