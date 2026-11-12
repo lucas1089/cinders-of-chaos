@@ -106,6 +106,7 @@ sanctified_seal,ground,rule 3: floor shape by name
 nova_frost,ground,rule 3: floor shape by name
 meteor_fall,ground,rule 4: covers the creature for 0.5 s or more
 nova_radiant,ground,rule 3: floor shape by name
+nova_radiant_blue,ground,rule 3: floor shape by name
 terra_strike,ground,rule 4: covers the creature for 0.5 s or more
 rift_void,ground,rule 3: floor shape by name
 summon_necro,ground,rule 4: covers the creature for 0.5 s or more
