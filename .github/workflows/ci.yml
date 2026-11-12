@@ -261,6 +261,9 @@ jobs:
           python3 -I client/tools/sprites/import_pair51_missiles_test.py
           python3 -I client/tools/sprites/gen_pair51_missile_ids_test.py
           python3 -I client/tools/sprites/gen_pair51_missile_ids.py --check
+          # pack missile names never name an id that draws donor art (O528); the Lua guard is server/tests/missile_art_source_test.lua
+          python3 -I client/tools/sprites/donor_missile_names_test.py
+          python3 -I client/tools/sprites/donor_missile_names.py --check
           python3 -I server/tools/patch_npc_currency_test.py
           python3 -I server/tools/check_dead_holes_test.py   # floor changes that lead nowhere (O263; needs a map to run for real)
           python3 -I server/tools/patch_dead_holes_test.py   # the install step deadholes on a synthetic map

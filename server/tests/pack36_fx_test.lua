@@ -64,13 +64,25 @@ for kind, name, id in ids:gmatch("\n(ChaosVfx%a*)%.([%w_]+) = {id = (%d+)") do
 	local k = kind == "ChaosVfxMissile" and "missile" or "effect"
 	got[k][#got[k] + 1] = {name = name, id = tonumber(id)}
 end
+-- pair 51 refilled some missile ids with donor art (O528): the ids file leaves those names out, the others keep their id
+local donor = {}
+for line in (readFile("../client/tools/sprites/pair51_missiles.csv") or ""):gmatch("[^\n]+") do
+	local id = line:match("^(%d+),")
+	if id then donor[tonumber(id)] = true end
+end
 for _, k in ipairs({"effect", "missile"}) do
-	eq(#got[k], #order[k], "the ids file lists every appended " .. k)
-	local base = k == "effect" and 854 or 188
+	local want = {}
 	for i, name in ipairs(order[k]) do
+		local id = (k == "effect" and 854 or 188) + i
+		if not (k == "missile" and donor[id]) then
+			want[#want + 1] = {name = name, id = id}
+		end
+	end
+	eq(#got[k], #want, "the ids file lists every appended " .. k .. " that no donor art replaced")
+	for i, w in ipairs(want) do
 		local e = got[k][i]
-		if not e or e.name ~= name or e.id ~= base + i then
-			ok(false, k .. " " .. name .. " is id " .. (base + i) .. " in the ids file")
+		if not e or e.name ~= w.name or e.id ~= w.id then
+			ok(false, k .. " " .. w.name .. " is id " .. w.id .. " in the ids file")
 			break
 		end
 	end

@@ -3532,9 +3532,13 @@ refilled. Run order: `prune_pair.py prune` (pair 50 -> pair 51 without missiles)
 - **Names.** `tools/sprites/gen_pair51_missile_ids.py` (`--check` and test in CI) writes `server/data/lib/chaos_pair51_missile_ids.lua`:
   `ChaosPair51Missile.<name> = id` and `ChaosVfxMissile.p51_<name> = {id, dx, dy}` (VfxShoot; dx, dy are half the size, untested for
   the 2x2 ones in a client). Nothing in the game sends them yet.
-- **Old names on the same ids.** 56 of the 62 ids still carry a catalog name in the older pack libs (proj_* 189-203, mega_* 204-250:
-  names reserved for spells not written yet, kept by the name rule of the prune; no spell sends them today). A spell that sends one of
-  those names later draws the new missile of that id, so give that spell its own name or one of the p51_ names.
+- **Old names on the same ids (O528).** 56 of the 62 ids carried a pack name (proj_* 189-203, mega_* 204-250). Those names no longer
+  exist: `tools/sprites/donor_missile_names.py` drops them from `chaos_pack36_fx_ids.lua`, `pack36_fx_catalog.csv` and
+  `pack41_fx_catalog.csv` (rows 189-203 of pair 41's redraw), and `import_fx_art.py` applies the same rule when it writes those tables.
+  The art specs `art_import/pack36_missiles.csv` and `pack41_missiles.csv` stay as they are: they are the build record of pairs 36 and 41
+  (a pair 36 missile's id is its row position, so a dropped row would move every later id). The 6 ids the donors did not take (200 205 208
+  228 229 249) keep their pack art and names. Pair 64 checked: all 62 donor ids have the size and phases of their csv row; the other 6
+  keep 8 phases. Guard: `server/tests/missile_art_source_test.lua`, `donor_missile_names_test.py`, `donor_missile_names.py --check` (ci.yml).
 - **Preview.** Every missile in its 8 directions (client mapping NW N NE E SE S SW W) was rendered from the new pair and looked at.
 ```
 python3 -I client/tools/sprites/import_pair51_missiles.py --dat pair51/Tibia.dat --spr pair51/Tibia.spr --out-dir out \
