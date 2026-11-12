@@ -292,8 +292,25 @@ namespace Chaos.Core.Tests
             check(ChestAuraState.FrameIndex(0, 200, 12) == 0 && ChestAuraState.FrameIndex(450, 200, 12) == 2 && ChestAuraState.FrameIndex(2400, 200, 12) == 0, "aura: loop frames");
             check(ChestAuraState.InSquare(new Pos(13, 8, 7), new Pos(10, 10, 7), 3) && !ChestAuraState.InSquare(new Pos(14, 10, 7), new Pos(10, 10, 7), 3) && !ChestAuraState.InSquare(new Pos(10, 10, 6), new Pos(10, 10, 7), 3), "aura: the range square is Chebyshev on one floor");
             check(ChestAuraState.FootPath(2) == "game_chestaura/images/foot/inquisitor_sigil.png" && ChestAuraState.FramePath(3) == "game_chestaura/images/frame/sentinel.png" && ChestAuraState.FootPath(4) == null, "aura: picture paths");
+            // Pyre Oath (O518): the ring list and the burn ids, the clock of the burn, the strips
+            double clock = 5000;
+            a.Clock = () => clock;
+            ext.Receive(118, ExtOpcodes.ToWire("{\"action\":\"pyre\",\"data\":{\"p\":[{\"i\":20,\"r\":2},{\"i\":21,\"r\":99},{\"i\":0,\"r\":2},{\"i\":22}]}}"));
+            check(a.Pyre.Count == 2 && a.Pyre[20] == 2 && a.Pyre[21] == ChestAuraState.PyreMaxRadius, "pyre: the ring list, radius capped, bad rows skipped");
+            ext.Receive(118, ExtOpcodes.ToWire("{\"action\":\"pyre\",\"data\":{\"p\":[]}}"));
+            check(a.Pyre.Count == 0, "pyre: an empty list clears the rings");
+            ext.Receive(118, ExtOpcodes.ToWire("{\"action\":\"burn\",\"data\":{\"b\":[30,31,\"x\",-1]}}"));
+            check(a.Burning.Count == 2 && a.Burning[30] == 5000 && a.Burning[31] == 5000, "pyre: burn ids begin at the tick");
+            clock = 6000;
+            ext.Receive(118, ExtOpcodes.ToWire("{\"action\":\"burn\",\"data\":{\"b\":[30]}}"));
+            check(a.Burning[30] == 6000 && a.Burning[31] == 5000, "pyre: a burning monster begins again at the next tick");
+            check(ChestAuraState.BurnFrame(0) == 0 && ChestAuraState.BurnFrame(125) == 1 && ChestAuraState.BurnFrame(1100) == 7 && ChestAuraState.BurnFrame(1250) == -1 && ChestAuraState.BurnFrame(-5) == 0, "pyre: burn frames");
+            a.PruneBurns(6300);
+            check(a.Burning.Count == 1 && a.Burning.ContainsKey(30), "pyre: a burn that is over is forgotten");
             string dir = FindUp("client/overlay/modules/game_chestaura");
             if (dir == null) { check(true, "aura: module files not found (skipped)"); return; }
+            check(PngWidth(Path.Combine(Path.GetDirectoryName(dir), ChestAuraState.PyreRingPath)) == ChestAuraState.PyreFrames * ChestAuraState.PyreRingPx, "pyre: the ring strip is 12 frames of 160 px");
+            check(PngWidth(Path.Combine(Path.GetDirectoryName(dir), ChestAuraState.BurnPath)) == ChestAuraState.BurnFrames * ChestAuraState.BurnPx, "pyre: the burn strip is 8 frames of 64 px");
             var paths = ChestAuraState.Chests.Values.Select(c => ChestAuraState.ChestPath(c.Art)).Concat(new[] { 1, 2, 3 }.SelectMany(l => new[] { ChestAuraState.FootPath(l), ChestAuraState.FramePath(l) })).ToList();
             string root = Path.GetDirectoryName(dir);
             var missing = paths.Where(p => !File.Exists(Path.Combine(root, p))).ToList();
