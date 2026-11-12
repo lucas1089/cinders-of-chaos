@@ -203,6 +203,38 @@ eq(pulse[1].pos.x, 101, 'in tile order')
 eq(pulse[1].id, LB.EFFECTS.orange, 'a Legendary beam')
 eq(pulse[2].id, LB.EFFECTS.blue, 'a Rare beam')
 
+-- pair 65: a beam at full size (3 x 5 tiles) is added at the tile + (1, 1), the halved 1 x 2 one on the tile
+local on = { x = 100, y = 200, z = 7 }
+local big = LB.effectPos(on, 3, 5)
+eq(big.x == 101 and big.y == 201 and big.z == 7, true, 'a 3 x 5 beam is added one tile south-east')
+eq(on.x == 100 and on.y == 200, true, 'the position is not changed')
+eq(LB.effectPos(on, 1, 2), on, 'a 1 x 2 beam (pair 36 to 64) is added on its tile')
+eq(LB.effectPos(on, nil, nil), on, 'no size read: on the tile')
+eq(LB.effectPos(on, 3, 4), on, 'any other size: on the tile')
+eq(LB.effectPos(nil, 3, 5), nil, 'no position, no position')
+-- the offset is the one the strips are cut for: the item's tile is column w - 1 - dx, row h - 1 - dy of the group
+eq(LB.FULL_SIZE.w - 1 - LB.FULL_SIZE.dx, 1, 'the item tile is column 1 of the 3 wide group')
+eq(LB.FULL_SIZE.h - 1 - LB.FULL_SIZE.dy, 3, 'the item tile is row 3 of the 5 high group')
+do
+  local specs = {}
+  local sf = io.open(dir .. '../../../tools/sprites/art_import/pack36_beam.csv', 'r')
+  if sf then
+    for line in sf:lines() do
+      local name, w, h, dx, dy = line:match('^effect,([%w_]+),[^,]*,(%d+),(%d+),%d+,%d+,(%d+),(%d+),')
+      if name then specs[name] = { tonumber(w), tonumber(h), tonumber(dx), tonumber(dy) } end
+    end
+    sf:close()
+    for _, g in ipairs(LB.GROUP_ORDER) do
+      local sp = specs[LB.EFFECT_NAMES[g]]
+      eq(sp ~= nil, true, 'the beam spec has ' .. LB.EFFECT_NAMES[g])
+      if sp then
+        eq(sp[1] == LB.FULL_SIZE.w and sp[2] == LB.FULL_SIZE.h and sp[3] == LB.FULL_SIZE.dx and sp[4] == LB.FULL_SIZE.dy, true,
+          LB.EFFECT_NAMES[g] .. ' is cut at the size and offset the module adds it for')
+      end
+    end
+  end
+end
+
 -- ---------------------------------------------------------------- filter fingerprint
 eq(LB.filterKey(L.defaults()) ~= LB.filterKey(strict), true, 'a filter change is seen')
 eq(LB.filterKey(nil), '', 'no filter')

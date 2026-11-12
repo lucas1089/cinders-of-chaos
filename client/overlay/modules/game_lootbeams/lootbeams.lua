@@ -11,7 +11,8 @@
 --
 -- How it is drawn (pair 36 and on): the animated loot beam effect of the beam's group (LootBeamsLogic.EFFECTS, effects
 -- of the client pair) is added to the tile (Effect.create + g_map.addThing) when the beam starts and again every
--- LB.EFFECT_MS while it stands; it plays on the map like a spell effect. A pair without those effects (or a client
+-- LB.EFFECT_MS while it stands; it plays on the map like a spell effect. From pair 65 the effect is 3 x 5 tiles and is
+-- added at the tile + (1, 1) (LB.effectPos; pair 36 to 64: 1 x 2, on the tile). A pair without those effects (or a client
 -- without Effect.create): the engine pillar below.
 -- The engine pillar (client base patch 0069, g_map.setLootBeam(pos, color, height, intensity)): MapView
 -- adds the pool on the floor under the creatures and the pillar over the floor, below names, bars and windows; it
@@ -88,10 +89,29 @@ local function hasEffects()
   return effectsOk
 end
 
+-- the size of an effect of the pair in tiles (w, h), cached; nil when it cannot be read
+local sizes = {}
+local function effectSize(id)
+  local c = sizes[id]
+  if c == nil then
+    c = false
+    local ok, w, h = pcall(function()
+      local t = g_things.getThingType(id, ThingCategoryEffect)
+      return t:getWidth(), t:getHeight()
+    end)
+    if ok and tonumber(w) and tonumber(h) then c = { w = tonumber(w), h = tonumber(h) } end
+    sizes[id] = c
+  end
+  return c or nil
+end
+
+-- the beam at full size (pair 65) is added one tile south-east of its tile, the old 1 x 2 one on the tile (see
+-- LB.effectPos)
 local function addEffect(pos, id)
   local e = Effect.create()
   e:setId(id)
-  g_map.addThing(e, pos, -1)
+  local size = effectSize(id)
+  g_map.addThing(e, size and LB.effectPos(pos, size.w, size.h) or pos, -1)
 end
 
 -- ---------------------------------------------------------------- settings

@@ -19,8 +19,14 @@ any sub folders. Two layouts are read:
     impacts, circles, auras and buffs, fields and traps, projectiles and the game feel set. Only their 64 px renders
     exist: each frame is halved (premultiplied 2 x 2 box mean, alpha cut with the 4x4 Bayer dither of
     gen_pack27_fx.clean_alpha) and placed by its halved pivot like gen_pack27_fx (feet point or tile centre).
-  * the loot beam strips (`*_loot_beam_strip24.png`, 24 frames of 64 x 128): halved to 32 x 64, the bottom tile on
-    the item's tile.
+  * the loot beam strips (`*_loot_beam_strip24.png`, 24 frames of 64 x 128, RGBA, alpha 0 / 255): AT FULL SIZE since
+    O522 (pair 65; before, halved to 32 x 64, a 17 x 56 px line in game). No scaling: each frame goes into a 3 x 5 tile
+    group (96 x 160 px) with the send offset (1, 1), so the item's tile is column 1, row 3 of the group (see BEAM_*
+    below: the art is wider than a tile and its ground ring hangs 4 px under it, so the group has a column to the
+    right and a row below the tile). The art is shifted as a whole so that the centre of its ground ring lands at
+    (16, 26) px of the item's tile, where the halved beams' ring was (15.5 to 16.5, 25 to 27). The last 3 frames
+    dissolve and an empty 25th phase ends the play, as before; 70 ms per phase. Only the `beam` group does this: the
+    five old loot rays redrawn in place (424 to 428, REPLACE) still read the halved strip.
 
 What is imported (art_import/pack36_<group>.csv, the specs of import_fx_art.py, chained in GROUPS order):
   replace  our procedural effects and missiles of gen_effects.py (fx_custom.csv) rebuilt AT THEIR IDS with the pack
@@ -387,7 +393,7 @@ def load(src):
         ax, ay = v['anchor_tile']
         directional = bool(e.get('directions')) and nrow == 8
         return rows, (ax * 32, ay * 32), (0, 0), int(round(1000 / e['fps'])), bool(e.get('loop')), directional
-    if src.fmt == 'beam':
+    if src.fmt == 'beam':                  # halved: the in-place loot rays 424-428 (the beam group is cut at full size)
         img = np.asarray(Image.open(src.root).convert('RGBA'))
         fw = img.shape[1] // 24
         frames = [halve(img[:, i * fw:(i + 1) * fw]) for i in range(24)]
@@ -474,6 +480,69 @@ def missile_strip(name, rows, anchor, point):
             x0 = (x * n + f) * W
             strip[y * H:(y + 1) * H, x0:x0 + W] = G.place(img, anchor, point, left, top, w, h, name)
     return strip, w, h, n, right, bottom
+
+
+# ------------------------------------------------------------------------------------- loot beams at full size (O522)
+BEAM_FRAMES = 24             # frames of a strip (64 x 128 each)
+BEAM_W, BEAM_H = 3, 5        # tiles of the frame group: 96 x 160 px holds the 64 x 128 art after the shift
+BEAM_DX, BEAM_DY = 1, 1      # send offset: the group's bottom-right tile is the item's tile + (1, 1), so the item's tile is
+                             # column BEAM_W - 1 - BEAM_DX = 1 and row BEAM_H - 1 - BEAM_DY = 3 (the engine puts the
+                             # bottom-right tile of a group on the tile an effect is added to)
+BEAM_RING = (16, 26)         # the ring centre, px from the item tile's top left: the halved beams had it at 15.5-16.5 x 25-27
+BEAM_MS = 70
+
+
+def ring_centre(frames, window=None):
+    """(x, y) in px of the centre of the ground ring of a beam's frames (RGBA arrays of one size). The ring is the bottom
+    ellipse: of the pixels that are drawn in at least 80% of the frames (the pillar and the ring stay, sparks move), in
+    the lowest `window` rows (default an eighth of the frame: 16 of the 128 px art) the rows at least 60% as wide as
+    the widest of them; its box gives the centre."""
+    a = np.stack([f[:, :, 3] > 0 for f in frames]).mean(0) >= 0.8
+    ys = np.nonzero(a.any(1))[0]
+    assert len(ys), 'no persistent art'
+    bottom = int(ys.max())
+    rows = range(max(0, bottom - (window or a.shape[0] // 8) - 1), bottom + 1)
+    wid = {y: int(a[y].sum()) for y in rows}
+    keep = [y for y in rows if wid[y] >= 0.6 * max(wid.values())]
+    x0 = min(int(np.nonzero(a[y])[0].min()) for y in keep)
+    x1 = max(int(np.nonzero(a[y])[0].max()) for y in keep)
+    return (x0 + x1 + 1) / 2.0, (min(keep) + max(keep) + 1) / 2.0
+
+
+def beam_strip(name, frames):
+    """a beam's 24 native frames -> (strip, w, h, n, dx, dy): the frames as the 3 x 5 group, the art shifted whole so the
+    ring centre is at BEAM_RING of the item's tile; the last FADE frames dissolve, an empty phase ends the play"""
+    frames = trim(list(frames))
+    assert len(frames) == BEAM_FRAMES, (name, len(frames))
+    cx, cy = ring_centre(frames)
+    col, row = BEAM_W - 1 - BEAM_DX, BEAM_H - 1 - BEAM_DY
+    sx = col * 32 + BEAM_RING[0] - int(np.floor(cx + 0.5))
+    sy = row * 32 + BEAM_RING[1] - int(np.floor(cy + 0.5))
+    for j in range(FADE):
+        k = len(frames) - FADE + j
+        frames[k] = G.dissolve(frames[k], (FADE - j) / (FADE + 1))
+    fh, fw = frames[0].shape[:2]
+    W, H = BEAM_W * 32, BEAM_H * 32
+    n = len(frames) + 1
+    strip = np.zeros((H, W * n, 4), np.uint8)
+    for i, f in enumerate(frames):
+        pad = np.zeros((H + 2 * fh, W + 2 * fw, 4), np.uint8)       # padded: art outside the group is cut, and checked
+        pad[fh + sy:fh + sy + fh, fw + sx:fw + sx + fw] = f
+        tile = pad[fh:fh + H, fw:fw + W]
+        assert (tile[:, :, 3] > 0).sum() == (f[:, :, 3] > 0).sum(), (name, 'art does not fit the group', sx, sy)
+        strip[:, i * W:(i + 1) * W] = tile
+    return strip, BEAM_W, BEAM_H, n, BEAM_DX, BEAM_DY
+
+
+def beam_convert(p):
+    """the beam group's pick -> [(spec row, strip)]: the native strip, not halved"""
+    img = np.asarray(Image.open(p.src.root).convert('RGBA'))
+    assert img.shape[0] == 128 and img.shape[1] == 64 * BEAM_FRAMES, (p.name, img.shape)
+    assert set(np.unique(img[:, :, 3]).tolist()) <= {0, 255}, (p.name, 'soft alpha')
+    frames = [img[:, i * 64:(i + 1) * 64] for i in range(BEAM_FRAMES)]
+    strip, w, h, n, dx, dy = beam_strip(p.name, frames)
+    return [(dict(kind='effect', name=p.name, file=f'pack36_fx/{p.name}.png', w=w, h=h, phases=n, ms=BEAM_MS,
+                  dx=dx, dy=dy, note=f'{p.note} (from {p.src.eid})'), strip)]
 
 
 REPLACE_MAX_TILES = 4         # an effect rebuilt at our id: at most 4 x 4 tiles
@@ -647,6 +716,8 @@ PULL = {}                    # replaced effect name -> (sx, sy), pull(): the piv
 
 def convert(p):
     """-> [(spec row, strip)] (a directional effect gives eight), [] when it does not fit"""
+    if p.group == 'beam':
+        return beam_convert(p)
     rows, anchor, point, ms, loop, directional = load(p.src)
     src = f'{p.src.eid}/{p.src.var}' if p.src.var else p.src.eid
     res = []

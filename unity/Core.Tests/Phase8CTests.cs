@@ -196,6 +196,11 @@ namespace Chaos.Core.Tests
             check(cx == 8 && cy == 19, "pack fx: a cell lies west and north of the effect's tile");
             check(PackFx.BeamId("white") == 4101 && PackFx.BeamId("orb") == 4090 && PackFx.BeamId("zzz") == 0 && PackFx.BeamId(null) == 0, "pack fx: beam ids by group");
             check(PackFx.BeamGroups.All(k => LootBeams.Colors.ContainsKey(k)) && LootBeams.Colors.Keys.All(k => PackFx.BeamId(k) != 0), "pack fx: every beam group of the loot rules has an effect");
+            var full = new FrameGroup { Width = PackFx.BeamFullW, Height = PackFx.BeamFullH };
+            var half = new FrameGroup { Width = 1, Height = 2 };
+            var at = new Pos(100, 200, 7);
+            check(PackFx.BeamTile(at, full) == new Pos(101, 201, 7), "pack fx: a 3 x 5 beam (pair 65) is drawn one tile south-east of its tile");
+            check(PackFx.BeamTile(at, half) == at && PackFx.BeamTile(at, null) == at, "pack fx: a 1 x 2 beam (pair 36 to 64) or none is drawn on its tile");
             string root = FindRoot();
             string lb = root == null ? null : Read(root, "client", "overlay", "modules", "game_lootbeams", "lootbeamslogic.lua");
             if (lb != null)
@@ -206,6 +211,8 @@ namespace Chaos.Core.Tests
                     foreach (Match e in Regex.Matches(m.Groups[1].Value, "(\\w+) = (\\d+)")) { same &= PackFx.BeamId(e.Groups[1].Value) == int.Parse(e.Groups[2].Value); n++; }
                 check(same && n == 6, "pack fx: the six beam ids are those of lootbeamslogic.lua");
                 check(Regex.IsMatch(lb, "LB\\.EFFECT_MS = " + (int)PackFx.BeamLoopMs + "\\b"), "pack fx: the beam loop is lootbeamslogic.lua EFFECT_MS");
+                var fs = Regex.Match(lb, "LB\\.FULL_SIZE = \\{ w = (\\d+), h = (\\d+), dx = (\\d+), dy = (\\d+) \\}");
+                check(fs.Success && int.Parse(fs.Groups[1].Value) == PackFx.BeamFullW && int.Parse(fs.Groups[2].Value) == PackFx.BeamFullH && int.Parse(fs.Groups[3].Value) == PackFx.BeamFullDx && int.Parse(fs.Groups[4].Value) == PackFx.BeamFullDy, "pack fx: the full size beam and its offset are those of lootbeamslogic.lua");
             }
             string lw = root == null ? null : Read(root, "client", "overlay", "modules", "game_levelwings", "levelwingsmath.lua");
             if (lw != null)
