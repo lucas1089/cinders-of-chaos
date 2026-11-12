@@ -20423,7 +20423,7 @@ touched. The table of what flies where, checked by `tests/pack41_fx_test.lua`:
 | `proj_razor_leaf_sakura` | Razor Rain, Samurai only (Thief and Ninja keep the razor disc) |
 | `proj_blood_spike_necrotic` | Marrow Bolt |
 | `proj_venom_glob_necrotic` | Blightbrand |
-| `proj_flame_lance_spirit` | Soulrend Beam |
+| `proj_flame_lance_spirit` | nothing since O520 (Soulrend Beam sent it: a cyan lance on a magenta hit; the kit now sends the pair 51 `p51_pink_lightning`) |
 | `proj_shadow_bolt_blood` | Life Siphon (the drain flies back to the Lich) |
 | `proj_soul_skull_spirit` | Raise Dead |
 | `proj_spirit_wisp_arcane` | Mirror Mend (heal to an ally) |
@@ -20431,7 +20431,7 @@ touched. The table of what flies where, checked by `tests/pack41_fx_test.lua`:
 | `proj_poison_dart_necrotic` | Soul Rot (the rot flies as a dart; the Beastmaster dart is earth and keeps its dart) |
 | `proj_spirit_arrow_blood` | Skewering Line (a caster with the blood spear store skin keeps the skin, `pshoot` yields to it) |
 | `proj_spirit_arrow_gold` | Radiant Smite (Templar holy filler) |
-| `proj_water_bolt_abyss` | Dreamrot (Illusionist; no spell is water, this is the abyssal one; it sent no missile before, so a client without the art sees none) |
+| `proj_water_bolt_abyss` | nothing since O520 (Dreamrot sent it: a teal bolt on a magenta cloud; the kit now sends the pair 51 `p51_magenta_orb_tendrils`) |
 
 Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
 
@@ -31346,6 +31346,23 @@ effect that already is in the pair. No art, no pair, no engine patch, no opcode;
   swaps replace them); Reaping Gyre (its combat effect is set when the script loads, on every tile; no per-spell swap reaches it).
 * **For a new pair:** 610 ninja_vanish and the dark redraws of 433, 633, 757 (no brighter picture of the same element exists
   in the pair), a blood slash of its own for the combat effect of Reaping Gyre.
+* **Send offsets of the p50 names (O520).** Owner 2026-11-12 (translated): "Dreamrot and Soulrend need fixing." The previews showed
+  the hit (purple cloud 4579, flame ball 4574, spiky ring 4584) about one tile down and right of the target, after a teal
+  (Dreamrot 75) and a cyan (Soulrend Beam 115) missile. The offset was real, not the renderer: `import_pair50.py` gave every effect
+  `(w // 2, h // 2)`, which centres the canvas, but these pictures sit in the bottom-right tile of their canvas (alpha centre of 4574
+  at 48, 49 px of 64, of 4584 at 46, 46, of 4579 at 38, 37), so a 2x2 sent at +1, +1 landed 22 to 33 px (up to a whole tile) away.
+  `client/tools/sprites/fit_pair50_offsets.py` (`--write` / `--check DAT SPR`, test `fit_pair50_offsets_test.py`, CI live-pair)
+  measures the alpha centre over all phases and moves an axis to the whole-tile offset nearest the target tile's middle where the
+  default is 20 px or more off and the fit 8 px or more closer; 213 of 600 effects moved (`server/data/items/pair50_effects.csv`,
+  then `gen_pair50_fx_ids.py` -> `chaos_pair50_fx_ids.lua`). Spells of this pass that send a moved name: 4579 Dreamrot, Wraithwind,
+  Soulflay Wave, Mistborne Strike (0, 0); 4574 Soulrend Beam, Ossuary Surge (0, 0); 4584 Soulrend Beam, Gravewail, Banner of
+  Bones (0, 0); 4573 Smoke Bomb (0, 0); 4147 Gale Volley (0, 0); 4144 Bell of Reckoning, Bulwark Slam, Iaijutsu (0, 0); 4416 Razor
+  Rain, Rampage Leap (2, 1); 4417 Keepfall, Rift Cleaver (1, 2). The `Fx()` wrapper takes a pass picture only at offset 0, 0, so
+  it now takes those moved to 0, 0 for a cast that sends a constant. Run the fit after `import_pair50.py`, which writes the plain
+  rule. The missiles: Dreamrot now sends `p51_magenta_orb_tendrils` 222 (a magenta orb, the colour of its cloud) and Soulrend Beam
+  `p51_pink_lightning` 221 (a magenta streak, the beam), `attack_kit_config.lua` `pshot`, which `ChaosSpell.pshoot` takes from
+  pair 51 too (`ChaosPack36Fx.live` loads its ids). Both spells are death; 4574, 4579 and 4584 are tagged death in
+  `spell_fx_elements.csv`. A client older than pair 51 draws no missile for them (as before for the pair 42 ones).
 * **Not verified:** a live client (draw order, real ground, the look of each effect in the real size, the offsets of the
   p50 names, which come from the registry); Raise Dead, Raise Bone Warrior, Archer and Mage and Banner of Bones need corpses or
   minions, so the probe does not run them (the pass is the same call path).

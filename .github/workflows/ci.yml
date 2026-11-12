@@ -252,6 +252,8 @@ jobs:
           python3 -I client/tools/sprites/import_pair50_test.py
           python3 -I client/tools/sprites/gen_pair50_fx_ids_test.py
           python3 -I client/tools/sprites/gen_pair50_fx_ids.py --check
+          # the send offsets of the pair 50 effects fitted to where the art sits in its canvas (O520; --check with the pair in live-pair)
+          python3 -I client/tools/sprites/fit_pair50_offsets_test.py
           python3 -I server/tools/install_pair50_items_test.py
           # pair 51 missiles: the 62 freed missile ids refilled from the two sources; selection and name table
           python3 -I client/tools/sprites/import_pair51_missiles_test.py
@@ -1720,6 +1722,11 @@ jobs:
       - name: Wing centres match the pair (gen_wing_centres.py --check, base patch 0193)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_wing_centres.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Pair 50 effect send offsets match the art (fit_pair50_offsets.py --check, O520)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/fit_pair50_offsets.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Foot marks table matches the pair (gen_foot_marks.py --check)

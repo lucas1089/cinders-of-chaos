@@ -3450,7 +3450,8 @@ biome, size, notes), one row per chosen thing; no pixels are committed.
   ladder use (script `pair50_items.lua`), its other 41 steps and pits carry no floor change.
 - **Monsters (679).** Outfits 2682-3360 (G 282, F 397), four directions, frame groups kept. Corpses are container items.
 - **Effects (600).** Ids 4102-4701 (G 53, F 547). Effects above 255 work (u16 effect ids). Big ones carry a send offset (width / 2,
-  height / 2 tiles) in `server/data/lib/chaos_pair50_fx_ids.lua`, written by `gen_pair50_fx_ids.py` (`--check`, test in CI).
+  height / 2 tiles, O520: moved by `fit_pair50_offsets.py` to the art's alpha centre where that is 20 px or more off, 213 of 600)
+  in `server/data/lib/chaos_pair50_fx_ids.lua`, written by `gen_pair50_fx_ids.py` (`--check`, test in CI).
 - **Missiles: none.** The protocol sends the missile id in one byte, 254 is the weapon-type constant and the pair already holds 253
   missiles. The 169 selected missiles (G 43, F 126) are skipped. An engine patch would be needed (not made).
 

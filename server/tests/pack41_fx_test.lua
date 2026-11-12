@@ -207,7 +207,7 @@ local SENT = {
 	proj_ball_lightning_thunder = {"chain_lightning.lua"},
 	proj_blood_spike_necrotic = {"attack_kit_config.lua"},
 	proj_boulder_magma = {"meteor_strike.lua"},
-	proj_flame_lance_spirit = {"attack_kit_config.lua"},
+	proj_flame_lance_spirit = {}, -- O520: Soulrend Beam sends the magenta pair 51 lightning now, the cyan lance clashed with its purple hit
 	proj_razor_leaf_sakura = {"attack_kit_config.lua"},
 	proj_shadow_bolt_blood = {"attack_kit_config.lua", "life_siphon.lua"},
 	proj_soul_skull_spirit = {"raise_dead.lua"},
@@ -215,10 +215,11 @@ local SENT = {
 	proj_venom_glob_necrotic = {"attack_kit_config.lua"},
 	proj_void_orb_abyss = {"shadow_step.lua"},
 	proj_wind_blade_storm = {"iaijutsu.lua"},
-	-- the last four (all sent since the O239 follow-up): Soul Rot, Skewering Line (a store skin keeps the blood spear
-	-- through pshoot), Radiant Smite, Dreamrot (the kit's pshot)
+	-- the last three (all sent since the O239 follow-up): Soul Rot, Skewering Line (a store skin keeps the blood spear
+	-- through pshoot), Radiant Smite; Dreamrot's teal bolt is unsent since O520 (its hit is a magenta cloud, the kit
+	-- sends the magenta pair 51 orb)
 	proj_poison_dart_necrotic = {"soul_rot.lua"}, proj_spirit_arrow_blood = {"piercing_volley.lua"},
-	proj_spirit_arrow_gold = {"radiant_smite.lua"}, proj_water_bolt_abyss = {"attack_kit_config.lua"}
+	proj_spirit_arrow_gold = {"radiant_smite.lua"}, proj_water_bolt_abyss = {}
 }
 local function scan(dir, into)
 	local h = io.popen("find " .. dir .. " -name '*.lua' -o -name '*.xml' 2>/dev/null")

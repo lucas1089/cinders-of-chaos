@@ -196,7 +196,7 @@ end
 
 -- ---------------------------------------------------------------------------------------------- the effects
 local function shot(player, spec, toPos)
-	local pname = spec.pshot -- a pair 41 / 42 missile (O239), by class where pshotBy names the class
+	local pname = spec.pshot -- a pair 41 / 42 / 51 missile (O239, O520), by class where pshotBy names the class
 	if spec.pshotBy then
 		local okVoc, voc = pcall(function() return player:getVocation():getName() end)
 		pname = okVoc and spec.pshotBy[voc] or pname

@@ -78,6 +78,7 @@ do
 	dofile("data/lib/chaos_vfx.lua")
 	dofile("data/lib/chaos_vfx_art.lua")
 	dofile("data/lib/chaos_pack41_fx_ids.lua")
+	dofile("data/lib/chaos_pair51_missile_ids.lua")
 	PACK41 = ChaosVfxMissile
 	local dirs = {"n", "ne", "e", "se", "s", "sw", "w", "nw"}
 	for _, key in ipairs(keys) do
@@ -87,7 +88,8 @@ do
 			ok(ChaosFxMissile[s.shot] ~= nil or ChaosVfxMissile[s.shot] ~= nil, key .. ": a missile named " .. s.shot)
 		end
 		if s.pshot then
-			ok(s.pshot:match("^proj_") ~= nil and PACK41[s.pshot] ~= nil, key .. ": a pair 41 / 42 missile named " .. s.pshot)
+			ok((s.pshot:match("^proj_") ~= nil or s.pshot:match("^p51_") ~= nil) and PACK41[s.pshot] ~= nil,
+				key .. ": a pair 41 / 42 / 51 missile named " .. s.pshot)
 		end
 		for voc, name in pairs(s.pshotBy or {}) do
 			ok(PACK41[name] ~= nil, key .. ": " .. voc .. " missile " .. name .. " exists")
