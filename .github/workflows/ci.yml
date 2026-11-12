@@ -108,6 +108,8 @@ jobs:
           /tmp/fxenv/bin/python -I desktop/tools/gen_admin_art.py --check  # header strip and icon of the desktop admin window (O344)
           # pair 36 effects: specs, sources and sums agree, names free, missiles uint8 (the pack art is never in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
+          # the loot beams of pair 36 at full size (O522, pair 65): ring centre, the 3 x 5 group, no scaling, the spec (synthetic strips)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_beam_test.py
           # pair 41: pair 36's projectile missiles redrawn from the native 32 px renders and three appended: spec, sources
           # and sums agree, ids 251-253 (the pack art is never in git); the test uses synthetic images
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack41_missiles.py build --check
@@ -176,6 +178,8 @@ jobs:
           # source sheet; the pure parts and the ids against chaos_orbs_config.lua
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art.py build --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art_test.py
+          # monster recolour table of O529 (outfits with no colour mask, hue shifted copies wait for pair 68)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_monster_recolour_test.py
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
@@ -252,11 +256,16 @@ jobs:
           python3 -I client/tools/sprites/import_pair50_test.py
           python3 -I client/tools/sprites/gen_pair50_fx_ids_test.py
           python3 -I client/tools/sprites/gen_pair50_fx_ids.py --check
+          # the send offsets of the pair 50 effects fitted to where the art sits in its canvas (O520; --check with the pair in live-pair)
+          python3 -I client/tools/sprites/fit_pair50_offsets_test.py
           python3 -I server/tools/install_pair50_items_test.py
           # pair 51 missiles: the 62 freed missile ids refilled from the two sources; selection and name table
           python3 -I client/tools/sprites/import_pair51_missiles_test.py
           python3 -I client/tools/sprites/gen_pair51_missile_ids_test.py
           python3 -I client/tools/sprites/gen_pair51_missile_ids.py --check
+          # pack missile names never name an id that draws donor art (O528); the Lua guard is server/tests/missile_art_source_test.lua
+          python3 -I client/tools/sprites/donor_missile_names_test.py
+          python3 -I client/tools/sprites/donor_missile_names.py --check
           python3 -I server/tools/patch_npc_currency_test.py
           python3 -I server/tools/check_dead_holes_test.py   # floor changes that lead nowhere (O263; needs a map to run for real)
           python3 -I server/tools/patch_dead_holes_test.py   # the install step deadholes on a synthetic map
@@ -1429,6 +1438,9 @@ jobs:
       - name: Base monsters take their new looks (patch_base_looks.py, baselooks step)
         run: python3 -I server/tools/patch_base_looks_test.py
 
+      - name: Hunt monsters keep a look of their own (audit_shared_looks.py, O529)
+        run: python3 -I server/tools/audit_shared_looks_test.py
+
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py
 
@@ -1501,6 +1513,13 @@ jobs:
           bash -n tools/ci/launch_rehearsal.sh
           shellcheck tools/ci/launch_rehearsal.sh
           python3 -I tools/ci/launch_rehearsal_test.py
+
+      - name: GitHub door of the VPS scripts (O530, private repository; chaos_github.sh with a fake curl and a recording git; token file order, the credential helper through git credential fill, no token on a command line, the refusal words, the asset download)
+        run: |
+          bash -n server/deploy/chaos_github.sh server/deploy/chaos_update.sh
+          shellcheck server/deploy/chaos_github.sh
+          python3 -I server/deploy/chaos_github_test.py
+          python3 -I server/deploy/chaos_update_test.py
 
       - name: Admin app server side (chaos-ctl.sh with stubs; remote.cmd commands)
         run: |
@@ -1720,6 +1739,11 @@ jobs:
       - name: Wing centres match the pair (gen_wing_centres.py --check, base patch 0193)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_wing_centres.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Pair 50 effect send offsets match the art (fit_pair50_offsets.py --check, O520)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/fit_pair50_offsets.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Foot marks table matches the pair (gen_foot_marks.py --check)

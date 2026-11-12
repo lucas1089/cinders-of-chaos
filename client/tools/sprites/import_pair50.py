@@ -205,7 +205,7 @@ def slug(s):
 def fx_offset(w, h):
     """whole tiles to send an effect of w x h tiles past its target tile so its middle lands on the target (the engine draws
     the bottom-right tile on the target): the same rule as the ChaosVfx entries of the other pairs (1 for 2 and 3 tiles,
-    2 for 4)"""
+    2 for 4). Right only for art in the middle of its canvas: run fit_pair50_offsets.py after the import (O520)"""
     return (w // 2, h // 2)
 
 

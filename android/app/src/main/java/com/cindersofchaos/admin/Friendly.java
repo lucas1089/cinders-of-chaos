@@ -213,6 +213,10 @@ final class Friendly {
         if (t.contains("applies at the next restart")) {
             return "Gravado no config.lua. Vale no próximo reinício do servidor.";
         }
+        String gh = EngineBuildInfo.refusal(t);
+        if (!gh.isEmpty()) {
+            return gh;
+        }
         if (t.startsWith("N must be a number")) {
             return "O número de linhas precisa ser um número.";
         }

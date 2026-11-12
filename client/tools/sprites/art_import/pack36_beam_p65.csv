@@ -1,0 +1,13 @@
+replace,kind,name,file,w,h,phases,ms,dx,dy,note
+4090,effect,beam_ancient,pack36_fx/beam_ancient.png,3,5,25,70,1,1,ancient (from ancient) (pair 65: redrawn in place at effect 4090)
+4091,effect,beam_blood,pack36_fx/beam_blood.png,3,5,25,70,1,1,blood (from blood) (pair 65: redrawn in place at effect 4091)
+4092,effect,beam_green_nature,pack36_fx/beam_green_nature.png,3,5,25,70,1,1,green_nature (from green_nature) (pair 65: redrawn in place at effect 4092)
+4093,effect,beam_legendary,pack36_fx/beam_legendary.png,3,5,25,70,1,1,legendary (from legendary) (pair 65: redrawn in place at effect 4093)
+4094,effect,beam_mythic,pack36_fx/beam_mythic.png,3,5,25,70,1,1,mythic (from mythic) (pair 65: redrawn in place at effect 4094)
+4095,effect,beam_orange_fire,pack36_fx/beam_orange_fire.png,3,5,25,70,1,1,orange_fire (from orange_fire) (pair 65: redrawn in place at effect 4095)
+4096,effect,beam_poison,pack36_fx/beam_poison.png,3,5,25,70,1,1,poison (from poison) (pair 65: redrawn in place at effect 4096)
+4097,effect,beam_rainbow_prismatic,pack36_fx/beam_rainbow_prismatic.png,3,5,25,70,1,1,rainbow_prismatic (from rainbow_prismatic) (pair 65: redrawn in place at effect 4097)
+4098,effect,beam_rare,pack36_fx/beam_rare.png,3,5,25,70,1,1,rare (from rare) (pair 65: redrawn in place at effect 4098)
+4099,effect,beam_red_cursed,pack36_fx/beam_red_cursed.png,3,5,25,70,1,1,red_cursed (from red_cursed) (pair 65: redrawn in place at effect 4099)
+4100,effect,beam_shadow,pack36_fx/beam_shadow.png,3,5,25,70,1,1,shadow (from shadow) (pair 65: redrawn in place at effect 4100)
+4101,effect,beam_silver_metal,pack36_fx/beam_silver_metal.png,3,5,25,70,1,1,silver_metal (from silver_metal) (pair 65: redrawn in place at effect 4101)

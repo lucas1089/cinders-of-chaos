@@ -32,11 +32,16 @@ with open(G.SRC, newline='', encoding='utf-8') as fh:
 ids = [int(r['effect_id']) for r in real]
 check(len(real) == 600 and ids == list(range(4102, 4702)), 'committed table: 600 effects, ids 4102..4701')
 check(len({r['key'] for r in real}) == len(real), 'keys are unique')
-ok = True
+# import_pair50.py writes half the size; fit_pair50_offsets.py (O520, needs the pair) moves the ones whose art sits off the
+# middle of its canvas, so most rows keep the half and every offset stays inside the effect
+ok, half = True, 0
 for r in real:
     w, h = (int(x) for x in r['size'].split('x'))
-    ok = ok and (int(r['dx']), int(r['dy'])) == (w // 2, h // 2)
-check(ok, 'offsets are half the size')
+    dx, dy = int(r['dx']), int(r['dy'])
+    ok = ok and 0 <= dx < w and 0 <= dy < h
+    half += (dx, dy) == (w // 2, h // 2)
+check(ok, 'every offset lies inside the effect')
+check(half >= len(real) * 0.6, 'most offsets are half the size (%d of %d)' % (half, len(real)))
 check(os.path.exists(G.OUT) and open(G.OUT, encoding='utf-8').read() == G.lua_text(real), 'generated Lua is up to date')
 
 print('gen_pair50_fx_ids_test:', 'OK' if not failed else '%d failure(s)' % failed)

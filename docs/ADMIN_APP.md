@@ -104,25 +104,60 @@ O caminho inteiro, sem terminal:
 Só uma rodada por vez: com uma na fila ou rodando, Recompilar é recusado (também quando a rodada foi aberta na página do
 GitHub). Se uma rodada falhar, nada mudou; corrija o motivo (o job e o passo estão no cartão) e rode de novo.
 
-### Token do GitHub (uma vez)
+### Repositório privado e o token do GitHub (O530, uma vez)
 
-A VPS precisa de um token para pedir a compilação. Crie um que só serve para isto:
+O repositório `lucas1089/cinders-of-chaos` é **privado** (2026-11-12). Sem login, o GitHub responde 404 a tudo: o `git fetch`
+da VPS, a lista de releases, o download dos pacotes e o auto-atualizar do app do PC. A VPS guarda **um** token e todo
+acesso ao GitHub passa por ele (`server/deploy/chaos_github.sh`). O token nunca sai da VPS: nem o app do PC nem o
+celular têm token.
+
+O que usa o token: Atualizar servidor (`update-check`, `update-apply`, `update-downloads`: git fetch, releases, o pacote do
+engine e os downloads do site), `update TAG` (git fetch), Publicar update do client / app Android / client Unity (o zip da
+release), o download do par de sprites (`spectate-pair fetch`), Recompilar engine (Actions) e o auto-atualizar do app do PC
+(a VPS pede o endereço do arquivo e o app baixa de lá; a assinatura Ed25519 continua sendo a trava). Os jogadores não usam
+nada disso: o client, o launcher, o APK e os downloads do site saem da própria VPS, sem GitHub e sem token.
+
+Crie um token que só serve para isto:
 
 1. GitHub > sua foto > Settings > Developer settings > Personal access tokens > **Fine-grained tokens** > Generate new token.
-2. Nome: `cinders-recompilar`. Expiração: a que preferir (90 dias, por exemplo; ao vencer o cartão diz "O GitHub recusou o
-   token" e basta definir outro). Resource owner: a conta dona do repositório.
+2. Nome: `cinders-vps`. Expiração: a que preferir (90 dias, por exemplo; ao vencer o app diz "O GitHub recusou o token" e
+   basta definir outro). Resource owner: a conta dona do repositório.
 3. Repository access: **Only select repositories** e escolha só `lucas1089/cinders-of-chaos`.
-4. Repository permissions: **Actions: Read and write**. Nenhuma outra (o Metadata de leitura vem sozinho; o repositório é
-   público, então ler as releases não pede mais nada).
+4. Repository permissions: **Contents: Read-only** (git fetch e os arquivos das releases), **Metadata: Read-only** (vem
+   sozinho) e **Actions: Read and write** (só para Recompilar engine; sem ela tudo o mais funciona). Nenhuma outra.
 5. Generate token e copie o `github_pat_...` (ele só aparece uma vez).
 6. No app: Painel > Recompilar engine > **Definir token do GitHub**, cole e **Salvar token** (no app do PC: Atualizações >
-   Recompilar engine > Definir token do GitHub). Campo vazio apaga o token.
+   **Repositório privado** > Definir token do GitHub). Campo vazio apaga o token. No app do PC, **Estado do token** diz se o
+   repositório é privado, se o token alcança o código (`contents`) e o Actions, e `ready`.
+7. Pelo shell da VPS, só se o app não puder: `printf '%s\n' "$TOKEN" | sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh
+   github-token-set` (leia o token com `read -rs TOKEN` antes, para não ficar no histórico) e `sudo ...chaos-ctl.sh
+   github-token-status`.
 
-O token vai pelo SSH no stdin do `chaos-ctl.sh engine-build-token-set`, nunca numa linha de comando. A VPS confere o formato,
-pergunta ao GitHub se ele alcança o repositório (um token recusado não é guardado), guarda em
-`/etc/chaos/engine-build.token` (só root, modo 600, `CHAOS_ENGINE_TOKEN_FILE` no `ctl.conf` muda o caminho) e nunca o mostra:
-nem na saída, nem no log, nem na lista de processos (o `curl` lê o cabeçalho de um arquivo de configuração no stdin). O app
-mostra só "token: sim ou não". Esse token não lê nem escreve código, só roda e lê workflows deste repositório.
+O token vai pelo SSH no stdin do `chaos-ctl.sh github-token-set`, nunca numa linha de comando. A VPS confere o formato,
+pergunta ao GitHub se ele lê o ramo (Contents; um token recusado não é guardado; o Actions só gera um aviso), guarda em
+`/etc/chaos/github.token` (só root, modo 600; `CHAOS_GITHUB_TOKEN_FILE` no `ctl.conf` muda o caminho; o nome antigo
+`CHAOS_ENGINE_TOKEN_FILE` e o arquivo `/etc/chaos/engine-build.token` de antes continuam valendo; `engine-build-token-set`
+é o mesmo comando) e nunca o mostra: nem na saída, nem no log, nem na lista de processos (o `curl` lê o cabeçalho de um
+arquivo de configuração no stdin; o `git` pede o token a um *credential helper* que lê o arquivo na hora, e a URL do
+`origin` e o `.git/config` ficam sem ele). Esse token não escreve código nem tem acesso a outros repositórios.
+
+**Primeira vez (o ovo e a galinha):** a VPS ainda tem o `chaos-ctl.sh` antigo, sem `github-token-set`, e não consegue
+baixar o novo. Salve o token com o comando que ela já tem (`engine-build-token-set`, no app: Recompilar engine > Definir
+token do GitHub; o token precisa ter Actions leitura e escrita além de Contents), e traga o código com o token no ambiente do
+git, sem pôr nada na URL nem numa linha de comando:
+
+```
+sudo bash -c 'T=$(tr -d "[:space:]" < /etc/chaos/engine-build.token); cd /opt/chaos/repo &&
+  GIT_TERMINAL_PROMPT=0 GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0= \
+  GIT_CONFIG_KEY_1=http.extraHeader \
+  GIT_CONFIG_VALUE_1="Authorization: Basic $(printf "x-access-token:%s" "$T" | base64 -w0)" git pull --ff-only origin main'
+```
+
+Daí em diante tudo (inclusive o app) usa o `chaos-ctl.sh` novo. O **app do PC** v0.4.1 não consegue atualizar a si mesmo
+(ele pedia as releases ao GitHub sem token): baixe a versão nova uma vez, logado, na página de Releases do repositório
+(`admin-desktop-vX.Y.Z`, o `cinders-admin.exe`), e troque o arquivo; as seguintes se atualizam pela VPS.
+
+Sem token e com o repositório privado, o app diz **"Repositório privado: defina o token do GitHub"** (`private-repo`).
 
 ### O número do client (`client_build`)
 
@@ -158,13 +193,14 @@ O workflow tem o input `client_build` (o número que o executável do client car
 
 ### Erros que o cartão traduz
 
-`token-missing` (sem token), `token-refused` (401: vencido ou apagado), `no-access` (o token não alcança o repositório ou
-falta Actions leitura e escrita), `build-running`, `client-changed`, `client-build-backwards`, `client-build-unknown`,
+`token-missing` (sem token), `private-repo` (repositório privado e sem token: "Repositório privado: defina o token do
+GitHub"), `token-refused` (401: vencido ou apagado), `no-access` (o token não alcança o repositório ou falta Contents
+leitura, ou Actions leitura e escrita para recompilar), `build-running`, `client-changed`, `client-build-backwards`, `client-build-unknown`,
 `client-check-failed` (sem commit para comparar: rode Atualizar servidor uma vez), `fetch-failed`, `workflow-refused`
 (422: a branch não tem o workflow manual), `dispatch-failed` e `github-unreachable`.
 
-Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]` e `chaos-ctl.sh engine-build-token-set`
-(token no stdin). Testes: `server/deploy/chaos_ctl_test.py` (`test_engine_build`, com um `curl` falso no lugar do GitHub),
+Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]` e `chaos-ctl.sh github-token-set`
+(token no stdin; `engine-build-token-set` é o nome de antes). Testes: `server/deploy/chaos_ctl_test.py` (`test_engine_build`, com um `curl` falso no lugar do GitHub),
 `android/.../EngineBuildInfoTest.java` e `desktop/src/engine.rs`.
 
 ## Comandos frequentes (Ações rápidas)
@@ -316,7 +352,9 @@ Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]
 ## Ligar o app à VPS (3 minutos)
 
 1. A VPS precisa do repositório em `/opt/chaos/repo` (o mesmo de `docs/LAUNCH.md`). Traga a versão nova:
-   `cd /opt/chaos/repo && git fetch origin --tags && git checkout <tag>` (ou `git pull`).
+   `cd /opt/chaos/repo && git fetch origin --tags && git checkout <tag>` (ou `git pull`). O repositório é privado: o
+   `git` precisa do token (a seção "Repositório privado e o token do GitHub", acima; o `chaos-ctl.sh update-apply` já o
+   usa sozinho; à mão, com `GIT_CONFIG_*` como no passo "primeira vez").
 2. App, aba **Config**: endereço da VPS, porta (22), usuário `chaosadmin`. Salvar.
 3. **Gerar chave**, depois **Copiar comando do servidor**. Cole esse comando no terminal da VPS (como root ou com sudo).
    Ele cria o usuário `chaosadmin`, instala a chave e libera `sudo` só para o `chaos-ctl.sh`.
@@ -343,6 +381,10 @@ Windows podem ter cada um a sua chave. Rodar de novo com a mesma chave não dupl
   fica bloqueada enquanto o campo Senha de Comandos > Contas está em foco ou tem texto. A chave privada nunca aparece
   na tela.
 - O app não abre porta nenhuma na VPS e nenhum painel na internet. Só SSH, com chave (sem senha).
+- O token do GitHub (repositório privado, O530) fica só na VPS, em `/etc/chaos/github.token` (root, modo 600). Os apps o
+  enviam uma vez pelo stdin e nunca o recebem de volta; o app do PC se atualiza pedindo à VPS um endereço assinado de
+  poucos minutos para cada arquivo, e confere a assinatura Ed25519 antes de trocar o programa. Perdeu um aparelho ou o
+  token vazou: apague o token em Settings > Developer settings do GitHub e defina outro.
 - Para tirar o acesso: apague `/home/chaosadmin/.ssh/authorized_keys` e `/etc/sudoers.d/chaos-admin` na VPS.
 - Perdeu o celular: faça isso na hora, de outro aparelho.
 - Recomendado na VPS: `PasswordAuthentication no` e `PermitRootLogin no` (`tools/linux/harden_vps.sh` faz isso).
@@ -353,7 +395,7 @@ Windows podem ter cada um a sua chave. Rodar de novo com a mesma chave não dupl
 `gm-logs [n] [NOME]`, `metrics [--json]`, `testers start [N] [MINUTOS] [--restart SEGUNDOS] [--keystones] | stop | status | report | log [N] | cleanup [--yes]` (bots de teste, server/README.md "Tester bots"), `errors clear`, `vps [info] | upgrade | upgrade-log [N] | reboot MIN | reboot-cancel`, `services`, `service NOME start|stop|restart`, `service-log NOME [N]`, `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
 `panel NOME ACAO JSON`, `reload-files`, `reload-file NOME [CONFIG]` (uma tabela `*_config.lua` no jogo sem /reload, grupo 6), `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
-`update-rollback`, `update-log`, `engine-build [status | start [--client-build N] | log [N]]` e `engine-build-token-set` (token no stdin; recompila o engine no GitHub, O436), `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
+`update-rollback`, `update-log`, `engine-build [status | start [--client-build N] | log [N]]` (recompila o engine no GitHub, O436), `github-token-set` (o token do repositório privado no stdin, O530; `engine-build-token-set` é o mesmo) e `github-token-status`, `admin-desktop-releases` e `admin-desktop-asset-url TAG NOME` (o auto-atualizar do app do PC pergunta à VPS), `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
 update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `client-pair [show | set N]`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `discord-bot status | install | set NOME | start | stop | restart | logs [N] | patchnotes`, `pay-status`, `pay-set NOME` (valor no stdin), `pay-test`, `pay-enable`, `pay-disable`, `newplayer-funnel`, `survey`, `game-health [--days N] [--kv | --json] [--pt]`, `balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm] | last | auto | timer on|off|status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`

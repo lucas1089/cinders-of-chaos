@@ -41,10 +41,12 @@ from PIL import Image
 from datspr import Dat, Spr, sprite_index
 from gen_effects import encode_sprite
 from import_vfx import entry_bytes, render_back, tiles_of, T_
+import donor_missile_names as DN
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ART = os.path.join(HERE, 'art_import')
 SPEC_NAME = 'fx_art.csv'        # named in the generated Lua header (main() sets it from --spec)
+DONORS = DN.donor_ids()          # missile ids whose art is a pair 51 donor: no pack name for them (O528; --keep-donor-names)
 
 
 def read_spec(path):
@@ -109,7 +111,7 @@ def lua_text(rows, gens, ids):
         if r['kind'] == 'missile' and (not r.get('replace') or r.get('lua')):
             L.append(f"ChaosVfxMissile.{r.get('lua') or r['name']} = {{id = {ids[(r['kind'], r['name'])]}, dx = {g['dx']}, dy = {g['dy']}}}"
                      f"  -- {r['note']}")
-    return '\n'.join(L) + '\n'
+    return DN.filter_lua('\n'.join(L) + '\n', DONORS)
 
 
 def write_catalog(rows, gens, ids, path):
@@ -117,6 +119,8 @@ def write_catalog(rows, gens, ids, path):
         w = csv.writer(fh, lineterminator='\n')
         w.writerow(['kind', 'id', 'name', 'size', 'send_offset', 'patterns', 'frames', 'ms', 'note'])
         for r, g in zip(rows, gens):
+            if r['kind'] == 'missile' and ids[(r['kind'], r['name'])] in DONORS:
+                continue
             w.writerow([r['kind'], ids[(r['kind'], r['name'])], r.get('lua') or r['name'], f"{g['w']}x{g['h']}", f"{g['dx']},{g['dy']}",
                         f"{g['px']}x{g['py']}", g['phases'], g['ms'], r['note']])
 
@@ -170,7 +174,12 @@ def main():
     ap.add_argument('--lua-out', default=None); ap.add_argument('--catalog-out', default=None)
     ap.add_argument('--merge', action='store_true',
                     help='keep the other entries of --lua-out / --catalog-out (a second spec on top of the first)')
+    ap.add_argument('--keep-donor-names', action='store_true',
+                    help='name the missile ids that pair 51 refilled with donor art too (a rebuild of a pair older than 51)')
     a = ap.parse_args()
+    global DONORS
+    if a.keep_donor_names:
+        DONORS = set()
     t0 = time.time()
     os.makedirs(a.out_dir, exist_ok=True)
     for p in (a.ours_dat, a.ours_spr):

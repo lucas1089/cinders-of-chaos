@@ -632,9 +632,10 @@ impl App {
 
     fn check_update(&mut self) {
         let tx = self.tx.clone();
+        let cfg = self.cfg.clone();
         self.update_note = "Procurando versão nova...".into();
         std::thread::spawn(move || {
-            let _ = tx.send(Msg::Update(update::check(VERSION)));
+            let _ = tx.send(Msg::Update(update::check(&cfg, VERSION)));
         });
     }
 
@@ -1969,10 +1970,10 @@ impl eframe::App for App {
                             ui.horizontal(|ui| {
                                 ui.colored_label(theme::WARN, format!("Versão nova {} disponível", f.tag));
                                 if theme::primary_button(ui, "Atualizar e reiniciar o app").clicked() {
-                                    let (tx, c) = (self.tx.clone(), ctx.clone());
+                                    let (tx, c, cfg) = (self.tx.clone(), ctx.clone(), self.cfg.clone());
                                     self.update_note = "Baixando...".into();
                                     std::thread::spawn(move || {
-                                        let _ = tx.send(Msg::Installed(update::install(&f, VERSION).map(|_| ())));
+                                        let _ = tx.send(Msg::Installed(update::install(&cfg, &f, VERSION).map(|_| ())));
                                         c.request_repaint();
                                     });
                                 }

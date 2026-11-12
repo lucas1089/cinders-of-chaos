@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 /**
  * The card Recompilar engine (O436) in Portuguese: what chaos-ctl.sh engine-build status reports (the run of
  * windows-package.yml on GitHub), the answer of engine-build start, the refusals of both worded for the owner, and the
- * same shape check of the GitHub token as engine-build-token-set. Pure Java, no Android classes. The token never leaves the
- * phone except on the stdin of engine-build-token-set.
+ * same shape check of the GitHub token as github-token-set. Pure Java, no Android classes. The token never leaves the
+ * phone except on the stdin of github-token-set.
  */
 final class EngineBuildInfo {
     /** The sentence of the confirmation: how long GitHub takes. */
@@ -33,7 +33,7 @@ final class EngineBuildInfo {
         return e;
     }
 
-    /** The token as engine-build-token-set accepts it; empty is fine in the card only as "remove" (checked apart). */
+    /** The token as github-token-set accepts it; empty is fine in the card only as "remove" (checked apart). */
     static boolean validToken(String token) {
         return token != null && TOKEN.matcher(token).matches();
     }
@@ -233,9 +233,10 @@ final class EngineBuildInfo {
     static String refusal(String out) {
         String s = out == null ? "" : out;
         String[][] words = {
-            {"token-missing", "Falta o token do GitHub. Toque em Definir token do GitHub e cole um token só deste repositório, com Actions leitura e escrita."},
+            {"token-missing", "Falta o token do GitHub. Toque em Definir token do GitHub e cole um token só deste repositório (Contents leitura, Metadata leitura, Actions leitura e escrita)."},
+            {"private-repo", "Repositório privado: defina o token do GitHub (Painel > Recompilar engine > Definir token do GitHub)."},
             {"token-refused", "O GitHub recusou o token (401). Ele pode ter vencido ou sido apagado: defina um novo."},
-            {"no-access", "O token não alcança o repositório ou não tem Actions leitura e escrita. Crie outro com essas permissões."},
+            {"no-access", "O token não alcança o repositório ou lhe falta permissão (Contents leitura; para recompilar, Actions leitura e escrita). Crie outro com essas permissões."},
             {"build-running", "Já há uma recompilação em andamento. Espere ela terminar."},
             {"client-changed", "O programa do client mudou desde o client publicado: o mesmo número de client apontaria para dois executáveis diferentes. Use Recompilar com client novo."},
             {"update-running", "Uma atualização do servidor está rodando. Espere ela terminar para recompilar com client novo."},

@@ -53,8 +53,8 @@ Unidades chaos-*.
 
 Atualizações > Recompilar engine, under Atualizar servidor: **Recompilar** (`engine-build start`, with a confirmation: GitHub
 compiles the server engine with every `server/src-patches/` patch, 20 to 60 minutes, the game keeps running), **Atualizar
-estado** (`engine-build status`), **Ver passos** (`engine-build log 20`) and **Definir token do GitHub**
-(`engine-build-token-set`, the token as a secret field on stdin, empty removes it). The card under the buttons shows the state
+estado** (`engine-build status`), **Ver passos** (`engine-build log 20`) and the token card (see "Repositório
+privado" below). The card under the buttons shows the state
 (queued, job and step, done, failed job and step, cancelled); while a build is queued or running the window asks the status
 every 20 s on its own (`src/engine.rs`, `Poller::every`), without writing to the output pane. When the build is done and its
 release is newer than the installed one, the card points to Atualizar servidor, which installs the engine. The token steps and
@@ -209,11 +209,25 @@ Windows needs the Rust toolchain (`rustup`, MSVC target). Linux needs a desktop 
 
 ## Updates
 
-At start (and with the Config page button "Procurar versão nova") the app reads the GitHub releases of this repository,
-takes the newest release tagged `admin-desktop-vX.Y.Z` that has `cinders-admin.exe` and `cinders-admin.exe.sig`,
-and if the version is higher than its own offers "Atualizar e reiniciar o app". It downloads both with `curl` (in
-Windows 10 and 11), verifies the signature, renames the running program to `cinders-admin.old`, puts the new one in its
-place (the very bytes that were verified) and starts it.
+The repository is private (O530), so the app has no access to GitHub and holds no token: it asks the VPS over the same ssh
+channel as every other command. At start (and with the Config page button "Procurar versão nova") it runs
+`chaos-ctl.sh admin-desktop-releases` (the JSON of the `admin-desktop-v*` releases: tag, draft, asset names), takes the
+newest release tagged `admin-desktop-vX.Y.Z` that has `cinders-admin.exe` and `cinders-admin.exe.sig`, and if the version is
+higher than its own offers "Atualizar e reiniciar o app". For each of the two files it runs `chaos-ctl.sh
+admin-desktop-asset-url TAG NAME` (a signed https address, valid a few minutes, the VPS asks GitHub with its token), downloads
+that address with `curl` (in Windows 10 and 11; https only, no token with it), verifies the signature, renames the running
+program to `cinders-admin.old`, puts the new one in its place (the very bytes that were verified) and starts it. An error of
+the VPS shows in Portuguese (`update::friendly`): without a token "Repositório privado: defina o token do GitHub".
+A VPS with an older `chaos-ctl.sh` has no such command: version 0.4.1 and older cannot update themselves any more; install the
+next release by hand once (the Releases page, logged in), see `docs/ADMIN_APP.md` "Primeira vez".
+
+### Repositório privado (O530)
+
+Atualizações > Repositório privado: **Estado do token** (`github-token-status`: is the repository private, does the token reach
+the code and Actions, `ready`) and **Definir token do GitHub** (`github-token-set`, the token as a secret field on stdin, empty
+removes it). One token on the VPS (`/etc/chaos/github.token`) serves the server update, the releases and downloads, Recompilar
+engine and this self-update; permissions Contents read, Metadata read, Actions read and write, only this repository
+(`docs/ADMIN_APP.md`).
 
 Signed: the same scheme as the game updater and the launcher (`client/MANIFEST.md` "Signed updater"). The `.sig` is an
 envelope `{format, key, signature, payload}`; the Ed25519 signature covers the exact bytes of `payload`, a JSON text with

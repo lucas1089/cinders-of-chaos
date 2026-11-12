@@ -94,9 +94,13 @@ umask 022
 if [ -z "${CHAOS_KIT_COPY:-}" ]; then
   copy=$(mktemp "${TMPDIR:-/tmp}/chaos_kit_update.XXXXXX") || exit 1
   cp "$0" "$copy"
-  CHAOS_KIT_COPY=$copy exec bash "$copy" "$@"
+  CHAOS_KIT_COPY=$copy CHAOS_DEPLOY_DIR=$(cd "$(dirname "$0")" && pwd) exec bash "$copy" "$@"
 fi
 trap 'rm -f "$CHAOS_KIT_COPY"' EXIT
+# the one door to GitHub (O530): the repository is private, git, the releases API and the asset downloads use the token
+# of the VPS (server/deploy/chaos_github.sh; never in the remote URL, a command line or this log)
+# shellcheck source=/dev/null
+. "${CHAOS_DEPLOY_DIR:?}/chaos_github.sh" || { echo "chaos_kit_update: no chaos_github.sh in $CHAOS_DEPLOY_DIR" >&2; exit 1; }
 
 REPO=${CHAOS_REPO:-/opt/chaos/repo}
 BRANCH=${CHAOS_UPDATE_BRANCH:-main}
@@ -134,7 +138,9 @@ die() { printf 'chaos_kit_update: %s\n' "$*" >&2; exit 1; }
 SERVER_REAL=$(readlink -f "$SERVER" 2>/dev/null || echo "$SERVER")
 STAGE="$SERVER_REAL.new"      # the staging copy of the server folder (same file system: the swap is a rename)
 OLD="$SERVER_REAL.old"        # the folder the swap replaced, kept for the rollback until the next update
-g() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+g() { chaos_gh_git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+# after a failed git command: why (private-repo, token-refused, no-access ...), from one probe of the repository
+git_why() { chaos_gh_git_why "$GHREPO"; }
 # the install on the staging copy runs beside the live game: low CPU and disk priority
 LOWPRIO=""
 if command -v nice >/dev/null; then
@@ -156,13 +162,20 @@ state_set() {
   mv "$tmp" "$STATE"
 }
 
-# the GitHub releases: "latest=N" and "asset=NAME SIZE SHA256" (SHA256 "-" when GitHub gives none) of release N
+# the GitHub releases: "latest=N" and "asset=NAME SIZE SHA256 ID" (SHA256 "-" when GitHub gives none, ID the asset's
+# number for the download) of release N, in REL (empty on failure). The reason of a refusal (private-repo: no token
+# saved ...) is in RELEASES_WHY. Not run in a subshell: the variables must stay.
+REL="" RELEASES_WHY=""
 releases() {
-  local out=$1
-  curl -fsSL --proto '=https' --proto-redir '=https' --max-time 30 --retry 2 \
-    -H 'Accept: application/vnd.github+json' -o "$out" \
-    "https://api.github.com/repos/$GHREPO/releases?per_page=50" || return 1
-  python3 -I - "$out" "$SERVER_ASSET" <<'PY'
+  local out=$1 code
+  REL="" RELEASES_WHY=""
+  code=$(chaos_gh_api GET "/repos/$GHREPO/releases?per_page=50" "$out")
+  if [ "$code" != 200 ]; then
+    RELEASES_WHY=$(chaos_gh_explain "$code" "$GHREPO")
+    [ -n "$RELEASES_WHY" ] || RELEASES_WHY="github-unreachable: HTTP $code from api.github.com"
+    return 1
+  fi
+  REL=$(python3 -I - "$out" "$SERVER_ASSET" <<'PY'
 import json, re, sys
 data = json.load(open(sys.argv[1], encoding='utf-8'))
 best = None
@@ -181,12 +194,13 @@ if best is None:
 print('latest=%d' % best[0])
 for a in best[1].get('assets') or []:
     name = str(a.get('name', ''))
-    if not re.fullmatch(r'[A-Za-z0-9._-]{1,100}', name):
+    if not re.fullmatch(r'[A-Za-z0-9._-]{1,100}', name) or not isinstance(a.get('id'), int):
         continue
     d = str(a.get('digest') or '')
     sha = d[7:] if re.fullmatch(r'sha256:[0-9a-f]{64}', d) else '-'
-    print('asset=%s %d %s' % (name, int(a.get('size') or 0), sha))
+    print('asset=%s %d %s %d' % (name, int(a.get('size') or 0), sha, a['id']))
 PY
+  ) || { REL=""; RELEASES_WHY="no-release: no winpkg-N release with the server package in $GHREPO"; return 1; }
 }
 asset_info() { sed -n "s/^asset=$1 //p" <<< "$REL"; }
 
@@ -201,15 +215,15 @@ dl_release() {
   python3 -I -c 'import json,sys; print(int(json.load(open(sys.argv[1]))["release"]))' "$DL/downloads.json" 2>/dev/null || echo 0
 }
 
-# download ASSET of release N into FILE: https only, size as GitHub says, sha256 printed and compared when known
+# download ASSET of release N into FILE: the API asset address (the repository is private; the token asks for a signed
+# address, which is the one https download), size as GitHub says, sha256 printed and compared when known
 fetch_asset() {
-  local name=$1 file=$2 info size sha got
+  local name=$1 file=$2 info size sha id got
   info=$(asset_info "$name")
   [ -n "$info" ] || { log "release winpkg-$LATEST has no $name"; return 1; }
-  read -r size sha <<< "$info"
-  log "download https://github.com/$GHREPO/releases/download/winpkg-$LATEST/$name ($size bytes)"
-  curl -fL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 --max-filesize 8589934592 -sS \
-    -o "$file" "https://github.com/$GHREPO/releases/download/winpkg-$LATEST/$name" || { log "download failed"; return 1; }
+  read -r size sha id <<< "$info"
+  log "download $name of winpkg-$LATEST ($size bytes)"
+  chaos_gh_download "$GHREPO" "$id" "$file" 8589934592 || { log "download failed: $CHAOS_GH_WHY"; return 1; }
   got=$(stat -c %s "$file")
   [ "$got" = "$size" ] || { log "size $got, GitHub says $size: refused"; return 1; }
   [ "$got" -ge 1048576 ] || { log "only $got bytes: refused (an error page?)"; return 1; }
@@ -369,10 +383,13 @@ map_fetch_files() {
 
 # ------------------------------------------------------------------------------------------------ check
 cmd_check() {
-  local cur remote work n
+  local cur remote work n why
   [ -d "$REPO/.git" ] || g rev-parse --git-dir >/dev/null 2>&1 || die "no git checkout at $REPO (CHAOS_REPO)"
   say "branch=$BRANCH"
-  g fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" 2>/dev/null || die "git fetch origin $BRANCH failed"
+  if ! g fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" 2>/dev/null; then
+    why=$(git_why) || why=""
+    die "git fetch origin $BRANCH failed${why:+ ($why)}"
+  fi
   cur=$(g rev-parse HEAD) remote=$(g rev-parse "origin/$BRANCH")
   say "local_commit=$(g rev-parse --short HEAD)"
   say "remote_commit=$(g rev-parse --short "origin/$BRANCH")"
@@ -380,7 +397,7 @@ cmd_check() {
   say "ahead=$(g rev-list --count "origin/$BRANCH..HEAD")"
   g log --no-decorate --format='commit=%h %s' -n 15 "HEAD..origin/$BRANCH" | cut -c1-160
   work=$(mktemp -d "$WORKBASE/chaos-kit-check.XXXXXX") || die "no work folder in $WORKBASE"
-  REL=$(releases "$work/rel.json") || REL=""
+  releases "$work/rel.json" || say "github_error=${RELEASES_WHY%%:*}"
   rm -rf "$work"
   LATEST=$(sed -n 's/^latest=//p' <<< "$REL")
   n=$(state_get installed_release)
@@ -753,14 +770,17 @@ cmd_apply() {
   [ -r "$ENVFILE" ] || finish failed "cannot read $ENVFILE (CHAOS_ENV)" 1
   dirty=$(g status --porcelain --untracked-files=no 2>&1) || finish failed "$REPO is not a git checkout" 1
   [ -z "$dirty" ] || { say "$dirty" | head -n 10; finish failed "the checkout $REPO has changed files (above): nothing done" 1; }
-  g fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || finish failed "git fetch origin $BRANCH failed" 1
+  if ! g fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"; then
+    why=$(git_why) || why=""
+    finish failed "git fetch origin $BRANCH failed${why:+ ($why)}" 1
+  fi
   cur=$(g rev-parse HEAD) remote=$(g rev-parse "origin/$BRANCH")
   [ "$(g rev-list --count "origin/$BRANCH..HEAD")" = 0 ] \
     || finish failed "the checkout has commits that are not on origin/$BRANCH: nothing done" 1
   log "code: $(g rev-parse --short HEAD) -> $(g rev-parse --short "origin/$BRANCH") ($(g rev-list --count "HEAD..origin/$BRANCH") commit(s))"
   work=$(mktemp -d "$WORKBASE/chaos-kit-update.XXXXXX") || finish failed "no work folder in $WORKBASE" 1
   trap 'rm -rf "$work"; rm -f "$CHAOS_KIT_COPY"' EXIT
-  REL=$(releases "$work/rel.json") || finish failed "cannot read the releases of $GHREPO" 1
+  releases "$work/rel.json" || finish failed "cannot read the releases of $GHREPO: $RELEASES_WHY" 1
   LATEST=$(sed -n 's/^latest=//p' <<< "$REL")
   installed=$(state_get installed_release)
   log "release: installed ${installed:-unknown}, newest winpkg-$LATEST"
@@ -1056,7 +1076,7 @@ cmd_downloads() {
   [ -d "$DL" ] || finish failed "no download folder $DL (CHAOS_DL_DIR)" 1
   work=$(mktemp -d "$WORKBASE/chaos-kit-update.XXXXXX") || finish failed "no work folder in $WORKBASE" 1
   trap 'rm -rf "$work"; rm -f "$CHAOS_KIT_COPY"' EXIT
-  REL=$(releases "$work/rel.json") || finish failed "cannot read the releases of $GHREPO" 1
+  releases "$work/rel.json" || finish failed "cannot read the releases of $GHREPO: $RELEASES_WHY" 1
   LATEST=$(sed -n 's/^latest=//p' <<< "$REL")
   have=$(dl_release)
   log "downloads: the site has release $have, newest winpkg-$LATEST"

@@ -205,26 +205,59 @@ def main():
         good = os.path.join(zips, 'client.zip')
         make_zip(good, public, url)
 
-        # curl stub: the GitHub release URL hands out $STUB_ZIP, everything else goes to the real curl
+        # curl stub (O530: the repository is private): the releases API of the tag lists the assets, an asset address
+        # answers 302 with a signed address, the signed address hands out $STUB_ZIP / $STUB_APK / $STUB_APK_INFO.
+        # Every call with -K (the config on stdin) is logged: the lines of the config, the arguments; any other call
+        # goes to the real curl
         real_curl = shutil.which('curl')
         with open(os.path.join(stub, 'curl'), 'w') as f:
-            f.write('''#!/usr/bin/env bash
-out="" url=""
-for a in "$@"; do
-  [ "$prev" = -o ] && out=$a
-  case $a in https://github.com/*) url=$a ;; esac
-  prev=$a
-done
-if [ -n "$url" ]; then
-  echo "$url" >> "$STUB_DIR/urls"
-  case $url in
-    *.apk) [ -n "${STUB_APK:-}" ] || exit 22; cp "$STUB_APK" "$out" ;;
-    *.json) [ -n "${STUB_APK_INFO:-}" ] || exit 22; cp "$STUB_APK_INFO" "$out" ;;
-    *) [ -n "${STUB_ZIP:-}" ] || exit 22; cp "$STUB_ZIP" "$out" ;;
-  esac
-  exit 0
-fi
-exec %s "$@"
+            f.write('''#!/usr/bin/env python3
+import os, re, shutil, sys
+args = sys.argv[1:]
+if '-K' not in args:
+    os.execv(%r, ['curl'] + args)
+stub = os.environ['STUB_DIR']
+cfg = sys.stdin.read()
+with open(os.path.join(stub, 'cfg.log'), 'a') as f:
+    f.write(cfg + '--\\n')
+with open(os.path.join(stub, 'args.log'), 'a') as f:
+    f.write(' '.join(args) + '\\n')
+url = re.search(r'url = "([^"]+)"', cfg).group(1)
+out = args[args.index('-o') + 1] if '-o' in args else None
+names = {'1': 'CindersOfChaos-Client-Windows.zip', '2': 'CindersOfChaos-Android.apk', '3': 'CindersOfChaos-Android.json',
+         '4': 'CindersOfChaos-Unity-Windows.zip'}
+def log(line):
+    with open(os.path.join(stub, 'urls'), 'a') as f:
+        f.write(line + '\\n')
+def answer(text):
+    sys.stdout.write(text)
+    sys.exit(0)
+api = os.environ.get('STUB_API_CODE')
+m = re.fullmatch(r'https://api\\.github\\.com/repos/([^/]+/[^/]+)/releases/tags/(.+)', url)
+if m:
+    log('tag ' + m.group(2))
+    if api:
+        if out:
+            open(out, 'w').write('{}')
+        answer(api)
+    open(os.path.join(stub, 'lasttag'), 'w').write(m.group(2))
+    body = '{"assets": [%%s]}' %% ','.join('{"id": %%s, "name": "%%s"}' %% (i, n) for i, n in names.items())
+    open(out, 'w').write(body)
+    answer('200')
+m = re.fullmatch(r'https://api\\.github\\.com/repos/([^/]+/[^/]+)/releases/assets/(\\d+)', url)
+if m:
+    log('asset ' + names[m.group(2)] + ' of ' + m.group(1))
+    answer('302 https://objects.example.org/signed/' + m.group(2) + '?sig=SIGNED')
+m = re.fullmatch(r'https://objects\\.example\\.org/signed/(\\d+)\\?sig=SIGNED', url)
+if m:
+    n = names[m.group(1)]
+    src = {'1': 'STUB_ZIP', '2': 'STUB_APK', '3': 'STUB_APK_INFO', '4': 'STUB_ZIP'}[m.group(1)]
+    if not os.environ.get(src):
+        sys.exit(22)
+    shutil.copy(os.environ[src], out)
+    sys.exit(0)
+sys.stderr.write('curl stub: unexpected ' + url + '\\n')
+sys.exit(22)
 ''' % real_curl)
         os.chmod(os.path.join(stub, 'curl'), 0o755)
 
@@ -293,17 +326,44 @@ exec %s "$@"
         r = run('winpkg-46', extra={'STUB_ZIP': good})
         check(r.returncode == 0, 'tag publishes: ' + r.stdout + r.stderr)
         urls = open(os.path.join(stub, 'urls')).read()
-        check('https://github.com/lucas1089/cinders-of-chaos/releases/download/winpkg-46/'
-              'CindersOfChaos-Client-Windows.zip' in urls, 'the release asset URL')
+        check('tag winpkg-46\n' in urls and 'asset CindersOfChaos-Client-Windows.zip of lucas1089/cinders-of-chaos' in urls,
+              'the release asset through the API: ' + urls)
         check(payload()['version'] == 46 and verify(), 'tag winpkg-46 -> version 46, verifies')
+        # O530: no token saved, a private repository (GitHub answers 404): refused with the word the apps translate
+        r = run('winpkg-47', extra={'STUB_ZIP': good, 'STUB_API_CODE': '404'})
+        check(r.returncode != 0 and 'private-repo' in r.stderr and 'github-token-set' in r.stderr, 'no token, 404: ' + r.stderr)
+        check(payload()['version'] == 46, 'a refused download publishes nothing')
+        # with the token: the API calls carry it (on stdin), the signed address and the command lines never do
+        token = 'github_pat_11ABCDEFG0aBcDeFgHiJkL_mNoPqRsTuVwXyZ0123456789aBcDeFgHiJkLmNoPqRsTuVwXyZ01234'
+        tfile = os.path.join(keys, 'github.token')
+        with open(tfile, 'w') as f:
+            f.write(token + '\n')
+        os.chmod(tfile, 0o600)
+        for n in ('cfg.log', 'args.log'):
+            if os.path.exists(os.path.join(stub, n)):
+                os.remove(os.path.join(stub, n))
+        r = run('winpkg-48', extra={'STUB_ZIP': good, 'CHAOS_GITHUB_TOKEN_FILE': tfile})
+        check(r.returncode == 0, 'tag publishes with a token: ' + r.stdout + r.stderr)
+        cfgs = [c for c in open(os.path.join(stub, 'cfg.log')).read().split('--\n') if c.strip()]
+        api_cfgs = [c for c in cfgs if 'api.github.com' in c]
+        cdn_cfgs = [c for c in cfgs if 'objects.example.org' in c]
+        check(len(api_cfgs) == 2 and all('Authorization: Bearer ' + token in c for c in api_cfgs),
+              'the tag and asset questions carry the token')
+        check(len(cdn_cfgs) == 1 and 'Authorization' not in cdn_cfgs[0], 'the signed address gets no token')
+        check('asset' in [c for c in api_cfgs if '/assets/' in c][0].replace('assets', 'asset')
+              and 'Accept: application/octet-stream' in [c for c in api_cfgs if '/assets/' in c][0],
+              'the asset question asks for the octet-stream')
+        check(token not in open(os.path.join(stub, 'args.log')).read(), 'the token is on no command line')
+        check(token not in r.stdout + r.stderr and 'SIGNED' not in r.stdout + r.stderr, 'no token or signed address in the output')
+        check(payload()['version'] == 48 and verify(), 'tag winpkg-48 -> version 48')
 
         before = open(os.path.join(live, 'manifest.json')).read()
 
         def unchanged():
             return open(os.path.join(live, 'manifest.json')).read() == before
 
-        r = run('winpkg-46', extra={'STUB_ZIP': good})
-        check(r.returncode != 0 and 'not above the published 46' in r.stderr, 'same version again refused')
+        r = run('winpkg-48', extra={'STUB_ZIP': good})
+        check(r.returncode != 0 and 'not above the published 48' in r.stderr, 'same version again refused')
         r = run('winpkg-45', extra={'STUB_ZIP': good})
         check(r.returncode != 0, 'an older tag refused')
         r = run('winpkg-47')
@@ -511,8 +571,8 @@ exec %s "$@"
         urls = open(os.path.join(stub, 'urls')).read()
         check(r.returncode == 0 and a.get('version_code') == 32 and a.get('min_version_code') == 31,
               'apk tag publishes: ' + r.stdout + r.stderr)
-        check('releases/download/android-32/CindersOfChaos-Android.apk' in urls
-              and 'releases/download/android-32/CindersOfChaos-Android.json' in urls, 'apk tag: both assets downloaded')
+        check('tag android-32\n' in urls and 'asset CindersOfChaos-Android.apk of ' in urls
+              and 'asset CindersOfChaos-Android.json of ' in urls, 'apk tag: both assets downloaded through the API')
         check(len(apk_files()) == 1 and verify(), 'apk tag: the old APK is removed')
         # a publish of new game files keeps the app update
         r = run('--version', '90', good, extra=env_apk)
@@ -617,8 +677,9 @@ exec %s "$@"
         open(os.path.join(stub, 'urls'), 'w').close()
         r = run('--unity', 'unity-3', extra=dict(env_u, STUB_ZIP=uzip, CHAOS_UPDATE_URL=uurl))
         check(r.returncode == 0, 'unity tag publishes: ' + r.stdout + r.stderr)
-        check('releases/download/unity-3/CindersOfChaos-Unity-Windows.zip' in open(os.path.join(stub, 'urls')).read(),
-              'unity: the release asset URL')
+        uurls = open(os.path.join(stub, 'urls')).read()
+        check('tag unity-3\n' in uurls and 'asset CindersOfChaos-Unity-Windows.zip of ' in uurls,
+              'unity: the release asset through the API')
         check(upayload()['version'] == 3 and uverify(), 'unity: tag unity-3 -> version 3')
         check('/updates/unity/manifest.json -> HTTP 200' in r.stdout and 'check: ok' in r.stdout,
               'unity: the web server check of updates/unity: ' + r.stdout)

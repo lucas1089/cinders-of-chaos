@@ -76,7 +76,9 @@ What you need:
 
 To play it first without any of this: run the **Windows package** workflow (Actions -> Windows package -> Run
 workflow). Its prerelease `winpkg-<run number>` (Releases; the run's Summary links each file; the newest 3 are kept) has
-five ready-to-use downloads, listed in the release notes:
+five ready-to-use downloads, listed in the release notes (the repository is private since 2026-11-12: these links need the
+owner's GitHub login. Players never need GitHub: the client, the launcher, the APK and the site downloads are served
+from the VPS, `docs/ADMIN_APP.md` "Repositório privado e o token do GitHub"):
 - `CindersOfChaos-Windows.zip`: the whole game for one Windows PC. The patched engine (`ChaosServer.exe`), the client,
   the merged dat/spr, a portable MariaDB, the client files and creature list for the map editor (the editor itself is a separate download,
   its licence does not let us pass it on) and `start-server.bat` / `start-client.bat`
@@ -1221,7 +1223,9 @@ sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh publish-log
 sudo /opt/chaos/repo/server/deploy/publish_client_update.sh winpkg-46
 ```
 
-What it does: downloads `CindersOfChaos-Client-Windows.zip` of the release (`curl -fL`, https only) into a new folder
+What it does: downloads `CindersOfChaos-Client-Windows.zip` of the release (the repository is private, O530: through
+the GitHub API with the VPS token, `server/deploy/chaos_github.sh`; the API gives a signed https address and curl
+fetches that, no token goes with it) into a new folder
 under `/var/tmp`, refuses a download under 50 MB, prints its size and SHA-256; extracts it with `python3 -I zipfile`,
 refusing absolute paths, `..`, links and more than 8 GB; finds the client: a packed build-13 package (the exe and
 `chaos.pack`) is decrypted with `CHAOS_CLIENT_KEY` into the work folder (`make_update_manifest.py unpack`; a
@@ -1342,7 +1346,7 @@ the items (`items.otb`, `items.xml`), the map, spawns, houses, vocations, any `i
 every script file again, so state a system keeps only in memory can reset: read its section in server/README.md first.
 The steps, as root:
 ```
-git -C /opt/chaos/repo fetch --tags && git -C /opt/chaos/repo checkout --detach <tag>
+git -C /opt/chaos/repo fetch --tags && git -C /opt/chaos/repo checkout --detach <tag>   # private repository (O530): chaos-ctl.sh update <tag> now does this fetch with the token; by hand see docs/ADMIN_APP.md "Primeira vez"
 python3 -I /opt/chaos/repo/server/tools/install_all.py /opt/chaos/server --only files --dry-run
 python3 -I /opt/chaos/repo/server/tools/install_all.py /opt/chaos/server --only files
 chown -R chaos:chaos /opt/chaos/server/data
@@ -1428,7 +1432,7 @@ login-screen services too (the web server still has to forward `/clientservices`
 hand, as root:
 
 ```
-/opt/chaos/repo/server/deploy/chaos-ctl.sh engine-build start      # a new engine: GitHub Actions builds winpkg-N (token: engine-build-token-set; follow it: engine-build status)
+/opt/chaos/repo/server/deploy/chaos-ctl.sh engine-build start      # a new engine: GitHub Actions builds winpkg-N (token: github-token-set; follow it: engine-build status)
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-check            # what is new: commits, releases, client, downloads
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-apply            # in the background; --no-client --no-downloads --no-site --no-map
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-log 100          # progress: STEP n/10 lines, the last line RESULT ...

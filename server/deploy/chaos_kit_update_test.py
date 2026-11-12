@@ -34,6 +34,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
 SCRIPT = os.path.join(HERE, 'chaos_kit_update.sh')
+GHLIB = os.path.join(HERE, 'chaos_github.sh')
 CTL = os.path.join(HERE, 'chaos-ctl.sh')
 RATES = os.path.join(HERE, 'chaos_config_rates.py')
 STAGE_SYNC = os.path.join(HERE, 'chaos_stage_sync.py')
@@ -45,27 +46,48 @@ sys.path.insert(0, os.path.join(REPO_ROOT, 'server', 'tools'))
 import late_game  # noqa: E402
 import map_master_test  # noqa: E402  (fake_map: a tiny synthetic OTBM)
 
-CURL = r'''#!/usr/bin/env bash
-# test stand-in: https only; the API answers $STUB/releases.json, downloads come from $STUB/assets/NAME
-echo "curl $*" >> "$STUB/calls"
-out="" url=""
-proto=0
-while [ $# -gt 0 ]; do
-	case "$1" in
-		-o) out=$2; shift 2 ;;
-		-H|--max-time|--retry|--retry-delay|--max-filesize) shift 2 ;;
-		--proto) [ "$2" = '=https' ] && proto=1; shift 2 ;;
-		--proto-redir) shift 2 ;;
-		-*) shift ;;
-		*) url=$1; shift ;;
-	esac
-done
-[ "$proto" = 1 ] || { echo "curl stub: no --proto =https" >&2; exit 2; }
-case "$url" in
-	https://api.github.com/repos/owner/game/releases*) cp "$STUB/releases.json" "$out" ;;
-	https://github.com/owner/game/releases/download/*) cp "$STUB/assets/${url##*/}" "$out" || exit 22 ;;
-	*) echo "curl stub: unexpected $url" >&2; exit 22 ;;
-esac
+CURL = r'''#!/usr/bin/env python3
+# test stand-in (O530, a private repository): https only, the config on stdin (-K -). The releases API answers
+# $STUB/releases.json (or the code of $STUB/api.code), an asset address answers 302 with a signed address, the signed
+# address hands out $STUB/assets/NAME. Arguments and config lines are logged.
+import json, os, re, shutil, sys
+stub = os.environ['STUB']
+args = sys.argv[1:]
+cfg = sys.stdin.read() if '-K' in args else ''
+open(os.path.join(stub, 'calls'), 'a').write('curl ' + ' '.join(args) + '\n')
+open(os.path.join(stub, 'cfg.log'), 'a').write(cfg + '--\n')
+if '--proto' not in args or args[args.index('--proto') + 1] != '=https':
+    sys.stderr.write('curl stub: no --proto =https\n')
+    sys.exit(2)
+out = args[args.index('-o') + 1] if '-o' in args else None
+m = re.search(r'url = "([^"]+)"', cfg)
+if not m:
+    sys.stderr.write('curl stub: no url in the config\n')
+    sys.exit(2)
+url = m.group(1)
+def read(name, default=''):
+    p = os.path.join(stub, name)
+    return open(p).read() if os.path.exists(p) else default
+if re.fullmatch(r'https://api\.github\.com/repos/owner/game/releases\?per_page=\d+', url):
+    code = read('api.code', '200').strip()
+    if out:
+        shutil.copy(os.path.join(stub, 'releases.json'), out) if code == '200' else open(out, 'w').write('{}')
+    sys.stdout.write(code)
+    sys.exit(0)
+m = re.fullmatch(r'https://api\.github\.com/repos/owner/game/releases/assets/(\d+)', url)
+if m:
+    sys.stdout.write(read('asset.code', '302').strip() + ' https://objects.example.org/signed/' + m.group(1) + '?sig=SIGNED')
+    sys.exit(0)
+m = re.fullmatch(r'https://objects\.example\.org/signed/(\d+)\?sig=SIGNED', url)
+if m:
+    names = json.loads(read('assets.map', '{}'))
+    src = os.path.join(stub, 'assets', names.get(m.group(1), 'none'))
+    if not os.path.exists(src):
+        sys.exit(22)
+    shutil.copy(src, out)
+    sys.exit(0)
+sys.stderr.write('curl stub: unexpected ' + url + '\n')
+sys.exit(22)
 '''
 
 SYSTEMCTL = r'''#!/usr/bin/env bash
@@ -185,6 +207,10 @@ class World:
         os.makedirs(os.path.join(self.stub, 'assets'))
         for name, body in (('curl', CURL), ('systemctl', SYSTEMCTL), ('mariadb', MYSQL), ('ldd', LDD)):
             write(os.path.join(self.stub, 'bin', name), body, 0o755)
+        # O530: the repository is private; every run has the token of the VPS in a root-only file
+        self.token = 'github_pat_11ABCDEFG0aBcDeFgHiJkL_mNoPqRsTuVwXyZ0123456789aBcDeFgHiJkLmNoPqRsTuVwXyZ01234'
+        self.tokenfile = os.path.join(r, 'github.token')
+        write(self.tokenfile, self.token + '\n', 0o600)
         self.kit = os.path.join(r, 'kit')
         self.server = os.path.join(self.kit, 'server')
         self.env = dict(os.environ, STUB=self.stub, KIT=self.kit,
@@ -210,6 +236,7 @@ class World:
         shutil.copy(RATES, os.path.join(o, 'server/deploy/chaos_config_rates.py'))
         shutil.copy(STAGE_SYNC, os.path.join(o, 'server/deploy/chaos_stage_sync.py'))
         shutil.copy(SCRIPT, os.path.join(o, 'server/deploy/chaos_kit_update.sh'))
+        shutil.copy(GHLIB, os.path.join(o, 'server/deploy/chaos_github.sh'))
         write(os.path.join(o, 'server/deploy/publish_client_update.sh'), PUBLISH, 0o755)
         write(os.path.join(o, 'website/install_site.sh'), SITE, 0o755)
         write(os.path.join(o, 'server/deploy/chaos-ctl.sh'), BOTCTL, 0o755)
@@ -306,10 +333,15 @@ class World:
                   'CindersOfChaos-Client-Windows.zip': os.urandom(1100000),
                   'CindersOfChaos-Client-Linux.tar.gz': os.urandom(1100000)}
         meta = []
+        amap_path = os.path.join(self.stub, 'assets.map')
+        amap = json.loads(read(amap_path)) if os.path.exists(amap_path) else {}
         for name, data in assets.items():
             write(os.path.join(a, name), data)
-            meta.append({'name': name, 'size': len(data) + (7 if size_lie else 0),
+            aid = 1000 + len(amap)
+            amap[str(aid)] = name
+            meta.append({'id': aid, 'name': name, 'size': len(data) + (7 if size_lie else 0),
                          'digest': 'sha256:' + hashlib.sha256(data).hexdigest()})
+        write(amap_path, json.dumps(amap))
         self.releases.insert(0, {'tag_name': 'winpkg-%d' % n, 'draft': False, 'assets': meta})
         self.releases.insert(0, {'tag_name': 'nightly', 'draft': False, 'assets': meta})
         write(os.path.join(self.stub, 'releases.json'), json.dumps(self.releases))
@@ -319,7 +351,8 @@ class World:
                    CHAOS_KIT_STATE=self.state, CHAOS_WORK_DIR=self.root, CHAOS_BOOT_TIMEOUT='10',
                    CHAOS_SITE_DIR=self.site, CHAOS_SITE_ENV=self.siteenv, CHAOS_MYSQL='mariadb',
                    CHAOS_ENV=self.envfile, CHAOS_LOG=os.path.join(self.kit, 'logs/server.log'),
-                   CHAOS_SYSTEMD_DIR=os.path.join(self.root, 'systemd'), **(extra or {}))
+                   CHAOS_SYSTEMD_DIR=os.path.join(self.root, 'systemd'), CHAOS_GITHUB_TOKEN_FILE=self.tokenfile)
+        env.update(extra or {})
         write(os.path.join(self.stub, 'calls'), '')
         if ctl:
             env.update(CHAOS_CTL_NO_SUDO='1', CHAOS_CTL_CONF=os.path.join(self.root, 'none.conf'),
@@ -414,6 +447,24 @@ def test_flow():
               'check: no map master branch', w.out)
         check(w.git('-C', w.repo, 'rev-parse', 'HEAD') != w.git('-C', w.origin, 'rev-parse', 'HEAD'),
               'check changes no checkout')
+
+        # O530: no token and a private repository (GitHub answers 404): check names the cause, apply refuses with it
+        write(os.path.join(w.stub, 'api.code'), '404')
+        nofile = {'CHAOS_GITHUB_TOKEN_FILE': os.path.join(w.root, 'no-token')}
+        rc = w.run('check', extra=nofile)
+        d = w.kv()
+        check(rc == 0 and d.get('github_error') == 'private-repo' and d.get('latest_release') == 'unknown'
+              and d.get('needs_engine') == 'unknown', 'check without a token: github_error=private-repo', w.out)
+        rc = w.run('apply', extra=nofile)
+        check(rc == 1 and 'RESULT failed' in w.out and 'private-repo' in w.out and 'github-token-set' in w.out,
+              'apply without a token: refused with private-repo', w.out)
+        check(not any(c.startswith('systemctl stop') for c in w.calls), 'apply without a token: nothing stopped')
+        write(os.path.join(w.stub, 'api.code'), '401')
+        rc = w.run('check')
+        check(w.kv().get('github_error') == 'token-refused', 'check with a refused token: github_error=token-refused', w.out)
+        os.remove(os.path.join(w.stub, 'api.code'))
+        rc = w.run('check')
+        check(rc == 0 and 'github_error' not in w.kv() and w.kv().get('latest_release') == '47', 'check with the token: no error', w.out)
 
         # the lock: a second run is refused while one holds it
         os.makedirs(w.state, exist_ok=True)
@@ -603,6 +654,16 @@ def test_flow():
         write(os.path.join(w.repo, 'server/tools/version.txt'), 'local change\n')
         rc = w.run('apply')
         check(rc == 1 and 'changed files' in w.out, 'a dirty checkout is refused', w.out)
+        # O530 over the whole flow: the API questions carried the token on curl's stdin, the signed addresses did not,
+        # and the token was on no command line and in no output
+        cfgs = [c for c in read(os.path.join(w.stub, 'cfg.log')).split('--\n') if c.strip()]
+        api = [c for c in cfgs if 'api.github.com' in c and w.token in c]
+        cdn = [c for c in cfgs if 'objects.example.org' in c]
+        check(len(api) > 5 and cdn and all('Authorization' not in c for c in cdn),
+              'the token goes to the API on stdin, never to the signed addresses (%d, %d)' % (len(api), len(cdn)))
+        check(len([c for c in cfgs if 'api.github.com' in c and 'Authorization' not in c]) >= 1,
+              'a run without a token sent no Authorization line')
+        check(w.token not in ''.join(w.calls) and w.token not in w.out, 'the token is on no command line and in no output')
     finally:
         shutil.rmtree(w.root, ignore_errors=True)
 
