@@ -37,8 +37,9 @@ end
 -- O536: two cells never show the same LOOK either (several monsters wear one sprite: Deathrattle twice, the Wyrm twice,
 -- Bloom Husk and Elite Twisted Shaper). The looks come from the monster files: our monsters from
 -- data/monster/monsters/chaos/**/*.xml, a base monster from the bounty pool (generated from the installed monster files),
--- a monster of the hue shifted copies (data/monster/monster_recolour_looks.csv) at its copy and a monster of the donor looks
--- (data/monster/monster_donor_looks.csv, O538) at its donor look, as the newest client pair draws it.
+-- a monster of the hue shifted copies (data/monster/monster_recolour_looks.csv) at its copy, a monster of the donor looks
+-- (data/monster/monster_donor_looks.csv, O538) at its donor look and a monster of the purchased looks
+-- (data/monster/monster_wst_looks.csv, O540) at its purchased look, as the newest client pair draws it.
 -- The cells: the display monster of every plan (config `plans`) and of every base hunt (tools/hall_hunts.csv, `display`,
 -- else `name`, as hall_order.room_monster); the quest rows show rewards, not monsters.
 local function readAll(path)
@@ -110,9 +111,16 @@ for line in (readAll("data/monster/monster_donor_looks.csv") or ""):gmatch("[^\r
 		donorOf[r[1]:lower()] = {tonumber(r[2]), tonumber(r[3])}
 	end
 end
+local wstOf = {} -- lower name -> {look, newLook}
+for line in (readAll("data/monster/monster_wst_looks.csv") or ""):gmatch("[^\r\n]+") do
+	local r = csvRow(line)
+	if r[1] ~= "monster" then
+		wstOf[r[1]:lower()] = {tonumber(r[2]), tonumber(r[3])}
+	end
+end
 local function lookAtNewestPair(name)
 	local look = monsterLook[name:lower()]
-	local c = copyOf[name:lower()] or donorOf[name:lower()]
+	local c = wstOf[name:lower()] or copyOf[name:lower()] or donorOf[name:lower()]
 	if look and c and c[1] == look then
 		return c[2]
 	end

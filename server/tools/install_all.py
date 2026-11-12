@@ -267,6 +267,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                70, outfits 3406-3433, data/monster/monster_donor_looks.csv): their installed files (ours and the base server's, XML and Lua)
                and the installed bounty pool get the new look; waits for config.lua chaosClientPair >= 70, README "Client pair guard" and
                "Donor monster looks (O538)"; after baselooks
+  monsterwstlooks tools/install_monster_wst_looks.py  79 hunt monsters wear a creature outfit made from the purchased packs (client pair 71,
+               outfits 3434-3510, data/monster/monster_wst_looks.csv); two of them (Bonepicker, Wan Sentry) leave their donor look for it; the
+               installed files and the installed bounty pool get the new look; waits for config.lua chaosClientPair >= 71, README "Client
+               pair guard" and "Purchased monster looks (O540)"; after monsterdonorlooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
@@ -1260,6 +1264,15 @@ def step_monsterdonorlooks(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('baselooks') + 1, 'monsterdonorlooks')  # the donor looks (pair 70) go over the base files after the base looks
+
+
+def step_monsterwstlooks(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 71) is in the tool; its warning reaches the report
+    args = [tool('install_monster_wst_looks.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_monster_wst_looks.py'))
+
+
+STEPS.insert(STEPS.index('monsterdonorlooks') + 1, 'monsterwstlooks')  # the purchased looks (pair 71) go over the donor looks
 
 
 def step_monsterresists(server, data, ctx):

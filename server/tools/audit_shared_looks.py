@@ -45,6 +45,7 @@ import client_pair  # noqa: E402
 REPO = os.path.dirname(os.path.dirname(HERE))
 RECOLOUR = os.path.join(REPO, 'server', 'data', 'monster', 'monster_recolour_looks.csv')
 DONOR = os.path.join(REPO, 'server', 'data', 'monster', 'monster_donor_looks.csv')
+PURCHASED = os.path.join(REPO, 'server', 'data', 'monster', 'monster_wst_looks.csv')
 ALLOW = os.path.join(REPO, 'server', 'data', 'monster', 'shared_looks_allow.csv')
 POOL = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'bounty_pool.lua')
 COLOUR_DIST = 0.28
@@ -272,16 +273,31 @@ def load_donor(path=DONOR):
     return out
 
 
-def look_at_pair(name, look, pair, recolour, donor=None):
-    """the lookType of a monster at a client pair: its copy from pair 69 on, its donor look (O538) from pair 70 on, the old look below
-    (a file or a pool row written for the other state is read for this one too, so a server mid update gives the same answer)"""
+def load_purchased(path=PURCHASED):
+    """{monster name: (look, new_look)} of monster_wst_looks.csv (O540): the same shape, from pair 71 on; `look` is the committed
+    look, also for a monster whose donor look (pair 70) it replaces"""
+    out = {}
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            out[r['monster']] = (int(r['look']), int(r['new_look']))
+    return out
+
+
+def look_at_pair(name, look, pair, recolour, donor=None, purchased=None):
+    """the lookType of a monster at a client pair: its copy from pair 69 on, its donor look (O538) from pair 70 on, its purchased look
+    (O540) from pair 71 on, the old look below (a file or a pool row written for the other state is read for this one too, so a
+    server mid update gives the same answer). A monster in two maps goes through them in the order of their pairs."""
     donor = load_donor() if donor is None else donor
-    for rows, need in ((recolour, client_pair.PAIR_RECOLOUR), (donor, client_pair.PAIR_DONOR)):
-        if name in rows:
-            old, new = rows[name]
-            if look in (old, new):
-                return new if pair >= need else old
-    return look
+    purchased = load_purchased() if purchased is None else purchased
+    chain = [(need, rows[name]) for rows, need in ((recolour, client_pair.PAIR_RECOLOUR), (donor, client_pair.PAIR_DONOR),
+                                                   (purchased, client_pair.PAIR_PURCHASED)) if name in rows]
+    if not chain or look not in {x for _n, (o, nl) in chain for x in (o, nl)}:
+        return look
+    out = chain[0][1][0]
+    for need, (_o, nl) in chain:
+        if pair >= need:
+            out = nl
+    return out
 
 
 def waits(names, look, recolour):
