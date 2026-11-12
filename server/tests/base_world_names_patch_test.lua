@@ -174,19 +174,21 @@ writeFile(data .. "/spells/spells.xml", '<spells><instant name="Oldtown Xy Light
 local ours = 'local town = "Oldtown Xy" -- the repository\'s own scripts\n'
 writeFile(data .. "/scripts/chaos/ours.lua", ours)
 
--- a small map: root node, three item nodes with texts (one with an escaped byte, one with an unknown attribute)
+-- a small map: root node, map data, one tile area with one tile holding four item nodes with texts (one with an
+-- escaped byte, one with an unknown attribute); the real node shape, so the map write guard (O512) can read it
 local function u16(n)
 	return string.char(n % 256, math.floor(n / 256))
 end
 local function textAttr(s)
 	return "\6" .. u16(#s) .. s
 end
-local map = "\0\0\0\0" .. "\254\0" .. "head"
+local map = "\0\0\0\0" .. "\254\0" .. "\2\0\0\0" .. u16(1000) .. u16(1000) .. "\3\0\0\0" .. "\57\0\0\0"
+	.. "\254\2" .. "\254\4" .. u16(1000) .. u16(1000) .. "\7" .. "\254\5" .. "\0\0"
 	.. "\254\6" .. u16(10000) .. textAttr("Welcome to Oldtown Xy!") .. "\255"
 	.. "\254\6" .. u16(10001) .. "\4\253\254\0" .. textAttr("Oldgod rests here.") .. "\255"
 	.. "\254\6" .. u16(10002) .. "\99\0\0" .. textAttr("Oldtown Xy unknown") .. "\255"
 	.. "\254\6" .. u16(10003) .. "\255"
-	.. "\255"
+	.. "\255\255\255\255"
 writeFile(data .. "/world/map.otbm", map)
 
 local function tool(name, args)

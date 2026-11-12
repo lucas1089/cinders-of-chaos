@@ -24,7 +24,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Lua 5.3 and LuaJIT
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
+        # python3-numpy: tests that drive a map writer (base_towns_patch_test, base_world_names_patch_test) pass the map write guard (O512)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit python3-numpy
 
       - name: Server unit tests (mocked engine API)
         run: |
