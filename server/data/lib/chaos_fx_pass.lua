@@ -76,6 +76,18 @@ C.spells = {
 	[106] = {fx = {necro_skull = "p50_skull_ghost_4235"}},                            -- Marrow Bolt (necro_skull 397 = MORTAREA 18)
 	[120] = {fx = {necro_skull = "p50_purple_flame_ball_4574"}},                      -- Ossuary Surge (the same)
 	[193] = {fx = {necro_skull = "p50_purple_spark_4575"}},                           -- Splinter Volley (the same)
+	-- The owner's donor client effects (O525, client pair 68, data/lib/chaos_donor_fx_ids.lua): native size pictures of the
+	-- element of the spell, the same role (hit stays a hit, area an area, buff a buff, heal a heal). Spells that have a class
+	-- signature effect (chaos_class_fx.lua: Chi Ward, Lightward, Lay on Hands, Vow of Mending) are left alone: the pass is asked first
+	[38] = {fx = {ice_shatter = "donor_ice_hit_489", ice_crystal = "donor_ice_hit_475"}}, -- Mirror Shards (shards around you, a chip on each enemy)
+	[201] = {fx = {fireball_hit = "donor_fire_hit_465"}},                             -- Witchfire Bolt
+	[202] = {fx = {lightning_hit = "donor_energy_bolt_528", lightning_strike = "donor_energy_strike_632"}}, -- Forked Storm
+	[199] = {fx = {dome_blast_holy = "donor_holy_ring_449"}},                         -- Purging Nova (radius 3)
+	[57] = {fx = {poison_ring = "donor_earth_field_505"}},                              -- Venom Spiral (a green cloud on the target while it rots)
+	[132] = {fx = {shield_bubble = "donor_physical_aura_495"}},                       -- Ironhold
+	[234] = {fx = {shield_bubble = "donor_arcane_aura_494"}},                         -- Soulward
+	[252] = {fx = {dawn_aegis = "donor_holy_aura_493"}},                              -- Aegis of Faith
+	[96] = {fx = {regenerating = "donor_holy_aura_216"}},                             -- Mirror Mend
 }
 
 -- spell id -> the spell's name in spells_chaos.xml (tests/fx_pass_test.lua: an id that moves fails it)
@@ -91,6 +103,9 @@ C.names = {
 	[246] = "Skyfall Cleave", [219] = "Hail of Dawn", [187] = "Banner of Bones", [170] = "Shield Wave", [65] = "Whirling Heel",
 	[43] = "Dreamrot", [241] = "Smoke Bomb", [67] = "Mistborne Strike", [88] = "Cleaving Heel",
 	[106] = "Marrow Bolt", [120] = "Ossuary Surge", [193] = "Splinter Volley",
+	[38] = "Mirror Shards", [201] = "Witchfire Bolt", [202] = "Forked Storm",
+	[199] = "Purging Nova", [57] = "Venom Spiral", [132] = "Ironhold",
+	[234] = "Soulward", [252] = "Aegis of Faith", [96] = "Mirror Mend",
 }
 
 -- the new name for a spell id, kind and name, or nil (pure: no switch, no ids)

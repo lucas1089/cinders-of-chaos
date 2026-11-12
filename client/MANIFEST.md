@@ -4276,6 +4276,41 @@ native 64 x 128 and the owner said "Pode fazer" (go ahead). Pair 65 draws the sa
   in a real client (draw order: the beam is added one tile south-east, so it is drawn over a creature on the tiles next to the item, as the level-up effect is).
 - Checked offline only. Not seen in a client.
 
+### Pair 68: pair 67 with 40 effects of the owner's donor client (`gen_donor_fx.py`, `import_fx_art.py` `durs`; built 2026-11-12; O525)
+The owner supplied a client's sprite file (origin unknown, docs/CREDITS.md "Owner-supplied spell effects") and, shown a sheet and a video of the 40 best effects, said "Todos" (all
+40). Missiles are not part of this step (the one-byte missile id space is full). Pair 68 appends the 40 as **new effects 4703 to 4742** after the 4702 effects of pair 67.
+- **Native size, nothing cut.** No halving, no dither, no crop: each effect keeps its whole frame group (sizes 1 x 1 to 11 x 11 tiles, 4 to 22 phases, one layer, one pattern), the
+  soft alpha of its frames (`alpha` column `soft`) and its own duration per phase (min and max, as the donor has them: `durs` column, e.g. `40;100;100;...`). `import_fx_art.py` got that column
+  (`import_vfx.py` `entry_bytes` writes each phase its own pair; a spec without it writes one `ms` as before) and now accepts a blank middle frame when `durs` is set (695 and 686 flicker).
+  Not copied: the donor's light flag (12 effects have one) and its loop and start phase fields (the pair's own: play once).
+- **The art is not in the repository.** `gen_donor_fx.py build --src DIR` (DIR holds the donor client's Tibia.dat and Tibia.spr; read with `datspr.py` only) cuts 40 strips into
+  `art_import/donor_fx/` (its `.gitignore` is `*`) and writes `art_import/donor_fx.csv` (the spec: our name `donor_<element>_<role>_<donor id>`, element, role, rank, size, phases, `durs`, send
+  offset), `donor_fx.sums` (sha256 of each strip) and nothing else; `build --check` compares them with the files, `--check` alone (CI) compares spec, sums and catalog without them.
+- **Send offsets** (the whole tiles that put the alpha weighted centre of the art over all phases nearest the middle of the target tile; the client draws the bottom right tile on the tile
+  it is sent to): 1 x 1 effects 0, 0; 3 x 3 mostly 1, 1; 5 x 5 2, 2; 9 x 9 novas 4, 4; the 11 x 11 gold burst by its centre. **Bolts land on their foot** (fix, owner: "Forked Storm looks out of plumb"): the lightning strike 4707 (donor 632, 5 x 5) and the lightning bolt 4708 (donor 528, 3 x 3) end low in their canvas (foot at about (141, 148) px and (77, 89) px), so the box-centre rule put their foot 2 tiles down and right of the target; they are fitted by the foot (the median over the phases of the lowest dense row, `gen_donor_fx.py` `FOOT`) and now send at 0, 0 (was 2, 2 and 1, 1), the foot within 4 to 9 px of the target tile's middle. The other 38 effects keep their offsets (comet 508 already ends at its tile; the 1 x 1 columns fill their tile; novas, bursts, rings, auras and slashes are centred shapes). The pair is unchanged (offsets are server side): dat 6b5638b4..., spr d3de6971... as built. `server/data/lib/chaos_donor_fx_ids.lua`
+  (`ChaosVfx.donor_<name> = {id, dx, dy, ms}`, `ms` the sum of the durations) is written by `gen_donor_fx.py ids` from `server/data/spells/donor_fx_catalog.csv` (written by the import); the same
+  step writes the 40 rows of `spell_fx_elements.csv` (the element tags) and the `spell_fx_allow.csv` rows of this set (none).
+- **Steps and output.** Input pair 67 (dat a8053548f049003bfa0dbf74deb49e2e, spr f91a0a4a9bd2f5d827409224a7500646, both checked first):
+  `python3 -I client/tools/sprites/import_fx_art.py --ours-dat P67/Tibia.dat --ours-spr P67/Tibia.spr --out-dir P68 --spec client/tools/sprites/art_import/donor_fx.csv --expect-first-effect 4703 --catalog-out server/data/spells/donor_fx_catalog.csv`
+  (4 s). 40 effects appended, 338 frames read back pixel-identical to the art, 5,189 sprites appended (951,900 to 957,089), every other item, outfit, effect and missile byte identical,
+  3,000 sampled old sprites unchanged. Output **pair 68**: dat **6b5638b4057f86f484bc506b00079f19** (8,900,251 bytes), spr **d3de6971d90415242375be76ca842aa3** (1,112,934,564 bytes, 957,089 sprites),
+  44,559 items, 3,370 outfits, 4,742 effects, 253 missiles. Pair 67 was the input (the newest of 65, 66, 67 on disk at 14:30, unchanged for 5 minutes); pair 66 (O523) is not in it.
+- **Checks** (offline, not in a client). `check_pair.py P68 --old P67`: 0 errors, 11,843 warnings (pair 67's 11,831 and the 12 new effects of 9 x 9 tiles or more: `size-large`). `gen_donor_fx.py live`
+  (every effect at its id with the spec's size, phases, durations and the sums of its pixels): OK. The steps of the CI job "Live sprite pair" that read the pair were regenerated: `gen_outfit_anchors.py`,
+  `gen_info_lift.py` (and Unity `gen_info_data.lua`), `gen_wing_centres.py`, `gen_foot_marks.py` (only the dat md5 line moves in each).
+- **Spells that send them** (server/README.md "Donor effects (O525)"): Mirror Shards, Purging Nova, Venom Spiral, Witchfire Bolt, Forked Storm, Ironhold, Soulward, Aegis of Faith, Mirror Mend and
+  Iaijutsu, through the effects pass (`chaos_fx_pass.lua`); the other 30 are in the pair and named for later spells.
+- **Looked at** (never committed): `SP/o525/import_final.mp4` (each changed spell, pair 64 effects on the left, pair 68 on the right, a target 3 tiles away, 2x). The pair 64 side is pair 65
+  (it differs from 64 only in the 12 loot beams, which no spell sends).
+- **Archive parts:** not built here (recipe as pair 64's); the push to windows-assets is the owner's step. `server/tools/client_pair.py` `PAIR_ASSETS` 68 and the new dat md5 stop the Windows
+  package job until then.
+- **In the repository:** `gen_donor_fx.py`, `gen_donor_fx_test.py`, the spec and sums, the catalog, the id table, the 40 tags, `import_fx_art.py` / `import_vfx.py` (the `durs` column), `chaos_fx_pass.lua`,
+  `chaos_pack36_fx.lua` (loads the id file), `iaijutsu.lua`, `fx_pass_test.lua`; regenerated against pair 68 (the dat md5 line only): `outfit_anchors.lua`, `info_lifts.lua`, `wing_centres.lua`,
+  `foot_marks.lua`, `InfoLiftData.cs`; `PAIR_ASSETS` 68 (`PAIR_ORBS` stays 63, no server item id changed); the credits line.
+- **Switch on:** the ten spells send the new ids as soon as the server has this commit, so the order is: push pair 68 to windows-assets, ship the client package, `chaos-ctl.sh client-pair set 68`
+  (admin app Comandos > "Par do cliente" > Gravar 68), then update the server. A client on pair 67 or older logs "invalid effect id" for them and draws nothing at those casts.
+- Checked offline only. Not seen in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

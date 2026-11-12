@@ -25,6 +25,7 @@ namespace Chaos.Core
                     new CreditEntry { Name = "Owner art", Author = "the Cinders of Chaos owner (own or commissioned art)", Use = "monster looks, wings, decoration and equipment sets", Source = "the equipment set sheets are the owner's own art, made for us" },
                     new CreditEntry { Name = "Login artwork", Author = "the Cinders of Chaos team", Use = "the login screen" },
                     new CreditEntry { Name = "Owner-supplied outfits", Use = "the moon outfits and the costumes (plush bears, crawling hands, fry box)", Source = "supplied by the owner, source pack unnamed" },
+                    new CreditEntry { Name = "Owner-supplied spell effects", Use = "40 spell effects (frost, fire, lightning and arcane bursts, novas and rings, shield auras, a heal cross, slashes), client pair 68", Source = "supplied by the owner (a client's sprite file), origin unknown, source not named" },
                     new CreditEntry { Name = "Region music", Author = "the Cinders of Chaos team (own work, synthesised by client/tools/gen_music.py; no samples)", Use = "the music of the login screen, towns, hunting grounds, dungeons and rifts, boss fights and arenas" },
                 },
             },
