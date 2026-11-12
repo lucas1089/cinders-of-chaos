@@ -34,6 +34,119 @@ for _, p in ipairs(cfg.plans) do
 	ok(not shown[k], "one slot per monster (owner 2026-10-22): " .. p.monster .. " shown by " .. p.id .. " and " .. tostring(shown[k]))
 	shown[k] = p.id
 end
+-- O536: two cells never show the same LOOK either (several monsters wear one sprite: Deathrattle twice, the Wyrm twice,
+-- Bloom Husk and Elite Twisted Shaper). The looks come from the monster files: our monsters from
+-- data/monster/monsters/chaos/**/*.xml, a base monster from the bounty pool (generated from the installed monster files),
+-- a monster of the hue shifted copies (data/monster/monster_recolour_looks.csv) at its copy, as the newest client pair draws it.
+-- The cells: the display monster of every plan (config `plans`) and of every base hunt (tools/hall_hunts.csv, `display`,
+-- else `name`, as hall_order.room_monster); the quest rows show rewards, not monsters.
+local function readAll(path)
+	local f = io.open(path, "r")
+	if not f then
+		return nil
+	end
+	local s = f:read("*a")
+	f:close()
+	return s
+end
+local function csvRow(line)
+	local out, i, n = {}, 1, #line
+	while i <= n + 1 do
+		if line:sub(i, i) == '"' then
+			local j, buf = i + 1, {}
+			while j <= n do
+				local c = line:sub(j, j)
+				if c == '"' and line:sub(j + 1, j + 1) == '"' then
+					buf[#buf + 1] = '"'
+					j = j + 2
+				elseif c == '"' then
+					break
+				else
+					buf[#buf + 1] = c
+					j = j + 1
+				end
+			end
+			out[#out + 1] = table.concat(buf)
+			i = j + 2
+		else
+			local j = line:find(",", i, true) or (n + 1)
+			out[#out + 1] = line:sub(i, j - 1)
+			i = j + 1
+		end
+	end
+	return out
+end
+local monsterLook = {} -- lower name -> look type
+do
+	local p = io.popen("find data/monster/monsters/chaos -name '*.xml' | sort")
+	for path in p:lines() do
+		local text = readAll(path) or ""
+		local name = text:match('<monster%s[^>]-name="([^"]+)"')
+		local look = text:match('<look%s[^>]-type="(%d+)"')
+		if name and look then
+			monsterLook[name:lower()] = tonumber(look)
+		end
+	end
+	p:close()
+	local pool = dofile("data/scripts/chaos/bounty_pool.lua")
+	for _, m in ipairs(pool.hunt) do
+		if not monsterLook[m.name:lower()] then
+			monsterLook[m.name:lower()] = m.look
+		end
+	end
+end
+local copyOf = {} -- lower name -> {look, newLook}
+for line in (readAll("data/monster/monster_recolour_looks.csv") or ""):gmatch("[^\r\n]+") do
+	local r = csvRow(line)
+	if r[1] ~= "monster" then
+		copyOf[r[1]:lower()] = {tonumber(r[2]), tonumber(r[3])}
+	end
+end
+local function lookAtNewestPair(name)
+	local look = monsterLook[name:lower()]
+	local c = copyOf[name:lower()]
+	if look and c and c[1] == look then
+		return c[2]
+	end
+	return look
+end
+local cells = {}
+for _, p in ipairs(cfg.plans) do
+	cells[#cells + 1] = {what = "plan " .. p.id, monster = p.monster}
+end
+do
+	local text = readAll("tools/hall_hunts.csv")
+	ok(text ~= nil, "tools/hall_hunts.csv is readable")
+	local header
+	for line in (text or ""):gmatch("[^\r\n]+") do
+		if line:sub(1, 1) ~= "#" then
+			local r = csvRow(line)
+			if not header then
+				header = {}
+				for i, k in ipairs(r) do
+					header[k] = i
+				end
+			elseif r[header.kind] == "hunt" then
+				local mon = r[header.display]
+				if mon == nil or mon == "" then
+					mon = r[header.name]
+				end
+				cells[#cells + 1] = {what = "base hunt " .. r[header.id], monster = mon}
+			end
+		end
+	end
+end
+ok(#cells >= 117, "the showcase cells: 80 plans and the base hunts (" .. #cells .. ")")
+local lookShown = {}
+for _, c in ipairs(cells) do
+	local look = lookAtNewestPair(c.monster)
+	ok(look ~= nil, c.what .. ": the display monster " .. tostring(c.monster) .. " has a look in the monster files or the bounty pool")
+	if look then
+		ok(not lookShown[look], "two cells never show one look: " .. c.monster .. " (" .. c.what .. ") wears look " .. look ..
+			", also shown by " .. tostring(lookShown[look]))
+		lookShown[look] = lookShown[look] or (c.monster .. " (" .. c.what .. ")")
+	end
+end
 local wyrm
 for _, p in ipairs(cfg.plans) do
 	if p.id == "wyrmspine_hollows" then
