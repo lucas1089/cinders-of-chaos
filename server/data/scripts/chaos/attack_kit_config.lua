@@ -370,7 +370,7 @@ ChaosAttackKit.cfg = {
 			id = 154, name = "Eclipse of Ruin", words = "drai ecl zhul vorn", level = 1200, mana = 4950, quest = 3,
 			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "ice",
 			pMin = 0, pMax = 0, mMin = 3.5, mMax = 6.5, bMin = 80, bMax = 160, scale = 6.4, shape = "circle", range = 7,
-			radius = 5, vfx = "frost_nova", vfx2 = "storm_ring"
+			radius = 5, vfx = "nova_radiant_blue" -- O523: one crisp blue nova (pair 66, effect 4702), was frost_nova + storm_ring (7x7 soft)
 		},
 		-- Death Between Heartbeats: Last Breath x 3.5 would add 19% (scale 2 x the critical hit 1.75); scale 1.2 x 1.75 = 2.1
 		deathbetweenheartbeats = {

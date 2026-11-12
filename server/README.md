@@ -20175,6 +20175,35 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   sends the stock id; on without the ids: nothing big; on: the big effect at the centre; the call sites).
   Started on a local server, 2026-10-13 (base, src-patches 0001-0036, `install_all.py` without the map steps, all pair 24 switches on): no new console error; `ChaosBigFx.live()` true, big_rift_void_7 = 654, a 7x7 telegraph sent. Not seen in a client.
 
+## Crisp pack effects (O523, pair 66: `ChaosSpell.plainHit`, `nova_radiant_blue`, `client/tools/sprites/clean_pack_dither.py`)
+Owner 2026-11-12 (translated): "I want our effects to look high quality." Much of the generated look of the effects came from
+OUR import, not the packs: the pack frames were cut to a 0 / 255 alpha with a 4x4 Bayer dither, so a soft glow became a mesh
+of every second pixel around the art (client/MANIFEST.md "Pair 66"). Three parts, effects only (no damage, area, timing or
+target changes):
+- **Plain hits.** The stock energy hit (effect 12) and ice attack (44) that a single-target spell sends on its target are the
+  pack's lightning blast (`blast_lightning`, 798, 3x3) and ice explosion (`mfx_ice`, 836, 3x3) now. `ChaosSpell.plainHit(pos,
+  effect)` in `data/spells/chaos/_common.lua` does it: it sends the pack effect and returns CONST_ME_NONE for the combat call,
+  or returns the stock effect unchanged when the pack effect cannot be sent. Asked by `ChaosSpell.damageTarget` and by the
+  attack kit's single-target hit with no `hitFx` of its own (`A.hit` in `data/spells/chaos/_attackkit.lua`; today Phantom
+  Needles). Not asked by area hits (one 3x3 blast per target would bury the screen), by dots, by the Templar, Necromancer,
+  blade and shuriken schools, by the archery arrows, by item procs, nor by the stock wands (the engine sends their hit).
+  `ChaosSpell.PLAIN_HIT` lists the two stock effects; any other effect passes through.
+- **Eclipse of Ruin** (id 154, Mystic / Elementalist / Illusionist, ice) sends ONE effect, `nova_radiant_blue` (effect 4702, 5x5,
+  send offset 2, 2): the Purging Nova (713, gold) with its hue turned +175 degrees (`gen_pair66_fx.py`). It sent `frost_nova`
+  (the 7x7 `big_nova_frost_7`, 644) and `storm_ring` (`big_shock_lightning_7`, 640). `vfx2` is gone from its kit row and
+  `ChaosBigFx.spells[154]` too. Effect 713 is unchanged: Purging Nova and Hammer of Ember Dawn still send it. The name is
+  in `data/lib/chaos_vfx_art.lua` (written by `import_fx_art.py --merge` from `art_import/pair66_fx.csv`) and tagged `ice`
+  in `data/spells/spell_fx_elements.csv`; `spell_fx_allow.csv` lost its Eclipse of Ruin row (the shock ring is not sent any
+  more); `836,mfx_ice,ice` is tagged too. **Switch on: the client package with pair 66.** A client on pair 65 or older has no
+  effect 4702 and draws nothing for the nova (the hit and the damage are the same); the other two changes need no new pair.
+- **The mesh in the pair.** Sprites of the effects and missiles are cleaned in place (`clean_pack_dither.py`, pair 66), so every
+  effect that came from a pack loses its halo mesh at its own id, with no server change. The import rule is a hard cut at
+  alpha 0.5 now (`gen_pack27_fx.clean_alpha`), for the next import from the packs.
+- Tests: `tests/plain_hit_test.lua` (the swap table, the pass-through, the wiring, the tags), `tests/attack_kit_test.lua` (Eclipse
+  of Ruin plays one effect; Phantom Needles asks `plainHit`, Prismatic Rupture does not), `tests/big_fx_test.lua`; CI `checks`
+  runs `tools/ci/check_spell_fx.py` (the new names are ice / energy; the probe runs the real scripts).
+  Not seen in a client.
+
 ## Status words (`data/lib/chaos_status_fx.lua`, `data/lib/chaos_status_fx_ids.lua`, switch `ChaosStatusFx.STATUS_FX`, on)
 Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, from the owner's text effect set
 (client/MANIFEST.md "Status words", effects 656-673 of things_custom25). Effects only: nothing else changes.

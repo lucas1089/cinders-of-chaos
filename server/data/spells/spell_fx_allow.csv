@@ -1,7 +1,6 @@
 spell_id,spell,effect_id,effect,reason
 24,Phantom Needles,799,blast_arcane,the energy line is drawn as arcane light
 152,Prismatic Rupture,799,blast_arcane,the energy line is drawn as arcane light
-154,Eclipse of Ruin,640,big_shock_lightning_7,a frost and lightning spell: the ice nova comes with a bolt shock
 67,Mistborne Strike,4579,p50_purple_cloud_4579,a mist of shadow around the strike (it was the shadow cloud 394)
 89,Tidal Palm,383,frost_ripple,a water palm drawn as a cold ripple
 113,Blightbrand,401,poison_flame,the necromancer's venom burns on a death spell

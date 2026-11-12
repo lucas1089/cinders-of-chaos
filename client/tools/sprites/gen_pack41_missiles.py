@@ -16,8 +16,8 @@ What it keeps from pair 36 (the same ids, so every script, monster and engine se
   * the 3 x 3 direction patterns: gen_pack27_fx.MISSILE_DIR maps the sheet rows (E SE S SW W NW N NE) onto the
     client's pattern cells (x west / centre / east, y north / centre / south); the centre cell repeats the south row;
   * the point: the pivot (frame pixel 32, 32) lands on (13, 13) of the tile, as in every pack import;
-  * the cut: layers merged, frames trimmed, alpha 0 / 255 with the 4x4 Bayer dither of gen_pack27_fx.clean_alpha (the
-    convention pairs 27 and 29 used on the same native renders);
+  * the cut: layers merged, frames trimmed, alpha 0 / 255 with gen_pack27_fx.clean_alpha (a hard cut at 0.5 since O523, a 4x4 Bayer dither
+    before it; the convention pairs 27 and 29 used on the same native renders);
   * ids 4..125: gen_pack36_fx.replaced_missile's rule (at most 2 x 2 tiles, send offset 0, 0);
   * ids 189..250 (the appended ones): the send offset (dx, dy) of art_import/pack36_missiles.csv, so the dx / dy of
     server/data/lib/chaos_pack36_fx_ids.lua stay right (at most 3 x 3 tiles). Art that reaches past the bottom-right

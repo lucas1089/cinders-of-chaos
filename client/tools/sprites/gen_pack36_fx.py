@@ -17,8 +17,8 @@ any sub folders. Two layouts are read:
   * `catalog.json` packs (sheets/64px/<category>/<effect>/<variant>/<effect>_<variant>.json; the stages start, loop
     and end in order; the `full` sheet, else the layers merged as gen_pack27_fx.load merges them): spells and
     impacts, circles, auras and buffs, fields and traps, projectiles and the game feel set. Only their 64 px renders
-    exist: each frame is halved (premultiplied 2 x 2 box mean, alpha cut with the 4x4 Bayer dither of
-    gen_pack27_fx.clean_alpha) and placed by its halved pivot like gen_pack27_fx (feet point or tile centre).
+    exist: each frame is halved (premultiplied 2 x 2 box mean, alpha cut hard at 0.5 by
+    gen_pack27_fx.clean_alpha; a 4x4 Bayer dither before O523, pair 66) and placed by its halved pivot like gen_pack27_fx (feet point or tile centre).
   * the loot beam strips (`*_loot_beam_strip24.png`, 24 frames of 64 x 128): halved to 32 x 64, the bottom tile on
     the item's tile.
 
@@ -349,7 +349,7 @@ def catalog_pack(cat, cats):
 
 
 def halve(fr):
-    """64 px art -> 32 px: premultiplied 2 x 2 box mean, then the alpha made clean (0 / 255, Bayer dither)"""
+    """64 px art -> 32 px: premultiplied 2 x 2 box mean, then the alpha made clean (0 / 255, a hard cut; a Bayer dither before O523)"""
     a = fr.astype(np.float64) / 255.0
     h, w = a.shape[0] // 2 * 2, a.shape[1] // 2 * 2
     a = a[:h, :w]

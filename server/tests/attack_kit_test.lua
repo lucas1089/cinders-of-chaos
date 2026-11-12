@@ -343,6 +343,8 @@ ChaosSpell = {
 	fx = function(pos, name) calls[#calls + 1] = {kind = "fx", name = name} end,
 	vfx = function(pos, name) calls[#calls + 1] = {kind = "vfx", name = name}; return true end,
 	vfxDir = function() return false end,
+	-- O523: the plain energy / ice hit of a single-target spell is a pack blast (the real one is in _common.lua)
+	plainHit = function(pos, effect) calls[#calls + 1] = {kind = "plain", effect = effect}; return effect end,
 	vshoot = function(a, b, name) calls[#calls + 1] = {kind = "shot", name = name} end,
 	pshoot = function(a, b, pname, vname, name) calls[#calls + 1] = {kind = "shot", name = pname} end,
 	pulse = function(casterId, count, interval, fn)
@@ -714,14 +716,30 @@ do
 	for _, x in ipairs(hits()) do seen[x.target.id] = true end
 	ok(seen[inner.id] and not seen[outer.id] and not seen[p.id], "radius 3, never the caster")
 
-	-- the second effect (vfx2) plays at the target
+	-- O523: Eclipse of Ruin plays one crisp blue nova (pair 66, effect 4702), no second effect and no big one
 	reset()
 	p = player()
 	t = creature(103, 100)
 	A.cast("eclipseofruin", p, {target = t})
-	local names = {}
-	for _, c in ipairs(calls) do if c.kind == "vfx" then names[c.name] = true end end
-	ok(names.frost_nova and names.storm_ring, "Eclipse of Ruin plays both of its effects (the big ones swap in by name)")
+	local names, n = {}, 0
+	for _, c in ipairs(calls) do if c.kind == "vfx" then names[c.name] = true; n = n + 1 end end
+	ok(names.nova_radiant_blue and n == 1, "Eclipse of Ruin plays one effect, the blue nova")
+	ok(cfg.spells.eclipseofruin.vfx2 == nil, "Eclipse of Ruin has no second effect")
+	-- the plain hit of a single-target energy spell asks for the pack blast; an area spell does not
+	reset()
+	p = player()
+	t = creature(103, 100)
+	A.cast("phantomneedles", p, {target = t})
+	local plain = 0
+	for _, c in ipairs(calls) do if c.kind == "plain" then plain = plain + 1 end end
+	eq(plain, 1, "Phantom Needles (single, energy): the plain hit goes through plainHit")
+	reset()
+	p = player()
+	t = creature(103, 100)
+	A.cast("prismaticrupture", p, {target = t})
+	plain = 0
+	for _, c in ipairs(calls) do if c.kind == "plain" then plain = plain + 1 end end
+	eq(plain, 0, "Prismatic Rupture (a circle): one blast per target would bury the screen, no plainHit")
 end
 
 -- the class factor of a quest spell (quest_spell_scale_config.lua): one factor per class of the line, 1 for any other spell

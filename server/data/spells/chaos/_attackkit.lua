@@ -168,6 +168,9 @@ function A.hit(player, target, spec, lo, hi, effect)
 	if not ChaosSpell.canAttack(player, target) then
 		return false
 	end
+	if spec.shape == "single" and not spec.hitFx then -- O523: the plain energy / ice hit of a single-target spell is a pack blast
+		effect = ChaosSpell.plainHit(target:getPosition(), effect)
+	end
 	return doTargetCombat(player, target, COMBAT[spec.ctype], -math.floor(lo), -math.floor(hi), effect, ORIGIN_SPELL)
 end
 

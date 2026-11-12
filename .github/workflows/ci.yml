@@ -101,6 +101,7 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art.py --check  # prints, glows and foot marks of game_cosmeticfx (O499)
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/clean_wing_shadows_test.py  # the baked ground shadow of the wings (O508, pair 64)
+          /tmp/fxenv/bin/python -I client/tools/sprites/clean_pack_dither_test.py  # the Bayer mesh of the pack effects, the hard cut of the import, the blue nova (O523, pair 66)
           /tmp/fxenv/bin/python -I client/tools/gen_tooltip_art.py --check  # ring, glow and diamond of the card item tooltip (O422)
           /tmp/fxenv/bin/python -I client/tools/gen_hotbar_art.py --check  # nine-slice frames, slots, caps and chat skin of game_hotbar / game_floatchat (O414)
           /tmp/fxenv/bin/python -I launcher/tools/gen_launcher_art.py --check  # banner and icon of the game launcher window (O339)
