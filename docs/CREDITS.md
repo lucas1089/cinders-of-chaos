@@ -43,6 +43,9 @@ files may not be extracted, decrypted or reused elsewhere: some art is licensed 
 - **Owner-supplied spell effects**
   - Source: supplied by the owner (a client's sprite file), origin unknown, source not named
   - Used for: 40 spell effects (frost, fire, lightning and arcane bursts, novas and rings, shield auras, a heal cross, slashes), client pair 68
+- **Owner-supplied creature looks**
+  - Source: supplied by the owner (a client's sprite file), origin unknown, source not named
+  - Used for: 33 monster looks (spirits, beasts, fiends, reptiles, spiders, undead), client pair 70
 - **Region music**
   - Author: the Cinders of Chaos team (own work, synthesised by `client/tools/gen_music.py`; no samples)
   - Used for: the music of the login screen, towns, hunting grounds, dungeons and rifts, boss fights and arenas

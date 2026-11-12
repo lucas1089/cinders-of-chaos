@@ -66,7 +66,8 @@ def dump(area_id):
 
 
 def monster_looks():
-    """name (lower case) -> look type, from every monster file of the repository"""
+    """name (lower case) -> look type, from every monster file of the repository; a monster of the donor map (O538,
+    server/data/monster/monster_donor_looks.csv) at its donor look, as the newest client pair (70) draws it"""
     looks = {}
     for root, _, files in os.walk(MONSTERS):
         for f in sorted(files):
@@ -77,6 +78,12 @@ def monster_looks():
             lk = re.search(r'<look\b[^>]*\btype="(\d+)"', s)
             if n and lk:
                 looks.setdefault(n.group(1).lower(), int(lk.group(1)))
+    path = os.path.join(REPO, 'server', 'data', 'monster', 'monster_donor_looks.csv')
+    if os.path.exists(path):
+        import csv
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            if looks.get(r['monster'].lower()) == int(r['look']):
+                looks[r['monster'].lower()] = int(r['new_look'])
     return looks
 
 
