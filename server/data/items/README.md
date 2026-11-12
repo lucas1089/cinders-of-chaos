@@ -80,7 +80,7 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Bloodmoon Edge | sword | 11395 / 860 | crimson sword | 90 | rare | Atk 44, Def 22, skillSword 3, criticalHitChance 5, criticalHitAmount 25 |
 | Soulreaper | sword | 8209 / 7385 | crimson sword | 120 | legendary | Atk 52, Def 28, skillSword 4, lifeLeechChance 10, lifeLeechAmount 8 |
 | Executioner's Reckoning | axe | 2440 / 3328 | scorchveil waraxe | 80 | rare | Atk 50, Def 18, skillAxe 3, criticalHitChance 7, criticalHitAmount 30 |
-| Harvester of Sorrows | axe | 10301 / 9384 | scythe of the reaper | 100 | legendary | Atk 50, Def 14, elementDeath 22, skillAxe 4, manaLeechChance 7, manaLeechAmount 6 |
+| Harvester of Sorrows | sword | 10301 / 9384 | scythe of the reaper | 100 | legendary | Atk 50, Def 14, elementDeath 22, skillSword 4, manaLeechChance 7, manaLeechAmount 6 |
 | Cinderbrand Axe | axe | 8925 / 8097 | solar axe | 130 | boss | Atk 58, Def 30, elementFire 24, skillAxe 5, absorbPercentFire 10 |
 | Lichfang Staff | club | 3961 / 3343 | lich staff | 70 | magic | Atk 36, Def 30, elementDeath 14, magicPoints 2, skillClub 2 |
 | Bonegrinder | club | 7379 / 7379 | brutetamer's staff | 90 | rare | Atk 58, Def 18, skillClub 5, criticalHitChance 5, criticalHitAmount 25 |
@@ -241,4 +241,9 @@ a dagger to find in every band; with the shop dagger (2379), the stock assassin 
 | Moonlit Shiv | 2402 | silver dagger | 28 | magic, chance 25 | every class | poison chance 12, life on hit 6, attack speed 8 |
 | Gravewhisper Stiletto | 2404 | combat knife | 600 | rare, chance 6 | Thief line | attack speed 10, poison chance 16, life on hit 30 |
 | Nightbloom Stiletto | 2411 | poison dagger | 1250 | rare, chance 6, waystone kills | Thief line | attack speed 15, poison chance 24, physical penetration 18, Critical Echo 20 |
-| Misericorde of the Pale Vow | 27193 | drownkin ceremonial dagger | 1900 | rare, chance 6, waystone kills | Thief line | attack speed 14, life on hit 45, physical penetration 18, Bloodrush 4 |
+| Misericorde of the Pale Vow | 7408 | wyvern fang | 1900 | rare, chance 6, waystone kills | Thief line | attack speed 14, life on hit 45, physical penetration 18, Bloodrush 4 |
+
+The Misericorde sat on 27193 (drownkin ceremonial dagger) until O520. That base only looks like a dagger: it is a wand of the
+Mystic and Necromancer lines, so a Thief could wear the unique and never hit with it. A unique weapon's base must be a weapon
+of the unique's kind whose weapon entry lets its classes hit: `tests/unique_weapon_base_test.lua` holds every one to
+`base_weapons.csv` (server/README.md "Unique weapons and their base (O520)").

@@ -9430,7 +9430,7 @@ CodexData = {
 					id = "unique:10301",
 					name = "Harvester of Sorrows",
 					color = "#ff9c3a",
-					sub = "Axe, level 100. Attack 50, Defense 14, Melee +4, Mana Leech: chance +7%, amount +6%",
+					sub = "Sword, level 100. Attack 50, Defense 14, Mana Leech: chance +7%, amount +6%, Melee +4",
 					f = {class = {"warrior", "templar"}, kind = {"weapon"}, level = 100, source = "monster"},
 					sections = {
 						{
@@ -9439,14 +9439,14 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 50", "Defense 14", "Melee +4", "Mana Leech: chance +7%, amount +6%"}
+							p = {"Attack 50", "Defense 14", "Mana Leech: chance +7%, amount +6%", "Melee +4"}
 						},
 						{
 							h = "Item",
 							cols = {"", ""},
 							w = {35, 65},
 							rows = {
-								{"Slot", "Axe"},
+								{"Slot", "Sword"},
 								{"Meant for level", "100"},
 								{"Power works for", "Warrior, Templar"},
 								{"Drops from", "Legendary monsters and stronger"}
@@ -11012,7 +11012,7 @@ CodexData = {
 					items = {28109}
 				},
 				{
-					id = "unique:27193",
+					id = "unique:7408",
 					name = "Misericorde of the Pale Vow",
 					color = "#ff9c3a",
 					sub = "Sword, level 1900. Attack 192, Defense 38, Melee +5, Attack Speed +14%, Health on Hit +45, Physical Penetration +18%, Bloodrush: each kill adds 4% damage (5 stacks, 6 s)",
@@ -11056,7 +11056,7 @@ CodexData = {
 							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 345 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
-					items = {27193}
+					items = {7408}
 				},
 				{
 					id = "unique:26765",

@@ -7,7 +7,9 @@
 --   * data/lib/chaos_unique_equip.lua: a unique copy is held to its own rule, a stock copy of the same base id to the
 --     stock rule, only the check pass decides;
 --   * tools/install_unique_equip.py on a small movements.xml: the stock entries taken in and recorded, the looser rule
---     in the block, the movement script, a second run changes nothing, add_vocations.py leaves the block alone.
+--     in the block, the movement script, a second run changes nothing, add_vocations.py leaves the block alone;
+--   * a base id that is no unique's any more gets its stock Equip entry back (O520: the Misericorde of the Pale Vow
+--     left the wand 27193 for the dagger 7408; tests/unique_weapon_base_test.lua holds every unique weapon to its base).
 local count, failures = 0, 0
 local function check(cond, what)
 	count = count + 1
@@ -235,6 +237,69 @@ else
 	local res = p:read("*a")
 	p:close()
 	check(res:find("same", 1, true), "add_vocations.patch_movements leaves the block: " .. res)
+
+	-- a base id that is no unique's any more (O520: the Misericorde of the Pale Vow left the wand 27193 for the dagger
+	-- 7408): an install made before has 27193 in the block with its stock rule recorded. The stock Equip entry goes back
+	-- in front of the block, the new base gets its entry and a DeEquip, the script forgets the old id.
+	text = readFile(moves)
+	local oldBlock = [[
+	<!-- stock 27193: slot="hand" level="180" vocations="Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord" -->
+	<movevent event="Equip" itemid="27193" slot="hand" level="180" function="onEquipItem" script="chaos_unique_equip.lua">
+		<vocation name="Thief" />
+		<vocation name="Ninja" showInDescription="0" />
+		<vocation name="Samurai" showInDescription="0" />
+		<vocation name="Mystic" showInDescription="0" />
+		<vocation name="Elementalist" showInDescription="0" />
+		<vocation name="Illusionist" showInDescription="0" />
+		<vocation name="Necromancer" showInDescription="0" />
+		<vocation name="Lich" showInDescription="0" />
+		<vocation name="Bone Lord" showInDescription="0" />
+	</movevent>
+]]
+	local marker = "\t<!-- end of the Chaos unique equip rules -->\n"
+	local at = text:find(marker, 1, true)
+	check(at ~= nil, "the block's end marker")
+	text = text:sub(1, at - 1) .. oldBlock .. text:sub(at)
+	-- the stock DeEquip of the wand was outside the block all the time
+	text = text:gsub("</movements>", '\t<movevent event="DeEquip" itemid="27193" slot="hand" function="onDeEquipItem" />\n</movements>')
+	writeFile(moves, text)
+	out = run()
+	check(out:find("exit=0", 1, true) and out:find("27193 is no unique base any more", 1, true), "the tool names the id that left: " .. out)
+	text = readFile(moves) or ""
+	block = text:match("<!%-%- Chaos unique equip rules.-<!%-%- end of the Chaos unique equip rules %-%->") or ""
+	outside = text:gsub("<!%-%- Chaos unique equip rules.-<!%-%- end of the Chaos unique equip rules %-%->", "")
+	check(not block:find("27193", 1, true), "27193 is out of the block")
+	local stockBack = outside:match('<movevent event="Equip" itemid="27193".-</movevent>') or ""
+	check(stockBack:find('slot="hand" level="180" function="onEquipItem">', 1, true) and not stockBack:find("script=", 1, true),
+		"the wand's stock Equip entry is back: level 180, no script: " .. stockBack)
+	check(stockBack:find('<vocation name="Mystic" />', 1, true) and stockBack:find('<vocation name="Necromancer" />', 1, true),
+		"the base class of each line shows in the look")
+	check(stockBack:find('<vocation name="Elementalist" showInDescription="0" />', 1, true)
+		and stockBack:find('<vocation name="Bone Lord" showInDescription="0" />', 1, true), "the ascended classes are hidden")
+	check(not stockBack:find("Thief", 1, true) and not stockBack:find("Ninja", 1, true), "no Thief line on the wand any more")
+	local _, equips = outside:gsub('event="Equip" itemid="27193"', "")
+	local _, deequips = outside:gsub('event="DeEquip" itemid="27193"', "")
+	eq(equips, 1, "one Equip entry for the wand"); eq(deequips, 1, "its one DeEquip entry stays")
+	check(block:find('<!-- stock 7408: none -->', 1, true), "the dagger base had no stock Equip entry")
+	check(block:find('<movevent event="Equip" itemid="7408" slot="hand" function="onEquipItem" script="chaos_unique_equip.lua" />', 1, true),
+		"the dagger base: the script decides, no engine rule")
+	check(block:find('<movevent event="DeEquip" itemid="7408" slot="hand" function="onDeEquipItem" />', 1, true), "and a DeEquip")
+	script = readFile(data .. "/movements/scripts/chaos_unique_equip.lua") or ""
+	check(script:find("[7408] = {}", 1, true) and not script:find("27193", 1, true), "the script: 7408 anyone, 27193 gone")
+	before, beforeScript = text, script
+	out = run()
+	check(out:find("up to date", 1, true) and not out:find("no unique base any more", 1, true), "a run after it: " .. out)
+	eq(readFile(moves), before, "a run after it: movements.xml unchanged")
+	eq(readFile(data .. "/movements/scripts/chaos_unique_equip.lua"), beforeScript, "a run after it: the script unchanged")
+	onEquip = nil
+	chunk = (loadstring or load)(script)
+	if chunk then
+		chunk()
+		check(onEquip(player("Samurai", 1900), item(7408, 1), 6, true), "script: the Misericorde on a Samurai at 1900")
+		check(not onEquip(player("Samurai", 1899), item(7408, 1), 6, true), "script: not below 1900")
+		check(not onEquip(player("Warrior", 2400), item(7408, 1), 6, true), "script: not a Warrior")
+		check(onEquip(player("Warrior", 1), item(7408, nil), 6, true), "script: a plain copy of the dagger base, anyone")
+	end
 	os.execute("rm -rf '" .. root .. "'")
 end
 

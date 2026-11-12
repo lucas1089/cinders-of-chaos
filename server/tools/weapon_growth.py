@@ -17,11 +17,12 @@ WEAPON_GROWTH = ((100, 1.00), (200, 1.14), (300, 1.26), (500, 1.42), (700, 1.55)
 WEAPON_SKILL_SHARE = 0.85   # skill x attack is about this share of a weapon hit
 
 # the attack of the uniques of data/items/chaos_items.xml before O472, keyed by the stock base id the unique is made from (only the ones
-# the growth changed): the `old` of chaos_weapon_growth.lua's uniques, so an owned unique can follow (ChaosCrafting.growWeapon)
+# the growth changed): the `old` of chaos_weapon_growth.lua's uniques, so an owned unique can follow (ChaosCrafting.growWeapon).
+# 7408 is the Misericorde of the Pale Vow, on 27193 until O520: an old copy turns into 7408 first (chaos_jewelry.lua uniqueMoves)
 OLD_UNIQUE_ATTACK = {
-    2404: 56, 2408: 78, 2411: 64, 7384: 50, 7402: 56, 7404: 42, 7418: 44, 7422: 54, 8209: 52, 8925: 58, 8931: 72,
+    2404: 56, 2408: 78, 2411: 64, 7384: 50, 7402: 56, 7404: 42, 7408: 68, 7418: 44, 7422: 54, 8209: 52, 8925: 58, 8931: 72,
     14334: 76, 22417: 88, 25418: 62, 25880: 73, 25881: 74, 25882: 77, 25884: 78, 25885: 91, 25886: 92, 26765: 83,
-    27193: 68, 27230: 75, 27474: 78, 27646: 73, 27658: 58, 36659: 64, 40011: 68, 40012: 70
+    27230: 75, 27474: 78, 27646: 73, 27658: 58, 36659: 64, 40011: 68, 40012: 70
 }
 
 

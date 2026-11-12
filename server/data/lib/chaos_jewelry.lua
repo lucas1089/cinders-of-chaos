@@ -93,14 +93,27 @@ J.uniqueBases = {
 		unique = "Heartbleed Pendant"}
 }
 
--- the new id of an old unique copy on a consumable base, or nil. isUnique: the copy carries the chaos_unique marker;
--- name: its name attribute (a copy made before the marker existed)
+-- uniques that moved to another STOCK base (no new item type, nothing for patch_base_jewelry.py to do): old copies turn the
+-- same way. `weapon`: the message of a worn copy says weapon.
+-- O520: the Misericorde of the Pale Vow, a Thief dagger, sat on 27193. That base only looks like a dagger: it is a wand of
+-- the Mystic and Necromancer lines (ice, range 6), so its weapon entry gave a Thief no hit and the unique's attack did
+-- nothing. Its base is 7408 now, a one-handed sword every class hits with (server/README.md "Unique weapons and their
+-- base (O520)"). A plain copy of 27193 carries no marker and no unique name: it stays the wand it is.
+J.uniqueMoves = {
+	{id = 7408, from = {27193}, unique = "Misericorde of the Pale Vow", weapon = true}
+}
+
+-- the new id of an old unique copy on a base it left (a consumable base, or a base of the wrong kind), or nil; the
+-- second value is the row. isUnique: the copy carries the chaos_unique marker; name: its name attribute (a copy made
+-- before the marker existed)
 function J.uniqueTarget(id, isUnique, name)
 	id = tonumber(id) or 0
-	for _, b in ipairs(J.uniqueBases) do
-		for _, from in ipairs(b.from) do
-			if from == id and (isUnique or name == b.unique) then
-				return b.id
+	for _, list in ipairs({J.uniqueBases, J.uniqueMoves}) do
+		for _, b in ipairs(list) do
+			for _, from in ipairs(b.from) do
+				if from == id and (isUnique or name == b.unique) then
+					return b.id, b
+				end
 			end
 		end
 	end

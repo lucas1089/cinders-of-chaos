@@ -92,7 +92,7 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Hellfire Fighter", "Fire Devil", "Massive Fire Elemental", "Hellhound", "Dragon Lord", "Blazebringer", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Hand of Cursed Fate"} },
 	{ name = "Soulreaper", id = 8209, minTier = "legendary", chance = 9, level = 120, slot = "sword",
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker"} },
-	{ name = "Harvester of Sorrows", id = 10301, minTier = "legendary", chance = 8, level = 100, slot = "axe",
+	{ name = "Harvester of Sorrows", id = 10301, minTier = "legendary", chance = 8, level = 100, slot = "sword",
 	  bossOnly = false, monsters = {"Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker", "Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage"} },
 	{ name = "Obsidian Aegis", id = 10318, minTier = "legendary", chance = 8, level = 110, slot = "shield",
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Dragon Lord", "Hand of Cursed Fate"} },
@@ -240,7 +240,7 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
 	{ name = "Nightbloom Stiletto", id = 2411, minTier = "rare", chance = 6, level = 1250, slot = "sword", minMonsterLevel = 1000,
 	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
-	{ name = "Misericorde of the Pale Vow", id = 27193, minTier = "rare", chance = 6, level = 1900, slot = "sword", minMonsterLevel = 1000,
+	{ name = "Misericorde of the Pale Vow", id = 7408, minTier = "rare", chance = 6, level = 1900, slot = "sword", minMonsterLevel = 1000,
 	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
 	-- weapon coverage uniques (2026-10-23): a leveling bow for the Beastmaster and endgame weapons the audit found missing
 	-- (tools/weapon_coverage.lua); the same rules as the other leveling and endgame uniques

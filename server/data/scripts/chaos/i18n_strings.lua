@@ -1703,6 +1703,8 @@ return {
 		["Last Ember: the Gravewarden's Seal kept you alive."] = "Last Ember: o Gravewarden's Seal te manteve vivo.",
 		["Your unique ring or amulet was renewed and put in your backpack. Put it on again."] =
 			"Seu anel ou amuleto único foi renovado e colocado na sua mochila. Equipe-o de novo.",
+		["Your unique weapon was renewed and put in your backpack. Put it on again."] =
+			"Sua arma única foi renovada e colocada na sua mochila. Equipe-a de novo.",
 		["Another %s! Yours gains %d pet experience."] = "Outro %s! O seu ganha %d de experiência de pet.",
 		["New pet: %s! Open Character > Pets to call it."] = "Pet novo: %s! Abra Character > Pets para chamá-lo.",
 		["Your pet mends you (+%.0f)."] = "Seu pet te cura (+%.0f).",

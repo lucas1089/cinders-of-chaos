@@ -3802,6 +3802,54 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
 - **No lines, every class** (2026-10-23): `equipLevel` without `equipLines` writes an empty class list; that lets every
   class wear it from the level (before, an empty list let nobody). A weapon base without a stock entry gets a `hand`
   entry. The leveling and endgame uniques below use both.
+- **A base that left** (O520): a base id the block held that is no unique's any more gets its recorded stock Equip entry
+  back in front of the block (slot, level, `onEquipItem`, the class list with the base class of each line shown). A
+  DeEquip the block added goes with the block. See the next section.
+
+## Unique weapons and their base (O520) (`tests/unique_weapon_base_test.lua`, `chaos_jewelry.lua` `uniqueMoves`)
+Found by the equip tooltip audit (O490), kind "unique copy: weapon check: class". Read from code and data, then run on an
+installed folder; not seen on a live server. After it, `audit_equip_tooltips.py` on that folder (2,182 tooltips, with
+the uniques of O510) lists no item of the kind, and no mismatch of any kind; `--check` passes.
+- **The rule of the engine.** A weapon hits through the weapons.xml entry of its item id. `Weapon::playerWeaponCheck`
+  returns 0 for a class that is not on the entry's class list, and `Weapon::useWeapon` then does nothing: no hit, no
+  message. No src-patch touches that check, and no Chaos script replaces the auto attack of a weapon. The equip check
+  (movements.xml) is a separate list. `install_unique_equip.py` loosens only that one.
+- **The finding.** The Misericorde of the Pale Vow (Thief line, level 1900) was a copy of 27193. That stock item is
+  named a dagger and is a wand: items.xml `weaponType` wand, ice, range 6; weapons.xml `<wand>` from level 180 for the
+  Mystic and Necromancer lines. So a Thief could wear the copy and never hit. Letting the Thief through the weapon
+  entry would not have made it a dagger: a wand ignores the attack attribute (192), deals its own 98 to 112 ice hit for
+  23 mana, counts as no light blade for dual wield and trains no sword skill.
+- **The fix.** The unique is a copy of 7408 now (wyvern fang): a one-handed sword, weapons.xml `<melee>` from level 25
+  with no class list, no stock Equip entry, no stock script. Its numbers, modifiers, passive, drop sources and rule
+  (Thief line, level 1900) are unchanged. Its look changes to the fang's. 27193 is a plain caster wand again: after a
+  re-run of step `uniqueequip` its stock Equip entry is back (level 180, Mystic and Necromancer lines).
+- **Owner decision** (2026-11-11, translated: "It can stay"): the base is 7408, with the fang's look. Who can use what
+  did not change: the Thief line from 1900, as designed. The bases not taken: 2379 (the shop dagger; the starter kit and
+  the off-hand grant count that id), and a base of its own that keeps the old look (a new server id copying the 27193
+  node as a sword, as the jewelry uniques of 41640-41642; more install steps).
+- **Old copies.** `ChaosJewelry.uniqueMoves` lists `{id = 7408, from = {27193}}`. A copy of 27193 with the
+  `chaos_unique` marker (or the unique's name) turns into 7408 like the jewelry uniques: in a container when moved, at
+  login in the backpack, and a worn one is moved to the backpack first and the player is told to put it on again
+  (`chaos/jewelry.lua`). Attack, skill, critical, modifiers, sockets and name are item attributes and stay. A plain
+  copy of 27193 stays a wand. The weapon growth row of the unique moved with it (`weapon_growth.py`
+  `OLD_UNIQUE_ATTACK` 7408), so a copy from before O472 still grows on touch after it turned.
+- **Every other unique.** 52 unique weapons sit on stock bases (shields, quivers, spellbooks and fist weapons have no
+  weapon entry of this kind). Each was compared with `data/items/base_weapons.csv` (kind, class list, level) and with
+  the weapons.xml of an installed folder. Only the Misericorde failed. 23 of them sit on bases with no weapons.xml
+  entry: the engine gives those its default weapon, with no class list and no level (`Weapons::loadDefaults`).
+  `tests/unique_weapon_base_test.lua` holds all of them from now on and names the unique, the kind and the refused
+  classes when one fails. It reads the snapshot, whose class list is the weapon entry narrowed by the stock Equip
+  rule: the strict side.
+- **Harvester of Sorrows** (found by the test when O500 came in). O500 typed the scythes as swords
+  (`stock_weapon_types.csv`: 10301, scythe of the reaper, axe to sword), and this unique on 10301 still said axe. The
+  copy was a sword in the engine already, since the kind is the item type's. The unique says sword now: `weaponType`,
+  `skillSword` and the drop entry's slot. Nothing changes in play: the +4 is the one melee skill for all three kinds,
+  and an owned copy needs no change. The Codex and the wiki read "Sword".
+- **Not changed, to know.** 7408 and 7404 (the Duskstalker Fang's base) are on the item fusion list
+  (`item_fusion_config.lua`). The base fusion script takes three items by id, so it does not tell a unique copy from a
+  plain one. This was true before for every unique on a listed base.
+- Tests: `tests/unique_weapon_base_test.lua`, `tests/unique_equip_test.lua` (the stock entry back, the new base's entry,
+  the script), `tests/jewelry_test.lua` (old copies turn, a plain wand stays, the login message).
 
 ## Equip rules in the tooltip (`data/lib/chaos_equip_rules.lua`, `tools/install_equip_rules.py`, `tools/audit_equip_tooltips.py`, O490)
 Owner, 2026-11-11 (translated), after the Ring of Blue Plasma of O489: "Exactly. Look for other items that have the same
@@ -3861,7 +3909,7 @@ tooltip says no, the server allows) counts as a lesser finding. Nothing here cha
 | tooltip stricter: class (tooltip drops a class the server allows) | 76 | 0 |
 | unique copy: tooltip stricter: class | 3 | 0 |
 | unique copy: tooltip stricter: level (the unique's own level, not asked by the server) | 35 (58 once the audit read every unique) | 0 (2026-11-11, O510) |
-| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding |
+| unique copy: weapon check: class (drownkin ceremonial dagger) | 1 | 1, data finding; 0 since O520 (the unique left that base: "Unique weapons and their base (O520)") |
 
   Shapes (one example each): a wand, rod, robe or hood for the Mystic + Illusionist line or the Mystic + Elementalist line
   read "Mystic, Necromancer" (the Elementalist or the Illusionist was refused after a yes; 126 Equip entries and 127
@@ -4338,11 +4386,12 @@ by the vocation's); a server restart after `install_all.py` loads the new vocati
   disagree, if the Thief is not tied with the Monk or if any class outside the two lines is not at 2000.
 - **Thief daggers.** Five uniques on dagger-sprite bases (one unique per base id), see `data/items/README.md` "Thief daggers":
   Cutpurse's Sliver (knife, level 10) and Moonlit Shiv (silver dagger, 28) from magic monsters and up of the low hunts (every class);
-  Gravewhisper Stiletto (combat knife, 600), Nightbloom Stiletto (poison dagger, 1250) and Misericorde of the Pale Vow (drownkin
-  ceremonial dagger, 1900) for the Thief line, with attack speed and the line's poison / penetration modifiers (the last two with a
+  Gravewhisper Stiletto (combat knife, 600), Nightbloom Stiletto (poison dagger, 1250) and Misericorde of the Pale Vow (wyvern
+  fang, 1900) for the Thief line, with attack speed and the line's poison / penetration modifiers (the last two with a
   legendary power, from waystone kills). Bands: 1-9 the shop dagger (2379), 10-27 and 28-599 the two leveling daggers and the stock
-  daggers (assassin dagger 7404 from level 40, ceremonial 27193 from 180), 300 the Duskstalker Fang, 600+ the Thief-only ones up
-  to 2400+. Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
+  daggers (wyvern fang 7408 from level 25, assassin dagger 7404 from 40), 300 the Duskstalker Fang, 600+ the Thief-only ones up
+  to 2400+. The drownkin ceremonial dagger (27193) is no dagger: it is a caster wand, and the Misericorde left it for the wyvern
+  fang (7408) in O520 ("Unique weapons and their base (O520)"). Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
   `weapon_sim.py --power --check` passes) scale it as every melee weapon. Only the level 600+ ones are Thief-line only. Drop pool,
   codex, wiki and tooltip come from the same files as every unique (`gen_unique_specs.py`, `gen_codex_data.lua`,
   `gen_wiki_data.lua`); uniques have no NPC price (`gen_item_prices.py --check`).
@@ -7981,9 +8030,9 @@ the basic melee attack. The rule of the owner: class damage does not move, so `c
 | Warrior | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
 | Juggernaut | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
 | Berserker | 3/3/2 | 8/12/9 | 8/14/12 | 7/5/6 | 8/8/6 | 4/5/2 | 3/3/2 | 6/3/3 | 4/3/1 | 2/7/2* |
-| Thief | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
-| Ninja | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
-| Samurai | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 8/11/8 |
+| Thief | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 9/11/8 |
+| Ninja | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 9/11/8 |
+| Samurai | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 11/10/7 | 6/4/4 | 12/7/6 | 8/8/4 | 9/11/8 |
 | Templar | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
 | Inquisitor | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
 | Sentinel | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
@@ -15698,9 +15747,9 @@ Owner question: does every class have enough weapons? The audit answers it from 
 | Mystic | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
 | Elementalist | 5/135 | 6/215 | 4/182 | 10/565 | 16/132 | 10/146 | 7/100 | 9/152 | 9/100 | 11/100 |
 | Illusionist | 8/135 | 11/215 | 4/182 | 11/565 | 26/132 | 11/146 | 7/100 | 9/152 | 9/100 | 11/100 |
-| Thief * | 60/325 | 68/140 | 73/149 | 43/137 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
-| Ninja * | 60/325 | 68/140 | 73/149 | 43/137 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
-| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 27/113 |
+| Thief * | 60/325 | 68/140 | 73/149 | 43/137 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 28/113 |
+| Ninja * | 60/325 | 68/140 | 73/149 | 43/137 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 28/113 |
+| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 28/113 | 14/100 | 25/125 | 20/114 | 28/113 |
 | Necromancer | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
 | Lich | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
 | Bone Lord | 9/135 | 13/215 | 6/182 | 16/565 | 30/132 | 17/146 | 13/100 | 17/152 | 17/100 | 20/100 |
