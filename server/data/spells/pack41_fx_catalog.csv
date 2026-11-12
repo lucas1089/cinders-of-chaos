@@ -34,21 +34,7 @@ missile,122,rep41_m122,2x2,"0,0",3x3,8,83,"proj_blood_spike (blood) native 32 px
 missile,123,rep41_m123,2x2,"0,0",3x3,8,83,"proj_lightning_bolt (thunder) native 32 px, id 123 (from proj_lightning_bolt/thunder)"
 missile,124,rep41_m124,2x2,"0,0",3x3,8,83,"proj_poison_dart (poison) native 32 px, id 124 (from proj_poison_dart/poison)"
 missile,125,rep41_m125,2x2,"0,0",3x3,8,83,"proj_soul_skull (hellfire) native 32 px, id 125 (from proj_soul_skull/hellfire)"
-missile,189,rep41_m189,3x3,"1,1",3x3,8,83,"proj_bomb (steel) native 32 px, id 189 (from proj_bomb/steel)"
-missile,190,rep41_m190,2x2,"0,0",3x3,8,83,"proj_bone_shards (necrotic) native 32 px, id 190 (from proj_bone_shards/necrotic)"
-missile,191,rep41_m191,3x3,"1,1",3x3,8,83,"proj_bone_spear (bone) native 32 px, id 191 (from proj_bone_spear/bone)"
-missile,192,rep41_m192,3x3,"1,1",3x3,8,83,"proj_comet (celestial) native 32 px, id 192 (from proj_comet/celestial)"
-missile,193,rep41_m193,3x3,"1,1",3x3,8,83,"proj_crossbow_bolt (steel) native 32 px, id 193 (from proj_crossbow_bolt/steel)"
-missile,194,rep41_m194,2x3,"0,1",3x3,8,83,"proj_lava_glob (magma) native 32 px, id 194 (from proj_lava_glob/magma)"
-missile,195,rep41_m195,3x3,"1,1",3x3,8,83,"proj_piercing_arrow (wind) native 32 px, id 195 (from proj_piercing_arrow/wind)"
-missile,196,rep41_m196,2x2,"0,0",3x3,8,83,"proj_razor_leaf (nature) native 32 px, id 196 (from proj_razor_leaf/nature)"
-missile,197,rep41_m197,2x2,"0,0",3x3,8,83,"proj_shuriken (steel) native 32 px, id 197 (from proj_shuriken/steel)"
-missile,198,rep41_m198,3x3,"1,1",3x3,8,83,"proj_spinning_hammer (steel) native 32 px, id 198 (from proj_spinning_hammer/steel)"
-missile,199,rep41_m199,3x3,"1,1",3x3,8,83,"proj_spirit_arrow (spirit) native 32 px, id 199 (from proj_spirit_arrow/spirit)"
 missile,200,rep41_m200,2x2,"0,0",3x3,8,83,"proj_spirit_wisp (spirit) native 32 px, id 200 (from proj_spirit_wisp/spirit)"
-missile,201,rep41_m201,3x3,"1,1",3x3,8,83,"proj_split_arrow (steel) native 32 px, id 201 (from proj_split_arrow/steel)"
-missile,202,rep41_m202,3x3,"1,1",3x3,8,83,"proj_throwing_knife (poison) native 32 px, id 202 (from proj_throwing_knife/poison)"
-missile,203,rep41_m203,3x3,"1,1",3x3,8,83,"proj_wind_blade (wind) native 32 px, id 203 (from proj_wind_blade/wind)"
 missile,251,proj_arrow_fire,3x3,"1,1",3x3,8,83,fire arrow (from proj_arrow/fire)
 missile,252,proj_arrow_frost,3x3,"1,1",3x3,8,83,frost arrow (from proj_arrow/frost)
 missile,253,proj_piercing_arrow_holy,3x3,"1,1",3x3,8,83,holy piercing arrow (from proj_piercing_arrow/holy)
