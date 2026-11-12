@@ -54,6 +54,11 @@ final class UpdateInfo {
     /** The summary card text: code, engine, map master, client update, downloads, site. */
     String summary() {
         StringBuilder b = new StringBuilder();
+        // O530: the repository is private; GitHub answered the VPS with a refusal (private-repo, token-refused, ...)
+        String gh = EngineBuildInfo.refusal(get("github_error") + ":");
+        if (!gh.isEmpty()) {
+            b.append("GitHub: ").append(gh).append('\n');
+        }
         int behind = num(get("behind"));
         String branch = get("branch").isEmpty() ? "main" : get("branch");
         if (behind > 0) {
@@ -202,6 +207,10 @@ final class UpdateInfo {
                 return "A versão nova não ligou. O servidor voltou para a versão anterior e está no ar. O banco ficou "
                         + "com as tabelas novas (só acrescentam). Veja o log em Logs > Atualização.";
             case "failed":
+                String gh = EngineBuildInfo.refusal(p.result);
+                if (!gh.isEmpty()) {
+                    return "Nada foi trocado. " + gh;
+                }
                 return "Nada foi trocado ou o servidor pode estar parado: " + p.result + ". Veja Logs > Atualização.";
             default:
                 return p.result;

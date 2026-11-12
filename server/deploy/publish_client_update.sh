@@ -128,6 +128,10 @@ UNITY_PAIR_FROM=${CHAOS_UPDATE_UNITY_PAIR_FROM:-}
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'publish: %s\n' "$*" >&2; exit 1; }
+# the one door to GitHub (O530): the repository is private, a release asset comes down through the API with the token
+# of the VPS (server/deploy/chaos_github.sh), never from a public download address
+# shellcheck source=/dev/null
+. "$(dirname "$SELF")/chaos_github.sh" || die "no chaos_github.sh next to $SELF"
 usage() { sed -n '2,/^set -euo/p' "$SELF" | sed '$d' | sed 's/^# \{0,1\}//'; }
 isnum() { [[ ${1:-} =~ ^[0-9]{1,9}$ ]]; }
 
@@ -278,12 +282,12 @@ fetch_apk() {
   elif [[ $APK =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] && [[ $APK != *..* ]]; then
     [ -z "$APKINFO" ] || die "--apk-info is for a local --apk file; a release tag brings its own"
     command -v curl >/dev/null || die "curl is missing"
-    local base="https://github.com/$GHREPO/releases/download/$APK"
-    say "download: $base/$APK_ASSET"
-    curl -fL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 --max-filesize 1073741824 \
-      -sS -o "$APKFILE" "$base/$APK_ASSET" || die "download failed ($base/$APK_ASSET)"
-    curl -fL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 --max-filesize 1048576 \
-      -sS -o "$APKJSON" "$base/$APK_INFO_ASSET" || die "download failed ($base/$APK_INFO_ASSET)"
+    say "download: $APK_ASSET of release $APK"
+    chaos_gh_release_asset "$GHREPO" "$APK" "$APK_ASSET" "$APKFILE" 1073741824 \
+      || die "download failed ($APK_ASSET of $APK): $CHAOS_GH_WHY"
+    say "download: $APK_INFO_ASSET of release $APK"
+    chaos_gh_release_asset "$GHREPO" "$APK" "$APK_INFO_ASSET" "$APKJSON" 1048576 \
+      || die "download failed ($APK_INFO_ASSET of $APK): $CHAOS_GH_WHY"
   else
     die "$APK: not a local file and not a release tag"
   fi
@@ -365,11 +369,10 @@ if [ -n "$APK" ]; then fetch_apk; fi
 
 if [ -n "$TAG" ]; then
   command -v curl >/dev/null || die "curl is missing"
-  if [ "$UNITY" = 1 ]; then url="https://github.com/$GHREPO/releases/download/$TAG/$UNITY_ASSET"
-  else url="https://github.com/$GHREPO/releases/download/$TAG/$ASSET"; fi
-  say "download: $url"
-  curl -fL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 --max-filesize 8589934592 \
-    -sS -o "$WORK/dl/client.zip" "$url" || die "download failed ($url)"
+  if [ "$UNITY" = 1 ]; then dlname=$UNITY_ASSET; else dlname=$ASSET; fi
+  say "download: $dlname of release $TAG"
+  chaos_gh_release_asset "$GHREPO" "$TAG" "$dlname" "$WORK/dl/client.zip" 8589934592 \
+    || die "download failed ($dlname of $TAG): $CHAOS_GH_WHY"
   ZIP="$WORK/dl/client.zip"
 fi
 size=$(stat -c %s "$ZIP")

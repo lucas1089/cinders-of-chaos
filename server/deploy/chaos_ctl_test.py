@@ -675,6 +675,7 @@ def main():
     test_discord_bot()
     test_pay()
     test_engine_build()
+    test_github_private()
     test_server_user()
     test_timezone()
     test_launch_check()
@@ -2533,6 +2534,205 @@ answer(404)
         check(not any(token in t or token[11:] in t for t in seen), 'no output of any engine-build command holds the token')
         check(token[11:] not in calls() and 'Bearer' not in calls() and 'github_pat' not in calls(), 'the token is never on a command line')
         check(run('engine-build', 'frobnicate').returncode != 0, 'engine-build: an unknown subcommand is refused')
+
+
+def test_github_private():
+    """github-token-set | github-token-status, admin-desktop-releases | admin-desktop-asset-url (O530, a private repository)"""
+    token = 'github_pat_11ABCDEFG0aBcDeFgHiJkL_mNoPqRsTuVwXyZ0123456789aBcDeFgHiJkLmNoPqRsTuVwXyZ01234'
+    # curl: a fake api.github.com. A private repository answers 404 to a call without the Authorization line.
+    curl = '''#!/usr/bin/env python3
+import json, os, re, sys
+stub = os.environ['STUB']
+args = sys.argv[1:]
+cfg = sys.stdin.read() if '-K' in args else ''
+open(os.path.join(stub, 'calls'), 'a').write('curl ' + ' '.join(args) + '\\n')
+open(os.path.join(stub, 'curl.stdin'), 'a').write(cfg + '\\n--\\n')
+out = args[args.index('-o') + 1] if '-o' in args else None
+url = re.search(r'url = "([^"]+)"', cfg).group(1)
+def read(name, default=''):
+    p = os.path.join(stub, name)
+    return open(p).read() if os.path.exists(p) else default
+def answer(code, body=''):
+    if out and out != '/dev/null':
+        open(out, 'w').write(body)
+    sys.stdout.write(str(code))
+    sys.exit(0)
+private = os.path.exists(os.path.join(stub, 'private'))
+authed = 'Authorization: Bearer ' in cfg
+if private and not authed:
+    answer(404, '{}')
+if re.search(r'/repos/o/r$', url):
+    answer(read('repo.code', '200').strip(), '{}')
+if re.search(r'/repos/o/r/branches/main$', url):
+    answer(read('contents.code', '200').strip(), '{}')
+if re.search(r'/actions/workflows/windows-package\\.yml$', url):
+    answer(read('actions.code', '200').strip(), '{}')
+if re.search(r'/repos/o/r/releases\\?per_page=\\d+$', url):
+    answer(read('rel.code', '200').strip(), read('releases.json', '[]'))
+m = re.search(r'/repos/o/r/releases/tags/(.+)$', url)
+if m:
+    for r in json.loads(read('releases.json', '[]')):
+        if r['tag_name'] == m.group(1):
+            answer(200, json.dumps(r))
+    answer(404, '{}')
+m = re.search(r'/repos/o/r/releases/assets/(\\d+)$', url)
+if m:
+    sys.stdout.write('302 https://objects.example.org/signed/' + m.group(1) + '?sig=SIGNED')
+    sys.exit(0)
+answer(404)
+'''
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        os.makedirs(stub)
+        p = os.path.join(stub, 'curl')
+        with open(p, 'w') as f:
+            f.write(curl)
+        os.chmod(p, 0o755)
+        tfile = os.path.join(tmp, 'etc', 'github.token')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=os.path.join(tmp, 'chaos.env'),
+                   CHAOS_REPO=os.path.join(tmp, 'repo'), CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_KIT_STATE=os.path.join(tmp, 'kit-state'), CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'),
+                   CHAOS_LOG=os.path.join(tmp, 'no.log'), CHAOS_SITE_DIR=os.path.join(tmp, 'site'),
+                   CHAOS_GITHUB_TOKEN_FILE=tfile, CHAOS_RELEASE_REPO='o/r', GIT_CONFIG_GLOBAL='/dev/null',
+                   GIT_CONFIG_SYSTEM='/dev/null')
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'CHAOS_BACKUP_DIR',
+                  'CHAOS_UPDATE_BRANCH', 'CHAOS_ENGINE_TOKEN_FILE'):
+            env.pop(k, None)
+        seen = []
+
+        def run(*args, stdin=None, extra=None):
+            r = subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), input=stdin,
+                               capture_output=True, text=True)
+            seen.append(r.stdout + r.stderr)
+            return r
+
+        def put(name, text):
+            with open(os.path.join(stub, name), 'w') as f:
+                f.write(text)
+
+        def drop(name):
+            if os.path.exists(os.path.join(stub, name)):
+                os.remove(os.path.join(stub, name))
+
+        def kv(out):
+            d = {}
+            for line in out.splitlines():
+                if '=' in line:
+                    k, v = line.split('=', 1)
+                    d.setdefault(k, v)
+            return d
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        # a public repository: nothing is needed
+        st = kv(run('github-token-status').stdout)
+        check(st.get('token') == 'no' and st.get('private') == 'no' and st.get('ready') == 'yes' and st.get('contents') == 'none',
+              'status, public repository, no token: %s' % st)
+        # the repository turns private
+        put('private', '')
+        r = run('github-token-status')
+        st = kv(r.stdout)
+        check(r.returncode == 0 and st.get('private') == 'yes' and st.get('ready') == 'no' and st.get('error', '').startswith('private-repo:')
+              and 'github-token-set' in st.get('error', ''), 'status, private repository, no token: ' + r.stdout)
+        # the admin app's questions get the word the app translates
+        r = run('admin-desktop-releases')
+        check(r.returncode != 0 and 'chaos-ctl: private-repo:' in r.stderr, 'admin-desktop-releases without a token: ' + r.stderr)
+        r = run('admin-desktop-asset-url', 'admin-desktop-v0.4.2', 'cinders-admin.exe')
+        check(r.returncode != 0 and 'private-repo' in r.stderr, 'admin-desktop-asset-url without a token: ' + r.stderr)
+        r = run('engine-build')
+        check(r.returncode == 1 and 'error=private-repo:' in r.stdout, 'engine-build status without a token on a private repository: ' + r.stdout)
+
+        # github-token-set: one line on stdin, a real shape, Contents checked before it is kept
+        for bad in ('ghp_short', 'not a token', token + '$(id)', 'github_pat_xx'):
+            r = run('github-token-set', stdin=bad + '\n')
+            check(r.returncode != 0 and not os.path.exists(tfile), 'github-token-set refuses %r' % bad)
+        r = run('github-token-set', stdin=token + '\nsecond\n')
+        check(r.returncode != 0 and not os.path.exists(tfile), 'a second line is refused')
+        check(run('github-token-set', token).returncode != 0 and not os.path.exists(tfile), 'a value on the command line is no input')
+        put('contents.code', '401')
+        r = run('github-token-set', stdin=token + '\n')
+        check(r.returncode != 0 and 'token-refused' in r.stderr and not os.path.exists(tfile), 'Contents 401 saves nothing: ' + r.stderr)
+        put('contents.code', '404')
+        r = run('github-token-set', stdin=token + '\n')
+        check(r.returncode != 0 and 'no-access' in r.stderr and 'Contents read' in r.stderr and not os.path.exists(tfile),
+              'Contents 404 saves nothing: ' + r.stderr)
+        drop('contents.code')
+        put('actions.code', '403')
+        r = run('github-token-set', stdin='  ' + token + '  \r\n')
+        check(r.returncode == 0 and open(tfile).read() == token + '\n' and 'Contents: ok' in r.stdout
+              and 'Actions: no access' in r.stdout, 'a token without Actions is kept for the updates: ' + r.stdout + r.stderr)
+        drop('actions.code')
+        check(stat.S_IMODE(os.stat(tfile).st_mode) == 0o600, 'the token file is mode 600')
+        r = run('github-token-set', stdin=token + '\n')
+        check(r.returncode == 0 and 'Contents: ok. Actions: ok' in r.stdout, 'saved with both: ' + r.stdout)
+        check('Authorization: Bearer ' + token in open(os.path.join(stub, 'curl.stdin')).read(), 'the token reaches curl on its stdin')
+        st = kv(run('github-token-status').stdout)
+        check(st.get('token') == 'yes' and st.get('private') == 'yes' and st.get('contents') == 'ok' and st.get('actions') == 'ok'
+              and st.get('ready') == 'yes' and 'error' not in st, 'status with the token: %s' % st)
+        put('contents.code', '404')
+        st = kv(run('github-token-status').stdout)
+        check(st.get('contents') == 'no-access' and st.get('ready') == 'no' and st.get('error', '').startswith('no-access:'),
+              'status: a token that lost the repository: %s' % st)
+        drop('contents.code')
+
+        # the releases for the desktop app, through the token
+        rels = [
+            {'tag_name': 'winpkg-900', 'draft': False, 'assets': [{'id': 1, 'name': 'CindersOfChaos-Server-Linux.tar.gz', 'size': 5}]},
+            {'tag_name': 'admin-desktop-v0.4.2', 'draft': False, 'assets': [
+                {'id': 11, 'name': 'cinders-admin.exe', 'size': 100, 'browser_download_url': 'https://github.com/x/y'},
+                {'id': 12, 'name': 'cinders-admin.exe.sig', 'size': 90}, {'id': 13, 'name': 'other.bin', 'size': 1}]},
+            {'tag_name': 'admin-desktop-v0.5.0', 'draft': True, 'assets': []},
+            {'tag_name': 'admin-desktop-v$(id)', 'draft': False, 'assets': []}]
+        put('releases.json', json.dumps(rels))
+        r = run('admin-desktop-releases')
+        got = json.loads(r.stdout) if r.returncode == 0 else None
+        check(got == [{'tag_name': 'admin-desktop-v0.4.2', 'draft': False, 'assets': [
+            {'name': 'cinders-admin.exe', 'size': 100}, {'name': 'cinders-admin.exe.sig', 'size': 90}]},
+            {'tag_name': 'admin-desktop-v0.5.0', 'draft': True, 'assets': []}],
+              'admin-desktop-releases: only the admin-desktop releases, names and sizes, no addresses: ' + r.stdout + r.stderr)
+        put('rel.code', '500')
+        r = run('admin-desktop-releases')
+        check(r.returncode != 0 and 'github-unreachable' in r.stderr, 'GitHub down: ' + r.stderr)
+        drop('rel.code')
+        check(run('admin-desktop-releases', 'x').returncode != 0, 'admin-desktop-releases takes no argument')
+
+        # the signed address of one asset
+        r = run('admin-desktop-asset-url', 'admin-desktop-v0.4.2', 'cinders-admin.exe.sig')
+        check(r.returncode == 0 and r.stdout == 'https://objects.example.org/signed/12?sig=SIGNED\n', 'admin-desktop-asset-url: ' + r.stdout + r.stderr)
+        cfgs = [c for c in open(os.path.join(stub, 'curl.stdin')).read().split('\n--\n') if 'releases/assets/12' in c]
+        check(cfgs and 'Accept: application/octet-stream' in cfgs[0] and 'Authorization: Bearer ' + token in cfgs[0],
+              'the asset question asks for the octet-stream with the token')
+        r = run('admin-desktop-asset-url', 'admin-desktop-v0.4.2', 'other.bin')
+        check(r.returncode != 0, 'a file that is not a cinders-admin file is refused')
+        r = run('admin-desktop-asset-url', 'admin-desktop-v0.4.2', 'cinders-admin.zip')
+        check(r.returncode != 0 and 'no-asset' in r.stderr, 'an asset the release lacks: ' + r.stderr)
+        r = run('admin-desktop-asset-url', 'winpkg-900', 'cinders-admin.exe')
+        check(r.returncode != 0 and 'admin-desktop-v' in r.stderr, 'only an admin-desktop tag')
+        r = run('admin-desktop-asset-url', 'admin-desktop-v9.9.9', 'cinders-admin.exe')
+        check(r.returncode != 0 and 'no-release' in r.stderr, 'a release that does not exist: ' + r.stderr)
+        check(run('admin-desktop-asset-url', 'admin-desktop-v0.4.2').returncode != 0, 'two arguments are needed')
+
+        # the old name writes the same file; the legacy setting still names the file
+        os.remove(tfile)
+        put('actions.code', '200')
+        r = run('engine-build-token-set', stdin=token + '\n')
+        check(r.returncode == 0 and open(tfile).read() == token + '\n', 'engine-build-token-set keeps the same token file: ' + r.stdout + r.stderr)
+        legacy = os.path.join(tmp, 'etc', 'engine-build.token')
+        r = run('github-token-set', stdin=token + '\n', extra={'CHAOS_GITHUB_TOKEN_FILE': '', 'CHAOS_ENGINE_TOKEN_FILE': legacy})
+        check(r.returncode == 0 and os.path.exists(legacy), 'CHAOS_ENGINE_TOKEN_FILE still names the file: ' + r.stdout + r.stderr)
+
+        # removing the token
+        r = run('github-token-set', stdin='\n')
+        check(r.returncode == 0 and not os.path.exists(tfile) and 'removed' in r.stdout, 'an empty line removes the file')
+        st = kv(run('github-token-status').stdout)
+        check(st.get('token') == 'no' and st.get('ready') == 'no', 'status after removing: %s' % st)
+
+        # never in an output, never on a command line
+        check(not any(token in t or token[11:] in t for t in seen), 'no output holds the token')
+        check(token[11:] not in calls() and 'Bearer' not in calls(), 'the token is never on a command line')
 
 
 def test_discord_bot():

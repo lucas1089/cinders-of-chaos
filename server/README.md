@@ -23908,9 +23908,10 @@ script re-runs itself with `sudo -n`, which drops the environment.
   A new engine comes from a new `winpkg-N` release, so the update has a step before it, the engine rebuild (O436):
   `chaos-ctl.sh engine-build [status | start [--client-build N] | log [N]]` dispatches `windows-package.yml` on
   `CHAOS_UPDATE_BRANCH` through the GitHub REST API (`POST /repos/{repo}/actions/workflows/windows-package.yml/dispatches`)
-  with the token of `engine-build-token-set` (stdin only; a fine-grained token for this repository, Actions read and write;
-  checked at GitHub before it is kept; `CHAOS_ENGINE_TOKEN_FILE`, default `/etc/chaos/engine-build.token`, root only, mode
-  600; never printed, never on a command line: curl reads its `Authorization` header from a config line on stdin). `start`
+  with the token of `github-token-set` (O530, "Private repository" below; `engine-build-token-set` is the same command under its
+  old name; stdin only; a fine-grained token for this repository, Actions read and write among others; checked at GitHub before
+  it is kept; root only, mode 600; never printed, never on a command line: curl reads its `Authorization` header from a config
+  line on stdin). `start`
   refuses while the newest run of the workflow on the branch is queued or in progress (also one started on GitHub's
   page), sends only `client_build` and `allow_dev_key=false` (every other input keeps the workflow's default), and waits up
   to 30 s for the run to appear. `status` prints key=value lines (`state` none | queued | in_progress | success | failure |
@@ -32991,3 +32992,56 @@ Our map editor borders our 12 pack grounds by itself. Before, the owner placed a
   the palette `Cinders` (terrain), choose "cinders thick lush grass", paint a patch on stock grass or dirt; next to it paint
   "cinders loam" or "cinders fine sand". The border pieces must appear on the lower tiles by themselves (automagic on). If a
   corner looks wrong, say which ground and which corner: the mapping is one table (`PIECE_OF`) in the script.
+
+## Private repository (O530) (`server/deploy/chaos_github.sh`, `chaos-ctl.sh github-token-set`, `github-token-status`, `admin-desktop-releases`, `admin-desktop-asset-url`, `chaos_github_test.py`)
+
+The repository `lucas1089/cinders-of-chaos` is private (owner 2026-11-12). Unauthenticated GitHub answers 404 to every
+read, so each access the VPS and the admin apps made without a token broke: the desktop app's self-update ("Sem checagem
+de versao: download failed (exit code: 22) ... 404"), the `git fetch` of the server update, the releases API and the
+asset downloads of the kit update, the zip and APK downloads of `publish_client_update.sh`, the pair fetch.
+
+**One secret.** A fine-grained token of this one repository: Contents read, Metadata read, Actions read and write (Actions
+only for `engine-build`; without it every other access works). Create it at GitHub > Settings > Developer settings >
+Fine-grained tokens, repository access "Only select repositories": `lucas1089/cinders-of-chaos`. One line in a root-only file
+(mode 600): `CHAOS_GITHUB_TOKEN_FILE`, else `CHAOS_ENGINE_TOKEN_FILE` (the setting of before), else `/etc/chaos/github.token`,
+else an existing `/etc/chaos/engine-build.token`. Set it from the admin app first (Painel > Recompilar engine > Definir
+token do GitHub; desktop: Atualizacoes > Repositorio privado > Definir token do GitHub), shell as the fallback:
+`read -rs T; printf '%s\n' "$T" | sudo chaos-ctl.sh github-token-set` (an empty line removes it, from every default file).
+The VPS checks the shape and asks GitHub for the branch (Contents; a refused token is not saved) and for the workflow
+(Actions; only a warning). `github-token-status` prints `token`, `file`, `repo`, `private` (asked without the token),
+`contents`, `actions`, `ready` and an `error` word. The token never goes on a command line, in a log, in the output, in a
+test or in `.git/config`.
+
+**One door.** `chaos_github.sh` is sourced by `chaos-ctl.sh`, `chaos_update.sh`, `chaos_kit_update.sh` and
+`publish_client_update.sh`; nothing else on the VPS talks to GitHub (the Windows and Android builds run in GitHub Actions
+with their own `GITHUB_TOKEN`; `website/install_site.sh` and the vcpkg and RmlUi clones fetch public third-party sources).
+- `git`: `chaos_gh_git` adds `-c credential.helper=<shell text>` (after an empty `credential.helper=` that drops every other
+  helper) and `GIT_TERMINAL_PROMPT=0`. The helper answers only for `protocol=https` and `host=github.com` and reads the token
+  file at the moment git asks; the remote URL and `.git/config` stay as they were. Without a token it is plain git.
+- API: `chaos_gh_api` gives curl its config (the URL, the headers, `Authorization: Bearer ...`) on stdin: the token is in no
+  `ps`. Release assets: `GET /repos/R/releases/assets/ID` with `Accept: application/octet-stream` answers 302 with a
+  signed address; curl is not told to follow (it would not drop the header on every host), `chaos_gh_download` reads the
+  address and downloads it in a second call without any token. `browser_download_url` is never used.
+- Refusals have one vocabulary (`chaos_gh_explain`): `private-repo` (no token saved and GitHub says 401, 403 or 404),
+  `token-refused` (401), `no-access` (403 or 404 with a token, or git refused although the repository answers),
+  `github-unreachable`, `no-release`, `no-asset`. The apps show `private-repo` as "Repositorio privado: defina o token do
+  GitHub". `update-check` adds `github_error=WORD` when the releases could not be read; `update-apply` stops with the word
+  in its RESULT line.
+
+**The desktop app's self-update** asks the VPS and holds no token: `chaos-ctl.sh admin-desktop-releases` prints the JSON of
+the `admin-desktop-v*` releases (tag, draft, asset names, sizes; no addresses), `admin-desktop-asset-url TAG NAME` prints the
+signed address of one `cinders-admin*` file (valid a few minutes; asked right before each download). The app downloads that
+address with curl (https only) and still checks the Ed25519 signature of `sign.rs` before it swaps the program. The Android
+admin app has no self-update (its APK is a release the owner installs by hand), so it needs no change there. Players
+download nothing from GitHub: the client updater, the launcher, the APK (`publish-apk`) and the site downloads are served
+from the VPS (`updates/`, `dl/`); the VPS fetches them from the release with the token when the owner publishes.
+
+**First time.** A VPS with the old `chaos-ctl.sh` cannot fetch the new code. `docs/ADMIN_APP.md` "Primeira vez" has the one
+`git pull` that passes the token through `GIT_CONFIG_*` environment variables (never a command line or a URL). The desktop
+app v0.4.1 cannot update itself: install the next one by hand from the Releases page, logged in.
+
+Tests: `python3 -I server/deploy/chaos_github_test.py` (the library: token file order, the credential helper through
+`git credential fill` for github.com, other hosts, plain http and no token; no token on any command line; the words; the
+asset download), `chaos_ctl_test.py` `test_github_private` (token set and clear, status, `admin-desktop-*`, the 404 without a
+token), `chaos_kit_update_test.py` (the whole update through the token, `github_error`), `publish_client_update_test.py` (tag
+download through the API, token only on the API calls), `desktop/src/update.rs` and `EngineBuildInfoTest.java`.

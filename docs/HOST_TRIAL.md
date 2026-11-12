@@ -49,14 +49,30 @@ Total: umas 3 horas de máquina e 30 minutos seus. Rode o teste do host duas vez
 
 Mais fácil: baixar tudo direto no VPS. Não precisa do PC.
 
+O repositório é **privado** (O530): sem login o GitHub responde 404 ao `git clone` e ao download da release. Crie o
+token de `docs/ADMIN_APP.md` ("Repositório privado e o token do GitHub": só este repositório, Contents e Metadata
+leitura) e cole-o quando o `read` pedir (nada aparece na tela e ele não vai para o histórico nem para uma linha de
+comando):
+
 ```
-apt-get update && apt-get install -y git screen curl
+apt-get update && apt-get install -y git screen curl python3
 mkdir -p /opt/chaos /opt/chaos-trial
+read -rs -p "token: " T; echo
+export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0= \
+  GIT_CONFIG_KEY_1=http.extraHeader GIT_CONFIG_VALUE_1="Authorization: Basic $(printf 'x-access-token:%s' "$T" | base64 -w0)"
 git clone --depth 1 https://github.com/lucas1089/cinders-of-chaos.git /opt/chaos/repo
-curl -L -o /root/CindersOfChaos-Server-Linux.tar.gz \
-  https://github.com/lucas1089/cinders-of-chaos/releases/download/winpkg-35/CindersOfChaos-Server-Linux.tar.gz
+unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0 GIT_CONFIG_KEY_1 GIT_CONFIG_VALUE_1
+printf 'Authorization: Bearer %s\n' "$T" > /root/.gh-header; chmod 600 /root/.gh-header
+R=https://api.github.com/repos/lucas1089/cinders-of-chaos
+AID=$(curl -fsS -H @/root/.gh-header $R/releases/tags/winpkg-35 | python3 -c 'import json,sys; print([a["id"] for a in json.load(sys.stdin)["assets"] if a["name"] == "CindersOfChaos-Server-Linux.tar.gz"][0])')
+URL=$(curl -sS -o /dev/null -w '%{redirect_url}' -H @/root/.gh-header -H 'Accept: application/octet-stream' $R/releases/assets/$AID)
+curl -fL -o /root/CindersOfChaos-Server-Linux.tar.gz "$URL"
+rm -f /root/.gh-header; unset T
 screen -S teste
 ```
+
+Depois da instalação o token vai para `/etc/chaos/github.token` (`chaos-ctl.sh github-token-set`, ou o app) e as
+atualizações seguintes usam só o `chaos-ctl.sh`.
 
 Ou, a partir do seu PC, na pasta do repositório:
 
