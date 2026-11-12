@@ -109,6 +109,20 @@ end
 local iai = readFile("data/spells/chaos/samurai/iaijutsu.lua") or ""
 ok(iai:find("p50_yellow_rune_ring_1_4144", 1, true) ~= nil, "Iaijutsu gathers in gold")
 ok(iai:find("sendMagicEffect(CONST_ME_YELLOWENERGY)", 1, true) ~= nil, "Iaijutsu keeps the stock constant as the fallback")
+-- the owner's donor client effects (O525): the id file is loaded by ChaosPack36Fx.live, every name has an offset inside its picture
+ok(ChaosVfx.donor_ice_hit_489 ~= nil, "live: a donor effect name is known")
+local donorCount = 0
+for name, e in pairs(ChaosVfx) do
+	if name:match("^donor_") then
+		donorCount = donorCount + 1
+		ok(e.id > 4701 and e.dx >= 0 and e.dy >= 0 and e.ms > 0, "donor effect " .. name .. " has an id past pair 65 and an offset")
+	end
+end
+eq(donorCount, 40, "40 donor effects")
+eq(C.swapFor(38, "fx", "ice_shatter"), "donor_ice_hit_489", "Mirror Shards sends the donor ice burst")
+eq(C.swapFor(202, "fx", "lightning_strike"), "donor_energy_strike_632", "Forked Storm sends the donor lightning strike")
+local iaiDonor = readFile("data/spells/chaos/samurai/iaijutsu.lua") or ""
+ok(iaiDonor:find("donor_holy_ring_449", 1, true) ~= nil, "Iaijutsu gathers in the donor gold ring first")
 local snares = readFile("data/spells/chaos/_snares.lua") or ""
 ok(snares:find("MINE_MARK", 1, true) ~= nil, "a set mine shows its element")
 
