@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "looks": [
+    {"look": 3019, "name": "ghoul", "scale": 2, "groups": [0, 1]},
+    {"look": 2975, "name": "skeleton", "scale": 2, "groups": [0, 1]},
+    {"look": 15, "name": "troll", "scale": 2, "groups": [0, 1]}
+  ]
+}

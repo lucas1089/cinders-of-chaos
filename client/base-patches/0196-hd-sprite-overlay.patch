@@ -1,0 +1,592 @@
+# Chaos: HD sprite overlay, a finer picture for a sprite id in the same rectangle (O539; client/BASE.md "0196"; src/client/chaoshdoverlay.h (new, pure),
+# spritemanager.h/.cpp, thingtype.cpp, luafunctions_client.cpp, mods/client_settings dataset.lua and options/graphics.otui; after 0001-0195).
+# The 32 px sprites of the pair and the .dat / .spr stay as they are. A parallel overlay (data/hd/index.txt and atlas PNGs, made by
+# client/tools/sprites/gen_hd_overlay.py) maps a sprite id to a square tile of an atlas, 32 * scale px a side (scale 2 or 4).
+#  * Hook: SpriteManager::getSpriteImage, the place 0027 (xBRZ) builds a sprite's image. On a cache miss a sprite with a tile gets that
+#    tile instead of the 32 px sprite or its xBRZ copy, resampled to the size one sprite has now (spriteSize: 32, or 64 with HD Sprite
+#    Upscaling): a 64 px tile on 64 is a copy, a 128 px tile (4x) on 64 is the mean of 2 x 2 (alpha weighted), a 64 px tile on 32 the
+#    mean as well, a smaller tile on a bigger size is nearest. So at every size the engine draws a sprite the rectangle is the same as
+#    before and the thing builders see the size they always see; the detail shows with HD Sprite Upscaling on
+#    (the PC default).
+#  * Slots: a sprite id cannot reach a tile the pair leaves empty (id 0), a sprite that other things draw too, or a sprite one thing repeats
+#    with another picture. The index has `slot <category> <thing id> <sprite index> <sprite id> <atlas> <x> <y> <scale>` records for those
+#    places; ThingType::getTexture (its one in-game sprite loop) asks g_sprites.getHdSlotImage(category, id, index, sprite id) before the
+#    sprite, and a slot whose sprite id is not the one the pair has there now is ignored. A slot wins over a `sprite` record.
+#  * Safety: the index stores the crc32 of the 32x32 RGBA bytes of the pair's sprite the tile was cut for; a sprite id that a later
+#    pair gave another picture shows the plain sprite (one log line; 00000000 = unchecked). A missing or bad index or atlas draws
+#    the plain sprites, nothing else changes.
+#  * Lua: g_sprites.loadHdOverlay(dir) (dir/index.txt, atlases next to it, read when a sprite is first drawn) returns the number of
+#    mapped sprites; unloadHdOverlay(), setHdOverlayEnabled(bool), isHdOverlayEnabled(), getHdOverlayCount(), hasHdSprite(id).
+#    Creatures only for now (the art), but the key is a sprite id, so items and effects work the same.
+#  * Option "HD monsters" (dataset.lua `hdMonsters`, default on, Options > Graphics under HD Sprite Upscaling): its apply tells the
+#    overlay module game_hdsprites (onOption), which sets the switch before the sprites load; changing it asks for a restart like
+#    hdmodeBox. The module turns it off once on a phone (g_app.isMobile), like the phone defaults of game_visualfx.
+# Cost: one tile cut and resampled per sprite first drawn, then the image cache of 0027 holds it; no per frame work.
+# Checked: applies after 0001-0195 on the base client tree (no fuzz); spritemanager.cpp, thingtype.cpp and luafunctions_client.cpp pass
+# g++ -std=c++20 -fsyntax-only; the header passes client/tools/chaoshdoverlay_test.cpp. Not built, linked or run in a client.
+diff -ru a/src/client/chaoshdoverlay.h b/src/client/chaoshdoverlay.h
+--- /dev/null
++++ b/src/client/chaoshdoverlay.h
+@@ -0,0 +1,273 @@
++// Cinders of Chaos (base patch 0196): the HD sprite overlay. Pure and header-only so client/tools/chaoshdoverlay_test.cpp can
++// run it without the engine.
++// A parallel set of high resolution pictures keyed by sprite id: the 32 px sprites of the pair stay as they are, and the
++// overlay maps a sprite id to a square tile of an atlas PNG, 32 * scale px a side (scale 2 or 4). SpriteManager::getSpriteImage
++// returns that picture, resampled to the size one sprite has now (spriteSize), instead of the sprite or its xBRZ upscale, so
++// the thing is drawn in the same rectangle with finer detail.
++// Index file (UTF-8 text, one record a line, '#' starts a comment, written by client/tools/sprites/gen_hd_overlay.py):
++//   chaos-hd-overlay 1
++//   atlas <n> <file name next to the index>
++//   sprite <id> <atlas n> <x> <y> <scale> <crc32 of the 32x32 RGBA bytes of the pair's sprite, 8 hex digits, 00000000 = unchecked>
++//   slot <category> <thing id> <sprite index> <sprite id> <atlas n> <x> <y> <scale>
++// A `sprite` line is for a sprite id that only one picture of one thing uses. The crc (spriteCrc) keeps its tile from showing on a
++// sprite id that a later pair gave another picture. A `slot` line is for the places a sprite id cannot reach: a place with no
++// sprite (id 0: the pair's art leaves that tile empty), a sprite that other things draw too, and a sprite that a thing repeats
++// with another tile. It names the place itself: the thing (category 0 item, 1 creature, 2 effect, 3 missile; id as the dat
++// numbers it) and the index into its sprite list, and the sprite id the pair has there now (0 for none), so a pair that moves
++// things around hides the tile. A slot wins over a `sprite` line.
++#ifndef CHAOSHDOVERLAY_H
++#define CHAOSHDOVERLAY_H
++
++#include <cstdint>
++#include <cstdlib>
++#include <cstring>
++#include <sstream>
++#include <string>
++#include <unordered_map>
++#include <vector>
++
++namespace chaos {
++namespace hdoverlay {
++
++constexpr int kBase = 32;        // a sprite of the pair
++constexpr int kMaxScale = 8;     // 32 * 8 = 256 px a tile, more is refused
++constexpr size_t kMaxSprites = 400000;
++constexpr size_t kMaxAtlases = 4096;
++
++struct Entry
++{
++    uint16_t atlas = 0;
++    uint16_t x = 0;
++    uint16_t y = 0;
++    uint8_t scale = 2;
++    uint32_t crc = 0;
++};
++
++inline uint64_t slotKey(unsigned category, unsigned thingId, unsigned index)
++{
++    return (static_cast<uint64_t>(category) << 40) | (static_cast<uint64_t>(thingId) << 20) | static_cast<uint64_t>(index);
++}
++
++struct Slot
++{
++    uint32_t sprite = 0;       // the sprite id the pair has at this place (0: none)
++    Entry tile;
++};
++
++struct Index
++{
++    std::vector<std::string> atlases;
++    std::unordered_map<uint32_t, Entry> sprites;
++    std::unordered_map<uint64_t, Slot> slots;
++    std::string error;
++    bool ok() const { return error.empty(); }
++};
++
++// CRC-32 (IEEE, the zlib one) of a byte run
++inline uint32_t crc32(const uint8_t* data, size_t size)
++{
++    uint32_t crc = 0xFFFFFFFFu;
++    for (size_t i = 0; i < size; ++i) {
++        crc ^= data[i];
++        for (int k = 0; k < 8; ++k)
++            crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
++    }
++    return ~crc;
++}
++
++// the crc of a sprite of the pair: its 32x32 RGBA bytes with the colour of a transparent pixel taken as 0 (the pair and the
++// decoder need not agree on what lies under alpha 0)
++inline uint32_t spriteCrc(const uint8_t* rgba, size_t pixels)
++{
++    uint32_t crc = 0xFFFFFFFFu;
++    for (size_t i = 0; i < pixels; ++i) {
++        const uint8_t* p = rgba + i * 4;
++        const uint8_t px[4] = { static_cast<uint8_t>(p[3] ? p[0] : 0), static_cast<uint8_t>(p[3] ? p[1] : 0),
++                                static_cast<uint8_t>(p[3] ? p[2] : 0), p[3] };
++        for (int b = 0; b < 4; ++b) {
++            crc ^= px[b];
++            for (int k = 0; k < 8; ++k)
++                crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
++        }
++    }
++    return ~crc;
++}
++
++inline bool validAtlasName(const std::string& name)
++{
++    if (name.empty() || name.size() > 120 || name[0] == '.')
++        return false;
++    for (char c : name) {
++        if (c == '/' || c == '\\' || c == ':' || static_cast<unsigned char>(c) < 32)
++            return false;
++    }
++    return true;
++}
++
++inline bool parseUnsigned(const std::string& s, unsigned long long maxValue, int base, unsigned long long& out)
++{
++    if (s.empty() || s.size() > 12)
++        return false;
++    char* end = nullptr;
++    out = std::strtoull(s.c_str(), &end, base);
++    return end && *end == 0 && out <= maxValue && s[0] != '-' && s[0] != '+';
++}
++
++// Reads the index text. Stops at the first bad line and says which in `error`; what was read before stays.
++inline Index parseIndex(const std::string& text)
++{
++    Index index;
++    std::istringstream in(text);
++    std::string line;
++    int lineNo = 0;
++    bool header = false;
++    auto fail = [&](const std::string& why) { index.error = "line " + std::to_string(lineNo) + ": " + why; };
++    while (std::getline(in, line)) {
++        ++lineNo;
++        if (!line.empty() && line.back() == '\r')
++            line.pop_back();
++        if (line.empty() || line[0] == '#')
++            continue;
++        std::istringstream ls(line);
++        std::vector<std::string> w;
++        std::string t;
++        while (ls >> t)
++            w.push_back(t);
++        if (!header) {
++            if (w.size() != 2 || w[0] != "chaos-hd-overlay" || w[1] != "1") {
++                fail("not a chaos-hd-overlay 1 file");
++                return index;
++            }
++            header = true;
++        } else if (w[0] == "atlas") {
++            unsigned long long n;
++            if (w.size() != 3 || !parseUnsigned(w[1], kMaxAtlases, 10, n) || n != index.atlases.size() || !validAtlasName(w[2])) {
++                fail("bad atlas line");
++                return index;
++            }
++            index.atlases.push_back(w[2]);
++        } else if (w[0] == "sprite") {
++            unsigned long long id, atlas, x, y, scale, crc;
++            if (w.size() != 7 || !parseUnsigned(w[1], 0xFFFFFFFFull, 10, id) || id == 0 || !parseUnsigned(w[2], 65535, 10, atlas) ||
++                !parseUnsigned(w[3], 65535, 10, x) || !parseUnsigned(w[4], 65535, 10, y) || !parseUnsigned(w[5], kMaxScale, 10, scale) ||
++                scale < 1 || w[6].size() != 8 || !parseUnsigned(w[6], 0xFFFFFFFFull, 16, crc)) {
++                fail("bad sprite line");
++                return index;
++            }
++            if (atlas >= index.atlases.size()) {
++                fail("sprite names an atlas that is not declared");
++                return index;
++            }
++            if (index.sprites.size() >= kMaxSprites) {
++                fail("too many sprites");
++                return index;
++            }
++            Entry e;
++            e.atlas = static_cast<uint16_t>(atlas);
++            e.x = static_cast<uint16_t>(x);
++            e.y = static_cast<uint16_t>(y);
++            e.scale = static_cast<uint8_t>(scale);
++            e.crc = static_cast<uint32_t>(crc);
++            index.sprites[static_cast<uint32_t>(id)] = e;
++        } else if (w[0] == "slot") {
++            unsigned long long cat, thing, idx, sprite, atlas, x, y, scale;
++            if (w.size() != 9 || !parseUnsigned(w[1], 3, 10, cat) || !parseUnsigned(w[2], 65535, 10, thing) || thing == 0 ||
++                !parseUnsigned(w[3], 65535, 10, idx) || !parseUnsigned(w[4], 0xFFFFFFFFull, 10, sprite) ||
++                !parseUnsigned(w[5], 65535, 10, atlas) || !parseUnsigned(w[6], 65535, 10, x) || !parseUnsigned(w[7], 65535, 10, y) ||
++                !parseUnsigned(w[8], kMaxScale, 10, scale) || scale < 1) {
++                fail("bad slot line");
++                return index;
++            }
++            if (atlas >= index.atlases.size()) {
++                fail("slot names an atlas that is not declared");
++                return index;
++            }
++            if (index.slots.size() >= kMaxSprites) {
++                fail("too many slots");
++                return index;
++            }
++            Slot sl;
++            sl.sprite = static_cast<uint32_t>(sprite);
++            sl.tile.atlas = static_cast<uint16_t>(atlas);
++            sl.tile.x = static_cast<uint16_t>(x);
++            sl.tile.y = static_cast<uint16_t>(y);
++            sl.tile.scale = static_cast<uint8_t>(scale);
++            index.slots[slotKey(static_cast<unsigned>(cat), static_cast<unsigned>(thing), static_cast<unsigned>(idx))] = sl;
++        } else {
++            fail("unknown record '" + w[0] + "'");
++            return index;
++        }
++    }
++    if (!header)
++        index.error = "empty index";
++    return index;
++}
++
++// Copies the tile at (x, y), size px a side, out of an RGBA atlas. False when it does not lie inside the atlas.
++inline bool cropTile(const uint8_t* atlas, int atlasW, int atlasH, int x, int y, int size, std::vector<uint8_t>& out)
++{
++    if (!atlas || size <= 0 || x < 0 || y < 0 || x + size > atlasW || y + size > atlasH)
++        return false;
++    out.resize(static_cast<size_t>(size) * size * 4);
++    for (int row = 0; row < size; ++row)
++        std::memcpy(&out[static_cast<size_t>(row) * size * 4], atlas + (static_cast<size_t>(y + row) * atlasW + x) * 4, static_cast<size_t>(size) * 4);
++    return true;
++}
++
++// Resamples a square RGBA tile to dst x dst px. Same size: a copy. Smaller: the mean of the covered source area, colour
++// weighted by alpha (premultiplied), so an edge does not pick up the colour of the clear pixels. Larger: nearest, so the
++// pixel edges of the art stay hard.
++inline void resample(const uint8_t* src, int srcSize, std::vector<uint8_t>& dst, int dstSize)
++{
++    dst.assign(static_cast<size_t>(dstSize) * dstSize * 4, 0);
++    if (!src || srcSize <= 0 || dstSize <= 0)
++        return;
++    if (srcSize == dstSize) {
++        std::memcpy(dst.data(), src, dst.size());
++        return;
++    }
++    if (dstSize > srcSize) {
++        for (int y = 0; y < dstSize; ++y) {
++            const int sy = static_cast<int>(static_cast<int64_t>(y) * srcSize / dstSize);
++            for (int x = 0; x < dstSize; ++x) {
++                const int sx = static_cast<int>(static_cast<int64_t>(x) * srcSize / dstSize);
++                std::memcpy(&dst[(static_cast<size_t>(y) * dstSize + x) * 4], src + (static_cast<size_t>(sy) * srcSize + sx) * 4, 4);
++            }
++        }
++        return;
++    }
++    // area average with exact fractional weights: source pixel i covers [i, i+1) of srcSize, a target pixel [t * r, (t+1) * r)
++    const double ratio = static_cast<double>(srcSize) / dstSize;
++    for (int y = 0; y < dstSize; ++y) {
++        const double y0 = y * ratio, y1 = (y + 1) * ratio;
++        for (int x = 0; x < dstSize; ++x) {
++            const double x0 = x * ratio, x1 = (x + 1) * ratio;
++            double sumA = 0, sumR = 0, sumG = 0, sumB = 0, area = 0;
++            for (int sy = static_cast<int>(y0); sy < srcSize && sy < y1; ++sy) {
++                const double wy = (sy + 1 < y1 ? sy + 1 : y1) - (sy > y0 ? sy : y0);
++                for (int sx = static_cast<int>(x0); sx < srcSize && sx < x1; ++sx) {
++                    const double wx = (sx + 1 < x1 ? sx + 1 : x1) - (sx > x0 ? sx : x0);
++                    const double w = wx * wy;
++                    const uint8_t* p = src + (static_cast<size_t>(sy) * srcSize + sx) * 4;
++                    sumA += w * p[3];
++                    sumR += w * p[0] * p[3];
++                    sumG += w * p[1] * p[3];
++                    sumB += w * p[2] * p[3];
++                    area += w;
++                }
++            }
++            uint8_t* o = &dst[(static_cast<size_t>(y) * dstSize + x) * 4];
++            if (area <= 0 || sumA <= 0)
++                continue;
++            o[0] = static_cast<uint8_t>(sumR / sumA + 0.5);
++            o[1] = static_cast<uint8_t>(sumG / sumA + 0.5);
++            o[2] = static_cast<uint8_t>(sumB / sumA + 0.5);
++            o[3] = static_cast<uint8_t>(sumA / area + 0.5);
++        }
++    }
++}
++
++} // namespace hdoverlay
++} // namespace chaos
++
++#endif
+diff -ru a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -158,6 +158,13 @@
+     g_lua.bindSingletonFunction("g_sprites", "spriteSize", &SpriteManager::spriteSize, &g_sprites);
+     g_lua.bindSingletonFunction("g_sprites", "setScaleFactor", &SpriteManager::setScaleFactor, &g_sprites);
+     g_lua.bindSingletonFunction("g_sprites", "getScaleFactor", &SpriteManager::getScaleFactor, &g_sprites);
++    // Chaos (0196): the HD sprite overlay
++    g_lua.bindSingletonFunction("g_sprites", "loadHdOverlay", &SpriteManager::loadHdOverlay, &g_sprites);
++    g_lua.bindSingletonFunction("g_sprites", "unloadHdOverlay", &SpriteManager::unloadHdOverlay, &g_sprites);
++    g_lua.bindSingletonFunction("g_sprites", "setHdOverlayEnabled", &SpriteManager::setHdOverlayEnabled, &g_sprites);
++    g_lua.bindSingletonFunction("g_sprites", "isHdOverlayEnabled", &SpriteManager::isHdOverlayEnabled, &g_sprites);
++    g_lua.bindSingletonFunction("g_sprites", "getHdOverlayCount", &SpriteManager::getHdOverlayCount, &g_sprites);
++    g_lua.bindSingletonFunction("g_sprites", "hasHdSprite", &SpriteManager::hasHdSprite, &g_sprites);
+ 
+     g_lua.registerSingletonClass("g_map");
+     g_lua.bindSingletonFunction("g_map", "isLookPossible", &Map::isLookPossible, &g_map);
+diff -ru a/src/client/spritemanager.cpp b/src/client/spritemanager.cpp
+--- a/src/client/spritemanager.cpp
++++ b/src/client/spritemanager.cpp
+@@ -550,7 +550,10 @@
+     }
+ 
+     ImagePtr baseSprite = getSpriteImageCasual(id);
+-    ImagePtr scaledSprite = m_scaleFactor > 1 ? upscaleSprite(baseSprite, m_scaleFactor) : baseSprite;
++    // Chaos (0196): a sprite with an HD picture draws that, at the size one sprite has now, instead of the xBRZ copy
++    ImagePtr scaledSprite = m_hdEnabled && baseSprite ? hdOverlayImage(id, baseSprite) : nullptr;
++    if (!scaledSprite)
++        scaledSprite = m_scaleFactor > 1 ? upscaleSprite(baseSprite, m_scaleFactor) : baseSprite;
+     if (!scaledSprite)
+         return baseSprite;
+ 
+@@ -586,6 +589,121 @@
+     clearImageCache();
+ }
+ 
++// Chaos (0196)
++int SpriteManager::loadHdOverlay(std::string dir)
++{
++    unloadHdOverlay();
++    while (dir.size() > 1 && dir.back() == '/')
++        dir.pop_back();
++    try {
++        const std::string file = dir + "/index.txt";
++        if (!g_resources.fileExists(file))
++            return 0;
++        m_hdIndex = chaos::hdoverlay::parseIndex(g_resources.readFileContents(file));
++    } catch (const std::exception& e) {
++        m_hdIndex = chaos::hdoverlay::Index();
++        m_hdIndex.error = e.what();
++    }
++    if (!m_hdIndex.ok()) {
++        g_logger.warning(stdext::format("HD overlay: %s/index.txt: %s", dir, m_hdIndex.error));
++        m_hdIndex = chaos::hdoverlay::Index();
++        return 0;
++    }
++    m_hdDir = dir;
++    m_hdAtlases.assign(m_hdIndex.atlases.size(), nullptr);
++    m_hdAtlasTried.assign(m_hdIndex.atlases.size(), false);
++    clearImageCache();
++    return static_cast<int>(m_hdIndex.sprites.size() + m_hdIndex.slots.size());
++}
++
++void SpriteManager::unloadHdOverlay()
++{
++    m_hdIndex = chaos::hdoverlay::Index();
++    m_hdAtlases.clear();
++    m_hdAtlasTried.clear();
++    m_hdDir.clear();
++    m_hdCrcWarned = false;
++    clearImageCache();
++}
++
++void SpriteManager::setHdOverlayEnabled(bool enabled)
++{
++    if (m_hdEnabled == enabled)
++        return;
++    m_hdEnabled = enabled;
++    clearImageCache();
++}
++
++ImagePtr SpriteManager::hdOverlayImage(int id, const ImagePtr& baseSprite)
++{
++    auto it = m_hdIndex.sprites.find(static_cast<uint32>(id));
++    if (it == m_hdIndex.sprites.end())
++        return nullptr;
++    const chaos::hdoverlay::Entry& entry = it->second;
++    if (entry.atlas >= m_hdAtlases.size())
++        return nullptr;
++
++    // the tile belongs to the sprite it was cut for: a pair that gave this id another picture hides it
++    if (entry.crc != 0 && baseSprite->getBpp() == 4) {
++        const std::vector<uint8>& pixels = baseSprite->getPixels();
++        if (chaos::hdoverlay::spriteCrc(pixels.data(), pixels.size() / 4) != entry.crc) {
++            if (!m_hdCrcWarned) {
++                m_hdCrcWarned = true;
++                g_logger.warning(stdext::format("HD overlay: sprite %d is not the picture its tile was made for, tile skipped (more of these are not logged)", id));
++            }
++            return nullptr;
++        }
++    }
++
++    return hdTileImage(entry);
++}
++
++ImagePtr SpriteManager::getHdSlotImage(int category, int thingId, int index, uint32 sprite)
++{
++    if (!m_hdEnabled || m_hdIndex.slots.empty() || category < 0 || thingId <= 0 || index < 0)
++        return nullptr;
++    auto it = m_hdIndex.slots.find(chaos::hdoverlay::slotKey(category, thingId, index));
++    if (it == m_hdIndex.slots.end() || it->second.sprite != sprite)
++        return nullptr;
++    return hdTileImage(it->second.tile);
++}
++
++// the tile of an entry cut out of its atlas and resampled to the size one sprite has now (spriteSize: 32 at scale 1, 64 with HD
++// Sprite Upscaling), so it fills the same rectangle as the sprite
++ImagePtr SpriteManager::hdTileImage(const chaos::hdoverlay::Entry& entry)
++{
++    if (entry.atlas >= m_hdAtlases.size())
++        return nullptr;
++    if (!m_hdAtlasTried[entry.atlas]) {
++        m_hdAtlasTried[entry.atlas] = true;
++        try {
++            ImagePtr atlas = Image::loadPNG(m_hdDir + "/" + m_hdIndex.atlases[entry.atlas]);
++            if (atlas && atlas->getBpp() == 4)
++                m_hdAtlases[entry.atlas] = atlas;
++            else
++                g_logger.warning(stdext::format("HD overlay: atlas %s is not an RGBA picture", m_hdIndex.atlases[entry.atlas]));
++        } catch (const std::exception& e) {
++            g_logger.warning(stdext::format("HD overlay: atlas %s: %s", m_hdIndex.atlases[entry.atlas], e.what()));
++        }
++    }
++    const ImagePtr& atlas = m_hdAtlases[entry.atlas];
++    if (!atlas)
++        return nullptr;
++
++    const int tileSize = chaos::hdoverlay::kBase * entry.scale;
++    std::vector<uint8_t> tile;
++    if (!chaos::hdoverlay::cropTile(atlas->getPixels().data(), atlas->getWidth(), atlas->getHeight(), entry.x, entry.y, tileSize, tile))
++        return nullptr;
++
++    // the same rectangle as the sprite: spriteSize px a side (32 at scale 1, 64 with HD Sprite Upscaling)
++    const int target = m_spriteSize;
++    std::vector<uint8_t> sized;
++    chaos::hdoverlay::resample(tile.data(), tileSize, sized, target);
++    auto image = std::make_shared<Image>(Size(target, target));
++    std::memcpy(image->getPixels().data(), sized.data(), sized.size());
++    return image;
++}
++
+ void SpriteManager::clearImageCache()
+ {
+     m_imageCache.clear();
+diff -ru a/src/client/spritemanager.h b/src/client/spritemanager.h
+--- a/src/client/spritemanager.h
++++ b/src/client/spritemanager.h
+@@ -24,6 +24,7 @@
+ #define SPRITEMANAGER_H
+ 
+ #include "const.h"
++#include "chaoshdoverlay.h"
+ #include <framework/core/declarations.h>
+ #include <framework/graphics/declarations.h>
+ #include <atomic>
+@@ -75,6 +76,20 @@
+     void setScaleFactor(int factor);
+     int getScaleFactor() { return m_scaleFactor; }
+ 
++    // Cinders of Chaos (base patch 0196, chaoshdoverlay.h): the HD sprite overlay. loadHdOverlay(dir) reads dir/index.txt and
++    // the atlas PNGs next to it (a resource path such as /data/hd); the pictures are cut out when a sprite is first drawn.
++    // Returns the number of sprites it maps, 0 when the index is missing or bad (logged once). setHdOverlayEnabled(false)
++    // draws the plain sprites again from the next sprite on (things already built keep their texture until reloaded).
++    int loadHdOverlay(std::string dir);
++    void unloadHdOverlay();
++    void setHdOverlayEnabled(bool enabled);
++    bool isHdOverlayEnabled() const { return m_hdEnabled; }
++    int getHdOverlayCount() const { return static_cast<int>(m_hdIndex.sprites.size() + m_hdIndex.slots.size()); }
++    bool hasHdSprite(int id) const { return m_hdIndex.sprites.find(static_cast<uint32>(id)) != m_hdIndex.sprites.end(); }
++    // the picture for one place of a thing's sprite list (ThingType::getTexture asks before the sprite): for the places a sprite
++    // id cannot reach, see chaoshdoverlay.h. `sprite` is the id the pair has there (0 for none). nullptr when there is none.
++    ImagePtr getHdSlotImage(int category, int thingId, int index, uint32 sprite);
++
+ private:
+     struct ImageCacheEntry
+     {
+@@ -92,6 +107,16 @@
+     void clearImageCache();
+     void updateSpriteSize();
+     ImagePtr upscaleSprite(const ImagePtr& sprite, int scaleFactor) const;
++    ImagePtr hdOverlayImage(int id, const ImagePtr& baseSprite);
++    ImagePtr hdTileImage(const chaos::hdoverlay::Entry& entry);
++
++    // Chaos (0196): the overlay index, the decoded atlases (null: not read yet or unreadable) and the switch
++    chaos::hdoverlay::Index m_hdIndex;
++    std::string m_hdDir;
++    std::vector<ImagePtr> m_hdAtlases;
++    std::vector<bool> m_hdAtlasTried;
++    bool m_hdEnabled = true;
++    bool m_hdCrcWarned = false;
+ 
+     bool m_loaded = false;
+     bool m_isHdMod = false;
+diff -ru a/src/client/thingtype.cpp b/src/client/thingtype.cpp
+--- a/src/client/thingtype.cpp
++++ b/src/client/thingtype.cpp
+@@ -894,7 +894,10 @@
+                             for (int h = 0; h < m_size.height(); ++h) {
+                                 for (int w = 0; w < m_size.width(); ++w) {
+                                     uint spriteIndex = getSpriteIndex(w, h, spriteMask ? 1 : l, x, y, z, animationPhase);
+-                                    ImagePtr spriteImage = g_sprites.getSpriteImage(m_spritesIndex[spriteIndex]);
++                                    // Chaos (0196): a place the HD overlay names (a sprite id cannot reach it) draws its tile
++                                    ImagePtr spriteImage = g_sprites.getHdSlotImage(m_category, m_id, spriteIndex, m_spritesIndex[spriteIndex]);
++                                    if (!spriteImage)
++                                        spriteImage = g_sprites.getSpriteImage(m_spritesIndex[spriteIndex]);
+                                     if (!spriteImage) {
+                                         continue;
+                                     }
+diff -ru a/mods/client_settings/classes/dataset.lua b/mods/client_settings/classes/dataset.lua
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1081,6 +1081,24 @@
+         end,
+ 	},
+ 
++	-- Chaos (base patch 0196): hand drawn HD pictures for monsters (overlay module game_hdsprites, g_sprites.loadHdOverlay)
++	hdMonsters = {
++		value = true,
++		apply = function(value)
++			local m = modules.game_hdsprites
++			if m and m.onOption then m.onOption(value) end
++			return true
++		end,
++		tempApply = function(value)
++			local graphicsWindow = GameOptions:getLoadedWindow('graphics')
++			local optionsVisible = optionsWindow and optionsWindow:isVisible() and graphicsWindow and graphicsWindow:isVisible()
++			if optionsVisible and value ~= GameOptions:getOption('hdMonsters') then
++				displayInfoBox(tr('HD monsters'), tr('Restart the client to apply HD monsters.'))
++			end
++			return true
++		end,
++	},
++
+ 	showSpells = {
+ 		value = true,
+         apply = function(value)
+diff -ru a/mods/client_settings/options/graphics.otui b/mods/client_settings/options/graphics.otui
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -125,6 +125,39 @@
+         !tooltip: tr('Upscales classic 32x32 sprites with the xBRZ filter for a sharper HD look.\nIncreases CPU and memory usage significantly.\nMay cause stuttering or slow loading on low-end machines.\nRestart the client to apply HD Sprite Upscaling.')
+ 
+     FlatPanel
++      // Chaos (base patch 0196, overlay module game_hdsprites): finer hand drawn pictures for some monsters, same size on screen
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
++      anchors.left: parent.left
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
++
++      SettingsCheckBox
++        id: hdMonsters
++        size: 12 12
++        !text: tr('HD monsters')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        anchors.left: parent.left
++        anchors.top: parent.top
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        margin-top: 5
++        margin-left: 5
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Some monsters have a finer picture drawn at twice the detail. They keep their size on the screen.\nThe plain pictures come back when this is off.\nRestart the client to apply HD monsters.')
++
++    FlatPanel
+       size: 505 22
+       anchors.top: prev.bottom
+       anchors.right: parent.right
