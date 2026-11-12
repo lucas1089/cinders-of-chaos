@@ -178,6 +178,8 @@ jobs:
           # source sheet; the pure parts and the ids against chaos_orbs_config.lua
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art.py build --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art_test.py
+          # monster recolour table of O529 (outfits with no colour mask, hue shifted copies wait for pair 68)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_monster_recolour_test.py
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
@@ -1435,6 +1437,9 @@ jobs:
 
       - name: Base monsters take their new looks (patch_base_looks.py, baselooks step)
         run: python3 -I server/tools/patch_base_looks_test.py
+
+      - name: Hunt monsters keep a look of their own (audit_shared_looks.py, O529)
+        run: python3 -I server/tools/audit_shared_looks_test.py
 
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py

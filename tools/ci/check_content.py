@@ -751,6 +751,14 @@ import rift_looks
 RIFT_CFG = 'server/data/scripts/chaos/rift_config.lua'
 for msg in rift_looks.problems(open(RIFT_CFG, encoding='utf-8').read(), BLANK_OUTFITS, PAIR_OUTFITS):
     fail(f'{RIFT_CFG}: [look.rift] {msg}')
+# no two different hunt monsters wear one look (O529): the bounty pool hunt list (>= 6 spawn points), grouped by lookType; a shared
+# look must be a row of server/data/monster/shared_looks_allow.csv with its reason (rank variants, stock pairs, `recolour pair`),
+# or a look with a colour mask (look_masks.csv) whose monsters have colours that tell them apart (the pool carries the colours).
+# The installed-server run with the dat: server/tools/audit_shared_looks.py (README "No two hunt monsters share a look")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'server', 'tools'))
+import audit_shared_looks
+for msg in audit_shared_looks.check_pool():
+    fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.shared] {msg}')
 for key in sorted(set(ALLOW) - allow_used):
     fail(f'tools/ci/check_content.py: ALLOW entry {key} matches nothing any more (remove it)')
 print('content check:', 'OK' if not bad else f'{bad} problem(s)')

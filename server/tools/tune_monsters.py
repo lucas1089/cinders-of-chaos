@@ -25,6 +25,8 @@ Row keys:
   armor             armor and defense of <defenses>
   coins             platinum countmax: the coin lines become COIN_BLOCK with it (the late-game set's gold, ~899 at 25)
   loot              the whole <loot> block (LOOT_*)
+  look              {head, body, legs, feet}: colour indices of the <look> (O529, only for an outfit with a colour mask: two
+                    hunt monsters of one lookType get their own colours; audit: tools/audit_shared_looks.py)
 
 The 32 dormant donor imports (DORMANT) are clamped to levels 650-1300 by their old rank and get the late-game curves
 (late_targets): health, experience per health and speed at the level as the 18 spawned late-game monsters have them,
@@ -232,6 +234,23 @@ for _f, _L, _sp in AISS_BAND:
         _row['level'] = (_L - 20, _L + 20)
 
 
+# O529: two hunt monsters on one lookType with a colour mask get their own colours (outfit colour table: index = row * 19 + hue
+# step, row 4 = full colour, 5 = darker, 2 = pale; 133 = no tint). The first monster of each look keeps its colours.
+def _col(row, step):
+    c = row * 19 + step
+    return {'head': c, 'body': c, 'legs': c, 'feet': c}
+
+
+for _f, _c in (('pack30/blightcrown_matron.xml', _col(4, 6)),    # blight: sick green
+               ('pack30/limb_hoarder.xml', _col(2, 2)),          # flesh: pale orange
+               ('pack30/nailcrown_regent.xml', _col(5, 1)),      # nails: rust red
+               ('pack30/bloom_husk.xml', _col(4, 5)),            # bloom: green
+               ('pack30/rustguard.xml', _col(5, 2)),             # rust: dark orange
+               ('pack30/grave_lantern.xml', _col(4, 9)),         # lantern light: teal
+               ('pack30/leechwing.xml', _col(4, 18))):           # leech: blood red (look 1501 has no colours before)
+    TUNING.setdefault(_f, {})['look'] = _c
+
+
 # ------------------------------------------------------------------------------------------------ text operations
 def _root(t, key, value):
     m = re.search(r'<monster\s[^>]*>', t)
@@ -315,6 +334,8 @@ def apply(t, row):
             t = _root(t, k, row[k])
     if 'desc' in row:
         t = _root(t, 'nameDescription', row['desc'])
+    if 'look' in row:
+        t = _tag(t, r'<look\s[^>]*>', row['look'])
     if 'health' in row:
         t = _tag(t, r'<health\s[^>]*>', {'now': row['health'], 'max': row['health']})
     if 'level' in row:

@@ -6121,3 +6121,6 @@ patches show, behind `pcall` and `nil` guards. Check it in a build before it shi
 - Poll: `watch(key, fn)` / `unwatch(key)`. One 100 ms cycle while anything watches. `fn(down)` runs on each Alt change.
 - Hover: a widget with `widget.altTip = function(down) return text end` (or a parent up to 4 levels) gets its long text while hovered with Alt, the short one after. `g_tooltip.displayText` redraws it at once.
 - Users: passive tree (`treetips.lua`), item tooltips (`itemhelp.lua`, own Ctrl poll reads `ChaosAltHelp.pressed()`), spellbook rows and helper spell pickers (`game_chaosspells/spellhelp.lua`, `ChaosSpellHelp`), buff bar icons.
+
+## Pair 69 plan: monster recolours (O529)
+Hue shifted copies of 35 mask-less monster outfits (52 monsters), appended after the outfits of pair 68: `tools/sprites/art_import/monster_recolour.csv`, transform and check in `tools/sprites/gen_monster_recolour.py` (`build` waits for pair 68, nothing is built). The 7 monsters on outfits with a colour mask need no pair: their colours are in the monster files. server/README.md "No two hunt monsters share a look (O529)".
