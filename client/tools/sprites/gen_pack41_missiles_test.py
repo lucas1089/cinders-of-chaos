@@ -123,7 +123,7 @@ def test_clean_alpha():
         make_pack(root, 'proj_a', 'steel', 6)
         sheet = os.path.join(root, 'sheets', '32px', 'projectiles', 'proj_a', 'steel', 'proj_a_steel_main.png')
         im = np.asarray(Image.open(sheet).convert('RGBA')).copy()
-        im[10:14, 10:14] = (255, 255, 255, 90)                    # a soft pixel block: the dither keeps some, as 255
+        im[10:14, 10:14] = (255, 255, 255, 90)                    # a soft pixel block under the cut: gone, no dither
         Image.fromarray(im).save(sheet)
         row, strip, _, _ = M.convert([root], ('replace', 4, 'rep41_m4', 'proj_a', 'steel', (2, 2, 0, 0)))
         ok(set(np.unique(strip[:, :, 3])) <= {0, 255}, 'alpha is 0 / 255')

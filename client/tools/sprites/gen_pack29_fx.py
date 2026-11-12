@@ -21,7 +21,7 @@ art_import/pack29_sources.csv):
     the flat ground shadow under the projectile (near-black, half transparent) removed before the cut. That set may be
     imported into the game; it is never a style reference or an input to an AI tool (docs/SPRITE_STYLE.md).
 
-Conversion: gen_pack27_fx.py (layers merged, alpha cut to 0 / 255 with a 4x4 ordered dither, `loop` cuts dissolve in
+Conversion: gen_pack27_fx.py (layers merged, alpha cut to 0 / 255, a hard cut at 0.5 since O523 (a 4x4 ordered dither before), `loop` cuts dissolve in
 their last three frames, an empty last frame for effects, missiles in the client's 3 x 3 direction patterns). No pick
 is recoloured: every Mystic pick has a variant in its theme colour, and the Druid-kit spells keep the nature green.
 

@@ -10,3 +10,4 @@ effect,589,bonelord_banner,2x2,"0,0",1x1,8,90,bone: shards circle up into a crow
 effect,590,bonelord_rally,1x1,"0,0",1x1,6,90,bone: shards spiral up a rallied minion (Banner of Bones)
 effect,591,bonelord_offering,2x2,"0,0",1x1,8,85,bone: a skeleton bursts into ribs; bones and ash (Bone Offering)
 effect,592,bonelord_ward,2x2,"0,0",1x1,8,90,bone: rib plates close over the caster and crumble (Bone Offering ward)
+effect,4702,nova_radiant_blue,5x5,"2,2",1x1,13,62,Eclipse of Ruin: a blue Purging Nova (effect 713 with the hue turned +175 degrees)

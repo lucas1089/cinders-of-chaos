@@ -73,6 +73,7 @@ id,name,element
 803,blast_fire3,fire
 809,blast_ground,physical
 811,blast_poison,earth
+836,mfx_ice,ice
 2888,mega_venom_wasps,earth
 3794,w_impact_holy_smite,holy
 3864,w_impact_terra_strike,physical
@@ -102,3 +103,4 @@ id,name,element
 4584,p50_purple_spiky_ring_4584,death
 4616,p50_red_claw_arc_4616,physical
 4638,p50_white_energy_orb_4638,physical
+4702,nova_radiant_blue,ice
