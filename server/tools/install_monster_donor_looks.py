@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Polished donor looks for 33 hunt monsters (O538): the monsters move to them once the client has pair 70. install_all.py step
+"""Polished donor looks for 28 hunt monsters (O538): the monsters move to them once the client has pair 70. install_all.py step
 `monsterdonorlooks`.
 
 usage: python3 -I install_monster_donor_looks.py DATA_DIR [--dry-run] [--map CSV]
 
-Client pair 70 holds 33 polished creature outfits (client/tools/sprites/gen_donor_outfits.py, README "Donor monster looks (O538)").
-server/data/monster/monster_donor_looks.csv names, for each of the 33 monsters, its old look (the one the committed bounty pool
-gives it) and its new look (the outfit id, 3406 to 3438). The rows are the `donor` rows of client/tools/sprites/monster_looks/picks.csv.
+Client pair 70 holds 28 polished creature outfits (client/tools/sprites/gen_donor_outfits.py, README "Donor monster looks (O538)").
+server/data/monster/monster_donor_looks.csv names, for each of the 28 monsters, its old look (the one the committed bounty pool
+gives it) and its new look (the outfit id, 3406 to 3433). The rows are the `donor` rows of client/tools/sprites/monster_looks/picks.csv.
 
 The repository files keep the old look, so a server whose client is on an older pair draws what it always did. This step runs
 after `baselooks` and does, only when config.lua chaosClientPair is 70 or more (client_pair.py, README "Client pair guard"):

@@ -193,7 +193,7 @@ jobs:
           # against the monster files and the two id files, build / live on a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_monster_recolour_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_monster_recolour.py check
-          # the 33 polished donor outfits of pair 70 (O538): the pick rule, build / live on synthetic pairs, the table, the sums and the
+          # the 28 polished donor outfits of pair 70 (O538): the pick rule, build / live on synthetic pairs, the table, the sums and the
           # monster map against the outfits and the committed pool
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_donor_outfits_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_donor_outfits.py check
@@ -1480,7 +1480,7 @@ jobs:
       - name: Monster recolours move the monsters at pair 69 (install_monster_recolour.py, monsterrecolour step, O531)
         run: python3 -I server/tools/install_monster_recolour_test.py
 
-      - name: Donor looks move 33 monsters at pair 70 (install_monster_donor_looks.py, monsterdonorlooks step, O538)
+      - name: Donor looks move 28 monsters at pair 70 (install_monster_donor_looks.py, monsterdonorlooks step, O538)
         run: python3 -I server/tools/install_monster_donor_looks_test.py
 
       - name: Hunt monsters move while they stand (audit_idle_looks.py, O533)

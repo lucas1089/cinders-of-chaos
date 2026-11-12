@@ -263,8 +263,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                level (README "Flat armour, weapon spells and the Monk's fist (O505)"; after monsterresists, and so after files)
   baselooks    tools/patch_base_looks.py         pair 30 sheet looks and pair 33 kit looks on matching base monsters (rows of family
                "base" of client/tools/sprites/monster_looks/picks.csv; README "Pack 30 monsters in the hunts")
-  monsterdonorlooks tools/install_monster_donor_looks.py  33 hunt monsters wear a polished creature outfit of the donor client (client pair
-               70, outfits 3406-3438, data/monster/monster_donor_looks.csv): their installed files (ours and the base server's, XML and Lua)
+  monsterdonorlooks tools/install_monster_donor_looks.py  28 hunt monsters wear a polished creature outfit of the donor client (client pair
+               70, outfits 3406-3433, data/monster/monster_donor_looks.csv): their installed files (ours and the base server's, XML and Lua)
                and the installed bounty pool get the new look; waits for config.lua chaosClientPair >= 70, README "Client pair guard" and
                "Donor monster looks (O538)"; after baselooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character

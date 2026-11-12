@@ -67,6 +67,10 @@ def main():
     assert [int(r['new']) for r in committed] == list(range(3406, 3406 + len(committed))) and G.FIRST_NEW == 3406 == G.OUTFITS_69 + 1
     assert all(r['kind'] in G.KIND_NAMES and int(r['colours']) >= 500 and int(r['walk']) >= 3 for r in committed)
     assert all(int(x) <= 2 for r in committed for x in r['size'].split('x')), 'a pick above 2x2'
+    # the owner's exclusion (2026-11-12, "Remove 3411 to 3415"): five donors, no row, and a table that has one fails
+    assert sorted(G.OWNER_EXCLUDED) == [2227, 2228, 2229, 2230, 2231] and len(committed) == 28
+    assert not {int(r['donor']) for r in committed} & set(G.OWNER_EXCLUDED)
+    assert any('struck by the owner' in x for x in G.problems(committed + [row(2227, 3434, kind='beast')], G.read_sums()))
     sums = G.read_sums()
     assert set(sums) == {int(r['donor']) for r in committed} and all(len(v) == 64 for v in sums.values())
     # every rule has a case

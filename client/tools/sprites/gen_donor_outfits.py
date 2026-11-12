@@ -19,6 +19,7 @@ Pick rule (`select`), all of it measured on the donor files:
   * polished: 500 or more colours (every opaque RGB over all frames facing south, all frame groups);
   * one colour layer, 4 directions, 3 or more walk frames (the phases of the last frame group), at most 2x2 tiles (MAX_TILES);
   * a creature (KINDS: the kind of each candidate, looked at by eye in the O537 catalog; wings, crystals, rings, costumes are no kind);
+  * not on OWNER_EXCLUDED (the five the owner struck on 2026-11-12);
   * not identical (every group, direction, phase, sprite pixel) to an outfit of the input pair, and not identical to a pick of lower id.
 
 Pair 70 (`build`) appends the picks as new outfits after the 3,405 outfits of pair 69, one per row, in table order: the row at
@@ -51,6 +52,16 @@ DAT_69_MD5 = '2bc03dde6fa919a9055d20991721ffd4'
 MIN_COLOURS = 500
 MIN_WALK = 3
 MAX_TILES = 2
+# donor outfits the owner struck from the picks (owner 2026-11-12, translated: "Remove 3411 to 3415": the five that pair 70 first had at
+# 3411-3415). They stay in KINDS (the catalog of kinds) but `select` drops them and `check` fails when one is on a row of the table.
+# The five hunt monsters that took them (Werehyaena, Werelioness, Werelion, Foxmouse, Hellhound) keep their current looks.
+OWNER_EXCLUDED = {
+    2227: 'Werehyaena',
+    2228: 'Werelioness',
+    2229: 'Werelion',
+    2230: 'Foxmouse',
+    2231: 'Hellhound',
+}
 KIND_NAMES = ('angel/spirit', 'beast', 'bird/bat', 'demon', 'dragon/drake', 'gazer/eye', 'golem/construct', 'hydra/serpent',
               'reptile', 'slime/blob', 'spider/insect', 'troll/ogre/orc', 'undead')
 # the kind of every polished candidate of the donor client that is a creature (looked at in the O537 catalog sheet); an outfit
@@ -120,6 +131,8 @@ def problems(table=None, sums=None, first=FIRST_NEW):
         seen.add(d)
         if r['kind'] not in KIND_NAMES:
             out.append('donor %d: kind %s is not one of %s' % (d, r['kind'], ', '.join(KIND_NAMES)))
+        if d in OWNER_EXCLUDED:
+            out.append('donor %d (%s): struck by the owner (2026-11-12), no row' % (d, OWNER_EXCLUDED[d]))
         if KINDS.get(d) != r['kind']:
             out.append('donor %d: kind %s, KINDS says %s' % (d, r['kind'], KINDS.get(d)))
         try:
@@ -271,6 +284,9 @@ def select(donor_dat, donor_spr, pair=None, log=print):
                     pass
     picks, seen = [], {}
     for look in sorted(KINDS):
+        if look in OWNER_EXCLUDED:
+            log('drop %d: struck by the owner (2026-11-12, %s)' % (look, OWNER_EXCLUDED[look]))
+            continue
         if d.outfit(look) is None:
             raise SystemExit('donor has no outfit %d' % look)
         m = measure(d, s, look)

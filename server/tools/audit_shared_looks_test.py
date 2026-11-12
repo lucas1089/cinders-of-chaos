@@ -35,7 +35,7 @@ def main():
     assert A.look_at_pair('D', 10, 69, rec, dn) == 10 and A.look_at_pair('D', 10, 70, rec, dn) == 20 and A.look_at_pair('D', 20, 69, rec, dn) == 10
     assert A.look_at_pair('R', 1, 69, rec, dn) == 2 and A.look_at_pair('R', 1, 68, rec, dn) == 1 and A.look_at_pair('X', 5, 70, rec, dn) == 5
     assert A.look_at_pair('D', 99, 70, rec, dn) == 99, 'another look stays'
-    assert len(A.load_donor()) == 33 and not set(A.load_donor()) & set(A.load_recolour()), 'the donor map: 33 monsters, none recoloured as well'
+    assert len(A.load_donor()) == 28 and not set(A.load_donor()) & set(A.load_recolour()), 'the donor map: 28 monsters, none recoloured as well'
     with tempfile.TemporaryDirectory() as t:
         md = os.path.join(t, 'monster')
         os.makedirs(os.path.join(md, 'monsters'))

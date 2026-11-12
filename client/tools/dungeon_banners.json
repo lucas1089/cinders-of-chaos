@@ -1698,7 +1698,7 @@
    "area": "sanctum",
    "creatures": [
     {
-     "look": 3424,
+     "look": 3419,
      "monster": "Wraithbone Stalker",
      "name": "Wraithbone Stalker",
      "x": 24644,
@@ -2299,7 +2299,7 @@
      "y": 24888
     },
     {
-     "look": 3424,
+     "look": 3419,
      "monster": "Wraithbone Stalker",
      "name": "Wraithbone Stalker",
      "x": 24857,

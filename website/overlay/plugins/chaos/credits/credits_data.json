@@ -30,7 +30,7 @@
     },
     {
      "name": "Owner-supplied creature looks",
-     "use": "33 monster looks (spirits, beasts, fiends, reptiles, spiders, undead), client pair 70",
+     "use": "28 monster looks (spirits, beasts, fiends, reptiles, spiders, undead), client pair 70",
      "source": "supplied by the owner (a client's sprite file), origin unknown, source not named"
     },
     {

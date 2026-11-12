@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """python3 -I server/tools/install_monster_donor_looks_test.py : install_monster_donor_looks.py (O538, install step `monsterdonorlooks`)
-on the shipped map and on a synthetic server folder: the map (33 rows, ids 3406-3438, the old looks are the committed pool's and our
+on the shipped map and on a synthetic server folder: the map (28 rows, ids 3406-3433, the old looks are the committed pool's and our
 files'), the client pair guard end to end (pair 69 or missing: nothing written and a WARNING line; pair 70: our XML, a base XML, a base
 Lua monster and the pool rows move, colours stay), idempotent, a file with another look stops the step, a missing file stops it,
 --dry-run writes nothing, gen_bounty_pool.py turns a new look back to the old one. No base server needed."""
@@ -76,8 +76,8 @@ def snapshot(d):
 
 # ---- the shipped map
 rows = M.read_map()
-check(len(rows) == 33, 'the map has 33 rows (%d)' % len(rows))
-check(sorted(r[2] for r in rows) == list(range(3406, 3439)), 'the new looks are 3406..3438, each once')
+check(len(rows) == 28, 'the map has 28 rows (%d)' % len(rows))
+check(sorted(r[2] for r in rows) == list(range(3406, 3434)), 'the new looks are 3406..3433, each once')
 check(len({r[0] for r in rows}) == len(rows), 'one row per monster')
 check(all(r[1] < 3406 for r in rows), 'the old looks are below the new pair')
 check(C.PAIR_DONOR == 70, 'the step needs pair 70')

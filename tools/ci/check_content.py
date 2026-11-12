@@ -382,8 +382,8 @@ import xml.etree.ElementTree as ET
 def _opt(flag):
     return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv[:-1] else None
 
-# the client pair the monsters are drawn with: pair 70 (client/MANIFEST.md "Pair 70": the 33 polished creature outfits 3406-3438 of the donor client, O538; the
-# monster files keep their old looks, install step `monsterdonorlooks` moves 33 monsters), pair 69 (client/MANIFEST.md "Pair 69": the 35 hue shifted monster outfits 3371-3405 after the
+# the client pair the monsters are drawn with: pair 70 (client/MANIFEST.md "Pair 70": the 28 polished creature outfits 3406-3433 of the donor client, O538; the
+# monster files keep their old looks, install step `monsterdonorlooks` moves 28 monsters), pair 69 (client/MANIFEST.md "Pair 69": the 35 hue shifted monster outfits 3371-3405 after the
 # 3370 of pair 68; the monster files keep their old looks, install step `monsterrecolour` moves them), pair 57 had 3370 outfits (pair 57 adds 3364-3370, pair 54 adds the
 # AutoSprite looks 3361-3363; pairs 38-53 added outfits up to 3360 and pair 51 blanked unused things, the extra blank
 # ranges from 1146 on); pair 37 had 2681 (it adds the moon outfits and costumes 2668-2681, no blank padding; pairs 34-36 added none); pair 33 had 2667 (it adds
@@ -392,7 +392,7 @@ def _opt(flag):
 # 75 sheet looks 2237-2311 and the 73 strip looks 2312-2384, art_import/pack30_looks.csv and pack30_strips.csv, no
 # blank padding; pair 29 added the Archmage 2235 / 2236); the blank ones have no sprite at all (stock gaps, 1562-1999 and 2082-2099 reserved, 2143-2160
 # and 2194-2199 padding). --pair recounts both.
-PAIR_NAME, PAIR_OUTFITS = 'pair 70', 3438
+PAIR_NAME, PAIR_OUTFITS = 'pair 70', 3433
 PAIR_BLANK = ('135 161-191 411 415 424 439-440 468-469 474-485 501 518-520 524-525 536 543 549 581-582 597 616 623 '
               '625 638-643 645-646 652-663 678 700-711 713 715 718-719 722-723 737 741-744 748 751-758 764-841 861 '
               '864-867 871-872 880 891-898 1146-1147 1193 1281 1285 1290 1292-1293 1295 1297 1369 1440 1442-1443 '
