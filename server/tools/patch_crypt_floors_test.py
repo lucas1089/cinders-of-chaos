@@ -91,6 +91,9 @@ def main():
         after = open(mp, 'rb').read()
         n = T.run(data, map_path=mp, rects=RECTS, log=log.append)
         check(n == 0 and open(mp, 'rb').read() == after, 'second run changes nothing: %s' % n)
+        import map_guard_testkit as K
+        K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(base_tiles())),
+                      lambda d, p: T.run(d, map_path=p, rects=RECTS, log=lambda s: None), root, 'crypt floors')
         ids = {r[0] for r in T.crypt_rects()}
         check({'hollow_crypt', 'bonechoir_catacomb', 'bonewright_galleries', 'graveknell_catacombs',
                'lanternless_catacombs'} <= ids, 'the real catacomb plans are found: %s' % sorted(ids))

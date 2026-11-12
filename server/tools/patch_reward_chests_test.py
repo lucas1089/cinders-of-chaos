@@ -183,6 +183,20 @@ try:
     s = T.run(data_dir, new_id=NEW, legacy_ids=(LEGACY,), aids=AIDS, log=logs.append, check_otb=False)
     check(s['changed'] == len(BASE), 'the base chests follow: %s' % s)
 
+    # O512: a writer that also changes an item on a far tile is refused by the map write guard
+    import map_guard_testkit as K
+    open(mp, 'wb').write(orig)
+    state, undo = K.inject_far_item(T, 'patch', set(SWAP))
+    try:
+        T.run(data_dir, new_id=NEW, legacy_ids=(LEGACY,), aids=AIDS, log=logs.append, check_otb=False)
+        check(False, 'guard: a writer that also changes a far tile is refused')
+    except T.ChestError as e:
+        check('far' in state and '%d,%d,%d: tile changed outside' % state['far'] in str(e), 'guard: the far tile is named: %s' % str(e)[:200])
+    finally:
+        undo()
+    check(open(mp, 'rb').read() == orig and os.path.exists(mp + '.tmp'), 'guard: the map is as it was, the .tmp stays')
+    os.remove(mp + '.tmp')
+
     # an id whose bytes need escaping (0xFE in the low byte)
     open(mp, 'wb').write(orig)
     T.run(data_dir, new_id=0x01FE, legacy_ids=(0x02FE,), aids=AIDS, log=logs.append, check_otb=False)

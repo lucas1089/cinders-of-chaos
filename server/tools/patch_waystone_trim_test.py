@@ -79,6 +79,9 @@ def main():
         after = open(mp, 'rb').read()
         res = T.run(data, map_path=mp, rows_path=rp, kinds=KINDS, log=log.append)
         check(open(mp, 'rb').read() == after and res['done'] == 0, 'a second run changes nothing: %s' % res)
+        import map_guard_testkit as K
+        K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(tiles)),
+                      lambda d, p: T.run(d, map_path=p, rows_path=rp, kinds=KINDS, log=lambda s: None), root, 'waystone trim')
     finally:
         shutil.rmtree(root, ignore_errors=True)
     rows = T.read_rows()

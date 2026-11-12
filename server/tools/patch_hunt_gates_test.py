@@ -114,6 +114,9 @@ def main():
         after = open(mp, 'rb').read()
         done = T.run(data, map_path=mp, list_path=lp, log=log.append)
         check(done == {} and open(mp, 'rb').read() == after, 'second run changes nothing: %s' % done)
+        import map_guard_testkit as K
+        K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(base_tiles())),
+                      lambda d, p: T.run(d, map_path=p, list_path=lp, log=lambda s: None), root, 'hunt gates')
         # the real list
         rows = T.read_rows()
         keys = [(r['pos'], r['item']) for r in rows]

@@ -28,6 +28,7 @@ import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)  # python -I leaves the script's folder off sys.path
 CSV_PATH = os.path.join(HERE, 'base_towns.csv')
 
 ESC, START, END = 0xFD, 0xFE, 0xFF
@@ -282,6 +283,13 @@ def main(argv):
     tmp = path + '.tmp'
     with open(tmp, 'wb') as f:
         f.write(out)
+    # the splice guard (O512): no tile may differ, the towns node keeps its town count (only names may move)
+    import map_write_guard as MG
+    try:
+        MG.check(path, tmp, allow_content=['towns'], log=print)
+    except MG.GuardError as e:
+        print('%s: %s; the old map is untouched and the new file stays at %s' % (path, e, tmp))
+        return 1
     os.replace(tmp, path)
     print('%s written (%d bytes, was %d)' % (os.path.basename(path), len(out), len(data)))
     return 0

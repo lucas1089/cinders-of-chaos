@@ -22816,6 +22816,75 @@ streaked tiles and round reddish-brown pebble discs, so it reads as broken.
 - **Owner step.** On the VPS, server stopped: `python3 -I server/tools/install_all.py SERVER_DIR --only cryptfloors
   --dry-run`, then the same without `--dry-run`. The admin app (`android/`) has no button for install steps.
 
+## Map write guard (`tools/map_write_guard.py`, O512)
+Every install step that rewrites the world map writes `<map>.otbm.tmp`, checks little (a tile count) and renames it over
+the map. A bug in a writer could change tiles outside the area it meant to touch and nobody would see it. Now each writer
+hands the old map, the new file and the tiles it meant to touch to the guard just before the rename. There is no flag, no
+environment variable and no option to turn it off.
+- **What it proves.** The guard reads both files in one streaming pass each (24 MiB chunks, numpy, no tile tree) and
+  checks:
+  1. Both files parse to the end: identifier, one root node, balanced nodes, no bytes after the root, no dangling escape.
+  2. Every tile outside the intended set exists in both files and is byte for byte the same (items, attributes, tile
+     flags, house id: the raw bytes of the tile node).
+  3. Every tile of the intended set is as meant: an added tile is new and written, a rewritten tile exists in both, a
+     removed tile is gone. No tile is on the map twice. With `expect` (`{pos: node bytes}`), an added or rewritten tile is
+     exactly the bytes the writer meant.
+  4. The header (identifier, root and map data attributes) is the same. Every other child of the map data node (towns,
+     waypoints, anything) has the same node count and content, unless the writer frees that type (`allow_nodes`) or only
+     its content (`allow_content`: the count must stay).
+- **Which steps use it.** `IC.write_map` of `install_content_areas.py` runs the guard on every call (`guard_map`: the
+  tiles of `remove` and `new_tiles` are the intended set, the bytes of `new_tiles` the `expect`). That covers
+  `contentareas`, `mapfixes`, `questshowcase`, `deadholes`, `huntgates`, `huntannexes`, `waystonetrim`, `lavaedges`,
+  `cryptfloors`, `huntroofs` and `templetidy`. The writers that patch map bytes in memory call `map_write_guard.verify`
+  themselves: `rewardchests` (the tiles of the replaced chests), `spawnfields` (the listed spots), `startchest` (the tiles
+  of the removed chests), `towns` (no tile may differ; the towns node keeps its town count, names move:
+  `allow_content`) and `worldtexts` (`text_only`: a tile may differ outside the sets only in the text and description
+  attributes of its items, nothing else; at most 200000 tiles). `rewardchests`, `spawnfields` and `startchest` used to
+  write `--out` files directly; they now go through the `.tmp` and the guard too.
+- **On a refusal.** The step raises (`refused: map write guard refused w.otbm.tmp: N difference(s) from the intended
+  change; first 20: 1030,1000,7: tile removed outside the intended change; ...`). The map is not replaced and is as it
+  was. The `.tmp` stays next to it (`data/world/<map>.otbm.tmp`) for inspection; the next run overwrites it.
+  `install_all.py` stops at that step.
+- **What the owner does then.** Nothing to repair: the old map stays. In the admin app (`android/`), Painel > card
+  "Atualizar servidor" > "Aplicar e reiniciar" runs the install through `chaos_kit_update.sh`. With the staging copy
+  (the default) the install runs on a copy of the server folder while the game keeps running; a refusal ends the update
+  as failed ("the install failed on the staging copy"), the live folder is not touched and the players notice nothing.
+  Without the staging copy (`CHAOS_STAGING=0`, or no room) the install runs with the server stopped and the kit rolls
+  back to the previous version. Either way the lines of the refusal, with the coordinates, are the last lines of the
+  install the card shows. Send them to the coordinator: a refusal means a writer touched tiles it should not have. There
+  is no button to override it. Shell fallback, to compare two maps: `python3 -I server/tools/map_write_guard.py OLD.otbm
+  NEW.otbm` (exit 0 when no tile differs).
+- **Cost (measured).** Synthetic map built for the measurement: 108 areas of 253 x 253 tiles, 6,912,972 tiles, 200 MB, three
+  nodes per tile; second file the same with 100 tiles added, 1 rewritten, 1 removed. One scan of one file: 5.6 s. The whole
+  check (two scans, sorting, comparing): 9.9 s, peak 651 MB (`otbm.load_otbm`, which every writer already runs on its
+  output, took 6.6 s and 2.4 GB on the same file). The time is linear in the number of node markers. A map twice as
+  dense or a VPS three times slower stays near 30 s, under the 60 s limit. A step runs the guard once, and only when it
+  changes the map (a second run writes nothing): 16 steps at most, each under the limit on its own. A first version
+  that used `np.isin` took 48 s; the comparison now uses sorted arrays and binary search.
+- **Found while doing it: the room's end tiles lost their attributes.** `room_layout` rebuilt the end tiles it moves
+  (`caps`) from the item ids alone. Every action id, unique id, text, description, count, unknown attribute and the things
+  inside a container were dropped on the moved tile. The test `cap_attribute_checks` in `install_content_areas_test.py`
+  showed it (aid 48001, uid 48002, a sign text, a count, an attribute 99, a container with two items: all gone). Fixed:
+  `keep_moved` reads the old end tile from the map (`read_tile_lossless`) and the new tile keeps every item node byte for
+  byte (`attrs['node']` in `tile_nodes`). A tile it cannot move that way (a house tile, a tile attribute other than
+  flags and ground) is refused with a reason instead of being rewritten. The copies of the module columns (new alcoves)
+  are still made from ids alone, on purpose: a copied action or unique id would be a duplicate. The other writers read
+  tiles with `hall_order.parse_tile`, which keeps the attributes it knows byte for byte and leaves a tile with one it
+  does not know alone (listed in the log), so they never dropped one.
+- **Not covered.** `map_master.py install` and the restore of `<map>.otbm.bak` put a whole file in place (the master is
+  checked against its SHA-256, the backup is the file the first install copied). `area_plan_place.py` writes a copy of the
+  map for the planner, not an install step. The map editor writes its own files. The guard proves a writer kept to its own
+  plan; it does not prove the plan is right (the checks of each step still do that).
+- **Tests.** `map_write_guard_test.py`: identical maps; the intended change only (add, rewrite, remove); one extra tile,
+  an item attribute, a text, a tile removed, a tile added, a tile written twice outside the set, each refused with the
+  coordinate named; a tile that is not what the writer meant; towns and waypoints nodes changed without and with
+  permission; a header change; truncated files, stray bytes, a dangling escape, a compressed file; escaped bytes in
+  coordinates and ids; the same verdicts with chunks of 64 bytes up; the text-only mode; the first 20 of 40 coordinates.
+  Every writer's own test (`patch_*_test.py`, `install_content_areas_test.py`, the new `patch_base_towns_test.py` and
+  `patch_base_texts_test.py`) has a case where a writer that also changes one far tile is refused, the map stays and the
+  `.tmp` stays (`map_guard_testkit.py` holds the builders and the fault). Not verified: a run on the real map (about 200
+  MB); the times above are from the synthetic file.
+
 ## Dead holes (`tools/check_dead_holes.py`, `tools/patch_dead_holes.py`, `tools/dead_holes.csv`, install step `deadholes`, O264)
 Owner report of 2026-10-26 with a screenshot: "esse buraco nao leva a lugar nenhum" (this hole leads nowhere): a dirt hole
 on a patch of grass beside grey stone ruins and jungle plants. No coordinates. The checker and the patch below came out
