@@ -3,6 +3,8 @@
 -- the purse (O492) and, once it is open, every bag in it (Loot Bag, the pouches) as pages of their own. A container is told apart by the key game_chaoslayout learns for it ("3_2854" = the container in
 -- inventory slot 3, "3_2854/1_1987" = the bag at index 1 of that one). Positions are the protocol's: an inventory slot
 -- is (65535, slot, 0), a slot of an open container is (65535, 64 + container id, index).
+-- The Loot Bag (O516) is the one bag that is no page: it is a section under the grid of the page shown, 20 slots at a time
+-- (C.lootView), so opening it never takes the backpack away.
 BagPanelCore = {}
 local C = BagPanelCore
 
@@ -139,9 +141,10 @@ function C.bagSlots(items)
 end
 
 -- the pages: the main backpack first, then one per bag of it, then (purse = nil: the character has no purse) the purse
--- and one per bag in it. purse.bags is empty until the purse has been opened: the client does not know its contents
+-- and one per bag in it (ids: the client ids the server named, C.isLootBag; the Loot Bag's entry carries loot = true:
+-- its button shows or hides the Loot Bag section instead of switching the page). purse.bags is empty until the purse has been opened: the client does not know its contents
 -- before.
-function C.pages(bags, purse)
+function C.pages(bags, purse, ids)
   local out = { { key = 'main', id = nil } }
   for _, b in ipairs(bags or {}) do
     out[#out + 1] = { key = C.bagKey('main', b.slot), slot = b.slot, id = b.id, fam = 'main' }
@@ -149,7 +152,8 @@ function C.pages(bags, purse)
   if purse then
     out[#out + 1] = { key = 'purse', id = nil, fam = 'purse' }
     for _, b in ipairs(purse.bags or {}) do
-      out[#out + 1] = { key = C.bagKey('purse', b.slot), slot = b.slot, id = b.id, fam = 'purse' }
+      out[#out + 1] = { key = C.bagKey('purse', b.slot), slot = b.slot, id = b.id, fam = 'purse',
+        loot = C.isLootBag(b.id, ids) or nil }
     end
   end
   return out
@@ -214,9 +218,10 @@ end
 -- ---------------------------------------------------------------- selection
 -- the page shown after a container opened. A bag or the purse the player opened (a double click, a page button, the
 -- Purse button, Find my item) is the page shown; the login restore opens containers too, and those leave the page alone
--- (the panel starts on the backpack). The main backpack opening changes nothing.
-function C.selectOnOpen(selected, kind, slot, restoring)
-  if restoring then return selected end
+-- (the panel starts on the backpack). The main backpack opening changes nothing, nor does the Loot Bag (`loot`: a section
+-- of its own, C.lootShownOnOpen).
+function C.selectOnOpen(selected, kind, slot, restoring, loot)
+  if restoring or loot then return selected end
   if kind == 'bag' or kind == 'pbag' then return C.bagKey(C.family(kind), slot) end
   if kind == 'purse' then return 'purse' end
   return selected
@@ -234,15 +239,16 @@ end
 -- ---------------------------------------------------------------- container ids
 -- The server holds at most 16 open containers for a player, and the id of an open is chosen by the client. The panel
 -- keeps at most one bag open per family, so it holds at most 4 containers: the main backpack, one bag of it, the purse
--- and one bag of the purse. memo: container id -> { fam, slot, id } of the bags opened for the panel.
-C.MAX_OPEN = 4
+-- and one bag of the purse, and the Loot Bag (O516: its own, a bag with `loot` in the memo is neither reused nor closed by
+-- the other bags of the family) makes 5. memo: container id -> { fam, slot, id, loot } of the bags opened for the panel.
+C.MAX_OPEN = 5
 
 -- the container whose id a bag page of family `fam` reuses (g_game.open(item, previous)): the bag of that family open
 -- now, nil when there is none (the client then takes a free id)
 function C.previousFor(memo, fam)
   local best
   for cid, m in pairs(memo or {}) do
-    if m.fam == fam and (best == nil or cid < best) then best = cid end
+    if m.fam == fam and not m.loot and (best == nil or cid < best) then best = cid end
   end
   return best
 end
@@ -252,10 +258,81 @@ end
 function C.superseded(memo, cid, fam)
   local out = {}
   for other, m in pairs(memo or {}) do
-    if m.fam == fam and other ~= cid then out[#out + 1] = other end
+    if m.fam == fam and other ~= cid and not m.loot then out[#out + 1] = other end
   end
   table.sort(out)
   return out
+end
+
+-- ---------------------------------------------------------------- the Loot Bag section (O516)
+-- The Loot Bag (500 slots, weightless, in the purse: server pouches_config.lua kinds.loot) opened as a page and took the
+-- backpack's place with a grid of 250 slots (owner 2026-11-12: "open only 20 slots by default and leave the main backpack
+-- open"). It is now a section under the grid of the page shown, LOOT_SLOTS slots at a time with arrows. The engine sends
+-- it in pages of 250 (server src-patch 0081: the container's capacity at the client is 250, the first index and the
+-- number of items come with it); a client page of 20 never crosses an engine page, so the last client page of an engine
+-- page is the 10 slots that are left and the next one asks the server for the next engine page (g_game.seekInContainer).
+C.LOOT_SLOTS = 20
+-- the client ids of the Loot Bag: pouches_config.lua kinds.loot clientId and oldClientId (a pair before 62 draws the old
+-- one); the server names the one in use (game_pouches getState().ids.loot), which wins when it is known
+C.LOOT_CLIENT_IDS = { 38608, 33653 }
+
+-- true when a bag of the purse with this client item id is the Loot Bag
+function C.isLootBag(id, ids)
+  id = int(id)
+  if not id then return false end
+  local named = type(ids) == 'table' and int(ids.loot) or nil
+  if named and named ~= 0 then return id == named end
+  for _, v in ipairs(C.LOOT_CLIENT_IDS) do
+    if id == v then return true end
+  end
+  return false
+end
+
+-- the section after the Loot Bag opened: shown when the player opened it (a double click in the purse, its page button),
+-- not when the login restore opened it (the panel starts without it, as it starts on the backpack)
+function C.lootShownOnOpen(shown, restoring)
+  if restoring then return shown end
+  return true
+end
+
+-- client pages of an engine page of `ep` slots: ceil(ep / 20) (13 for 250)
+local function lootPer(ep)
+  return math.ceil(math.max(int(ep) or 1, 1) / C.LOOT_SLOTS)
+end
+
+-- the client page that holds item index `index` (0-based over the whole container)
+function C.lootPageOf(index, ep)
+  ep = math.max(int(ep) or 1, 1)
+  index = math.max(int(index) or 0, 0)
+  return math.floor(index / ep) * lootPer(ep) + math.floor((index % ep) / C.LOOT_SLOTS)
+end
+
+-- how many client pages the arrows walk: up to the page of the last item, one when the bag is empty. size: the items in
+-- the whole container, ep: the container's capacity as the client has it
+function C.lootPageCount(size, ep)
+  size = int(size) or 0
+  if size <= 0 then return 1 end
+  return C.lootPageOf(size - 1, ep) + 1
+end
+
+-- what client page `page` (0-based, clamped) shows: { page, pages, seek = the first index of the engine page it lives in
+-- (0 for a bag that is not paged), first = the first slot of that engine page it shows, count = slots shown }
+function C.lootView(page, size, ep)
+  ep = math.max(int(ep) or 1, 1)
+  local pages = C.lootPageCount(size, ep)
+  page = math.min(math.max(int(page) or 0, 0), pages - 1)
+  local per = lootPer(ep)
+  local first = (page % per) * C.LOOT_SLOTS
+  return { page = page, pages = pages, seek = math.floor(page / per) * ep, first = first,
+    count = math.min(C.LOOT_SLOTS, ep - first) }
+end
+
+-- the client page the container shows now, from its first index (c:getFirstIndex()); the page the player asked for while
+-- the engine page it needs has not come yet stays the asked one (the server answers a seek with a new open)
+function C.lootPageFor(want, firstIndex, size, ep)
+  local v = C.lootView(want, size, ep)
+  if (int(firstIndex) or 0) == v.seek then return v.page end
+  return C.lootPageOf(int(firstIndex) or 0, ep)
 end
 
 -- ---------------------------------------------------------------- drops on a page button

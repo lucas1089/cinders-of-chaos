@@ -32,6 +32,13 @@ BagPanelButton < ChaosButton
   size: 64 20
   font: verdana-11px-antialised
 
+// the arrows and the hide button of the Loot Bag section (O516)
+BagPanelMini < ChaosButton
+  size: 20 18
+  padding: 0
+  font: verdana-11px-antialised
+  text-offset: 0 0
+
 MiniWindow
   id: bagPanelWindow
   !text: tr('Inventory')
@@ -135,9 +142,88 @@ MiniWindow
       !text: tr('Nothing here.')
       visible: false
 
+    // the Loot Bag (O516): its own section under the grid of the page shown, 20 slots at a time (bagpanel.lua drawLoot)
+    Panel
+      id: lootSection
+      anchors.top: emptyLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 0
+      height: 0
+      visible: false
+
+      Panel
+        id: lootHeader
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 18
+
+        BagPanelMini
+          id: lootHide
+          anchors.top: parent.top
+          anchors.right: parent.right
+          text: x
+          !tooltip: tr('Hides the Loot Bag. It stays open: its button shows it again.')
+          @onClick: modules.game_bagpanel.toggleLoot()
+
+        BagPanelMini
+          id: lootNext
+          anchors.top: parent.top
+          anchors.right: lootHide.left
+          margin-right: 2
+          text: >
+          !tooltip: tr('Next 20 slots of the Loot Bag')
+          @onClick: modules.game_bagpanel.lootArrow(1)
+
+        ChaosLabelDim
+          id: lootPage
+          anchors.top: parent.top
+          anchors.right: lootNext.left
+          margin-right: 3
+          width: 62
+          height: 18
+          text-auto-resize: false
+          text-align: center
+          color: #d6c9ae
+          font: verdana-11px-antialised
+
+        BagPanelMini
+          id: lootPrev
+          anchors.top: parent.top
+          anchors.right: lootPage.left
+          margin-right: 3
+          text: <
+          !tooltip: tr('Previous 20 slots of the Loot Bag')
+          @onClick: modules.game_bagpanel.lootArrow(-1)
+
+        ChaosLabelDim
+          id: lootTitle
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: lootPrev.left
+          margin-right: 3
+          height: 18
+          text-auto-resize: false
+          color: #f6cf72
+          font: verdana-11px-antialised
+
+      Panel
+        id: lootGrid
+        anchors.top: lootHeader.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 2
+        height: 36
+        layout:
+          type: grid
+          cell-size: 34 34
+          cell-spacing: 2
+          flow: true
+
     Panel
       id: pages
-      anchors.top: emptyLabel.bottom
+      anchors.top: lootSection.bottom
       anchors.left: parent.left
       anchors.right: parent.right
       margin-top: 4

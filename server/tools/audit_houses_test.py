@@ -59,10 +59,11 @@ for h in HOUSE_CODES:
         tiles[(door[0], door[1] - 1, 7)] = dict(items=[351, 201])        # the street tile in front of the door is blocked
     entry = (door[0], door[1] - 1, 7) if h not in (4, 5) else ((ox + 4, oy, 7) if h == 4 else (9999, 9999, 7))
     rows.append(dict(id=h, name='House %d' % h, entry=entry))
-# house 2: an upper floor, roofed
+# house 2: two upper floors (three in all; the default --max-floors 2 takes two, owner 2026-11-12), roofed
 ox, oy = region(2)
 tiles[(ox + 1, oy + 1, 6)] = dict(items=[351], house=2)
-tiles[(ox + 1, oy + 1, 5)] = dict(items=[500])
+tiles[(ox + 1, oy + 1, 5)] = dict(items=[351], house=2)
+tiles[(ox + 1, oy + 1, 4)] = dict(items=[500])
 MAP, XML = os.path.join(tmp, 'm.otbm'), os.path.join(tmp, 'items.xml')
 OTB = os.path.join(tmp, 'items.otb')
 HOUSES = os.path.join(tmp, 'm-house.xml')
@@ -88,9 +89,11 @@ found, meta = H.audit(world[0], houses)
 for h, code in HOUSE_CODES.items():
     got = sorted(c for c, _d in found.get(h, []))
     check(got == ([code] if code else []), 'house %d: %s, found %s' % (h, code or 'clean', got))
-check(meta[7][0] == 4 and meta[1][0] == 16 and meta[2][0] == 17, 'tile counts: %r' % {k: meta[k][0] for k in (1, 2, 7)})
-f2, _m = H.audit(world[0], houses, max_floors=2)
-check(not f2[2], '--max-floors 2 lets the two-floor house pass')
+check(meta[7][0] == 4 and meta[1][0] == 16 and meta[2][0] == 18, 'tile counts: %r' % {k: meta[k][0] for k in (1, 2, 7)})
+f2, _m = H.audit(world[0], houses, max_floors=3)
+check(not f2[2], '--max-floors 3 lets the three-floor house pass')
+f1, _m = H.audit(world[0], houses, max_floors=1)
+check(sorted(c for c, _d in f1.get(2, [])) == ['MULTI_FLOOR'], '--max-floors 1 still lists it')
 
 rc, text = run('--map', MAP, '--items', OTB, '--xml', XML, '--houses', HOUSES, '--known', EMPTY)
 check(rc == 0 and '8 houses, 7 findings, 7 not in the known list' in text, 'the report: ' + text[:400])
@@ -122,8 +125,8 @@ text_known = open(known).read().replace('3,NO_DOOR,synthetic\n', '')
 open(known, 'w').write(text_known)
 rc, text = run('--map', MAP, '--items', OTB, '--xml', XML, '--houses', HOUSES, '--known', known, '--check')
 check(rc == 1 and 'NEW findings: 1' in text, '--check fails on the one that is not listed')
-rc, text = run('--map', MAP, '--items', OTB, '--xml', XML, '--houses', HOUSES, '--known', EMPTY, '--max-floors', '2', '--summary')
-check(('%-17s %5d' % ('MULTI_FLOOR', 0)) in text and ' 6 findings' in text, '--max-floors 2 on the command line: ' + text[:200])
+rc, text = run('--map', MAP, '--items', OTB, '--xml', XML, '--houses', HOUSES, '--known', EMPTY, '--max-floors', '3', '--summary')
+check(('%-17s %5d' % ('MULTI_FLOOR', 0)) in text and ' 6 findings' in text, '--max-floors 3 on the command line: ' + text[:200])
 
 # refusals
 rc, text = run('--map', MAP, '--items', OTB, '--houses', os.path.join(tmp, 'nope.xml'))
