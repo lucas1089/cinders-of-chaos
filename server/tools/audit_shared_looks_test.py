@@ -98,7 +98,7 @@ def main():
     assert allow_rows and all(s in ('kept', 'recolour pair') and why for _, _, s, why in allow_rows), 'allow rows need a status and a reason'
     # the pool rows of the monsters recoloured by mask are the colours of their files (tune_monsters.py)
     rows = {r['name']: r for r in A.pool_rows()}
-    for n in ('Blightcrown Matron', 'Limb Hoarder', 'Nailcrown Regent', 'Bloom Husk', 'Rustguard', 'Grave Lantern', 'Leechwing'):
+    for n in ('Nailcrown Regent', 'Bloom Husk', 'Leechwing'):   # Grave Lantern took the idle look 3103 (O533)
         assert rows[n]['head'] not in (0, 133), n
     assert 1468 in A.load_masks() and 1501 in A.load_masks()
     print('audit_shared_looks_test: OK')

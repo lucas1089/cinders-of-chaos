@@ -2,7 +2,7 @@
 <monster name="Blazebringer" nameDescription="a blazebringer" race="blood" experience="4700" speed="60" manacost="0">
 	<health now="13400" max="13400"/>
 	<level min="700" max="740"/>
-	<look type="376" corpse="6068" />
+	<look type="2899" corpse="6068" />
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0" />

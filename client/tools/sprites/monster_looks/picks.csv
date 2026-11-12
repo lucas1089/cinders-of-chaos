@@ -166,10 +166,8 @@ base_restore_werewolf,308,stock,,,base,base,Werewolf,"Werewolf: its stock look a
 base_restore_goblin,61,stock,,,base,base,Goblin,"Goblin: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
 base_restore_orc_rider,4,stock,,,base,base,Orc Rider,"Orc Rider: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
 base_restore_war_wolf,3,stock,,,base,base,War Wolf,"War Wolf: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
-base_restore_gargoyle,95,stock,,,base,base,Gargoyle,"Gargoyle: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
 base_restore_carrion_worm,192,stock,,,base,base,Carrion Worm,"Carrion Worm: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
 base_restore_skeleton_warrior,298,stock,,,base,base,Skeleton Warrior,"Skeleton Warrior: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
-base_restore_ghost,48,stock,,,base,base,Ghost,"Ghost: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
 base_restore_witch,54,stock,,,base,base,Witch,"Witch: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
 eye_demon,3361,autosprite,cmvrcd1w20014jc1opt6ib6ox,,lairboss,boss,Vharzul the Verdant Eye,"Verdant Eye Demon: horned red and black demon with pale green eyes, claws and spiked shoulders, 4x4","autosprite walk, 256 px shrunk to 128"
 ashbound_thrall,3362,autosprite,cmvre826d00ezz6z1fg72bkp8,,hunt,hunt,Ashbound Thrall,"Ashbound Thrall: hunched chained demonic thrall, charred hide cracked with ember veins, small horns","autosprite walk, 256 px shrunk to 64"
@@ -181,3 +179,116 @@ redmane_anvilbreaker,3367,aiss,armored-berserker-sheet.png,,hunt,hunt,Redmane An
 marshlight_hollowseer,3368,aiss,teal-mage-sheet.png,,hunt,hunt,Marshlight Hollowseer,"Marshlight Hollowseer: hooded teal-cloaked seer with empty shadow for a face, holding two glowing lanterns","pack sheet, 64 px cells"
 gravecrown_oathbreaker,3369,aiss,crowned-knight-sheet.png,,hunt,hunt,Gravecrown Oathbreaker,"Gravecrown Oathbreaker: skull-pauldroned knight in a small gold crown, torn red cape, blue soul glow, great sword","pack sheet, 64 px cells"
 coralcrown_brinecaller,3370,aiss,sea-naga-sheet.png,,hunt,hunt,Coralcrown Brinecaller,Coralcrown Brinecaller: teal serpent-tailed sea siren with a pink coral crown and a coral trident,"pack sheet, 64 px cells, every second pixel of 128 px cells"
+idle_orc,2966,pair50,F 5,,base,base,Orc,"Orc (pair 50 look 2966; the old look 5 has no idle animation, O533)",new look with an idle animation
+idle_orc_warrior,2968,pair50,F 7,,base,base,Orc Warrior,"Orc with shield and sword (pair 50 look 2968; the old look 7 has no idle animation, O533)",new look with an idle animation
+idle_orc_berserker,2969,pair50,F 8,,base,base,Orc Berserker,"Orc berserker with axe (pair 50 look 2969; the old look 8 has no idle animation, O533)",new look with an idle animation
+idle_orc_shaman,2967,pair50,F 6,,base,base,Orc Shaman,"Orc shaman, purple hood (pair 50 look 2967; the old look 6 has no idle animation, O533)",new look with an idle animation
+idle_orc_spearman,2982,pair50,F 50,,base,base,Orc Spearman,"Orc spearman (pair 50 look 2982; the old look 50 has no idle animation, O533)",new look with an idle animation
+idle_orc_leader,2964,pair50,F 2,,base,base,Orc Leader,"Armoured orc champion (pair 50 look 2964; the old look 59 has no idle animation, O533)",new look with an idle animation
+idle_orc_warlord,2986,pair50,F 59,,base,base,Orc Warlord,"Orc warlord (pair 50 look 2986; the old look 2 has no idle animation, O533)",new look with an idle animation
+idle_orc_marauder,2965,pair50,F 4,,base,base,Orc Marauder,"Hooded grave zombie (pair 50 look 2965; the old look 342 has no idle animation, O533)",new look with an idle animation
+idle_minotaur,2974,pair50,F 25,,base,base,Minotaur,"Minotaur (pair 50 look 2974; the old look 25 has no idle animation, O533)",new look with an idle animation
+idle_minotaur_archer,2973,pair50,F 24,,base,base,Minotaur Archer,"Minotaur archer (pair 50 look 2973; the old look 24 has no idle animation, O533)",new look with an idle animation
+idle_minotaur_amazon,2801,pair50,G 781,,base,base,Minotaur Amazon,"Minotaur 1 (pair 50 look 2801; the old look 608 has no idle animation, O533)",new look with an idle animation
+idle_skeleton,2975,pair50,F 33,,base,base,Skeleton,"Skeleton (pair 50 look 2975; the old look 33 has no idle animation, O533)",new look with an idle animation
+idle_demon_skeleton,2978,pair50,F 37,,base,base,Demon Skeleton,"Bloody skeleton (pair 50 look 2978; the old look 37 has no idle animation, O533)",new look with an idle animation
+idle_zombie,2972,pair50,F 18,,base,base,Zombie,"Zombie (pair 50 look 2972; the old look 311 has no idle animation, O533)",new look with an idle animation
+idle_ghoul,3019,pair50,F 565,,base,base,Ghoul,"Green ghoul (pair 50 look 3019; the old look 18 has no idle animation, O533)",new look with an idle animation
+idle_ghost,2981,pair50,F 48,,base,base,Ghost,"Ghost (pair 50 look 2981; the old look 48 has no idle animation, O533)",new look with an idle animation
+idle_banshee,2687,pair50,G 331,,base,base,Banshee,"Pale ghost 1 (pair 50 look 2687; the old look 78 has no idle animation, O533)",new look with an idle animation
+idle_lost_soul,2688,pair50,G 361,,base,base,Lost Soul,"Cyan wisp 1 (pair 50 look 2688; the old look 232 has no idle animation, O533)",new look with an idle animation
+idle_spectre,2689,pair50,G 788,,base,base,Spectre,"Grey shade wisp 1 (pair 50 look 2689; the old look 235 has no idle animation, O533)",new look with an idle animation
+idle_phantasm,3258,pair50,F 2858,,base,base,Phantasm,"Purple tentacle reaper (pair 50 look 3258; the old look 241 has no idle animation, O533)",new look with an idle animation
+idle_grim_reaper,2682,pair50,G 422,,base,base,Grim Reaper,"Scythe reaper 1 (pair 50 look 2682; the old look 300 has no idle animation, O533)",new look with an idle animation
+idle_infernal_phantom,3359,pair50,F 3520,,base,base,Infernal Phantom,"Hooded flame ghost, red (pair 50 look 3359; the old look 1046 has no idle animation, O533)",new look with an idle animation
+idle_mould_phantom,3358,pair50,F 3519,,base,base,Mould Phantom,"Hooded flame ghost, green (pair 50 look 3358; the old look 1046 has no idle animation, O533)",new look with an idle animation
+idle_distorted_phantom,3360,pair50,F 3521,,base,base,Distorted Phantom,"Hooded flame ghost, blue (pair 50 look 3360; the old look 1046 has no idle animation, O533)",new look with an idle animation
+idle_capricious_phantom,3184,pair50,F 1958,,base,base,Capricious Phantom,"Purple flame wraith (pair 50 look 3184; the old look 1046 has no idle animation, O533)",new look with an idle animation
+idle_quicksilver_wraith,3225,pair50,F 2610,,hunt,hunt,Quicksilver Wraith,"Blue wisp (pair 50 look 3225; the old look 1291 has no idle animation, O533)",new look with an idle animation
+idle_poison_spider,3319,pair50,F 3387,,base,base,Poison Spider,"Small black spider with red maw (pair 50 look 3319; the old look 36 has no idle animation, O533)",new look with an idle animation
+idle_spider,3318,pair50,F 3386,,base,base,Spider,"Black spider with red maw (pair 50 look 3318; the old look 30 has no idle animation, O533)",new look with an idle animation
+idle_tarantula,2997,pair50,F 219,,base,base,Tarantula,"Tarantula (pair 50 look 2997; the old look 219 has no idle animation, O533)",new look with an idle animation
+idle_giant_spider,2979,pair50,F 38,,base,base,Giant Spider,"Giant red spider (pair 50 look 2979; the old look 38 has no idle animation, O533)",new look with an idle animation
+idle_scorpion,3195,pair50,F 2157,,base,base,Scorpion,"Giant scorpion, dark (pair 50 look 3195; the old look 43 has no idle animation, O533)",new look with an idle animation
+idle_sandstone_scorpion,3311,pair50,F 3341,,base,base,Sandstone Scorpion,"Ornate scorpion, gold (pair 50 look 3311; the old look 398 has no idle animation, O533)",new look with an idle animation
+idle_brimstone_bug,3313,pair50,F 3355,,base,base,Brimstone Bug,"Flaming scorpion (pair 50 look 3313; the old look 352 has no idle animation, O533)",new look with an idle animation
+idle_dragon,2976,pair50,F 34,,base,base,Dragon,"Green dragon (pair 50 look 2976; the old look 34 has no idle animation, O533)",new look with an idle animation
+idle_dragon_lord,2980,pair50,F 39,,base,base,Dragon Lord,"Red dragon (pair 50 look 2980; the old look 39 has no idle animation, O533)",new look with an idle animation
+idle_frost_dragon,3322,pair50,F 3390,,base,base,Frost Dragon,"Blue serpent dragon (pair 50 look 3322; the old look 248 has no idle animation, O533)",new look with an idle animation
+idle_dragon_hatchling,3071,pair50,F 1125,,base,base,Dragon Hatchling,"Green wyvern (pair 50 look 3071; the old look 271 has no idle animation, O533)",new look with an idle animation
+idle_dragon_lord_hatchling,3137,pair50,F 1552,,base,base,Dragon Lord Hatchling,"Dark winged horned drake (pair 50 look 3137; the old look 272 has no idle animation, O533)",new look with an idle animation
+idle_black_dragon,3269,pair50,F 2906,,base,base,Black Dragon,"Black winged drake (pair 50 look 3269; the old look 963 has no idle animation, O533)",new look with an idle animation
+idle_mega_dragon,3349,pair50,F 3492,,base,base,Mega Dragon,"Molten demon dragon (pair 50 look 3349; the old look 978 has no idle animation, O533)",new look with an idle animation
+idle_wardragon,3264,pair50,F 2897,,base,base,Wardragon,"Grey winged demon drake (pair 50 look 3264; the old look 977 has no idle animation, O533)",new look with an idle animation
+idle_netheria_dragon,3261,pair50,F 2894,,base,base,Netheria Dragon,"Winged demon drake, purple (pair 50 look 3261; the old look 969 has no idle animation, O533)",new look with an idle animation
+idle_wyrm,3332,pair50,F 3402,,base,base,Wyrm,"Horned serpent, purple (pair 50 look 3332; the old look 291 has no idle animation, O533)",new look with an idle animation
+idle_elder_wyrm,3263,pair50,F 2896,,base,base,Elder Wyrm,"Winged demon drake, olive B (pair 50 look 3263; the old look 561 has no idle animation, O533)",new look with an idle animation
+idle_stormvein_wrym,3260,pair50,F 2893,,base,base,Stormvein Wrym,"Winged demon drake, violet (pair 50 look 3260; the old look 1419 has no idle animation, O533)",new look with an idle animation
+idle_viridscale_wrym,3267,pair50,F 2900,,base,base,Viridscale Wrym,"Winged demon drake, green glow (pair 50 look 3267; the old look 1417 has no idle animation, O533)",new look with an idle animation
+idle_ashfang_wrym,3266,pair50,F 2899,,base,base,Ashfang Wrym,"Winged demon drake, red glow (pair 50 look 3266; the old look 1418 has no idle animation, O533)",new look with an idle animation
+idle_shadowvein_wrym,3262,pair50,F 2895,,base,base,Shadowvein Wrym,"Winged demon drake, olive (pair 50 look 3262; the old look 1416 has no idle animation, O533)",new look with an idle animation
+idle_demon,2977,pair50,F 35,,base,base,Demon,"Red demon (pair 50 look 2977; the old look 35 has no idle animation, O533)",new look with an idle animation
+idle_fire_devil,3224,pair50,F 2544,,base,base,Fire Devil,"Flame demon (pair 50 look 3224; the old look 40 has no idle animation, O533)",new look with an idle animation
+idle_demon_outcast,3043,pair50,F 985,,base,base,Demon Outcast,"Purple horned demon (pair 50 look 3043; the old look 590 has no idle animation, O533)",new look with an idle animation
+idle_alpha_demon,3278,pair50,F 2953,,base,base,Alpha Demon,"Red demon fist brute (pair 50 look 3278; the old look 962 has no idle animation, O533)",new look with an idle animation
+idle_retching_horror,3351,pair50,F 3494,,base,base,Retching Horror,"Red horned brute (pair 50 look 3351; the old look 588 has no idle animation, O533)",new look with an idle animation
+idle_dark_torturer,3177,pair50,F 1853,,base,base,Dark Torturer,"Bleeding red-eyed reaper (pair 50 look 3177; the old look 234 has no idle animation, O533)",new look with an idle animation
+idle_choking_fear,3198,pair50,F 2222,,base,base,Choking Fear,"Shadow shroud creature (pair 50 look 3198; the old look 586 has no idle animation, O533)",new look with an idle animation
+idle_wolf,3180,pair50,F 1895,,base,base,Wolf,"Dark beast with red collar (pair 50 look 3180; the old look 27 has no idle animation, O533)",new look with an idle animation
+idle_hellhound,3183,pair50,F 1957,,base,base,Hellhound,"Fire wraith (pair 50 look 3183; the old look 240 has no idle animation, O533)",new look with an idle animation
+idle_gnarlhound,3182,pair50,F 1923,,base,base,Gnarlhound,"Armoured beast with green eyes (pair 50 look 3182; the old look 341 has no idle animation, O533)",new look with an idle animation
+idle_hyaena,3306,pair50,F 3329,,base,base,Hyaena,"Armoured beast, brown (pair 50 look 3306; the old look 94 has no idle animation, O533)",new look with an idle animation
+idle_manticore,3352,pair50,F 3497,,base,base,Manticore,"Chimera with serpent tail (pair 50 look 3352; the old look 1024 has no idle animation, O533)",new look with an idle animation
+idle_elite_yeti,3321,pair50,F 3389,,hunt,hunt,Elite Yeti,"Blue frost beast (pair 50 look 3321; the old look 110 has no idle animation, O533)",new look with an idle animation
+idle_stone_golem,3037,pair50,F 943,,base,base,Stone Golem,"Stone head golem (pair 50 look 3037; the old look 67 has no idle animation, O533)",new look with an idle animation
+idle_lava_golem,3014,pair50,F 491,,base,base,Lava Golem,"Lava golem (pair 50 look 3014; the old look 491 has no idle animation, O533)",new look with an idle animation
+idle_war_golem,3277,pair50,F 2933,,base,base,War Golem,"Grey skull golem with blue band (pair 50 look 3277; the old look 326 has no idle animation, O533)",new look with an idle animation
+idle_massive_water_elemental,2902,pair50,G 355,,base,base,Massive Water Elemental,"Element spirit 2 (pair 50 look 2902; the old look 11 has no idle animation, O533)",new look with an idle animation
+idle_turbulent_elemental,2907,pair50,G 930,,base,base,Turbulent Elemental,"Element spirit 3 (pair 50 look 2907; the old look 1058 has no idle animation, O533)",new look with an idle animation
+idle_blazebringer,2899,pair50,G 350,,hunt,hunt,Blazebringer,"Fire spirit 1 (pair 50 look 2899; the old look 376 has no idle animation, O533)",new look with an idle animation
+idle_magma_crawler,3232,pair50,F 2668,,base,base,Magma Crawler,"Magma elemental (pair 50 look 3232; the old look 492 has no idle animation, O533)",new look with an idle animation
+idle_elder_bonelord,2993,pair50,F 108,,base,base,Elder Bonelord,"Floating eye tyrant, brown (pair 50 look 2993; the old look 108 has no idle animation, O533)",new look with an idle animation
+idle_gazer,2971,pair50,F 17,,base,base,Gazer,"Floating eye tyrant, yellow (pair 50 look 2971; the old look 109 has no idle animation, O533)",new look with an idle animation
+idle_sight_of_surrender,3199,pair50,F 2377,,base,base,Sight of Surrender,"Red eye tyrant (pair 50 look 3199; the old look 583 has no idle animation, O533)",new look with an idle animation
+idle_many_faces,3337,pair50,F 3428,,base,base,Many Faces,"Medusa-haired eyeball, black (pair 50 look 3337; the old look 1044 has no idle animation, O533)",new look with an idle animation
+idle_medusa,3009,pair50,F 330,,base,base,Medusa,"Gorgon with snake hair (pair 50 look 3009; the old look 330 has no idle animation, O533)",new look with an idle animation
+idle_serpent_spawn,3331,pair50,F 3401,,base,base,Serpent Spawn,"Horned serpent, green (pair 50 look 3331; the old look 220 has no idle animation, O533)",new look with an idle animation
+idle_tidecrest_serpent,3333,pair50,F 3403,,base,base,Tidecrest Serpent,"Horned serpent, fire (pair 50 look 3333; the old look 675 has no idle animation, O533)",new look with an idle animation
+idle_sea_serpent,3334,pair50,F 3404,,base,base,Sea Serpent,"Horned serpent, blue (pair 50 look 3334; the old look 275 has no idle animation, O533)",new look with an idle animation
+idle_calamary,2736,pair50,G 785,,base,base,Calamary,"Purple octopus 1 (pair 50 look 2736; the old look 451 has no idle animation, O533)",new look with an idle animation
+idle_drownkin_spellsinger,2867,pair50,G 937,,base,base,Drownkin Spellsinger,"Siren 2 (pair 50 look 2867; the old look 443 has no idle animation, O533)",new look with an idle animation
+idle_gargoyle,3006,pair50,F 307,,base,base,Gargoyle,"Winged bat demon (pair 50 look 3006; the old look 95 has no idle animation, O533)",new look with an idle animation
+idle_gorebloom,2890,pair50,G 536,,base,base,Gorebloom,"Carnivorous plant 1 (pair 50 look 2890; the old look 120 has no idle animation, O533)",new look with an idle animation
+idle_spiky_carnivor,2998,pair50,F 221,,hunt,hunt,Spiky Carnivor,"Carnivorous plant (pair 50 look 2998; the old look 1478 has no idle animation, O533)",new look with an idle animation
+idle_blight_bloom,3161,pair50,F 1773,,hunt,hunt,Blight Bloom,"Spore cluster plant (pair 50 look 3161; the old look 563 has no idle animation, O533)",new look with an idle animation
+idle_haunted_treeling,1439,stock,,,base,base,Haunted Treeling,"bark creature (stock look 1439; the old look 310 has no idle animation, O533)",new look with an idle animation
+idle_ogre_brute,3355,pair50,F 3505,,base,base,Ogre Brute,"Red armoured ogre (pair 50 look 3355; the old look 857 has no idle animation, O533)",new look with an idle animation
+idle_ogre_shaman,3357,pair50,F 3518,,base,base,Ogre Shaman,"Red hulk with green staff (pair 50 look 3357; the old look 859 has no idle animation, O533)",new look with an idle animation
+idle_lacewing_moth,3171,pair50,F 1833,,hunt,hunt,Lacewing Moth,"Winged tentacle orchid, violet (pair 50 look 3171; the old look 1480 has no idle animation, O533)",new look with an idle animation
+idle_grave_lantern,3103,pair50,F 1389,,hunt,hunt,Grave Lantern,"Cyan wisp in glass (pair 50 look 3103; the old look 1478 has no idle animation, O533)",new look with an idle animation
+idle_rimeshroud_revenant,3234,pair50,F 2681,,hunt,hunt,Rimeshroud Revenant,"Horned demon skull, blue glow (pair 50 look 3234; the old look 1544 has no idle animation, O533)",new look with an idle animation
+idle_bonepicker,3354,pair50,F 3499,,hunt,hunt,Bonepicker,"Black raven with blue gem (pair 50 look 3354; the old look 2219 has no idle animation, O533)",new look with an idle animation
+idle_siege_behemoth,3326,pair50,F 3394,,hunt,hunt,Siege Behemoth,"Lava rock golem (pair 50 look 3326; the old look 2218 has no idle animation, O533)",new look with an idle animation
+idle_massive_energy_elemental,2903,pair50,G 362,,base,base,Massive Energy Elemental,"Fire spirit 2 (pair 50 look 2903; the old look 290 has no idle animation, O533)",new look with an idle animation
+idle_charger,2904,pair50,G 927,,base,base,Charger,"Dark spiked ball 1 (pair 50 look 2904; the old look 293 has no idle animation, O533)",new look with an idle animation
+idle_vicious_manbat,3012,pair50,F 363,,base,base,Vicious Manbat,"Black bat (pair 50 look 3012; the old look 554 has no idle animation, O533)",new look with an idle animation
+idle_shock_head,3304,pair50,F 3312,,base,base,Shock Head,"Stone head eye tyrant with green tentacles (pair 50 look 3304; the old look 579 has no idle animation, O533)",new look with an idle animation
+idle_rage_squid,2895,pair50,G 926,,base,base,Rage Squid,"Red knot 1 (pair 50 look 2895; the old look 987 has no idle animation, O533)",new look with an idle animation
+idle_cursed_prospector,3316,pair50,F 3368,,base,base,Cursed Prospector,"Ghostly purple apparition (pair 50 look 3316; the old look 1031 has no idle animation, O533)",new look with an idle animation
+idle_flimsy_lost_soul,3104,pair50,F 1390,,base,base,Flimsy Lost Soul,"Green wisp in glass (pair 50 look 3104; the old look 1031 has no idle animation, O533)",new look with an idle animation
+idle_evil_prospector,3227,pair50,F 2660,,base,base,Evil Prospector,"Ghostly armoured wraith (pair 50 look 3227; the old look 1031 has no idle animation, O533)",new look with an idle animation
+idle_usurper_knight,3303,pair50,F 3305,,base,base,Usurper Knight,"Dark armoured beast knight (pair 50 look 3303; the old look 1060 has no idle animation, O533)",new look with an idle animation
+idle_gazer_spectre,3153,pair50,F 1687,,base,base,Gazer Spectre,"Stone with teal flame wisp (pair 50 look 3153; the old look 1068 has no idle animation, O533)",new look with an idle animation
+idle_wraithbone_stalker,3294,pair50,F 3162,,hunt,hunt,Wraithbone Stalker,"Hooded shadow beast with gold (pair 50 look 3294; the old look 1449 has no idle animation, O533)",new look with an idle animation
+idle_limb_hoarder,3018,pair50,F 564,,hunt,hunt,Limb Hoarder,"Flesh blob with eye (pair 50 look 3018; the old look 1467 has no idle animation, O533)",new look with an idle animation
+idle_blightcrown_matron,3086,pair50,F 1265,,hunt,hunt,Blightcrown Matron,"Horned maggot demon, violet (pair 50 look 3086; the old look 1467 has no idle animation, O533)",new look with an idle animation
+idle_rustguard,3215,pair50,F 2441,,hunt,hunt,Rustguard,"Hooded armoured crawler (pair 50 look 3215; the old look 1468 has no idle animation, O533)",new look with an idle animation
+idle_twisted_shaper,3172,pair50,F 1834,,hunt,hunt,Twisted Shaper,"Winged tentacle orchid, green (pair 50 look 3172; the old look 1468 has no idle animation, O533)",new look with an idle animation
+idle_wax_penitent,3092,pair50,F 1286,,hunt,hunt,Wax Penitent,"Pale ember flame spirit on stick (pair 50 look 3092; the old look 1475 has no idle animation, O533)",new look with an idle animation
+idle_corpselight_lurker,3091,pair50,F 1285,,hunt,hunt,Corpselight Lurker,"Ember flame spirit on stick (pair 50 look 3091; the old look 1485 has no idle animation, O533)",new look with an idle animation
+idle_dirge_herald,3090,pair50,F 1284,,hunt,hunt,Dirge Herald,"Blue flame spirit on stick (pair 50 look 3090; the old look 1485 has no idle animation, O533)",new look with an idle animation
+idle_slagborer_reaver,3237,pair50,F 2684,,hunt,hunt,Slagborer Reaver,"Red-eyed shadow crawler (pair 50 look 3237; the old look 1499 has no idle animation, O533)",new look with an idle animation
+idle_pit_delver,3217,pair50,F 2443,,hunt,hunt,Pit Delver,"Scythe spider machine (pair 50 look 3217; the old look 2220 has no idle animation, O533)",new look with an idle animation
+idle_wan_sentry,3216,pair50,F 2442,,hunt,hunt,Wan Sentry,"Dark winged creature (pair 50 look 3216; the old look 2220 has no idle animation, O533)",new look with an idle animation
+idle_reliquary_urn,3209,pair50,F 2402,,hunt,hunt,Reliquary Urn,"Ember cinder creature (pair 50 look 3209; the old look 2220 has no idle animation, O533)",new look with an idle animation
+idle_pitgnawer,3218,pair50,F 2480,,hunt,hunt,Pitgnawer,"Violet flame stalker (pair 50 look 3218; the old look 2220 has no idle animation, O533)",new look with an idle animation

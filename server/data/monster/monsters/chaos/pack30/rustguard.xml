@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Rustguard" nameDescription="a rustguard" race="energy" experience="17600" speed="44" manacost="0">
 	<health now="23700" max="23700"/>
-	<look type="1468" head="97" body="97" legs="97" feet="97" corpse="6068"/>
+	<look type="3215" corpse="6068"/>
 	<level min="1040" max="1080"/>
 	<targetchange interval="5000" chance="0"/>
 	<flags>
