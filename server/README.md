@@ -32749,3 +32749,54 @@ drop chance twice. Owner 2026-11-11: colour option 3 (the place in colour, the n
   no drop), `tools/install_gems_test.py` (old text to new, second run), client `tooltiplogic_test.lua`.
 - **Not verified**: a real client (the row layout of `gemBox` in `item_tooltip.lua` is not run by a test; the rows and colours are),
   a speaker's reading of the pt-BR lines.
+
+## Editor brushes (O514) (`tools/gen_editor_brushes.py`, `mapeditor/tools/merge_brushes.py`, `tools/ci/check_editor_palette.py`)
+
+Our map editor borders our 12 pack grounds by itself. Before, the owner placed a ground and its border pieces by id.
+
+- **What the upstream editor reads** (the pin in `mapeditor/UPSTREAM`; `editor/core/brushstore.cpp`, `editor/core/tilesetstore.cpp`,
+  `editor/core/terrainborderalignment.h`, data in `data/1098/`). One `brushes.json` and one `tilesets.json` per client version,
+  JSON, no XML, no include of a second file. `grounds`: name to `{zorder, lookid, items [[id, chance]], borders [{align
+  outer|inner, border KEY, to NAME|"*"|""}], friends, hate_friends, optional, solo_optional}`. `borders`: KEY to 13 slots,
+  slot 0 unused, then n, e, s, w, cnw, cne, csw, cse, dnw, dne, dse, dsw; a slot is an id or `{"variants": [[id, chance]]}`.
+  `tilesets.json`: category (terrain, doodad, item, raw, collection, door) to palette name to a list of ids.
+- **Its rule.** For a tile, `computeBorderItems` looks at the 8 neighbours. The neighbour with the higher z order that owns an
+  `outer` set for this tile's ground makes the pieces; the neighbour mask goes through a table of 256 entries with up to 4
+  slots. Written as a rule (it reproduces all 256 entries, checked when the test was written): exactly two sides that meet give
+  the inner corner d.. of that pair; any other sides give one edge per side; a diagonal neighbour whose two sides are not the
+  higher ground gives the outer corner c... Equal z orders: the one with a matching outer set wins, then name order.
+- **Ours.** `gen_editor_brushes.py` writes `mapeditor/data/1098/cinders/cinders_brushes.json` and `cinders_tilesets.json` from
+  `data/items/art_items.csv` and the z orders of the planner (`tools/areaplan_build.lua` `PACK`; `EDITOR_Z` in the script for the
+  other six: fine sand 3050, floors 3300-3320, red clay 3480, bright grass 3640). Stock grounds: dirt 1000, sand 3000, grass 3500,
+  earth 10500, so ours draw over stock dirt and sand; stock grass draws over our floors, clay and sand; loam ties with stock grass
+  and loses by name order (grass over loam); dense grass and fresh snow tie (they never meet). Each ground has one `outer` block
+  `to: "*"`, no friends, no inner block.
+- **The 12 pieces.** Editor n, e, s, w = our n, e, s, w. Outer corners cnw, cne, csw, cse = our nw, ne, sw, se. Inner corners dnw,
+  dne, dse, dsw = our in_nw, in_ne, in_se, in_sw. The proof, three parts. (1) The planner's table
+  (`areaplan_build.lua` `packPiece`, `piecesFrom`) is the same and the planned areas were checked on renders; the test reads it.
+  (2) The rule above against `ChaosAreaGenCore.borderPieces` on all 256 patterns, in luajit and lua5.3: 176 give the same
+  pieces. The other 80 are the patterns with three or four sides: the editor puts an edge per side, the generator the inner
+  corner of a pair and an edge for the rest; the sides and the corners they cover are equal (the test asserts both). (3) The
+  art: in the families whose rim is cut out of the tile (lush, dense, dry and meadow grass, loam, jade tile, slate: 7 of 12) the
+  transparent part of n is at the south, of s at the north, e at the west, w at the east; each of nw, ne, sw, se is opaque on
+  its two named sides and shows the lower ground on the other two (the convex rounded corner of a ground that grows one tile
+  into the lower one); each in_ piece is over 96 % opaque and its bite, if any, is at the corner away from its name (a tile
+  with two sides covered). That is the geometry of cnw / dnw. The other 5 families paint the rim into an opaque tile; their
+  shape matches by eye (contact sheet) and by the same file layout, not by a test.
+- **Palettes.** Terrain `Cinders`: the 12 grounds, 8 water, 114 shore pieces. RAW `Cinders objects`: lake objects, dock props,
+  trees, stumps. RAW `Cinders border pieces`: the 144 border pieces, for a fix by hand. Shores are not brushes: a shore set has 19
+  pieces named after land sides in 4-neighbour combinations (in_ew, in_nsw, ...), animated, drawn on the water tile; the editor
+  picks 12 slots from 8 neighbours, so the naming does not map. Use them from the palette.
+- **How it gets into the editor.** The editor has no include, and a change of its program is not needed:
+  `mapeditor/tools/merge_brushes.py DATA_DIR` merges the two files into its `brushes.json` and `tilesets.json`. Our keys are replaced,
+  stock entries stay, a ground that names an id a stock ground owns is refused. `mapeditor-build.yml` runs it on the release folder
+  (patched variant) so the self-updater's zip carries the merge, and puts the files and the tool into the source zip.
+  `windows-package.yml` runs it again on the unpacked editor (idempotent), also for the upstream fallback.
+  The stock files' ids are server ids of the game's items.xml, which the package puts into `data\1098` too; the build's own zip
+  has the stock items.xml, so our ids show as unknown there until packaged.
+- **Tests and checks.** `tools/gen_editor_brushes_test.py`, `mapeditor/tools/merge_brushes_test.py`,
+  `tools/ci/check_editor_palette.py` (+ `_test.py`), `gen_editor_brushes.py --check` (CI diffs the generated files).
+- **Not verified**: the brushes in the running editor (Windows build). How the owner tests it: open the editor, open
+  the palette `Cinders` (terrain), choose "cinders thick lush grass", paint a patch on stock grass or dirt; next to it paint
+  "cinders loam" or "cinders fine sand". The border pieces must appear on the lower tiles by themselves (automagic on). If a
+  corner looks wrong, say which ground and which corner: the mapping is one table (`PIECE_OF`) in the script.

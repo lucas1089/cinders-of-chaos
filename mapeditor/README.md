@@ -15,6 +15,8 @@ This folder holds the pin, our patches and the tools.
 | `tools/check_patches.sh` | Checks every patch applies in order on a clean copy. |
 | `tools/upstream.py` | Prints the upstream repository and the pin for the workflow. |
 | `tools/run_profile.py` | Runs builds on a map and writes the timing table. |
+| `data/1098/cinders/` | Our grounds as brushes and our palettes (generated, O514, below). |
+| `tools/merge_brushes.py` | Merges that folder into the editor's own `data/1098` files. |
 | `.github/workflows/mapeditor-build.yml` | Build, tests, artifacts, release for the package, optional profile. |
 
 Pin: `2b98cb3192a74e01bb6b88b05a8ba8185c9ebfa1` (upstream HEAD of 2026-10-28, cloned 2026-11-03).
@@ -177,6 +179,29 @@ Owner 2026-11-03: keep the updater and its button, but update from our releases.
 The release job writes the manifest into each `mapeditor-<short>` release and copies it to the rolling release
 `mapeditor-latest`, unless that names a newer version (a re-run of an old run). The pruning of old releases never
 removes the one `mapeditor-latest` names.
+
+## Brushes of our grounds (O514)
+
+Owner request 2026-11-12: the editor should border our 12 pack grounds by itself.
+
+The editor reads one `data/1098/brushes.json` and one `tilesets.json` (JSON). It has no include for a second file, so
+there is no patch: `tools/merge_brushes.py DATA_DIR` merges our entries into those two files.
+
+- `server/tools/gen_editor_brushes.py` writes `data/1098/cinders/cinders_brushes.json` and `cinders_tilesets.json` from
+  `server/data/items/art_items.csv` and the planner's z orders (`--check` in CI; a change of the pack items needs a new run).
+- Brushes `cinders <ground name>` with one `outer` border set each (`cinders_<ground>`, 12 pieces), palettes `Cinders`
+  (terrain), `Cinders objects` and `Cinders border pieces` (RAW). Shores are palette only (19 pieces, not the editor's 12 slots).
+- The merge keeps every stock entry, replaces our own on a second run, and refuses a ground that names an id a stock ground
+  owns. `.github/workflows/mapeditor-build.yml` runs it on the release folder of the patched build, so the zip of the
+  self-updater carries it; the fragment and the tool go into `cinders-patches/` of the source zip. `windows-package.yml` runs
+  it again on the unpacked editor (idempotent; also for the upstream fallback).
+- Piece mapping, z orders and the proof: `server/README.md` "Editor brushes (O514)". Docs for the owner: `docs/MAP_GUIDE.md`
+  "Pack items in the map editor".
+- Checks: `server/tools/gen_editor_brushes_test.py`, `tools/merge_brushes_test.py`, `tools/ci/check_editor_palette.py`.
+- Not verified in the running editor. Test: open the editor, palette `Cinders`, brush "cinders thick lush grass", paint a
+  patch on stock grass, then "cinders loam" next to it; the border pieces must appear on the lower tiles.
+- On a move of the pin: re-read `brushstore.cpp` (schema, slot order, `getBrushTo`) and `terrainborderalignment.h`; the test
+  holds the rule as `editor_pieces`.
 
 ## Findings without a patch yet
 
