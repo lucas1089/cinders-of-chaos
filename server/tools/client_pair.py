@@ -36,12 +36,13 @@ PAIR_W800 = 56      # the 34 weapons above level 800 (install_weapons800.py)
 PAIR_RELIC = 58     # the 65 pieces of the five relic sets (install_relic_sets.py)
 PAIR_TEMPLE = 60    # the 39 pieces of the temple tileset (install_temple_art.py)
 PAIR_ORBS = 63      # the ten orbs that get their own client item (install_orbs.py `look`; the other eight are redrawn in place)
+PAIR_RECOLOUR = 69  # the 52 hue shifted monster outfits 3371-3422 (install_monster_recolour.py, step `monsterrecolour`)
 
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 68
-PAIR_ASSETS_DAT_MD5 = '6b5638b4057f86f484bc506b00079f19'
+PAIR_ASSETS = 69
+PAIR_ASSETS_DAT_MD5 = '66d98f722120044132872d6d57998310'
 
 
 def parse(text):

@@ -30409,6 +30409,7 @@ README warned.
   | `weapons800` (the 34 weapons above level 800, "Weapons above level 800") | 56 | the whole step is skipped |
   | `relicsets` (the 65 pieces of the five relic sets, "Relic sets (pair 58)") | 58 | the whole step is skipped |
   | `templeart` (the 39 pieces of the temple tileset, "Temple tileset (pair 60)") | 60 | the whole step is skipped |
+  | `monsterrecolour` (52 monsters wear a hue shifted copy of their outfit, "Monster recolours (O531)") | 69 | the whole step is skipped: the monster files and the bounty pool keep the old looks |
 
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
   `ItemType(id)` exists, and the scaled class roll (`loot.lua` `classWeapons`) drops an id the server has no item for.
@@ -33186,20 +33187,50 @@ them worse and chose a recolour: every monster of a shared look but the first ge
   hue shifted copy of the outfit in the pair. Table `client/tools/sprites/art_import/monster_recolour.csv` (look, hue shift in
   degrees, monster; mode `hue` rotates the hue, `tint` sets the hue of a nearly grey outfit; theme by the monster's name and
   element: fire reds, ice blues, poison greens, undead and shadow purples, iron browns, gold yellows, blood crimsons; the colours
-  of one look are at least 40 degrees apart and from the source hue). `client/tools/sprites/gen_monster_recolour.py` holds the
-  pixel transform (`recolour()`) and `check`; `build` is a stub: **no pair is built here**, it waits for pair 68 (the copies are
-  appended as new outfits, the lookTypes move with an `install` step of the pair). Until then the groups are rows of the allow list
-  with status `recolour pair`, and `gen_monster_recolour.py check` holds that every such row has a table row for all but one monster.
-  Not decided: the colour of a few themes is the table's guess (Siege Behemoth teal, Ashveil Hierarch green); change a `hue_shift`
-  and run the preview before the pair is built.
+  of one look are at least 120 degrees apart and from the source hue, owner 2026-11-12 in O531; a grey source is tinted). `client/tools/sprites/gen_monster_recolour.py` holds the
+  pixel transform (`recolour()`), `check`, `ids`, `build` and `live`; pair 69 holds the 52 copies (O531, next section). The groups
+  were rows of the allow list with status `recolour pair` until then; the rows are gone, the audit reads the monsters at the
+  client pair (a group the map separates waits below pair 69, is distinct from it).
+  Not decided: the colour of a few themes is the table's guess (Siege Behemoth teal, Ashveil Hierarch green); a changed
+  `hue_shift` needs a new pair (the copies are built).
 - **The check.** `tools/ci/check_content.py` fails when two different monsters of the `bounty_pool.lua` hunt list (6 or more spawn
   points) share a lookType that is neither a row of `shared_looks_allow.csv` nor a masked look (`data/monster/look_masks.csv`,
-  written by `audit_shared_looks.py --write-masks Tibia.dat` from the live dat) whose pool colours tell them apart.
+  written by `audit_shared_looks.py --write-masks Tibia.dat` from the live dat) whose pool colours tell them apart, nor a group
+  the recolour map separates (read at pair 68 and at pair 69, "Monster recolours (O531)").
   `tools/audit_shared_looks_test.py` (CI step "Hunt monsters keep a look of their own") tests the tool on a synthetic folder and
   holds the committed pool to the rule.
 - Not done: base monsters were not recoloured (every group had a monster of ours to change); the creature strips 2312-2384 and
   the sheet looks of pair 30 stay out (O524). Not verified: in a running client (the pool colours are the files' colours, the
   preview renders the outfit colour table as the client does: mask layer, multiplied on the base layer).
+
+
+## Monster recolours (O531; `tools/install_monster_recolour.py`, `data/monster/monster_recolour_looks.csv`)
+Owner 2026-11-12: the recolour of O529 for the 35 outfits that have no colour mask. Client pair 69 holds 52 hue shifted copies, outfits
+3371 to 3422 (client/MANIFEST.md "Pair 69"); this is the server side.
+- **The map.** `data/monster/monster_recolour_looks.csv` (monster, look, new_look), written by `gen_monster_recolour.py ids` from the
+  table `client/tools/sprites/art_import/monster_recolour.csv`: the row at line n is outfit 3371 + n. All 52 monsters are Chaos files
+  (`data/monster/monsters/chaos`), no base monster is touched. The repository files keep the OLD look: they are what a server whose
+  client is on pair 68 or older loads. `gen_monster_recolour.py check` and `check_content.py` hold the map to the files (the old look is
+  the file's look, the new ids are 3371.. in a row, inside the pair, never blank).
+- **The step.** `install_all.py` step `monsterrecolour` (after `monsters`, so after the file copy): with `config.lua` `chaosClientPair`
+  69 or more it sets `<look type>` of each of the 52 files in the installed folder to the copy (head, body, legs, feet, corpse stay)
+  and the `look = ` of their rows in the installed `data/scripts/chaos/bounty_pool.lua` (the bounty board and its notices draw that
+  outfit). Below 69, or with the record missing, it prints a `WARNING:` line and writes nothing ("Client pair guard"); the next update
+  copies the repository files again and the step runs again, so the state follows the record. A file that is missing or has a look that
+  is neither the old nor the new one stops the step (exit 1, nothing written); `--dry-run` writes nothing. Idempotent.
+- **The pool.** The committed `bounty_pool.lua` carries the old looks. `gen_bounty_pool.py` writes a copy's look back as the old one,
+  so a run on a server at pair 69 gives the committed file; the installed copy is moved by the step.
+- **The audit.** `audit_shared_looks.py` and `check_pool()` read each monster at a pair (`--pair N`, else the `config.lua` record beside
+  the data folder, else the newest): from 69 a monster of the map wears its copy, so the groups are distinct; below 69 a group in which
+  all but one monster have a row of the map is counted as waiting (`WAITS`), not as shared. CI reads the committed pool at 68 and at 69;
+  the tests hold that without the map the 35 groups fail at 69 (their allow rows are gone). On an installed server: `python3 -I
+  tools/audit_shared_looks.py DATA_DIR/monster --spawn ... --dat Tibia.dat --check`.
+- **Switch on (owner).** Push pair 69 to windows-assets, ship the client package, record the pair (admin app Comandos > "Par do
+  cliente" > Gravar 69, or `chaos-ctl.sh client-pair set 69`), then update the server (admin app, aba Painel > cartão Atualizar servidor > Verificar, Aplicar e reiniciar). Do not record 69 before the
+  client has shipped: a client on pair 68 draws nothing for the new ids (invisible monsters).
+- Tests: `tools/install_monster_recolour_test.py` (guard end to end on a synthetic server and on the real files, idempotent, refusals,
+  the generator), `tools/audit_shared_looks_test.py`, `client/tools/sprites/gen_monster_recolour_test.py` (transform, ids, build and live
+  on a synthetic pair). Checked offline only; not seen in a running client.
 
 ## Hunt monsters move while they stand (O533; `tools/audit_idle_looks.py`, `data/monster/no_idle_allow.csv`, `look_idle.csv`, `crowded_looks_allow.csv`)
 Owner, 2026-11-12, after the recolour preview of O529: "these monsters standing still have no idle animation? If so, change them to one

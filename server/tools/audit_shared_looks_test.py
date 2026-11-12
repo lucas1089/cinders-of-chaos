@@ -4,8 +4,10 @@
 Synthetic monster folder, spawn file, pool and allow list: shared look found, colours that differ are no duplicate,
 a mask-less outfit ignores colours, bosses (few spawns) are not met, the allow list covers or fails a group, the CI
 pool rule (a masked look with colours that differ passes, the same colours need a row), the pool colours, and the tool's exit
-code. Then the real repo: the committed pool passes the rule, every `recolour pair` row has its recolour table rows, and the
-monsters recoloured by mask (O529) have colours that differ.
+code. The hue shifted copies of pair 69 (O531): the same pool read at pair 68 (a group that the map will separate waits, no failure)
+and at pair 69 (the copies are distinct looks), the tool's --pair and its WAITS status. Then the real repo: the committed pool passes
+the rule at both pairs, without the map at pair 69 the 35 groups fail (no allow rows are left for them), and the monsters
+recoloured by mask (O529) have colours that differ.
 """
 import csv
 import os
@@ -91,11 +93,51 @@ def main():
         assert A.check_pool(pool, allow, {})   # without the mask all three share the look
         open(allow, 'w').write('look,names,status,reason\n100,Alpha | Charlie,kept,twins\n')
         assert A.check_pool(pool, allow, masks) == []
-    # the repo itself
-    probs = A.check_pool()
-    assert not probs, probs
+        # the hue shifted copies (O531): Bravo has a copy 3372 from pair 69, Charlie of a three monster look has none
+        open(pool, 'w').write('return {\n\thunt = {\n\t\t{name = "Alpha", level = 5, exp = 1, health = 9, spawns = 9, look = 100},\n'
+                              '\t\t{name = "Bravo", level = 5, exp = 1, health = 9, spawns = 9, look = 100},\n'
+                              '\t\t{name = "Delta", level = 5, exp = 1, health = 9, spawns = 9, look = 200},\n'
+                              '\t\t{name = "Echo", level = 5, exp = 1, health = 9, spawns = 9, look = 200},\n'
+                              '\t\t{name = "Foxtrot", level = 5, exp = 1, health = 9, spawns = 9, look = 200},\n\t},\n\tbosses = {\n\t},\n}\n')
+        open(allow, 'w').write('look,names,status,reason\n')
+        rmap = {'Bravo': (100, 3372), 'Echo': (200, 3373)}
+        assert A.look_at_pair('Bravo', 100, 68, rmap) == 100 and A.look_at_pair('Bravo', 100, 69, rmap) == 3372
+        assert A.look_at_pair('Bravo', 3372, 68, rmap) == 100 and A.look_at_pair('Bravo', 3372, 69, rmap) == 3372   # a file of the other state
+        assert A.look_at_pair('Alpha', 100, 69, rmap) == 100 and A.look_at_pair('Bravo', 555, 69, rmap) == 555
+        probs = A.check_pool(pool, allow, {}, pair=68, recolour=rmap)
+        assert len(probs) == 1 and 'look 200' in probs[0], probs     # Alpha | Bravo waits (one of two has a copy); the three of look 200 do not
+        probs = A.check_pool(pool, allow, {}, pair=69, recolour=rmap)
+        assert len(probs) == 1 and 'look 200 is shared by Delta, Foxtrot' in probs[0], probs   # Echo has its copy; Alpha and Bravo are apart
+        assert len(A.check_pool(pool, allow, {}, pair=69, recolour={})) == 2   # without the map both groups fail: no allow row is left
+        rmap['Foxtrot'] = (200, 3374)
+        assert A.check_pool(pool, allow, {}, pair=68, recolour=rmap) == [] and A.check_pool(pool, allow, {}, pair=69, recolour=rmap) == []
+        assert A.waits(['Delta', 'Echo', 'Foxtrot'], 200, rmap) and not A.waits(['Delta', 'Echo', 'Foxtrot'], 201, rmap)
+        # the tool: the same group at the recorded pair (config.lua beside the data folder) and with --pair
+        srv = os.path.join(t, 'srv')
+        os.makedirs(os.path.join(srv, 'data'))
+        os.replace(md, os.path.join(srv, 'data', 'monster'))
+        md2 = os.path.join(srv, 'data', 'monster')
+        open(allow, 'w').write('look,names,status,reason\n')
+        rc = subprocess.run([sys.executable, '-I', '-c',
+                             'import sys; sys.argv = ["x", %r, "--spawn", %r, "--allow", %r, "--pair", "68"]; sys.path.insert(0, %r);'
+                             'import audit_shared_looks as A; A.load_recolour = lambda: {"Bravo": (100, 3372), "Alpha": (100, 3371)};'
+                             'A.main()' % (md2, spawn, allow, HERE)], capture_output=True, text=True)
+        assert rc.returncode == 0 and '1 waiting for pair 69' in rc.stdout and '0 not allowed' in rc.stdout, rc.stdout + rc.stderr
+        rc = subprocess.run([sys.executable, '-I', '-c',
+                             'import sys; sys.argv = ["x", %r, "--spawn", %r, "--allow", %r, "--pair", "69", "--check"]; sys.path.insert(0, %r);'
+                             'import audit_shared_looks as A; A.load_recolour = lambda: {"Bravo": (100, 3372)};'
+                             'A.main()' % (md2, spawn, allow, HERE)], capture_output=True, text=True)
+        assert rc.returncode == 0 and 'waiting' not in rc.stdout and '0 not allowed' in rc.stdout, rc.stdout + rc.stderr
+    # the repo itself, at both pairs
+    for pair in (68, 69):
+        probs = A.check_pool(pair=pair)
+        assert not probs, (pair, probs)
+    # the groups of the recolour map are not on the allow list any more: without the map they fail at pair 69
+    assert len(A.check_pool(pair=69, recolour={})) >= 20
     allow_rows = A.load_allow()
-    assert allow_rows and all(s in ('kept', 'recolour pair') and why for _, _, s, why in allow_rows), 'allow rows need a status and a reason'
+    assert allow_rows and all(s == 'kept' and why for _, _, s, why in allow_rows), 'allow rows need the status kept and a reason'
+    rm = A.load_recolour()
+    assert rm and all(3370 < n < 3371 + len(rm) for _, n in rm.values())
     # the pool rows of the monsters recoloured by mask are the colours of their files (tune_monsters.py)
     rows = {r['name']: r for r in A.pool_rows()}
     for n in ('Nailcrown Regent', 'Bloom Husk', 'Leechwing'):   # Grave Lantern took the idle look 3103 (O533)

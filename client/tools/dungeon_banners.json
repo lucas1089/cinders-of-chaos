@@ -11,7 +11,7 @@
      "y": 14607
     },
     {
-     "look": 376,
+     "look": 2899,
      "monster": "Blazebringer",
      "name": "Blazebringer",
      "x": 14567,
@@ -308,7 +308,7 @@
     [23, 4],
     [29, 4]
    ],
-   "pixels": "6a944527050e272491c5f55475834f4b",
+   "pixels": "9cf9c021e097735a52967d5a78316b52",
    "sids": [
     [
      [3152, 1442],
@@ -584,7 +584,7 @@
      "y": 24584
     },
     {
-     "look": 1468,
+     "look": 3172,
      "monster": "Twisted Shaper",
      "name": "Twisted Shaper",
      "x": 24589,
@@ -873,7 +873,7 @@
     [0, 4],
     [5, 4]
    ],
-   "pixels": "d8d4641330a254847f03f930582da116",
+   "pixels": "43a2c955088183237259c4167439888b",
    "sids": [
     [
      [10767, 30508],
@@ -1698,7 +1698,7 @@
    "area": "sanctum",
    "creatures": [
     {
-     "look": 1449,
+     "look": 3294,
      "monster": "Wraithbone Stalker",
      "name": "Wraithbone Stalker",
      "x": 24644,
@@ -1712,24 +1712,24 @@
      "y": 24906
     },
     {
-     "look": 1544,
+     "look": 3234,
      "monster": "Rimeshroud Revenant",
      "name": "Rimeshroud Revenant",
-     "x": 24651,
+     "x": 24652,
      "y": 24906
     },
     {
      "look": 2219,
      "monster": "Cinderskull Reaver",
      "name": "Cinderskull Reaver",
-     "x": 24654,
+     "x": 24655,
      "y": 24906
     },
     {
      "look": 2218,
      "monster": "Cinderhorn Juggernaut",
      "name": "Cinderhorn Juggernaut",
-     "x": 24657,
+     "x": 24658,
      "y": 24906
     },
     {
@@ -2008,7 +2008,7 @@
     [29, 5],
     [23, 6]
    ],
-   "pixels": "03863cb2286ead004d5e8ca458003d05",
+   "pixels": "849630f5bf314ba468021ab0f6d603c3",
    "sids": [
     [
      [30488, 30536],
@@ -2299,7 +2299,7 @@
      "y": 24888
     },
     {
-     "look": 1449,
+     "look": 3294,
      "monster": "Wraithbone Stalker",
      "name": "Wraithbone Stalker",
      "x": 24857,
@@ -2576,7 +2576,7 @@
     [23, 6],
     [25, 6]
    ],
-   "pixels": "a23532f9abb0946978b2704effcf2d24",
+   "pixels": "96e6c81cae6cd4eb42ba28da7a1b2306",
    "sids": [
     [
      [30484],
