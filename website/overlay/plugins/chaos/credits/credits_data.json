@@ -156,8 +156,8 @@
     {
      "name": "WsT monster packs",
      "author": "WsT",
-     "licence": "purchased; modified or not, no attribution needed; no resale or sharing of the raw files; never machine-learning training data or a style reference",
-     "use": "monsters"
+     "licence": "purchased; unlimited personal and commercial use, modified or not, no attribution needed (credit appreciated); no resale, redistribution, sublicensing or sharing of the raw assets, even modified; never machine-learning training data or a style reference",
+     "use": "monsters: the Duskmarch Warhost, Gilded Ruin and Rustmire Monsters packs (75 creatures) as the sheet looks of pair 30, and since pair 71 (O540) 70 of them as creature outfits with the default colours drawn in (large ones halved); the art is not in the repository"
     },
     {
      "name": "WsT Magic VFX / monster packs",
@@ -188,7 +188,7 @@
      "name": "WsT Hollow Harvest Kit",
      "author": "WsT",
      "licence": "purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data",
-     "use": "harvest farmland and catacomb tiles, decoration, event props and monsters (planned)"
+     "use": "harvest farmland and catacomb tiles, decoration, event props and monsters (planned); since pair 71 (O540) 7 of its creatures as creature outfits (a werewolf, a witch, a pumpkin brute, a scarecrow, a ghost, two skeletons); the art is not in the repository"
     },
     {
      "name": "Dark Fantasy RPG UI Kit Full Pack",

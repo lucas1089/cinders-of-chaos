@@ -36,6 +36,14 @@ def main():
     assert A.look_at_pair('R', 1, 69, rec, dn) == 2 and A.look_at_pair('R', 1, 68, rec, dn) == 1 and A.look_at_pair('X', 5, 70, rec, dn) == 5
     assert A.look_at_pair('D', 99, 70, rec, dn) == 99, 'another look stays'
     assert len(A.load_donor()) == 28 and not set(A.load_donor()) & set(A.load_recolour()), 'the donor map: 28 monsters, none recoloured as well'
+    # the purchased looks of pair 71 (O540): a monster of the donor map and of this one goes through both, in the order of their pairs
+    wt = {'D': (10, 30), 'W': (40, 50)}
+    assert A.look_at_pair('D', 10, 70, rec, dn, wt) == 20 and A.look_at_pair('D', 10, 71, rec, dn, wt) == 30 and A.look_at_pair('D', 10, 69, rec, dn, wt) == 10
+    assert A.look_at_pair('D', 20, 71, rec, dn, wt) == 30 and A.look_at_pair('D', 30, 70, rec, dn, wt) == 20 and A.look_at_pair('D', 30, 69, rec, dn, wt) == 10
+    assert A.look_at_pair('W', 40, 70, rec, dn, wt) == 40 and A.look_at_pair('W', 40, 71, rec, dn, wt) == 50 and A.look_at_pair('W', 50, 70, rec, dn, wt) == 40
+    assert A.look_at_pair('W', 99, 71, rec, dn, wt) == 99, 'another look stays'
+    assert len(A.load_purchased()) == 79 and not set(A.load_purchased()) & set(A.load_recolour()), 'the purchased map: 79 monsters, none recoloured as well'
+    assert set(A.load_purchased()) & set(A.load_donor()) == {'Bonepicker', 'Wan Sentry'}, 'two monsters leave their donor look for a purchased one'
     with tempfile.TemporaryDirectory() as t:
         md = os.path.join(t, 'monster')
         os.makedirs(os.path.join(md, 'monsters'))

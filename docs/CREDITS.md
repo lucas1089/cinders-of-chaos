@@ -135,8 +135,8 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Source: Cozy Farmhouse Bathroom, Boats & Docks Pack, Forest Bushes & Berry Shrubs, Fishing Village Pack, Forest Builder Packs, Forgotten Forest Ruins, Cozy World Animated Sewer Builder Kit
 - **WsT monster packs**
   - Author: WsT
-  - Licence: purchased; modified or not, no attribution needed; no resale or sharing of the raw files; never machine-learning training data or a style reference
-  - Used for: monsters
+  - Licence: purchased; unlimited personal and commercial use, modified or not, no attribution needed (credit appreciated); no resale, redistribution, sublicensing or sharing of the raw assets, even modified; never machine-learning training data or a style reference
+  - Used for: monsters: the Duskmarch Warhost, Gilded Ruin and Rustmire Monsters packs (75 creatures) as the sheet looks of pair 30, and since pair 71 (O540) 70 of them as creature outfits with the default colours drawn in (large ones halved); the art is not in the repository
 - **WsT Magic VFX / monster packs**
   - Author: WsT
   - Licence: purchased; credit appreciated, not required; no resale, redistribution or sharing of the assets, even modified (they ship only inside the compiled game); never machine-learning training data
@@ -157,7 +157,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **WsT Hollow Harvest Kit**
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
-  - Used for: harvest farmland and catacomb tiles, decoration, event props and monsters (planned)
+  - Used for: harvest farmland and catacomb tiles, decoration, event props and monsters (planned); since pair 71 (O540) 7 of its creatures as creature outfits (a werewolf, a witch, a pumpkin brute, a scarecrow, a ghost, two skeletons); the art is not in the repository
 - **Dark Fantasy RPG UI Kit Full Pack**
   - Author: ZSS Game Lab (itch.io)
   - Licence: purchased; personal and commercial use, resized, recoloured and modified; no resale, redistribution or repackaging of the files as standalone assets (credit appreciated); made with AI-assisted workflows and refined by hand
