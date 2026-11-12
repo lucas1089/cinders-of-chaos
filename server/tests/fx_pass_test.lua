@@ -128,6 +128,17 @@ do
 	local e = ChaosVfx.donor_energy_strike_632
 	ok(e ~= nil and e.id == 4707 and e.dx == 0 and e.dy == 0, "the strike's bottom-right tile is the target tile (offset 0,0)")
 end
+-- the impact flash on top of it (O532): the plain energy blast 798, 3x3 with its middle cell on the target tile, sent 200 ms after the bolt
+-- starts (the bolt is bright and thick then), for the first hit and each jump (both go through strike())
+local fork = readFile("data/spells/chaos/sorcerer/chain_lightning.lua") or ""
+ok(fork:find('IMPACT_FX = "blast_lightning"', 1, true) ~= nil, "Forked Storm names the impact flash")
+ok(fork:find("IMPACT_MS = 200", 1, true) ~= nil, "Forked Storm sends the flash 200 ms after the bolt starts")
+ok(fork:find("M.later(math.max(1, fly) + IMPACT_MS, toPos, IMPACT_FX)", 1, true) ~= nil, "the flash is sent from strike(), so the first hit and every jump get it")
+do
+	dofile("data/lib/chaos_pack29_vfx_ids.lua")
+	local e = ChaosVfx.blast_lightning
+	ok(e ~= nil and e.id == 798 and e.dx == 1 and e.dy == 1, "the flash is drawn centred on the target tile (3x3, offset 1,1)")
+end
 local iaiDonor = readFile("data/spells/chaos/samurai/iaijutsu.lua") or ""
 ok(iaiDonor:find("donor_holy_ring_449", 1, true) ~= nil, "Iaijutsu gathers in the donor gold ring first")
 local snares = readFile("data/spells/chaos/_snares.lua") or ""
