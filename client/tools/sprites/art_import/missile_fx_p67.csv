@@ -1,0 +1,7 @@
+replace,kind,name,file,w,h,phases,ms,dx,dy,note
+222,missile,mfx_dreamrot,missile_fx/mfx_dreamrot.png,3,3,8,50,1,1,"Dreamrot: style B, particle trail, 8 phases (pair 67: redrawn in place at missile 222)"
+221,missile,mfx_soulrend,missile_fx/mfx_soulrend.png,3,3,8,50,1,1,"Soulrend Beam: style B, particle trail, 8 phases (pair 67: redrawn in place at missile 221)"
+5,missile,mfx_energy,missile_fx/mfx_energy.png,3,3,8,50,1,1,"Energy shot: style B, particle trail, 8 phases (pair 67: redrawn in place at missile 5)"
+37,missile,mfx_ice,missile_fx/mfx_ice.png,3,3,8,50,1,1,"Ice shot: style B, particle trail, 8 phases (pair 67: redrawn in place at missile 37)"
+161,missile,mfx_fire,missile_fx/mfx_fire.png,3,3,8,50,1,1,"Witchfire Bolt: style B, particle trail, 8 phases (pair 67: redrawn in place at missile 161)"
+144,missile,mfx_earth,missile_fx/mfx_earth.png,3,3,8,50,1,1,"Blightbrand: style B, particle trail, 8 phases (pair 67: redrawn in place at missile 144)"
