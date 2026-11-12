@@ -551,6 +551,8 @@ function Game.createMonster(name, pos, extended, force)
 	function m:unregisterEvent(e) self._events[e] = nil end
 	function m:setDropLoot(v) self._dropLoot = v end
 	function m:remove() self._removed = true; monsters[self._id] = nil end
+	function m:getPathTo() if self._noPath then return false end return {} end
+	function m:teleportTo(p) self._pos = Position(p.x, p.y, p.z); self._teleported = (self._teleported or 0) + 1; self._noPath = nil; return true end
 	function m:getType() return {isBoss = function() return false end, getLoot = function() return {} end} end
 	monsters[m._id] = m
 	return m
@@ -972,7 +974,8 @@ do
 	local realOk = ChaosSpawnTile.ok
 	local only
 	ChaosSpawnTile.ok = function(p2, o)
-		if only and (p2.x ~= only.x or p2.y ~= only.y) then
+		-- only the horde's own pick (it carries reachFrom) is cut down to the one tile; the walk over the tiles is not
+		if only and o and o.reachFrom and (p2.x ~= only.x or p2.y ~= only.y) then
 			return false
 		end
 		return realOk(p2, o)
@@ -995,6 +998,83 @@ do
 	ok((cTight.ev.made or 0) >= 1, "on the one free tile")
 	ChaosSpawnTile.ok = realOk
 	CC.failEvent(cTight, "time")
+end
+-- O517: a horde tile must be walk-connected to the chest (a Juggernaut stood on a rock nobody could climb)
+do
+	local function ring(cx, cy, r, kind)
+		for dx = -r, r do
+			for dy = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r then
+					blocked[(cx + dx) .. ":" .. (cy + dy) .. ":7"] = kind
+				end
+			end
+		end
+	end
+	local cx, cy = deathPos.x, deathPos.y
+	ring(cx, cy, 3, "solid") -- a wall at 3 tiles: tiles at 4 and 5 are cut off from the chest
+	local cReach = freshChest(hero)
+	ok(cReach ~= nil, "a chest stands in the walled pocket")
+	openIt(cReach, hero)
+	T = T + 4000
+	runQueue()
+	eq(cReach.ev.state, "running", "the horde rises in the pocket")
+	local made, inside = 0, 0
+	for _, m in pairs(monsters) do
+		made = made + 1
+		local mp = m:getPosition()
+		if math.max(math.abs(mp.x - cReach.pos.x), math.abs(mp.y - cReach.pos.y)) <= 2 then inside = inside + 1 end
+	end
+	ok(made >= 1, "monsters came")
+	eq(inside, made, "every horde monster is inside the wall, none on a cut-off tile")
+	CC.failEvent(cReach, "time")
+	-- the chest itself: the corpse tile and its 3x3 ring blocked, the only usable tiles at 2 are cut off: no chest
+	for k in pairs(blocked) do blocked[k] = nil end
+	ring(cx, cy, 0, "solid")
+	ring(cx, cy, 1, "solid")
+	CC.state.cooldown, CC.state.perOwner = {}, {}
+	allHit()
+	drop(mkDying("Troll", "magic"), mkCorpse(hero:getId(), deathPos))
+	eq(next(CC.chests), nil, "no chest on a tile the corpse tile cannot walk to")
+	for k in pairs(blocked) do blocked[k] = nil end
+end
+-- the safety net: a monster no participant has a path to for stuckSec is moved near the chest; with no spot it is removed
+do
+	local cNet = freshChest(hero)
+	openIt(cNet, hero)
+	T = T + 4000
+	runQueue()
+	local list = {}
+	for _, m in pairs(monsters) do list[#list + 1] = m; m._noPath = true end
+	ok(#list >= 2, "a horde stands")
+	local stuckAfter = cfg.event.stuckSec + cfg.event.stuckCheckSec + 3
+	for _ = 1, cfg.event.stuckSec - 2 do
+		T = T + 1000
+		runQueue()
+	end
+	local early = 0
+	for _, m in ipairs(list) do early = early + (m._teleported or 0) end
+	eq(early, 0, "not moved before stuckSec")
+	for _ = 1, stuckAfter - (cfg.event.stuckSec - 2) do
+		T = T + 1000
+		runQueue()
+	end
+	local moved = 0
+	for _, m in ipairs(list) do moved = moved + (m._teleported or 0) end
+	eq(moved, #list, "every unreachable monster is moved once")
+	eq(cNet.ev.moved, #list, "the event counts the moves")
+	eq(cNet.ev.state, "running", "the event goes on")
+	-- no spot at all: removed
+	local realOk = ChaosSpawnTile.ok
+	for _, m in pairs(monsters) do m._noPath = true end
+	cNet.ev.lastSpawnAt = T -- the next horde timer does not run into this part
+	ChaosSpawnTile.ok = function() return false end
+	for _ = 1, stuckAfter do
+		T = T + 1000
+		runQueue()
+	end
+	ChaosSpawnTile.ok = realOk
+	ok((cNet.ev.removed or 0) >= 1, "no spot: the monster is removed")
+	if cNet.ev.state == "running" then CC.failEvent(cNet, "time") end
 end
 -- an unclaimed open chest crumbles: win one by killing its hordes
 ch = freshChest(hero)

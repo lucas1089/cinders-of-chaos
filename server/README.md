@@ -1118,6 +1118,29 @@ flag, so it passed, and a land monster never walks out of it.
 - `ChaosSpawnTile.find(center[, opts])` returns the centre if it fits, else tries `tries` random tiles within `radius`
   (and at least `minRadius` away). It returns nil when none fits, and the caller skips that spawn.
 
+- `ChaosSpawnTile.reachMap(from[, opts])` (O517) is a breadth first walk over the same tile rules: 8 directions, the same
+  floor, at most `maxPath` steps (default 12) inside a box of `box` tiles around `from` (default `maxPath`), so at most
+  `(2 * box + 1)^2` tiles are looked at. It returns `{["x:y"] = steps}` and the count. `from` is the seed and need not fit
+  (a chest tile is blocked by the chest). The walk may cross occupied tiles; protection zone, house and water follow the
+  same options as `ok`. `opts.walk(pos)` replaces the tile query (tests inject one).
+- Option `reachFrom = pos` (with `maxPath`, `box`) on `ok` and `find`: a tile that fits must also be in the walk from
+  `pos`, else `ok` says "unreachable". The map is built once per opts table (`opts.reach`), so a scan of a whole square
+  walks once. Chosen over `Creature:getPathTo` because it needs no creature (the tile is picked before the monster
+  exists), is a pure function of the tile query, and costs at most a few hundred tile reads. `getPathTo` is used where a
+  monster already stands (the cursed chest safety net).
+
+O517 (owner 2026-11-12): a cursed chest horde monster stood on a raised rock that no player could climb. The tile rules
+looked at one tile only. A mountain top inside a ring of blocking rock pieces is plain ground with no blocking flag, no
+water and no floor change, so `ok` passed it, and the walk from the chest to it did not exist. The map is not in git, so
+the exact tiles are not inspected; an island cut off by blocking items, or a plateau reached only by a floor change, gives
+the same result. The event ends only when its monsters are dead, so the fight never ended.
+
+Turned on (`reachFrom`): cursed chest hordes (from the chest, `event.maxPath` 12, `event.reachBox` 8), the cursed chest's
+own place (`placeFor`, a walk from the corpse tile, no fallback to a cut-off tile: no chest rather than a trap),
+Haunted Harvest ritual monsters (from the ritual spot, the player must kill them) and waystone breach monsters (from the
+portal). Not turned on: invasion waves and nemesis (`isWater` only, they place on generated paths and walk to the player
+themselves), the pet spot (follows its owner, no kill needed) and the arenas above (floors the script built).
+
 Systems that use it: cursed chest hordes (`cursedchest.lua`), invasion waves (`invasion.lua` `tileOk`), waystone breach
 monsters (`waystone_mods.lua`), Haunted Harvest ritual monsters (`harvest_event.lua`), nemesis appearances
 (`nemesis.lua`) and the pet spot (`pets.lua`). Not touched: monsters placed inside generated or built arenas (rift, raid,
@@ -29696,6 +29719,19 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
   protection zone). Now `randomSpot` scans every tile of the ring, then of the whole square, and takes one at random; a horde
   that still makes no monster (or fails with an error) ends the event (`CC.failEvent(ch, "room")`, "The hordes find no room to
   rise here."). `ev.made` counts the monsters made (the tester helper reads it). Tests: `tests/cursedchest_test.lua`.
+- **Unreachable horde monster (O517, 2026-11-12).** Owner report with a screenshot: an Ascension Juggernaut of a horde stood
+  on a raised rock, the player on the grass path could not reach it, and the event waited for it. Cause: see "Spawn tiles"
+  (`ChaosSpawnTile.ok` tests one tile; it cannot know a tile is cut off). Now `randomSpot` passes `reachFrom = chest tile`,
+  `maxPath = event.maxPath` (12) and `box = event.reachBox` (8) to `ChaosSpawnTile`, in the random tries and in the full scan,
+  and `placeFor` keeps only tiles in the walk from the corpse tile. Safety net (`CC.checkStuck`, called each tick, runs every
+  `event.stuckCheckSec` = 4 s): each live event monster asks `getPathTo` (to within 1 tile, full search) for a path to a
+  participant within `leaveRadius`; with none to any of them for `event.stuckSec` = 20 s it is moved with `teleportTo` to a
+  new `randomSpot` (counted in `ev.moved`), or removed when there is no spot (`ev.removed`), so the event never hangs. No
+  participant near, a monster on another floor or an engine without `getPathTo` reset the timer. The event itself still ends
+  by the same rules (all hordes dead, time, abandoned). Tests: `tests/spawn_tile_test.lua` (island refused with `reachFrom`
+  and accepted without, ring corridor, diagonals, the bound, injected walk, cache, protection zone), `tests/cursedchest_test.lua`
+  (a walled pocket: hordes only inside; no chest on a cut-off tile; stuck monster moved after `stuckSec`, not before; no spot:
+  removed). Not verified on a live server.
 - **Staff.** `/cursedchest` makes a chest next to you; `/cursedchest roll <tier>, <level>[, <n>]` shows the chance.
 - **Ascension Proof (2026-10-29).** Owner report: the monsters of a cursed chest did not count for the Ascension Proof of Strength.
   Cause: the tier was applied (`ChaosApplyTier`), but the Proof compares the monster's hunting level, and a chest monster keeps
