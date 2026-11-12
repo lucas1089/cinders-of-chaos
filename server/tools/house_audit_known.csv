@@ -1,0 +1,3 @@
+# Findings of tools/audit_houses.py that were looked at and left (server/README.md "House audit (O513)").
+# Columns: house,code,reason. audit_houses.py --check exits 1 for a finding that is not listed here.
+house,code,reason

@@ -5132,6 +5132,34 @@ If the VPS runs a map master (`data/world/<map>.otbm.master.json` exists, "Map m
 - **Thin.** Gloom Pillars (149 monsters on 1454 tiles) loses 71 stock entries, each time the one whose ground other monsters cover (no tile uncovered), never a `late_game_spawns.csv` row: 78 monsters, 5.4 per 100, the same 1454 tiles.
 - `audit_hunts.py` skips XML comments now (the entries `chaosremoved` and the blocks `chaosemptied` are not on the map); `gen_spawn_density.py` ignores the `X` blocks like its own `F` ones. Tests: `tools/gen_spawn_expand_test.py` (CI), `tools/patch_waystone_trim_test.py` (CI), `tests/base_spawns_patch_test.lua` (a list of fill files, a `remove` list).
 
+## Map tile audit (O511) (`tools/audit_map_tiles.py`, `tools/map_tile_rules.py`, `tools/audit_map_plans.py`, `tools/map_tile_audit_known.csv`)
+
+Owner 2026-11-12, translated: build our own versions of the ideas seen in three map editors, all of them. This is the whole-map tile lint. It reads the map and lists tiles that break a structure rule. It is read only and never writes the map. All rules, sources and numbers are our own, from our own tables.
+
+- **Codes.** One line each: `CODE x,y,z ids=A[,B] fix=CLASS`. `NO_GROUND` (items, none of them a ground; fix `add-ground`), `GROUND_NOT_FIRST` (a ground not in the first slot, or a second ground; `reorder`), `DUP_ITEM` (the same id twice where that is never normal: border pieces, walls, doors, tops, floor changes, teleports; stackables, grounds and decoration are not looked at; `remove-dup`), `UNKNOWN_ID` (not in `items.otb`; `replace-id`), `ORPHAN_BORDER` (`fix-border`), `WALL_MISMATCH` (`fix-wall`), `BLOCKED_DOOR` (no walkable tile on any side of a door; `open-door`), `BLOCKED_ON_SPECIAL` (a blocking item shares the tile of a door or a teleport; `clear-tile`), `BLOCKED_TELEPORT` (the destination is no tile, or one nobody can stand on; `retarget`), `ROOF_NO_SUPPORT` (`support-or-remove-roof`), `TOO_MANY_ITEMS` (`thin`). `BLOCKED_ON_SPECIAL` is the one code beyond the first list. It is the rule the area planner's QA shares, see below.
+- **Our tables, not invented ones.** `ORPHAN_BORDER` reads the 12 piece sets of `areagen_config.lua`: `pieces`, `borders` for the higher family each set belongs to, `families` for its ground ids. The dark tile set names come from `data/lib/chaos_dark_tiles.lua`. A piece lies on the lower ground and names the side where the higher ground lies: `n`, `cnw`, `dnw` and so on, as `derive_borders.py edges` measured. It is an orphan when none of the neighbours it names carries a ground of that higher family. The ground ids of the family are widened by name with `ItemDB.ground_family()`, so another variant of the same ground counts. `WALL_MISMATCH` reads the `walls` brushes `ruin` and `darkstone`. The first wall piece of a tile gives its type. The 4 neighbours that carry a piece of the same brush give the type `A.wallPiece` wants. A difference is a finding. The reader of the Lua table literals is held to LuaJIT: its reading of `families`, `borders`, `pieces` and `walls` is byte for byte a LuaJIT dump. `map_tile_rules.py` holds ports of `A.borderPieces` and `A.wallPiece`. The test runs the Lua originals (luajit, else lua5.3) and compares all 256 border patterns and all 16 wall patterns.
+- **Other rules.** `BLOCKED_DOOR`: a door is an item of otb group 13 or of items.xml type door. The door is judged by its four neighbours. None walkable means neither side of the passing axis can be entered. Walkable: the first item is a ground that does not block, and no other item blocks. A door is no blocker. `BLOCKED_TELEPORT`: the destinations come from `otbm.teleports`. `ROOF_NO_SUPPORT`: a roof is an item whose items.xml name has the word roof, or one of the ids `patch_hunt_roofs.py` lays. It is looked at on floor 7 and above. It has support when the tile under it is walkable ground or holds a built item, which is anything but a ground. `TOO_MANY_ITEMS`: more than 12.
+- **Limits.** Constants at the top of the tool: `MAX_ITEMS` 12 (`--max-items N`), `DUP_CLASSES`, `DUP_GROUPS`, `DUP_OK_IDS` (empty: add an id where a pair is meant), `ROOF_NAME`, `ROOF_MAX_Z`.
+- **Run.** `python3 -I server/tools/audit_map_tiles.py SERVER_DIR [--box x1,y1,x2,y2] [--floor Z] [--csv OUT] [--known FILE] [--check] [--summary] [--limit N]`, or `--map FILE --items items.otb [--xml items.xml]`. On the VPS: `python3 -I /opt/chaos/repo/server/tools/audit_map_tiles.py /opt/chaos/server --summary`. The admin app has no button for it, as for the hunt audit: it runs for minutes, holds gigabytes, and is a review tool the owner does not run often. `chaos-ctl.sh` has no pattern for an audit to follow. `launch-check` is a seconds-long read of the install, not a map reader. So no button and no `map-audit` command were invented. `--known` (default `tools/map_tile_audit_known.csv`, columns `code,x,y,z,reason`, starts empty) lists findings that were looked at and left. `--check` exits 1 for a finding that is not in it. A listed entry that is gone is printed and does not fail. `--box` and `--floor` limit what is reported. The neighbours of an edge tile are still read.
+- **Memory and time.** The map is read with `tools/map/otbm.py` into arrays and every code is found with whole-array maths. Only doors, teleports and printed lines are looked at one by one. Measured on synthetic maps of random ground and decoration: 1,048,576 tiles (13 MB file) peak 305 MB and 1.1 s. 4,194,304 tiles (53.6 MB file) peak 1,075 MB and 4.7 s. All of the peak is `otbm.load_otbm`, the audit adds nothing above it. It is about 20 bytes of memory per byte of file. The live map (18.2 M tiles, about 200 MB) therefore needs about 4 GB and 20 seconds, the same as `audit_hunts.py`. Not measured on the live map.
+- **Planner QA (O511 part 2).** `area_plan_compile.py` calls `map_tile_rules.no_ground_below` and `map_tile_rules.blocking_on_special` in `tile_rule_errors`. These are the functions `audit_map_tiles.py` uses too, one copy. The rules: an item with no ground below it (an empty ground slot, or a non-ground in it), and a blocking item, or a tile nobody can walk on, where a teleport lies. Both are ERRORs. All 80 plans pass, so the legacy list of `shape_rules.json` was not needed. The compile writes the same bytes: the OTBM, spawn files and manifests of all 80 plans have the same md5 before and after.
+- **Run over the planned areas.** `python3 -I server/tools/audit_map_plans.py [--check]` compiles every plan of `tools/areaplan/plans` in memory, writes the area with its view frame as one OTBM in a temporary folder and runs the audit. The base `items.otb` is not in git, so the item database comes from the generator's own tables. The ground slot is a ground, `pieces` are borders, `walls` and the blocking groups of the decoration kits and themes block, the portal is a teleport, the kit roof ground is a roof. So `UNKNOWN_ID` cannot fire there, and the blocking flags are the generator's belief. Result 2026-11-12: 76 plans audited, 0 findings in any code. 4 plans are imports of real map chunks and are not compiled by the planner. On a sample of 9 plans the run looked at 15,968 border pieces, 3,680 wall pieces and 9 portals. So there is no generator bug to fix and no rule to loosen. The other plan folders (`chronicle`, `rooms`, `annexes`, `events`, `inbox`) were not run.
+- **Not verified.** Nothing ran on the live map or its `items.otb`. `WALL_MISMATCH` and `ORPHAN_BORDER` are our generator's rules. `A.wallPiece` was measured on the live map for stone and ruin walls, and the winning piece has a share under 100 %, so stock walls that do not follow it will be listed. Expect many `WALL_MISMATCH` and some `ORPHAN_BORDER` on the live map. Put the ones that are meant in the known list, or tune the rule after the first run. `DUP_ITEM`, `ROOF_NO_SUPPORT` and the roof name rule are first guesses at what is wrong on a map of mixed origin.
+- **Tests.** `tools/audit_map_tiles_test.py`: the shared rules, the two Lua ports against the Lua originals, the table reader, a synthetic map with exactly one fault per code and a clean area that stays silent, `--box`, `--floor`, `--summary`, `--csv`, `--known`, `--check` exit codes, refusals, `SERVER_DIR` by `config.lua`, the map file never written. `tools/area_planner_test.py`: the planner's two rules on synthetic tiles. Both run in CI (`checks` job), with `audit_map_plans.py --check`.
+
+## House audit (O513) (`tools/audit_houses.py`, `tools/house_audit_known.csv`)
+
+Owner 2026-11-12, translated: build our own versions of the map editor ideas, all of them. This reads `houses.xml` and the map and lists the houses that break a rule. The live map has about 1,057 houses of mixed origin, so it is report only. There is no fixer, and `docs/MAP_GUIDE.md` keeps houses out of every tool that edits the map.
+
+- **Codes, per house id.** `MULTI_FLOOR`: tiles on more than `--max-floors` floors, default 1. Every house with an upper floor is listed. The guide counts 77 % of live houses on one floor, 10 % on two, the big ones on 3-5, so `--max-floors 2` or `5` lists the odd ones. `NO_DOOR`: no door item on a house tile that has a side which is not the house. `DOOR_UNREACHABLE`: doors on the edge, none with a walkable tile of house id 0 next to it. `ENTRY_BLOCKED`: the entry of `houses.xml` is no tile or a tile nobody can stand on, also a house on the map with no row in the file. `HOUSE_FLAGS`: the tiles of one house disagree on the protection zone flag, or a house tile carries the PvP zone flag. `SIZE`: outside 13-180 tiles, a house with no tile too. `ROOF_SHARE`: under 97 % of the house tiles on floors 1-7 have a tile on the floor above.
+- **Numbers.** From `docs/MAP_GUIDE.md` "Towns": house size median 40-60, p25 25, p75 80-90, roofs on 97-100 % of the tiles. `HOUSE_MIN_TILES` is half of p25 (13). `HOUSE_MAX_TILES` is twice the top of p75 (180). `ROOF_MIN_SHARE` is the low end of the roof band (0.97). Constants at the top of the tool.
+- **Where the data is.** The house tiles are the OTBM house nodes (`otbm.py` `house`, the tile's house id). The house file is found as `patch_base_houses.py` finds it: `data/world/<mapName>-house.xml`, else the only `*-house.xml`. Doors, walkability and roofs are the rules of `audit_map_tiles.py`, the same `World`.
+- **Reading of the flags, a decision to confirm.** The engine makes every house tile a protection zone when it loads the house, so the file need not set it. The audit therefore does not ask for the flag. It asks that the house is consistent, all of its tiles or none, and that no house tile is a PvP zone. The old house bit 2 of the tile flags is not read.
+- **Reading of the door rule.** `DOOR_UNREACHABLE` is one step: a door needs a walkable tile outside the house next to it. A walk from further away is not searched.
+- **Run.** `python3 -I server/tools/audit_houses.py SERVER_DIR [--houses FILE] [--known FILE] [--check] [--summary] [--csv OUT] [--limit N] [--max-floors N]`, or `--map`, `--items`, `--xml` and `--houses`. On the VPS: `python3 -I /opt/chaos/repo/server/tools/audit_houses.py /opt/chaos/server --summary --max-floors 2`. No admin app button, for the reason given under "Map tile audit (O511)". `--known` (default `tools/house_audit_known.csv`, columns `house,code,reason`, starts empty): `--check` exits 1 for a finding that is not listed, a listed one that is gone is printed only. Memory and time as the tile audit.
+- **Not verified.** Not run on the live map. The size and roof limits and the flag reading are first numbers. The first run will show how many houses of the base map break them.
+- **Tests.** `tools/audit_houses_test.py`: a synthetic map and `houses.xml` with eight houses, one clean and one for each of the seven codes with exactly that fault, `--max-floors`, `--summary`, `--csv`, `--known`, `--check`, refusals, `SERVER_DIR`, nothing written. In CI (`checks` job).
+
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
 Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125, a Legendary Haloed Quiver rolled at the kit's item level), `beastmaster` (Doomtide Longbow and a Legendary Mercurial Quiver), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).
@@ -22230,6 +22258,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   walls, light props, corner pieces, wall props, clusters of 2-5, path edging, floor detail denser near walls. Never on
   a spawn, teleport, link, chest, NPC or boss tile; nothing blocking on the routes or the planned paths; the QA checks
   that no walkable tile is cut off. `decoration` sparse/normal/dense = x0.55/x1/x1.5, `light` scales the lights.
+- **Buildings (O515):** a plan may list `buildings` (temple, depot, shop, house) with the door on a chosen side: see "Buildings in the planner (O515)" below.
 - **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
   south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
 - **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
@@ -22272,6 +22301,94 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   `dofile`: it returns its tables and reads no `arg`), inside the editor's Lua 5.1; `paint_plan.lua` paints a plan
   compiled by the build (rows of server ids, notes with what the editor cannot write). Code in `tools/editor_scripts/`,
   tests `tests/editor_scripts_test.lua` (also Lua 5.1 in CI) and `tools/gen_editor_scripts_test.py`.
+
+## Buildings in the planner (`tools/area_plan_buildings.py`, `tools/areaplan/prefabs/`, O515)
+
+A plan may list `buildings`: a temple, a depot, a shop or a house, each with its door on a side the plan chooses. The
+planner stamps floor, walls, door, roof, features and decor, joins the tile outside the door to the entry and checks it.
+Nothing runs on the live server and the world map is never written. The new type is opt in. A plan without `buildings`
+compiles to the same bytes as before: `area_plan_buildings_test.py` holds the checksums of five plans, and all 88 plans of
+the repo were compared before and after by hand.
+
+- **Plan.** Top level `buildings`, each `{id, kind, zone}` plus optional `at` (top-left tile of the footprint, local like a
+  zone's `at`; without it the building is "auto inside the zone"), `door` (`n`, `e`, `s`, `w` or `route`), `size`
+  `[width, height]`, `wall`, `floor`, `roof`, `pz`, `npc` `{name, new, lines}` and `slots` (more decor slots). A building
+  never holds an item id: the schema refuses unknown keys. The zone gives the floor. A building cannot stand in the boss room.
+- **Prefabs.** One file per kind in `tools/areaplan/prefabs/<kind>.json`: `width` and `height` ranges, `door_side`
+  (default `route`), `door_width`, `wall` and `floor` families, `roof`, `pz`, an `npc` slot, `features` and `slots`.
+  The frame is the canonical one with the door in the south wall. `width` runs across the door wall, `height` from the back
+  wall to the door wall. `dx` counts interior columns from the west, `dy` interior rows from the north wall. A negative
+  number counts from the far end, `"c"` is the door column. A door on the east or west side swaps width and height on
+  the map. Features: `altar`, `pillar_pair`, `bench_row`, `counter` (`gap`: `start` or `end`), `shelf_row`. `reach: true`
+  asks that the tile in front of the piece is reachable. Slots have a `role`: `floor` (a piece on an interior tile, `facing`
+  for pieces with a front) or `hang` (a piece on the wall beside an interior tile, `wall`: back, front, left, right). A hung
+  piece draws only on a north or a west wall, as the dresser does. On the other two walls it is left out and the
+  manifest lists it under `dropped`.
+- **Sizes.** House: width 6-9, height 6-9, from docs/MAP_GUIDE.md Towns (footprint 6 x 7, p25 5 x 6, p75 7 x 9). Depot 8-10 x
+  7-9: the guide only says 6-25 lockers in one depot building near the temple. Temple 10-12 x 9-12 and shop 8-10 x 7-9 have
+  no statistic in the guide, so we chose them. Each prefab says so in `stats`.
+- **Families, no ids in a prefab.** Wall brushes and floor grounds are the families of `areagen_config.lua` and
+  `areaplan_build.lua`. A new mode `luajit tools/areaplan_build.lua materials` prints them and `area_plan_core.materials()`
+  reads it. Walls: `st_stone` (the town's grey stone, with the same rule `A.wallPiece` as the generator: pole in the
+  north-west corner, corner piece in the south-east one), `ruin`, `darkstone`, `k_brick`. Floors: `st_white_marble`, `tiles`,
+  `flagstone`, `marble`, `gilded`, `slate` and the other walkable families. The door pair is `cfg.doors.wood` in
+  `areaplan_build.lua`: the stock "closed door" without the locked text and its "open door". Pieces come from
+  `decor_kits.json` groups (altar, pillar, brazier, crates, plants, torch, banner, tapestry) or from
+  `tools/areaplan/building_families.json` (stock counter, bench, bookcase as shelf, locker, square table, wooden chair).
+  The stock ids were read in the installed `items.xml`.
+- **Placing.** The buildings of one zone take turns on an ellipse round the middle of the zone, clockwise from the north.
+  For each one the planner takes the footprint whose centre is nearest its point and that fits. It lies inside the zone, on
+  ground a floor can lie on (a tree or a stone on it is removed), with a free ring of one tile round it that is no rock or rim,
+  two tiles from every other building, off the plan's paths, off the arrival and the holes. The tile outside the door is
+  walkable and the entry reaches it. The building cuts no walkable tile off the entry. `door: route` tries all four sides and
+  keeps the one whose outside tile is nearest a route point: the arrival, the middle of the zone, the plan's path tiles.
+  With `at` the footprint is fixed and only the side is chosen. A failure is a QA error that names the building and the reason.
+- **Stamping.** The footprint tiles get the floor ground and nothing else of the old tile stays. The wall ring gets the
+  pieces, the door tile the closed door, interior features and slots their items (a blocking piece leaves the walkable
+  set). The roof goes on `z - 1` over every footprint tile, with the ground the dungeon roofs use (920). It is an error
+  where another floor of the plan already holds that tile. Walls, the door's outside tile, the tiles in front of counters and altars and
+  the NPC tile are protected, so the dressing pass puts nothing blocking beside them and keeps the lanes from the arrival
+  to them free. A prefab with `pz` makes the inside and the door a protection zone. An NPC of a building stands on the
+  prefab's npc slot and uses the existing stub mechanism: `new: true` writes the XML and script stub.
+- **QA** (`area_plan_compile.py`, `BLD.qa_all`, on the final tiles). The door tile is walkable and holds the door and nothing
+  else. A blocking item there is the shared rule `map_tile_rules.blocking_on_special` of O511. The entry reaches the door, the
+  tile outside it, the tile just inside it, every counter or altar front and every free interior tile (a pocket is a
+  warning). Every wall tile carries the piece type the shared `wall_piece` rule wants. The roof covers the whole footprint.
+  No two buildings share a tile. A building overlaps no route, building or special tile (a placement error). The view
+  frame, border and unknown id checks run as before. A building's tiles are exempt from the border rule, because its wall
+  is the edge, and its ids are on the allowed list. The whole-map audit `audit_map_plans.py` found nothing on the example.
+- **Example.** `tools/areaplan/examples/village_square.json` (Ashford Square, forest, 120 x 96) has a plaza of 40 x 34 with a
+  temple, a depot, two shops (one with ruin walls and a flagstone floor) and three houses round it (one door fixed
+  to the west, one house sized 7 x 8), two wild paths to an orchard and a meadow, and a grove behind the orchard. The test
+  compiles it with zero QA errors and zero warnings. CI validates and compiles it with the other examples. The picture
+  is not rendered: the render needs the base server's `items.otb`, which is not in git and not in CI.
+- **Ask for a village in chat.** The owner says it in words: "a village square in a forest, a temple, a depot, two shops,
+  three houses, doors facing the plaza". Claude copies `village_square.json`, changes the id, name, seed, zones and
+  buildings, validates it with `area_planner.py validate`, and files it with `area_inbox.py new --plan PLAN.json --prompt
+  "THE WORDS"`. The AI adapter's `--from-prompt` also works, because `buildings` is in the schema it is given. From there the
+  flow of "Map inbox" is unchanged: `chaos-ctl.sh areas-publish` (admin app: Comandos > Mapas pedidos > Publicar áreas), the
+  Windows `fetch-areas.bat`, the map editor, approve, promote. For a good result use one big `room` or `lobes` zone for the plaza (40 x 34
+  fits seven buildings), `ragged` on the zones around it so the outline rule of "Asymmetric areas" holds, and `pz: true`
+  on the plaza.
+- **Check on the live data.** `area_planner.py check-kits ITEMS.otb ITEMS.xml Tibia.dat` now also checks the stock ids of the
+  buildings (`BLD.check_buildings`): known, a sprite, blocking as listed, doors of the door group, walls and grounds of their
+  kind, nothing pickupable. It prints the size of each door sprite for a look. It was not run in this session, because the
+  base `items.otb` is not available.
+- **Not done.** `houses.xml` rows, house ids, names, rents and the house door (the locked door pair 1209 / 1212 needs a house).
+  The compiler writes no houses today, so `house` is a building shape only. Beds (a bed is two linked items with a bed
+  type). Depot lockers: the base depot locker 2589-2592 needs a depot id attribute, which the OTBM writer does not
+  know, so the depot uses the stock locker 1732-1735 as a stand-in. Towns and the temple position in the OTBM (the writer
+  writes an empty towns node). Shop offers (the NPC stub says words only). Windows. Second floors and stairs in a building. Door
+  action ids and keys. **Not verified:** which of the two stock door pairs is drawn across a wall and which along it (the
+  table says `v` = 1210 / 1211 for a wall that runs north-south), and the facing order of the stock bench, bookcase, locker
+  and chair ids (`building_families.json`). Both wait for `check-kits` and a look on the pair. Hung pieces on south and east walls
+  are left out.
+- **Tests.** `tools/area_plan_buildings_test.py` (CI step "Area planner"): the four prefabs and the family tables, 184 layouts
+  (every kind, every size of its range, all four door sides: door on the asked side, footprint turned, a clear way from
+  the door to every feature and to every free tile), the layout turning with the door, every kind compiled on every door
+  side, the village example, the QA cases (a pillar inside the door, a crate in front of the altar, a piece hung on the
+  door tile, overlap, a building outside its zone, a roof tile missing, a wrong wall piece, an unreachable door, a blocking item on
+  the door tile), the validator, and the checksums of five old plans. `area_planner_test.py` runs the example with the others.
 
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 
@@ -22787,6 +22904,75 @@ streaked tiles and round reddish-brown pebble discs, so it reads as broken.
   `<map>.otbm.bak` first, leaves house tiles alone. Test `tools/patch_crypt_floors_test.py`.
 - **Owner step.** On the VPS, server stopped: `python3 -I server/tools/install_all.py SERVER_DIR --only cryptfloors
   --dry-run`, then the same without `--dry-run`. The admin app (`android/`) has no button for install steps.
+
+## Map write guard (`tools/map_write_guard.py`, O512)
+Every install step that rewrites the world map writes `<map>.otbm.tmp`, checks little (a tile count) and renames it over
+the map. A bug in a writer could change tiles outside the area it meant to touch and nobody would see it. Now each writer
+hands the old map, the new file and the tiles it meant to touch to the guard just before the rename. There is no flag, no
+environment variable and no option to turn it off.
+- **What it proves.** The guard reads both files in one streaming pass each (24 MiB chunks, numpy, no tile tree) and
+  checks:
+  1. Both files parse to the end: identifier, one root node, balanced nodes, no bytes after the root, no dangling escape.
+  2. Every tile outside the intended set exists in both files and is byte for byte the same (items, attributes, tile
+     flags, house id: the raw bytes of the tile node).
+  3. Every tile of the intended set is as meant: an added tile is new and written, a rewritten tile exists in both, a
+     removed tile is gone. No tile is on the map twice. With `expect` (`{pos: node bytes}`), an added or rewritten tile is
+     exactly the bytes the writer meant.
+  4. The header (identifier, root and map data attributes) is the same. Every other child of the map data node (towns,
+     waypoints, anything) has the same node count and content, unless the writer frees that type (`allow_nodes`) or only
+     its content (`allow_content`: the count must stay).
+- **Which steps use it.** `IC.write_map` of `install_content_areas.py` runs the guard on every call (`guard_map`: the
+  tiles of `remove` and `new_tiles` are the intended set, the bytes of `new_tiles` the `expect`). That covers
+  `contentareas`, `mapfixes`, `questshowcase`, `deadholes`, `huntgates`, `huntannexes`, `waystonetrim`, `lavaedges`,
+  `cryptfloors`, `huntroofs` and `templetidy`. The writers that patch map bytes in memory call `map_write_guard.verify`
+  themselves: `rewardchests` (the tiles of the replaced chests), `spawnfields` (the listed spots), `startchest` (the tiles
+  of the removed chests), `towns` (no tile may differ; the towns node keeps its town count, names move:
+  `allow_content`) and `worldtexts` (`text_only`: a tile may differ outside the sets only in the text and description
+  attributes of its items, nothing else; at most 200000 tiles). `rewardchests`, `spawnfields` and `startchest` used to
+  write `--out` files directly; they now go through the `.tmp` and the guard too.
+- **On a refusal.** The step raises (`refused: map write guard refused w.otbm.tmp: N difference(s) from the intended
+  change; first 20: 1030,1000,7: tile removed outside the intended change; ...`). The map is not replaced and is as it
+  was. The `.tmp` stays next to it (`data/world/<map>.otbm.tmp`) for inspection; the next run overwrites it.
+  `install_all.py` stops at that step.
+- **What the owner does then.** Nothing to repair: the old map stays. In the admin app (`android/`), Painel > card
+  "Atualizar servidor" > "Aplicar e reiniciar" runs the install through `chaos_kit_update.sh`. With the staging copy
+  (the default) the install runs on a copy of the server folder while the game keeps running; a refusal ends the update
+  as failed ("the install failed on the staging copy"), the live folder is not touched and the players notice nothing.
+  Without the staging copy (`CHAOS_STAGING=0`, or no room) the install runs with the server stopped and the kit rolls
+  back to the previous version. Either way the lines of the refusal, with the coordinates, are the last lines of the
+  install the card shows. Send them to the coordinator: a refusal means a writer touched tiles it should not have. There
+  is no button to override it. Shell fallback, to compare two maps: `python3 -I server/tools/map_write_guard.py OLD.otbm
+  NEW.otbm` (exit 0 when no tile differs).
+- **Cost (measured).** Synthetic map built for the measurement: 108 areas of 253 x 253 tiles, 6,912,972 tiles, 200 MB, three
+  nodes per tile; second file the same with 100 tiles added, 1 rewritten, 1 removed. One scan of one file: 5.6 s. The whole
+  check (two scans, sorting, comparing): 9.9 s, peak 651 MB (`otbm.load_otbm`, which every writer already runs on its
+  output, took 6.6 s and 2.4 GB on the same file). The time is linear in the number of node markers. A map twice as
+  dense or a VPS three times slower stays near 30 s, under the 60 s limit. A step runs the guard once, and only when it
+  changes the map (a second run writes nothing): 16 steps at most, each under the limit on its own. A first version
+  that used `np.isin` took 48 s; the comparison now uses sorted arrays and binary search.
+- **Found while doing it: the room's end tiles lost their attributes.** `room_layout` rebuilt the end tiles it moves
+  (`caps`) from the item ids alone. Every action id, unique id, text, description, count, unknown attribute and the things
+  inside a container were dropped on the moved tile. The test `cap_attribute_checks` in `install_content_areas_test.py`
+  showed it (aid 48001, uid 48002, a sign text, a count, an attribute 99, a container with two items: all gone). Fixed:
+  `keep_moved` reads the old end tile from the map (`read_tile_lossless`) and the new tile keeps every item node byte for
+  byte (`attrs['node']` in `tile_nodes`). A tile it cannot move that way (a house tile, a tile attribute other than
+  flags and ground) is refused with a reason instead of being rewritten. The copies of the module columns (new alcoves)
+  are still made from ids alone, on purpose: a copied action or unique id would be a duplicate. The other writers read
+  tiles with `hall_order.parse_tile`, which keeps the attributes it knows byte for byte and leaves a tile with one it
+  does not know alone (listed in the log), so they never dropped one.
+- **Not covered.** `map_master.py install` and the restore of `<map>.otbm.bak` put a whole file in place (the master is
+  checked against its SHA-256, the backup is the file the first install copied). `area_plan_place.py` writes a copy of the
+  map for the planner, not an install step. The map editor writes its own files. The guard proves a writer kept to its own
+  plan; it does not prove the plan is right (the checks of each step still do that).
+- **Tests.** `map_write_guard_test.py`: identical maps; the intended change only (add, rewrite, remove); one extra tile,
+  an item attribute, a text, a tile removed, a tile added, a tile written twice outside the set, each refused with the
+  coordinate named; a tile that is not what the writer meant; towns and waypoints nodes changed without and with
+  permission; a header change; truncated files, stray bytes, a dangling escape, a compressed file; escaped bytes in
+  coordinates and ids; the same verdicts with chunks of 64 bytes up; the text-only mode; the first 20 of 40 coordinates.
+  Every writer's own test (`patch_*_test.py`, `install_content_areas_test.py`, the new `patch_base_towns_test.py` and
+  `patch_base_texts_test.py`) has a case where a writer that also changes one far tile is refused, the map stays and the
+  `.tmp` stays (`map_guard_testkit.py` holds the builders and the fault). Not verified: a run on the real map (about 200
+  MB); the times above are from the synthetic file.
 
 ## Dead holes (`tools/check_dead_holes.py`, `tools/patch_dead_holes.py`, `tools/dead_holes.csv`, install step `deadholes`, O264)
 Owner report of 2026-10-26 with a screenshot: "esse buraco nao leva a lugar nenhum" (this hole leads nowhere): a dirt hole
@@ -32652,3 +32838,54 @@ drop chance twice. Owner 2026-11-11: colour option 3 (the place in colour, the n
   no drop), `tools/install_gems_test.py` (old text to new, second run), client `tooltiplogic_test.lua`.
 - **Not verified**: a real client (the row layout of `gemBox` in `item_tooltip.lua` is not run by a test; the rows and colours are),
   a speaker's reading of the pt-BR lines.
+
+## Editor brushes (O514) (`tools/gen_editor_brushes.py`, `mapeditor/tools/merge_brushes.py`, `tools/ci/check_editor_palette.py`)
+
+Our map editor borders our 12 pack grounds by itself. Before, the owner placed a ground and its border pieces by id.
+
+- **What the upstream editor reads** (the pin in `mapeditor/UPSTREAM`; `editor/core/brushstore.cpp`, `editor/core/tilesetstore.cpp`,
+  `editor/core/terrainborderalignment.h`, data in `data/1098/`). One `brushes.json` and one `tilesets.json` per client version,
+  JSON, no XML, no include of a second file. `grounds`: name to `{zorder, lookid, items [[id, chance]], borders [{align
+  outer|inner, border KEY, to NAME|"*"|""}], friends, hate_friends, optional, solo_optional}`. `borders`: KEY to 13 slots,
+  slot 0 unused, then n, e, s, w, cnw, cne, csw, cse, dnw, dne, dse, dsw; a slot is an id or `{"variants": [[id, chance]]}`.
+  `tilesets.json`: category (terrain, doodad, item, raw, collection, door) to palette name to a list of ids.
+- **Its rule.** For a tile, `computeBorderItems` looks at the 8 neighbours. The neighbour with the higher z order that owns an
+  `outer` set for this tile's ground makes the pieces; the neighbour mask goes through a table of 256 entries with up to 4
+  slots. Written as a rule (it reproduces all 256 entries, checked when the test was written): exactly two sides that meet give
+  the inner corner d.. of that pair; any other sides give one edge per side; a diagonal neighbour whose two sides are not the
+  higher ground gives the outer corner c... Equal z orders: the one with a matching outer set wins, then name order.
+- **Ours.** `gen_editor_brushes.py` writes `mapeditor/data/1098/cinders/cinders_brushes.json` and `cinders_tilesets.json` from
+  `data/items/art_items.csv` and the z orders of the planner (`tools/areaplan_build.lua` `PACK`; `EDITOR_Z` in the script for the
+  other six: fine sand 3050, floors 3300-3320, red clay 3480, bright grass 3640). Stock grounds: dirt 1000, sand 3000, grass 3500,
+  earth 10500, so ours draw over stock dirt and sand; stock grass draws over our floors, clay and sand; loam ties with stock grass
+  and loses by name order (grass over loam); dense grass and fresh snow tie (they never meet). Each ground has one `outer` block
+  `to: "*"`, no friends, no inner block.
+- **The 12 pieces.** Editor n, e, s, w = our n, e, s, w. Outer corners cnw, cne, csw, cse = our nw, ne, sw, se. Inner corners dnw,
+  dne, dse, dsw = our in_nw, in_ne, in_se, in_sw. The proof, three parts. (1) The planner's table
+  (`areaplan_build.lua` `packPiece`, `piecesFrom`) is the same and the planned areas were checked on renders; the test reads it.
+  (2) The rule above against `ChaosAreaGenCore.borderPieces` on all 256 patterns, in luajit and lua5.3: 176 give the same
+  pieces. The other 80 are the patterns with three or four sides: the editor puts an edge per side, the generator the inner
+  corner of a pair and an edge for the rest; the sides and the corners they cover are equal (the test asserts both). (3) The
+  art: in the families whose rim is cut out of the tile (lush, dense, dry and meadow grass, loam, jade tile, slate: 7 of 12) the
+  transparent part of n is at the south, of s at the north, e at the west, w at the east; each of nw, ne, sw, se is opaque on
+  its two named sides and shows the lower ground on the other two (the convex rounded corner of a ground that grows one tile
+  into the lower one); each in_ piece is over 96 % opaque and its bite, if any, is at the corner away from its name (a tile
+  with two sides covered). That is the geometry of cnw / dnw. The other 5 families paint the rim into an opaque tile; their
+  shape matches by eye (contact sheet) and by the same file layout, not by a test.
+- **Palettes.** Terrain `Cinders`: the 12 grounds, 8 water, 114 shore pieces. RAW `Cinders objects`: lake objects, dock props,
+  trees, stumps. RAW `Cinders border pieces`: the 144 border pieces, for a fix by hand. Shores are not brushes: a shore set has 19
+  pieces named after land sides in 4-neighbour combinations (in_ew, in_nsw, ...), animated, drawn on the water tile; the editor
+  picks 12 slots from 8 neighbours, so the naming does not map. Use them from the palette.
+- **How it gets into the editor.** The editor has no include, and a change of its program is not needed:
+  `mapeditor/tools/merge_brushes.py DATA_DIR` merges the two files into its `brushes.json` and `tilesets.json`. Our keys are replaced,
+  stock entries stay, a ground that names an id a stock ground owns is refused. `mapeditor-build.yml` runs it on the release folder
+  (patched variant) so the self-updater's zip carries the merge, and puts the files and the tool into the source zip.
+  `windows-package.yml` runs it again on the unpacked editor (idempotent), also for the upstream fallback.
+  The stock files' ids are server ids of the game's items.xml, which the package puts into `data\1098` too; the build's own zip
+  has the stock items.xml, so our ids show as unknown there until packaged.
+- **Tests and checks.** `tools/gen_editor_brushes_test.py`, `mapeditor/tools/merge_brushes_test.py`,
+  `tools/ci/check_editor_palette.py` (+ `_test.py`), `gen_editor_brushes.py --check` (CI diffs the generated files).
+- **Not verified**: the brushes in the running editor (Windows build). How the owner tests it: open the editor, open
+  the palette `Cinders` (terrain), choose "cinders thick lush grass", paint a patch on stock grass or dirt; next to it paint
+  "cinders loam" or "cinders fine sand". The border pieces must appear on the lower tiles by themselves (automagic on). If a
+  corner looks wrong, say which ground and which corner: the mapping is one table (`PIECE_OF`) in the script.

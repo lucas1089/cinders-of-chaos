@@ -863,12 +863,19 @@ jobs:
             fi
             echo "  - data\\1098\\creatures.xml: every monster and NPC of the game (tools/windows/editor_creatures.py)"
             echo "  - data\\1098\\items.xml: the game server's items.xml (open-map-editor.bat copies it again)"
+            echo "  - data\\1098\\brushes.json, tilesets.json: our grounds with their border sets (brush names \"cinders ...\")"
+            echo "    and the palettes Cinders (terrain) and Cinders objects / Cinders border pieces (RAW), added to the"
+            echo "    editor's own entries (mapeditor/tools/merge_brushes.py); nothing of the editor's was removed"
             echo "Added (not part of the editor):"
             echo "  - client\\: the game's 10.98 Tibia.dat, Tibia.spr, Tibia.otfi and items.otb"
             echo "  - cinders\\: our scripts for Tools > Lua Scripts (cinders\\README.txt)"
             echo "  - settings-key.txt: where the editor keeps its settings (open-map-editor.bat presets them)"
           } | sed 's/$/\r/' > "$P/mapeditor/CHANGES.txt"
           mkdir -p "$P/mapeditor/client" "$P/mapeditor/data/1098"
+          # our grounds, border sets and palettes (O514). Our build's zip has them already (mapeditor-build.yml); this
+          # covers the upstream fallback and an older build of ours. Idempotent.
+          python3 -I chaos/mapeditor/tools/merge_brushes.py "$P/mapeditor/data/1098" ||
+            echo "::warning::our brushes were not merged into the map editor (O514): the palette Cinders is missing"
           # the 10.98 profile reads data\1098\creatures.xml: Chaos monsters first (a name there wins), then every
           # monster and NPC of the packaged server (without them their spawns are empty grey squares, owner 2026-11-03)
           python3 -I chaos/tools/windows/editor_creatures.py "$P/mapeditor/data/1098/creatures.xml" \

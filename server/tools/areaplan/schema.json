@@ -462,6 +462,162 @@
         }
       }
     },
+    "buildings": {
+      "type": "array",
+      "maxItems": 40,
+      "description": "parametric buildings (server/tools/areaplan/prefabs, server/README.md \"Buildings in the planner (O515)\"): each stands inside one zone, stamped with walls, a door on the chosen side, a floor, features, decor and a roof one floor up; the plan never names an item id",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "zone"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "kind": {
+            "enum": [
+              "temple",
+              "depot",
+              "shop",
+              "house"
+            ],
+            "description": "the prefab: areaplan/prefabs/<kind>.json"
+          },
+          "zone": {
+            "type": "string",
+            "description": "the zone it stands in (its floor is the zone's)"
+          },
+          "at": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 200
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "top-left tile of the footprint, local like a zone's `at`; leave out for \"auto inside the zone\" (the buildings of a zone stand round its middle)"
+          },
+          "door": {
+            "enum": [
+              "n",
+              "e",
+              "s",
+              "w",
+              "route"
+            ],
+            "description": "the side of the door; route = the side that faces the nearest route (default: the prefab's)"
+          },
+          "size": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 21
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "[width across the door wall, height from the back wall to the door wall], walls included; a door on the east or west side turns the building, so the footprint on the map is [height, width] (default: from the prefab's ranges, by the seed)"
+          },
+          "wall": {
+            "type": "string",
+            "description": "a wall brush of areagen_config.lua / areaplan_build.lua (default: the prefab's)"
+          },
+          "floor": {
+            "type": "string",
+            "description": "a walkable ground family of those tables (default: the prefab's)"
+          },
+          "roof": {
+            "type": "boolean",
+            "description": "a roof on the floor above (default: the prefab's)"
+          },
+          "pz": {
+            "type": "boolean",
+            "description": "a protection zone inside (default: the prefab's)"
+          },
+          "npc": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "description": "the NPC of the prefab's npc slot (a priest, a keeper, a clerk); the existing NPC stub mechanism",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "new": {
+                "type": "boolean",
+                "description": "an NPC not in our list yet: the compile writes its XML and script stub"
+              },
+              "lines": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              }
+            }
+          },
+          "slots": {
+            "type": "array",
+            "maxItems": 12,
+            "description": "more decor slots beside the prefab's (family names of building_families.json)",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "dx",
+                "dy",
+                "family",
+                "role"
+              ],
+              "properties": {
+                "dx": {
+                  "description": "interior column from the west (negative: from the east end, \"c\": the door column)"
+                },
+                "dy": {
+                  "description": "interior row from the back wall (negative: from the door wall)"
+                },
+                "family": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "floor",
+                    "hang"
+                  ]
+                },
+                "wall": {
+                  "enum": [
+                    "back",
+                    "front",
+                    "left",
+                    "right"
+                  ],
+                  "description": "hang only"
+                },
+                "facing": {
+                  "enum": [
+                    "n",
+                    "e",
+                    "s",
+                    "w"
+                  ],
+                  "description": "floor pieces that have a front: the side it faces in the canonical frame (door south)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "chests": {
       "type": "array",
       "maxItems": 20,

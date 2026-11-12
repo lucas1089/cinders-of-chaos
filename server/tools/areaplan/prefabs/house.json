@@ -1,0 +1,23 @@
+{
+  "kind": "house",
+  "note": "Canonical frame as in temple.json. One door, a locker row against the north wall, a table with a chair and a plant. No beds and no house id: houses.xml rows, rents and beds are not written (server/README.md 'Buildings in the planner (O515)', not done).",
+  "width": [6, 9],
+  "height": [6, 9],
+  "stats": "docs/MAP_GUIDE.md Towns: house footprint 6 x 7 (p25 5 x 6, p75 7 x 9), 1 door, a roof on every tile; widths 6-9 and depths 6-9 here keep the interior at 4 x 4 or more so the furniture fits",
+  "door_side": "route",
+  "door_width": 1,
+  "wall": "st_stone",
+  "floor": "tiles",
+  "roof": true,
+  "pz": false,
+  "features": [
+    {"type": "shelf_row", "dx": 0, "dy": 0, "length": 2, "family": "locker"}
+  ],
+  "slots": [
+    {"dx": -2, "dy": 1, "family": "table", "role": "floor"},
+    {"dx": -2, "dy": 2, "family": "chair", "role": "floor", "facing": "n"},
+    {"dx": -1, "dy": -1, "family": "plants", "role": "floor"},
+    {"dx": 1, "dy": 0, "family": "torch", "role": "hang", "wall": "back"},
+    {"dx": 0, "dy": 2, "family": "tapestry", "role": "hang", "wall": "left"}
+  ]
+}

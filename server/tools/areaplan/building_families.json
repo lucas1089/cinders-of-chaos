@@ -1,0 +1,24 @@
+{
+  "note": "Material families of the planner's buildings (server/tools/area_plan_buildings.py, areaplan/prefabs/*.json, server/README.md 'Buildings in the planner (O515)'). A prefab names families, never item ids. A family here is either a decor kit group (the ids come from decor_kits.json, each checked on the pair by check-kits) or a short list of stock ids of the base server's items.xml. Walls, floors and doors come from areagen_config.lua and areaplan_build.lua (`areaplan_build.lua materials`), not from this file. Orientation: `dirs` gives the id that faces n, e, s or w; `h` and `v` give the piece that runs along x or along y. The order of the stock ids that stand for each direction is NOT verified on the pair (the sprites of the base server's items.otb are not in git): check-kits lists them for a look.",
+  "families": {
+    "altar": {"group": "altars"},
+    "pillar": {"group": "marble_pillar"},
+    "brazier": {"group": "coal_basin"},
+    "crates": {"group": "crates"},
+    "plants": {"group": "plants"},
+    "torch": {"hang": true, "group_h": "torch_h", "group_v": "torch_v"},
+    "banner": {"hang": true, "group_h": "banner_h", "group_v": "banner_v"},
+    "tapestry": {"hang": true, "group_h": "tapestry_h", "group_v": "tapestry_v"},
+    "counter": {"block": true, "h": [1617], "v": [1618],
+                "source": "stock counter pieces 1617-1618 (items.xml: counter); 1620-1621 and 1642-1645 are the other counter pieces"},
+    "bench": {"block": true, "dirs": {"s": 1662, "w": 1663, "n": 1664, "e": 1665},
+              "source": "stock bench 1662-1665 (items.xml: bench)"},
+    "shelf": {"block": true, "dirs": {"s": 6368, "w": 6369, "n": 6370, "e": 6371},
+              "source": "stock bookcase 6368-6371 (items.xml: bookcase, a rotatable container)"},
+    "locker": {"block": true, "dirs": {"s": 1732, "w": 1733, "n": 1734, "e": 1735},
+               "source": "stock locker 1732-1735 (items.xml: locker, a rotatable container; NOT the depot locker 2589-2592, which needs a depot id)"},
+    "table": {"block": true, "ids": [1615], "source": "stock square table 1615"},
+    "chair": {"block": true, "dirs": {"s": 1650, "w": 1651, "n": 1652, "e": 1653},
+              "source": "stock wooden chair 1650-1653"}
+  }
+}

@@ -1,0 +1,438 @@
+{
+ "borders": {
+  "cinders_lush_grass": [
+   0,
+   36301,
+   36303,
+   36302,
+   36304,
+   36305,
+   36306,
+   36307,
+   36308,
+   36309,
+   36310,
+   36312,
+   36311
+  ],
+  "cinders_dense_grass": [
+   0,
+   36314,
+   36316,
+   36315,
+   36317,
+   36318,
+   36319,
+   36320,
+   36321,
+   36322,
+   36323,
+   36325,
+   36324
+  ],
+  "cinders_dry_grass": [
+   0,
+   36327,
+   36329,
+   36328,
+   36330,
+   36331,
+   36332,
+   36333,
+   36334,
+   36335,
+   36336,
+   36338,
+   36337
+  ],
+  "cinders_meadow_grass": [
+   0,
+   36340,
+   36342,
+   36341,
+   36343,
+   36344,
+   36345,
+   36346,
+   36347,
+   36348,
+   36349,
+   36351,
+   36350
+  ],
+  "cinders_bright_grass": [
+   0,
+   36353,
+   36355,
+   36354,
+   36356,
+   36357,
+   36358,
+   36359,
+   36360,
+   36361,
+   36362,
+   36364,
+   36363
+  ],
+  "cinders_loam": [
+   0,
+   36366,
+   36368,
+   36367,
+   36369,
+   36370,
+   36371,
+   36372,
+   36373,
+   36374,
+   36375,
+   36377,
+   36376
+  ],
+  "cinders_flagstone_floor": [
+   0,
+   36379,
+   36381,
+   36380,
+   36382,
+   36383,
+   36384,
+   36385,
+   36386,
+   36387,
+   36388,
+   36390,
+   36389
+  ],
+  "cinders_jade_tile_floor": [
+   0,
+   36392,
+   36394,
+   36393,
+   36395,
+   36396,
+   36397,
+   36398,
+   36399,
+   36400,
+   36401,
+   36403,
+   36402
+  ],
+  "cinders_slate_floor": [
+   0,
+   36405,
+   36407,
+   36406,
+   36408,
+   36409,
+   36410,
+   36411,
+   36412,
+   36413,
+   36414,
+   36416,
+   36415
+  ],
+  "cinders_red_clay": [
+   0,
+   36418,
+   36420,
+   36419,
+   36421,
+   36422,
+   36423,
+   36424,
+   36425,
+   36426,
+   36427,
+   36429,
+   36428
+  ],
+  "cinders_fine_sand": [
+   0,
+   36431,
+   36433,
+   36432,
+   36434,
+   36435,
+   36436,
+   36437,
+   36438,
+   36439,
+   36440,
+   36442,
+   36441
+  ],
+  "cinders_fresh_snow": [
+   0,
+   36444,
+   36446,
+   36445,
+   36447,
+   36448,
+   36449,
+   36450,
+   36451,
+   36452,
+   36453,
+   36455,
+   36454
+  ]
+ },
+ "grounds": {
+  "cinders thick lush grass": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_lush_grass",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36300,
+     100
+    ]
+   ],
+   "lookid": 36300,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3700
+  },
+  "cinders dense grass": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_dense_grass",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36313,
+     100
+    ]
+   ],
+   "lookid": 36313,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3600
+  },
+  "cinders dry prairie grass": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_dry_grass",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36326,
+     100
+    ]
+   ],
+   "lookid": 36326,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3620
+  },
+  "cinders meadow grass": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_meadow_grass",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36339,
+     100
+    ]
+   ],
+   "lookid": 36339,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3650
+  },
+  "cinders bright grass": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_bright_grass",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36352,
+     100
+    ]
+   ],
+   "lookid": 36352,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3640
+  },
+  "cinders loam": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_loam",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36365,
+     100
+    ]
+   ],
+   "lookid": 36365,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3500
+  },
+  "cinders flagstone floor": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_flagstone_floor",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36378,
+     100
+    ]
+   ],
+   "lookid": 36378,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3300
+  },
+  "cinders jade tile floor": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_jade_tile_floor",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36391,
+     100
+    ]
+   ],
+   "lookid": 36391,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3310
+  },
+  "cinders violet slate floor": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_slate_floor",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36404,
+     100
+    ]
+   ],
+   "lookid": 36404,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3320
+  },
+  "cinders red clay": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_red_clay",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36417,
+     100
+    ]
+   ],
+   "lookid": 36417,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3480
+  },
+  "cinders fine sand": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_fine_sand",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36430,
+     100
+    ]
+   ],
+   "lookid": 36430,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3050
+  },
+  "cinders fresh snow": {
+   "borders": [
+    {
+     "align": "outer",
+     "border": "cinders_fresh_snow",
+     "to": "*"
+    }
+   ],
+   "friends": [],
+   "hate_friends": false,
+   "items": [
+    [
+     36443,
+     100
+    ]
+   ],
+   "lookid": 36443,
+   "optional": "",
+   "solo_optional": false,
+   "zorder": 3600
+  }
+ }
+}

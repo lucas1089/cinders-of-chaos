@@ -1,6 +1,7 @@
 -- The area planner's bridge to the area generator (server/tools/area_planner.py; docs/MAP_GUIDE.md "Area planner").
 -- Run from the server/ folder with LuaJIT or Lua 5.3:
 --     luajit tools/areaplan_build.lua catalogue [pair24] [dark]   the biomes, materials and items a plan may use (JSON)
+--     luajit tools/areaplan_build.lua materials [pair24] [dark]   the wall brushes, ground families and doors (JSON; buildings)
 --     luajit tools/areaplan_build.lua build JOB.lua [pair24] [dark] the tile model of one compiled plan (lines below)
 --
 -- A plan never holds an item id. Every id comes from our own tables, read here:
@@ -183,6 +184,12 @@ local function addStock()
 	-- south-east one, see areagen_core.lua A.wallPiece)
 	cfg.families.st_white_marble = {z = 1, grounds = {{406, 1}}, indoor = true}
 	cfg.walls.st_stone = {horizontal = {{1050, 1}}, vertical = {{1049, 1}}, corner = {{1053, 1}}, pole = {{1051, 1}}}
+	-- the planner's buildings (area_plan_buildings.py, server/README.md "Buildings in the planner (O515)"): the stock door
+	-- items that open for everybody (a "closed door" with no "It is locked." text in items.xml, and its "open door"),
+	-- one pair per wall direction: v stands in a wall that runs north-south (the west and east sides of a building), h in a
+	-- wall that runs east-west. The ids are the stock door table's; which of the two pairs is drawn across and which
+	-- along a wall is NOT verified on the pair (check-kits prints them for a look)
+	cfg.doors = {wood = {v = {closed = 1210, open = 1211}, h = {closed = 1213, open = 1214}}}
 end
 addStock()
 
@@ -647,8 +654,53 @@ if mode == "catalogue" then
 	return
 end
 
+-- ------------------------------------------------------------------ materials
+-- the wall brushes, ground families and doors of our tables with their ids, for the planner's buildings (JSON). Families
+-- whose ids are dark tile names (they exist only with "dark") are left out unless every id resolves.
+if mode == "materials" then
+	local walls, fams, doors = {}, {}, {}
+	for name, brush in pairs(cfg.walls) do
+		local w, whole = {}, true
+		for kind, rws in pairs(brush) do
+			w[kind] = {}
+			for _, row in ipairs(rws) do
+				if row[1] then
+					w[kind][#w[kind] + 1] = idOf(row[1])
+				else
+					whole = false
+				end
+			end
+			if #w[kind] == 0 then
+				whole = false
+			end
+		end
+		if whole then
+			walls[name] = w
+		end
+	end
+	for name, d in pairs(cfg.families) do
+		local ids, whole = {}, true
+		for _, row in ipairs(d.grounds) do
+			local id = idOf(row[1])
+			if id then
+				ids[#ids + 1] = id
+			else
+				whole = false
+			end
+		end
+		if whole and #ids > 0 then
+			fams[name] = {z = d.z, walk = d.walk ~= false, indoor = d.indoor == true, grounds = ids}
+		end
+	end
+	for name, d in pairs(cfg.doors or {}) do
+		doors[name] = d
+	end
+	print(json({walls = walls, families = fams, doors = doors, pair24 = pair24, dark = dark}))
+	return
+end
+
 -- ------------------------------------------------------------------ build
-assert(mode == "build" and flags, "usage: areaplan_build.lua catalogue|build JOB.lua [pair24] [dark]")
+assert(mode == "build" and flags, "usage: areaplan_build.lua catalogue|materials|build JOB.lua [pair24] [dark]")
 local job = dofile(arg[2])
 local def = job.def
 local biomeDef = BIOMES[job.biome]

@@ -24,7 +24,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Lua 5.3 and LuaJIT
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
+        # python3-numpy: tests that drive a map writer (base_towns_patch_test, base_world_names_patch_test) pass the map write guard (O512)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit python3-numpy
 
       - name: Server unit tests (mocked engine API)
         run: |
@@ -828,6 +829,14 @@ jobs:
         run: |
           python3 -I mapeditor/tools/run_profile_test.py
           python3 -I mapeditor/tools/upstream_test.py
+          python3 -I mapeditor/tools/merge_brushes_test.py
+
+      - name: Map editor brushes of our grounds (O514; generated files up to date, the 12 piece mapping against the editor's rule and ChaosAreaGenCore.borderPieces, no dead id)
+        run: |
+          python3 -I server/tools/gen_editor_brushes.py --check
+          python3 -I server/tools/gen_editor_brushes_test.py
+          python3 -I tools/ci/check_editor_palette.py
+          python3 -I tools/ci/check_editor_palette_test.py
 
       - name: Client release host and site (client/tools/set_server_host.py)
         run: python3 -I client/tools/set_server_host_test.py
@@ -968,6 +977,13 @@ jobs:
           python3 -I server/tools/patch_hunt_gates_test.py
       - name: "Hunt audit rules on synthetic data (audit_hunts.py, monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O337)"
         run: python3 -I server/tools/audit_hunts_test.py
+      - name: "Map tile audit and house audit on a synthetic map (audit_map_tiles.py, audit_houses.py, the shared tile rules against the Lua originals; every planned area passes the audit, audit_map_plans.py; the installed map is audited by hand; O511, O513)"
+        run: |
+          # system numpy and luajit: the audits read maps with tools/map/otbm.py, the plans compile through the Lua generator
+          sudo apt-get install -y -qq luajit python3-numpy
+          python3 -I server/tools/audit_map_tiles_test.py
+          python3 -I server/tools/audit_houses_test.py
+          python3 -I server/tools/audit_map_plans.py --check --quiet
       - name: Hunt annexes (the five annex plans compile, asymmetric, the rows of hunt_annexes.json; the portal step on a synthetic map; the spawn fills; O337)
         run: |
           sudo apt-get install -y -qq luajit python3-numpy
@@ -1126,11 +1142,12 @@ jobs:
       - name: Area generator export (the Lua generator's dump, OTBM writer and reader, spawn file)
         run: python3 -I server/tools/areagen_export_test.py
 
-      - name: Area planner (validator, reachability maths, layout, compiler, decoration, place; the example and content plans)
+      - name: Area planner (validator, reachability maths, layout, compiler, decoration, buildings, place; the example and content plans)
         run: |
           # system numpy: place reads maps with tools/map/otbm.py (python3 -I does not see pip's user site)
           sudo apt-get install -y -qq python3-numpy
           python3 -I server/tools/area_planner_test.py
+          python3 -I server/tools/area_plan_buildings_test.py   # parametric buildings (O515): prefabs, layouts, door sides, the village example, QA
           python3 -I server/tools/area_import_test.py   # imported hunts (O335): chunks, spawns, exit, boxes
           python3 -I server/tools/area_inbox_test.py   # the map inbox (O192): new, build (deterministic), publish, promote
           python3 -I server/tools/area_inbox.py check  # every inbox entry validates and compiles
@@ -1167,6 +1184,9 @@ jobs:
           python3 -I server/tools/patch_map_fixes_test.py  # broken teleports, the sea round the hall, the temple portal gallery
           python3 -I server/tools/patch_start_chest_test.py  # the base starter chest cut off the map, its script disabled
           python3 -I server/tools/patch_temple_tidy_test.py  # O386: the east purple teleport and clutter off Cinderhold's temple
+          python3 -I server/tools/map_write_guard_test.py  # O512: the splice guard of every map writer: intended change passes, a tile, an attribute, a town changed outside is refused
+          python3 -I server/tools/patch_base_towns_test.py  # O512: town names through the guard
+          python3 -I server/tools/patch_base_texts_test.py  # O512: item texts of the map through the guard (text-only mode)
 
       - name: "Map master (pack, verify, unpack and install of the owner's edited map; synthetic OTBM)"
         run: python3 -I server/tools/map_master_test.py

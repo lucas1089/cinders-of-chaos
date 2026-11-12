@@ -1041,6 +1041,86 @@ def cache_checks():
         shutil.rmtree(root, ignore_errors=True)
 
 
+def raw_items(path, pos):
+    """the raw (escaped) bytes of each item node of the tile at pos of a map file, in order, and the tile's own payload"""
+    data = open(path, 'rb').read()
+    s, e = T.tile_ranges(data, [pos])[pos]
+    raw = data[s:e + 1]
+    items, depth, i, start, own = [], 0, 0, None, b''
+    while i < len(raw):
+        c = raw[i]
+        if c == 0xFD:
+            i += 2
+            continue
+        if c == 0xFE:
+            depth += 1
+            if depth == 2:
+                start = i
+        elif c == 0xFF:
+            if depth == 2:
+                items.append(raw[start:i + 1])
+            depth -= 1
+        i += 1
+    first = raw.find(b'\xFE', 1)
+    own = raw[:first if first > 0 else len(raw)]
+    return items, own
+
+
+def cap_attribute_checks(root):
+    """O512: the end tiles the room moves keep every byte of their items, attributes we know (action id, unique id, text,
+    description, count) and ones we do not (an unknown attribute, the items inside a container)"""
+    text = bytes([6]) + struct.pack('<H', 11) + b'Ashgate sign' + bytes([7]) + struct.pack('<H', 4) + b'desc' + bytes([15, 3])
+    unknown = bytes([99, 7, 8, 9])
+    extra = {(14, 12, Z): dict(ground=None, items=[(G, {}), (WALL, {'aid': 48001, 'uid': 48002, 'raw': text + unknown})], flags=1),
+             (14, 14, Z): dict(ground=None, items=[(G, {}), (WALL, {'kids': [1111, 2222]})], flags=1)}
+    srv, plans, comp = setup(os.path.join(root, 'caps'), extra)
+    mp = os.path.join(srv, 'data', 'world', 'w.otbm')
+    before = {p: raw_items(mp, p) for p in extra}
+    res, _log = run(srv, plans, comp)
+    check(res['room'] == 'todo', 'caps: the room grew')
+    for p in extra:
+        q = (p[0] + 8, p[1], p[2])  # the end moves by 8 (2 modules of 4 columns)
+        items, own = raw_items(mp, q)
+        check(items == before[p][0], 'caps: the items of %s moved to %s byte for byte: %r != %r' % (p, q, items, before[p][0]))
+        check(own == before[p][1] or own.replace(bytes([5, q[0] & 0xFF, q[1] & 0xFF]), bytes([5, p[0] & 0xFF, p[1] & 0xFF]), 1) == before[p][1],
+              'caps: the tile flags kept')
+    # a tile attribute we cannot read (a house id on a plain tile node): refused, never dropped
+    srv, plans, comp = setup(os.path.join(root, 'caps2'))
+    mp = os.path.join(srv, 'data', 'world', 'w.otbm')
+    data = open(mp, 'rb').read()
+    s0, e0 = T.tile_ranges(data, [(14, 12, Z)])[(14, 12, Z)]
+    raw = data[s0:e0 + 1]
+    odd = b'\xFE' + esc(bytes([5, 14, 12, 3, 1, 0, 0, 0, 77, 1, 2, 3, 4])) + raw[raw.find(b'\xFE', 1):]
+    open(mp, 'wb').write(data[:s0] + odd + data[e0 + 1:])
+    try:
+        run(srv, plans, comp)
+        check(False, 'caps: a tile attribute we cannot move is refused')
+    except T.InstallError as err:
+        check('byte for byte' in str(err) or 'cannot' in str(err), 'caps: refused with a reason: %s' % err)
+
+
+def guard_checks(root):
+    """O512: a writer that also cuts one far tile is stopped by the map write guard: the install refuses, the map, the
+    spawn file and the places file are as they were, the .tmp stays"""
+    import map_guard_testkit as K
+    srv, plans, comp = setup(os.path.join(root, 'guard'))
+    mp = os.path.join(srv, 'data', 'world', 'w.otbm')
+    before = digest(srv)
+    state, undo = K.inject_far_cut(T, mp)
+    try:
+        run(srv, plans, comp)
+        check(False, 'guard: a writer that also cuts a far tile is refused')
+    except T.InstallError as e:
+        check('far' in state and '%d,%d,%d: tile removed outside' % state['far'] in str(e), 'guard: the far tile is named: %s' % str(e)[:200])
+    finally:
+        undo()
+    check(digest(srv) == before, 'guard: map, spawns and places are as they were')
+    check(os.path.exists(mp + '.tmp'), 'guard: the .tmp stays for inspection')
+    os.remove(mp + '.tmp')
+    res, _log = run(srv, plans, comp)
+    check(res['room'] == 'todo' and not os.path.exists(mp + '.tmp'), 'guard: the same install without the fault goes through')
+
+
 def main():
     root = tempfile.mkdtemp(prefix='content_areas_test_')
     try:
@@ -1254,6 +1334,8 @@ def main():
         wing_ground_checks(root)
         upper_wing_checks()
         shared_cell_checks(root)
+        cap_attribute_checks(root)
+        guard_checks(root)
 
         # the real hunts: ascending by band, every plan exactly once, and ascending along the corridor's slots
         real = T.plan_files(T.PLANS_DIR)
