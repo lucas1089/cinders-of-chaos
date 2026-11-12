@@ -1167,6 +1167,9 @@ jobs:
           python3 -I server/tools/patch_map_fixes_test.py  # broken teleports, the sea round the hall, the temple portal gallery
           python3 -I server/tools/patch_start_chest_test.py  # the base starter chest cut off the map, its script disabled
           python3 -I server/tools/patch_temple_tidy_test.py  # O386: the east purple teleport and clutter off Cinderhold's temple
+          python3 -I server/tools/map_write_guard_test.py  # O512: the splice guard of every map writer: intended change passes, a tile, an attribute, a town changed outside is refused
+          python3 -I server/tools/patch_base_towns_test.py  # O512: town names through the guard
+          python3 -I server/tools/patch_base_texts_test.py  # O512: item texts of the map through the guard (text-only mode)
 
       - name: "Map master (pack, verify, unpack and install of the owner's edited map; synthetic OTBM)"
         run: python3 -I server/tools/map_master_test.py

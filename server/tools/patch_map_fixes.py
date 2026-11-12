@@ -417,7 +417,7 @@ def run(data_dir, dry=False, map_path=None, out=None, only=PARTS, fixes_path=FIX
     tmp = target + '.tmp'
     new_tiles = dict(changed)
     new_tiles.update(added)
-    IC.write_map(map_path, tmp, list(changed), new_tiles)
+    IC.write_map(map_path, tmp, list(changed), new_tiles, log=log)
     m2 = otbm.load_otbm(tmp)
     if len(m2.tiles['x']) != world.count() + len(added):
         os.remove(tmp)

@@ -209,7 +209,7 @@ def run(data_dir, dry=False, map_path=None, out=None, rows_path=ROWS, csv_rows=N
         return res
     target = out or map_path
     tmp = target + '.tmp'
-    IC.write_map(map_path, tmp, list(changed), dict(changed))
+    IC.write_map(map_path, tmp, list(changed), dict(changed), log=log)
     m2 = otbm.load_otbm(tmp)
     if len(m2.tiles['x']) != world.count():
         os.remove(tmp)

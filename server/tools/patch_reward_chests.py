@@ -56,6 +56,7 @@ SERVER = os.path.dirname(HERE)
 sys.path.insert(0, HERE)  # python -I leaves the script's folder off sys.path
 
 import gen_poi as G  # noqa: E402
+import map_write_guard as MG  # noqa: E402
 
 OLD_IDS = (1740, 21584)  # the looks a planned area's quest chest had: the plain chest (until 2026-10-20), the stock reward chest
 STOCK_REWARD = 21584     # the base server's own reward chest item
@@ -292,16 +293,19 @@ def run(data_dir, dry=False, map_path=None, out=None, new_id=None, old_ids=OLD_I
     if dry and not out:
         log('reward chests: would replace %d (%d moved from the 2 x 2 look) with %d' % (len(chests), migrated, new_id))
         return summary
+    target = out or map_path
+    tmp = target + '.tmp'
+    open(tmp, 'wb').write(new)
+    # the splice guard (O512): only the tiles of these chests may differ
+    MG.verify(ChestError, map_path, tmp, log=log, change={c[3] for c in chests})
     if out:
-        open(out, 'wb').write(new)
+        os.replace(tmp, out)
         log('reward chests: %d replaced in %s (reward chest %d)' % (len(chests), out, new_id))
         return summary
     bak = map_path + '.bak'
     if not os.path.exists(bak):
         shutil.copyfile(map_path, bak)
         log('backup %s' % bak)
-    tmp = map_path + '.tmp'
-    open(tmp, 'wb').write(new)
     os.replace(tmp, map_path)
     log('reward chests: %d replaced in %s (reward chest %d)' % (len(chests), map_path, new_id))
     return summary

@@ -442,15 +442,23 @@ def main(argv):
     if dry:
         print('dry run: nothing written (%d file(s)%s would change)' % (len(writes), ' and the map' if new_map else ''))
         return 0
+    tmp = path + '.tmp' if new_map is not None else None
+    if tmp:
+        with open(tmp, 'wb') as f:
+            f.write(new_map)
+        # the splice guard (O512), before any file is written: the tiles may differ only in item texts
+        import map_write_guard as MG
+        try:
+            MG.check(path, tmp, text_only=True, log=print)
+        except MG.GuardError as e:
+            print('%s: %s; nothing written, the new file stays at %s' % (path, e, tmp))
+            return 1
     for p, t in writes.items():
         L.write(p, t)
     if new_map is not None:
         if backup and not os.path.exists(path + '.bak'):
             with open(path + '.bak', 'wb') as f:
                 f.write(raw)
-        tmp = path + '.tmp'
-        with open(tmp, 'wb') as f:
-            f.write(new_map)
         os.replace(tmp, path)
         print('%s written (%d bytes, was %d)' % (os.path.basename(path), len(new_map), len(raw)))
     print('%d file(s) written' % len(writes))

@@ -108,6 +108,9 @@ def main():
         after = open(mp, 'rb').read()
         res = Q.run(data, map_path=mp, rows_path=rp, csv_rows=CSV, log=log.append)
         check(open(mp, 'rb').read() == after and res['done'] == 0 and res['kept'] == 4, 'a second run changes nothing: %s' % res)
+        import map_guard_testkit as K
+        K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(tiles)),
+                      lambda d, p: Q.run(d, map_path=p, rows_path=rp, csv_rows=CSV, log=lambda s: None), root, 'quest showcase')
         json.dump({'quests': [{'quest': 'Beta Quest', 'replace': [[9999, 9998]]}]}, open(rp, 'w'))
         try:
             Q.run(data, map_path=mp, rows_path=rp, csv_rows=CSV, log=log.append)

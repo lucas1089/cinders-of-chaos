@@ -138,6 +138,9 @@ with tempfile.TemporaryDirectory() as d:
     after = open(mp, 'rb').read()
     res, log = run(data, mp, cfg)
     check(res == dict(items=0, texts=0) and open(mp, 'rb').read() == after, 'a second run changes nothing: %s' % res)
+    import map_guard_testkit as K
+    K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(base_tiles())),
+                  lambda dd, p: T.run(dd, map_path=p, config=cfg, log=lambda s: None), d, 'temple tidy')
     check(open(os.path.join(data, T.MESSAGES)).read() == text, 'a second run leaves the script')
     p = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'patch_temple_tidy.py'), data, '--map', mp,
                         '--config', cfg], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

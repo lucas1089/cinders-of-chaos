@@ -125,6 +125,20 @@ try:
     s = run()
     check(s['changed'] == 0 and open(mp, 'rb').read() == new, 'second run changes nothing')
 
+    # O512: a writer that also changes an item on a far tile is refused by the map write guard
+    import map_guard_testkit as K
+    open(mp, 'wb').write(orig)
+    state, undo = K.inject_far_item(T, 'patch', set(SPOTS))
+    try:
+        run()
+        check(False, 'guard: a writer that also changes a far tile is refused')
+    except T.FieldError as e:
+        check('far' in state and '%d,%d,%d: tile changed outside' % state['far'] in str(e), 'guard: the far tile is named: %s' % str(e)[:200])
+    finally:
+        undo()
+    check(open(mp, 'rb').read() == orig and os.path.exists(mp + '.tmp'), 'guard: the map is as it was, the .tmp stays')
+    os.remove(mp + '.tmp')
+
     # items.xml checks: the small fire must do no damage, the burning ones must
     open(mp, 'wb').write(orig)
     for bad in (ITEMS_XML.replace('<attribute key="field" value="fire" />',
