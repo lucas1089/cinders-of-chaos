@@ -1,14 +1,14 @@
 look,names,status,reason
 14,Evil Sheep | Sheep,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
-15,Furious Troll | Mountain Troll | Troll | Young Troll,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
+15,Furious Troll | Young Troll,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 19,Slime | Son of Pestrogh,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 20,Saltkin Predator | Saltkin Predator Scout,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 22,Cyclops | Juvenile Cyclops,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 23,Minotaur Mage | Minotaur Occultist,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
-26,Earworm | Gutworm,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 28,Sacred Snake | Snake,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 31,Deer | Doom Deer,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 32,Dog | Hot Dog,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
+33,Brittle Skeleton | Party Skeleton | Risen Archer | Undead Mine Worker,kept,stock skeleton family: the base server dresses all four in one skeleton look (the audit missed Brittle Skeleton before O536 because its registry line names the file first)
 46,Saltkin Constrictor | Saltkin Constrictor Scout,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 47,Saltkin Hydromancer | Saltkin Hydromancer Scout,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 49,Blazing Fire Elemental | Fire Elemental,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
@@ -55,7 +55,6 @@ look,names,status,reason
 528,Dawnfly | Emerald Damselfly,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 529,Salamander | Troll-Trained Salamander,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design
 530,Marsh Stalker | Meadow Strider,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
-535,Swampling | Woodling,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 570,Noble Lion | Roaring Lion,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 593,Feverdream | Terrordream,kept,stock pair: base server monsters that share a look by the base design (families of one creature); touched when a stock look batch reaches them (README O524 next batches)
 877,Arcspark | Instable Arcspark,kept,rank or colour variants of one creature by name (Elite / Scout / Instable / Damaged / family prefix): the same creature by design

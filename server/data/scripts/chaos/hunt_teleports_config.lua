@@ -214,7 +214,7 @@ return {
 		{id = "sorrowfen_marsh", monster = "Coralcrown Brinecaller"},
 		{id = "shroudhallow_tomb", monster = "Ice Lich"},
 		{id = "hagthorn_weald", monster = "Lady bug"},
-		{id = "pyreglass_chasm", monster = "Elite Twisted Shaper"},
+		{id = "pyreglass_chasm", monster = "Deepforge Fiend"}, -- O536: was Elite Twisted Shaper, the look of Bloom Husk (deepgrudge_warrens); the plan's most frequent monster of 2x2 or less
 		{id = "rimeblood_glacier", monster = "Rustguard"},
 		{id = "lanternless_catacombs", monster = "Quicksilver Wraith"},
 		{id = "scaldmoor_expanse", monster = "Masque Dancer"},

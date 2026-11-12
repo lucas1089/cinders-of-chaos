@@ -17,7 +17,7 @@ base_5_31658_32254,5,31658,32254,32189,31429,7,hunt,Frost Dragon,73,40,75,Frost 
 base_5_31658_32258,5,31658,32258,33227,32115,9,hunt,grothar,331,300,335,grothar,75,grothar|krag'lok|grugnor,"retargeted O337 from 33195,32115,4 (small)"
 base_5_31662_32254,5,31662,32254,32540,31045,6,hunt,Fleshcarver,154,145,231,Fleshcarver,45,Fleshcarver|Fleshrend|Giant Tortoise,"retargeted O337 from 32583,31039,7 (sparse small)"
 base_5_31662_32258,5,31662,32258,33016,31932,7,hunt,Scaledrake,308,305,310,Scaledrake,75,Scaledrake|Cinderclaw|Goblin,"retargeted O333 from 33043,31911,6 (mixed)"
-base_5_31666_32254,5,31666,32254,32978,30977,7,hunt,deathrattle,289,230,300,deathrattle,75,deathrattle|bonelich|tombwraith,
+base_5_31666_32254,5,31666,32254,32978,30977,7,hunt,deathrattle,289,230,300,Bonelich,75,deathrattle|bonelich|tombwraith,O536: the room shows Bonelich because the plan bonechoir_catacomb already shows Deathrattle (two cells never show one look)
 base_5_31666_32258,5,31666,32258,32826,31434,7,hunt,Blackblade,275,150,300,Urzog,75,Blackblade|Malevolent|Urzog,Blackblade turns invisible: the room shows Urzog
 base_5_31667_32256,5,31667,32256,32413,31488,7,hunt,fangclaw,308,305,390,fangclaw,120,fangclaw|scalebreaker|lurkskin,
 base_6_31630_32254,6,31630,32254,31927,32632,10,hunt,Saltkin Pincher Scout,39,30,40,Saltkin Pincher Scout,120,Saltkin Pincher Scout|Saltkin Predator Scout|Saltkin Hydromancer Scout,
@@ -33,7 +33,7 @@ base_6_31654_32254,6,31654,32254,32124,32371,9,hunt,Gutworm,10,10,15,Gutworm,120
 base_6_31654_32258,6,31654,32258,33194,31777,12,hunt,Blightwalker,97,95,150,Blightwalker,120,Defiler|Blightwalker|Plaguesmith,beta report 2026-10-22: the base teleport led where Blightwalker cannot be reached; destination moved to the Blightwalker spawn (way back: hunt_teleports_config.lua returns)
 base_6_31657_32254,6,31657,32254,32070,31078,9,hunt,Novice of the Cult,16,10,20,Novice of the Cult,120,Novice of the Cult|Bonelord|Dark Monk,"retargeted O337 from 32375,32767,6 (sparse small)"
 base_6_31658_32258,6,31658,32258,32045,31044,8,hunt,Frost Dragon Hatchling,44,25,75,Frost Dragon Hatchling,120,Frost Dragon Hatchling|Frost Dragon|Rimekin Toolshaper,
-base_6_31659_32254,6,31659,32254,33066,32395,12,hunt,Wyrm,63,60,65,Wyrm,120,Wyrm|Grim Reaper,
+base_6_31659_32254,6,31659,32254,33066,32395,12,hunt,Wyrm,63,60,65,Grim Reaper,120,Wyrm|Grim Reaper,O536: the room shows Grim Reaper because the hunt of z 5 31634 already shows the Wyrm (two cells never show one look)
 base_6_31662_32254,6,31662,32254,32880,32636,11,hunt,Serpent Spawn,88,35,105,Serpent Spawn,120,Serpent Spawn|Medusa|Bonebeast,
 base_6_31662_32258,6,31662,32258,33635,31690,13,hunt,Rustheap Golem,75,60,80,Rustheap Golem,120,Sludgebrass Golem|Rustheap Golem|Sludgebrass Blob,beta report 2026-10-22: the base teleport led where Rustheap Golem cannot be reached; destination moved to the Rustheap Golem spawn (way back: hunt_teleports_config.lua returns)
 base_6_31666_32254,6,31666,32254,33590,31648,15,hunt,Behemoth,80,60,80,Behemoth,120,Behemoth|Cyclops Smith|Cyclops Drone,"retargeted O337 from 33261,31646,10 (small display); retargeted O333 from 33284,31698,14 (mixed)"

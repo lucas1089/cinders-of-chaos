@@ -79,8 +79,10 @@ def load_monsters(mdir):
     reg = os.path.join(mdir, 'monsters.xml')
     files = []
     if os.path.exists(reg):
-        for n, f in re.findall(r'<monster\s+name="([^"]+)"\s+file="([^"]+)"', read(reg)):
-            files.append((n, os.path.join(mdir, f)))
+        for tag in re.findall(r'<monster\s[^>]*>', read(reg)):   # name and file in either order (the base writes some the other way round)
+            n, f = re.search(r'\bname="([^"]+)"', tag), re.search(r'\bfile="([^"]+)"', tag)
+            if n and f:
+                files.append((n.group(1), os.path.join(mdir, f.group(1))))
     else:
         for root, _, fs in os.walk(mdir):
             for f in sorted(fs):
