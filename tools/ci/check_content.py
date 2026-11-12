@@ -382,7 +382,7 @@ import xml.etree.ElementTree as ET
 def _opt(flag):
     return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv[:-1] else None
 
-# the client pair the monsters are drawn with: pair 69 (client/MANIFEST.md "Pair 69": the 52 hue shifted monster outfits 3371-3422 after the
+# the client pair the monsters are drawn with: pair 69 (client/MANIFEST.md "Pair 69": the 35 hue shifted monster outfits 3371-3405 after the
 # 3370 of pair 68; the monster files keep their old looks, install step `monsterrecolour` moves them), pair 57 had 3370 outfits (pair 57 adds 3364-3370, pair 54 adds the
 # AutoSprite looks 3361-3363; pairs 38-53 added outfits up to 3360 and pair 51 blanked unused things, the extra blank
 # ranges from 1146 on); pair 37 had 2681 (it adds the moon outfits and costumes 2668-2681, no blank padding; pairs 34-36 added none); pair 33 had 2667 (it adds
@@ -391,7 +391,7 @@ def _opt(flag):
 # 75 sheet looks 2237-2311 and the 73 strip looks 2312-2384, art_import/pack30_looks.csv and pack30_strips.csv, no
 # blank padding; pair 29 added the Archmage 2235 / 2236); the blank ones have no sprite at all (stock gaps, 1562-1999 and 2082-2099 reserved, 2143-2160
 # and 2194-2199 padding). --pair recounts both.
-PAIR_NAME, PAIR_OUTFITS = 'pair 69', 3422
+PAIR_NAME, PAIR_OUTFITS = 'pair 69', 3405
 PAIR_BLANK = ('135 161-191 411 415 424 439-440 468-469 474-485 501 518-520 524-525 536 543 549 581-582 597 616 623 '
               '625 638-643 645-646 652-663 678 700-711 713 715 718-719 722-723 737 741-744 748 751-758 764-841 861 '
               '864-867 871-872 880 891-898 1146-1147 1193 1281 1285 1290 1292-1293 1295 1297 1369 1440 1442-1443 '
@@ -791,6 +791,15 @@ for _n, (_o, _nl) in sorted(_rmap.items()):
 import audit_idle_looks
 for msg in audit_idle_looks.check_pool():
     fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.idle] {msg}')
+# the walk in place list of game_bossanimate (O534): generated from look_idle.csv and player_looks.csv, up to date, and no look a
+# player can wear (a mount or an outfit must not walk in place)
+for msg in audit_idle_looks.check_walk():
+    fail(f'client/overlay/modules/game_bossanimate/idle_walk_looks.lua: [look.walk] {msg}')
+_player = audit_idle_looks.load_player()
+if not _player:
+    fail('server/data/monster/player_looks.csv: [look.walk] empty (run tools/audit_idle_looks.py --write-player-looks DATA_DIR)')
+for _l in sorted(audit_idle_looks.load_walklist() & set(_player)):
+    fail(f'client/overlay/modules/game_bossanimate/idle_walk_looks.lua: [look.walk] look {_l} is a player look ({_player[_l]})')
 for msg in audit_idle_looks.check_crowded():   # at most 2 hunt monsters on one look (owner 2026-11-12)
     fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.crowded] {msg}')
 for key in sorted(set(ALLOW) - allow_used):

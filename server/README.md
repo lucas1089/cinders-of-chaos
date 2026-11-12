@@ -30409,7 +30409,7 @@ README warned.
   | `weapons800` (the 34 weapons above level 800, "Weapons above level 800") | 56 | the whole step is skipped |
   | `relicsets` (the 65 pieces of the five relic sets, "Relic sets (pair 58)") | 58 | the whole step is skipped |
   | `templeart` (the 39 pieces of the temple tileset, "Temple tileset (pair 60)") | 60 | the whole step is skipped |
-  | `monsterrecolour` (52 monsters wear a hue shifted copy of their outfit, "Monster recolours (O531)") | 69 | the whole step is skipped: the monster files and the bounty pool keep the old looks |
+  | `monsterrecolour` (35 monsters wear a hue shifted copy of their outfit, "Monster recolours (O531)") | 69 | the whole step is skipped: the monster files and the bounty pool keep the old looks |
 
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
   `ItemType(id)` exists, and the scaled class roll (`loot.lua` `classWeapons`) drops an id the server has no item for.
@@ -33183,12 +33183,12 @@ them worse and chose a recolour: every monster of a shared look but the first ge
   Grave Lantern 85 (teal), Spiky Carnivor stays; look 1501 Leechwing 94 (blood red), Nexweaver stays. `data/scripts/chaos/
   bounty_pool.lua` carries the same colours (the generator reads them from the files). The hue distances are far over the 0.28 of
   the audit.
-- **Outfits with no mask (35 looks, 52 monsters).** An outfit with no mask layer cannot take a colour: the second monster needs a
+- **Outfits with no mask (32 looks, 35 monsters).** An outfit with no mask layer cannot take a colour: the second monster needs a
   hue shifted copy of the outfit in the pair. Table `client/tools/sprites/art_import/monster_recolour.csv` (look, hue shift in
   degrees, monster; mode `hue` rotates the hue, `tint` sets the hue of a nearly grey outfit; theme by the monster's name and
   element: fire reds, ice blues, poison greens, undead and shadow purples, iron browns, gold yellows, blood crimsons; the colours
   of one look are at least 120 degrees apart and from the source hue, owner 2026-11-12 in O531; a grey source is tinted). `client/tools/sprites/gen_monster_recolour.py` holds the
-  pixel transform (`recolour()`), `check`, `ids`, `build` and `live`; pair 69 holds the 52 copies (O531, next section). The groups
+  pixel transform (`recolour()`), `check`, `ids`, `build` and `live`; pair 69 holds the 35 copies (O531, next section). The groups
   were rows of the allow list with status `recolour pair` until then; the rows are gone, the audit reads the monsters at the
   client pair (a group the map separates waits below pair 69, is distinct from it).
   Not decided: the colour of a few themes is the table's guess (Siege Behemoth teal, Ashveil Hierarch green); a changed
@@ -33205,15 +33205,15 @@ them worse and chose a recolour: every monster of a shared look but the first ge
 
 
 ## Monster recolours (O531; `tools/install_monster_recolour.py`, `data/monster/monster_recolour_looks.csv`)
-Owner 2026-11-12: the recolour of O529 for the 35 outfits that have no colour mask. Client pair 69 holds 52 hue shifted copies, outfits
-3371 to 3422 (client/MANIFEST.md "Pair 69"); this is the server side.
+Owner 2026-11-12: the recolour of O529 for the 32 outfits that have no colour mask. Client pair 69 holds 35 hue shifted copies, outfits
+3371 to 3405 (client/MANIFEST.md "Pair 69"); this is the server side.
 - **The map.** `data/monster/monster_recolour_looks.csv` (monster, look, new_look), written by `gen_monster_recolour.py ids` from the
-  table `client/tools/sprites/art_import/monster_recolour.csv`: the row at line n is outfit 3371 + n. All 52 monsters are Chaos files
+  table `client/tools/sprites/art_import/monster_recolour.csv`: the row at line n is outfit 3371 + n. All 35 monsters are Chaos files
   (`data/monster/monsters/chaos`), no base monster is touched. The repository files keep the OLD look: they are what a server whose
   client is on pair 68 or older loads. `gen_monster_recolour.py check` and `check_content.py` hold the map to the files (the old look is
   the file's look, the new ids are 3371.. in a row, inside the pair, never blank).
 - **The step.** `install_all.py` step `monsterrecolour` (after `monsters`, so after the file copy): with `config.lua` `chaosClientPair`
-  69 or more it sets `<look type>` of each of the 52 files in the installed folder to the copy (head, body, legs, feet, corpse stay)
+  69 or more it sets `<look type>` of each of the 35 files in the installed folder to the copy (head, body, legs, feet, corpse stay)
   and the `look = ` of their rows in the installed `data/scripts/chaos/bounty_pool.lua` (the bounty board and its notices draw that
   outfit). Below 69, or with the record missing, it prints a `WARNING:` line and writes nothing ("Client pair guard"); the next update
   copies the repository files again and the step runs again, so the state follows the record. A file that is missing or has a look that
@@ -33273,3 +33273,30 @@ that has". Later that day: "strange to reuse the same sprite 5 times, the Pit De
 - Not done: 637 monsters. The looks that move are used up; the other way is the client: a list like `game_bossanimate` that sets animateAlways on
   their looks would play their walk frames while they stand (no pair, one line per look; not decided). Not verified: in a running client (the
   preview renders the dat groups with the animator times of the dat).
+
+### Walk in place for the rest (O534; `client/overlay/modules/game_bossanimate/idle_walk_looks.lua`, `data/monster/player_looks.csv`, client/BASE.md `0195`)
+Owner 2026-11-12: the hunt monsters that still stand still play their walk animation in place. This replaces the "Not done" bullet above.
+- **The list.** `audit_idle_looks.py --write-walk-idle` writes `idle_walk_looks.lua` (`IdleWalkLooks`, sorted, 16 ids a line) from
+  `look_idle.csv` and `player_looks.csv`: a look with no idle animation, one idle phase and a walk group that draws 2 or more pictures
+  (`walk_info`, columns `walk` and `walk_frames` of `look_idle.csv`, written by `--write-idle Tibia.dat`), that no player can wear. 498 looks.
+  `look_idle.csv` now also holds the looks of the allow list (met monsters with 3 to 5 spawn points are not in the pool): 734 rows.
+- **Not players.** `player_looks.csv` (look, source; 792 rows) is every look of `XML/outfits.xml`, `mounts.xml`, `wings.xml`, `auras.xml` of an
+  installed server plus the `lookType` / `male` / `female` fields of `chaos_constants.lua`, `exclusives_config.lua`, `chaos_pack37_looks.lua`
+  (outfits behind a switch): `audit_idle_looks.py --write-player-looks DATA_DIR`. A flag on the look of a player outfit would move the
+  player, and one on a mount look moves every rider (`Outfit::draw` reads the mount's own flag), so these looks stay out.
+- **The module.** `game_bossanimate` loads the list before its logic: `L.WALK`, `L.applyWalk` calls `setAnimateAlways(true)` (base 0189)
+  on each look and `setWalkInPlace(true)` where the engine has base patch 0195. `bossanimatelogic_test.lua` (luajit and lua5.3) runs it on a fake engine.
+- **The engine and the speed.** 0189 alone: `Outfit::draw` takes `(millis % 1000) / (1000 / N)` as the phase, N the phases of the walk
+  group, counted from the idle picture: the creature cycles the idle picture and walk phases 1..N-1 (the last one never), one turn a
+  second, and while it walks it keeps that clock instead of the step phase (feet out of step). 0195 adds the flag `setWalkInPlace`: standing, phases
+  1..N, one turn a second (N pictures, 1000 / N ms each; 8 phases are 125 ms a frame, a step cycle is about 350 ms); walking, the step's phase. One turn a second
+  is calm next to a step, so no slower speed was added. The speed is fixed in `outfit.cpp` for all looks: a per look duration would need another patch; the dat
+  durations are used only by the UI path. Applies after 0001-0193 (`patch --dry-run --fuzz=0` on the patched tree); the client was not built.
+- **The allow list.** `no_idle_allow.csv` shrank from 640 to 45 rows: 44 monsters on a look a player can wear (human outfits 128-153, 268, 541 and the mounts 374, 515, 686,
+  886, 1076) and 1 on look 92, whose walk group draws one picture. The check treats a look of the generated list as moving (`check_pool`, `--check`).
+- **The check.** `check_content.py` rule `[look.walk]`: the list is up to date (`audit_idle_looks.py --write-walk-idle --check`, also a CI step) and holds no look of
+  `player_looks.csv`. `audit_idle_looks_test.py` tests `walk_info`, the list, the player reader and the committed state.
+- **Merge with O531 and O533.** The 17 monsters of the recolour table that O533 moved to other looks left `monster_recolour.csv` (35 rows, copies 3371-3405,
+  colours recomputed for the looks that shrank). Pair 69 was built again from pair 68 with that table. The walk list also holds the copy of each look on it
+  (`with_copies`: a monster that wears its copy at pair 69 walks in place like the original; each id once).
+- Not verified: in a running client (the preview draws the dat groups with the rule of 0195).

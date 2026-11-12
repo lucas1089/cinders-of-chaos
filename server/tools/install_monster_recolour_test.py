@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """python3 -I server/tools/install_monster_recolour_test.py : install_monster_recolour.py (O531, install step `monsterrecolour`) on the
-shipped map and on a synthetic server folder: the map (52 rows, ids 3371-3422 in table order, the old looks are the files' looks), the
-client pair guard end to end (pair 68 or missing: nothing written and a WARNING line; pair 69: the 52 files and the pool rows move),
+shipped map and on a synthetic server folder: the map (35 rows, ids 3371-3405 in table order, the old looks are the files' looks), the
+client pair guard end to end (pair 68 or missing: nothing written and a WARNING line; pair 69: the 35 files and the pool rows move),
 idempotent, a file with another look stops the step, a missing file stops it, --dry-run writes nothing, gen_bounty_pool.py turns a copy
 back to the old look. No base server needed."""
 import csv

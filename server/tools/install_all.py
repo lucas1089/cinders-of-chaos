@@ -174,8 +174,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                vendor and bad-luck protection")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
-  monsterrecolour tools/install_monster_recolour.py  52 hunt monsters wear a hue shifted copy of their outfit (client pair 69, outfits
-               3371-3422, data/monster/monster_recolour_looks.csv): their installed files and the installed bounty pool get the new
+  monsterrecolour tools/install_monster_recolour.py  35 hunt monsters wear a hue shifted copy of their outfit (client pair 69, outfits
+               3371-3405, data/monster/monster_recolour_looks.csv): their installed files and the installed bounty pool get the new
                look; waits for config.lua chaosClientPair >= 69, README "Client pair guard" and "Monster recolours (O531)"; after
                monsters (and the file copy), nothing else is touched
   debuffs      tools/patch_debuff_durations.py   monster debuffs (slow, outfit, drunk, strength) last at most 10 s

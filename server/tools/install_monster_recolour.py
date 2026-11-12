@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Hue shifted copies of 52 monster outfits (O531): the monsters move to them once the client has pair 69. install_all.py step
+"""Hue shifted copies of 35 monster outfits (O531): the monsters move to them once the client has pair 69. install_all.py step
 `monsterrecolour`.
 
 usage: python3 -I install_monster_recolour.py DATA_DIR [--dry-run] [--map CSV]
 
 Client pair 69 holds a hue shifted copy of 35 monster outfits that have no colour mask, one copy per monster that shared the
 outfit with another (client/tools/sprites/gen_monster_recolour.py, README "Monster recolours (O531)"). server/data/monster/
-monster_recolour_looks.csv names, for each of the 52 monsters, its old look and its new look (the copy's outfit id, 3371 to 3422).
+monster_recolour_looks.csv names, for each of the 35 monsters, its old look and its new look (the copy's outfit id, 3371 to 3405).
 
 The repository files keep the old look, so a server whose client is on an older pair draws what it always did. This step runs
 after `monsters` (which copies the files) and does, only when config.lua chaosClientPair is 69 or more (client_pair.py, README

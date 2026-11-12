@@ -1466,6 +1466,10 @@ jobs:
       - name: Hunt monsters move while they stand (audit_idle_looks.py, O533)
         run: python3 -I server/tools/audit_idle_looks_test.py
 
+      # the walk in place list of game_bossanimate (O534) is generated: it must be committed up to date
+      - name: Walk in place looks are up to date (audit_idle_looks.py --write-walk-idle, O534)
+        run: python3 -I server/tools/audit_idle_looks.py --write-walk-idle --check
+
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py
 

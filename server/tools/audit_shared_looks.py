@@ -19,7 +19,7 @@ always count when different. A look without a mask layer ignores all colours: tw
 are always shared. Bosses and variants the design wants alike are on the allow list (server/data/monster/
 shared_looks_allow.csv: look, names, status kept, reason); --check fails when a shared look is neither allowed nor absent.
 
-Hue shifted copies (O531): 52 monsters wear a copy of their outfit from client pair 69 (server/data/monster/
+Hue shifted copies (O531): 35 monsters wear a copy of their outfit from client pair 69 (server/data/monster/
 monster_recolour_looks.csv: monster, look, new_look; table client/tools/sprites/art_import/monster_recolour.csv). The audit
 reads each monster with the look it has at the pair of the server: --pair N, else the pair recorded in the config.lua beside
 the data folder (client_pair.py), else the newest pair. At pair 69 or more a monster in the map has its new look. Below it a
