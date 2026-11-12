@@ -91,6 +91,9 @@ jobs:
           python3 -I client/tools/sprites/gen_wing_centres_test.py
           # the feet of every look per direction, for the footprints (synthetic figures)
           python3 -I client/tools/sprites/gen_foot_marks_test.py
+          # HD sprite overlay (O539, base patch 0196): the tool on a synthetic pair, and the committed atlas and index against the frames
+          python3 -I client/tools/sprites/gen_hd_overlay_test.py
+          python3 -I client/tools/sprites/gen_hd_overlay.py build --check
           # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
           # check runs on the versions the strips were made with (gen_class_fx.py docstring)
           python3 -m venv /tmp/fxenv
@@ -699,6 +702,16 @@ jobs:
           "$d/chaosmissileanim_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissileanim_test.cpp -o "$d/chaosmissileanim_asan"
           "$d/chaosmissileanim_asan"
+
+      - name: HD sprite overlay maths (C++; header from base patch 0196)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaoshdoverlay\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0196-hd-sprite-overlay.patch > "$d/chaoshdoverlay.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaoshdoverlay_test.cpp -o "$d/chaoshdoverlay_test"
+          "$d/chaoshdoverlay_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoshdoverlay_test.cpp -o "$d/chaoshdoverlay_asan"
+          "$d/chaoshdoverlay_asan"
 
       - name: Glowing spell effects bookkeeping (C++; header from base patch 0152)
         run: |
