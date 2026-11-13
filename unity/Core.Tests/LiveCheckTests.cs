@@ -31,6 +31,7 @@ namespace Chaos.Core.Tests
             Market(check);
             ExperienceTexts(check);
             WalkSkipsStairs(check);
+            StepAfterRespawn(check);
             SecureModeRule(check);
             SecureModeSession(check);
             ModalTalesFlow(check);
@@ -260,6 +261,28 @@ namespace Chaos.Core.Tests
             p.Pinged = () => pings++;
             p.Parse(w.ToArray());
             check(p.NumberMessages == 2 && p.ExpGainTexts == 1 && p.LastExpGain == 150 && pings == 1 && p.FailureCount == 0, "experience text: a kind 26 message is counted with its amount, a damage message only counted (" + p.NumberMessages + "/" + p.ExpGainTexts + ")");
+        }
+
+        // ------------------------------------------------------------------------------------------------ the step after a respawn (O546)
+        // found 2026-11-13 (PR 378, run 43375436334): the death scenario stepped on the first tile that looked free after the respawn. A dead character lands beside the temple tile
+        // and the staff partner stands on that tile after its /t; a player in a protection zone carries the walkthrough byte, so the client called the tile free and the server
+        // refused the first step onto it (Player::canWalkthrough wants a second attempt inside 2 s): "could not take a step after coming back", twice, on a character that was
+        // not stuck. A tile with another creature is no step now, whatever its walkthrough byte says.
+        static void StepAfterRespawn(Action<bool, string> check)
+        {
+            var w = new World(DatFile.Parse(Program.SyntheticDat()));
+            var partner = new Creature { Id = 7, Walkthrough = true };
+            var me = new Creature { Id = 5 };
+            w.AddThing(new Pos(100, 101, 7), new Thing { Item = new Item { Id = 100, Type = new ThingType { Ground = true } } });
+            w.AddThing(new Pos(100, 101, 7), new Thing { Creature = partner });
+            w.AddThing(new Pos(100, 99, 7), new Thing { Item = new Item { Id = 100, Type = new ThingType { Ground = true } } });
+            w.AddThing(new Pos(101, 100, 7), new Thing { Item = new Item { Id = 100, Type = new ThingType { Ground = true } } });
+            w.AddThing(new Pos(101, 100, 7), new Thing { Creature = me });
+            check(WalkMap.Walkable(w, new Pos(100, 101, 7), 5), "respawn step: the client calls a tile with a walkthrough player free (the cause)");
+            check(LiveRun.HasOtherCreature(w.Get(new Pos(100, 101, 7)), 5), "respawn step: the tile with the partner is not stepped on");
+            check(!LiveRun.HasOtherCreature(w.Get(new Pos(100, 99, 7)), 5), "respawn step: an empty tile is");
+            check(!LiveRun.HasOtherCreature(w.Get(new Pos(101, 100, 7)), 5), "respawn step: the character's own tile has no other creature");
+            check(!LiveRun.HasOtherCreature(null, 5), "respawn step: a tile not in view has none");
         }
 
         // ------------------------------------------------------------------------------------------------ the walk sweep and stairs (phase 22)

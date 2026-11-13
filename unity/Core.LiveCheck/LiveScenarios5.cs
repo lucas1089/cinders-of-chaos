@@ -399,17 +399,7 @@ namespace Chaos.Core.LiveCheck
                 if (pp.Dead || pp.Health <= 0) problems.Append("the partner came back dead after the last death; ");
                 if (ph.Active) problems.Append("the partner got a rift HUD after the rift collapsed; ");
                 if (PathFinder.Cheb(partner.Pos, home) > 30 || partner.Pos.Z != home.Z) problems.Append("the partner is not back in town after the collapse (at " + P(partner.Pos) + ", town " + P(home) + "); ");
-                bool step = false;
-                foreach (var d in new[] { Dir.South, Dir.North, Dir.East, Dir.West })
-                {
-                    var to = WalkDirs.Step(partner.Pos, d);
-                    if (!Passable(partner.World, to, partner.World.PlayerId) || FloorChangeOf(partner.World.Get(to)) != null) continue;
-                    if (!WaitFor(3000, () => partner.S.CanWalk)) break;
-                    int m0 = pp.PlayerMoves;
-                    partner.S.Walk(d);
-                    step = WaitFor(2500, () => pp.PlayerMoves > m0);
-                    break;
-                }
+                bool step = StepAfterLogin(partner);
                 r.Note("a step after the last death: " + (step ? "confirmed" : "not confirmed"));
                 if (!step) problems.Append("the partner could not take a step after coming back; ");
                 done = true;

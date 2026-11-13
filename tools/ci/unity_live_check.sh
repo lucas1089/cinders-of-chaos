@@ -435,7 +435,7 @@ live_run() {
 }
 
 # run_group_once GROUP IDENTITY: fresh characters, one Core.LiveCheck run. A failed first try is kept as "GROUP try1" and the
-# group runs once more with new characters (the server is live: a refused step after a respawn is a flake, a real fault repeats).
+# group runs once more with new characters (the server is live: a real fault repeats; the refused step after a respawn that this once covered was the staff partner on the temple tile, O546).
 run_group_once() {
   local g=$1 id=$2 label=$1
   case "$g" in
