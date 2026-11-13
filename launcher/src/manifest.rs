@@ -50,7 +50,33 @@ pub struct NativeFile {
     pub path: String,
     pub sha256: String,
     pub size: u64,
+    /// Hashes of the file in fixed-size chunks (O552), for resume, repair and parallel download. None for a small
+    /// file or a manifest of the older publisher; the whole-file hash is always there.
+    pub chunks: Option<Chunks>,
 }
+
+/// `chunk` bytes per piece (the last one is shorter), one SHA-256 per piece. Inside the signed payload.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Chunks {
+    pub size: u64,
+    pub hashes: Vec<String>,
+}
+
+impl Chunks {
+    pub fn count(&self) -> usize {
+        self.hashes.len()
+    }
+
+    /// Byte range of piece `i` in a file of `total` bytes.
+    pub fn range(&self, i: usize, total: u64) -> (u64, u64) {
+        let start = i as u64 * self.size;
+        (start, (start + self.size).min(total))
+    }
+}
+
+pub const CHUNK_MIN: u64 = 1024 * 1024;
+pub const CHUNK_MAX: u64 = 128 * 1024 * 1024;
+pub const MAX_CHUNKS: usize = 4096;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Native {
@@ -137,6 +163,35 @@ fn bad<T>(d: impl Into<String>) -> Result<T, Error> {
     Err(Error::BadManifest(d.into()))
 }
 
+/// `chunk` and `chunks` of one file entry: both or neither; the size between 1 and 128 MiB, as many hashes as the file has
+/// pieces, every hash 64 hex digits. A file entry with only one of the two keys, or a wrong count, refuses the manifest.
+fn parse_chunks(f: &Value, path: &str, size: u64) -> Result<Option<Chunks>, Error> {
+    let (chunk, list) = (f.get("chunk"), f.get("chunks"));
+    if chunk.is_none() && list.is_none() {
+        return Ok(None);
+    }
+    let Some(chunk) = chunk
+        .and_then(Value::as_u64)
+        .filter(|c| (CHUNK_MIN..=CHUNK_MAX).contains(c))
+    else {
+        return bad(format!("native: bad chunk size for {path}"));
+    };
+    let Some(list) = list.and_then(Value::as_array) else {
+        return bad(format!("native: bad chunk list for {path}"));
+    };
+    if size == 0 || list.len() > MAX_CHUNKS || list.len() as u64 != size.div_ceil(chunk) {
+        return bad(format!("native: wrong number of chunks for {path}"));
+    }
+    let mut hashes = Vec::with_capacity(list.len());
+    for h in list {
+        match h.as_str().filter(|h| is_sha256_hex(h)) {
+            Some(h) => hashes.push(h.to_string()),
+            None => return bad(format!("native: bad chunk hash for {path}")),
+        }
+    }
+    Ok(Some(Chunks { size: chunk, hashes }))
+}
+
 fn parse_native(n: &Value, layout: Layout) -> Result<Native, Error> {
     let Some(obj) = n.as_object() else {
         return bad("native is not an object");
@@ -180,10 +235,12 @@ fn parse_native(n: &Value, layout: Layout) -> Result<Native, Error> {
         let Some(size) = size.filter(|s| *s <= MAX_FILE_SIZE) else {
             return bad(format!("native: bad size for {path}"));
         };
+        let chunks = parse_chunks(f, path, size)?;
         files.push(NativeFile {
             path: path.to_string(),
             sha256: sha.to_string(),
             size,
+            chunks,
         });
     }
     if layout == Layout::Tree {
@@ -338,6 +395,55 @@ mod tests {
             (n.package, n.game.as_str(), n.files.len(), n.launcher),
             (14, "Chaos.exe", 2, None)
         );
+    }
+
+    fn chunked(size: u64, chunk: u64, hashes: usize) -> String {
+        let list = vec![format!("\"{SHA}\""); hashes].join(",");
+        format!(r#"{{"path":"chaos.pack","sha256":"{SHA}","size":{size},"chunk":{chunk},"chunks":[{list}]}}"#)
+    }
+
+    fn chunks_of(files: &str) -> Result<Native, Error> {
+        let p = payload(&native(&format!("{},{files}", file("Chaos.exe")), ""));
+        let (env, pk) = sign(1, &p);
+        parse_envelope(env.as_bytes(), &pk).map(|m| m.native.unwrap())
+    }
+
+    #[test]
+    fn chunk_hashes_are_read_and_checked() {
+        let mb = 1024 * 1024;
+        let n = chunks_of(&chunked(70 * mb, 32 * mb, 3)).unwrap();
+        let c = n.files[1].chunks.clone().unwrap();
+        assert_eq!((c.size, c.count()), (32 * mb, 3));
+        assert_eq!(c.range(0, 70 * mb), (0, 32 * mb));
+        assert_eq!(
+            c.range(2, 70 * mb),
+            (64 * mb, 70 * mb),
+            "the last piece is the short one"
+        );
+        // a file without them is as before
+        assert_eq!(n.files[0].chunks, None);
+        // an exact multiple has no empty last piece
+        assert_eq!(
+            chunks_of(&chunked(64 * mb, 32 * mb, 2)).unwrap().files[1]
+                .chunks
+                .as_ref()
+                .unwrap()
+                .count(),
+            2
+        );
+        let bad = [
+            chunked(70 * mb, 32 * mb, 2),                                      // one piece short
+            chunked(70 * mb, 32 * mb, 4),                                      // one piece too many
+            chunked(70 * mb, 512 * 1024, 140),                                 // pieces under 1 MiB
+            chunked(70 * mb, 256 * mb, 1),                                     // pieces over 128 MiB
+            chunked(70 * mb, 32 * mb, 3).replace(SHA, "zz"),                   // not a hash
+            chunked(70 * mb, 32 * mb, 3).replace("\"chunk\":33554432,", ""),   // chunks without the size
+            chunked(70 * mb, 32 * mb, 3).replace(",\"chunks\":[", ",\"x\":["), // the size without chunks
+            chunked(0, 32 * mb, 0),                                            // an empty file has none
+        ];
+        for b in bad {
+            assert!(matches!(chunks_of(&b), Err(Error::BadManifest(_))), "{b}");
+        }
     }
 
     #[test]

@@ -18,6 +18,13 @@ impl Lang {
         }
     }
 
+    pub fn tag(self) -> &'static str {
+        match self {
+            Lang::Pt => "pt",
+            Lang::En => "en",
+        }
+    }
+
     /// `CINDERS_LANG`, then `LC_ALL`, then `LANG`; Portuguese when none is set.
     pub fn detect(get: impl Fn(&str) -> Option<String>) -> Lang {
         for k in ["CINDERS_LANG", "LC_ALL", "LANG"] {
@@ -33,6 +40,8 @@ impl Lang {
 pub enum Status {
     Checking,
     Hashing,
+    /// "Verify files": the same check with no hash cache.
+    Verifying,
     Downloading,
     Applying,
     LauncherStaged,
@@ -47,6 +56,8 @@ pub fn status(s: Status, l: Lang) -> &'static str {
         (Status::Checking, Lang::En) => "Looking for updates...",
         (Status::Hashing, Lang::Pt) => "Conferindo os arquivos do jogo...",
         (Status::Hashing, Lang::En) => "Checking the game files...",
+        (Status::Verifying, Lang::Pt) => "Conferindo e consertando os arquivos...",
+        (Status::Verifying, Lang::En) => "Checking and repairing the files...",
         (Status::Downloading, Lang::Pt) => "Baixando atualização...",
         (Status::Downloading, Lang::En) => "Downloading the update...",
         (Status::Applying, Lang::Pt) => "Instalando os arquivos...",
@@ -88,6 +99,149 @@ pub fn use_main_client(l: Lang) -> &'static str {
     match l {
         Lang::Pt => "Usar o cliente principal",
         Lang::En => "Use the main client",
+    }
+}
+
+/// Texts of the window's own parts (O552): the rail, the news strip, the bottom bar and the settings card.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Ui {
+    Ready,
+    Discord,
+    Site,
+    Wiki,
+    Signup,
+    News,
+    NewsSub,
+    Settings,
+    Close,
+    Minimize,
+    InstallFolder,
+    OpenFolder,
+    Verify,
+    VerifyHint,
+    Verifying,
+    ClearCache,
+    CloseOnPlay,
+    Language,
+    Version,
+    Files,
+    UpToDateLine,
+    ReadMore,
+    Back,
+    NoCards,
+    NoSpaceHint,
+}
+
+pub fn ui(t: Ui, l: Lang) -> &'static str {
+    match (t, l) {
+        (Ui::Ready, Lang::Pt) => "Pronto para jogar",
+        (Ui::Ready, Lang::En) => "Ready to play",
+        (Ui::Discord, _) => "Discord",
+        (Ui::Site, _) => "Site",
+        (Ui::Wiki, _) => "Wiki",
+        (Ui::Signup, Lang::Pt) => "Conta",
+        (Ui::Signup, Lang::En) => "Account",
+        (Ui::News, Lang::Pt) => "Notícias",
+        (Ui::News, Lang::En) => "News",
+        (Ui::NewsSub, Lang::Pt) => "do Discord e do site",
+        (Ui::NewsSub, Lang::En) => "from Discord and the website",
+        (Ui::Settings, Lang::Pt) => "Configurações",
+        (Ui::Settings, Lang::En) => "Settings",
+        (Ui::Close, Lang::Pt) => "Fechar",
+        (Ui::Close, Lang::En) => "Close",
+        (Ui::Minimize, Lang::Pt) => "Minimizar",
+        (Ui::Minimize, Lang::En) => "Minimize",
+        (Ui::InstallFolder, Lang::Pt) => "Pasta do jogo",
+        (Ui::InstallFolder, Lang::En) => "Game folder",
+        (Ui::OpenFolder, Lang::Pt) => "Abrir pasta",
+        (Ui::OpenFolder, Lang::En) => "Open folder",
+        (Ui::Verify, Lang::Pt) => "Verificar arquivos",
+        (Ui::Verify, Lang::En) => "Verify files",
+        (Ui::VerifyHint, Lang::Pt) => "Confere cada arquivo do jogo e baixa de novo só o que estiver errado.",
+        (Ui::VerifyHint, Lang::En) => "Checks every game file and downloads again only what is wrong.",
+        (Ui::Verifying, Lang::Pt) => "Conferindo e consertando os arquivos...",
+        (Ui::Verifying, Lang::En) => "Checking and repairing the files...",
+        (Ui::ClearCache, Lang::Pt) => "Limpar cache de download",
+        (Ui::ClearCache, Lang::En) => "Clear download cache",
+        (Ui::CloseOnPlay, Lang::Pt) => "Fechar o launcher ao jogar",
+        (Ui::CloseOnPlay, Lang::En) => "Close the launcher when the game starts",
+        (Ui::Language, Lang::Pt) => "Idioma",
+        (Ui::Language, Lang::En) => "Language",
+        (Ui::Version, Lang::Pt) => "Versão do launcher",
+        (Ui::Version, Lang::En) => "Launcher version",
+        (Ui::Files, Lang::Pt) => "arquivos",
+        (Ui::Files, Lang::En) => "files",
+        (Ui::UpToDateLine, Lang::Pt) => "Tudo em dia",
+        (Ui::UpToDateLine, Lang::En) => "All up to date",
+        (Ui::ReadMore, Lang::Pt) => "Abrir no site",
+        (Ui::ReadMore, Lang::En) => "Open on the website",
+        (Ui::Back, Lang::Pt) => "Voltar",
+        (Ui::Back, Lang::En) => "Back",
+        (Ui::NoCards, Lang::Pt) => "Nenhuma novidade por enquanto.",
+        (Ui::NoCards, Lang::En) => "No news yet.",
+        (Ui::NoSpaceHint, Lang::Pt) => "Libere espaço no disco ou escolha outra pasta.",
+        (Ui::NoSpaceHint, Lang::En) => "Free some disk space or pick another folder.",
+    }
+}
+
+/// Texts of the setup screen (O552 phase C, `setup.rs`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum SetupText {
+    Title,
+    Choose,
+    DesktopLink,
+    MenuLink,
+    Install,
+    Installing,
+    WarnProgramFiles,
+    WarnNetwork,
+    NotEmpty,
+    BadFolder,
+    Checking,
+    UninstallTitle,
+    UninstallAsk,
+}
+
+pub fn setup_text(t: SetupText, l: Lang) -> &'static str {
+    match (t, l) {
+        (SetupText::Title, Lang::Pt) => "Instalar Cinders of Chaos",
+        (SetupText::Title, Lang::En) => "Install Cinders of Chaos",
+        (SetupText::Choose, Lang::Pt) => "Escolher pasta...",
+        (SetupText::Choose, Lang::En) => "Choose folder...",
+        (SetupText::DesktopLink, Lang::Pt) => "Atalho na área de trabalho",
+        (SetupText::DesktopLink, Lang::En) => "Desktop shortcut",
+        (SetupText::MenuLink, Lang::Pt) => "Atalho no menu Iniciar",
+        (SetupText::MenuLink, Lang::En) => "Start menu shortcut",
+        (SetupText::Install, Lang::Pt) => "Instalar",
+        (SetupText::Install, Lang::En) => "Install",
+        (SetupText::Installing, Lang::Pt) => "Instalando...",
+        (SetupText::Installing, Lang::En) => "Installing...",
+        (SetupText::WarnProgramFiles, Lang::Pt) => {
+            "Esta pasta pode exigir permissão de administrador. Prefira uma pasta sua."
+        }
+        (SetupText::WarnProgramFiles, Lang::En) => {
+            "This folder may need administrator rights. A folder of your own is better."
+        }
+        (SetupText::WarnNetwork, Lang::Pt) => {
+            "Uma pasta de rede deixa o jogo lento. Prefira um disco do seu computador."
+        }
+        (SetupText::WarnNetwork, Lang::En) => {
+            "A network folder makes the game slow. A disk of your computer is better."
+        }
+        (SetupText::NotEmpty, Lang::Pt) => "Essa pasta já tem outros arquivos. Escolha uma pasta vazia ou nova.",
+        (SetupText::NotEmpty, Lang::En) => "That folder already has other files. Choose an empty or new folder.",
+        (SetupText::BadFolder, Lang::Pt) => "Escolha uma pasta de verdade, por exemplo uma pasta nova no seu disco.",
+        (SetupText::BadFolder, Lang::En) => "Choose a real folder, for example a new folder on your disk.",
+        (SetupText::Checking, Lang::Pt) => "Conferindo o tamanho da instalação...",
+        (SetupText::Checking, Lang::En) => "Checking the size of the install...",
+        (SetupText::UninstallTitle, Lang::Pt) => "Desinstalar Cinders of Chaos",
+        (SetupText::UninstallTitle, Lang::En) => "Uninstall Cinders of Chaos",
+        (SetupText::UninstallAsk, Lang::Pt) => {
+            "Os arquivos do jogo e o launcher serão apagados. Seus próprios arquivos na pasta ficam. Continuar?"
+        }
+        (SetupText::UninstallAsk, Lang::En) => {
+            "The game files and the launcher will be deleted. Your own files in the folder stay. Continue?"
+        }
     }
 }
 
@@ -198,6 +352,8 @@ pub enum Error {
     NoGame(String),
     /// A local file operation failed.
     Io(String),
+    /// The folder cannot hold the download (checked before the first byte).
+    NoSpace { need: u64, free: u64 },
     /// The published Unity package is a DEV build (no client key inside): not offered to players.
     DevPackage,
 }
@@ -231,6 +387,18 @@ impl Error {
             (Error::Config(d), Lang::En) => format!("The launcher settings (launcher.json) are invalid. Download the game again from the website. ({d})"),
             (Error::NoGame(f), Lang::Pt) => format!("O programa do jogo ({f}) não está na pasta. Atualize ou baixe o jogo de novo."),
             (Error::NoGame(f), Lang::En) => format!("The game program ({f}) is not in the folder. Update or download the game again."),
+            (Error::NoSpace { need, free }, Lang::Pt) => format!(
+                "Falta espaço em disco: precisa de {}, tem {}. {}",
+                crate::fmt::bytes(*need, l),
+                crate::fmt::bytes(*free, l),
+                ui(Ui::NoSpaceHint, l)
+            ),
+            (Error::NoSpace { need, free }, Lang::En) => format!(
+                "Not enough disk space: {} needed, {} free. {}",
+                crate::fmt::bytes(*need, l),
+                crate::fmt::bytes(*free, l),
+                ui(Ui::NoSpaceHint, l)
+            ),
             (Error::Io(d), Lang::Pt) => format!("Erro com arquivos no disco. Confira o espaço livre. ({d})"),
             (Error::Io(d), Lang::En) => format!("Disk error. Check the free space. ({d})"),
         }
@@ -292,6 +460,10 @@ mod tests {
             Error::NoGame("Chaos.exe".into()),
             Error::Io("x".into()),
             Error::DevPackage,
+            Error::NoSpace {
+                need: 2_400_000_000,
+                free: 1_100_000_000,
+            },
         ];
         for e in all {
             let (pt, en) = (e.text(Lang::Pt), e.text(Lang::En));
@@ -348,6 +520,63 @@ mod tests {
     }
 
     #[test]
+    fn window_texts_have_both_languages() {
+        let same = [Ui::Discord, Ui::Site, Ui::Wiki];
+        for t in [
+            Ui::Ready,
+            Ui::Discord,
+            Ui::Site,
+            Ui::Wiki,
+            Ui::Signup,
+            Ui::News,
+            Ui::NewsSub,
+            Ui::Settings,
+            Ui::Close,
+            Ui::Minimize,
+            Ui::InstallFolder,
+            Ui::OpenFolder,
+            Ui::Verify,
+            Ui::VerifyHint,
+            Ui::Verifying,
+            Ui::ClearCache,
+            Ui::CloseOnPlay,
+            Ui::Language,
+            Ui::Version,
+            Ui::Files,
+            Ui::UpToDateLine,
+            Ui::ReadMore,
+            Ui::Back,
+            Ui::NoCards,
+            Ui::NoSpaceHint,
+        ] {
+            let (pt, en) = (ui(t, Lang::Pt), ui(t, Lang::En));
+            assert!(!pt.is_empty() && !en.is_empty(), "{t:?}");
+            assert_eq!(pt == en, same.contains(&t), "{t:?}");
+        }
+    }
+
+    #[test]
+    fn setup_texts_have_both_languages() {
+        for t in [
+            SetupText::Title,
+            SetupText::Choose,
+            SetupText::DesktopLink,
+            SetupText::MenuLink,
+            SetupText::Install,
+            SetupText::Installing,
+            SetupText::WarnProgramFiles,
+            SetupText::WarnNetwork,
+            SetupText::NotEmpty,
+            SetupText::BadFolder,
+            SetupText::Checking,
+            SetupText::UninstallTitle,
+            SetupText::UninstallAsk,
+        ] {
+            assert_ne!(setup_text(t, Lang::Pt), setup_text(t, Lang::En), "{t:?}");
+        }
+    }
+
+    #[test]
     fn client_choice_texts_have_both_languages() {
         use crate::config::Client;
         assert_ne!(client_label(Lang::Pt), client_label(Lang::En));
@@ -363,6 +592,7 @@ mod tests {
         for s in [
             Status::Checking,
             Status::Hashing,
+            Status::Verifying,
             Status::Downloading,
             Status::Applying,
             Status::LauncherStaged,

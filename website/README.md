@@ -1122,6 +1122,10 @@ Nothing is written for it by hand:
   whose English file has a `Kind: news` line before its first section goes to News instead: title, date, its intro as
   the text (560 characters) and the link to the full note, merged with the site news by date, 6 shown. Every note now
   in the repository is marked so; new notes without the line (the Discord bot writes none) are Changelog entries.
+- **Card fields for the launcher's carousel (O552).** A note file may carry the header lines `Tag: update|news|event|maintenance|notice`,
+  `Build: 47` and `Image: raid.jpg` (before the first section, like `Kind:`). The feed adds `tag`, `build` and `image` to that item when
+  the value is valid (`chaos_lf_card_fields`: five tag words, up to 8 digits, a plain jpg or png file name, which becomes
+  `<site>/plugins/chaos/assets/launcher/<file>`); an item without them has none of the keys and the launcher shows its default art.
 - **Shape** (`format` 1): `{"format":1,"generated":<unix>,"en":{"news":[{id,date,title,text,url}],"changelog":[{id,date,title,lines,url}]},"pt-BR":{...}}`.
   Plain text only (BBCode, HTML and control characters are removed); links are absolute `https://` addresses or empty.
 - **Limits and cache.** 6 news and 6 changelog entries (24 notes read), titles 80, news text 560 and lines 200 characters, the file at

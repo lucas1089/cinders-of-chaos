@@ -5099,6 +5099,20 @@ at most 64 files of at most 2 GiB; `game` and `launcher` must be `.exe` files of
 pack beside `chaos.pack`, `--native-package` = the package's `Services.update.package`); a package without the launcher
 publishes no section and prunes the old native blobs. `verify` checks the native blobs too.
 
+**Start ticket (O552 phase D).** The game exe refuses to run unless the launcher started it: the launcher puts a 30 s HMAC ticket in `CINDERS_TICKET`, the game
+checks it in `main()` (client base patch 0198, `-DCHAOS_REQUIRE_LAUNCHER=ON` in the Windows workflows only). A deterrent, not security; client only, no server rule;
+Unity exempt for now. Details: `launcher/README.md` "Start ticket", `client/BASE.md` "0198".
+
+**Setup (O552 phase C).** The launcher exe is also the setup program: with no `launcher.json` beside it and the manifest address and public key built in
+(`launcher/embedded.json`, from the workflow inputs `update_manifest` / `update_public_key`), it installs itself in a per-user folder (`%LOCALAPPDATA%\CindersOfChaos`,
+no admin rights), makes shortcuts and the uninstall entry, and its first run downloads the whole client from the `native` section. `publish_client_update.sh`
+writes the launcher as `download/Cinders-of-Chaos-Setup.exe` with its `.sha256`. Details: `launcher/README.md` "Self-installing setup".
+
+**Chunk hashes (O552).** A native file bigger than one piece may also carry `"chunk": BYTES` (1 to 128 MiB, default 32 MiB) and `"chunks": [sha256 of
+each piece]`, both or neither, at most 4096 pieces, as many as `ceil(size / chunk)`. The blob stays one plain file; the launcher fetches the pieces with
+`Range`, four at a time, checks each, resumes and repairs per piece, and copies unchanged pieces from the installed file. Old launchers ignore the keys.
+`make_update_manifest.py build --native-chunk BYTES` (default 32 MiB, 0 off), `verify` re-hashes the pieces of every native blob.
+
 **Update.** Hash each native file of the install (cache by size and mtime), download the changed ones to
 `.cinders_launcher/stage/` (resumable `Range` parts, 5 retries with backoff, the system `curl`), check size and SHA-256,
 then the swap: a journal, the old file to `backup/`, the staged file in place (`.exe` last), the journal removed. Any
@@ -5120,12 +5134,10 @@ copy in `.cinders_launcher/feed.json` for an offline start; feed text shown as p
 out, counts and lengths capped); links open in the browser only when `https://` without spaces; a broken, missing or
 oversize feed shows one short line, never a dialog. Texts in pt-BR and en in `i18n.rs` (`FeedText`). The window is 560x520.
 
-**Look (O339).** Dark fantasy window: warm black, ember accent, gold headings (`launcher/src/theme.rs`). A hero banner
-with the brand logo, an ember Play button (hover, pressed, cold while the update runs), a styled progress bar, News and
-Changelog as cards under ember-underline tabs, a footer with the version and a link to the site (the origin of `feed`).
-The window icon is the brand icon. Art: `launcher/tools/gen_launcher_art.py` writes `launcher/assets/banner.rgba` (960x300)
-and `icon.rgba` (128x128), raw RGBA from `docs/brand/cinders_logo*.png`, embedded with `include_bytes!`
-(`--check` in CI, fx venv). No new crate, no new font (egui's default fonts). Window 760x700, resizable, minimum 600x560.
+**Look (O339, new look O552).** A borderless 1280x800 window in the game's own ornate style (login art, brand logo, the skin's corner
+ornaments, the login screen's octagon buttons), a link rail (Discord, Site, Wiki, Conta), the News and Changelog as one carousel of cards
+(tag, picture, build, date, text) under the logo, a bottom bar with progress, speed, time left, the client chip and JOGAR, a settings
+card (folder, close on play, language). Art: `launcher/tools/gen_launcher_art.py` (`--check` in CI). Details: `launcher/README.md` "Look".
 
 **Tests.** `launcher/tests/mass_update.rs` (fake server on 127.0.0.1, fake install, the real `curl`): 120 rounds with
 random trouble and a launcher update every few rounds, plus interrupted download (resume from the byte held), bad hash

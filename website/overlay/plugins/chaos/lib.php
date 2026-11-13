@@ -1062,6 +1062,10 @@ function chaos_pn_parse(string $text, string $id): array {
 			}
 		} elseif ($sec === null && preg_match('/^kind\s*:\s*news\s*$/i', $body)) {
 			$note['kind'] = 'news';   // an announcement: the launcher shows it under News, not in the Changelog
+		} elseif ($sec === null && preg_match('/^(tag|build|image)\s*:\s*(\S+)\s*$/i', $body, $hm)) {
+			// optional card fields of the game launcher (O552): Tag: update|news|event|maintenance|notice, Build: 47,
+			// Image: a file name in assets/launcher/ (jpg or png); anything else is ignored by the launcher feed
+			$note[strtolower($hm[1])] = $hm[2];
 		} elseif (preg_match('/^[-*+]\s+(.*)$/', $body, $bm)) {
 			if ($sec !== null) {
 				if (count($note['sections'][$sec]['items']) < $lim['items']) {

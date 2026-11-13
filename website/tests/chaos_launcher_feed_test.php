@@ -144,6 +144,19 @@ check(chaos_launcher_feed_cached($build, $cache, 300, 2001) === '{"n":3}', 'cach
 check(chaos_launcher_feed_cached($build, '/nonexistent-folder/x.json', 300, 3000) === '{"n":4}', 'cache: an unwritable place still answers');
 check(count(glob($dir . '/cache.json.*.tmp') ?: array()) === 0, 'cache: no temporary file left');
 
+// ---------------------------------------------------------------- card fields of the carousel (O552): Tag, Build, Image
+$note = chaos_pn_parse("# Patch\nDate: 2026-11-13\nTag: Event\nBuild: 47\nImage: raid.jpg\n\nIntro.\n\n## New\n\n- **Lead.** Text.\n", '2026-11-13');
+check(($note['tag'] ?? '') === 'Event' && ($note['build'] ?? '') === '47' && ($note['image'] ?? '') === 'raid.jpg', 'the header lines Tag, Build and Image are read');
+$cf = chaos_lf_card_fields($note, 'https://www.example.org');
+check($cf === array('tag' => 'event', 'build' => '47', 'image' => 'https://www.example.org/plugins/chaos/assets/launcher/raid.jpg'), 'card fields: ' . json_encode($cf));
+$e = chaos_lf_entry($note, '2026-11-13', 'https://www.example.org');
+check(($e['tag'] ?? '') === 'event' && ($e['build'] ?? '') === '47' && isset($e['image']) && $e['lines'] !== array(), 'a changelog entry carries them');
+check(chaos_lf_card_fields(array('tag' => 'weird', 'build' => '4x', 'image' => '../etc/passwd'), 'https://www.example.org') === array(), 'a bad tag, build or image path is left out');
+check(chaos_lf_card_fields(array('image' => 'a.gif'), 'https://www.example.org') === array() && chaos_lf_card_fields(array('image' => 'a.png'), '') === array(), 'only jpg and png, and only with a site address');
+check(chaos_lf_card_fields(array('image' => 'a..b.png'), 'https://www.example.org') === array(), 'no double dots in the file name');
+$plain = chaos_lf_entry(chaos_pn_parse("# Plain\nDate: 2026-11-12\n\n## New\n\n- One.\n", 'p'), 'p', 'https://www.example.org');
+check(!isset($plain['tag']) && !isset($plain['build']) && !isset($plain['image']), 'a note without the lines has none of the keys');
+
 // ---------------------------------------------------------------- live builder: a failing database keeps the news notes
 function db() {
 	return new class {

@@ -25,6 +25,7 @@ that holds the shards publishes them as they are, one with both leaves the singl
 
 usage: python3 -I server/deploy/publish_client_update_test.py
 """
+import hashlib
 import http.server
 import json
 import os
@@ -517,6 +518,9 @@ sys.exit(22)
         # the launcher (O314): a package with CindersLauncher.exe publishes its program files as the native section
         lz = os.path.join(zips, 'launcher.zip')
         make_packed_zip(lz, tmp, public, url, package=15, shards='only', launcher=True)
+        # the chunk size is passed on (O552): a size the manifest tool refuses stops the publish, nothing goes live
+        r = run('--version', '80', lz, extra={'CHAOS_UPDATE_URL': purl, 'CHAOS_NATIVE_CHUNK': '1000'})
+        check(r.returncode != 0 and 'native-chunk' in r.stderr and payload()['version'] == 72, 'a bad chunk size is refused')
         r = run('--version', '80', lz, extra={'CHAOS_UPDATE_URL': purl})
         m = payload()
         nat = m.get('native') or {}
@@ -530,12 +534,20 @@ sys.exit(22)
         for f in nat.get('files', []):
             b = os.path.join(live, 'native', f['sha256'][:2], f['sha256'])
             check(os.path.isfile(b) and os.path.getsize(b) == f['size'], 'native blob of ' + f['path'])
+        # the launcher is also the setup program (O552): copied to download/ with its hash
+        setup = os.path.join(site, 'download', 'Cinders-of-Chaos-Setup.exe')
+        check(os.path.isfile(setup) and open(setup, 'rb').read() == b'MZ launcher', 'the setup file is the launcher exe')
+        sumf = setup + '.sha256'
+        check(os.path.isfile(sumf) and open(sumf).read().split()[0] == hashlib.sha256(b'MZ launcher').hexdigest(), 'its sha256 file')
+        check(not any(n.startswith('.Cinders') for n in os.listdir(os.path.dirname(setup))), 'no temporary file left')
         # a package without the launcher publishes no native section (and the old native blobs go)
         r = run('--version', '81', packed, extra={'CHAOS_UPDATE_URL': purl, 'CHAOS_ENV': envfile},
                 drop=('CHAOS_CLIENT_KEY',))
         check(r.returncode == 0 and 'native' not in payload(), 'no launcher, no native section')
         check(not os.path.isdir(os.path.join(live, 'native')) or not os.listdir(os.path.join(live, 'native')),
               'old native blobs removed')
+        r = run('--version', '85', lz, extra={'CHAOS_UPDATE_URL': purl, 'CHAOS_NATIVE_CHUNK': '0'})
+        check(r.returncode == 0 and not any('chunks' in f for f in payload()['native']['files']), 'chunk size 0 turns them off')
 
         # the app update (O313 step 8): the Android client's own APK, plain under apk/, the entry in the signed manifest
         def make_apk_files(name, code, version, signer='ab' * 32, body=None):

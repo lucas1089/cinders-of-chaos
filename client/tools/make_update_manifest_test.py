@@ -588,6 +588,55 @@ class Native(unittest.TestCase):
         self.assertEqual(code, 0, err)
         self.assertIn('4 native files (package 14)', out)
 
+    def test_chunk_hashes_for_the_big_files(self):
+        """the launcher's resume, repair and parallel download (O552): a file over one piece gets chunk and chunks"""
+        mb = 1024 * 1024
+        pack = b'CHPK' + os.urandom(2 * mb + 4321)
+        self.nat_files['chaos.pack'] = pack
+        open(os.path.join(self.nat, 'chaos.pack'), 'wb').write(pack)
+        code, out, err = self.publish('--native-chunk', str(mb))
+        self.assertEqual(code, 0, err)
+        files = {f['path']: f for f in self.payload()['native']['files']}
+        c = files['chaos.pack']
+        self.assertEqual(c['chunk'], mb)
+        self.assertEqual(c['chunks'], [hashlib.sha256(pack[i:i + mb]).hexdigest() for i in range(0, len(pack), mb)])
+        self.assertEqual(len(c['chunks']), 3)
+        for name in ('Chaos.exe', 'libssl-3-x64.dll', 'CindersLauncher.exe'):
+            self.assertNotIn('chunks', files[name], 'a file of one piece has none')
+        self.assertEqual(run(['verify', self.out, '--public', self.pub])[0], 0)
+        # a blob that is the right size and hash but whose published chunk list is wrong cannot happen without the
+        # signature; a damaged blob is caught by the file hash first
+        blob = os.path.join(self.out, 'native', c['sha256'][:2], c['sha256'])
+        os.chmod(blob, 0o644)
+        with open(blob, 'r+b') as f:
+            f.seek(mb + 5)
+            f.write(b'\x00\x01')
+        code, out, err = run(['verify', self.out, '--public', self.pub])
+        self.assertNotEqual(code, 0)
+        # off, default and refused sizes
+        shutil.rmtree(self.out)
+        self.assertEqual(self.publish('--native-chunk', '0')[0], 0)
+        self.assertTrue(all('chunks' not in f for f in self.payload()['native']['files']))
+        shutil.rmtree(self.out)
+        self.assertEqual(self.publish()[0], 0)
+        self.assertTrue(all('chunks' not in f for f in self.payload()['native']['files']), 'the default is 32 MiB: nothing here is that big')
+        for bad in ('1000', str(129 * mb), '-5'):
+            self.assertNotEqual(self.publish('--native-chunk', bad)[0], 0, bad)
+
+    def test_check_native_refuses_wrong_chunk_lists(self):
+        h = 'a' * 64
+        base = {'path': 'chaos.pack', 'sha256': h, 'size': 3 * 1024 * 1024}
+        ok = dict(base, chunk=1024 * 1024, chunks=[h, h, h])
+        game = {'path': 'Chaos.exe', 'sha256': h, 'size': 5}
+
+        def n(f):
+            return {'package': 14, 'game': 'Chaos.exe', 'files_url': 'native/', 'files': [game, f]}
+        self.assertIsNone(mum.check_native(n(ok)))
+        for bad in (dict(ok, chunks=[h, h]), dict(ok, chunks=[h] * 4), dict(ok, chunk=1000),
+                    dict(ok, chunk=200 * 1024 * 1024), dict(ok, chunks=[h, h, 'zz']),
+                    {k: v for k, v in ok.items() if k != 'chunk'}, {k: v for k, v in ok.items() if k != 'chunks'}):
+            self.assertIsNotNone(mum.check_native(n(bad)), bad)
+
     def test_old_clients_see_the_same_files(self):
         self.assertEqual(self.publish(native=False)[0], 0)
         plain = self.payload()

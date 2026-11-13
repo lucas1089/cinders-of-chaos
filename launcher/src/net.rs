@@ -42,7 +42,11 @@ impl From<&str> for FetchError {
     }
 }
 
-pub trait Fetch {
+pub trait Fetch: Sync {
+    /// True when `download_range` works (the chunk pool needs it).
+    fn supports_ranges(&self) -> bool {
+        false
+    }
     /// Small answer in memory (the manifest).
     fn get(&self, url: &str) -> Result<Vec<u8>, FetchError>;
     /// A small optional answer (the launcher feed): a short time limit and a size limit. Never used for the update.
@@ -52,6 +56,18 @@ pub trait Fetch {
     /// Appends to `part` from the byte it already holds (a `Range` request), calls `progress` with the size of `part`.
     /// Ok means the transfer ended without error; the caller still checks size and hash.
     fn download(&self, url: &str, part: &Path, progress: &mut dyn FnMut(u64)) -> Result<(), FetchError>;
+    /// Bytes `start..end` (end excluded) of the file into `part`, which is rewritten from its first byte (a piece is
+    /// the unit of resume). `progress` gets the size of `part`. Used by the parallel chunk pool (O552).
+    fn download_range(
+        &self,
+        _url: &str,
+        _start: u64,
+        _end: u64,
+        _part: &Path,
+        _progress: &mut dyn FnMut(u64),
+    ) -> Result<(), FetchError> {
+        Err("ranges are not supported by this fetcher".into())
+    }
 }
 
 pub struct Curl;
@@ -137,6 +153,10 @@ fn finish(o: std::process::Output) -> Result<Vec<u8>, FetchError> {
 }
 
 impl Fetch for Curl {
+    fn supports_ranges(&self) -> bool {
+        true
+    }
+
     fn get(&self, url: &str) -> Result<Vec<u8>, FetchError> {
         let mut c = base(url);
         c.args(["--max-time", "60", "--max-filesize", "4194304"]);
@@ -156,6 +176,43 @@ impl Fetch for Curl {
         ]);
         let o = c.output().map_err(|e| format!("cannot start curl: {e}"))?;
         finish(o)
+    }
+
+    fn download_range(
+        &self,
+        url: &str,
+        start: u64,
+        end: u64,
+        part: &Path,
+        progress: &mut dyn FnMut(u64),
+    ) -> Result<(), FetchError> {
+        if end <= start {
+            return Err("empty range".into());
+        }
+        let _ = std::fs::remove_file(part);
+        let mut c = base(url);
+        c.args(["--speed-limit", "1024", "--speed-time", "30"]);
+        c.args(["-r", &format!("{start}-{}", end - 1)]);
+        c.arg("-o").arg(part);
+        c.stdout(Stdio::piped()).stderr(Stdio::piped());
+        let mut child = c.spawn().map_err(|e| format!("cannot start curl: {e}"))?;
+        loop {
+            match child.try_wait() {
+                Ok(Some(_)) => break,
+                Ok(None) => {
+                    progress(std::fs::metadata(part).map(|m| m.len()).unwrap_or(0));
+                    std::thread::sleep(Duration::from_millis(25));
+                }
+                Err(e) => return Err(e.to_string().into()),
+            }
+        }
+        let o = child.wait_with_output().map_err(|e| e.to_string())?;
+        progress(std::fs::metadata(part).map(|m| m.len()).unwrap_or(0));
+        if o.status.success() {
+            Ok(())
+        } else {
+            Err(classify(o.status.code(), split_status(&o.stdout).1, &o.stderr))
+        }
     }
 
     fn download(&self, url: &str, part: &Path, progress: &mut dyn FnMut(u64)) -> Result<(), FetchError> {

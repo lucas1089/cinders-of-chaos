@@ -732,6 +732,28 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosminimaphd_test.cpp -o "$d/chaosminimaphd_asan"
           "$d/chaosminimaphd_asan"
 
+      - name: Launcher-only start ticket (C++, OpenSSL; headers from base patches 0035 and 0198; the vector is the launcher's and ticket_vector_test.py's)
+        run: |
+          d=$(mktemp -d)
+          cut() {
+            awk -v F="$2" 'BEGIN{pat="^\\+\\+\\+ b/src/client/" F "$"} $0 ~ pat{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' "$1" > "$d/$2"
+          }
+          cut client/base-patches/0035-client-guard.patch chaosguard.h
+          cut client/base-patches/0035-client-guard.patch chaosguard_builtin.h
+          cut client/base-patches/0198-launcher-start-only.patch chaosticket.h
+          cut client/base-patches/0198-launcher-start-only.patch chaoslauncher.h
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosticket_test.cpp -lcrypto -o "$d/chaosticket_test"
+          "$d/chaosticket_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosticket_test.cpp -lcrypto -o "$d/chaosticket_asan"
+          "$d/chaosticket_asan"
+          g++ -std=c++17 -O1 -Wall -Wextra -DCHAOS_CLIENT_BUILD=47 -I "$d" -I client/tools/chaoslauncher_test_key client/tools/chaoslauncher_test.cpp -lcrypto -o "$d/chaoslauncher_test"
+          "$d/chaoslauncher_test"
+          python3 -I client/tools/ticket_vector_test.py
+      - name: Launcher-only wiring (the Windows workflows pass the option, Android does not, the package starts the game through the launcher)
+        run: |
+          python3 -I tools/ci/check_launcher_only.py
+          python3 -I tools/ci/check_launcher_only_test.py
+
       - name: Glowing spell effects bookkeeping (C++; header from base patch 0152)
         run: |
           d=$(mktemp -d)
@@ -833,6 +855,9 @@ jobs:
           for d in crates/selfupdate launcher; do
             (cd "$d" && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test --locked)
           done
+          # the Windows side of the setup (O552 phase C): type-checked only, it never runs on this machine
+          rustup target add x86_64-pc-windows-gnu
+          (cd launcher && cargo check --locked --target x86_64-pc-windows-gnu --all-targets)
 
       - name: Android app update download (O313 step 8; ApkFetcher on a plain JVM against a local HTTP server)
         run: |

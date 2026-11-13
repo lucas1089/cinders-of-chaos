@@ -26,6 +26,50 @@ pub fn sha256_file(path: &Path) -> std::io::Result<String> {
     Ok(hex(&h.finalize()))
 }
 
+/// Hash of a stream in pieces (a part of a big file is hashed without holding it in memory).
+#[derive(Default)]
+pub struct Sha256Stream(Sha256);
+
+impl Sha256Stream {
+    pub fn new() -> Self {
+        Sha256Stream(Sha256::new())
+    }
+
+    pub fn update(&mut self, bytes: &[u8]) {
+        self.0.update(bytes);
+    }
+
+    pub fn finish_hex(self) -> String {
+        hex(&self.0.finalize())
+    }
+}
+
+/// HMAC-SHA256 (RFC 2104) of `msg` under `key`. Used for the launcher's start ticket (O552).
+pub fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
+    const BLOCK: usize = 64;
+    let mut k = [0u8; BLOCK];
+    if key.len() > BLOCK {
+        k[..32].copy_from_slice(&Sha256::digest(key));
+    } else {
+        k[..key.len()].copy_from_slice(key);
+    }
+    let mut inner = Sha256::new();
+    inner.update(k.map(|b| b ^ 0x36));
+    inner.update(msg);
+    let mut outer = Sha256::new();
+    outer.update(k.map(|b| b ^ 0x5c));
+    outer.update(inner.finalize());
+    outer.finalize().into()
+}
+
+/// HKDF-SHA256 (RFC 5869) with an empty salt, for one 32-byte output block: `T(1) = HMAC(PRK, info || 0x01)`.
+pub fn hkdf_sha256_32(ikm: &[u8], info: &[u8]) -> [u8; 32] {
+    let prk = hmac_sha256(&[0u8; 32], ikm);
+    let mut msg = info.to_vec();
+    msg.push(1);
+    hmac_sha256(&prk, &msg)
+}
+
 /// True for 64 lower-case hex digits.
 pub fn is_sha256_hex(s: &str) -> bool {
     s.len() == 64 && s.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
@@ -50,6 +94,46 @@ mod tests {
             Some(h)
         );
         assert_eq!(parse_sha("short"), None);
+    }
+
+    #[test]
+    fn hmac_rfc4231_vectors() {
+        // test case 1
+        assert_eq!(
+            hex(&hmac_sha256(&[0x0b; 20], b"Hi There")),
+            "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"
+        );
+        // test case 2
+        assert_eq!(
+            hex(&hmac_sha256(b"Jefe", b"what do ya want for nothing?")),
+            "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+        );
+        // test case 6: a key longer than the block
+        assert_eq!(
+            hex(&hmac_sha256(
+                &[0xaa; 131],
+                b"Test Using Larger Than Block-Size Key - Hash Key First"
+            )),
+            "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+        );
+    }
+
+    #[test]
+    fn hkdf_rfc5869_case_3_has_an_empty_salt() {
+        // RFC 5869 test case 3 (SHA-256, zero-length salt and info): the first 32 bytes of the 42-byte output
+        let okm = hkdf_sha256_32(&[0x0b; 22], b"");
+        assert_eq!(
+            hex(&okm),
+            "8da4e775a563c18f715f802a063c5a31b8a11f5c5ee1879ec3454e5f3c738d2d"
+        );
+    }
+
+    #[test]
+    fn stream_hash_matches_one_shot() {
+        let mut s = Sha256Stream::new();
+        s.update(b"a");
+        s.update(b"bc");
+        assert_eq!(s.finish_hex(), sha256_hex(b"abc"));
     }
 
     #[test]

@@ -36,6 +36,11 @@ pub enum Event {
     },
     /// The file being downloaded.
     File(String),
+    /// Files finished and files to do in this run (O552: "1/12 files").
+    Files {
+        done: usize,
+        total: usize,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -76,6 +81,13 @@ pub struct Options {
     /// Install a DEV Unity package (one built without the client guard key, manifest `"dev": true`). Off for players: such a
     /// build cannot log in to a live server or open the sprite pair. The launcher's `--allow-dev-unity` turns it on (testers).
     pub allow_dev: bool,
+    /// "Verify files" (O552): the hash cache is ignored and every installed file is hashed again; a damaged file is
+    /// repaired piece by piece when the manifest has chunk hashes.
+    pub verify: bool,
+    /// Pieces fetched at the same time for a chunked file.
+    pub parallel: usize,
+    /// Test hook: pretends this many bytes are free in the install folder. `None` in the program (the real figure).
+    pub free_space: Option<u64>,
 }
 
 impl Default for Options {
@@ -86,6 +98,9 @@ impl Default for Options {
             fault: Fault::None,
             launcher_only: false,
             allow_dev: false,
+            verify: false,
+            parallel: 4,
+            free_space: None,
         }
     }
 }
@@ -101,6 +116,29 @@ pub fn manifest_fetch_error(e: FetchError, unity: bool) -> Error {
     }
 }
 
+/// Fetches the signed manifest of a config and checks the signature and the rules of its layout. Nothing is trusted
+/// before the signature is good. The query string defeats caches.
+pub fn fetch_manifest(fetch: &dyn Fetch, cfg: &Config) -> Result<Manifest, Error> {
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let sep = if cfg.manifest_url.contains('?') { '&' } else { '?' };
+    let url = format!("{}{sep}t={stamp}", cfg.manifest_url);
+    let body = fetch
+        .get(&url)
+        .map_err(|e| manifest_fetch_error(e, cfg.layout == Layout::Tree))?;
+    manifest::parse_envelope_for(&body, &cfg.public_key, cfg.layout)
+}
+
+/// The client build (`native.package`) the last good run of this install applied, from `state.json`.
+pub fn saved_package(dir: &Path) -> Option<u64> {
+    std::fs::read_to_string(dir.join(STATE_DIR).join("state.json"))
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|v| v.get("package").and_then(Value::as_u64))
+}
+
 pub struct Updater<'a> {
     pub cfg: &'a Config,
     pub fetch: &'a dyn Fetch,
@@ -111,7 +149,7 @@ pub struct Updater<'a> {
 
 // ---------------------------------------------------------------- small file helpers
 
-fn io<T>(r: std::io::Result<T>, what: &str) -> Result<T, Error> {
+pub(crate) fn io<T>(r: std::io::Result<T>, what: &str) -> Result<T, Error> {
     r.map_err(|e| Error::Io(format!("{what}: {e}")))
 }
 
@@ -122,18 +160,21 @@ fn write_atomic(path: &Path, text: &str) -> Result<(), Error> {
     io(std::fs::rename(&tmp, path), "rename")
 }
 
-fn mtime_key(path: &Path) -> Option<(u64, u128)> {
+pub(crate) fn mtime_key(path: &Path) -> Option<(u64, u128)> {
     let m = std::fs::metadata(path).ok()?;
     let t = m.modified().ok()?.duration_since(UNIX_EPOCH).ok()?;
     Some((m.len(), t.as_nanos()))
 }
 
-fn move_over(from: &Path, to: &Path) -> std::io::Result<()> {
+pub(crate) fn move_over(from: &Path, to: &Path) -> std::io::Result<()> {
     if to.exists() {
         std::fs::remove_file(to)?;
     }
     std::fs::rename(from, to)
 }
+
+/// Free bytes kept on top of the download for the swap, the journal and the player's own files.
+pub const SPACE_MARGIN: u64 = 256 * 1024 * 1024;
 
 /// `.exe` last: the other files are in place before the program that loads them.
 fn apply_order(name: &str) -> bool {
@@ -144,7 +185,7 @@ impl<'a> Updater<'a> {
     fn state_dir(&self) -> PathBuf {
         self.cfg.dir.join(STATE_DIR)
     }
-    fn stage_dir(&self) -> PathBuf {
+    pub(crate) fn stage_dir(&self) -> PathBuf {
         self.state_dir().join("stage")
     }
     fn backup_dir(&self) -> PathBuf {
@@ -345,6 +386,42 @@ impl<'a> Updater<'a> {
         }
     }
 
+    // ------------------------------------------------------------ disk space
+
+    /// Bytes of this file already in the stage folder (a finished file, or the pieces and the part of an earlier run).
+    fn staged_bytes(&self, f: &NativeFile) -> u64 {
+        let stage = self.stage_dir();
+        if let Some((n, _)) = mtime_key(&stage.join(&f.sha256)) {
+            return n;
+        }
+        let mut sum = mtime_key(&stage.join(format!("{}.part", f.sha256))).map_or(0, |k| k.0);
+        if let Ok(rd) = std::fs::read_dir(stage.join(format!("{}.chunks", f.sha256))) {
+            sum += rd
+                .flatten()
+                .filter_map(|e| e.metadata().ok())
+                .map(|m| m.len())
+                .sum::<u64>();
+        }
+        sum.min(f.size)
+    }
+
+    /// Refuses before the first byte when the folder cannot hold the download: what is still to fetch, plus the margin.
+    fn check_space(&self, jobs: &[&NativeFile], total: u64) -> Result<(), Error> {
+        let staged: u64 = jobs.iter().map(|f| self.staged_bytes(f)).sum();
+        let need = total.saturating_sub(staged) + if total > 0 { SPACE_MARGIN } else { 0 };
+        if need == 0 {
+            return Ok(());
+        }
+        let free = match self.opts.free_space {
+            Some(f) => Some(f),
+            None => fs2::available_space(&self.cfg.dir).ok(),
+        };
+        match free {
+            Some(free) if free < need => Err(Error::NoSpace { need, free }),
+            _ => Ok(()), // an unknown figure never blocks an update
+        }
+    }
+
     // ------------------------------------------------------------ the run
 
     /// Checks for an update and installs it. Nothing in the install changes before every file is downloaded and
@@ -354,17 +431,7 @@ impl<'a> Updater<'a> {
         self.recover()?;
 
         ev(Event::Status(Status::Checking));
-        let stamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-        let sep = if self.cfg.manifest_url.contains('?') { '&' } else { '?' };
-        let url = format!("{}{sep}t={stamp}", self.cfg.manifest_url);
-        let body = self
-            .fetch
-            .get(&url)
-            .map_err(|e| manifest_fetch_error(e, self.cfg.layout == Layout::Tree))?;
-        let m = manifest::parse_envelope_for(&body, &self.cfg.public_key, self.cfg.layout)?;
+        let m = fetch_manifest(self.fetch, self.cfg)?;
         let have = self.cfg.baseline.max(self.applied_version());
         if m.version < have {
             return Err(Error::OlderManifest { got: m.version, have });
@@ -386,8 +453,16 @@ impl<'a> Updater<'a> {
             return Err(Error::DevPackage);
         }
 
-        ev(Event::Status(Status::Hashing));
-        let mut cache = self.load_cache();
+        ev(Event::Status(if self.opts.verify {
+            Status::Verifying
+        } else {
+            Status::Hashing
+        }));
+        let mut cache = if self.opts.verify {
+            HashMap::new()
+        } else {
+            self.load_cache()
+        };
         let mut todo: Vec<&NativeFile> = Vec::new();
         let mut launcher: Option<&NativeFile> = None;
         for f in &native.files {
@@ -415,12 +490,17 @@ impl<'a> Updater<'a> {
         let mut jobs: Vec<&NativeFile> = todo.clone();
         jobs.extend(launcher);
         let total: u64 = jobs.iter().map(|f| f.size).sum();
+        self.check_space(&jobs, total)?;
         let mut done_before = 0u64;
         if !jobs.is_empty() {
             ev(Event::Status(Status::Downloading));
         }
         ev(Event::Progress { done: 0, total });
-        for f in &jobs {
+        ev(Event::Files {
+            done: 0,
+            total: jobs.len(),
+        });
+        for (n, f) in jobs.iter().enumerate() {
             ev(Event::File(f.path.clone()));
             self.fetch_file(f, &mut |n| {
                 ev(Event::Progress {
@@ -432,6 +512,10 @@ impl<'a> Updater<'a> {
             ev(Event::Progress {
                 done: done_before,
                 total,
+            });
+            ev(Event::Files {
+                done: n + 1,
+                total: jobs.len(),
             });
         }
 
@@ -484,6 +568,9 @@ impl<'a> Updater<'a> {
     /// Downloads one file into `stage/<sha>`, resuming a `.part`, retrying with a growing wait. A file whose hash is
     /// wrong is deleted and fetched again; after the last try the error says which.
     fn fetch_file(&self, f: &NativeFile, progress: &mut dyn FnMut(u64)) -> Result<(), Error> {
+        if f.chunks.is_some() && self.fetch.supports_ranges() {
+            return self.fetch_chunked(f, progress);
+        }
         let done = self.stage_dir().join(&f.sha256);
         if done.is_file() && mtime_key(&done).map(|k| k.0) == Some(f.size) {
             if sha256_file(&done).ok().as_deref() == Some(&f.sha256) {
