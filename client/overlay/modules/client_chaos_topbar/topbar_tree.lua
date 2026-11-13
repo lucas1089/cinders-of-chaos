@@ -22,7 +22,7 @@ T.HUBS = {
     { id = 'group', name = 'Group', cards = { 'Party', 'Party Frames', 'Group Queue' } },
   } },
   { id = 'adventure', name = 'Adventure', glyph = 'peaks', tabs = {
-    { id = 'journey', name = 'Journey', cards = { 'Dungeons', 'Bounty Board', 'Quest Log', 'Daily Reward', 'Next Goals' } },
+    { id = 'journey', name = 'Journey', cards = { 'Dungeons', 'Bounty Board', 'Quest Log', 'Daily Reward', 'Next Goals', 'Main Quest' } },
     { id = 'rifts', name = 'Rifts', cards = { 'Rifts', 'Rift Atlas', 'Waystone Atlas' } },
     { id = 'trials', name = 'Trials', cards = { 'Infinity Tower', 'Ember Descent', 'Raid: Ashen Sepulchre', 'Boss Spawns' } },
     { id = 'season', name = 'Season', cards = { 'Season', 'Season Pass', 'Weekly Chest', 'Ember Cache', 'Events' } },

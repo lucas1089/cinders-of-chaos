@@ -33,6 +33,7 @@ cd server && luajit tests/arena_test.lua          # one test
 for t in client/overlay/modules/*/*_test.lua; do luajit "$t" && lua5.3 "$t"; done
 
 python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
+python3 -I tools/ci/check_topbar_widgets.py && python3 -I tools/ci/check_topbar_widgets_test.py   # hub menu widgets (O550): every widget id and style client_chaos_topbar/topbar_hub.lua looks up or creates is in topbar_hub.otui, anchors name ids of the file, window / card / badge have a $mobile rule; topbar_hub_test.lua (client loop) runs the widget code on a fake engine built from the real .otui ids
 python3 -I tools/ci/check_topbar_tree.py && python3 -I tools/ci/check_topbar_tree_test.py   # hub menu (O550): every window a module registers has a card on a tab of client_chaos_topbar/topbar_tree.lua (or is named dropped / shared / text-only), hotkey windows on the first tab, 6 hubs, at most 6 cards a tab, glyph and pt-BR text of every card; client_chaos_topbar/topbarhublogic_test.lua runs in the client loop
 python3 -I client/tools/gen_topbar_icons.py --check && python3 -I client/tools/gen_topbar_icons_test.py   # glyph atlases (white, tinted by the skin) and topbar_glyph_index.lua of the hub menu (O550; shapes: client/tools/topbar_glyphs.py; CI uses the fx venv)
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters

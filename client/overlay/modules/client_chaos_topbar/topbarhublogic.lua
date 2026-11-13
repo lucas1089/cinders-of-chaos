@@ -230,4 +230,36 @@ function H.rowsOf(tab)
   return math.ceil(#tab.cards / H.CARDS_PER_ROW)
 end
 
+-- ---------------------------------------------------------------- the card grid
+H.CARD_W, H.CARD_H, H.CARD_GAP = 182, 68, 6
+
+-- where card number i (1 based) of a tab sits in the cards panel: x, y of its top left corner (cardH: 68, a phone 76)
+function H.cardPos(i, cardH)
+  local col = (i - 1) % H.CARDS_PER_ROW
+  local row = math.floor((i - 1) / H.CARDS_PER_ROW)
+  return col * (H.CARD_W + H.CARD_GAP), row * ((cardH or H.CARD_H) + H.CARD_GAP)
+end
+
+-- a text cut to fit maxW pixels: measure(text) -> width; the cut ends in ".." when it was cut
+function H.fit(text, maxW, measure)
+  text = tostring(text or '')
+  if measure(text) <= maxW then return text end
+  local cut = text
+  while #cut > 1 do
+    cut = cut:sub(1, #cut - 1)
+    local try = cut:gsub('%s+$', '') .. '..'
+    if measure(try) <= maxW then return try end
+  end
+  return cut
+end
+
+-- how many hub badges and pins the bar shows, and its width: 28 px badges (phone 40), 4 px apart, 8 px of divider and
+-- 16 px of frame
+function H.barWidth(hubs, pins, badge)
+  badge = badge or 28
+  local w = 16 + hubs * badge + math.max(hubs - 1, 0) * 4
+  if pins > 0 then w = w + 8 + pins * (badge + 4) end
+  return w
+end
+
 return H

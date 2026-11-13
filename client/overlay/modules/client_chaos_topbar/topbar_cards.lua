@@ -57,6 +57,7 @@ C.CARDS = {
   ['Quest Log'] = { 'book', 'Your quests' },
   ['Daily Reward'] = { 'chest', 'Claim today\'s reward' },
   ['Next Goals'] = { 'compass', 'What to do next' },
+  ['Main Quest'] = { 'star', 'The story, step by step' },
   -- Adventure > Rifts
   ['Rifts'] = { 'rift', 'Tiered rifts and their keys' },
   ['Rift Atlas'] = { 'map', 'Points that make rifts richer' },

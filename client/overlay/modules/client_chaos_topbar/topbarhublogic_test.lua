@@ -42,7 +42,7 @@ for _, hub in ipairs(T.HUBS) do
   end
 end
 eq(tabs, 26, '26 tabs')
-eq(cards, 104, '104 cards')
+eq(cards, 105, '105 cards')
 for text in pairs(C.CARDS) do eq(seen[text], true, 'a card line for a text the tree does not hold: ' .. text) end
 -- the hotkey windows are on the first tab of their hub (two clicks)
 local first = {}
@@ -147,5 +147,17 @@ eq(H.normalizeStyle('text'), 'text', 'text'); eq(H.normalizeStyle(nil), 'hubs', 
 eq(H.resolveStyle('hubs', true, false), 'hubs', 'hubs'); eq(H.resolveStyle('hubs', false, false), 'text', 'art missing')
 eq(H.resolveStyle('hubs', true, true), 'text', 'after an error'); eq(H.resolveStyle('text', true, false), 'text', 'chosen')
 eq(H.rowsOf({ cards = { 1, 2, 3, 4, 5 } }), 2, 'rows')
+
+-- ---------------------------------------------------------------- the grid, fit, bar width
+local x, y = H.cardPos(1); eq(x + y, 0, 'first card at the corner')
+x, y = H.cardPos(4); eq(x, 3 * 188, 'fourth card, last column'); eq(y, 0, 'fourth card, first row')
+x, y = H.cardPos(5); eq(x, 0, 'fifth card wraps'); eq(y, 74, 'second row'); x, y = H.cardPos(6, 76); eq(x, 188, 'sixth card column'); eq(y, 82, 'phone row pitch')
+local function m8(s) return #s * 8 end
+eq(H.fit('Short', 100, m8), 'Short', 'fits as it is')
+eq(H.fit('Map Overlay Settings', 100, m8), 'Map Overla..', 'cut with dots')
+eq(H.fit('Ab', 1, m8), 'A', 'nothing fits: one letter')
+eq(m8(H.fit('Points of interest and party marks', 118, m8)) <= 118, true, 'cut width within the limit')
+eq(H.barWidth(6, 1), 16 + 6 * 28 + 5 * 4 + 8 + 32, 'bar of six and one pin'); eq(H.barWidth(6, 0, 40), 16 + 240 + 20, 'phone bar without pins')
+eq(H.barWidth(6, 3) <= 310, true, 'three pins stay in 310 px')
 
 print('topbarhublogic_test: ' .. n .. ' checks ok')

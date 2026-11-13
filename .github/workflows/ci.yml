@@ -909,6 +909,8 @@ jobs:
           python3 -I tools/ci/check_assembled_test.py
           python3 -I tools/ci/check_topbar_tree.py  # hub menu (O550): every registered entry has a card, hotkeys on first tabs, glyphs drawn, pt-BR texts
           python3 -I tools/ci/check_topbar_tree_test.py
+          python3 -I tools/ci/check_topbar_widgets.py  # hub menu (O550): every widget id and style topbar_hub.lua uses is in topbar_hub.otui, anchors, $mobile rules
+          python3 -I tools/ci/check_topbar_widgets_test.py
 
       - name: Client localization (every tr() key has pt-BR, no hard-coded UI text)
         run: python3 -I tools/ci/check_locales.py

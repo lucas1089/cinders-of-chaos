@@ -1,0 +1,299 @@
+// The top menu as hubs (O550): the badges on the bar and the hub window (tabs and cards). Imported from chaos_topbar.lua
+// (topbar_hub.lua builds the widgets). The look is the game's own: the window is a ChaosWindow, the tabs ChaosTabButton,
+// the badges and chips the 9-slice of skin/button, the cards ChaosPanel, so the interface skins (client_chaos_theme)
+// repaint it with the rest. The glyph pictures are white atlases (images/glyphs_bar, images/glyphs_card, client/tools/
+// gen_topbar_icons.py); topbar_hub.lua sets the clip of the glyph and tints it with the skin's palette (image-color).
+// tools/ci/check_topbar_widgets.py holds the ids topbar_hub.lua looks up and the styles it creates to this file.
+
+// ---------------------------------------------------------------- the bar
+// a hub badge: 28 px (phone 40), the skin button cell with the glyph on it; open = the third row, as a pressed button
+ChaosHubBadge < UIButton
+  size: 28 28
+  image-source: /images/chaos/skin/button
+  image-clip: 0 0 64 24
+  image-border: 5
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    image-clip: 0 24 64 24
+
+  $on:
+    image-clip: 0 48 64 24
+
+  $pressed:
+    image-clip: 0 48 64 24
+
+  $mobile:
+    size: 40 40
+
+  UIWidget
+    id: glyph
+    size: 24 24
+    anchors.centerIn: parent
+    image-source: images/glyphs_bar
+    phantom: true
+
+// a thin line between the hub badges and the pinned ones
+ChaosHubDivider < UIWidget
+  size: 1 20
+  background-color: #6b6258
+  margin-top: 4
+  margin-left: 2
+  margin-right: 2
+  phantom: true
+
+  $mobile:
+    height: 28
+    margin-top: 6
+
+// the red dot on a badge: how many applications wait (Party Finder)
+ChaosHubDot < UILabel
+  id: dot
+  font: verdana-9px-rounded
+  color: #fff0dc
+  background-color: #b8160f
+  border-width: 1
+  border-color: #f6cf72
+  text-align: center
+  size: 14 14
+  anchors.top: parent.top
+  anchors.right: parent.right
+  margin-top: -3
+  margin-right: -3
+  phantom: true
+
+// ---------------------------------------------------------------- the window
+ChaosHubTab < ChaosTabButton
+  size: 96 24
+  margin-right: 2
+  focusable: false
+
+  $mobile:
+    height: 30
+    font: chaos-heading-14px
+
+ChaosHubTabs < UIWidget
+  id: tabs
+  anchors.top: parent.top
+  anchors.left: parent.left
+  anchors.right: parent.right
+  height: 24
+  phantom: false
+  focusable: false
+
+  $mobile:
+    height: 30
+
+ChaosHubCards < UIWidget
+  id: cards
+  anchors.top: tabs.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  anchors.bottom: footer.top
+  margin-top: 6
+  focusable: false
+
+ChaosHubCardText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  phantom: true
+
+// one card: the hex badge with its glyph, the name, one line, the chips. 182 x 68 (phone 76 high)
+ChaosHubCard < UIWidget
+  size: 182 68
+  image-source: /images/chaos/panel
+  image-border: 8
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    image-source: /images/chaos/panel_highlight
+
+  $mobile:
+    height: 76
+
+  UIWidget
+    id: badge
+    size: 40 40
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+    image-source: /images/chaos/skin/button
+    image-clip: 0 0 64 24
+    image-border: 5
+    phantom: true
+
+    UIWidget
+      id: glyph
+      size: 32 32
+      anchors.centerIn: parent
+      image-source: images/glyphs_card
+      phantom: true
+
+  ChaosHubCardText
+    id: name
+    font: verdana-11px-rounded
+    height: 14
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 9
+    margin-left: 58
+    width: 116
+
+    $mobile:
+      font: chaos-heading-14px
+      height: 18
+
+  ChaosHubCardText
+    id: desc
+    font: Verdana-9px-antialiased
+    color: #8c8070
+    text-wrap: true
+    anchors.top: prev.bottom
+    anchors.left: prev.left
+    margin-top: 3
+    width: 118
+    height: 22
+
+    $mobile:
+      height: 24
+
+  // the hotkey chip, bottom right (hidden on a locked card); the NEW chip sits left of it, topbar_hub.lua sets its margin
+  ChaosHubCardText
+    id: key
+    font: Verdana-9px-antialiased
+    color: #d6c9ae
+    text-align: center
+    image-source: /images/chaos/panel_dark
+    image-border: 6
+    size: 40 14
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 5
+    margin-right: 8
+    visible: false
+
+  // the gold NEW chip, bottom right
+  ChaosHubCardText
+    id: newChip
+    font: Verdana-9px-antialiased
+    color: #ffd24a
+    text-align: center
+    image-source: /images/chaos/skin/button
+    image-clip: 0 0 64 24
+    image-border: 5
+    size: 30 14
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 5
+    margin-right: 8
+    visible: false
+
+  // locked: the padlock and "Unlocks at level N", bottom
+  UIWidget
+    id: lockIcon
+    size: 10 12
+    image-source: /images/game/depot/lock
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-bottom: 6
+    margin-left: 58
+    visible: false
+    phantom: true
+
+  ChaosHubCardText
+    id: lockText
+    font: Verdana-9px-antialiased
+    color: #7a7466
+    anchors.verticalCenter: prev.verticalCenter
+    anchors.left: prev.right
+    margin-left: 4
+    text-auto-resize: true
+    visible: false
+
+  // the red count: applications waiting (Party Finder)
+  ChaosHubCardText
+    id: count
+    font: verdana-9px-rounded
+    color: #fff0dc
+    background-color: #b8160f
+    border-width: 1
+    border-color: #f6cf72
+    text-align: center
+    size: 16 16
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 34
+    visible: false
+
+ChaosHubFooterButton < UIButton
+  font: Verdana-9px-antialiased
+  color: #8c8070
+  text-auto-resize: true
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    color: #f6cf72
+
+  $mobile:
+    font: verdana-11px-antialised
+
+// the hub window: fixed 780 x 262 under the bar (phone: 780 x 290). A ChaosWindow, not a main window: it sits under the bar
+// and not in the middle of the screen. topbar_hub.lua sets its title and escape key.
+ChaosHubWindow < ChaosWindow
+  id: chaosHubWindow
+  size: 780 262
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 44
+  draggable: false
+  focusable: true
+
+  $mobile:
+    size: 780 290
+    margin-top: 56
+
+  ChaosHubTabs
+
+  ChaosHubCards
+
+  UIWidget
+    id: footer
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 16
+    focusable: false
+
+    $mobile:
+      height: 20
+
+    UILabel
+      id: hint
+      font: Verdana-9px-antialiased
+      color: #8c8070
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      text-auto-resize: true
+      phantom: true
+
+      $mobile:
+        font: verdana-11px-antialised
+
+    ChaosHubFooterButton
+      id: textMenu
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+
+// phone: a tap outside the window closes it (a plain widget behind the window)
+ChaosHubShade < UIWidget
+  id: chaosHubShade
+  anchors.fill: parent
+  focusable: false
