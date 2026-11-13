@@ -30731,6 +30731,13 @@ monster renames) found five more unknown names, now in `FIXES`: "Orc Sambackpack
 Frost Dragon. Targets are base monsters of the same theme and about the same health that `monsternames` does not rename. The
 raid files name no items, so no item errors can come from them.
 
+Owner log 2026-11-13: `[Error] Raids: Cant create monster Frostmaw`. Root cause: before O294 `worldtexts` renamed raid spawn names
+as people's names, so the VPS file `svargrond/ocyakao.xml` held `Frostmaw` (the `base_world_names.csv` row of sha256("ocyakao")),
+and `FIXES` only knew `Ocyakao`; `restore_raid_spawns` cannot help because "Ocyakao" is no monster type. Same for "Chayenne" ->
+"Wren". `patch_base_raids.py` now also takes the replacement names of the rename lists (`renamed_names`, by sha256) as keys of
+`FIXES`, and prints a WARNING for every raid spawn name left that no monster type has. Install: Update in the admin app, or
+`install_all.py SERVER_DIR --only baseraids`. Not seen on a fresh install (the local test server is correct).
+
 ## Unique loot names (`tools/install_decor49_items.py`, `tools/install_owner_decor.py`)
 
 Owner log 2026-10-28: `Non-unique loot item "witch broom"` / `"witch hat"`, then `Cant load loot. witch.xml`: the Witch had no loot at
