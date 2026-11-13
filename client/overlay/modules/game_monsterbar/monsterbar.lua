@@ -306,6 +306,12 @@ end
 
 local function onExtendedOpcode(protocol, opcode, buffer)
   local ok, msg = pcall(json.decode, buffer)
+  if ok and type(msg) == 'table' and (msg.action == 'floor' or msg.action == 'floorclear') then
+    -- O549: the floor marks of a boss attack belong to game_telegraph (it says hello on this opcode and draws them)
+    local telegraph = rawget(_G, 'ChaosTelegraphClient')
+    if telegraph then telegraph.onMessage(msg) end
+    return
+  end
   if ok and type(msg) == 'table' and msg.action == 'mech' and type(msg.data) == 'table' then
     onMech(msg.data)
     return

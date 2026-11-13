@@ -7,7 +7,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 70,
+  "opcode": 71,
   "out": 39,
   "passive": 108,
   "place": 15,
@@ -9861,13 +9861,15 @@
     "query"
    ],
    "client": [
-    "game_monsterbar"
+    "game_monsterbar",
+    "game_telegraph"
    ],
    "dataKeys": [
     "cid"
    ],
    "files": [
-    "monster_tiers.lua"
+    "monster_tiers.lua",
+    "telegraph.lua"
    ],
    "opcode": 125,
    "out": false,
@@ -9875,7 +9877,8 @@
    "systems": [
     "hitcap",
     "manashield",
-    "monster_defence"
+    "monster_defence",
+    "telegraph"
    ]
   },
   "nameplate": {
@@ -13029,6 +13032,16 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "telegraph": {
+   "files": [
+    "telegraph.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "monsterbar"
+   ],
+   "talkactions": []
   },
   "telemetry": {
    "files": [

@@ -683,10 +683,32 @@ local function zones(tr, player)
 	local marked = {}
 	for _, z in ipairs(list) do
 		if M.inRoom(tr.L, z) then
-			local pos = P(z)
-			pos:sendMagicEffect(CONST_ME_MAGIC_RED or CONST_ME_FIREAREA)
-			marked[#marked + 1] = pos
+			marked[#marked + 1] = P(z)
 		end
+	end
+	-- the floor mark of game_telegraph (O549); the red sprite marks go only to the players that do not have the module
+	local mark
+	if ChaosTelegraph and #marked > 0 then
+		local area = {}
+		for _, pos in ipairs(marked) do
+			area[#area + 1] = {x = pos.x, y = pos.y, z = pos.z}
+		end
+		tr.zoneSeq = (tr.zoneSeq or 0) + 1
+		mark = ChaosTelegraph.open("tz:" .. tr.pid .. ":" .. tr.zoneSeq, area, {ms = c.zoneDelay, user = "trials"})
+	end
+	local function sprites(who)
+		for _, pos in ipairs(marked) do
+			if who then
+				pos:sendMagicEffect(CONST_ME_MAGIC_RED or CONST_ME_FIREAREA, who)
+			else
+				pos:sendMagicEffect(CONST_ME_MAGIC_RED or CONST_ME_FIREAREA)
+			end
+		end
+	end
+	if mark and ChaosTelegraph then
+		ChaosTelegraph.draw(mark, sprites)
+	else
+		sprites(nil)
 	end
 	local pid, share = tr.pid, tr.tierDef.zoneShare
 	addEvent(function()

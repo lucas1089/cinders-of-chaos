@@ -69,8 +69,12 @@ local function orange()
 end
 
 -- an effect by name (chaos_vfx, pack and big ids), else the stock constant named `fallback`
-local function fx(pos, name, fallback)
+local function fx(pos, name, fallback, who)
 	if not pos then
+		return
+	end
+	if who and ChaosTelegraph then
+		ChaosTelegraph.effectTo(who, pos, name, fallback) -- one player's sprite marks (O549)
 		return
 	end
 	if name and ChaosBigFx and ChaosBigFx.live and ChaosBigFx.live() and name:sub(1, 4) == "big_" then
@@ -315,14 +319,22 @@ local function spawnAdds(f, spec)
 end
 
 -- ======================================================================== telegraphs
-local function drawMarks(f, tel, kind)
+-- the sprite marks of one pulse. who = nil: everybody near gets them (nobody near has game_telegraph, ChaosTelegraph is
+-- not loaded or its switch is off: exactly as before O549); who = a player: only that one (a player without
+-- game_telegraph while others near have it)
+local function drawMarks(f, tel, kind, who)
 	local cfg = C()
 	local effect = kind == "fill" and cfg.fillEffect or cfg.warnEffect
 	for _, t in ipairs(tel.plan.big) do
-		fx(t, effect, "CONST_ME_MAGIC_RED")
+		fx(t, effect, "CONST_ME_MAGIC_RED", who)
 	end
 	for _, t in ipairs(tel.plan.small) do
-		P(t):sendMagicEffect(kind == "fill" and CONST_ME_DRAWBLOOD or CONST_ME_MAGIC_RED)
+		local stock = kind == "fill" and CONST_ME_DRAWBLOOD or CONST_ME_MAGIC_RED
+		if who then
+			P(t):sendMagicEffect(stock, who)
+		else
+			P(t):sendMagicEffect(stock)
+		end
 	end
 end
 
@@ -348,6 +360,20 @@ local function telegraph(f, spec, warnMs)
 	end
 	sendCast(f, spec.label, warnMs, "telegraph")
 	local id, token = f.id, f.token
+	-- the floor mark of game_telegraph (O549): the area once now, again when a follow circle moves; the sprite pulses below
+	-- go only to the players near it that do not have the module
+	local mark
+	if ChaosTelegraph then
+		f.markSeq = (f.markSeq or 0) + 1
+		mark = ChaosTelegraph.open("bm:" .. f.id .. ":" .. f.markSeq, tel.tiles, {ms = warnMs, user = "bossMechanics"})
+	end
+	local function draw(fn)
+		if mark and ChaosTelegraph then
+			ChaosTelegraph.draw(mark, fn)
+		else
+			fn(nil)
+		end
+	end
 	for i, pulse in ipairs(tel.pulses) do
 		addEvent(function()
 			local fl = M.fights[id]
@@ -357,19 +383,28 @@ local function telegraph(f, spec, warnMs)
 			-- a follow circle moves with its target until the lock
 			if spec.kind == "follow" and mnow() < tel.lockAt then
 				G.refollow(fl.st, tel, ctxOf(fl, fightPlayers(fl)), mnow())
-			end
-			if i == 1 then
-				-- pair 27 (data/lib/chaos_pack27_fx.lua, off): its danger circle, else the large one
-				local P27, drawn = ChaosPack27Fx, false
-				if P27 and P27.PAIR27_FX and P27.telegraph then
-					local ok, sent = pcall(P27.telegraph, tel.tiles)
-					drawn = ok and sent == true
-				end
-				if not drawn and ChaosBigFx and ChaosBigFx.telegraph then
-					pcall(ChaosBigFx.telegraph, tel.tiles)
+				if mark and ChaosTelegraph then
+					pcall(ChaosTelegraph.move, mark, tel.tiles)
 				end
 			end
-			drawMarks(fl, tel, pulse.kind)
+			draw(function(who)
+				if i == 1 then
+					if who then
+						pcall(ChaosTelegraph.circleTo, who, tel.tiles, true)
+					else
+						-- pair 27 (data/lib/chaos_pack27_fx.lua, off): its danger circle, else the large one
+						local P27, drawn = ChaosPack27Fx, false
+						if P27 and P27.PAIR27_FX and P27.telegraph then
+							local ok, sent = pcall(P27.telegraph, tel.tiles)
+							drawn = ok and sent == true
+						end
+						if not drawn and ChaosBigFx and ChaosBigFx.telegraph then
+							pcall(ChaosBigFx.telegraph, tel.tiles)
+						end
+					end
+				end
+				drawMarks(fl, tel, pulse.kind, who)
+			end)
 		end, pulse.at)
 	end
 	addEvent(function()
@@ -555,6 +590,9 @@ local function cleanup(f)
 			m:remove()
 		end
 		M.addOf[f.channel.totem] = nil
+	end
+	if ChaosTelegraph then
+		pcall(ChaosTelegraph.closePrefix, "bm:" .. f.id .. ":") -- the floor marks of a cancelled hit (O549)
 	end
 	M.fights[f.id] = nil
 end

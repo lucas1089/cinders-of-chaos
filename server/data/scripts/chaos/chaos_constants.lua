@@ -57,7 +57,7 @@ Chaos = {}
 -- None of the values below collide with those.
 ChaosOpcodes = {
 	bank = 60,
-	monsterbar = 125,
+	monsterbar = 125, -- also the floor telegraphs of the bosses (O549: floor / floorclear server -> client, floorhello client -> server; telegraph.lua)
 	passivetree = 65,
 	notifications = 79,
 	dungeons = 109,
