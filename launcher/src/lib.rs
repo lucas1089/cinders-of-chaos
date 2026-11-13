@@ -20,5 +20,6 @@ pub mod manifest;
 pub mod net;
 pub mod selfupdate;
 pub mod setup;
+pub mod ticket;
 #[cfg(windows)]
 pub mod winshell;

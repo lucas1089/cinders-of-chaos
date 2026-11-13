@@ -199,7 +199,15 @@ impl App {
     }
 
     fn play(&mut self, ctx: &egui::Context, game: &str) {
-        match launch::start(&self.active(), game) {
+        // the main client wants a start ticket for the build this run applied (else the last saved one); Unity is exempt
+        let package = match &self.phase {
+            Phase::Ready(o) => o.package,
+            _ => None,
+        };
+        let ticket = (self.client == Client::Main)
+            .then(|| launch::ticket_for(&self.active(), package))
+            .flatten();
+        match launch::start(&self.active(), game, ticket.as_deref()) {
             Ok(()) => {
                 if self.settings.close_on_play {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);

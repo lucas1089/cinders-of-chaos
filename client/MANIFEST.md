@@ -5099,6 +5099,10 @@ at most 64 files of at most 2 GiB; `game` and `launcher` must be `.exe` files of
 pack beside `chaos.pack`, `--native-package` = the package's `Services.update.package`); a package without the launcher
 publishes no section and prunes the old native blobs. `verify` checks the native blobs too.
 
+**Start ticket (O552 phase D).** The game exe refuses to run unless the launcher started it: the launcher puts a 30 s HMAC ticket in `CINDERS_TICKET`, the game
+checks it in `main()` (client base patch 0198, `-DCHAOS_REQUIRE_LAUNCHER=ON` in the Windows workflows only). A deterrent, not security; client only, no server rule;
+Unity exempt for now. Details: `launcher/README.md` "Start ticket", `client/BASE.md` "0198".
+
 **Setup (O552 phase C).** The launcher exe is also the setup program: with no `launcher.json` beside it and the manifest address and public key built in
 (`launcher/embedded.json`, from the workflow inputs `update_manifest` / `update_public_key`), it installs itself in a per-user folder (`%LOCALAPPDATA%\CindersOfChaos`,
 no admin rights), makes shortcuts and the uninstall entry, and its first run downloads the whole client from the `native` section. `publish_client_update.sh`

@@ -82,6 +82,36 @@ separate installer program: the website's download is the launcher exe itself, p
   fakes (`setup.rs` tests, `tests/setup_install.rs`: setup to full install to uninstall against the fake server). `cargo check --target x86_64-pc-windows-gnu
   --all-targets` type-checks the Windows code here; it was never run on Windows.
 
+## Start ticket: the game starts only through the launcher (O552 phase D)
+
+Owner 2026-11-13 (pt-BR): "onde não dá pra lançar o jogo via o exe, tem que lançar pelo launcher". Owner decisions: the check is in the client only (no
+server rule), Unity is exempt for now. **A deterrent, not security**: the key is in the launcher and in the game, only obfuscated; whoever reads the launcher
+can mint a ticket and whoever patches the game skips the check. It stops the double click on `Chaos.exe` and the old habit of playing on stale files. The
+real gate stays the game server's client guard.
+
+- **Ticket** (`src/ticket.rs`). `t1.<build>.<launcher>.<expiry>.<nonce>.<mac>`: the client build (the manifest's `native.package` the run applied, or the one
+  `state.json` saved, `install::saved_package`), the launcher's number (`Cargo.toml` 0.2.0 is 200), the Unix time it ends (30 s ahead), 16 random bytes
+  (`getrandom`), and `mac = HMAC-SHA256(sub_key, "t1|build|launcher|expiry|nonce")`. `sub_key = HKDF-SHA256(CHAOS_CLIENT_KEY, "cinders-launcher-ticket-v1")`:
+  the launcher never holds the key the game proves itself to the server with (HKDF is one way), so a leak of the launcher cannot answer the login challenge.
+  It goes to the game in the environment variable `CINDERS_TICKET`, only to the game process (`launch::start` also removes a ticket from its own environment).
+- **Key.** `build.rs` reads `CHAOS_CLIENT_KEY` (the GitHub secret, 64 hex digits) at build time, derives the sub key, and writes it shuffled and XOR-masked into
+  `OUT_DIR/ticket_key.rs`. The secret is never printed, never cached beyond cargo's `rerun-if-env-changed`, never in a test: the tests use a TEST key (32 bytes
+  of 0x11) and the vector `tests/data/ticket_vector.json`. Without the variable the public development key of the client's CMake is used (a cargo warning), so a
+  development launcher and a development client agree. `windows-package.yml` builds the launcher with the secret.
+- **One vector, three implementations.** `ticket.rs` (Rust), `src/client/chaosticket.h` (C++, OpenSSL, client base patch 0198) and
+  `client/tools/ticket_vector_test.py` (Python hmac and hashlib) read the same vector; the Python test also fails when the constants of
+  `client/tools/chaosticket_test.cpp` drift. HMAC and HKDF are in `crates/selfupdate` (`hash.rs`, RFC 4231 and 5869 vectors), no new crate.
+- **The game's side** (base patch 0198, client/BASE.md): checks the ticket in `main()` before anything else. No ticket, a wrong or an old one: "Abra o jogo pelo
+  Launcher." and the launcher starts (`CindersLauncher.exe --play`, which the launcher takes as nothing special). A restart of the game after an update mints its own
+  60 s ticket. Compiled only with `-DCHAOS_REQUIRE_LAUNCHER=ON` (the Windows release workflows); Android, Linux and development builds have no check.
+- **`--play-local [--build N] [--dir DIR]`.** Starts the game of a folder with a ticket and nothing else: no manifest, no update, no network, no `launcher.json`. The build
+  is `--build`, else `chaos_build.txt` beside the game, else the last update's state. The full one-PC package's `start-client.bat` uses it (the exe is no longer
+  started by hand there either).
+- Tests: `src/ticket.rs` (the vector, a changed field breaks the mac, malformed text, the built-in key's tickets pass the rules, the key is not a plain literal, the build
+  script's sub key is the spec's), `tests/launch_ticket.rs` (a fake game sees exactly the ticket, none when none is given even if the launcher's own environment has one,
+  the build from the run or from `state.json`, `--play-local` in all its forms), `chaosticket_test.cpp`, `chaoslauncher_test.cpp`, `ticket_vector_test.py`,
+  `tools/ci/check_launcher_only.py` (the release wiring).
+
 ## Client choice (Unity client beta, O433 phase 16)
 
 Owner 2026-11-07 (pt-BR): "Quero que os jogadores consigam jogar em ambos os clientes." The window has a row "Cliente: Cliente principal | Cliente Unity (beta)"

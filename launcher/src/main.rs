@@ -27,6 +27,8 @@ struct Args {
     cli: bool,
     no_start: bool,
     uninstall: bool,
+    play_local: bool,
+    build: Option<u64>,
     dir: Option<PathBuf>,
     lang: Option<Lang>,
     client: Option<Client>,
@@ -38,6 +40,8 @@ fn parse_args() -> Args {
         cli: false,
         no_start: false,
         uninstall: false,
+        play_local: false,
+        build: None,
         dir: None,
         lang: None,
         client: None,
@@ -52,6 +56,12 @@ fn parse_args() -> Args {
             "--cli" => a.cli = true,
             "--no-start" => a.no_start = true,
             "--uninstall" => a.uninstall = true,
+            // start the game with no update and no network (the one-PC package's start-client.bat); `--build N` names the
+            // client build, else `chaos_build.txt` beside the game, else the build the last update saved
+            "--play-local" => a.play_local = true,
+            "--build" => a.build = it.next().and_then(|t| t.trim().parse().ok()),
+            // the game starts the launcher with it ("open the game from the launcher"): nothing else to do
+            "--play" => {}
             // the setup program starts the installed copy with it; nothing else to do, the update runs as always
             "--first-run" => {}
             "--verify" => VERIFY.store(true, Ordering::Relaxed),
@@ -105,6 +115,28 @@ fn pick_client(cfg: &Config, given: Option<Client>) -> Client {
     }
 }
 
+/// `--play-local`: starts the game of this folder with a start ticket and nothing else (no manifest, no update, no network).
+/// It needs no `launcher.json`: the one-PC test package has none. The build comes from `--build`, `chaos_build.txt` or the
+/// last update's state; with none of them there is no ticket and the game says so itself.
+fn play_local(dir: &std::path::Path, build: Option<u64>, lang: Lang) -> i32 {
+    let build = build
+        .or_else(|| {
+            std::fs::read_to_string(dir.join("chaos_build.txt"))
+                .ok()
+                .and_then(|t| t.trim().parse().ok())
+        })
+        .or_else(|| cinders_launcher::install::saved_package(dir));
+    let cfg = Config::bare(dir);
+    let ticket = build.and_then(cinders_launcher::ticket::for_launch);
+    match launch::start(&cfg, &cfg.game, ticket.as_deref()) {
+        Ok(()) => 0,
+        Err(e) => {
+            eprintln!("{}", e.text(lang));
+            1
+        }
+    }
+}
+
 /// `--uninstall` (the entry of Windows' "Apps" list): asks once, then removes what the launcher owns.
 fn uninstall(dir: &std::path::Path, exe: &std::path::Path, lang: Lang) -> i32 {
     #[cfg(windows)]
@@ -150,7 +182,12 @@ fn run_cli(cfg: &Config, exe: PathBuf, lang: Lang, no_start: bool, client: Clien
     };
     if !no_start && may_start {
         println!("{}", i18n::status(Status::Launching, lang));
-        if let Err(e) = launch::start(&active, &game) {
+        // the main client wants a start ticket (O552 phase D); the Unity client is exempt for now
+        let package = r.as_ref().ok().and_then(|(o, _)| o.package);
+        let ticket = (client == Client::Main)
+            .then(|| launch::ticket_for(&active, package))
+            .flatten();
+        if let Err(e) = launch::start(&active, &game, ticket.as_deref()) {
             eprintln!("{}", e.text(lang));
             return 1;
         }
@@ -175,6 +212,9 @@ fn main() {
         .clone()
         .or_else(|| exe.parent().map(PathBuf::from))
         .unwrap_or_else(|| PathBuf::from("."));
+    if args.play_local {
+        std::process::exit(play_local(&dir, args.build, lang));
+    }
     if args.uninstall {
         std::process::exit(uninstall(&dir, &exe, lang));
     }

@@ -478,6 +478,13 @@
      "source": "https://github.com/PolyMeilex/rfd"
     },
     {
+     "name": "getrandom",
+     "author": "The Rand Project Developers",
+     "licence": "MIT or Apache-2.0",
+     "use": "the random part of the game launcher's start tickets",
+     "source": "https://github.com/rust-random/getrandom"
+    },
+    {
      "name": "fs2",
      "author": "Dan Burkert",
      "licence": "MIT or Apache-2.0",

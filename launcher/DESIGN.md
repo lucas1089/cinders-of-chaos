@@ -175,6 +175,10 @@ The client guard handshake today is `cg1:<build>:<hex>`. Add an optional launche
 | The launcher is older than the exe | the exe checks `launcher_build >= CHAOS_MIN_LAUNCHER` (compiled in), else "Atualize o Launcher" and opens it; the launcher self-update runs at its start anyway. |
 | Two clients on one PC | tickets are per start; nothing shared. |
 
+> Owner answers 2026-11-13 changed this plan: no server rule (section 3 "Server side" is dropped: no `cg2`, no `clientGuardRequireLauncher`, no src-patch 0093),
+> the replay file of used nonces was dropped (the 30 s expiry is the limit), the look was redrawn in the game's own ornate style, and the phases A to D were built
+> (launcher/README.md).
+
 ## 4. Implementation plan
 
 Phases, each one a round with its own tests; nothing changes the game server until D. Order is chosen so the look lands first and cannot break updating.

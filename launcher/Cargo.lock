@@ -322,6 +322,7 @@ dependencies = [
  "ed25519-compact",
  "eframe",
  "fs2",
+ "getrandom 0.3.4",
  "image",
  "mslnk",
  "rfd",

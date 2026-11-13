@@ -53,7 +53,7 @@
 # Game launcher (O314, launcher/README.md): the separate client download starts with CindersLauncher.exe (built in the
 # client job, launcher.json written next to it from the init.lua settings). The launcher updates the exe, the DLLs and
 # chaos.pack from the "native" section of the signed manifest, which publish_client_update.sh adds when the zip holds
-# CindersLauncher.exe. The full local package keeps start-client.bat and Chaos.exe.
+# CindersLauncher.exe. The full local package starts the game with start-client.bat, which runs the launcher with --play-local.
 # Signed updater (client/MANIFEST.md "Signed updater"): it updates only modules/ mods/ data/ layouts/, which both clients
 # share, so update_manifest / update_public_key go into the Windows and the Linux client alike, with the baseline
 # Services.update.baseline = this run's number (winpkg-N -> N, the version publish_client_update.sh gives the update made
@@ -489,7 +489,7 @@ jobs:
           vs=$("$vswhere" -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationVersion 2>/dev/null | tr -d '\r' || true)
           vs=${vs:-image-${ImageVersion:-unknown}}
           keyhash=$(printf '%s' "$CHAOS_CLIENT_KEY" | sha256sum | cut -d' ' -f1)
-          recipe="client-win-v2 windows-2025 x64-windows-static Release Ninja lto+harden build=$CLIENT_BUILD"
+          recipe="client-win-v3 windows-2025 x64-windows-static Release Ninja lto+harden launcher-only build=$CLIENT_BUILD"
           hardening=$(sha256sum ../chaos/client/tools/chaos_hardening.cmake | cut -d' ' -f1)
           hash=$({ echo "$recipe"; echo "vs=$vs"; echo "key=$keyhash"; echo "flags=$hardening"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
           echo "recipe: $recipe"; echo "visual studio: $vs"; echo "source files: $(wc -l <<<"$files")"; echo "key hash: $hash"
@@ -533,7 +533,7 @@ jobs:
           if not exist vcpkg git clone https://github.com/microsoft/vcpkg vcpkg
           call vcpkg\bootstrap-vcpkg.bat -disableMetrics
           if errorlevel 1 exit /b 1
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_TOOLCHAIN_FILE=%CD%\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCHAOS_CLIENT_BUILD=%CLIENT_BUILD% -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DCMAKE_PROJECT_INCLUDE=%GITHUB_WORKSPACE%\chaos\client\tools\chaos_hardening.cmake
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_TOOLCHAIN_FILE=%CD%\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCHAOS_CLIENT_BUILD=%CLIENT_BUILD% -DCHAOS_REQUIRE_LAUNCHER=ON -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DCMAKE_PROJECT_INCLUDE=%GITHUB_WORKSPACE%\chaos\client\tools\chaos_hardening.cmake
           if errorlevel 1 exit /b 1
           cmake --build build --parallel %NUMBER_OF_PROCESSORS%
           if errorlevel 1 exit /b 1
@@ -582,9 +582,14 @@ jobs:
       # the game launcher (O314, launcher/README.md): the entry point of the separate client download. It updates the
       # exe, the DLLs and chaos.pack from the signed manifest ("native" section) and starts the game. Rust, the Windows
       # runner has the toolchain; its tests run on Linux in ci.yml (Native checks)
+      # the launcher makes the start tickets the game now wants (O552 phase D, client base patch 0198): it is built with a
+      # sub key of the client guard secret (never the secret itself; without the secret, the public development key, which
+      # only a development client accepts)
       - name: Build the launcher (O314)
         shell: bash
         working-directory: chaos/launcher
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
         run: |
           # the facts of the setup program (O552 phase C): the same manifest and key the packages use; without them the
           # launcher runs only beside a launcher.json and shows no setup screen
@@ -933,8 +938,11 @@ jobs:
           # keep the configured, unpacked tree (updater settings already written) for the separate client download,
           # which sets the server host and RSA key into init.lua before packing
           cp -a "$P/client" clienttree
-          # the full local package starts Chaos.exe with start-client.bat and has no live update site: no launcher
-          rm -f "$P/client/CindersLauncher.exe"
+          # the full local package has no live update site: its launcher gets no launcher.json (so it only plays) and
+          # start-client.bat starts the game through it with --play-local (the game wants a start ticket, base patch 0198);
+          # chaos_build.txt tells it the client build
+          rm -f "$P/client/launcher.json"
+          printf '%s\n' "$CLIENT_BUILD" > "$P/client/chaos_build.txt"
           # pack with the same key the exe was built with (pack_client.py falls back to the dev key when the secret is
           # absent, matching an allow_dev_key exe); then strip the loose tree, leaving the exe, its DLLs and chaos.pack
           python3 -I chaos/client/tools/pack_client.py build "$P/client" chaos.pack

@@ -131,6 +131,14 @@ pub fn fetch_manifest(fetch: &dyn Fetch, cfg: &Config) -> Result<Manifest, Error
     manifest::parse_envelope_for(&body, &cfg.public_key, cfg.layout)
 }
 
+/// The client build (`native.package`) the last good run of this install applied, from `state.json`.
+pub fn saved_package(dir: &Path) -> Option<u64> {
+    std::fs::read_to_string(dir.join(STATE_DIR).join("state.json"))
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|v| v.get("package").and_then(Value::as_u64))
+}
+
 pub struct Updater<'a> {
     pub cfg: &'a Config,
     pub fetch: &'a dyn Fetch,

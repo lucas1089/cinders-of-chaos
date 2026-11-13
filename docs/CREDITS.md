@@ -356,6 +356,11 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Licence: MIT
   - Used for: the folder dialog and the uninstall question of the game launcher (Windows only)
   - Source: https://github.com/PolyMeilex/rfd
+- **getrandom**
+  - Author: The Rand Project Developers
+  - Licence: MIT or Apache-2.0
+  - Used for: the random part of the game launcher's start tickets
+  - Source: https://github.com/rust-random/getrandom
 - **fs2**
   - Author: Dan Burkert
   - Licence: MIT or Apache-2.0

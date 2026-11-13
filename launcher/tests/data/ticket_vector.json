@@ -1,0 +1,10 @@
+{
+ "note": "TEST key only. Made by client/tools/ticket_vector_test.py (UPDATE_TICKET_VECTOR=1); read by launcher/src/ticket.rs; the same constants are in client/tools/chaosticket_test.cpp.",
+ "client_key_hex": "1111111111111111111111111111111111111111111111111111111111111111",
+ "sub_key_hex": "855b74dfece7c8900ac9aa88d3667063ff856c4ab37214179d5287cb8710b4c0",
+ "build": 47,
+ "launcher": 200,
+ "expiry": 1800000000,
+ "nonce": "00112233445566778899aabbccddeeff",
+ "ticket": "t1.47.200.1800000000.00112233445566778899aabbccddeeff.09115e8900323d8561376d956ffba6a796a21be83d62c3f9de309d66e86dbb52"
+}

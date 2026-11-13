@@ -1,0 +1,419 @@
+# Chaos: the game starts only through the launcher (O552 phase D; client/BASE.md "0198"; src/client/chaosticket.h and
+# src/client/chaoslauncher.h (new), src/main.cpp, src/client/CMakeLists.txt; after 0001-0197).
+# Owner 2026-11-13 (pt-BR): "onde nao da pra lancar o jogo via o exe, tem que lancar pelo launcher". The launcher puts a ticket in the
+# environment variable CINDERS_TICKET of the game process (launcher/src/ticket.rs); main() checks it before anything else.
+#  * chaosticket.h (pure, OpenSSL): t1.<build>.<launcher>.<expiry>.<nonce>.<mac>, mac = HMAC-SHA256(sub_key, "t1|build|launcher|
+#    expiry|nonce"), sub_key = HKDF-SHA256(client guard key, info "cinders-launcher-ticket-v1"): the launcher holds the sub key, never
+#    the key the game proves itself to the server with. Checked: shape, mac in constant time, expiry (30 s), build. Vector shared with
+#    the launcher and client/tools/ticket_vector_test.py; client/tools/chaosticket_test.cpp builds the header on its own.
+#  * chaoslauncher.h (platform): requireOrExit() reads and removes the variable, and when the ticket is not good tells the player
+#    ("Abra o jogo pelo Launcher." / "Open the game from the Launcher.", a message box, the system language) and starts
+#    CindersLauncher.exe from the game's folder, the folder above it (the Unity player sits in unity/) or HKCU\Software\CindersOfChaos
+#    \InstallDir, then main() returns. prepareRestart() gives the next process its own 60 s ticket (Application::relaunchIfRequested
+#    starts the new client after an update, base patch 0101), so a restart needs no launcher.
+#  * src/client/CMakeLists.txt: option CHAOS_REQUIRE_LAUNCHER (default OFF) -> -DCHAOS_REQUIRE_LAUNCHER=1. Everything is compiled
+#    out without it: Android (a phone has no launcher), Linux and every development build never see the check. The Windows release
+#    workflows pass ON.
+# A deterrent, not security: the key is in every client and launcher, only obfuscated; whoever patches the exe skips the check.
+# Not built against the real client tree (the base is not in the repository): the headers pass the C++ tests here (the platform half
+# on Linux only: its Windows branch was never compiled), the hunks were dry-run on files rebuilt from the context of 0035, 0101, 0102
+# and 0167. Applies after 0001-0197; checked with patch --dry-run on those files, not on a full tree.
+--- a/src/client/CMakeLists.txt
++++ b/src/client/CMakeLists.txt
+@@ -178,6 +178,19 @@
+ unset(_chaos_mask)
+ include_directories("${CMAKE_BINARY_DIR}/chaosguard")
+ add_definitions(-DCHAOS_CLIENT_BUILD=${CHAOS_CLIENT_BUILD})
++# Cinders of Chaos (base patch 0198, client/BASE.md "0198"): the game starts only through the launcher. OFF by default: Android,
++# Linux and development builds never see the check; the Windows release workflows pass -DCHAOS_REQUIRE_LAUNCHER=ON.
++option(CHAOS_REQUIRE_LAUNCHER "Refuse to start unless the launcher gave a ticket (CINDERS_TICKET)" OFF)
++if(CHAOS_REQUIRE_LAUNCHER)
++    add_definitions(-DCHAOS_REQUIRE_LAUNCHER=1)
++    message(STATUS "Launcher-only start: ON (the game needs a ticket from CindersLauncher.exe)")
++else()
++    message(STATUS "Launcher-only start: off")
++endif()
++set(client_SOURCES ${client_SOURCES}
++    ${CMAKE_CURRENT_LIST_DIR}/chaosticket.h
++    ${CMAKE_CURRENT_LIST_DIR}/chaoslauncher.h
++)
+ if(_chaos_dev)
+     message(STATUS "Client guard: build ${CHAOS_CLIENT_BUILD}, DEVELOPMENT key")
+ else()
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -35,6 +35,7 @@
+ #include <framework/platform/nativesplash.h>
+ #include <client/client.h>
+ #include <client/chaosguard_builtin.h> // Cinders of Chaos: the client guard key, reused to decrypt chaos.pack (patch 0102)
++#include <client/chaoslauncher.h> // Cinders of Chaos: the game starts only through the launcher (patch 0198)
+
+ #include <algorithm>
+ #include <array>
+@@ -163,6 +164,14 @@
+     }
+ #endif
+
++#if defined(CHAOS_REQUIRE_LAUNCHER) && !defined(ANDROID) && !defined(__EMSCRIPTEN__)
++    // Cinders of Chaos (base patch 0198, client/BASE.md "0198"): the game starts only through the launcher, which puts a
++    // short-lived ticket in CINDERS_TICKET. No ticket, a wrong or an old one: the player is told, the launcher starts, and the
++    // game ends here, before it opens a window or reads a setting. A deterrent, not security.
++    if (!chaoslauncher::requireOrExit())
++        return 1;
++#endif
++
+     std::string compactName = g_resources.getCompactName();
+     g_logger.setLogFile(compactName + ".log");
+
+@@ -256,6 +265,10 @@
+
+     // Cinders of Chaos (base patch 0101): a restart asked during the run starts the client again only now, after
+     // every thread is joined and the settings are saved
++#if defined(CHAOS_REQUIRE_LAUNCHER) && !defined(ANDROID) && !defined(__EMSCRIPTEN__)
++    if (g_app.isRestartRequested())
++        chaoslauncher::prepareRestart(); // base patch 0198: the new process gets its own ticket, it does not need the launcher
++#endif
+     g_app.relaunchIfRequested();
+     return 0;
+ }
+--- a/src/client/chaosticket.h
++++ b/src/client/chaosticket.h
+@@ -0,0 +1,171 @@
++// Cinders of Chaos start ticket: the game starts only through the launcher (client base patch 0198, client/BASE.md "0198").
++//
++// The launcher (launcher/src/ticket.rs) puts a ticket in the environment variable CINDERS_TICKET of the game process;
++// main() checks it before anything else. The format, made three times (Rust, this header, client/tools/ticket_vector_test.py)
++// from one vector:
++//     t1.<build>.<launcher>.<expiry>.<nonce>.<mac>
++//   build     the client build the ticket is for (chaosguard::build(), the launcher's manifest package)
++//   launcher  the launcher's own number (0.2.0 is 200)
++//   expiry    Unix time (seconds) after which the ticket is refused; the launcher makes it 30 s ahead
++//   nonce     16 random bytes, 32 lower-case hex digits
++//   mac       hex(HMAC-SHA256(sub_key, "t1|<build>|<launcher>|<expiry>|<nonce>"))
++//   sub_key   HKDF-SHA256(client key, no salt, info "cinders-launcher-ticket-v1", 32 bytes): the launcher holds this, never
++//             the client guard key itself, so a leak of the launcher cannot answer the login challenge of the game server.
++//
++// A deterrent, not security: the key is in every client and every launcher, only obfuscated; whoever patches the exe skips the
++// check. It stops the double click on Chaos.exe. The server's client guard (src-patch 0021) stays the gate.
++//
++// Header only (OpenSSL), so client/tools/chaosticket_test.cpp builds it on its own.
++#pragma once
++
++#include <cstdint>
++#include <string>
++#include <vector>
++
++#include <openssl/crypto.h>
++#include <openssl/evp.h>
++#include <openssl/hmac.h>
++#include <openssl/rand.h>
++
++namespace chaosticket
++{
++
++constexpr const char* ENV_NAME = "CINDERS_TICKET";
++constexpr const char* HKDF_INFO = "cinders-launcher-ticket-v1";
++// a restart of the game after an update mints its own ticket for the new process, which starts after the old one has shut down
++constexpr uint64_t RESTART_LIFETIME = 60;
++
++// raw 32-byte HMAC-SHA256; "" when OpenSSL fails
++inline std::string hmac(const std::string& key, const std::string& data)
++{
++    unsigned char out[EVP_MAX_MD_SIZE];
++    unsigned int outLen = 0;
++    if (!HMAC(EVP_sha256(), key.data(), static_cast<int>(key.size()), reinterpret_cast<const unsigned char*>(data.data()),
++              data.size(), out, &outLen) || outLen != 32)
++        return std::string();
++    return std::string(reinterpret_cast<const char*>(out), outLen);
++}
++
++inline std::string toHex(const std::string& bytes)
++{
++    static const char digits[] = "0123456789abcdef";
++    std::string out;
++    out.reserve(bytes.size() * 2);
++    for (unsigned char c : bytes) {
++        out.push_back(digits[c >> 4]);
++        out.push_back(digits[c & 15]);
++    }
++    return out;
++}
++
++// HKDF-SHA256 with an empty salt, one output block: T(1) = HMAC(PRK, info || 0x01), PRK = HMAC(32 zero bytes, key)
++inline std::string subKey(const std::string& clientKey)
++{
++    const std::string prk = hmac(std::string(32, '\0'), clientKey);
++    if (prk.empty())
++        return std::string();
++    return hmac(prk, std::string(HKDF_INFO) + std::string(1, '\x01'));
++}
++
++struct Ticket
++{
++    uint64_t build = 0;
++    uint64_t launcher = 0;
++    uint64_t expiry = 0;
++    std::string nonce;
++};
++
++enum class Verdict { Ok, Malformed, BadMac, Expired, WrongBuild };
++
++inline std::vector<std::string> splitDots(const std::string& s)
++{
++    std::vector<std::string> parts(1);
++    for (char c : s) {
++        if (c == '.')
++            parts.emplace_back();
++        else
++            parts.back().push_back(c);
++    }
++    return parts;
++}
++
++// 1 to 12 decimal digits, nothing else (no sign, no space)
++inline bool parseNumber(const std::string& s, uint64_t& out)
++{
++    if (s.empty() || s.size() > 12)
++        return false;
++    uint64_t v = 0;
++    for (char c : s) {
++        if (c < '0' || c > '9')
++            return false;
++        v = v * 10 + static_cast<uint64_t>(c - '0');
++    }
++    out = v;
++    return true;
++}
++
++inline bool isLowerHex(const std::string& s, size_t n)
++{
++    if (s.size() != n)
++        return false;
++    for (char c : s)
++        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
++            return false;
++    return true;
++}
++
++inline std::string message(uint64_t build, uint64_t launcher, uint64_t expiry, const std::string& nonce)
++{
++    return "t1|" + std::to_string(build) + "|" + std::to_string(launcher) + "|" + std::to_string(expiry) + "|" + nonce;
++}
++
++// The game's rules: shape, mac (constant time), expiry (the last second still counts), build. `out` gets the fields when Ok.
++inline Verdict verify(const std::string& clientKey, const std::string& text, uint64_t now, uint64_t expectBuild,
++                      Ticket* out = nullptr)
++{
++    const std::vector<std::string> p = splitDots(text);
++    uint64_t build = 0, launcher = 0, expiry = 0;
++    if (p.size() != 6 || p[0] != "t1" || !parseNumber(p[1], build) || !parseNumber(p[2], launcher) ||
++        !parseNumber(p[3], expiry) || !isLowerHex(p[4], 32) || !isLowerHex(p[5], 64))
++        return Verdict::Malformed;
++    const std::string sub = subKey(clientKey);
++    if (sub.empty())
++        return Verdict::Malformed;
++    const std::string want = toHex(hmac(sub, message(build, launcher, expiry, p[4])));
++    if (want.size() != p[5].size() || CRYPTO_memcmp(want.data(), p[5].data(), want.size()) != 0)
++        return Verdict::BadMac;
++    if (now > expiry)
++        return Verdict::Expired;
++    if (build != expectBuild)
++        return Verdict::WrongBuild;
++    if (out) {
++        out->build = build;
++        out->launcher = launcher;
++        out->expiry = expiry;
++        out->nonce = p[4];
++    }
++    return Verdict::Ok;
++}
++
++// the ticket text for these values; "" when OpenSSL fails
++inline std::string mint(const std::string& clientKey, uint64_t build, uint64_t launcher, uint64_t expiry, const std::string& nonce)
++{
++    const std::string sub = subKey(clientKey);
++    if (sub.empty())
++        return std::string();
++    const std::string mac = hmac(sub, message(build, launcher, expiry, nonce));
++    if (mac.empty())
++        return std::string();
++    return "t1." + std::to_string(build) + "." + std::to_string(launcher) + "." + std::to_string(expiry) + "." + nonce + "." + toHex(mac);
++}
++
++// 16 random bytes as 32 hex digits; "" when the generator fails (no ticket is better than a weak one)
++inline std::string randomNonce()
++{
++    unsigned char b[16];
++    if (RAND_bytes(b, sizeof(b)) != 1)
++        return std::string();
++    return toHex(std::string(reinterpret_cast<const char*>(b), sizeof(b)));
++}
++
++} // namespace chaosticket
+--- a/src/client/chaoslauncher.h
++++ b/src/client/chaoslauncher.h
+@@ -0,0 +1,164 @@
++// Cinders of Chaos: the game starts only through the launcher (client base patch 0198, client/BASE.md "0198").
++// The platform half of src/client/chaosticket.h: reads and clears CINDERS_TICKET, tells the player, starts the launcher.
++// Compiled into the game only when CMake got -DCHAOS_REQUIRE_LAUNCHER=ON (the Windows release workflows); Android, Linux and
++// every development build leave the option OFF and never see any of it.
++//
++// A deterrent, not security (see chaosticket.h). The one real rule: no ticket, a wrong one or an old one, no game window.
++#pragma once
++
++#include "chaosguard_builtin.h"
++#include "chaosticket.h"
++
++#include <cstdio>
++#include <cstdlib>
++#include <ctime>
++#include <string>
++
++#ifdef _WIN32
++#ifndef NOMINMAX
++#define NOMINMAX
++#endif
++#ifndef WIN32_LEAN_AND_MEAN
++#define WIN32_LEAN_AND_MEAN
++#endif
++#include <windows.h>
++#endif
++
++namespace chaoslauncher
++{
++
++// The launcher number of the ticket this process was started with (0: none, a development build without the option)
++inline uint64_t& launcherBuild()
++{
++    static uint64_t v = 0;
++    return v;
++}
++
++inline std::string getEnv(const char* name)
++{
++    const char* v = std::getenv(name);
++    return v ? std::string(v) : std::string();
++}
++
++inline void setEnv(const char* name, const std::string& value)
++{
++#ifdef _WIN32
++    _putenv_s(name, value.c_str()); // an empty value removes the variable from this process
++#else
++    if (value.empty())
++        unsetenv(name);
++    else
++        setenv(name, value.c_str(), 1);
++#endif
++}
++
++#ifdef _WIN32
++inline std::wstring exeDirectory()
++{
++    wchar_t buf[MAX_PATH * 4];
++    const DWORD n = GetModuleFileNameW(nullptr, buf, static_cast<DWORD>(sizeof(buf) / sizeof(buf[0])));
++    std::wstring p(buf, n);
++    const size_t s = p.find_last_of(L"\\/");
++    return s == std::wstring::npos ? std::wstring(L".") : p.substr(0, s);
++}
++
++inline bool fileExists(const std::wstring& p)
++{
++    const DWORD a = GetFileAttributesW(p.c_str());
++    return a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY);
++}
++
++// HKCU\Software\CindersOfChaos\InstallDir, written by the launcher's setup
++inline std::wstring registeredInstallDir()
++{
++    std::wstring out;
++    HKEY k = nullptr;
++    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\CindersOfChaos", 0, KEY_READ, &k) == ERROR_SUCCESS) {
++        wchar_t buf[MAX_PATH * 2];
++        DWORD size = sizeof(buf), type = 0;
++        if (RegQueryValueExW(k, L"InstallDir", nullptr, &type, reinterpret_cast<LPBYTE>(buf), &size) == ERROR_SUCCESS &&
++            type == REG_SZ)
++            out.assign(buf, wcsnlen(buf, size / sizeof(wchar_t)));
++        RegCloseKey(k);
++    }
++    return out;
++}
++
++// beside the game, in the folder above it (the Unity player sits in unity/), or where the setup registered it
++inline bool startLauncher()
++{
++    const std::wstring dir = exeDirectory();
++    const std::wstring registered = registeredInstallDir();
++    std::wstring candidates[3] = {dir + L"\\CindersLauncher.exe", dir + L"\\..\\CindersLauncher.exe",
++                                  registered.empty() ? std::wstring() : registered + L"\\CindersLauncher.exe"};
++    for (const std::wstring& c : candidates) {
++        if (c.empty() || !fileExists(c))
++            continue;
++        std::wstring cmd = L"\"" + c + L"\" --play";
++        const size_t s = c.find_last_of(L"\\/");
++        const std::wstring work = c.substr(0, s);
++        STARTUPINFOW si{};
++        si.cb = sizeof(si);
++        PROCESS_INFORMATION pi{};
++        if (CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, work.c_str(), &si, &pi)) {
++            CloseHandle(pi.hThread);
++            CloseHandle(pi.hProcess);
++            return true;
++        }
++    }
++    return false;
++}
++
++inline void tell(bool launcherFound)
++{
++    const bool pt = (GetUserDefaultUILanguage() & 0xFF) == LANG_PORTUGUESE;
++    std::wstring text = pt ? L"Abra o jogo pelo Launcher." : L"Open the game from the Launcher.";
++    if (launcherFound)
++        text += pt ? L"\n\nO Launcher vai abrir agora." : L"\n\nThe Launcher is opening now.";
++    else
++        text += pt ? L"\n\nO Launcher n\u00e3o foi encontrado nesta pasta. Baixe o instalador no site do jogo."
++                   : L"\n\nThe Launcher was not found in this folder. Download the setup from the game's website.";
++    MessageBoxW(nullptr, text.c_str(), L"Cinders of Chaos", MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND);
++}
++#endif
++
++// Reads the ticket, removes the variable (so nothing the game starts inherits it) and checks it. True: go on. False: the
++// player has been told and, on Windows, the launcher is starting; main() returns at once.
++inline bool requireOrExit()
++{
++    std::string key = chaosguard::builtInKey();
++    const std::string text = getEnv(chaosticket::ENV_NAME);
++    setEnv(chaosticket::ENV_NAME, std::string());
++    chaosticket::Ticket t;
++    const chaosticket::Verdict v = chaosticket::verify(key, text, static_cast<uint64_t>(std::time(nullptr)),
++                                                       chaosguard::build(), &t);
++    chaosguard::wipe(key);
++    if (v == chaosticket::Verdict::Ok) {
++        launcherBuild() = t.launcher;
++        return true;
++    }
++#ifdef _WIN32
++    const bool started = startLauncher();
++    tell(started);
++#else
++    std::fprintf(stderr, "Open the game from the Launcher (no valid start ticket).\n");
++#endif
++    return false;
++}
++
++// Before the game starts itself again after an update (Application::relaunchIfRequested): the new process gets its own
++// ticket, made with the built-in key, so the restart does not need the launcher.
++inline void prepareRestart()
++{
++    std::string key = chaosguard::builtInKey();
++    const std::string nonce = chaosticket::randomNonce();
++    if (!nonce.empty()) {
++        const uint64_t expiry = static_cast<uint64_t>(std::time(nullptr)) + chaosticket::RESTART_LIFETIME;
++        const std::string t = chaosticket::mint(key, chaosguard::build(), launcherBuild(), expiry, nonce);
++        if (!t.empty())
++            setEnv(chaosticket::ENV_NAME, t);
++    }
++    chaosguard::wipe(key);
++}
++
++} // namespace chaoslauncher

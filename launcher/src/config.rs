@@ -241,6 +241,22 @@ impl Client {
 }
 
 impl Config {
+    /// A config with nothing but the folder and the default game name (`--play-local`: no manifest is read).
+    pub fn bare(dir: &Path) -> Config {
+        Config {
+            manifest_url: String::new(),
+            public_key: [0; 32],
+            baseline: 0,
+            game: "Chaos.exe".to_string(),
+            args: Vec::new(),
+            feed: None,
+            dir: dir.to_path_buf(),
+            unity_manifest: None,
+            unity_game: UNITY_GAME.to_string(),
+            layout: Layout::Flat,
+        }
+    }
+
     /// The config of one client: the main one as it is; the Unity one with its own manifest, its own folder
     /// (`unity/` inside the install folder, so its files and its `.cinders_launcher` state never mix with the main
     /// client's), the tree layout and no baseline. `None` for Unity when the manifest address is not set.

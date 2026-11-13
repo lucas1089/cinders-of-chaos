@@ -1291,6 +1291,17 @@ website; `min_package` still keeps old clients without the launcher out. Nothing
 update signing key offline: it now also decides which programs the launchers run. Release steps and open items:
 `launcher/README.md`.
 
+**The launcher installs itself and the game starts only through it (O552).** The website's download is now one file, `Cinders-of-Chaos-Setup.exe`, which is the
+launcher itself: `publish_client_update.sh` (admin app: tab Comandos, card "Site e update do client", button "Publicar update"; shell fallback `chaos-ctl.sh
+publish-update winpkg-N`) copies it to `$CHAOS_SITE_DIR/download/` with its `.sha256` whenever it publishes a package that holds the launcher. Run from any
+folder it shows the setup screen (per-user folder under `%LOCALAPPDATA%`, no admin rights, shortcuts, an entry in Windows' app list), then downloads the whole
+client. Point the site's download button at that file. The big files also carry chunk hashes now (resume, repair and parallel download). Client base patch 0198 makes
+the game exe refuse to start without a ticket from the launcher; it is on in the Windows workflows only, so **the first release with it needs a new `client_build`**
+(old exes keep starting by hand until the launcher replaces them, which is the point). Steps: raise `client_build` (workflow "Windows package"; it needs the
+secret `CHAOS_CLIENT_KEY`, and the inputs `update_manifest` and `update_public_key` so the launcher can install itself), publish the update, check one Windows PC:
+the Setup file on an empty folder installs and plays, a copy of `Chaos.exe` started by hand says "Abra o jogo pelo Launcher". This is a deterrent, not security:
+the server's client guard (above) stays the gate. Not run on Windows yet. Details: `launcher/README.md`.
+
 **Packaging never uses the live update.** The `windows-package.yml` start test runs the client with
 `CHAOS_UPDATE_OFF=1` (no manifest request, no update folder mounted) and fails when the log lacks
 `updater: off (CHAOS_UPDATE_OFF is set)`. The same switch works for any local test run of a package.
