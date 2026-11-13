@@ -3,7 +3,7 @@ Module
   description: Cinders of Chaos menu bar at the top of the game map (category drop-downs with sub-menus and hotkeys, systems shown as the character unlocks them; replaces the side button icons)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ topbarlogic, topbarunlockslogic, topbar_unlocks, chaos_topbar ]
+  scripts: [ topbarlogic, topbarhublogic, topbar_tree, topbar_cards, topbarunlockslogic, topbar_unlocks, chaos_topbar ]
   dependencies:
     - client_chaos_theme
     - game_interface
