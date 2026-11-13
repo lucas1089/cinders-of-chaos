@@ -105,6 +105,8 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
           /tmp/fxenv/bin/python -I client/tools/gen_pyre_art.py --check   # Pyre Oath ember ring and burn strips of game_chestaura (O518)
           /tmp/fxenv/bin/python -I client/tools/gen_toast_art.py --check  # toast icons of game_chaosnotify, Pact hourglass included (O317)
+          /tmp/fxenv/bin/python -I client/tools/gen_topbar_icons.py --check  # glyph atlases and index of the hub menu (O550)
+          /tmp/fxenv/bin/python -I client/tools/gen_topbar_icons_test.py
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art.py --check  # prints, glows and foot marks of game_cosmeticfx (O499)
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/clean_wing_shadows_test.py  # the baked ground shadow of the wings (O508, pair 64)
@@ -905,6 +907,8 @@ jobs:
         run: |
           python3 -I tools/ci/check_modules.py
           python3 -I tools/ci/check_assembled_test.py
+          python3 -I tools/ci/check_topbar_tree.py  # hub menu (O550): every registered entry has a card, hotkeys on first tabs, glyphs drawn, pt-BR texts
+          python3 -I tools/ci/check_topbar_tree_test.py
 
       - name: Client localization (every tr() key has pt-BR, no hard-coded UI text)
         run: python3 -I tools/ci/check_locales.py
