@@ -1059,9 +1059,9 @@ diff -ruN a/src/client/minimap.cpp b/src/client/minimap.cpp
 +    if(px == kFullPx) {
 +        image = std::make_shared<Image>(Size(px, px), 4, m_hdScratch.data());
 +    } else {
-+        std::vector<uint8_t> small((size_t)px * px * 4);
-+        downscale(m_hdScratch.data(), px, small.data());
-+        image = std::make_shared<Image>(Size(px, px), 4, small.data());
++        std::vector<uint8_t> shrunk((size_t)px * px * 4);
++        downscale(m_hdScratch.data(), px, shrunk.data());
++        image = std::make_shared<Image>(Size(px, px), 4, shrunk.data());
 +    }
 +    TexturePtr tex = std::make_shared<Texture>(image, false, false, true);
 +    block.m_hdTexture = tex;
