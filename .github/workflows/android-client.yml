@@ -320,7 +320,7 @@ jobs:
           SYSLIBS=' libc.so libm.so libdl.so liblog.so libandroid.so libEGL.so libGLESv2.so libGLESv3.so libOpenSLES.so libaaudio.so libz.so libjnigraphics.so '
           for so in libcinders.so libopenal.so; do
             for need in $("$RE" -d "$RUNNER_TEMP/$so" | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p'); do
-              unzip -l "$APK" | grep -q "lib/arm64-v8a/$need\$" && continue
+              if unzip -l "$APK" | grep -q "lib/arm64-v8a/$need\$"; then continue; fi
               [[ "$SYSLIBS" == *" $need "* ]] || { echo "::error::$so needs $need, which is neither in the APK nor a system library"; exit 1; }
             done
           done
@@ -551,12 +551,13 @@ jobs:
           [ -n "$TAG" ] || { echo "::error::no winpkg release with CindersOfChaos-Server-Linux.tar.gz"; exit 1; }
           echo "server package of $TAG"
           gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p CindersOfChaos-Server-Linux.tar.gz -D "$RUNNER_TEMP"
-          mkdir -p "$RUNNER_TEMP/srv" && tar -xzf "$RUNNER_TEMP/CindersOfChaos-Server-Linux.tar.gz" -C "$RUNNER_TEMP/srv"
+          mkdir -p "$RUNNER_TEMP/srv"
+          tar -xzf "$RUNNER_TEMP/CindersOfChaos-Server-Linux.tar.gz" -C "$RUNNER_TEMP/srv"
           cd "$RUNNER_TEMP/srv/CindersOfChaos-Server-Linux"
           sed -i -E 's/^ip = ".*"/ip = "10.0.2.2"/' server/config.lua
           grep -E '^ip = ' server/config.lua
           ./start-server.sh -d
-          for _ in $(seq 1 600); do grep -q "Server Online" logs/server.log 2>/dev/null && break; sleep 1; done
+          for _ in $(seq 1 600); do if grep -q "Server Online" logs/server.log 2>/dev/null; then break; fi; sleep 1; done
           grep -q "Server Online" logs/server.log || { tail -n 60 logs/server.log; echo "::error::the server did not start"; exit 1; }
           ./add-account.sh phonetest phonetest1 "Phone Tester" warrior
           # group 6 (god: access, may attack monsters), so the test can place its NPC and monster (/s, /m) and jump (/a);

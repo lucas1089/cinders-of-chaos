@@ -164,7 +164,8 @@ jobs:
         run: |
           # install step contentareas: numpy (area_plan_place.py reads the map; python3 -I does not see pip's user
           # site) and luajit (hunt_teleports_dump.lua reads the teleport room config)
-          sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy luajit
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-numpy luajit
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p base work
           tar -xJf assets/server/base-server.tar.xz -C base
@@ -226,7 +227,8 @@ jobs:
           tar -xJf assets/server/base-server.tar.xz -C base --wildcards --no-wildcards-match-slash \
             '*/CMakeLists.txt' '*/cmake' '*/src' || true
           if ! compgen -G 'base/*/src' > /dev/null || ! compgen -G 'base/*/CMakeLists.txt' > /dev/null; then
-            rm -rf base && mkdir base
+            rm -rf base
+            mkdir base
             tar -xJf assets/server/base-server.tar.xz -C base
           fi
           mv base/*/ server  # the archive holds one folder: the base server
@@ -682,7 +684,8 @@ jobs:
         id: editor
         run: |
           set -euo pipefail
-          sudo apt-get update -qq && sudo apt-get install -y -qq luajit
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq luajit
           (python3 -I chaos/server/tools/gen_editor_scripts.py cinderspack > cinderspack.log 2>&1) &
           pack_pid=$!
           src=$(python3 -I chaos/tools/windows/editor_release.py repo)
@@ -694,7 +697,8 @@ jobs:
               echo "map editor: our build, release $tag of $GITHUB_REPOSITORY"
               ok=
               for try in 1 2 3; do
-                rm -rf editordl && mkdir editordl
+                rm -rf editordl
+                mkdir editordl
                 gh release download "$tag" -R "$GITHUB_REPOSITORY" -D editordl -p '*-windows-x64.zip' \
                   -p '*-source.zip' -p SHA256SUMS.txt -p BUILD_INFO.txt || { sleep 30; continue; }
                 if python3 -I chaos/tools/windows/editor_release.py verify editordl --ours > editor.env; then
@@ -717,7 +721,8 @@ jobs:
             echo "map editor: upstream $src, release $tag"
             ok=
             for try in 1 2 3; do
-              rm -rf editordl && mkdir editordl
+              rm -rf editordl
+              mkdir editordl
               gh release download "$tag" -R "$src" -D editordl -p '*-windows-x64.zip' -p '*-source.zip' \
                 -p SHA256SUMS.txt -p update-manifest.json || { sleep 60; continue; }
               if python3 -I chaos/tools/windows/editor_release.py verify editordl > editor.env; then ok=1; break; fi
@@ -913,7 +918,8 @@ jobs:
           # pair, the single Tibia.spr (it cannot read shards), since the client no longer ships data/things loose.
           wait "$verify_pid"  # fails the step (set -e) when the shards differ from the single spr
           find things -maxdepth 1 -type f -name 'Tibia.*' -exec mv -t "$P/mapeditor/client/" {} +
-          test -f "$P/mapeditor/client/Tibia.dat" && test -f "$P/mapeditor/client/Tibia.spr"
+          test -f "$P/mapeditor/client/Tibia.dat"
+          test -f "$P/mapeditor/client/Tibia.spr"
           # the editors' sprite info file: without a .otfi beside the dat a map editor takes transparency as off and
           # reads our RGBA spr as RGB (black boxes and stripes in the item palette, owner 2026-11-02); read from the spr
           python3 -I chaos/tools/windows/editor_versions.py "$P/mapeditor/client" --otfi "$P/mapeditor/client/Tibia.otfi"
@@ -1122,7 +1128,8 @@ jobs:
 
       - name: Check the compiled engine
         run: |
-          test -x work/server/build/tfs && ls -la work/server/build/tfs
+          test -x work/server/build/tfs
+          ls -la work/server/build/tfs
           # patch 0068: PIE, RELRO, BIND_NOW, stack protector, FORTIFY (also for a cached binary)
           bash chaos/tools/linux/check_engine_hardening.sh work/server/build/tfs
 
@@ -1170,7 +1177,8 @@ jobs:
             ./stop-server.sh || true
             exit 1
           fi
-          timeout 5 bash -c 'echo > /dev/tcp/127.0.0.1/7171' && timeout 5 bash -c 'echo > /dev/tcp/127.0.0.1/7172'
+          timeout 5 bash -c 'echo > /dev/tcp/127.0.0.1/7171'
+          timeout 5 bash -c 'echo > /dev/tcp/127.0.0.1/7172'
           ./add-account.sh smoketest smoketest1 "Smoke Tester" mystic
           ./stop-server.sh
           if pgrep -af "$RUNNER_TEMP/smoke"; then
