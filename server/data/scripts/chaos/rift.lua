@@ -1920,14 +1920,39 @@ local function groundTick(run, now)
 end
 
 -- a marked strike: the mark now, the hit warnMs later on every run player within radius of it
-local function markedStrike(run, at, radius, warnMs, share, element, markEffect)
+local function markedStrike(run, at, radius, warnMs, share, element, markEffect, colour)
 	local rid, slot = run.id, run.slot
-	for dx = -radius, radius do
-		for dy = -radius, radius do
-			if math.max(math.abs(dx), math.abs(dy)) == radius or radius <= 1 then
-				Position(at.x + dx, at.y + dy, at.z):sendMagicEffect(markEffect or CONST_ME_MAGIC_RED or CONST_ME_POFF)
+	-- the floor mark of game_telegraph (O549): the whole square the strike hits, once; the sprite ring below goes only to the
+	-- players near it that do not have the module (everybody when none has it)
+	local mark
+	if ChaosTelegraph then
+		local area = {}
+		for dx = -radius, radius do
+			for dy = -radius, radius do
+				area[#area + 1] = {x = at.x + dx, y = at.y + dy, z = at.z}
 			end
 		end
+		run.markSeq = (run.markSeq or 0) + 1
+		mark = ChaosTelegraph.open("rf:" .. rid .. ":" .. run.markSeq, area, {ms = warnMs, color = colour, user = "rift"})
+	end
+	local function ring(who)
+		for dx = -radius, radius do
+			for dy = -radius, radius do
+				if math.max(math.abs(dx), math.abs(dy)) == radius or radius <= 1 then
+					local pos = Position(at.x + dx, at.y + dy, at.z)
+					if who then
+						pos:sendMagicEffect(markEffect or CONST_ME_MAGIC_RED or CONST_ME_POFF, who)
+					else
+						pos:sendMagicEffect(markEffect or CONST_ME_MAGIC_RED or CONST_ME_POFF)
+					end
+				end
+			end
+		end
+	end
+	if mark and ChaosTelegraph then
+		ChaosTelegraph.draw(mark, ring)
+	else
+		ring(nil)
 	end
 	addEvent(function(p0)
 		local r = RF.runs[slot]
@@ -1954,7 +1979,7 @@ local function stormTick(run, now)
 	run.stormAt = now + s.every
 	for _, p in ipairs(targets(run, now)) do
 		markedStrike(run, R.nearTile(p:getPosition(), s.near, rand), s.radius, s.warnMs, run.fx.storm, "energy",
-			CONST_ME_PURPLEENERGY)
+			CONST_ME_PURPLEENERGY, "violet")
 	end
 end
 

@@ -536,8 +536,8 @@ function Position(x, y, z)
 	return setmetatable({x = x, y = y, z = z}, Pos)
 end
 local effects = {}
-function Pos:sendMagicEffect(id)
-	effects[#effects + 1] = {x = self.x, y = self.y, id = id}
+function Pos:sendMagicEffect(id, who)
+	effects[#effects + 1] = {x = self.x, y = self.y, id = id, who = who}
 end
 function Pos:getDistance(o)
 	return math.max(math.abs(self.x - o.x), math.abs(self.y - o.y))
@@ -899,6 +899,93 @@ if EventCallback.onSpawn then
 end
 creatures[shown.id] = nil
 ChaosHuntTeleports = nil
+
+-- floor telegraphs (O549, telegraph.lua): the telegraph opens one floor mark with its tiles and time, and its sprite pulses go through
+-- ChaosTelegraph.draw: to everybody (nobody near has game_telegraph), to one player (a mixed crowd) or to nobody (all have it)
+do
+	cfg.profiles["mark boss"] = {label = "Marker", size = 1, element = "fire", difficulty = 0, every = 900000, firstMs = 500,
+		compensate = false,
+		telegraphs = {{key = "slam", label = "Slam", kind = "circle", radius = 2, share = 0.1, hit = "x", fallback = 1}}}
+	local mode = "all"
+	local opened, closed, who = {}, {}, nil
+	ChaosTelegraph = {
+		open = function(id, tiles, opts)
+			opened[#opened + 1] = {id = id, n = #tiles, ms = opts.ms, user = opts.user}
+			return {id = id}
+		end,
+		draw = function(h, fn)
+			check(h and h.id == opened[#opened].id, "draw gets the mark that open returned")
+			if mode == "all" then
+				fn(nil)
+			elseif mode == "some" then
+				fn(who)
+			end
+		end,
+		effectTo = function(w, pos, name, fallback)
+			effects[#effects + 1] = {x = pos.x, y = pos.y, id = fallback, who = w}
+		end,
+		circleTo = function() end,
+		move = function() end,
+		closePrefix = function(prefix) closed[#closed + 1] = prefix end,
+	}
+	for _, c in pairs(creatures) do
+		if c.player then c.pos = {x = 300, y = 300, z = 7} end
+	end
+	local function run(m)
+		mode = m
+		opened, effects = {}, {}
+		local mb = make({name = "Mark Boss", pos = {x = 200, y = 200, z = 7}, hp = 100000})
+		local pl = make({name = "Marked", player = true, pos = {x = 200, y = 201, z = 7}, hp = 10000})
+		mb.target = pl.id
+		who = pl
+		local mf = M.attach(mb, nil, {center = {x = 200, y = 200, z = 7}, radius = 8})
+		check(mf ~= nil, "attached (" .. m .. ")")
+		runTo(T + 700)
+		return mb, pl
+	end
+	local mb, pl = run("all")
+	check(#opened == 1, "one floor mark for the telegraph")
+	check(opened[1] and opened[1].id == "bm:" .. mb.id .. ":1", "its id names the fight and counts the marks")
+	check(opened[1] and opened[1].user == "bossMechanics", "its user key")
+	check(opened[1] and opened[1].n > 5 and opened[1].ms > 500, "its tiles and its time to the hit")
+	local broadcast = 0
+	for _, e in ipairs(effects) do
+		check(e.who == nil, "nobody has the module: the marks go to everybody")
+		broadcast = broadcast + 1
+	end
+	check(broadcast > 0, "and they are drawn")
+	creatures[mb.id] = nil
+	runTo(T + 500)
+	check(closed[#closed] == "bm:" .. mb.id .. ":", "the end of the fight closes its floor marks")
+	mb, pl = run("some")
+	local toOne = 0
+	for _, e in ipairs(effects) do
+		check(e.who == pl, "a mixed crowd: the marks go to the one player without the module")
+		toOne = toOne + 1
+	end
+	check(toOne > 0, "and they are drawn for that player")
+	creatures[mb.id] = nil
+	runTo(T + 500)
+	mb, pl = run("none")
+	check(#effects == 0, "everybody near has the module: no sprite marks")
+	check(#opened == 1, "but the floor mark is open")
+	creatures[mb.id] = nil
+	runTo(T + 500)
+	-- the switch off or no room for the mark (open returns nil): the sprite marks go to everybody
+	ChaosTelegraph.open = function() return nil end
+	ChaosTelegraph.draw = function() check(false, "draw is not asked without a mark") end
+	opened, effects = {}, {}
+	mb, pl = run("all")
+	local plain = 0
+	for _, e in ipairs(effects) do
+		check(e.who == nil, "no mark: marks for everybody")
+		plain = plain + 1
+	end
+	check(plain > 0, "no floor mark: the sprite marks are drawn as before")
+	creatures[mb.id] = nil
+	runTo(T + 500)
+	ChaosTelegraph = nil
+end
 
 print(string.format("boss_mechanics_test: %d checks, %d failures", count, failures))
 if failures > 0 then

@@ -238,7 +238,11 @@ local function bigFx(fn, ...)
 	end
 end
 
-local function fxAt(pos, name, fallback)
+local function fxAt(pos, name, fallback, who)
+	if who and ChaosTelegraph then
+		ChaosTelegraph.effectTo(who, pos, name, fallback) -- one player's sprite marks (O549)
+		return
+	end
 	if Vfx and ChaosVfx and ChaosVfx[name] then
 		Vfx(pos, name)
 	elseif fallback then
@@ -815,6 +819,13 @@ local function telegraph(run, tiles, hitFnc, warnMs, centers, label)
 			end)
 		end
 	end
+	-- the floor mark of game_telegraph (O549): the area once now; the sprite marks below go only to the players near it
+	-- that do not have the module (everybody when none has it)
+	local mark
+	if ChaosTelegraph then
+		run.markSeq = (run.markSeq or 0) + 1
+		mark = ChaosTelegraph.open("rd:" .. slot .. ":" .. run.markSeq, tiles, {ms = hitMs, user = "raid"})
+	end
 	for i, ms in ipairs(marks) do
 		local filling = kinds[i] == "fill"
 		local effect = filling and cfg.telegraph.fillEffect or cfg.telegraph.warnEffect
@@ -822,14 +833,30 @@ local function telegraph(run, tiles, hitFnc, warnMs, centers, label)
 			if not live() then
 				return
 			end
-			if i == 1 then
-				bigFx("telegraph", tiles)
+			local function pulse(who)
+				if i == 1 then
+					if who then
+						pcall(ChaosTelegraph.circleTo, who, tiles, false)
+					else
+						bigFx("telegraph", tiles)
+					end
+				end
+				for _, t in ipairs(plan.big) do
+					fxAt(P(t), effect, CONST_ME_MAGIC_RED, who)
+				end
+				for _, t in ipairs(plan.small) do
+					local stock = filling and CONST_ME_DRAWBLOOD or CONST_ME_MAGIC_RED
+					if who then
+						P(t):sendMagicEffect(stock, who)
+					else
+						P(t):sendMagicEffect(stock)
+					end
+				end
 			end
-			for _, t in ipairs(plan.big) do
-				fxAt(P(t), effect, CONST_ME_MAGIC_RED)
-			end
-			for _, t in ipairs(plan.small) do
-				P(t):sendMagicEffect(filling and CONST_ME_DRAWBLOOD or CONST_ME_MAGIC_RED)
+			if mark and ChaosTelegraph then
+				ChaosTelegraph.draw(mark, pulse)
+			else
+				pulse(nil)
 			end
 		end, ms)
 	end
@@ -1573,6 +1600,9 @@ closeRun = function(run, mode)
 			it:remove()
 		end
 		run.finalExit = nil
+	end
+	if ChaosTelegraph then
+		pcall(ChaosTelegraph.closePrefix, "rd:" .. run.slot .. ":") -- floor marks of a hit that never lands (O549)
 	end
 	X.runs[run.slot] = nil
 	S().saveInstance(run.inst)

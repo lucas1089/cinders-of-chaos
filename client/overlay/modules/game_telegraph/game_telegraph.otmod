@@ -1,0 +1,13 @@
+Module
+  name: game_telegraph
+  description: Floor telegraphs (O549) - boss attacks mark the floor: a flat translucent orange fill on every tile of the attack area and a bright line round the whole area, under the creatures; the server sends the area on the monster bar's extended opcode 125 (game_monsterbar hands the actions floor and floorclear over) and leaves the sprite pulses to clients that did not say hello
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ telegraph_logic, telegraph ]
+  dependencies:
+    - game_interface
+    - game_monsterbar
+  autoload: true
+  autoload-priority: 1007
+  @onLoad: init()
+  @onUnload: terminate()

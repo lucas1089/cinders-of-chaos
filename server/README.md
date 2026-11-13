@@ -672,7 +672,7 @@ working directory, as with the rest of the base server libs).
 | game_gamble | `gamble.lua`, `gamble_core.lua`, `gamble_config.lua`, `tools/install_gamble.py`, NPC `data/npc/Mordecai Ashwager.xml` | **199**, the Gambler NPC (no top menu entry), the Gambler next to the main temple | The Gambler: per character a stock of 14 sealed pieces (base type, slot and item level shown, rarity hidden) from a seed of the character and the 4-hour window (00:00, 04:00, ... server time), sold slots in player storages, gold prices by item level and slot (about 18% of an hour of hunting per piece), the rarity rolled at the purchase with the loot layer's roll after the gold and a save, a paid early refresh (see "The Gambler"). Unit and mocked-engine tests; tested on a live test server (full map) with one client. |
 | game_candlemarks | `candlemarks.lua`, `candlemarks_core.lua`, `candlemarks_config.lua`, `sql/chaos_candlemarks.sql`, `tools/install_candlemarks.py`, NPC `data/npc/Osric the Chandler.xml` | **176**, Osric the Chandler (no top menu entry), the counter next to the menu bar, Osric the Chandler next to the temples | Candlemarks: one per 30 minutes online for every online character (2 per IP at most) into the account balance; a shop of pocket boss charges, common orbs, gems, supplies and guarded offers for other systems' APIs, weekly limits, crash-safe purchases (see "Candlemarks"). Unit, mocked-engine and fuzz tests; not run live. |
 | game_conquest | `conquest.lua`, `conquest_core.lua`, `conquest_config.lua`, `sql/chaos_conquest.sql`, `tools/install_conquest.py`, NPC `data/npc/Iselde Varrow.xml` (hooks in `loot.lua`, `itemsets.lua`, `raid.lua`, `rift.lua`, `dungeons.lua`, `descent.lua`, `invasion.lua`, `salvage.lua`, `uber.lua`) | **167**, Iselde Varrow (no top menu entry), Iselde Varrow next to the main temple | Conquest Tokens from every boss and clear, a vendor of every unique and set piece the character has seen, Omen Keys and Ascended Shards of a chosen kind and their conversion, a deterministic rarity step, bad-luck protection on boss, set, raid and monster uniques (see "Conquest Tokens, the Conquest vendor and bad-luck protection"). Unit and mocked-engine tests; not run on a live server. |
-| game_monsterbar (cast bar) | `boss_mechanics.lua`, `boss_mechanics_core.lua`, `boss_mechanics_config.lua` (hooks in `worldboss.lua`, `uber.lua`, `guildboss.lua`, `rift.lua`; `raid.lua` sends the cast bar too) | 125 (action `mech`, server -> client; no new opcode) | Boss mechanics: telegraphs, adds phases, soft enrage, debuffs, soak, channels with totems, pillar blasts and the cast bar (see "Boss mechanics"). Unit, grid-simulation and mocked-engine tests; not run on a live server. |
+| game_monsterbar (cast bar) | `boss_mechanics.lua`, `boss_mechanics_core.lua`, `boss_mechanics_config.lua` (hooks in `worldboss.lua`, `uber.lua`, `guildboss.lua`, `rift.lua`; `raid.lua` sends the cast bar too) | 125 (action `mech`, server -> client; no new opcode) | Boss mechanics: telegraphs, adds phases, soft enrage, debuffs, soak, channels with totems, pillar blasts and the cast bar (see "Boss mechanics"). Unit, grid-simulation and mocked-engine tests; not run on a live server. The floor marks of the telegraphs (O549): see "Floor telegraphs (O549)". |
 
 ### Extended opcodes in use
 
@@ -702,7 +702,7 @@ collision check") and be added here.
 | 121 | `npcTravel` | `npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua` | `game_npctravel` | client -> server `travel {k}` (a key of `npc_travel_config.lua` `npcs`); the answer is a game message (status line, or the reason as a cancel message), see "Travel to an NPC (O330)" |
 | 122 | `survey` | `survey.lua`, `survey_core.lua`, `survey_config.lua` | `game_chaossurvey` | server -> client `open {s, max}` (the stage, level 20 or 50, and the text limit) and `done {s}`; client -> server `answer {s, fun, rec, text, src}` / `skip {s}`, once per account and stage, see "New player funnel and survey (O374)" |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
-| 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
+| 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua`, `telegraph.lua` | `game_monsterbar`, `game_telegraph` | server -> client `info` / `mech`; O549 (no new opcode): server -> client `floor {id, z, x0, y0, t = [[dx, dy]], c, ms}` and `floorclear {id}`, client -> server `floorhello {v = 1}` (floor telegraphs, see "Floor telegraphs (O549)"; `game_monsterbar` owns the opcode and hands these two actions to `game_telegraph`) |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
 | 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua`, `radar.lua` | `game_mapmarkers`, `game_minimapdots` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked`; O415: `poi.lua` action `npcmarks` (the marks over NPC heads); O543: `radar.lua` action `radar` (the monsters within 30 tiles; `game_mapmarkers` owns the client handler and passes it to `game_minimapdots`) |
@@ -11372,6 +11372,7 @@ donor bosses) is attached at its first think after the spawn (an `onSpawn` Event
 monster_tiers.lua does), with a box of radius 8 round it as the arena (walkable tiles only). The Ascended bosses, the
 Cinderheart and the guild boss keep their own telegraphs, hazards, adds and enrage (`ownTelegraphs`); the profile adds
 the mechanics below on top, and while one of those runs (`ChaosBossMech.busy`) they draw no telegraph of their own.
+The marks of every telegraph lie on the floor as one translucent area with an outline since O549 ("Floor telegraphs (O549)").
 
 **Dungeon difficulty does not scale the mechanics (beta 2026-10-24).** The mechanics' hits are a share of the victim's
 max health (telegraph `share`, soak `total` / `missShare`, channel and blast `share`), so they are already tuned to the
@@ -11583,6 +11584,56 @@ line, puddles and blast and Morvane's ring as 4 x 4 Omen guardians in a rift cha
 and client (the machine had 3.6 GB free, under the 4 GB a test server needs); the `warning_zone` / `warning_fill`
 strips are in the client pair only, so the renders draw a red tile in their place. The attach paths in worldboss.lua,
 uber.lua, guildboss.lua and rift.lua are guarded (`ChaosBossMech` nil in their tests) and not exercised by those tests.
+
+## Floor telegraphs (`telegraph.lua`, `telegraph_core.lua`, `telegraph_config.lua`, client `game_telegraph`; O549)
+
+Owner 2026-11-13: boss attacks mark the floor like a picture he sent. Every tile of the attack's area gets a flat translucent orange
+fill and the outline of the whole area (only the outer edges of the union of the tiles) a bright orange line, under the creatures.
+The client draws it (client/MANIFEST.md "Floor telegraphs (O549)"); the server sends the area once and clears it. Before, every
+telegraph was a sprite effect pulsing on each tile (`warning_zone` and `warning_fill`, the red magic effect, the pair 27 and big
+warning circles of `chaos_pack27_fx.lua` / `chaos_big_fx.lua`) every 600 ms.
+
+**Protocol.** No new opcode: the monster bar's 125 (`ChaosOpcodes.monsterbar`, "Opcode collision check" unchanged; `game_monsterbar`
+owns the opcode on the client and hands these two actions to `game_telegraph`). Server -> client `floor` `{id, z, x0, y0,
+t = [[dx, dy]], c = colour key, ms = ms to the hit}` (the area, whole, tiles relative to `x0, y0`, sorted by row; about 6 bytes a
+tile, at most 300 tiles = under 2 KB, so never chunked) and `floorclear` `{id}`; client -> server `floorhello` `{v = 1}`. The
+colour key is `orange` (a boss attack), `red`, `green`, `violet` (the rift Veilstorm strike) or `blue`; the client draws the colours.
+
+**Who gets what.** A client that says `floorhello` is *capable*: it gets the area and **no** per-tile sprite pulse of that
+telegraph (the sprite hit effect at the impact stays). A client that did not say it (no module, an old client, an engine without
+`Tile:setFloorWidget`) gets the sprite marks **exactly** as before. The helper works that out per pulse from the players that can
+see the area now (its floor, its bounding box plus the client's view `rangeX` / `rangeY`): `ChaosTelegraph.draw(mark, fn)` calls
+`fn(nil)` when nobody near is capable (the effects go to everybody, as before O549: the same calls and arguments as the old code),
+`fn(player)` once for every non-capable player when the crowd is mixed (`position:sendMagicEffect(effect, player)`, TFS 1.4's player
+argument; `ChaosTelegraph.effectTo` and `circleTo` do what `Vfx` and the big circles do for one player, with the same offsets), and
+nothing when every player near is capable. A player who walks into view later gets the area on the next 250 ms tick with the time
+that is left; one who walks away is told to clear it; a player's hello sends what is up near it at once; logout forgets the
+player. A mark is dropped at its hit time plus `graceMs` (the client drops it at the hit by itself) and when the fight ends.
+
+**API** (any boss script; each call site checks `ChaosTelegraph` first, so the old path is untouched when the file is not loaded):
+`ChaosTelegraph.open(id, tiles, {ms, color, user})` (nil when the switch is off, the user key is off, the area is over `maxTiles`,
+the id is bad or the time is outside `minMs` .. `maxMs`: the caller then draws the sprite marks for everybody), `.move(mark, tiles
+[, ms])` (a follow circle that moved or locked: everybody near gets the whole area again), `.draw(mark, fn)`, `.close(id)`,
+`.closePrefix("bm:12:")`. Ids are strings of letters, digits and `: _ - .` up to 64 characters, one mark per id.
+
+**Wired in** (every place that drew a boss telegraph; `user` key in `telegraph_config.lua`, each can be turned off alone):
+`boss_mechanics.lua` (`bossMechanics`: circle, cone, line, ring, cross, puddles and follow, id `bm:<boss id>:<n>`; a follow circle
+sends the new area at every move; `cleanup` closes the fight's marks), `uber.lua` (`uber`, `ub:<run>:<n>`), `guildboss.lua`
+(`guildBoss`, `gb:`), `raid.lua` (`raid`, `rd:<slot>:<n>`), `rift.lua` (`rift`: the Wrathful Guardian's nova, orange, and the
+Veilstorm strike, violet, in `markedStrike`; the floor mark is the whole square the strike hits, the sprite ring stays for the
+players without the module), `trials.lua` and `ascension_quest.lua` (`trials`, `tz:<player>:<n>`: the fire zones). The Ascended,
+guild and raid files close their marks when the run is torn down (the rift and trial marks are over within 1.5 s anyway). The soak circle (green), the line-of-sight blast, hazards
+and the pyre safe lights are not attack areas: they keep their sprites. The waystone map affix strike in `waystone_mods.lua` is a map
+modifier, not a boss: unchanged.
+
+**Tests.** `tests/telegraph_test.lua` (278 checks, both interpreters): the opcode is the monster bar's and not duplicated, ids and
+colours, the union of the tiles (dedupe, floors, the cap), the outline of the union (a tile, a bar, a block, an L, a ring, two
+overlapping areas), the payload and its size, who gets what (told once, a new viewer, a viewer who left, a follow move, a replaced
+id), the clear at the hit and at the end of a fight, the hello, the sprite mode, and the glue against a mocked engine (capable and
+non-capable players, the sprite pulse sent to the right ones, login, logout, the loop). `tests/boss_mechanics_test.lua` runs a real
+telegraph with a mocked `ChaosTelegraph` in the four cases (nobody capable, a mixed crowd, everybody capable, no mark).
+**Not checked:** a live server (the player argument of `Position:sendMagicEffect` and the `Game.getSpectators` call are the stock
+TFS 1.4 ones, assumed) and a client.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
