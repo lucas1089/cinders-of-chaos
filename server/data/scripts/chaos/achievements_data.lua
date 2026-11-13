@@ -55,6 +55,7 @@
 --   pvpzone_kills, pvpzone_banked, pvpzone_haul, pvpzone_captures   the Scorched Marches (pvpzone.lua)
 --   prof_<delving|wortcunning|flaying|angling>, prof_total          professions (professions.lua: the level; all four levels together)
 --   cinderhold_tale                                                  the Tale of Cinderhold (tales.lua: chapters done; login, turn-in)
+--   mainquest_boss                                                   the main quest's last page (mainquest_boss.lua: Vael Ashmourn slain, 1)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible; no engine calls (also read by server/tests/achievements_test.lua).
 
 local CHAOS, DIVINE, EXALTED = 29856, 29857, 29855
@@ -499,6 +500,10 @@ return {
 			points = 15, stat = "cinderhold_tale", target = 5},
 		{id = "cinderhold_10", cat = "explore", name = "Keeper of the Founding", desc = "Finish all ten chapters of the Tale of Cinderhold.",
 			points = 50, stat = "cinderhold_tale", target = 10, title = "Keeper of the Founding"},
+
+		-- the main quest "The Ember Oath" (O551, mainquest_boss.lua): Vael Ashmourn slain alone
+		{id = "mainquest_boss", cat = "explore", name = "Ember-Sworn", desc = "Slay Vael Ashmourn, the Unsworn Warden, alone: the last page of the main quest.",
+			points = 25, stat = "mainquest_boss", target = 1, title = "Ember-Sworn"},
 
 		-- mentors (mentor.lua): mentor_graduates = apprentices this character mentored to graduation (with enough time
 		-- hunting together); mentor_fledged = 1 once this character graduated from a mentor

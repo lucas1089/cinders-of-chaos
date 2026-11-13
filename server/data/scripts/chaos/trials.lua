@@ -75,6 +75,7 @@ T.bad = T.bad or {}
 T.monsterRun = T.monsterRun or {} -- monster id -> player id
 T.fast = T.fast or {} -- player id -> true: a GM shortened the next run (boss health 1)
 T.hooks = T.hooks or {}
+T.hookFor = T.hookFor -- function(tr) -> {won, failed} of a quest other than the line spell quests (mainquest_boss.lua), or nil
 T.spellHook = T.spellHook -- {won = function(player, run) -> {lines}, failed = function(player, run, how)}; set by spellquest.lua
 
 local function C()
@@ -605,7 +606,7 @@ local function startStage(tr)
 			finish(tr.pid, "error", "The guardian did not answer the call. Nothing is lost; please tell the staff.")
 			return
 		end
-		dress(m, tr.fam.boss.look, tr.fam.boss.name)
+		dress(m, tr.fam.boss.look, bossName(tr))
 		setHealth(m, T.fast[tr.pid] and 200 or scale.hp)
 		m:registerEvent("ChaosTrialMonsterDeath")
 		T.monsterRun[m:getId()] = tr.pid
@@ -618,10 +619,20 @@ local function startStage(tr)
 		if m.selectTarget then
 			m:selectTarget(player)
 		end
-		tr.notes = {ChaosI18n.msg("%s awakens.", tr.fam.boss.name)}
-		say(tr, "%s awakens. %s", tr.fam.boss.name, ChaosI18n.msg(tr.fam.story))
+		tr.notes = {ChaosI18n.msg("%s awakens.", bossName(tr))}
+		say(tr, "%s awakens. %s", bossName(tr), ChaosI18n.msg(tr.fam.story))
 	end
 	sendHud(tr, "update")
+end
+
+-- the boss's shown name: the family's, or another quest's (the main quest's Vael Ashmourn: T.bossNameFor, mainquest_boss.lua)
+local function bossName(tr)
+	local f = T.bossNameFor
+	local ok, name = false, nil
+	if f and tr.spell then
+		ok, name = pcall(f, tr)
+	end
+	return ok and name or tr.fam.boss.name
 end
 
 local function nextStage(tr)
@@ -673,7 +684,7 @@ local function spawnBossAdds(tr, player)
 		end
 		spawnThrall(tr, pos, tr.scale.addHp)
 	end
-	say(tr, "%s calls for aid!", tr.fam.boss.name)
+	say(tr, "%s calls for aid!", bossName(tr))
 end
 
 local function zones(tr, player)
@@ -1027,8 +1038,8 @@ function finish(pid, how, text)
 		player:removeCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT)
 		clearMarker(player)
 		if how == "won" and tr.spell then
-			-- a spell trial: the quest pays (spellquest.lua sets the hook), not the tiers
-			local hook = T.spellHook
+			-- a spell trial: the quest pays (spellquest.lua sets the hook; the main quest's boss has its own, T.hookFor), not the tiers
+			local hook = T.hookFor and T.hookFor(tr) or T.spellHook
 			local lines = {}
 			if hook and hook.won then
 				local ok, res = pcall(hook.won, player, tr)
@@ -1073,7 +1084,7 @@ function finish(pid, how, text)
 			local fail = how == "error" and Chaos.t(player, text or "The trial could not begin. Nothing is lost.")
 				or Chaos.t(player, "%s Nothing is lost.", Chaos.t(player, text or "You have failed the trial."))
 			if tr.spell then
-				local hook = T.spellHook
+				local hook = T.hookFor and T.hookFor(tr) or T.spellHook
 				if hook and hook.failed then
 					local ok, err = pcall(hook.failed, player, tr, how)
 					if not ok then
@@ -1155,6 +1166,14 @@ T.hooks.preHit = function(player, attacker, pd, pt, sd, st, origin)
 	end
 	-- a share of the maximum health; a Hollow Vessel counts health + maximum energy shield (Chaos.percentBase)
 	local amount = math.max(1, math.floor(Chaos.percentBase(player) * share * (0.85 + math.random() * 0.3)))
+	-- the main quest's boss: the hit is of one element and the player's resistance to it counts (the share above replaces the hit the
+	-- defence layer worked out, so without this the resistances would never matter here; mainquest_boss.lua T.questHit)
+	if tr.spell and T.questHit then
+		local ok, v = pcall(T.questHit, player, tr, isBoss, amount)
+		if ok and tonumber(v) then
+			amount = math.max(1, math.floor(v))
+		end
+	end
 	return -amount, 0
 end
 
