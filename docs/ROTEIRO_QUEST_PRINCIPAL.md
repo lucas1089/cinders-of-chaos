@@ -27,13 +27,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 1.3 Ande até o território dos Trolls (nível 8)
 
-- Objetivo: Chegue a the Troll ground (marca no mapa).
+- Objetivo: Ande até o território dos Trolls (a marca está no mapa).
 - Dica: Siga a marca no mapa até o território dos Trolls. O minimapa mostra o caminho.
 - Conclusão (Ysolde): Você chegou inteiro. A maioria perde a trilha na primeira curva.
 
 ### 1.4 Mate 12 Trolls (nível 8)
 
-- Objetivo: Mate 12 (Troll).
+- Objetivo: Mate 12 Trolls (monstros: Troll).
 - Dica: Mire num Troll e ataque. Magias e golpes saem sozinhos com o Auto setup ligado.
 - Conclusão (Ysolde): Doze a menos. Eles voltam, sempre voltam, mas hoje a trilha está mais segura.
 
@@ -45,7 +45,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 1.6 Colete 6 Presas de Troll (nível 8)
 
-- Objetivo: Colete 6 Presa de Troll dos monstros (Troll).
+- Objetivo: Colete 6 Presas de Troll (monstros: Troll).
 - Dica: Trolls carregam presas que a Vigília paga bem. Elas só caem enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Presas inteiras. Leve-as à Ysolde.
 
@@ -81,7 +81,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 1.12 Mate 15 Minotauros (nível 10)
 
-- Objetivo: Mate 15 (Minotaur).
+- Objetivo: Mate 15 Minotauros (monstros: Minotaur).
 - Dica: A caçada de Minotauros é o próximo degrau. Observe a vida e beba a tempo.
 - Conclusão (Ysolde): Minotauros não perdoam descuido. Você não descuidou.
 
@@ -121,19 +121,19 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 2.2 Ande até a cripta dos Ghouls (nível 15)
 
-- Objetivo: Chegue a the Ghoul crypt (marca no mapa).
+- Objetivo: Ande até a cripta dos Ghouls (a marca está no mapa).
 - Dica: A cripta fica a leste. Veja a marca no mapa.
 - Conclusão (Ysolde): Ar de tumba. Respire pela boca, é mais fácil.
 
 ### 2.3 Mate 20 Ghouls (nível 15)
 
-- Objetivo: Mate 20 (Ghoul).
+- Objetivo: Mate 20 Ghouls (monstros: Ghoul).
 - Dica: Ghouls vêm em bando. Lute num canto para que poucos alcancem você de uma vez.
 - Conclusão (Ysolde): A cripta ficou quieta. Por enquanto.
 
 ### 2.4 Colete 5 Cinzas de Túmulo (nível 15)
 
-- Objetivo: Colete 5 Cinza de Túmulo dos monstros (Ghoul).
+- Objetivo: Colete 5 Cinzas de Túmulo (monstros: Ghoul).
 - Dica: A Cinza de Túmulo cai dos Ghouls enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Cinza fresca de túmulo. É disso que o Juramento é feito.
 
@@ -151,7 +151,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 2.7 Mate 25 Gárgulas (nível 20)
 
-- Objetivo: Mate 25 (Gargoyle).
+- Objetivo: Mate 25 Gárgulas (monstros: Gargoyle).
 - Dica: Gárgulas batem forte mas param entre os golpes. Saia da frente e revide.
 - Conclusão (Ysolde): Pedra também quebra. Anote isso.
 
@@ -181,7 +181,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 2.12 Colete 4 Corações de Pedra (nível 22)
 
-- Objetivo: Colete 4 Coração de Pedra dos monstros (Gargoyle).
+- Objetivo: Colete 4 Corações de Pedra (monstros: Gargoyle).
 - Dica: Gárgulas guardam um coração de pedra. Eles só caem enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Pesados. Ainda batem, dizem. Levo à Ysolde.
 
@@ -199,7 +199,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 2.15 Mate 25 Gigantes de Gelo (nível 25)
 
-- Objetivo: Mate 25 (Frost Giant).
+- Objetivo: Mate 25 Gigantes de Gelo (monstros: Frost Giant).
 - Dica: Os Gigantes de Gelo são lentos e duros. Continue se movendo e use suas melhores magias.
 - Conclusão (Ysolde): Gelo quebrado, caminho livre.
 
@@ -239,19 +239,19 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 3.5 Ande até o acampamento dos Ogros (nível 35)
 
-- Objetivo: Chegue a the Ogre camp (marca no mapa).
+- Objetivo: Ande até o acampamento dos Ogros (a marca está no mapa).
 - Dica: O acampamento dos Ogros fica a leste. Veja a marca no mapa.
 - Conclusão (Ysolde): Cheiro forte, mas você chegou.
 
 ### 3.6 Mate 30 Ogre Brutes (nível 35)
 
-- Objetivo: Mate 30 (Ogre Brute).
+- Objetivo: Mate 30 Ogre Brutes (monstros: Ogre Brute).
 - Dica: Ogre Brutes avançam em linha. Desvie para o lado e acerte quando virarem.
 - Conclusão (Ysolde): Trinta a menos. O acampamento vai sentir.
 
 ### 3.7 Colete 6 Retalhos de Estandarte (nível 35)
 
-- Objetivo: Colete 6 Retalho de Estandarte dos monstros (Ogre Brute, Ogre Shaman).
+- Objetivo: Colete 6 Retalhos de Estandarte (monstros: Ogre Brute, Ogre Shaman).
 - Dica: Os Ogros rasgam retalhos de seus estandartes. Eles só caem enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Retalhos sujos de sangue. Servem de prova.
 
@@ -281,13 +281,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 3.12 Ande até o covil dos Dragões (nível 42)
 
-- Objetivo: Chegue a the Dragon lair (marca no mapa).
+- Objetivo: Ande até o covil dos Dragões (a marca está no mapa).
 - Dica: O covil fica a nordeste. Dragões cospem fogo: guarde uma poção.
 - Conclusão (Ysolde): Não se ouve nada. Isso é pior.
 
 ### 3.13 Mate 14 Dragões (nível 45)
 
-- Objetivo: Mate 14 (Dragon).
+- Objetivo: Mate 14 Dragões (monstros: Dragon).
 - Dica: Dragões cospem fogo em cone. A marca no chão mostra onde: saia dela.
 - Conclusão (Ysolde): Catorze dragões. Há bardos que morrem sem ver um.
 
@@ -317,13 +317,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 3.18 Mate 25 Wyrms (nível 60)
 
-- Objetivo: Mate 25 (Wyrm).
+- Objetivo: Mate 25 Wyrms (monstros: Wyrm).
 - Dica: Wyrms engolem fragmentos de Brasa. O sopro é largo: fique pelas bordas.
 - Conclusão (Ysolde): Vinte e cinco wyrms. A Vigília nem esperava tanto.
 
 ### 3.19 Colete 5 Brasas de Wyrm (nível 60)
 
-- Objetivo: Colete 5 Brasa de Wyrm dos monstros (Wyrm).
+- Objetivo: Colete 5 Brasas de Wyrm (monstros: Wyrm).
 - Dica: As Brasas de Wyrm só caem enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Ainda quentes. Mantenha longe das mãos.
 
@@ -341,7 +341,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 3.22 Mate 20 Wyrmblood Warmasters (nível 70)
 
-- Objetivo: Mate 20 (Wyrmblood Warmaster).
+- Objetivo: Mate 20 Wyrmblood Warmasters (monstros: Wyrmblood Warmaster).
 - Dica: Warmasters chamam aliados. Mate o conjurador primeiro quando puder.
 - Conclusão (Ysolde): Mestres de guerra caídos. Os próximos vão pensar duas vezes.
 
@@ -393,13 +393,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 4.8 Mate 25 Choking Fears (nível 105)
 
-- Objetivo: Mate 25 (Choking Fear).
+- Objetivo: Mate 25 Choking Fears (monstros: Choking Fear).
 - Dica: Choking Fears drenam mana e vida. Mantenha as poções prontas.
 - Conclusão (Ysolde): O hino parou de sufocar. Por ora.
 
 ### 4.9 Colete 5 Fragmentos de Hino (nível 105)
 
-- Objetivo: Colete 5 Fragmento de Hino dos monstros (Choking Fear).
+- Objetivo: Colete 5 Fragmentos de Hino (monstros: Choking Fear).
 - Dica: Os Fragmentos de Hino caem dos Choking Fears enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Letras de um canto antigo. Maelis vai querer ver.
 
@@ -429,7 +429,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 4.14 Mate 30 Bone Warriors (nível 125)
 
-- Objetivo: Mate 30 (Bone Warrior).
+- Objetivo: Mate 30 Bone Warriors (monstros: Bone Warrior).
 - Dica: Bone Warriors atacam em duplas. Lute com as costas numa parede.
 - Conclusão (Ysolde): Ossos no chão. Sem mais.
 
@@ -459,13 +459,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 4.19 Mate 30 Ironhorn Brutes (nível 155)
 
-- Objetivo: Mate 30 (Ironhorn Brute).
+- Objetivo: Mate 30 Ironhorn Brutes (monstros: Ironhorn Brute).
 - Dica: A forja Ironhorn é guardada por brutos que ignoram flechas. Use magias.
 - Conclusão (Ysolde): A forja ficou desprotegida. Interessante.
 
 ### 4.20 Colete 6 Engrenagens Ironhorn (nível 155)
 
-- Objetivo: Colete 6 Engrenagem Ironhorn dos monstros (Ironhorn Brute, Ironhorn Alchemist).
+- Objetivo: Colete 6 Engrenagens Ironhorn (monstros: Ironhorn Brute, Ironhorn Alchemist).
 - Dica: As Engrenagens caem dos monstros Ironhorn enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Engrenagens de uma máquina que não devia existir.
 
@@ -499,7 +499,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 5.4 Mate 30 Frost Hydras (nível 220)
 
-- Objetivo: Mate 30 (Frost Hydra).
+- Objetivo: Mate 30 Frost Hydras (monstros: Frost Hydra).
 - Dica: Frost Hydras congelam. A resistência a gelo importa aqui: veja o Character Info.
 - Conclusão (Ysolde): Hidras de gelo. A água do degelo nunca foi tão limpa.
 
@@ -529,13 +529,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 5.9 Mate 30 Archons (nível 260)
 
-- Objetivo: Mate 30 (Archon).
+- Objetivo: Mate 30 Archons (monstros: Archon).
 - Dica: Archons brilham e golpeiam com luz. Use sua resistência a Lightning.
 - Conclusão (Ysolde): Luz apagada. Um alívio, para ser sincera.
 
 ### 5.10 Colete 5 Últimas Luzes (nível 260)
 
-- Objetivo: Colete 5 Última Luz dos monstros (Archon).
+- Objetivo: Colete 5 Últimas Luzes (monstros: Archon).
 - Dica: As Últimas Luzes caem dos Archons enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Luzes que não se apagam sozinhas. Cuidado ao carregar.
 
@@ -563,7 +563,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 6.3 Mate 20 Slinkhides (nível 310)
 
-- Objetivo: Mate 20 (Slinkhide).
+- Objetivo: Mate 20 Slinkhides (monstros: Slinkhide).
 - Dica: Slinkhides atacam do escuro. Mantenha as costas cobertas.
 - Conclusão (Ysolde): Escuridão ficou mais limpa. Por enquanto.
 
@@ -575,13 +575,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 6.5 Mate 20 Mould Phantoms (nível 365)
 
-- Objetivo: Mate 20 (Mould Phantom).
+- Objetivo: Mate 20 Mould Phantoms (monstros: Mould Phantom).
 - Dica: Mould Phantoms envenenam. Mantenha uma cura à mão.
 - Conclusão (Ysolde): Mofo seco. O jardim agora é outro.
 
 ### 6.6 Colete 6 Esporos de Mofo (nível 365)
 
-- Objetivo: Colete 6 Esporo de Mofo dos monstros (Mould Phantom).
+- Objetivo: Colete 6 Esporos de Mofo (monstros: Mould Phantom).
 - Dica: Os Esporos caem dos Mould Phantoms enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Esporos fechados. Segure sem respirar.
 
@@ -605,7 +605,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 6.10 Mate 20 Druid's Apparitions (nível 405)
 
-- Objetivo: Mate 20 (Druid's Apparition).
+- Objetivo: Mate 20 Druid's Apparitions (monstros: Druid's Apparition).
 - Dica: Aparições piscam e golpeiam. Magias de área ajudam.
 - Conclusão (Ysolde): Os druidas descansam, finalmente.
 
@@ -617,13 +617,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 6.12 Ande até a costa dos Pyrarchs (nível 440)
 
-- Objetivo: Chegue a the Pyrarch coast (marca no mapa).
+- Objetivo: Ande até a costa dos Pyrarchs (a marca está no mapa).
 - Dica: Os Pyrarchs dominam a costa noroeste. Veja o mapa.
 - Conclusão (Ysolde): Sal e cinza no ar. Respire fundo.
 
 ### 6.13 Mate 20 Brinebrute Pyrarchs (nível 450)
 
-- Objetivo: Mate 20 (Brinebrute Pyrarch).
+- Objetivo: Mate 20 Brinebrute Pyrarchs (monstros: Brinebrute Pyrarch).
 - Dica: Pyrarchs queimam e afogam. As duas resistências importam agora.
 - Conclusão (Ysolde): Vinte Pyrarchs. A maré virou.
 

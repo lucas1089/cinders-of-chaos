@@ -14,13 +14,9 @@ local function objective(step)
 	for _, c in ipairs(step.conds) do
 		if c.c == "count" then
 			local list = table.concat(c.mons, ", ")
-			if c.item then
-				parts[#parts + 1] = string.format("Colete %d %s dos monstros (%s).", c.target, c.item.pt, list)
-			else
-				parts[#parts + 1] = string.format("Mate %d (%s).", c.target, list)
-			end
+			parts[#parts + 1] = string.format("%s (monstros: %s).", step.title.pt, list)
 		elseif c.c == "visit" then
-			parts[#parts + 1] = string.format("Chegue a %s (marca no mapa).", c.label)
+			parts[#parts + 1] = string.format("%s (a marca está no mapa).", step.title.pt)
 		elseif c.c == "talk" then
 			parts[#parts + 1] = "Fale com a Guardiã Ysolde e diga \"juramento\"."
 		elseif c.c == "boss" then
