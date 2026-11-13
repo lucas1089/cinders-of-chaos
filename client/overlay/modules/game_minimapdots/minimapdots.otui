@@ -1,0 +1,12 @@
+// Minimap radar (game_minimapdots): the dots sit in one layer inside the minimap widget and never take the mouse.
+// Size, colours and the ring are set from Lua (MinimapDotsLogic.style).
+
+MinimapDotLayer < UIWidget
+  phantom: true
+  focusable: false
+
+MinimapDot < UIWidget
+  size: 3 3
+  phantom: true
+  focusable: false
+  visible: false

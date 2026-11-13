@@ -1,0 +1,10 @@
+Module
+  name: game_minimaphd
+  description: HD minimap - the explored map drawn from small pictures of the real ground, walls and trees with shadows and living water and lava, from 2 px per tile up (base patch 0197)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ minimaphd_logic, minimaphd ]
+  autoload: true
+  autoload-priority: 21
+  @onLoad: init()
+  @onUnload: terminate()

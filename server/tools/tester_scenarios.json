@@ -7,7 +7,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 69,
+  "opcode": 70,
   "out": 38,
   "passive": 108,
   "place": 15,
@@ -9710,19 +9710,23 @@
   "mapMarkers": {
    "actions": [
     "hello",
-    "set"
+    "set",
+    "radar"
    ],
    "client": [
-    "game_mapmarkers"
+    "game_mapmarkers",
+    "game_minimapdots"
    ],
    "dataKeys": [
     "npcmarks",
+    "on",
     "party",
     "poi"
    ],
    "files": [
     "partymarkers.lua",
-    "poi.lua"
+    "poi.lua",
+    "radar.lua"
    ],
    "flags": [
     "party",
@@ -9733,7 +9737,8 @@
    "skip": [],
    "systems": [
     "partymarkers",
-    "poi"
+    "poi",
+    "radar"
    ]
   },
   "mapmarks": {
@@ -12549,6 +12554,16 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "radar": {
+   "files": [
+    "radar.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "mapMarkers"
+   ],
+   "talkactions": []
   },
   "raid": {
    "files": [

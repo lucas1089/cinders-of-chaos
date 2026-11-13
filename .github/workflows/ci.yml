@@ -94,6 +94,9 @@ jobs:
           # HD sprite overlay (O539, base patch 0196): the tool on a synthetic pair, and the committed atlas and index against the frames
           python3 -I client/tools/sprites/gen_hd_overlay_test.py
           python3 -I client/tools/sprites/gen_hd_overlay.py build --check
+          # HD minimap swatch atlas (O543, base patch 0197): the tool on a synthetic pair, and the committed atlas, index and ids file agree
+          python3 -I client/tools/gen_minimap_swatches_test.py
+          python3 -I client/tools/gen_minimap_swatches.py build --check
           # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
           # check runs on the versions the strips were made with (gen_class_fx.py docstring)
           python3 -m venv /tmp/fxenv
@@ -716,6 +719,16 @@ jobs:
           "$d/chaoshdoverlay_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoshdoverlay_test.cpp -o "$d/chaoshdoverlay_asan"
           "$d/chaoshdoverlay_asan"
+
+      - name: HD minimap compose and rules (C++; header from base patch 0197)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosminimaphd\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0197-hd-minimap.patch > "$d/chaosminimaphd.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosminimaphd_test.cpp -o "$d/chaosminimaphd_test"
+          "$d/chaosminimaphd_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosminimaphd_test.cpp -o "$d/chaosminimaphd_asan"
+          "$d/chaosminimaphd_asan"
 
       - name: Glowing spell effects bookkeeping (C++; header from base patch 0152)
         run: |
@@ -1790,6 +1803,11 @@ jobs:
       - name: Name lifts of tall looks match the pair (gen_info_lift.py --check)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_info_lift.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Minimap swatch atlas matches the pair (gen_minimap_swatches.py build --check, O543, base patch 0197)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/gen_minimap_swatches.py build --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Wing centres match the pair (gen_wing_centres.py --check, base patch 0193)
