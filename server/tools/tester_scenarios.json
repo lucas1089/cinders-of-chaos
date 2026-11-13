@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 71,
   "out": 39,
-  "passive": 108,
+  "passive": 109,
   "place": 15,
   "staff": 17
  },
@@ -12015,6 +12015,16 @@
   "lootline": {
    "files": [
     "lootline.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "mainquest": {
+   "files": [
+    "mainquest.lua",
+    "mainquest_boss.lua"
    ],
    "kind": "passive",
    "opcodes": [],
