@@ -1,0 +1,84 @@
+name: Journey bots
+
+# tools/ci/journey_bots.sh (O542, unity/README.md "Journey bots (O542)"): three bots, a Warrior, a Ranger and a Mystic, play a fresh character
+# each on the live check server (tools/ci/unity_live_check.sh --serve-only: the base server and map of windows-assets, install_all.py of this
+# commit, a private MariaDB, the engine of the newest release). No teleport, no staff command, no helper file: they walk, hunt by level,
+# fight, loot, sell and buy, explore and open game systems. The report compares minutes per level against server/tools/progression_model.lua
+# and lists deaths, stuck positions and the coverage table. A report, not a gate. About 20 minutes of set-up and then the minutes you give.
+# Manual only. No secret is used (the guard key is made in the run).
+
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "Wall minutes each bot plays (it stops at the level below, too)"
+        default: "40"
+      level:
+        description: "Level the bots stop at"
+        default: "25"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: journey-bots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  journey:
+    name: Journey bots on a live server
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    steps:
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the assets
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets
+          sparse-checkout: |
+            server
+            world
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Install the tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mariadb-server mariadb-client python3-numpy luajit
+          sudo systemctl stop mariadb || true
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd 2>/dev/null || true
+          dotnet --version
+
+      - name: Journey bots
+        env:
+          UL_ASSETS: ${{ github.workspace }}/assets
+          UL_WORK: ${{ runner.temp }}/jb
+          JB_OUT: ${{ runner.temp }}/jb-out
+          JB_MINUTES: ${{ inputs.minutes }}
+          JB_LEVEL: ${{ inputs.level }}
+        run: |
+          mkdir -p "$UL_WORK" "$JB_OUT"
+          bash chaos/tools/ci/journey_bots.sh
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: journey-bots-reports
+          # the numbers of each bot (JSON and text), the report, a log tail; never the work folder, key.pem or config.lua
+          path: |
+            ${{ runner.temp }}/jb-out/*.json
+            ${{ runner.temp }}/jb-out/*.txt
+            ${{ runner.temp }}/jb-out/*.md
+            ${{ runner.temp }}/jb-out/*.log
+          if-no-files-found: warn
+          retention-days: 14

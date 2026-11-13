@@ -667,6 +667,7 @@ def main():
         check(out.get('pid') == '', 'a pid that is not the engine (tfs) is not used')
     test_admin_commands()
     test_testers()
+    test_journey()
     test_metrics()
     test_newplayer()
     test_health_balance()
@@ -1028,6 +1029,124 @@ if sys.argv[1] == 'status':
 if sys.argv[1] == 'run':
     time.sleep(60)
 """
+
+
+JOURNEY_STUB = """import os, sys
+with open(os.path.join(os.environ['STUB'], 'journey_calls'), 'a') as f:
+    f.write(' '.join(sys.argv[1:]) + '\\n')
+if sys.argv[1] == 'list':
+    print('bots=%s' % os.environ.get('STUB_BOTS', '0'))
+if sys.argv[1] == 'env':
+    print('export CHAOS_LIVE_ACCOUNT=tstbotabc')
+    print('export CHAOS_LIVE_PASSWORD=pw_secret_123')
+    print("export JOURNEY_CHARACTER='Tester Aaa'")
+    print("export JOURNEY_CLASS='Warrior'")
+"""
+
+DOTNET_STUB = """#!/bin/bash
+# records the arguments and whether the secrets came by the environment, then lives a little
+{ echo "args: $*"; echo "pw_in_env=${CHAOS_LIVE_PASSWORD:+yes} key_in_env=${CHAOS_CLIENT_KEY:+yes}"; } >> "$STUB/dotnet_calls"
+sleep 30
+"""
+
+
+def test_journey():
+    """chaos-ctl.sh journey (O542): refusals, the bots started with the secrets only in the environment, status, stop, cleanup"""
+    import time
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        server = os.path.join(tmp, 'server')
+        repo = os.path.join(tmp, 'repo')
+        state = os.path.join(tmp, 'tstate')
+        jstate = os.path.join(tmp, 'jstate')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(server, 'data', 'items'))
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL), ('dotnet', DOTNET_STUB)):
+            pth = os.path.join(stub, name)
+            with open(pth, 'w') as f:
+                f.write(body)
+            os.chmod(pth, 0o755)
+        with open(os.path.join(repo, 'server', 'tools', 'testers.py'), 'w') as f:
+            f.write(TESTERS_STUB)
+        with open(os.path.join(repo, 'server', 'tools', 'journey_setup.py'), 'w') as f:
+            f.write(JOURNEY_STUB)
+        with open(os.path.join(repo, 'server', 'tools', 'journey_report.py'), 'w') as f:
+            f.write('import sys\nprint("report of " + " ".join(sys.argv[1:]))\n')
+        cfg = os.path.join(server, 'config.lua')
+        with open(cfg, 'w') as f:
+            f.write('clientGuardAllowDevKey = false\n')
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        key = os.path.join(tmp, 'tester-client-key')
+        dll = os.path.join(tmp, 'Core.LiveCheck.dll')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1', CHAOS_SERVER_DIR=server,
+                   CHAOS_ENV=env_file, CHAOS_REPO=repo, CHAOS_MYSQL='mysql', CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'server.log'), CHAOS_TESTER_KEY=key,
+                   CHAOS_TESTER_STATE=state, CHAOS_TESTER_LOG=os.path.join(tmp, 'testers.log'), CHAOS_JOURNEY_STATE=jstate,
+                   CHAOS_JOURNEY_DLL=dll, CHAOS_TESTERS_STOP_WAIT='0')
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True, text=True, timeout=60)
+
+        def read(name):
+            pth = os.path.join(stub, name)
+            return open(pth).read() if os.path.exists(pth) else ''
+
+        for bad in (('0',), ('11',), ('3', '0'), ('3', '2000'), ('x',), ('3', '5', '5'), ('--level', '1'), ('--level', 'x'), ('--level', '5000')):
+            check(run('journey', 'start', *bad).returncode != 0, 'journey start refused: %r' % (bad,))
+        check(run('journey', 'fly').returncode != 0, 'journey: an unknown subcommand is refused')
+        r = run('journey', 'start')
+        check(r.returncode != 0 and 'read -rsp' in r.stderr, 'journey: no key file is refused: ' + r.stderr)
+        with open(key, 'w') as f:
+            f.write('ab' * 32 + '\n')
+        os.chmod(key, 0o600)
+        with open(cfg, 'w') as f:
+            f.write('clientGuardAllowDevKey = true\n')
+        r = run('journey', 'start')
+        check(r.returncode != 0 and 'clientGuardAllowDevKey' in r.stderr, 'journey: the development key is refused')
+        with open(cfg, 'w') as f:
+            f.write('clientGuardAllowDevKey = false\n')
+        r = run('journey', 'start')
+        check(r.returncode != 0 and 'chaos_poi.lua' in r.stderr, 'journey: no map marks file is refused: ' + r.stderr)
+        with open(os.path.join(server, 'data', 'chaos_poi.lua'), 'w') as f:
+            f.write('return {marks = {}}\n')
+        r = run('journey', 'start')
+        check(r.returncode != 0 and ('journey-binary-missing' in r.stderr or 'journey-build-failed' in r.stderr), 'journey: no bot program is refused: ' + r.stderr)
+        with open(dll, 'w') as f:
+            f.write('stub')
+        r = run('journey', 'start', extra={'STUB_BOTS': '2'})
+        check(r.returncode != 0 and 'journey cleanup --yes first' in r.stderr, 'journey: characters left from an earlier run are refused: ' + r.stderr)
+        r = run('journey', 'start', '2', '7', '--level', '12')
+        check(r.returncode == 0 and 'journey bots started: 2 for 7 min or level 12' in r.stdout, 'journey start: ' + r.stdout + r.stderr)
+        time.sleep(1.5)
+        calls = read('journey_calls')
+        check('setup --count 2 --server-dir ' + server + ' --state ' + jstate in calls and 'env --state ' + jstate + ' --index 0' in calls and '--index 1' in calls, 'journey: setup and one env call per bot: ' + calls)
+        dn = read('dotnet_calls')
+        check(dn.count('--journey-minutes 7') == 2 and '--journey' in dn and '--journey-minutes 7' in dn and '--journey-level 12' in dn and 'chaos_poi.lua' in dn and 'items.otb' in dn and '--class Warrior' in dn, 'journey: the bot programs got their arguments: ' + dn)
+        check('pw_secret_123' not in dn and ('ab' * 32) not in dn and dn.count('pw_in_env=yes key_in_env=yes') == 2 and dn.count('--identity chaos --journey') == 2, 'journey: the password and the guard key reach the bots by the environment only: ' + dn)
+        r = run('journey', 'start')
+        check(r.returncode != 0 and 'already running' in r.stderr, 'journey: a second start while the bots run is refused: ' + r.stderr)
+        r = run('journey', 'status')
+        check('running=yes' in r.stdout, 'journey status: running: ' + r.stdout)
+        with open(os.path.join(jstate, 'bot-0.json'), 'w') as f:
+            f.write('{"name":"Tester Aaa","class":"Warrior","level":14,"minutes":3.5,"kills":40,"deaths":[{}],"stuck":[]}')
+        r = run('journey', 'status')
+        check('bot=Tester Aaa;Warrior;level=14;minutes=3.5;kills=40;deaths=1;stuck=0' in r.stdout, 'journey status: a bot line from its numbers: ' + r.stdout)
+        r = run('journey', 'report')
+        check(r.returncode == 0 and 'report of ' in r.stdout and 'bot-0.json' in r.stdout and '--model-dir' in r.stdout, 'journey report: ' + r.stdout + r.stderr)
+        r = run('journey', 'stop')
+        check(r.returncode == 0 and 'stopped' in r.stdout, 'journey stop: ' + r.stdout + r.stderr)
+        r = run('journey', 'status')
+        check('running=no' in r.stdout, 'journey status after stop: ' + r.stdout)
+        r = run('journey', 'cleanup')
+        check(r.returncode == 0 and 'nothing deleted' in r.stdout and 'cleanup --state ' + jstate + ' --dry-run' in read('testers_calls'), 'journey cleanup without --yes only lists: ' + r.stdout + r.stderr)
+        r = run('journey', 'cleanup', '--yes')
+        check(r.returncode == 0 and 'cleanup --state ' + jstate + ' --server-dir ' + server in read('testers_calls'), 'journey cleanup --yes deletes through testers.py cleanup: ' + r.stdout + r.stderr)
+        check(run('journey', 'cleanup', '--now').returncode != 0, 'journey cleanup: an unknown flag is refused')
 
 
 def test_testers():
