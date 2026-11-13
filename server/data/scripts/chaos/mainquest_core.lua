@@ -97,6 +97,25 @@ function M.flagPlace(cfg, key)
 	return nil
 end
 
+-- set a flag on a player through its storages (a hook in another system's own Lua state, an NPC script: no ChaosMainQuest there).
+-- Nothing happens before the quest saw the character (state -1) or when the flag is unknown. Returns true when set.
+function M.emitFlag(cfg, player, flag)
+	if not cfg or not player then
+		return false
+	end
+	local name, bit = M.flagPlace(cfg, flag)
+	if not name then
+		return false
+	end
+	local base = cfg.storage.base
+	if num(player:getStorageValue(base + cfg.storage.state), -1) < 0 then
+		return false
+	end
+	local key = base + cfg.storage[name]
+	player:setStorageValue(key, M.setBit(max(0, num(player:getStorageValue(key), 0)), bit))
+	return true
+end
+
 -- ------------------------------------------------------------------------------------------------- validation
 local KINDS = {count = true, visit = true, stat = true, flag = true, talk = true, spell = true, gear = true, storage = true,
 	resist = true, boss = true}

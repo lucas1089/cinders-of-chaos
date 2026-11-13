@@ -961,6 +961,9 @@ function L.save(player, slot, name, icon)
 	if plan.activate then
 		lines[#lines + 1] = "This loadout is now active: your current build is saved in it."
 	end
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "loadout") -- main quest step (O551)
+	end
 	return true, text, lines
 end
 

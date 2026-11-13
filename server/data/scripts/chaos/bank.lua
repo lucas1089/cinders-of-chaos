@@ -126,6 +126,9 @@ local function depositGold(player, amount)
 	end
 	player:setBankBalance(player:getBankBalance() + amount)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You deposited %d gold. Bank balance: %d gold.", amount, player:getBankBalance()))
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "bank") -- main quest step (O551)
+	end
 	sendBankState(player)
 end
 

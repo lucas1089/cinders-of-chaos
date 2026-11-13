@@ -499,6 +499,35 @@ check(imp.store[key("step")] > 3, "the steps it did are passed")
 local gsrc = io.open("data/scripts/chaos/goals.lua"):read("*a")
 check(gsrc:find("ChaosMainQuest.onAction", 1, true) and gsrc:find('msg.action:sub(1, 2) == "mq"', 1, true), "goals.lua hands the mq actions over")
 check(gsrc:find("ChaosMainQuest.skip", 1, true) and gsrc:find("ChaosMainQuest.forget", 1, true), "goals.lua skips and resends")
+-- every flag has a source: a hook of another system, the client's Go button (acks), a probe or a storage
+local HOOKS = {potion = "potions.lua", daily = "daily.lua", market = "market.lua", loadout = "loadouts.lua", bank = "bank.lua",
+	salvage = "salvage.lua", stash = "stash.lua", gambler = "gamble.lua", portal = "townportal.lua", teleports = "hunt_teleports.lua"}
+local OTHER = {sell = "data/npc/scripts/loot_buyer.lua", door = "data/npc/scripts/chaos_faction_npc.lua"}
+local PROBED = {autoloot = true, weekly = true}
+local acks = {}
+for _, a in ipairs(cfg.acks) do acks[a] = true end
+for _, k in ipairs(cfg.flags) do
+	local src = (HOOKS[k] and io.open("data/scripts/chaos/" .. HOOKS[k]):read("*a")) or (OTHER[k] and io.open(OTHER[k]):read("*a")) or ""
+	local hooked = src:find('ChaosMainQuest.emit, player, "' .. k .. '"', 1, true) or src:find('"' .. k .. '"', 1, true)
+	check(hooked or acks[k] or PROBED[k], "flag " .. k .. " has a source")
+end
+for k, f in pairs(HOOKS) do
+	local src = io.open("data/scripts/chaos/" .. f):read("*a")
+	check(src:find('ChaosMainQuest.emit, player, "' .. k .. '"', 1, true), "the hook in " .. f)
+	check(src:find("if ChaosMainQuest and ChaosMainQuest.emit then", 1, true), "guarded: " .. f)
+end
+for _, a in ipairs(cfg.acks) do check(K.flagPlace(cfg, a), "ack " .. a .. " is a flag") end
+local ysrc = io.open("data/npc/scripts/chaos_faction_npc.lua"):read("*a")
+check(ysrc:find("questTalk", 1, true) and ysrc:find('key == "vigil"', 1, true), "Ysolde's dialogue")
+-- emitFlag from an NPC state: only after the quest saw the character
+local ghost = newPlayer(7, 8)
+players = {ghost}
+eq(K.emitFlag(cfg, ghost, "sell"), false, "before the first look: nothing")
+ghost.store[key("state")] = cfg.states.active
+eq(K.emitFlag(cfg, ghost, "sell"), true); eq(K.emitFlag(cfg, ghost, "nothing"), false)
+local nm, bt = K.flagPlace(cfg, "sell")
+check(K.hasBit(ghost.store[key(nm)], bt), "the bit is set")
+
 -- the full state for the chapter window
 local st = W.state(p)
 eq(#st.chapters, #cfg.chapters); eq(#st.steps, #cfg.steps); eq(#st.epilogue, #cfg.epilogue)

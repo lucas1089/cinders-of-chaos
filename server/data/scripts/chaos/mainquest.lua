@@ -396,8 +396,14 @@ end
 -- one look at a character on the quest: a done step moves on (one per look), the rows follow
 function W.check(player)
 	local c = C()
-	if not c.enabled or get(player, "state") ~= c.states.active then
+	if not c.enabled then
 		W.ready[player:getId()] = nil
+		return
+	end
+	if ChaosMainQuestBoss and ChaosMainQuestBoss.sweepDoor then
+		pcall(ChaosMainQuestBoss.sweepDoor, player) -- the door flag Ysolde's script sets (any state)
+	end
+	if get(player, "state") ~= c.states.active then
 		return
 	end
 	local i = get(player, "step")
@@ -474,15 +480,7 @@ function W.emit(who, flag)
 	if not c or not c.enabled or get(player, "state") < 0 then
 		return false
 	end
-	local name, bit = K.flagPlace(c, flag)
-	if not name then
-		return false
-	end
-	local mask = math.max(0, get(player, name))
-	if not K.hasBit(mask, bit) then
-		set(player, name, K.setBit(mask, bit))
-	end
-	return true
+	return K.emitFlag(c, player, flag)
 end
 
 -- a step whose flags the client's Go button marks (windows to see, info to read): server side the step must be the current one
@@ -590,6 +588,34 @@ function W.onAction(player, msg)
 		end
 	end
 end
+
+-- ---------------------------------------------------------------- the mark over Ysolde's head (poi.lua O415)
+-- "ready" (gold "?") while the open step wants a talk (or the door of the last page is open to a skipped / veteran character),
+-- "new" (gold "!") while the quest waits to be taken again after a skip
+function W.npcMarks(player)
+	local c = C()
+	if not c or not c.enabled or staff(player) then
+		return {}
+	end
+	local name = c.boss.keeper
+	local state = get(player, "state")
+	if state == c.states.active then
+		local step = c.steps[get(player, "step")]
+		if step and player:getLevel() >= step.level then
+			for _, cond in ipairs(step.conds) do
+				if cond.c == "talk" then
+					return {{npc = name, mark = "ready"}}
+				end
+			end
+		end
+	elseif state == c.states.skipped then
+		return {{npc = name, mark = "new"}}
+	end
+	return {}
+end
+ChaosPoi = ChaosPoi or {}
+ChaosPoi.markSources = ChaosPoi.markSources or {}
+ChaosPoi.markSources.mainquest = W.npcMarks
 
 -- ---------------------------------------------------------------- events
 if CreatureEvent then

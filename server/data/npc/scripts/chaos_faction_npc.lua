@@ -100,6 +100,62 @@ local function taleTalk(cid, player, msg)
 	return #done > 0
 end
 
+-- the main quest (O551, data/scripts/chaos/mainquest_core.lua, mainquest_config.lua): Warden Ysolde (faction "vigil") is its giver.
+-- "oath" / "juramento" offers it, sets the talk flag of a step that wants one, or says what the open step asks; "door" / "porta"
+-- asks for the last page (the engine side answers). Own Lua state: only the storages are touched here.
+if key == "vigil" and (not ChaosMainQuestCore or not ChaosMainQuestCore.talk) then
+	pcall(dofile, "data/scripts/chaos/mainquest_core.lua")
+end
+local function questTalk(cid, player, msg)
+	local K = ChaosMainQuestCore
+	local c = K and K.cfg and K.cfg()
+	if key ~= "vigil" or not c or not c.enabled then
+		return false
+	end
+	local s = " " .. msg:lower():gsub("[^%w ]", " ") .. " "
+	local door = s:find(" door ", 1, true) or s:find(" porta ", 1, true) or s:find(" chamber ", 1, true) or s:find(" camara ", 1, true)
+	local oath = s:find(" oath ", 1, true) or s:find(" juramento ", 1, true) or s:find(" quest ", 1, true) or s:find(" missao ", 1, true)
+	if not door and not oath then
+		return false
+	end
+	local lang = ChaosI18n.langOf and ChaosI18n.langOf(player) == "pt-BR" and "pt" or "en"
+	local function get(name) return player:getStorageValue(c.storage.base + c.storage[name]) end
+	local function put(name, v) player:setStorageValue(c.storage.base + c.storage[name], v) end
+	local vars = {oath = "oath", juramento = "juramento", door = "door", porta = "porta"}
+	local state = get("state")
+	if door then
+		-- the engine side (mainquest.lua sweep) reads the flag, checks the door and answers in the chat
+		local name, bit = K.flagPlace(c, "door")
+		if name then
+			put(name, K.setBit(math.max(0, get(name)), bit))
+		end
+		npcHandler:say(K.fill(K.text(c.ysolde.door_open, lang), vars), cid)
+		return true
+	end
+	if state < 0 or state == c.states.skipped then
+		if state == c.states.skipped then
+			put("state", c.states.active)
+			npcHandler:say(K.fill(K.text(c.ysolde.offer, lang), vars), cid)
+		else
+			npcHandler:say(K.fill(K.text(c.ysolde.greet, lang), vars), cid)
+		end
+	elseif state == c.states.active then
+		local r = K.talk(c, get, put)
+		local step = c.steps[get("step")]
+		if r == true then
+			npcHandler:say(K.fill(K.text(c.ysolde.take, lang), vars), cid)
+		elseif step then
+			vars.step = K.fill(K.text(step.title, lang), vars)
+			npcHandler:say(K.fill(K.text(c.ysolde.wait, lang), vars), cid)
+		end
+	elseif state == c.states.done then
+		npcHandler:say(K.fill(K.text(c.ysolde.done, lang), vars), cid)
+	else
+		npcHandler:say(K.fill(K.text(c.ysolde.veteran, lang), vars), cid)
+	end
+	return true
+end
+
 local function creatureSayCallback(cid, type, msg)
 	if not npcHandler:isFocused(cid) or not faction then
 		return false
@@ -108,6 +164,10 @@ local function creatureSayCallback(cid, type, msg)
 	local text = msg:lower()
 	if not player then
 		return false
+	end
+	local okQ, quest = pcall(questTalk, cid, player, msg)
+	if okQ and quest then
+		return true
 	end
 	local okT, talked = pcall(taleTalk, cid, player, msg)
 	if okT and talked then

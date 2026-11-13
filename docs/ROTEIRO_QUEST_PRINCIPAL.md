@@ -285,11 +285,11 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 - Dica: O covil fica a nordeste. Dragões cospem fogo: guarde uma poção.
 - Conclusão (Ysolde): Não se ouve nada. Isso é pior.
 
-### 3.13 Mate 10 Dragões (nível 45)
+### 3.13 Mate 14 Dragões (nível 45)
 
-- Objetivo: Mate 10 (Dragon).
+- Objetivo: Mate 14 (Dragon).
 - Dica: Dragões cospem fogo em cone. A marca no chão mostra onde: saia dela.
-- Conclusão (Ysolde): Dez dragões. Há bardos que morrem sem ver um.
+- Conclusão (Ysolde): Catorze dragões. Há bardos que morrem sem ver um.
 
 ### 3.14 Vença um duelo na Arena (nível 50)
 
@@ -561,9 +561,9 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 - Dica: Honrado abre equipamento fixo no intendente.
 - Conclusão (Ysolde): Honra se ganha. Nunca se pede.
 
-### 6.3 Mate 30 Slinkhides (nível 310)
+### 6.3 Mate 20 Slinkhides (nível 310)
 
-- Objetivo: Mate 30 (Slinkhide).
+- Objetivo: Mate 20 (Slinkhide).
 - Dica: Slinkhides atacam do escuro. Mantenha as costas cobertas.
 - Conclusão (Ysolde): Escuridão ficou mais limpa. Por enquanto.
 
@@ -573,9 +573,9 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 - Dica: Fendas altas soltam saque lendário.
 - Conclusão (Ysolde): Fenda alta, risco alto. Saque também.
 
-### 6.5 Mate 30 Mould Phantoms (nível 365)
+### 6.5 Mate 20 Mould Phantoms (nível 365)
 
-- Objetivo: Mate 30 (Mould Phantom).
+- Objetivo: Mate 20 (Mould Phantom).
 - Dica: Mould Phantoms envenenam. Mantenha uma cura à mão.
 - Conclusão (Ysolde): Mofo seco. O jardim agora é outro.
 
@@ -603,9 +603,9 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 - Dica: Orbs of Grafting adicionam um modificador a uma peça.
 - Conclusão (Ysolde): Uma peça sua, de verdade. Só sua.
 
-### 6.10 Mate 30 Druid's Apparitions (nível 405)
+### 6.10 Mate 20 Druid's Apparitions (nível 405)
 
-- Objetivo: Mate 30 (Druid's Apparition).
+- Objetivo: Mate 20 (Druid's Apparition).
 - Dica: Aparições piscam e golpeiam. Magias de área ajudam.
 - Conclusão (Ysolde): Os druidas descansam, finalmente.
 
@@ -697,6 +697,7 @@ As últimas masmorras esperam em 1300, 1600 e 2000. Adventure > Next Goals lista
 - **nothing**: Você não tem assunto comigo agora. Termine o que o rastreador pede e eu estarei aqui.
 - **offer**: As Brasas levaram meus Guardiões um a um. Os que elas recusaram, os nascidos das brasas, são o que sobrou. O Juramento é uma caminhada: um voto de cada vez, uma lição de cada vez. Não vou pedir que você jure nada que não possa cumprir.
 - **skipped**: Você pulou o Juramento. A oferta continua: diga {juramento} e eu abro de novo.
+- **take**: Deixe-me ver.
 - **veteran**: Você já passou do Juramento, veterano. Resta uma porta: Vael Ashmourn, o Guardião Sem Juramento. Diga {porta} quando estiver pronto.
 - **wait**: Sua etapa ainda está aberta: {step}. Volte quando terminar.
 

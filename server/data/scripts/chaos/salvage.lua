@@ -522,6 +522,9 @@ local function salvageOne(player, data)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "salvage") -- main quest step (O551)
+	end
 end
 
 -- takes the items of a batch result out and pays them; `more` = another batch follows by itself (the text says so)

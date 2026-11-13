@@ -354,6 +354,9 @@ local function claim(player, value)
 	local accountId = player:getAccountId()
 	DY.accounts[accountId] = newRec
 	save(accountId, newRec)
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "daily") -- main quest step (O551)
+	end
 	-- the old per-character storages, kept in step (nothing reads them any more)
 	player:setStorageValue(S.dailyStreakDay, res.slot)
 	player:setStorageValue(S.dailyLastClaim, today)

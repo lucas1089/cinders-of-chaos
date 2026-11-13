@@ -902,6 +902,9 @@ function MK.list(player, d)
 	send(player, "done", {what = "list", id = id, text = Chaos.t(player, "Listed %s%s for %s. Listing fee: %s gold.",
 		count > 1 and (count .. "x ") or "", name, MK.priceText(gold, coins, player), MC.money(fee))})
 	sendWallet(player)
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "market") -- main quest step (O551)
+	end
 	return true
 end
 
@@ -1241,6 +1244,9 @@ function MK.orderPost(player, d)
 	send(player, "done", {what = "orderPost", id = id, text = Chaos.t(player, "Buy order posted: %dx %s at %s each. %s are held for it; listing fee: %s gold.",
 		o.quantity, name, amt(player, o.cur, o.price), amt(player, o.cur, o.total), MC.money(o.fee))})
 	sendWallet(player)
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "market") -- main quest step (O551)
+	end
 	return true
 end
 
