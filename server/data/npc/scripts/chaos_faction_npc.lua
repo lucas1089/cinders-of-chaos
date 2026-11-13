@@ -129,7 +129,7 @@ local function questTalk(cid, player, msg)
 		if name then
 			put(name, K.setBit(math.max(0, get(name)), bit))
 		end
-		npcHandler:say(K.fill(K.text(c.ysolde.door_open, lang), vars), cid)
+		npcHandler:say(K.fill(K.text(c.ysolde.take, lang), vars), cid)
 		return true
 	end
 	if state < 0 or state == c.states.skipped then

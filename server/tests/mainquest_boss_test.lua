@@ -115,7 +115,8 @@ p.store[key(name)] = bit
 entered = nil
 B.sweepDoor(p)
 ok(entered ~= nil, "the sweep opens the door"); eq(p.store[key(name)], 0, "the flag is cleared")
-ok(p.msgs[#p.msgs]:find("Warden Ysolde: ", 1, true) ~= nil, "Ysolde answers")
+ok(p.msgs[#p.msgs - 1]:find("Warden Ysolde: " .. cfg.ysolde.door_open.en, 1, true) ~= nil, "Ysolde opens the door")
+ok(p.msgs[#p.msgs]:find("Vael Ashmourn: " .. cfg.vael.enter.en, 1, true) ~= nil, "Vael answers")
 
 local enrageFamily
 for k in pairs(M.cfg().families) do

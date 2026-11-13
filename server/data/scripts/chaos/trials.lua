@@ -434,11 +434,21 @@ local function notesOf(tr)
 	return out
 end
 
+-- the boss's shown name: the family's, or another quest's (the main quest's Vael Ashmourn: T.bossNameFor, mainquest_boss.lua)
+local function bossName(tr)
+	local f = T.bossNameFor
+	local ok, name = false, nil
+	if f and tr.spell then
+		ok, name = pcall(f, tr)
+	end
+	return ok and name or tr.fam.boss.name
+end
+
 local function hudData(tr, state)
 	local boss = tr.bossState
 	return {title = "Vocation Trial - " .. tr.tierDef.name, theme = tr.fam.name, left = secondsLeft(tr), limit = tr.limit,
 		total = tr.total, killed = math.min(tr.killed, tr.total), bossAt = tr.total, boss = boss, state = state or "running",
-		bossName = tr.fam.boss.name, mods = {}, notes = notesOf(tr), lives = tr.lives, livesMax = tr.livesMax, tier = tr.tier}
+		bossName = bossName(tr), mods = {}, notes = notesOf(tr), lives = tr.lives, livesMax = tr.livesMax, tier = tr.tier}
 end
 
 local function sendHud(tr, action, state)
@@ -623,16 +633,6 @@ local function startStage(tr)
 		say(tr, "%s awakens. %s", bossName(tr), ChaosI18n.msg(tr.fam.story))
 	end
 	sendHud(tr, "update")
-end
-
--- the boss's shown name: the family's, or another quest's (the main quest's Vael Ashmourn: T.bossNameFor, mainquest_boss.lua)
-local function bossName(tr)
-	local f = T.bossNameFor
-	local ok, name = false, nil
-	if f and tr.spell then
-		ok, name = pcall(f, tr)
-	end
-	return ok and name or tr.fam.boss.name
 end
 
 local function nextStage(tr)

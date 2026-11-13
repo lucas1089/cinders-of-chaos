@@ -140,8 +140,12 @@ function B.sweepDoor(player)
 	end
 	set(player, name, K.clearBit(mask, bit))
 	local ok, text = B.enter(player)
-	if text and text ~= "" then
-		say(player, (langOf(player) == "pt" and "Guardiã Ysolde: " or "Warden Ysolde: ") .. text)
+	local who = langOf(player) == "pt" and "Guardiã Ysolde: " or "Warden Ysolde: "
+	if ok then
+		say(player, who .. K.text(C().ysolde.door_open, langOf(player)))
+		say(player, (C().boss.name or "Vael") .. ": " .. tostring(text))
+	elseif text and text ~= "" then
+		say(player, who .. text)
 	end
 end
 
