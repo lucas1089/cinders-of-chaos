@@ -36,6 +36,7 @@ python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
 ! git grep -nE '^(<<<<<<< |>>>>>>> )' -- .   # no merge conflict markers left in a tracked file
+python3 -I tools/ci/check_workflow_steps.py && python3 -I tools/ci/check_workflow_steps_test.py   # a failing command of a workflow run block fails its step: no `&&` list in the middle of a multi-line block (bash -e does not stop left of `&&`); one command per line, a guard as `if` (O545)
 python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix); a rawget read of tr falls back to ChaosLocale.tr (O479); a client file that groups thousands with a comma reads ChaosLocale (pt-BR writes 1.234.567, O506)
 python3 -I tools/ci/check_desktop_commands.py   # desktop admin app (O312) table names the same chaos-ctl commands as android/
 python3 -I desktop/tools/sign_release_test.py   # desktop admin app signed self-update: the Python signer and desktop/src/sign.rs share one vector; key must be the compiled-in one
@@ -126,6 +127,7 @@ python3 -I server/tools/fist_attack_patch_test.py   # src-patch 0091 (O505): the
 python3 -I server/tools/monster_bonus_once_patch_test.py   # src-patch 0090: the monster level damage bonus once per hit, not again on the re-entry after the target's health / mana events; table of a 40 hit once and twice by level (O477)
 python3 -I server/tools/rune_bag_purse_patch_test.py   # src-patch 0092: the Rune Bag in the purse (O509): a player's search, count and removal by item type also walk the Rune Bag that lies directly in the purse, nothing else of it, after the backpack; the id comes from pouches.lua (Game.setRuneBagContainer), the capability; the header test: g++ -std=c++17 -I DIR server/tools/chaosrunebag_test.cpp (CI cuts it from the patch); tests/pouches_test.lua, tests/supports_test.lua and client game_pouches/runebagcount_test.lua run in their loops
 python3 -I server/tools/patch_base_fusion_allowlist_test.py   # item fusion (67) only for the ids of item_fusion_config.lua, fail closed (O310; install_all step fusionlist)
+python3 -I server/tools/patch_base_fusion_plain_test.py   # item fusion (67) takes only plain copies, never a unique, set or rolled copy (O544; install_all step fusionplain; the rule: data/scripts/chaos/item_fusion_core.lua, tests/item_fusion_test.lua in the server loop)
 python3 -I client/tools/rml_window_audit.py && python3 -I client/tools/rml_window_audit_test.py   # which windows the RmlUi mirror draws and which stay classic, from the .otui files (O406; --otui)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I mapeditor/tools/run_profile_test.py && python3 -I mapeditor/tools/upstream_test.py   # our map editor (O382): profile table, upstream pin; build and profile: mapeditor-build.yml, patches: mapeditor/tools/check_patches.sh UPSTREAM_CLONE

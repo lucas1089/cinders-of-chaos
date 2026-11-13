@@ -158,18 +158,21 @@ jobs:
           (cd client/overlay/modules && find game_chaosnotify/images/toast -type f -name '*.png' -print0) |
             while IFS= read -r -d '' f; do mkdir -p "$dst/$(dirname "$f")"; cp "client/overlay/modules/$f" "$dst/$f"; done
           # the toast plate (Background); the answer buttons are in images/toast (phase 7 track Y)
-          mkdir -p "$dst/game_chaosnotify/images" && cp client/overlay/modules/game_chaosnotify/images/Background.png "$dst/game_chaosnotify/images/"
+          mkdir -p "$dst/game_chaosnotify/images"
+          cp client/overlay/modules/game_chaosnotify/images/Background.png "$dst/game_chaosnotify/images/"
           # pictures of client/overlay/data (spell icon sheets, buff icons, monster bar art, the achievement toast icon): the player reads them as ../data
           ddst=unity/Client/Assets/StreamingAssets/overlay/data
           for d in images/game/spells images/game/buffs images/chaos/monsterbar images/chaos/skin images/chaos/mapmarkers images/chaos/mapoverlay skins; do
             (cd client/overlay/data && find "$d" -type f -name '*.png' -print0) |
               while IFS= read -r -d '' f; do mkdir -p "$ddst/$(dirname "$f")"; cp "client/overlay/data/$f" "$ddst/$f"; done
           done
-          mkdir -p "$ddst/images/chaos" && cp client/overlay/data/images/chaos/topbutton_ranking.png "$ddst/images/chaos/"
+          mkdir -p "$ddst/images/chaos"
+          cp client/overlay/data/images/chaos/topbutton_ranking.png "$ddst/images/chaos/"
           # the charm slot pictures per shape (phase 8 track B: charmslot_1x1, 2x1, 1x2, 2x2) and, with game_cosmetics above, the effect icons of the Cosmetics rows
           cp client/overlay/data/images/chaos/charmslot_*.png "$ddst/images/chaos/"
           # the bitmap fonts of the damage numbers (data/fonts/chaos: the .otfont text and its sheet; phase 7 track Y)
-          mkdir -p "$ddst/fonts/chaos" && cp client/overlay/data/fonts/chaos/chaos-display-16px.* client/overlay/data/fonts/chaos/chaos-outline-11px.* "$ddst/fonts/chaos/"
+          mkdir -p "$ddst/fonts/chaos"
+          cp client/overlay/data/fonts/chaos/chaos-display-16px.* client/overlay/data/fonts/chaos/chaos-outline-11px.* "$ddst/fonts/chaos/"
           echo "copied $(find "$dst" "$ddst" -type f | wc -l) files to $dst and $ddst"
       - name: Build
         if: steps.lic.outputs.ok == '1'
@@ -216,9 +219,11 @@ jobs:
           sudo timeout 900 apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 libglu1-mesa ffmpeg
           pair=""
           if ls assets/things/things-1098.tar.xz.part* >/dev/null 2>&1; then
-            (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts) && mkdir -p pair \
+            if (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts) && mkdir -p pair \
               && cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C pair \
-              && [ -f pair/Tibia.dat ] && pair="$PWD/pair"
+              && [ -f pair/Tibia.dat ]; then
+              pair="$PWD/pair"
+            fi
           fi
           if [ -n "$pair" ]; then echo "real pair: $pair"; else echo "::notice::no sprite pair: the demo room uses synthetic sprites"; fi
           set +e
@@ -267,7 +272,7 @@ jobs:
               ls -l "$out/demo_tour.mp4"
               for k in 1 2 3 4; do
                 f=$(printf "%s/demo_tour_%04d.png" "$out" $(( n * k / 5 )))
-                [ -f "$f" ] && cp "$f" "$out/demo_tour_still_$k.png"
+                if [ -f "$f" ]; then cp "$f" "$out/demo_tour_still_$k.png"; fi
               done
               rm -f "$out"/demo_tour_[0-9][0-9][0-9][0-9].png
             else
@@ -287,7 +292,7 @@ jobs:
               ls -l "$out/walk_tour.mp4"
               for k in 1 2 3 4; do
                 f=$(printf "%s/walk_tour_%04d.png" "$out" $(( nw * k / 5 )))
-                [ -f "$f" ] && cp "$f" "$out/walk_tour_still_$k.png"
+                if [ -f "$f" ]; then cp "$f" "$out/walk_tour_still_$k.png"; fi
               done
               rm -f "$out"/walk_tour_[0-9][0-9][0-9][0-9].png
             else
@@ -392,7 +397,7 @@ jobs:
           pair=""
           if [ -f pair/Tibia.dat ]; then pair="$PWD/pair"
           elif ls assets/things/things-1098.tar.xz.part* >/dev/null 2>&1; then
-            mkdir -p pair && cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C pair && [ -f pair/Tibia.dat ] && pair="$PWD/pair"
+            if mkdir -p pair && cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C pair && [ -f pair/Tibia.dat ]; then pair="$PWD/pair"; fi
           fi
           if [ -z "$pair" ]; then echo "::warning::live smoke: no sprite pair (the screenshots step has none either): the player cannot load the item and creature art"; exit 1; fi
           # the server up, detached; it is stopped below and by the trap, whatever happens in between
