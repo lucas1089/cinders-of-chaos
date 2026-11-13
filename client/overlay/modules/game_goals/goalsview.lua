@@ -73,14 +73,71 @@ function V.onWelcome(st, data)
   data = type(data) == 'table' and data or {}
   st.welcome = list(data.rows)
   st.welcomeStep, st.welcomeCount = num(data.step), num(data.count)
+  st.welcomeChapter = type(data.chapterName) == 'string' and data.chapterName or ''
   return st
 end
 
--- the welcome section's head: "Welcome Path 2/7" (folded: "Welcome Path (2/7) +")
+-- the main quest section's head (server mainquest.lua, O551; it replaced the welcome path): "Main Quest 13/103" (folded:
+-- "Main Quest (13/103) +")
 function V.welcomeTitle(st, folded)
   local i, n = num(st.welcomeStep), num(st.welcomeCount)
-  if folded then return tr('Welcome Path (%d/%d) +', i, n) end
-  return tr('Welcome Path %d/%d', i, n)
+  if folded then return tr('Main Quest (%d/%d) +', i, n) end
+  return tr('Main Quest %d/%d', i, n)
+end
+
+-- a main quest row: the usual ascension row line, with the weakest resistance group of a resistance step after it
+function V.welcomeLine(r)
+  local text, pct, color = V.ascensionLine(r)
+  if type(r) == 'table' and type(r.detail) == 'string' and r.detail ~= '' then
+    text = text .. '  (' .. r.detail .. ')'
+  end
+  return text, pct, color
+end
+
+-- mq {state, step, count, chapters = [{n, name, intro, from, to, done, total}], steps = [{i, key, ch, level, title, hint,
+-- state = done | open | todo}], epilogue = [{key, level, title, text}]}: the whole quest for the chapter window (server mainquest.lua)
+function V.onMQ(st, data)
+  data = type(data) == 'table' and data or {}
+  st.mq = {
+    state = num(data.state, -1), step = num(data.step, 1), count = num(data.count),
+    chapters = list(data.chapters), steps = list(data.steps), epilogue = list(data.epilogue)
+  }
+  return st
+end
+
+-- the chapter a window opens on: the chapter of the open step, else the first with steps left, else the first
+function V.mqChapter(mq)
+  if not mq then return 1 end
+  for _, s in ipairs(mq.steps) do
+    if s.state == 'open' then return num(s.ch, 1) end
+  end
+  for _, c in ipairs(mq.chapters) do
+    if num(c.done) < num(c.total) then return num(c.n, 1) end
+  end
+  return 1
+end
+
+function V.mqChapterLine(c)
+  if num(c.n) >= 8 then return tostring(c.name or '') end
+  return tr('%s  %d/%d', tostring(c.name or ''), num(c.done), num(c.total))
+end
+
+-- the steps of one chapter (n), each {title, state, level, hint}; the epilogue cards for the last chapter
+function V.mqSteps(mq, n)
+  local out = {}
+  if not mq then return out end
+  for _, s in ipairs(mq.steps) do
+    if num(s.ch) == n then out[#out + 1] = s end
+  end
+  return out
+end
+
+function V.mqStepLine(s)
+  local mark = s.state == 'done' and '[x] ' or (s.state == 'open' and '[>] ' or '[ ] ')
+  if num(s.level) > 0 and s.state ~= 'done' then
+    return mark .. tostring(s.title or '') .. '  ' .. tr('(level %d)', num(s.level))
+  end
+  return mark .. tostring(s.title or '')
 end
 
 -- "Level 300-499: World bosses" / "Level 2000+: The apex"

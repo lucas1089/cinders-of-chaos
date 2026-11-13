@@ -1,0 +1,147 @@
+// Main Quest window (game_goals, O551; server mainquest.lua over the goals channel, opcode 178): the chapters of the Ember Oath on
+// the left, the steps of the chosen chapter on the right, the epilogue cards after the last chapter. Styles from client_chaos_theme.
+// Opened from the tracker ("Chapters and steps") or Adventure > Main Quest.
+
+MQChapterButton < ChaosButton
+  height: 34
+  margin-bottom: 4
+  text-align: left
+  padding-left: 8
+  font: verdana-11px-antialised
+
+MQStepRow < UIWidget
+  height: 52
+  margin-bottom: 4
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+
+  UILabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    margin-left: 8
+    margin-right: 8
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: hint
+    anchors.top: title.bottom
+    anchors.left: title.left
+    anchors.right: parent.right
+    margin-top: 2
+    margin-right: 8
+    height: 28
+    font: verdana-11px-antialised
+    color: #a89a84
+    text-align: left
+    text-wrap: true
+    phantom: true
+
+ChaosMainWindow
+  id: mqWindow
+  size: 760 500
+  $mobile:
+    height: 500
+  !text: tr('Main Quest: The Ember Oath')
+  @onEscape: modules.game_goals.hideMainQuest()
+
+  UILabel
+    id: introLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 32
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    text-wrap: true
+
+  ChaosPanelDark
+    id: chapterFrame
+    anchors.top: introLabel.bottom
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 8
+    width: 230
+    padding: 4
+
+  UIScrollArea
+    id: chapterList
+    anchors.fill: chapterFrame
+    margin: 4
+    layout:
+      type: verticalBox
+    auto-focus: none
+
+  ChaosPanelDark
+    id: stepFrame
+    anchors.top: introLabel.bottom
+    anchors.left: chapterFrame.right
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-left: 8
+    margin-bottom: 8
+    padding: 3
+
+  UIScrollArea
+    id: stepList
+    anchors.top: stepFrame.top
+    anchors.left: stepFrame.left
+    anchors.right: stepScroll.left
+    anchors.bottom: stepFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: stepScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: stepScroll
+    anchors.top: stepFrame.top
+    anchors.right: stepFrame.right
+    anchors.bottom: stepFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 48
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: waitLabel
+    anchors.centerIn: stepFrame
+    text-auto-resize: true
+    !text: tr('Loading the Oath...')
+
+  ChaosButton
+    id: skipChapterButton
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    width: 120
+    !text: tr('Skip chapter')
+    @onClick: modules.game_goals.skipChapter()
+
+  ChaosButton
+    id: goButton
+    anchors.left: skipChapterButton.right
+    anchors.bottom: parent.bottom
+    margin-left: 8
+    width: 120
+    !text: tr('Go')
+    @onClick: modules.game_goals.goCurrentStep()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_goals.hideMainQuest()
