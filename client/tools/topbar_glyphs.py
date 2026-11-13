@@ -176,13 +176,6 @@ def house(g):
     g.rect(15, 5, 18, 8.5)
 
 
-def bag(g):
-    g.ell(4, 9, 20, 22.5)
-    g.poly([(8.5, 10), (15.5, 10), (17, 4.5), (7, 4.5)])
-    g.poly([(7, 4.5), (9.5, 2.5), (14.5, 2.5), (17, 4.5)])
-    g.line([(8, 10.2), (16, 10.2)], 1.1, cut=True)
-    g.line([(11, 14.5), (13, 14.5)], 0.9, cut=True)
-    g.line([(7.5, 14), (11, 20)], 0.9, cut=True)
 
 
 def bars(g):
@@ -508,14 +501,14 @@ def note(g):
 
 
 NAMES = (
-    'anvil', 'bag', 'bars', 'bolt', 'book', 'cards', 'chest', 'claws', 'columns', 'compass', 'coins', 'cross', 'dividers', 'door',
+    'anvil', 'bars', 'bolt', 'book', 'cards', 'chest', 'claws', 'columns', 'compass', 'coins', 'cross', 'dividers', 'door',
     'funnel', 'gear', 'gem', 'hammer', 'heads', 'helm', 'horns', 'house', 'info', 'laurel', 'list', 'lootarrow', 'magnifier', 'map',
     'note', 'orbs', 'pack', 'peaks', 'pick', 'pouch', 'power', 'rift', 'salvage', 'scales', 'scroll', 'sellcoin', 'shirt', 'sliders',
     'split', 'stall', 'star', 'stopwatch', 'swirl', 'swords', 'terminal', 'tome', 'tower', 'tree', 'trio', 'trophy',
 )
 
 _SHAPES = {
-    'anvil': anvil, 'bag': bag, 'bars': bars, 'bolt': bolt, 'book': book, 'cards': cards, 'chest': chest, 'claws': claws,
+    'anvil': anvil, 'bars': bars, 'bolt': bolt, 'book': book, 'cards': cards, 'chest': chest, 'claws': claws,
     'columns': columns, 'compass': compass, 'coins': coins, 'cross': cross, 'dividers': dividers, 'door': door, 'funnel': funnel,
     'gear': gear, 'gem': gem, 'hammer': hammer, 'heads': heads, 'helm': helm, 'horns': horns, 'house': house, 'info': info,
     'laurel': laurel, 'list': listg, 'lootarrow': lootarrow, 'magnifier': magnifier, 'map': mapg, 'note': note, 'orbs': orbs,
