@@ -86,6 +86,11 @@ local function onSell(cid, itemid, subType, amount, ignoreEquipped)
 	if gold > 0 then
 		player:addMoney(gold)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, t(player, "Sold %dx %s for %s gold.", units, ItemType(itemid):getName(), fmt(gold)))
+		-- the main quest step "sell loot" (O551; own Lua state: the flag is a storage bit)
+		pcall(function()
+			if not ChaosMainQuestCore then dofile("data/scripts/chaos/mainquest_core.lua") end
+			ChaosMainQuestCore.emitFlag(ChaosMainQuestCore.cfg(), player, "sell")
+		end)
 	end
 	if kept > 0 then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, t(player, kept == 1 and

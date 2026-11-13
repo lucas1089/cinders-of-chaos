@@ -55,7 +55,14 @@ return {
 			pyreShare = 0.28, zoneShare = 0.26, stillShare = 0.24},
 		{key = "s3", name = "Spell Trial III", minLevel = 1200, maxLevel = 1600, hpShare = 1.2, hit = 0.15, addHit = 0.065,
 			time = 420, lives = 2, addHp = 0.09, wave = 8, extraWaves = 0, seals = 5, marks = 5, markSeconds = 9,
-			pyreShare = 0.32, zoneShare = 0.30, stillShare = 0.28}
+			pyreShare = 0.32, zoneShare = 0.30, stillShare = 0.28},
+		-- the last page of the main quest (mainquest_boss.lua, mainquest_config.lua boss): Vael Ashmourn, solo at level 500. hpShare
+		-- gives about 282,000 health at level 500 (130,000 x 2.17): 150 s for the typical character (boss_length_model.py D.dps,
+		-- {500, 1883}); the weakest class needs about 181 s. A hit is the Cruel Trial's share (0.09) of the maximum health before the
+		-- resistance of its element (the quest's four phases); tools/mainquest_boss_model.py --check holds these numbers.
+		{key = "mq", name = "The Oath Chamber", minLevel = 500, maxLevel = 700, hpShare = 2.17, hit = 0.09, addHit = 0.035,
+			time = 360, lives = 3, addHp = 0.06, wave = 5, extraWaves = 0, seals = 4, marks = 4, markSeconds = 12,
+			pyreShare = 0.24, zoneShare = 0.22, stillShare = 0.20}
 	},
 	enrageBelow = 0.30, enrageMult = 1.5, -- "enrage": the boss hits harder below this share of its health
 	-- mechanics (timings in ms)

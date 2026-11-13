@@ -46,6 +46,14 @@ do
 	end
 end
 
+-- O551: the main quest (mainquest.lua) replaces the welcome path in the tracker and imports its state; while it runs this module
+-- stays quiet (no rows, no rewards). Off with mainquest_config.lua enabled = false.
+local function replaced()
+	local q = ChaosMainQuest ~= nil and ChaosMainQuestCore ~= nil and ChaosMainQuestCore.cfg and ChaosMainQuestCore.cfg()
+	return q and q.enabled == true or false
+end
+W.replaced = replaced
+
 local function opcode()
 	return (ChaosOpcodes and ChaosOpcodes.goals) or C().opcode
 end
@@ -322,7 +330,7 @@ function W.firstLook(player)
 	local c = C()
 	local pid = player:getId()
 	W.ready[pid] = true
-	if not c.enabled or staff(player) then
+	if not c.enabled or staff(player) or replaced() then
 		return
 	end
 	local state = get(player, "state")
@@ -378,7 +386,7 @@ if CreatureEvent then
 	function login.onLogin(player)
 		local pid = player:getId()
 		W.sent[pid], W.ready[pid] = nil, nil
-		if not C() or not C().enabled then
+		if not C() or not C().enabled or replaced() then
 			return true
 		end
 		player:registerEvent("ChaosWelcomePathKill")
@@ -428,7 +436,7 @@ end
 if GlobalEvent then
 	local think = GlobalEvent("ChaosWelcomePathThink")
 	function think.onThink(interval)
-		if not C() or not C().enabled then
+		if not C() or not C().enabled or replaced() then
 			return true
 		end
 		for _, player in ipairs(Game.getPlayers()) do

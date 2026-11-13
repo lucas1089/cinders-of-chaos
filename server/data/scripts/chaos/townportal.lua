@@ -414,6 +414,9 @@ function T.cast(player, source)
 	Chaos.send(player, OPCODE, "cast", {ms = cfg.castMs})
 	player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Opening a town portal... stand still."))
 	addEvent(poll, cfg.pollMs, player:getId(), token)
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "portal") -- main quest step (O551)
+	end
 	return true
 end
 

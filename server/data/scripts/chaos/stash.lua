@@ -1223,6 +1223,9 @@ function S.deposit(player, item, quiet)
 			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, M.stashed, s.count, s.name))
 		end
 	end
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "stash") -- main quest step (O551)
+	end
 	return true
 end
 

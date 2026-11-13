@@ -879,6 +879,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
 | 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
 | 7101080 - 7101089 | level milestones (`milestones_config.lua` `storage`, O378): +0 the highest milestone level whose Milestone Cache was given or skipped (-1 = not seen yet; the first login sets the baseline); +1..9 free. 7101090 - 7101099 stays free |
+| 7101110 - 7101139 | the main quest (`mainquest_config.lua` `storage`, `Chaos.storage.mainQuest`, O551): +0 state (-1 never seen, 0 active, 1 done, 2 skipped, 3 quiet), +1 current step index, +2 count of the open step (kills, drops), +3 flag bits 1-30 (bit 1 the talk flag), +4 flag bits 31-60, +5 boss tries, +6 boss door cooldown (os.time), +7 boss won, +8 drop pity counter, +9..+29 free |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
@@ -28526,7 +28527,64 @@ Built on what exists; nothing is duplicated:
   broadcast, staff, testers, the switch); `achievements_test.lua`, `cosmetics_test.lua`, `goals_test.lua`,
   `i18n_test.lua`; client `game_chaosnotify/notifyview_test.lua`. Not run on a live server.
 
+## Main quest "The Ember Oath" (O551, `mainquest.lua`, `mainquest_core.lua`, `mainquest_config.lua`, `mainquest_boss.lua`, client `game_goals`)
+
+Owner request 2026-11-13 (pt-BR): "faça uma quest principal, com vários steps. pra ajudar os players novos a entenderem do jogo", then: show everything, above all the
+resistances dropping at their levels; to level 500, a solo boss at the end; the player must kill, collect and explore. Design: replaces the welcome path (O370) in the
+Next Goals tracker (same channel, same skip), imports its state, builds on the Tale of Cinderhold (lore, Archivist Maelis: untouched) and Next Goals (a list by band: untouched).
+The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated from the config (`cd server && luajit tools/gen_mainquest_script.lua`, `--check` in CI).
+
+- **Frame.** Warden Ysolde of the Ashen Vigil (a stall of the hub market) swears the "cinder-born" (what the temple gives back) into the Oath, a vow at a time; the last
+  page is a door and behind it the first Warden, Vael Ashmourn, who refused to swear. No new NPC.
+- **Steps** (103, 8 chapters, `mainquest_config.lua`; the stored step is an index: new steps only at the end before the first live character). Chapters: I Cinder-Born (8-14),
+  II The Oath of the Forge (15-29), III The Oath of the Many (30-99), IV The Oath of Ascension (100-199), V The Oath of the Deep (200-299), VI The Oath of Ruin (300-500),
+  VII The Unsworn Warden (500), VIII Beyond the Oath (epilogue cards of the later systems, never gating). A step is a list of conditions `conds`, all must hold:
+  `count` (kill N monsters of the names `mons`; with `item` a quest drop that falls only while the step is open, a counter and a loot line "Troll Tusk (3/6)", never an item,
+  like the spell quest fragments: the chance per kill makes the step take about its minutes, `drop.killsPerMinute` 6, a pity drop after 3 x the expected kills), `visit` (within
+  `radius` of the hunting mark), `talk` (Ysolde heard "oath"/"juramento": her script, own Lua state, sets the talk flag), `stat` (an achievement counter or a Next Goals own
+  stat: rifts, dungeons, trials, bosses, party kills, arena, ...), `flag` (a hook: below), `storage` (the Ember Spark), `spell`, `gear` (the welcome path's probes),
+  `resist` (the defence layer), `boss`. 42 steps are kill, drop, explore or deliver, 28 more are clears and kills of the other systems (the test holds half of them).
+- **Flags** (`ChaosMainQuest.emit(player, key)`, one guarded line in: `potions.lua` drink, `daily.lua` claim, `market.lua` list and buy order, `loadouts.lua` save, `bank.lua`
+  deposit, `salvage.lua`, `stash.lua` deposit, `gamble.lua` buy, `townportal.lua` cast, `hunt_teleports.lua` enter; the Loot Buyer and Ysolde set storage bits through
+  `ChaosMainQuestCore.emitFlag`). Windows to see and pages to read (`acks`: charms, Orb Exchange, pets, Spellbook, transmog, Hideout, Achievements, Mentors, Nemesis, the
+  Chronicle, Siege, Scorched Marches, Season Pass, the death rule, Character Info) are marked by the Go button / a click on the tracker row (`mqGo`, only for the open step): a
+  spoofed report pays one small reward once, accepted. The Autoloot list and the Weekly Chest are read from their storages.
+- **Resistance steps** (owner's must). For each mark of `player_defence_config.lua` `penalty.marks` three steps: know (`warnFrom` minus 15: Character Info opened; what drops, when,
+  how to raise it: gear, gems, charms and sets in full, the passive tree `tree.share` of its points at most `tree.cap`, cap `resistCap`), prepare (`warnFrom`: every group's sum
+  reaches the mark's points; the row shows the weakest group, "earth 8/30"), hold the line (the mark's level: every group's result after the penalty at least `resist.safeMin`
+  0, read from `ChaosPlayerDefence.sheet`). Texts have `{m1} {p1} {w1} {m2} {p2} {w2} {share} {tcap} {cap} {safe} {death_rule}` filled from the configs of the systems
+  (`ChaosMainQuestCore.vars`), a test fails for a bare number of a mark in a resistance text and when a step level leaves `warnFrom - 15`, `warnFrom`, `level`.
+- **The boss** (`mainquest_boss.lua`). Vael Ashmourn is the spell trial `mq` of the Vocation Trials (`trials_config.lua` spellTiers: minLevel 500, window to 700, 3 lives, 360 s,
+  hpShare 2.17 = about 282,000 health at level 500, the Cruel Trial's hit share 0.09). Door: "door"/"porta" to Ysolde (the NPC sets the door flag, the sweep answers): level 500, the
+  four results at `safeMin` or more (strict: the last "Hold the line" step), the quest on its boss step (a skipped or finished quest keeps the door), Ysolde within 6 tiles, no
+  cooldown (60 s after a failed run, unlimited tries). The Trials replace a monster's hit by a share of the maximum health, which threw away what the defence layer
+  (`player_defence.lua`) had worked out: `T.questHit` (trials.lua calls it) applies the resistance of the phase's element (by Vael's health: fire above 75%, cold, lightning, chaos)
+  to that share, so a character at result 0 takes the design share, at 30 a third less, below 0 more (floor -100), tested on the real Trials files
+  (`tests/mainquest_boss_test.lua`). His lines by phase, the enrage and the defeat/victory lines are in the config. Reward once: 1,500,000 gold, 2 Orbs of Fate, 1 Orb of Sockets,
+  800 Vigil reputation, the achievement and title Ember-Sworn (`mainquest_boss`, `achievements_data.lua`). Sizing: `tools/mainquest_boss_model.py --check` (median class 150 s at
+  level 500, the weakest (Beastmaster) 181 s of 360, at most 70% of the clock, a class at least 60% of the median). The four phases differ in element, line and the telegraphs of the
+  player's class family (the Trials' own mechanics): the four distinct attack shapes of the first design (ring, cone, beam, all together) are NOT built; they need engine work in trials.lua.
+- **Rewards.** Gold to the bank = the step's minutes x the Ember Cache income at its level (`embercache_config.lua`, rounded to 100) plus a few cheap orbs (2 to 4 of Upheaval,
+  Awakening, Fate, Sockets, Whetstone); chapters III-VI pay fewer minutes (the income table jumps at 300 to 500). `tools/mainquest_model.lua --check`: the quest with the boss reward is
+  at most 7% of the gold an ideal hunter earns from 8 to 500 (4.37M, 6.6%), kill and drop steps take 0.5 to 2.2 times the minutes they pay for, orbs only, no coin, the boss under the
+  Cruel Trial's first clear. No store item is ever a step (the Loot Bag and the Auto Seller are store items).
+- **Existing characters.** At the first look (12 s after login): above level 500 the state is quiet (no tracker; Ysolde offers the door). Otherwise the steps the character has done already
+  pass silently (no reward); a character that played before passes silently every step `silentGap` (40) levels below its own, and the kill, drop, visit, talk and spell steps up to its
+  level; the rest stay open and pay. A character on the welcome path starts after the steps it did and its old path rests (state 2). Skip: a step's window is not skippable, "Skip chapter"
+  (window), "Skip main quest" (tracker, two clicks; Ysolde offers it again with "oath"); the boss door stays.
+- **Protocol** (goals channel 178, no new opcode): `welcome {title, step, count, chapter, chapterName, rows[{key, title, progress, target, state, hint, where, detail}]}` for the tracker;
+  client to server `mqOpen`, `mqSkip {scope}`, `mqGo {step}`; server to client `mq {state, step, count, chapters, steps, epilogue}` chunked (`Chaos.sendChunked`). Client: `game_goals/mainquest.lua`,
+  `mainquest.otui`, Adventure > Main Quest, "Chapters and steps" under the tracker rows; pt-BR in `client_chaos_locale/pt_br.lua`. The mark over Ysolde's head: `ChaosPoi.markSources.mainquest`.
+  Unity: not planned (it would need the window, the tracker rows and the three actions on the goals handler).
+- **Tests.** `tests/mainquest_test.lua` (config, validation, texts and placeholders against the configs, the resistance steps against `player_defence_config.lua`, progress of every
+  condition, drops and pity, rewards, first look and veterans, the welcome import, skip, hooks present and guarded, the goals.lua calls), `tests/mainquest_boss_test.lua` (door, reward once,
+  cooldown, lines, the resistance in the Trials' combat hook), client `game_goals/goalsview_test.lua`, the two models. Not run on a live server or in a client.
+- **Not done.** The Unity client; real quest items (the drops are counters, as the spell quest fragments: items would need `install_*.py` steps and a look); the distinct attack shapes of
+  Vael's phases; English versions of Ysolde's completion lines (the English text is "Step done."); hunts and drops that count a party member (only the killer counts).
+
 ## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
+
+**Replaced by the main quest (O551, section above): while `mainquest_config.lua` is enabled this module stays quiet (`ChaosWelcomePath.replaced`) and its state is imported.**
 
 Owner request 2026-11-03 (pt-BR): a tracked chain of first steps for a new character, each with a small reward, that
 teaches the basics in order. Built on the Next Goals tracker and its channel (no new opcode, no new window).

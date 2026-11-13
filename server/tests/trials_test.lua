@@ -553,7 +553,7 @@ end
 do
 	local merc = cfg.tiers[cfg.spellHpBase]
 	eq(merc.key, "merciless", "spellHpBase is the Merciless tier")
-	eq(#cfg.spellTiers, 3, "three spell trials")
+	eq(#cfg.spellTiers, 4, "three spell trials and the main quest boss (mq, O551)")
 	local keys = {"s1", "s2", "s3"}
 	local share, hit, addHit, minutes, lives = {0.8, 1.0, 1.2}, {0.09, 0.12, 0.15}, {0.035, 0.05, 0.065}, {5, 6, 7}, {3, 3, 2}
 	local gate = {500, 800, 1200}

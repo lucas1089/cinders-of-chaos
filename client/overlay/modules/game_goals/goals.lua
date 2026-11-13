@@ -2,9 +2,9 @@
 -- level band, the gear path and hunts of the band and the next unlocks, and a compact tracker on screen. The pure
 -- parts: goalsview.lua (GoalsView, tested by goalsview_test.lua). Menu: Adventure > Next Goals and Adventure > Goal
 -- Tracker (added with ChaosTopBar.addEntry). The "where" buttons open a window or put a mark on the minimap.
---   client -> server  open | close | tracker | welcomeSkip
+--   client -> server  open | close | tracker | welcomeSkip | mqOpen | mqSkip {scope} | mqGo {step}
 --   server -> client  goals {...} (chunked) | tracker {rows} | ascension {rows} | spellquest {rows} | welcome {...} |
---                     done {text}
+--                     mq {...} (chunked: the whole main quest, O551) | done {text}
 
 local OPCODE = 178
 local V = GoalsView
@@ -22,6 +22,19 @@ local function send(action)
   if protocol then
     protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = {} }))
   end
+end
+
+-- an action with data (the main quest buttons)
+function sendData(action, data)
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
+  end
+end
+
+-- the state of the channel for the main quest window (mainquest.lua, another file of the module)
+function mqState()
+  return st
 end
 
 local function status(text)
@@ -190,13 +203,13 @@ local function addTrackerRow(parent, text, look, color, pct, onClick, tooltip)
   return w
 end
 
--- "Skip welcome path": the first click asks, a second one within SKIP_CONFIRM_MS skips (server welcomepath.lua)
+-- "Skip main quest": the first click asks, a second one within SKIP_CONFIRM_MS skips (server welcomepath.lua)
 local SKIP_CONFIRM_MS = 4000
 local skipArmed, skipEvent
 local function resetSkip()
   skipArmed = false
   if skipEvent then removeEvent(skipEvent) skipEvent = nil end
-  if tracker and tracker.welcomeSkip then tracker.welcomeSkip:setText(tr('Skip welcome path')) end
+  if tracker and tracker.welcomeSkip then tracker.welcomeSkip:setText(tr('Skip main quest')) end
 end
 
 local function onSkipClick()
@@ -224,6 +237,7 @@ local function renderTracker()
   tracker.sqTitle:setFont(look.title)
   tracker.goalsTitle:setFont(look.title)
   tracker.welcomeSkip:setFont(look.font)
+  tracker.mqOpen:setFont(look.font)
   local folded = g_settings.getBoolean(SETTING_FOLDED, false)
   local hasWelcome = #st.welcome > 0
   local hasGoals, hasAsc, hasSq = #st.tracker > 0, #st.ascension > 0, #st.spellquest > 0
@@ -245,6 +259,7 @@ local function renderTracker()
   if not hasWelcome then resetSkip() end
   tracker.welcomeRows:setVisible(not folded)
   tracker.welcomeSkip:setVisible(hasWelcome and not folded)
+  tracker.mqOpen:setVisible(hasWelcome and not folded)
   tracker.goalsTitle:setVisible(hasWelcome and hasGoals and not folded and take[2] > 0)
   tracker.rows:setVisible(not folded)
   tracker.ascTitle:setVisible(hasAsc and (hasGoals or hasWelcome) and not folded and take[3] > 0)
@@ -261,9 +276,14 @@ local function renderTracker()
   end
   for i, r in ipairs(st.welcome) do
     if i <= take[1] then
-      local text, pct, color = V.ascensionLine(r)
+      local text, pct, color = V.welcomeLine(r)
       local where = r.where
-      local click = V.action(where) and function() runWhere(where) end or nil
+      local stepKey = r.key
+      -- a click does the step's where and tells the server (the steps that only ask to see a window are marked by it)
+      local click = V.action(where) and function()
+        runWhere(where)
+        sendData('mqGo', { step = stepKey })
+      end or nil
       addTrackerRow(tracker.welcomeRows, text, look, color, pct, click, type(r.hint) == 'string' and r.hint or nil)
     end
   end
@@ -356,6 +376,9 @@ local function onMessage(msg)
   elseif msg.action == 'welcome' then
     V.onWelcome(st, msg.data)
     renderTracker()
+  elseif msg.action == 'mq' then
+    V.onMQ(st, msg.data)
+    if drawMainQuest then drawMainQuest() end
   elseif msg.action == 'done' then
     status(V.doneText(msg.data))
     local cs = modules.game_chaossound -- O238: the goal sound
@@ -388,6 +411,8 @@ local function addMenu()
   if api and api.addEntry then
     local ok1 = pcall(api.addEntry, 'adventure',
       { text = 'Next Goals', icon = 'quests', modules = { 'game_goals' }, fns = { 'toggle' } })
+    pcall(api.addEntry, 'adventure',
+      { text = 'Main Quest', icon = 'quests', modules = { 'game_goals' }, fns = { 'toggleMainQuest' } })
     pcall(api.addEntry, 'adventure',
       { text = 'Goal Tracker', icon = 'quests', modules = { 'game_goals' }, fns = { 'toggleTracker' } })
     menuAdded = ok1
@@ -530,6 +555,7 @@ function init()
   pcall(function() modules.game_howitworks.attach(window, 'goals') end) -- game_howitworks: the ? button
   window:hide()
   window.trackerBox:setChecked(trackerEnabled())
+  if initMainQuest then initMainQuest() end
 
   -- the map panel runs under the side panels and the chat: anchor to what is really visible
   local root = modules.game_interface.getRootPanel()
@@ -539,6 +565,7 @@ function init()
   tracker.title.onMouseMove = onTitleMove
   tracker.title.onMouseRelease = onTitleRelease
   tracker.welcomeSkip.onClick = onSkipClick
+  tracker.mqOpen.onClick = function() toggleMainQuest() end
   anchorTracker()
   watchGeometry(true)
 
@@ -548,6 +575,7 @@ function init()
 end
 
 function terminate()
+  if terminateMainQuest then terminateMainQuest() end
   if anchorEvent then removeEvent(anchorEvent); anchorEvent = nil end
   if skipEvent then removeEvent(skipEvent); skipEvent = nil end
   pcall(watchGeometry, false)

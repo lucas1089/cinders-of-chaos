@@ -155,24 +155,52 @@ eq(V.savedPosition({ Jokr = { x = 1 } }, 'Jokr'), nil, 'half a position'); eq(V.
 eq(V.savedPosition({}, 'Other'), nil, 'other character')
 eq(V.isDrag(2, 3), false, 'small move is a click'); eq(V.isDrag(0, -6), true, 'big move is a drag')
 
--- the welcome path (server welcomepath.lua, O370): one row, the step count in the head
+-- the main quest rows (server mainquest.lua, O551; they replaced the welcome path): one row, the step count in the head
 local w = V.new()
 eq(#w.welcome, 0, 'no welcome rows at first')
 V.onWelcome(w, { title = 'Welcome Path', step = 2, count = 7,
   rows = { { key = 'kills', title = 'Slay 20 monsters', progress = 5, target = 20, state = 'open', hint = 'The hunts.',
     where = { k = 'hunts', pos = { x = 1, y = 2, z = 7 }, label = 'Rats' } }, 'junk' } })
 eq(#w.welcome, 1, 'one welcome row, junk dropped')
-eq(V.welcomeTitle(w), 'Welcome Path 2/7', 'welcome head')
-eq(V.welcomeTitle(w, true), 'Welcome Path (2/7) +', 'folded welcome head')
+eq(V.welcomeTitle(w), 'Main Quest 2/7', 'main quest head')
+eq(V.welcomeTitle(w, true), 'Main Quest (2/7) +', 'folded main quest head')
 local wt, wp = V.ascensionLine(w.welcome[1])
 eq(wt, 'Slay 20 monsters  5/20', 'welcome row text'); eq(wp, 25, 'welcome row bar')
 eq(V.action(w.welcome[1].where).map.x, 1, 'the row marks the hunt on the map')
+-- a resistance step shows its weakest group after the line
+local rl = V.welcomeLine({ key = 'res1b', title = 'Prepare', progress = 2, target = 4, state = 'open', detail = 'earth 8/30' })
+eq(rl, 'Prepare  2/4  (earth 8/30)', 'the resistance row names the weakest group')
+eq(V.welcomeLine(w.welcome[1]), 'Slay 20 monsters  5/20', 'no detail: the plain line')
+-- the chapter name rides on the welcome message
+V.onWelcome(w, { step = 3, count = 103, chapterName = 'Cinder-Born', rows = { { key = 'a', title = 'x', progress = 0, target = 1 } } })
+eq(w.welcomeChapter, 'Cinder-Born', 'the chapter name')
 V.onWelcome(w, { rows = {} })
 eq(#w.welcome, 0, 'no rows hide the section'); eq(w.welcomeStep, 0, 'step reset')
 V.onWelcome(w, nil)
 eq(#w.welcome, 0, 'a bad message hides it too')
 sh, hid = V.budget({ 1, 3, 0, 0 }, 3)
 eq(sh[1], 1, 'budget: the welcome step first'); eq(sh[2], 2, 'budget: then two goals'); eq(hid, 1, 'budget: one goal hidden')
+
+-- the whole quest for the chapter window (server mainquest.lua `mq`)
+local mqs = V.new()
+V.onMQ(mqs, { state = 0, step = 3, count = 5,
+  chapters = { { n = 1, name = 'Cinder-Born', intro = 'a', from = 8, to = 14, done = 2, total = 3 },
+    { n = 2, name = 'The Oath of the Forge', intro = 'b', from = 15, to = 29, done = 0, total = 2 },
+    { n = 8, name = 'Beyond the Oath', intro = 'c', from = 501, to = 2000, done = 0, total = 0 } },
+  steps = { { i = 1, key = 'a', ch = 1, level = 8, title = 'Meet Ysolde', hint = 'h', state = 'done' },
+    { i = 2, key = 'b', ch = 1, level = 8, title = 'Cast a spell', hint = 'h', state = 'done' },
+    { i = 3, key = 'c', ch = 1, level = 8, title = 'Slay 12 Trolls', hint = 'h', state = 'open' },
+    { i = 4, key = 'd', ch = 2, level = 15, title = 'Save a loadout', hint = 'h', state = 'todo' },
+    { i = 5, key = 'e', ch = 2, level = 20, title = 'Use an orb', hint = 'h', state = 'todo' } },
+  epilogue = { { key = 'raid', level = 800, title = 'Raid', text = 't' } } })
+eq(#mqs.mq.chapters, 3, 'three chapters'); eq(#mqs.mq.steps, 5, 'five steps'); eq(#mqs.mq.epilogue, 1, 'one epilogue card')
+eq(V.mqChapter(mqs.mq), 1, 'the window opens on the chapter of the open step')
+eq(#V.mqSteps(mqs.mq, 2), 2, 'two steps in chapter 2')
+eq(V.mqChapterLine(mqs.mq.chapters[1]), 'Cinder-Born  2/3', 'chapter line'); eq(V.mqChapterLine(mqs.mq.chapters[3]), 'Beyond the Oath', 'epilogue has no count')
+eq(V.mqStepLine(mqs.mq.steps[1]), '[x] Meet Ysolde', 'a done step'); eq(V.mqStepLine(mqs.mq.steps[3]), '[>] Slay 12 Trolls  (level 8)', 'the open step')
+eq(V.mqStepLine(mqs.mq.steps[5]), '[ ] Use an orb  (level 20)', 'a step to come')
+V.onMQ(mqs, nil)
+eq(#mqs.mq.chapters, 0, 'a bad message empties it'); eq(V.mqChapter(nil), 1)
 
 if fails > 0 then print('goalsview_test: ' .. fails .. ' failure(s)'); os.exit(1) end
 print('goalsview_test: ' .. checks .. ' checks OK')

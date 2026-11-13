@@ -2329,6 +2329,8 @@ Chaos.storage.spellQuestCount = 3
 -- Level milestones (O378; milestones_config.lua `storage`): 7101080 - 7101089, +0 the highest milestone paid; +1..9
 -- free. 7101090 - 7101099 stays free.
 Chaos.storage.welcomePath = 7101070
+-- the main quest (O551, mainquest_config.lua `storage`): 7101110 - 7101139
+Chaos.storage.mainQuest = 7101110
 -- Hunting level on screen (owner 2026-10-27): the bounty pool's level (ChaosLoot.monsterLevel) is half of the level
 -- players hunt a monster at; every text that prints a pool-scale level (monster level thresholds, map marks) prints
 -- Chaos.huntingLevel(n) = n x pace_config.lua baseLevelMult. A gate that compares a monster with a share of the

@@ -462,6 +462,9 @@ local function buyNow(player, d)
 			end
 		end
 	end
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "gambler") -- main quest step (O551)
+	end
 	return result(player, true, line, reveal)
 end
 

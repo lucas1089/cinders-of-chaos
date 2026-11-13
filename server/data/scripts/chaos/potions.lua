@@ -109,6 +109,9 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	for _, pool in ipairs(pools) do
 		lastDrink[player:getId() .. ":" .. pool] = nowMs()
 	end
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "potion") -- main quest step (O551)
+	end
 	return true -- the flask is never used up
 end
 local registered = 0

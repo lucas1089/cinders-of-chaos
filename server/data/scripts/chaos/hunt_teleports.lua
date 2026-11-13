@@ -357,6 +357,9 @@ function step.onStepIn(creature, item, position, fromPosition)
 		return true
 	end
 	position:sendMagicEffect(cfg.effects.go)
+	if ChaosMainQuest and ChaosMainQuest.emit then
+		pcall(ChaosMainQuest.emit, player, "teleports") -- main quest step (O551)
+	end
 	player:teleportTo(P(entry.arrival))
 	player:getPosition():sendMagicEffect(cfg.effects.go)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, msg)
