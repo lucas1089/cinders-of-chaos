@@ -1519,17 +1519,29 @@ local function pyreTick(player)
 		Chaos.heal(player, regen)
 	end
 	local burn = A.pyreBurn(maxHealth, player:getHealth(), shield)
-	if burn > 0 then
-		pcall(doTargetCombatHealth, 0, player, COMBAT_FIREDAMAGE, -burn, -burn, CONST_ME_NONE)
-	end
 	local aura = A.pyreAura(maxHealth, hasUnique(player:getId(), "pyreMantle"))
 	local struck = {}
-	for _, v in ipairs(enemies) do
-		local target = Creature(v.id)
-		if target and target:getHealth() > 0 then
-			struck[#struck + 1] = v
+	-- O550: the engine's fire hit effect (src-patch 0045, the pair 29 blast) is off while the tick deals its damage: the client draws the burn
+	local V = rawget(_G, "ChaosPack29Vfx")
+	local function deal()
+		if burn > 0 then
+			pcall(doTargetCombatHealth, 0, player, COMBAT_FIREDAMAGE, -burn, -burn, CONST_ME_NONE)
 		end
-		dealOwn("pyre", player, target, COMBAT_FIREDAMAGE, aura, CONST_ME_NONE)
+		for _, v in ipairs(enemies) do
+			local target = Creature(v.id)
+			if target and target:getHealth() > 0 then
+				struck[#struck + 1] = v
+			end
+			dealOwn("pyre", player, target, COMBAT_FIREDAMAGE, aura, CONST_ME_NONE)
+		end
+	end
+	if V and V.withoutHitEffect then
+		local ok, err = V.withoutHitEffect(COMBAT_FIREDAMAGE, deal)
+		if not ok then
+			print("[ChaosArchetypes] pyre tick: " .. tostring(err))
+		end
+	else
+		deal()
 	end
 	if #struck > 0 and aura > 0 then
 		sendBurn(player, pos, struck)

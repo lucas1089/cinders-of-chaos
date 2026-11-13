@@ -3700,6 +3700,13 @@ at level 300 (`rotation_sim.py --mana`, which only checks up to level 300 and wi
   Templars" switches the ring and the burn off for the viewer (own and other players'). Test: `tests/archetypes_test.lua` (core rules,
   the glue on a mocked engine: ring only on change, empty list on a dead holder, the burn names the struck monsters only, no map effect,
   numbers as before); client: `chestaura_test.lua`. Not verified in a running client.
+  **The engine's blast (O550, owner 2026-11-13: "the circle shows, but the effect is still the old one").** `CONST_ME_NONE` in the script
+  was not enough: the engine itself sends the hit effect of a direct fire hit in `Game::combatChangeHealth`, and with pair 29 live src-patch 0045
+  swaps it for `blast_fire1` (`C.elementHits`), so every struck monster still got the big orange blast each second. `pyreTick` now deals its damage
+  (the aura hits and the self burn) inside `ChaosPack29Vfx.withoutHitEffect(COMBAT_FIREDAMAGE, fn)` (`chaos_pack29_vfx.lua`): `Game.setHitEffect(1,
+  fire, 0)` while it runs, then exactly the row `applyEngine` set (`C.engineHits`) or the stock effect (-1), `pcall`, nested calls restore once;
+  no other fire hit is touched, an engine without 0045 runs as before. Damage unchanged. An item's ignite proc on an aura hit still shows its own
+  ignite effect (a chance of the item, not the blast). Test: `tests/pyre_hit_effect_test.lua`, `tests/archetypes_test.lua`. Not seen on a running server.
 
 ## Fixed spell costs (owner 2026-10-21: "Mas o custo de mana das skills ainda tá escalando com o level do char")
 
