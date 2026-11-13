@@ -68,6 +68,20 @@ local function style(w, kind, scale)
     w:setBackgroundColor(st.fill)
     w:setBorderWidth(st.ring)
     w:setBorderColor(st.edge)
+    -- the light corner pixel inside the black edge (option C, 2026-11-13)
+    local shine = w:getChildById('shine')
+    if st.shine then
+      if not shine then
+        shine = g_ui.createWidget('MinimapDotShine', w)
+        shine:setId('shine')
+      end
+      shine:setBackgroundColor(st.shine)
+      shine:setMarginLeft(st.ring)
+      shine:setMarginTop(st.ring)
+      shine:show()
+    elseif shine then
+      shine:hide()
+    end
     w.styleKey = key
   end
   return st

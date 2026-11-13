@@ -58,17 +58,19 @@ end
 -- the colours: red monster, red with a gold ring for a boss, green party, blue NPC, white you (with a dark edge so a dot
 -- reads on any ground)
 L.COLORS = {
-  monster = { fill = '#e82828', edge = '#2d0000' },
+  monster = { fill = '#ff1e1e', edge = '#000000', shine = '#ffbeb4' },
   boss = { fill = '#be0f0f', edge = '#ffd646' },
   party = { fill = '#46e15a', edge = '#002800' },
-  npc = { fill = '#5096ff', edge = '#00143c' },
+  npc = { fill = '#5096ff', edge = '#000000', shine = '#d2e6ff' },
   self = { fill = '#ffffff', edge = '#000000' },
 }
 
--- size in px and ring width for a kind at a zoom (scale = px per tile). At 1 px per tile or less the dots are squares of 2 x 2
--- (a pack would hide the map otherwise), the boss 6 x 6 with a 1 px gold ring, you and the party 4 x 4 with a dark ring;
--- from 2 px per tile up a dot grows with the zoom (3 px at 2, 4 at 4, 6 at 8, at most 9) and gets a 1 px dark edge once it is 5 px
--- or more; a boss is 3 px bigger with a 2 px gold ring, you and the party one px bigger with a 1 px ring.
+-- size in px and ring width for a kind at a zoom (scale = px per tile). Owner 2026-11-13 (option C of the preview): a monster
+-- or NPC dot is a bright square with a 1 px black edge and a light pixel in its top left corner, so it reads on any ground
+-- (the edge is drawn inside the widget, so the dot is the fill plus 2 px). At 1 px per tile or less the fill is 2 x 2 (4 px
+-- with the edge), the boss 6 x 6 with a 1 px gold ring, you and the party 4 x 4 with a dark ring; from 2 px per tile up the
+-- fill grows with the zoom (3 px at 2, 4 at 4, 6 at 8, at most 9); a boss is 3 px bigger with a 2 px gold ring, you and the
+-- party one px bigger with a 1 px ring. `shine` is the colour of the corner pixel (nil: none).
 function L.style(kind, scale)
   scale = tonumber(scale) or 1
   local c = L.COLORS[kind] or L.COLORS.monster
@@ -90,7 +92,11 @@ function L.style(kind, scale)
       size, ring = size + 1, 1
     end
   end
-  return { size = size, ring = ring, fill = c.fill, edge = c.edge }
+  local shine
+  if L.COLORS[kind] == nil or kind == 'monster' or kind == 'npc' then
+    size, ring, shine = size + 2, 1, c.shine
+  end
+  return { size = size, ring = ring, fill = c.fill, edge = c.edge, shine = shine }
 end
 
 -- the order the dots are drawn in (later over earlier): NPCs, monsters, party, bosses, you

@@ -10,3 +10,10 @@ MinimapDot < UIWidget
   phantom: true
   focusable: false
   visible: false
+
+MinimapDotShine < UIWidget
+  size: 1 1
+  phantom: true
+  focusable: false
+  anchors.top: parent.top
+  anchors.left: parent.left
