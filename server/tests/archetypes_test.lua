@@ -1028,7 +1028,7 @@ end
 eq(burnSelf, 150, "burns 2.5%")
 eq(aura, 1, "only the enemy in reach")
 eq(jug.c.hp, 5000 + 120 - 150, "regenerated 2%, burnt 2.5%")
--- O550: no engine hit effect on the aura's fire hits (src-patch 0045 override 0 while the tick deals), restored after, errors too
+-- O548: no engine hit effect on the aura's fire hits (src-patch 0045 override 0 while the tick deals), restored after, errors too
 do
 	dofile("data/lib/chaos_pack29_fx.lua")
 	dofile("data/lib/chaos_pack29_vfx.lua")

@@ -1,5 +1,5 @@
 -- Run from the server/ folder: luajit tests/pyre_hit_effect_test.lua (CI runs it with luajit and lua5.3)
--- O550: ChaosPack29Vfx.withoutHitEffect, the engine hit effect (src-patch 0045, Game.setHitEffect kind 1) off around Pyre Oath's damage:
+-- O548: ChaosPack29Vfx.withoutHitEffect, the engine hit effect (src-patch 0045, Game.setHitEffect kind 1) off around Pyre Oath's damage:
 -- 0 while the damage runs, exactly what applyEngine set (or stock, -1) after, also when the damage errors, nested calls, other
 -- combat types untouched, an engine without the patch runs the function as before.
 local failures = 0

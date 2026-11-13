@@ -1521,7 +1521,7 @@ local function pyreTick(player)
 	local burn = A.pyreBurn(maxHealth, player:getHealth(), shield)
 	local aura = A.pyreAura(maxHealth, hasUnique(player:getId(), "pyreMantle"))
 	local struck = {}
-	-- O550: the engine's fire hit effect (src-patch 0045, the pair 29 blast) is off while the tick deals its damage: the client draws the burn
+	-- O548: the engine's fire hit effect (src-patch 0045, the pair 29 blast) is off while the tick deals its damage: the client draws the burn
 	local V = rawget(_G, "ChaosPack29Vfx")
 	local function deal()
 		if burn > 0 then

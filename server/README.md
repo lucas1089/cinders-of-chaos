@@ -3700,7 +3700,7 @@ at level 300 (`rotation_sim.py --mana`, which only checks up to level 300 and wi
   Templars" switches the ring and the burn off for the viewer (own and other players'). Test: `tests/archetypes_test.lua` (core rules,
   the glue on a mocked engine: ring only on change, empty list on a dead holder, the burn names the struck monsters only, no map effect,
   numbers as before); client: `chestaura_test.lua`. Not verified in a running client.
-  **The engine's blast (O550, owner 2026-11-13: "the circle shows, but the effect is still the old one").** `CONST_ME_NONE` in the script
+  **The engine's blast (O548, owner 2026-11-13: "the circle shows, but the effect is still the old one").** `CONST_ME_NONE` in the script
   was not enough: the engine itself sends the hit effect of a direct fire hit in `Game::combatChangeHealth`, and with pair 29 live src-patch 0045
   swaps it for `blast_fire1` (`C.elementHits`), so every struck monster still got the big orange blast each second. `pyreTick` now deals its damage
   (the aura hits and the self burn) inside `ChaosPack29Vfx.withoutHitEffect(COMBAT_FIREDAMAGE, fn)` (`chaos_pack29_vfx.lua`): `Game.setHitEffect(1,

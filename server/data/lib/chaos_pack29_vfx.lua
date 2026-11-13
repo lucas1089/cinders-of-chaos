@@ -342,7 +342,7 @@ function C.applyEngine()
 	return #hits + #shots
 end
 
--- O550: the engine hit effect of a direct hit of combat type `ctype` (kind 1) is off while fn runs, then exactly what applyEngine set
+-- O548: the engine hit effect of a direct hit of combat type `ctype` (kind 1) is off while fn runs, then exactly what applyEngine set
 -- (C.engineHits) or the stock one (-1) again; pcall, so an error never leaves the override at 0. For damage whose look is drawn by the
 -- client (Pyre Oath's burn, opcode 118): the engine's blast on every struck monster is gone, no other fire hit is touched. An engine
 -- without src-patch 0045 (no Game.setHitEffect): fn runs as before. Nested calls: only the outer one sets and restores.
