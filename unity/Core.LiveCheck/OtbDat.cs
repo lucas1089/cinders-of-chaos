@@ -140,6 +140,90 @@ namespace Chaos.Core.LiveCheck
             return result;
         }
 
+        /// <summary>The client ids of the items of items.xml with attribute type = TYPE (door, teleport, ...), by the otb node of the server id (O542: the journey bot opens doors).</summary>
+        public static HashSet<int> ItemsOfType(string itemsXml, byte[] otb, string type)
+        {
+            var byServer = new Dictionary<int, int>();
+            foreach (var n in ReadNodes(otb)) byServer[n.Server] = n.Client;
+            var result = new HashSet<int>();
+            foreach (Match m in Regex.Matches(itemsXml, @"<item\b([^>]*?)(/?)>"))
+            {
+                if (m.Groups[2].Value.Length > 0) continue;
+                int bodyStart = m.Index + m.Length;
+                int end = itemsXml.IndexOf("</item>", bodyStart, StringComparison.Ordinal);
+                string body = itemsXml.Substring(bodyStart, (end >= 0 ? end : bodyStart) - bodyStart);
+                if (!Regex.IsMatch(body, "key=\"type\"\\s+value=\"" + type + "\"")) continue;
+                int from = -1, to = -1;
+                foreach (Match a in Regex.Matches(m.Groups[1].Value, "(\\w+)=\"([^\"]*)\""))
+                {
+                    int.TryParse(a.Groups[2].Value, out int v);
+                    switch (a.Groups[1].Value)
+                    {
+                        case "id": from = to = v; break;
+                        case "fromid": from = v; break;
+                        case "toid": to = v; break;
+                    }
+                }
+                if (from < 0 || to < from || to - from > 5000) continue;
+                for (int id = from; id <= to; id++) if (byServer.TryGetValue(id, out int cid)) result.Add(cid);
+            }
+            return result;
+        }
+
+        /// <summary>The client ids of the items of items.xml with this name (ladders: "ladder"), self-closing entries included, ranges (fromid / toid) too (O542: the journey bot climbs a ladder with a use).</summary>
+        public static HashSet<int> ItemsNamed(string itemsXml, byte[] otb, string name)
+        {
+            var byServer = new Dictionary<int, int>();
+            foreach (var n in ReadNodes(otb)) byServer[n.Server] = n.Client;
+            var result = new HashSet<int>();
+            foreach (Match m in Regex.Matches(itemsXml, @"<item\b([^>]*?)/?>"))
+            {
+                int from = -1, to = -1;
+                bool named = false;
+                foreach (Match a in Regex.Matches(m.Groups[1].Value, "(\\w+)=\"([^\"]*)\""))
+                {
+                    int.TryParse(a.Groups[2].Value, out int v);
+                    switch (a.Groups[1].Value)
+                    {
+                        case "id": from = to = v; break;
+                        case "fromid": from = v; break;
+                        case "toid": to = v; break;
+                        case "name": named = string.Equals(a.Groups[2].Value, name, StringComparison.OrdinalIgnoreCase); break;
+                    }
+                }
+                if (!named || from < 0 || to < from || to - from > 5000) continue;
+                for (int id = from; id <= to; id++) if (byServer.TryGetValue(id, out int cid)) result.Add(cid);
+            }
+            return result;
+        }
+
+        /// <summary>The names of items.xml by client id (O542: the journey bot knows a potion in its backpack by name). A range (fromid / toid) names every id of it.</summary>
+        public static Dictionary<int, string> ItemNames(string itemsXml, byte[] otb)
+        {
+            var byServer = new Dictionary<int, int>();
+            foreach (var n in ReadNodes(otb)) byServer[n.Server] = n.Client;
+            var result = new Dictionary<int, string>();
+            foreach (Match m in Regex.Matches(itemsXml, @"<item\b([^>]*?)/?>"))
+            {
+                int from = -1, to = -1;
+                string name = "";
+                foreach (Match a in Regex.Matches(m.Groups[1].Value, "(\\w+)=\"([^\"]*)\""))
+                {
+                    int.TryParse(a.Groups[2].Value, out int v);
+                    switch (a.Groups[1].Value)
+                    {
+                        case "id": from = to = v; break;
+                        case "fromid": from = v; break;
+                        case "toid": to = v; break;
+                        case "name": name = a.Groups[2].Value; break;
+                    }
+                }
+                if (name.Length == 0 || from < 0 || to < from || to - from > 5000) continue;
+                for (int id = from; id <= to; id++) if (byServer.TryGetValue(id, out int cid) && !result.ContainsKey(cid)) result[cid] = name;
+            }
+            return result;
+        }
+
         public static DatFile Build(byte[] otb)
         {
             var nodes = ReadNodes(otb);

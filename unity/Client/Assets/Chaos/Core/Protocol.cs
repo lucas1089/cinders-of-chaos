@@ -150,9 +150,12 @@ namespace Chaos.Core
             stream = tcp.GetStream();
         }
 
+        /// <summary>A local address to connect from (the journey bots, O542: the server allows one connection per address, so each bot of a run binds its own 127.1.x.y). Null: the system picks.</summary>
+        public static string LocalBind;
+
         public static async Task<Connection> Open(string host, int port, int timeoutMs = 10000)
         {
-            var t = new TcpClient();
+            var t = LocalBind != null && System.Net.IPAddress.TryParse(LocalBind, out var bind) ? new TcpClient(new System.Net.IPEndPoint(bind, 0)) : new TcpClient();
             var connect = t.ConnectAsync(host, port);
             if (await Task.WhenAny(connect, Task.Delay(timeoutMs)) != connect)
             {

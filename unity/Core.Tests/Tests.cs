@@ -101,6 +101,7 @@ namespace Chaos.Core.Tests
             WalkTourTests.Run,
             Phase29Tests.Run,
             Phase30Tests.Run,
+            JourneyTests.Run,
         };
 
         static void CryptoChecks()

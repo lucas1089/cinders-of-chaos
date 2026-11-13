@@ -398,6 +398,17 @@ if mode == "--spells" then
 	end
 	return
 end
+if mode == "--curve-json" then
+	-- O542: the expected minutes per level (level L to L + 1) as JSON, for the journey bot report (server/tools/journey_report.py)
+	local maxL = tonumber(arg[2]) or 100
+	local parts = {}
+	for L = 1, maxL do
+		local c = curve[L]
+		if c and c.min ~= math.huge then parts[#parts + 1] = string.format('"%d":%.4f', L, c.min) end
+	end
+	print('{"source":"progression_model.lua","levels":{' .. table.concat(parts, ",") .. '}}')
+	return
+end
 if mode == "--check" then
 	for _, p in ipairs(problems) do print("progression: " .. p) end
 	if #problems > 0 then

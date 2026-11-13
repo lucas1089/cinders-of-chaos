@@ -6,6 +6,7 @@
 // extended opcode Unity handles and writes a JSON and a text report (unity/README.md "Live check (O433)"). Exit 0 when the login, the entry and
 // the walk worked and the parser had no error; 1 otherwise; 2 on a usage error.
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Chaos.Core.LiveCheck
@@ -16,6 +17,7 @@ namespace Chaos.Core.LiveCheck
         {
             if (why != null) Console.Error.WriteLine(why);
             Console.Error.WriteLine("usage: Core.LiveCheck HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE] [--identity extended|chaos]");
+            Console.Error.WriteLine("                      journey bot (O542): --journey --otb items.otb [--poi data/chaos_poi.lua] [--journey-minutes N] [--journey-level N] [--journey-out FILE] [--seed N] [--class NAME]");
             Console.Error.WriteLine("                      [--otb items.otb | --pair DIR] [--no-ext]   (password: environment variable CHAOS_LIVE_PASSWORD)");
             Console.Error.WriteLine("                      [--scenario newplayer,questlog,firstunlock,firstkill,firstquest,tooltip,stairs,floorchange,npc,sell,market,modal,moremodals,party,sharedkill,rift,riftboss,partyrift,rifttier,riftfail,omen,coffer,guardians,partnerdeath,lastlife,party3,trialwindows,riftsolodeath,riftkilled,omenparty,wrathnova,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
             Console.Error.WriteLine("                      [--rift-tier N] [--rift-mods name:value,...] [--keeper-at X,Y,Z]");
@@ -35,6 +37,8 @@ namespace Chaos.Core.LiveCheck
         static int Main(string[] args)
         {
             var o = new LiveOptions();
+            var jo = new JourneyOptions();
+            bool journey = false;
             int pos = 0;
             for (int i = 0; i < args.Length; i++)
             {
@@ -50,6 +54,13 @@ namespace Chaos.Core.LiveCheck
                         case "--otb": o.OtbFile = Next(); break;
                         case "--pair": o.PairDir = Next(); break;
                         case "--no-ext": o.SkipExt = true; break;
+                        case "--journey": journey = true; break;
+                        case "--journey-minutes": jo.Minutes = Math.Max(1, int.Parse(Next())); break;
+                        case "--journey-level": jo.TargetLevel = Math.Max(2, int.Parse(Next())); break;
+                        case "--journey-out": jo.OutFile = Next(); break;
+                        case "--poi": jo.PoiFile = Next(); break;
+                        case "--seed": jo.Seed = ulong.Parse(Next()); break;
+                        case "--class": jo.ClassName = Next(); break;
                         case "--scenario":
                             foreach (string n in Next().Split(',', StringSplitOptions.RemoveEmptyEntries))
                             {
@@ -133,6 +144,28 @@ namespace Chaos.Core.LiveCheck
             }
             catch (Exception e) when (e is IOException || e is ProtocolException || e is InvalidDataException) { return Usage("item types: " + e.Message); }
 
+            if (journey)
+            {
+                string bindIp = Environment.GetEnvironmentVariable("CHAOS_LIVE_BIND");
+                if (!string.IsNullOrEmpty(bindIp)) Connection.LocalBind = bindIp;
+                // O542: the journey bot (LiveJourney.cs): floor changes and doors from items.xml beside the otb
+                Dictionary<int, string> fc = null, names = null; HashSet<int> doors = null, ladders = null;
+                if (o.OtbFile != null)
+                {
+                    string xml = o.ItemsXml;
+                    if (xml == null) { string beside = Path.Combine(Path.GetDirectoryName(o.OtbFile) ?? ".", "items.xml"); if (File.Exists(beside)) xml = beside; }
+                    if (xml != null)
+                    {
+                        byte[] otb = File.ReadAllBytes(o.OtbFile);
+                        string text = File.ReadAllText(xml, System.Text.Encoding.GetEncoding("ISO-8859-1"));
+                        fc = OtbDat.FloorChanges(text, otb);
+                        doors = OtbDat.ItemsOfType(text, otb, "door");
+                        ladders = OtbDat.ItemsNamed(text, otb, "ladder");
+                        names = OtbDat.ItemNames(text, otb);
+                    }
+                }
+                return new JourneyRun(o, jo, dat, fc, doors, ladders, names).Execute();
+            }
             var run = new LiveRun(o, dat, datSource);
             int code = run.Execute();
             Console.WriteLine(run.TextReport());
