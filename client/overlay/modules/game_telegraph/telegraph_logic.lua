@@ -1,7 +1,8 @@
 -- Floor telegraphs (O549): the rules without client API (tested by telegraph_test.lua with luajit and lua5.3).
 -- A boss attack marks its tiles on the floor: every tile of the area gets a flat translucent fill, and the outline of the whole
 -- area (the outer edges of the union of the tiles, not the edges between two marked tiles) a bright line a couple of pixels wide,
--- under the creatures. The fill brightens a little in the last 0.4 s before the hit; the mark is gone at the hit, at the server's
+-- under the creatures. The mark heats up as the hit nears: it fades in, turns from orange to red, throbs faster and faster, flares
+-- in the last 0.4 s and bursts at the hit (a short bright flash that fades out in BURST_MS); it is gone after that, at the server's
 -- clear, and at a safety expiry.
 -- The server (telegraph.lua) sends on the monster bar's opcode 125 (forwarded by game_monsterbar):
 --   floor      {id, z, x0, y0, t = [[dx, dy]], c = colour key, ms = ms to the hit}   the area, whole (again when a follow circle moves)
@@ -25,20 +26,30 @@ L.MAX_MS = 12000
 L.EXPIRY_SLACK_MS = 1500  -- a mark whose hit time is older than this plus its length is dropped whatever the clock says
 
 -- ---------------------------------------------------------------- the look
-L.BRIGHT_MS = 400         -- the fill brightens in the last 0.4 s before the hit
-L.FILL_ALPHA = 0.38       -- the flat fill: 35 to 40 percent
-L.FILL_BRIGHT = 0.56      -- and at the hit
+L.FADE_IN_MS = 150        -- a new mark fades in
+L.BRIGHT_MS = 400         -- the flare: the last 0.4 s before the hit
+L.BURST_MS = 180          -- the burst: a flash at the hit that fades out (the server clears 300 ms after the hit, so it is seen)
+L.FILL_ALPHA = 0.32       -- the fill of a fresh mark
+L.FILL_HOT = 0.46         -- the fill when the heat reaches 1, before the flare
+L.FILL_BRIGHT = 0.62      -- and at the hit
+L.FILL_BURST = 0.80       -- the burst flash
+L.THROB = 0.06            -- the throb's depth at full heat (none on a cold mark)
+L.THROB_SCALE = 60        -- the throb's phase is sqrt(ms left / THROB_SCALE) turns: about 700 ms a beat 2 s out, 220 ms at 0.2 s
+L.HEAT_POW = 1.6          -- heat = progress ^ HEAT_POW: orange for most of the wait, red at the end
+L.HEAT_STEPS = 32         -- the colour is set in steps of 1 / 32 of the heat too
 L.LINE_PX = 2             -- the line, in screen pixels (the engine draws a widget in map pixels, the line follows the zoom: lineWidth)
 L.ALPHA_STEPS = 32        -- the fill's alpha is set in steps of 1 / 32 so a widget is touched only when the picture changes
 
--- colour key -> {fill, line} as 'rrggbb'. A boss attack is orange.
+-- colour key -> {fill, line, hot fill, hot line} as 'rrggbb': the mark goes from the first pair to the hot pair as it heats up.
+-- A boss attack is orange and ends red.
 L.COLORS = {
-  orange = { 'ff7a1e', 'ff8c28' },
-  red = { 'ff3a24', 'ff5a3c' },
-  green = { '3cd264', '66e68a' },
-  violet = { 'a050ff', 'b878ff' },
-  blue = { '3c8cff', '64aaff' },
+  orange = { 'ff7a1e', 'ff8c28', 'e8180c', 'ff2a14' },
+  red = { 'ff3a24', 'ff5a3c', 'b80808', 'ff1e10' },
+  green = { '3cd264', '66e68a', '20a040', '8cffa8' },
+  violet = { 'a050ff', 'b878ff', '7a1ee0', 'd2a0ff' },
+  blue = { '3c8cff', '64aaff', '1450e0', '9cc8ff' },
 }
+L.BURST_COLOR = { 'ffb45a', 'fff0c8' } -- the burst flash: fill, line (white hot)
 L.DEFAULT_COLOR = 'orange'
 
 function L.colorKey(key)
@@ -51,14 +62,39 @@ local function hex2(v)
   return string.format('%02x', v)
 end
 
--- '#rrggbbaa' of the fill at an alpha 0..1
-function L.fillColor(key, alpha)
-  return '#' .. L.COLORS[L.colorKey(key)][1] .. hex2((alpha or L.FILL_ALPHA) * 255)
+local function clamp01(v)
+  if v ~= v or v < 0 then return 0 end
+  if v > 1 then return 1 end
+  return v
 end
 
--- '#rrggbbff': the line is never translucent
-function L.lineColor(key)
-  return '#' .. L.COLORS[L.colorKey(key)][2] .. 'ff'
+-- 'rrggbb' between two 'rrggbb' at k 0..1
+function L.mix(a, b, k)
+  k = clamp01(k)
+  local out = {}
+  for i = 1, 5, 2 do
+    local x, y = tonumber(a:sub(i, i + 1), 16), tonumber(b:sub(i, i + 1), 16)
+    out[#out + 1] = hex2(x + (y - x) * k)
+  end
+  return table.concat(out)
+end
+
+-- 'rrggbb' of the fill / line at a heat 0..1, and burst 0..1 (white hot at the hit)
+local function rgb(key, which, heat, burst)
+  local c = L.COLORS[L.colorKey(key)]
+  local v = L.mix(c[which], c[which + 2], heat or 0)
+  if burst and burst > 0 then v = L.mix(v, L.BURST_COLOR[which], burst) end
+  return v
+end
+
+-- '#rrggbbaa' of the fill at an alpha 0..1, a heat 0..1 and a burst 0..1
+function L.fillColor(key, alpha, heat, burst)
+  return '#' .. rgb(key, 1, heat, burst) .. hex2((alpha or L.FILL_ALPHA) * 255)
+end
+
+-- '#rrggbbaa' of the line: full alpha (only the burst fades it)
+function L.lineColor(key, heat, burst, alpha)
+  return '#' .. rgb(key, 2, heat, burst) .. hex2((alpha or 1) * 255)
 end
 
 -- ---------------------------------------------------------------- the message
@@ -184,7 +220,7 @@ function L.clear(st, id)
 end
 
 function L.expired(area, now)
-  return now >= area.hitAt or now >= area.born + area.ms + L.EXPIRY_SLACK_MS
+  return now >= area.hitAt + L.BURST_MS or now >= area.born + area.ms + L.EXPIRY_SLACK_MS
 end
 
 -- the marks past their hit go; returns their ids
@@ -205,19 +241,49 @@ function L.count(st)
   return #st.order
 end
 
--- ---------------------------------------------------------------- the fill over time
--- the alpha of the fill at `now` for a hit at `hitAt`: flat, then rising to FILL_BRIGHT over the last BRIGHT_MS
-function L.fillAlpha(hitAt, now)
-  local left = hitAt - now
-  if left >= L.BRIGHT_MS then return L.FILL_ALPHA end
-  if left <= 0 then return L.FILL_BRIGHT end
-  local k = 1 - left / L.BRIGHT_MS
-  return L.FILL_ALPHA + (L.FILL_BRIGHT - L.FILL_ALPHA) * k
+-- ---------------------------------------------------------------- the mark over time
+-- the heat 0..1 at `now` of a mark born at `born` that hits at `hitAt`: progress ^ HEAT_POW
+function L.heat(born, hitAt, now)
+  local len = hitAt - born
+  if len <= 0 then return 1 end
+  return clamp01((now - born) / len) ^ L.HEAT_POW
 end
 
--- the same alpha rounded to a step (what is set on the widget)
+-- the look at `now`: fill alpha, heat, burst (0 before the hit, 1 at it, falling to 0 over BURST_MS) and line alpha.
+-- Before the hit: fade in, alpha FILL_ALPHA -> FILL_HOT with the heat, a throb that quickens as the hit nears and deepens with the
+-- heat, and over the last BRIGHT_MS a flare to FILL_BRIGHT. At the hit: FILL_BURST, white hot, fading out.
+function L.look(born, hitAt, now)
+  local left = hitAt - now
+  if left <= 0 then
+    local k = clamp01(-left / L.BURST_MS)
+    local fade = 1 - k
+    return L.FILL_BURST * fade, 1, fade, fade
+  end
+  local heat = L.heat(born, hitAt, now)
+  local alpha = L.FILL_ALPHA + (L.FILL_HOT - L.FILL_ALPHA) * heat
+  alpha = alpha + L.THROB * heat * math.sin(2 * math.pi * math.sqrt(left / L.THROB_SCALE))
+  if left < L.BRIGHT_MS then
+    local k = 1 - left / L.BRIGHT_MS
+    alpha = alpha + (L.FILL_BRIGHT - alpha) * k * k
+  end
+  local age = now - born
+  if age < L.FADE_IN_MS then alpha = alpha * clamp01(age / L.FADE_IN_MS) end
+  return clamp01(alpha), heat, 0, 1
+end
+
+-- the fill alpha alone (kept for callers of before)
+function L.fillAlpha(born, hitAt, now)
+  return (L.look(born, hitAt, now))
+end
+
+-- the alpha rounded to a step
 function L.alphaStep(alpha)
   return math.floor(alpha * L.ALPHA_STEPS + 0.5)
+end
+
+-- one number for the picture of a tile: the widget is touched only when it changes
+function L.lookStep(alpha, heat, burst)
+  return (L.alphaStep(alpha) * 64 + math.floor(heat * L.HEAT_STEPS + 0.5)) * 64 + math.floor(burst * L.HEAT_STEPS + 0.5)
 end
 
 -- ---------------------------------------------------------------- the picture on the floor
@@ -240,7 +306,7 @@ function L.layout(st, z)
         local k = L.tileKey(t.x, t.y)
         set[k] = true
         if not cells[k] then
-          cells[k] = { x = t.x, y = t.y, color = a.color, hitAt = a.hitAt }
+          cells[k] = { x = t.x, y = t.y, color = a.color, hitAt = a.hitAt, born = a.born }
         end
       end
     end

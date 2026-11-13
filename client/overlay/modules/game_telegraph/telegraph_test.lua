@@ -99,7 +99,7 @@ end
 eq(#L.add(st, mk('a', 10, 10, 3, 3, 2000, 0)), 0, 'add: nothing goes'); eq(L.count(st), 1, 'one mark')
 L.add(st, mk('a', 20, 20, 2, 2, 2000, 0)); eq(L.count(st), 1, 'the same id replaces the mark'); eq(st.areas.a.tiles[1].x, 20, 'the new area')
 L.add(st, mk('b', 30, 30, 2, 2, 1000, 0)); eq(L.count(st), 2, 'two marks')
-eq(#L.step(st, 999), 0, 'before the hit nothing goes'); eq(L.step(st, 1000)[1], 'b', 'at the hit b goes'); eq(L.count(st), 1, 'a is left')
+eq(#L.step(st, 999), 0, 'before the hit nothing goes'); eq(#L.step(st, 1000 + L.BURST_MS - 1), 0, 'the burst is still drawn'); eq(L.step(st, 1000 + L.BURST_MS)[1], 'b', 'after the burst b goes'); eq(L.count(st), 1, 'a is left')
 eq(L.clear(st, 'zzz')[1], nil, 'a clear of an unknown id does nothing'); eq(L.clear(st, 'a')[1], 'a', 'clear a'); eq(L.count(st), 0, 'none left')
 L.add(st, mk('a', 1, 1, 1, 1, 2000, 0)); L.add(st, mk('b', 3, 3, 1, 1, 2000, 0)); eq(#L.clear(st, 'all'), 2, 'clear all'); eq(L.count(st), 0, 'nothing left')
 -- the caps: marks
@@ -115,26 +115,61 @@ eq(L.count(L.newState()), 0, 'empty state')
 -- the safety expiry: a mark whose clock was moved far back is dropped too
 st = L.newState()
 L.add(st, mk('s', 1, 1, 1, 1, 2000, 100000))
-eq(L.expired(st.areas.s, 100000), false, 'new'); eq(L.expired(st.areas.s, 102000), true, 'at the hit'); eq(L.expired(st.areas.s, 99999), false, 'a clock a little back')
-eq(#L.step(st, 100500), 0, 'alive in between'); eq(#L.step(st, 102000), 1, 'gone at the hit')
+eq(L.expired(st.areas.s, 100000), false, 'new'); eq(L.expired(st.areas.s, 102000), false, 'at the hit: the burst'); eq(L.expired(st.areas.s, 102000 + L.BURST_MS), true, 'after the burst'); eq(L.expired(st.areas.s, 99999), false, 'a clock a little back')
+eq(#L.step(st, 100500), 0, 'alive in between'); eq(#L.step(st, 102000 + L.BURST_MS), 1, 'gone after the burst')
 
--- ---------------------------------------------------------------- the fill
-eq(L.fillAlpha(5000, 0), L.FILL_ALPHA, 'flat long before the hit'); eq(L.fillAlpha(5000, 4599), L.FILL_ALPHA, 'still flat 401 ms before')
-eq(L.fillAlpha(5000, 4600), L.FILL_ALPHA, 'flat exactly 400 ms before'); eq(L.fillAlpha(5000, 5000), L.FILL_BRIGHT, 'brightest at the hit'); eq(L.fillAlpha(5000, 6000), L.FILL_BRIGHT, 'and after')
-local mid = L.fillAlpha(5000, 4800)
-eq(math.abs(mid - (L.FILL_ALPHA + L.FILL_BRIGHT) / 2) < 1e-9, true, 'halfway at 200 ms before')
-eq(L.fillAlpha(5000, 4700) < L.fillAlpha(5000, 4900), true, 'rising')
-eq(L.FILL_ALPHA >= 0.35 and L.FILL_ALPHA <= 0.40, true, 'the flat fill is 35 to 40 percent'); eq(L.FILL_BRIGHT > L.FILL_ALPHA and L.FILL_BRIGHT < 0.7, true, 'a slight brightening')
-eq(L.BRIGHT_MS, 400, 'the last 0.4 s')
-eq(L.alphaStep(L.FILL_ALPHA), 12, 'the step of the flat fill'); eq(L.alphaStep(L.FILL_BRIGHT), 18, 'the step of the bright fill')
-eq(L.alphaStep(L.fillAlpha(5000, 4600)), L.alphaStep(L.fillAlpha(5000, 0)), 'no widget update before the brightening starts')
+-- ---------------------------------------------------------------- the mark over time
+-- a mark born at 0 that hits at 2000
+local function lk(now) return L.look(0, 2000, now) end
+local a0 = lk(0); eq(a0, 0, 'a new mark fades in from nothing')
+local aIn = lk(L.FADE_IN_MS / 2); eq(aIn > 0 and aIn < L.FILL_ALPHA, true, 'half faded in')
+local a1, h1, b1, la1 = lk(L.FADE_IN_MS); eq(math.abs(a1 - L.FILL_ALPHA) < 0.01, true, 'faded in: the fresh fill'); eq(h1 < 0.03, true, 'cold'); eq(b1, 0, 'no burst'); eq(la1, 1, 'the line is full')
+eq(L.heat(0, 2000, 0), 0, 'heat 0 at birth'); eq(L.heat(0, 2000, 2000), 1, 'heat 1 at the hit'); eq(L.heat(0, 2000, 1000) < 0.5, true, 'the heat lags: orange for most of the wait')
+eq(L.heat(0, 2000, 1500) < L.heat(0, 2000, 1800), true, 'the heat rises'); eq(L.heat(5, 5, 5), 1, 'no length: hot')
+-- the throb: no throb on a cold mark, deeper and faster near the hit
+local function swing(from, to)
+  local lo, hi = 1, 0
+  for t = from, to, 5 do local a = lk(t); lo = math.min(lo, a); hi = math.max(hi, a) end
+  return hi - lo
+end
+eq(swing(200, 400) < 0.02, true, 'a cold mark barely moves')
+eq(swing(1200, 1600) > 0.05, true, 'a hot mark throbs')
+local function beats(from, to)
+  local n, prev, up = 0, nil, nil
+  for t = from, to do
+    local x = math.sin(2 * math.pi * math.sqrt((2000 - t) / L.THROB_SCALE))
+    if prev then local u = x > prev; if up ~= nil and u ~= up then n = n + 1 end; up = u end
+    prev = x
+  end
+  return n
+end
+eq(beats(1200, 1500) < beats(1600, 1900), true, 'the throb quickens as the hit nears')
+-- the flare and the burst
+eq(lk(2000 - 1) > lk(2000 - L.BRIGHT_MS), true, 'the flare: brighter at the end'); eq(math.abs(lk(1999.9) - L.FILL_BRIGHT) < 0.01, true, 'the flare ends at FILL_BRIGHT')
+local ab, hb, bb, lb = lk(2000); eq(ab, L.FILL_BURST, 'the burst flash'); eq(hb, 1, 'hot'); eq(bb, 1, 'white hot at the hit'); eq(lb, 1, 'the line at full')
+local am, _, bm, lm = lk(2000 + L.BURST_MS / 2); eq(math.abs(am - L.FILL_BURST / 2) < 1e-9, true, 'the burst fades'); eq(math.abs(bm - 0.5) < 1e-9, true, 'and cools'); eq(math.abs(lm - 0.5) < 1e-9, true, 'the line fades with it')
+eq(lk(2000 + L.BURST_MS), 0, 'gone after the burst'); eq(lk(9000), 0, 'and stays gone')
+for t = 0, 2400, 7 do local a, h, b, l = lk(t); eq(a >= 0 and a <= 1 and h >= 0 and h <= 1 and b >= 0 and b <= 1 and l >= 0 and l <= 1, true, 'in range at ' .. t) end
+eq(L.fillAlpha(0, 2000, 2000), L.FILL_BURST, 'fillAlpha is the look alpha')
+eq(L.FILL_ALPHA < L.FILL_HOT and L.FILL_HOT < L.FILL_BRIGHT and L.FILL_BRIGHT < L.FILL_BURST and L.FILL_BURST <= 0.85, true, 'the fill rises: fresh, hot, flare, burst')
+eq(L.BURST_MS < 300, true, 'the burst ends before the server clear (300 ms after the hit)')
+eq(L.alphaStep(L.FILL_ALPHA), 10, 'the step of the fresh fill')
+eq(L.lookStep(0.5, 0, 0) ~= L.lookStep(0.5, 0.5, 0), true, 'a heat change is a new picture'); eq(L.lookStep(0.5, 1, 0) ~= L.lookStep(0.5, 1, 1), true, 'a burst change too')
+eq(L.lookStep(0.5, 0.5, 0), L.lookStep(0.5 + 0.001, 0.5 + 0.001, 0), 'a tiny change is not')
 
 -- ---------------------------------------------------------------- colours
 eq(L.fillColor('orange', 0.38), '#ff7a1e61', 'the orange fill: ff7a1e at 38 percent'); eq(L.lineColor('orange'), '#ff8c28ff', 'the orange line: ff8c28 at full alpha')
+eq(L.fillColor('orange', 0.5, 1), '#e8180c80', 'a hot orange mark is red'); eq(L.lineColor('orange', 1), '#ff2a14ff', 'and its line')
+eq(L.fillColor('orange', 0.5, 0.5), '#' .. L.mix('ff7a1e', 'e8180c', 0.5) .. '80', 'half way: between orange and red')
+eq(L.fillColor('orange', 0.5, 1, 1), '#ffb45a80', 'the burst is white hot'); eq(L.lineColor('orange', 1, 1, 0.5), '#fff0c880', 'the burst line fades')
+eq(L.mix('000000', 'ffffff', 0.5), '808080', 'mix'); eq(L.mix('102030', '102030', 0.7), '102030', 'mix of one colour'); eq(L.mix('000000', 'ffffff', 2), 'ffffff', 'mix is cut at 1')
+local function redness(hex) return tonumber(hex:sub(2, 3), 16) - tonumber(hex:sub(4, 5), 16) end
+eq(redness(L.fillColor('orange', 1, 1)) > redness(L.fillColor('orange', 1, 0)), true, 'redder when hot')
 eq(L.fillColor(nil, 0.5), '#ff7a1e80', 'no key: orange'); eq(L.fillColor('pink', 0.5), '#ff7a1e80', 'an unknown key: orange'); eq(L.lineColor('pink'), '#ff8c28ff', 'an unknown line key')
 eq(#L.fillColor('violet', 1), 9, 'a colour is #rrggbbaa'); eq(L.fillColor('red', 0), '#ff3a2400', 'alpha 0'); eq(L.fillColor('red', 2), '#ff3a24ff', 'alpha over 1 is cut')
 for key in pairs(L.COLORS) do
   eq(#L.COLORS[key][1], 6, key .. ' fill is 6 hex'); eq(#L.COLORS[key][2], 6, key .. ' line is 6 hex'); eq(L.colorKey(key), key, key .. ' is a key')
+  eq(#L.COLORS[key][3], 6, key .. ' hot fill is 6 hex'); eq(#L.COLORS[key][4], 6, key .. ' hot line is 6 hex')
 end
 
 -- ---------------------------------------------------------------- the layout of the marks on a floor

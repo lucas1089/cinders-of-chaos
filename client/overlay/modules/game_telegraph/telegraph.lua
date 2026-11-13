@@ -16,7 +16,7 @@
 local L = TelegraphLogic
 
 local state = L.newState()
-local cells = {}              -- 'x,y' -> {widget, tile, prev, x, y, z, color, mask, step, hitAt, width}
+local cells = {}              -- 'x,y' -> {widget, tile, prev, x, y, z, color, mask, step, hitAt, born, width, alpha, heat, burst, lineAlpha, lineKey}
 local layoutList = {}         -- the cells of the marks on the player's floor, from L.layout
 local dirty = false           -- the marks changed: lay them out again
 local animEvent
@@ -87,8 +87,9 @@ end
 local function paint(cell)
   local w = cell.widget
   if not alive(w) then return end
-  w:setBackgroundColor(L.fillColor(cell.color, cell.alpha))
-  local line = L.lineColor(cell.color)
+  w:setBackgroundColor(L.fillColor(cell.color, cell.alpha, cell.heat, cell.burst))
+  local line = L.lineColor(cell.color, cell.heat, cell.burst, cell.lineAlpha)
+  cell.lineKey = line
   local lw = cell.width
   local up, right, down, left = L.sides(cell.mask)
   if sideApi == nil then sideApi = type(w.setBorderWidthTop) == 'function' and type(w.setBorderColorTop) == 'function' end
@@ -136,7 +137,7 @@ local function ensure(entry, z)
       cell.mask, cell.color, cell.width = entry.mask, entry.color, lineWidth
       paint(cell)
     end
-    cell.hitAt = entry.hitAt
+    cell.hitAt, cell.born = entry.hitAt, entry.born
     return cell
   end
   if cell then
@@ -153,7 +154,9 @@ local function ensure(entry, z)
   w:setPhantom(true)
   local prev = tile:getFloorWidget()
   cell = { widget = w, tile = tile, prev = (alive(prev) and prev) or nil, x = entry.x, y = entry.y, z = z, color = entry.color,
-    mask = entry.mask, hitAt = entry.hitAt, width = lineWidth, alpha = L.FILL_ALPHA, step = L.alphaStep(L.FILL_ALPHA) }
+    mask = entry.mask, hitAt = entry.hitAt, born = entry.born, width = lineWidth }
+  cell.alpha, cell.heat, cell.burst, cell.lineAlpha = L.look(entry.born, entry.hitAt, now())
+  cell.step = L.lookStep(cell.alpha, cell.heat, cell.burst)
   paint(cell)
   tile:setFloorWidget(w)
   cells[key] = cell
@@ -207,11 +210,16 @@ local function animate()
   -- the widgets are checked about every 300 ms (tiles that were not in view, widgets the engine took, the zoom); a change at once
   if dirty or ticks % 6 == 0 then sync() end
   for _, cell in pairs(cells) do
-    local alpha = L.fillAlpha(cell.hitAt, t)
-    local step = L.alphaStep(alpha)
+    local alpha, heat, burst, lineAlpha = L.look(cell.born, cell.hitAt, t)
+    local step = L.lookStep(alpha, heat, burst)
     if step ~= cell.step and alive(cell.widget) then
-      cell.step, cell.alpha = step, alpha
-      cell.widget:setBackgroundColor(L.fillColor(cell.color, alpha))
+      local lineKey = L.lineColor(cell.color, heat, burst, lineAlpha)
+      cell.step, cell.alpha, cell.heat, cell.burst, cell.lineAlpha = step, alpha, heat, burst, lineAlpha
+      if lineKey ~= cell.lineKey then
+        paint(cell) -- the line follows the heat too: the borders are set only when its colour changes
+      else
+        cell.widget:setBackgroundColor(L.fillColor(cell.color, alpha, heat, burst))
+      end
     end
   end
   if L.count(state) == 0 then
