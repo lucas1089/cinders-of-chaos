@@ -21,7 +21,8 @@
 -- (ChaosConquest.grant(player, "goals", n): given only while its config has a "goals" source).
 --
 -- Protocol (JSON {action, data}):
---   client -> server  open | close | tracker | welcomeSkip (the welcome path, welcomepath.lua, O370)
+--   client -> server  open | close | tracker | welcomeSkip (the main quest, mainquest.lua, O551; it replaced the welcome path, O370)
+--                     | mqOpen | mqSkip | mqGo (the main quest window)
 --   server -> client  goals {header, goals, upcoming, gear, hunts, hereWhere}   (Chaos.sendChunked)
 --                     tracker {rows = [{key, title, progress, target}]}
 --                     done {text}
@@ -632,9 +633,18 @@ if CreatureEvent then
 			if ChaosWelcomePath and ChaosWelcomePath.forget then
 				pcall(ChaosWelcomePath.forget, player) -- and the welcome path's (O370)
 			end
+			if ChaosMainQuest and ChaosMainQuest.forget then
+				pcall(ChaosMainQuest.forget, player) -- and the main quest's (O551)
+			end
 		elseif msg.action == "welcomeSkip" then
-			if ChaosWelcomePath and ChaosWelcomePath.skip then
+			if ChaosMainQuest and ChaosMainQuest.skip then
+				pcall(ChaosMainQuest.skip, player, "quest") -- the skip line under the main quest rows (O551; the welcome path it replaces)
+			elseif ChaosWelcomePath and ChaosWelcomePath.skip then
 				pcall(ChaosWelcomePath.skip, player) -- the skip line under its tracker rows (O370)
+			end
+		elseif msg.action:sub(1, 2) == "mq" then
+			if ChaosMainQuest and ChaosMainQuest.onAction then
+				pcall(ChaosMainQuest.onAction, player, msg) -- the main quest window and its buttons (O551)
 			end
 		end
 	end
