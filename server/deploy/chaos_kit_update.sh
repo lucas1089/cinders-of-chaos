@@ -149,6 +149,20 @@ if command -v nice >/dev/null; then
 fi
 
 state_get() { [ -f "$STATE" ] && sed -n "s/^$1=//p" "$STATE" | tail -n 1; }
+# code_new CUR REMOTE: DEPLOYED = the commit last installed (state deployed_commit), CODE_NEW yes / no. New code is what
+# the last install did not have, whatever the checkout's HEAD says: a checkout moved by hand (git pull, checkout) is not
+# a deploy (O547). No deployed_commit (first run, an old state file) counts as new, unless HEAD is the remote and the
+# state records an installed release.
+code_new() {
+  DEPLOYED=$(state_get deployed_commit)
+  if [ -n "$DEPLOYED" ]; then
+    if [ "$DEPLOYED" = "$2" ]; then CODE_NEW=no; else CODE_NEW=yes; fi
+  elif [ "$1" = "$2" ] && [ -n "$(state_get installed_release)" ]; then
+    CODE_NEW=no
+  else
+    CODE_NEW=yes
+  fi
+}
 # state_set KEY=VALUE...: changes those keys, keeps the others
 state_set() {
   mkdir -p "$STATE_DIR"
@@ -383,7 +397,7 @@ map_fetch_files() {
 
 # ------------------------------------------------------------------------------------------------ check
 cmd_check() {
-  local cur remote work n why
+  local cur remote work n why shortd
   [ -d "$REPO/.git" ] || g rev-parse --git-dir >/dev/null 2>&1 || die "no git checkout at $REPO (CHAOS_REPO)"
   say "branch=$BRANCH"
   if ! g fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" 2>/dev/null; then
@@ -395,6 +409,13 @@ cmd_check() {
   say "remote_commit=$(g rev-parse --short "origin/$BRANCH")"
   say "behind=$(g rev-list --count "HEAD..origin/$BRANCH")"
   say "ahead=$(g rev-list --count "origin/$BRANCH..HEAD")"
+  code_new "$cur" "$remote"
+  shortd=none
+  [ -n "$DEPLOYED" ] && { shortd=$(g rev-parse --short "$DEPLOYED" 2>/dev/null) || shortd=$DEPLOYED; }
+  say "deployed_commit=$shortd"
+  if [ "$CODE_NEW" = yes ] && [ "$cur" = "$remote" ]; then
+    say "note=the checkout is ahead of what is deployed: $shortd is installed, $(g rev-parse --short HEAD) is not"
+  fi
   g log --no-decorate --format='commit=%h %s' -n 15 "HEAD..origin/$BRANCH" | cut -c1-160
   work=$(mktemp -d "$WORKBASE/chaos-kit-check.XXXXXX") || die "no work folder in $WORKBASE"
   releases "$work/rel.json" || say "github_error=${RELEASES_WHY%%:*}"
@@ -426,7 +447,7 @@ cmd_check() {
   # the site counts from the commit it was last installed from (a checkout moved by hand skips no site change)
   n=$(state_get site_commit); [ -n "$n" ] && g cat-file -e "$n^{commit}" 2>/dev/null || n=$cur
   if g diff --quiet "$n" "$remote" -- website/ 2>/dev/null; then say "website_changed=no"; else say "website_changed=yes"; fi
-  if [ "$cur" != "$remote" ] || [ "$(state_get installed_release)" != "$LATEST" ] || [ "$needs_map" = yes ]; then
+  if [ "$CODE_NEW" = yes ] || [ "$(state_get installed_release)" != "$LATEST" ] || [ "$needs_map" = yes ]; then
     say "update_available=yes"
   else
     say "update_available=no"
@@ -777,14 +798,18 @@ cmd_apply() {
   cur=$(g rev-parse HEAD) remote=$(g rev-parse "origin/$BRANCH")
   [ "$(g rev-list --count "origin/$BRANCH..HEAD")" = 0 ] \
     || finish failed "the checkout has commits that are not on origin/$BRANCH: nothing done" 1
-  log "code: $(g rev-parse --short HEAD) -> $(g rev-parse --short "origin/$BRANCH") ($(g rev-list --count "HEAD..origin/$BRANCH") commit(s))"
+  code_new "$cur" "$remote"
+  log "code: $(g rev-parse --short HEAD) -> $(g rev-parse --short "origin/$BRANCH") ($(g rev-list --count "HEAD..origin/$BRANCH") commit(s)); deployed: ${DEPLOYED:-none}"
+  if [ "$CODE_NEW" = yes ] && [ "$cur" = "$remote" ]; then
+    log "the checkout is at origin/$BRANCH, but that commit was never installed: it is new code"
+  fi
   work=$(mktemp -d "$WORKBASE/chaos-kit-update.XXXXXX") || finish failed "no work folder in $WORKBASE" 1
   trap 'rm -rf "$work"; rm -f "$CHAOS_KIT_COPY"' EXIT
   releases "$work/rel.json" || finish failed "cannot read the releases of $GHREPO: $RELEASES_WHY" 1
   LATEST=$(sed -n 's/^latest=//p' <<< "$REL")
   installed=$(state_get installed_release)
   log "release: installed ${installed:-unknown}, newest winpkg-$LATEST"
-  if [ "$cur" = "$remote" ] && [ "$installed" = "$LATEST" ]; then
+  if [ "$CODE_NEW" = no ] && [ "$installed" = "$LATEST" ]; then
     log "the server is up to date"
   fi
 
@@ -825,10 +850,11 @@ cmd_apply() {
     map_new=$MAP_STATE
   fi
 
-  if [ "$cur" = "$remote" ] && [ -z "$engine_new" ] && [ -z "$map_new" ]; then
+  if [ "$CODE_NEW" = no ] && [ -z "$engine_new" ] && [ -z "$map_new" ]; then
     log "no new code, no new engine and no new map: the server is not restarted"
     changelog
     state_set "installed_release=$LATEST"
+    [ -n "$DEPLOYED" ] || state_set "deployed_commit=$remote"
     prev_release=$installed
   else
     say "STEP 4/10 backup"
@@ -864,7 +890,10 @@ cmd_apply() {
     g checkout --quiet -B "$BRANCH" "origin/$BRANCH" || finish failed "git checkout $BRANCH failed: nothing changed" 1
     log "checkout at $(g rev-parse --short HEAD) ($BRANCH)"
     ENGINE_BK_REL="" MAP_BK="" STAGED=""
-    local record_state=(prev_commit="$cur" prev_release="$installed" data_archive="$archive" engine_backup= target_commit="$remote"
+    # the rollback goes back to what was installed, not to where a hand-moved checkout stood
+    local prevc=$cur
+    if [ -n "$DEPLOYED" ] && g cat-file -e "$DEPLOYED^{commit}" 2>/dev/null; then prevc=$DEPLOYED; fi
+    local record_state=(prev_commit="$prevc" prev_release="$installed" data_archive="$archive" engine_backup= target_commit="$remote"
       target_release="$LATEST" map_backup= old_server=)
     if can_stage; then
       STAGED=1
@@ -993,10 +1022,19 @@ cmd_apply() {
     fi
   fi
 
-  if [ -n "$warn" ]; then
-    finish warn "server on $(g rev-parse --short HEAD), winpkg-$LATEST; not done:$warn (see above)" 3
+  # the commit that runs is the deployed one, never just the checkout's HEAD
+  local ondep
+  ondep=$(state_get deployed_commit)
+  ondep=$(g rev-parse --short "$ondep" 2>/dev/null || echo "${ondep:-unknown}")
+  if [ "$CODE_NEW" = no ]; then
+    ondep="$ondep (no new code: nothing installed"
+    [ "$(g rev-parse HEAD)" = "$(state_get deployed_commit)" ] || ondep="$ondep; the checkout at $(g rev-parse --short HEAD) is not what runs"
+    ondep="$ondep)"
   fi
-  finish ok "server on $(g rev-parse --short HEAD), winpkg-$LATEST${prev_release:+ (was $prev_release)}${map_new:+, map master $map_new}" 0
+  if [ -n "$warn" ]; then
+    finish warn "server on $ondep, winpkg-$LATEST; not done:$warn (see above)" 3
+  fi
+  finish ok "server on $ondep, winpkg-$LATEST${prev_release:+ (was $prev_release)}${map_new:+, map master $map_new}" 0
 }
 
 # the release's client packages into the download folder, one at a time: temp name, checked, NAME.prev, rename

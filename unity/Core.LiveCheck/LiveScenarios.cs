@@ -735,6 +735,40 @@ namespace Chaos.Core.LiveCheck
             return true;
         }
 
+        /// <summary>The staff client removes a monster it summoned (the stock /r takes the thing on the tile in front of the staff character): it steps beside it, turns to it and says
+        /// /r, a few tries since the monster walks. True when the staff client no longer sees it.</summary>
+        bool RemoveSummoned(LiveClient staff, uint id, out string trace)
+        {
+            var tr = new StringBuilder();
+            trace = "";
+            for (int attempt = 0; attempt < 8; attempt++)
+            {
+                if (!staff.World.Creatures.TryGetValue(id, out var m) || m.Position.Equals(default(Pos))) { trace = tr.ToString(); return true; }   // a creature that left the view stays in the table at 0,0,0
+                tr.Append(" [staff " + P(staff.Pos) + " monster " + P(m.Position) + " dead " + staff.S.Parser.Dead + "]");
+                if (staff.S.Closed != null || m.Position.Z != staff.Pos.Z) { trace = tr.ToString(); return false; }
+                int dx = m.Position.X - staff.Pos.X, dy = m.Position.Y - staff.Pos.Y;
+                Dir? face = dx == 0 && dy == -1 ? Dir.North : dx == 0 && dy == 1 ? Dir.South : dx == 1 && dy == 0 ? Dir.East : dx == -1 && dy == 0 ? Dir.West : (Dir?)null;
+                if (face == null)
+                {
+                    // not on a straight neighbour: walk to a tile beside it (a straight neighbour of the monster that is free)
+                    foreach (var d in new[] { Dir.North, Dir.South, Dir.East, Dir.West })
+                    {
+                        var beside = WalkDirs.Step(m.Position, d);
+                        if (!Passable(staff.World, beside, staff.World.PlayerId) || FloorChangeOf(staff.World.Get(beside)) != null) continue;
+                        if (WalkTo(staff, beside, 0, 6000, false, out _)) break;
+                    }
+                    Pump(300, () => false);
+                    continue;
+                }
+                staff.S.Turn(face.Value);
+                Pump(300, () => false);
+                staff.S.Say("/r");
+                WaitFor(2000, () => !staff.World.Creatures.TryGetValue(id, out var gone) || gone.Position.Equals(default(Pos)) || staff.S.Closed != null);
+            }
+            trace = tr.ToString();
+            return !staff.World.Creatures.TryGetValue(id, out var left) || left.Position.Equals(default(Pos));
+        }
+
         void ScDeath(ScenarioResult r)
         {
             string err = EnsurePartner();
@@ -761,7 +795,8 @@ namespace Chaos.Core.LiveCheck
             if (!summoned)
             {
                 var texts = partner.ServerTexts(pSay).Skip(0).Take(4).ToList();
-                r.Skip("no monster appeared after '/m " + o.Killer + "' (the partner needs the administrator rights, and the name must be a monster)" + (texts.Count > 0 ? "; server said: " + string.Join(" | ", texts) : ""));
+                // /goto brought the partner here, so it has the staff rights: a missing monster is a fault of the set-up (no free tile beside the partner, a wrong name), not a missing right
+                r.Fail("no monster appeared after '/m " + o.Killer + "' although /goto worked (no free tile beside the partner, or the name is not a monster)" + (texts.Count > 0 ? "; server said: " + string.Join(" | ", texts) : ""));
                 return;
             }
             var killer = world.Creatures.Values.First(c => c.Type == 1 && !seenMonsters.Contains(c.Id));
@@ -780,6 +815,10 @@ namespace Chaos.Core.LiveCheck
             if (p.DeathType != 0 && p.DeathType != 1) problems.Append("death type " + p.DeathType + "; ");
             if (p.DeathPenalty < 0 || p.DeathPenalty > 100) problems.Append("death penalty " + p.DeathPenalty + "; ");
             problems.Append(markA.Diff(me, "primary"));
+            // the summoned killer stays in the world after the death: the partner (staff) removes it with /r, or the next run on this server finds no free tile at the landing
+            // for its own summon (O546)
+            bool gone = RemoveSummoned(partner, killer.Id, out string rtrace);
+            r.Note("the killer removed again: " + (gone ? "yes" : "no") + rtrace);
             // the partner leaves the scene (best effort), the dead character logs out and in again
             partner.S.Say("/t");
             me.Close();
@@ -798,18 +837,8 @@ namespace Chaos.Core.LiveCheck
             if (np.Health <= 0) problems.Append("the character comes back with " + np.Health + " health; ");
             if (np.FailureCount > 0) problems.Append("login after the death: " + np.FailureCount + " parse failure(s) (" + string.Join("; ", np.Failures.Take(3).Select(f => f.ToString())) + "); ");
             // it must walk: a stuck character is the failure this scenario guards against
-            bool moved = false;
-            foreach (var d in new[] { Dir.South, Dir.North, Dir.East, Dir.West })
-            {
-                var to = WalkDirs.Step(again.Pos, d);
-                if (!Passable(again.World, to, again.World.PlayerId) || FloorChangeOf(again.World.Get(to)) != null) continue;
-                if (!WaitFor(3000, () => again.S.CanWalk)) break;
-                int m0 = np.PlayerMoves;
-                again.S.Walk(d);
-                moved = WaitFor(2500, () => np.PlayerMoves > m0);
-                break;
-            }
-            r.Note("a step after the death: " + (moved ? "confirmed" : "not confirmed"));
+            bool moved = StepAfterLogin(again);
+            r.Note("a step after the death: " + (moved ? "confirmed" : "not confirmed") + "; partner at " + P(partner.Pos) + ", character at " + P(again.Pos) + ", tiles round it " + Neighbours(again));
             if (!moved) problems.Append("the character could not take a step after coming back; ");
             if (problems.Length > 0) r.Fail(problems.ToString().Trim());
             else r.Pass("killed by a summoned monster, 0x28 parsed (type " + p.DeathType + ", penalty " + p.DeathPenalty + "%), logged out and in again, alive and walking");

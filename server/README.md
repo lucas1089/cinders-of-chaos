@@ -3700,6 +3700,13 @@ at level 300 (`rotation_sim.py --mana`, which only checks up to level 300 and wi
   Templars" switches the ring and the burn off for the viewer (own and other players'). Test: `tests/archetypes_test.lua` (core rules,
   the glue on a mocked engine: ring only on change, empty list on a dead holder, the burn names the struck monsters only, no map effect,
   numbers as before); client: `chestaura_test.lua`. Not verified in a running client.
+  **The engine's blast (O548, owner 2026-11-13: "the circle shows, but the effect is still the old one").** `CONST_ME_NONE` in the script
+  was not enough: the engine itself sends the hit effect of a direct fire hit in `Game::combatChangeHealth`, and with pair 29 live src-patch 0045
+  swaps it for `blast_fire1` (`C.elementHits`), so every struck monster still got the big orange blast each second. `pyreTick` now deals its damage
+  (the aura hits and the self burn) inside `ChaosPack29Vfx.withoutHitEffect(COMBAT_FIREDAMAGE, fn)` (`chaos_pack29_vfx.lua`): `Game.setHitEffect(1,
+  fire, 0)` while it runs, then exactly the row `applyEngine` set (`C.engineHits`) or the stock effect (-1), `pcall`, nested calls restore once;
+  no other fire hit is touched, an engine without 0045 runs as before. Damage unchanged. An item's ignite proc on an aura hit still shows its own
+  ignite effect (a chance of the item, not the blast). Test: `tests/pyre_hit_effect_test.lua`, `tests/archetypes_test.lua`. Not seen on a running server.
 
 ## Fixed spell costs (owner 2026-10-21: "Mas o custo de mana das skills ainda tá escalando com o level do char")
 
@@ -29325,6 +29332,8 @@ Tests: `tests/stock_level_range_test.lua` (name at the spawn, loot / orb / wayst
 Problem (2026-10-24): `chaos-ctl.sh update-apply` took over 5 minutes with the game down for most of it, because
 `install_all.py` ran with the server stopped.
 
+New code (O547): decided by the commit last installed (state `deployed_commit`), not by the checkout's HEAD; a checkout moved by hand (`git pull`) whose commit was never installed is new code, an empty `deployed_commit` too unless HEAD is the remote and a release is recorded; `check` prints `deployed_commit=` and a `note=` when the checkout is ahead of it, `prev_commit` is the deployed commit, and a run with no new code ends "server on SHA (no new code: nothing installed)".
+
 Flow of `chaos_kit_update.sh apply` (step names and `RESULT` lines unchanged):
 
 1. Backup with the game up. The save wait ends at the engine log line `> Saved in steps:` (patch 0026), `--save-wait` is only the maximum. New option `--save-log FILE` of `tools/backup.sh`.
@@ -30730,6 +30739,13 @@ monster renames) found five more unknown names, now in `FIXES`: "Orc Sambackpack
 `venore/orc_backpack.xml`) -> Orc Warlord, "White Pale" -> Spectre, "Chayenne" -> Dragon Lord, "Ocyakao" -> Yeti, "Hirintror" ->
 Frost Dragon. Targets are base monsters of the same theme and about the same health that `monsternames` does not rename. The
 raid files name no items, so no item errors can come from them.
+
+Owner log 2026-11-13: `[Error] Raids: Cant create monster Frostmaw`. Root cause: before O294 `worldtexts` renamed raid spawn names
+as people's names, so the VPS file `svargrond/ocyakao.xml` held `Frostmaw` (the `base_world_names.csv` row of sha256("ocyakao")),
+and `FIXES` only knew `Ocyakao`; `restore_raid_spawns` cannot help because "Ocyakao" is no monster type. Same for "Chayenne" ->
+"Wren". `patch_base_raids.py` now also takes the replacement names of the rename lists (`renamed_names`, by sha256) as keys of
+`FIXES`, and prints a WARNING for every raid spawn name left that no monster type has. Install: Update in the admin app, or
+`install_all.py SERVER_DIR --only baseraids`. Not seen on a fresh install (the local test server is correct).
 
 ## Unique loot names (`tools/install_decor49_items.py`, `tools/install_owner_decor.py`)
 

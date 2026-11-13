@@ -317,6 +317,7 @@ function C.applyEngine()
 		Game.clearEffectOverrides()
 	end
 	ChaosVfxEngineShift = {}
+	C.engineHits = {}
 	if not C.live() then
 		return 0
 	end
@@ -330,10 +331,46 @@ function C.applyEngine()
 	ChaosVfxEngineShift = {}
 	for _, h in ipairs(hits) do
 		Game.setHitEffect(h[1], h[2], h[3], h[4], h[5])
+		if h[1] == 1 then
+			C.engineHits[h[2]] = h
+		end
 	end
 	for _, s in ipairs(shots) do
 		Game.setMissileEffect(s[1], s[2], s[3], s[4])
 		ChaosVfxEngineShift[s[1]] = true -- a send of this stock id is shifted by the engine (VfxShoot must not shift it too)
 	end
 	return #hits + #shots
+end
+
+-- O548: the engine hit effect of a direct hit of combat type `ctype` (kind 1) is off while fn runs, then exactly what applyEngine set
+-- (C.engineHits) or the stock one (-1) again; pcall, so an error never leaves the override at 0. For damage whose look is drawn by the
+-- client (Pyre Oath's burn, opcode 118): the engine's blast on every struck monster is gone, no other fire hit is touched. An engine
+-- without src-patch 0045 (no Game.setHitEffect): fn runs as before. Nested calls: only the outer one sets and restores.
+-- Returns what fn returns, or nil, the error text.
+C.engineHits = C.engineHits or {}
+local quiet = 0
+function C.withoutHitEffect(ctype, fn, ...)
+	local set = Game and Game.setHitEffect
+	if not set or ctype == nil then
+		return pcall(fn, ...)
+	end
+	quiet = quiet + 1
+	if quiet == 1 then
+		set(1, ctype, 0)
+	end
+	local res = {pcall(fn, ...)}
+	quiet = quiet - 1
+	if quiet == 0 then
+		local h = C.engineHits[ctype]
+		local okR, errR
+		if h then
+			okR, errR = pcall(set, 1, ctype, h[3], h[4], h[5])
+		else
+			okR, errR = pcall(set, 1, ctype, -1)
+		end
+		if not okR then
+			print("[ChaosPack29Vfx] hit effect not restored: " .. tostring(errR))
+		end
+	end
+	return (table.unpack or unpack)(res)
 end

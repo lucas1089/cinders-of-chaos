@@ -1028,6 +1028,49 @@ end
 eq(burnSelf, 150, "burns 2.5%")
 eq(aura, 1, "only the enemy in reach")
 eq(jug.c.hp, 5000 + 120 - 150, "regenerated 2%, burnt 2.5%")
+-- O548: no engine hit effect on the aura's fire hits (src-patch 0045 override 0 while the tick deals), restored after, errors too
+do
+	dofile("data/lib/chaos_pack29_fx.lua")
+	dofile("data/lib/chaos_pack29_vfx.lua")
+	local V = ChaosPack29Vfx
+	local held = {} -- the engine's overrides, kind 1: combat type -> effect
+	local oldGame = Game.setHitEffect
+	Game.setHitEffect = function(kind, key, effect)
+		if kind == 1 then held[key] = (effect ~= nil and effect >= 0) and effect or nil end
+	end
+	held[COMBAT_FIREDAMAGE] = 811 -- what applyEngine set
+	held[COMBAT_ICEDAMAGE] = 812
+	V.engineHits = {[COMBAT_FIREDAMAGE] = {1, COMBAT_FIREDAMAGE, 811, 0, 0}}
+	local oldDeal, oldSelf = doTargetCombat, doTargetCombatHealth
+	local during = {}
+	doTargetCombat = function(...) during[#during + 1] = {"aura", held[COMBAT_FIREDAMAGE], held[COMBAT_ICEDAMAGE]}; return oldDeal(...) end
+	doTargetCombatHealth = function(...) during[#during + 1] = {"self", held[COMBAT_FIREDAMAGE], held[COMBAT_ICEDAMAGE]}; return oldSelf(...) end
+	jug.c.pz = false
+	pm.c.hp = 90000
+	dealt = {}
+	registered.ChaosArchetypesThink.onThink(1000)
+	local seenAura, seenSelf = false, false
+	for _, d in ipairs(during) do
+		eq(d[2], 0, "pyre " .. d[1] .. " hit: engine fire hit effect is 0")
+		eq(d[3], 812, "pyre " .. d[1] .. " hit: ice untouched")
+		if d[1] == "aura" then seenAura = true else seenSelf = true end
+	end
+	check(seenAura and seenSelf, "the tick dealt the aura hit and the self burn")
+	eq(held[COMBAT_FIREDAMAGE], 811, "restored after the tick")
+	-- the damage raises an error: restored all the same, no throw
+	during = {}
+	doTargetCombat = function() during[#during + 1] = held[COMBAT_FIREDAMAGE]; error("engine fault") end
+	local thrown = not pcall(registered.ChaosArchetypesThink.onThink, 1000)
+	check(not thrown, "an error of the damage does not leave the think")
+	eq(held[COMBAT_FIREDAMAGE], 811, "restored when the aura damage errors")
+	-- any other fire hit of the game meanwhile: the override is the pair's again
+	eq(held[COMBAT_FIREDAMAGE], 811, "another fire hit gets the blast")
+	doTargetCombat, doTargetCombatHealth, Game.setHitEffect = oldDeal, oldSelf, oldGame
+	V.engineHits = {}
+	jug.c.pz = true
+	dealt = {}
+end
+
 jug.c.pz = true
 dealt = {}
 registered.ChaosArchetypesThink.onThink(1000)

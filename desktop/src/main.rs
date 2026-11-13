@@ -1037,16 +1037,6 @@ impl App {
     /// no wrapping, scrollable both ways, following the end while it streams.
     fn output_ui(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, in_window: bool) {
         ui.horizontal(|ui| {
-            if !in_window {
-                let colour = if self.status.ends_with(": falhou") {
-                    theme::ERROR
-                } else if self.status.ends_with(": feito") {
-                    theme::OK
-                } else {
-                    theme::TEXT
-                };
-                ui.colored_label(colour, &self.status);
-            }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 let label = if in_window { "Fechar janela" } else { "Abrir em janela" };
                 if ui
@@ -1074,8 +1064,10 @@ impl App {
                     .map(|e| e.heading())
                     .unwrap_or_else(|| "Nenhuma saída ainda".into());
                 let mut pick = self.out.pinned();
+                // narrower window: the picker shrinks first, so the status keeps some room
+                let pick_w = (ui.available_width() - 360.0).clamp(90.0, 260.0);
                 egui::ComboBox::from_id_salt(("out_history", in_window))
-                    .width(260.0)
+                    .width(pick_w)
                     .selected_text(egui::RichText::new(shown).color(theme::TEXT))
                     .show_ui(ui, |ui| {
                         ui.selectable_value(&mut pick, None, "Seguir a mais recente");
@@ -1091,6 +1083,12 @@ impl App {
                 if !in_window {
                     ui.label(theme::caption(&format!("v{VERSION}  {}", self.update_note)));
                 }
+                // the status takes what the buttons leave, on one line, cut with an ellipsis
+                if !in_window {
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        status_label(ui, &self.status);
+                    });
+                }
             });
         });
         let entry = self.out.shown();
@@ -1101,7 +1099,8 @@ impl App {
                     RunState::Ok => theme::OK,
                     RunState::Failed => theme::ERROR,
                 };
-                ui.colored_label(colour, e.heading());
+                ui.add(egui::Label::new(egui::RichText::new(e.heading()).color(colour)).truncate())
+                    .on_hover_text(e.heading());
                 if e.state == RunState::Running {
                     ui.add(egui::Spinner::new().color(theme::MUTED));
                 }
@@ -2010,12 +2009,14 @@ impl eframe::App for App {
                 .frame(out_frame)
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
-                        ui.colored_label(theme::TEXT, &self.status);
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui.button("Trazer a saída de volta").clicked() {
                                 self.out_window = false;
                             }
                             ui.label(theme::caption(&format!("v{VERSION}  {}", self.update_note)));
+                            ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                                status_label(ui, &self.status);
+                            });
                         });
                     });
                 });
@@ -2091,6 +2092,19 @@ impl eframe::App for App {
 }
 
 /// A sub heading inside a card with its content right under it (no collapsing: O383).
+/// The status line of the output bar: one line, coloured by its ending, cut with an ellipsis where the buttons
+/// start, the whole text on hover.
+fn status_label(ui: &mut egui::Ui, status: &str) {
+    let colour = match output::StatusKind::of(status) {
+        output::StatusKind::Failed => theme::ERROR,
+        output::StatusKind::Done => theme::OK,
+        output::StatusKind::Plain => theme::TEXT,
+    };
+    let line = output::one_line(status);
+    ui.add(egui::Label::new(egui::RichText::new(&line).color(colour)).truncate())
+        .on_hover_text(line);
+}
+
 fn sub_block(ui: &mut egui::Ui, title: &str, add: impl FnOnce(&mut egui::Ui)) {
     ui.add_space(6.0);
     ui.label(egui::RichText::new(title).strong().color(theme::TEXT_2));

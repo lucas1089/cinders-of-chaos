@@ -281,7 +281,8 @@ namespace Chaos.Core.LiveCheck
             if (!WaitFor(6000, () => NewMonster(me, before) != null && NewMonster(partner, before) != null))
             {
                 var texts = partner.ServerTexts(pSay).Take(4).ToList();
-                r.Skip("no monster appeared after '/m " + o.Weak + "' (the partner needs the administrator rights, and the name must be a monster)" + (texts.Count > 0 ? "; server said: " + string.Join(" | ", texts) : ""));
+                // /goto brought the partner here, so it has the staff rights: a missing monster is a fault of the set-up, not a missing right
+                r.Fail("no monster appeared after '/m " + o.Weak + "' although /goto worked (no free tile beside the partner, or the name is not a monster)" + (texts.Count > 0 ? "; server said: " + string.Join(" | ", texts) : ""));
                 LeaveParty();
                 return;
             }
@@ -416,17 +417,7 @@ namespace Chaos.Core.LiveCheck
             if (np.Dead) problems.Append("the new session starts dead; ");
             if (np.Health <= 0) problems.Append("the victim comes back with " + np.Health + " health; ");
             if (np.FailureCount > 0) problems.Append("login after the death: " + np.FailureCount + " parse failure(s) (" + string.Join("; ", np.Failures.Take(3).Select(f => f.ToString())) + "); ");
-            bool moved = false;
-            foreach (var d in new[] { Dir.South, Dir.North, Dir.East, Dir.West })
-            {
-                var to = WalkDirs.Step(again.Pos, d);
-                if (!Passable(again.World, to, again.World.PlayerId) || FloorChangeOf(again.World.Get(to)) != null) continue;
-                if (!WaitFor(3000, () => again.S.CanWalk)) break;
-                int m0 = np.PlayerMoves;
-                again.S.Walk(d);
-                moved = WaitFor(2500, () => np.PlayerMoves > m0);
-                break;
-            }
+            bool moved = StepAfterLogin(again);
             r.Note("a step after the death: " + (moved ? "confirmed" : "not confirmed"));
             if (!moved) problems.Append("the victim could not take a step after coming back; ");
             if (problems.Length > 0) r.Fail(problems.ToString().Trim());

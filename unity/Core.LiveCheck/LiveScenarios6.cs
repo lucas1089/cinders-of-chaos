@@ -92,21 +92,28 @@ namespace Chaos.Core.LiveCheck
             return null;
         }
 
-        /// <summary>The walk step that must work after a login (a stuck character is what the death scenarios guard against).</summary>
+        /// <summary>The walk step that must work after a login (a stuck character is what the death scenarios guard against). A tile with another creature on it is not tried: the
+        /// respawn of a dead character lands beside the temple tile, where the staff partner stands after its /t, and a player in a protection zone looks walkable to the client
+        /// (the creature's walkthrough byte) while the server refuses the first step onto it (Player::canWalkthrough wants a second attempt inside 2 s). So the first free tile is
+        /// stepped on, and a refused step goes on to the next free tile: only a character that none of its free tiles lets through is stuck (O546).</summary>
         bool StepAfterLogin(LiveClient c)
         {
             var pp = c.S.Parser;
-            foreach (var d in new[] { Dir.South, Dir.North, Dir.East, Dir.West })
+            foreach (var d in new[] { Dir.South, Dir.North, Dir.East, Dir.West, Dir.SouthEast, Dir.SouthWest, Dir.NorthEast, Dir.NorthWest })
             {
                 var to = WalkDirs.Step(c.Pos, d);
-                if (!Passable(c.World, to, c.World.PlayerId) || FloorChangeOf(c.World.Get(to)) != null) continue;
+                var tile = c.World.Get(to);
+                if (!Passable(c.World, to, c.World.PlayerId) || FloorChangeOf(tile) != null || HasOtherCreature(tile, c.World.PlayerId)) continue;
                 if (!WaitFor(3000, () => c.S.CanWalk)) return false;
                 int m0 = pp.PlayerMoves;
                 c.S.Walk(d);
-                return WaitFor(2500, () => pp.PlayerMoves > m0);
+                if (WaitFor(2500, () => pp.PlayerMoves > m0)) return true;
             }
             return false;
         }
+
+        /// <summary>True when a creature other than `selfId` stands on the tile.</summary>
+        public static bool HasOtherCreature(Tile t, uint selfId) => t != null && t.Things.Any(th => th.IsCreature && th.Creature != null && th.Creature.Id != selfId);
 
         /// <summary>The rift of a mortal client is ended by its own deadline (the local /rtime): the staff command /rift fail is not for it.</summary>
         void EndRiftOf(LiveClient c, Pos before)

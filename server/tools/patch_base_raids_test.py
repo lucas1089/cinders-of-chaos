@@ -59,6 +59,20 @@ for rel, want in (('raids/venore/orc_backpack.xml', 'Orc Warlord'), ('raids/dara
                   ('raids/svargrond/hirintror.xml', 'Frost Dragon')):
     check(want in P.FIXES.get(rel, {}).values(), 'fix for ' + rel)
 
+# a server an older worldtexts run changed: the spawn names hold the replacement (Ocyakao -> Frostmaw), the repair finds them
+OLD_RAID = '<raid>\n\t<singlespawn delay="60000" name="Frostmaw" x="1" y="2" z="7"/>\n</raid>\n'
+check(P.renamed_names('Ocyakao') == ['Frostmaw'] and P.renamed_names('Chayenne') == ['Wren'], 'rename list gives the replacements')
+fixed, done = P.patch(OLD_RAID, P.with_aliases(P.FIXES['raids/svargrond/ocyakao.xml']), {'yeti'})
+check(done == [('Frostmaw', 'Yeti')] and 'name="Yeti"' in fixed, 'Frostmaw spawn repaired: %r' % done)
+check(P.patch(OLD_RAID, P.FIXES['raids/svargrond/ocyakao.xml'], {'yeti'})[1] == [], 'without the alias it was missed (the bug)')
+check(P.patch(OLD_RAID, P.with_aliases(P.FIXES['raids/svargrond/ocyakao.xml']), {'yeti', 'frostmaw'})[1] == [], 'a real Frostmaw monster stays')
+
+with tempfile.TemporaryDirectory() as d:
+    os.makedirs(os.path.join(d, 'raids'))
+    with open(os.path.join(d, 'raids', 'x.xml'), 'w', encoding='utf-8') as f:
+        f.write(OLD_RAID + '<!-- <singlespawn name="Hidden" /> -->')
+    check(P.unknown_spawns(d, {'yeti'}) == [('raids/x.xml', 'Frostmaw')], 'unknown spawn names are found, comments skipped')
+
 with tempfile.TemporaryDirectory() as d:
     os.makedirs(os.path.join(d, 'raids', 'thais'))
     os.makedirs(os.path.join(d, 'monster'))
