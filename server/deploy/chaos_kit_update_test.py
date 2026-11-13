@@ -864,10 +864,86 @@ def test_staging():
         shutil.rmtree(w.root, ignore_errors=True)
 
 
+def test_deployed():
+    """O547: new code is decided by the commit last deployed (state deployed_commit), not by the checkout's HEAD"""
+    w = World()
+    try:
+        w.release(47, 'engine 47\n')
+        w.push('First', {'server/tools/version.txt': 'first\n'})
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and 'RESULT ok' in w.out, 'O547: first apply', w.out)
+
+        # O547: new code is what the last install did not have, not what the checkout's HEAD says
+        def restarted():
+            return any(c.startswith(('systemctl stop', 'systemctl restart')) for c in w.calls)
+
+        def set_state(**kv):
+            lines = [l for l in read(os.path.join(w.state, 'state')).splitlines()
+                     if l.split('=', 1)[0] not in kv]
+            lines += ['%s=%s' % (k, v) for k, v in kv.items() if v is not None]
+            write(os.path.join(w.state, 'state'), '\n'.join(lines) + '\n')
+
+        deployed = w.state_value('deployed_commit')
+        head = w.git('-C', w.repo, 'rev-parse', 'HEAD')
+        check(deployed == head, 'O547: apply records deployed_commit', deployed)
+        rc = w.run('check')
+        d = w.kv()
+        check(d.get('deployed_commit') == head[:len(d.get('deployed_commit', 'x'))] and 'note' not in d
+              and d.get('update_available') == 'no', 'O547 check: deployed = HEAD = remote, no note, no update', w.out)
+        # HEAD == remote == deployed: no restart, as before
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and not restarted() and 'the server is up to date' in w.out
+              and not any(c.startswith('install') for c in w.calls), 'O547: HEAD == remote == deployed: nothing runs', w.out)
+        # a checkout moved by hand to a commit that was never installed (git pull)
+        w.push('New server script', {'server/tools/version.txt': 'v2b\n'})
+        w.git('-C', w.repo, 'pull', '--quiet', '--ff-only', 'origin', 'main')
+        check(w.git('-C', w.repo, 'rev-parse', 'HEAD') == w.git('-C', w.origin, 'rev-parse', 'HEAD'), 'O547: checkout pulled by hand')
+        rc = w.run('check')
+        d = w.kv()
+        check(d.get('behind') == '0' and d.get('deployed_commit') == deployed[:len(d.get('deployed_commit', 'x'))]
+              and d.get('update_available') == 'yes' and 'ahead of what is deployed' in d.get('note', ''),
+              'O547 check: HEAD == remote, deployed older: note and update_available=yes', w.out)
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and 'RESULT ok' in w.out and 'never installed' in w.out
+              and any(c.startswith('install') and '--no-sql' in c for c in w.calls) and restarted()
+              and 'no new code' not in w.out, 'O547: HEAD == remote but deployed older: install_all runs, the server restarts', w.out)
+        check(w.state_value('deployed_commit') == w.git('-C', w.repo, 'rev-parse', 'HEAD'), 'O547: deployed_commit moves to HEAD')
+        check(w.state_value('prev_commit') == deployed, 'O547: the rollback goes to the deployed commit, not the pulled HEAD',
+              w.state_value('prev_commit') or '')
+        head_now = w.git('-C', w.repo, 'rev-parse', 'HEAD')
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and not restarted(), 'O547: the next run has nothing new', w.out)
+        # the result never claims a commit that was not installed
+        check('no new code: nothing installed' in w.out and 'RESULT ok: server on %s' % head_now[:7] in w.out,
+              'O547: the no-install result names the deployed commit and says nothing was installed', w.out)
+        w.git('-C', w.repo, 'reset', '--quiet', '--hard', deployed)
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and not restarted() and 'is not what runs' in w.out and 'RESULT ok: server on %s' % head_now[:7] in w.out
+              and w.state_value('deployed_commit') == head_now, 'O547: a checkout behind the deployed commit: result says it is not what runs', w.out)
+        w.git('-C', w.repo, 'reset', '--quiet', '--hard', head_now)
+        # an empty deployed_commit (first run, an old state file)
+        set_state(deployed_commit=None)
+        rc = w.run('check')
+        check(w.kv().get('deployed_commit') == 'none' and w.kv().get('update_available') == 'no',
+              'O547 check: empty deployed_commit, HEAD == remote, a release recorded: no update', w.out)
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and not restarted(), 'O547: empty deployed_commit, HEAD == remote, release recorded: no restart', w.out)
+        set_state(deployed_commit=None, installed_release=None)
+        rc = w.run('check')
+        check(w.kv().get('update_available') == 'yes', 'O547 check: empty deployed_commit, no release recorded: update', w.out)
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and any(c.startswith('install') and '--no-sql' in c for c in w.calls) and restarted()
+              and w.state_value('deployed_commit') == w.git('-C', w.repo, 'rev-parse', 'HEAD'),
+              'O547: empty deployed_commit and no release recorded: new code, installed, recorded', w.out)
+    finally:
+        shutil.rmtree(w.root, ignore_errors=True)
+
+
 def main():
     test_rates_tool()
     test_flow()
     test_staging()
+    test_deployed()
     test_map()
     print('chaos_kit_update_test: %d failures' % len(FAILS))
     return 1 if FAILS else 0

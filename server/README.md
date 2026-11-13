@@ -29325,6 +29325,8 @@ Tests: `tests/stock_level_range_test.lua` (name at the spawn, loot / orb / wayst
 Problem (2026-10-24): `chaos-ctl.sh update-apply` took over 5 minutes with the game down for most of it, because
 `install_all.py` ran with the server stopped.
 
+New code (O547): decided by the commit last installed (state `deployed_commit`), not by the checkout's HEAD; a checkout moved by hand (`git pull`) whose commit was never installed is new code, an empty `deployed_commit` too unless HEAD is the remote and a release is recorded; `check` prints `deployed_commit=` and a `note=` when the checkout is ahead of it, `prev_commit` is the deployed commit, and a run with no new code ends "server on SHA (no new code: nothing installed)".
+
 Flow of `chaos_kit_update.sh apply` (step names and `RESULT` lines unchanged):
 
 1. Backup with the game up. The save wait ends at the engine log line `> Saved in steps:` (patch 0026), `--save-wait` is only the maximum. New option `--save-log FILE` of `tools/backup.sh`.
