@@ -271,6 +271,10 @@ const XP_P: &[Param] = &[int("n", "Multiplicador (1 a 100)", 1, 100, "1")];
 const PAIR_P: &[Param] = &[int("n", "Par do cliente", 1, 9999, "1")];
 const ENGINE_TOKEN_P: &[Param] = &[secret("token", "Token do GitHub (vazio apaga)")];
 const TESTERS_P: &[Param] = &[int("n", "Bots", 1, 150, "100"), int("m", "Minutos", 1, 1440, "60")];
+const JOURNEY_P: &[Param] = &[
+    int("n", "Bots (1 a 10)", 1, 10, "3"),
+    int("m", "Minutos", 1, 1440, "180"),
+];
 const ACC_P: &[Param] = &[text("name", "Conta"), secret("password", "Senha (6 a 64 caracteres)")];
 const UNIT_P: &[Param] = &[text("unit", "Unidade (ex.: chaos-helpai)")];
 const UNIT_ACT_P: &[Param] = &[
@@ -435,6 +439,12 @@ pub static ACTIONS: &[Action] = &[
     act(Testers, "Testers", "Relatório", "testers report").t(120),
     act(Testers, "Testers", "Log das ações", "testers log 400").t(60),
     act(Testers, "Testers", "Apagar testers", "testers cleanup --yes").ask().t(240),
+    // ---- Journey bots (O542): fresh tester characters that play like players, no restart
+    act(Testers, "Bots de jornada", "Iniciar", "journey start {n} {m}").p(JOURNEY_P).ask().t(180),
+    act(Testers, "Bots de jornada", "Parar", "journey stop").ask().t(60),
+    act(Testers, "Bots de jornada", "Estado", "journey status").t(60),
+    act(Testers, "Bots de jornada", "Relatório", "journey report").t(120),
+    act(Testers, "Bots de jornada", "Apagar os bots", "journey cleanup --yes").ask().t(300),
     // ---- VPS e manutenção
     act(Machine, "Saúde e espaço", "Ver sobras a limpar", "cleanup").t(120),
     act(Machine, "Saúde e espaço", "Limpar sobras", "cleanup --yes").ask().t(120),

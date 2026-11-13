@@ -249,6 +249,21 @@
 #                               the run also writes its report next to it, run-*-report.txt; the 20 newest runs are kept)
 #   testers cleanup [--yes]     lists (or with --yes deletes) the tester accounts, characters and every row of them;
 #                               stops the bots first and waits 2 minutes after a stop (a character in a fight stays in game)
+#   journey start [N] [MINUTES] [--level L]
+#                               journey bots (O542, server/README.md "Journey bots (O542)"): N fresh level 1 characters
+#                               "Tester Xxx" (default 3: Warrior, Ranger, Mystic; at most 10) play like a player for MINUTES
+#                               (default 180, at most 1440) or until level L (default 25): they walk (no teleport, no staff
+#                               command, no helper file), pick hunts by level, fight, loot, sell and buy at NPCs, explore, talk
+#                               to NPCs, open game systems. TESTER rules enforced by the server (marker storage + name, src-patch
+#                               0059, testers.lua): never counted online, no combat, trade, party, market or mail with a player.
+#                               Needs the client key file (CHAOS_TESTER_KEY) and the bot program (CHAOS_JOURNEY_DLL, built from the
+#                               repo with dotnet when missing). No server restart.
+#   journey stop                ends the bots (they log out and write their numbers)
+#   journey status              key=value lines: running, pids, bots, then one line per bot (name, class, level, minutes,
+#                               kills, deaths, stuck): read from the numbers each bot writes every minute
+#   journey report              the report: minutes per level against server/tools/progression_model.lua, deaths, stuck
+#                               positions, kills / xp / gold per hour, the coverage table of systems, opcodes, towns, areas
+#   journey cleanup [--yes]     lists (or with --yes deletes) the journey accounts, characters and every row of them
 #   discord-set CHANNEL         a Discord webhook URL of CHANNEL (records, bosses, players, announce, status, bazaar, drops,
 #                               default) into /etc/chaos/discord.env (CHAOS_DISCORD_ENV; mode 600, owner www-data). The URL
 #                               is read from stdin (one line), never from the command line, checked against
@@ -478,6 +493,8 @@ WORKDIR=$(setting CHAOS_WORK_DIR /var/tmp)
 TKEY=$(setting CHAOS_TESTER_KEY /etc/chaos/tester-client-key)
 TSTATE=$(setting CHAOS_TESTER_STATE /var/lib/chaos/testers)
 TLOG=$(setting CHAOS_TESTER_LOG /var/log/chaos/testers.log)
+JSTATE=$(setting CHAOS_JOURNEY_STATE /var/lib/chaos/journey)
+JDLL=$(setting CHAOS_JOURNEY_DLL /var/lib/chaos/journey-bin/Core.LiveCheck.dll)
 VLOG=$(setting CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log)
 SPPAIR=$(setting CHAOS_SPECTATE_PAIR "$ROOT/pair")
 SPSTATE=$(setting CHAOS_SPECTATE_STATE /var/lib/chaos/spectate)
@@ -1127,6 +1144,31 @@ testers_py() {
     [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK
     CHAOS_MYSQL=$MYSQL
     set +a; exec python3 -I "$py" "$@" )
+}
+
+# ---- journey bots (server/README.md "Journey bots (O542)")
+journey_pids() {
+  local f p ok=1
+  for f in "$JSTATE"/bot-*.pid; do
+    [ -r "$f" ] || continue
+    p=$(head -c 20 "$f" | tr -dc 0-9)
+    if [ -n "$p" ] && kill -0 "$p" 2>/dev/null; then echo "$p"; ok=0; fi
+  done
+  return $ok
+}
+journey_py() {
+  ( set -a; . "$ENVFILE"
+    [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK
+    CHAOS_MYSQL=$MYSQL
+    set +a; exec python3 -I "$REPO/server/tools/journey_setup.py" "$@" )
+}
+# the bot program: a published Core.LiveCheck (CHAOS_JOURNEY_DLL); built from the repo with dotnet when it is missing
+journey_dll() {
+  [ -r "$JDLL" ] && return 0
+  command -v dotnet >/dev/null 2>&1 || die "journey-binary-missing: no $JDLL and no dotnet to build it (dotnet publish -c Release -o $(dirname "$JDLL") $REPO/unity/Core.LiveCheck)"
+  echo "building the journey bot program (dotnet publish)"
+  dotnet publish -c Release -o "$(dirname "$JDLL")" "$REPO/unity/Core.LiveCheck" >/dev/null 2>&1 || die "journey-build-failed: dotnet publish of $REPO/unity/Core.LiveCheck"
+  [ -r "$JDLL" ] || die "journey-build-failed: no $JDLL after the build"
 }
 
 # ---- live spectator (server/README.md "Live spectator")
@@ -3810,6 +3852,101 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         fi
         ;;
       *) die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] | stop | status | report | log [N] | cleanup [--yes]" ;;
+    esac
+    ;;
+  journey)
+    sub=${1:-status}
+    [ $# -gt 0 ] && shift
+    case $sub in
+      start)
+        n=3 minutes=180 level=25 pos=0
+        while [ $# -gt 0 ]; do
+          case $1 in
+            --level)
+              level=${2:-}
+              num "$level" || die "--level L"
+              { [ "$level" -ge 2 ] && [ "$level" -le 2000 ]; } || die "--level: 2 to 2000"
+              shift 2 ;;
+            *)
+              num "$1" || die "journey start [N] [MINUTES] [--level L]"
+              [ $pos -lt 2 ] || die "journey start [N] [MINUTES] [--level L]"
+              if [ $pos -eq 0 ]; then n=$1; else minutes=$1; fi
+              pos=$((pos + 1)); shift ;;
+          esac
+        done
+        if [ "$n" -lt 1 ] || [ "$n" -gt 10 ]; then die "N: 1 to 10 journey bots"; fi
+        if [ "$minutes" -lt 1 ] || [ "$minutes" -gt 1440 ]; then die "MINUTES: 1 to 1440"; fi
+        journey_pids >/dev/null && die "journey bots already running: chaos-ctl.sh journey stop"
+        dev_key_on && die "config.lua has clientGuardAllowDevKey = true: the journey bots never run with the development key"
+        key_file_ok
+        [ -r "$SERVER/data/chaos_poi.lua" ] || die "no $SERVER/data/chaos_poi.lua (install step poi)"
+        journey_dll
+        have=$( (journey_py list --state "$JSTATE") 2>/dev/null | sed -n 's/^bots=//p')
+        if [ -n "$have" ] && [ "$have" -ne 0 ]; then die "the last setup left $have journey characters: chaos-ctl.sh journey cleanup --yes first"; fi
+        mkdir -p "$JSTATE" && chmod 700 "$JSTATE"
+        rm -f "$JSTATE"/bot-*.json "$JSTATE"/bot-*.txt "$JSTATE"/bot-*.pid "$JSTATE"/bot-*.log
+        journey_py setup --count "$n" --server-dir "$SERVER" --state "$JSTATE" || die "setup failed"
+        echo "== $(date '+%F %T') journey start $n $minutes level $level" >> "$TLOG"
+        i=0
+        while [ "$i" -lt "$n" ]; do
+          # one process per bot; the account, password and the guard key reach it by the environment of a subshell, never a command line
+          (
+            eval "$(journey_py env --state "$JSTATE" --index "$i")"
+            CHAOS_CLIENT_KEY=$(tr -dc 0-9a-fA-F < "$TKEY")
+            export CHAOS_CLIENT_KEY
+            # one source address per bot (the server allows one connection per address)
+            export CHAOS_LIVE_BIND="127.1.0.$((i + 1))"
+            exec setsid nohup dotnet "$JDLL" 127.0.0.1 7171 "$CHAOS_LIVE_ACCOUNT" "$JOURNEY_CHARACTER" --identity chaos --journey \
+              --otb "$SERVER/data/items/items.otb" --poi "$SERVER/data/chaos_poi.lua" --journey-minutes "$minutes" --journey-level "$level" \
+              --journey-out "$JSTATE/bot-$i.json" --seed "$((i + 1))" --class "$JOURNEY_CLASS" > "$JSTATE/bot-$i.log" 2>&1 &
+            echo $! > "$JSTATE/bot-$i.pid"
+          )
+          i=$((i + 1))
+          sleep 2
+        done
+        echo "journey bots started: $n for $minutes min or level $level"
+        ;;
+      stop)
+        pids=$(journey_pids) || { echo "no journey bots running"; exit 0; }
+        for p in $pids; do kill -TERM "$p" 2>/dev/null; done
+        for _ in $(seq 1 20); do journey_pids >/dev/null || break; sleep 1; done
+        for p in $(journey_pids); do kill -KILL "$p" 2>/dev/null; done
+        echo "journey bots stopped"
+        ;;
+      status)
+        if pids=$(journey_pids); then echo running=yes; echo "pids=$(echo "$pids" | tr '\n' ' ' | sed 's/ $//')"; else echo running=no; echo pids=; fi
+        (journey_py list --state "$JSTATE") 2>/dev/null | grep -E '^bots='
+        for f in "$JSTATE"/bot-*.json; do
+          [ -r "$f" ] || continue
+          python3 -I - "$f" <<'PY'
+import json, sys
+try:
+    b = json.load(open(sys.argv[1]))
+except (OSError, ValueError):
+    sys.exit(0)
+print("bot=%s;%s;level=%s;minutes=%s;kills=%s;deaths=%d;stuck=%d" % (b.get("name"), b.get("class"), b.get("level"), b.get("minutes"), b.get("kills"), len(b.get("deaths", [])), len(b.get("stuck", []))))
+PY
+        done
+        ;;
+      report)
+        ls "$JSTATE"/bot-*.json >/dev/null 2>&1 || die "no journey numbers yet (journey start first)"
+        python3 -I "$REPO/server/tools/journey_report.py" "$JSTATE"/bot-*.json --model-dir "$REPO/server"
+        ;;
+      cleanup)
+        yes=0
+        case "$*" in '') ;; --yes) yes=1 ;; *) die "journey cleanup [--yes]" ;; esac
+        if journey_pids >/dev/null; then CHAOS_CTL_NO_SUDO=1 "$SELF" journey stop; fi
+        wait_s=${CHAOS_TESTERS_STOP_WAIT:-120}
+        num "$wait_s" || wait_s=120
+        if [ $yes -eq 1 ] && [ "$wait_s" -gt 0 ]; then echo "waiting $wait_s s (a character in a fight stays in game)"; sleep "$wait_s"; fi
+        if [ $yes -eq 1 ]; then
+          testers_py cleanup --state "$JSTATE" --server-dir "$SERVER"
+        else
+          testers_py cleanup --state "$JSTATE" --dry-run
+          echo "(nothing deleted: chaos-ctl.sh journey cleanup --yes)"
+        fi
+        ;;
+      *) die "journey start [N] [MINUTES] [--level L] | stop | status | report | cleanup [--yes]" ;;
     esac
     ;;
   ''|help|-h|--help)

@@ -1160,6 +1160,12 @@ jobs:
 
       - name: 'Unity client channel (make_unity_manifest.py: pack a player folder, signed publish into updates/unity, verify, refusals; O433 phase 16)'
         run: python3 -I client/tools/make_unity_manifest_test.py
+      - name: 'Journey bots (O542): report against the progression model, the tester characters of the bots, the CI script (the decision logic is Core.Tests JourneyTests, run by unity-prototype.yml)'
+        run: |
+          python3 -I server/tools/journey_report_test.py
+          python3 -I server/tools/journey_setup_test.py
+          shellcheck tools/ci/journey_bots.sh
+
       - name: 'Unity live check builds (Core.LiveCheck, O433: it only builds here, the run against a server is manual, unity/README.md "Live check (O433)")'
         run: dotnet build -c Release unity/Core.LiveCheck
 

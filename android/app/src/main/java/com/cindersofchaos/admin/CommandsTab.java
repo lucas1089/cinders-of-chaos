@@ -232,6 +232,7 @@ final class CommandsTab {
         buildVps();
         buildServices();
         buildTesters();
+        buildJourney();
         buildSiteClient();
         buildMapInbox();
     }
@@ -982,6 +983,45 @@ final class CommandsTab {
                 + "personagens e tudo deles. Se estão rodando, para agora e espera 2 minutos antes de apagar (um "
                 + "toque só). O próximo Iniciar cria novos, com os níveis atuais.", "Apagar", true,
                 () -> ctl("Apagar testers", "testers cleanup --yes", 240, null)));
+        b.addView(clean, ui.gap(8));
+        quick.addView(c, ui.gap(12));
+    }
+
+    // journey bots on the live server (chaos-ctl.sh journey, server/README.md "Journey bots (O542)"): fresh Tester characters that play like players
+    private void buildJourney() {
+        MaterialCardView c = ui.titledCard("Bots de jornada");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("Personagens \"Tester\" novos (nível 1) jogam como jogadores: andam, caçam por nível, lutam, "
+                + "pegam o loot, vendem e compram nos NPCs, exploram e abrem os sistemas do jogo. Sem teleporte, sem comando de GM. "
+                + "Nunca entram na contagem de jogadores nem têm contato com jogadores. Não reinicia o servidor."));
+        TextInputLayout count = ui.field("Quantos", "1 a 10.", "3", InputType.TYPE_CLASS_NUMBER);
+        TextInputLayout minutes = ui.field("Minutos", "1 a 1440.", "180", InputType.TYPE_CLASS_NUMBER);
+        b.addView(ui.evenRow(count, minutes), ui.gap(8));
+        MaterialButton start = ui.primary("Iniciar", R.drawable.ic_play);
+        start.setOnClickListener(v -> {
+            int n = number(count, 1, 10), m = number(minutes, 1, 1440);
+            if (n < 0 || m < 0) {
+                return;
+            }
+            a.confirm("Iniciar " + n + " bots de jornada por " + m + " min?", "Cada bot é um Tester novo (Warrior, Ranger, "
+                    + "Mystic em rodízio) que joga até o nível 25 ou até o tempo acabar.", "Iniciar", true,
+                    () -> ctl("Iniciar bots de jornada", "journey start " + n + " " + m, 180, null));
+        });
+        MaterialButton stop = ui.danger("Parar", R.drawable.ic_stop);
+        stop.setOnClickListener(v -> a.confirm("Parar os bots de jornada?", "Eles saem do jogo e gravam os números.", "Parar", true,
+                () -> ctl("Parar bots de jornada", "journey stop", 60, null)));
+        b.addView(ui.evenRow(start, stop), ui.gap(8));
+        MaterialButton status = ui.secondary("Status", R.drawable.ic_refresh);
+        status.setOnClickListener(v -> ctl("Bots de jornada", "journey status", 30, null));
+        MaterialButton report = ui.secondary("Relatório", R.drawable.ic_search);
+        report.setOnClickListener(v -> ctl("Relatório dos bots de jornada", "journey report", 120, null));
+        b.addView(ui.evenRow(status, report), ui.gap(8));
+        b.addView(ui.hint("O relatório compara os minutos por nível com o modelo do servidor, lista mortes, lugares onde o bot "
+                + "travou e o que ele tocou: sistemas, opcodes, cidades, áreas."), ui.gap(4));
+        MaterialButton clean = ui.flat("Apagar os bots de jornada", 0);
+        clean.setOnClickListener(v -> a.confirm("Apagar as contas dos bots de jornada?", "Apaga as contas, os personagens e tudo "
+                + "deles. Se estão rodando, para agora e espera 2 minutos antes de apagar.", "Apagar", true,
+                () -> ctl("Apagar bots de jornada", "journey cleanup --yes", 300, null)));
         b.addView(clean, ui.gap(8));
         quick.addView(c, ui.gap(12));
     }
