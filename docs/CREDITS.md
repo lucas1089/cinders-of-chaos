@@ -341,6 +341,21 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Licence: MIT
   - Used for: checking the Ed25519 signature of the update manifest in the game launcher and of the releases of the desktop admin app
   - Source: https://github.com/jedisct1/rust-ed25519-compact
+- **winreg (winreg-rs)**
+  - Author: Igor Shaula
+  - Licence: MIT
+  - Used for: the per-user install and uninstall entries of the game launcher (Windows only)
+  - Source: https://github.com/gentoo90/winreg-rs
+- **mslnk**
+  - Author: Max Henkel and the mslnk contributors
+  - Licence: MIT
+  - Used for: the desktop and Start menu shortcuts of the game launcher's setup (Windows only)
+  - Source: https://github.com/EvilJackoLo/mslnk
+- **rfd (Rusty File Dialogs)**
+  - Author: Poly and the rfd contributors
+  - Licence: MIT
+  - Used for: the folder dialog and the uninstall question of the game launcher (Windows only)
+  - Source: https://github.com/PolyMeilex/rfd
 - **fs2**
   - Author: Dan Burkert
   - Licence: MIT or Apache-2.0

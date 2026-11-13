@@ -56,6 +56,32 @@ What phase B added around that (`src/chunked.rs`, `src/install.rs`, `src/manifes
   verify and repaired with one Range, one changed piece, a cut and a corrupt piece, a full disk, staged pieces not counted again, a wrong piece hash
   installs nothing, a manifest without chunks), `manifest.rs` (the chunk rules), `make_update_manifest_test.py` (`test_chunk_hashes_for_the_big_files`).
 
+## Self-installing setup (O552 phase C)
+
+Owner 2026-11-13: the launcher installs itself, no admin rights, `%LOCALAPPDATA%\CindersOfChaos`, shortcuts, an uninstall entry. There is no
+separate installer program: the website's download is the launcher exe itself, published as `Cinders-of-Chaos-Setup.exe` (+ `.sha256`) by
+`publish_client_update.sh` (`$CHAOS_SITE_DIR/download/`, `CHAOS_SETUP_DIR`) whenever it publishes the launcher's native files.
+
+- **Facts built in.** `launcher/embedded.json` (gitignored) is the text of a `launcher.json`; `build.rs` compiles it in (`setup::EMBEDDED`, empty when the
+  file is missing). `windows-package.yml` writes it before `cargo build` from the workflow inputs `update_manifest` and `update_public_key`
+  (`set_launcher_config.py --embed embedded.json --manifest URL --public-key HEX`, also `GAME_DIR --embed FILE` beside the normal `launcher.json`).
+- **Mode** (`setup::mode`). `launcher.json` beside the program: the normal launcher. No `launcher.json` but good facts built in (and no `--dir`): the setup
+  screen. Neither: the old error. The zip's launcher sits beside its `launcher.json`, so it never shows the setup.
+- **Screen** (`src/setup_ui.rs`, same look). Folder field (default `%LOCALAPPDATA%\CindersOfChaos`, `setup::default_dir`), "Escolher pasta..." (folder dialog,
+  Windows only; a non-empty folder gets a `CindersOfChaos` sub-folder), the size from the signed manifest (`setup::download_size`, plus 256 MiB of margin) against the free
+  space of that folder, two shortcut boxes, INSTALAR. `setup::check_dir` refuses an empty path, a relative one, a drive root, a system folder, a file and a folder
+  that holds other files (an earlier install of ours is fine), and only warns for Program Files and network paths.
+- **Install** (`setup::install`). Copies itself as `CindersLauncher.exe` (a temporary name, then a rename), writes `launcher.json` from the built-in facts,
+  makes the shortcuts (desktop and Start menu, optional, a failure is not fatal) and the entries `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\CindersOfChaos`
+  (`UninstallString` = `"...\CindersLauncher.exe" --uninstall`) and `HKCU\Software\CindersOfChaos\InstallDir`, then starts the copy with `--first-run`. The copy runs the
+  ordinary update, which downloads the whole client (see the section above).
+- **Uninstall** (`--uninstall`, `setup::uninstall`). Asks once, then removes only what the launcher owns: the native files of `owned.json`, `.cinders_launcher/`,
+  `chaos_update/`, `unity/`, `launcher.json`, the shortcuts and the registry entries, and the program itself after it exits (`cmd` delayed delete, the folder only
+  if it is then empty). Files the player put in the folder stay.
+- **Windows side.** `src/winshell.rs` (only on Windows): `winreg`, `mslnk` and `rfd`, behind the traits `Shell` and `Registry`; everything else is tested on Linux with
+  fakes (`setup.rs` tests, `tests/setup_install.rs`: setup to full install to uninstall against the fake server). `cargo check --target x86_64-pc-windows-gnu
+  --all-targets` type-checks the Windows code here; it was never run on Windows.
+
 ## Client choice (Unity client beta, O433 phase 16)
 
 Owner 2026-11-07 (pt-BR): "Quero que os jogadores consigam jogar em ambos os clientes." The window has a row "Cliente: Cliente principal | Cliente Unity (beta)"

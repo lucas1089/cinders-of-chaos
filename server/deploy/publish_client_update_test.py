@@ -25,6 +25,7 @@ that holds the shards publishes them as they are, one with both leaves the singl
 
 usage: python3 -I server/deploy/publish_client_update_test.py
 """
+import hashlib
 import http.server
 import json
 import os
@@ -533,6 +534,12 @@ sys.exit(22)
         for f in nat.get('files', []):
             b = os.path.join(live, 'native', f['sha256'][:2], f['sha256'])
             check(os.path.isfile(b) and os.path.getsize(b) == f['size'], 'native blob of ' + f['path'])
+        # the launcher is also the setup program (O552): copied to download/ with its hash
+        setup = os.path.join(site, 'download', 'Cinders-of-Chaos-Setup.exe')
+        check(os.path.isfile(setup) and open(setup, 'rb').read() == b'MZ launcher', 'the setup file is the launcher exe')
+        sumf = setup + '.sha256'
+        check(os.path.isfile(sumf) and open(sumf).read().split()[0] == hashlib.sha256(b'MZ launcher').hexdigest(), 'its sha256 file')
+        check(not any(n.startswith('.Cinders') for n in os.listdir(os.path.dirname(setup))), 'no temporary file left')
         # a package without the launcher publishes no native section (and the old native blobs go)
         r = run('--version', '81', packed, extra={'CHAOS_UPDATE_URL': purl, 'CHAOS_ENV': envfile},
                 drop=('CHAOS_CLIENT_KEY',))

@@ -4,7 +4,7 @@ use cinders_launcher::config::{self, Client, Config};
 use cinders_launcher::i18n::{self, Lang, Status};
 use cinders_launcher::install::{Event, Options};
 use cinders_launcher::net::Curl;
-use cinders_launcher::{choice, launch, selfupdate};
+use cinders_launcher::{choice, launch, selfupdate, setup};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -26,6 +26,7 @@ fn update_options() -> Options {
 struct Args {
     cli: bool,
     no_start: bool,
+    uninstall: bool,
     dir: Option<PathBuf>,
     lang: Option<Lang>,
     client: Option<Client>,
@@ -36,6 +37,7 @@ fn parse_args() -> Args {
     let mut a = Args {
         cli: false,
         no_start: false,
+        uninstall: false,
         dir: None,
         lang: None,
         client: None,
@@ -49,6 +51,9 @@ fn parse_args() -> Args {
         match x.as_str() {
             "--cli" => a.cli = true,
             "--no-start" => a.no_start = true,
+            "--uninstall" => a.uninstall = true,
+            // the setup program starts the installed copy with it; nothing else to do, the update runs as always
+            "--first-run" => {}
             "--verify" => VERIFY.store(true, Ordering::Relaxed),
             "--allow-dev-unity" => ALLOW_DEV_UNITY.store(true, Ordering::Relaxed),
             "--dir" => a.dir = it.next().map(PathBuf::from),
@@ -100,6 +105,22 @@ fn pick_client(cfg: &Config, given: Option<Client>) -> Client {
     }
 }
 
+/// `--uninstall` (the entry of Windows' "Apps" list): asks once, then removes what the launcher owns.
+fn uninstall(dir: &std::path::Path, exe: &std::path::Path, lang: Lang) -> i32 {
+    #[cfg(windows)]
+    if !cinders_launcher::winshell::confirm_uninstall(
+        i18n::setup_text(i18n::SetupText::UninstallTitle, lang),
+        i18n::setup_text(i18n::SetupText::UninstallAsk, lang),
+    ) {
+        return 0;
+    }
+    #[cfg(not(windows))]
+    let _ = lang;
+    let removed = setup::uninstall(dir, exe, &setup::SYSTEM, &setup::SYSTEM);
+    println!("removed {} item(s)", removed.len());
+    0
+}
+
 fn run_cli(cfg: &Config, exe: PathBuf, lang: Lang, no_start: bool, client: Client) -> i32 {
     let active = match choice::active_config(cfg, client) {
         Ok(a) => a,
@@ -138,6 +159,8 @@ fn run_cli(cfg: &Config, exe: PathBuf, lang: Lang, no_start: bool, client: Clien
 }
 
 #[cfg(feature = "gui")]
+mod setup_ui;
+#[cfg(feature = "gui")]
 mod theme;
 #[cfg(feature = "gui")]
 mod ui;
@@ -152,6 +175,18 @@ fn main() {
         .clone()
         .or_else(|| exe.parent().map(PathBuf::from))
         .unwrap_or_else(|| PathBuf::from("."));
+    if args.uninstall {
+        std::process::exit(uninstall(&dir, &exe, lang));
+    }
+    // no launcher.json beside the program but the facts built in: the setup screen (O552 phase C)
+    #[cfg(feature = "gui")]
+    if !args.cli && args.dir.is_none() && setup::mode(&dir, setup::EMBEDDED) == setup::Mode::Setup {
+        if let Err(e) = setup_ui::run(lang, exe) {
+            eprintln!("{e}");
+            std::process::exit(1);
+        }
+        return;
+    }
     let cfg = match config::load(&dir) {
         Ok(mut c) => {
             c.args.extend(args.rest.clone());

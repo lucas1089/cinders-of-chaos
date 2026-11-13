@@ -586,6 +586,11 @@ jobs:
         shell: bash
         working-directory: chaos/launcher
         run: |
+          # the facts of the setup program (O552 phase C): the same manifest and key the packages use; without them the
+          # launcher runs only beside a launcher.json and shows no setup screen
+          if [ -n "$UPDATE_MANIFEST" ]; then
+            python3 -I ../client/tools/set_launcher_config.py --embed embedded.json --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY"
+          fi
           cargo build --locked --release
           test -s target/release/cinders-launcher.exe
 

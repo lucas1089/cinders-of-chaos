@@ -30,3 +30,9 @@ opt-level = 2
 lto = true
 codegen-units = 1
 strip = true
+
+# the Windows side of the setup (O552 phase C): per-user registry keys, shortcuts, the folder dialog
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+mslnk = "0.1"
+rfd = { version = "0.15", default-features = false }

@@ -184,6 +184,67 @@ pub fn ui(t: Ui, l: Lang) -> &'static str {
     }
 }
 
+/// Texts of the setup screen (O552 phase C, `setup.rs`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum SetupText {
+    Title,
+    Choose,
+    DesktopLink,
+    MenuLink,
+    Install,
+    Installing,
+    WarnProgramFiles,
+    WarnNetwork,
+    NotEmpty,
+    BadFolder,
+    Checking,
+    UninstallTitle,
+    UninstallAsk,
+}
+
+pub fn setup_text(t: SetupText, l: Lang) -> &'static str {
+    match (t, l) {
+        (SetupText::Title, Lang::Pt) => "Instalar Cinders of Chaos",
+        (SetupText::Title, Lang::En) => "Install Cinders of Chaos",
+        (SetupText::Choose, Lang::Pt) => "Escolher pasta...",
+        (SetupText::Choose, Lang::En) => "Choose folder...",
+        (SetupText::DesktopLink, Lang::Pt) => "Atalho na área de trabalho",
+        (SetupText::DesktopLink, Lang::En) => "Desktop shortcut",
+        (SetupText::MenuLink, Lang::Pt) => "Atalho no menu Iniciar",
+        (SetupText::MenuLink, Lang::En) => "Start menu shortcut",
+        (SetupText::Install, Lang::Pt) => "Instalar",
+        (SetupText::Install, Lang::En) => "Install",
+        (SetupText::Installing, Lang::Pt) => "Instalando...",
+        (SetupText::Installing, Lang::En) => "Installing...",
+        (SetupText::WarnProgramFiles, Lang::Pt) => {
+            "Esta pasta pode exigir permissão de administrador. Prefira uma pasta sua."
+        }
+        (SetupText::WarnProgramFiles, Lang::En) => {
+            "This folder may need administrator rights. A folder of your own is better."
+        }
+        (SetupText::WarnNetwork, Lang::Pt) => {
+            "Uma pasta de rede deixa o jogo lento. Prefira um disco do seu computador."
+        }
+        (SetupText::WarnNetwork, Lang::En) => {
+            "A network folder makes the game slow. A disk of your computer is better."
+        }
+        (SetupText::NotEmpty, Lang::Pt) => "Essa pasta já tem outros arquivos. Escolha uma pasta vazia ou nova.",
+        (SetupText::NotEmpty, Lang::En) => "That folder already has other files. Choose an empty or new folder.",
+        (SetupText::BadFolder, Lang::Pt) => "Escolha uma pasta de verdade, por exemplo uma pasta nova no seu disco.",
+        (SetupText::BadFolder, Lang::En) => "Choose a real folder, for example a new folder on your disk.",
+        (SetupText::Checking, Lang::Pt) => "Conferindo o tamanho da instalação...",
+        (SetupText::Checking, Lang::En) => "Checking the size of the install...",
+        (SetupText::UninstallTitle, Lang::Pt) => "Desinstalar Cinders of Chaos",
+        (SetupText::UninstallTitle, Lang::En) => "Uninstall Cinders of Chaos",
+        (SetupText::UninstallAsk, Lang::Pt) => {
+            "Os arquivos do jogo e o launcher serão apagados. Seus próprios arquivos na pasta ficam. Continuar?"
+        }
+        (SetupText::UninstallAsk, Lang::En) => {
+            "The game files and the launcher will be deleted. Your own files in the folder stay. Continue?"
+        }
+    }
+}
+
 pub fn title(l: Lang) -> &'static str {
     match l {
         Lang::Pt => "Cinders of Chaos Launcher",
@@ -491,6 +552,27 @@ mod tests {
             let (pt, en) = (ui(t, Lang::Pt), ui(t, Lang::En));
             assert!(!pt.is_empty() && !en.is_empty(), "{t:?}");
             assert_eq!(pt == en, same.contains(&t), "{t:?}");
+        }
+    }
+
+    #[test]
+    fn setup_texts_have_both_languages() {
+        for t in [
+            SetupText::Title,
+            SetupText::Choose,
+            SetupText::DesktopLink,
+            SetupText::MenuLink,
+            SetupText::Install,
+            SetupText::Installing,
+            SetupText::WarnProgramFiles,
+            SetupText::WarnNetwork,
+            SetupText::NotEmpty,
+            SetupText::BadFolder,
+            SetupText::Checking,
+            SetupText::UninstallTitle,
+            SetupText::UninstallAsk,
+        ] {
+            assert_ne!(setup_text(t, Lang::Pt), setup_text(t, Lang::En), "{t:?}");
         }
     }
 

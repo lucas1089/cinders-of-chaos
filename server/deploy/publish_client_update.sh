@@ -97,6 +97,7 @@
 #   CHAOS_UPDATE_APK_INFO_ASSET  CindersOfChaos-Android.json   its info asset
 #   CHAOS_UPDATE_APK_MIN_MB      1                 a smaller APK download is refused
 #   CHAOS_UPDATE_URL      (empty)             the public manifest URL for the check (default: the package's own)
+#   CHAOS_SETUP_DIR       $CHAOS_SITE_DIR/download   where the launcher is also written as Cinders-of-Chaos-Setup.exe (+ .sha256)
 #   CHAOS_NATIVE_CHUNK    33554432            piece size in bytes of the chunk hashes of the launcher's big files (0 off, 1 to 128 MiB)
 #   CHAOS_WORK_DIR        /var/tmp            where the work folder is made (needs about 4x the zip size free: the spr is split there)
 #   CHAOS_UPDATE_MIN_MB   50                  a smaller download is refused (an error page, a wrong asset)
@@ -632,6 +633,17 @@ fi
 say ""
 say "published: version $NEWV (was $PREV), min_package $MINPKG, from ${TAG:-$SRC}"
 say "  folder: $LIVE"
+# the launcher itself is also the setup program (O552 phase C): from any folder it installs itself, so the site's download
+# button points at the newest signed file. Written beside the other downloads, renamed into place, with its SHA-256.
+if [ -n "$NATIVE" ] && [ -f "$NATIVE/CindersLauncher.exe" ]; then
+  setup_dir="${CHAOS_SETUP_DIR:-$SITE/download}"
+  mkdir -p "$setup_dir" || die "cannot make $setup_dir (CHAOS_SETUP_DIR)"
+  cp "$NATIVE/CindersLauncher.exe" "$setup_dir/.Cinders-of-Chaos-Setup.exe.tmp" || die "cannot copy the setup file to $setup_dir"
+  setup_sum=$(sha256sum "$setup_dir/.Cinders-of-Chaos-Setup.exe.tmp" | cut -d' ' -f1)
+  mv -f "$setup_dir/.Cinders-of-Chaos-Setup.exe.tmp" "$setup_dir/Cinders-of-Chaos-Setup.exe"
+  printf '%s  Cinders-of-Chaos-Setup.exe\n' "$setup_sum" > "$setup_dir/Cinders-of-Chaos-Setup.exe.sha256"
+  say "  setup file: $setup_dir/Cinders-of-Chaos-Setup.exe (sha256 $setup_sum)"
+fi
 say "  public key: $PUBLIC"
 say "  clients of package $MINPKG or newer with this key apply it at their next start; older packages with the"
 say "  updater are told to download the new client (the game server refuses them when clientGuardManifest names it)"

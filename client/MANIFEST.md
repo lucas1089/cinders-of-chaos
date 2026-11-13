@@ -5099,6 +5099,11 @@ at most 64 files of at most 2 GiB; `game` and `launcher` must be `.exe` files of
 pack beside `chaos.pack`, `--native-package` = the package's `Services.update.package`); a package without the launcher
 publishes no section and prunes the old native blobs. `verify` checks the native blobs too.
 
+**Setup (O552 phase C).** The launcher exe is also the setup program: with no `launcher.json` beside it and the manifest address and public key built in
+(`launcher/embedded.json`, from the workflow inputs `update_manifest` / `update_public_key`), it installs itself in a per-user folder (`%LOCALAPPDATA%\CindersOfChaos`,
+no admin rights), makes shortcuts and the uninstall entry, and its first run downloads the whole client from the `native` section. `publish_client_update.sh`
+writes the launcher as `download/Cinders-of-Chaos-Setup.exe` with its `.sha256`. Details: `launcher/README.md` "Self-installing setup".
+
 **Chunk hashes (O552).** A native file bigger than one piece may also carry `"chunk": BYTES` (1 to 128 MiB, default 32 MiB) and `"chunks": [sha256 of
 each piece]`, both or neither, at most 4096 pieces, as many as `ceil(size / chunk)`. The blob stays one plain file; the launcher fetches the pieces with
 `Range`, four at a time, checks each, resumes and repairs per piece, and copies unchanged pieces from the installed file. Old launchers ignore the keys.

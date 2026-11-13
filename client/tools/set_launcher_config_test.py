@@ -100,6 +100,33 @@ class SetLauncherConfig(unittest.TestCase):
             self.assertNotEqual(self.run_tool('--site', bad)[0], 0, bad)
         self.assertFalse(os.path.exists(os.path.join(self.d, 'launcher.json')))
 
+    def test_embed_writes_the_same_text_for_the_launcher_build(self):
+        self.init()
+        emb = os.path.join(self.d, 'embedded.json')
+        self.assertEqual(self.run_tool('--embed', emb)[0], 0)
+        self.assertEqual(open(emb).read(), open(os.path.join(self.d, 'launcher.json')).read())
+        # without a game folder: the manifest and the key come from the workflow inputs
+        os.remove(emb)
+        code, out, err = self.run_embed_only(emb, 'https://site.test/updates/live/manifest.json', KEY)
+        self.assertEqual(code, 0, err)
+        cfg = json.load(open(emb))
+        self.assertEqual(cfg, {'manifest': 'https://site.test/updates/live/manifest.json', 'public_key': KEY,
+                               'game': 'Chaos.exe', 'feed': 'https://site.test/chaos_launcher_feed.php'})
+        os.remove(emb)
+        for bad in (('http://site.test/m/manifest.json', KEY), ('https://site.test/manifest.json', 'zz')):
+            self.assertNotEqual(self.run_embed_only(emb, *bad)[0], 0, bad)
+            self.assertFalse(os.path.exists(emb))
+
+    def run_embed_only(self, emb, manifest, key):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            try:
+                code = slc.main(['--embed', emb, '--manifest', manifest, '--public-key', key])
+            except SystemExit as e:
+                code = e.code if isinstance(e.code, int) else 1
+                err.write(str(e.code))
+        return code, out.getvalue(), err.getvalue()
+
     def test_game_name(self):
         self.init()
         self.assertEqual(self.run_tool('--game', 'Game.exe')[0], 0)

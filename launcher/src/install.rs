@@ -116,6 +116,21 @@ pub fn manifest_fetch_error(e: FetchError, unity: bool) -> Error {
     }
 }
 
+/// Fetches the signed manifest of a config and checks the signature and the rules of its layout. Nothing is trusted
+/// before the signature is good. The query string defeats caches.
+pub fn fetch_manifest(fetch: &dyn Fetch, cfg: &Config) -> Result<Manifest, Error> {
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let sep = if cfg.manifest_url.contains('?') { '&' } else { '?' };
+    let url = format!("{}{sep}t={stamp}", cfg.manifest_url);
+    let body = fetch
+        .get(&url)
+        .map_err(|e| manifest_fetch_error(e, cfg.layout == Layout::Tree))?;
+    manifest::parse_envelope_for(&body, &cfg.public_key, cfg.layout)
+}
+
 pub struct Updater<'a> {
     pub cfg: &'a Config,
     pub fetch: &'a dyn Fetch,
@@ -408,17 +423,7 @@ impl<'a> Updater<'a> {
         self.recover()?;
 
         ev(Event::Status(Status::Checking));
-        let stamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-        let sep = if self.cfg.manifest_url.contains('?') { '&' } else { '?' };
-        let url = format!("{}{sep}t={stamp}", self.cfg.manifest_url);
-        let body = self
-            .fetch
-            .get(&url)
-            .map_err(|e| manifest_fetch_error(e, self.cfg.layout == Layout::Tree))?;
-        let m = manifest::parse_envelope_for(&body, &self.cfg.public_key, self.cfg.layout)?;
+        let m = fetch_manifest(self.fetch, self.cfg)?;
         let have = self.cfg.baseline.max(self.applied_version());
         if m.version < have {
             return Err(Error::OlderManifest { got: m.version, have });

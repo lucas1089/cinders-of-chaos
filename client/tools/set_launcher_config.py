@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Write launcher.json for the game launcher (O314, launcher/README.md) from an assembled client's init.lua.
 
-  python3 -I client/tools/set_launcher_config.py GAME_DIR [--game Chaos.exe] [--feed URL | --no-feed]
+  python3 -I client/tools/set_launcher_config.py GAME_DIR [--game Chaos.exe] [--feed URL | --no-feed] [--embed FILE]
+  python3 -I client/tools/set_launcher_config.py --embed FILE --manifest URL --public-key HEX [--feed URL | --no-feed]
 
 Reads Services.update (manifest, publicKey, baseline) of GAME_DIR/init.lua, so the launcher and the in-game updater
 always use the same manifest, the same Ed25519 public key and the same baseline, and writes GAME_DIR/launcher.json.
@@ -68,14 +69,27 @@ def make_config(manifest, public_key, baseline, game='Chaos.exe', feed=None, lin
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('game_dir')
+    ap.add_argument('game_dir', nargs='?')
     ap.add_argument('--game', default='Chaos.exe')
     g = ap.add_mutually_exclusive_group()
     g.add_argument('--feed', help='launcher feed URL (default: chaos_launcher_feed.php on the manifest\'s site)')
     g.add_argument('--no-feed', action='store_true', help='no News and Changelog panels')
     for k in LINK_KEYS:
         ap.add_argument('--' + k, help='link of the %s button of the launcher window (empty hides it)' % k)
+    ap.add_argument('--embed', help='also write the same text to FILE (launcher/embedded.json), which build.rs compiles into the '
+                                    'launcher so it can install itself from anywhere (O552); never committed')
+    ap.add_argument('--manifest', help='without GAME_DIR: the manifest address (the workflow input update_manifest)')
+    ap.add_argument('--public-key', help='without GAME_DIR: the update public key (the workflow input update_public_key)')
     a = ap.parse_args(argv)
+    if a.game_dir is None:
+        if not (a.embed and a.manifest and a.public_key):
+            ap.error('without GAME_DIR the tool needs --embed FILE, --manifest URL and --public-key HEX')
+        text = make_config(a.manifest, a.public_key, '', a.game, '' if a.no_feed else a.feed,
+                           {k: getattr(a, k) for k in LINK_KEYS if getattr(a, k) is not None})
+        with open(a.embed, 'w', encoding='utf-8') as f:
+            f.write(text)
+        print(f'{a.embed}: manifest {a.manifest}, key {a.public_key[:16]}... (built into the launcher)')
+        return 0
     with open(os.path.join(a.game_dir, 'init.lua'), encoding='utf-8') as f:
         manifest, key, baseline = read_update(f.read())
     if not manifest or not key:
@@ -85,6 +99,9 @@ def main(argv=None):
     text = make_config(manifest, key, baseline, a.game, '' if a.no_feed else a.feed, links)
     with open(os.path.join(a.game_dir, 'launcher.json'), 'w', encoding='utf-8') as f:
         f.write(text)
+    if a.embed:
+        with open(a.embed, 'w', encoding='utf-8') as f:
+            f.write(text)
     print(f'{a.game_dir}/launcher.json: manifest {manifest}, key {key[:16]}...'
           + (f', baseline {baseline}' if baseline != '' else '')
           + (f', feed {json.loads(text)["feed"] or "off"}'))
