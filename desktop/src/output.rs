@@ -7,6 +7,33 @@ pub const KEEP: usize = 30;
 /// Characters kept per entry; older text is dropped from the start (a whole line at a time).
 pub const MAX_CHARS: usize = 1_000_000;
 
+/// How the status line is coloured: by its ending (`: falhou` / `: feito`), plain otherwise.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StatusKind {
+    Failed,
+    Done,
+    Plain,
+}
+
+impl StatusKind {
+    pub fn of(status: &str) -> Self {
+        let t = status.trim_end();
+        if t.ends_with(": falhou") {
+            Self::Failed
+        } else if t.ends_with(": feito") {
+            Self::Done
+        } else {
+            Self::Plain
+        }
+    }
+}
+
+/// The status as one line: every run of whitespace (newlines of an error included) becomes one space, so the
+/// label never draws a second line over the next widget.
+pub fn one_line(status: &str) -> String {
+    status.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum State {
     Running,
@@ -177,6 +204,23 @@ impl Utf8Chunks {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn status_kind_by_ending() {
+        assert_eq!(StatusKind::of("Backup: falhou"), StatusKind::Failed);
+        assert_eq!(StatusKind::of("Backup: feito\n"), StatusKind::Done);
+        assert_eq!(StatusKind::of("curl: (22) 404"), StatusKind::Plain);
+        assert_eq!(StatusKind::of(""), StatusKind::Plain);
+    }
+
+    #[test]
+    fn status_is_one_line() {
+        assert_eq!(
+            one_line("failed (22)\n  The requested URL\r\nreturned 404 "),
+            "failed (22) The requested URL returned 404"
+        );
+        assert_eq!(one_line(""), "");
+    }
 
     #[test]
     fn streams_then_final_text() {
