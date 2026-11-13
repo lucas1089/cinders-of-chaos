@@ -41,7 +41,10 @@ def default_feed(manifest):
     return origin + '/' + FEED_NAME
 
 
-def make_config(manifest, public_key, baseline, game='Chaos.exe', feed=None):
+LINK_KEYS = ('discord', 'site', 'wiki', 'signup')
+
+
+def make_config(manifest, public_key, baseline, game='Chaos.exe', feed=None, links=None):
     if not re.fullmatch(r'https://[A-Za-z0-9.-]+(:\d+)?/[A-Za-z0-9._~/-]*manifest\.json', manifest):
         sys.exit('manifest: an https:// URL ending in manifest.json')
     if not re.fullmatch(r'[0-9a-f]{64}', public_key):
@@ -55,6 +58,11 @@ def make_config(manifest, public_key, baseline, game='Chaos.exe', feed=None):
     if feed != '' and not FEED_URL.fullmatch(feed):
         sys.exit('--feed: an https:// URL without spaces')
     cfg['feed'] = feed
+    # the link buttons of the window: a key left out derives from the site; '' hides the button (O552)
+    for k, v in sorted((links or {}).items()):
+        if k not in LINK_KEYS or (v != '' and not FEED_URL.fullmatch(v)):
+            sys.exit('--%s: an https:// URL without spaces (or empty to hide the button)' % k)
+        cfg.setdefault('links', {})[k] = v
     return json.dumps(cfg, indent=1, sort_keys=True) + '\n'
 
 
@@ -65,13 +73,16 @@ def main(argv=None):
     g = ap.add_mutually_exclusive_group()
     g.add_argument('--feed', help='launcher feed URL (default: chaos_launcher_feed.php on the manifest\'s site)')
     g.add_argument('--no-feed', action='store_true', help='no News and Changelog panels')
+    for k in LINK_KEYS:
+        ap.add_argument('--' + k, help='link of the %s button of the launcher window (empty hides it)' % k)
     a = ap.parse_args(argv)
     with open(os.path.join(a.game_dir, 'init.lua'), encoding='utf-8') as f:
         manifest, key, baseline = read_update(f.read())
     if not manifest or not key:
         print('updater is off in init.lua (no manifest or publicKey): no launcher.json', file=sys.stderr)
         return 2
-    text = make_config(manifest, key, baseline, a.game, '' if a.no_feed else a.feed)
+    links = {k: getattr(a, k) for k in LINK_KEYS if getattr(a, k) is not None}
+    text = make_config(manifest, key, baseline, a.game, '' if a.no_feed else a.feed, links)
     with open(os.path.join(a.game_dir, 'launcher.json'), 'w', encoding='utf-8') as f:
         f.write(text)
     print(f'{a.game_dir}/launcher.json: manifest {manifest}, key {key[:16]}...'

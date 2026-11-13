@@ -73,6 +73,56 @@ pub fn derive_feed(manifest_url: &str) -> Option<String> {
 
 pub const FEED_NAME: &str = "chaos_launcher_feed.php";
 
+/// The four link buttons of the window (O552). Each is `None` (the button is hidden) or an `https://` address.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Links {
+    pub discord: Option<String>,
+    pub site: Option<String>,
+    pub wiki: Option<String>,
+    pub signup: Option<String>,
+}
+
+/// `https://host` of a manifest address.
+fn origin(url: &str) -> Option<String> {
+    let rest = url.strip_prefix("https://")?;
+    let end = rest.find('/').unwrap_or(rest.len());
+    (end > 0).then(|| format!("https://{}", &rest[..end]))
+}
+
+/// Reads `links` of `launcher.json`: `{"discord": URL, "site": URL, "wiki": URL, "signup": URL}`. A key that is absent
+/// is derived from the site of the manifest (`/`, `/wiki`, `/register`; Discord has no default); a key that is `""`,
+/// not a string or not an `https://` address hides its button. A wrong link setting never stops anything.
+pub fn parse_links(text: &str, manifest_url: &str) -> Links {
+    let v: Value = serde_json::from_str(text).unwrap_or(Value::Null);
+    let block = v.get("links").filter(|b| b.is_object());
+    let site = origin(manifest_url);
+    let pick = |key: &str, default: Option<String>| -> Option<String> {
+        match block.and_then(|b| b.get(key)) {
+            None => default,
+            Some(u) => u
+                .as_str()
+                .filter(|u| {
+                    (u.starts_with("https://") || loopback_http(u))
+                        && u.len() <= 300
+                        && u.is_ascii()
+                        && !u.chars().any(|c| c.is_ascii_control() || c.is_whitespace())
+                })
+                .map(str::to_string),
+        }
+    };
+    Links {
+        discord: pick("discord", None),
+        site: pick("site", site.as_ref().map(|s| format!("{s}/"))),
+        wiki: pick("wiki", site.as_ref().map(|s| format!("{s}/wiki"))),
+        signup: pick("signup", site.as_ref().map(|s| format!("{s}/register"))),
+    }
+}
+
+pub fn load_links(dir: &Path, manifest_url: &str) -> Links {
+    let text = std::fs::read_to_string(dir.join(FILE)).unwrap_or_default();
+    parse_links(&text, manifest_url)
+}
+
 /// The Unity channel of an old `launcher.json` without the key: the same site and key, the folder `updates/unity/`
 /// (`https://site/updates/live/manifest.json` -> `https://site/updates/unity/manifest.json`), or `None` when the update
 /// URL does not have that shape.
@@ -216,25 +266,71 @@ impl Config {
 
 pub const SETTINGS: &str = "settings.json";
 
-/// The player's choice, saved beside the other launcher state: `.cinders_launcher/settings.json`, `{"client": "unity"}`.
-/// Missing, unreadable or odd: the main client.
-pub fn load_client(dir: &Path) -> Client {
-    std::fs::read_to_string(dir.join(crate::install::STATE_DIR).join(SETTINGS))
-        .ok()
-        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
-        .and_then(|v| v.get("client").and_then(Value::as_str).and_then(Client::from_tag))
-        .unwrap_or_default()
+/// What the player chose in the window (O552), saved in `.cinders_launcher/settings.json`:
+/// `{"client": "unity", "lang": "en", "close_on_play": false}`. Every key is optional; missing, unreadable or odd
+/// means the default (main client, the system language, close the launcher when the game starts).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Settings {
+    pub client: Client,
+    pub lang: Option<crate::i18n::Lang>,
+    pub close_on_play: bool,
 }
 
-pub fn save_client(dir: &Path, client: Client) -> Result<(), Error> {
+impl Default for Settings {
+    fn default() -> Self {
+        Settings {
+            client: Client::Main,
+            lang: None,
+            close_on_play: true,
+        }
+    }
+}
+
+fn settings_path(dir: &Path) -> PathBuf {
+    dir.join(crate::install::STATE_DIR).join(SETTINGS)
+}
+
+pub fn load_settings(dir: &Path) -> Settings {
+    let v = std::fs::read_to_string(settings_path(dir))
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok());
+    let Some(v) = v else {
+        return Settings::default();
+    };
+    Settings {
+        client: v
+            .get("client")
+            .and_then(Value::as_str)
+            .and_then(Client::from_tag)
+            .unwrap_or_default(),
+        lang: v.get("lang").and_then(Value::as_str).map(crate::i18n::Lang::from_tag),
+        close_on_play: v.get("close_on_play").and_then(Value::as_bool).unwrap_or(true),
+    }
+}
+
+pub fn save_settings(dir: &Path, s: &Settings) -> Result<(), Error> {
     let state = dir.join(crate::install::STATE_DIR);
     let io = |e: std::io::Error| Error::Io(format!("{SETTINGS}: {e}"));
     std::fs::create_dir_all(&state).map_err(io)?;
-    let path = state.join(SETTINGS);
+    let mut v = serde_json::json!({"client": s.client.tag(), "close_on_play": s.close_on_play});
+    if let Some(l) = s.lang {
+        v["lang"] = Value::from(l.tag());
+    }
+    let path = settings_path(dir);
     let tmp = path.with_extension("tmp");
-    std::fs::write(&tmp, format!("{{\"client\":\"{}\"}}", client.tag())).map_err(io)?;
+    std::fs::write(&tmp, v.to_string()).map_err(io)?;
     let _ = std::fs::remove_file(&path);
     std::fs::rename(&tmp, &path).map_err(io)
+}
+
+pub fn load_client(dir: &Path) -> Client {
+    load_settings(dir).client
+}
+
+pub fn save_client(dir: &Path, client: Client) -> Result<(), Error> {
+    let mut s = load_settings(dir);
+    s.client = client;
+    save_settings(dir, &s)
 }
 
 pub fn load(dir: &Path) -> Result<Config, Error> {
@@ -388,6 +484,68 @@ mod tests {
         }
         assert_eq!(Client::from_tag(" Unity "), Some(Client::Unity));
         assert_eq!(Client::from_tag("x"), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn links_derive_from_the_site_and_can_be_set_or_hidden() {
+        let m = "https://site.test/updates/live/manifest.json";
+        let l = parse_links("{}", m);
+        assert_eq!(l.site.as_deref(), Some("https://site.test/"));
+        assert_eq!(l.wiki.as_deref(), Some("https://site.test/wiki"));
+        assert_eq!(l.signup.as_deref(), Some("https://site.test/register"));
+        assert_eq!(l.discord, None);
+        let l = parse_links(
+            r#"{"links":{"discord":"https://discord.test/x","wiki":"","signup":"http://x.test/","site":"https://a b"}}"#,
+            m,
+        );
+        assert_eq!(l.discord.as_deref(), Some("https://discord.test/x"));
+        assert_eq!((l.wiki, l.signup, l.site), (None, None, None));
+        // junk anywhere gives the defaults, never a panic
+        assert_eq!(parse_links("not json", m).site.as_deref(), Some("https://site.test/"));
+        assert_eq!(
+            parse_links(r#"{"links":5}"#, m).wiki.as_deref(),
+            Some("https://site.test/wiki")
+        );
+        // a manifest on a loopback http address (tests) derives nothing
+        assert_eq!(parse_links("{}", "http://127.0.0.1:1/m.json").site, None);
+    }
+
+    #[test]
+    fn settings_round_trip_and_defaults() {
+        use crate::i18n::Lang;
+        let dir = std::env::temp_dir().join(format!("cinders-launcher-settings-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(load_settings(&dir), Settings::default());
+        let s = Settings {
+            client: Client::Unity,
+            lang: Some(Lang::En),
+            close_on_play: false,
+        };
+        save_settings(&dir, &s).unwrap();
+        assert_eq!(load_settings(&dir), s);
+        // saving the client keeps the other keys
+        save_client(&dir, Client::Main).unwrap();
+        assert_eq!(
+            load_settings(&dir),
+            Settings {
+                client: Client::Main,
+                ..s
+            }
+        );
+        // an old file with only the client still loads
+        let f = dir.join(crate::install::STATE_DIR).join(SETTINGS);
+        std::fs::write(&f, r#"{"client":"unity"}"#).unwrap();
+        assert_eq!(
+            load_settings(&dir),
+            Settings {
+                client: Client::Unity,
+                lang: None,
+                close_on_play: true
+            }
+        );
+        std::fs::write(&f, r#"{"close_on_play":"no","lang":7}"#).unwrap();
+        assert_eq!(load_settings(&dir), Settings::default());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

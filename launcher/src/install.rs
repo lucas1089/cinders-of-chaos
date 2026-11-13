@@ -36,6 +36,11 @@ pub enum Event {
     },
     /// The file being downloaded.
     File(String),
+    /// Files finished and files to do in this run (O552: "1/12 files").
+    Files {
+        done: usize,
+        total: usize,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -420,7 +425,11 @@ impl<'a> Updater<'a> {
             ev(Event::Status(Status::Downloading));
         }
         ev(Event::Progress { done: 0, total });
-        for f in &jobs {
+        ev(Event::Files {
+            done: 0,
+            total: jobs.len(),
+        });
+        for (n, f) in jobs.iter().enumerate() {
             ev(Event::File(f.path.clone()));
             self.fetch_file(f, &mut |n| {
                 ev(Event::Progress {
@@ -432,6 +441,10 @@ impl<'a> Updater<'a> {
             ev(Event::Progress {
                 done: done_before,
                 total,
+            });
+            ev(Event::Files {
+                done: n + 1,
+                total: jobs.len(),
             });
         }
 

@@ -5120,12 +5120,10 @@ copy in `.cinders_launcher/feed.json` for an offline start; feed text shown as p
 out, counts and lengths capped); links open in the browser only when `https://` without spaces; a broken, missing or
 oversize feed shows one short line, never a dialog. Texts in pt-BR and en in `i18n.rs` (`FeedText`). The window is 560x520.
 
-**Look (O339).** Dark fantasy window: warm black, ember accent, gold headings (`launcher/src/theme.rs`). A hero banner
-with the brand logo, an ember Play button (hover, pressed, cold while the update runs), a styled progress bar, News and
-Changelog as cards under ember-underline tabs, a footer with the version and a link to the site (the origin of `feed`).
-The window icon is the brand icon. Art: `launcher/tools/gen_launcher_art.py` writes `launcher/assets/banner.rgba` (960x300)
-and `icon.rgba` (128x128), raw RGBA from `docs/brand/cinders_logo*.png`, embedded with `include_bytes!`
-(`--check` in CI, fx venv). No new crate, no new font (egui's default fonts). Window 760x700, resizable, minimum 600x560.
+**Look (O339, new look O552).** A borderless 1280x800 window in the game's own ornate style (login art, brand logo, the skin's corner
+ornaments, the login screen's octagon buttons), a link rail (Discord, Site, Wiki, Conta), the News and Changelog as one carousel of cards
+(tag, picture, build, date, text) under the logo, a bottom bar with progress, speed, time left, the client chip and JOGAR, a settings
+card (folder, close on play, language). Art: `launcher/tools/gen_launcher_art.py` (`--check` in CI). Details: `launcher/README.md` "Look".
 
 **Tests.** `launcher/tests/mass_update.rs` (fake server on 127.0.0.1, fake install, the real `curl`): 120 rounds with
 random trouble and a launcher update every few rounds, plus interrupted download (resume from the byte held), bad hash

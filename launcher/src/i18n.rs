@@ -18,6 +18,13 @@ impl Lang {
         }
     }
 
+    pub fn tag(self) -> &'static str {
+        match self {
+            Lang::Pt => "pt",
+            Lang::En => "en",
+        }
+    }
+
     /// `CINDERS_LANG`, then `LC_ALL`, then `LANG`; Portuguese when none is set.
     pub fn detect(get: impl Fn(&str) -> Option<String>) -> Lang {
         for k in ["CINDERS_LANG", "LC_ALL", "LANG"] {
@@ -88,6 +95,88 @@ pub fn use_main_client(l: Lang) -> &'static str {
     match l {
         Lang::Pt => "Usar o cliente principal",
         Lang::En => "Use the main client",
+    }
+}
+
+/// Texts of the window's own parts (O552): the rail, the news strip, the bottom bar and the settings card.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Ui {
+    Ready,
+    Discord,
+    Site,
+    Wiki,
+    Signup,
+    News,
+    NewsSub,
+    Settings,
+    Close,
+    Minimize,
+    InstallFolder,
+    OpenFolder,
+    Verify,
+    VerifyHint,
+    Verifying,
+    ClearCache,
+    CloseOnPlay,
+    Language,
+    Version,
+    Files,
+    UpToDateLine,
+    ReadMore,
+    Back,
+    NoCards,
+    NoSpaceHint,
+}
+
+pub fn ui(t: Ui, l: Lang) -> &'static str {
+    match (t, l) {
+        (Ui::Ready, Lang::Pt) => "Pronto para jogar",
+        (Ui::Ready, Lang::En) => "Ready to play",
+        (Ui::Discord, _) => "Discord",
+        (Ui::Site, _) => "Site",
+        (Ui::Wiki, _) => "Wiki",
+        (Ui::Signup, Lang::Pt) => "Conta",
+        (Ui::Signup, Lang::En) => "Account",
+        (Ui::News, Lang::Pt) => "Notícias",
+        (Ui::News, Lang::En) => "News",
+        (Ui::NewsSub, Lang::Pt) => "do Discord e do site",
+        (Ui::NewsSub, Lang::En) => "from Discord and the website",
+        (Ui::Settings, Lang::Pt) => "Configurações",
+        (Ui::Settings, Lang::En) => "Settings",
+        (Ui::Close, Lang::Pt) => "Fechar",
+        (Ui::Close, Lang::En) => "Close",
+        (Ui::Minimize, Lang::Pt) => "Minimizar",
+        (Ui::Minimize, Lang::En) => "Minimize",
+        (Ui::InstallFolder, Lang::Pt) => "Pasta do jogo",
+        (Ui::InstallFolder, Lang::En) => "Game folder",
+        (Ui::OpenFolder, Lang::Pt) => "Abrir pasta",
+        (Ui::OpenFolder, Lang::En) => "Open folder",
+        (Ui::Verify, Lang::Pt) => "Verificar arquivos",
+        (Ui::Verify, Lang::En) => "Verify files",
+        (Ui::VerifyHint, Lang::Pt) => "Confere cada arquivo do jogo e baixa de novo só o que estiver errado.",
+        (Ui::VerifyHint, Lang::En) => "Checks every game file and downloads again only what is wrong.",
+        (Ui::Verifying, Lang::Pt) => "Conferindo e consertando os arquivos...",
+        (Ui::Verifying, Lang::En) => "Checking and repairing the files...",
+        (Ui::ClearCache, Lang::Pt) => "Limpar cache de download",
+        (Ui::ClearCache, Lang::En) => "Clear download cache",
+        (Ui::CloseOnPlay, Lang::Pt) => "Fechar o launcher ao jogar",
+        (Ui::CloseOnPlay, Lang::En) => "Close the launcher when the game starts",
+        (Ui::Language, Lang::Pt) => "Idioma",
+        (Ui::Language, Lang::En) => "Language",
+        (Ui::Version, Lang::Pt) => "Versão do launcher",
+        (Ui::Version, Lang::En) => "Launcher version",
+        (Ui::Files, Lang::Pt) => "arquivos",
+        (Ui::Files, Lang::En) => "files",
+        (Ui::UpToDateLine, Lang::Pt) => "Tudo em dia",
+        (Ui::UpToDateLine, Lang::En) => "All up to date",
+        (Ui::ReadMore, Lang::Pt) => "Abrir no site",
+        (Ui::ReadMore, Lang::En) => "Open on the website",
+        (Ui::Back, Lang::Pt) => "Voltar",
+        (Ui::Back, Lang::En) => "Back",
+        (Ui::NoCards, Lang::Pt) => "Nenhuma novidade por enquanto.",
+        (Ui::NoCards, Lang::En) => "No news yet.",
+        (Ui::NoSpaceHint, Lang::Pt) => "Libere espaço no disco ou escolha outra pasta.",
+        (Ui::NoSpaceHint, Lang::En) => "Free some disk space or pick another folder.",
     }
 }
 
@@ -345,6 +434,42 @@ mod tests {
         // "Changelog" is the same word in both
         assert_eq!(feed_text(FeedText::TabChangelog, Lang::Pt), "Changelog");
         assert_eq!(feed_text(FeedText::TabNews, Lang::Pt), "Notícias");
+    }
+
+    #[test]
+    fn window_texts_have_both_languages() {
+        let same = [Ui::Discord, Ui::Site, Ui::Wiki];
+        for t in [
+            Ui::Ready,
+            Ui::Discord,
+            Ui::Site,
+            Ui::Wiki,
+            Ui::Signup,
+            Ui::News,
+            Ui::NewsSub,
+            Ui::Settings,
+            Ui::Close,
+            Ui::Minimize,
+            Ui::InstallFolder,
+            Ui::OpenFolder,
+            Ui::Verify,
+            Ui::VerifyHint,
+            Ui::Verifying,
+            Ui::ClearCache,
+            Ui::CloseOnPlay,
+            Ui::Language,
+            Ui::Version,
+            Ui::Files,
+            Ui::UpToDateLine,
+            Ui::ReadMore,
+            Ui::Back,
+            Ui::NoCards,
+            Ui::NoSpaceHint,
+        ] {
+            let (pt, en) = (ui(t, Lang::Pt), ui(t, Lang::En));
+            assert!(!pt.is_empty() && !en.is_empty(), "{t:?}");
+            assert_eq!(pt == en, same.contains(&t), "{t:?}");
+        }
     }
 
     #[test]

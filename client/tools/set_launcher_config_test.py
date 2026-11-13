@@ -88,6 +88,18 @@ class SetLauncherConfig(unittest.TestCase):
             self.assertNotEqual(self.run_tool('--feed', bad)[0], 0, bad)
         self.assertFalse(os.path.exists(os.path.join(self.d, 'launcher.json')))
 
+    def test_links_of_the_window_buttons(self):
+        self.init()
+        self.assertEqual(self.run_tool()[0], 0)
+        self.assertNotIn('links', json.load(open(os.path.join(self.d, 'launcher.json'))))
+        self.assertEqual(self.run_tool('--discord', 'https://discord.gg/abc', '--wiki', '')[0], 0)
+        cfg = json.load(open(os.path.join(self.d, 'launcher.json')))
+        self.assertEqual(cfg['links'], {'discord': 'https://discord.gg/abc', 'wiki': ''})
+        os.remove(os.path.join(self.d, 'launcher.json'))
+        for bad in ('http://x.test/', 'https://x.test/a b', 'javascript:1'):
+            self.assertNotEqual(self.run_tool('--site', bad)[0], 0, bad)
+        self.assertFalse(os.path.exists(os.path.join(self.d, 'launcher.json')))
+
     def test_game_name(self):
         self.init()
         self.assertEqual(self.run_tool('--game', 'Game.exe')[0], 0)

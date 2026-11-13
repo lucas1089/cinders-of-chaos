@@ -253,7 +253,7 @@ SIL Open Font License 1.1. The licence texts ship with the client in `data/fonts
 - **Cinzel**
   - Author: Copyright 2020 The Cinzel Project Authors
   - Licence: SIL Open Font License 1.1
-  - Used for: window titles, the login splash and captions; the website's headings, menu and window titles
+  - Used for: window titles, the login splash and captions; the website's headings, menu and window titles; the titles, tags and the Play label of the game launcher (a weight 700 instance, launcher/assets/fonts/)
   - Source: https://github.com/NDISCOVER/Cinzel
 - **Alegreya SC**
   - Author: Copyright 2011 The Alegreya Project Authors, Huerta Tipográfica
@@ -263,7 +263,7 @@ SIL Open Font License 1.1. The licence texts ship with the client in `data/fonts
 - **Alegreya Sans**
   - Author: Copyright 2013 The Alegreya Sans Project Authors, Huerta Tipográfica
   - Licence: SIL Open Font License 1.1
-  - Used for: text over the game picture, and the text of the RmlUi test window; the website's body text
+  - Used for: text over the game picture, and the text of the RmlUi test window; the website's body text; the text of the game launcher
   - Source: https://github.com/huertatipografica/Alegreya-Sans
 - **IM Fell English**
   - Author: Copyright (c) 2010, Igino Marini
@@ -341,6 +341,11 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Licence: MIT
   - Used for: checking the Ed25519 signature of the update manifest in the game launcher and of the releases of the desktop admin app
   - Source: https://github.com/jedisct1/rust-ed25519-compact
+- **image (image-rs)**
+  - Author: The image-rs developers
+  - Licence: MIT or Apache-2.0
+  - Used for: decoding the PNG and JPEG pictures of the game launcher (its embedded art and the news pictures; PNG and JPEG decoders only, with their dependencies)
+  - Source: https://github.com/image-rs/image
 - **RmlUi**
   - Author: Peter Curry, Michael R. P. Ragazzon and the RmlUi contributors
   - Licence: MIT

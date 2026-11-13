@@ -22,8 +22,7 @@ Status: done in code and tests (Linux). Not run on Windows. Open: code-signing c
    again. The same staged rename as the desktop admin app (`crates/selfupdate`).
 7. Shows progress and errors in pt-BR or en (`CINDERS_LANG`, `LC_ALL`, `LANG`; pt-BR when none is set), with the
    buttons Jogar, Tentar de novo and Jogar assim mesmo. When the server is unreachable the player can still play.
-8. Shows News and a Changelog under the Play button (tabs "Notícias" / "News" and "Changelog"), from the website's
-   launcher feed. See "News and Changelog" below.
+8. Shows the News and the Changelog as one carousel of cards (tag, picture, build, date, text), from the website's launcher feed. See "News and Changelog" below.
 9. The in-game Lua updater stays for module-only updates (`files` of the manifest). The two do not overlap: the
    launcher never touches `modules/`, `data/` and so on, the Lua updater never touches native files.
 
@@ -84,27 +83,35 @@ error; the launcher's own file is fetched inside the update, and in a Unity run 
   (a Unity manifest signed by `make_unity_manifest_test.py`). Phase 17 added the dev flag: `manifest.rs` (boolean, default false), `unity_update.rs` (a dev package refused with
   nothing installed and no state saved, allowed with `allow_dev`, a keyed one with `dev` false or absent).
 
-## Look (O339)
+## Look (O339, new look O552)
 
-Owner, 2026-10-30 (pt-BR): "faça um launcher mais bonito". The window is dark fantasy: warm black background, ember
-(orange-red) accent, gold headings, rounded cards. All colours and widgets are in `src/theme.rs`; `main.rs` only lays
-them out.
+Owner, 2026-10-30 (pt-BR): "faça um launcher mais bonito". Owner, 2026-11-13: a launcher like the one in a reference picture, then "mude um
+pouco o visual pra não ficar igual": the layout is our own, built from the game's ornate skin. Design record: `DESIGN.md`.
 
-- Hero banner with the brand logo, then a status card: status line (or progress bar) on the left, the big **Jogar**
-  button on the right. The button has hover and pressed looks, and is drawn cold and unclickable while the update runs.
-  After an error the card turns red and shows **Tentar de novo** / **Jogar assim mesmo**.
-- News and Changelog are cards (title, date, text, "Abrir no site") under tabs with an ember underline. A changelog
-  line starts with an ember diamond. The text is still plain text.
-- Footer: the version (`v` + `Cargo.toml`) and "Site do jogo" / "Game website", the origin of the `feed` address (hidden
-  when there is no feed or it fails the link rules).
-- The window icon is the brand icon (`docs/brand/cinders_logo_icon.png`). Size 760x700, resizable, minimum 600x560.
-- Art: `tools/gen_launcher_art.py` makes `assets/banner.rgba` (960x300) and `assets/icon.rgba` (128x128) from
-  `docs/brand/`, raw RGBA, embedded with `include_bytes!`. `python3 -I launcher/tools/gen_launcher_art.py --check` runs in
-  CI (needs Pillow and numpy, the fx venv); `--preview out.png` saves the banner. Change the colours in `theme.rs` and
-  `BG` in the generator together.
-- Look at it without Windows: build with the default features and run under `xvfb-run` (needs `libxkbcommon-x11-0` and
-  Mesa), then take the root window with ImageMagick `import -window root shot.png`.
-- No new crate and no new font: egui's built-in fonts.
+- **Window.** Borderless, fixed 1280x800 canvas (`src/layout.rs`, every rectangle in one place, unit tested for overlaps), own title bar:
+  ember dot, name, version, PT | EN pill, settings gear, minimize, close; the bar drags the window. A screen smaller than the canvas
+  gets `layout::scale_for` (a 1366x768 laptop draws at 0.90). Not resizable.
+- **Art.** The login art as the background, the brand logo in the middle, the game skin's corner ornaments and crest, the login screen's
+  octagon buttons for the link rail and JOGAR (nine-sliced). All of it is embedded from `assets/`, made by `tools/gen_launcher_art.py`
+  from `client/overlay/data/images/chaos/`, `docs/brand/` and `client/fonts-src/` (`--check` in CI: copies byte for byte, pictures within
+  2 of 255). Fonts: Cinzel weight 700 for titles, Alegreya Sans for text (both OFL, in `docs/CREDITS.md`).
+- **Rail, left.** Discord, Site, Wiki, Conta from `launcher.json` `links` (`config::parse_links`: a key left out derives from the site of the
+  manifest as `/`, `/wiki`, `/register`, Discord has no default; `""` or a non-https link hides the button). `set_launcher_config.py`
+  `--discord URL --site URL --wiki URL --signup URL` writes them.
+- **News strip, below the logo.** The feed's News and Changelog merged by date (`Feed::cards`, 12 at most), four cards on the strip with
+  an arrow pair, a counter and dots (`src/carousel.rs`, 8 s auto-advance, paused while the mouse is on the strip or a panel is open, 24 s rest
+  after a click). A card: picture, tag chip (`ATUALIZAÇÃO`, `NOTÍCIA`, `EVENTO`, `MANUTENÇÃO`, `AVISO`), title, "Build N · há 2 dias"
+  (`fmt::relative`), two lines of text. A click opens the reading panel (full text, "Abrir no site"). Pictures: the item's `image` (https,
+  at most 400 KB, 2000x1000, PNG or JPEG, decoded on a thread, `src/images.rs`), else the default art of its tag. See "News and Changelog".
+- **Bottom bar.** Status dot and line (ember working, gold ready, red on error), the client chip (`Cliente principal · 47 ▾`, a menu with
+  the two clients when the Unity address is known, disabled while updating), the progress bar (eased, ember to gold), bytes and files
+  (`24,3 MB de 1,1 GB · 1/12 arquivos`), speed over 3 s and time left (`fmt::Speed`), and JOGAR (cold while updating, absent after an error,
+  where "Tentar de novo" / "Jogar assim mesmo" / "Usar o cliente principal" take the progress place by the same `choice::buttons` rule).
+- **Settings (gear).** Game folder with "Abrir pasta", "Fechar o launcher ao jogar" (on by default, else it minimizes), language, version.
+  Saved in `.cinders_launcher/settings.json` (`config::Settings`: `client`, `lang`, `close_on_play`).
+- **Window icon** is the brand icon. No icon pack and no SVG: the icons are painter shapes (`theme.rs`).
+- Look at it without Windows: build with the default features and run under `xvfb-run` (needs `libxkbcommon-x11-0` and Mesa), then take the
+  root window with ImageMagick `import -window root shot.png`.
 
 ## Files
 
@@ -122,7 +129,7 @@ them out.
   `selfupdate.rs`, `net.rs` (the system `curl`, built into Windows 10 and 11), `config.rs` (also the client choice), `choice.rs` (update the chosen client),
   `feed.rs` (News and Changelog), `i18n.rs`, `launch.rs`,
   `main.rs` (egui window, or `--cli [--no-start] [--dir DIR] [--lang pt|en] [--client main|unity] [--allow-dev-unity]` for tests and scripts).
-- `theme.rs` (window look), `assets/` (embedded art), `tools/gen_launcher_art.py` (makes the art).
+- `theme.rs` (colours, skin, icons, drawing helpers), `ui.rs` (the window), `layout.rs`, `carousel.rs`, `fmt.rs`, `images.rs` (pure and tested), `assets/` (embedded art), `tools/gen_launcher_art.py` (makes the art).
 - `../crates/selfupdate/`: SHA-256, version compare and the staged rename, shared with `desktop/`.
 
 ## News and Changelog
@@ -143,6 +150,10 @@ news of the site (ZnoteX news, the front page's) and the changelog, which is the
   The window has no HTML or Markdown rendering.
 - **Links.** "Abrir no site" opens the item's page in the browser (egui `open_url`). Only `https://` addresses
   without spaces, non-ASCII or `user@` open (a loopback `http://` only in tests); any other link is dropped from the item.
+- **Card fields (O552).** Optional per item: `tag` (`update`, `news`, `event`, `maintenance`, `notice`; anything else is `news`, a changelog
+  entry without one is `update`), `build` (digits, shown as "Build N") and `image` (an https address). The site writes them from the
+  header lines `Tag:`, `Build:` and `Image:` of a patch note (a plain file name under `assets/launcher/` of the site, jpg or png), see
+  website/README.md "Launcher feed". Not done: an image attached in the Discord bot's `/patch` command.
 - **Language.** The same pick as the rest of the window (`CINDERS_LANG`, `LC_ALL`, `LANG`; pt-BR when none).
   The feed has one block per language; a missing block falls back to the other one.
 

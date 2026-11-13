@@ -1,7 +1,7 @@
 # Launcher v2: new look, install from scratch, game starts only through the launcher (O552)
 
 Owner, pt-BR: "faça um instalador desse tipo pra gente. onde não dá pra lançar o jogo via o exe, tem que lançar pelo launcher".
-Status: round 1, design and look preview. Nothing is built. The reference picture is style direction only: no art, name, text or icon of it is used.
+Status: round 1 was the design. Owner answers 2026-11-13: the look must not copy the reference (the layout in this file was redrawn, see launcher/README.md "Look"); the launcher installs itself; the launch check is in the client only (no server rule, so section 3 "Server side" is dropped); Unity is exempt for now; other decisions as recommended. The reference picture is style direction only: no art, name, text or icon of it is used.
 
 Previews, 1600x1000, drawn with our real art (login art, brand logo) and the fonts we already ship:
 - `preview_launcher.png`: downloading state.

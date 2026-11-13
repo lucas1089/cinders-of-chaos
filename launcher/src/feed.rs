@@ -32,6 +32,9 @@ pub struct NewsItem {
     pub title: String,
     pub text: String,
     pub url: Option<String>,
+    pub tag: Tag,
+    pub build: String,
+    pub image: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +43,109 @@ pub struct Entry {
     pub title: String,
     pub lines: Vec<String>,
     pub url: Option<String>,
+    pub tag: Tag,
+    pub build: String,
+    pub image: Option<String>,
+}
+
+/// The kind of an item, shown as a chip on its card (O552). The feed says `update`, `news`, `event`, `maintenance` or
+/// `notice`; anything else is `news`. A changelog entry without a tag is an `update`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Tag {
+    Update,
+    News,
+    Event,
+    Maintenance,
+    Notice,
+}
+
+impl Tag {
+    pub fn from_feed(s: &str) -> Option<Tag> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "update" => Some(Tag::Update),
+            "news" => Some(Tag::News),
+            "event" => Some(Tag::Event),
+            "maintenance" => Some(Tag::Maintenance),
+            "notice" => Some(Tag::Notice),
+            _ => None,
+        }
+    }
+
+    pub fn label(self, lang: Lang) -> &'static str {
+        match (self, lang) {
+            (Tag::Update, Lang::Pt) => "ATUALIZAÇÃO",
+            (Tag::Update, Lang::En) => "UPDATE",
+            (Tag::News, Lang::Pt) => "NOTÍCIA",
+            (Tag::News, Lang::En) => "NEWS",
+            (Tag::Event, Lang::Pt) => "EVENTO",
+            (Tag::Event, Lang::En) => "EVENT",
+            (Tag::Maintenance, Lang::Pt) => "MANUTENÇÃO",
+            (Tag::Maintenance, Lang::En) => "MAINTENANCE",
+            (Tag::Notice, Lang::Pt) => "AVISO",
+            (Tag::Notice, Lang::En) => "NOTICE",
+        }
+    }
+
+    /// Name of the embedded default picture of this tag (`assets/news_<name>.jpg`).
+    pub fn art(self) -> &'static str {
+        match self {
+            Tag::Update => "update",
+            Tag::News => "news",
+            Tag::Event => "event",
+            Tag::Maintenance | Tag::Notice => "notice",
+        }
+    }
+}
+
+pub const MAX_CARDS: usize = 12;
+
+/// One card of the carousel: a news item or a changelog entry, the same shape.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Card {
+    pub tag: Tag,
+    pub date: String,
+    pub title: String,
+    pub build: String,
+    pub body: Vec<String>,
+    pub url: Option<String>,
+    pub image: Option<String>,
+}
+
+impl Feed {
+    /// News and changelog in one list, newest first (an ISO date sorts by its day; a date that is not one goes last),
+    /// at most `MAX_CARDS`. The sort is stable, so the feed's own order decides between the same dates.
+    pub fn cards(&self) -> Vec<Card> {
+        let mut v: Vec<Card> = Vec::new();
+        for n in &self.news {
+            v.push(Card {
+                tag: n.tag,
+                date: n.date.clone(),
+                title: n.title.clone(),
+                build: n.build.clone(),
+                body: if n.text.is_empty() {
+                    vec![]
+                } else {
+                    vec![n.text.clone()]
+                },
+                url: n.url.clone(),
+                image: n.image.clone(),
+            });
+        }
+        for e in &self.changelog {
+            v.push(Card {
+                tag: e.tag,
+                date: e.date.clone(),
+                title: e.title.clone(),
+                build: e.build.clone(),
+                body: e.lines.clone(),
+                url: e.url.clone(),
+                image: e.image.clone(),
+            });
+        }
+        v.sort_by_key(|c| std::cmp::Reverse(crate::fmt::days_of(&c.date)));
+        v.truncate(MAX_CARDS);
+        v
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -145,6 +251,19 @@ fn link_of(v: &Value) -> Option<String> {
     v.get("url").and_then(Value::as_str).and_then(safe_link)
 }
 
+/// The picture of an item: an `https://` link under the same rules as any other (O552). The launcher fetches it only
+/// with a size limit and decodes it on a thread of its own; a bad picture shows the default art.
+fn image_of(v: &Value) -> Option<String> {
+    v.get("image").and_then(Value::as_str).and_then(safe_link)
+}
+
+fn tag_of(v: &Value, default: Tag) -> Tag {
+    v.get("tag")
+        .and_then(Value::as_str)
+        .and_then(Tag::from_feed)
+        .unwrap_or(default)
+}
+
 fn block(root: &Value, lang: Lang) -> Option<&Value> {
     let (first, second) = match lang {
         Lang::Pt => ("pt-BR", "en"),
@@ -181,6 +300,9 @@ pub fn parse(bytes: &[u8], lang: Lang) -> Result<Feed, FeedError> {
                 title,
                 text: text_of(n, "text", MAX_TEXT),
                 url: link_of(n),
+                tag: tag_of(n, Tag::News),
+                build: text_of(n, "build", 12),
+                image: image_of(n),
             });
         }
     }
@@ -205,6 +327,9 @@ pub fn parse(bytes: &[u8], lang: Lang) -> Result<Feed, FeedError> {
                 title,
                 lines,
                 url: link_of(e),
+                tag: tag_of(e, Tag::Update),
+                build: text_of(e, "build", 12),
+                image: image_of(e),
             });
         }
     }
@@ -505,5 +630,69 @@ mod tests {
             Panel::Ready { cached: false, .. }
         ));
         let _ = std::fs::remove_dir_all(&d);
+    }
+
+    const RICH: &str = r#"{"format":1,
+      "en":{"news":[{"date":"2026-11-10","title":"Season","text":"Join.","tag":"EVENT","build":"46","image":"https://site.test/i/a.jpg"},
+                     {"date":"2026-11-12","title":"Odd tag","text":"","tag":"weird","image":"http://site.test/i.jpg"}],
+            "changelog":[{"date":"2026-11-11","title":"Patch","lines":["One."],"build":"47"},
+                          {"date":"soon","title":"Undated","lines":[]}]}}"#;
+
+    #[test]
+    fn tags_builds_and_images_are_read() {
+        let f = parse(RICH.as_bytes(), Lang::En).unwrap();
+        assert_eq!(f.news[0].tag, Tag::Event);
+        assert_eq!(f.news[0].build, "46");
+        assert_eq!(f.news[0].image.as_deref(), Some("https://site.test/i/a.jpg"));
+        // an unknown tag is news, a plain http picture is dropped
+        assert_eq!(f.news[1].tag, Tag::News);
+        assert_eq!(f.news[1].image, None);
+        // a changelog entry with no tag is an update
+        assert_eq!(f.changelog[0].tag, Tag::Update);
+        assert_eq!(f.changelog[0].build, "47");
+    }
+
+    #[test]
+    fn cards_merge_news_and_changelog_newest_first() {
+        let f = parse(RICH.as_bytes(), Lang::En).unwrap();
+        let titles: Vec<_> = f.cards().iter().map(|c| c.title.clone()).collect();
+        assert_eq!(titles, ["Odd tag", "Patch", "Season", "Undated"]);
+        let cards = f.cards();
+        assert_eq!(cards[2].body, ["Join."]);
+        assert!(cards[0].body.is_empty());
+    }
+
+    #[test]
+    fn at_most_twelve_cards() {
+        let news: Vec<String> = (0..10)
+            .map(|i| format!(r#"{{"date":"2026-10-{:02}","title":"n{i}","text":"t"}}"#, i + 1))
+            .collect();
+        let log: Vec<String> = (0..10)
+            .map(|i| format!(r#"{{"date":"2026-09-{:02}","title":"c{i}","lines":[]}}"#, i + 1))
+            .collect();
+        let j = format!(
+            r#"{{"format":1,"en":{{"news":[{}],"changelog":[{}]}}}}"#,
+            news.join(","),
+            log.join(",")
+        );
+        let f = parse(j.as_bytes(), Lang::En).unwrap();
+        let c = f.cards();
+        assert_eq!(c.len(), MAX_CARDS);
+        assert_eq!(c[0].title, "n9");
+        assert_eq!(c[10].title, "c9");
+    }
+
+    #[test]
+    fn tag_labels_in_both_languages() {
+        for t in [Tag::Update, Tag::News, Tag::Event, Tag::Maintenance, Tag::Notice] {
+            assert!(!t.label(Lang::Pt).is_empty() && !t.label(Lang::En).is_empty());
+            assert!(
+                std::path::Path::new(&format!("assets/news_{}.jpg", t.art())).is_file(),
+                "{t:?}"
+            );
+        }
+        assert_eq!(Tag::Update.label(Lang::Pt), "ATUALIZAÇÃO");
+        assert_eq!(Tag::from_feed(" Maintenance "), Some(Tag::Maintenance));
+        assert_eq!(Tag::from_feed(""), None);
     }
 }

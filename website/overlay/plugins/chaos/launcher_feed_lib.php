@@ -104,6 +104,29 @@ function chaos_lf_notes(string $dir): array {
 	return array_slice($notes, 0, $lim['notes']);   // news and patch notes; the build keeps 6 of each
 }
 
+/** The optional card fields of a note for the game launcher's carousel (O552): tag (one of five words, else none),
+ * build (digits, at most 8) and image (the address of a jpg or png under assets/launcher/ of the site, built from a
+ * plain file name; anything else is left out). Only keys with a valid value are returned. */
+function chaos_lf_card_fields(array $note, string $site): array {
+	$out = array();
+	$tag = strtolower((string)($note['tag'] ?? ''));
+	if (in_array($tag, array('update', 'news', 'event', 'maintenance', 'notice'), true)) {
+		$out['tag'] = $tag;
+	}
+	$build = (string)($note['build'] ?? '');
+	if (preg_match('/^[0-9]{1,8}$/', $build)) {
+		$out['build'] = $build;
+	}
+	$image = (string)($note['image'] ?? '');
+	if ($site !== '' && preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,60}\.(jpg|jpeg|png)$/i', $image) && strpos($image, '..') === false) {
+		$url = chaos_lf_url($site . '/plugins/chaos/assets/launcher/' . rawurlencode($image));
+		if ($url !== '') {
+			$out['image'] = $url;
+		}
+	}
+	return $out;
+}
+
 /** One parsed note -> a changelog entry: title, date and the first lines (bullets, "Lead. text"), in plain text. */
 function chaos_lf_entry(array $note, string $id, string $site): array {
 	$lim = chaos_launcher_feed_limits();
@@ -128,7 +151,7 @@ function chaos_lf_entry(array $note, string $id, string $site): array {
 		'title' => chaos_lf_plain($note['title'] ?? $id, $lim['title']),
 		'lines' => $lines,
 		'url'   => $site === '' ? '' : chaos_lf_url($site . '/page?plugin=chaos&p=patchnotes&id=' . rawurlencode($id)),
-	);
+	) + chaos_lf_card_fields($note, $site);
 }
 
 /** An announcement note ("Kind: news") -> a news item: title, date, the intro paragraphs in plain text. */
@@ -140,7 +163,7 @@ function chaos_lf_note_news(array $note, string $id, string $site): array {
 		'title' => chaos_lf_plain($note['title'] ?? $id, $lim['title']),
 		'text'  => chaos_lf_plain(implode(' ', $note['intro'] ?? array()), $lim['news_text']),
 		'url'   => $site === '' ? '' : chaos_lf_url($site . '/page?plugin=chaos&p=patchnotes&id=' . rawurlencode($id)),
-	);
+	) + chaos_lf_card_fields($note, $site);
 }
 
 /** The feed array. $newsRows: znote_news rows; $notes: chaos_lf_notes(). A note is news when its English file says
