@@ -1,0 +1,70 @@
+# Chaos: the option "Menu in hubs" (O550; client/BASE.md "0199"; mods/client_settings/classes/dataset.lua, options/graphics.otui; after
+# 0001-0198). Lua and OTUI only, no engine code: the overlay module client_chaos_topbar draws the top menu as six hub badges that
+# open a window with tabs and cards (default), or as the text menu with drop-down lists, and reads this option.
+#  * dataset.lua: `hubMenu` (default on); its apply tells client_chaos_topbar (`onOption('hubMenu', value)`).
+#  * options/graphics.otui: one checkbox "Menu in hubs" under "Monsters on the minimap"; pt-BR in client_chaos_locale.
+# Without the patch the menu is in hubs (the module's default); the hub window's footer link "Text menu" and the text menu's entry
+# "Menu Style" switch without the option (g_settings `chaosMenuStyle`). Not run in a client; goes live with the next client build.
+diff -ruN a/mods/client_settings/classes/dataset.lua b/mods/client_settings/classes/dataset.lua
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1119,6 +1119,16 @@
+ 		end,
+ 	},
+ 
++	-- Chaos (base patch 0199): the top menu as hubs (on) or the text menu (off); overlay module client_chaos_topbar
++	hubMenu = {
++		value = true,
++		apply = function(value)
++			local m = modules.client_chaos_topbar
++			if m and m.onOption then m.onOption('hubMenu', value) end
++			return true
++		end,
++	},
++
+ 	showSpells = {
+ 		value = true,
+         apply = function(value)
+diff -ruN a/mods/client_settings/options/graphics.otui b/mods/client_settings/options/graphics.otui
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -224,6 +224,39 @@
+         !tooltip: tr('Shows the monsters within 30 tiles as red dots on the minimap, a boss as a bigger dot with a gold ring, NPCs in blue, your party in green and you in white.\nThe server sends the positions while the minimap is open.')
+ 
+     FlatPanel
++      // Chaos (base patch 0199, overlay module client_chaos_topbar): the top menu as hubs or as text
+       size: 505 22
+       anchors.top: prev.bottom
+       anchors.right: parent.right
++      anchors.left: parent.left
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
++
++      SettingsCheckBox
++        id: hubMenu
++        size: 12 12
++        !text: tr('Menu in hubs')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        anchors.left: parent.left
++        anchors.top: parent.top
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        margin-top: 5
++        margin-left: 5
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('On: six small badges at the top, each opens a window with tabs and cards.\nOff: the text menu with drop-down lists. The hub window also has a link back to the text menu.')
++
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
