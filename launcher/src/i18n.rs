@@ -40,6 +40,8 @@ impl Lang {
 pub enum Status {
     Checking,
     Hashing,
+    /// "Verify files": the same check with no hash cache.
+    Verifying,
     Downloading,
     Applying,
     LauncherStaged,
@@ -54,6 +56,8 @@ pub fn status(s: Status, l: Lang) -> &'static str {
         (Status::Checking, Lang::En) => "Looking for updates...",
         (Status::Hashing, Lang::Pt) => "Conferindo os arquivos do jogo...",
         (Status::Hashing, Lang::En) => "Checking the game files...",
+        (Status::Verifying, Lang::Pt) => "Conferindo e consertando os arquivos...",
+        (Status::Verifying, Lang::En) => "Checking and repairing the files...",
         (Status::Downloading, Lang::Pt) => "Baixando atualização...",
         (Status::Downloading, Lang::En) => "Downloading the update...",
         (Status::Applying, Lang::Pt) => "Instalando os arquivos...",
@@ -287,6 +291,8 @@ pub enum Error {
     NoGame(String),
     /// A local file operation failed.
     Io(String),
+    /// The folder cannot hold the download (checked before the first byte).
+    NoSpace { need: u64, free: u64 },
     /// The published Unity package is a DEV build (no client key inside): not offered to players.
     DevPackage,
 }
@@ -320,6 +326,18 @@ impl Error {
             (Error::Config(d), Lang::En) => format!("The launcher settings (launcher.json) are invalid. Download the game again from the website. ({d})"),
             (Error::NoGame(f), Lang::Pt) => format!("O programa do jogo ({f}) não está na pasta. Atualize ou baixe o jogo de novo."),
             (Error::NoGame(f), Lang::En) => format!("The game program ({f}) is not in the folder. Update or download the game again."),
+            (Error::NoSpace { need, free }, Lang::Pt) => format!(
+                "Falta espaço em disco: precisa de {}, tem {}. {}",
+                crate::fmt::bytes(*need, l),
+                crate::fmt::bytes(*free, l),
+                ui(Ui::NoSpaceHint, l)
+            ),
+            (Error::NoSpace { need, free }, Lang::En) => format!(
+                "Not enough disk space: {} needed, {} free. {}",
+                crate::fmt::bytes(*need, l),
+                crate::fmt::bytes(*free, l),
+                ui(Ui::NoSpaceHint, l)
+            ),
             (Error::Io(d), Lang::Pt) => format!("Erro com arquivos no disco. Confira o espaço livre. ({d})"),
             (Error::Io(d), Lang::En) => format!("Disk error. Check the free space. ({d})"),
         }
@@ -381,6 +399,10 @@ mod tests {
             Error::NoGame("Chaos.exe".into()),
             Error::Io("x".into()),
             Error::DevPackage,
+            Error::NoSpace {
+                need: 2_400_000_000,
+                free: 1_100_000_000,
+            },
         ];
         for e in all {
             let (pt, en) = (e.text(Lang::Pt), e.text(Lang::En));
@@ -488,6 +510,7 @@ mod tests {
         for s in [
             Status::Checking,
             Status::Hashing,
+            Status::Verifying,
             Status::Downloading,
             Status::Applying,
             Status::LauncherStaged,

@@ -341,6 +341,11 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Licence: MIT
   - Used for: checking the Ed25519 signature of the update manifest in the game launcher and of the releases of the desktop admin app
   - Source: https://github.com/jedisct1/rust-ed25519-compact
+- **fs2**
+  - Author: Dan Burkert
+  - Licence: MIT or Apache-2.0
+  - Used for: the free disk space check of the game launcher before it downloads
+  - Source: https://github.com/danburkert/fs2-rs
 - **image (image-rs)**
   - Author: The image-rs developers
   - Licence: MIT or Apache-2.0

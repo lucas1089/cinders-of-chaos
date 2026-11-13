@@ -7,6 +7,7 @@
 //! folder, chosen in the window (`choice`).
 pub mod carousel;
 pub mod choice;
+mod chunked;
 pub mod config;
 pub mod feed;
 pub mod fmt;

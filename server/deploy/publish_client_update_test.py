@@ -517,6 +517,9 @@ sys.exit(22)
         # the launcher (O314): a package with CindersLauncher.exe publishes its program files as the native section
         lz = os.path.join(zips, 'launcher.zip')
         make_packed_zip(lz, tmp, public, url, package=15, shards='only', launcher=True)
+        # the chunk size is passed on (O552): a size the manifest tool refuses stops the publish, nothing goes live
+        r = run('--version', '80', lz, extra={'CHAOS_UPDATE_URL': purl, 'CHAOS_NATIVE_CHUNK': '1000'})
+        check(r.returncode != 0 and 'native-chunk' in r.stderr and payload()['version'] == 72, 'a bad chunk size is refused')
         r = run('--version', '80', lz, extra={'CHAOS_UPDATE_URL': purl})
         m = payload()
         nat = m.get('native') or {}
@@ -536,6 +539,8 @@ sys.exit(22)
         check(r.returncode == 0 and 'native' not in payload(), 'no launcher, no native section')
         check(not os.path.isdir(os.path.join(live, 'native')) or not os.listdir(os.path.join(live, 'native')),
               'old native blobs removed')
+        r = run('--version', '85', lz, extra={'CHAOS_UPDATE_URL': purl, 'CHAOS_NATIVE_CHUNK': '0'})
+        check(r.returncode == 0 and not any('chunks' in f for f in payload()['native']['files']), 'chunk size 0 turns them off')
 
         # the app update (O313 step 8): the Android client's own APK, plain under apk/, the entry in the signed manifest
         def make_apk_files(name, code, version, signer='ab' * 32, body=None):

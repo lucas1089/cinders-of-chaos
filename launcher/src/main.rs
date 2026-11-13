@@ -12,9 +12,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// players never get one offered (O433 phase 17).
 static ALLOW_DEV_UNITY: AtomicBool = AtomicBool::new(false);
 
+/// `--verify`: hash every file again (no cache) and repair what is damaged (the settings card's "Verify files").
+static VERIFY: AtomicBool = AtomicBool::new(false);
+
 fn update_options() -> Options {
     Options {
         allow_dev: ALLOW_DEV_UNITY.load(Ordering::Relaxed),
+        verify: VERIFY.load(Ordering::Relaxed),
         ..Options::default()
     }
 }
@@ -45,6 +49,7 @@ fn parse_args() -> Args {
         match x.as_str() {
             "--cli" => a.cli = true,
             "--no-start" => a.no_start = true,
+            "--verify" => VERIFY.store(true, Ordering::Relaxed),
             "--allow-dev-unity" => ALLOW_DEV_UNITY.store(true, Ordering::Relaxed),
             "--dir" => a.dir = it.next().map(PathBuf::from),
             "--lang" => a.lang = it.next().map(|t| Lang::from_tag(&t)),
@@ -56,7 +61,7 @@ fn parse_args() -> Args {
                 }
             }
             "--help" | "-h" => {
-                println!("cinders-launcher [--cli] [--no-start] [--dir FOLDER] [--lang pt|en] [--client main|unity] [--allow-dev-unity]");
+                println!("cinders-launcher [--cli] [--no-start] [--dir FOLDER] [--lang pt|en] [--client main|unity] [--allow-dev-unity] [--verify]");
                 std::process::exit(0);
             }
             _ => a.rest.push(x),

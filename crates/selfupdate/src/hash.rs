@@ -26,6 +26,24 @@ pub fn sha256_file(path: &Path) -> std::io::Result<String> {
     Ok(hex(&h.finalize()))
 }
 
+/// Hash of a stream in pieces (a part of a big file is hashed without holding it in memory).
+#[derive(Default)]
+pub struct Sha256Stream(Sha256);
+
+impl Sha256Stream {
+    pub fn new() -> Self {
+        Sha256Stream(Sha256::new())
+    }
+
+    pub fn update(&mut self, bytes: &[u8]) {
+        self.0.update(bytes);
+    }
+
+    pub fn finish_hex(self) -> String {
+        hex(&self.0.finalize())
+    }
+}
+
 /// True for 64 lower-case hex digits.
 pub fn is_sha256_hex(s: &str) -> bool {
     s.len() == 64 && s.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
@@ -50,6 +68,14 @@ mod tests {
             Some(h)
         );
         assert_eq!(parse_sha("short"), None);
+    }
+
+    #[test]
+    fn stream_hash_matches_one_shot() {
+        let mut s = Sha256Stream::new();
+        s.update(b"a");
+        s.update(b"bc");
+        assert_eq!(s.finish_hex(), sha256_hex(b"abc"));
     }
 
     #[test]

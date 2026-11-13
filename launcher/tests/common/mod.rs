@@ -49,12 +49,15 @@ fn serve(mut s: TcpStream, st: Arc<Mutex<ServerState>>) {
         .to_string();
     let range = head.lines().find_map(|l| {
         let l = l.to_ascii_lowercase();
-        l.strip_prefix("range: bytes=")
-            .and_then(|r| r.trim_end_matches('-').parse::<u64>().ok())
+        l.strip_prefix("range: bytes=").and_then(|r| {
+            // "a-" (resume) or "a-b" (a piece of a chunked file, O552)
+            let (a, b) = r.trim().split_once('-')?;
+            Some((a.parse::<u64>().ok()?, b.parse::<u64>().ok()))
+        })
     });
     let (body, cut) = {
         let mut g = st.lock().unwrap();
-        g.hits.push((path.clone(), range));
+        g.hits.push((path.clone(), range.map(|r| r.0)));
         if g.offline {
             return; // closes the connection
         }
@@ -68,14 +71,18 @@ fn serve(mut s: TcpStream, st: Arc<Mutex<ServerState>>) {
         let _ = s.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
         return;
     };
-    let start = range.unwrap_or(0).min(body.len() as u64) as usize;
-    let part = &body[start..];
+    let start = range.map_or(0, |r| r.0).min(body.len() as u64) as usize;
+    let stop = range
+        .and_then(|r| r.1)
+        .map_or(body.len(), |e| (e as usize + 1).min(body.len()))
+        .max(start);
+    let part = &body[start..stop];
     let head = if range.is_some() {
         format!(
             "HTTP/1.1 206 Partial Content\r\nContent-Length: {}\r\nContent-Range: bytes {}-{}/{}\r\nConnection: close\r\n\r\n",
             part.len(),
             start,
-            body.len().saturating_sub(1),
+            (start + part.len()).saturating_sub(1),
             body.len()
         )
     } else {

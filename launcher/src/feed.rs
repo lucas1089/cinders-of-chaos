@@ -380,7 +380,7 @@ pub fn load(fetch: &dyn Fetch, cfg: &Config, lang: Lang) -> Panel {
 mod tests {
     use super::*;
     use crate::net::FetchError;
-    use std::cell::RefCell;
+    use std::sync::Mutex;
 
     const FEED: &str = r#"{"format":1,"generated":5,
       "en":{"news":[{"id":1,"date":"2026-10-29","title":"Season two","text":"Join now.","url":"https://site.test/?view=1"}],
@@ -389,15 +389,15 @@ mod tests {
             "changelog":[{"id":"2026-10-22","date":"2026-10-22","title":"Asas","lines":["Um.","Dois."],"url":null}]}}"#;
 
     struct Fake {
-        answer: RefCell<Result<Vec<u8>, FetchError>>,
-        asked: RefCell<Vec<(String, u32, u64)>>,
+        answer: Mutex<Result<Vec<u8>, FetchError>>,
+        asked: Mutex<Vec<(String, u32, u64)>>,
     }
 
     impl Fake {
         fn new(a: Result<Vec<u8>, FetchError>) -> Fake {
             Fake {
-                answer: RefCell::new(a),
-                asked: RefCell::new(vec![]),
+                answer: Mutex::new(a),
+                asked: Mutex::new(vec![]),
             }
         }
     }
@@ -407,8 +407,8 @@ mod tests {
             panic!("the feed must use get_small")
         }
         fn get_small(&self, url: &str, secs: u32, max: u64) -> Result<Vec<u8>, FetchError> {
-            self.asked.borrow_mut().push((url.to_string(), secs, max));
-            self.answer.borrow().clone()
+            self.asked.lock().unwrap().push((url.to_string(), secs, max));
+            self.answer.lock().unwrap().clone()
         }
         fn download(&self, _: &str, _: &Path, _: &mut dyn FnMut(u64)) -> Result<(), FetchError> {
             unreachable!()
@@ -570,7 +570,7 @@ mod tests {
         assert!(matches!(&p, Panel::Ready { cached: false, feed } if feed.news.len() == 1));
         // short time limit and size limit are passed on
         assert_eq!(
-            up.asked.borrow()[0],
+            up.asked.lock().unwrap()[0],
             (
                 "https://site.test/chaos_launcher_feed.php".to_string(),
                 FETCH_SECS,
@@ -614,7 +614,7 @@ mod tests {
         // no feed address: nothing is fetched
         let up = Fake::new(Ok(FEED.as_bytes().to_vec()));
         assert_eq!(load(&up, &cfg(&d, None), Lang::En), Panel::Unavailable);
-        assert!(up.asked.borrow().is_empty());
+        assert!(up.asked.lock().unwrap().is_empty());
         // a corrupt saved copy is ignored
         std::fs::create_dir_all(d.join(STATE_DIR)).unwrap();
         std::fs::write(cache_path(&d), b"\xff\xfe garbage").unwrap();

@@ -5099,6 +5099,11 @@ at most 64 files of at most 2 GiB; `game` and `launcher` must be `.exe` files of
 pack beside `chaos.pack`, `--native-package` = the package's `Services.update.package`); a package without the launcher
 publishes no section and prunes the old native blobs. `verify` checks the native blobs too.
 
+**Chunk hashes (O552).** A native file bigger than one piece may also carry `"chunk": BYTES` (1 to 128 MiB, default 32 MiB) and `"chunks": [sha256 of
+each piece]`, both or neither, at most 4096 pieces, as many as `ceil(size / chunk)`. The blob stays one plain file; the launcher fetches the pieces with
+`Range`, four at a time, checks each, resumes and repairs per piece, and copies unchanged pieces from the installed file. Old launchers ignore the keys.
+`make_update_manifest.py build --native-chunk BYTES` (default 32 MiB, 0 off), `verify` re-hashes the pieces of every native blob.
+
 **Update.** Hash each native file of the install (cache by size and mtime), download the changed ones to
 `.cinders_launcher/stage/` (resumable `Range` parts, 5 retries with backoff, the system `curl`), check size and SHA-256,
 then the swap: a journal, the old file to `backup/`, the staged file in place (`.exe` last), the journal removed. Any

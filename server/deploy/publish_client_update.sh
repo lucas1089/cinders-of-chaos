@@ -97,6 +97,7 @@
 #   CHAOS_UPDATE_APK_INFO_ASSET  CindersOfChaos-Android.json   its info asset
 #   CHAOS_UPDATE_APK_MIN_MB      1                 a smaller APK download is refused
 #   CHAOS_UPDATE_URL      (empty)             the public manifest URL for the check (default: the package's own)
+#   CHAOS_NATIVE_CHUNK    33554432            piece size in bytes of the chunk hashes of the launcher's big files (0 off, 1 to 128 MiB)
 #   CHAOS_WORK_DIR        /var/tmp            where the work folder is made (needs about 4x the zip size free: the spr is split there)
 #   CHAOS_UPDATE_MIN_MB   50                  a smaller download is refused (an error page, a wrong asset)
 # Exit: 0 published (a failed web server check only warns), 1 refused or failed, nothing published.
@@ -611,6 +612,8 @@ vargs=(verify "$LIVE" --public "$PUBLIC")
 if [ -n "$NATIVE" ]; then
   isnum "$PKG_PACKAGE" || die "the launcher's files need Services.update.package in init.lua"
   args+=(--native-dir "$NATIVE" --native-package "$((10#$PKG_PACKAGE))" --native-launcher CindersLauncher.exe)
+  # chunk hashes of the big native files (O552): resume, repair and parallel download in the launcher; 0 turns them off
+  args+=(--native-chunk "${CHAOS_NATIVE_CHUNK:-33554432}")
 fi
 if [ -n "$APK" ]; then args+=(--apk "$APKFILE" --apk-info "$APKJSON"); fi
 if [ -n "$APKMIN" ]; then args+=(--apk-min-version-code "$APKMIN"); fi

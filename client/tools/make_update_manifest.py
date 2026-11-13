@@ -9,7 +9,8 @@
           Prints only the public key (64 hex digits) of a private key file (server/deploy/publish_client_update.sh).
   build   CLIENT_DIR --out PUBLISH_DIR [--key PATH] [--version N] [--min-version N] [--min-package N]
           [--parallel N] [--channel NAME] [--roots modules,mods,data,layouts] [--dry-run] [--dev] [--key-index N]
-          [--with-single-spr] [--native-dir DIR --native-package N [--native-game NAME] [--native-launcher NAME]]
+          [--with-single-spr] [--native-dir DIR --native-package N [--native-game NAME] [--native-launcher NAME]
+          [--native-chunk BYTES]]
           [--no-android] [--android-exclude PREFIX ...] [--apk FILE --apk-info JSON [--apk-min-version-code N]] [--no-apk]
           Hashes every file under the roots of an assembled client folder (client/tools/assemble_client.sh, with
           the Tibia.dat/.spr pair in data/things/1098/; or a packed package unpacked with `unpack`), ENCRYPTS each
@@ -381,10 +382,37 @@ def collect_native(native_dir):
     return files, problems
 
 
-def make_native(entries, package, game, launcher):
-    """entries: (name, sha256, size). The "native" payload section."""
-    n = {'package': package, 'game': game, 'files_url': NATIVE_DIR + '/',
-         'files': [{'path': p, 'sha256': h, 'size': s} for p, h, s in entries]}
+NATIVE_CHUNK_DEFAULT = 32 * 1024 * 1024
+NATIVE_CHUNK_MIN = 1024 * 1024
+NATIVE_CHUNK_MAX = 128 * 1024 * 1024
+NATIVE_MAX_CHUNKS = 4096
+
+
+def chunk_hashes(path, chunk):
+    """SHA-256 of each `chunk`-byte piece of a file (the last one is shorter)."""
+    out = []
+    with open(path, 'rb') as f:
+        while True:
+            b = f.read(chunk)
+            if not b:
+                break
+            out.append(hashlib.sha256(b).hexdigest())
+    return out
+
+
+def make_native(entries, package, game, launcher, chunk=0, src=None):
+    """entries: (name, sha256, size). The "native" payload section. With chunk > 0 every file bigger than one piece also
+    gets `chunk` and `chunks` (O552): the SHA-256 of each piece, for the launcher's resume, repair and parallel download."""
+    files = []
+    for p, h, s in entries:
+        f = {'path': p, 'sha256': h, 'size': s}
+        if chunk and s > chunk:
+            if not src or h not in src:
+                raise ValueError('chunk hashes need the file ' + p)
+            f['chunk'] = chunk
+            f['chunks'] = chunk_hashes(src[h], chunk)
+        files.append(f)
+    n = {'package': package, 'game': game, 'files_url': NATIVE_DIR + '/', 'files': files}
     if launcher:
         n['launcher'] = launcher
     return n
@@ -413,6 +441,15 @@ def check_native(n):
             return 'native: bad sha256 for ' + f['path']
         if not isinstance(f.get('size'), int) or not 0 <= f['size'] <= NATIVE_MAX_FILE_SIZE:
             return 'native: bad size for ' + f['path']
+        if 'chunk' in f or 'chunks' in f:
+            c, hs = f.get('chunk'), f.get('chunks')
+            if not isinstance(c, int) or isinstance(c, bool) or not NATIVE_CHUNK_MIN <= c <= NATIVE_CHUNK_MAX:
+                return 'native: bad chunk size for ' + f['path']
+            if not isinstance(hs, list) or len(hs) > NATIVE_MAX_CHUNKS or f['size'] == 0 \
+                    or len(hs) != -(-f['size'] // c):
+                return 'native: wrong number of chunks for ' + f['path']
+            if not all(re.fullmatch(r'[0-9a-f]{64}', str(h)) for h in hs):
+                return 'native: bad chunk hash for ' + f['path']
     game = n.get('game')
     if check_native_name(game) or not game.lower().endswith('.exe') or game.lower() not in names:
         return 'native: game is not an .exe of the file list'
@@ -816,7 +853,8 @@ def build(args):
     if min_version > version:
         sys.exit('--min-version cannot be above --version')
     created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-    native = (make_native(native_entries, args.native_package, args.native_game, args.native_launcher)
+    native = (make_native(native_entries, args.native_package, args.native_game, args.native_launcher,
+                          args.native_chunk, native_src)
               if native_entries is not None else None)
     android = None if args.no_android else tuple(args.android_exclude or ())
     for x in android or ():
@@ -935,7 +973,8 @@ def read_native(args):
         sys.exit(f'--native-game {args.native_game}: not in {nd}')
     if args.native_launcher and args.native_launcher.lower() not in names:
         sys.exit(f'--native-launcher {args.native_launcher}: not in {nd}')
-    err = check_native(make_native(entries, args.native_package, args.native_game, args.native_launcher))
+    err = check_native(make_native(entries, args.native_package, args.native_game, args.native_launcher,
+                                   args.native_chunk, src))
     if err:
         sys.exit('refused: ' + err)
     return entries, src
@@ -1018,6 +1057,9 @@ def verify(args):
         blob = native_blob_path(out, f['sha256'])
         if not os.path.isfile(blob) or os.path.getsize(blob) != f['size'] or sha256_file(blob) != f['sha256']:
             print('bad native file', f['path'], file=sys.stderr)
+            bad += 1
+        elif 'chunks' in f and chunk_hashes(blob, f['chunk']) != f['chunks']:
+            print('bad chunk hashes of native file', f['path'], file=sys.stderr)
             bad += 1
     apk = m.get('android_apk')
     if apk:
@@ -1193,6 +1235,8 @@ def main(argv=None):
     b.add_argument('--native-package', type=int, help='package number of the native files')
     b.add_argument('--native-game', default='Chaos.exe')
     b.add_argument('--native-launcher', help='file name of the launcher itself in --native-dir')
+    b.add_argument('--native-chunk', type=int, default=NATIVE_CHUNK_DEFAULT,
+                   help='piece size in bytes of the chunk hashes of the native files (default 32 MiB, 0 off; 1 to 128 MiB)')
     b.add_argument('--no-android', action='store_true', help='leave the "android" (phone data) section out')
     b.add_argument('--android-exclude', action='append', metavar='PREFIX',
                    help='a folder the phone does not download, e.g. data/images/streamer/ (repeatable; desktop-only art)')
@@ -1224,6 +1268,8 @@ def main(argv=None):
         ap.error('build needs --out (or --dry-run)')
     if args.cmd == 'build' and (args.native_package is not None or args.native_launcher) and not args.native_dir:
         ap.error('--native-package and --native-launcher need --native-dir')
+    if args.cmd == 'build' and args.native_chunk and not NATIVE_CHUNK_MIN <= args.native_chunk <= NATIVE_CHUNK_MAX:
+        ap.error('--native-chunk: 0 (off) or 1 MiB to 128 MiB in bytes')
     if args.cmd == 'build' and args.apk_info and not args.apk:
         ap.error('--apk-info needs --apk')
     if args.cmd == 'build' and args.apk and args.no_apk:

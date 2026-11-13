@@ -37,6 +37,8 @@ struct Actions {
     open: Option<String>,
     toggle_close_on_play: bool,
     open_folder: bool,
+    verify: bool,
+    clear_cache: bool,
 }
 
 pub struct App {
@@ -71,6 +73,7 @@ pub struct App {
     chip_open: bool,
     scaled: bool,
     version: &'static str,
+    verify_next: bool,
 }
 
 fn tag_color(t: feed::Tag) -> (Color32, Color32) {
@@ -117,6 +120,7 @@ impl App {
             settings_open: false,
             chip_open: false,
             scaled: false,
+            verify_next: false,
             version: env!("CARGO_PKG_VERSION"),
             cfg,
         };
@@ -175,9 +179,14 @@ impl App {
         self.speed.clear();
         (self.done, self.total, self.files_done, self.files_total) = (0, 0, 0, 0);
         self.shown = 0.0;
+        let verify = std::mem::take(&mut self.verify_next);
         let (cfg, client, exe, tx) = (self.cfg.clone(), self.client, self.exe.clone(), self.tx.clone());
         std::thread::spawn(move || {
-            let r = choice::update(&cfg, client, exe, &Curl, super::update_options(), &mut |e| {
+            let opts = Options {
+                verify,
+                ..super::update_options()
+            };
+            let r = choice::update(&cfg, client, exe, &Curl, opts, &mut |e| {
                 let _ = tx.send(Msg::Ev(e));
             });
             let _ = tx.send(Msg::Done(r.map(|(o, _)| o)));
@@ -896,7 +905,7 @@ impl App {
         let screen = Rect::from_min_size(cv.origin, Vec2::new(layout::W * cv.k, layout::H * cv.k));
         let outside = ui.interact(screen, egui::Id::new("settings_bg"), Sense::click());
         p.rect_filled(screen, 0.0, Color32::from_black_alpha(160));
-        let card = R::new(390.0, 170.0, 500.0, 400.0);
+        let card = R::new(390.0, 150.0, 500.0, 460.0);
         let rect = cv.rect(card);
         p.rect_filled(rect, Rounding::same(cv.px(12.0)), Color32::from_rgb(14, 11, 10));
         p.rect_stroke(
@@ -998,9 +1007,35 @@ impl App {
                 act.lang = Some(lg);
             }
         }
+        // repair and cache: not while an update runs
+        let idle = !matches!(self.phase, Phase::Working);
+        let vb = cv.rect(R::new(card.x + 26.0, row(268.0), 220.0, 38.0));
+        if small_button(ui, &self.art, cv, vb, i18n::ui(Ui::Verify, lang), "set_verify", idle) {
+            act.verify = true;
+        }
+        let cb2 = cv.rect(R::new(card.x + 258.0, row(268.0), 216.0, 38.0));
+        if small_button(
+            ui,
+            &self.art,
+            cv,
+            cb2,
+            i18n::ui(Ui::ClearCache, lang),
+            "set_cache",
+            idle,
+        ) {
+            act.clear_cache = true;
+        }
+        let hint = fit(&p, i18n::ui(Ui::VerifyHint, lang), &cv.font(13.0), cv.px(448.0));
+        p.text(
+            cv.pt(card.x + 26.0, row(322.0)),
+            Align2::LEFT_CENTER,
+            hint,
+            cv.font(13.0),
+            theme::MUTED,
+        );
         // version
         p.text(
-            cv.pt(card.x + 26.0, row(300.0)),
+            cv.pt(card.x + 26.0, row(352.0)),
             Align2::LEFT_CENTER,
             format!("{}: {}", i18n::ui(Ui::Version, lang), self.version),
             cv.font(13.5),
@@ -1436,6 +1471,10 @@ impl eframe::App for App {
             self.settings.close_on_play = !self.settings.close_on_play;
             self.save_settings();
         }
+        if act.clear_cache && !matches!(self.phase, Phase::Working) {
+            // only the half-downloaded pieces of an earlier run; the installed files are not touched
+            let _ = std::fs::remove_dir_all(self.cfg.dir.join(cinders_launcher::install::STATE_DIR).join("stage"));
+        }
         if act.open_folder {
             open_folder(&self.cfg.dir);
         }
@@ -1443,6 +1482,10 @@ impl eframe::App for App {
             ctx.open_url(egui::OpenUrl::new_tab(u));
         }
         let mut retry = act.retry;
+        if act.verify && !matches!(self.phase, Phase::Working) {
+            self.verify_next = true;
+            retry = true;
+        }
         if let Some(c) = act.pick {
             self.settings.client = c;
             self.save_settings();

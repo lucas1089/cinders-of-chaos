@@ -457,6 +457,13 @@
      "source": "https://github.com/jedisct1/rust-ed25519-compact"
     },
     {
+     "name": "fs2",
+     "author": "Dan Burkert",
+     "licence": "MIT or Apache-2.0",
+     "use": "the free disk space check of the game launcher before it downloads",
+     "source": "https://github.com/danburkert/fs2-rs"
+    },
+    {
      "name": "image (image-rs)",
      "author": "The image-rs developers",
      "licence": "MIT or Apache-2.0",

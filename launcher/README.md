@@ -30,6 +30,32 @@ The launcher never replaces a file the manifest does not name, and only `.exe`, 
 folder itself (no sub-folders). It never deletes files. It refuses a manifest older than `baseline` of
 `launcher.json` or than the last one it applied.
 
+## Install from an empty folder, chunks, repair (O552 phase B)
+
+A folder with `launcher.json` and `CindersLauncher.exe` and nothing else becomes a full client at the first run: the main manifest's `native`
+section holds `Chaos.exe`, its DLLs and `chaos.pack` (the modules, data and sprite shards are inside the pack), so there is no other file to fetch.
+What phase B added around that (`src/chunked.rs`, `src/install.rs`, `src/manifest.rs`, `src/net.rs`):
+
+- **Chunk hashes.** A native file over one piece may carry `chunk` (bytes, 1 to 128 MiB, the publisher's default is 32 MiB) and `chunks` (the SHA-256 of
+  every piece), inside the signed payload (`make_update_manifest.py build --native-chunk BYTES`, `CHAOS_NATIVE_CHUNK` of the publish script, 0 off). The
+  published blob stays one plain file. The launcher refuses a manifest whose list has the wrong number of pieces, a bad hash or one of the two keys only.
+  An older launcher ignores both keys and downloads the whole file as before; a manifest without them installs as before.
+- **Parallel pieces.** The pieces come four at a time (`Options::parallel`) with `curl -r START-END`, each into `stage/<sha>.chunks/c<i>`, each checked
+  against its own hash before it counts. A cut or corrupt piece is fetched again (5 tries with backoff); a piece that is on disk and right is kept, so
+  resume works piece by piece. The pieces are joined into `stage/<sha>.part` (each removed as it is appended, so the extra disk use stays near one piece)
+  and the whole file is checked against the signed hash before the swap, which is unchanged (journal, backup, rollback).
+- **Repair and small updates.** The installed file seeds the pieces: a piece of the old file at the same place that hashes to the new value is copied
+  locally. So "Verify files" (settings card, `--verify`: the hash cache is ignored, every file is hashed again) downloads only the damaged pieces of a
+  pack, and a new pack that changed one piece costs one piece. A change that shifts the pack (a file grows in the middle) moves every later piece:
+  there is no content-defined delta, owner decision 2026-11-13.
+- **Disk space.** Before the first byte the run needs what is still to fetch (what the stage folder already holds is not counted again) plus 256 MiB;
+  less free space is `Error::NoSpace` ("Falta espaço em disco: precisa de 2,4 GB, tem 1,1 GB"). The figure comes from `fs2::available_space`; an unknown
+  figure never blocks.
+- **Files done.** `Event::Files { done, total }` drives "1/12 arquivos" in the bar. Settings also has "Limpar cache de download" (the stage folder only).
+- Tests: `tests/chunked_install.rs` (first install into an empty folder with a 4-piece pack, a quiet second run, a flipped byte the cache hides found by
+  verify and repaired with one Range, one changed piece, a cut and a corrupt piece, a full disk, staged pieces not counted again, a wrong piece hash
+  installs nothing, a manifest without chunks), `manifest.rs` (the chunk rules), `make_update_manifest_test.py` (`test_chunk_hashes_for_the_big_files`).
+
 ## Client choice (Unity client beta, O433 phase 16)
 
 Owner 2026-11-07 (pt-BR): "Quero que os jogadores consigam jogar em ambos os clientes." The window has a row "Cliente: Cliente principal | Cliente Unity (beta)"
