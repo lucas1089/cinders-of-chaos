@@ -297,6 +297,13 @@ The hints come once each, as a message and a toast, in English or Brazilian Port
 the module first sees them get every hint marked as given, silently. Files: `server/data/scripts/chaos/firsthour*.lua`,
 `server/tests/firsthour_test.lua`.
 
+### Main quest "The Ember Oath" (O551)
+
+Replaces the welcome path below for a new character: 103 steps from level 8 to 500 in 8 chapters, given by Warden Ysolde, ending with a solo fight against Vael Ashmourn.
+Every step teaches one system by doing something: hunting a named monster, collecting a quest drop, walking to a place, bringing the drops to Ysolde, using a window, or minding the
+resistance penalty at levels 250 and 500 (know it, prepare, hold the line). The pt-BR script is `docs/ROTEIRO_QUEST_PRINCIPAL.md` (generated from the config); the rules, the boss and
+the numbers are in server/README.md "Main quest (O551)".
+
 ### Welcome path (O370)
 
 A new character also walks a short welcome path: seven first steps, one at a time, shown first in the goal tracker
