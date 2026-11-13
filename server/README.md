@@ -338,6 +338,8 @@ server/
                                       game_mapmarkers; see "Map markers")
     poi.lua  poi_core.lua  poi_config.lua (points of interest on the minimap: data/chaos_poi.lua from tools/gen_poi.py,
                                       discoveries in sql/chaos_poi.sql; see "Map markers")
+    radar.lua  radar_core.lua  radar_config.lua (monster dots on the minimap by a radius, client game_minimapdots;
+                                      see "Minimap radar (O543)")
     market.lua  market_core.lua  market_config.lua (our player market for gold and Chaos Coins; sql/chaos_market.sql,
                                       tools/patch_market.py, engine patch 0017; see "Market")
     bestiary.lua  bestiary_core.lua  bestiary_config.lua  bestiary_spawns.lua (bestiary, kill tasks, task tracker;
@@ -638,6 +640,7 @@ working directory, as with the rest of the base server libs).
 | game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
 | game_mapmarkers | `partymarkers.lua`, `partymarkers_core.lua`, `partymarkers_config.lua`, `poi.lua`, `poi_core.lua`, `poi_config.lua`, `data/chaos_poi.lua` (`tools/gen_poi.py`, install step `poi`), `sql/chaos_poi.sql` | **153**, Hunt > More > Map Markers | Map markers on the minimap and the full map: the other party members (pin in a party colour, floor triangle, edge arrow toward a member out of view, name / health / floor / distance on hover; sent only when something changed, at most once a second, throttled) and points of interest (temples, depots, banks, Chaos NPCs, shops, travel, crafting, guild hall, portals, dungeons, boss places, hunting areas; the remote ones discovered on approach), each category switchable (see "Map markers"). Unit tests, generator test; tested on a live test server (full map) with two clients and 395 bots. |
+| game_minimapdots | `radar.lua`, `radar_core.lua`, `radar_config.lua` | **153** (action `radar`, shared with game_mapmarkers) | Minimap radar (O543): every 1.5 s the monsters, NPCs and party members within 30 tiles on the player's floor, to players who switched the option on; the client draws red dots, a gold ringed dot for a boss, blue NPCs, green party members (see "Minimap radar (O543)"). Core unit tested; not run on a live server. |
 | game_rightclickequip | `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, engine patch 0024 | **188** | Right-click equips: the client option "Right-click equips items" (client -> server) and the multi-use weapons a right-click equips (server -> client, at login); the equipping is the engine's (see "Right-click equips"). Tested in game. |
 | game_kitewalk | `kitewalk.lua`, `kitewalk_core.lua`, engine patch 0028 | **186** | Keep attacking while moving: the client option "Keep attacking while moving" (client -> server); the kiting itself is the engine's (see "Keep attacking while moving"). Tested in game. |
 | game_tileoverlays | `tilebars.lua`, `tilebars_core.lua`, `tilebars_config.lua` (users: `battleground.lua`, `professions.lua`, `invasion.lua`) | **156** (server -> client; `hello` back) | Progress bars over tiles: a labelled bar (progress or countdown) over a map position for the players near it; brazier captures, profession node respawns (gatherer only), the invasion breach. The same client module draws the field timers (client only). See "Progress bars over tiles". |
@@ -702,7 +705,7 @@ collision check") and be added here.
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
-| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua` | `game_mapmarkers` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked`; O415: `poi.lua` action `npcmarks` (the marks over NPC heads) |
+| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua`, `radar.lua` | `game_mapmarkers`, `game_minimapdots` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked`; O415: `poi.lua` action `npcmarks` (the marks over NPC heads); O543: `radar.lua` action `radar` (the monsters within 30 tiles; `game_mapmarkers` owns the client handler and passes it to `game_minimapdots`) |
 | 155 | `itemFinder` | `itemfinder.lua` | `game_itemfinder` | answers through `Chaos.sendChunked` |
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
@@ -25227,6 +25230,51 @@ when a quest is ready to turn in".
 - **Tests.** `tests/tales_test.lua` (O415 blocks: the story, the marks, the introduction through the engine),
   `tests/poi_test.lua` (merge, diff), `tests/npcmarks_test.lua` (`poi.lua` on a mocked engine), `tests/spellquest_test.lua`,
   `tests/ascension_quest_test.lua`, client `game_mapmarkers/npcmarkmath_test.lua`. Not run on a live server or in a client.
+
+## Minimap radar (O543) (`radar.lua`, `radar_core.lua`, `radar_config.lua`, client `game_minimapdots`)
+
+Owner decision 2026-11-13: monster dots on the minimap by "a radius of 30 sent by the server": red dots for monsters, a bigger dot with a gold ring for a
+boss, blue NPCs, green party members, a white dot for you (drawn by the client). The plan (ROADMAP O543) called this "option (ii)" and listed its
+risk; the owner chose it, so the numbers below are that choice and every mitigation of the plan is a switch that defaults to it.
+
+- **Protocol.** Extended opcode 153 (`ChaosOpcodes.mapMarkers`, no new number; 188-254 are all taken, see "Opcode collision check"; the opcode check of
+  `tests/radar_test.lua` and `tests/partymarkers_test.lua` holds it). Client to server: `radar {on = true|false}`, sent while the option "Monsters on the
+  minimap" is on, the minimap window is shown and the player is online, and when that changes (a rate limit of `setMs`). Server to client:
+  `radar {z, r, m = [[x, y, f], ...]}`: the floor, the radius and one entry per creature with its absolute position; `f` bits: 1 boss, 2 NPC,
+  4 party member, 0 monster. Sent with `Chaos.send`, which splits a message over 8192 bytes (`Chaos.sendChunked`); the cap keeps it far under that
+  (a default message is about 2 KB, 400 dots with five digit coordinates under 8192 bytes: `tests/radar_test.lua` checks it).
+- **When.** A tick every `tickMs` (500 ms) serves the watchers that are due: each at most every `intervalMs` (1.5 s), at most `maxPerTick` (300) per tick,
+  round robin from the last one served. A message goes out only when the list or the floor changed (an equal list is not sent again; positions are
+  absolute so a quiet place costs nothing); a list that became empty goes out once; a new watcher gets its first list at the next tick. Switching off sends
+  one empty list. A logout drops the watcher. Nothing is sent to a client without the module or with the option off.
+- **Who is listed** (`ChaosRadar.plan`). Monsters within `radius` (30) tiles on the watcher's floor, a circle (a square of 61 x 61 tiles is read from the
+  engine, then cut to the circle); NPCs (`npcs`); the watcher's own party members on the same floor (`party`; the party markers draw them on every floor too);
+  never other players, never a creature in ghost mode, summons and pets of players only with `summons`. A boss (`MonsterType:isBoss()`, cached per name)
+  carries the flag when `bosses` is on. More than `cap` (120) qualify: bosses first, then party, NPCs, then monsters nearest first.
+- **Cost.** One `Game.getSpectators` query of the radius per due watcher every 1.5 s plus one small message, and one tick of the scheduler every 500 ms
+  (nothing when nobody watches). Not measured on a live server: the core is pure Lua and its tests do not time the engine call. For scale, the party markers
+  read 100 parties in about 2.5 ms (see "Map markers"); this is one spectator query per watcher instead. Look at `ChaosRadar.stats` (ticks, total and
+  maximum ms, sends) on a loaded server before raising `maxPerTick` or lowering `intervalMs`.
+- **Config** (`radar_config.lua`, numbers clamped by `ChaosRadar.sanitize`): `radius` 30, `intervalMs` 1500, `tickMs` 500, `cap` 120, `maxCap` 400,
+  `maxPerTick` 300, `npcs` true, `party` true, `bosses` true, `summons` false, `setMs` 500. Switches that default to the owner's choice (off, exact):
+  `offInInstances` (true: no radar inside a rift, dungeon, raid, tower or arena, by `Chaos.inAnyInstance`), `offAreas` (rectangles with no radar, none),
+  `round` (positions rounded to a multiple of this many tiles, 1 = exact).
+- **What the plan listed and this does not do.** An unlock (a passive tree node, a Hunter's Lens item or a Kill Task reward) so the radar is a build choice;
+  a delay of the dots; dots without the boss flag is `bosses = false`; a server counter of players that never leave radar view (a bot signal); bosses only
+  when they announce themselves. All are possible later without a protocol change.
+- **Information for bots.** The radar gives the player what the game screen does not: monsters behind walls and up to 30 tiles away, as a clean list. A
+  bot can read it to walk to the nearest pack instead of searching, skip empty spawns, take the best spawn of an area in seconds, read an empty spawn as
+  "someone cleared it" and move on or contest the area, snipe a boss the moment it spawns within 30 tiles (the boss flag makes it exact) and plan a path
+  round packs. The removed scripting bot is not the issue (the client has no scripting); the issue is that a screen reader is no longer needed. The owner
+  chose it knowing this; if it shows in the antibot numbers (`antibot.lua`), tighten with `offInInstances`, `round = 2`, a lower `radius` or `cap`, or an
+  unlock, in that order of cost.
+- **Not verified.** The client half is written and unit tested (`game_minimapdots`, `minimapdots_logic_test.lua`) and drawn in the offline render of
+  client/MANIFEST.md "HD minimap and radar dots (O543)"; neither side ran against a real client or a live server. The engine calls in `radar.lua`
+  (`Game.getSpectators`, `Monster:getMaster`, `MonsterType:isBoss`, `Player:getParty`, `Chaos.inAnyInstance`) are the ones other scripts of this
+  repository already use.
+
+Tests: `cd server && luajit tests/radar_test.lua && lua5.3 tests/radar_test.lua` (181 checks: the opcode, the owner's numbers, the config clamps, the circle,
+floors, ghosts, summons, the switches, the order and cap, rounding, the diff, the interval, the per tick limit with round robin, areas, the message size).
 
 ## NPC review (O415)
 

@@ -1,0 +1,14 @@
+Module
+  name: game_minimapdots
+  description: Minimap radar - red dots for the monsters round you, a gold ringed dot for a boss, blue NPCs, green party members and a white dot for you, on the minimap (server radar.lua, action radar of extended opcode 153)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ minimapdots_logic, minimapdots ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+    - game_mapmarkers
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

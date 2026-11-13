@@ -19,6 +19,8 @@
 --   stops sending it.
 -- The markers sit in one layer inside the minimap widget and never take the mouse: clicks, drags and the wheel stay the
 -- minimap's own. The hover text comes from a hit test in the minimap's mouse move (MapMarkerMath.hit).
+-- * Radar (O543): this module owns the opcode, so the action `radar` (server radar.lua: the monsters, NPCs and party members within
+--   30 tiles) is passed on to game_minimapdots, which draws the dots on the same minimap widget.
 -- Protocol: extended opcode 153, JSON {action, data}; see the server scripts.
 
 local M = MapMarkerMath
@@ -468,6 +470,10 @@ local function onMessage(protocol, opcode, msg)
   elseif msg.action == 'npcmarks' then
     -- O415: the gold ! and ? over NPC heads (npcmarks.lua)
     if settings.npcmarks then NpcMarks.onMessage(d) end
+  elseif msg.action == 'radar' then
+    -- O543: the monsters round the player (server radar.lua), drawn by game_minimapdots; this module owns the opcode
+    local dots = modules.game_minimapdots
+    if dots and dots.onRadar then dots.onRadar(d) end
   end
 end
 

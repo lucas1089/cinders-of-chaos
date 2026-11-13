@@ -1,0 +1,1381 @@
+# Chaos: HD minimap, the explored map drawn from small pictures of the real items (O543; client/BASE.md "0197"; src/client/chaosminimaphd.h (new, pure),
+# minimap.h/.cpp, uiminimap.h/.cpp, luafunctions_client.cpp, mods/client_settings dataset.lua and options/graphics.otui; after 0001-0196).
+# Owner decision 2026-11-13: style "HD painted": real sprites in miniature plus shadows, living water and lava, smooth zoom; HD from 2 px per tile up,
+# flat colours below.
+#  * Recipe: MinimapTile grows from 3 to 11 bytes. Besides flags, colour and speed it keeps the client ids of the tile's ground, ground border, top
+#    decoration and top solid (Minimap::updateTile, chaosRecipe: only items that belong to the map; creatures and things a player drops are left out).
+#    .otmm version 2 stores the 11 byte tile. A version 1 file still loads: its blocks are expanded with an empty recipe (chaos::minimaphd::expandV1Block),
+#    so an old explored map shows the flat colour squares of before. #pragma pack now ends with the tile (the block holds 64 bit counters).
+#  * Swatches: client/tools/gen_minimap_swatches.py makes data/minimap_hd/swatches.png (8 px per tile cell of every item type the map uses, area averaged,
+#    alpha weighted, lightly sharpened) and index.txt. g_minimap.loadHdAtlas(dir) reads both; an id without a swatch, a tile without a recipe or an atlas that
+#    did not load gives the flat colour square. Nothing leaves the explored area: only tiles the client has seen are drawn.
+#  * Compose (chaosminimaphd.h composeBlock): a 64 x 64 block becomes one RGBA picture of 8 px per tile (flat square, ground, border, decoration, then the
+#    solid with an alpha boost of 1.55 so a thin wall or tree keeps its body; a 2 x 2 item of the next block spills up and left across the edge, so a ring of 2
+#    tiles of the neighbour blocks is read), then the C pass: a shadow south east of walls, rock and trees (light from the north west), a soft contact shadow,
+#    a lighter north west rim and a darker south east edge on the tall tiles, a thin dark line where rock meets open ground, water and lava tint, a glow round
+#    lava, a little more colour. Then reduced to the texel density of the zoom (2, 4 or 8 px per tile, chaos::minimaphd::lodFor): the engine's texture has no
+#    hardware mipmaps, so the picture is made at the size it is drawn. About 6 ms for a block with trees and water (-O2, header benchmark).
+#  * Draw: HD blocks go through DrawQueueItemImageWithShader with the shader chaos_minimap_hd (overlay data/shaders, vertex stage chaos_minimap_vertex), which moves
+#    water and lava: the picture tells the liquids by its alpha (255 plain, 245 water, 235 lava, 0 not explored), the shader writes alpha 1 back. A block is
+#    composed at most once per draw call and a changed block at most every 250 ms (the older picture is drawn meanwhile), so a step that brings new tiles does not
+#    stall a frame. Blocks held as HD pictures: an LRU of at least 24 (and twice the blocks in view), evictOldest; the flat 64 x 64 picture of every block stays
+#    and is the fallback. Filter: linear (smooth).
+#  * Smooth scroll: Minimap::draw, getTilePoint, getTilePosition and getTileRect take the camera's sub tile offset in tiles. UIMinimap::getSubTile follows the
+#    local player's walk offset while the camera is on the player's tile (walk offset over the sprite size), so the map glides through a step instead of jumping
+#    a tile; HD blocks take the exact shift, flat blocks the shift rounded to a pixel. UIMinimap:setFollowWalk(bool) (default on). One block more at the top and
+#    left is walked since the shift can bring it into view. The Lua pins and dots read getTilePoint, so they follow.
+#  * Lua: g_minimap.loadHdAtlas(dir), unloadHdAtlas(), setHdEnabled(bool), isHdEnabled(), setHdMinScale(px per tile), getHdSwatchCount(), getHdBlockCount(),
+#    getHdMaxBlocks(); UIMinimap:setFollowWalk(bool), isFollowWalk(), getSubTileX(), getSubTileY() (the camera's sub tile offset in tiles, so the Lua dot of the player stays at the camera).
+#  * Options (Options > Graphics, under HD monsters): "HD minimap" (dataset `hdMinimap`, default on, no restart; overlay module game_minimaphd) and "Monsters on the
+#    minimap" (dataset `minimapRadar`, default on; overlay module game_minimapdots, server radar.lua).
+# Checked: applies after 0001-0196 on the base client tree (no fuzz); minimap.cpp, uiminimap.cpp, luafunctions_client.cpp, map.cpp and client.cpp pass
+# g++ -std=c++20 -fsyntax-only; the header passes client/tools/chaosminimaphd_test.cpp (also with -fsanitize=address,undefined); the shaders pass glslangValidator
+# (desktop 1.10 and ES 1.00). Not built, linked or run in a client.
+diff -ruN a/mods/client_settings/classes/dataset.lua b/mods/client_settings/classes/dataset.lua
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1099,6 +1099,26 @@
+ 		end,
+ 	},
+ 
++	-- Chaos (base patch 0197): HD minimap (overlay module game_minimaphd, g_minimap.setHdEnabled); no restart
++	hdMinimap = {
++		value = true,
++		apply = function(value)
++			local m = modules.game_minimaphd
++			if m and m.onOption then m.onOption(value) end
++			return true
++		end,
++	},
++
++	-- Chaos (base patch 0197): monster dots on the minimap (overlay module game_minimapdots, server radar.lua)
++	minimapRadar = {
++		value = true,
++		apply = function(value)
++			local m = modules.game_minimapdots
++			if m and m.onOption then m.onOption(value) end
++			return true
++		end,
++	},
++
+ 	showSpells = {
+ 		value = true,
+         apply = function(value)
+diff -ruN a/mods/client_settings/options/graphics.otui b/mods/client_settings/options/graphics.otui
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -158,6 +158,72 @@
+         !tooltip: tr('Some monsters have a finer picture drawn at twice the detail. They keep their size on the screen.\nThe plain pictures come back when this is off.\nRestart the client to apply HD monsters.')
+ 
+     FlatPanel
++      // Chaos (base patch 0197, overlay module game_minimaphd): the minimap drawn from small pictures of the ground, walls and trees
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
++      anchors.left: parent.left
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
++
++      SettingsCheckBox
++        id: hdMinimap
++        size: 12 12
++        !text: tr('HD minimap')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        anchors.left: parent.left
++        anchors.top: parent.top
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        margin-top: 5
++        margin-left: 5
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('The explored map is drawn from small pictures of the real ground, walls and trees, with shadows and moving water and lava.\nThis shows from 2 pixels per tile up (zoom in once). The flat colours come back when this is off.')
++
++    FlatPanel
++      // Chaos (base patch 0197, overlay module game_minimapdots): monster dots on the minimap, from the server radar
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
++      anchors.left: parent.left
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
++
++      SettingsCheckBox
++        id: minimapRadar
++        size: 12 12
++        !text: tr('Monsters on the minimap')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        anchors.left: parent.left
++        anchors.top: parent.top
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        margin-top: 5
++        margin-left: 5
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Shows the monsters within 30 tiles as red dots on the minimap, a boss as a bigger dot with a gold ring, NPCs in blue, your party in green and you in white.\nThe server sends the positions while the minimap is open.')
++
++    FlatPanel
+       size: 505 22
+       anchors.top: prev.bottom
+       anchors.right: parent.right
+diff -ruN a/src/client/chaosminimaphd.h b/src/client/chaosminimaphd.h
+--- /dev/null
++++ b/src/client/chaosminimaphd.h
+@@ -0,0 +1,579 @@
++// Cinders of Chaos (base patch 0197): the HD minimap. Pure and header-only so client/tools/chaosminimaphd_test.cpp can run it
++// without the engine.
++// The minimap keeps, per explored tile, the client ids of its ground, ground border, decoration and top solid item (the recipe).
++// A block of 64 x 64 tiles is composed from the swatch atlas (client/tools/gen_minimap_swatches.py: one picture of 8 px per tile
++// cell for every item type of the map) into one RGBA picture of 8 px per tile (512 x 512), then shaded (shadows, rim, water and
++// lava tint), then reduced to the texel density the zoom needs. The engine file only turns the result into a texture.
++//   * Index file (text, written by gen_minimap_swatches.py):
++//       chaos-minimap-hd 1
++//       atlas <png name> <width> <height> <cell px> <sha256>
++//       <client id> <x> <y> <w h as two digits> <flags hex>     flags: 1 solid, 2 tall, 4 water, 8 lava
++//   * An id without a swatch, a tile without a recipe (a minimap file of version 1) and an atlas that did not load all give the
++//     flat colour square of the old minimap, so nothing is ever blank that the old map showed.
++//   * Alpha of the composed picture: 0 not explored, 255 explored, kWaterAlpha / kLavaAlpha explored liquid ground. The fragment
++//     shader chaos_minimap_hd reads the two codes to move water and lava, and writes alpha 1; a linear filter between a liquid
++//     and a plain tile gives a value between, which the shader reads as a weaker effect.
++#ifndef CHAOSMINIMAPHD_H
++#define CHAOSMINIMAPHD_H
++
++#include <algorithm>
++#include <cmath>
++#include <cstdint>
++#include <cstdlib>
++#include <cstring>
++#include <sstream>
++#include <string>
++#include <unordered_map>
++#include <vector>
++
++namespace chaos {
++namespace minimaphd {
++
++constexpr int kBlockTiles = 64;           // tiles a side of a minimap block (MMBLOCK_SIZE)
++constexpr int kCellPx = 8;                // composed px per tile
++constexpr int kFullPx = kBlockTiles * kCellPx;
++constexpr int kMargin = 2;                // tiles of neighbours read round a block (a tall item spills up and to the left)
++constexpr int kGrid = kBlockTiles + 2 * kMargin;
++constexpr int kPad = 8;                   // px of mask margin for the shadow and blur passes
++constexpr uint8_t kWaterAlpha = 245;
++constexpr uint8_t kLavaAlpha = 235;
++constexpr float kSolidBoost = 1.55f;      // a thin wall or tree keeps its body when the picture is reduced
++
++enum SwatchFlag : uint8_t { FlagSolid = 1, FlagTall = 2, FlagWater = 4, FlagLava = 8 };
++
++struct Recipe {
++    uint16_t ground = 0, border = 0, decor = 0, solid = 0;
++    bool empty() const { return !ground && !border && !decor && !solid; }
++};
++
++// one tile as the composer reads it: the recipe, the flat 8 bit minimap colour (255 none) and whether it was explored
++struct GridTile {
++    Recipe r;
++    uint8_t color = 255;
++    bool seen = false;
++};
++
++struct Swatch {
++    uint16_t x = 0, y = 0;
++    uint8_t w = 1, h = 1, flags = 0;
++};
++
++// the colour of the 6x6x6 cube byte the old minimap draws (Color::from8bit)
++inline void cubeColor(int c, uint8_t& r, uint8_t& g, uint8_t& b)
++{
++    r = (uint8_t)((c / 36) % 6 * 51);
++    g = (uint8_t)((c / 6) % 6 * 51);
++    b = (uint8_t)(c % 6 * 51);
++}
++
++class Atlas {
++public:
++    // true when the text is a usable index; err names the first problem
++    bool parseIndex(const std::string& text, std::string& err)
++    {
++        m_sw.clear();
++        m_ready = false;
++        std::istringstream in(text);
++        std::string line;
++        if (!std::getline(in, line) || trim(line) != "chaos-minimap-hd 1") {
++            err = "bad index header";
++            return false;
++        }
++        if (!std::getline(in, line)) {
++            err = "no atlas line";
++            return false;
++        }
++        {
++            std::istringstream ls(line);
++            std::string tag, sha;
++            if (!(ls >> tag >> m_file >> m_w >> m_h >> m_cell >> sha) || tag != "atlas" || m_w <= 0 || m_h <= 0 || m_cell != kCellPx) {
++                err = "bad atlas line";
++                return false;
++            }
++        }
++        while (std::getline(in, line)) {
++            line = trim(line);
++            if (line.empty())
++                continue;
++            std::istringstream ls(line);
++            long id, x, y, flags;
++            std::string wh;
++            std::string fl;
++            if (!(ls >> id >> x >> y >> wh >> fl) || wh.size() != 2 || id < 0 || id > 65535) {
++                err = "bad item line: " + line;
++                return false;
++            }
++            Swatch s;
++            s.w = (uint8_t)(wh[0] - '0');
++            s.h = (uint8_t)(wh[1] - '0');
++            flags = std::strtol(fl.c_str(), nullptr, 16);
++            if (s.w < 1 || s.w > 9 || s.h < 1 || s.h > 9 || x < 0 || y < 0 || x + s.w * m_cell > m_w || y + s.h * m_cell > m_h) {
++                err = "swatch outside the atlas: " + line;
++                return false;
++            }
++            s.x = (uint16_t)x;
++            s.y = (uint16_t)y;
++            s.flags = (uint8_t)(flags & 15);
++            m_sw[(uint16_t)id] = s;
++        }
++        err.clear();
++        return true;
++    }
++
++    // the decoded atlas picture, RGBA; the index and the picture must agree on the size
++    bool setPixels(std::vector<uint8_t> rgba, int w, int h)
++    {
++        if (w != m_w || h != m_h || rgba.size() != (size_t)w * h * 4)
++            return false;
++        m_pix = std::move(rgba);
++        m_ready = !m_sw.empty();
++        return m_ready;
++    }
++
++    void clear()
++    {
++        m_sw.clear();
++        m_pix.clear();
++        m_ready = false;
++    }
++
++    bool ready() const { return m_ready; }
++    size_t count() const { return m_sw.size(); }
++    const std::string& file() const { return m_file; }
++    int width() const { return m_w; }
++    int height() const { return m_h; }
++
++    const Swatch* find(uint16_t id) const
++    {
++        if (!m_ready || !id)
++            return nullptr;
++        auto it = m_sw.find(id);
++        return it == m_sw.end() ? nullptr : &it->second;
++    }
++    uint8_t flagsOf(uint16_t id) const
++    {
++        const Swatch* s = find(id);
++        return s ? s->flags : 0;
++    }
++    const uint8_t* pixel(int x, int y) const { return &m_pix[((size_t)y * m_w + x) * 4]; }
++
++private:
++    static std::string trim(const std::string& s)
++    {
++        size_t a = s.find_first_not_of(" \t\r\n");
++        if (a == std::string::npos)
++            return std::string();
++        size_t b = s.find_last_not_of(" \t\r\n");
++        return s.substr(a, b - a + 1);
++    }
++    std::unordered_map<uint16_t, Swatch> m_sw;
++    std::vector<uint8_t> m_pix;
++    std::string m_file;
++    int m_w = 0, m_h = 0, m_cell = 0;
++    bool m_ready = false;
++};
++
++// ---------------------------------------------------------------- composing
++namespace detail {
++
++inline const GridTile& gridAt(const GridTile* grid, int tx, int ty)   // tile coordinates inside the block, -kMargin .. 63 + kMargin
++{
++    return grid[(ty + kMargin) * kGrid + (tx + kMargin)];
++}
++
++inline bool inGrid(int tx, int ty)
++{
++    return tx >= -kMargin && ty >= -kMargin && tx < kBlockTiles + kMargin && ty < kBlockTiles + kMargin;
++}
++
++// blit a swatch whose bottom right cell sits on tile (tx, ty); only pixels of explored tiles inside the block are written
++inline void blit(const Atlas& atlas, const Swatch& s, const GridTile* grid, int tx, int ty, bool boost, uint8_t* out)
++{
++    int pw = s.w * kCellPx, ph = s.h * kCellPx;
++    int ox = (tx + 1) * kCellPx - pw;
++    int oy = (ty + 1) * kCellPx - ph;
++    int boostK = boost ? (int)(kSolidBoost * 256.0f) : 256;
++    for (int sy = 0; sy < ph; ++sy) {
++        int py = oy + sy;
++        if (py < 0 || py >= kFullPx)
++            continue;
++        for (int sx = 0; sx < pw; ++sx) {
++            int px = ox + sx;
++            if (px < 0 || px >= kFullPx)
++                continue;
++            const uint8_t* src = atlas.pixel(s.x + sx, s.y + sy);
++            if (!src[3])
++                continue;
++            if (!gridAt(grid, px / kCellPx, py / kCellPx).seen)
++                continue;
++            int a = std::min(256, (src[3] * boostK) >> 8);      // 0..256
++            if (src[3] == 255)
++                a = 256;
++            uint8_t* dst = &out[((size_t)py * kFullPx + px) * 4];
++            for (int k = 0; k < 3; ++k)
++                dst[k] = (uint8_t)((dst[k] * (256 - a) + src[k] * a + 128) >> 8);
++            dst[3] = 255;
++        }
++    }
++}
++
++struct Plane {
++    int w = 0, h = 0;
++    std::vector<float> v;
++    Plane() = default;
++    Plane(int w_, int h_) : w(w_), h(h_), v((size_t)w_ * h_, 0.0f) {}
++    float& at(int x, int y) { return v[(size_t)y * w + x]; }
++    float get(int x, int y) const
++    {
++        if (x < 0 || y < 0 || x >= w || y >= h)
++            return 0.0f;
++        return v[(size_t)y * w + x];
++    }
++};
++
++// separable box blur, radius r, edges read as 0 (a running sum, so the cost does not grow with r)
++inline Plane boxBlur(const Plane& in, int r)
++{
++    Plane tmp(in.w, in.h), out(in.w, in.h);
++    const float inv = 1.0f / (2 * r + 1);
++    for (int y = 0; y < in.h; ++y) {
++        const float* row = &in.v[(size_t)y * in.w];
++        float* dst = &tmp.v[(size_t)y * in.w];
++        float s = 0;
++        for (int k = 0; k <= r && k < in.w; ++k)
++            s += row[k];
++        for (int x = 0; x < in.w; ++x) {
++            dst[x] = s * inv;
++            if (x + r + 1 < in.w)
++                s += row[x + r + 1];
++            if (x - r >= 0)
++                s -= row[x - r];
++        }
++    }
++    for (int x = 0; x < in.w; ++x) {
++        float s = 0;
++        for (int k = 0; k <= r && k < in.h; ++k)
++            s += tmp.v[(size_t)k * in.w + x];
++        for (int y = 0; y < in.h; ++y) {
++            out.v[(size_t)y * in.w + x] = s * inv;
++            if (y + r + 1 < in.h)
++                s += tmp.v[(size_t)(y + r + 1) * in.w + x];
++            if (y - r >= 0)
++                s -= tmp.v[(size_t)(y - r) * in.w + x];
++        }
++    }
++    return out;
++}
++
++// [1 2 1] / 4 on both axes: a soft edge for the shadow (the outermost ring stays 0: the planes carry kPad px of margin)
++inline Plane softEdge(const Plane& in)
++{
++    Plane tmp(in.w, in.h), out(in.w, in.h);
++    for (int y = 0; y < in.h; ++y) {
++        const float* r = &in.v[(size_t)y * in.w];
++        float* d = &tmp.v[(size_t)y * in.w];
++        for (int x = 1; x < in.w - 1; ++x)
++            d[x] = 0.25f * r[x - 1] + 0.5f * r[x] + 0.25f * r[x + 1];
++    }
++    for (int y = 1; y < in.h - 1; ++y) {
++        const float* up = &tmp.v[(size_t)(y - 1) * in.w];
++        const float* mid = &tmp.v[(size_t)y * in.w];
++        const float* dn = &tmp.v[(size_t)(y + 1) * in.w];
++        float* d = &out.v[(size_t)y * in.w];
++        for (int x = 0; x < in.w; ++x)
++            d[x] = 0.25f * up[x] + 0.5f * mid[x] + 0.25f * dn[x];
++    }
++    return out;
++}
++
++} // namespace detail
++
++constexpr int kMaskPx = kFullPx + 2 * kPad;
++
++struct ComposeStats {
++    int ground = 0, flat = 0, solid = 0, tall = 0, water = 0, lava = 0;
++};
++
++// grid: kGrid x kGrid tiles, the block's tile (0, 0) at grid[kMargin * kGrid + kMargin]; out: kFullPx x kFullPx RGBA
++inline ComposeStats composeBlock(const Atlas& atlas, const GridTile* grid, uint8_t* out)
++{
++    using namespace detail;
++    ComposeStats st;
++    std::memset(out, 0, (size_t)kFullPx * kFullPx * 4);
++
++    // 1. flat colour square, ground, border, decoration (borders and decorations alpha over)
++    for (int ty = 0; ty < kBlockTiles; ++ty) {
++        for (int tx = 0; tx < kBlockTiles; ++tx) {
++            const GridTile& t = gridAt(grid, tx, ty);
++            if (!t.seen)
++                continue;
++            uint8_t r = 24, g = 24, b = 24;
++            if (t.color != 255)
++                cubeColor(t.color, r, g, b);
++            for (int y = 0; y < kCellPx; ++y) {
++                uint8_t* p = &out[((size_t)(ty * kCellPx + y) * kFullPx + tx * kCellPx) * 4];
++                for (int x = 0; x < kCellPx; ++x, p += 4) {
++                    p[0] = r;
++                    p[1] = g;
++                    p[2] = b;
++                    p[3] = 255;
++                }
++            }
++            if (!atlas.find(t.r.ground))
++                ++st.flat;
++        }
++    }
++    for (int ty = -kMargin; ty < kBlockTiles + kMargin; ++ty) {
++        for (int tx = -kMargin; tx < kBlockTiles + kMargin; ++tx) {
++            const GridTile& t = gridAt(grid, tx, ty);
++            if (!t.seen)
++                continue;
++            if (const Swatch* s = atlas.find(t.r.ground)) {
++                blit(atlas, *s, grid, tx, ty, false, out);
++                ++st.ground;
++            }
++            if (const Swatch* s = atlas.find(t.r.border))
++                blit(atlas, *s, grid, tx, ty, false, out);
++            if (const Swatch* s = atlas.find(t.r.decor))
++                blit(atlas, *s, grid, tx, ty, false, out);
++        }
++    }
++    // 2. solids on top, with the alpha boost
++    for (int ty = -kMargin; ty < kBlockTiles + kMargin; ++ty) {
++        for (int tx = -kMargin; tx < kBlockTiles + kMargin; ++tx) {
++            const GridTile& t = gridAt(grid, tx, ty);
++            if (!t.seen)
++                continue;
++            if (const Swatch* s = atlas.find(t.r.solid)) {
++                blit(atlas, *s, grid, tx, ty, true, out);
++                ++st.solid;
++            }
++        }
++    }
++
++    // 3. masks at pixel level (bit 1 tall, 2 water, 4 lava), kPad px of margin round the block
++    std::vector<uint8_t> mk((size_t)kMaskPx * kMaskPx, 0);
++    bool anyTall = false, anyWater = false, anyLava = false;
++    for (int ty = -kMargin; ty < kBlockTiles + kMargin; ++ty) {
++        for (int tx = -kMargin; tx < kBlockTiles + kMargin; ++tx) {
++            const GridTile& t = gridAt(grid, tx, ty);
++            if (!t.seen)
++                continue;
++            bool isTall = (atlas.flagsOf(t.r.solid) & FlagTall) != 0;
++            uint8_t gf = atlas.flagsOf(t.r.ground);
++            bool isWater = (gf & FlagWater) != 0, isLava = (gf & FlagLava) != 0;
++            if (!isTall && !isWater && !isLava)
++                continue;
++            anyTall |= isTall;
++            anyWater |= isWater;
++            anyLava |= isLava;
++            uint8_t bits = (uint8_t)((isTall ? 1 : 0) | (isWater ? 2 : 0) | (isLava ? 4 : 0));
++            for (int y = 0; y < kCellPx; ++y) {
++                int py = ty * kCellPx + y + kPad;
++                if (py < 0 || py >= kMaskPx)
++                    continue;
++                for (int x = 0; x < kCellPx; ++x) {
++                    int px = tx * kCellPx + x + kPad;
++                    if (px >= 0 && px < kMaskPx)
++                        mk[(size_t)py * kMaskPx + px] = bits;
++                }
++            }
++            if (ty >= 0 && tx >= 0 && ty < kBlockTiles && tx < kBlockTiles) {
++                st.tall += isTall;
++                st.water += isWater;
++                st.lava += isLava;
++            }
++        }
++    }
++
++    // soft passes at half resolution (4 px per tile, 2 px of mask margin per side kept): shadow, contact shadow, lava glow
++    constexpr int kHalf = kMaskPx / 2;
++    Plane shade, ao, glow;
++    if (anyTall || anyLava) {
++        Plane t2(kHalf, kHalf), l2(kHalf, kHalf);
++        for (int y = 0; y < kHalf; ++y) {
++            const uint8_t* r0 = &mk[(size_t)(2 * y) * kMaskPx];
++            const uint8_t* r1 = r0 + kMaskPx;
++            for (int x = 0; x < kHalf; ++x) {
++                t2.v[(size_t)y * kHalf + x] = 0.25f * ((r0[2 * x] & 1) + (r0[2 * x + 1] & 1) + (r1[2 * x] & 1) + (r1[2 * x + 1] & 1));
++                l2.v[(size_t)y * kHalf + x] = 0.25f * (((r0[2 * x] >> 2) & 1) + ((r0[2 * x + 1] >> 2) & 1) + ((r1[2 * x] >> 2) & 1) + ((r1[2 * x + 1] >> 2) & 1));
++            }
++        }
++        if (anyTall) {
++            Plane sh(kHalf, kHalf);
++            for (int y = 1; y < kHalf; ++y) {
++                const float* cur = &t2.v[(size_t)y * kHalf];
++                const float* up = &t2.v[(size_t)(y - 1) * kHalf];
++                float* dst = &sh.v[(size_t)y * kHalf];
++                for (int x = 1; x < kHalf; ++x)
++                    dst[x] = cur[x] > 0.5f ? 0.0f : std::max(up[x - 1], 0.55f * cur[x - 1]);
++            }
++            shade = softEdge(sh);
++            ao = boxBlur(t2, 2);
++            for (size_t i = 0; i < ao.v.size(); ++i)
++                if (t2.v[i] > 0.5f)
++                    ao.v[i] = 0.0f;
++        }
++        if (anyLava) {
++            glow = boxBlur(boxBlur(l2, 2), 1);
++            for (size_t i = 0; i < glow.v.size(); ++i)
++                if (l2.v[i] > 0.5f)
++                    glow.v[i] = 0.0f;
++        }
++    }
++
++    // 4. shading per pixel of explored tiles
++    for (int y = 0; y < kFullPx; ++y) {
++        const int my = y + kPad;
++        const uint8_t* m0 = &mk[(size_t)(my - 1) * kMaskPx + kPad];
++        const uint8_t* m1 = &mk[(size_t)my * kMaskPx + kPad];
++        const uint8_t* m2 = &mk[(size_t)(my + 1) * kMaskPx + kPad];
++        for (int x = 0; x < kFullPx; ++x) {
++            uint8_t* p = &out[((size_t)y * kFullPx + x) * 4];
++            if (!p[3])
++                continue;
++            const int hx = (x + kPad) / 2, hy = my / 2;
++            float c[3] = {(float)p[0], (float)p[1], (float)p[2]};
++            if (anyTall) {
++                float m;
++                if (m1[x] & 1) {
++                    m = 1.0f;
++                    if (!(m0[x - 1] & 1))
++                        m *= 1.16f;                     // north west rim
++                    if (!(m2[x + 1] & 1))
++                        m *= 0.80f;                     // south east edge
++                    if ((m1[x - 1] & 1) + (m1[x + 1] & 1) + (m0[x] & 1) + (m2[x] & 1) < 4)
++                        m *= 0.94f;                     // a thin dark line where rock meets open ground
++                } else {
++                    m = (1.0f - 0.52f * shade.v[(size_t)hy * kHalf + hx]) * (1.0f - 0.20f * ao.v[(size_t)hy * kHalf + hx]);
++                }
++                for (int i = 0; i < 3; ++i)
++                    c[i] *= m;
++            }
++            if (anyWater && (m1[x] & 2)) {
++                static const float tint[3] = {24, 84, 170};
++                for (int i = 0; i < 3; ++i)
++                    c[i] = c[i] * 0.82f + tint[i] * 0.18f;
++                p[3] = kWaterAlpha;
++            } else if (anyLava && (m1[x] & 4)) {
++                static const float tint[3] = {255, 110, 20};
++                for (int i = 0; i < 3; ++i)
++                    c[i] = c[i] * 0.70f + tint[i] * 0.30f;
++                p[3] = kLavaAlpha;
++            } else if (anyLava) {
++                float g = glow.v[(size_t)hy * kHalf + hx];
++                c[0] += 70.0f * g;
++                c[1] += 25.0f * g;
++            }
++            float grey = (c[0] + c[1] + c[2]) / 3.0f;
++            for (int i = 0; i < 3; ++i) {
++                float v = grey + (c[i] - grey) * 1.10f;
++                p[i] = (uint8_t)std::min(255.0f, std::max(0.0f, v + 0.5f));
++            }
++        }
++    }
++    return st;
++}
++
++// reduce a composed block to dstPx x dstPx (dstPx 2, 4 or 8 per tile times 64): box average, colour weighted by alpha
++inline void downscale(const uint8_t* src, int dstPx, uint8_t* dst)
++{
++    int f = kFullPx / dstPx;
++    for (int y = 0; y < dstPx; ++y) {
++        for (int x = 0; x < dstPx; ++x) {
++            float sr = 0, sg = 0, sb = 0, sa = 0;
++            for (int j = 0; j < f; ++j) {
++                for (int i = 0; i < f; ++i) {
++                    const uint8_t* p = &src[((size_t)(y * f + j) * kFullPx + (x * f + i)) * 4];
++                    float a = p[3];
++                    sr += p[0] * a;
++                    sg += p[1] * a;
++                    sb += p[2] * a;
++                    sa += a;
++                }
++            }
++            uint8_t* o = &dst[((size_t)y * dstPx + x) * 4];
++            if (sa <= 0) {
++                o[0] = o[1] = o[2] = o[3] = 0;
++                continue;
++            }
++            o[0] = (uint8_t)std::lround(sr / sa);
++            o[1] = (uint8_t)std::lround(sg / sa);
++            o[2] = (uint8_t)std::lround(sb / sa);
++            o[3] = (uint8_t)std::lround(sa / (f * f));
++        }
++    }
++}
++
++// ---------------------------------------------------------------- small rules the engine file asks
++// the texel density of a block picture for a zoom: 2 px per tile up to scale 3, 4 up to 7, else 8 (0 = draw the flat map)
++inline int lodFor(float scale, float minScale)
++{
++    if (scale + 0.001f < minScale || scale < 2.0f)
++        return 0;
++    if (scale < 4.0f)
++        return 2;
++    if (scale < 8.0f)
++        return 4;
++    return 8;
++}
++
++// the sub tile shift of the camera while the player walks: the walk offset in sprite pixels (0 at rest, towards the old tile
++// while walking) over the sprite size; the camera follows the sprite, not the tile
++inline float subTile(int walkOffsetPx, int spriteSize)
++{
++    if (spriteSize <= 0)
++        return 0.0f;
++    float v = (float)walkOffsetPx / (float)spriteSize;
++    return std::max(-1.0f, std::min(1.0f, v));
++}
++
++// the least recently used picture goes first; a picture used this frame stays. Returns indexes into stamps to drop so that at
++// most `limit` pictures are kept (stamps: the frame each picture was last drawn, 0 for none)
++inline std::vector<size_t> evictOldest(const std::vector<uint64_t>& stamps, uint64_t frame, size_t limit)
++{
++    std::vector<size_t> held;
++    for (size_t i = 0; i < stamps.size(); ++i)
++        if (stamps[i] != 0)
++            held.push_back(i);
++    std::vector<size_t> drop;
++    if (held.size() <= limit)
++        return drop;
++    std::sort(held.begin(), held.end(), [&](size_t a, size_t b) { return stamps[a] != stamps[b] ? stamps[a] < stamps[b] : a < b; });
++    size_t over = held.size() - limit;
++    for (size_t i = 0; i < held.size() && drop.size() < over; ++i)
++        if (stamps[held[i]] != frame)
++            drop.push_back(held[i]);
++    return drop;
++}
++
++// the old minimap file (version 1) stores 3 bytes a tile (flags, colour, speed), the new one 11 (and the 4 ids); expand a v1
++// block so it loads as flat colour squares without a recipe
++constexpr int kTileBytesV1 = 3;
++constexpr int kTileBytesV2 = 11;
++inline void expandV1Block(const uint8_t* v1, uint8_t* v2)
++{
++    for (int i = 0; i < kBlockTiles * kBlockTiles; ++i) {
++        std::memcpy(v2 + (size_t)i * kTileBytesV2, v1 + (size_t)i * kTileBytesV1, kTileBytesV1);
++        std::memset(v2 + (size_t)i * kTileBytesV2 + kTileBytesV1, 0, kTileBytesV2 - kTileBytesV1);
++    }
++}
++
++// the liquid shimmer of the shader, written here so the test can hold the shader's decoding to it: alpha code -> (water, lava)
++// weights, 0..1 each. Plain tiles (alpha 255) give 0, 0; the edge to an unexplored tile (alpha below 0.9) gives 0, 0.
++inline void liquidWeights(float alpha, float& water, float& lava)
++{
++    float d = 1.0f - alpha;
++    water = lava = 0.0f;
++    if (alpha < 0.88f)
++        return;
++    float lv = std::min(1.0f, std::max(0.0f, (d - 0.04f) / 0.04f));
++    float wt = std::min(1.0f, std::max(0.0f, d / 0.04f));
++    lava = lv;
++    water = wt * (1.0f - lv);
++}
++
++} // namespace minimaphd
++} // namespace chaos
++
++#endif
+diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -258,6 +258,15 @@
+     g_lua.bindSingletonFunction("g_minimap", "loadOtmm", &Minimap::loadOtmm, &g_minimap);
+     g_lua.bindSingletonFunction("g_minimap", "saveOtmm", &Minimap::saveOtmm, &g_minimap);
+     g_lua.bindSingletonFunction("g_minimap", "clearArea", &Minimap::clearArea, &g_minimap);
++    // Chaos (0197): the HD minimap
++    g_lua.bindSingletonFunction("g_minimap", "loadHdAtlas", &Minimap::loadHdAtlas, &g_minimap);
++    g_lua.bindSingletonFunction("g_minimap", "unloadHdAtlas", &Minimap::unloadHdAtlas, &g_minimap);
++    g_lua.bindSingletonFunction("g_minimap", "setHdEnabled", &Minimap::setHdEnabled, &g_minimap);
++    g_lua.bindSingletonFunction("g_minimap", "isHdEnabled", &Minimap::isHdEnabled, &g_minimap);
++    g_lua.bindSingletonFunction("g_minimap", "setHdMinScale", &Minimap::setHdMinScale, &g_minimap);
++    g_lua.bindSingletonFunction("g_minimap", "getHdSwatchCount", &Minimap::getHdSwatchCount, &g_minimap);
++    g_lua.bindSingletonFunction("g_minimap", "getHdBlockCount", &Minimap::getHdBlockCount, &g_minimap);
++    g_lua.bindSingletonFunction("g_minimap", "getHdMaxBlocks", &Minimap::getHdMaxBlocks, &g_minimap);
+ 
+     g_lua.registerSingletonClass("g_creatures");
+     g_lua.bindSingletonFunction("g_creatures", "getCreatures", &CreatureManager::getCreatures, &g_creatures);
+@@ -1294,6 +1303,10 @@
+     g_lua.bindClassMemberFunction<UIMinimap>("getMaxZoom", &UIMinimap::getMaxZoom);
+     g_lua.bindClassMemberFunction<UIMinimap>("getZoom", &UIMinimap::getZoom);
+     g_lua.bindClassMemberFunction<UIMinimap>("getScale", &UIMinimap::getScale);
++    g_lua.bindClassMemberFunction<UIMinimap>("setFollowWalk", &UIMinimap::setFollowWalk); // Chaos (0197)
++    g_lua.bindClassMemberFunction<UIMinimap>("isFollowWalk", &UIMinimap::isFollowWalk);
++    g_lua.bindClassMemberFunction<UIMinimap>("getSubTileX", &UIMinimap::getSubTileX);
++    g_lua.bindClassMemberFunction<UIMinimap>("getSubTileY", &UIMinimap::getSubTileY);
+     g_lua.bindClassMemberFunction<UIMinimap>("anchorPosition", &UIMinimap::anchorPosition);
+     g_lua.bindClassMemberFunction<UIMinimap>("fillPosition", &UIMinimap::fillPosition);
+     g_lua.bindClassMemberFunction<UIMinimap>("centerInPosition", &UIMinimap::centerInPosition);
+diff -ruN a/src/client/minimap.cpp b/src/client/minimap.cpp
+--- a/src/client/minimap.cpp
++++ b/src/client/minimap.cpp
+@@ -33,6 +33,9 @@
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/image.h>
+ #include <framework/graphics/framebuffermanager.h>
++#include <framework/graphics/drawqueue.h>
++#include <framework/graphics/coordsbuffer.h>
++#include <framework/core/clock.h>
+ #include <framework/core/resourcemanager.h>
+ #include <framework/core/filestream.h>
+ #include <zlib.h>
+@@ -45,6 +48,9 @@
+ {
+     m_tiles.fill(MinimapTile());
+     m_texture.reset();
++    m_hdTexture.reset();
++    m_hdStamp = 0;
++    m_hdDirty = true;
+     m_mustUpdate = false;
+ }
+ 
+@@ -80,6 +86,9 @@
+ {
+     if(m_tiles[getTileIndex(x,y)].color != tile.color)
+         m_mustUpdate = true;
++    // Chaos (0197): the HD picture follows the colour and the recipe
++    if(m_tiles[getTileIndex(x,y)].color != tile.color || !m_tiles[getTileIndex(x,y)].sameRecipe(tile))
++        m_hdDirty = true;
+ 
+     m_tiles[getTileIndex(x,y)] = tile;
+ }
+@@ -99,6 +108,7 @@
+     std::lock_guard<std::mutex> lock(m_lock);
+     for (auto& tileBlocks : m_tileBlocks)
+         tileBlocks.clear();
++    m_hdBlocks.clear();
+ }
+ 
+ int Minimap::clearArea(const Position& from, const Position& to)
+@@ -130,7 +140,7 @@
+     return cleared;
+ }
+ 
+-void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color)
++void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color, const PointF& subTile)
+ {
+     if(screenRect.isEmpty())
+         return;
+@@ -147,14 +157,30 @@
+     Point off = Point((mapRect.size() * scale).toPoint() - screenRect.size().toPoint())/2;
+     Point start = screenRect.topLeft() -(mapRect.topLeft() - blockOff)*scale - off;
+ 
+-    for(int y = blockOff.y, ys = start.y;ys<screenRect.bottom();y += MMBLOCK_SIZE, ys += MMBLOCK_SIZE*scale) {
++    // Chaos (0197): the smooth scroll shifts the map by the camera's sub tile offset; the flat blocks take it rounded to a pixel,
++    // the HD blocks exactly. One block more at the top and left is walked, since the shift can bring it into view.
++    const PointF shiftF(-subTile.x * scale, -subTile.y * scale);
++    const Point shiftI((int)std::lround(shiftF.x), (int)std::lround(shiftF.y));
++    const PointF resid(shiftF.x - shiftI.x, shiftF.y - shiftI.y);
++    start += shiftI;
++    const int lod = (m_hdEnabled && m_atlas.ready()) ? chaos::minimaphd::lodFor(scale, m_hdMinScale) : 0;
++    ++m_hdFrame;
++    int composeBudget = 1;
++    size_t visibleBlocks = 0;
++    const float blockPx = MMBLOCK_SIZE * scale;
++
++    for(int y = blockOff.y - MMBLOCK_SIZE, ys = start.y - (int)blockPx;ys<screenRect.bottom();y += MMBLOCK_SIZE, ys += (int)blockPx) {
+         if(y < 0 || y >= 65536)
+             continue;
+ 
+-        for(int x = blockOff.x, xs = start.x;xs<screenRect.right();x += MMBLOCK_SIZE, xs += MMBLOCK_SIZE*scale) {
++        for(int x = blockOff.x - MMBLOCK_SIZE, xs = start.x - (int)blockPx;xs<screenRect.right();x += MMBLOCK_SIZE, xs += (int)blockPx) {
+             if(x < 0 || x >= 65536)
+                 continue;
+ 
++            // the extra block at the top and left is only drawn when the shift brought it into view
++            if(xs + (int)blockPx + 1 < screenRect.left() || ys + (int)blockPx + 1 < screenRect.top())
++                continue;
++
+             Position blockPos(x, y, mapCenter.z);
+             if(!hasBlock(blockPos))
+                 continue;
+@@ -162,6 +188,18 @@
+             MinimapBlock& block = getBlock(Position(x, y, mapCenter.z));
+             block.update();
+ 
++            if(lod && block.getTexture()) { // a block with no explored tile has no flat picture either
++                TexturePtr hd = hdTexture(block, blockPos, lod, composeBudget);
++                if(hd) {
++                    ++visibleBlocks;
++                    CoordsBuffer coords;
++                    coords.addRect(RectF(xs + resid.x, ys + resid.y, blockPx, blockPx), RectF(0, 0, hd->getWidth(), hd->getHeight()));
++                    const std::array<float, 4> params = {(float)(x % 256), (float)(y % 256), scale, 0.f};
++                    g_drawQueue->add(std::make_unique<DrawQueueItemImageWithShader>(coords, hd, Color::white, "chaos_minimap_hd", params));
++                    continue;
++                }
++            }
++
+             const TexturePtr& tex = block.getTexture();
+             if(tex) {
+                 Rect src(0, 0, MMBLOCK_SIZE, MMBLOCK_SIZE);
+@@ -173,9 +211,11 @@
+     }
+ 
+     g_drawQueue->setClip(drawQueueStart, screenRect);
++    if(lod)
++        trimHd(std::max<size_t>(m_hdMaxBlocks, visibleBlocks * 2 + 4));
+ }
+ 
+-Point Minimap::getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale)
++Point Minimap::getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const PointF& subTile)
+ {
+     if(screenRect.isEmpty() || pos.z != mapCenter.z)
+         return Point(-1,-1);
+@@ -183,10 +223,11 @@
+     Rect mapRect = calcMapRect(screenRect, mapCenter, scale);
+     Point off = Point((mapRect.size() * scale).toPoint() - screenRect.size().toPoint())/2;
+     Point posoff = (Point(pos.x,pos.y) - mapRect.topLeft())*scale;
++    posoff -= Point((int)std::lround(subTile.x * scale), (int)std::lround(subTile.y * scale)); // Chaos (0197)
+     return posoff + screenRect.topLeft() - off + (Point(1,1)*scale)/2;
+ }
+ 
+-Position Minimap::getTilePosition(const Point& point, const Rect& screenRect, const Position& mapCenter, float scale)
++Position Minimap::getTilePosition(const Point& point, const Rect& screenRect, const Position& mapCenter, float scale, const PointF& subTile)
+ {
+     if(screenRect.isEmpty())
+         return Position();
+@@ -194,17 +235,23 @@
+     Rect mapRect = calcMapRect(screenRect, mapCenter, scale);
+     Point off = Point((mapRect.size() * scale).toPoint() - screenRect.size().toPoint())/2;
+     Point pos2d = (point - screenRect.topLeft() + off)/scale + mapRect.topLeft();
++    if(subTile.x != 0.f || subTile.y != 0.f) { // Chaos (0197): the map is shifted by the sub tile offset
++        const Point rel = point - screenRect.topLeft() + off;
++        const Point tl = mapRect.topLeft();
++        PointF f(rel.x / scale + tl.x + subTile.x, rel.y / scale + tl.y + subTile.y);
++        pos2d = Point((int)std::floor(f.x), (int)std::floor(f.y));
++    }
+     return Position(pos2d.x, pos2d.y, mapCenter.z);
+ }
+ 
+-Rect Minimap::getTileRect(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale)
++Rect Minimap::getTileRect(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const PointF& subTile)
+ {
+     if(screenRect.isEmpty() || pos.z != mapCenter.z)
+         return Rect();
+ 
+     int tileSize = g_sprites.spriteSize() * scale;
+     Rect tileRect(0,0,tileSize, tileSize);
+-    tileRect.moveCenter(getTilePoint(pos, screenRect, mapCenter, scale));
++    tileRect.moveCenter(getTilePoint(pos, screenRect, mapCenter, scale, subTile));
+     return tileRect;
+ }
+ 
+@@ -216,6 +263,178 @@
+     return mapRect;
+ }
+ 
++// Chaos (0197): the recipe of a tile for the HD minimap, the client ids of its ground, its ground border, the top decoration and
++// the top solid. Only items that belong to the map count (creatures and things a player drops or moves do not): a decoration is a
++// static thing (bottom, top) or one that cannot be moved; a solid blocks walking and cannot be picked up.
++static void chaosRecipe(const TilePtr& tile, MinimapTile& out)
++{
++    for(const ThingPtr& thing : tile->getThings()) {
++        if(!thing || !thing->isItem())
++            continue;
++        uint32 id = thing->getId();
++        if(id == 0 || id > 65535)
++            continue;
++        if(thing->isGround())
++            out.ground = id;
++        else if(thing->isGroundBorder())
++            out.border = id;
++        else if(thing->isNotWalkable() && !thing->isPickupable())
++            out.solid = id;
++        else if(thing->isStatic() || thing->isNotMoveable())
++            out.decor = id;
++    }
++}
++
++int Minimap::loadHdAtlas(const std::string& dir)
++{
++    unloadHdAtlas();
++    try {
++        std::string text = g_resources.readFileContents(dir + "/index.txt");
++        std::string err;
++        if(!m_atlas.parseIndex(text, err)) {
++            g_logger.error(stdext::format("minimap HD index '%s': %s", dir, err));
++            m_atlas.clear();
++            return 0;
++        }
++        ImagePtr image = Image::load(dir + "/" + m_atlas.file());
++        if(!image || image->getBpp() != 4 || !m_atlas.setPixels(image->getPixels(), image->getWidth(), image->getHeight())) {
++            g_logger.error(stdext::format("minimap HD atlas '%s' does not match its index", m_atlas.file()));
++            m_atlas.clear();
++            return 0;
++        }
++    } catch(stdext::exception& e) {
++        g_logger.error(stdext::format("failed to load the minimap HD atlas: %s", e.what()));
++        m_atlas.clear();
++        return 0;
++    }
++    std::lock_guard<std::mutex> lock(m_lock);
++    for(auto& tileBlocks : m_tileBlocks)
++        for(auto& it : tileBlocks)
++            it.second->mustUpdateHd();
++    return (int)m_atlas.count();
++}
++
++void Minimap::unloadHdAtlas()
++{
++    m_atlas.clear();
++    trimHd(0);
++}
++
++void Minimap::setHdEnabled(bool on)
++{
++    if(on == m_hdEnabled)
++        return;
++    m_hdEnabled = on;
++    if(!on)
++        trimHd(0);
++}
++
++// drop the HD pictures beyond `keep` blocks, the least recently drawn first (a block drawn in the current call stays)
++void Minimap::trimHd(size_t keep)
++{
++    if(m_hdBlocks.empty())
++        return;
++    std::vector<uint64_t> stamps;
++    stamps.reserve(m_hdBlocks.size());
++    for(const MinimapBlock_ptr& b : m_hdBlocks)
++        stamps.push_back(b->m_hdTexture ? std::max<uint64_t>(b->m_hdStamp, 1) : 0);
++    std::vector<size_t> drop = keep == 0 ? std::vector<size_t>() : chaos::minimaphd::evictOldest(stamps, m_hdFrame, keep);
++    if(keep == 0) {
++        for(size_t i = 0; i < m_hdBlocks.size(); ++i)
++            drop.push_back(i);
++    }
++    std::vector<bool> gone(m_hdBlocks.size(), false);
++    for(size_t i : drop) {
++        MinimapBlock& b = *m_hdBlocks[i];
++        b.m_hdTexture.reset();
++        b.m_hdStamp = 0;
++        b.m_hdDirty = true;
++        gone[i] = true;
++    }
++    std::vector<MinimapBlock_ptr> kept;
++    for(size_t i = 0; i < m_hdBlocks.size(); ++i)
++        if(!gone[i])
++            kept.push_back(m_hdBlocks[i]);
++    m_hdBlocks.swap(kept);
++}
++
++// the HD picture of a block at the texel density of lod (2, 4 or 8 px per tile). A picture that is out of date is composed again
++// at once only when `budget` allows (one block a draw call, and a block at most every 250 ms, so a step that brings new tiles
++// does not stall a frame); the older picture is drawn meanwhile. Null: none yet, the caller draws the flat block.
++TexturePtr Minimap::hdTexture(MinimapBlock& block, const Position& blockPos, int lod, int& budget)
++{
++    using namespace chaos::minimaphd;
++    block.m_hdStamp = m_hdFrame;
++    const bool have = block.m_hdTexture != nullptr;
++    if(have && !block.m_hdDirty && block.m_hdLod == lod)
++        return block.m_hdTexture;
++    const int64_t now = (int64_t)g_clock.millis();
++    if(budget <= 0 || (have && block.m_hdLod == lod && now - block.m_hdBuiltAt < 250))
++        return block.m_hdTexture;
++    --budget;
++
++    // the block and a ring of tiles of its neighbours
++    std::vector<GridTile> grid((size_t)kGrid * kGrid);
++    {
++        std::lock_guard<std::mutex> lock(m_lock);
++        MinimapBlock_ptr nbs[3][3];
++        for(int by = -1; by <= 1; ++by) {
++            for(int bx = -1; bx <= 1; ++bx) {
++                int nx = blockPos.x + bx * MMBLOCK_SIZE, ny = blockPos.y + by * MMBLOCK_SIZE;
++                if(nx < 0 || ny < 0 || nx >= 65536 || ny >= 65536)
++                    continue;
++                Position np(nx, ny, blockPos.z);
++                if(hasBlock(np))
++                    nbs[by + 1][bx + 1] = m_tileBlocks[np.z][getBlockIndex(np)];
++            }
++        }
++        for(int ty = -kMargin; ty < kBlockTiles + kMargin; ++ty) {
++            for(int tx = -kMargin; tx < kBlockTiles + kMargin; ++tx) {
++                const int bx = tx < 0 ? -1 : (tx >= kBlockTiles ? 1 : 0);
++                const int by = ty < 0 ? -1 : (ty >= kBlockTiles ? 1 : 0);
++                const MinimapBlock_ptr& nb = nbs[by + 1][bx + 1];
++                if(!nb)
++                    continue;
++                const MinimapTile& mt = nb->getTile(tx - bx * kBlockTiles, ty - by * kBlockTiles);
++                GridTile& gt = grid[(size_t)(ty + kMargin) * kGrid + (tx + kMargin)];
++                gt.color = mt.color;
++                gt.seen = mt.color != 255;
++                gt.r.ground = mt.ground;
++                gt.r.border = mt.border;
++                gt.r.decor = mt.decor;
++                gt.r.solid = mt.solid;
++            }
++        }
++    }
++
++    m_hdScratch.resize((size_t)kFullPx * kFullPx * 4);
++    composeBlock(m_atlas, grid.data(), m_hdScratch.data());
++    const int px = lod * kBlockTiles;
++    ImagePtr image;
++    if(px == kFullPx) {
++        image = std::make_shared<Image>(Size(px, px), 4, m_hdScratch.data());
++    } else {
++        std::vector<uint8_t> small((size_t)px * px * 4);
++        downscale(m_hdScratch.data(), px, small.data());
++        image = std::make_shared<Image>(Size(px, px), 4, small.data());
++    }
++    TexturePtr tex = std::make_shared<Texture>(image, false, false, true);
++    block.m_hdTexture = tex;
++    block.m_hdLod = lod;
++    block.m_hdDirty = false;
++    block.m_hdBuiltAt = now;
++    if(!have) {
++        for(const MinimapBlock_ptr& b : m_hdBlocks)
++            if(b.get() == &block)
++                return tex;
++        std::lock_guard<std::mutex> lock(m_lock);
++        auto it = m_tileBlocks[blockPos.z].find(getBlockIndex(blockPos));
++        if(it != m_tileBlocks[blockPos.z].end())
++            m_hdBlocks.push_back(it->second);
++    }
++    return tex;
++}
++
+ void Minimap::updateTile(const Position& pos, const TilePtr& tile)
+ {
+     MinimapTile minimapTile;
+@@ -227,6 +446,7 @@
+         if(!tile->isPathable())
+             minimapTile.flags |= MinimapTileNotPathable;
+         minimapTile.speed = std::min<int>((int)std::ceil(tile->getGroundSpeed() / 10.0f), 255);
++        chaosRecipe(tile, minimapTile);
+     } else {
+         minimapTile.color = 255;
+         minimapTile.flags |= MinimapTileEmpty;
+@@ -236,8 +456,27 @@
+     if(minimapTile != MinimapTile()) {
+         MinimapBlock& block = getBlock(pos);
+         Point offsetPos = getBlockOffset(Point(pos.x, pos.y));
+-        block.updateTile(pos.x - offsetPos.x, pos.y - offsetPos.y, minimapTile);
++        const int lx = pos.x - offsetPos.x, ly = pos.y - offsetPos.y;
++        const bool hdChange = block.getTile(lx, ly).color != minimapTile.color || !block.getTile(lx, ly).sameRecipe(minimapTile);
++        block.updateTile(lx, ly, minimapTile);
+         block.justSaw();
++        // Chaos (0197): a tile within kMargin of the block edge is read by the next block's HD picture too
++        const int mg = chaos::minimaphd::kMargin;
++        if(hdChange && (lx < mg || ly < mg || lx >= MMBLOCK_SIZE - mg || ly >= MMBLOCK_SIZE - mg)) {
++            for(int dy = -1; dy <= 1; ++dy) {
++                for(int dx = -1; dx <= 1; ++dx) {
++                    if((!dx && !dy) || (dx < 0 && lx >= mg) || (dx > 0 && lx < MMBLOCK_SIZE - mg) ||
++                       (dy < 0 && ly >= mg) || (dy > 0 && ly < MMBLOCK_SIZE - mg))
++                        continue;
++                    int nx = offsetPos.x + dx * MMBLOCK_SIZE, ny = offsetPos.y + dy * MMBLOCK_SIZE;
++                    if(nx < 0 || ny < 0 || nx >= 65536 || ny >= 65536)
++                        continue;
++                    Position np(nx, ny, pos.z);
++                    if(hasBlock(np))
++                        getBlock(np).mustUpdateHd();
++                }
++            }
++        }
+     }
+ }
+ 
+@@ -383,7 +622,8 @@
+         fin->getU32(); // flags
+ 
+         switch(version) {
+-            case 1: {
++            case 1:
++            case 2: { // Chaos (0197): version 2 stores the tile recipe too
+                 fin->getString(); // description
+                 break;
+             }
+@@ -394,8 +634,11 @@
+         fin->seek(start);
+ 
+         uint blockSize = MMBLOCK_SIZE * MMBLOCK_SIZE * sizeof(MinimapTile);
+-        std::vector<uchar> compressBuffer(compressBound(blockSize));
+-        std::vector<uchar> decompressBuffer(blockSize);
++        // a version 1 block holds 3 bytes a tile (no recipe); it is expanded after the inflate
++        const uint fileBlockSize = version == 1 ? MMBLOCK_SIZE * MMBLOCK_SIZE * chaos::minimaphd::kTileBytesV1 : blockSize;
++        static_assert(sizeof(MinimapTile) == chaos::minimaphd::kTileBytesV2, "the .otmm tile is 11 bytes");
++        std::vector<uchar> compressBuffer(compressBound(fileBlockSize));
++        std::vector<uchar> decompressBuffer(fileBlockSize);
+ 
+         while(true) {
+             Position pos;
+@@ -408,7 +651,7 @@
+                 break;
+ 
+             ulong len = fin->getU16();
+-            ulong destLen = blockSize;
++            ulong destLen = fileBlockSize;
+             if (len > compressBuffer.size() || fin->read(compressBuffer.data(), 1, len) != len)
+                 stdext::throw_exception("invalid compressed minimap block");
+ 
+@@ -418,10 +661,13 @@
+ 
+             MinimapBlock& block = getBlock(pos);
+             int ret = uncompress(decompressBuffer.data(), &destLen, compressBuffer.data(), len);
+-            if(ret != Z_OK || destLen != blockSize)
++            if(ret != Z_OK || destLen != fileBlockSize)
+                 break;
+ 
+-            memcpy((uchar*)&block.getTiles(), decompressBuffer.data(), blockSize);
++            if(version == 1)
++                chaos::minimaphd::expandV1Block(decompressBuffer.data(), (uchar*)&block.getTiles());
++            else
++                memcpy((uchar*)&block.getTiles(), decompressBuffer.data(), blockSize);
+             block.mustUpdate();
+             block.justSaw();
+         }
+@@ -456,8 +702,8 @@
+         fin->addU16(OTMM_VERSION);
+         fin->addU32(flags);
+ 
+-        // version 1 header
+-        fin->addString("OTMM 1.0"); // description
++        // version 2 header (same as version 1)
++        fin->addString("OTMM 2.0"); // description (Chaos 0197: version 2)
+ 
+         // go back and rewrite where the map data starts
+         uint32 start = fin->tell();
+diff -ruN a/src/client/minimap.h b/src/client/minimap.h
+--- a/src/client/minimap.h
++++ b/src/client/minimap.h
+@@ -26,11 +26,12 @@
+ 
+ #include "declarations.h"
+ #include <framework/graphics/declarations.h>
++#include "chaosminimaphd.h"
+ 
+ enum {
+     MMBLOCK_SIZE = 64,
+     OTMM_SIGNATURE = 0x4D4d544F,
+-    OTMM_VERSION = 1
++    OTMM_VERSION = 2 // Chaos (0197): 2 adds the tile recipe (4 item ids); version 1 files still load
+ };
+ 
+ enum MinimapTileFlags {
+@@ -43,15 +44,22 @@
+ #pragma pack(push,1) // disable memory alignment
+ struct MinimapTile
+ {
+-    MinimapTile() : flags(0), color(255), speed(10) { }
++    MinimapTile() : flags(0), color(255), speed(10), ground(0), border(0), decor(0), solid(0) { }
+     uint8 flags;
+     uint8 color;
+     uint8 speed;
++    // Chaos (0197): the recipe of the HD minimap, the client ids of the tile's ground, ground border, decoration and top solid
++    uint16 ground;
++    uint16 border;
++    uint16 decor;
++    uint16 solid;
+     bool hasFlag(MinimapTileFlags flag) const { return flags & flag; }
+     int getSpeed() const { return speed * 10; }
+-    bool operator==(const MinimapTile& other) const { return color == other.color && flags == other.flags && speed == other.speed; }
++    bool operator==(const MinimapTile& other) const { return color == other.color && flags == other.flags && speed == other.speed && sameRecipe(other); }
++    bool sameRecipe(const MinimapTile& other) const { return ground == other.ground && border == other.border && decor == other.decor && solid == other.solid; }
+     bool operator!=(const MinimapTile& other) const { return !(*this == other); }
+ };
++#pragma pack(pop) // Chaos (0197): the pack ends with the tile (the block holds 64 bit counters now); the tile layout, which the .otmm stores, is unchanged
+ 
+ class MinimapBlock
+ {
+@@ -64,7 +72,14 @@
+     uint getTileIndex(int x, int y) { return ((y % MMBLOCK_SIZE) * MMBLOCK_SIZE) + (x % MMBLOCK_SIZE); }
+     const TexturePtr& getTexture() { return m_texture; }
+     std::array<MinimapTile, MMBLOCK_SIZE * MMBLOCK_SIZE>& getTiles() { return m_tiles; }
+-    void mustUpdate() { m_mustUpdate = true; }
++    void mustUpdate() { m_mustUpdate = true; m_hdDirty = true; }
++    // Chaos (0197): the HD picture of the block (composed from the swatch atlas, see Minimap::hdTexture)
++    void mustUpdateHd() { m_hdDirty = true; }
++    TexturePtr m_hdTexture;
++    int m_hdLod = 0;                 // px per tile of m_hdTexture (2, 4 or 8)
++    uint64_t m_hdStamp = 0;          // the draw call that last used it (0 = no picture held)
++    int64_t m_hdBuiltAt = 0;         // g_clock.millis() of the last compose
++    bool m_hdDirty = true;
+     void justSaw() { m_wasSeen = true; }
+     bool wasSeen() { return m_wasSeen; }
+ private:
+@@ -74,8 +89,6 @@
+     stdext::boolean<false> m_wasSeen;
+ };
+ 
+-#pragma pack(pop)
+-
+ using MinimapBlock_ptr = std::shared_ptr<MinimapBlock>;
+ 
+ class Minimap
+@@ -89,10 +102,22 @@
+     // forget the seen tiles of a rectangle of one floor (a rebuilt instance area); tiles in view stay
+     int clearArea(const Position& from, const Position& to);
+ 
+-    void draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color);
+-    Point getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale);
+-    Position getTilePosition(const Point& point, const Rect& screenRect, const Position& mapCenter, float scale);
+-    Rect getTileRect(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale);
++    // Chaos (0197): subTile is the shift of the camera from the middle of its tile in tiles (-1..1), for the smooth scroll
++    void draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color, const PointF& subTile = PointF());
++    Point getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const PointF& subTile = PointF());
++    Position getTilePosition(const Point& point, const Rect& screenRect, const Position& mapCenter, float scale, const PointF& subTile = PointF());
++    Rect getTileRect(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const PointF& subTile = PointF());
++
++    // Chaos (0197): the HD minimap. dir holds index.txt and the atlas png (client/overlay/data/minimap_hd); returns the number
++    // of swatches (0: no HD, the flat map is drawn as before). HD is drawn from hdMinScale px per tile up (default 2).
++    int loadHdAtlas(const std::string& dir);
++    void unloadHdAtlas();
++    void setHdEnabled(bool on);
++    bool isHdEnabled() { return m_hdEnabled; }
++    void setHdMinScale(float scale) { m_hdMinScale = scale; }
++    int getHdSwatchCount() { return (int)m_atlas.count(); }
++    int getHdBlockCount() { return (int)m_hdBlocks.size(); }
++    int getHdMaxBlocks() { return m_hdMaxBlocks; }
+ 
+     void updateTile(const Position& pos, const TilePtr& tile);
+     const MinimapTile& getTile(const Position& pos);
+@@ -104,6 +129,8 @@
+     void saveOtmm(const std::string& fileName);
+ 
+ private:
++    TexturePtr hdTexture(MinimapBlock& block, const Position& blockPos, int lod, int& budget);
++    void trimHd(size_t keep);
+     Rect calcMapRect(const Rect& screenRect, const Position& mapCenter, float scale);
+     bool hasBlock(const Position& pos) { return m_tileBlocks[pos.z].find(getBlockIndex(pos)) != m_tileBlocks[pos.z].end(); }
+     MinimapBlock& getBlock(const Position& pos) { 
+@@ -120,6 +147,14 @@
+     uint getBlockIndex(const Position& pos) { return ((pos.y / MMBLOCK_SIZE) * (65536 / MMBLOCK_SIZE)) + (pos.x / MMBLOCK_SIZE); }
+     std::vector<std::unordered_map<uint, MinimapBlock_ptr>> m_tileBlocks;
+     std::mutex m_lock;
++    // Chaos (0197)
++    chaos::minimaphd::Atlas m_atlas;
++    std::vector<MinimapBlock_ptr> m_hdBlocks;     // blocks that hold an HD picture (the least recently used go first)
++    std::vector<uint8_t> m_hdScratch;
++    uint64_t m_hdFrame = 0;
++    float m_hdMinScale = 2.0f;
++    int m_hdMaxBlocks = 24;
++    bool m_hdEnabled = true;
+ };
+ 
+ extern Minimap g_minimap;
+diff -ruN a/src/client/uiminimap.cpp b/src/client/uiminimap.cpp
+--- a/src/client/uiminimap.cpp
++++ b/src/client/uiminimap.cpp
+@@ -24,6 +24,9 @@
+ #include "houses.h"
+ #include "minimap.h"
+ #include "game.h"
++#include "localplayer.h"
++#include "spritemanager.h"
++#include "chaosminimaphd.h"
+ #include "uimapanchorlayout.h"
+ #include "luavaluecasts_client.h"
+ 
+@@ -53,7 +56,20 @@
+ 
+     ensureLayout();
+ 
+-    g_minimap.draw(getPaddingRect(), getCameraPosition(), m_scale, m_color);
++    g_minimap.draw(getPaddingRect(), getCameraPosition(), m_scale, m_color, getSubTile());
++}
++
++// Chaos (0197): the walk offset of the local player in tiles while the camera sits on its tile, else nothing
++PointF UIMinimap::getSubTile()
++{
++    if(!m_followWalk || !g_game.isOnline())
++        return PointF();
++    LocalPlayerPtr player = g_game.getLocalPlayer();
++    if(!player || !player->isWalking() || player->getPosition() != m_cameraPosition)
++        return PointF();
++    const Point offset = player->getWalkOffset();
++    const int size = g_sprites.spriteSize();
++    return PointF(chaos::minimaphd::subTile(offset.x, size), chaos::minimaphd::subTile(offset.y, size));
+ }
+ 
+ bool UIMinimap::setZoom(int zoom)
+@@ -119,17 +135,17 @@
+ 
+ Point UIMinimap::getTilePoint(const Position& pos)
+ {
+-    return g_minimap.getTilePoint(pos, getPaddingRect(), getCameraPosition(), m_scale);
++    return g_minimap.getTilePoint(pos, getPaddingRect(), getCameraPosition(), m_scale, getSubTile());
+ }
+ 
+ Rect UIMinimap::getTileRect(const Position& pos)
+ {
+-    return g_minimap.getTileRect(pos, getPaddingRect(), getCameraPosition(), m_scale);
++    return g_minimap.getTileRect(pos, getPaddingRect(), getCameraPosition(), m_scale, getSubTile());
+ }
+ 
+ Position UIMinimap::getTilePosition(const Point& mousePos)
+ {
+-    return g_minimap.getTilePosition(mousePos, getPaddingRect(), getCameraPosition(), m_scale);
++    return g_minimap.getTilePosition(mousePos, getPaddingRect(), getCameraPosition(), m_scale, getSubTile());
+ }
+ 
+ void UIMinimap::anchorPosition(const UIWidgetPtr& anchoredWidget, Fw::AnchorEdge anchoredEdge, const Position& hookedPosition, Fw::AnchorEdge hookedEdge)
+diff -ruN a/src/client/uiminimap.h b/src/client/uiminimap.h
+--- a/src/client/uiminimap.h
++++ b/src/client/uiminimap.h
+@@ -48,6 +48,13 @@
+     Rect getTileRect(const Position& pos);
+     Position getTilePosition(const Point& mousePos);
+ 
++    // Chaos (0197): while the camera is on the player the map follows the sprite through a step, not the tile (smooth scroll)
++    void setFollowWalk(bool on) { m_followWalk = on; }
++    bool isFollowWalk() { return m_followWalk; }
++    PointF getSubTile();
++    float getSubTileX() { return getSubTile().x; }
++    float getSubTileY() { return getSubTile().y; }
++
+     Position getCameraPosition() { return m_cameraPosition; }
+     int getMinZoom() { return m_minZoom; }
+     int getMaxZoom() { return m_maxZoom; }
+@@ -73,6 +80,7 @@
+     int m_zoom;
+     int m_minZoom;
+     int m_maxZoom;
++    bool m_followWalk = true;
+ };
+ 
+ #endif
