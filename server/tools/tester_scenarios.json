@@ -8,7 +8,7 @@
  ],
  "counts": {
   "opcode": 70,
-  "out": 38,
+  "out": 39,
   "passive": 108,
   "place": 15,
   "staff": 17
@@ -11873,6 +11873,13 @@
    "opcodes": [],
    "talkactions": [],
    "why": "the item encoding library; used by every item system"
+  },
+  "item_fusion": {
+   "files": [],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "the rule of the base item fusion (opcode 67, not a Chaos opcode); no client window sends it (O544)"
   },
   "item_tooltip": {
    "files": [
