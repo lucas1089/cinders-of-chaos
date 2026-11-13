@@ -6384,3 +6384,49 @@ Add HD art for a monster (a creature look, one layer, 4 directions or 1):
    id in `allow_foreign` and accept that the other thing changes too); a sprite repeated inside the look takes the tile of its first place
    (`same` / `conflict` in `hd_tiles.csv`). The index keeps the crc of each pair sprite; a pair that gives an id another picture hides the
    tile, so after a pair that retouches a look run `build DAT SPR` again.
+
+## Menu hubs (O550, `client_chaos_topbar`, base patch 0199)
+
+The top menu is six hub badges on the bar (Hero, Hunt, Adventure, Trade, Social, System; 28 px, phone 40 px) and one pinned Store.
+A badge opens one window of 780 x 262 (phone 780 x 290) with tabs and cards: 6 hubs, 26 tabs, 105 cards, the same windows as the
+text menu. Owner 2026-11-13: "mude o nosso menu do topo pra algo desse tipo. com ícones e sub ícones ... diminua ele", then
+"acho que tem que ficar ainda menor. deixe por exemplo abrir uma janela com abas". Roadmap id O550. Not run in a client.
+- **Data and logic (no engine):** `topbar_tree.lua` (hub -> tab -> card text, `CATEGORY_HUB`, `DROPPED`, `SHARED`, `TEXT_ONLY`),
+  `topbar_cards.lua` (card text -> glyph slot and one line of at most 34 characters), `topbarhublogic.lua` (the model of
+  hubs / tabs / cards from the usable entries, pins, the remembered tab, the card grid, `fit`, the style). Tests
+  `topbarhublogic_test.lua` and `topbar_hub_test.lua` (the widget code on a fake engine whose children come from the real
+  `topbar_hub.otui`). Check `tools/ci/check_topbar_tree.py`: every entry a module registers (`ChaosTopBar.addEntry`, the
+  `CATEGORIES` list) has a card or is named dropped / shared / text-only / NPC-only, hotkey windows sit on the first tab of their
+  hub (two clicks), a hub has at most 6 tabs and a tab at most 6 cards, every glyph is drawn, every name and line has pt-BR. An
+  entry no card names (a module added later) still shows, on the last tab of the hub of its category with its old icon's glyph.
+- **Widgets:** `topbar_hub.lua` (bar badges, divider and pins, the window, tabs, cards) and `topbar_hub.otui` (styles
+  `ChaosHubBadge`, `ChaosHubWindow` on `ChaosWindow`, `ChaosHubTab` on `ChaosTabButton`, `ChaosHubCard` on the `panel` image, the chips
+  on `skin/button` and `panel_dark`), so the interface skins repaint it with the rest. The glyphs are two white atlases
+  (`images/glyphs_bar.png` 24 px cells, `images/glyphs_card.png` 32 px cells, 53 shapes of our own, made by
+  `client/tools/gen_topbar_icons.py` from `topbar_glyphs.py`; `topbar_glyph_index.lua` holds the cells) tinted by `image-color` with
+  the skin palette (`accent2`; `menuNew` for a new one, `menuLocked` for a locked one). Check `tools/ci/check_topbar_widgets.py`:
+  every id Lua looks up and every style it creates is in the .otui, every anchor names an id of the file, window, card and badge
+  have a `$mobile` rule.
+- **Behaviour:** a badge click opens its hub, a second click (or Escape, or a tap outside on a phone) closes it. A card click closes
+  the hub and runs the window (Shift keeps the hub open); a locked card says "Unlocks at level N" and keeps the hub open. A right
+  click pins a card to the bar (3 pins, `g_settings` `chaosHubPins_<character>`, `v1:Store|Market`; the default pin is Store), a
+  second one unpins; a phone has no right click, so a long press is meant to do it (unverified). The last tab of every hub is
+  remembered per character (`chaosHubTab_<hub>_<character>`). Gated cards follow the unlock table by entry text as before: hidden
+  until reachable, the next one grey, "Show the whole menu" lifts it; an empty tab and an empty hub are hidden. The login screen shows
+  the System hub with the `offline` cards only. A gold glyph on a badge or tab means a new unlocked system inside, a red count is
+  the Party Finder applications. The hotkey chip sits bottom right of a card (not top right: names such as "Spell Supports" would
+  not fit beside it in the engine's 11 px font).
+- **Kept API:** `ChaosTopBar.addEntry`, `refresh`, `setAdmin`, `setBadge`, `available`, `run`, `open(categoryId)` (opens the hub of
+  that category: character -> Hero, economy -> Trade, chaos -> Adventure, admin -> System), hotkeys, the unlock state. New:
+  `getStyle()`, `setStyle('hubs' | 'text')`.
+- **The text menu stays** as before (drop-downs, "More", alphabetical order). Switch: Options > Graphics "Menu in hubs" (checkbox,
+  default on; base patch `0199`, see client/BASE.md), the footer link "Text menu" of the hub window, the entry "Menu Style" of the text
+  menu (the way back; the hubs leave it out). The choice is `g_settings` `chaosMenuStyle`; the option writes it through
+  `ChaosTopBar.onOption('hubMenu', value)`. Any error in the hub code is caught (`pcall`), logged once and puts the text menu back
+  until the player picks the hubs again; so does a missing glyph atlas.
+- **Texts:** hub names `hub.<id>`, tab names `tab.<hub>.<id>`, the card lines, the hints and the footer link go through `tr()`; pt-BR in
+  `client_chaos_locale/pt_br.lua` (O550 block).
+- **To check in a client:** that `$mobile` works on a child widget of a style (the bar glyph and the card text), that a window created
+  as a plain `ChaosWindow` under the bar takes `onEscape`, that a long press reaches `onMouseRelease` as `MouseRightButton`, that the
+  `image-clip` string on the glyph children of a button is kept when the state changes, and the 9-slice of `skin/button` at 28 and 40 px.
+  Previews are in the design round's scratch folder, not committed.
