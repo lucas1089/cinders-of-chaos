@@ -871,6 +871,11 @@ local function tickMarks(tr, player, ms)
 	end
 end
 
+-- the main quest's boss brings its own floor attacks (mainquest_boss.lua T.questOwnsFloor): the family's stillness, zones and pyre stay off
+local function ownsFloor(tr)
+	return tr.spell and T.questOwnsFloor and T.questOwnsFloor(tr) or false
+end
+
 local function tick(pid)
 	local tr = T.runs[pid]
 	if not tr or tr.over then
@@ -922,7 +927,7 @@ local function tick(pid)
 				if boss and boss.getTarget and not boss:getTarget() and boss.selectTarget then
 					boss:selectTarget(player)
 				end
-				if M.hasMech(tr.famKey, "stillness") then
+				if M.hasMech(tr.famKey, "stillness") and not ownsFloor(tr) then
 					local r = M.stillness(tr.still, pos.x .. ":" .. pos.y, ms)
 					if r == "warn" then
 						pos:sendMagicEffect(CONST_ME_STONES or CONST_ME_POFF)
@@ -935,13 +940,13 @@ local function tick(pid)
 					tr.nextAdd = ms + c.addEvery
 					spawnBossAdds(tr, player)
 				end
-				if M.hasMech(tr.famKey, "zones") and ms >= tr.nextZone then
+				if M.hasMech(tr.famKey, "zones") and not ownsFloor(tr) and ms >= tr.nextZone then
 					tr.nextZone = ms + c.zoneEvery
 					zones(tr, player)
 				end
 			end
 		end
-		if M.hasMech(tr.famKey, "pyre") and ms >= (tr.nextPyre or 0) then
+		if M.hasMech(tr.famKey, "pyre") and not ownsFloor(tr) and ms >= (tr.nextPyre or 0) then
 			tr.nextPyre = ms + c.pyreEvery
 			pyre(tr, player)
 		end
