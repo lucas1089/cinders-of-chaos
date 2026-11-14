@@ -28562,8 +28562,8 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
   to that share, so a character at result 0 takes the design share, at 30 a third less, below 0 more (floor -100), tested on the real Trials files
   (`tests/mainquest_boss_test.lua`). His lines by phase, the enrage and the defeat/victory lines are in the config. Reward once: 1,500,000 gold, 2 Orbs of Fate, 1 Orb of Sockets,
   800 Vigil reputation, the achievement and title Ember-Sworn (`mainquest_boss`, `achievements_data.lua`). Sizing: `tools/mainquest_boss_model.py --check` (median class 150 s at
-  level 500, the weakest (Beastmaster) 181 s of 360, at most 70% of the clock, a class at least 60% of the median). The four phases differ in element, line and the telegraphs of the
-  player's class family (the Trials' own mechanics): the four distinct attack shapes of the first design (ring, cone, beam, all together) are NOT built; they need engine work in trials.lua.
+  level 500, the weakest (Beastmaster) 181 s of 360, at most 70% of the clock, a class at least 60% of the median). The four phases differ in element, line and Vael's own attacks
+  (O554: six named floor shapes, section "Vael's attacks (O554)" below; the player's class family's stillness, zones and pyre do not run for Vael).
 - **Rewards.** Gold to the bank = the step's minutes x the Ember Cache income at its level (`embercache_config.lua`, rounded to 100) plus a few cheap orbs (2 to 4 of Upheaval,
   Awakening, Fate, Sockets, Whetstone); chapters III-VI pay fewer minutes (the income table jumps at 300 to 500). `tools/mainquest_model.lua --check`: the quest with the boss reward is
   at most 7% of the gold an ideal hunter earns from 8 to 500 (4.37M, 6.6%), kill and drop steps take 0.5 to 2.2 times the minutes they pay for, orbs only, no coin, the boss under the
@@ -28579,8 +28579,46 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
 - **Tests.** `tests/mainquest_test.lua` (config, validation, texts and placeholders against the configs, the resistance steps against `player_defence_config.lua`, progress of every
   condition, drops and pity, rewards, first look and veterans, the welcome import, skip, hooks present and guarded, the goals.lua calls), `tests/mainquest_boss_test.lua` (door, reward once,
   cooldown, lines, the resistance in the Trials' combat hook), client `game_goals/goalsview_test.lua`, the two models. Not run on a live server or in a client.
-- **Not done.** The Unity client; real quest items (the drops are counters, as the spell quest fragments: items would need `install_*.py` steps and a look); the distinct attack shapes of
-  Vael's phases; English versions of Ysolde's completion lines (the English text is "Step done."); hunts and drops that count a party member (only the killer counts).
+- **Not done.** The Unity client; real quest items (the drops are counters, as the spell quest fragments: items would need `install_*.py` steps and a look); English versions of Ysolde's completion lines (the English text is "Step done."); hunts and drops that count a party member (only the killer counts).
+
+## Vael's attacks (O554, `mainquest_boss_config.lua`, `mainquest_boss_attacks_core.lua`, `mainquest_boss.lua`)
+
+Follow-up B of the main quest (O551): Vael Ashmourn no longer fights with generic hits and the class family's floor mechanics alone. He has six named attacks, each a floor shape
+that the floor telegraph (O549, `ChaosTelegraph`, opcode 125 `floor` / `floorclear`; no new opcode, no client change) shows before the hit, so a player can step out. A dodged attack
+does nothing: only a character on a marked tile at the hit takes that part's share of the maximum health. The shapes are `boss_mechanics_core.lua`'s (`G.shape`), the same tile rules
+and the same walking and fairness code (`G.makeFair`, `G.isFair`) as the world bosses.
+
+| Attack (pt-BR) | Shape | Phases | Windup | Hit (share of the maximum health, before the resistance) |
+|---|---|---|---:|---:|
+| Cinder Breath (Sopro de Brasa) | cone ahead of Vael towards the character, 7 long, 3 wide at the end (33 tiles) | 1 fire, 3 lightning | 2.4 s | 15% |
+| Ember Rain (Chuva de Brasas) | 5 circles of radius 2, one under the character, the rest anywhere | 1 fire, 2 cold | 2.6 s | 13% |
+| Ashen Ring (Anel de Cinzas) | a ring 2 to 6 tiles from Vael; next to him and past the ring is safe | 2 cold, 3 lightning | 2.8 s | 17% |
+| Oath Lance (Lança do Juramento) | a beam from Vael towards the character, 3 wide, to the wall | 2 cold, 3 lightning, 4 chaos | 2.2 s | 19% |
+| Warden's Cross (Cruz do Guardião) | the row and the column through Vael, 3 wide; the corners between the arms are safe | 3 lightning | 2.8 s | 17% |
+| Final Oath (Juramento Final) | the cross and 4 circles together (two marks, one windup, two different shapes) | 4 chaos | 3.0 s | 10% + 9%, both when a character stands in both |
+
+- **Timing.** The first attack comes 6 s after Vael wakes. One attack at a time; the next starts `every[phase]` ms after the last one started (9, 8.5, 8, 8 s), never less than the windup
+  plus `gapMs` (2 s) of quiet. Never the same attack twice in a row while the phase has another. Below the Trials' `enrageBelow` (30%) the attacks come 0.85 times as far apart and
+  hit 1.2 times as hard; the windup does not shrink. No attack starts while the monsters cannot touch the character after a fall (`shieldUntil`), and the next one waits a second past it.
+- **Telegraph, never unavoidable.** The windup is at least `minWindMs` 1.8 s. The floor mark (`ChaosTelegraph.open`, one per shape, colour by the phase's element: orange fire, blue cold,
+  violet lightning, green chaos) opens at the start of the windup with `ms` = the windup, the legacy sprite marks (`warning` pulses, red / blood) go only to the players without
+  `game_telegraph`, and Vael calls the attack by name (the first time of a run with what to do about it, one chat line). The plan is made fair before it is cast: the reference character
+  (level 500, `chaos_speed.lua` step rules) must reach a safe tile within windup minus `reactionMs` 500 ms; a pocket is cut out of the shape where it cannot, and an attack that is still
+  not fair is not cast (retried a second later). 500 ms covers about 300 ms of ping (half to see the mark, half for the move to arrive); the hit is read `lagMs` 150 ms after the mark
+  ends. Tests hold at most half of the room marked and a safe tile in reach for every attack from sampled positions of the room.
+- **Damage.** The share of the parts the character stands in, times the tier's hit scale (`tr.scale.hit / tr.tierDef.hit`, the class variant), times what the resistance of the phase's
+  element leaves (the same rule as the melee hit, `ChaosMainQuestCore.hitAmount`, cap `resistCap`, floor -100), through `T.hurt` (the Trials' own raw hit: a life instead of death,
+  `catch`). The phase and its element are the ones at the start of the windup. The family's stillness, zones and pyre do not run in this trial (`T.questOwnsFloor`, trials.lua tick), so
+  every class meets the same floor attacks; adds and the enrage of the family stay.
+- **Model** (`tools/mainquest_boss_model.py --check`, the config is read through `tools/mainquest_boss_numbers.lua`): 4 to 6 attacks, every phase has some, the last has one of two shapes,
+  windup 1.8 to 3.5 s, the biggest hit (enraged) at most the tier's zone / pyre share 0.24, and the load the attacks add (share of the maximum health a second) at the assumed dodge share
+  (typical 75%, poor 50% of the attacks stepped out of; `dodge` in the config) at most 25% (typical) and 40% (poor) of Vael's melee load (the tier's hit every 2 s), in every phase and
+  enraged. The same table prints each attack's damage per use, its uses in the median kill and what it takes over a kill at both dodge shares. The kill time (150 s median at 500, the
+  weakest under 70% of the clock) is unchanged: the attacks take no damage from the player and add no health.
+- **Tests.** `tests/mainquest_boss_attacks_test.lua`: the tile sets of the five shapes (counts and edges), timing, phase mapping, the colour, fairness, hit only on the tiles hit, a dodged
+  attack, the resistance, a fallen or shielded character, Vael gone, the run over, an unfair plan not cast, no attack without a mark (or the sprite marks without the module);
+  `tools/mainquest_boss_model_test.py`. Not run on a live server.
+- **Not done.** A line charge in which Vael moves (the lance is a beam); a cast bar over Vael (the `mech` action of the monster bar); Unity (the floor marks are the client's `game_telegraph`).
 
 ## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
 
