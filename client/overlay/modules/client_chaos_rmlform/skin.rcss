@@ -158,6 +158,10 @@ select {
 }
 select:hover { color: #fff1d6; }
 select:checked { decorator: ninepatch(combo-o, combo-o-in); }
+/* An open select lifts its whole box (selectbox included) above the controls that come after it in the same row, so the
+   neighbouring combo boxes and check boxes of a Helper slot (percent, monsters, Force, Self) do not show through the list
+   of spells as empty grey cells (O576). Only the open one: every select with a z-index of its own would paint in page order. */
+select:checked { position: relative; z-index: 300; }
 select:disabled { color: #8c8070; }
 select selectvalue { height: 20dp; padding: 2dp 24dp 0dp 6dp; }
 select selectarrow { width: 21dp; height: 20dp; }

@@ -41,8 +41,6 @@ COPIES = {
     "skin_corner_br.png": "skin/orn_corner_br.png",
     "skin_crest.png": "skin/orn_crest.png",
     "skin_btn.png": "login/btn_normal.png",
-    "skin_btn_red.png": "login/btn_red_normal.png",
-    "skin_btn_off.png": "login/btn_disabled.png",
 }
 # default news picture crops of the login art (x0, y0, x1, y1 of the 1920x1080 picture)
 NEWS_CROPS = {

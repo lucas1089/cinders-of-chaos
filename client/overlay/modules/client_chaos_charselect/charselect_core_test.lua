@@ -180,6 +180,11 @@ local wingA = C.anchorOf(A, 1179)
 local shifted = C.figure(A, { type = 2161, wings = 1179 }, nil, 6, 7)
 check(shifted.left == math.min(body.left - 6, wingA.left + 7) and shifted.right == math.max(body.right - 6, wingA.right + 7),
   'wings shifted: the box follows')
+-- base patch 0200 (O564): a head piece shifted onto this body's head moves its box, the body and the feet stay
+local plainAura = C.figure(A, { type = 2161, aura = 1512 })
+local movedAura = C.figure(A, { type = 2161, aura = 1512 }, nil, 0, 0, { x = -9, y = -4 })
+check(movedAura.left == math.min(body.left, auraA.left + (auraA.w - 1) * 16 - 9) and movedAura.fx == plainAura.fx and movedAura.fy == plainAura.fy,
+  'a head piece shifted: its box follows, the feet stay')
 check(shifted.fx == lifted.fx and shifted.fy == lifted.fy, 'wings shifted: feet stay')
 local plainFig = C.figure(A, { type = 2161 }, nil, 6)
 check(plainFig.fy == body.fy and plainFig.fx == body.fx and plainFig.hover == 0, 'no wings, no lift, no hover')

@@ -4,6 +4,7 @@
 -- the layout: labels of the same and neighbouring tiles never overlap and stay near their tile.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. '../game_lootfilter/lootfilterlogic.lua')
+dofile(dir .. 'labelplates.lua')
 dofile(dir .. 'groundlabelslogic.lua')
 local L, GL = LootFilterLogic, GroundLabelsLogic
 GL.setFilterLogic(L)
@@ -35,6 +36,8 @@ eq(GL.isCandidate({ top = true, pickupable = true }), false, 'on top (doors, arc
 eq(GL.isCandidate({ container = true, corpse = true }), true, 'a corpse')
 eq(GL.isCandidate({ container = true, pickupable = false }), false, 'a chest on the floor')
 eq(GL.isCorpseThing(false, false, 6068), true, 'the loot bag has no corpse flag in the dat but is a corpse')
+eq(GL.isCorpseThing(false, false, 19202), true, 'the loot bag is the plain pouch (client 19202, O565) and is a corpse')
+eq(GL.isCorpseThing(false, false, GL.LOOT_BAG_LOOK), true, 'the loot bag look of the server config')
 eq(GL.isCorpseThing(false, true, 6069), true, 'a lying corpse')
 eq(GL.isCorpseThing(true, false, 6069), true, 'a corpse')
 eq(GL.isCorpseThing(false, false, 1740), false, 'a chest is none')
@@ -234,6 +237,30 @@ eq(GL.needsLook(seenTile, 3, seenTile.verifyAt), true, 'an old look is repeated'
 eq(GL.nextLook(1000, 0), 1000 + GL.VERIFY_MS, 'verify time')
 eq(GL.nextLook(1000, 9) > GL.nextLook(1000, 0), true, 'verify times are staggered by key')
 eq(GL.nextLook(1000, 9) - 1000 < 2 * GL.VERIFY_MS, true, 'stagger stays inside one verify period')
+
+-- loot label plates (O562): every loot label set of the server has its own plate picture
+local function readAll(path) local f = assert(io.open(path, 'rb')) local t = f:read('*a') f:close() return t end
+local cfg = readAll(dir .. '../../../../server/data/scripts/chaos/cosmetics_config.lua')
+local seenPlate, sets = {}, 0
+for key, accent in cfg:gmatch('key = "loot_([%w_]+)", kind = "lootbeam".-accent = "(#%x%x%x%x%x%x%x%x)"') do
+  sets = sets + 1
+  GL.setAccent(accent)
+  local pl = GL.plateFor(accent)
+  eq(pl ~= nil, true, 'a plate for the accent of ' .. key)
+  if pl then
+    eq(pl.name, key, 'the plate is named after the set ' .. key) eq(seenPlate[pl.name], nil, 'one plate per set ' .. key)
+    seenPlate[pl.name] = true
+    eq(readAll(dir .. 'images/label_' .. pl.name .. '.png'):sub(2, 4), 'PNG', 'the picture exists: ' .. pl.name)
+    eq(GL.plateFor(accent:upper():gsub('^#', '#')) ~= nil, true, 'case does not matter')
+    local st = GL.style({ highlight = true }, '#ffd040')
+    eq(st.plate and st.plate.name, key, 'a highlighted label takes the plate') eq(st.text, '#ffd040', 'with the rarity colour on the text')
+  end
+end
+eq(sets >= 17, true, 'the 17 loot label sets are read')
+GL.setAccent(nil)
+eq(GL.style({ highlight = true }, '#ffd040').plate, nil, 'no accent: no plate')
+eq(GL.style({ highlight = false }, '#ffd040').plate, nil, 'a label that does not glow has none')
+eq(GL.plateFor('#123456f0'), nil, 'an unknown accent') eq(GL.plateFor(nil), nil, 'no accent')
 
 print(string.format('groundlabels_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

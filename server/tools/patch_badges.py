@@ -60,16 +60,15 @@ DECKS = (27632, 27633, 27634)
 SHIPS = tuple(range(27796, 27803))
 BELTGLOVES = (29577, 29578, 29582, 29583, 29584, 29586, 29587, 29588, 29589, 29590, 29591, 29592, 29593, 29594, 29595,
               29596, 29597, 29598, 29914, 29915, 29916, 29917, 29918, 29919)
-DECK_DESC = ("A deck for cards. It can't be worn: carry it, then use a card you carry to put it in the deck and turn it "
-             "on. Veyra the Apothecary sells decks. The Loot Buyer buys it.")
+DECK_DESC = ("No longer used: the Deck of Cards took its place and keeps your cards by itself. "
+            "The Loot Buyer buys this.")
 SHIP_DESC = "A ship. It can't be worn: carry it and walk from a dock onto the sea to sail. The Loot Buyer buys it."
 BELTGLOVES_DESC = "It can't be worn. The Loot Buyer buys it."
 # the cards the base deck system turns on (its cardsAllowed): the 60 common to mythic cards and the level 6 legendaries;
 # the legendary levels 1-5 only upgrade and keep their text. Players did not find where a card goes (beta,
 # 2026-10-22: "como eu acesso o deck?"), so their description ends with where to put it.
 CARDS = tuple(range(27482, 27542)) + tuple(range(27547, 27632, 6)) + (27640,)
-CARD_HINT = ("Use it to put it in a deck you carry and turn it on, use it again to turn it off. "
-             "Veyra the Apothecary sells decks.")
+CARD_HINT = "It goes into your Deck of Cards by itself. Open the Deck from the menu to turn it on."
 # earlier texts of the hint: replaced, so a second install never appends two
 CARD_DESCRIPTIONS_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'items',
                                      'card_descriptions.csv')
@@ -85,7 +84,10 @@ def card_texts(path=None):
 
 
 CARD_TEXTS = card_texts()
-OLD_CARD_HINTS = ("Put it in a Bronze, Silver or Golden Deck you carry and use it there to turn it on or off.",)
+OLD_CARD_HINTS = (
+    "Put it in a Bronze, Silver or Golden Deck you carry and use it there to turn it on or off.",
+    "Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks.",
+)
 DESCRIPTIONS = {}
 DESCRIPTIONS.update({i: DECK_DESC for i in DECKS})
 DESCRIPTIONS.update({i: SHIP_DESC for i in SHIPS})

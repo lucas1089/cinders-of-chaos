@@ -729,10 +729,34 @@ check(call("autobuildPreview", {build = "warrior_slayer"}).autobuildError.build 
 clock = clock + 2000
 sent = {}
 ext.onExtendedOpcode(p, OP, {action = "autobuildPreview", data = {build = "ninja_twin_fangs"}})
-clock = clock + 300 -- past the generic 200 ms per-action limit, inside the preview limit
-ext.onExtendedOpcode(p, OP, {action = "autobuildPreview", data = {build = "ninja_phantom"}})
+clock = clock + 60 -- inside the preview limit and inside the generic 200 ms per-action limit (O560)
+ext.onExtendedOpcode(p, OP, {action = "autobuildPreview", data = {build = "ninja_phantom", seq = 7}})
 check(#sent == 2 and sent[1].action == "autobuildPreview" and sent[2].action == "autobuildError" and sent[2].data.retry == true
-	and sent[2].data.build == "ninja_phantom", "preview: too fast is answered with retry")
+	and sent[2].data.build == "ninja_phantom", "preview: too fast is answered with retry, even inside the generic limit")
+check(sent[2].data.seq == 7 and sent[2].data.wait == cfg.previewRateMs, "preview: the refusal echoes the request number and says how long to wait")
+check(cfg.previewRateMs <= 200, "preview: the limit is short (O560)")
+clock = clock + cfg.previewRateMs
+ext.onExtendedOpcode(p, OP, {action = "autobuildPreview", data = {build = "ninja_phantom", seq = 8}})
+check(sent[#sent].action == "autobuildPreview" and sent[#sent].data.seq == 8 and sent[#sent].data.build == "ninja_phantom",
+	"preview: the pick after the wait is answered with its own build and number")
+-- the last of several quick picks is the one the server answers last, with its own number
+clock = clock + 2000
+sent = {}
+for i, id in ipairs({"ninja_twin_fangs", "ninja_phantom", "ninja_twin_fangs"}) do
+	clock = clock + 20
+	ext.onExtendedOpcode(p, OP, {action = "autobuildPreview", data = {build = id, seq = 100 + i}})
+end
+check(#sent == 3 and sent[3].data.seq == 103 and sent[3].data.build == "ninja_twin_fangs", "preview: every quick pick is answered, in order, with its number")
+-- another autobuild action refused by the generic limit is answered, not dropped
+clock = clock + 2000
+sent = {}
+ext.onExtendedOpcode(p, OP, {action = "autobuildList", data = {}})
+local before = #sent
+clock = clock + 20
+ext.onExtendedOpcode(p, OP, {action = "autobuildList", data = {}})
+check(sent[#sent].action == "autobuildError" and #sent == before + 1, "autobuild: a request refused by the generic limit gets an answer")
+check(ChaosPassiveBuilds.seqOf({seq = "x"}) == nil and ChaosPassiveBuilds.seqOf({seq = -1}) == nil and ChaosPassiveBuilds.seqOf({seq = 5.9}) == 5
+	and ChaosPassiveBuilds.seqOf(nil) == nil, "preview: the request number is a small integer or nothing")
 clock = clock + 2000
 sent = {}
 ext.onExtendedOpcode(p, OP, {action = "autobuildApply", data = {build = "ninja_twin_fangs", mode = "bogus"}})

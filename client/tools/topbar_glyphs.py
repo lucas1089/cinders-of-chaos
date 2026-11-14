@@ -440,6 +440,13 @@ def pick(g):
     g.im = g.im.rotate(-40, resample=Image.BICUBIC)
 
 
+def pin(g):
+    # a thumbtack: flat head, tapered body, needle
+    g.rect(7.5, 2, 16.5, 4.2)
+    g.poly([(9, 4), (15, 4), (15.4, 10), (19.5, 14.2), (4.5, 14.2), (8.6, 10)])
+    g.line([(12, 14), (12, 22.2)], 1.7)
+
+
 def salvage(g):
     g.gear(12, 12, 9.4, 8, 0.36)
     g.line([(3, 21), (9.5, 14.5), (13, 16.5), (21.5, 3)], 1.5, cut=True)
@@ -503,7 +510,7 @@ def note(g):
 NAMES = (
     'anvil', 'bars', 'bolt', 'book', 'cards', 'chest', 'claws', 'columns', 'compass', 'coins', 'cross', 'dividers', 'door',
     'funnel', 'gear', 'gem', 'hammer', 'heads', 'helm', 'horns', 'house', 'info', 'laurel', 'list', 'lootarrow', 'magnifier', 'map',
-    'note', 'orbs', 'pack', 'peaks', 'pick', 'pouch', 'power', 'rift', 'salvage', 'scales', 'scroll', 'sellcoin', 'shirt', 'sliders',
+    'note', 'orbs', 'pack', 'peaks', 'pick', 'pin', 'pouch', 'power', 'rift', 'salvage', 'scales', 'scroll', 'sellcoin', 'shirt', 'sliders',
     'split', 'stall', 'star', 'stopwatch', 'swirl', 'swords', 'terminal', 'tome', 'tower', 'tree', 'trio', 'trophy',
 )
 
@@ -512,7 +519,7 @@ _SHAPES = {
     'columns': columns, 'compass': compass, 'coins': coins, 'cross': cross, 'dividers': dividers, 'door': door, 'funnel': funnel,
     'gear': gear, 'gem': gem, 'hammer': hammer, 'heads': heads, 'helm': helm, 'horns': horns, 'house': house, 'info': info,
     'laurel': laurel, 'list': listg, 'lootarrow': lootarrow, 'magnifier': magnifier, 'map': mapg, 'note': note, 'orbs': orbs,
-    'pack': pack, 'peaks': peaks, 'pick': pick, 'pouch': pouch, 'power': power, 'rift': rift, 'salvage': salvage, 'scales': scales,
+    'pack': pack, 'peaks': peaks, 'pick': pick, 'pin': pin, 'pouch': pouch, 'power': power, 'rift': rift, 'salvage': salvage, 'scales': scales,
     'scroll': scroll, 'sellcoin': sellcoin, 'shirt': shirt, 'sliders': sliders, 'split': split, 'stall': stall, 'star': star,
     'stopwatch': stopwatch, 'swirl': swirl, 'swords': swords, 'terminal': terminal, 'tome': tome, 'tower': tower, 'tree': tree,
     'trio': trio, 'trophy': trophy,

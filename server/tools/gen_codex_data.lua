@@ -1911,7 +1911,7 @@ function Gen.basicsEntries(D)
 			"Every unique has one power of its own, the orange block under its text. It is not a stat: it changes how you play.",
 			"The power works only for the classes listed after \"For:\" in its text. A unique with no \"For:\" works for every class. A class line includes its ascended classes.",
 			"Every class its class row allows can wear the item. When your class is not on the power's list, the power sleeps and only the stats count.",
-			"The tooltip tells which it is: \"Works for your class.\" or \"Asleep: your class is not in its list.\""}},
+			"The tooltip tells which it is: \"Works for your class.\" or \"Cannot use: not for your class.\""}},
 		{h = "How many powers work at once", p = {
 			string.format("At most %d unique powers work at once, and only one of each family. A family is a kind of effect: two uniques of the same kind do not add up.",
 				up.maxActive),

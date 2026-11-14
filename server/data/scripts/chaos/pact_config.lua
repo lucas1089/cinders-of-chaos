@@ -102,7 +102,7 @@ return {
 		-- They are sold for coins in the store as well; the Marks are a second way to get one, for the month it is on the shelf.
 		monthly = {
 			{key = "foot_ember", marks = 200},    -- January
-			{key = "emote_roar", marks = 200},    -- February
+			{key = "lvl_frost", marks = 200},     -- February
 			{key = "lvl_grove", marks = 150},     -- March
 			{key = "rare_seal", marks = 150},     -- April
 			{key = "kill_shatter", marks = 200},  -- May
@@ -111,7 +111,7 @@ return {
 			{key = "foot_shadow", marks = 200},   -- August
 			{key = "lvl_dawn", marks = 200},      -- September
 			{key = "rare_crimson", marks = 200},  -- October
-			{key = "emote_salute", marks = 200},  -- November
+			{key = "lvl_ember", marks = 200},     -- November
 			{key = "kill_bloodbloom", marks = 200} -- December
 		},
 		maxBalance = 100000 -- a sanity cap for the column, far above what a Pact earns in years

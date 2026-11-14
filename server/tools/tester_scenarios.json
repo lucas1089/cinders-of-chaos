@@ -7,7 +7,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 71,
+  "opcode": 72,
   "out": 39,
   "passive": 110,
   "place": 15,
@@ -8672,22 +8672,28 @@
     "candlemarks"
    ]
   },
-  "cardState": {
+  "cardDeck": {
    "actions": [
-    "sync"
+    "seen",
+    "toggle",
+    "sync",
+    "open"
    ],
    "client": [
-    "game_cardborder"
+    "game_carddeck"
    ],
    "dataKeys": [
-    "cards",
-    "size",
-    "used"
+    "copies",
+    "distinct",
+    "new",
+    "on",
+    "set",
+    "unlocked"
    ],
    "files": [
     "cards.lua"
    ],
-   "opcode": 172,
+   "opcode": 173,
    "out": false,
    "skip": [],
    "systems": [
@@ -8907,7 +8913,8 @@
     "id",
     "kind",
     "line",
-    "list"
+    "list",
+    "range"
    ],
    "files": [
     "cosmetics.lua"
@@ -9161,6 +9168,22 @@
    "systems": [
     "factions"
    ]
+  },
+  "fxOwner": {
+   "actions": [
+    "hello"
+   ],
+   "client": [
+    "game_effectopacity"
+   ],
+   "dataKeys": [],
+   "files": [
+    "fxowner.lua"
+   ],
+   "opcode": 164,
+   "out": false,
+   "skip": [],
+   "systems": []
   },
   "gamble": {
    "actions": [
@@ -9718,6 +9741,7 @@
     "game_minimapdots"
    ],
    "dataKeys": [
+    "huntports",
     "npcmarks",
     "on",
     "party",
@@ -10077,6 +10101,7 @@
   },
   "passivetree": {
    "actions": [
+    "autobuildPreview",
     "requestNodesUnlocked",
     "requestPoints",
     "refund",
@@ -10667,6 +10692,29 @@
     "townportal"
    ]
   },
+  "trainerMeter": {
+   "actions": [
+    "watch"
+   ],
+   "client": [
+    "game_trainerdps"
+   ],
+   "dataKeys": [
+    "on",
+    "party"
+   ],
+   "files": [
+    "trainer_meter.lua"
+   ],
+   "opcode": 147,
+   "out": false,
+   "skip": [
+    "reset"
+   ],
+   "systems": [
+    "trainer_meter"
+   ]
+  },
   "transmog": {
    "actions": [
     "looks",
@@ -11114,7 +11162,7 @@
    ],
    "kind": "opcode",
    "opcodes": [
-    "cardState"
+    "cardDeck"
    ],
    "talkactions": []
   },
@@ -11342,7 +11390,8 @@
   },
   "corpse": {
    "files": [
-    "corpse_bag.lua"
+    "corpse_bag.lua",
+    "corpse_empty.lua"
    ],
    "kind": "passive",
    "opcodes": [],
@@ -13139,6 +13188,16 @@
     "townPortal"
    ],
    "place": "temple",
+   "talkactions": []
+  },
+  "trainer_meter": {
+   "files": [
+    "trainer_meter.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "trainerMeter"
+   ],
    "talkactions": []
   },
   "transmog": {

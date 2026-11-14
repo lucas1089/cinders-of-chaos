@@ -3613,6 +3613,8 @@ return {
 			"Mais %d nós da build precisam de mais pontos.",
 		["Too fast: wait a moment and apply again."] =
 			"Rápido demais: espere um momento e aplique de novo.",
+		["Too fast: wait a moment and try again."] =
+			"Rápido demais: espere um momento e tente de novo.",
 		["Too fast: wait a moment and pick the build again."] =
 			"Rápido demais: espere um momento e escolha a build de novo.",
 		["The preview could not be made. Try another build or try again later."] =
@@ -3732,8 +3734,6 @@ return {
 			"Cada poção é vendida uma de cada vez. Os pacotes grandes ficam na loja.",
 		["Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}, or an {upgrade} for your Everfull flask."] =
 			"Veyra, boticária. Vendo poções de todos os níveis, uma de cada vez, as runas que os caçadores mais pedem, e corda, pá, tocha e mochila. Peça uma {trade}, ou um {upgrade} do seu frasco Everfull.",
-		["A deck holds your cards: five in the Bronze, ten in the Silver, twenty in the Golden. Carry it, then use a card to put it in and turn it on. Ask for a {trade}."] =
-			"Um baralho guarda suas cartas: cinco no de Bronze, dez no de Prata, vinte no de Ouro. Carregue-o e use uma carta para guardá-la nele e ativá-la. Peça uma {trade}.",
 		["Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}, or an {upgrade} for your Everfull flask."] =
 			"Poções de vida, mana e espírito, da pequena à suprema, cada uma para um nível. Em grande quantidade, a loja vende pacotes de cem por menos. Peça uma {trade}, ou um {upgrade} do seu frasco Everfull.",
 		["No potion leaves a flask now. Old empty ones I still buy, five gold each. An Everfull flask I can {upgrade}."] =
@@ -3813,47 +3813,24 @@ return {
 		["This item can't be worn. The Loot Buyer buys it."] = "Este item não pode ser equipado. O Loot Buyer compra ele.",
 		["These slots are retired: decks, ships, belts and gloves can't be worn. Moved: %s."] =
 			"Estes slots foram aposentados: decks, navios, cintos e luvas não podem ser equipados. Movidos: %s.",
+		-- the Badge slot opens with a main quest step (badges_core.lua, O570)
+		["The Badge slot opens with the main quest step \"%s\" (Adventure > Main Quest)."] =
+			"O slot de Badge abre com a etapa \"%s\" da quest principal (Aventura > Quest Principal).",
 		-- Cards and decks (cards_core.lua, cards.lua)
 		["You turned on %s: %s"] =
 			"Você ativou %s: %s",
 		["You turned off %s."] =
 			"Você desativou %s.",
-		["%s went into your %s."] =
-			"%s foi para o seu %s.",
-		["%s is already on with another copy of it. Only one copy counts."] =
-			"%s já está ativa com outra cópia dela. Só uma cópia conta.",
 		["You already have %d cards on, the most there can be. Turn one off first."] =
 			"Você já tem %d cartas ativas, o máximo possível. Desative uma primeiro.",
-		["Your decks are full. Take a card out of a deck that is off, or buy a bigger deck from %s."] =
-			"Seus decks estão cheios. Tire uma carta desativada de um deck, ou compre um deck maior de %s.",
-		["You need a deck to use cards. Buy one from %s in the hub: Bronze Deck for %d gold (5 cards), Silver Deck for %d (10 cards, level %d), Golden Deck for %d (20 cards, level %d). Carry it, then use the card again."] =
-			"Você precisa de um deck para usar cartas. Compre um de %s no hub: Bronze Deck por %d de ouro (5 cartas), Silver Deck por %d (10 cartas, nível %d), Golden Deck por %d (20 cartas, nível %d). Carregue-o na mochila e use a carta de novo.",
-		["The card %s is no longer in a deck you carry: turned off."] =
-			"A carta %s não está mais em um deck que você carrega: desativada.",
-		["Carry the card in your backpack to use it: not in the depot or the Purse."] =
-			"Carregue a carta na mochila para usá-la: não no depot nem na Purse.",
-		["The card could not be moved into your deck."] =
-			"Não foi possível colocar a carta no seu deck.",
-		["Decks carried: %s"] =
-			"Decks que você carrega: %s",
-		["You carry no deck."] =
-			"Você não carrega nenhum deck.",
 		["Cards on (%d of %d):"] =
 			"Cartas ativas (%d de %d):",
-		["Cards in your decks, off:"] =
-			"Cartas nos seus decks, desativadas:",
-		["Cards carried outside a deck (use one to put it in a deck):"] =
-			"Cartas fora de um deck (use uma para colocá-la em um deck):",
 		["No card is on."] =
 			"Nenhuma carta está ativa.",
 		["... and %d more."] =
 			"... e mais %d.",
-		["%s %d of %d"] =
-			"%s %d de %d",
 		["Cards"] =
 			"Cartas",
-		["Use a card you carry: it goes into a deck and turns on. Use it again to turn it off. At most %d cards are on at once."] =
-			"Use uma carta que você carrega: ela vai para um deck e é ativada. Use de novo para desativar. No máximo %d cartas ficam ativas ao mesmo tempo.",
 		["Drown"] =
 			"Afogamento",
 		["Minor"] =
@@ -3878,8 +3855,36 @@ return {
 			"Ativa, %s dura %d segundos a mais e dá %d pontos percentuais a mais de skill de distância.",
 		["Needs %s. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time."] =
 			"Precisa de %s. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
-		["Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks."] =
-			"Use para colocá-la em um deck que você carrega e ativá-la, use de novo para desativá-la. Veyra the Apothecary vende decks.",
+		["You have no copy of %s in your Deck of Cards."] =
+			"Você não tem nenhuma cópia de %s no seu Deck of Cards.",
+		["The card %s is no longer in your Deck of Cards: turned off."] =
+			"A carta %s não está mais no seu Deck of Cards: desativada.",
+		["%s went into your Deck of Cards."] =
+			"%s foi para o seu Deck of Cards.",
+		["%d new cards went into your Deck of Cards."] =
+			"%d cartas novas foram para o seu Deck of Cards.",
+		["Your decks are gone. %d cards went into your Deck of Cards."] =
+			"Seus decks acabaram. %d cartas foram para o seu Deck of Cards.",
+		["Your decks are gone. %d cards went into your Deck of Cards, which is open for you: open it from the menu."] =
+			"Seus decks acabaram. %d cartas foram para o seu Deck of Cards, que já está aberto para você: abra pelo menu.",
+		["Deck of Cards: %d of %d cards, %d copies."] =
+			"Deck of Cards: %d de %d cartas, %d cópias.",
+		["Open the Deck of Cards from the menu (Hero, Build) to turn cards on and off. At most %d cards are on at once."] =
+			"Abra o Deck of Cards pelo menu (Herói, Build) para ativar e desativar cartas. No máximo %d cartas ficam ativas ao mesmo tempo.",
+		["New card"] =
+			"Nova carta",
+		["Your Deck of Cards is locked. It opens with the main quest step \"%s\" (Adventure > Main Quest): your cards are kept, they work once it is open."] =
+			"Seu Deck of Cards está trancado. Ele abre com a etapa \"%s\" da quest principal (Aventura > Quest Principal): suas cartas ficam guardadas e funcionam quando ele abrir.",
+		["Your Deck of Cards is locked, so your cards are off. It opens with the main quest step \"%s\"."] =
+			"Seu Deck of Cards está trancado, então suas cartas estão desativadas. Ele abre com a etapa \"%s\" da quest principal.",
+		["%s went into your Deck of Cards. It is kept, but the Deck is locked: it opens with the main quest step \"%s\"."] =
+			"%s foi para o seu Deck of Cards. Ela fica guardada, mas o Deck está trancado: ele abre com a etapa \"%s\" da quest principal.",
+		["Your Deck of Cards is locked. It opens with the main quest step \"%s\" (Adventure > Main Quest). Your cards are kept in the Deck meanwhile (%d of %d)."] =
+			"Seu Deck of Cards está trancado. Ele abre com a etapa \"%s\" da quest principal (Aventura > Quest Principal). Suas cartas ficam guardadas no Deck enquanto isso (%d de %d).",
+		["It goes into your Deck of Cards by itself. Open the Deck from the menu to turn it on."] =
+			"Ela vai para o seu Deck of Cards sozinha. Abra o Deck pelo menu para ativá-la.",
+		["Cards keep themselves now. The Deck of Cards is part of the Oath: it opens in the main quest, and every card you loot goes in by itself. Open it from the menu."] =
+			"As cartas se guardam sozinhas agora. O Deck of Cards faz parte do Juramento: ele abre na quest principal, e toda carta que você pegar entra nele sozinha. Abra pelo menu.",
 		-- Card sets (O453; cards_core.lua)
 		["Card set %s is on with %s cards: %s"] =
 			"Conjunto de cartas %s ativo com %s cartas: %s",
@@ -4598,8 +4603,10 @@ return {
 		["A cursed chest rises where the %s fell! Use it within %d seconds if you dare: five hordes guard its loot."] =
 			"Um baú amaldiçoado surge onde o %s caiu! Use-o em %d segundos, se tiver coragem: cinco hordas guardam o tesouro.",
 		["CURSED CHEST"] = "BAÚ AMALDIÇOADO",
-		["%s opens the cursed chest! Five hordes will come, one after another."] =
-			"%s abre o baú amaldiçoado! Cinco hordas virão, uma após a outra.",
+		["%s opens the cursed chest! Five hordes will come, one after another. Kill them all within %d minutes."] =
+			"%s abre o baú amaldiçoado! Cinco hordas virão, uma após a outra. Mate todas em até %d minutos.",
+		["The curse grows stronger: %d seconds left to kill the hordes."] =
+			"A maldição se fortalece: restam %d segundos para matar as hordas.",
 		["Horde %d/%d!"] = "Horda %d/%d!",
 		["Horde %d/%d: a rare leader leads it!"] = "Horda %d/%d: um líder raro a comanda!",
 		["Horde %d/%d: a legendary leader leads it!"] = "Horda %d/%d: um líder lendário a comanda!",
@@ -6034,7 +6041,7 @@ return {
 		-- tooltip; unique_intro_config.lua: the one-time line at the first unique)
 		["Works for your class."] = "Funciona para a sua classe.",
 		["Works for every class."] = "Funciona para todas as classes.",
-		["Asleep: your class is not in its list."] = "Inativo: a sua classe não está na lista.",
+		["Cannot use: not for your class."] = "Não pode usar: não é para a sua classe.",
 		["Active."] = "Ativo.",
 		["Asleep: %s is stronger."] = "Inativo: %s é mais forte.",
 		["Asleep: only %d unique powers work at once."] = "Inativo: só %d poderes únicos funcionam ao mesmo tempo.",
@@ -8404,6 +8411,30 @@ return {
 			"Visto pelos jogadores por perto",
 		["A walking box of fries"] =
 			"Uma caixa de batatas fritas ambulante",
+		["Hop about as a fizzing blue energy drink can with a yellow lightning bolt"] =
+			"Saltite por aí como uma lata azul de energético com um raio amarelo",
+		["Hop about as a plain red and white pack of smokes with its lid open"] =
+			"Saltite por aí como um maço liso vermelho e branco com a tampa aberta",
+		["Waddle about as a chrome toaster with two slices of toast popping up"] =
+			"Gingue por aí como uma torradeira cromada com duas fatias de torrada pulando",
+		["Waddle about as a squeaky yellow rubber duck"] =
+			"Gingue por aí como um patinho de borracha amarelo que apita",
+		["Scuttle about as a cardboard box with two eyes peeking out"] =
+			"Escorra por aí como uma caixa de papelão com dois olhos espiando",
+		["Bounce about as a slice of pepperoni pizza with dripping cheese"] =
+			"Quique por aí como uma fatia de pizza de calabresa com queijo escorrendo",
+		["Hop about as an orange road cone with two white stripes"] =
+			"Saltite por aí como um cone de trânsito laranja com duas faixas brancas",
+		["Stroll about as a garden gnome with a tall red hat and a long white beard"] =
+			"Passeie por aí como um gnomo de jardim com um chapéu vermelho alto e uma longa barba branca",
+		["Stroll about as a snowman that came to life, top hat, carrot nose and scarf"] =
+			"Passeie por aí como um boneco de neve que ganhou vida, com cartola, nariz de cenoura e cachecol",
+		["Stroll about as a little mushroom folk under a big spotted red cap"] =
+			"Passeie por aí como um pequeno cogumelo sob um grande chapéu vermelho pintado",
+		["Stroll about as a skeleton jester with a belled two-pointed hat"] =
+			"Passeie por aí como um bobo da corte esqueleto com um chapéu de duas pontas e guizos",
+		["Strut about in a white chicken suit with a red comb and a feathered tail"] =
+			"Desfile por aí numa fantasia branca de galinha com crista vermelha e cauda de penas",
 		["A warm amber frame round your name plate, for good"] =
 			"Uma moldura âmbar quente em volta da sua placa de nome, para sempre",
 		["A warm golden line traces your outline"] =
@@ -9050,12 +9081,6 @@ return {
 			"Founder Pack, uma venda limitada, em breve",
 		["%s is no longer on sale."] =
 			"%s não está mais à venda.",
-		-- Victory emote lines (O318, cosmetics_config.lua emote say; Chaos.yell sends each viewer the line in own language)
-		["Victory!"] = "Vitória!",
-		["For the fallen!"] = "Pelos caídos!",
-		["Burn bright!"] = "Brilhe em chamas!",
-		["Glory!"] = "Glória!",
-		["Until next time."] = "Até a próxima.",
 		-- Old stash tabs worth 4 expansions (O316 follow-up, stash_config.lua messages.tabsRaised)
 		["Your old stash tabs are now worth %d slots each (%d Stash Slot Expansions). Your stash has %d slots."] =
 			"Suas abas antigas do stash agora valem %d espaços cada (%d Stash Slot Expansions). Seu stash tem %d espaços.",
@@ -9236,5 +9261,41 @@ return {
 			"Atenção: no nível %d todas as suas resistências caem %d pontos. Aumente-as antes de chegar lá.",
 		["Your resistances now carry a penalty of %d points (level %d). Raise them with gear and the passive tree."] =
 			"Suas resistências agora têm uma penalidade de %d pontos (nível %d). Aumente-as com equipamentos e a árvore passiva.",
+		["The monster you finish blows away as sand in the wind, top first"] =
+			"O monstro que você abate se desfaz em areia levada pelo vento, de cima para baixo",
+		["The monster you finish comes apart into its own pixels that drift and fade"] =
+			"O monstro que você abate se desfaz nos próprios pixels, que vão à deriva e somem",
+		["The monster you finish crumbles to grey ash and falls"] =
+			"O monstro que você abate se esfarela em cinza e cai",
+		["The monster you finish freezes, shatters into shards and melts away"] =
+			"O monstro que você abate congela, se estilhaça em cacos e derrete",
+		["Witchfire Bolt, Falling Pyre and Doomtide burn in a ring of banked embers"] =
+			"Witchfire Bolt, Falling Pyre e Doomtide queimam em um anel de brasas",
+		["Rime Bloom and Frozen Crypt burst in tall spikes of ice"] =
+			"Rime Bloom e Frozen Crypt explodem em longas lanças de gelo",
+		["Crimson Covenant spreads a ring of shadow instead of blood"] =
+			"Crimson Covenant espalha um anel de sombra em vez de sangue",
+		["Forked Storm throws arcane orbs and violet lightning"] =
+			"Forked Storm lança orbes arcanos e raios violeta",
+		["Blightswarm, Briar Prison and Primordial Squall burst in a cloud of shadow instead of spores"] =
+			"Blightswarm, Briar Prison e Primordial Squall explodem em uma nuvem de sombra em vez de esporos",
+		["Martyr's Pyre and Pyre of Absolution burn in a flaring ring of fire"] =
+			"Martyr's Pyre e Pyre of Absolution queimam em um anel de fogo rugindo",
+		["Bell of Reckoning, Rampart Quake and Pyre of Absolution strike in a violet dome"] =
+			"Bell of Reckoning, Rampart Quake e Pyre of Absolution atingem em uma cúpula violeta",
+		["Sanctum Verdict, Zealot's Wrath and Hammer of Ember Dawn flare in red"] =
+			"Sanctum Verdict, Zealot's Wrath e Hammer of Ember Dawn brilham em vermelho",
+		["Judgment of Iron and Red Frenzy burst in gold instead of red"] =
+			"Judgment of Iron e Red Frenzy explodem em dourado em vez de vermelho",
+		["Thousand-Echo Palm and Tidal Palm strike in cold blue"] =
+			"Thousand-Echo Palm e Tidal Palm atingem em azul frio",
+		["Chi Lance and Mistborne Strike strike in gold"] =
+			"Chi Lance e Mistborne Strike atingem em dourado",
+		["Hollow Knuckle strikes in red, Chi Lance and Thousand-Echo Palm send a wave of blood"] =
+			"Hollow Knuckle atinge em vermelho; Chi Lance e Thousand-Echo Palm enviam uma onda de sangue",
+		["Blightbrand burns with grave-light, not venom"] =
+			"Blightbrand queima com luz de sepulcro, não com veneno",
+		["Soulrend Beam opens a rift of arcane light"] =
+			"Soulrend Beam abre uma fenda de luz arcana",
 	},
 }

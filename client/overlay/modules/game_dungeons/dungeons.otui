@@ -1,99 +1,324 @@
-DungeonMenuItem < Panel
-  height: 60
-  image-color: #ababab
-  image-source: /images/ui/panel_flat
-  image-border: 1
-  image-color: #999999
-  focusable: true
-  phantom: false
+// Dungeons window (game_dungeons), new look of O555. From top to bottom: the filter chips and the card rail (one picture
+// card per dungeon, grouped by level band or Weekly Challenge, scrolls sideways), the chosen dungeon (art header, difficulty
+// tiles, requirements; on the right the Loot and Ranking tabs) and the queue bar (status, times, Join, Close).
+// Styles from client_chaos_theme (ChaosMainWindow, ChaosPanelDark, ChaosTabButton, ChaosPrimaryButton) and the card frames and
+// the dark fade of client/tools/gen_dungeon_card_art.py (images/dungeons/card_frame*.png, scrim.png). The pictures of the
+// dungeons are images/dungeons/<name>.png (966 x 100, dungeonsview.lua V.BANNERS); a card and the header show a slice of one.
+// dungeons.lua builds the cards (DungeonGroup holds a heading and a row of DungeonCard) and the filter chips at run time;
+// dungeons_widgets_test.lua plays that code on a fake engine built from the ids of this file.
 
-  $hover !disabled:
-    image-color: #dfdfdf
+// ---------------------------------------------------------------- the filter chips over the rail
+// a chip: the skin button cell (rest, hover, pressed = chosen); dungeons.lua sets the text and the width
+DungeonFilterChip < UIButton
+  font: verdana-11px-antialised
+  color: #8c8070
+  height: 22
+  width: 80
+  margin-right: 4
+  text-offset: 0 1
+  image-source: /images/chaos/skin/button
+  image-clip: 0 0 64 24
+  image-border: 5
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
 
-  $focus:
-    image-color: #ffffff
+  $hover !checked:
+    image-clip: 0 24 64 24
+    color: #d6c9ae
 
-  UICreature
-    id: boss
+  $checked:
+    image-clip: 0 48 64 24
+    color: #f6cf72
+
+// ---------------------------------------------------------------- the rail
+// a group: its heading with a rule to the end of its cards, then the row of its cards. dungeons.lua sets the width
+DungeonGroup < UIWidget
+  height: 190
+  margin-right: 16
+  focusable: false
+
+  $mobile:
+    height: 136
+
+  UILabel
+    id: heading
+    font: verdana-11px-rounded
+    color: #e8b84a
+    height: 16
     anchors.top: parent.top
     anchors.left: parent.left
-    size: 48 48
-    padding-top: 10
-    old-scaling: true
+    text-auto-resize: true
+    phantom: true
 
-  Label
-    id: title
-    anchors.top: parent.top
-    anchors.left: boss.right
+  UIWidget
+    id: rule
+    height: 1
+    background-color: #3a3339
+    anchors.left: prev.right
     anchors.right: parent.right
-    margin-top: 1
-    margin-left: 3
-    !text: tr('Dungeon Name')
-    color: #dfdfdf
+    anchors.verticalCenter: prev.verticalCenter
+    margin-left: 8
+    margin-right: 8
+    phantom: true
 
-  Label
+  UIWidget
+    id: row
+    anchors.top: heading.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-top: 6
+    focusable: false
+    layout:
+      type: horizontalBox
+
+// the pieces of a card, each its own style so a phone can resize it ($mobile on a child written inside a style is not
+// something this engine promises)
+DungeonCardArt < UIWidget
+  id: art
+  anchors.top: parent.top
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin: 4 4 0 4
+  height: 100
+  image-source: /images/dungeons/Underworld
+  image-clip: 408 0 148 100
+  phantom: true
+
+  $mobile:
+    height: 62
+    image-clip: 423 19 120 62
+
+DungeonCardScrim < UIWidget
+  id: scrim
+  anchors.left: art.left
+  anchors.right: art.right
+  anchors.bottom: art.bottom
+  height: 40
+  image-source: /images/dungeons/scrim
+  phantom: true
+
+  $mobile:
+    height: 28
+
+DungeonCardBoss < UICreature
+  id: boss
+  size: 64 64
+  anchors.right: art.right
+  anchors.bottom: art.bottom
+  margin-right: 2
+  margin-bottom: 2
+  old-scaling: true
+  phantom: true
+
+  $mobile:
+    size: 44 44
+
+// small flat chip over the picture (group tag, best difficulty)
+DungeonCardChip < UILabel
+  font: verdana-9px-rounded
+  color: #d6c9ae
+  height: 14
+  background-color: #0d0b0ecc
+  border-width: 1
+  border-color: #574d52
+  text-auto-resize: true
+  phantom: true
+
+DungeonCardTitle < UILabel
+  id: title
+  font: verdana-11px-rounded
+  color: #f6cf72
+  height: 14
+  anchors.top: art.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin-top: 3
+  margin-left: 8
+  margin-right: 6
+  text-align: left
+  phantom: true
+
+DungeonCardLine < UILabel
+  font: Verdana-9px-antialiased
+  color: #8c8070
+  height: 12
+  anchors.top: prev.bottom
+  anchors.left: prev.left
+  anchors.right: prev.right
+  margin-top: 2
+  text-align: left
+  phantom: true
+
+// over the picture of a card the character cannot enter yet: a dark veil, a padlock and "Needs level N" (the name, the
+// level and the queue under the picture stay readable)
+DungeonCardLock < UIWidget
+  id: lock
+  anchors.top: art.top
+  anchors.left: art.left
+  anchors.right: art.right
+  anchors.bottom: art.bottom
+  background-color: #0d0b0ebe
+  visible: false
+  phantom: true
+
+  UIWidget
+    id: lockIcon
+    size: 10 12
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.verticalCenter: parent.verticalCenter
+    margin-bottom: 12
+    image-source: /images/game/depot/lock
+    phantom: true
+
+  UILabel
+    id: lockText
+    font: verdana-11px-rounded
+    color: #b9ab8e
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    text-align: center
+    phantom: true
+
+// one dungeon: 156 x 168 (phone 128 x 112): the picture with the group tag, the best difficulty and the boss; under it the
+// name, the level and the queue. The frame is the card art (rest, hover, chosen = checked)
+DungeonCard < UIWidget
+  size: 156 168
+  margin-right: 8
+  image-source: /images/dungeons/card_frame
+  image-border: 4
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover !checked:
+    image-source: /images/dungeons/card_frame_hover
+
+  $checked:
+    image-source: /images/dungeons/card_frame_sel
+
+  $mobile:
+    size: 128 112
+
+  DungeonCardArt
+
+  DungeonCardScrim
+
+  DungeonCardBoss
+
+  DungeonCardChip
+    id: group
+    anchors.top: art.top
+    anchors.left: art.left
+    margin-top: 4
+    margin-left: 4
+
+  DungeonCardChip
+    id: best
+    anchors.top: art.top
+    anchors.right: art.right
+    margin-top: 4
+    margin-right: 4
+    color: #f6cf72
+    visible: false
+
+  DungeonCardTitle
+
+  DungeonCardLine
     id: level
-    anchors.top: prev.bottom
-    anchors.left: boss.right
-    anchors.right: parent.right
-    margin-top: 2
-    margin-left: 3
 
-  Label
+  DungeonCardLine
     id: queue
-    anchors.top: prev.bottom
-    anchors.left: boss.right
-    anchors.right: parent.right
-    margin-top: 2
-    margin-left: 3
+
+  // the party size, when the dungeon asks for one (hidden on a phone: no room)
+  DungeonCardLine
+    id: party
+    visible: false
+
+  DungeonCardLock
+
+// ---------------------------------------------------------------- the chosen dungeon
+DungeonSectionHeading < UILabel
+  font: verdana-11px-rounded
+  color: #e8b84a
+  height: 16
+  text-align: left
+  phantom: true
+
+DungeonChip < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  height: 20
+  margin-right: 6
+  background-color: #0d0b0e99
+  border-width: 1
+  border-color: #3a3339
+  text-auto-resize: true
+  phantom: true
 
 DifficultyButton < Panel
-  width: 160
-  image-color: #ababab
-  image-source: /images/ui/panel_flat
-  image-border: 1
-  image-color: #999999
+  width: 116
+  height: 136
+  margin-right: 4
+  image-source: /images/dungeons/card_frame
+  image-border: 4
   color: #999999
-  text-offset: 0 -35
+  text-offset: 0 -56
+  font: verdana-11px-rounded
   phantom: false
   clipping: true
 
   $hover !disabled:
-    image-color: #dfdfdf
+    image-source: /images/dungeons/card_frame_hover
+    color: #d6c9ae
 
   $focus:
-    image-color: #ffffff
+    image-source: /images/dungeons/card_frame_sel
+    color: #f6cf72
 
   $disabled:
-    color: #ababab88
+    color: #6b6258
 
-  // phone: six buttons share the 705 px of the info panel
+  // phone: six tiles share the 918 px of the window; no icon, so the text has the height
   $mobile:
-    width: 114
+    width: 148
+    height: 96
+    text-offset: 0 -38
 
 DifficultyIcon < Panel
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 20
   size: 40 42
   image-source: /images/dungeons/diff
   opacity: 1.0
 
   $disabled:
-    opacity: 0.8
+    opacity: 0.6
+
+  $mobile:
+    visible: false
 
 DifficultyInfo < Label
   id: info
+  font: Verdana-9px-antialiased
   anchors.top: prev.bottom
   anchors.left: parent.left
   anchors.right: parent.right
   anchors.bottom: parent.bottom
-  margin-top: 20
+  margin-top: 4
+  margin-left: 4
+  margin-right: 4
   text-align: top
   color: #ababab
 
+  // phone: the icon is hidden, so the text starts under the name
   $mobile:
-    margin-top: 4
-    font: verdana-9px
+    anchors.top: parent.top
+    margin-top: 18
 
 PlayersTableRow < TableRow
   height: 19
@@ -155,634 +380,92 @@ LootItem < UIItem
   virtual: true
   phantom: false
 
-MainWindow
+ChaosMainWindow
+  id: dungeonsWindow
   !text: tr('Dungeons')
   size: 1219 720
-  // phone interface is 540 high and 960 wide: 950 x 536. The info panel (705 x 444) has two pages behind the tabs
-  // at its top (dungeons.lua setMobilePage): page 1 banner 26+72, difficulties 150, requirements 168 (to 417) with the
-  // queue to the right of it; page 2 boss loot 26+162 with the challenges below it, the two rank tables on the right
-  // (half of the height each). The menu on the left keeps its 190.
+  // phone interface is 540 high and 960 wide: 950 x 536. The rail gets shorter cards, the chosen dungeon has two pages
+  // behind the tabs at its top (dungeons.lua setMobilePage): page 1 the header, the difficulty tiles and the requirements,
+  // page 2 the Loot and Ranking tabs
   $mobile:
     width: 950
     height: 536
 
-  ScrollablePanel
-    id: dungeonsMenu
+  // ---- filter chips (dungeons.lua adds the chips: All and one per group that has a card)
+  UIWidget
+    id: filterRow
     anchors.top: parent.top
     anchors.left: parent.left
-    anchors.bottom: separator.top
-    width: 190
-    margin-bottom: 10
-    image-source: /images/ui/panel_flat
-    image-border: 1
-    image-color: #999999
-    padding: 1
-    vertical-scrollbar: dungeonsScroll
-    auto-focus: none
-    layout:
-      type: verticalBox
-
-  VerticalScrollBar
-    id: dungeonsScroll
-    anchors.top: dungeonsMenu.top
-    anchors.bottom: dungeonsMenu.bottom
-    anchors.left: dungeonsMenu.right
-    step: 24
-    pixels-scroll: true
-
-  FlatPanel
-    id: dungeonInfo
-    anchors.top: prev.top
-    anchors.left: prev.right
     anchors.right: parent.right
-    anchors.bottom: prev.bottom
-    margin-left: 10
-    padding: 1
+    height: 24
+    focusable: false
+
+    UILabel
+      id: railTitle
+      font: chaos-heading-14px
+      color: #e8b84a
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      text-auto-resize: true
+      !text: tr('Choose a dungeon')
+      phantom: true
 
     UIWidget
-      id: banner
+      id: filters
       anchors.top: parent.top
-      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      anchors.left: prev.right
       anchors.right: parent.right
-      height: 100
-      background: #555555
-
-      $mobile:
-        margin-top: 26
-        height: 72
-
-    MiniPanel
-      id: difficulties
-      anchors.top: parent.top
-      anchors.left: parent.left
-      anchors.right: parent.right
-      height: 179
-      margin-top: 100
-      !text: tr('Difficulty')
+      margin-left: 20
+      focusable: false
       layout:
         type: horizontalBox
 
-      $mobile:
-        margin-top: 98
-        height: 150
+  // ---- the rail: groups of cards, scrolls sideways (wheel, bar or drag of the bar)
+  ScrollablePanel
+    id: dungeonsRail
+    anchors.top: filterRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 190
+    horizontal-scrollbar: dungeonsRailScroll
+    auto-focus: none
+    focusable: false
+    layout:
+      type: horizontalBox
 
-      DifficultyButton
-        !text: tr('Normal')
-        @onFocusChange: modules.game_dungeons.onDifficultyFocus(1, self:isFocused())
+    $mobile:
+      height: 136
 
-        DifficultyIcon
-          image-clip: 0 0 40 42
-        
-        DifficultyInfo
-          !text: tr('Monster Health 100%\nMonster Damage 100%')
+  HorizontalScrollBar
+    id: dungeonsRailScroll
+    anchors.top: dungeonsRail.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 12
+    step: 40
+    pixels-scroll: true
 
-      DifficultyButton
-        !text: tr('Hard')
-        @onFocusChange: modules.game_dungeons.onDifficultyFocus(2, self:isFocused())
+  // ---- the chosen dungeon
+  UIWidget
+    id: detail
+    anchors.top: dungeonsRailScroll.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: queueBar.top
+    margin-top: 8
+    margin-bottom: 8
+    focusable: false
 
-        DifficultyIcon
-          image-clip: 40 0 40 42
-        
-        DifficultyInfo
-          !text: tr('Monster Health 200%\nMonster Damage 130%\nBonus XP +75%\nGold Drop +75%')
-        
-        Panel
-          id: lockBg
-          anchors.fill: parent
-          background: #000000cc
-          margin-top: 1
-          visible: false
-        
-        Panel
-          id: lockImg
-          anchors.centerIn: parent
-          image-source: /images/dungeons/difficulty_lock
-          visible: false
-
-      DifficultyButton
-        !text: tr('Expert')
-        @onFocusChange: modules.game_dungeons.onDifficultyFocus(3, self:isFocused())
-
-        DifficultyIcon
-          image-clip: 80 0 40 42
-        
-        DifficultyInfo
-          !text: tr('Monster Health 320%\nMonster Damage 190%\nBonus XP +100%\nGold Drop +100%\nLoot Chance +15%')
-        
-        Panel
-          id: lockBg
-          anchors.fill: parent
-          background: #000000cc
-          margin-top: 1
-          visible: false
-        
-        Panel
-          id: lockImg
-          anchors.centerIn: parent
-          image-source: /images/dungeons/difficulty_lock
-          visible: false
-
-      DifficultyButton
-        !text: tr('Master')
-        @onFocusChange: modules.game_dungeons.onDifficultyFocus(4, self:isFocused())
-
-        DifficultyIcon
-          image-clip: 120 0 40 42
-        
-        DifficultyInfo
-          !text: tr('Monster Health 500%\nMonster Damage 280%\nBonus XP +200%\nGold Drop +200%\nLoot Chance +30%')
-        
-        Panel
-          id: lockBg
-          anchors.fill: parent
-          background: #000000cc
-          margin-top: 1
-          visible: false
-        
-        Panel
-          id: lockImg
-          anchors.centerIn: parent
-          image-source: /images/dungeons/difficulty_lock
-          visible: false
-
-      DifficultyButton
-        !text: tr('Torment')
-        @onFocusChange: modules.game_dungeons.onDifficultyFocus(5, self:isFocused())
-
-        DifficultyIcon
-          image-clip: 160 0 40 42
-        
-        DifficultyInfo
-          !text: tr('Monster Health 800%\nMonster Damage 400%\nBonus XP +300%\nGold Drop +300%\nLoot Chance +45%')
-        
-        Panel
-          id: lockBg
-          anchors.fill: parent
-          background: #000000cc
-          margin-top: 1
-          visible: false
-        
-        Panel
-          id: lockImg
-          anchors.centerIn: parent
-          image-source: /images/dungeons/difficulty_lock
-          visible: false
-
-      DifficultyButton
-        !text: tr('Hell')
-        @onFocusChange: modules.game_dungeons.onDifficultyFocus(6, self:isFocused())
-
-        DifficultyIcon
-          image-clip: 200 0 40 42
-        
-        DifficultyInfo
-          !text: tr('Monster Health 1300%\nMonster Damage 600%\nBonus XP +400%\nGold Drop +400%\nLoot Chance +60%')
-        
-        Panel
-          id: lockBg
-          anchors.fill: parent
-          background: #000000cc
-          margin-top: 1
-          visible: false
-        
-        Panel
-          id: lockImg
-          anchors.centerIn: parent
-          image-source: /images/dungeons/difficulty_lock
-          visible: false
-
-    MiniPanel
-      id: requirements
-      anchors.top: prev.bottom
-      anchors.left: parent.left
-      size: 221 168
-      image-source: /images/ui/minipanel
-      image-border: 10
-      image-border-top: 30
-      image-border-bottom: 5
-      margin-top: 1
-      !text: tr('Requirements')
-
-      Label
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-left: 2
-        !text: tr('Level:')
-
-        $disabled:
-          height: 0
-          margin-top: 0
-
-        Label
-          id: level
-          anchors.top: parent.top
-          anchors.right: parent.right
-          margin-right: 5
-          text-align: right
-          text-auto-resize: true
-          text: 100
-
-      Label
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-left: 2
-        !text: tr('Party:')
-
-        $disabled:
-          height: 0
-
-        Label
-          id: party
-          anchors.top: parent.top
-          anchors.right: parent.right
-          margin-right: 5
-          text-align: right
-          text-auto-resize: true
-          text: 1-4
-
-      Label
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-left: 2
-        !text: tr('Item Level:')
-
-        $disabled:
-          height: 0
-
-        Label
-          id: iLvl
-          anchors.top: parent.top
-          anchors.right: parent.right
-          margin-right: 5
-          text-align: right
-          text-auto-resize: true
-          text: 350
-
-      Label
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-left: 2
-        !text: tr('Gold:')
-
-        $disabled:
-          height: 0
-
-        Label
-          id: gold
-          anchors.top: parent.top
-          anchors.right: parent.right
-          margin-right: 5
-          text-align: right
-          text-auto-resize: true
-          text: 100.000.000
-
-      MiniPanel
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-top: 2
-        margin-left: 2
-        margin-right: 4
-        !text: tr('Quests')
-        height: 55
-
-        $disabled:
-          height: 0
-          margin-top: 0
-
-        Label
-          id: quests
-          anchors.fill: parent
-          text-auto-resize: true
-          text-wrap: true
-      
-      MiniPanel
-        id: items
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 65
-        !text: tr('Items')
-        layout:
-          type: grid
-          cell-size: 34 34
-          flow: true
-
-        $disabled:
-          height: 0
-          margin-top: 0
-          margin-bottom: 0
-      
-        LootItem
-          id: item1
-        LootItem
-          id: item2
-        LootItem
-          id: item3
-        LootItem
-          id: item4
-        LootItem
-          id: item5
-        LootItem
-          id: item6
-
-    MiniPanel
-      id: bossLoot
-      anchors.top: prev.top
-      anchors.left: prev.right
-      size: 247 162
-      !text: tr('Potential Boss Loot')
-      layout:
-        type: grid
-        cell-size: 34 34
-        flow: true
-
-      $mobile:
-        anchors.top: parent.top
-        anchors.left: parent.left
-        margin-top: 26
-
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-      LootItem
-
-    MiniPanel
-      anchors.top: prev.top
-      anchors.left: prev.right
-      anchors.bottom: parent.bottom
-      image-source: /images/ui/minipanel
-      image-border: 20
-      image-border-top: 30
-      image-border-bottom: 5
-      width: 250
-      id: soloPanel
-      !text: tr('Top Solo Runners')
-
-      $mobile:
-        anchors.top: parent.top
-        anchors.left: bossLoot.right
-        anchors.right: parent.right
-        anchors.bottom: parent.verticalCenter
-        margin-top: 26
-
-      Table
-        id: soloTable
-        anchors.fill: parent
-        focusable: false
-        table-data: soloTableData
-        row-style: PlayersTableRow
-        column-style: PlayersTableColumn
-        header-column-style: false
-        header-row-style: false
-
-        TableHeaderRow
-          id: header
-          height: 20
-          
-          PlayersTableHeaderColumn
-            !text: tr('#')
-            width: 33
-
-          PlayersTableHeaderColumn
-            !text: tr('Name')
-            width: 128
-
-          PlayersTableHeaderColumn
-            !text: tr('Time')
-            width: 70
-
-      TableData
-        id: soloTableData
-        anchors.fill: soloTable
-        padding: 1
-        padding-top: 20
-        vertical-scrollbar: soloTableScroll
-
-      VerticalScrollBar
-        id: soloTableScroll
-        anchors.top: soloTableData.top
-        anchors.bottom: soloTableData.bottom
-        anchors.right: soloTableData.right
-        step: 20
-        pixels-scroll: true
-    
-    MiniPanel
-      anchors.top: prev.top
-      anchors.left: prev.right
-      anchors.bottom: parent.bottom
-      image-source: /images/ui/minipanel
-      image-border: 20
-      image-border-top: 30
-      image-border-bottom: 5
-      width: 250
-      id: groupPanel
-      !text: tr('Top Group Runners')
-
-      $mobile:
-        anchors.top: parent.verticalCenter
-        anchors.left: bossLoot.right
-        anchors.right: parent.right
-
-      Table
-        id: groupTable
-        anchors.fill: parent
-        focusable: false
-        table-data: groupTableData
-        row-style: PlayersTableRow
-        column-style: PlayersTableColumn
-        header-column-style: false
-        header-row-style: false
-
-        TableHeaderRow
-          id: header
-          height: 20
-          
-          PlayersTableHeaderColumn
-            !text: tr('#')
-            width: 33
-
-          PlayersTableHeaderColumn
-            !text: tr('Name')
-            width: 128
-
-          PlayersTableHeaderColumn
-            !text: tr('Time')
-            width: 70
-
-      TableData
-        id: groupTableData
-        anchors.fill: groupTable
-        padding: 1
-        padding-top: 20
-        vertical-scrollbar: groupTableScroll
-
-      VerticalScrollBar
-        id: groupTableScroll
-        anchors.top: groupTableData.top
-        anchors.bottom: groupTableData.bottom
-        anchors.right: groupTableData.right
-        step: 20
-        pixels-scroll: true
-
-    MiniPanel
-      anchors.top: requirements.bottom
-      anchors.left: parent.left
-      anchors.right: requirements.right
-      anchors.bottom: parent.bottom
-      image-source: /images/ui/minipanel
-      image-border: 10
-      image-border-top: 30
-      image-border-bottom: 5
-      id: queuePanel
-      !text: tr('Queue')
-
-      $mobile:
-        anchors.top: requirements.top
-        anchors.left: requirements.right
-        anchors.right: parent.right
-        margin-left: 4
-
-      Label
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-left: 2
-        margin-top: 2
-        text-auto-resize: true
-        !text: tr('Status:')
-
-        Label
-          id: queueStatus
-          anchors.top: parent.top
-          anchors.right: parent.right
-          margin-right: 5
-          text-align: right
-          text-auto-resize: true
-          color: green
-          !text: tr('Open')
-          text-auto-resize: true
-
-      Label
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-left: 2
-        !text: tr('Estimated Time:')
-        text-auto-resize: true
-
-        Label
-          id: queueTime
-          anchors.top: parent.top
-          anchors.right: parent.right
-          margin-right: 5
-          text-align: right
-          text: 00:00:00
-          text-auto-resize: true
-
-      HorizontalSeparator
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin: 0 10
-        margin-top: 10
-
-      HorizontalSeparator
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin: 0 10
-        margin-top: 70
-
-      Label
-        anchors.centerIn: parent
-        !text: tr('Waiting Time')
-        margin-bottom: 22
-        color: #adadad
-        text-auto-resize: true
-
-      Label
-        id: queueWaiting
-        anchors.centerIn: parent
-        text: 00:00:00
-        margin-bottom: 7
-        text-auto-resize: true
-
-      Label
-        id: queueDungeon
-        anchors.centerIn: parent
-        margin-top: 11
-        text: ------
-        text-auto-resize: true
-
-      Button
-        id: queueButton
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        !text: tr('Join')
-        margin-bottom: 5
-        @onClick: modules.game_dungeons.joinQueue()
-
-    ChallengesPanel
-      id: challenges
-      anchors.top: bossLoot.bottom
-      anchors.left: bossLoot.left
-      anchors.right: bossLoot.right
-      anchors.bottom: parent.bottom
-      image-source: /images/ui/panel_map
-      image-border: 10
-      image-border-top: 5
-      image-border-bottom: 5
-      !text: tr('Challenges')
-      vertical-scrollbar: challengesScroll
-      layout:
-        type: verticalBox
-    
-    VerticalScrollBar
-      id: challengesScroll
-      anchors.top: challenges.top
-      anchors.bottom: challenges.bottom
-      anchors.right: challenges.right
-      margin-top: 23
-      margin-bottom: 4
-      margin-right: 4
-      step: 24
-      pixels-scroll: true
-
-    // phone only: the two pages of the info panel (dungeons.lua setMobilePage)
+    // phone only: the two pages of the chosen dungeon (dungeons.lua setMobilePage)
     ChaosTabButton
       id: pageInfoTab
       anchors.top: parent.top
       anchors.left: parent.left
-      width: 170
+      width: 190
+      height: 24
       visible: false
       checked: true
       !text: tr('Difficulty and queue')
@@ -796,7 +479,8 @@ MainWindow
       anchors.top: parent.top
       anchors.left: prev.right
       margin-left: 4
-      width: 170
+      width: 190
+      height: 24
       visible: false
       !text: tr('Loot and ranks')
       @onClick: modules.game_dungeons.setMobilePage(2)
@@ -804,16 +488,677 @@ MainWindow
       $mobile:
         visible: true
 
-  HorizontalSeparator
-    id: separator
+    // ---- left: the art header, the difficulty tiles, the requirements
+    ChaosPanelDark
+      id: infoPanel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      width: 735
+      padding: 5
+
+      $mobile:
+        anchors.right: parent.right
+        margin-top: 28
+
+      UIWidget
+        id: banner
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 84
+        background: #1a151a
+        image-source: /images/dungeons/Underworld
+        image-clip: 120 8 725 84
+        phantom: true
+
+        $mobile:
+          height: 52
+          image-clip: 120 24 725 52
+
+      UIWidget
+        id: bannerScrim
+        anchors.left: banner.left
+        anchors.right: banner.right
+        anchors.bottom: banner.bottom
+        height: 52
+        image-source: /images/dungeons/scrim
+        phantom: true
+
+      UILabel
+        id: bannerTitle
+        font: chaos-heading-14px
+        color: #f6cf72
+        anchors.left: banner.left
+        anchors.bottom: banner.bottom
+        margin-left: 12
+        margin-bottom: 8
+        text-auto-resize: true
+        phantom: true
+
+        $mobile:
+          margin-bottom: 4
+
+      UIWidget
+        id: chips
+        anchors.top: banner.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        height: 20
+        focusable: false
+        layout:
+          type: horizontalBox
+
+        DungeonChip
+          id: chipLevel
+
+        DungeonChip
+          id: chipQueue
+
+        DungeonChip
+          id: chipBest
+          visible: false
+
+      DungeonSectionHeading
+        id: difficultiesHeading
+        anchors.top: chips.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        !text: tr('Difficulty')
+
+        $mobile:
+          visible: false
+
+      UIWidget
+        id: difficulties
+        anchors.top: difficultiesHeading.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 2
+        height: 136
+        layout:
+          type: horizontalBox
+
+        $mobile:
+          anchors.top: chips.bottom
+          margin-top: 6
+          height: 96
+
+        DifficultyButton
+          !text: tr('Normal')
+          @onFocusChange: modules.game_dungeons.onDifficultyFocus(1, self:isFocused())
+
+          DifficultyIcon
+            image-clip: 0 0 40 42
+
+          DifficultyInfo
+            !text: tr('Monster Health 100%\nMonster Damage 100%')
+
+        DifficultyButton
+          !text: tr('Hard')
+          @onFocusChange: modules.game_dungeons.onDifficultyFocus(2, self:isFocused())
+
+          DifficultyIcon
+            image-clip: 40 0 40 42
+
+          DifficultyInfo
+            !text: tr('Monster Health 200%\nMonster Damage 130%\nBonus XP +75%\nGold Drop +75%')
+
+          Panel
+            id: lockBg
+            anchors.fill: parent
+            background: #000000cc
+            margin-top: 1
+            visible: false
+
+          Panel
+            id: lockImg
+            anchors.centerIn: parent
+            image-source: /images/dungeons/difficulty_lock
+            visible: false
+
+        DifficultyButton
+          !text: tr('Expert')
+          @onFocusChange: modules.game_dungeons.onDifficultyFocus(3, self:isFocused())
+
+          DifficultyIcon
+            image-clip: 80 0 40 42
+
+          DifficultyInfo
+            !text: tr('Monster Health 320%\nMonster Damage 190%\nBonus XP +100%\nGold Drop +100%\nLoot Chance +15%')
+
+          Panel
+            id: lockBg
+            anchors.fill: parent
+            background: #000000cc
+            margin-top: 1
+            visible: false
+
+          Panel
+            id: lockImg
+            anchors.centerIn: parent
+            image-source: /images/dungeons/difficulty_lock
+            visible: false
+
+        DifficultyButton
+          !text: tr('Master')
+          @onFocusChange: modules.game_dungeons.onDifficultyFocus(4, self:isFocused())
+
+          DifficultyIcon
+            image-clip: 120 0 40 42
+
+          DifficultyInfo
+            !text: tr('Monster Health 500%\nMonster Damage 280%\nBonus XP +200%\nGold Drop +200%\nLoot Chance +30%')
+
+          Panel
+            id: lockBg
+            anchors.fill: parent
+            background: #000000cc
+            margin-top: 1
+            visible: false
+
+          Panel
+            id: lockImg
+            anchors.centerIn: parent
+            image-source: /images/dungeons/difficulty_lock
+            visible: false
+
+        DifficultyButton
+          !text: tr('Torment')
+          @onFocusChange: modules.game_dungeons.onDifficultyFocus(5, self:isFocused())
+
+          DifficultyIcon
+            image-clip: 160 0 40 42
+
+          DifficultyInfo
+            !text: tr('Monster Health 800%\nMonster Damage 400%\nBonus XP +300%\nGold Drop +300%\nLoot Chance +45%')
+
+          Panel
+            id: lockBg
+            anchors.fill: parent
+            background: #000000cc
+            margin-top: 1
+            visible: false
+
+          Panel
+            id: lockImg
+            anchors.centerIn: parent
+            image-source: /images/dungeons/difficulty_lock
+            visible: false
+
+        DifficultyButton
+          !text: tr('Hell')
+          @onFocusChange: modules.game_dungeons.onDifficultyFocus(6, self:isFocused())
+
+          DifficultyIcon
+            image-clip: 200 0 40 42
+
+          DifficultyInfo
+            !text: tr('Monster Health 1300%\nMonster Damage 600%\nBonus XP +400%\nGold Drop +400%\nLoot Chance +60%')
+
+          Panel
+            id: lockBg
+            anchors.fill: parent
+            background: #000000cc
+            margin-top: 1
+            visible: false
+
+          Panel
+            id: lockImg
+            anchors.centerIn: parent
+            image-source: /images/dungeons/difficulty_lock
+            visible: false
+
+      // requirements: the chips that apply (dungeons.lua hides the rest), then the quests and the items
+      UIWidget
+        id: requirements
+        anchors.top: difficulties.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-top: 8
+        focusable: false
+
+        UIWidget
+          id: reqChips
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          height: 20
+          focusable: false
+          layout:
+            type: horizontalBox
+
+          DungeonChip
+            id: reqLevel
+
+          DungeonChip
+            id: reqParty
+
+          DungeonChip
+            id: reqILvl
+
+          DungeonChip
+            id: reqGold
+
+        UIWidget
+          id: reqRow
+          anchors.top: reqChips.bottom
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.bottom: parent.bottom
+          margin-top: 4
+          focusable: false
+          layout:
+            type: horizontalBox
+
+          UILabel
+            id: quests
+            width: 480
+            font: Verdana-9px-antialiased
+            color: #b9ab8e
+            text-wrap: true
+            text-align: topLeft
+            visible: false
+
+          UIWidget
+            id: items
+            width: 204
+            visible: false
+            layout:
+              type: grid
+              cell-size: 34 34
+              flow: true
+
+            LootItem
+              id: item1
+            LootItem
+              id: item2
+            LootItem
+              id: item3
+            LootItem
+              id: item4
+            LootItem
+              id: item5
+            LootItem
+              id: item6
+
+    // ---- right: Loot and Ranking
+    ChaosPanelDark
+      id: sidePanel
+      anchors.top: parent.top
+      anchors.left: infoPanel.right
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-left: 8
+      padding: 5
+
+      $mobile:
+        anchors.left: parent.left
+        margin-left: 0
+        margin-top: 28
+        visible: false
+
+      ChaosTabButton
+        id: lootTab
+        anchors.top: parent.top
+        anchors.left: parent.left
+        width: 110
+        height: 24
+        checked: true
+        !text: tr('Loot')
+        @onClick: modules.game_dungeons.showSideTab(1)
+
+      ChaosTabButton
+        id: rankTab
+        anchors.top: parent.top
+        anchors.left: prev.right
+        margin-left: 4
+        width: 110
+        height: 24
+        !text: tr('Ranking')
+        @onClick: modules.game_dungeons.showSideTab(2)
+
+      // loot tab
+      UIWidget
+        id: lootPage
+        anchors.top: lootTab.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-top: 8
+        focusable: false
+
+        DungeonSectionHeading
+          id: lootHeading
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          !text: tr('Potential Boss Loot')
+
+        UIWidget
+          id: bossLoot
+          anchors.top: prev.bottom
+          anchors.left: parent.left
+          anchors.right: parent.right
+          margin-top: 4
+          height: 118
+          focusable: false
+          layout:
+            type: grid
+            cell-size: 34 34
+            cell-spacing: 4
+            flow: true
+
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+          LootItem
+
+        ChallengesPanel
+          id: challenges
+          anchors.top: bossLoot.bottom
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.bottom: parent.bottom
+          margin-top: 6
+          image-source: /images/ui/panel_map
+          image-border: 10
+          image-border-top: 5
+          image-border-bottom: 5
+          !text: tr('Challenges')
+          vertical-scrollbar: challengesScroll
+          layout:
+            type: verticalBox
+
+        VerticalScrollBar
+          id: challengesScroll
+          anchors.top: challenges.top
+          anchors.bottom: challenges.bottom
+          anchors.right: challenges.right
+          margin-top: 23
+          margin-bottom: 4
+          margin-right: 4
+          step: 24
+          pixels-scroll: true
+
+      // ranking tab
+      UIWidget
+        id: rankPage
+        anchors.top: lootTab.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-top: 8
+        visible: false
+        focusable: false
+
+        UIWidget
+          id: soloPanel
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.bottom: parent.verticalCenter
+          margin-bottom: 4
+          focusable: false
+
+          DungeonSectionHeading
+            id: soloHeading
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            !text: tr('Top Solo Runners')
+
+          Table
+            id: soloTable
+            anchors.top: prev.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            margin-top: 2
+            focusable: false
+            table-data: soloTableData
+            row-style: PlayersTableRow
+            column-style: PlayersTableColumn
+            header-column-style: false
+            header-row-style: false
+
+            TableHeaderRow
+              id: header
+              height: 20
+
+              PlayersTableHeaderColumn
+                !text: tr('#')
+                width: 36
+
+              PlayersTableHeaderColumn
+                !text: tr('Name')
+                width: 290
+
+              PlayersTableHeaderColumn
+                !text: tr('Time')
+                width: 80
+
+          TableData
+            id: soloTableData
+            anchors.fill: soloTable
+            padding: 1
+            padding-top: 20
+            vertical-scrollbar: soloTableScroll
+
+          VerticalScrollBar
+            id: soloTableScroll
+            anchors.top: soloTableData.top
+            anchors.bottom: soloTableData.bottom
+            anchors.right: soloTableData.right
+            step: 20
+            pixels-scroll: true
+
+        UIWidget
+          id: groupPanel
+          anchors.top: soloPanel.bottom
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.bottom: parent.bottom
+          margin-top: 4
+          focusable: false
+
+          DungeonSectionHeading
+            id: groupHeading
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            !text: tr('Top Group Runners')
+
+          Table
+            id: groupTable
+            anchors.top: prev.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            margin-top: 2
+            focusable: false
+            table-data: groupTableData
+            row-style: PlayersTableRow
+            column-style: PlayersTableColumn
+            header-column-style: false
+            header-row-style: false
+
+            TableHeaderRow
+              id: header
+              height: 20
+
+              PlayersTableHeaderColumn
+                !text: tr('#')
+                width: 36
+
+              PlayersTableHeaderColumn
+                !text: tr('Name')
+                width: 290
+
+              PlayersTableHeaderColumn
+                !text: tr('Time')
+                width: 80
+
+          TableData
+            id: groupTableData
+            anchors.fill: groupTable
+            padding: 1
+            padding-top: 20
+            vertical-scrollbar: groupTableScroll
+
+          VerticalScrollBar
+            id: groupTableScroll
+            anchors.top: groupTableData.top
+            anchors.bottom: groupTableData.bottom
+            anchors.right: groupTableData.right
+            step: 20
+            pixels-scroll: true
+
+  // ---- the queue bar: status, estimated and waiting time, the dungeon queued for, Join and Close
+  ChaosPanelDark
+    id: queueBar
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-bottom: 35
+    height: 46
+    padding: 4
 
-  Button
-    anchors.bottom: parent.bottom
-    anchors.right: parent.right
-    !text: tr('Close')
-    width: 60
-    @onClick: modules.game_dungeons.toggle()
+    $mobile:
+      height: 40
+
+    UILabel
+      id: statusCaption
+      font: Verdana-9px-antialiased
+      color: #8c8070
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 3
+      margin-left: 10
+      text-auto-resize: true
+      !text: tr('Status:')
+      phantom: true
+
+    UILabel
+      id: queueStatus
+      font: verdana-11px-rounded
+      color: green
+      anchors.top: prev.bottom
+      anchors.left: prev.left
+      margin-top: 2
+      text-auto-resize: true
+      !text: tr('Open')
+      phantom: true
+
+    UILabel
+      id: timeCaption
+      font: Verdana-9px-antialiased
+      color: #8c8070
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 3
+      margin-left: 170
+      text-auto-resize: true
+      !text: tr('Estimated Time:')
+      phantom: true
+
+    UILabel
+      id: queueTime
+      font: verdana-11px-rounded
+      color: #d6c9ae
+      anchors.top: prev.bottom
+      anchors.left: prev.left
+      margin-top: 2
+      text-auto-resize: true
+      text: 00:00:00
+      phantom: true
+
+    UILabel
+      id: waitCaption
+      font: Verdana-9px-antialiased
+      color: #8c8070
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 3
+      margin-left: 330
+      text-auto-resize: true
+      !text: tr('Waiting Time')
+      phantom: true
+
+    UILabel
+      id: queueWaiting
+      font: verdana-11px-rounded
+      color: #d6c9ae
+      anchors.top: prev.bottom
+      anchors.left: prev.left
+      margin-top: 2
+      text-auto-resize: true
+      text: 00:00:00
+      phantom: true
+
+    UILabel
+      id: dungeonCaption
+      font: Verdana-9px-antialiased
+      color: #8c8070
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 3
+      margin-left: 490
+      text-auto-resize: true
+      !text: tr('In queue for')
+      phantom: true
+
+    UILabel
+      id: queueDungeon
+      font: verdana-11px-rounded
+      color: #d6c9ae
+      anchors.top: prev.bottom
+      anchors.left: prev.left
+      margin-top: 2
+      text-auto-resize: true
+      text: ------
+      phantom: true
+
+    ChaosButton
+      id: closeButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 6
+      width: 70
+      !text: tr('Close')
+      @onClick: modules.game_dungeons.toggle()
+
+    ChaosPrimaryButton
+      id: queueButton
+      anchors.right: prev.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 12
+      size: 190 32
+      !text: tr('Join')
+      @onClick: modules.game_dungeons.joinQueue()

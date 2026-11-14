@@ -43,11 +43,14 @@ L.CHESTS = {
 -- Pickups on the floor (O456): one static frame each, so they wear a glow of the same kind (a floor widget, the same loop and timer). 64 px
 -- strips in images/pickup/, centred on the item's tile. A `pickup` entry counts against PICKUP_CAP: loot bags come in dozens.
 --   44396 the Ember portal (server 32090), 44397 the health globe (32088), 44398 the mana globe (32089): items of pair 55
---   6068  the loot bag (the monster corpse of O435, server/README.md "Loot bag instead of corpses")
+--   19202 the loot bag (the monster corpse of O435, server/README.md "Loot bag instead of corpses"): the plain leather pouch the
+--         server draws for it since O565 (server corpse_config.lua `look`); 6068 is the stock dark lump it had before, kept for a
+--         server that has not run the install step
 L.PICKUPS = {
   [44396] = { art = 'portal_glow', px = 64, pickup = true },
   [44397] = { art = 'globe_health', px = 64, pickup = true },
   [44398] = { art = 'globe_mana', px = 64, pickup = true },
+  [19202] = { art = 'bag_glint', px = 64, pickup = true },
   [6068] = { art = 'bag_glint', px = 64, pickup = true },
 }
 L.PICKUP_CAP = 24         -- floor widgets for pickups at once; a bigger crowd of bags in view: the nearest 24 glint, the rest stay plain

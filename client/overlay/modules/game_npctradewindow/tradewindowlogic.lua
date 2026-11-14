@@ -1,11 +1,11 @@
--- NPC trade window: the geometry without client API (tested by tradewindowlogic_test.lua with luajit and lua5.3).
+-- NPC trade window: the geometry and the currency without client API (tested by tradewindowlogic_test.lua with luajit and lua5.3).
 TradeWindowLogic = {}
 local L = TradeWindowLogic
 
-L.WIDTH = 420
-L.HEIGHT = 520
-L.MIN_WIDTH = 300
-L.MIN_HEIGHT = 300
+L.WIDTH = 720
+L.HEIGHT = 480
+L.MIN_WIDTH = 560
+L.MIN_HEIGHT = 380
 L.MARGIN = 24
 
 -- The window size and position for a game view of rootW x rootH: the preferred size, smaller when the view is, and
@@ -19,26 +19,6 @@ function L.geometry(rootW, rootH, top)
   return { x = x, y = y, w = w, h = h }
 end
 
--- Should the trade window be lifted out of its side panel? Only a window that is shown and not already floating
--- (parent = the game view's root panel, which the base dialog uses too). `forced`: the window was put on the root panel
--- by this module (see L.keepsOutOfPanels), so only the size, the place and the focus are left to do.
-function L.needsFloat(visible, parentIsRoot, forced)
-  return visible == true and (forced == true or parentIsRoot ~= true)
-end
-
--- O506: the trade window never takes room in a side panel. The base's show() asks game_interface for a place in a side panel
--- first (addToPanelsWithPriority(window, true); addToPanels without it): forceSpaceInPanel closes the windows at the bottom
--- of the first panel, backpacks included, until the base's own 175 px window fits, and recalculateWidgetOnPanel closes
--- backpacks too; this module lifts the window to the root panel right after, so the backpacks were closed for nothing.
--- While show() runs, a request of the window with this id goes to the root panel instead. L.PANEL_CALLS are the
--- game_interface functions that take such a request.
-L.TRADE_ID = 'tradeWindow'
-L.PANEL_CALLS = { 'addToPanelsWithPriority', 'addToPanels' }
-
-function L.keepsOutOfPanels(id)
-  return id == L.TRADE_ID
-end
-
 -- ---------------------------------------------------------------------------------------------------------------
 -- A currency other than gold (owner beta 2026-10-24: the azure NPC's window said "Currency: Gold Coin" and priced its
 -- sets "30" next to the player's gold). The 10.98 shop packet carries no currency, so the server says it first on
@@ -49,8 +29,6 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 L.CURRENCY_TTL = 15      -- seconds a pending currency waits for its window
 L.NAME_MAX = 24          -- the longest currency name shown in the header
-L.ROW_NAME_MAX = 36      -- the longest item name in a list row
-L.ROW_INFO_MAX = 44      -- the longest "Price 30, 85.00 oz" line
 
 -- "hallowfall coins" -> "Hallowfall Coins"
 function L.titleCase(s)
@@ -117,20 +95,4 @@ end
 -- The window closed (or opens again): back to gold.
 function L.release(state)
   state.active = nil
-end
-
--- The item's name in a list row, whole when it fits.
-function L.rowName(name)
-  return L.clip(name, L.ROW_NAME_MAX)
-end
-
--- "Price 30, 85.00 oz": `priceLabel` is the translated, formatted "Price 30"; `weight` a number of ounces (0 or nil
--- for none).
-function L.rowInfo(priceLabel, weight, unit)
-  local text = tostring(priceLabel or '')
-  weight = tonumber(weight) or 0
-  if weight > 0 then
-    text = text .. ', ' .. string.format('%.2f', weight) .. ' ' .. tostring(unit or 'oz')
-  end
-  return L.clip(text, L.ROW_INFO_MAX)
 end

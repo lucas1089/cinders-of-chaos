@@ -20,6 +20,9 @@ local selected = nil -- id of the picked build
 local confirmBox = nil
 local filling = false
 local pending = nil -- {build, tries, event}: the preview asked for and not answered yet
+local seq = 0 -- number of the last preview request sent (the answer carries it back, O560)
+local lastSentAt = nil -- g_clock.millis() of the last preview request
+local sendEvent = nil -- the request waiting for the minimum gap
 local failed = nil -- id of the build whose preview failed (not asked again until it is picked again)
 local note = nil -- {text, color}: the server's last word (an error, the applied message), shown under the preview
 local RED = '#e07060'
@@ -95,6 +98,14 @@ local function clearPending()
 end
 
 local askPreview
+local sendPreview
+
+local function cancelSend()
+  if sendEvent then
+    removeEvent(sendEvent)
+    sendEvent = nil
+  end
+end
 
 local function previewFailed(text)
   if pending then
@@ -122,14 +133,34 @@ local function onPreviewTimeout()
 end
 
 -- asks for the picked build's preview (again: the same build counts its tries); the answer or the timeout ends the wait
+-- (O560) at most one request per AutoBuildView.MIN_GAP_MS: a pick inside the gap waits for it, and the request that goes
+-- out asks for whatever is picked THEN, so the last pick always wins
 askPreview = function()
+  preview = nil
+  cancelSend()
+  local delay = AutoBuildView.gateDelay(lastSentAt, g_clock.millis())
+  if delay > 0 and selected then
+    refresh()
+    sendEvent = scheduleEvent(function()
+      sendEvent = nil
+      sendPreview()
+    end, delay)
+    return
+  end
+  sendPreview()
+end
+
+sendPreview = function()
   preview = nil
   local before = pending
   clearPending()
   if selected then
     pending = AutoBuildView.ask(before, selected)
     pending.event = scheduleEvent(onPreviewTimeout, AutoBuildView.PREVIEW_TIMEOUT_MS)
-    sendAction('autobuildPreview', {build = selected})
+    seq = seq + 1
+    pending.seq = seq
+    lastSentAt = g_clock.millis()
+    sendAction('autobuildPreview', {build = selected, seq = seq})
   else
     showTreeAllocation({}, false)
     sendAction('requestNodesUnlocked')
@@ -191,6 +222,7 @@ end
 -- leave the preview: the tree shows the saved allocation again
 local function leavePreview()
   closeConfirm()
+  cancelSend()
   clearPending()
   if preview then
     preview = nil
@@ -229,6 +261,7 @@ end
 function destroyAutoBuild()
   closeSlotWindow()
   closeConfirm()
+  cancelSend()
   clearPending()
   preview, failed, note = nil, nil, nil
   if abWindow then
@@ -363,7 +396,7 @@ ChaosTreeHandlers.autobuildPreview = function(data)
   if type(data) ~= 'table' or not alive() or not abWindow:isVisible() then
     return
   end
-  if data.build ~= selected then
+  if data.build ~= selected or AutoBuildView.isStale(seq, data) then
     return -- an answer to an earlier pick
   end
   clearPending()
@@ -429,13 +462,16 @@ ChaosTreeHandlers.autobuildError = function(data)
     sendMessageBox(tr('Auto build'), text)
     return
   end
+  if AutoBuildView.isStale(seq, data) then
+    return -- the error of a request that a newer pick replaced
+  end
   local answer = AutoBuildView.onError(pending, data)
   if answer == 'retry' then
-    -- too fast: ask again in a moment (MAX_TRIES still ends the wait)
+    -- too fast: ask again when the server says (MAX_TRIES still ends the wait)
     if pending.event then
       removeEvent(pending.event)
     end
-    pending.event = scheduleEvent(onPreviewTimeout, AutoBuildView.RETRY_DELAY_MS)
+    pending.event = scheduleEvent(onPreviewTimeout, AutoBuildView.retryDelay(data))
     return
   elseif answer == 'fail' then
     previewFailed(text)

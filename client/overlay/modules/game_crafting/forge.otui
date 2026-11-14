@@ -270,6 +270,11 @@ ChaosMainWindow
   @onEscape: modules.game_crafting.forgeHide()
   @onEnter: modules.game_crafting.forgeNow()
 
+  // ------------------------------------------------------------ the close X (O572, Esc closes it too)
+  ChaosCloseX
+    id: closeX
+    @onClick: modules.game_crafting.forgeHide()
+
   // ------------------------------------------------------------ the steps (one thin row)
   UIWidget
     id: check1

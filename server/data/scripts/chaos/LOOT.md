@@ -50,6 +50,10 @@ The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.
    downgrades. If the target is higher, `Game.createItemWithRarity(id, 1, target)` (target a stored id) is made, checked
    (`getCustomAttribute("rarity") == target`), added with `corpse:addItemEx`, and only then the old item is removed. On any
    failure the original stays.
+   2a. **Guaranteed gear** (O575, `gear.guarantee`): a Legendary monster's corpse always holds at least 1 gear piece of Rare or
+   better: a corpse without gear gets one of the monster's own loot table (else a base of the killer's class near its level)
+   before this step, and after it `L.guaranteeRaise` lifts the best lower piece to the floor. server/README.md "Legendary
+   monsters always drop good loot".
 3. **Currency**: `currency.entries` (stock orbs 29857 Divine, 29856 Chaos; add your own) with `chance[tier]` per 10000,
    plus `guaranteed[tier]` weighted draws (legendary 1, boss 1), count scaled by `countMult[tier]`. The chance scale
    (rate x item find x orb find x Ember of the Forge) is capped at `currency.maxScale` (3.0). Orbs drop only from monsters

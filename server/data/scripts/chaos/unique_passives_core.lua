@@ -133,7 +133,7 @@ function C.fitText(info, t, nameOf)
 		return nil
 	end
 	if not info.fit then
-		return t("Asleep: your class is not in its list."), true
+		return t("Cannot use: not for your class."), true
 	end
 	local s = info.every and t("Works for every class.") or t("Works for your class.")
 	if info.state == "active" then

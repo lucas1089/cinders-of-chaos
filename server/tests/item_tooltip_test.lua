@@ -38,6 +38,7 @@ local TYPES = {
 	[2183] = {name = "test wand", weaponType = 6, slot = 48, level = 26, voc = "mystics and necromancers"}, -- O490
 	[2184] = {name = "test bow", weaponType = 5, slot = 48 + 2048, level = 80, voc = "rangers"}, -- O490
 	[2185] = {name = "test blade", weaponType = 1, slot = 48, level = 220, voc = "warriors"}, -- O490
+	[28130] = {name = "amber bludgeon", weaponType = 2, slot = 2048 + 48, defense = 34, element = 67, attackSpeed = 3000},
 	[2160] = {name = "crystal coin", stackable = true, description = ""},
 	[27749] = {name = "lasting exercise wand", charges = 14400},
 	[27849] = {name = "Moon Amplifier Catalyst [1]", slot = 48, description = "An amplifier of the old badge rite.",
@@ -62,8 +63,8 @@ function ItemType(id)
 		getHitChance = function() return 0 end,
 		getShootRange = function() return 0 end,
 		getAttackSpeed = function() return t.attackSpeed or 0 end,
-		getElementDamage = function() return 0 end,
-		getElementType = function() return 0 end,
+		getElementDamage = function() return t.element or 0 end,
+		getElementType = function() return t.element and 8 or 0 end,
 		getAbilities = function() return t.abilities or {} end,
 		getMinReqLevel = function() return t.level or 0 end,
 		getMinReqMagicLevel = function() return 0 end,
@@ -590,6 +591,12 @@ local sword = newItem(2400) -- one-handed, attack 48, default 2 s interval
 local row = dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, distance = 10}}))
 eq(row ~= nil, true, "a sword has the line") eq(row.l, "Estimated DPS") eq(row.fmt, "est")
 eq(row.v, ChaosWeaponDps.round(ChaosWeaponDps.maxHit(100, 70, 48) / 2 / 2), "level 100, melee 70, attack 48, 2 s")
+-- attack 0 and death damage 67 (the amber weapons, owner 2026-11-14 "item nao mostra o dps"): the element hit is rolled
+-- like the physical one with the element value as its attack, so the estimate uses it
+local amber = dpsOf(T.build(newItem(28130), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, distance = 10}}))
+eq(amber ~= nil, true, "an element-only club has the line")
+eq(amber.v, ChaosWeaponDps.round(ChaosWeaponDps.estimate({level = 100, skill = 70, attack = 67, interval = 3000,
+	twoHanded = (bit and bit.band) and true or false, weaponType = "club"})), "the element part alone: attack 67, 3 s (the two-handed bit is read where bit exists)")
 local row2 = dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0, level = 100, melee = 90, distance = 10}}))
 eq(row2.v > row.v, true, "more skill, more DPS")
 eq(dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0}})), nil, "no level: no estimate")

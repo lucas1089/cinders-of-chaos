@@ -1,10 +1,10 @@
--- The cards and decks (cards_core.lua, cards.lua; server/README.md "Cards and decks"). Plain data, no engine calls
--- (tests/cards_test.lua and tools/patch_badges.py read it). Lua 5.1 / LuaJIT and 5.3.
+-- The cards and the Deck of Cards (cards_core.lua, cards.lua; server/README.md "Cards and decks", "Deck of Cards (O570)"). Plain data,
+-- no engine calls (tests/cards_test.lua and tools/patch_badges.py read it). Lua 5.1 / LuaJIT and 5.3.
 --
--- The base deck system keeps a card on or off in one player storage per card (DeckSystem.Cards / .Legendary of the base
--- lib, 37000-37059 and 37065-37080) and tags a card that is on with action id 37866 (the base Player:onMoveItem refuses
--- to move or trade such a card). Chaos keeps that exactly: the bonus scripts of the base read the same storages.
--- Item names are not repeated here: the server reads them from the item types (the rename step makes them ours).
+-- The base deck system keeps a card on or off in one player storage per card (DeckSystem.Cards / .Legendary of the base lib,
+-- 37000-37059 and 37065-37080). Chaos keeps that exactly: the bonus scripts of the base read the same storages. Since O570 a card is
+-- on when that storage is 1 and the character owns a copy in its Deck of Cards; the deck items and their action id 37866 are gone
+-- (`activeActionId` stays for the old data). Item names are not repeated here: the server reads them from the item types.
 local C = {}
 
 C.maxActive = 5 -- the base's maxActivatedCards: at most this many cards on, whatever the decks
@@ -16,15 +16,49 @@ C.scanLimit = 600 -- items looked at per scan of the backpack tree (a guard, a b
 C.reconcileMs = 60000 -- a card that left the deck (death, a bag put away) is turned off at most this late
 C.maxTextBytes = 6000 -- the status text stays under the extended opcode's 8192 bytes with its JSON around it
 
--- deck item id -> cards it holds (the base items.xml containerSize)
-C.decks = {
-	{id = 27632, size = 5, name = "Bronze Deck"},
-	{id = 27633, size = 10, name = "Silver Deck"},
-	{id = 27634, size = 20, name = "Golden Deck"},
+-- O570 (owner 2026-11-14): the three deck items are gone. Every card a character loots goes into its Deck of Cards, kept on the
+-- server (the storages below), and the Deck is opened by a main quest step (see below). The old decks are only known here
+-- so that the one-time migration (cards.lua) can empty one that is still carried or lying in a depot (tools/patch_remove_decks.py
+-- takes them out of loot, shops and tasks). `price` is what Veyra asked, for the text of the refund note.
+C.retiredDecks = {
+	{id = 27632, name = "Bronze Deck", price = 1000},
+	{id = 27633, name = "Silver Deck", price = 6000},
+	{id = 27634, name = "Golden Deck", price = 30000},
 }
 
--- Where a deck comes from: Veyra the Apothecary (apothecary_config.lua `decks`; her prices are read from there)
-C.seller = "Veyra the Apothecary"
+-- The Deck of Cards (O570, server/README.md "Deck of Cards (O570)"). It opens with the main quest step `unlock.step`
+-- (mainquest_config.lua; data/lib/chaos_mqgate.lua reads the quest's storages): a character past that step has it, a character that
+-- held an old deck has it too. The Badge slot opens with the same step (badges.lua). Storage block 7104400 - 7104619 (README "Storage keys"):
+--   +0 .. +80     copies owned of the card whose base storage is 37000 + n (the card's own on / off storage stays 37000-37080:
+--                 the base bonus scripts read it, 1 = on)
+--   +100 .. +180  1 while the card was looted and not seen in the window yet (the "New" mark; the hub badge counts them)
+--   +200  the version of the migration this character had (decks and loose cards moved into the Deck, once)
+--   +201  1 = the Deck of Cards is open for good (the character held an old deck: `grandfather`); a character past the main quest
+--         step has it open without this mark
+--   +202  free (the Veyra quest of the first design was dropped: the owner moved the unlock to the main quest)
+--   +203  the number of decks found by the migration (a note for staff)
+-- Cards looted before the step are counted all the same and kept; until the Deck is open the window shows them (locked) and no
+-- card can be turned on (the bonus storages are cleared by the sweep), nothing is ever lost.
+C.deck = {
+	name = "Deck of Cards",
+	storage = {base = 7104400, counts = 0, fresh = 100, migrated = 200, unlocked = 201, quest = 202, decksFound = 203,
+		last = 7104619, offset = 37000},
+	maxCopies = 9999, -- a count never goes above this
+	migrationVersion = 1,
+	absorbMs = 4000, -- loose cards of the carried bags and the inbox are taken in at most this late (also on every move of a card)
+	carriedLimit = 600, -- items looked at per sweep of the carried bags (a guard)
+	migrateLimit = 30000, -- items looked at once in a depot, the inbox and the store inbox
+	-- the main quest step that opens the Deck of Cards and the Badge slot (mainquest_config.lua `steps`, key `deck`; the step is done
+	-- when the character opens the Deck window: ChaosMainQuest.emit "deck")
+	unlock = {step = "deck", menu = "Adventure > Main Quest"},
+	-- a character that held a deck item (carried or in the depot) when the migration ran has the Deck of Cards open at once: it
+	-- paid for a deck (Veyra sold them for gold, never for store coins: nothing to refund), and its cards stay on
+	grandfather = true,
+	-- the rarity words of the four tiers, the legendary cards are "Legendary" (the item names carry the same words)
+	rarities = {"Common", "Rare", "Epic", "Mythic"},
+	legendaryRarity = "Legendary",
+	toastMax = 3, -- new cards named one by one in one sweep; more are told in one line
+}
 
 C.tiers = {"Minor", "Major", "Intense", "Powerful"}
 

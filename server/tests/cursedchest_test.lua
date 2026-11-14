@@ -41,7 +41,7 @@ eq(cfg.spawn.chance.magic, 0.8, "magic odds 0.8%")
 eq(cfg.spawn.chance.rare, 1.5, "rare odds 1.5%")
 eq(cfg.spawn.chance.boss, 3, "boss odds 3%")
 ok(cfg.spawn.expireSec >= 120 and cfg.spawn.expireSec <= 180, "an unopened chest lasts 2-3 minutes")
-ok(cfg.event.totalSec >= 240 and cfg.event.totalSec <= 300, "total time 4-5 minutes")
+eq(cfg.event.totalSec, 300, "total time 5 minutes (owner 2026-11-14)")
 for i = 2, 5 do
 	local a, b = cfg.event.hordes[i - 1], cfg.event.hordes[i]
 	ok(b.count >= a.count, "horde " .. i .. " is not smaller")
@@ -278,6 +278,15 @@ eq(acts[1][1], "win", "the win after the fifth is dead")
 K.win(cfg, ev, 171000)
 eq(ev.state, "won", "won")
 eq(#K.step(cfg, ev, {alive = 0, inside = 1}, 172000), 0, "a won event does no more steps")
+
+-- the time left: told once per mark, the lowest when several pass at once
+ev = newEv(0)
+local function tl(a) for _, x in ipairs(a) do if x[1] == "timeleft" then return x[2] end end end
+eq(tl(K.step(cfg, ev, {alive = 3, inside = 1}, 1000)), nil, "no time line at the start")
+eq(tl(K.step(cfg, ev, {alive = 3, inside = 1}, (e.totalSec - 120) * 1000)), 120, "2 minutes left")
+eq(tl(K.step(cfg, ev, {alive = 3, inside = 1}, (e.totalSec - 119) * 1000)), nil, "told once")
+eq(tl(K.step(cfg, ev, {alive = 3, inside = 1}, (e.totalSec - 5) * 1000)), 10, "the lowest mark when several pass")
+eq(tl(K.step(cfg, ev, {alive = 3, inside = 1}, (e.totalSec - 4) * 1000)), nil, "every mark told")
 
 -- failures
 ev = newEv(0)

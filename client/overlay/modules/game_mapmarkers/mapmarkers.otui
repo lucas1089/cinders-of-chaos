@@ -12,6 +12,13 @@ MapMarkerPoi < UIWidget
   focusable: false
   image-smooth: true
 
+// O568: a hunt teleport of the hall or the way out of a hunt (huntports.lua sets the image, the size and the place)
+MapMarkerHuntPort < UIWidget
+  size: 14 14
+  phantom: true
+  focusable: false
+  image-smooth: true
+
 // a party member: the pin (tinted with the member's colour from Lua) and the floor triangle in its top right corner
 MapMarkerParty < UIWidget
   size: 12 12
@@ -66,7 +73,7 @@ MapMarkerCheck < ChaosCheckBox
 
 MapMarkerCategory < ChaosCheckBox
   height: 20
-  margin-top: 2
+  margin-top: 0
   icon-size: 14 14
   icon-offset: 18 1
   text-offset: 36 0
@@ -74,7 +81,7 @@ MapMarkerCategory < ChaosCheckBox
 MapMarkerSettings < ChaosMainWindow
   id: mapMarkerSettings
   !text: tr('Map Markers')
-  size: 320 522
+  size: 320 528
 
   MapMarkerCheck
     id: partyBox
@@ -120,7 +127,7 @@ MapMarkerSettings < ChaosMainWindow
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 6
-    height: 220
+    height: 200
     layout:
       type: verticalBox
 
@@ -142,6 +149,14 @@ MapMarkerSettings < ChaosMainWindow
     !text: tr('Quest marks over NPCs')
     !tooltip: tr('A gold ! over an NPC with a quest you can start, a gold ? over one you have a step to turn in to.')
     @onCheckChange: modules.game_mapmarkers.setNpcMarks(self:isChecked())
+
+  MapMarkerCheck
+    id: huntPortsBox
+    anchors.top: npcMarksBox.bottom
+    margin-top: 6
+    !text: tr('Hunt teleports on the map')
+    !tooltip: tr('A gate for every hunt teleport of the hall (the one you last used shines gold: your way back) and a door for the way out of the hunts you have entered.')
+    @onCheckChange: modules.game_mapmarkers.setHuntPorts(self:isChecked())
 
   ChaosButton
     id: closeButton

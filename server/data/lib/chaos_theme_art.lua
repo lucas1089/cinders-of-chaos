@@ -64,12 +64,17 @@ M.kits = {
 M.transmogKinds = {sword = true, axe = true, club = true, bow = true, crossbow = true, wand = true, rod = true,
 	shield = true, spellbook = true, helmet = true, armor = true, legs = true, boots = true}
 
+-- the look of the Rune Seal aura: the old flat ring 2186, or the round ring 3524 of client pair 72 once config.lua chaosClientPair is
+-- 72 or more (data/lib/chaos_fun_costumes.lua, O566; install_auras.py gives auras.xml the same id)
+local okFun, FUN = pcall(dofile, "data/lib/chaos_fun_costumes.lua")
+local sealLook = okFun and type(FUN) == "table" and FUN.sealLook and FUN.sealLook() or 2186
+
 -- the visual exclusives (exclusives_config.lua format; install_outfits.py reads the wings line from this file when the
 -- switch is on), and the boss groups that roll them
 M.exclusives = {
 	{key = "aura_bloodvortex", kind = "aura", id = 31, look = 2185, icon = 2156, source = "boss",
 		name = "Blood Vortex", desc = "Three streams of blood spiral round your feet."},
-	{key = "aura_runeseal", kind = "aura", id = 32, look = 2186, icon = 2192, source = "boss",
+	{key = "aura_runeseal", kind = "aura", id = 32, look = sealLook, icon = 2192, source = "boss",
 		name = "Rune Seal", desc = "A pale seal of turning runes glows under you."},
 	{key = "wings_runic", kind = "wings", id = 20, look = 2187, icon = 2363, source = "boss",
 		name = "Runic Wings", desc = "Pale feathered wings with glowing blue runes."}

@@ -203,7 +203,7 @@ end
 -- (the auras of things_custom24, ChaosThemeArt.PAIR24 on since 2026-10-13, are in chaos_auras_theme.csv; the pair 33
 -- head accessories and capes, ChaosPack33.PAIR33, in chaos_auras_pack33.csv)
 local csv = readFile("data/XML/chaos_auras_exclusive.csv") .. (readFile("data/XML/chaos_auras_theme.csv") or "") ..
-	(readFile("data/XML/chaos_auras_pack33.csv") or "")
+	(readFile("data/XML/chaos_auras_pack33.csv") or "") .. (readFile("data/XML/chaos_auras_pair72.csv") or "") -- the round Rune Seal (config.lua chaosClientPair >= 72)
 for _, e in ipairs(cfg.exclusives) do
 	if e.kind == "aura" then
 		eq(e.id > 28, true, e.key .. ": not a store or faction aura")

@@ -917,6 +917,84 @@ end
 if PRINT_TABLE then
 	return
 end
+-- ---------------------------------------------------------------- trainers (O573)
+-- a training monster defends like a normal / elite / boss monster of the hitting player's level (trainer_meter.lua sets the
+-- two hooks the layer asks); with the profile off it keeps its own level and rank; every other monster is untouched
+do
+	local realCE = CreatureEvent
+	CreatureEvent = function(name)
+		local o = {name = name}
+		function o:type() end
+		function o:register() end
+		return o
+	end
+	local realGE = GlobalEvent
+	GlobalEvent = function(name)
+		local o = {}
+		function o:interval() end
+		function o:register() end
+		return o
+	end
+	local realJson = json
+	json = json or {encode = function() return "" end, decode = function() return nil end}
+	dofile("data/scripts/chaos/trainer_meter.lua")
+	CreatureEvent, GlobalEvent, json = realCE, realGE, realJson
+	local TC = ChaosTrainerMeter.cfg
+	local function playerAt(level)
+		local p = newPlayer()
+		p.getLevel = function() return level end
+		return p
+	end
+	local function dmg(monster, attacker, value, origin)
+		local pd = hit(monster, attacker, value, COMBAT_PHYSICALDAMAGE, origin)
+		return pd
+	end
+	local dummy = spawnMonster("Training Dummy", {level = 5})
+	ok(dummy.events.ChaosMonsterDefence, "a trainer gets the layer like every monster")
+	eq(MD.classOf(dummy), "normal", "the default profile: a normal monster")
+	for _, lv in ipairs({100, 500, 1000}) do
+		for _, origin in ipairs({ORIGIN_MELEE, ORIGIN_SPELL}) do
+			local wyrm = spawnMonster("Wyrm", {level = lv})
+			local who = playerAt(lv)
+			eq(dmg(dummy, who, 1000, origin), dmg(wyrm, who, 1000, origin),
+				"the trainer takes what a normal monster of the player's level " .. lv .. " takes (origin " .. origin .. ")")
+		end
+	end
+	ok(dmg(dummy, playerAt(100), 1000, ORIGIN_SPELL) ~= dmg(dummy, playerAt(1000), 1000, ORIGIN_SPELL),
+		"the armour follows the level of the player that hits")
+	ok(dmg(dummy, playerAt(500), 1000, ORIGIN_SPELL) < 1000, "a trainer has armour now")
+	-- a summon's hit counts for its master's level
+	local master = playerAt(700)
+	local wolf = newMonster("Wolf", {master = master})
+	eq(dmg(dummy, wolf, 1000, ORIGIN_SPELL), dmg(spawnMonster("Wyrm", {level = 700}), master, 1000, ORIGIN_SPELL),
+		"a summon is measured at its master's level")
+	-- a player with no level to read: level 1, no error
+	local blank = newPlayer()
+	ok(dmg(dummy, blank, 1000, ORIGIN_SPELL) <= 1000, "a player without getLevel")
+	-- a profile of its own: a boss of a fixed level
+	TC.byName["boss trainer"] = {class = "boss", level = 300}
+	local bt = spawnMonster("Boss Trainer", {level = 5})
+	eq(MD.classOf(bt), "boss", "per name class")
+	local boss300 = spawnMonster("Pestrogh", {level = 300, boss = true})
+	eq(dmg(bt, playerAt(10), 1000, ORIGIN_SPELL), dmg(boss300, playerAt(10), 1000, ORIGIN_SPELL),
+		"a boss profile at a fixed level takes what a level 300 boss takes, whoever hits")
+	TC.byName["elite trainer"] = {class = "elite"}
+	local et = spawnMonster("Elite Trainer", {level = 5})
+	eq(MD.classOf(et), "elite", "an elite profile")
+	ok(MD.effectiveResist(et, COMBAT_FIREDAMAGE, 0) >= MD.effectiveResist(dummy, COMBAT_FIREDAMAGE, 0),
+		"an elite also gets the rank resistance bonus")
+	-- off: the trainer keeps its own level and rank
+	TC.profile.enabled = false
+	local plain = spawnMonster("Training Monk", {level = 200})
+	eq(MD.classOf(plain), "normal", "profile off: normal")
+	eq(dmg(plain, playerAt(900), 1000, ORIGIN_SPELL), dmg(spawnMonster("Wyrm", {level = 200}), playerAt(900), 1000, ORIGIN_SPELL),
+		"profile off: the trainer's own level, whoever hits")
+	TC.profile.enabled = true
+	-- no other monster is touched
+	local wyrm = spawnMonster("Wyrm", {level = 300})
+	ok(wyrm.events.ChaosMonsterDefence and MD.trainerProfile(wyrm) == nil, "a normal monster has no trainer profile")
+end
+
 print(string.format("monster defence tests: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

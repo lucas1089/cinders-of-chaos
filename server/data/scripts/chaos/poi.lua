@@ -21,6 +21,12 @@
 --                                                                       new | ready | locked; a difference, `full` after the
 --                                                                       hello; sent when the client's hello / set has
 --                                                                       npcmarks = true)
+--                     huntports {ports = [{i, n, l = [lo, hi], t, f, a, b}]}  (O568: the hall's hunt teleports, each hunt's
+--                                                                       arrival and way out as {x, y, z}; chunked; sent
+--                                                                       once when the client's hello / set has
+--                                                                       huntports = true, which a client that does not
+--                                                                       know the action never sends;
+--                                                                       ChaosHuntTeleportsCore.ports)
 -- Mark sources (O415): ChaosPoi.markSources[name] = fn(player) -> {{npc = name, mark = "new" | "ready" | "locked"}}
 -- (tales.lua, spellquest.lua, ascension_quest.lua); poi_core.lua P.mergeMarks / P.markDiff.
 -- Quest sources (O410): a quest system registers ChaosPoi.addQuestSource(name, fn); fn(player) -> entries of P.goals
@@ -122,6 +128,22 @@ local function sendAll(player)
 	local buffer = json.encode({action = "poi", data = {v = I.version, marks = I.view(I.all, set)}})
 	Chaos.sendChunked(player, OPCODE, buffer)
 end
+
+-- O568: the hunt teleports of the hall for the client's map markers (a static list, built again only after a reload of
+-- the hunt teleports)
+local function sendHuntPorts(player)
+	local HT = ChaosHuntTeleports
+	if not HT or not HT.ports then
+		return
+	end
+	local idx = HT.idx
+	if I.portsIdx ~= idx or not I.portsBuffer then
+		I.portsIdx = idx
+		I.portsBuffer = json.encode({action = "huntports", data = {ports = HT.ports()}})
+	end
+	Chaos.sendChunked(player, OPCODE, I.portsBuffer)
+end
+I.sendHuntPorts = sendHuntPorts
 
 -- the character's next quest steps from every quest source (O410), sent when they changed (or `force`)
 local function goalsOf(player)
@@ -405,6 +427,11 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		else
 			I.markWatch[id], I.markSent[id] = nil, nil
 		end
+	end
+	-- O568: the hunt teleports on the map are their own switch too (a static list, sent when it is turned on)
+	if data.huntports == true and not (msg.action == "set" and ChaosRateLimit
+			and not ChaosRateLimit.allow(player, "poi.ports", cfg.setMs)) then
+		sendHuntPorts(player)
 	end
 	if data.poi == nil then
 		return

@@ -103,8 +103,13 @@ jobs:
           /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
           /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
+          /tmp/fxenv/bin/python -I client/tools/gen_lootbeam_art.py --check   # loot beam strips of game_lootbeams (O569)
+          /tmp/fxenv/bin/python -I client/tools/gen_lootbeam_art_test.py
           /tmp/fxenv/bin/python -I client/tools/gen_pyre_art.py --check   # Pyre Oath ember ring and burn strips of game_chestaura (O518)
+          /tmp/fxenv/bin/python -I client/tools/gen_lootlabel_art.py --check   # loot label plates and labelplates.lua (O562)
           /tmp/fxenv/bin/python -I client/tools/gen_toast_art.py --check  # toast icons of game_chaosnotify, Pact hourglass included (O317)
+          /tmp/fxenv/bin/python -I client/tools/gen_dungeon_card_art.py --check  # card frames and the dark fade of the Dungeons window (O555)
+          /tmp/fxenv/bin/python -I client/tools/gen_kill_dissolve.py --check  # the seven kill dissolve shaders and the tile pictures of game_killdissolve (O563)
           /tmp/fxenv/bin/python -I client/tools/gen_topbar_icons.py --check  # glyph atlases and index of the hub menu (O550)
           /tmp/fxenv/bin/python -I client/tools/gen_topbar_icons_test.py
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art.py --check  # prints, glows and foot marks of game_cosmeticfx (O499)
@@ -206,6 +211,19 @@ jobs:
           # packs and pairs, the table, the sums and the monster map against the outfits and the committed pool (no art is committed)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_wst_outfits_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_wst_outfits.py check
+          # the twelve fun costumes, the new Dusk Moth and the round Rune Seal ring of pair 72 (O566; PixelLab art of ours, committed as sheets):
+          # table, sums and sheets agree, the ring is drawn by script, placement, build / live on a synthetic pair (the live pair step
+          # comes with the push of pair 72 to windows-assets)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_fun_costumes_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_fun_costumes.py check
+          # the two oblique Ki auras of pair 72 (O577; drawn by script, sheets committed): table, sums and sheets agree, the drawing loops and is centred,
+          # build / live on a synthetic pair (the live pair step comes with the push of pair 72 to windows-assets)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_ki_auras_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_ki_auras.py check
+          # O578: the hop, breath and palette lock that move the costumes (fun_costume_motion.py) and the Dusk Moth drawn by script
+          # (gen_dusk_moth.py: 28 phases, no frame skips, the same pictures every run)
+          /tmp/fxenv/bin/python -I client/tools/sprites/fun_costume_motion_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_dusk_moth.py check
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
@@ -686,6 +704,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoswingfit_test.cpp -o "$d/chaoswingfit_asan"
           "$d/chaoswingfit_asan"
 
+      - name: Head accessories on the head (C++; header from base patch 0200, O561)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosheadfit\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0200-head-accessories-on-the-head.patch > "$d/chaosheadfit.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosheadfit_test.cpp -o "$d/chaosheadfit_test"
+          "$d/chaosheadfit_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosheadfit_test.cpp -o "$d/chaosheadfit_asan"
+          "$d/chaosheadfit_asan"
+
       - name: Eased bars bookkeeping (C++; header from base patch 0146)
         run: |
           d=$(mktemp -d)
@@ -713,6 +741,16 @@ jobs:
           "$d/chaosmissileanim_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissileanim_test.cpp -o "$d/chaosmissileanim_asan"
           "$d/chaosmissileanim_asan"
+
+      - name: Effect owner and opacity maths (C++; header from base patch 0202)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosfxowner\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0202-effect-opacity-by-owner.patch > "$d/chaosfxowner.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosfxowner_test.cpp -o "$d/chaosfxowner_test"
+          "$d/chaosfxowner_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosfxowner_test.cpp -o "$d/chaosfxowner_asan"
+          "$d/chaosfxowner_asan"
 
       - name: HD sprite overlay maths (C++; header from base patch 0196)
         run: |
@@ -911,6 +949,8 @@ jobs:
           python3 -I tools/ci/check_topbar_tree_test.py
           python3 -I tools/ci/check_topbar_widgets.py  # hub menu (O550): every widget id and style topbar_hub.lua uses is in topbar_hub.otui, anchors, $mobile rules
           python3 -I tools/ci/check_topbar_widgets_test.py
+          python3 -I tools/ci/check_window_close.py  # hub menu windows (O572): every window a module of the menu opens has a close control (ChaosCloseX, a Close or Cancel button), named exceptions in ALLOWED
+          python3 -I tools/ci/check_window_close_test.py
 
       - name: Client localization (every tr() key has pt-BR, no hard-coded UI text)
         run: python3 -I tools/ci/check_locales.py
@@ -1080,6 +1120,8 @@ jobs:
           python3 -I server/tools/audit_map_tiles_test.py
           python3 -I server/tools/audit_houses_test.py
           python3 -I server/tools/audit_map_plans.py --check --quiet
+          python3 -I server/tools/audit_plan_look_test.py
+          python3 -I server/tools/audit_plan_look.py --check
       - name: Hunt annexes (the five annex plans compile, asymmetric, the rows of hunt_annexes.json; the portal step on a synthetic map; the spawn fills; O337)
         run: |
           sudo apt-get install -y -qq luajit python3-numpy
@@ -1472,6 +1514,9 @@ jobs:
       - name: "Soul pit and its items removed: the tool on synthetic base files, the SQL file, the price tables and the install step (O488)"
         run: python3 -I server/tools/patch_remove_soulpit_test.py
 
+      - name: "Deck items out of the base data: loot, trade and reward lines, CRLF, idempotence (O570)"
+        run: python3 -I server/tools/patch_remove_decks_test.py
+
       - name: "Equip rules in the tooltip: the chip reading, the rules of movements.xml and weapons.xml, every mismatch kind, the install step (O490)"
         run: python3 -I server/tools/audit_equip_tooltips_test.py
 
@@ -1551,6 +1596,9 @@ jobs:
 
       - name: Purchased looks move 79 monsters at pair 71 (install_monster_wst_looks.py, monsterwstlooks step, O540)
         run: python3 -I server/tools/install_monster_wst_looks_test.py
+
+      - name: Fun costumes, the new Dusk Moth and the round Rune Seal appear at pair 72 (install_fun_looks.py, install_auras.py, O566)
+        run: python3 -I server/tools/install_fun_looks_test.py
 
       - name: Hunt monsters move while they stand (audit_idle_looks.py, O533)
         run: python3 -I server/tools/audit_idle_looks_test.py
@@ -1904,6 +1952,16 @@ jobs:
       - name: Purchased creature outfits sit at their ids (gen_wst_outfits.py live, pair 71, O540)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_wst_outfits.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Fun costumes, Dusk Moth and Rune Seal sit at their ids (gen_fun_costumes.py live, pair 72, O566 / O578)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_fun_costumes.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Golden Ki and Crimson Blaze ground auras sit at their ids (gen_ki_auras.py live, pair 72, O577)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_ki_auras.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Wing shadows stay cleaned (clean_wing_shadows.py check-clean, pair 64; Shadow Smoke 2457 untouched)

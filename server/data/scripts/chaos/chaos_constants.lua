@@ -114,6 +114,12 @@ ChaosOpcodes.riftAtlas = 210
 ChaosOpcodes.waystoneAtlas = 159
 -- DPS meter and combat log: per-skill damage / healing / taken, fights, party totals (client game_dpsmeter; combatlog*.lua)
 ChaosOpcodes.combatLog = 204
+-- Trainer DPS panel (O573; client game_trainerdps; trainer_meter*.lua): the damage a player deals to a training monster,
+-- server -> client `state` once a second while the session is active, client -> server `watch` / `reset` / `open`. 147 is
+-- free in the reference server, the base client's ExtendedIds, every Chaos script and every client module (README "Opcode
+-- collision check"; tests/trainer_meter_test.lua). Not 204: a client module that registers an opcode replaces the earlier
+-- one, and game_dpsmeter owns 204.
+ChaosOpcodes.trainerMeter = 147
 -- Display scale: the viewer's level and factor, server -> client (client game_chaosscale; display_scale*.lua)
 ChaosOpcodes.displayScale = 157
 -- Client guard (engine src-patch 0021, client base patch 0035, clientguard*.lua; server/README.md "Client guard"): 189 is
@@ -253,7 +259,7 @@ Chaos.botReviewTables = {daily = "chaos_bot_daily", actions = "chaos_bot_actions
 -- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab
 -- of client game_cosmetics, cosmetics opcode 225, no new opcode). Storages 7102000 - 7102049 reserved: +0 the chosen
 -- footprint, +1 the chosen outline, +2 the level-up effect, +3 the rare-loot effect, +4 the victory emote
--- (cosmetics_config.lua storage), +10 .. +39 name plate frame slots 9 and up
+-- (removed O564, the key stays reserved, never reuse it; cosmetics_config.lua storage), +10 .. +39 name plate frame slots 9 and up
 -- (shopFrameBase2 above)
 Chaos.storage.wardrobe = 7102000
 
@@ -1070,9 +1076,12 @@ Chaos.storage.nemesis = 7102300
 ChaosOpcodes.goals = 178
 Chaos.tables.goals = "chaos_goals"
 
--- Card borders: the cards that are ON, server -> client (client game_cardborder; cards.lua, cards_core.lua K.state; server/README.md
--- "Cards and decks"). 172 is free in the reference server, the base client and every Chaos module. No storage, no table.
-ChaosOpcodes.cardState = 172
+-- The Deck of Cards window (O570, client game_carddeck; cards.lua, cards_core.lua; server/README.md "Deck of Cards (O570)").
+-- 173 is free in the reference server, the base client and every Chaos module. Server -> client `cards` (the list), `state`;
+-- client -> server `sync`, `toggle`, `seen`, `open`. Storage block 7104400 (cards_config.lua `deck.storage`), no table.
+-- 172 (the card borders of the deck items, game_cardborder) is retired with the deck items: nothing sends or reads it, the
+-- number stays reserved (Unity still has the old handler, frozen).
+ChaosOpcodes.cardDeck = 173
 
 -- Ember Cache, Daily Spark and the day book: points from every activity, a daily Spark, three weekly milestones, what
 -- the character did today (client game_embercache; embercache.lua, embercache_core.lua, daybook_core.lua,
@@ -2315,6 +2324,14 @@ ChaosOpcodes.npcTravel = 121
 ChaosOpcodes.survey = 122
 Chaos.tables.survey = "chaos_survey"
 Chaos.storage.survey = 7103060
+-- Effect owner marks (O567; data/lib/chaos_fx_owner.lua, fxowner.lua; client game_effectopacity, base patch 0201): which map
+-- effects and missiles of a player's own spells to draw at the "my effects" opacity. client -> server `hello {need}` (1 while the
+-- client's two opacity sliders differ), server -> client `marks {b, m}` (one small message per tick of a cast, only to a player
+-- whose client said need = 1). 164 is free in the reference server, the base client's ExtendedIds, every Chaos script and every
+-- client module (README "Opcode collision check"; tests/fx_owner_test.lua). Storage 7103120: 1 while the client wants marks, else
+-- -1 (set at the hello, cleared at login and logout; 7103121 - 7103129 free). No table.
+ChaosOpcodes.fxOwner = 164
+Chaos.storage.fxOwner = 7103120
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,

@@ -2,7 +2,6 @@ local CODE = 109
 
 local window = nil
 local windowButton = nil
-local dungeonInfo = nil
 local killCounter = nil
 local challengeNotifi = nil
 
@@ -31,6 +30,31 @@ local cooldownHint = nil
 local selectionCooldownEvent = nil
 local currentUI = {}
 
+-- the card rail (O555)
+local Entries = {} -- the "list" payload: {id, title, level, boss, queue}
+local cards = {} -- [dungeon id] = its card widget
+local railFilter = 'all' -- 'all' or a DungeonsView group key
+local railSignature = nil -- the group of every dungeon (the rail is rebuilt when it changes)
+local CARD_GAP = 8
+local sideTab = 1
+
+local function isMobileUI()
+  return g_app ~= nil and g_app.isMobile ~= nil and g_app.isMobile() and true or false
+end
+
+local function ui(id)
+  return window and window:recursiveGetChildById(id) or nil
+end
+
+local function playerLevel()
+  local player = g_game.getLocalPlayer and g_game.getLocalPlayer() or nil
+  return player and player.getLevel and player:getLevel() or nil
+end
+
+local function infoOf(id)
+  return Dungeons[id]
+end
+
 function init()
   connect(
     g_game,
@@ -39,6 +63,7 @@ function init()
       onGameEnd = destroy
     }
   )
+  connect(LocalPlayer, { onLevelChange = onPlayerLevelChange })
 
   ProtocolGame.registerExtendedOpcode(CODE, onExtendedOpcode)
 
@@ -55,30 +80,43 @@ function terminate()
       onGameEnd = destroy
     }
   )
+  disconnect(LocalPlayer, { onLevelChange = onPlayerLevelChange })
 
   ProtocolGame.unregisterExtendedOpcode(CODE, onExtendedOpcode)
 
   destroy()
 end
 
--- phone only (g_app.isMobile): the info panel shows page 1 (difficulty, requirements, queue) or page 2 (boss loot, rank
--- tables, challenges); the desktop layout never calls this and keeps everything visible
+-- phone only (g_app.isMobile): the chosen dungeon shows page 1 (art header, difficulty tiles, requirements) or page 2 (the
+-- Loot and Ranking tabs); the desktop layout never calls this and keeps both panels visible
 local MOBILE_PAGES = {
-  { 'banner', 'difficulties', 'requirements', 'queuePanel' },
-  { 'bossLoot', 'soloPanel', 'groupPanel', 'challenges', 'challengesScroll' }
+  { 'infoPanel' },
+  { 'sidePanel' }
 }
 
 function setMobilePage(n)
-  if not dungeonInfo or not (g_app and g_app.isMobile and g_app.isMobile()) then return end
+  if not window or not isMobileUI() then return end
   for page, ids in ipairs(MOBILE_PAGES) do
     for _, id in ipairs(ids) do
-      local w = dungeonInfo:getChildById(id)
+      local w = ui(id)
       if w then w:setVisible(page == n) end
     end
   end
-  local a, b = dungeonInfo:getChildById('pageInfoTab'), dungeonInfo:getChildById('pageLootTab')
+  local a, b = ui('pageInfoTab'), ui('pageLootTab')
   if a then a:setChecked(n == 1) end
   if b then b:setChecked(n == 2) end
+end
+
+-- the Loot / Ranking tabs of the right panel (1 = loot and challenges, 2 = the two rank tables)
+function showSideTab(n)
+  if not window then return end
+  sideTab = n == 2 and 2 or 1
+  local loot, rank = ui('lootPage'), ui('rankPage')
+  if loot then loot:setVisible(sideTab == 1) end
+  if rank then rank:setVisible(sideTab == 2) end
+  local a, b = ui('lootTab'), ui('rankTab')
+  if a then a:setChecked(sideTab == 1) end
+  if b then b:setChecked(sideTab == 2) end
 end
 
 function create()
@@ -89,8 +127,9 @@ function create()
   windowButton = modules.client_topmenu.addRightGameToggleButton("dungeonsButton", tr("Dungeons Finder"), "/images/topbuttons/dungeon", toggle)
   windowButton:setOn(false)
 
-  dungeonInfo = window:getChildById("dungeonInfo")
   setMobilePage(1)
+  showSideTab(1)
+  hookRailWheel()
 
   killCounter = g_ui.loadUI("killcounter", modules.game_interface.getMapPanel())
   killCounter:hide()
@@ -119,11 +158,14 @@ function destroy()
       removeEvent(timerEvent)
     end
     timerEvent = nil
-    dungeonInfo = nil
     selectedDungeonId = nil
     selectedDifficulty = 1
     queueTime = 0
     Dungeons = {}
+    Entries = {}
+    cards = {}
+    railFilter = 'all'
+    railSignature = nil
 
     if timeLeftEvent then
       removeEvent(timeLeftEvent)
@@ -222,135 +264,297 @@ function onExtendedOpcode(protocol, code, buffer)
   end
 end
 
-function onDungeonsList(data)
-  local dungeonsMenus = window:getChildById("dungeonsMenu")
-  dungeonsMenus.onChildFocusChange = onDungeonSelected
+local function chipText(text)
+  return ' ' .. tostring(text) .. ' '
+end
 
-  dungeonsMenus:destroyChildren()
-  table.sort(data, function(a, b) return a.level < b.level end)
-  for i = 1, #data do
-    local dungeon = data[i]
-    local dungeonMenu = g_ui.createWidget("DungeonMenuItem", dungeonsMenus)
-    dungeonMenu:setId("dungeon" .. dungeon.id)
-    local boss = dungeonMenu:getChildById("boss")
-    local title = dungeonMenu:getChildById("title")
-    local level = dungeonMenu:getChildById("level")
-    local queue = dungeonMenu:getChildById("queue")
-    boss:setOutfit(dungeon.boss)
-    title:setText(dungeon.title)
-    level:setText(tr('%s+ Level', formatShortNumber(dungeon.level)))
-    queue:setText(tr('Queue: %s', (dungeon.queue == 0 and tr("Open") or tr('%s Players', dungeon.queue))))
-    if dungeon.queue >= 6 then
-      queue:setColor("red")
-    elseif dungeon.queue >= 3 then
-      queue:setColor("orange")
-    else
-      queue:setColor("green")
-    end
-    dungeonMenu = nil
+-- one card: the picture slice of the dungeon, the boss, the group tag, name, level and queue
+local function fillCard(card, entry, groupKey)
+  local info = Dungeons[entry.id]
+  local art = card:getChildById('art')
+  if art then art:setImageSource(bannerFor(DungeonsView.bannerTitle(info or entry))) end
+  local boss = card:getChildById('boss')
+  if boss and entry.boss then boss:setOutfit(entry.boss) end
+  card:getChildById('group'):setText(chipText(DungeonsView.groupTag(groupKey)))
+  card:getChildById('title'):setText(entry.title or '')
+  card:getChildById('level'):setText(DungeonsView.levelText(entry.level))
+  card.dungeonId = entry.id
+end
+
+-- the parts of a card that change while the window is open: queue, best difficulty, the level veil
+local function refreshCard(id)
+  local card = cards[id]
+  if not card then return end
+  local entry
+  for _, e in ipairs(Entries) do
+    if e.id == id then entry = e break end
   end
-  if #data > 0 then
-    local firstDungeonId = data[1].id
-    local firstChild = dungeonsMenus:getChildById("dungeon" .. firstDungeonId)
-    if firstChild then
-      dungeonsMenus.onChildFocusChange = nil
-      dungeonsMenus:focusChild(firstChild)
-      dungeonsMenus.onChildFocusChange = onDungeonSelected
+  if not entry then return end
+  local players = DungeonsView.queuePlayers(entry.queue)
+  local queue = card:getChildById('queue')
+  queue:setText(DungeonsView.queueText(players))
+  queue:setColor(DungeonsView.queueTone(players))
 
-      if Dungeons[firstDungeonId] then
-        selectDungeon(firstDungeonId)
-      else
-        pendingInitialDungeonId = firstDungeonId
+  local info = Dungeons[id]
+  local party = card:getChildById('party')
+  local partyReq = info and info.req and info.req.party or nil
+  if partyReq ~= nil and not isMobileUI() then
+    party:setText(tr('Party:') .. ' ' .. tostring(partyReq))
+    party:setVisible(true)
+  else
+    party:setVisible(false)
+  end
+
+  local best = card:getChildById('best')
+  local bestText = info and DungeonsView.bestText(info.difficulty) or nil
+  best:setText(bestText and chipText(bestText) or '')
+  best:setVisible(bestText ~= nil)
+
+  local veil = card:getChildById('lock')
+  local lockText = DungeonsView.lockText(entry.level, playerLevel())
+  if lockText then
+    veil:getChildById('lockText'):setText(lockText)
+    veil:setVisible(true)
+  else
+    veil:setVisible(false)
+  end
+end
+
+local function refreshAllCards()
+  for id in pairs(cards) do refreshCard(id) end
+end
+
+function onPlayerLevelChange()
+  refreshAllCards()
+  refreshQueueStatus()
+end
+
+local function markSelected(dungeonId)
+  for id, card in pairs(cards) do
+    card:setChecked(id == dungeonId)
+  end
+end
+
+-- sideways wheel on the rail (the base scroll area only moves up and down)
+function hookRailWheel()
+  local rail, bar = ui('dungeonsRail'), ui('dungeonsRailScroll')
+  if not rail or not bar then return end
+  rail.onMouseWheel = function(self, mousePos, direction)
+    if bar.getValue and bar.setValue then
+      local step = 80
+      bar:setValue(bar:getValue() + (direction == MouseWheelUp and -step or step))
+    end
+    return true
+  end
+end
+
+local function groupsNow()
+  return DungeonsView.arrange(Entries, infoOf, railFilter)
+end
+
+local function signatureNow()
+  local parts = {}
+  for _, e in ipairs(Entries) do
+    local info = Dungeons[e.id]
+    parts[#parts + 1] = e.id .. ':' .. DungeonsView.groupOf(e.level, info and info.weekly or nil)
+  end
+  table.sort(parts)
+  return table.concat(parts, ',')
+end
+
+-- the cards of every group of the current filter, new
+function rebuildRail()
+  local rail = ui('dungeonsRail')
+  if not rail then return end
+  rail:destroyChildren()
+  cards = {}
+  local cardWidth = isMobileUI() and 128 or 156
+  for _, group in ipairs(groupsNow()) do
+    local box = g_ui.createWidget('DungeonGroup', rail)
+    box:setWidth(DungeonsView.groupWidth(#group.items, cardWidth, CARD_GAP))
+    box:getChildById('heading'):setText(group.title)
+    local row = box:getChildById('row')
+    for _, entry in ipairs(group.items) do
+      local card = g_ui.createWidget('DungeonCard', row)
+      card:setId('dungeon' .. entry.id)
+      cards[entry.id] = card
+      fillCard(card, entry, group.key)
+      card.onMouseRelease = function(self, mousePos, button)
+        if button ~= MouseLeftButton or not self:containsPoint(mousePos) or not self:isEnabled() then return false end
+        doSelection(entry.id)
+        return true
       end
+    end
+  end
+  railSignature = signatureNow()
+  refreshAllCards()
+  markSelected(selectedDungeonId)
+  local bar = ui('dungeonsRailScroll')
+  if bar and bar.setValue then bar:setValue(0) end
+end
+
+-- the filter chips: All and every group that has a card (hidden when there is only one group)
+local function buildFilters()
+  local panel = ui('filters')
+  if not panel then return end
+  panel:destroyChildren()
+  local filters = DungeonsView.filters(Entries, infoOf)
+  local valid = false
+  for _, f in ipairs(filters) do
+    if f.key == railFilter then valid = true end
+  end
+  if not valid then railFilter = 'all' end
+  for _, f in ipairs(filters) do
+    local chip = g_ui.createWidget('DungeonFilterChip', panel)
+    chip:setId('filter_' .. f.key)
+    chip:setText(f.title)
+    chip:setWidth(chip:getTextSize().width + 28)
+    chip:setChecked(f.key == railFilter)
+    chip.onClick = function() setFilter(f.key) end
+  end
+  panel:setVisible(#filters > 2)
+end
+
+function setFilter(key)
+  if railFilter == key then return end
+  railFilter = key
+  local panel = ui('filters')
+  if panel then
+    for i = 1, panel:getChildCount() do
+      local chip = panel:getChildByIndex(i)
+      local id = chip and chip:getId()
+      if id then chip:setChecked(id == 'filter_' .. key) end
+    end
+  end
+  rebuildRail()
+  local id = DungeonsView.pick(groupsNow(), selectedDungeonId)
+  if id and id ~= selectedDungeonId then
+    doSelection(id)
+  end
+end
+
+-- the chosen card scrolls into view
+local function showCard(id)
+  local rail, card = ui('dungeonsRail'), cards[id]
+  if rail and card and rail.ensureChildVisible then
+    pcall(function() rail:ensureChildVisible(card) end)
+  end
+end
+
+function onDungeonsList(data)
+  if not window or type(data) ~= 'table' then return end
+  Entries = {}
+  for _, d in ipairs(data) do
+    Entries[#Entries + 1] = d
+  end
+  buildFilters()
+  rebuildRail()
+  local id = DungeonsView.pick(groupsNow(), selectedDungeonId)
+  if id then
+    if Dungeons[id] then
+      selectDungeon(id)
+    else
+      pendingInitialDungeonId = id
     end
   end
 end
 
+-- the requirements: a chip per number that applies, the quests, the items
 local function applyRequirementsUI(dungeon)
   if not dungeon then return end
-  local panel = currentUI.requirementsPanel
-  if not panel then return end
-
   local req = dungeon.req or {}
-  local reqTable = { "level", "party", "iLvl", "gold", "quests", "items" }
 
-  for i, key in ipairs(reqTable) do
-    local parent = panel:getChildByIndex(i)
-    local hasRequirement = false
-
-    if key == "items" then
-      if req.items then
-        for j = 1, 6 do
-          if req.items[j] then
-            hasRequirement = true
-            break
-          end
-        end
-      end
+  local function chip(id, caption, value)
+    local w = ui(id)
+    if not w then return end
+    if value ~= nil then
+      w:setText(chipText(caption .. ' ' .. tostring(value)))
+      w:setVisible(true)
     else
-      hasRequirement = req[key] ~= nil
+      w:setText('')
+      w:setVisible(false)
     end
+  end
+  local function number(v)
+    return type(v) == 'number' and formatShortNumber(v) or v
+  end
+  chip('reqLevel', tr('Level:'), number(req.level))
+  chip('reqParty', tr('Party:'), number(req.party))
+  chip('reqILvl', tr('Item Level:'), number(req.iLvl))
+  chip('reqGold', tr('Gold:'), number(req.gold))
+  local gold = ui('reqGold')
+  if gold and req.gold then gold:setTooltip(comma_value(req.gold)) end
 
-    if parent then
-      if hasRequirement then
-        parent:enable()
-      else
-        parent:disable()
-        local child = parent:recursiveGetChildById(key)
-        if child and key ~= "items" and key ~= "quests" then
-          child:setText("")
-        end
-        if key == "quests" and parent:recursiveGetChildById("quests") then
-          parent:recursiveGetChildById("quests"):setText("")
-        end
-      end
+  local quests = ui('quests')
+  if quests then
+    if type(req.quests) == 'table' and #req.quests > 0 then
+      quests:setText(tr('Quests') .. ': ' .. table.concat(req.quests, ', ') .. '.')
+      quests:setVisible(true)
+    else
+      quests:setText('')
+      quests:setVisible(false)
     end
   end
 
-  if req.gold then
-    local widget = panel:recursiveGetChildById("gold")
-    if widget then
-      widget:setText(formatShortNumber(req.gold))
-      widget:setTooltip(comma_value(req.gold))
-    end
-  end
-
-  if type(req.items) == "table" then
-    local widget = panel:recursiveGetChildById("items")
-    if widget then
+  local items = ui('items')
+  if items then
+    local any = false
+    if type(req.items) == 'table' then
       for i = 1, 6 do
-        local slot = widget:getChildByIndex(i)
+        local slot = items:getChildByIndex(i)
         local reqItem = req.items[i]
         if slot then
           if reqItem then
             slot:setItemId(reqItem.clientId)
             slot:setItemCount(reqItem.count)
+            any = true
           else
             slot:setItem(nil)
           end
         end
       end
     end
+    items:setVisible(any)
   end
+end
 
-  if type(req.quests) == "table" then
-    local widget = panel:recursiveGetChildById("quests")
-    if widget then
-      if #req.quests > 0 then
-        widget:setText(table.concat(req.quests, ", ") .. ".")
-      else
-        widget:setText("")
-      end
-    end
+-- the chosen dungeon's header: title on the picture, the chips under it
+local function applyHeader(dungeonId)
+  local dungeon, entry = Dungeons[dungeonId], nil
+  for _, e in ipairs(Entries) do
+    if e.id == dungeonId then entry = e break end
   end
+  local banner, title = ui('banner'), ui('bannerTitle')
+  if banner then banner:setImageSource(bannerFor(DungeonsView.bannerTitle(dungeon or entry))) end
+  if title then title:setText((dungeon and dungeon.title) or (entry and entry.title) or '') end
+  local chips = DungeonsView.headerChips(entry, dungeon, playerLevel())
+  local level, queue, best = ui('chipLevel'), ui('chipQueue'), ui('chipBest')
+  if level then
+    level:setText(chipText(chips.level))
+    level:setColor(chips.levelTone == 'red' and '#e03a1e' or '#d6c9ae')
+  end
+  if queue then
+    queue:setText(chipText(chips.queue))
+    queue:setColor(chips.queueTone)
+  end
+  if best then
+    best:setText(chips.best and chipText(chips.best) or '')
+    best:setVisible(chips.best ~= nil)
+  end
+end
 
-  for _, key in ipairs({ "level", "party", "iLvl" }) do
-    if req[key] ~= nil then
-      local widget = panel:recursiveGetChildById(key)
-      if widget then
-        widget:setText(type(req[key]) == "number" and formatShortNumber(req[key]) or req[key])
-      end
-    end
+function refreshQueueStatus()
+  local status = currentUI.queueStatus or ui('queueStatus')
+  local dungeon = Dungeons[selectedDungeonId]
+  if not status or not dungeon then return end
+  local players = DungeonsView.queuePlayers(dungeon.queue)
+  local lockText = DungeonsView.lockText(dungeon.req and dungeon.req.level, playerLevel())
+  if lockText then
+    status:setText(lockText)
+    status:setColor('#e03a1e')
+  else
+    status:setText(DungeonsView.queueShort(players))
+    status:setColor(DungeonsView.queueTone(players))
   end
 end
 
@@ -373,9 +577,25 @@ function onDungeonData(data)
     return
   end
 
+  local previous = Dungeons[data.id]
+  if previous then
+    data.solo = data.solo or previous.solo -- the rank tables come in their own messages
+    data.group = data.group or previous.group
+  end
   Dungeons[data.id] = data
-  if selectedDungeonId == data.id and dungeonInfo then
+  if window and #Entries > 0 then
+    if railSignature ~= signatureNow() then
+      -- a Weekly Challenge payload moves its card to its own group
+      buildFilters()
+      rebuildRail()
+    else
+      refreshCard(data.id)
+    end
+  end
+  if selectedDungeonId == data.id and window then
     applyDifficultyTexts(data)
+    applyHeader(data.id)
+    refreshQueueStatus()
   end
 
   if pendingInitialDungeonId == data.id then
@@ -402,47 +622,15 @@ function onGroupRunners(data)
   dungeon.group[difficulty] = data.top
 end
 
-function refreshMenuQueueColor(menuDungeon)
-  if not menuDungeon then return end
-  local idStr = menuDungeon:getId()
-  local dungeonId = tonumber(idStr and idStr:match("^dungeon(%d+)$"))
-  local dungeon = dungeonId and Dungeons[dungeonId]
-  if not dungeon then return end
-
-  local queueLabel = menuDungeon:getChildById("queue")
-  if not queueLabel then return end
-
-  local queuePlayers
-  if type(dungeon.queue) == "table" then
-    queuePlayers = dungeon.queue.players or 0
-  else
-    queuePlayers = dungeon.queue or 0
-  end
-
-  queueLabel:setText(tr('Queue: %s', (queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))))
-  if queuePlayers >= 6 then
-    queueLabel:setColor("red")
-  elseif queuePlayers >= 3 then
-    queueLabel:setColor("orange")
-  else
-    queueLabel:setColor("green")
-  end
-end
-
 function setDungeonMenuInteractable(enabled)
-  local dungeonsMenus = window and window:getChildById("dungeonsMenu")
-  if not dungeonsMenus then return end
-  for i = 1, dungeonsMenus:getChildCount() do
-    local child = dungeonsMenus:getChildByIndex(i)
-    if child then
-      if enabled then
-        child:enable()
-        refreshMenuQueueColor(child)
-      else
-        child:disable()
-      end
+  for id, card in pairs(cards) do
+    if enabled then
+      card:enable()
+    else
+      card:disable()
     end
   end
+  if enabled then refreshAllCards() end
 end
 
 function startSelectionCooldown()
@@ -516,16 +704,6 @@ function doSelection(dungeonId)
   isApplyingDungeon = false
 end
 
-function onDungeonSelected(parent, child, reason)
-  if not child then return end
-  local idStr = child:getId()
-  if not idStr then return end
-  local dungeonId = tonumber(idStr:match("^dungeon(%d+)$"))
-  if not dungeonId then return end
-
-  doSelection(dungeonId)
-end
-
 -- banner art: DungeonsView.bannerFor (dungeonsview.lua)
 function bannerFor(title)
   return DungeonsView.bannerFor(title, function(path) return g_resources.fileExists(path) end)
@@ -546,32 +724,34 @@ end
 
 function selectDungeon(dungeonId)
   local dungeon = Dungeons[dungeonId]
-  if not dungeon then return end
+  if not dungeon or not window then return end
   if selectedDungeonId == dungeonId then return end
 
   selectedDungeonId = dungeonId
+  markSelected(dungeonId)
+  showCard(dungeonId)
 
-  currentUI.difficultiesPanel = dungeonInfo:getChildById("difficulties")
-  currentUI.requirementsPanel = dungeonInfo:getChildById("requirements")
-  currentUI.bossLootPanel = dungeonInfo:getChildById("bossLoot")
-  currentUI.queueStatus = dungeonInfo:recursiveGetChildById("queueStatus")
-  currentUI.queueTime = dungeonInfo:recursiveGetChildById("queueTime")
-  currentUI.queueWaiting = dungeonInfo:recursiveGetChildById("queueWaiting")
-  currentUI.challengesPanel = dungeonInfo:getChildById("challenges")
-  currentUI.soloTable = window and window:recursiveGetChildById("soloTable") or nil
-  currentUI.groupTable = window and window:recursiveGetChildById("groupTable") or nil
+  currentUI.difficultiesPanel = ui("difficulties")
+  currentUI.requirementsPanel = ui("requirements")
+  currentUI.bossLootPanel = ui("bossLoot")
+  currentUI.queueStatus = ui("queueStatus")
+  currentUI.queueTime = ui("queueTime")
+  currentUI.queueWaiting = ui("queueWaiting")
+  currentUI.challengesPanel = ui("challenges")
+  currentUI.soloTable = ui("soloTable")
+  currentUI.groupTable = ui("groupTable")
 
-  dungeonInfo:getChildById("banner"):setImageSource(bannerFor(DungeonsView.bannerTitle(dungeon)))
+  applyHeader(dungeonId)
   applyDifficultyTexts(dungeon)
 
+  -- the tile that is lit is the difficulty a Join sends: the hardest the character has unlocked (the Weekly Challenge
+  -- runs at difficulty 1 only, server weekly_challenge_config.lua)
+  local wanted = dungeon.weekly and 1 or math.max(1, math.min(6, tonumber(dungeon.difficulty) or 1))
+  lastDifficultyId = nil
   if currentUI.difficultiesPanel then
-    if currentUI.difficultiesPanel:getChildCount() >= 1 then
-      currentUI.difficultiesPanel:focusChild(currentUI.difficultiesPanel:getChildByIndex(1))
-    end
     for i = 2, 6 do
       local diffWidget = currentUI.difficultiesPanel:getChildByIndex(i)
       if diffWidget then
-        -- the Weekly Challenge runs at difficulty 1 only (server weekly_challenge_config.lua)
         if dungeon.difficulty < i or dungeon.weekly then
           diffWidget:disable()
           diffWidget:getChildById("lockBg"):show()
@@ -583,6 +763,8 @@ function selectDungeon(dungeonId)
         end
       end
     end
+    local tile = currentUI.difficultiesPanel:getChildByIndex(wanted)
+    if tile then currentUI.difficultiesPanel:focusChild(tile) end
   end
 
   applyRequirementsUI(dungeon)
@@ -611,21 +793,11 @@ function selectDungeon(dungeonId)
     end
   end
 
-  if currentUI.queueStatus then
-    local queuePlayers = dungeon.queue.players
-    currentUI.queueStatus:setText(queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))
-    if queuePlayers >= 6 then
-      currentUI.queueStatus:setColor("red")
-    elseif queuePlayers >= 3 then
-      currentUI.queueStatus:setColor("orange")
-    else
-      currentUI.queueStatus:setColor("green")
-    end
-  end
+  refreshQueueStatus()
   if currentUI.queueTime then
     currentUI.queueTime:setText(SecondsToShortTime(dungeon.queue.estimated / 1000))
   end
-  if currentUI.queueWaiting then
+  if currentUI.queueWaiting and not timerEvent then
     currentUI.queueWaiting:setText("00:00:00")
   end
 
@@ -647,8 +819,7 @@ function selectDungeon(dungeonId)
     end
   end
 
-  lastDifficultyId = nil
-  onDifficultyFocus(dungeon.difficulty or 1, true)
+  onDifficultyFocus(wanted, true)
 end
 
 function onDifficultyFocus(difficultyId, focused)
@@ -747,13 +918,13 @@ function joinQueue()
 end
 
 function onDungeonQueue(data)
-  if not dungeonInfo then return end
-  local queueWaiting = safeRecursiveGet(dungeonInfo, "queueWaiting")
+  if not window then return end
+  local queueWaiting = safeRecursiveGet(window, "queueWaiting")
   if queueWaiting then queueWaiting:setText("00:00:00") end
   queueTime = 0
 
-  local queueDungeon = safeRecursiveGet(dungeonInfo, "queueDungeon")
-  local queueButton = safeRecursiveGet(dungeonInfo, "queueButton")
+  local queueDungeon = safeRecursiveGet(window, "queueDungeon")
+  local queueButton = safeRecursiveGet(window, "queueButton")
   if not queueDungeon or not queueButton then return end
 
   if data.joined then
@@ -775,13 +946,13 @@ function onDungeonQueue(data)
 end
 
 function onStopQueue()
-  if not dungeonInfo then return end
-  local queueWaiting = safeRecursiveGet(dungeonInfo, "queueWaiting")
+  if not window then return end
+  local queueWaiting = safeRecursiveGet(window, "queueWaiting")
   if queueWaiting then queueWaiting:setText("00:00:00") end
   queueTime = 0
 
-  local queueDungeon = safeRecursiveGet(dungeonInfo, "queueDungeon")
-  local queueButton = safeRecursiveGet(dungeonInfo, "queueButton")
+  local queueDungeon = safeRecursiveGet(window, "queueDungeon")
+  local queueButton = safeRecursiveGet(window, "queueButton")
   if queueButton then queueButton:setText(tr("Join")) end
   if queueDungeon then queueDungeon:setText("------") end
   if timerEvent then
@@ -791,8 +962,8 @@ function onStopQueue()
 end
 
 function queueTimer()
-  if not dungeonInfo then return end
-  local queueWaiting = safeRecursiveGet(dungeonInfo, "queueWaiting")
+  if not window then return end
+  local queueWaiting = safeRecursiveGet(window, "queueWaiting")
   queueTime = queueTime + 1
   if queueWaiting then
     queueWaiting:setText(SecondsToShortTime(queueTime))
@@ -809,13 +980,13 @@ function onDungeonPrepare()
 end
 
 function onDungeonStart(data)
-  if not dungeonInfo then return end
-  local queueWaiting = safeRecursiveGet(dungeonInfo, "queueWaiting")
+  if not window then return end
+  local queueWaiting = safeRecursiveGet(window, "queueWaiting")
   if queueWaiting then queueWaiting:setText("00:00:00") end
   queueTime = 0
 
-  local queueDungeon = safeRecursiveGet(dungeonInfo, "queueDungeon")
-  local queueButton = safeRecursiveGet(dungeonInfo, "queueButton")
+  local queueDungeon = safeRecursiveGet(window, "queueDungeon")
+  local queueButton = safeRecursiveGet(window, "queueButton")
   if queueButton then queueButton:setText(tr("Join")) end
   if queueDungeon then queueDungeon:setText("------") end
   if timerEvent then
@@ -945,20 +1116,24 @@ function onDungeonDifficulty(data)
   local dungeon = Dungeons[data.id]
   if dungeon then
     dungeon.difficulty = data.difficulty
-    if selectedDungeonId and selectedDungeonId == data.id then
-      local difficultiesPanel = dungeonInfo:getChildById("difficulties")
+    refreshCard(data.id)
+    if selectedDungeonId and selectedDungeonId == data.id and window then
+      local difficultiesPanel = ui("difficulties")
       for i = 2, 6 do
-        local diffWidget = difficultiesPanel:getChildByIndex(i)
-        if dungeon.difficulty < i then
-          diffWidget:disable()
-          diffWidget:getChildById("lockBg"):show()
-          diffWidget:getChildById("lockImg"):show()
-        else
-          diffWidget:enable()
-          diffWidget:getChildById("lockBg"):hide()
-          diffWidget:getChildById("lockImg"):hide()
+        local diffWidget = difficultiesPanel and difficultiesPanel:getChildByIndex(i)
+        if diffWidget then
+          if dungeon.difficulty < i then
+            diffWidget:disable()
+            diffWidget:getChildById("lockBg"):show()
+            diffWidget:getChildById("lockImg"):show()
+          else
+            diffWidget:enable()
+            diffWidget:getChildById("lockBg"):hide()
+            diffWidget:getChildById("lockImg"):hide()
+          end
         end
       end
+      applyHeader(data.id)
     end
   end
 end
@@ -966,34 +1141,18 @@ end
 function onDungeonQueueUpdate(data)
   local dungeon = Dungeons[data.id]
   if dungeon then
+    if type(dungeon.queue) ~= 'table' then dungeon.queue = {} end
     dungeon.queue.players = data.queue
     dungeon.queue.estimated = data.estimated
   end
-
-  local dungeonsMenus = window:getChildById("dungeonsMenu")
-  local menuDungeon = dungeonsMenus:getChildById("dungeon" .. data.id)
-  local queue = menuDungeon:getChildById("queue")
-  local queuePlayers = data.queue
-  queue:setText(tr('Queue: %s', (queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))))
-  if queuePlayers >= 6 then
-    queue:setColor("red")
-  elseif queuePlayers >= 3 then
-    queue:setColor("orange")
-  else
-    queue:setColor("green")
+  for _, entry in ipairs(Entries) do
+    if entry.id == data.id then entry.queue = data.queue end
   end
+  refreshCard(data.id)
+
   if selectedDungeonId == data.id then
-    if currentUI.queueStatus then
-      local queuePlayers = data.queue
-      currentUI.queueStatus:setText(queuePlayers == 0 and tr("Open") or tr('%s Players', queuePlayers))
-      if queuePlayers >= 6 then
-        currentUI.queueStatus:setColor("red")
-      elseif queuePlayers >= 3 then
-        currentUI.queueStatus:setColor("orange")
-      else
-        currentUI.queueStatus:setColor("green")
-      end
-    end
+    refreshQueueStatus()
+    applyHeader(data.id)
     if currentUI.queueTime and Dungeons[data.id] then
       currentUI.queueTime:setText(SecondsToShortTime(Dungeons[data.id].queue.estimated / 1000))
     end
@@ -1036,8 +1195,13 @@ function show()
   if not window or not windowButton then
     return
   end
-  local dungeonsMenus = window:getChildById("dungeonsMenu")
-  dungeonsMenus:focusChild(dungeonsMenus:getChildByIndex(1))
+  -- the chosen dungeon stays chosen; the first card when none is
+  local id = DungeonsView.pick(groupsNow(), selectedDungeonId)
+  if id and id ~= selectedDungeonId and Dungeons[id] then
+    selectDungeon(id)
+  end
+  refreshAllCards()
+  refreshQueueStatus()
   window:show()
   window:raise()
   window:focus()

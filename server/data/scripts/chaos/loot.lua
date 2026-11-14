@@ -1199,6 +1199,125 @@ function L.classWeapons(monster, owner, tier, ctx)
 end
 
 -- text, nearMessage: deferred texts (ChaosI18n.msg), each player reads them in their own language
+-- O575: guaranteed good loot of a tier (loot_config.lua gear.guarantee). The rule of a tier: {pieces, minRarity} or nil
+function L.guaranteeRule(tier)
+	local g = cfg().gear.guarantee
+	if type(g) ~= "table" or g.enabled == false or type(g.tiers) ~= "table" then
+		return nil
+	end
+	local r = g.tiers[L.normTier(tier)]
+	local pieces = type(r) == "table" and math.floor(tonumber(r.pieces) or 0) or 0
+	if pieces < 1 then
+		return nil
+	end
+	return {pieces = pieces, minRarity = tonumber(r.minRarity) or 0}
+end
+
+-- how many gear pieces a corpse still needs: the rule's pieces less the gear it already holds (never below 0)
+function L.guaranteeMissing(rule, gearCount)
+	if not rule then
+		return 0
+	end
+	return math.max(0, rule.pieces - math.max(0, math.floor(tonumber(gearCount) or 0)))
+end
+
+-- the gear ids of a monster's loot table (equal weights: the level fits the monster); isAmmo(id) -> true skips an id
+function L.guaranteeCandidates(lootTable, isAmmo)
+	local ids, seen = {}, {}
+	local skip = cfg().extraSkipItems
+	for _, entry in ipairs(lootTable or {}) do
+		local id = entry.itemId
+		if id and not seen[id] and not (skip and skip[id]) and not (isAmmo and isAmmo(id)) and L.isGearId(id) then
+			seen[id] = true
+			ids[#ids + 1] = id
+		end
+	end
+	return ids
+end
+
+-- one gear base id for a corpse short of gear: the monster's own table first, else a weapon base of the killer's class near
+-- the level (data/lib/chaos_class_loot.lua L.eligible); nil when neither has one
+function L.guaranteePick(lootTable, owner, level, isAmmo)
+	local ids = L.guaranteeCandidates(lootTable, isAmmo)
+	if #ids > 0 then
+		return ids[rnd(1, #ids)]
+	end
+	local CL = ChaosClassLoot
+	if not CL then
+		local okL, lib = pcall(dofile, "data/lib/chaos_class_loot.lua")
+		CL = okL and lib or nil
+	end
+	local okV, className = pcall(function() return owner:getVocation():getName() end)
+	if not (CL and CL.eligible and okV and CL.classKinds and CL.classKinds[className]) then
+		return nil
+	end
+	local list = {}
+	for _, kind in ipairs(CL.classKinds[className]) do
+		for _, b in ipairs(CL.eligible(kind, level)) do
+			if L.isGearId(b[1]) then
+				list[#list + 1] = b[1]
+			end
+		end
+	end
+	return #list > 0 and list[rnd(1, #list)] or nil
+end
+
+-- the gear a kill of a guaranteed tier lacks, added to the corpse (before the rarity step, so the piece is forged like any
+-- drop). Returns the names added. The caller wraps it in pcall.
+function L.guaranteeGear(corpse, monster, owner, tier, level, lootTable, isAmmo)
+	local rule = L.guaranteeRule(tier)
+	if not rule then
+		return {}
+	end
+	local have = 0
+	for slot = 0, corpse:getSize() - 1 do
+		local item = corpse:getItem(slot)
+		if item and item:isItem() and L.isGearId(item:getId()) then
+			have = have + 1
+		end
+	end
+	local added = {}
+	for _ = 1, L.guaranteeMissing(rule, have) do
+		local id = L.guaranteePick(lootTable, owner, level, isAmmo)
+		local item = id and (L.addToCorpse(corpse, id, 1))
+		if not item then
+			break
+		end
+		added[#added + 1] = itemName(id)
+	end
+	return added
+end
+
+-- the rarity floor of a guaranteed tier on the gear of a corpse. gear = list of {rarity = stored id, raisable = bool}; the
+-- result lists {index, target} so that at least rule.pieces entries reach the floor: the highest below it first, only
+-- raisable ones (a piece the engine already rolled is not touched)
+function L.guaranteeRaise(rule, gear)
+	local out = {}
+	if not rule then
+		return out
+	end
+	local R = ChaosRarity
+	local floor = R.rank(rule.minRarity)
+	local good, low = 0, {}
+	for i, g in ipairs(gear) do
+		if R.rank(g.rarity) >= floor then
+			good = good + 1
+		elseif g.raisable then
+			low[#low + 1] = {index = i, rank = R.rank(g.rarity)}
+		end
+	end
+	table.sort(low, function(a, b)
+		if a.rank ~= b.rank then
+			return a.rank > b.rank
+		end
+		return a.index < b.index
+	end)
+	for k = 1, math.min(#low, rule.pieces - good) do
+		out[#out + 1] = {index = low[k].index, target = R.idOfRank(floor)}
+	end
+	return out
+end
+
 local function announce(owner, corpsePos, text, nearMessage)
 	local u = cfg().unique
 	local msgType = globalByName(u.messageType, MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR)
@@ -1360,6 +1479,19 @@ local function processKill(monster, corpse)
 		ChaosContentRewards.onKill(monster, corpse, owner, ctx, L, bonus)
 	end
 
+	-- 1a'. O575: a kill of a guaranteed tier (gear.guarantee, legendary) always holds its gear pieces
+	do
+		local okG, names = pcall(L.guaranteeGear, corpse, monster, owner, tier, ctx.huntLevel > 0 and ctx.huntLevel or level,
+			lootTable, isAmmo)
+		if okG then
+			for _, name in ipairs(names) do
+				bonus[#bonus + 1] = name
+			end
+		else
+			print("[Chaos loot] guaranteed gear: " .. tostring(names))
+		end
+	end
+
 	-- 1b. smart loot (smartloot.lua): a gear drop nobody near can wear may become one of this loot table they can
 	if ChaosSmartLoot and ChaosSmartLoot.apply then
 		local okSmart, errSmart = pcall(ChaosSmartLoot.apply, corpse, owner, lootTable, rnd)
@@ -1420,6 +1552,25 @@ local function processKill(monster, corpse)
 	-- item that still carries one in the corpse after all onDropLoot callbacks (Monster::dropLoot), once. Rolling here
 	-- too (Game.createItemWithRarity) gave corpse items two sets of stats. Items that leave the corpse before the
 	-- engine pass (autoloot, the loot pouch) are rolled on the way out: L.finalizeRarity.
+	local function markUpgrade(item, id, current, target)
+		if ChaosRarity.rank(target) <= ChaosRarity.rank(current) then
+			return
+		end
+		item:setCustomAttribute("rarity", target)
+		-- one loot line (lootline.lua): the stock entry of this item ("[Common] x", written before this roll)
+		-- shows the new rarity, {} from Rare on; without it a bonus item, marked the same way
+		local up = {name = itemName(id), from = current > 0 and rarityName(current) or nil, to = rarityName(target)}
+		if not (ChaosLootLine and ChaosLootLine.addUpgrade and ChaosLootLine.addUpgrade(monster, up)) then
+			local text = string.format("[%s] %s", up.to, up.name)
+			local flag = ChaosPouchesConfig and ChaosPouchesConfig.lootLine and ChaosPouchesConfig.lootLine.flagRarity or 3
+			bonus[#bonus + 1] = target >= flag and ("{" .. text .. "}") or text
+		end
+		local from = c.announceRarityFrom or 0
+		if from > 0 and target >= from then
+			announce(owner, corpsePos,
+				string.format("%s found a [%s] %s!", owner:getName(), rarityName(target), itemName(id)))
+		end
+	end
 	for _, item in ipairs(items) do
 		local id = item:getId()
 		if L.isGearId(id) and not L.isRolled(item) then
@@ -1431,21 +1582,25 @@ local function processKill(monster, corpse)
 					target = t
 				end
 			end
-			if ChaosRarity.rank(target) > ChaosRarity.rank(current) then
-				item:setCustomAttribute("rarity", target)
-				-- one loot line (lootline.lua): the stock entry of this item ("[Common] x", written before this roll)
-				-- shows the new rarity, {} from Rare on; without it a bonus item, marked the same way
-				local up = {name = itemName(id), from = current > 0 and rarityName(current) or nil, to = rarityName(target)}
-				if not (ChaosLootLine and ChaosLootLine.addUpgrade and ChaosLootLine.addUpgrade(monster, up)) then
-					local text = string.format("[%s] %s", up.to, up.name)
-					local flag = ChaosPouchesConfig and ChaosPouchesConfig.lootLine and ChaosPouchesConfig.lootLine.flagRarity or 3
-					bonus[#bonus + 1] = target >= flag and ("{" .. text .. "}") or text
+			markUpgrade(item, id, current, target)
+		end
+	end
+
+	-- 2a. O575: the rarity floor of a guaranteed tier holds even when ensureChance is below 100
+	do
+		local rule = L.guaranteeRule(tier)
+		if rule then
+			local gear, refs = {}, {}
+			for slot = 0, corpse:getSize() - 1 do
+				local item = corpse:getItem(slot)
+				if item and item:isItem() and L.isGearId(item:getId()) then
+					gear[#gear + 1] = {rarity = itemRarityOf(item), raisable = not L.isRolled(item)}
+					refs[#gear] = item
 				end
-				local from = c.announceRarityFrom or 0
-				if from > 0 and target >= from then
-					announce(owner, corpsePos,
-						string.format("%s found a [%s] %s!", owner:getName(), rarityName(target), itemName(id)))
-				end
+			end
+			for _, r in ipairs(L.guaranteeRaise(rule, gear)) do
+				local item = refs[r.index]
+				markUpgrade(item, item:getId(), gear[r.index].rarity, r.target)
 			end
 		end
 	end

@@ -15,6 +15,7 @@
 --            map) get a forcefield with the same action id beside their arrival at startup (`at`, else the nearest
 --            free tile, ChaosHuntTeleportsCore.pickReturnTile); it sends players in front of the hunt's own teleport
 --            and the label "Back to the teleport room" floats over it
+--   map      HT.ports(): the hall teleports, arrivals and ways out for the client's map markers (O568, poi.lua)
 --   display  the display monsters in the closed cells are harmless and unharmed: HT.isDisplay / isDisplaySpot for the
 --            other systems (boss mechanics, monster tiers, treasure goblin, item powers skip them), onTargetCombat
 --            refuses their hits and hits on them, ChaosHallDisplayGuard (onHealthChange) drops direct damage
@@ -84,6 +85,11 @@ function HT.backFor(pos)
 	end
 	local b = H.backFor(HT.idx, pos)
 	return b and P(b) or nil
+end
+
+-- the hunts of the hall for the map markers (poi.lua, action huntports; ChaosHuntTeleportsCore.ports)
+function HT.ports()
+	return H.ports(cfg, HT.idx)
 end
 
 -- display monsters (the two in the closed cells beside each teleport): found by their spot, since the spawn file's

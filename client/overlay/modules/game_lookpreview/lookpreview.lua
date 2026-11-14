@@ -96,6 +96,22 @@ local function wingShift(outfit)
   return ok and tonumber(s) or 0
 end
 
+-- the shift {x, y} base patch 0200 gives a head accessory worn on this body (the piece was fitted to look 128), facing
+-- south, in sprite px at 1x; nil without the patch or its table (the module client_chaos_wingfit hands it over as
+-- WingFit.headShift(outfit) or HeadFit.shift(outfit): whichever exists is asked, nothing else is assumed)
+local function auraShift(outfit)
+  if num(outfit.aura) <= 0 then return nil end
+  local m = modules.client_chaos_wingfit
+  if not m then return nil end
+  local fn = (m.WingFit and m.WingFit.headShift) or (m.HeadFit and m.HeadFit.shift)
+  if type(fn) ~= 'function' then return nil end
+  local ok, x, y = pcall(fn, outfit)
+  if not ok then return nil end
+  if type(x) == 'table' then return { x = tonumber(x.x or x[1]) or 0, y = tonumber(x.y or x[2]) or 0 } end
+  if tonumber(x) then return { x = tonumber(x), y = tonumber(y) or 0 } end
+  return nil
+end
+
 local function figureOf(outfit)
   local Core, anchors = charselect()
   local mounted = num(outfit.mount) > 0
@@ -110,7 +126,7 @@ end
 
 -- the box of everything the engine draws of an outfit (LookPreviewCore.lookBox), for the panel's centring
 local function boxOf(outfit)
-  local ok, b = pcall(P.lookBox, outfit, anchorOf, thingInfo, wingLift(), wingShift(outfit))
+  local ok, b = pcall(P.lookBox, outfit, anchorOf, thingInfo, wingLift(), wingShift(outfit), auraShift(outfit))
   return ok and b or P.copy(P.FALLBACK_BOX)
 end
 
@@ -157,7 +173,8 @@ function fitCard(creatureWidget, outfit, w, h)
   creatureWidget:setMarginBottom(0)
   creatureWidget:setMarginRight(0)
   creatureWidget:setSize({ width = L.size, height = L.size })
-  creatureWidget:setDirection(P.SOUTH)
+  -- a cape is drawn from the back (O562)
+  creatureWidget:setDirection(P.shownDirection(outfit, P.SOUTH, false))
   return true
 end
 
@@ -267,18 +284,83 @@ end
 
 -- the widget of a LookPreviewCore.sampleSpec inside `parent`, sized by its text (text-auto-resize); nil when the art of a
 -- plate frame is not in this client
+-- A label's size comes from its text, now: a UILabel with text-auto-resize reports its old size until the next layout
+-- pass, so the centring that read getWidth() / getHeight() right after setText put the text off-centre in the box
+-- (O562). The size is set from the measured text and the padding, the text is centred in it.
+local function fitLabel(l, padX, padY, minW)
+  pcall(l.setTextAutoResize, l, false)
+  local ts = l:getTextSize()
+  local w = math.max(minW or 0, ts.width + 2 * padX)
+  local h = ts.height + 2 * padY
+  l:setSize({ width = w, height = h })
+  pcall(l.setTextAlign, l, AlignCenter)
+  return l
+end
+
+-- Animated chat colours on the samples (O562): the name of a chat sample takes the look of its colour
+-- (game_cosmetics ChatColorFx, the same look the console draws) and a timer repaints the live ones. Without the module,
+-- or an engine that refuses, the flat colour stays.
+local chatLive, chatEvent = {}, nil
+
+local function chatFx()
+  local m = modules.game_cosmetics
+  return m and m.ChatColorFx or nil
+end
+
+local function chatTick()
+  local F = chatFx()
+  local now = (g_clock and g_clock.millis and g_clock.millis() or 0) / 1000
+  local n = 0
+  for w, e in pairs(chatLive) do
+    local ok, dead = pcall(function() return w:isDestroyed() end)
+    if not ok or dead then
+      chatLive[w] = nil
+    else
+      n = n + 1
+      if F and w:isVisible() then
+        local parts = F.recolor(e.parts, e.first, e.last, e.style, now)
+        if not pcall(w.setColoredText, w, parts) then chatLive[w] = nil end
+      end
+    end
+  end
+  if n == 0 and chatEvent then
+    removeEvent(chatEvent)
+    chatEvent = nil
+  end
+end
+
+local function animateChat(l, spec)
+  local F = chatFx()
+  local first = spec.parts[1]
+  local style = F and type(spec.parts[2]) == 'string' and F.styleOf(spec.parts[2]) or nil
+  if not style or type(first) ~= 'string' or first == '' or type(cycleEvent) ~= 'function' then return end
+  chatLive[l] = { parts = spec.parts, first = 1, last = #first, style = style }
+  if not chatEvent then chatEvent = cycleEvent(chatTick, F.FRAME_MS) end
+end
+
 local function buildSampleWidget(parent, spec)
   if spec.kind == 'lootlabel' then
     local l = g_ui.createWidget('LookPreviewGroundLabel', parent)
     l:setText(spec.text)
     l:setColor(spec.color)
+    local GLL = modules.game_groundlabels and modules.game_groundlabels.GroundLabelsLogic
+    local plate = GLL and type(GLL.plateFor) == 'function' and GLL.plateFor(spec.bg) or nil
+    if plate and g_resources.fileExists(plate.path .. '.png') then
+      l:setBorderWidth(0)
+      l:setImageSource(plate.path)
+      l:setImageBorder(plate.border)
+      l:setBackgroundColor('#00000000')
+      return fitLabel(l, 8, 5, 40)
+    end
     l:setBorderColor(spec.border)
     l:setBackgroundColor(spec.bg)
-    return l
+    return fitLabel(l, 6, 4, 40)
   elseif spec.kind == 'chatcolor' then
     local l = g_ui.createWidget('LookPreviewChatLine', parent)
     l:setColoredText(spec.parts)
     l:setBackgroundColor(spec.bg)
+    fitLabel(l, 6, 3, 0)
+    animateChat(l, spec)
     return l
   elseif spec.kind == 'plate' then
     if not g_resources.fileExists(spec.path .. '.png') then return nil end
@@ -287,7 +369,7 @@ local function buildSampleWidget(parent, spec)
     l:setImageBorder(spec.border)
     l:setText(spec.text)
     l:setColor(spec.color)
-    return l
+    return fitLabel(l, 9, 4, 0)
   end
   return nil
 end
@@ -347,9 +429,11 @@ function Preview:startFx(opt)
   local scene = P.sceneOf(opt)
   self.fx = { timeline = P.timeline(play, side, phasesOf, scene), holders = {}, started = g_clock.millis(),
     hasStock = hasStock, scene = scene, play = play, sizeOf = sizeOf }
-  -- the troll: alone in a kill scene, facing the player in a spell scene
+  -- the troll: alone in a kill scene, facing the player in a spell scene; none in a rare-loot scene (a loot bag instead)
   local tw = targetWidget(self)
-  if tw then
+  if tw and scene.loot then
+    tw:setVisible(false)
+  elseif tw then
     pcall(tw.setOutfit, tw, { type = P.TROLL })
     tw:setDirection(scene.kill and P.SOUTH or P.WEST)
     tw:setAnimate(false)
@@ -357,12 +441,37 @@ function Preview:startFx(opt)
     tw:setOpacity(1)
     tw:setVisible(true)
   end
+  -- a dissolve kill effect (O563): the troll itself comes apart (game_killdissolve); its plain effect stays the fallback
+  local kd = modules.game_killdissolve
+  local d = type(opt.dissolve) == 'table' and opt.dissolve or nil
+  if d and kd and type(kd.canPreview) == 'function' and kd.canPreview(d.m) and kd.KillDissolveCore then
+    self.fx.dissolve = d
+    self.fx.timeline = { items = {}, total = kd.KillDissolveCore.loopMs(d.m), lead = 0 }
+  end
+end
+
+-- one frame of a dissolve loop on the troll: stands, dissolves through the shader, is gone, fades back in. The outfit is
+-- set only while it changes (the dissolve frames; the plain troll once per phase).
+function Preview:dissolveTick(now)
+  local kd = modules.game_killdissolve
+  local tw = targetWidget(self)
+  if not kd or not tw then return end
+  local d = self.fx.dissolve
+  local o, st = kd.previewOutfit({ type = P.TROLL }, d.m, d.t, now)
+  if st.phase == 'dissolve' and o then
+    pcall(tw.setOutfit, tw, o)
+    tw:setOpacity(1)
+  else
+    if self.fx.dphase ~= st.phase and st.phase ~= 'gone' then pcall(tw.setOutfit, tw, { type = P.TROLL }) end
+    tw:setOpacity(st.phase == 'gone' and 0 or (st.phase == 'appear' and st.alpha or 1))
+  end
+  self.fx.dphase = st.phase
 end
 
 -- the scene's extent (in tiles) with the boxes of its creatures
 function Preview:fxExtent()
   local fx = self.fx
-  local boxes = { target = boxOf({ type = P.TROLL }) }
+  local boxes = { target = fx.scene.loot and P.LOOT_BOX or boxOf({ type = P.TROLL }) }
   if fx.scene.caster then boxes.caster = self.box end
   return P.fxExtent(fx.play, fx.sizeOf, fx.scene, boxes)
 end
@@ -393,6 +502,28 @@ function Preview:drawSteps(art, prints)
     w:setRotation(f.rotation)
     w:setOpacity(f.opacity)
   end
+end
+
+-- a rare-loot effect's scene (O564): the loot bag on its tile, under the effect (the fxUnder layer), tagged so a ground
+-- effect in the same layer is left alone
+local BAG_ID = 'lootbag'
+function Preview:drawLootBag(L)
+  local st = self.widget.stage
+  for _, c in ipairs(st.fxUnder:getChildren()) do
+    if c:getId() == BAG_ID then c:destroy() end
+  end
+  local scene = self.fx and self.fx.scene
+  if not (scene and scene.loot) then return end
+  local bag = g_ui.createWidget('UIItem', st.fxUnder)
+  bag:setId(BAG_ID)
+  bag:setPhantom(true)
+  bag:setVirtual(true)
+  bag:setItemId(P.LOOT_BAG)
+  bag:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  bag:addAnchor(AnchorTop, 'parent', AnchorTop)
+  bag:setSize({ width = L.T, height = L.T })
+  bag:setMarginLeft(L.tileX + scene.target.x * L.T)
+  bag:setMarginTop(L.tileY + scene.target.y * L.T)
 end
 
 -- the stage's sample (a loot label over a loot bag beside the feet, a chat line near the head, a name plate over it):
@@ -460,6 +591,7 @@ function Preview:fxTick()
   if not self.fx or not alive(self.widget) or not self.layout or not self.layout.T then return end
   local L = self.layout
   local now = g_clock.millis() - self.fx.started
+  if self.fx.dissolve then return self:dissolveTick(now) end
   local playing = {}
   local label
   for _, a in ipairs(P.activeAt(self.fx.timeline, now)) do
@@ -601,6 +733,7 @@ function Preview:relayout()
   self.layout = L
   self.widget.controls.zoomLabel:setText(L.scale .. 'x')
   if self.steps then self:drawSteps(self.steps, prints) end
+  self:drawLootBag(L)
   self:drawSample(L, W, H)
 end
 
@@ -614,7 +747,7 @@ function Preview:refresh()
     g_logger.warning('[lookpreview] setOutfit refused the look ' .. tostring(outfit.type))
     pcall(cw.setOutfit, cw, { type = outfit.type, mount = outfit.mount })
   end
-  cw:setDirection(self.dir)
+  cw:setDirection(self:face(outfit))
   self:animate()
   -- the outline: on the preview's own creature (an engine without 0038 has none: say so, no picture in its place)
   local c = cw:getCreature()
@@ -636,13 +769,13 @@ function Preview:refresh()
     if fxKey then
       self:startFx(fxOpt)
       self.fx.compare = settings.compare
-      -- a spell scene: the player faces the troll
-      if not self.fx.scene.kill then self.dir = P.EAST end
+      -- a spell scene: the player faces the troll (a kill and a rare-loot scene: south)
+      if not self.fx.scene.kill and not self.fx.scene.loot then self.dir = P.EAST end
     else
-      if self.fx and not self.fx.scene.kill then self.dir = P.SOUTH end -- back from a spell scene
+      if self.fx and not self.fx.scene.kill then self.dir = P.SOUTH end -- back from a spell or rare-loot scene
       self:stopFx()
     end
-    cw:setDirection(self.dir)
+    cw:setDirection(self:face(outfit))
   end
   self.sample = P.sampleOf(opt)
   local steps = P.footprintArt(opt)
@@ -650,7 +783,7 @@ function Preview:refresh()
     self.steps = steps
     if not steps then self.widget.stage.fxUnder:destroyChildren() end
     self.dir = steps and 1 or P.SOUTH -- walking east, the prints behind
-    cw:setDirection(self.dir)
+    cw:setDirection(self:face(outfit))
     self:animate()
   end
   self.outfit = outfit
@@ -705,8 +838,15 @@ function Preview:setOwnOutfit(o)
   self:refresh()
 end
 
+-- the direction to draw `outfit` facing: a cape is shown from the back (O562, LookPreviewCore.face), but a spell scene
+-- or footprints keep the direction they set
+function Preview:face(outfit)
+  if self.fxPlay or self.steps then return self.dir end
+  return P.face(self, outfit)
+end
+
 function Preview:turn(step)
-  self.dir = P.turn(self.dir, step)
+  P.turnBy(self, self.outfit, step)
   if alive(self.widget) then self.widget.stage.creature:setDirection(self.dir) end
 end
 
@@ -922,6 +1062,8 @@ function terminate()
   autoEvent = nil
   if fxEvent then removeEvent(fxEvent) end
   fxEvent = nil
+  if chatEvent then removeEvent(chatEvent) end
+  chatEvent, chatLive = nil, {}
   things = {}
   creatureThings = {}
   stopOutfitWindow()

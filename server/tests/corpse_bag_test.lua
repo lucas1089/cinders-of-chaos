@@ -6,7 +6,10 @@
 -- corpse container, an engine without the patch. Part 3, the consumers of a corpse read the bag as a corpse: the
 -- Necromancer's usable corpses, the ground labels' rule, the player corpse ids the Necromancer refuses. Part 4, one rule
 -- in one place: the client's ground labels and the import fallback carry the config's bag id, every monster file's
--- corpse 0 stays and the kept ids are real corpse ids of the base scripts.
+-- corpse 0 stays and the kept ids are real corpse ids of the base scripts. Part 5 (O565): the bag looks like a plain pouch
+-- (the config's client id, carried by the client's labels and glint) and an EMPTY bag decays in emptySeconds: the pure
+-- sweep (a bag with items keeps its time, the time is never made longer, a forgotten place) and the engine glue
+-- corpse_empty.lua on a mocked engine (tiles, containers, the timer).
 
 local checks = 0
 local function eq(a, b, m)
@@ -39,6 +42,9 @@ eq(cfg.enabled, true, "on by default (owner 2026-11-08)")
 eq(cfg.bagId, 6068, "the bag is item 6068")
 ok(cfg.seconds <= 300, "a corpse stays at most 5 minutes (owner 2026-10-20)")
 ok(cfg.slots >= 60, "as many slots as the biggest stock corpse")
+eq(cfg.look, 19202, "the bag draws client item 19202, a plain leather pouch (not the stock dark lump of 6068)")
+ok(cfg.emptySeconds >= 3 and cfg.emptySeconds <= 5, "an empty bag goes in 3-5 seconds (owner 2026-11-14)")
+ok(cfg.emptySeconds < cfg.seconds, "the empty time is shorter than the bag's own")
 
 local bag, keep = C.engineArgs(cfg)
 eq(bag, 6068, "engine args: the bag")
@@ -73,6 +79,12 @@ bad(function(c) c.bagId = 6068.5 end, "bag id not whole")
 bad(function(c) c.seconds = 3000 end, "a bag that lasts over 5 minutes")
 bad(function(c) c.slots = 0 end, "no slots")
 bad(function(c) c.name = "" end, "no name")
+bad(function(c) c.look = 0 end, "no look")
+bad(function(c) c.look = 70000 end, "a look over 65535")
+bad(function(c) c.emptySeconds = -1 end, "a negative empty time")
+bad(function(c) c.emptySeconds = 61 end, "an empty time over a minute")
+bad(function(c) c.emptySeconds = c.seconds end, "an empty time as long as the bag's own")
+bad(function(c) c.emptySeconds = "5" end, "an empty time that is no number")
 bad(function(c) c.keepIds = {6068} end, "the bag among the kept ids")
 bad(function(c) c.keepIds = {"x"} end, "a kept id that is no number")
 
@@ -225,6 +237,9 @@ eq(#fixed, 0, "no Chaos script compares a corpse's item id with a number: " .. t
 -- ---------------------------------------------------------------- part 4: one rule in one place
 local labels = readFile("../client/overlay/modules/game_groundlabels/groundlabelslogic.lua")
 eq(tonumber(labels:match("GL%.CORPSE_BAG_ID%s*=%s*(%d+)")), cfg.bagId, "the client's ground labels carry the config's bag id")
+eq(tonumber(labels:match("GL%.LOOT_BAG_LOOK%s*=%s*(%d+)")), cfg.look, "the client's ground labels carry the config's bag look")
+local aura = readFile("../client/overlay/modules/game_chestaura/chestaura_logic.lua")
+ok(aura:find("[" .. cfg.look .. "] = { art = 'bag_glint'", 1, true), "the client's glint is keyed on the config's bag look")
 local fix = readFile("tools/fix_monster_xml.py")
 eq(tonumber(fix:match("FALLBACK_CORPSE%s*=%s*(%d+)")), cfg.bagId, "the monster import fallback is the bag")
 local pouchCfg = readFile("data/scripts/chaos/pouches_config.lua")
@@ -253,5 +268,188 @@ end
 p:close()
 ok(zero >= 20, "the 22 Chaos monsters with corpse 0 are there (" .. zero .. ")")
 ok(bagUsers > 100, "the Chaos monsters have corpses to replace (" .. bagUsers .. ")")
+
+-- ---------------------------------------------------------------- part 5: the empty bag decay (O565)
+local W = 1000 * cfg.emptySeconds
+eq(C.emptyMs(cfg), W, "emptyMs: the config in milliseconds")
+eq(C.emptyMs(off), nil, "emptyMs: the switch off, no shortcut")
+local zero = {}
+for k, v in pairs(cfg) do
+	zero[k] = v
+end
+zero.emptySeconds = 0
+eq(C.emptyMs(zero), nil, "emptyMs: 0 seconds is off")
+eq(#C.validate(zero), 0, "emptySeconds 0 is a valid config")
+eq(C.emptyMs(nil), nil, "emptyMs: no config")
+eq(C.emptyMs(broken), nil, "emptyMs: a broken config is off")
+ok(C.shouldShorten(cfg, 0, 120000), "an empty bag with 2 minutes left is cut")
+ok(not C.shouldShorten(cfg, 0, W), "an empty bag with exactly that left is left alone")
+ok(not C.shouldShorten(cfg, 0, 1000), "an empty bag that goes sooner is never made longer")
+ok(not C.shouldShorten(cfg, 1, 120000), "a bag with an item keeps its time")
+ok(not C.shouldShorten(cfg, 12, 120000), "a bag with items keeps its time")
+ok(not C.shouldShorten(zero, 0, 120000), "0 seconds: nothing is cut")
+ok(not C.shouldShorten(off, 0, 120000), "switched off: nothing is cut")
+ok(C.shouldShorten(cfg, nil, 120000), "no size is an empty bag")
+
+-- the sweep on a fake map: tiles hold rows {size, remaining}
+local function sweepWorld(tiles, w, now)
+	local cut = {}
+	local n = C.sweep(cfg, w, now, function(pos)
+		return tiles[pos.x .. "," .. pos.y .. "," .. pos.z] or {}
+	end, function(row, ms)
+		row.remaining = ms
+		cut[#cut + 1] = row
+	end)
+	return cut, n
+end
+local w = C.newWatch()
+eq(C.count(w), 0, "a new watch is empty")
+ok(not C.watch(w, nil, 1), "no position is not watched")
+ok(not C.watch(w, {x = 1}, 1), "a position without y and z is not watched")
+ok(C.watch(w, {x = 5, y = 6, z = 7}, 100), "a place is watched")
+ok(C.watch(w, {x = 5, y = 6, z = 7}, 101), "the same place again")
+eq(C.count(w), 1, "one place once")
+C.watch(w, {x = 9, y = 9, z = 7}, 100)
+C.watch(w, {x = 3, y = 3, z = 7}, 100)
+eq(C.count(w), 3, "three places")
+local tiles = {
+	["5,6,7"] = {{size = 0, remaining = 170000}, {size = 3, remaining = 170000}}, -- one empty, one with loot (a pack died here)
+	["9,9,7"] = {{size = 0, remaining = 170000}},
+	-- 3,3,7: no bag any more
+}
+local cut, gone = sweepWorld(tiles, w, 102)
+eq(#cut, 2, "the two empty bags are cut")
+eq(cut[1].remaining, W, "to the config time")
+eq(tiles["5,6,7"][2].remaining, 170000, "the bag with loot keeps its time")
+eq(gone, 2, "the place with no bag and the place with only an emptied bag are forgotten")
+eq(C.count(w), 1, "the place of the bag with loot is still watched")
+cut, gone = sweepWorld(tiles, w, 103)
+eq(#cut, 0, "a second pass cuts nothing more (the empty bag is short already)")
+eq(C.count(w), 1, "still watched: the loot is not taken yet")
+tiles["5,6,7"][2].size = 0 -- the player takes the last item
+cut, gone = sweepWorld(tiles, w, 104)
+eq(#cut, 1, "the bag that was emptied later is cut")
+eq(tiles["5,6,7"][2].remaining, W, "to the config time")
+eq(C.count(w), 0, "and the place is forgotten")
+-- a place is forgotten when the bag's own time is over, whatever it still says
+local w2 = C.newWatch()
+C.watch(w2, {x = 1, y = 1, z = 7}, 1000)
+cut, gone = sweepWorld({["1,1,7"] = {{size = 4, remaining = 170000}}}, w2, 1000 + cfg.seconds + C.GRACE_SEC + 1)
+eq(C.count(w2), 0, "a place older than the bag can live is forgotten")
+-- the switch off: the places are dropped and nothing is cut
+local w3 = C.newWatch()
+C.watch(w3, {x = 1, y = 1, z = 7}, 5)
+local probed = false
+C.sweep(off, w3, 6, function() probed = true return {} end, function() end)
+eq(C.count(w3), 0, "switched off: places are dropped")
+ok(not probed, "switched off: no tile is looked at")
+
+-- the engine glue on a mocked engine
+local function glue(config)
+	local env = {tiles = {}, events = {}, printed = {}, callbacks = {}}
+	Chaos = {corpseConfig = config}
+	ChaosCorpse = nil
+	ITEM_ATTRIBUTE_DURATION = 16
+	local function newBag(pos, size, remaining)
+		local item = {id = config.bagId, size = size, remaining = remaining, sets = {}, decays = 0}
+		function item:getId() return self.id end
+		function item:getSize() return self.size end
+		function item:getAttribute(k) assert(k == ITEM_ATTRIBUTE_DURATION) return self.remaining end
+		function item:setAttribute(k, v) assert(k == ITEM_ATTRIBUTE_DURATION) self.remaining = v self.sets[#self.sets + 1] = v return true end
+		function item:decay() self.decays = self.decays + 1 return true end
+		function item:getPosition() return pos end
+		local key = pos.x .. "," .. pos.y .. "," .. pos.z
+		env.tiles[key] = env.tiles[key] or {}
+		table.insert(env.tiles[key], item)
+		return item
+	end
+	env.newBag = newBag
+	Tile = function(x, y, z)
+		local list = env.tiles[x .. "," .. y .. "," .. z]
+		if not list then return nil end
+		return {getItems = function() return list end}
+	end
+	addEvent = function(fn, ms) env.events[#env.events + 1] = {fn = fn, ms = ms} end
+	local realEventCallback, realPrint = EventCallback, print
+	EventCallback = setmetatable({register = function(self, prio) env.callbacks[#env.callbacks + 1] = {fn = self.onDropLoot, prio = prio} end}, {})
+	print = function(m) env.printed[#env.printed + 1] = m end
+	local good, err = pcall(dofile, "data/scripts/chaos/corpse_empty.lua")
+	EventCallback, print = realEventCallback, realPrint
+	if not good then error(err) end
+	function env.runEvents()
+		local list = env.events
+		env.events = {}
+		for _, e in ipairs(list) do e.fn() end
+	end
+	return env
+end
+
+local env = glue(cfg)
+eq(#env.callbacks, 1, "glue: one onDropLoot callback")
+eq(env.callbacks[1].prio, 9, "glue: after the loot layer and autoloot")
+eq(#env.events, 0, "glue: no timer until a bag lies somewhere")
+local pos = {x = 100, y = 200, z = 7}
+local empty = env.newBag(pos, 0, 180000)
+local full = env.newBag(pos, 5, 180000)
+local other = env.newBag({x = 101, y = 200, z = 7}, 2, 180000)
+local function die(bag)
+	env.callbacks[1].fn({}, bag)
+end
+die(empty)
+die(full)
+die(other)
+eq(#env.events, 1, "glue: one timer for all the places")
+eq(env.events[1].ms, C.CHECK_MS, "glue: it looks every second")
+env.runEvents()
+eq(empty.remaining, W, "glue: an empty bag has the config time left")
+eq(empty.sets[1], W, "glue: through the duration attribute")
+eq(full.remaining, 180000, "glue: a bag with items keeps its time")
+eq(other.remaining, 180000, "glue: another place's bag keeps its time")
+eq(#env.events, 1, "glue: the timer runs while a place is watched")
+full.size = 0 -- looted by hand
+env.runEvents()
+eq(full.remaining, W, "glue: a bag emptied later goes the same way")
+eq(#empty.sets, 1, "glue: an emptied bag is cut once")
+other.size = 0
+env.runEvents()
+eq(other.remaining, W, "glue: the other place too")
+eq(#env.events, 0, "glue: the timer stops when no place is watched")
+local late = env.newBag(pos, 0, 180000)
+die(late)
+eq(#env.events, 1, "glue: the next kill starts it again")
+env.runEvents()
+eq(late.remaining, W, "glue: and cuts that bag")
+-- not our bag, no corpse: nothing watched
+local foreign = env.newBag({x = 1, y = 1, z = 7}, 0, 180000)
+foreign.id = 3058
+env.events = {}
+die(foreign)
+die(nil)
+eq(#env.events, 0, "glue: a body that is no bag is not watched")
+-- the switch off or 0 seconds: not watched
+local offEnv = glue(off)
+offEnv.callbacks[1].fn({}, offEnv.newBag(pos, 0, 180000))
+eq(#offEnv.events, 0, "glue: switched off, nothing is watched")
+local zeroEnv = glue(zero)
+zeroEnv.callbacks[1].fn({}, zeroEnv.newBag(pos, 0, 180000))
+eq(#zeroEnv.events, 0, "glue: 0 seconds, nothing is watched")
+-- an error in a pass is logged, not thrown, and the timer keeps running while a place is watched
+local errEnv = glue(cfg)
+local bomb = errEnv.newBag(pos, 0, 180000)
+bomb.getAttribute = function() error("boom") end
+errEnv.callbacks[1].fn({}, bomb)
+local realPrint = print
+local logged = {}
+print = function(m) logged[#logged + 1] = m end
+errEnv.runEvents()
+print = realPrint
+ok(#logged == 1 and logged[1]:find("empty bag sweep"), "glue: an error in a pass is logged")
+eq(#errEnv.events, 1, "glue: the timer is kept after an error")
+Chaos, ChaosCorpse, Tile, addEvent, ITEM_ATTRIBUTE_DURATION = nil, nil, nil, nil, nil
+
+-- the script file itself: registered after autoloot, reads and sets the duration attribute
+local glueSrc = readFile("data/scripts/chaos/corpse_empty.lua")
+ok(glueSrc:find("drop:register(9)", 1, true), "glue: registered after autoloot")
+ok(glueSrc:find("ITEM_ATTRIBUTE_DURATION", 1, true), "glue: reads and sets the duration attribute")
 
 print(string.format("corpse_bag_test: %d checks ok", checks))

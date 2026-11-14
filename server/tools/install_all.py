@@ -181,9 +181,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   debuffs      tools/patch_debuff_durations.py   monster debuffs (slow, outfit, drunk, strength) last at most 10 s
   corpses      tools/patch_corpse_decay.py       every corpse (all its decay stages) stays at most 5 min (items.xml durations)
   lootbag      tools/patch_monster_corpses.py    item 6068 becomes the loot bag every monster leaves instead of its body: name, slots,
-               lasts seconds then nothing (items.xml; the rule is engine src-patch 0089 and scripts/chaos/corpse_bag.lua, the
-               numbers scripts/chaos/corpse_config.lua; README "Loot bag instead of corpses"; after corpses); also turns the stock
-               skinning script (obsidian knife) off, the professions' Flaying hook in it still runs
+               lasts seconds then nothing (items.xml), and the items.otb node of 6068 draws client item 19202, a plain leather
+               pouch, instead of the stock dark horned lump (O565; one client id attribute, items.otb.bak keeps the original; the
+               rule is engine src-patch 0089 and scripts/chaos/corpse_bag.lua, an EMPTY bag goes in `emptySeconds` through
+               scripts/chaos/corpse_empty.lua, the numbers scripts/chaos/corpse_config.lua; README "Loot bag instead of corpses";
+               after corpses); also turns the stock skinning script (obsidian knife) off, the professions' Flaying hook in it
+               still runs
   spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
                tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
@@ -271,6 +274,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                outfits 3434-3510, data/monster/monster_wst_looks.csv); two of them (Bonepicker, Wan Sentry) leave their donor look for it; the
                installed files and the installed bounty pool get the new look; waits for config.lua chaosClientPair >= 71, README "Client
                pair guard" and "Purchased monster looks (O540)"; after monsterdonorlooks
+  funlooks     tools/install_fun_looks.py        the Dusk Moth pet wears its new moth outfit 3523 in place of the stock look 213 (client pair 72, O566;
+               the installed monster file; the fun costumes' outfits.xml lines come with the `outfits` step, the round Rune Seal with `auras`);
+               waits for config.lua chaosClientPair >= 72, README "Client pair guard" and "Fun costumes (O566)"; after monsterwstlooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
@@ -453,6 +459,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                drop go, the descriptions of the items say "No longer used.". Runs after eventrooms (and the two waystone steps
                behind it), so a server that had the pit wired by the older eventrooms ends in the same state as a
                fresh one. The items players own are deleted by server/sql/chaos_zz_soulpit_removal.sql (the step `sql`)
+  removedecks  tools/patch_remove_decks.py       the three deck items leave the base data (O570, README "Deck of Cards (O570)"): a
+               deck is cut out of every monster's loot, of the NPC trade lists and of the reward and list lines of the scripts.
+               The Deck of Cards (cards.lua) replaced them; a deck a character still carries or keeps in a depot is emptied
+               into the Deck at login. Runs right after the soul pit step (the same kind of cut), before sql
   dungeonentry tools/patch_base_dungeon.py       the base dungeon entry tile (step-in, item 26702) opens the Chaos dungeon
                window instead of the base modal window, so every dungeon entry goes through the queue (one run per
                box, the time cap and warnings); the modal run with its box scan and fixed timer never starts (README
@@ -1279,6 +1289,15 @@ def step_monsterwstlooks(server, data, ctx):
 STEPS.insert(STEPS.index('monsterdonorlooks') + 1, 'monsterwstlooks')  # the purchased looks (pair 71) go over the donor looks
 
 
+def step_funlooks(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 72) is in the tool; its warning reaches the report
+    args = [tool('install_fun_looks.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_fun_looks.py'))
+
+
+STEPS.insert(STEPS.index('monsterwstlooks') + 1, 'funlooks')  # the new Dusk Moth look (pair 72)
+
+
 def step_monsterresists(server, data, ctx):
     args = [tool('patch_monster_resists.py'), data, '--quiet'] + (['--dry-run'] if ctx['dry'] else [])
     return tool_result(run_tool(args, 'patch_monster_resists.py'))
@@ -1805,6 +1824,14 @@ def step_soulpit(server, data, ctx):
 
 # O488: after eventrooms (a server whose pit was wired by the older eventrooms ends as a fresh one does), before sql
 STEPS.insert(STEPS.index('waystonebosses') + 1, 'soulpit')
+
+
+def step_removedecks(server, data, ctx):
+    return tool_result(run_tool([tool('patch_remove_decks.py'), data], 'patch_remove_decks.py'))
+
+
+# O570: the decks leave the base data; after soulpit (the same kind of loot cut), before sql
+STEPS.insert(STEPS.index('soulpit') + 1, 'removedecks')
 
 
 def step_bankpayments(server, data, ctx):

@@ -788,6 +788,8 @@ function tickInner(key)
 				CC.failEvent(ch, "room")
 				return
 			end
+		elseif a[1] == "timeleft" then
+			tellAll(ev, "The curse grows stronger: %d seconds left to kill the hordes.", a[2])
 		elseif a[1] == "warn" then
 			tellAll(ev, "You are leaving the cursed chest! Go back or the curse wins in %d seconds.",
 				c.event.emptyGraceSec - c.event.warnSec)
@@ -811,7 +813,8 @@ function CC.startEvent(player, ch)
 	ev.monsters = {}
 	ch.ev, ch.state = ev, "running"
 	fx(ch.pos, "CONST_ME_MORTAREA")
-	tellAll(ev, "%s opens the cursed chest! Five hordes will come, one after another.", player:getName())
+	tellAll(ev, "%s opens the cursed chest! Five hordes will come, one after another. Kill them all within %d minutes.",
+		player:getName(), math.floor(c.event.totalSec / 60))
 	addEvent(CC.tick, c.event.tickMs, ch.key)
 end
 

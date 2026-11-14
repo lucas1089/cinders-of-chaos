@@ -78,7 +78,24 @@ local wc = E.choices(src, 'wings', false)
 eq(#wc, 3, 'none, owned and locked wings'); eq(wc[3].value, 7, 'locked wings value'); eq(wc[3].how, 'Store', 'wings source')
 local pc = E.choices(src, 'pet', false)
 eq(#pc, 3, 'none, owned and locked pet'); eq(pc[3].text, 'Ember Fox', 'locked pet name'); eq(pc[3].how, 'Achievement.', 'pet how')
-eq(#E.choices(src, 'frame', false), 2, 'frames: no catalogue, nothing locked')
+eq(#E.choices(src, 'frame', false), 2 + #E.FRAME_CATALOG - 1, 'frames: the title frame, the owned one and the catalogue without it')
+eq(#E.choices(src, 'frame', true), 2, 'only mine: the title frame and the owned one')
+local fl = E.lockedOf(src, 'frame')
+eq(fl[1].value, 'violet', 'first locked frame') eq(fl[1].text, 'Violet', 'its name') eq(fl[1].how, 'Store', 'how')
+for _, l in ipairs(fl) do eq(l.value ~= 'frost', true, 'an owned frame is not locked') end
+eq(#E.lockedOf({}, 'frame'), 0, 'no services answer yet: nothing')
+-- the catalogue is every frame of the game: the client plates and the server list
+local function readf(p) local f = assert(io.open(p, 'r')) local t = f:read('*a') f:close() return t end
+local np = readf('client/overlay/modules/game_nameplate/nameplatemath.lua'):match('NameplateMath%.FRAMES = (%b{})')
+local srv = readf('server/data/scripts/chaos/nameplate_core.lua'):match('N%.FRAMES = (%b{})')
+local inCat = { default = true }
+for _, f in ipairs(E.FRAME_CATALOG) do eq(inCat[f[1]], nil, 'frame once ' .. f[1]) inCat[f[1]] = true end
+for _, body in ipairs({ np, srv }) do
+  for k in body:gmatch('([%a]+) = true') do eq(inCat[k], true, 'frame in the catalogue: ' .. k) end
+end
+local nFrames = 0
+for _ in np:gmatch('([%a]+) = true') do nFrames = nFrames + 1 end
+eq(#E.FRAME_CATALOG + 1, nFrames, 'the catalogue holds every client frame but the default')
 eq(E.choices({}, 'outline', false), nil, 'no source, no list')
 eq(E.choices(src, 'bogus', false), nil, 'unknown key')
 eq(E.textOf(E.row(src, 'outline'), 12), 'Void Outline', 'value text'); eq(E.textOf(E.row(src, 'outline'), 99), nil, 'unknown value')

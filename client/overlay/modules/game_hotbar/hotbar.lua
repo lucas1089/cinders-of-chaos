@@ -218,6 +218,12 @@ local function buildParts()
   end
   for _, c in ipairs(layout) do
     c.button = buttons[c.index]
+    if c.kind ~= 'slot' then
+      -- the ring over the base button (a square): the circle shows, not the square (O558); phantom, so drops and clicks reach the button
+      local r = L.ring(m, c.x)
+      c.ring = part('ChaosHotbarPart', frame, r.x, r.y, r.size, r.size)
+      c.ring:setImageSource('/modules/game_hotbar/images/hotbar_ring')
+    end
     c.key = part('ChaosHotbarKey', frame, c.x + math.floor((m.slot - m.keyW) / 2), m.keyY, m.keyW, m.keyH)
     c.cd = part('ChaosHotbarCooldown', frame, c.x, m.slotY, m.slot, m.slot)
     cells[#cells + 1] = c

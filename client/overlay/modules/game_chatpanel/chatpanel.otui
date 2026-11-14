@@ -1,5 +1,5 @@
 // The grips beside the bottom area (action bars + console). Width: the right edge. Move: the left edge and the
-// handle (the chat's title) above its top-left corner. The height keeps the base splitter above the action bars.
+// handle (a grip tab) above its top-left corner. The height keeps the base splitter above the action bars.
 ChaosChatGrip < UIWidget
   width: 6
   focusable: false
@@ -17,19 +17,16 @@ ChaosChatWidthGrip < ChaosChatGrip
 ChaosChatMoveGrip < ChaosChatGrip
   !tooltip: tr('Drag to move the chat anywhere. Double-click: back to the bottom centre.')
 
+// a grip tab (dots, no text: a word read as a button that opens or closes the chat, O558); art: tools/gen_hotbar_art.py,
+// normal / hover / pressed side by side
 ChaosChatMoveHandle < UIWidget
   size: 64 14
   focusable: false
-  !text: tr('Chat')
-  font: verdana-11px-rounded
-  color: #e8c89a
-  text-align: center
-  background-color: #2a1a12dd
-  border-width: 1
-  border-color: #8a5a3aaa
+  image-source: /modules/game_chatpanel/images/chatpanel_handle
+  image-clip: 0 0 64 14
+  image-smooth: true
   !tooltip: tr('Drag to move the chat anywhere. Double-click: back to the bottom centre.')
   $hover:
-    background-color: #5a3a29ee
-    color: #ffe0b0
+    image-clip: 64 0 64 14
   $pressed:
-    background-color: #c8782eee
+    image-clip: 128 0 64 14

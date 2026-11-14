@@ -1,9 +1,9 @@
 Module
   name: game_npctalk
-  description: NPC dialogue window: Talk from the NPC's menu, the whole conversation in a speech bubble over the NPC
+  description: NPC dialogue window (O571): Talk from the NPC's menu, the whole conversation as a log next to the NPC, with its portrait, keyword chips in groups and an input
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ npctalk_logic, npctalk ]
+  scripts: [ npctalk_logic, npctalkview, npctalk ]
   dependencies:
     - client_chaos_theme
     - game_interface

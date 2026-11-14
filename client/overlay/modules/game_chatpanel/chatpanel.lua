@@ -1,7 +1,7 @@
 -- game_chatpanel: size and place of the bottom area (action bars + console) (client/MANIFEST.md "Chat panel").
 -- * The group life orb + chat + mana orb is centred in the game window by default and re-centred when the window
 --   changes. The orbs (game_shaderfx) are anchored to the chat's edges and follow it.
--- * Move: the handle above the chat's top-left corner (ChaosChatMoveHandle, its title) or the grip on its left edge
+-- * Move: the handle above the chat's top-left corner (ChaosChatMoveHandle, a grip tab, no text) or the grip on its left edge
 --   (ChaosChatMoveGrip) drag the chat anywhere in the game area, clamped to the screen (up only in the extended view:
 --   the classic view docks the map above it). Double-click puts it back at the bottom centre; a move that ends near
 --   the centre or the bottom edge snaps back there.
@@ -314,7 +314,7 @@ end
 
 local function createGrips()
   local r, s = root(), splitter()
-  if not r or not s or g_app.isMobile() then return end
+  if not r or not s or not L.gripsShown(actionMode(), g_app.isMobile()) then return end
   wrapSplitter(s)
   if not widthGrip then widthGrip = makeGrip('ChaosChatWidthGrip', 'width') end
   if not moveGrip then moveGrip = makeGrip('ChaosChatMoveGrip', 'move') end

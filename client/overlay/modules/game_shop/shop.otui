@@ -1,22 +1,45 @@
-ShopCategory < Panel
-  height: 56
-  focusable: true
-  background: alpha
+// The store (O556): a header with the balance, the Donate button and the search; a short side rail (Home and one entry
+// per top group, no tree); in the page the chips of the group, a grid of offer cards, or the home page (the weekly
+// strip, the bundles, the starter packs); on the right the details of the picked offer with the Buy button.
+// The look is the game's own (ChaosPanelDark, ChaosPrimaryButton, ChaosButton, ChaosTextEdit and the images of the
+// client_chaos_topbar hub window) so the interface skins repaint it. shop.lua builds the rail entries, the chips and the
+// cards from the styles below; shopview.lua holds the rules (rail, home page, card states) and is unit tested.
+// The balance coin is /images/ui/goldcoin (9 x 9, drawn at 2x in the header and the details pane).
 
-  $focus:
-    background: #99999999
+// ---------------------------------------------------------------- the side rail
+// one entry: a small icon, the name (two lines when long), a subtle count (or the timer of the weekly offers)
+ShopRail < UIWidget
+  height: 32
+  background-color: #00000000
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+  margin-bottom: 2
 
-  // the cosmetic itself as the icon where it is no item or creature: a print, a plate, an effect, a colour sample
-  // (shopicon.lua draws into it; hidden until then)
+  $hover:
+    background-color: #ffffff14
+
+  $checked:
+    background-color: #3a3339cc
+
+  // the gold bar of the open entry (shop.lua shows it)
   UIWidget
-    id: art
+    id: bar
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.bottom: parent.bottom
-    margin-top: 2
-    margin-bottom: 2
-    margin-left: 2
-    size: 32 32
+    width: 3
+    background-color: #e8b84a
+    visible: false
+    phantom: true
+
+  // the cosmetic itself as the icon where it is no item or creature (shopicon.lua draws into it; hidden until then)
+  UIWidget
+    id: art
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    margin-left: 7
+    size: 26 26
     phantom: true
     visible: false
     image-fixed-ratio: true
@@ -26,110 +49,109 @@ ShopCategory < Panel
   Label
     id: name
     anchors.top: parent.top
+    anchors.bottom: parent.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: parent.bottom
     margin-left: 40
+    margin-right: 34
     text-align: left
-    color: white
-    font: verdana-11px-rounded    
-    
-ShopCategoryItem < ShopCategory
+    text-wrap: true
+    color: #d6c9ae
+    font: verdana-11px-rounded
+    phantom: true
+
+    $mobile:
+      margin-right: 4
+
+  Label
+    id: count
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.right: parent.right
+    margin-right: 8
+    text-auto-resize: true
+    color: #8c8070
+    font: Verdana-9px-antialiased
+    phantom: true
+
+    $mobile:
+      visible: false
+
+ShopRailItem < ShopRail
   UIItem
     id: item
-    anchors.top: parent.top
+    anchors.verticalCenter: parent.verticalCenter
     anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    margin-top: 2
-    margin-bottom: 2
-    margin-left: 2
+    margin-left: 7
+    size: 26 26
     virtual: true
-    size: 32 32
-    
-ShopCategoryCreature < ShopCategory
+    phantom: true
+
+ShopRailCreature < ShopRail
   UICreature
     id: creature
-    anchors.top: parent.top
+    anchors.verticalCenter: parent.verticalCenter
     anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    margin-top: 2
-    margin-bottom: 2
-    margin-left: 2
-    size: 32 32
-    
-ShopCategoryImage < ShopCategory
-  Label
+    margin-left: 7
+    size: 26 26
+    phantom: true
+
+ShopRailImage < ShopRail
+  UIWidget
     id: image
-    anchors.top: parent.top
+    anchors.verticalCenter: parent.verticalCenter
     anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    margin-top: 2
-    margin-bottom: 2
-    margin-left: 2
-    size: 32 32
+    margin-left: 7
+    size: 26 26
+    image-fixed-ratio: true
+    phantom: true
 
-// the category tree (shoptree.lua): a subcategory row, indented and lower, under its open parent
-ShopSubCategoryItem < ShopCategoryItem
-  height: 40
-  margin-left: 14
-
-ShopSubCategoryCreature < ShopCategoryCreature
-  height: 40
-  margin-left: 14
-
-ShopSubCategoryImage < ShopCategoryImage
-  height: 40
-  margin-left: 14
-
-// a parent row (Cosmetics, Consumables ...): no focus of its own, a click opens or closes it (+ / -)
-ShopGroupArrow < Label
-  id: arrow
-  anchors.right: parent.right
-  anchors.verticalCenter: parent.verticalCenter
-  margin-right: 8
-  text-auto-resize: true
-  color: #f0c050
-  font: verdana-11px-rounded
-  phantom: true
-
-ShopGroupItem < ShopCategoryItem
+// ---------------------------------------------------------------- chips (the subcategories of a group, the filter of
+// the search results)
+ShopChip < UIButton
+  size: 108 22
+  font: Verdana-9px-antialiased
+  color: #d6c9ae
+  text-offset: 0 1
+  image-source: /images/chaos/skin/button
+  image-clip: 0 0 64 24
+  image-border: 5
   focusable: false
-  $hover:
-    background: #55555555
-  ShopGroupArrow
+  change-cursor-image: true
+  cursor: pointer
 
-ShopGroupCreature < ShopCategoryCreature
+  $hover !checked:
+    image-clip: 0 24 64 24
+    color: #f6cf72
+
+  $checked:
+    image-clip: 0 48 64 24
+    color: #f6cf72
+
+// ---------------------------------------------------------------- the offer card (170 x 68 grid cell, 168 x 68)
+// the icon (item, creature, picture or the cosmetic itself), the name (two lines), "x100" for a pack, the price with the
+// coin, the price before a sale struck through, and a badge: Owned / -20% / New / Featured / the tag as it is
+ShopCard < UIWidget
+  size: 168 68
+  image-source: /images/chaos/panel
+  image-border: 8
+  image-color: #ffffff
   focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
   $hover:
-    background: #55555555
-  ShopGroupArrow
+    image-source: /images/chaos/panel_highlight
 
-ShopGroupImage < ShopCategoryImage
-  focusable: false
-  $hover:
-    background: #55555555
-  ShopGroupArrow
+  $checked:
+    image-source: /images/chaos/panel_highlight
+    image-color: #ffe0a0
 
-    
-    
-ShopOffer < Panel
-  height: 60
-  background: alpha
-  focusable: true
-  
-  $focus:
-    background: #99999999
-
-  // as ShopCategory's art, 48 px
   UIWidget
     id: art
-    anchors.top: parent.top
+    anchors.verticalCenter: parent.verticalCenter
     anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    margin-top: 4
-    margin-bottom: 4
-    margin-left: 2
-    size: 48 48
+    margin-left: 8
+    size: 40 40
     phantom: true
     visible: false
     image-fixed-ratio: true
@@ -138,25 +160,61 @@ ShopOffer < Panel
 
   Label
     id: title
-    anchors.left: parent.left
     anchors.top: parent.top
-    margin-top: 4
-    margin-left: 55
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 7
+    margin-left: 56
+    margin-right: 6
+    height: 26
+    text-wrap: true
     text-align: topleft
-    text-auto-resize: true
-    color: white
+    color: #d6c9ae
     font: verdana-11px-rounded
+    phantom: true
 
-  // the price before a sale or a bundle discount, struck through (shop.lua sends oldCost)
+  Label
+    id: sub
+    anchors.top: title.bottom
+    anchors.left: title.left
+    anchors.right: title.right
+    margin-top: 1
+    height: 11
+    text-align: left
+    color: #8c8070
+    font: Verdana-9px-antialiased
+    phantom: true
+
+  UIWidget
+    id: coin
+    anchors.left: title.left
+    anchors.bottom: parent.bottom
+    margin-bottom: 8
+    size: 9 9
+    image-source: /images/ui/goldcoin
+    phantom: true
+
+  Label
+    id: price
+    anchors.left: coin.right
+    anchors.verticalCenter: coin.verticalCenter
+    margin-left: 4
+    text-auto-resize: true
+    color: #f6cf72
+    font: verdana-11px-rounded
+    phantom: true
+
+  // the price before a sale, struck through (shop.lua sends oldCost)
   Label
     id: oldPrice
-    anchors.left: title.right
-    anchors.top: title.top
-    margin-left: 6
+    anchors.left: price.right
+    anchors.verticalCenter: price.verticalCenter
+    margin-left: 5
     text-auto-resize: true
-    color: #9a9a9a
-    font: verdana-11px-rounded
+    color: #8c8070
+    font: Verdana-9px-antialiased
     visible: false
+    phantom: true
 
     UIWidget
       id: strike
@@ -167,100 +225,100 @@ ShopOffer < Panel
       background-color: #d24a3a
       phantom: true
 
-  // Sale / New / Featured / Bundle tags
   Label
-    id: tags
-    anchors.left: oldPrice.right
-    anchors.top: title.top
-    margin-left: 6
-    text-auto-resize: true
-    color: #f0c050
-    font: verdana-11px-rounded
+    id: badge
+    anchors.right: parent.right
+    anchors.verticalCenter: coin.verticalCenter
+    margin-right: 6
+    size: 46 14
+    text-align: center
+    color: #ffd24a
+    font: Verdana-9px-antialiased
+    image-source: /images/chaos/panel_dark
+    image-border: 6
+    visible: false
+    phantom: true
+
+ShopCardItem < ShopCard
+  UIItem
+    id: item
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    margin-left: 8
+    size: 40 40
+    virtual: true
+    phantom: true
+
+ShopCardCreature < ShopCard
+  UICreature
+    id: creature
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    margin-left: 8
+    size: 40 40
+    phantom: true
+
+ShopCardImage < ShopCard
+  UIWidget
+    id: image
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    margin-left: 8
+    size: 40 40
+    image-fixed-ratio: true
+    phantom: true
+
+// ---------------------------------------------------------------- the home page sections
+// a titled strip: the name, a subtle line (the weekly timer), See all, the cards in a grid (shop.lua sets the height)
+ShopSection < UIWidget
+  height: 100
+  margin-bottom: 8
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  padding: 6
 
   Label
-    id: description
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-left: 2
+    text-auto-resize: true
+    color: #e8b84a
+    font: verdana-11px-rounded
+    phantom: true
+
+  Label
+    id: note
+    anchors.left: title.right
+    anchors.verticalCenter: title.verticalCenter
+    margin-left: 8
+    text-auto-resize: true
+    color: #8c8070
+    font: Verdana-9px-antialiased
+    phantom: true
+
+  ChaosButton
+    id: seeAll
+    anchors.top: parent.top
+    anchors.right: parent.right
+    size: 96 18
+    font: Verdana-9px-antialiased
+    visible: false
+
+  Panel
+    id: grid
     anchors.top: title.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    margin-left: 55
-    margin-right: 104
-    text-align: topleft
-    text-auto-resize: true
-    text-wrap: true
-    color: white
-    font: verdana-11px-rounded
+    margin-top: 6
+    height: 68
+    layout:
+      type: grid
+      flow: true
+      cell-size: 168 68
+      cell-spacing: 6
 
-  Button
-    id: buyButton
-    !text: tr('BUY')
-    width: 40
-    height: 25
-    anchors.verticalCenter: parent.verticalCenter
-    anchors.right: parent.right
-    margin-right: 15
-    text-align: center
-
-  // buy it for another character (shown when the server says the offer can be gifted)
-  Button
-    id: giftButton
-    !text: tr('GIFT')
-    width: 40
-    height: 25
-    anchors.verticalCenter: parent.verticalCenter
-    anchors.right: buyButton.left
-    margin-right: 4
-    text-align: center
-    visible: false
-
-  // TRY ON (tryon.lua): the offer on your own character for ten seconds, only you see it, nothing is bought. A cosmetic
-  // with an effect also plays it round you on the map (server cosmetics.lua)
-  Button
-    id: previewButton
-    !text: tr('TRY ON')
-    !tooltip: tr('Shows it on your character for 10 seconds. Only you see it. Nothing is bought.')
-    width: 56
-    height: 25
-    anchors.verticalCenter: parent.verticalCenter
-    anchors.right: buyButton.left
-    margin-right: 4
-    text-align: center
-    visible: false
-    
-ShopOfferItem < ShopOffer
-  UIItem
-    id: item
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    margin-top: 4
-    margin-bottom: 4
-    margin-left: 2
-    virtual: true
-    size: 48 48
-    
-ShopOfferCreature < ShopOffer
-  UICreature
-    id: creature
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    margin-top: 4
-    margin-bottom: 4
-    margin-left: 2
-    size: 48 48
-    
-ShopOfferImage < ShopOffer
-  Label
-    id: image
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    margin-top: 4
-    margin-bottom: 4
-    margin-left: 2
-    size: 48 48    
-  
+// ---------------------------------------------------------------- the window
 MainWindow
   id: shopWindow
   !text: tr('Shop')
@@ -269,155 +327,406 @@ MainWindow
   $mobile:
     size: 500 380
 
-  Panel
+  // the header: the balance with its coin, Donate, the search
+  ChaosPanelDark
     id: infoPanel
     anchors.top: parent.top
     anchors.left: parent.left
-    width: 230
-    height: 60
+    anchors.right: parent.right
+    height: 42
+    padding: 4
+
+    UIWidget
+      id: coin
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: parent.left
+      margin-left: 6
+      size: 18 18
+      image-source: /images/ui/goldcoin
+      phantom: true
+
+    Label
+      id: coinsLabel
+      anchors.top: parent.top
+      anchors.left: coin.right
+      margin-top: 2
+      margin-left: 8
+      !text: tr('Chaos Coins')
+      text-auto-resize: true
+      color: #8c8070
+      font: Verdana-9px-antialiased
+      phantom: true
 
     Label
       id: points
-      anchors.horizontalCenter: parent.horizontalCenter
-      anchors.top: parent.top
-      margin-top: 10
+      anchors.top: coinsLabel.bottom
+      anchors.left: coinsLabel.left
       text: -
       text-auto-resize: true
-    
+      color: #f6cf72
+      font: chaos-heading-14px
+
     // voluntary donations for Chaos Coins (pay.lua, pay.otui)
-    Button
+    ChaosPrimaryButton
       id: donate
+      anchors.verticalCenter: parent.verticalCenter
       anchors.left: parent.left
-      anchors.top: points.bottom
-      margin-top: 10
-      margin-left: 4
+      margin-left: 170
       width: 110
       !text: tr("Donate")
       !tooltip: tr("Voluntary donation: Chaos Coins as a thank-you. The game is fully playable for free.")
       @onClick: modules.game_shop.showPay()
 
-    Button
+      $mobile:
+        margin-left: 120
+        width: 90
+
+    ChaosButton
       id: buy
-      anchors.right: parent.right
-      width: 106
-      anchors.top: points.bottom
-      margin-top: 10
-      margin-right: 4
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: donate.right
+      margin-left: 6
+      width: 80
       visible: false
       !text: tr("Website")
 
-  // the shared look preview (game_lookpreview): the offer under the mouse or picked, on the own character
-  UIWidget
-    id: lookPreview
-    anchors.top: parent.top
+    // the store search (the server looks through every offer: name, category, parent)
+    ChaosTextEdit
+      id: searchText
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      margin-right: 6
+      width: 250
+      height: 24
+      !placeholder: tr('Search the store...')
+      placeholder-color: #808080
+      @onTextChange: modules.game_shop.onSearchChange()
+
+      $mobile:
+        width: 140
+
+  // the rail: Home and one entry per top group (shop.lua fills it)
+  ScrollablePanel
+    id: rail
+    anchors.top: infoPanel.bottom
+    anchors.left: parent.left
+    anchors.bottom: transactionHistory.top
+    margin-top: 8
+    margin-bottom: 8
+    width: 164
+    focusable: false
+    layout:
+      type: verticalBox
+
+    $mobile:
+      width: 112
+
+  // the details of the picked offer: the look preview (look offers only), name, price, text, Try on, Gift, Buy
+  ChaosPanelDark
+    id: detailPanel
+    anchors.top: infoPanel.bottom
     anchors.right: parent.right
     anchors.bottom: transactionHistory.top
-    margin-bottom: 10
+    margin-top: 8
+    margin-bottom: 8
     width: 200
+    padding: 8
 
-  Panel
-    id: adPanel
-    anchors.top: parent.top
-    anchors.left: infoPanel.right
-    anchors.right: lookPreview.left
-    margin-left: 10
-    margin-right: 10
-    height: 0
-    
-    Label
-      id: ad
-      anchors.horizontalCenter: parent.horizontalCenter
+    $mobile:
+      width: 150
+
+    // the shared look preview (game_lookpreview): the offer under the mouse or picked, on the own character; opens
+    // (height 190) only for an offer that has a look
+    UIWidget
+      id: lookPreview
       anchors.top: parent.top
-      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 0
+      visible: false
+
+    Label
+      id: dTitle
+      anchors.top: lookPreview.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 2
+      height: 30
+      text-wrap: true
+      text-align: topleft
+      color: #f6cf72
+      font: verdana-11px-rounded
+      text: ''
+
+    Label
+      id: dTags
+      anchors.top: dTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 12
+      text-align: left
+      color: #ffd24a
+      font: Verdana-9px-antialiased
+      text: ''
+
+    UIWidget
+      id: dCoin
+      anchors.top: dTags.bottom
+      anchors.left: parent.left
+      margin-top: 4
+      size: 18 18
+      image-source: /images/ui/goldcoin
+      visible: false
+      phantom: true
+
+    Label
+      id: dPrice
+      anchors.left: dCoin.right
+      anchors.verticalCenter: dCoin.verticalCenter
+      margin-left: 6
       text-auto-resize: true
+      color: #f6cf72
+      font: chaos-heading-14px
+      text: ''
+
+    // the price before a sale, struck through
+    Label
+      id: dOld
+      anchors.left: dPrice.right
+      anchors.verticalCenter: dCoin.verticalCenter
+      margin-left: 8
+      text-auto-resize: true
+      color: #8c8070
+      font: verdana-11px-antialised
+      visible: false
+
+      UIWidget
+        id: strike
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        height: 1
+        background-color: #d24a3a
+        phantom: true
+
+    Label
+      id: dDesc
+      anchors.top: dCoin.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: dNote.top
+      margin-top: 6
+      margin-bottom: 4
+      text-wrap: true
+      text-align: topleft
+      color: #d6c9ae
+      font: verdana-11px-antialised
+      text: ''
+
+    // owned, or the coins short (red), or a history line
+    Label
+      id: dNote
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: tryButton.top
+      margin-bottom: 4
+      height: 28
+      text-wrap: true
+      text-align: bottomleft
+      color: #e03a1e
+      font: verdana-11px-antialised
+      text: ''
+
+    // TRY ON (tryon.lua): the offer on your own character for ten seconds, only you see it, nothing is bought. A
+    // cosmetic with an effect also plays it round you on the map (server cosmetics.lua)
+    ChaosButton
+      id: tryButton
+      anchors.left: parent.left
+      anchors.right: parent.horizontalCenter
+      anchors.bottom: buyButton.top
+      margin-right: 2
+      margin-bottom: 4
+      height: 22
+      !text: tr('TRY ON')
+      !tooltip: tr('Shows it on your character for 10 seconds. Only you see it. Nothing is bought.')
+      visible: false
+
+    // buy it for another character (shown when the server says the offer can be gifted)
+    ChaosButton
+      id: giftButton
+      anchors.left: parent.horizontalCenter
+      anchors.right: parent.right
+      anchors.bottom: buyButton.top
+      margin-left: 2
+      margin-bottom: 4
+      height: 22
+      !text: tr('GIFT')
+      visible: false
+
+    ChaosPrimaryButton
+      id: buyButton
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: 28
+      !text: tr('BUY')
+      visible: false
+
+  // the page: ad line, path, chips, the cards (or the home page), the pager
+  Panel
+    id: mainPanel
+    anchors.top: infoPanel.bottom
+    anchors.left: rail.right
+    anchors.right: detailPanel.left
+    anchors.bottom: transactionHistory.top
+    margin-top: 8
+    margin-left: 8
+    margin-right: 8
+    margin-bottom: 8
+
+    Panel
+      id: adPanel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 0
+
+      Label
+        id: ad
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        text-auto-resize: true
+        text-wrap: true
+        text-align: center
+        font: sans-bold-16px
+
+    // the path of the shown category ("Cosmetics > Wings"), the search or the history; the subtle count beside it
+    Label
+      id: pathLabel
+      anchors.top: adPanel.bottom
+      anchors.left: parent.left
+      margin-top: 2
+      text-auto-resize: true
+      color: #f6cf72
+      font: verdana-11px-rounded
+
+    Label
+      id: pathCount
+      anchors.left: pathLabel.right
+      anchors.verticalCenter: pathLabel.verticalCenter
+      margin-left: 8
+      text-auto-resize: true
+      color: #8c8070
+      font: Verdana-9px-antialiased
+
+    Panel
+      id: chips
+      anchors.top: pathLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 0
+      layout:
+        type: grid
+        flow: true
+        cell-size: 108 22
+        cell-spacing: 3
+
+    // the offer cards of a category, the search or the history
+    ScrollablePanel
+      id: offers
+      anchors.top: chips.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: pageControls.top
+      margin-top: 6
+      margin-bottom: 6
+      padding-right: 15
+      vertical-scrollbar: offersScrollBar
+      focusable: false
+      layout:
+        type: grid
+        flow: true
+        cell-size: 168 68
+        cell-spacing: 6
+
+    VerticalScrollBar
+      id: offersScrollBar
+      anchors.top: offers.top
+      anchors.bottom: offers.bottom
+      anchors.right: offers.right
+      step: 50
+      pixels-scroll: true
+
+    // the home page: the weekly strip, the starter packs, the bundles
+    ScrollablePanel
+      id: home
+      anchors.top: chips.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: pageControls.top
+      margin-top: 6
+      margin-bottom: 6
+      padding-right: 15
+      vertical-scrollbar: homeScrollBar
+      focusable: false
+      visible: false
+      layout:
+        type: verticalBox
+
+    VerticalScrollBar
+      id: homeScrollBar
+      anchors.top: home.top
+      anchors.bottom: home.bottom
+      anchors.right: home.right
+      step: 50
+      pixels-scroll: true
+      visible: false
+
+    Label
+      id: emptyLabel
+      anchors.centerIn: offers
+      width: 300
       text-wrap: true
       text-align: center
-      font: sans-bold-16px
-  
-  // the store search (the server looks through every offer: name, category, parent)
-  TextEdit
-    id: searchText
-    anchors.left: infoPanel.left
-    anchors.right: infoPanel.right
-    anchors.bottom: transactionHistory.top
-    margin-bottom: 10
-    !placeholder: tr('Search the store...')
-    placeholder-color: #808080
-    @onTextChange: modules.game_shop.onSearchChange()
+      color: #8c8070
+      font: verdana-11px-antialised
+      visible: false
+      text: ''
 
-  TextList
-    id: categories
-    vertical-scrollbar: categoriesScrollBar
-    anchors.top: infoPanel.bottom
-    anchors.left: infoPanel.left
-    anchors.right: infoPanel.right
-    anchors.bottom: searchText.top
-    margin-top: 10
-    margin-bottom: 6
-    padding: 1
-    focusable: false
-
-  VerticalScrollBar
-    id: categoriesScrollBar
-    anchors.top: categories.top
-    anchors.bottom: categories.bottom
-    anchors.right: categories.right
-    step: 50
-    pixels-scroll: true
-
-  // the path of the shown category ("Cosmetics > Wings"), the search or the history
-  Label
-    id: pathLabel
-    anchors.top: adPanel.bottom
-    anchors.left: adPanel.left
-    anchors.right: adPanel.right
-    margin-top: 8
-    height: 16
-    color: #f0c050
-    font: verdana-11px-rounded
-    text-align: left
-
-  TextList
-    id: offers
-    vertical-scrollbar: offersScrollBar
-    anchors.top: pathLabel.bottom
-    anchors.left: adPanel.left
-    anchors.right: adPanel.right
-    anchors.bottom: transactionHistory.top
-    margin-top: 10
-    margin-bottom: 10
-    padding: 1
-    focusable: false
-
-  VerticalScrollBar
-    id: offersScrollBar
-    anchors.top: offers.top
-    anchors.bottom: offers.bottom
-    anchors.right: offers.right
-    step: 50
-    pixels-scroll: true
-
-  Panel
-    id: pageControls
-    visible: true
-    size: 80 30
-    margin-top: 240
-    anchors.horizontalCenter: offers.horizontalCenter
-    anchors.verticalCenter: offers.verticalCenter
-
-    Button
-      id: prevPage
-      text: "<"
-      width: 30
+    Panel
+      id: pageControls
       anchors.left: parent.left
-      anchors.verticalCenter: parent.verticalCenter
-
-    Button
-      id: nextPage
-      text: ">"
-      width: 30
       anchors.right: parent.right
-      anchors.verticalCenter: parent.verticalCenter
+      anchors.bottom: parent.bottom
+      height: 24
+      visible: false
+
+      Label
+        id: pageLabel
+        anchors.centerIn: parent
+        width: 70
+        text-align: center
+        color: #d6c9ae
+        font: verdana-11px-antialised
+        text: ''
+
+      Button
+        id: prevPage
+        text: "<"
+        width: 30
+        anchors.right: pageLabel.left
+        anchors.verticalCenter: parent.verticalCenter
+        margin-right: 6
+
+      Button
+        id: nextPage
+        text: ">"
+        width: 30
+        anchors.left: pageLabel.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 6
 
   Button
     id: transactionHistory

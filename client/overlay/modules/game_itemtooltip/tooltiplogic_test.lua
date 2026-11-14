@@ -194,11 +194,11 @@ for i, l in ipairs(lines) do
   if l.text:find('Each kill restores', 1, true) then ruleAt = i end
 end
 eq(fitAt ~= nil and ruleAt ~= nil and fitAt > ruleAt, true, 'the fit line comes under the rule')
-reaper.passive.fit, reaper.passive.warn = 'Asleep: your class is not in its list.', true
+reaper.passive.fit, reaper.passive.warn = 'Cannot use: not for your class.', true
 lines = L.lines(reaper)
 found = {}
 for _, l in ipairs(lines) do found[l.text] = l end
-eq(found['Asleep: your class is not in its list.'] ~= nil and found['Asleep: your class is not in its list.'].color, L.COLORS.red,
+eq(found['Cannot use: not for your class.'] ~= nil and found['Cannot use: not for your class.'].color, L.COLORS.red,
   'an asleep power in the warning colour')
 local fitCard = L.card({ name = 'x', unique = { name = 'x' }, passive = { name = 'P', text = 'Rule.', flavor = 'F.', fit = 'Asleep: Y is stronger.', warn = true } }, {})
 local rows

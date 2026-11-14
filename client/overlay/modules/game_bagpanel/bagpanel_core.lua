@@ -248,7 +248,7 @@ C.MAX_OPEN = 5
 function C.previousFor(memo, fam)
   local best
   for cid, m in pairs(memo or {}) do
-    if m.fam == fam and not m.loot and (best == nil or cid < best) then best = cid end
+    if m.fam == fam and not m.loot and not m.pinned and (best == nil or cid < best) then best = cid end
   end
   return best
 end
@@ -258,7 +258,7 @@ end
 function C.superseded(memo, cid, fam)
   local out = {}
   for other, m in pairs(memo or {}) do
-    if m.fam == fam and other ~= cid and not m.loot then out[#out + 1] = other end
+    if m.fam == fam and other ~= cid and not m.loot and not m.pinned then out[#out + 1] = other end
   end
   table.sort(out)
   return out
@@ -363,6 +363,171 @@ end
 -- only), so Sort works there. Returns the reason code the page cannot be sorted, nil when it can.
 function C.sortBlock(key)
   if C.parseKey(key) == 'purse' then return 'purse' end
+  return nil
+end
+
+-- ---------------------------------------------------------------- empty slots (O557)
+-- A container the engine sizes to its capacity (a rift bag, a pouch: 36 slots and more) drew every slot, a wall of empty
+-- cells under the nine items it held. The grid now draws the slots in use and one more row to drop into, at least `minRows`
+-- rows, never more than the capacity. Items sit at the front (the server adds at the front), so the slots shown are the
+-- first ones. total: the capacity (or the slots of the page), used: the highest occupied slot + 1.
+C.MIN_ROWS = 2
+function C.visibleSlots(total, used, cols, minRows)
+  total, used = math.max(int(total) or 0, 0), math.max(int(used) or 0, 0)
+  cols, minRows = math.max(int(cols) or 1, 1), math.max(int(minRows) or C.MIN_ROWS, 1)
+  local rows = math.max(math.ceil((used + 1) / cols), minRows)
+  return math.min(total, rows * cols)
+end
+
+-- the highest occupied slot + 1 of a container read by `get(i)` (a truthy value: a slot in use), i = 0 .. cap - 1
+function C.usedSlots(cap, get)
+  local used = 0
+  for i = 0, (int(cap) or 0) - 1 do
+    if get(i) then used = i + 1 end
+  end
+  return used
+end
+
+-- ---------------------------------------------------------------- bag names (O557)
+-- The tooltip of a page button names the bag: the first usable name among `names`, else "Bag N" (the caller's tr). The
+-- engine's own placeholder names are no names.
+function C.bagName(names)
+  for _, n in ipairs(names or {}) do
+    if type(n) == 'string' then
+      n = n:gsub('^%s+', ''):gsub('%s+$', '')
+      local low = n:lower()
+      if n ~= '' and low ~= 'item' and low ~= 'unknown' and not low:match('^item of type') then return n end
+    end
+  end
+  return nil
+end
+
+-- ---------------------------------------------------------------- loot header (O557)
+-- "Page 1 of 13" did not fit between the arrows: the page reads "1/13" (the tooltip has the words), and the text a label
+-- has not the room for is cut with "..." by `measure(text)` (the pixel width in the label's font).
+function C.pageText(page, pages)
+  return string.format('%d/%d', math.max(int(page) or 1, 1), math.max(int(pages) or 1, 1))
+end
+
+function C.elide(text, room, measure)
+  text = tostring(text or '')
+  room = int(room) or 0
+  if measure(text) <= room then return text end
+  local dots = '...'
+  if measure(dots) > room then return '' end
+  local n = #text
+  while n > 0 do
+    local cut = text:sub(1, n):gsub('%s+$', '')
+    if measure(cut .. dots) <= room then return cut .. dots end
+    n = n - 1
+  end
+  return dots
+end
+
+-- ---------------------------------------------------------------- pinned bags (O557)
+-- A pinned bag stays open: no other bag replaces it (C.previousFor, C.superseded skip it) and it opens again after a login.
+-- It is remembered per character as a key that does not move when items are added in front of the bag (the bag's index
+-- does): the kind, the bag's item id and its number among the bags of that id in its container ("bag:1987#2": the second bag
+-- 1987 of the backpack; "pbag:38608#1": a bag of the purse; "purse"). Limit: two bags of one id that swap places swap pins;
+-- a bag replaced by another of the same id keeps the pin.
+C.MAX_PINS = 3
+
+-- items: the slots of the parent container as C.bagSlots reads them, { { id, container } or false }
+function C.pinKey(fam, slot, items)
+  slot = int(slot)
+  local it = slot and items and items[slot + 1]
+  if not it or not it.container then return nil end
+  local n = 0
+  for i = 1, slot + 1 do
+    local o = items[i]
+    if o and o.container and o.id == it.id then n = n + 1 end
+  end
+  return (fam == 'purse' and 'pbag:' or 'bag:') .. tostring(it.id) .. '#' .. n
+end
+
+-- 'purse' | 'bag' | 'pbag', id, number (nil for a key that is none of them)
+function C.parsePin(key)
+  if key == 'purse' then return 'purse' end
+  local kind, id, n = tostring(key):match('^(p?bag):(%d+)#(%d+)$')
+  if kind then return kind, tonumber(id), tonumber(n) end
+  return nil
+end
+
+-- the slot the pin is at now in the parent's items, nil when that bag is gone
+function C.pinSlot(key, items)
+  local kind, id, num = C.parsePin(key)
+  if not id then return nil end
+  local n = 0
+  for i = 1, #items do
+    local o = items[i]
+    if o and o.container and o.id == id then
+      n = n + 1
+      if n == num then return i - 1 end
+    end
+  end
+  return nil
+end
+
+function C.encodePins(list)
+  return table.concat(list or {}, ';')
+end
+
+-- the saved text -> the pins: valid keys only, no duplicates, at most MAX_PINS
+function C.decodePins(text)
+  local out, seen = {}, {}
+  for key in tostring(text or ''):gmatch('[^;]+') do
+    if C.parsePin(key) and not seen[key] and #out < C.MAX_PINS then
+      seen[key] = true
+      out[#out + 1] = key
+    end
+  end
+  return out
+end
+
+function C.pinned(list, key)
+  for _, k in ipairs(list or {}) do
+    if k == key then return true end
+  end
+  return false
+end
+
+-- toggles `key`: the new list, whether it is pinned now, and 'full' when a fourth pin was refused
+function C.togglePin(list, key)
+  local out, found = {}, false
+  for _, k in ipairs(list or {}) do
+    if k == key then found = true else out[#out + 1] = k end
+  end
+  if found then return out, false end
+  if not C.parsePin(key) then return out, false, 'invalid' end
+  if #out >= C.MAX_PINS then return out, false, 'full' end
+  out[#out + 1] = key
+  return out, true
+end
+
+-- the next thing to open for the pins after a login, nil when nothing is left. state: { mainItems, purseItems (nil while
+-- the purse is closed), purseOpen, open = { [pin key] = true } for the pinned bags open now }. The purse first, then the
+-- bags of the backpack, then the bags of the purse (they need it open); a pin whose bag is gone is skipped.
+function C.nextPinOpen(list, state)
+  state = state or {}
+  local open = state.open or {}
+  local want = {}
+  for _, k in ipairs(list or {}) do want[#want + 1] = k end
+  local function order(k) local kind = C.parsePin(k) return kind == 'purse' and 1 or kind == 'bag' and 2 or 3 end
+  table.sort(want, function(a, b) return order(a) < order(b) end)
+  for _, k in ipairs(want) do
+    local kind = C.parsePin(k)
+    if kind == 'purse' then
+      if not state.purseOpen then return { kind = 'purse', key = k } end
+    elseif not open[k] then
+      if kind == 'bag' and state.mainItems then
+        local slot = C.pinSlot(k, state.mainItems)
+        if slot then return { kind = 'bag', slot = slot, key = k } end
+      elseif kind == 'pbag' and state.purseOpen and state.purseItems then
+        local slot = C.pinSlot(k, state.purseItems)
+        if slot then return { kind = 'pbag', slot = slot, key = k } end
+      end
+    end
+  end
   return nil
 end
 

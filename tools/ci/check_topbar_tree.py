@@ -58,8 +58,10 @@ def parse_tree(text):
     category_hub = dict((lua_str(a), lua_str(b)) for a, b in re.findall(r"(\w+) = '(\w+)'", table('CATEGORY_HUB')))
     dropped = set(lua_str(x) for x in re.findall(r"\['((?:[^'\\]|\\.)*)'\] = true", table('DROPPED')))
     text_only = set(lua_str(x) for x in re.findall(r"\['((?:[^'\\]|\\.)*)'\] = true", table('TEXT_ONLY')))
+    pin_only = set(lua_str(x) for x in re.findall(r"\['((?:[^'\\]|\\.)*)'\] = true", table('PIN_ONLY')))
     shared = dict((lua_str(a), lua_str(b)) for a, b in re.findall(r"\['((?:[^'\\]|\\.)*)'\] = '((?:[^'\\]|\\.)*)'", table('SHARED')))
-    return {'hubs': hubs, 'category_hub': category_hub, 'dropped': dropped, 'shared': shared, 'text_only': text_only}
+    return {'hubs': hubs, 'category_hub': category_hub, 'dropped': dropped, 'shared': shared, 'text_only': text_only,
+            'pin_only': pin_only}
 
 
 def parse_cards(text):
@@ -176,7 +178,7 @@ def problems(tree, cards, glyph_names, registered, npc_only, pt_br):
                 if not pt_br.get(line):
                     out.append('card %r: the line %r has no pt-BR text' % (text, line))
     for text in cards['cards']:
-        if text not in placed:
+        if text not in placed and text not in tree.get('pin_only', ()):
             out.append('topbar_cards.lua names %r, which is on no tab' % text)
     for cat, hub_id in tree['category_hub'].items():
         if hub_id not in ids:
@@ -192,7 +194,7 @@ def problems(tree, cards, glyph_names, registered, npc_only, pt_br):
     for text in npc_only:
         if text in placed:
             out.append('%r opens from its NPC, not from a card' % text)
-    allowed = set(placed) | tree['dropped'] | tree['text_only'] | set(tree['shared']) | npc_only
+    allowed = set(placed) | tree.get('pin_only', set()) | tree['dropped'] | tree['text_only'] | set(tree['shared']) | npc_only
     for text in sorted(registered):
         if text not in allowed:
             out.append('entry %r (%s) has no card: add it to a tab of topbar_tree.lua and to topbar_cards.lua, or to DROPPED' % (text, registered[text].get('where', '?')))

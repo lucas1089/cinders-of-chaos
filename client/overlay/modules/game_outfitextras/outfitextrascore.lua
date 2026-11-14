@@ -82,6 +82,19 @@ function E.wingsRow(src)
   return { key = 'wings', options = options, current = current, locked = locked }
 end
 
+-- the name plate frames the game has (client game_nameplate plate_<key>.png, server nameplate_core.lua FRAMES) and how
+-- each is got, in the order the tab lists the ones the character does not own (O562: the tab listed only the owned
+-- frames, so a character with none saw "(0 of 0)" and one tile; the others were never shown). A test holds the keys to
+-- NameplateMath.FRAMES and the server list.
+E.FRAME_CATALOG = {
+  { 'violet', 'Store' }, { 'frost', 'Store' }, { 'ember', 'Store' }, { 'verdant', 'Store' }, { 'bone', 'Store' },
+  { 'ashen', 'Store' }, { 'sapphire', 'Store' }, { 'rose', 'Store' }, { 'jade', 'Store' }, { 'copper', 'Store' },
+  { 'obsidian', 'Store' }, { 'amber', 'Store' }, { 'storm', 'Store' },
+  { 'laurel', 'Achievement' }, { 'sepulchre', 'Boss drop' }, { 'infernal', 'Boss drop' },
+  { 'gold', 'Staff title' }, { 'crimson', 'Siege Champion title' }, { 'cinderwrought', 'Season pass' },
+  { 'gallery', 'Collection' }, { 'pactbound', 'Chaos Pact' }, { 'founder', 'Founder Pack' },
+}
+
 -- name plate frame: the title's own, then the frames the character owns
 function E.frameRow(services)
   if type(services) ~= 'table' then return nil end
@@ -154,7 +167,7 @@ function E.textOf(row, value)
   return nil
 end
 
--- what the character does not own yet, from the same sources: {{value, text, how}} (frames have no catalogue)
+-- what the character does not own yet, from the same sources: {{value, text, how}} (frames: E.FRAME_CATALOG)
 function E.lockedOf(src, key)
   src = src or {}
   local out = {}
@@ -168,6 +181,15 @@ function E.lockedOf(src, key)
       if type(c) == 'table' and num(c.l) > 0 and not have[num(c.l)] then
         have[num(c.l)] = true
         out[#out + 1] = { value = num(c.l), text = tostring(c.n or c.l), how = c.s }
+      end
+    end
+  elseif key == 'frame' then
+    local services = type(src.services) == 'table' and src.services or nil
+    if services then
+      local have = {}
+      for _, f in ipairs(type(services.frames) == 'table' and services.frames or {}) do have[f] = true end
+      for _, f in ipairs(E.FRAME_CATALOG) do
+        if not have[f[1]] then out[#out + 1] = { value = f[1], text = capital(f[1]), how = tr(f[2]) } end
       end
     end
   elseif key == 'pet' then

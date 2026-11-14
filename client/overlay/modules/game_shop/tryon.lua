@@ -5,9 +5,9 @@
 -- cosmetics.lua). Nobody else sees either, nothing is granted.
 --   in the panel     outfits, addons, mounts, wings, auras, shaders (the outfit fields), outlines (the engine's outline
 --                    pass), footprints (prints behind the walking figure), spell skins, kill / level-up / rare-loot
---                    effects and emotes (the effect on the stage), and a bundle of those
+--                    effects (the effect on the stage), and a bundle of those
 --   on the map       the server's preview of a cosmetic with an effect (preview.effect): spell skins, kill, level-up,
---                    rare-loot effects, emotes (an effect round you), footprints and outlines (game_cosmeticfx draws them
+--                    rare-loot effects (an effect round you), footprints and outlines (game_cosmeticfx draws them
 --                    on you for a few seconds)
 --   on the plate     a name plate frame (O318): game_nameplate draws it on the own plate for TryOn.MS, this client
 --                    only (previewFrame), when that module is loaded

@@ -100,12 +100,51 @@ def test_install(tmp):
         expect(p37 == [] and IO.P37BEGIN not in xml, 'pair 37 off: no lines')
 
 
+def test_pair72(tmp):
+    """the fun costumes (chaos_fun_costumes.lua): their lines come only while config.lua chaosClientPair is 72 or more (O566)"""
+    srv = os.path.join(tmp, 'srv72')
+    data = os.path.join(srv, 'data')
+    os.makedirs(os.path.join(data, 'XML'))
+    for name, text in BASE.items():
+        open(os.path.join(data, 'XML', name), 'w').write(text)
+    cfg = os.path.join(srv, 'config.lua')
+
+    def run(pair):
+        if pair is None:
+            if os.path.exists(cfg):
+                os.remove(cfg)
+        else:
+            open(cfg, 'w').write('chaosClientPair = %d\n' % pair)
+        IO.main([data])
+        return open(os.path.join(data, 'XML', 'outfits.xml')).read()
+    xml = run(None)
+    expect(IO.F72BEGIN not in xml and 'looktype="3511"' not in xml, 'no config.lua: no pair 72 outfit')
+    xml = run(71)
+    expect(IO.F72BEGIN not in xml and 'looktype="3511"' not in xml, 'pair 71: no pair 72 outfit')
+    xml = run(72)
+    f72 = IO.fun72_outfits(data)
+    expect(len(f72) == 12 and f72[0] == (3511, 3511, 'Volt Fizz Can') and f72[-1] == (3522, 3522, 'Chicken Suit'), 'pair 72: twelve costumes read')
+    expect(IO.F72BEGIN in xml and IO.F72END in xml, 'pair 72: the block is written')
+    for m, f, n in f72:
+        expect('<outfit type="1" looktype="%d" name="%s" premium="no" unlocked="no"' % (m, n) in xml and
+               '<outfit type="0" looktype="%d" name="%s" premium="no" unlocked="no"' % (f, n) in xml, 'pair 72: %s locked for both sexes' % n)
+    expect(run(72) == xml, 'pair 72: a second run changes nothing')
+    expect(run(75) == xml, 'pair 75: the same block')
+    xml = run(71)
+    expect(IO.F72BEGIN not in xml and 'looktype="3511"' not in xml, 'back to pair 71: the block is gone again')
+    # a look that outfits.xml already has outside the block stops the step
+    open(os.path.join(data, 'XML', 'outfits.xml'), 'w').write(BASE['outfits.xml'].replace('</outfits>', '\t<outfit type="0" looktype="3511" name="X" premium="no" unlocked="yes" enabled="yes" />\n</outfits>\n'))
+    open(cfg, 'w').write('chaosClientPair = 72\n')
+    expect(IO.main([data]) == 1, 'a clashing look type stops the step')
+
+
 def main():
     test_shipped()
     tmp = tempfile.mkdtemp()
     try:
         test_switch_on(tmp)
         test_install(tmp)
+        test_pair72(tmp)
     finally:
         shutil.rmtree(tmp)
     if FAILS:

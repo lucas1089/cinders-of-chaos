@@ -3,8 +3,8 @@
 # open a window with tabs and cards (default), or as the text menu with drop-down lists, and reads this option.
 #  * dataset.lua: `hubMenu` (default on); its apply tells client_chaos_topbar (`onOption('hubMenu', value)`).
 #  * options/graphics.otui: one checkbox "Menu in hubs" under "Monsters on the minimap"; pt-BR in client_chaos_locale.
-# Without the patch the menu is in hubs (the module's default); the hub window's footer link "Text menu" and the text menu's entry
-# "Menu Style" switch without the option (g_settings `chaosMenuStyle`). Not run in a client; goes live with the next client build.
+# Without the patch the menu is in hubs (the module's default); the text menu's entry "Menu Style" switches back without the option
+# (g_settings `chaosMenuStyle`; the hub window has no link to the text menu since 2026-11-14, this checkbox is the way). Not run in a client; goes live with the next client build.
 diff -ruN a/mods/client_settings/classes/dataset.lua b/mods/client_settings/classes/dataset.lua
 --- a/mods/client_settings/classes/dataset.lua
 +++ b/mods/client_settings/classes/dataset.lua
@@ -62,7 +62,7 @@ diff -ruN a/mods/client_settings/options/graphics.otui b/mods/client_settings/op
 +        margin-right: 5
 +        margin-top: 5
 +        image-source: /images/skin/show-gui-help-grey
-+        !tooltip: tr('On: six small badges at the top, each opens a window with tabs and cards.\nOff: the text menu with drop-down lists. The hub window also has a link back to the text menu.')
++        !tooltip: tr('On: six small badges at the top, each opens a window with tabs and cards.\nOff: the text menu with drop-down lists.')
 +
 +    FlatPanel
        size: 505 22

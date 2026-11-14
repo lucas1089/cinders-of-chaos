@@ -420,7 +420,7 @@ second element is a choice.
 
 - You turn on at most 5 cards. A set needs **3 cards of one element**, one for each spell line your class casts. The highest
   card of a line that is on gives the line its element. A lower card of the same line, a second copy of a card, a card of a
-  spell your class cannot cast, a card that is off or sits outside the deck: none of them counts.
+  spell your class cannot cast, a card that is off or not in your Deck of Cards: none of them counts.
 - **One tier only.** 4 or 5 cards give the bonus of 3. **One set at a time:** five slots hold no second set of three.
 - A heal, melee, widen, bow or legendary card has no element. Ice (no class has three Ice lines) and Drown have no set.
 - Character Info (Character > Character Info) names the set and shows the progress, for example "2 of 3 cards". Turning a

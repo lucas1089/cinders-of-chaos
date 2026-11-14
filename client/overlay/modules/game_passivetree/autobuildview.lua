@@ -124,6 +124,36 @@ V.PREVIEW_TIMEOUT_MS = 4000
 V.RETRY_DELAY_MS = 700 -- after "too fast" (autobuildError {retry}): a little over the server's preview limit
 V.MAX_TRIES = 3
 
+-- O560: quick picks in the dropdown. The pick shows at once; the request goes out at most every MIN_GAP_MS (the server's
+-- previewRateMs) and always asks for the LAST pick; every request carries a number the server sends back, an answer to an
+-- older number is dropped, so a slow answer never overwrites a newer pick.
+V.MIN_GAP_MS = 150
+V.RETRY_MARGIN_MS = 30
+
+-- ms to wait before the next request may go out (0 = now); lastSentAt nil = none sent yet
+function V.gateDelay(lastSentAt, now)
+  if lastSentAt == nil or now < lastSentAt then
+    return lastSentAt == nil and 0 or V.MIN_GAP_MS
+  end
+  local d = lastSentAt + V.MIN_GAP_MS - now
+  return d > 0 and d or 0
+end
+
+-- is this answer to an older request than the latest one sent? (an answer without a number is judged by its build)
+function V.isStale(latestSeq, data)
+  local n = type(data) == 'table' and tonumber(data.seq) or nil
+  return n ~= nil and latestSeq ~= nil and n < latestSeq
+end
+
+-- ms until a refused request (autobuildError {retry}) is asked again: the server says how long (wait), else the old delay
+function V.retryDelay(data)
+  local w = type(data) == 'table' and tonumber(data.wait) or nil
+  if w and w >= 0 and w <= 5000 then
+    return math.floor(w) + V.RETRY_MARGIN_MS
+  end
+  return V.RETRY_DELAY_MS
+end
+
 -- ask for the preview of `selected` now? Not when it is shown already, asked already, or failed (until a new pick)
 function V.needsPreview(selected, preview, pending, failed)
   if selected == nil or failed == selected then

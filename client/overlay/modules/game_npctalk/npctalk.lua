@@ -1,54 +1,51 @@
--- NPC dialogue window: talk to an NPC from its right-click menu ("Talk"), a left click (smart controls) or "Use"; the
--- player walks up to it when it is too far, says "hi", and the whole conversation runs in a speech bubble over the NPC:
--- its name and outfit, its latest reply (long replies wrap; the bubble grows up to a limit, then scrolls), the
--- {keywords} of the reply as clickable words and chips, a text field, and Yes / No / Trade / Bye when they fit. Esc,
--- Bye or the x end it ("bye"); walking out of the NPC's talk radius closes it (the server ends the conversation then).
+-- NPC dialogue window (rebuilt in O571, owner 2026-11-14): talk to an NPC from its right-click menu ("Talk"), a left click
+-- (smart controls) or "Use"; the player walks up to it when it is too far, says "hi", and the conversation runs in a window of
+-- its own, beside the NPC and never over the character: the NPC's portrait (its own outfit, large), its name and title, the
+-- whole conversation as a scrolling log (the NPC's lines with their {keywords} as gold clickable words, the player's lines
+-- apart on the right), the keywords of the latest reply as chips in groups (quests marked, the most useful first), Yes / No /
+-- Trade when they fit the reply, an input with Say, and Bye. Esc, Bye or the x end it ("bye"); walking out of the NPC's talk
+-- radius closes it (the server ends the conversation then).
 --
 -- Every NPC works unchanged: nothing on the server. The 10.98 server sends an NPC's answers as private NPC speech
 -- (MessageModes.NpcFrom / NpcFromStartBlock, the console's "NPCs" tab); the console hands those to
 -- game_npctrade.tryHandleNpcDialogMessage first (the base client's own NPC dialog window); the game's own onTalk signal
--- brings the same line too (O160: the bubble does not depend on the console). This module replaces that
+-- brings the same line too (O160: the window does not depend on the console). This module replaces that
 -- function and its companions (onNpcPlayerTalk, onNpcConversationAttempt, endNpcConversation,
 -- setNpcDialogWindowEnabled), game_interface.talkToNpc (the menu's Talk), g_game.use on an NPC and g_map.addThing
 -- (the conversation NPC's words over its head) while it is loaded and puts it all back on unload: lines of the NPC we
--- talk to go to the bubble, every other line (another NPC, a public "Good bye" when walking away) stays in the
+-- talk to go to the window, every other line (another NPC, a public "Good bye" when walking away) stays in the
 -- console. The player's
 -- words go out as the engine expects: "hi" in the default channel, the rest as private NPC talk (MessageModes.NpcTo),
 -- the same packets the console's NPCs tab sends. Server windows (modal windows of the Ascendant Oracle and the Keeper
--- of Trials, the trade window) open as usual; the bubble stays where it is.
+-- of Trials, the trade window) open as usual; the dialogue window stays where it is.
 --
--- Settings: Options > Interface > "Disable NPC Dialog Window" (the base client's option) turns the bubble off: NPC
+-- Settings: Options > Interface > "Disable NPC Dialog Window" (the base client's option) turns the window off: NPC
 -- talk stays in the console as before, Talk still walks up and greets. g_settings node 'npcTalk': consoleCopy (also
--- copy the conversation into the console's NPCs tab), from the bubble's "..." menu.
--- The logic without client API (keywords, buttons, geometry) is npctalk_logic.lua.
+-- copy the conversation into the console's NPCs tab), from the window's "..." menu.
+-- The logic without client API (keywords, groups, buttons, geometry) is npctalk_logic.lua, the widgets npctalkview.lua.
 
 local L = NpcTalkLogic
 
 local APPROACH_TIMEOUT = 10000 -- walking up to an NPC gives up after this long
-local SUPPRESS_MS = 3000       -- after a goodbye, the NPC's farewell goes to the console, not to a new bubble
+local SUPPRESS_MS = 3000       -- after a goodbye, the NPC's farewell goes to the console, not to a new window
 local SWITCH_GAP_MS = 1500     -- Talk to another NPC: "bye" to the first, "hi" this much later
-local IDLE_MS = 120000         -- the stock NpcHandler forgets an idle player after 120 s; so does the bubble
+local IDLE_MS = 120000         -- the stock NpcHandler forgets an idle player after 120 s; so does the window
 local TICK_MS = 20
-local TAIL_W, TAIL_H = 22, 12
 local MAX_TRANSCRIPT = 40
 
-local okText, Text = pcall(dofile, '/modules/game_spellsupports/supportstext.lua')
-if not okText or type(Text) ~= 'table' then Text = nil end
-
-local bubble, tail
+local window, view
 local settings = { consoleCopy = false }
 local originals = {}
 local origTalkToNpc, origUse, origAddThing
 local tickEvent
 local escapeBound = false
 
--- the conversation: {id, name, creature, turn = {npc lines}, said, history = {all npc lines}, transcript, started,
--- lastActivity}; approach: {creature, started}
+-- the conversation: {id, name, creature, turn = {npc lines}, said, history = {all npc lines}, transcript = {{side, who,
+-- text}} (the log), placed, started, lastActivity}; approach: {creature, started}
 local conv
 local approach
 local suppressAllUntil = 0 -- until then NPC lines stay in the console (the farewells answering a goodbye)
 local tracks = {}     -- creature id -> {pos, from}: the last step, for the walk offset
-local layoutKey
 
 -- ---------------------------------------------------------------- helpers
 local function warn(where, err)
@@ -149,7 +146,7 @@ local function copyPlayerLineToConsole(text)
   end
 end
 
--- ---------------------------------------------------------------- walk offsets (the bubble follows a walking NPC)
+-- ---------------------------------------------------------------- walk offsets (the window is placed by where the walking NPC is drawn)
 local function trackOf(creature)
   local id = creature:getId()
   local pos = creature:getPosition()
@@ -176,117 +173,61 @@ local function walkOffset(creature, spriteSize)
   return { x = x, y = y }
 end
 
--- ---------------------------------------------------------------- the bubble
+-- ---------------------------------------------------------------- the window
 local function setStatus(text)
-  if alive(bubble) then bubble.status:setText(text or '') end
-end
-
-local function resetLayout()
-  layoutKey = nil
-end
-
-local function transcriptTooltip()
-  if not conv or not alive(bubble) then return end
-  local text = L.transcript(conv.transcript, 64, 16, Text and Text.wrap or nil)
-  if text ~= '' then
-    bubble.npcName:setTooltip(text)
-  else
-    bubble.npcName:removeTooltip()
-  end
+  if view then view:setStatus(text or '') end
 end
 
 local sendText -- forward
 
--- a font of client_chaos_theme (ChaosTheme.fonts) on a widget, only when that font is loaded: the NPC's lines in
--- 'dialogue' (IM Fell English), its name in 'heading' (Alegreya SC); the player's line, chips and buttons keep the
--- UI font
-local function applyThemeFont(widget, role)
-  local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
-  if theme and theme.applyFont then theme.applyFont(widget, role) end
+local function tradeIsOpen()
+  local trade = modules.game_npctrade
+  return trade and trade.isTrading and trade.isTrading() or false
 end
 
-local function addReplyLabel(text)
-  local label = g_ui.createWidget('NpcTalkText', bubble.textScroll)
-  applyThemeFont(label, 'dialogue')
-  local colored, hasKeys = L.coloredText(text, L.COLORS.npc, L.COLORS.keyword, true)
-  if hasKeys then
-    label:setEventListener(EVENT_TEXT_CLICK)
-    label:setEventListener(EVENT_TEXT_HOVER)
-    label.onTextClick = function(_, word) sendText(word) end
-    label.onTextHoverChange = function(widget, _, hovered)
-      if hovered and not widget.pointer then
-        widget.pointer = true
-        g_mouse.pushCursor('pointer')
-      elseif not hovered and widget.pointer then
-        widget.pointer = nil
-        g_mouse.popCursor('pointer')
-      end
-    end
-    label.onDestroy = function(widget)
-      if widget.pointer then
-        widget.pointer = nil
-        g_mouse.popCursor('pointer')
-      end
-    end
+-- the title line under the NPC's name: a word of its name ("Archivist Maelis"), else what the conversation shows it to be
+local function refreshTitle()
+  if not conv or not view then return end
+  local _, title = L.splitName(conv.name)
+  if not title then
+    local role = L.role(conv.history, tradeIsOpen())
+    if role == 'trade' then title = tr('Trader') elseif role == 'quests' then title = tr('Has quests') end
   end
-  label:setColoredText(colored)
+  view:setTitle(title or '')
+end
+
+local function layoutContent()
+  if not alive(window) or not view then return end
+  local inner = window:getWidth() - window:getPaddingLeft() - window:getPaddingRight()
+  view:layoutChips(inner)
+  view:setQuickWidth(inner)
 end
 
 local function refreshChipsAndButtons()
-  if not conv or not alive(bubble) then return end
-  local tradeOpen = modules.game_npctrade and modules.game_npctrade.isTrading and modules.game_npctrade.isTrading()
-  local shown = L.buttons(conv.turn, conv.history, tradeOpen)
-  local hidden = {}
-  for _, id in ipairs(L.BUTTONS) do
-    local button = bubble.quickButtons[id]
-    button:setVisible(shown[id])
-    if shown[id] then hidden[id] = true end
-  end
-  bubble.chips:destroyChildren()
+  if not conv or not alive(window) then return end
+  local shown = L.buttons(conv.turn, conv.history, tradeIsOpen())
+  -- the keywords a quick button already offers are no chips (the Bye button is always there)
+  local offered = { bye = true }
+  for _, id in ipairs(L.BUTTONS) do if shown[id] then offered[id] = true end end
+  view:setButtons(shown)
+  view:setChips(L.groups(L.chips(conv.turn, offered)))
   conv.hint = #L.keywords(conv.turn) > 0 and tr('Click a gold word to say it.') or nil
-  for _, word in ipairs(L.chips(conv.turn, hidden)) do
-    local chip = g_ui.createWidget('NpcTalkChip', bubble.chips)
-    chip:setText(word)
-    chip.fullWidth = chip:getTextSize().width + 16
-    chip:setWidth(chip.fullWidth)
-    chip:addAnchor(AnchorTop, 'parent', AnchorTop)
-    chip:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-    chip.onClick = function() sendText(word) end
-  end
-  resetLayout()
+  layoutContent()
 end
 
--- the reply area: what the player said last (dim), then the NPC's lines since
+-- the log: everything said so far, the NPC's lines and the player's apart
 local function refreshText()
-  if not conv or not alive(bubble) then return end
-  bubble.textScroll:destroyChildren()
-  if conv.said then
-    local said = g_ui.createWidget('NpcTalkSaid', bubble.textScroll)
-    said:setText(tr('You') .. ': ' .. conv.said)
-  end
-  if #conv.turn == 0 then
-    local waiting = g_ui.createWidget('NpcTalkSaid', bubble.textScroll)
-    waiting:setText('...')
-  end
-  for _, line in ipairs(conv.turn) do addReplyLabel(line) end
+  if not conv or not alive(window) then return end
+  view:renderLog(conv.transcript, #conv.turn == 0)
   refreshChipsAndButtons()
-  transcriptTooltip()
-  scheduleEvent(function()
-    if alive(bubble) then bubble.textScrollBar:setValue(bubble.textScrollBar:getMaximum()) end
-  end, 60)
+  refreshTitle()
 end
 
 local function focusInput()
-  if alive(bubble) and bubble:isVisible() then
-    bubble:raise()
-    if alive(tail) then tail:raise() end
+  if alive(window) and window:isVisible() then
+    window:raise()
     -- the whole chain up to the root: a relog can leave the root's focus on another window
-    if bubble.input.recursiveFocus then
-      bubble.input:recursiveFocus(KeyboardFocusReason)
-    else
-      bubble:focus()
-      bubble.input:focus()
-    end
+    view:focusInput()
   end
 end
 
@@ -313,9 +254,11 @@ local function screenLimits()
   return limits
 end
 
--- size and place the bubble over the NPC (every tick: the NPC and the camera move)
-local function layout()
-  if not conv or not alive(bubble) then return end
+-- Where the window opens (one place for it: O572): beside the NPC on the side away from the player, never over either of
+-- them, inside the part of the map the player sees; the middle of that part when the NPC is not on screen. Done once per
+-- conversation: the window is draggable and stays where the player puts it.
+local function placeWindow()
+  if not conv or not alive(window) then return end
   local map = mapPanel()
   local c = conv.creature
   local p = player()
@@ -328,82 +271,35 @@ local function layout()
   local stretch = L.stretch(mapArea, vis, spriteSize)
   local area = L.visibleArea(mapArea, screenLimits())
   local cam = map:getCameraPosition() or p:getPosition()
-  local center = L.tileCenter(mapArea, stretch, spriteSize, cam, walkOffset(p, spriteSize), c:getPosition(),
+  local npcAt = L.tileCenter(mapArea, stretch, spriteSize, cam, walkOffset(p, spriteSize), c:getPosition(),
     walkOffset(c, spriteSize))
-  if not center then return end
-
-  -- width and height: wider maps get a slightly wider bubble; the reply area grows up to a limit, then scrolls
-  local width = math.max(300, math.min(400, math.floor(area.width * 0.36)))
-  local maxText = math.max(56, math.min(260, math.floor(area.height * 0.5) - 130))
-  local key = width .. ':' .. maxText .. ':' .. bubble.textScroll:getChildCount() .. ':' .. bubble.chips:getChildCount()
-  local contentH = 0
-  for _, child in ipairs(bubble.textScroll:getChildren()) do
-    if child:isVisible() then contentH = contentH + child:getHeight() + child:getMarginBottom() end
+  local playerAt = L.tileCenter(mapArea, stretch, spriteSize, cam, walkOffset(p, spriteSize), p:getPosition(),
+    walkOffset(p, spriteSize))
+  local w, h = L.windowSize(area)
+  window:setSize({ width = w, height = h })
+  local spot
+  if npcAt then
+    local r = rootPanel():getRect()
+    local screen = { x = r.x, y = math.max(r.y, screenLimits().top or r.y), width = r.width, height = r.height }
+    screen.height = r.y + r.height - screen.y
+    spot = L.windowPlace(w, h, npcAt, playerAt, spriteSize * stretch, area, 8, screen)
+  else
+    spot = { x = area.x + math.floor((area.width - w) / 2), y = area.y + math.floor((area.height - h) / 2) }
   end
-  key = key .. ':' .. contentH
-  if key ~= layoutKey then
-    layoutKey = key
-    bubble:setWidth(width)
-    local textH = math.max(14, math.min(contentH, maxText))
-    local scrolls = contentH > maxText
-    bubble.textScrollBar:setVisible(scrolls)
-    bubble.textScroll:setPaddingRight(scrolls and 16 or 0)
-    bubble.textScroll:setHeight(textH)
-    -- chips in rows (anchored to the chips panel's top left: they move with the bubble)
-    local widths = {}
-    local chips = bubble.chips:getChildren()
-    for i, chip in ipairs(chips) do widths[i] = chip.fullWidth or chip:getWidth() end
-    local inner = width - bubble:getPaddingLeft() - bubble:getPaddingRight()
-    local places, chipsH = L.flow(widths, inner, 20, 4, 4)
-    for i, chip in ipairs(chips) do
-      chip:setMarginLeft(places[i].x)
-      chip:setMarginTop(places[i].y)
-      chip:setWidth(places[i].width)
-    end
-    bubble.chips:setHeight(chipsH)
-    bubble.chips:setMarginTop(chipsH > 0 and 6 or 0)
-    -- quick buttons share the row
-    local visible = {}
-    for _, id in ipairs(L.BUTTONS) do
-      if bubble.quickButtons[id]:isVisible() then visible[#visible + 1] = bubble.quickButtons[id] end
-    end
-    local bw = math.floor((inner - 4 * math.max(0, #visible - 1)) / math.max(1, #visible))
-    for _, b in ipairs(visible) do b:setWidth(math.min(bw, 90)) end
-    local h = bubble:getPaddingTop() + 40 + 6 + textH + (chipsH > 0 and (chipsH + 6) or 0) + 6 + 22 + 6 + 22 +
-      bubble:getPaddingBottom()
-    bubble:setHeight(h)
-  end
-  -- the tail points at the NPC's name (drawn 12 px above the point over its head) or, under it, at its feet
-  local outfit = c:getOutfit()
-  local dispY = 8
-  local okType, thingType = pcall(g_things.getThingType, outfit.type or 0, ThingCategoryCreature)
-  if okType and thingType and thingType.getDisplacementY then dispY = thingType:getDisplacementY() end
-  -- a tall look's name goes up by its lift (client_chaos_infolift, base patch 0111)
-  local lift = c.getInformationLift and c:getInformationLift() or 0
-  local top = center.y - math.floor((spriteSize / 2 + dispY + 2 + lift) * stretch) - 16
-  local bottom = center.y + math.floor((spriteSize / 2 - dispY) * stretch) + 2
-  local place = L.place(bubble:getWidth(), bubble:getHeight(), { x = center.x, y = top }, { x = center.x, y = bottom },
-    area, TAIL_W, TAIL_H, 4)
-  bubble:setPosition({ x = place.x, y = place.y })
-  if alive(tail) then
-    tail:setImageSource('/modules/game_npctalk/images/' .. (place.below and 'tail_up' or 'tail_down'))
-    tail:setPosition({ x = place.tailX, y = place.tailY })
-  end
+  window:setPosition(spot)
+  conv.placed = true
+  layoutContent()
 end
 
-local function hideBubble()
-  if alive(bubble) then bubble:hide() end
-  if alive(tail) then tail:hide() end
+local function hideWindow()
+  if alive(window) then window:hide() end
 end
 
-local function showBubble()
-  if not alive(bubble) then return end
-  bubble:show()
-  if alive(tail) then tail:show() end
-  resetLayout()
-  layout()
-  bubble:raise()
-  if alive(tail) then tail:raise() end
+local function showWindow()
+  if not alive(window) then return end
+  window:show()
+  if conv and not conv.placed then placeWindow() else layoutContent() end
+  window:raise()
 end
 
 -- ---------------------------------------------------------------- conversation
@@ -411,14 +307,14 @@ local stopTicking
 
 local function closeConversation(suppress)
   -- a goodbye reaches every NPC in range that was listening (a "hi" greets them all): their farewells stay in the
-  -- console instead of opening a new bubble
+  -- console instead of opening a new window
   if suppress then suppressAllUntil = now() + SUPPRESS_MS end
   conv = nil
-  hideBubble()
-  if alive(bubble) then
-    bubble.textScroll:destroyChildren()
-    bubble.chips:destroyChildren()
-    bubble.input:clearText()
+  hideWindow()
+  if alive(window) and view then
+    view:renderLog({}, false)
+    view:setChips({})
+    view:clearInput()
   end
   if not approach then stopTicking() end
 end
@@ -430,27 +326,21 @@ local function openConversation(creature)
     id = creature:getId(), name = creature:getName(), creature = creature,
     turn = {}, history = {}, transcript = {}, started = now(), lastActivity = now(),
   }
-  if not alive(bubble) then return end
-  bubble.npcName:setText(conv.name)
-  bubble.npcName:removeTooltip()
-  local portrait = bubble.portraitFrame.portrait
+  if not alive(window) then return end
   local outfit = creature:getOutfit()
   local okType, thingType = pcall(g_things.getThingType, outfit.type or 0, ThingCategoryCreature)
   local big = okType and thingType and math.max(thingType:getWidth(), thingType:getHeight()) >= 2
-  portrait:setSize(big and { width = 64, height = 64 } or { width = 40, height = 40 })
-  portrait:setMarginRight(big and -2 or 0)
-  portrait:setMarginBottom(big and -4 or 0)
-  portrait:setOutfit(outfit)
-  setStatus('')
+  local who, title = L.splitName(conv.name)
+  view:setNpc({ name = who, title = title, outfit = outfit, big = big })
   if enabled() then
-    showBubble()
+    showWindow()
     refreshText()
     focusInput()
   end
   startTicking()
 end
 
--- "bye" to the NPC (unless already said), the trade window shut, the bubble closed
+-- "bye" to the NPC (unless already said), the trade window shut, the dialogue window closed
 local function endConversation(sayBye)
   if not conv then return end
   if sayBye and g_game.isOnline() then
@@ -464,13 +354,13 @@ local function endConversation(sayBye)
   closeConversation(true)
 end
 
--- the player said something to the NPC (from the bubble, or typed in the console's NPCs tab)
+-- the player said something to the NPC (from the window, or typed in the console's NPCs tab)
 local function onPlayerSaid(text)
   if not conv then return end
   conv.said = text
   conv.turn = {}
   conv.lastActivity = now()
-  table.insert(conv.transcript, { who = tr('You'), text = text })
+  table.insert(conv.transcript, { side = 'player', who = tr('You'), text = text })
   while #conv.transcript > MAX_TRANSCRIPT do table.remove(conv.transcript, 1) end
   refreshText()
 end
@@ -498,8 +388,8 @@ local function greet(creature)
   conv.said = 'hi'
   conv.turn = {}
   conv.lastActivity = now()
-  table.insert(conv.transcript, { who = tr('You'), text = 'hi' })
-  if alive(bubble) and bubble:isVisible() then refreshText() end
+  table.insert(conv.transcript, { side = 'player', who = tr('You'), text = 'hi' })
+  if alive(window) and window:isVisible() then refreshText() end
   g_game.talk('hi')
 end
 
@@ -535,11 +425,11 @@ local function talkTo(creature)
   local p = player()
   if not p then return false end
   if conv and conv.id == creature:getId() then
-    -- the bubble is open already; greet again when the NPC opened it by itself (a goodbye of its own, say) or left
+    -- the window is open already; greet again when the NPC opened it by itself (a goodbye of its own, say) or left
     -- the last words unanswered
     if not conv.said or (#conv.turn == 0 and now() - conv.lastActivity > 4000) then greet(creature) end
     if enabled() then
-      showBubble()
+      showWindow()
       focusInput()
     end
     return true
@@ -575,7 +465,7 @@ local function talkTo(creature)
   return true
 end
 
--- ---------------------------------------------------------------- the tick: approach, range, idle, placement
+-- ---------------------------------------------------------------- the tick: approach, range, idle
 local function tick()
   if not g_game.isOnline() then
     approach = nil
@@ -617,11 +507,10 @@ local function tick()
       closeConversation(true)
     elseif now() - conv.lastActivity > IDLE_MS then
       closeConversation(true)
-    elseif alive(bubble) and bubble:isVisible() then
+    elseif alive(window) and window:isVisible() then
       -- an NPC that already counts the player as its guest does not greet again: say so instead of waiting forever
       local status = (#conv.turn == 0 and now() - conv.lastActivity > 4000) and tr('No answer yet.') or conv.hint or ''
-      if bubble.status:getText() ~= status then setStatus(status) end
-      layout()
+      if view:status() ~= status then setStatus(status) end
     end
   end
   if not conv and not approach then stopTicking() end
@@ -650,9 +539,9 @@ local function findNpcAt(pos)
   return nil
 end
 
-local lastLine -- {name, text, at, handled}: the line the bubble saw last (the hook and the talk signal both bring it)
+local lastLine -- {name, text, at, handled}: the line the window saw last (the hook and the talk signal both bring it)
 
--- one line of an NPC: true when the bubble took it (the console then leaves it out unless it keeps a copy)
+-- one line of an NPC: true when the window took it (the console then leaves it out unless it keeps a copy)
 local function onNpcLine(name, _, mode, text, pos)
   local route = L.routeNpcLine({ mode = mode, name = name, text = text, pos = pos }, {
     modes = { npcFrom = MessageModes.NpcFrom, npcFromStartBlock = MessageModes.NpcFromStartBlock },
@@ -672,12 +561,12 @@ local function onNpcLine(name, _, mode, text, pos)
     route = 'conv'
   end
   if route ~= 'conv' then return false end
-  if not alive(bubble) then return false end
-  if not bubble:isVisible() then showBubble() end
+  if not alive(window) then return false end
+  if not window:isVisible() then showWindow() end
   table.insert(conv.turn, text)
   table.insert(conv.history, text)
   while #conv.history > MAX_TRANSCRIPT do table.remove(conv.history, 1) end
-  table.insert(conv.transcript, { who = conv.name, text = text })
+  table.insert(conv.transcript, { side = 'npc', who = conv.name, text = text })
   while #conv.transcript > MAX_TRANSCRIPT do table.remove(conv.transcript, 1) end
   conv.lastActivity = now()
   refreshText()
@@ -686,7 +575,7 @@ end
 
 -- Every NPC line comes in twice: through the console (its hook, which also keeps the line out of the console) and
 -- through the game's talk signal below, which does not depend on the console at all (a console that stops short, or a
--- hook that is not in place, no longer leaves the bubble at "..."). The second copy answers as the first did.
+-- hook that is not in place, no longer leaves the window at "..."). The second copy answers as the first did.
 local function deliverNpcLine(name, mode, text, pos)
   local at = now()
   if L.isDuplicate(lastLine, name, text, at) then return lastLine.handled end
@@ -717,7 +606,7 @@ local function onConsoleNpcTalk(text)
   onPlayerSaid(text)
 end
 
--- the player said something in Local Chat: a greeting opens the bubble for the NPC that answers
+-- the player said something in Local Chat: a greeting opens the window for the NPC that answers
 local function onConsoleLocalTalk(text)
   if not text then return end
   if L.isGreeting(text) then suppressAllUntil = 0 end
@@ -744,9 +633,9 @@ local HOOKS = {
   setNpcDialogWindowEnabled = function(...) return onDialogWindowEnabled(...) end,
 }
 
--- a map text ("<name> says:" ...) of the conversation NPC, at its tile, while the bubble shows
+-- a map text ("<name> says:" ...) of the conversation NPC, at its tile, while the window shows
 local function isConversationText(thing, pos)
-  if type(thing) ~= 'userdata' or not pos or not enabled() or not alive(bubble) or not bubble:isVisible() then
+  if type(thing) ~= 'userdata' or not pos or not enabled() or not alive(window) or not window:isVisible() then
     return false
   end
   local ok, text = pcall(function() return thing.addColoredMessage and thing:getText() end)
@@ -786,7 +675,7 @@ local function installHooks()
       function(_, _, _, creature) return isNpcCreature(creature) end)
   end
   -- the console writes every NPC line over the NPC's head too (Chat:sendMapText, just before it hands the line to
-  -- us): the lines of the NPC in the bubble stay off the map, the bubble shows them
+  -- us): the lines of the NPC in the window stay off the map, the window shows them
   origAddThing = g_map.addThing
   g_map.addThing = function(thing, pos, ...)
     if conv and isConversationText(thing, pos) then return end
@@ -848,7 +737,7 @@ end
 
 -- ---------------------------------------------------------------- module
 local function onEscape()
-  if conv and alive(bubble) and bubble:isVisible() then
+  if conv and alive(window) and window:isVisible() then
     endConversation(true)
     return true
   end
@@ -874,29 +763,21 @@ function init()
     return
   end
   g_ui.importStyle('npctalk')
-  bubble = g_ui.createWidget('NpcTalkBubble', root)
-  bubble:setId('npcTalkBubble')
-  applyThemeFont(bubble.npcName, 'heading')
-  bubble:hide()
-  tail = g_ui.createWidget('NpcTalkTail', root)
-  tail:setId('npcTalkTail')
-  tail:hide()
-  for _, id in ipairs(L.BUTTONS) do
-    local word = id
-    bubble.quickButtons[id].onClick = function() sendText(word) end
-  end
-  bubble.sayButton.onClick = function()
-    local text = bubble.input:getText()
-    bubble.input:clearText()
-    sendText(text)
-  end
-  bubble.closeButton.onClick = function() endConversation(true) end
-  bubble.optionsButton.onClick = showOptions
+  window = g_ui.createWidget('NpcTalkWindow', root)
+  window:setId('npcTalkWindow')
+  window.chaosNoMirror = true -- the NPC's portrait is a creature widget: the RmlUi window mirror leaves it in OTUI
+  window:hide()
+  view = NpcTalkView.new(window)
+  view.on.say = function(text) sendText(text) end
+  view.on.word = function(word) sendText(word) end
+  view.on.bye = function() endConversation(true) end
+  view.on.close = function() endConversation(true) end
+  view.on.options = showOptions
   g_keyboard.bindKeyPress('Enter', function()
-    bubble.sayButton.onClick()
+    view.ui.sayButton.onClick()
     return true -- not on to the game, which would switch the chat mode
-  end, bubble.input)
-  g_keyboard.bindKeyDown('Escape', onEscape, bubble)
+  end, view.ui.input)
+  g_keyboard.bindKeyDown('Escape', onEscape, window)
   -- Esc with the map focused: the game's own Esc bindings run as well (this one never claims the key)
   g_keyboard.bindKeyDown('Escape', onRootEscape, root)
   escapeBound = true
@@ -914,9 +795,8 @@ function terminate()
     pcall(g_keyboard.unbindKeyDown, 'Escape', onRootEscape, root)
   end
   escapeBound = false
-  if alive(bubble) then bubble:destroy() end
-  if alive(tail) then tail:destroy() end
-  bubble, tail = nil, nil
+  if alive(window) then window:destroy() end
+  window, view = nil, nil
 end
 
 -- for tests and other modules
@@ -928,4 +808,4 @@ function getConversation()
   if not conv then return nil end
   return { name = conv.name, id = conv.id, turn = conv.turn, said = conv.said }
 end
-function getBubble() return bubble end
+function getWindow() return window end

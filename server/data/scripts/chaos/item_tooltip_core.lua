@@ -863,12 +863,25 @@ function T.dpsRow(item, it, w, ms)
 	-- the price of the weapon's family for a wielder that gets the traits (weapon_families_core.lua, O454)
 	local FM = ChaosWeaponFamilies
 	local familyFactor = typeName and FM and FM.affected and w.vocId and FM.affected(w.vocId) and FM.single(typeName) or nil
-	local dps = D.round(D.estimate({
-		familyFactor = familyFactor,
-		level = w.level, skill = typeName and w.melee or w.distance,
-		attack = attrOr(item, ITEM_ATTRIBUTE_ATTACK, call(it, "getAttack")), interval = ms,
-		launcher = launcher, twoHanded = hasBit or false, weaponType = typeName,
-		hitChance = attrOr(item, ITEM_ATTRIBUTE_HITCHANCE, call(it, "getHitChance"))}))
+	local function est(attack)
+		return D.estimate({
+			familyFactor = familyFactor,
+			level = w.level, skill = typeName and w.melee or w.distance,
+			attack = attack, interval = ms,
+			launcher = launcher, twoHanded = hasBit or false, weaponType = typeName,
+			hitChance = attrOr(item, ITEM_ATTRIBUTE_HITCHANCE, call(it, "getHitChance"))})
+	end
+	local total = est(attrOr(item, ITEM_ATTRIBUTE_ATTACK, call(it, "getAttack"))) or 0
+	-- a melee weapon's element damage (items.xml elementdeath and the like) is a second hit of each swing, rolled by the
+	-- engine like the physical one with the element value as its attack (Weapon::getElementDamage); the amber weapons
+	-- have attack 0 and only this part (owner 2026-11-14: "item nao mostra o dps" on an amber bludgeon)
+	if typeName then
+		local element = int(call(it, "getElementDamage"))
+		if element > 0 then
+			total = total + (est(element) or 0)
+		end
+	end
+	local dps = D.round(total)
 	if not dps then
 		return nil
 	end

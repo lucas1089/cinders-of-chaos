@@ -1,6 +1,7 @@
 -- The base's extra slots (server/README.md "Badge slot"): the glue the base scripts call after tools/patch_badges.py.
 --   Player:onMoveItem (data/events/scripts/player.lua)  ChaosBadges.onMoveItem(player, item, toPosition): refuses a
---        move into a retired slot (12, 14, 15, 16) and a deck, ship, belt or gloves into the badge slot (13)
+--        move into a retired slot (12, 14, 15, 16), a deck, ship, belt or gloves into the badge slot (13), and (O570) a badge into
+--        it before the main quest step "deck" is passed
 --   the base deck system (deck_system.lua)  ChaosBadges.deckOf(player): the deck the cards are looked for in
 --   the base sea tiles (boat_navigation.lua)  ChaosBadges.boardShip(player): the ship storages from what is carried
 --   login: a worn item of a retired slot (or a deck in slot 13) goes to the store inbox ("Purse"), else the depot
@@ -18,6 +19,10 @@ if not ChaosBadgesCore or not ChaosBadgesCore.loginMoves then
 	dofile("data/scripts/chaos/badges_core.lua")
 end
 
+if not ChaosMQGate then
+	pcall(dofile, "data/lib/chaos_mqgate.lua")
+end
+
 ChaosBadges = ChaosBadges or {}
 local B = ChaosBadges
 local K = ChaosBadgesCore
@@ -31,8 +36,18 @@ local function langOf(player)
 end
 
 -- RETURNVALUE_NOTPOSSIBLE for a move into a retired slot, nil for every other move
+-- true when the character is past the main quest step that opens the Badge slot (O570)
+function B.badgeOpen(player)
+	return ChaosMQGate ~= nil and ChaosMQGate.passed(player, K.BADGE_UNLOCK_STEP) == true
+end
+
 function B.onMoveItem(player, item, toPosition)
 	local id = item and item:getId()
+	if id and player and K.badgeLocked(id, toPosition, B.badgeOpen(player)) then
+		local lang = langOf(player)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, K.badgeLockedText(lang, ChaosMQGate and ChaosMQGate.title(K.BADGE_UNLOCK_STEP, lang)))
+		return RETURNVALUE_NOTPOSSIBLE
+	end
 	if not (id and K.refusesMove(id, toPosition)) then
 		return nil
 	end

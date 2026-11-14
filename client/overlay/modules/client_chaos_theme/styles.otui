@@ -118,6 +118,36 @@ ChaosButton < UIButton
     color: #6b6258
     change-cursor-image: false
 
+// The close X in the top right corner of a Chaos window (O572, owner 2026-11-14: the Forge had none). 20 x 20, on the
+// title bar: the ChaosWindow padding (38 top, 16 right) is taken out of the margins, so the X sits 7 px under the top
+// edge and 8 px in from the right edge of the frame. Give it @onClick (the window's own close call) and let the window
+// close on Escape too. tools/ci/check_window_close.py fails when a window of the hub menu has no close control.
+ChaosCloseX < UIButton
+  id: closeX
+  size: 20 20
+  anchors.top: parent.top
+  anchors.right: parent.right
+  margin-top: -31
+  margin-right: -8
+  text: X
+  font: verdana-11px-rounded
+  color: #d6c9ae
+  text-align: center
+  text-offset: 0 1
+  image-source: /images/chaos/button_normal
+  image-border: 6
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover !disabled:
+    image-source: /images/chaos/button_hover
+    color: #f6cf72
+
+  $pressed:
+    image-source: /images/chaos/button_pressed
+    color: #e03a1e
+    text-offset: 1 2
+
 // The primary button of the interface skins (sheet chaos/skin/button_primary: normal, hover, pressed, disabled, 64 x 24
 // each; solid ember in "Forge and Embers", violet in "Abyssal Arcane"; classic keeps the Button look, client/tools/gen_skin_variants.py)
 ChaosPrimaryButton < UIButton

@@ -108,8 +108,6 @@ pub struct Art {
     pub corners: [Tex; 4],
     pub crest: Tex,
     pub btn: Tex,
-    pub btn_red: Tex,
-    pub btn_off: Tex,
     /// Default news pictures by `Tag::art()`: update, news, event, notice.
     pub news: [(&'static str, TextureHandle); 4],
 }
@@ -129,8 +127,6 @@ impl Art {
             ],
             crest: skin(ctx, "crest", include_bytes!("../assets/skin_crest.png")),
             btn: skin(ctx, "btn", include_bytes!("../assets/skin_btn.png")),
-            btn_red: skin(ctx, "btn_red", include_bytes!("../assets/skin_btn_red.png")),
-            btn_off: skin(ctx, "btn_off", include_bytes!("../assets/skin_btn_off.png")),
             news: [
                 news("update", include_bytes!("../assets/news_update.jpg")),
                 news("news", include_bytes!("../assets/news_news.jpg")),
@@ -255,6 +251,155 @@ pub fn gradient_v(p: &Painter, rect: Rect, top: Color32, bottom: Color32) {
     m.vertices.push(v(rect.right_bottom(), bottom));
     m.vertices.push(v(rect.left_bottom(), bottom));
     m.indices.extend([0, 1, 2, 0, 2, 3]);
+    p.add(m);
+}
+
+/// Look of the big call-to-action button (Play, Install).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum BigBtn {
+    Ready,
+    Hover,
+    Pressed,
+    Off,
+}
+
+/// Corners of an octagon: `rect` with its four corners cut by `cut`, clockwise from the top-left.
+fn octagon(rect: Rect, cut: f32) -> [Pos2; 8] {
+    let (a, b) = (rect.min, rect.max);
+    [
+        Pos2::new(a.x + cut, a.y),
+        Pos2::new(b.x - cut, a.y),
+        Pos2::new(b.x, a.y + cut),
+        Pos2::new(b.x, b.y - cut),
+        Pos2::new(b.x - cut, b.y),
+        Pos2::new(a.x + cut, b.y),
+        Pos2::new(a.x, b.y - cut),
+        Pos2::new(a.x, a.y + cut),
+    ]
+}
+
+fn lerp_c(a: Color32, b: Color32, t: f32) -> Color32 {
+    let t = t.clamp(0.0, 1.0);
+    let m = |x: u8, y: u8| (x as f32 + (y as f32 - x as f32) * t).round() as u8;
+    Color32::from_rgba_unmultiplied(m(a.r(), b.r()), m(a.g(), b.g()), m(a.b(), b.b()), m(a.a(), b.a()))
+}
+
+/// Octagon filled with a top to bottom gradient (a fan from the centre: exact for a linear gradient).
+fn octagon_fill(p: &Painter, rect: Rect, cut: f32, top: Color32, bottom: Color32) {
+    let col = |y: f32| lerp_c(top, bottom, (y - rect.min.y) / rect.height().max(1.0));
+    let mut m = Mesh::default();
+    let v = |pos: Pos2| Vertex {
+        pos,
+        uv: egui::epaint::WHITE_UV,
+        color: col(pos.y),
+    };
+    m.vertices.push(v(rect.center()));
+    for q in octagon(rect, cut) {
+        m.vertices.push(v(q));
+    }
+    for i in 0..8u32 {
+        m.indices.extend([0, 1 + i, 1 + (i + 1) % 8]);
+    }
+    p.add(m);
+}
+
+/// The big button, drawn smooth at any size: a cut-corner plate with a gradient, a soft sheen on the
+/// upper half, a bright outer edge and a thin inner line. No stretched texture, so no banding.
+pub fn big_button(p: &Painter, rect: Rect, k: f32, look: BigBtn) {
+    let cut = (12.0 * k).min(rect.height() / 3.0);
+    let (top, bottom, edge, inner) = match look {
+        BigBtn::Ready => (
+            Color32::from_rgb(132, 34, 18),
+            Color32::from_rgb(46, 8, 6),
+            Color32::from_rgb(236, 120, 64),
+            Color32::from_rgba_unmultiplied(255, 196, 140, 70),
+        ),
+        BigBtn::Hover => (
+            Color32::from_rgb(168, 48, 22),
+            Color32::from_rgb(64, 12, 8),
+            Color32::from_rgb(255, 160, 96),
+            Color32::from_rgba_unmultiplied(255, 214, 170, 110),
+        ),
+        BigBtn::Pressed => (
+            Color32::from_rgb(70, 14, 8),
+            Color32::from_rgb(110, 26, 14),
+            Color32::from_rgb(200, 96, 52),
+            Color32::from_rgba_unmultiplied(255, 196, 140, 40),
+        ),
+        BigBtn::Off => (
+            Color32::from_rgb(44, 38, 35),
+            Color32::from_rgb(20, 17, 16),
+            Color32::from_rgb(92, 80, 72),
+            Color32::from_rgba_unmultiplied(160, 140, 124, 30),
+        ),
+    };
+    // outer edge as a slightly bigger plate behind, then the body
+    octagon_fill(p, rect, cut, edge, lerp_c(edge, bottom, 0.55));
+    let body = rect.shrink(2.0 * k);
+    octagon_fill(p, body, (cut - 0.8 * k).max(0.0), top, bottom);
+    // sheen: the upper 45% fades from a faint light to nothing
+    if look != BigBtn::Pressed {
+        let sheen = Rect::from_min_max(body.min, Pos2::new(body.max.x, body.min.y + body.height() * 0.45));
+        let a = if look == BigBtn::Off { 10 } else { 34 };
+        octagon_top_sheen(p, body, sheen, (cut - 0.8 * k).max(0.0), a);
+    }
+    // thin inner line
+    let inl = body.shrink(3.0 * k);
+    let pts = octagon(inl, (cut - 2.5 * k).max(0.0)).to_vec();
+    p.add(egui::Shape::closed_line(pts, Stroke::new(1.0 * k, inner)));
+}
+
+/// The sheen band: the octagon clipped to `band` (its top part), white fading to clear downwards.
+fn octagon_top_sheen(p: &Painter, body: Rect, band: Rect, cut: f32, alpha: u8) {
+    let o = octagon(body, cut);
+    // the top part of the octagon: top edge corners, the side points at the band's bottom
+    let yb = band.max.y;
+    let side_x = |left: bool| {
+        if yb >= body.min.y + cut {
+            if left {
+                body.min.x
+            } else {
+                body.max.x
+            }
+        } else {
+            let d = cut - (yb - body.min.y);
+            if left {
+                body.min.x + d
+            } else {
+                body.max.x - d
+            }
+        }
+    };
+    let mut pts = vec![o[0], o[1]];
+    if yb >= body.min.y + cut {
+        pts.push(o[2]);
+    }
+    pts.push(Pos2::new(side_x(false), yb));
+    pts.push(Pos2::new(side_x(true), yb));
+    if yb >= body.min.y + cut {
+        pts.push(o[7]);
+    }
+    let top = Color32::from_rgba_unmultiplied(255, 236, 214, alpha);
+    let clear = Color32::from_rgba_unmultiplied(255, 236, 214, 0);
+    let mut m = Mesh::default();
+    let c = Pos2::new(body.center().x, (body.min.y + yb) / 2.0);
+    let col = |y: f32| lerp_c(top, clear, (y - body.min.y) / (yb - body.min.y).max(1.0));
+    m.vertices.push(Vertex {
+        pos: c,
+        uv: egui::epaint::WHITE_UV,
+        color: col(c.y),
+    });
+    for q in &pts {
+        m.vertices.push(Vertex {
+            pos: *q,
+            uv: egui::epaint::WHITE_UV,
+            color: col(q.y),
+        });
+    }
+    let n = pts.len() as u32;
+    for i in 0..n {
+        m.indices.extend([0, 1 + i, 1 + (i + 1) % n]);
+    }
     p.add(m);
 }
 

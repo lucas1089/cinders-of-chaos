@@ -5,7 +5,7 @@
 --                  0078: under the chest, creatures and walls); the 12 frames switch by image-clip on one timer. There is no
 --                  message: the client finds the chests itself.
 --   pickup glows   (O456) the same floor widget and loop under the Ember portal 44396, the health and mana globes 44397 / 44398 and the
---                  loot bag 6068 (ChestAuraLogic.PICKUPS, strips in images/pickup/). One widget per pickup in view, at most
+--                  loot bag 19202 (6068 before O565; ChestAuraLogic.PICKUPS, strips in images/pickup/). One widget per pickup in view, at most
 --                  PICKUP_CAP (24) at once, the nearest to the player; the chests 38643 / 38644 (the other cursed chest looks) are in
 --                  CHESTS now. The same option covers them.
 --   foot aura      the Templar line's sigil under the feet of every Templar-line player the server names (a creature bottom widget,

@@ -88,10 +88,11 @@ end
 -- "achievement"); the client shows "title: text" under that kind's header. Used by guild.lua (guild level-up) and
 -- guildwar.lua (war toasts). "sale" (header ITEM SOLD) is a listing of the player that sold: market.lua and the Orb
 -- Exchange (orbexchange.lua), at once or at the next login. "cursedchest" (header CURSED CHEST): cursedchest.lua.
--- "milestone" (header LEVEL MILESTONE): milestones.lua (O378).
+-- "milestone" (header LEVEL MILESTONE): milestones.lua (O378). "newcard" (header NEW CARD): cards.lua, a card new to the
+-- Deck of Cards (O570).
 local SEND_KINDS = {achievement = true, bounty = true, newplayer = true, bestiary = true, bosspoints = true,
 	ascension = true, market = true, sale = true, seasonpass = true, journey = true, invasion = true, pact = true,
-	cursedchest = true, weeklychest = true, milestone = true}
+	cursedchest = true, weeklychest = true, milestone = true, newcard = true}
 
 function ChaosNotify.send(player, title, text, kind)
 	if not player then

@@ -1,0 +1,291 @@
+// Deck of Cards window (game_carddeck). Styles from client_chaos_theme (styles.otui).
+
+CardCell < UIItem
+  size: 46 50
+  padding: 5 5 12 5
+  image-source: /images/chaos/itemslot
+  image-border: 4
+  border-width: 2
+  border-color: #3a3228
+  phantom: false
+  focusable: true
+
+  $focus:
+    image-color: #ffe9a8
+
+  UILabel
+    id: count
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 3
+    margin-bottom: 1
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #ffffff
+    phantom: true
+
+  UILabel
+    id: newMark
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 1
+    margin-top: 1
+    text-auto-resize: true
+    padding: 0 3
+    background-color: #b02a1e
+    font: verdana-11px-rounded
+    color: #ffffff
+    !text: tr('New')
+    phantom: true
+
+CardActiveRow < ChaosLabel
+  height: 16
+  text-align: left
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  phantom: false
+
+ChaosMainWindow
+  id: cardDeckWindow
+  size: 900 540
+  !text: tr('Deck of Cards')
+  @onEscape: modules.game_carddeck.hide()
+
+  // ---------------------------------------------------------------- filters
+  ChaosTextEdit
+    id: searchEdit
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 150
+    height: 22
+    max-length: 32
+    !tooltip: tr('Search by name, spell, element or text')
+
+  ChaosComboBox
+    id: setCombo
+    anchors.left: searchEdit.right
+    anchors.verticalCenter: searchEdit.verticalCenter
+    margin-left: 6
+    size: 104 22
+    !tooltip: tr('Card set')
+
+  ChaosComboBox
+    id: rarityCombo
+    anchors.left: setCombo.right
+    anchors.verticalCenter: searchEdit.verticalCenter
+    margin-left: 6
+    size: 104 22
+    !tooltip: tr('Rarity')
+
+  ChaosComboBox
+    id: elementCombo
+    anchors.left: rarityCombo.right
+    anchors.verticalCenter: searchEdit.verticalCenter
+    margin-left: 6
+    size: 104 22
+    !tooltip: tr('Element')
+
+  ChaosComboBox
+    id: ownedCombo
+    anchors.left: elementCombo.right
+    anchors.verticalCenter: searchEdit.verticalCenter
+    margin-left: 6
+    size: 126 22
+    !tooltip: tr('Owned or missing')
+
+  ChaosComboBox
+    id: classCombo
+    anchors.left: ownedCombo.right
+    anchors.verticalCenter: searchEdit.verticalCenter
+    margin-left: 6
+    size: 96 22
+    !tooltip: tr('Cards your class can use')
+
+  ChaosComboBox
+    id: sortCombo
+    anchors.left: classCombo.right
+    anchors.verticalCenter: searchEdit.verticalCenter
+    margin-left: 6
+    size: 104 22
+    !tooltip: tr('Sort')
+
+  // ---------------------------------------------------------------- the cards
+  ChaosPanelDark
+    id: gridFrame
+    anchors.top: searchEdit.bottom
+    anchors.left: parent.left
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 8
+    width: 600
+    padding: 3
+
+    UIScrollArea
+      id: cardGrid
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: gridScroll.left
+      anchors.bottom: parent.bottom
+      margin: 4
+      vertical-scrollbar: gridScroll
+      auto-focus: none
+      layout:
+        type: grid
+        cell-size: 50 54
+        cell-spacing: 4
+        flow: true
+
+    ChaosScrollBar
+      id: gridScroll
+      anchors.top: parent.top
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 3
+      margin-bottom: 3
+      margin-right: 3
+      step: 58
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: emptyLabel
+      anchors.centerIn: parent
+      width: 360
+      height: 40
+      text-align: center
+      text-wrap: true
+      !text: tr('No card matches these filters.')
+      visible: false
+
+  // ---------------------------------------------------------------- the active cards and the card under the cursor
+  ChaosPanelDark
+    id: sidePanel
+    anchors.top: searchEdit.bottom
+    anchors.left: gridFrame.right
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-left: 8
+    margin-bottom: 8
+    padding: 8
+
+    ChaosLabel
+      id: activeTitle
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      text-align: left
+      color: #f6cf72
+      font: verdana-11px-rounded
+
+    UIWidget
+      id: activeList
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: activeTitle.bottom
+      margin-top: 4
+      height: 82
+      layout:
+        type: verticalBox
+
+    ChaosLabel
+      id: setLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: activeList.bottom
+      margin-top: 4
+      height: 56
+      text-align: topLeft
+      text-wrap: true
+      color: #5cc8c0
+      font: verdana-11px-antialised
+
+    ChaosSeparator
+      id: sep
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: setLabel.bottom
+      margin-top: 4
+
+    ChaosTitle
+      id: nameLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: sep.bottom
+      margin-top: 6
+      text-align: left
+
+    ChaosLabelDim
+      id: subLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: nameLabel.bottom
+      text-align: left
+
+    ChaosLabel
+      id: textLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: subLabel.bottom
+      margin-top: 6
+      height: 96
+      text-align: topLeft
+      text-wrap: true
+      font: verdana-11px-antialised
+
+    ChaosLabel
+      id: whyLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: toggleButton.top
+      margin-bottom: 4
+      height: 30
+      text-align: topLeft
+      text-wrap: true
+      color: #e8a84a
+      font: verdana-11px-antialised
+
+    ChaosPrimaryButton
+      id: toggleButton
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: 24
+      !text: tr('Turn on')
+      @onClick: modules.game_carddeck.toggleSelected()
+
+  // ---------------------------------------------------------------- bottom line
+  ChaosLabel
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: markButton.left
+    anchors.bottom: hintLabel.top
+    margin-right: 8
+    margin-bottom: 2
+    height: 16
+    text-align: left
+    color: #5cc8c0
+
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: markButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    height: 16
+    text-align: left
+
+  ChaosButton
+    id: markButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    width: 120
+    !text: tr('Mark all seen')
+    @onClick: modules.game_carddeck.markAllSeen()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_carddeck.hide()

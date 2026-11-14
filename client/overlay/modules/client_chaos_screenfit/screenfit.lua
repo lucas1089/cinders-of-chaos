@@ -3,8 +3,11 @@
 --  * it opens with its title in view (top or left edge of the parent);
 --  * dragging it, also by any empty part on a phone, scrolls it: it moves until its far edge reaches the screen edge;
 --  * the mouse wheel over an empty part scrolls it too.
+--  * (O572) a window with no valid position (no anchors so it sat at the top left, a saved (0,0), off the screen) opens
+--    centred in the game screen, below the menu bar; a position the player gave it is kept. Rules in centre_logic.lua.
 -- One hook on UIWindow, no edit of the windows themselves. A window that fits behaves as before. Rules in screenfit_logic.lua.
 local L = ScreenFitLogic
+local C = WindowCentreLogic
 
 local base = {}
 local mine = {}
@@ -49,7 +52,62 @@ local function fitOpen(w)
   fitting = false
 end
 
+-- windows that keep the place their style gives them (a HUD anchored to the top left corner)
+local KEEP_PLACE = { chaosPerfWindow = true }
+
+local function isMobile()
+  return g_app and g_app.isMobile and g_app.isMobile() == true
+end
+
+local function rectOf(w)
+  local r = w:getRect()
+  return { x = r.x, y = r.y, width = r.width, height = r.height }
+end
+
+-- the game screen as the centre rules want it: the root rect, the bottom of the menu bar, the map panel
+local function screenInfo()
+  local root = g_ui.getRootWidget()
+  if not root then return nil end
+  local info = { root = rectOf(root) }
+  local ok, bar = pcall(function() return root:recursiveGetChildById('chaosMenuBar') end)
+  if ok and bar and not bar:isDestroyed() and bar:isVisible() then
+    local r = bar:getRect()
+    info.barBottom = r.y + r.height
+  end
+  local gi = modules and modules.game_interface
+  if g_game and g_game.isOnline and g_game.isOnline() and gi and gi.getMapPanel then
+    local okMap, map = pcall(gi.getMapPanel)
+    if okMap and map and not map:isDestroyed() then info.map = rectOf(map) end
+  end
+  return info
+end
+
+-- once the window has had its layout: no valid position, so centre it (an anchored window is already placed)
+local function centreNow(w)
+  w.chaosCentreQueued = nil
+  if fitting or not alive(w) or w.chaosMoved or w.chaosCentreDone or KEEP_PLACE[w:getId()] then return end
+  if not w:isVisible() or not topLevel(w) or isMobile() then return end
+  local info = screenInfo()
+  if not info then return end
+  local r = w:getRect()
+  info.pos, info.size = { x = r.x, y = r.y }, { width = r.width, height = r.height }
+  w.chaosCentreDone = true
+  local p = C.openPosition(info)
+  if not p or (p.x == r.x and p.y == r.y) then return end
+  fitting = true
+  w:breakAnchors()
+  w:setPosition(p)
+  fitting = false
+end
+
+local function queueCentre(w)
+  if w.chaosCentreDone or w.chaosCentreQueued or w.chaosMoved or not topLevel(w) then return end
+  w.chaosCentreQueued = true
+  addEvent(function() centreNow(w) end)
+end
+
 local function hook_onDragMove(self, mousePos, mouseMoved)
+  self.chaosMoved = true
   if not overflowing(self) then return base.onDragMove(self, mousePos, mouseMoved) end
   if self.static or not self.movingReference then return end
   local pr = parentRect(self)
@@ -72,7 +130,7 @@ end
 
 local function hook_onVisibilityChange(self, visible)
   if base.onVisibilityChange then base.onVisibilityChange(self, visible) end
-  if visible then fitOpen(self) else self.chaosFitOpened = nil end
+  if visible then fitOpen(self) queueCentre(self) else self.chaosFitOpened = nil self.chaosCentreDone = nil end
 end
 
 -- a window made visible by g_ui.createWidget / displayUI announces no visibility change: its first layout that overflows
@@ -80,6 +138,7 @@ end
 local function hook_onGeometryChange(self, oldRect, newRect)
   if base.onGeometryChange then base.onGeometryChange(self, oldRect, newRect) end
   if not fitting and not self.chaosFitOpened and overflowing(self) then fitOpen(self) end
+  if not fitting and self:isVisible() then queueCentre(self) end
 end
 
 local function install()

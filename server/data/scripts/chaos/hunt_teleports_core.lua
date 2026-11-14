@@ -399,6 +399,41 @@ function H.returnFor(idx, pos)
 	return r and r.target or nil
 end
 
+-- The hunt teleports for the map (O568, poi.lua action huntports of extended opcode 153; client game_mapmarkers
+-- huntports.lua): one row per hunt of the hall, placed plans and base hunts, sorted by id:
+-- {i = id, n = name, l = {lo, hi}, t = the hall teleport, f = the tile in front of it (where a way out lands), a = the
+-- hunt's arrival, b = the way out of the hunt (a plan's camp portal, a base hunt's added way back; none for a base hunt
+-- whose way back is the map's own)}. a, f and b are left out when unknown.
+local function copyPos(p)
+	return isPos(p) and {x = p.x, y = p.y, z = p.z} or nil
+end
+
+function H.ports(cfg, idx)
+	local out = {}
+	if not (cfg and cfg.enabled) or type(idx) ~= "table" then
+		return out
+	end
+	local back = {}
+	for _, r in ipairs(idx.returns or {}) do
+		back[r.id] = r.pos or r.at
+	end
+	for _, list in ipairs({idx.list or {}, idx.base or {}}) do
+		for _, e in ipairs(list) do
+			if type(e.id) == "string" and isPos(e.teleport) and type(e.level) == "table" then
+				out[#out + 1] = {
+					i = e.id, n = e.name or e.id, l = {e.level[1], e.level[2]}, t = copyPos(e.teleport),
+					f = copyPos(e.front or H.frontOf(cfg, e.teleport)), a = copyPos(e.arrival),
+					b = copyPos(isPos(e.exit) and e.exit or back[e.id])
+				}
+			end
+		end
+	end
+	table.sort(out, function(a, b)
+		return a.i < b.i
+	end)
+	return out
+end
+
 -- the floating label over a way back, in `lang`
 function H.returnLabel(cfg, lang)
 	return H.text(cfg, lang, "Back to the teleport room")

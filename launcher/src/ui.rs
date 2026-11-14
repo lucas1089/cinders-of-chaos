@@ -1381,16 +1381,16 @@ impl App {
                     Color32::from_rgba_unmultiplied(235, 80, 20, if resp.hovered() { 150 } else { 100 }),
                     cv.px(if resp.hovered() { 30.0 } else { 20.0 }),
                 );
-                let tint = if resp.is_pointer_button_down_on() {
-                    Color32::from_rgb(210, 160, 140)
+                let look = if resp.is_pointer_button_down_on() {
+                    theme::BigBtn::Pressed
                 } else if resp.hovered() {
-                    Color32::from_rgb(255, 215, 190)
+                    theme::BigBtn::Hover
                 } else {
-                    Color32::from_rgb(255, 190, 160)
+                    theme::BigBtn::Ready
                 };
-                theme::nine(&p, &self.art.btn_red, play, 14.0, cv.px(1.0), tint);
+                theme::big_button(&p, play, cv.px(1.0), look);
             } else {
-                theme::nine(&p, &self.art.btn_off, play, 14.0, cv.px(1.0), Color32::WHITE);
+                theme::big_button(&p, play, cv.px(1.0), theme::BigBtn::Off);
             }
             let ink = if ready {
                 Color32::from_rgb(255, 243, 222)
@@ -1402,10 +1402,10 @@ impl App {
             if ready {
                 theme::tracked(
                     &p,
-                    play.center() + Vec2::new(cv.px(1.5), cv.px(2.5)),
+                    play.center() + Vec2::new(cv.px(18.0 + 1.0), cv.px(1.5)),
                     &label,
                     tf.clone(),
-                    Color32::from_black_alpha(130),
+                    Color32::from_black_alpha(150),
                     cv.px(4.0),
                     Align2::CENTER_CENTER,
                 );

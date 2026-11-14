@@ -139,6 +139,38 @@ def forge_tabs(tr):
     return problems
 
 
+BAG_FONT = 'verdana-11px-rounded'  # a stand-in: the panel uses verdana-11px-antialised, whose sheet is not in the overlay
+BAG_BUTTON_PAD = 4                 # BagPanelButton padding 2 each side
+BAG_PAGE_WORST = '13/13'           # the Loot Bag's last page (13 client pages per engine page, two engine pages)
+
+
+def bag_panel(tr):
+    """the inventory panel (O557): the loot page text fits its label between the arrows, the Sort / Purse / Pin buttons fit their text, English and pt-BR"""
+    problems = []
+    otui = open(os.path.join(CLIENT, 'overlay', 'modules', 'game_bagpanel', 'bagpanel.otui'), encoding='utf-8').read()
+    measure = load_font(BAG_FONT)
+
+    def width_of(widget_id, default_style=None):
+        m = re.search(r'id: %s\n(?:(?!\n\n).)*?\n\s+width: (\d+)' % widget_id, otui, re.S)
+        if m:
+            return int(m.group(1))
+        m = re.search(r'^%s < \w+\n\s+size: (\d+)' % default_style, otui, re.M) if default_style else None
+        return int(m.group(1)) if m else None
+    page_w = width_of('lootPage')
+    if page_w is None or measure(BAG_PAGE_WORST) + 4 > page_w:
+        problems.append('bag panel: the loot page text "%s" is %s px, its label is %s px' % (BAG_PAGE_WORST, measure(BAG_PAGE_WORST), page_w))
+    for wid, key in (('sortButton', 'Sort'), ('purseButton', 'Purse'), ('pinButton', 'Pin')):
+        room = width_of(wid, 'BagPanelButton')
+        for lang in ('en', 'pt-BR'):
+            text = key if lang == 'en' else tr.get(key)
+            if text is None:
+                problems.append('bag panel: no pt-BR text for "%s"' % key)
+                continue
+            if room is None or measure(text) > room - BAG_BUTTON_PAD:
+                problems.append('bag panel: button "%s" is %s px in %s, its text room is %s' % (text, measure(text), lang, None if room is None else room - BAG_BUTTON_PAD))
+    return problems
+
+
 def check():
     problems = []
     patched = subentry_font_in_patches()
@@ -180,6 +212,7 @@ def check():
         if w > room:
             problems.append('options menu entry "%s" is %d px in %s, the button has %d' % (text, w, SUBENTRY_FONT, room))
     problems += forge_tabs(tr)
+    problems += bag_panel(tr)
     return problems, widest, room
 
 

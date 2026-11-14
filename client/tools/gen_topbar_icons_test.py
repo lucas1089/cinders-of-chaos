@@ -40,13 +40,13 @@ check(len(set(names)) == len(names), 'no glyph name twice')
 # every glyph the tree and the cards use is drawn (the CI check says it too, here the atlas side)
 tree = CHK.parse_tree(CHK.read(os.path.join(CHK.TOPBAR, 'topbar_tree.lua')))
 cards = CHK.parse_cards(CHK.read(os.path.join(CHK.TOPBAR, 'topbar_cards.lua')))
-used = set(h['glyph'] for h in tree['hubs']) | set(g for g, _ in cards['cards'].values()) | set(cards['icon_glyph'].values()) | {cards['fallback']}
+used = set(h['glyph'] for h in tree['hubs']) | set(g for g, _ in cards['cards'].values()) | set(cards['icon_glyph'].values()) | {cards['fallback']} | {'pin'}   # pin: the mark of a pinned card (topbar_hub.lua)
 check(used <= set(names), 'undrawn glyphs: %s' % sorted(used - set(names)))
 check(set(names) <= used, 'a drawn glyph nobody uses: %s' % sorted(set(names) - used))
 
 with tempfile.TemporaryDirectory() as tmp:
     first = GEN.render(tmp)
-    check(first == ['glyphs_bar.png', 'glyphs_card.png'], 'two atlases')
+    check(first == ['glyphs_bar.png', 'glyphs_card.png', 'glyphs_mark.png'], 'three atlases')
     with tempfile.TemporaryDirectory() as tmp2:
         GEN.render(tmp2)
         for f in first:

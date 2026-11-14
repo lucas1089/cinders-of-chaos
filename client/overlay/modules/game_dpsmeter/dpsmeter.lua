@@ -491,6 +491,10 @@ function showMenu()
   menu:addOption(tr('Copy the summary'), function() exportClipboard() end)
   menu:addOption(tr('Summary into the chat input'), function() exportChat() end)
   menu:addOption(tr('Combat log (details)'), function() toggleDetails() end)
+  -- O573: the panel that measures what you deal to a training monster (game_trainerdps)
+  if modules.game_trainerdps and modules.game_trainerdps.toggle then
+    menu:addOption(tr('Trainer DPS panel'), function() modules.game_trainerdps.toggle() end)
+  end
   menu:addSeparator()
   menu:addOption((settings.share and '[x] ' or '[ ] ') .. tr('Share my totals with my party'), function()
     setShare(not settings.share)

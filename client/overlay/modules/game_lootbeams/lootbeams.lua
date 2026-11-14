@@ -9,7 +9,15 @@
 --   ground   the item rows game_groundlabels has for the tiles in view (getGroundItems), when "ground" is on.
 -- The rules (tier -> colour, the filter, the best per tile, the cap, the engine calls) are in lootbeamslogic.lua.
 --
--- How it is drawn (pair 36 and on): the animated loot beam effect of the beam's group (LootBeamsLogic.EFFECTS, effects
+-- How it is drawn (O569, since 2026-11-14): ONE widget per beam over its tile (Tile:addOverlayWidget, client base patch 0041, drawn in
+-- screen pixels so the size and the margins follow the zoom), a strip of soft light frames made by client/tools/gen_lootbeam_art.py
+-- (images/<style>_<group>.png; the rarity colours, three styles the player picks in the settings window, default a): a feathered
+-- column with a bright centre line, a pulse travelling up, motes drifting up and a ground ring lying on the floor in the game's
+-- oblique view. The burst frames play once when a beam appears, then a loop of 12. The best RICH_CAP (8) beams animate; the others
+-- (up to MAX_BEAMS) stand still on one loop frame, so a pile of corpses costs no timer work. Rules and sizes: lootbeamslogic.lua.
+-- A client without Tile:addOverlayWidget (or without the pictures) draws the older beams below.
+--
+-- The older beams (pair 36 and on): the animated loot beam effect of the beam's group (LootBeamsLogic.EFFECTS, effects
 -- of the client pair) is added to the tile (Effect.create + g_map.addThing) when the beam starts and again every
 -- LB.EFFECT_MS while it stands; it plays on the map like a spell effect. From pair 65 the effect is 3 x 5 tiles and is
 -- added at the tile + (1, 1) (LB.effectPos; pair 36 to 64: 1 x 2, on the tile). A pair without those effects (or a client
@@ -22,6 +30,7 @@
 local LB = LootBeamsLogic
 
 local TICK_MS = 300
+local ANIM_MS = 50
 
 local settings = LB.defaults()
 local state = LB.newState()
@@ -29,6 +38,8 @@ local drawn = {}          -- posKey -> {sig, pos}: what the engine draws
 local dirty = true
 local lastKey = ''        -- filter + settings + ground version + player position: re-chosen when it changes
 local engineOk = nil
+local widgetsOk = nil
+local entries = {}        -- posKey -> {w, pos, tile, group, rich, t0, frame, fit}: the widget beams (O569)
 local effectsOk = nil
 local window
 local updatingUi = false
@@ -68,6 +79,21 @@ local function hasEngine()
     end
   end
   return engineOk
+end
+
+-- the client can put a widget over a tile and the beam pictures are in the module (O569)
+local function hasWidgets()
+  if widgetsOk == nil then
+    widgetsOk = type(Tile) == 'table' and Tile.addOverlayWidget ~= nil and Tile.hasOverlayWidget ~= nil
+      and Tile.removeOverlayWidget ~= nil and type(g_ui) ~= 'nil' and type(g_map) ~= 'nil' and g_map.getTile ~= nil
+    if widgetsOk and g_resources and g_resources.fileExists then
+      widgetsOk = g_resources.fileExists(LB.artPath('a', 'white')) and true or false
+    end
+    if not widgetsOk then
+      g_logger.info('[lootbeams] no tile overlay widgets or no beam pictures: the older beams are drawn')
+    end
+  end
+  return widgetsOk
 end
 
 -- the pair has the beam effects and the client can add an effect to a tile
@@ -123,9 +149,112 @@ local function saveSettings()
   g_settings.setNode('lootBeams', settings)
 end
 
+-- ---------------------------------------------------------------- widget beams (O569)
+local function alive(w)
+  return w ~= nil and not w:isDestroyed()
+end
+
+local function nowMs()
+  return g_clock.millis()
+end
+
+-- the size of a tile on screen (the map panel's size over its visible tiles; zoom and window size change it)
+local function tileSize()
+  local gi = modules.game_interface
+  local panel = gi and gi.getMapPanel and gi.getMapPanel()
+  local vd = panel and panel:getVisibleDimension()
+  local r = panel and panel:getRect()
+  if not vd or not r or vd.width <= 0 or vd.height <= 0 then return 64, 64 end
+  local w, h = r.width / vd.width, r.height / vd.height
+  if panel:isKeepAspectRatioEnabled() then
+    local m = math.min(w, h)
+    return m, m
+  end
+  return w, h
+end
+
+local function fitWidget(e, tw, th)
+  local fit = table.concat({ math.floor(tw + 0.5), math.floor(th + 0.5), settings.height }, ',')
+  if e.fit == fit then return end
+  e.fit = fit
+  local width, height, ml, mt = LB.box(tw, th, settings.height)
+  e.w:resize(width, height)
+  e.w:setMarginLeft(ml)
+  e.w:setMarginTop(mt)
+end
+
+local function setFrame(e, f)
+  if e.frame == f then return end
+  e.frame = f
+  e.w:setImageClip(LB.clip(f))
+end
+
+local function attachWidget(e)
+  local tile = g_map.getTile(e.pos)
+  if not tile then
+    e.tile = nil
+    return
+  end
+  if not tile:hasOverlayWidget(e.w) then tile:addOverlayWidget(e.w) end
+  e.tile = tile
+end
+
+local function dropWidget(key)
+  local e = entries[key]
+  if not e then return end
+  entries[key] = nil
+  if alive(e.w) then
+    if e.tile then pcall(e.tile.removeOverlayWidget, e.tile, e.w) end
+    e.w:destroy()
+  end
+end
+
+local function dropAllWidgets()
+  for key in pairs(entries) do dropWidget(key) end
+end
+
+local function newWidget(b, rich)
+  local w = g_ui.createWidget('UIWidget')
+  w:setImageSource(LB.artPath(settings.style, b.group))
+  w:setImageSmooth(true)
+  w:setPhantom(true)
+  w:setOpacity(LB.OPACITY[settings.intensity] or 0.85)
+  local e = { w = w, pos = b.pos, group = b.group, rich = rich and true or false, t0 = nowMs() }
+  e.frame = LB.frame(0, e.rich)
+  w:setImageClip(LB.clip(e.frame))
+  fitWidget(e, tileSize())
+  attachWidget(e)
+  return e
+end
+
+-- once per tick: the widgets follow zoom (a new size), a tile the server sent again (the engine forgot our widget) and a lost widget
+local function maintainWidgets()
+  local tw, th = tileSize()
+  for key, e in pairs(entries) do
+    if not alive(e.w) then
+      entries[key] = nil
+      drawn[key] = nil -- drawn again at the next change
+      dirty = true
+    else
+      fitWidget(e, tw, th)
+      if not e.tile or not e.tile:hasOverlayWidget(e.w) then attachWidget(e) end
+    end
+  end
+end
+
+-- the burst, then the loop, of the beams that animate (about every 50 ms; one clip change per frame step each)
+local function animate()
+  if not g_game.isOnline() then return end
+  local t = nowMs()
+  for _, e in pairs(entries) do
+    if e.rich and alive(e.w) then setFrame(e, LB.frame(t - e.t0, true)) end
+  end
+end
+
 -- ---------------------------------------------------------------- engine
 local function clearDrawn()
-  if not hasEffects() and hasEngine() then g_map.clearLootBeams() end
+  dropAllWidgets()
+  if not hasWidgets() and not hasEffects() and hasEngine() then g_map.clearLootBeams() end
   drawn = {}
 end
 
@@ -135,8 +264,9 @@ local function groundVersion()
 end
 
 local function apply()
-  local effects = hasEffects()
-  if not effects and not hasEngine() then return end
+  local widgets = hasWidgets()
+  local effects = not widgets and hasEffects()
+  if not widgets and not effects and not hasEngine() then return end
   local player = g_game.isOnline() and g_game.getLocalPlayer()
   local ppos = player and player:getPosition()
   local L = filterLogic()
@@ -150,6 +280,23 @@ local function apply()
   local want = LB.resolve(state, filterSettings(), settings, ppos, LB.MAX_BEAMS)
   local calls
   calls, drawn = LB.diff(drawn, want)
+  if widgets then -- the beams of this client are widgets: new ones burst in, the best RICH_CAP animate, the rest stand still
+    local rich = LB.richKeys(want, LB.RICH_CAP)
+    for _, pos in ipairs(calls.remove) do dropWidget(LB.posKey(pos)) end
+    for _, b in ipairs(calls.set) do
+      dropWidget(b.key)
+      entries[b.key] = newWidget(b, rich[b.key])
+    end
+    for key, e in pairs(entries) do
+      local r = rich[key] and true or false
+      if r ~= e.rich then
+        e.rich = r
+        if r then e.t0 = nowMs() - LB.ART_MS end -- no burst for a beam that was standing still
+        setFrame(e, LB.frame(r and (nowMs() - e.t0) or 0, r))
+      end
+    end
+    return
+  end
   if effects then -- a removed beam's effect ends by itself; a new one starts now
     for _, b in ipairs(calls.set) do
       local id = LB.effectFor(b.group)
@@ -165,7 +312,7 @@ end
 
 -- the beam effects again, every LB.EFFECT_MS (one play of the strip)
 local function pulse()
-  if not g_game.isOnline() or not hasEffects() then return end
+  if not g_game.isOnline() or hasWidgets() or not hasEffects() then return end
   for _, p in ipairs(LB.pulse(drawn)) do addEffect(p.pos, p.id) end
 end
 
@@ -175,6 +322,7 @@ local function tick()
   local ppos = player and player:getPosition()
   local key = table.concat({ LB.filterKey(filterSettings()), tostring(groundVersion()),
     ppos and LB.posKey(ppos) or '-' }, '#')
+  if next(entries) then maintainWidgets() end
   if dirty or key ~= lastKey then
     dirty, lastKey = false, key
     apply()
@@ -207,6 +355,10 @@ local function intensityNames()
   return { soft = tr('Soft'), normal = tr('Normal'), bright = tr('Bright') }
 end
 
+local function styleNames()
+  return { a = tr('A: Soft light pillar'), b = tr('B: Twisted twin strands'), c = tr('C: Rune column') }
+end
+
 local function fillCombo(combo, order, names, current)
   combo:clearOptions()
   for _, k in ipairs(order) do combo:addOption(names[k], k) end
@@ -234,6 +386,7 @@ local function refreshWindow()
   window.ground:setChecked(settings.ground)
   fillCombo(window.heightCombo, LB.HEIGHT_ORDER, heightNames(), settings.height)
   fillCombo(window.intensityCombo, LB.INTENSITY_ORDER, intensityNames(), settings.intensity)
+  fillCombo(window.styleCombo, LB.STYLE_ORDER, styleNames(), settings.style)
   updatingUi = false
 end
 
@@ -246,7 +399,12 @@ local function onUiChange()
   settings.height = h and LB.HEIGHTS[h.data] and h.data or settings.height
   local i = window.intensityCombo:getCurrentOption()
   settings.intensity = i and LB.INTENSITIES[i.data] and i.data or settings.intensity
+  local st = window.styleCombo:getCurrentOption()
+  local style = st and LB.styleOf(st.data) or settings.style
+  local restyled = style ~= settings.style
+  settings.style = style
   saveSettings()
+  if restyled then clearDrawn() end -- the pictures change: every beam bursts in again in the new style
   dirty = true
   tick()
 end
@@ -280,7 +438,10 @@ function getStats()
   for _ in pairs(state.corpses) do corpses = corpses + 1 end
   local n = 0
   for _ in pairs(drawn) do n = n + 1 end
-  return { corpses = corpses, drawn = n, engine = hasEngine(), engineCount = hasEngine() and g_map.getLootBeamCount() or 0,
+  local widgetCount = 0
+  for _ in pairs(entries) do widgetCount = widgetCount + 1 end
+  return { corpses = corpses, drawn = n, widgets = widgetCount, widgetMode = hasWidgets(), style = settings.style,
+    engine = hasEngine(), engineCount = hasEngine() and g_map.getLootBeamCount() or 0,
     effects = hasEffects(), enabled = settings.enabled }
 end
 
@@ -297,12 +458,15 @@ function init()
     for _, id in ipairs({ 'enabled', 'orbs', 'ground' }) do window[id].onCheckChange = safe('ui', onUiChange) end
     window.heightCombo.onOptionChange = safe('ui', onUiChange)
     window.intensityCombo.onOptionChange = safe('ui', onUiChange)
+    window.styleCombo.onOptionChange = safe('ui', onUiChange)
     safe('legend', buildLegend)()
   else
     g_logger.warning('[lootbeams] settings window not loaded: ' .. tostring(ui))
   end
   connect(g_game, handlers.game)
   events.tick = cycleEvent(handlers.tick, TICK_MS)
+  handlers.anim = safe('anim', animate)
+  events.anim = cycleEvent(handlers.anim, ANIM_MS)
   handlers.pulse = safe('pulse', pulse)
   if LB.EFFECT_MS > 0 then events.pulse = cycleEvent(handlers.pulse, LB.EFFECT_MS) end
 end

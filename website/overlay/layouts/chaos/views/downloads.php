@@ -113,18 +113,19 @@ if (is_file($setupDir . '/' . $setupName) && is_file($setupDir . '/' . $setupNam
 </div>
 
 <div class="chaos-box">
-	<h2 class="chaos-heading">How to start</h2>
+	<h2 class="chaos-heading"><?= $h(chaos_t('How to start')) ?></h2>
 	<ol class="chaos-steps">
-		<li><a href="register">Create an account</a>, then <a href="createcharacter">create a character</a>: Warrior, Ranger, Mystic or Thief.</li>
+		<li><?= chaos_t('<a href="register">Create an account</a>, then <a href="createcharacter">create a character</a>: Warrior, Ranger, Mystic or Thief. The Necromancer, the Monk and the Templar open for the whole account once one of its characters reaches level 200.') ?></li>
 		<?php if ($setup !== null): ?>
 		<li><?= $h(chaos_t('On Windows, download the setup, run it and start the game from the launcher. On Linux, download the client and unpack it into a folder of your choice.')) ?></li>
 		<?php else: ?>
-		<li>Download the client for your system and unpack it into a folder of your choice.</li>
+		<li><?= $h(chaos_t('Download the client for your system and unpack it into a folder of your choice.')) ?></li>
 		<?php endif; ?>
-		<li>Start the client and log in with your account<?php if ($host !== ''): ?> (server <code><?= $h($host) ?></code>, port <code><?= (int)$port ?></code>; already set in the client)<?php endif; ?>.</li>
-		<li>Your character wakes up on the tutorial island. Five stations teach you to fight, cast, spend a passive point and craft. Character > Services > Leave Tutorial leaves at any time.</li>
+		<li><?= $h(chaos_t('Start the game and log in with your account.')) ?><?php if ($host !== ''): ?> <?= chaos_t('Server %s, port %s: already set in the game.', '<code>' . $h($host) . '</code>', '<code>' . (int)$port . '</code>') ?><?php endif; ?></li>
+		<li><?= $h(chaos_t('Your character starts at level 8 in the Cinderhold temple, wearing its class kit. On the first login, System > Helper > Auto setup sets heals, potions and the attack rotation in one click.')) ?></li>
+		<li><?= $h(chaos_t('Follow the main quest (Adventure > Main Quest) and the Next Goals card: they lead you through the world step by step.')) ?></li>
 		<?php if ($discord !== ''): ?>
-		<li>Join the community on <a href="<?= $h($discord) ?>" rel="noopener">Discord</a>: news, records, world bosses and help.</li>
+		<li><?= chaos_t('Join the community on %s: news, records, world bosses and help.', '<a href="' . $h($discord) . '" rel="noopener">Discord</a>') ?></li>
 		<?php endif; ?>
 	</ol>
 </div>

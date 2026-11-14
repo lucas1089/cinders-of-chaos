@@ -1,0 +1,744 @@
+// The NPC trade window (O571): Buy and Sell tabs, a search, category chips, a grid of item cards and a side panel for the
+// selected item (amount, total, gold after, capacity, the trade button). Styles of client_chaos_theme. tradeview.lua fills
+// it; the ids here are the ids tradeview.lua looks up (tradeview_test.lua checks them against this file).
+
+// ---------------------------------------------------------------- the cards
+// one item of the list: the icon, the name, the price with the coin, weight and owned count (tradeview.lua fills it)
+TradeCard < UIButton
+  height: 58
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  clipping: true
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+  tooltip-delayed: true
+
+  $hover !checked:
+    image-source: /images/chaos/button_hover
+
+  $checked:
+    image-source: /images/chaos/panel_highlight
+
+  ChaosItemSlot
+    id: slot
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    size: 38 38
+    virtual: true
+    phantom: true
+    draggable: false
+
+  UILabel
+    id: nameLabel
+    anchors.top: parent.top
+    anchors.left: slot.right
+    anchors.right: parent.right
+    margin-top: 7
+    margin-left: 8
+    margin-right: 6
+    height: 14
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UIItem
+    id: coin
+    anchors.top: nameLabel.bottom
+    anchors.left: slot.right
+    margin-top: 5
+    margin-left: 8
+    size: 14 14
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: priceLabel
+    anchors.verticalCenter: coin.verticalCenter
+    anchors.left: coin.right
+    margin-left: 4
+    height: 14
+    width: 120
+    font: verdana-11px-antialised
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: metaLabel
+    anchors.top: coin.bottom
+    anchors.left: slot.right
+    anchors.right: parent.right
+    margin-top: 4
+    margin-left: 8
+    margin-right: 6
+    height: 13
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    phantom: true
+
+// a category chip (All, Potions, Runes ...): tradeview.lua sets the width from the text
+TradeChip < ChaosTabButton
+  height: 22
+  size: 60 22
+  padding: 2 8 2 8
+
+// a row of the side panel: a dim caption on the left, the value on the right
+TradeCaption < UILabel
+  font: verdana-11px-antialised
+  color: #8c8070
+  text-align: left
+  height: 14
+  phantom: true
+
+TradeValue < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: right
+  height: 14
+  phantom: true
+
+// ---------------------------------------------------------------- the window
+TradeWindow < ChaosWindow
+  id: tradeWindow
+  !text: tr('NPC Trade')
+  size: 720 480
+  padding-top: 38
+  focusable: true
+  &save: false
+
+  $mobile:
+    size: 640 400
+
+  UIButton
+    id: closeButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: -30
+    margin-right: -8
+    size: 18 18
+    font: verdana-11px-rounded
+    text: x
+    color: #8c8070
+    image-source: /images/chaos/panel_dark
+    image-border: 4
+    !tooltip: tr('End the conversation')
+    $hover:
+      color: #e03a1e
+
+  // the tabs on the left, the currency and the balance on the right
+  UIWidget
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 34
+    phantom: false
+
+    ChaosTabButton
+      id: buyTab
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 96 26
+      !text: tr('Buy')
+
+    ChaosTabButton
+      id: sellTab
+      anchors.top: parent.top
+      anchors.left: buyTab.right
+      margin-left: 4
+      size: 96 26
+      !text: tr('Sell')
+
+    UIItem
+      id: currencyItem
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 24 24
+      virtual: true
+      phantom: true
+      virtual-count: false
+
+    UILabel
+      id: currencyLabel
+      anchors.top: parent.top
+      anchors.right: currencyItem.left
+      margin-right: 6
+      margin-top: 1
+      height: 14
+      width: 220
+      font: verdana-11px-rounded
+      color: #e8b84a
+      text-align: right
+      phantom: false
+      tooltip-delayed: true
+
+    UILabel
+      id: balanceLabel
+      anchors.top: currencyLabel.bottom
+      anchors.right: currencyLabel.right
+      margin-top: 3
+      height: 14
+      width: 220
+      font: verdana-11px-antialised
+      color: #d6c9ae
+      text-align: right
+      phantom: false
+      tooltip-delayed: true
+
+  // the left side: search, sort, chips, cards
+  UIWidget
+    id: listColumn
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-top: 6
+    width: 440
+    phantom: true
+
+    ChaosTextEdit
+      id: searchText
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 250 24
+      max-length: 40
+      !placeholder: tr('Type to search')
+      placeholder-color: #6b6258
+
+      UIButton
+        id: clearSearchButton
+        anchors.top: parent.top
+        anchors.right: parent.right
+        margin-top: 3
+        margin-right: 4
+        size: 16 16
+        font: verdana-11px-rounded
+        text: x
+        color: #8c8070
+        $hover:
+          color: #e03a1e
+
+    ChaosButton
+      id: sortButton
+      anchors.top: parent.top
+      anchors.left: searchText.right
+      anchors.right: parent.right
+      margin-left: 6
+      height: 24
+      size: 100 24
+      padding: 2 6 2 6
+      !tooltip: tr('Change the order of the list')
+
+    UIWidget
+      id: chips
+      anchors.top: searchText.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 22
+      phantom: false
+
+    ScrollablePanel
+      id: list
+      anchors.top: chips.bottom
+      anchors.left: parent.left
+      anchors.right: listScrollBar.left
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      margin-right: 3
+      vertical-scrollbar: listScrollBar
+      layout:
+        type: grid
+        cell-size: 208 58
+        cell-spacing: 4
+        flow: true
+        num-columns: 2
+
+    ChaosScrollBar
+      id: listScrollBar
+      anchors.top: chips.bottom
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      anchors.right: parent.right
+      step: 30
+      pixels-scroll: true
+
+    UILabel
+      id: emptyLabel
+      anchors.centerIn: list
+      width: 300
+      height: 40
+      font: verdana-11px-antialised
+      color: #8c8070
+      text-align: center
+      text-wrap: true
+      phantom: true
+      visible: false
+      !text: tr('Nothing matches.')
+
+  // the right side: the selected item, the amount, the total, the trade button. `content` holds everything that only means
+  // something with an item selected (it is shown or hidden as one: no widget below anchors to one that goes away)
+  ChaosPanelDark
+    id: detail
+    anchors.top: header.bottom
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-top: 6
+    width: 236
+    padding: 8
+
+    ChaosItemSlot
+      id: selItem
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 44 44
+      virtual: true
+      phantom: false
+      draggable: false
+
+    UILabel
+      id: selName
+      anchors.top: selItem.top
+      anchors.left: selItem.right
+      anchors.right: parent.right
+      margin-left: 8
+      height: 28
+      font: verdana-11px-rounded
+      color: #e8b84a
+      text-align: topLeft
+      text-wrap: true
+      phantom: true
+
+    UILabel
+      id: selMeta
+      anchors.top: selName.bottom
+      anchors.left: selItem.right
+      anchors.right: parent.right
+      margin-left: 8
+      margin-top: 2
+      height: 14
+      font: verdana-11px-antialised
+      color: #8c8070
+      text-align: left
+      phantom: true
+
+    UILabel
+      id: hintLabel
+      anchors.top: selItem.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 8
+      height: 30
+      font: verdana-11px-antialised
+      color: #8c8070
+      text-align: topLeft
+      text-wrap: true
+      phantom: true
+      !text: tr('Pick an item on the left.')
+
+    UIWidget
+      id: content
+      anchors.top: selItem.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: tradeButton.top
+      margin-top: 8
+      margin-bottom: 8
+      phantom: true
+
+      TradeCaption
+        id: priceCaption
+        anchors.top: parent.top
+        anchors.left: parent.left
+        !text: tr('Price each')
+
+      TradeValue
+        id: priceValue
+        anchors.top: priceCaption.top
+        anchors.left: priceCaption.right
+        anchors.right: parent.right
+
+      TradeCaption
+        id: weightCaption
+        anchors.top: priceCaption.bottom
+        anchors.left: parent.left
+        margin-top: 4
+        !text: tr('Weight each')
+
+      TradeValue
+        id: weightValue
+        anchors.top: weightCaption.top
+        anchors.left: weightCaption.right
+        anchors.right: parent.right
+
+      TradeCaption
+        id: ownedCaption
+        anchors.top: weightCaption.bottom
+        anchors.left: parent.left
+        margin-top: 4
+        !text: tr('You carry')
+
+      TradeValue
+        id: ownedValue
+        anchors.top: ownedCaption.top
+        anchors.left: ownedCaption.right
+        anchors.right: parent.right
+
+      ChaosSeparator
+        id: separator
+        anchors.top: ownedCaption.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+
+      TradeCaption
+        id: amountCaption
+        anchors.top: separator.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        !text: tr('Amount')
+
+      UIWidget
+        id: amountRow
+        anchors.top: amountCaption.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 4
+        height: 24
+        phantom: true
+
+        ChaosButton
+          id: minusButton
+          anchors.top: parent.top
+          anchors.left: parent.left
+          size: 26 24
+          padding: 2 2 2 2
+          text: -
+
+        ChaosTextEdit
+          id: amountText
+          anchors.top: parent.top
+          anchors.left: minusButton.right
+          margin-left: 4
+          size: 64 24
+          only-number: true
+          max-length: 3
+          text-align: center
+          !placeholder: tr('0')
+
+        ChaosButton
+          id: plusButton
+          anchors.top: parent.top
+          anchors.left: amountText.right
+          margin-left: 4
+          size: 26 24
+          padding: 2 2 2 2
+          text: +
+
+        ChaosButton
+          id: maxButton
+          anchors.top: parent.top
+          anchors.left: plusButton.right
+          anchors.right: parent.right
+          margin-left: 4
+          height: 24
+          padding: 2 4 2 4
+          !text: tr('Max')
+
+      HorizontalScrollBar
+        id: quantityScroll
+        anchors.top: amountRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 8
+        step: 1
+        minimum: 0
+        maximum: 0
+        default-scroll: true
+
+      TradeCaption
+        id: totalCaption
+        anchors.top: quantityScroll.bottom
+        anchors.left: parent.left
+        margin-top: 10
+        !text: tr('Total')
+
+      UIItem
+        id: totalCoin
+        anchors.verticalCenter: totalCaption.verticalCenter
+        anchors.right: totalValue.left
+        margin-right: 4
+        size: 14 14
+        virtual: true
+        phantom: true
+
+      UILabel
+        id: totalValue
+        anchors.top: totalCaption.top
+        anchors.right: parent.right
+        width: 130
+        height: 14
+        font: verdana-11px-rounded
+        color: #f6cf72
+        text-align: right
+        phantom: true
+
+      TradeCaption
+        id: afterCaption
+        anchors.top: totalCaption.bottom
+        anchors.left: parent.left
+        margin-top: 4
+
+      TradeValue
+        id: afterValue
+        anchors.top: afterCaption.top
+        anchors.left: afterCaption.right
+        anchors.right: parent.right
+
+      TradeCaption
+        id: capacityCaption
+        anchors.top: afterCaption.bottom
+        anchors.left: parent.left
+        margin-top: 4
+        !text: tr('Capacity after')
+
+      TradeValue
+        id: capacityValue
+        anchors.top: capacityCaption.top
+        anchors.left: capacityCaption.right
+        anchors.right: parent.right
+
+      UILabel
+        id: warnLabel
+        anchors.top: capacityCaption.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        height: 28
+        font: verdana-11px-antialised
+        color: #e03a1e
+        text-align: topLeft
+        text-wrap: true
+        phantom: true
+
+      // the options of the tab: each anchored to this box only, so one that is hidden moves nothing
+      UIWidget
+        id: optionsBox
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: 52
+        phantom: true
+
+        ChaosCheckBox
+          id: bagsCheck
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          height: 16
+          !text: tr('Buy in shopping bags')
+          !tooltip: tr('The seller packs the goods in bags for a small fee.')
+
+        ChaosCheckBox
+          id: ignoreCapCheck
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          margin-top: 22
+          height: 16
+          !text: tr('Ignore capacity')
+
+        ChaosCheckBox
+          id: equippedCheck
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          height: 16
+          !text: tr('Sell equipped items too')
+
+        ChaosButton
+          id: sellAllButton
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          margin-top: 26
+          height: 24
+          !text: tr('Sell all...')
+          !tooltip: tr('Sell everything the seller buys, after a look at the list')
+
+    ChaosPrimaryButton
+      id: tradeButton
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: 28
+      !text: tr('Buy')
+
+// ---------------------------------------------------------------- Sell all
+// one row of the Sell all list: a tick, the icon, "12x Ember Shard", the price, and Keep / Restore
+TradeSellRow < UIWidget
+  height: 34
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  clipping: true
+
+  ChaosCheckBox
+    id: tick
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+
+  ChaosItemSlot
+    id: slot
+    anchors.left: tick.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    size: 28 28
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: nameLabel
+    anchors.left: slot.right
+    anchors.right: keepButton.left
+    anchors.top: parent.top
+    margin-left: 8
+    margin-right: 6
+    margin-top: 4
+    height: 14
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: infoLabel
+    anchors.left: slot.right
+    anchors.right: keepButton.left
+    anchors.bottom: parent.bottom
+    margin-left: 8
+    margin-right: 6
+    margin-bottom: 4
+    height: 13
+    font: verdana-11px-antialised
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  ChaosButton
+    id: keepButton
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    size: 70 22
+    padding: 2 4 2 4
+
+TradeSellAllWindow < ChaosWindow
+  id: tradeSellAllWindow
+  !text: tr('Sell all')
+  size: 480 440
+
+  $mobile:
+    size: 440 380
+
+  UILabel
+    id: introLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 28
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: topLeft
+    text-wrap: true
+    phantom: true
+
+  UIWidget
+    id: tabs
+    anchors.top: introLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 26
+    phantom: true
+
+    ChaosTabButton
+      id: sellTab
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 140 26
+
+    ChaosTabButton
+      id: ignoreTab
+      anchors.top: parent.top
+      anchors.left: sellTab.right
+      margin-left: 4
+      size: 140 26
+
+  ScrollablePanel
+    id: rows
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: rowsScrollBar.left
+    anchors.bottom: totalLabel.top
+    margin-top: 6
+    margin-bottom: 8
+    margin-right: 3
+    vertical-scrollbar: rowsScrollBar
+    layout:
+      type: verticalBox
+      spacing: 3
+
+  ChaosScrollBar
+    id: rowsScrollBar
+    anchors.top: tabs.bottom
+    anchors.bottom: totalLabel.top
+    margin-top: 6
+    margin-bottom: 8
+    anchors.right: parent.right
+    step: 34
+    pixels-scroll: true
+
+  UILabel
+    id: totalLabel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: noteLabel.top
+    margin-bottom: 4
+    height: 16
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: noteLabel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: sellButton.top
+    margin-bottom: 8
+    height: 28
+    font: verdana-11px-antialised
+    color: #e03a1e
+    text-align: topLeft
+    text-wrap: true
+    phantom: true
+
+  ChaosPrimaryButton
+    id: sellButton
+    anchors.bottom: parent.bottom
+    anchors.right: cancelButton.left
+    margin-right: 6
+    size: 150 26
+    !text: tr('Sell selected')
+
+  ChaosButton
+    id: cancelButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    size: 90 26
+    !text: tr('Cancel')

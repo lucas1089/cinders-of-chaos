@@ -219,9 +219,24 @@ local function paint(w, spec, boxW, boxH, iconSize)
     if not ok then return end
     local lp = lookModule()
     if lp and type(lp.fitCard) == 'function' then lp.fitCard(cr, spec.outfit, boxW, boxH) end
+    -- the outline of an Outline card is drawn on the tile's own creature, as the stage does (O562: the tile had no
+    -- outline, the stage's creature did)
+    local c = cr:getCreature()
+    if c and type(c.clearOutline) == 'function' then pcall(c.clearOutline, c) end
+    if c and type(spec.outline) == 'table' then
+      local fx = modules.game_cosmeticfx
+      if fx and type(fx.applyOutline) == 'function' then pcall(fx.applyOutline, c, spec.outline.art, spec.outline.pulse) end
+    end
     cr:setVisible(true)
   elseif spec.kind == 'play' then
     local lp = lookModule()
+    -- a dissolve kill effect: its own generated picture (the monster at 42% of the dissolve); it plays on hover (tileHover)
+    local pic = C.dissolveIcon(spec.row)
+    if pic and g_resources.fileExists(pic .. '.png') then
+      ic:setImageSource(pic)
+      ic:setVisible(true)
+      return
+    end
     local effect = lp and type(spec.row) == 'table' and type(spec.row.play) == 'table' and lp.LookPreviewCore.mainEffect(spec.row.play)
     if effect and lp.effectIcon(ic, effect, iconSize, FX_ICONS) then ic:setVisible(true) end
   elseif spec.kind == 'print' and type(spec.art) == 'string' and spec.art:match('^[%w_]+$') then
@@ -232,7 +247,7 @@ end
 
 local function specOf(key, card)
   local look = C.cardLook(key, card, temp)
-  if look then return { kind = 'outfit', outfit = look } end
+  if look then return { kind = 'outfit', outfit = look, outline = C.cardOutline(key, card) } end
   if card.row and (key == 'spellskin' or key == 'killfx') then return { kind = 'play', row = card.row } end
   if card.row and key == 'footprint' and not card.none and type(card.row.art) == 'string' then
     return { kind = 'print', art = card.row.art }
@@ -276,6 +291,64 @@ local function updatePet()
   else
     view:setVisible(false)
   end
+end
+
+-- ---------------------------------------------------------------- dissolve tiles (O563)
+-- The tile under the mouse plays its kill effect: the dummy monster dissolves in a loop on the tile (game_killdissolve
+-- draws it with the same shader the game uses), the picture comes back when the mouse leaves. One tile at a time.
+local tileAnim = nil
+
+local function stopTileAnim()
+  local a = tileAnim
+  tileAnim = nil
+  if not a then return end
+  if a.event then removeEvent(a.event) end
+  if alive(a.widget) then
+    local box = a.widget:getChildById('pic') or a.widget
+    local cr, ic = box:getChildById('creature'), box:getChildById('icon')
+    if cr then cr:setVisible(false) cr:setOpacity(1) end
+    if ic then ic:setVisible(true) end
+  end
+end
+
+local function startTileAnim(w, row)
+  stopTileAnim()
+  local kd, lp = modules.game_killdissolve, lookModule()
+  local d = C.dissolveOf(row)
+  if not (d and kd and lp and kd.KillDissolveCore and type(kd.canPreview) == 'function' and kd.canPreview(d.m) and alive(w)) then return end
+  local box = w:getChildById('pic') or w
+  local cr, ic = box:getChildById('creature'), box:getChildById('icon')
+  if not cr or not ic then return end
+  local troll = { type = lp.LookPreviewCore.TROLL }
+  pcall(cr.setOutfit, cr, troll)
+  if type(lp.fitCard) == 'function' then lp.fitCard(cr, troll, 116, 64) end
+  ic:setVisible(false)
+  cr:setVisible(true)
+  local started, phase = g_clock.millis(), nil
+  local anim = { widget = w }
+  tileAnim = anim
+  local function tick()
+    if tileAnim ~= anim or not alive(w) then return end
+    local ok, err = pcall(function()
+      local o, st = kd.previewOutfit(troll, d.m, d.t, g_clock.millis() - started)
+      if st.phase == 'dissolve' and o then
+        cr:setOutfit(o)
+        cr:setOpacity(1)
+      else
+        if phase ~= st.phase and st.phase ~= 'gone' then cr:setOutfit(troll) end
+        cr:setOpacity(st.phase == 'gone' and 0 or (st.phase == 'appear' and st.alpha or 1))
+      end
+      phase = st.phase
+    end)
+    if not ok then warn('tile dissolve', err) stopTileAnim() return end
+    anim.event = scheduleEvent(tick, kd.KillDissolveCore.FRAME_MS)
+  end
+  tick()
+end
+
+local function tileHover(w, key, card, hovered)
+  if key ~= 'killfx' or not card.row then return end
+  if hovered then startTileAnim(w, card.row) elseif tileAnim and tileAnim.widget == w then stopTileAnim() end
 end
 
 local function onCardHover(key, card, hovered)
@@ -384,7 +457,10 @@ local function makeCard(grid, key, card)
     w:setTooltip(card.text)
   end
   w.onClick = function() pickCard(key, card) end
-  w.onHoverChange = function(_, hovered) onCardHover(key, card, hovered) end
+  w.onHoverChange = function(_, hovered)
+    tileHover(w, key, card, hovered)
+    onCardHover(key, card, hovered)
+  end
   cardList[#cardList + 1] = { widget = w, key = key, card = card }
 end
 
@@ -395,6 +471,7 @@ local function rebuildGrid()
   local grid = child('grid')
   local title = child('titleLabel')
   if not grid then return end
+  stopTileAnim()
   grid:destroyChildren()
   cardList = {}
   local cards = C.cards(category, { lists = lists, src = src, onlyMine = onlyMine(), search = searchText })
@@ -699,6 +776,7 @@ function terminate()
   if redrawEvent then removeEvent(redrawEvent) end
   searchEvent, redrawEvent = nil, nil
   cardToken = cardToken + 1
+  stopTileAnim()
   -- give the packet back to the base window
   local o = modules.game_outfit
   if retired and o and type(o.create) == 'function' then pcall(connect, g_game, { onOpenOutfitWindow = o.create }) end

@@ -55,6 +55,19 @@ function Item:isContainer() return self.kids ~= nil end
 function Item:getSize() return #self.kids end
 function Item:getItem(i) return self.kids[i + 1] end
 function Item:getName() return itemNames[self.id] or ("item " .. self.id) end
+function Item:getItems() return self.kids end
+function Item:getCount() return 1 end
+function Item:remove()
+	local from = self.parent
+	for i, k in ipairs(from and from.kids or {}) do
+		if k == self then
+			table.remove(from.kids, i)
+			break
+		end
+	end
+	self.parent = nil
+	return true
+end
 function Item:moveTo(dest)
 	if #dest.kids >= dest.cap then
 		return false
@@ -90,7 +103,7 @@ Game = {getPlayers = function() return players end}
 EventCallback = {register = function() end}
 
 -- the JSON of the card state message is kept as a table so the test reads it back
-json = {encode = function(t) return t end, decode = function(t) return {action = t} end}
+json = {encode = function(t) return t end, decode = function(t) if t == "@msg" then return TEST_MSG end return {action = t} end}
 dofile("data/scripts/chaos/chaos_constants.lua")
 dofile("data/scripts/chaos/i18n_core.lua")
 dofile("data/scripts/chaos/cards.lua")
@@ -115,7 +128,6 @@ eq(C.cards[27482].element, "Earth", "first card element") eq(C.cards[27485].elem
 eq(C.cards[27526].kind, "heal", "heal line") eq(C.cards[27534].kind, "widen", "Taunt of Iron line")
 eq(C.cards[27514].spell, "Bloodlust", "melee buff line") eq(C.cards[27538].spell, "Tautstring", "bow buff line")
 eq(C.maxActive, 5, "five at once") eq(C.activeActionId, 37866, "the base's action id")
-eq(C.decks[1].size + C.decks[2].size + C.decks[3].size, 35, "deck sizes 5, 10, 20")
 -- the card list matches the patch tool's list (tools/patch_badges.py CARDS)
 local f = io.open("tools/patch_badges.py", "rb")
 local py = f:read("*a")
@@ -124,7 +136,6 @@ ok(py:find("tuple(range(27482, 27542)) + tuple(range(27547, 27632, 6)) + (27640,
 for id = 27482, 27541 do ok(K.isCard(id), "common to mythic " .. id) end
 for id = 27547, 27631, 6 do ok(K.isCard(id), "legendary level 6 " .. id) end
 ok(K.isCard(27640) and not K.isCard(27635) and not K.isCard(27632) and not K.isCard(nil), "ids outside")
-ok(K.isDeck(27632) and K.isDeck(27634) and not K.isDeck(27482), "decks")
 
 -- every card has a bonus text in both languages, none empty, no stray format
 for id in pairs(C.cards) do
@@ -142,19 +153,68 @@ eq(K.bonusText("en", 27547),
 ok(K.bonusText("pt-BR", 27547):find("nível mágico", 1, true) ~= nil, "legendary text pt-BR")
 eq(K.bonusText("en", 1), "", "not a card")
 
--- ---------------------------------------------------------------- core: decide
+-- ---------------------------------------------------------------- core: decide, reconcile, quest, payloads
+local D = ChaosCardDeck
+local Deck = ChaosCardDeck
+local DK = C.deck
 local function d(over)
-	local s = {id = 27482, inDeck = false, isOn = false, storageOn = false, count = 0, decks = {{used = 0, size = 5}}}
+	local s = {id = 27482, owned = 1, isOn = false, count = 0, unlocked = true}
 	for k, v in pairs(over or {}) do s[k] = v end
 	return K.decide(s)
 end
-eq(d(), "move", "loose card, deck with room: move") eq(d({inDeck = true}), "on", "in a deck: on")
-eq(d({storageOn = true, isOn = true, inDeck = true}), "off", "on: off")
-eq(d({storageOn = true, isOn = false}), "dupe", "another copy is on")
-eq(d({count = 5}), "max", "five on") eq(d({count = 5, storageOn = true, isOn = true}), "off", "off at five")
-eq(d({decks = {}}), "nodeck", "no deck") eq(d({decks = {{used = 5, size = 5}}}), "full", "full")
-eq(select(2, d({decks = {{used = 5, size = 5}, {used = 1, size = 10}}})), 2, "the second deck has room")
-eq(d({id = 27632}), "notcard", "a deck is not a card")
+eq(d(), "on", "owned, unlocked: on") eq(d({unlocked = false}), "locked", "locked Deck")
+eq(d({owned = 0}), "none", "no copy") eq(d({isOn = true}), "off", "on: off")
+eq(d({count = 5}), "max", "five on") eq(d({count = 5, isOn = true}), "off", "off at five")
+eq(d({id = 27632}), "notcard", "a deck is not a card") eq(d({unlocked = false, isOn = true}), "locked", "locked wins")
+ok(K.isRetiredDeck(27632) and K.isRetiredDeck(27634) and not K.isRetiredDeck(27482), "the retired decks")
+ok(C.decks == nil, "no deck table any more")
+eq(DK.name, "Deck of Cards", "the name") eq(C.maxActive, 5, "the slot rule is kept: five on")
+
+-- the storage keys: inside the block, once each, apart from the card storages
+do
+	local seenKeys = {}
+	for _, id in ipairs(K.cardIds()) do
+		local ck, fk = K.countKey(id), K.freshKey(id)
+		ok(ck >= DK.storage.base and fk <= DK.storage.last and ck < fk, "keys of " .. id .. " inside the block")
+		ok(not seenKeys[ck] and not seenKeys[fk], "keys of " .. id .. " are new")
+		seenKeys[ck], seenKeys[fk] = true, true
+	end
+	eq(DK.storage.base, 7104400, "the block") eq(K.countKey(27482), 7104400, "first count") eq(K.freshKey(27482), 7104500, "first mark")
+	ok(DK.storage.base + DK.storage.decksFound <= DK.storage.last, "the notes fit")
+end
+eq(K.addCopies(nil, 1), 1, "copies from nothing") eq(K.addCopies(-1, 2), 2, "unset is -1") eq(K.addCopies(DK.maxCopies, 5), DK.maxCopies, "capped")
+
+-- reconcile
+do
+	local owned = {[27482] = 1, [27483] = 0}
+	local on = {[27482] = 1, [27483] = 1, [27484] = 1}
+	local plan = K.reconcile(function(id) return owned[id] or 0 end, function(id) return on[id] or 0 end, true)
+	eq(table.concat(plan.off, ","), "27483,27484", "cards with no copy go off") eq(K.activeCount(plan), 1, "one stays")
+	plan = K.reconcile(function(id) return owned[id] or 0 end, function(id) return on[id] or 0 end, false)
+	eq(#plan.off, 3, "locked: every card goes off") eq(plan.lockedOff, true, "and says why") eq(K.activeCount(plan), 0, "none on")
+	local seven = {}
+	for id = 27482, 27488 do seven[id] = 1 end
+	plan = K.reconcile(function() return 3 end, function(id) return seven[id] or 0 end, true)
+	eq(K.activeCount(plan), 5, "never more than five") eq(table.concat(plan.off, ","), "27487,27488", "the highest ids go first")
+end
+
+-- payloads
+do
+	local cards = K.cardsPayload("en", function(id) return "Card " .. id end, function(id) return id + 1000 end)
+	eq(#cards.cards, 76, "the list holds every card") eq(cards.max, 5, "the slot rule travels")
+	local row
+	for _, r in ipairs(cards.cards) do if r.i == 27482 then row = r end end
+	eq(row.c, 28482, "client id") eq(row.n, "Card 27482", "name") eq(row.t, 1, "tier") eq(row.r, "Common", "rarity") eq(row.e, "Earth", "element")
+	eq(row.l, "Reaping Gyre", "line") eq(row.k, "convert", "kind") eq(row.s, "Earth", "the set element")
+	ok(#row.x > 20, "text") ok(row.cl and #row.cl >= 3, "classes of a convert line")
+	local leg
+	for _, r in ipairs(cards.cards) do if r.i == 27547 then leg = r end end
+	eq(leg.r, "Legendary", "legendary rarity") eq(leg.t, 5, "legendary tier") eq(leg.l, "Sorcerer", "legendary class")
+	ok(leg.cl and #leg.cl >= 1, "legendary classes by weapon")
+	for _, r in ipairs(cards.cards) do
+		ok(r.r ~= nil and r.t >= 1 and r.t <= 5, "rarity " .. r.i)
+	end
+end
 
 -- ---------------------------------------------------------------- the glue on a mocked engine
 itemNames[27482], itemNames[27483], itemNames[27632] = "Common One Card", "Rare One Card", "Bronze Deck"
@@ -164,6 +224,10 @@ local function mkPlayer(name)
 	local p = newPlayer(name)
 	p.backpack = newItem(1988, {}, 30)
 	p.slots[3] = p.backpack
+	p.level, p.gold = 50, 100000
+	function p:getLevel() return self.level end
+	function p:getMoney() return self.gold end
+	function p:removeMoney(n) if self.gold < n then return false end self.gold = self.gold - n return true end
 	return p
 end
 local function put(bag, item)
@@ -172,189 +236,256 @@ local function put(bag, item)
 	return item
 end
 local function lastMsg(p) return p.messages[#p.messages] end
+local function anyMsg(p, text)
+	for _, m in ipairs(p.messages) do if m:find(text, 1, true) then return true end end
+	return false
+end
+local function lastExt(p) return p.ext[#p.ext] end
 
--- no deck: the text says where to buy one, with the seller's prices
+-- the toasts of ChaosNotify.send (kind newcard)
+local toasts = {}
+ChaosNotify = {send = function(player, title, text, kind) toasts[#toasts + 1] = {who = player:getId(), title = title, text = text, kind = kind} return true end}
+
+-- a card looted: loose in the backpack. The absorb takes it in, a new card is marked and toasted; Deck is locked
 local p = mkPlayer("Alice")
 local card = put(p.backpack, newItem(27482))
-eq(M.use(p, card), true, "no deck: handled")
-ok(lastMsg(p):find("Veyra the Apothecary", 1, true) and lastMsg(p):find("1000 gold", 1, true)
-	and lastMsg(p):find("6000", 1, true) and lastMsg(p):find("30000", 1, true), "no deck: where and how much: " .. tostring(lastMsg(p)))
-eq(p.storage[37000], nil, "no deck: nothing turned on") eq(card.aid, 0, "no deck: no action id")
-eq(M.use(p, newItem(2160)), nil, "not a card: the base runs")
+eq(M.use(p, card), true, "a used card is handled") eq(M.use(p, newItem(2160)), nil, "not a card: the base runs")
+eq(D.owned(p, 27482), 1, "one copy in the Deck") eq(#p.backpack.kids, 0, "the item is gone: no inventory item")
+eq(D.isFresh(p, 27482), true, "marked new") eq(D.freshCount(p), 1, "one new card")
+eq(#toasts, 1, "a toast for a new card") eq(toasts[1].kind, "newcard", "kind newcard") eq(toasts[1].text, "Common One Card", "names the card")
+eq(toasts[1].title, "New card", "title")
+ok(lastMsg(p):find("went into your Deck of Cards", 1, true) and lastMsg(p):find("locked", 1, true) and lastMsg(p):find("main quest step", 1, true),
+	"locked: kept, and where to go: " .. tostring(lastMsg(p)))
+eq(p.storage[37000], nil, "nothing turned on") eq(D.unlocked(p), false, "locked")
+-- a second copy: counts, no new toast
+put(p.backpack, newItem(27482))
+M.sweep(p)
+eq(D.owned(p, 27482), 2, "the second copy counts") eq(#toasts, 1, "no toast for a copy") eq(D.freshCount(p), 1, "still one new card")
+-- locked: a toggle is refused, nothing is lost
+eq(M.toggle(p, 27482), false, "locked: refused") ok(lastMsg(p):find("locked", 1, true), "said so") eq(p.storage[37000], nil, "still off")
+-- cards looted before the quest are never lost: many, in nested bags
+local nest = put(p.backpack, newItem(1987, {}, 20))
+local nest2 = put(nest, newItem(1987, {}, 20))
+put(nest2, newItem(27483)) put(nest2, newItem(27484)) put(nest, newItem(27485))
+M.sweep(p)
+eq(D.owned(p, 27483) + D.owned(p, 27484) + D.owned(p, 27485), 3, "cards in nested bags were taken in")
+eq(select(1, D.totals(p)), 4, "four different cards") eq(#nest.kids, 1, "only the bag is left")
+-- the toast count is capped, the rest in one line
+for _, id in ipairs({27486, 27487, 27488, 27489, 27490}) do put(p.backpack, newItem(id)) end
+local before = #toasts
+M.sweep(p)
+eq(#toasts - before, DK.toastMax, "at most toastMax toasts in one sweep")
+ok(lastMsg(p):find("5 new cards went into your Deck of Cards", 1, true), "one line for several")
+-- the inbox is swept too
+local inbox = newItem(2594, {}, 50)
+p.getInbox = function() return inbox end
+put(inbox, newItem(27491))
+M.sweep(p)
+eq(D.owned(p, 27491), 1, "a card in the inbox is taken in")
 
--- a deck nested two bags deep and the card loose: the card goes in and turns on
-local inner = put(p.backpack, newItem(1987, {}, 20))
-local innermost = put(inner, newItem(1987, {}, 20))
-local deck = put(innermost, newItem(27632, {}, 5))
-eq(M.use(p, card), true, "deck deep in a bag: handled")
-eq(card.parent, deck, "the card is in the deck") eq(#p.backpack.kids, 1, "left the backpack")
-eq(p.storage[37000], 1, "on") eq(card.aid, 37866, "tagged")
-ok(p.messages[#p.messages - 1]:find("went into your Bronze Deck", 1, true) and lastMsg(p):find("You turned on Common One Card", 1, true)
-	and lastMsg(p):find("Reaping Gyre deals Earth damage instead.", 1, true), "messages")
--- used inside the deck: off
-eq(M.use(p, card), true, "off") eq(p.storage[37000], 0, "off storage") eq(card.aid, 0, "action id gone")
-ok(lastMsg(p):find("You turned off Common One Card", 1, true), "off message")
-M.use(p, card)
-eq(p.storage[37000], 1, "on again (inside the deck)")
-
--- a second copy of an on card: refused, counts once; the copy is not duplicated or moved
-local copy = put(p.backpack, newItem(27482))
-eq(M.use(p, copy), true, "second copy handled")
-ok(lastMsg(p):find("already on with another copy", 1, true), "second copy: said so")
-eq(copy.parent, p.backpack, "second copy stays") eq(copy.aid, 0, "second copy untagged")
--- a second deck: the card still counts once
-local deck2 = put(p.backpack, newItem(27634, {}, 20))
-local st = M.scan(p)
-eq(#st.decks, 2, "two decks seen") eq(st.decks[1].size, 20, "the golden deck first")
-local plan = K.reconcile(st.decks, st.loose, st.storage)
-eq(K.activeCount(plan), 1, "one card on with two decks")
-
--- the limit of five
-local ids = {27483, 27484, 27485, 27486, 27487}
-local made = {}
-for _, id in ipairs(ids) do
-	made[#made + 1] = put(p.backpack, newItem(id))
-end
-for i = 1, 4 do
-	M.use(p, made[i])
-end
-local on = 0
-for _, c in pairs(C.cards) do if p.storage[c.storage] == 1 then on = on + 1 end end
-eq(on, 5, "five on")
-eq(M.use(p, made[5]), true, "sixth handled")
-ok(lastMsg(p):find("already have 5 cards on", 1, true), "sixth: the limit")
-eq(made[5].parent, p.backpack, "sixth stays out (no move without turning on)") eq(made[5].aid, 0, "sixth untagged")
--- off frees a place
-M.use(p, card)
-M.use(p, made[5])
-eq(p.storage[C.cards[27487].storage], 1, "after an off the sixth turns on")
-
--- all decks full: the card stays, the text says so. A Bronze Deck of 5 cards is full already
-local q = mkPlayer("Bob")
-local bronze = put(q.backpack, newItem(27632, {}, 5))
-for _ = 1, 5 do put(bronze, newItem(2160)) end
-local c1 = put(q.backpack, newItem(27483))
-eq(M.use(q, c1), true, "full deck: handled")
-ok(lastMsg(q):find("decks are full", 1, true), "full deck: said so") eq(c1.parent, q.backpack, "full deck: card stays")
-eq(q.storage[37001], nil, "full deck: off")
-
--- a card in the depot (not carried): told to carry it
-local lone = newItem(27483)
-eq(M.use(q, lone), true, "a card that is not carried: handled")
-ok(lastMsg(q):find("Carry the card in your backpack", 1, true), "not carried: said so")
-
--- a card dropped while on (death): the next sweep turns it off, the count frees
-local r = mkPlayer("Cara")
-local rdeck = put(r.backpack, newItem(27633, {}, 10))
-local rc = put(r.backpack, newItem(27483))
-M.use(r, rc)
-eq(r.storage[37001], 1, "on before the loss")
-for i, k in ipairs(rdeck.kids) do if k == rc then table.remove(rdeck.kids, i) end end -- gone
-M.sweep(r)
-eq(r.storage[37001], 0, "left the deck: off after the sweep")
-ok(lastMsg(r):find("no longer in a deck you carry", 1, true), "told")
--- the deck itself put away (not carried): its card turns off
-local rc2 = put(rdeck, newItem(27484))
-M.use(r, rc2)
-eq(r.storage[37002], 1, "on")
-for i, k in ipairs(r.backpack.kids) do if k == rdeck then table.remove(r.backpack.kids, i) end end
-M.sweep(r)
-eq(r.storage[37002], 0, "deck put away: off")
-
--- a stray action id (card outside a deck, a second tagged copy, a tagged card with its storage off) is cleared
-local s = mkPlayer("Dan")
-local sdeck = put(s.backpack, newItem(27633, {}, 10))
-local a = put(s.backpack, newItem(27483)); a.aid = 37866
-local b1 = put(sdeck, newItem(27484)); b1.aid = 37866
-local b2 = put(sdeck, newItem(27484)); b2.aid = 37866
-s.storage[37002] = 1
-M.sweep(s)
-eq(a.aid, 0, "loose tagged card cleared")
-eq(b1.aid, 37866, "the first tagged copy stays on") eq(b2.aid, 0, "the second tagged copy cleared")
-eq(s.storage[37002], 1, "still on once")
-s.storage[37002] = 0
-M.sweep(s)
-eq(b1.aid, 0, "storage off: the tag goes")
-
--- login keeps what is right and repairs what is not (no message when nothing changed)
-local t = mkPlayer("Eve")
-local tdeck = put(t.backpack, newItem(27632, {}, 5))
-local tc = put(tdeck, newItem(27482))
-M.use(t, tc)
-local before = #t.messages
-registered.ChaosCardsLogin.onLogin(t)
-eq(t.storage[37000], 1, "login: still on") eq(tc.aid, 37866, "login: still tagged") eq(#t.messages, before, "login: silent")
-eq(registered.ChaosCardsReconcile.ms, C.reconcileMs, "the sweep interval")
-
--- a legendary card sets the base's one-time flag, once
-local u = mkPlayer("Fay")
-put(u.backpack, newItem(27632, {}, 5))
-local lc = put(u.backpack, newItem(27547))
-M.use(u, lc)
-eq(u.storage[37065], 1, "legendary on") eq(u.storage[110017], 1, "the base's first-time flag (110017 + id - 27547)")
-
--- ---------------------------------------------------------------- card borders (client game_cardborder)
+-- the unlock: the main quest step "deck" opens the Deck (data/lib/chaos_mqgate.lua); a stored mark opens it for a character that held a deck
 do
-	eq(ChaosOpcodes.cardState, 172, "the card state opcode")
-	eq(K.stateKey(K.activeIds({active = {[27483] = {}, [27482] = {}}})), "27482,27483", "the key is sorted")
-	eq(K.stateKey(K.activeIds({active = {}})), "", "no card on: empty key")
-	eq(#K.statePayload(nil).on, 0, "no plan: no card on")
-	do
-		local pl = K.statePayload({active = {[27483] = {}, [27482] = {}}}, function(id) return id + 1000 end)
-		eq(table.concat(pl.on, ","), "28482,28483", "the cards on in client ids")
-		eq(#pl.cards, 76, "every card") eq(#pl.decks, 3, "every deck") eq(pl.decks[1], 28632, "deck ids in client ids")
-		eq(K.statePayload({active = {}}).decks[3], 27634, "no conversion: server ids")
-	end
-	-- no other Chaos system uses the opcode
-	for name, v in pairs(ChaosOpcodes) do
-		ok(name == "cardState" or v ~= 172, "opcode 172 is only cardState, not " .. name)
-	end
-	local b = mkPlayer("Gus")
-	local bdeck = put(b.backpack, newItem(27632, {}, 5))
-	local bc1 = put(bdeck, newItem(27482))
-	local bc2 = put(bdeck, newItem(27483))
-	local function last(pl) return pl.ext[#pl.ext] end
-	eq(#b.ext, 0, "nothing sent before anything happens")
-	-- login: always sent, even with no card on
-	registered.ChaosCardsLogin.onLogin(b)
-	eq(#b.ext, 1, "login sends the set") eq(last(b).op, 172, "on opcode 172")
-	eq(last(b).buf.action, "state", "action state") eq(#last(b).buf.data.on, 0, "no card on at login")
-	ok(b.events.ChaosCardsExtended and b.events.ChaosCardsLogout, "login registers the opcode and logout events")
-	-- turning a card on sends the new set
-	M.use(b, bc1)
-	eq(#b.ext, 2, "on: sent") eq(table.concat(last(b).buf.data.on, ","), "27482", "set after on")
-	M.use(b, bc2)
-	eq(table.concat(last(b).buf.data.on, ","), "27482,27483", "two cards on")
-	-- the periodic sweep sends nothing when the set is the same
-	local sent = #b.ext
-	M.sweep(b)
-	registered.ChaosCardsReconcile.onThink(1)
-	eq(#b.ext, sent, "an unchanged set is not sent again")
-	-- off
-	M.use(b, bc1)
-	eq(table.concat(last(b).buf.data.on, ","), "27483", "set after off")
-	-- a refused use (a second copy) changes nothing and sends nothing
-	local bcopy = put(b.backpack, newItem(27483))
-	sent = #b.ext
-	M.use(b, bcopy)
-	eq(#b.ext, sent, "a refused use sends nothing")
-	-- the card leaves the deck (dropped on death): the sweep turns it off and tells the client
-	bc2.parent = nil
-	bdeck.kids = {bc1}
-	M.sweep(b)
-	eq(#last(b).buf.data.on, 0, "card gone: the set is empty") eq(#b.ext, sent + 1, "one message for the change")
-	-- the client asks: sent again whatever the set
-	local ask = registered.ChaosCardsExtended
-	sent = #b.ext
-	ask.onExtendedOpcode(b, 172, "sync")
-	eq(#b.ext, sent + 1, "sync answers")
-	ask.onExtendedOpcode(b, 173, "sync")
-	ask.onExtendedOpcode(b, 172, "other")
-	eq(#b.ext, sent + 1, "another opcode or action is ignored")
-	-- logout forgets the player's last set
-	registered.ChaosCardsLogout.onLogout(b)
-	registered.ChaosCardsLogin.onLogin(b)
-	eq(#b.ext, sent + 2, "login after logout sends")
+	local MQ = dofile("data/scripts/chaos/mainquest_config.lua")
+	local mqState, mqStep = MQ.storage.base + MQ.storage.state, MQ.storage.base + MQ.storage.step
+	local idx
+	for i, st in ipairs(MQ.steps) do if st.key == DK.unlock.step then idx = i end end
+	ok(idx ~= nil, "the main quest has the step " .. DK.unlock.step)
+	local st = MQ.steps[idx]
+	eq(st.conds[1].c, "flag", "the step is done by a flag") eq(st.conds[1].key, "deck", "the flag deck")
+	local inFlags, inAcks = false, false
+	for _, f in ipairs(MQ.flags) do if f == "deck" then inFlags = true end end
+	for _, f in ipairs(MQ.acks) do if f == "deck" then inAcks = true end end
+	ok(inFlags and inAcks, "the flag deck is one the quest knows and the Go button marks")
+	eq(st.where.m, "game_carddeck", "the step opens the window")
+	eq(ChaosMQGate.title("deck", "en"), "Open the Deck of Cards", "the step title") eq(ChaosMQGate.title("deck", "pt-BR"), "Abra o Deck of Cards", "in pt-BR")
+	local g = mkPlayer("Gate")
+	eq(D.unlocked(g), false, "a character the quest has not seen: locked")
+	g.storage[mqState], g.storage[mqStep] = 0, idx
+	eq(D.unlocked(g), false, "on the step: locked")
+	g.storage[mqStep] = idx + 1
+	eq(D.unlocked(g), true, "past the step: open, with nothing stored")
+	eq(g.storage[7104400 + 201], nil, "no mark is needed")
+	g.storage[mqState] = MQ.states.skipped
+	eq(D.unlocked(g), true, "a skipped quest: open") g.storage[mqState] = MQ.states.quiet eq(D.unlocked(g), true, "a quiet character: open")
+	g.storage[mqState] = MQ.states.done g.storage[mqStep] = 0
+	eq(D.unlocked(g), true, "a finished quest: open")
+	local h = mkPlayer("Mark")
+	Deck.unlock(h)
+	eq(D.unlocked(h), true, "the stored mark opens it")
+	-- opening the window emits the flag of the step (the quest's own hook) and sends the state again
+	local emitted = {}
+	ChaosMainQuest = {emit = function(pl, flag) emitted[#emitted + 1] = flag return true end}
+	local before = #h.ext
+	TEST_MSG = nil
+	registered.ChaosCardsExtended.onExtendedOpcode(h, 173, "open")
+	eq(emitted[1], "deck", "the window opened: flag deck") eq(emitted[2], nil, "once")
+	ChaosMainQuest = nil
+	registered.ChaosCardsExtended.onExtendedOpcode(h, 173, "open")
+end
+
+-- turn on and off (unlocked): the rules of five, copies, storage and the legendary flag
+local u = mkPlayer("Fay")
+Deck.unlock(u)
+for _, id in ipairs({27482, 27483, 27484, 27485, 27486, 27487}) do D.add(u, id, 1) end
+D.add(u, 27547, 1)
+eq(M.toggle(u, 27482), true, "on") eq(u.storage[37000], 1, "storage on")
+ok(lastMsg(u):find("You turned on Common One Card", 1, true) and lastMsg(u):find("Reaping Gyre deals Earth damage instead.", 1, true), "on message")
+eq(M.toggle(u, 27482), true, "off") eq(u.storage[37000], 0, "storage off") ok(lastMsg(u):find("You turned off Common One Card", 1, true), "off message")
+for _, id in ipairs({27482, 27483, 27484, 27485, 27486}) do M.toggle(u, id) end
+eq(M.toggle(u, 27487), false, "the sixth is refused") ok(lastMsg(u):find("already have 5 cards on", 1, true), "the limit")
+eq(u.storage[37005], nil, "the sixth stays off")
+M.toggle(u, 27482)
+eq(M.toggle(u, 27487), true, "after an off the sixth turns on") eq(u.storage[37005], 1, "on")
+eq(M.toggle(u, 27541), false, "no copy: refused") ok(lastMsg(u):find("no copy of", 1, true), "none text")
+eq(M.toggle(u, 2160), false, "not a card")
+M.toggle(u, 27483)
+eq(M.toggle(u, 27547), true, "a legendary card on") eq(u.storage[37065], 1, "legendary on") eq(u.storage[110017], 1, "the base's first-time flag (110017 + id - 27547)")
+-- two copies count once
+D.add(u, 27484, 4)
+local act = 0
+for _, c in pairs(C.cards) do if u.storage[c.storage] == 1 then act = act + 1 end end
+eq(act, 5, "five on however many copies")
+
+-- the sweep keeps the storages true: a card with no copy, a locked Deck, six on
+local v = mkPlayer("Gus")
+Deck.unlock(v)
+D.add(v, 27482, 1)
+v.storage[37000], v.storage[37001] = 1, 1
+M.sweep(v)
+eq(v.storage[37000], 1, "owned: stays on") eq(v.storage[37001], 0, "no copy: off") ok(lastMsg(v):find("no longer in your Deck of Cards", 1, true), "told")
+v.storage[7104400 + 201] = 0
+M.sweep(v)
+eq(v.storage[37000], 0, "locked: every card off") ok(lastMsg(v):find("Deck of Cards is locked", 1, true), "told why")
+
+-- migration at login: decks (carried, nested, in the depot), loose cards, the marker, grandfather
+local m = mkPlayer("Hal")
+local mdeck = put(m.backpack, newItem(27633, {}, 10))
+local c1 = put(mdeck, newItem(27482)); c1.aid = 37866
+local c2 = put(mdeck, newItem(27547))
+local junk = put(mdeck, newItem(2160))
+local c1b = put(m.backpack, newItem(27482))
+local chest = newItem(2594, {}, 100)
+local depotDeck = put(chest, newItem(27632, {}, 5))
+put(depotDeck, newItem(27541))
+put(chest, newItem(27541))
+m.depot = {[1] = chest}
+m.getDepotChest = function(self, id) return self.depot[id] end
+m.storage[37000] = 1 -- the card was on in the deck
+registered.ChaosCardsLogin.onLogin(m)
+eq(D.owned(m, 27482), 2, "the deck's card and the loose copy") eq(D.owned(m, 27547), 1, "a legendary card") eq(D.owned(m, 27541), 2, "depot: the deck's card and the loose one")
+eq(#mdeck.kids, 0, "the deck is emptied") eq(junk.parent, m.backpack, "a non-card item of a deck goes to the bag")
+eq(#m.backpack.kids, 1, "the deck item is removed, the junk stays") eq(#chest.kids, 0, "the depot is empty of decks and cards")
+eq(D.unlocked(m), true, "a character that held a deck has the Deck open") eq(m.storage[37000], 1, "its card stays on")
+eq(m.storage[7104400 + 203], 2, "two decks found") eq(m.storage[7104400 + 200], DK.migrationVersion, "the marker")
+ok(anyMsg(m, "Your decks are gone. 5 cards went into your Deck of Cards, which is open for you"), "told: " .. tostring(m.messages[1]))
+-- a second login changes nothing
+local copies = select(2, D.totals(m))
+local nmsg = #m.messages
+put(chest, newItem(27541))
+registered.ChaosCardsLogin.onLogin(m)
+eq(select(2, D.totals(m)), copies + 0, "the migration runs once: a card put in the depot later is not walked at login")
+eq(#chest.kids, 1, "and stays in the depot") eq(#m.messages, nmsg, "no message")
+-- no deck: not unlocked
+local n = mkPlayer("Ina")
+put(n.backpack, newItem(27483))
+registered.ChaosCardsLogin.onLogin(n)
+eq(D.owned(n, 27483), 1, "loose cards move in at login") eq(D.unlocked(n), false, "no deck held: the quest is still to do")
+ok(anyMsg(n, "Your decks are gone. 1 cards went into your Deck of Cards."), "migration text without the open note")
+-- a deck found later (picked up from a house floor) is taken in by the sweep, once
+local lateDeck = put(n.backpack, newItem(27634, {}, 20))
+put(lateDeck, newItem(27484))
+M.sweep(n)
+eq(D.owned(n, 27484), 1, "a deck picked up later is emptied") eq(#n.backpack.kids, 0, "and removed") eq(D.unlocked(n), true, "and it opens the Deck")
+-- a deck item that cannot be emptied stays (no card or item is lost)
+local stuck = mkPlayer("Jo")
+local sdeck = put(stuck.backpack, newItem(27632, {}, 5))
+local sjunk = put(sdeck, newItem(2160))
+sjunk.moveTo = function() return false end
+M.sweep(stuck)
+eq(#stuck.backpack.kids, 1, "a deck whose items cannot move out is kept") eq(sdeck.kids[1], sjunk, "with its item")
+
+-- the window talks: sync sends the list and the state, toggle, seen
+local w = mkPlayer("Wim")
+Deck.unlock(w)
+D.add(w, 27482, 2) D.add(w, 27483, 1)
+local ask = registered.ChaosCardsExtended
+local function send(pl, msg) TEST_MSG = msg ask.onExtendedOpcode(pl, 173, type(msg) == "table" and "@msg" or msg) end
+ChaosOpcodes.cardDeck = ChaosOpcodes.cardDeck
+eq(ChaosOpcodes.cardDeck, 173, "the Deck of Cards opcode")
+for name, v in pairs(ChaosOpcodes) do ok(name == "cardDeck" or (v ~= 172 and v ~= 173), "opcodes 172 (retired) and 173 are not used by " .. name) end
+eq(#w.ext, 0, "nothing sent before")
+send(w, "sync")
+eq(#w.ext, 2, "sync: the list and the state") eq(w.ext[1].buf.action, "cards", "the list first") eq(#w.ext[1].buf.data.cards, 76, "76 cards")
+local st = lastExt(w).buf.data
+eq(lastExt(w).op, 173, "opcode") eq(lastExt(w).buf.action, "state", "state") eq(st.unlocked, true, "unlocked") eq(st.distinct, 2, "two different cards")
+eq(st.copies, 3, "three copies") eq(#st.new, 2, "both are new") eq(#st.own, 2, "two rows") eq(st.own[1][1], 27482, "first row") eq(st.own[1][2], 2, "two copies")
+eq(st.max, 5, "slot rule") eq(#st.on, 0, "none on")
+-- toggle through the opcode
+send(w, {action = "toggle", id = 27482})
+eq(w.storage[37000], 1, "toggle turned it on") eq(table.concat(lastExt(w).buf.data.on, ","), "27482", "the state follows")
+local sent = #w.ext
+w.limitedNow = true
+send(w, {action = "seen", ids = {27482}})
+st = lastExt(w).buf.data
+eq(#st.new, 1, "one mark cleared") eq(st.new[1], 27483, "the other stays") eq(D.isFresh(w, 27482), false, "seen")
+send(w, {action = "seen", all = true})
+eq(#lastExt(w).buf.data.new, 0, "all seen") eq(D.freshCount(w), 0, "the badge count is zero")
+sent = #w.ext
+send(w, {action = "seen", all = true})
+eq(#w.ext, sent, "nothing changed: nothing sent")
+send(w, {action = "toggle", id = 1})
+send(w, {action = "bogus"})
+ask.onExtendedOpcode(w, 172, "sync")
+eq(#w.ext, sent, "another opcode, action or card is ignored")
+-- the periodic sweep sends nothing when nothing changed
+M.sweep(w)
+registered.ChaosCardsReconcile.onThink(1)
+registered.ChaosCardsAbsorb.onThink(1)
+eq(#w.ext, sent, "an unchanged state is not sent again")
+eq(registered.ChaosCardsReconcile.ms, C.reconcileMs, "the sweep interval") eq(registered.ChaosCardsAbsorb.ms, DK.absorbMs, "the absorb interval")
+-- logout forgets the last state
+registered.ChaosCardsLogout.onLogout(w)
+registered.ChaosCardsLogin.onLogin(w)
+eq(#w.ext, sent + 1, "login after logout sends the state")
+-- a locked Deck says so in the state
+local lk = mkPlayer("Lock")
+send(lk, "sync")
+eq(lastExt(lk).buf.data.unlocked, false, "locked state") ok(lastExt(lk).buf.data.quest:find("main quest step", 1, true), "with the hint")
+-- the card list is in the player's language
+Chaos.setLang(lk, "pt-BR")
+send(lk, "sync")
+local ptList
+for _, e in ipairs(lk.ext) do if e.buf.action == "cards" then ptList = e.buf.data end end
+ok(ptList.cards[1].x:find("Ativa,", 1, true) ~= nil, "pt-BR card text in the list")
+-- a card item that moves into a bag is taken in at once (EventCallback onItemMoved)
+do
+	local moved = EventCallback.onItemMoved
+	ok(type(moved) == "function", "the move callback")
+	local mv = mkPlayer("Mov")
+	mv.isPlayer = function() return true end
+	local it = put(mv.backpack, newItem(27483))
+	moved(mv, it, 1, {x = 1, y = 1, z = 7}, {x = 65535, y = 64, z = 0})
+	eq(D.owned(mv, 27483), 1, "the moved card is in the Deck") eq(#mv.backpack.kids, 0, "and gone from the bag")
+	local gold2 = put(mv.backpack, newItem(2160))
+	moved(mv, gold2, 1, {x = 1, y = 1, z = 7}, {x = 65535, y = 64, z = 0})
+	eq(#mv.backpack.kids, 1, "other items are left alone")
+end
+-- the carried scan stops at its limit
+local huge = mkPlayer("Huge")
+for _ = 1, DK.carriedLimit + 50 do put(huge.backpack, newItem(2160)) end
+local _, _, looked = M.collect({huge.backpack}, DK.carriedLimit)
+eq(looked, DK.carriedLimit, "the walk ends at its limit")
+
+-- a legendary on card sets the flag once (above); login keeps the state and is silent when nothing changed
+do
+	local t = mkPlayer("Eve")
+	Deck.unlock(t)
+	D.add(t, 27482, 1)
+	M.toggle(t, 27482)
+	registered.ChaosCardsLogin.onLogin(t)
+	local nmsgs = #t.messages
+	registered.ChaosCardsLogin.onLogin(t)
+	eq(t.storage[37000], 1, "login: still on") eq(#t.messages, nmsgs, "login: silent")
 end
 
 -- ---------------------------------------------------------------- Character Info
@@ -367,34 +498,18 @@ local function status(player, lang)
 	player.sendTextMessage = saved
 	return captured
 end
-local text = status(p, "en")
-ok(text:find("Decks carried: Golden Deck 0 of 20, Bronze Deck 1 of 5", 1, true) or text:find("Decks carried:", 1, true), "decks line")
+local text = status(u, "en")
+ok(text:find("Deck of Cards: 8 of 76 cards", 1, true) or text:find("Deck of Cards: 7 of 76 cards", 1, true), "deck line: " .. text)
 ok(text:find("Cards on (5 of 5):", 1, true), "cards on count: " .. text)
-ok(text:find("Reaping Gyre deals Earth damage instead.", 1, true), "an on card with its bonus")
-ok(text:find("Cards carried outside a deck", 1, true), "loose cards listed")
-ok(text:find("Cards 1 of 25", 1, true) or text:find("of 25", 1, true), "capacity used of total")
+ok(text:find("Reaping Gyre", 1, true) ~= nil, "an on card with its bonus")
 ok(#text < C.maxTextBytes, "under the size cap")
-local none = status(mkPlayer("Gus"), "en")
-ok(none:find("You carry no deck.", 1, true) and none:find("Veyra the Apothecary", 1, true) and none:find("No card is on.", 1, true),
-	"no deck: how to get one")
-local pt = status(q, "pt-BR")
-ok(pt:find("Decks que você carrega", 1, true) and pt:find("Cartas", 1, true), "pt-BR status: " .. pt)
-local ptNone = status(mkPlayer("Hal"), "pt-BR")
-ok(ptNone:find("não carrega nenhum deck", 1, true) and ptNone:find("Veyra the Apothecary", 1, true), "pt-BR no deck")
-
--- a golden deck full of cards and as many loose: the text is cut, under the cap
-local big = mkPlayer("Ivy")
-local gd = put(big.backpack, newItem(27634, {}, 20))
-for _ = 1, 20 do put(gd, newItem(27547)) end
-for _ = 1, 200 do put(big.backpack, newItem(27547)) end
-local bigText = status(big, "pt-BR")
-ok(#bigText <= C.maxTextBytes, "huge list stays under the cap: " .. #bigText)
-ok(bigText:find("... e mais", 1, true) ~= nil, "cut with a count")
-
--- the scan guard
-local huge = mkPlayer("Jo")
-for _ = 1, C.scanLimit + 50 do put(huge.backpack, newItem(2160)) end
-eq(#M.scan(huge).loose, 0, "the scan ends at its limit")
+local lockedText = status(mkPlayer("Gus2"), "en")
+ok(lockedText:find("Deck of Cards is locked", 1, true) and lockedText:find("main quest step", 1, true) and lockedText:find("No card is on.", 1, true),
+	"locked: how to open it")
+local ptText = status(u, "pt-BR")
+ok(ptText:find("Cartas ativas", 1, true) or ptText:find("ativas", 1, true), "pt-BR status: " .. ptText)
+local ptLocked = status(mkPlayer("Hal2"), "pt-BR")
+ok(ptLocked:find("trancado", 1, true) and ptLocked:find("quest principal", 1, true), "pt-BR locked")
 
 
 -- ---------------------------------------------------------------- the spells the cards name are current spells
@@ -446,7 +561,7 @@ ok(#oldNames > 100, "spell_names.csv read")
 for _, lang in ipairs({"en", "pt-BR"}) do
 	for id, c in pairs(C.cards) do
 		local d = K.description(lang, id)
-		ok(d:sub(-#"Veyra the Apothecary sells decks.") == "Veyra the Apothecary sells decks." or lang ~= "en", "ends with the hint " .. id)
+		ok(d:sub(-#"Open the Deck from the menu to turn it on.") == "Open the Deck from the menu to turn it on." or lang ~= "en", "ends with the hint " .. id)
 		for _, old in ipairs(oldNames) do
 			-- an old stock name is fine only when it is a current name too
 			if not newNames[old:lower()] then
@@ -473,7 +588,7 @@ for f, fam in ipairs(C.families) do
 	end
 end
 -- the hint is the install tool's hint (tools/patch_badges.py CARD_HINT)
-ok(py:find(K.HINT:sub(1, 60), 1, true) ~= nil and py:find("Veyra the Apothecary sells decks.", 1, true) ~= nil, "the hint matches the tool")
+ok(py:find(K.HINT:sub(1, 60), 1, true) ~= nil and py:find("Open the Deck from the menu to turn it on.", 1, true) ~= nil, "the hint matches the tool")
 -- the screenshot of 2026-10-23: the line that named the old spell now names its replacement
 ok(not K.description("en", 27482):find("Exori", 1, true), "no stock words")
 eq(K.description("en", 27482):find("Reaping Gyre deals Earth damage instead", 1, true) ~= nil, true, "Reaping Gyre line")
@@ -1061,7 +1176,7 @@ do
 		local fam = C.families[lineOf(spell)]
 		for t = 1, 4 do if fam.elements[t] == el then return fam.ids[t] end end
 	end
-	-- a player of a class with a Bronze Deck holding `ids`, none on yet
+	-- a player of a class with the Deck of Cards open and holding `ids`, none on yet; the 2nd result is only kept for the old call shape
 	local function setPlayer(name, vocId, ids)
 		local p = mkPlayer(name)
 		p.getVocation = function() return {getId = function() return vocId end} end
@@ -1070,10 +1185,9 @@ do
 		p.getHealth = function(self) return self.health end
 		p.getMaxHealth = function(self) return self.maxHealth end
 		p.addHealth = function(self, n) self.healed = (self.healed or 0) + n self.health = self.health + n end
-		local deck = put(p.backpack, newItem(27632, {}, 5))
-		local items = {}
-		for i, id in ipairs(ids) do items[i] = put(deck, newItem(id)) end
-		return p, deck, items
+		Deck.unlock(p)
+		for _, id in ipairs(ids) do D.add(p, id, 1) end
+		return p, nil, ids
 	end
 	local function target(isPlayer)
 		local t = {id = 1000 + #players, conditions = {}}
@@ -1108,13 +1222,13 @@ do
 	local mon = target(false)
 	local a, b = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
 	eq(a, -100, "no card on: a Fire hit is untouched")
-	M.use(ranger, it[1])
+	M.toggle(ranger, it[1])
 	ok(lastMsg(ranger):find("You turned on", 1, true) ~= nil, "one card: no set message, only the card's own")
-	M.use(ranger, it[2])
+	M.toggle(ranger, it[2])
 	ok(lastMsg(ranger):find("Card set Fire: 2 of 3 cards.", 1, true) ~= nil, "two cards: the progress is told: " .. lastMsg(ranger))
 	a = hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)
 	eq(a, -100, "2 cards: no bonus")
-	M.use(ranger, it[3])
+	M.toggle(ranger, it[3])
 	ok(lastMsg(ranger):find("Card set Fire is on with 3 cards: Your Fire damage: +3.5% increased damage", 1, true) ~= nil, "three cards: the set is on: " .. lastMsg(ranger))
 	eq(M.sets[ranger:getId()].element, "Fire", "the cache says Fire")
 	-- the hit: the primary part, the secondary part, never another element
@@ -1145,41 +1259,40 @@ do
 	ranger.storage[ctxKey] = -1
 
 	-- swapping a card: off turns the set off at once and says so; on again turns it on
-	M.use(ranger, it[3])
+	M.toggle(ranger, it[3])
 	ok(lastMsg(ranger):find("Card set Fire: 2 of 3 cards.", 1, true) ~= nil or lastMsg(ranger):find("Card set Fire is off.", 1, true) ~= nil,
 		"a card off: the set is off: " .. lastMsg(ranger))
 	eq(M.sets[ranger:getId()].element, nil, "no set after the card went off")
 	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "the bonus is gone with the card")
-	M.use(ranger, it[3])
+	M.toggle(ranger, it[3])
 	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -103, "the bonus is back with the card")
-	-- the same card twice: the second copy is refused, the count stays 3
+	-- the same card twice: a second copy goes into the Deck and counts once, the count of cards stays 3
 	local copy = put(ranger.backpack, newItem(f1))
 	M.use(ranger, copy)
+	eq(D.owned(ranger, f1), 2, "a second copy is in the Deck")
 	eq(M.sets[ranger:getId()].count, 3, "a second copy of a card does not make a fourth card")
-	ok(lastMsg(ranger):find("Only one copy counts", 1, true) ~= nil, "the second copy is refused")
 	-- a card of the line with a higher tier of another element replaces it ("the element changed by another card")
 	local ice = elementCard("Sanctum Burst", "Ice")
-	local iceCopy = put(deck, newItem(ice))
-	M.use(ranger, iceCopy)
+	D.add(ranger, ice, 1)
+	M.toggle(ranger, ice)
 	eq(M.sets[ranger:getId()].counts.Fire, 2, "Sanctum Burst Ice (tier 2) replaces its Fire card: 2 Fire cards")
 	eq((hitOf(ranger, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "no bonus when another card changed the element")
-	M.use(ranger, iceCopy)
+	M.toggle(ranger, ice)
 	eq(M.sets[ranger:getId()].counts.Fire, 3, "the Ice card off: Fire is back")
-	-- cards in the deck but off, loose, or not carried: no set
-	local q, qdeck, qit = setPlayer("Quin", 3, {f1, f2, f3})
-	M.use(q, qit[1]) M.use(q, qit[2])
-	local looseCard = put(q.backpack, newItem(f3))
+	-- cards in the Deck but off, or loose: no set
+	local q, _, qit = setPlayer("Quin", 3, {f1, f2, f3})
+	M.toggle(q, qit[1]) M.toggle(q, qit[2])
 	eq(M.sets[q:getId()].count, nil, "two cards on: no set")
-	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "the third card is in the deck, off: no bonus")
+	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "the third card is in the Deck, off: no bonus")
+	local looseCard = put(q.backpack, newItem(f3))
 	M.sweep(q)
-	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "a loose card is no card on: no bonus")
-	-- a card that left the decks (dropped on death): the sweep turns it off and the bonus goes
-	M.use(q, qit[3])
+	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "a loose card went into the Deck, off: no bonus")
+	-- a card that lost its last copy: the sweep turns it off and the bonus goes
+	M.toggle(q, qit[3])
 	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -103, "three cards on: the bonus")
-	qit[3].parent = nil
-	qdeck.kids = {qit[1], qit[2]}
+	D.setOwned(q, qit[3], 0)
 	M.sweep(q)
-	eq(M.sets[q:getId()].element, nil, "the card left the deck: the set is off after the sweep")
+	eq(M.sets[q:getId()].element, nil, "no copy left: the set is off after the sweep")
 	eq((hitOf(q, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "no bonus without the card")
 	-- the Character Info line
 	local info = status(ranger, "en")
@@ -1197,7 +1310,7 @@ do
 	-- Death leech (Warrior line, vocation 4): Gyre tier 3, Frostfall tier 4, Earthbreaker tier 4
 	local w, _, wit = setPlayer("Wil", 4, {elementCard("Reaping Gyre", "Death"), elementCard("Frostfall Rune", "Death"),
 		elementCard("Earthbreaker", "Death")})
-	for _, item in ipairs(wit) do M.use(w, item) end
+	for _, item in ipairs(wit) do M.toggle(w, item) end
 	eq(M.sets[w:getId()].element, "Death", "the Warrior's Death set")
 	w.healed = nil
 	local pd = hitOf(w, mon, -1000, COMBAT_DEATHDAMAGE, 0, 0)
@@ -1216,7 +1329,7 @@ do
 	-- Earth poison (Warrior line): Gyre tier 1, Frostfall tier 2, Earthbreaker tier 2
 	local ep, _, epit = setPlayer("Eve", 4, {elementCard("Reaping Gyre", "Earth"), elementCard("Frostfall Rune", "Earth"),
 		elementCard("Earthbreaker", "Earth")})
-	for _, item in ipairs(epit) do M.use(ep, item) end
+	for _, item in ipairs(epit) do M.toggle(ep, item) end
 	eq(M.sets[ep:getId()].element, "Earth", "the Warrior's Earth set")
 	local conds = {}
 	Condition = function(kind)
@@ -1245,7 +1358,7 @@ do
 	ChaosSpell = {slow = function(t, ms, pct) sl[#sl + 1] = {t = t, ms = ms, pct = pct} end}
 	local my, _, myit = setPlayer("Mia", 1, {elementCard("Rime Bloom", "Energy"), elementCard("Frostfall Rune", "Energy"),
 		elementCard("Frozen Crypt", "Energy")})
-	for _, item in ipairs(myit) do M.use(my, item) end
+	for _, item in ipairs(myit) do M.toggle(my, item) end
 	eq(M.sets[my:getId()].element, "Energy", "the Mystic's Energy set")
 	eq((hitOf(my, mon, -1000, COMBAT_ENERGYDAMAGE, 0, 0)), -1000, "Energy: the hit itself is not changed")
 	eq(#sl, 1, "Energy: the target is slowed") eq(sl[1].ms, 1500, "for 1.5 s") eq(sl[1].pct, 0.15, "by 15%")
@@ -1258,7 +1371,7 @@ do
 	-- Holy heal (Elementalist, vocation 5): Rime Bloom, Tempest Fan, Doomtide at their Holy tier
 	local el, _, elit = setPlayer("Eli", 5, {elementCard("Rime Bloom", "Holy"), elementCard("Tempest Fan", "Holy"),
 		elementCard("Doomtide", "Holy")})
-	for _, item in ipairs(elit) do M.use(el, item) end
+	for _, item in ipairs(elit) do M.toggle(el, item) end
 	eq(M.sets[el:getId()].element, "Holy", "the Elementalist's Holy set")
 	local clock = 100000
 	local realMtime = os.mtime
@@ -1275,8 +1388,9 @@ do
 	-- the set cache of a class with no vocation id (a test player): no set, no error
 	local nv = mkPlayer("Nvi")
 	nv.isPlayer = function() return true end
-	local ndeck = put(nv.backpack, newItem(27632, {}, 5))
-	M.use(nv, put(ndeck, newItem(f1)))
+	Deck.unlock(nv)
+	D.add(nv, f1, 1)
+	M.toggle(nv, f1)
 	eq(M.sets[nv:getId()], nil, "no vocation: no set state")
 	eq((hitOf(nv, mon, -100, COMBAT_FIREDAMAGE, 0, 0)), -100, "no vocation: no bonus")
 	-- the event stays registered once, on the monsters a player attacks (the set needs no other event)

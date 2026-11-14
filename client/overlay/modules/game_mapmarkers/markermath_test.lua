@@ -19,6 +19,7 @@ s = M.sanitize({ party = false, poi = 'true', cats = { hunt = false, shop = 'fal
 eq(s.party, false, 'party off'); eq(s.poi, true, 'string true'); eq(s.cats.hunt, false, 'hunt off'); eq(s.cats.shop, false, 'shop off')
 eq(s.cats.junk, nil, 'unknown category dropped'); eq(s.cats.town, true, 'others stay on')
 eq(M.sanitize({ cats = 'x' }).cats.boss, true, 'bad cats')
+eq(s.huntports, true, 'hunt teleport markers on by default (O568)'); eq(M.sanitize({ huntports = false }).huntports, false, 'hunt teleport markers off'); eq(M.sanitize({ huntports = 'false' }).huntports, false, 'string false'); eq(M.sanitize(nil).huntports, true, 'no settings: on')
 for kind, cat in pairs(M.KIND_CATEGORY) do
   local found = false
   for _, c in ipairs(M.CATEGORIES) do if c == cat then found = true end end

@@ -1,0 +1,169 @@
+# Chaos: shader params and the part rectangle for outfit shaders (O563; client/BASE.md "0200"; src/client/outfit.h/.cpp, luavaluecasts_client.cpp, luafunctions_client.cpp, src/framework/graphics/paintershaderprogram.h/.cpp; after 0001-0199).
+# The kill dissolve (overlay module game_killdissolve) draws a dying monster's own sprite through an outfit shader that has to
+# know two things an outfit shader never had: how far the dissolve is (per creature, changing every frame) and where the sprite
+# is inside the texture atlas (the shader needs a local 0..1 position: top first, from the edges, towards the middle).
+#  * Outfit: four floats m_shaderParams (setShaderParams / setShaderParam / getShaderParam, default 0). The Lua outfit table
+#    takes them as fields shaderA .. shaderD (absent = 0), so Creature:setOutfit / UICreature:setOutfit carry them like the shader name.
+#  * Outfit::draw hands them to the two DrawQueueItemOutfitWithShader it queues (new last constructor argument, default 0).
+#  * DrawQueueItemOutfitWithShader::draw: only when one of the four is not 0, shader->setParams(a, b, c, d) (u_Params, the uniform of
+#    base patch 0044) and the new shader->setSrc(left, top, width, height) (u_Src, SRC_UNIFORM 19) of the part's rectangle in the texture,
+#    in the pixels of a_TexCoord (the same in the framebuffer path of a scaled draw). Every other outfit shader makes no uniform call.
+#  * PainterShaderProgram: SRC_UNIFORM 19 bound to "u_Src" in setupUniforms, setSrc. A program that does not declare u_Src ignores it.
+#  * Creature.hasShaderParams() (static, true): the capability check of the overlay (an older client build without this patch gets the plain
+#    kill effect instead of a dissolve that would never move).
+# Cost: nothing for outfits without params (four float compares per shaded part).
+# Checked: applies after 0001-0199 on the base tree; the touched .cpp files pass g++ -std=c++17 -fsyntax-only.
+# Not built, linked or run in a client; goes live with the next client build.
+--- a/src/client/outfit.h	2026-11-14 13:55:28.293154313 +0000
++++ b/src/client/outfit.h	2026-11-14 13:55:54.674274815 +0000
+@@ -74,6 +74,9 @@
+     void setAura(int aura) { m_aura = aura; }
+     void setCategory(ThingCategory category) { m_category = category; }
+     void setShader(const std::string& shader) { m_shader = shader; }
++    // Chaos (base patch 0200): four numbers the outfit's shader reads as u_Params (the kill dissolve's progress); all 0 = none
++    void setShaderParams(float a, float b, float c, float d) { m_shaderParams = {a, b, c, d}; }
++    void setShaderParam(int index, float value) { if (index >= 0 && index < 4) m_shaderParams[index] = value; }
+     void setHealthBar(uint8 id) { m_healthBar = id; }
+     void setManaBar(uint8 id) { m_manaBar = id; }
+     void setCenter(bool value) { m_center = value; }
+@@ -98,6 +101,7 @@
+     int getAura() const { return m_aura; }
+     ThingCategory getCategory() const { return m_category; }
+     std::string getShader() const { return m_shader; }
++    float getShaderParam(int index) const { return index >= 0 && index < 4 ? m_shaderParams[index] : 0.f; }
+     int getHealthBar() const { return m_healthBar; }
+     int getManaBar() const { return m_manaBar; }
+ 
+@@ -106,6 +110,7 @@
+     int m_id, m_auxId, m_head, m_body, m_legs, m_feet, m_addons, m_mount = 0, m_familiar = 0, m_wings = 0, m_aura = 0;
+     int m_healthBar = 0, m_manaBar = 0;
+     std::string m_shader;
++    std::array<float, 4> m_shaderParams = {0.f, 0.f, 0.f, 0.f}; // Chaos (base patch 0200)
+     bool m_center = false;
+     const OutfitOutline* m_drawOutline = nullptr;
+     std::vector<CreatureHitPart>* m_hitParts = nullptr;
+@@ -125,8 +130,9 @@
+ };
+ 
+ struct DrawQueueItemOutfitWithShader : public DrawQueueItemTexturedRect {
+-    DrawQueueItemOutfitWithShader(const Rect& rect, const TexturePtr& texture, const Rect& src, const Point& offset, const Point& center, int32_t colors, const std::string& shader) :
+-        DrawQueueItemTexturedRect(rect, texture, src, Color::white), m_offset(offset), m_center(center), m_colors(colors), m_shader(shader)
++    DrawQueueItemOutfitWithShader(const Rect& rect, const TexturePtr& texture, const Rect& src, const Point& offset, const Point& center, int32_t colors, const std::string& shader,
++                                  const std::array<float, 4>& params = {0.f, 0.f, 0.f, 0.f}) :
++        DrawQueueItemTexturedRect(rect, texture, src, Color::white), m_offset(offset), m_center(center), m_colors(colors), m_shader(shader), m_params(params)
+     {};
+ 
+     void draw() override;
+@@ -141,6 +147,7 @@
+     Point m_center;
+     int32_t m_colors;
+     std::string m_shader;
++    std::array<float, 4> m_params; // Chaos (base patch 0200): u_Params of the shader, with u_Src the part's rectangle
+ };
+ 
+ // Cinders of Chaos (base patch 0038): queued before the outfit's parts, drawn from them at draw time (their final
+--- a/src/client/outfit.cpp	2026-11-14 13:55:28.299693004 +0000
++++ b/src/client/outfit.cpp	2026-11-14 13:55:54.675366149 +0000
+@@ -460,7 +460,7 @@
+                     continue;
+                 if (yPattern == 0)
+                     center = outfitParams->dest.center();
+-                auto shaded = std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, 0, m_shader);
++                auto shaded = std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, 0, m_shader, m_shaderParams);
+                 addOutlinePart(shaded.get(), type, animationPhase);
+                 g_drawQueue->add(std::move(shaded));
+                 continue;
+@@ -481,7 +481,7 @@
+         } else {
+             if (yPattern == 0)
+                 center = outfitParams->dest.center();
+-            auto shaded = std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, colors, m_shader);
++            auto shaded = std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, colors, m_shader, m_shaderParams);
+             addOutlinePart(shaded.get(), type, animationPhase);
+             g_drawQueue->add(std::move(shaded));
+         }
+@@ -644,6 +644,12 @@
+     g_painter->setOffset(m_offset);
+     shader->setMatrixColor(mat4);
+     shader->setCenter(m_center);
++    // Chaos (base patch 0200): an outfit that carries shader params (the kill dissolve) hands them and its part's rectangle
++    // in the texture to the shader; every other outfit shader draws as before (no uniform call at all)
++    if (m_params[0] != 0.f || m_params[1] != 0.f || m_params[2] != 0.f || m_params[3] != 0.f) {
++        shader->setParams(m_params[0], m_params[1], m_params[2], m_params[3]);
++        shader->setSrc((float)m_src.left(), (float)m_src.top(), (float)m_src.width(), (float)m_src.height());
++    }
+     shader->bindMultiTextures();
+     if (useFramebuffer) {
+         g_painter->drawTexturedRect(Rect(0, 0, m_src.size()), m_texture, m_src);
+--- a/src/client/luavaluecasts_client.cpp	2026-11-14 13:55:28.304167708 +0000
++++ b/src/client/luavaluecasts_client.cpp	2026-11-14 13:55:54.676132433 +0000
+@@ -108,6 +108,15 @@
+             g_lua.getField("shader", index);
+             outfit.setShader(g_lua.popString());
+         //}
++        // Chaos (base patch 0200): shaderA .. shaderD, the numbers the outfit's shader reads as u_Params (absent = 0)
++        g_lua.getField("shaderA", index);
++        outfit.setShaderParam(0, (float)g_lua.popNumber());
++        g_lua.getField("shaderB", index);
++        outfit.setShaderParam(1, (float)g_lua.popNumber());
++        g_lua.getField("shaderC", index);
++        outfit.setShaderParam(2, (float)g_lua.popNumber());
++        g_lua.getField("shaderD", index);
++        outfit.setShaderParam(3, (float)g_lua.popNumber());
+         if (g_game.getFeature(Otc::GameHealthInfoBackground)) {
+             g_lua.getField("healthBar", index);
+             outfit.setHealthBar(g_lua.popInteger());
+--- a/src/client/luafunctions_client.cpp	2026-11-14 13:55:28.307790584 +0000
++++ b/src/client/luafunctions_client.cpp	2026-11-14 13:55:54.676860129 +0000
+@@ -719,6 +719,7 @@
+     g_lua.bindClassStaticFunction<Creature>("setSoftShadow", &Creature::setSoftShadow);
+     g_lua.bindClassStaticFunction<Creature>("isSoftShadow", &Creature::isSoftShadow);
+     g_lua.bindClassStaticFunction<Creature>("setDeathFade", &Creature::setDeathFade); // base patch 0139
++    g_lua.bindClassStaticFunction<Creature>("hasShaderParams", []{ return true; }); // base patch 0200: outfit tables take shaderA .. shaderD
+     g_lua.bindClassStaticFunction<Creature>("isDeathFade", &Creature::isDeathFade);
+     g_lua.bindClassStaticFunction<Creature>("setHitTint", &Creature::setHitTint); // base patch 0142
+     g_lua.bindClassStaticFunction<Creature>("isHitTint", &Creature::isHitTint);
+--- a/src/framework/graphics/paintershaderprogram.h	2026-11-14 13:55:28.311792195 +0000
++++ b/src/framework/graphics/paintershaderprogram.h	2026-11-14 13:55:54.675703021 +0000
+@@ -56,7 +56,8 @@
+         CENTER_UNIFORM = 15,
+         MAP_WALKOFFSET_UNIFORM = 16,
+         PARAMS_UNIFORM = 17, // Chaos (base patch 0044): u_Params, a widget's own values (UIWidget:setUiShaderParams)
+-        PARAMS2_UNIFORM = 18 // Chaos (base patch 0153): u_Params2, the map grade's second set of values
++        PARAMS2_UNIFORM = 18, // Chaos (base patch 0153): u_Params2, the map grade's second set of values
++        SRC_UNIFORM = 19 // Chaos (base patch 0200): u_Src, an outfit part's rectangle in its texture (left, top, width, height in pixels)
+     };
+ 
+     friend class Painter;
+@@ -81,6 +82,7 @@
+     void updateWalkOffset(const PointF& offset);
+     void setParams(float a, float b, float c, float d);
+     void setParams2(float a, float b, float c, float d); // Chaos (base patch 0153)
++    void setSrc(float left, float top, float width, float height); // Chaos (base patch 0200)
+ 
+     void addMultiTexture(const std::string& file);
+     void bindMultiTextures();
+--- a/src/framework/graphics/paintershaderprogram.cpp	2026-11-14 13:55:28.315296858 +0000
++++ b/src/framework/graphics/paintershaderprogram.cpp	2026-11-14 13:55:54.675878547 +0000
+@@ -61,6 +61,7 @@
+     bindUniformLocation(MAP_WALKOFFSET_UNIFORM, "u_WalkOffset");
+     bindUniformLocation(PARAMS_UNIFORM, "u_Params");
+     bindUniformLocation(PARAMS2_UNIFORM, "u_Params2");
++    bindUniformLocation(SRC_UNIFORM, "u_Src"); // Chaos (base patch 0200)
+ 
+     // VALUES
+     setUniformValue(TRANSFORM_MATRIX_UNIFORM, m_transformMatrix);
+@@ -232,6 +233,13 @@
+     setUniformValue(PARAMS2_UNIFORM, a, b, c, d);
+ }
+ 
++// Chaos (base patch 0200): the rectangle of the outfit part being drawn, in texture pixels
++void PainterShaderProgram::setSrc(float left, float top, float width, float height)
++{
++    bind();
++    setUniformValue(SRC_UNIFORM, left, top, width, height);
++}
++
+ void PainterShaderProgram::addMultiTexture(const std::string& file)
+ {
+     if (m_multiTextures.size() > 3)

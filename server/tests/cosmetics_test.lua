@@ -150,8 +150,8 @@ for _, c in ipairs(cfg.cosmetics) do
 		eq(c.price, store[c.kind], "one price per kind: " .. c.key)
 	end
 end
-eq(count.spellskin, 12, "12 spell skins")
-eq(count.killfx, 25, "25 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 9 reward track, 3 Pact months, 1 Candlemarks)")
+eq(count.spellskin, 26, "26 spell skins (12 first, 14 for the spells of the starter builds, O563)")
+eq(count.killfx, 32, "32 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 9 reward track, 3 Pact months, 1 Candlemarks, 7 dissolve effects of O563: 4 store, 3 achievements)")
 eq(count.lootbeam, 17, "17 label accents (three PvP, 4 reward track, 3 Pact months, 1 Candlemarks, the 7-day streak)")
 eq(count.chatcolor, 17, "17 chat colours (three PvP, 5 reward track, the Pact's, 1 Candlemarks, the collection reward)")
 -- the Chaos Pact (VIP) perks: never sold, every monthly key and the chat colour are pact cosmetics
@@ -174,10 +174,10 @@ eq(store.lootbeam, 150, "label accents 150") eq(store.chatcolor, 200, "chat colo
 eq(count.footprint, 14, "14 footprints (9 store, an achievement, the reward track, two boss drops, the collection reward)")
 eq(count.outline, 13, "13 outlines (9 store, an achievement, the reward track, two boss drops)")
 eq(store.footprint, 200, "footprints 200") eq(store.outline, 250, "outlines 250")
--- every line but the Necromancer's has 2-3 skins of 2-3 spells
+-- every line has 1 to 8 skins (O563: the Necromancer line has two, the Mystic line seven)
 for _, l in ipairs(cfg.lines) do
 	local skins = K.index(cfg).skinsOfLine[l.key]
-	eq(#skins >= 1 and #skins <= 3, true, l.key .. ": skins")
+	eq(skins ~= nil and #skins >= 1 and #skins <= 8, true, l.key .. ": skins")
 end
 
 -- the validator refuses what is not a recolour, unknown effects, power, unreadable colours, a wrong store price
@@ -475,6 +475,101 @@ eq(broken(function(l) byKeyIn(l, "foot_ember").art = "nope" end):find("art nope 
 	"unknown print art")
 eq(broken(function(l) byKeyIn(l, "foot_ember").art = "frost" end):find("art frost used by", 1, true) ~= nil, true,
 	"one picture per footprint")
+
+-- dissolve kill effects (O563): config rules, rows, offers, payload, throttle, viewers
+eq(broken(function(l) byKeyIn(l, "kill_windswept").dissolve = "plasma" end):find("not a mode", 1, true) ~= nil, true,
+	"an unknown dissolve mode is refused")
+eq(broken(function(l) byKeyIn(l, "kill_windswept").tint = 8 end):find("tint is a whole number", 1, true) ~= nil, true,
+	"a tint beyond the palette is refused")
+eq(broken(function(l) byKeyIn(l, "kill_windswept").tint = 1.5 end):find("tint is a whole number", 1, true) ~= nil, true,
+	"a fractional tint is refused")
+eq(broken(function(l) byKeyIn(l, "loot_ember").dissolve = "sand" end):find("only for kill effects", 1, true) ~= nil, true,
+	"only a kill effect dissolves")
+eq(broken(function(l) byKeyIn(l, "kill_soulspark").tint = 2 end):find("not a mode", 1, true) ~= nil, true,
+	"a tint without a dissolve is refused")
+do
+	local dissolving = {}
+	for _, c in ipairs(cfg.cosmetics) do
+		if c.kind == "killfx" and c.dissolve then
+			dissolving[#dissolving + 1] = c.key
+			eq(K.dissolveKnown(cfg, c.dissolve), true, c.key .. ": a known mode")
+			eq(type(c.vfx), "string", c.key .. ": keeps its plain effect for the fallback")
+			eq((c.tint or 0) >= 0 and (c.tint or 0) < cfg.dissolve.tints, true, c.key .. ": tint in the palette")
+		end
+	end
+	table.sort(dissolving)
+	-- the three replaced ones keep their ids and owners; seven are new; at least four are sold or earned in new ways
+	eq(#dissolving, 10, "ten dissolve kill effects")
+	eq(K.byKey(cfg, "kill_verdigris").id, 112, "Verdigris Splash keeps its id") eq(K.byKey(cfg, "kill_verdigris").source, "achievement", "and its owner rule")
+	eq(K.byKey(cfg, "kill_verdigris").points, 500, "and its points")
+	eq(K.byKey(cfg, "kill_pact_ember").id, 130, "Pact Ember keeps its id") eq(K.byKey(cfg, "kill_pact_ember").source, "pact", "and its source")
+	eq(K.byKey(cfg, "kill_honorbrand").id, 110, "Honor Brand keeps its id") eq(K.byKey(cfg, "kill_honorbrand").source, "pvp", "and its source")
+	local modes = {}
+	for _, c in ipairs(cfg.cosmetics) do
+		if c.dissolve then modes[c.dissolve] = true end
+	end
+	for _, m in ipairs(cfg.dissolve.modes) do
+		eq(modes[m], true, "mode " .. m .. " is used by a kill effect")
+	end
+	local d, t = K.dissolveOf(K.byKey(cfg, "kill_gildeddust"))
+	eq(d, "gold", "dissolveOf mode") eq(t, 4, "dissolveOf tint")
+	eq(K.dissolveOf(K.byKey(cfg, "kill_soulspark")), nil, "a plain kill effect has none")
+	eq(K.dissolveOf(K.byKey(cfg, "skin_mystic_ember")), nil, "a skin has none")
+	-- the window rows and the store offer carry it
+	local drows = K.rows(cfg, {}, {}, {})
+	local byId = {}
+	for _, r in ipairs(drows) do byId[r.id] = r end
+	eq(byId[122].dissolve, "sand", "row: mode") eq(byId[122].tint, nil, "row: tint 0 is not sent")
+	eq(byId[128].dissolve, "gold", "row: mode") eq(byId[128].tint, 4, "row: tint")
+	eq(byId[101].dissolve, nil, "a plain kill effect row has none")
+	local look = K.offerLook(cfg, "cosmetic_kill_windswept", function() return {id = 1, dx = 0, dy = 0, ms = 100} end)
+	eq(look.kind, "effects", "offer look") eq(look.killfx, true, "on a dying monster") eq(look.dissolve, "sand", "offer: mode")
+	local tinted = {}
+	for k, v in pairs(cfg) do tinted[k] = v end
+	tinted.cosmetics = {}
+	for i, c in ipairs(cfg.cosmetics) do
+		tinted.cosmetics[i] = c
+		if c.key == "kill_windswept" then
+			local copy = {}
+			for k, v in pairs(c) do copy[k] = v end
+			copy.tint = 4
+			tinted.cosmetics[i] = copy
+		end
+	end
+	look = K.offerLook(tinted, "cosmetic_kill_windswept", function() return {id = 1, dx = 0, dy = 0, ms = 100} end)
+	eq(look.dissolve, "sand", "offer: sand") eq(look.tint, 4, "offer: tint")
+	eq(K.offerLook(cfg, "cosmetic_kill_soulspark", function() return {id = 1, dx = 0, dy = 0, ms = 100} end).dissolve, nil, "plain offer")
+end
+do
+	local out = {outfit = {lookType = 15, lookHead = 1, lookBody = 2, lookLegs = 3, lookFeet = 4, lookAddons = 0}}
+	local msg = K.dissolvePayload(cfg, 9001, {x = 200, y = 210, z = 7}, "sand", 0, out.outfit, 3, {id = 468, dx = 1, dy = 1})
+	eq(msg.action, "kdis", "action") eq(msg.data.i, 9001, "creature id") eq(msg.data.x, 200, "x") eq(msg.data.y, 210, "y") eq(msg.data.z, 7, "z")
+	eq(msg.data.m, "sand", "mode") eq(msg.data.t, nil, "tint 0 is left out") eq(msg.data.o.l, 15, "look") eq(msg.data.o.g, 3, "legs")
+	eq(msg.data.d, 3, "direction") eq(msg.data.v.id, 468, "plain effect id") eq(msg.data.v.dx, 1, "plain dx")
+	msg = K.dissolvePayload(cfg, 1, {x = 1, y = 1, z = 7}, "burn", 7, out.outfit, nil, {id = 9, dx = 0, dy = 0})
+	eq(msg.data.t, 7, "tint sent") eq(msg.data.d, 2, "south by default") eq(msg.data.v.dx, nil, "dx 0 is left out")
+	eq(K.dissolvePayload(cfg, 1, {x = 1, y = 1, z = 7}, "plasma", 0, out.outfit, 2, nil), nil, "unknown mode: no payload")
+	eq(K.dissolvePayload(cfg, 1, {x = 1, y = 1, z = 7}, "sand", 0, {lookType = 0, lookTypeEx = 2400}, 2, nil), nil, "an item look: plain effect")
+	eq(K.dissolvePayload(cfg, 1, {x = 1, y = 1, z = 7}, "sand", 0, {lookType = 15, lookTypeEx = 2400}, 2, nil), nil, "a look with an item: plain effect")
+	eq(K.dissolvePayload(cfg, 1, nil, "sand", 0, out.outfit, 2, nil), nil, "no place")
+	eq(K.dissolvePayload(cfg, 1, {x = 1, y = 1, z = 7}, "sand", 0, out.outfit, 2, nil).data.v, nil, "no plain effect known: none sent")
+	-- the rate: perSec per killer and second, then the plain effect; a new second starts again
+	local st = {}
+	for i = 1, cfg.dissolve.perSec do
+		eq(K.dissolveAllowed(cfg, st, 7, 1000), true, "dissolve " .. i .. " of the second")
+	end
+	eq(K.dissolveAllowed(cfg, st, 7, 1000), false, "over the rate: plain effect")
+	eq(K.dissolveAllowed(cfg, st, 8, 1000), true, "another killer has its own count")
+	eq(K.dissolveAllowed(cfg, st, 7, 1001), true, "the next second starts again")
+	-- the viewers: the killer first, at most maxViewers
+	local near = {}
+	for i = 1, 30 do near[i] = {id = 100 + i} end
+	local picked = K.dissolveViewers(cfg, near, 120)
+	eq(#picked, cfg.dissolve.maxViewers, "at most maxViewers") eq(picked[1].id, 120, "the killer first")
+	eq(#K.dissolveViewers(cfg, {{id = 5}}, 5), 1, "alone") eq(#K.dissolveViewers(cfg, {}, 5), 0, "nobody")
+	eq(#K.dissolveViewers(cfg, {{id = 6}, {id = 7}}, 5), 2, "the killer out of range is not added")
+end
+
 eq(broken(function(l) byKeyIn(l, "foot_ember").pulse = true end):find("only for outlines", 1, true) ~= nil, true,
 	"a footprint does not pulse")
 eq(broken(function(l) byKeyIn(l, "glow_cinder").boss = nil end):find("needs the boss's name", 1, true) ~= nil, true,
@@ -551,7 +646,8 @@ eq(K.skinForSpell(cfg, 63, function(line) return chosenLines[line] end), nil, "t
 chosenLines.warrior = 8 -- a monk skin stored in the warrior slot is ignored
 eq(K.skinForSpell(cfg, 222, function(line) return chosenLines[line] end), nil, "a skin of another line is ignored")
 eq(K.lineOfVocation(cfg, "Iron Sage"), "monk", "Iron Sage is the monk line")
-eq(K.lineOfVocation(cfg, "Lich"), nil, "the Necromancer line has no skins")
+eq(K.lineOfVocation(cfg, "Lich"), "necromancer", "Lich is the necromancer line (O563)")
+eq(K.storageOf(cfg, "spellskin", "necromancer"), 7100949, "necromancer slot storage, the last of the block")
 eq(K.storageOf(cfg, "spellskin", "templar"), 7100948, "templar slot storage")
 eq(K.storageOf(cfg, "chatcolor"), 7100942, "chat colour storage")
 -- previews
@@ -827,6 +923,61 @@ opcode(ann, "select", {kind = "killfx", id = 0})
 registered.ChaosCosmeticsDeath.onDeath(monster, nil, ann, ann)
 eq(#effects, before, "back to the default: nothing")
 
+-- dissolve kill effects (O563): the clients near the kill get the monster's look, no server effect plays
+do
+	M.storeUnlock("cosmetic_kill_windswept").grant(ann)
+	opcode(ann, "select", {kind = "killfx", id = 122})
+	eq(M.active[ann:getId()].killdis.mode, "sand", "Ann wears Windswept") eq(M.active[ann:getId()].killdis.tint, 0, "its tint")
+	eq(M.active[ann:getId()].killfx, "px586_white", "its plain effect stays the fallback")
+	local function dying(x, outfit)
+		return {getId = function() return 9001 end, getPosition = function() return Position(x, 200, 7) end,
+			getOutfit = function() return outfit end, getDirection = function() return 3 end}
+	end
+	local look = {lookType = 15, lookHead = 1, lookBody = 2, lookLegs = 3, lookFeet = 4, lookAddons = 0}
+	local nearby = {bob, ann}
+	Game.getSpectators = function() return nearby end
+	local realTime = os.time
+	os.time = function() return 5000 end
+	local b4, s4 = #effects, #sent
+	registered.ChaosCosmeticsDeath.onDeath(dying(200, look), nil, ann, ann)
+	eq(#effects, b4, "a dissolve plays no server effect")
+	eq(#sent, s4 + 2, "two clients are told")
+	local toAnn, toBob = lastTo("Ann", "kdis"), lastTo("Bob", "kdis")
+	eq(toAnn ~= nil and toBob ~= nil, true, "the killer and the player near it")
+	eq(toAnn.m, "sand", "mode") eq(toAnn.o.l, 15, "look") eq(toAnn.x, 200, "place") eq(toAnn.i, 9001, "creature") eq(toAnn.v.id, ChaosVfx.px586_white.id, "plain effect id")
+	eq(sent[s4 + 1].to, "Ann", "the killer is told first")
+	-- a monster with no creature look: the plain effect
+	b4 = #effects
+	registered.ChaosCosmeticsDeath.onDeath(dying(200, {lookType = 0, lookTypeEx = 2400}), nil, ann, ann)
+	eq(#effects, b4 + 1, "an item look plays the plain effect")
+	-- the rate: perSec dissolves a second, the next kill plays the plain effect
+	s4, b4 = #sent, #effects
+	for i = 1, cfg.dissolve.perSec + 2 do
+		registered.ChaosCosmeticsDeath.onDeath(dying(200 + i, look), nil, ann, ann)
+	end
+	eq(#sent, s4 + (cfg.dissolve.perSec - 1) * 2, "the rest of the second's dissolves go out (one was spent above)")
+	eq(#effects, b4 + 3, "the kills over the rate play the plain effect")
+	os.time = function() return 5001 end
+	s4 = #sent
+	registered.ChaosCosmeticsDeath.onDeath(dying(200, look), nil, ann, ann)
+	eq(#sent, s4 + 2, "a new second dissolves again")
+	-- nobody to tell: the plain effect
+	nearby = {}
+	b4, s4 = #effects, #sent
+	os.time = function() return 5002 end
+	registered.ChaosCosmeticsDeath.onDeath(dying(200, look), nil, ann, ann)
+	eq(#sent, s4, "nobody told") eq(#effects, b4 + 1, "the plain effect plays")
+	os.time = realTime
+	Game.getSpectators = nil
+	-- a plain kill effect never sends a dissolve
+	opcode(ann, "select", {kind = "killfx", id = 103})
+	eq(M.active[ann:getId()].killdis, nil, "Frost Shatter has no dissolve")
+	s4 = #sent
+	registered.ChaosCosmeticsDeath.onDeath(dying(200, look), nil, ann, ann)
+	eq(#sent, s4, "a plain kill effect sends no message")
+	opcode(ann, "select", {kind = "killfx", id = 0})
+end
+
 -- chat name colours: for every online character, sent at login and on a change
 M.storeUnlock("cosmetic_chat_frost").grant(bob)
 opcode(bob, "select", {kind = "chatcolor", id = 302})
@@ -1036,30 +1187,27 @@ end
 do
 	dofile("data/lib/chaos_rarity.lua")
 	SKILL_LEVEL, TALKTYPE_MONSTER_SAY = 8, 34
-	-- the pure rules: throttle, rare check, who shows an emote
+	-- the pure rules: throttle, rare check
 	local last = {}
 	eq(K.allowFx(last, "a", 1000, 500), true, "first play") eq(K.allowFx(last, "a", 1200, 500), false, "too soon")
 	eq(K.allowFx(last, "a", 1500, 500), true, "after the wait") eq(K.allowFx(last, "b", 1500, 500), true, "another key")
 	eq(K.allowFx(last, "a", 100, 500), true, "a clock that went back plays")
 	eq(K.hasRare({0, 4, 5}, 5, ChaosRarity.rank), true, "Legendary found") eq(K.hasRare({0, 4}, 5, ChaosRarity.rank), false, "Rare is not")
 	eq(K.hasRare({}, 5, ChaosRarity.rank), false, "nothing dropped") eq(K.hasRare({0}, 0, ChaosRarity.rank), false, "none is no rarity")
-	local wearers = K.emoteWearers({combat = {maxPerKill = 2}}, {1, 2, 2, 3, 4}, function(id) return id ~= 3 end,
-		function(id) return id ~= 1 end)
-	eq(#wearers, 2, "at most maxPerKill") eq(wearers[1], 2, "in order, once each, near only") eq(wearers[2], 4, "skips the one without an emote")
 	-- the shipped combat cosmetics: visual only, 150-250, a real effect, one price band, store offers, rewards
-	local kinds = {levelfx = 0, rarefx = 0, emote = 0}
+	local kinds = {levelfx = 0, rarefx = 0}
 	for _, c in ipairs(cfg.cosmetics) do
 		if kinds[c.kind] then
 			kinds[c.kind] = kinds[c.kind] + 1
 			eq(c.source == "store" or c.source == "achievement" or c.source == "daily", true, c.key .. " is sold or a milestone or login streak reward (O378, O409)") eq(ChaosVfx[c.vfx] ~= nil, true, c.key .. " plays a known effect")
-			eq(c.kind == "emote" and #c.say >= 1 and #c.say <= K.EMOTE_MAX or c.say == nil, true, c.key .. " line")
+			eq(c.say, nil, c.key .. " says nothing (the emotes are gone, O564)")
 		end
 	end
-	eq(kinds.levelfx >= 3 and kinds.rarefx >= 3 and kinds.emote >= 3, true, "three or more of each kind")
-	eq(cfg.storage.levelfx >= 7102000 and cfg.storage.emote <= 7102009, true, "storages in the wardrobe block")
-	eq(cfg.storage.levelfx ~= cfg.storage.rarefx and cfg.storage.rarefx ~= cfg.storage.emote, true, "storages differ")
-	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "emote_roar" then c.say = ("x"):rep(40) end end end)
-		:find("say is a line", 1, true) ~= nil, true, "a long emote line is refused")
+	eq(kinds.levelfx >= 3 and kinds.rarefx >= 3, true, "three or more of each kind")
+	eq(cfg.storage.levelfx >= 7102000 and cfg.storage.rarefx <= 7102009, true, "storages in the wardrobe block")
+	eq(cfg.storage.levelfx ~= cfg.storage.rarefx and cfg.storage.emote == nil, true, "storages differ, the emote one is retired")
+	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "lvl_dawn" then c.say = "Hi" end end end)
+		:find("say was only", 1, true) ~= nil, true, "a line on an effect is refused")
 	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "lvl_dawn" then c.vfx = "no_such" end end end)
 		:find("not an effect", 1, true) ~= nil, true, "an unknown effect is refused")
 	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "foot_collector" then c.price = 100 end end end)
@@ -1075,14 +1223,14 @@ do
 	party = {getMembers = function() return {eve, fay} end, getLeader = function() return eve end}
 	registered.ChaosCosmeticsLogin.onLogin(eve)
 	registered.ChaosCosmeticsLogin.onLogin(fay)
-	for _, key in ipairs({"lvl_dawn", "rare_gilded", "emote_roar"}) do
+	for _, key in ipairs({"lvl_dawn", "rare_gilded"}) do
 		eq(M.storeUnlock("cosmetic_" .. key).grant(eve), true, key .. " bought")
 	end
-	M.storeUnlock("cosmetic_emote_salute").grant(fay)
+	eq(M.storeUnlock("cosmetic_emote_salute"), nil, "the emotes are not on sale any more")
 	opcode(eve, "select", {kind = "levelfx", id = 601}) eq(lastTo("Eve", "result").ok, true, "level-up effect chosen")
-	opcode(eve, "select", {kind = "rarefx", id = 701}) opcode(eve, "select", {kind = "emote", id = 801})
-	opcode(fay, "select", {kind = "emote", id = 802})
-	eq(storages[70][cfg.storage.levelfx], 601, "stored") eq(storages[70][cfg.storage.emote], 801, "emote stored")
+	opcode(eve, "select", {kind = "rarefx", id = 701})
+	opcode(eve, "select", {kind = "emote", id = 801}) eq(lastTo("Eve", "result").ok, false, "an emote cannot be chosen")
+	eq(storages[70][cfg.storage.levelfx], 601, "stored")
 	opcode(eve, "select", {kind = "levelfx", id = 602}) eq(lastTo("Eve", "result").ok, false, "one not owned is refused")
 	eq(lastTo("Eve", "state").rows[1].id ~= nil, true, "rows still sent")
 
@@ -1119,32 +1267,6 @@ do
 	eq(effects[#effects].id, ChaosVfx.aura_burst_gold.id, "Gilded Glint") eq(effects[#effects].x, 300 + ChaosVfx.aura_burst_gold.dx, "at the corpse")
 	eq(M.rareDrop(eve, corpseOf({10})), false, "throttled") eq(#effects, before + 1, "still one")
 
-	-- victory emote: a boss only, the killer and the party near, once per emoteMs
-	local function monsterAt(x, boss, master)
-		return {isMonster = function() return true end, getMaster = function() return master end,
-			getType = function() return {isBoss = function() return boss end} end,
-			getPosition = function() return Position(x, 100, 7) end}
-	end
-	before = #effects
-	-- Eve reads English, Fay pt-BR; both stand in range: every line goes out once per viewer, in the viewer's language
-	Chaos.setLang(eve, "en") Chaos.setLang(fay, "pt-BR")
-	Game.getSpectators = function() return {eve, fay} end
-	eq(M.victory(monsterAt(101, false), eve, eve), false, "an ordinary monster: no emote")
-	eq(M.victory(monsterAt(101, true, {}), eve, eve), false, "a summon: no emote")
-	eq(M.victory(monsterAt(101, true), eve, nil), true, "a boss fell") eq(#effects, before + 2, "Eve's and Fay's effects")
-	eq(#said, 4, "two lines, each sent to two viewers") eq(said[1].who, "Eve", "the killer first") eq(said[1].to, "Eve", "to the English viewer")
-	eq(said[1].text, "Victory!", "her line in English") eq(said[2].to, "Fay", "then the pt-BR viewer") eq(said[2].text, "Vit\xc3\xb3ria!", "her line in pt-BR")
-	eq(said[3].who, "Fay", "then the party member") eq(said[3].text, "For the fallen!", "Warrior's Salute in English")
-	eq(said[4].text, "Pelos ca\xc3\xaddos!", "Warrior's Salute in pt-BR")
-	eq(effects[#effects].only, nil, "seen by players nearby")
-	eq(M.victory(monsterAt(101, true), eve, nil), false, "throttled") eq(#said, 4, "no more lines")
-	Game.getSpectators = nil
-	Chaos.setLang(fay, "en")
-	for _, c in ipairs(cfg.cosmetics) do
-		if c.kind == "emote" then
-			eq(ChaosI18n.text("pt-BR", c.say) ~= c.say, true, c.key .. " line has a pt-BR text")
-		end
-	end
 	registered.ChaosCosmeticsLogout.onLogout(eve)
 	registered.ChaosCosmeticsLogout.onLogout(fay)
 	eq(M.active[70], nil, "logout clears the cache")

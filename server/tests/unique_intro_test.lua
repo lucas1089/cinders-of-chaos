@@ -83,7 +83,7 @@ ok(pt.sent[1][2]:find("Codex", 1, true), "pt-BR: names the Codex")
 
 -- ---------------------------------------------------------------- the texts of the tooltip line, both languages
 local S = I.strings["pt-BR"]
-for _, key in ipairs({"Works for your class.", "Works for every class.", "Asleep: your class is not in its list.", "Active.",
+for _, key in ipairs({"Works for your class.", "Works for every class.", "Cannot use: not for your class.", "Active.",
 		"Asleep: %s is stronger.", "Asleep: only %d unique powers work at once.", cfg.text}) do
 	ok(S[key] and S[key] ~= key, "pt-BR text of: " .. key)
 	local _, ec = key:gsub("%%[sd]", "")

@@ -115,7 +115,7 @@ end
 do
 	local list = cfg.marks.monthly
 	check(#list >= 6 and #list <= 12, "6 to 12 cosmetics in the rotation")
-	local kinds = {lootbeam = true, chatcolor = true, killfx = true, footprint = true, outline = true, levelfx = true, rarefx = true, emote = true}
+	local kinds = {lootbeam = true, chatcolor = true, killfx = true, footprint = true, outline = true, levelfx = true, rarefx = true}
 	local seen = {}
 	for _, it in ipairs(list) do
 		local c = cosOf[it.key]
@@ -140,16 +140,16 @@ do
 		eq(it.endsAt, os.time({year = m == 12 and 2027 or 2026, month = m == 12 and 1 or m + 1, day = 1, hour = 0}), "it ends at the start of the next month")
 		if #list > 1 then check(nextM.key ~= it.key, "the next month has another one") end
 	end
-	eq(P.monthlyItem(cfg, at(2026, 10)).key, "rare_crimson", "October 2026: the Crimson Rare Loot Effect") eq(P.monthlyItem(cfg, at(2026, 11)).key, "emote_salute", "November 2026")
+	eq(P.monthlyItem(cfg, at(2026, 10)).key, "rare_crimson", "October 2026: the Crimson Rare Loot Effect") eq(P.monthlyItem(cfg, at(2026, 11)).key, "lvl_ember", "November 2026")
 	-- the shelf: the 6 fixed rows then the month's
 	local shelf = P.shelf(cfg, at(2026, 11))
 	eq(#shelf, #cfg.marks.shelf + 1, "the fixed shelf and one slot") eq(shelf[#shelf].monthly, true, "the slot is last")
 	eq(shelf[1].key, cfg.marks.shelf[1].key, "the fixed rows keep their place") eq(shelf[1].monthly, nil, "a fixed row is not monthly")
 	-- only this month's cosmetic can be bought, and the same rules as the fixed shelf
-	eq(P.shelfCheck(cfg, 200, {}, "emote_salute", at(2026, 11)), nil, "November: 200 Marks buy the Salute")
-	check(P.shelfCheck(cfg, 199, {}, "emote_salute", at(2026, 11)) ~= nil, "199 are not enough")
-	check(P.shelfCheck(cfg, 9999, {emote_salute = true}, "emote_salute", at(2026, 11)) ~= nil, "owned: not twice")
-	eq(P.shelfCheck(cfg, 9999, {}, "emote_salute", at(2026, 12)), cfg.messages.marksNoItem, "in December the Salute is off the shelf")
+	eq(P.shelfCheck(cfg, 200, {}, "lvl_ember", at(2026, 11)), nil, "November: 200 Marks buy the Ember Ascent")
+	check(P.shelfCheck(cfg, 199, {}, "lvl_ember", at(2026, 11)) ~= nil, "199 are not enough")
+	check(P.shelfCheck(cfg, 9999, {lvl_ember = true}, "lvl_ember", at(2026, 11)) ~= nil, "owned: not twice")
+	eq(P.shelfCheck(cfg, 9999, {}, "lvl_ember", at(2026, 12)), cfg.messages.marksNoItem, "in December the Ember Ascent is off the shelf")
 	eq(P.shelfCheck(cfg, 9999, {}, "kill_bloodbloom", at(2026, 11)), cfg.messages.marksNoItem, "another month's cosmetic cannot be bought")
 	eq(P.shelfCheck(cfg, 150, {}, "loot_ember", at(2026, 11)), nil, "the fixed shelf is the same every month")
 	-- a monthly cosmetic that is also fixed shows once (a config slip must not duplicate a row)

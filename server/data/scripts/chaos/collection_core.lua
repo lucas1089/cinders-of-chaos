@@ -10,7 +10,7 @@ local K = ChaosCollectionCore
 
 K.WARDROBE_KINDS = {"outfit", "mount", "wings", "aura", "shader"}
 -- the groups the window lists, in order
-K.GROUPS = {"outfit", "mount", "wings", "aura", "shader", "frame", "spellskin", "killfx", "levelfx", "rarefx", "emote",
+K.GROUPS = {"outfit", "mount", "wings", "aura", "shader", "frame", "spellskin", "killfx", "levelfx", "rarefx",
 	"lootbeam", "chatcolor", "footprint", "outline", "title"}
 K.TITLE_MAX_CHARS = 24
 

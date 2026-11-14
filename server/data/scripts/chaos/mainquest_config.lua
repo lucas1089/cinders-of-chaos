@@ -36,9 +36,9 @@ return {
 		items = 10, last = 7101139},
 	states = {fresh = -1, active = 0, done = 1, skipped = 2, quiet = 3},
 	flagBits = {talk = 1}, -- bit 1 of +3 is the talk flag; the keys of `flags` below take the next bits (29 in +3, then +4)
-	flags = {"potion", "sell", "autoloot", "daily", "market", "loadout", "charms", "bank", "stash", "salvage", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "gambler", "nemesis", "portal", "chronicle", "weekly", "siege", "marches", "teleports", "seasonpass", "charinfo1", "charinfo2", "door"},
+	flags = {"potion", "sell", "autoloot", "daily", "market", "loadout", "charms", "bank", "stash", "salvage", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "gambler", "nemesis", "portal", "chronicle", "weekly", "siege", "marches", "teleports", "seasonpass", "charinfo1", "charinfo2", "door", "deck"},
 	-- flags the client's Go button marks (a window to see, an info page to read): ChaosMainQuest.go; every other flag comes from a hook
-	acks = {"charms", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "nemesis", "chronicle", "siege", "marches", "seasonpass", "charinfo1", "charinfo2"},
+	acks = {"charms", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "nemesis", "chronicle", "siege", "marches", "seasonpass", "charinfo1", "charinfo2", "deck"},
 	staffGroup = 4,
 	quietAbove = 500, -- first seen above this level: no tracker, only the door of the last page (state quiet)
 	startLevel = 8,
@@ -522,6 +522,12 @@ return {
 			hint = T("Guilds fight over fortresses (level 100). The Marches are PvP with risky loot (level 150): enter only if you want.", "Guildas disputam fortalezas (nível 100). As Marches são PvP com saque arriscado (nível 150): só entre se quiser."),
 			done = T("Step done.", "Saber onde não entrar também é saber."),
 			where = {k = "window", m = "game_siege", f = "toggle"}},
+		{key = "deck", ch = 4, level = 150, mins = 2, items = {},
+			conds = {{c = "flag", key = "deck"}},
+			title = T("Open the Deck of Cards", "Abra o Deck of Cards"),
+			hint = T("Cards drop from the level 150 hunts on. Hero > Build > Deck of Cards: every card you loot goes into it by itself. Opening it also opens the Badge slot of your inventory.", "As cartas caem das hunts a partir do nível 150. Herói > Build > Deck of Cards: toda carta que você pega vai para ele sozinha. Abri-lo também abre o slot de Badge do seu inventário."),
+			done = T("Step done.", "Agora as cartas têm casa, e os brasões têm lugar. Guarde bem os dois."),
+			where = {k = "window", m = "game_carddeck", f = "toggle"}},
 		{key = "ironhorn", ch = 4, level = 155, mins = 4, items = {},
 			conds = {{c = "count", mons = {"Ironhorn Brute"}, target = 30, label = "Ironhorn Brute"}},
 			title = T("Slay 30 Ironhorn Brutes", "Mate 30 Ironhorn Brutes"),

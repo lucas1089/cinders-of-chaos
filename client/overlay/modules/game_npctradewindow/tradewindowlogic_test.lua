@@ -9,30 +9,19 @@ local function eq(a, b, what)
 end
 
 local g = L.geometry(1920, 1080, 0)
-eq(g.w, 420, 'full width on a big view'); eq(g.h, 520, 'full height on a big view')
-eq(g.x, 750, 'centred x'); eq(g.y, 280, 'centred y')
+eq(g.w, 720, 'full width on a big view'); eq(g.h, 480, 'full height on a big view')
+eq(g.x, 600, 'centred x'); eq(g.y, 300, 'centred y')
 g = L.geometry(1920, 1080, 40)
-eq(g.y, 40 + math.floor((1080 - 40 - 520) / 2), 'centred under the menu bar')
-g = L.geometry(800, 600, 0)
-eq(g.w, 420, 'width fits'); eq(g.h, 520, 'height fits')
-g = L.geometry(400, 400, 30)
-eq(g.w, 352, 'narrow view: width less the margins'); eq(g.h, 322, 'short view: height less the margins')
+eq(g.y, 40 + math.floor((1080 - 40 - 480) / 2), 'centred under the menu bar')
+g = L.geometry(960, 540, 0)
+eq(g.w, 720, 'the phone view fits the width'); eq(g.h, 480 - 0, 'and the height (540 - 48 = 492)')
+g = L.geometry(700, 500, 30)
+eq(g.w, 652, 'narrow view: width less the margins'); eq(g.h, 422, 'short view: height less the margins')
 eq(g.x >= 0, true, 'x never negative'); eq(g.y >= 30, true, 'y never above the bar')
 g = L.geometry(200, 200, 0)
-eq(g.w, 300, 'tiny view: minimum width'); eq(g.h, 300, 'tiny view: minimum height'); eq(g.x, 0, 'x clamped at 0')
+eq(g.w, 560, 'tiny view: minimum width'); eq(g.h, 380, 'tiny view: minimum height'); eq(g.x, 0, 'x clamped at 0')
 g = L.geometry(nil, nil, nil)
-eq(g.w, 300, 'bad input: minimum'); eq(g.x, 0, 'bad input x')
-eq(L.needsFloat(true, false), true, 'shown in a side panel: float')
-eq(L.needsFloat(true, true), false, 'already floating')
-eq(L.needsFloat(false, false), false, 'hidden: nothing to do')
-eq(L.needsFloat(true, true, true), true, 'put on the root panel by the module: size, place and focus still to do')
-eq(L.needsFloat(false, true, true), false, 'forced but hidden: nothing to do')
-eq(L.needsFloat(true, false, false), true, 'not forced, in a side panel: float')
--- O506: the trade window never takes room in a side panel
-eq(L.keepsOutOfPanels('tradeWindow'), true, 'the trade window')
-eq(L.keepsOutOfPanels('containerBackpack'), false, 'a backpack is placed as before') eq(L.keepsOutOfPanels('skillWindow'), false, 'a skills window')
-eq(L.keepsOutOfPanels(nil), false, 'no id') eq(L.keepsOutOfPanels('tradeWindow2'), false, 'only the exact id')
-eq(L.PANEL_CALLS[1], 'addToPanelsWithPriority', 'the call the base show() makes') eq(L.PANEL_CALLS[2], 'addToPanels', 'and the one it falls back to')
+eq(g.w, 560, 'bad input: minimum'); eq(g.x, 0, 'bad input x')
 
 -- ---------------------------------------------------------------- a currency other than gold
 local JSON = {
@@ -93,23 +82,6 @@ L.release(S)
 L.receive(S, P('azure'), 400)
 L.receive(S, P('storage'), 401)
 eq(L.take(S, 402).name, 'Hallowfall Coins', 'the last pending packet wins')
-
--- list rows: whole names and one readable second line
-eq(L.rowName('blightwoven armor'), 'blightwoven armor', 'a name that fits stays whole')
-eq(L.rowInfo('Price 30', 85, 'oz'), 'Price 30, 85.00 oz', 'price and weight')
-eq(L.rowInfo('Price 30', 0, 'oz'), 'Price 30', 'no weight: the price only')
-eq(L.rowInfo('Price 15.3k', 110.5, 'oz'), 'Price 15.3k, 110.50 oz', 'a short gold price')
-eq(#L.rowName(string.rep('x', 60)) <= L.ROW_NAME_MAX, true, 'a huge name is clipped')
-eq(#L.rowInfo('Price ' .. string.rep('9', 60), 1, 'oz') <= L.ROW_INFO_MAX, true, 'a huge line is clipped')
--- the rows of the azure NPC (the stock item names and weights): every one fits whole
-for _, row in ipairs({ { 'blightwoven armor', 30, 110 }, { 'blightwoven boots', 30, 11.75 }, { 'ironwrath helmet', 30, 46 },
-                       { 'blightwoven sword', 50, 62.5 }, { 'ashborne armor', 30, 85 }, { 'exowing bow', 50, 36.5 } }) do
-  eq(L.rowName(row[1]), row[1], 'row name whole: ' .. row[1])
-  local info = L.rowInfo('Price ' .. row[2], row[3], 'oz')
-  eq(info:sub(-3) ~= '...', true, 'row info whole: ' .. info)
-end
--- the Portuguese label is longer than the English one: the line still fits its limit
-eq(#L.rowInfo('Preço 50', 110.5, 'oz') <= L.ROW_INFO_MAX, true, 'pt-BR price line fits')
 
 print('npctradewindow tests OK (' .. checks .. ' checks)')
 if fails > 0 then os.exit(1) end

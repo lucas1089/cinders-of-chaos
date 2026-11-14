@@ -62,5 +62,46 @@ check(all(r[2] == G.PACK for r in G.sources_rows()), 'sources: every row names t
 shapes = G.expected_shapes()
 check(shapes['hollow_rider'] == (160 * 8, 160 * 4) and shapes['crypt_portal'] == (96, 96 * 8), 'expected shapes')
 
+# ---- the rider stands on its tile (O576)
+C = 160
+
+
+def figure(x0, x1, y0, y1):
+    f = np.zeros((C, C, 4), np.uint8)
+    f[y0:y1, x0:x1] = (200, 50, 50, 255)
+    return f
+
+
+# the kit's shape: figures hang in the middle of the cell, a different size per direction (north 112 wide, east 90, south 77, west 128)
+boxes = [(10, 122, 20, 147), (38, 128, 46, 123), (46, 123, 38, 128), (10, 138, 11, 123)]
+idle = [[figure(*b), figure(b[0] + 1, b[1], b[2], b[3] - 2)] for b in boxes]
+walk = [[figure(b[0], b[1] - 1, b[2] + 1, b[3]), figure(*b)] for b in boxes]
+i2, w2, moves = G.stand(idle, walk)
+for d in range(4):
+    box = G.box_of(i2[d] + w2[d])
+    check(box[3] == C, 'stand: the lowest pixel of direction %d is on the last row (%d)' % (d, box[3]))
+    check(abs((box[0] + box[1]) / 2.0 - 96) <= 0.5, 'stand: direction %d is centred on column 96 (%s)' % (d, box))
+    check(box[0] >= 0 and box[1] <= C and box[2] >= 0, 'stand: direction %d stays in the cell' % d)
+    # one shift for all frames of a direction: the frames keep their places against each other
+    for f0, f1 in zip(idle[d] + walk[d], i2[d] + w2[d]):
+        dx, dy = moves[d]
+        check(np.array_equal(f0[:C - dy, :C - dx] if dx >= 0 and dy >= 0 else f0, f1[dy:, dx:] if dx >= 0 and dy >= 0 else f0),
+              'stand: frame of direction %d only moved by (%d, %d)' % (d, dx, dy))
+box_w = G.box_of(i2[3] + w2[3])
+check(box_w[1] == C, 'stand: the widest direction ends at the cell edge (%s)' % (box_w,))
+check(sum(int((f[..., 3] > 0).sum()) for f in sum(idle, []) + sum(walk, [])) ==
+      sum(int((f[..., 3] > 0).sum()) for f in sum(i2, []) + sum(w2, [])), 'stand: no pixel lost')
+# a creature narrower than a tile: the middle of its tile (cell - 16); a wider one is moved left until it ends at the cell edge
+narrow = [[figure(60, 84, 40, 120)] for _ in range(4)]
+n2, _w2, mv = G.stand(narrow, narrow)
+check(abs(sum(G.box_of(n2[0])[:2]) / 2.0 - (C - 16)) <= 0.5, 'stand: a narrow figure stands on the middle of its tile')
+# the shift never loses art: a frame that would fall off is refused
+try:
+    G.shifted(figure(100, 160, 100, 160), 5, 0)
+    check(False, 'shifted: art falling off the right is refused')
+except AssertionError:
+    pass
+check(np.array_equal(G.shifted(G.shifted(figure(10, 20, 10, 20), 7, 9), -7, -9), figure(10, 20, 10, 20)), 'shifted: back and forth')
+
 print('gen_assets_art_test:', 'OK' if not failed else '%d failure(s)' % failed)
 sys.exit(1 if failed else 0)

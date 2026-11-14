@@ -76,7 +76,8 @@ return {
 		leaveRadius = 16,
 		emptyGraceSec = 10,
 		warnSec = 4,
-		totalSec = 270, -- the whole event, from the use of the chest: fail past it
+		totalSec = 300, -- the whole event, from the use of the chest: fail past it (owner 2026-11-14: 5 minutes)
+		timeLeftSec = {120, 60, 30, 10}, -- the party is told the time left at these marks
 		firstDelayMs = 2500, -- the first horde comes this long after the use
 		betweenMs = 3000, -- the next horde comes this long after the last monster of the one before died
 		hordeTimerSec = 45, -- or this long after the horde before came, dead or not (the chest does not wait)

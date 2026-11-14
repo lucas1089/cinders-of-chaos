@@ -4,6 +4,7 @@
 -- that puts the wings' pair centre on its torso.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. 'wing_centres.lua')
+dofile(dir .. 'head_centres.lua')
 dofile(dir .. 'wingfit_core.lua')
 local C = WingFitCore
 local D = ChaosWingCentres
@@ -75,6 +76,53 @@ end
 ok(worst == 0, 'landing: torso and pair centre agree, worst ' .. worst)
 -- the two outliers of the first measure (a thin streak beside the wing) are not off: 2441 south is near its mean
 ok(math.abs(D.wings[2441][3] - D.wings[2414][3]) <= 8, '2441 is no outlier: ' .. D.wings[2441][3])
+
+-- head accessories on the head (base patch 0200): head_centres.lua and its hand-over
+local H = ChaosHeadCentres
+ok(type(H) == 'table' and type(H.dat) == 'string' and #H.dat == 32 and H.dat == D.dat, 'head table: same pair as the wing table')
+ok(H.first == 2477 and H.last == 2568, 'head piece range')
+ok(type(H.ref) == 'table' and #H.ref == 8, 'reference look 128 has a head per direction')
+local nh = 0
+for id, row in pairs(H.bodies) do
+  nh = nh + 1
+  ok(type(id) == 'number' and #row == 8 and math.abs(row[5]) <= 120 and math.abs(row[6]) <= 120, 'head row ' .. tostring(id))
+end
+ok(nh == nb, 'a head row for every body row: ' .. nh .. ' ' .. nb)
+for _, id in ipairs({ 2060, 2061, 2073, 2074, 2161, 2183, 2173, 2163, 2045, 2049, 2080, 2169, 2171, 2179 }) do
+  ok(H.bodies[id] ~= nil, 'class look ' .. id .. ' has a head row')
+end
+-- the hand-over: reference, range, every row, four directions
+local calls = { ref = 0, pieces = 0, body = 0 }
+local gotRef, gotPieces, gotBody
+local n = C.applyHeads(H, function(d, x, y) calls.ref = calls.ref + 1; if d == 2 then gotRef = { x, y } end end,
+  function(f, l) calls.pieces = calls.pieces + 1; gotPieces = { f, l } end,
+  function(l, d, x, y) calls.body = calls.body + 1; if l == 2073 and d == 2 then gotBody = { x, y } end end)
+ok(n == nh and calls.ref == 4 and calls.pieces == 1 and calls.body == nh * 4, 'applyHeads counts ' .. n)
+ok(gotRef[1] == H.ref[5] and gotRef[2] == H.ref[6] and gotPieces[1] == 2477 and gotPieces[2] == 2568, 'applyHeads hands the reference and range')
+ok(gotBody[1] == H.bodies[2073][5] and gotBody[2] == H.bodies[2073][6], 'applyHeads hands the south head')
+ok(C.applyHeads(nil, error, error, error) == 0, 'no head table: nothing')
+ok(C.applyHeads({ first = 1, last = 2, ref = { 1, 2, 3 }, bodies = {} }, error, error, error) == 0, 'a short reference: nothing')
+ok(C.applyHeads({ first = 5, last = 2, ref = { 1, 2, 3, 4, 5, 6, 7, 8 }, bodies = {} }, error, error, error) == 0, 'a bad range: nothing')
+local junkH = { first = 10, last = 20, ref = { 0, 0, 0, 0, 0, 0, 0, 0 }, bodies = { [5] = { 1, 2, 3 }, [6] = { 1, 2, 3, 4, 5, 6, 7, 8 }, x = { 1, 2, 3, 4, 5, 6, 7, 8 } } }
+ok(C.applyHeads(junkH, function() end, function() end, function() end) == 1, 'only whole rows count')
+-- the shift: head(body) - head(128), per direction, inside the piece range only
+local s2 = C.headShiftOf(H, 2073, 2486, 2)
+ok(s2[1] == H.bodies[2073][5] - H.ref[5] and s2[2] == H.bodies[2073][6] - H.ref[6], 'Warrior with Bull Horns: ' .. s2[1] .. ',' .. s2[2])
+local s0 = C.headShiftOf(H, 2073, 2486, 0)
+ok(s0[1] == H.bodies[2073][1] - H.ref[1] and s0[2] == H.bodies[2073][2] - H.ref[2], 'north')
+local sr = C.headShiftOf(H, 128, 2486, 2)
+ok(sr[1] == 0 and sr[2] == 0, 'look 128 needs no shift')
+ok(C.headShiftOf(H, 2073, 2414, 2)[1] == 0 and C.headShiftOf(H, 2073, 2569, 2)[2] == 0 and C.headShiftOf(H, 2073, 0, 2)[1] == 0, 'outside the piece range: none')
+ok(C.headShiftOf(H, 99999, 2486, 2)[1] == 0 and C.headShiftOf(nil, 2073, 2486, 2)[1] == 0, 'no row, no table: none')
+ok(C.headShiftOf({ first = 1, last = 9, ref = { 0, 0, 0, 0, 0, 0, 0, 0 }, bodies = { [3] = { 0, 0, 0, 0, 99, 0, 0, 0 } } }, 3, 5, 2)[1] == 0, 'over the limit')
+-- the class looks stand left of and above look 128 on average (the owner's picture): the median shift is negative
+local xs, ys = {}, {}
+for _, id in ipairs({ 2045, 2046, 2049, 2050, 2055, 2056, 2060, 2061, 2062, 2063, 2071, 2072, 2073, 2074, 2075, 2076, 2080, 2081 }) do
+  local sh = C.headShiftOf(H, id, 2486, 2)
+  xs[#xs + 1], ys[#ys + 1] = sh[1], sh[2]
+end
+table.sort(xs); table.sort(ys)
+ok(xs[math.floor(#xs / 2)] <= 0 and ys[math.floor(#ys / 2)] < 0, 'the median class head is left of and above look 128: ' .. xs[math.floor(#xs / 2)] .. ',' .. ys[math.floor(#ys / 2)])
 
 if fails > 0 then os.exit(1) end
 print('wingfit_core_test: all checks passed')

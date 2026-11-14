@@ -1,10 +1,10 @@
 Module
   name: game_shop
-  description: Cinders of Chaos store (category tree, search, offers, coin gifts and history from the server; voluntary donations for Chaos Coins)
+  description: Cinders of Chaos store (header with the balance and search, side rail, home page with the weekly offers, chips, offer cards and a details pane; coin gifts and history from the server; voluntary donations for Chaos Coins)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ qrcode, payview, rotation, shoptree, shopicon, tryon, pay, shop ]
-  dependencies: [ client_topmenu ]
+  scripts: [ qrcode, payview, rotation, shoptree, shopview, shopicon, tryon, pay, shop ]
+  dependencies: [ client_topmenu, client_chaos_theme ]
   autoload: true
   autoload-priority: 1000
   @onLoad: init()

@@ -77,6 +77,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pack30lib as L  # noqa: E402  (shared helpers: tables, md5 checks, alpha boxes; read only)
+import gen_assets_art as GA  # noqa: E402  (stand: a figure drawn in the middle of its cell, put on the creature's tile)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ART = os.path.join(HERE, 'art_import')
@@ -122,6 +123,11 @@ ALPHA_MIN = 12
 DIRS = ('N', 'E', 'S', 'W')                       # dat order
 ROW_OF = {'E': 0, 'SE': 1, 'S': 2, 'SW': 3, 'W': 4, 'NW': 5, 'N': 6, 'NE': 7}
 KIT_DIRS = ('n', 'e', 's', 'w')
+# Kit looks drawn in the middle of their 160 px cell: the client puts the bottom-right 32 px of an outfit on the creature's tile, so
+# the figure hung up and left of it (the Hollow King 13 to 37 px, O576, owner 2026-11-14 "hollow rider fora de prumo", same fault and
+# same drawing style as the rider of pair 27). gen_assets_art.stand moves each direction's frames (one whole-pixel shift for all of
+# them) so the lowest pixel is on the cell's last row and the figure on the middle of the tile, left of it for a wide one.
+KIT_STAND = ('hollow_king',)
 LICENCE = ('purchased; use in games incl. commercial, modified or not; no attribution needed (credit appreciated); '
            'no resale, redistribution or sharing of the assets, even modified (they ship only inside the compiled '
            'game); never machine-learning training data or a style reference; vendor: docs/CREDITS.md')
@@ -437,6 +443,10 @@ def build_kit(S):
         tw, th = tiles_px(fw, fset), tiles_px(fh, fset)
         if any(f.shape[:2] != (fh, fw) for g in groups for fr, _, _ in g for f in fr):
             raise BuildError('kit/%s: frame sizes differ' % fset)
+        if fset in KIT_STAND:
+            idle_f, walk_f, _moves = GA.stand([groups[0][d][0] for d in range(4)], [groups[1][d][0] for d in range(4)])
+            groups = [[(idle_f[d], groups[0][d][1], groups[0][d][2]) for d in range(4)],
+                      [(walk_f[d], groups[1][d][1], groups[1][d][2]) for d in range(4)]]
         n0, n1 = len(groups[0][0][0]), len(groups[1][0][0])
         if any(len(fr) != n for g, n in zip(groups, (n0, n1)) for fr, _, _ in g):
             raise BuildError('kit/%s: frame counts differ per direction' % fset)

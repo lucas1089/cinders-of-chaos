@@ -1,12 +1,11 @@
--- cards_core.lua: the rules of the cards and decks (server/README.md "Cards and decks"). Pure Lua, no engine calls; the
--- glue is cards.lua, the numbers cards_config.lua, the tests tests/cards_test.lua. Lua 5.1 / LuaJIT and 5.3.
+-- cards_core.lua: the rules of the cards and the Deck of Cards (server/README.md "Cards and decks", "Deck of Cards (O570)"). Pure
+-- Lua, no engine calls; the glue is cards.lua and data/lib/chaos_carddeck.lua, the numbers cards_config.lua, the tests
+-- tests/cards_test.lua. Lua 5.1 / LuaJIT and 5.3.
 --
--- A card is on when its storage is 1 and one copy of it sits in a deck the player carries with the action id 37866 (the
--- base refuses to move or trade that copy). The scan of the carried bags (cards.lua) gives this module:
---   decks = {{id = deck item id, used = cards inside, size = capacity, cards = {{id, aid = bool, ref}}}}
---   loose = {{id, aid = bool, ref}}   cards carried outside a deck
---   storage = function(cardId) -> value of the card's storage
--- reconcile() says what to repair, decide() what a "use" does, statusText() what Character Info shows.
+-- A card is on when its storage (37000-37080, the one the base bonus scripts read) is 1. Since O570 every card a character
+-- loots is counted in the Deck of Cards (a storage per card: copies owned, "new" mark); there is no deck item. The rules:
+--   owned(id) -> copies in the Deck      storage(id) -> the card's on / off storage      unlocked -> the quest is done
+-- reconcile() says what to repair, decide() what a toggle does, statusText() what Character Info shows.
 
 local C = ChaosCardsConfig or dofile("data/scripts/chaos/cards_config.lua")
 ChaosCardsConfig = C
@@ -14,17 +13,18 @@ ChaosCardsCore = ChaosCardsCore or {}
 local K = ChaosCardsCore
 K.config = C
 
-K.deckInfo = {}
-for _, d in ipairs(C.decks) do
-	K.deckInfo[d.id] = d
+K.retiredInfo = {}
+for _, d in ipairs(C.retiredDecks) do
+	K.retiredInfo[d.id] = d
 end
 
 function K.isCard(id)
 	return C.cards[tonumber(id) or -1] ~= nil
 end
 
-function K.isDeck(id)
-	return K.deckInfo[tonumber(id) or -1] ~= nil
+-- one of the three deck items that no longer exist as a thing to use (the migration empties them)
+function K.isRetiredDeck(id)
+	return K.retiredInfo[tonumber(id) or -1] ~= nil
 end
 
 -- the text of a key in lang (through ChaosI18n when it is loaded, English otherwise)
@@ -44,25 +44,23 @@ K.T = T
 K.TEXT = {
 	on = "You turned on %s: %s",
 	off = "You turned off %s.",
-	moved = "%s went into your %s.",
-	dupe = "%s is already on with another copy of it. Only one copy counts.",
 	max = "You already have %d cards on, the most there can be. Turn one off first.",
-	full = "Your decks are full. Take a card out of a deck that is off, or buy a bigger deck from %s.",
-	nodeck = "You need a deck to use cards. Buy one from %s in the hub: Bronze Deck for %d gold (5 cards), Silver Deck for %d (10 cards, level %d), Golden Deck for %d (20 cards, level %d). Carry it, then use the card again.",
-	lostoff = "The card %s is no longer in a deck you carry: turned off.",
-	notcarried = "Carry the card in your backpack to use it: not in the depot or the Purse.",
-	failed = "The card could not be moved into your deck.",
+	none = "You have no copy of %s in your Deck of Cards.",
+	locked = "Your Deck of Cards is locked. It opens with the main quest step \"%s\" (Adventure > Main Quest): your cards are kept, they work once it is open.",
+	lostoff = "The card %s is no longer in your Deck of Cards: turned off.",
+	lockedoff = "Your Deck of Cards is locked, so your cards are off. It opens with the main quest step \"%s\".",
+	stored = "%s went into your Deck of Cards.",
+	storedlocked = "%s went into your Deck of Cards. It is kept, but the Deck is locked: it opens with the main quest step \"%s\".",
+	newcards = "%d new cards went into your Deck of Cards.",
+	migrated = "Your decks are gone. %d cards went into your Deck of Cards.",
+	migratedopen = "Your decks are gone. %d cards went into your Deck of Cards, which is open for you: open it from the menu.",
 	-- Character Info
-	hdr_decks = "Decks carried: %s",
-	hdr_none = "You carry no deck.",
+	hdr_deck = "Deck of Cards: %d of %d cards, %d copies.",
+	hdr_locked = "Your Deck of Cards is locked. It opens with the main quest step \"%s\" (Adventure > Main Quest). Your cards are kept in the Deck meanwhile (%d of %d).",
 	hdr_on = "Cards on (%d of %d):",
-	hdr_off = "Cards in your decks, off:",
-	hdr_loose = "Cards carried outside a deck (use one to put it in a deck):",
 	none_on = "No card is on.",
 	more = "... and %d more.",
-	cut = "(The list is cut here.)",
-	deckline = "%s %d of %d",
-	howto = "Use a card you carry: it goes into a deck and turns on. Use it again to turn it off. At most %d cards are on at once.",
+	howto = "Open the Deck of Cards from the menu (Hero, Build) to turn cards on and off. At most %d cards are on at once.",
 	-- bonus texts: one per kind of card (the item description is this plus HINT)
 	convert = "While on, %s deals %s damage instead. With several cards of this spell on, the highest one counts.",
 	convert2 = "While on, %s deal %s damage instead. With several cards of these spells on, the highest one counts.",
@@ -85,7 +83,7 @@ K.TEXT = {
 }
 
 -- the hint every card description ends with (tools/patch_badges.py CARD_HINT is the same text; tests compare them)
-K.HINT = "Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks."
+K.HINT = "It goes into your Deck of Cards by itself. Open the Deck from the menu to turn it on."
 
 -- the vocabulary the bonus texts put in (each is a key in i18n_strings.lua)
 local function word(lang, w)
@@ -355,35 +353,6 @@ function K.description(lang, id)
 	return text .. " " .. T(lang, K.HINT)
 end
 
--- the seller's prices for the no-deck text: {id, price, level} per deck from apothecary_config.lua
-function K.sellerDecks()
-	local ok, cfg = pcall(dofile, "data/scripts/chaos/apothecary_config.lua")
-	local out = {}
-	if ok and type(cfg) == "table" and cfg.decks then
-		for _, d in ipairs(cfg.decks) do
-			out[#out + 1] = {id = d.id, price = d.price, level = d.level}
-		end
-	end
-	return out
-end
-
-local function priceOf(list, id)
-	for _, d in ipairs(list) do
-		if d.id == id then
-			return d.price, d.level
-		end
-	end
-	return 0, 0
-end
-
-function K.noDeckText(lang, sellers)
-	sellers = sellers or K.sellerDecks()
-	local bp = priceOf(sellers, 27632)
-	local sp, sl = priceOf(sellers, 27633)
-	local gp, gl = priceOf(sellers, 27634)
-	return T(lang, K.TEXT.nodeck, C.seller, bp, sp, sl, gp, gl)
-end
-
 -- ---------------------------------------------------------------- legendary cards: the weapon
 -- The legendary card of a class fires when the hit comes with the right weapon in the left hand (the base script: four
 -- lists of stock item ids; tools/patch_badges.py now hands the check to ChaosCards.holds, which classifies by weapon
@@ -437,42 +406,65 @@ function K.legendaryFor(classRow, weapon)
 end
 
 -- ---------------------------------------------------------------- reconcile
--- What to repair so storage, action ids and the carried decks agree:
---   off     card ids whose storage is 1 but no copy of the card is on in a deck carried (it was dropped, lost, put away):
---           their storage goes to 0
---   clear   refs of copies that carry the action id without being the on copy (a second copy, a copy outside a deck, a
---           copy whose storage is off): the action id goes, so the card can be moved again
---   active  card id -> the ref of the copy that is on
--- The first copy with the action id in a deck wins when the storage is 1.
-function K.reconcile(decks, loose, storage)
-	local active, clear, off = {}, {}, {}
-	for _, deck in ipairs(decks or {}) do
-		for _, card in ipairs(deck.cards or {}) do
-			if card.aid then
-				if storage(card.id) == 1 and not active[card.id] then
-					active[card.id] = card
-				else
-					clear[#clear + 1] = card
-				end
+-- ---------------------------------------------------------------- the Deck of Cards (O570)
+local DK = C.deck
+K.deck = DK
+
+-- every card id, ascending (the order of the window and of every list)
+local sortedIds
+function K.cardIds()
+	if not sortedIds then
+		sortedIds = {}
+		for id in pairs(C.cards) do
+			sortedIds[#sortedIds + 1] = id
+		end
+		table.sort(sortedIds)
+	end
+	return sortedIds
+end
+
+-- the storage that holds the copies of a card in the Deck, and the one that marks it "new" (unseen)
+function K.countKey(id)
+	local c = C.cards[tonumber(id) or -1]
+	return c and (DK.storage.base + DK.storage.counts + (c.storage - DK.storage.offset)) or nil
+end
+
+function K.freshKey(id)
+	local c = C.cards[tonumber(id) or -1]
+	return c and (DK.storage.base + DK.storage.fresh + (c.storage - DK.storage.offset)) or nil
+end
+
+-- copies after adding n (never above the cap, never below 0)
+function K.addCopies(current, n)
+	local v = (tonumber(current) or 0)
+	if v < 0 then
+		v = 0
+	end
+	return math.max(0, math.min(DK.maxCopies, v + (tonumber(n) or 0)))
+end
+
+-- What to repair so the on / off storages agree with the Deck:
+--   off     card ids whose storage is 1 but that cannot be on: the Deck is locked, no copy is owned, or more than C.maxActive
+--           are on (the highest ids go first): their storage goes to 0
+--   active  card id -> true for the cards that are on
+--   lockedOff  true when cards were turned off because the Deck is locked
+-- owned(id) -> copies, storage(id) -> the card's storage, unlocked -> bool
+function K.reconcile(owned, storage, unlocked)
+	local active, off, lockedOff, n = {}, {}, false, 0
+	for _, id in ipairs(K.cardIds()) do
+		if storage(id) == 1 then
+			if not unlocked then
+				off[#off + 1] = id
+				lockedOff = true
+			elseif (owned(id) or 0) <= 0 or n >= C.maxActive then
+				off[#off + 1] = id
+			else
+				active[id] = true
+				n = n + 1
 			end
 		end
 	end
-	for _, card in ipairs(loose or {}) do
-		if card.aid then
-			clear[#clear + 1] = card
-		end
-	end
-	local ids = {}
-	for id in pairs(C.cards) do
-		ids[#ids + 1] = id
-	end
-	table.sort(ids)
-	for _, id in ipairs(ids) do
-		if storage(id) == 1 and not active[id] then
-			off[#off + 1] = id
-		end
-	end
-	return {off = off, clear = clear, active = active}
+	return {off = off, active = active, lockedOff = lockedOff}
 end
 
 -- number of cards on after a reconcile
@@ -484,11 +476,6 @@ function K.activeCount(plan)
 	return n
 end
 
--- ---------------------------------------------------------------- card borders
--- The client draws a border on the cards inside a deck window (client game_cardborder): gold-green when the card is on, dim
--- when it is off. It cannot see action ids, so the server sends the card ids that are on (extended opcode 172, action
--- "state", data {on = {ids}}). A card is told by its id, not by its copy: the client only decorates cards that sit in a
--- deck container, and a second copy in a deck beside the one that is on shows as on too (the server counts one copy).
 -- ids of the cards that are on after a reconcile, ascending
 function K.activeIds(plan)
 	local ids = {}
@@ -499,7 +486,7 @@ function K.activeIds(plan)
 	return ids
 end
 
--- the text two equal sets share, to send only when the set changes
+-- the text two equal states share, to send only when something changed
 function K.stateKey(ids)
 	local parts = {}
 	for i, id in ipairs(ids or {}) do
@@ -508,144 +495,161 @@ function K.stateKey(ids)
 	return table.concat(parts, ",")
 end
 
--- the payload of the "state" message, in the ids the client draws (clientId(serverId); the same number when nil):
---   on     the cards that are on, ascending by server id
---   cards  every card, decks  every deck: the client decorates only cards inside a deck container
-function K.statePayload(plan, clientId)
-	local conv = clientId or function(id) return id end
-	local out = {on = {}, cards = {}, decks = {}}
-	for _, id in ipairs(K.activeIds(plan)) do
-		out.on[#out.on + 1] = conv(id)
-	end
-	local ids = {}
-	for id in pairs(C.cards) do
-		ids[#ids + 1] = id
-	end
-	table.sort(ids)
-	for _, id in ipairs(ids) do
-		out.cards[#out.cards + 1] = conv(id)
-	end
-	for _, d in ipairs(C.decks) do
-		out.decks[#out.decks + 1] = conv(d.id)
-	end
-	return out
-end
-
--- ---------------------------------------------------------------- use
--- s = {id, inDeck (the used copy sits in a deck carried), isOn (this copy is the one that is on), storageOn (the card is on,
--- after reconcile), count (cards on), decks = {{used, size}}}. Returns the action and, for "move", the index in s.decks
--- of the deck to put it in (the first with room; the scan lists the biggest deck first).
+-- what a toggle of card `id` does. s = {id, owned, isOn, count (cards on), unlocked}
+--   locked (the Deck is not bound yet), none (no copy), off, max (five on), on
 function K.decide(s)
 	if not K.isCard(s.id) then
 		return "notcard"
 	end
-	if s.storageOn then
-		return s.isOn and "off" or "dupe"
+	if not s.unlocked then
+		return "locked"
+	end
+	if s.isOn then
+		return "off"
+	end
+	if (s.owned or 0) <= 0 then
+		return "none"
 	end
 	if (s.count or 0) >= C.maxActive then
 		return "max"
 	end
-	if s.inDeck then
-		return "on"
+	return "on"
+end
+
+-- the rarity of a card: its tier word, or the legendary one
+function K.rarityOf(id)
+	local c = C.cards[tonumber(id) or -1]
+	if not c then
+		return nil
 	end
-	if #(s.decks or {}) == 0 then
-		return "nodeck"
+	if c.legendary then
+		return DK.legendaryRarity
 	end
-	for i, d in ipairs(s.decks) do
-		if (d.used or 0) < (d.size or 0) then
-			return "move", i
+	return DK.rarities[c.tier]
+end
+
+-- the classes (names of C.classes) that can use a card; nil when the card is for every class or the config does not say. A
+-- convert line is the lineClasses of its spell; a legendary card is the classes with a weapon of its class (legendaryKinds).
+function K.classesOf(id)
+	local c = C.cards[tonumber(id) or -1]
+	if not c then
+		return nil
+	end
+	local out = {}
+	if c.kind == "convert" then
+		local list = {}
+		for _, fam in ipairs(C.families) do
+			if fam.spell == c.spell then
+				list = C.lineClasses[fam.spell] or {}
+			end
+		end
+		for _, n in ipairs(list) do
+			out[#out + 1] = n
+		end
+		return #out > 0 and out or nil
+	elseif c.legendary then
+		local kinds = C.legendaryKinds[c.class] or {}
+		for _, row in ipairs(C.classes) do
+			for _, w in ipairs(row.weapons) do
+				if kinds[w] then
+					out[#out + 1] = row.name
+					break
+				end
+			end
+		end
+		return #out > 0 and out or nil
+	end
+	return nil
+end
+
+-- the static list of the window (action "cards", sent once per session and language): one row per card. clientId(serverId) -> the
+-- id the client draws; nameOf(serverId) -> the item name
+--   i server id, c client id, n name, t tier (1-4, 5 = legendary), r rarity, l the spell of the line (legendary: the class),
+--   e element ("" none), k kind, s the set element ("" none), x what it gives, cl the classes that can use it (absent: any)
+function K.cardsPayload(lang, nameOf, clientId)
+	local conv = clientId or function(id) return id end
+	local rows = {}
+	for _, id in ipairs(K.cardIds()) do
+		local c = C.cards[id]
+		local row = {i = id, c = conv(id), n = nameOf and nameOf(id) or tostring(id), t = c.legendary and 5 or c.tier,
+			r = K.rarityOf(id), l = c.legendary and c.class or c.spell, e = c.element or "", k = c.kind,
+			s = K.setElement(id) or "", x = K.bonusText(lang, id)}
+		local cl = K.classesOf(id)
+		if cl then
+			row.cl = cl
+		end
+		rows[#rows + 1] = row
+	end
+	return {cards = rows, max = C.maxActive, needSet = S.need}
+end
+
+-- the live state of the window (action "state"): view = {unlocked, owned(id), fresh(id) -> bool, plan (a reconcile), className,
+-- setLine (text), questHint (text)}. Only cards owned are listed.
+function K.statePayload(view)
+	local own, new = {}, {}
+	local total, copies = 0, 0
+	for _, id in ipairs(K.cardIds()) do
+		local n = view.owned(id) or 0
+		if n > 0 then
+			own[#own + 1] = {id, n}
+			total = total + 1
+			copies = copies + n
+			if view.fresh and view.fresh(id) then
+				new[#new + 1] = id
+			end
 		end
 	end
-	return "full"
+	return {unlocked = view.unlocked and true or false, own = own, new = new, on = K.activeIds(view.plan), distinct = total,
+		copies = copies, max = C.maxActive, class = view.className or "", set = view.setLine or "", quest = view.questHint or ""}
 end
 
 -- ---------------------------------------------------------------- Character Info
-local function deckName(id)
-	local d = K.deckInfo[id]
-	return d and d.name or tostring(id)
-end
-
--- The text of the `deck` command. st = {decks, loose, storage, nameOf = function(id) -> item name}.
--- Names go through nameOf (the item type's name); the text stays under C.maxTextBytes.
+-- The text of the `deck` command. st = {unlocked, owned(id), storage(id), nameOf(id), vocId}; under C.maxTextBytes.
 function K.statusText(lang, st)
 	local nameOf = st.nameOf or function(id) return tostring(id) end
 	local lines = {}
 	local function add(s)
 		lines[#lines + 1] = s
 	end
-	local plan = K.reconcile(st.decks, st.loose, st.storage)
-	local used, total, parts = 0, 0, {}
-	for _, d in ipairs(st.decks) do
-		used, total = used + (d.used or 0), total + (d.size or 0)
-		parts[#parts + 1] = T(lang, K.TEXT.deckline, T(lang, deckName(d.id)), d.used or 0, d.size or 0)
+	local plan = K.reconcile(st.owned, st.storage, st.unlocked)
+	local distinct, copies = 0, 0
+	for _, id in ipairs(K.cardIds()) do
+		local n = st.owned(id) or 0
+		if n > 0 then
+			distinct, copies = distinct + 1, copies + n
+		end
 	end
-	if #st.decks == 0 then
-		add(T(lang, K.TEXT.hdr_none))
-		add(K.noDeckText(lang, st.sellers))
+	local total = #K.cardIds()
+	if st.unlocked then
+		add(T(lang, K.TEXT.hdr_deck, distinct, total, copies))
+		add(T(lang, K.TEXT.howto, C.maxActive))
 	else
-		add(T(lang, K.TEXT.hdr_decks, table.concat(parts, ", ")))
-		add(T(lang, K.TEXT.deckline, T(lang, "Cards"), used, total))
+		add(T(lang, K.TEXT.hdr_locked, st.stepTitle or "", distinct, total))
 	end
-	add(T(lang, K.TEXT.howto, C.maxActive))
 	add("")
-	local count = K.activeCount(plan)
-	add(T(lang, K.TEXT.hdr_on, count, C.maxActive))
-	local onIds = {}
-	for id in pairs(plan.active) do
-		onIds[#onIds + 1] = id
-	end
-	table.sort(onIds)
+	add(T(lang, K.TEXT.hdr_on, K.activeCount(plan), C.maxActive))
+	local onIds = K.activeIds(plan)
 	if #onIds == 0 then
 		add("  " .. T(lang, K.TEXT.none_on))
 	end
-	for _, id in ipairs(onIds) do
-		add("  " .. nameOf(id) .. ": " .. K.bonusText(lang, id))
+	local bytes = 0
+	for _, l in ipairs(lines) do
+		bytes = bytes + #l + 1
 	end
-	-- the card set (O453): needs the class; a caller without one (st.vocId nil) gets no set line
+	for i, id in ipairs(onIds) do
+		local line = "  " .. nameOf(id) .. ": " .. K.bonusText(lang, id)
+		if bytes + #line + 1 > C.maxTextBytes - 400 then
+			add("  " .. T(lang, K.TEXT.more, #onIds - i + 1))
+			break
+		end
+		add(line)
+		bytes = bytes + #line + 1
+	end
 	local className = K.classNameOf(st.vocId)
 	if className then
 		add("")
 		add(K.setLine(lang, K.planSetState(plan, className)))
 	end
-	-- cards in decks that are off, one line each copy; then the loose ones
-	local offList, looseList = {}, {}
-	for _, d in ipairs(st.decks) do
-		for _, card in ipairs(d.cards or {}) do
-			if plan.active[card.id] ~= card then
-				offList[#offList + 1] = card.id
-			end
-		end
-	end
-	for _, card in ipairs(st.loose or {}) do
-		looseList[#looseList + 1] = card.id
-	end
-	table.sort(offList)
-	table.sort(looseList)
-	local bytes = 0
-	for _, l in ipairs(lines) do
-		bytes = bytes + #l + 1
-	end
-	local cut = false
-	local function section(title, ids)
-		if #ids == 0 or cut then
-			return
-		end
-		add("")
-		add(title)
-		bytes = bytes + #title + 2
-		for i, id in ipairs(ids) do
-			local line = "  " .. nameOf(id) .. ": " .. K.bonusText(lang, id)
-			if bytes + #line + 1 > C.maxTextBytes - 200 then
-				add("  " .. T(lang, K.TEXT.more, #ids - i + 1))
-				cut = true
-				return
-			end
-			add(line)
-			bytes = bytes + #line + 1
-		end
-	end
-	section(T(lang, K.TEXT.hdr_off), offList)
-	section(T(lang, K.TEXT.hdr_loose), looseList)
 	return table.concat(lines, "\n")
 end
 

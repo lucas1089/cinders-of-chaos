@@ -13,7 +13,7 @@ fixed seed (no reference art, nothing third-party). A filmstrip is one row of sq
                                           widen and fade, motes rising
   pickup/globe_health.png    64 px x 12   the health globe (client 44397): a red pool with a heartbeat, a ring with a travelling glint, light rising
   pickup/globe_mana.png      64 px x 12   the mana globe (client 44398): a blue pool that breathes slowly, a ring with a travelling glint, twinkles
-  pickup/bag_glint.png       64 px x 12   the loot bag (client 6068, any number of them in view): a small warm pool and gold twinkles, kept faint
+  pickup/bag_glint.png       64 px x 12   the loot bag (client 19202, the plain pouch since O565, 6068 before; any number of them in view): a small warm pool and gold twinkles, kept faint
                                           so that a screen full of bags stays calm
   foot/templar_sigil.png     64 px x 24   the Templar line's foot aura, one turn of 24 frames (6 s at 250 ms): a ring with a slow
   foot/inquisitor_sigil.png               travelling highlight and a dashed sigil, in the line's tint (holy gold, white and ember,
@@ -249,7 +249,7 @@ def globe_mana(n, p):
 
 
 def bag_glint(n, p):
-    """Loot bag (client 6068): a small warm pool and gold twinkles at three fixed spots, one after the other. Faint on purpose."""
+    """Loot bag (client 19202): a small warm pool and gold twinkles at three fixed spots, one after the other. Faint on purpose."""
     out = canvas(n)
     c = n / 2
     cy = c + 4
@@ -455,7 +455,7 @@ def preview(res, pair, outdir):
     # the pickups (O456): each item with no glow, then three frames of its glow, on three floors
     rows = []
     for title, cid, key in (('ember portal 44396', 44396, 'portal_glow'), ('health globe 44397', 44397, 'globe_health'),
-                            ('mana globe 44398', 44398, 'globe_mana'), ('loot bag 6068', 6068, 'bag_glint')):
+                            ('mana globe 44398', 44398, 'globe_mana'), ('loot bag 19202', 19202, 'bag_glint')):
         cells = [scene(floors[0], cid, None, 0, False, 'no glow')]
         cells += [scene(g, cid, key, f, False, '%s f%d' % (key, f), 'pickup') for g, f in zip(floors, (0, 4, 8))]
         row = Image.new('RGBA', (sum(c.width for c in cells) + 6 * len(cells), cells[0].height + 14), (24, 24, 28, 255))

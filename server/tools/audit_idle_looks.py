@@ -49,7 +49,7 @@ PLAYER = os.path.join(REPO, 'server', 'data', 'monster', 'player_looks.csv')
 PLAYER_HEADER = ['look', 'source']
 # Lua files whose `lookType / male / female = N` fields are outfits a player can wear (gated ones are not in outfits.xml while off)
 PLAYER_LUA = ['server/data/scripts/chaos/chaos_constants.lua', 'server/data/scripts/chaos/exclusives_config.lua',
-              'server/data/lib/chaos_pack37_looks.lua']
+              'server/data/lib/chaos_pack37_looks.lua', 'server/data/lib/chaos_fun_costumes.lua']
 HEADER = ['look', 'idle', 'phases', 'frames', 'how', 'walk', 'walk_frames']
 ALLOW_HEADER = ['name', 'look', 'reason']
 

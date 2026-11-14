@@ -31,8 +31,9 @@ ChaosPassiveBuildsConfig = {
 	-- one request per this many ms (the server's other tree actions: 1000)
 	rateMs = 1000,
 	-- one preview per this many ms (its own limit: the client asks for one right after an Apply); a faster one is
-	-- answered with autobuildError {retry = true} and the client asks again
-	previewRateMs = 500,
+	-- answered with autobuildError {retry = true, wait = this} and the client asks again (O560: was 500, with the generic
+	-- 200 ms limit dropping a quick second pick without any answer)
+	previewRateMs = 150,
 	-- the caps of the stats the effects apply (passivetree_effects.lua charStatCap / maxSpeed / maxAbsorb / maxAttackSpeed, in node units)
 	caps = {strength = 120, intelligence = 120, dexterity = 80, vitality = 100, spirit = 100, wisdom = 0,
 		speed = 800, absorb = 75, attackSpeed = 15},

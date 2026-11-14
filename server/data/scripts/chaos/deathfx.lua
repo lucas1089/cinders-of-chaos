@@ -3,7 +3,7 @@
 --
 -- This file registers no hook of its own. The two hooks already there call it:
 --   death  the CreatureEvent "ChaosCosmeticsDeath" of cosmetics.lua (registered once per monster by its onSpawn
---          callback, the kill cosmetics and the boss victory emote ride on it): ChaosDeathFx.onDeath(creature)
+--          callback, the kill cosmetics ride on it): ChaosDeathFx.onDeath(creature)
 --   spawn  the EventCallback onSpawn of cosmetics.lua (before the placement): ChaosDeathFx.onSpawn(...)
 -- Cost: one Lua call and one effect packet (Position:sendMagicEffect, sent to the spectators of the tile only) per
 -- death and per respawn that passes the rules; no timer, no storage, no database. A token bucket per kind caps a pack

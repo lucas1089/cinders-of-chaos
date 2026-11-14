@@ -186,9 +186,18 @@ end
 local function styleLabel(label, d, color)
   local st = GL.style(d, color) -- the highlight background may be the player's accent cosmetic (setAccent)
   label:setColor(st.text)
-  label:setBorderWidth(1)
-  label:setBorderColor(st.border)
-  label:setBackgroundColor(st.background)
+  if st.plate then
+    -- a set's plate: gradient, frame and corner ornaments in the picture, the rarity colour stays on the text
+    label:setBorderWidth(0)
+    label:setImageSource(st.plate.path)
+    label:setImageBorder(st.plate.border)
+    label:setBackgroundColor('#00000000')
+  else
+    label:setImageSource('')
+    label:setBorderWidth(1)
+    label:setBorderColor(st.border)
+    label:setBackgroundColor(st.background)
+  end
   label:setOpacity(d.dim and 0.7 or 1)
   label.baseBackground = label:getBackgroundColor()
 end

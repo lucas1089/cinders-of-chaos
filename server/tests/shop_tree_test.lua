@@ -189,6 +189,11 @@ local pack37 = dofile("data/lib/chaos_pack37_looks.lua")
 if pack37.PAIR37 then
 	for _, o in ipairs(pack37.outfits) do LOOKS[o.male] = true end
 end
+-- the pair 72 fun costumes (chaos_fun_costumes.lua, while config.lua chaosClientPair is 72 or more; install_outfits.py writes their lines)
+local fun72 = dofile("data/lib/chaos_fun_costumes.lua")
+if fun72.PAIR72 then
+	for _, o in ipairs(fun72.outfits) do LOOKS[o.male] = true end
+end
 for _, e in ipairs(COS.mounts) do MOUNTS[e.id] = e.clientid end
 -- service handlers: shop_services.lua S.services, and the systems that add theirs
 local servicesSrc = readFile("data/scripts/chaos/shop_services.lua")

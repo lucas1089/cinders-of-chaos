@@ -206,6 +206,20 @@ def test_kit_build():
         check([s[0] for s in sources] == keys, 'kit sources in row order')
         lk = dict(sheets)['pack33_kit/look_king.png']
         check(lk.shape == (8 * 64, 4 * 64, 4) and lk[50, 64 * 2 + 5, 2] == 32, 'kit look sheet, south column')
+        # a look in KIT_STAND is stood on its tile (O576): the lowest pixel of every direction on the cell's last row
+        G.KIT_STAND = ('king',)
+        try:
+            _rows2, sheets2, _src2, _S2 = G.build_pack('kit', root, scanning=True)
+        finally:
+            G.KIT_STAND = ('hollow_king',)
+        st = dict(sheets2)['pack33_kit/look_king.png']
+        check(st.shape == lk.shape, 'stood look keeps its sheet size')
+        for d in range(4):
+            cell = st[0:64, d * 64:(d + 1) * 64, 3]
+            ys = np.nonzero(cell.any(axis=1))[0]
+            check(ys.max() == 63, 'stood look: direction %d stands on the last row (%d)' % (d, ys.max()))
+        check((st[..., 3] > 0).sum() == (lk[..., 3] > 0).sum(), 'stood look: no pixel lost')
+        check('hollow_king' in G.KIT_STAND, 'the Hollow King is stood on its tile')
 
 
 def test_committed():

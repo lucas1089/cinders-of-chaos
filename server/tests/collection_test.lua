@@ -234,7 +234,7 @@ wardrobeOwned.Ann.mount = {{l = 368, o = 1}, {l = 1, o = 1}}
 cosOwned[10].rare_gilded = true
 cosOwned[10].lvl_ember = true
 cosOwned[10].lvl_frost = true
-cosOwned[10].emote_roar = true
+cosOwned[10].rare_crimson = true
 for _, key in ipairs({"skin_warrior_void", "skin_warrior_storm", "skin_ranger_sunfire", "skin_mystic_voidfire", "kill_shatter",
 	"kill_bloodbloom", "chat_cinder", "chat_frost", "foot_ember", "foot_frost", "glow_gold"}) do
 	cosOwned[10][key] = true

@@ -27,7 +27,7 @@ foreach ($lines as $base => $line) {
 	<h1 class="chaos-heading"><?= $h(t('createchar.title')) ?></h1>
 
 	<?php if ($formState === 'success'): ?>
-		<div class="chaos-msg chaos-msg--ok"><?= $h(t('createchar.success')) ?> Log in with the client: your character wakes up on the tutorial island.</div>
+		<div class="chaos-msg chaos-msg--ok"><?= $h(t('createchar.success')) ?> Log in with the game: your character starts in the Cinderhold temple.</div>
 		<p><a class="chaos-btn" href="myaccount">My account</a></p>
 	<?php else: ?>
 		<?php if ($formState === 'errors'): ?>
@@ -83,7 +83,7 @@ foreach ($lines as $base => $line) {
 							<option value="<?= (int)$tid ?>"<?= ((int)($_POST['selected_town'] ?? 0) === (int)$tid) ? ' selected' : '' ?>><?= $h(town_id_to_name($tid)) ?></option>
 						<?php endforeach; ?>
 					</select>
-					<span class="chaos-note">Every new character starts on the tutorial island; its temple is where you go when you leave it.</span>
+					<span class="chaos-note">Your home town: its temple is where you return.</span>
 				</div>
 			<?php else: ?>
 				<input type="hidden" name="selected_town" value="<?= (int)reset($towns) ?>">

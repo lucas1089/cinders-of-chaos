@@ -94,6 +94,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a5632",
         duration = 10000,
     },
+    -- a Vocation Trial is open to the player (client game_passivetree/trials.lua, O559): once for every new availability
+    TRIAL = {
+        icon = "images/toast/ascension.png",
+        title = "TRIAL OPEN",
+        titleColor = "#e8b84a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 10000,
+    },
     -- invasions and world events (server data/scripts/chaos/invasion.lua, worldevents.lua): warnings, waves, the end
     -- the market (server data/scripts/chaos/market.lua): a sale, a purchase, items and gold delivered
     MARKET = {
@@ -148,6 +157,15 @@ local NOTIFICATION_TYPES = {
         backgroundColor = "#ccbebb",
         borderColor = "#6a4a1a",
         duration = 10000,
+    },
+    -- a card new to the Deck of Cards (server data/scripts/chaos/cards.lua, O570)
+    NEW_CARD = {
+        icon = "images/toast/season_pass.png",
+        title = "NEW CARD",
+        titleColor = "#e8c15a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a4a1a",
+        duration = 7000,
     },
     -- season pass (server data/scripts/chaos/seasonpass.lua): tier up, challenge done, premium and packs
     SEASON_PASS = {
@@ -1380,6 +1398,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         milestone = function(data)
             if data.message then
                 addNotification("MILESTONE", data.message)
+            end
+        end,
+
+        -- the Deck of Cards (server data/scripts/chaos/cards.lua, O570): "New card: NAME"
+        newcard = function(data)
+            if data.message then
+                addNotification("NEW_CARD", data.message)
             end
         end,
 

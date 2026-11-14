@@ -7,7 +7,8 @@
 --   parent = function() -> the widget the bar sits on (the window opens on it),
 --   items = function() -> the usable entries (see topbarhublogic.lua), admin = function() -> bool,
 --   run = function(text) -> true when the entry ran, locked = function(text) (says when a locked one opens),
---   character = function() -> the character name or '', failed = function(err), textMenu = function() (the footer link),
+--   character = function() -> the character name or '', failed = function(err),
+--   relayout = function() (the bar's badges changed: the host measures the bar again, topbar_hub.lua asks after a pin),
 -- }
 
 ChaosTopBarHub = {}
@@ -89,6 +90,8 @@ local function setGlyph(widget, kind, name, tint)
   if not atlas or not widget then return end
   local cell = atlas.slots[name] or atlas.slots[ChaosTopBarCards.FALLBACK_GLYPH]
   if not cell then return end
+  widget:setWidth(atlas.cell)       -- the glyph widget is as big as the cell it draws (the glyph fills most of the badge)
+  widget:setHeight(atlas.cell)
   widget:setImageClip(string.format('%d %d %d %d', cell[1], cell[2], atlas.cell, atlas.cell))
   widget:setImageColor(tint or color('accent2', '#f6cf72'))
 end
@@ -116,7 +119,7 @@ local function rebuildModel()
 end
 
 local function cardSig(c)
-  return table.concat({ c.text, tostring(c.locked), tostring(c.new), tostring(c.count), tostring(c.key) }, ',')
+  return table.concat({ c.text, tostring(c.locked), tostring(c.new), tostring(c.count), tostring(c.points), tostring(c.key) }, ',')
 end
 
 local function modelSig()
@@ -169,6 +172,9 @@ local function pinCard(card)
   pins = list
   savePins()
   barSig = nil
+  -- the bar changed its badges: the host sets the bar's width again (a bar left at its old width squeezes or clips the new
+  -- badge), then the bar and the open window follow
+  if host.relayout then host.relayout() end
   Hub.refresh()
   setHint(added and tx('Pinned to the bar.') or tx('Removed from the bar.'), 3)
 end
@@ -201,7 +207,7 @@ local function buildCard(parent, card, index, cardH)
   local shown = tx(card.text)
   local label = tx(card.desc ~= '' and card.desc or '')
   nameLabel:setText(shown)
-  nameLabel:setText(H.fit(shown, 116, function(t) nameLabel:setText(t) return nameLabel:getTextSize().width end))
+  nameLabel:setText(H.fit(shown, 114, function(t) nameLabel:setText(t) return nameLabel:getTextSize().width end))
   nameLabel:setColor(locked and color('menuLocked', '#7a7466') or color('menuNormal', '#d6c9ae'))
   desc:setText(label)
   desc:setColor(locked and color('textDisabled', '#6b6258') or color('textDim', '#8c8070'))
@@ -226,10 +232,23 @@ local function buildCard(parent, card, index, cardH)
     lockText:setText(ChaosTopBarUnlocksLogic.unlocksAt(card.locked, tx))
     lockText:setVisible(true)
   end
-  if card.count and card.count > 0 then
+  -- the red square on the corner of the glyph badge: the applications waiting (Party Finder) or the unspent passive points
+  local function shown(v)
+    if type(v) == 'string' then return v ~= '' and v or nil end
+    return v and v > 0 and v or nil
+  end
+  local n = shown(card.count) or shown(card.points)
+  if n then
     local c = get(w, 'count')
-    c:setText(tostring(math.min(card.count, 99)))
+    c:setText(type(n) == 'string' and n or (n > 99 and '99+' or tostring(n)))
+    c:setWidth(math.max(16, c:getTextSize().width + 8))
     c:setVisible(true)
+  end
+  -- the pin mark, from the saved pins (so it is right after a reload)
+  if H.isPinned(pins, card.text) then
+    local mark = get(w, 'pinMark')
+    setGlyph(mark, 'mark', 'pin', color('menuNew', '#ffd24a'))
+    mark:setVisible(true)
   end
 
   local function hoverBadge(hovered)
@@ -266,7 +285,7 @@ local function fillWindow()
   if not openTab or not hub.tabs[openTab] then
     openTab = H.pickTab(hub, getSetting(H.tabSettingKey(hub.id, charName())))
   end
-  local sigParts = { hub.id, tostring(openTab), isPhone() and 'p' or 'd' }
+  local sigParts = { hub.id, tostring(openTab), isPhone() and 'p' or 'd', table.concat(pins, '+') }
   for _, tab in ipairs(hub.tabs) do
     sigParts[#sigParts + 1] = tab.id .. ':' .. tostring(tab.new) .. ':' .. tab.count
   end
@@ -298,12 +317,6 @@ local function fillWindow()
   for i, card in ipairs(hub.tabs[openTab].cards) do
     buildCard(cardsPanel, card, i, cardH)
   end
-  local textMenu = get(win, 'textMenu')
-  textMenu:setText(tx('Text menu'))
-  textMenu.onClick = function()
-    closeHub()
-    if host.textMenu then guard('textMenu', host.textMenu)() end
-  end
   setHint(defaultHint())
 end
 
@@ -330,6 +343,7 @@ local function ensureWindow()
   end
   if not windowAlive() then
     win = g_ui.createWidget('ChaosHubWindow', parent)
+    win.chaosNoMirror = true   -- the cards are made in Lua (glyph pictures, chips): the RmlUi window mirror leaves it in OTUI
     win:hide()
     win.onEscape = function() closeHub() return true end
   end
@@ -337,6 +351,7 @@ local function ensureWindow()
 end
 
 local function openHub(hubId)
+  if host.opened then pcall(host.opened) end   -- the host may ask a module for a fresh count (answered later)
   rebuildModel()
   local hub = H.findHub(model, hubId)
   if not hub then return false end
@@ -361,7 +376,8 @@ end
 local function addBadge(panel, id, glyph, tooltip, tint, onClick)
   local b = g_ui.createWidget('ChaosHubBadge', panel)
   b:setId(id)
-  setGlyph(get(b, 'glyph'), 'bar', glyph, tint)
+  -- a phone badge is 44 px: it draws the card atlas (cells of 40), a desktop one the bar atlas (cells of 32)
+  setGlyph(get(b, 'glyph'), isPhone() and 'card' or 'bar', glyph, tint)
   b:setTooltip(tooltip)
   b.onClick = onClick
   return b
@@ -377,24 +393,27 @@ local function buildBar()
   for _, w in pairs(barBadges) do if alive(w) then w:destroy() end end
   for _, w in ipairs(pinBadges) do if alive(w) then w:destroy() end end
   barBadges, pinBadges = {}, {}
-  for _, hub in ipairs(model.hubs) do
-    local tint = hub.new and color('menuNew', '#ffd24a') or nil
-    local b = addBadge(barPanel, 'chaosHub_' .. hub.id, hub.glyph, hubName(hub), tint, function()
-      guard('toggle', Hub.toggle)(hub.id)
-    end)
-    addDot(b, hub.count)
-    barBadges[hub.id] = b
-  end
-  local cards = H.pinnedCards(model, pins)
-  if #cards > 0 then
-    local d = g_ui.createWidget('ChaosHubDivider', barPanel)
-    pinBadges[#pinBadges + 1] = d
-    for i, card in ipairs(cards) do
+  local pinCards = H.pinnedCards(model, pins)
+  local pinNo = 0
+  for _, it in ipairs(H.barItems(model, pinCards)) do
+    if it.kind == 'hub' then
+      local hub = it.hub
+      local tint = hub.new and color('menuNew', '#ffd24a') or nil
+      local b = addBadge(barPanel, 'chaosHub_' .. hub.id, hub.glyph, hubName(hub), tint, function()
+        guard('toggle', Hub.toggle)(hub.id)
+      end)
+      addDot(b, hub.count)
+      barBadges[hub.id] = b
+    elseif it.kind == 'divider' then
+      pinBadges[#pinBadges + 1] = g_ui.createWidget('ChaosHubDivider', barPanel)
+    else
+      local card = it.card
+      pinNo = pinNo + 1
       local locked = card.locked ~= nil
       local tip = tx(card.text) .. (card.key and ('  (' .. card.key .. ')') or '')
       if locked then tip = ChaosTopBarUnlocksLogic.unlocksAt(card.locked, tx) end
       local tint = locked and color('menuLocked', '#7a7466') or color('menuNew', '#ffd24a')
-      local b = addBadge(barPanel, 'chaosPin_' .. i, card.glyph, tip, tint, function()
+      local b = addBadge(barPanel, 'chaosPin_' .. pinNo, card.glyph, tip, tint, function()
         guard('pin', function()
           closeHub()
           if locked then if host.locked then host.locked(card.shown) end else host.run(card.shown) end
@@ -428,7 +447,8 @@ function Hub.layoutBar(panel)
       buildBar()
       barSig = sig
     end
-    return H.barWidth(#model.hubs, #H.pinnedCards(model, pins), isPhone() and 40 or 28)
+    if openHubId then fillWindow() end    -- a count changed (unspent points, applications): the open hub follows
+    return H.barWidth(H.barItems(model, H.pinnedCards(model, pins)), isPhone() and 44 or 32)
   end)(panel)
 end
 

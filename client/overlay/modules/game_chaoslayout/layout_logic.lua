@@ -91,6 +91,18 @@ function L.clampRect(rect, area, minimum)
   return { x = x, y = y, width = w, height = h }
 end
 
+-- O572: a saved window position that may be restored. A window with no anchors used to open at the top left and its
+-- (0,0) was saved; restored, it pinned the window there for good. (0,0) and a non-number are dropped: the window opens
+-- centred (client_chaos_screenfit) and the next save holds the real place. A place off the screen is pulled back by
+-- clampRect as before.
+function L.usableRect(rect)
+  if type(rect) ~= 'table' then return false end
+  local x, y = tonumber(rect.x), tonumber(rect.y)
+  if not x or not y or x ~= x or y ~= y then return false end
+  if math.abs(x) <= 2 and math.abs(y) <= 2 then return false end
+  return true
+end
+
 -- a stable text of a layout, to see whether it changed
 function L.serialize(t)
   if type(t) ~= 'table' then return tostring(t) end

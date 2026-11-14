@@ -132,3 +132,120 @@ function TrialsMath.confirmText(state, entry, side)
   end
   return head .. '\n\n' .. table.concat(lines, '\n')
 end
+
+-- ------------------------------------------------------------------------------------------------ a trial is open to you (O559)
+-- The Trials button of the passive tree shows it (glow, badge, tooltip), the hub menu reads it through trialsAvailableCount()
+-- of trials.lua, and a toast tells it once. The rule uses what the server's trialState already holds: a trial is available
+-- when the next uncleared difficulty (tier + 1) has its level reached and no run is going; its first clear opens a pair of
+-- nodes. A failed run's 60 s cooldown does not take it away (it is still yours, the Enter button says why it waits).
+-- Returns the tier index and its entry, or nil.
+function TrialsMath.openTier(state)
+  if type(state) ~= 'table' or not state.supported or state.running or type(state.tiers) ~= 'table' then
+    return nil
+  end
+  local i = (tonumber(state.tier) or 0) + 1
+  local t = state.tiers[i]
+  if type(t) ~= 'table' or t.cleared or (tonumber(state.level) or 0) < (tonumber(t.minLevel) or math.huge) then
+    return nil
+  end
+  return i, t
+end
+
+-- how many trials are open (the next difficulty only, so 0 or 1; a count so a hub badge can add it to other numbers)
+function TrialsMath.availableCount(state)
+  return TrialsMath.openTier(state) and 1 or 0
+end
+
+-- unlocked pairs of nodes with nothing held that a node can be chosen from (the first choice of a pair is free)
+function TrialsMath.pendingPicks(state)
+  if type(state) ~= 'table' or not state.supported or state.running or type(state.pairs) ~= 'table' then
+    return 0
+  end
+  local n = 0
+  for _, entry in ipairs(state.pairs) do
+    if not entry.locked and (entry.held or 0) == 0 then
+      for _, node in ipairs(entry.nodes or {}) do
+        if node.can then
+          n = n + 1
+          break
+        end
+      end
+    end
+  end
+  return n
+end
+
+-- the text of the badge on the Trials button: "!" while a trial is open, else nothing
+function TrialsMath.badgeText(state)
+  return TrialsMath.availableCount(state) > 0 and '!' or ''
+end
+
+-- the sentence that says which trial and why ('' when none is open)
+function TrialsMath.availableText(state)
+  local i, t = TrialsMath.openTier(state)
+  if not i then
+    return ''
+  end
+  return tr('Trial open: %s on %s. Your level (%d) reaches it. The first clear opens a pair of special nodes.',
+    tostring(state.trial), tostring(t.name), tonumber(t.minLevel) or 0)
+end
+
+-- the tooltip of the Trials button: the open trial first, the pairs waiting for a choice, then the plain explanation
+function TrialsMath.buttonTooltip(state, base)
+  local lines = {}
+  local text = TrialsMath.availableText(state)
+  if text ~= '' then
+    lines[#lines + 1] = text
+  end
+  local picks = TrialsMath.pendingPicks(state)
+  if picks > 0 then
+    lines[#lines + 1] = tr('%d open pairs of nodes wait for your choice.', picks)
+  end
+  lines[#lines + 1] = base
+  return table.concat(lines, '\n\n')
+end
+
+-- when to ask the server again without the window open: no state yet, or the level just reached the next difficulty
+function TrialsMath.needsRefresh(state, level)
+  if type(state) ~= 'table' then
+    return true
+  end
+  if not state.supported or state.running or TrialsMath.openTier(state) or type(state.tiers) ~= 'table' then
+    return false
+  end
+  local t = state.tiers[(tonumber(state.tier) or 0) + 1]
+  return type(t) == 'table' and not t.cleared and (tonumber(level) or 0) >= (tonumber(t.minLevel) or math.huge)
+end
+
+-- the glow of the button: its image colour breathes between white and ember (period PULSE_MS)
+TrialsMath.PULSE_MS = 1600
+TrialsMath.EMBER = {255, 168, 80}
+function TrialsMath.pulseColor(ms)
+  local phase = ((tonumber(ms) or 0) % TrialsMath.PULSE_MS) / TrialsMath.PULSE_MS
+  local k = (1 - math.cos(phase * 2 * math.pi)) / 2 -- 0 .. 1 .. 0
+  local out = {}
+  for i = 1, 3 do
+    out[i] = math.floor(255 + (TrialsMath.EMBER[i] - 255) * k + 0.5)
+  end
+  return string.format('#%02x%02x%02x', out[1], out[2], out[3])
+end
+
+-- the toast: once for every new availability. The key names the character, the vocation and the tier, so the same open
+-- trial never repeats at the next login, an ascension or the next difficulty is new
+function TrialsMath.toastKey(name, state)
+  local i = TrialsMath.openTier(state)
+  if not i then
+    return nil
+  end
+  return tostring(name or '') .. ':' .. tostring(state.voc or 0) .. ':' .. i
+end
+function TrialsMath.shouldToast(lastKey, key)
+  return key ~= nil and key ~= lastKey
+end
+function TrialsMath.toastText(state)
+  local i, t = TrialsMath.openTier(state)
+  if not i then
+    return ''
+  end
+  return tr('%s on %s is open to you. Open the Trials button of the passive tree.', tostring(state.trial), tostring(t.name))
+end

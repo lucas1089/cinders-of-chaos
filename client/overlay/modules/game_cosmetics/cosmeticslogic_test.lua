@@ -91,7 +91,7 @@ eq(tab[1].selected, true, 'no outline chosen') eq(CL.subText(tab[2]), 'Store: 25
 eq(CL.DRAWN.footprint and CL.DRAWN.outline, true, 'drawn kinds')
 local keys = {}
 for _, k in ipairs(CL.KINDS) do keys[#keys + 1] = k.key end
-eq(table.concat(keys, ','), 'spellskin,killfx,lootbeam,chatcolor,footprint,outline,levelfx,rarefx,emote,collection', 'tabs')
+eq(table.concat(keys, ','), 'spellskin,killfx,lootbeam,chatcolor,footprint,outline,levelfx,rarefx,collection', 'tabs')
 
 -- the Collection tab (server exclusives_core.lua rows): owned first, never usable here
 local col = { { key = 'mount_tuskhide', kind = 'mount', kindName = 'Mount', name = 'Tuskhide Boar',
@@ -113,12 +113,12 @@ eq(col[1].id, nil, 'the server rows are not changed')
 -- the combat cosmetics tabs (O318): a default row and the rows of their kind
 local combat = { { id = 601, kind = 'levelfx', name = 'Dawn Ascent', owned = true, preview = true },
   { id = 701, kind = 'rarefx', name = 'Gilded Glint', owned = false, how = 'Store: 200 Chaos Coins', preview = true },
-  { id = 801, kind = 'emote', name = 'Victory Roar', owned = true, selected = true, preview = true } }
+  { id = 702, kind = 'rarefx', name = 'Crimson Gleam', owned = true, selected = true, preview = true } }
 tab = CL.tabRows(combat, 'levelfx')
 eq(#tab, 2, 'default + the level-up effect') eq(tab[1].desc, 'No effect when you gain a level.', 'level-up default text')
 eq(tab[1].selected, true, 'none chosen')
-tab = CL.tabRows(combat, 'emote')
-eq(tab[1].selected, false, 'an emote is in use') eq(CL.canUse(tab[1]), true, 'switch it off') eq(CL.canUse(tab[2]), false, 'already in use')
+tab = CL.tabRows(combat, 'rarefx')
+eq(tab[1].selected, false, 'a rare loot effect is in use') eq(CL.canUse(tab[1]), true, 'switch it off') eq(CL.canUse(tab[3]), false, 'already in use')
 eq(CL.tabRows(combat, 'rarefx')[2].how, 'Store: 200 Chaos Coins', 'how to get it')
 
 -- the collection score (server collection_core.lua K.view)

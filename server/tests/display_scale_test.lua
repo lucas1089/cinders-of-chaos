@@ -188,6 +188,35 @@ eq(sst.party[1].sd, st.party[1].sd * 1000, "party totals")
 eq(sst.party[1].sdur, st.party[1].sdur, "party duration stays")
 eq(DS.combatLogBrief(st.party[1], 22).sh, st.party[1].sh * 22, "a brief alone")
 
+-- trainer DPS panel (O573): a real view from trainer_meter_core.lua
+dofile("data/scripts/chaos/trainer_meter_core.lua")
+do
+	local TM = ChaosTrainerMeterCore
+	local tcfg = TM.configure(dofile("data/scripts/chaos/trainer_meter_config.lua"))
+	local ts = TM.newSession(1, 7, "Training Dummy")
+	TM.record(tcfg, ts, 1000, 300, {k = "s:Bolt", t = "s", n = "Bolt", i = "x"}, "fire", false)
+	TM.record(tcfg, ts, 1500, 120, {k = "s:Bolt", t = "s", n = "Bolt", i = "x"}, "fire", true)
+	local tv = TM.view(tcfg, ts, 2000)
+	tv.party = {{n = "Hero", cur = 90, tot = 420, me = 1}}
+	local tbefore = DS.clone(tv)
+	local tsc = DS.trainerState(tv, 1000)
+	ok(deepEq(tv, tbefore), "trainer: the state it was given is untouched")
+	eq(DS.trainerState(tv, 1), tv, "trainer: factor 1 is the payload itself")
+	eq(tsc.tot, tv.tot * 1000, "trainer: total")
+	eq(tsc.cur, tv.cur * 1000, "trainer: DPS now")
+	eq(tsc.avg, tv.avg * 1000, "trainer: average")
+	eq(tsc.max, tv.max * 1000, "trainer: biggest hit")
+	eq(tsc.rows[1].v, tv.rows[1].v * 1000, "trainer: row total")
+	eq(tsc.rows[1].m, tv.rows[1].m * 1000, "trainer: row max")
+	eq(tsc.rows[1].h, tv.rows[1].h, "trainer: row hits stay")
+	eq(tsc.el[1][2], tv.el[1][2] * 1000, "trainer: element")
+	eq(tsc.el[1][1], "fire", "trainer: element name stays")
+	eq(tsc.party[1].tot, 420000, "trainer: party total")
+	eq(tsc.hits, tv.hits, "trainer: hits stay")
+	eq(tsc.dur, tv.dur, "trainer: time stays")
+	eq(DS.trainerState({none = 1}, 1000).none, 1, "trainer: an empty state stays")
+end
+
 -- death recap: a real recap from deathrecap_core.lua, scaled by the level at that death
 dofile("data/scripts/chaos/deathrecap_core.lua")
 local R = ChaosDeathRecap
@@ -457,6 +486,7 @@ local function source(path)
 end
 local hooks = {
 	{"combatlog.lua", 'DS.apply("combatLogState", player, st)', 'Chaos.sendChunked(player, OPCODE, json.encode({action = "state", data = st}))'},
+	{"trainer_meter.lua", 'DS.apply("trainerState", player, data)', 'Chaos.send(player, OPCODE, "state", data)'},
 	{"deathrecap.lua", "DS.deathRecapData(data, DS.forPlayer(player))", "Chaos.sendChunked(player, OPCODE, json.encode({action = action, data = data}))"},
 	{"partyframes.lua", 'ChaosDisplayScale.apply("partyState", player, data)', "Chaos.send(player, OPCODE, action, data)"},
 	{"hunt.lua", 'ChaosDisplayScale.apply("huntState", player, st)', 'Chaos.send(player, OPCODE, "state", st)'},

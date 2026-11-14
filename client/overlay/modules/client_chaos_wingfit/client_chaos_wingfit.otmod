@@ -1,9 +1,9 @@
 Module
   name: client_chaos_wingfit
-  description: Wings centred on the body they are drawn with: hands the tables of wing_centres.lua (from the pair) to the engine (base patch 0193)
+  description: Wings centred on the body they are drawn with: hands the tables of wing_centres.lua (from the pair) to the engine (base patches 0193 and 0200: wings and head accessories)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ wing_centres, wingfit_core, wingfit ]
+  scripts: [ wing_centres, head_centres, wingfit_core, wingfit ]
   autoload: true
   autoload-priority: 1000
   @onLoad: init()
