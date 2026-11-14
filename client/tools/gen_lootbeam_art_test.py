@@ -214,7 +214,7 @@ for st in G.STYLES:
         path = os.path.join(G.OUT, G.strip_name(st, g))
         if not os.path.exists(path):
             bad.append(path + ' (missing)')
-        elif not np.array_equal(G.load(path), strips[(st, g)]):
+        elif np.abs(G.load(path).astype(np.int16) - strips[(st, g)].astype(np.int16)).max() > G.TOL:  # CPU float rounding
             bad.append(path + ' (differs)')
 eq(bad, [], 'the committed strips match')
 

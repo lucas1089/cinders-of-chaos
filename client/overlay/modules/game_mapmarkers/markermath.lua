@@ -34,7 +34,8 @@ M.COLORS = { '#ff9d2e', '#5fd0ff', '#8ee05a', '#e070ff', '#ffd84a', '#ff6464', '
              '#ffffff', '#ff9ad0' }
 
 -- npcmarks (O415): the gold ! and ? over the heads of NPCs with a quest for you (npcmarks.lua)
-M.DEFAULTS = { party = true, poi = true, game = true, npcmarks = true }
+-- huntports (O568): the hunt teleports on the map (huntports.lua)
+M.DEFAULTS = { party = true, poi = true, game = true, npcmarks = true, huntports = true }
 
 local function clamp(v, lo, hi)
   if v < lo then return lo end
@@ -51,7 +52,7 @@ end
 function M.sanitize(t)
   t = type(t) == 'table' and t or {}
   local s = { party = flag(t.party, M.DEFAULTS.party), poi = flag(t.poi, M.DEFAULTS.poi), game = flag(t.game, M.DEFAULTS.game),
-    npcmarks = flag(t.npcmarks, M.DEFAULTS.npcmarks), cats = {} }
+    npcmarks = flag(t.npcmarks, M.DEFAULTS.npcmarks), huntports = flag(t.huntports, M.DEFAULTS.huntports), cats = {} }
   local cats = type(t.cats) == 'table' and t.cats or {}
   for _, c in ipairs(M.CATEGORIES) do
     s.cats[c] = flag(cats[c], true)

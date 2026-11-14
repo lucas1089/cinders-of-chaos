@@ -16,7 +16,7 @@ OUT = os.path.join(ROOT, "unity", "Client", "Assets", "Chaos", "Core", "CodexTex
 
 # the blocks of pt_br.lua that belong to the Codex: from a start marker up to an end marker (both lines are not part of the block)
 BLOCKS = [
-    ("-- Codex (game_codex/codextext.lua)", "-- client/overlay/modules/game_npctradewindow/tradewindow.lua"),
+    ("-- Codex (game_codex/codextext.lua)", "-- client/overlay/modules/game_npctradewindow/tradeview.lua"),
     ("-- Codex: more paragraphs", "-- BEGIN GENERATED UNIQUE DESCRIPTIONS"),
 ]
 

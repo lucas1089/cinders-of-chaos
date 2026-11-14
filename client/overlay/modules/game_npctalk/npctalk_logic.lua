@@ -1,7 +1,7 @@
 -- The parts of the NPC dialogue window that need no client API (tested by npctalk_logic_test.lua):
--- keywords in an NPC's reply, the coloured text with clickable keywords, which quick buttons fit the reply, the
--- conversation tooltip (wrapped with SupportsText.wrap of game_spellsupports), and the geometry: where an NPC is on
--- the screen and where the bubble goes so that its tail points at the NPC and it stays inside the map.
+-- keywords in an NPC's reply, the coloured text with clickable keywords, which quick buttons fit the reply, the keyword
+-- chips grouped (quests, trade, topics, language) with the quest words marked, the NPC's name and title, and the geometry:
+-- where an NPC and the player are on the screen and where the window goes (beside the NPC, never over the character).
 
 NpcTalkLogic = {}
 local L = NpcTalkLogic
@@ -167,19 +167,6 @@ function L.flow(widths, maxWidth, chipHeight, gapX, gapY)
   return out, (#widths > 0) and (y + chipHeight) or 0
 end
 
--- ---------------------------------------------------------------- the conversation tooltip
--- lines {who, text}: the last `max` of them as "Name: text", each wrapped at `width` characters
-function L.transcript(lines, width, max, wrap)
-  local out = {}
-  local first = math.max(1, #lines - (max or 16) + 1)
-  for i = first, #lines do
-    local line = lines[i]
-    local text = (line.who and (line.who .. ': ') or '') .. L.plain(line.text)
-    out[#out + 1] = wrap and wrap(text, width or 60, '   ') or text
-  end
-  return table.concat(out, '\n')
-end
-
 -- ---------------------------------------------------------------- geometry
 -- the engine (UIMap / MapView) draws the visible tiles into the map widget's padding rect, less 1 px, kept at the
 -- aspect of the visible dimension when keepAspect, centred; the camera tile's centre is the centre of that rect
@@ -222,34 +209,6 @@ function L.tileCenter(mapRect, stretch, spriteSize, cam, camOff, pos, off)
     x = math.floor(cx + ((pos.x - cam.x) * spriteSize + off.x - camOff.x) * stretch + 0.5),
     y = math.floor(cy + ((pos.y - cam.y) * spriteSize + off.y - camOff.y) * stretch + 0.5),
   }
-end
-
--- the bubble's place: above the NPC with the tail's tip at `above` (the point over its name), or under it with the
--- tip at `below` (its feet) when there is no room above; always inside `area` (the map rect, less `margin`).
--- Returns {x, y, tailX, tailY, below} (tailX/tailY: the tail image's top-left).
-function L.place(w, h, above, below, area, tailW, tailH, margin)
-  margin = margin or 4
-  tailW, tailH = tailW or 22, tailH or 12
-  local overlap = 3 -- the tail's top rows cover the bubble's rim
-  local minX, maxX = area.x + margin, area.x + area.width - margin - w
-  local minY, maxY = area.y + margin, area.y + area.height - margin - h
-  local x = math.floor(above.x - w / 2)
-  x = math.max(minX, math.min(maxX, x))
-  if maxX < minX then x = minX end
-  local isBelow = false
-  local y = above.y - tailH + overlap - h
-  if y < minY then
-    local yb = below.y + tailH - overlap
-    if yb <= maxY then
-      y, isBelow = yb, true
-    elseif area.y + area.height - below.y > above.y - area.y then
-      y, isBelow = yb, true -- no room on either side: the roomier side, pushed back inside the map below
-    end
-  end
-  y = math.max(minY, math.min(math.max(minY, maxY), y))
-  local tailX = math.max(x + 8, math.min(x + w - 8 - tailW, math.floor(above.x - tailW / 2)))
-  local tailY = isBelow and (y - tailH + overlap) or (y + h - overlap)
-  return { x = x, y = y, tailX = tailX, tailY = tailY, below = isBelow }
 end
 
 -- the part of the map the player sees: the map rect cut by the window and the panels around it. `limits` = {left,
@@ -301,6 +260,172 @@ end
 function L.inRange(a, b, range)
   local d = L.distance(a, b)
   return d ~= nil and d <= (range or L.TALK_RANGE)
+end
+
+-- ---------------------------------------------------------------- the NPC's name and title
+-- "Archivist Maelis" -> "Maelis", "Archivist"; "Osric the Chandler" -> "Osric", "Chandler"; a name that is a job only
+-- ("Loot Buyer", "Keeper of Trials") stays whole with no title. Nothing is made up: the title is a word of the name.
+local TITLE_FIRST = { archivist = true, cantor = true, elder = true, forgemaster = true, warden = true, widow = true,
+  master = true, captain = true, sergeant = true, smith = true, sage = true, priest = true, priestess = true,
+  lord = true, lady = true, sir = true, hunter = true, guard = true }
+
+function L.splitName(name)
+  name = trim(name)
+  local who, title = name:match('^(%S+)%s+the%s+(.+)$')
+  if who then return who, title end
+  local first, rest = name:match('^(%S+)%s+(.+)$')
+  if first and TITLE_FIRST[first:lower()] then return rest, first end
+  return name, nil
+end
+
+-- ---------------------------------------------------------------- keyword chips, grouped
+-- Quest words mark a chip; the groups come most useful first: quests, trade, topics, language.
+L.QUEST_WORDS = { quest = true, quests = true, mission = true, missions = true, task = true, tasks = true, job = true,
+  jobs = true, adventure = true, reward = true, rewards = true, trial = true, trials = true, oath = true,
+  ascension = true, ascend = true, ascendant = true, bounty = true, errand = true, errands = true, favor = true,
+  favour = true, ritual = true, vow = true, pact = true }
+L.TRADE_KEYWORDS = { trade = true, offer = true, offers = true, wares = true, buy = true, sell = true, shop = true,
+  goods = true, prices = true, price = true, barter = true }
+L.LANGUAGE_WORDS = { portugues = true, ['portugu\195\170s'] = true, portuguese = true, english = true, ingles = true,
+  ['ingl\195\170s'] = true }
+L.GROUPS = { 'quest', 'trade', 'topics', 'language' }
+
+local function wordIn(set, word)
+  word = trim(word):lower()
+  if set[word] then return true end
+  for w in word:gmatch('[%a\128-\255]+') do
+    if set[w] then return true end
+  end
+  return false
+end
+
+-- a quest word: the keyword itself, or one of its words ("the spell quest")
+function L.isQuestWord(word)
+  return wordIn(L.QUEST_WORDS, word)
+end
+
+function L.groupOf(word)
+  if wordIn(L.LANGUAGE_WORDS, word) then return 'language' end
+  if L.isQuestWord(word) then return 'quest' end
+  if wordIn(L.TRADE_KEYWORDS, word) then return 'trade' end
+  return 'topics'
+end
+
+-- the chips of a turn in groups: [{id, words = {...}}], empty groups left out, the order of the words kept in a group
+function L.groups(words)
+  local by = {}
+  for _, w in ipairs(words or {}) do
+    local g = L.groupOf(w)
+    by[g] = by[g] or {}
+    by[g][#by[g] + 1] = w
+  end
+  local out = {}
+  for _, id in ipairs(L.GROUPS) do
+    if by[id] then out[#out + 1] = { id = id, words = by[id] } end
+  end
+  return out
+end
+
+-- The chips and the group labels laid out in rows. `widthOf(word)` gives the width of a chip; with two groups or more
+-- (and a `labelHeight`) every group starts on a new row under its label.
+-- Returns {labels = {{id, y}}, chips = {{word, group, x, y, width}}, height}.
+function L.flowGroups(groups, widthOf, maxWidth, chipHeight, gapX, gapY, labelHeight)
+  gapX, gapY, labelHeight = gapX or 4, gapY or 4, labelHeight or 0
+  local labelled = #groups > 1 and labelHeight > 0
+  local labels, chips = {}, {}
+  local y = 0
+  for gi, g in ipairs(groups) do
+    if gi > 1 then y = y + gapY + 2 end
+    if labelled then
+      labels[#labels + 1] = { id = g.id, y = y }
+      y = y + labelHeight + 2
+    end
+    local x = 0
+    for _, word in ipairs(g.words) do
+      local w = math.min(widthOf(word), maxWidth)
+      if x > 0 and x + w > maxWidth then x, y = 0, y + chipHeight + gapY end
+      chips[#chips + 1] = { word = word, group = g.id, x = x, y = y, width = w }
+      x = x + w + gapX
+    end
+    y = y + chipHeight
+  end
+  return { labels = labels, chips = chips, height = y }
+end
+
+-- A short line under the NPC's name when its name has no title: what the conversation shows it to be. 'trade' when the
+-- trade window is open or it spoke of its wares, 'quests' when a keyword of the conversation is a quest word.
+function L.role(history, tradeOpen)
+  if tradeOpen then return 'trade' end
+  for _, k in ipairs(L.keywords(history or {})) do
+    if L.isQuestWord(k) then return 'quests' end
+  end
+  if mentions(history or {}, TRADE_WORDS) then return 'trade' end
+  return nil
+end
+
+-- ---------------------------------------------------------------- where the dialogue window goes
+L.WINDOW_W, L.WINDOW_H = 480, 480
+L.WINDOW_MIN_W, L.WINDOW_MIN_H = 380, 340
+
+-- the window's size for the visible part of the map `area` ({x, y, width, height})
+function L.windowSize(area)
+  local w = math.max(L.WINDOW_MIN_W, math.min(L.WINDOW_W, area.width - 16))
+  local h = math.max(L.WINDOW_MIN_H, math.min(L.WINDOW_H, area.height - 16))
+  return w, h
+end
+
+local function overlaps(x, y, w, h, r)
+  return x < r.x + r.width and r.x < x + w and y < r.y + r.height and r.y < y + h
+end
+
+-- The window beside the NPC: on the side of it away from the player, else the other side, never over the player's tile or the
+-- NPC's. The part of the map the player sees (`area`) comes first, then the whole screen (`screen`, optional: a small map
+-- leaves no room beside the NPC, and the window may cover a side panel but not the character). After the sides: a corner of
+-- the area, a corner of the screen, the middle of the area. `npc` and `player` are the screen centres of their tiles (player
+-- may be nil), `tile` the size of a tile on the screen. Returns {x, y}.
+function L.windowPlace(w, h, npc, player, tile, area, margin, screen)
+  margin = margin or 8
+  tile = math.max(8, tile or 32)
+  local keep = {}
+  for _, c in ipairs({ npc, player or false }) do
+    if c then keep[#keep + 1] = { x = c.x - tile * 0.75, y = c.y - tile * 1.25, width = tile * 1.5, height = tile * 2 } end
+  end
+  local function free(x, y)
+    for _, r in ipairs(keep) do if overlaps(x, y, w, h, r) then return false end end
+    return true
+  end
+  local function limits(a)
+    local minX, maxX = a.x + margin, a.x + a.width - margin - w
+    local minY, maxY = a.y + margin, a.y + a.height - margin - h
+    return minX, math.max(minX, maxX), minY, math.max(minY, maxY)
+  end
+  local function beside(a)
+    local minX, maxX, minY, maxY = limits(a)
+    local y = math.max(minY, math.min(maxY, math.floor(npc.y - h / 2)))
+    local right = { x = math.floor(npc.x + tile), y = y }
+    local left = { x = math.floor(npc.x - tile - w), y = y }
+    local order = (not player or player.x <= npc.x) and { right, left } or { left, right }
+    for _, c in ipairs(order) do
+      if c.x >= minX and c.x <= maxX and free(c.x, c.y) then return { x = c.x, y = c.y } end
+    end
+  end
+  -- the free corner (or the spot above or under the NPC) nearest the NPC
+  local function corners(a)
+    local minX, maxX, minY, maxY = limits(a)
+    local midX = math.max(minX, math.min(maxX, math.floor(npc.x - w / 2)))
+    local best, bestD
+    for _, s in ipairs({ { minX, minY }, { maxX, minY }, { minX, maxY }, { maxX, maxY }, { midX, minY }, { midX, maxY } }) do
+      if free(s[1], s[2]) then
+        local d = (s[1] + w / 2 - npc.x) ^ 2 + (s[2] + h / 2 - npc.y) ^ 2
+        if not bestD or d < bestD then best, bestD = { x = s[1], y = s[2] }, d end
+      end
+    end
+    return best
+  end
+  local spot = beside(area) or (screen and beside(screen)) or corners(area) or (screen and corners(screen))
+  if spot then return spot end
+  local minX, maxX, minY, maxY = limits(area)
+  return { x = math.floor((minX + maxX) / 2), y = math.floor((minY + maxY) / 2) }
 end
 
 -- ---------------------------------------------------------------- which window gets an NPC line

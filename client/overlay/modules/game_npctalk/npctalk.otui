@@ -1,23 +1,35 @@
-// The NPC dialogue window: a speech bubble over the NPC (game_npctalk). npctalk.lua sizes and places it every frame,
-// fills the reply, the keyword chips and the quick buttons.
+// The NPC dialogue window (O571): the NPC's portrait, name and title, the conversation as a log (what the NPC says in parchment
+// with gold keywords, what the player said apart on the right), the keyword chips in groups (quests marked), the Yes / No /
+// Trade buttons that fit the reply, an input with Say and Bye. npctalkview.lua fills it; the ids here are the ids it looks up
+// (npctalkview_test.lua checks them against this file). Styles of client_chaos_theme.
 
-NpcTalkText < UILabel
+NpcTalkLine < UILabel
   font: verdana-11px-antialised
   color: #d6c9ae
   text-align: topLeft
   text-wrap: true
   text-auto-resize: true
   height: 14
-  margin-bottom: 3
+  margin-bottom: 5
 
-NpcTalkSaid < NpcTalkText
+// what the NPC says: its name in gold in front of the text (npctalkview.lua colours the parts)
+NpcTalkNpcLine < NpcTalkLine
+  margin-right: 24
+
+// what the player said: dim, on the right, so the two voices never read as one
+NpcTalkPlayerLine < NpcTalkLine
   color: #8c8070
+  text-align: topRight
+  margin-left: 48
+
+NpcTalkNote < NpcTalkLine
+  color: #6b6258
   phantom: true
 
 NpcTalkChip < UIButton
   font: verdana-11px-antialised
   color: #f6cf72
-  height: 20
+  height: 22
   text-offset: 0 1
   image-source: /images/chaos/panel_dark
   image-border: 6
@@ -32,68 +44,40 @@ NpcTalkChip < UIButton
     image-source: /images/chaos/button_pressed
     color: #e03a1e
 
+// a quest keyword: the highlighted frame and a "!" in front of the word (npctalkview.lua)
+NpcTalkQuestChip < NpcTalkChip
+  image-source: /images/chaos/panel_highlight
+  color: #ffffff
+
+NpcTalkGroupLabel < UILabel
+  font: verdana-11px-antialised
+  color: #8c8070
+  height: 12
+  text-align: left
+  phantom: true
+
 NpcTalkQuick < ChaosButton
-  height: 22
+  height: 24
   width: 70
   padding: 2 4 2 4
 
-NpcTalkTail < UIWidget
-  size: 22 12
-  image-source: /modules/game_npctalk/images/tail_down
-  phantom: true
-  focusable: false
-
-NpcTalkBubble < ChaosPanelHighlight
-  size: 340 180
-  padding: 8
+NpcTalkWindow < ChaosWindow
+  id: npcTalkWindow
+  !text: tr('Conversation')
+  size: 480 480
+  padding-top: 38
   focusable: true
-  phantom: false
+  &save: false
 
-  ChaosPanelDark
-    id: portraitFrame
-    anchors.top: parent.top
-    anchors.left: parent.left
-    size: 40 40
-    padding: 0
-    clipping: true
-
-    // npctalk.lua sizes it: 64 px for the large (2x2) outfits, whose figure sits in the lower right of the frame
-    UICreature
-      id: portrait
-      anchors.right: parent.right
-      anchors.bottom: parent.bottom
-      size: 40 40
-      fixed-creature-size: true
-      phantom: true
-
-  UILabel
-    id: npcName
-    anchors.top: parent.top
-    anchors.left: portraitFrame.right
-    anchors.right: optionsButton.left
-    margin-left: 8
-    margin-right: 4
-    margin-top: 3
-    height: 16
-    font: verdana-11px-rounded
-    color: #e8b84a
-    text-align: left
-
-  UILabel
-    id: status
-    anchors.top: npcName.bottom
-    anchors.left: npcName.left
-    anchors.right: closeButton.right
-    margin-top: 3
-    height: 14
-    font: verdana-11px-antialised
-    color: #8c8070
-    text-align: left
+  $mobile:
+    size: 440 400
 
   UIButton
     id: closeButton
     anchors.top: parent.top
     anchors.right: parent.right
+    margin-top: -30
+    margin-right: -8
     size: 18 18
     font: verdana-11px-rounded
     text: x
@@ -108,7 +92,8 @@ NpcTalkBubble < ChaosPanelHighlight
     id: optionsButton
     anchors.top: parent.top
     anchors.right: closeButton.left
-    margin-right: 3
+    margin-top: 0
+    margin-right: 4
     size: 18 18
     font: verdana-11px-rounded
     text: ...
@@ -120,63 +105,110 @@ NpcTalkBubble < ChaosPanelHighlight
     $hover:
       color: #f6cf72
 
-  ScrollablePanel
-    id: textScroll
-    anchors.top: portraitFrame.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 6
-    height: 40
-    vertical-scrollbar: textScrollBar
-    layout:
-      type: verticalBox
-
-  ChaosScrollBar
-    id: textScrollBar
-    anchors.top: textScroll.top
-    anchors.bottom: textScroll.bottom
-    anchors.right: textScroll.right
-    step: 14
-    pixels-scroll: true
-    visible: false
-
+  // the NPC: a big portrait of its own outfit, its name, its title, a hint
   UIWidget
-    id: chips
-    anchors.top: textScroll.bottom
+    id: header
+    anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 6
-    height: 0
+    height: 86
     phantom: true
 
-  ChaosTextEdit
-    id: input
-    anchors.top: chips.bottom
-    anchors.left: parent.left
-    anchors.right: sayButton.left
-    margin-top: 6
-    margin-right: 4
-    height: 22
-    max-length: 255
-    !placeholder: tr('Say something...')
-    placeholder-color: #6b6258
+    ChaosPanelDark
+      id: portraitFrame
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 84 84
+      padding: 0
+      clipping: true
 
-  ChaosButton
-    id: sayButton
-    anchors.top: chips.bottom
-    margin-top: 6
+      // npctalkview.lua sizes it: 80 px for a 1x1 outfit, 128 px for the large (2x2) ones, whose figure sits in the lower
+      // right of the frame
+      UICreature
+        id: portrait
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        size: 80 80
+        fixed-creature-size: true
+        phantom: true
+
+    UILabel
+      id: npcName
+      anchors.top: parent.top
+      anchors.left: portraitFrame.right
+      anchors.right: parent.right
+      margin-left: 12
+      margin-top: 6
+      height: 22
+      font: verdana-11px-rounded
+      color: #e8b84a
+      text-align: left
+
+    UILabel
+      id: npcTitle
+      anchors.top: npcName.bottom
+      anchors.left: npcName.left
+      anchors.right: parent.right
+      margin-top: 2
+      height: 16
+      font: verdana-11px-antialised
+      color: #8c8070
+      text-align: left
+
+    UILabel
+      id: status
+      anchors.bottom: parent.bottom
+      anchors.left: npcName.left
+      anchors.right: parent.right
+      height: 14
+      font: verdana-11px-antialised
+      color: #6b6258
+      text-align: left
+
+  // the conversation
+  ChaosPanelDark
+    id: logPanel
+    anchors.top: header.bottom
+    anchors.left: parent.left
     anchors.right: parent.right
-    size: 48 22
-    padding: 2 4 2 4
-    !text: tr('Say')
+    anchors.bottom: chips.top
+    margin-top: 8
+    margin-bottom: 8
+    padding: 6
+
+    ScrollablePanel
+      id: textScroll
+      anchors.fill: parent
+      vertical-scrollbar: textScrollBar
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: textScrollBar
+      anchors.top: textScroll.top
+      anchors.bottom: textScroll.bottom
+      anchors.right: textScroll.right
+      step: 14
+      pixels-scroll: true
+      visible: false
+
+  // the keywords of the latest reply, in groups
+  UIWidget
+    id: chips
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: quickButtons.top
+    margin-bottom: 6
+    height: 0
+    phantom: false
 
   UIWidget
     id: quickButtons
-    anchors.top: input.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 6
-    height: 22
+    anchors.bottom: inputRow.top
+    margin-bottom: 6
+    height: 24
     phantom: true
     layout:
       type: horizontalBox
@@ -194,6 +226,38 @@ NpcTalkBubble < ChaosPanelHighlight
       id: trade
       !text: tr('Trade')
 
-    NpcTalkQuick
-      id: bye
+  UIWidget
+    id: inputRow
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    height: 26
+    phantom: true
+
+    ChaosTextEdit
+      id: input
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: sayButton.left
+      margin-right: 4
+      height: 26
+      max-length: 255
+      !placeholder: tr('Say something...')
+      placeholder-color: #6b6258
+
+    ChaosPrimaryButton
+      id: sayButton
+      anchors.top: parent.top
+      anchors.right: byeButton.left
+      margin-right: 4
+      size: 56 26
+      padding: 2 4 2 4
+      !text: tr('Say')
+
+    ChaosButton
+      id: byeButton
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 56 26
+      padding: 2 4 2 4
       !text: tr('Bye')

@@ -15,6 +15,10 @@ outline so they stay visible over water, grass and the black of unexplored map.
   npcmark_new.png         16x24  (O415) a gold exclamation mark with a dark outline: drawn over the head of an NPC that has
   npcmark_ready.png              a quest this character can start now; a gold question mark: a step to turn in or
   npcmark_locked.png             report to this NPC; a grey exclamation mark: a quest that waits for a level
+  huntport.png            14x14  (O568) a stone gate with an ember opening: a hunt teleport of the hall
+  huntport_last.png       18x18  the same in gold on a glowing plate: the one you last used, your way back
+  huntexit.png            14x14  a frost door with an arrow out: the way out of a hunt you have entered
+  huntexit_here.png       18x18  the same glowing: the way out of the hunt you stand in (the client pulses the two big ones)
   poi_<kind>.png          14x14  a dark round plate, gold rim, the kind's motif: temple, depot, bank, npc, shop,
                                  travel, bless, craft, guild, portal, boss, dungeon, hunt, quest (a quest giver or
                                  chest: a gold exclamation mark), questgoal (your next quest step: an ember target)
@@ -49,14 +53,16 @@ def c(ramp, i):
 
 
 class Canvas:
-    def __init__(self, size, height=None):
+    def __init__(self, size, height=None, unit=None):
+        # unit: the design's own size in drawing units (a 14 unit design on a bigger canvas is drawn bigger)
         self.size = size
         self.height = height or size
+        self.k = K * size / (unit or size)
         self.img = Image.new('RGBA', (size * K, self.height * K), (0, 0, 0, 0))
         self.d = ImageDraw.Draw(self.img)
 
     def p(self, v):
-        return v * K
+        return v * self.k
 
     def ellipse(self, x0, y0, x1, y1, fill):
         self.d.ellipse((self.p(x0), self.p(y0), self.p(x1), self.p(y1)), fill=fill)
@@ -239,6 +245,86 @@ def poi_icon(motif):
     return cv.done()
 
 
+# ------------------------------------------------------------------------------------------------ hunt teleports (O568)
+# Drawn in the 14 unit plate design; the highlighted ones on an 18 px canvas (the same design, drawn bigger) with a glow
+# ring round the plate. The colours are the markers' meaning: ember gate (into a hunt), gold (the one to go back to),
+# frost door (out of a hunt), a brighter frost when it is the hunt you are in.
+def glow(cv, ramp):
+    for i, (grow_by, alpha) in enumerate(((0.0, 70), (-0.8, 110))):
+        g = c(ramp, 3)[:3] + (alpha,)
+        cv.ellipse(-0.6 - grow_by, -0.6 - grow_by, 14.6 + grow_by, 14.6 + grow_by, g)
+
+
+def m_gate(ramp, frame='stone', lo=3, hi=4):
+    def draw(cv):
+        cv.rect(3.0, 3.4, 4.8, 11.6, c(frame, lo))                   # the two posts
+        cv.rect(9.2, 3.4, 11.0, 11.6, c(frame, lo))
+        cv.poly([(3.0, 3.4), (7.0, 1.8), (11.0, 3.4), (11.0, 5.0), (3.0, 5.0)], c(frame, hi))   # the lintel
+        cv.rect(4.8, 5.0, 9.2, 11.6, INK)                            # the opening
+        cv.ellipse(5.4, 6.2, 8.6, 11.6, c(ramp, 2))                  # the glow inside
+        cv.ellipse(6.1, 7.4, 7.9, 11.0, c(ramp, 4))
+    return draw
+
+
+def m_door(ramp, frame='stone', lo=3):
+    def draw(cv):
+        cv.rect(3.2, 2.4, 9.0, 11.8, c(frame, lo))                   # the frame
+        cv.rect(4.2, 3.4, 8.0, 11.8, c(ramp, 1))                     # the door
+        cv.rect(4.2, 3.4, 5.0, 11.8, c(ramp, 3))                     # lit from the left
+        cv.ellipse(6.8, 7.2, 7.6, 8.0, c('gold', 4))                 # the handle
+        cv.poly([(9.4, 6.2), (12.2, 7.6), (9.4, 9.0)], c(ramp, 4))   # the arrow out
+        cv.rect(8.2, 7.1, 10.2, 8.1, c(ramp, 4))
+    return draw
+
+
+class Shifted:
+    """draws the 14 unit design moved by dx units on a bigger canvas"""
+    def __init__(self, base, dx):
+        self.base, self.dx = base, dx
+
+    def ellipse(self, x0, y0, x1, y1, fill):
+        d = self.dx
+        self.base.ellipse(x0 + d, y0 + d, x1 + d, y1 + d, fill)
+
+    def rect(self, x0, y0, x1, y1, fill):
+        d = self.dx
+        self.base.rect(x0 + d, y0 + d, x1 + d, y1 + d, fill)
+
+    def poly(self, pts, fill):
+        self.base.poly([(x + self.dx, y + self.dx) for x, y in pts], fill)
+
+    def line(self, pts, fill, w):
+        self.base.line([(x + self.dx, y + self.dx) for x, y in pts], fill, w)
+
+
+PAD = 2.2   # units of glow round the plate on an 18 px marker
+
+
+def hunt_icon(motif, size, rim=None, halo=None):
+    if size == 14:
+        cv = Canvas(14)
+        plate(cv)
+        motif(cv)
+        return cv.done()
+    cv = Canvas(size, unit=14 + 2 * PAD)
+    out = Shifted(cv, PAD)
+    glow(out, halo)
+    plate(out)
+    out.ellipse(0.9, 0.9, 13.1, 13.1, rim)           # a thicker, brighter rim
+    out.ellipse(1.9, 1.9, 12.1, 12.1, PLATE[0])
+    out.ellipse(2.3, 2.1, 10.6, 9.6, PLATE[1])
+    motif(out)
+    return cv.done()
+
+
+HUNT_ART = {
+    'huntport': lambda: hunt_icon(m_gate('ember'), 14),
+    'huntport_last': lambda: hunt_icon(m_gate('ember', 'gold', 2, 3), 18, rim=c('gold', 4), halo='gold'),
+    'huntexit': lambda: hunt_icon(m_door('frost'), 14),
+    'huntexit_here': lambda: hunt_icon(m_door('frost', 'frost', 3), 18, rim=c('frost', 3), halo='frost'),
+}
+
+
 # ------------------------------------------------------------------------------------------------ marks over NPC heads (O415)
 # 16x24, a dark outline all round so they read on grass, stone and water. Gold ramp for the quests of the character,
 # the stone ramp (grey) for a quest that waits for a level.
@@ -286,6 +372,8 @@ def all_art():
         out['party_arrow_' + name] = party_arrow(angle)
     for kind, motif in POI.items():
         out['poi_' + kind] = poi_icon(motif)
+    for name, make in HUNT_ART.items():
+        out[name] = make()
     return out
 
 

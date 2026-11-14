@@ -1,7 +1,6 @@
 -- luajit npctalk_logic_test.lua && lua5.3 npctalk_logic_test.lua (CI runs every client/overlay/modules/*/*_test.lua)
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. 'npctalk_logic.lua')
-dofile(dir .. '../game_spellsupports/supportstext.lua')
 local L = NpcTalkLogic
 local fails, checks = 0, 0
 local function eq(a, b, what)
@@ -75,13 +74,6 @@ eq(h, 44, 'flow height')
 eq(select(2, L.flow({}, 100, 20)), 0, 'no chips no height')
 eq(L.flow({ 300 }, 100, 20)[1].width, 100, 'too wide chip capped')
 
--- transcript (wrapped with SupportsText.wrap)
-local lines = { { who = 'You', text = 'hi' }, { who = 'Dove', text = 'Be greeted, noble traveller, and welcome to the {post office}.' } }
-local tt = L.transcript(lines, 30, 16, SupportsText.wrap)
-eq(tt, 'You: hi\nDove: Be greeted, noble\n   traveller, and welcome to\n   the post office.', 'transcript wrapped')
-eq(L.transcript(lines, 30, 1), 'Dove: Be greeted, noble traveller, and welcome to the post office.', 'transcript last line, no wrap')
-for _, line in ipairs({ tt:match('([^\n]*)\n'), 'x' }) do eq(#line <= 30, true, 'wrapped width') end
-
 -- geometry: a 15x11 map at 32 px per tile, no stretch
 local vis = { width = 15, height = 11 }
 local panel = { x = 100, y = 50, width = 482, height = 354 }
@@ -113,28 +105,105 @@ eq(L.stretch(big, vis, 32), 2, 'stretch 2')
 local wide = L.mapRect({ x = 0, y = 0, width = 962, height = 354 }, vis, false)
 eq(L.stretch(wide, vis, 32), 2, 'wide: width decides')
 
--- placing the bubble
-local area = { x = 0, y = 0, width = 800, height = 600 }
-local pl = L.place(300, 120, { x = 400, y = 300 }, { x = 400, y = 340 }, area, 22, 12, 4)
-eq(pl.below, false, 'room above')
-eq(pl.x, 250, 'centred on the npc')
-eq(pl.y + 120 + 12 - 3, 300, 'tail tip at the anchor')
-eq(pl.tailX, 389, 'tail under the anchor')
-eq(pl.tailY, pl.y + 117, 'tail joins the bottom rim')
-pl = L.place(300, 120, { x = 20, y = 300 }, { x = 20, y = 340 }, area, 22, 12, 4)
-eq(pl.x, 4, 'clamped left')
-eq(pl.tailX, 12, 'tail stays on the bubble')
-pl = L.place(300, 120, { x = 790, y = 300 }, { x = 790, y = 340 }, area, 22, 12, 4)
-eq(pl.x, 496, 'clamped right')
-eq(pl.tailX, 496 + 300 - 8 - 22, 'tail at the right end')
-pl = L.place(300, 120, { x = 400, y = 60 }, { x = 400, y = 100 }, area, 22, 12, 4)
-eq(pl.below, true, 'no room above: below')
-eq(pl.y, 100 + 9, 'below the feet')
-eq(pl.tailY, 100, 'tail tip at the feet')
-pl = L.place(300, 580, { x = 400, y = 100 }, { x = 400, y = 140 }, area, 22, 12, 4)
-eq(pl.y >= 4 and pl.y + 580 <= 596, true, 'too tall: inside the map')
-pl = L.place(300, 120, { x = 400, y = 300 }, { x = 400, y = 340 }, { x = 10, y = 10, width = 200, height = 100 }, 22, 12, 4)
-eq(pl.x, 14, 'map narrower than the bubble: left edge')
+-- the NPC's name and title
+local who, title = L.splitName('Archivist Maelis')
+eq(who, 'Maelis', 'name without the title'); eq(title, 'Archivist', 'the title is a word of the name')
+who, title = L.splitName('Osric the Chandler')
+eq(who, 'Osric', 'name before "the"'); eq(title, 'Chandler', 'the trade after "the"')
+who, title = L.splitName('Veyra the Apothecary')
+eq(who, 'Veyra', 'Veyra'); eq(title, 'Apothecary', 'Apothecary')
+who, title = L.splitName('Loot Buyer')
+eq(who, 'Loot Buyer', 'a job name stays whole'); eq(title, nil, 'and has no title')
+who, title = L.splitName('Keeper of Trials')
+eq(who, 'Keeper of Trials', 'Keeper of Trials stays whole'); eq(title, nil, 'no title')
+who, title = L.splitName('Tavish Coldhand')
+eq(who, 'Tavish Coldhand', 'a plain name'); eq(title, nil, 'no title')
+who, title = L.splitName('Warden Ysolde')
+eq(who, 'Ysolde', 'Warden Ysolde'); eq(title, 'Warden', 'Warden')
+who, title = L.splitName('  Elder   Bramwyn ')
+eq(who, 'Bramwyn', 'spaces'); eq(title, 'Elder', 'Elder')
+who, title = L.splitName('Archivist')
+eq(who, 'Archivist', 'a lone word'); eq(title, nil, 'is no title')
+who, title = L.splitName(nil)
+eq(who, '', 'nil'); eq(title, nil, 'nil title')
+
+-- quest words and the chip groups
+eq(L.isQuestWord('quest'), true, 'quest'); eq(L.isQuestWord('Spell Quest'), true, 'a word of the keyword')
+eq(L.isQuestWord('lore'), false, 'lore'); eq(L.isQuestWord('ascension'), true, 'ascension')
+eq(L.groupOf('trade'), 'trade', 'trade'); eq(L.groupOf('offers'), 'trade', 'offers')
+eq(L.groupOf('portugues'), 'language', 'the pt-BR switch word'); eq(L.groupOf('english'), 'language', 'the English one')
+eq(L.groupOf('portugu\195\170s'), 'language', 'with the accent')
+eq(L.groupOf('ledger'), 'topics', 'ledger'); eq(L.groupOf('quest'), 'quest', 'a quest word is a quest chip')
+local groups = L.groups({ 'ledger', 'tales', 'story', 'lore', 'portugues', 'quest', 'trade' })
+eq(#groups, 4, 'four groups'); eq(groups[1].id, 'quest', 'quests first'); eq(groups[2].id, 'trade', 'then trade')
+eq(groups[3].id, 'topics', 'then topics'); eq(groups[4].id, 'language', 'language last')
+eq(join(groups[3].words), 'ledger|tales|story|lore', 'the order of the words is kept')
+eq(#L.groups({}), 0, 'no words, no groups'); eq(#L.groups(nil), 0, 'nil')
+eq(#L.groups({ 'lore', 'tales' }), 1, 'one group when all are topics')
+-- the archivist's greeting (server data/npc/scripts/archivist_maelis.lua): the chips as the owner saw them
+local archivist = 'Ash on your boots, Ash. I keep the {ledger}. Ask me for {tales}, the {story} of Cinderhold, or any {lore} you fear. (Diga {portugues} para conversar em portugues.)'
+groups = L.groups(L.keywords(archivist))
+eq(join(groups[1].words), 'ledger|tales|story|lore', 'topics first when there is nothing more useful'); eq(groups[2].id, 'language', 'the language switch last')
+-- the chips in rows with group labels
+local widths = { a = 40, b = 50, c = 60, d = 30 }
+local flow = L.flowGroups({ { id = 'quest', words = { 'a', 'b' } }, { id = 'topics', words = { 'c', 'd' } } },
+  function(w) return widths[w] end, 100, 20, 4, 4, 12)
+eq(#flow.labels, 2, 'a label per group'); eq(flow.labels[1].y, 0, 'first label on top')
+eq(flow.chips[1].y, 14, 'chips under the label'); eq(flow.chips[2].x, 44, 'second chip beside it')
+eq(flow.labels[2].y, 14 + 20 + 4 + 2, 'the next label under the first group')
+eq(flow.chips[3].y, flow.labels[2].y + 14, 'its chips under it'); eq(flow.chips[4].x, 64, 'beside')
+eq(flow.height, flow.chips[3].y + 20, 'the height')
+flow = L.flowGroups({ { id = 'topics', words = { 'a', 'b', 'c' } } }, function(w) return widths[w] end, 100, 20, 4, 4, 12)
+eq(#flow.labels, 0, 'one group: no label'); eq(flow.chips[3].y, 24, 'the third wraps'); eq(flow.height, 44, 'two rows')
+eq(L.flowGroups({}, function() return 1 end, 100, 20).height, 0, 'nothing, no height')
+eq(L.flowGroups({ { id = 'topics', words = { 'x' } } }, function() return 500 end, 100, 20).chips[1].width, 100, 'capped')
+-- the role line for a name without a title
+eq(L.role({ 'Welcome. {trade} is open.' }, false), 'trade', 'spoke of its trade')
+eq(L.role({ 'Ask about the {quest}.' }, false), 'quests', 'has a quest')
+eq(L.role({ 'Hello.' }, true), 'trade', 'trade window open')
+eq(L.role({ 'Hello {friend}.' }, false), nil, 'nothing to say'); eq(L.role(nil, false), nil, 'no history')
+
+-- the window beside the NPC
+local area = { x = 0, y = 0, width = 1200, height = 700 }
+eq(select(1, L.windowSize(area)), 480, 'the usual width'); eq(select(2, L.windowSize(area)), 480, 'the usual height')
+eq(select(1, L.windowSize({ x = 0, y = 0, width = 300, height = 300 })), 380, 'minimum width')
+eq(select(2, L.windowSize({ x = 0, y = 0, width = 500, height = 400 })), 384, 'height less the margins')
+local function covers(pl, w, h, c, tile)
+  return pl.x < c.x + tile * 0.75 and c.x - tile * 0.75 < pl.x + w and pl.y < c.y + tile * 0.75 and c.y - tile * 1.25 < pl.y + h
+end
+-- the player stands left of the NPC: the window goes to its right
+local npc, ply = { x = 500, y = 350 }, { x = 400, y = 350 }
+local pl = L.windowPlace(480, 480, npc, ply, 32, area)
+eq(pl.x, 532, 'right of the NPC'); eq(pl.y, 110, 'centred on it'); eq(covers(pl, 480, 480, npc, 32), false, 'not over the NPC')
+eq(covers(pl, 480, 480, ply, 32), false, 'not over the player')
+-- the player stands right of it: the window goes left
+pl = L.windowPlace(480, 480, { x = 700, y = 350 }, { x = 800, y = 350 }, 32, area)
+eq(pl.x, 700 - 32 - 480, 'left of the NPC'); eq(covers(pl, 480, 480, { x = 800, y = 350 }, 32), false, 'not over the player')
+-- no room on the far side: the near side, if it does not cover the player
+pl = L.windowPlace(480, 480, { x = 1000, y = 350 }, { x = 900, y = 600 }, 32, area)
+eq(pl.x + 480 <= 1200 - 8, true, 'inside the area'); eq(covers(pl, 480, 480, { x = 900, y = 600 }, 32), false, 'the player is clear')
+-- a small map leaves no room beside the NPC: the whole screen is tried next (a side panel may be covered, the character not)
+local screen = { x = 0, y = 0, width = 1280, height = 720 }
+pl = L.windowPlace(464, 340, { x = 341, y = 227 }, { x = 405, y = 227 }, 32, { x = 101, y = 51, width = 480, height = 352 }, 8, screen)
+eq(covers(pl, 464, 340, { x = 341, y = 227 }, 32) or covers(pl, 464, 340, { x = 405, y = 227 }, 32), false, 'a player on the right and no room left of the NPC: a spot that covers neither')
+eq(pl.x >= 8 and pl.x + 464 <= 1272, true, 'inside the screen')
+pl = L.windowPlace(464, 340, { x = 341, y = 227 }, { x = 280, y = 227 }, 32, { x = 101, y = 51, width = 480, height = 352 }, 8, screen)
+eq(pl.x, 341 + 32, 'a player on the left: to the right of the NPC, over the side panel')
+-- a small area, no screen: corners and the middle, never over the player or the NPC when there is a way
+local small = { x = 0, y = 0, width = 600, height = 500 }
+pl = L.windowPlace(480, 480, { x = 300, y = 250 }, { x = 250, y = 250 }, 32, small)
+eq(pl.x >= 8 and pl.x + 480 <= 592 and pl.y >= 8 and pl.y + 480 <= 492, true, 'no room at all: still inside the area')
+-- an NPC at the top edge: the window is pulled down into the area
+pl = L.windowPlace(480, 480, { x = 300, y = 20 }, { x = 250, y = 100 }, 32, area)
+eq(pl.y >= 8, true, 'inside at the top'); eq(pl.y + 480 <= 700 - 8, true, 'inside at the bottom')
+-- no player known
+pl = L.windowPlace(480, 480, { x = 300, y = 350 }, nil, 32, area)
+eq(pl.x, 332, 'no player: right of the NPC')
+-- the window is never outside the area, whatever the spot
+for _, c in ipairs({ { 5, 5 }, { 1195, 5 }, { 5, 695 }, { 1195, 695 }, { 600, 350 } }) do
+  local q = L.windowPlace(480, 480, { x = c[1], y = c[2] }, { x = c[1] + 40, y = c[2] }, 32, area)
+  eq(q.x >= 8 and q.x + 480 <= 1192 and q.y >= 8 and q.y + 480 <= 692, true, 'inside the area at ' .. c[1] .. ',' .. c[2])
+end
 
 -- the visible part of the map: the extended view's map is taller than the window, panels cover its sides
 local va = L.visibleArea({ x = 0, y = -80, width = 1280, height = 800 }, { left = 1, right = 1102, top = 38, bottom = 514 })
