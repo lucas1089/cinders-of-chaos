@@ -10670,7 +10670,7 @@ server or in a client.
   `card_set_model.py --check` and its test pass unchanged: no number moved.
 - **State stays true.** `ChaosCards.reconcile` (login, every 60 s, every toggle, the `deck` command): a card whose storage is 1 but
   that has no copy, or while the Deck is locked, or beyond five, is turned off (the highest ids first) with a message.
-- **Unlock = a main quest step** (`mainquest_config.lua`, step `deck`, chapter 1, level 14, "Open the Deck of Cards", flag `deck`,
+- **Unlock = a main quest step** (`mainquest_config.lua`, step `deck`, chapter 4, level 150 (owner 2026-11-14: level 14 was too early; the first cards drop from level 150 hunts such as Fleshrend and Mauler), "Open the Deck of Cards", flag `deck`,
   also an `ack` so the tracker's Go button marks it; `docs/ROTEIRO_QUEST_PRINCIPAL.md` regenerated). The step is done when the
   character opens the window: the client sends `open`, the server emits the flag (`ChaosMainQuest.emit`) and sends the state again
   a moment later. `data/lib/chaos_mqgate.lua` `passed(player, "deck")` reads the quest's storages from any Lua state: the quest is
@@ -10716,7 +10716,7 @@ server or in a client.
   `update-apply`: files, `badges` and `removedecks` steps, restart). Shell fallback: `chaos-ctl.sh update-apply`. By hand on the
   VPS: `python3 -I server/tools/install_all.py SERVER_DIR --only badges,removedecks,files`. The migration needs no step: it runs
   at each character's first login. The client: publish the client update (admin app: tab Comandos > card "Site e update do client" > field "Release do client" >
-  button "Publicar update"; shell fallback `chaos-ctl.sh publish-update TAG`). Staff check: `luajit tests/cards_test.lua`, and a test character past level 14 on the main quest: open the Deck
+  button "Publicar update"; shell fallback `chaos-ctl.sh publish-update TAG`). Staff check: `luajit tests/cards_test.lua`, and a test character past level 150 on the main quest: open the Deck
   from Hero > Build, it opens; loot or drop a card item in the backpack: the toast "New card".
 - **Beta caveat.** The new step sits inside chapter 1, so the stored step index of a character on the main quest shifts by one from
   that point on (the quest file says never to insert on a live server). The beta characters are the only ones; a character that
