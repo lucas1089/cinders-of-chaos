@@ -25,6 +25,10 @@
 --   monster's effective resistance AFTER its cap, down to -100; physical penetration is taken off the armour share, down to
 --   0. item_mods.lua no longer has a penetration of its own.
 --
+-- * Trainers (O573): a training monster (trainer_meter.lua sets ChaosMonsterDefence.trainerProfile / trainerLevel) defends
+--   like a normal, elite or boss monster of the level of the player that hits it (trainer_meter_config.lua `profile`), so the DPS
+--   it measures means something. Its health, its behaviour and the training itself are untouched.
+--
 -- Exports: ChaosMonsterDefence.effectiveResist(monster, combatType, penetration), .armourOf(monster), .weaponArmourOf(monster), .classOf(monster),
 -- .levelOf(monster), .isBossLike(monster), .playerAbsorb(player, combatType) (the ONE reader of a player's absorb for
 -- the element a modifier adds; the player stage replaces it).
@@ -145,6 +149,9 @@ local function entryOf(monster)
 	local e = cache.get(id)
 	if not e then
 		e = {level = levelOf(monster), boss = bossLike(monster, id) and true or false, armour = {}, armourW = {}, list = listOf(monster)}
+		-- O573: a training monster defends with the profile of trainer_meter_config.lua (class, and the level of the player that hits)
+		local tp = MD.trainerProfile
+		e.trainer = tp and try(function() return tp(monster) end) or nil
 		cache.put(id, e)
 	end
 	return e
@@ -165,6 +172,9 @@ local function tierOf(monster)
 end
 
 local function classIn(e, monster)
+	if e.trainer then
+		return e.trainer.class
+	end
 	return e.boss and "boss" or C.rankClass(cfg(), tierOf(monster), false)
 end
 
@@ -292,6 +302,20 @@ function ev.onHealthChange(creature, attacker, primaryDamage, primaryType, secon
 	ctx.def, ctx.cfg, ctx.set = def(), cfg(), set
 	ctx.A = armourIn(e, creature, class)
 	ctx.Aw = weaponArmourIn(e, creature, class)
+	if e.trainer then
+		-- O573: the armour of a normal / elite / boss monster of the hitting player's level (or the profile's fixed level)
+		local lv = MD.trainerLevel and try(function() return MD.trainerLevel(e.trainer, playerOf(attacker)) end) or e.level
+		local key = class .. ":" .. tostring(lv)
+		local t = e.trainerArmour or {}
+		e.trainerArmour = t
+		local pair = t[key]
+		if not pair then
+			pair = {C.armourValue(def(), cfg(), lv, class, typeNameOf(creature)),
+				C.armourValue(def(), cfg(), lv, class, typeNameOf(creature), true)}
+			t[key] = pair
+		end
+		ctx.A, ctx.Aw = pair[1], pair[2]
+	end
 	ctx.weaponCap = C.weaponShareCap(cfg(), class)
 	ctx.bonus = class == "elite" and cfg().rankResistBonus or 0
 	-- penetration (O464): the attacking player's (or its summon's master's) item modifiers. Elemental: points off the capped

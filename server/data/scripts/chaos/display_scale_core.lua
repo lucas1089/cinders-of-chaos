@@ -236,6 +236,23 @@ function DS.combatLogState(st, f)
 	return st
 end
 
+-- trainer DPS panel (trainer_meter_core.lua M.view): cur, avg, tot, max, rows {v, m}, el [[element, amount]], party {cur, tot};
+-- hits, crits and times stay
+local TRAINER_TOP, TRAINER_ROW = {"cur", "avg", "tot", "max"}, {"v", "m"}
+function DS.trainerState(st, f)
+	if f == 1 or type(st) ~= "table" or st.none then
+		return st
+	end
+	st = DS.clone(st)
+	DS.fields(st, TRAINER_TOP, f)
+	DS.each(st.rows, TRAINER_ROW, f)
+	for _, e in ipairs(st.el or {}) do
+		e[2] = DS.scale(e[2], f)
+	end
+	DS.each(st.party, {"cur", "tot"}, f)
+	return st
+end
+
 -- a party member's totals alone (CL.brief)
 function DS.combatLogBrief(b, f)
 	if f == 1 or type(b) ~= "table" then
