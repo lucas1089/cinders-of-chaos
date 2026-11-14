@@ -165,5 +165,12 @@ x, lift = L.snapPlace(far, 300)
 eq(x, centredLeft + 200, 'no snap far from the centre')
 eq(lift, 300, 'no snap far from the bottom edge')
 
+-- O558: the grips and the handle belong to the classic layout on a computer only
+eq(L.gripsShown(false, false), true, 'classic on a computer: grips')
+eq(L.gripsShown(true, false), false, 'action bar layout: no grips (the handle floated at the bottom-left)')
+eq(L.gripsShown(false, true), false, 'phone: no grips')
+eq(L.gripsShown(nil, nil), true, 'unknown mode reads classic')
+eq(L.HANDLE_WIDTH, 64, 'handle art width')
+
 if fails > 0 then os.exit(1) end
 print('chatpanel tests OK')
