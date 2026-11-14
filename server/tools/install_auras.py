@@ -24,7 +24,8 @@ switch is on (ChaosPack33.PAIR33 in data/lib/chaos_pack33.lua): the head accesso
 (auras 33..213, looks 2477..2657).
 A sixth, data/XML/chaos_auras_pair72.csv (O566), is read after all of them only while config.lua chaosClientPair is 72 or more
 (client_pair.py PAIR_FUN): its rows give an aura id a new client look and replace the row of the same aura id of the others (the
-round Rune Seal ring 3524 for the flat 2186; the aura id, its owners and its store offer stay).
+round Rune Seal ring 3524 for the flat 2186; the aura id, its owners and its store offer stay). O577 adds the two oblique Ki auras the same way:
+Golden Ki (aura 6) 3525 for the straight-up flame 1511 and Crimson Blaze (aura 7) 3526 for 1512 (client/tools/sprites/gen_ki_auras.py).
 """
 import csv, os, re, sys
 
@@ -76,7 +77,7 @@ def main(argv):
     rows = read_manifest(*manifests)
     if os.path.isfile(PAIR72_MANIFEST) and '--manifest' not in argv:
         import client_pair
-        ok, why = client_pair.allows(args[0], client_pair.PAIR_FUN, 'auras (round Rune Seal)')
+        ok, why = client_pair.allows(args[0], client_pair.PAIR_FUN, 'auras (round Rune Seal, Golden Ki, Crimson Blaze)')
         print(why)
         if ok:
             over = {r[0]: r for r in read_manifest(PAIR72_MANIFEST)}

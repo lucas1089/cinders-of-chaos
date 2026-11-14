@@ -1,4 +1,4 @@
--- chaos_fun_costumes.lua: the twelve fun costumes of client pair 72, the new Dusk Moth look and the round Rune Seal ring, on the
+-- chaos_fun_costumes.lua: the twelve fun costumes of client pair 72, the new Dusk Moth look, the round Rune Seal ring and the two oblique Ki auras (O577), on the
 -- server side, behind one gate (O566). Loaded with  ChaosFunCostumes = dofile("data/lib/chaos_fun_costumes.lua")  (shop_config.lua,
 -- pets_config.lua and chaos_theme_art.lua do so; server/tools/install_outfits.py, install_fun_looks.py and install_auras.py read the
 -- M.outfits lines and the two ids). Plain Lua, no engine calls at load (server/tests/fun_costumes_test.lua).
@@ -60,6 +60,14 @@ M.looks = {
 M.moth = {old = 213, look = 3523}
 M.seal = {old = 2186, look = 3524}
 
+-- O577: Golden Ki (aura 6) and Crimson Blaze (aura 7) get oblique ground auras, the looks 3525 and 3526 (client/tools/sprites/gen_ki_auras.py,
+-- art_import/ki_auras.csv; appended after the 14 outfits above), in place of the straight-up flames 1511 and 1512. The aura ids, their
+-- owners and their store offers stay; only the client look of the auras.xml row changes (data/XML/chaos_auras_pair72.csv, install_auras.py).
+M.ki = {
+	{key = "ki_gold", name = "Golden Ki", aura = 6, old = 1511, look = 3525},
+	{key = "ki_blaze", name = "Crimson Blaze", aura = 7, old = 1512, look = 3526}
+}
+
 -- the costumes as players get them (one outfits.xml line per sex; install_outfits.py reads these lines as written: keep one entry per
 -- line). One look for both sexes, locked, sold in Cosmetics > Costumes.
 M.outfits = {
@@ -118,6 +126,20 @@ end
 -- the client look of the Rune Seal aura: the round ring once the gate is on, else the old flat ring
 function M.sealLook()
 	return M.PAIR72 and M.seal.look or M.seal.old
+end
+
+-- the client look of an aura of this file's gate (the Rune Seal 32, Golden Ki 6, Crimson Blaze 7): the new look once the gate is on, else
+-- the old one; nil for any other aura id
+function M.auraLook(aura)
+	if aura == 32 then
+		return M.sealLook()
+	end
+	for _, k in ipairs(M.ki) do
+		if k.aura == aura then
+			return M.PAIR72 and k.look or k.old
+		end
+	end
+	return nil
 end
 
 return M

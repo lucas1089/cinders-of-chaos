@@ -69,8 +69,9 @@ def main():
             check(moth(data) == MOTH % 213, '%s: the moth file is unchanged' % name)
             rc, out = run(AURAS, data)
             xml = open(os.path.join(data, 'XML', 'auras.xml')).read()
-            check(rc == 0 and 'WARNING: auras (round Rune Seal) skipped' in out and 'clientid="2186"' in xml and 'clientid="3524"' not in xml,
-                  '%s: the aura keeps the old ring: %s' % (name, out))
+            check(rc == 0 and 'WARNING: auras (round Rune Seal, Golden Ki, Crimson Blaze) skipped' in out and 'clientid="2186"' in xml and 'clientid="3524"' not in xml
+                  and 'clientid="1511"' in xml and 'clientid="1512"' in xml and 'clientid="3525"' not in xml and 'clientid="3526"' not in xml,
+                  '%s: the auras keep the old looks (ring 2186, flames 1511 and 1512): %s' % (name, out))
         # pair 72
         data = server(tmp, 'p72', 72)
         rc, out = run(TOOL, data, '--dry-run')
@@ -85,6 +86,10 @@ def main():
         xml = open(os.path.join(data, 'XML', 'auras.xml')).read()
         check(rc == 0, 'install_auras runs: %s' % out)
         check('<aura id="32" clientid="3524" name="Rune Seal" speed="20" />' in xml and 'clientid="2186"' not in xml, 'pair 72: aura 32 is the round ring')
+        check('<aura id="6" clientid="3525" name="Golden Ki" speed="20" />' in xml and '<aura id="7" clientid="3526" name="Crimson Blaze" speed="20" />' in xml
+              and 'clientid="1511"' not in xml and 'clientid="1512"' not in xml and xml.count('id="6"') == 1 and xml.count('id="7"') == 1,
+              'pair 72: Golden Ki (6) and Crimson Blaze (7) are the oblique looks 3525 and 3526, the aura ids stay')
+        check('<aura id="8" clientid="1513" name="Storm Surge"' in xml, 'the other Chaos auras keep their looks')
         check(xml.count('id="32"') == 1 and '<aura id="31" clientid="2185" name="Blood Vortex"' in xml, 'one aura 32, the Blood Vortex stays')
         rc, out = run(AURAS, data)
         check(rc == 0 and open(os.path.join(data, 'XML', 'auras.xml')).read() == xml, 'a second aura run changes nothing')
@@ -93,6 +98,8 @@ def main():
         rc, out = run(AURAS, data)
         xml = open(os.path.join(data, 'XML', 'auras.xml')).read()
         check(rc == 0 and '<aura id="32" clientid="2186" name="Rune Seal"' in xml and '3524' not in xml, 'pair 71 again: the old ring is back')
+        check('<aura id="6" clientid="1511" name="Golden Ki"' in xml and '<aura id="7" clientid="1512" name="Crimson Blaze"' in xml
+              and '3525' not in xml and '3526' not in xml, 'pair 71 again: the Ki flames 1511 and 1512 are back')
         # a moth file with another look, a missing file
         data = server(tmp, 'odd', 72, look=77)
         rc, out = run(TOOL, data)
@@ -105,7 +112,7 @@ def main():
         check(rc == 1, 'no data folder prints the help')
     # the shipped manifest
     rows = A.read_manifest(A.PAIR72_MANIFEST)
-    check(rows == [(32, 3524, 'Rune Seal')], 'the pair 72 manifest: %s' % rows)
+    check(rows == [(32, 3524, 'Rune Seal'), (6, 3525, 'Golden Ki'), (7, 3526, 'Crimson Blaze')], 'the pair 72 manifest: %s' % rows)
     if failed:
         print('%d failures' % failed)
         sys.exit(1)
