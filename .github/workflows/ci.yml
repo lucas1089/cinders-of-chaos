@@ -729,6 +729,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissileanim_test.cpp -o "$d/chaosmissileanim_asan"
           "$d/chaosmissileanim_asan"
 
+      - name: Effect owner and opacity maths (C++; header from base patch 0202)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosfxowner\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0202-effect-opacity-by-owner.patch > "$d/chaosfxowner.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosfxowner_test.cpp -o "$d/chaosfxowner_test"
+          "$d/chaosfxowner_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosfxowner_test.cpp -o "$d/chaosfxowner_asan"
+          "$d/chaosfxowner_asan"
+
       - name: HD sprite overlay maths (C++; header from base patch 0196)
         run: |
           d=$(mktemp -d)

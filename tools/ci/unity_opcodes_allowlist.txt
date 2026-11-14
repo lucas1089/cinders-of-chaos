@@ -4,3 +4,4 @@
 # Remove a line in the same commit that ports its module (and say so in docs/UNITY_PARITY.md).
 
 111 | retired by O316: the depot tabs window is gone, nothing sends or reads opcode 111, the number stays reserved
+164 | effect owner marks (O567): the Options > Effects opacity of my effects is a main client option (base patch 0202); the Unity client never sends the hello, so the server sends it nothing

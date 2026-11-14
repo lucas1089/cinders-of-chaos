@@ -1,6 +1,6 @@
 Module
   name: game_effectopacity
-  description: One spell effect opacity (25-100%, Options > Effects, base patch 0049): moves old per-source values over once
+  description: Effect opacity (Options > Effects, base patches 0049 and 0202): my effects and the others, moves old values over once, asks the server which effects are mine (extended opcode 164), warnings never fade
   author: Cinders of Chaos
   sandboxed: true
   scripts: [ effectopacitylogic, effectopacity ]
