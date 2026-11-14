@@ -90,7 +90,7 @@ for _, c in ipairs(shopOff.categories) do
 	end
 end
 for _, e in ipairs(exclOff.exclusives) do
-	eq(e.look == nil or e.look < 2385, true, "no exclusive names a pair 33 look while off")
+	eq(e.look == nil or e.look < 2385 or e.look == 3524, true, "no exclusive names a pair 33 look while off") -- 3524: the round Rune Seal of pair 72
 end
 eq(#M.storeOffers("wings") + #M.storeOffers("heads") + #M.storeOffers("capes"), 0, "no store offers while off")
 

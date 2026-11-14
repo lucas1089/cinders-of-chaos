@@ -49,9 +49,14 @@ end
 -- ---------------------------------------------------------------- forced off: nothing in the store
 M.PAIR37 = false
 local realDofile = dofile
+local FUN = realDofile("data/lib/chaos_fun_costumes.lua")
+FUN.PAIR72 = false -- the pair 72 costumes are the fun_costumes_test.lua's: a config.lua with chaosClientPair 72 next to the tests must not add them here
 local function withM(path, ...)
 	if path == "data/lib/chaos_pack37_looks.lua" then
 		return M
+	end
+	if path == "data/lib/chaos_fun_costumes.lua" then
+		return FUN
 	end
 	return realDofile(path, ...)
 end

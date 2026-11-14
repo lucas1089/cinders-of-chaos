@@ -274,6 +274,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                outfits 3434-3510, data/monster/monster_wst_looks.csv); two of them (Bonepicker, Wan Sentry) leave their donor look for it; the
                installed files and the installed bounty pool get the new look; waits for config.lua chaosClientPair >= 71, README "Client
                pair guard" and "Purchased monster looks (O540)"; after monsterdonorlooks
+  funlooks     tools/install_fun_looks.py        the Dusk Moth pet wears its new moth outfit 3523 in place of the stock look 213 (client pair 72, O566;
+               the installed monster file; the fun costumes' outfits.xml lines come with the `outfits` step, the round Rune Seal with `auras`);
+               waits for config.lua chaosClientPair >= 72, README "Client pair guard" and "Fun costumes (O566)"; after monsterwstlooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
@@ -1280,6 +1283,15 @@ def step_monsterwstlooks(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('monsterdonorlooks') + 1, 'monsterwstlooks')  # the purchased looks (pair 71) go over the donor looks
+
+
+def step_funlooks(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 72) is in the tool; its warning reaches the report
+    args = [tool('install_fun_looks.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_fun_looks.py'))
+
+
+STEPS.insert(STEPS.index('monsterwstlooks') + 1, 'funlooks')  # the new Dusk Moth look (pair 72)
 
 
 def step_monsterresists(server, data, ctx):

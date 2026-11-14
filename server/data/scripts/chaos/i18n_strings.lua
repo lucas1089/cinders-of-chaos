@@ -8406,6 +8406,30 @@ return {
 			"Visto pelos jogadores por perto",
 		["A walking box of fries"] =
 			"Uma caixa de batatas fritas ambulante",
+		["Hop about as a fizzing blue energy drink can with a yellow lightning bolt"] =
+			"Saltite por aí como uma lata azul de energético com um raio amarelo",
+		["Hop about as a plain red and white pack of smokes with its lid open"] =
+			"Saltite por aí como um maço liso vermelho e branco com a tampa aberta",
+		["Waddle about as a chrome toaster with two slices of toast popping up"] =
+			"Gingue por aí como uma torradeira cromada com duas fatias de torrada pulando",
+		["Waddle about as a squeaky yellow rubber duck"] =
+			"Gingue por aí como um patinho de borracha amarelo que apita",
+		["Scuttle about as a cardboard box with two eyes peeking out"] =
+			"Escorra por aí como uma caixa de papelão com dois olhos espiando",
+		["Bounce about as a slice of pepperoni pizza with dripping cheese"] =
+			"Quique por aí como uma fatia de pizza de calabresa com queijo escorrendo",
+		["Hop about as an orange road cone with two white stripes"] =
+			"Saltite por aí como um cone de trânsito laranja com duas faixas brancas",
+		["Stroll about as a garden gnome with a tall red hat and a long white beard"] =
+			"Passeie por aí como um gnomo de jardim com um chapéu vermelho alto e uma longa barba branca",
+		["Stroll about as a snowman that came to life, top hat, carrot nose and scarf"] =
+			"Passeie por aí como um boneco de neve que ganhou vida, com cartola, nariz de cenoura e cachecol",
+		["Stroll about as a little mushroom folk under a big spotted red cap"] =
+			"Passeie por aí como um pequeno cogumelo sob um grande chapéu vermelho pintado",
+		["Stroll about as a skeleton jester with a belled two-pointed hat"] =
+			"Passeie por aí como um bobo da corte esqueleto com um chapéu de duas pontas e guizos",
+		["Strut about in a white chicken suit with a red comb and a feathered tail"] =
+			"Desfile por aí numa fantasia branca de galinha com crista vermelha e cauda de penas",
 		["A warm amber frame round your name plate, for good"] =
 			"Uma moldura âmbar quente em volta da sua placa de nome, para sempre",
 		["A warm golden line traces your outline"] =

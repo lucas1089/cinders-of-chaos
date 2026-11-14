@@ -83,6 +83,9 @@ end
 
 -- the themed appearance sets of pair 24 sold in the weekly rotation only (data/lib/chaos_theme_art.lua M.storeOffers;
 -- empty while its switch is off)
+-- the Dusk Moth pet offer's look: the stock butterfly 213, or the new moth outfit of client pair 72 (data/lib/chaos_fun_costumes.lua)
+local okFunMoth, FUNMOTH = pcall(dofile, "data/lib/chaos_fun_costumes.lua")
+local DUSK_MOTH_LOOK = okFunMoth and type(FUNMOTH) == "table" and FUNMOTH.mothLook and FUNMOTH.mothLook() or 213
 local okTheme, THEME = pcall(dofile, "data/lib/chaos_theme_art.lua")
 local THEME_OFFERS = (okTheme and type(THEME) == "table" and THEME.storeOffers) and THEME.storeOffers() or {}
 -- the store wings of client pair 26, the owner's art (data/lib/chaos_owner_art.lua M.storeOffers; empty while its
@@ -652,7 +655,7 @@ local cfg = {
 					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets from level 25."},
 				{kind = "unlock", unlock = "petBogFrog", look = 224, icon = 2148, cost = 400, name = "Bog Frog",
 					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets from level 25."},
-				{kind = "unlock", unlock = "petDuskMoth", look = 213, icon = 2050, cost = 400, name = "Dusk Moth",
+				{kind = "unlock", unlock = "petDuskMoth", look = DUSK_MOTH_LOOK, icon = 2050, cost = 400, name = "Dusk Moth",
 					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets from level 25."}
 				-- <<< Wardrobe
 			}
@@ -742,6 +745,13 @@ end
 local okPack37, PACK37 = pcall(dofile, "data/lib/chaos_pack37_looks.lua")
 if okPack37 and type(PACK37) == "table" and PACK37.addStore then
 	PACK37.addStore(cfg, P_COSMETICS)
+end
+
+-- the twelve fun costumes of client pair 72 (data/lib/chaos_fun_costumes.lua; nothing while config.lua chaosClientPair is below 72): at
+-- the end of the Costumes subcategory the pair 37 block made
+local okFun, FUN = pcall(dofile, "data/lib/chaos_fun_costumes.lua")
+if okFun and type(FUN) == "table" and FUN.addStore then
+	FUN.addStore(cfg)
 end
 
 return cfg
