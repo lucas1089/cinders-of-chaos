@@ -35,7 +35,7 @@ GLES_HEAD = ''   # the client prepends "precision highp float;" only on GLES; de
 ORDER = ['ember_glow', 'frost_rime', 'void_flicker', 'holy_radiance', 'blood_pulse', 'spectral_ghost', 'ash_drift',
          'cinder_crown']
 CELL = 32                 # sprite cell, px
-FRAME = 64                # one drawn frame, px (the sprite in the middle, room for what a shader draws round it)
+FRAME = 72                # one drawn frame, px (the sprite in the middle, room for what a shader draws round it)
 GROUND = (46, 52, 46)     # a dark floor tile colour
 
 # ------------------------------------------------------------------------------------------------ sample sprites
@@ -260,48 +260,49 @@ class Renderer:
             self.glTexParameteri(GL_TEXTURE_2D, p, v)
         return t.value
 
-    def draw(self, name, atlas, sprite_xy, size, offset, colours, t, ground=GROUND):
-        """one frame: the sprite of `size` (w, h) at atlas px sprite_xy, its template at `offset` px from it, drawn at the
-        middle of the target; -> RGBA uint8 (H, W, 4), alpha 255 over the ground colour"""
+    def draw(self, name, atlas, colours, t, ground=GROUND):
+        """one frame: every 32 px tile of the sprite is its own quad from its own atlas (as the engine draws an outfit
+        bigger than one tile), the whole sprite centred in the target; -> RGBA uint8 (H, W, 4) over the ground colour"""
         c = ctypes
         prog = self.program(name)
         self.glBindFramebuffer(GL_FRAMEBUFFER, self._fbo_id())
         self.glClearColor(ground[0] / 255.0, ground[1] / 255.0, ground[2] / 255.0, 1.0)
         self.glClear(GL_COLOR_BUFFER_BIT)
         self.glUseProgram(prog)
-        aw, ah = atlas['size']
-        sw, sh = size
-        x0, y0 = (self.W - sw) // 2, (self.H - sh) // 2 + 4
-        # a_Vertex in target px (y down), a_TexCoord in atlas px
-        sx, sy = sprite_xy
-        verts = np.array([x0, y0, sx, sy, x0 + sw, y0, sx + sw, sy, x0, y0 + sh, sx, sy + sh, x0 + sw, y0 + sh, sx + sw,
-                          sy + sh], np.float32)
+        sw, sh = atlas['sprite']
+        ox, oy = (self.W - sw) // 2, (self.H - sh) // 2 + 4
+
+        def loc(n):
+            return self.glGetUniformLocation(prog, n.encode())
+        proj = np.array([[2.0 / self.W, 0, 0], [0, -2.0 / self.H, 0], [-1.0, 1.0, 1.0]], np.float32)
+        ident = np.eye(3, dtype=np.float32)
+        m = np.zeros((4, 4), np.float32)
+        for i, col in enumerate(colours):
+            m[i] = col
+        self.glUniformMatrix3fv(loc('u_ProjectionMatrix'), 1, 0, np.ascontiguousarray(proj).ctypes.data)
+        self.glUniformMatrix3fv(loc('u_TransformMatrix'), 1, 0, ident.ctypes.data)
+        self.glUniformMatrix4fv(loc('u_Color'), 1, 0, m.ctypes.data)
+        self.glUniform1f(loc('u_Time'), float(t))
+        self.glActiveTexture(0x84C0)
+        self.glUniform1i(loc('u_Tex0'), 0)
         self.glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
-        self.glBufferData(GL_ARRAY_BUFFER, verts.nbytes, verts.ctypes.data, GL_STATIC_DRAW)
         self.glEnableVertexAttribArray(0)
         self.glEnableVertexAttribArray(1)
         self.glVertexAttribPointer(0, 2, GL_FLOAT, 0, 16, None)
         self.glVertexAttribPointer(1, 2, GL_FLOAT, 0, 16, c.c_void_p(8))
-        # projection: target px (y down) -> clip; the texture matrix: atlas px -> 0..1
-        proj = np.array([[2.0 / self.W, 0, 0], [0, -2.0 / self.H, 0], [-1.0, 1.0, 1.0]], np.float32)  # column major
-        ident = np.eye(3, dtype=np.float32)
-        tex = np.array([[1.0 / aw, 0, 0], [0, 1.0 / ah, 0], [0, 0, 1.0]], np.float32)
-
-        def loc(n):
-            return self.glGetUniformLocation(prog, n.encode())
-        self.glUniformMatrix3fv(loc('u_ProjectionMatrix'), 1, 0, np.ascontiguousarray(proj).ctypes.data)
-        self.glUniformMatrix3fv(loc('u_TransformMatrix'), 1, 0, ident.ctypes.data)
-        self.glUniformMatrix3fv(loc('u_TextureMatrix'), 1, 0, np.ascontiguousarray(tex).ctypes.data)
-        self.glUniform2f(loc('u_Offset'), float(offset[0]), float(offset[1]))
-        m = np.zeros((4, 4), np.float32)
-        for i, col in enumerate(colours):
-            m[i] = col        # u_Color[i] is the i-th column: column-major upload of the rows = the colours
-        self.glUniformMatrix4fv(loc('u_Color'), 1, 0, m.ctypes.data)
-        self.glUniform1f(loc('u_Time'), float(t))
-        self.glActiveTexture(0x84C0)
-        self.glBindTexture(GL_TEXTURE_2D, atlas['id'])
-        self.glUniform1i(loc('u_Tex0'), 0)
-        self.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+        for tile in atlas['tiles']:
+            aw, ah = tile['size']
+            sx, sy = tile['xy']
+            x0, y0 = ox + tile['dx'], oy + tile['dy']
+            tw = th = CELL
+            verts = np.array([x0, y0, sx, sy, x0 + tw, y0, sx + tw, sy, x0, y0 + th, sx, sy + th, x0 + tw, y0 + th,
+                              sx + tw, sy + th], np.float32)
+            self.glBufferData(GL_ARRAY_BUFFER, verts.nbytes, verts.ctypes.data, GL_STATIC_DRAW)
+            tex = np.array([[1.0 / aw, 0, 0], [0, 1.0 / ah, 0], [0, 0, 1.0]], np.float32)
+            self.glUniformMatrix3fv(loc('u_TextureMatrix'), 1, 0, np.ascontiguousarray(tex).ctypes.data)
+            self.glUniform2f(loc('u_Offset'), float(tile['offset'][0]), float(tile['offset'][1]))
+            self.glBindTexture(GL_TEXTURE_2D, tile['id'])
+            self.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
         buf = np.zeros((self.H, self.W, 4), np.uint8)
         self.glReadPixels(0, 0, self.W, self.H, GL_RGBA, GL_UNSIGNED_BYTE, buf.ctypes.data)
         return buf[::-1].copy()
@@ -317,15 +318,22 @@ class Renderer:
         return self._fbo
 
     def atlas(self, base, mask):
-        """base and mask RGBA (h, w, 4): one texture, the sprite at (32, 32), the template 64 px right of it (the
-        client's atlas keeps both layers of a frame in one texture; the shaders read it through u_Offset)"""
+        """base and mask RGBA (h, w, 4). The engine draws an outfit bigger than 32 px as one quad per 32 px tile, each
+        from its own place in a texture atlas, the colour template of the tile at a fixed offset from it. So every tile
+        gets an atlas of its own, at a different place in it (a shader that reads v_Px rows sees no neighbour tile)"""
         h, w = base.shape[:2]
-        aw, ah = 32 + w + 64 + w + 32, 32 + h + 32
-        aw, ah = (aw + 31) // 32 * 32, (ah + 31) // 32 * 32
-        img = np.zeros((ah, aw, 4), np.uint8)
-        img[32:32 + h, 32:32 + w] = base
-        img[32:32 + h, 96:96 + w] = mask
-        return {'id': self.texture(img), 'size': (aw, ah), 'xy': (32, 32), 'offset': (64, 0), 'sprite': (w, h)}
+        tiles = []
+        n = 0
+        for ty in range(0, h, CELL):
+            for tx in range(0, w, CELL):
+                bx, by = 32 + 32 * ((n * 2) % 3), 32 + 32 * ((n * 5) % 4)
+                img = np.zeros((224, 224, 4), np.uint8)
+                img[by:by + CELL, bx:bx + CELL] = base[ty:ty + CELL, tx:tx + CELL]
+                img[by:by + CELL, bx + 64:bx + 64 + CELL] = mask[ty:ty + CELL, tx:tx + CELL]
+                tiles.append({'id': self.texture(img), 'size': (224, 224), 'xy': (bx, by), 'offset': (64, 0),
+                              'dx': tx, 'dy': ty})
+                n += 1
+        return {'tiles': tiles, 'sprite': (w, h)}
 
 
 # ------------------------------------------------------------------------------------------------ sheets and video
@@ -338,7 +346,7 @@ def sample_atlases(rd, pair, looks):
 
 
 def frame(rd, name, atlas, t, colours=None):
-    return rd.draw(name, atlas, atlas['xy'], atlas['sprite'], atlas['offset'], colours or COLOURS, t)
+    return rd.draw(name, atlas, colours or COLOURS, t)
 
 
 def names_arg(arg):

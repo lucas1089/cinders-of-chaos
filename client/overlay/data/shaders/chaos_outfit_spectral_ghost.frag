@@ -1,4 +1,4 @@
-// Cinders of Chaos outfit shader (game_chaosshaders, written for this server). Spectral Ghost: a cold translucent ectoplasm that sways at the hem and fades toward the feet, with a rune line that scans down the figure.
+// Cinders of Chaos outfit shader (game_chaosshaders, written for this server). Spectral Ghost: a cold translucent ectoplasm, clearer toward the edges, with a rune contour that scans in from the edge. It reads only the sprite alpha and the time, so tall outfits drawn as several tiles have no seam.
 // Vertex stage chaos_outfit_vertex.frag.
 uniform mat4 u_Color;
 uniform sampler2D u_Tex0;
@@ -24,13 +24,18 @@ vec4 dressedAt(vec2 sh)
     return c;
 }
 
-// 1 at the silhouette's inner edge (a neighbour `r` texels away is transparent), 0 deeper inside
+// 1 at the silhouette's inner edge (a neighbour `r` texels away is transparent), 0 deeper inside. A neighbour outside
+// this 32 px tile counts as opaque: the engine draws a tall outfit as separate tiles, so what lies beyond a tile's
+// border in the atlas is another picture, and reading it made a false edge (a bright cross) where tiles meet.
 float rimAt(float r)
 {
     vec2 d = v_Texel * r;
-    float n = min(min(texture2D(u_Tex0, v_TexCoord + vec2(d.x, 0.0)).a, texture2D(u_Tex0, v_TexCoord - vec2(d.x, 0.0)).a),
-                  min(texture2D(u_Tex0, v_TexCoord + vec2(0.0, d.y)).a, texture2D(u_Tex0, v_TexCoord - vec2(0.0, d.y)).a));
-    return 1.0 - n;
+    vec2 lp = fract(v_Px / 32.0) * 32.0;
+    float aR = lp.x + r >= 32.0 ? 1.0 : texture2D(u_Tex0, v_TexCoord + vec2(d.x, 0.0)).a;
+    float aL = lp.x - r < 0.0 ? 1.0 : texture2D(u_Tex0, v_TexCoord - vec2(d.x, 0.0)).a;
+    float aD = lp.y + r >= 32.0 ? 1.0 : texture2D(u_Tex0, v_TexCoord + vec2(0.0, d.y)).a;
+    float aU = lp.y - r < 0.0 ? 1.0 : texture2D(u_Tex0, v_TexCoord - vec2(0.0, d.y)).a;
+    return 1.0 - min(min(aR, aL), min(aD, aU));
 }
 
 float cellHash(vec2 c)
@@ -60,25 +65,31 @@ float rowOf()
     return floor(fract(v_Px.y / 32.0) * 32.0);
 }
 
+// how many pixels the silhouette's edge is away: 1 at the edge, up to 5 deep inside. It reads only the sprite's own
+// alpha, so it is the same on every 32 px tile of a tall outfit (the engine draws them as separate quads: a row or
+// a position in the atlas says nothing about where the tile sits in the figure)
+float edgeDepth()
+{
+    return 5.0 - (rimAt(1.0) + rimAt(2.0) + rimAt(3.0) + rimAt(4.0));
+}
+
 void main()
 {
-    float t = u_Time;
-    float vy = rowOf() / 31.0;
-    float sway = sin(v_Px.y * 0.5 + t * 2.4) * v_Texel.x * 0.8 * vy;
-    vec4 c = dressedAt(vec2(sway, 0.0));
+    vec4 c = dressedAt(vec2(0.0));
     if (c.a < 0.01)
         discard;
+    float t = u_Time;
     float l = luma(c.rgb);
+    float depth = edgeDepth();
     vec3 col = mix(vec3(0.38, 0.70, 0.78), vec3(0.88, 1.0, 1.0), l);
-    float fade = 0.78 - 0.34 * vy;
-    float row = rowOf();
-    float scan = fract(t * 0.35) * 40.0 - 4.0;
-    float line = 1.0 - smoothstep(0.0, 1.6, abs(row - scan));
-    float dash = step(0.5, fract(floor(v_Px.x) * 0.25 + floor(t * 2.0) * 0.5));
-    float rune = line * (0.45 + 0.55 * dash);
-    float e = rimAt(1.0);
-    col = mix(col, vec3(0.80, 1.0, 1.0), e * 0.55);
+    float inner = clamp((depth - 1.0) / 4.0, 0.0, 1.0);
+    float step_ = floor(fract(t * 0.45) * 7.0) + 1.0;
+    float lit = 1.0 - smoothstep(0.0, 0.7, abs(depth - step_));
+    float dash = step(0.5, fract(floor(v_Px.x + v_Px.y) * 0.25 + floor(t * 2.0) * 0.5));
+    float rune = lit * (0.45 + 0.55 * dash);
+    float breathe = 0.5 + 0.5 * sin(t * 2.0);
+    col = mix(col, vec3(0.80, 1.0, 1.0), (1.0 - inner) * 0.55);
     col += vec3(0.35, 0.75, 0.80) * rune;
-    float a = c.a * min(1.0, fade + rune * 0.3 + e * 0.18);
+    float a = c.a * min(1.0, 0.42 + 0.14 * breathe + 0.22 * l + 0.28 * (1.0 - inner) + rune * 0.3);
     gl_FragColor = vec4(min(col, vec3(1.0)), a);
 }

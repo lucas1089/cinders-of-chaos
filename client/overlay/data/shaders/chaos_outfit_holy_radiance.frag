@@ -24,13 +24,18 @@ vec4 dressedAt(vec2 sh)
     return c;
 }
 
-// 1 at the silhouette's inner edge (a neighbour `r` texels away is transparent), 0 deeper inside
+// 1 at the silhouette's inner edge (a neighbour `r` texels away is transparent), 0 deeper inside. A neighbour outside
+// this 32 px tile counts as opaque: the engine draws a tall outfit as separate tiles, so what lies beyond a tile's
+// border in the atlas is another picture, and reading it made a false edge (a bright cross) where tiles meet.
 float rimAt(float r)
 {
     vec2 d = v_Texel * r;
-    float n = min(min(texture2D(u_Tex0, v_TexCoord + vec2(d.x, 0.0)).a, texture2D(u_Tex0, v_TexCoord - vec2(d.x, 0.0)).a),
-                  min(texture2D(u_Tex0, v_TexCoord + vec2(0.0, d.y)).a, texture2D(u_Tex0, v_TexCoord - vec2(0.0, d.y)).a));
-    return 1.0 - n;
+    vec2 lp = fract(v_Px / 32.0) * 32.0;
+    float aR = lp.x + r >= 32.0 ? 1.0 : texture2D(u_Tex0, v_TexCoord + vec2(d.x, 0.0)).a;
+    float aL = lp.x - r < 0.0 ? 1.0 : texture2D(u_Tex0, v_TexCoord - vec2(d.x, 0.0)).a;
+    float aD = lp.y + r >= 32.0 ? 1.0 : texture2D(u_Tex0, v_TexCoord + vec2(0.0, d.y)).a;
+    float aU = lp.y - r < 0.0 ? 1.0 : texture2D(u_Tex0, v_TexCoord - vec2(0.0, d.y)).a;
+    return 1.0 - min(min(aR, aL), min(aD, aU));
 }
 
 float cellHash(vec2 c)

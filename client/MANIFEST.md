@@ -6495,9 +6495,9 @@ text menu. Owner 2026-11-13: "mude o nosso menu do topo pra algo desse tipo. com
   lists the 22 frames (`game_nameplate` plate_*.png) with how each is got; the unowned ones are locked cards with the frame sample. The test holds the list
   to `NameplateMath.FRAMES` and the server's `nameplate_core.lua`.
 - **Outfit shaders (ids 19-26, names kept).** `chaos_outfit_*.frag` redrawn, one idea each, alpha respected, smooth in time: Ember Glow (rising spark pixels with tails,
-  coals from the feet), Frost Rime (a faceted rime that creeps up from the feet and melts back), Void Flicker (the void eats the edges, slow ragged front; no flicker),
-  Holy Radiance (gold filigree on highlights, a glint sweeping across), Heartblood (double heartbeat, wave from the chest, veins), Spectral Ghost (swaying hem,
-  fade to the feet, a scanning rune line), Ash Drift (ash grey, falling flecks, dull coals), Cinder Crown (lava cracks, heat shimmer, ember crown). The base store shaders
+  coals from the feet), Frost Rime (a faceted rime that grows in from the edges and melts back), Void Flicker (the void eats the edges, slow ragged front; no flicker),
+  Holy Radiance (gold filigree on highlights, a glint sweeping across), Heartblood (double heartbeat, wave from the chest, veins), Spectral Ghost (clearer toward the edges,
+  a rune contour that scans in from the edge), Ash Drift (ash grey, falling flecks, dull coals), Cinder Crown (lava cracks, heat shimmer, ember crown). Tall outfits: the engine draws a outfit bigger than 32 px as one quad per tile, so no shader can know the figure height; Frost Rime and Spectral Ghost read only the alpha edge depth (`edgeDepth`) and the time, and `rimAt` counts a neighbour outside the 32 px tile as opaque (it made a bright cross where tiles met). Ash Drift was too dark against a dark floor (its middle looked missing); lifted. The base store shaders
   (ids 1-18) are untouched. `client/tools/render_outfit_shaders.py` runs them headless (EGL surfaceless, Mesa llvmpipe, ctypes): `check`, `sheet`, `video`.
 - **Loot label plates.** `client/tools/gen_lootlabel_art.py` (CI `--check`): one 9-slice plate per loot label set (gradient fill, metal frame, a corner ornament that
   differs by set) and `game_groundlabels/labelplates.lua`; `GL.plateFor(accent)`. The ground labels and the samples draw highlighted labels on the plate, the rarity
