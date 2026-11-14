@@ -7050,18 +7050,17 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Claim today's reward"] = "Pegue o prêmio de hoje",
   ["What to do next"] = "O que fazer a seguir",
   ["The story, step by step"] = "A história, passo a passo",
-  -- client_chaos_topbar/topbar_hub.lua, chaos_topbar.lua (O550): the hub window, its hints, the way back from the text menu
+  -- client_chaos_topbar/topbar_hub.lua, chaos_topbar.lua (O550): the hub window, its hints, the way back from the text menu (Menu Style)
   ["Click a card to open it. Right-click to pin it to the bar."] = "Clique em um card para abrir. Clique com o botão direito para fixar na barra.",
   ["Tap a card to open it. Press and hold to pin it to the bar."] = "Toque em um card para abrir. Mantenha pressionado para fixar na barra.",
   ["The bar is full. Unpin one first."] = "A barra está cheia. Solte um item antes.",
   ["Could not pin this card."] = "Não foi possível fixar este card.",
   ["Pinned to the bar."] = "Fixado na barra.",
   ["Removed from the bar."] = "Removido da barra.",
-  ["Text menu"] = "Menu em texto",
   ["Menu Style"] = "Estilo do menu",
   -- base patch 0199: Options > Graphics, the menu style
   ["Menu in hubs"] = "Menu em hubs",
-  ["On: six small badges at the top, each opens a window with tabs and cards.\nOff: the text menu with drop-down lists. The hub window also has a link back to the text menu."] = "Ligado: seis ícones pequenos no topo, cada um abre uma janela com abas e cards.\nDesligado: o menu em texto com listas. A janela dos hubs também tem um link para voltar ao menu em texto.",
+  ["On: six small badges at the top, each opens a window with tabs and cards.\nOff: the text menu with drop-down lists."] = "Ligado: seis ícones pequenos no topo, cada um abre uma janela com abas e cards.\nDesligado: o menu em texto com listas.",
   ["Tiered rifts and their keys"] = "Fendas por nível e suas chaves",
   ["Points that make rifts richer"] = "Pontos que enriquecem as fendas",
   ["Points for waystone maps"] = "Pontos para mapas de pedra-guia",

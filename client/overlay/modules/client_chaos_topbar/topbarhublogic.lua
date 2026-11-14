@@ -10,7 +10,8 @@ ChaosTopBarHubLogic = {}
 local H = ChaosTopBarHubLogic
 
 H.MAX_PINS = 3
-H.DEFAULT_PINS = { 'Store' }
+H.DEFAULT_PINS = {}
+H.RIGHT_HUB = 'system'     -- the hub that sits alone at the right end of the bar (owner 2026-11-14: where the Store pin was)
 H.CARDS_PER_ROW = 4
 H.STYLES = { hubs = true, text = true }
 H.DEFAULT_STYLE = 'hubs'
@@ -58,7 +59,8 @@ end
 
 -- the model: { hubs = { { id, name, glyph, new, count, tabs = { { id, name, new, count, cards = { card } } } } } }
 -- card = { text (the base text, the unlock and run key), shown (the entry text as given), glyph, desc, key, locked (a
--- level) or nil, new, count (number or nil), extra (not in the tree) }
+-- level) or nil, new, count (number or nil), points (a number the card's module counts, shown as a square badge; nil
+-- or 0 = none), extra (not in the tree) }
 -- Hidden: dropped and text-only entries, the admin entries unless opts.admin, empty tabs and empty hubs.
 function H.build(tree, cards, items, opts)
   opts = opts or {}
@@ -86,6 +88,7 @@ function H.build(tree, cards, items, opts)
         text = base, shown = item.text, key = item.key, count = count,
         locked = item.status == 'locked' and (item.level or 0) or nil,
         new = item.status == 'open' and item.isNew == true,
+        points = (item.status == 'open' and (tonumber(item.points) or 0) > 0) and math.floor(tonumber(item.points)) or nil,
       }
       if at then
         local def = cards.CARDS[slotText] or {}
@@ -203,6 +206,13 @@ function H.togglePin(list, text)
   return out, true
 end
 
+function H.isPinned(list, text)
+  for _, t in ipairs(list) do
+    if t == text then return true end
+  end
+  return false
+end
+
 -- the cards the bar shows pinned, in pin order: the ones the model has (usable now), locked ones included
 function H.pinnedCards(model, pins)
   local out = {}
@@ -253,12 +263,34 @@ function H.fit(text, maxW, measure)
   return cut
 end
 
--- how many hub badges and pins the bar shows, and its width: 28 px badges (phone 40), 4 px apart, 8 px of divider and
--- 16 px of frame
-function H.barWidth(hubs, pins, badge)
-  badge = badge or 28
-  local w = 16 + hubs * badge + math.max(hubs - 1, 0) * 4
-  if pins > 0 then w = w + 8 + pins * (badge + 4) end
+-- the bar, left to right: the hubs (all but the right one), a divider and the pinned cards, a divider and the right hub
+-- (System). A divider is drawn only when something comes before it. Items: { kind = 'hub', hub = hub } | { kind = 'divider' }
+-- | { kind = 'pin', card = card }.
+function H.barItems(model, pinCards)
+  local items, rightHub = {}, nil
+  for _, hub in ipairs(model.hubs) do
+    if hub.id == H.RIGHT_HUB then rightHub = hub else items[#items + 1] = { kind = 'hub', hub = hub } end
+  end
+  if #pinCards > 0 then
+    if #items > 0 then items[#items + 1] = { kind = 'divider' } end
+    for _, card in ipairs(pinCards) do items[#items + 1] = { kind = 'pin', card = card } end
+  end
+  if rightHub then
+    if #items > 0 then items[#items + 1] = { kind = 'divider' } end
+    items[#items + 1] = { kind = 'hub', hub = rightHub }
+  end
+  return items
+end
+
+H.DIVIDER_W = 5   -- 1 px line and 2 px margins each side
+
+-- the bar's width for these items: 4 px between children and 16 px of frame
+function H.barWidth(items, badge)
+  badge = badge or 32
+  local w = 16
+  for i, it in ipairs(items) do
+    w = w + (it.kind == 'divider' and H.DIVIDER_W or badge) + (i > 1 and 4 or 0)
+  end
   return w
 end
 

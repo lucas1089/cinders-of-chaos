@@ -1,8 +1,8 @@
 -- luajit topbar_hub_test.lua (CI runs every client *_test.lua from the repo root, under LuaJIT and Lua 5.3)
 -- topbar_hub.lua on a fake widget engine. The fake builds the children of every style from the REAL topbar_hub.otui (the ids
 -- under each style), so a Lua lookup of an id the .otui lacks raises here as it would in the client. It plays the bar, the
--- opening of two hubs, a tab switch, a card click, a locked card, a pin, the remembered tab, the text menu link and the
--- fallback when the hub code raises an error.
+-- opening of two hubs, a tab switch, a card click, a locked card, a pin (right click, the mark, the bar measured again), the
+-- remembered tab, the square points badge, System at the right end of the bar and the fallback when the hub code raises an error.
 local here = (arg and arg[0] and arg[0]:match('^(.*[/\\])') or '')
 local n = 0
 local function eq(a, b, m) n = n + 1 if a ~= b then error((m or '') .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b), 2) end end
@@ -38,7 +38,14 @@ local function idsOf(styleName, out, seen)
   return out
 end
 eq(#idsOf('ChaosHubCard') >= 9, true, 'the card style has its ids')
-eq(#idsOf('ChaosHubWindow') >= 4, true, 'the window style has tabs, cards, hint, textMenu')
+eq(#idsOf('ChaosHubWindow') >= 3, true, 'the window style has tabs, cards, hint')
+local hasId = {}
+for _, id in ipairs(idsOf('ChaosHubWindow')) do hasId[id] = true end
+eq(hasId.textMenu, nil, 'no link to the text menu in the hub window (owner 2026-11-14)')
+eq(hasId.pinMark, nil, 'the pin mark is on the card, not the window')
+local cardIds = {}
+for _, id in ipairs(idsOf('ChaosHubCard')) do cardIds[id] = true end
+eq(cardIds.pinMark, true, 'the card has its pin mark'); eq(cardIds.count, true, 'and its square count')
 
 -- ---------------------------------------------------------------- the fake engine
 local Widget = {}
@@ -108,7 +115,7 @@ dofile(here .. 'topbar_hub.lua')
 local Hub = ChaosTopBarHub
 
 -- ---------------------------------------------------------------- a host with a few entries
-local ran, lockedSeen, failed, textMenu = {}, {}, {}, 0
+local ran, lockedSeen, failed, relayouts, lastWidth = {}, {}, {}, 0, nil
 local items = {
   { text = 'Store', category = 'economy', icon = 'market', status = 'open' },
   { text = 'Inventory', category = 'character', icon = 'inventory', status = 'open' },
@@ -127,18 +134,20 @@ local host = {
   admin = function() return false end,
   run = function(text) ran[#ran + 1] = text return true end,
   locked = function(text) lockedSeen[#lockedSeen + 1] = text end,
-  textMenu = function() textMenu = textMenu + 1 end,
+  relayout = function() relayouts = relayouts + 1 lastWidth = Hub.layoutBar(Hub.testPanel) end,
   failed = function(err) failed[#failed + 1] = err end,
 }
 Hub.init(host)
 local panel = new('panel')
+Hub.testPanel = panel
 
 -- ---------------------------------------------------------------- the bar
 local width = Hub.layoutBar(panel)
-eq(width, ChaosTopBarHubLogic.barWidth(4, 1, 28), 'width for the hubs with usable cards and the Store pin')
+eq(width, 16 + 4 * 32 + 5 + 4 * 4, 'width: Hero, Hunt, Trade, a divider and System (32 px badges, no default pin)')
 local ids = {}
 for _, k in ipairs(panel.kids) do ids[#ids + 1] = k.id or k.style end
-eq(table.concat(ids, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,chaosHub_system,ChaosHubDivider,chaosPin_1', 'badges, divider, pin')
+eq(table.concat(ids, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,ChaosHubDivider,chaosHub_system', 'System alone at the right end, Store among the Trade cards')
+eq(panel.kids[2].byId.glyph.width, 32, 'the bar glyph is as big as its 32 px cell')
 eq(panel.kids[2].byId.glyph.clip ~= nil, true, 'a badge glyph got its atlas cell')
 eq(panel.kids[2].tooltip, 'Hunt', 'tooltip is the hub name')
 eq(#panel.kids[2].kids, 1, 'the Hunt badge has its red dot (3 applications)')
@@ -166,12 +175,13 @@ local finder
 for _, c in ipairs(cards.kids) do if c.byId.name.text == 'Party Finder' then finder = c end end
 eq(finder.byId.count.text, '3', 'the count badge on Party Finder'); eq(finder.byId.key.text, 'Alt+L', 'its hotkey chip')
 eq(win.byId.hint.text, 'Click a card to open it. Right-click to pin it to the bar.', 'the hint')
-eq(win.byId.textMenu.text, 'Text menu', 'the footer link')
+eq(win.byId.textMenu, nil, 'no footer link')
 
 -- a left click runs the entry (with its shown text) and closes the hub
 local function click(card, button) return card.onMouseRelease(card, { x = 1, y = 1 }, button) end
 eq(click(finder, MouseLeftButton), true, 'the click is taken')
 eq(ran[1], 'Party Finder (3)', 'run gets the entry text as shown')
+eq(win.chaosNoMirror, true, 'the window stays out of the RmlUi mirror')
 eq(win.visible, false, 'the hub closed'); eq(panel.kids[2].on, false, 'the badge is off again')
 
 -- a second click on the badge toggles it shut
@@ -198,23 +208,69 @@ eq(locked.byId.key.visible, false, 'no hotkey chip on a locked card'); eq(locked
 click(locked, MouseLeftButton)
 eq(lockedSeen[1], 'Passive Tree', 'host.locked is told'); eq(win.visible, true, 'the hub stays open'); eq(#ran, 1, 'nothing ran')
 
--- a right click pins; a second one unpins; the bar follows
+-- a right click pins; a second one unpins; the bar follows, is measured again and the card shows a mark
 local inv
 for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv = c end end
-click(inv, MouseRightButton)
-eq(settings['chaosHubPins'], 'v1:Store|Inventory', 'the pin is saved')
-local pinIds = {}
-for _, k in ipairs(panel.kids) do if k.id and k.id:match('^chaosPin_') then pinIds[#pinIds + 1] = k.id end end
-eq(table.concat(pinIds, ','), 'chaosPin_1,chaosPin_2', 'two pinned badges on the bar')
+eq(inv.byId.pinMark.visible, false, 'no pin mark before')
+local rel0 = relayouts
+eq(click(inv, MouseRightButton), true, 'the right click is taken')
+eq(settings['chaosHubPins'], 'v1:Inventory', 'the pin is saved')
+eq(relayouts > rel0, true, 'the host measured the bar again (a bar kept at its old width squeezes the new badge)')
+eq(lastWidth, 16 + 5 * 32 + 2 * 5 + 6 * 4, 'the bar is wide enough for the pin and its divider')
+local order = {}
+for _, k in ipairs(panel.kids) do order[#order + 1] = k.id or 'div' end
+eq(table.concat(order, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,div,chaosPin_1,div,chaosHub_system', 'the pin sits between the hubs and System')
 eq(win.byId.hint.text, 'Pinned to the bar.', 'the hint says so')
-click(inv, MouseRightButton)
-eq(settings['chaosHubPins'], 'v1:Store', 'a second right click unpins')
+local inv2
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv2 = c end end
+eq(inv2.byId.pinMark.visible, true, 'the pinned card shows its mark'); eq(inv2.byId.pinMark.clip ~= nil, true, 'with the pin picture')
+local other
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Passive Tree' then other = c end end
+eq(other.byId.pinMark.visible, false, 'an unpinned card has none')
+-- after a reload (a new Hub from the same settings) the mark is still there
+Hub.terminate(); Hub.init(host); Hub.testPanel = new('panel'); Hub.layoutBar(Hub.testPanel)
+Hub.toggle('hero')
+for _, c in ipairs(created) do if c.style == 'ChaosHubWindow' and not c.destroyed then win = c end end
+local inv3
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv3 = c end end
+eq(inv3.byId.pinMark.visible, true, 'the mark is drawn from the saved pins after a reload')
+click(inv3, MouseRightButton)
+eq(settings['chaosHubPins'], 'v1:', 'a second right click unpins')
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv3 = c end end
+eq(inv3.byId.pinMark.visible, false, 'the mark is gone')
+-- the bar holds three pins at most
+settings['chaosHubPins'] = 'v1:Store|Bank|Market'
+Hub.terminate(); Hub.init(host); Hub.testPanel = new('panel'); Hub.layoutBar(Hub.testPanel)
+Hub.toggle('hero')
+for _, c in ipairs(created) do if c.style == 'ChaosHubWindow' and not c.destroyed then win = c end end
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv3 = c end end
+click(inv3, MouseRightButton)
+eq(settings['chaosHubPins'], 'v1:Store|Bank|Market', 'a fourth pin is refused'); eq(win.byId.hint.text, 'The bar is full. Unpin one first.', 'and says why')
+settings['chaosHubPins'] = nil
+Hub.terminate(); Hub.init(host); panel = new('panel'); Hub.testPanel = panel; Hub.layoutBar(panel)
 Hub.close()
 
--- the text menu link
+-- the square badge of the Passive Tree card: the unspent points its module counts, hidden at 0, follows a change
+items[#items + 1] = { text = 'Skills', category = 'character', icon = 'skills', status = 'open', points = 4 }
+Hub.toggle('hero')
+for _, c in ipairs(created) do if c.style == 'ChaosHubWindow' and not c.destroyed then win = c end end
+local skills
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Skills' then skills = c end end
+eq(skills.byId.count.visible, true, 'the square count shows'); eq(skills.byId.count.text, '4', 'with the points')
+items[#items].points = 120
+Hub.layoutBar(panel)
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Skills' then skills = c end end
+eq(skills.byId.count.text, '99+', 'the open hub follows a change, 99+ past 99')
+items[#items].points = nil
+Hub.layoutBar(panel)
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Skills' then skills = c end end
+eq(skills.byId.count.visible, false, 'hidden at 0')
+table.remove(items)
+Hub.close()
+
+-- the System hub (no text menu link) and Escape
 Hub.toggle('system')
-win.byId.textMenu.onClick()
-eq(textMenu, 1, 'the footer link asks for the text menu'); eq(win.visible, false, 'and closes the hub')
+eq(win.byId.textMenu, nil, 'no text menu chip')
 
 -- Escape
 Hub.toggle('system'); win.onEscape(); eq(win.visible, false, 'Escape closes')

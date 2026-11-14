@@ -6409,7 +6409,7 @@ Add HD art for a monster (a creature look, one layer, 4 directions or 1):
 
 ## Menu hubs (O550, `client_chaos_topbar`, base patch 0199)
 
-The top menu is six hub badges on the bar (Hero, Hunt, Adventure, Trade, Social, System; 28 px, phone 40 px) and one pinned Store.
+The top menu is six hub badges on the bar (Hero, Hunt, Adventure, Trade, Social, System; 32 px, phone 44 px; System alone at the right end behind a divider, the player's pins between the other hubs and it; the Store is a card of the Trade hub, no default pin).
 A badge opens one window of 780 x 262 (phone 780 x 290) with tabs and cards: 6 hubs, 26 tabs, 105 cards, the same windows as the
 text menu. Owner 2026-11-13: "mude o nosso menu do topo pra algo desse tipo. com ícones e sub ícones ... diminua ele", then
 "acho que tem que ficar ainda menor. deixe por exemplo abrir uma janela com abas". Roadmap id O550. Not run in a client.
@@ -6424,22 +6424,51 @@ text menu. Owner 2026-11-13: "mude o nosso menu do topo pra algo desse tipo. com
 - **Widgets:** `topbar_hub.lua` (bar badges, divider and pins, the window, tabs, cards) and `topbar_hub.otui` (styles
   `ChaosHubBadge`, `ChaosHubWindow` on `ChaosWindow`, `ChaosHubTab` on `ChaosTabButton`, `ChaosHubCard` on the `panel` image, the chips
   on `skin/button` and `panel_dark`), so the interface skins repaint it with the rest. The glyphs are two white atlases
-  (`images/glyphs_bar.png` 24 px cells, `images/glyphs_card.png` 32 px cells, 53 shapes of our own, made by
+  (`images/glyphs_bar.png` 32 px cells with the glyph 26 px, `images/glyphs_card.png` 40 px cells with the glyph 34 px, `images/glyphs_mark.png` 20 px cells for the pin mark, 54 shapes of our own, made by
   `client/tools/gen_topbar_icons.py` from `topbar_glyphs.py`; `topbar_glyph_index.lua` holds the cells) tinted by `image-color` with
   the skin palette (`accent2`; `menuNew` for a new one, `menuLocked` for a locked one). Check `tools/ci/check_topbar_widgets.py`:
   every id Lua looks up and every style it creates is in the .otui, every anchor names an id of the file, window, card and badge
   have a `$mobile` rule.
 - **Behaviour:** a badge click opens its hub, a second click (or Escape, or a tap outside on a phone) closes it. A card click closes
   the hub and runs the window (Shift keeps the hub open); a locked card says "Unlocks at level N" and keeps the hub open. A right
-  click pins a card to the bar (3 pins, `g_settings` `chaosHubPins_<character>`, `v1:Store|Market`; the default pin is Store), a
-  second one unpins; a phone has no right click, so a long press is meant to do it (unverified). The last tab of every hub is
+  click pins a card to the bar (3 pins, `g_settings` `chaosHubPins_<character>`, `v1:Store|Market`; no default pin), a
+  second one unpins; a pinned card shows a gold pin in its top right corner, drawn from the saved pins; a phone has no right click, so a long press is meant to do it (unverified). The last tab of every hub is
   remembered per character (`chaosHubTab_<hub>_<character>`). Gated cards follow the unlock table by entry text as before: hidden
   until reachable, the next one grey, "Show the whole menu" lifts it; an empty tab and an empty hub are hidden. The login screen shows
-  the System hub with the `offline` cards only. A gold glyph on a badge or tab means a new unlocked system inside, a red count is
-  the Party Finder applications. The hotkey chip sits bottom right of a card (not top right: names such as "Spell Supports" would
+  the System hub with the `offline` cards only. A gold glyph on a badge or tab means a new unlocked system inside, a red square on the
+  corner of a card's glyph badge is the Party Finder applications or, on the Passive Tree card, the unspent passive points (hidden at
+  0, `99+`; read from `game_passivetree` `getTreeFreePoints`, which keeps the last `sendPoints`; the client asks for it with the
+  tree's own `requestPoints` at the start of a game and when a hub opens, at most every 5 s; `passivetree.lua` calls
+  `ChaosTopBar.refresh` when the points arrive, so the open hub follows; no protocol change). Season Pass has `claimableCount` but
+  only knows it after its window loaded, so it has no badge. The hotkey chip sits bottom right of a card (not top right: names such as "Spell Supports" would
   not fit beside it in the engine's 11 px font).
 - **Kept API:** `ChaosTopBar.addEntry`, `refresh`, `setAdmin`, `setBadge`, `available`, `run`, `open(categoryId)` (opens the hub of
   that category: character -> Hero, economy -> Trade, chaos -> Adventure, admin -> System), hotkeys, the unlock state. New:
   `getStyle()`, `setStyle('hubs' | 'text')`.
 - **The text menu stays** as before (drop-downs, "More", alphabetical order). Switch: Options > Graphics "Menu in hubs" (checkbox,
-  default on; base patch `0199`, see client/BASE.md), the footer link "Text menu" of the 
+  default on; base patch `0199`, see client/BASE.md), the entry "Menu Style" of the text
+  menu (the way back; the hubs leave it out). The hub window has no link to the text menu (owner 2026-11-14). The choice is `g_settings` `chaosMenuStyle`; the option writes it through
+  `ChaosTopBar.onOption('hubMenu', value)`. Any error in the hub code is caught (`pcall`), logged once and puts the text menu back
+  until the player picks the hubs again; so does a missing glyph atlas.
+- **Texts:** hub names `hub.<id>`, tab names `tab.<hub>.<id>`, the card lines and the hints go through `tr()`; pt-BR in
+  `client_chaos_locale/pt_br.lua` (O550 block).
+- **To check in a client:** that `$mobile` works on a child widget of a style (the bar glyph and the card text), that a window created
+  as a plain `ChaosWindow` under the bar takes `onEscape`, that a long press reaches `onMouseRelease` as `MouseRightButton`, that the
+  `image-clip` string on the glyph children of a button is kept when the state changes, and the 9-slice of `skin/button` at 32 and 44 px.
+  Previews are in the design round's scratch folder, not committed.
+- **Owner playtest fixes (2026-11-14, pt-BR):** (1) the "Text menu" chip is gone; the way back is Options > Graphics "Menu in hubs".
+  (2) the Passive Tree square points badge above. (3) The glyphs were small (about 21 px of drawing in a 40 px badge, 14 in 28): the
+  badges are 44 / 32 px (phone 44) and the glyph about 27 / 21 px; the bar is 42 high (phone 56) and the window sits 4 px lower; the
+  glyph widget is sized from Lua to its atlas cell, a phone bar badge draws the card atlas. (4) Right click to pin: the pin was saved
+  and the badge built, but the bar kept its old width (only `ChaosTopBar.refresh` measured it), so the new badge was squeezed or
+  stuck out of the frame and nothing seemed to happen; `host.relayout` now measures the bar again after a pin, `layoutBar` also
+  refreshes the open window, and a pinned card shows a pin mark (`topbar_hub_test.lua` right-clicks a card, checks the mark, the
+  saved pins, the new bar width and the unpin). The hub window is also marked `chaosNoMirror` (its cards are made in Lua; the RmlUi
+  window mirror would otherwise take it). (5) "Layout options" (`game_hotbar/hotbar_options.lua`): the left menu panel of the
+  Options window is a plain panel whose entries are anchor-chained, so the unanchored button sat at its top left on Controls and
+  its sub-entries; it is now anchored to the panel's bottom (`hotbar_options_test.lua`). (6) System is the badge at the right end
+  of the bar, where the pinned Store was; the Store is no default pin (a saved pin list is kept). (7) The stock top strip of
+  `client_topmenu` (a dark band with a red border and clipped red text) peeked out above the hub bar: it is now hidden, phantom and
+  0 high, and every `ChaosTopBar.refresh` does it again when the base shows or grows it (both looks; `terminate` gives it back;
+  `chaos_topbar_test.lua`). The text menu keeps its own bar.
+

@@ -1557,6 +1557,13 @@ function onExtendedOpcode(protocol, code, buffer)
 	if action == "sendPoints" then
 		pointsOwned = data
 		updatePoints(0)
+		-- the top menu's Passive Tree card shows the free points (client_chaos_topbar): tell it they changed
+		pcall(function()
+			local top = modules.client_chaos_topbar
+			if top and top.ChaosTopBar and top.ChaosTopBar.refresh then
+				top.ChaosTopBar.refresh()
+			end
+		end)
 	elseif action == "sendMessage" then
 		sendMessageBox(data.title, data.message)
 	elseif action == "sendNodes" then
