@@ -1036,30 +1036,27 @@ end
 do
 	dofile("data/lib/chaos_rarity.lua")
 	SKILL_LEVEL, TALKTYPE_MONSTER_SAY = 8, 34
-	-- the pure rules: throttle, rare check, who shows an emote
+	-- the pure rules: throttle, rare check
 	local last = {}
 	eq(K.allowFx(last, "a", 1000, 500), true, "first play") eq(K.allowFx(last, "a", 1200, 500), false, "too soon")
 	eq(K.allowFx(last, "a", 1500, 500), true, "after the wait") eq(K.allowFx(last, "b", 1500, 500), true, "another key")
 	eq(K.allowFx(last, "a", 100, 500), true, "a clock that went back plays")
 	eq(K.hasRare({0, 4, 5}, 5, ChaosRarity.rank), true, "Legendary found") eq(K.hasRare({0, 4}, 5, ChaosRarity.rank), false, "Rare is not")
 	eq(K.hasRare({}, 5, ChaosRarity.rank), false, "nothing dropped") eq(K.hasRare({0}, 0, ChaosRarity.rank), false, "none is no rarity")
-	local wearers = K.emoteWearers({combat = {maxPerKill = 2}}, {1, 2, 2, 3, 4}, function(id) return id ~= 3 end,
-		function(id) return id ~= 1 end)
-	eq(#wearers, 2, "at most maxPerKill") eq(wearers[1], 2, "in order, once each, near only") eq(wearers[2], 4, "skips the one without an emote")
 	-- the shipped combat cosmetics: visual only, 150-250, a real effect, one price band, store offers, rewards
-	local kinds = {levelfx = 0, rarefx = 0, emote = 0}
+	local kinds = {levelfx = 0, rarefx = 0}
 	for _, c in ipairs(cfg.cosmetics) do
 		if kinds[c.kind] then
 			kinds[c.kind] = kinds[c.kind] + 1
 			eq(c.source == "store" or c.source == "achievement" or c.source == "daily", true, c.key .. " is sold or a milestone or login streak reward (O378, O409)") eq(ChaosVfx[c.vfx] ~= nil, true, c.key .. " plays a known effect")
-			eq(c.kind == "emote" and #c.say >= 1 and #c.say <= K.EMOTE_MAX or c.say == nil, true, c.key .. " line")
+			eq(c.say, nil, c.key .. " says nothing (the emotes are gone, O564)")
 		end
 	end
-	eq(kinds.levelfx >= 3 and kinds.rarefx >= 3 and kinds.emote >= 3, true, "three or more of each kind")
-	eq(cfg.storage.levelfx >= 7102000 and cfg.storage.emote <= 7102009, true, "storages in the wardrobe block")
-	eq(cfg.storage.levelfx ~= cfg.storage.rarefx and cfg.storage.rarefx ~= cfg.storage.emote, true, "storages differ")
-	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "emote_roar" then c.say = ("x"):rep(40) end end end)
-		:find("say is a line", 1, true) ~= nil, true, "a long emote line is refused")
+	eq(kinds.levelfx >= 3 and kinds.rarefx >= 3, true, "three or more of each kind")
+	eq(cfg.storage.levelfx >= 7102000 and cfg.storage.rarefx <= 7102009, true, "storages in the wardrobe block")
+	eq(cfg.storage.levelfx ~= cfg.storage.rarefx and cfg.storage.emote == nil, true, "storages differ, the emote one is retired")
+	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "lvl_dawn" then c.say = "Hi" end end end)
+		:find("say was only", 1, true) ~= nil, true, "a line on an effect is refused")
 	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "lvl_dawn" then c.vfx = "no_such" end end end)
 		:find("not an effect", 1, true) ~= nil, true, "an unknown effect is refused")
 	eq(broken(function(l) for _, c in ipairs(l) do if c.key == "foot_collector" then c.price = 100 end end end)
@@ -1075,14 +1072,14 @@ do
 	party = {getMembers = function() return {eve, fay} end, getLeader = function() return eve end}
 	registered.ChaosCosmeticsLogin.onLogin(eve)
 	registered.ChaosCosmeticsLogin.onLogin(fay)
-	for _, key in ipairs({"lvl_dawn", "rare_gilded", "emote_roar"}) do
+	for _, key in ipairs({"lvl_dawn", "rare_gilded"}) do
 		eq(M.storeUnlock("cosmetic_" .. key).grant(eve), true, key .. " bought")
 	end
-	M.storeUnlock("cosmetic_emote_salute").grant(fay)
+	eq(M.storeUnlock("cosmetic_emote_salute"), nil, "the emotes are not on sale any more")
 	opcode(eve, "select", {kind = "levelfx", id = 601}) eq(lastTo("Eve", "result").ok, true, "level-up effect chosen")
-	opcode(eve, "select", {kind = "rarefx", id = 701}) opcode(eve, "select", {kind = "emote", id = 801})
-	opcode(fay, "select", {kind = "emote", id = 802})
-	eq(storages[70][cfg.storage.levelfx], 601, "stored") eq(storages[70][cfg.storage.emote], 801, "emote stored")
+	opcode(eve, "select", {kind = "rarefx", id = 701})
+	opcode(eve, "select", {kind = "emote", id = 801}) eq(lastTo("Eve", "result").ok, false, "an emote cannot be chosen")
+	eq(storages[70][cfg.storage.levelfx], 601, "stored")
 	opcode(eve, "select", {kind = "levelfx", id = 602}) eq(lastTo("Eve", "result").ok, false, "one not owned is refused")
 	eq(lastTo("Eve", "state").rows[1].id ~= nil, true, "rows still sent")
 
@@ -1119,32 +1116,6 @@ do
 	eq(effects[#effects].id, ChaosVfx.aura_burst_gold.id, "Gilded Glint") eq(effects[#effects].x, 300 + ChaosVfx.aura_burst_gold.dx, "at the corpse")
 	eq(M.rareDrop(eve, corpseOf({10})), false, "throttled") eq(#effects, before + 1, "still one")
 
-	-- victory emote: a boss only, the killer and the party near, once per emoteMs
-	local function monsterAt(x, boss, master)
-		return {isMonster = function() return true end, getMaster = function() return master end,
-			getType = function() return {isBoss = function() return boss end} end,
-			getPosition = function() return Position(x, 100, 7) end}
-	end
-	before = #effects
-	-- Eve reads English, Fay pt-BR; both stand in range: every line goes out once per viewer, in the viewer's language
-	Chaos.setLang(eve, "en") Chaos.setLang(fay, "pt-BR")
-	Game.getSpectators = function() return {eve, fay} end
-	eq(M.victory(monsterAt(101, false), eve, eve), false, "an ordinary monster: no emote")
-	eq(M.victory(monsterAt(101, true, {}), eve, eve), false, "a summon: no emote")
-	eq(M.victory(monsterAt(101, true), eve, nil), true, "a boss fell") eq(#effects, before + 2, "Eve's and Fay's effects")
-	eq(#said, 4, "two lines, each sent to two viewers") eq(said[1].who, "Eve", "the killer first") eq(said[1].to, "Eve", "to the English viewer")
-	eq(said[1].text, "Victory!", "her line in English") eq(said[2].to, "Fay", "then the pt-BR viewer") eq(said[2].text, "Vit\xc3\xb3ria!", "her line in pt-BR")
-	eq(said[3].who, "Fay", "then the party member") eq(said[3].text, "For the fallen!", "Warrior's Salute in English")
-	eq(said[4].text, "Pelos ca\xc3\xaddos!", "Warrior's Salute in pt-BR")
-	eq(effects[#effects].only, nil, "seen by players nearby")
-	eq(M.victory(monsterAt(101, true), eve, nil), false, "throttled") eq(#said, 4, "no more lines")
-	Game.getSpectators = nil
-	Chaos.setLang(fay, "en")
-	for _, c in ipairs(cfg.cosmetics) do
-		if c.kind == "emote" then
-			eq(ChaosI18n.text("pt-BR", c.say) ~= c.say, true, c.key .. " line has a pt-BR text")
-		end
-	end
 	registered.ChaosCosmeticsLogout.onLogout(eve)
 	registered.ChaosCosmeticsLogout.onLogout(fay)
 	eq(M.active[70], nil, "logout clears the cache")

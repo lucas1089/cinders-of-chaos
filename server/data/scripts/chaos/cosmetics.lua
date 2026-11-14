@@ -9,9 +9,8 @@
 --                       character's silhouette, for every viewer. Both are drawn by each client (game_cosmeticfx)
 --                       from the "looks" this script sends (who wears which art); the server does nothing per step
 --   level-up effects    an effect on the character when it gains a level; rare-loot effects: an effect on the corpse when
---                       the kill drops a Legendary item or better; victory emotes: an effect and a line after a boss
---                       kill (O318). All three go to everyone near, are throttled per character (cfg.combat) and are
---                       visual only
+--                       the kill drops a Legendary item or better (O318). Both go to everyone near, are throttled per
+--                       character (cfg.combat) and are visual only. (The victory emotes were removed, O564.)
 -- Data: cosmetics_config.lua. Rules: cosmetics_core.lua (server/tests/cosmetics_test.lua). Unlocks are account-wide
 -- (table chaos_cosmetics, server/sql/chaos_cosmetics.sql, also created here at startup); the choice is per character
 -- (storages 7100940 - 7100949). Store offers: {kind = "unlock", unlock = "cosmetic_<key>"} (shop_services.lua asks
@@ -156,7 +155,7 @@ M.addOwnedShaders = addOwnedShaders
 local function chosenOf(player)
 	local st = cfg.storage
 	local chosen = {lines = {}}
-	for _, kind in ipairs({"killfx", "lootbeam", "chatcolor", "footprint", "outline", "levelfx", "rarefx", "emote"}) do
+	for _, kind in ipairs({"killfx", "lootbeam", "chatcolor", "footprint", "outline", "levelfx", "rarefx"}) do
 		chosen[kind] = math.max(0, player:getStorageValue(st[kind]))
 	end
 	for _, l in ipairs(cfg.lines) do
@@ -214,10 +213,10 @@ local function refresh(player, announce)
 	local a = {lines = {}}
 	local kill = chosen.killfx > 0 and owned(player, chosen.killfx)
 	a.killfx = kill and kill.kind == "killfx" and kill.vfx or nil
-	-- combat cosmetics others see (O318): the effect (and the emote's line) of the chosen one
-	for _, kind in ipairs({"levelfx", "rarefx", "emote"}) do
+	-- combat cosmetics others see (O318): the effect of the chosen one
+	for _, kind in ipairs({"levelfx", "rarefx"}) do
 		local cc = chosen[kind] > 0 and owned(player, chosen[kind])
-		a[kind] = cc and cc.kind == kind and {vfx = cc.vfx, say = cc.say} or nil
+		a[kind] = cc and cc.kind == kind and {vfx = cc.vfx} or nil
 	end
 	for line, id in pairs(chosen.lines) do
 		local c = id > 0 and owned(player, id)
@@ -599,7 +598,7 @@ local logout = CreatureEvent("ChaosCosmeticsLogout")
 function logout.onLogout(player)
 	M.active[player:getId()] = nil
 	lastPreview[player:getId()] = nil
-	for _, kind in ipairs({"levelfx", "rarefx", "emote"}) do
+	for _, kind in ipairs({"levelfx", "rarefx"}) do
 		lastFx[player:getId() .. kind] = nil
 	end
 	M.colors[player:getName()] = nil
@@ -612,14 +611,6 @@ end
 logout:register()
 
 -- ---------------------------------------------------------------- combat cosmetics others see (O318)
-local function isBoss(monster)
-	local okType, boss = pcall(function()
-		local mt = monster:getType()
-		return mt and mt:isBoss()
-	end)
-	return okType and boss == true
-end
-
 -- a chosen effect of `kind` for player `p` at `pos` unless it played for this character a moment ago; sent to every
 -- spectator of the tile (Vfx has no target player), so everyone near sees it
 local function playFx(p, kind, pos, ms)
@@ -669,60 +660,6 @@ function M.rareDrop(owner, corpse)
 	return playFx(owner, "rarefx", corpse:getPosition(), cfg.combat.rareMs)
 end
 
--- a boss died: the killer and the party members near show their victory emote (an effect and a line over the head)
-function M.victory(creature, killer, mostDamageKiller)
-	if not creature or not creature.isMonster or not creature:isMonster() or creature:getMaster() or not isBoss(creature) then
-		return false
-	end
-	local candidates, byId = {}, {}
-	local function add(c)
-		if c and c.isPlayer and c:isPlayer() then
-			candidates[#candidates + 1] = c:getId()
-			byId[c:getId()] = c
-			local party = c:getParty()
-			if party then
-				for _, m in ipairs(party:getMembers() or {}) do
-					candidates[#candidates + 1] = m:getId()
-					byId[m:getId()] = m
-				end
-				local leader = party:getLeader()
-				if leader then
-					candidates[#candidates + 1] = leader:getId()
-					byId[leader:getId()] = leader
-				end
-			end
-		end
-	end
-	add(killer)
-	add(mostDamageKiller)
-	local pos = creature:getPosition()
-	local range = cfg.combat.range
-	local who = K.emoteWearers(cfg, candidates, function(id)
-		local a = M.active[id]
-		return a ~= nil and a.emote ~= nil
-	end, function(id)
-		local p = byId[id]
-		local pp = p and p:getPosition()
-		return pp ~= nil and pp.z == pos.z and math.abs(pp.x - pos.x) <= range and math.abs(pp.y - pos.y) <= range
-	end)
-	local n = 0
-	for _, id in ipairs(who) do
-		local p = byId[id]
-		local fx = M.active[id].emote
-		if K.allowFx(lastFx, id .. "emote", nowMs(), cfg.combat.emoteMs) then
-			n = n + 1
-			if Vfx then
-				Vfx(p:getPosition(), fx.vfx)
-			end
-			if fx.say and p.say then
-				-- each player in range reads the line in own language (Chaos.yell: creature:say with a target)
-				Chaos.yell(p, fx.say, TALKTYPE_MONSTER_SAY)
-			end
-		end
-	end
-	return n > 0
-end
-
 local advance = CreatureEvent("ChaosCosmeticsAdvance")
 function advance.onAdvance(player, skill, oldLevel, newLevel)
 	if skill == SKILL_LEVEL and (tonumber(newLevel) or 0) > (tonumber(oldLevel) or 0) then
@@ -754,10 +691,6 @@ end
 -- kill effects: the killing blow (the engine's last hit) of a character on a monster that is nobody's summon
 local death = CreatureEvent("ChaosCosmeticsDeath")
 function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjustified, mostDamageUnjustified)
-	local ok, err = pcall(M.victory, creature, killer, mostDamageKiller)
-	if not ok then
-		print("[Chaos cosmetics] victory failed: " .. tostring(err))
-	end
 	-- the race effect of the death (deathfx.lua, O456): this event is the one death hook of monsters, so it rides here
 	if ChaosDeathFx and ChaosDeathFx.onDeath then
 		pcall(ChaosDeathFx.onDeath, creature)

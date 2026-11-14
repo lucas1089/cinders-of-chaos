@@ -9052,12 +9052,6 @@ return {
 			"Founder Pack, uma venda limitada, em breve",
 		["%s is no longer on sale."] =
 			"%s não está mais à venda.",
-		-- Victory emote lines (O318, cosmetics_config.lua emote say; Chaos.yell sends each viewer the line in own language)
-		["Victory!"] = "Vitória!",
-		["For the fallen!"] = "Pelos caídos!",
-		["Burn bright!"] = "Brilhe em chamas!",
-		["Glory!"] = "Glória!",
-		["Until next time."] = "Até a próxima.",
 		-- Old stash tabs worth 4 expansions (O316 follow-up, stash_config.lua messages.tabsRaised)
 		["Your old stash tabs are now worth %d slots each (%d Stash Slot Expansions). Your stash has %d slots."] =
 			"Suas abas antigas do stash agora valem %d espaços cada (%d Stash Slot Expansions). Seu stash tem %d espaços.",

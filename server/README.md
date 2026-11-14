@@ -893,7 +893,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101810 - 7101819 | right-click equips (`Chaos.storage.rightClickEquipOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0024) |
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
-| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (`cosmetics_config.lua`, O318), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
+| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (removed, O564: reserved, never reused; `cosmetics_config.lua`, O318), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z, +5 the day of its respec waiver and +6 the waivers used that day ("Respec waiver for testers"); +7..9 free |
 | 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
@@ -6128,7 +6128,7 @@ the score are never counted.
 
 | Counted | Read from |
 |---|---|
-| spell skins, kill / level-up / rare-loot effects, emotes, loot labels, chat colours, footprints, outlines, Chaos outfit shaders | the account's `chaos_cosmetics` rows, live (`ChaosCosmetics.ownedOf`) |
+| spell skins, kill / level-up / rare-loot effects, loot labels, chat colours, footprints, outlines, Chaos outfit shaders | the account's `chaos_cosmetics` rows, live (`ChaosCosmetics.ownedOf`) |
 | outfits and addons, mounts, wings, auras, shaders | `ChaosWardrobe.list` of the character (`o` set); prices by client look from the store offers, mounts by `clientid`, wings and auras by XML id through the wardrobe catalogue |
 | name plate frames | the store's frame storages (`ChaosShopCore.frameStorage`) |
 | titles | `ChaosTitles.of` (the "collection" titles and staff are left out) |
@@ -6173,7 +6173,7 @@ go as `tryfx`). Nobody else sees any of it and nothing is granted.
 | Offer kind | Try on |
 |---|---|
 | outfits, addons, mounts, wings, auras, shaders, Chaos shaders, outlines, footprints | in the look preview on the own character; footprints and outlines also on the map (`tryfx`) |
-| spell skins, kill effects, level-up effects, rare-loot effects, victory emotes | the effect in the look preview and round the character on the map (server `preview`) |
+| spell skins, kill effects, level-up effects, rare-loot effects | the effect in the look preview and round the character on the map (server `preview`); a rare-loot effect plays over a loot bag beside the figure (O564) |
 | bundles | in the look preview when a part is worn |
 | name plate frames | on the player's own name plate on the map for 10 s, this client only (client `game_nameplate` `previewFrame`, nothing is sent), then the real plate is back; a bundle with a plate part too. Without `game_nameplate` the offer keeps its icon and the preview prints a note |
 | chat colours, loot label accents | no: the row's title shows the colour or the accent |
@@ -6193,25 +6193,46 @@ the walking trail, so no second trail was added. New, in the Cosmetics group of 
 |---|---|---|---|
 | Level-up effects (5) | a chaos_vfx effect on the character when it gains a level | 150 to 250 | once per 4 s per character |
 | Rare loot effects (5) | an effect on the corpse when the character's kill drops a Legendary item or better (the corpse owner) | 150 to 250 | once per 3 s per character |
-| Victory emotes (5) | an effect on the character and a line over its head after a boss kill (the killer, the most damage dealer and their party members within 12 tiles, at most 5) | 200 to 250 | once per 30 s per character |
 
 Prices: Dawn / Ember / Frost Ascent 200, Verdant Ascent 150, Void Ascent 250; Gilded Glint, Crimson Gleam 200, Starfall
-Find, Royal Pyre 250, Holy Seal Find 150; Victory Roar, Warrior's Salute, Shadow Bow 200, Ember Flourish, Halo of Triumph 250.
+Find, Royal Pyre 250, Holy Seal Find 150. (The five Victory Emotes of 200 to 250 were removed on 2026-11-14, O564: see "Victory emotes removed" below.)
 The effects are existing `chaos_vfx.lua` effects sent to every spectator of the tile (`Vfx`), so players nearby see them.
-The server sends no number and does no work per step. Storages 7102002 (level-up), 7102003 (rare loot), 7102004 (emote) in
-the wardrobe block. Hooks: a `CreatureEvent` `onAdvance` (`ChaosCosmeticsAdvance`), an `EventCallback.onDropLoot` at index 2.5
+The server sends no number and does no work per step. Storages 7102002 (level-up), 7102003 (rare loot) in
+the wardrobe block (7102004 was the emote: reserved, never reused). Hooks: a `CreatureEvent` `onAdvance` (`ChaosCosmeticsAdvance`), an `EventCallback.onDropLoot` at index 2.5
 (after the loot layer and the achievements scan, before the autoloot) and the monster death event cosmetics.lua already
-registers on every monster. The window has three more tabs (Level-ups, Rare Loot, Emotes) with the same Preview button.
-The emote line is translated per viewer (2026-10-29): `Chaos.yell(player, line, TALKTYPE_MONSTER_SAY)` lists the players in speech range and
-sends each one `Creature:say(text, type, false, viewer, position)` in that viewer's language (`ChaosI18n`, `i18n_strings.lua`: the five lines have
-pt-BR texts, `tests/cosmetics_test.lua` checks it). While every viewer reads English it is the plain `say` of before.
+registers on every monster. The window has two more tabs (Level-ups, Rare Loot) with the same Preview button.
 
 **Tests.** `tests/collection_test.lua` (points from prices and sources, the score with the title cap, the catalogue maps,
 milestones due and next, the view, the validator refusals, `collection.lua` on a mocked engine: login sweep, claiming once,
 the cosmetic reward, staff, two characters of one account, rows read back, the title source, the hooks), `tests/cosmetics_test.lua`
-(the new kinds: throttle, rarity check, emote wearers, the level-up, rare-drop and victory paths, prices 150-250), client
+(the new kinds: throttle, rarity check, the level-up, rare-drop and victory paths, prices 150-250), client
 `game_shop/tryon_test.lua`, `game_cosmetics/cosmeticslogic_test.lua`, `game_lookpreview/lookpreview_core_test.lua`.
 **Not run in game.**
+
+### Victory emotes removed (O564)
+Owner, 2026-11-14 (pt-BR, translated): "the victory emotes make no sense, you can take them out". The five emote cosmetics (Victory
+Roar 801, Warrior's Salute 802, Ember Flourish 803, Halo of Triumph 804, Shadow Bow 805; 200 to 250 coins) and the kind itself are gone from
+the store (`cosmetics_store.lua` / `shop_config.lua`), `cosmetics_config.lua` (`kinds`, `storage.emote`, `combat.emoteMs` / `range` /
+`maxPerKill`), `cosmetics_core.lua` (`emoteWearers`, `EMOTE_MAX`, the `say` rules), `cosmetics.lua` (the boss-death hook `M.victory`, the
+`emote` choice and cache), the collection groups, the five lines of `i18n_strings.lua`, the Pact's monthly shelf and the client tabs.
+- **Reserved, never reused.** `cosmetics_config.lua` `retired` keeps id, key and list price of the five; `K.validate` refuses a live
+  cosmetic with one of those ids or keys. Storage 7102004 (the chosen emote) stays reserved in the wardrobe block, nothing reads or
+  writes it.
+- **The Pact shelf.** `pact_config.lua` `marks.monthly` named two emotes: February is now Frost Ascent (`lvl_frost`, 200 Marks) and
+  November Ember Ascent (`lvl_ember`, 200 Marks), both store cosmetics of the same price.
+- **The refund** is `server/sql/chaos_zz_emote_removal.sql` (run by the install step `sql`, last of the files, like the soul pit's):
+  one transaction that pays and deletes together, so a failure pays nothing and a second run finds no row. Per owned row of the five keys
+  in `chaos_cosmetics`: `source` `store` gets the Chaos Coins back (the price of the last `chaos_shop_purchases` row of the offer
+  `unlock:cosmetic_<key>`, a sale price counts, else the list price) into `chaos_shop_coins`, with a refund row (`offer_key`
+  `refund:cosmetic_<key>`, negative price) in the purchase log so the sales dashboard shows the net and every refund can be found;
+  `source` `marks` gets the Marks back (balance + 200, at most the 100000 cap, `spent` - 200, a `chaos_pact_log` row `refund`); any other
+  source (a staff grant) pays nothing. Then the rows are deleted from `chaos_cosmetics` and storage 7102004 from `player_storage`.
+  Nothing runs unless all five tables exist (a fresh install is a no-op, the next run does the work). Run it with the server stopped
+  (the install does): a running server holds an account's cosmetics in memory. Tested on a private MariaDB (store, Marks and staff
+  rows, a sale price, the cap, a second run); `tests/cosmetics_removal_test.lua` holds the file to the `retired` list.
+  The collection score of an account that owned one drops by its points (the cosmetics are read live); milestones already claimed stay.
+- A rare-loot effect no longer shows the kill animation in the preview (the offer's look carries `lootfx`, not `killfx`; client
+  `game_lookpreview` plays it over a loot bag beside the figure, client/MANIFEST.md "Store cosmetics fixes (O564)").
 
 ## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
 

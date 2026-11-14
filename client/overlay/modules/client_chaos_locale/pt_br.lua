@@ -6510,7 +6510,6 @@ ChaosLocaleStrings['pt-BR'] = {
   -- collection score, try on, combat cosmetics (O318)
   ["Level-ups"] = "Subir de nível",
   ["Rare Loot"] = "Loot raro",
-  ["Emotes"] = "Emotes",
   ["Collection score: %d"] = "Pontos de coleção: %d",
   ["next reward at %d (%d to go)"] = "próximo prêmio com %d (faltam %d)",
   ["every reward earned"] = "todos os prêmios conquistados",
@@ -6533,7 +6532,6 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Titles"] = "Títulos",
   ["No effect when you gain a level."] = "Nenhum efeito ao subir de nível.",
   ["No effect when a kill drops a rare item."] = "Nenhum efeito quando um abate solta um item raro.",
-  ["No emote after a boss kill."] = "Nenhum emote depois de abater um boss.",
   ["TRY ON"] = "EXPERIMENTAR",
   ["Shows it on your character for 10 seconds. Only you see it. Nothing is bought."] = "Mostra no seu personagem por 10 segundos. Só você vê. Nada é comprado.",
   ["Average hit of your weapon's auto attack, with the bonuses of your passive tree. Wands, rods and fists have no attack hit."] = "Dano médio do ataque automático da sua arma, com os bônus da árvore passiva. Varinhas, cajados e punhos não têm esse golpe.",

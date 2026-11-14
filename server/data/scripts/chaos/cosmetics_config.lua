@@ -49,8 +49,9 @@ return {
 	storage = {killfx = 7100940, lootbeam = 7100941, chatcolor = 7100942, skinBase = 7100943,
 		-- footprints and outlines: the wardrobe block 7102000 - 7102049 (chaos_constants.lua Chaos.storage.wardrobe)
 		footprint = 7102000, outline = 7102001,
-		-- combat cosmetics others see (O318): the level-up effect, the rare-loot effect and the victory emote
-		levelfx = 7102002, rarefx = 7102003, emote = 7102004},
+		-- combat cosmetics others see (O318): the level-up effect and the rare-loot effect. 7102004 was the victory emote
+		-- (removed, O564): the key stays reserved, nothing reads or writes it, never reuse it
+		levelfx = 7102002, rarefx = 7102003},
 	staffGroup = 4, -- /cosmetic <character>, <key | all>[, revoke]
 	previewCooldownMs = 1500, -- a store / window preview (an effect only the asking player sees)
 	consoleBackground = "#1c1a18", -- chat colours must stay readable on this (contrast 4.5 or more)
@@ -66,24 +67,30 @@ return {
 		{key = "footprint", name = "Footprints", store = "Footprints"},
 		{key = "outline", name = "Outlines", store = "Outlines"},
 		{key = "levelfx", name = "Level-up Effects", store = "Level-up Effects"},
-		{key = "rarefx", name = "Rare Loot Effects", store = "Rare Loot Effects"},
-		{key = "emote", name = "Victory Emotes", store = "Victory Emotes"}
+		{key = "rarefx", name = "Rare Loot Effects", store = "Rare Loot Effects"}
 	},
 
-	-- Combat cosmetics others see (O318, cosmetics.lua). Visual only: an effect on a tile (and, for the emote, a line the
-	-- character says), sent to everyone who stands near, never a number. Throttled on the server per character and kind:
+	-- The cosmetics taken out of the game (O564, owner 2026-11-14: the Victory Emotes "do not make sense, take them
+	-- out"): id, key and the store list price stay here so their ids and keys are never reused and the refund
+	-- (server/sql/chaos_zz_emote_removal.sql, server/README.md "Victory emotes removed") is held to this list by
+	-- tests/cosmetics_removal_test.lua. Nothing else reads it.
+	retired = {
+		{id = 801, key = "emote_roar", kind = "emote", price = 200},
+		{id = 802, key = "emote_salute", kind = "emote", price = 200},
+		{id = 803, key = "emote_flourish", kind = "emote", price = 250},
+		{id = 804, key = "emote_halo", kind = "emote", price = 250},
+		{id = 805, key = "emote_shadow", kind = "emote", price = 200}
+	},
+
+	-- Combat cosmetics others see (O318, cosmetics.lua). Visual only: an effect on a tile, sent to everyone who stands
+	-- near, never a number. Throttled on the server per character and kind:
 	--   levelup  the effect of `levelfx` on the character's tile when it gains a level (once per levelMs)
 	--   rare     the effect of `rarefx` on the corpse's tile when the kill drops an item of `rarity` or better (the
 	--            data/lib/chaos_rarity.lua key), for the character that owns the corpse (once per rareMs)
-	--   emote    the effect and the line of `emote` after a boss kill, for the killer and the party members within
-	--            `range` tiles of the boss (once per emoteMs; at most `maxPerKill` characters per kill)
 	combat = {
 		levelMs = 4000,
 		rareMs = 3000,
-		rarity = "legendary",
-		emoteMs = 30000,
-		range = 12,
-		maxPerKill = 5
+		rarity = "legendary"
 	},
 
 	-- the pictures of the client (client/tools/gen_cosmeticfx_art.py -> game_cosmeticfx/images/prints|glows/<art>.png);
@@ -431,17 +438,6 @@ return {
 			name = "Holy Seal Find", desc = "A seal of light glows on the corpse when it drops a Legendary item or better."},
 		{id = 705, key = "rare_royal", kind = "rarefx", icon = 18414, source = "store", price = 250, vfx = "dome_blast_violet",
 			name = "Royal Pyre", desc = "A dome of violet fire rises over the corpse when it drops a Legendary item or better."},
-		-- victory emotes: after a boss kill, `vfx` on you and the line `say` over your head (cfg.combat.emoteMs apart)
-		{id = 801, key = "emote_roar", kind = "emote", icon = 2400, source = "store", price = 200, vfx = "aura_burst_red",
-			say = "Victory!", name = "Victory Roar", desc = "A red burst and a victory shout after you fell a boss."},
-		{id = 802, key = "emote_salute", kind = "emote", icon = 2392, source = "store", price = 200, vfx = "aura_burst_gold",
-			say = "For the fallen!", name = "Warrior's Salute", desc = "A golden burst and a salute for the fallen after you fell a boss."},
-		{id = 803, key = "emote_flourish", kind = "emote", icon = 2187, source = "store", price = 250, vfx = "ember_crown",
-			say = "Burn bright!", name = "Ember Flourish", desc = "A crown of embers and a flourish after you fell a boss."},
-		{id = 804, key = "emote_halo", kind = "emote", icon = 2145, source = "store", price = 250, vfx = "dawn_aegis",
-			say = "Glory!", name = "Halo of Triumph", desc = "A dome of golden light and a cry of glory after you fell a boss."},
-		{id = 805, key = "emote_shadow", kind = "emote", icon = 2150, source = "store", price = 200, vfx = "shade_vanish",
-			say = "Until next time.", name = "Shadow Bow", desc = "You fade in a puff of shadow with a farewell after you fell a boss."},
 
 		-- ------------------------------------------------------------------ the collection score rewards (O318,
 		-- collection_config.lua milestones; source "collection": granted once when the account reaches `collection`

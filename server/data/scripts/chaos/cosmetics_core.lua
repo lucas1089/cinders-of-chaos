@@ -7,14 +7,12 @@ ChaosCosmeticsCore = ChaosCosmeticsCore or {}
 local C = ChaosCosmeticsCore
 
 C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true, footprint = true, outline = true,
-	levelfx = true, rarefx = true, emote = true}
+	levelfx = true, rarefx = true}
 -- the kinds that are one chaos_vfx.lua effect (`vfx`) other players see: killfx on the killed monster, levelfx on the
--- character at a level up, rarefx on the corpse of a rare drop, emote on the character after a boss kill (cosmetics.lua)
-C.VFX_KINDS = {killfx = true, levelfx = true, rarefx = true, emote = true}
--- the longest line a victory emote says
-C.EMOTE_MAX = 32
+-- character at a level up, rarefx on the corpse of a rare drop (cosmetics.lua). The victory emote kind is gone (O564).
+C.VFX_KINDS = {killfx = true, levelfx = true, rarefx = true}
 -- the combat cosmetics others see (O318): sold at 150-250 coins
-C.COMBAT_KINDS = {levelfx = true, rarefx = true, emote = true}
+C.COMBAT_KINDS = {levelfx = true, rarefx = true}
 -- pvp: battleground.lua / arena_season.lua grant it; boss: a rare personal drop of a boss (exclusives.lua grants it)
 -- collection: granted once when the account's collection score reaches `collection` points (collection.lua)
 -- daily: granted once when the account's login streak reaches `days` (daily.lua, daily_config.lua milestones, O409)
@@ -233,24 +231,6 @@ function C.hasRare(rarities, minRank, rankOf)
 		end
 	end
 	return false
-end
-
--- The characters that show their victory emote after a boss kill: the killer first, then the others, each once, only
--- those with an emote chosen (wears(id) -> true) and within cfg.combat.range tiles (near(id) -> true), at most
--- cfg.combat.maxPerKill. ids = candidates in order (the killer, the most damage dealer, then party members).
-function C.emoteWearers(cfg, ids, wears, near)
-	local out, seen = {}, {}
-	local max = (cfg.combat or {}).maxPerKill or 5
-	for _, id in ipairs(ids or {}) do
-		if #out >= max then
-			break
-		end
-		if not seen[id] and wears(id) and near(id) then
-			out[#out + 1] = id
-		end
-		seen[id] = true
-	end
-	return out
 end
 
 -- ---------------------------------------------------------------- colours
@@ -483,7 +463,7 @@ end
 -- What the store shows for a cosmetic unlock "cosmetic_<key>": its own appearance, in the shape of the client's look
 -- options (client game_lookpreview LookPreviewCore), used for the offer's icon and the preview beside the list:
 --   outline    {kind = "outline", art, pulse?, color?}            footprint {kind = "footprint", art, color?}
---   spell skin / kill effect  {kind = "effects", play, killfx?}   (play: playRows, the effects themselves)
+--   spell skin / kill effect / rare-loot effect  {kind = "effects", play, killfx?, lootfx?}   (play: playRows, the effects)
 --   chat colour / loot label  {kind = "swatch", color, accent?}   (a sample of the colour; nothing to wear)
 --   outfit shader             {kind = "shader", shader}
 -- nil for an unknown unlock. lookup(type, name) is the one of C.playRows.
@@ -497,8 +477,9 @@ function C.offerLook(cfg, unlockName, lookup)
 		elseif c.kind == "spellskin" or C.VFX_KINDS[c.kind] then
 			local play = lookup and C.playRows(c, lookup) or {}
 			if #play > 0 then
-				-- a kill effect and a rare-loot effect play on a troll that dies; the others on the figure
-				return {kind = "effects", play = play, killfx = (c.kind == "killfx" or c.kind == "rarefx") or nil}
+				-- a kill effect plays on a troll that dies, a rare-loot effect over a loot bag beside the figure (O564: it
+				-- showed the kill animation before); the others on the figure
+				return {kind = "effects", play = play, killfx = c.kind == "killfx" or nil, lootfx = c.kind == "rarefx" or nil}
 			end
 		elseif c.kind == "chatcolor" then
 			return c.color and {kind = "swatch", color = c.color} or nil
@@ -707,12 +688,25 @@ function C.validate(cfg, opts)
 			bad("line %s: slot 0..6", l.key)
 		end
 	end
+	-- retired cosmetics (O564): their ids and keys stay reserved, a new cosmetic never takes one
+	local retiredIds, retiredKeys = {}, {}
+	for _, r in ipairs(cfg.retired or {}) do
+		if type(r.id) ~= "number" or type(r.key) ~= "string" or type(r.price) ~= "number" or r.price <= 0 then
+			bad("retired %s: id, key and the list price are needed", tostring(r.key))
+		end
+		retiredIds[r.id or -1], retiredKeys[r.key or "?"] = true, true
+	end
 	for i, c in ipairs(cfg.cosmetics or {}) do
 		local w = "cosmetic " .. tostring(c.key or i)
 		if type(c.id) ~= "number" or c.id < 1 or c.id % 1 ~= 0 then
 			bad("%s: id must be a whole number above 0", w)
 		elseif ids[c.id] then
 			bad("%s: id %d used twice", w, c.id)
+		elseif retiredIds[c.id] then
+			bad("%s: id %d belongs to a retired cosmetic (never reused)", w, c.id)
+		end
+		if retiredKeys[c.key or "?"] then
+			bad("%s: key belongs to a retired cosmetic (never reused)", w)
 		end
 		ids[c.id or -1] = true
 		if type(c.key) ~= "string" or not c.key:match("^[%w_]+$") or #c.key > 40 then
@@ -852,12 +846,8 @@ function C.validate(cfg, opts)
 			elseif catalog.vfx and not catalog.vfx[c.vfx] then
 				bad("%s: %s is not an effect of the client pair", w, c.vfx)
 			end
-			if c.kind == "emote" then
-				if type(c.say) ~= "string" or c.say == "" or #c.say > C.EMOTE_MAX or c.say:find("[%c|]") then
-					bad("%s: say is a line of 1 to %d characters", w, C.EMOTE_MAX)
-				end
-			elseif c.say ~= nil then
-				bad("%s: say is only for emotes", w)
+			if c.say ~= nil then
+				bad("%s: say was only for the retired emotes (O564)", w)
 			end
 		elseif c.kind == "lootbeam" then
 			local r, g, b, a = hex(c.accent)

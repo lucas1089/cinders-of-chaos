@@ -96,6 +96,22 @@ local function wingShift(outfit)
   return ok and tonumber(s) or 0
 end
 
+-- the shift {x, y} base patch 0200 gives a head accessory worn on this body (the piece was fitted to look 128), facing
+-- south, in sprite px at 1x; nil without the patch or its table (the module client_chaos_wingfit hands it over as
+-- WingFit.headShift(outfit) or HeadFit.shift(outfit): whichever exists is asked, nothing else is assumed)
+local function auraShift(outfit)
+  if num(outfit.aura) <= 0 then return nil end
+  local m = modules.client_chaos_wingfit
+  if not m then return nil end
+  local fn = (m.WingFit and m.WingFit.headShift) or (m.HeadFit and m.HeadFit.shift)
+  if type(fn) ~= 'function' then return nil end
+  local ok, x, y = pcall(fn, outfit)
+  if not ok then return nil end
+  if type(x) == 'table' then return { x = tonumber(x.x) or 0, y = tonumber(x.y) or 0 } end
+  if tonumber(x) then return { x = tonumber(x), y = tonumber(y) or 0 } end
+  return nil
+end
+
 local function figureOf(outfit)
   local Core, anchors = charselect()
   local mounted = num(outfit.mount) > 0
@@ -110,7 +126,7 @@ end
 
 -- the box of everything the engine draws of an outfit (LookPreviewCore.lookBox), for the panel's centring
 local function boxOf(outfit)
-  local ok, b = pcall(P.lookBox, outfit, anchorOf, thingInfo, wingLift(), wingShift(outfit))
+  local ok, b = pcall(P.lookBox, outfit, anchorOf, thingInfo, wingLift(), wingShift(outfit), auraShift(outfit))
   return ok and b or P.copy(P.FALLBACK_BOX)
 end
 
@@ -413,9 +429,11 @@ function Preview:startFx(opt)
   local scene = P.sceneOf(opt)
   self.fx = { timeline = P.timeline(play, side, phasesOf, scene), holders = {}, started = g_clock.millis(),
     hasStock = hasStock, scene = scene, play = play, sizeOf = sizeOf }
-  -- the troll: alone in a kill scene, facing the player in a spell scene
+  -- the troll: alone in a kill scene, facing the player in a spell scene; none in a rare-loot scene (a loot bag instead)
   local tw = targetWidget(self)
-  if tw then
+  if tw and scene.loot then
+    tw:setVisible(false)
+  elseif tw then
     pcall(tw.setOutfit, tw, { type = P.TROLL })
     tw:setDirection(scene.kill and P.SOUTH or P.WEST)
     tw:setAnimate(false)
@@ -428,7 +446,7 @@ end
 -- the scene's extent (in tiles) with the boxes of its creatures
 function Preview:fxExtent()
   local fx = self.fx
-  local boxes = { target = boxOf({ type = P.TROLL }) }
+  local boxes = { target = fx.scene.loot and P.LOOT_BOX or boxOf({ type = P.TROLL }) }
   if fx.scene.caster then boxes.caster = self.box end
   return P.fxExtent(fx.play, fx.sizeOf, fx.scene, boxes)
 end
@@ -459,6 +477,28 @@ function Preview:drawSteps(art, prints)
     w:setRotation(f.rotation)
     w:setOpacity(f.opacity)
   end
+end
+
+-- a rare-loot effect's scene (O564): the loot bag on its tile, under the effect (the fxUnder layer), tagged so a ground
+-- effect in the same layer is left alone
+local BAG_ID = 'lootbag'
+function Preview:drawLootBag(L)
+  local st = self.widget.stage
+  for _, c in ipairs(st.fxUnder:getChildren()) do
+    if c:getId() == BAG_ID then c:destroy() end
+  end
+  local scene = self.fx and self.fx.scene
+  if not (scene and scene.loot) then return end
+  local bag = g_ui.createWidget('UIItem', st.fxUnder)
+  bag:setId(BAG_ID)
+  bag:setPhantom(true)
+  bag:setVirtual(true)
+  bag:setItemId(P.LOOT_BAG)
+  bag:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  bag:addAnchor(AnchorTop, 'parent', AnchorTop)
+  bag:setSize({ width = L.T, height = L.T })
+  bag:setMarginLeft(L.tileX + scene.target.x * L.T)
+  bag:setMarginTop(L.tileY + scene.target.y * L.T)
 end
 
 -- the stage's sample (a loot label over a loot bag beside the feet, a chat line near the head, a name plate over it):
@@ -667,6 +707,7 @@ function Preview:relayout()
   self.layout = L
   self.widget.controls.zoomLabel:setText(L.scale .. 'x')
   if self.steps then self:drawSteps(self.steps, prints) end
+  self:drawLootBag(L)
   self:drawSample(L, W, H)
 end
 
@@ -702,10 +743,10 @@ function Preview:refresh()
     if fxKey then
       self:startFx(fxOpt)
       self.fx.compare = settings.compare
-      -- a spell scene: the player faces the troll
-      if not self.fx.scene.kill then self.dir = P.EAST end
+      -- a spell scene: the player faces the troll (a kill and a rare-loot scene: south)
+      if not self.fx.scene.kill and not self.fx.scene.loot then self.dir = P.EAST end
     else
-      if self.fx and not self.fx.scene.kill then self.dir = P.SOUTH end -- back from a spell scene
+      if self.fx and not self.fx.scene.kill then self.dir = P.SOUTH end -- back from a spell or rare-loot scene
       self:stopFx()
     end
     cw:setDirection(self:face(outfit))

@@ -48,7 +48,8 @@ end
 --   { kind = 'subject', look = id }                  something that is not worn: a pet, drawn alone
 --   { kind = 'bundle', parts = {option, ...} }       a store bundle: every part on the character, in order (outfit,
 --                                                    mount, wings, aura, shader, an outline, an effect)
---   { kind = 'effects', play, killfx }               a spell skin / kill effect, played on the stage (fromPlayRow)
+--   { kind = 'effects', play, killfx, lootfx }       a spell skin / kill effect / rare-loot effect, played on the stage (fromPlayRow):
+--                                                    killfx on a troll that dies, lootfx over a loot bag beside the figure (O564)
 --   { kind = 'footprint', art }                      prints behind the walking figure
 --   { kind = 'lootlabel', accent }                   a loot label sample on the stage (accent: its background colour, nil = stock)
 --   { kind = 'chatcolor', color }                    a chat line sample on the stage (color: the name's colour, nil = stock)
@@ -166,7 +167,8 @@ function P.fromStoreLook(l, depth)
   elseif k == 'footprint' then
     return name(l.art) and { kind = 'footprint', art = l.art } or nil
   elseif k == 'effects' then
-    return type(l.play) == 'table' and #l.play > 0 and { kind = 'effects', play = l.play, killfx = l.killfx == true or nil } or nil
+    return type(l.play) == 'table' and #l.play > 0
+      and { kind = 'effects', play = l.play, killfx = l.killfx == true or nil, lootfx = l.lootfx == true or nil } or nil
   elseif k == 'nameplate' then
     return name(l.frame) and { kind = 'nameplate', frame = l.frame } or nil
   elseif k == 'swatch' then
@@ -346,7 +348,7 @@ end
 -- quarter (client_chaos_charselect/charselect_core.lua, "UICreature draws a creature ..."). The list cards place a
 -- figure (fx, fy: the feet; top, left, right: the reach), CharSelectCore.figure's, from the sprite anchors of the
 -- pair: the centre of the feet goes where the feet should stand (client/MANIFEST.md "Where a character stands"); the
--- panel itself centres the drawn picture's box (below). P.FALLBACK, when that
+-- panel itself centres the figure's box (below). P.FALLBACK, when that
 -- module is absent: a 2x2 player look with displacement 8, its feet where CharSelectCore.FEET_FALLBACK puts them
 -- (the test checks both agree), the bounds of stock look 128.
 P.FALLBACK = { fx = 12, fy = 19, top = -22, left = -13, right = 24, hover = 0 }
@@ -368,7 +370,8 @@ end
 
 -- ---------------------------------------------------------------- the drawn picture's box
 -- The panel draws every look at one zoom, P.SCALE (owner, 2026-10-20: "make them all the size of this one", a 2x
--- look), and centres the box of everything the engine draws (body with its addons, mount, wings, aura) in the stage.
+-- look), and centres the figure (the body with its addons and its mount) in the stage; the box of everything the engine
+-- draws (adding wings, aura) is kept for what must clear it all.
 -- The box is in sprite pixels from the top left of the creature's own tile, as Outfit::draw (1098 profile) places
 -- each part, facing south:
 --   * a part's own box: the pixel bounds of the pair (CharSelectAnchors: top, left, right; first south frame, every
@@ -384,7 +387,11 @@ end
 --   * an aura with two layers (GameAuraFrontAndBack: layer 0 behind the body, layer 1 over it; the head accessories
 --     and capes of pair 33) counts the tiles of both layers, not the anchors (they measure layer 0 only).
 -- anchorOf(id) -> {fx, fy, top, left, right} or nil; infoOf(id) -> {w, h, dx, dy, layers, px, py, pz, phases,
--- sprites} or nil (any field may be missing). Returns {left, top, right, bottom, fx, fy} (fx, fy: the feet).
+-- sprites} or nil (any field may be missing). Returns {left, top, right, bottom, fx, fy, core} (fx, fy: the feet; core:
+-- the box of the figure alone, the body with its mount, without wings and aura).
+-- The figure is what the stage centres (O564, owner: "some effects in the preview lift the character"): an aura, wings
+-- or a cape never move it, they are clipped by the stage when they reach past it. The box of everything drawn
+-- (`left` .. `bottom`) stays for what must clear the whole picture (the sample lines, the effect scene's extent).
 P.SCALE = 2
 P.RIDER_SEAT = 10
 P.BELOW_GROUND = 5 -- sprite px a part's art reaches below the anchors' ground row (pair 30: 128, 1221, 1213, 1338)
@@ -465,18 +472,29 @@ local function partBox(anchor, info, z, addons, ox, oy, allLayers)
     fy = b.fy + oy }
 end
 
-function P.lookBox(outfit, anchorOf, infoOf, lift, wingShift)
+-- wingShift: the x shift of base patch 0193 on the wings; auraShift {x, y} (optional): the shift base patch 0200 gives a head
+-- piece (an aura of the head accessory set) so it sits on this body's head: its box moves by it (O564, owner: the head
+-- accessories sit off the head in the store preview). Both come from the module client_chaos_wingfit when it has them.
+function P.lookBox(outfit, anchorOf, infoOf, lift, wingShift, auraShift)
   if type(outfit) ~= 'table' then return copy(P.FALLBACK_BOX) end
   local function A(id) return anchorOf and num(id) > 0 and anchorOf(num(id)) or nil end
   local function I(id) return infoOf and num(id) > 0 and infoOf(num(id)) or nil end
-  local box
-  local function add(b)
+  local box, core
+  local function add(b, isCore)
     if not b then return end
     if not box then
       box = { left = b.left, top = b.top, right = b.right, bottom = b.bottom }
     else
       box.left, box.top = math.min(box.left, b.left), math.min(box.top, b.top)
       box.right, box.bottom = math.max(box.right, b.right), math.max(box.bottom, b.bottom)
+    end
+    if isCore then
+      if not core then
+        core = { left = b.left, top = b.top, right = b.right, bottom = b.bottom }
+      else
+        core.left, core.top = math.min(core.left, b.left), math.min(core.top, b.top)
+        core.right, core.bottom = math.max(core.right, b.right), math.max(core.bottom, b.bottom)
+      end
     end
   end
   local l = num(outfit.wings) > 0 and num(lift) or 0
@@ -489,12 +507,12 @@ function P.lookBox(outfit, anchorOf, infoOf, lift, wingShift)
     local mdx, mdy = signed(mi and (mi.dx or mi.dispX)), signed(mi and (mi.dy or mi.dispY))
     if mdx >= 0 and mdy >= 0 then ox, oy = ox - mdx, oy - mdy end
     local mb = partBox(A(outfit.mount), mi, 0, 0, ox, oy)
-    add(mb)
+    add(mb, true)
     feet = mb
     seat = P.RIDER_SEAT
   end
   local rb = partBox(A(outfit.type), bodyInfo, 0, outfit.addons, ox, oy - seat)
-  add(rb)
+  add(rb, true)
   feet = feet or rb
   if num(outfit.wings) > 0 then
     add(partBox(A(outfit.wings), I(outfit.wings), mounted and 1 or 0, 0, num(wingShift), mounted and -6 or 0)) -- wingShift: base patch 0193
@@ -503,22 +521,32 @@ function P.lookBox(outfit, anchorOf, infoOf, lift, wingShift)
     local ai = I(outfit.aura)
     local aw, ah = max1(ai and ai.w), max1(ai and ai.h)
     local front = ai ~= nil and num(ai.layers) >= 2
-    add(partBox(not front and A(outfit.aura) or nil, ai, mounted and 1 or 0, 0, -l + (aw - 1) * 16,
-      -l + (ah - 1) * 16, front))
+    local ash = type(auraShift) == 'table' and auraShift or {}
+    add(partBox(not front and A(outfit.aura) or nil, ai, mounted and 1 or 0, 0, -l + (aw - 1) * 16 + num(ash.x),
+      -l + (ah - 1) * 16 + num(ash.y), front))
   end
   if not box then return copy(P.FALLBACK_BOX) end
   box.fx = feet and feet.fx or (box.left + box.right) / 2
   box.fy = feet and feet.fy or box.bottom
+  box.core = core
   return box
 end
 
--- the whole layout for a stage of w x h: always P.SCALE, the box's centre on the stage's centre. Returns scale, T, the
+-- the box the stage centres: the figure alone (box.core), else the whole box (a table without a core)
+local function centreBox(box)
+  return type(box.core) == 'table' and box.core or box
+end
+P.centreBox = centreBox
+
+-- the whole layout for a stage of w x h: always P.SCALE, the centre of the figure's box (the body with its mount, no
+-- wings, no aura: P.lookBox `core`) on the stage's centre. Returns scale, T, the
 -- UICreature rect (x, y, size) and where the feet are drawn (feetX, feetY)
 function P.layout(box, w, h)
   box = box or P.FALLBACK_BOX
   local s = P.SCALE
   local T = 32 * s
-  local cx, cy = (box.left + box.right) / 2, (box.top + box.bottom) / 2
+  local cb = centreBox(box)
+  local cx, cy = (cb.left + cb.right) / 2, (cb.top + cb.bottom) / 2
   local x = math.floor(w / 2 - (cx + 32) * s + 0.5)
   local y = math.floor(h / 2 - (cy + 32) * s + 0.5)
   local fx, fy = box.fx or cx, box.fy or box.bottom
@@ -530,7 +558,7 @@ end
 -- sprite px, 22 x 8 in shape. Returns x, y, w, h in stage px
 P.SHADOW_MIN, P.SHADOW_MAX = 22, 60
 function P.shadowRect(L, box)
-  box = box or P.FALLBACK_BOX
+  box = centreBox(box or P.FALLBACK_BOX)
   local sw = math.max(P.SHADOW_MIN, math.min(P.SHADOW_MAX, (box.right - box.left) * 0.6))
   local w = math.floor(sw * L.scale + 0.5)
   local h = math.floor(sw * 8 / 22 * L.scale + 0.5)
@@ -605,10 +633,18 @@ P.KILL_LEAD = 600
 P.FADE_MS = 350
 P.EAST, P.WEST = 1, 3
 
--- the scene of an effects option: {kill, caster = {x, y} or nil, target = {x, y}}
+-- Rare-loot effects (O564): the figure stands on (0, 0) facing south and a loot bag lies on the tile P.LOOT_AT east of
+-- it (the corpse of the kill); every step plays on the bag's tile, the loop starts over after P.FX_PAUSE.
+P.LOOT_AT = 1
+P.LOOT_BOX = { left = 0, top = 0, right = 32, bottom = 32 } -- the bag: one tile, in sprite px from its tile's top left
+
+-- the scene of an effects option: {kill, loot, caster = {x, y} or nil, target = {x, y}}
 function P.sceneOf(opt)
   if type(opt) == 'table' and opt.killfx == true then
     return { kill = true, target = { x = 0, y = 0 } }
+  end
+  if type(opt) == 'table' and opt.lootfx == true then
+    return { kill = false, loot = true, caster = { x = 0, y = 0 }, target = { x = P.LOOT_AT, y = 0 } }
   end
   return { kill = false, caster = { x = 0, y = 0 }, target = { x = P.TARGET_AT, y = 0 } }
 end
@@ -622,7 +658,7 @@ P.TARGET_WORDS = { 'explosion', 'lightning', 'strike', 'impact', 'hit', 'punch',
 function P.landsOn(spec, hasMissile, scene)
   if type(spec) ~= 'table' then return 'target' end
   if spec.m then return 'missile' end
-  if type(scene) == 'table' and (scene.kill or not scene.caster) then return 'target' end
+  if type(scene) == 'table' and (scene.kill or scene.loot or not scene.caster) then return 'target' end
   if hasMissile then return 'target' end
   local n = type(spec.n) == 'string' and spec.n:lower() or ''
   for _, w in ipairs(P.TARGET_WORDS) do
@@ -1132,8 +1168,9 @@ end
 -- the option of a Cosmetics row for the stage: {kind = 'effects', play} for a row with effects
 function P.fromPlayRow(r)
   if type(r) ~= 'table' or type(r.play) ~= 'table' or #r.play == 0 then return nil end
-  -- a kill effect and a rare-loot effect play on a troll that dies; the others on the figure itself
-  return { kind = 'effects', play = r.play, killfx = (r.kind == 'killfx' or r.kind == 'rarefx') or nil }
+  -- a kill effect plays on a troll that dies, a rare-loot effect over a loot bag beside the figure (O564: it showed the
+  -- kill animation before); the others on the figure itself
+  return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil, lootfx = r.kind == 'rarefx' or nil }
 end
 
 return P

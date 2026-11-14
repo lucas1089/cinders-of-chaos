@@ -331,7 +331,7 @@ local CATEGORY = {
 	["Chaos Pact"] = true, ["Storage & Slots"] = true, ["Season Pass"] = true, ["Premium Time"] = true, ["Pacto Completo"] = true,
 	["Spell Effects"] = true, ["Kill Effects"] = true, ["Loot Labels"] = true, ["Chat Colours"] = true, ["Appearances"] = true,
 	["Footprints"] = true, ["Outlines"] = true, -- cosmetics.lua: looks only
-	["Level-up Effects"] = true, ["Rare Loot Effects"] = true, ["Victory Emotes"] = true, -- cosmetics.lua (O318): effects only
+	["Level-up Effects"] = true, ["Rare Loot Effects"] = true, -- cosmetics.lua (O318): effects only
 	["Hideout Decorations"] = true, -- hideout_store.lua: looks only
 	["Depot Tabs"] = true, -- depot_config.lua: account room (service pactExtra, as Storage & Slots), while sold
 	["Themed Sets"] = true, -- chaos_theme_art.lua appearance sets (weekly rotation only): looks only

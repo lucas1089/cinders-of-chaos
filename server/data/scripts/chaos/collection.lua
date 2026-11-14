@@ -4,7 +4,7 @@
 --
 -- Counted, from data that already exists (nothing is listed by hand):
 --   cosmetics   the chaos_cosmetics unlocks of the account (cosmetics.lua): spell skins, kill / level-up / rare-loot
---               effects, emotes, loot labels, chat colours, footprints, outlines
+--               effects, loot labels, chat colours, footprints, outlines
 --   wardrobe    outfits and addons, mounts, wings, auras, shaders the character owns (wardrobe.lua); a character that
 --               owns everything by its group counts none of it
 --   frames      the name plate frames the character owns (the store's frame storages)
