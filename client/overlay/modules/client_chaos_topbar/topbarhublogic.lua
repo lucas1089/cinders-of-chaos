@@ -88,7 +88,8 @@ function H.build(tree, cards, items, opts)
         text = base, shown = item.text, key = item.key, count = count,
         locked = item.status == 'locked' and (item.level or 0) or nil,
         new = item.status == 'open' and item.isNew == true,
-        points = (item.status == 'open' and (tonumber(item.points) or 0) > 0) and math.floor(tonumber(item.points)) or nil,
+        points = item.status == 'open' and (item.points == '!' and '!'
+          or ((tonumber(item.points) or 0) > 0 and math.floor(tonumber(item.points)) or nil)) or nil,
       }
       if at then
         local def = cards.CARDS[slotText] or {}

@@ -724,7 +724,8 @@ end
 -- Passive Tree card shows the unspent passive points (game_passivetree keeps the last sendPoints in getTreeFreePoints;
 -- the client asks the server for it with the same requestPoints the tree window sends, see askCardPoints)
 local CARD_POINTS = {
-  ['Passive Tree'] = { module = 'game_passivetree', fn = 'getTreeFreePoints' },
+  -- a trial open (O559, trialsAvailableCount) shows "!" when no point is waiting
+  ['Passive Tree'] = { module = 'game_passivetree', fn = 'getTreeFreePoints', flag = 'trialsAvailableCount' },
 }
 
 local function cardPoints(text)
@@ -734,7 +735,13 @@ local function cardPoints(text)
   if type(fn) ~= 'function' then return nil end
   local ok, n = pcall(fn)
   n = ok and tonumber(n) or nil
-  return n and n > 0 and math.floor(n) or nil
+  if n and n > 0 then return math.floor(n) end
+  local flag = def.flag and rawget(m, def.flag)
+  if type(flag) == 'function' then
+    local fok, f = pcall(flag)
+    if fok and (tonumber(f) or 0) > 0 then return '!' end
+  end
+  return nil
 end
 
 -- asks the modules that count a card's number for a fresh one (the server answers on the module's own opcode and the

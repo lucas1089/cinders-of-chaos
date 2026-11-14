@@ -261,6 +261,10 @@ items[#items].points = 120
 Hub.layoutBar(panel)
 for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Skills' then skills = c end end
 eq(skills.byId.count.text, '99+', 'the open hub follows a change, 99+ past 99')
+items[#items].points = '!'
+Hub.layoutBar(panel)
+for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Skills' then skills = c end end
+eq(skills.byId.count.text, '!', 'a mark instead of a number shows as it is (an open trial, O559)')
 items[#items].points = nil
 Hub.layoutBar(panel)
 for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Skills' then skills = c end end

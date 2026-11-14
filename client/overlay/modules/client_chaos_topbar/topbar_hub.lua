@@ -233,10 +233,14 @@ local function buildCard(parent, card, index, cardH)
     lockText:setVisible(true)
   end
   -- the red square on the corner of the glyph badge: the applications waiting (Party Finder) or the unspent passive points
-  local n = (card.count and card.count > 0 and card.count) or (card.points and card.points > 0 and card.points) or nil
+  local function shown(v)
+    if type(v) == 'string' then return v ~= '' and v or nil end
+    return v and v > 0 and v or nil
+  end
+  local n = shown(card.count) or shown(card.points)
   if n then
     local c = get(w, 'count')
-    c:setText(n > 99 and '99+' or tostring(n))
+    c:setText(type(n) == 'string' and n or (n > 99 and '99+' or tostring(n)))
     c:setWidth(math.max(16, c:getTextSize().width + 8))
     c:setVisible(true)
   end

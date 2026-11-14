@@ -128,6 +128,11 @@ local function updateAvailability()
     for fn in pairs(listeners) do
       pcall(fn, count, picks)
     end
+    -- the Passive Tree card of the hub menu shows "!" while a trial is open
+    local top = modules and modules.client_chaos_topbar
+    if top and top.ChaosTopBar and top.ChaosTopBar.refresh then
+      pcall(top.ChaosTopBar.refresh)
+    end
   end
 end
 

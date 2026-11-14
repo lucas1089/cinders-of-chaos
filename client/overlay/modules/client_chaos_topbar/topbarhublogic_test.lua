@@ -169,5 +169,7 @@ local full = { hubs = { { id = 'hero' }, { id = 'hunt' }, { id = 'adventure' }, 
 eq(H.barWidth(H.barItems(full, { {}, {}, {} }), 32) <= 420, true, 'six hubs and three pins stay in 420 px')
 local pm = H.build(T, C, { item('Passive Tree', { category = 'character', points = 3 }), item('Skills', { category = 'character', points = 0 }) }, {})
 eq(H.findCard(pm, 'Passive Tree').points, 3, 'a card takes the points its module counts'); eq(H.findCard(pm, 'Skills').points, nil, 'zero points: no badge')
+local pt = H.build(T, C, { item('Passive Tree', { category = 'character', points = '!' }) }, {})
+eq(H.findCard(pt, 'Passive Tree').points, '!', 'an open trial with no point waiting: the card keeps "!" (O559)')
 
 print('topbarhublogic_test: ' .. n .. ' checks ok')
