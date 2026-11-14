@@ -9,6 +9,14 @@ As Brasas levaram os Guardiões da Vigília Cinzenta um a um. Quem sai vivo do t
 
 São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.
 
+## Itens de quest e grupo
+
+Os itens das etapas de coleta são de verdade, não um contador. Cada um é um item do jogo (um stock item, como uma presa ou uma engrenagem) com nome, descrição e marca próprios, feito para o personagem que o recebeu. Ele cai no saco de saque do monstro morto quando o personagem é o dono do saque, senão vai direto para a mochila (e, com a mochila cheia, para a caixa de correio). Não pode ser vendido, jogado fora, colocado no mercado nem empilhado com uma cópia comum do mesmo item, e o item de outro personagem não conta. A etapa de coleta conta os itens que o personagem carrega. Quem perdeu algum é avisado pela Guardiã Ysolde na etapa de entrega, e o item volta a cair dos mesmos monstros (a regra da garantia ainda vale: depois de muitas mortes sem queda, a próxima derruba).
+
+Quem estava no meio de uma etapa de coleta antes dessa mudança recebe, uma vez, os itens que o contador já tinha contado. Uma etapa de entrega aberta na regra antiga é aceita sem itens.
+
+Uma morte conta para quem deu o golpe final, para quem causou mais dano e para os membros do grupo deles que estão no mesmo andar, a até 30 casas: quem causou dano conta sempre, quem não causou conta quando a experiência compartilhada do grupo está funcionando. Cada membro na etapa certa (nível da etapa atingido) conta a morte, ou rola a queda do item para si, e o item vai para quem rolou.
+
 ## Capítulo 1: Nascido das Brasas (níveis 8 a 14)
 
 *Abertura:* As Brasas levaram os Guardiões um a um, e quem sai vivo do templo é chamado de nascido das brasas. A Guardiã Ysolde oferece o Juramento: uma caminhada pelo reino, um voto de cada vez.
@@ -45,13 +53,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 1.6 Colete 6 Presas de Troll (nível 8)
 
-- Objetivo: Colete 6 Presas de Troll (monstros: Troll).
+- Objetivo: Colete 6 Presas de Troll (monstros: Troll). Item de quest: Presa de Troll, o stock item 8614 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: Trolls carregam presas que a Vigília paga bem. Elas só caem enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Presas inteiras. Leve-as à Ysolde.
 
 ### 1.7 Mostre as presas à Ysolde (nível 8)
 
-- Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
+- Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Volte à Guardiã Ysolde e diga "juramento" para entregar as presas.
 - Conclusão (Ysolde): Servem. A Vigília paga o que deve: aqui está.
 
@@ -133,13 +141,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 2.4 Colete 5 Cinzas de Túmulo (nível 15)
 
-- Objetivo: Colete 5 Cinzas de Túmulo (monstros: Ghoul).
+- Objetivo: Colete 5 Cinzas de Túmulo (monstros: Ghoul). Item de quest: Cinza de Túmulo, o stock item 5905 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: A Cinza de Túmulo cai dos Ghouls enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Cinza fresca de túmulo. É disso que o Juramento é feito.
 
 ### 2.5 Leve a Cinza de Túmulo à Ysolde (nível 15)
 
-- Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
+- Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Diga "juramento" à Guardiã Ysolde.
 - Conclusão (Ysolde): Cinzas e juramentos: a Vigília nunca desperdiça nenhum dos dois.
 
@@ -181,7 +189,7 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 2.12 Colete 4 Corações de Pedra (nível 22)
 
-- Objetivo: Colete 4 Corações de Pedra (monstros: Gargoyle).
+- Objetivo: Colete 4 Corações de Pedra (monstros: Gargoyle). Item de quest: Coração de Pedra, o stock item 2178 com nome, descrição e marca próprios. A Vigília recolhe os itens quando a etapa termina.
 - Dica: Gárgulas guardam um coração de pedra. Eles só caem enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Pesados. Ainda batem, dizem. Levo à Ysolde.
 
@@ -251,13 +259,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 3.7 Colete 6 Retalhos de Estandarte (nível 35)
 
-- Objetivo: Colete 6 Retalhos de Estandarte (monstros: Ogre Brute, Ogre Shaman).
+- Objetivo: Colete 6 Retalhos de Estandarte (monstros: Ogre Brute, Ogre Shaman). Item de quest: Retalho de Estandarte, o stock item 11330 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: Os Ogros rasgam retalhos de seus estandartes. Eles só caem enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Retalhos sujos de sangue. Servem de prova.
 
 ### 3.8 Leve os retalhos à Ysolde (nível 35)
 
-- Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
+- Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Diga "juramento" à Guardiã Ysolde.
 - Conclusão (Ysolde): O acampamento nunca mais levanta estandarte. Bom trabalho.
 
@@ -323,13 +331,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 3.19 Colete 5 Brasas de Wyrm (nível 60)
 
-- Objetivo: Colete 5 Brasas de Wyrm (monstros: Wyrm).
+- Objetivo: Colete 5 Brasas de Wyrm (monstros: Wyrm). Item de quest: Brasa de Wyrm, o stock item 5906 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: As Brasas de Wyrm só caem enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Ainda quentes. Mantenha longe das mãos.
 
 ### 3.20 Leve as Brasas à Ysolde (nível 60)
 
-- Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
+- Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Diga "juramento" à Guardiã Ysolde.
 - Conclusão (Ysolde): Brasas devolvidas ao fogo. A conta está certa.
 
@@ -399,13 +407,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 4.9 Colete 5 Fragmentos de Hino (nível 105)
 
-- Objetivo: Colete 5 Fragmentos de Hino (monstros: Choking Fear).
+- Objetivo: Colete 5 Fragmentos de Hino (monstros: Choking Fear). Item de quest: Fragmento de Hino, o stock item 10531 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: Os Fragmentos de Hino caem dos Choking Fears enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Letras de um canto antigo. Maelis vai querer ver.
 
 ### 4.10 Leve os Fragmentos à Ysolde (nível 105)
 
-- Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
+- Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Diga "juramento" à Guardiã Ysolde.
 - Conclusão (Ysolde): Guardo comigo. Maelis recebe cópias.
 
@@ -465,13 +473,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 4.20 Colete 6 Engrenagens Ironhorn (nível 155)
 
-- Objetivo: Colete 6 Engrenagens Ironhorn (monstros: Ironhorn Brute, Ironhorn Alchemist).
+- Objetivo: Colete 6 Engrenagens Ironhorn (monstros: Ironhorn Brute, Ironhorn Alchemist). Item de quest: Engrenagem Ironhorn, o stock item 9690 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: As Engrenagens caem dos monstros Ironhorn enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Engrenagens de uma máquina que não devia existir.
 
 ### 4.21 Leve as Engrenagens à Ysolde (nível 155)
 
-- Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
+- Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Diga "juramento" à Guardiã Ysolde.
 - Conclusão (Ysolde): Isso explica muita coisa. Obrigada.
 
@@ -535,13 +543,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 5.10 Colete 5 Últimas Luzes (nível 260)
 
-- Objetivo: Colete 5 Últimas Luzes (monstros: Archon).
+- Objetivo: Colete 5 Últimas Luzes (monstros: Archon). Item de quest: Última Luz, o stock item 12508 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: As Últimas Luzes caem dos Archons enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Luzes que não se apagam sozinhas. Cuidado ao carregar.
 
 ### 5.11 Leve as Últimas Luzes à Ysolde (nível 260)
 
-- Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
+- Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Diga "juramento" à Guardiã Ysolde.
 - Conclusão (Ysolde): Elas vão iluminar o Braseiro por mais uma noite.
 
@@ -581,13 +589,13 @@ São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou
 
 ### 6.6 Colete 6 Esporos de Mofo (nível 365)
 
-- Objetivo: Colete 6 Esporos de Mofo (monstros: Mould Phantom).
+- Objetivo: Colete 6 Esporos de Mofo (monstros: Mould Phantom). Item de quest: Esporo de Mofo, o stock item 7251 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: Os Esporos caem dos Mould Phantoms enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Esporos fechados. Segure sem respirar.
 
 ### 6.7 Leve os Esporos à Ysolde (nível 365)
 
-- Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
+- Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Diga "juramento" à Guardiã Ysolde.
 - Conclusão (Ysolde): Para a Maelis estudar. Ela adora essas coisas.
 
@@ -696,8 +704,10 @@ As últimas masmorras esperam em 1300, 1600 e 2000. Adventure > Next Goals lista
 - **greet**: De volta do templo, nascido das brasas? Sou a Guardiã Ysolde da Vigília Cinzenta. Diga {juramento} e eu digo o que o reino precisa em seguida.
 - **nothing**: Você não tem assunto comigo agora. Termine o que o rastreador pede e eu estarei aqui.
 - **offer**: As Brasas levaram meus Guardiões um a um. Os que elas recusaram, os nascidos das brasas, são o que sobrou. O Juramento é uma caminhada: um voto de cada vez, uma lição de cada vez. Não vou pedir que você jure nada que não possa cumprir.
+- **short**: Contei {held} de {target} {item}. O resto se perdeu ou ainda está por aí: eles caem de novo dos mesmos monstros, então vá caçar mais.
 - **skipped**: Você pulou o Juramento. A oferta continua: diga {juramento} e eu abro de novo.
 - **take**: Deixe-me ver.
+- **took**: Bom. {n} {item}, tudo aí.
 - **veteran**: Você já passou do Juramento, veterano. Resta uma porta: Vael Ashmourn, o Guardião Sem Juramento. Diga {porta} quando estiver pronto.
 - **wait**: Sua etapa ainda está aberta: {step}. Volte quando terminar.
 

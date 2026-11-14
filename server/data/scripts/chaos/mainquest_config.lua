@@ -4,12 +4,15 @@
 --
 -- Replaces the welcome path (O370): the same tracker section, the same channel (goals opcode 178), the same skip. A step is a
 -- list of conditions `conds`, all of which must hold (a step that kills or collects counts in its own storage while it is open):
---   count    kill `target` monsters of the names `mons` (`item`: a quest drop that falls from them only while the step is open;
---            a counter and a loot message, never a real item, like the spell quest fragments)
+--   count    kill `target` monsters of the names `mons` (`item`: a quest drop that falls from them only while the step is open.
+--            O553: a real item. `itemId` is a stock item made a quest item by custom attributes (name `item`, description
+--            `lore`, the lock, the owner), it falls into the loot bag of the kill, and the step counts the ones the character
+--            holds; a kill counts for every party member on the step, each rolls the drop for itself)
 --   visit    stand within `radius` of `pos` (the hunting mark)
 --   stat     an achievement counter or a Next Goals own stat at least `target` (welcomepath.lua statOf)
 --   flag     an event reported by a hook (ChaosMainQuest.emit(player, key)) or a window the client opened (mqSeen)
---   talk     the character told Warden Ysolde "oath" (the NPC script sets the talk flag)
+--   talk     the character told Warden Ysolde "oath" (the NPC script sets the talk flag). `bring` = the key of a drop step: she
+--            takes its quest items from the backpack first (O553); lost ones fall again from the same monsters while she waits
 --   spell / gear   as the welcome path; storage a value in a storage; resist the defence layer (player_defence.lua PD.sheet);
 --   boss     Vael Ashmourn is dead (the Trials engine hook, mainquest_boss.lua)
 -- Texts: {name} places are filled at run time from the configs (mainquest_core.lua fill), never typed.
@@ -27,9 +30,10 @@ return {
 	opcode = 178, -- ChaosOpcodes.goals: no new opcode
 	-- storage block 7101110-7101139 (server/README.md "Storage keys"): +0 state, +1 step index, +2 count of the open step,
 	-- +3 flag bits 1-30, +4 flag bits 31-60, +5 boss tries, +6 boss door cooldown (os.time), +7 boss won, +8 pity counter,
-	-- +9 the day of the last reward toast; +10..+29 free
+	-- +9 free, +10 the step the real quest items rule opened on (O553: a character mid-step before it has its old counter honoured
+	-- once), +11..+29 free
 	storage = {base = 7101110, state = 0, step = 1, count = 2, flags = 3, flags2 = 4, tries = 5, cooldown = 6, won = 7, pity = 8,
-		last = 7101139},
+		items = 10, last = 7101139},
 	states = {fresh = -1, active = 0, done = 1, skipped = 2, quiet = 3},
 	flagBits = {talk = 1}, -- bit 1 of +3 is the talk flag; the keys of `flags` below take the next bits (29 in +3, then +4)
 	flags = {"potion", "sell", "autoloot", "daily", "market", "loadout", "charms", "bank", "stash", "salvage", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "gambler", "nemesis", "portal", "chronicle", "weekly", "siege", "marches", "teleports", "seasonpass", "charinfo1", "charinfo2", "door"},
@@ -48,6 +52,15 @@ return {
 	-- the quest drop: the chance per kill makes the step take about its minutes at killsPerMinute; after pityMult x the expected
 	-- kills without a drop the next kill drops for sure
 	drop = {killsPerMinute = 6, pityMult = 3, minChance = 0.05, maxChance = 0.6},
+	-- O553: the quest items. Custom attributes on the item (a reserved name block "chaos_mq*"): `quest` = the key of the drop step,
+	-- `owner` = the guid of the character it was made for (another character's copy counts for nothing). `lock` is the engine's item
+	-- lock (src-patch 0009: no NPC buys it, no trash, no market, the stash and the Auto Seller skip it) with the value 2 of a bound
+	-- item (the client draws it in its own colours; the item menu cannot unlock it). The plain copies of the stock id stay plain.
+	questItem = {quest = "chaos_mq", owner = "chaos_mq_owner", lock = "chaos_locked", lockValue = 2, scanLimit = 3000},
+	-- O553: party credit of a kill (same rules as the bounty board and the spell quests: a killer always counts; a party member
+	-- of a killer counts within partyRange tiles of the killer on the same floor when it dealt damage or the party's shared
+	-- experience works)
+	party = {range = 30},
 	-- the reward of a step: minutes of hunting income at its level (embercache_config.lua income, one source), rounded to 100;
 	-- tools/mainquest_model.lua --check holds the total to maxShareOfHunting of the gold an ideal hunter earns from 8 to 500
 	reward = {incomeFrom = "data/scripts/chaos/embercache_config.lua", round = 100, maxShareOfHunting = 0.07},
@@ -108,13 +121,13 @@ return {
 			done = T("Step done.", "Beber na hora certa vale mais que qualquer espada. Lembre disso."),
 			where = nil},
 		{key = "tusks", ch = 1, level = 8, mins = 2, items = {},
-			conds = {{c = "count", mons = {"Troll"}, target = 6, label = "Troll Tusk", item = T("Troll Tusk", "Presa de Troll")}},
+			conds = {{c = "count", mons = {"Troll"}, target = 6, label = "Troll Tusk", item = T("Troll Tusk", "Presa de Troll"), itemId = 8614, lore = T("Pulled from a Troll that wanted your head.", "Arrancada de um Troll que queria a sua cabeça.")}},
 			title = T("Collect 6 Troll Tusks", "Colete 6 Presas de Troll"),
 			hint = T("Trolls carry tusks the Vigil pays for. They fall only while this step is open.", "Trolls carregam presas que a Vigília paga bem. Elas só caem enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Presas inteiras. Leve-as à Ysolde."),
 			where = {k = "pos", pos = {x = 32354, y = 32129, z = 8}, label = "Troll Tusk"}},
 		{key = "tusks_in", ch = 1, level = 8, mins = 1, items = {},
-			conds = {{c = "talk"}},
+			conds = {{c = "talk", bring = "tusks"}},
 			title = T("Show Ysolde the tusks", "Mostre as presas à Ysolde"),
 			hint = T("Go back to Warden Ysolde and say \"oath\" to hand the tusks over.", "Volte à Guardiã Ysolde e diga \"juramento\" para entregar as presas."),
 			done = T("Step done.", "Servem. A Vigília paga o que deve: aqui está."),
@@ -192,13 +205,13 @@ return {
 			done = T("Step done.", "A cripta ficou quieta. Por enquanto."),
 			where = {k = "pos", pos = {x = 33221, y = 32684, z = 12}, label = "Ghoul"}},
 		{key = "grave_ash", ch = 2, level = 15, mins = 3, items = {},
-			conds = {{c = "count", mons = {"Ghoul"}, target = 5, label = "Grave Ash", item = T("Grave Ash", "Cinza de Túmulo")}},
+			conds = {{c = "count", mons = {"Ghoul"}, target = 5, label = "Grave Ash", item = T("Grave Ash", "Cinza de Túmulo"), itemId = 5905, lore = T("Grey dust from a Ghoul's grave. It still smells of earth.", "Pó cinzento do túmulo de um Ghoul. Ainda cheira a terra.")}},
 			title = T("Collect 5 Grave Ash", "Colete 5 Cinzas de Túmulo"),
 			hint = T("Grave Ash falls from Ghouls while this step is open.", "A Cinza de Túmulo cai dos Ghouls enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Cinza fresca de túmulo. É disso que o Juramento é feito."),
 			where = {k = "pos", pos = {x = 33221, y = 32684, z = 12}, label = "Grave Ash"}},
 		{key = "grave_ash_in", ch = 2, level = 15, mins = 1, items = {},
-			conds = {{c = "talk"}},
+			conds = {{c = "talk", bring = "grave_ash"}},
 			title = T("Bring the Grave Ash to Ysolde", "Leve a Cinza de Túmulo à Ysolde"),
 			hint = T("Say \"oath\" to Warden Ysolde.", "Diga \"juramento\" à Guardiã Ysolde."),
 			done = T("Step done.", "Cinzas e juramentos: a Vigília nunca desperdiça nenhum dos dois."),
@@ -240,7 +253,7 @@ return {
 			done = T("Step done.", "Conhecer o inimigo é metade da vitória. A outra metade é matá-lo."),
 			where = {k = "window", m = "game_bestiary", f = "toggle"}},
 		{key = "gargoyle_hearts", ch = 2, level = 22, mins = 3, items = {},
-			conds = {{c = "count", mons = {"Gargoyle"}, target = 4, label = "Stone Heart", item = T("Stone Heart", "Coração de Pedra")}},
+			conds = {{c = "count", mons = {"Gargoyle"}, target = 4, label = "Stone Heart", item = T("Stone Heart", "Coração de Pedra"), itemId = 2178, lore = T("A cold heavy stone that once beat inside a Gargoyle.", "Uma pedra fria e pesada que já bateu dentro de uma Gárgula.")}},
 			title = T("Collect 4 Stone Hearts", "Colete 4 Corações de Pedra"),
 			hint = T("Gargoyles keep a heart of stone. They drop only while this step is open.", "Gárgulas guardam um coração de pedra. Eles só caem enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Pesados. Ainda batem, dizem. Levo à Ysolde."),
@@ -306,13 +319,13 @@ return {
 			done = T("Step done.", "Trinta a menos. O acampamento vai sentir."),
 			where = {k = "pos", pos = {x = 33667, y = 31723, z = 7}, label = "Ogre Brute"}},
 		{key = "warbanner", ch = 3, level = 35, mins = 4, items = {},
-			conds = {{c = "count", mons = {"Ogre Brute", "Ogre Shaman"}, target = 6, label = "Warbanner Scrap", item = T("Warbanner Scrap", "Retalho de Estandarte")}},
+			conds = {{c = "count", mons = {"Ogre Brute", "Ogre Shaman"}, target = 6, label = "Warbanner Scrap", item = T("Warbanner Scrap", "Retalho de Estandarte"), itemId = 11330, lore = T("A scrap of an Ogre warbanner, stiff with old blood.", "Um retalho de estandarte de Ogro, duro de sangue velho.")}},
 			title = T("Collect 6 Warbanner Scraps", "Colete 6 Retalhos de Estandarte"),
 			hint = T("Ogres tear scraps off their banners. They fall only while this step is open.", "Os Ogros rasgam retalhos de seus estandartes. Eles só caem enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Retalhos sujos de sangue. Servem de prova."),
 			where = {k = "pos", pos = {x = 33667, y = 31723, z = 7}, label = "Warbanner Scrap"}},
 		{key = "warbanner_in", ch = 3, level = 35, mins = 1, items = {},
-			conds = {{c = "talk"}},
+			conds = {{c = "talk", bring = "warbanner"}},
 			title = T("Bring the scraps to Ysolde", "Leve os retalhos à Ysolde"),
 			hint = T("Say \"oath\" to Warden Ysolde.", "Diga \"juramento\" à Guardiã Ysolde."),
 			done = T("Step done.", "O acampamento nunca mais levanta estandarte. Bom trabalho."),
@@ -378,13 +391,13 @@ return {
 			done = T("Step done.", "Vinte e cinco wyrms. A Vigília nem esperava tanto."),
 			where = {k = "pos", pos = {x = 33703, y = 31642, z = 13}, label = "Wyrm"}},
 		{key = "wyrm_cinder", ch = 3, level = 60, mins = 4, items = {},
-			conds = {{c = "count", mons = {"Wyrm"}, target = 5, label = "Wyrm Cinder", item = T("Wyrm Cinder", "Brasa de Wyrm")}},
+			conds = {{c = "count", mons = {"Wyrm"}, target = 5, label = "Wyrm Cinder", item = T("Wyrm Cinder", "Brasa de Wyrm"), itemId = 5906, lore = T("Red grit that still glows when the light is low.", "Grãos vermelhos que ainda brilham quando a luz é pouca.")}},
 			title = T("Collect 5 Wyrm Cinders", "Colete 5 Brasas de Wyrm"),
 			hint = T("Wyrm Cinders fall only while this step is open.", "As Brasas de Wyrm só caem enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Ainda quentes. Mantenha longe das mãos."),
 			where = {k = "pos", pos = {x = 33703, y = 31642, z = 13}, label = "Wyrm Cinder"}},
 		{key = "wyrm_cinder_in", ch = 3, level = 60, mins = 1, items = {},
-			conds = {{c = "talk"}},
+			conds = {{c = "talk", bring = "wyrm_cinder"}},
 			title = T("Bring the Cinders to Ysolde", "Leve as Brasas à Ysolde"),
 			hint = T("Say \"oath\" to Warden Ysolde.", "Diga \"juramento\" à Guardiã Ysolde."),
 			done = T("Step done.", "Brasas devolvidas ao fogo. A conta está certa."),
@@ -450,13 +463,13 @@ return {
 			done = T("Step done.", "O hino parou de sufocar. Por ora."),
 			where = {k = "pos", pos = {x = 33568, y = 32402, z = 7}, label = "Choking Fear"}},
 		{key = "hymn", ch = 4, level = 105, mins = 4, items = {},
-			conds = {{c = "count", mons = {"Choking Fear"}, target = 5, label = "Hymn Shard", item = T("Hymn Shard", "Fragmento de Hino")}},
+			conds = {{c = "count", mons = {"Choking Fear"}, target = 5, label = "Hymn Shard", item = T("Hymn Shard", "Fragmento de Hino"), itemId = 10531, lore = T("A dark shard that hums a hymn nobody remembers.", "Um caco escuro que zumbe um hino que ninguém lembra.")}},
 			title = T("Collect 5 Hymn Shards", "Colete 5 Fragmentos de Hino"),
 			hint = T("Hymn Shards fall from Choking Fears while this step is open.", "Os Fragmentos de Hino caem dos Choking Fears enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Letras de um canto antigo. Maelis vai querer ver."),
 			where = {k = "pos", pos = {x = 33568, y = 32402, z = 7}, label = "Hymn Shard"}},
 		{key = "hymn_in", ch = 4, level = 105, mins = 1, items = {},
-			conds = {{c = "talk"}},
+			conds = {{c = "talk", bring = "hymn"}},
 			title = T("Bring the Hymn Shards to Ysolde", "Leve os Fragmentos à Ysolde"),
 			hint = T("Say \"oath\" to Warden Ysolde.", "Diga \"juramento\" à Guardiã Ysolde."),
 			done = T("Step done.", "Guardo comigo. Maelis recebe cópias."),
@@ -516,13 +529,13 @@ return {
 			done = T("Step done.", "A forja ficou desprotegida. Interessante."),
 			where = {k = "pos", pos = {x = 31766, y = 32407, z = 8}, label = "Ironhorn Brute"}},
 		{key = "cog", ch = 4, level = 155, mins = 4, items = {},
-			conds = {{c = "count", mons = {"Ironhorn Brute", "Ironhorn Alchemist"}, target = 6, label = "Ironhorn Cog", item = T("Ironhorn Cog", "Engrenagem Ironhorn")}},
+			conds = {{c = "count", mons = {"Ironhorn Brute", "Ironhorn Alchemist"}, target = 6, label = "Ironhorn Cog", item = T("Ironhorn Cog", "Engrenagem Ironhorn"), itemId = 9690, lore = T("A cog from an Ironhorn contraption, warm to the touch.", "Uma engrenagem de engenhoca Ironhorn, morna ao toque.")}},
 			title = T("Collect 6 Ironhorn Cogs", "Colete 6 Engrenagens Ironhorn"),
 			hint = T("Cogs fall from Ironhorn monsters while this step is open.", "As Engrenagens caem dos monstros Ironhorn enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Engrenagens de uma máquina que não devia existir."),
 			where = {k = "pos", pos = {x = 31766, y = 32407, z = 8}, label = "Ironhorn Cog"}},
 		{key = "cog_in", ch = 4, level = 155, mins = 1, items = {},
-			conds = {{c = "talk"}},
+			conds = {{c = "talk", bring = "cog"}},
 			title = T("Bring the Cogs to Ysolde", "Leve as Engrenagens à Ysolde"),
 			hint = T("Say \"oath\" to Warden Ysolde.", "Diga \"juramento\" à Guardiã Ysolde."),
 			done = T("Step done.", "Isso explica muita coisa. Obrigada."),
@@ -582,13 +595,13 @@ return {
 			done = T("Step done.", "Luz apagada. Um alívio, para ser sincera."),
 			where = {k = "pos", pos = {x = 33398, y = 31797, z = 4}, label = "Archon"}},
 		{key = "archon_light", ch = 5, level = 260, mins = 5, items = {},
-			conds = {{c = "count", mons = {"Archon"}, target = 5, label = "Last Light", item = T("Last Light", "Última Luz")}},
+			conds = {{c = "count", mons = {"Archon"}, target = 5, label = "Last Light", item = T("Last Light", "Última Luz"), itemId = 12508, lore = T("A crystal that keeps the last light of an Archon.", "Um cristal que guarda a última luz de um Arconte.")}},
 			title = T("Collect 5 Last Lights", "Colete 5 Últimas Luzes"),
 			hint = T("Last Lights fall from Archons while this step is open.", "As Últimas Luzes caem dos Archons enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Luzes que não se apagam sozinhas. Cuidado ao carregar."),
 			where = {k = "pos", pos = {x = 33398, y = 31797, z = 4}, label = "Last Light"}},
 		{key = "archon_in", ch = 5, level = 260, mins = 1, items = {},
-			conds = {{c = "talk"}},
+			conds = {{c = "talk", bring = "archon_light"}},
 			title = T("Bring the Last Lights to Ysolde", "Leve as Últimas Luzes à Ysolde"),
 			hint = T("Say \"oath\" to Warden Ysolde.", "Diga \"juramento\" à Guardiã Ysolde."),
 			done = T("Step done.", "Elas vão iluminar o Braseiro por mais uma noite."),
@@ -624,13 +637,13 @@ return {
 			done = T("Step done.", "Mofo seco. O jardim agora é outro."),
 			where = {k = "pos", pos = {x = 33783, y = 31297, z = 14}, label = "Mould Phantom"}},
 		{key = "spores", ch = 6, level = 365, mins = 2, items = {},
-			conds = {{c = "count", mons = {"Mould Phantom"}, target = 6, label = "Mould Spore", item = T("Mould Spore", "Esporo de Mofo")}},
+			conds = {{c = "count", mons = {"Mould Phantom"}, target = 6, label = "Mould Spore", item = T("Mould Spore", "Esporo de Mofo"), itemId = 7251, lore = T("Spores that glimmer in the dark. Do not breathe them.", "Esporos que brilham no escuro. Não respire.")}},
 			title = T("Collect 6 Mould Spores", "Colete 6 Esporos de Mofo"),
 			hint = T("Spores fall from Mould Phantoms while this step is open.", "Os Esporos caem dos Mould Phantoms enquanto esta etapa estiver aberta."),
 			done = T("Step done.", "Esporos fechados. Segure sem respirar."),
 			where = {k = "pos", pos = {x = 33783, y = 31297, z = 14}, label = "Mould Spore"}},
 		{key = "spores_in", ch = 6, level = 365, mins = 1, items = {},
-			conds = {{c = "talk"}},
+			conds = {{c = "talk", bring = "spores"}},
 			title = T("Bring the Spores to Ysolde", "Leve os Esporos à Ysolde"),
 			hint = T("Say \"oath\" to Warden Ysolde.", "Diga \"juramento\" à Guardiã Ysolde."),
 			done = T("Step done.", "Para a Maelis estudar. Ela adora essas coisas."),
@@ -711,6 +724,10 @@ return {
 		greet = T("Back from the temple, cinder-born? I am Warden Ysolde of the Ashen Vigil. Say {oath} and I will tell you what the realm needs next.", "De volta do templo, nascido das brasas? Sou a Guardiã Ysolde da Vigília Cinzenta. Diga {juramento} e eu digo o que o reino precisa em seguida."),
 		offer = T("The Cinders took my Wardens one by one. The ones they refused, the cinder-born, are what is left. The Oath is a walk: a vow at a time, a lesson at a time. I will not ask you to swear anything you cannot keep.", "As Brasas levaram meus Guardiões um a um. Os que elas recusaram, os nascidos das brasas, são o que sobrou. O Juramento é uma caminhada: um voto de cada vez, uma lição de cada vez. Não vou pedir que você jure nada que não possa cumprir."),
 		take = T("Let me see.", "Deixe-me ver."),
+		-- O553: the bring steps
+		short = T("I count {held} of {target} {item}. The rest is lost or still out there: they fall again from the same monsters, so go and hunt more.",
+			"Contei {held} de {target} {item}. O resto se perdeu ou ainda está por aí: eles caem de novo dos mesmos monstros, então vá caçar mais."),
+		took = T("Good. {n} {item}, all there.", "Bom. {n} {item}, tudo aí."),
 		wait = T("Your step is still open: {step}. Come back when it is done.", "Sua etapa ainda está aberta: {step}. Volte quando terminar."),
 		nothing = T("You have no business with me now. Finish what the tracker asks and I will be here.", "Você não tem assunto comigo agora. Termine o que o rastreador pede e eu estarei aqui."),
 		done = T("The Oath is complete. There is nothing more I can teach, only things I can warn you about.", "O Juramento está completo. Não tenho mais nada a ensinar, só coisas sobre as quais avisar."),
@@ -744,7 +761,19 @@ return {
 		items = T("%d %s", "%d %s"),
 		potions = T("potions", "poções"),
 		none = T("nothing", "nada"),
-		drop = T("%s (%d/%d)", "%s (%d/%d)"),
+		-- the quest drop (O553): where the item fell. %s = the step's `item`, then what is held and the target (a drop in the loot
+		-- bag is not held yet: the line says to take it, and what is held now)
+		drop = T("%s is in the loot bag: take it (you hold %d/%d).", "%s está no saco de saque: pegue (você tem %d/%d)."),
+		inPack = T("%s (%d/%d), in your backpack", "%s (%d/%d), na sua mochila"),
+		inInbox = T("%s (%d/%d), your backpack is full: it is in your inbox", "%s (%d/%d), sua mochila está cheia: está na sua caixa de correio"),
+		-- the quest item (name is the step's `item`; the description is its `lore` and this)
+		itemDesc = T("Quest item of the Ember Oath. Bring %d to Warden Ysolde. It cannot be sold or traded.",
+			"Item da quest do Juramento da Brasa. Leve %d à Guardiã Ysolde. Não pode ser vendido nem trocado."),
+		itemDescAuto = T("Quest item of the Ember Oath. The Vigil takes the %d when the step is done. It cannot be sold or traded.",
+			"Item da quest do Juramento da Brasa. A Vigília recolhe os %d quando a etapa termina. Não pode ser vendido nem trocado."),
+		held = T("%s %d/%d", "%s %d/%d"),
+		takenAuto = T("The Vigil takes the %d %s.", "A Vigília recolhe %d %s."),
+		migrated = T("The %d %s you had earned are real items now, in your backpack.", "Os %d %s que você já tinha conseguido agora são itens de verdade, na sua mochila."),
 		weakest = T("%s %d/%d", "%s %d/%d"),
 		chapter = T("Chapter %s: %s", "Capítulo %s: %s")
 	},

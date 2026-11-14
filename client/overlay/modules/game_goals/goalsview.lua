@@ -132,12 +132,22 @@ function V.mqSteps(mq, n)
   return out
 end
 
+-- the quest items of the open step (server mainquest.lua O553: `item` = {name, held, target}): what the character carries
+function V.mqItemText(s)
+  local it = type(s) == 'table' and s.item
+  if type(it) ~= 'table' or s.state ~= 'open' then return nil end
+  return tr('(%d/%d held)', num(it.held), num(it.target))
+end
+
 function V.mqStepLine(s)
   local mark = s.state == 'done' and '[x] ' or (s.state == 'open' and '[>] ' or '[ ] ')
+  local held = V.mqItemText(s)
+  local text = mark .. tostring(s.title or '')
+  if held then text = text .. '  ' .. held end
   if num(s.level) > 0 and s.state ~= 'done' then
-    return mark .. tostring(s.title or '') .. '  ' .. tr('(level %d)', num(s.level))
+    return text .. '  ' .. tr('(level %d)', num(s.level))
   end
-  return mark .. tostring(s.title or '')
+  return text
 end
 
 -- "Level 300-499: World bosses" / "Level 2000+: The apex"

@@ -11,8 +11,11 @@
 --                     detail}]} (rows = [] hides the section) | mq {state, step, chapters, steps, epilogue} (chunked)
 -- Facts, read with no edits of the other systems: the achievement counters and Next Goals own stats, the welcome path's spell and
 -- gear probes, the character's position (visit steps), the defence sheet (ChaosPlayerDefence.sheet) and the flags the hooks set
--- (ChaosMainQuest.emit(player, key); mainquest_config.lua `flags`). Kills of a step are counted in its own storage; a quest drop is
--- a counter and a loot message, never an item (like the spell quest fragments).
+-- (ChaosMainQuest.emit(player, key); mainquest_config.lua `flags`). Kills of a step are counted in its own storage. A quest drop
+-- is a real item (O553): a stock item made a quest item by custom attributes (the lock of src-patch 0009 among them), put into the
+-- loot bag of the kill for the one who owns the bag, else into the backpack; the step counts the ones the character holds and the
+-- bring step lets Warden Ysolde take them. A kill counts for the killer and for the party members around (mainquest_core.lua
+-- credited), each rolling the drop for itself. A character mid-step before O553 has its old counter honoured once (W.migrate).
 -- Storage: block 7101110-7101139 (Chaos.storage.mainQuest). Once per character. Staff walk no quest.
 -- Assumed engine API (TFS 1.4): CreatureEvent login/logout/kill, GlobalEvent think, Player storage, slots, bank, getInbox, getCondition.
 
@@ -60,6 +63,12 @@ end
 
 local function set(player, name, value)
 	player:setStorageValue(key(name), value)
+end
+
+-- the step index, with the step the real items rule opened on (a legacy step: M.legacy in the core)
+local function setStep(player, i)
+	set(player, "step", i)
+	set(player, "items", i)
 end
 
 local function staff(player)
@@ -259,6 +268,11 @@ function W.facts(player, i)
 		end
 	end
 	f.boss = get(player, "won") == 1
+	-- a drop step, or the bring step of one: what the character holds (a legacy step counts its old counter, W.migrate)
+	local rule = K.killRule(c, i)
+	if rule and rule.cond.item and not K.legacy(i, get(player, "items")) then
+		f.held = K.heldCount(c, player, rule.step.key)
+	end
 	return f
 end
 
@@ -368,6 +382,223 @@ local function clearStepState(player)
 	set(player, name, K.clearBit(math.max(0, get(player, name)), bit))
 end
 
+-- ---------------------------------------------------------------- the quest items (O553)
+local NOERR = RETURNVALUE_NOERROR or 0
+
+-- the items of the step that was just done go with it: a drop step no bring step takes (the Vigil takes them) or what is left
+-- after a bring step (a lost item that fell again: the extras)
+function W.settleItems(player, i, lang)
+	local c = C()
+	local rule = K.killRule(c, i)
+	if not rule or not rule.cond.item then
+		return
+	end
+	if rule.mode == "drop" and not K.bringIndex(c, i) then
+		local n = K.takeQuestItems(c, player, rule.step.key)
+		if n > 0 then
+			tell(player, string.format(K.text(c.texts.takenAuto, lang), n, K.text(rule.cond.item, lang)))
+		end
+	elseif rule.mode == "refill" then
+		K.takeQuestItems(c, player, rule.step.key)
+	end
+end
+
+-- one quest item into the world of a character: the loot bag of the kill when the character owns it, else the backpack, else the
+-- inbox. The item is created and marked first, then placed (a plain copy of the stock id never takes it into its stack).
+-- Returns "bag" | "pack" | "inbox" | nil
+function W.giveQuestItem(player, step, cond, corpse, lang)
+	local c = C()
+	local item = Game.createItem(cond.itemId, 1)
+	if not item then
+		return nil
+	end
+	K.markItem(c, item, step, cond, player, lang)
+	local where
+	if corpse and corpse.addItemEx then
+		local okO, owner = pcall(function() return corpse:getCorpseOwner() end)
+		if okO and owner == player:getId() then
+			local okA, ret = pcall(function() return corpse:addItemEx(item) end)
+			if okA and ret == NOERR then
+				where = "bag"
+			end
+		end
+	end
+	if not where and player:addItemEx(item, false) == NOERR then
+		where = "pack"
+	end
+	if not where then
+		local okI, inbox = pcall(function() return player:getInbox() end)
+		if okI and inbox and inbox:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) == NOERR then
+			where = "inbox"
+		end
+	end
+	if not where then
+		pcall(function() item:remove() end)
+	end
+	return where
+end
+
+-- a character whose step opened before the real items: the counter it earned becomes the items (once), so nothing is lost. A
+-- bring step of that kind stays legacy until it is done: Warden Ysolde takes no items there (mainquest_core.lua M.talk).
+function W.migrate(player)
+	local c = C()
+	local i = get(player, "step")
+	local rule = K.killRule(c, i)
+	if not rule or not rule.cond.item or not K.legacy(i, get(player, "items")) then
+		return false
+	end
+	if rule.mode == "drop" then
+		local lang = langOf(player)
+		local owed = K.legacyOwed(rule.cond, math.max(0, get(player, "count")), K.heldCount(c, player, rule.step.key))
+		local given = 0
+		for _ = 1, owed do
+			if W.giveQuestItem(player, rule.step, rule.cond, nil, lang) then
+				given = given + 1
+			end
+		end
+		if given < owed then
+			return false -- no room anywhere: try again at the next look
+		end
+		set(player, "items", i)
+		if given > 0 then
+			tell(player, string.format(K.text(c.texts.migrated, lang), given, K.text(rule.cond.item, lang)))
+		end
+		return true
+	end
+	return false
+end
+
+-- ---------------------------------------------------------------- kill credit (O553)
+-- one kill of a monster named `name` for a character: the counter of a kill step, or the roll of the quest item of a drop step
+-- (and of its bring step while items are missing). corpse = the loot bag of the kill.
+function W.creditKill(player, name, corpse)
+	local c = C()
+	if not c or not c.enabled or staff(player) or get(player, "state") ~= c.states.active then
+		return false
+	end
+	pcall(W.migrate, player)
+	local i = get(player, "step")
+	local step = c.steps[i]
+	if not step or player:getLevel() < step.level then
+		return false
+	end
+	local rule = K.killRule(c, i)
+	if not rule then
+		return false
+	end
+	local cond = rule.cond
+	local target = math.max(1, math.floor(cond.target))
+	if rule.mode == "kill" then
+		local counted = K.onKill(c, step, cond, name, 0, 1)
+		if counted then
+			set(player, "count", math.min(target, math.max(0, get(player, "count")) + 1))
+		end
+		return counted
+	end
+	if K.legacy(i, get(player, "items")) then
+		return false -- a step of before the real items: an old counter has no drop to roll (W.migrate gives the items)
+	end
+	local held = K.heldCount(c, player, rule.step.key)
+	if held >= target then
+		return false
+	end
+	local _, dropped, pity = K.onKill(c, rule.step, cond, name, math.max(0, get(player, "pity")), math.random())
+	set(player, "pity", pity)
+	if not dropped then
+		return false
+	end
+	local lang = langOf(player)
+	local where = W.giveQuestItem(player, rule.step, cond, corpse, lang)
+	if not where then
+		return false
+	end
+	set(player, "count", math.min(target, math.max(0, get(player, "count")) + 1))
+	local key = where == "bag" and "drop" or (where == "pack" and "inPack" or "inInbox")
+	local shown = where == "bag" and held or math.min(target, held + 1) -- in the bag it is not held yet
+	player:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
+		string.format(K.text(c.texts[key], lang), K.text(cond.item, lang), shown, target))
+	return true
+end
+
+local function playerOf(creature)
+	if not creature then
+		return nil
+	end
+	if creature:isPlayer() then
+		return creature
+	end
+	local master = creature:getMaster()
+	if master and master:isPlayer() then
+		return master
+	end
+	return nil
+end
+
+local function partyMembers(p)
+	local party = p:getParty()
+	if not party then
+		return nil
+	end
+	local members = party:getMembers()
+	members[#members + 1] = party:getLeader()
+	return members
+end
+
+-- the party's shared experience works (the engine's own rule: every member in range, level range and fighting)
+local function sharedOn(p)
+	local party = p:getParty()
+	if not party then
+		return false
+	end
+	local ok, v = pcall(function() return party:isSharedExperienceEnabled() end)
+	if ok and v ~= nil then
+		return v == true
+	end
+	ok, v = pcall(function() return party:isSharedExperienceActive() end)
+	return ok and v == true
+end
+
+local CREDIT_API = {partyOf = partyMembers, posOf = function(p) return p:getPosition() end, idOf = function(p) return p:getId() end,
+	sharedOn = sharedOn}
+
+-- a monster of the quest died: the killers and the party members around them (K.credited), each on its own
+function W.onDeath(creature, corpse, killer, mostDamageKiller)
+	local c = C()
+	if not c or not c.enabled or not creature or creature:getMaster() then
+		return
+	end
+	if ChaosRift and ChaosRift.isHusk and ChaosRift.isHusk(creature) then
+		return -- a husk of a dense rift gives no kill credit
+	end
+	local name = creature:getName()
+	local killers, seen = {}, {}
+	for _, k in ipairs({playerOf(killer), playerOf(mostDamageKiller)}) do
+		if k and not seen[k:getId()] then
+			seen[k:getId()] = true
+			killers[#killers + 1] = k
+		end
+	end
+	if #killers == 0 then
+		return
+	end
+	local damagers = {}
+	if creature.getDamageMap then
+		for id in pairs(creature:getDamageMap() or {}) do
+			local p = playerOf(Creature(id))
+			if p then
+				damagers[#damagers + 1] = p
+			end
+		end
+	end
+	local credited = K.credited(killers, damagers, CREDIT_API, (c.party or {}).range)
+	for _, p in ipairs(credited) do
+		local ok, err = pcall(W.creditKill, p, name, corpse)
+		if not ok then
+			log("kill: " .. tostring(err))
+		end
+	end
+end
+
 -- the current step done: the next one (the step first: a crash after it loses the reward rather than paying twice)
 function W.advance(player)
 	local c = C()
@@ -377,8 +608,9 @@ function W.advance(player)
 		return false
 	end
 	local lang = langOf(player)
-	set(player, "step", i + 1)
+	setStep(player, i + 1)
 	clearStepState(player)
+	W.settleItems(player, i, lang)
 	local got = W.reward(player, step, lang)
 	local who = lang == "pt" and "Guardiã Ysolde" or "Warden Ysolde"
 	tell(player, who .. ": " .. K.text(step.done, lang))
@@ -406,6 +638,7 @@ function W.check(player)
 	if get(player, "state") ~= c.states.active then
 		return
 	end
+	pcall(W.migrate, player)
 	local i = get(player, "step")
 	if c.steps[i] and K.isDone(c.steps[i], W.facts(player, i)) then
 		W.advance(player)
@@ -452,7 +685,7 @@ function W.firstLook(player)
 		local wstate = wk and player:getStorageValue(wk) or -1
 		local played = W.played(player) or wstate == 0 or wstate == 1
 		local start = K.skipDone(c, 1, function(i) return W.facts(player, i) end, played)
-		set(player, "step", start)
+		setStep(player, start)
 		if wk and wstate == 0 then
 			player:setStorageValue(wk, 2) -- the old path rests
 		end
@@ -527,12 +760,13 @@ function W.skip(player, scope)
 		if nxt > #c.steps then
 			endSkipped(player)
 		else
-			set(player, "step", nxt)
+			setStep(player, nxt)
 			clearStepState(player)
 		end
 	else
 		endSkipped(player)
 	end
+	pcall(K.takeQuestItems, c, player) -- a quest item has no use outside the quest
 	W.refresh(player, true)
 	return true
 end
@@ -559,6 +793,13 @@ function W.state(player)
 		local s = (state == c.states.done or n < i) and "done" or (n == i and "open" or "todo")
 		out.steps[#out.steps + 1] = {i = n, key = st.key, ch = st.ch, level = st.level, title = K.fill(K.text(st.title, lang), v),
 			hint = K.fill(K.text(st.hint, lang), v), state = s}
+		if s == "open" and state == c.states.active then
+			local rule = K.killRule(c, n)
+			if rule and rule.cond.item and not K.legacy(n, get(player, "items")) then
+				out.steps[#out.steps].item = {name = K.text(rule.cond.item, lang), held = K.heldCount(c, player, rule.step.key),
+					target = rule.cond.target}
+			end
+		end
 	end
 	for _, e in ipairs(c.epilogue) do
 		out.epilogue[#out.epilogue + 1] = {key = e.key, level = e.level, title = K.text(e.title, lang), text = K.text(e.text, lang)}
@@ -626,7 +867,6 @@ if CreatureEvent then
 		if not C() or not C().enabled then
 			return true
 		end
-		player:registerEvent("ChaosMainQuestKill")
 		player:registerEvent("ChaosMainQuestLogout")
 		addEvent(function()
 			local p = Player(pid)
@@ -651,41 +891,40 @@ if CreatureEvent then
 	logout:type("logout")
 	logout:register()
 
-	-- a kill while a count step is open: the count, or the quest drop with its loot line
-	local kill = CreatureEvent("ChaosMainQuestKill")
-	function kill.onKill(player, target)
-		local c = C()
-		if not c or not c.enabled or not player:isPlayer() or not target or not target:isMonster() or target:getMaster() then
-			return true
-		end
-		if get(player, "state") ~= c.states.active then
-			return true
-		end
-		local step = c.steps[get(player, "step")]
-		if not step or player:getLevel() < step.level then
-			return true
-		end
-		for _, cond in ipairs(step.conds) do
-			if cond.c == "count" then
-				local counted, dropped, pity = K.onKill(c, step, cond, target:getName(), math.max(0, get(player, "pity")), math.random())
-				if cond.item then
-					set(player, "pity", pity)
-				end
-				if counted or dropped then
-					local n = math.min(cond.target, math.max(0, get(player, "count")) + 1)
-					set(player, "count", n)
-					if dropped then
-						local lang = langOf(player)
-						player:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
-							string.format(K.text(c.texts.drop, lang), K.text(cond.item, lang), n, cond.target))
-					end
-				end
-			end
+	-- a monster of a count step died (O553: the death event of the monster, not the kill event of the player, so the loot bag
+	-- exists and the party members around the killer are credited too)
+	local death = CreatureEvent("ChaosMainQuestDeath")
+	function death.onDeath(creature, corpse, killer, mostDamageKiller)
+		local ok, err = pcall(W.onDeath, creature, corpse, killer, mostDamageKiller)
+		if not ok then
+			log("death: " .. tostring(err))
 		end
 		return true
 	end
-	kill:type("kill")
-	kill:register()
+	death:register()
+end
+
+-- the monsters of the quest get that event when they spawn (only the names of the count steps)
+if EventCallback then
+	local names = {}
+	for _, st in ipairs(C() and C().steps or {}) do
+		for _, cond in ipairs(st.conds) do
+			if cond.c == "count" then
+				for _, m in ipairs(cond.mons) do
+					names[m:lower()] = true
+				end
+			end
+		end
+	end
+	W.monsterNames = names
+	local spawn = EventCallback
+	spawn.onSpawn = function(self, position, startup, artificial)
+		if C() and C().enabled and names[self:getName():lower()] and not self:getMaster() then
+			self:registerEvent("ChaosMainQuestDeath")
+		end
+		return true
+	end
+	spawn:register()
 end
 
 if GlobalEvent then

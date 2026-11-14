@@ -140,10 +140,19 @@ local function questTalk(cid, player, msg)
 			npcHandler:say(K.fill(K.text(c.ysolde.greet, lang), vars), cid)
 		end
 	elseif state == c.states.active then
-		local r = K.talk(c, get, put)
+		-- O553: a bring step takes the quest items of its drop step from the backpack (the items carry the key of the step and the
+		-- guid of the character; a plain copy of the same stock item counts for nothing)
+		local items = {held = function(stepKey) return K.heldCount(c, player, stepKey) end,
+			take = function(stepKey, n) return K.takeQuestItems(c, player, stepKey, n) end}
+		local r, a, b, dc = K.talk(c, get, put, items)
 		local step = c.steps[get("step")]
 		if r == true then
 			npcHandler:say(K.fill(K.text(c.ysolde.take, lang), vars), cid)
+			if dc and a and a > 0 then
+				npcHandler:say(K.fill(K.text(c.ysolde.took, lang), {n = a, item = K.text(dc.item, lang)}), cid)
+			end
+		elseif r == "short" then
+			npcHandler:say(K.fill(K.text(c.ysolde.short, lang), {held = a, target = b, item = K.text(dc.item, lang)}), cid)
 		elseif step then
 			vars.step = K.fill(K.text(step.title, lang), vars)
 			npcHandler:say(K.fill(K.text(c.ysolde.wait, lang), vars), cid)
