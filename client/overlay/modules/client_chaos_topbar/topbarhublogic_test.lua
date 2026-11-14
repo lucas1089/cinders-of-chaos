@@ -42,8 +42,8 @@ for _, hub in ipairs(T.HUBS) do
   end
 end
 eq(tabs, 26, '26 tabs')
-eq(cards, 105, '105 cards')
-for text in pairs(C.CARDS) do eq(seen[text], true, 'a card line for a text the tree does not hold: ' .. text) end
+eq(cards, 104, '104 cards (the Store is a pin, on no tab)')
+for text in pairs(C.CARDS) do eq(seen[text] or T.PIN_ONLY[text], true, 'a card line for a text the tree does not hold: ' .. text) end
 -- the hotkey windows are on the first tab of their hub (two clicks)
 local first = {}
 for _, hub in ipairs(T.HUBS) do for _, text in ipairs(hub.tabs[1].cards) do first[text] = true end end
@@ -130,7 +130,7 @@ eq(H.pickTab(h2, 'c'), 3, 'saved tab'); eq(H.pickTab(h2, 'gone'), 1, 'a tab that
 eq(H.parsePins(''), nil, 'never set'); eq(H.parsePins(nil), nil, 'nil')
 eq(#H.parsePins('v1:'), 0, 'cleared'); eq(table.concat(H.parsePins('v1:Store|Market'), ','), 'Store,Market', 'two pins')
 eq(#H.parsePins('v1:a|b|c|d|e'), 3, 'at most three')
-eq(table.concat(H.pinsOrDefault(''), ','), 'Store', 'the default pin'); eq(#H.pinsOrDefault('v1:'), 0, 'cleared stays cleared')
+eq(table.concat(H.pinsOrDefault(''), ','), 'Store', 'the Store is the default pin (its own button, on no tab)'); eq(#H.pinsOrDefault('v1:'), 0, 'cleared stays cleared')
 eq(H.serializePins({ 'Store', 'Bank' }), 'v1:Store|Bank', 'serialize')
 local pins, changed, why = H.togglePin({ 'Store' }, 'Market')
 eq(changed, true, 'pinned'); eq(table.concat(pins, ','), 'Store,Market', 'added last')
@@ -157,7 +157,19 @@ eq(H.fit('Short', 100, m8), 'Short', 'fits as it is')
 eq(H.fit('Map Overlay Settings', 100, m8), 'Map Overla..', 'cut with dots')
 eq(H.fit('Ab', 1, m8), 'A', 'nothing fits: one letter')
 eq(m8(H.fit('Points of interest and party marks', 118, m8)) <= 118, true, 'cut width within the limit')
-eq(H.barWidth(6, 1), 16 + 6 * 28 + 5 * 4 + 8 + 32, 'bar of six and one pin'); eq(H.barWidth(6, 0, 40), 16 + 240 + 20, 'phone bar without pins')
-eq(H.barWidth(6, 3) <= 310, true, 'three pins stay in 310 px')
+local bm = { hubs = { { id = 'hero' }, { id = 'hunt' }, { id = 'system' } } }
+local function kinds(items) local o = {} for _, it in ipairs(items) do o[#o + 1] = it.kind == 'hub' and it.hub.id or (it.kind == 'pin' and ('pin:' .. it.card.text) or '|') end return table.concat(o, ',') end
+eq(kinds(H.barItems(bm, {})), 'hero,hunt,|,system', 'System alone at the right end, behind a divider')
+eq(kinds(H.barItems(bm, { { text = 'Bank' } })), 'hero,hunt,|,pin:Bank,|,system', 'pins between the hubs and System')
+eq(kinds(H.barItems({ hubs = { { id = 'system' } } }, {})), 'system', 'the login screen: System only, no divider')
+eq(H.barWidth(H.barItems(bm, {}), 32), 16 + 3 * 32 + 5 + 3 * 4, 'width: three badges and a divider')
+eq(H.barWidth(H.barItems({ hubs = { { id = 'system' } } }, {}), 32), 16 + 32, 'width of the login bar')
+eq(H.barWidth({}, 32), 16, 'empty bar')
+local full = { hubs = { { id = 'hero' }, { id = 'hunt' }, { id = 'adventure' }, { id = 'trade' }, { id = 'social' }, { id = 'system' } } }
+eq(H.barWidth(H.barItems(full, { {}, {}, {} }), 32) <= 420, true, 'six hubs and three pins stay in 420 px')
+local pm = H.build(T, C, { item('Passive Tree', { category = 'character', points = 3 }), item('Skills', { category = 'character', points = 0 }) }, {})
+eq(H.findCard(pm, 'Passive Tree').points, 3, 'a card takes the points its module counts'); eq(H.findCard(pm, 'Skills').points, nil, 'zero points: no badge')
+local pt = H.build(T, C, { item('Passive Tree', { category = 'character', points = '!' }) }, {})
+eq(H.findCard(pt, 'Passive Tree').points, '!', 'an open trial with no point waiting: the card keeps "!" (O559)')
 
 print('topbarhublogic_test: ' .. n .. ' checks ok')

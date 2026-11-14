@@ -1,5 +1,5 @@
 // Cosmetics (game_cosmetics): spell effect skins, kill effects, loot label accents, chat name colours, footprints,
-// outlines, level-up and rare-loot effects, victory emotes, the collection score and the Collection of exclusives. Styles from client_chaos_theme.
+// outlines, level-up and rare-loot effects, the collection score and the Collection of exclusives. Styles from client_chaos_theme.
 
 CosmeticRow < ChaosPanelDark
   height: 40

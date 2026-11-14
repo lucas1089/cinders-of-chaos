@@ -100,6 +100,22 @@ w = gw.wing_ids()
 check(len(w) == len(set(w)) and 937 in w and 2231 in w and 2414 in w and 2385 in w, 'wing ids: %d' % len(w))
 check(len(w) == 29 + len(gw.pack33_wings()), 'base 29 plus the pack wings: %d' % len(w))
 
+# ---- heads (O561, base patch 0200)
+fig = np.zeros((64, 64), np.uint8)
+fig[10:22, 26:34] = 255             # a head, x 26..33 (centre 29.5), rows 10..21
+fig[22:50, 22:36] = 255             # the body below
+hx, hy = gw.head_xy(fig)
+check(near(hx, 29.5 - 0.0, 2.6) and near(hy, 15.0, 0.01), 'head: the top band of the solid body: %s %s' % (hx, hy))
+staff = fig.copy()
+staff[0:40, 8:10] = 255             # a thin staff held up beside the head: opened away, the head stays
+hx2, hy2 = gw.head_xy(staff)
+check(near(hx2, hx, 0.01) and near(hy2, hy, 0.01), 'a staff above the head does not move it: %s %s' % (hx2, hy2))
+check(gw.head_xy(np.zeros((64, 64), np.uint8)) is None, 'head: nothing visible')
+moved = np.roll(np.roll(fig, 5, axis=1), 3, axis=0)
+mx, my = gw.head_xy(moved)
+check(near(mx - hx, 5.0, 0.01) and near(my - hy, 3.0, 0.01), 'head moves with the figure: %s %s' % (mx - hx, my - hy))
+check(gw.HEAD_PIECES == (2477, 2568) and gw.HEAD_REF == 128, 'head piece range and reference look')
+
 if fails:
     print('%d failure(s)' % fails)
     sys.exit(1)

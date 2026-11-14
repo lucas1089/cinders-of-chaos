@@ -38,6 +38,12 @@ LB.HEIGHTS = { short = 2.5, normal = 3.5, tall = 4.5 } -- tiles
 LB.HEIGHT_ORDER = { 'short', 'normal', 'tall' }
 LB.INTENSITIES = { soft = 0.55, normal = 0.8, bright = 1.0 }
 LB.INTENSITY_ORDER = { 'soft', 'normal', 'bright' }
+LB.STYLES = { a = true, b = true, c = true }
+LB.STYLE_ORDER = { 'a', 'b', 'c' }
+function LB.styleOf(v)
+  v = type(v) == 'string' and v:lower() or ''
+  return LB.STYLES[v] and v or 'a'
+end
 LB.MAX_BEAMS = 24 -- the engine caps at 64; a big pull of 10 corpses stays well under this
 
 -- Since pair 36 (2026-10-22) a beam is an animated pack effect of the client pair (the loot beam strips, credited in
@@ -73,6 +79,73 @@ function LB.effectFor(group)
   return id and id > 0 and id or nil
 end
 
+-- ---------------------------------------------------------------- the beam pictures (O569)
+-- Owner 2026-11-14: "o loot beam parece que está em baixa qualidade". A beam is one widget over its tile (Tile:addOverlayWidget,
+-- base patch 0041; the widget is drawn in screen pixels, so its size and margins follow the zoom), a strip of 64 x 128 px frames
+-- drawn by client/tools/gen_lootbeam_art.py: images/<style>_<group>.png, 6 burst frames (played once when the beam appears) then a
+-- loop of 12. The foot of the beam, the middle of its ground ring, is at (32, 112) of a frame and stands 4 px (of 32) below the
+-- tile's centre, where an item lies. The test reads the strips against these numbers.
+LB.ART = { w = 64, h = 128, footY = 112, footDrop = 4, burst = 6, loop = 12, burstMs = 60, loopMs = 100, simple = 3, tile = 32 }
+LB.ART_MS = LB.ART.burst * LB.ART.burstMs -- how long the burst plays
+
+-- Only the best RICH_CAP beams animate (one image-clip change per frame step each); the others, up to MAX_BEAMS, stand still on one
+-- loop frame: the same picture, no timer work. A pair-free, widget-free client keeps the old pair effect / engine pillar.
+LB.RICH_CAP = 8
+-- the whole picture scales with the height setting (the ring with it), 0.85 .. 1.15; intensity is the widget's opacity
+LB.HEIGHT_SCALE = { short = 0.85, normal = 1.0, tall = 1.15 }
+LB.OPACITY = { soft = 0.6, normal = 0.85, bright = 1.0 }
+
+function LB.artPath(style, group)
+  if not LB.GROUPS[group] then return nil end
+  return '/modules/game_lootbeams/images/' .. LB.styleOf(style) .. '_' .. group .. '.png'
+end
+
+-- the clip of frame `i` (0-based) in a strip
+function LB.clip(i)
+  return string.format('%d 0 %d %d', i * LB.ART.w, LB.ART.w, LB.ART.h)
+end
+
+-- the frame to show `age` ms after the beam started. rich: the burst, then the loop; else the one still loop frame
+function LB.frame(age, rich)
+  local a = LB.ART
+  if not rich then return a.burst + a.simple end
+  age = tonumber(age) or 0
+  if age < 0 then age = 0 end
+  if age < LB.ART_MS then return math.floor(age / a.burstMs) end
+  return a.burst + math.floor((age - LB.ART_MS) / a.loopMs) % a.loop
+end
+
+-- size and margins of the widget of a beam over a tile of tw x th px on the screen. The engine centres a tile widget on its tile's
+-- top left + 32 px (so the margins that centre it are tw / 2 - 32), and the picture's foot must sit footDrop px (of a 32 px tile)
+-- below the tile's centre: the widget's centre is higher than that by footY - h / 2 - footDrop (frame px, scaled). Returns
+-- width, height, marginLeft, marginTop (integers).
+function LB.box(tw, th, heightKey)
+  local a = LB.ART
+  tw, th = tonumber(tw) or 64, tonumber(th) or 64
+  if tw <= 0 then tw = 64 end
+  if th <= 0 then th = 64 end
+  local f = LB.HEIGHT_SCALE[heightKey] or 1
+  local sx, sy = tw / a.tile * f, th / a.tile * f
+  local lift = (a.footY - a.h / 2 - a.footDrop) * sy
+  local function rnd(v) return math.floor(v + 0.5) end
+  return rnd(a.w * sx), rnd(a.h * sy), rnd(tw / 2 - 32), rnd(th / 2 - 32 - lift)
+end
+
+-- the keys of the `cap` beams that animate: the same order as the choice of the beams on screen (best group first, then the
+-- nearest, then the key). want = LB.resolve(...). Returns {[key] = true}.
+function LB.richKeys(want, cap)
+  local list = {}
+  for key, b in pairs(want) do list[#list + 1] = { key = key, order = LB.GROUPS[b.group].order, dist = b.dist or 0 } end
+  table.sort(list, function(a, b)
+    if a.order ~= b.order then return a.order > b.order end
+    if a.dist ~= b.dist then return a.dist < b.dist end
+    return a.key < b.key
+  end)
+  local out = {}
+  for i = 1, math.min(cap or LB.RICH_CAP, #list) do out[list[i].key] = true end
+  return out
+end
+
 local function flag(v)
   return v == true or v == 1 or v == '1'
 end
@@ -86,8 +159,9 @@ end
 -- enabled  beams at all
 -- height   short | normal | tall      intensity  soft | normal | bright
 -- orbs     orbs get a beam too        ground     items lying on the ground (not in a corpse) get one (Ground Labels)
+-- style    a | b | c   the look of the beam pictures (O569): a soft light pillar, b twisted twin strands, c rune column
 function LB.defaults()
-  return { enabled = true, height = 'normal', intensity = 'normal', orbs = false, ground = true }
+  return { enabled = true, height = 'normal', intensity = 'normal', orbs = false, ground = true, style = 'a' }
 end
 
 function LB.normalize(t)
@@ -99,6 +173,7 @@ function LB.normalize(t)
     intensity = LB.INTENSITIES[t.intensity] and t.intensity or d.intensity,
     orbs = bool(t.orbs, d.orbs),
     ground = bool(t.ground, d.ground),
+    style = LB.styleOf(t.style),
   }
 end
 

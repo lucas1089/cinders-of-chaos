@@ -63,8 +63,8 @@ for id, def in pairs(L.PICKUPS) do check_strip(L.artPath(def), L.CHEST_FRAMES, d
 
 -- ---------------------------------------------------------------- pickups and the two other cursed chest looks (O456)
 eq(L.chestOf(44396).art, 'portal_glow', 'the Ember portal glows'); eq(L.chestOf(44397).art, 'globe_health', 'the health globe glows')
-eq(L.chestOf(44398).art, 'globe_mana', 'the mana globe glows'); eq(L.chestOf(6068).art, 'bag_glint', 'the loot bag glints')
-for _, id in ipairs({ 44396, 44397, 44398, 6068 }) do
+eq(L.chestOf(44398).art, 'globe_mana', 'the mana globe glows'); eq(L.chestOf(6068).art, 'bag_glint', 'the old loot bag glints'); eq(L.chestOf(19202).art, 'bag_glint', 'the loot bag (a plain pouch since O565) glints')
+for _, id in ipairs({ 44396, 44397, 44398, 6068, 19202 }) do
   eq(L.chestOf(id).pickup, true, 'pickup ' .. id .. ' counts against the cap'); eq(L.chestOf(id).px, 64, 'pickup ' .. id .. ' is a 64 px strip')
   eq(L.chestOf(id).big, nil, 'pickup ' .. id .. ' is one tile')
   eq(L.CHESTS[id], nil, 'pickup ' .. id .. ' is no chest')

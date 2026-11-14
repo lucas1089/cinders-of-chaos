@@ -80,7 +80,7 @@ end
 -- offer; the client draws the icon from it and, when the offer is picked, the character preview):
 --   {kind = "outfit" | "addons", look = looktype, addons = 3}   {kind = "mount" | "wings" | "aura", look = client id}
 --   {kind = "shader", shader = name}   {kind = "outline", art, pulse?}   {kind = "footprint", art}
---   {kind = "effects", play, killfx?}  {kind = "swatch", color, accent?}  {kind = "nameplate", frame}
+--   {kind = "effects", play, killfx?, lootfx?}  {kind = "swatch", color, accent?}  {kind = "nameplate", frame}
 --   {kind = "subject", look = looktype}  (a pet)   {kind = "bundle", parts = {look, ...}}
 -- nil for offers that are not an appearance (items, services, premium time, convenience unlocks): the client then
 -- draws the item picture. src supplies what only the engine side knows: outfitLook(offer) (the viewer's sex),
@@ -137,7 +137,7 @@ function C.categoryShowsLook(look)
 		return look.accent ~= true
 	end
 	if look.kind == "effects" then
-		return look.killfx == true
+		return look.killfx == true or look.lootfx == true
 	end
 	return true
 end

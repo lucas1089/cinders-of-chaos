@@ -475,7 +475,8 @@ namespace Chaos.Core.LiveCheck
             if (loot == null) return "no loot container on or beside the kill's tile " + P(at) + " (the corpse or the loot bag)";
             var (tile, stack, cid) = loot.Value;
             int sid = serverToClient == null ? 0 : serverToClient.Where(kv => kv.Value == cid).Select(kv => kv.Key).FirstOrDefault();
-            wasBag = sid == 6068;
+            // the loot bag is server item 6068; its client look is a plain pouch (client 19202, O565), not the stock id 6068
+            wasBag = sid == 6068 || (serverToClient != null && serverToClient.TryGetValue(6068, out int bagClient) && bagClient == cid);
             if (PathFinder.Cheb(tile, me.Pos) > 1 && !WalkTo(me, tile, 1, 20000, false, out string why)) return "could not walk to the loot at " + P(tile) + ": " + why;
             if (p.Inventory.Length <= 3 || p.Inventory[3] == null) return "no backpack to loot into";
             ushort bagId = (ushort)p.Inventory[3].Id;

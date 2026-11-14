@@ -893,7 +893,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101810 - 7101819 | right-click equips (`Chaos.storage.rightClickEquipOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0024) |
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
-| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (`cosmetics_config.lua`, O318), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
+| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (removed, O564: reserved, never reused; `cosmetics_config.lua`, O318), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z, +5 the day of its respec waiver and +6 the waivers used that day ("Respec waiver for testers"); +7..9 free |
 | 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
@@ -4525,8 +4525,11 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   `autobuildPreview` / `autobuildApply {build, mode = "add" | "reset", cost}`. Apply only adds the nodes you can pay and takes
   nothing back. Reset and apply takes the tree back at the normal respec price (a free reset is used first) and builds the
   chosen one; the price shown in the preview is the one sent back. Rate limited: Apply `passivetree.autobuild` (1 s),
-  the preview its own `passivetree.autobuildPreview` (`previewRateMs`, 500 ms). Every preview request is answered: a
-  refused one with `autobuildError {message, build, retry}` (retry: too fast), a Lua error with `autobuildError` too.
+  the preview its own `passivetree.autobuildPreview` (`previewRateMs`, 150 ms since O560; the generic 200 ms per-action limit of
+  the opcode skips it). Every preview request is answered: a refused one with `autobuildError {message, build, retry, wait, seq}`
+  (retry: too fast, wait: ms), a Lua error with `autobuildError` too; `seq`, the request number the client sent, comes back in
+  every answer so the client drops an answer to a pick it replaced (O560: quick switching was slow and sometimes did not
+  switch). Another autobuild action refused by the generic limit gets `autobuildError`, never silence.
   Fix 2026-10-20 (owner report: stuck at "Asking the server for a preview..."): the client asked for a preview only on
   its first list, so after an Apply or on reopening the window it waited for an answer to a request it never sent. It
   now asks whenever no preview is shown, asks again after 4 s (3 tries) and then shows an error. The skipped count of
@@ -5929,8 +5932,8 @@ sold through `ChaosCosmetics.storeUnlock` (`shop_services.lua` `unlockEntry`); s
 
 | Kind | What | Store (coins) | Achievement |
 |---|---|---|---|
-| Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 12 skins, 250 each: Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
-| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's) | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler), Sovereign's Pyre (The Last Door, the raid) |
+| Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 26 skins, 250 each (14 added in O563 for the spells the starter builds use most: Mystic Emberwreath, Glacial Spikes, Umbral Covenant, Aether Storm, Gloomswarm; Templar Wildfire Pyre, Violet Verdict, Crimson Verdict; Warrior Gilded Verdict; Monk Azure Palms, Golden Lance, Bloodied Knuckles; Necromancer Gravefire, Wail of the Rift; the Necromancer line is slot 6): Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
+| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's); 10 of them dissolve the monster's own sprite instead (O563, "Dissolve kill effects") | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, and the dissolves Windswept, Unravelling, Ashfall, Frostmelt, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler), Sovereign's Pyre (The Last Door, the raid) |
 | Loot label accents | the background of the character's own highlighted ground loot labels (`game_groundlabels`); text and border keep the rarity colour, the corpse loot rays keep theirs | Ember, Verdant, Azure, Royal Labels, 150 each | Gilded Labels (Greed Is Good) |
 | Chat name colours | the character's name in chat, for every viewer (player lines only, the name only; item link colours stay) | Cinder, Frost, Verdant, Amethyst, Rose Name, 200 each | Veteran's Gold (Veteran of the Wastes) |
 
@@ -5942,7 +5945,13 @@ also inside the cast's `addEvent` callbacks); `_common.lua` asks `ChaosCosmetics
 `ChaosSpell.fx` / `vfx` / `vshoot` and in the global `Fx` / `FxMissile` (wrapped once), so heal and area effects of the cast
 change too. A variant the server does not know sends the default effect. Effects set at load time (a combat's
 `COMBAT_PARAM_EFFECT`) stay the default. A spell belongs to one line; the skin chosen for that line is per character
-(storage 7100943 + line slot). The Necromancer line has no skins yet (its effects were being redrawn).
+(storage 7100943 + line slot). The Necromancer line has two since O563 (slot 6, the last storage of the block). A skin is
+1 to 3 spells of one line; one spell may be in several skins of its line (the player picks one per line). The 14 skins of O563 were
+chosen from the spells of `server/tools/starter_builds_config.lua` (the Recommended builds) and kept to the recolour families: a fire
+spell stays fire (`fire_nova` to the ember `fire_ring`), ice stays ice (`frost_burst` to `ice_spikes`, a new `shards` family), the
+war cries, palms and domes only change colour; the effect each spell sends before a skin is read from the real scripts
+(a recording run of `tools/ci/spell_fx_probe.lua` with a mock `ChaosCosmetics.swapFor`). The hot Ranger arrow spells (Gale Volley,
+Moonshard Rain, Arrowstorm) and the Warrior slams (Colossus Fall, Anvil Fall) send effects that have no recolour in the pair, so they have no skin yet.
 
 **Choosing and previews.** Character > Cosmetics: one tab per kind, a Default row, Use, Preview, Open the Store. Preview (and
 the store's SHOW button on a skin or kill effect) plays the effects at the player's tile for that player only
@@ -6125,7 +6134,7 @@ the score are never counted.
 
 | Counted | Read from |
 |---|---|
-| spell skins, kill / level-up / rare-loot effects, emotes, loot labels, chat colours, footprints, outlines, Chaos outfit shaders | the account's `chaos_cosmetics` rows, live (`ChaosCosmetics.ownedOf`) |
+| spell skins, kill / level-up / rare-loot effects, loot labels, chat colours, footprints, outlines, Chaos outfit shaders | the account's `chaos_cosmetics` rows, live (`ChaosCosmetics.ownedOf`) |
 | outfits and addons, mounts, wings, auras, shaders | `ChaosWardrobe.list` of the character (`o` set); prices by client look from the store offers, mounts by `clientid`, wings and auras by XML id through the wardrobe catalogue |
 | name plate frames | the store's frame storages (`ChaosShopCore.frameStorage`) |
 | titles | `ChaosTitles.of` (the "collection" titles and staff are left out) |
@@ -6170,7 +6179,7 @@ go as `tryfx`). Nobody else sees any of it and nothing is granted.
 | Offer kind | Try on |
 |---|---|
 | outfits, addons, mounts, wings, auras, shaders, Chaos shaders, outlines, footprints | in the look preview on the own character; footprints and outlines also on the map (`tryfx`) |
-| spell skins, kill effects, level-up effects, rare-loot effects, victory emotes | the effect in the look preview and round the character on the map (server `preview`) |
+| spell skins, kill effects, level-up effects, rare-loot effects | the effect in the look preview and round the character on the map (server `preview`); a rare-loot effect plays over a loot bag beside the figure (O564) |
 | bundles | in the look preview when a part is worn |
 | name plate frames | on the player's own name plate on the map for 10 s, this client only (client `game_nameplate` `previewFrame`, nothing is sent), then the real plate is back; a bundle with a plate part too. Without `game_nameplate` the offer keeps its icon and the preview prints a note |
 | chat colours, loot label accents | no: the row's title shows the colour or the accent |
@@ -6190,25 +6199,46 @@ the walking trail, so no second trail was added. New, in the Cosmetics group of 
 |---|---|---|---|
 | Level-up effects (5) | a chaos_vfx effect on the character when it gains a level | 150 to 250 | once per 4 s per character |
 | Rare loot effects (5) | an effect on the corpse when the character's kill drops a Legendary item or better (the corpse owner) | 150 to 250 | once per 3 s per character |
-| Victory emotes (5) | an effect on the character and a line over its head after a boss kill (the killer, the most damage dealer and their party members within 12 tiles, at most 5) | 200 to 250 | once per 30 s per character |
 
 Prices: Dawn / Ember / Frost Ascent 200, Verdant Ascent 150, Void Ascent 250; Gilded Glint, Crimson Gleam 200, Starfall
-Find, Royal Pyre 250, Holy Seal Find 150; Victory Roar, Warrior's Salute, Shadow Bow 200, Ember Flourish, Halo of Triumph 250.
+Find, Royal Pyre 250, Holy Seal Find 150. (The five Victory Emotes of 200 to 250 were removed on 2026-11-14, O564: see "Victory emotes removed" below.)
 The effects are existing `chaos_vfx.lua` effects sent to every spectator of the tile (`Vfx`), so players nearby see them.
-The server sends no number and does no work per step. Storages 7102002 (level-up), 7102003 (rare loot), 7102004 (emote) in
-the wardrobe block. Hooks: a `CreatureEvent` `onAdvance` (`ChaosCosmeticsAdvance`), an `EventCallback.onDropLoot` at index 2.5
+The server sends no number and does no work per step. Storages 7102002 (level-up), 7102003 (rare loot) in
+the wardrobe block (7102004 was the emote: reserved, never reused). Hooks: a `CreatureEvent` `onAdvance` (`ChaosCosmeticsAdvance`), an `EventCallback.onDropLoot` at index 2.5
 (after the loot layer and the achievements scan, before the autoloot) and the monster death event cosmetics.lua already
-registers on every monster. The window has three more tabs (Level-ups, Rare Loot, Emotes) with the same Preview button.
-The emote line is translated per viewer (2026-10-29): `Chaos.yell(player, line, TALKTYPE_MONSTER_SAY)` lists the players in speech range and
-sends each one `Creature:say(text, type, false, viewer, position)` in that viewer's language (`ChaosI18n`, `i18n_strings.lua`: the five lines have
-pt-BR texts, `tests/cosmetics_test.lua` checks it). While every viewer reads English it is the plain `say` of before.
+registers on every monster. The window has two more tabs (Level-ups, Rare Loot) with the same Preview button.
 
 **Tests.** `tests/collection_test.lua` (points from prices and sources, the score with the title cap, the catalogue maps,
 milestones due and next, the view, the validator refusals, `collection.lua` on a mocked engine: login sweep, claiming once,
 the cosmetic reward, staff, two characters of one account, rows read back, the title source, the hooks), `tests/cosmetics_test.lua`
-(the new kinds: throttle, rarity check, emote wearers, the level-up, rare-drop and victory paths, prices 150-250), client
+(the new kinds: throttle, rarity check, the level-up, rare-drop and victory paths, prices 150-250), client
 `game_shop/tryon_test.lua`, `game_cosmetics/cosmeticslogic_test.lua`, `game_lookpreview/lookpreview_core_test.lua`.
 **Not run in game.**
+
+### Victory emotes removed (O564)
+Owner, 2026-11-14 (pt-BR, translated): "the victory emotes make no sense, you can take them out". The five emote cosmetics (Victory
+Roar 801, Warrior's Salute 802, Ember Flourish 803, Halo of Triumph 804, Shadow Bow 805; 200 to 250 coins) and the kind itself are gone from
+the store (`cosmetics_store.lua` / `shop_config.lua`), `cosmetics_config.lua` (`kinds`, `storage.emote`, `combat.emoteMs` / `range` /
+`maxPerKill`), `cosmetics_core.lua` (`emoteWearers`, `EMOTE_MAX`, the `say` rules), `cosmetics.lua` (the boss-death hook `M.victory`, the
+`emote` choice and cache), the collection groups, the five lines of `i18n_strings.lua`, the Pact's monthly shelf and the client tabs.
+- **Reserved, never reused.** `cosmetics_config.lua` `retired` keeps id, key and list price of the five; `K.validate` refuses a live
+  cosmetic with one of those ids or keys. Storage 7102004 (the chosen emote) stays reserved in the wardrobe block, nothing reads or
+  writes it.
+- **The Pact shelf.** `pact_config.lua` `marks.monthly` named two emotes: February is now Frost Ascent (`lvl_frost`, 200 Marks) and
+  November Ember Ascent (`lvl_ember`, 200 Marks), both store cosmetics of the same price.
+- **The refund** is `server/sql/chaos_zz_emote_removal.sql` (run by the install step `sql`, last of the files, like the soul pit's):
+  one transaction that pays and deletes together, so a failure pays nothing and a second run finds no row. Per owned row of the five keys
+  in `chaos_cosmetics`: `source` `store` gets the Chaos Coins back (the price of the last `chaos_shop_purchases` row of the offer
+  `unlock:cosmetic_<key>`, a sale price counts, else the list price) into `chaos_shop_coins`, with a refund row (`offer_key`
+  `refund:cosmetic_<key>`, negative price) in the purchase log so the sales dashboard shows the net and every refund can be found;
+  `source` `marks` gets the Marks back (balance + 200, at most the 100000 cap, `spent` - 200, a `chaos_pact_log` row `refund`); any other
+  source (a staff grant) pays nothing. Then the rows are deleted from `chaos_cosmetics` and storage 7102004 from `player_storage`.
+  Nothing runs unless all five tables exist (a fresh install is a no-op, the next run does the work). Run it with the server stopped
+  (the install does): a running server holds an account's cosmetics in memory. Tested on a private MariaDB (store, Marks and staff
+  rows, a sale price, the cap, a second run); `tests/cosmetics_removal_test.lua` holds the file to the `retired` list.
+  The collection score of an account that owned one drops by its points (the cosmetics are read live); milestones already claimed stay.
+- A rare-loot effect no longer shows the kill animation in the preview (the offer's look carries `lootfx`, not `killfx`; client
+  `game_lookpreview` plays it over a loot bag beside the figure, client/MANIFEST.md "Store cosmetics fixes (O564)").
 
 ## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
 
@@ -31410,11 +31440,40 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   ordinary corpse container. Rules: corpse 0 stays nothing (22 Chaos monsters, summons, pets, Necromancer minions); a monster whose own
   corpse id is in `keepIds` keeps it; bag id 0 is the old behaviour. `corpse_bag.lua` calls the function at every load, so
   `enabled = false` and a `/reload` give the bodies back. An engine without the patch logs one line and nothing changes.
+* **The look (O565).** Owner 2026-11-14 (pt-BR): "os corpos dos monstros estao assim. deveriam ser aquelas bags basicas mais
+  genericas". Root cause: the server sent the stock client item of server 6068, which in the dat is the dark, horned lump of a demon
+  corpse (the first stage of 6068 -> 5527 -> 5528, drawn with four black sparkles), so on a hunt every kill left a dark blob that
+  read as the monster's own body, with the client's warm glint ring (`bag_glint`) on top and, with the loot label's highlight, an
+  orange or red patch; the bag table (engine patch 0089) was right (one id for every monster), the id's *look* was wrong. Fix, no
+  new sprite and no new pair: `corpse_config.lua` `look = 19202`, the client item id of a plain brown leather loot pouch of the
+  current pair (a container the dat does not let a player pick up; the stock "reward container" look); step `lootbag`
+  (`tools/patch_monster_corpses.py`) rewrites only the client id attribute of the items.otb node of server 6068 (`items.otb.bak`
+  keeps the original, the file is parsed again and the node checked), so the server sends 19202 for the bag of every monster,
+  the same one look. Server ids and every script are unchanged (the bag is still 6068, the 191 import monsters still name it).
+  Client: `GroundLabelsLogic.LOOT_BAG_LOOK` (19202, next to the stock `CORPSE_BAG_ID`; a pouch has no corpse flag in the dat either)
+  and the glint of `game_chestaura` are keyed on the new id (both keep 6068 for a server that has not run the step; the test
+  compares them with the config). There is no rarity colouring of the bag itself: the label over it carries the rarity colour.
+  Stock bag colours exist in the pair (client 2857-2863: green, yellow, red, purple, blue, grey, gold) for a later rarity tint,
+  which would need the bag to change id after the loot is known: not done.
+* **Empty bags go fast (O565).** Owner 2026-11-14 (pt-BR): "faca tambem eles desaparecem mais rapido quando estiverem vazias". A bag
+  with items keeps its `seconds` (180). Once it holds nothing (looted by hand, quick loot, auto loot, a monster with no loot) its
+  remaining time is cut to `emptySeconds` (config, 5): `scripts/chaos/corpse_empty.lua`. There is no engine event for "the last
+  item left this container" (hand moves, quick loot, auto loot and scripts all go through different paths), so: an
+  `EventCallback onDropLoot` (priority 9, after the loot layer, autoloot and globes) remembers the *tile* of every new bag; one
+  timer, running only while a tile is remembered, looks at those tiles every second (`ChaosCorpse.sweep`, pure, tested) and for
+  each bag there with `getSize() == 0` and more than `emptySeconds` left calls `item:setAttribute(ITEM_ATTRIBUTE_DURATION, ms)`,
+  which moves a decaying item to its new time (decay.h). The time is never made longer, a bag with loot is left alone, a tile is
+  forgotten when it has no bag, only emptied bags, or when the bag could not live any more. A bag goes `emptySeconds` plus at most
+  one second after its last item left. No items.xml change (the decay is the item's own, the step only sets the full time),
+  nothing to install for it: the file loads with the other scripts. State is in memory; after a restart bags already on the
+  ground keep their time. `emptySeconds = 0` or `enabled = false` turns it off with a `/reload`. **Necromancer:** Raise Dead and
+  Corpse Explosion use an empty corpse of the caster or the party (`corpseUsable`: no items inside), so they now have those
+  5 seconds after the last item leaves a bag instead of up to 3 minutes; raise `emptySeconds` if that is too short.
 * **Players.** Not touched: `Player::getLookCorpse` is not in the patch, the table is read only from `Monster::getLookCorpse`.
   Tested three ways: `ChaosCorpse.corpseFor(cfg, "player", id)` returns the id for any id (`tests/corpse_bag_test.lua`), the patch guard
   fails when the patch touches player.* / creature.* or calls the table anywhere but monster.h (`tools/patch_monster_corpses_test.py`),
   and the C++ header test has no player path.
-* **items.xml.** Install step `lootbag` (`tools/patch_monster_corpses.py`, idempotent, after `corpses`): item 6068 gets the name
+* **items.xml.** Install step `lootbag` (`tools/patch_monster_corpses.py`, idempotent, after `corpses`; also the items.otb look above): item 6068 gets the name
   "sack of loot", the config's slots (the biggest stock corpse holds 60, bonus loot and orbs come on top), `decayTo 0` and
   `duration` 180 s. No remains stage: the stock chain left a pile (5527, 5528) after the loot. `corpseType` stays, so
   `ItemType:isCorpse()` is true. 180 s is the loot stage the 5 minute decay scaling (`patch_corpse_decay.py`) left before.
@@ -33684,3 +33743,28 @@ Client side: client/MANIFEST.md "Pair 71" (77 outfits 3434-3510, `gen_wst_outfit
   at most 2 monsters on a look, the old look is the pool's (and the file's for ours), no monster in the recolour map, and a monster of the donor map has the same old look in both. `tests/hunt_teleports_test.lua` reads the map: no showcase cell repeats a look at pair 71 (cells that changed look: the plans of Quicksilver Wraith, Bonepicker, Azure Guard, Distorted Phantom and Nightfang Widow and base hunts with Talon Knight, Wyrm, Crab, Carrion Worm, Rustheap Golem, Ghoul, Usurper Warlock and the lost souls).
   `client/tools/gen_dungeon_banners.py` draws a monster of the map at its purchased look (no banner monster is in it: no banner changed).
 - **Tests.** `install_monster_wst_looks_test.py` (the map, the guard end to end, XML ours and base, Lua, pool, a monster that wears its donor look, idempotence, refusals), `audit_idle_looks_test.py`, `audit_shared_looks_test.py`, `client_pair_test.py`, `gen_wst_outfits_test.py` (CI). Not verified: in a running client.
+
+### Dissolve kill effects (O563)
+
+A kill effect with `dissolve = "<mode>"` (and `tint = 0..7`, 0 = the mode's own colour) in `cosmetics_config.lua` does not play a tile
+effect: the monster's own sprite comes apart on the clients near the kill (client `game_killdissolve`, base patch `0200`, "Kill dissolve (O563)"
+in client/MANIFEST.md). Modes (`cfg.dissolve.modes`): `sand` (blown away, top first), `pixels` (its pixels drift apart), `ash` (crumbles and falls),
+`burn` (burns from the edges inward), `void` (collapses to a point), `frost` (shatters and melts), `gold` (rises as dust). The cosmetic keeps `vfx`:
+the plain effect that plays when the dissolve cannot.
+
+- **The message.** `cosmetics.lua` `M.dissolve` (called by the death handler `ChaosCosmeticsDeath` after the killing blow of a character that wears one):
+  `{action = "kdis", data = {i, x, y, z, m, t, o = {l, h, b, g, f, a}, d, v = {id, dx, dy}}}` on the cosmetics opcode 225 (no new opcode, an old client
+  ignores the action) to the killer first and the other players within `cfg.dissolve.range` (9 x 7 tiles), at most `maxViewers` (12). The rules are in
+  `cosmetics_core.lua` (`dissolvePayload`, `dissolveAllowed`, `dissolveViewers`) and tested in `tests/cosmetics_test.lua`.
+- **The caps.** At most `cfg.dissolve.perSec` (4) dissolves per killer and second: the next kill of that second plays the plain effect (`Vfx`) on the
+  server, as does a monster that has no creature look (an item look, an invisible one) or a kill with nobody to tell. The client caps again (6 at once, 3 on a
+  phone). One message per viewer per kill, about 120 bytes; a pack of 4 kills a second to 12 viewers is 48 messages a second at the very worst.
+- **The window.** `rows` carry `dissolve` and `tint` (tint 0 left out); the store offer's `look` the same (`offerLook`), so the Customise window and the store
+  preview play the dissolve on their dummy monster.
+- **Config rules** (`validate`): `dissolve` must be one of the modes, `tint` a whole number below `cfg.dissolve.tints`, only a kill effect has either.
+- **The effects.** Replaced in place (same id, same owner rule): Verdigris Splash (112, reward track 500 points: green `pixels`), Pact Ember (130, Chaos Pact
+  November 2026: crimson `burn`), Honor Brand (110, Battleground honor vendor: crimson `ash`). New: Windswept (122, `sand`), Unravelling (123, `pixels`),
+  Ashfall (124, `ash`), Frostmelt (125, `frost`), all four in the store at 200 (the kill effect price: one price per kind, `docs/PRICES.md`); Emberfade (126,
+  ember `burn`, achievement Keeper of the Ashes), Void Collapse (127, `void`, Herald of Omens), Gilded Dust (128, gold `gold`, Hoardbreaker). Names stay
+  English like every cosmetic name (`i18n_strings.lua`: proper names stay in English); the texts the client adds are in pt-BR.
+- **Never power.** A dissolve changes a picture only (no damage, drop, timing or area); the cosmetics test still refuses any field that is not cosmetic.

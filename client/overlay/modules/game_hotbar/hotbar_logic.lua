@@ -14,6 +14,7 @@ L.KEY_W = 30           -- the key label box under a slot
 L.KEY_H = 14
 L.KEY_BORDER = 4
 L.SOCKET = 44          -- the round side slots
+L.SOCKET_WINDOW = 34   -- the round window of the ring over a side slot (smaller than BUTTON: the base button's square frame stays behind the ring)
 L.SOCKET_GAP = 8       -- socket <-> first slot
 L.BODY_H = 84          -- the iron frame
 L.BODY_BORDER = 20
@@ -99,9 +100,20 @@ function L.metrics(opts)
   m.socketRX = m.slotsX + m.cellsW + m.socketGap
   m.slotY = m.bodyTop + m.slotTop
   m.socketY = m.slotY + round((m.slot - m.socket) / 2)
+  m.window = round(L.SOCKET_WINDOW * s)
   m.keyY = m.slotY + m.slot - round(4 * s)
   m.lineY = m.bodyTop - m.lineH
   return m
+end
+
+-- The ring over a side slot (Q, E; art hotbar_ring.png, drawn over the base button, which is a square): its square canvas
+-- is the socket, centred on the button, and its round window must be no wider than the button, so the button's own frame
+-- and corners lie under the ring and the circle is what the player sees. Returns the ring's rectangle (from the bar's left
+-- edge and top) and whether the button is covered at these metrics (every scale of the options and of a fitted bar).
+function L.ring(m, socketX)
+  local pad = round((m.socket - m.button) / 2)
+  return { x = socketX, y = m.socketY, size = m.socket, window = m.window,
+           covers = m.window <= m.button and m.socket >= m.button and pad >= 0 }
 end
 
 -- The round chat and gear buttons over the right end of the bar: size, top (from the bar's top edge) and the right

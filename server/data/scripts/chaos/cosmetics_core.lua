@@ -7,14 +7,12 @@ ChaosCosmeticsCore = ChaosCosmeticsCore or {}
 local C = ChaosCosmeticsCore
 
 C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true, footprint = true, outline = true,
-	levelfx = true, rarefx = true, emote = true}
+	levelfx = true, rarefx = true}
 -- the kinds that are one chaos_vfx.lua effect (`vfx`) other players see: killfx on the killed monster, levelfx on the
--- character at a level up, rarefx on the corpse of a rare drop, emote on the character after a boss kill (cosmetics.lua)
-C.VFX_KINDS = {killfx = true, levelfx = true, rarefx = true, emote = true}
--- the longest line a victory emote says
-C.EMOTE_MAX = 32
+-- character at a level up, rarefx on the corpse of a rare drop (cosmetics.lua). The victory emote kind is gone (O564).
+C.VFX_KINDS = {killfx = true, levelfx = true, rarefx = true}
 -- the combat cosmetics others see (O318): sold at 150-250 coins
-C.COMBAT_KINDS = {levelfx = true, rarefx = true, emote = true}
+C.COMBAT_KINDS = {levelfx = true, rarefx = true}
 -- pvp: battleground.lua / arena_season.lua grant it; boss: a rare personal drop of a boss (exclusives.lua grants it)
 -- collection: granted once when the account's collection score reaches `collection` points (collection.lua)
 -- daily: granted once when the account's login streak reaches `days` (daily.lua, daily_config.lua milestones, O409)
@@ -131,6 +129,83 @@ function C.skinForSpell(cfg, spellId, chosenIdOf)
 	return nil
 end
 
+-- the dissolve of a kill effect (O563): mode, tint; nil for the plain ones
+function C.dissolveOf(c)
+	if type(c) ~= "table" or c.kind ~= "killfx" or type(c.dissolve) ~= "string" then
+		return nil
+	end
+	return c.dissolve, c.tint or 0
+end
+
+-- is `mode` one of the config's dissolve modes (the client has a shader for each)
+function C.dissolveKnown(cfg, mode)
+	for _, m in ipairs((cfg.dissolve or {}).modes or {}) do
+		if m == mode then
+			return true
+		end
+	end
+	return false
+end
+
+-- Throttle of the dissolve kill effects (O563): a killer's dissolves per second. state = {[killerId] = {sec, n}} (kept by
+-- cosmetics.lua); returns true and counts the dissolve while the killer is under cfg.dissolve.perSec this second,
+-- false (the plain effect plays) once over it. `now` in seconds.
+function C.dissolveAllowed(cfg, state, killerId, now)
+	local per = (cfg.dissolve or {}).perSec or 4
+	local e = state[killerId]
+	if not e or e.sec ~= now then
+		e = {sec = now, n = 0}
+		state[killerId] = e
+	end
+	if e.n >= per then
+		return false
+	end
+	e.n = e.n + 1
+	return true
+end
+
+-- The viewers of a dissolve: the killer first, then the other players near the kill, at most cfg.dissolve.maxViewers.
+-- `near` = a list of {id = , ...}; returns the picked list (the same entries).
+function C.dissolveViewers(cfg, near, killerId)
+	local max = (cfg.dissolve or {}).maxViewers or 12
+	local out, rest = {}, {}
+	for _, p in ipairs(near or {}) do
+		if p.id == killerId then
+			out[#out + 1] = p
+		else
+			rest[#rest + 1] = p
+		end
+	end
+	for _, p in ipairs(rest) do
+		if #out >= max then
+			break
+		end
+		out[#out + 1] = p
+	end
+	return out
+end
+
+-- The message of a dissolve (client game_killdissolve): the dying monster's look (nil when it has no creature look: a plain
+-- effect plays), its place, the mode and tint and the plain effect {id, dx, dy} the client plays when it cannot dissolve.
+-- outfit = the engine's {lookType, lookTypeEx, lookHead, lookBody, lookLegs, lookFeet, lookAddons}; vfx = ChaosVfx[name].
+function C.dissolvePayload(cfg, creatureId, pos, mode, tint, outfit, direction, vfx)
+	if not C.dissolveKnown(cfg, mode) or type(pos) ~= "table" or type(outfit) ~= "table" then
+		return nil
+	end
+	local look = tonumber(outfit.lookType) or 0
+	if look <= 0 or (tonumber(outfit.lookTypeEx) or 0) > 0 then
+		return nil
+	end
+	local data = {i = creatureId, x = pos.x, y = pos.y, z = pos.z, m = mode, t = tint ~= 0 and tint or nil,
+		o = {l = look, h = tonumber(outfit.lookHead) or 0, b = tonumber(outfit.lookBody) or 0, g = tonumber(outfit.lookLegs) or 0,
+			f = tonumber(outfit.lookFeet) or 0, a = tonumber(outfit.lookAddons) or 0},
+		d = tonumber(direction) or 2}
+	if type(vfx) == "table" and tonumber(vfx.id) then
+		data.v = {id = vfx.id, dx = vfx.dx ~= 0 and vfx.dx or nil, dy = vfx.dy ~= 0 and vfx.dy or nil}
+	end
+	return {action = "kdis", data = data}
+end
+
 -- the effects a store / window preview of a cosmetic shows (names, in order) and their type
 function C.previewOf(c)
 	if not c then
@@ -233,24 +308,6 @@ function C.hasRare(rarities, minRank, rankOf)
 		end
 	end
 	return false
-end
-
--- The characters that show their victory emote after a boss kill: the killer first, then the others, each once, only
--- those with an emote chosen (wears(id) -> true) and within cfg.combat.range tiles (near(id) -> true), at most
--- cfg.combat.maxPerKill. ids = candidates in order (the killer, the most damage dealer, then party members).
-function C.emoteWearers(cfg, ids, wears, near)
-	local out, seen = {}, {}
-	local max = (cfg.combat or {}).maxPerKill or 5
-	for _, id in ipairs(ids or {}) do
-		if #out >= max then
-			break
-		end
-		if not seen[id] and wears(id) and near(id) then
-			out[#out + 1] = id
-		end
-		seen[id] = true
-	end
-	return out
 end
 
 -- ---------------------------------------------------------------- colours
@@ -447,6 +504,10 @@ function C.rows(cfg, owned, chosen, opts)
 			how = C.how(c, opts.achievementName and c.achievement and opts.achievementName(c.achievement) or nil,
 				opts.categoryName and c.category and opts.categoryName(c.category) or nil),
 			color = c.color, accent = c.accent}
+		row.dissolve, row.tint = C.dissolveOf(c)
+		if row.tint == 0 then
+			row.tint = nil
+		end
 		if c.kind == "spellskin" then
 			local l = ix.lines[c.line]
 			row.line = c.line
@@ -483,7 +544,7 @@ end
 -- What the store shows for a cosmetic unlock "cosmetic_<key>": its own appearance, in the shape of the client's look
 -- options (client game_lookpreview LookPreviewCore), used for the offer's icon and the preview beside the list:
 --   outline    {kind = "outline", art, pulse?, color?}            footprint {kind = "footprint", art, color?}
---   spell skin / kill effect  {kind = "effects", play, killfx?}   (play: playRows, the effects themselves)
+--   spell skin / kill effect / rare-loot effect  {kind = "effects", play, killfx?, lootfx?}   (play: playRows, the effects)
 --   chat colour / loot label  {kind = "swatch", color, accent?}   (a sample of the colour; nothing to wear)
 --   outfit shader             {kind = "shader", shader}
 -- nil for an unknown unlock. lookup(type, name) is the one of C.playRows.
@@ -497,8 +558,11 @@ function C.offerLook(cfg, unlockName, lookup)
 		elseif c.kind == "spellskin" or C.VFX_KINDS[c.kind] then
 			local play = lookup and C.playRows(c, lookup) or {}
 			if #play > 0 then
-				-- a kill effect and a rare-loot effect play on a troll that dies; the others on the figure
-				return {kind = "effects", play = play, killfx = (c.kind == "killfx" or c.kind == "rarefx") or nil}
+				-- a kill effect plays on a troll that dies, a rare-loot effect over a loot bag beside the figure (O564: it
+				-- showed the kill animation before); the others on the figure
+				local mode, tint = C.dissolveOf(c)
+				return {kind = "effects", play = play, killfx = c.kind == "killfx" or nil, lootfx = c.kind == "rarefx" or nil,
+					dissolve = mode, tint = mode and tint ~= 0 and tint or nil}
 			end
 		elseif c.kind == "chatcolor" then
 			return c.color and {kind = "swatch", color = c.color} or nil
@@ -707,12 +771,25 @@ function C.validate(cfg, opts)
 			bad("line %s: slot 0..6", l.key)
 		end
 	end
+	-- retired cosmetics (O564): their ids and keys stay reserved, a new cosmetic never takes one
+	local retiredIds, retiredKeys = {}, {}
+	for _, r in ipairs(cfg.retired or {}) do
+		if type(r.id) ~= "number" or type(r.key) ~= "string" or type(r.price) ~= "number" or r.price <= 0 then
+			bad("retired %s: id, key and the list price are needed", tostring(r.key))
+		end
+		retiredIds[r.id or -1], retiredKeys[r.key or "?"] = true, true
+	end
 	for i, c in ipairs(cfg.cosmetics or {}) do
 		local w = "cosmetic " .. tostring(c.key or i)
 		if type(c.id) ~= "number" or c.id < 1 or c.id % 1 ~= 0 then
 			bad("%s: id must be a whole number above 0", w)
 		elseif ids[c.id] then
 			bad("%s: id %d used twice", w, c.id)
+		elseif retiredIds[c.id] then
+			bad("%s: id %d belongs to a retired cosmetic (never reused)", w, c.id)
+		end
+		if retiredKeys[c.key or "?"] then
+			bad("%s: key belongs to a retired cosmetic (never reused)", w)
 		end
 		ids[c.id or -1] = true
 		if type(c.key) ~= "string" or not c.key:match("^[%w_]+$") or #c.key > 40 then
@@ -797,6 +874,9 @@ function C.validate(cfg, opts)
 				bad("%s: a boss cosmetic has no price (never sold)", w)
 			end
 		end
+		if c.kind ~= "killfx" and (c.dissolve ~= nil or c.tint ~= nil) then
+			bad("%s: dissolve and tint are only for kill effects", w)
+		end
 		-- never power: only the fields of the kind
 		for k in pairs(c) do
 			if k == "damage" or k == "area" or k == "bonus" or k == "chance" or k == "stats" then
@@ -852,12 +932,23 @@ function C.validate(cfg, opts)
 			elseif catalog.vfx and not catalog.vfx[c.vfx] then
 				bad("%s: %s is not an effect of the client pair", w, c.vfx)
 			end
-			if c.kind == "emote" then
-				if type(c.say) ~= "string" or c.say == "" or #c.say > C.EMOTE_MAX or c.say:find("[%c|]") then
-					bad("%s: say is a line of 1 to %d characters", w, C.EMOTE_MAX)
+			if c.dissolve ~= nil or c.tint ~= nil then
+				-- a dissolve kill effect (O563): a mode of cfg.dissolve.modes and a tint of its palette; only a kill effect has them
+				local d = cfg.dissolve or {}
+				local known = false
+				for _, m in ipairs(d.modes or {}) do
+					known = known or m == c.dissolve
 				end
-			elseif c.say ~= nil then
-				bad("%s: say is only for emotes", w)
+				if c.kind ~= "killfx" then
+					-- reported once above
+				elseif not known then
+					bad("%s: dissolve %s is not a mode of cfg.dissolve.modes", w, tostring(c.dissolve))
+				elseif c.tint ~= nil and (type(c.tint) ~= "number" or c.tint % 1 ~= 0 or c.tint < 0 or c.tint >= (d.tints or 8)) then
+					bad("%s: tint is a whole number from 0 to %d", w, (d.tints or 8) - 1)
+				end
+			end
+			if c.say ~= nil then
+				bad("%s: say was only for the retired emotes (O564)", w)
 			end
 		elseif c.kind == "lootbeam" then
 			local r, g, b, a = hex(c.accent)

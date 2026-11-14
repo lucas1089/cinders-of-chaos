@@ -6,9 +6,11 @@
 // tools/ci/check_topbar_widgets.py holds the ids topbar_hub.lua looks up and the styles it creates to this file.
 
 // ---------------------------------------------------------------- the bar
-// a hub badge: 28 px (phone 40), the skin button cell with the glyph on it; open = the third row, as a pressed button
+// a hub badge: 32 px (phone 44), the skin button cell with the glyph on it; open = the third row, as a pressed button.
+// The glyph fills about three quarters of it (owner 2026-11-14: the glyphs were small): topbar_hub.lua sizes the glyph
+// widget to the atlas cell it draws (bar atlas 32 px, the card atlas 40 px on a phone)
 ChaosHubBadge < UIButton
-  size: 28 28
+  size: 32 32
   image-source: /images/chaos/skin/button
   image-clip: 0 0 64 24
   image-border: 5
@@ -26,11 +28,11 @@ ChaosHubBadge < UIButton
     image-clip: 0 48 64 24
 
   $mobile:
-    size: 40 40
+    size: 44 44
 
   UIWidget
     id: glyph
-    size: 24 24
+    size: 32 32
     anchors.centerIn: parent
     image-source: images/glyphs_bar
     phantom: true
@@ -101,7 +103,7 @@ ChaosHubCardText < UILabel
   text-align: left
   phantom: true
 
-// one card: the hex badge with its glyph, the name, one line, the chips. 182 x 68 (phone 76 high)
+// one card: the badge with its glyph (44 px, the glyph about 27 px), the name, one line, the chips, the pin mark. 182 x 68 (phone 76 high)
 ChaosHubCard < UIWidget
   size: 182 68
   image-source: /images/chaos/panel
@@ -118,10 +120,10 @@ ChaosHubCard < UIWidget
 
   UIWidget
     id: badge
-    size: 40 40
+    size: 44 44
     anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    margin-left: 10
+    margin-left: 8
     image-source: /images/chaos/skin/button
     image-clip: 0 0 64 24
     image-border: 5
@@ -129,7 +131,7 @@ ChaosHubCard < UIWidget
 
     UIWidget
       id: glyph
-      size: 32 32
+      size: 40 40
       anchors.centerIn: parent
       image-source: images/glyphs_card
       phantom: true
@@ -141,8 +143,8 @@ ChaosHubCard < UIWidget
     anchors.top: parent.top
     anchors.left: parent.left
     margin-top: 9
-    margin-left: 58
-    width: 116
+    margin-left: 60
+    width: 114
 
     $mobile:
       font: chaos-heading-14px
@@ -156,7 +158,7 @@ ChaosHubCard < UIWidget
     anchors.top: prev.bottom
     anchors.left: prev.left
     margin-top: 3
-    width: 118
+    width: 114
     height: 22
 
     $mobile:
@@ -201,7 +203,7 @@ ChaosHubCard < UIWidget
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     margin-bottom: 6
-    margin-left: 58
+    margin-left: 60
     visible: false
     phantom: true
 
@@ -215,7 +217,8 @@ ChaosHubCard < UIWidget
     text-auto-resize: true
     visible: false
 
-  // the red count: applications waiting (Party Finder)
+  // the red square count on the corner of the glyph badge: applications waiting (Party Finder) or unspent passive points
+  // (Passive Tree); topbar_hub.lua sets the text and widens it for "99+"
   ChaosHubCardText
     id: count
     font: verdana-9px-rounded
@@ -227,23 +230,22 @@ ChaosHubCard < UIWidget
     size: 16 16
     anchors.top: parent.top
     anchors.left: parent.left
-    margin-top: 5
-    margin-left: 34
+    margin-top: 4
+    margin-left: 40
     visible: false
 
-ChaosHubFooterButton < UIButton
-  font: Verdana-9px-antialiased
-  color: #8c8070
-  text-auto-resize: true
-  focusable: false
-  change-cursor-image: true
-  cursor: pointer
-
-  $hover:
-    color: #f6cf72
-
-  $mobile:
-    font: verdana-11px-antialised
+  // the pin mark, top right: the card is pinned to the bar (drawn from the saved pins); the picture is the pin glyph of
+  // the mark atlas, tinted by topbar_hub.lua
+  UIWidget
+    id: pinMark
+    size: 20 20
+    image-source: images/glyphs_mark
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 3
+    margin-right: 4
+    visible: false
+    phantom: true
 
 // the hub window: fixed 780 x 262 under the bar (phone: 780 x 290). A ChaosWindow, not a main window: it sits under the bar
 // and not in the middle of the screen. topbar_hub.lua sets its title and escape key.
@@ -252,13 +254,13 @@ ChaosHubWindow < ChaosWindow
   size: 780 262
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
-  margin-top: 44
+  margin-top: 48
   draggable: false
   focusable: true
 
   $mobile:
     size: 780 290
-    margin-top: 56
+    margin-top: 62
 
   ChaosHubTabs
 
@@ -286,11 +288,6 @@ ChaosHubWindow < ChaosWindow
 
       $mobile:
         font: verdana-11px-antialised
-
-    ChaosHubFooterButton
-      id: textMenu
-      anchors.right: parent.right
-      anchors.verticalCenter: parent.verticalCenter
 
 // phone: a tap outside the window closes it (a plain widget behind the window)
 ChaosHubShade < UIWidget

@@ -235,6 +235,11 @@ local function restoreBig(id, w)
   local b = big[id]
   local rect = saved and saved.windows and saved.windows[id]
   local ui = g_ui.getRootWidget()
+  if rect and not L.usableRect(rect) then
+    -- O572: a saved (0,0) (the old top left bug): not restored, dropped, the window opens centred
+    if saved and saved.windows then saved.windows[id] = nil end
+    rect = nil
+  end
   if rect and ui then
     local area = { x = 0, y = 0, width = ui:getWidth(), height = ui:getHeight() }
     local size = w:getSize()

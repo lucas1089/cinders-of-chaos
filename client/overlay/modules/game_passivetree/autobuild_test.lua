@@ -19,6 +19,7 @@ local function advance(ms)
     if not e.removed and e.at <= clock then e.removed = true; e.fn() end
   end
 end
+g_clock = {millis = function() return clock end}
 function showTreeAllocation() shown = shown + 1 end
 function sendMessageBox() boxes = boxes + 1 end
 local lastBox = nil
@@ -90,6 +91,7 @@ eq(kids.applyButton.enabled, true, 'Apply on')
 
 -- Apply: the new list must ask for the preview of the new tree (it did not: stuck at "Asking...")
 sent = {}
+advance(AutoBuildView.MIN_GAP_MS)
 H.autobuildApplied({message = 'Auto build: 5 nodes added, 32 in all.'})
 list()
 eq(count('autobuildPreview'), 1, 'after an Apply: the preview is asked again')
@@ -101,6 +103,7 @@ eq(kids.applyButton.enabled, false, 'nothing left to add: Apply off')
 -- closing and opening the window again: asked again (it was not)
 closeAutoBuild()
 sent = {}
+advance(AutoBuildView.MIN_GAP_MS) -- the request gap (O560)
 openAutoBuild()
 list()
 eq(count('autobuildPreview'), 1, 'reopened: the preview is asked again')
@@ -109,6 +112,7 @@ answer('ranger_sharpshooter', 0)
 -- no answer at all: asked again on the timeout, then an error instead of waiting for good
 closeAutoBuild()
 sent = {}
+advance(AutoBuildView.MIN_GAP_MS) -- the request gap (O560)
 openAutoBuild()
 list()
 eq(count('autobuildPreview'), 1, 'asked')
@@ -129,6 +133,7 @@ eq(kids.applyButton.enabled, true, 'late answer: Apply on')
 -- "too fast" from the server: asked again after a moment, no error shown
 closeAutoBuild()
 sent = {}
+advance(AutoBuildView.MIN_GAP_MS) -- the request gap (O560)
 openAutoBuild()
 list()
 H.autobuildError({message = 'Too fast', build = 'ranger_sharpshooter', retry = true})
@@ -141,6 +146,7 @@ eq(kids.applyButton.enabled, true, 'too fast, then the answer')
 -- a refusal ends the wait with its text; the build is not asked for again by the next list
 closeAutoBuild()
 sent = {}
+advance(AutoBuildView.MIN_GAP_MS) -- the request gap (O560)
 openAutoBuild()
 list()
 H.autobuildError({message = 'That build is not for your class.', build = 'ranger_sharpshooter'})
@@ -151,9 +157,70 @@ advance(AutoBuildView.PREVIEW_TIMEOUT_MS * 4)
 eq(count('autobuildPreview'), 1, 'and no timer is left')
 eq(boxes, 0, 'no message box while the window is open')
 
+-- ------------------------------------------------------------------------------------------------ quick picks (O560)
+-- the owner report of 2026-11-14: switching the build quickly was slow and sometimes did not switch. Picks inside the gap
+-- are coalesced (the last one is asked for), the dropdown shows the pick at once, an older answer never overwrites it.
+closeAutoBuild()
+sent = {}
+advance(AutoBuildView.MIN_GAP_MS)
+openAutoBuild()
+list()
+answer('ranger_sharpshooter', 5)
+advance(AutoBuildView.MIN_GAP_MS)
+sent = {}
+local combo = kids.buildCombo
+local function pickRow(id)
+  for i, o in ipairs(combo.options) do
+    if o.text:find(id, 1, true) then combo.onOptionChange(combo, o.text, o.data); return end
+  end
+  error('no row ' .. id)
+end
+pickRow('Mana')
+eq(count('autobuildPreview'), 1, 'a pick after a quiet moment is asked at once')
+local firstSeq = sent[1].data.seq
+eq(type(firstSeq), 'number', 'the request carries a number')
+eq(sent[1].data.build, 'focus_mana', 'the pick is asked for')
+advance(20)
+pickRow('Sharpshooter') -- back to the first one inside the gap
+eq(count('autobuildPreview'), 1, 'a pick inside the gap waits')
+eq(detail.text:find('Asking', 1, true) ~= nil, true, 'the pick shows at once, waiting for its preview')
+advance(AutoBuildView.MIN_GAP_MS)
+eq(count('autobuildPreview'), 2, 'the waiting pick goes out after the gap')
+eq(sent[2].data.build, 'ranger_sharpshooter', 'it asks for the last pick')
+eq(sent[2].data.seq > firstSeq, true, 'with a newer number')
+-- the slow answer of the first request arrives after the second was sent: dropped, nothing shown
+H.autobuildPreview({build = 'focus_mana', seq = firstSeq, add = {added = 9, nodes = {}}, reset = {added = 0, removed = 0, nodes = {}}})
+eq(detail.text:find('Asking', 1, true) ~= nil, true, 'an older answer shows nothing')
+-- even an older answer for the same build (picked again) is dropped by its number
+H.autobuildPreview({build = 'ranger_sharpshooter', seq = firstSeq, add = {added = 9, nodes = {}}, reset = {added = 0, removed = 0, nodes = {}}})
+eq(detail.text:find('Asking', 1, true) ~= nil, true, 'an older number of the same build shows nothing')
+H.autobuildPreview({build = 'ranger_sharpshooter', seq = sent[2].data.seq, add = {added = 4, nodes = {}}, reset = {added = 0, removed = 0, nodes = {}}})
+eq(detail.text:find('Asking', 1, true), nil, 'the answer to the last pick is shown')
+eq(kids.applyButton.enabled, true, 'Apply on for the last pick')
+-- three quick picks: fewer requests than picks, the last one asked for last
+sent = {}
+advance(AutoBuildView.MIN_GAP_MS)
+pickRow('Mana'); advance(10); pickRow('Sharpshooter'); advance(10); pickRow('Mana')
+advance(AutoBuildView.MIN_GAP_MS * 2)
+eq(count('autobuildPreview') <= 2, true, 'a run of picks is not one request each')
+eq(sent[#sent].data.build, 'focus_mana', 'the last pick is the last asked for')
+-- a refusal of the limit names its wait: asked again by that time; the refusal of an older request is ignored
+local lastSeq = sent[#sent].data.seq
+sent = {}
+H.autobuildError({message = 'Too fast', build = 'focus_mana', retry = true, wait = 150, seq = lastSeq - 1})
+advance(2000)
+eq(count('autobuildPreview'), 0, 'the refusal of an older request is ignored')
+H.autobuildError({message = 'Too fast', build = 'focus_mana', retry = true, wait = 150, seq = lastSeq})
+advance(150 + AutoBuildView.RETRY_MARGIN_MS)
+eq(count('autobuildPreview'), 1, 'the refusal says when: asked again right then, not after 700 ms')
+advance(AutoBuildView.MIN_GAP_MS)
+pickRow('Sharpshooter') -- the later sections start from this pick
+closeAutoBuild()
+
 -- ------------------------------------------------------------------------------------------------ save to a loadout slot (O448)
 closeAutoBuild()
 sent = {}
+advance(AutoBuildView.MIN_GAP_MS) -- the request gap (O560)
 openAutoBuild()
 list()
 answer('ranger_sharpshooter', 5)

@@ -1,6 +1,6 @@
 Module
   name: game_lootbeams
-  description: Loot beams - an animated beam effect (pair 36) over corpses and ground items with loot the loot filter makes glow, one per tier group; else the engine pillar (base patch 0069); server data on the loot filter opcode 238
+  description: Loot beams - (O569) a soft light beam widget (three styles, burst, motes, ground ring) over corpses and ground items with loot the loot filter makes glow, one per tier group; else the pair 36 beam effect, else the engine pillar (base patch 0069); server data on the loot filter opcode 238
   author: Cinders of Chaos
   sandboxed: true
   scripts: [ lootbeamslogic, lootbeams ]

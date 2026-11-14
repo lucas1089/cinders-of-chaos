@@ -72,9 +72,9 @@ array_pop($ENTRIES);
 $view = (string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/downloads.php');
 $table = require __DIR__ . '/../overlay/plugins/chaos/i18n/pt-BR.php';
 preg_match_all("/chaos_t\\('((?:[^'\\\\]|\\\\.)*)'\\)/", $view, $m);
-check(count($m[1]) === 7, 'unity and setup: seven chaos_t texts without an argument in the view (' . count($m[1]) . ')');
+check(count($m[1]) === 13, 'unity, setup and how to start: thirteen chaos_t texts without an argument in the view (' . count($m[1]) . ')');
 preg_match_all("/chaos_t\\('((?:[^'\\\\]|\\\\.)*)', /", $view, $m2);
-check(count($m2[1]) === 1, 'setup: one chaos_t text with an argument');
+check(count($m2[1]) === 3, 'setup, server and Discord: three chaos_t texts with an argument');
 foreach (array_merge($m[1], $m2[1]) as $en) {
 	$en = str_replace("\\'", "'", $en);
 	check(isset($table[$en]) && $table[$en] !== '' && (in_array($en, array('Download', 'Cinders-of-Chaos-Setup.exe · %s MB'), true) || $table[$en] !== $en), 'pt-BR text for: ' . substr($en, 0, 40));

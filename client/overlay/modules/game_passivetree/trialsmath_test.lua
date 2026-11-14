@@ -64,5 +64,57 @@ state.pairs[1].clear = {can = true}
 eq(M.clearCard(state, state.pairs[1]).enabled, false, 'no clear during a run')
 state.running = nil
 
+-- O559: a trial is open to you
+local function st(level, tier, extra)
+  local s = {supported = true, voc = 4, trial = 'The Iron Gauntlet', level = level, tier = tier,
+    tiers = {{name = 'Normal', minLevel = 100, cleared = tier >= 1}, {name = 'Cruel', minLevel = 250, cleared = tier >= 2},
+      {name = 'Merciless', minLevel = 400, cleared = tier >= 3}},
+    pairs = {{locked = tier < 1, held = 0, nodes = {{can = true}, {can = true}}}, {locked = tier < 2, held = 0, nodes = {{can = false}, {can = false}}},
+      {locked = tier < 3, held = 0, nodes = {{can = true}, {can = true}}}}}
+  for k, v in pairs(extra or {}) do s[k] = v end
+  return s
+end
+eq(M.openTier(st(99, 0)), nil, 'below level 100: nothing open')
+eq(M.openTier(st(100, 0)), 1, 'level 100, nothing cleared: Normal is open')
+eq(M.availableCount(st(100, 0)), 1, 'count 1')
+eq(M.openTier(st(600, 0)), 1, 'a high level still opens Normal first')
+eq(M.openTier(st(249, 1)), nil, 'Normal cleared, Cruel needs 250')
+eq(M.openTier(st(250, 1)), 2, 'Cruel open at 250')
+eq(M.openTier(st(400, 3)), nil, 'all three cleared: nothing open')
+eq(M.availableCount(st(400, 3)), 0, 'count 0 when all cleared')
+eq(M.openTier(st(100, 0, {running = true})), nil, 'not while a trial runs')
+eq(M.openTier(st(100, 0, {supported = false})), nil, 'not for a vocation without a trial')
+eq(M.openTier(nil), nil, 'no state, nothing open')
+local cool = st(100, 0)
+cool.tiers[1].problem = 'The trial is still closed to you for 40 seconds.'
+eq(M.openTier(cool), 1, 'the cooldown after a failed run keeps it open')
+eq(M.badgeText(st(100, 0)), '!', 'badge while open'); eq(M.badgeText(st(99, 0)), '', 'no badge when not')
+eq(M.availableText(st(250, 1)), 'Trial open: The Iron Gauntlet on Cruel. Your level (250) reaches it. The first clear opens a pair of special nodes.', 'which trial and why')
+eq(M.availableText(st(99, 0)), '', 'no text when none')
+eq(M.pendingPicks(st(100, 1)), 1, 'pair 1 unlocked, nothing held: one choice waits')
+eq(M.pendingPicks(st(400, 3)), 2, 'a pair with no choosable node does not count')
+eq(M.pendingPicks(st(100, 0)), 0, 'locked pairs do not count')
+local tip = M.buttonTooltip(st(100, 0), 'BASE')
+eq(tip:find('Trial open: The Iron Gauntlet on Normal', 1, true) == 1 and tip:sub(-4) == 'BASE', true, 'tooltip: the trial first, the plain text last')
+eq(M.buttonTooltip(st(99, 0), 'BASE'), 'BASE', 'tooltip: the plain text alone when nothing is open')
+eq(M.buttonTooltip(st(250, 2, {tiers = st(250, 2).tiers}), 'BASE'):find('open pairs', 1, true) ~= nil, true, 'tooltip: pairs waiting for a choice')
+eq(M.needsRefresh(nil, 1), true, 'no state: ask')
+eq(M.needsRefresh(st(99, 0), 99), false, 'level 99: nothing new')
+eq(M.needsRefresh(st(99, 0), 100), true, 'the level reached Normal: ask again')
+eq(M.needsRefresh(st(100, 0), 101), false, 'already open: no need')
+eq(M.needsRefresh(st(400, 3), 500), false, 'all cleared: never')
+eq(M.needsRefresh(st(100, 0, {supported = false}), 500), false, 'no trial for the vocation: never')
+eq(M.pulseColor(0), '#ffffff', 'pulse starts white')
+eq(M.pulseColor(M.PULSE_MS / 2), '#ffa850', 'pulse peaks at ember')
+eq(M.pulseColor(M.PULSE_MS), '#ffffff', 'pulse repeats')
+for ms = 0, M.PULSE_MS, 50 do eq(M.pulseColor(ms):match('^#%x%x%x%x%x%x$') ~= nil, true, 'pulse colour is a hex colour') end
+eq(M.toastKey('Ana', st(100, 0)), 'Ana:4:1', 'toast key: character, vocation, tier')
+eq(M.toastKey('Ana', st(99, 0)), nil, 'no key when nothing is open')
+eq(M.shouldToast(nil, 'Ana:4:1'), true, 'a new availability toasts')
+eq(M.shouldToast('Ana:4:1', 'Ana:4:1'), false, 'the same one does not toast again')
+eq(M.shouldToast('Ana:4:1', 'Ana:4:2'), true, 'the next difficulty is new')
+eq(M.shouldToast('Ana:4:1', nil), false, 'nothing open, no toast')
+eq(M.toastText(st(100, 0)), 'The Iron Gauntlet on Normal is open to you. Open the Trials button of the passive tree.', 'toast text')
+
 if fails > 0 then os.exit(1) end
 print('trialsmath_test: OK')
