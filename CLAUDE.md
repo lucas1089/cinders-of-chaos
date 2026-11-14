@@ -120,6 +120,7 @@ python3 -I client/tools/gen_music.py --check       # region music of game_chaosm
 python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size
 python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaosweather (O208)
 python3 -I client/tools/gen_aura_art.py --check     # chest and Templar aura strips of game_chestaura (O315; CI uses the fx venv)
+python3 -I client/tools/gen_lootbeam_art.py --check && python3 -I client/tools/gen_lootbeam_art_test.py   # loot beam strips of game_lootbeams (O569): 3 styles x 6 tier groups, 6 burst + 12 loop frames of 64 x 128 soft light (no hard edge, the loop closes, the rarity colours, no tier louder); `--preview DIR` writes beams_styles.mp4 and beams_tiers.mp4 (ffmpeg, never committed); lootbeams_test.lua reads the strip sizes in the client loop (CI uses the fx venv)
 python3 -I client/tools/gen_pyre_art.py --check     # Pyre Oath ember ring and burn strips of game_chestaura (O518; CI uses the fx venv; --combo DIR draws a preview GIF, never committed)
 python3 -I client/tools/gen_toast_art.py --check    # toast icons of game_chaosnotify (O317; CI uses the fx venv)
 python3 -I client/tools/gen_dungeon_card_art.py --check    # card frames and dark fade of the Dungeons window, game_dungeons (O555; CI uses the fx venv)
