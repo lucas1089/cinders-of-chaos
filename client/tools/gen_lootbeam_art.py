@@ -435,6 +435,11 @@ def preview(outdir):
     return 0
 
 
+# a tolerance of TOL per channel in --check: numpy's exp, sin and power round differently on other CPUs (vector
+# paths), so a CI runner may draw a pixel one or two steps off the committed strip
+TOL = 4
+
+
 # ---------------------------------------------------------------- main
 def main(argv):
     args = argv[1:]
@@ -449,7 +454,7 @@ def main(argv):
             path = os.path.join(OUT, name)
             if not os.path.exists(path):
                 bad.append(name + ' (missing)')
-            elif load(path).shape != arr.shape or not np.array_equal(load(path), arr):
+            elif load(path).shape != arr.shape or np.abs(load(path).astype(np.int16) - arr.astype(np.int16)).max() > TOL:
                 bad.append(name + ' (differs)')
         known = set(n for n, _ in ((strip_name(s, g), 0) for s in STYLES for g in GROUP_ORDER))
         for f in sorted(os.listdir(OUT)) if os.path.isdir(OUT) else []:
