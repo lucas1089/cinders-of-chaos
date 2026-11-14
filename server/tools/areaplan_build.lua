@@ -346,6 +346,12 @@ local BIOMES = {
 		desc = "vault: dark stone halls with flagstone, slate and tile rooms and a marble boss room"},
 	catacomb = {kind = "dungeon", theme = "rift_crypt", z = 10, light = "dim",
 		desc = "catacombs: crypt sand corridors, slate and flagstone rooms, ruin walls"},
+	-- one floor for every room (owner 2026-11-14, Hollow Crypt: "chao errado"): the catacomb's room floors alternate slate,
+	-- flagstone and slate, so a crypt of five rooms had two light grey rooms among dark ones; here every room is slate
+	-- and only the boss room stays marble
+	catacomb_slate = {kind = "dungeon", theme = "rift_crypt", z = 10, light = "dim",
+		desc = "catacombs of one floor: crypt sand corridors, slate rooms only (marble boss room), ruin walls",
+		override = {roomFloors = {"slate"}, mixedFloors = {"slate"}}},
 	hall = {kind = "dungeon", theme = "rift_hall", z = 9, light = "normal",
 		desc = "black marble halls in dark stone walls"},
 	-- a town building (the Halls of Services of 2026-10-15 used it; none now): not a dungeon: no clutter, no pillars

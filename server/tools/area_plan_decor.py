@@ -40,6 +40,10 @@ LIGHT = {'dark': 0.5, 'dim': 0.75, 'normal': 1.0, 'bright': 1.5}
 # rates at "normal" (per candidate tile unless noted)
 RATE = dict(floor_wall=0.14, floor_near=0.08, floor_mid=0.03, wall_side=0.07, corner=0.55, clusters_per100=1.9,
             path_edge=0.16, wall_spacing=4, light_floor_per100=1.1, light_small=0.012, hall_min=(11, 9))
+# no lone centre piece (owner 2026-11-14, Hollow Crypt): in these kits an anchor of the `centre` list that got fewer
+# than LONE_MIN_DETAILS `around` details is taken back. Other kits keep their bytes (every placed plan stays as it is).
+LONE_KITS = ('hollow_crypt_clean',)
+LONE_MIN_DETAILS = 2
 _kits = None
 
 
@@ -211,6 +215,27 @@ class Dresser:
                 self.blocked.discard(t)
                 self.walk.add(t)
         return gone
+
+    def withdraw(self, t):
+        """take back what put() placed last on tile t (a centre piece): the item, the block, the counters"""
+        for n in range(len(self.placed) - 1, -1, -1):
+            pt, iid, g, cat = self.placed[n]
+            if pt != t:
+                continue
+            del self.placed[n]
+            items = self.tiles[t]['items']
+            for k in range(len(items) - 1, -1, -1):
+                if items[k][0] == iid:
+                    del items[k]
+                    break
+            self.counts[cat] = self.counts.get(cat, 1) - 1
+            if not self.counts[cat]:
+                del self.counts[cat]
+            if self.groups[g]['block'] and t in self.blocked:
+                self.blocked.discard(t)
+                self.walk.add(t)
+            return True
+        return False
 
     def can_block(self, t, spacing=1, lanes=True):
         # set pieces of a hall may stand on a route: a blocking piece is only placed where its neighbours stay
@@ -449,15 +474,22 @@ class Dresser:
                     continue
                 if not self.try_block(t, anchors, 'clusters', 1):
                     continue
-                made += 1
                 k = self.rng.randint(2, 5)
                 ring = [(t[0] + dx, t[1] + dy, t[2]) for dx in range(-2, 3) for dy in range(-2, 3) if dx or dy]
                 self.rng.shuffle(ring)
+                got = 0
                 for n in ring:
                     if k <= 0:
                         break
                     if self.try_flat(n, around, 'cluster detail'):
                         k -= 1
+                        got += 1
+                if got < LONE_MIN_DETAILS and self.kit_name in LONE_KITS:
+                    # a centre piece with no detail round it stands alone in the room (owner 2026-11-14, Hollow
+                    # Crypt): take it back, the tile stays free for the floor detail pass
+                    self.withdraw(t)
+                    continue
+                made += 1
 
     def path_edges(self):
         rows = self.kit.get('path_edge') or []

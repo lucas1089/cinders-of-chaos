@@ -1112,6 +1112,8 @@ jobs:
           python3 -I server/tools/audit_map_tiles_test.py
           python3 -I server/tools/audit_houses_test.py
           python3 -I server/tools/audit_map_plans.py --check --quiet
+          python3 -I server/tools/audit_plan_look_test.py
+          python3 -I server/tools/audit_plan_look.py --check
       - name: Hunt annexes (the five annex plans compile, asymmetric, the rows of hunt_annexes.json; the portal step on a synthetic map; the spawn fills; O337)
         run: |
           sudo apt-get install -y -qq luajit python3-numpy

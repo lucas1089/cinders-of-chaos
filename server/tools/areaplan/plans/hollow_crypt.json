@@ -2,7 +2,7 @@
  "schema": "chaos-area-plan/1",
  "id": "hollow_crypt",
  "name": "Hollow Crypt",
- "biome": "catacomb",
+ "biome": "catacomb_slate",
  "size": [
   132,
   110
