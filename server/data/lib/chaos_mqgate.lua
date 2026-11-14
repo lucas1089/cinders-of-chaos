@@ -1,5 +1,5 @@
 -- Main quest gates (O570, server/README.md "Deck of Cards (O570)", "Main quest (O551)"): a feature that opens when a character is past
--- a step of the main quest (the Deck of Cards and the Badge slot open with the step "deck"). Reads the main quest's own storages
+-- a step of the main quest (the Deck of Cards opens with the step "deck", the Badge slot with the step "badge"). Reads the main quest's own storages
 -- (mainquest_config.lua `storage`), so any Lua state can ask it: revscripts and NPC scripts. No event, no write.
 --   ChaosMQGate.passed(player, stepKey)   true when the character is past the step: its quest is done, skipped or quiet (first
 --        seen above level 500), or its current step is after the step. A character the quest has not seen yet (state -1) is not past.
