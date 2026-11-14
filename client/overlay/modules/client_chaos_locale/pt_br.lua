@@ -2943,6 +2943,18 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Transaction history"] = "Histórico de transações",
   ["Transfer Coins"] = "Transferir coins",
   ["Search the store..."] = "Buscar na loja...",
+  -- game_shop/shop.lua (O556: the store with a rail, a home page and a details pane). Run-time keys: the sale tag names the server sends
+  ["Home"] = "Início",
+  ["Featured"] = "Destaque",
+  ["Sale"] = "Promoção",
+  ["Launch sale"] = "Promoção de lançamento",
+  ["%d offers"] = "%d ofertas",
+  ["See all (%d)"] = "Ver tudo (%d)",
+  ["Nothing found. Try another word."] = "Nada encontrado. Tente outra palavra.",
+  ["No purchases yet."] = "Nenhuma compra ainda.",
+  ["Pick an offer to see its details."] = "Escolha uma oferta para ver os detalhes.",
+  ["You already own this."] = "Você já tem isto.",
+  ["Not enough Chaos Coins. You need %s more."] = "Chaos Coins insuficientes. Faltam %s.",
   -- game_shop/transfer.otui
   ["Gift Chaos Coins"] = "Presentear Chaos Coins",
   ["Please select the amount of Chaos Coins you would like to gift and enter the name of the character that should receive the Chaos Coins."] = "Escolha a quantidade de Chaos Coins que você quer presentear e digite o nome do personagem que vai receber os Chaos Coins.",
