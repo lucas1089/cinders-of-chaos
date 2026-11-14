@@ -199,6 +199,16 @@ eq(#V.mqSteps(mqs.mq, 2), 2, 'two steps in chapter 2')
 eq(V.mqChapterLine(mqs.mq.chapters[1]), 'Cinder-Born  2/3', 'chapter line'); eq(V.mqChapterLine(mqs.mq.chapters[3]), 'Beyond the Oath', 'epilogue has no count')
 eq(V.mqStepLine(mqs.mq.steps[1]), '[x] Meet Ysolde', 'a done step'); eq(V.mqStepLine(mqs.mq.steps[3]), '[>] Slay 12 Trolls  (level 8)', 'the open step')
 eq(V.mqStepLine(mqs.mq.steps[5]), '[ ] Use an orb  (level 20)', 'a step to come')
+-- the quest items of the open step (O553): the held count after the title
+V.onMQ(mqs, { state = 0, step = 1, count = 2, chapters = {}, epilogue = {},
+  steps = { { i = 1, key = 'tusks', ch = 1, level = 8, title = 'Collect 6 Troll Tusks', hint = 'h', state = 'open',
+      item = { name = 'Troll Tusk', held = 4, target = 6 } },
+    { i = 2, key = 'tusks_in', ch = 1, level = 8, title = 'Show Ysolde the tusks', hint = 'h', state = 'todo',
+      item = { name = 'Troll Tusk', held = 4, target = 6 } } } })
+eq(mqs.mq.steps[1].item.held, 4, 'the item reaches the window data')
+eq(V.mqStepLine(mqs.mq.steps[1]), '[>] Collect 6 Troll Tusks  (4/6 held)  (level 8)', 'the open step shows what is held')
+eq(V.mqStepLine(mqs.mq.steps[2]), '[ ] Show Ysolde the tusks  (level 8)', 'a step to come shows no count')
+eq(V.mqItemText({ state = 'open' }), nil, 'a step with no item has no count')
 V.onMQ(mqs, nil)
 eq(#mqs.mq.chapters, 0, 'a bad message empties it'); eq(V.mqChapter(nil), 1)
 

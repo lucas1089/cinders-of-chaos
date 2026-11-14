@@ -3682,6 +3682,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Skip chapter"] = "Pular capítulo",
   ["%s  %d/%d"] = "%s  %d/%d",
   ["(level %d)"] = "(nível %d)",
+  ["(%d/%d held)"] = "(%d/%d na mochila)",
   ["%s (from level %d)"] = "%s (a partir do nível %d)",
   ["Click again to skip"] = "Clique de novo para pular",
   ["Spell Quest"] = "Missão de Magia",

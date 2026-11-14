@@ -132,7 +132,7 @@ end
 function M.validate(cfg)
 	local out = {}
 	local s = cfg.storage or {}
-	for _, k in ipairs({"state", "step", "count", "flags", "flags2", "tries", "cooldown", "won", "pity"}) do
+	for _, k in ipairs({"state", "step", "count", "flags", "flags2", "tries", "cooldown", "won", "pity", "items"}) do
 		local key = num(s.base, 0) + num(s[k], -1000)
 		if key < 7101110 or key > 7101139 then
 			out[#out + 1] = "storage " .. k .. " outside 7101110-7101139"
@@ -187,6 +187,15 @@ function M.validate(cfg)
 				out[#out + 1] = where .. ": a count needs monsters and a target"
 			elseif c.c == "count" and c.item and (type(c.item.en) ~= "string" or type(c.item.pt) ~= "string") then
 				out[#out + 1] = where .. ": the quest item needs en and pt"
+			elseif c.c == "count" and c.item and (num(c.itemId, 0) < 100 or type(c.lore) ~= "table" or type(c.lore.en) ~= "string"
+					or type(c.lore.pt) ~= "string") then
+				out[#out + 1] = where .. ": the quest item needs an itemId and a lore with en and pt"
+			elseif c.c == "talk" and c.bring then
+				local j = M.indexOf(cfg, c.bring)
+				local from = j and cfg.steps[j]
+				if not (j and j < i and M.dropCond(from)) then
+					out[#out + 1] = where .. ": bring names no earlier drop step: " .. tostring(c.bring)
+				end
 			elseif c.c == "visit" and not (c.pos and num(c.radius, 0) >= 1) then
 				out[#out + 1] = where .. ": a visit needs a position and a radius"
 			elseif c.c == "resist" and (not c.mark or (c.mode ~= "prepare" and c.mode ~= "hold")) then
@@ -249,6 +258,238 @@ function M.onKill(cfg, step, cond, name, pity, rand)
 		return false, true, 0
 	end
 	return false, false, pity
+end
+
+-- ------------------------------------------------------------------------------------------------- the quest items (O553)
+-- A drop step makes real items: a stock item (`itemId`) with custom attributes (mainquest_config.lua `questItem`): the key of the
+-- drop step and the guid of its owner. The engine's item lock keeps it from every NPC, the trash and the market. The functions
+-- that take engine objects (player, item, container) call only the plain TFS methods and are tested on a mock.
+
+-- the index of the step with this key (nil when none)
+function M.indexOf(cfg, key)
+	for i, st in ipairs(cfg.steps or {}) do
+		if st.key == key then
+			return i
+		end
+	end
+	return nil
+end
+
+-- the count condition of a step that drops a quest item (nil when the step has none)
+function M.dropCond(step)
+	for _, c in ipairs(step and step.conds or {}) do
+		if c.c == "count" and c.item then
+			return c
+		end
+	end
+	return nil
+end
+
+-- the index of the step that takes the items of drop step i (a talk condition `bring`), nil when none does
+function M.bringIndex(cfg, i)
+	local key = cfg.steps[i] and cfg.steps[i].key
+	for j = i + 1, #cfg.steps do
+		for _, c in ipairs(cfg.steps[j].conds) do
+			if c.c == "talk" and c.bring == key then
+				return j
+			end
+		end
+	end
+	return nil
+end
+
+-- what a kill does for a character on step i: {mode, cond, step, index} or nil.
+--   kill    a count step with no item: the counter
+--   drop    a drop step: the item rolls while the character holds fewer than the target
+--   refill  the bring step of a drop step: the same drop rolls again while the character holds fewer than it must bring (a lost
+--           item falls again from the same monsters; Warden Ysolde says so)
+function M.killRule(cfg, i)
+	local step = cfg.steps[i]
+	if not step then
+		return nil
+	end
+	for _, c in ipairs(step.conds) do
+		if c.c == "count" then
+			return {mode = c.item and "drop" or "kill", cond = c, step = step, index = i}
+		elseif c.c == "talk" and c.bring then
+			local j = M.indexOf(cfg, c.bring)
+			local from = j and cfg.steps[j]
+			local dc = from and M.dropCond(from)
+			if dc then
+				return {mode = "refill", cond = dc, step = from, index = j, bring = true}
+			end
+		end
+	end
+	return nil
+end
+
+-- a step that opened before the real items (the stored `items` step is not this one): its old counter is honoured once
+function M.legacy(i, itemsStep)
+	return floor(num(itemsStep, -1)) ~= floor(num(i, 0))
+end
+
+-- the items a legacy drop step owes: the counter earned, made real (never more than the target, minus what is held)
+function M.legacyOwed(cond, count, held)
+	local earned = min(max(1, floor(num(cond.target, 1))), max(0, floor(num(count, 0))))
+	return max(0, earned - max(0, floor(num(held, 0))))
+end
+
+-- players a kill counts for. killers = the players that made it (last hit, most damage, a summon's master); damagers = every
+-- player that dealt damage. api: partyOf(p) -> the members of p's party (leader included) or nil; posOf(p) -> {x, y, z};
+-- idOf(p) -> a unique id; sharedOn(p) -> true when p's party shares experience (it works). A killer always counts. A party member
+-- of a killer counts when it stands on the killer's floor within `range` tiles and it dealt damage or the share works.
+-- Returns the players (killers first, then the others by id) and the set of ids of the killers.
+function M.credited(killers, damagers, api, range)
+	local out, seen, direct = {}, {}, {}
+	local function add(p)
+		local id = api.idOf(p)
+		if not seen[id] then
+			seen[id] = true
+			out[#out + 1] = p
+		end
+	end
+	for _, k in ipairs(killers or {}) do
+		direct[api.idOf(k)] = true
+		add(k)
+	end
+	local dealt = {}
+	for _, d in ipairs(damagers or {}) do
+		dealt[api.idOf(d)] = true
+	end
+	local pending = {}
+	for _, k in ipairs(killers or {}) do
+		local members = api.partyOf(k)
+		local kp = api.posOf(k)
+		local shared = members and api.sharedOn(k) or false
+		for _, m in ipairs(members or {}) do
+			local id = api.idOf(m)
+			if not seen[id] and not pending[id] then
+				local mp = api.posOf(m)
+				local near = kp and mp and kp.z == mp.z and max(math.abs(kp.x - mp.x), math.abs(kp.y - mp.y)) <= num(range, 30)
+				if near and (dealt[id] or shared) then
+					pending[id] = m
+				end
+			end
+		end
+	end
+	local ids = {}
+	for id in pairs(pending) do
+		ids[#ids + 1] = id
+	end
+	table.sort(ids)
+	for _, id in ipairs(ids) do
+		add(pending[id])
+	end
+	return out, direct
+end
+
+local function customOf(item, key)
+	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	if ok then
+		return v
+	end
+	return nil
+end
+
+-- every item a character carries (the worn slots and the containers inside them), at most `limit` of them: fn(item) per item
+function M.eachCarried(player, fn, limit)
+	local seenN = 0
+	limit = limit or 3000
+	local function walk(container, depth)
+		local okSize, size = pcall(function() return container:getSize() end)
+		for k = 0, (okSize and size or 0) - 1 do
+			if seenN >= limit then
+				return
+			end
+			local item = container:getItem(k)
+			if item then
+				seenN = seenN + 1
+				fn(item)
+				local okC, isC = pcall(function() return item:isContainer() end)
+				if okC and isC and depth < 8 then
+					walk(item, depth + 1)
+				end
+			end
+		end
+	end
+	for slot = 1, 10 do
+		local item = player:getSlotItem(slot)
+		if item then
+			seenN = seenN + 1
+			fn(item)
+			local okC, isC = pcall(function() return item:isContainer() end)
+			if okC and isC then
+				walk(item, 1)
+			end
+		end
+	end
+end
+
+-- the quest items of this character: the list of {item, count} and the total. stepKey = the drop step's key; nil = every step's
+function M.questItems(cfg, player, stepKey)
+	local qa = cfg.questItem
+	local guid = player:getGuid()
+	local list, total = {}, 0
+	M.eachCarried(player, function(item)
+		local k = customOf(item, qa.quest)
+		if k ~= nil and (stepKey == nil or k == stepKey) and num(customOf(item, qa.owner), -1) == guid then
+			local okN, n = pcall(function() return item:getCount() end)
+			n = max(1, floor(num(okN and n or 1, 1)))
+			list[#list + 1] = {item = item, count = n}
+			total = total + n
+		end
+	end, qa.scanLimit)
+	return list, total
+end
+
+function M.heldCount(cfg, player, stepKey)
+	local _, total = M.questItems(cfg, player, stepKey)
+	return total
+end
+
+-- take up to n quest items of a drop step (nil n = all of them) from the backpack: the number taken
+function M.takeQuestItems(cfg, player, stepKey, n)
+	local list = M.questItems(cfg, player, stepKey)
+	local left = n or math.huge
+	local taken = 0
+	for _, e in ipairs(list) do
+		if left <= 0 then
+			break
+		end
+		local k = min(e.count, left)
+		local ok, removed = pcall(function() return e.item:remove(k) end)
+		if ok and removed then
+			taken = taken + k
+			left = left - k
+		end
+	end
+	return taken
+end
+
+local function articleOf(name)
+	return tostring(name):lower():match("^%s*[aeiou]") and "an" or "a"
+end
+
+-- make a created item a quest item of this step for this character (name, description, the marks, the lock); returns its name
+function M.markItem(cfg, item, step, cond, player, lang)
+	local qa = cfg.questItem
+	local name = M.text(cond.item, lang)
+	local idx = M.indexOf(cfg, step.key)
+	local text = (idx and M.bringIndex(cfg, idx)) and cfg.texts.itemDesc or cfg.texts.itemDescAuto
+	local desc = M.text(cond.lore, lang) .. " " .. string.format(M.text(text, lang), floor(num(cond.target, 1)))
+	if ITEM_ATTRIBUTE_NAME then
+		item:setAttribute(ITEM_ATTRIBUTE_NAME, name)
+	end
+	if ITEM_ATTRIBUTE_ARTICLE then
+		item:setAttribute(ITEM_ATTRIBUTE_ARTICLE, articleOf(name))
+	end
+	if ITEM_ATTRIBUTE_DESCRIPTION then
+		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, desc)
+	end
+	item:setCustomAttribute(qa.quest, step.key)
+	item:setCustomAttribute(qa.owner, player:getGuid())
+	item:setCustomAttribute(qa.lock, qa.lockValue)
+	return name
 end
 
 -- ------------------------------------------------------------------------------------------------- the reward
@@ -381,7 +622,8 @@ local function condProgress(cond, facts, step)
 	local k = cond.c
 	if k == "count" then
 		local t = max(1, floor(num(cond.target, 1)))
-		return min(t, max(0, floor(num(facts.count, 0)))), t
+		local n = (cond.item and facts.held ~= nil) and facts.held or facts.count
+		return min(t, max(0, floor(num(n, 0)))), t
 	elseif k == "stat" then
 		local t = max(1, floor(num(cond.target, 1)))
 		return min(t, max(0, floor(num(facts.stats and facts.stats[cond.stat], 0)))), t
@@ -589,8 +831,13 @@ function M.view(cfg, state, stepIndex, facts, lang, vars)
 			if w then
 				detail = string.format(M.text(cfg.texts.weakest, lang), w.k, floor(w.value), floor(w.goal))
 			end
-		elseif c.c == "count" and c.item and running then
-			title = M.text(step.title, lang)
+		end
+	end
+	if running and facts and facts.held ~= nil then
+		local rule = M.killRule(cfg, i)
+		if rule and rule.cond.item then
+			detail = string.format(M.text(cfg.texts.held, lang), M.text(rule.cond.item, lang), floor(facts.held),
+				floor(num(rule.cond.target, 1)))
 		end
 	end
 	local ch = M.chapterOf(cfg, step)
@@ -610,20 +857,39 @@ end
 
 -- ------------------------------------------------------------------------------------------------- the NPC
 -- Warden Ysolde heard "oath" (or the quest's other words): when the current step wants a talk and the character's level is
--- there, set the talk flag. get(name) / set(name, v) read and write the storages by the names of cfg.storage. Returns true when
--- the flag was set, "wait" when the step is open but wants something else, nil with no open step.
-function M.talk(cfg, get, set)
+-- there, set the talk flag. get(name) / set(name, v) read and write the storages by the names of cfg.storage. A step that brings
+-- a drop step's items (O553 `bring`) needs the whole target first: items = {held(stepKey) -> n, take(stepKey, n) -> taken} (the
+-- NPC script binds them to the character; a character whose step opened before the real items, M.legacy, hands nothing over).
+-- Returns true (the flag was set; then the number of items taken and the drop condition), "short" (then held, target and the
+-- drop condition: she took nothing), "wait" when the step is open but wants something else, nil with no open step.
+function M.talk(cfg, get, set, items)
 	if get("state") ~= cfg.states.active then
 		return nil
 	end
-	local step = cfg.steps[get("step")]
+	local i = get("step")
+	local step = cfg.steps[i]
 	if not step then
 		return nil
 	end
 	for _, c in ipairs(step.conds) do
 		if c.c == "talk" then
+			local j = c.bring and M.indexOf(cfg, c.bring)
+			local dc = j and M.dropCond(cfg.steps[j])
+			if dc and not M.legacy(i, get("items")) then
+				local target = max(1, floor(num(dc.target, 1)))
+				local held = items and items.held(c.bring) or 0
+				if held < target then
+					return "short", held, target, dc
+				end
+				local taken = items.take(c.bring, target)
+				if taken < target then
+					return "short", max(0, held - taken), target, dc
+				end
+				set("flags", M.setBit(get("flags"), 1))
+				return true, taken, dc
+			end
 			set("flags", M.setBit(get("flags"), 1))
-			return true
+			return true, 0
 		end
 	end
 	return "wait"

@@ -9,14 +9,30 @@ local function w(s)
 	o[#o + 1] = s or ""
 end
 
+local hasBring = {}
+for _, st in ipairs(cfg.steps) do
+	for _, c in ipairs(st.conds) do
+		if c.c == "talk" and c.bring then
+			hasBring[c.bring] = true
+		end
+	end
+end
+
 local function objective(step)
 	local parts = {}
 	for _, c in ipairs(step.conds) do
-		if c.c == "count" then
+		if c.c == "count" and c.item then
+			local list = table.concat(c.mons, ", ")
+			local takes = hasBring[step.key] and "A Guardiã Ysolde recolhe os itens no passo seguinte." or "A Vigília recolhe os itens quando a etapa termina."
+			parts[#parts + 1] = string.format("%s (monstros: %s). Item de quest: %s, o stock item %d com nome, descrição e marca próprios. %s",
+				step.title.pt, list, c.item.pt, c.itemId, takes)
+		elseif c.c == "count" then
 			local list = table.concat(c.mons, ", ")
 			parts[#parts + 1] = string.format("%s (monstros: %s).", step.title.pt, list)
 		elseif c.c == "visit" then
 			parts[#parts + 1] = string.format("%s (a marca está no mapa).", step.title.pt)
+		elseif c.c == "talk" and c.bring then
+			parts[#parts + 1] = "Leve os itens de quest à Guardiã Ysolde e diga \"juramento\": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta."
 		elseif c.c == "talk" then
 			parts[#parts + 1] = "Fale com a Guardiã Ysolde e diga \"juramento\"."
 		elseif c.c == "boss" then
@@ -38,6 +54,14 @@ w()
 w("As Brasas levaram os Guardiões da Vigília Cinzenta um a um. Quem sai vivo do templo de Cinderhold é chamado de nascido das brasas, e a Guardiã Ysolde, no mercado da sala de teleportes, oferece a esses sobreviventes o Juramento: uma caminhada pelo reino, um voto de cada vez. A última página do Juramento é uma porta, e atrás dela espera Vael Ashmourn, o primeiro Guardião, que se recusou a jurar.")
 w()
 w(string.format("São %d etapas em %d capítulos, do nível %d ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.", #cfg.steps, #cfg.chapters - 1, cfg.startLevel))
+w()
+w("## Itens de quest e grupo")
+w()
+w("Os itens das etapas de coleta são de verdade, não um contador. Cada um é um item do jogo (um stock item, como uma presa ou uma engrenagem) com nome, descrição e marca próprios, feito para o personagem que o recebeu. Ele cai no saco de saque do monstro morto quando o personagem é o dono do saque, senão vai direto para a mochila (e, com a mochila cheia, para a caixa de correio). Não pode ser vendido, jogado fora, colocado no mercado nem empilhado com uma cópia comum do mesmo item, e o item de outro personagem não conta. A etapa de coleta conta os itens que o personagem carrega. Quem perdeu algum é avisado pela Guardiã Ysolde na etapa de entrega, e o item volta a cair dos mesmos monstros (a regra da garantia ainda vale: depois de muitas mortes sem queda, a próxima derruba).")
+w()
+w("Quem estava no meio de uma etapa de coleta antes dessa mudança recebe, uma vez, os itens que o contador já tinha contado. Uma etapa de entrega aberta na regra antiga é aceita sem itens.")
+w()
+w(string.format("Uma morte conta para quem deu o golpe final, para quem causou mais dano e para os membros do grupo deles que estão no mesmo andar, a até %d casas: quem causou dano conta sempre, quem não causou conta quando a experiência compartilhada do grupo está funcionando. Cada membro na etapa certa (nível da etapa atingido) conta a morte, ou rola a queda do item para si, e o item vai para quem rolou.", cfg.party.range))
 w()
 for _, ch in ipairs(cfg.chapters) do
 	w(string.format("## Capítulo %d: %s (níveis %d a %d)", ch.n, ch.name.pt, ch.from, ch.to))

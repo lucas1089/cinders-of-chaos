@@ -17,12 +17,12 @@ check(cfg, "the config loads")
 eq(#K.validate(cfg), 0, "the shipped config validates: " .. table.concat(K.validate(cfg), "; "))
 eq(cfg.storage.base, Chaos.storage.mainQuest, "the storage base is Chaos.storage.mainQuest")
 eq(cfg.storage.last - cfg.storage.base + 1, 30, "a block of 30 keys")
-for _, name in ipairs({"state", "step", "count", "flags", "flags2", "tries", "cooldown", "won", "pity"}) do
+for _, name in ipairs({"state", "step", "count", "flags", "flags2", "tries", "cooldown", "won", "pity", "items"}) do
 	check(cfg.storage[name] >= 0 and cfg.storage[name] <= 29, "storage " .. name .. " inside the block")
 end
 -- every storage of the block is used once
 local seen = {}
-for _, name in ipairs({"state", "step", "count", "flags", "flags2", "tries", "cooldown", "won", "pity"}) do
+for _, name in ipairs({"state", "step", "count", "flags", "flags2", "tries", "cooldown", "won", "pity", "items"}) do
 	check(not seen[cfg.storage[name]], "storage " .. name .. " is its own key")
 	seen[cfg.storage[name]] = true
 end
@@ -339,9 +339,54 @@ ChaosNewPlayer = {kitFor = function() return {equip = {{slot = "left", id = 8602
 dofile("data/scripts/chaos/welcomepath_core.lua")
 ChaosAchievements = {stats = {}}
 local byId = {}
+-- an item of the mock: attributes, custom attributes, a count, and (a container) the items inside it
+function newItem(id, container)
+	local it = {id = id, attrs = {}, custom = {}, count = 1, container = container or false, items = {}, owner = 0}
+	function it:getId() return self.id end
+	function it:setAttribute(k, v) self.attrs[k] = v end
+	function it:getAttribute(k) return self.attrs[k] end
+	function it:setCustomAttribute(k, v) self.custom[k] = v end
+	function it:getCustomAttribute(k) return self.custom[k] end
+	function it:getCount() return self.count end
+	function it:isContainer() return self.container end
+	function it:getSize() return #self.items end
+	function it:getItem(k) return self.items[k + 1] end
+	function it:getCorpseOwner() return self.owner end
+	function it:addItemEx(item)
+		if self.full then return 99 end
+		item.parent = self
+		self.items[#self.items + 1] = item
+		return RETURNVALUE_NOERROR
+	end
+	function it:remove(n)
+		if n and n < self.count then
+			self.count = self.count - n
+			return true
+		end
+		local parent = self.parent
+		if parent then
+			for k, v in ipairs(parent.items) do
+				if v == self then table.remove(parent.items, k) break end
+			end
+		end
+		self.removed = true
+		return true
+	end
+	return it
+end
 local function newPlayer(id, level, group)
 	local pl = {id = id, level = level, store = {}, msgs = {}, slots = {}, items = {}, bank = 0, cooldown = false, group = group or 1,
 		pos = {x = 32369, y = 32241, z = 7}}
+	pl.pack = newItem(1988, true)
+	pl.inbox = newItem(14404, true)
+	function pl:addItemEx(item, canDrop)
+		if self.packFull then return 99 end
+		return self.pack:addItemEx(item)
+	end
+	function pl:getInbox() return self.inbox end
+	function pl:getParty() return self.party end
+	function pl:getMaster() return nil end
+	function pl:getName() return "Player" .. self.id end
 	function pl:getId() return self.id end
 	function pl:getGuid() return self.id + 100 end
 	function pl:getLevel() return self.level end
@@ -355,7 +400,11 @@ local function newPlayer(id, level, group)
 	function pl:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
 	function pl:sendExtendedOpcode() end
 	function pl:getCondition(ctype, cid, grp) return self.cooldown and ctype == CONDITION_SPELLGROUPCOOLDOWN and grp == 1 end
-	function pl:getSlotItem(slot) local id2 = self.slots[slot]; return id2 and {getId = function() return id2 end} or nil end
+	function pl:getSlotItem(slot)
+		if slot == 3 then return self.pack end
+		local id2 = self.slots[slot]
+		return id2 and {getId = function() return id2 end} or nil
+	end
 	function pl:getBankBalance() return self.bank end
 	function pl:setBankBalance(val) self.bank = val end
 	byId[id] = pl
@@ -363,7 +412,8 @@ local function newPlayer(id, level, group)
 end
 Player = function(id) return byId[id] end
 local players = {}
-Game = {getPlayers = function() return players end}
+Game = {getPlayers = function() return players end, createItem = function(id, count) return newItem(id) end}
+Creature = function(id) return byId[id] end
 local function said(pl, needle)
 	for _, m in ipairs(pl.msgs) do
 		if m:find(needle, 1, true) then return true end
@@ -375,13 +425,36 @@ local function lastSent(pl)
 		if sent[i].pid == pl:getId() and sent[i].action == "welcome" then return sent[i] end
 	end
 end
-local function monster(name) return {isMonster = function() return true end, getMaster = function() return nil end, getName = function() return name end} end
+local function monster(name, damagedBy)
+	local m = {isMonster = function() return true end, getMaster = function() return nil end, getName = function() return name end}
+	function m:getDamageMap()
+		local map = {}
+		for _, pl in ipairs(damagedBy or {}) do map[pl:getId()] = {total = 10} end
+		return map
+	end
+	return m
+end
+-- a monster died: the death event with its loot bag (corpse owned by the killer) and the damage map
+local function die(name, killer, o)
+	o = o or {}
+	local corpse = o.corpse
+	if corpse == nil and o.bag ~= false then
+		corpse = newItem(6068, true)
+		corpse.owner = killer and killer:getId() or 0
+	end
+	events.ChaosMainQuestDeath.onDeath(monster(name, o.damage), corpse, killer, o.most or killer)
+	return corpse
+end
+local function held(pl, stepKey) return K.heldCount(cfg, pl, stepKey) end
 
+local spawnCallback
+EventCallback = {register = function(self) spawnCallback = self.onSpawn end}
 dofile("data/scripts/chaos/mainquest.lua")
 local W = ChaosMainQuest
 local sweep = globals.ChaosMainQuestThink
-check(events.ChaosMainQuestLogin and events.ChaosMainQuestKill and events.ChaosMainQuestLogout and sweep, "events")
-eq(events.ChaosMainQuestKill.t, "kill"); eq(sweep.ms, cfg.sweepMs)
+check(events.ChaosMainQuestLogin and events.ChaosMainQuestDeath and events.ChaosMainQuestLogout and sweep, "events")
+check(events.ChaosMainQuestKill == nil, "the player's kill event is gone: the monsters' death event counts (O553)")
+eq(sweep.ms, cfg.sweepMs)
 check(events.ChaosMainQuestExtended == nil, "no second handler on opcode 178")
 local key = function(name) return cfg.storage.base + cfg.storage[name] end
 
@@ -419,14 +492,15 @@ p.pos = {x = 32356, y = 32130, z = 8}
 sweep.onThink(1000)
 eq(p.store[key("step")], 4, "near the Troll ground")
 -- kills: the name counts, others and summons do not
-events.ChaosMainQuestKill.onKill(p, monster("Rat"))
+die("Rat", p)
 eq(p.store[key("count")] or 0, 0, "another monster")
-events.ChaosMainQuestKill.onKill(p, {isMonster = function() return true end, getMaster = function() return {} end, getName = function() return "Troll" end})
+events.ChaosMainQuestDeath.onDeath({isMonster = function() return true end, getMaster = function() return {} end, getName = function() return "Troll" end,
+	getDamageMap = function() return {} end}, nil, p, p)
 eq(p.store[key("count")] or 0, 0, "a summon")
-for _ = 1, 11 do events.ChaosMainQuestKill.onKill(p, monster("Troll")) end
+for _ = 1, 11 do die("Troll", p) end
 sweep.onThink(1000)
 eq(p.store[key("step")], 4, "11 of 12"); eq(lastSent(p).data.rows[1].progress, 11, "the tracker shows 11")
-events.ChaosMainQuestKill.onKill(p, monster("Troll"))
+die("Troll", p)
 sweep.onThink(1000)
 eq(p.store[key("step")], 5, "12 Trolls"); eq(p.store[key("count")], 0, "the counter starts over")
 -- a hook flag
@@ -435,17 +509,343 @@ eq(p.store[key("step")], 5, "no potion yet")
 check(W.emit(p, "potion"), "the hook"); eq(W.emit(p, "nothing"), false, "an unknown flag")
 sweep.onThink(1000)
 eq(p.store[key("step")], 6, "a potion")
--- the drop: while the step is open the Troll Tusk falls; a kill of the step before does not count here
-local tries = 0
-while (p.store[key("count")] or 0) < 6 and tries < 400 do
-	events.ChaosMainQuestKill.onKill(p, monster("Troll"))
-	tries = tries + 1
+-- O553: the quest drop is a real item. A kill of another monster does nothing; a Troll drops a Troll Tusk into the loot bag of the
+-- kill (the killer owns it), marked as a quest item; the step counts the ones held, so it is done when they are looted.
+local function loot(corpse, pl)
+	local n = 0
+	while #corpse.items > 0 do
+		local it = table.remove(corpse.items, 1)
+		pl.pack:addItemEx(it)
+		n = n + 1
+	end
+	return n
 end
-eq(p.store[key("count")], 6, "6 tusks")
+local function getp(pl) return function(k) return pl:getStorageValue(key(k)) end end
+local function setp(pl) return function(k, val) pl:setStorageValue(key(k), val) end end
+local function itemsOf(pl)
+	return {held = function(k) return K.heldCount(cfg, pl, k) end, take = function(k, n) return K.takeQuestItems(cfg, pl, k, n) end}
+end
+eq(p.store[key("items")], 6, "the step opened under the real item rule")
+local c0 = die("Rat", p)
+eq(#c0.items, 0, "another monster drops nothing")
+local tries, bagDrops, inspected = 0, 0, false
+while held(p, "tusks") < 6 and tries < 400 do
+	local corpse = die("Troll", p)
+	tries = tries + 1
+	if #corpse.items > 0 then
+		bagDrops = bagDrops + 1
+		local it = corpse.items[1]
+		if not inspected then
+			inspected = true
+			eq(it.id, 8614, "a stock item of 10.98")
+			eq(it.attrs[ITEM_ATTRIBUTE_NAME], "Troll Tusk", "its own name")
+			check(it.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("Bring 6 to Warden Ysolde", 1, true), "its description says what to do")
+			check(it.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("cannot be sold or traded", 1, true), "and that it cannot be sold")
+			eq(it.attrs[ITEM_ATTRIBUTE_ARTICLE], "a")
+			eq(it.custom.chaos_mq, "tusks", "marked with the step"); eq(it.custom.chaos_mq_owner, p:getGuid(), "and the owner")
+			eq(it.custom.chaos_locked, 2, "the engine's item lock, bound value: no NPC, no market, no trash")
+			eq(it.parent, corpse, "in the loot bag of the kill")
+		end
+		eq(held(p, "tusks"), bagDrops - 1, "in the bag it is not held yet")
+		loot(corpse, p)
+		eq(held(p, "tusks"), bagDrops, "looted: held")
+	end
+end
+eq(held(p, "tusks"), 6, "6 tusks held"); eq(bagDrops, 6, "6 drops")
 check(tries >= 6 and tries < 400, "the drops took a number of kills: " .. tries)
-check(said(p, "Troll Tusk (1/6)"), "a loot line")
+check(said(p, "Troll Tusk (1/6), in the loot bag"), "a loot line")
+check(p.store[key("count")] == 6, "the counter of the drops earned")
+die("Troll", p)
+eq(held(p, "tusks"), 6, "no drop above the target")
+-- the tracker shows what is held
+W.refresh(p, true)
+local row = lastSent(p).data.rows[1]
+eq(row.progress, 6); eq(row.target, 6); eq(row.detail, "Troll Tusk 6/6", "the held count after the row")
+local stw = W.state(p)
+eq(stw.steps[6].item.held, 6, "the window gets the held count"); eq(stw.steps[6].item.name, "Troll Tusk"); eq(stw.steps[6].item.target, 6)
 sweep.onThink(1000)
 eq(p.store[key("step")], 7, "the tusks done")
+eq(p.store[key("items")], 7, "the next step is of the real item rule too")
+eq(held(p, "tusks"), 6, "the tusks stay with the character until the bring step")
+-- the bring step: Warden Ysolde (her own Lua state calls K.talk with the character's items)
+local plain = newItem(8614)
+p.pack:addItemEx(plain)
+eq(held(p, "tusks"), 6, "a plain copy of the stock item is not a quest item")
+local foreign = newItem(8614)
+foreign:setCustomAttribute("chaos_mq", "tusks"); foreign:setCustomAttribute("chaos_mq_owner", 9999)
+p.pack:addItemEx(foreign)
+eq(held(p, "tusks"), 6, "another character's copy counts for nothing")
+sweep.onThink(1000)
+eq(p.store[key("step")], 7, "no talk yet")
+-- a lost item: she says so, takes nothing, and the tusks fall again from the same monsters
+K.questItems(cfg, p, "tusks")[1].item:remove()
+eq(held(p, "tusks"), 5)
+local r, a, b, dcond = K.talk(cfg, getp(p), setp(p), itemsOf(p))
+eq(r, "short"); eq(a, 5); eq(b, 6); eq(dcond.item.en, "Troll Tusk"); eq(held(p, "tusks"), 5, "she took nothing")
+eq(K.hasBit(p.store[key("flags")], 1), false, "no talk flag")
+sweep.onThink(1000)
+eq(p.store[key("step")], 7, "the step stays open")
+local before = p.store[key("pity")] or 0
+die("Rat", p)
+eq(held(p, "tusks"), 5, "a monster of another name does nothing on the way back")
+local refills = 0
+while held(p, "tusks") < 6 and refills < 400 do
+	local corpse = die("Troll", p)
+	refills = refills + 1
+	loot(corpse, p)
+end
+eq(held(p, "tusks"), 6, "the lost tusk fell again (the pity rule bounds the kills)")
+check(refills <= math.ceil(1 / K.dropChance(cfg, S.tusks.mins, 6) * cfg.drop.pityMult) + 1, "within the pity bound: " .. refills)
+local r2, taken = K.talk(cfg, getp(p), setp(p), itemsOf(p))
+eq(r2, true); eq(taken, 6, "she took the six")
+eq(held(p, "tusks"), 0, "taken from the backpack")
+check(plain.removed ~= true and foreign.removed ~= true, "the plain copy and the other character's copy stay")
+eq(K.hasBit(p.store[key("flags")], 1), true, "the talk flag")
+sweep.onThink(1000)
+eq(p.store[key("step")], 8, "the bring step is done")
+check(said(p, "Warden Ysolde: "), "her line")
+
+-- no items, no talk: a bring step with nothing held
+local brg = newPlayer(20, 8)
+brg.store[key("state")] = cfg.states.active; brg.store[key("step")] = 7; brg.store[key("items")] = 7; brg.store[key("flags")] = 0
+local rb, hb, tb = K.talk(cfg, getp(brg), setp(brg), itemsOf(brg))
+eq(rb, "short"); eq(hb, 0); eq(tb, 6)
+eq(brg.store[key("flags")], 0, "the flag stays down")
+local rc = K.talk(cfg, getp(brg), setp(brg), nil)
+eq(rc, "short", "no items to check: no hand-over")
+
+-- a drop that cannot enter the loot bag (not its owner, or the bag is full) goes into the backpack, then the inbox
+local drp = newPlayer(21, 8)
+drp.store[key("state")] = cfg.states.active; drp.store[key("step")] = 6; drp.store[key("items")] = 6
+players = {drp}
+local oldRandom = math.random
+math.random = function() return 0 end
+local cpse = newItem(6068, true); cpse.owner = 999
+die("Troll", drp, {corpse = cpse})
+eq(#cpse.items, 0, "the bag of another is not touched"); eq(held(drp, "tusks"), 1, "backpack"); check(said(drp, "Troll Tusk (1/6), in your backpack"), "the line says where")
+local full = newItem(6068, true); full.owner = drp:getId(); full.full = true
+die("Troll", drp, {corpse = full})
+eq(held(drp, "tusks"), 2, "a full bag: the backpack")
+drp.packFull = true
+die("Troll", drp, {corpse = full})
+eq(#drp.inbox.items, 1, "a full backpack: the inbox"); check(said(drp, "it is in your inbox"), "told")
+eq(held(drp, "tusks"), 2, "the inbox is not carried")
+die("Troll", drp, {bag = false})
+eq(#drp.inbox.items, 2, "no loot bag at all: the same road")
+math.random = oldRandom
+-- the new quest item never joins the stack of a plain copy: it carries its own name and marks
+local stackProbe = newItem(8614)
+check(stackProbe.attrs[ITEM_ATTRIBUTE_NAME] == nil and stackProbe.custom.chaos_mq == nil, "a plain copy has no marks")
+check(drp.inbox.items[1].attrs[ITEM_ATTRIBUTE_NAME] ~= nil and drp.inbox.items[1].custom.chaos_mq ~= nil, "a quest item has")
+
+-- migration: a character mid-step before the real items has its counter honoured once
+local mig = newPlayer(22, 8)
+mig.store[key("state")] = cfg.states.active; mig.store[key("step")] = 6; mig.store[key("count")] = 4
+players = {mig}
+eq(mig.store[key("items")], nil, "the step opened under the old rule")
+W.facts(mig, 6)
+eq(W.facts(mig, 6).held, nil, "legacy: no held count yet")
+eq(select(1, K.progress(S.tusks, W.facts(mig, 6))), 4, "the counter is its progress")
+W.check(mig)
+eq(held(mig, "tusks"), 4, "the 4 tusks earned are real items now")
+eq(mig.store[key("items")], 6, "the step is of the real item rule now")
+check(said(mig, "The 4 Troll Tusk you had earned are real items now"), "told")
+W.check(mig)
+eq(held(mig, "tusks"), 4, "once only")
+math.random = function() return 0 end
+die("Troll", mig, {bag = false})
+die("Troll", mig, {bag = false})
+math.random = oldRandom
+eq(held(mig, "tusks"), 6, "the rest falls as items")
+W.check(mig)
+eq(mig.store[key("step")], 7, "done")
+-- a counter at the target (the step was done on the old rule but the character did not move on yet) pays out the whole target
+local mig2 = newPlayer(23, 8)
+mig2.store[key("state")] = cfg.states.active; mig2.store[key("step")] = 6; mig2.store[key("count")] = 6
+players = {mig2}
+W.check(mig2)
+eq(mig2.store[key("step")], 7, "migrated and done at once")
+eq(held(mig2, "tusks"), 6, "with the tusks in hand for the bring step")
+-- a bring step the old rule opened: she takes no items (they were counters), the earned counter is honoured
+local mig3 = newPlayer(24, 8)
+mig3.store[key("state")] = cfg.states.active; mig3.store[key("step")] = 7; mig3.store[key("flags")] = 0
+local rm, tm = K.talk(cfg, getp(mig3), setp(mig3), itemsOf(mig3))
+eq(rm, true); eq(tm, 0, "nothing to take"); eq(mig3.store[key("flags")], 1, "the flag is up")
+players = {mig3}
+die("Troll", mig3, {bag = false})
+eq(held(mig3, "tusks"), 0, "a legacy bring step has no refill: the counter was paid")
+mig3.store[key("flags")] = 0
+-- the migration needs room: with nowhere to put the items it waits
+local mig4 = newPlayer(25, 8)
+mig4.store[key("state")] = cfg.states.active; mig4.store[key("step")] = 6; mig4.store[key("count")] = 2
+mig4.packFull = true; mig4.inbox.full = true
+eq(W.migrate(mig4), false); eq(mig4.store[key("items")], nil, "not marked: tried again at the next look")
+mig4.packFull = false
+eq(W.migrate(mig4), true); eq(held(mig4, "tusks"), 2)
+
+-- a drop step with no bring step: the Vigil takes the items when the step is done (the Stone Hearts)
+local hrt = newPlayer(26, 30)
+local hi = idx.gargoyle_hearts
+hrt.store[key("state")] = cfg.states.active; hrt.store[key("step")] = hi; hrt.store[key("items")] = hi
+players = {hrt}
+math.random = function() return 0 end
+for _ = 1, 4 do die("Gargoyle", hrt, {bag = false}) end
+math.random = oldRandom
+eq(held(hrt, "gargoyle_hearts"), 4)
+check(hrt.pack.items[1].attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("The Vigil takes the 4 when the step is done", 1, true), "its description says the Vigil takes it")
+eq(hrt.pack.items[1].id, 2178)
+W.check(hrt)
+eq(hrt.store[key("step")], hi + 1, "done")
+eq(held(hrt, "gargoyle_hearts"), 0, "the Vigil took them"); check(said(hrt, "The Vigil takes the 4 Stone Heart"), "told")
+-- a skipped quest keeps no quest item
+local skp = newPlayer(27, 8)
+skp.store[key("state")] = cfg.states.active; skp.store[key("step")] = 6; skp.store[key("items")] = 6
+players = {skp}
+math.random = function() return 0 end
+die("Troll", skp, {bag = false}); die("Troll", skp, {bag = false})
+math.random = oldRandom
+eq(held(skp, "tusks"), 2)
+W.skip(skp, "quest")
+eq(held(skp, "tusks"), 0, "skipped: the items go")
+
+-- party credit: the killer and the party members around, each on its own (K.credited and the engine)
+local function api(pos, party, shared)
+	return {idOf = function(x) return x.id end, posOf = function(x) return pos[x.id] end, partyOf = function(x) return party[x.id] end,
+		sharedOn = function(x) return shared end}
+end
+local A, B, Cc, D, E = {id = 1}, {id = 2}, {id = 3}, {id = 4}, {id = 5}
+local P0 = {x = 100, y = 100, z = 7}
+local function ids(list) local o = {} for _, x in ipairs(list) do o[#o + 1] = x.id end return table.concat(o, ",") end
+local pos = {[1] = P0, [2] = {x = 110, y = 95, z = 7}, [3] = {x = 131, y = 100, z = 7}, [4] = {x = 100, y = 100, z = 8}, [5] = {x = 100, y = 130, z = 7}}
+local team = {A, B, Cc, D, E}
+local party = {[1] = team, [2] = team, [3] = team, [4] = team, [5] = team}
+eq(ids((K.credited({A}, {}, api(pos, party, true), 30))), "1,2,5", "a share that works: in range (30 tiles), same floor only")
+eq(ids((K.credited({A}, {}, api(pos, party, false), 30))), "1", "no share, no damage: the killer only")
+eq(ids((K.credited({A}, {B, Cc, D}, api(pos, party, false), 30))), "1,2", "no share: the ones that dealt damage, in range, same floor")
+eq(ids((K.credited({A}, {B}, {idOf = function(x) return x.id end, posOf = function(x) return pos[x.id] end,
+	partyOf = function() return nil end, sharedOn = function() return true end}, 30))), "1", "no party: only the killer")
+eq(ids((K.credited({A, B}, {}, api(pos, party, true), 30))), "1,2,3,5", "two killers: each one's range; each player once, by id after the killers")
+eq(ids((K.credited({}, {B}, api(pos, party, true), 30))), "", "nobody made the kill: nobody")
+local _, direct = K.credited({A}, {B}, api(pos, party, true), 30)
+eq(direct[1], true); eq(direct[2], nil, "a member is not a killer")
+eq(ids((K.credited({A}, {}, api({[1] = P0, [2] = {x = 130, y = 70, z = 7}, [3] = {x = 131, y = 100, z = 7}}, {[1] = {A, B, Cc}}, true), 30))), "1,2",
+	"30 tiles is in, 31 is out")
+
+-- on the engine: the leader hunts the tusks, a member at hand rolls on its own and gets its item in its own backpack
+local function onStep(id, level, stepKey, extra)
+	local pl = newPlayer(id, level)
+	local si = idx[stepKey]
+	pl.store[key("state")] = cfg.states.active; pl.store[key("step")] = si; pl.store[key("items")] = si
+	pl.store[key("flags")] = 0
+	for k, v in pairs(extra or {}) do pl.store[key(k)] = v end
+	return pl
+end
+local function newParty(leader, members, shared)
+	local pt = {leader = leader, members = members}
+	function pt:getMembers() local o = {} for _, m in ipairs(self.members) do o[#o + 1] = m end return o end
+	function pt:getLeader() return self.leader end
+	function pt:isSharedExperienceEnabled() return shared end
+	function pt:isSharedExperienceActive() return shared end
+	leader.party = pt
+	for _, m in ipairs(members) do m.party = pt end
+	return pt
+end
+local lead = onStep(30, 12, "tusks"); lead.pos = {x = 200, y = 200, z = 8}
+local mem = onStep(31, 12, "tusks"); mem.pos = {x = 205, y = 203, z = 8}
+local far = onStep(32, 12, "tusks"); far.pos = {x = 260, y = 200, z = 8}
+local up = onStep(33, 12, "tusks"); up.pos = {x = 204, y = 200, z = 9}
+local low = onStep(34, 5, "tusks"); low.pos = {x = 204, y = 200, z = 8} -- below the step's level 8
+local other = onStep(35, 12, "trolls"); other.pos = {x = 201, y = 201, z = 8} -- a kill step: counts
+local late = onStep(36, 12, "potion"); late.pos = {x = 201, y = 201, z = 8} -- a step with no kill
+local idle = newPlayer(37, 12); idle.pos = {x = 201, y = 201, z = 8} -- never saw the quest: state unset
+local pt1 = newParty(lead, {mem, far, up, low, other, late, idle}, true)
+players = {lead, mem, far, up, low, other, late, idle}
+math.random = function() return 0 end
+local cps = die("Troll", lead)
+math.random = oldRandom
+eq(#cps.items, 1, "the leader's tusk is in the bag of the kill (it owns it)")
+eq(held(mem, "tusks"), 1, "the member at hand rolled its own drop and got it in its backpack")
+check(said(mem, "Troll Tusk (1/6), in your backpack"), "its own line")
+eq(held(far, "tusks"), 0, "too far: nothing"); eq(held(up, "tusks"), 0, "another floor: nothing")
+eq(held(low, "tusks"), 0, "below the level of the step: nothing")
+eq(other.store[key("count")], 1, "a member on a kill step: the kill counts")
+eq(held(late, "tusks"), 0); eq(late.store[key("count")] or 0, 0, "a member on a step with no kill: nothing")
+eq(idle.store[key("state")], nil, "a character that never saw the quest is left alone")
+-- the share is off: the ones that did no damage do not count, the ones that did count
+local pt2 = newParty(lead, {mem}, false)
+players = {lead, mem}
+local c2 = newItem(6068, true); c2.owner = lead:getId()
+math.random = function() return 0 end
+die("Troll", lead, {corpse = c2})
+eq(held(mem, "tusks"), 1, "no share, no damage: nothing")
+die("Troll", lead, {corpse = newItem(6068, true), damage = {mem}})
+math.random = oldRandom
+eq(held(mem, "tusks"), 2, "no share but it dealt damage: counts")
+-- the last hit and the most damage both in the party: each member rolls once
+local a1, a2 = onStep(40, 12, "tusks"), onStep(41, 12, "tusks")
+a1.pos = {x = 300, y = 300, z = 7}; a2.pos = {x = 301, y = 300, z = 7}
+newParty(a1, {a2}, true)
+players = {a1, a2}
+math.random = function() return 0 end
+local cb = newItem(6068, true); cb.owner = a1:getId()
+events.ChaosMainQuestDeath.onDeath(monster("Troll", {a1, a2}), cb, a1, a2)
+math.random = oldRandom
+eq(held(a1, "tusks") + #cb.items, 1, "one roll for the killer"); eq(held(a2, "tusks"), 1, "one roll for the other killer: no double credit")
+-- a summon's kill is its master's; a husk gives no credit
+local husk = monster("Troll")
+ChaosRift = {isHusk = function() return true end}
+math.random = function() return 0 end
+local hb2 = newItem(6068, true); hb2.owner = a1:getId()
+events.ChaosMainQuestDeath.onDeath(husk, hb2, a1, a1)
+math.random = oldRandom
+eq(#hb2.items, 0, "a husk of a dense rift gives no credit")
+ChaosRift = nil
+-- the monsters that get the death event are the ones of the count steps
+check(W.monsterNames["troll"] and W.monsterNames["gargoyle"] and W.monsterNames["ogre shaman"] and not W.monsterNames["rat"],
+	"the death event is for the monsters of the count steps")
+local registered = {}
+local function spawned(name, master)
+	return {getName = function() return name end, getMaster = function() return master end,
+		registerEvent = function(_, ev) registered[#registered + 1] = name .. ":" .. ev end}
+end
+check(spawnCallback(spawned("Troll"), nil, false, false), "the spawn callback answers true")
+spawnCallback(spawned("Rat"), nil, false, false)
+spawnCallback(spawned("Troll", {}), nil, false, false)
+eq(table.concat(registered, ","), "Troll:ChaosMainQuestDeath", "a Troll gets the event; a Rat and a summon do not")
+-- the NPC script binds the items
+local ysrc2 = io.open("data/npc/scripts/chaos_faction_npc.lua"):read("*a")
+check(ysrc2:find("K.talk(c, get, put, items)", 1, true) and ysrc2:find("K.takeQuestItems", 1, true), "Ysolde's script hands the items over")
+
+-- the config of the items
+local nItems = 0
+for i2, st in ipairs(cfg.steps) do
+	local dc3 = K.dropCond(st)
+	if dc3 then
+		nItems = nItems + 1
+		check(dc3.itemId >= 100 and dc3.itemId < 16000, "a stock item of 10.98: " .. st.key)
+		check(dc3.lore.en ~= "" and dc3.lore.pt ~= "", "lore: " .. st.key)
+		local j = K.bringIndex(cfg, i2)
+		check(j == nil or j == i2 + 1, "a bring step comes right after its drop step: " .. st.key)
+	end
+end
+eq(nItems, 9, "nine quest items")
+local seenIds = {}
+for _, st in ipairs(cfg.steps) do
+	local dc3 = K.dropCond(st)
+	if dc3 then check(not seenIds[dc3.itemId], "an item id of its own: " .. st.key); seenIds[dc3.itemId] = true end
+end
+eq(K.bringIndex(cfg, idx.tusks), idx.tusks_in); eq(K.bringIndex(cfg, idx.gargoyle_hearts), nil, "the hearts have no bring step")
+eq(K.killRule(cfg, idx.tusks_in).mode, "refill"); eq(K.killRule(cfg, idx.tusks).mode, "drop"); eq(K.killRule(cfg, idx.trolls).mode, "kill")
+eq(K.killRule(cfg, idx.potion), nil)
+local bad2 = {storage = cfg.storage, flags = cfg.flags, chapters = cfg.chapters, steps = {
+	{key = "d", ch = 1, level = 8, mins = 1, conds = {{c = "count", mons = {"X"}, target = 1, item = {en = "a", pt = "b"}}},
+		title = {en = "x", pt = "y"}, hint = {en = "y", pt = "z"}, done = {en = "d", pt = "d"}},
+	{key = "b", ch = 1, level = 8, mins = 1, conds = {{c = "talk", bring = "nothing"}}, title = {en = "x", pt = "y"},
+		hint = {en = "y", pt = "z"}, done = {en = "d", pt = "d"}}}}
+local probs2 = table.concat(K.validate(bad2), "|")
+check(probs2:find("needs an itemId and a lore", 1, true), "an item needs its id and lore")
+check(probs2:find("bring names no earlier drop step", 1, true), "a bring step names a drop step")
+
 -- the Go button marks the windows of an ack step, only for the current step
 eq(W.go(p, "season"), false, "not the current step")
 -- a veteran at level 300: passes what it can
@@ -531,7 +931,7 @@ check(K.hasBit(ghost.store[key(nm)], bt), "the bit is set")
 -- the full state for the chapter window
 local st = W.state(p)
 eq(#st.chapters, #cfg.chapters); eq(#st.steps, #cfg.steps); eq(#st.epilogue, #cfg.epilogue)
-eq(st.steps[1].state, "done"); eq(st.steps[7].state, "open"); eq(st.steps[8].state, "todo")
+eq(st.steps[1].state, "done"); eq(st.steps[8].state, "open"); eq(st.steps[9].state, "todo")
 for _, s2 in ipairs(st.steps) do check(not s2.title:find("{", 1, true), "no open place in the window: " .. s2.key) end
 W.onAction(p, {action = "mqOpen"})
 eq(sent[#sent].action, "chunk", "the window state goes chunked")

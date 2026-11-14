@@ -879,7 +879,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
 | 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
 | 7101080 - 7101089 | level milestones (`milestones_config.lua` `storage`, O378): +0 the highest milestone level whose Milestone Cache was given or skipped (-1 = not seen yet; the first login sets the baseline); +1..9 free. 7101090 - 7101099 stays free |
-| 7101110 - 7101139 | the main quest (`mainquest_config.lua` `storage`, `Chaos.storage.mainQuest`, O551): +0 state (-1 never seen, 0 active, 1 done, 2 skipped, 3 quiet), +1 current step index, +2 count of the open step (kills, drops), +3 flag bits 1-30 (bit 1 the talk flag), +4 flag bits 31-60, +5 boss tries, +6 boss door cooldown (os.time), +7 boss won, +8 drop pity counter, +9..+29 free |
+| 7101110 - 7101139 | the main quest (`mainquest_config.lua` `storage`, `Chaos.storage.mainQuest`, O551): +0 state (-1 never seen, 0 active, 1 done, 2 skipped, 3 quiet), +1 current step index, +2 count of the open step (kills, drops), +3 flag bits 1-30 (bit 1 the talk flag), +4 flag bits 31-60, +5 boss tries, +6 boss door cooldown (os.time), +7 boss won, +8 drop pity counter, +9 free, +10 the step the real quest item rule opened on (O553), +11..+29 free |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
@@ -28539,11 +28539,46 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
 - **Steps** (103, 8 chapters, `mainquest_config.lua`; the stored step is an index: new steps only at the end before the first live character). Chapters: I Cinder-Born (8-14),
   II The Oath of the Forge (15-29), III The Oath of the Many (30-99), IV The Oath of Ascension (100-199), V The Oath of the Deep (200-299), VI The Oath of Ruin (300-500),
   VII The Unsworn Warden (500), VIII Beyond the Oath (epilogue cards of the later systems, never gating). A step is a list of conditions `conds`, all must hold:
-  `count` (kill N monsters of the names `mons`; with `item` a quest drop that falls only while the step is open, a counter and a loot line "Troll Tusk (3/6)", never an item,
-  like the spell quest fragments: the chance per kill makes the step take about its minutes, `drop.killsPerMinute` 6, a pity drop after 3 x the expected kills), `visit` (within
-  `radius` of the hunting mark), `talk` (Ysolde heard "oath"/"juramento": her script, own Lua state, sets the talk flag), `stat` (an achievement counter or a Next Goals own
+  `count` (kill N monsters of the names `mons`; with `item` a quest drop that falls only while the step is open, a real item since O553 (below): the chance per kill makes
+  the step take about its minutes, `drop.killsPerMinute` 6, a pity drop after 3 x the expected kills), `visit` (within
+  `radius` of the hunting mark), `talk` (Ysolde heard "oath"/"juramento": her script, own Lua state, sets the talk flag; with `bring` = the key of a drop step she takes its
+  items first), `stat` (an achievement counter or a Next Goals own
   stat: rifts, dungeons, trials, bosses, party kills, arena, ...), `flag` (a hook: below), `storage` (the Ember Spark), `spell`, `gear` (the welcome path's probes),
   `resist` (the defence layer), `boss`. 42 steps are kill, drop, explore or deliver, 28 more are clears and kills of the other systems (the test holds half of them).
+- **Quest items and party credit (O553).** Follow-up A of the owner's list after O551 ("real quest items and party kill credit"). Nothing here ran on a live server.
+  * *The item.* Each drop step (`count` with `item`) names a stock item of 10.98 in `itemId` (`mainquest_config.lua`): Troll Tusk = 8614 (orc tusk), Grave Ash 5905 (vampire dust),
+    Stone Heart 2178 (mind stone), Warbanner Scrap 11330 (warbound flag), Wyrm Cinder 5906 (demon dust), Hymn Shard 10531 (midnight shard), Ironhorn Cog 9690 (gear wheel), Last
+    Light 12508 (magic crystal), Mould Spore 7251 (mushroom spores); all in `data/items/base_item_values.csv` or the base `items.xml`, none a weapon or armour, none an item a
+    Chaos system treats as gear. `ChaosMainQuestCore.markItem` makes a created copy a quest item: its own name (`item`) and article, the description (`lore` and the step's
+    rule), custom attributes `chaos_mq` = the key of the drop step and `chaos_mq_owner` = the guid of the character (`questItem` in the config, the reserved name block
+    `chaos_mq*`; no action id is used), and `chaos_locked` = 2. That is the engine's item lock (src-patch 0009): no NPC buys it (the Loot Buyer's `P.saleBlock`, the stock
+    shops, `Game::playerSellItem`), the trash refuses it, the market does not list it, the Auto Seller, salvage and both stashes skip it. Value 2 is the "bound" lock (the client
+    draws it in its own colours; the item menu cannot unlock it). It never stacks with a plain copy: it is created first, marked, then placed with `addItemEx`, and an item
+    with its own name and custom attributes is not `equals` a plain one. A copy of another character, or a plain copy of the stock id, counts for nothing.
+  * *Where it falls.* `ChaosMainQuest.giveQuestItem`: the loot bag of the kill (item 6068, O435) when the character owns the corpse (`getCorpseOwner()`), else the backpack,
+    else the inbox; the line says which ("Troll Tusk (3/6), in the loot bag" / "in your backpack" / "your backpack is full: it is in your inbox"). The bag decays after 180 s
+    with whatever is left in it: that item is lost and falls again (below). The kill is handled in the death event of the monster (`ChaosMainQuestDeath`, registered at spawn
+    for the monsters named by the count steps, like the bounty board and the spell quests), not the player's kill event: only there the loot bag exists, and a death is seen once
+    however many killers it has. A husk of a dense rift gives no credit.
+  * *Counting.* A drop step counts the quest items the character carries (worn slots and every container inside, `eachCarried`, at most 3000 items), so it is done when they are
+    in the backpack. The tracker row shows "(Troll Tusk 4/6)" (`detail`), the chapter window "(4/6 held)" on the open step (`mq` steps `item = {name, held, target}`, client
+    `GoalsView.mqItemText`). `count` (storage +2) still counts the drops earned. A kill step with no item still counts kills.
+  * *Bring and lost items.* The step after a drop step has `talk` with `bring`: Ysolde (`chaos_faction_npc.lua`, her own Lua state) calls `K.talk(cfg, get, set, items)`, takes
+    exactly the target from the backpack (`takeQuestItems`) and sets the talk flag; short of it she takes nothing and says how many she counts, and **the same drop rolls again
+    while the step stays open** (mode `refill`, the same monsters, the same chance, the pity counter still bounds it at 3 x the expected kills): the way back for an item lost to
+    the bag's decay, a death or a mistake. No step goes back and no reward is paid twice. The Stone Hearts (no bring step: the step after it is a stat) are taken by the Vigil when
+    the step is done ("The Vigil takes the 4 Stone Heart."); what is left after a bring step and every quest item of a skipped quest or chapter go too (`settleItems`, `skip`).
+  * *Characters mid-step (migration).* Storage +10 `items` holds the step the real-item rule opened on (`setStep` writes it with the step: first look, advance, skip chapter). A step
+    whose index is not in it is legacy: on a drop step `W.migrate` (every look, and before a kill is credited) makes the counter earned into real items once (the target at most,
+    minus what is held; with no room anywhere it waits for the next look) and marks the step; a bring step the old rule opened is accepted by Ysolde with no items and has no refill.
+  * *Party credit.* `ChaosMainQuestCore.credited` (the rules of the bounty board and the spell quests, one function): the players that made the kill (last hit, most damage, a summon's
+    master) always count; a party member of a killer counts when it stands on the killer's floor within `party.range` (30) tiles of the killer and it dealt damage (the damage map) or
+    the party's shared experience works (`party:isSharedExperienceEnabled()`, the engine's own rule: level range, range, fighting). Each credited player is looked at on its own: on
+    the step (and at its level), the kill counts for a kill step, and a drop step rolls the drop **for that member** with its own pity counter, the item going to that member (the
+    loot bag only for the corpse's owner, the backpack for the rest). Two killers of one party are two members, one roll each. Tested in `tests/mainquest_test.lua`: a table of
+    cases of `credited` (range edge 30 / 31, floor, share on and off, damage, no party, two killers) and the engine path with two to eight members.
+  * *Model.* The drop numbers did not change, so the solo pace stays 0.5 to 2.2 times the minutes a step pays for. `tools/mainquest_model.lua --check` also holds the party:
+    members roll at the solo chance per kill, a party of 5 kills at most 5 times as fast, so a kill or drop step takes at least 10% of its paid minutes (the quickest is 16%).
 - **Flags** (`ChaosMainQuest.emit(player, key)`, one guarded line in: `potions.lua` drink, `daily.lua` claim, `market.lua` list and buy order, `loadouts.lua` save, `bank.lua`
   deposit, `salvage.lua`, `stash.lua` deposit, `gamble.lua` buy, `townportal.lua` cast, `hunt_teleports.lua` enter; the Loot Buyer and Ysolde set storage bits through
   `ChaosMainQuestCore.emitFlag`). Windows to see and pages to read (`acks`: charms, Orb Exchange, pets, Spellbook, transmog, Hideout, Achievements, Mentors, Nemesis, the
@@ -28578,9 +28613,11 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
   Unity: not planned (it would need the window, the tracker rows and the three actions on the goals handler).
 - **Tests.** `tests/mainquest_test.lua` (config, validation, texts and placeholders against the configs, the resistance steps against `player_defence_config.lua`, progress of every
   condition, drops and pity, rewards, first look and veterans, the welcome import, skip, hooks present and guarded, the goals.lua calls), `tests/mainquest_boss_test.lua` (door, reward once,
-  cooldown, lines, the resistance in the Trials' combat hook), client `game_goals/goalsview_test.lua`, the two models. Not run on a live server or in a client.
-- **Not done.** The Unity client; real quest items (the drops are counters, as the spell quest fragments: items would need `install_*.py` steps and a look); the distinct attack shapes of
-  Vael's phases; English versions of Ysolde's completion lines (the English text is "Step done."); hunts and drops that count a party member (only the killer counts).
+  cooldown, lines, the resistance in the Trials' combat hook), client `game_goals/goalsview_test.lua`, the two models. O553 adds to the first one: marking, delivery (bag, backpack,
+  inbox), counting, a plain or foreign copy, the bring step, a lost item and the way back, the migration (four cases), the Vigil taking the Stone Hearts, skip, `credited` and the party
+  on the engine file, the spawn callback. Not run on a live server or in a client.
+- **Not done.** The Unity client; own sprites for the quest items (they wear the look of their stock item: a tusk, a dust, a gear wheel); the distinct attack shapes of
+  Vael's phases; English versions of Ysolde's completion lines (the English text is "Step done."); a quest item in the depot or the stash (the stash and the guild stash refuse it).
 
 ## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
 

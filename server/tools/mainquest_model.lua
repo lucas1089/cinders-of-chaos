@@ -19,6 +19,10 @@ local curve = PM.curve(env, 500)
 
 local LIMITS = {
 	paceMin = 0.5, paceMax = 2.2, -- the minutes a kill / drop step takes at killsPerMinute, over the minutes it pays for
+	-- O553: a kill counts for every party member around the killer, each member rolling the drop for itself. The chance per kill is
+	-- the solo chance, so a party's only gain is the kills per minute: at most partySize times a solo hunter's (the worst case, every
+	-- member kills what a solo hunter would). A step then still takes at least partyMin of the minutes it pays for.
+	partySize = 5, partyMin = 0.1,
 	itemMax = 4, -- orbs in one step
 	allowed = {[29856] = true, [29851] = true, [29857] = true, [24692] = true, [32256] = true}, -- Upheaval, Awakening, Fate, Sockets, Whetstone
 	bossAtMostCruelFirstClear = 4000 * 500 * 2
@@ -28,6 +32,7 @@ local problems = {}
 local function bad(text) problems[#problems + 1] = text end
 
 local total, byChapter = 0, {}
+local partyLow = math.huge
 for i, s in ipairs(cfg.steps) do
 	local g = K.gold(cfg, income, s)
 	total = total + g
@@ -42,6 +47,12 @@ for i, s in ipairs(cfg.steps) do
 			if ratio < LIMITS.paceMin or ratio > LIMITS.paceMax then
 				bad(string.format("step %d %s: %.1f minutes of %s against %d paid (ratio %.2f)", i, s.key, minutes, c.label, s.mins, ratio))
 			end
+			local partyRatio = ratio / LIMITS.partySize
+			if partyRatio < LIMITS.partyMin then
+				bad(string.format("step %d %s: a party of %d takes %.2f of the minutes it pays for (limit %.2f)", i, s.key, LIMITS.partySize,
+					partyRatio, LIMITS.partyMin))
+			end
+			partyLow = math.min(partyLow, partyRatio)
 		end
 	end
 	for _, it in ipairs(s.items) do
@@ -80,6 +91,9 @@ if mode == "--table" or mode ~= "--check" then
 		for _, s in ipairs(cfg.steps) do if s.ch == ch.n then n = n + 1 end end
 		print(string.format("| %d %s | %d | %s |", ch.n, ch.name.en, n, K.int(byChapter[ch.n] or 0)))
 	end
+	print(string.format("party note: a kill counts for every party member around the killer and each member rolls its own drop (O553); a party of %d "
+		.. "kills %d times as fast at most, so its quickest kill / drop step takes %.0f%% of the minutes it pays for (limit %.0f%%)",
+		LIMITS.partySize, LIMITS.partySize, partyLow * 100, LIMITS.partyMin * 100))
 	print(string.format("total with the boss reward %s gold = %.1f%% of the %s gold of an ideal hunt from level 8 to 500 (%.1f hours)", K.int(total), share * 100,
 		K.int(ideal), PM.hours(curve, 8, 500)))
 end
