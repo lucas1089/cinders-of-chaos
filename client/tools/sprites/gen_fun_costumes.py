@@ -11,15 +11,18 @@
 Twelve costumes, a new Dusk Moth look and a new Rune Seal ring are appended to pair 71 as 14 outfits, one per row of
 art_import/fun_costumes.csv: the row at line n is outfit 3511 + n.
 
-The art is ours: the 12 costumes and the moth were drawn with PixelLab (docs/CREDITS.md, Tools; characters and hopping objects, four
-directions, a walk or hop cycle each) and placed here by script; the Rune Seal ring is drawn by this script (`draw_ring`). Owned art
+The art is ours: the 12 costumes were drawn with PixelLab (docs/CREDITS.md, Tools; O578 redid them: pro characters in the game's low top-down
+view, four true directions) and placed here by script, `fun_costume_motion.py` makes the clean frames out of the downloads (the figures keep the
+walk PixelLab moved; the objects hop by script from their standing pictures; every costume breathes in 4 idle phases); the Dusk Moth is drawn
+by `gen_dusk_moth.py` (28 phases); the Rune Seal ring is drawn by this script (`draw_ring`). Owned art
 is committed the way the repository commits its other PixelLab sheets: one PNG per outfit in art_import/fun_costumes/, rows
 north, east, south, west for the idle phases then the same four for the walk phases (the ring: one row, same picture every way).
-The downloads themselves stay out of git (`art --src DIR` reads DIR/KEY/rot/DIRECTION.png and DIR/KEY/walk/DIRECTION/frame_NNN.png;
+The downloads themselves stay out of git (`art --src DIR` reads DIR/KEY/rot/DIRECTION.png, DIR/KEY/idle/DIRECTION/frame_NNN.png (2 to 4 phases,
+optional) and DIR/KEY/walk/DIRECTION/frame_NNN.png, as `fun_costume_motion.py prepare` writes them;
 a creature with no west pictures gets its east ones mirrored, the oblique view being symmetric: the Wandering Toaster).
 
 Outfit shapes (all one colour layer, no addons):
-  costume  2x2 tiles (64 px), idle group (2 phases) and walk group (N phases, 4 directions); one look for both sexes, locked, sold in
+  costume  2x2 tiles (64 px), idle group (2 to 4 phases) and walk group (N phases, 4 directions); one look for both sexes, locked, sold in
            the store (Cosmetics > Costumes). Feet on row 63, the figure centred on column 47.5 (the creature's own tile, as the 2x2 hunt looks).
   pet      1x1 tile, one always animated walk group (flag animateAlways, like the stock look 213 it replaces), a flap and a hover bob.
   aura     3x3 tiles, one idle-type group of 24 phases (a half turn) and no flags, built like the stock 3x3 ground auras 1518 and 1521 (no displacement:
@@ -49,6 +52,8 @@ FOOT_ROW = 63
 MID_COL = 47.5
 IDLE_MS = 500
 MIN_WALK = 4
+MIN_IDLE = 2
+MAX_IDLE = 4
 MIN_PET_PHASES = 8
 MIN_AURA_PHASES = 8
 # the look each flags column copies from the input pair: the stock moth look (animateAlways)
@@ -231,6 +236,20 @@ def load_walk(base, d):
     return [a[:, ::-1].copy() for a in out] if flip else out
 
 
+def load_idle(base, d):
+    """the idle pictures DIR/KEY/idle/DIRECTION/frame_NNN.png of a direction (None when the creature has no idle folder); a missing west
+    folder is the east one flipped, as the walk"""
+    root = os.path.join(base, 'idle')
+    if not os.path.isdir(root):
+        return None
+    flip = d == 'west' and not os.path.isdir(os.path.join(root, 'west'))
+    dd = os.path.join(root, 'east' if flip else d)
+    if not os.path.isdir(dd):
+        return None
+    out = [load_png(os.path.join(dd, f)) for f in sorted(os.listdir(dd)) if f.endswith('.png')]
+    return [a[:, ::-1].copy() for a in out] if flip else out
+
+
 def source_files(src, key):
     """every picture file of a creature of the downloads, in a fixed order"""
     out = []
@@ -239,11 +258,12 @@ def source_files(src, key):
         p = os.path.join(base, 'rot', d + '.png')
         if os.path.exists(p):
             out.append(p)
-    wd = os.path.join(base, 'walk')
-    for d in DIR_NAMES:
-        dd = os.path.join(wd, d)
-        if os.path.isdir(dd):
-            out += [os.path.join(dd, f) for f in sorted(os.listdir(dd)) if f.endswith('.png')]
+    for sub in ('idle', 'walk'):
+        wd = os.path.join(base, sub)
+        for d in DIR_NAMES:
+            dd = os.path.join(wd, d)
+            if os.path.isdir(dd):
+                out += [os.path.join(dd, f) for f in sorted(os.listdir(dd)) if f.endswith('.png')]
     return out
 
 
@@ -281,8 +301,8 @@ def shift_into(a, dx, dy, cell):
 
 def place_costume(src, key, idle_n=2):
     """DIR/KEY downloads -> {(group, dir, phase): 64 x 64 cell}: one shift for every frame (lowest opaque pixel on FOOT_ROW, middle of the
-    union box on MID_COL, moved left when the box would pass the last column); the idle phases are the standing picture and the same
-    picture one pixel up (a breath)"""
+    union box on MID_COL, moved left when the box would pass the last column); the idle phases are the pictures of DIR/KEY/idle/DIRECTION
+    (O578: 2 to 4 phases, a slow breath) or, with none, the standing picture and the same picture one pixel up"""
     import numpy as np
     base = os.path.join(src, key)
     rot = [restyle(binary_alpha(load_rot(base, d))) for d in DIR_NAMES]
@@ -290,7 +310,14 @@ def place_costume(src, key, idle_n=2):
     n = {len(w) for w in walk}
     if len(n) != 1 or min(n) < MIN_WALK:
         raise ValueError('%s: walk phases per direction %s (need the same %d or more)' % (key, sorted(n), MIN_WALK))
-    allf = rot + [f for w in walk for f in w]
+    idle = [load_idle(base, d) for d in DIR_NAMES]
+    if any(i is None for i in idle):
+        idle = None
+    else:
+        idle = [[restyle(binary_alpha(a)) for a in i] for i in idle]
+        if len({len(i) for i in idle}) != 1 or not MIN_IDLE <= len(idle[0]) <= MAX_IDLE:
+            raise ValueError('%s: idle phases per direction %s (need the same %d to %d)' % (key, sorted({len(i) for i in idle}), MIN_IDLE, MAX_IDLE))
+    allf = rot + [f for w in walk for f in w] + ([f for i in idle for f in i] if idle else [])
     x0, y0, x1, y1 = union_box(allf)
     dy = FOOT_ROW - y1
     dx = min(math.floor(MID_COL - (x0 + x1) / 2.0), 63 - x1)
@@ -298,8 +325,12 @@ def place_costume(src, key, idle_n=2):
         raise ValueError('%s: the figure (%dx%d) does not fit the 64 px canvas' % (key, x1 - x0 + 1, y1 - y0 + 1))
     out = {}
     for d in range(4):
-        out[('idle', d, 0)] = shift_into(rot[d], dx, dy, 64)
-        out[('idle', d, 1)] = shift_into(rot[d], dx, dy - 1, 64)
+        if idle:
+            for ph, f in enumerate(idle[d]):
+                out[('idle', d, ph)] = shift_into(f, dx, dy, 64)
+        else:
+            out[('idle', d, 0)] = shift_into(rot[d], dx, dy, 64)
+            out[('idle', d, 1)] = shift_into(rot[d], dx, dy - 1, 64)
         for ph, f in enumerate(walk[d]):
             out[('walk', d, ph)] = shift_into(f, dx, dy, 64)
     return out, len(walk[0])
@@ -470,6 +501,7 @@ def art(src, write):
         else:
             fr, n = place_costume(src, r['key'])
             r['walk'] = str(n)
+            r['idle'] = str(1 + max(k[2] for k in fr if k[0] == 'idle'))
             r['src'] = src_sum(src, r['key'])
         sheets[r['key']] = (r, fr)
         out_rows.append(r)
